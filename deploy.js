@@ -21,7 +21,7 @@ const SITE  = process.env.NETLIFY_SITE  || 'd22039b2-75f2-4206-b543-7c6176f2d181
 const API   = 'https://api.netlify.com/api/v1';
 const ROOT  = process.cwd();
 
-const SKIP_DIRS = new Set(['node_modules', '.git', '.netlify', '.vscode', '.idea', 'tmp', 'scratch']);
+const SKIP_DIRS = new Set(['node_modules', '.git', '.netlify', '.vscode', '.idea', 'tmp', 'scratch', '.claude']);
 const SKIP_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini', '.gitignore', '.env', '.env.local', 'package.json', 'package-lock.json', 'deploy.js', 'verify.js', 'CLAUDE.md', 'README.md']);
 
 function* walk(dir) {
