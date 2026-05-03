@@ -17,6 +17,9 @@ desktop.ini
 *.swp
 *~
 
+# Claude Code local settings
+.claude/
+
 # Local outputs / scratch
 /tmp/
 /scratch/
