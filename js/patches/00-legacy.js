@@ -1586,14 +1586,22 @@ console.log('[patch-master] loaded with all fixes');
       if(el.style) el.style.display = show ? '' : 'none';
     });
   }
-  // Inject filter UI when field view becomes visible
-  setInterval(function(){
+  // Inject filter UI when field view becomes visible — one-shot on display change.
+  function tryInject(){
     var view = document.getElementById('view-field');
     if(!view) return;
-    var s = getComputedStyle(view);
-    if(s.display === 'none') return;
+    if(getComputedStyle(view).display === 'none') return;
     injectFilterUI();
-  }, 1000);
+  }
+  document.addEventListener('view-shown', function(e){
+    if(e.detail && e.detail.name === 'field') setTimeout(tryInject, 100);
+  });
+  // Also observe view-field's class/style changes as a safety net
+  var fv = document.getElementById('view-field');
+  if(fv){
+    new MutationObserver(tryInject).observe(fv, { attributes:true, attributeFilter:['style','class'] });
+  }
+  setTimeout(tryInject, 800);
   console.log('[pm] map filter UI active');
 })();
 

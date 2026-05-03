@@ -89,3 +89,75 @@
 @media (max-width: 900px){
   #_qs_modal video{max-height:60vh !important}
 }
+
+/* ============================================================ */
+/* PHONE OVERFLOW & FIT FIXES (≤480px)                          */
+/* ============================================================ */
+@media (max-width: 480px){
+  /* No element bleeds past the viewport */
+  html,body{overflow-x:hidden}
+  *{box-sizing:border-box}
+
+  /* Topbar / hamburger sit further out so the nav drawer can be 88vw wide */
+  .topbar{width:88vw !important;max-width:300px}
+
+  /* Field view: 3 columns become 1 stacked */
+  .field-body{display:block !important}
+  .field-col{width:100% !important;margin-bottom:14px}
+
+  /* Sala POS — banner stacks, less padding */
+  .pos-banner{flex-direction:column !important;min-height:0 !important;padding:8px !important}
+  .pos-banner > div{padding:8px 12px !important}
+  /* product/service tiles: 2 columns */
+  #pos-products,#pos-services,#view-sala [style*="minmax(130px"],#view-sala [style*="minmax(140px"]{
+    grid-template-columns:repeat(2,1fr) !important;gap:6px !important
+  }
+  /* Cart panel pinned below product grid, not sticky */
+  #view-sala > div:nth-child(2){grid-template-columns:1fr !important;gap:8px !important;padding:8px !important}
+  #view-sala > div:nth-child(2) > div:last-child > div{position:static !important;max-height:none !important}
+
+  /* Modal width on phone fills nearly the full screen */
+  .modal.open > .modal-hd,
+  .modal.open > .modal-bd,
+  .modal.open > .modal-ft{
+    width:96vw !important;max-width:96vw !important
+  }
+  .modal-bd{padding:12px !important}
+
+  /* Yfirlit dashboard tiles: 2 columns instead of 4 */
+  ._pm_dash,.stat-grid4,.overview-stats{
+    grid-template-columns:repeat(2,1fr) !important;gap:8px !important
+  }
+
+  /* Detail-page action button rows wrap */
+  .info-grid{grid-template-columns:1fr !important}
+  div[style*="display:flex"][style*="gap:7px"]{flex-wrap:wrap !important;gap:6px !important}
+
+  /* Tables: keep the horizontal-scroll wrapper but tighter */
+  .view table{font-size:11px !important}
+  .view table th,.view table td{padding:6px 4px !important}
+
+  /* Toolbars wrap and full-width */
+  .field-toolbar{flex-wrap:wrap !important;gap:6px !important}
+  .field-toolbar > *{flex:1 1 auto;min-width:120px}
+
+  /* Receipts/invoices in popup: scale-fit when previewed inline */
+  .sheet{padding:6mm !important}
+
+  /* Settings tiles single col */
+  #settings-main [style*="grid-template-columns"]{grid-template-columns:1fr !important}
+
+  /* QR-bulk-print tile sheet at full width */
+  .qb-sheet{width:100% !important}
+
+  /* Make any Lánstæki / Geymsla "geyma slot" grid wrap properly */
+  [class*="geymsla"][style*="grid-template-columns"]{grid-template-columns:repeat(auto-fill,minmax(38px,1fr)) !important}
+}
+
+/* Tablet/small-laptop pinch (481-768px): looser version of phone rules */
+@media (min-width: 481px) and (max-width: 768px){
+  #pos-products,#pos-services{grid-template-columns:repeat(3,1fr) !important}
+  ._pm_dash{grid-template-columns:repeat(2,1fr) !important}
+  .field-body{display:block !important}
+  .field-col{width:100% !important;margin-bottom:14px}
+}

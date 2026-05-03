@@ -244,6 +244,23 @@
       flex: 1; max-width: 280px; border-bottom: 0.6pt solid #000; height: 1.2em;
     }
     .disclaimer { margin-top: 16px; font-size: 8pt; color: #444; }
+
+    /* Phone preview: shrink the sheet so the user can see/print without horizontal scroll */
+    @media screen and (max-width: 600px) {
+      html, body { padding: 6px !important; }
+      .sheet {
+        max-width: 100% !important; padding: 8mm 6mm !important;
+        min-height: auto !important; font-size: 9pt;
+      }
+      .hdr { flex-direction: column; gap: 12px; }
+      .hdr-right { text-align: left; }
+      .meta-row { grid-template-columns: 1fr; gap: 14px; }
+      .totals-block { margin-left: 0 !important; }
+      .co-name, .co-tag { font-size: 18pt; }
+      .inv-title-row em { font-size: 16pt; }
+      .items th, .items td { padding: 3px 4px !important; font-size: 9pt; }
+      .no-print button { padding: 9px 14px; font-size: 13px; }
+    }
   `;
 
   function buildHTML(ctx) {
