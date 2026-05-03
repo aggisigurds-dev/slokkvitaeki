@@ -67,6 +67,7 @@
 
   // ---------- (2) Auto-search ----------
   function getSB() {
+    if (window.DB && window.DB.sb) return window.DB.sb;
     if (!window.supabase || !window.SUPABASE_URL || !window.SUPABASE_KEY) return null;
     if (!window.__posFixesSB) {
       window.__posFixesSB = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);

@@ -6,7 +6,7 @@
     return;
   }
 
-  const SB = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+  const SB = (window.DB && window.DB.sb) || window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'

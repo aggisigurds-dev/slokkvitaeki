@@ -6,7 +6,7 @@
     return;
   }
 
-  const SB = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+  const SB = (window.DB && window.DB.sb) || window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
   const DESKTOP_MIN = 900;
   const isDesktop = () => window.matchMedia('(min-width: ' + DESKTOP_MIN + 'px)').matches;
 

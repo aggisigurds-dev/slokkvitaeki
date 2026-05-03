@@ -16,13 +16,19 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { createHash } from 'node:crypto';
 
-const TOKEN = process.env.NETLIFY_TOKEN || 'nfp_Yeabk2zFF2GspfKi5rq3XbqPftGpSrhqa6b7';
-const SITE  = process.env.NETLIFY_SITE  || 'd22039b2-75f2-4206-b543-7c6176f2d181';
+const TOKEN = process.env.NETLIFY_TOKEN;
+const SITE  = process.env.NETLIFY_SITE || 'd22039b2-75f2-4206-b543-7c6176f2d181';
+if (!TOKEN) {
+  console.error('NETLIFY_TOKEN env var is not set.');
+  console.error('PowerShell:  $env:NETLIFY_TOKEN = "nfp_xxxxx"; node deploy.js');
+  console.error('CMD:         set NETLIFY_TOKEN=nfp_xxxxx && node deploy.js');
+  process.exit(1);
+}
 const API   = 'https://api.netlify.com/api/v1';
 const ROOT  = process.cwd();
 
 const SKIP_DIRS = new Set(['node_modules', '.git', '.netlify', '.vscode', '.idea', 'tmp', 'scratch', '.claude']);
-const SKIP_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini', '.gitignore', '.env', '.env.local', 'package.json', 'package-lock.json', 'deploy.js', 'verify.js', 'CLAUDE.md', 'README.md']);
+const SKIP_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini', '.gitignore', '.env', '.env.local', 'package.json', 'package-lock.json', 'deploy.js', 'verify.js']);
 
 function* walk(dir) {
   for (const name of readdirSync(dir)) {
@@ -31,7 +37,7 @@ function* walk(dir) {
     if (SKIP_DIRS.has(name)) continue;
     const st = statSync(full);
     if (st.isDirectory()) yield* walk(full);
-    else if (!SKIP_FILES.has(name)) yield rel;
+    else if (!SKIP_FILES.has(name) && !/\.md$/i.test(name)) yield rel;
   }
 }
 

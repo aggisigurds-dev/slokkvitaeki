@@ -19,6 +19,7 @@
   const VIEW_ID = 'view-bokhalds-yfirlit';
 
   function getSB() {
+    if (window.DB && window.DB.sb) return window.DB.sb;
     if (!window.supabase || !window.SUPABASE_URL || !window.SUPABASE_KEY) return null;
     if (!window.__byaSB) window.__byaSB = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
     return window.__byaSB;

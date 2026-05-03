@@ -37,7 +37,7 @@ _done=true;
 var outer=document.createElement('div');outer.style.cssText='padding:10px 20px 0;';
 var hd=document.createElement('div');hd.style.cssText='display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;';
 var ttl=document.createElement('span');ttl.style.cssText='font-size:13px;font-weight:700;color:#404550;';ttl.textContent='Kort \u2014 \xdej\xf3nustusv\xe6\xf0i';
-var rb=document.createElement('button');rb.textContent='\u21bb Uppf\xe6ra';rb.style.cssText='font-size:11px;padding:3px 10px;border:1px solid #e4e6ea;border-radius:6px;background:white;cursor:pointer;color:#555;';rb.onclick=function(){(window._slokk_markers||_markers)();};
+var rb=document.createElement('button');rb.textContent='\u21bb Uppf\xe6ra';rb.style.cssText='font-size:11px;padding:3px 10px;border:1px solid #e4e6ea;border-radius:6px;background:white;cursor:pointer;color:#555;';rb.onclick=function(){if(typeof window._slokk_markers==='function')window._slokk_markers();};
 hd.appendChild(ttl);hd.appendChild(rb);
 var mc=document.createElement('div');mc.id='field-map-container';mc.style.cssText='width:100%;height:300px;border-radius:10px;border:1px solid #e4e6ea;overflow:hidden;background:#f8f9fa;';
 outer.appendChild(hd);outer.appendChild(mc);

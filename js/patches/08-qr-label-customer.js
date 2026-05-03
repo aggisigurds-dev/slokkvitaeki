@@ -15,6 +15,7 @@
   window.__qrLabelCustomerInstalled = true;
 
   function getSB() {
+    if (window.DB && window.DB.sb) return window.DB.sb;
     if (!window.supabase || !window.SUPABASE_URL || !window.SUPABASE_KEY) return null;
     if (!window.__qrLcSB) {
       window.__qrLcSB = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
