@@ -1,0 +1,212 @@
+'use strict';
+// ============ COUNTER ============
+var Counter = {
+  sel: null,
+  render: function() { this.renderList(); if(this.sel) this.select(this.sel); else if(DB.getActiveJobs().length) this.select(DB.getActiveJobs()[0].id); },
+  renderList: function() {
+    var jobs=DB.getActiveJobs(), el=document.getElementById('job-list');
+    if(!el) return;
+    if(!jobs.length) { el.innerHTML='<div class="empty-state" style="padding:30px 16px"><div class="es-sub">Engar verkbeiðnir</div></div>'; }
+    else el.innerHTML=jobs.map(function(j) {
+      var a=Counter.sel===j.id?' active':'';
+      return '<div class="jli'+a+'" onclick="Counter.select('+j.id+')"><div class="jli-dot '+U.dc(j.status)+'"></div><div><div class="jli-num">'+U.e(j.num)+'</div><div class="jli-name">'+U.e(j.customer)+'</div><div class="jli-meta">'+j.units.length+' slökkvitæki</div>'+U.badge(j.status)+'</div></div>';
+    }).join('');
+    var rdy=DB.getReadyJobs(), rel=document.getElementById('sidebar-ready');
+    if(!rel) return;
+    if(!rdy.length) { rel.innerHTML=''; return; }
+    rel.innerHTML='<div class="sidebar-ready-title">Tilbúið til afhendingar</div>'+rdy.map(function(j) {
+      return '<div class="ready-item"><div><div class="ready-name">'+U.e(j.customer)+'</div><div class="ready-meta">'+U.e(j.num)+' · '+j.units.length+' slökkvitæki</div></div><button class="btn btn-sm btn-success" onclick="Counter.markCollected('+j.id+')">Sótt ✓</button></div>';
+    }).join('');
+    document.getElementById('alert-badge').textContent = DB.getOverdue().length + DB.getDue().length;
+  },
+  select: function(id) {
+    this.sel=id; var job=DB.getJob(id); if(!job) return;
+    this.renderList(); this.renderDetail(job); this.renderPrintAside(job);
+  },
+  renderDetail: function(job) {
+    var el=document.getElementById('counter-main'); if(!el) return;
+    var html='<div class="jd-header"><div><div class="jd-title">'+U.e(job.customer)+' <span style="font-family:var(--mono);font-size:15px;color:var(--ink3)">'+U.e(job.num)+'</span></div><div class="jd-sub">Móttekið '+U.fd(job.dropoff)+' · Afhending '+U.fd(job.pickup)+'</div></div>';
+    html+='<div class="jd-actions">'+U.badge(job.status);
+    if(job.status!=='collected') html+='<button class="btn btn-outline btn-sm" onclick="Print.showJob(DB.getJob('+job.id+'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Prenta</button>';
+    if(job.status==='ready') html+='<button class="btn btn-success btn-sm" onclick="Counter.markCollected('+job.id+')">Sótt ✓</button>';
+    html+='</div></div>';
+    html+='<div class="info-grid"><div class="ic"><div class="ic-lbl">Sími</div><div class="ic-val">'+U.e(job.phone)+'</div></div><div class="ic"><div class="ic-lbl">Afhendingardagur</div><div class="ic-val">'+U.fd(job.pickup)+'</div></div>';
+    if(job.notes) html+='<div class="ic ic-span"><div class="ic-lbl">Athugasemdir</div><div class="ic-val" style="color:var(--ink2)">'+U.e(job.notes)+'</div></div>';
+    html+='</div>';
+    html+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><span style="font-size:14px;font-weight:600">Slökkvitæki í verki</span><span style="font-family:var(--mono);font-size:11px;background:var(--bg2);padding:2px 8px;border-radius:8px;color:var(--ink2)">'+job.units.length+' stk.</span></div>';
+    html+='<div class="tcard"><table class="dtbl"><thead><tr><th>Raðnúmer</th><th>Tegund</th><th>Stærð</th><th>Þjónusta</th><th>Staða</th><th></th></tr></thead><tbody>';
+    job.units.forEach(function(u) {
+      html+='<tr><td><span class="ser">'+U.e(u.serial)+'</span></td><td>'+U.e(u.type)+'</td><td>'+U.e(u.size||'')+'</td><td>'+U.e(u.service)+'</td><td>'+U.badge(u.status)+'</td><td><button class="btn btn-ghost btn-sm" onclick="Print.showQR({serial:\''+U.e(u.serial)+'\',type:\''+U.e(u.type)+'\',size:\''+U.e(u.size||'')+'\',client:\''+U.e(job.customer)+'\',next_insp:\''+U.e(job.pickup)+'\'})" title="Prenta QR"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg></button></td></tr>';
+    });
+    html+='</tbody></table></div>';
+    el.innerHTML=html;
+  },
+  renderPrintAside: function(job) {
+    var el=document.getElementById('print-aside'); if(!el) return;
+    var u=job.units[0];
+    var html='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:12px">Prenta</div>';
+    html+='<div class="pa-block"><div class="pa-hd"><svg viewBox="0 0 24 24"><path d="M12 2C9.5 5 8 7.5 8 10a4 4 0 008 0c0-1.5-.5-3-2-4.5-.5 2-1.5 3-2 3.5-.5-.5-1-2-.5-4.5C11 5 10 6.5 10 6.5S12 5 12 2zm-2 14h4v6h-4v-6z"/></svg><span class="pa-hd-title">Miðar (×'+job.units.length+')</span></div>';
+    html+='<div class="pa-body"><div class="stk-prev"><div class="stk-logo"><div class="stk-logo-dot"><svg viewBox="0 0 24 24"><path d="M12 2C9.5 5 8 7.5 8 10a4 4 0 008 0c0-1.5-.5-3-2-4.5-.5 2-1.5 3-2 3.5-.5-.5-1-2-.5-4.5C11 5 10 6.5 10 6.5S12 5 12 2zm-2 14h4v6h-4v-6z"/></svg></div><div class="stk-logo-txt">Slökkvitæki ehf<br>Brunakerfi</div></div>';
+    html+='<div class="stk-body"><div class="stk-fields"><div class="stk-f"><div class="stk-f-lbl">Verk</div><div class="stk-f-val">'+U.e(job.num)+'</div></div><div class="stk-f"><div class="stk-f-lbl">Viðskiptavinur</div><div class="stk-f-val">'+U.e(job.customer)+'</div></div><div class="stk-f"><div class="stk-f-lbl">Þjónusta</div><div class="stk-f-val">'+U.e(u.service)+'</div></div><div class="stk-f"><div class="stk-f-lbl">Afhending</div><div class="stk-f-val">'+U.fd(job.pickup)+'</div></div></div><div class="stk-qr">'+QR.svg(u.serial,52)+'</div></div></div>';
+    html+='<button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="Print.showJob(DB.getJob('+job.id+'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Prenta '+job.units.length+' miða</button></div></div>';
+    html+='<div class="pa-block" style="margin-top:11px"><div class="pa-hd gray"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8" fill="none"/></svg><span class="pa-hd-title">Kvittun</span></div>';
+    html+='<div class="pa-body"><div class="rcpt-co">Slökkvitæki ehf · Brunakerfi</div>';
+    html+='<div class="rcpt-ln"><span>Verk</span><span style="font-family:var(--mono)">'+U.e(job.num)+'</span></div>';
+    job.units.forEach(function(u2){html+='<div class="rcpt-ln"><span>'+U.e(u2.serial.slice(-6))+'</span><span>'+U.e(u2.service)+'</span></div>';});
+    html+='<div class="rcpt-ln rcpt-tot"><span>Afhending</span><span>'+U.fd(job.pickup)+'</span></div>';
+    html+='<div class="rcpt-note">Við hringum þegar tilbúið</div>';
+    html+='<button class="btn btn-outline btn-sm" style="width:100%;justify-content:center;margin-top:8px" onclick="Print.showJob(DB.getJob('+job.id+'))">Prenta kvittun</button></div></div>';
+    el.innerHTML=html;
+  },
+  openNew: function() {
+    var d=document.getElementById('nj-drop'), p=document.getElementById('nj-pick');
+    d.value=U.today(); p.value=U.tomorrow();
+    ['nj-name','nj-phone','nj-notes'].forEach(function(id){document.getElementById(id).value='';});
+    document.getElementById('nj-rows').innerHTML=''; this.addRow();
+    Modal.open('modal-newjob');
+  },
+  addRow: function() {
+    var r=document.createElement('div'); r.className='unit-row-form';
+    r.innerHTML='<select><option>ABC Duft</option><option>CO₂</option><option>Vatn</option><option>Froðu</option><option>Blautt efni</option></select><input placeholder="6 kg"/><select><option>Hlaðning</option><option>Skoðun</option><option>Viðgerð</option><option>Hlaðning + Skoðun</option></select><button class="rm-btn" onclick="this.parentElement.remove()">✕</button>';
+    document.getElementById('nj-rows').appendChild(r);
+  },
+  submitNew: async function() {
+    var name=document.getElementById('nj-name').value.trim();
+    if(!name) { Toast.show('Vinsamlegast sláðu inn nafn'); return; }
+    var rows=document.querySelectorAll('#nj-rows .unit-row-form');
+    if(!rows.length) { Toast.show('Bættu við að minnsta kosti einu slökkvitæki'); return; }
+    var units=[]; rows.forEach(function(r){var s=r.querySelectorAll('select'),i=r.querySelector('input'); units.push({type:s[0].value,size:i.value||'6 kg',service:s[1].value});});
+    var btn=document.querySelector('#modal-newjob .btn-primary'); btn.disabled=true; btn.textContent='Vista…';
+    var job=await DB.createJob({num:U.nextJobNum(),customer:name,phone:document.getElementById('nj-phone').value,dropoff:document.getElementById('nj-drop').value,pickup:document.getElementById('nj-pick').value,notes:document.getElementById('nj-notes').value,verd:(document.getElementById('nj-verd')||{}).value||'',units});
+    btn.disabled=false; btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Stofna + Prenta';
+    Modal.close('modal-newjob');
+    if(job) { Counter.sel=job.id; Counter.render(); setTimeout(function(){Print.showJob(job);},200); Toast.show('Verk '+job.num+' stofnað ✓'); }
+  },
+  markCollected: function(id) { DB.updateJobStatus(id,'collected'); Counter.sel=null; Toast.show('Verk merkt sem sótt ✓'); },
+  editVerd: async function(id) {
+    var job=DB.getJob(id); if(!job) return;
+    var cur=job.verd?String(parseFloat(job.verd)):'';
+    var val=prompt('Verð á verki (kr):',cur);
+    if(val===null) return;
+    var num=parseFloat(val.replace(/[^0-9.]/g,''))||0;
+    if(DB.online) await DB.sb.from('verkbeidnir').update({verd:num}).eq('id',id);
+    job.verd=num;
+    var el=document.getElementById('verd-display-'+id);
+    if(el) el.textContent=num?num.toLocaleString('is')+' kr':'—';
+    Toast.show('Verð uppfært: '+num.toLocaleString('is')+' kr ✓');
+    App.refreshAll();
+  }
+};
+
+// ============ WORKSHOP ============
+var Workshop = {
+  sel: null,
+  render: function() {
+    var el=document.getElementById('workshop-queue'); if(!el) return;
+    var jobs=DB.getWorkshopJobs();
+    var html='<div style="padding:16px"><div class="ws-queue-hd"><div><div class="ws-queue-title">Verkröð</div><div class="ws-queue-sub">'+jobs.length+' verk í bið · '+U.fd(U.today())+'</div></div><button class="btn btn-outline btn-sm" onclick="Field.openScan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg>Skanna tæki</button></div>';
+    if(!jobs.length) html+='<div class="empty-state"><div class="es-icon">🎉</div><div class="es-title">Verkröð tóm</div><div class="es-sub">Engin verk í vinnslu</div></div>';
+    else html+=jobs.map(function(j) {
+      var a=Workshop.sel===j.id?' active':''; var done=j.units.filter(function(u){return u.status==='done';}).length;
+      return '<div class="qcard'+a+'" onclick="Workshop.select('+j.id+')"><div class="qcard-top"><div class="qcard-info"><div class="qcard-num">'+U.e(j.num)+'</div><div class="qcard-cust">'+U.e(j.customer)+'</div><div class="qcard-meta">Afhending '+U.fd(j.pickup)+' · '+done+'/'+j.units.length+' lokið</div></div>'+U.badge(j.status)+'</div><div class="qcard-chips">'+j.units.map(function(u){var d=u.status==='done'; return '<div class="chip'+(d?' done':'')+'">'+( d?'<svg style="width:11px;height:11px;stroke:var(--grn);fill:none;flex-shrink:0" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>':''  )+'<span class="chip-ser">'+U.e((u.serial.match(/[^-]+$/)||[u.serial])[0])+'</span><span class="chip-tp">'+U.e(u.type)+'</span></div>';}).join('')+'</div></div>';
+    }).join('');
+    html+='</div>'; el.innerHTML=html;
+    if(this.sel) this.renderDetail(DB.getJob(this.sel));
+  },
+  select: function(id) {
+    this.sel=id; this.render();
+  },
+  renderDetail: function(job) {
+    var el=document.getElementById('workshop-detail'); if(!el||!job) return;
+    var html='<div class="ws-scroll"><div class="ws-title">'+U.e(job.customer)+'</div><div class="ws-sub">'+U.e(job.num)+' · '+job.units.length+' slökkvitæki · Afhending '+U.fd(job.pickup)+'</div>';
+    html+=job.units.map(function(u) {
+      var done=u.status==='done';
+      return '<div class="ws-row"><div class="ws-info"><div class="ws-ser">'+U.e(u.serial)+'</div><div class="ws-name">'+U.e(u.type)+' · '+U.e(u.size||'')+'</div><div class="ws-svc">'+U.e(u.service)+'</div></div><div class="ws-acts"><button class="ws-scan" onclick="Workshop.scanUnit('+job.id+','+u.id+')"><svg viewBox="0 0 24 24" stroke-width="2"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg>Skanna</button><div class="ws-chk'+(done?' done':'')+'" onclick="Workshop.toggleUnit('+job.id+','+u.id+')" title="Lokið"><svg viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div></div></div>';
+    }).join('');
+    html+='</div><div class="ws-footer"><button class="btn btn-success" style="width:100%;justify-content:center" onclick="Workshop.markReady('+job.id+')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Merkja sem tilbúið</button><div class="ws-hint">Afgreiðsla fær tilkynningu og hringir í viðskiptavin</div></div>';
+    el.innerHTML=html;
+  },
+  toggleUnit: async function(jid, uid) { await DB.updateUnitStatus(jid, uid, 'done'); },
+  scanUnit: function(jid, uid) { Toast.show('Skanna QR kóðann á slökkvitækinu…'); setTimeout(function(){ DB.updateUnitStatus(jid,uid,'done'); Toast.show('✓ Tæki skannað og merkt sem lokið'); },900); },
+  markReady: async function(id) { await DB.updateJobStatus(id,'ready'); Workshop.sel=null; Toast.show('Verk tilbúið · Afgreiðsla getur hringt í viðskiptavin 📞'); }
+};
+
+// ============ FIELD ============
+var Field = {
+  result: 'pass',
+  unit: null,
+  render: function() {
+    var ov=DB.getOverdue(), du=DB.getDue(), sc=DB.cache.schedule, hi=DB.cache.history;
+    var ae=document.getElementById('field-alerts');
+    if(ae) ae.innerHTML='<div class="fcol-title">Útrunnið <span class="fcol-count">'+ov.length+'</span></div>'+
+      (ov.length?ov.map(function(u){return '<div class="alert-card ov"><div class="ac-serial">'+U.e(u.serial)+'</div><div class="ac-name">'+U.e(u.client)+'</div><div class="ac-meta">'+U.e(u.location||'')+(u.next_insp?' · Útrunnið '+U.fd(u.next_insp):'')+'</div><div class="ac-acts"><button class="btn btn-primary btn-sm" onclick="Field.openInspect(DB.getUnit('+u.id+'))">Skrá skoðun</button><button class="btn btn-outline btn-sm" onclick="Print.showQR(DB.getUnit('+u.id+'))">Prenta QR</button></div></div>';}).join(''):'<div class="empty-state" style="padding:20px"><div class="es-sub">Engin útrunnin tæki 🎉</div></div>')+
+      '<div class="fcol-title" style="margin-top:16px">Gjaldfallið <span class="fcol-count">'+du.length+'</span></div>'+
+      (du.length?du.map(function(u){return '<div class="alert-card due"><div class="ac-serial">'+U.e(u.serial)+'</div><div class="ac-name">'+U.e(u.client)+'</div><div class="ac-meta">Næsta skoðun: '+U.fd(u.next_insp)+'</div><div class="ac-acts"><button class="btn btn-outline btn-sm" onclick="Field.openInspect(DB.getUnit('+u.id+'))">Skrá skoðun</button></div></div>';}).join(''):'<div class="empty-state" style="padding:20px"><div class="es-sub">Engin tæki gjaldfallin</div></div>');
+    var se=document.getElementById('field-schedule');
+    if(se) se.innerHTML='<div class="fcol-title">Næstu heimsóknir <span class="fcol-count">'+sc.length+'</span></div>'+
+      (sc.length?sc.map(function(s){var d=new Date(s.date+'T00:00:00');var mo=['jan','feb','mar','apr','maí','jún','júl','ágú','sep','okt','nóv','des'];return '<div class="sched-card"><div class="sched-date"><div class="sched-day">'+d.getDate()+'</div><div class="sched-mon">'+mo[d.getMonth()]+'</div></div><div class="sched-info"><div class="sched-client">'+U.e(s.client)+'</div><div class="sched-meta">'+s.time+' · '+s.tech+' · '+s.units+' tæki</div></div>'+U.badge('scheduled')+'</div>';}).join(''):'<div class="empty-state" style="padding:20px"><div class="es-sub">Engar áætlaðar heimsóknir</div></div>');
+    var he=document.getElementById('field-history');
+    if(he) he.innerHTML='<div class="fcol-title">Skoðunarsaga <span class="fcol-count">'+hi.length+'</span></div>'+
+      (hi.length?hi.map(function(h){return '<div class="hist-card"><div class="hist-top"><div class="hist-name">'+U.e(h.client)+'</div>'+U.badge(h.result)+'</div><div class="hist-meta">'+U.fd(h.date)+(h.tech?' · '+U.e(h.tech):'')+'</div>'+(h.notes?'<div class="hist-notes">'+(function(n){try{var o=JSON.parse(n);var acts={insert:'Bætt við',update:'Uppfærð',delete:'Eytt'};var tbl={verkbeidnir:'verkbeiðni',verklidur:'þjónustulínu',uttaeki:'tæki',fyrirtaeki:'fyrirtæki',vorur:'vöru',solur:'sölu'};if(o.d)return U.e(o.d);var a=acts[o.a]||o.a||'';var t=tbl[o.t]||o.t||'';return U.e([a,t?'→ '+t:''].filter(Boolean).join(' '));}catch(e){return U.e(n);}})(h.notes)+'</div>':'')+'</div>';}).join(''):'');
+  },
+  openScan: function() { document.getElementById('scan-serial').value=''; document.getElementById('scan-result').innerHTML=''; Modal.open('modal-scan'); setTimeout(function(){document.getElementById('scan-serial').focus();},300); },
+  doLookupCode: function(code) { document.getElementById('scan-serial').value = code; this.doLookup(); },
+  doLookup: function() {
+    var s=document.getElementById('scan-serial').value.trim(); if(!s){Toast.show('Sláðu inn raðnúmer');return;}
+    var u=DB.findBySerial(s), el=document.getElementById('scan-result');
+    if(!u){el.innerHTML='<div class="scan-notfound">Ekkert tæki fannst með raðnúmerið: <strong>'+U.e(s)+'</strong></div>'; return;}
+    el.innerHTML='<div class="scan-found"><div class="ub-ser">'+U.e(u.serial)+'</div><div class="ub-name">'+U.e(u.client)+'</div><div class="ub-sub">'+U.e(u.type)+' · '+U.e(u.size||'')+' · '+U.badge(u.status)+'</div><div style="display:flex;gap:8px;margin-top:10px"><button class="btn btn-outline btn-sm" onclick="Modal.close(\'modal-scan\');Print.showQR(DB.getUnit('+u.id+'))">Prenta QR</button><button class="btn btn-primary btn-sm" onclick="Modal.close(\'modal-scan\');Field.openInspect(DB.getUnit('+u.id+'))">Skrá skoðun</button></div></div>';
+  },
+  openInspect: function(u) {
+    if(!u) return; this.unit=u; this.result='pass';
+    document.getElementById('inspect-badge').innerHTML='<div class="ub-ser">'+U.e(u.serial)+'</div><div class="ub-name">'+U.e(u.client)+'</div><div class="ub-sub">'+U.e(u.type)+' · '+U.e(u.size||'')+(u.location?' · '+U.e(u.location):'')+'</div>';
+    document.getElementById('ip-pressure').value=u.pressure||''; document.getElementById('ip-notes').value=''; document.getElementById('ip-weight').selectedIndex=0;
+    this.setResult('pass'); Modal.open('modal-inspect');
+  },
+  setResult: function(r) { this.result=r; document.getElementById('rb-pass').classList.toggle('active',r==='pass'); document.getElementById('rb-fail').classList.toggle('active',r==='fail'); },
+  submitInspect: async function() {
+    if(!this.unit) return;
+    var u=this.unit;
+    await DB.addInspection(u.id,{result:this.result,pressure:document.getElementById('ip-pressure').value,weight:document.getElementById('ip-weight').value,notes:document.getElementById('ip-notes').value});
+    Modal.close('modal-inspect');
+    Toast.show((this.result==='pass'?'✓ Skoðun í lagi · ':'✗ Skoðun mistókst · ')+'QR miði prentaður');
+    setTimeout(function(){Print.showQR(DB.getUnit(u.id));},400);
+  },
+  openAddUnit: function() {
+    var t=U.today(), n=(parseInt(t.slice(0,4))+1)+t.slice(4);
+    document.getElementById('au-inst').value=t; document.getElementById('au-next').value=n;
+    ['au-type','au-size','au-client','au-loc'].forEach(function(id){var el=document.getElementById(id);if(el.tagName==='INPUT')el.value='';});
+    Modal.open('modal-addunit');
+  },
+  submitAddUnit: async function() {
+    var client=document.getElementById('au-client').value.trim();
+    if(!client){Toast.show('Sláðu inn staðsetningu');return;}
+    var u=await DB.addUnit({type:document.getElementById('au-type').value,size:document.getElementById('au-size').value||'6 kg',client,location:document.getElementById('au-loc').value,inst:document.getElementById('au-inst').value,next:document.getElementById('au-next').value});
+    Modal.close('modal-addunit'); Field.render();
+    setTimeout(function(){Print.showQR(u);},200);
+    Toast.show('Tæki skráð · '+u.serial);
+  }
+};
+
+// ============ APP ============
+var App = {
+  view: 'counter',
+  init: function() { DB.init(); },
+  switchView: function(v) {
+    this.view=v;
+    document.querySelectorAll('.view').forEach(function(el){el.classList.remove('active');});
+    document.querySelectorAll('.vnav-btn').forEach(function(el){el.classList.remove('active');});
+    var vEl=document.getElementById('view-'+v); if(vEl) vEl.classList.add('active');
+    var btn=document.querySelector('.vnav-btn[data-view="'+v+'"]'); if(btn) btn.classList.add('active');
+    if(v==='companies'&&typeof Companies!=='undefined')Companies.load();
+    if(v==='settings'&&typeof Settings!=='undefined')Settings.load();
+    if(v==='income'&&typeof Income!=='undefined')Income.render();
+  },
+  refreshAll: function() {
+    Counter.render(); Workshop.render(); Field.render();
+    if(this.view==='companies'&&typeof Companies!=='undefined')Companies.render();
+    if(this.view==='income'&&typeof Income!=='undefined')Income.render();
+    document.getElementById('alert-badge').textContent = DB.getOverdue().length + DB.getDue().length;
+  }
+};
+document.addEventListener('DOMContentLoaded', function() { App.init(); });

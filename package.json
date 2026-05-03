@@ -1,0 +1,14 @@
+{
+  "name": "slokkvitaeki",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Internal web app for Slökkvitæki ehf — fire extinguisher inspection and service",
+  "type": "module",
+  "scripts": {
+    "deploy": "node deploy.js",
+    "verify": "node verify.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
