@@ -270,6 +270,7 @@
     w.document.close();
   }
   function watch(){setInterval(function(){var v=document.getElementById('view-sala');if(!v||!v.classList.contains('active'))return;if(!document.getElementById('pos-checkout')){v.removeAttribute('data-pos-v3');loadAll().then(render);}},300);}
+  window.POS = { getState: function(){ return state; }, totals: totals };
   function init(){watch();console.log('[POS v3] Ready');}
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 })();

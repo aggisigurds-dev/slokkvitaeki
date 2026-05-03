@@ -250,8 +250,17 @@
 
   // --- Print Receipt ---
   function printReceipt(cart, method) {
-    const win = window.open('', 'kvittun', 'width=420,height=700');
+    const win = window.open('', '_blank', 'width=900,height=1100');
     if (!win) { alert('Vinsamlegast leyfðu sprettiglugga til að prenta kvittun.'); return; }
+    // Prefer the A4 invoice layout if available (window.SalaInvoice)
+    if (window.SalaInvoice && typeof SalaInvoice.render === 'function') {
+      const ok = SalaInvoice.render(win, {
+        customerName: cart.customer.nafn || '',
+        tilvisun: cart.customer.simi || '',
+        radnr: cart.customer.kt || ''
+      });
+      if (ok) return;
+    }
     const date = new Date().toLocaleString('is-IS', { dateStyle: 'short', timeStyle: 'short' });
     const methodLabel = method === 'kort' ? '💳 Greitt með korti' : '💵 Greitt með pening';
     const cust = cart.customer;
