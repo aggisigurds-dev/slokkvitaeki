@@ -21,7 +21,7 @@
   const ICELAND_LOCALE = 'is-IS';
   const COMPANY = {
     name: 'Slökkvitæki ehf',
-    tag: 'Brunakerfi',
+    tag: 'Brunahólf',
     kt: '600508-0400',
     vsk: '98107',
     addr1: 'Helluhrauni 10',
@@ -29,10 +29,37 @@
     phone: '565-4080'
   };
   const DEFAULTS = {
-    paymentTerms: 'Krafa í banka 10 dagar',
+    paymentTerms: 'Staðgreitt',
     deliveryTerms: 'Skilmáli1',
-    employee: 'Kassi'
+    employee: 'Kassi'  // last-resort fallback only — see resolveEmployee()
   };
+
+  // Resolve the "Starfsmaður" field on the receipt to the actual logged-in
+  // user's display name (from window.UserAuth) so it shows e.g.
+  // "Haukur Valdimarsson" instead of the generic "Kassi".
+  function resolveEmployee() {
+    try {
+      const profile = window.UserAuth?.getProfile?.();
+      if (profile && profile.nafn) return profile.nafn;
+      const user = window.UserAuth?.getUser?.();
+      if (user && user.email) return user.email.split('@')[0];
+    } catch (e) { /* fall through */ }
+    return DEFAULTS.employee;
+  }
+
+  // Map greitt_med payment-method codes to the wording shown on the receipt
+  // under "Greiðsl.skilm."
+  function paymentTermsFor(method) {
+    const m = String(method || '').toLowerCase().trim();
+    if (m === 'reikningur' || m === 'i reikning' || m === 'í reikning') {
+      return 'Krafa í banka 10 dagar';
+    }
+    if (m === 'greitt_sidar' || m === 'greitt sidar' || m === 'greitt síðar') {
+      return 'Ógreitt — greitt við afhendingu';
+    }
+    // Card, cash and everything else default to Staðgreitt
+    return 'Staðgreitt';
+  }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
@@ -111,19 +138,37 @@
     return [];
   }
 
-  function totalsByRate(lines) {
+  function totalsByRate(lines, opts) {
     const byRate = {};
-    let subEx = 0, vsk = 0;
+    let rawEx = 0, rawVsk = 0;
     for (const l of lines) {
       const v = (l.lineEx * l.vskPct) / 100;
-      subEx += l.lineEx;
-      vsk += v;
+      rawEx += l.lineEx;
+      rawVsk += v;
       const key = String(l.vskPct);
       byRate[key] = byRate[key] || { vskPct: l.vskPct, vskCode: l.vskCode, ex: 0, vsk: 0 };
       byRate[key].ex += l.lineEx;
       byRate[key].vsk += v;
     }
-    return { subEx, vsk, total: subEx + vsk, byRate };
+    // Apply discount: % first, then absolute kr. Both clamp at zero. The
+    // discount is split across VSK rates proportionally so the breakdown
+    // (e.g. "Sala með 24% Vsk") reflects the post-discount amounts.
+    const pct = Math.max(0, Math.min(100, parseFloat(opts && opts.discount_pct) || 0));
+    const abs = Math.max(0, parseFloat(opts && opts.discount) || 0);
+    const pctDiscEx = rawEx * pct / 100;
+    const totalDiscEx = Math.min(rawEx, pctDiscEx + abs);
+    const subEx = Math.max(0, rawEx - totalDiscEx);
+    const factor = rawEx > 0 ? subEx / rawEx : 1;
+    let vsk = 0;
+    Object.keys(byRate).forEach(k => {
+      byRate[k].ex *= factor;
+      byRate[k].vsk *= factor;
+      vsk += byRate[k].vsk;
+    });
+    return {
+      subEx, vsk, total: subEx + vsk, byRate,
+      rawEx, rawVsk, discountEx: totalDiscEx, discountPct: pct, discountAbs: abs
+    };
   }
 
   const CSS = `
@@ -180,9 +225,10 @@
       display: grid; grid-template-columns: 1fr 1fr; gap: 28px;
       margin: 10px 0 22px;
     }
-    .bill-to { font-size: 10pt; line-height: 1.55; }
-    .bill-to .nafn { font-size: 11pt; }
-    .bill-to .vegna { margin-top: 12px; font-size: 9.5pt; font-style: italic; color: #111; }
+    .bill-to { font-size: 10.5pt; line-height: 1.5; color: #000; }
+    .bill-to .bt-name { font-size: 10.5pt; margin-bottom: 10px; }
+    .bill-to .bt-line { font-size: 10.5pt; }
+    .bill-to .vegna { margin-top: 10px; font-size: 9.5pt; font-style: italic; }
 
     .invoice-meta { font-size: 10pt; }
     .inv-title-row {
@@ -263,6 +309,13 @@
     }
   `;
 
+  // The receipt opens in a popup whose URL is `about:blank`, so root-relative
+  // paths like "/img/logo.jpg" don't resolve. Build an absolute URL from the
+  // parent window's origin so the logo loads correctly in print + preview.
+  const LOGO_URL = (typeof window !== 'undefined' && window.location && window.location.origin)
+    ? window.location.origin + '/img/logo.jpg'
+    : '/img/logo.jpg';
+
   function buildHTML(ctx) {
     const t = ctx.totals;
     const lines = ctx.lines;
@@ -287,12 +340,13 @@
 
     const co = ctx.customer || {};
     const addr = splitAddress(co.heimilisfang);
-    const customerLines = [];
-    if (co.nafn || ctx.customerName) customerLines.push(`<div class="nafn">${esc(co.nafn || ctx.customerName)}</div>`);
-    if (addr.line1) customerLines.push(`<div>${esc(addr.line1)}</div>`);
-    if (addr.line2) customerLines.push(`<div>${esc(addr.line2)}</div>`);
-    if (co.kennitala) customerLines.push(`<div>${esc(fmtKt(co.kennitala))}</div>`);
-    if (ctx.vegna) customerLines.push(`<div class="vegna">vegna ${esc(ctx.vegna)}</div>`);
+    const nafn  = co.nafn || ctx.customerName || '';
+    const customerRows = [];
+    if (nafn)         customerRows.push(`<div class="bt-name">${esc(nafn)}</div>`);
+    if (addr.line1)   customerRows.push(`<div class="bt-line">${esc(addr.line1)}</div>`);
+    if (addr.line2)   customerRows.push(`<div class="bt-line">${esc(addr.line2)}</div>`);
+    if (co.kennitala) customerRows.push(`<div class="bt-line">${esc(fmtKt(co.kennitala))}</div>`);
+    if (ctx.vegna)    customerRows.push(`<div class="vegna">vegna ${esc(ctx.vegna)}</div>`);
 
     return `
       <div class="no-print">
@@ -302,12 +356,9 @@
       <div class="sheet">
         <header class="hdr">
           <div class="hdr-left">
-            <div class="logo-circle">
-              <svg viewBox="0 0 48 48" width="44" height="44">
-                <circle cx="24" cy="24" r="24" fill="#000"/>
-                <path d="M24 9c-2 5-4 7-6 11-2.5 5 0 11 6 14-3-2-3-6 0-9 1.5 2 3 4 3 7 4-2 6-6 6-11 0-4-3-7-5-9 0 3-1 5-3 5 1-3 0-6-1-8z" fill="#fff"/>
-              </svg>
-            </div>
+            <img src="${esc(LOGO_URL)}" alt="Slökkvitæki ehf"
+              style="width:72px;height:72px;object-fit:contain;flex-shrink:0;border-radius:50%"
+              onerror="this.outerHTML='&lt;div aria-hidden=&quot;true&quot; style=&quot;width:72px;height:72px;flex-shrink:0;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:36pt;letter-spacing:-0.02em;font-family:Arial,Helvetica,sans-serif;&quot;&gt;S&lt;/div&gt;'">
             <div class="hdr-co">
               <div class="co-name">${esc(COMPANY.name)}</div>
               <div class="co-tag">${esc(COMPANY.tag)}</div>
@@ -323,7 +374,7 @@
 
         <div class="meta-row">
           <div class="bill-to">
-            ${customerLines.join('')}
+            ${customerRows.join('')}
           </div>
           <div class="invoice-meta">
             <div class="inv-title-row">
@@ -358,6 +409,16 @@
         <div class="spacer"></div>
 
         <div class="totals-block">
+          ${(t.discountEx > 0) ? `
+            <div class="totals-line">
+              <span class="lbl">Samtals fyrir afslátt:</span>
+              <span class="amt">${fmtAmt(t.rawEx)}</span>
+            </div>
+            <div class="totals-line" style="color:#b91c1c">
+              <span class="lbl">Afsláttur${t.discountPct > 0 ? ' ('+t.discountPct+'%)' : ''}:</span>
+              <span class="amt">−${fmtAmt(t.discountEx)}</span>
+            </div>
+          ` : ''}
           <div class="totals-line">
             <span class="lbl">Samtals fyrir Vsk.:</span>
             <span class="amt">${fmtAmt(t.subEx)}</span>
@@ -384,28 +445,63 @@
     if (!win || win.closed) return false;
     const opts = options || {};
     const state = (window.POS && typeof POS.getState === 'function') ? POS.getState() : null;
-    const customer = lookupCustomer(state);
+    let customer = lookupCustomer(state);
+    // Fallback: if no Companies.list record matched, build a synthetic customer
+    // from the POS state OR from explicit opts.customer{Name,Kt,Simi} passed
+    // by the caller (e.g. the checkout dialog reads the live form fields and
+    // hands them to us; state may not be set when the call originates there).
+    if (!customer) {
+      const sc = (state && state.customer) || {};
+      const fallbackNafn = sc.nafn || opts.customerName || '';
+      const fallbackKt   = sc.kt   || sc.kennitala || opts.customerKt || '';
+      const fallbackAddr = sc.heimilisfang || opts.customerHeimilisfang || '';
+      if (fallbackNafn || fallbackKt || fallbackAddr) {
+        customer = {
+          nafn: fallbackNafn,
+          kennitala: fallbackKt,
+          heimilisfang: fallbackAddr
+        };
+      }
+    }
     const lines = buildLines(state);
     if (!lines.length) {
       console.warn('[SalaInvoice] no lines in POS state — falling back to no-op');
       return false;
     }
-    const t = totalsByRate(lines);
+    // Pull discount from state (or from explicit opts overrides) so the
+    // receipt's totals & VSK breakdown match what the POS showed.
+    const t = totalsByRate(lines, {
+      discount_pct: (opts.discount_pct != null) ? opts.discount_pct
+                  : (state && state.discount_pct) || 0,
+      discount:     (opts.discount != null) ? opts.discount
+                  : (state && state.discount) || 0
+    });
     const now = new Date();
     const notes = (state && state.notes) || '';
+
+    // Derive paymentTerms from the supplied payment method if not explicit.
+    const derivedTerms = opts.paymentMethod
+      ? paymentTermsFor(opts.paymentMethod)
+      : (opts.paymentTerms || DEFAULTS.paymentTerms);
 
     const ctx = {
       lines,
       totals: t,
       customer,
       customerName: opts.customerName || (state && state.customer && state.customer.nafn) || '',
-      invoiceNum: opts.invoiceNum || ('R-' + now.getTime().toString().slice(-6)),
-      radnr: opts.radnr || (state && state.customer && state.customer.kt) || '',
+      // Sequential R-NNNNNN numbers are assigned by the Supabase trigger on
+      // INSERT into solur. Pass through opts.invoiceNum when available;
+      // otherwise show a placeholder which the user can replace once saved.
+      invoiceNum: opts.invoiceNum || 'R-(úthlutað við vistun)',
+      // Raðnr. = the device/serial number for this receipt. NOT the kennitala
+      // (that belongs in the bill-to block). Leave blank unless caller passes one.
+      radnr: opts.radnr || '',
       dateStr: fmtDate(now),
-      paymentTerms: opts.paymentTerms || DEFAULTS.paymentTerms,
+      paymentTerms: derivedTerms,
       deliveryTerms: opts.deliveryTerms || DEFAULTS.deliveryTerms,
-      employee: opts.employee || DEFAULTS.employee,
-      tilvisun: opts.tilvisun || (state && state.customer && state.customer.simi) || '',
+      employee: opts.employee || resolveEmployee(),
+      // Tilvísun is a freeform reference field; don't auto-fill with phone.
+      tilvisun: opts.tilvisun || '',
       vegna: opts.vegna || notes
     };
 
@@ -422,7 +518,59 @@
     }
   }
 
-  window.SalaInvoice = { render, version: 'v2' };
-  console.log('[sala-invoice] v2 ready');
+  // Re-render a previously-saved sale (a row from the `solur` table) using
+  // the same template. Called by the Bókhalds yfirlit / Tekjur / Reikningar
+  // views when the user wants to re-print a historical receipt. The saved
+  // row already has the correct invoice number, lines, totals, etc., so we
+  // just unpack it into a synthetic POS-state shape and call render().
+  function renderFromSale(win, sale, customerLookup) {
+    if (!win || win.closed || !sale) return false;
+    // Build a synthetic state. The renderer reads `state.lines`,
+    // `state.discount_pct`, `state.discount`, `state.notes` and
+    // `state.customer.{nafn,kt,co_id,heimilisfang}`.
+    const linur = Array.isArray(sale.linur) ? sale.linur : [];
+    // Reconstruct discount % from saved data when possible. We saved
+    // `afslattur` as the absolute kr amount applied at sale time; pass it
+    // through as discount_pct=0, discount=afslattur so the receipt totals
+    // match what was originally printed.
+    const fakeState = {
+      lines: linur,
+      discount: +sale.afslattur || 0,
+      discount_pct: 0,
+      notes: sale.athugasemdir || '',
+      customer: {
+        nafn: sale.customer_nafn || '',
+        kt: '',
+        kennitala: '',
+        heimilisfang: '',
+        co_id: sale.customer_id || null
+      }
+    };
+    // If the caller provides extra customer info (e.g. fetched from the
+    // `vidskiptavinir` / `fyrirtaeki` tables) splice it in.
+    if (customerLookup) {
+      fakeState.customer.kt = customerLookup.kennitala || '';
+      fakeState.customer.kennitala = customerLookup.kennitala || '';
+      fakeState.customer.heimilisfang = customerLookup.heimilisfang || '';
+    }
+    // Temporarily override POS.getState() so render() pulls our fake state.
+    const origGetState = window.POS && window.POS.getState;
+    if (window.POS) window.POS.getState = () => fakeState;
+    try {
+      return render(win, {
+        invoiceNum: sale.num || '',
+        paymentMethod: sale.greitt_med || '',
+        employee: sale.starfsmadur || '',
+        customerName: sale.customer_nafn || '',
+        customerKt: customerLookup ? customerLookup.kennitala : '',
+        customerHeimilisfang: customerLookup ? customerLookup.heimilisfang : ''
+      });
+    } finally {
+      if (window.POS) window.POS.getState = origGetState;
+    }
+  }
+
+  window.SalaInvoice = { render, renderFromSale, paymentTermsFor, version: 'v8' };
+  console.log('[sala-invoice] v8 ready');
 })();
 /* === END SALA RECEIPT REDESIGN === */

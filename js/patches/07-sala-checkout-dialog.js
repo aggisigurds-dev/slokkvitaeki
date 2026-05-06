@@ -73,6 +73,8 @@
       #${MODAL_ID} .scd-method:active { transform: translateY(0); }
       #${MODAL_ID} .scd-method[data-method="kort"]:hover { border-color: #2563eb; }
       #${MODAL_ID} .scd-method[data-method="pening"]:hover { border-color: #16a34a; background: #f0fdf4; }
+      #${MODAL_ID} .scd-method[data-method="reikningur"]:hover { border-color: #b45309; background: #fffbeb; }
+      #${MODAL_ID} .scd-method[data-method="greitt_sidar"]:hover { border-color: #ea580c; background: #fff7ed; }
       #${MODAL_ID} .scd-icon { font-size: 28px; line-height: 1; }
       #${MODAL_ID} .scd-check {
         display: flex; align-items: center; gap: 10px;
@@ -194,6 +196,16 @@
                 <span class="scd-icon">💵</span>
                 <span>Greitt með pening</span>
               </button>
+              <button class="scd-method" data-method="reikningur" type="button">
+                <span class="scd-icon">📋</span>
+                <span>Setja í reikning</span>
+                <small style="display:block;font-size:11px;color:#64748b;margin-top:2px">Krafa í banka 10 dagar</small>
+              </button>
+              <button class="scd-method" data-method="greitt_sidar" type="button">
+                <span class="scd-icon">⏳</span>
+                <span>Greitt síðar</span>
+                <small style="display:block;font-size:11px;color:#64748b;margin-top:2px">Greitt þegar tækið er sótt</small>
+              </button>
             </div>
           </div>
           <div class="scd-section">
@@ -205,6 +217,17 @@
             <label class="scd-check ${hasProducts ? '' : 'disabled'}">
               <input type="checkbox" id="scd-barcodes" ${hasProducts ? '' : 'disabled'}>
               <span>🏷️ Prenta strikamerki fyrir tæki${hasProducts ? ' (' + productCount + ')' : ' (engin tæki í körfu)'}</span>
+            </label>
+            <label class="scd-check">
+              <input type="checkbox" id="scd-refill-label">
+              <span>🏷️ Prenta QR-merki fyrir tæki í áfyllingu (24 × 100 mm)</span>
+            </label>
+          </div>
+          <div class="scd-section">
+            <div class="scd-section-title">Verkbeiðnir</div>
+            <label class="scd-check" title="Hakaðu af þetta þegar t.d. áfylling/hleðsla á sér stað strax og engin verkbeiðni þarf að búa til">
+              <input type="checkbox" id="scd-skip-verk">
+              <span>⏭️ Sleppa að búa til verkbeiðnir fyrir áfyllingu/hleðslu</span>
             </label>
           </div>
           <div class="scd-section">
@@ -230,7 +253,12 @@
         const method = btn.dataset.method;
         const doReceipt = modal.querySelector('#scd-receipt').checked;
         const doBarcodes = modal.querySelector('#scd-barcodes').checked && hasProducts;
-        proceed(originalBtn, method, doReceipt, doBarcodes, cart);
+        const doRefillLabel = modal.querySelector('#scd-refill-label')?.checked;
+        const skipVerk = modal.querySelector('#scd-skip-verk')?.checked;
+        // Pass-through to pos.js — its checkout() reads this global to decide
+        // whether to create a verkbeiðni per service line.
+        window._pendingSkipVerk = !!skipVerk;
+        proceed(originalBtn, method, doReceipt, doBarcodes, doRefillLabel, cart);
       });
     });
 
@@ -239,9 +267,50 @@
     });
   }
 
-  function proceed(originalBtn, method, doReceipt, doBarcodes, cart) {
+  async function proceed(originalBtn, method, doReceipt, doBarcodes, doRefillLabel, cart) {
+    // Pre-allocate the next invoice number so the printed receipt shows the
+    // same R-NNNNNN that the database will store. The trigger on solur
+    // respects pre-set num values that match ^R-\d+$.
+    let invoiceNum = '';
+    try {
+      if (window.DB && window.DB.sb) {
+        const { data } = await window.DB.sb.rpc('next_reikningur_num');
+        if (typeof data === 'string') invoiceNum = data;
+      }
+    } catch (e) { console.warn('[scd] could not pre-allocate invoice num', e); }
+    cart.invoiceNum = invoiceNum;
+    window._pendingReikningurNum = invoiceNum; // pos.js reads this
+    window._pendingPaymentMethod = method;     // pos.js / others may use
+
+    // For the "pay-on-pickup" path, prepend a clear ÓGREITT marker to the
+    // notes so the staff sees it the moment the customer comes back to
+    // collect their tæki. Survives into solur.athugasemdir, the bookkeeping
+    // overview, the printed receipt, and the customer-detail view.
+    if (method === 'greitt_sidar') {
+      const stamp = '⚠ ÓGREITT — verður greitt við afhendingu';
+      // Set on POS state so pos.js's checkout writes it to solur.athugasemdir
+      try {
+        if (window.POS && typeof window.POS.getState === 'function') {
+          const st = window.POS.getState();
+          if (st) {
+            const cur = (st.notes || '').trim();
+            if (!/ÓGREITT/i.test(cur)) {
+              st.notes = stamp + (cur ? ' · ' + cur : '');
+              // Sync the visible textarea too
+              const ta = document.getElementById('pos-notes');
+              if (ta) ta.value = st.notes;
+            }
+          }
+        }
+      } catch (e) { /* ignore */ }
+    }
+
     if (doReceipt) printReceipt(cart, method);
     if (doBarcodes) printBarcodes(cart);
+    if (doRefillLabel && window.QrLabelCustomer && typeof QrLabelCustomer.open === 'function') {
+      // Open the existing 24×100mm QR-label dialog with the customer prefilled.
+      setTimeout(() => QrLabelCustomer.open(cart.customer), 100);
+    }
     close();
     // Allow the original click to go through this time
     originalBtn.dataset.scdProceed = '1';
@@ -256,8 +325,14 @@
     if (window.SalaInvoice && typeof SalaInvoice.render === 'function') {
       const ok = SalaInvoice.render(win, {
         customerName: cart.customer.nafn || '',
-        tilvisun: cart.customer.simi || '',
-        radnr: cart.customer.kt || ''
+        // The kennitala belongs in the bill-to block; pass it via customerKt
+        // so the renderer can build a synthetic customer record with it.
+        // Tilvísun/Raðnr. are left empty (they are reference/serial fields,
+        // not meant to hold the customer's phone or kennitala).
+        customerKt: cart.customer.kt || '',
+        customerSimi: cart.customer.simi || '',
+        paymentMethod: method,            // 'kort' / 'pening' / 'reikningur'
+        invoiceNum: cart.invoiceNum || '' // assigned by DB trigger on save
       });
       if (ok) return;
     }

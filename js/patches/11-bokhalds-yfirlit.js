@@ -321,7 +321,7 @@
     const SB = getSB();
     if (!SB) throw new Error('Supabase not initialized');
     const [salesRes, custRes, prodRes] = await Promise.all([
-      SB.from('solur').select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at').order('created_at', { ascending: false }),
+      SB.from('solur').select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,paid_at,paid_method').order('created_at', { ascending: false }),
       SB.from('vidskiptavinir').select('id,kennitala,nafn,simi,netfang'),
       SB.from('vorur').select('id,nafn,flokkur')
     ]);
@@ -344,6 +344,8 @@
         afslattur: +s.afslattur || 0,
         total: s.samtals != null ? +s.samtals : (stEx + stVsk),
         payment: s.greitt_med || '',
+        paid_at: s.paid_at || null,
+        paid_method: s.paid_method || '',
         notes: s.athugasemdir || ''
       };
     });
@@ -564,8 +566,34 @@
           <div class="item"><span class="lbl">Kennitala</span><span class="val">${esc(getKt(sale) || '—')}</span></div>
           <div class="item"><span class="lbl">Starfsmaður</span><span class="val">${esc(sale.staff || '—')}</span></div>
           <div class="item"><span class="lbl">Greiðsluaðferð</span><span class="val">${esc(sale.payment || '—')}</span></div>
+          ${(() => {
+            // Show paid/unpaid status for invoice/pay-later sales
+            const isInvoice = sale.payment === 'reikningur' || sale.payment === 'greitt_sidar';
+            if (!isInvoice) return '';
+            if (sale.paid_at) {
+              return `<div class="item"><span class="lbl">Greiðslustaða</span><span class="val" style="color:#166534;font-weight:600;">✓ Greitt ${esc(fmtDate(sale.paid_at))}${sale.paid_method ? ' (' + esc(sale.paid_method) + ')' : ''}</span></div>`;
+            }
+            return `<div class="item"><span class="lbl">Greiðslustaða</span><span class="val" style="color:#dc2626;font-weight:700;">⚠ Ógreitt</span></div>`;
+          })()}
           ${sale.afslattur ? `<div class="item"><span class="lbl">Afsláttur</span><span class="val">${fmtKr(sale.afslattur)}</span></div>` : ''}
           ${sale.notes ? `<div class="item"><span class="lbl">Athugasemd</span><span class="val">${esc(sale.notes)}</span></div>` : ''}
+        </div>
+        <div style="margin:8px 0 12px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="by-reprint-btn" data-sale-id="${esc(sale.id)}" type="button"
+            style="padding:8px 14px;background:#1a7f4b;color:#fff;border:none;border-radius:7px;
+                   font-weight:600;font-size:13px;cursor:pointer">
+            🖨 Prenta aftur (kvittun)
+          </button>
+          ${(() => {
+            // Add a "Merkja greitt" button if this sale is invoice/pay-later AND unpaid
+            const isInvoice = sale.payment === 'reikningur' || sale.payment === 'greitt_sidar';
+            if (!isInvoice || sale.paid_at) return '';
+            return `<button class="by-markpaid-btn" data-sale-id="${esc(sale.id)}" type="button"
+              style="padding:8px 14px;background:#16a34a;color:#fff;border:none;border-radius:7px;
+                     font-weight:600;font-size:13px;cursor:pointer">
+              ✓ Merkja greitt
+            </button>`;
+          })()}
         </div>
         <table class="by-detail-table">
           <thead>
@@ -754,7 +782,74 @@
     // Delegated row-click handler — survives every renderTable() rebuild
     const tbody = document.getElementById('by-tbody');
     if (tbody) {
-      tbody.addEventListener('click', (e) => {
+      tbody.addEventListener('click', async (e) => {
+        // "Merkja greitt" button — open the mark-paid modal for unpaid
+        // invoice/pay-later sales. Don't bubble to the row toggle.
+        const mpBtn = e.target.closest('.by-markpaid-btn');
+        if (mpBtn) {
+          e.stopPropagation();
+          const sid = mpBtn.getAttribute('data-sale-id');
+          const sale = allSales.find(s => String(s.id) === String(sid));
+          if (!sale) { alert('Salan fannst ekki.'); return; }
+          if (!window.InvoicePaid || typeof window.InvoicePaid.markPaid !== 'function') {
+            alert('Greiðslumerking er ekki tiltæk.'); return;
+          }
+          // Adapt the BY-format sale to what InvoicePaid.markPaid expects.
+          const adapted = {
+            id: sale.id,
+            num: sale.num,
+            customer: sale.customer || '',
+            total: sale.total,
+            created_at: sale.date,
+            payment: sale.payment
+          };
+          await window.InvoicePaid.markPaid(adapted, (updated) => {
+            // Copy the new paid status into the BY allSales row so the
+            // detail panel re-renders with the green "✓ Greitt" badge.
+            sale.paid_at = updated.paid_at || new Date().toISOString();
+            sale.paid_method = updated.paid_method || '';
+            renderTable();
+            // Refresh the InvoicePaid panel/badge if it's exposed
+            try { window.InvoicePaid && window.InvoicePaid.refresh && window.InvoicePaid.refresh(); } catch (_) {}
+          });
+          return;
+        }
+
+        // "Prenta aftur" button — re-print the saved receipt using the
+        // SalaInvoice template. Don't bubble up to the row toggle below.
+        const printBtn = e.target.closest('.by-reprint-btn');
+        if (printBtn) {
+          e.stopPropagation();
+          const sid = printBtn.getAttribute('data-sale-id');
+          const sale = allSales.find(s => String(s.id) === String(sid));
+          if (!sale) { alert('Salan fannst ekki.'); return; }
+          if (!window.SalaInvoice || typeof window.SalaInvoice.renderFromSale !== 'function') {
+            alert('Reikningsmótið er ekki tiltækt.'); return;
+          }
+          // Pull the customer (kennitala/heimilisfang) from the lookup map so
+          // the bill-to block on the reprinted receipt is complete.
+          const cust = sale.customer_id ? customerMap.get(sale.customer_id) : null;
+          const win = window.open('', '_blank', 'width=900,height=1100');
+          if (!win) { alert('Vinsamlegast leyfðu sprettiglugga til að prenta.'); return; }
+          // Reshape the sale row from BY-format back to the raw `solur` row
+          // shape that renderFromSale expects (it reads .linur, .num, etc.).
+          window.SalaInvoice.renderFromSale(win, {
+            id: sale.id,
+            num: sale.num,
+            customer_nafn: sale.customer,
+            customer_id: sale.customer_id,
+            starfsmadur: sale.staff,
+            linur: sale.lines,
+            upphaed_an_vsk: sale.ex,
+            vsk_upphaed: sale.vsk,
+            afslattur: sale.afslattur || 0,
+            samtals: sale.total,
+            greitt_med: sale.payment,
+            athugasemdir: sale.notes,
+            created_at: sale.date
+          }, cust);
+          return;
+        }
         const tr = e.target.closest('.by-sale-row');
         if (!tr || !tbody.contains(tr)) return;
         const id = tr.dataset.id;

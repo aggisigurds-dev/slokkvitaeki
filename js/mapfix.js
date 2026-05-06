@@ -61,10 +61,23 @@
       var link = e.target.closest && e.target.closest('.mapfix-co-link');
       if(!link) return;
       e.preventDefault();
-      var coId = link.getAttribute('data-co-id');
-      if(coId && window.App && window.Companies){
-        App.switchView('companies');
-        setTimeout(function(){ Companies.openDetail(parseInt(coId,10)); }, 200);
+      var coId = parseInt(link.getAttribute('data-co-id'), 10);
+      if(!coId || !window.App || !window.Companies) return;
+      // Switch view manually — App.switchView('companies') triggers
+      // Companies.load() which is async and overwrites openDetail with the
+      // list, leaving the user on the companies frontpage.
+      window.App.view = 'companies';
+      document.querySelectorAll('.view').forEach(function(el){el.classList.remove('active');});
+      document.querySelectorAll('.vnav-btn').forEach(function(el){el.classList.remove('active');});
+      var vEl = document.getElementById('view-companies'); if(vEl) vEl.classList.add('active');
+      var nb = document.querySelector('.vnav-btn[data-view="companies"]'); if(nb) nb.classList.add('active');
+      var doOpen = function(){ if(window.Companies && Companies.openDetail) Companies.openDetail(coId); };
+      if (window.Companies && Companies.list && Companies.list.length) {
+        doOpen();
+      } else if (window.Companies && typeof Companies.load === 'function') {
+        Promise.resolve(Companies.load()).then(doOpen).catch(doOpen);
+      } else {
+        doOpen();
       }
     });
     state.clickHooked = true;

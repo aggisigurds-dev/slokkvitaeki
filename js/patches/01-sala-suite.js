@@ -24,7 +24,7 @@
   const warn = (...a) => console.warn(TAG, ...a);
 
   /* ---------- Supabase access ---------- */
-  const sb = () => window.sb || window.supabase || null;
+  const sb = () => (window.DB && window.DB.sb) || window.sb || window.supabase || null;
   async function waitForSB(timeoutMs = 15000) {
     const t0 = Date.now();
     while (!sb() && Date.now() - t0 < timeoutMs) {
@@ -708,7 +708,7 @@
   const log  = (...a) => console.log(TAG, ...a);
   const warn = (...a) => console.warn(TAG, ...a);
 
-  const sb = () => window.sb || window.supabase || null;
+  const sb = () => (window.DB && window.DB.sb) || window.sb || window.supabase || null;
   const todayISO = () => new Date().toISOString().slice(0, 10);
 
   async function waitFor(check, timeoutMs = 20000, interval = 150) {
@@ -1135,7 +1135,7 @@
   const log  = (...a) => console.log(TAG, ...a);
   const warn = (...a) => console.warn(TAG, ...a);
 
-  const sb = () => window.sb || window.supabase || null;
+  const sb = () => (window.DB && window.DB.sb) || window.sb || window.supabase || null;
   const todayISO = () => new Date().toISOString().slice(0, 10);
   const fmtKr = n => {
     if (n == null || n === '') return '—';
@@ -2041,7 +2041,7 @@
   const log  = (...a) => console.log(TAG, ...a);
   const warn = (...a) => console.warn(TAG, ...a);
 
-  const sb = () => window.sb || window.supabase || null;
+  const sb = () => (window.DB && window.DB.sb) || window.sb || window.supabase || null;
   async function waitFor(check, timeoutMs = 30000, interval = 150) {
     const t0 = Date.now();
     while (Date.now() - t0 < timeoutMs) {

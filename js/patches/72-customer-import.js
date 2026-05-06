@@ -1,0 +1,1393 @@
+/* === CUSTOMER IMPORT TOOL v1 ===
+ *
+ * One-time import of pre-existing customer list (~173 customers) into the
+ * vidskiptavinir table. Idempotent: matches existing rows by kennitala and
+ * skips them, so re-running is safe.
+ *
+ * Adds a button to the Settings view that:
+ *   1. Shows preview (count of records, examples)
+ *   2. Confirms with user
+ *   3. Inserts each new customer (skips kennitalas already present)
+ *   4. Reports inserted / skipped / failed counts
+ *
+ * Fields imported: nafn, kennitala, heimilisfang, simi, farsimi, netfang,
+ * vefsida, tengilidur, greidsluskilmali, athugasemdir.
+ *
+ * The DB columns farsimi, vefsida, tengilidur, greidsluskilmali must exist
+ * (added via ALTER TABLE before deploying this patch).
+ */
+(() => {
+  'use strict';
+  if (typeof window === 'undefined' || typeof document === 'undefined') return;
+  if (window.__customerImportInstalled) return;
+  window.__customerImportInstalled = true;
+
+  const CUSTOMERS = [
+  {
+    "nafn": "White arctic ehf.",
+    "kennitala": "710117-0200",
+    "heimilisfang": "Norðurhellu 8, 221 Hafnarfirði"
+  },
+  {
+    "nafn": "Ásakór 1 og 3, húsfélag",
+    "kennitala": "470508-2050",
+    "heimilisfang": "Suðurlandsbraut 30, 108 Reykjavík",
+    "netfang": "gjaldkeri@eignaumsjon.is",
+    "tengilidur": "Eignarumsjón ehf",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Hveragerðisbær",
+    "kennitala": "650169-4849",
+    "heimilisfang": "Pósthólf 100, 810 Hveragerði",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Stubbalubbar ehf",
+    "kennitala": "650102-2580",
+    "heimilisfang": "Skálatjörn, 801 Selfossi",
+    "tengilidur": "Helena Hólm",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Malbikunarstöðin Hlaðbær-Colas hf",
+    "kennitala": "420187-1499",
+    "heimilisfang": "Gulhellu 1, 220 Hafnarfjörður",
+    "netfang": "bokhald@colas.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Rafha ehf",
+    "kennitala": "530390-1019",
+    "heimilisfang": "Suðurlandsbraut 16, 108 Reykjavík",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Jón Trausti Harðarson /Vegna bílav.",
+    "kennitala": "210652-4699",
+    "heimilisfang": "Völvufelli 48, 111 Reykjavík",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Toppbílar ehf.",
+    "kennitala": "560306-1050",
+    "heimilisfang": "Kletthálsi 2, 110 Reykjavík",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Selfosskirkja",
+    "kennitala": "560269-2269",
+    "heimilisfang": "Kirkjuvegi, 800 Selfoss",
+    "netfang": "selfosskirkja@selfosskirkja.is",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Húsfélagið Austurvegi 38",
+    "kennitala": "540895-2449",
+    "heimilisfang": "Austurvegi 38, 800 Selfoss",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Foldarskart ehf.",
+    "kennitala": "560312-0830",
+    "heimilisfang": "Hvaleyrarbraut 29, 220 Hafnarfirði",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Mountain 4U ehf.",
+    "kennitala": "681215-1900",
+    "heimilisfang": "Logasölum 9, 201 Kópavogi",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Verktakafyrirtækið Grjótgarðar ehf.",
+    "kennitala": "660312-0130",
+    "heimilisfang": "Starmóa 13, 260 Reykjanesbæ",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "HBTS ehf.",
+    "kennitala": "461112-0210",
+    "heimilisfang": "Eyravegi 32, 800 Selfoss",
+    "netfang": "info@tommis.is",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Heilbrigðisstofnun Suðurlands",
+    "kennitala": "670804-2750",
+    "heimilisfang": "Árvegi, 800 Selfossi",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "FOSS, stéttarfélag í almannaþjónust",
+    "kennitala": "430775-0659",
+    "heimilisfang": "Eyravegi 37, 800 Selfossi",
+    "netfang": "foss@foss.bsrb.is",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "AH Pípulagnir ehf",
+    "kennitala": "410994-2409",
+    "heimilisfang": "Suðurhrauni 12c, 210 Garðabær",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Gunnarshólmi Guesthouse slf",
+    "kennitala": "550610-0430",
+    "heimilisfang": "Gunnarshólma, 203 Kópavogur",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Þóra Jónína Hjálmarsdóttir",
+    "kennitala": "090977-5399",
+    "heimilisfang": "Klausturhvammur 8, 220 Hafnarfirði",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Brunakerfi ehf.",
+    "kennitala": "590199-3389",
+    "heimilisfang": "Ásbraut 17, 200 Kópavogur",
+    "tengilidur": "Georg Ragnarsson",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "TRS ehf.",
+    "kennitala": "700895-2549",
+    "heimilisfang": "Eyravegi 37, 800 Selfossi",
+    "netfang": "gunnar@trs.is, trs@trs.is",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Míla ehf.",
+    "kennitala": "460207-1690",
+    "heimilisfang": "Suðurlandsbraut 30, 108 Reykjavík",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Eldhestar ehf",
+    "kennitala": "421092-2069",
+    "heimilisfang": "Völlum, 816 Ölfus",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Eimverk ehf.",
+    "kennitala": "510811-0700",
+    "heimilisfang": "Lyngási 13, 210 Garðabæ",
+    "netfang": "solveig@eimverk.is",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Sturlaugur Jónsson & Co ehf.",
+    "kennitala": "670201-3170",
+    "heimilisfang": "Selhellu 13, 221 Hafnarfirði",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "J.S.Þ.Viðskiptastofa ehf",
+    "kennitala": "430102-2730",
+    "heimilisfang": "Nýbýlavegi 14, 200 Kópavogur",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Gúmmíbátar og Gallar sf.",
+    "kennitala": "510211-0220",
+    "heimilisfang": "Smiðjuvegi 8, 200 Kópavogi",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Bifreiðaverkstæðið Toppur ehf",
+    "kennitala": "630680-0509",
+    "heimilisfang": "Skemmuvegi 34, 200 Kópavogur",
+    "netfang": "bokhald@toppur.is",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Aqua Sport ehf., heildverslun",
+    "kennitala": "490197-3039",
+    "heimilisfang": "Bæjarlind 1-3, 201 Kópavogur",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "BB-skilti ehf",
+    "kennitala": "590986-2599",
+    "heimilisfang": "Miðhrauni 22b, 210 Garðabæ",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Fríform ehf",
+    "kennitala": "540200-2460",
+    "heimilisfang": "Askalind 3, 201 Kópavogur",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "El-Rún ehf",
+    "kennitala": "441202-2880",
+    "heimilisfang": "Gljúfraseli 13, 109 Rvík",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "GEA Westfalia Separator Iceland ehf",
+    "kennitala": "591098-2419",
+    "heimilisfang": "Þverárseli 4, 109 Reykjavík",
+    "tengilidur": "Baldvin Loftsson",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Bolasmiðjan ehf.",
+    "kennitala": "450303-2320",
+    "heimilisfang": "Hverafold 1-3, 112 Reykjavík",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Efnalaugin Björg ehf.",
+    "kennitala": "561115-1330",
+    "heimilisfang": "Heiðargerði 28, 108 Reykjavík",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Hafnarfjarðarkaupstaður",
+    "kennitala": "590169-7579",
+    "heimilisfang": "Pósthólf 100, 222 Hafnarfjörður",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "GTS ehf.",
+    "kennitala": "551010-1200",
+    "heimilisfang": "Fossnesi C, 800 Selfossi",
+    "netfang": "berglind@gts.is, gts@gts.is",
+    "greidsluskilmali": "Staðgreiðsla",
+    "athugasemdir": "Ár 2017, tilboð 2900 + vsk Ár 2018, tilboð 2900 + vsk. Ár 2019, tilboð 2900 + vsk. Ár 2023, tilboð 3000 + vsk. Ár 2024  tilboð 3200 + vsk Ár 2025  tilboð 3360 + vsk Ár 2026 tilboð  3.696 + vsk. 20% afsl. af nýjum tækjum"
+  },
+  {
+    "nafn": "Sérleyfisbílar Akureyrar-Norðurleið",
+    "kennitala": "690190-1259",
+    "heimilisfang": "Hjalteyrargötu 10, 600 Akureyri",
+    "greidsluskilmali": "Staðgreiðsla",
+    "athugasemdir": "Samþykkt 2400+vsk per tæki, 19,12,2016  2500+ vsk hleðsla per tæki, nýtt 25% afslátt 2018(Frank) 2600+vsk hleðsla per tæki 2019,20%afslátt af öðru 2650+ vsk leðsla 2020 2800 + vsk hleðsla 2022 3000 + vsk hleðsla 2023  3200 + vsk hleðsla 2024 3360 + vsk hleðsla 2025 3.696 + vsl hleðsla 2026"
+  },
+  {
+    "nafn": "Guðmundur Tyrfingsson ehf",
+    "kennitala": "700969-0109",
+    "heimilisfang": "Fossnesi C, 800 Selfoss",
+    "netfang": "gts@gts.is",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "K Apartments ehf",
+    "kennitala": "441207-0850",
+    "heimilisfang": "Bergstaðastræti 3, 101 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Miðbæjarhótel/Centerhotels ehf.",
+    "kennitala": "450905-1430",
+    "heimilisfang": "Aðalstræti 6, 101 Reykjavík",
+    "netfang": "reikningar@centerhotels.com, dor@centerhotels.com",
+    "greidsluskilmali": "Krafa í banka 10 dagar",
+    "athugasemdir": "Yfirferð 2200 Yfirferð slanga 2100 Hleðsla 3700 Ný tæki 20%  2022: Yfirferð 2400 Yfirferð slanga 2300 Hleðsla 3900 Ný tæki 20%  2023: Yfirferð 2600 Yfirferð slanga 2500 Hleðsla 4100 Ný tæki 20%  2024:"
+  },
+  {
+    "nafn": "Prikið ehf",
+    "kennitala": "711003-2070",
+    "heimilisfang": "Bankastræti 12, 101 Reykjavík",
+    "netfang": "joi@partybaer.is",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Þrír Grænir Ostar ehf",
+    "kennitala": "470100-2490",
+    "heimilisfang": "Skólavörðustíg 8, 101 Reykjavík",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Allrahanda GL ehf.",
+    "kennitala": "571292-2979",
+    "heimilisfang": "Klettagörðum 4, 104 Reykjavík",
+    "greidsluskilmali": "Staðgreiðsla",
+    "athugasemdir": "MÁ EKKI NOTA ÞESSA KT.  Á að nota 580316-0500 Reykjavík Sightseeing/Grayline"
+  },
+  {
+    "nafn": "Lindabakarí ehf",
+    "kennitala": "590499-2349",
+    "heimilisfang": "Bæjarlind 1-3, 201 Kópavogur",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Púst ehf",
+    "kennitala": "691206-1570",
+    "heimilisfang": "Smiðjuvegi 50, 200 Kópavogur",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Bílanaust ehf.",
+    "kennitala": "680605-2030",
+    "heimilisfang": "Bæjarhrauni 12, 220 Hafnarfirði",
+    "netfang": "bilanaust@bilanaust.is, bokhald@bilanaust.is",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Laufvangur 16, húsfélag",
+    "kennitala": "531175-0269",
+    "heimilisfang": "Laufvangi 16, 220 Hafnarfjörður",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Burknavellir 5, húsfélag",
+    "kennitala": "590304-3440",
+    "heimilisfang": "Burknavöllum 5, 221 Hafnarfjörður",
+    "netfang": "reikningar@rekstrarumsjon.is",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Öldugata 42-44, húsfélag",
+    "kennitala": "411275-0869",
+    "heimilisfang": "Öldugata 42-44, 220 Hafnarfjörður",
+    "netfang": "oldugatahusfelag@gmail.com",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Hestamannafélagið Sörli",
+    "kennitala": "640269-6509",
+    "heimilisfang": "Pósthólf 65, 222 Hafnarfirði",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Kirkjugarður Hafnarfjarðar",
+    "kennitala": "700371-3799",
+    "heimilisfang": "Kaldárselsvegi, 220 Hafnarfjörður",
+    "netfang": "kghf@simnet.is",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Natalia Yukhnovskaya",
+    "kennitala": "300478-2639",
+    "heimilisfang": "Langholtsvegur 154, 104 Reykjavík",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Bílaleiga Flugleiða ehf",
+    "kennitala": "471299-2439",
+    "heimilisfang": "Reykjavíkurflugvelli, 101 Reykjavík",
+    "netfang": "reikningar@hertz.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Skúlagata 20, húsfélag",
+    "kennitala": "610798-2419",
+    "heimilisfang": "Skúlagata 20, 101 Reykjavík",
+    "simi": "893-4689",
+    "farsimi": "861-8580",
+    "netfang": "gata@simnet.is , reikningar@eignarekstur.is",
+    "tengilidur": "Sigurdór",
+    "greidsluskilmali": "Staðgreiðsla"
+  },
+  {
+    "nafn": "Flyðrugrandi 2-10,húsfélag",
+    "kennitala": "700681-0689",
+    "heimilisfang": "Pósthólf 8940, 128 Reykjavík",
+    "simi": "863-0974",
+    "farsimi": "863-0974",
+    "tengilidur": "Björg K Sigurðardóttir",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Hamraborg ehf",
+    "kennitala": "501285-0649",
+    "heimilisfang": "Lundi 92, 200 Kópavogi",
+    "netfang": "hamraborg@simnet.is, begga@sb.is"
+  },
+  {
+    "nafn": "Dalfoss ehf",
+    "kennitala": "591000-2330",
+    "heimilisfang": "Sóleyjargötu 31, 101 Reykjavík",
+    "netfang": "stigurmar@gmail.com"
+  },
+  {
+    "nafn": "Local Guide ehf.",
+    "kennitala": "600815-0160",
+    "heimilisfang": "Hofsnesi, 785 Öræfum",
+    "netfang": "aron@localguide.is"
+  },
+  {
+    "nafn": "Hugheimur ehf.",
+    "kennitala": "540108-1290",
+    "heimilisfang": "Ásenda 19, 108 Reykjavík",
+    "netfang": "hugheimur@gmail.com",
+    "athugasemdir": "Hleðsla 3000kr + VSK 2025 Hleðsla 3.260 kr.+vsk 2026 Hleðsla 3.696 kr. + vsk"
+  },
+  {
+    "nafn": "Útgerðarfélagið SÓ slf.",
+    "kennitala": "690110-2450",
+    "heimilisfang": "Aðalstræti 97, 450 Patreksfirði"
+  },
+  {
+    "nafn": "Hjarðarból ehf",
+    "kennitala": "701293-5179",
+    "heimilisfang": "Hjarðarbóli, 801 Selfoss",
+    "netfang": "info@hjardarbol.is"
+  },
+  {
+    "nafn": "Fagkaup ehf.",
+    "kennitala": "670169-5459",
+    "heimilisfang": "Klettagörðum 25, 104 Reykjavík",
+    "netfang": "eldklar@eldklar.is"
+  },
+  {
+    "nafn": "Kæling ehf",
+    "kennitala": "410605-0900",
+    "heimilisfang": "Stapahrauni 6, 220 Hafnarfirði",
+    "netfang": "bokhald@cooling.is"
+  },
+  {
+    "nafn": "NSN tæki ehf.",
+    "kennitala": "670504-3950",
+    "heimilisfang": "Gjáhellu 5, 221 Hafnarfirði",
+    "netfang": "mds@simnet.is"
+  },
+  {
+    "nafn": "Sáning ehf.",
+    "kennitala": "481100-2080",
+    "heimilisfang": "Úthlíð 23, 221 Hafnarfirði",
+    "netfang": "saning@saning.is"
+  },
+  {
+    "nafn": "Vélaverkstæði Hjalta Einarssonar eh",
+    "kennitala": "531295-2189",
+    "heimilisfang": "Pósthólf 228, 222 Hafnarfjörður",
+    "netfang": "vhe@vhe.is"
+  },
+  {
+    "nafn": "Rakel Mist Hauksdóttir",
+    "kennitala": "170991-2069",
+    "heimilisfang": "Álfaskeið 74, 220 Hafnarfirði"
+  },
+  {
+    "nafn": "Sleed ehf.",
+    "kennitala": "611106-0920",
+    "heimilisfang": "Helluhrauni 10, 220 Hafnarfirði"
+  },
+  {
+    "nafn": "VR-5 ehf.",
+    "kennitala": "491209-1270",
+    "heimilisfang": "Álhellu 8, 221 Hafnarfirði",
+    "netfang": "velras@velras.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar",
+    "athugasemdir": "Tengiliður Salli s.860-1861 afsláttur 20%"
+  },
+  {
+    "nafn": "Hagvagnar þjónusta ehf.",
+    "kennitala": "640996-3159",
+    "heimilisfang": "Melabraut 18, 220 Hafnarfirði",
+    "netfang": "bokhald@hopbilar.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar",
+    "athugasemdir": "Tilboðsverð 2026  hleðsla tilboðsverð  3.065 kr + vsk Nýtt 6 kg duftslökkvitæki 6.062 kr+vsk 2kg duftslökkvitæki 4.831 kr.+vsk                          Léttvatnsslökkvitæki  6.941 kr+vsk              Akstur per ferð 1.362 kr + vsk."
+  },
+  {
+    "nafn": "Stálsmiðjan-Framtak ehf.",
+    "kennitala": "430801-2520",
+    "heimilisfang": "Vesturhrauni 1, 210 Garðabæ",
+    "netfang": "reikningar@stalsmidjan.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Martex-Batik ehf",
+    "kennitala": "660707-1740",
+    "heimilisfang": "Bíldshöfða 16, 110 Reykjavík",
+    "netfang": "markus@martex.is",
+    "tengilidur": "Markús",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "GL Iceland ehf.",
+    "kennitala": "450711-1520",
+    "heimilisfang": "Klettagörðum 4, 104 Reykjavík",
+    "simi": "6601303",
+    "netfang": "runar@grayline.is",
+    "tengilidur": "Rúnar",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Partýbær ehf.",
+    "kennitala": "440413-1100",
+    "heimilisfang": "Hverfisgötu 105, 101 Reykjavík",
+    "netfang": "gisli@partybaer.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "DRA ehf.",
+    "kennitala": "691003-2560",
+    "heimilisfang": "Rauðarárstíg 31, 105 Reykjavík",
+    "netfang": "office@dra.is",
+    "tengilidur": "Guðjón Ingi Árnason",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Endurvinnslan hf.",
+    "kennitala": "610789-1299",
+    "heimilisfang": "Knarrarvogi 4, 104 Reykjavík",
+    "netfang": "evhf@evhf.is , margret@evhf.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar",
+    "athugasemdir": "ATH.Endurvinnslan greiðir með millifærslu"
+  },
+  {
+    "nafn": "Terra umhverfisþjónusta hf.",
+    "kennitala": "410283-0349",
+    "heimilisfang": "Berghellu 1, 221 Hafnarfirði",
+    "netfang": "gretar@terra.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar",
+    "athugasemdir": "ATH.Verður að vera  \"SV\"kóði til að skrá á reikning og nafn þess sem verslar.  Á að vera rafrænn reikningur."
+  },
+  {
+    "nafn": "Ferðafélag Íslands",
+    "kennitala": "530169-3759",
+    "heimilisfang": "Mörkinni 6, 108 Reykjavík",
+    "netfang": "fi@fi.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar",
+    "athugasemdir": "Hleðsla 3200kr + VSK 20% afsl.af nýjum tækjum"
+  },
+  {
+    "nafn": "Armar Vinnulyftur ehf.",
+    "kennitala": "680999-2449",
+    "heimilisfang": "Kaplahrauni 2-4, 220 Hafnarfirði",
+    "netfang": "bokhald@armar.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar",
+    "athugasemdir": "Muna: er kt rétt og hver biður um"
+  },
+  {
+    "nafn": "Heimaleiga ehf.",
+    "kennitala": "510117-0690",
+    "heimilisfang": "Grensásvegi 14, 108 Reykjavík",
+    "netfang": "asgeir@heimaleiga.is, erna@heimaleiga.is , eva@heimaleiga.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar",
+    "athugasemdir": "yfirferð 2.700 kr. Hleðsla 4.400 kr. Ný tæki 25% afsláttur"
+  },
+  {
+    "nafn": "Heggur ehf",
+    "kennitala": "480987-2259",
+    "heimilisfang": "Bíldshöfða 18, 110 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Húsasmiðjan ehf.",
+    "kennitala": "551211-0290",
+    "heimilisfang": "Kjalarvogi 12, 104 Reykjavík",
+    "netfang": "reikningar@husa.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Tokyo veitingar ehf",
+    "kennitala": "670710-0920",
+    "heimilisfang": "Nýbílavegur 4, 200 Kópavogur",
+    "netfang": "bokhald@tokyo.is",
+    "tengilidur": "Andrey A Rudkov",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "ID electronic ehf",
+    "kennitala": "681004-3270",
+    "heimilisfang": "Grensásvegi 12, 108 Reykjavík",
+    "netfang": "ingo@hljodx.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "JM Veitingar ehf",
+    "kennitala": "540709-0330",
+    "heimilisfang": "Hrauntungu 1, 220 Hafnarfjörður",
+    "netfang": "olhusid@olhusid.is",
+    "tengilidur": "Jón Þórir Jónsson",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Reynir bakari ehf",
+    "kennitala": "701195-3029",
+    "heimilisfang": "Dalvegi 4, 200 200 Kópavogur",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Stjörnu-Oddi hf.",
+    "kennitala": "460185-0419",
+    "heimilisfang": "Skeiðarási 12, 210 Garðabæ",
+    "netfang": "johanna@star-oddi.com",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Rofabær 45,húsfélag",
+    "kennitala": "480277-9459",
+    "heimilisfang": "Laugavegi 178, 105 Reykjavík",
+    "netfang": "reikningar@eignarekstur.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Styrktarfélag klúbbsins Geysis",
+    "kennitala": "501097-2259",
+    "heimilisfang": "Skipholti 29, 105 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Indverska matarfélagið ehf.",
+    "kennitala": "610417-0350",
+    "heimilisfang": "Ármúla 21, 108 Reykjavík",
+    "netfang": "ingunn.sigurjonsdottir@bdo.is, agustreynir@gmail.com",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Leifsgata 10,húsfélag",
+    "kennitala": "500486-1399",
+    "heimilisfang": "Leifsgötu 10, 101 Reykjavík",
+    "netfang": "reikningar@eignarekstur.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Verkalýðsfélagið Hlíf",
+    "kennitala": "620169-3319",
+    "heimilisfang": "Pósthólf 110, 220 Hfj",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Sjúkraþjálfun Reykjavíkur og Garðab",
+    "kennitala": "630290-1049",
+    "heimilisfang": "Fiskislóð 1, 101 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Nýja Kökuhúsið ehf",
+    "kennitala": "510276-0199",
+    "heimilisfang": "Auðbrekku 2, 200  Kópavogur",
+    "netfang": "nk@nk.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "K. Richter hf",
+    "kennitala": "460670-1449",
+    "heimilisfang": "Smiðsbúð 5, 210 Garðabær",
+    "netfang": "linda@krichter.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Jarðboranir hf.",
+    "kennitala": "590286-1419",
+    "heimilisfang": "Hlíðasmára 3, 201 Kópavogi",
+    "netfang": "jbinfo@jardboranir.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Akurvellir 1,húsfélag",
+    "kennitala": "561106-0450",
+    "heimilisfang": "Pósthólf 8940, 128 Reykjavík",
+    "netfang": "gjaldkeri@eignaumsjon.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Krummahólar 4,húsfélag",
+    "kennitala": "611175-1329",
+    "heimilisfang": "Krummahólum 4, 111 Reykjavík",
+    "simi": "6632778",
+    "netfang": "husfelagkrummaholar4@gmail.com",
+    "tengilidur": "Regína Aðalsteinsdóttir",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Nýja bílasmiðjan hf.",
+    "kennitala": "481074-1779",
+    "heimilisfang": "Flugumýri 20, 270 Mosfellsbæ",
+    "netfang": "inga@nybil.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Íslensk hollusta ehf.",
+    "kennitala": "601005-1150",
+    "heimilisfang": "Skútahrauni 7, 220 Hafnarfirði",
+    "netfang": "islenskhollusta@islenskhollsta.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Vegagerðin",
+    "kennitala": "680269-2899",
+    "heimilisfang": "Borgartúni 5-7, 105 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Volt ehf.",
+    "kennitala": "480513-1340",
+    "heimilisfang": "Álfabergi 20, 221 Hafnarfirði",
+    "simi": "820-1500",
+    "netfang": "thorey@voltehf.is, sigmar@voltehf.is",
+    "tengilidur": "Sigmar",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Tryggingar og ráðgjöf ehf.",
+    "kennitala": "560500-3190",
+    "heimilisfang": "Sóltúni 26, 105 Reykjavík",
+    "netfang": "tryggir@tryggir.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Rekstrarfélag Norðurturnsins",
+    "kennitala": "600317-1990",
+    "heimilisfang": "Pósthólf 8940, 128 Reykjavík",
+    "netfang": "nordurturn@outlook.com",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Stakkholt 2-4, húsfélag",
+    "kennitala": "490115-0130",
+    "heimilisfang": "Suðurlandsbraut 30, 108 Reykjavík",
+    "tengilidur": "gjaldkeri@eignaumsjon.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Ferðamálastofa",
+    "kennitala": "530169-4059",
+    "heimilisfang": "Lækjargötu 3, 101 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Hjálparsveit skáta Kópavogi",
+    "kennitala": "410271-0289",
+    "heimilisfang": "Pósthólf 87, 202 Kópavogi",
+    "netfang": "sandra.yr.andresdottir@hssk.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Nesdekk ehf.",
+    "kennitala": "420296-2079",
+    "heimilisfang": "Krókhálsi 9, 110 Reykjavík",
+    "netfang": "nesdekk@nesdekk.is, reikningar@nesdekk.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Fiskverslun Hveragerðis ehf.",
+    "kennitala": "700516-0910",
+    "heimilisfang": "Heiðarbrún 69, 810 Hveragerði",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Úðafoss ehf.",
+    "kennitala": "420309-1390",
+    "heimilisfang": "Álfhólsvegi 10, 200 Kópavogi",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Pólóborg ehf.",
+    "kennitala": "591017-0630",
+    "heimilisfang": "Háholti 8, 210 Garðabæ",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Bílasmiðurinn hf",
+    "kennitala": "541298-2159",
+    "heimilisfang": "Bíldshöfða 16, 110 Reykjavík",
+    "netfang": "erla@bilasmidurinn.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Litla bílasalan ehf",
+    "kennitala": "580986-1109",
+    "heimilisfang": "Eirhöfða 11, 110 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Pit-stop ehf.",
+    "kennitala": "510219-0150",
+    "heimilisfang": "Austurvegi 52, 800 Selfossi",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Skerpa renniverkstæði ehf",
+    "kennitala": "421089-1679",
+    "heimilisfang": "Skútahrauni 9a, 220 Hafnarfirði",
+    "netfang": "skerpusmari@simnet.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "SyNord ehf.",
+    "kennitala": "520417-2650",
+    "heimilisfang": "Laugavegi 178, 105 Reykjavík",
+    "netfang": "gunnar@minimax.is, bokhald@islande.is, reikningar@islande.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Tryggingamiðlun Íslands ehf",
+    "kennitala": "690597-2849",
+    "heimilisfang": "Síðumúla 21, 108 Reykjavík",
+    "netfang": "fanney@tmi.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Sölufélag garðyrkjumanna ehf.",
+    "kennitala": "440598-2189",
+    "heimilisfang": "Brúarvogi 2, 104 Reykjavík",
+    "netfang": "jona@sfg.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Lyngás 1a-d, lóðar-og bílag.",
+    "kennitala": "520618-0820",
+    "heimilisfang": "Pósthólf 8940, 128 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Furugrund 72,húsfélag",
+    "kennitala": "520380-0279",
+    "heimilisfang": "Laugavegi 178, 105 Kópavogi",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Bifreiðaverkstæðið Lyngási 12 ehf.",
+    "kennitala": "530110-1330",
+    "heimilisfang": "Lyngási 12, 210 Garðabæ",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Gnoðarvogur 28 húsfélag",
+    "kennitala": "670395-2199",
+    "heimilisfang": "Pósthólf 8940, 128 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Icelandair Cargo ehf.",
+    "kennitala": "471299-2359",
+    "heimilisfang": "Reykjavíkurflugvelli, 101 Reykjavík",
+    "netfang": "olafurj@fjarvakur.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Flatahraun 1,húsfélag",
+    "kennitala": "430407-0580",
+    "heimilisfang": "Flatahrauni 1, 220 Hafnarfirði",
+    "netfang": "hafdismbua@gmail.com",
+    "tengilidur": "Eiríkur  8982653",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Þangbakki 8-10,húsfélag",
+    "kennitala": "640980-0289",
+    "heimilisfang": "Pósthólf 8940, 128 Reykjavík",
+    "tengilidur": "Eignaumsjón",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Tjaldfélagið ehf.",
+    "kennitala": "511119-1700",
+    "heimilisfang": "Álfatúni 16, 200 Kópavogi",
+    "netfang": "aquasport@aquasport.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar",
+    "athugasemdir": "vegna verslunar Aqua sport Bæjarlind 1-3  201 Kópavogur"
+  },
+  {
+    "nafn": "Austurberg 2-6, húsfélag",
+    "kennitala": "511115-1400",
+    "heimilisfang": "Pósthólf 8940, 128 Reykjavík",
+    "netfang": "gjaldkeri@eignaumsjon.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar",
+    "athugasemdir": "V/Austurberg 2"
+  },
+  {
+    "nafn": "H.Jónsson ehf.",
+    "kennitala": "660603-3360",
+    "heimilisfang": "Smiðshöfða 14, 110 Reykjavík",
+    "netfang": "hjonsson@hjonsson.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Endurskoðun og reikningshald ehf.",
+    "kennitala": "581219-0240",
+    "heimilisfang": "Suðurlandsbraut 22, 108 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Arctic Rafting ehf.",
+    "kennitala": "451120-0340",
+    "heimilisfang": "Drumboddsstöðum, 806 Selfoss",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Svalþúfa ehf",
+    "kennitala": "711095-2259",
+    "heimilisfang": "Klukkubergi 42, 221 Hafnarfirði",
+    "netfang": "svalthufa@simnet.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Teknís ehf.",
+    "kennitala": "690110-1050",
+    "heimilisfang": "Einhellu 8, 221 Hafnarfirði",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Bustravel Iceland ehf.",
+    "kennitala": "441115-0400",
+    "heimilisfang": "Skógarhlíð 10, 105 Reykjavík",
+    "netfang": "info@bustravel.is , vilhelm@bustravel.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Erla hár ehf.",
+    "kennitala": "421219-0360",
+    "heimilisfang": "Smiðjuvegi 4A, 200 Kópavogi",
+    "netfang": "thoranna90@gmail.com",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Bumbuborgarar ehf.",
+    "kennitala": "541020-1520",
+    "heimilisfang": "Mýrargötu 9, 190 Vogum",
+    "netfang": "bumbuborgarar@bumbuborgarar.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Háfell ehf.",
+    "kennitala": "500907-1770",
+    "heimilisfang": "Skeifunni 19, 108 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Pallett ehf.",
+    "kennitala": "460521-1490",
+    "heimilisfang": "Strandgötu 75, 220 Hafnarfirði",
+    "netfang": "pallett@pallett.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Hótel Varmaland ehf.",
+    "kennitala": "541218-2110",
+    "heimilisfang": "Varmalandi, 311 Borgarnesi",
+    "simi": "896-4773",
+    "netfang": "info@hotelvarmaland.is",
+    "tengilidur": "Biggi",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "H.Vellir ehf.",
+    "kennitala": "690421-1860",
+    "heimilisfang": "Tjarnarvöllum 3, 221 Hafnarfirði",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Get a Room ehf.",
+    "kennitala": "540217-0760",
+    "heimilisfang": "Grænásvegi 10, 260 Reykjanesbæ",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Hamraborg 26,húsfélag",
+    "kennitala": "470576-0229",
+    "heimilisfang": "Laugavegi 178, 105 Kópavogi",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Norðurey ehf.",
+    "kennitala": "430872-0289",
+    "heimilisfang": "Snorrabraut 71, 105 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Bros auglýsingavörur ehf.",
+    "kennitala": "590593-4949",
+    "heimilisfang": "Norðlingabraut 14, 110 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "AFL Starfsgreinafélag",
+    "kennitala": "560101-3090",
+    "heimilisfang": "Búðareyri 1, 730 Reyðarfirði",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Stigahlíð 10,húsfélag",
+    "kennitala": "520391-1859",
+    "heimilisfang": "Laugavegi 178, 105 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Lífstykkjabúðin ehf.",
+    "kennitala": "660719-1210",
+    "heimilisfang": "Fákafeni 9, 108 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Lóðaþjónustan ehf.",
+    "kennitala": "640502-2580",
+    "heimilisfang": "Eirhöfða 12, 110 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Brim hf.",
+    "kennitala": "541185-0389",
+    "heimilisfang": "Norðurgarði 1, 101 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Elvit sf.",
+    "kennitala": "630621-0700",
+    "heimilisfang": "Ægisgrund 12, 210 Garðabæ",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Samband stjórnendafélaga",
+    "kennitala": "680269-7699",
+    "heimilisfang": "Hlíðasmára 8, 201 Kópavogi",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "G.G. lagnir ehf.",
+    "kennitala": "551288-1379",
+    "heimilisfang": "Fosshálsi 27-29, 110 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Vorkx ehf.",
+    "kennitala": "671115-1470",
+    "heimilisfang": "Hlíðarási 10, 221 Hafnarfirði",
+    "netfang": "vorkx@vorkx.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Klaki Tech ehf.",
+    "kennitala": "621019-1200",
+    "heimilisfang": "Hafnarbraut 25, 200 Kópavogi",
+    "netfang": "klaki@klaki.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Indo services hf.",
+    "kennitala": "411018-0400",
+    "heimilisfang": "Lágmúla 6, 108 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Ginnir ehf.",
+    "kennitala": "550507-2180",
+    "heimilisfang": "Skipholti 50d, 105 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Granítsmiðjan ehf",
+    "kennitala": "480816-0210",
+    "heimilisfang": "Smiðsbúð 3, 212 Garðabæ",
+    "simi": "8943110",
+    "netfang": "granitsmidjan@granitsmidjan.is",
+    "tengilidur": "Kjartan",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Íþrótta- og sýningahöllin hf.",
+    "kennitala": "481200-3340",
+    "heimilisfang": "Engjavegi 8, 104 Reykjavík",
+    "netfang": "birgir@ish.is",
+    "tengilidur": "Birgir Bárðarson",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "ORF ehf.",
+    "kennitala": "651114-1360",
+    "heimilisfang": "Dalvegi 16d, 200 Kópavogi",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Rokó ehf.",
+    "kennitala": "670591-1319",
+    "heimilisfang": "Valhúsabraut 39, 170 Seltjarnarnesi",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Season Tours ehf.",
+    "kennitala": "501012-2030",
+    "heimilisfang": "Fífuhjalla 19, 200 Kópavogi",
+    "netfang": "bokhald@seasontours.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Steinmótun ehf.",
+    "kennitala": "630996-2959",
+    "heimilisfang": "Réttarbakka 7, 109 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Nielsen sérverslun ehf.",
+    "kennitala": "451018-1320",
+    "heimilisfang": "Asparási 1, 210 Garðabæ",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Járnfag ehf.",
+    "kennitala": "631001-3190",
+    "heimilisfang": "Skipalóni 25, 220 Hafnarfirði",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Landsblikk ehf.",
+    "kennitala": "690119-0130",
+    "heimilisfang": "Flugumýri 16a, 270 Mosfellsbæ",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Fjórir GAP ehf",
+    "kennitala": "460409-0200",
+    "heimilisfang": "Starhaga 4, 107 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "14K Heildsala ehf.",
+    "kennitala": "551009-1060",
+    "heimilisfang": "Dalvegi 10-14, 201 Kópavogi",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Sjávariðjan Rifi hf.",
+    "kennitala": "480494-2029",
+    "heimilisfang": "Háarifi 5 Rifi, 360 Hellissandi",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Sveitarfélagið Vogar",
+    "kennitala": "670269-2649",
+    "heimilisfang": "Iðndal 2, 190 Vogum",
+    "netfang": "skrifstofa@vogar.is",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Viðburðir og Hönnun slf.",
+    "kennitala": "520522-1150",
+    "heimilisfang": "Völuskarði 7, 221 Hafnarfirði",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Soloborg ehf.",
+    "kennitala": "460420-1720",
+    "heimilisfang": "Vallarbraut 6, 170 Seltjarnarnesi",
+    "netfang": "gudjonjonas@gmail.com",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "S\\&L ehf.",
+    "kennitala": "500614-0720",
+    "heimilisfang": "Þönglabakka 6, 109 Reykjavík",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  },
+  {
+    "nafn": "Lindarhraun ehf.",
+    "kennitala": "531217-0980",
+    "heimilisfang": "Hraunprýði 1, 210 Garðabæ",
+    "greidsluskilmali": "Krafa í banka 10 dagar"
+  }
+];
+
+  function getSB() { return window.DB && window.DB.sb; }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+      ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c]);
+  }
+  function normKt(kt) { return String(kt || '').replace(/[^0-9]/g, ''); }
+
+  function injectButton() {
+    const view = document.getElementById('view-settings');
+    if (!view) return;
+    if (document.getElementById('ci-trigger-btn')) return;
+
+    const wrap = document.createElement('div');
+    wrap.id = 'ci-trigger-btn';
+    wrap.style.cssText =
+      'margin:18px 0;padding:14px;background:#eff6ff;border:2px solid #93c5fd;' +
+      'border-radius:10px;display:flex;align-items:center;justify-content:space-between;' +
+      'gap:14px;flex-wrap:wrap;';
+    wrap.innerHTML = `
+      <div style="flex:1;min-width:200px">
+        <div style="font-weight:700;color:#1e40af;font-size:14px">
+          📥 Flytja inn viðskiptavini
+        </div>
+        <div style="color:#1e3a8a;font-size:12px;margin-top:2px">
+          Bætir inn ${CUSTOMERS.length} viðskiptavinum úr eldri lista (Excel/Google Sheets).
+          Aðeins kennitölur sem ekki eru þegar í kerfinu eru bættar við — óhætt að keyra oftar.
+        </div>
+      </div>
+      <button id="ci-trigger-btn-go" type="button"
+              style="background:#2563eb;color:#fff;border:none;border-radius:8px;
+                     padding:10px 18px;font-weight:700;cursor:pointer;font-size:13px;
+                     white-space:nowrap;flex-shrink:0">
+        Opna verkfæri →
+      </button>`;
+    wrap.querySelector('#ci-trigger-btn-go').addEventListener('click', openDialog);
+
+    // Insert near the top, AFTER the data-reset button if present
+    const target = view.querySelector('main, .main-panel, .settings-content') || view;
+    const dr = target.querySelector('#dr-trigger-btn');
+    if (dr && dr.nextSibling) target.insertBefore(wrap, dr.nextSibling);
+    else if (dr) target.appendChild(wrap);
+    else if (target.firstChild) target.insertBefore(wrap, target.firstChild);
+    else target.appendChild(wrap);
+  }
+
+  async function fetchExisting() {
+    const SB = getSB();
+    if (!SB) return new Map();
+    const r = await SB.from('vidskiptavinir').select('id, kennitala, nafn').limit(10000);
+    if (r.error) throw r.error;
+    const map = new Map();
+    for (const row of (r.data || [])) {
+      const k = normKt(row.kennitala);
+      if (k) map.set(k, row);
+    }
+    return map;
+  }
+
+  async function openDialog() {
+    const SB = getSB();
+    if (!SB) { alert('Engin tenging við gagnagrunn.'); return; }
+    let existing;
+    try { existing = await fetchExisting(); }
+    catch (e) { alert('Villa við að ná í núverandi viðskiptavini: ' + (e.message || e)); return; }
+
+    const total = CUSTOMERS.length;
+    const newOnes = CUSTOMERS.filter(c => !existing.has(normKt(c.kennitala)));
+    const dupes = total - newOnes.length;
+
+    const m = document.createElement('div');
+    m.id = 'ci-modal';
+    m.style.cssText =
+      'position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:10000;' +
+      'display:flex;align-items:center;justify-content:center;padding:20px;';
+    const sample = newOnes.slice(0, 5).map(c =>
+      `<li style="font-size:12px;color:#475569;margin-bottom:2px">${esc(c.nafn)} <span style="color:#94a3b8">— ${esc(c.kennitala)}</span></li>`
+    ).join('');
+    m.innerHTML = `
+      <div style="background:#fff;border-radius:12px;max-width:560px;width:100%;
+                  max-height:90vh;overflow-y:auto;padding:24px;
+                  box-shadow:0 24px 60px rgba(0,0,0,.35);">
+        <h2 style="margin:0 0 6px;color:#1e40af;font-size:20px">📥 Flytja inn viðskiptavini</h2>
+        <p style="margin:0 0 16px;color:#475569;font-size:13px;line-height:1.45">
+          Þetta verkfæri bætir núverandi viðskiptavinalista úr eldra kerfi inn í gagnagrunninn.
+        </p>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+          <div style="background:#dbeafe;border:1px solid #93c5fd;border-radius:8px;padding:10px 12px;">
+            <div style="font-size:11px;color:#1e3a8a;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Verður bætt við</div>
+            <div style="font-size:24px;font-weight:700;color:#1e40af;line-height:1">${newOnes.length}</div>
+          </div>
+          <div style="background:#f1f5f9;border:1px solid #cbd5e1;border-radius:8px;padding:10px 12px;">
+            <div style="font-size:11px;color:#475569;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Þegar í kerfi (sleppt)</div>
+            <div style="font-size:24px;font-weight:700;color:#475569;line-height:1">${dupes}</div>
+          </div>
+        </div>
+
+        ${newOnes.length > 0 ? `
+          <div style="font-size:12px;color:#64748b;margin-bottom:6px;font-weight:600">Sýnishorn (fyrstu 5):</div>
+          <ul style="margin:0 0 16px;padding:8px 12px 8px 24px;background:#f8fafc;border-radius:8px;border:1px solid #e2e8f0;">
+            ${sample}
+          </ul>
+        ` : '<div style="padding:14px;background:#f1f5f9;border-radius:8px;color:#475569;font-size:13px;text-align:center;margin-bottom:16px;">Engir nýir viðskiptavinir til að flytja inn — allir eru þegar í kerfinu.</div>'}
+
+        <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;
+                    padding:10px 12px;font-size:12px;color:#92400e;margin-bottom:16px;line-height:1.4">
+          ℹ <strong>Athugið:</strong> Innflutningurinn sameinar eingöngu nýja viðskiptavini.
+          Núverandi viðskiptavinir verða óbreyttir. Hægt er að keyra þetta verkfæri aftur og aftur án vandræða.
+        </div>
+
+        <div id="ci-progress" style="display:none;font-size:12px;color:#475569;margin-bottom:8px;padding:8px 12px;background:#f0f9ff;border-radius:8px;border:1px solid #bae6fd"></div>
+
+        <div style="display:flex;justify-content:space-between;gap:8px;margin-top:18px;
+                    padding-top:14px;border-top:1px solid #e2e8f0">
+          <button id="ci-cancel" type="button"
+                  style="background:#f1f5f9;color:#334155;border:none;border-radius:8px;
+                         padding:10px 16px;font-weight:600;cursor:pointer;font-size:13px">
+            Loka
+          </button>
+          <button id="ci-go" type="button" ${newOnes.length === 0 ? 'disabled' : ''}
+                  style="background:#2563eb;color:#fff;border:none;border-radius:8px;
+                         padding:10px 18px;font-weight:700;cursor:pointer;font-size:13px;
+                         opacity:${newOnes.length === 0 ? '.5' : '1'}">
+            📥 Flytja inn ${newOnes.length} viðskiptavin${newOnes.length === 1 ? '' : 'i'}
+          </button>
+        </div>
+      </div>`;
+    document.body.appendChild(m);
+
+    m.querySelector('#ci-cancel').addEventListener('click', () => m.remove());
+    m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+
+    const goBtn = m.querySelector('#ci-go');
+    if (newOnes.length === 0) return;
+
+    goBtn.addEventListener('click', async () => {
+      goBtn.disabled = true;
+      goBtn.style.opacity = '.6';
+      goBtn.textContent = 'Flyt inn…';
+      const progressEl = m.querySelector('#ci-progress');
+      progressEl.style.display = 'block';
+
+      let inserted = 0, failed = 0;
+      const failures = [];
+
+      // Insert in batches of 50 for speed; if a batch fails, retry per-row.
+      const BATCH = 50;
+      for (let i = 0; i < newOnes.length; i += BATCH) {
+        const batch = newOnes.slice(i, i + BATCH);
+        progressEl.textContent = `Innflutningur ${i + 1}–${Math.min(i + BATCH, newOnes.length)} af ${newOnes.length}…`;
+        const rows = batch.map(c => ({
+          nafn: c.nafn || null,
+          kennitala: c.kennitala || null,
+          heimilisfang: c.heimilisfang || null,
+          simi: c.simi || null,
+          farsimi: c.farsimi || null,
+          netfang: c.netfang || null,
+          vefsida: c.vefsida || null,
+          tengilidur: c.tengilidur || null,
+          greidsluskilmali: c.greidsluskilmali || null,
+          athugasemdir: c.athugasemdir || null
+        }));
+        const r = await SB.from('vidskiptavinir').insert(rows);
+        if (r.error) {
+          // Batch failed — try one at a time so we can record which ones failed
+          for (const row of rows) {
+            const r1 = await SB.from('vidskiptavinir').insert(row);
+            if (r1.error) {
+              failed++;
+              failures.push({ nafn: row.nafn, kennitala: row.kennitala, err: r1.error.message });
+            } else {
+              inserted++;
+            }
+          }
+        } else {
+          inserted += rows.length;
+        }
+      }
+
+      progressEl.style.background = failed === 0 ? '#dcfce7' : '#fef2f2';
+      progressEl.style.borderColor = failed === 0 ? '#86efac' : '#fca5a5';
+      progressEl.style.color = failed === 0 ? '#166534' : '#991b1b';
+      progressEl.textContent = failed === 0
+        ? `✓ ${inserted} viðskiptavinir fluttir inn.`
+        : `⚠ ${inserted} fluttir inn, ${failed} mistókust — sjá console.`;
+      if (failures.length) console.warn('[customer-import] failures:', failures);
+
+      goBtn.textContent = 'Lokið';
+      goBtn.style.background = '#16a34a';
+      goBtn.style.opacity = '1';
+      setTimeout(() => {
+        goBtn.disabled = false;
+        goBtn.style.background = '#2563eb';
+        goBtn.textContent = '📥 Keyra aftur (athuga á ný)';
+        goBtn.onclick = () => { m.remove(); openDialog(); };
+      }, 1500);
+
+      // Refresh customers view if that's what's being looked at
+      try { window.Vidskiptavinir && Vidskiptavinir.refresh && Vidskiptavinir.refresh(); } catch (e) {}
+    });
+  }
+
+  function tryInject() { injectButton(); }
+  document.addEventListener('DOMContentLoaded', tryInject);
+  setTimeout(tryInject, 1500);
+  setTimeout(tryInject, 3000);
+  setTimeout(tryInject, 6000);
+  const obs = new MutationObserver(() => {
+    const v = document.getElementById('view-settings');
+    if (v && v.classList.contains('active')) tryInject();
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+
+  window.CustomerImport = { open: openDialog, version: 'v1', count: CUSTOMERS.length };
+  console.log('[customer-import] v1 ready —', CUSTOMERS.length, 'customers staged');
+})();
+/* === END CUSTOMER IMPORT TOOL === */

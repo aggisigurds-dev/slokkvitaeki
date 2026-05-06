@@ -6,7 +6,8 @@
     return;
   }
 
-  const SB = (window.DB && window.DB.sb) || window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+  // Lazy getter — evaluated at call-time so we always get the canonical DB.sb
+  const getSB = () => (window.DB && window.DB.sb) || window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
   const DESKTOP_MIN = 900;
   const isDesktop = () => window.matchMedia('(min-width: ' + DESKTOP_MIN + 'px)').matches;
 
@@ -59,7 +60,7 @@
     isLoading = true;
     tableMissing = false;
     try {
-      const { data, error } = await SB.from('verkdagbok').select('*').order('created_at', { ascending: false });
+      const { data, error } = await getSB().from('verkdagbok').select('*').order('created_at', { ascending: false });
       if (error) {
         if (/(could not find|relation .* does not exist|schema cache)/i.test(error.message || '')) {
           tableMissing = true;
@@ -649,7 +650,7 @@
     }
     form.done = false; form.archived = false;
     try {
-      const { error } = await SB.from('verkdagbok').insert(form);
+      const { error } = await getSB().from('verkdagbok').insert(form);
       if (error) throw error;
       await load(); render();
     } catch (e) { alert('Villa við vistun: ' + e.message); }
@@ -657,7 +658,7 @@
 
   async function toggleDone(id, done) {
     try {
-      const { error } = await SB.from('verkdagbok').update({ done }).eq('id', id);
+      const { error } = await getSB().from('verkdagbok').update({ done }).eq('id', id);
       if (error) throw error;
       const entry = entries.find(x => String(x.id) === String(id));
       if (entry) entry.done = done;
@@ -668,7 +669,7 @@
   async function archiveEntry(id, archived) {
     try {
       const upd = { archived, archived_at: archived ? new Date().toISOString() : null };
-      const { error } = await SB.from('verkdagbok').update(upd).eq('id', id);
+      const { error } = await getSB().from('verkdagbok').update(upd).eq('id', id);
       if (error) throw error;
       await load(); render();
     } catch (e) { alert('Villa: ' + e.message); }
@@ -678,7 +679,7 @@
     const e = entries.find(x => String(x.id) === String(id));
     if (!confirm('Eyða þessari færslu varanlega?\n\n' + (e?.athugasemdir?.slice(0,80) || e?.fyrirtaeki || '(ónefnd)'))) return;
     try {
-      const { error } = await SB.from('verkdagbok').delete().eq('id', id);
+      const { error } = await getSB().from('verkdagbok').delete().eq('id', id);
       if (error) throw error;
       await load(); render();
     } catch (e) { alert('Villa: ' + e.message); }
@@ -724,7 +725,7 @@
     const saveFn = async () => {
       const upd = readForm(modal, 've');
       try {
-        const { error } = await SB.from('verkdagbok').update(upd).eq('id', entry.id);
+        const { error } = await getSB().from('verkdagbok').update(upd).eq('id', entry.id);
         if (error) throw error;
         close(); await load(); render();
       } catch (er) { alert('Villa við vistun: ' + er.message); }

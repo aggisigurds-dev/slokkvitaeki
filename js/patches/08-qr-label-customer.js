@@ -126,9 +126,9 @@
     #_qrlc_modal .qrlc-btn:disabled { opacity: .5; cursor: not-allowed; }
     #_qrlc_modal .qrlc-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-    /* Preview at near-actual scale (96dpi → 24mm≈91px, 100mm≈378px). */
+    /* Preview at near-actual scale (96dpi → 18mm≈68px, 70mm≈264px). */
     .qrlc-label {
-      width: 378px; height: 91px;
+      width: 264px; height: 68px;
       background: #fff; border: 1px solid #cbd5e1;
       display: flex; align-items: stretch;
       margin: 0 auto;
@@ -138,12 +138,12 @@
       padding: 2px;
     }
     .qrlc-label .ql-qr {
-      flex: 0 0 87px;       /* ~23mm at 96dpi */
+      flex: 0 0 64px;       /* ~17mm at 96dpi */
       padding: 0;
       display: flex; align-items: center; justify-content: center;
     }
     .qrlc-label .ql-qr img {
-      width: 87px; height: 87px;        /* fill the 23mm box */
+      width: 64px; height: 64px;        /* fill the 17mm box */
       transform: rotate(90deg);         /* rotate so QR top faces text */
       image-rendering: pixelated;
     }
@@ -152,20 +152,22 @@
       display: flex; flex-direction: column; justify-content: center;
       min-width: 0;
     }
+    /* Sized so the 18×70mm preview matches the print output. */
     .qrlc-label .ql-name {
-      font-size: 15px; font-weight: 700; color: #000;
-      line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-size: 16px; font-weight: 800; color: #000;
+      line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .qrlc-label .ql-phone {
-      font-size: 13px; color: #000; margin-top: 2px;
+      font-size: 14px; font-weight: 600; color: #000; margin-top: 2px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .qrlc-label .ql-line {
-      font-size: 11px; color: #334155; margin-top: 1px;
+      font-size: 11px; color: #000; margin-top: 1px;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .qrlc-label .ql-serial {
-      font-size: 10px; color: #475569; margin-top: 3px; font-family: 'Courier New', monospace;
+      font-size: 11px; font-weight: 600; color: #000; margin-top: 2px;
+      font-family: 'Courier New', monospace;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
   `;
@@ -187,45 +189,60 @@
   }
 
   // ------- Print ----------
-  function openPrintWindow(labelHTML) {
+  // Allowed label lengths in mm (matches the dropdown in the dialog).
+  const LABEL_LENGTHS = [50, 70, 90, 100];
+  // Brother PT-P750W on 24mm TZe tape: ~18mm printable height.
+  const LABEL_HEIGHT_MM = 18;
+
+  function openPrintWindow(labelHTML, lengthMm) {
+    const len = LABEL_LENGTHS.includes(+lengthMm) ? +lengthMm : 70;
+    const textLeft = 23; // mm — same QR cell on every length
     const win = window.open('', '_blank', 'width=900,height=500');
     if (!win) { alert('Vinsamlegast leyfa popup glugga til að prenta.'); return; }
     win.document.open();
     win.document.write(`
-      <!doctype html><html><head><meta charset="utf-8"><title>QR-miði 24×100mm</title>
+      <!doctype html><html><head><meta charset="utf-8"><title>QR-miði ${LABEL_HEIGHT_MM}×${len}mm</title>
       <style>
-        @page { size: 100mm 24mm; margin: 0; }
+        /* Page size matches the ACTUAL printable area of the Brother PT-P750W
+           on 24mm TZe tape: 18mm tall (the tape is 24mm but the printer leaves
+           a ~3mm dead zone on each side). Length is configurable.
+           Absolute positioning so nothing can reflow under the print pipeline. */
+        @page { size: ${len}mm ${LABEL_HEIGHT_MM}mm; margin: 0; }
         @media print {
           html, body { margin: 0; padding: 0; background: #fff; }
         }
         html, body { margin: 0; padding: 0; background: #fff;
           font-family: 'Helvetica Neue', Arial, sans-serif; }
         .sheet {
-          width: 100mm; height: 24mm; box-sizing: border-box;
-          padding: 0.5mm; display: flex; align-items: stretch;
+          width: ${len}mm; height: ${LABEL_HEIGHT_MM}mm; box-sizing: border-box;
+          position: relative;
           page-break-after: always;
+          overflow: hidden;
         }
         .ql-qr {
-          flex: 0 0 23mm; padding: 0;
-          display: flex; align-items: center; justify-content: center;
+          position: absolute;
+          left: 4mm; top: 0.5mm;
+          width: 17mm; height: 17mm;
         }
         .ql-qr img {
-          width: 23mm; height: 23mm;
+          display: block;
+          width: 17mm; height: 17mm;
           transform: rotate(90deg);
           image-rendering: pixelated;
         }
         .ql-text {
-          flex: 1; padding: 0 1.5mm 0 2mm;
+          position: absolute;
+          left: ${textLeft}mm; right: 1mm; top: 0.5mm; bottom: 0.5mm;
           display: flex; flex-direction: column; justify-content: center;
-          min-width: 0; overflow: hidden;
+          overflow: hidden;
         }
-        .ql-name { font-size: 13pt; font-weight: 700; color: #000;
-          line-height: 1.1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ql-phone { font-size: 11pt; color: #000; margin-top: .8mm;
+        .ql-name { font-size: 13pt; font-weight: 800; color: #000;
+          line-height: 1.05; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ql-phone { font-size: 11pt; font-weight: 600; color: #000; margin-top: 0.4mm;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ql-line { font-size: 9pt; color: #000; margin-top: .5mm;
+        .ql-line { font-size: 8pt; color: #000; margin-top: 0.3mm;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ql-serial { font-size: 8pt; color: #333; margin-top: .8mm;
+        .ql-serial { font-size: 8pt; color: #000; font-weight: 600; margin-top: 0.4mm;
           font-family: 'Courier New', monospace;
           white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         @media screen {
@@ -236,6 +253,70 @@
       </head><body>
       ${labelHTML}
       <script>setTimeout(()=>{ try { window.focus(); window.print(); } catch(e){} }, 250);</script>
+      </body></html>
+    `);
+    win.document.close();
+  }
+
+  // Print a calibration test pattern: corner markers + a centred crosshair so
+  // the user can confirm the printable area + horizontal centring on the tape.
+  // Useful when switching tape sizes or troubleshooting clipped edges.
+  function printTestPattern(lengthMm) {
+    const len = LABEL_LENGTHS.includes(+lengthMm) ? +lengthMm : 70;
+    const h = LABEL_HEIGHT_MM;
+    const win = window.open('', '_blank', 'width=900,height=500');
+    if (!win) { alert('Vinsamlegast leyfa popup glugga til að prenta.'); return; }
+    win.document.open();
+    win.document.write(`
+      <!doctype html><html><head><meta charset="utf-8"><title>Calibration ${h}×${len}mm</title>
+      <style>
+        @page { size: ${len}mm ${h}mm; margin: 0; }
+        html, body { margin: 0; padding: 0; background: #fff;
+          font-family: 'Courier New', monospace; }
+        .sheet {
+          width: ${len}mm; height: ${h}mm; box-sizing: border-box;
+          position: relative; page-break-after: always; overflow: hidden;
+        }
+        /* 5mm L-shaped corner markers, 0.4mm stroke. */
+        .corner { position: absolute; width: 5mm; height: 5mm; }
+        .corner::before, .corner::after {
+          content:''; position:absolute; background:#000;
+        }
+        .corner::before { width: 5mm; height: 0.4mm; }
+        .corner::after  { width: 0.4mm; height: 5mm; }
+        .tl { top: 0; left: 0; }
+        .tr { top: 0; right: 0; transform: scaleX(-1); }
+        .bl { bottom: 0; left: 0; transform: scaleY(-1); }
+        .br { bottom: 0; right: 0; transform: scale(-1,-1); }
+        /* Centred crosshair (full size 6mm). */
+        .crosshair { position: absolute; top: 50%; left: 50%;
+          width: 6mm; height: 6mm; transform: translate(-50%,-50%); }
+        .crosshair::before, .crosshair::after { content:''; position:absolute; background:#000; }
+        .crosshair::before { left: 0; top: calc(50% - 0.2mm); width: 6mm; height: 0.4mm; }
+        .crosshair::after  { top: 0; left: calc(50% - 0.2mm); width: 0.4mm; height: 6mm; }
+        /* Size label centred. */
+        .size {
+          position: absolute; top: 50%; left: 50%;
+          transform: translate(-50%, calc(-50% + 4mm));
+          font-size: 8pt; font-weight: 700; color: #000;
+        }
+        /* Edge labels for orientation. */
+        .edge { position: absolute; font-size: 6pt; color: #000; }
+        .edge-l { left: 0.5mm; top: 50%; transform: translateY(-50%); }
+        .edge-r { right: 0.5mm; top: 50%; transform: translateY(-50%); }
+      </style>
+      </head><body>
+        <div class="sheet">
+          <div class="corner tl"></div>
+          <div class="corner tr"></div>
+          <div class="corner bl"></div>
+          <div class="corner br"></div>
+          <div class="crosshair"></div>
+          <div class="size">${h}×${len}mm</div>
+          <div class="edge edge-l">L</div>
+          <div class="edge edge-r">R</div>
+        </div>
+        <script>setTimeout(()=>{ try { window.focus(); window.print(); } catch(e){} }, 250);</script>
       </body></html>
     `);
     win.document.close();
@@ -254,6 +335,16 @@
   }
 
   let state = { customer: null, devices: [], selectedDevice: null, qrSize: 320, searchTimer: null };
+
+  // Fetch the next sequential serial (S0001, S0002, …) from Supabase via RPC
+  async function fetchNextSerial() {
+    try {
+      const SB = getSB(); if (!SB) return '';
+      const { data, error } = await SB.rpc('next_uttaeki_serial');
+      if (error) { console.warn('[qrlc] next_uttaeki_serial', error); return ''; }
+      return typeof data === 'string' ? data : '';
+    } catch (e) { return ''; }
+  }
 
   async function searchCustomers(query) {
     const SB = getSB(); if (!SB) return [];
@@ -377,8 +468,8 @@
         </div>
         <div class="qrlc-row2">
           <div>
-            <label for="_qrlc_serial">Raðnúmer / SN</label>
-            <input type="text" id="_qrlc_serial" placeholder="t.d. NEW-1234">
+            <label for="_qrlc_serial">Raðnúmer / SN <button type="button" id="_qrlc_genserial" style="margin-left:6px;font-size:11px;padding:2px 8px;border:1px solid #cbd5e1;background:#f8fafc;border-radius:4px;cursor:pointer">↻ Fá næsta (S0001…)</button></label>
+            <input type="text" id="_qrlc_serial" placeholder="t.d. S0001">
           </div>
           <div>
             <label for="_qrlc_extra">Auka lína (valfrjáls)</label>
@@ -387,8 +478,25 @@
         </div>
 
         <div class="qrlc-preview-wrap">
-          <div class="qrlc-preview-cap">Forskoðun · 24 mm × 100 mm (QR snúinn 90°)</div>
+          <div class="qrlc-preview-cap">Forskoðun · <span id="_qrlc_preview_cap_size">18 × 70 mm</span> (printable area · QR snúinn 90°)</div>
           <div id="_qrlc_preview"></div>
+        </div>
+
+        <div class="qrlc-row2" style="margin-top:8px">
+          <div>
+            <label for="_qrlc_length">Lengd miða (mm)</label>
+            <select id="_qrlc_length">
+              <option value="50">50 mm — stutt</option>
+              <option value="70" selected>70 mm — stöðluð</option>
+              <option value="90">90 mm</option>
+              <option value="100">100 mm — löng</option>
+            </select>
+          </div>
+          <div style="display:flex;align-items:flex-end">
+            <button type="button" class="qrlc-btn" id="_qrlc_testpattern" style="width:100%" title="Prentar kvörðunarmynstur með hornum og krosshair fyrir að stilla prentara/límband.">
+              🎯 Prufuprent (kvörðun)
+            </button>
+          </div>
         </div>
 
         <div class="qrlc-actions">
@@ -447,13 +555,41 @@
     modal.addEventListener('click', (e) => { if (e.target === modal) closeDialog(); });
     document.addEventListener('keydown', escHandler);
 
+    document.getElementById('_qrlc_genserial').addEventListener('click', async () => {
+      const btn = document.getElementById('_qrlc_genserial');
+      btn.textContent = '⏳';
+      const next = await fetchNextSerial();
+      btn.textContent = '↻ Fá næsta (S0001…)';
+      if (next) {
+        document.getElementById('_qrlc_serial').value = next;
+        refreshPreview();
+      } else {
+        alert('Gat ekki fengið næsta raðnúmer — keyrðu MIGRATION.sql í Supabase');
+      }
+    });
+
     document.getElementById('_qrlc_print').addEventListener('click', async () => {
       const previewEl = document.getElementById('_qrlc_preview');
       const ds = previewEl.dataset;
       const labelHTML = buildPrintLabel({
         qrDataUrl: ds.qr || '', name: ds.name, phone: ds.phone, serial: ds.serial, extra: ds.extra
       });
-      openPrintWindow(labelHTML);
+      const lengthMm = +(document.getElementById('_qrlc_length')?.value || 70);
+      openPrintWindow(labelHTML, lengthMm);
+    });
+
+    // Length dropdown updates the preview caption so the user sees what they
+    // are about to print.
+    document.getElementById('_qrlc_length').addEventListener('change', (e) => {
+      const cap = document.getElementById('_qrlc_preview_cap_size');
+      if (cap) cap.textContent = `18 × ${e.target.value} mm`;
+    });
+
+    // Test-pattern button — prints calibration markers at the currently
+    // selected length so the user can verify printer alignment.
+    document.getElementById('_qrlc_testpattern').addEventListener('click', () => {
+      const lengthMm = +(document.getElementById('_qrlc_length')?.value || 70);
+      printTestPattern(lengthMm);
     });
 
     refreshPreview();
@@ -472,7 +608,7 @@
     const btn = document.createElement('button');
     btn.className = existing.className.replace(/\bactive\b/g, '').trim();
     btn.setAttribute('data-qrlc', '1');
-    btn.textContent = '🏷️ QR-miði (24×100mm)';
+    btn.textContent = '🏷️ QR-miði (18×70mm)';
     btn.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); openDialog(); });
     existing.parentElement.insertBefore(btn, existing.nextSibling);
   }
@@ -483,6 +619,21 @@
   const obs = new MutationObserver(() => ensureNavButton());
   obs.observe(document.body, { childList: true, subtree: true });
 
-  window.QrLabelCustomer = { open: openDialog, version: 'v2' };
+  // Allow callers (e.g. patch 07 checkout) to open the dialog with a customer
+  // pre-selected and a fresh serial auto-fetched.
+  async function openWithCustomer(customer) {
+    openDialog();
+    if (customer && (customer.nafn || customer.kt || customer.simi)) {
+      // Reuse selectCustomer to wire up devices & names
+      selectCustomer({ nafn: customer.nafn || '', kennitala: customer.kt || '', simi: customer.simi || '' });
+    }
+    // Auto-populate serial with next from sequence
+    const next = await fetchNextSerial();
+    if (next) {
+      const inp = document.getElementById('_qrlc_serial');
+      if (inp) { inp.value = next; refreshPreview(); }
+    }
+  }
+  window.QrLabelCustomer = { open: openWithCustomer, openEmpty: openDialog, fetchNextSerial, printTestPattern, version: 'v4' };
 })();
 /* === END QR LABEL CUSTOMER === */

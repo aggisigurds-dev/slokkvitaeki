@@ -169,9 +169,9 @@
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">' +
         '<div>' +
-          '<label style="display:block;font-size:12px;color:#64748b;margin-bottom:6px;font-weight:600">Verð án VSK</label>' +
-          '<input id="f-verd" type="number" value="'+(p.verd_an_vsk||0)+'" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;box-sizing:border-box">' +
-          '<div id="f-verd-vsk" style="font-size:11px;color:#64748b;margin-top:4px">'+fmtKrVat(p.verd_an_vsk||0)+'</div>' +
+          '<label style="display:block;font-size:12px;color:#64748b;margin-bottom:6px;font-weight:600">Verð m/VSK <span style="color:#94a3b8;font-weight:400">· útsöluverð</span></label>' +
+          '<input id="f-verd-inc" type="number" value="'+Math.round((p.verd_an_vsk||0) * (1 + (p.vsk_prosenta||24)/100))+'" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;box-sizing:border-box">' +
+          '<div id="f-verd-ex" style="font-size:11px;color:#64748b;margin-top:4px">'+fmtKr(p.verd_an_vsk||0)+' án vsk</div>' +
         '</div>' +
         '<div>' +
           '<label style="display:block;font-size:12px;color:#64748b;margin-bottom:6px;font-weight:600">Birgðir '+(isSvc?'(á ekki við fyrir þjónustu)':'')+'</label>' +
@@ -197,9 +197,17 @@
     document.getElementById('vorur-close').addEventListener('click',function(){m.remove();});
     document.getElementById('vorur-cancel').addEventListener('click',function(){m.remove();});
     m.addEventListener('click',function(e){if(e.target===m)m.remove();});
-    document.getElementById('f-verd').addEventListener('input',function(e){
-      document.getElementById('f-verd-vsk').textContent = fmtKrVat(e.target.value||0);
-    });
+    // The user types verð m/vsk (sale price). The verð án vsk shown below is
+    // computed dynamically from the current VSK %. On save we divide back out
+    // to store verd_an_vsk in the DB (which is the canonical column).
+    function recomputeExVat() {
+      var inc = parseFloat(document.getElementById('f-verd-inc').value) || 0;
+      var vskPct = parseFloat(document.getElementById('f-vsk').value) || 24;
+      var ex = inc / (1 + vskPct/100);
+      document.getElementById('f-verd-ex').textContent = fmtKr(ex) + ' án vsk';
+    }
+    document.getElementById('f-verd-inc').addEventListener('input', recomputeExVat);
+    document.getElementById('f-vsk').addEventListener('input', recomputeExVat);
     // Auto-toggle birgdir when flokkur switches to/from Þjónusta
     document.getElementById('f-flokkur').addEventListener('change',function(e){
       var isSvcNow = e.target.value === 'Þjónusta';
@@ -225,11 +233,15 @@
     });
     // Save
     document.getElementById('vorur-save').addEventListener('click',async function(){
+      // User entered verð m/vsk; convert back to verd_an_vsk for the DB.
+      var inc = parseFloat(document.getElementById('f-verd-inc').value) || 0;
+      var vskPct = parseInt(document.getElementById('f-vsk').value,10) || 24;
+      var verdAnVsk = inc / (1 + vskPct/100);
       var data = {
         nafn: document.getElementById('f-nafn').value.trim(),
         lysing: document.getElementById('f-lysing').value.trim(),
-        verd_an_vsk: parseFloat(document.getElementById('f-verd').value) || 0,
-        vsk_prosenta: parseInt(document.getElementById('f-vsk').value,10) || 24,
+        verd_an_vsk: Math.round(verdAnVsk * 100) / 100,
+        vsk_prosenta: vskPct,
         birgdir: parseInt(document.getElementById('f-birgdir').value,10) || 0,
         flokkur: document.getElementById('f-flokkur').value,
         mynd: imgDataUrl || '',

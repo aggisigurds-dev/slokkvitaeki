@@ -3,8 +3,10 @@
   'use strict';
   console.log('[POS v3] Script loaded');
   var state = {
-    customer: { mode:'kt', kt:'', nafn:'', simi:'', co_id:null },
-    lines: [], discount: 0, notes: '',
+    customer: { mode:'kt', kt:'', nafn:'', simi:'', co_id:null, afslattur_pct: 0, athugasemdir: '' },
+    // discount       = absolute kr off subtotal (legacy field, still supported)
+    // discount_pct   = % off subtotal (new, set per sale or pulled from customer)
+    lines: [], discount: 0, discount_pct: 0, notes: '',
     products: [], services: []
   };
   var ICONS = {
@@ -28,8 +30,69 @@
       state.products = all.filter(function(p){return p.flokkur!=='Þjónusta';});
     }).catch(function(e){state.products=[];state.services=[];});
   }
-  function lookupKt(kt){kt=kt.replace(/[^0-9]/g,'');if(kt.length!==10)return Promise.resolve(null);return DB.sb.from('fyrirtaeki').select('id,nafn,simi,kennitala').eq('kennitala',kt).maybeSingle().then(function(r){if(r.data)return{nafn:r.data.nafn,simi:r.data.simi||'',co_id:r.data.id};return null;});}
-  function totals(){var ex=0,vsk=0;state.lines.forEach(function(l){var le=l.qty*l.unit_price_ex_vat;ex+=le;vsk+=le*(l.vsk_pct||24)/100;});var ad=Math.max(0,ex-state.discount);var av=ex>0?ad*(vsk/ex):0;return{ex:ad,vsk:av,total:ad+av};}
+  function lookupKt(kt){
+    kt = kt.replace(/[^0-9]/g, '');
+    if (kt.length !== 10) return Promise.resolve(null);
+    // Query BOTH fyrirtaeki (companies) and vidskiptavinir (individuals)
+    // in parallel. Same kennitala can exist in both tables (e.g. when a
+    // company is auto-created from a sale, but the user later set the
+    // discount on the customer-facing Viðskiptavinir record). We prefer
+    // fyrirtaeki for co_id linkage, but always pick whichever table has
+    // the highest non-zero discount so the user's saved discount actually
+    // applies. Falls back to RSK/já.is when neither table has the kt.
+    return Promise.all([
+      DB.sb.from('fyrirtaeki')
+        .select('id,nafn,simi,kennitala,heimilisfang,afslattur_pct,athugasemdir')
+        .eq('kennitala', kt).maybeSingle(),
+      DB.sb.from('vidskiptavinir')
+        .select('id,nafn,simi,kennitala,heimilisfang,afslattur_pct,athugasemdir')
+        .eq('kennitala', kt).maybeSingle()
+    ]).then(function (results) {
+      var fy = results[0] && results[0].data;
+      var vk = results[1] && results[1].data;
+      if (fy || vk) {
+        var fyDisc = +(fy && fy.afslattur_pct) || 0;
+        var vkDisc = +(vk && vk.afslattur_pct) || 0;
+        var best   = Math.max(fyDisc, vkDisc);  // whichever table has a saved discount wins
+        // Prefer whichever table has actual notes; if both have notes (rare),
+        // prefer vidskiptavinir since that's the canonical customer record.
+        var notes = (vk && vk.athugasemdir) || (fy && fy.athugasemdir) || '';
+        return {
+          nafn:  (fy && fy.nafn) || (vk && vk.nafn) || '',
+          simi:  (fy && fy.simi) || (vk && vk.simi) || '',
+          heimilisfang: (fy && fy.heimilisfang) || (vk && vk.heimilisfang) || '',
+          co_id: fy ? fy.id : null,
+          afslattur_pct: best,
+          athugasemdir: notes,
+          source: fy ? 'fyrirtaeki' : 'vidskiptavinir'
+        };
+      }
+      // Not in either local table — fall back to the external registry.
+      if (window.KtLookup && typeof window.KtLookup.lookup === 'function') {
+        return window.KtLookup.lookup(kt).then(function (ext) {
+          if (!ext) return null;
+          return {
+            nafn: ext.nafn || '', simi: ext.simi || '',
+            co_id: null, heimilisfang: ext.heimilisfang || '',
+            afslattur_pct: 0, athugasemdir: '', source: 'rsk'
+          };
+        }).catch(function () { return null; });
+      }
+      return null;
+    });
+  }
+  function totals(){
+    var ex=0,vsk=0;
+    state.lines.forEach(function(l){var le=l.qty*l.unit_price_ex_vat;ex+=le;vsk+=le*(l.vsk_pct||24)/100;});
+    // Apply % discount first (off the without-VAT subtotal), then any
+    // absolute kr discount. Both are clamped so the total never goes
+    // negative.
+    var pctDisc = ex * (parseFloat(state.discount_pct)||0) / 100;
+    var absDisc = parseFloat(state.discount)||0;
+    var ad = Math.max(0, ex - pctDisc - absDisc);
+    var av = ex>0 ? ad * (vsk/ex) : 0;
+    return { ex:ad, vsk:av, total:ad+av, raw_ex:ex, pct_disc:pctDisc, abs_disc:absDisc };
+  }
   function render(){var v=document.getElementById('view-sala');if(!v)return;if(v.getAttribute('data-pos-v3')==='1')return;v.innerHTML=buildHTML();v.setAttribute('data-pos-v3','1');bindEvents();rerenderDynamic();}
   function rerenderDynamic(){var l=document.getElementById('pos-lines');if(l)l.innerHTML=buildLinesHTML();var t=document.getElementById('pos-totals');if(t)t.innerHTML=buildTotalsHTML();var sv=document.getElementById('pos-services');if(sv)sv.innerHTML=buildServicesHTML();var pr=document.getElementById('pos-products');if(pr)pr.innerHTML=buildProductsHTML();var cb=document.getElementById('pos-checkout');if(cb){var tt=totals();cb.innerHTML=tt.total>0?('✓ GREIÐA · '+fmtKr(tt.total)):'✓ GREIÐA';cb.disabled=tt.total===0;}}
   function buildBannerHTML(){
@@ -80,6 +143,18 @@
           '<div id="pos-manual-box" style="display:none">' +
             '<input id="pos-nafn" placeholder="Nafn viðskiptavinar" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;box-sizing:border-box;margin-bottom:6px">' +
             '<input id="pos-simi" placeholder="Sími" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;box-sizing:border-box">' +
+          '</div>' +
+          // Customer memo / price-instructions display — shown only when the
+          // selected customer has saved athugasemdir on their record. Read-only;
+          // surfaces price agreements and notes (e.g. "Yfirferð 2200, Hleðsla
+          // 3700, 20% afsl. af nýjum tækjum") so the operator sees them while
+          // adding line items. The actual sale-level athugasemdir textarea
+          // is in the Karfa panel (pos-notes) and is independent of this.
+          '<div id="pos-customer-memo" style="display:none;margin-top:10px;padding:10px 12px;background:#fef9c3;border:1px solid #fde047;border-radius:8px;border-left:4px solid #ca8a04">' +
+            '<div style="font-size:11px;font-weight:700;color:#854d0e;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;display:flex;align-items:center;gap:6px">' +
+              '<span>📝 Athugasemdir / Verðupplýsingar</span>' +
+            '</div>' +
+            '<div id="pos-customer-memo-text" style="font-size:13px;color:#422006;white-space:pre-wrap;line-height:1.45"></div>' +
           '</div>' +
         '</div>' +
         '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
@@ -132,18 +207,125 @@
       var col=l.type==='service'?'#b45309':'#0d6efd';
       return '<div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9">' +
         '<div style="width:28px;height:28px;background:'+col+'15;color:'+col+';border-radius:6px;display:flex;align-items:center;justify-content:center;margin-right:8px;flex-shrink:0;font-size:14px">'+(l.type==='service'?'🔧':'🛒')+'</div>' +
-        '<div style="flex:1;min-width:0"><div style="font-weight:600;color:#0f172a;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.desc)+'</div><div style="color:#64748b;font-size:11px">'+l.qty+' × '+fmtKr(l.unit_price_ex_vat)+(l.ref?' · '+esc(l.ref):'')+'</div></div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:600;color:#0f172a;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.desc)+'</div>' +
+          // Price is now an inline-editable input. Click and edit.
+          '<div style="color:#64748b;font-size:11px;display:flex;align-items:center;gap:3px">' +
+            '<span>'+l.qty+' × </span>' +
+            '<input class="pos-price-edit" data-idx="'+idx+'" type="number" min="0" step="1" value="'+l.unit_price_ex_vat+'" ' +
+              'title="Smelltu til að breyta verði (án VSK)" ' +
+              'style="width:72px;padding:1px 4px;border:1px solid #e2e8f0;border-radius:4px;font:inherit;font-size:11px;text-align:right;font-variant-numeric:tabular-nums">' +
+            '<span>kr án vsk</span>' +
+            (l.ref?' · '+esc(l.ref):'') +
+          '</div>' +
+        '</div>' +
         '<div style="display:flex;align-items:center;gap:4px;margin-left:6px"><button class="pos-qty-dn" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b">−</button><span style="font-weight:600;font-size:13px;min-width:18px;text-align:center">'+l.qty+'</span><button class="pos-qty-up" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b">+</button></div>' +
         '<div style="font-weight:700;color:#0f172a;margin-left:8px;white-space:nowrap;font-size:12px;min-width:60px;text-align:right">'+fmtKr(lineTotal)+'</div>' +
         '<button class="pos-line-del" data-idx="'+idx+'" style="background:none;color:#cbd5e1;border:none;cursor:pointer;font-size:18px;padding:2px 6px">×</button>' +
       '</div>';
     }).join('');
   }
-  function buildTotalsHTML(){var t=totals();return '<div style="border-top:2px solid #e2e8f0;padding-top:10px;font-variant-numeric:tabular-nums"><div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>Án VSK:</span><span>'+fmtKr(t.ex)+'</span></div><div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>VSK:</span><span>'+fmtKr(t.vsk)+'</span></div><div style="display:flex;justify-content:space-between;padding:6px 0;font-weight:700;font-size:18px;color:#0f172a;margin-top:4px;border-top:1px solid #f1f5f9"><span>Samtals:</span><span>'+fmtKr(t.total)+'</span></div></div>';}
+  function buildTotalsHTML(){
+    var t = totals();
+    var pct = state.discount_pct || 0;
+    var hasDisc = (pct > 0) || (state.discount > 0);
+    var custDisc = state.customer && +state.customer.afslattur_pct > 0
+      ? '<button id="pos-disc-cust-apply" type="button" title="Sækja afslátt viðskiptavinar" '
+         + 'style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:6px;'
+         + 'padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;margin-left:6px">'
+         + '↺ ' + (+state.customer.afslattur_pct) + '%</button>'
+      : '';
+    return '<div style="border-top:2px solid #e2e8f0;padding-top:10px;font-variant-numeric:tabular-nums">' +
+        // Subtotal (raw, before discount)
+        '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>Án VSK:</span><span>'+fmtKr(t.raw_ex)+'</span></div>' +
+        // Inline discount row — input lets the user type a %
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;color:#64748b;font-size:13px">' +
+          '<span>Afsláttur:' + custDisc + '</span>' +
+          '<span style="display:flex;align-items:center;gap:4px">' +
+            // type="text" with inputmode="decimal" — gives a numeric keyboard
+            // on mobile but no up/down spinner arrows. The input is also
+            // auto-selected on focus so the user can immediately type a new
+            // value without having to manually clear the old one.
+            '<input id="pos-discount" type="text" inputmode="decimal" pattern="[0-9.,]*" value="' + pct + '" ' +
+              'autocomplete="off" ' +
+              'style="width:60px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;' +
+              'text-align:right;font-variant-numeric:tabular-nums">' +
+            '<span style="color:#94a3b8">%</span>' +
+          '</span>' +
+        '</div>' +
+        (hasDisc ? '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#dc2626;font-size:12px"><span>− Afsláttur '+(pct>0?pct+'% ':'')+'</span><span>−'+fmtKr(t.pct_disc + t.abs_disc)+'</span></div>' : '') +
+        '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>Án VSK (eftir afslátt):</span><span>'+fmtKr(t.ex)+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>VSK:</span><span>'+fmtKr(t.vsk)+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;padding:6px 0;font-weight:700;font-size:18px;color:#0f172a;margin-top:4px;border-top:1px solid #f1f5f9"><span>Samtals:</span><span>'+fmtKr(t.total)+'</span></div>' +
+      '</div>';
+  }
   function bindEvents(){
     document.querySelectorAll('.pos-mode-btn').forEach(function(b){b.addEventListener('click',function(){var m=b.getAttribute('data-mode');state.customer.mode=m;document.querySelectorAll('.pos-mode-btn').forEach(function(x){var a=x.getAttribute('data-mode')===m;x.style.background=a?'#eff6ff':'#fff';x.style.borderColor=a?'#60a5fa':'#cbd5e1';x.style.color=a?'#1e40af':'#64748b';});document.getElementById('pos-kt-box').style.display=m==='kt'?'':'none';document.getElementById('pos-manual-box').style.display=m==='manual'?'':'none';});});
     var ktEl=document.getElementById('pos-kt');
-    if(ktEl){ktEl.addEventListener('input',function(){var v=ktEl.value.replace(/[^0-9]/g,'');if(v.length>6)v=v.substring(0,6)+'-'+v.substring(6,10);ktEl.value=v;state.customer.kt=v;var r=document.getElementById('pos-kt-result');var c=v.replace(/[^0-9]/g,'');if(c.length===10){r.textContent='Leita...';lookupKt(c).then(function(m){if(m){state.customer.nafn=m.nafn;state.customer.simi=m.simi;state.customer.co_id=m.co_id;r.innerHTML='<span style="color:#16a34a;font-weight:600">✓ '+esc(m.nafn)+'</span>'+(m.simi?' · '+esc(m.simi):'');}else{state.customer.nafn='';state.customer.simi='';state.customer.co_id=null;r.innerHTML='<span style="color:#b45309">Óþekkt kt — skráð sem nýr</span>';}});}else{r.textContent='';}});}
+    if (ktEl) {
+      ktEl.addEventListener('input', function () {
+        var v = ktEl.value.replace(/[^0-9]/g, '');
+        if (v.length > 6) v = v.substring(0, 6) + '-' + v.substring(6, 10);
+        ktEl.value = v;
+        state.customer.kt = v;
+        var r = document.getElementById('pos-kt-result');
+        var c = v.replace(/[^0-9]/g, '');
+        if (c.length === 10) {
+          r.textContent = 'Leita...';
+          lookupKt(c).then(function (m) {
+            // Helper: populate / hide the customer memo box. The memo shows
+            // the customer's saved athugasemdir (price agreements, notes etc).
+            function setMemo(text) {
+              var box = document.getElementById('pos-customer-memo');
+              var t = document.getElementById('pos-customer-memo-text');
+              if (!box || !t) return;
+              if (text && String(text).trim()) {
+                t.textContent = text;
+                box.style.display = '';
+              } else {
+                t.textContent = '';
+                box.style.display = 'none';
+              }
+            }
+            if (m) {
+              state.customer.nafn = m.nafn;
+              state.customer.simi = m.simi;
+              state.customer.co_id = m.co_id;
+              state.customer.heimilisfang = m.heimilisfang || '';
+              state.customer.afslattur_pct = m.afslattur_pct || 0;
+              state.customer.athugasemdir = m.athugasemdir || '';
+              if (m.afslattur_pct > 0) state.discount_pct = m.afslattur_pct;
+              var discNote = m.afslattur_pct > 0 ? ' · <span style="color:#16a34a;font-weight:600">' + m.afslattur_pct + '% afsláttur</span>' : '';
+              // Tag where the data came from so the user knows whether it
+              // was already in the system (✓) or pulled live from RSK (📋).
+              var srcIcon = m.source === 'rsk' ? '📋 RSK' : '✓';
+              var srcColor = m.source === 'rsk' ? '#1d4ed8' : '#16a34a';
+              r.innerHTML = '<span style="color:' + srcColor + ';font-weight:600">' + srcIcon + ' ' + esc(m.nafn) + '</span>'
+                + (m.heimilisfang ? ' · <span style="color:#64748b">' + esc(m.heimilisfang) + '</span>' : '')
+                + (m.simi ? ' · ' + esc(m.simi) : '')
+                + discNote;
+              setMemo(m.athugasemdir);
+              rerenderDynamic();
+            } else {
+              state.customer.nafn = '';
+              state.customer.simi = '';
+              state.customer.co_id = null;
+              state.customer.heimilisfang = '';
+              state.customer.afslattur_pct = 0;
+              state.customer.athugasemdir = '';
+              setMemo('');
+              r.innerHTML = '<span style="color:#b45309">Óþekkt kt — skráð sem nýr</span>';
+            }
+          });
+        } else {
+          r.textContent = '';
+          // Hide the memo box when no customer is selected
+          var memoBox = document.getElementById('pos-customer-memo');
+          if (memoBox) memoBox.style.display = 'none';
+          state.customer.athugasemdir = '';
+        }
+      });
+    }
     var nEl=document.getElementById('pos-nafn'),sEl=document.getElementById('pos-simi');
     if(nEl)nEl.addEventListener('input',function(){state.customer.nafn=nEl.value;});
     if(sEl)sEl.addEventListener('input',function(){state.customer.simi=sEl.value;});
@@ -152,6 +334,50 @@
     document.getElementById('pos-services').addEventListener('click',function(e){var b=e.target.closest('.pos-svc');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);var s=state.services.find(function(x){return x.id===id;});if(!s)return;state.lines.push({type:'service',desc:s.nafn,qty:1,unit_price_ex_vat:s.verd_an_vsk,vsk_pct:s.vsk_prosenta||24,ref:'',product_id:s.id});rerenderDynamic();});
     document.getElementById('pos-products').addEventListener('click',function(e){var b=e.target.closest('.pos-prod');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);addProductLine(id);});
     document.getElementById('pos-lines').addEventListener('click',function(e){var d=e.target.closest('.pos-line-del'),u=e.target.closest('.pos-qty-up'),n=e.target.closest('.pos-qty-dn');if(d){state.lines.splice(parseInt(d.getAttribute('data-idx'),10),1);rerenderDynamic();return;}if(u){var i=parseInt(u.getAttribute('data-idx'),10);state.lines[i].qty++;rerenderDynamic();return;}if(n){var j=parseInt(n.getAttribute('data-idx'),10);state.lines[j].qty--;if(state.lines[j].qty<=0)state.lines.splice(j,1);rerenderDynamic();return;}});
+    // Per-line price editing — click input, edit, blur to save.
+    document.getElementById('pos-lines').addEventListener('input',function(e){
+      var p = e.target.closest('.pos-price-edit'); if (!p) return;
+      var i = parseInt(p.getAttribute('data-idx'), 10);
+      if (state.lines[i]) {
+        state.lines[i].unit_price_ex_vat = parseFloat(p.value) || 0;
+        // Re-render only the totals; don't redraw the inputs (cursor jumps).
+        var tEl = document.getElementById('pos-totals'); if (tEl) tEl.innerHTML = buildTotalsHTML();
+        var cb = document.getElementById('pos-checkout');
+        if (cb) { var tt = totals(); cb.innerHTML = tt.total > 0 ? ('✓ GREIÐA · '+fmtKr(tt.total)) : '✓ GREIÐA'; cb.disabled = tt.total === 0; }
+        // Update only the line total cell on the same row.
+        var row = p.closest('div[style*="display:flex"]'); // line container
+      }
+    });
+    // Discount % input — live update. Parses both decimal point AND comma
+    // (Icelandic locale uses comma as decimal separator). Strips anything
+    // that's not a digit / period / comma so paste behaviour is forgiving.
+    document.getElementById('pos-totals').addEventListener('input', function(e){
+      var d = e.target.closest('#pos-discount'); if (!d) return;
+      var raw = String(d.value || '').replace(/[^0-9.,]/g, '').replace(',', '.');
+      state.discount_pct = Math.max(0, Math.min(100, parseFloat(raw) || 0));
+      // Don't re-render the input itself (cursor would jump). Only update
+      // the totals + checkout button label to reflect the new discount.
+      var tEl = document.getElementById('pos-totals');
+      var preserved = d.value;
+      if (tEl) tEl.innerHTML = buildTotalsHTML();
+      var newD = document.getElementById('pos-discount');
+      if (newD) newD.value = preserved;  // restore exactly what user typed
+      var cb = document.getElementById('pos-checkout');
+      if (cb) { var tt = totals(); cb.innerHTML = tt.total > 0 ? ('✓ GREIÐA · '+fmtKr(tt.total)) : '✓ GREIÐA'; cb.disabled = tt.total === 0; }
+    });
+    // Auto-select all text when user focuses the discount field, so they
+    // can immediately type a replacement value without manually clearing.
+    document.getElementById('pos-totals').addEventListener('focusin', function(e){
+      var d = e.target.closest('#pos-discount'); if (!d) return;
+      setTimeout(function () { try { d.select(); } catch(_) {} }, 0);
+    });
+    // "Sækja afslátt viðskiptavinar" button — applies the customer's
+    // saved default % to the current sale.
+    document.getElementById('pos-totals').addEventListener('click', function(e){
+      var b = e.target.closest('#pos-disc-cust-apply'); if (!b) return;
+      state.discount_pct = +state.customer.afslattur_pct || 0;
+      rerenderDynamic();
+    });
     document.getElementById('pos-notes').addEventListener('input',function(e){state.notes=e.target.value;});
     document.getElementById('pos-checkout').addEventListener('click',checkout);
   }
@@ -165,9 +391,24 @@
     if(!cust){if(!confirm('Enginn viðskiptavinur — halda áfram?'))return;cust='Staðgreitt';}
     var t=totals();var btn=document.getElementById('pos-checkout');btn.disabled=true;btn.innerHTML='Vista...';
     try{
-      var y=new Date().getFullYear(),rnd=Math.floor(Math.random()*90000)+10000,num='#'+y+'-'+rnd;
-      var sr=await DB.sb.from('solur').insert({num:num,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,linur:state.lines,upphaed_an_vsk:Math.round(t.ex),vsk_upphaed:Math.round(t.vsk),afslattur:state.discount,samtals:Math.round(t.total),greitt_med:'Kort',athugasemdir:state.notes}).select().single();
+      // Use the pre-allocated R-NNNNNN if one was reserved by the checkout
+      // dialog (so the printed receipt matches the saved row). Otherwise the
+      // BEFORE INSERT trigger on solur assigns one.
+      var preNum = window._pendingReikningurNum || '';
+      var pmCode = window._pendingPaymentMethod || 'kort';
+      var pmLabel = pmCode === 'reikningur'   ? 'reikningur'
+                  : pmCode === 'greitt_sidar' ? 'greitt_sidar'
+                  : pmCode === 'pening'       ? 'Pening'
+                                              : 'Kort';
+      // Compute total kr value of all discounts (% + absolute) and store
+      // that as `afslattur` on solur for backward-compatibility with the
+      // existing accounting/Bókhald yfirlit reports.
+      var discKr = Math.round((t.pct_disc || 0) + (t.abs_disc || 0));
+      var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,linur:state.lines,upphaed_an_vsk:Math.round(t.ex),vsk_upphaed:Math.round(t.vsk),afslattur:discKr,samtals:Math.round(t.total),greitt_med:pmLabel,athugasemdir:state.notes}).select().single();
       if(sr.error)throw sr.error;
+      var num = sr.data && sr.data.num ? sr.data.num : preNum;
+      window._pendingReikningurNum = '';
+      window._pendingPaymentMethod = '';
       // Auto-create fyrirtaeki for new kennitala customers
       if(state.customer.mode==='kt'&&state.customer.kt&&!state.customer.co_id){
         var cleanKt=state.customer.kt.replace(/[^0-9]/g,'');
@@ -183,9 +424,22 @@
         }
       }
       var svc=state.lines.filter(function(l){return l.type==='service';});
-      for(var i=0;i<svc.length;i++){var sl=svc[i];await DB.sb.from('verkbeidnir').insert({num:num+'-V'+(i+1),status:'received',customer:cust,phone:state.customer.simi,dropoff:new Date().toISOString().substring(0,10),pickup:new Date(Date.now()+7*86400000).toISOString().substring(0,10),notes:sl.desc+(sl.ref?' · '+sl.ref:''),verd:Math.round(sl.unit_price_ex_vat*1.24)});}
-      alert('✓ Sala '+num+'\n'+fmtKr(t.total)+'\n'+svc.length+' verkbeiðnir búnar til');
-      state.customer={mode:'kt',kt:'',nafn:'',simi:'',co_id:null};state.lines=[];state.notes='';
+      // The checkout dialog's "Sleppa að búa til verkbeiðnir" checkbox sets
+      // window._pendingSkipVerk = true. Useful when a refill/hleðsla
+      // happens on the spot and no follow-up work request is needed.
+      var skipVerk = window._pendingSkipVerk === true;
+      window._pendingSkipVerk = false; // reset for next sale
+      var verkCount = 0;
+      if (!skipVerk) {
+        for(var i=0;i<svc.length;i++){var sl=svc[i];await DB.sb.from('verkbeidnir').insert({num:num+'-V'+(i+1),status:'received',customer:cust,phone:state.customer.simi,dropoff:new Date().toISOString().substring(0,10),pickup:new Date(Date.now()+7*86400000).toISOString().substring(0,10),notes:sl.desc+(sl.ref?' · '+sl.ref:''),verd:Math.round(sl.unit_price_ex_vat*1.24)});verkCount++;}
+      }
+      var verkMsg = skipVerk
+        ? '\n(verkbeiðnir slepptar)'
+        : ('\n' + verkCount + ' verkbeiðnir búnar til');
+      alert('✓ Sala '+num+'\n'+fmtKr(t.total)+verkMsg);
+      state.customer={mode:'kt',kt:'',nafn:'',simi:'',co_id:null,afslattur_pct:0,athugasemdir:''};state.lines=[];state.notes='';state.discount=0;state.discount_pct=0;
+      // Hide the customer memo box on reset so it doesn't leak into the next sale
+      var memoBoxReset=document.getElementById('pos-customer-memo');if(memoBoxReset)memoBoxReset.style.display='none';
       var v=document.getElementById('view-sala');v.removeAttribute('data-pos-v3');render();
     }catch(e){alert('Villa: '+(e.message||e));}finally{btn.disabled=false;btn.innerHTML='✓ GREIÐA';}
   }

@@ -6,7 +6,9 @@
     return;
   }
 
-  const SB = (window.DB && window.DB.sb) || window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+  // Lazy getter — evaluated at call-time so we always get the canonical DB.sb
+  // (DB.sb is null at script-load time; it's set inside DB.init() on DOMContentLoaded)
+  const getSB = () => (window.DB && window.DB.sb) || window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
@@ -79,7 +81,7 @@
   async function load() {
     isLoading = true;
     try {
-      const { data: rows, error } = await SB.from('vidskiptavinir').select('*').order('nafn', { ascending: true });
+      const { data: rows, error } = await getSB().from('vidskiptavinir').select('*').order('nafn', { ascending: true });
       if (error) throw error;
       customers = rows || [];
 
@@ -90,14 +92,14 @@
       unitsByName = {};
 
       if (phones.length) {
-        const { data: byPhone } = await SB.from('uttaeki').select('*').in('phone', phones);
+        const { data: byPhone } = await getSB().from('uttaeki').select('*').in('phone', phones);
         for (const u of byPhone || []) {
           const k = u.phone || '';
           if (k) (unitsByPhone[k] = unitsByPhone[k] || []).push(u);
         }
       }
       if (names.length) {
-        const { data: byName } = await SB.from('uttaeki').select('*').in('client', names);
+        const { data: byName } = await getSB().from('uttaeki').select('*').in('client', names);
         for (const u of byName || []) {
           const k = u.client || '';
           // dedupe: only count by name if not already counted by phone
@@ -398,7 +400,7 @@
       let ok = 0, err = 0;
       for (const id of ids) {
         try {
-          const { error } = await SB.from('vidskiptavinir').delete().eq('id', id);
+          const { error } = await getSB().from('vidskiptavinir').delete().eq('id', id);
           if (error) throw error;
           ok++;
           selectedIds.delete(id);
@@ -491,14 +493,20 @@
         <div style="padding:8px 12px;font-size:13px;color:var(--text-muted,#8891a0);background:#f9fafb;border-bottom:1px solid #f3f4f6;">${esc(label)}</div>
         <div style="padding:8px 12px;font-size:14px;color:var(--text,#0f1117);background:#fff;border-bottom:1px solid #f3f4f6;">${value || '<span style="color:#9ca3af;">—</span>'}</div>
       </div>`;
+    const discPctNum = +c.afslattur_pct || 0;
     const infoGridHTML = `
       <div class="info-grid" style="display:grid;grid-template-columns:180px 1fr;gap:1px;background:#e5e7eb;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-bottom:20px;">
         ${infoRow('Nafn', esc(c.nafn || ''))}
         ${infoRow('Kennitala', esc(c.kennitala || ''))}
         ${infoRow('Sími', c.simi ? `<a href="tel:${esc(c.simi)}" style="color:#2563eb;text-decoration:none;">${esc(c.simi)}</a>` : '')}
+        ${infoRow('Farsími', c.farsimi ? `<a href="tel:${esc(c.farsimi)}" style="color:#2563eb;text-decoration:none;">${esc(c.farsimi)}</a>` : '')}
         ${infoRow('Netfang', c.netfang ? `<a href="mailto:${esc(c.netfang)}" style="color:#2563eb;text-decoration:none;">${esc(c.netfang)}</a>` : '')}
+        ${infoRow('Vefsíða', c.vefsida ? `<a href="${esc(c.vefsida.startsWith('http') ? c.vefsida : 'https://' + c.vefsida)}" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:none;">${esc(c.vefsida)}</a>` : '')}
         ${infoRow('Heimilisfang', esc(c.heimilisfang || ''))}
-        ${infoRow('Athugasemdir', esc(c.athugasemdir || ''))}
+        ${infoRow('Tengiliður', esc(c.tengilidur || ''))}
+        ${infoRow('Greiðsluskilmáli', esc(c.greidsluskilmali || ''))}
+        ${infoRow('Sjálfgefinn afsláttur', discPctNum > 0 ? `<span style="font-weight:600;color:#16a34a;">${discPctNum}%</span>` : '')}
+        ${infoRow('Athugasemdir', c.athugasemdir ? `<div style="white-space:pre-wrap;">${esc(c.athugasemdir)}</div>` : '')}
       </div>`;
 
     const tableRows = detailUnits.length === 0
@@ -548,7 +556,7 @@
     m.querySelector('#vk-delete')?.addEventListener('click', async () => {
       if (!confirm('Eyða viðskiptavini "' + (c.nafn || c.kennitala || c.id) + '"?\n\nÞetta er ekki hægt að taka til baka.')) return;
       try {
-        const { error } = await SB.from('vidskiptavinir').delete().eq('id', c.id);
+        const { error } = await getSB().from('vidskiptavinir').delete().eq('id', c.id);
         if (error) throw error;
         view = 'list'; detailCustomer = null;
         await load();
@@ -571,14 +579,35 @@
               <input id="vk-e-nafn" value="${esc(c.nafn || '')}" style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;"></label>
             <label style="display:block;"><div style="font-size:13px;color:#555;margin-bottom:4px;">Kennitala</div>
               <input id="vk-e-kt" value="${esc(c.kennitala || '')}" style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;"></label>
-            <label style="display:block;"><div style="font-size:13px;color:#555;margin-bottom:4px;">Sími</div>
-              <input id="vk-e-simi" value="${esc(c.simi || '')}" style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;"></label>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+              <label style="display:block;"><div style="font-size:13px;color:#555;margin-bottom:4px;">Sími</div>
+                <input id="vk-e-simi" value="${esc(c.simi || '')}" style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;"></label>
+              <label style="display:block;"><div style="font-size:13px;color:#555;margin-bottom:4px;">Farsími</div>
+                <input id="vk-e-farsimi" value="${esc(c.farsimi || '')}" style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;"></label>
+            </div>
             <label style="display:block;"><div style="font-size:13px;color:#555;margin-bottom:4px;">Netfang</div>
               <input id="vk-e-netfang" value="${esc(c.netfang || '')}" style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;"></label>
+            <label style="display:block;"><div style="font-size:13px;color:#555;margin-bottom:4px;">Vefsíða</div>
+              <input id="vk-e-vefsida" value="${esc(c.vefsida || '')}" placeholder="t.d. www.example.is" style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;"></label>
             <label style="display:block;"><div style="font-size:13px;color:#555;margin-bottom:4px;">Heimilisfang</div>
               <input id="vk-e-addr" value="${esc(c.heimilisfang || '')}" style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;"></label>
-            <label style="display:block;"><div style="font-size:13px;color:#555;margin-bottom:4px;">Athugasemdir</div>
-              <textarea id="vk-e-notes" rows="3" style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;resize:vertical;">${esc(c.athugasemdir || '')}</textarea></label>
+            <label style="display:block;"><div style="font-size:13px;color:#555;margin-bottom:4px;">Tengiliður</div>
+              <input id="vk-e-tengilidur" value="${esc(c.tengilidur || '')}" placeholder="Nafn tengiliðar" style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;"></label>
+            <label style="display:block;"><div style="font-size:13px;color:#555;margin-bottom:4px;">Greiðsluskilmáli</div>
+              <select id="vk-e-greidsluskilmali" style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;background:#fff;">
+                <option value=""${!c.greidsluskilmali ? ' selected' : ''}>—</option>
+                <option value="Staðgreiðsla"${c.greidsluskilmali === 'Staðgreiðsla' ? ' selected' : ''}>Staðgreiðsla</option>
+                <option value="Krafa í banka 10 dagar"${c.greidsluskilmali === 'Krafa í banka 10 dagar' ? ' selected' : ''}>Krafa í banka 10 dagar</option>
+                <option value="Krafa í banka 14 dagar"${c.greidsluskilmali === 'Krafa í banka 14 dagar' ? ' selected' : ''}>Krafa í banka 14 dagar</option>
+                <option value="Krafa í banka 30 dagar"${c.greidsluskilmali === 'Krafa í banka 30 dagar' ? ' selected' : ''}>Krafa í banka 30 dagar</option>
+                <option value="__custom"${c.greidsluskilmali && !['Staðgreiðsla','Krafa í banka 10 dagar','Krafa í banka 14 dagar','Krafa í banka 30 dagar'].includes(c.greidsluskilmali) ? ' selected' : ''}>Annað…</option>
+              </select>
+              <input id="vk-e-greidsluskilmali-custom" value="${esc(c.greidsluskilmali && !['Staðgreiðsla','Krafa í banka 10 dagar','Krafa í banka 14 dagar','Krafa í banka 30 dagar'].includes(c.greidsluskilmali) ? c.greidsluskilmali : '')}" placeholder="Sérsniðinn skilmáli" style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;margin-top:6px;display:${c.greidsluskilmali && !['Staðgreiðsla','Krafa í banka 10 dagar','Krafa í banka 14 dagar','Krafa í banka 30 dagar'].includes(c.greidsluskilmali) ? 'block' : 'none'};"></label>
+            <label style="display:block;"><div style="font-size:13px;color:#555;margin-bottom:4px;">Sjálfgefinn afsláttur (%)
+              <span style="font-weight:400;color:#94a3b8;font-size:11px;margin-left:4px">— færist sjálfvirkt yfir í Sala þegar þessi viðskiptavinur er valinn</span></div>
+              <input id="vk-e-disc" type="text" inputmode="decimal" value="${(+c.afslattur_pct||0)}" placeholder="0" style="width:120px;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;text-align:right;font-variant-numeric:tabular-nums;"></label>
+            <label style="display:block;"><div style="font-size:13px;color:#555;margin-bottom:4px;">Athugasemdir / Verðupplýsingar</div>
+              <textarea id="vk-e-notes" rows="4" style="width:100%;padding:8px 10px;border:1px solid #e5e7eb;border-radius:6px;font-size:14px;resize:vertical;font-family:inherit;">${esc(c.athugasemdir || '')}</textarea></label>
           </div>
           <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
             <button class="btn btn-outline btn-sm" id="vk-e-cancel">Hætta við</button>
@@ -591,17 +620,36 @@
     const close = () => modal.remove();
     modal.querySelector('#vk-e-cancel').addEventListener('click', close);
     modal.addEventListener('click', e => { if (e.target === modal) close(); });
+    // Toggle custom payment-terms input when "Annað…" is selected
+    const gselSel = modal.querySelector('#vk-e-greidsluskilmali');
+    const gselCustom = modal.querySelector('#vk-e-greidsluskilmali-custom');
+    gselSel?.addEventListener('change', () => {
+      gselCustom.style.display = gselSel.value === '__custom' ? 'block' : 'none';
+      if (gselSel.value === '__custom') gselCustom.focus();
+    });
+
     modal.querySelector('#vk-e-save').addEventListener('click', async () => {
+      // Resolve greidsluskilmali: dropdown value, unless "__custom" picked then use custom input
+      let greidsluskilmaliVal = (gselSel?.value || '').trim();
+      if (greidsluskilmaliVal === '__custom') greidsluskilmaliVal = (gselCustom?.value || '').trim();
+      // discount: accept "10", "10%", "10,5", "10.5"
+      const discRaw = (modal.querySelector('#vk-e-disc').value || '').trim().replace('%', '').replace(',', '.');
+      const discNum = parseFloat(discRaw);
       const upd = {
         nafn: modal.querySelector('#vk-e-nafn').value.trim() || null,
         kennitala: modal.querySelector('#vk-e-kt').value.trim() || null,
         simi: modal.querySelector('#vk-e-simi').value.trim() || null,
+        farsimi: modal.querySelector('#vk-e-farsimi').value.trim() || null,
         netfang: modal.querySelector('#vk-e-netfang').value.trim() || null,
+        vefsida: modal.querySelector('#vk-e-vefsida').value.trim() || null,
         heimilisfang: modal.querySelector('#vk-e-addr').value.trim() || null,
+        tengilidur: modal.querySelector('#vk-e-tengilidur').value.trim() || null,
+        greidsluskilmali: greidsluskilmaliVal || null,
+        afslattur_pct: isFinite(discNum) ? Math.max(0, Math.min(100, discNum)) : 0,
         athugasemdir: modal.querySelector('#vk-e-notes').value.trim() || null
       };
       try {
-        const { error } = await SB.from('vidskiptavinir').update(upd).eq('id', c.id);
+        const { error } = await getSB().from('vidskiptavinir').update(upd).eq('id', c.id);
         if (error) throw error;
         close();
         await load();
