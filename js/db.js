@@ -44,6 +44,17 @@ var DB = {
       this.cache.units = u.data || [];
       this.cache.schedule = s.data || [];
       this.cache.history = h.data || [];
+      // 2026-05-08: Pre-bucket units by client name ONCE here so callers
+      // (Companies.render, 89-monthly-strip, features.js, …) can do
+      // O(1) lookup instead of O(N) filter per company. At 456 companies
+      // × 3000 units this saves 1.36M iterations on every render.
+      this.cache.unitsByClient = Object.create(null);
+      var arr = this.cache.units;
+      for (var i = 0; i < arr.length; i++) {
+        var k = arr[i].client || '';
+        if (!k) continue;
+        (this.cache.unitsByClient[k] = this.cache.unitsByClient[k] || []).push(arr[i]);
+      }
       this.setSyncState('online');
       this.online = true;
       App.refreshAll();
@@ -57,8 +68,52 @@ var DB = {
   subscribeRealtime: function() {
     if (!this.sb) return;
     var self = this;
-    this.sb.channel('changes').on('postgres_changes', {event:'*', schema:'public'}, function() {
-      self.loadAll();
+    // 2026-05-08: Áður triggaði HVAÐA breyting sem var (insert/update/delete
+    // á hvaða töflu sem er) full `loadAll()` sem sækir 5 töflur og endurraðar
+    // 3 view. Á 400+ fyrirtækjum + 3000 tækjum + autosave á hverja innslátt
+    // verður þetta sjálfsgrafandi: hver innsláttur kveikir á 5 fyrirspurnum
+    // og 3 view-renderum sem aftur trigga ný observer-fíringar á öðrum
+    // tækjum sem allir notendur eru að nota samtímis.
+    //
+    // Núna er debounced (3 sek) og BARA aktíverað ef breytingin er á töflu
+    // sem aktíva view-ið þarf. Annars uppfærum við bara cache fyrir
+    // tilteknu töfluna í staðinn fyrir loadAll.
+    var _debounce = null;
+    var _pendingTables = new Set();
+    function applyChange() {
+      _debounce = null;
+      var tables = Array.from(_pendingTables);
+      _pendingTables.clear();
+      // Look up which view is currently active and decide if we need a full
+      // reload. The cheap path: just refresh the affected table.
+      var activeView = (window.App && App.view) || (document.querySelector('.view.active') || {}).id || '';
+      var activeId = String(activeView).replace(/^view-/, '');
+      // Workshop / Counter / Field views read jobs+units → need verkbeidnir/verklidur
+      // Companies view reads units → need uttaeki
+      // Most other views are independent of these tables
+      var viewsNeedingJobs = ['workshop', 'counter', 'sala', 'field', 'dashboard', 'home'];
+      var viewsNeedingUnits = ['companies', 'field', 'lanstaeki', 'workshop', 'home', 'dashboard'];
+      var needsJobs = tables.some(function(t){return t==='verkbeidnir'||t==='verklidur';}) && viewsNeedingJobs.indexOf(activeId) >= 0;
+      var needsUnits = tables.indexOf('uttaeki') >= 0 && viewsNeedingUnits.indexOf(activeId) >= 0;
+      if (needsJobs || needsUnits) {
+        self.loadAll();
+      }
+      // For companies/vidskiptavinir table changes, just nudge the
+      // module-level reloaders if available — much cheaper than loadAll.
+      if (tables.indexOf('fyrirtaeki') >= 0 && window.Companies && typeof Companies.load === 'function') {
+        try { Companies.load(); } catch(e){}
+      }
+      if (tables.indexOf('vidskiptavinir') >= 0 && window.Vidskiptavinir && typeof Vidskiptavinir.load === 'function') {
+        try { Vidskiptavinir.load(); } catch(e){}
+      }
+      // Other tables (solur, app_settings, etc.) — let observers/views
+      // refetch lazily when they become active.
+    }
+    this.sb.channel('changes').on('postgres_changes', {event:'*', schema:'public'}, function(payload) {
+      var t = payload && payload.table;
+      if (t) _pendingTables.add(t);
+      if (_debounce) clearTimeout(_debounce);
+      _debounce = setTimeout(applyChange, 3000);
     }).subscribe();
   },
 

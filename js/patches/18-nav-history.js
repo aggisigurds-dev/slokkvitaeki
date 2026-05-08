@@ -43,9 +43,14 @@
 
   function apply(entry) {
     if (!entry) return;
+    // For companies, use the safe helper that avoids the App.switchView/Companies.load race
+    if (entry.view === 'companies' && entry.detailId != null && window._openCompanySafe) {
+      window._openCompanySafe(entry.detailId);
+      return;
+    }
     if (window.App && App.switchView) App.switchView(entry.view);
+    if (entry.detailId == null) return;
     setTimeout(() => {
-      if (entry.detailId == null) return;
       if (entry.view === 'companies' && window.Companies && Companies.openDetail) {
         Companies.openDetail(entry.detailId);
       } else if (entry.view === 'vidskiptavinir' && window.Vidskiptavinir && typeof Vidskiptavinir.openDetail === 'function') {

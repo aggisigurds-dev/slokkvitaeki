@@ -105,16 +105,15 @@
     try {
       const res = await SB
         .from('solur')
-        .select('id,num,customer_nafn,customer_id,samtals,created_at,paid_at,paid_method,athugasemdir')
+        .select('id,num,customer_nafn,customer_id,samtals,created_at,paid_at,paid_method,athugasemdir,greitt_med')
         .in('greitt_med', ['reikningur', 'greitt_sidar'])
         .is('paid_at', null)
         .order('created_at', { ascending: true });
       data = res.data; error = res.error;
     } catch (_) {
-      // paid_at column doesn't exist yet — load all unpaid rows
       const res2 = await SB
         .from('solur')
-        .select('id,num,customer_nafn,customer_id,samtals,created_at,athugasemdir')
+        .select('id,num,customer_nafn,customer_id,samtals,created_at,athugasemdir,greitt_med')
         .in('greitt_med', ['reikningur', 'greitt_sidar'])
         .order('created_at', { ascending: true });
       data = res2.data; error = res2.error;
@@ -128,6 +127,7 @@
       created_at: s.created_at,
       notes: s.athugasemdir || '',
       paid_at: s.paid_at || null,
+      payment: s.greitt_med || '',
       days: daysSince(s.created_at)
     }));
   }
@@ -146,55 +146,76 @@
       return;
     }
 
-    // Bucket invoices
-    const buckets = [[], [], [], []];
-    for (const inv of invoices) buckets[ageBucket(inv.days)].push(inv);
+    // Split by payment method — Setja í reikning vs Greitt síðar.
+    // These are different workflows (monthly batch billing vs pay-on-pickup)
+    // so totals/buckets must NOT be combined.
+    const groups = [
+      { key: 'reikningur',   label: '📋 Setja í reikning (krafa í heimabanka)', items: invoices.filter(i => i.payment === 'reikningur'), color: '#1d4ed8' },
+      { key: 'greitt_sidar', label: '⏳ Greitt síðar (greitt við afhendingu)', items: invoices.filter(i => i.payment === 'greitt_sidar'), color: '#b45309' }
+    ].filter(g => g.items.length > 0);
+
     const totalAmt = invoices.reduce((a, i) => a + i.total, 0);
 
-    // Summary cards
-    wrap.querySelector('#ar-summary').innerHTML = buckets.map((b, i) => {
-      const amt = b.reduce((a, inv) => a + inv.total, 0);
-      return `<div class="ar-bucket-card" style="background:${BUCKET_BG[i]};border-color:${BUCKET_BORDER[i]};">
-        <div class="bc-lbl" style="color:${BUCKET_COLORS[i]};">${BUCKET_LABELS[i]}</div>
-        <div class="bc-count" style="color:${BUCKET_COLORS[i]};">${b.length}</div>
-        <div class="bc-amt" style="color:${BUCKET_COLORS[i]};">${fmtKr(amt)}</div>
+    // Top-level summary: ONE row per payment method, each with its own total
+    wrap.querySelector('#ar-summary').innerHTML = groups.map(g => {
+      const amt = g.items.reduce((a, inv) => a + inv.total, 0);
+      return `<div class="ar-bucket-card" style="background:#fff;border-color:${g.color};border-width:2px;flex:1">
+        <div class="bc-lbl" style="color:${g.color};font-weight:700">${g.label}</div>
+        <div class="bc-count" style="color:${g.color};">${g.items.length} ógreitt</div>
+        <div class="bc-amt" style="color:${g.color};">${fmtKr(amt)}</div>
       </div>`;
     }).join('');
 
-    // Total bar
+    // Total bar — keep grand total but make it secondary
     wrap.querySelector('#ar-total').innerHTML = `
-      <div class="tc-item"><div class="lbl">Samtals ógreitt</div><div class="val">${fmtKr(totalAmt)}</div></div>
+      <div class="tc-item"><div class="lbl">Heildar ógreitt (allt)</div><div class="val">${fmtKr(totalAmt)}</div></div>
       <div class="tc-item"><div class="lbl">Fjöldi reikninga</div><div class="val">${invoices.length}</div></div>
       <div class="tc-item"><div class="lbl">Elsti reikningur</div><div class="val">${invoices.length ? invoices[0].days + ' dagar' : '—'}</div></div>
     `;
 
-    // Per-bucket tables
+    // For each payment-method group, render its own bucket-by-age tables
     let sectionsHTML = '';
-    for (let i = 3; i >= 0; i--) {
-      const b = buckets[i];
-      if (!b.length) continue;
-      const secAmt = b.reduce((a, inv) => a + inv.total, 0);
-      const rows = b.map(inv => `<tr>
-        <td>${esc(inv.num)}</td>
-        <td>${esc(inv.customer)}</td>
-        <td>${esc(fmtDate(inv.created_at))}</td>
-        <td style="font-weight:700;color:${BUCKET_COLORS[i]};">${inv.days} d</td>
-        <td style="text-align:right;font-weight:700;">${esc(fmtKr(inv.total))}</td>
-        <td>${esc(inv.notes)}</td>
-        <td><button class="ar-mip-btn" data-ar-id="${inv.id}">Merkja greitt</button></td>
-      </tr>`).join('');
-      sectionsHTML += `<div class="ar-section">
-        <div class="ar-section-hd" style="background:${BUCKET_BG[i]};border:1px solid ${BUCKET_BORDER[i]};color:${BUCKET_COLORS[i]};">
-          <span>${BUCKET_LABELS[i]} (${b.length})</span>
-          <span>${fmtKr(secAmt)}</span>
+    for (const g of groups) {
+      const groupTotal = g.items.reduce((a, inv) => a + inv.total, 0);
+      sectionsHTML += `<div style="margin-top:24px;padding:14px 18px;background:${g.color}15;border-left:4px solid ${g.color};border-radius:8px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <h2 style="margin:0;color:${g.color};font-size:18px">${g.label}</h2>
+          <div style="font-size:18px;font-weight:700;color:${g.color}">${fmtKr(groupTotal)}</div>
         </div>
-        <div class="ar-table-wrap" style="border-color:${BUCKET_BORDER[i]};">
-          <table class="ar-table">
-            <thead><tr><th>Númer</th><th>Viðskiptavinur</th><th>Dagsetning</th><th>Aldur</th><th style="text-align:right;">Upphæð</th><th>Athugasemd</th><th></th></tr></thead>
-            <tbody>${rows}</tbody>
+      </div>`;
+      // Age buckets within this group
+      const groupBuckets = [[], [], [], []];
+      for (const inv of g.items) groupBuckets[ageBucket(inv.days)].push(inv);
+      for (let i = 3; i >= 0; i--) {
+        const b = groupBuckets[i];
+        if (!b.length) continue;
+        const secAmt = b.reduce((a, inv) => a + inv.total, 0);
+        const rows = b.map(inv => `<tr>
+          <td>${esc(inv.num)}</td>
+          <td>${esc(inv.customer)}</td>
+          <td>${esc(fmtDate(inv.created_at))}</td>
+          <td style="font-weight:700;color:${BUCKET_COLORS[i]};">${inv.days} d</td>
+          <td style="text-align:right;font-weight:700;">${esc(fmtKr(inv.total))}</td>
+          <td>${esc(inv.notes)}</td>
+          <td style="white-space:nowrap">
+            <button class="ar-mip-btn" data-ar-id="${inv.id}" title="Merkja greitt">✓</button>
+            <button class="ar-credit-btn" data-ar-id="${inv.id}" data-ar-num="${esc(inv.num)}" title="Kreditfæra (búa til kreditreikning)" style="margin-left:4px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">Kreditfæra</button>
+            <button class="ar-delete-btn" data-ar-id="${inv.id}" data-ar-num="${esc(inv.num)}" title="Eyða færslu (varúð: óafturkræft)" style="margin-left:4px;background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;padding:6px 10px;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600">🗑</button>
+          </td>
+        </tr>`).join('');
+        sectionsHTML += `<div class="ar-section">
+          <div class="ar-section-hd" style="background:${BUCKET_BG[i]};border:1px solid ${BUCKET_BORDER[i]};color:${BUCKET_COLORS[i]};">
+            <span>${BUCKET_LABELS[i]} (${b.length})</span>
+            <span>${fmtKr(secAmt)}</span>
+          </div>
+          <div class="ar-table-wrap" style="border-color:${BUCKET_BORDER[i]};">
+            <table class="ar-table">
+              <thead><tr><th>Númer</th><th>Viðskiptavinur</th><th>Dagsetning</th><th>Aldur</th><th style="text-align:right;">Upphæð</th><th>Athugasemd</th><th>Aðgerðir</th></tr></thead>
+              <tbody>${rows}</tbody>
           </table>
         </div>
       </div>`;
+      }
     }
     wrap.querySelector('#ar-main').innerHTML = sectionsHTML;
 
@@ -210,12 +231,43 @@
             render();
           });
         } else {
-          // Fallback: direct update
           const SB = getSB();
           if (!SB) return;
           const { error } = await SB.from('solur').update({ paid_at: new Date().toISOString(), paid_method: 'Óþekkt' }).eq('id', id);
           if (!error) { invoices = invoices.filter(i => i.id !== id); render(); }
         }
+      });
+    });
+    // Wire kreditfæra buttons — uses patch 26's credit-invoice flow
+    wrap.querySelectorAll('.ar-credit-btn[data-ar-id]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = parseInt(btn.dataset.arId, 10);
+        const SB = getSB();
+        if (!SB) return;
+        // Fetch the original sale row in full (CreditInvoice.open expects a full sale)
+        const { data: sale, error } = await SB.from('solur').select('*').eq('id', id).maybeSingle();
+        if (error || !sale) { alert('Gat ekki sótt sölu'); return; }
+        if (window.CreditInvoice && CreditInvoice.open) {
+          CreditInvoice.open(sale);
+        } else {
+          alert('Kreditfærsla er ekki tiltæk (vantar patch 26)');
+        }
+      });
+    });
+    // Wire delete buttons — destructive, requires double confirm
+    wrap.querySelectorAll('.ar-delete-btn[data-ar-id]').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const id = parseInt(btn.dataset.arId, 10);
+        const num = btn.dataset.arNum || '#'+id;
+        if (!confirm('Eyða færslu '+num+' endanlega?\n\nÞetta er ÓAFTURKRÆFT. Notaðu Kreditfæra ef þú vilt halda bókhaldsslóð.')) return;
+        if (!confirm('Ertu alveg viss? '+num+' verður ekki hægt að endurheimta.')) return;
+        const SB = getSB();
+        if (!SB) return;
+        const { error } = await SB.from('solur').delete().eq('id', id);
+        if (error) { alert('Villa: '+error.message); return; }
+        invoices = invoices.filter(i => i.id !== id);
+        render();
+        if (window.Toast && Toast.show) Toast.show('🗑 '+num+' eytt');
       });
     });
   }

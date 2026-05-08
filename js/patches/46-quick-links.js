@@ -1,12 +1,13 @@
-/* === QUICK LINKS v1 === */
+/* === QUICK LINKS v2 === */
 /* Side-nav quick-link buttons:
  *   📁 Skrár        — opens Supabase Storage browser (verkdagbok bucket)
  *   📊 Google Sheet — opens user-configured Google Sheet
+ *   ☁️  Google Drive — opens user-configured Google Drive folder
  *
- * Sheet URL is stored in localStorage 'cfg_google_sheet_url'.
- * If not set, clicking the button prompts for it.
- *
- * Right-click either button → option to change/clear URL.
+ * v2: URLs now live in AppSettings (Supabase) so they sync across all devices
+ * and don't fall out when localStorage is cleared. Old localStorage values are
+ * migrated automatically on first load. Right-click still works to edit
+ * inline; the proper editor lives in Stillingar → 🔗 Tenglar tab.
  */
 (() => {
   if (window.__quickLinksInstalled) return;
@@ -14,34 +15,65 @@
 
   const STORAGE_URL = 'https://supabase.com/dashboard/project/osfdzskyvisifcwyjkuk/storage/buckets/verkdagbok';
 
-  // Configurable URLs (each stored under cfg_<key>_url in localStorage)
+  // Configurable URLs — keys correspond to AppSettings.tenglar.<key>_url
   const LINKS = [
-    { key:'google_sheet', icon:'📊', label:'Google Sheet',   defaultPlaceholder:'https://docs.google.com/spreadsheets/d/' },
-    { key:'google_drive', icon:'☁️',  label:'Google Drive',   defaultPlaceholder:'https://drive.google.com/drive/folders/' }
+    { key:'google_sheet', settingsKey:'google_sheet_url', icon:'📊', label:'Google Sheet', defaultPlaceholder:'https://docs.google.com/spreadsheets/d/' },
+    { key:'google_drive', settingsKey:'google_drive_url', icon:'☁️',  label:'Google Drive', defaultPlaceholder:'https://drive.google.com/drive/folders/' }
   ];
 
-  function getUrl(key)  { return localStorage.getItem('cfg_'+key+'_url') || ''; }
-  function setUrl(key,u){ if (u) localStorage.setItem('cfg_'+key+'_url', u); else localStorage.removeItem('cfg_'+key+'_url'); }
+  function getUrl(link) {
+    // 1. AppSettings (Supabase) — primary source
+    if (window.AppSettings && typeof window.AppSettings.path === 'function') {
+      const v = window.AppSettings.path('tenglar.' + link.settingsKey);
+      if (v) return v;
+    }
+    // 2. localStorage — legacy fallback (and for first-load before Supabase responds)
+    return localStorage.getItem('cfg_'+link.key+'_url') || '';
+  }
+  async function setUrl(link, u) {
+    const url = (u || '').trim();
+    // Save to localStorage immediately (works offline, instant)
+    if (url) localStorage.setItem('cfg_'+link.key+'_url', url);
+    else localStorage.removeItem('cfg_'+link.key+'_url');
+    // Save to AppSettings (Supabase) — persists across devices
+    if (window.AppSettings && typeof window.AppSettings.save === 'function') {
+      const patch = { tenglar: {} };
+      patch.tenglar[link.settingsKey] = url;
+      try { await window.AppSettings.save(patch); } catch (e) { /* offline → localStorage already set */ }
+    }
+  }
+  // One-time migration: if localStorage has URLs but Supabase doesn't, push up.
+  function migrateLocalStorage() {
+    if (!window.AppSettings || !window.AppSettings.isLoaded || !window.AppSettings.isLoaded()) return;
+    const t = window.AppSettings.path('tenglar') || {};
+    LINKS.forEach(link => {
+      const local = localStorage.getItem('cfg_'+link.key+'_url');
+      if (local && !t[link.settingsKey]) {
+        // Push the local value up so other devices see it too
+        setUrl(link, local);
+      }
+    });
+  }
 
-  function openLink(link) {
-    let url = getUrl(link.key);
+  async function openLink(link) {
+    let url = getUrl(link);
     if (!url) {
-      url = prompt(`Sláðu inn slóð á ${link.label}:\n(Hægri-smelltu hvenær sem er til að breyta)`, link.defaultPlaceholder);
+      url = prompt(`Sláðu inn slóð á ${link.label}:\n(Þetta vistast núna í Stillingar → 🔗 Tenglar — virkar á öllum tækjum)`, link.defaultPlaceholder);
       if (!url || url === link.defaultPlaceholder) return;
       if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-      setUrl(link.key, url);
+      await setUrl(link, url);
     }
     window.open(url, '_blank', 'noopener');
   }
 
   function openStorage() { window.open(STORAGE_URL, '_blank', 'noopener'); }
 
-  function changeUrl(link, e) {
+  async function changeUrl(link, e) {
     e.preventDefault();
-    const cur = getUrl(link.key);
+    const cur = getUrl(link);
     const v = prompt(`Slóð á ${link.label} (skildu eftir tóman reit til að fjarlægja):`, cur);
     if (v === null) return;
-    setUrl(link.key, v.trim());
+    await setUrl(link, v.trim());
     return false;
   }
 
@@ -89,10 +121,14 @@
     const updateLabels = () => {
       LINKS.forEach(l => {
         const lbl = wrap.querySelector(`[data-qlbl="${l.key}"]`);
-        if (lbl) lbl.textContent = getUrl(l.key) ? l.label : `${l.label} (stilla)`;
+        if (lbl) lbl.textContent = getUrl(l) ? l.label : `${l.label} (stilla)`;
       });
     };
     updateLabels();
+    // Re-render labels whenever AppSettings.tenglar changes (Stillingar save).
+    if (window.AppSettings && typeof window.AppSettings.onChange === 'function') {
+      window.AppSettings.onChange(() => updateLabels());
+    }
 
     wrap.querySelector('#qlink-storage').addEventListener('click', e => { e.preventDefault(); openStorage(); });
     LINKS.forEach(l => {
@@ -108,7 +144,18 @@
   const obs = new MutationObserver(() => inject());
   obs.observe(document.body, { childList:true, subtree:true });
 
+  // After AppSettings hydrates, run one-time migration of legacy localStorage URLs.
+  function tryMigrate(tries) {
+    if (window.AppSettings && window.AppSettings.isLoaded && window.AppSettings.isLoaded()) {
+      migrateLocalStorage();
+      return;
+    }
+    if ((tries || 0) > 30) return;
+    setTimeout(() => tryMigrate((tries || 0) + 1), 400);
+  }
+  tryMigrate();
+
   window.QuickLinks = { openStorage, openLink, changeUrl, getUrl, setUrl, LINKS };
-  console.log('[quick-links] installed');
+  console.log('[quick-links v2] installed');
 })();
 /* === END QUICK LINKS === */

@@ -59,24 +59,24 @@
     const last7 = new Date(today); last7.setDate(last7.getDate()-7);
 
     const [unpaid, dueInsp, lowStock, recentJobs, expiringQuotes] = await Promise.all([
-      safe(SB.from('solur').select('id,num,company_nafn,samtals,created_at,paid_at,greitt_med').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null).lte('created_at', new Date(Date.now()-30*86400000).toISOString())),
-      safe(SB.from('uttaeki').select('id,nr,fyrirtaeki,next_insp').not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10)).order('next_insp',{ascending:true})),
+      safe(SB.from('solur').select('id,num,customer_nafn,samtals,created_at,paid_at,greitt_med').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null).lte('created_at', new Date(Date.now()-30*86400000).toISOString())),
+      safe(SB.from('uttaeki').select('id,serial,client,next_insp').not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10)).order('next_insp',{ascending:true})),
       safe(SB.from('birgdir').select('id,nafn,magn,lagmark,eining').filter('magn','lt','lagmark')),
-      safe(SB.from('verkbeidnir').select('id,num,company_nafn,created_at,status').gte('created_at', last7.toISOString()).order('created_at',{ascending:false}).limit(10)),
+      safe(SB.from('verkbeidnir').select('id,num,customer,created_at,status').gte('created_at', last7.toISOString()).order('created_at',{ascending:false}).limit(10)),
       safe(SB.from('tilbod').select('id,num,company_nafn,valid_until,status').eq('status','sent').not('valid_until','is',null).lte('valid_until', new Date(Date.now()+7*86400000).toISOString().slice(0,10)))
     ]);
 
     alerts = [
       { kind:'unpaid',  sev:'high', label:'Ógreiddir reikningar (>30 daga)', items: (unpaid.data||[]).map(r=>({
-        title:`${r.num||'#'+r.id} — ${r.company_nafn||''}`,
+        title:`${r.num||'#'+r.id} — ${r.customer_nafn||''}`,
         meta:`${fmtKr(r.samtals)} · ${fmtDate(r.created_at)}`,
-        click:()=> window.App && window.App.switchView('sala-list')
+        click:()=> window.App && window.App.switchView('income')
       })) },
       { kind:'insp',    sev:'med',  label:'Þjónustutæki sem þarf að skoða', items: (dueInsp.data||[]).map(r=>{
         const d = daysFrom(r.next_insp);
-        return { title:`${r.nr||'#'+r.id} — ${r.fyrirtaeki||''}`,
+        return { title:`${r.serial||'#'+r.id} — ${r.client||''}`,
           meta: d<0 ? `${-d} dögum yfir tíma` : (d===0?'Í dag':`Eftir ${d} daga`),
-          click:()=> window.App && window.App.switchView('thjonustuaaetlun')
+          click:()=> window.App && window.App.switchView('field')
         };
       }) },
       { kind:'stock',   sev:'med',  label:'Lág-birgðir', items: (lowStock.data||[]).map(r=>({
@@ -89,9 +89,9 @@
         click:()=> window.App && window.App.switchView('tilbod')
       })) },
       { kind:'newjobs', sev:'low',  label:'Ný verk (síðustu 7 dagar)', items: (recentJobs.data||[]).map(r=>({
-        title:`${r.num||'#'+r.id} — ${r.company_nafn||''}`,
+        title:`${r.num||'#'+r.id} — ${r.customer||''}`,
         meta:`${fmtDate(r.created_at)} · ${r.status||''}`,
-        click:()=> window.App && window.App.switchView('verkbeidnir')
+        click:()=> window.App && window.App.switchView('counter')
       })) }
     ].filter(g => g.items.length > 0);
 

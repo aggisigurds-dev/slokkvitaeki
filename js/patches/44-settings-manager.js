@@ -201,7 +201,7 @@
     });
 
     // Inject gear button into top nav / header if there's a settings button placeholder
-    const existing = document.querySelector('[data-view="stillingar"]');
+    const existing = document.querySelector('[data-view="settings"]');
     if (existing && !existing.dataset.smOverride) {
       existing.dataset.smOverride = '1';
       const origClick = existing.onclick;

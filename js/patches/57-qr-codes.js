@@ -37,7 +37,7 @@
   // ── Print QR labels for selected/all devices ──────────────────────────────
   async function printLabels(deviceIds){
     const SB = getSB(); if (!SB) return;
-    let q = SB.from('uttaeki').select('id,nr,fyrirtaeki,tegund').order('nr');
+    let q = SB.from('uttaeki').select('id,serial,client,type').order('serial');
     if (deviceIds && deviceIds.length) q = q.in('id', deviceIds);
     const { data } = await q;
     if (!data || !data.length) { alert('Engin tæki fundust'); return; }
@@ -51,9 +51,9 @@
       cards += `<div class="lbl">
         <img src="${dataUrl}" alt="QR">
         <div class="info">
-          <div class="nr">${esc(d.nr||'#'+d.id)}</div>
-          <div class="co">${esc(d.fyrirtaeki||'')}</div>
-          <div class="tg">${esc(d.tegund||'')}</div>
+          <div class="nr">${esc(d.serial||'#'+d.id)}</div>
+          <div class="co">${esc(d.client||'')}</div>
+          <div class="tg">${esc(d.type||'')}</div>
         </div>
       </div>`;
     }
@@ -123,7 +123,7 @@
         const nr = document.getElementById('qr-manual').value.trim();
         if (!nr) return;
         const SB = getSB();
-        const { data } = await SB.from('uttaeki').select('id').eq('nr', nr).limit(1).single();
+        const { data } = await SB.from('uttaeki').select('id').eq('serial', nr).limit(1).single();
         if (data) { m.remove(); _showDevice(data.id); } else alert('Tæki fannst ekki');
       }};
     }
@@ -135,7 +135,7 @@
     const { data: dev } = await SB.from('uttaeki').select('*').eq('id', id).single();
     if (!dev) { alert('Tæki fannst ekki'); return; }
     if (window.DeviceHistory && window.DeviceHistory.show) window.DeviceHistory.show(dev);
-    else alert(`Tæki: ${dev.nr}\n${dev.fyrirtaeki||''}\nSíðasta skoðun: ${dev.last_insp||'—'}\nNæsta skoðun: ${dev.next_insp||'—'}`);
+    else alert(`Tæki: ${dev.serial}\n${dev.client||''}\nSíðasta skoðun: ${dev.last_insp||'—'}\nNæsta skoðun: ${dev.next_insp||'—'}`);
   }
 
   function checkHash(){

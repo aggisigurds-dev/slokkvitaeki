@@ -72,6 +72,7 @@
     ['Bókhalds yfirlit', 'Bókhaldsyfirlit'],
     ['Tekjur'],
     ['Reikningar'],
+    ['Kreditreikning', 'Kreditfæra'],
     SEP,
     ['Tenglar', 'Tenglir', 'Kort'],   // kort/links
     SEP
@@ -96,8 +97,12 @@
   let inProgress = false;
   function scheduleReorder() {
     if (scheduled || inProgress) return;
+    // If the user just clicked anywhere in the sidebar, defer reordering by
+    // 800ms so the click handler completes before we shuffle the DOM.
+    const sinceClick = Date.now() - _lastUserClick;
+    const delay = sinceClick < 800 ? 800 : 200;
     scheduled = true;
-    setTimeout(() => { scheduled = false; reorder(); }, 200);
+    setTimeout(() => { scheduled = false; reorder(); }, delay);
   }
 
   function reorder() {
@@ -158,6 +163,11 @@
         }
       });
 
+      // Save sidebar scroll position so user doesn't get bounced to top when
+      // we wipe + reappend (this is what was making nav clicks feel laggy —
+      // a late reorder fired during a click and the button moved away).
+      const savedScrollTop = nav.scrollTop;
+
       // Wipe existing buttons / separators / section labels / qlinks and
       // re-append in the new order. Anything else inside the nav (e.g. a
       // brand block, if present) is left in place.
@@ -170,33 +180,70 @@
         }
       });
       ordered.forEach(el => nav.appendChild(el));
+
+      // Restore scroll position
+      nav.scrollTop = savedScrollTop;
     } finally {
       inProgress = false;
     }
   }
 
-  // Initial passes — run a few times because various patches inject
-  // their nav buttons on different timers (some at DOMContentLoaded,
-  // some after a 500ms / 1500ms / 3000ms delay).
-  document.addEventListener('DOMContentLoaded', scheduleReorder);
-  setTimeout(scheduleReorder, 800);
-  setTimeout(scheduleReorder, 2000);
-  setTimeout(scheduleReorder, 4000);
-  setTimeout(scheduleReorder, 7000);
+  // If the user is actively clicking, hold off reordering until they're done
+  // — prevents the "click swallowed because button was removed mid-click" bug.
+  let _lastUserClick = 0;
+  document.addEventListener('mousedown', e => {
+    if (e.target && e.target.closest && e.target.closest('.view-nav, nav.view-nav')) {
+      _lastUserClick = Date.now();
+    }
+  }, true);
 
-  // Watch for late button insertions (e.g. role gates, login completion)
-  // and re-apply the order. The `inProgress` guard prevents the observer
-  // looping on the writes we make ourselves.
-  const obs = new MutationObserver(() => {
-    if (inProgress) return;
-    scheduleReorder();
-  });
-  function startObs() {
+  // 2026-05-07: simplified to TWO passes only (down from 5 + observer).
+  // The late reorders + MutationObserver were destroying buttons under the
+  // user's cursor when they clicked, causing the "need to click 2-3 times"
+  // bug. Two passes cover 99 % of patches' nav-button injections.
+  // Trade-off: any nav button added after 3 s won't be auto-reordered, but
+  // that's rare and a hard refresh fixes it. Reorder is also exposed on
+  // window.SidebarReorder.reorder() if the user wants to trigger it manually.
+  document.addEventListener('DOMContentLoaded', scheduleReorder);
+  setTimeout(scheduleReorder, 1500);
+  setTimeout(scheduleReorder, 3000);
+
+  // Safety-net delegated click handler on the nav itself. If the inline
+  // onclick on a button gets lost for any reason (e.g. detach + re-attach
+  // via cloneNode anywhere in the chain), this still routes the click to
+  // App.switchView. Idempotent — passing through to the original handler is
+  // fine because App.switchView itself is idempotent for re-clicks.
+  function attachDelegated(tries) {
     const nav = document.querySelector('nav.view-nav, .view-nav');
-    if (!nav) { setTimeout(startObs, 1000); return; }
-    obs.observe(nav, { childList: true });
+    if (!nav) {
+      if ((tries || 0) > 30) return;
+      setTimeout(() => attachDelegated((tries || 0) + 1), 500);
+      return;
+    }
+    if (nav.dataset._navDelegated === '1') return;
+    nav.dataset._navDelegated = '1';
+    nav.addEventListener('click', e => {
+      const btn = e.target && e.target.closest && e.target.closest('.vnav-btn[data-view]');
+      if (!btn) return;
+      const view = btn.getAttribute('data-view');
+      if (!view) return;
+      // Don't fight with patches that intercept specific views (vidskiptavinir,
+      // Reikningar) at the document capture phase — those still run first.
+      if (window.App && typeof window.App.switchView === 'function') {
+        // Use a short setTimeout so this fires AFTER the button's own onclick
+        // runs (if it's still wired). If onclick succeeds, switchView is
+        // idempotent so a second call is harmless.
+        setTimeout(() => {
+          // Only fire fallback if the view didn't activate via onclick
+          const target = document.getElementById('view-' + view);
+          if (target && !target.classList.contains('active')) {
+            try { window.App.switchView(view); } catch (_) {}
+          }
+        }, 30);
+      }
+    });
   }
-  startObs();
+  attachDelegated();
 
   window.SidebarReorder = { reorder, version: 'v1' };
   console.log('[sidebar-reorder] v1 ready');

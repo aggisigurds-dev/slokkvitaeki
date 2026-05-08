@@ -7,10 +7,11 @@ async function loadCache(){
   if(_pending)return _cache;
   _pending=true;
   try{
-    var r=await DB.sb.from("uttaeki").select("serial,phone,shelf").eq("status","i_geymslu");
+    // uttaeki has no `shelf` column — `location` is the closest field. Status is `geymsla` (not `i_geymslu`).
+    var r=await DB.sb.from("uttaeki").select("serial,phone,location").eq("status","geymsla");
     if(r.data){
       _cache={};
-      r.data.forEach(function(u){if(u.serial)_cache[u.serial]={phone:u.phone,shelf:u.shelf};});
+      r.data.forEach(function(u){if(u.serial)_cache[u.serial]={phone:u.phone,shelf:u.location};});
       _lastFetch=Date.now();
     }
   }catch(e){console.warn("[GeymslaCols] load err:",e);}

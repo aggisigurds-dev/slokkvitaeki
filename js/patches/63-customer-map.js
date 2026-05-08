@@ -34,10 +34,12 @@
     const cache = getCache();
     if (cache[addr]) return cache[addr];
     try {
-      const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addr+', Iceland')}`);
+      // Proxy via Netlify function — browser can't hit Nominatim directly (no CORS, no UA)
+      const r = await fetch(`/api/geocode?q=${encodeURIComponent(addr)}`);
+      if (!r.ok) return null;
       const j = await r.json();
-      if (j[0]) {
-        const c = [parseFloat(j[0].lat), parseFloat(j[0].lon)];
+      if (j && typeof j.lat === 'number' && typeof j.lon === 'number') {
+        const c = [j.lat, j.lon];
         cache[addr] = c; saveCache(cache);
         return c;
       }

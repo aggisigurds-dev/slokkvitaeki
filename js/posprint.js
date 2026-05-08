@@ -20,13 +20,21 @@ function buildReceipt(sale,lines,totals,method){
   out.push(pad('Vara',22)+padL('Fj',4)+padL('Verð',16));
   out.push(''.padEnd(W,'-'));
   lines.forEach(function(l){
-    var lineTotal = l.verd * l.qty * 1.24;
+    // Use per-line VAT % (vsk_pct) — not hardcoded 24% — so 11%-rated services
+    // print correct line totals.
+    var rate = (l.vsk_pct != null ? l.vsk_pct : (l.vskPct != null ? l.vskPct : 24));
+    var lineTotal = l.verd * l.qty * (1 + rate/100);
     out.push(pad(l.nafn,22)+padL(l.qty,4)+padL(fmtKr(lineTotal),16));
   });
   out.push(''.padEnd(W,'-'));
   out.push(pad('Án vsk',26)+padL(fmtKr(totals.sub),16));
   if(totals.disc>0){out.push(pad('Afsláttur',26)+padL('-'+fmtKr(totals.disc),16));}
-  out.push(pad('Vsk 24%',26)+padL(fmtKr(totals.vat),16));
+  // VAT label: show effective rate if all lines share one, else "Vsk".
+  var rates = {};
+  lines.forEach(function(l){ var r = (l.vsk_pct != null ? l.vsk_pct : (l.vskPct != null ? l.vskPct : 24)); rates[r]=1; });
+  var rateKeys = Object.keys(rates);
+  var vatLabel = rateKeys.length === 1 ? ('Vsk ' + rateKeys[0] + '%') : 'Vsk';
+  out.push(pad(vatLabel,26)+padL(fmtKr(totals.vat),16));
   out.push(''.padEnd(W,'='));
   out.push(pad('SAMTALS',26)+padL(fmtKr(totals.total),16));
   out.push(''.padEnd(W,'='));

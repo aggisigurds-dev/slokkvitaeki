@@ -60,7 +60,12 @@ var Counter = {
   },
   openNew: function() {
     var d=document.getElementById('nj-drop'), p=document.getElementById('nj-pick');
-    d.value=U.today(); p.value=U.tomorrow();
+    d.value=U.today();
+    // Pickup defaults from AppSettings.almennt.default_pickup_offset_days (Stillingar → Almennt).
+    var offsetDays=1;
+    try{var v=window.AppSettings&&window.AppSettings.path('almennt.default_pickup_offset_days');if(Number.isFinite(+v)&&+v>0)offsetDays=+v;}catch(e){}
+    var pd=new Date(); pd.setDate(pd.getDate()+offsetDays);
+    p.value=pd.toISOString().slice(0,10);
     ['nj-name','nj-phone','nj-notes'].forEach(function(id){document.getElementById(id).value='';});
     document.getElementById('nj-rows').innerHTML=''; this.addRow();
     Modal.open('modal-newjob');
@@ -82,7 +87,46 @@ var Counter = {
     Modal.close('modal-newjob');
     if(job) { Counter.sel=job.id; Counter.render(); setTimeout(function(){Print.showJob(job);},200); Toast.show('Verk '+job.num+' stofnað ✓'); }
   },
-  markCollected: function(id) { DB.updateJobStatus(id,'collected'); Counter.sel=null; Toast.show('Verk merkt sem sótt ✓'); },
+  markCollected: async function(id) {
+    var job = DB.getJob(id);
+    var saleNum = (job && job.num) ? String(job.num).replace(/-V\d+$/, '') : null;
+    // For Greitt síðar items: confirm payment was received BEFORE marking as
+    // collected. Prevents accidentally letting the customer leave without paying.
+    var pendingSale = null;
+    if (saleNum && DB.sb) {
+      try {
+        var r = await DB.sb.from('solur')
+          .select('id,num,samtals,greitt_med,paid_at')
+          .eq('num', saleNum)
+          .eq('greitt_med', 'greitt_sidar')
+          .is('paid_at', null)
+          .maybeSingle();
+        if (r && r.data) pendingSale = r.data;
+      } catch (e) { /* non-fatal */ }
+    }
+    if (pendingSale) {
+      var amt = Math.round(pendingSale.samtals || 0).toLocaleString('is-IS');
+      var ok = confirm('💰 Greiðsla móttekin?\n\n'+
+                       'Þetta verk var greitt síðar (Greitt við afhendingu).\n'+
+                       'Upphæð: ' + amt + ' kr\n\n'+
+                       'Smelltu OK ef þú hefur fengið greiðsluna núna.\n'+
+                       'Smelltu Hætta við ef ekki — verkið er þá ekki merkt sem sótt.');
+      if (!ok) return;
+    }
+    DB.updateJobStatus(id,'collected');
+    Counter.sel=null;
+    Toast.show('Verk merkt sem sótt ✓');
+    // Mark the matching solur as paid (Greitt síðar → paid on pickup)
+    if (saleNum && DB.sb) {
+      try {
+        await DB.sb.from('solur')
+          .update({ paid_at: new Date().toISOString(), paid_method: 'greitt_sidar_pickup' })
+          .eq('num', saleNum)
+          .eq('greitt_med', 'greitt_sidar')
+          .is('paid_at', null);
+      } catch (e) { /* non-fatal */ }
+    }
+  },
   editVerd: async function(id) {
     var job=DB.getJob(id); if(!job) return;
     var cur=job.verd?String(parseFloat(job.verd)):'';

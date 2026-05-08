@@ -5,6 +5,27 @@
   var CACHE_KEY = '_slokk_gc';
   var state = { rendered:{}, markers:{}, clickHooked:false, btnHooked:false };
 
+  // Exposed helper: switch to companies view + open a specific company detail,
+  // without racing against the async Companies.load() that App.switchView triggers.
+  // Used by mapfix click delegate and other patches (13, 18, 77, modal "Opna fyrirtæki" buttons).
+  window._openCompanySafe = function(coId){
+    coId = parseInt(coId, 10);
+    if (!coId || !window.App || !window.Companies) return;
+    window.App.view = 'companies';
+    document.querySelectorAll('.view').forEach(function(el){el.classList.remove('active');});
+    document.querySelectorAll('.vnav-btn').forEach(function(el){el.classList.remove('active');});
+    var vEl = document.getElementById('view-companies'); if(vEl) vEl.classList.add('active');
+    var nb = document.querySelector('.vnav-btn[data-view="companies"]'); if(nb) nb.classList.add('active');
+    var doOpen = function(){ if(window.Companies && Companies.openDetail) Companies.openDetail(coId); };
+    if (window.Companies && Companies.list && Companies.list.length) {
+      doOpen();
+    } else if (window.Companies && typeof Companies.load === 'function') {
+      Promise.resolve(Companies.load()).then(doOpen).catch(doOpen);
+    } else {
+      doOpen();
+    }
+  };
+
   if(!document.getElementById('mapfix-legend-css')){
     var css = document.createElement('style');
     css.id = 'mapfix-legend-css';
@@ -61,24 +82,8 @@
       var link = e.target.closest && e.target.closest('.mapfix-co-link');
       if(!link) return;
       e.preventDefault();
-      var coId = parseInt(link.getAttribute('data-co-id'), 10);
-      if(!coId || !window.App || !window.Companies) return;
-      // Switch view manually — App.switchView('companies') triggers
-      // Companies.load() which is async and overwrites openDetail with the
-      // list, leaving the user on the companies frontpage.
-      window.App.view = 'companies';
-      document.querySelectorAll('.view').forEach(function(el){el.classList.remove('active');});
-      document.querySelectorAll('.vnav-btn').forEach(function(el){el.classList.remove('active');});
-      var vEl = document.getElementById('view-companies'); if(vEl) vEl.classList.add('active');
-      var nb = document.querySelector('.vnav-btn[data-view="companies"]'); if(nb) nb.classList.add('active');
-      var doOpen = function(){ if(window.Companies && Companies.openDetail) Companies.openDetail(coId); };
-      if (window.Companies && Companies.list && Companies.list.length) {
-        doOpen();
-      } else if (window.Companies && typeof Companies.load === 'function') {
-        Promise.resolve(Companies.load()).then(doOpen).catch(doOpen);
-      } else {
-        doOpen();
-      }
+      var coId = link.getAttribute('data-co-id');
+      if (window._openCompanySafe) window._openCompanySafe(coId);
     });
     state.clickHooked = true;
   }
@@ -118,11 +123,13 @@
   async function geocodeAddress(address){
     if(!address || address.length < 3) return null;
     try {
-      var url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=is&q='+encodeURIComponent(address);
-      var r = await fetch(url, {headers:{'Accept-Language':'is'}});
+      // Proxy via Netlify function — browser can't hit Nominatim directly (no CORS, no UA)
+      var url = '/api/geocode?q='+encodeURIComponent(address);
+      var r = await fetch(url);
+      if (!r.ok) return null;
       var data = await r.json();
-      if(data && data.length){
-        return {lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon)};
+      if (data && typeof data.lat === 'number' && typeof data.lon === 'number') {
+        return {lat: data.lat, lng: data.lon};
       }
     } catch(e){ console.warn('[MapFix] geocode failed for', address, e); }
     return null;

@@ -23,7 +23,8 @@
       if (HHMM_RE.test(t) && d.children.length === 0) target = d;
     });
     if (target) {
-      target.textContent = new Date().toLocaleTimeString('is-IS', {hour: '2-digit', minute: '2-digit'});
+      // Always 24-hour format (no AM/PM) regardless of OS locale.
+      target.textContent = new Date().toLocaleTimeString('is-IS', {hour: '2-digit', minute: '2-digit', hour12: false});
     }
   }
   setInterval(tickClock, 30000);

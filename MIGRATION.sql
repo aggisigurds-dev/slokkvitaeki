@@ -75,8 +75,10 @@ ALTER TABLE dagbok ENABLE ROW LEVEL SECURITY;
 CREATE POLICY IF NOT EXISTS "Allow all" ON dagbok FOR ALL USING (true) WITH CHECK (true);
 
 -- ── Patch 30: Recurring service interval ─────────────────────
--- Stores the default inspection interval (months) per service unit.
-ALTER TABLE þjonustutaeki ADD COLUMN IF NOT EXISTS service_interval_months INT DEFAULT 12;
+-- DEPRECATED 2026-05-06: patch 30 was rewritten to update next_insp on `uttaeki`
+-- directly without using a service_interval_months column. The original ALTER
+-- referenced a non-existent table `þjonustutaeki`. Left here as a no-op marker.
+-- ALTER TABLE uttaeki ADD COLUMN IF NOT EXISTS service_interval_months INT DEFAULT 12;
 
 -- ── Patch 32: User profiles / roles ──────────────────────────
 -- Stores display name and role for each authenticated user.

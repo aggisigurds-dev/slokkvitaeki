@@ -16,12 +16,21 @@ var Companies = {
         '<div class="es-title">Engin fyrirt\u00e6ki</div>' +
         '<div class="es-sub">Smelltu \u00e1 \u201e+ N\u00fdtt fyrirt\u00e6ki\u201c</div></div>';
     } else {
+      // 2026-05-08: Use the pre-built `DB.cache.unitsByClient` index for
+      // O(1) lookup instead of scanning all units per company. At 456
+      // companies × 3000 units this changes 1.36M iterations into 456
+      // hash lookups.
+      var _ubc = (DB.cache && DB.cache.unitsByClient) || {};
       html += '<div class="company-grid">' + L.map(function(c) {
-        var units = DB.cache.units.filter(function(u) { return u.client === c.nafn; });
-        var ov = units.filter(function(u) { return u.status === 'overdue'; }).length;
+        var units = _ubc[c.nafn] || [];
+        // "Overdue" = active unit whose next inspection is in the past. Real status values
+        // are 'active'/'geymsla'/etc. — there's no 'overdue' status string.
+        var _today = new Date().toISOString().substring(0,10);
+        var ov = units.filter(function(u) { return u.status === 'active' && u.next_insp && u.next_insp < _today; }).length;
         var nafn = U.e(c.nafn);
         var simi = c.simi ? '<div class="company-meta">' + U.e(c.simi) + '</div>' : '';
-        var hv = c.heimilisFang ? '<span class="company-stat">' + U.e(c.heimilisFang) + '</span>' : '';
+        var addr = c.heimilisfang || c.heimilisFang || '';
+        var hv = addr ? '<span class="company-stat">' + U.e(addr) + '</span>' : '';
         var badge = ov > 0 ? '<span class="st st-ov">' + ov + ' \u00fatrunnin</span>' : '<span class="st st-ok">\u00cd lagi</span>';
         return '<div class="company-card" onclick="Companies.openDetail(' + c.id + ')">' +
           '<div class="company-card-top">' +

@@ -65,12 +65,8 @@
     const months = intervalMonths || DEFAULT_INTERVAL;
     const nextDate = addMonths(new Date().toISOString(), months);
     const update = { next_insp: nextDate };
-    // Try to also update service_interval_months if column exists
-    try {
-      await SB.from('þjonustutaeki').update({ ...update, service_interval_months: months }).eq('id', unitId);
-    } catch (_) {
-      await SB.from('þjonustutaeki').update(update).eq('id', unitId);
-    }
+    // service_interval_months column doesn't exist on uttaeki, just update next_insp.
+    await SB.from('uttaeki').update(update).eq('id', unitId);
     return nextDate;
   }
 
@@ -79,18 +75,15 @@
     const SB = getSB();
     if (!SB) return;
     try {
-      const start = new Date(nextDate + 'T08:00:00');
-      const end = new Date(nextDate + 'T10:00:00');
-      await SB.from('dagbok').insert({
-        title: 'Þjónustuskoðun — ' + (unit.tegund || unit.serial || 'tæki'),
-        company_id: unit.company_id || null,
-        company_nafn: unit.company_nafn || unit.company || null,
-        notes: 'Sjálfvirkt búið til. Raðnr: ' + (unit.serial || ''),
-        scheduled_start: start.toISOString(),
-        scheduled_end: end.toISOString(),
-        status: 'scheduled'
+      // verkdagbok schema: id, job_date, fyrirtaeki, athugasemdir, duft_*, lettvatn_*, kolsyra_*, done, archived
+      await SB.from('verkdagbok').insert({
+        job_date: nextDate,
+        fyrirtaeki: unit.client || unit.company_nafn || unit.company || null,
+        athugasemdir: 'Þjónustuskoðun — ' + (unit.type || unit.tegund || unit.serial || 'tæki') +
+                     ' (Sjálfvirkt búið til. Raðnr: ' + (unit.serial || '') + ')',
+        done: false
       });
-    } catch (_) {}  // dagbok table may not exist yet
+    } catch (_) {}  // safe to skip on error
   }
 
   // ── Prompt after completing a job ────────────────────────────────────────

@@ -89,7 +89,7 @@
   // ── Viewer ────────────────────────────────────────────────────────────────
   function ensureNav(){
     if (document.querySelector('.vnav-btn[data-view="audit"]')) return;
-    const sample = document.querySelector('.vnav-btn[data-view="stillingar"]');
+    const sample = document.querySelector('.vnav-btn[data-view="settings"]');
     if (!sample) return;
     const btn = sample.cloneNode(false);
     btn.className = sample.className.replace(/\bactive\b/g,'').trim();

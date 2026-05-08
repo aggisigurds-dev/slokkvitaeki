@@ -29,8 +29,24 @@
       else nav.appendChild(btn);
     }
   }
-  function init(){ ensureViewSala(); injectSalaNav(); }
+  function setSalaAsLanding(){
+    // Land on Sala by default. Skip if another view is already active (user
+    // may have clicked something during page load) or if the URL hash points
+    // somewhere else.
+    var anyActive = document.querySelector('.view.active');
+    if (anyActive) return;
+    if (location.hash && /^#?view-/.test(location.hash)) return;
+    if (window.App && typeof App.switchView === 'function') {
+      App.switchView('sala');
+    }
+  }
+  function init(){
+    ensureViewSala(); injectSalaNav();
+    // Defer landing to next tick so all view-creators (sala.js itself + any
+    // patch that injects views) have run before we activate one.
+    setTimeout(setSalaAsLanding, 0);
+  }
   if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', init); }
   else { init(); }
-  console.log('[sala.js stub v2] view-sala + nav with icon ensured');
+  console.log('[sala.js stub v3] view-sala + nav + default landing');
 })();

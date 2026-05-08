@@ -117,7 +117,7 @@
       `<div class="jli-dot ${dot}" style="flex-shrink:0;margin-top:4px"></div>` +
       '<div style="min-width:0;flex:1">' +
         `<div style="font-family:var(--mono,monospace);font-size:11px;color:#94a3b8;font-weight:600">${esc(j.num)}</div>` +
-        `<div style="font-size:13px;font-weight:600;color:#111;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
+        `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
         `<div style="font-size:11px;color:#64748b">${j.units ? j.units.length : 0} slökkvitæki ${badge}</div>` +
       '</div>' +
     '</div>';
@@ -127,7 +127,7 @@
     return '<div style="display:flex;gap:8px;padding:10px;border-radius:10px;margin-bottom:6px;background:#f0fdf4;border:1px solid #bbf7d0">' +
       '<div onclick="Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
         `<div style="font-family:var(--mono,monospace);font-size:11px;color:#059669;font-weight:600">${esc(j.num)}</div>` +
-        `<div style="font-size:13px;font-weight:600;color:#111;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
+        `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
         `<div style="font-size:11px;color:#059669">${j.units ? j.units.length : 0} slökkvitæki</div>` +
       '</div>' +
       `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt ✓</button>` +
@@ -147,7 +147,7 @@
           return '<div style="display:flex;gap:8px;padding:7px 8px;border-radius:8px;margin-bottom:3px;background:#f0fdf4;border:1px solid #bbf7d0">' +
             '<div onclick="event.stopPropagation();Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
               `<div style="font-family:var(--mono,monospace);font-size:10px;color:#059669;font-weight:600">${esc(j.num)}</div>` +
-              `<div style="font-size:12px;color:#111;margin:1px 0">${j.units ? j.units.length : 0} slökkvitæki</div>` +
+              `<div style="font-size:12px;color:#0f172a;margin:1px 0">${j.units ? j.units.length : 0} slökkvitæki</div>` +
             '</div>' +
             `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt ✓</button>` +
           '</div>';
@@ -156,7 +156,7 @@
           `<div class="jli-dot ${dot}" style="flex-shrink:0;margin-top:3px"></div>` +
           '<div style="min-width:0;flex:1">' +
             `<div style="font-family:var(--mono,monospace);font-size:10px;color:#94a3b8">${esc(j.num)}</div>` +
-            `<div style="font-size:12px;color:#111;margin:1px 0">${j.units ? j.units.length : 0} slökkvitæki ${badge}</div>` +
+            `<div style="font-size:12px;color:#0f172a;margin:1px 0">${j.units ? j.units.length : 0} slökkvitæki ${badge}</div>` +
           '</div>' +
         '</div>';
       }).join('') + '</div>';
@@ -209,7 +209,7 @@
 
     const html =
       '<div style="padding:10px 16px;border-bottom:1px solid var(--brd,#e4e6ea);display:flex;align-items:center;gap:10px;background:#f8f9fb;flex-wrap:wrap">' +
-        '<div style="font-size:13px;font-weight:600;color:#111">Verkröð</div>' +
+        '<div style="font-size:13px;font-weight:600;color:#0f172a">Verkröð</div>' +
         `<span style="font-size:12px;color:var(--ink3,#8891a0)">${jobs.length} verk í vinnslu</span>` +
         '<button class="btn btn-outline btn-sm" onclick="Field.openScan()" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg>Skanna tæki</button>' +
       '</div>' +
@@ -275,7 +275,7 @@
       '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">' +
         '<div style="min-width:0;flex:1">' +
           `<div style="font-family:var(--mono,monospace);font-size:11px;color:#94a3b8;font-weight:600">${esc(j.num)}</div>` +
-          `<div style="font-size:13px;font-weight:600;color:#111;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
+          `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
           `<div style="font-size:11px;color:#64748b">${done}/${total} lokið · Afhending ${fd}</div>` +
         '</div>' + badge +
       '</div>' +
@@ -297,7 +297,7 @@
         return '<div onclick="event.stopPropagation();Workshop.select(' + j.id + ')" style="display:flex;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;margin-bottom:3px;background:#f8fafc;border:1px solid #f1f5f9" onmouseover="this.style.background=\'#eef2f7\'" onmouseout="this.style.background=\'#f8fafc\'">' +
           '<div style="min-width:0;flex:1">' +
             `<div style="font-family:var(--mono,monospace);font-size:10px;color:#94a3b8">${esc(j.num)}</div>` +
-            `<div style="font-size:12px;color:#111;margin:1px 0">${done}/${total} lokið ${badge}</div>` +
+            `<div style="font-size:12px;color:#0f172a;margin:1px 0">${done}/${total} lokið ${badge}</div>` +
           '</div>' +
         '</div>';
       }).join('') + '</div>';
@@ -307,7 +307,7 @@
       '<div style="padding:10px 12px;display:flex;align-items:center;gap:8px">' +
         `<span style="color:#64748b;font-size:13px;width:14px">${caret}</span>` +
         '<div style="min-width:0;flex:1">' +
-          `<div style="font-size:13px;font-weight:600;color:#111;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(co.name)}</div>` +
+          `<div style="font-size:13px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(co.name)}</div>` +
           `<div style="font-size:11px;color:#64748b">${co.jobs.length} verk · ${co.doneUnits}/${co.totalUnits} lokið</div>` +
         '</div>' +
       '</div>' +
@@ -320,6 +320,7 @@
   // to display:flex with default row direction. That squishes our 3-col / 2-col grid
   // (which is one of several sibling children) into a single column on the left.
   // Force flex-direction:column so our children stack toolbar→grid→modal vertically.
+  // Also: at ≤900px (mobile), columns get too narrow to read, so stack them too.
   if (!document.getElementById('_cw_redesign_css')) {
     const css = document.createElement('style');
     css.id = '_cw_redesign_css';
@@ -328,6 +329,21 @@
       '  flex-direction: column !important;' +
       '  align-items: stretch !important;' +
       '  overflow: hidden !important;' +
+      '}' +
+      '@media (max-width: 900px) {' +
+      '  #view-counter > div[style*="grid-template-columns:1fr 1fr 1fr"],' +
+      '  #view-workshop > div[style*="grid-template-columns:1fr 1fr"] {' +
+      '    grid-template-columns: 1fr !important;' +
+      '    height: auto !important;' +
+      '    overflow: auto !important;' +
+      '  }' +
+      '  #counter-detail-modal > div, #workshop-detail-modal > div {' +
+      '    max-width: 96vw !important;' +
+      '  }' +
+      '  #counter-detail-modal [style*="grid-template-columns:1fr 320px"] {' +
+      '    grid-template-columns: 1fr !important;' +
+      '  }' +
+      '  #counter-detail-modal aside { display: none !important; }' +
       '}';
     document.head.appendChild(css);
   }

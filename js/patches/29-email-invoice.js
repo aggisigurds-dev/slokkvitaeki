@@ -155,23 +155,28 @@
 
   // ── Send via Resend API ───────────────────────────────────────────────────
   async function sendResend(toEmail, sale) {
+    // Browser can't hit Resend directly (no CORS). Proxy via /api/email-send.
+    // The proxy reads RESEND_API_KEY env var on Netlify; falls back to apiKey in body for legacy.
     const apiKey = localStorage.getItem('resend_api_key') || '';
     const from = localStorage.getItem('email_from') || 'noreply@slokkvitaeki.is';
-    if (!apiKey) throw new Error('Resend API lykill ekki stilltur — sjá Stillingar');
     const payload = {
       from,
       to: [toEmail],
       subject: 'Reikningur ' + (sale.num || '') + ' frá Slökkvitæki ehf',
-      html: buildHtmlEmail(sale)
+      html: buildHtmlEmail(sale),
+      apiKey: apiKey || undefined  // server prefers env var; this is legacy fallback
     };
-    const r = await fetch('https://api.resend.com/emails', {
+    const r = await fetch('/api/email-send', {
       method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + apiKey, 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
     });
     if (!r.ok) {
       const err = await r.json().catch(() => ({ message: r.statusText }));
-      throw new Error(err.message || 'HTTP ' + r.status);
+      if (err.error === 'API_KEY_MISSING') {
+        throw new Error('Resend API lykill ekki stilltur — settu RESEND_API_KEY í Netlify env eða Stillingar');
+      }
+      throw new Error(err.message || err.error || 'HTTP ' + r.status);
     }
     return await r.json();
   }

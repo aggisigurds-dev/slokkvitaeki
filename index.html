@@ -32,8 +32,8 @@
   <div class="brand">
       <div class="brand-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2C9.5 5 8 7.5 8 10a4 4 0 008 0c0-2.5-1.5-5-4-8zm-2 14h4v6H10v-6z"/></svg></div>
       <div class="brand-text">
-        <div class="brand-name">Slökkvitæki ehf</div>
-        <div class="brand-sub">Brunakerfi</div>
+        <div class="brand-name" data-banner-title>Slökkvitæki ehf</div>
+        <div class="brand-sub" data-banner-subtitle>Brunakerfi</div>
       </div>
     </div>
 <nav class="view-nav">
@@ -58,7 +58,7 @@
   <div class="topbar-right">
     <div class="sync-dot" id="sync-dot" title="Tengt við gagnagrunn"></div>
     <div class="alert-badge" id="alert-badge">0</div>
-    <div class="online-chip"><div class="sync-dot" id="sync-dot"></div><span>Tengt</span></div><div class="user-chip">
+    <div class="online-chip"><div class="sync-dot"></div><span>Tengt</span></div><div class="user-chip">
       <div class="user-avatar">JS</div>
       <span>Jón S.</span>
     </div>
@@ -153,8 +153,7 @@
       <div class="fg"><label class="fl">Móttökudagur</label><input class="fi" id="nj-drop" type="date"/></div>
       <div class="fg"><label class="fl">Afhendingardagur</label><input class="fi" id="nj-pick" type="date"/></div>
     </div>
-    <div class="fg"><label class="fl">Athugasemdir</label><input class="fi" id="nj-notes" placeholder="Valfrjálst…"/></div>
-    <div class="frow2"><div class="fg"><label class="fl">Verð (kr)</label><input class="fi" id="nj-verd" type="number" placeholder="0" min="0" step="100"/></div><div class="fg"><label class="fl">Athugasemdir</label><input class="fi" id="nj-notes" placeholder="Valfrjálst..."/></div></div><div class="units-hd">
+    <div class="frow2"><div class="fg"><label class="fl">Verð (kr)</label><input class="fi" id="nj-verd" type="number" placeholder="0" min="0" step="100"/></div><div class="fg"><label class="fl">Athugasemdir</label><input class="fi" id="nj-notes" placeholder="Valfrjálst…"/></div></div><div class="units-hd">
       <span class="fl" style="margin:0">Slökkvitæki</span>
       <button class="add-unit-btn" onclick="Counter.addRow()">+ Bæta við</button>
     </div>
@@ -274,241 +273,134 @@
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/config.js"></script>
-<script src="js/db.js"></script>
+<script src="js/db.js?v=20260508a"></script>
 <script src="js/utils.js"></script>
-<script src="js/modal.js"></script>
-<script src="/js/patches/00-legacy.js?v=20260503"></script>
-<script src="/js/patches/01-sala-suite.js?v=20260504a"></script>
+<script src="js/modal.js?v=20260506e"></script>
+<script src="/js/patches/00-legacy.js?v=20260508d"></script>
+<script src="/js/patches/01-sala-suite.js?v=20260508b"></script>
 <script src="/js/patches/02-vidsk-tab.js?v=20260503"></script>
-<script src="/js/patches/03-vidsk-revamp.js?v=20260504b"></script>
+<script src="/js/patches/03-vidsk-revamp.js?v=20260508d"></script>
 <script src="/js/patches/04-verkdagbok.js?v=20260503b"></script>
 <script src="/js/patches/05-mapfix-orange-remover.js?v=20260503"></script>
 <script src="/js/patches/06-pos-fixes.js?v=20260503"></script>
-<script src="/js/patches/07-sala-checkout-dialog.js?v=20260504c"></script>
+<script src="/js/patches/07-sala-checkout-dialog.js?v=20260506q"></script>
 <script src="/js/patches/08-qr-label-customer.js?v=20260503p"></script>
 <script src="/js/patches/09-verkdagbok-attachments.js?v=20260503"></script>
-<script src="/js/patches/10-sala-receipt-redesign.js?v=20260504c"></script>
+<script src="/js/patches/10-sala-receipt-redesign.js?v=20260506j"></script>
 <script src="/js/patches/11-bokhalds-yfirlit.js?v=20260504b"></script>
 <script src="/js/patches/12-mapfix-kill-dots.js?v=20260503"></script>
-<script src="/js/patches/13-field-company-deeplink.js?v=20260503"></script>
+<script src="/js/patches/13-field-company-deeplink.js?v=20260506b"></script>
 <script src="/js/patches/14-companies-openedit.js?v=20260503"></script>
 <script src="/js/patches/15-sidebar-counts.js?v=20260503"></script>
 <script src="/js/patches/16-switchview-dispatch.js?v=20260503"></script>
 <script src="/js/patches/17-form-validation.js?v=20260503"></script>
-<script src="/js/patches/18-nav-history.js?v=20260503"></script>
+<script src="/js/patches/18-nav-history.js?v=20260506b"></script>
 <script src="/js/patches/19-kennitala-lookup.js?v=20260504a"></script>
 <script src="/js/patches/20-mark-invoice-paid.js?v=20260504a"></script>
-<script src="/js/patches/21-inspection-forecast.js?v=20260503a"></script>
+<script src="/js/patches/21-inspection-forecast.js?v=20260506c"></script>
 <script src="/js/patches/22-vsk-report.js?v=20260503a"></script>
-<script src="/js/patches/23-aging-report.js?v=20260504a"></script>
+<script src="/js/patches/23-aging-report.js?v=20260506c"></script>
 <script src="/js/patches/24-contact-log.js?v=20260503a"></script>
 <script src="/js/patches/25-customer-ledger.js?v=20260504a"></script>
 <script src="/js/patches/26-credit-invoice.js?v=20260503a"></script>
 <script src="/js/patches/27-tilbod-quote.js?v=20260504a"></script>
 <script src="/js/patches/28-calendar.js?v=20260503a"></script>
-<script src="/js/patches/29-email-invoice.js?v=20260503a"></script>
-<script src="/js/patches/30-recurring-service.js?v=20260503a"></script>
+<script src="/js/patches/29-email-invoice.js?v=20260506c"></script>
+<script src="/js/patches/30-recurring-service.js?v=20260506c"></script>
 <script src="/js/patches/31-route-optimizer.js?v=20260503a"></script>
 <script src="/js/patches/32-user-auth.js?v=20260504a"></script>
 <script src="/js/patches/33-sms-reminder.js?v=20260503a"></script>
-<script src="/js/patches/34-dashboard.js?v=20260503a"></script>
-<script src="/js/patches/35-service-certificate.js?v=20260503a"></script>
+<script src="/js/patches/34-dashboard.js?v=20260507a"></script>
+<script src="/js/patches/35-service-certificate.js?v=20260506c"></script>
 <script src="/js/patches/36-stock-management.js?v=20260503a"></script>
-<script src="/js/patches/37-bulk-reminders.js?v=20260503a"></script>
-<script src="/js/patches/38-insp-form.js?v=20260503a"></script>
+<script src="/js/patches/37-bulk-reminders.js?v=20260506c"></script>
+<script src="/js/patches/38-insp-form.js?v=20260506c"></script>
 <script src="/js/patches/39-purchase-orders.js?v=20260503a"></script>
 <script src="/js/patches/40-time-tracking.js?v=20260503a"></script>
 <script src="/js/patches/41-expense-tracking.js?v=20260503a"></script>
-<script src="/js/patches/42-weekly-report.js?v=20260504a"></script>
+<script src="/js/patches/42-weekly-report.js?v=20260506c"></script>
 <script src="/js/patches/43-job-profitability.js?v=20260504a"></script>
-<script src="/js/patches/44-settings-manager.js?v=20260503a"></script>
+<script src="/js/patches/44-settings-manager.js?v=20260506c"></script>
 <script src="/js/patches/45-verkdagbok-photos.js?v=20260504a"></script>
-<script src="/js/patches/46-quick-links.js?v=20260503a"></script>
+<script src="/js/patches/46-quick-links.js?v=20260507a"></script>
 <script src="/js/patches/47-mileage-log.js?v=20260503a"></script>
-<script src="/js/patches/48-notifications.js?v=20260504b"></script>
-<script src="/js/patches/49-backup.js?v=20260503b"></script>
+<script src="/js/patches/48-notifications.js?v=20260506b"></script>
+<script src="/js/patches/49-backup.js?v=20260506c"></script>
 <script src="/js/patches/50-service-contracts.js?v=20260503d"></script>
-<script src="/js/patches/51-customer-portal.js?v=20260504a"></script>
+<script src="/js/patches/51-customer-portal.js?v=20260506c"></script>
 <script src="/js/patches/52-tech-route.js?v=20260503b"></script>
 <script src="/js/patches/53-auto-email-invoice.js?v=20260503b"></script>
-<script src="/js/patches/54-sales-analytics.js?v=20260503b"></script>
-<script src="/js/patches/55-product-images.js?v=20260503b"></script>
-<script src="/js/patches/56-global-search.js?v=20260504a"></script>
-<script src="/js/patches/57-qr-codes.js?v=20260503e"></script>
+<script src="/js/patches/54-sales-analytics.js?v=20260506c"></script>
+<script src="/js/patches/55-product-images.js?v=20260506c"></script>
+<script src="/js/patches/56-global-search.js?v=20260506b"></script>
+<script src="/js/patches/57-qr-codes.js?v=20260506c"></script>
 <script src="/js/patches/58-device-history.js?v=20260504a"></script>
 <script src="/js/patches/59-technicians.js?v=20260504a"></script>
 <script src="/js/patches/60-signature-pad.js?v=20260503e"></script>
-<script src="/js/patches/61-command-center.js?v=20260504b"></script>
+<script src="/js/patches/61-command-center.js?v=20260506c"></script>
 <script src="/js/patches/62-templates.js?v=20260503e"></script>
-<script src="/js/patches/63-customer-map.js?v=20260503e"></script>
-<script src="/js/patches/64-audit-log.js?v=20260503e"></script>
-<script src="/js/patches/65-refill-log.js?v=20260503e"></script>
-<script src="/js/patches/66-pricelist-seed.js?v=20260504g"></script>
+<script src="/js/patches/63-customer-map.js?v=20260506c"></script>
+<script src="/js/patches/64-audit-log.js?v=20260506c"></script>
+<script src="/js/patches/65-refill-log.js?v=20260506c"></script>
+<script src="/js/patches/66-pricelist-seed.js?v=20260507a"></script>
 <script src="/js/patches/67-data-reset.js?v=20260504c"></script>
-<script src="/js/patches/68-sidebar-reorder.js?v=20260504c"></script>
-<script src="/js/patches/70-mobile-light-theme.js?v=20260504c"></script>
+<script src="/js/patches/68-sidebar-reorder.js?v=20260507c"></script>
+<!-- patch 70 (mobile-light-theme) DISABLED 2026-05-06: user wants mobile to match desktop theme (dark when desktop is dark) -->
+<!-- <script src="/js/patches/70-mobile-light-theme.js?v=20260504c"></script> -->
 <script src="/js/patches/71-tilbod-photos.js?v=20260504a"></script>
 <script src="/js/patches/72-customer-import.js?v=20260504a"></script>
-<script src="/js/patches/73-bulk-add-units.js?v=20260506a"></script>
-<script src="/js/patches/74-sala-tweaks.js?v=20260506a"></script>
+<script src="/js/patches/73-bulk-add-units.js?v=20260508b"></script>
+<script src="/js/patches/74-sala-tweaks.js?v=20260506b"></script>
 <script src="/js/patches/75-fyrirtaeki-detail-enrich.js?v=20260506a"></script>
 <script src="/js/patches/76-sidebar-polish.js?v=20260506d"></script>
-<script src="/js/patches/77-gjaldfallid-group.js?v=20260506a"></script>
-<script src="/js/patches/78-counter-workshop-redesign.js?v=20260506d"></script>
+<script src="/js/patches/77-gjaldfallid-group.js?v=20260506b"></script>
+<script src="/js/patches/78-counter-workshop-redesign.js?v=20260506e"></script>
 <script src="/js/patches/79-sidebar-trim.js?v=20260506a"></script>
-<script src="/js/patches/66-dark-mode.js?v=20260503e"></script>
-<script src="js/features.js"></script>
+<script src="/js/patches/80-aux-products.js?v=20260507a"></script>
+<script src="/js/patches/81-sala-shortcuts.js?v=20260506b"></script>
+<script src="/js/patches/82-reikningar-monthly.js?v=20260506c"></script>
+<script src="/js/patches/83-verkbeidni-payment.js?v=20260506a"></script>
+<script src="/js/patches/84-print-test.js?v=20260508b"></script>
+<script src="/js/patches/85-app-settings.js?v=20260507b"></script>
+<script src="/js/patches/86-settings-ui.js?v=20260508a"></script>
+<script src="/js/patches/87-sala-from-settings.js?v=20260507b"></script>
+<script src="/js/patches/88-apply-utlit-almennt.js?v=20260507a"></script>
+<script src="/js/patches/89-monthly-inspection-strip.js?v=20260508a"></script>
+<script src="/js/patches/90-unit-row-actions.js?v=20260507a"></script>
+<script src="/js/patches/91-important-companies.js?v=20260508a"></script>
+<script src="/js/patches/92-credit-by-num.js?v=20260508a"></script>
+<script src="/js/patches/93-detail-stay-open.js?v=20260508a"></script>
+<script src="/js/patches/94-document-templates.js?v=20260508d"></script>
+<script src="/js/patches/95-barcode-manager.js?v=20260507a"></script>
+<script src="/js/patches/96-document-attachments.js?v=20260507a"></script>
+<script src="/js/patches/97-notes-scratchpad.js?v=20260507a"></script>
+<script src="/js/patches/98-document-fill-in.js?v=20260507a"></script>
+<script src="/js/patches/99-companies-list-fix.js?v=20260508b"></script>
+<script src="/js/patches/100-back-button-fix.js?v=20260507a"></script>
+<script src="/js/patches/101-unit-detail-modal.js?v=20260507c"></script>
+<script src="/js/patches/102-visit-report.js?v=20260507b"></script>
+<script src="/js/patches/103-workshop-row-actions.js?v=20260508a"></script>
+<script src="/js/patches/104-workshop-add-unit.js?v=20260508a"></script>
+<script src="/js/patches/105-sala-line-units.js?v=20260508a"></script>
+<script src="/js/patches/106-checkout-unit-prompt.js?v=20260508c"></script>
+<script src="/js/patches/107-dedupe-company-notes.js?v=20260508a"></script>
+<script src="/js/patches/109-floorplan-banner.js?v=20260508b"></script>
+<script src="/js/patches/110-cleanup-pos-walkins.js?v=20260508c"></script>
+<script src="/js/patches/111-company-attachments.js?v=20260508a"></script>
+<script src="/js/patches/112-form-builder.js?v=20260508b"></script>
+<script src="/js/patches/117-vorur-picker.js?v=20260508a"></script>
+<script src="/js/patches/113-company-pricing.js?v=20260508c"></script>
+<script src="/js/patches/114-unified-pos-search.js?v=20260508i"></script>
+<script src="/js/patches/115-cart-qty-input.js?v=20260508b"></script>
+<script src="/js/patches/116-vidsk-pricing.js?v=20260508c"></script>
+<script src="/js/patches/118-cart-savings.js?v=20260508b"></script>
+<script src="/js/patches/119-send-back-to-workshop.js?v=20260508a"></script>
+<script src="/js/patches/120-broken-units-workflow.js?v=20260508c"></script>
+<script src="/js/patches/121-pickup-checkout.js?v=20260508a"></script>
+<script src="/js/patches/66-dark-mode.js?v=20260506b"></script>
+<script src="js/features.js?v=20260508a"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <script src="js/scanner.js"></script>
-<script>
-var Geymsla = {
-  items: [],
-  filter: '',
-  load: async function() {
-    var el = document.getElementById('geymsla-main');
-    if (!el) return;
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3)">Hleður...</div>';
-    if (DB.online) {
-      var r = await DB.sb.from('uttaeki').select('*').eq('status','geymsla').order('created_at', {ascending:false});
-      this.items = r.data || [];
-    } else { this.items = []; }
-    this.render();
-  },
-  render: function() {
-    var el = document.getElementById('geymsla-main');
-    if (!el) return;
-    var now = new Date();
-    var items = this.items;
-    var q = this.filter.toLowerCase();
-    if (q) items = items.filter(function(i){
-      return (i.serial||'').toLowerCase().includes(q)||(i.client||'').toLowerCase().includes(q)||(i.notes||'').toLowerCase().includes(q);
-    });
-    var overdueItems = this.items.filter(function(i){
-      if (!i.created_at) return false;
-      return (now - new Date(i.created_at))/(1000*60*60*24*365) >= 1;
-    });
-    var html = '';
-    if (overdueItems.length) {
-      html += '<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'+
-        '<div><div style="font-weight:600;color:#991b1b">&#9888; '+overdueItems.length+' tæki hafa legið yfir 12 mánuði!</div>'+
-        '<div style="font-size:13px;color:#b91c1c">Þessi tæki eru tilúüin til að henda</div></div>'+
-        '<button class="btn" style="background:#dc2626;color:#fff;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:600;font-size:13px" onclick="Geymsla.disposeOverdue()">Henda '+overdueItems.length+' tæki</button>'+
-      '</div>';
-    }
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap">'+
-      '<div><div style="font-size:19px;font-weight:600">Geymsla</div>'+
-      '<div style="font-size:13px;color:var(--ink3)">'+this.items.length+' tæki &middot; '+overdueItems.length+' komin yfir 12 mánuði</div></div>'+
-      '<button class="btn btn-primary btn-sm" onclick="Geymsla.openNew()">+ Skrá tæki</button>'+
-    '</div>';
-    html += '<input type="text" placeholder="Leita að raðnúmeri eða viðskiptavini..." '+
-      'value="'+U.e(this.filter)+'" oninput="Geymsla.filter=this.value;Geymsla.render()" '+
-      'style="width:100%;padding:9px 12px;border:1px solid var(--brd);border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;background:var(--bg1);color:var(--ink1)">';
-    if (!items.length) {
-      html += '<div class="empty-state"><div class="es-icon">&#128230;</div>'+
-        '<div class="es-title">'+(this.filter?'Ekkert fannst':'Engin tæki í geymslu')+'</div>'+
-        '<div class="es-sub">'+(this.filter?'Reyndu aðra leit':'Bættu við tæki sem érðu keypt með fyrirtækinu')+'</div></div>';
-    } else {
-      html += '<div class="tcard"><table class="dtbl"><thead><tr>'+
-        '<th>Raðnúmer</th><th>Tegund</th><th>Stærð</th><th>Viðskiptavinur</th><th>Aldur</th><th>Staða</th><th></th>'+
-        '</tr></thead><tbody>';
-      items.forEach(function(i) {
-        var age = i.created_at ? (now - new Date(i.created_at))/(1000*60*60*24) : 0;
-        var months = Math.floor(age/30);
-        var isOv = months >= 12;
-        var ageStr = isOv ?
-          '<span style="color:#dc2626;font-weight:600">'+months+' mán. &#9888;</span>' :
-          '<span>'+months+' mán.</span>';
-        var badge = isOv ?
-          '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">Henta</span>' :
-          '<span class="st st-ok">Í geymslu</span>';
-        html += '<tr>'+
-          '<td><span class="ser">'+U.e(i.serial)+'</span></td>'+
-          '<td>'+U.e(i.type||'')+'</td>'+
-          '<td>'+U.e(i.size||'')+'</td>'+
-          '<td>'+(i.client?U.e(i.client):'<span style="color:var(--ink3);font-style:italic">Okunnur</span>')+'</td>'+
-          '<td>'+ageStr+'</td>'+
-          '<td>'+badge+'</td>'+
-          '<td><div style="display:flex;gap:4px">'+
-            (i.client||i.phone?'<button class="btn btn-ghost btn-sm" onclick="Geymsla.contact('+i.id+')" title="Hafa samband">&#128222;</button>':'')+  // phone stored in pressure
-            '<button class="btn btn-ghost btn-sm" onclick="Geymsla.markReturned('+i.id+')" style="color:var(--grn)">&#10003; Sótt</button>'+
-            '<button class="btn btn-ghost btn-sm" onclick="Geymsla.disposeOne('+i.id+')" style="color:#dc2626">&#128465;</button>'+
-          '</div></td>'+
-        '</tr>';
-      });
-      html += '</tbody></table></div>';
-    }
-    var byType = {};
-    this.items.forEach(function(i){ if(i.type&&i.type!=='geymsla') byType[i.type]=(byType[i.type]||0)+1; });
-    var typeKeys = Object.keys(byType);
-    if (typeKeys.length) {
-      html += '<div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">';
-      typeKeys.forEach(function(k){ html += '<div class="ic" style="min-width:110px;text-align:center"><div class="ic-lbl">'+U.e(k)+'</div><div style="font-size:20px;font-weight:700">'+byType[k]+'</div></div>'; });
-      html += '</div>';
-    }
-    el.innerHTML = html;
-  },
-  openNew: function() {
-    ['gs-serial','gs-size','gs-client','gs-phone','gs-notes'].forEach(function(id){ var e=document.getElementById(id);if(e)e.value=''; });
-    var t=document.getElementById('gs-type');if(t)t.selectedIndex=0;
-    Modal.open('modal-geymsla');
-  },
-  submitNew: async function() {
-    var serial = document.getElementById('gs-serial').value.trim();
-    if (!serial) { Toast.show('Sláðu inn raðnúmer'); return; }
-    var typeEl = document.getElementById('gs-type');
-    var data = {
-      serial: serial,
-      type: typeEl ? typeEl.value : 'ABC Duft',
-      size: (document.getElementById('gs-size')||{}).value||'',
-      client: (document.getElementById('gs-client')||{}).value.trim()||null,
-      phone: (document.getElementById('gs-phone')||{}).value.trim()||null,
-      notes: (document.getElementById('gs-notes')||{}).value.trim()||null,
-      status: 'geymsla',
-      next_insp: U.today()
-    };
-    var btn = document.querySelector('#modal-geymsla .btn-primary');
-    if (btn) { btn.disabled=true; btn.textContent='Vista...'; }
-    if (DB.online) {
-      var r = await DB.sb.from('uttaeki').insert(data).select().single();
-      if (r.error) { Toast.show('Villa: '+r.error.message); if(btn){btn.disabled=false;btn.textContent='Vista tæki';} return; }
-      this.items.unshift(r.data);
-    } else { data.id=Date.now(); data.created_at=new Date().toISOString(); this.items.unshift(data); }
-    if (btn) { btn.disabled=false; btn.textContent='Vista tæki'; }
-    Modal.close('modal-geymsla');
-    this.render();
-    Toast.show('Tæki skráð í geymslu ✓');
-  },
-  contact: function(id) {
-    var i = this.items.find(function(x){return x.id===id;});
-    if (!i) return;
-    var msg = 'Slökkvitæki ehf: Við höfum slökkvitæki ('+i.serial+') í geymslu hjá okkur. Vinsamlegast hafið samband.';
-    if (i.phone) { window.open('sms:'+i.phone+'?body='+encodeURIComponent(msg)); }
-    else { Toast.show('Engir símanúmer skráður'); }
-  },
-  markReturned: async function(id) {
-    if (!confirm('Mæla við tækinu sem sótt?')) return;
-    if (DB.online) await DB.sb.from('uttaeki').update({status:'ok'}).eq('id',id);
-    this.items = this.items.filter(function(i){return i.id!==id;});
-    this.render(); Toast.show('Tæki mælt sem sótt ✓');
-  },
-  disposeOne: async function(id) {
-    if (!confirm('Henda þessu tæki?')) return;
-    if (DB.online) await DB.sb.from('uttaeki').update({status:'disposed'}).eq('id',id);
-    this.items = this.items.filter(function(i){return i.id!==id;});
-    this.render(); Toast.show('Tæki hentt');
-  },
-  disposeOverdue: async function() {
-    var now = new Date();
-    var ids = this.items.filter(function(i){
-      return i.created_at && (now-new Date(i.created_at))/(1000*60*60*24*365)>=1;
-    }).map(function(i){return i.id;});
-    if (!ids.length) return;
-    if (!confirm('Henda '+ids.length+' tæki sem hafa legið yfir 12 mánuði?')) return;
-    if (DB.online) { for (var j=0;j<ids.length;j++) await DB.sb.from('uttaeki').update({status:'disposed'}).eq('id',ids[j]); }
-    this.items = this.items.filter(function(i){return ids.indexOf(i.id)===-1;});
-    this.render(); Toast.show(ids.length+' tæki hentt');
-  }
-};</script>
+    <script src="js/scanner.js?v=20260506b"></script>
 
   <!-- Geymsla modal -->
   <div class="modal" id="modal-geymsla">
@@ -952,21 +844,21 @@ var Lanstaeki = {
   document.addEventListener('DOMContentLoaded', function(){ setTimeout(update, 2000); });
 })();
 </script>
-<script src="/js/newfeatures.js?v=1776797624642"></script>
-    <script src="/js/mapfix.js?v=1776865959315"></script>
+<script src="/js/newfeatures.js?v=20260507a"></script>
+    <script src="/js/mapfix.js?v=20260506c"></script>
     <script src="/js/floorplanfix.js?v=1776869886801"></script>
     <script src="/js/navfix.js?v=1776869886801"></script>
     <script src="/js/vbu.js?v=1776877291301"></script>
-    <script src="/js/pos.js?v=20260504f"></script>
-    <script src="/js/tekjur.js?v=1776976348949"></script>
+    <script src="/js/pos.js?v=20260508f"></script>
+    <script src="/js/tekjur.js?v=20260506a"></script>
 <script src="/js/v9.js?v=1776797624642"></script>
-<script src="/js/gaedakerfi.js?v=1776797624642"></script>
-<script src="/js/scanmode.js?v=1776797624642"></script>
+<!-- DISABLED 2026-05-07: <script src="/js/gaedakerfi.js?v=20260506a"></script> -->
+<script src="/js/scanmode.js?v=20260506c"></script>
 <script src="/js/detailview.js?v=1776797624642"></script>
 <script src="/js/qrprint.js?v=1776797624642"></script>
 <script src="/js/qrscan.js?v=1776797624642"></script>
-<script src="/js/geymslacols.js?v=1776797624642"></script>
-<script src="/js/companieslist.js?v=1776797624642"></script>
+<script src="/js/geymslacols.js?v=20260506c"></script>
+<script src="/js/companieslist.js?v=20260508a"></script>
 <script src="/js/kennitalafield.js?v=1776797624642"></script>
 <script src="/js/editjobbutton.js?v=1776797624642"></script>
 <script src="/js/qrbulkprint.js?v=1776797624642"></script>
@@ -975,9 +867,9 @@ var Lanstaeki = {
 <script src="/js/mobilenav.js?v=1776797624642"></script>
 <script src="/js/printphonefix.js?v=1776797624642"></script>
 <script src="/js/qrtag.js?v=1776797624642"></script>
-<script src="/js/posprint.js?v=1776797624642"></script>
-<script src="/js/vorur.js?v=20260503q"></script>
-<script src="/js/sala.js?v=1776797624642"></script>
+<script src="/js/posprint.js?v=20260506b"></script>
+<script src="/js/vorur.js?v=20260507b"></script>
+<script src="/js/sala.js?v=20260506a"></script>
 <script src="/js/searchbox.js?v=1776797624642"></script>
 <script src="/js/demoseed.js?v=1776797624642"></script>
 <script src="/js/fixcompanysave.js?v=1776797624642"></script>

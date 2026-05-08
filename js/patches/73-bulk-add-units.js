@@ -128,15 +128,30 @@
     const addBtn = findAddButton(scope);
     if (!addBtn) return;
     if (addBtn.parentNode.querySelector('._bulkadd_btn')) return;
-    // Try to extract the company/customer name from sibling onclick
+
+    // Determine if button is on vidsk-main or companies-main, then look up
+    // the customer/company name from the right place. Two channels:
+    //   (a) Companies — onclick has  ".addUnit(NUM, 'NAME')"  → parse out
+    //   (b) Vidskiptavinir — button has id="vk-add-tæki" and the customer
+    //       name is rendered in the .company-name div on the same page
     const onclickStr = addBtn.getAttribute('onclick') || '';
+    const isVidsk = addBtn.id === 'vk-add-tæki' ||
+                    !!addBtn.closest('#vidsk-main, #view-vidskiptavinir');
     let nafn = '';
-    const m = onclickStr.match(/['"]([^'"]+)['"]\s*\)/); // last quoted arg
-    if (m) nafn = m[1].replace(/\\'/g, "'");
+    let custId = null;
+
+    // (a) Companies: parse onclick — the name is typically the last quoted arg
+    const nameMatch = onclickStr.match(/['"]([^'"]+)['"]\s*\)/);
+    const idMatch = onclickStr.match(/\.addUnit\((\d+)/);
+    if (nameMatch) nafn = nameMatch[1].replace(/\\'/g, "'");
+    if (idMatch) custId = parseInt(idMatch[1], 10);
+
+    // (b) Vidskiptavinir: read from .company-name (vidsk-revamp's heading
+    // for the customer's display name). Falls back to h2 only — NEVER h3,
+    // which matches unrelated section headings like patch 116's "💎 Sérkjör".
     if (!nafn) {
-      // Fallback: nearest title-like element
-      const root = addBtn.closest('[id$="-main"], .modal-box, body') || document.body;
-      const titleEl = root.querySelector('h2, h3, [style*="font-size:21px"], [style*="font-size:19px"]');
+      const root = addBtn.closest('#vidsk-main, [id$="-main"], .modal-box, body') || document.body;
+      const titleEl = root.querySelector('.company-name, h2, [style*="font-size:21px"], [style*="font-size:19px"]');
       nafn = (titleEl && titleEl.textContent.trim()) || '';
     }
     if (!nafn) return;
@@ -147,14 +162,17 @@
     btn.textContent = '+ Mörg tæki';
     btn.onclick = (e) => {
       e.stopPropagation();
-      // After successful insert, re-render the company/customer detail
+      // Pick the right refresh callback for the surface we're on
       let refreshFn = null;
-      if (window.Companies && Companies.openDetail) {
-        const idMatch = onclickStr.match(/\.addUnit\((\d+)/);
-        if (idMatch) {
-          const cid = parseInt(idMatch[1], 10);
-          refreshFn = () => Companies.openDetail(cid);
-        }
+      if (isVidsk) {
+        refreshFn = () => {
+          // Re-open the vidsk detail to pick up the new units
+          if (window.Vidskiptavinir && typeof Vidskiptavinir.refresh === 'function') {
+            try { Vidskiptavinir.refresh(); } catch (_) {}
+          }
+        };
+      } else if (window.Companies && Companies.openDetail && custId) {
+        refreshFn = () => Companies.openDetail(custId);
       }
       openBulkModal(nafn, refreshFn);
     };

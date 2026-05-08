@@ -180,9 +180,10 @@
   async function openForCompany(companyNafn, companyAddress, technicianName) {
     const SB = getSB();
     if (!SB) { if(window.Toast)Toast.show('Gagngrunnur ekki tengdur'); return; }
-    const { data: units } = await SB.from('þjonustutaeki')
-      .select('serial,tegund,sterd,pressure,next_insp,last_insp,notes')
-      .or(`company_nafn.eq.${companyNafn},client.eq.${companyNafn}`)
+    // PostgREST or() requires careful escaping of values; use eq() for safety.
+    const { data: units } = await SB.from('uttaeki')
+      .select('serial,type,size,pressure,next_insp,last_insp,notes')
+      .eq('client', companyNafn)
       .order('serial');
     showCert({ customer: companyNafn, address: companyAddress, units: units||[], technician: technicianName, notes: '' });
   }

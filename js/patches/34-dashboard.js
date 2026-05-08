@@ -212,13 +212,13 @@
         <button class="dash-act-btn" onclick="App.switchView('counter');Counter&&Counter.openNew&&Counter.openNew()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ný verkbeiðni
         </button>
-        <button class="dash-act-btn" onclick="App.switchView('yfirlit-tilbod')">
+        <button class="dash-act-btn" onclick="if(window.Tilbod&&Tilbod.open)Tilbod.open();else App.switchView('tilbod')">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:14px;height:14px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nýtt tilboð
         </button>
         <button class="dash-act-btn" onclick="if(window.CalendarView)CalendarView.open();else App.switchView('calendar')">
           📅 Opna dagbók
         </button>
-        <button class="dash-act-btn" onclick="if(window.InspForecast)InspForecast.open();else App.switchView('inspforecast')">
+        <button class="dash-act-btn" onclick="if(window.InspForecast)InspForecast.open();else App.switchView('insp-forecast')">
           📈 Þjónustuáætlun
         </button>
         <button class="dash-act-btn" onclick="if(window.AgingReport)AgingReport.open()">
@@ -267,11 +267,11 @@
     App.switchView._dashPatch = true;
   })();
 
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-      if (typeof App !== 'undefined' && App.switchView) App.switchView('yfirlit');
-    }, 600);
-  });
+  // 2026-05-07: removed the auto-`switchView('yfirlit')` on DOMContentLoaded —
+  // it overrode the user's chosen starting view (Stillingar → Útlit → Sjálfgefin
+  // upphafssíða). Sala/Dashboard/etc. landing is now decided by patch 88
+  // reading AppSettings.almennt.starting_view (defaults to 'sala').
+  // To go to Yfirlit on load, set Stillingar → Útlit → Síða þegar app opnast = Yfirlit.
 
   window.Dashboard = { refresh: () => render(true) };
   console.log('[dashboard] installed');

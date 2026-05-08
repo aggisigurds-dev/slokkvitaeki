@@ -194,7 +194,7 @@
     if (!rec.magn_kg) { alert('Sláðu inn magn'); return; }
     // Try resolving uttaeki_id from nr
     if (rec.uttaeki_nr) {
-      const { data: dev } = await SB.from('uttaeki').select('id').eq('nr', rec.uttaeki_nr).limit(1).single();
+      const { data: dev } = await SB.from('uttaeki').select('id').eq('serial', rec.uttaeki_nr).limit(1).single();
       if (dev) rec.uttaeki_id = dev.id;
     }
     const { error } = await SB.from('afyllingar').insert(rec);

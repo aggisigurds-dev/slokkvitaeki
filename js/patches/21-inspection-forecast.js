@@ -116,19 +116,19 @@
 
     // Load service units with next_insp
     const { data: unitData } = await SB
-      .from('þjonustutaeki')
-      .select('id,serial,tegund,company_id,company_nafn,next_insp,staðsetning')
+      .from('uttaeki')
+      .select('id,serial,type,size,client,next_insp,location')
       .not('next_insp', 'is', null)
       .order('next_insp', { ascending: true });
 
     units = (unitData || []).map(u => ({
       id: u.id,
       serial: u.serial || '',
-      tegund: u.tegund || '',
-      company_id: u.company_id,
-      company: u.company_nafn || '—',
+      tegund: u.type || '',
+      company_id: null,
+      company: u.client || '—',
       next_insp: u.next_insp,
-      stadsetning: u.staðsetning || ''
+      stadsetning: u.location || ''
     }));
 
     // Try to compute average from recent sales if not manually set

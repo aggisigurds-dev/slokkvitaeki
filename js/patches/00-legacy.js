@@ -546,15 +546,13 @@ function hookPOSRender(){
 
 /* ===== 5. SETJA Í REIKNING (uses POS state) ===== [FIX #4] */
 function addInvBtn(){
-  var co=document.getElementById('pos-checkout');
-  if(!co || document.getElementById('pos-invoice'))return;
-  var b=document.createElement('button');
-  b.id='pos-invoice';
-  b.type='button';
-  b.textContent='\uD83D\uDCCB Setja \u00ed Reikning';
-  b.style.cssText='margin-top:8px;width:100%;padding:14px;border:1px solid #475569;border-radius:10px;background:#1e293b;color:#cbd5e1;font-weight:600;cursor:pointer;font-size:15px';
-  b.addEventListener('click',doInv);
-  co.parentNode.insertBefore(b, co.nextSibling);
+  // No-op: takkinn "Setja \u00ed Reikning" hefur veri\u00F0 fjarl\u00E6g\u00F0ur 2026-05-08.
+  // \u00CDtarlegri \u00FAtsk\u00FDring: notandi smellir n\u00FAna \u00E1 gr\u00E6na "\u00C1fram" takkann
+  // og velur "Setja \u00ed reikning" sem grei\u00F0slua\u00F0fer\u00F0 \u00ed checkout-modal-inum,
+  // svo a\u00F0 sj\u00E1lfst\u00E6\u00F0ur takki ne\u00F0an vi\u00F0 var ru\u00F0ningur.
+  // Fj\u00E6rl\u00E6gum hann \u00FArra ef hann var settur inn \u00E1\u00F0ur en patch-i\u00F0 deplodi.
+  var existing = document.getElementById('pos-invoice');
+  if (existing && existing.parentNode) existing.parentNode.removeChild(existing);
 }
 function doInv(){
   if(!window.DB || !window.DB.sb){toast('\u274c Ekki tengt','#dc2626');return;}
@@ -1131,7 +1129,9 @@ function openReikModal(){
   m.addEventListener('click',function(e){if(e.target===m)m.remove();});
 
   if(!window.DB || !window.DB.sb)return;
-  window.DB.sb.from('sala_transactions').select('*').order('created_at',{ascending:false}).then(function(r){
+  // Reikningar modal should only show invoice-type rows (Setja í reikning + Greitt síðar).
+  // Sales paid by card/cash (type='sale') belong in Bókhaldsyfirlit / Tekjur, not here.
+  window.DB.sb.from('sala_transactions').select('*').neq('type','sale').order('created_at',{ascending:false}).then(function(r){
     var holder=document.getElementById('_reik_table');
     if(!holder)return;
     if(r.error){holder.innerHTML='<div style="color:#dc2626">Villa: '+esc(r.error.message)+'</div>';return;}
@@ -1142,11 +1142,10 @@ function openReikModal(){
     if(open.length){
       html+='<h3 style="color:#fff;margin:0 0 8px">\u23f3 \u00d3greitt</h3>'+invTbl(open,true);
     }
-    if(paid.length){
-      html+='<h3 style="color:#fff;margin:24px 0 8px">\u2705 Greitt</h3>'+invTbl(paid,false);
-    }
+    // Greitt section removed \u2014 once paid, rows no longer matter for the monthly
+    // heimabanki upload. User reviews paid history in B\u00f3khaldsyfirlit instead.
     if(!html){
-      html='<div style="opacity:.6;padding:40px;text-align:center">Engir reikningar enn</div>';
+      html='<div style="opacity:.6;padding:40px;text-align:center">Engir \u00f3greiddir reikningar</div>';
     }
     holder.innerHTML=html;
     holder.querySelectorAll('.mk-paid').forEach(function(btn){
@@ -1400,8 +1399,10 @@ console.log('[patch-master] loaded with all fixes');
 
 /* FIX A: Map coords from Google Places + force-clear old markers */
 (function(){
-  Object.keys(localStorage).forEach(function(k){if(k.startsWith("fp_"))localStorage.removeItem(k);});
-  var O=Storage.prototype.setItem;Storage.prototype.setItem=function(k,v){if(k&&k.startsWith&&k.startsWith("fp_"))return;return O.call(this,k,v);};
+  // 2026-05-08: REMOVED destructive fp_ wipe + setItem block. They were
+  // erasing every uploaded teikning at page load and silently dropping
+  // new ones. Floor plans now persist correctly via FloorPlan.save →
+  // localStorage.setItem("fp_<id>", ...).
   // FORCE replace geocode cache with Google Places data
   var C={};
   function a(n,lat,lng){C[n]={lat:lat,lng:lng};}
@@ -1925,7 +1926,15 @@ console.log('[patch-master] loaded with all fixes');
   if(!document.getElementById('_pm_vorur_css')){
     var css = document.createElement('style');
     css.id = '_pm_vorur_css';
-    css.textContent = '#view-vorur{background:#fff !important;min-height:100vh;padding:0 !important}#view-vorur>div{max-width:100% !important;padding:12px 16px !important;box-sizing:border-box !important}#view-vorur>div>div[style*="grid"]{grid-template-columns:repeat(auto-fill,180px) !important;gap:12px !important;justify-content:center !important}#view-vorur .vorur-card,#view-vorur>div>div>div{background:#fff !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;box-shadow:0 1px 4px rgba(0,0,0,0.06) !important;overflow:hidden !important;width:180px !important;box-sizing:border-box !important}#view-vorur img{width:100% !important;height:140px !important;object-fit:contain !important;display:block !important;background:#fff !important;padding:8px !important;box-sizing:border-box !important}#view-vorur>div>div{max-width:100% !important;overflow:hidden !important}@media(max-width:768px){#view-vorur>div>div[style*="grid"]{grid-template-columns:repeat(auto-fill,150px) !important;gap:8px !important}#view-vorur .vorur-card,#view-vorur>div>div>div{width:150px !important}#view-vorur img{height:110px !important}}';
+    // 2026-05-07: rewrote to only target the actual card class (.vorur-card)
+    // and not "any deep div under #view-vorur". The old depth-based selector
+    // (#view-vorur>div>div>div) was matching the new category-section wrappers
+    // and forcing them to width:180px, which broke the grouped layout.
+    css.textContent =
+      '#view-vorur{background:#fff !important;min-height:100vh;padding:0 !important}' +
+      '#view-vorur > div{max-width:100% !important;padding:12px 16px !important;box-sizing:border-box !important}' +
+      '#view-vorur .vorur-card{background:#fff !important;border:1px solid #e2e8f0 !important;border-radius:10px !important;box-shadow:0 1px 4px rgba(0,0,0,0.06) !important;overflow:hidden !important;box-sizing:border-box !important}' +
+      '#view-vorur .vorur-card img{width:100% !important;height:140px !important;object-fit:contain !important;display:block !important;background:#fff !important;padding:8px !important;box-sizing:border-box !important}';
     document.head.appendChild(css);
   }
   console.log('[pm] vorur styling fix active');
@@ -2614,6 +2623,15 @@ console.log('[patch-master] loaded with all fixes');
     window.DB.sb.from('uttaeki').select('*').eq('serial',serial).single().then(function(r){
       if(!r.data){alert('Taeki ekki fundid: '+serial);return;}
       var d=r.data;
+      // 2026-05-08: ef nýja UnitDetail modal er hlaðinn (patch 101) þá notum
+      // hann frekar — gamli „_pm_dev" modallinn er ófullkominn (vantar
+      // sögu, athugasemdir-tímalína, áfyllingar o.fl.). UnitDetail er
+      // sami modal og verkstæðismaður opnar með ✏️ Breyta hnappi á
+      // tækjarúðum (patch 103). Föst sömu aðferð alls staðar.
+      if (window.UnitDetail && typeof window.UnitDetail.open === 'function') {
+        window.UnitDetail.open(d.id, 'uttaeki');
+        return;
+      }
       var m=document.createElement('div');m.className='_pm_dev_modal';
       m.innerHTML='<div class="_pm_dev_box">' +
         '<h3>'+serial+'</h3>' +
@@ -2675,23 +2693,34 @@ console.log('[patch-master] loaded with all fixes');
   }
   window._pmOpenDevice = openDeviceModal;
 
-  // Make equipment table rows clickable
+  // Make equipment table rows clickable.
+  // 2026-05-08: was reading first <td> as the serial — that broke on
+  // Vidskiptavinir profile where column 1 is "Tegund" (type, e.g. "ABC Duft")
+  // and column 2 is "Raðnúmer". Now we find the serial column dynamically by
+  // matching the <th> text, then read the corresponding <td>.
   function hookDeviceRows(){
     var tables = document.querySelectorAll('table');
     tables.forEach(function(table){
-      var ths = table.querySelectorAll('th');
-      var hasSerial = false;
-      ths.forEach(function(th){if(/RA[ÐD]N|serial/i.test(th.textContent))hasSerial=true;});
-      if(!hasSerial) return;
+      var ths = table.querySelectorAll('thead th');
+      if (!ths.length) ths = table.querySelectorAll('th');
+      var serialColIdx = -1;
+      ths.forEach(function(th, i){
+        if (serialColIdx < 0 && /RA[ÐD]N|serial/i.test(th.textContent)) serialColIdx = i;
+      });
+      if (serialColIdx < 0) return;
       var rows = table.querySelectorAll('tbody tr');
       rows.forEach(function(row){
-        if(row.dataset._pmDevHook) return;
-        row.dataset._pmDevHook='1';
+        if (row.dataset._pmDevHook) return;
+        row.dataset._pmDevHook = '1';
         row.classList.add('_pm_dev_row');
-        var serial = row.querySelector('td') ? row.querySelector('td').textContent.trim() : '';
-        if(!serial) return;
-        row.addEventListener('click',function(e){
-          if(e.target.tagName==='SELECT'||e.target.tagName==='BUTTON'||e.target.tagName==='INPUT'||e.target.tagName==='A') return;
+        var tds = row.querySelectorAll('td');
+        var cell = tds[serialColIdx];
+        var serial = cell ? cell.textContent.trim() : '';
+        // Sanity check: serial should look like a unit code, not a type label
+        if (!serial || serial === '—') return;
+        row.addEventListener('click', function(e){
+          if (e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON' ||
+              e.target.tagName === 'INPUT' || e.target.tagName === 'A') return;
           openDeviceModal(serial);
         });
       });

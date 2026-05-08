@@ -82,7 +82,7 @@
     const SB = getSB(); if (!SB) return;
     const yearStart = new Date(); yearStart.setMonth(0,1); yearStart.setHours(0,0,0,0);
     const lastYear = new Date(yearStart); lastYear.setFullYear(lastYear.getFullYear()-1);
-    const { data, error } = await SB.from('solur').select('id,num,company_nafn,samtals,created_at')
+    const { data, error } = await SB.from('solur').select('id,num,customer_nafn,samtals,created_at')
       .gte('created_at', lastYear.toISOString()).order('created_at', { ascending:false });
     if (error) { main.innerHTML=`<div style="padding:30px;text-align:center;color:#dc2626">${esc(error.message)}</div>`; return; }
 
@@ -99,7 +99,7 @@
     // Top customers
     const byCo = {};
     thisYear.forEach(s => {
-      const k = s.company_nafn || '—';
+      const k = s.customer_nafn || '—';
       if (!byCo[k]) byCo[k] = { rev:0, cnt:0 };
       byCo[k].rev += parseFloat(s.samtals)||0;
       byCo[k].cnt++;

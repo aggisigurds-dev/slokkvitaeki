@@ -12,6 +12,9 @@
   var ICONS = {
     flame: '<svg viewBox="0 0 24 24" fill="currentColor" width="28" height="28"><path d="M12 2c-1 4-4 6-4 10a4 4 0 0 0 8 0c0-1.5-.5-3-1.5-4 0 2-1 3-2.5 3 0-3 2-5 0-9z"/></svg>',
     cylinder: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><rect x="7" y="5" width="10" height="15" rx="1"/><rect x="9" y="3" width="6" height="2" rx="0.5"/><line x1="9" y1="9" x2="15" y2="9"/></svg>',
+    // CO₂ hleðsla — explicit gray fills so the icon stays gray even though the
+    // surrounding tile uses red `color:` for the background tint.
+    co2_hledsla: '<svg viewBox="0 0 24 24" width="28" height="28" xmlns="http://www.w3.org/2000/svg"><rect x="7" y="5" width="10" height="15" rx="1.2" fill="#cbd5e1" stroke="#475569" stroke-width="1.4" stroke-linejoin="round"/><rect x="9" y="3" width="6" height="2" rx="0.4" fill="#94a3b8" stroke="#475569" stroke-width="1"/><line x1="9" y1="9" x2="15" y2="9" stroke="#475569" stroke-width="1"/><text x="12" y="15" text-anchor="middle" font-size="4" font-weight="700" font-family="Arial,sans-serif" fill="#475569">CO₂</text></svg>',
     check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M12 2L4 6v6c0 5 3.5 9.5 8 10 4.5-.5 8-5 8-10V6l-8-4z"/><polyline points="9 12 11.5 14.5 16 10"/></svg>',
     wrench: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.3 2.3L13 9l2.3-2.3z"/></svg>',
     smoke: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="28" height="28"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>',
@@ -19,8 +22,10 @@
     mount: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><path d="M4 4v16M4 8h8a3 3 0 0 1 3 3v2a3 3 0 0 1-3 3H4"/></svg>',
     cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><circle cx="9" cy="20" r="1.5"/><circle cx="17" cy="20" r="1.5"/><path d="M3 4h2l2.5 11h11l2.5-7H6"/></svg>'
   };
-  function iconFromNafn(n){n=(n||'').toLowerCase();if(/co2|co₂/i.test(n))return'cylinder';if(/áfyll|afyll/i.test(n))return'flame';if(/ársk|skoð/i.test(n))return'check';if(/viðhald|viðger|vidger/i.test(n))return'wrench';if(/slökk|tæki/i.test(n))return'cylinder';if(/reyk|skynjari/i.test(n))return'smoke';if(/teppi|blanket/i.test(n))return'blanket';if(/veggfesting|festing|mount/i.test(n))return'mount';return'cart';}
-  function colorFromNafn(n){n=(n||'').toLowerCase();if(/áfyll|afyll/i.test(n)&&/co2|co₂/i.test(n))return'#0d6efd';if(/áfyll|afyll/i.test(n))return'#dc2626';if(/ársk|skoð/i.test(n))return'#b45309';if(/viðhald|viðger|vidger/i.test(n))return'#6b7280';if(/co2|co₂/i.test(n))return'#0d6efd';if(/slökk|tæki/i.test(n))return'#dc2626';if(/reyk/i.test(n))return'#ea580c';if(/teppi|blanket/i.test(n))return'#059669';if(/veggfesting|festing/i.test(n))return'#7c3aed';return'#475569';}
+  // CO₂ er ein "fjölskylda" — alltaf rautt + grátt gashylki íkon óháð því
+  // hvort um er að ræða hleðslu, áfyllingu, yfirferð eða annað.
+  function iconFromNafn(n){n=(n||'').toLowerCase();if(/co2|co₂/i.test(n))return'co2_hledsla';if(/áfyll|afyll/i.test(n))return'flame';if(/ársk|skoð/i.test(n))return'check';if(/viðhald|viðger|vidger/i.test(n))return'wrench';if(/slökk|tæki/i.test(n))return'cylinder';if(/reyk|skynjari/i.test(n))return'smoke';if(/teppi|blanket/i.test(n))return'blanket';if(/veggfesting|festing|mount/i.test(n))return'mount';return'cart';}
+  function colorFromNafn(n){n=(n||'').toLowerCase();if(/co2|co₂/i.test(n))return'#dc2626';if(/áfyll|afyll/i.test(n))return'#dc2626';if(/ársk|skoð/i.test(n))return'#b45309';if(/viðhald|viðger|vidger/i.test(n))return'#6b7280';if(/slökk|tæki/i.test(n))return'#dc2626';if(/reyk/i.test(n))return'#ea580c';if(/teppi|blanket/i.test(n))return'#059669';if(/veggfesting|festing/i.test(n))return'#7c3aed';return'#475569';}
   function fmtKr(n){var s=Math.round(n).toString();var parts=[];while(s.length>3){parts.unshift(s.slice(-3));s=s.slice(0,-3);}parts.unshift(s);return parts.join('.')+' kr';}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
   function loadAll(){
@@ -33,6 +38,19 @@
   function lookupKt(kt){
     kt = kt.replace(/[^0-9]/g, '');
     if (kt.length !== 10) return Promise.resolve(null);
+    // 2026-05-08: Special "Staðgreitt" kennitala — never look up, return synthetic.
+    if (kt === '9999999999') {
+      return Promise.resolve({
+        nafn: 'Staðgreitt',
+        kennitala: '999999-9999',
+        simi: '',
+        heimilisfang: '',
+        afslattur_pct: 0,
+        athugasemdir: '',
+        co_id: null,
+        source: 'walkin'
+      });
+    }
     // Query BOTH fyrirtaeki (companies) and vidskiptavinir (individuals)
     // in parallel. Same kennitala can exist in both tables (e.g. when a
     // company is auto-created from a sale, but the user later set the
@@ -93,36 +111,148 @@
     var av = ex>0 ? ad * (vsk/ex) : 0;
     return { ex:ad, vsk:av, total:ad+av, raw_ex:ex, pct_disc:pctDisc, abs_disc:absDisc };
   }
-  function render(){var v=document.getElementById('view-sala');if(!v)return;if(v.getAttribute('data-pos-v3')==='1')return;v.innerHTML=buildHTML();v.setAttribute('data-pos-v3','1');bindEvents();rerenderDynamic();}
-  function rerenderDynamic(){var l=document.getElementById('pos-lines');if(l)l.innerHTML=buildLinesHTML();var t=document.getElementById('pos-totals');if(t)t.innerHTML=buildTotalsHTML();var sv=document.getElementById('pos-services');if(sv)sv.innerHTML=buildServicesHTML();var pr=document.getElementById('pos-products');if(pr)pr.innerHTML=buildProductsHTML();var cb=document.getElementById('pos-checkout');if(cb){var tt=totals();cb.innerHTML=tt.total>0?('✓ GREIÐA · '+fmtKr(tt.total)):'✓ GREIÐA';cb.disabled=tt.total===0;}}
+  function render(){var v=document.getElementById('view-sala');if(!v)return;if(v.getAttribute('data-pos-v3')==='1')return;v.innerHTML=buildHTML();v.setAttribute('data-pos-v3','1');bindEvents();rerenderCatalog();rerenderDynamic();}
+  // 2026-05-08: rerenderCatalog (vörur+þjónustur) er aðskilið frá
+  // rerenderDynamic (karfa+totals). Áður var allt í einu sem þýddi að í
+  // hvert sinn sem notandi bætti vöru í körfu var ALLUR vörulistinn
+  // endurbyggður frá grunni — myndir hlóðu sig aftur og grid reflowaði,
+  // sem leit út eins og óstöðugt layout. Núna: vörur+þjónustur
+  // endurbyggjast eingöngu í initial render() og þegar loadAll() hleður
+  // nýjum gögnum (sem gerist bara þegar notandi kemur aftur á Sala).
+  function rerenderCatalog(){
+    var sv=document.getElementById('pos-services');if(sv)sv.innerHTML=buildServicesHTML();
+    var pr=document.getElementById('pos-products');if(pr)pr.innerHTML=buildProductsHTML();
+  }
+  function rerenderDynamic(){
+    var l=document.getElementById('pos-lines');if(l)l.innerHTML=buildLinesHTML();
+    var t=document.getElementById('pos-totals');if(t)t.innerHTML=buildTotalsHTML();
+    var cb=document.getElementById('pos-checkout');
+    if(cb){var tt=totals();cb.innerHTML=tt.total>0?('✓ ÁFRAM · '+fmtKr(tt.total)):'✓ ÁFRAM';cb.disabled=tt.total===0;}
+  }
   function buildBannerHTML(){
     var now = new Date();
     var _wk = ['Sun','Mán','Þri','Mið','Fim','Fös','Lau'];
     var _mo = ['jan','feb','mar','apr','maí','jún','júl','ágú','sep','okt','nóv','des'];
     var dagur = _wk[now.getDay()]+' '+now.getDate()+'. '+_mo[now.getMonth()];
-    var klst = now.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit'});
-    return '<div class="pos-banner" style="background:linear-gradient(135deg,#1a0505 0%,#3b0a0a 25%,#5c1010 50%,#2d0808 75%,#0f0505 100%);color:#fff;padding:0;border-radius:14px;margin:16px;margin-bottom:12px;display:flex;align-items:stretch;box-shadow:0 8px 32px rgba(180,20,20,0.35);position:relative;overflow:hidden;min-height:92px">' +
-      '<div style="width:6px;background:linear-gradient(180deg,#fbbf24,#ef4444,#991b1b,#ef4444,#fbbf24);box-shadow:0 0 12px rgba(251,191,36,0.6)"></div>' +
+    var klst = now.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit',hour12:false});
+    // Pick first starfsmadur name from AppSettings (Stillingar → Starfsmenn) as default.
+    var staffName = 'Kassi';
+    try{var _slist=window.AppSettings&&window.AppSettings.path('starfsmenn');if(Array.isArray(_slist)){var _first=_slist.find(function(s){return s&&s.name&&s.name.trim();});if(_first)staffName=_first.name.trim();}}catch(_e){}
+    // Pull branding from AppSettings (Stillingar → Branding). Fallbacks keep
+    // the banner sensible during initial load before settings hydrate.
+    var b = (window.AppSettings && window.AppSettings.path('branding')) || {};
+    var primary = b.primary_color || '#C93C1D';
+    var title = b.banner_text || b.company_name || 'Slökkvitæki ehf';
+    var subtitle = b.banner_subtitle || 'Slökkvitækjaþjónusta';
+    var addrLine = ((b.address1 || '') + (b.address2 ? ', ' + b.address2 : '') + (b.phone ? ' · ' + b.phone : '')).trim();
+    var style = b.banner_style || 'litrikt';
+    function darken(hex, amount){
+      var h = (hex || '#C93C1D').replace('#',''); if (h.length===3) h = h.split('').map(c=>c+c).join('');
+      var r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), bl = parseInt(h.slice(4,6),16);
+      r = Math.max(0, Math.round(r * (1 - amount)));
+      g = Math.max(0, Math.round(g * (1 - amount)));
+      bl = Math.max(0, Math.round(bl * (1 - amount)));
+      return '#' + ('0'+r.toString(16)).slice(-2) + ('0'+g.toString(16)).slice(-2) + ('0'+bl.toString(16)).slice(-2);
+    }
+    var dark = darken(primary, 0.55);
+    var darker = darken(primary, 0.78);
+
+    if (style === 'mynd') {
+      // Custom banner image — uses PNG files in /img/ with mobile + retina variants.
+      // Picture element handles srcset/source so we get the right resolution per device.
+      // Clock + date appears as a small overlay on the right.
+      var imgUrl = (b.banner_image_url || '/img/banner-1x.png').trim();
+      var img2x  = (b.banner_image_2x_url || '/img/banner-2x.png').trim();
+      var imgMob = (b.banner_image_mobile_url || '/img/banner-mobile.png').trim();
+      return '<div class="pos-banner" style="border-radius:10px;margin:16px;margin-bottom:12px;overflow:hidden;position:relative;line-height:0">' +
+        '<picture>' +
+          '<source media="(max-width: 720px)" srcset="' + esc(imgMob) + '">' +
+          '<source media="(min-resolution: 1.5dppx)" srcset="' + esc(img2x) + '">' +
+          '<img src="' + esc(imgUrl) + '" alt="' + esc(title) + '" style="width:100%;height:auto;display:block">' +
+        '</picture>' +
+        '<div style="position:absolute;top:50%;right:18px;transform:translateY(-50%);background:rgba(15,23,42,0.82);color:#fff;padding:10px 18px;border-radius:12px;font-weight:600;line-height:1.35;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);text-align:right;box-shadow:0 4px 14px rgba(0,0,0,0.35);border:1px solid rgba(255,255,255,0.12);min-width:130px;z-index:5">' +
+          '<div style="font-size:10px;opacity:0.65;text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-bottom:3px">Kassakerfi</div>' +
+          '<div style="font-size:22px;font-variant-numeric:tabular-nums;font-weight:800">'+esc(klst)+'</div>' +
+          '<div style="font-size:11px;opacity:0.9;margin-top:2px;font-weight:600">'+esc(dagur)+'</div>' +
+          '<div style="font-size:11px;opacity:0.75;margin-top:3px">Starfsm: '+esc(staffName)+'</div>' +
+        '</div>' +
+      '</div>';
+    }
+    if (style === 'minimalt') {
+      // Solid color, slim height, just title + clock
+      return '<div class="pos-banner" style="background:'+primary+';color:#fff;border-radius:10px;margin:16px;margin-bottom:12px;padding:12px 20px;display:flex;justify-content:space-between;align-items:center;min-height:50px;box-shadow:0 1px 3px rgba(0,0,0,0.08)">' +
+        '<div style="font-size:18px;font-weight:700;letter-spacing:-0.01em">'+esc(title)+'</div>' +
+        '<div style="font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;opacity:0.85">'+esc(klst)+' · '+esc(dagur)+'</div>' +
+      '</div>';
+    }
+    if (style === 'ljos') {
+      // Light/white background with primary color accents
+      return '<div class="pos-banner" style="background:#fff;color:#0f172a;border:1px solid #e2e8f0;border-left:5px solid '+primary+';border-radius:10px;margin:16px;margin-bottom:12px;padding:14px 20px;display:flex;justify-content:space-between;align-items:center;min-height:60px;box-shadow:0 1px 3px rgba(0,0,0,0.04)">' +
+        '<div>' +
+          '<div style="font-size:20px;font-weight:800;color:#0f172a;letter-spacing:-0.01em">'+esc(title)+'</div>' +
+          '<div style="font-size:12px;color:#64748b;margin-top:2px">'+esc(subtitle)+(addrLine?' · '+esc(addrLine):'')+'</div>' +
+        '</div>' +
+        '<div style="text-align:right">' +
+          '<div style="font-size:18px;font-weight:700;color:'+primary+';font-variant-numeric:tabular-nums">'+esc(klst)+'</div>' +
+          '<div style="font-size:11px;color:#64748b;margin-top:2px">'+esc(dagur)+'</div>' +
+        '</div>' +
+      '</div>';
+    }
+    if (style === 'hreint') {
+      // Clean single-gradient — no diagonal overlays, no stripes
+      return '<div class="pos-banner" style="background:linear-gradient(135deg,'+primary+',' +dark+ ');color:#fff;border-radius:12px;margin:16px;margin-bottom:12px;padding:18px 26px;display:flex;justify-content:space-between;align-items:center;min-height:80px;box-shadow:0 4px 14px rgba(0,0,0,0.12)">' +
+        '<div>' +
+          '<div style="font-size:24px;font-weight:800;letter-spacing:-0.02em;line-height:1">'+esc(title)+'</div>' +
+          '<div style="font-size:12px;opacity:0.85;margin-top:5px;font-weight:500">'+esc(subtitle)+'</div>' +
+          (addrLine?'<div style="font-size:11px;opacity:0.65;margin-top:2px">'+esc(addrLine)+'</div>':'') +
+        '</div>' +
+        '<div style="text-align:right">' +
+          '<div style="font-size:11px;opacity:0.6;text-transform:uppercase;letter-spacing:0.08em;font-weight:600">Kassakerfi</div>' +
+          '<div style="font-size:22px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums">'+esc(klst)+'</div>' +
+          '<div style="font-size:11px;opacity:0.7;margin-top:2px">'+esc(dagur)+'</div>' +
+        '</div>' +
+      '</div>';
+    }
+    // Default 'litrikt' — original colourful banner with side stripe + diagonal overlays
+    return '<div class="pos-banner" style="background:linear-gradient(135deg,'+darker+' 0%,'+dark+' 50%,'+darker+' 100%);color:#fff;padding:0;border-radius:14px;margin:16px;margin-bottom:12px;display:flex;align-items:stretch;box-shadow:0 8px 32px rgba(180,20,20,0.35);position:relative;overflow:hidden;min-height:92px">' +
+      '<div style="width:6px;background:linear-gradient(180deg,#fbbf24,'+primary+','+darker+','+primary+',#fbbf24);box-shadow:0 0 12px rgba(251,191,36,0.6)"></div>' +
       '<div style="position:absolute;top:0;right:0;width:70%;height:100%;background:linear-gradient(120deg,transparent 0%,transparent 20%,rgba(251,191,36,0.12) 20%,rgba(251,191,36,0.08) 35%,transparent 35%,transparent 40%,rgba(239,68,68,0.15) 40%,rgba(239,68,68,0.10) 55%,transparent 55%,transparent 60%,rgba(251,191,36,0.08) 60%,rgba(251,191,36,0.05) 75%,transparent 75%,transparent 80%,rgba(239,68,68,0.06) 80%,rgba(239,68,68,0.03) 90%,transparent 90%);pointer-events:none"></div>' +
-      '<div style="position:absolute;bottom:0;left:0;width:100%;height:40%;background:linear-gradient(180deg,transparent,rgba(251,191,36,0.06));pointer-events:none"></div>' +
       '<div style="flex:1;padding:18px 28px;display:flex;justify-content:space-between;align-items:center;position:relative;z-index:1">' +
         '<div style="display:flex;align-items:center;gap:18px">' +
-          '<div style="width:68px;height:68px;background:linear-gradient(135deg,#ef4444,#991b1b);border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(239,68,68,0.5),0 0 24px rgba(251,191,36,0.2)">' +
+          '<div style="width:68px;height:68px;background:linear-gradient(135deg,'+primary+','+darker+');border-radius:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(239,68,68,0.5)">' +
             '<svg viewBox="0 0 48 48" width="42" height="42"><path d="M24 6c-2 7-8 10-8 18a8 8 0 0 0 16 0c0-4-2-6-4-8 0 3-2 4.5-3 4.5 0-4 2-6 -1-14.5z" fill="#fbbf24"/><path d="M24 14c-1.5 4-5 6-5 11a5 5 0 0 0 10 0c0-2-.5-3-2-4 0 1.5-1 2.5-2 2.5 0-2 1-4 -1-9.5z" fill="#fff" opacity="0.9"/></svg>' +
           '</div>' +
           '<div>' +
-            '<div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;line-height:1;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,0.5)">Slökkvitæki<span style="color:#ef4444"> ehf</span></div>' +
-            '<div style="font-size:12px;opacity:0.75;margin-top:5px;letter-spacing:0.06em;text-transform:uppercase;font-weight:600">Slökkvitækjaþjónusta</div>' +
-            '<div style="font-size:11px;opacity:0.5;margin-top:2px">Helluhraun 10, 220 Hafnarfirði · 565-4080</div>' +
+            '<div style="font-size:26px;font-weight:800;letter-spacing:-0.02em;line-height:1;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,0.5)">'+esc(title)+'</div>' +
+            '<div style="font-size:12px;opacity:0.75;margin-top:5px;letter-spacing:0.06em;text-transform:uppercase;font-weight:600">'+esc(subtitle)+'</div>' +
+            (addrLine?'<div style="font-size:11px;opacity:0.5;margin-top:2px">'+esc(addrLine)+'</div>':'') +
           '</div>' +
         '</div>' +
         '<div style="text-align:right">' +
           '<div style="font-size:10px;opacity:0.45;text-transform:uppercase;letter-spacing:0.1em;font-weight:600">Kassakerfi</div>' +
           '<div style="font-size:20px;font-weight:700;margin-top:4px;font-variant-numeric:tabular-nums;text-shadow:0 2px 6px rgba(0,0,0,0.4)">'+klst+'</div>' +
-          '<div style="font-size:11px;opacity:0.55;margin-top:2px">'+esc(dagur)+' · Starfsmaður: Kassi</div>' +
+          '<div style="font-size:11px;opacity:0.55;margin-top:2px">'+esc(dagur)+' · Starfsmaður: '+esc(staffName)+'</div>' +
         '</div>' +
       '</div>' +
     '</div>';
+  }
+  // Refresh just the banner without re-rendering the whole Sala view.
+  // Called when AppSettings change so banner_style / banner_text updates take
+  // effect immediately, without losing the cart state.
+  function refreshBanner() {
+    var v = document.getElementById('view-sala');
+    if (!v) return;
+    var existing = v.querySelector('.pos-banner');
+    if (!existing) return;
+    var tmp = document.createElement('div');
+    tmp.innerHTML = buildBannerHTML();
+    var fresh = tmp.firstElementChild;
+    if (fresh) existing.replaceWith(fresh);
+  }
+  // Expose for AppSettings change hook + external triggers.
+  if (typeof window !== 'undefined') {
+    window.POS = window.POS || {};
+    window.POS.refreshBanner = refreshBanner;
   }
   function buildHTML(){
     return buildBannerHTML() +
@@ -178,7 +308,7 @@
           '<div id="pos-lines" style="overflow-y:auto;flex:1;min-height:100px"></div>' +
           '<div id="pos-totals" style="margin-top:10px"></div>' +
           '<textarea id="pos-notes" placeholder="Athugasemdir..." style="width:100%;min-height:44px;margin-top:10px;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>' +
-          '<button id="pos-checkout" style="width:100%;margin-top:10px;background:linear-gradient(180deg,#16a34a,#15803d);color:#fff;border:none;padding:14px;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 2px 6px rgba(22,163,74,0.25)">✓ GREIÐA</button>' +
+          '<button id="pos-checkout" style="width:100%;margin-top:10px;background:linear-gradient(180deg,#16a34a,#15803d);color:#fff;border:none;padding:14px;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 2px 6px rgba(22,163,74,0.25)">✓ ÁFRAM</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -190,7 +320,7 @@
     var ic = iconFromNafn(item.nafn);
     var img = item.mynd ? '<img src="'+esc(item.mynd)+'" style="width:42px;height:42px;object-fit:cover;border-radius:10px" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' : '';
     var iconDiv = '<div style="width:42px;height:42px;background:'+col+'15;color:'+col+';border-radius:10px;display:'+(item.mynd?'none':'flex')+';align-items:center;justify-content:center">' + ICONS[ic] + '</div>';
-    var stockChip = (!isService && item.birgdir != null) ? '<div style="position:absolute;top:6px;right:6px;background:#ecfdf5;color:#065f46;font-size:10px;padding:2px 6px;border-radius:20px;font-weight:600">'+item.birgdir+'</div>' : '';
+    var stockChip = (!isService && item.birgdir != null) ? '<div style="position:absolute;top:4px;right:6px;color:#065f46;font-size:11px;font-weight:700;text-shadow:0 1px 2px rgba(255,255,255,0.9),0 0 4px rgba(255,255,255,0.7)">'+item.birgdir+'</div>' : '';
     var cls = isService ? 'pos-svc' : 'pos-prod';
     return '<button class="'+cls+'" data-id="'+item.id+'" style="padding:10px 8px;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;cursor:pointer;text-align:center;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative">' +
       stockChip + img + iconDiv +
@@ -229,23 +359,22 @@
     var t = totals();
     var pct = state.discount_pct || 0;
     var hasDisc = (pct > 0) || (state.discount > 0);
-    var custDisc = state.customer && +state.customer.afslattur_pct > 0
-      ? '<button id="pos-disc-cust-apply" type="button" title="Sækja afslátt viðskiptavinar" '
+    // Customer-discount badge: show "↺ 10% (≈ 1.200 kr)" so user sees in
+    // kr what would be saved before applying.
+    var custDiscPct = state.customer && +state.customer.afslattur_pct || 0;
+    var custDisc = '';
+    if (custDiscPct > 0 && custDiscPct !== pct) {
+      var custDiscKr = Math.round(t.raw_ex * custDiscPct / 100);
+      custDisc = '<button id="pos-disc-cust-apply" type="button" title="Sækja afslátt viðskiptavinar" '
          + 'style="background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:6px;'
          + 'padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;margin-left:6px">'
-         + '↺ ' + (+state.customer.afslattur_pct) + '%</button>'
-      : '';
+         + '↺ ' + custDiscPct + '% (≈ ' + fmtKr(custDiscKr) + ')</button>';
+    }
     return '<div style="border-top:2px solid #e2e8f0;padding-top:10px;font-variant-numeric:tabular-nums">' +
-        // Subtotal (raw, before discount)
-        '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>Án VSK:</span><span>'+fmtKr(t.raw_ex)+'</span></div>' +
-        // Inline discount row — input lets the user type a %
+        '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>Án VSK:</span><span id="pos-tot-raw">'+fmtKr(t.raw_ex)+'</span></div>' +
         '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;color:#64748b;font-size:13px">' +
           '<span>Afsláttur:' + custDisc + '</span>' +
           '<span style="display:flex;align-items:center;gap:4px">' +
-            // type="text" with inputmode="decimal" — gives a numeric keyboard
-            // on mobile but no up/down spinner arrows. The input is also
-            // auto-selected on focus so the user can immediately type a new
-            // value without having to manually clear the old one.
             '<input id="pos-discount" type="text" inputmode="decimal" pattern="[0-9.,]*" value="' + pct + '" ' +
               'autocomplete="off" ' +
               'style="width:60px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;' +
@@ -253,11 +382,27 @@
             '<span style="color:#94a3b8">%</span>' +
           '</span>' +
         '</div>' +
-        (hasDisc ? '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#dc2626;font-size:12px"><span>− Afsláttur '+(pct>0?pct+'% ':'')+'</span><span>−'+fmtKr(t.pct_disc + t.abs_disc)+'</span></div>' : '') +
-        '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>Án VSK (eftir afslátt):</span><span>'+fmtKr(t.ex)+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>VSK:</span><span>'+fmtKr(t.vsk)+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;padding:6px 0;font-weight:700;font-size:18px;color:#0f172a;margin-top:4px;border-top:1px solid #f1f5f9"><span>Samtals:</span><span>'+fmtKr(t.total)+'</span></div>' +
+        '<div id="pos-tot-disc-row" style="display:flex;justify-content:space-between;padding:3px 0;color:#dc2626;font-size:12px;'+(hasDisc?'':'display:none;')+'"><span id="pos-tot-disc-lbl">− Afsláttur '+(pct>0?pct+'% ':'')+'</span><span id="pos-tot-disc-amt">−'+fmtKr(t.pct_disc + t.abs_disc)+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>Án VSK (eftir afslátt):</span><span id="pos-tot-ex">'+fmtKr(t.ex)+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>VSK:</span><span id="pos-tot-vsk">'+fmtKr(t.vsk)+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;padding:6px 0;font-weight:700;font-size:18px;color:#0f172a;margin-top:4px;border-top:1px solid #f1f5f9"><span>Samtals:</span><span id="pos-tot-total">'+fmtKr(t.total)+'</span></div>' +
       '</div>';
+  }
+  // In-place update of the calculated cells — does NOT touch the discount input,
+  // so the keyboard focus + cursor position stay intact while typing.
+  function _updateTotalsCells() {
+    var t = totals();
+    var pct = state.discount_pct || 0;
+    var hasDisc = (pct > 0) || (state.discount > 0);
+    var setText = function(id, val){ var e = document.getElementById(id); if (e) e.textContent = val; };
+    setText('pos-tot-raw', fmtKr(t.raw_ex));
+    setText('pos-tot-ex', fmtKr(t.ex));
+    setText('pos-tot-vsk', fmtKr(t.vsk));
+    setText('pos-tot-total', fmtKr(t.total));
+    var row = document.getElementById('pos-tot-disc-row');
+    if (row) row.style.display = hasDisc ? '' : 'none';
+    setText('pos-tot-disc-lbl', '− Afsláttur ' + (pct>0?pct+'% ':''));
+    setText('pos-tot-disc-amt', '−' + fmtKr(t.pct_disc + t.abs_disc));
   }
   function bindEvents(){
     document.querySelectorAll('.pos-mode-btn').forEach(function(b){b.addEventListener('click',function(){var m=b.getAttribute('data-mode');state.customer.mode=m;document.querySelectorAll('.pos-mode-btn').forEach(function(x){var a=x.getAttribute('data-mode')===m;x.style.background=a?'#eff6ff':'#fff';x.style.borderColor=a?'#60a5fa':'#cbd5e1';x.style.color=a?'#1e40af':'#64748b';});document.getElementById('pos-kt-box').style.display=m==='kt'?'':'none';document.getElementById('pos-manual-box').style.display=m==='manual'?'':'none';});});
@@ -343,27 +488,34 @@
         // Re-render only the totals; don't redraw the inputs (cursor jumps).
         var tEl = document.getElementById('pos-totals'); if (tEl) tEl.innerHTML = buildTotalsHTML();
         var cb = document.getElementById('pos-checkout');
-        if (cb) { var tt = totals(); cb.innerHTML = tt.total > 0 ? ('✓ GREIÐA · '+fmtKr(tt.total)) : '✓ GREIÐA'; cb.disabled = tt.total === 0; }
+        if (cb) { var tt = totals(); cb.innerHTML = tt.total > 0 ? ('✓ ÁFRAM · '+fmtKr(tt.total)) : '✓ ÁFRAM'; cb.disabled = tt.total === 0; }
         // Update only the line total cell on the same row.
         var row = p.closest('div[style*="display:flex"]'); // line container
       }
     });
-    // Discount % input — live update. Parses both decimal point AND comma
-    // (Icelandic locale uses comma as decimal separator). Strips anything
-    // that's not a digit / period / comma so paste behaviour is forgiving.
+    // Discount % input — live update without re-rendering the input.
+    // Previous version replaced #pos-totals.innerHTML on every keystroke,
+    // which destroys the focused input. The browser drops typed-but-not-yet-
+    // delivered keystrokes (e.g. "20" became "2"). Now we update only the
+    // calculated cells in place; the input stays mounted and focused.
     document.getElementById('pos-totals').addEventListener('input', function(e){
       var d = e.target.closest('#pos-discount'); if (!d) return;
       var raw = String(d.value || '').replace(/[^0-9.,]/g, '').replace(',', '.');
       state.discount_pct = Math.max(0, Math.min(100, parseFloat(raw) || 0));
-      // Don't re-render the input itself (cursor would jump). Only update
-      // the totals + checkout button label to reflect the new discount.
-      var tEl = document.getElementById('pos-totals');
-      var preserved = d.value;
-      if (tEl) tEl.innerHTML = buildTotalsHTML();
-      var newD = document.getElementById('pos-discount');
-      if (newD) newD.value = preserved;  // restore exactly what user typed
+      _updateTotalsCells();
+      // Update checkout button label
+      var t = totals();
       var cb = document.getElementById('pos-checkout');
-      if (cb) { var tt = totals(); cb.innerHTML = tt.total > 0 ? ('✓ GREIÐA · '+fmtKr(tt.total)) : '✓ GREIÐA'; cb.disabled = tt.total === 0; }
+      if (cb) { cb.innerHTML = t.total>0?('✓ ÁFRAM · '+fmtKr(t.total)):'✓ ÁFRAM'; cb.disabled = t.total===0; }
+      return;
+      // Old fallback path — kept commented for reference
+      // var tEl = document.getElementById('pos-totals');
+      // var preserved = d.value;
+      // if (tEl) tEl.innerHTML = buildTotalsHTML();
+      // var newD = document.getElementById('pos-discount');
+      // if (newD) newD.value = preserved;
+      var cb = document.getElementById('pos-checkout');
+      if (cb) { var tt = totals(); cb.innerHTML = tt.total > 0 ? ('✓ ÁFRAM · '+fmtKr(tt.total)) : '✓ ÁFRAM'; cb.disabled = tt.total === 0; }
     });
     // Auto-select all text when user focuses the discount field, so they
     // can immediately type a replacement value without manually clearing.
@@ -409,16 +561,35 @@
       var num = sr.data && sr.data.num ? sr.data.num : preNum;
       window._pendingReikningurNum = '';
       window._pendingPaymentMethod = '';
-      // Auto-create fyrirtaeki for new kennitala customers
+      // Auto-create viðskiptavinur for new kennitala customers.
+      // 2026-05-08: Was incorrectly inserting into 'fyrirtaeki' (companies)
+      // which polluted the Fyrirtækjaþjónusta list with walk-in POS customers.
+      // Walk-ins from Sala belong in 'vidskiptavinir' (regular customers).
+      // Only B2B service companies should ever be in 'fyrirtaeki', and those
+      // are created manually via the "+ Nýtt fyrirtæki" button.
       if(state.customer.mode==='kt'&&state.customer.kt&&!state.customer.co_id){
         var cleanKt=state.customer.kt.replace(/[^0-9]/g,'');
-        if(cleanKt.length===10){
-          var custNm=state.customer.nafn||('Vidskiptavinur '+state.customer.kt);
+        // 2026-05-08: Skip auto-create for the special "Staðgreitt" kennitala
+        // 999999-9999 — walk-in customers should NOT be saved to vidskiptavinir.
+        if(cleanKt==='9999999999'){
+          // Just attach the name on the sale row for the receipt
+          var walkinNm = state.customer.nafn || 'Staðgreitt';
+          await DB.sb.from('solur').update({customer_nafn: walkinNm}).eq('id', sr.data.id);
+        } else if(cleanKt.length===10){
+          var custNm=state.customer.nafn||(state.customer.kt?'Viðskiptavinur':'Staðgreitt');
           try{
-            var cr=await DB.sb.from('fyrirtaeki').insert({nafn:custNm,kennitala:cleanKt,simi:state.customer.simi||''}).select().single();
-            if(cr.data){
-              state.customer.co_id=cr.data.id;
-              await DB.sb.from('solur').update({customer_id:cr.data.id,customer_nafn:custNm}).eq('id',sr.data.id);
+            // Re-use existing viðskiptavinur if same kennitala already in DB
+            var existing=await DB.sb.from('vidskiptavinir').select('id,nafn').eq('kennitala',cleanKt).limit(1).maybeSingle();
+            var custId=null;
+            if(existing&&existing.data&&existing.data.id){
+              custId=existing.data.id;
+            }else{
+              var cr=await DB.sb.from('vidskiptavinir').insert({nafn:custNm,kennitala:cleanKt,simi:state.customer.simi||''}).select().single();
+              if(cr.data) custId=cr.data.id;
+            }
+            if(custId){
+              state.customer.co_id=custId;
+              await DB.sb.from('solur').update({customer_id:custId,customer_nafn:custNm}).eq('id',sr.data.id);
             }
           }catch(ce){console.warn('[POS] Auto-create customer:',ce);}
         }
@@ -431,7 +602,74 @@
       window._pendingSkipVerk = false; // reset for next sale
       var verkCount = 0;
       if (!skipVerk) {
-        for(var i=0;i<svc.length;i++){var sl=svc[i];await DB.sb.from('verkbeidnir').insert({num:num+'-V'+(i+1),status:'received',customer:cust,phone:state.customer.simi,dropoff:new Date().toISOString().substring(0,10),pickup:new Date(Date.now()+7*86400000).toISOString().substring(0,10),notes:sl.desc+(sl.ref?' · '+sl.ref:''),verd:Math.round(sl.unit_price_ex_vat*1.24)});verkCount++;}
+        // Pickup-offset comes from Stillingar → Almennt → "Default sókn (dagar)".
+        // Default VSK% (when product/service didn't specify) also from settings.
+        var pickupOffsetDays = 7;
+        var defVsk = 24;
+        try{var _o=window.AppSettings&&window.AppSettings.path('almennt.default_pickup_offset_days');if(Number.isFinite(+_o)&&+_o>0)pickupOffsetDays=+_o;var _v=window.AppSettings&&window.AppSettings.path('almennt.default_vsk_pct');if(Number.isFinite(+_v)&&+_v>0)defVsk=+_v;}catch(e){}
+        // 2026-05-08: Auk þess að búa til verkbeiðnir þá búum við líka til
+        // verklidur (eitt fyrir hvert magn í línunni). Án þess sá Verkstæði
+        // alltaf „0 slökkvitæki" á hverri verkbeiðni — því job.units kemur
+        // úr verklidur-töflu (sjá db.js loadAll).
+        // Notum SalaLineUnits.get() ef notandi skráði raðnúmer í 🏷-gluggann
+        // áður en hann smellti ÁFRAM. Annars er TMP-XXXXXX placeholder
+        // sem tæknimaður skiptir út fyrir alvöru raðnúmer við skoðun.
+        function makeTmpSerial(){
+          var ALPHA='23456789ABCDEFGHJKLMNPQRSTUVWXYZ', s='';
+          for(var k=0;k<6;k++){s+=ALPHA[Math.floor(Math.random()*ALPHA.length)];}
+          return 'TMP-'+s;
+        }
+        // Build a quick lookup by line desc → registered units
+        var pendingUnitsByDesc = {};
+        try {
+          if (window.SalaLineUnits && typeof SalaLineUnits.get === 'function') {
+            var entries = SalaLineUnits.get();
+            for (var ee=0; ee<entries.length; ee++) {
+              var data = entries[ee][1];
+              if (data && data.desc) pendingUnitsByDesc[data.desc] = data.units || [];
+            }
+          }
+        } catch(_){}
+
+        for(var i=0;i<svc.length;i++){
+          var sl=svc[i];
+          var vatRate=(sl.vsk_pct!=null?sl.vsk_pct:defVsk);
+          var insertResult = await DB.sb.from('verkbeidnir').insert({
+            num: num+'-V'+(i+1),
+            status: 'received',
+            customer: cust,
+            phone: state.customer.simi,
+            dropoff: new Date().toISOString().substring(0,10),
+            pickup: new Date(Date.now()+pickupOffsetDays*86400000).toISOString().substring(0,10),
+            notes: sl.desc+(sl.ref?' · '+sl.ref:''),
+            verd: Math.round(sl.unit_price_ex_vat*(1+vatRate/100))
+          }).select('id').single();
+          verkCount++;
+          // Insert verklidur rows so workshop view has clickable units
+          var jobId = insertResult && insertResult.data && insertResult.data.id;
+          if (jobId) {
+            var qty = parseInt(sl.qty, 10) || 1;
+            var registered = pendingUnitsByDesc[sl.desc] || [];
+            var verklidurRows = [];
+            for (var u=0; u<qty; u++) {
+              var registeredUnit = registered[u];
+              var serial = (registeredUnit && registeredUnit.serial && registeredUnit.serial.trim())
+                || makeTmpSerial();
+              verklidurRows.push({
+                job_id: jobId,
+                serial: serial,
+                type: '—',                // workshop will fill in correct type
+                size: '',
+                service: sl.desc,
+                status: 'received'
+              });
+            }
+            if (verklidurRows.length) {
+              try { await DB.sb.from('verklidur').insert(verklidurRows); }
+              catch (e) { console.warn('[pos] verklidur insert failed:', e); }
+            }
+          }
+        }
       }
       var verkMsg = skipVerk
         ? '\n(verkbeiðnir slepptar)'
@@ -441,12 +679,12 @@
       // Hide the customer memo box on reset so it doesn't leak into the next sale
       var memoBoxReset=document.getElementById('pos-customer-memo');if(memoBoxReset)memoBoxReset.style.display='none';
       var v=document.getElementById('view-sala');v.removeAttribute('data-pos-v3');render();
-    }catch(e){alert('Villa: '+(e.message||e));}finally{btn.disabled=false;btn.innerHTML='✓ GREIÐA';}
+    }catch(e){alert('Villa: '+(e.message||e));}finally{btn.disabled=false;btn.innerHTML='✓ ÁFRAM';}
   }
   function showReceipt(num, cust, lines, totals, svcCount, phone, notes){
     var now = new Date();
     var dateStr = now.toLocaleDateString('is-IS',{day:'numeric',month:'short',year:'numeric'});
-    var timeStr = now.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit'});
+    var timeStr = now.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit',hour12:false});
     var linesHtml = lines.map(function(l){
       var lineTotal = l.qty * l.unit_price_ex_vat * (1 + (l.vsk_pct||24)/100);
       return '<tr><td style="padding:4px 0;font-size:13px">'+esc(l.desc)+(l.ref?' <span style="color:#888;font-size:11px">'+esc(l.ref)+'</span>':'')+'</td><td style="padding:4px 8px;text-align:center;font-size:13px">'+l.qty+'</td><td style="padding:4px 0;text-align:right;font-size:13px">'+fmtKr(lineTotal)+'</td></tr>';
@@ -490,7 +728,7 @@
     if(!w){ alert('Popup blocker — leyfa popups'); return; }
     var now = new Date();
     var dateStr = now.toLocaleDateString('is-IS',{day:'numeric',month:'short',year:'numeric'});
-    var timeStr = now.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit'});
+    var timeStr = now.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit',hour12:false});
     var linesHtml = lines.map(function(l){
       var lt = l.qty * l.unit_price_ex_vat * (1 + (l.vsk_pct||24)/100);
       return '<tr><td style="padding:4px 0;font-size:12px">'+(l.type==='service'?'🔧':'🛒')+' '+esc(l.desc)+(l.ref?' <span style="color:#888;font-size:10px">'+esc(l.ref)+'</span>':'')+'</td><td style="text-align:center;font-size:12px">'+l.qty+'</td><td style="text-align:right;font-size:12px;white-space:nowrap">'+fmtKr(lt)+'</td></tr>';

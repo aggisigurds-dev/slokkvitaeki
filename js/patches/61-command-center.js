@@ -64,10 +64,10 @@
 
     const [revM, unpaid, openJobs, todayJobs, dueInsp, lowStock, contractsDue] = await Promise.all([
       safe(SB.from('solur').select('samtals,created_at').gte('created_at', monthStart.toISOString())),
-      safe(SB.from('solur').select('id,samtals,company_nafn').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null)),
-      safe(SB.from('verkbeidnir').select('id,num,company_nafn,status').neq('status','done').neq('status','cancelled')),
-      safe(SB.from('dagbok').select('id,title,company_nafn,scheduled_start,assigned_to').gte('scheduled_start', today.toISOString()).lt('scheduled_start', tomorrow.toISOString()).order('scheduled_start')),
-      safe(SB.from('uttaeki').select('id,nr,fyrirtaeki,next_insp').not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10))),
+      safe(SB.from('solur').select('id,samtals,customer_nafn').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null)),
+      safe(SB.from('verkbeidnir').select('id,num,customer,status').neq('status','done').neq('status','cancelled')),
+      safe(SB.from('verkdagbok').select('id,fyrirtaeki,job_date,athugasemdir').gte('job_date', today.toISOString().slice(0,10)).lt('job_date', tomorrow.toISOString().slice(0,10)).order('job_date')),
+      safe(SB.from('uttaeki').select('id,serial,client,next_insp').not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10))),
       safe(SB.from('birgdir').select('id,nafn,magn,lagmark').filter('magn','lt','lagmark')),
       safe(SB.from('thjonustusamningar').select('id,company_nafn,upphaed_an_vsk,next_due').lte('next_due', in30.toISOString().slice(0,10)).eq('status','virkur'))
     ]);
@@ -108,30 +108,30 @@
             <h3>📍 Verk í dag</h3>
             ${(todayJobs.data||[]).length ? (todayJobs.data||[]).map(j=>`
               <div class="cc-row">
-                <div><strong>${esc(j.title||'')}</strong> ${j.assigned_to?`<span class="cc-tag">${esc(j.assigned_to)}</span>`:''}</div>
-                <div style="font-size:12px;color:#64748b">${j.company_nafn?'🏢 '+esc(j.company_nafn):''}</div>
+                <div><strong>${esc(j.athugasemdir||j.fyrirtaeki||'Verk')}</strong></div>
+                <div style="font-size:12px;color:#64748b">${j.fyrirtaeki?'🏢 '+esc(j.fyrirtaeki):''}</div>
               </div>`).join('') : '<div class="cc-empty">🌴 Engin verk í dag</div>'}
-            <button class="btn btn-outline btn-sm" style="margin-top:8px;width:100%" onclick="App.switchView('dagbok')">Sjá dagbók →</button>
+            <button class="btn btn-outline btn-sm" style="margin-top:8px;width:100%" onclick="App.switchView('verkdagbok')">Sjá dagbók →</button>
           </div>
 
           <div class="cc-section">
             <h3>⚠️ Stærstu ógreiddu</h3>
             ${(unpaid.data||[]).slice(0,5).map(u=>`
               <div class="cc-row">
-                <div><strong>${esc(u.company_nafn||'')}</strong></div>
+                <div><strong>${esc(u.customer_nafn||'')}</strong></div>
                 <div style="font-size:13px;color:#dc2626;font-weight:600">${fmtKr(u.samtals)}</div>
               </div>`).join('') || '<div class="cc-empty">✓ Allt greitt</div>'}
-            <button class="btn btn-outline btn-sm" style="margin-top:8px;width:100%" onclick="App.switchView('aldur')">Aldursgreining →</button>
+            <button class="btn btn-outline btn-sm" style="margin-top:8px;width:100%" onclick="if(window.AgingReport&&AgingReport.open)AgingReport.open();else App.switchView('aging-report')">Aldursgreining →</button>
           </div>
 
           <div class="cc-section">
             <h3>🔥 Þjónustutæki sem þarfnast skoðunar</h3>
             ${(dueInsp.data||[]).slice(0,5).map(d=>`
               <div class="cc-row">
-                <div><strong>${esc(d.nr||'')}</strong> ${esc(d.fyrirtaeki||'')}</div>
+                <div><strong>${esc(d.serial||'')}</strong> ${esc(d.client||'')}</div>
                 <div style="font-size:12px;color:#f59e0b">Næsta: ${esc(d.next_insp)}</div>
               </div>`).join('') || '<div class="cc-empty">✓ Allt á áætlun</div>'}
-            <button class="btn btn-outline btn-sm" style="margin-top:8px;width:100%" onclick="App.switchView('thjonustuaaetlun')">Þjónustuáætlun →</button>
+            <button class="btn btn-outline btn-sm" style="margin-top:8px;width:100%" onclick="App.switchView('field')">Þjónustuáætlun →</button>
           </div>
 
           <div class="cc-section">

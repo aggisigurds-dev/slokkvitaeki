@@ -62,10 +62,14 @@
 
     const SB = getSB(); if (!SB) return;
     const safe = async p => { try { return await p; } catch (e) { return { data:[], error:e }; } };
-    const [coRes, invRes, unitRes] = await Promise.all([
-      safe(SB.from('fyrirtaeki').select('*').eq('id', companyId).single()),
-      safe(SB.from('solur').select('*').eq('company_id', companyId).order('created_at',{ascending:false})),
-      safe(SB.from('uttaeki').select('*').eq('company_id', companyId).order('nr',{ascending:true}))
+    // uttaeki has no company_id — must look up by client name. Sequential to know the name first.
+    const coRes = await safe(SB.from('fyrirtaeki').select('*').eq('id', companyId).single());
+    const coNafn = coRes.data ? coRes.data.nafn : null;
+    const [invRes, unitRes] = await Promise.all([
+      safe(SB.from('solur').select('*').eq('customer_id', companyId).order('created_at',{ascending:false})),
+      coNafn
+        ? safe(SB.from('uttaeki').select('*').eq('client', coNafn).order('serial',{ascending:true}))
+        : Promise.resolve({ data: [] })
     ]);
 
     const co = coRes.data;
@@ -88,8 +92,8 @@
     document.getElementById('pt-units').innerHTML = units.length ? `
       <table><thead><tr><th>Nr</th><th>Tegund</th><th>Síðasta skoðun</th><th>Næsta skoðun</th></tr></thead>
       <tbody>${units.map(u=>`<tr>
-        <td>${esc(u.nr||'')}</td>
-        <td>${esc(u.tegund||'')}</td>
+        <td>${esc(u.serial||'')}</td>
+        <td>${esc(u.type||'')}</td>
         <td>${fmtDate(u.last_insp)}</td>
         <td>${fmtDate(u.next_insp)}</td>
       </tr>`).join('')}</tbody></table>` : '<div class="pt-empty">Engin tæki skráð</div>';

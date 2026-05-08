@@ -116,7 +116,7 @@
         (_sales.length ? _sales.map(function(s){
           var d = new Date(s.created_at);
           var dStr = d.toLocaleDateString('is-IS',{day:'numeric',month:'short',year:'numeric'});
-          var tStr = d.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit'});
+          var tStr = d.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit',hour12:false});
           var lineCount = Array.isArray(s.linur) ? s.linur.length : 0;
           return '<div class="tekjur-sale" data-id="'+s.id+'" style="display:flex;justify-content:space-between;align-items:center;padding:12px 8px;border-bottom:1px solid #f1f5f9;cursor:pointer;border-radius:6px;transition:background .15s" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'\'">' +
             '<div style="display:flex;align-items:center;gap:12px">' +
@@ -164,7 +164,7 @@
   function showSaleDetail(sale){
     var d = new Date(sale.created_at);
     var dStr = d.toLocaleDateString('is-IS',{day:'numeric',month:'short',year:'numeric'});
-    var tStr = d.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit'});
+    var tStr = d.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit',hour12:false});
     var linur = Array.isArray(sale.linur) ? sale.linur : [];
     var linesHtml = linur.map(function(l){
       var lt = (l.qty||1) * (l.unit_price_ex_vat||0) * (1 + (l.vsk_pct||24)/100);

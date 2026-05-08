@@ -78,7 +78,7 @@
       card.className = 'alert-card due';
       const nextLine = earliest ? ` · næsta skoðun ${fmtDate(earliest)}` : '';
       const btnHtml = co
-        ? `<button class="btn btn-outline btn-sm" onclick="App.switchView('companies');setTimeout(function(){Companies.openDetail(${co.id});},180);">Opna fyrirtæki</button>`
+        ? `<button class="btn btn-outline btn-sm" onclick="window._openCompanySafe?window._openCompanySafe(${co.id}):(App.switchView('companies'),setTimeout(function(){Companies.openDetail(${co.id});},200));">Opna fyrirtæki</button>`
         : '';
       card.innerHTML =
         `<div class="ac-name">${esc(clientName)}</div>` +

@@ -311,8 +311,18 @@
 
     // ---- Step 1: insert any missing products/services ---------------------
     if (!localStorage.getItem('_pricelist66Seeded')) {
+      // Respect user deletions — names in AppSettings.sala.deleted_product_names
+      // were explicitly removed and should never be re-seeded.
+      var tombstoned = {};
+      try{
+        var dpn = window.AppSettings && window.AppSettings.path && window.AppSettings.path('sala.deleted_product_names');
+        if (Array.isArray(dpn)) dpn.forEach(function(n){ tombstoned[String(n||'').trim().toLowerCase()] = true; });
+      } catch(_){}
       var rows = products
-        .filter(function (p) { return !existingByName[p.nafn.toLowerCase()]; })
+        .filter(function (p) {
+          var key = p.nafn.toLowerCase();
+          return !existingByName[key] && !tombstoned[key];
+        })
         .map(function (p) {
           return {
             nafn: p.nafn,

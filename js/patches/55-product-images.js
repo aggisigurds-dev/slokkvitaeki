@@ -55,7 +55,7 @@
         <h3 style="margin:0 0 12px">🏷 ${esc(vara.nafn || 'Vara')}</h3>
         <div style="display:flex;gap:14px;margin-bottom:12px;align-items:flex-start">
           <div>
-            ${vara.image_url ? `<img class="pi-preview" src="${esc(vara.image_url)}" id="pi-img-preview">` : `<div class="pi-preview" id="pi-img-preview" style="display:flex;align-items:center;justify-content:center;font-size:36px;color:#cbd5e1">📦</div>`}
+            ${vara.mynd ? `<img class="pi-preview" src="${esc(vara.mynd)}" id="pi-img-preview">` : `<div class="pi-preview" id="pi-img-preview" style="display:flex;align-items:center;justify-content:center;font-size:36px;color:#cbd5e1">📦</div>`}
           </div>
           <div style="flex:1">
             <label style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase">Mynd</label>
@@ -64,7 +64,7 @@
           </div>
         </div>
         <label style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase">Lýsing</label>
-        <textarea id="pi-desc" rows="3" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;box-sizing:border-box;margin-bottom:12px">${esc(vara.description||'')}</textarea>
+        <textarea id="pi-desc" rows="3" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;box-sizing:border-box;margin-bottom:12px">${esc(vara.lysing||vara.description||'')}</textarea>
         <div id="pi-status" style="font-size:12px;color:#64748b;margin-bottom:8px"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="btn btn-outline" onclick="document.getElementById('pi-modal').remove()">Loka</button>
@@ -79,11 +79,11 @@
     const file = document.getElementById('pi-file').files[0];
     const desc = document.getElementById('pi-desc').value.trim();
     const status = document.getElementById('pi-status');
-    const update = { description: desc };
+    const update = { lysing: desc };
     if (file) {
       if (file.size > 5*1024*1024) { alert('Mynd er of stór (>5MB)'); return; }
       status.textContent = '⏳ Hleð upp mynd...';
-      try { update.image_url = await uploadImage(file, varaId); }
+      try { update.mynd = await uploadImage(file, varaId); }
       catch (e) { status.textContent = '⚠️ Upload villa: '+e.message; return; }
     }
     const { error } = await SB.from('vorur').update(update).eq('id', varaId);

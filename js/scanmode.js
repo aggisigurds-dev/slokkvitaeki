@@ -217,6 +217,13 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ image: base64, type: step.key })
       });
+      if (!res.ok) {
+        // OCR endpoint not deployed (404) or upstream error → fall back to manual entry
+        updateStatus('⚠ OCR ekki tiltæk — sláðu inn handvirkt', '#dc2626');
+        state.phase = 'scanning'; state.stillFrames = 0;
+        setTimeout(function(){ manualEntry(); }, 1500);
+        return;
+      }
       var data = await res.json();
       if (data.error === 'API_KEY_MISSING') {
         updateStatus('⚠ Vantar API lykil', '#dc2626');

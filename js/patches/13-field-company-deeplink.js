@@ -46,11 +46,14 @@
     const name = (el.textContent || '').trim();
     if (!name) return;
     const co = findCompanyByName(name);
-    if (window.App && App.switchView) App.switchView('companies');
-    if (co && window.Companies && Companies.openDetail) {
-      setTimeout(() => Companies.openDetail(co.id), 180);
-    } else if (window.Toast && Toast.show) {
-      Toast.show('Fyrirtækið "' + name + '" fannst ekki í skránni');
+    if (co && window._openCompanySafe) {
+      window._openCompanySafe(co.id);
+    } else if (co && window.App && App.switchView) {
+      App.switchView('companies');
+      if (window.Companies && Companies.openDetail) setTimeout(() => Companies.openDetail(co.id), 200);
+    } else {
+      if (window.App && App.switchView) App.switchView('companies');
+      if (window.Toast && Toast.show) Toast.show('Fyrirtækið "' + name + '" fannst ekki í skránni');
     }
   }, true);
 

@@ -260,7 +260,7 @@
         var filtered = !q ? entries : entries.filter(function(e){ return JSON.stringify(e).toLowerCase().indexOf(q) >= 0; });
         tbody.innerHTML = filtered.map(function(e){
           var t = new Date(e._ts||e.ts);
-          var tStr = t.toLocaleDateString('is-IS')+' '+t.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+          var tStr = t.toLocaleDateString('is-IS')+' '+t.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
           var dataStr = e.af ? JSON.stringify(e.af).slice(0,80) : '—';
           return `<tr style="border-bottom:1px solid #f3f4f6;">
             <td style="padding:8px 10px;white-space:nowrap;font-family:monospace;font-size:11px;">${tStr}</td>
@@ -280,7 +280,7 @@
         var csvRows = [headers.join(';')];
         filtered.forEach(function(e){
           var t = new Date(e._ts||e.ts);
-          var tStr = t.toLocaleDateString('is-IS')+' '+t.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+          var tStr = t.toLocaleDateString('is-IS')+' '+t.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
           var cells = [tStr, e.u||'', e.a||'', e.t||'', (e.d||'').replace(/[;\n\r]/g,' '), JSON.stringify(e.af||{}).replace(/[;\n\r]/g,' ')];
           csvRows.push(cells.map(function(c){ return '"'+String(c).replace(/"/g,'""')+'"'; }).join(';'));
         });
@@ -412,7 +412,7 @@
     document.getElementById('_gk_sig_btn').onclick = function(){
       var st = document.getElementById('_gk_sig_status');
       var now = new Date();
-      var t = now.toLocaleDateString('is-IS')+' '+now.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit'});
+      var t = now.toLocaleDateString('is-IS')+' '+now.toLocaleTimeString('is-IS',{hour:'2-digit',minute:'2-digit',hour12:false});
       st.innerHTML = '<span style="color:#059669;font-weight:600;">✓ Staðfest af '+_currentTech+' · '+t+'</span>';
       document.getElementById('_gk_sig_btn').disabled = true;
       document.getElementById('_gk_sig_btn').style.opacity = '0.5';

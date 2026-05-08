@@ -53,7 +53,10 @@
     { id: 'created-asc',  key: 'created', dir:  1, label: 'Elstu fyrst' }
   ];
 
-  let customers = [];
+  // 2026-05-08: customers is now a STABLE array reference. Never reassign
+  // it — always mutate in-place so external code (Vidskiptavinir.list)
+  // sees the same array as the closure does.
+  const customers = [];
   let unitsByPhone = {};   // phone -> [units]
   let unitsByName = {};    // name -> [units]
   let searchTerm = '';
@@ -83,7 +86,9 @@
     try {
       const { data: rows, error } = await getSB().from('vidskiptavinir').select('*').order('nafn', { ascending: true });
       if (error) throw error;
-      customers = rows || [];
+      // Mutate-in-place to keep external references in sync (see decl note)
+      customers.length = 0;
+      (rows || []).forEach(r => customers.push(r));
 
       const phones = customers.map(c => c.simi).filter(Boolean);
       const names = customers.map(c => c.nafn).filter(Boolean);
@@ -106,29 +111,40 @@
           if (k && !u.phone) (unitsByName[k] = unitsByName[k] || []).push(u);
         }
       }
-      window.Vidskiptavinir.list = customers;
+      // Note: getter on Vidskiptavinir.list returns `customers` directly,
+      // so no re-assignment is needed. Kept the line removed.
+
+      // 2026-05-08 perf: Pre-compute counts ONCE per customer here so
+      // sort/search comparisons can read `c._counts` without re-running
+      // unitsFor() + categorize loop. compareCustomers() is called
+      // ~N×log(N) times per render — at 188 customers it was ~2k
+      // categorize loops; at 600+ it'd lock the UI on every keystroke.
+      customers.forEach(c => {
+        const u = unitsForRaw(c);
+        let ext = 0, hose = 0, smoke = 0, other = 0;
+        for (const x of u) {
+          const cat = categorize(x.type);
+          if (cat === 'ext') ext++;
+          else if (cat === 'hose') hose++;
+          else if (cat === 'smoke') smoke++;
+          else other++;
+        }
+        c._counts = { ext, hose, smoke, other, total: u.length };
+      });
     } finally {
       isLoading = false;
     }
   }
 
-  function unitsFor(c) {
+  function unitsForRaw(c) {
     const a = c.simi ? (unitsByPhone[c.simi] || []) : [];
     const b = unitsByName[c.nafn] || [];
     return a.concat(b);
   }
+  function unitsFor(c) { return unitsForRaw(c); }
 
   function counts(c) {
-    const u = unitsFor(c);
-    let ext = 0, hose = 0, smoke = 0, other = 0;
-    for (const x of u) {
-      const cat = categorize(x.type);
-      if (cat === 'ext') ext++;
-      else if (cat === 'hose') hose++;
-      else if (cat === 'smoke') smoke++;
-      else other++;
-    }
-    return { ext, hose, smoke, other, total: u.length };
+    return c._counts || { ext: 0, hose: 0, smoke: 0, other: 0, total: 0 };
   }
 
   function ensureMain() {
@@ -679,12 +695,22 @@
     }
   }
 
+  // Public surface. `list` is a LIVE getter that returns the closure
+  // `customers` array directly (which is now mutate-in-place — see
+  // declaration). Setter mutates the same array so external prefetchers
+  // (e.g. patch 114) populate the live data instead of replacing the
+  // pointer behind everyone's back.
   window.Vidskiptavinir = {
     load, render: renderList, refresh,
-    list: customers,
+    get list() { return customers; },
+    set list(v) {
+      if (!Array.isArray(v)) return;
+      customers.length = 0;
+      v.forEach(x => customers.push(x));
+    },
     openDetail: c => { if (c?.id) openDetailById(c.id); },
     openNew: () => window.SalaMottaka?.openNewCustomer?.(),
-    version: 'revamp-5-bulk'
+    version: 'revamp-6-live'
   };
   window.__VidskRevampInstalled = true;
 

@@ -98,10 +98,10 @@
     if (!list) return;
     const SB = getSB();
     if (!SB) { list.innerHTML = '<div style="padding:12px;font-size:13px;color:var(--ink3)">Gagngrunnur ekki tengdur</div>'; return; }
-    const { data } = await SB.from('þjonustutaeki').select('company_nafn,client').limit(500);
+    const { data } = await SB.from('uttaeki').select('client').limit(500);
     const seen = new Set(), out = [];
     (data||[]).forEach(r => {
-      const n = r.company_nafn || r.client || '';
+      const n = r.client || '';
       if (n && !seen.has(n) && (!q || n.toLowerCase().includes(q.toLowerCase()))) { seen.add(n); out.push(n); }
     });
     out.sort();
@@ -151,9 +151,9 @@
     if (wrap) wrap.innerHTML = '<div class="loading-state">Hleður tæki…</div>';
     const SB = getSB();
     if (!SB) return;
-    const { data } = await SB.from('þjonustutaeki')
-      .select('id,serial,tegund,sterd,next_insp,last_insp,pressure,notes')
-      .or(`company_nafn.eq.${_co},client.eq.${_co}`)
+    const { data } = await SB.from('uttaeki')
+      .select('id,serial,type,size,next_insp,last_insp,pressure,notes')
+      .eq('client', _co)
       .order('serial');
     _units = data || [];
     if (!_units.length) {
@@ -184,7 +184,7 @@
       return `<div class="ifm-unit-card">
         <div class="ifm-unit-hd">
           <span class="ifm-serial">${esc(u.serial||'?')}</span>
-          <span class="ifm-meta">${esc(u.tegund||'')}${u.sterd?' · '+esc(u.sterd):''}${u.next_insp?' · Gjalddagi: '+fmtDate(u.next_insp):''}</span>
+          <span class="ifm-meta">${esc(u.type||u.tegund||'')}${(u.size||u.sterd)?' · '+esc(u.size||u.sterd):''}${u.next_insp?' · Gjalddagi: '+fmtDate(u.next_insp):''}</span>
         </div>
         <div class="ifm-unit-bd">
           <label class="ifm-chk">
@@ -248,7 +248,7 @@
     const today = todayISO();
     await Promise.all(_units.map(u => {
       const r = _results[u.id] || {};
-      return SB.from('þjonustutaeki').update({
+      return SB.from('uttaeki').update({
         last_insp: today,
         next_insp: r.next_insp || addYearISO(today),
         notes:     (r.notes||'').trim() || null

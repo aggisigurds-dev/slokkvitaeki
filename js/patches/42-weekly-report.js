@@ -131,8 +131,8 @@
     const [jobsRes, solurRes, inspRes, eventsRes, timaRes, utgRes] = await Promise.all([
       SB.from('verkbeidnir').select('id,num,customer,status,created_at').gte('created_at', fromStart).lte('created_at', toEnd),
       SB.from('solur').select('samtals,greitt_med,paid_at,created_at').gte('created_at', fromStart).lte('created_at', toEnd),
-      safe(SB.from('þjonustutaeki').select('serial,tegund,company_nafn,client,last_insp').gte('last_insp', from).lte('last_insp', to)),
-      safe(SB.from('dagbok').select('title,scheduled_start,assigned_to,status').gte('scheduled_start', fromStart).lte('scheduled_start', toEnd).neq('status','cancelled').order('scheduled_start')),
+      safe(SB.from('uttaeki').select('serial,type,client,last_insp').gte('last_insp', from).lte('last_insp', to)),
+      safe(SB.from('verkdagbok').select('athugasemdir,job_date,fyrirtaeki,done').gte('job_date', from).lte('job_date', to).order('job_date')),
       safe(SB.from('timabok').select('tæknimaður,mínútur,dagsetning').gte('dagsetning', from).lte('dagsetning', to)),
       safe(SB.from('utgjalda_log').select('lýsing,flokkur,upphæð,dagsetning').gte('dagsetning', from).lte('dagsetning', to))
     ]);
@@ -168,8 +168,8 @@
 
     const inspRows = insps.slice(0,20).map(i=>`<tr>
       <td style="font-family:monospace">${esc(i.serial||'?')}</td>
-      <td>${esc(i.tegund||'')}</td>
-      <td>${esc(i.company_nafn||i.client||'')}</td>
+      <td>${esc(i.type||'')}</td>
+      <td>${esc(i.client||'')}</td>
     </tr>`).join('') || '<tr><td colspan="3" style="text-align:center;color:#94a3b8">Engar skoðanir skráðar þessa viku</td></tr>';
 
     const techRows = Object.entries(byTech).sort((a,b)=>b[1]-a[1]).map(([t,m])=>`<tr>
@@ -181,9 +181,9 @@
     </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:#94a3b8">Engar útgjaldafærslur</td></tr>';
 
     const eventRows = events.map(e=>`<tr>
-      <td>${e.scheduled_start?new Date(e.scheduled_start).toLocaleDateString('is-IS'):''}</td>
-      <td>${esc(e.title||'')}</td>
-      <td>${esc(e.assigned_to||'')}</td>
+      <td>${e.job_date?new Date(e.job_date).toLocaleDateString('is-IS'):''}</td>
+      <td>${esc(e.athugasemdir||'')}</td>
+      <td>${esc(e.fyrirtaeki||'')}</td>
     </tr>`).join('') || '<tr><td colspan="3" style="text-align:center;color:#94a3b8">Engar dagbókarfærslur</td></tr>';
 
     const certNum = 'W-'+from.replace(/-/g,'');

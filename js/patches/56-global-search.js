@@ -61,16 +61,16 @@
     const safe = async p => { try { return await p; } catch (e) { return { data:[], error:e }; } };
     const [co, inv, job, dev, qt] = await Promise.all([
       safe(SB.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang').or(`nafn.ilike.%${q}%,kennitala.ilike.%${q}%,heimilisfang.ilike.%${q}%`).limit(8)),
-      safe(SB.from('solur').select('id,num,company_nafn,samtals,created_at').or(`num.ilike.%${q}%,company_nafn.ilike.%${q}%`).limit(8)),
-      safe(SB.from('verkbeidnir').select('id,num,company_nafn,status').or(`num.ilike.%${q}%,company_nafn.ilike.%${q}%`).limit(8)),
-      safe(SB.from('uttaeki').select('id,nr,fyrirtaeki,tegund').or(`nr.ilike.%${q}%,fyrirtaeki.ilike.%${q}%`).limit(8)),
+      safe(SB.from('solur').select('id,num,customer_nafn,samtals,created_at').or(`num.ilike.%${q}%,customer_nafn.ilike.%${q}%`).limit(8)),
+      safe(SB.from('verkbeidnir').select('id,num,customer,status').or(`num.ilike.%${q}%,customer.ilike.%${q}%`).limit(8)),
+      safe(SB.from('uttaeki').select('id,serial,client,type').or(`serial.ilike.%${q}%,client.ilike.%${q}%`).limit(8)),
       safe(SB.from('tilbod').select('id,num,company_nafn,samtals').or(`num.ilike.%${q}%,company_nafn.ilike.%${q}%`).limit(5))
     ]);
     results=[];
-    (co.data||[]).forEach(r=>results.push({type:'co',icon:'🏢',title:r.nafn,meta:r.kennitala||r.heimilisfang||'',action:'vidskiptavinir'}));
-    (inv.data||[]).forEach(r=>results.push({type:'inv',icon:'📄',title:`${r.num||'#'+r.id} — ${r.company_nafn||''}`,meta:r.samtals?Math.round(r.samtals).toLocaleString()+' kr':'',action:'sala-list'}));
-    (job.data||[]).forEach(r=>results.push({type:'job',icon:'🔧',title:`${r.num||'#'+r.id} — ${r.company_nafn||''}`,meta:r.status||'',action:'verkbeidnir'}));
-    (dev.data||[]).forEach(r=>results.push({type:'dev',icon:'🔥',title:`${r.nr||'#'+r.id} — ${r.tegund||''}`,meta:r.fyrirtaeki||'',action:'thjonustutaeki'}));
+    (co.data||[]).forEach(r=>results.push({type:'co',icon:'🏢',title:r.nafn,meta:r.kennitala||r.heimilisfang||'',action:'companies'}));
+    (inv.data||[]).forEach(r=>results.push({type:'inv',icon:'📄',title:`${r.num||'#'+r.id} — ${r.customer_nafn||''}`,meta:r.samtals?Math.round(r.samtals).toLocaleString()+' kr':'',action:'income'}));
+    (job.data||[]).forEach(r=>results.push({type:'job',icon:'🔧',title:`${r.num||'#'+r.id} — ${r.customer||''}`,meta:r.status||'',action:'counter'}));
+    (dev.data||[]).forEach(r=>results.push({type:'dev',icon:'🔥',title:`${r.serial||'#'+r.id} — ${r.type||''}`,meta:r.client||'',action:'field'}));
     (qt.data||[]).forEach(r=>results.push({type:'qt',icon:'📝',title:`${r.num||'#'+r.id} — ${r.company_nafn||''}`,meta:r.samtals?Math.round(r.samtals).toLocaleString()+' kr':'',action:'tilbod'}));
     selectedIdx=0;
     renderResults();

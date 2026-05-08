@@ -149,14 +149,19 @@
       const m = parentTxt.match(/Samtals:\s*([\d.]+\s*kr)/);
       if (m) grandTotal = m[1];
     }
-    // Customer info
+    // Customer info — merge form values with POS state. In kt-lookup mode the
+    // form inputs are empty but state.customer holds the looked-up nafn + simi.
     const ktInput = document.getElementById('pos-kt');
     const nafnInput = document.getElementById('pos-nafn');
     const simiInput = document.getElementById('pos-simi');
+    const stateCust = (window.POS && typeof window.POS.getState === 'function')
+      ? (window.POS.getState().customer || {})
+      : {};
     const customer = {
-      kt: ktInput?.value.trim() || '',
-      nafn: nafnInput?.value.trim() || '',
-      simi: simiInput?.value.trim() || ''
+      kt:    ktInput?.value.trim()  || stateCust.kt   || '',
+      nafn:  nafnInput?.value.trim() || stateCust.nafn || '',
+      simi:  simiInput?.value.trim() || stateCust.simi || '',
+      co_id: stateCust.co_id || null
     };
     return { items, grandTotal, customer };
   }
@@ -211,15 +216,15 @@
           <div class="scd-section">
             <div class="scd-section-title">Prenta</div>
             <label class="scd-check">
-              <input type="checkbox" id="scd-receipt" checked>
+              <input type="checkbox" id="scd-receipt" ${(window.AppSettings && window.AppSettings.path('prentun.default_print_kvittun') !== false) ? 'checked' : ''}>
               <span>🧾 Prenta kvittun</span>
             </label>
             <label class="scd-check ${hasProducts ? '' : 'disabled'}">
-              <input type="checkbox" id="scd-barcodes" ${hasProducts ? '' : 'disabled'}>
+              <input type="checkbox" id="scd-barcodes" ${hasProducts && (!window.AppSettings || window.AppSettings.path('prentun.default_print_strikamerki') !== false) ? 'checked' : (hasProducts ? '' : 'disabled')}>
               <span>🏷️ Prenta strikamerki fyrir tæki${hasProducts ? ' (' + productCount + ')' : ' (engin tæki í körfu)'}</span>
             </label>
             <label class="scd-check">
-              <input type="checkbox" id="scd-refill-label">
+              <input type="checkbox" id="scd-refill-label" ${(window.AppSettings && window.AppSettings.path('prentun.default_print_qr_label') === true) ? 'checked' : ''}>
               <span>🏷️ Prenta QR-merki fyrir tæki í áfyllingu (24 × 100 mm)</span>
             </label>
           </div>
@@ -282,28 +287,13 @@
     window._pendingReikningurNum = invoiceNum; // pos.js reads this
     window._pendingPaymentMethod = method;     // pos.js / others may use
 
-    // For the "pay-on-pickup" path, prepend a clear ÓGREITT marker to the
-    // notes so the staff sees it the moment the customer comes back to
-    // collect their tæki. Survives into solur.athugasemdir, the bookkeeping
-    // overview, the printed receipt, and the customer-detail view.
-    if (method === 'greitt_sidar') {
-      const stamp = '⚠ ÓGREITT — verður greitt við afhendingu';
-      // Set on POS state so pos.js's checkout writes it to solur.athugasemdir
-      try {
-        if (window.POS && typeof window.POS.getState === 'function') {
-          const st = window.POS.getState();
-          if (st) {
-            const cur = (st.notes || '').trim();
-            if (!/ÓGREITT/i.test(cur)) {
-              st.notes = stamp + (cur ? ' · ' + cur : '');
-              // Sync the visible textarea too
-              const ta = document.getElementById('pos-notes');
-              if (ta) ta.value = st.notes;
-            }
-          }
-        }
-      } catch (e) { /* ignore */ }
-    }
+    // 2026-05-06: NO LONGER auto-prepending an ÓGREITT stamp to notes.
+    // The receipt already shows "Greiðsl.skilm.: Ógreitt — greitt við afhendingu"
+    // via paymentTermsFor(method), and the bookkeeping overview groups by
+    // greitt_med directly. Adding the stamp to athugasemdir produced a
+    // duplicate "vegna ÓGREITT —" line on the receipt right above the
+    // payment-terms line. Now greitt_med = 'greitt_sidar' is the single
+    // source of truth.
 
     if (doReceipt) printReceipt(cart, method);
     if (doBarcodes) printBarcodes(cart);
@@ -401,39 +391,65 @@
       }
     }
     if (products.length === 0) return;
-    const win = window.open('', 'strikamerki', 'width=380,height=700');
+    // Customer info for the label (name + phone). Read from cart.customer if present.
+    const cust = cart.customer || {};
+    const custName = (cust.nafn || cust.name || '').trim();
+    const custPhone = (cust.simi || cust.farsimi || cust.phone || '').trim();
+    const win = window.open('', 'strikamerki', 'width=420,height=700');
     if (!win) { alert('Vinsamlegast leyfðu sprettiglugga til að prenta strikamerki.'); return; }
     const labelsHTML = products.map(p => `
       <div class="lbl">
-        <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&margin=0&data=${encodeURIComponent(p.serial)}" alt="${esc(p.serial)}">
+        <img class="qr" src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&margin=0&data=${encodeURIComponent(p.serial)}" alt="${esc(p.serial)}">
         <div class="lbl-text">
           <div class="lbl-serial">${esc(p.serial)}</div>
-          <div class="lbl-name">${esc(p.name)}</div>
+          <div class="lbl-name">${esc(custName || p.name)}</div>
+          ${custPhone ? '<div class="lbl-phone">📞 '+esc(custPhone)+'</div>' : ''}
           <div class="lbl-org">Slökkvitæki ehf · 565-4080</div>
         </div>
       </div>`).join('');
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Strikamerki</title>
+    /* Pull label size + DPI shift compensation from AppSettings (patch 85).
+       Falls back to 54×17 mm + 2 mm DPI comp if settings aren't loaded. */
+    const _ps = (window.AppSettings && window.AppSettings.path('prentun')) || {};
+    const _sz = _ps.label_size || '54x17';
+    const _dpiComp = Number.isFinite(+_ps.dpi_compensation) ? +_ps.dpi_compensation : 2;
+    let _w = 54, _h = 17;
+    if (_sz === '62x17')      { _w = 62; _h = 17; }
+    else if (_sz === '62x100'){ _w = 62; _h = 100; }
+    else if (_sz === '38x90') { _w = 38; _h = 90; }
+    const _top = 9 + _dpiComp;
+    const _qr = Math.max(4, Math.min(20, _h - _top - 1));
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Strikamerki — Brother ${_w}×${_h} mm</title>
 <style>
-  @page { margin: 4mm; }
-  body { font-family: -apple-system, sans-serif; margin: 0; padding: 6px; color: #000; }
+  /* Brother QL series. Dimensions + DPI shift compensation come from
+     AppSettings.prentun (Settings panel → Prentun tab). */
+  @page { size: ${_w}mm ${_h}mm; margin: 0; }
+  html, body { margin: 0; padding: 0; color: #000; font-family: Arial, Helvetica, sans-serif; }
   .lbl {
-    display: flex; align-items: center; gap: 10px;
-    padding: 6px 8px; border: 1px solid #000; border-radius: 4px;
-    margin-bottom: 6px; page-break-inside: avoid;
-    width: 220px; min-height: 80px;
+    width: ${_w}mm; height: ${_h}mm;
+    box-sizing: border-box; padding: ${_top}mm 6mm 0mm 5mm;
+    display: flex; align-items: center; gap: 1.5mm;
+    page-break-after: always; break-after: page; overflow: hidden;
   }
-  .qr { width: 70px; height: 70px; flex-shrink: 0; }
-  .lbl-text { flex: 1; min-width: 0; }
-  .lbl-serial { font-size: 14px; font-weight: 700; font-family: monospace; line-height: 1.1; }
-  .lbl-name { font-size: 10px; color: #333; line-height: 1.2; margin-top: 3px; word-break: break-word; }
-  .lbl-org { font-size: 8px; color: #666; margin-top: 3px; }
-  .toolbar { padding: 6px; background: #f0f0f0; margin-bottom: 10px; text-align: center; font-size: 11px; }
+  .lbl:last-child { page-break-after: auto; }
+  .qr { width: ${_qr}mm; height: ${_qr}mm; flex-shrink: 0; }
+  .lbl-text { flex: 1; min-width: 0; line-height: 1.05; }
+  .lbl-serial { font-size: 10pt; font-weight: 800; font-family: 'Courier New', monospace; }
+  .lbl-name   { font-size: 7.5pt; font-weight: 600; margin-top: 0.4mm; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lbl-phone  { font-size: 6.5pt; color: #222; margin-top: 0.3mm; }
+  .lbl-org    { font-size: 5.5pt; color: #555; margin-top: 0.3mm; }
+  .toolbar {
+    padding: 8px 12px; background: #f4f4f4; border-bottom: 1px solid #ddd;
+    text-align: center; font-size: 12px;
+  }
   .toolbar button { padding: 6px 14px; font-size: 12px; cursor: pointer; margin: 0 4px; }
-  @media print { .toolbar { display: none; } body { padding: 0; } }
+  .toolbar small { color: #666; display: block; margin-top: 4px; font-size: 10px; }
+  @media print { .toolbar { display: none; } }
 </style></head><body>
   <div class="toolbar">
-    ${products.length} strikamerki tilbúin · <button onclick="window.print()">🖨️ Prenta</button>
+    ${products.length} strikamerki tilbúin · 54 × 17 mm
+    <button onclick="window.print()">🖨️ Prenta</button>
     <button onclick="window.close()">Loka</button>
+    <small>Veldu Brother QL prentara í prentglugganum og settu pappírsstærð á 54 × 17 mm</small>
   </div>
   ${labelsHTML}
   <script>
@@ -470,7 +486,11 @@
 
   window.SalaCheckout = {
     show: () => { const b = document.getElementById('pos-checkout'); if (b) showDialog(b); },
-    version: 'v1'
+    // Exposed for the test-print panel (patch 84) and any other tooling that
+    // needs to drive the print routines without going through a real sale.
+    printReceipt,
+    printBarcodes,
+    version: 'v2'
   };
 })();
 /* === END SALA CHECKOUT DIALOG === */

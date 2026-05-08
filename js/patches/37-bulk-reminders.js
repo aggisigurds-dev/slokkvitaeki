@@ -80,8 +80,10 @@
   async function loadDue(fromISO, toISO) {
     const SB = getSB();
     if (!SB) return [];
-    const { data } = await SB.from('þjonustutaeki')
-      .select('id,serial,tegund,company_id,company_nafn,client,next_insp,simi,netfang')
+    // uttaeki schema: id, serial, type, size, client, location, last_insp, next_insp, status, pressure, phone, notes.
+    // No netfang on uttaeki itself — fetch from fyrirtaeki via client name lookup later.
+    const { data } = await SB.from('uttaeki')
+      .select('id,serial,type,size,client,next_insp,phone')
       .gte('next_insp', fromISO)
       .lte('next_insp', toISO)
       .order('next_insp');
@@ -89,22 +91,37 @@
   }
 
   // ── Group by company ──────────────────────────────────────────────────────
-  function groupByCompany(units) {
+  async function groupByCompany(units) {
     const map = {};
     units.forEach(u => {
-      const key = u.company_nafn || u.client || 'Óþekkt';
-      if (!map[key]) map[key] = { name: key, units: [], email: u.netfang||'', phone: u.simi||'' };
+      const key = u.client || 'Óþekkt';
+      if (!map[key]) map[key] = { name: key, units: [], email: '', phone: u.phone||'' };
       map[key].units.push(u);
-      if (!map[key].email && u.netfang) map[key].email = u.netfang;
-      if (!map[key].phone && u.simi) map[key].phone = u.simi;
+      if (!map[key].phone && u.phone) map[key].phone = u.phone;
     });
+    // Backfill emails from fyrirtaeki by company name
+    const SB = getSB();
+    if (SB) {
+      const names = Object.keys(map);
+      if (names.length) {
+        try {
+          const { data } = await SB.from('fyrirtaeki').select('nafn,netfang,simi').in('nafn', names);
+          (data||[]).forEach(c => {
+            if (map[c.nafn]) {
+              if (!map[c.nafn].email && c.netfang) map[c.nafn].email = c.netfang;
+              if (!map[c.nafn].phone && c.simi) map[c.nafn].phone = c.simi;
+            }
+          });
+        } catch (_) {}
+      }
+    }
     return Object.values(map).sort((a,b) => a.name.localeCompare(b.name));
   }
 
   // ── Build email body ──────────────────────────────────────────────────────
   function buildEmailBody(group) {
     const unitList = group.units.map(u =>
-      `  • ${u.serial||'?'} — ${u.tegund||''} — skoðun: ${fmtDate(u.next_insp)}`
+      `  • ${u.serial||'?'} — ${u.type||u.tegund||''} — skoðun: ${fmtDate(u.next_insp)}`
     ).join('\n');
     return `Góðan dag,\n\nSlökkvitæki ehf hér með áminningu um að eftirfarandi slökkvitæki eru á gjalddaga skoðunar:\n\n${unitList}\n\nVinsamlegast hafðu samband við okkur til að bóka tíma.\n\nSlökkvitæki ehf\n${localStorage.getItem('sms_company_phone')||''}`;
   }
@@ -142,7 +159,7 @@
     document.body.appendChild(wrap);
 
     const units = await loadDue(fromISO, toISO);
-    const groups = groupByCompany(units);
+    const groups = await groupByCompany(units);
     const log = getLog();
 
     if (!groups.length) {

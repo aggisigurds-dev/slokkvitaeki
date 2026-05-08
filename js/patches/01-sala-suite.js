@@ -974,7 +974,50 @@
       }},
     });
 
+    // 2026-05-08: button to send a Tilbúið verkbeiðni back to workshop
+    // (e.g. when customer arrived and tækið looked broken — staff need to
+    // mark it ónýtt and/or add replacement-part notes for billing). Sets
+    // status back to "Í vinnslu" so it shows up in the workshop list
+    // again, and appends a tagged line to notes documenting the reason.
+    const sendBack = el('button', {
+      class: 'sm-btn',
+      text: '↩ Aftur til verkstæðis',
+      on: { click: async () => {
+        const reason = prompt(
+          'Hvers vegna er verkið sent aftur til verkstæðis?\n\n' +
+          'Dæmi: „Tæki ónýtt", „Vantar varahluti", „Þrýstingur féll", ' +
+          '„Bæta við hleðslu". Verkstæðismaður getur þá merkt tæki sem ónýtt eða ' +
+          'skráð athugasemd með varahlutum sem þarf að rukka fyrir.',
+          ''
+        );
+        if (reason === null) return; // cancelled
+        errBox.innerHTML = '';
+        sendBack.disabled = true;
+        sendBack.textContent = 'Sendi til baka…';
+        try {
+          const today = todayISO();
+          const stamp = '\n\n[' + today + ' · Aftur til verkstæðis] ' + (reason.trim() || '(engin ástæða gefin)');
+          const newNotes = (v.notes || '') + stamp;
+          await updateVerkStatus(v.id, { status: 'Í vinnslu', notes: newNotes });
+          // Best-effort: also reset linked uttaeki status back to active
+          // so the workshop row shows up correctly
+          const serials = parseSerialsFromNotes(v.notes);
+          for (const s of serials) {
+            try { await updateTaekiStatus(s, 'active'); }
+            catch (e) { warn('taeki status reset failed for', s, e); }
+          }
+          closeModal();
+          if (onBack) onBack();
+        } catch (e) {
+          sendBack.disabled = false;
+          sendBack.textContent = '↩ Aftur til verkstæðis';
+          errBox.appendChild(el('div', { class: 'sm-err', text: 'Villa: ' + (e.message || e) }));
+        }
+      }},
+    });
+
     const buttons = [back];
+    if (isTilbuid && !isAfhent) buttons.push(sendBack);
     if (!isTilbuid && !isAfhent) buttons.push(ready);
     if (!isAfhent) buttons.push(handover);
 

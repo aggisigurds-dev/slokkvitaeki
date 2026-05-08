@@ -3,6 +3,7 @@
   'use strict';
   var _products = [];
   var _activeTab = 'allt'; // 'allt' | 'vorur' | 'thjonusta'
+  var _searchTerm = '';
 
   function fmtKr(n){return Math.round(Number(n)||0).toLocaleString('is-IS')+' kr';}
   function fmtKrVat(n){var w=Number(n)*1.24;return Math.round(w).toLocaleString('is-IS')+' kr m/vsk';}
@@ -39,9 +40,18 @@
   }
 
   function filteredProducts(){
-    if(_activeTab==='vorur') return _products.filter(function(p){return p.flokkur !== 'Þjónusta';});
-    if(_activeTab==='thjonusta') return _products.filter(function(p){return p.flokkur === 'Þjónusta';});
-    return _products;
+    var rows = _products;
+    if(_activeTab==='vorur') rows = rows.filter(function(p){return p.flokkur !== 'Þjónusta';});
+    else if(_activeTab==='thjonusta') rows = rows.filter(function(p){return p.flokkur === 'Þjónusta';});
+    var q = (_searchTerm||'').trim().toLowerCase();
+    if(q){
+      rows = rows.filter(function(p){
+        return (p.nafn||'').toLowerCase().indexOf(q)>=0
+            || (p.flokkur||'').toLowerCase().indexOf(q)>=0
+            || (p.lysing||'').toLowerCase().indexOf(q)>=0;
+      });
+    }
+    return rows;
   }
 
   function renderView(){
@@ -57,14 +67,19 @@
         '<h1 style="margin:0;font-size:22px;color:#0f172a">Vörur og þjónusta</h1>' +
         '<button id="vorur-new" style="background:#1a7f4b;color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-size:14px">+ Ný vara/þjónusta</button>' +
       '</div>' +
+      // Search
+      '<div style="position:relative;margin-bottom:14px">' +
+        '<input id="vorur-search" type="search" placeholder="🔎 Leita eftir nafni, lýsingu eða flokki…" value="'+esc(_searchTerm)+'" ' +
+          'style="width:100%;padding:11px 14px 11px 14px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;background:#fff">' +
+      '</div>' +
       // Tabs
       '<div style="display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #e2e8f0">' +
         tabBtn('allt','Allt · '+counts.allt) +
         tabBtn('vorur','Vörur · '+counts.vorur) +
         tabBtn('thjonusta','Þjónusta · '+counts.thjonusta) +
       '</div>' +
-      // Grid
-      '<div id="vorur-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px"></div>' +
+      // Grouped grid
+      '<div id="vorur-grid"></div>' +
     '</div>';
     bindEvents();
     renderGrid();
@@ -79,8 +94,46 @@
     var grid = document.getElementById('vorur-grid');
     if(!grid) return;
     var rows = filteredProducts();
-    if(!rows.length){grid.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:40px;grid-column:1/-1">Engar færslur. Smelltu á "+ Ný vara/þjónusta" til að bæta við.</div>';return;}
-    grid.innerHTML = rows.map(function(p){
+    if(!rows.length){
+      grid.innerHTML = '<div style="color:#94a3b8;text-align:center;padding:40px">' +
+        (_searchTerm ? 'Engin niðurstaða fyrir "'+esc(_searchTerm)+'"' : 'Engar færslur. Smelltu á "+ Ný vara/þjónusta" til að bæta við.') +
+      '</div>';
+      return;
+    }
+    // Group by flokkur (category) — same pattern as Sala "Aðrar Vörur" panel.
+    var byCat = {};
+    rows.forEach(function(p){
+      var c = (p.flokkur||'Annað');
+      (byCat[c] = byCat[c] || []).push(p);
+    });
+    // Sort categories: Þjónusta first, then alphabetically. "Annað" last.
+    var cats = Object.keys(byCat).sort(function(a,b){
+      if (a === 'Þjónusta' && b !== 'Þjónusta') return -1;
+      if (b === 'Þjónusta' && a !== 'Þjónusta') return 1;
+      if (a === 'Annað' && b !== 'Annað') return 1;
+      if (b === 'Annað' && a !== 'Annað') return -1;
+      return a.localeCompare(b, 'is');
+    });
+    grid.innerHTML = cats.map(function(cat){
+      return '<div style="margin-bottom:24px">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0">' +
+          '<span style="font-size:14px;font-weight:800;color:#0f172a;text-transform:uppercase;letter-spacing:0.04em">'+esc(cat)+'</span>' +
+          '<span style="font-size:11px;color:#64748b;background:#f1f5f9;padding:2px 8px;border-radius:10px;font-weight:600">'+byCat[cat].length+'</span>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">' +
+          byCat[cat].map(renderCard).join('') +
+        '</div>' +
+      '</div>';
+    }).join('');
+    // Click handlers on the cards (now nested inside category sections)
+    Array.from(grid.querySelectorAll('.vorur-card')).forEach(function(c){
+      c.addEventListener('click',function(){
+        openEditor(parseInt(c.getAttribute('data-id'),10));
+      });
+    });
+  }
+
+  function renderCard(p){
       var priceInc = p.verd_an_vsk * (1 + (p.vsk_prosenta||24)/100);
       var img = p.mynd ? '<img src="'+esc(p.mynd)+'" style="width:100%;height:140px;object-fit:cover;border-radius:8px;background:#f8fafc">' : '<div style="width:100%;height:140px;background:#f8fafc;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:32px">📦</div>';
       var isSvc = p.flokkur === 'Þjónusta';
@@ -99,13 +152,6 @@
           '</div>' +
         '</div>' +
       '</div>';
-    }).join('');
-    // Click handlers
-    Array.from(grid.querySelectorAll('.vorur-card')).forEach(function(c){
-      c.addEventListener('click',function(){
-        openEditor(parseInt(c.getAttribute('data-id'),10));
-      });
-    });
   }
 
   function bindEvents(){
@@ -117,6 +163,14 @@
     });
     var nb = document.getElementById('vorur-new');
     if(nb) nb.addEventListener('click',function(){openEditor(null);});
+    var search = document.getElementById('vorur-search');
+    if(search){
+      search.addEventListener('input',function(e){
+        _searchTerm = e.target.value || '';
+        // Re-render only the grid — keep input focus + cursor position.
+        renderGrid();
+      });
+    }
   }
 
   function openEditor(id){
@@ -270,6 +324,18 @@
       try {
         var dr = await DB.sb.from('vorur').delete().eq('id',product.id);
         if(dr.error) throw dr.error;
+        // Tombstone the name so seed-patches (66 pricelist-seed, 80 aux-products)
+        // don't re-insert it on next page load.
+        try{
+          if(window.AppSettings && typeof window.AppSettings.save==='function'){
+            var existing = (window.AppSettings.path('sala.deleted_product_names')||[]).slice();
+            var name = String(p.nafn||'').trim();
+            if(name && existing.indexOf(name)<0){
+              existing.push(name);
+              await window.AppSettings.save({sala:{deleted_product_names: existing}});
+            }
+          }
+        } catch(_){ /* tombstone is best-effort */ }
         await refresh();
         m.remove();
       } catch(e){ alert('Villa: '+(e.message||e)); delBtn.disabled=false; delBtn.textContent='Eyða'; }

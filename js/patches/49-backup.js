@@ -8,12 +8,13 @@
 
   function getSB() { return window.DB && window.DB.sb; }
 
+  // Tables backed up. Wrapped in safe() in backup() so missing tables don't break the whole job.
+  // Keep the list comprehensive — some tables only exist if their feature has been enabled.
   const TABLES = [
     'fyrirtaeki','vidskiptavinir','solur','sala_transactions','verkbeidnir','verklidur',
-    'verkdagbok','verkdagbok_attachments','dagbok','dagskra','tilbod','contact_log',
-    'uttaeki','lanstaeki','lanstaeki_saga','skodunar_saga','taekjategundir','thjonustategundir',
-    'taeknimenn','vorur','user_profiles','birgdir','innkaupapantanir',
-    'timabok','utgjalda_log','akstursdagbok'
+    'verkdagbok','verkdagbok_attachments','tilbod','tilbod_attachments','contact_log',
+    'uttaeki','lanstaeki','thjonustusamningar','vorur','user_profiles',
+    'birgdir','innkaupapantanir','timabok','utgjalda_log','akstursdagbok','afyllingar'
   ];
 
   async function backup() {

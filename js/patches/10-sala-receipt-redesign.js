@@ -19,7 +19,7 @@
   window.__salaInvoiceInstalled = true;
 
   const ICELAND_LOCALE = 'is-IS';
-  const COMPANY = {
+  const COMPANY_FALLBACK = {
     name: 'Slökkvitæki ehf',
     tag: 'Brunahólf',
     kt: '600508-0400',
@@ -27,6 +27,18 @@
     addr1: 'Helluhrauni 10',
     addr2: '220 Hafnarfjörður',
     phone: '565-4080'
+  };
+  // Live getter: pulls company info from AppSettings (Settings panel → Branding)
+  // every time a receipt is built. Falls back to hardcoded values until
+  // settings load. Uses a Proxy-free pattern via getter object.
+  const COMPANY = {
+    get name()  { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.company_name) || COMPANY_FALLBACK.name; },
+    get tag()   { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.tagline)      || COMPANY_FALLBACK.tag; },
+    get kt()    { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.kennitala)    || COMPANY_FALLBACK.kt; },
+    get vsk()   { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.vsk_nr)       || COMPANY_FALLBACK.vsk; },
+    get addr1() { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.address1)     || COMPANY_FALLBACK.addr1; },
+    get addr2() { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.address2)     || COMPANY_FALLBACK.addr2; },
+    get phone() { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.phone)        || COMPANY_FALLBACK.phone; }
   };
   const DEFAULTS = {
     paymentTerms: 'Staðgreitt',
@@ -44,6 +56,14 @@
       const user = window.UserAuth?.getUser?.();
       if (user && user.email) return user.email.split('@')[0];
     } catch (e) { /* fall through */ }
+    // Fallback to first non-empty starfsmadur from AppSettings (Stillingar → Starfsmenn).
+    try {
+      const list = window.AppSettings && window.AppSettings.path('starfsmenn');
+      if (Array.isArray(list)) {
+        const first = list.find(s => s && s.name && s.name.trim());
+        if (first) return first.name.trim();
+      }
+    } catch (e) { /* ignore */ }
     return DEFAULTS.employee;
   }
 
@@ -81,6 +101,11 @@
   }
   function fmtDate(d) {
     if (!(d instanceof Date)) d = new Date();
+    // Honor Stillingar → Almennt → "Dagsformat". Falls back to dd.mm.yy
+    // (legacy) if AppSettings is not loaded yet.
+    if (window.AppSettings && typeof window.AppSettings.fmtDate === 'function') {
+      try { return window.AppSettings.fmtDate(d); } catch (_) {}
+    }
     const dd = String(d.getDate()).padStart(2, '0');
     const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yy = String(d.getFullYear()).slice(-2);
@@ -310,11 +335,11 @@
   `;
 
   // The receipt opens in a popup whose URL is `about:blank`, so root-relative
-  // paths like "/img/logo.jpg" don't resolve. Build an absolute URL from the
+  // paths like "/img/logo.png" don't resolve. Build an absolute URL from the
   // parent window's origin so the logo loads correctly in print + preview.
   const LOGO_URL = (typeof window !== 'undefined' && window.location && window.location.origin)
-    ? window.location.origin + '/img/logo.jpg'
-    : '/img/logo.jpg';
+    ? window.location.origin + '/img/logo.png'
+    : '/img/logo.png';
 
   function buildHTML(ctx) {
     const t = ctx.totals;
@@ -340,13 +365,39 @@
 
     const co = ctx.customer || {};
     const addr = splitAddress(co.heimilisfang);
-    const nafn  = co.nafn || ctx.customerName || '';
+    let nafn  = co.nafn || ctx.customerName || '';
+    // Strip the auto-generated "Viðskiptavinur NNNNNN-NNNN" placeholder name
+    // (created by legacy.js when a sale is made with only a kennitala). Run
+    // unconditionally — when re-printing a historical sale the kennitala may
+    // not be passed in separately, but it's embedded in the name itself and
+    // we can recover it from there.
+    const placeholder = /^vi[ðd]skiptavinur\s+(\d{6,}(?:-?\d{4})?)\s*$/i.exec(nafn.trim());
+    if (placeholder) {
+      nafn = 'Viðskiptavinur';
+      if (!co.kennitala) co.kennitala = placeholder[1];
+    }
+    const ktDigits = (co.kennitala || '').replace(/[^0-9]/g, '');
+    if (ktDigits && nafn.replace(/[^0-9]/g, '') === ktDigits && /^[\d\s-]+$/.test(nafn)) {
+      nafn = 'Viðskiptavinur';
+    }
     const customerRows = [];
     if (nafn)         customerRows.push(`<div class="bt-name">${esc(nafn)}</div>`);
     if (addr.line1)   customerRows.push(`<div class="bt-line">${esc(addr.line1)}</div>`);
     if (addr.line2)   customerRows.push(`<div class="bt-line">${esc(addr.line2)}</div>`);
     if (co.kennitala) customerRows.push(`<div class="bt-line">${esc(fmtKt(co.kennitala))}</div>`);
-    if (ctx.vegna)    customerRows.push(`<div class="vegna">vegna ${esc(ctx.vegna)}</div>`);
+    // Strip the legacy auto-prepended "ÓGREITT — verður greitt við afhendingu"
+    // stamp. Older sales saved this into athugasemdir and the field still has it.
+    // paymentTerms now conveys the same info; the stamp on the receipt is just
+    // duplicate noise. Keep whatever real free-form note remains.
+    if (ctx.vegna) {
+      const cleaned = String(ctx.vegna)
+        .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]\s*verður\s+greitt\s+við\s+afhendingu\s*[—\-:]?\s*/i, '')
+        .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]?\s*/i, '')
+        .trim();
+      if (cleaned) {
+        customerRows.push(`<div class="vegna">vegna ${esc(cleaned)}</div>`);
+      }
+    }
 
     return `
       <div class="no-print">
@@ -356,9 +407,14 @@
       <div class="sheet">
         <header class="hdr">
           <div class="hdr-left">
-            <img src="${esc(LOGO_URL)}" alt="Slökkvitæki ehf"
+            ${(() => {
+              // Honor Stillingar → Kvittun → "Birta logo" toggle. When off,
+              // logo is skipped entirely (the company name takes its place).
+              const showLogo = !window.AppSettings || window.AppSettings.path('kvittun.show_logo') !== false;
+              return showLogo ? `<img src="${esc(LOGO_URL)}" alt="${esc(COMPANY.name)}"
               style="width:72px;height:72px;object-fit:contain;flex-shrink:0;border-radius:50%"
-              onerror="this.outerHTML='&lt;div aria-hidden=&quot;true&quot; style=&quot;width:72px;height:72px;flex-shrink:0;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:36pt;letter-spacing:-0.02em;font-family:Arial,Helvetica,sans-serif;&quot;&gt;S&lt;/div&gt;'">
+              onerror="this.outerHTML='&lt;div aria-hidden=&quot;true&quot; style=&quot;width:72px;height:72px;flex-shrink:0;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:36pt;letter-spacing:-0.02em;font-family:Arial,Helvetica,sans-serif;&quot;&gt;S&lt;/div&gt;'">` : '';
+            })()}
             <div class="hdr-co">
               <div class="co-name">${esc(COMPANY.name)}</div>
               <div class="co-tag">${esc(COMPANY.tag)}</div>
@@ -431,6 +487,14 @@
         </div>
 
         <div class="footer">
+          ${(() => {
+            // Pull from AppSettings.kvittun (Stillingar → Kvittun tab)
+            const k = (window.AppSettings && window.AppSettings.path('kvittun')) || {};
+            const isInv = ctx.paymentMethod === 'reikningur' || /reikning/i.test(ctx.paymentTerms || '');
+            const reikMsg = (isInv && k.reikningur_message) ? `<div class="reik-msg" style="margin-bottom:8px;padding:8px 10px;background:#fff7ed;border-left:3px solid #C93C1D;font-size:9pt;color:#7c2d12">${esc(k.reikningur_message)}</div>` : '';
+            const footerTxt = k.footer_text ? `<div class="footer-txt" style="margin-top:6px;text-align:center;font-size:9pt;color:#475569;font-style:italic">${esc(k.footer_text)}</div>` : '';
+            return reikMsg + footerTxt;
+          })()}
           <div class="signature">
             <span class="lbl">Móttekið/Greitt:</span>
             <span class="line"></span>

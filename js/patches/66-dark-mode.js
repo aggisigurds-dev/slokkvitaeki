@@ -45,11 +45,22 @@
     apply(cur==='dark' ? 'light' : 'dark');
   }
 
-  // Load saved theme on init
-  const saved = localStorage.getItem('cfg_theme');
-  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    apply('dark');
+  // One-time reset — until 2026-05-06 the patch auto-applied dark mode based on
+  // OS preference. That polluted localStorage with cfg_theme='dark' on every
+  // device whose OS was set to dark, and the dark-mode CSS doesn't render the
+  // app well (see screenshots in the "Nytt fix mobile layout" Drive folder).
+  // Wipe the stored preference once so everyone falls back to light; users
+  // who actually want dark can re-enable it via the 🌙 toggle.
+  if (!localStorage.getItem('cfg_theme_v2_reset')) {
+    localStorage.removeItem('cfg_theme');
+    localStorage.setItem('cfg_theme_v2_reset', '1');
   }
+  // Load saved theme on init. Light is the default — we no longer follow the
+  // OS preference automatically because users who have Windows in dark mode
+  // were getting the dark theme without choosing it, and the desktop layout
+  // wasn't designed around it.
+  const saved = localStorage.getItem('cfg_theme');
+  if (saved === 'dark') apply('dark');
 
   function ensureBtn(){
     if (document.getElementById('dark-toggle')) return;

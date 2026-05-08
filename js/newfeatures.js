@@ -24,8 +24,18 @@ async function _geo(addr){
     var coRes=await DB.sb.from('fyrirtaeki').select('nafn,heimilisfang').eq('nafn',addr).limit(1);
     if(coRes.data&&coRes.data[0]&&coRes.data[0].heimilisfang)qAddr=coRes.data[0].heimilisfang;
   }catch(e){}
-  try{var r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=is&q='+encodeURIComponent(qAddr+', Iceland'),{headers:{'Accept-Language':'is'}});var d=await r.json();if(d&&d.length){var p={lat:parseFloat(d[0].lat),lng:parseFloat(d[0].lon)};_gc[addr]=p;try{localStorage.setItem("_slokk_gc",JSON.stringify(_gc));}catch(e){}return p;}}catch(e){}return null;}
-async function _markers(){if(!_map)return;_map.eachLayer(function(l){if(l instanceof L.Marker)_map.removeLayer(l);});var res=await DB.sb.from('fyrirtaeki').select('id,nafn,heimilisfang');if(!res.data)return;for(var i=0;i<res.data.length;i++){var co=res.data[i];var addr=(co.heimilisfang||co.address||'').trim();if(!addr)continue;var pos=await _geo(addr);if(!pos)continue;var uR=await DB.sb.from('uttaeki').select('next_insp,status').eq('client',co.nafn).eq('status','active');var col=_col(uR.data||[]);var cnt=uR.data?uR.data.length:0;var lbl=col==='#dc2626'?'Útrunni':col==='#b45309'?'Rennur út':'Í lagi';var icon=L.divIcon({html:'<div style="width:16px;height:16px;border-radius:50%;background:'+col+';border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,.4);"></div>',className:'',iconSize:[16,16],iconAnchor:[8,8],popupAnchor:[0,-12]});var pd=document.createElement('div');pd.innerHTML='<b style="font-size:14px;">'+co.nafn+'</b><br><span style="font-size:11px;color:#666;">'+addr+'</span><br><span style="font-size:12px;margin-top:4px;display:block;">'+cnt+' sl\xf6kkvit\xe6ki &mdash; <b style="color:'+col+'">'+lbl+'</b></span>';var pb=document.createElement('button');pb.textContent='Skoda';pb.style.cssText='margin-top:8px;width:100%;padding:6px;background:#c93c1d;color:white;border:none;border-radius:6px;cursor:pointer;font-size:12px;font-weight:600;';(function(id){pb.onclick=function(){App.switchView('companies');setTimeout(function(){Companies.openDetail(id);},400);};}(co.id));pd.appendChild(pb);L.marker([pos.lat,pos.lng],{icon:icon}).bindPopup(pd,{maxWidth:220}).addTo(_map);await new Promise(function(r){setTimeout(r,1100);});}}
+  try{var r=await fetch('/api/geocode?q='+encodeURIComponent(qAddr));if(!r.ok){return null;}var d=await r.json();if(d&&typeof d.lat==='number'&&typeof d.lon==='number'){var p={lat:d.lat,lng:d.lon};_gc[addr]=p;try{localStorage.setItem("_slokk_gc",JSON.stringify(_gc));}catch(e){}return p;}}catch(e){}return null;}
+// 2026-05-07: SLOKK v7 _markers disabled. It was rendering its own L.marker
+// circles on top of mapfix.js's status markers, producing visual duplicates
+// ("þykkir grænir punktar" the user reported). mapfix.js owns map markers
+// now and re-renders on its own interval (see mapfix.js: setInterval(tick,500)).
+async function _markers(){
+  if(!_map)return;
+  // Sweep any leftover CircleMarker layers from older sessions.
+  _map.eachLayer(function(l){
+    if(l instanceof L.CircleMarker)_map.removeLayer(l);
+  });
+}
 function _build(mc){mc.style.height='360px';mc.style.width='100%';_map=window._slokk_map=L.map(mc).setView([64.1355,-21.8954],11);L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'\xa9 OpenStreetMap',maxZoom:19}).addTo(_map);var lg=L.control({position:'bottomleft'});lg.onAdd=function(){var d=L.DomUtil.create('div');d.style.cssText='background:white;padding:8px 12px;border-radius:8px;font-size:11px;border:1px solid #e4e6ea;line-height:1.9;box-shadow:0 2px 8px rgba(0,0,0,.1);';d.innerHTML='<b style="font-size:9px;color:#888;text-transform:uppercase;letter-spacing:.06em;">Staða skoðun</b><br><span style="color:#dc2626;">\u25cf</span> Útrunni<br><span style="color:#b45309;">\u25cf</span> Rennur út<br><span style="color:#1a7f4b;">\u25cf</span> Í lagi<br><span style="color:#9ca3af;">\u25cf</span> Engar dagsetningar';return d;};lg.addTo(_map);window.FieldMap={map:_map,refresh:_markers};(window._slokk_markers||_markers)();}
 function _inject(){
 var ex=document.getElementById('field-map-container');
@@ -47,34 +57,16 @@ setTimeout(function(){if(typeof L!=='undefined'){_build(mc);}else{var lc=documen
 new MutationObserver(function(ms){if(_done)return;for(var i=0;i<ms.length;i++){if(ms[i].type==='attributes'&&ms[i].target.id==='view-field'){setTimeout(_inject,300);return;}}}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['class']});
 document.addEventListener('click',function(){if(!_done)setTimeout(_inject,400);});
 setTimeout(_inject,900);
+// 2026-05-07: Legacy circle-marker renderer disabled. The thick green dots it
+// drew were duplicating the smaller status markers from mapfix.js, so we now
+// just clear any leftover CircleMarkers and let mapfix.js own the map.
 window._slokk_markers=async function(){
-  var units=DB.cache.units||[];
-  var clients=[...new Set(units.map(function(u){return u.client;}))];
   var map=window._slokk_map;
-  var gc=window._mapGc;
-  if(!map||!gc)return;
+  if(!map)return;
+  // Sweep stale CircleMarker layers (left over from older sessions or browser
+  // restoration). mapfix.js uses L.marker with divIcon, NOT CircleMarker, so
+  // this only removes the legacy dots.
   map.eachLayer(function(l){if(l instanceof L.CircleMarker)map.removeLayer(l);});
-  var now=new Date();
-  for(var ci=0;ci<clients.length;ci++){
-    var client=clients[ci];
-    var pos=gc[client];
-    if(!pos){
-      try{
-        var coRes=await DB.sb.from("fyrirtaeki").select("nafn,heimilisfang").eq("nafn",client).limit(1);
-        var qAddr=coRes.data&&coRes.data[0]?coRes.data[0].heimilisfang:client;
-        var gRes=await fetch("https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=is&q="+encodeURIComponent(qAddr+", Iceland"),{headers:{"Accept-Language":"is"}});
-        var gData=await gRes.json();
-        if(gData&&gData[0]){pos={lat:parseFloat(gData[0].lat),lng:parseFloat(gData[0].lon)};gc[client]=pos;try{localStorage.setItem("_slokk_gc",JSON.stringify(gc));}catch(e){}}
-      }catch(e){continue;}
-    }
-    if(!pos)continue;
-    var cu=units.filter(function(u){return u.client===client;});
-    var hasOverdue=cu.some(function(u){return u.status==="overdue"||(u.next_insp&&new Date(u.next_insp)<now);});
-    var hasSoon=!hasOverdue&&cu.some(function(u){if(!u.next_insp)return false;var d=new Date(u.next_insp);return(d-now)<31*24*3600*1000;});
-    var col=hasOverdue?"#dc2626":hasSoon?"#f97316":"#16a34a";
-    L.circleMarker([pos.lat,pos.lng],{radius:14,color:col,fillColor:col,fillOpacity:0.85,weight:2})
-      .addTo(map).bindPopup("<b>"+client+"</b><br>"+cu.length+" tæki");
-  }
 };
 window._slokk_refresh=function(){window._slokk_markers&&window._slokk_markers();};
 (function(){
@@ -386,12 +378,12 @@ _schedObs.observe(document.body, {childList: true, subtree: true});
 if (window.MapModule && MapModule._geocode) {
   var _origGeo = MapModule._geocode.bind(MapModule);
   MapModule._geocode = function(address, cb) {
-    // Add Iceland country bias
-    var query = encodeURIComponent(address + ', Iceland');
-    fetch('https://nominatim.openstreetmap.org/search?q=' + query + '&format=json&limit=1&countrycodes=is')
-      .then(function(r) { return r.json(); })
+    // Proxy via Netlify function (browser can't hit Nominatim directly)
+    var query = encodeURIComponent(address);
+    fetch('/api/geocode?q=' + query)
+      .then(function(r) { return r.ok ? r.json() : null; })
       .then(function(data) {
-        if (data && data[0]) cb(parseFloat(data[0].lat), parseFloat(data[0].lon));
+        if (data && typeof data.lat === 'number' && typeof data.lon === 'number') cb(data.lat, data.lon);
         else _origGeo(address, cb);
       })
       .catch(function() { _origGeo(address, cb); });
