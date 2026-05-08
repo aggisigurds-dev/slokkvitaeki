@@ -51,30 +51,21 @@ Most code uses the global `DB` object (in `/js/db.js`).
 
 ## Project state — important context
 
-There was no Git repo before this folder was created. The codebase was built
-incrementally over many Claude.ai sessions where each patch was streamed into
-the live site through the browser, because the sandbox couldn't reach
-api.netlify.com directly. All accumulated patches live in **one giant file**:
-`js/patch-master.js` (~456 KB).
-
-Each patch is wrapped:
+The codebase was originally built over many Claude.ai sessions where patches
+were streamed into the live site through the browser, because the sandbox
+couldn't reach api.netlify.com directly. All accumulated patches lived in
+**one giant file** (`js/patch-master.js`, ~456 KB), each wrapped:
 ```
 /* === FOO PATCH NAME v1 === */
 (() => { ... })();
 /* === END FOO PATCH NAME === */
 ```
 
-Recent patches in patch-master.js:
-- `BOKHALDS YFIRLIT v1.1` — accounting overview view + CSV export
-- `SALA RECEIPT REDESIGN v1` — A4 invoice popup
-- `MAPFIX KILL DOTS v2` — removes orange overlay-pane SVG circles
-- `VERKDAGBOK ATTACHMENTS v1` — file attachments (SQL pending)
-- `POS FIXES v4`, `QR LABEL CUSTOMER v2`, etc.
-
-**First-session priority**: split `js/patch-master.js` into `js/patches/*.js`,
-one file per `=== ... === / === END ... ===` block. Update `index.html`
-to include each new file. Then commit. The big file is hard to navigate and
-diff; this makes future work much easier.
+That single file has since been **split into `js/patches/*.js`** (one file per
+patch block), and the project lives in a private GitHub repo at
+`aggisigurds-dev/slokkvitaeki`. Adding new functionality means a new file under
+`js/patches/` and a `<script>` tag in `index.html` — no need for the
+`/* === NAME === */` wrapper anymore.
 
 ---
 
@@ -130,29 +121,12 @@ verkdagbok       (id uuid PK, created_at, job_date, fyrirtaeki, athugasemdir,
 
 ---
 
-## Pending work (first sessions)
+## Setup status (all done)
 
-**1. Split patch-master.js** — top priority. Each `/* === NAME === */ ... /* === END NAME === */` block becomes its own file under `js/patches/`. Update `index.html` script tags. Verify nothing breaks. Commit.
-
-**2. Run Supabase SQL for Verkdagbok attachments** — never executed. SQL is stored in `window.VdAttachments.setupSQL` at runtime. Needs to run in Supabase SQL Editor:
-```sql
-CREATE TABLE verkdagbok_attachments (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  entry_id uuid REFERENCES verkdagbok(id) ON DELETE CASCADE,
-  filename text, storage_path text, public_url text,
-  mime_type text, size_bytes bigint,
-  uploaded_at timestamptz DEFAULT now()
-);
-CREATE INDEX ON verkdagbok_attachments(entry_id);
-ALTER TABLE verkdagbok_attachments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY anon_all ON verkdagbok_attachments FOR ALL TO anon USING (true) WITH CHECK (true);
--- Then in Storage UI: create bucket "verkdagbok-attachments" (public),
--- with anon SELECT/INSERT/DELETE policies.
-```
-
-**3. Set up real deploy script** — `deploy.js` is included in this folder (uses Netlify API directly via Node.js fetch). Run with `node deploy.js`.
-
-**4. Optional**: connect to a private GitHub repo for backup + history.
+- ✅ `js/patch-master.js` split into `js/patches/*.js`
+- ✅ `verkdagbok_attachments` table + `verkdagbok-attachments` storage bucket exist in Supabase
+- ✅ `deploy.js` (Netlify API push from Node.js) — see workflow section below
+- ✅ Private GitHub repo at `aggisigurds-dev/slokkvitaeki`
 
 ---
 
