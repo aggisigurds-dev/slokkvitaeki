@@ -37,7 +37,12 @@ function* walk(dir) {
     if (SKIP_DIRS.has(name)) continue;
     const st = statSync(full);
     if (st.isDirectory()) yield* walk(full);
-    else if (!SKIP_FILES.has(name) && !/\.md$/i.test(name)) yield rel;
+    else if (
+      !SKIP_FILES.has(name) &&
+      !/\.md$/i.test(name) &&
+      !name.startsWith('_') &&     // local scratch / source assets (e.g. _customer-import-data.json, _logo2.jpg) — may contain PII
+      !/\.sql$/i.test(name)        // schema migrations, run via Supabase SQL Editor — never serve publicly
+    ) yield rel;
   }
 }
 

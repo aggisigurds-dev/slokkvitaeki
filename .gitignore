@@ -25,5 +25,8 @@ desktop.ini
 /scratch/
 *.bak
 
+# Local-only PII / source assets — never commit, never deploy
+_customer-import-data.json
+
 # Netlify CLI cache (if you ever install it)
 .netlify/
