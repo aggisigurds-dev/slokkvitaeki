@@ -162,6 +162,69 @@
     }
   }
 
+  // ── Action: revert/undo (downgrade status) ────────────────────────────
+  // 2026-05-11: User asked for a way to undo accidental Tilbúið / Sótt
+  // marking. This handles both:
+  //   - status='ready' → revert to 'inprogress' or 'received'
+  //   - status='collected' → revert to 'ready' AND clear paid_at, reset
+  //     verklidur 'done' → 'received'. Warns if a real sale was finalized.
+  async function revertJob(job) {
+    const SB = getSB();
+    if (!SB) { alert('Engin gagnabankatenging'); return; }
+    const fromStatus = job.status;
+    let toStatus = null;
+    let extraWarning = '';
+    if (fromStatus === 'ready') {
+      toStatus = 'received';
+    } else if (fromStatus === 'collected') {
+      toStatus = 'ready';
+      extraWarning = '\n\nViðvörun: salinn er ÞEGAR FINALIZERAÐUR í bókhaldi. ' +
+        'Þetta afturkallar VERKBEIÐNINA en upphæðin er enn skráð sem tekjur ' +
+        'á þessum degi. Notaðu „↩ Kreditfæra" ef þú þarft að breyta peningalegu upphæðinni.';
+    } else {
+      alert('Þessi verkbeiðni hefur stöðu „' + (fromStatus || 'óþekkt') + '" — ekkert að afturkalla.');
+      return;
+    }
+    let ok = true;
+    if (window.Confirm && typeof Confirm.show === 'function') {
+      ok = await Confirm.show(
+        'Afturkalla stöðu „' + fromStatus + '" → „' + toStatus + '"?' +
+        '\n\nVerkbeiðni: ' + (job.num || job.id) +
+        extraWarning,
+        { danger: !!extraWarning, okText: 'Já, afturkalla' }
+      );
+    } else {
+      ok = confirm('Afturkalla „' + fromStatus + '" → „' + toStatus + '"?' + extraWarning);
+    }
+    if (!ok) return;
+    const stamp = '[' + todayISO() + ' · AFTURKALLAÐ] Staða „' + fromStatus + '" → „' + toStatus + '"';
+    const newNotes = (job.notes || '') + '\n\n' + stamp;
+    try {
+      const updates = { status: toStatus, notes: newNotes };
+      // Going from collected back to ready — clear pickup date so it doesn't
+      // look like it was picked up.
+      if (fromStatus === 'collected') updates.pickup = null;
+      await SB.from('verkbeidnir').update(updates).eq('id', job.id);
+      // Reset verklidur from 'done' → 'received'. Keep 'broken' alone.
+      if (Array.isArray(job.units)) {
+        for (const u of job.units) {
+          if (u.status === 'done') {
+            try { await SB.from('verklidur').update({ status: 'received' }).eq('id', u.id); } catch(_){}
+          }
+        }
+      }
+      // Update local cache
+      if (window.DB && DB.cache && Array.isArray(DB.cache.jobs)) {
+        const j = DB.cache.jobs.find(x => x.id === job.id);
+        if (j) { j.status = toStatus; j.notes = newNotes; if (fromStatus === 'collected') j.pickup = null; }
+      }
+      if (window.Toast && Toast.show) Toast.show('↶ Afturkallað: ' + fromStatus + ' → ' + toStatus);
+      if (typeof App.refreshAll === 'function') App.refreshAll();
+    } catch (e) {
+      alert('Villa: ' + (e.message || e));
+    }
+  }
+
   // ── Inject buttons into counter-main ────────────────────────────────────
   function injectButtons() {
     const main = document.getElementById('counter-main');
@@ -204,6 +267,21 @@
     creditBtn.title = 'Opna kreditfærslu á upphaflegu sölunni';
     creditBtn.addEventListener('click', e => { e.stopPropagation(); creditJob(getCurrentJob() || job); });
     toolbar.appendChild(creditBtn);
+
+    // Revert button — only show when there's something to undo (ready or
+    // collected). For 'received' / 'inprogress' there's nothing to revert.
+    if (job.status === 'ready' || job.status === 'collected') {
+      const revertBtn = document.createElement('button');
+      revertBtn.type = 'button';
+      revertBtn.className = 'btn btn-outline btn-sm _va-revert';
+      revertBtn.style.cssText = 'padding:6px 12px;border:1px solid #c4b5fd;background:#fff;color:#5b21b6;border-radius:7px;cursor:pointer;font-size:12px;font-weight:600';
+      revertBtn.innerHTML = '↶ Afturkalla';
+      revertBtn.title = (job.status === 'collected'
+        ? 'Afturkalla afhendingu — staða aftur í „Tilbúið"'
+        : 'Afturkalla Tilbúið — staða aftur í „Móttekið"');
+      revertBtn.addEventListener('click', e => { e.stopPropagation(); revertJob(getCurrentJob() || job); });
+      toolbar.appendChild(revertBtn);
+    }
 
     // Insert AFTER the header
     if (header.parentNode) {
