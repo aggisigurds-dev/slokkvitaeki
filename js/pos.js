@@ -446,8 +446,22 @@
               }
             }
             if (m) {
-              state.customer.nafn = m.nafn;
-              state.customer.simi = m.simi;
+              // 2026-05-11: For walk-in (kt 999999-9999) the synthetic
+              // lookup returns nafn='Staðgreitt'. But patch 114's walk-in
+              // flow sets state.customer.nafn to the user-typed name AFTER
+              // dispatching the kt input (sync) — and this lookupKt
+              // callback is async. So this would overwrite the user's
+              // typed name with 'Staðgreitt'. Preserve user-typed name.
+              if (m.source === 'walkin' && state.customer.nafn && state.customer.nafn !== 'Staðgreitt') {
+                // keep current nafn
+              } else {
+                state.customer.nafn = m.nafn;
+              }
+              if (m.source === 'walkin' && state.customer.simi && state.customer.simi !== '') {
+                // keep current simi
+              } else {
+                state.customer.simi = m.simi;
+              }
               state.customer.co_id = m.co_id;
               state.customer.heimilisfang = m.heimilisfang || '';
               state.customer.afslattur_pct = m.afslattur_pct || 0;
@@ -552,7 +566,15 @@
   async function checkout(){
     if(!state.lines.length){alert('Engar línur');return;}
     var cust=state.customer.nafn.trim();
-    if(!cust&&state.customer.mode==='kt'&&state.customer.kt)cust='kt: '+state.customer.kt;
+    // 2026-05-11: For walk-in (kt 999999-9999), if user didn't type a name
+    // we want "Staðgreitt" on the receipt — NOT "kt: 999999-9999" which
+    // looks confusing. The walk-in flow auto-fills 'Staðgreitt' but timing
+    // bugs can leave nafn empty. Prefer 'Staðgreitt' over the kt string.
+    if(!cust&&state.customer.mode==='kt'&&state.customer.kt){
+      var ktClean=state.customer.kt.replace(/[^0-9]/g,'');
+      if(ktClean==='9999999999') cust='Staðgreitt';
+      else cust='kt: '+state.customer.kt;
+    }
     // 2026-05-10 (B5+): replaced native await Confirm.show() with Confirm.show — native
     // confirm freezes browser, esp. blocking automation/MCP tools. Async-safe
     // because submitNew is already async.
@@ -658,8 +680,13 @@
           // the note the salesperson wrote at sale time. Previously the
           // note only landed on solur.athugasemdir and was invisible to
           // workshop, which made it easy to forget.
+          // 2026-05-11 (later): only attach the general note to the FIRST
+          // verkbeiðni — not every one. Otherwise patch 134 surfaces the
+          // same note on every order in Counter/Workshop, making it look
+          // like the note belongs to all orders ("Þeir hringdu..." sticky
+          // on every job).
           var notesParts = [sl.desc + (sl.ref ? ' · ' + sl.ref : '')];
-          if (state.notes && state.notes.trim()) notesParts.push(state.notes.trim());
+          if (i === 0 && state.notes && state.notes.trim()) notesParts.push(state.notes.trim());
           var insertResult = await DB.sb.from('verkbeidnir').insert({
             num: num+'-V'+(i+1),
             status: 'received',
