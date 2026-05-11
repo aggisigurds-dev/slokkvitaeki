@@ -27,10 +27,17 @@
   // Heuristic: is the first line just a service description (auto-added by
   // pos.js)? If so, hide it from the editable note — only show what came
   // after, which is the real customer/workshop note.
+  // 2026-05-11: Original regex had un-anchored alternations — keywords
+  // like "vatn", "hleðsla", "yfirferð" matched anywhere in the line,
+  // eating legitimate user notes starting with those words (e.g. "Vatn
+  // í tankinum", "Hleðsla bilaði"). Now we ONLY treat as auto-prefix
+  // if the line starts with a number + unit (the structured pos.js
+  // output like "6 kg. Duft ABC hleðsla"). Pure-text user notes are
+  // preserved.
   function isServiceDescLine(line) {
     const l = String(line || '').trim();
     if (!l) return false;
-    return /^[\d.,]+\s*(kg|kr|l|stk|stykki|m|mm|cm)\b|hleðsla|yfirferð|slökkvitæki|brunaslang|reykskynjari|létt[av]atn/i.test(l);
+    return /^\d+[\d.,]*\s*(kg|kr|l|stk|stykki|m|mm|cm)\b/i.test(l);
   }
 
   // Split raw verkbeidnir.notes into { servicePrefix, userNote }.
@@ -132,11 +139,14 @@
           esc(userNote) +
       '</div>';
     }
-    // Empty state — invitation to add a note.
+    // Empty state — small, unobtrusive invitation. 2026-05-11: was a
+    // big dashed box on every order with no note — looked like real
+    // content and added visual clutter when scanning the list. Now a
+    // single small link in the corner that still lets user add a note.
     return '<div data-job-id="' + jobId + '" data-prefix="' + esc(prefix) + '" ' +
-      'style="margin:0 0 12px;padding:11px 16px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:6px;font-size:13px;color:#94a3b8;cursor:pointer;text-align:center" ' +
-      'class="_jnd-sticky">' +
-        '+ 📝 Bæta við athugasemd' +
+      'style="margin:0 0 8px;padding:5px 0;font-size:11px;color:#94a3b8;cursor:pointer;text-align:right;font-weight:500" ' +
+      'class="_jnd-sticky" title="Smelltu til að bæta við athugasemd">' +
+        '<span style="opacity:0.7">📝 Bæta við athugasemd</span>' +
     '</div>';
   }
 

@@ -545,13 +545,29 @@
         }
       }
       if (saleRes.error) {
-        // Solur insert failed — fall back to a synthesized number so the
-        // verkbeiðni still gets a unique-looking id. Patch 121 will create
-        // the sale fresh at finalize time.
-        console.warn('[samningshafar-receive] draft solur insert failed:', saleRes.error.message);
+        // 2026-05-11: Was synthesizing 'R-' + Date.now().slice(-6) here as
+        // an "ultra-fallback" but that:
+        //   1. Can collide with REAL R-NNNNNN numbers from the trigger,
+        //      breaking parentSaleNum() lookups in patch 121.
+        //   2. Bypasses the BEFORE-INSERT trigger that assigns canonical IDs.
+        // Better: abort the verkbeiðni creation entirely and tell the user
+        // what went wrong. The customer can retry, and we keep data clean.
+        console.error('[samningshafar-receive] draft solur insert failed:', saleRes.error.message);
+        if (window.Toast && Toast.show) {
+          Toast.show('❌ Gat ekki vistað sölu: ' + saleRes.error.message);
+        } else {
+          alert('Gat ekki vistað sölu — verkbeiðni ekki stofnuð.\n\n' + saleRes.error.message);
+        }
+        return; // abort — don't create orphan verkbeiðni
       }
-      const num = (saleRes.data && saleRes.data.num) ||
-                  ('R-' + String(Date.now()).slice(-6));        // ultra-fallback
+      const num = saleRes.data && saleRes.data.num;
+      if (!num) {
+        // Sale was created but num came back empty (trigger missing?). Same
+        // safety: abort rather than synthesize.
+        console.error('[samningshafar-receive] solur insert succeeded but num is empty');
+        if (window.Toast && Toast.show) Toast.show('❌ Salinn fékk ekki R-númer');
+        return;
+      }
 
       // Insert verkbeiðni with the SAME num as the draft solur.
       const jobIns = await SB.from('verkbeidnir').insert({
