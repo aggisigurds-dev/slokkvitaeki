@@ -111,8 +111,8 @@
 
     const [jobs, solurThis, solurLast, units, quotes, events] = await Promise.all([
       SB.from('verkbeidnir').select('id,status,customer').neq('status','Afhent'),
-      SB.from('solur').select('samtals,paid_at,greitt_med').gte('created_at', thisMonthStart),
-      SB.from('solur').select('samtals').gte('created_at', lastMonthStart).lt('created_at', thisMonthStart),
+      SB.from('solur').select('samtals,paid_at,greitt_med').neq('status','drog').gte('created_at', thisMonthStart),
+      SB.from('solur').select('samtals').neq('status','drog').gte('created_at', lastMonthStart).lt('created_at', thisMonthStart),
       SB.from('þjonustutaeki').select('id,next_insp,serial,tegund,company_nafn').lte('next_insp', in30ISO).gte('next_insp', today),
       SB.from('tilbod').select('id,status').in('status',['draft','sent']),
       SB.from('dagbok').select('id,title,scheduled_start,assigned_to,status').gte('scheduled_start', today+'T00:00:00').lte('scheduled_start', tomorrowISO+'T23:59:59').neq('status','cancelled').order('scheduled_start')

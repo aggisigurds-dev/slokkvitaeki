@@ -1131,25 +1131,69 @@ function openReikModal(){
   if(!window.DB || !window.DB.sb)return;
   // Reikningar modal should only show invoice-type rows (Setja í reikning + Greitt síðar).
   // Sales paid by card/cash (type='sale') belong in Bókhaldsyfirlit / Tekjur, not here.
-  window.DB.sb.from('sala_transactions').select('*').neq('type','sale').order('created_at',{ascending:false}).then(function(r){
+  // 2026-05-09 (F-4): legacy modal var a\u00f0 querya `sala_transactions` t\u00f6flu \u2014
+  // en n\u00fdjar s\u00f6lur fara n\u00fa \u00ed `solur`, svo bara einn forn r\u00f6\u00f0 birtist. Skiptum
+  // yfir \u00ed `solur` me\u00f0 r\u00e9ttri filter: reikningur / greitt_sidar, ekki greiddar,
+  // ekki dr\u00f6g.
+  Promise.all([
+    window.DB.sb.from('solur')
+      .select('id,num,customer_nafn,customer_id,samtals,greitt_med,created_at,paid_at,status')
+      .in('greitt_med',['reikningur','greitt_sidar'])
+      .is('paid_at',null)
+      .neq('status','drog')
+      .order('created_at',{ascending:false}),
+    window.DB.sb.from('vidskiptavinir').select('id,kennitala,nafn')
+  ]).then(function(results){
+    var sr=results[0], cr=results[1];
     var holder=document.getElementById('_reik_table');
     if(!holder)return;
-    if(r.error){holder.innerHTML='<div style="color:#dc2626">Villa: '+esc(r.error.message)+'</div>';return;}
-    var rows=r.data||[];
-    var open=rows.filter(function(x){return x.status!=='paid';});
-    var paid=rows.filter(function(x){return x.status==='paid';});
+    if(sr.error){holder.innerHTML='<div style="color:#dc2626">Villa: '+esc(sr.error.message)+'</div>';return;}
+    var custMap={};
+    (cr.data||[]).forEach(function(c){custMap[c.id]=c;});
+    var rows=(sr.data||[]).map(function(s){
+      var cust=s.customer_id && custMap[s.customer_id];
+      return {
+        id: s.id,
+        customer: s.customer_nafn || (cust && cust.nafn) || '',
+        kennitala: (cust && cust.kennitala) || '',
+        type: s.greitt_med==='greitt_sidar' ? 'greitt_sidar' : 'reikningur',
+        total: +s.samtals || 0,
+        invoice_amount: +s.samtals || 0,
+        created_at: s.created_at,
+        status: 'open'
+      };
+    });
     var html='';
-    if(open.length){
-      html+='<h3 style="color:#fff;margin:0 0 8px">\u23f3 \u00d3greitt</h3>'+invTbl(open,true);
-    }
-    // Greitt section removed \u2014 once paid, rows no longer matter for the monthly
-    // heimabanki upload. User reviews paid history in B\u00f3khaldsyfirlit instead.
-    if(!html){
+    if(rows.length){
+      html+='<h3 style="color:#fff;margin:0 0 8px">\u23f3 \u00d3greitt</h3>'+invTbl(rows,true);
+    } else {
       html='<div style="opacity:.6;padding:40px;text-align:center">Engir \u00f3greiddir reikningar</div>';
     }
     holder.innerHTML=html;
     holder.querySelectorAll('.mk-paid').forEach(function(btn){
       btn.addEventListener('click',function(){markPaid(btn.dataset.id, parseFloat(btn.dataset.amt));});
+    });
+    // 2026-05-09 (F-2): Kredit button wired to patch 26's CreditInvoice.open
+    holder.querySelectorAll('.mk-credit').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        if (!window.CreditInvoice || !window.CreditInvoice.open) {
+          alert('Kreditreikningur er ekki tilbúinn — endurhladdu síðunni.');
+          return;
+        }
+        var id = btn.dataset.id;
+        var sr = await window.DB.sb.from('solur')
+          .select('id,num,customer_nafn,customer_id,samtals,greitt_med,linur,upphaed_an_vsk,vsk_upphaed,created_at')
+          .eq('id', id).single();
+        if (sr.error || !sr.data) { alert('Villa: '+(sr.error && sr.error.message || 'sala fannst ekki')); return; }
+        var d = sr.data;
+        window.CreditInvoice.open({
+          id: d.id, num: d.num,
+          customer: d.customer_nafn, customer_id: d.customer_id,
+          total: +(d.samtals||0), ex: +(d.upphaed_an_vsk||0), vsk: +(d.vsk_upphaed||0),
+          lines: Array.isArray(d.linur) ? d.linur : [],
+          payment: d.greitt_med
+        });
+      });
     });
   });
 }
@@ -1160,16 +1204,19 @@ function invTbl(invs, withAct){
     var typeLabel = inv.type==='sale'?'\uD83D\uDCB0 Sala':'\uD83D\uDCCB Reikningur';
     h+='<tr style="border-bottom:1px solid rgba(255,255,255,.05)"><td style="padding:12px">'+esc(inv.customer||'')+'</td><td style="padding:12px;font-family:monospace;font-size:12px">'+esc(inv.kennitala||'')+'</td><td style="padding:12px">'+typeLabel+'</td><td style="padding:12px;text-align:right;font-weight:600">'+fmtKr(inv.invoice_amount||inv.total||0)+' kr</td><td style="padding:12px;font-size:12px;opacity:.7">'+fmtDate(inv.created_at)+'</td>';
     if(withAct){
-      h+='<td style="padding:12px;text-align:right"><button class="mk-paid" data-id="'+inv.id+'" data-amt="'+(inv.invoice_amount||inv.total||0)+'" style="padding:6px 12px;border:none;border-radius:6px;background:#16a34a;color:#fff;font-size:12px;font-weight:600;cursor:pointer">\u2705 Mark a\u00f0 greitt</button></td>';
+      h+='<td style="padding:12px;text-align:right;white-space:nowrap"><button class="mk-paid" data-id="'+inv.id+'" data-amt="'+(inv.invoice_amount||inv.total||0)+'" style="padding:6px 12px;border:none;border-radius:6px;background:#16a34a;color:#fff;font-size:12px;font-weight:600;cursor:pointer;margin-right:6px">\u2705 Greitt</button>'
+       +'<button class="mk-credit" data-id="'+inv.id+'" style="padding:6px 12px;border:1px solid #fed7aa;border-radius:6px;background:#fff7ed;color:#c2410c;font-size:12px;font-weight:600;cursor:pointer">\u21a9 Kredit</button></td>';
     }
     h+='</tr>';
   });
   h+='</tbody></table></div>';
   return h;
 }
-function markPaid(id, amt){
-  if(!confirm('Stadfesta gretslu?'))return;
-  window.DB.sb.from('sala_transactions').update({status:'paid',invoice_amount:amt,paid_at:new Date().toISOString()}).eq('id',id).select().single().then(function(r){
+async function markPaid(id, amt){
+  if(!await Confirm.show('Staðfesta greiðslu?'))return;
+  // 2026-05-09 (F-4): markPaid uppfærir nú `solur`, ekki gamla
+  // `sala_transactions` (samrænd Reikningar listanum sem nú les úr `solur`).
+  window.DB.sb.from('solur').update({paid_at:new Date().toISOString(),paid_method:'reikningur'}).eq('id',id).select().single().then(function(r){
     if(r.error){toast('\u274c Villa','#dc2626');return;}
     toast('\u2705 Reikningur grei\u00f0ur','#16a34a');
     setTimeout(openReikModal,300);
@@ -1699,12 +1746,12 @@ console.log('[patch-master] loaded with all fixes');
     btn.className = 'btn btn-outline btn-sm _pm_delete_btn';
     btn.style.cssText = 'color:#dc2626;border-color:#dc2626;';
     btn.textContent = '\uD83D\uDDD1\uFE0F Ey\u00f0a';
-    btn.onclick = function(e){
+    btn.onclick = async function(e){
       e.stopPropagation();
       var name = main.querySelector('.company-initials');
       var nameText = name ? name.parentElement.querySelector('div[style*="font-size:21px"]') : null;
       var label = nameText ? nameText.textContent : 'fyrirt\u00e6ki #'+coId;
-      if(!confirm('Ertu viss um a\u00f0 ey\u00f0a "'+label+'"?\n\n\u00deetta er ekki h\u00e6gt a\u00f0 afturkalla.')) return;
+      if(!await Confirm.show('Ertu viss um a\u00f0 ey\u00f0a "'+label+'"?\n\n\u00deetta er ekki h\u00e6gt a\u00f0 afturkalla.')) return;
       // Delete ALL related records, then delete company
       Promise.all([
         window.DB.sb.from('solur').delete().eq('customer_id', coId),
@@ -2096,7 +2143,7 @@ console.log('[patch-master] loaded with all fixes');
     if(main.querySelector('._pm_fin')) return;
     _finInjected = true;
     // Fetch all solur records
-    var r = await window.DB.sb.from('solur').select('*').order('created_at',{ascending:false});
+    var r = await window.DB.sb.from('solur').select('*').neq('status','drog').order('created_at',{ascending:false});
     if(!r.data) return;
     var sales = r.data;
     // Group by month
@@ -2215,7 +2262,7 @@ console.log('[patch-master] loaded with all fixes');
       var nextYear = new Date();
       nextYear.setFullYear(nextYear.getFullYear()+1);
       var next = nextYear.toISOString().substring(0,10);
-      if(!confirm('Merkja \u00f6ll t\u00e6ki hj\u00e1 "'+co.nafn+'" sem sko\u00f0u\u00f0 \u00ed dag?\n\nS\u00ed\u00f0asta sko\u00f0un: '+today+'\nN\u00e6sta sko\u00f0un: '+next)) return;
+      if(!await Confirm.show('Merkja \u00f6ll t\u00e6ki hj\u00e1 "'+co.nafn+'" sem sko\u00f0u\u00f0 \u00ed dag?\n\nS\u00ed\u00f0asta sko\u00f0un: '+today+'\nN\u00e6sta sko\u00f0un: '+next)) return;
       btn.disabled = true;
       btn.textContent = '\u23f3 Uppf\u00e6ri...';
       try{
@@ -2681,8 +2728,8 @@ console.log('[patch-master] loaded with all fixes');
           if(window._currentCompanyId && window.Companies) window.Companies.openDetail(window._currentCompanyId);
         });
       };
-      m.querySelector('._pm_dev_del').onclick=function(){
-        if(!confirm('Eyda taeki '+serial+'?')) return;
+      m.querySelector('._pm_dev_del').onclick=async function(){
+        if(!await Confirm.show('Eyda taeki '+serial+'?')) return;
         window.DB.sb.from('uttaeki').delete().eq('serial',serial).then(function(res){
           if(res.error){alert('Villa: '+res.error.message);return;}
           m.remove();

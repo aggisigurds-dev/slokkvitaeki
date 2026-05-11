@@ -173,7 +173,7 @@
     }).join('');
     // Wire delete
     list.querySelectorAll('.del').forEach(b => b.addEventListener('click', async () => {
-      if (!confirm('Eyða þessari skrá?')) return;
+      if (!await Confirm.show('Eyða þessari skrá?')) return;
       const id = +b.getAttribute('data-id');
       const path = b.getAttribute('data-path');
       try {

@@ -75,11 +75,23 @@
 
   // ── Customer info ────────────────────────────────────────────────────────
   function readCustomer() {
-    // pos.js exposes state via DOM inputs
-    const nafn = (document.getElementById('pos-cust-nafn') || {}).value || '';
-    const simi = (document.getElementById('pos-cust-simi') || {}).value || '';
-    const kt   = (document.getElementById('pos-kt') || {}).value || '';
-    return { nafn: nafn.trim(), simi: simi.trim(), kt: kt.trim() };
+    // 2026-05-10 (F4 fix): Prefer POS state — when the user picks a customer
+    // via the unified search (patch 114, by kennitala/name), the state is set
+    // there but not necessarily mirrored to pos-cust-nafn input. Falling back
+    // to "Staðgreitt" in the title was confusing for selected B2B customers.
+    let nafn = '', simi = '', kt = '';
+    try {
+      if (window.POS && typeof POS.getState === 'function') {
+        const c = (POS.getState() || {}).customer || {};
+        nafn = (c.nafn || '').trim();
+        simi = (c.simi || '').trim();
+        kt = (c.kt || '').trim();
+      }
+    } catch (_) {}
+    if (!nafn) nafn = ((document.getElementById('pos-cust-nafn') || {}).value || '').trim();
+    if (!simi) simi = ((document.getElementById('pos-cust-simi') || {}).value || '').trim();
+    if (!kt)   kt   = ((document.getElementById('pos-kt') || {}).value || '').trim();
+    return { nafn, simi, kt };
   }
 
   // ── Open the prompt dialog ───────────────────────────────────────────────
@@ -106,10 +118,17 @@
           '</div>'
         );
       }
+      // 2026-05-10 (#4): „Auto-fylla allar" takki birtist í haus línunnar þegar
+      // qty > 1. Eitt smell býr til QR-form raðnúmer fyrir öll tæki sem eru
+      // tóm — sparar 9 smelli fyrir 10× sömu hleðslu.
+      const bulkBtn = line.qty > 1
+        ? '<button class="_cup-bulk" data-line="' + lineIdx + '" type="button" title="Búa til Ræðnúmer fyrir öll tóm" style="padding:5px 11px;background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✨ Auto-fylla öll</button>'
+        : '';
       return '' +
         '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:10px;background:#fff">' +
-          '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center">' +
+          '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;gap:8px">' +
             '<span>🔧 ' + esc(line.desc) + ' <span style="color:#64748b;font-weight:500">× ' + line.qty + '</span></span>' +
+            bulkBtn +
           '</div>' +
           inputs.join('') +
           '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-top:8px;margin-bottom:4px">Athugasemd</label>' +
@@ -176,12 +195,39 @@
         const inp = dlg.querySelector(sel);
         if (!inp) return;
         // If field has a value, treat click as "Reset" — clear it
+        // 2026-05-10 (B5+): Confirm.show í stað native confirm. Note: handler
+        // is sync; we early-return and re-trigger after Confirm resolves.
         if (inp.value.trim()) {
-          if (!confirm('Hreinsa núverandi raðnúmer og búa til nýtt?')) return;
+          Confirm.show('Hreinsa núverandi raðnúmer og búa til nýtt?', {okText:'Hreinsa'}).then(ok => {
+            if (!ok) return;
+            inp.value = genQrSerial(nextSeq++);
+            inp.style.background = '#fef3c7';
+            setTimeout(() => { inp.style.background = ''; }, 600);
+          });
+          return;
         }
         inp.value = genQrSerial(nextSeq++);
         inp.style.background = '#fef3c7';
         setTimeout(() => { inp.style.background = ''; }, 600);
+      });
+    });
+
+    // 2026-05-10 (#4): Wire bulk auto-fill button — fills all empty raðnúmer
+    // inputs in this line section with generated QR serials in one click.
+    dlg.querySelectorAll('._cup-bulk').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const lineIdx = btn.dataset.line;
+        const sel = 'input[data-line="' + lineIdx + '"][data-row]';
+        let filled = 0;
+        dlg.querySelectorAll(sel).forEach(inp => {
+          if (!inp.value.trim()) {
+            inp.value = genQrSerial(nextSeq++);
+            inp.style.background = '#dcfce7';
+            setTimeout(() => { inp.style.background = ''; }, 800);
+            filled++;
+          }
+        });
+        if (filled && window.Toast && Toast.show) Toast.show('✨ ' + filled + ' raðnúmer búin til');
       });
     });
 
@@ -228,14 +274,41 @@
       return { skip: skipCb.checked, result };
     }
 
-    dlg.querySelector('#_cup-skip-btn').addEventListener('click', () => {
+    dlg.querySelector('#_cup-skip-btn').addEventListener('click', async () => {
+      const warnMsg =
+        '⚠ Ertu viss?\n\n' +
+        'Engin verkbeiðni verður búin til.\n' +
+        'Það þýðir að verkstæðismaður sér ekki þetta verk,\n' +
+        'og þú þarft sjálf/ur að vinna tækið áður en\n' +
+        'viðskiptavinur getur sótt það.\n\n' +
+        'Notaðu þetta aðeins fyrir hreinar vörusölur\n' +
+        '(t.d. nýtt slökkvitæki keypt í heilu lagi).';
+      if (window.Confirm && Confirm.show) {
+        const ok = await Confirm.show(warnMsg);
+        if (!ok) return;
+      } else {
+        if (!confirm(warnMsg)) return;
+      }
       const { result } = collect();
       close();
       onConfirm({ skipVerk: true, lines: result });
     });
 
-    dlg.querySelector('#_cup-go').addEventListener('click', () => {
+    dlg.querySelector('#_cup-go').addEventListener('click', async () => {
       const { skip, result } = collect();
+      // Same warning if the user ticked the skip checkbox and is now hitting Halda áfram.
+      if (skip) {
+        const warnMsg =
+          '⚠ Þú hefur hakað í „Sleppa verkbeiðnum".\n\n' +
+          'Engin verkbeiðni verður búin til — verkstæðismaður\n' +
+          'sér ekki þetta verk. Heldurðu áfram?';
+        if (window.Confirm && Confirm.show) {
+          const ok = await Confirm.show(warnMsg);
+          if (!ok) return;
+        } else {
+          if (!confirm(warnMsg)) return;
+        }
+      }
       close();
       onConfirm({ skipVerk: skip, lines: result });
     });
@@ -258,6 +331,12 @@
       const allLines = readCartLines();
       const serviceLines = allLines.filter(l => l.type === 'service');
       if (!serviceLines.length) return; // no services → nothing to prompt
+
+      // 2026-05-11: If the user already opted to skip verkbeiðnir in the
+      // payment dialog (patch 07's "Sleppa verkbeiðnir" checkbox), there's
+      // no point opening this dialog — we'd just ask the same question
+      // again. Let the checkout proceed without an extra modal.
+      if (window._pendingSkipVerk === true) return;
 
       // Stop the original handler
       e.preventDefault();

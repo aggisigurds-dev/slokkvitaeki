@@ -99,8 +99,8 @@
     _manage(kind);
   }
 
-  function _del(id){
-    if (!confirm('Eyða sniðmáti?')) return;
+  async function _del(id){
+    if (!await Confirm.show('Eyða sniðmáti?')) return;
     const list = getAll().filter(t => t.id !== id);
     saveAll(list);
     _manage();

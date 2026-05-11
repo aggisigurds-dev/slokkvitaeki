@@ -87,7 +87,7 @@
     btn.style.cssText = 'background:#16a34a;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-size:13px;font-weight:600;cursor:pointer;margin-right:6px';
     btn.textContent = '💰 Setja inn greitt';
     btn.addEventListener('click', async () => {
-      const ok = confirm('Staðfesta að greiðsla ' + fmtKr(sale.samtals) + ' hafi borist?\n\n' +
+      const ok = await Confirm.show('Staðfesta að greiðsla ' + fmtKr(sale.samtals) + ' hafi borist?\n\n' +
                          'Verkið verður áfram á stöðunni "Tilbúið" — smelltu "Sótt ✓" þegar viðskiptavinur sækir tækið.');
       if (!ok) return;
       btn.disabled = true;

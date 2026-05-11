@@ -182,7 +182,7 @@
 
     dlg.querySelector('#_cpw-run').addEventListener('click', async () => {
       if (!candidatesCache.length) return;
-      if (!confirm('Flytja ' + candidatesCache.length + ' rúður úr Fyrirtækjaþjónustu yfir í Viðskiptavinir? Þetta er ekki afturkræft.')) return;
+      if (!await Confirm.show('Flytja ' + candidatesCache.length + ' rúður úr Fyrirtækjaþjónustu yfir í Viðskiptavinir? Þetta er ekki afturkræft.')) return;
       runBtn.disabled = true;
       runBtn.textContent = '⏳ Vinn...';
       result.innerHTML = '⏳ Flyt...';

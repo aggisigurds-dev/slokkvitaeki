@@ -174,7 +174,7 @@
   }
 
   async function _deleteAttachment(id, path) {
-    if (!confirm('Eyða þessari skrá?')) return;
+    if (!await Confirm.show('Eyða þessari skrá?')) return;
     const SB = getSB();
     const m = document.getElementById('vdp-modal');
     const entryId = m && m.dataset.entryId;

@@ -48,50 +48,222 @@
 
   // Prefetch both companies + viðskiptavinir directly from Supabase so search
   // works even before user visits those views.
+  //
+  // 2026-05-11: Added TTL (60s) so updates from other tabs / users / direct
+  // DB edits are picked up automatically. Without this the cache was set
+  // once on page load and never refreshed — e.g. when a customer was
+  // renamed from "Vidskiptavinur 491209-1270" to "VR-5 Vélrás" in another
+  // view, the POS search kept showing the old name forever.
   let _prefetchPromise = null;
-  function prefetchCustomers() {
-    if (_prefetchPromise) return _prefetchPromise;
+  let _lastFetchTs = 0;
+  const PREFETCH_TTL_MS = 60 * 1000;
+
+  function prefetchCustomers(force) {
     const SB = window.DB && window.DB.sb;
     if (!SB) {
-      // DB not ready yet — DON'T cache an empty promise (would block forever).
-      // Just retry shortly.
       setTimeout(prefetchCustomers, 500);
       return Promise.resolve();
     }
+    // Reuse an in-flight promise if available.
+    if (_prefetchPromise && !force) {
+      const age = Date.now() - _lastFetchTs;
+      if (age < PREFETCH_TTL_MS) return _prefetchPromise;
+      // Cache expired → kick off a fresh fetch.
+    }
     _prefetchPromise = Promise.all([
-      // Companies
-      // 2026-05-08 FIX: removed `heimilisFang` (capital F) — column does
-      // not exist in fyrirtaeki schema, the include caused PostgREST to
-      // return error: "column fyrirtaeki.heimilisFang does not exist"
-      // → entire companies prefetch returned 0 rows → company-search
-      // produced no results, and Sjá → couldn't open companies.
       SB.from('fyrirtaeki')
         .select('id,nafn,simi,kennitala,heimilisfang,netfang,afslattur_pct,athugasemdir')
         .order('nafn'),
-      // Vidskiptavinir
       SB.from('vidskiptavinir')
         .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,afslattur_pct,athugasemdir')
         .order('nafn')
     ]).then(results => {
       const fy = (results[0] && results[0].data) || [];
       const vk = (results[1] && results[1].data) || [];
-      // Hydrate Companies.list if empty
-      if (window.Companies && (!Companies.list || !Companies.list.length)) {
-        Companies.list = fy;
-      }
-      // Hydrate Vidskiptavinir / DB.cache.vidsk
-      if (window.Vidskiptavinir && (!Vidskiptavinir.list || !Vidskiptavinir.list.length)) {
-        Vidskiptavinir.list = vk;
-      }
-      if (window.DB && window.DB.cache && (!DB.cache.vidsk || !DB.cache.vidsk.length)) {
-        DB.cache.vidsk = vk;
-      }
+      // Always overwrite caches so renames / new rows are visible.
+      if (window.Companies) Companies.list = fy;
+      if (window.Vidskiptavinir) Vidskiptavinir.list = vk;
+      if (window.DB && window.DB.cache) DB.cache.vidsk = vk;
       _vidskFallback = vk;
+      _lastFetchTs = Date.now();
       console.log('[unified-pos-search] prefetched', fy.length, 'companies +', vk.length, 'viðskiptavinir');
     }).catch(e => {
       console.warn('[unified-pos-search] prefetch failed:', e);
     });
     return _prefetchPromise;
+  }
+
+  // Public helper so other patches can force a refresh after editing.
+  window._upsRefreshCustomers = () => prefetchCustomers(true);
+
+  // 2026-05-10 (#2): Public opener so other patches (e.g. patch 19 RSK
+  // lookup) can fall back to this when their flow can't proceed.
+  window._upsOpenNewCustomer = function(presetText, presetKt) {
+    return openNewCustomerDialog(presetText, presetKt);
+  };
+
+  // 2026-05-10 (F6/F7): Inline "+ Stofna nýjan viðskiptavin" dialog. Used
+  // when search returns no results — lets the user add a customer right in
+  // the POS flow without navigating to Vidskiptavinir / Fyrirtæki page.
+  function openNewCustomerDialog(presetText, presetKt) {
+    const looksLikeKt = /^\d{3,10}$/.test((presetText || '').replace(/[^0-9]/g, ''));
+    const initialNafn = looksLikeKt ? '' : (presetText || '');
+    const initialKt = (presetKt || '').replace(/[^0-9]/g, '');
+
+    const existing = document.getElementById('_ups-newdlg');
+    if (existing) existing.remove();
+    const dlg = document.createElement('div');
+    dlg.id = '_ups-newdlg';
+    dlg.style.cssText = 'position:fixed;inset:0;z-index:100040;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    dlg.innerHTML =
+      '<div style="background:#fff;border-radius:13px;box-shadow:0 24px 60px rgba(0,0,0,0.3);width:min(460px,calc(100vw - 32px));overflow:hidden">' +
+        '<div style="padding:13px 18px;background:linear-gradient(135deg,#16a34a,#15803d);color:#fff">' +
+          '<div style="font-size:11px;color:#bbf7d0;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Stofna viðskiptavin</div>' +
+          '<div style="font-size:15px;font-weight:700;margin-top:2px">+ Nýr viðskiptavinur</div>' +
+        '</div>' +
+        '<div style="padding:18px 22px;display:flex;flex-direction:column;gap:11px">' +
+          '<div><label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">Nafn *</label>' +
+            '<input id="_ups-new-nafn" type="text" value="' + esc(initialNafn) + '" placeholder="Fyrirtæki eða nafn" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;margin-top:4px;box-sizing:border-box"></div>' +
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+            '<div><label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">Kennitala</label>' +
+              '<input id="_ups-new-kt" type="text" inputmode="numeric" value="' + esc(initialKt) + '" placeholder="0000000000" maxlength="11" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;margin-top:4px;box-sizing:border-box;font-family:monospace"></div>' +
+            '<div><label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">Sími</label>' +
+              '<input id="_ups-new-simi" type="tel" placeholder="555 1234" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;margin-top:4px;box-sizing:border-box"></div>' +
+          '</div>' +
+          '<div><label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">Netfang</label>' +
+            '<input id="_ups-new-email" type="email" placeholder="reikningur@dæmi.is" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;margin-top:4px;box-sizing:border-box"></div>' +
+          '<div><label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">Heimilisfang</label>' +
+            '<input id="_ups-new-addr" type="text" placeholder="Götu 1, 101 Reykjavík" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;margin-top:4px;box-sizing:border-box"></div>' +
+          '<div id="_ups-new-err" style="display:none;font-size:12px;color:#dc2626;font-weight:600;padding:6px 10px;background:#fee2e2;border-radius:6px"></div>' +
+        '</div>' +
+        '<div style="padding:11px 18px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end">' +
+          '<button id="_ups-new-cancel" type="button" style="padding:8px 16px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>' +
+          '<button id="_ups-new-save" type="button" style="padding:8px 18px;background:#16a34a;color:#fff;border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">Vista og velja</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(dlg);
+    function close() { dlg.remove(); }
+    dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
+    dlg.querySelector('#_ups-new-cancel').addEventListener('click', close);
+
+    const nafnInp = dlg.querySelector('#_ups-new-nafn');
+    const ktInp = dlg.querySelector('#_ups-new-kt');
+    const simiInp = dlg.querySelector('#_ups-new-simi');
+    const emailInp = dlg.querySelector('#_ups-new-email');
+    const addrInp = dlg.querySelector('#_ups-new-addr');
+    const errEl = dlg.querySelector('#_ups-new-err');
+    setTimeout(() => { (initialNafn ? simiInp : nafnInp).focus(); }, 30);
+
+    // Auto-format kt as user types: 6 digits + dash + 4 digits
+    ktInp.addEventListener('input', () => {
+      const raw = ktInp.value.replace(/[^0-9]/g, '').slice(0, 10);
+      ktInp.value = raw.length > 6 ? raw.slice(0,6) + '-' + raw.slice(6) : raw;
+    });
+
+    function showErr(msg) { errEl.textContent = msg; errEl.style.display = ''; }
+
+    dlg.querySelector('#_ups-new-save').addEventListener('click', async () => {
+      const nafn = nafnInp.value.trim();
+      const ktClean = ktInp.value.replace(/[^0-9]/g, '');
+      const simi = simiInp.value.trim();
+      const email = emailInp.value.trim();
+      const addr = addrInp.value.trim();
+      if (!nafn) { showErr('Nafn vantar'); return; }
+      if (ktClean && ktClean.length !== 10) { showErr('Kennitala verður að vera 10 tölustafir (eða tóm)'); return; }
+      const SB = window.DB && window.DB.sb;
+      if (!SB) { showErr('Engin gagnabankatenging'); return; }
+
+      // 2026-05-10 (#1): Kt-collision check. If user enters a kennitala that
+      // already exists in vidskiptavinir or fyrirtaeki, warn and offer
+      // "Velja eldri" instead of silently creating a duplicate row that
+      // confuses the kt-lookup later.
+      if (ktClean) {
+        try {
+          const [existVi, existFy] = await Promise.all([
+            SB.from('vidskiptavinir').select('id,nafn,kennitala').eq('kennitala', ktClean).maybeSingle(),
+            SB.from('fyrirtaeki').select('id,nafn,kennitala').eq('kennitala', ktClean).maybeSingle()
+          ]);
+          const existing = (existVi && existVi.data) || (existFy && existFy.data);
+          if (existing) {
+            const useExisting = await Confirm.show(
+              'Þessi kennitala (' + ktClean.slice(0,6) + '-' + ktClean.slice(6) + ') er þegar skráð á:\n\n' +
+              '   ' + (existing.nafn || '(óþekkt nafn)') + '\n\n' +
+              'Viltu velja þennan viðskiptavin í staðinn fyrir að stofna nýjan?',
+              { okText: 'Velja eldri', cancelText: 'Stofna nýjan samt' }
+            );
+            if (useExisting) {
+              // Pick the existing customer
+              if (window.POS && typeof POS.getState === 'function') {
+                const st = POS.getState();
+                if (st && st.customer) {
+                  st.customer.nafn = existing.nafn || '';
+                  st.customer.kt = existing.kennitala || '';
+                  st.customer.co_id = existing.id;
+                  st.customer.mode = 'kt';
+                }
+              }
+              const ktDom = document.getElementById('pos-kt');
+              if (ktDom) {
+                ktDom.value = ktClean.slice(0,6) + '-' + ktClean.slice(6);
+                ktDom.dispatchEvent(new Event('input', { bubbles: true }));
+              }
+              if (window.Toast && Toast.show) Toast.show('✓ Eldri viðskiptavinur valinn: ' + (existing.nafn || ''));
+              close();
+              if (typeof window.rerenderDynamic === 'function') window.rerenderDynamic();
+              return;
+            }
+            // If user clicks "Stofna nýjan samt" we fall through to insert below.
+            // Fresh row with same kt will technically work but flagged for the user.
+          }
+        } catch (_) { /* lookup non-fatal — proceed with insert */ }
+      }
+
+      try {
+        const r = await SB.from('vidskiptavinir').insert({
+          nafn, kennitala: ktClean || null,
+          simi: simi || null, netfang: email || null,
+          heimilisfang: addr || null
+        }).select().single();
+        if (r.error) { showErr(r.error.message); return; }
+        // Refresh local cache so it appears in future searches
+        try {
+          if (window.Vidskiptavinir && Array.isArray(Vidskiptavinir.list)) Vidskiptavinir.list.push(r.data);
+          if (window.DB && DB.cache && Array.isArray(DB.cache.vidsk)) DB.cache.vidsk.push(r.data);
+          _vidskFallback.push(r.data);
+        } catch (_) {}
+        // Push to POS state so the customer sticks immediately
+        if (window.POS && typeof POS.getState === 'function') {
+          const st = POS.getState();
+          if (st && st.customer) {
+            st.customer.nafn = r.data.nafn || '';
+            st.customer.kt = r.data.kennitala || '';
+            st.customer.simi = r.data.simi || '';
+            st.customer.co_id = r.data.id;
+            st.customer.mode = 'kt';
+          }
+        }
+        // Mirror to legacy DOM inputs that other patches read
+        const ktDom = document.getElementById('pos-kt');
+        if (ktDom && r.data.kennitala) {
+          ktDom.value = r.data.kennitala.slice(0,6) + '-' + r.data.kennitala.slice(6);
+          ktDom.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        if (window.Toast && Toast.show) Toast.show('✓ ' + r.data.nafn + ' stofnaður og valinn');
+        close();
+        // Re-trigger render so the customer card pop in
+        if (typeof window.rerenderDynamic === 'function') window.rerenderDynamic();
+      } catch (e) {
+        showErr(e.message || String(e));
+      }
+    });
+
+    // Enter on any field saves
+    [nafnInp, ktInp, simiInp, emailInp, addrInp].forEach(inp => {
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); dlg.querySelector('#_ups-new-save').click(); }
+        if (e.key === 'Escape') { e.preventDefault(); close(); }
+      });
+    });
   }
 
   // Search both companies + viðskiptavinir
@@ -115,9 +287,45 @@
         source: 'fyrirtaeki'
       });
     });
+    // 2026-05-11: Smarter dedup — when two rows share the same kennitala
+    // (e.g. duplicates created by a rename that inserted instead of
+    // updating), prefer the one with a real name. The legacy placeholder
+    // "Viðskiptavinur NNNNNN-NNNN" or just "Viðskiptavinur" should always
+    // lose to a row with a real company / person name.
+    function isPlaceholderName(nafn) {
+      const n = String(nafn || '').trim();
+      if (!n) return true;
+      if (/^vi[ðd]skiptavinur(\s+\d{3,})?\s*$/i.test(n)) return true;
+      return false;
+    }
+    function ktDigits(s) { return String(s || '').replace(/[^0-9]/g, ''); }
+
     getVidsk().forEach(v => {
-      // Skip if we already have a fyrirtaeki entry with same kennitala
-      if (v.kennitala && all.some(x => String(x.kennitala).replace(/[^0-9]/g, '') === String(v.kennitala).replace(/[^0-9]/g, ''))) return;
+      const vKt = ktDigits(v.kennitala);
+      if (vKt) {
+        // Look for an existing row with the same kt-digits.
+        const existingIdx = all.findIndex(x => ktDigits(x.kennitala) === vKt);
+        if (existingIdx >= 0) {
+          const existing = all[existingIdx];
+          // Replace existing if the existing is a placeholder AND the new
+          // one isn't. Otherwise skip (keep the first / better one).
+          if (isPlaceholderName(existing.nafn) && !isPlaceholderName(v.nafn)) {
+            all[existingIdx] = {
+              id: v.id,
+              nafn: v.nafn || '',
+              kennitala: v.kennitala || '',
+              simi: v.simi || existing.simi || '',
+              farsimi: v.farsimi || existing.farsimi || '',
+              netfang: v.netfang || existing.netfang || '',
+              heimilisfang: v.heimilisfang || existing.heimilisfang || '',
+              afslattur_pct: v.afslattur_pct || existing.afslattur_pct || 0,
+              athugasemdir: v.athugasemdir || existing.athugasemdir || '',
+              source: 'vidskiptavinir'
+            };
+          }
+          return;
+        }
+      }
       all.push({
         id: v.id,
         nafn: v.nafn || '',
@@ -250,7 +458,15 @@
       });
       runSearch();
     });
-    search.addEventListener('focus', prefetchCustomers);
+    // On focus, kick off a background refresh so renames / new customers
+    // appear without the user having to reload the page. TTL inside
+    // prefetchCustomers prevents hammering Supabase.
+    search.addEventListener('focus', () => {
+      prefetchCustomers().then(() => {
+        // If the user is mid-search, re-run with fresh data.
+        if (search.value.trim()) runSearch();
+      });
+    });
     // Enter → pick first visible result (or fall back to RSK lookup if 10 digits)
     search.addEventListener('keydown', e => {
       if (e.key === 'Enter') {
@@ -276,27 +492,62 @@
       // If user types a 10-digit kennitala, also support direct lookup
       const qDigits = q.replace(/[^0-9]/g, '');
       const matches = searchCustomers(q);
-      if (!matches.length && qDigits.length === 10) {
-        // No local match — show "Look up via RSK" option
-        results.innerHTML =
-          '<div class="_ups-rsk" data-kt="' + qDigits + '" style="padding:11px 14px;cursor:pointer;border-bottom:1px solid #e2e8f0;background:#eff6ff;color:#1e40af;font-weight:600;font-size:13px">' +
+      // 2026-05-10 (F6/F7): When the search has no local matches, give the
+      // user a way to ADD a new customer inline — both for kt-shaped queries
+      // (alongside the RSK option) and for free-text name queries.
+      if (!matches.length) {
+        let html = '';
+        if (qDigits.length === 10) {
+          html += '<div class="_ups-rsk" data-kt="' + qDigits + '" style="padding:11px 14px;cursor:pointer;border-bottom:1px solid #e2e8f0;background:#eff6ff;color:#1e40af;font-weight:600;font-size:13px">' +
             '📋 Leita að ' + qDigits.slice(0,6) + '-' + qDigits.slice(6,10) + ' í þjóðskrá / RSK' +
           '</div>';
+        }
+        const newLabel = qDigits.length === 10
+          ? '+ Stofna nýjan viðskiptavin (handvirkt)'
+          : '+ Stofna nýjan viðskiptavin' + (q ? ': „' + esc(q) + '"' : '');
+        html += '<div class="_ups-new" style="padding:11px 14px;cursor:pointer;background:#dcfce7;color:#166534;font-weight:600;font-size:13px;border-top:1px solid #e2e8f0">' +
+          newLabel +
+        '</div>';
+        if (!html) html = '<div style="padding:14px;text-align:center;color:#94a3b8;font-size:13px">Engin niðurstaða — prófaðu „⚡ Staðgreitt" eða sláðu inn fulla kennitölu.</div>';
+        results.innerHTML = html;
         results.style.display = 'block';
-        results.querySelector('._ups-rsk').addEventListener('click', () => {
-          // Trigger the existing kt lookup flow via the hidden #pos-kt input
-          const ktInp = document.getElementById('pos-kt');
-          if (ktInp) {
-            ktInp.value = qDigits.slice(0,6) + '-' + qDigits.slice(6,10);
-            ktInp.dispatchEvent(new Event('input', { bubbles: true }));
-          }
-          results.style.display = 'none';
+        const rsk = results.querySelector('._ups-rsk');
+        if (rsk) {
+          rsk.addEventListener('click', async () => {
+            // The RSK row is a single <div> with text directly inside (no
+            // child element). Use textContent on the row itself to update it.
+            rsk.textContent = '⏳ Sæki úr RSK...';
+            try {
+              if (window.KtLookup && typeof KtLookup.lookup === 'function') {
+                const data = await KtLookup.lookup(qDigits);
+                if (data && data.nafn) {
+                  results.style.display = 'none';
+                  selectCustomer({
+                    id: null,
+                    nafn: data.nafn,
+                    kennitala: qDigits,
+                    simi: data.simi || '',
+                    heimilisfang: data.heimilisfang || '',
+                    afslattur_pct: 0
+                  }, 'rsk');
+                  if (window.Toast && Toast.show) Toast.show('✓ ' + data.nafn);
+                  return;
+                }
+              }
+              rsk.style.background = '#fef3c7';
+              rsk.style.color = '#78350f';
+              rsk.textContent = '⚠ Fannst ekki í RSK — stofnaðu handvirkt';
+            } catch (e) {
+              console.warn('[ups-rsk] lookup error:', e);
+              rsk.style.background = '#fee2e2';
+              rsk.style.color = '#991b1b';
+              rsk.textContent = '⚠ ' + (e.message || 'Uppfletting mistókst');
+            }
+          });
+        }
+        results.querySelector('._ups-new').addEventListener('click', () => {
+          openNewCustomerDialog(q, qDigits.length === 10 ? qDigits : '');
         });
-        return;
-      }
-      if (!matches.length) {
-        results.innerHTML = '<div style="padding:14px;text-align:center;color:#94a3b8;font-size:13px">Engin niðurstaða — prófaðu „⚡ Staðgreitt" eða sláðu inn fulla kennitölu.</div>';
-        results.style.display = 'block';
         return;
       }
       results.innerHTML = matches.map(m => {
@@ -420,6 +671,25 @@
   }
 
   function selectCustomer(m, source) {
+    // 2026-05-11: Also write to POS state synchronously so the cart has
+    // the customer name immediately. Otherwise pos.js's async kt-lookup
+    // (which runs from the input event below) is racy — if the user
+    // clicks ÁFRAM before it returns, the receipt prints with an empty
+    // customer name. By mutating POS.getState().customer directly we
+    // make the customer info available the moment the user picks them.
+    try {
+      const posState = window.POS && typeof POS.getState === 'function' && POS.getState();
+      if (posState && posState.customer) {
+        posState.customer.nafn = m.nafn || '';
+        posState.customer.kt = m.kennitala || '';
+        posState.customer.simi = m.simi || '';
+        posState.customer.co_id = (source === 'fyrirtaeki') ? (m.id || null) : null;
+        posState.customer.heimilisfang = m.heimilisfang || m.heimilisFang || '';
+        if (m.afslattur_pct != null) posState.customer.afslattur_pct = +m.afslattur_pct || 0;
+        if (m.athugasemdir != null) posState.customer.athugasemdir = m.athugasemdir || '';
+      }
+    } catch (_) {}
+
     // Drive the existing kt-lookup flow by populating #pos-kt and dispatching input
     const ktInp = document.getElementById('pos-kt');
     if (ktInp && m.kennitala) {

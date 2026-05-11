@@ -189,16 +189,47 @@
     if (!wrap) {
       wrap = document.createElement('div');
       wrap.className = '_mis-wrap';
-      // Insert AFTER the map container, BEFORE the .field-body columns.
-      const mapBox = fv.querySelector('#field-map-container');
-      const body = fv.querySelector('.field-body');
-      if (mapBox && mapBox.parentElement) {
-        mapBox.parentElement.insertAdjacentElement('afterend', wrap);
-      } else if (body && body.parentElement) {
-        body.parentElement.insertBefore(wrap, body);
-      } else {
-        fv.appendChild(wrap);
+    }
+    // 2026-05-10: Position wrap BETWEEN the map and the .field-body columns.
+    // Race condition history: if patch 89 fired before newfeatures.js injected
+    // the map, wrap landed above field-body BEFORE the map, so the map+columns
+    // were pushed below the fold and the user had to scroll past 100+ list
+    // rows. Now we always re-check on every rebuild + schedule a follow-up
+    // re-check so a late-arriving map gets the wrap repositioned correctly.
+    const body = fv.querySelector('.field-body');
+    const mapBox = fv.querySelector('#field-map-container');
+    const mapWrapper = mapBox && mapBox.parentElement && mapBox.parentElement.parentElement === fv
+      ? mapBox.parentElement : null;
+
+    if (mapWrapper) {
+      // Map is present — put wrap right after it (so order is: map, wrap, body).
+      if (wrap.previousElementSibling !== mapWrapper) {
+        mapWrapper.insertAdjacentElement('afterend', wrap);
       }
+    } else if (body && body.parentElement) {
+      // Map not injected yet — sit just before field-body. We'll re-check
+      // shortly to catch the map when it shows up.
+      if (wrap.nextElementSibling !== body) {
+        body.insertAdjacentElement('beforebegin', wrap);
+      }
+      if (!wrap._misMapWatch) {
+        wrap._misMapWatch = true;
+        // Poll a couple times for the map to appear; rebuildStrip is idempotent.
+        let attempts = 0;
+        const tick = () => {
+          attempts++;
+          if (fv.querySelector('#field-map-container')) {
+            rebuildStrip();
+          } else if (attempts < 10) {
+            setTimeout(tick, 500);
+          } else {
+            wrap._misMapWatch = false; // give up after 5s
+          }
+        };
+        setTimeout(tick, 500);
+      }
+    } else if (!wrap.parentElement) {
+      fv.appendChild(wrap);
     }
     wrap.innerHTML = html;
     // Wire month buttons + year nav

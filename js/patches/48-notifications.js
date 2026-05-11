@@ -44,6 +44,20 @@
     document.head.appendChild(s);
   }
 
+  // Cache table-exists checks so we don't spam Supabase with HEADs every
+  // reload. `null` = unknown, true/false = cached result.
+  let _tilbodExistsCache = null;
+  async function checkTilbodTable(SB) {
+    if (_tilbodExistsCache !== null) return _tilbodExistsCache;
+    try {
+      const { error } = await SB.from('tilbod').select('id', { head: true, count: 'exact' }).limit(1);
+      _tilbodExistsCache = !error;
+    } catch (_) {
+      _tilbodExistsCache = false;
+    }
+    return _tilbodExistsCache;
+  }
+
   async function load() {
     const SB = getSB();
     if (!SB) return;
@@ -58,13 +72,27 @@
     const in30 = new Date(today); in30.setDate(in30.getDate()+30);
     const last7 = new Date(today); last7.setDate(last7.getDate()-7);
 
-    const [unpaid, dueInsp, lowStock, recentJobs, expiringQuotes] = await Promise.all([
-      safe(SB.from('solur').select('id,num,customer_nafn,samtals,created_at,paid_at,greitt_med').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null).lte('created_at', new Date(Date.now()-30*86400000).toISOString())),
+    // 2026-05-11: birgdir compare magn<lagmark can't be expressed via PostgREST
+    // (no column-to-column comparison without an RPC). Fetch all rows and
+    // filter client-side.
+    // Also: `tilbod` table may not exist on every deployment. Skip query if
+    // table is missing — safe() wrapper still logs the 404 once into network
+    // panel; we silence that by checking for table existence first via a
+    // cheap HEAD query and caching the result.
+    const tilbodExists = await checkTilbodTable(SB);
+
+    const queries = [
+      safe(SB.from('solur').select('id,num,customer_nafn,samtals,created_at,paid_at,greitt_med').neq('status','drog').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null).lte('created_at', new Date(Date.now()-30*86400000).toISOString())),
       safe(SB.from('uttaeki').select('id,serial,client,next_insp').not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10)).order('next_insp',{ascending:true})),
-      safe(SB.from('birgdir').select('id,nafn,magn,lagmark,eining').filter('magn','lt','lagmark')),
+      safe(SB.from('birgdir').select('id,nafn,magn,lagmark,eining').limit(500)),
       safe(SB.from('verkbeidnir').select('id,num,customer,created_at,status').gte('created_at', last7.toISOString()).order('created_at',{ascending:false}).limit(10)),
-      safe(SB.from('tilbod').select('id,num,company_nafn,valid_until,status').eq('status','sent').not('valid_until','is',null).lte('valid_until', new Date(Date.now()+7*86400000).toISOString().slice(0,10)))
-    ]);
+      tilbodExists
+        ? safe(SB.from('tilbod').select('id,num,company_nafn,valid_until,status').eq('status','sent').not('valid_until','is',null).lte('valid_until', new Date(Date.now()+7*86400000).toISOString().slice(0,10)))
+        : Promise.resolve({ data: [], error: null })
+    ];
+    const [unpaid, dueInsp, lowStockRaw, recentJobs, expiringQuotes] = await Promise.all(queries);
+    // Client-side filter for low stock since column-to-column compare isn't possible.
+    const lowStock = { data: (lowStockRaw.data || []).filter(r => Number(r.magn) < Number(r.lagmark)), error: lowStockRaw.error };
 
     alerts = [
       { kind:'unpaid',  sev:'high', label:'Ógreiddir reikningar (>30 daga)', items: (unpaid.data||[]).map(r=>({

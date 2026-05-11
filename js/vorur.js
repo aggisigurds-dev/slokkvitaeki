@@ -319,7 +319,7 @@
     // Delete
     var delBtn = document.getElementById('vorur-del');
     if(delBtn) delBtn.addEventListener('click',async function(){
-      if(!confirm('Viltu virkilega eyða "'+p.nafn+'"?')) return;
+      if(!await Confirm.show('Viltu virkilega eyða "'+p.nafn+'"?')) return;
       delBtn.disabled = true; delBtn.textContent = 'Eyði...';
       try {
         var dr = await DB.sb.from('vorur').delete().eq('id',product.id);

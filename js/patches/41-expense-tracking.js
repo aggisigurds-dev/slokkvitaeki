@@ -166,7 +166,7 @@
     const topJobs = Object.entries(byJob).sort((a,b)=>b[1]-a[1]).slice(0,5);
 
     const tabs = ['week','month','all'].map(p =>
-      `<button class="utg-tab${_period===p?' active':''}" onclick="ExpenseTracking._period('${p}')">${p==='week'?'Þessi vika':p==='month'?'Þessi mánuður':'Allt'}</button>`
+      `<button class="utg-tab${_period===p?' active':''}" onclick="ExpenseTracking._setPeriod('${p}')">${p==='week'?'Þessi vika':p==='month'?'Þessi mánuður':'Allt'}</button>`
     ).join('');
 
     const catBars = Object.entries(byCat).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]).map(([cat,val]) => `
@@ -282,14 +282,14 @@
   }
 
   async function _delete(id) {
-    if (!confirm('Eyða þessari færslu?')) return;
+    if (!await Confirm.show('Eyða þessari færslu?')) return;
     const SB = getSB();
     if (SB) await SB.from('utgjalda_log').delete().eq('id',id);
     if(window.Toast) Toast.show('Færsla eytt');
     load();
   }
 
-  function _period(p) { _period = p; render(); }
+  function _setPeriod(p) { _period = p; render(); }
 
   function _exportCsv() {
     const entries = filtered();
@@ -342,7 +342,7 @@
 
   document.addEventListener('view-shown', e => { if (e.detail==='utgjaldalog') load(); });
 
-  window.ExpenseTracking = { load, _openNew, _save, _delete, _period, _exportCsv };
+  window.ExpenseTracking = { load, _openNew, _save, _delete, _setPeriod, _exportCsv };
   console.log('[expense-tracking] installed');
 })();
 /* === END EXPENSE TRACKING === */

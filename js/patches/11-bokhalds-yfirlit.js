@@ -321,7 +321,7 @@
     const SB = getSB();
     if (!SB) throw new Error('Supabase not initialized');
     const [salesRes, custRes, prodRes] = await Promise.all([
-      SB.from('solur').select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,paid_at,paid_method').order('created_at', { ascending: false }),
+      SB.from('solur').select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,paid_at,paid_method').neq('status','drog').order('created_at', { ascending: false }),
       SB.from('vidskiptavinir').select('id,kennitala,nafn,simi,netfang'),
       SB.from('vorur').select('id,nafn,flokkur')
     ]);

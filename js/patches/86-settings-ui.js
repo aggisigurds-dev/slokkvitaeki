@@ -546,7 +546,7 @@
         const status = body.querySelector('#_su-bulk-status');
         const pct = parseFloat(pctInput.value);
         if (!Number.isFinite(pct) || pct === 0) { status.textContent = 'Sláðu inn prósentu'; return; }
-        if (!confirm('Þetta breytir öllum ' + _allProducts.length + ' vöruverðum um ' + pct + '%. Halda áfram?')) return;
+        if (!await Confirm.show('Þetta breytir öllum ' + _allProducts.length + ' vöruverðum um ' + pct + '%. Halda áfram?')) return;
         bulkBtn.disabled = true; status.textContent = 'Vinn…';
         const factor = 1 + pct / 100;
         let done = 0, errs = 0;
@@ -893,7 +893,7 @@
       try {
         const txt = await file.text();
         const data = JSON.parse(txt);
-        if (!confirm('Yfirskrifa allar stillingar úr ' + file.name + '?')) return;
+        if (!await Confirm.show('Yfirskrifa allar stillingar úr ' + file.name + '?')) return;
         const ok = await window.AppSettings.save(data);
         alert(ok ? '✓ Stillingar fluttar inn' : '✗ Tókst ekki að vista');
       } catch (err) {

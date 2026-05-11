@@ -271,7 +271,7 @@
     });
     tbody.querySelectorAll('[data-tb-del]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (!confirm('Eyða þessu tilboði?')) return;
+        if (!await Confirm.show('Eyða þessu tilboði?')) return;
         const SB = getSB(); if (!SB) return;
         await SB.from('tilbod').delete().eq('id', btn.dataset.tbDel);
         quotes = quotes.filter(q => q.id != btn.dataset.tbDel);

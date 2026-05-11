@@ -259,8 +259,8 @@
       btn.addEventListener('click', async () => {
         const id = parseInt(btn.dataset.arId, 10);
         const num = btn.dataset.arNum || '#'+id;
-        if (!confirm('Eyða færslu '+num+' endanlega?\n\nÞetta er ÓAFTURKRÆFT. Notaðu Kreditfæra ef þú vilt halda bókhaldsslóð.')) return;
-        if (!confirm('Ertu alveg viss? '+num+' verður ekki hægt að endurheimta.')) return;
+        if (!await Confirm.show('Eyða færslu '+num+' endanlega?\n\nÞetta er ÓAFTURKRÆFT. Notaðu Kreditfæra ef þú vilt halda bókhaldsslóð.')) return;
+        if (!await Confirm.show('Ertu alveg viss? '+num+' verður ekki hægt að endurheimta.')) return;
         const SB = getSB();
         if (!SB) return;
         const { error } = await SB.from('solur').delete().eq('id', id);

@@ -238,7 +238,7 @@
         e.stopPropagation();
         const f = getCompanyAttachments(coId).find(x => x.id === delBtn.dataset.id);
         if (!f) return;
-        if (confirm('Eyða skjalinu „' + f.name + '"? Þetta er ekki afturkræft.')) {
+        if (await Confirm.show('Eyða skjalinu „' + f.name + '"? Þetta er ekki afturkræft.')) {
           delBtn.disabled = true;
           await deleteAttachment(coId, f);
           refreshSection(section, coId);

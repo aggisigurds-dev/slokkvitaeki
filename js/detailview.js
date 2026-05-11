@@ -228,13 +228,13 @@
     var retireBtn = document.getElementById('_ud_retire');
     var unretireBtn = document.getElementById('_ud_unretire');
     if (retireBtn) retireBtn.onclick = async function(){
-      if (!confirm('Merkja '+unit.serial+' sem úrelt?')) return;
+      if (!await Confirm.show('Merkja '+unit.serial+' sem úrelt?')) return;
       await DB.sb.from('uttaeki').update({status:'urelt'}).eq('id', unit.id);
       modal.remove();
       showUnitDetail(unit.serial);
     };
     if (unretireBtn) unretireBtn.onclick = async function(){
-      if (!confirm('Endurvirkja '+unit.serial+'?')) return;
+      if (!await Confirm.show('Endurvirkja '+unit.serial+'?')) return;
       await DB.sb.from('uttaeki').update({status:'active'}).eq('id', unit.id);
       modal.remove();
       showUnitDetail(unit.serial);

@@ -196,7 +196,7 @@
     // Wire delete buttons
     container.querySelectorAll('[data-cl-del]').forEach(btn => {
       btn.addEventListener('click', async () => {
-        if (!confirm('Eyða þessari færslu?')) return;
+        if (!await Confirm.show('Eyða þessari færslu?')) return;
         const id = parseInt(btn.dataset.clDel, 10);
         try {
           await deleteEntry(id);

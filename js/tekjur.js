@@ -10,7 +10,7 @@
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 
   async function loadSales(){
-    var r = await DB.sb.from('solur').select('*').order('created_at',{ascending:false});
+    var r = await DB.sb.from('solur').select('*').neq('status','drog').order('created_at',{ascending:false});
     _sales = r.data || [];
   }
 

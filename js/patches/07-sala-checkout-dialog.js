@@ -190,6 +190,29 @@
         </div>
         <div class="scd-body">
           <div class="scd-amount">${esc(cart.grandTotal || '0 kr')}</div>
+          ${(() => {
+            // Prominent "Bills to:" card so the user always sees the customer
+            // name + kt before paying. Helps catch cases where the customer
+            // wasn't populated properly.
+            const cu = cart.customer || {};
+            const hasInfo = !!(cu.nafn || cu.kt);
+            if (!hasInfo) {
+              return '<div style="margin:0 0 14px;padding:10px 14px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;font-size:13px;color:#78350f">' +
+                '⚠ Enginn viðskiptavinur skráður — kvittunin verður án nafns. ' +
+                'Smelltu „Hætta við" og veldu viðskiptavin ef það á við.' +
+              '</div>';
+            }
+            const parts = [];
+            if (cu.nafn) parts.push('<div style="font-weight:700;font-size:15px;color:#0f172a">' + esc(cu.nafn) + '</div>');
+            const meta = [];
+            if (cu.kt) meta.push('kt. ' + esc(cu.kt));
+            if (cu.simi) meta.push('📞 ' + esc(cu.simi));
+            if (meta.length) parts.push('<div style="font-size:12px;color:#475569;margin-top:2px">' + meta.join(' · ') + '</div>');
+            return '<div style="margin:0 0 14px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px">' +
+              '<div style="font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Reikningur á</div>' +
+              parts.join('') +
+            '</div>';
+          })()}
           <div class="scd-section">
             <div class="scd-section-title">Greiðslumáti</div>
             <div class="scd-methods">

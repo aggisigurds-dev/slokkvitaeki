@@ -290,7 +290,7 @@
 
   async function deleteItem(id) {
     const item = _items.find(i=>i.id===id);
-    if (!confirm('Eyða "' + (item?.nafn||id) + '"?')) return;
+    if (!await Confirm.show('Eyða "' + (item?.nafn||id) + '"?')) return;
     const SB = getSB();
     if (SB) await SB.from('birgdir').delete().eq('id',id);
     Toast.show('Vara eytt');
