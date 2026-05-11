@@ -142,6 +142,34 @@
       const body = dlg.querySelector('#_pkc-body');
       let html = '';
 
+      // ── Section 0: Customer info (editable until paid) ──────────────────
+      // Walk-ins (kt 999999-9999) often want to add their real kt at pickup
+      // for their receipt. Allow editing here so user can update without
+      // having to cancel + recreate the sale.
+      const curNafn = (sale && sale.customer_nafn) || job.customer || '';
+      const curKt = ((sale && sale.linur && sale.linur[0] && sale.linur[0].customer_kt) || '');
+      const curSimi = (job.phone || '');
+      html += '<div style="margin-bottom:14px;padding:11px 13px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px">' +
+        '<div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Upplýsingar á reikning</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">' +
+          '<div>' +
+            '<label style="display:block;font-size:10px;color:#64748b;font-weight:600;margin-bottom:3px">Nafn</label>' +
+            '<input id="_pkc-cust-nafn" type="text" value="' + esc(curNafn) + '" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box">' +
+          '</div>' +
+          '<div>' +
+            '<label style="display:block;font-size:10px;color:#64748b;font-weight:600;margin-bottom:3px">Kennitala (valkvætt)</label>' +
+            '<input id="_pkc-cust-kt" type="text" placeholder="000000-0000" value="' + esc(curKt) + '" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box;font-family:monospace">' +
+          '</div>' +
+          '<div>' +
+            '<label style="display:block;font-size:10px;color:#64748b;font-weight:600;margin-bottom:3px">Sími</label>' +
+            '<input id="_pkc-cust-simi" type="tel" value="' + esc(curSimi) + '" style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box">' +
+          '</div>' +
+          '<div style="display:flex;align-items:end">' +
+            '<div style="font-size:10px;color:#94a3b8;line-height:1.35">Þú getur breytt nafni og bætt við kennitölu áður en kvittunin er prentuð.</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
       // ── Section 1: Tæki sem viðskiptavinur tekur ────────────────────────
       html += '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Tæki frá viðgerð</div>';
       if (unitState.length) {
@@ -306,11 +334,18 @@
     dlg.querySelector('#_pkc-finalize').addEventListener('click', async () => {
       const t = calcTotals();
       const payMethod = dlg.querySelector('#_pkc-pay').value;
+      // 2026-05-11: Capture edited customer info — user may have added kt
+      // or changed name/phone since drop-off
+      const customerInfo = {
+        nafn: (dlg.querySelector('#_pkc-cust-nafn')?.value || '').trim(),
+        kt: (dlg.querySelector('#_pkc-cust-kt')?.value || '').trim(),
+        simi: (dlg.querySelector('#_pkc-cust-simi')?.value || '').trim()
+      };
       const finalBtn = dlg.querySelector('#_pkc-finalize');
       finalBtn.disabled = true;
       finalBtn.textContent = 'Vista…';
       try {
-        await finalizePickup(job, sale, unitState, pickupExtras, payMethod, t);
+        await finalizePickup(job, sale, unitState, pickupExtras, payMethod, t, customerInfo);
         // Reset extras for next pickup
         pickupExtras.length = 0;
         close();
@@ -385,7 +420,7 @@
   }
 
   // ── Finalize: update solur, mark verkbeidnir collected, mark units done ─
-  async function finalizePickup(job, sale, unitState, extras, payMethod, totals) {
+  async function finalizePickup(job, sale, unitState, extras, payMethod, totals, customerInfo) {
     const SB = getSB();
     if (!SB) throw new Error('Engin gagnabankatenging');
 
@@ -446,6 +481,28 @@
       (extraList.length ? '\nViðbót: ' + extraList.join(', ') : '') +
       '\nGreiðsla: ' + payMethod;
 
+    // 2026-05-11: Customer info captured from the pickup modal — may have
+    // been edited (e.g. walk-in adds kt at pickup, name corrected). Look up
+    // by kt to link customer_id if present, otherwise just store the nafn.
+    let customerIdToSave = sale && sale.customer_id;
+    let customerNafnToSave = sale ? sale.customer_nafn : (job.customer || '');
+    if (customerInfo && customerInfo.nafn) customerNafnToSave = customerInfo.nafn;
+    if (customerInfo && customerInfo.kt) {
+      const cleanKt = customerInfo.kt.replace(/[^0-9]/g, '');
+      if (cleanKt.length === 10 && cleanKt !== '9999999999') {
+        try {
+          const fy = await SB.from('fyrirtaeki').select('id,nafn').eq('kennitala', cleanKt).maybeSingle();
+          if (fy.data) { customerIdToSave = fy.data.id; if (!customerInfo.nafn) customerNafnToSave = fy.data.nafn; }
+          else {
+            const vk = await SB.from('vidskiptavinir').select('id,nafn').eq('kennitala', cleanKt).maybeSingle();
+            if (vk.data) { customerIdToSave = vk.data.id; if (!customerInfo.nafn) customerNafnToSave = vk.data.nafn; }
+          }
+        } catch (_) {}
+      }
+    }
+    const ktAuditNote = (customerInfo && customerInfo.kt && customerInfo.kt.replace(/[^0-9]/g,'') !== '9999999999')
+      ? '\nKt: ' + customerInfo.kt
+      : '';
     if (sale && sale.id) {
       // Path A: update the existing draft sale → final.
       const updates = {
@@ -456,7 +513,9 @@
         samtals: Math.round(newSamtals),
         greitt_med: payMethod,
         paid_at: payMethod === 'greitt_sidar' || payMethod === 'reikningur' ? null : new Date().toISOString(),
-        athugasemdir: (sale.athugasemdir || '') + auditNote
+        customer_nafn: customerNafnToSave,
+        customer_id: customerIdToSave,
+        athugasemdir: (sale.athugasemdir || '') + ktAuditNote + auditNote
       };
       let r = await SB.from('solur').update(updates).eq('id', sale.id);
       if (r.error && /status/i.test(r.error.message || '')) {
@@ -500,8 +559,13 @@
         await SB.from('verkbeidnir').update({ status: 'collected', pickup: todayISO() }).eq('id', j.id);
       } catch (_) {}
     }
+    // 2026-05-11 fix: If user UNCHECKED a unit in the pickup modal it means
+    // "not delivered" — so its verklidur should be marked 'broken'. Previously
+    // we only set 'broken' if DB ALREADY had it as 'broken', which meant
+    // unchecking in the modal had ZERO effect on stored status (samtals didn't
+    // reduce either because price-scaling relies on this state).
     for (const s of unitState) {
-      const newStatus = s.unit.status === 'broken' ? 'broken' : 'done';
+      const newStatus = s.checked ? 'done' : 'broken';
       try {
         await SB.from('verklidur').update({ status: newStatus }).eq('id', s.unit.id);
       } catch (_) {}
