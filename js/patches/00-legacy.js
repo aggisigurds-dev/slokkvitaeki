@@ -2839,6 +2839,11 @@ console.log('[patch-master] loaded with all fixes');
       ths.forEach(function(th){if(/RA[\u00d0D]N|serial/i.test(th.textContent))hasSerial=true;});
       if(!hasSerial) return;
       if(table.parentNode.querySelector('._pm_memo_wrap')) return;
+      // 2026-05-12: Skip when the table is inside a verkbei\u00f0ni detail view
+      // (Counter / Workshop). The memo box is tied to fyrirtaeki.athugasemdir
+      // and shows "Engin fyrirt\u00e6ki tengt" for walk-in customers, which is
+      // noise. Only show on Companies detail page.
+      if (table.closest('#counter-main, #workshop-detail, #counter-detail-modal, #workshop-detail-modal')) return;
       // Create memo box now, load data async
       var wrap=document.createElement('div');wrap.className='_pm_memo_wrap';
       wrap.innerHTML='<label>\u2709 Minn\u00f3 / Athugasemdir <span class="_pm_memo_saved" id="_memo_saved">\u2713 Vista\u00f0!</span></label><textarea class="_pm_memo_ta" id="_pm_memo_input" placeholder="Skrifa\u00f0u athugasemdir h\u00e9r..."></textarea>';

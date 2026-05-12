@@ -84,9 +84,9 @@
     ed.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:11000;display:flex;align-items:center;justify-content:center;padding:20px';
     ed.innerHTML =
       '<div style="background:#fff;border-radius:12px;width:min(480px,calc(100vw - 32px));overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.4)">' +
-        '<div style="background:#fef3c7;padding:13px 18px;border-bottom:1px solid #fde68a">' +
-          '<div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em">📝 Athugasemd á verki</div>' +
-          '<div style="font-size:11px;color:#a16207;margin-top:2px">Sýnileg fyrir Sölu, Afgreiðslu og Verkstæði.</div>' +
+        '<div style="background:#eff6ff;padding:13px 18px;border-bottom:1px solid #bfdbfe">' +
+          '<div style="font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.05em">📝 Athugasemd á verki</div>' +
+          '<div style="font-size:11px;color:#3b82f6;margin-top:2px">Sýnileg fyrir Sölu, Afgreiðslu og Verkstæði.</div>' +
         '</div>' +
         '<div style="padding:16px 20px">' +
           '<textarea id="_jnd-ta" rows="5" placeholder="t.d. Þrýstingur lítill, viðskiptavinur vill sækja á mánudag, allir skápar fest…" ' +
@@ -130,11 +130,11 @@
   function buildStickyHtml(jobId, userNote, prefix) {
     if (userNote && userNote.trim()) {
       return '<div data-job-id="' + jobId + '" data-prefix="' + esc(prefix) + '" ' +
-        'style="margin:0 0 12px;padding:12px 16px;background:#fef3c7;border-left:4px solid #f59e0b;border-radius:6px;font-size:13px;line-height:1.45;color:#78350f;white-space:pre-wrap;box-shadow:0 1px 3px rgba(0,0,0,0.05);cursor:pointer;position:relative" ' +
+        'style="margin:0 0 12px;padding:12px 16px;background:#eff6ff;border-left:4px solid #3b82f6;border-radius:6px;font-size:13px;line-height:1.45;color:#1e3a8a;white-space:pre-wrap;box-shadow:0 1px 3px rgba(0,0,0,0.05);cursor:pointer;position:relative" ' +
         'class="_jnd-sticky" title="Smelltu til að breyta">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
-            '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#92400e">📌 Athugasemd</div>' +
-            '<div style="font-size:11px;color:#a16207;font-weight:600">✏ Breyta</div>' +
+            '<div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#1e40af">📌 Athugasemd</div>' +
+            '<div style="font-size:11px;color:#3b82f6;font-weight:600">✏ Breyta</div>' +
           '</div>' +
           esc(userNote) +
       '</div>';
