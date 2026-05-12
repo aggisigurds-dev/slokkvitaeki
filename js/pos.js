@@ -703,8 +703,16 @@
           if (jobId) {
             var qty = parseInt(sl.qty, 10) || 1;
             var registered = pendingUnitsByDesc[sl.desc] || [];
+            // 2026-05-12: Gram-based services (e.g. "CO₂ 100 gr.") use qty as
+            // the WEIGHT (20 × 100gr = 2kg refill into a single cylinder),
+            // not as a count of separate units. Treat as 1 verklidur in that
+            // case so workshop sees the cylinder once, not 20 phantom rows.
+            // Detect via "gr" / "gramm" / "ml" / "litr" tokens in desc, OR by
+            // checking that user didn't register multiple serials.
+            var isGramBased = /\b\d+\s*(gr?\.?|gramm|ml|litr?)\b/i.test(sl.desc) && registered.length <= 1;
+            var verklidurCount = isGramBased ? 1 : qty;
             var verklidurRows = [];
-            for (var u=0; u<qty; u++) {
+            for (var u=0; u<verklidurCount; u++) {
               var registeredUnit = registered[u];
               var serial = (registeredUnit && registeredUnit.serial && registeredUnit.serial.trim())
                 || makeTmpSerial();
@@ -713,7 +721,9 @@
                 serial: serial,
                 type: '—',                // workshop will fill in correct type
                 size: '',
-                service: sl.desc,
+                service: isGramBased
+                  ? sl.desc + ' × ' + qty + ' (samtals)'
+                  : sl.desc,
                 status: 'received'
               });
             }
@@ -909,7 +919,7 @@
     w.document.close();
   }
   function watch(){setInterval(function(){var v=document.getElementById('view-sala');if(!v||!v.classList.contains('active'))return;if(!document.getElementById('pos-checkout')){v.removeAttribute('data-pos-v3');loadAll().then(render);}},300);}
-  window.POS = { getState: function(){ return state; }, totals: totals };
+  window.POS = { getState: function(){ return state; }, totals: totals, rerenderDynamic: rerenderDynamic };
   function init(){watch();console.log('[POS v3] Ready');}
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 })();
