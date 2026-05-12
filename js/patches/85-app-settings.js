@@ -112,7 +112,38 @@
     }
   };
 
+  // 2026-05-09: localStorage cache to eliminate banner/topbar flicker on
+  // page load. Without this, the page renders with DEFAULTS for ~300-500ms
+  // (until Supabase fetch completes), then visibly re-renders with the
+  // user's banner image / company colors. With cache: initial paint uses
+  // last-known-good settings → no flicker on repeat visits. Fresh DB load
+  // still happens after; if it differs, that's one re-render — but only
+  // when settings actually changed, not every visit.
+  const CACHE_KEY = 'slokk_app_settings_v1';
+  function readCache() {
+    try {
+      const raw = localStorage.getItem(CACHE_KEY);
+      if (!raw) return null;
+      const o = JSON.parse(raw);
+      if (!o || !o.s || typeof o.s !== 'object') return null;
+      // Drop cache older than 30 days — defensive against stale schemas.
+      if (o.at && (Date.now() - o.at) > 30 * 86400000) return null;
+      return o.s;
+    } catch (_) { return null; }
+  }
+  function writeCache(s) {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify({ s, at: Date.now() })); } catch (_) {}
+  }
+  function clearCache() { try { localStorage.removeItem(CACHE_KEY); } catch (_) {} }
+
   let _settings = JSON.parse(JSON.stringify(DEFAULTS));
+  // Hydrate from cache synchronously so the very first paint can use real
+  // settings instead of defaults. deepMerge ensures any new keys added to
+  // DEFAULTS since the cache was written still get filled in.
+  const _cached = readCache();
+  if (_cached) {
+    _settings = deepMerge(JSON.parse(JSON.stringify(DEFAULTS)), _cached);
+  }
   let _loaded = false;
   const _listeners = [];
 
@@ -161,6 +192,9 @@
         console.warn('[app-settings] load skipped:', r.error.message);
       } else if (r.data && r.data.settings) {
         _settings = deepMerge(JSON.parse(JSON.stringify(DEFAULTS)), r.data.settings);
+        // Cache the freshly-loaded settings so the next page load can paint
+        // with real values immediately instead of defaults.
+        writeCache(r.data.settings);
       }
     } catch (e) {
       console.warn('[app-settings] load exception:', e);
@@ -187,6 +221,8 @@
         return false;
       }
       _settings = next;
+      // Update cache so the next page load reflects the change immediately.
+      writeCache(next);
       notify();
       return true;
     } catch (e) {

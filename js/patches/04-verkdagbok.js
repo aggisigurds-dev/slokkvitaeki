@@ -677,7 +677,7 @@
 
   async function deleteEntry(id) {
     const e = entries.find(x => String(x.id) === String(id));
-    if (!confirm('Eyða þessari færslu varanlega?\n\n' + (e?.athugasemdir?.slice(0,80) || e?.fyrirtaeki || '(ónefnd)'))) return;
+    if (!await Confirm.show('Eyða þessari færslu varanlega?\n\n' + (e?.athugasemdir?.slice(0,80) || e?.fyrirtaeki || '(ónefnd)'))) return;
     try {
       const { error } = await getSB().from('verkdagbok').delete().eq('id', id);
       if (error) throw error;

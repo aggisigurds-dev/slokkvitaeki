@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video — Sækja inn úr fyrirtæki | Slökkvitæki ehf</title>
+<link rel="stylesheet" href="video-player.css">
+</head>
+<body>
+<div class="player">
+
+<div class="topbar">
+  <div><a href="index.html">← Forsíða</a> · <a href="kennsla-saekja-inn.html">📄 Texti útgáfa</a></div>
+  <div><a href="video-walk-in.html">→ Walk-in video</a></div>
+</div>
+
+<h1>📥 Sækja inn úr fyrirtæki</h1>
+<p class="subtitle">Phase A — bílstjóri kemur með tæki úr þjónustu-fyrirtæki, verkstæðismaður vinnur, viðskiptavinur sækir.</p>
+
+<div class="stage" id="stage">
+  <div class="step-tag" id="step-tag">1 / 11</div>
+  <div class="progress"><div class="progress-fill" id="progress-fill"></div></div>
+</div>
+
+<div class="caption" id="caption">…</div>
+
+<div class="controls">
+  <button class="btn primary" id="play-btn">▶ Spila með talsetningu</button>
+  <button class="btn" id="prev-btn">⏮ Aftur</button>
+  <button class="btn" id="next-btn">⏭ Næsta</button>
+  <button class="btn" id="replay-btn">⟲ Byrja aftur</button>
+  <span class="spacer"></span>
+  <span class="step-counter" id="step-counter">Skref 1 af 11</span>
+</div>
+
+<div class="controls" style="margin-top:8px">
+  <div class="lang-toggle" id="lang-toggle">
+    <button data-lang="auto">Sjálfvirkt</button>
+    <button data-lang="is">Íslenska</button>
+    <button data-lang="en">English</button>
+  </div>
+  <span class="spacer"></span>
+  <div class="voice-pick">
+    <span>🔊 Rödd:</span>
+    <select id="voice-select"></select>
+  </div>
+</div>
+
+<div class="voice-warn" id="voice-warn">
+  ⚠ Engin íslensk rödd uppsett í þessu tæki. Smelltu á <b>English</b> hér að ofan, eða settu upp íslenska rödd í Windows: <i>Settings → Time & Language → Speech → Add voices → Icelandic</i>.
+</div>
+
+<div class="thumbs" id="thumbs"></div>
+
+</div>
+
+<script>
+window.__SLIDES = [
+  {
+    img: 'img/01-verkstaedi.jpg',
+    text_is: 'Velkomin í kennslubók um sækja inn úr fyrirtæki. Hér sérðu Verkstæði, aðal sýnina þar sem öll virk verk eru. Vinstri súlan sýnir öll verk í vinnslu og hægri súlan sýnir verk hjá fyrirtækjum með þjónustusamning.',
+    text_en: 'Welcome to the workshop pickup tutorial. This is the Workshop view where all active jobs are. The left column shows jobs in progress, the right column shows jobs at companies with service contracts.'
+  },
+  {
+    img: 'img/02-saekja-modal.jpg',
+    text_is: 'Þegar bílstjóri kemur úr eftirliti með tæki, smelltu á bláa takkann sækja inn úr fyrirtæki. Listinn opnast og sýnir öll fyrirtæki. Þau sem eru með þjónustusamning birtast efst með bláu samningshafa-merki.',
+    text_en: 'When the driver returns from a service visit with equipment, click the blue button: pickup from company. A list opens showing all companies. Those with active service contracts appear at the top with a blue contract holder badge.'
+  },
+  {
+    img: 'img/03-saekja-units.jpg',
+    text_is: 'Veldu fyrirtækið og kerfið sýnir öll tæki sem skráð eru á það. Sjálfgefið eru þau öll valin. Þú getur hakað af, breytt þjónustu í drop-down menúinu hægra megin, og séð útrunnin tæki merkt rauðlitað.',
+    text_en: 'Select the company and the system shows all equipment registered to it. By default, all are selected. You can uncheck, change the service type in the dropdown on the right, and see expired equipment marked in red.'
+  },
+  {
+    img: 'img/04-job-created.jpg',
+    text_is: 'Smelltu á græna takkann stofna verk. Kerfið býr sjálfvirkt til verkbeiðni með R-númeri, drög að reikningi með upphæðum, og verklínur fyrir hvert tæki. Verkið birtist nú í verkröð og einnig í samningshafa-súlunni.',
+    text_en: 'Click the green Create work button. The system automatically creates a work request with an R-number, a draft invoice with prices, and work lines for each unit. The job now appears in both the work queue and the contract holder column.'
+  },
+  {
+    img: 'img/05-job-detail.jpg',
+    text_is: 'Smelltu á verkið til að opna verkgluggann. Þú sérð hvert tæki með takka fyrir hvert: skanna, hak, breyta, athugasemd og ónýtt. Verkstæðismaður vinnur tækin og merkir kláraða með græna haknum.',
+    text_en: 'Click the job to open the work window. You see each unit with buttons: scan, check, edit, note, and broken. The technician works on the units and marks completed ones with the green check.'
+  },
+  {
+    img: 'img/06-one-done.jpg',
+    text_is: 'Þegar tæki er klárað smellir þú á græna haka takkann við hliðina á því. Hringurinn fyllist grænn og framvinda uppfærist sjálfkrafa. Hér sérðu eitt af tíu kláruð.',
+    text_en: 'When a unit is finished, click the green check button next to it. The circle fills green and the progress updates automatically. Here you see one of ten completed.'
+  },
+  {
+    img: 'img/07-all-done.jpg',
+    text_is: 'Halda áfram þangað til öll tæki eru græn. Þegar tíu af tíu eru kláruð er verkið tilbúið til afhendingar.',
+    text_en: 'Continue until all units are green. When ten of ten are done, the job is ready for handover.'
+  },
+  {
+    img: 'img/08-afgreidsla-tilbuin.jpg',
+    text_is: 'Verkkortið flyst sjálfvirkt yfir í tilbúin súluna í afgreiðslu sýninni. Þaðan tekur afgreiðslufólk við þegar viðskiptavinur kemur að sækja.',
+    text_en: 'The job card automatically moves to the Ready column in the Counter view. From there, the counter staff takes over when the customer arrives.'
+  },
+  {
+    img: 'img/09-checkout-modal.jpg',
+    text_is: 'Þegar viðskiptavinur kemur smellir þú á græna sótt-takkann. Sókn glugginn opnast og sýnir lista yfir öll tæki frá viðgerð, með verðlínu fyrir hvert og samtölum neðst. Þú getur hakað af tæki sem ekki eru sótt í þetta sinn.',
+    text_en: 'When the customer arrives, click the green Picked up button. The pickup window opens showing all units from the workshop, with a price line for each and the total at the bottom. You can uncheck units not being picked up this time.'
+  },
+  {
+    img: 'img/10-checkout-done.jpg',
+    text_is: 'Veldu greiðslumáta í drop-down menúinu og smelltu klára sölu og afhenda. Salan fer í lokastöðu, næsta skoðun á öllum tækjum er sjálfvirkt sett tólf mánuðum fram, og verkbeiðnin lokar.',
+    text_en: 'Choose the payment method in the dropdown and click Complete sale and hand over. The sale moves to final state, the next inspection on all units is automatically set twelve months ahead, and the work request closes.'
+  },
+  {
+    img: 'img/11-skyrsla.jpg',
+    text_is: 'Að lokum getur þú prentað úttektarskýrslu. Hún birtist sem A4 prentanleg skýrsla með auðkennum, upplýsingum um viðskiptavin, töflu yfir öll tæki, samtölum með VSK og undirskriftarsvæði. Smelltu prenta efst eða vista sem PDF.',
+    text_en: 'Finally, you can print the inspection report. It displays as an A4 printable report with company branding, customer details, a table of all units, totals with VAT, and signature fields. Click Print at the top, or save as PDF.'
+  }
+];
+</script>
+<script src="video-player.js"></script>
+
+</body>
+</html>

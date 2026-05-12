@@ -36,8 +36,9 @@
     if (!SB) { alert('Engin gagnabankatenging'); return; }
     const isBrokenNow = currentStatus === 'broken';
     const newStatus = isBrokenNow ? 'received' : 'broken';
+    // 2026-05-10 (B5+): Confirm.show in stað native confirm
     if (!isBrokenNow) {
-      if (!confirm('Merkja tæki sem ÓNÝTT?\n\nAfgreiðslufólk sér viðvörun á verkbeiðninni og getur boðið viðskiptavin nýtt í staðinn.')) return;
+      if (!(await Confirm.show('Merkja tæki sem ÓNÝTT?\n\nAfgreiðslufólk sér viðvörun á verkbeiðninni og getur boðið viðskiptavin nýtt í staðinn.', {danger:true, okText:'Merkja ónýtt'}))) return;
     }
     btn.disabled = true;
     btn.textContent = '...';

@@ -127,7 +127,12 @@
       '</div>';
     document.body.appendChild(dlg);
 
-    function close() { dlg.remove(); try { delete window._pkcRefresh; } catch(_){} }
+    function close() {
+      dlg.remove();
+      // 2026-05-10 (F3 fix): clear extras on close so a re-open starts fresh.
+      pickupExtras.length = 0;
+      try { delete window._pkcRefresh; } catch(_){}
+    }
     dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
     dlg.querySelector('#_pkc-x').addEventListener('click', close);
     dlg.querySelector('#_pkc-cancel').addEventListener('click', close);
@@ -173,13 +178,18 @@
         html += '<div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">';
         pickupExtras.forEach((ex, i) => {
           const lineTotal = (ex.qty || 1) * (ex.unit_price_ex_vat || 0) * (1 + (ex.vsk_pct || 24) / 100);
+          // F1 fix: qty is now an inline editable input.
           html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid #f1f5f9">' +
             '<div style="flex:1;min-width:0">' +
               '<div style="font-size:13px;font-weight:600;color:#0f172a">' + esc(ex.name) + '</div>' +
-              '<div style="font-size:11px;color:#64748b;margin-top:2px">' + (ex.qty || 1) + ' × ' + esc(fmtKr(ex.unit_price_ex_vat || 0)) + ' án vsk · vsk ' + (ex.vsk_pct || 24) + '%</div>' +
+              '<div style="font-size:11px;color:#64748b;margin-top:2px">' + esc(fmtKr(ex.unit_price_ex_vat || 0)) + ' án vsk · vsk ' + (ex.vsk_pct || 24) + '%</div>' +
             '</div>' +
-            '<div style="font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums">' + esc(fmtKr(lineTotal)) + '</div>' +
-            '<button class="_pkc-rm-extra" data-i="' + i + '" type="button" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:18px;padding:2px 6px">×</button>' +
+            '<div style="display:flex;align-items:center;gap:6px">' +
+              '<input class="_pkc-extra-qty" data-i="' + i + '" type="number" min="1" step="1" value="' + (ex.qty || 1) + '" style="width:56px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;text-align:center;font-variant-numeric:tabular-nums">' +
+              '<span style="color:#94a3b8;font-size:12px">×</span>' +
+            '</div>' +
+            '<div style="font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;min-width:80px;text-align:right">' + esc(fmtKr(lineTotal)) + '</div>' +
+            '<button class="_pkc-rm-extra" data-i="' + i + '" type="button" title="Eyða línu" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:18px;padding:2px 6px">×</button>' +
           '</div>';
         });
         html += '</div>';
@@ -201,6 +211,28 @@
       });
       // Wire add-extra
       body.querySelector('#_pkc-add-extra').addEventListener('click', () => openExtraDialog());
+      // Wire qty edit on extras
+      body.querySelectorAll('._pkc-extra-qty').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const i = +inp.dataset.i;
+          const v = parseInt(inp.value, 10);
+          if (!Number.isFinite(v) || v < 1) return;
+          if (pickupExtras[i]) {
+            pickupExtras[i].qty = v;
+            renderTotals();
+            // Update the line-total cell next to this input without full re-render
+            const cell = inp.closest('div[style*="padding:9px"]');
+            if (cell) {
+              const totalEl = cell.querySelector('div[style*="min-width:80px"]');
+              if (totalEl) {
+                const ex = pickupExtras[i];
+                const lt = (ex.qty || 1) * (ex.unit_price_ex_vat || 0) * (1 + (ex.vsk_pct || 24) / 100);
+                totalEl.textContent = fmtKr(lt);
+              }
+            }
+          }
+        });
+      });
       // Wire remove-extra
       body.querySelectorAll('._pkc-rm-extra').forEach(b => {
         b.addEventListener('click', () => {
@@ -292,14 +324,15 @@
   }
 
   // ── Add an extra (replacement) line to the pickup ──────────────────────
-  // Triggered via the global window-level callback set by renderPickupModal.
+  // 2026-05-10 (B5 fix): Replaced native `prompt()` with a custom qty modal.
+  // The native prompt blocked the entire browser thread (including the MCP /
+  // automation tooling), and looked out of place against the rest of the app.
   function openExtraDialog() {
     if (!window.VorurPicker || typeof VorurPicker.open !== 'function') {
       alert('Vörulisti ekki tilbúinn — endurhladdu síðunni og prófaðu aftur.');
       return;
     }
-    VorurPicker.open(p => {
-      const qty = parseInt(prompt('Magn fyrir „' + p.nafn + '":', '1'), 10);
+    VorurPicker.open(p => askQty(p, qty => {
       if (!Number.isFinite(qty) || qty < 1) return;
       pickupExtras.push({
         name: p.nafn,
@@ -307,9 +340,48 @@
         unit_price_ex_vat: +p.verd_an_vsk || 0,
         vsk_pct: +p.vsk_prosenta || 24
       });
-      // Re-render via the modal's own refresh function
       if (typeof window._pkcRefresh === 'function') window._pkcRefresh();
+    }));
+  }
+
+  // Custom qty prompt — non-blocking, themed, keyboard-friendly.
+  function askQty(product, onPicked) {
+    const existing = document.getElementById('_pkc-qty-dialog');
+    if (existing) existing.remove();
+    const dlg = document.createElement('div');
+    dlg.id = '_pkc-qty-dialog';
+    dlg.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    dlg.innerHTML =
+      '<div style="background:#fff;border-radius:12px;box-shadow:0 20px 60px rgba(0,0,0,0.3);width:min(420px,calc(100vw - 32px));overflow:hidden">' +
+        '<div style="padding:13px 18px;background:linear-gradient(135deg,#0d6efd,#0a58ca);color:#fff">' +
+          '<div style="font-size:11px;color:#bfdbfe;text-transform:uppercase;letter-spacing:0.06em;font-weight:600">Magn</div>' +
+          '<div style="font-size:15px;font-weight:700;margin-top:2px">' + esc(product.nafn) + '</div>' +
+        '</div>' +
+        '<div style="padding:18px">' +
+          '<input id="_pkc-qty-input" type="number" min="1" step="1" value="1" autofocus style="width:100%;padding:11px 14px;border:1.5px solid #cbd5e1;border-radius:8px;font:inherit;font-size:18px;text-align:center;font-variant-numeric:tabular-nums;box-sizing:border-box">' +
+          '<div style="font-size:11px;color:#64748b;margin-top:6px;text-align:center">Sláðu inn fjölda · Enter = staðfesta · Esc = hætta við</div>' +
+        '</div>' +
+        '<div style="padding:11px 18px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end">' +
+          '<button id="_pkc-qty-cancel" type="button" style="padding:8px 16px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>' +
+          '<button id="_pkc-qty-ok" type="button" style="padding:8px 18px;background:#0d6efd;color:#fff;border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">Bæta við</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(dlg);
+    const inp = dlg.querySelector('#_pkc-qty-input');
+    function close() { dlg.remove(); }
+    function submit() {
+      const v = parseInt(inp.value, 10);
+      close();
+      onPicked(v);
+    }
+    dlg.querySelector('#_pkc-qty-cancel').addEventListener('click', close);
+    dlg.querySelector('#_pkc-qty-ok').addEventListener('click', submit);
+    dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); submit(); }
+      if (e.key === 'Escape') { e.preventDefault(); close(); }
     });
+    setTimeout(() => { inp.focus(); inp.select(); }, 30);
   }
 
   // ── Finalize: update solur, mark verkbeidnir collected, mark units done ─
@@ -317,36 +389,107 @@
     const SB = getSB();
     if (!SB) throw new Error('Engin gagnabankatenging');
 
-    // 1. Build new linur for solur. Strategy:
-    //    - Keep existing linur if sale exists, but adjust qty by takenCount
-    //      vs total (proportional). Simpler: replace linur entirely with a
-    //      single summary line per service + extras.
-    //    - Or even simpler: keep it informational-only and just update samtals.
-    // For now: keep original linur as-is (informational) and just update
-    // samtals + greitt_med + paid_at.
+    // Phase B (2026-05-09): Replace linur to reflect what was ACTUALLY
+    // delivered. Original linur are scaled proportionally by takenCount /
+    // totalUnits (handles the common case of "12 hleðslur kom inn, 4 ónýt,
+    // 8 afhent → qty 12 → 8"). Lines whose qty rounds to 0 are dropped.
+    // Extras added at pickup are appended as new lines. Totals are
+    // recomputed from the new linur (not proportional from old samtals).
+    // Status flips drög → final.
+
+    // Build the final linur (the actual delivered lines).
+    //
+    // Two paths:
+    //   A) sale exists (POS sold upfront, or patch 122 created a draft solur)
+    //      → scale existing linur proportionally by takenCount / totalUnits,
+    //        append extras, recompute totals, UPDATE the row.
+    //   B) sale missing (no upfront sale, no draft → "Sækja inn" before this
+    //      fix shipped, or solur insert failed for any reason)
+    //      → INSERT a new solur row with extras only as the line items, since
+    //        we have no source price data. Totals come from extras.
+    const totalUnits = unitState.length;
+    const takenCount = unitState.filter(s => s.checked).length;
+    const ratio = totalUnits > 0 ? takenCount / totalUnits : 1;
+
+    const oldLinur = (sale && Array.isArray(sale.linur)) ? sale.linur : [];
+    const newLinur = oldLinur
+      .map(l => {
+        const oldQty = +l.qty || 0;
+        const scaled = oldQty * ratio;
+        const newQty = Number.isInteger(oldQty)
+          ? Math.round(scaled)
+          : Math.round(scaled * 100) / 100;
+        return { ...l, qty: newQty };
+      })
+      .filter(l => (+l.qty || 0) > 0);
+
+    extras.forEach(ex => {
+      newLinur.push({
+        desc: ex.name,
+        qty: ex.qty,
+        unit_price_ex_vat: ex.unit_price_ex_vat,
+        vsk_pct: ex.vsk_pct,
+        type: 'product'
+      });
+    });
+
+    const newEx = newLinur.reduce(
+      (a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0), 0);
+    const newVsk = newLinur.reduce(
+      (a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 0) / 100), 0);
+    const newSamtals = newEx + newVsk;
+
+    const brokenList = unitState.filter(s => !s.checked).map(s => s.unit.serial).filter(Boolean);
+    const extraList = extras.map(ex => ex.qty + '× ' + ex.name);
+    const auditNote = '\n\n[Sótt ' + todayISO() + ']' +
+      (brokenList.length ? '\nEkki afhent: ' + brokenList.join(', ') : '') +
+      (extraList.length ? '\nViðbót: ' + extraList.join(', ') : '') +
+      '\nGreiðsla: ' + payMethod;
 
     if (sale && sale.id) {
+      // Path A: update the existing draft sale → final.
       const updates = {
-        samtals: totals.grand,
+        status: 'final',
+        linur: newLinur,
+        upphaed_an_vsk: Math.round(newEx),
+        vsk_upphaed: Math.round(newVsk),
+        samtals: Math.round(newSamtals),
         greitt_med: payMethod,
-        paid_at: payMethod === 'greitt_sidar' || payMethod === 'reikningur' ? null : new Date().toISOString()
+        paid_at: payMethod === 'greitt_sidar' || payMethod === 'reikningur' ? null : new Date().toISOString(),
+        athugasemdir: (sale.athugasemdir || '') + auditNote
       };
-      // If the price went down due to broken units, also reduce upphaed_an_vsk + vsk_upphaed proportionally
-      if (sale.samtals && +sale.samtals > 0) {
-        const ratio = totals.grand / +sale.samtals;
-        if (sale.upphaed_an_vsk) updates.upphaed_an_vsk = Math.round(+sale.upphaed_an_vsk * ratio);
-        if (sale.vsk_upphaed) updates.vsk_upphaed = Math.round(+sale.vsk_upphaed * ratio);
+      let r = await SB.from('solur').update(updates).eq('id', sale.id);
+      if (r.error && /status/i.test(r.error.message || '')) {
+        // status column missing — retry without status
+        const { status, ...rest } = updates;
+        r = await SB.from('solur').update(rest).eq('id', sale.id);
       }
-      // Note about what happened
-      const brokenList = unitState.filter(s => !s.checked).map(s => s.unit.serial).filter(Boolean);
-      const extraList = extras.map(ex => ex.qty + '× ' + ex.name);
-      const auditNote = '\n\n[Sótt ' + todayISO() + ']' +
-        (brokenList.length ? '\nÓnýt eftir: ' + brokenList.join(', ') : '') +
-        (extraList.length ? '\nViðbót: ' + extraList.join(', ') : '') +
-        '\nGreiðsla: ' + payMethod;
-      updates.athugasemdir = (sale.athugasemdir || '') + auditNote;
-
-      const r = await SB.from('solur').update(updates).eq('id', sale.id);
+      if (r.error) throw r.error;
+    } else {
+      // 2026-05-10 (B1 fix) Path B: no sale exists yet. INSERT a new solur
+      // row right now so the transaction has accounting visibility. Common
+      // case: "Sækja inn úr fyrirtæki" verkbeiðnir from before patch 122
+      // started creating draft solur, OR if that draft insert failed.
+      const newSale = {
+        num: parentSaleNum(job.num),
+        starfsmadur: 'Verkstæði',
+        customer_nafn: job.customer || '',
+        customer_id: null,
+        linur: newLinur,
+        upphaed_an_vsk: Math.round(newEx),
+        vsk_upphaed: Math.round(newVsk),
+        afslattur: 0,
+        samtals: Math.round(newSamtals),
+        greitt_med: payMethod,
+        paid_at: payMethod === 'greitt_sidar' || payMethod === 'reikningur' ? null : new Date().toISOString(),
+        athugasemdir: 'Stofnað við Sótt ✓ úr verkstæðis-afhendingu' + auditNote,
+        status: 'final'
+      };
+      let r = await SB.from('solur').insert(newSale).select().single();
+      if (r.error && /status/i.test(r.error.message || '')) {
+        const { status, ...rest } = newSale;
+        r = await SB.from('solur').insert(rest).select().single();
+      }
       if (r.error) throw r.error;
     }
 
@@ -361,6 +504,36 @@
       const newStatus = s.unit.status === 'broken' ? 'broken' : 'done';
       try {
         await SB.from('verklidur').update({ status: newStatus }).eq('id', s.unit.id);
+      } catch (_) {}
+    }
+
+    // 2b. (2026-05-10) For verklidur with a uttaeki_id link (created by
+    // patch 122's "Sækja inn" flow), auto-update the uttaeki row:
+    //   • not broken + customer took it → next_insp = today + 12 mán,
+    //     last_insp = today, status = 'active'
+    //   • broken → uttaeki.status = 'broken' (replaced; stays out of
+    //     normal scheduling until manually returned to service)
+    // This eliminates the manual 12-month rescheduling step.
+    const today = todayISO();
+    const next12mo = (() => {
+      const d = new Date(); d.setMonth(d.getMonth() + 12);
+      return d.toISOString().slice(0, 10);
+    })();
+    for (const s of unitState) {
+      const uid = s.unit && s.unit.uttaeki_id;
+      if (!uid) continue;
+      try {
+        if (s.unit.status === 'broken') {
+          await SB.from('uttaeki').update({ status: 'broken' }).eq('id', uid);
+        } else if (s.checked) {
+          await SB.from('uttaeki').update({
+            status: 'active',
+            last_insp: today,
+            next_insp: next12mo
+          }).eq('id', uid);
+        }
+        // s.checked === false (customer didn't take it back) → leave uttaeki
+        // alone; the field-service record stays as-is.
       } catch (_) {}
     }
 

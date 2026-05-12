@@ -18,7 +18,7 @@
  *     created_at TIMESTAMPTZ DEFAULT NOW()
  *   );
  */
-(() => {
+(async () => {
   if (window.__techsInstalled) return;
   window.__techsInstalled = true;
 
@@ -156,7 +156,7 @@
               <td style="padding:10px;font-size:13px">${esc(c.skirteini_nafn||'')}</td>
               <td style="padding:10px;font-size:13px">${esc(c.utgefandi||'—')}</td>
               <td style="padding:10px;font-size:13px">${fmtDate(c.gefid_ut)}</td>
-              <td style="padding:10px;font-size:13px;color:${color};font-weight:${d!==null&&d<90?'700':'400'}">${fmtDate(c.rennur_ut)}${d!==null?` <small>(${d<0?-d+'d í tímadrögun':d+'d')</small>`:''}</td>
+              <td style="padding:10px;font-size:13px;color:${color};font-weight:${d!==null&&d<90?'700':'400'}">${fmtDate(c.rennur_ut)}${d!==null?` <small>(${d<0?-d+'d í tímadrögun':d+'d'})</small>`:''}</td>
               <td style="padding:10px"><button class="btn btn-sm btn-outline" onclick="Technicians._delCert(${c.id})">🗑</button></td>
             </tr>`;
           }).join('')}</tbody>
@@ -195,7 +195,7 @@
     });
     load();
   }
-  async function _delCert(id){ if (!confirm('Eyða?')) return; await getSB().from('skirteini').delete().eq('id', id); load(); }
+  async function _delCert(id){ if (!await Confirm.show('Eyða?')) return; await getSB().from('skirteini').delete().eq('id', id); load(); }
 
   function init(){ ensureNav(); ensureView(); patchSwitch(); }
   setTimeout(init, 1000);

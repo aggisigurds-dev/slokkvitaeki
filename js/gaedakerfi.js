@@ -357,12 +357,12 @@
           </div>`;
       });
     });
-    window._gk_markUrelt = function(id, serial){
-      if (!confirm('Merkja '+serial+' sem úrelt? Þetta verður skráð í aðgerðaskrá.')) return;
+    window._gk_markUrelt = async function(id, serial){
+      if (!await Confirm.show('Merkja '+serial+' sem úrelt? Þetta verður skráð í aðgerðaskrá.')) return;
       DB.sb.from('uttaeki').update({status:'urelt'}).eq('id',id).then(function(){ renderTab('urelt'); });
     };
-    window._gk_reinstate = function(id){
-      if (!confirm('Endurvirkja þetta tæki?')) return;
+    window._gk_reinstate = async function(id){
+      if (!await Confirm.show('Endurvirkja þetta tæki?')) return;
       DB.sb.from('uttaeki').update({status:'active'}).eq('id',id).then(function(){ renderTab('urelt'); });
     };
   }

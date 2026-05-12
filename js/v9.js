@@ -509,7 +509,7 @@
       setTimeout(inject,600);
     };
     document.getElementById('_em_del').onclick=async function(){
-      if(!confirm(t('delConfirm')))return;
+      if(!await Confirm.show(t('delConfirm')))return;
       await DB.sb.from('uttaeki').delete().eq('id',u.id);
       if(DB.cache.units)DB.cache.units=DB.cache.units.filter(function(x){return x.id!==u.id;});
       m.close();

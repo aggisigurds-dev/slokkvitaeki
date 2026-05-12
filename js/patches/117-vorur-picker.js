@@ -107,11 +107,15 @@
       if (f === 'vorur') rows = rows.filter(p => p.flokkur !== 'Þjónusta');
       else if (f === 'thjonusta') rows = rows.filter(p => p.flokkur === 'Þjónusta');
       if (q) {
-        rows = rows.filter(p =>
-          (p.nafn || '').toLowerCase().indexOf(q) >= 0 ||
-          (p.flokkur || '').toLowerCase().indexOf(q) >= 0 ||
-          (p.lysing || '').toLowerCase().indexOf(q) >= 0
-        );
+        // 2026-05-10 (F2 fix): Tokenized search — split query by whitespace
+        // and require ALL tokens to appear (in any order) across nafn/flokkur/
+        // lysing. So "duft hleðsla 6" finds "6 kg. Duft ABC hleðsla", which
+        // the previous strict-substring search missed.
+        const tokens = q.split(/\s+/).filter(Boolean);
+        rows = rows.filter(p => {
+          const hay = ((p.nafn || '') + ' ' + (p.flokkur || '') + ' ' + (p.lysing || '')).toLowerCase();
+          return tokens.every(tok => hay.indexOf(tok) >= 0);
+        });
       }
       countEl.textContent = rows.length + ' / ' + products.length;
 

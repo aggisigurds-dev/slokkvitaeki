@@ -46,14 +46,35 @@
   }
 
   // ── Core lookup ──────────────────────────────────────────────────────────
-  // Uses our own Netlify Function /api/kt-lookup which scrapes Skatturinn
-  // Fyrirtækjaskrá server-side. The browser can't call Iceland's lookup
-  // endpoints directly because none of them send CORS headers — so we proxy.
-  // Free, no API key needed, works for company kennitalas.
+  // Skatturinn (RSK) Fyrirtækjaskrá sendir ekki CORS-headers, þannig að við
+  // þurfum að proxa beiðnina. Tvær leiðir í forgangsröð:
+  //   1) Eigin Netlify Function /api/kt-lookup (ef hún er deplýjuð — annars 404)
+  //   2) Public CORS proxy (corsproxy.io / allorigins.win) sem nær HTML-inu
+  //      beint frá skatturinn.is og við parsum það client-side.
+  //
+  // HTML pars hér mirroar parsing-logic-ið úr Netlify Function (netlify/
+  // functions/kt-lookup.js) svo niðurstaðan sé sú sama. Free, no API key.
+
+  function parseRskHtml(html) {
+    const nameMatch = html.match(/<h1>\s*([^<(]+?)\s*\((\d{10})\)\s*<\/h1>/);
+    const nafn = nameMatch ? nameMatch[1].trim() : '';
+    if (!nafn) return null;
+    let heimilisfang = '', postnumer = '', stadur = '';
+    const addrMatch = html.match(/<td>\s*([^<>]+?)\s*<br\s*\/?>\s*(\d{3})\s+([^<>]+?)\s*<\/td>/);
+    if (addrMatch) {
+      heimilisfang = addrMatch[1].trim();
+      postnumer    = addrMatch[2].trim();
+      stadur       = addrMatch[3].trim();
+    }
+    const heimilisfang_full = [heimilisfang, postnumer && stadur ? `${postnumer} ${stadur}` : (postnumer || stadur)]
+      .filter(Boolean).join(', ');
+    return { nafn, heimilisfang, heimilisfang_full, postnumer, stadur };
+  }
+
   async function fetchKt(kt) {
     const clean = kt.replace(/[^0-9]/g, '');
 
-    // 1) Our Netlify Function (server-side scrape of Skatturinn — free, no key)
+    // 1) Try our Netlify Function first (works only if deployed).
     try {
       const r = await fetch(`/api/kt-lookup?kt=${clean}`);
       if (r.ok) {
@@ -69,8 +90,44 @@
       }
     } catch (_) { /* fall through */ }
 
-    // 2) já.is API — only used when the user has explicitly set an API key
-    //    in Stillingar (paid service). Skipped silently otherwise.
+    // 2) Public CORS proxies → Skatturinn (RSK) Fyrirtækjaskrá.
+    //    codetabs er fyrsti valkostur (frítt, virkar áreiðanlega) — nota
+    //    trailing slash til að sleppa 301 redirect sem getur týnt CORS-um
+    //    í sumum vöfrum.
+    const target = `https://www.skatturinn.is/fyrirtaekjaskra/leit/kennitala/${clean}`;
+    const proxies = [
+      'https://api.codetabs.com/v1/proxy/?quest=' + encodeURIComponent(target),
+      'https://api.allorigins.win/raw?url=' + encodeURIComponent(target),
+      'https://corsproxy.io/?url=' + encodeURIComponent(target)
+    ];
+    let anyProxyReached = false;
+    for (const url of proxies) {
+      try {
+        const r = await fetch(url);
+        if (!r.ok) { console.warn('[kt-lookup] proxy', url.split('?')[0], 'HTTP', r.status); continue; }
+        anyProxyReached = true;
+        const html = await r.text();
+        const parsed = parseRskHtml(html);
+        if (parsed) {
+          console.log('[kt-lookup] found via', url.split('?')[0], '→', parsed.nafn);
+          return {
+            nafn: parsed.nafn,
+            heimilisfang: parsed.heimilisfang_full || parsed.heimilisfang || '',
+            simi: '',
+            netfang: ''
+          };
+        }
+        // Proxy worked but page had no company info → RSK said no.
+        console.warn('[kt-lookup] proxy ok but kt not in fyrirtækjaskrá:', clean);
+      } catch (e) {
+        console.warn('[kt-lookup] proxy failed', url.split('?')[0], e && e.message);
+      }
+    }
+    if (!anyProxyReached) {
+      throw new Error('Engin CORS-proxy svaraði — netvandamál eða allir blokkaðir.');
+    }
+
+    // 3) já.is API — ef notandi hefur sett lykil í Stillingar (paid service).
     const apiKey = localStorage.getItem(LS_KEY) || '';
     if (apiKey) {
       try {
@@ -91,7 +148,7 @@
       } catch (_) { /* fall through */ }
     }
 
-    throw new Error('Kennitala fannst ekki í gagnagrunni.');
+    throw new Error('Kennitala fannst ekki í fyrirtækjaskrá RSK.');
   }
 
   // ── Button injection ─────────────────────────────────────────────────────
@@ -157,6 +214,33 @@
         btn.textContent = '✗ Ekki fundið';
         btn.className = 'kt-lookup-btn err';
         if (window.Toast && Toast.show) Toast.show('Uppfletting mistókst — ' + (e.message || e));
+        // 2026-05-10 (#2): Offer inline fallback to manually create the
+        // customer with this kt instead of leaving the user stranded with
+        // a "Engin samsvörun" message and no path forward.
+        try {
+          const ktForFallback = (input.value || '').replace(/[^0-9]/g, '');
+          if (ktForFallback.length === 10 && window.Confirm && Confirm.show) {
+            const ok = await Confirm.show(
+              'Kennitala ' + ktForFallback.slice(0,6) + '-' + ktForFallback.slice(6) +
+              ' fannst ekki í þjóðskrá / kerfinu.\n\nViltu skrá viðskiptavin handvirkt með þessari kt?',
+              { okText: 'Skrá handvirkt', cancelText: 'Hætta við' }
+            );
+            if (ok) {
+              // Look for the unified-pos-search "+ Stofna" dialog opener
+              if (window._upsOpenNewCustomer) {
+                window._upsOpenNewCustomer('', ktForFallback);
+              } else {
+                // Fallback: trigger search results re-render so user sees
+                // the inline "+ Stofna" option from patch 114
+                const searchInp = document.querySelector('#_ups-search, input[placeholder*="kennit"]');
+                if (searchInp) {
+                  searchInp.focus();
+                  searchInp.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+              }
+            }
+          }
+        } catch (_) {}
         setTimeout(() => {
           btn.innerHTML = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><circle cx="8" cy="8" r="5"/><path d="M15 15l-3.5-3.5"/></svg>Fletta upp';
           btn.className = 'kt-lookup-btn';
@@ -167,13 +251,28 @@
 
     btn.addEventListener('click', doLookup);
 
-    // Auto-trigger when 10 digits are typed
-    input.addEventListener('input', () => {
-      const digits = input.value.replace(/[^0-9]/g, '');
-      if (digits.length === 10) {
-        setTimeout(doLookup, 300);
-      }
-    });
+    // Auto-trigger only on customer-creation forms — NOT on the Sala POS
+    // input (#pos-kt). On Sala the unified search (patch 114) owns the
+    // customer-resolution flow and populates state directly from the local
+    // DB. Auto-running an RSK lookup on top of that caused two issues:
+    //   • If RSK had slightly different data, the form fields got overwritten
+    //     with stale info (e.g. older heimilisfang).
+    //   • If RSK couldn't find the kt (e.g. individual / not in
+    //     fyrirtækjaskrá), the catch-branch fallback fired the "Skrá
+    //     viðskiptavin handvirkt?" Confirm.show dialog even though a
+    //     valid local customer was already selected — confusing the user.
+    // The user can still click the "Fletta upp" button explicitly when
+    // they actually want to refresh from RSK.
+    const isSalaSearch = input.id === 'pos-kt' ||
+      !!input.closest('#view-sala, .pos-cart, [id*="pos-"]');
+    if (!isSalaSearch) {
+      input.addEventListener('input', () => {
+        const digits = input.value.replace(/[^0-9]/g, '');
+        if (digits.length === 10) {
+          setTimeout(doLookup, 300);
+        }
+      });
+    }
   }
 
   // ── Find and wrap kt inputs in forms ────────────────────────────────────

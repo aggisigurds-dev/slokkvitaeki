@@ -130,7 +130,7 @@
 
     const [jobsRes, solurRes, inspRes, eventsRes, timaRes, utgRes] = await Promise.all([
       SB.from('verkbeidnir').select('id,num,customer,status,created_at').gte('created_at', fromStart).lte('created_at', toEnd),
-      SB.from('solur').select('samtals,greitt_med,paid_at,created_at').gte('created_at', fromStart).lte('created_at', toEnd),
+      SB.from('solur').select('samtals,greitt_med,paid_at,created_at').neq('status','drog').gte('created_at', fromStart).lte('created_at', toEnd),
       safe(SB.from('uttaeki').select('serial,type,client,last_insp').gte('last_insp', from).lte('last_insp', to)),
       safe(SB.from('verkdagbok').select('athugasemdir,job_date,fyrirtaeki,done').gte('job_date', from).lte('job_date', to).order('job_date')),
       safe(SB.from('timabok').select('tæknimaður,mínútur,dagsetning').gte('dagsetning', from).lte('dagsetning', to)),

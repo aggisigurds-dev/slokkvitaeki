@@ -75,6 +75,8 @@
     ['Kreditreikning', 'Kreditfæra'],
     SEP,
     ['Tenglar', 'Tenglir', 'Kort'],   // kort/links
+    SEP,
+    ['Leiðbeiningar'],
     SEP
     // Everything else flows after the last separator.
   ];

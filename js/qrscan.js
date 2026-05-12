@@ -1,5 +1,11 @@
-/* QR Scanner v2 — robust camera access with HTTPS check, permission prompt, manual fallback */
+/* QR Scanner v3 — close-focus + tap-to-focus + zoom + torch for tiny QR labels */
 (function(){'use strict';
+if(!document.getElementById('_qs_anim')){
+  var st=document.createElement('style');
+  st.id='_qs_anim';
+  st.textContent='@keyframes _qsPing{0%{transform:scale(.5);opacity:1}100%{transform:scale(1.6);opacity:0}}';
+  document.head.appendChild(st);
+}
 var _jsqr=null;
 function loadJsQR(){
   return new Promise(function(res,rej){
@@ -97,12 +103,25 @@ async function openScanner(callback){
   function tryGetStream(constraints){
     return navigator.mediaDevices.getUserMedia(constraints);
   }
-  // Try environment camera first, fall back to any camera
-  var primary={video:{facingMode:{ideal:'environment'}},audio:false};
-  var fallback={video:true,audio:false};
+  // Try environment camera first, fall back to any camera. Request continuous
+  // autofocus and high resolution so small QR labels stay sharp at close range.
+  var primary={video:{
+    facingMode:{ideal:'environment'},
+    width:{ideal:1920},
+    height:{ideal:1080},
+    advanced:[
+      {focusMode:'continuous'},
+      {focusDistance:0.1}
+    ]
+  },audio:false};
+  var fallback={video:{facingMode:{ideal:'environment'}},audio:false};
+  var fallback2={video:true,audio:false};
   tryGetStream(primary).catch(function(e){
-    console.warn('[QR] primary constraints failed:',e.name,'retrying with fallback');
+    console.warn('[QR] primary constraints failed:',e.name,'retrying without advanced');
     return tryGetStream(fallback);
+  }).catch(function(e){
+    console.warn('[QR] fallback failed:',e.name,'retrying with any camera');
+    return tryGetStream(fallback2);
   }).then(function(s){
     if(done)return;
     stream=s;
@@ -110,6 +129,90 @@ async function openScanner(callback){
     return video.play();
   }).then(function(){
     if(done)return;
+    // Build controls AFTER a short delay so getCapabilities() is populated.
+    // We always show the controls (best-effort applyConstraints); if a
+    // particular capability isn't supported the click silently no-ops.
+    setTimeout(function(){
+      if(done)return;
+      var track=stream.getVideoTracks()[0];
+      if(!track)return;
+      var caps={};
+      try { caps=track.getCapabilities ? track.getCapabilities() : {}; } catch(_){}
+      console.log('[QR] camera capabilities:', caps);
+
+      // 1. Continuous autofocus + minimum focus distance for close-range scanning.
+      var adv=[];
+      if(caps.focusMode && caps.focusMode.indexOf('continuous')>=0) adv.push({focusMode:'continuous'});
+      if(caps.focusDistance && caps.focusDistance.min) adv.push({focusDistance:caps.focusDistance.min});
+      if(adv.length){
+        track.applyConstraints({advanced:adv}).catch(function(e){console.warn('[QR] focus apply:',e.name,e.message);});
+      }
+
+      // 2. Tap-to-focus — works on most Android Chrome with rear cam.
+      video.addEventListener('click', function(ev){
+        var r=video.getBoundingClientRect();
+        var x=Math.max(0,Math.min(1,(ev.clientX-r.left)/r.width));
+        var y=Math.max(0,Math.min(1,(ev.clientY-r.top)/r.height));
+        var advTap=[{focusMode:'continuous'}];
+        if(caps.pointsOfInterest!==undefined) advTap.push({pointsOfInterest:[{x:x,y:y}]});
+        track.applyConstraints({advanced:advTap}).catch(function(e){console.warn('[QR] tap-focus:',e.name,e.message);});
+        var ping=document.createElement('div');
+        ping.style.cssText='position:fixed;left:'+(ev.clientX-26)+'px;top:'+(ev.clientY-26)+'px;width:52px;height:52px;border:2px solid #fff;border-radius:50%;pointer-events:none;z-index:99;animation:_qsPing .55s ease-out;box-shadow:0 0 12px rgba(255,255,255,.7)';
+        document.body.appendChild(ping);
+        setTimeout(function(){ping.remove();},550);
+      });
+
+      // 3. Zoom controls — always visible. If applyConstraints throws we hide them.
+      var zmin=(caps.zoom && caps.zoom.min) || 1;
+      var zmax=(caps.zoom && caps.zoom.max) || 4;
+      var zstep=(caps.zoom && caps.zoom.step) || 0.1;
+      var z=document.createElement('div');
+      z.id='_qs_zoom';
+      z.style.cssText='position:fixed;left:50%;bottom:80px;transform:translateX(-50%);background:rgba(0,0,0,.7);border-radius:28px;padding:8px 14px;display:flex;align-items:center;gap:10px;z-index:3;color:#fff;font-size:13px;box-shadow:0 4px 14px rgba(0,0,0,.4)';
+      z.innerHTML='<button id="_qs_zout" style="background:#fff;color:#000;border:none;width:38px;height:38px;border-radius:50%;font-size:20px;font-weight:700;cursor:pointer">−</button>'+
+                 '<span id="_qs_zlbl" style="min-width:42px;text-align:center;font-variant-numeric:tabular-nums;font-weight:700">1.0×</span>'+
+                 '<button id="_qs_zin" style="background:#fff;color:#000;border:none;width:38px;height:38px;border-radius:50%;font-size:20px;font-weight:700;cursor:pointer">+</button>';
+      modal.appendChild(z);
+      var curZoom=zmin;
+      try { var s0=track.getSettings(); if(s0 && s0.zoom) curZoom=s0.zoom; } catch(_){}
+      function setZoom(nz){
+        nz=Math.min(zmax,Math.max(zmin,nz));
+        track.applyConstraints({advanced:[{zoom:nz}]}).then(function(){
+          curZoom=nz;
+          var lbl=document.getElementById('_qs_zlbl');
+          if(lbl) lbl.textContent=curZoom.toFixed(1)+'×';
+        }).catch(function(e){
+          console.warn('[QR] zoom not supported:',e.name);
+          var zEl=document.getElementById('_qs_zoom'); if(zEl) zEl.style.display='none';
+        });
+      }
+      document.getElementById('_qs_zin').onclick=function(){setZoom(curZoom + Math.max(zstep, (zmax-zmin)/10));};
+      document.getElementById('_qs_zout').onclick=function(){setZoom(curZoom - Math.max(zstep, (zmax-zmin)/10));};
+
+      // 4. Torch toggle — always visible; hidden if applyConstraints rejects.
+      var torchOn=false;
+      var tBtn=document.createElement('button');
+      tBtn.id='_qs_torch';
+      tBtn.style.cssText='position:fixed;right:14px;top:70px;background:rgba(0,0,0,.7);color:#fff;border:1px solid #fff;border-radius:24px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer;z-index:3;box-shadow:0 4px 12px rgba(0,0,0,.4)';
+      tBtn.textContent='🔦 Ljós';
+      tBtn.onclick=function(){
+        torchOn=!torchOn;
+        tBtn.style.background=torchOn?'#fbbf24':'rgba(0,0,0,.7)';
+        tBtn.style.color=torchOn?'#0f172a':'#fff';
+        track.applyConstraints({advanced:[{torch:torchOn}]}).catch(function(e){
+          console.warn('[QR] torch not supported:',e.name);
+          tBtn.style.display='none';
+        });
+      };
+      modal.appendChild(tBtn);
+
+      // 5. Hint label so user knows tap-to-focus is available.
+      var hint=document.createElement('div');
+      hint.style.cssText='position:fixed;left:0;right:0;bottom:140px;text-align:center;color:#fff;font-size:13px;z-index:2;text-shadow:0 1px 3px rgba(0,0,0,.7);pointer-events:none';
+      hint.textContent='👆 Smelltu á QR-merkið til að fókusera';
+      modal.appendChild(hint);
+      setTimeout(function(){if(hint && hint.parentNode) hint.style.transition='opacity .5s'; hint && (hint.style.opacity='0');}, 4000);
+    }, 600);
     var lastScan=0;
     function scan(ts){
       if(done)return;
@@ -138,5 +241,5 @@ async function openScanner(callback){
   });
 }
 window.openQRScanner=openScanner;
-console.log('[QRScan v2] loaded');
+console.log('[QRScan v3] loaded — close focus, tap-to-focus, zoom, torch');
 })();

@@ -313,7 +313,7 @@
           const id = b.dataset.id;
           const att = attachments.find(a => a.id === id);
           if (!att) return;
-          if (!confirm('Eyða "' + (att.filename || 'skránni') + '"?')) return;
+          if (!await Confirm.show('Eyða "' + (att.filename || 'skránni') + '"?')) return;
           try { await deleteAttachment(att); await refresh(); }
           catch (e) { alert('Villa við að eyða: ' + e.message); }
         });

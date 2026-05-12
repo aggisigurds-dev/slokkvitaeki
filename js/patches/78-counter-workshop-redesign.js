@@ -4,10 +4,10 @@
  * Replaces Verkstæði (view-workshop) with a 2-column layout: Móttekin / Í vinnslu.
  *
  * Within each column, when one customer has 2+ jobs they collapse into a
- * single expandable row (▸ Harpa · 3 verk · 20 tæki) that you click to expand
+ * single expandable row (�-� Harpa · 3 verk · 20 tæki) that you click to expand
  * inline. Single-job customers show as a normal card.
  *
- * Click any card → opens the existing job-detail in a centered modal
+ * Click any card �?' opens the existing job-detail in a centered modal
  * (containing the original #counter-main and #print-aside elements, so the
  * existing renderDetail/renderPrintAside/Print.showJob/etc. all keep working).
  *
@@ -27,6 +27,9 @@
   function esc(v) {
     return String(v == null ? '' : v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
+  // 2026-05-10 (#3): Strip -V1 suffix for display in cards.
+  // Detail views still get the full num via DB.getJob(id).
+  function dnum(n) { return esc(String(n == null ? '' : n).replace(/-V\d+$/, '')); }
 
   // ----- Counter (Afgreiðsla) -----
 
@@ -59,7 +62,7 @@
       '<div id="counter-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;padding:24px">' +
         '<div style="background:#fff;border-radius:16px;max-width:1100px;width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 80px rgba(0,0,0,.35)">' +
           '<div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:flex-end">' +
-            '<button onclick="Counter.closeJobModal()" style="border:none;background:#f3f4f6;border-radius:10px;padding:6px 14px;font-size:13px;cursor:pointer">✕ Loka</button>' +
+            '<button onclick="Counter.closeJobModal()" style="border:none;background:#f3f4f6;border-radius:10px;padding:6px 14px;font-size:13px;cursor:pointer">�o. Loka</button>' +
           '</div>' +
           '<div style="display:grid;grid-template-columns:1fr 320px;gap:0;flex:1;overflow:hidden">' +
             '<div id="counter-main" style="overflow-y:auto;padding:24px"></div>' +
@@ -72,11 +75,15 @@
     const ab = document.getElementById('alert-badge');
     if (ab && DB.getOverdue && DB.getDue) ab.textContent = DB.getOverdue().length + DB.getDue().length;
 
-    // If something was selected, re-render its detail (modal stays hidden until reopened)
+    // 2026-05-10 (L2 fix): If a job was selected, re-render detail AND
+    // re-show the modal �?" innerHTML replace destroyed the previous one.
+    // Without this, clicking actions inside the detail modal that trigger
+    // App.refreshAll() (e.g. updateUnitStatus) silently closed the modal.
     if (Counter.sel) {
       const job = DB.getJob(Counter.sel);
       if (job && Counter.renderDetail) Counter.renderDetail(job);
       if (job && Counter.renderPrintAside) Counter.renderPrintAside(job);
+      if (job && Counter.openJobModal) Counter.openJobModal();
     }
   }
 
@@ -116,7 +123,7 @@
     return '<div onclick="Counter.select(' + j.id + ')" style="display:flex;gap:10px;padding:10px;border-radius:10px;cursor:pointer;margin-bottom:6px;background:#fff;border:1px solid #f1f5f9;transition:all .12s" onmouseover="this.style.background=\'#f8fafc\';this.style.borderColor=\'#e2e8f0\'" onmouseout="this.style.background=\'#fff\';this.style.borderColor=\'#f1f5f9\'">' +
       `<div class="jli-dot ${dot}" style="flex-shrink:0;margin-top:4px"></div>` +
       '<div style="min-width:0;flex:1">' +
-        `<div style="font-family:var(--mono,monospace);font-size:11px;color:#94a3b8;font-weight:600">${esc(j.num)}</div>` +
+        `<div style="font-family:var(--mono,monospace);font-size:11px;color:#94a3b8;font-weight:600">${dnum(j.num)}</div>` +
         `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
         `<div style="font-size:11px;color:#64748b">${j.units ? j.units.length : 0} slökkvitæki ${badge}</div>` +
       '</div>' +
@@ -126,18 +133,18 @@
   function readyCard(j) {
     return '<div style="display:flex;gap:8px;padding:10px;border-radius:10px;margin-bottom:6px;background:#f0fdf4;border:1px solid #bbf7d0">' +
       '<div onclick="Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
-        `<div style="font-family:var(--mono,monospace);font-size:11px;color:#059669;font-weight:600">${esc(j.num)}</div>` +
+        `<div style="font-family:var(--mono,monospace);font-size:11px;color:#059669;font-weight:600">${dnum(j.num)}</div>` +
         `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
         `<div style="font-size:11px;color:#059669">${j.units ? j.units.length : 0} slökkvitæki</div>` +
       '</div>' +
-      `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt ✓</button>` +
+      `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt �o"</button>` +
     '</div>';
   }
 
   function customerGroup(statusKey, co, isReady) {
     const key = statusKey + ':' + co.name;
     const expanded = Counter.expandedCos[key] === true;
-    const caret = expanded ? '▾' : '▸';
+    const caret = expanded ? '�-�' : '�-�';
     let inner = '';
     if (expanded) {
       inner = '<div style="padding:4px 4px 8px 18px">' + co.jobs.map(j => {
@@ -146,16 +153,16 @@
         if (isReady) {
           return '<div style="display:flex;gap:8px;padding:7px 8px;border-radius:8px;margin-bottom:3px;background:#f0fdf4;border:1px solid #bbf7d0">' +
             '<div onclick="event.stopPropagation();Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
-              `<div style="font-family:var(--mono,monospace);font-size:10px;color:#059669;font-weight:600">${esc(j.num)}</div>` +
+              `<div style="font-family:var(--mono,monospace);font-size:10px;color:#059669;font-weight:600">${dnum(j.num)}</div>` +
               `<div style="font-size:12px;color:#0f172a;margin:1px 0">${j.units ? j.units.length : 0} slökkvitæki</div>` +
             '</div>' +
-            `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt ✓</button>` +
+            `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt �o"</button>` +
           '</div>';
         }
         return '<div onclick="event.stopPropagation();Counter.select(' + j.id + ')" style="display:flex;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;margin-bottom:3px;background:#f8fafc;border:1px solid #f1f5f9" onmouseover="this.style.background=\'#eef2f7\'" onmouseout="this.style.background=\'#f8fafc\'">' +
           `<div class="jli-dot ${dot}" style="flex-shrink:0;margin-top:3px"></div>` +
           '<div style="min-width:0;flex:1">' +
-            `<div style="font-family:var(--mono,monospace);font-size:10px;color:#94a3b8">${esc(j.num)}</div>` +
+            `<div style="font-family:var(--mono,monospace);font-size:10px;color:#94a3b8">${dnum(j.num)}</div>` +
             `<div style="font-size:12px;color:#0f172a;margin:1px 0">${j.units ? j.units.length : 0} slökkvitæki ${badge}</div>` +
           '</div>' +
         '</div>';
@@ -179,7 +186,7 @@
 
   // ----- Workshop (Verkstæði) -----
 
-  // Active service contracts — cached. Set is keyed by customer name (lowercased).
+  // Active service contracts �?" cached. Set is keyed by customer name (lowercased).
   let _contractSet = new Set();
   let _contractsLoading = false;
   async function loadContracts() {
@@ -221,7 +228,7 @@
       '<div id="workshop-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;padding:24px">' +
         '<div style="background:#fff;border-radius:16px;max-width:780px;width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 80px rgba(0,0,0,.35)">' +
           '<div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:flex-end">' +
-            '<button onclick="Workshop.closeDetail()" style="border:none;background:#f3f4f6;border-radius:10px;padding:6px 14px;font-size:13px;cursor:pointer">✕ Loka</button>' +
+            '<button onclick="Workshop.closeDetail()" style="border:none;background:#f3f4f6;border-radius:10px;padding:6px 14px;font-size:13px;cursor:pointer">�o. Loka</button>' +
           '</div>' +
           '<div id="workshop-detail" style="overflow-y:auto;flex:1"></div>' +
         '</div>' +
@@ -231,6 +238,12 @@
     if (Workshop.sel) {
       const job = DB.getJob(Workshop.sel);
       if (job && Workshop.renderDetail) Workshop.renderDetail(job);
+      // 2026-05-10 (L2 fix): innerHTML replace just rebuilt the modal element
+      // so its `display:flex` state from openDetail() is gone. Re-show it
+      // when there's a selected job �?" keeps the detail modal stable across
+      // unit-toggle re-renders (clicking �o" on a unit no longer closes/jumps
+      // the modal).
+      if (Workshop.openDetail) Workshop.openDetail();
     }
   }
 
@@ -271,12 +284,25 @@
     const pct = total ? Math.round(done / total * 100) : 0;
     const badge = (window.U && U.badge) ? U.badge(j.status) : '';
     const fd = (window.U && U.fd) ? U.fd(j.pickup) : (j.pickup || '');
+    // Also show service desc + customer note on top-level job cards.
+    const rawNotes = String(j.notes || '');
+    const noteLines = rawNotes.split('\n').map(l => l.trim()).filter(Boolean);
+    const svcDesc = noteLines[0] || '';
+    const extraNote = noteLines.slice(1).map(l => l.replace(/^—\s*/, '').trim()).filter(Boolean).join(' · ');
+    const svcHtml = svcDesc
+      ? `<div style="font-size:11px;color:#475569;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(svcDesc)}</div>`
+      : '';
+    const noteHtml = extraNote
+      ? `<div style="font-size:11px;color:#92400e;background:#fef3c7;border-left:3px solid #f59e0b;padding:3px 6px;border-radius:4px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(extraNote)}">📝 ${esc(extraNote)}</div>`
+      : '';
     return '<div onclick="Workshop.select(' + j.id + ')" style="padding:10px;border-radius:10px;cursor:pointer;margin-bottom:6px;background:#fff;border:1px solid #f1f5f9;transition:all .12s" onmouseover="this.style.background=\'#f8fafc\';this.style.borderColor=\'#e2e8f0\'" onmouseout="this.style.background=\'#fff\';this.style.borderColor=\'#f1f5f9\'">' +
       '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">' +
         '<div style="min-width:0;flex:1">' +
-          `<div style="font-family:var(--mono,monospace);font-size:11px;color:#94a3b8;font-weight:600">${esc(j.num)}</div>` +
+          `<div style="font-family:var(--mono,monospace);font-size:11px;color:#94a3b8;font-weight:600">${dnum(j.num)}</div>` +
           `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
           `<div style="font-size:11px;color:#64748b">${done}/${total} lokið · Afhending ${fd}</div>` +
+          svcHtml +
+          noteHtml +
         '</div>' + badge +
       '</div>' +
       `<div style="margin-top:7px;height:4px;background:#f1f5f9;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct === 100 ? '#10b981' : '#f59e0b'};transition:width .2s"></div></div>` +
@@ -286,7 +312,7 @@
   function wCustomerGroup(statusKey, co) {
     const key = statusKey + ':' + co.name;
     const expanded = Workshop.expandedCos[key] === true;
-    const caret = expanded ? '▾' : '▸';
+    const caret = expanded ? '�-�' : '�-�';
     const pct = co.totalUnits ? Math.round(co.doneUnits / co.totalUnits * 100) : 0;
     let inner = '';
     if (expanded) {
@@ -294,10 +320,26 @@
         const done = j.units ? j.units.filter(u => u.status === 'done').length : 0;
         const total = j.units ? j.units.length : 0;
         const badge = (window.U && U.badge) ? U.badge(j.status) : '';
+        // 2026-05-11: also surface the service description + any customer
+        // note so the user doesn't have to open every job to know what's
+        // in it. j.notes is "<service desc>\n— <state.notes>" from pos.js
+        // (or just the service desc on older jobs).
+        const rawNotes = String(j.notes || '');
+        const noteLines = rawNotes.split('\n').map(l => l.trim()).filter(Boolean);
+        const svcDesc = noteLines[0] || '';
+        const extraNote = noteLines.slice(1).map(l => l.replace(/^—\s*/, '').trim()).filter(Boolean).join(' · ');
+        const svcHtml = svcDesc
+          ? `<div style="font-size:11px;color:#475569;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(svcDesc)}</div>`
+          : '';
+        const noteHtml = extraNote
+          ? `<div style="font-size:11px;color:#92400e;background:#fef3c7;border-left:3px solid #f59e0b;padding:3px 6px;border-radius:4px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(extraNote)}">📝 ${esc(extraNote)}</div>`
+          : '';
         return '<div onclick="event.stopPropagation();Workshop.select(' + j.id + ')" style="display:flex;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;margin-bottom:3px;background:#f8fafc;border:1px solid #f1f5f9" onmouseover="this.style.background=\'#eef2f7\'" onmouseout="this.style.background=\'#f8fafc\'">' +
           '<div style="min-width:0;flex:1">' +
-            `<div style="font-family:var(--mono,monospace);font-size:10px;color:#94a3b8">${esc(j.num)}</div>` +
+            `<div style="font-family:var(--mono,monospace);font-size:10px;color:#94a3b8">${dnum(j.num)}</div>` +
             `<div style="font-size:12px;color:#0f172a;margin:1px 0">${done}/${total} lokið ${badge}</div>` +
+            svcHtml +
+            noteHtml +
           '</div>' +
         '</div>';
       }).join('') + '</div>';
@@ -319,8 +361,8 @@
   // Inject CSS override: app.css forces #view-counter.active and #view-workshop.active
   // to display:flex with default row direction. That squishes our 3-col / 2-col grid
   // (which is one of several sibling children) into a single column on the left.
-  // Force flex-direction:column so our children stack toolbar→grid→modal vertically.
-  // Also: at ≤900px (mobile), columns get too narrow to read, so stack them too.
+  // Force flex-direction:column so our children stack toolbar�?'grid�?'modal vertically.
+  // Also: at �?�900px (mobile), columns get too narrow to read, so stack them too.
   if (!document.getElementById('_cw_redesign_css')) {
     const css = document.createElement('style');
     css.id = '_cw_redesign_css';
@@ -382,7 +424,7 @@
       if (grid) grid.setAttribute('data-_pm-info', 'job-detail');
     };
 
-    Counter.renderList = function() { /* legacy stub — render() now drives this */ };
+    Counter.renderList = function() { /* legacy stub �?" render() now drives this */ };
 
     Workshop.expandedCos = Workshop.expandedCos || {};
     Workshop.render = workshopRender;
@@ -397,6 +439,21 @@
       if (Workshop.renderDetail) Workshop.renderDetail(job);
       Workshop.openDetail();
     };
+
+    // 2026-05-10 (L3 fix): Hydrate contract list and re-render Workshop so
+    // Samningshafar súlan actually shows contract-holders' jobs.
+    // loadContracts was defined but never called �?' Samningshafar always empty.
+    // Re-fetch on every view-shown for workshop + on AppSettings changes so
+    // newly-added contracts surface without a full page refresh.
+    loadContracts().then(() => { try { Workshop.render(); } catch (_) {} });
+    document.addEventListener('view-shown', e => {
+      if (e && e.detail && e.detail.name === 'workshop') {
+        loadContracts().then(() => { try { Workshop.render(); } catch (_) {} });
+      }
+    });
+    if (window.AppSettings && typeof window.AppSettings.onChange === 'function') {
+      window.AppSettings.onChange(() => loadContracts());
+    }
 
     // Force a re-render right away if those views are mounted
     try { Counter.render(); } catch (_) {}

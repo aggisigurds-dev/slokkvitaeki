@@ -53,3 +53,45 @@ the file from the active Netlify manifest.
 ---
 
 All known backlog items resolved as of 2026-05-03.
+
+---
+
+# Open requests (2026-05-09)
+
+User-reported items, to be addressed after Phase B (solur drög/final). Listed
+in roughly increasing effort.
+
+## F-1. CO₂ 100gr — +/− buttons overlap price slightly
+
+POS product card for CO₂ 100gr: the qty +/− buttons sit on top of the price
+text. CSS-only fix in the product card layout.
+
+## F-5. Show discount amount visibly in cart
+
+Currently the cart shows the post-discount total but doesn't surface the
+discount amount itself. User wants to see the kr-value of the discount on
+the cart so they can sanity-check before finalizing.
+
+## F-7. „Tilboðsverð" window in company profile — recolor yellow → blueish
+
+In a company's detail page, the new Tilboðsverð (price-list) window is
+yellow. User wants it blue/blueish to match the rest of the UI.
+
+## F-3. „Bókhald" button on Sala page — lower half stuck on „Hleður…"
+
+Clicking the Bókhald button in the Sala (POS) page opens a panel whose
+lower half never finishes loading. Needs investigation — likely a query
+failure or render-after-empty bug.
+
+## F-4. Reikningar tab on front page only shows one reikningur
+
+The Reikningar tab on the front page is showing only a single invoice
+when there should be many more. Likely a broken filter, broken query, or
+a regression. Needs investigation.
+
+## F-2. Wire up Kreditreikningur (credit invoice) feature properly
+
+Patch 26 (`26-credit-invoice.js`) exists but isn't reachable from the
+right place. User wants the Kredit action to be invocable from either
+the Bókhalds yfirlit page OR the Sala (POS) page. Bigger task — needs
+UI placement decision + wiring.

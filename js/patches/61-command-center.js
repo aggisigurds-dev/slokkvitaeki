@@ -63,8 +63,8 @@
     const in30 = new Date(today); in30.setDate(in30.getDate()+30);
 
     const [revM, unpaid, openJobs, todayJobs, dueInsp, lowStock, contractsDue] = await Promise.all([
-      safe(SB.from('solur').select('samtals,created_at').gte('created_at', monthStart.toISOString())),
-      safe(SB.from('solur').select('id,samtals,customer_nafn').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null)),
+      safe(SB.from('solur').select('samtals,created_at').neq('status','drog').gte('created_at', monthStart.toISOString())),
+      safe(SB.from('solur').select('id,samtals,customer_nafn').neq('status','drog').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null)),
       safe(SB.from('verkbeidnir').select('id,num,customer,status').neq('status','done').neq('status','cancelled')),
       safe(SB.from('verkdagbok').select('id,fyrirtaeki,job_date,athugasemdir').gte('job_date', today.toISOString().slice(0,10)).lt('job_date', tomorrow.toISOString().slice(0,10)).order('job_date')),
       safe(SB.from('uttaeki').select('id,serial,client,next_insp').not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10))),

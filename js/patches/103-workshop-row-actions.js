@@ -115,8 +115,9 @@
     }
 
     dlg.querySelector('#_wrac-add').addEventListener('click', () => save(false));
-    dlg.querySelector('#_wrac-replace').addEventListener('click', () => {
-      if (existingNotes && !confirm('Skrifa yfir fyrri athugasemdir? Þetta er ekki afturkræft.')) return;
+    dlg.querySelector('#_wrac-replace').addEventListener('click', async () => {
+      // 2026-05-10 (B5+): Confirm.show í stað native confirm
+      if (existingNotes && !(await Confirm.show('Skrifa yfir fyrri athugasemdir? Þetta er ekki afturkræft.', {danger:true, okText:'Skrifa yfir'}))) return;
       save(true);
     });
     ta.addEventListener('keydown', e => {
@@ -132,7 +133,8 @@
     const isScrapNow = unit.status === 'scrap';
     const newStatus = isScrapNow ? 'active' : 'scrap';
     if (!isScrapNow) {
-      if (!confirm('Merkja tæki ' + (unit.serial || unit.id) + ' sem ÓNÝTT?\n\nÞetta merkir tækið sem brotið/ónýtt — það mun birtast með rauðum status í kerfinu.')) return;
+      // 2026-05-10 (B5+): Confirm.show í stað native confirm
+      if (!(await Confirm.show('Merkja tæki ' + (unit.serial || unit.id) + ' sem ÓNÝTT?\n\nÞetta merkir tækið sem brotið/ónýtt — það mun birtast með rauðum status í kerfinu.', {danger:true, okText:'Merkja ónýtt'}))) return;
     }
     btn.disabled = true;
     btn.textContent = '...';
@@ -392,8 +394,9 @@
       close();
     }
     dlg.querySelector('#_wral-add').addEventListener('click', () => save(false));
-    dlg.querySelector('#_wral-replace').addEventListener('click', () => {
-      if (existing && !confirm('Skrifa yfir fyrri athugasemdir?')) return;
+    dlg.querySelector('#_wral-replace').addEventListener('click', async () => {
+      // 2026-05-10 (B5+): Confirm.show í stað native confirm
+      if (existing && !(await Confirm.show('Skrifa yfir fyrri athugasemdir?', {danger:true, okText:'Skrifa yfir'}))) return;
       save(true);
     });
     ta.addEventListener('keydown', e => {

@@ -385,7 +385,7 @@
 
   // ── Receive — auto-restock birgdir ────────────────────────────────────────
   async function _receive(id) {
-    if (!confirm('Merkja sem móttekið og uppfæra birgðir?')) return;
+    if (!await Confirm.show('Merkja sem móttekið og uppfæra birgðir?')) return;
     const o = _orders.find(x => x.id===id);
     if (!o) return;
     const SB = getSB();
@@ -410,7 +410,7 @@
   // ── Delete ────────────────────────────────────────────────────────────────
   async function _delete(id) {
     const o = _orders.find(x=>x.id===id);
-    if (!confirm('Eyða pöntun '+((o?.po_num)||id)+'?')) return;
+    if (!await Confirm.show('Eyða pöntun '+((o?.po_num)||id)+'?')) return;
     const SB = getSB();
     if (SB) await SB.from('innkaupapantanir').delete().eq('id',id);
     if(window.Toast) Toast.show('Pöntun eytt');

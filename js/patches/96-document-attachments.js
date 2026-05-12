@@ -240,7 +240,7 @@
         e.stopPropagation();
         const f = getFilesList().find(x => x.id === delBtn.dataset.id);
         if (!f) return;
-        if (confirm('Eyða skjalinu "' + f.name + '"? Þetta er ekki afturkræft.')) {
+        if (await Confirm.show('Eyða skjalinu "' + f.name + '"? Þetta er ekki afturkræft.')) {
           delBtn.disabled = true;
           await deleteFile(f);
           refreshSection();

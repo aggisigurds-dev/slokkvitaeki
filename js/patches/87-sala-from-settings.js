@@ -193,6 +193,18 @@
     if (e && e.detail && e.detail.name === 'sala') reapplySoon(150);
   });
 
+  // 2026-05-09: pos.js dispatches `sala-catalog-rendered` whenever it
+  // rebuilds the products/services grid. Without this, pos.js's periodic
+  // loadAll().then(render) watcher (every 300ms while sala is active and
+  // pos-checkout is missing) silently reset the catalog to alphabetical
+  // order and patch 87 had no way to know — user had to force-refresh
+  // 1-3 times for the custom order to stick. Invalidate the cache key so
+  // applyPinHide actually re-runs the reorder.
+  document.addEventListener('sala-catalog-rendered', () => {
+    _lastPinHideKey = null;
+    reapplySoon(30);
+  });
+
   function hookSettings() {
     if (window.AppSettings && typeof window.AppSettings.onChange === 'function') {
       window.AppSettings.onChange(() => reapplySoon(50));

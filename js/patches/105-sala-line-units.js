@@ -211,8 +211,9 @@
       });
     });
 
-    dlg.querySelector('#_slu-clear').addEventListener('click', () => {
-      if (!confirm('Hreinsa öll raðnúmer og athugasemd á þessari línu?')) return;
+    dlg.querySelector('#_slu-clear').addEventListener('click', async () => {
+      // 2026-05-10 (B5+): Confirm.show í stað native confirm
+      if (!(await Confirm.show('Hreinsa öll raðnúmer og athugasemd á þessari línu?', {danger:true, okText:'Hreinsa'}))) return;
       UNIT_DATA_BY_IDX.delete(idx);
       close();
       refreshTagBadge(lineEl);

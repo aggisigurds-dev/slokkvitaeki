@@ -106,11 +106,14 @@ var Counter = {
     }
     if (pendingSale) {
       var amt = Math.round(pendingSale.samtals || 0).toLocaleString('is-IS');
-      var ok = confirm('💰 Greiðsla móttekin?\n\n'+
-                       'Þetta verk var greitt síðar (Greitt við afhendingu).\n'+
-                       'Upphæð: ' + amt + ' kr\n\n'+
-                       'Smelltu OK ef þú hefur fengið greiðsluna núna.\n'+
-                       'Smelltu Hætta við ef ekki — verkið er þá ekki merkt sem sótt.');
+      // 2026-05-10 (B5+): native confirm freezes browser. Use Confirm.show.
+      var ok = await Confirm.show(
+        '💰 Greiðsla móttekin?\n\n'+
+        'Þetta verk var greitt síðar (Greitt við afhendingu).\n'+
+        'Upphæð: ' + amt + ' kr\n\n'+
+        'Smelltu Já ef þú hefur fengið greiðsluna núna.\n'+
+        'Smelltu Hætta við ef ekki — verkið er þá ekki merkt sem sótt.'
+      );
       if (!ok) return;
     }
     DB.updateJobStatus(id,'collected');

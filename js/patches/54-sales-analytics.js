@@ -83,7 +83,7 @@
     const yearStart = new Date(); yearStart.setMonth(0,1); yearStart.setHours(0,0,0,0);
     const lastYear = new Date(yearStart); lastYear.setFullYear(lastYear.getFullYear()-1);
     const { data, error } = await SB.from('solur').select('id,num,customer_nafn,samtals,created_at')
-      .gte('created_at', lastYear.toISOString()).order('created_at', { ascending:false });
+      .neq('status','drog').gte('created_at', lastYear.toISOString()).order('created_at', { ascending:false });
     if (error) { main.innerHTML=`<div style="padding:30px;text-align:center;color:#dc2626">${esc(error.message)}</div>`; return; }
 
     const all = data || [];

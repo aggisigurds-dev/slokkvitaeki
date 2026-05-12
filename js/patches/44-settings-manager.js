@@ -181,8 +181,8 @@
     reader.readAsText(file);
   }
 
-  function _clearLog() {
-    if (!confirm('Hreinsa áminningarlog? Þetta mun fjarlægja minningar um sent tölvupóstar/SMS.')) return;
+  async function _clearLog() {
+    if (!await Confirm.show('Hreinsa áminningarlog? Þetta mun fjarlægja minningar um sent tölvupóstar/SMS.')) return;
     localStorage.removeItem('bulk_reminder_log');
     localStorage.removeItem('sms_sent_log');
     if(window.Toast) Toast.show('✓ Log hreinsað');

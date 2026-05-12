@@ -142,7 +142,7 @@
 
     clearBtn.addEventListener('click', async () => {
       if (!ta.value.trim()) return;
-      if (!confirm('Hreinsa alla punkta og verð? Þetta er ekki afturkræft.')) return;
+      if (!await Confirm.show('Hreinsa alla punkta og verð? Þetta er ekki afturkræft.')) return;
       ta.value = '';
       lastSaved = '';
       const ok = await saveNotes('');

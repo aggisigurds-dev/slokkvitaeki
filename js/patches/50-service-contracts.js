@@ -514,7 +514,7 @@
   async function _bill(id) {
     const c = contracts.find(x=>x.id===id);
     if (!c) return;
-    if (!confirm(`Marka sem rukkað og færa næstu rukkun fram um ${c.tidni_man||12} mán?`)) return;
+    if (!await Confirm.show(`Marka sem rukkað og færa næstu rukkun fram um ${c.tidni_man||12} mán?`)) return;
     const SB = getSB();
     await SB.from('thjonustusamningar').update({
       last_billed: new Date().toISOString().slice(0,10),
@@ -524,7 +524,7 @@
   }
 
   async function _delete(id) {
-    if (!confirm('Eyða þessum samning?')) return;
+    if (!await Confirm.show('Eyða þessum samning?')) return;
     await getSB().from('thjonustusamningar').delete().eq('id', id);
     load();
   }
