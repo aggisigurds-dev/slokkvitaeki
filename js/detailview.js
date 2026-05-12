@@ -201,7 +201,7 @@
               return '<div style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;display:flex;justify-content:space-between;align-items:center;">'+
                 '<div>'+
                   '<div style="font-weight:600;">'+escHtml(j.num||'—')+'  ·  '+escHtml(j.customer||'—')+'</div>'+
-                  '<div style="font-size:12px;color:#888;margin-top:2px;">Móttekið: '+fmtDate(j.dropoff||j.created_at)+' · Afhending: '+fmtDate(j.pickup)+'</div>'+
+                  '<div style="font-size:12px;color:#888;margin-top:2px;">Móttekið: '+fmtDate(j.dropoff||j.created_at)+'</div>'+
                 '</div>'+
                 '<div>'+statusBadge(j.status)+'</div>'+
               '</div>';

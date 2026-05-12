@@ -390,8 +390,8 @@
       '<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px">' +
         '<input id="_ups-search" type="text" autocomplete="off" placeholder="🔍 Leita að kennitölu, nafni eða síma…" ' +
           'style="flex:1;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;box-sizing:border-box">' +
-        '<button id="_ups-walkin" type="button" title="Staðgreitt — kt: 999999-9999, engin skráning" ' +
-          'style="padding:10px 14px;background:#fef3c7;border:1px solid #fde68a;color:#92400e;border-radius:8px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">⚡ Staðgreitt</button>' +
+        '<button id="_ups-walkin" type="button" title="Án kennitölu — gestur, kt: 999999-9999, engin skráning" ' +
+          'style="padding:10px 14px;background:#fef3c7;border:1px solid #fde68a;color:#92400e;border-radius:8px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">⚡ Án kennitölu</button>' +
       '</div>' +
       '<div id="_ups-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:50;max-height:380px;overflow:auto;margin-top:2px"></div>' +
       // Selected customer card — sober grey/blue palette

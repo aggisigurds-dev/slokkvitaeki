@@ -71,13 +71,29 @@
     if (window.POS && POS.rerenderDynamic) POS.rerenderDynamic();
   }
 
+  // 2026-05-12: Show the byrjunargjald toggle only when the cart contains
+  // CO₂ 100gr (the only service where the user actually charges this fee).
+  const CO2_100GR_RX = /co.{0,2}2.*100\s*gr|100\s*gr.*co.{0,2}2/i;
+  function cartHasCo2Refill(state) {
+    return (state.lines || []).some(l => CO2_100GR_RX.test(l.desc || ''));
+  }
+
+  function setToggleVisibility(state) {
+    const wrap = document.getElementById('_bg-toggle-wrap');
+    if (!wrap) return;
+    const show = cartHasCo2Refill(state);
+    wrap.style.display = show ? 'flex' : 'none';
+    // If we hid the toggle but byrjunargjald is in cart, leave the line
+    // alone — user explicitly added it earlier.
+  }
+
   function injectToggle() {
     const totalsEl = document.getElementById('pos-totals');
     if (!totalsEl) return;
     if (document.getElementById('_bg-toggle-wrap')) return;
     const wrap = document.createElement('label');
     wrap.id = '_bg-toggle-wrap';
-    wrap.style.cssText = 'display:flex;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#0f172a;cursor:pointer;user-select:none';
+    wrap.style.cssText = 'display:none;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#0f172a;cursor:pointer;user-select:none';
     wrap.innerHTML =
       '<input type="checkbox" id="_bg-toggle" style="width:16px;height:16px;cursor:pointer;accent-color:#16a34a">' +
       '<span style="flex:1">🚚 Byrjunargjald</span>' +
@@ -102,6 +118,8 @@
     function syncFromCart() {
       const state = (window.POS && POS.getState && POS.getState()) || null;
       if (!state) return;
+      // Visibility tied to CO₂ 100gr line being present.
+      setToggleVisibility(state);
       cb.checked = cartHasByrjunar(state);
       wrap.style.background = cb.checked ? '#dcfce7' : '#f8fafc';
       wrap.style.borderColor = cb.checked ? '#86efac' : '#e2e8f0';

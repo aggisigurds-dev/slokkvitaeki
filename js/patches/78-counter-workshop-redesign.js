@@ -300,7 +300,7 @@
         '<div style="min-width:0;flex:1">' +
           `<div style="font-family:var(--mono,monospace);font-size:11px;color:#94a3b8;font-weight:600">${dnum(j.num)}</div>` +
           `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
-          `<div style="font-size:11px;color:#64748b">${done}/${total} lokið · Afhending ${fd}</div>` +
+          `<div style="font-size:11px;color:#64748b">${done}/${total} lokið · Móttekið ${(window.U && U.fd) ? U.fd(j.dropoff) : (j.dropoff || '')}</div>` +
           svcHtml +
           noteHtml +
         '</div>' + badge +
