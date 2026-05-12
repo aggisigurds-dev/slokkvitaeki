@@ -16,15 +16,19 @@
 (function(){
 'use strict';
 /* ===== JOBS REALTIME FIX (Afgrei\u00f0sla sync) ===== */
-/* The original db.js subscribes to 'realtime:changes' and calls DB.loadAll() on any change.
- * In practice this callback never fires (likely because v9.js's per-table channels
- * supersede it). Result: when Sala POS creates a verkbei\u00f0ni, the cache stays stale
- * and Afgrei\u00f0sla doesn't show the new job until manual page reload.
+/* 2026-05-11: DISABLED \u2014 db.js subscribeRealtime was rewritten with a
+ * smart debounced subscription that handles this correctly. Running
+ * BOTH together meant every DB write fired loadAll() 2-3 times. The
+ * remaining `if(false)` keeps the source visible for reference; to
+ * re-enable, flip the guard.
  *
- * Fix: subscribe directly to verkbei\u00f0nir/uttaeki/lanstaeki changes and call DB.loadAll()
- * with a debounce, then re-render Counter/Workshop/Field views.
+ * Original problem this fixed (no longer present):
+ *   The original db.js subscribed to 'realtime:changes' but the callback
+ *   never fired because v9.js's per-table channels superseded it.
  */
 (function(){
+  if (true) return; // 2026-05-11: disabled \u2014 see comment above. Was redundant
+                    // with the new db.js smart subscription.
   var attempts = 0;
   function trySetup(){
     attempts++;

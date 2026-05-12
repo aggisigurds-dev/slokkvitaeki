@@ -664,7 +664,11 @@
   }
 
   // 2. Realtime sync via Supabase subscriptions
+  // 2026-05-11: DISABLED — db.js subscribeRealtime now handles this with
+  // a debounced + table-aware approach. Running both subscribed the same
+  // tables in parallel, multiplying the cost of every DB write.
   function setupRealtime() {
+    if (true) return; // disabled — see db.js for canonical subscription
     if (window._rtReady || !DB.sb.channel) return;
     window._rtReady = true;
     ['uttaeki','verkbeidnir','lanstaeki','dagskra','fyrirtaeki'].forEach(function(tbl){

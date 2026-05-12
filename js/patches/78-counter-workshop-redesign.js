@@ -62,7 +62,7 @@
       '<div id="counter-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;padding:24px">' +
         '<div style="background:#fff;border-radius:16px;max-width:1100px;width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 80px rgba(0,0,0,.35)">' +
           '<div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:flex-end">' +
-            '<button onclick="Counter.closeJobModal()" style="border:none;background:#f3f4f6;border-radius:10px;padding:6px 14px;font-size:13px;cursor:pointer">�o. Loka</button>' +
+            '<button onclick="Counter.closeJobModal()" style="border:none;background:#f3f4f6;border-radius:10px;padding:6px 14px;font-size:13px;cursor:pointer">✕ Loka</button>' +
           '</div>' +
           '<div style="display:grid;grid-template-columns:1fr 320px;gap:0;flex:1;overflow:hidden">' +
             '<div id="counter-main" style="overflow-y:auto;padding:24px"></div>' +
@@ -137,14 +137,14 @@
         `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
         `<div style="font-size:11px;color:#059669">${j.units ? j.units.length : 0} slökkvitæki</div>` +
       '</div>' +
-      `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt �o"</button>` +
+      `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt ✓</button>` +
     '</div>';
   }
 
   function customerGroup(statusKey, co, isReady) {
     const key = statusKey + ':' + co.name;
     const expanded = Counter.expandedCos[key] === true;
-    const caret = expanded ? '�-�' : '�-�';
+    const caret = expanded ? '▼' : '▶';
     let inner = '';
     if (expanded) {
       inner = '<div style="padding:4px 4px 8px 18px">' + co.jobs.map(j => {
@@ -156,7 +156,7 @@
               `<div style="font-family:var(--mono,monospace);font-size:10px;color:#059669;font-weight:600">${dnum(j.num)}</div>` +
               `<div style="font-size:12px;color:#0f172a;margin:1px 0">${j.units ? j.units.length : 0} slökkvitæki</div>` +
             '</div>' +
-            `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt �o"</button>` +
+            `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt ✓</button>` +
           '</div>';
         }
         return '<div onclick="event.stopPropagation();Counter.select(' + j.id + ')" style="display:flex;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;margin-bottom:3px;background:#f8fafc;border:1px solid #f1f5f9" onmouseover="this.style.background=\'#eef2f7\'" onmouseout="this.style.background=\'#f8fafc\'">' +
@@ -228,7 +228,7 @@
       '<div id="workshop-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;padding:24px">' +
         '<div style="background:#fff;border-radius:16px;max-width:780px;width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 80px rgba(0,0,0,.35)">' +
           '<div style="padding:12px 16px;border-bottom:1px solid #f1f5f9;display:flex;justify-content:flex-end">' +
-            '<button onclick="Workshop.closeDetail()" style="border:none;background:#f3f4f6;border-radius:10px;padding:6px 14px;font-size:13px;cursor:pointer">�o. Loka</button>' +
+            '<button onclick="Workshop.closeDetail()" style="border:none;background:#f3f4f6;border-radius:10px;padding:6px 14px;font-size:13px;cursor:pointer">✕ Loka</button>' +
           '</div>' +
           '<div id="workshop-detail" style="overflow-y:auto;flex:1"></div>' +
         '</div>' +
@@ -312,7 +312,7 @@
   function wCustomerGroup(statusKey, co) {
     const key = statusKey + ':' + co.name;
     const expanded = Workshop.expandedCos[key] === true;
-    const caret = expanded ? '�-�' : '�-�';
+    const caret = expanded ? '▼' : '▶';
     const pct = co.totalUnits ? Math.round(co.doneUnits / co.totalUnits * 100) : 0;
     let inner = '';
     if (expanded) {
