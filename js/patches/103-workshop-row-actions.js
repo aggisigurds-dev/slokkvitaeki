@@ -292,6 +292,76 @@
     });
     wrap.appendChild(noteBtn);
 
+    // 2026-05-12: Add 🚫 Ónýtt button on workshop rows (ws-row) too. Patch
+    // 120 only targets `counter-main` table rows but the workshop redesign
+    // modal uses div-based ws-row layout so 120's button never appeared
+    // here. We toggle the verklidur status directly (the workshop rows
+    // have a matching verklidur row even when no uttaeki exists).
+    const scrapBtn = document.createElement('button');
+    scrapBtn.className = 'btn btn-ghost btn-sm _wra-scrap-line';
+    scrapBtn.type = 'button';
+    scrapBtn.style.cssText = 'padding:5px 10px;background:#fff;border:1px solid #fecaca;color:#dc2626;font-weight:600;border-radius:6px;font-size:12px;cursor:pointer';
+    scrapBtn.innerHTML = '🚫 Ónýtt';
+    scrapBtn.title = 'Merkja sem ónýtt (verklidur.status=broken)';
+    scrapBtn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const SB = getSB();
+      if (!SB) { alert('Engin gagnabankatenging'); return; }
+      // Find the verklidur row by serial across all jobs
+      let liveUnit = null;
+      if (window.DB && DB.cache && Array.isArray(DB.cache.jobs)) {
+        for (const job of DB.cache.jobs) {
+          if (!Array.isArray(job.units)) continue;
+          const u = job.units.find(x => x.serial === serial);
+          if (u) { liveUnit = u; break; }
+        }
+      }
+      if (!liveUnit) { alert('Tæki ekki fundið í kerfi'); return; }
+      const isBroken = liveUnit.status === 'broken';
+      const newStatus = isBroken ? 'received' : 'broken';
+      if (!isBroken && !confirm('Merkja tæki ' + serial + ' sem ÓNÝTT?\n\nAfgreiðslufólk fær viðvörun við sókn.')) return;
+      scrapBtn.disabled = true;
+      scrapBtn.textContent = '…';
+      try {
+        const r = await SB.from('verklidur').update({ status: newStatus }).eq('id', liveUnit.id);
+        if (r.error) throw r.error;
+        liveUnit.status = newStatus;
+        // Visual toggle
+        if (newStatus === 'broken') {
+          scrapBtn.style.background = '#dc2626';
+          scrapBtn.style.borderColor = '#991b1b';
+          scrapBtn.style.color = '#fff';
+          scrapBtn.innerHTML = '🚫 Ónýtt ✓';
+          row.style.background = '#fef2f2';
+        } else {
+          scrapBtn.style.background = '#fff';
+          scrapBtn.style.borderColor = '#fecaca';
+          scrapBtn.style.color = '#dc2626';
+          scrapBtn.innerHTML = '🚫 Ónýtt';
+          row.style.background = '';
+        }
+        if (window.Toast && Toast.show) {
+          Toast.show(newStatus === 'broken' ? '🚫 Tæki merkt ónýtt' : '✓ Tæki aftur í lagi');
+        }
+      } catch (err) {
+        alert('Villa: ' + (err.message || err));
+      } finally {
+        scrapBtn.disabled = false;
+      }
+    });
+    // Apply initial visual state if already broken
+    try {
+      const liveUnit = (DB.cache.jobs || []).flatMap(j => j.units || []).find(u => u.serial === serial);
+      if (liveUnit && liveUnit.status === 'broken') {
+        scrapBtn.style.background = '#dc2626';
+        scrapBtn.style.borderColor = '#991b1b';
+        scrapBtn.style.color = '#fff';
+        scrapBtn.innerHTML = '🚫 Ónýtt ✓';
+        row.style.background = '#fef2f2';
+      }
+    } catch(_) {}
+    wrap.appendChild(scrapBtn);
+
     target.appendChild(wrap);
   }
 
