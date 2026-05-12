@@ -70,20 +70,29 @@
   }
 
   // Hook the realtime channels so we can count pending changes.
+  // 2026-05-11: Guard against double-install (hot-reload, repeat
+  // patch loads) — previous code happily created new channels each
+  // time the patch ran, leaking memory + duplicating events.
   function attachRealtime() {
     const sb = window.DB && window.DB.sb;
     if (!sb || !sb.channel) { setTimeout(attachRealtime, 800); return; }
+    if (window.__crRealtimeAttached) return;
+    window.__crRealtimeAttached = true;
+    const channels = [];
     ['uttaeki','fyrirtaeki','verkbeidnir'].forEach(tbl => {
       try {
-        sb.channel('rt_cr_'+tbl)
+        const ch = sb.channel('rt_cr_'+tbl)
           .on('postgres_changes', { event:'*', schema:'public', table:tbl }, () => {
             if (window.__companiesEditGuard && window.__companiesEditGuard.blocked && window.__companiesEditGuard.blocked()) {
               _pendingChanges++;
               updateButton();
             }
           }).subscribe();
+        channels.push(ch);
       } catch(e){}
     });
+    // Expose unsubscribe for hot-reload scenarios
+    window.__crRealtimeChannels = channels;
   }
   attachRealtime();
 

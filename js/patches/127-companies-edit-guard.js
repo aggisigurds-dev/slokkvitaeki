@@ -107,8 +107,21 @@
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName) && isInsideCompaniesView(t)) setEditing(false);
   }, true);
 
+  // 2026-05-11: Was matching too broadly. Narrowed the selector to
+  // specific modal IDs/classes we actually need to guard against, so
+  // unrelated widgets (Toast, tooltips, third-party dialogs with
+  // "modal" in their className) don't accidentally pause realtime
+  // updates for the Companies view.
   const modalObs = new MutationObserver(() => {
-    const openModal = document.querySelector('[role="dialog"]:not([style*="display: none"]), .modal.open, ._vbu_modal, ._cl_detail_open, #_bulkadd_modal');
+    const openModal = document.querySelector(
+      '[role="dialog"]:not([style*="display: none"]), ' +
+      '.modal.open, ' +
+      '._vbu_modal, ' +
+      '._cl_detail_open, ' +
+      '#_bulkadd_modal, ' +
+      '#_pkc-dialog, ' +
+      '#_jnd-editor'
+    );
     if (openModal && viewActive()) {
       setEditing(true);
     } else if (!openModal && _isEditing && Date.now() - _lastFocusTime > 500) {

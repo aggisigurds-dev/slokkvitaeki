@@ -29,6 +29,12 @@
 (() => {
   if (window.__backButtonFixInstalled) return;
   window.__backButtonFixInstalled = true;
+  // 2026-05-12 DISABLED — existed only to neutralize patch 18 nav-history
+  // which is now disabled. The original `onclick="Companies.render()"` on
+  // detail pages works as intended without either patch. Patch 136 (capture-
+  // phase Til baka pre-clear for the editor-guard) is still active for the
+  // case when patch 127's edit-guard would otherwise block the render.
+  return;
 
   // Capture-phase listener that runs BEFORE patch 18's listener.
   // (patch 18 also uses capture phase, but our patch loads later, so our

@@ -13,6 +13,14 @@
   if (typeof window === 'undefined') return;
   if (window.__navHistoryInstalled) return;
   window.__navHistoryInstalled = true;
+  // 2026-05-12 DISABLED — this patch was the root cause of the "Til baka
+  // does nothing" bug on Companies. It hijacked the inline onclick on
+  // every back button and routed it through a custom stack which got
+  // out of sync with the actual rendered surface. Patches 100 + 136
+  // existed only to neutralize this. With 18 disabled, the original
+  // inline `onclick="Companies.render()"` on detail pages works as
+  // intended and patches 100 + 136 become unnecessary.
+  return;
 
   const stack = [];
   let suppressNext = false;

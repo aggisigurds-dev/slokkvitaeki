@@ -16,15 +16,19 @@
 (function(){
 'use strict';
 /* ===== JOBS REALTIME FIX (Afgrei\u00f0sla sync) ===== */
-/* The original db.js subscribes to 'realtime:changes' and calls DB.loadAll() on any change.
- * In practice this callback never fires (likely because v9.js's per-table channels
- * supersede it). Result: when Sala POS creates a verkbei\u00f0ni, the cache stays stale
- * and Afgrei\u00f0sla doesn't show the new job until manual page reload.
+/* 2026-05-11: DISABLED \u2014 db.js subscribeRealtime was rewritten with a
+ * smart debounced subscription that handles this correctly. Running
+ * BOTH together meant every DB write fired loadAll() 2-3 times. The
+ * remaining `if(false)` keeps the source visible for reference; to
+ * re-enable, flip the guard.
  *
- * Fix: subscribe directly to verkbei\u00f0nir/uttaeki/lanstaeki changes and call DB.loadAll()
- * with a debounce, then re-render Counter/Workshop/Field views.
+ * Original problem this fixed (no longer present):
+ *   The original db.js subscribed to 'realtime:changes' but the callback
+ *   never fired because v9.js's per-table channels superseded it.
  */
 (function(){
+  if (true) return; // 2026-05-11: disabled \u2014 see comment above. Was redundant
+                    // with the new db.js smart subscription.
   var attempts = 0;
   function trySetup(){
     attempts++;
@@ -2533,16 +2537,24 @@ console.log('[patch-master] loaded with all fixes');
 
   // Hook Breyta buttons in company detail view
   // Wrap openDetail to track current company ID
+  // 2026-05-12: Was running setInterval(wrapOpenDetail, 500) forever just
+  // to re-wrap if openDetail gets replaced. Once-on-init + a retry guard
+  // is plenty — Companies.openDetail is stable after page load.
   function wrapOpenDetail(){
-    if(!window.Companies||!window.Companies.openDetail||window.Companies.openDetail._pmW) return;
+    if(!window.Companies||!window.Companies.openDetail||window.Companies.openDetail._pmW) return true;
     var orig=window.Companies.openDetail;
     window.Companies.openDetail=function(id){
       window._currentCompanyId=id;
       return orig.apply(this,arguments);
     };
     window.Companies.openDetail._pmW=true;
+    return true;
   }
-  setInterval(wrapOpenDetail,500);
+  (function tryWrap(attempts){
+    if(wrapOpenDetail()) return;
+    if(attempts>=20) return; // give up after 10s
+    setTimeout(function(){tryWrap(attempts+1);}, 500);
+  })(0);
 
   function hookBreytaButtons(){
     var btns=document.querySelectorAll('button');

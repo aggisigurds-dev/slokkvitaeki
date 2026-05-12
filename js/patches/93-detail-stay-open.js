@@ -20,6 +20,13 @@
 (() => {
   if (window.__detailStayOpenGuardInstalled) return;
   window.__detailStayOpenGuardInstalled = true;
+  // 2026-05-12 DISABLED — db.js subscribeRealtime is now smart (debounced
+  // 3s + only calls Companies.load() for fyrirtaeki changes, which doesn't
+  // wipe #companies-main). Patch 127 (companies-edit-guard) also blocks
+  // any render that would wipe a detail page. This patch's re-open dance
+  // was the cause of the nav-history-stack inflation that patch 100 had
+  // to clean up. With db.js + patch 127 in place, no longer needed.
+  return;
 
   // Detect if a company-detail is currently rendered (vs the company list).
   // Use multiple signals because patch 100 strips the inline onclick attribute

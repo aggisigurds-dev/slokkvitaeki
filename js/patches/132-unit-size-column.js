@@ -121,11 +121,18 @@
     });
 
     // Wire change handlers (delegated).
+    // 2026-05-11: Was firing BOTH 'change' and 'blur' on the same edit —
+    // two Supabase round-trips per save (often visible as the cell flicker
+    // green twice). The blur handler also bypassed the visual feedback.
+    // Now only 'change' handles saves; 'blur' just re-checks in case the
+    // user blurred without firing change (e.g. via Tab without modifying).
     table.addEventListener('change', e => {
       const inp = e.target.closest('._usc-size');
       if (!inp) return;
       const unitId = +inp.dataset.uid;
       const newSize = inp.value.trim();
+      if (newSize === (inp.dataset._lastSaved || '')) return;
+      inp.dataset._lastSaved = newSize;
       inp.style.background = '#fef9c3';
       saveSize(unitId, newSize).then(ok => {
         inp.style.background = ok ? '#dcfce7' : '#fee2e2';
@@ -135,10 +142,13 @@
     table.addEventListener('blur', e => {
       const inp = e.target.closest('._usc-size');
       if (!inp) return;
+      // Only save on blur if change didn't already fire (text differs).
       const unitId = +inp.dataset.uid;
       const cur = getUnitSize(unitId);
       const newSize = inp.value.trim();
       if (newSize === cur) return;
+      if (newSize === (inp.dataset._lastSaved || '')) return;
+      inp.dataset._lastSaved = newSize;
       saveSize(unitId, newSize);
     }, true);
   }
