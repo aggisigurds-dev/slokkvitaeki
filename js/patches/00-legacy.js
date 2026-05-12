@@ -2537,16 +2537,24 @@ console.log('[patch-master] loaded with all fixes');
 
   // Hook Breyta buttons in company detail view
   // Wrap openDetail to track current company ID
+  // 2026-05-12: Was running setInterval(wrapOpenDetail, 500) forever just
+  // to re-wrap if openDetail gets replaced. Once-on-init + a retry guard
+  // is plenty — Companies.openDetail is stable after page load.
   function wrapOpenDetail(){
-    if(!window.Companies||!window.Companies.openDetail||window.Companies.openDetail._pmW) return;
+    if(!window.Companies||!window.Companies.openDetail||window.Companies.openDetail._pmW) return true;
     var orig=window.Companies.openDetail;
     window.Companies.openDetail=function(id){
       window._currentCompanyId=id;
       return orig.apply(this,arguments);
     };
     window.Companies.openDetail._pmW=true;
+    return true;
   }
-  setInterval(wrapOpenDetail,500);
+  (function tryWrap(attempts){
+    if(wrapOpenDetail()) return;
+    if(attempts>=20) return; // give up after 10s
+    setTimeout(function(){tryWrap(attempts+1);}, 500);
+  })(0);
 
   function hookBreytaButtons(){
     var btns=document.querySelectorAll('button');
