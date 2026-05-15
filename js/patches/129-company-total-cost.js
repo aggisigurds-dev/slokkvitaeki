@@ -51,6 +51,14 @@
       .replace(/æ/g, 'ae').replace(/[áàâ]/g, 'a').replace(/[éèê]/g, 'e')
       .replace(/[íìî]/g, 'i').replace(/[óòô]/g, 'o').replace(/[úùû]/g, 'u')
       .replace(/[ýỳ]/g, 'y').replace(/ö/g, 'o')
+      // 2026-05-14: Normalize Unicode subscript digits (U+2080..U+2089) to
+      // ASCII 0-9 so "CO₂" / "H₂O" etc. match against "CO2" / "H2O" tokens.
+      // Same for superscript digits (U+2070..U+2079) just in case.
+      .replace(/[₀-₉]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x2080 + 0x30))
+      .replace(/[⁰¹²³⁴-⁹]/g, ch => {
+        const map = { '⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9' };
+        return map[ch] || ch;
+      })
       .replace(/[._,()]/g, ' ')
       // Split "5kg" → "5 kg" and "kg5" → "kg 5" so number/unit tokenize separately.
       .replace(/(\d)([a-z])/g, '$1 $2')

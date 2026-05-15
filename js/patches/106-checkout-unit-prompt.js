@@ -106,7 +106,13 @@
     let counter = 0;
     const sections = serviceLines.map((line, lineIdx) => {
       const inputs = [];
-      for (let i = 0; i < line.qty; i++) {
+      // 2026-05-12: Gram-based service lines (CO₂ 100gr × 20, ml, etc.) use
+      // qty as the WEIGHT poured into a single cylinder — NOT as a count of
+      // separate tæki. Ask for ONE serial in that case, not qty inputs.
+      // Mirrors the isGramBased detection in pos.js verklidur creation.
+      const _isGramBased = /\b\d+\s*(gr?\.?|gramm|ml|litr?)\b/i.test(line.desc || '');
+      const _rowCount = _isGramBased ? 1 : line.qty;
+      for (let i = 0; i < _rowCount; i++) {
         counter++;
         const myCounter = counter;
         inputs.push(
@@ -121,13 +127,13 @@
       // 2026-05-10 (#4): „Auto-fylla allar" takki birtist í haus línunnar þegar
       // qty > 1. Eitt smell býr til QR-form raðnúmer fyrir öll tæki sem eru
       // tóm — sparar 9 smelli fyrir 10× sömu hleðslu.
-      const bulkBtn = line.qty > 1
+      const bulkBtn = (_rowCount > 1)
         ? '<button class="_cup-bulk" data-line="' + lineIdx + '" type="button" title="Búa til Ræðnúmer fyrir öll tóm" style="padding:5px 11px;background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✨ Auto-fylla öll</button>'
         : '';
       return '' +
         '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:10px;background:#fff">' +
           '<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:5px;display:flex;justify-content:space-between;align-items:center;gap:8px">' +
-            '<span>🔧 ' + esc(line.desc) + ' <span style="color:#64748b;font-weight:500">× ' + line.qty + '</span></span>' +
+            '<span>🔧 ' + esc(line.desc) + ' <span style="color:#64748b;font-weight:500">× ' + line.qty + (_isGramBased ? ' <em style="color:#16a34a;font-style:normal">(sami kútur)</em>' : '') + '</span></span>' +
             bulkBtn +
           '</div>' +
           inputs.join('') +

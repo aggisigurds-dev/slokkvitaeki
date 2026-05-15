@@ -265,7 +265,7 @@
   </div>
 </div>
 
-<div id="view-companies" class="view"><main class="main-panel" id="companies-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="view-income" class="view"><main class="main-panel" id="income-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="view-lanstaeki" class="view"><main class="main-panel" id="lanstaeki-main" style="height:100%;overflow-y:auto;padding:24px"></main></div>
+<div id="view-companies" class="view"><main class="main-panel" id="companies-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="view-brunakerfi" class="view"><main class="main-panel" id="brunakerfi-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="view-income" class="view"><main class="main-panel" id="income-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="view-lanstaeki" class="view"><main class="main-panel" id="lanstaeki-main" style="height:100%;overflow-y:auto;padding:24px"></main></div>
   <div id="view-geymsla" class="view"><main class="main-panel" id="geymsla-main" style="height:100%;overflow-y:auto;padding:20px"><div class="loading-state">Hleður...</div></main></div>
 <div id="view-settings" class="view"><main class="main-panel" id="settings-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="modal-nyfyrirtaeki" class="modal modal-sm"><div class="modal-hd"><h2>Nýtt fyrirtæki</h2><button class="modal-x" onclick="Modal.close('modal-nyfyrirtaeki')">✕</button></div><div class="modal-bd"><div class="fg"><label class="fl">Nafn *</label><input class="fi" id="nf-nafn" placeholder="Harpa ehf"/></div><div class="frow2"><div class="fg"><label class="fl">Kennitala</label><input class="fi" id="nf-kt" placeholder="000000-0000"/></div><div class="fg"><label class="fl">Sími</label><input class="fi" id="nf-simi" placeholder="+354 XXX XXXX"/></div></div><div class="frow2"><div class="fg"><label class="fl">Netfang</label><input class="fi" id="nf-netfang" placeholder="netfang@fyrirtaeki.is"/></div><div class="fg"><label class="fl">Tengiliður</label><input class="fi" id="nf-tengiliður" placeholder="Nafn"/></div></div><div class="fg"><label class="fl">Heimilisfang</label><input class="fi" id="nf-heimilisfang" placeholder="Götu 1, 101 Reykjavík"/></div><div class="fg"><label class="fl">Athugasemdir</label><input class="fi" id="nf-athugasemdir" placeholder="Valfrjálst..."/></div></div><div class="modal-ft"><button class="btn btn-outline" onclick="Modal.close('modal-nyfyrirtaeki')">Hætta við</button><button class="btn btn-primary" onclick="Companies.submitNew()">Vista fyrirtæki</button></div></div><div class="toast" id="toast"></div>
 <div id="printarea"></div>
@@ -275,18 +275,19 @@
 <script src="js/config.js"></script>
 <script src="js/db.js?v=20260510f"></script>
 <script src="js/utils.js?v=20260512d"></script>
-<script src="js/modal.js?v=20260512d"></script>
-<script src="/js/patches/00-legacy.js?v=20260512b"></script>
+<script src="js/modal.js?v=20260514a"></script>
+<script src="/js/patches/148-date-format-unify.js?v=20260515a"></script>
+<script src="/js/patches/00-legacy.js?v=20260515d"></script>
 <script src="/js/patches/01-sala-suite.js?v=20260510f"></script>
-<script src="/js/patches/02-vidsk-tab.js?v=20260503"></script>
+<script src="/js/patches/02-vidsk-tab.js?v=20260515a"></script>
 <script src="/js/patches/03-vidsk-revamp.js?v=20260510f"></script>
-<script src="/js/patches/04-verkdagbok.js?v=20260510f"></script>
+<script src="/js/patches/04-verkdagbok.js?v=20260515a"></script>
 <script src="/js/patches/06-pos-fixes.js?v=20260511a"></script>
-<script src="/js/patches/07-sala-checkout-dialog.js?v=20260511a"></script>
+<script src="/js/patches/07-sala-checkout-dialog.js?v=20260512e"></script>
 <script src="/js/patches/08-qr-label-customer.js?v=20260510f"></script>
 <script src="/js/patches/09-verkdagbok-attachments.js?v=20260503"></script>
 <script src="/js/patches/10-sala-receipt-redesign.js?v=20260510f"></script>
-<script src="/js/patches/11-bokhalds-yfirlit.js?v=20260510f"></script>
+<script src="/js/patches/11-bokhalds-yfirlit.js?v=20260515a"></script>
 <script src="/js/patches/12-mapfix-kill-dots.js?v=20260503"></script>
 <script src="/js/patches/13-field-company-deeplink.js?v=20260510f"></script>
 <script src="/js/patches/14-companies-openedit.js?v=20260503"></script>
@@ -301,7 +302,7 @@
 <script src="/js/patches/23-aging-report.js?v=20260510f"></script>
 <script src="/js/patches/24-contact-log.js?v=20260510f"></script>
 <script src="/js/patches/25-customer-ledger.js?v=20260510f"></script>
-<script src="/js/patches/26-credit-invoice.js?v=20260510f"></script>
+<script src="/js/patches/26-credit-invoice.js?v=20260512c"></script>
 <script src="/js/patches/27-tilbod-quote.js?v=20260510f"></script>
 <script src="/js/patches/28-calendar.js?v=20260510f"></script>
 <script src="/js/patches/29-email-invoice.js?v=20260510f"></script>
@@ -325,7 +326,7 @@
 <script src="/js/patches/47-mileage-log.js?v=20260510f"></script>
 <script src="/js/patches/48-notifications.js?v=20260511a"></script>
 <script src="/js/patches/49-backup.js?v=20260510f"></script>
-<script src="/js/patches/50-service-contracts.js?v=20260510f"></script>
+<script src="/js/patches/50-service-contracts.js?v=20260513a"></script>
 <script src="/js/patches/51-customer-portal.js?v=20260510f"></script>
 <script src="/js/patches/52-tech-route.js?v=20260510f"></script>
 <script src="/js/patches/53-auto-email-invoice.js?v=20260510f"></script>
@@ -336,21 +337,21 @@
 <script src="/js/patches/58-device-history.js?v=20260510f"></script>
 <script src="/js/patches/59-technicians.js?v=20260510f"></script>
 <script src="/js/patches/60-signature-pad.js?v=20260510f"></script>
-<script src="/js/patches/61-command-center.js?v=20260510f"></script>
+<script src="/js/patches/61-command-center.js?v=20260515a"></script>
 <script src="/js/patches/62-templates.js?v=20260510f"></script>
 <script src="/js/patches/63-customer-map.js?v=20260510f"></script>
 <script src="/js/patches/64-audit-log.js?v=20260510f"></script>
 <script src="/js/patches/65-refill-log.js?v=20260511a"></script>
 <script src="/js/patches/66-pricelist-seed.js?v=20260510f"></script>
 <script src="/js/patches/67-data-reset.js?v=20260510f"></script>
-<script src="/js/patches/68-sidebar-reorder.js?v=20260510f"></script>
+<script src="/js/patches/68-sidebar-reorder.js?v=20260515c"></script>
 <script src="/js/patches/71-tilbod-photos.js?v=20260510f"></script>
 <script src="/js/patches/72-customer-import.js?v=20260510f"></script>
 <script src="/js/patches/73-bulk-add-units.js?v=20260510f"></script>
 <script src="/js/patches/74-sala-tweaks.js?v=20260510f"></script>
 <script src="/js/patches/75-fyrirtaeki-detail-enrich.js?v=20260512a"></script>
 <script src="/js/patches/76-sidebar-polish.js?v=20260510f"></script>
-<script src="/js/patches/77-gjaldfallid-group.js?v=20260510f"></script>
+<script src="/js/patches/77-gjaldfallid-group.js?v=20260515a"></script>
 <script src="/js/patches/78-counter-workshop-redesign.js?v=20260512d"></script>
 <script src="/js/patches/79-sidebar-trim.js?v=20260510f"></script>
 <script src="/js/patches/80-aux-products.js?v=20260511b"></script>
@@ -365,9 +366,9 @@
 <script src="/js/patches/89-monthly-inspection-strip.js?v=20260510f"></script>
 <script src="/js/patches/90-unit-row-actions.js?v=20260510f"></script>
 <script src="/js/patches/91-important-companies.js?v=20260510f"></script>
-<script src="/js/patches/92-credit-by-num.js?v=20260510f"></script>
+<script src="/js/patches/92-credit-by-num.js?v=20260512c"></script>
 <script src="/js/patches/93-detail-stay-open.js?v=20260512a"></script>
-<script src="/js/patches/94-document-templates.js?v=20260510f"></script>
+<script src="/js/patches/94-document-templates.js?v=20260515b"></script>
 <script src="/js/patches/95-barcode-manager.js?v=20260510f"></script>
 <script src="/js/patches/96-document-attachments.js?v=20260510f"></script>
 <script src="/js/patches/97-notes-scratchpad.js?v=20260510f"></script>
@@ -378,28 +379,28 @@
 <script src="/js/patches/102-visit-report.js?v=20260510f"></script>
 <script src="/js/patches/103-workshop-row-actions.js?v=20260512b"></script>
 <script src="/js/patches/104-workshop-add-unit.js?v=20260510f"></script>
-<script src="/js/patches/105-sala-line-units.js?v=20260510f"></script>
-<script src="/js/patches/106-checkout-unit-prompt.js?v=20260511b"></script>
+<script src="/js/patches/105-sala-line-units.js?v=20260514d"></script>
+<script src="/js/patches/106-checkout-unit-prompt.js?v=20260512d"></script>
 <script src="/js/patches/109-floorplan-banner.js?v=20260510f"></script>
 <script src="/js/patches/110-cleanup-pos-walkins.js?v=20260510f"></script>
 <script src="/js/patches/111-company-attachments.js?v=20260510f"></script>
 <script src="/js/patches/112-form-builder.js?v=20260510f"></script>
 <script src="/js/patches/117-vorur-picker.js?v=20260510f"></script>
 <script src="/js/patches/113-company-pricing.js?v=20260510f"></script>
-<script src="/js/patches/114-unified-pos-search.js?v=20260512d"></script>
+<script src="/js/patches/114-unified-pos-search.js?v=20260514c"></script>
 <script src="/js/patches/115-cart-qty-input.js?v=20260510f"></script>
 <script src="/js/patches/116-vidsk-pricing.js?v=20260510f"></script>
 <script src="/js/patches/118-cart-savings.js?v=20260510f"></script>
 <script src="/js/patches/119-send-back-to-workshop.js?v=20260510f"></script>
 <script src="/js/patches/120-broken-units-workflow.js?v=20260511g"></script>
-<script src="/js/patches/121-pickup-checkout.js?v=20260511g"></script>
+<script src="/js/patches/121-pickup-checkout.js?v=20260515a"></script>
 <script src="/js/patches/122-samningshafar-receive.js?v=20260511g"></script>
 <script src="/js/patches/123-uttektarskyrsla.js?v=20260510f"></script>
 <script src="/js/patches/124-leidbeiningar.js?v=20260510b"></script>
 <script src="/js/patches/126-show-settings-tab.js?v=20260510a"></script>
 <script src="/js/patches/127-companies-edit-guard.js?v=20260511g"></script>
 <script src="/js/patches/128-bulk-add-pricing.js?v=20260511d"></script>
-<script src="/js/patches/129-company-total-cost.js?v=20260511f"></script>
+<script src="/js/patches/129-company-total-cost.js?v=20260514c"></script>
 <script src="/js/patches/130-companies-refresh-btn.js?v=20260511g"></script>
 <script src="/js/patches/131-unit-service-picker.js?v=20260511a"></script>
 <script src="/js/patches/132-unit-size-column.js?v=20260511g"></script>
@@ -859,22 +860,35 @@ var Lanstaeki = {
     <script src="/js/floorplanfix.js?v=1776869886801"></script>
     <script src="/js/navfix.js?v=1776869886801"></script>
     <script src="/js/vbu.js?v=1776877291301"></script>
-    <script src="/js/pos.js?v=20260512b"></script>
-<script src="/js/patches/138-byrjunargjald-toggle.js?v=20260512b"></script>
+    <script src="/js/pos.js?v=20260514b"></script>
+<script src="/js/patches/138-byrjunargjald-toggle.js?v=20260514e"></script>
+<script src="/js/patches/139-print-brother-labels.js?v=20260512c"></script>
+<script src="/js/patches/140-shelf-dropdown.js?v=20260512c"></script>
+<script src="/js/patches/141-companies-enter-fix.js?v=20260514b"></script>
+<script src="/js/patches/142-sale-editor.js?v=20260515a"></script>
+<script src="/js/patches/143-drog-list.js?v=20260514a"></script>
+<script src="/js/patches/144-kunnareikningur.js?v=20260514b"></script>
+<script src="/js/patches/145-todo-board.js?v=20260515c"></script>
+<script src="/js/patches/146-companies-click-fix.js?v=20260515a"></script>
+<script src="/js/patches/147-brunakerfi.js?v=20260515m"></script>
+<script src="/js/patches/149-dd-mm-yyyy-date-inputs.js?v=20260515a"></script>
+<script src="/js/patches/150-brunakerfi-pricelist.js?v=20260515b"></script>
+<script src="/js/patches/151-brunakerfi-doc-import.js?v=20260515f"></script>
+<script src="/js/patches/145-companies-diagnose.js?v=20260515a"></script>
     <script src="/js/tekjur.js?v=20260510f"></script>
 <script src="/js/v9.js?v=20260511g"></script>
 <script src="/js/scanmode.js?v=20260510f"></script>
-<script src="/js/detailview.js?v=1776797624642"></script>
+<script src="/js/detailview.js?v=20260515a"></script>
 <script src="/js/qrprint.js?v=1776797624642"></script>
 <script src="/js/qrscan.js?v=20260510v4"></script>
 <script src="/js/geymslacols.js?v=20260510f"></script>
-<script src="/js/companieslist.js?v=20260511a"></script>
+<script src="/js/companieslist.js?v=20260515a"></script>
 <script src="/js/kennitalafield.js?v=1776797624642"></script>
 <script src="/js/editjobbutton.js?v=1776797624642"></script>
 <script src="/js/qrbulkprint.js?v=1776797624642"></script>
-<script src="/js/vidskiptavinir.js?v=1776797624642"></script>
+<script src="/js/vidskiptavinir.js?v=20260515a"></script>
 <script src="/js/settigeymslu.js?v=1776797624642"></script>
-<script src="/js/mobilenav.js?v=1776797624642"></script>
+<script src="/js/mobilenav.js?v=20260515a"></script>
 <script src="/js/printphonefix.js?v=1776797624642"></script>
 <script src="/js/qrtag.js?v=1776797624642"></script>
 <script src="/js/posprint.js?v=20260510f"></script>

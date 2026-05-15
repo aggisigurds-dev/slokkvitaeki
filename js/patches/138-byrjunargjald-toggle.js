@@ -10,7 +10,12 @@
   if (window.__byrjunargjaldToggleInstalled) return;
   window.__byrjunargjaldToggleInstalled = true;
 
-  const PRODUCT_NAME_RX = /byrjun[ar]gjald/i;
+  // 2026-05-14: Word is "byrjunargjald" (b-y-r-j-u-n-A-R-g-j-a-l-d). The
+  // previous regex /byrjun[ar]gjald/ required exactly ONE of [a,r] between
+  // "byrjun" and "gjald", so it failed to match the actual two-char "ar".
+  // Result: cart had the line but the toggle never recognized it (stayed
+  // unchecked, auto-add tried to add it again, etc.). Use a literal match.
+  const PRODUCT_NAME_RX = /byrjunargjald/i;
   let _byrjunarProduct = null; // cached
 
   async function loadProduct() {
@@ -73,18 +78,49 @@
 
   // 2026-05-12: Show the byrjunargjald toggle only when the cart contains
   // CO₂ 100gr (the only service where the user actually charges this fee).
-  const CO2_100GR_RX = /co.{0,2}2.*100\s*gr|100\s*gr.*co.{0,2}2/i;
+  // NOTE: the product name uses Unicode subscript ₂ (U+2082), not ASCII 2 —
+  // so we must match either, OR the Icelandic word "kolsýra". We also match
+  // any line whose product_id is the known CO₂ 100gr SKU (#83).
+  const CO2_NAME_RX = /(co[2₂]|kols[ýy]ra).*100\s*gr|100\s*gr.*(co[2₂]|kols[ýy]ra)/i;
+  const CO2_100GR_PRODUCT_ID = 83;
   function cartHasCo2Refill(state) {
-    return (state.lines || []).some(l => CO2_100GR_RX.test(l.desc || ''));
+    return (state.lines || []).some(l => {
+      if (+l.product_id === CO2_100GR_PRODUCT_ID) return true;
+      return CO2_NAME_RX.test(l.desc || '');
+    });
   }
+
+  // 2026-05-12: Track whether the user has explicitly dismissed (unchecked)
+  // the byrjunargjald for this cart session. If they did, don't re-auto-add
+  // it on every cart mutation — would feel like the checkbox is fighting
+  // them. Reset when cart is empty (= fresh sale starting).
+  let _userDismissed = false;
+  let _hasAutoTickedThisCart = false;
 
   function setToggleVisibility(state) {
     const wrap = document.getElementById('_bg-toggle-wrap');
     if (!wrap) return;
     const show = cartHasCo2Refill(state);
     wrap.style.display = show ? 'flex' : 'none';
-    // If we hid the toggle but byrjunargjald is in cart, leave the line
-    // alone — user explicitly added it earlier.
+    // Reset session flags when cart is fully empty (new sale)
+    if (!state.lines || !state.lines.length) {
+      _userDismissed = false;
+      _hasAutoTickedThisCart = false;
+      return;
+    }
+    // Auto-add byrjunargjald on first CO₂ 100gr detection per cart session.
+    // Only do it once — if user unchecks it, we honour that.
+    if (show && !_hasAutoTickedThisCart && !_userDismissed && !cartHasByrjunar(state)) {
+      _hasAutoTickedThisCart = true;
+      loadProduct().then(p => {
+        if (!p) return;
+        if (cartHasByrjunar(state)) return; // race-guard
+        addByrjunar(state, p);
+        if (window.POS && typeof POS.rerenderDynamic === 'function') {
+          POS.rerenderDynamic();
+        }
+      });
+    }
   }
 
   function injectToggle() {
@@ -131,8 +167,14 @@
       if (!state) return;
       const product = await loadProduct();
       if (!product) { cb.checked = false; return; }
-      if (cb.checked) addByrjunar(state, product);
-      else removeByrjunar(state);
+      if (cb.checked) {
+        addByrjunar(state, product);
+        _userDismissed = false;
+      } else {
+        removeByrjunar(state);
+        // Remember the user said NO for this cart session.
+        _userDismissed = true;
+      }
       // Trigger pos.js to redraw cart + totals
       if (window.POS && typeof POS.rerenderDynamic === 'function') {
         POS.rerenderDynamic();

@@ -231,8 +231,16 @@
 
     const { data, error } = await SB.from('solur').insert(row).select().single();
     if (error) {
-      // If is_credit/credit_of columns don't exist yet, retry without them
-      if (/column.*does not exist/i.test(error.message)) {
+      // 2026-05-12: Two distinct error shapes from Postgres/PostgREST when the
+      // optional credit columns aren't present:
+      //   - direct PG:   "column \"is_credit\" of relation \"solur\" does not exist"
+      //   - PostgREST:   "Could not find the 'credit_of' column of 'solur' in the schema cache"
+      // Match either so the fallback INSERT (without is_credit/credit_of) fires.
+      const msg = (error.message || '') + ' ' + (error.details || '');
+      const isMissingCol = /column.*does not exist/i.test(msg)
+        || /could not find the.*column.*in the schema cache/i.test(msg)
+        || /(is_credit|credit_of)/i.test(msg);
+      if (isMissingCol) {
         delete row.is_credit; delete row.credit_of;
         const { data: d2, error: e2 } = await SB.from('solur').insert(row).select().single();
         if (e2) throw e2;

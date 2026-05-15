@@ -117,8 +117,10 @@
         '<div style="padding:13px 22px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">' +
           '<button id="_pkc-cancel" type="button" style="padding:9px 18px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>' +
           '<select id="_pkc-pay" style="padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;background:#fff">' +
+            // 2026-05-12: Default to Kort (card) — that's how the vast majority
+            // of pickups are paid in 2026. Reiðufé moved to second.
+            '<option value="kort" selected>💳 Kort</option>' +
             '<option value="reidufe">💵 Reiðufé</option>' +
-            '<option value="kort">💳 Kort</option>' +
             '<option value="reikningur">📋 Setja í reikning</option>' +
             '<option value="greitt_sidar">⏳ Greitt síðar</option>' +
           '</select>' +
@@ -348,8 +350,13 @@
         await finalizePickup(job, sale, unitState, pickupExtras, payMethod, t, customerInfo);
         // Reset extras for next pickup
         pickupExtras.length = 0;
+        const saleNumForPrint = parentSaleNum(job.num);
         close();
         if (window.Toast && Toast.show) Toast.show('✓ Sótt og selt — ' + fmtKr(t.grand));
+        // 2026-05-12 (#9): After pickup, offer to print the receipt. The sale
+        // was just updated with final linur + paid_at, so we re-fetch and
+        // hand it to SalaInvoice.renderFromSale (same template as Sala).
+        setTimeout(() => offerReceiptPrint(saleNumForPrint), 400);
       } catch (e) {
         finalBtn.disabled = false;
         finalBtn.textContent = '✓ Klára sölu og afhenda';
@@ -444,19 +451,38 @@
     //        we have no source price data. Totals come from extras.
     const totalUnits = unitState.length;
     const takenCount = unitState.filter(s => s.checked).length;
-    const ratio = totalUnits > 0 ? takenCount / totalUnits : 1;
+    const unchecked = totalUnits - takenCount;
 
+    // 2026-05-15: FIXED — was scaling each line by (taken/total) ratio,
+    // which silently rounds back to the original when each cart line has
+    // qty=1 (5 lines × 0.8 ratio → round(0.8)=1 → no reduction). For KAT
+    // this meant the printed receipt still showed 50.000 kr after the user
+    // unchecked a broken unit. Now we directly subtract `unchecked` items
+    // from the line pool, starting with the largest-qty line so single-qty
+    // lines drop out cleanly when broken.
     const oldLinur = (sale && Array.isArray(sale.linur)) ? sale.linur : [];
-    const newLinur = oldLinur
-      .map(l => {
-        const oldQty = +l.qty || 0;
-        const scaled = oldQty * ratio;
-        const newQty = Number.isInteger(oldQty)
-          ? Math.round(scaled)
-          : Math.round(scaled * 100) / 100;
-        return { ...l, qty: newQty };
-      })
-      .filter(l => (+l.qty || 0) > 0);
+    const workingLinur = oldLinur.map(l => ({ ...l, qty: +l.qty || 0 }));
+    let toRemove = unchecked;
+    if (toRemove > 0) {
+      // Sort by qty descending — peel from biggest first
+      const order = workingLinur
+        .map((l, i) => ({ i, qty: l.qty }))
+        .sort((a, b) => b.qty - a.qty);
+      for (const entry of order) {
+        if (toRemove <= 0) break;
+        const take = Math.min(toRemove, workingLinur[entry.i].qty);
+        workingLinur[entry.i].qty -= take;
+        toRemove -= take;
+      }
+      // Safety: if we couldn't account for every unchecked (e.g. linur qty
+      // sum < totalUnits), fall back to proportional scaling for whatever
+      // remains. Rare edge case.
+      if (toRemove > 0 && totalUnits > 0) {
+        const ratio = takenCount / totalUnits;
+        workingLinur.forEach(l => { l.qty = Math.max(0, Math.round(l.qty * ratio)); });
+      }
+    }
+    const newLinur = workingLinur.filter(l => l.qty > 0);
 
     extras.forEach(ex => {
       newLinur.push({
@@ -613,6 +639,64 @@
     if (window.App && typeof App.refreshAll === 'function') App.refreshAll();
     if (window.Counter && typeof Counter.render === 'function') Counter.render();
     if (window.DB && typeof DB.loadAll === 'function') DB.loadAll();
+  }
+
+  // ── 2026-05-12 (#9): Receipt print prompt after pickup ──────────────────
+  // Shows a small dialog with "🖨 Prenta kvittun" + "Sleppa" so the user can
+  // hand the customer a receipt right after the Sótt-flow completes.
+  async function offerReceiptPrint(saleNum) {
+    const SB = getSB();
+    if (!SB || !saleNum) return;
+    let sale = null;
+    try {
+      const r = await SB.from('solur').select('*').eq('num', saleNum).maybeSingle();
+      sale = r.data;
+    } catch (_) {}
+    if (!sale) return;
+    if (!window.SalaInvoice || typeof SalaInvoice.renderFromSale !== 'function') return;
+
+    document.getElementById('_pkc-print-prompt')?.remove();
+    const dlg = document.createElement('div');
+    dlg.id = '_pkc-print-prompt';
+    dlg.style.cssText = 'position:fixed;inset:0;z-index:100050;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;padding:16px;font-family:inherit';
+    dlg.innerHTML =
+      '<div style="background:#fff;border-radius:14px;padding:22px 26px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(15,23,42,.3);">' +
+        '<h2 style="margin:0 0 6px;font-size:17px;color:#0f172a;">✓ Sótt og selt</h2>' +
+        '<div style="font-size:13px;color:#64748b;margin-bottom:16px;">Salnúmer ' + esc(saleNum) + ' · ' + fmtKr(sale.samtals || 0) + '</div>' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end">' +
+          '<button id="_pkc-print-skip" type="button" style="padding:9px 16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Sleppa</button>' +
+          '<button id="_pkc-print-go" type="button" style="padding:9px 18px;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">🖨 Prenta kvittun</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(dlg);
+    function closePrompt() { dlg.remove(); document.removeEventListener('keydown', onKey); }
+    function onKey(e) {
+      if (e.key === 'Escape') { e.preventDefault(); closePrompt(); }
+      if (e.key === 'Enter')  { e.preventDefault(); doPrint(); }
+    }
+    document.addEventListener('keydown', onKey);
+    dlg.querySelector('#_pkc-print-skip').addEventListener('click', closePrompt);
+    dlg.addEventListener('click', e => { if (e.target === dlg) closePrompt(); });
+    async function doPrint() {
+      const win = window.open('', '_blank', 'width=900,height=1100');
+      if (!win) { alert('Vinsamlegast leyfðu sprettiglugga til að prenta kvittun.'); return; }
+      let cust = null;
+      if (sale.customer_id) {
+        try {
+          const c = await SB.from('vidskiptavinir').select('*').eq('id', sale.customer_id).maybeSingle();
+          if (c.data) cust = c.data;
+          else {
+            const f = await SB.from('fyrirtaeki').select('*').eq('id', sale.customer_id).maybeSingle();
+            if (f.data) cust = f.data;
+          }
+        } catch (_) {}
+      }
+      try { SalaInvoice.renderFromSale(win, sale, cust); } catch (e) { alert('Villa: ' + (e.message || e)); }
+      closePrompt();
+    }
+    dlg.querySelector('#_pkc-print-go').addEventListener('click', doPrint);
+    // Auto-focus the print button — Enter prints, Escape skips
+    setTimeout(() => dlg.querySelector('#_pkc-print-go')?.focus(), 30);
   }
 
   // ── Hook Counter.markCollected ──────────────────────────────────────────

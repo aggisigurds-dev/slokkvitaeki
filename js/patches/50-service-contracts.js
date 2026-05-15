@@ -245,7 +245,7 @@
                   Dags: <input type="date" id="ct-signed" value="${esc(c.signed_at||defaultSigned)}" style="border:none;border-bottom:1px solid #0f172a;background:transparent;margin-left:6px">
                 </div>
                 <div class="title">Þjónustusamningur</div>
-                <div class="brand">🔥 ${COMPANY.nafn}</div>
+                <div class="brand" style="line-height:0"><img src="/img/logo.png" alt="${COMPANY.nafn}" style="max-height:80px;max-width:100%;display:inline-block"></div>
                 <div class="slogan">${COMPANY.slogan}</div>
                 <div class="phone">Sími: ${COMPANY.sími}</div>
               </div>

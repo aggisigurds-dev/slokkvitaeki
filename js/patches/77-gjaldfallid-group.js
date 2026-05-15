@@ -17,7 +17,11 @@
   }
   function fmtDate(d) {
     if (!d) return '—';
-    try { return new Date(d).toLocaleDateString('is-IS'); } catch (_) { return String(d); }
+    try {
+      const x = new Date(d);
+      if (isNaN(x)) return String(d);
+      return String(x.getDate()).padStart(2,'0') + '/' + String(x.getMonth()+1).padStart(2,'0') + '/' + x.getFullYear();
+    } catch (_) { return String(d); }
   }
 
   function regroup() {

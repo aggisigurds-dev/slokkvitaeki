@@ -391,7 +391,7 @@
         '<input id="_ups-search" type="text" autocomplete="off" placeholder="🔍 Leita að kennitölu, nafni eða síma…" ' +
           'style="flex:1;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;box-sizing:border-box">' +
         '<button id="_ups-walkin" type="button" title="Án kennitölu — gestur, kt: 999999-9999, engin skráning" ' +
-          'style="padding:10px 14px;background:#fef3c7;border:1px solid #fde68a;color:#92400e;border-radius:8px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">⚡ Án kennitölu</button>' +
+          'style="padding:10px 14px;background:#dcfce7;border:1px solid #86efac;color:#166534;border-radius:8px;font:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">⚡ Án kennitölu</button>' +
       '</div>' +
       '<div id="_ups-results" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid #cbd5e1;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,0.12);z-index:50;max-height:380px;overflow:auto;margin-top:2px"></div>' +
       // Selected customer card — sober grey/blue palette
@@ -418,17 +418,17 @@
           '<div id="_ups-sel-notes-text" style="font-size:12px;color:#334155;white-space:pre-wrap;line-height:1.45"></div>' +
         '</div>' +
       '</div>' +
-      // Walk-in form (hidden until user clicks Staðgreitt)
-      '<div id="_ups-walkin-form" style="display:none;margin-top:8px;padding:10px 12px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px">' +
+      // Walk-in form (hidden until user clicks Án kennitölu) — soft green
+      '<div id="_ups-walkin-form" style="display:none;margin-top:8px;padding:10px 12px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
-          '<div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.05em">⚡ Staðgreitt — kt: 999999-9999</div>' +
-          '<button id="_ups-walkin-clear" type="button" style="background:transparent;border:none;color:#92400e;font-size:14px;cursor:pointer;padding:0 4px">✕</button>' +
+          '<div style="font-size:11px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:0.05em">⚡ Án kennitölu — kt: 999999-9999</div>' +
+          '<button id="_ups-walkin-clear" type="button" style="background:transparent;border:none;color:#166534;font-size:14px;cursor:pointer;padding:0 4px">✕</button>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">' +
-          '<input id="_ups-walkin-name" type="text" placeholder="Nafn (valkvætt)" style="padding:8px 10px;border:1px solid #fde68a;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box">' +
-          '<input id="_ups-walkin-phone" type="tel" placeholder="Sími (valkvætt)" style="padding:8px 10px;border:1px solid #fde68a;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box">' +
+          '<input id="_ups-walkin-name" type="text" placeholder="Nafn (valkvætt)" style="padding:8px 10px;border:1px solid #bbf7d0;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box">' +
+          '<input id="_ups-walkin-phone" type="tel" placeholder="Sími (valkvætt)" style="padding:8px 10px;border:1px solid #bbf7d0;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box">' +
         '</div>' +
-        '<div style="margin-top:6px;font-size:11px;color:#92400e">Engin skráning í Viðskiptavinir — fer í kvittun og bókhald með kt 999999-9999.</div>' +
+        '<div style="margin-top:6px;font-size:11px;color:#166534">Engin skráning í Viðskiptavinir — fer í kvittun og bókhald með kt 999999-9999.</div>' +
       '</div>';
 
     card.insertBefore(wrap, ktBox);
@@ -596,12 +596,16 @@
         const txt = (posKtResult.textContent || '').trim();
         // Only show our card if the result indicates a found customer (not a "Leita…" or empty)
         if (!txt || /Leita\.\.\.|Leita…|Engin/.test(txt)) return;
+        // 2026-05-14: When the user clicked "Án kennitölu" the kt becomes
+        // 999999-9999 — this is a SENTINEL, not a real customer. Never
+        // promote a walk-in into the "Valinn viðskiptavinur" card just
+        // because some old stray vidskiptavinur row happens to share that kt.
+        const ktInp = document.getElementById('pos-kt');
+        const kt = ktInp ? ktInp.value.replace(/[^0-9]/g, '') : '';
+        if (kt === '9999999999') return;
         // If our card is already shown for a selected customer, skip
         const card = document.getElementById('_ups-selected');
         if (card && card.style.display !== 'none') return;
-        // Try to parse kennitala from #pos-kt input
-        const ktInp = document.getElementById('pos-kt');
-        const kt = ktInp ? ktInp.value.replace(/[^0-9]/g, '') : '';
         if (kt.length !== 10) return;
         // Find customer in companies/vidsk by kt
         const fy = getCompanies().find(c => String(c.kennitala || '').replace(/[^0-9]/g, '') === kt);
@@ -613,28 +617,48 @@
 
     walkinBtn.addEventListener('click', () => {
       walkinForm.style.display = '';
+      // 2026-05-12: FULLY RESET previous customer state before entering
+      // walk-in mode. Was carrying over the last customer's nafn/sími which
+      // is confusing — walk-in should start empty and only show what the
+      // user types now.
+      walkinName.value = '';
+      walkinPhone.value = '';
+      // Hide selected-customer card if it was showing from previous selection
+      const selCard = document.getElementById('_ups-selected');
+      if (selCard) selCard.style.display = 'none';
+      // Reset POS state so the next sale doesn't inherit a stale name/co_id
+      try {
+        const posState = window.POS && typeof POS.getState === 'function' && POS.getState();
+        if (posState && posState.customer) {
+          posState.customer.nafn = '';
+          posState.customer.kt = STAÐGREITT_KT;
+          posState.customer.simi = '';
+          posState.customer.co_id = null;
+          posState.customer.heimilisfang = '';
+          posState.customer.afslattur_pct = 0;
+          posState.customer.athugasemdir = '';
+          posState.customer.mode = 'walkin';
+        }
+      } catch (_) {}
       // Set kt to 999999-9999 (drives existing pos.js auto-create logic)
       const ktInp = document.getElementById('pos-kt');
       if (ktInp) {
         ktInp.value = STAÐGREITT_KT;
         ktInp.dispatchEvent(new Event('input', { bubbles: true }));
       }
-      // Set state.customer fields (we use the manual mode hooks of pos.js)
-      // Existing pos.js writes to state.customer.nafn / .simi when manual inputs change.
+      // Clear the legacy manual nafn/sími fields so pos.js can't read stale data
       const manualNafn = document.getElementById('pos-nafn');
       const manualSimi = document.getElementById('pos-simi');
-      if (manualNafn) manualNafn.value = walkinName.value || 'Staðgreitt';
-      if (manualSimi) manualSimi.value = walkinPhone.value || '';
-      // Trigger events so pos.js state.customer updates
-      [manualNafn, manualSimi].forEach(el => { if (el) el.dispatchEvent(new Event('input', { bubbles: true })); });
+      if (manualNafn) { manualNafn.value = ''; manualNafn.dispatchEvent(new Event('input', { bubbles: true })); }
+      if (manualSimi) { manualSimi.value = ''; manualSimi.dispatchEvent(new Event('input', { bubbles: true })); }
       // Clear search field
       search.value = '';
       results.style.display = 'none';
-      // Display result text in the existing pos-kt-result element
+      // Show fresh "⚡ Án kennitölu" header line
       const r = document.getElementById('pos-kt-result');
-      if (r) {
-        r.innerHTML = '<span style="color:#92400e;font-weight:600">⚡ Staðgreitt' + (walkinName.value ? ' · ' + esc(walkinName.value) : '') + '</span>';
-      }
+      if (r) r.innerHTML = '<span style="color:#166534;font-weight:600">⚡ Án kennitölu</span>';
+      // Focus the name input so the user can type the customer name right away
+      setTimeout(() => walkinName.focus(), 30);
     });
 
     // Walk-in name/phone live-update
@@ -645,7 +669,7 @@
         manualNafn.dispatchEvent(new Event('input', { bubbles: true }));
       }
       const r = document.getElementById('pos-kt-result');
-      if (r) r.innerHTML = '<span style="color:#92400e;font-weight:600">⚡ Staðgreitt' + (walkinName.value ? ' · ' + esc(walkinName.value) : '') + '</span>';
+      if (r) r.innerHTML = '<span style="color:#166534;font-weight:600">⚡ Án kennitölu' + (walkinName.value ? ' · ' + esc(walkinName.value) : '') + '</span>';
     });
     walkinPhone.addEventListener('input', () => {
       const manualSimi = document.getElementById('pos-simi');

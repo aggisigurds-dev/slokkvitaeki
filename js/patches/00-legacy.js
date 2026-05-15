@@ -205,7 +205,7 @@
 /* ===== 0. HELPERS ===== */
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function fmtKr(n){return Math.round(n||0).toLocaleString('is-IS');}
-function fmtDate(s){if(!s)return'';try{var d=new Date(s);return d.toLocaleDateString('is-IS');}catch(e){return s;}}
+function fmtDate(s){if(!s)return'';try{var d=new Date(s);if(isNaN(d))return s;return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}catch(e){return s;}}
 function toast(m,c,ms){
   var t=document.createElement('div');
   t.style.cssText='position:fixed;top:80px;left:50%;transform:translateX(-50%);background:'+(c||'#1e293b')+';color:#fff;padding:14px 22px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.3);z-index:99999;font-weight:600;font-size:14px';
@@ -2556,6 +2556,40 @@ console.log('[patch-master] loaded with all fixes');
     setTimeout(function(){tryWrap(attempts+1);}, 500);
   })(0);
 
+  // 2026-05-14: Resolve the currently-viewed company id from multiple
+  // sources so the Breyta button always works — even when the detail page
+  // was opened via a code path that doesn't go through the wrapped
+  // Companies.openDetail (e.g. customer-search "Sjá →", nav-history
+  // restore, or patch 141's force-enter flow). Falls back to scanning the
+  // detail DOM for any embedded openEdit / openDetail / openMap onclick.
+  function resolveCurrentCompanyId(){
+    // 2026-05-14: ALWAYS read from current DOM first — never trust the
+    // cached _currentCompanyId across navigations. The cache is updated
+    // from the DOM scan so subsequent calls hit it cleanly.
+    var main = document.getElementById('companies-main') ||
+               document.querySelector('#view-companies, #view-fyrirtaeki');
+    if (!main) return window._currentCompanyId || null;
+    // Try to parse from any button's onclick that references a company id
+    var ids = [];
+    main.querySelectorAll('[onclick]').forEach(function(el){
+      var oc = el.getAttribute('onclick') || '';
+      var m = oc.match(/Companies\.(?:openEdit|openMap|openDetail|render)\((\d+)\)/);
+      if (m) ids.push(+m[1]);
+    });
+    if (ids.length) {
+      // Most common id wins — usually all buttons reference the same company
+      var counts = {};
+      ids.forEach(function(id){ counts[id] = (counts[id]||0) + 1; });
+      var best = ids[0], bestN = 0;
+      Object.keys(counts).forEach(function(k){
+        if (counts[k] > bestN) { best = +k; bestN = counts[k]; }
+      });
+      window._currentCompanyId = best; // cache for next call
+      return best;
+    }
+    return null;
+  }
+
   function hookBreytaButtons(){
     var btns=document.querySelectorAll('button');
     btns.forEach(function(btn){
@@ -2568,7 +2602,7 @@ console.log('[patch-master] loaded with all fixes');
         btn.dataset._pmHooked='1';
         btn.addEventListener('click',function(e){
           e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-          var id=window._currentCompanyId;
+          var id = resolveCurrentCompanyId();
           if(id) openEditModal(id);
           else alert('Veldu fyrirtaeki fyrst');
         },true);
@@ -2593,6 +2627,10 @@ console.log('[patch-master] loaded with all fixes');
     var tables = document.querySelectorAll('table');
     tables.forEach(function(table){
       if(table.dataset._pmStatusDone) return;
+      // 2026-05-14: Skip when the table is inside modals that have their own
+      // "Staða" column meaning (kúnnareikningur statement, bókhald yfirlit
+      // detail, etc.) — they show transaction status, not equipment status.
+      if (table.closest('#_kr-statement, #_kr-picker, #ci-modal, #_se-dlg, #_drog-list-modal, #counter-detail-modal, #workshop-detail-modal')) return;
       // Check if this table has STAÐA column
       var ths = table.querySelectorAll('th');
       var statusIdx = -1;
@@ -2801,26 +2839,40 @@ console.log('[patch-master] loaded with all fixes');
 
   // Find company ID by looking at the page heading
   function findCompanyId(){
-    // 1. Check if already set
-    if(window._currentCompanyId) return Promise.resolve(window._currentCompanyId);
-    // 2. Find company name from the page heading (h1/h2 near Til baka)
+    // 2026-05-14: The cache (_currentCompanyId) was returned BEFORE scanning
+    // the live DOM \u2014 which left the memo box loading the PREVIOUS company's
+    // athugasemdir when the user navigated A\u2192B via any path that didn't go
+    // through the wrapped Companies.openDetail. Now we always read fresh
+    // from the page first; cache is only a last-resort fallback.
+    var main = document.getElementById('companies-main');
+    if (main) {
+      var btns = main.querySelectorAll('[onclick]');
+      for (var i = 0; i < btns.length; i++) {
+        var oc = btns[i].getAttribute('onclick') || '';
+        var m = oc.match(/Companies\.(?:openEdit|openMap|openDetail|render)\((\d+)\)/);
+        if (m) {
+          var freshId = +m[1];
+          window._currentCompanyId = freshId; // update cache to match DOM
+          return Promise.resolve(freshId);
+        }
+      }
+    }
+    if (window._currentCompanyId) return Promise.resolve(window._currentCompanyId);
+    // Fallback: find company name in page heading + DB lookup
     var headings = document.querySelectorAll('h1,h2,h3,[class*="name"],[class*="title"]');
     var companyName = null;
     headings.forEach(function(h){
       var text = h.textContent.trim();
-      // Skip generic headings
       if(text.length > 3 && text.length < 100 && !/Geymsla|Verkbei|Tekjur|Sala|Vorur|Sl\u00f6kkvi/i.test(text)){
         if(!companyName) companyName = text;
       }
     });
     if(!companyName) return Promise.resolve(null);
-    // 3. Look up in DB by name
     return window.DB.sb.from('fyrirtaeki').select('id').eq('nafn',companyName).single().then(function(r){
       if(r.data){
         window._currentCompanyId = r.data.id;
         return r.data.id;
       }
-      // Try partial match
       return window.DB.sb.from('fyrirtaeki').select('id').ilike('nafn','%'+companyName.substring(0,10)+'%').limit(1).then(function(r2){
         if(r2.data && r2.data.length){
           window._currentCompanyId = r2.data[0].id;

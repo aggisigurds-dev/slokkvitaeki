@@ -51,7 +51,14 @@ var Counter = {
     var labelW = 180, labelH = 56; // visual proxy for 17×54mm
     var qrSvg = QR.svg(u.serial, 44);
     var custName = U.e(job.customer || '');
-    var html='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:12px">Prenta</div>';
+    var html='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3);margin-bottom:12px">Aðgerðir</div>';
+    // 2026-05-14: "✏️ Breyta sölu" — opens the universal Sale Editor on the
+    // parent sale of this verkbeiðni (R-NNN). Customer / lines / prices /
+    // discounts editable until status='final'.
+    html += '<button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-bottom:10px;background:#2563eb;border-color:#2563eb" ' +
+      'onclick="window.SaleEditor && SaleEditor.openFromJob(\''+ U.e(job.num) +'\')">' +
+      '✏️ Breyta sölu (R-' + U.e(String(job.num||'').replace(/-V\d+$/,'').replace(/^R-/,'')) + ')' +
+    '</button>';
 
     // 2026-05-12: Removed the custom 17×54 preview. The label design is
     // chosen at order finalisation in the cart (greiðsla dialog), so the

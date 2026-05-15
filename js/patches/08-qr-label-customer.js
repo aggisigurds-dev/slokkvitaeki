@@ -634,6 +634,12 @@
       if (inp) { inp.value = next; refreshPreview(); }
     }
   }
-  window.QrLabelCustomer = { open: openWithCustomer, openEmpty: openDialog, fetchNextSerial, printTestPattern, version: 'v4' };
+  window.QrLabelCustomer = {
+    open: openWithCustomer, openEmpty: openDialog, fetchNextSerial, printTestPattern,
+    // Exposed so other patches (e.g. 139-print-brother-labels) can reuse the
+    // exact same template/CSS rather than copy-pasting it.
+    openPrintWindow, buildPrintLabel, ensureQRLib, qrPNG, LABEL_LENGTHS, LABEL_HEIGHT_MM,
+    version: 'v4'
+  };
 })();
 /* === END QR LABEL CUSTOMER === */

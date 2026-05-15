@@ -343,26 +343,34 @@
   function buildProductsHTML(){if(!state.products.length)return'<div style="color:#94a3b8;font-size:13px;text-align:center;padding:16px;grid-column:1/-1">Engar vörur skráðar.</div>';return state.products.map(function(p){return renderTile(p,false);}).join('');}
   function buildLinesHTML(){
     if(!state.lines.length)return'<div style="color:#94a3b8;text-align:center;padding:32px 16px;font-size:13px;border:2px dashed #e2e8f0;border-radius:8px">Karfan er tóm<br><span style="font-size:11px">Smelltu á flísar til að bæta við</span></div>';
+    // 2026-05-12: Two-row layout. Old layout crammed icon + name + qty +
+    // price + total + delete onto one flex row, which made the name wrap
+    // ugly in the narrow cart column. Now: row 1 = icon + name + delete;
+    // row 2 = qty stepper + price input + line total. Name gets the full
+    // row width so it never wraps mid-word.
     return state.lines.map(function(l,idx){
       var lineTotal=l.qty*l.unit_price_ex_vat*(1+(l.vsk_pct||24)/100);
       var col=l.type==='service'?'#b45309':'#0d6efd';
-      return '<div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9">' +
-        '<div style="width:28px;height:28px;background:'+col+'15;color:'+col+';border-radius:6px;display:flex;align-items:center;justify-content:center;margin-right:8px;flex-shrink:0;font-size:14px">'+(l.type==='service'?'🔧':'🛒')+'</div>' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="font-weight:600;color:#0f172a;font-size:13px;line-height:1.3;overflow-wrap:break-word;word-break:break-word">'+esc(l.desc)+'</div>' +
-          // Price is now an inline-editable input. Click and edit.
-          '<div style="color:#64748b;font-size:11px;display:flex;align-items:center;gap:3px">' +
-            '<span>'+l.qty+' × </span>' +
-            '<input class="pos-price-edit" data-idx="'+idx+'" type="number" min="0" step="1" value="'+l.unit_price_ex_vat+'" ' +
-              'title="Smelltu til að breyta verði (án VSK)" ' +
-              'style="width:72px;padding:1px 4px;border:1px solid #e2e8f0;border-radius:4px;font:inherit;font-size:11px;text-align:right;font-variant-numeric:tabular-nums">' +
-            '<span>kr án vsk</span>' +
-            (l.ref?' · '+esc(l.ref):'') +
-          '</div>' +
+      return '<div style="padding:8px 0;border-bottom:1px solid #f1f5f9">' +
+        // Row 1 — icon + name + delete
+        '<div style="display:flex;align-items:flex-start;gap:8px">' +
+          '<div style="width:26px;height:26px;background:'+col+'15;color:'+col+';border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">'+(l.type==='service'?'🔧':'🛒')+'</div>' +
+          '<div style="flex:1;min-width:0;font-weight:600;color:#0f172a;font-size:13px;line-height:1.25;overflow-wrap:break-word;word-break:break-word">'+esc(l.desc)+(l.ref?'<div style="font-weight:400;font-size:11px;color:#64748b;margin-top:1px">'+esc(l.ref)+'</div>':'')+'</div>' +
+          '<button class="pos-line-del" data-idx="'+idx+'" title="Fjarlægja" style="background:none;color:#cbd5e1;border:none;cursor:pointer;font-size:18px;padding:0 2px;line-height:1;flex-shrink:0">×</button>' +
         '</div>' +
-        '<div style="display:flex;align-items:center;gap:4px;margin-left:8px;flex-shrink:0"><button class="pos-qty-dn" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b">−</button><span style="font-weight:600;font-size:13px;min-width:18px;text-align:center">'+l.qty+'</span><button class="pos-qty-up" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b">+</button></div>' +
-        '<div style="font-weight:700;color:#0f172a;margin-left:14px;white-space:nowrap;font-size:12px;min-width:70px;text-align:right;flex-shrink:0">'+fmtKr(lineTotal)+'</div>' +
-        '<button class="pos-line-del" data-idx="'+idx+'" style="background:none;color:#cbd5e1;border:none;cursor:pointer;font-size:18px;padding:2px 6px">×</button>' +
+        // Row 2 — qty stepper + price input + line total (indented under name)
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:5px;margin-left:34px">' +
+          '<button class="pos-qty-dn" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b">−</button>' +
+          '<span style="font-weight:600;font-size:13px;min-width:18px;text-align:center">'+l.qty+'</span>' +
+          '<button class="pos-qty-up" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b">+</button>' +
+          '<span style="color:#94a3b8;font-size:11px;margin:0 1px">×</span>' +
+          '<input class="pos-price-edit" data-idx="'+idx+'" type="number" min="0" step="1" value="'+l.unit_price_ex_vat+'" ' +
+            'title="Smelltu til að breyta verði (án VSK)" ' +
+            'style="width:64px;padding:2px 5px;border:1px solid #e2e8f0;border-radius:4px;font:inherit;font-size:11px;text-align:right;font-variant-numeric:tabular-nums">' +
+          '<span style="color:#94a3b8;font-size:11px">kr</span>' +
+          '<div style="flex:1"></div>' +
+          '<div style="font-weight:700;color:#0f172a;font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums">'+fmtKr(lineTotal)+'</div>' +
+        '</div>' +
       '</div>';
     }).join('');
   }
@@ -642,6 +650,21 @@
       var skipVerk = window._pendingSkipVerk === true;
       window._pendingSkipVerk = false; // reset for next sale
       var verkCount = 0;
+      // 2026-05-12: Detect CO₂ byrjunargjald in the cart. It's a 'product'
+      // line so it doesn't get its own verkbeiðni — but the user wants it
+      // visible alongside the CO₂ 100gr refill it accompanies. We fold its
+      // amount + a note into the matching CO₂ 100gr verkbeiðni below.
+      var _bgLine = (state.lines || []).find(function(l){
+        return /byrjunargjald/i.test(l.desc || '');
+      });
+      var _bgInc = 0;
+      if (_bgLine) {
+        var _bgQty = +_bgLine.qty || 1;
+        var _bgEx  = +_bgLine.unit_price_ex_vat || 0;
+        var _bgVat = +_bgLine.vsk_pct || 24;
+        _bgInc = Math.round(_bgQty * _bgEx * (1 + _bgVat/100));
+      }
+      var _bgConsumed = false; // ensure we only bundle once even with multiple CO₂ lines
       if (!skipVerk) {
         // Pickup-offset comes from Stillingar → Almennt → "Default sókn (dagar)".
         // Default VSK% (when product/service didn't specify) also from settings.
@@ -687,6 +710,24 @@
           // on every job).
           var notesParts = [sl.desc + (sl.ref ? ' · ' + sl.ref : '')];
           if (i === 0 && state.notes && state.notes.trim()) notesParts.push(state.notes.trim());
+          // 2026-05-12: For gram-based services (CO₂ 100gr × 20 = 1 cylinder)
+          // the verklidur count is 1 but the price should reflect the FULL line
+          // total (qty × unit). modal.js / counter view computes
+          // totalKr = verd × units.length — so for 1-unit gram-based jobs we
+          // must store qty × unit_price as verd, not just unit_price.
+          var _qty = parseInt(sl.qty, 10) || 1;
+          var _isGramBasedLine = /\b\d+\s*(gr?\.?|gramm|ml|litr?)\b/i.test(sl.desc);
+          var _verd = Math.round(sl.unit_price_ex_vat * (1 + vatRate/100));
+          if (_isGramBasedLine) _verd = Math.round(sl.unit_price_ex_vat * _qty * (1 + vatRate/100));
+          // Fold CO₂ byrjunargjald into the CO₂ 100gr verkbeiðni (price + note)
+          // Match Unicode ₂ (U+2082) as well as ASCII 2, plus 'kolsýra'.
+          var _isCo2_100gr = (+sl.product_id === 83)
+            || /(co[2₂]|kols[ýy]ra).*100\s*gr|100\s*gr.*(co[2₂]|kols[ýy]ra)/i.test(sl.desc);
+          if (_isCo2_100gr && _bgInc > 0 && !_bgConsumed) {
+            _verd += _bgInc;
+            notesParts.push('🚚 Byrjunargjald: ' + _bgInc.toLocaleString('is-IS') + ' kr (innifalið)');
+            _bgConsumed = true;
+          }
           var insertResult = await DB.sb.from('verkbeidnir').insert({
             num: num+'-V'+(i+1),
             status: 'received',
@@ -695,8 +736,15 @@
             dropoff: new Date().toISOString().substring(0,10),
             pickup: new Date(Date.now()+pickupOffsetDays*86400000).toISOString().substring(0,10),
             notes: notesParts.join('\n— '),
-            verd: Math.round(sl.unit_price_ex_vat*(1+vatRate/100))
+            verd: _verd
           }).select('id').single();
+          // 2026-05-14: Don't lie about success when the insert errored out.
+          // Log the error so it's visible, AND don't bump verkCount for the
+          // failed insert — the post-sale modal then shows the real count.
+          if (insertResult && insertResult.error) {
+            console.error('[pos] verkbeidnir insert failed:', insertResult.error);
+            continue; // skip verklidur creation for this line
+          }
           verkCount++;
           // Insert verklidur rows so workshop view has clickable units
           var jobId = insertResult && insertResult.data && insertResult.data.id;

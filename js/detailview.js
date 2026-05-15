@@ -7,7 +7,8 @@
   function fmtDate(d){
     if (!d) return '—';
     var dt = new Date(d);
-    return dt.toLocaleDateString('is-IS');
+    if (isNaN(dt)) return '—';
+    return String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + dt.getFullYear();
   }
 
   function daysUntil(d){

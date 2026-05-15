@@ -20,18 +20,22 @@
     return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
   };
 
-  const MONTHS_IS = ['jan','feb','mar','apr','maí','jún','júl','ágú','sep','okt','nóv','des'];
+  // 2026-05-15: Unified all date formatters to DD/MM/YYYY (with slashes) so
+  // both the meta line and the table column read the same way. Previously
+  // showed e.g. "12. maí" in one place and "12. 5.'26" in another.
+  function _ddmmyyyy(d) {
+    return String(d.getDate()).padStart(2,'0') + '/' +
+           String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+  }
   const fmtDateShort = s => {
     if (!s) return '';
-    try { const d = new Date(s); if (isNaN(d)) return String(s);
-      return d.getDate() + '. ' + MONTHS_IS[d.getMonth()];
-    } catch(e) { return ''; }
+    try { const d = new Date(s); if (isNaN(d)) return String(s); return _ddmmyyyy(d); }
+    catch(e) { return ''; }
   };
   const fmtDateTbl = s => {
     if (!s) return '';
-    try { const d = new Date(s); if (isNaN(d)) return String(s);
-      return d.getDate() + '. ' + (d.getMonth()+1) + ".'" + String(d.getFullYear()).slice(-2);
-    } catch(e) { return ''; }
+    try { const d = new Date(s); if (isNaN(d)) return String(s); return _ddmmyyyy(d); }
+    catch(e) { return ''; }
   };
 
   function dateBucketLabel(dateStr) {
@@ -46,7 +50,7 @@
     if (diffDays === -1) return 'Á morgun';
     if (diffDays > 0 && diffDays <= 6) return diffDays + ' dögum síðan';
     if (diffDays < 0 && diffDays >= -6) return 'Eftir ' + (-diffDays) + ' daga';
-    return d.getDate() + '. ' + MONTHS_IS[d.getMonth()] + (d.getFullYear() !== today.getFullYear() ? " '" + String(d.getFullYear()).slice(-2) : '');
+    return _ddmmyyyy(d);
   }
 
   // -------- state --------

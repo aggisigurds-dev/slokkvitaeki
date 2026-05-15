@@ -23,7 +23,7 @@ async function loadData(){
   _cache=byClient;
   return byClient;
 }
-function fmtDate(d){if(!d)return '—';var dt=new Date(d);return dt.toLocaleDateString('is-IS');}
+function fmtDate(d){if(!d)return '—';var dt=new Date(d);if(isNaN(dt))return '—';return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();}
 function daysUntil(d){if(!d)return null;var n=new Date();n.setHours(0,0,0,0);var t=new Date(d);t.setHours(0,0,0,0);return Math.round((t-n)/86400000);}
 function escHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function getSortVal(row,key){var d=row.data;if(key==='name')return row.name.toLowerCase();if(key==='ext')return d.ext;if(key==='hose')return d.hose;if(key==='smoke')return d.smoke;if(key==='total')return d.ext+d.hose+d.smoke+d.other;if(key==='next')return d.nextInsp||'9999-12-31';return row.name.toLowerCase();}
