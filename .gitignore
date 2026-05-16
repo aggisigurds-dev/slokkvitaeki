@@ -28,5 +28,14 @@ desktop.ini
 # Local-only PII / source assets — never commit, never deploy
 _customer-import-data.json
 
+# Supabase data backups — local restore points; never push (contain
+# customer PII and would bloat the repo). Run `node backup-supabase.mjs`
+# to refresh.
+backups/
+
+# One-shot scratch scripts and data dumps used during data migrations
+tmp_*.mjs
+tmp_*.json
+
 # Netlify CLI cache (if you ever install it)
 .netlify/
