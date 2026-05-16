@@ -65,25 +65,23 @@
   }
 
   /* ── DASHBOARD ──────────────────────────────────────────────── */
+  // 2026-05-16: v9.js's legacy "Dashboard" sidebar button was injected
+  // without a data-view attribute, which made it a rogue duplicate of
+  // patch 34's "Yfirlit" view button (when both labels resolved to
+  // "Yfirlit" in Icelandic). It also bypassed patch 88's
+  // hidden_nav_views preference. Patch 34 (with proper data-view="yfirlit")
+  // is the canonical dashboard now — this builder is a no-op. Clean up
+  // any existing rogue node so the sidebar reorders cleanly.
   function buildDashBtn() {
-    if (document.getElementById('_dash_nav')) return;
-    var nav = document.querySelector('.view-nav');
-    if (!nav) return;
-
-    var btn = document.createElement('button');
-    btn.id = '_dash_nav';
-    btn.className = 'vnav-btn';
-    btn.style.cssText = 'width:100%;display:flex;align-items:center;gap:8px;padding:8px 14px;background:none;border:none;color:rgba(255,255,255,0.75);cursor:pointer;font-size:13px;border-radius:8px;margin-bottom:2px;transition:background .15s;';
-    btn.onmouseenter = function(){ this.style.background='rgba(255,255,255,0.08)'; };
-    btn.onmouseleave = function(){ this.style.background='none'; };
-    btn.innerHTML = '<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span>'+t('dashboard')+'</span>';
-    btn.onclick = showDashboard;
-    nav.insertBefore(btn, nav.firstChild);
-
-    // Divider after button
-    var sep = document.createElement('div');
-    sep.style.cssText = 'height:1px;background:rgba(255,255,255,0.1);margin:6px 12px 8px;';
-    nav.insertBefore(sep, btn.nextSibling);
+    var stale = document.getElementById('_dash_nav');
+    if (stale) {
+      var sep = stale.nextElementSibling;
+      stale.remove();
+      // Remove the trailing divider too (height:1px style)
+      if (sep && sep.style && /height:\s*1px/.test(sep.style.cssText || '')) sep.remove();
+    }
+    // showDashboard is still callable from anywhere via window if needed,
+    // but no nav button is auto-created.
   }
 
   function showDashboard() {

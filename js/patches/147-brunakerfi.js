@@ -42,6 +42,20 @@
   }
   const MONTHS_IS = ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
 
+  function fmtKr(n) {
+    const v = Math.round(Number(n) || 0);
+    if (!v) return '—';
+    return v.toLocaleString('is-IS').replace(/,/g, '.') + ' kr';
+  }
+  function fmtKrShort(n) {
+    const v = Math.round(Number(n) || 0);
+    if (v === 0) return '';
+    if (v >= 1000000) return (v / 1000000).toFixed(1).replace('.0','').replace('.', ',') + 'M';
+    if (v >= 10000) return Math.round(v / 1000) + 'þ';
+    if (v >= 1000) return (v / 1000).toFixed(1).replace('.', ',') + 'þ';
+    return String(v);
+  }
+
   function getList() {
     const m = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
     return m && typeof m === 'object' ? m : {};
@@ -249,19 +263,76 @@
           ${list.map(c => renderCard(c)).join('')}
         </div>
 
+        ${(() => {
+          // Compute per-month revenue. For each month, use 2026's revenue
+          // for companies inspecting that month if their 2026 inspection
+          // is already done (i.e. the month has passed or is current);
+          // otherwise project from 2025's revenue. The "actual" flag tells
+          // us if it's billed (2026 entered) vs. projected (2025 fallback).
+          const today = new Date();
+          const curYear = today.getFullYear();
+          const curMonth = today.getMonth() + 1; // 1-12
+          let yearActual = 0;
+          let yearProjected = 0;
+          const monthRev = {};
+          for (let m = 1; m <= 12; m++) {
+            const arr = monthBuckets[m] || [];
+            let actual = 0, projected = 0;
+            for (const c of arr) {
+              const bk = c._bk || {};
+              const r26 = +bk.revenue_2026 || 0;
+              const r25 = +bk.revenue_2025 || 0;
+              // If we have a 2026 amount → it's actual; otherwise project from 2025
+              if (r26 > 0) actual += r26;
+              else if (r25 > 0) projected += r25;
+            }
+            monthRev[m] = { actual, projected, isPast: m < curMonth || curYear > 2026 };
+            yearActual += actual;
+            yearProjected += projected;
+          }
+          const yearTotal = yearActual + yearProjected;
+
+          return `
         <div style="margin-top:24px;padding:14px 18px;background:#fff;border:1px solid #e2e8f0;border-radius:10px">
-          <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📅 Ársskoðun-dagatal</div>
-          <div style="display:grid;grid-template-columns:repeat(12,1fr);gap:6px">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">📅 Ársskoðun-dagatal ${curYear}</div>
+            <div style="font-size:11px;color:#475569"><span style="color:#16a34a;font-weight:700">${fmtKr(yearActual)}</span> rauntekjur${yearProjected > 0 ? ` · <span style="color:#f59e0b">${fmtKr(yearProjected)}</span> áætlað` : ''}</div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(12,minmax(0,1fr)) 1.3fr;gap:6px;align-items:stretch">
             ${Array.from({length:12}, (_, i) => i + 1).map(m => {
               const arr = monthBuckets[m] || [];
-              return `<div style="background:${arr.length ? '#fef3c7' : '#f8fafc'};border:1px solid ${arr.length ? '#fde68a' : '#e2e8f0'};border-radius:7px;padding:8px;text-align:center;min-height:54px">
-                <div style="font-size:10px;font-weight:700;color:#92400e">${esc(MONTHS_IS[m-1].slice(0,3))}</div>
-                <div style="font-size:18px;font-weight:800;color:${arr.length ? '#92400e' : '#cbd5e1'};margin:2px 0">${arr.length}</div>
-                <div style="font-size:9px;color:#64748b">fyrirtæki</div>
+              const r = monthRev[m];
+              const totalKr = r.actual + r.projected;
+              const isActual = r.actual > 0;
+              const isProj = r.projected > 0 && r.actual === 0;
+              const bg = isActual ? '#dcfce7' : (isProj ? '#fef3c7' : (arr.length ? '#f1f5f9' : '#f8fafc'));
+              const bd = isActual ? '#bbf7d0' : (isProj ? '#fde68a' : (arr.length ? '#e2e8f0' : '#e2e8f0'));
+              const krColor = isActual ? '#15803d' : (isProj ? '#92400e' : '#94a3b8');
+              const krStyle = isProj ? 'font-style:italic' : '';
+              return `<div style="background:${bg};border:1px solid ${bd};border-radius:7px;padding:6px 4px;text-align:center;display:flex;flex-direction:column;justify-content:space-between;min-height:72px">
+                <div>
+                  <div style="font-size:10px;font-weight:700;color:#475569">${esc(MONTHS_IS[m-1].slice(0,3))}</div>
+                  <div style="font-size:16px;font-weight:800;color:${arr.length ? '#0f172a' : '#cbd5e1'};margin:1px 0">${arr.length}</div>
+                  <div style="font-size:9px;color:#64748b">fyrirtæki</div>
+                </div>
+                <div style="font-size:10.5px;font-weight:700;color:${krColor};margin-top:4px;padding-top:3px;border-top:1px solid rgba(0,0,0,0.06);font-variant-numeric:tabular-nums;${krStyle}">${fmtKrShort(totalKr) || '—'}</div>
               </div>`;
             }).join('')}
+            <div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;border:1px solid #0f172a;border-radius:7px;padding:6px 8px;text-align:center;display:flex;flex-direction:column;justify-content:space-between;min-height:72px">
+              <div>
+                <div style="font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase">Samtals</div>
+                <div style="font-size:14px;font-weight:800;margin:1px 0">${list.length}</div>
+                <div style="font-size:9px;color:#cbd5e1">fyrirtæki</div>
+              </div>
+              <div style="font-size:11px;font-weight:800;color:#86efac;margin-top:4px;padding-top:3px;border-top:1px solid rgba(255,255,255,0.15);font-variant-numeric:tabular-nums">${fmtKrShort(yearTotal)}</div>
+            </div>
           </div>
-        </div>
+          <div style="display:flex;gap:14px;justify-content:flex-end;margin-top:8px;font-size:10px;color:#64748b">
+            <span><span style="display:inline-block;width:10px;height:10px;background:#dcfce7;border:1px solid #bbf7d0;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Raun (2026)</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:#fef3c7;border:1px solid #fde68a;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Áætlað (2025)</span>
+          </div>
+        </div>`;
+        })()}
         `}
       </div>
     `;
@@ -299,6 +370,10 @@
       const cust = (v.vidskiptavinur_nafn || v.verkkaupi || v.customer_nafn || d.customer || '').toLowerCase();
       return cust === (c.nafn || '').toLowerCase();
     });
+    // Attachment count too — these are bills, contracts, etc. attached to
+    // the company (separate from filled-in template documents above).
+    const attsAll = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('company_attachments')) || {};
+    const attsCount = (attsAll[String(c.id)] || []).length;
     return `
       <div class="_bk-card" data-co-id="${c.id}" style="background:#fff;border:1px solid #e2e8f0;border-radius:11px;padding:13px 15px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,0.04);transition:all .15s" onmouseover="this.style.borderColor='#fca5a5'" onmouseout="this.style.borderColor='#e2e8f0'">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
@@ -322,7 +397,14 @@
             <div style="font-size:13px;font-weight:700;color:#92400e">${esc(monthLabel)}</div>
           </div>
         </div>
-        <div style="font-size:10.5px;color:#64748b">Síðasta skoðun: <strong style="color:#0f172a">${esc(lastIns)}</strong> · ${docs.length} skjöl vistuð</div>
+        <div style="font-size:10.5px;color:#64748b">Síðasta skoðun: <strong style="color:#0f172a">${esc(lastIns)}</strong> · ${docs.length} form · ${attsCount} skjöl</div>
+        ${(() => {
+          const r26 = +bk.revenue_2026 || 0;
+          const r25 = +bk.revenue_2025 || 0;
+          const useYear = r26 > 0 ? 2026 : (r25 > 0 ? 2025 : null);
+          const useVal = r26 > 0 ? r26 : r25;
+          return useYear ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 8px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;font-size:11px"><span style="font-weight:700;color:#166534">💰 Tekjur ${useYear}</span><span style="font-weight:800;color:#15803d;font-variant-numeric:tabular-nums">${fmtKr(useVal)}</span></div>` : '';
+        })()}
         <div style="display:flex;gap:5px;margin-top:3px;flex-wrap:wrap">
           <button class="_bk-open" type="button" style="flex:1;min-width:80px;padding:6px 8px;background:#0f172a;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">📂 Opna</button>
           <button class="_bk-skyrsla" type="button" style="padding:6px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600" title="Ný ársskoðun">📋 Skýrsla</button>
@@ -662,6 +744,16 @@
                 <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:3px">Síðasta skoðun</label>
                 <input id="_bk-last" type="date" value="${esc(bk.last_inspected || '')}" style="width:100%;padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13.5px;box-sizing:border-box">
               </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px">
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:700;color:#15803d;margin-bottom:3px">💰 Tekjur 2025 (kr)</label>
+                  <input id="_bk-rev25" type="number" min="0" step="1" value="${+bk.revenue_2025 || ''}" placeholder="0" style="width:100%;padding:8px 11px;border:1px solid #bbf7d0;border-radius:7px;font:inherit;font-size:13.5px;box-sizing:border-box;background:#f0fdf4;font-variant-numeric:tabular-nums">
+                </div>
+                <div>
+                  <label style="display:block;font-size:11px;font-weight:700;color:#15803d;margin-bottom:3px">💰 Tekjur 2026 (kr)</label>
+                  <input id="_bk-rev26" type="number" min="0" step="1" value="${+bk.revenue_2026 || ''}" placeholder="0" style="width:100%;padding:8px 11px;border:1px solid #bbf7d0;border-radius:7px;font:inherit;font-size:13.5px;box-sizing:border-box;background:#f0fdf4;font-variant-numeric:tabular-nums">
+                </div>
+              </div>
               <div>
                 <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin-bottom:3px">Athugasemd (brunakerfi)</label>
                 <textarea id="_bk-notes" rows="2" style="width:100%;padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box;resize:vertical">${esc(bk.notes || '')}</textarea>
@@ -731,7 +823,9 @@
         unit_count: parseInt(dlg.querySelector('#_bk-units').value, 10) || 0,
         inspect_month: parseInt(dlg.querySelector('#_bk-month').value, 10) || 0,
         last_inspected: dlg.querySelector('#_bk-last').value || null,
-        notes: dlg.querySelector('#_bk-notes').value.trim()
+        notes: dlg.querySelector('#_bk-notes').value.trim(),
+        revenue_2025: parseInt(dlg.querySelector('#_bk-rev25').value, 10) || 0,
+        revenue_2026: parseInt(dlg.querySelector('#_bk-rev26').value, 10) || 0
       };
       await saveOne(coId, entry);
 
@@ -906,13 +1000,23 @@
       attsListEl.innerHTML = '<div style="display:flex;flex-direction:column;gap:4px">' +
         list.map((a, i) => {
           const name = a.name || a.filename || ('Skjal ' + (i+1));
-          return `<div class="_bk-att-row" data-path="${esc(a.path || '')}" data-name="${esc(name)}" style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#f8fafc;border-radius:6px;font-size:11.5px;gap:8px;cursor:pointer" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#f8fafc'">
-            <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1e40af">📄 ${esc(name)}</div>
+          // Drive-link attachments (kind=bill, kind=contract, etc.) have a
+          // drive_url instead of a Supabase storage `path`. Show a small
+          // icon so the user knows it's a Drive link, not an uploaded file.
+          const isExt = !!(a.external || a.drive_url || a.drive_id);
+          const kindIcon = a.kind === 'bill' ? '🧾' : (a.kind === 'contract' ? '📜' : (isExt ? '🔗' : '📄'));
+          const dataAttr = isExt
+            ? `data-drive-url="${esc(a.drive_url || ('https://drive.google.com/file/d/' + a.drive_id + '/view'))}"`
+            : `data-path="${esc(a.path || '')}"`;
+          return `<div class="_bk-att-row" ${dataAttr} data-name="${esc(name)}" style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#f8fafc;border-radius:6px;font-size:11.5px;gap:8px;cursor:pointer" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#f8fafc'">
+            <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1e40af">${kindIcon} ${esc(name)}${isExt ? ' <span style="font-size:9px;color:#64748b">↗ Drive</span>' : ''}</div>
             <div style="color:#64748b;font-size:10px;flex-shrink:0">${esc(fmtDate(a.uploaded_at || a.created_at))}</div>
           </div>`;
         }).join('') + '</div>';
       attsListEl.querySelectorAll('._bk-att-row').forEach(r => {
         r.addEventListener('click', () => {
+          const ext = r.dataset.driveUrl;
+          if (ext) { window.open(ext, '_blank', 'noopener'); return; }
           const p = r.dataset.path;
           if (p) openAttachmentByPath(p, r.dataset.name);
         });

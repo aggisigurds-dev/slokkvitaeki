@@ -298,6 +298,15 @@
 
   // ── Preview / download ──────────────────────────────────────────────────
   async function openPreview(file) {
+    // Drive-link attachments (added by patch 147's brunakerfi bulk-import in
+    // session 2026-05-15) carry `drive_url` / `drive_id` instead of a Supabase
+    // Storage `path`. Open them directly in Drive viewer — patch 111's
+    // preview lightbox can't host Google Drive content securely anyway.
+    if (file && (file.drive_url || file.drive_id || file.external)) {
+      const driveUrl = file.drive_url || ('https://drive.google.com/file/d/' + file.drive_id + '/view');
+      window.open(driveUrl, '_blank', 'noopener');
+      return;
+    }
     const url = await getPublicUrl(file.path);
     if (!url) { alert('Gat ekki opnað skrá. Athugaðu nettengingu.'); return; }
     const ic = iconForType(file.content_type, file.name);
@@ -351,6 +360,12 @@
   }
 
   async function downloadFile(file) {
+    if (file && (file.drive_url || file.drive_id || file.external)) {
+      // Drive files — open the viewer; Drive handles download itself.
+      const driveUrl = file.drive_url || ('https://drive.google.com/file/d/' + file.drive_id + '/view');
+      window.open(driveUrl, '_blank', 'noopener');
+      return;
+    }
     const url = await getPublicUrl(file.path);
     if (!url) { alert('Gat ekki sótt skrá.'); return; }
     const a = document.createElement('a');

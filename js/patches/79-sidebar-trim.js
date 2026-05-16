@@ -26,6 +26,15 @@
     'Skoðun'
   ]);
 
+  // Strip the leading emoji + whitespace so "♻️ Áfyllingar" matches the
+  // plain "Áfyllingar" in the HIDE set. The previous exact-match logic
+  // silently no-op'd on every emoji-prefixed button label.
+  function stripLeadingEmoji(s) {
+    return String(s || '')
+      .replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{1F000}-\u{1F2FF}️‍\s]+/u, '')
+      .trim();
+  }
+
   function trim(root) {
     const nav = (root && root.querySelector ? root.querySelector('.view-nav, .sidebar') : null)
              || document.querySelector('.view-nav, .sidebar');
@@ -33,10 +42,11 @@
     nav.querySelectorAll('button, a').forEach(el => {
       if (el.dataset._sbtChecked) return;
       // Get the visible label — pick the last span (handles "[svg] [span]label")
-      // or the trimmed text content.
+      // or the trimmed text content. Then strip any leading emoji prefix.
       const span = el.querySelector('span');
-      const label = (span ? span.textContent : el.textContent || '').trim();
-      if (HIDE.has(label)) {
+      const rawLabel = (span ? span.textContent : el.textContent || '').trim();
+      const label = stripLeadingEmoji(rawLabel);
+      if (HIDE.has(label) || HIDE.has(rawLabel)) {
         el.style.display = 'none';
         // Also hide any preceding section divider/label that becomes orphaned
         // (best-effort; safer than removing because other patches may rely on it)

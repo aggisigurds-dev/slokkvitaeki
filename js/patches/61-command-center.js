@@ -120,7 +120,14 @@
       return '🌆 Gott kvöld';
     })();
 
-    const dayName = new Date().toLocaleDateString('is-IS', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    // Build the date string manually — Chrome on Windows falls back to
+    // en-US for 'is-IS' long-form locale data ("Saturday, May 16, 2026"),
+    // so we use Icelandic arrays directly to guarantee Icelandic output.
+    const WEEKDAYS_IS = ['sunnudagur','mánudagur','þriðjudagur','miðvikudagur','fimmtudagur','föstudagur','laugardagur'];
+    const MONTHS_LONG_IS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
+    const _dn = new Date();
+    const dayName = WEEKDAYS_IS[_dn.getDay()].charAt(0).toUpperCase() + WEEKDAYS_IS[_dn.getDay()].slice(1) +
+                    ', ' + _dn.getDate() + '. ' + MONTHS_LONG_IS[_dn.getMonth()] + ' ' + _dn.getFullYear();
 
     main.innerHTML = `
       <div style="max-width:1280px;margin:0 auto">
@@ -228,17 +235,29 @@
   // max value in the window; today's bar is highlighted, and bars with
   // zero revenue still show a thin baseline so the day labels stay aligned.
   function revenueChartHtml(buckets, max, weekTotal, avg) {
+    // Scale by absolute value so a day with a -323k credit gets a visible
+    // bar (going down) without being lost to a height of 1.5%.
+    const absMax = Math.max(1, ...buckets.map(b => Math.abs(b.total)));
     const bars = buckets.map(b => {
-      const pct = max > 0 ? (b.total / max) * 100 : 0;
-      const heightPct = Math.max(b.total > 0 ? 4 : 1.5, pct); // min 4% so non-zero bars are visible
-      const barColor = b.isToday ? '#dc2626' : (b.total > 0 ? '#16a34a' : '#e2e8f0');
-      const labelColor = b.isToday ? '#dc2626' : '#64748b';
-      const valueLabel = b.total > 0 ? fmtKr(b.total) : '—';
+      const isNeg = b.total < 0;
+      const pct = Math.abs(b.total) / absMax * 100;
+      const heightPct = Math.max(b.total !== 0 ? 4 : 1.5, pct);
+      const barColor = b.isToday ? '#dc2626'
+                       : isNeg ? '#f87171'
+                       : (b.total > 0 ? '#16a34a' : '#e2e8f0');
+      const labelColor = b.isToday ? '#dc2626' : (isNeg ? '#dc2626' : '#64748b');
+      const valueLabel = b.total === 0 ? '—' : fmtKr(b.total);
+      const labelText = b.total === 0 ? '' : (isNeg ? '−' + fmtKrShort(Math.abs(b.total)) : fmtKrShort(b.total));
+      // Negative days render the bar from the top down so it visually
+      // reads as a deduction. Otherwise normal bottom-up bar.
+      const negStyle = isNeg
+        ? 'align-self:flex-start;border-radius:2px 2px 6px 6px;'
+        : '';
       return `
         <div class="cc-chart-col" title="${b.label} ${b.dayNum} · ${valueLabel}">
-          <div class="cc-chart-val" style="color:${labelColor};${b.total === 0 ? 'opacity:.5' : ''}">${b.total > 0 ? fmtKrShort(b.total) : ''}</div>
+          <div class="cc-chart-val" style="color:${labelColor};${b.total === 0 ? 'opacity:.5' : ''}">${labelText}</div>
           <div class="cc-chart-bar-wrap">
-            <div class="cc-chart-bar" style="height:${heightPct}%;background:${barColor};${b.isToday ? 'box-shadow:0 0 0 2px rgba(220,38,38,.18)' : ''}"></div>
+            <div class="cc-chart-bar" style="height:${heightPct}%;background:${barColor};${negStyle}${b.isToday ? 'box-shadow:0 0 0 2px rgba(220,38,38,.18)' : ''}"></div>
           </div>
           <div class="cc-chart-day" style="color:${labelColor};font-weight:${b.isToday ? '700' : '500'}">${b.label}</div>
           <div class="cc-chart-date" style="color:${labelColor};opacity:.7">${b.dayNum}</div>

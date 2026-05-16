@@ -17,6 +17,17 @@
   if (window.__companiesDiagnoseInstalled) return;
   window.__companiesDiagnoseInstalled = true;
 
+  // 2026-05-16: original Companies-click bug was solved by patch 146. This
+  // instrumentation now runs OFF by default to avoid per-call wrapper +
+  // stack-trace overhead in production. To re-enable for debugging, run in
+  // the browser console:
+  //   window.__diagEnable = true;
+  //   location.reload();
+  if (!window.__diagEnable) {
+    console.log('[companies-diagnose] inactive — set window.__diagEnable=true and reload to enable');
+    return;
+  }
+
   function shortStack() {
     try {
       const stack = new Error().stack || '';

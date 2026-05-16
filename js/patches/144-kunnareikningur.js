@@ -353,7 +353,7 @@
       </style>
       </head><body>
         <div class="hd">
-          <div><img src="/img/logo.png" class="logo"></div>
+          <div><img src="${window.location.origin}/img/logo.png" class="logo" onerror="this.style.display='none'"></div>
           <div class="meta">
             Slökkvitæki ehf · Helluhrauni 10, 220 Hafnarfirði<br>
             kt 600508-0400 · vsknr. 98107 · Sími 565-4080<br>
