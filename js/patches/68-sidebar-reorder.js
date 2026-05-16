@@ -56,6 +56,7 @@
     SEP,
     ['Sala'],
     ['Drög'],
+    ['Til að rukka'],
     ['Afgreiðsla'],
     ['Verkstæði'],
     SEP,

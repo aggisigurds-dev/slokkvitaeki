@@ -309,6 +309,20 @@
   // ----- State -----
   let allSales = [];
   let customerMap = new Map(); // id -> { kennitala, simi, netfang, ... }
+  let vbByParent = {};         // R-NNN -> [status1, status2, ...] from verkbeidnir
+
+  // Pickup-status helper: returns { icon, label, color } based on whether all
+  // related verkbeiðnir for a sale have been collected, are still at the shop,
+  // or there's no linkage. Only meaningful for greitt_sidar / reikningur sales.
+  function pickupStatusFor(saleNum) {
+    const statuses = vbByParent[saleNum] || [];
+    if (!statuses.length) return null;
+    const allCollected = statuses.every(s => s === 'collected' || s === 'done');
+    const anyAtShop = statuses.some(s => s === 'received' || s === 'ready' || s === 'inprogress');
+    if (allCollected) return { icon: '✅', label: 'Sótt', color: '#16a34a' };
+    if (anyAtShop) return { icon: '🏪', label: 'Hjá þér', color: '#f59e0b' };
+    return null;
+  }
   let productMap = new Map();  // id -> { nafn, ... }
   let filtered = [];
   let sortKey = 'date';
@@ -320,12 +334,21 @@
   async function loadAllSales() {
     const SB = getSB();
     if (!SB) throw new Error('Supabase not initialized');
-    const [salesRes, custRes, prodRes] = await Promise.all([
+    const [salesRes, custRes, prodRes, vbRes] = await Promise.all([
       SB.from('solur').select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,paid_at,paid_method').neq('status','drog').order('created_at', { ascending: false }),
       SB.from('vidskiptavinir').select('id,kennitala,nafn,simi,netfang'),
-      SB.from('vorur').select('id,nafn,flokkur')
+      SB.from('vorur').select('id,nafn,flokkur'),
+      // Pickup status for greitt_sidar / reikningur sales: read verkbeidnir
+      // status per parent sale-number so the row can show 🏪 Hjá þér / ✅ Sótt.
+      SB.from('verkbeidnir').select('num,status').like('num', 'R-%-V%')
     ]);
     if (salesRes.error) throw salesRes.error;
+    // Build a (parent → statuses[]) map for pickup-status lookup later.
+    vbByParent = {};
+    (vbRes && vbRes.data || []).forEach(v => {
+      const parent = String(v.num || '').replace(/-V\d+$/, '');
+      (vbByParent[parent] = vbByParent[parent] || []).push(v.status);
+    });
     allSales = (salesRes.data || []).map(s => {
       const linur = Array.isArray(s.linur) ? s.linur : [];
       // Recompute totals from linur for safety (fallback to stored values)
@@ -536,7 +559,16 @@
         + '<td class="num-col">' + fmtNum(s.ex) + '</td>'
         + '<td class="num-col">' + fmtNum(s.vsk) + '</td>'
         + '<td class="num-col" style="font-weight:700;">' + fmtNum(s.total) + '</td>'
-        + '<td><span class="by-payment-pill ' + payClass(s.payment) + '">' + esc(s.payment || '—') + '</span></td>'
+        + '<td><span class="by-payment-pill ' + payClass(s.payment) + '">' + esc(s.payment || '—') + '</span>'
+        + (
+          // For unpaid greitt_sidar / reikningur, show a tiny pickup-status
+          // chip so the user knows at a glance whether to bill the customer
+          // (✅ Sótt) or wait (🏪 Hjá þér).
+          !s.paid_at && (s.payment === 'greitt_sidar' || s.payment === 'reikningur')
+            ? (() => { const ps = pickupStatusFor(s.num); return ps ? '<div style="display:inline-block;margin-left:6px;font-size:11px;color:' + ps.color + ';font-weight:600;white-space:nowrap" title="Pickup status">' + ps.icon + ' ' + esc(ps.label) + '</div>' : ''; })()
+            : ''
+          )
+        + '</td>'
         + '</tr>'
       );
       if (isOpen) {
