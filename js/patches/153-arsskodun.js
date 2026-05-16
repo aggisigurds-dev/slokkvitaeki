@@ -399,6 +399,11 @@
     }));
   }
 
+  function attCount(coId) {
+    const attsAll = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('company_attachments')) || {};
+    return (attsAll[String(coId)] || []).length;
+  }
+
   function renderCards(arr) {
     const today = new Date();
     const curYear = today.getFullYear();
@@ -449,6 +454,10 @@
                 </div>
               </div>
 
+              ${(() => {
+                const ac = attCount(c.id);
+                return ac > 0 ? `<div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:#64748b"><span style="background:#dbeafe;color:#1d4ed8;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #93c5fd">📎 ${ac} ${ac === 1 ? 'skjal' : 'skjöl'}</span></div>` : '';
+              })()}
               ${aminning ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:5px 8px;font-size:10.5px;color:#92400e;line-height:1.35"><strong style="font-weight:700">📌 Áminning:</strong> ${esc(aminning.slice(0, 140))}${aminning.length>140?'…':''}</div>` : ''}
 
               <div style="display:flex;gap:5px;margin-top:3px">
@@ -601,6 +610,35 @@
               }).join('')}
             </div>
           </div>
+
+          ${(() => {
+            // Pull Drive-link attachments from AppSettings.company_attachments
+            const attsAll = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('company_attachments')) || {};
+            const list = attsAll[String(coId)] || [];
+            if (!list.length) return '';
+            // Sort newest year first
+            const sorted = list.slice().sort((a, b) => (+b.year || 0) - (+a.year || 0));
+            return `
+              <div>
+                <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px">📎 Skjöl <span style="color:#94a3b8;font-weight:500">(${list.length})</span></div>
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  ${sorted.map(a => {
+                    const url = a.drive_url || (a.drive_id ? 'https://drive.google.com/file/d/' + a.drive_id + '/view' : '#');
+                    const icon = a.kind === 'samningur' ? '📜' : '🧾';
+                    const yearTag = a.year ? `<span style="background:#f0fdf4;color:#15803d;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #bbf7d0;margin-left:6px">${a.year}</span>` : '';
+                    const autoTag = a.auto_matched ? '<span style="color:#94a3b8;font-size:10px" title="Sjálfkrafa pörun">✦</span>' : '';
+                    return `<a href="${esc(url)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;background:#fafafa;border:1px solid #f1f5f9;border-radius:6px;padding:6px 10px;text-decoration:none;color:#0f172a;font-size:11.5px;transition:background .1s" onmouseover="this.style.background='#fff';this.style.borderColor='#cbd5e1'" onmouseout="this.style.background='#fafafa';this.style.borderColor='#f1f5f9'">
+                      <span style="font-size:14px">${icon}</span>
+                      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.name || 'Skjal')}</span>
+                      ${yearTag}
+                      ${autoTag}
+                      <span style="color:#94a3b8;font-size:10px">↗</span>
+                    </a>`;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          })()}
 
           ${history.length ? `
           <div>
