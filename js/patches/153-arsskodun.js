@@ -77,8 +77,16 @@
   const MONTHS_IS_SHORT = ['Jan','Feb','Mar','Apr','Maí','Jún','Júl','Ágú','Sep','Okt','Nóv','Des'];
   // Filter out junk áminning entries — sometimes the sheet has "0 kr",
   // "FALSE", or short throwaway strings that aren't real notes.
+  //
+  // Some rows got polluted with a leading "FALSE" / "TRUE" / "0 kr" /
+  // "FALSE\n" prefix during the earlier Viðskiptavinir-sheet enrichment
+  // (the parser read one column too early — c[38]=Falinn? instead of
+  // c[39]=Áminning). Cheaper to strip at read time than to re-import.
   function cleanAminning(s) {
-    const t = String(s == null ? '' : s).trim();
+    let t = String(s == null ? '' : s).trim();
+    if (!t) return '';
+    // Strip junk prefix (single token + separator)
+    t = t.replace(/^(false|true|0\s*kr|null|—|-)\s*[\n,;.\s]*/i, '').trim();
     if (!t) return '';
     if (/^(0\s*kr|false|true|—|-|0|null)$/i.test(t)) return '';
     if (t.length < 4) return '';                 // single words / typos
@@ -242,9 +250,17 @@
     }
     const q = state.search.trim().toLowerCase();
     if (q) {
+      // Diacritic-insensitive: normalise BOTH sides via NFD + strip combining
+      // marks, then also fold the Icelandic-specific letters that don't have
+      // an obvious ASCII equivalent (þ → th, ð → d, æ → ae, ö → o).
+      const fold = s => String(s || '').toLowerCase()
+        .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+        .replace(/þ/g, 'th').replace(/ð/g, 'd')
+        .replace(/æ/g, 'ae').replace(/ö/g, 'o');
+      const qn = fold(q);
       arr = arr.filter(c => {
         const hay = (c.nafn || '') + ' ' + (c.kennitala || '') + ' ' + (c.heimilisfang || '');
-        return hay.toLowerCase().includes(q);
+        return fold(hay).includes(qn);
       });
     }
     if (state.sort === 'alpha') {
@@ -304,10 +320,11 @@
       <div style="max-width:1400px;margin:0 auto;padding:18px 22px 60px">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:14px">
           <div>
-            <h1 style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">📋 Ársskoðun</h1>
-            <div style="font-size:12px;color:#64748b;margin-top:2px">${all.length} fyrirtæki · ${all.filter(c => c._ars && c._ars.equipment).length} með árlegri slökkvitækjaskoðun</div>
+            <h1 style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">🏢 Fyrirtæki</h1>
+            <div style="font-size:12px;color:#64748b;margin-top:2px">${all.length} fyrirtæki · ${arsAll.length} í árlegri slökkvitækjaskoðun</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button id="_ars-new" type="button" style="padding:7px 14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Nýtt fyrirtæki</button>
             <div style="display:flex;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;background:#fff">
               <button data-view-mode="card" class="_ars-vm" style="padding:7px 14px;border:none;background:${state.view==='card'?'#0f172a':'#fff'};color:${state.view==='card'?'#fff':'#475569'};cursor:pointer;font:inherit;font-size:12px;font-weight:600">🟦 Kort</button>
               <button data-view-mode="list" class="_ars-vm" style="padding:7px 14px;border:none;background:${state.view==='list'?'#0f172a':'#fff'};color:${state.view==='list'?'#fff':'#475569'};cursor:pointer;font:inherit;font-size:12px;font-weight:600;border-left:1px solid #cbd5e1">📋 Listi</button>
@@ -388,6 +405,7 @@
     main.querySelectorAll('._ars-vm').forEach(b => b.addEventListener('click', () => {
       state.view = b.dataset.viewMode; saveState(); render();
     }));
+    main.querySelector('#_ars-new')?.addEventListener('click', openNewCompanyDialog);
     main.querySelector('#_ars-sort')?.addEventListener('change', e => {
       state.sort = e.target.value; saveState(); render();
     });
@@ -692,18 +710,31 @@
             `;
           })()}
 
-          ${history.length ? `
-          <div>
-            <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px">📜 Saga</div>
-            <div style="display:flex;flex-direction:column;gap:4px">
-              ${history.slice().sort((a,b)=>String(b.year).localeCompare(String(a.year))).map(h => `
-                <div style="background:#fafafa;border:1px solid #f1f5f9;border-radius:6px;padding:6px 10px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:11.5px">
-                  <div><strong style="color:#0f172a">${esc(String(h.year))}</strong> <span style="color:#64748b">${esc(h.skodun || '')}</span></div>
-                  <div style="color:#475569;font-size:11px">${esc((h.stada||'').replace(/_/g, ' ')) || ''}</div>
-                </div>
-              `).join('')}
-            </div>
-          </div>` : ''}
+          ${(() => {
+            if (!history.length) return '';
+            // Dedupe: úttektir sometimes records the same kt twice for the
+            // same inspection month (e.g. the customer had two work orders
+            // that month). Collapse by year+skodun, keeping the entry with
+            // a status if both exist.
+            const seen = {};
+            for (const h of history) {
+              const key = String(h.year) + '|' + String(h.skodun || '');
+              if (!seen[key] || (!seen[key].stada && h.stada)) seen[key] = h;
+            }
+            const rows = Object.values(seen).sort((a, b) => String(b.year).localeCompare(String(a.year)));
+            return `
+            <div>
+              <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px">📜 Saga <span style="color:#94a3b8;font-weight:500">(${rows.length})</span></div>
+              <div style="display:flex;flex-direction:column;gap:4px">
+                ${rows.map(h => `
+                  <div style="background:#fafafa;border:1px solid #f1f5f9;border-radius:6px;padding:6px 10px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:11.5px">
+                    <div><strong style="color:#0f172a">${esc(String(h.year))}</strong> <span style="color:#64748b">${esc(h.skodun || '')}</span></div>
+                    <div style="color:#475569;font-size:11px">${esc((h.stada||'').replace(/_/g, ' ')) || ''}</div>
+                  </div>
+                `).join('')}
+              </div>
+            </div>`;
+          })()}
 
           <div style="display:flex;gap:7px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #f1f5f9">
             <button class="_ars-go-fyrirt" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:#0f172a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🏢 Opna fyrirtæki</button>
@@ -813,38 +844,110 @@
     document.body.appendChild(bg);
   }
 
+  // ── New-company dialog ───────────────────────────────────────────────────
+  // Lightweight inline form: nafn + kennitala + heimilisfang + sími + netfang.
+  // Saves directly into fyrirtaeki (no Ársskoðun data — they can edit it
+  // afterwards from the detail modal). Reloads the list on success.
+  function openNewCompanyDialog() {
+    document.querySelectorAll('._ars-modal-bg').forEach(n => n.remove());
+    const bg = document.createElement('div');
+    bg.className = '_ars-modal-bg';
+    bg.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:60px 16px;overflow-y:auto';
+    bg.innerHTML = `
+      <div style="background:#fff;border-radius:14px;max-width:520px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,0.4);overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:16px;font-weight:700;color:#0f172a">+ Nýtt fyrirtæki</div>
+          <button class="_ars-new-close" type="button" style="background:transparent;border:none;font-size:24px;color:#94a3b8;cursor:pointer;line-height:1;padding:0 4px">×</button>
+        </div>
+        <div style="padding:18px;display:flex;flex-direction:column;gap:10px">
+          <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#475569;font-weight:700;text-transform:uppercase">Nafn *<input data-f="nafn" required style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;color:#0f172a;background:#fff;outline:none"/></label>
+          <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#475569;font-weight:700;text-transform:uppercase">Kennitala<input data-f="kennitala" placeholder="123456-7890" style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;color:#0f172a;background:#fff;outline:none;font-family:monospace"/></label>
+          <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#475569;font-weight:700;text-transform:uppercase">Heimilisfang<input data-f="heimilisfang" style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;color:#0f172a;background:#fff;outline:none"/></label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#475569;font-weight:700;text-transform:uppercase">Sími<input data-f="simi" style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;color:#0f172a;background:#fff;outline:none"/></label>
+            <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#475569;font-weight:700;text-transform:uppercase">Netfang<input data-f="netfang" type="email" style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;color:#0f172a;background:#fff;outline:none"/></label>
+          </div>
+          <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#475569;font-weight:700;text-transform:uppercase">Tengiliður<input data-f="tengiliður" style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;color:#0f172a;background:#fff;outline:none"/></label>
+          <div class="_ars-new-err" style="color:#dc2626;font-size:12px;display:none"></div>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button class="_ars-new-save" type="button" style="flex:1;padding:9px 14px;background:#15803d;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">💾 Vista</button>
+            <button class="_ars-new-cancel" type="button" style="padding:9px 14px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:13px">Hætta við</button>
+          </div>
+        </div>
+      </div>
+    `;
+    bg.addEventListener('click', e => { if (e.target === bg) bg.remove(); });
+    bg.querySelector('._ars-new-close').addEventListener('click', () => bg.remove());
+    bg.querySelector('._ars-new-cancel').addEventListener('click', () => bg.remove());
+    setTimeout(() => bg.querySelector('input[data-f="nafn"]').focus(), 50);
+    bg.querySelector('._ars-new-save').addEventListener('click', async () => {
+      const errEl = bg.querySelector('._ars-new-err');
+      errEl.style.display = 'none';
+      const data = {};
+      bg.querySelectorAll('input[data-f]').forEach(i => {
+        const v = String(i.value || '').trim();
+        if (v) data[i.dataset.f] = v;
+      });
+      if (!data.nafn) {
+        errEl.textContent = 'Nafn er nauðsynlegt.';
+        errEl.style.display = 'block';
+        return;
+      }
+      const SB = getSB();
+      if (!SB) { errEl.textContent = 'Engin tenging við gagnagrunn.'; errEl.style.display = 'block'; return; }
+      const { data: rows, error } = await SB.from('fyrirtaeki').insert(data).select();
+      if (error) {
+        errEl.textContent = 'Vista mistókst: ' + error.message;
+        errEl.style.display = 'block';
+        return;
+      }
+      bg.remove();
+      await loadAll();
+      render();
+      // Open the newly-created row's detail modal so user can keep editing
+      if (rows && rows[0]) {
+        setTimeout(() => openDetail(rows[0].id), 100);
+      }
+    });
+    document.body.appendChild(bg);
+  }
+
   // ── Map deep-link ────────────────────────────────────────────────────────
-  // Opens Þjónustutæki and tries to focus the map on this company.
-  function openOnMap(coId) {
+  // Switch to view-field (Þjónustutæki / Leaflet map) and pan-zoom to the
+  // company's marker. Uses the window.MapFix.focusCompany helper exposed
+  // by mapfix.js, which polls until the map + markers are ready.
+  //
+  // Failure modes (the helper returns { ok:false, reason:... }):
+  //   • no-map      — Leaflet hasn't initialised yet (rare; view never opened)
+  //   • no-marker   — Company has no cached geocoordinate; we toast the user
+  //                   and link them to "Uppfæra" (the geocoding button).
+  async function openOnMap(coId) {
     const co = _cache.byId[coId];
     if (!co) return;
     if (!window.App || !window.App.switchView) return;
-    // Stash the deep-link so the Þjónustutæki page can pick it up after
-    // its data has loaded.
-    try {
-      sessionStorage.setItem('_ars_focus_company', JSON.stringify({
-        id: coId, nafn: co.nafn || '', kennitala: co.kennitala || ''
-      }));
-    } catch (_) {}
     window.App.switchView('field');
-    // Try to focus once the view is rendered. Re-poll a few times because
-    // Field is async.
-    let tries = 0;
-    function tryFocus() {
-      tries++;
-      const focusFn = window.Field && (window.Field.focusCompany || window.Field.focusOnCompany || window.Field.openCompany);
-      if (focusFn) {
-        try { focusFn.call(window.Field, coId, co.nafn); return; } catch (_) {}
-      }
-      // Fallback: try to set the search box value and trigger filter
-      const search = document.querySelector('#view-field input[type="search"], #view-field input[type="text"]');
-      if (search) {
-        search.value = co.nafn || '';
-        search.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-      if (tries < 8) setTimeout(tryFocus, 250);
+    if (!window.MapFix || typeof window.MapFix.focusCompany !== 'function') {
+      // Old mapfix.js without the focusCompany helper — best we can do
+      // is leave the user on the map view.
+      return;
     }
-    setTimeout(tryFocus, 350);
+    const result = await window.MapFix.focusCompany(coId, { maxTries: 30, zoom: 17 });
+    if (!result.ok) {
+      const msg = result.reason === 'no-marker'
+        ? 'Þetta fyrirtæki er ekki staðsett á korti. Smelltu á "Uppfæra" hnappinn til að sækja staðsetningu.'
+        : 'Kortið er ekki tilbúið ennþá — reyndu aftur eftir nokkrar sekúndur.';
+      if (window.Toast && window.Toast.show) {
+        window.Toast.show(msg);
+      } else {
+        // Simple inline toast — keeps user informed even if the global
+        // Toast helper isn't around yet.
+        const t = document.createElement('div');
+        t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;border-radius:8px;font:13px/1.4 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:99999;max-width:340px;text-align:center';
+        t.textContent = msg;
+        document.body.appendChild(t);
+        setTimeout(() => t.remove(), 4500);
+      }
+    }
   }
 
   // ── Boot ─────────────────────────────────────────────────────────────────

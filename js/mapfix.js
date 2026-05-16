@@ -204,4 +204,40 @@
   } else {
     init();
   }
+
+  // Public API for deep-linking from other views (e.g. the new Fyrirtæki
+  // page in patch 153). Call MapFix.focusCompany(coId) — it pans, zooms,
+  // and opens the popup. Caller is responsible for switching to view-field
+  // first; this helper retries while the map / markers are still loading.
+  window.MapFix = window.MapFix || {};
+  window.MapFix.focusCompany = function(coId, opts){
+    coId = parseInt(coId, 10);
+    opts = opts || {};
+    var maxTries = opts.maxTries || 20;
+    var zoom = opts.zoom != null ? opts.zoom : 16;
+    var tries = 0;
+    return new Promise(function(resolve){
+      function attempt(){
+        tries++;
+        var map = window._slokk_map;
+        var marker = map && state.markers && state.markers[coId];
+        if(map && marker){
+          try {
+            map.setView(marker.getLatLng(), zoom, { animate: true });
+            // Defer popup open until pan finishes so it lands centred.
+            setTimeout(function(){ try { marker.openPopup(); } catch(_){} }, 350);
+            resolve({ ok: true, marker: marker });
+            return;
+          } catch(e){ /* fall through to retry */ }
+        }
+        // Not ready yet — keep polling. instantRender() is called from
+        // tick() every 500 ms once view-field is active.
+        if(tries < maxTries){ setTimeout(attempt, 250); }
+        else resolve({ ok: false, reason: !map ? 'no-map' : 'no-marker' });
+      }
+      attempt();
+    });
+  };
+  // Expose marker map (read-only diagnostic; patches shouldn't mutate)
+  window.MapFix.getMarkers = function(){ return state.markers; };
 })();
