@@ -63,6 +63,7 @@
     ['Þjónustutæki'],
     ['Fyrirtækjaþjónusta', 'Fyrirtæki'],
     ['Brunakerfisþjónusta'],
+    ['Ársskoðun'],
     ['Viðskiptavinir'],
     SEP,
     ['Geymsla'],

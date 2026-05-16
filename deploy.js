@@ -27,8 +27,8 @@ if (!TOKEN) {
 const API   = 'https://api.netlify.com/api/v1';
 const ROOT  = process.cwd();
 
-const SKIP_DIRS = new Set(['node_modules', '.git', '.netlify', '.vscode', '.idea', 'tmp', 'scratch', '.claude']);
-const SKIP_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini', '.gitignore', '.env', '.env.local', 'package.json', 'package-lock.json', 'deploy.js', 'verify.js']);
+const SKIP_DIRS = new Set(['node_modules', '.git', '.netlify', '.vscode', '.idea', 'tmp', 'scratch', '.claude', 'backups']);
+const SKIP_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini', '.gitignore', '.env', '.env.local', 'package.json', 'package-lock.json', 'deploy.js', 'verify.js', 'backup-supabase.mjs']);
 
 function* walk(dir) {
   for (const name of readdirSync(dir)) {
@@ -41,6 +41,7 @@ function* walk(dir) {
       !SKIP_FILES.has(name) &&
       !/\.md$/i.test(name) &&
       !name.startsWith('_') &&     // local scratch / source assets (e.g. _customer-import-data.json, _logo2.jpg) — may contain PII
+      !/^tmp_/.test(name) &&       // one-shot migration scripts + their JSON dumps (mirror .gitignore rule) — contain customer PII
       !/\.sql$/i.test(name)        // schema migrations, run via Supabase SQL Editor — never serve publicly
     ) yield rel;
   }
