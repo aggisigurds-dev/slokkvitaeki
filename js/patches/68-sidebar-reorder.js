@@ -61,9 +61,8 @@
     ['Verkstæði'],
     SEP,
     ['Þjónustutæki'],
-    ['Fyrirtækjaþjónusta', 'Fyrirtæki'],
+    ['Fyrirtækjaþjónusta', 'Fyrirtæki'],  // patch 153 hijacks this slot — old Fyrirtæki (view-companies) is hidden
     ['Brunakerfisþjónusta'],
-    ['Ársskoðun'],
     ['Viðskiptavinir'],
     SEP,
     ['Geymsla'],

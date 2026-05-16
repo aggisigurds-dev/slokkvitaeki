@@ -101,52 +101,70 @@
     if (window.AppSettings && window.AppSettings.load) {
       try { await window.AppSettings.load(); } catch (_) {}
     }
-    const map = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
-    const ids = Object.keys(map).map(k => +k).filter(Boolean);
+    const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
 
-    let companies = [];
-    if (ids.length) {
-      // Pull in batches of 80 to stay under PostgREST URL limits
-      for (let i = 0; i < ids.length; i += 80) {
-        const batch = ids.slice(i, i + 80);
-        const { data } = await SB.from('fyrirtaeki')
-          .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir')
-          .in('id', batch);
-        companies.push(...(data || []));
-      }
-    }
-    _cache.allCompanies = companies;
-    _cache.byId = Object.fromEntries(companies.map(c => [c.id, c]));
-    _cache.list = companies.map(c => ({
+    // Load ALL fyrirtaeki rows (not just árskoðun customers). This replaces
+    // the old Fyrirtæki page entirely. PostgREST paginates at 1000 rows by
+    // default, which is more than enough for current data.
+    const { data: companies, error } = await SB.from('fyrirtaeki')
+      .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida')
+      .order('nafn');
+    if (error) { console.error('[arsskodun] loadAll', error); return; }
+    const allCompanies = companies || [];
+    _cache.allCompanies = allCompanies;
+    _cache.byId = Object.fromEntries(allCompanies.map(c => [c.id, c]));
+    _cache.list = allCompanies.map(c => ({
       ...c,
-      _ars: map[String(c.id)] || {}
+      _ars: arsMap[String(c.id)] || {}
     })).sort((a, b) => String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is'));
   }
 
   // ── Sidebar entry ────────────────────────────────────────────────────────
+  // Replace the OLD Fyrirtæki nav (data-view="companies") with our Ársskoðun
+  // entry — same position, new label. The old view is still available via
+  // direct URL (?view=companies) for the rare case a feature isn't here yet.
   function injectSidebar() {
     const nav = document.querySelector('nav.view-nav, .view-nav');
     if (!nav) { setTimeout(injectSidebar, 500); return; }
-    if (nav.querySelector('[data-view="' + NAV_KEY + '"]')) return;
-    // Insert AFTER Brunakerfisþjónusta if present, else AFTER Þjónustutæki,
-    // else at the end.
+    if (nav.querySelector('[data-view="' + NAV_KEY + '"]')) {
+      // Already injected — but make sure the old Fyrirtæki button is hidden.
+      hideOldFyrirtaekiBtn(nav);
+      return;
+    }
     const allBtns = Array.from(nav.querySelectorAll('.vnav-btn'));
-    const after = allBtns.find(b => /brunakerf/i.test(b.textContent || ''))
-              || allBtns.find(b => /þjónustutæki|fyrirtæki/i.test(b.textContent || ''))
+    // Find old companies nav (legacy "Fyrirtæki"). We'll insert RIGHT BEFORE
+    // it and then hide it, so our new entry lands in the same sidebar slot.
+    const oldFyrirtBtn = allBtns.find(b => b.getAttribute('data-view') === 'companies')
+                     || allBtns.find(b => /^\s*(🏢)?\s*Fyrirtæki\s*$/i.test(b.textContent || ''));
+    const after = oldFyrirtBtn
+              || allBtns.find(b => /brunakerf/i.test(b.textContent || ''))
+              || allBtns.find(b => /þjónustutæki/i.test(b.textContent || ''))
               || allBtns[0];
     const tpl = after || allBtns[0];
     if (!tpl) { setTimeout(injectSidebar, 500); return; }
     const btn = document.createElement('button');
     btn.className = (tpl.className || 'vnav-btn').replace(/\bactive\b/g, '').trim();
     btn.setAttribute('data-view', NAV_KEY);
-    btn.innerHTML = '<span style="margin-right:6px">📋</span>Ársskoðun';
+    btn.innerHTML = '<span style="margin-right:6px">🏢</span>Fyrirtæki';
     btn.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
       if (window.App && App.switchView) App.switchView(NAV_KEY);
       else show();
     });
-    if (after && after.parentNode) after.parentNode.insertBefore(btn, after.nextSibling);
-    else nav.appendChild(btn);
+    if (oldFyrirtBtn && oldFyrirtBtn.parentNode) {
+      // Insert BEFORE the old button so we take its slot.
+      oldFyrirtBtn.parentNode.insertBefore(btn, oldFyrirtBtn);
+    } else if (after && after.parentNode) {
+      after.parentNode.insertBefore(btn, after.nextSibling);
+    } else {
+      nav.appendChild(btn);
+    }
+    hideOldFyrirtaekiBtn(nav);
+  }
+  function hideOldFyrirtaekiBtn(nav) {
+    nav.querySelectorAll('.vnav-btn[data-view="companies"]').forEach(b => {
+      b.style.display = 'none';
+    });
   }
 
   // ── View container ───────────────────────────────────────────────────────
@@ -266,14 +284,19 @@
     if (!main) return;
     const all = _cache.list;
     const filtered = filteredSorted();
+    // Stats restricted to companies that ARE in árskoðun (have equipment).
+    // The full list still includes everyone — the user wanted the whole
+    // fyrirtækjaregistur in one tab, but tiles only count the ones that
+    // matter for yearly inspections.
+    const arsAll = all.filter(c => c._ars && c._ars.equipment);
 
     const today = new Date();
     const curYear = today.getFullYear();
     const monthCounts = Array(13).fill(0);
-    all.forEach(c => { const m = +c._ars.inspect_month || 0; if (m >= 1 && m <= 12) monthCounts[m]++; });
-    const doneThisYear = all.filter(c => +c._ars.last_year_inspected === curYear).length;
-    const totalEstimate = all.reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
-    const estDoneThisYear = all
+    arsAll.forEach(c => { const m = +c._ars.inspect_month || 0; if (m >= 1 && m <= 12) monthCounts[m]++; });
+    const doneThisYear = arsAll.filter(c => +c._ars.last_year_inspected === curYear).length;
+    const totalEstimate = arsAll.reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
+    const estDoneThisYear = arsAll
       .filter(c => +c._ars.last_year_inspected === curYear)
       .reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
 
@@ -282,7 +305,7 @@
         <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:14px">
           <div>
             <h1 style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">📋 Ársskoðun</h1>
-            <div style="font-size:12px;color:#64748b;margin-top:2px">${all.length} viðskiptavinir í árlegri slökkvitækjaskoðun</div>
+            <div style="font-size:12px;color:#64748b;margin-top:2px">${all.length} fyrirtæki · ${all.filter(c => c._ars && c._ars.equipment).length} með árlegri slökkvitækjaskoðun</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <div style="display:flex;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;background:#fff">
@@ -301,16 +324,16 @@
           <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Fjöldi</div>
             <div style="font-size:22px;font-weight:800;color:#0f172a;line-height:1.1;margin-top:2px">${all.length}</div>
-            <div style="font-size:10.5px;color:#64748b">viðskiptavinir alls</div>
+            <div style="font-size:10.5px;color:#64748b">${arsAll.length} í ársskoðun</div>
           </div>
           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Búið ${curYear}</div>
             <div style="font-size:22px;font-weight:800;color:#15803d;line-height:1.1;margin-top:2px">${doneThisYear}</div>
-            <div style="font-size:10.5px;color:#16a34a">${Math.round(doneThisYear/Math.max(all.length,1)*100)}% af öllum</div>
+            <div style="font-size:10.5px;color:#16a34a">${Math.round(doneThisYear/Math.max(arsAll.length,1)*100)}% af ársskoðun</div>
           </div>
           <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em">Eftir ${curYear}</div>
-            <div style="font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${all.length - doneThisYear}</div>
+            <div style="font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${arsAll.length - doneThisYear}</div>
             <div style="font-size:10.5px;color:#b45309">í pípunni</div>
           </div>
           <div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;border:1px solid #0f172a;border-radius:10px;padding:11px 13px">
@@ -559,13 +582,34 @@
     bg.innerHTML = `
       <div class="_ars-modal" style="background:#fff;border-radius:14px;max-width:780px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,0.4);overflow:hidden">
         <div style="padding:16px 20px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
-          <div>
-            <div style="font-size:18px;font-weight:700;color:#0f172a">${esc(c.nafn || '—')}</div>
-            <div style="font-size:11.5px;color:#64748b;margin-top:3px">${esc(fmtKt(c.kennitala) || '—')}${c.heimilisfang ? ' · 📍 ' + esc(c.heimilisfang) : ''}</div>
-            ${c.simi || c.farsimi ? `<div style="font-size:11px;color:#64748b;margin-top:1px">📞 ${esc([c.simi, c.farsimi].filter(Boolean).join(' / '))}</div>` : ''}
-            ${c.netfang ? `<div style="font-size:11px;color:#64748b;margin-top:1px">✉️ ${esc(c.netfang)}</div>` : ''}
+          <div style="flex:1;min-width:0">
+            <div class="_ars-info-view">
+              <div style="font-size:18px;font-weight:700;color:#0f172a">${esc(c.nafn || '—')}</div>
+              <div style="font-size:11.5px;color:#64748b;margin-top:3px">${esc(fmtKt(c.kennitala) || '—')}${c.heimilisfang ? ' · 📍 ' + esc(c.heimilisfang) : ''}</div>
+              ${c.simi || c.farsimi ? `<div style="font-size:11px;color:#64748b;margin-top:1px">📞 ${esc([c.simi, c.farsimi].filter(Boolean).join(' / '))}</div>` : ''}
+              ${c.netfang ? `<div style="font-size:11px;color:#64748b;margin-top:1px">✉️ ${esc(c.netfang)}</div>` : ''}
+              ${c['tengiliður'] ? `<div style="font-size:11px;color:#64748b;margin-top:1px">👤 ${esc(c['tengiliður'])}</div>` : ''}
+            </div>
+            <div class="_ars-info-edit" style="display:none">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Nafn<input data-field="nafn" value="${esc(c.nafn || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Kennitala<input data-field="kennitala" value="${esc(c.kennitala || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none;font-family:monospace"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;grid-column:1/-1">Heimilisfang<input data-field="heimilisfang" value="${esc(c.heimilisfang || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Sími<input data-field="simi" value="${esc(c.simi || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Farsími<input data-field="farsimi" value="${esc(c.farsimi || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Netfang<input data-field="netfang" type="email" value="${esc(c.netfang || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Tengiliður<input data-field="tengiliður" value="${esc(c['tengiliður'] || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none"/></label>
+              </div>
+              <div style="display:flex;gap:6px;margin-top:8px">
+                <button class="_ars-info-save" type="button" style="padding:6px 14px;background:#15803d;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">💾 Vista</button>
+                <button class="_ars-info-cancel" type="button" style="padding:6px 14px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:12px">Hætta við</button>
+              </div>
+            </div>
           </div>
-          <button class="_ars-close" type="button" style="background:transparent;border:none;font-size:24px;color:#94a3b8;cursor:pointer;line-height:1;padding:0 4px">×</button>
+          <div style="display:flex;gap:4px;flex-shrink:0">
+            <button class="_ars-info-toggle" type="button" title="Breyta upplýsingum" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;border-radius:5px;width:28px;height:28px;cursor:pointer;font-size:13px;padding:0">✏️</button>
+            <button class="_ars-close" type="button" style="background:transparent;border:none;font-size:24px;color:#94a3b8;cursor:pointer;line-height:1;padding:0 4px">×</button>
+          </div>
         </div>
 
         <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px">
@@ -599,15 +643,23 @@
           </div>` : ''}
 
           <div>
-            <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px">🧰 Þjónustutæki  <span style="color:#94a3b8;font-weight:500">(${eqTotal} alls)</span></div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+              <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase">🧰 Þjónustutæki  <span class="_ars-eq-total" style="color:#94a3b8;font-weight:500">(${eqTotal} alls)</span></div>
+              <button class="_ars-eq-toggle" type="button" title="Breyta tölum" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;border-radius:5px;padding:3px 8px;cursor:pointer;font:inherit;font-size:11px">✏️ Breyta</button>
+            </div>
+            <div class="_ars-eq-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
               ${eqRows.map(([k, label]) => {
                 const v = +eq[k] || 0;
-                return `<div style="background:${v?'#f8fafc':'#fff'};border:1px solid ${v?'#cbd5e1':'#f1f5f9'};border-radius:7px;padding:7px 9px;text-align:center">
+                return `<div data-eq-cell="${k}" style="background:${v?'#f8fafc':'#fff'};border:1px solid ${v?'#cbd5e1':'#f1f5f9'};border-radius:7px;padding:7px 9px;text-align:center;position:relative">
                   <div style="font-size:9.5px;color:#64748b;font-weight:600;line-height:1.2">${esc(label)}</div>
-                  <div style="font-size:18px;font-weight:800;color:${v?'#0f172a':'#cbd5e1'};margin-top:2px">${v||'·'}</div>
+                  <div class="_ars-eq-val" style="font-size:18px;font-weight:800;color:${v?'#0f172a':'#cbd5e1'};margin-top:2px">${v||'·'}</div>
+                  <input class="_ars-eq-input" data-eq="${k}" type="number" min="0" step="1" value="${v}" style="display:none;width:100%;padding:4px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:14px;font-weight:700;color:#0f172a;background:#fff;outline:none;text-align:center;margin-top:2px;box-sizing:border-box;-moz-appearance:textfield"/>
                 </div>`;
               }).join('')}
+            </div>
+            <div class="_ars-eq-actions" style="display:none;gap:6px;margin-top:8px">
+              <button class="_ars-eq-save" type="button" style="padding:6px 14px;background:#15803d;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">💾 Vista breytingar</button>
+              <button class="_ars-eq-cancel" type="button" style="padding:6px 14px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:12px">Hætta við</button>
             </div>
           </div>
 
@@ -665,6 +717,86 @@
       if (e.target === bg) bg.remove();
     });
     bg.querySelector('._ars-close').addEventListener('click', () => bg.remove());
+
+    // ── Contact info editing ────────────────────────────────────────────
+    const infoView = bg.querySelector('._ars-info-view');
+    const infoEdit = bg.querySelector('._ars-info-edit');
+    const infoToggle = bg.querySelector('._ars-info-toggle');
+    function setInfoMode(editing) {
+      infoView.style.display = editing ? 'none' : '';
+      infoEdit.style.display = editing ? '' : 'none';
+      infoToggle.style.display = editing ? 'none' : '';
+    }
+    infoToggle.addEventListener('click', () => setInfoMode(true));
+    bg.querySelector('._ars-info-cancel').addEventListener('click', () => setInfoMode(false));
+    bg.querySelector('._ars-info-save').addEventListener('click', async () => {
+      const patch = {};
+      infoEdit.querySelectorAll('input[data-field]').forEach(i => {
+        const f = i.dataset.field;
+        const v = String(i.value || '').trim();
+        // Only include fields that actually changed (null-vs-empty equivalence)
+        if (v !== String(c[f] || '').trim()) patch[f] = v || null;
+      });
+      if (!Object.keys(patch).length) { setInfoMode(false); return; }
+      const SB = getSB();
+      if (!SB) { alert('Engin tenging við gagnagrunn'); return; }
+      const { error } = await SB.from('fyrirtaeki').update(patch).eq('id', coId);
+      if (error) { alert('Vista mistókst: ' + error.message); return; }
+      // Update local cache + close modal & re-render
+      Object.assign(c, patch);
+      Object.assign(_cache.byId[coId] || {}, patch);
+      const inList = _cache.list.find(x => x.id === coId);
+      if (inList) Object.assign(inList, patch);
+      bg.remove();
+      render();
+    });
+
+    // ── Equipment editing ──────────────────────────────────────────────
+    const eqGrid = bg.querySelector('._ars-eq-grid');
+    const eqToggle = bg.querySelector('._ars-eq-toggle');
+    const eqActions = bg.querySelector('._ars-eq-actions');
+    function setEqMode(editing) {
+      eqGrid.querySelectorAll('._ars-eq-val').forEach(el => el.style.display = editing ? 'none' : '');
+      eqGrid.querySelectorAll('._ars-eq-input').forEach(el => el.style.display = editing ? '' : 'none');
+      eqActions.style.display = editing ? 'flex' : 'none';
+      eqToggle.style.display = editing ? 'none' : '';
+    }
+    eqToggle.addEventListener('click', () => setEqMode(true));
+    bg.querySelector('._ars-eq-cancel').addEventListener('click', () => setEqMode(false));
+    bg.querySelector('._ars-eq-save').addEventListener('click', async () => {
+      const newEq = {};
+      eqGrid.querySelectorAll('._ars-eq-input').forEach(i => {
+        newEq[i.dataset.eq] = Math.max(0, parseInt(i.value, 10) || 0);
+      });
+      // Save to AppSettings.arsskodun_customers[coId].equipment
+      if (!window.AppSettings || !window.AppSettings.save) {
+        alert('Engar stillingar tiltækar'); return;
+      }
+      const allMap = (window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
+      const entry = Object.assign({}, allMap[String(coId)] || {});
+      entry.co_id = coId;
+      entry.equipment = newEq;
+      // Re-compute estimated_yearly using cached parsed Áminning
+      const parsed = entry.aminning_parsed || null;
+      const PRICES = { lettvatn:3150, duft2:3150, duft6_12:3387, co2_2:3270, co2_5:6540, brunaslongur:4346, eldvarnarteppi:0, reykskynjarar:2346 };
+      let total = 0;
+      for (const k in PRICES) {
+        const qty = +newEq[k] || 0;
+        if (!qty) continue;
+        let unit = PRICES[k];
+        if (parsed && parsed.yfirferd_price > 0 && /^(lettvatn|duft|co2)/.test(k)) unit = parsed.yfirferd_price;
+        total += qty * unit;
+      }
+      if (parsed && parsed.discount_pct > 0) total = total * (1 - parsed.discount_pct / 100);
+      entry.estimated_yearly = Math.round(total);
+      const map = Object.assign({}, allMap, { [String(coId)]: entry });
+      const ok = await window.AppSettings.save({ [STORAGE_KEY]: map });
+      if (!ok) { alert('Vista mistókst'); return; }
+      // Update local cache + redraw page so the card reflects new counts
+      if (c._ars) { c._ars.equipment = newEq; c._ars.estimated_yearly = entry.estimated_yearly; }
+      bg.remove();
+      render();
+    });
     bg.querySelector('._ars-go-fyrirt').addEventListener('click', () => {
       bg.remove();
       if (window._openCompanySafe) window._openCompanySafe(coId);
