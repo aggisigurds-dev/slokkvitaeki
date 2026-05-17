@@ -141,11 +141,62 @@
     if (_cancelled) return;
     const customers = getArsCustomers();
     if (customers && customers.length) {
+      // Fire-and-forget bulk upload of any existing localStorage entries
+      // to the shared Supabase cache. Doesn't block the pre-warm.
+      syncLocalToShared();
       // Wait a bit more for any concurrent UI to settle
       setTimeout(runPrewarm, 2000);
       return;
     }
     setTimeout(waitForData, 500);
+  }
+
+  // One-time bulk upload of existing localStorage cache to the shared
+  // Supabase cache (table: geocode_cache). Without this, the 100+
+  // addresses already resolved on this PC stay local — other PCs
+  // would have to re-geocode them. This step makes the shared cache
+  // benefit retroactive. Runs once per browser session, guarded by
+  // localStorage flag. Bulk insert in one round-trip; upsert via
+  // Prefer: resolution=merge-duplicates so concurrent uploads from
+  // multiple PCs don't conflict.
+  const SYNC_FLAG = '_slokk_gc_synced_v1';
+  async function syncLocalToShared() {
+    if (localStorage.getItem(SYNC_FLAG)) return;
+    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) return;
+    const gc = readGc();
+    const entries = Object.entries(gc).filter(([k, v]) =>
+      typeof k === 'string' && k.length >= 3 &&
+      v && typeof v.lat === 'number' && typeof v.lng === 'number'
+    );
+    if (!entries.length) {
+      localStorage.setItem(SYNC_FLAG, '1');
+      return;
+    }
+    const rows = entries.map(([query, c]) => ({
+      query, lat: c.lat, lng: c.lng,
+      display_name: c.display_name || null,
+      source: 'local-sync',
+    }));
+    try {
+      const r = await fetch(window.SUPABASE_URL + '/rest/v1/geocode_cache', {
+        method: 'POST',
+        headers: {
+          apikey: window.SUPABASE_KEY,
+          Authorization: 'Bearer ' + window.SUPABASE_KEY,
+          'Content-Type': 'application/json',
+          Prefer: 'resolution=merge-duplicates',
+        },
+        body: JSON.stringify(rows),
+      });
+      if (r.ok) {
+        console.log('[geocode-prewarm] synced', rows.length, 'local entries to shared cache');
+        localStorage.setItem(SYNC_FLAG, '1');
+      } else {
+        console.warn('[geocode-prewarm] sync failed', r.status);
+      }
+    } catch (e) {
+      console.warn('[geocode-prewarm] sync error', e);
+    }
   }
 
   // Cancel on tab close to avoid orphan fetches (browsers handle this anyway,
