@@ -316,6 +316,22 @@
       .filter(c => +c._ars.last_year_inspected === curYear)
       .reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
 
+    // 2026-05-17 (Luna): per-month / per-filter revenue summary shown below
+    // the list. Lets the user see "if I do all of May's inspections, that's X kr".
+    const filteredAars = filtered.filter(c => c._ars && c._ars.equipment);
+    const filteredTotal = filteredAars.reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
+    const filteredDone = filteredAars
+      .filter(c => +c._ars.last_year_inspected === curYear)
+      .reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
+    const filteredRemain = Math.max(0, filteredTotal - filteredDone);
+    const filteredDonePct = filteredTotal > 0 ? Math.round(filteredDone / filteredTotal * 100) : 0;
+    const filterLabel = state.month >= 1 && state.month <= 12
+      ? `${MONTHS_IS[state.month - 1]} ${curYear}`
+      : (state.status === 'done'    ? `Búið ${curYear} (allir mánuðir)`
+       : state.status === 'pending' ? `Eftir ${curYear} (allir mánuðir)`
+       : state.status === 'never'   ? `Aldrei skoðað`
+       : `Allir mánuðir ${curYear}`);
+
     main.innerHTML = `
       <div style="max-width:1400px;margin:0 auto;padding:18px 22px 60px">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:14px">
@@ -394,6 +410,32 @@
             <div style="font-size:12px">Reyndu að breyta sía eða leitarstreng.</div>
           </div>
         ` : (state.view === 'card' ? renderCards(filtered) : renderTable(filtered))}
+
+        ${filteredAars.length > 0 ? `
+        <div style="margin-top:14px;padding:13px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
+          <div>
+            <div style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Samantekt — ${esc(filterLabel)}</div>
+            <div style="font-size:13px;color:#475569;margin-top:3px">${filteredAars.length} fyrirtæki í ársskoðun</div>
+          </div>
+          <div style="display:flex;gap:22px;flex-wrap:wrap">
+            <div style="text-align:right">
+              <div style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Áætlaðar tekjur</div>
+              <div style="font-size:18px;font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums">${fmtKr(filteredTotal)}</div>
+            </div>
+            ${filteredDone > 0 ? `
+            <div style="text-align:right">
+              <div style="font-size:10.5px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Þegar innheimt</div>
+              <div style="font-size:18px;font-weight:800;color:#15803d;font-variant-numeric:tabular-nums">${fmtKr(filteredDone)}</div>
+              <div style="font-size:10.5px;color:#16a34a">${filteredDonePct}%</div>
+            </div>` : ''}
+            ${filteredRemain > 0 ? `
+            <div style="text-align:right">
+              <div style="font-size:10.5px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em">Eftir</div>
+              <div style="font-size:18px;font-weight:800;color:#b45309;font-variant-numeric:tabular-nums">${fmtKr(filteredRemain)}</div>
+            </div>` : ''}
+          </div>
+        </div>
+        ` : ''}
 
         <div style="margin-top:18px;font-size:11px;color:#94a3b8;text-align:center">
           Sýni <strong style="color:#475569">${filtered.length}</strong> af ${all.length} viðskiptavinum
@@ -738,7 +780,7 @@
 
           <div style="display:flex;gap:7px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #f1f5f9">
             <button class="_ars-go-fyrirt" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:#0f172a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🏢 Opna fyrirtæki</button>
-            <button class="_ars-go-map" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🗺️ Sjá á Þjónustutæki</button>
+            <button class="_ars-go-map" data-co-id="${c.id}" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🗺️ Sjá á korti</button>
             <button class="_ars-go-brunakerfi" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:#fff;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🚨 Brunakerfi</button>
           </div>
         </div>
