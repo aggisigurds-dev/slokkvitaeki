@@ -153,7 +153,7 @@
     const btn = document.createElement('button');
     btn.className = (tpl.className || 'vnav-btn').replace(/\bactive\b/g, '').trim();
     btn.setAttribute('data-view', NAV_KEY);
-    btn.innerHTML = '<span style="margin-right:6px">🏢</span>Fyrirtæki';
+    btn.innerHTML = '<span style="margin-right:6px">🏢</span>Fyrirtæki í Þjónustu';
     btn.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
       if (window.App && App.switchView) App.switchView(NAV_KEY);
@@ -320,7 +320,7 @@
       <div style="max-width:1400px;margin:0 auto;padding:18px 22px 60px">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:14px">
           <div>
-            <h1 style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">🏢 Fyrirtæki</h1>
+            <h1 style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">🏢 Fyrirtæki í Þjónustu</h1>
             <div style="font-size:12px;color:#64748b;margin-top:2px">${all.length} fyrirtæki · ${arsAll.length} í árlegri slökkvitækjaskoðun</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
