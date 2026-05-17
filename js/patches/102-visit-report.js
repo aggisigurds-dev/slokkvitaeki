@@ -273,6 +273,26 @@
     const ktLine = co.kennitala ? ' kt:' + esc(co.kennitala) : '';
     const heim = co.heimilisFang || co.heimilisfang || '';
 
+    // 2026-05-17: read brand from AppSettings so Stillingar → Branding can edit it live.
+    // Two distinct identities (during the slow merge of Slökkvitæki ehf into Brunahólf ehf):
+    //   compNameLogo  → visual identity at the top (logo area). Auto-trims " ehf"
+    //                   from the legal name to give the cleaner customer-facing logo
+    //                   ("Slökkvitæki ehf" → "Slökkvitæki"). When the company eventually
+    //                   renames to "Brunahólf ehf", the logo automatically becomes "Brunahólf".
+    //   compNameLegal → legal entity name used in body text ("Tæki voru yfirfarin af…",
+    //                   "Fyrir hönd…") and VAT references. Keeps the "ehf".
+    // Note: the in-app top banner uses banner_text directly (NOT this trim), so it can
+    //   keep "Slökkvitæki ehf" internally if the user prefers.
+    const b = (window.AppSettings && window.AppSettings.path('branding')) || {};
+    const compNameLegal = b.company_name || 'Slökkvitæki ehf';
+    const compNameLogo  = compNameLegal.replace(/\s+ehf\.?\s*$/i, '');
+    const tagline       = b.tagline      || 'Brunahólf';
+    const addrLine = (b.address1 || b.address2)
+      ? [b.address1, b.address2].filter(Boolean).join(', ')
+      : 'Helluhrauni 10, 220 Hafnarfjörður';
+    const phoneStr = b.phone     || '565-4080';
+    const ktStr    = b.kennitala || '600508-0400';
+
     const html =
       '<!DOCTYPE html><html><head><meta charset="utf-8"><title>Úttektarskýrsla — ' + esc(co.nafn) + '</title>' +
       '<style>' +
@@ -281,6 +301,7 @@
         '@media print{body{padding:0}}' +
         '.hdr{margin-bottom:18px}' +
         '.hdr .org{font-size:13pt;font-weight:700}' +
+        '.hdr .tag{font-size:11pt;color:#0f172a;margin-bottom:4px}' +
         '.hdr .meta{font-size:11pt;color:#0f172a}' +
         '.title{margin:18px 0;font-size:13pt;line-height:1.55}' +
         '.subtitle{margin:14px 0 16px;font-size:12pt;font-style:italic}' +
@@ -302,20 +323,21 @@
           '<button onclick="window.close()">Loka</button>' +
         '</div>' +
         '<div class="hdr">' +
-          '<div class="org">Slökkvitæki ehf</div>' +
-          '<div class="meta">Helluhrauni 10, 220 Hafnarfjörður</div>' +
-          '<div class="meta">Sími: 565 4080, kt. 600508-0400</div>' +
+          '<div class="org">' + esc(compNameLogo) + '</div>' +
+          (tagline ? '<div class="tag">' + esc(tagline) + '</div>' : '') +
+          '<div class="meta">' + esc(addrLine) + '</div>' +
+          '<div class="meta">Sími: ' + esc(phoneStr) + ', kt. ' + esc(ktStr) + '</div>' +
         '</div>' +
         '<div class="title">' +
           'Skýrsla vegna úttektar á brunaslöngum, slökkvitækjum og öðrum búnaði (ef við á) hjá fyrirtækinu <strong>' + esc(co.nafn) + '</strong>' +
           (heim ? ', ' + esc(heim) : '') + esc(ktLine) +
         '</div>' +
-        '<div class="subtitle">Tæki voru yfirfarin af Slökkvitæki ehf í ' + esc(monthYear) + '</div>' +
+        '<div class="subtitle">Tæki voru yfirfarin af ' + esc(compNameLegal) + ' í ' + esc(monthYear) + '</div>' +
         '<div class="categories">' + catLines + '</div>' +
         (opts.annad ? '<div class="section"><span class="lbl">Annað:</span> <span class="body">' + esc(opts.annad).replace(/\n/g, '<br>') + '</span></div>' : '<div class="section"><span class="lbl">Annað:</span></div>') +
         (opts.notes ? '<div class="section"><span class="lbl">Athugasemdir:</span> <span class="body">' + esc(opts.notes).replace(/\n/g, '<br>') + '</span></div>' : '<div class="section"><span class="lbl">Athugasemdir:</span></div>') +
         '<div class="signature">' +
-          '<div>Fyrir hönd Slökkvitæki ehf</div>' +
+          '<div>Fyrir hönd ' + esc(compNameLegal) + '</div>' +
           '<div class="above"></div>' +
           '<div>' + esc(opts.tech || '') + '</div>' +
         '</div>' +

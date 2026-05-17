@@ -20,7 +20,8 @@
 
   const ICELAND_LOCALE = 'is-IS';
   const COMPANY_FALLBACK = {
-    name: 'Slökkvitæki ehf',
+    name: 'Slökkvitæki ehf',      // LEGAL entity name — used in VAT address block, alt text
+    nameLogo: 'Slökkvitæki',      // VISUAL identity for the logo area (drops "ehf")
     tag: 'Brunahólf',
     kt: '600508-0400',
     vsk: '98107',
@@ -32,8 +33,12 @@
   // every time a receipt is built. Falls back to hardcoded values until
   // settings load. Uses a Proxy-free pattern via getter object.
   const COMPANY = {
-    get name()  { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.company_name) || COMPANY_FALLBACK.name; },
-    get tag()   { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.tagline)      || COMPANY_FALLBACK.tag; },
+    get name()     { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.company_name) || COMPANY_FALLBACK.name; },
+    // nameLogo = visual identity for the logo area at the top of the receipt.
+    // Auto-trims " ehf" from the legal name ("Slökkvitæki ehf" → "Slökkvitæki").
+    // The in-app top banner uses banner_text directly so it can keep "ehf" internally.
+    get nameLogo() { return this.name.replace(/\s+ehf\.?\s*$/i, ''); },
+    get tag()      { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.tagline)      || COMPANY_FALLBACK.tag; },
     get kt()    { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.kennitala)    || COMPANY_FALLBACK.kt; },
     get vsk()   { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.vsk_nr)       || COMPANY_FALLBACK.vsk; },
     get addr1() { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.address1)     || COMPANY_FALLBACK.addr1; },
@@ -416,7 +421,7 @@
               onerror="this.outerHTML='&lt;div aria-hidden=&quot;true&quot; style=&quot;width:72px;height:72px;flex-shrink:0;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:36pt;letter-spacing:-0.02em;font-family:Arial,Helvetica,sans-serif;&quot;&gt;S&lt;/div&gt;'">` : '';
             })()}
             <div class="hdr-co">
-              <div class="co-name">${esc(COMPANY.name)}</div>
+              <div class="co-name">${esc(COMPANY.nameLogo)}</div>
               <div class="co-tag">${esc(COMPANY.tag)}</div>
               <div class="co-kt">Kt. ${esc(COMPANY.kt)}</div>
             </div>

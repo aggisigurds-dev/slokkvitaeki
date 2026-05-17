@@ -21,6 +21,8 @@
 
   const DEFAULTS = {
     branding: {
+      // company_name = LEGAL entity name. Used on invoices, reports, signatures, VAT.
+      // For the visual logo/banner identity, use banner_text (drops the "ehf").
       company_name: 'Slökkvitæki ehf',
       tagline: 'Brunahólf',
       kennitala: '600508-0400',
@@ -31,7 +33,7 @@
       email: 'eldklar@eldklar.is',
       logo_url: '/img/logo.png',
       primary_color: '#C93C1D',
-      banner_text: 'Slökkvitæki ehf',
+      banner_text: 'Slökkvitæki',
       banner_subtitle: 'Slökkvitækjaþjónusta',
       banner_style: 'litrikt',
       banner_image_url: '/img/banner-1x.png',
