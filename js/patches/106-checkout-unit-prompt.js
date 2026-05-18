@@ -344,6 +344,12 @@
       // again. Let the checkout proceed without an extra modal.
       if (window._pendingSkipVerk === true) return;
 
+      // 2026-05-18: Global skip flag — AppSettings.prentun.skip_unit_prompt.
+      // When true (Agnar's default), the unit-registration dialog never
+      // opens; checkout proceeds straight to patch 07's payment dialog.
+      // Toggle off in Stillingar -> Prentun if you want the prompt back.
+      if (window.AppSettings && window.AppSettings.path('prentun.skip_unit_prompt') === true) return;
+
       // Stop the original handler
       e.preventDefault();
       e.stopPropagation();

@@ -399,6 +399,7 @@
       <div class="su-row"><label>📄 Kvittun</label><label class="su-inline" style="font-weight:400;font-size:13px;color:#475569"><input type="checkbox" data-pk="default_print_kvittun" ${p.default_print_kvittun?'checked':''} style="margin-right:6px;width:auto"> Kveikt sjálfgefið</label></div>
       <div class="su-row"><label>🏷 Strikamerki</label><label class="su-inline" style="font-weight:400;font-size:13px;color:#475569"><input type="checkbox" data-pk="default_print_strikamerki" ${p.default_print_strikamerki?'checked':''} style="margin-right:6px;width:auto"> Kveikt þegar tæki er í körfu</label></div>
       <div class="su-row"><label>🟢 QR áfylling</label><label class="su-inline" style="font-weight:400;font-size:13px;color:#475569"><input type="checkbox" data-pk="default_print_qr_label" ${p.default_print_qr_label?'checked':''} style="margin-right:6px;width:auto"> Kveikt sjálfgefið</label></div>
+      <div class="su-row"><label>🛠 Skrá tæki popup</label><label class="su-inline" style="font-weight:400;font-size:13px;color:#475569"><input type="checkbox" data-pk="skip_unit_prompt" ${p.skip_unit_prompt?'checked':''} style="margin-right:6px;width:auto"> Sleppa "Skrá tæki fyrir verkbeiðni" glugganum</label></div>
       <div class="su-section-title">Brother QL stillingar</div>
       <div class="su-row">
         <label>Label stærð</label>

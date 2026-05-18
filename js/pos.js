@@ -267,10 +267,10 @@
         '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
             '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Viðskiptavinur</div>' +
-            '<div style="display:flex;gap:4px">' +
-              '<button class="pos-mode-btn" data-mode="kt" style="padding:6px 12px;border:1px solid #60a5fa;background:#eff6ff;color:#1e40af;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">Kennitala</button>' +
-              '<button class="pos-mode-btn" data-mode="manual" style="padding:6px 12px;border:1px solid #cbd5e1;background:#fff;color:#64748b;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">Nafn/Sími</button>' +
-            '</div>' +
+            // 2026-05-18: single toggle between kennitala-lookup and walk-in modes.
+            // Replaces the older two-button picker. The button label reflects the
+            // OTHER mode (what you'll switch TO) so it's clearly an action.
+            '<button id="pos-mode-toggle" type="button" style="padding:6px 12px;border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px;white-space:nowrap">→ Án kennitölu</button>' +
           '</div>' +
           '<div id="pos-kt-box">' +
             '<input id="pos-kt" placeholder="000000-0000" maxlength="11" autocomplete="off" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:16px;box-sizing:border-box;font-variant-numeric:tabular-nums">' +
@@ -432,7 +432,20 @@
     }
   }
   function bindEvents(){
-    document.querySelectorAll('.pos-mode-btn').forEach(function(b){b.addEventListener('click',function(){var m=b.getAttribute('data-mode');state.customer.mode=m;document.querySelectorAll('.pos-mode-btn').forEach(function(x){var a=x.getAttribute('data-mode')===m;x.style.background=a?'#eff6ff':'#fff';x.style.borderColor=a?'#60a5fa':'#cbd5e1';x.style.color=a?'#1e40af':'#64748b';});document.getElementById('pos-kt-box').style.display=m==='kt'?'':'none';document.getElementById('pos-manual-box').style.display=m==='manual'?'':'none';});});
+    // Single mode-toggle button: kt <-> manual. Label shows the OTHER mode
+    // (the destination) so the button text reads like an action.
+    var modeBtn = document.getElementById('pos-mode-toggle');
+    function syncModeUI(){
+      var m = state.customer.mode;
+      document.getElementById('pos-kt-box').style.display = m==='kt' ? '' : 'none';
+      document.getElementById('pos-manual-box').style.display = m==='manual' ? '' : 'none';
+      if (modeBtn) modeBtn.textContent = m==='kt' ? '→ Án kennitölu' : '← Með kennitölu';
+    }
+    if (modeBtn) modeBtn.addEventListener('click', function(){
+      state.customer.mode = state.customer.mode==='kt' ? 'manual' : 'kt';
+      syncModeUI();
+    });
+    syncModeUI();
     var ktEl=document.getElementById('pos-kt');
     if (ktEl) {
       ktEl.addEventListener('input', function () {
