@@ -94,9 +94,20 @@
     if(!window.Companies || !Companies.list || !Companies.list.length){ return false; }
     var units = (DB.cache && DB.cache.units) || [];
     var cache = readCache();
+    // Pre-tally active units by client name so we can skip companies
+    // that have no units without doing 444 × full-scan. Þjónustutæki
+    // is the UNIT field-service map — companies with no uttaeki rows
+    // shouldn't drop grey pins. Regression introduced 2026-05-18 when
+    // the shared geocode cache started filling localStorage with many
+    // contract holders that have no per-unit records yet.
+    var hasUnits = {};
+    units.forEach(function(u){
+      if (u.status === 'active') hasUnits[u.client] = true;
+    });
     var rendered = 0;
     Companies.list.forEach(function(c){
       if(state.markers[c.id]) return;
+      if(!hasUnits[c.nafn]) return; // skip — not a unit-based customer
       var coord = cache[c.nafn] || cache[c.heimilisfang||''] || null;
       if(!coord){ return; }
       var status = statusFor(units, c.nafn);
