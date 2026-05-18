@@ -149,12 +149,69 @@
     if (customers && customers.length) {
       // Fire-and-forget bulk upload of any existing localStorage entries
       // to the shared Supabase cache. Doesn't block the pre-warm.
-      syncLocalToShared();
+      // First: bulk-download the shared Supabase cache into localStorage so
+      // any address ANY pc has already resolved drops a pin instantly here.
+      // Then sync our local entries up so other PCs benefit too.
+      syncSharedToLocal().then(() => syncLocalToShared());
       // Wait a bit more for any concurrent UI to settle
       setTimeout(runPrewarm, 2000);
       return;
     }
     setTimeout(waitForData, 500);
+  }
+
+  // Bulk-download the SHARED Supabase cache into localStorage at boot.
+  // Without this, each browser starts with an empty pin map and the
+  // map shows ~0 pins until the user has been around the app for a while.
+  // This single GET (paginated if large) fills the local cache with
+  // everything other PCs have already geocoded — instant pins on map open.
+  //
+  // Idempotent: re-fetching always overlays the latest from server. Safe
+  // to run on every page load. ~1 second for a few hundred rows.
+  async function syncSharedToLocal() {
+    if (!window.SUPABASE_URL || !window.SUPABASE_KEY) return;
+    try {
+      // PostgREST defaults to 1000 rows, plenty for any realistic cache size.
+      const r = await fetch(window.SUPABASE_URL + '/rest/v1/geocode_cache?select=query,lat,lng,display_name', {
+        headers: {
+          apikey: window.SUPABASE_KEY,
+          Authorization: 'Bearer ' + window.SUPABASE_KEY
+        }
+      });
+      if (!r.ok) {
+        console.warn('[geocode-prewarm] shared->local sync HTTP', r.status);
+        return;
+      }
+      const rows = await r.json();
+      if (!Array.isArray(rows) || !rows.length) return;
+      const gc = readGc();
+      let added = 0;
+      let updated = 0;
+      for (const row of rows) {
+        if (!row || !row.query || typeof row.lat !== 'number' || typeof row.lng !== 'number') continue;
+        if (gc[row.query]) {
+          // Already local — overwrite only if remote is more recent (we don't
+          // track timestamps yet, so just merge fields silently).
+          if (!gc[row.query].display_name && row.display_name) {
+            gc[row.query].display_name = row.display_name;
+            updated++;
+          }
+        } else {
+          gc[row.query] = { lat: row.lat, lng: row.lng, display_name: row.display_name || null };
+          added++;
+        }
+      }
+      writeGc(gc);
+      console.log('[geocode-prewarm] shared->local: pulled', rows.length, 'rows,', added, 'added,', updated, 'updated');
+      // Trigger a map refresh if the embedded map is currently visible
+      // (patch 155 reads from _slokk_gc on demand, so a fresh re-render
+      // picks up the new pins).
+      if (window.ArsMapEmbed && typeof window.ArsMapEmbed.refresh === 'function') {
+        try { window.ArsMapEmbed.refresh(); } catch (_) {}
+      }
+    } catch (e) {
+      console.warn('[geocode-prewarm] shared->local sync error', e);
+    }
   }
 
   // One-time bulk upload of existing localStorage cache to the shared
