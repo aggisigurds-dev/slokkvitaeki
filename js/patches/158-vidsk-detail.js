@@ -337,18 +337,40 @@
     main.querySelectorAll('._vd-toggle').forEach(b => b.addEventListener('click', () => {
       toggleService(b.dataset.svc, b.dataset.action);
     }));
+    // "Opna í Fyrirtækjaþjónustu →" — goes to the FULL company profile
+    // page (Þjónustufyrirtæki), where the per-unit table + Úttektarskýrsla
+    // + Mörg tæki / Bæta við tæki / Merkja skoðun / Teikning all live.
+    // Previously routed to the Ársskoðun list page which only shows
+    // summary equipment counts. _openCompanySafe is the helper used by
+    // patches 13/18/77 and mapfix.js to navigate there safely.
     main.querySelectorAll('._vd-open-ars').forEach(b => b.addEventListener('click', () => {
-      if (window.App && App.switchView) App.switchView('arsskodun');
-      // patch 153's Arsskodun.openDetail opens the inline modal in that view
-      setTimeout(() => {
-        if (window.Arsskodun && typeof Arsskodun.openDetail === 'function') Arsskodun.openDetail(_currentId);
-      }, 200);
+      if (window._openCompanySafe) {
+        window._openCompanySafe(_currentId);
+      } else if (window.Companies && typeof Companies.openDetail === 'function') {
+        Companies.openDetail(_currentId);
+      } else if (window.App && App.switchView) {
+        App.switchView('companies');
+      }
     }));
+    // "Opna í Brunakerfisþjónustu →" — open the brunakerfi-specific
+    // customer profile (patch 147 exposes openCompanyDetail). Fallback
+    // to plain view-switch if not loaded.
     main.querySelectorAll('._vd-open-bru').forEach(b => b.addEventListener('click', () => {
-      if (window.App && App.switchView) App.switchView('brunakerfi');
+      if (window.Brunakerfi && typeof Brunakerfi.openCompanyDetail === 'function') {
+        Brunakerfi.openCompanyDetail(_currentId);
+      } else if (window.App && App.switchView) {
+        App.switchView('brunakerfi');
+      }
     }));
+    // "Opna í Þjónustutæki →" (from the units section) — also goes to
+    // the company profile so the user lands directly on the unit table
+    // + report button rather than on the map.
     main.querySelectorAll('._vd-open-field').forEach(b => b.addEventListener('click', () => {
-      if (window.App && App.switchView) App.switchView('field');
+      if (window._openCompanySafe) {
+        window._openCompanySafe(_currentId);
+      } else if (window.App && App.switchView) {
+        App.switchView('field');
+      }
     }));
   }
 
