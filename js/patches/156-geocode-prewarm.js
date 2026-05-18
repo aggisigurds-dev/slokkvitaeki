@@ -51,18 +51,24 @@
     return null;
   }
 
-  // Pull Ársskoðun-relevant customers WITHOUT requiring patch 153 to have
-  // navigated to the view first (which is when its own _cache.list populates).
-  // We combine Companies.list (all 444 customers, loaded at app boot) with
-  // AppSettings.path('arsskodun_customers') (the per-customer ars metadata).
-  // Only customers that appear in BOTH AND have ars.equipment are returned.
+  // Pull CONTRACT customers — fyrirtækjaþjónustu OR brunakerfi. These
+  // are the addresses the team actually drives to. Non-contract companies
+  // (~133 walk-in / sales records) don't need to be on the map and don't
+  // need pre-geocoding. User's instruction 2026-05-18: "the map does not
+  // need to read all the address only those that have contracts for us
+  // to service at there location."
   function getArsCustomers() {
     const companies = (window.Companies && Companies.list) || null;
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || null;
-    if (!companies || !arsMap) return null;
+    const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || null;
+    if (!companies) return null;
+    if (!arsMap && !bruMap) return null;
     return companies.filter(c => {
-      const ars = arsMap[String(c.id)];
-      return ars && ars.equipment;
+      const ars = arsMap && arsMap[String(c.id)];
+      const bru = bruMap && bruMap[String(c.id)];
+      // Include if subscribed to either service. arsskodun needs equipment
+      // (the legacy "is contract holder" flag); brunakerfi just needs a row.
+      return (ars && ars.equipment) || bru;
     });
   }
 

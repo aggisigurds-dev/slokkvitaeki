@@ -162,13 +162,25 @@
   }
 
   // ── Read filtered customer IDs from the rendered ars-main ──────────
+  // Restricted to contract holders only — the map shows where we actually
+  // drive to service customers. Non-contract companies (~133 walk-in
+  // records) get cards on the list but no pins on the map. User instruction
+  // 2026-05-18: "the map does not need to read all the address only those
+  // that have contracts for us to service at there location."
   function getVisibleCoIds() {
     const main = document.getElementById('ars-main');
     if (!main) return [];
+    const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
+    const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
+    const isContract = (id) => {
+      const ars = arsMap[String(id)];
+      const bru = bruMap[String(id)];
+      return !!((ars && ars.equipment) || bru);
+    };
     const set = new Set();
     main.querySelectorAll('[data-co-id]').forEach(el => {
       const id = parseInt(el.dataset.coId, 10);
-      if (id) set.add(id);
+      if (id && isContract(id)) set.add(id);
     });
     return Array.from(set);
   }

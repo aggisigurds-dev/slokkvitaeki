@@ -259,16 +259,34 @@
         if (id) openDetail(id);
       });
     });
+    // Subscribe/unsubscribe buttons — stop card-click propagation so we
+    // don't accidentally open the detail at the same time.
+    main.querySelectorAll('._av-toggle').forEach(b => {
+      b.addEventListener('click', e => {
+        e.stopPropagation();
+        e.preventDefault();
+        const coId = +b.dataset.coId;
+        const svc = b.dataset.svc;
+        const action = b.dataset.action;
+        toggleService(coId, svc, action);
+      });
+    });
   }
 
   function renderCards(arr) {
     return `
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:11px">
         ${arr.map(c => {
-          const badges = [];
-          if (c._hasArs) badges.push('<span style="background:#fee2e2;color:#b91c1c;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #fecaca">🔥 Fyrirtækjaþj.</span>');
-          if (c._hasBru) badges.push('<span style="background:#dbeafe;color:#1d4ed8;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #93c5fd">🚨 Brunakerfi</span>');
-          if (!c._hasArs && !c._hasBru) badges.push('<span style="background:#f1f5f9;color:#64748b;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #cbd5e1">Án samnings</span>');
+          // Service toggle buttons — click to subscribe / unsubscribe.
+          // When subscribed: red/blue filled chip with × icon (click to remove).
+          // When not subscribed: outlined chip with + icon (click to add).
+          const arsBtn = c._hasArs
+            ? `<button class="_av-toggle" data-co-id="${c.id}" data-svc="ars" data-action="remove" type="button" title="Fjarlægja úr fyrirtækjaþjónustu" style="background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;border:1px solid #fecaca;cursor:pointer;font-family:inherit">🔥 Fyrirtækjaþj. <span style="opacity:.6;margin-left:2px">✕</span></button>`
+            : `<button class="_av-toggle" data-co-id="${c.id}" data-svc="ars" data-action="add" type="button" title="Skrá í fyrirtækjaþjónustu" style="background:#fff;color:#94a3b8;font-size:10px;font-weight:600;padding:3px 8px;border-radius:99px;border:1px dashed #cbd5e1;cursor:pointer;font-family:inherit">🔥 + Fyrirtækjaþj.</button>`;
+
+          const bruBtn = c._hasBru
+            ? `<button class="_av-toggle" data-co-id="${c.id}" data-svc="bru" data-action="remove" type="button" title="Fjarlægja úr brunakerfi" style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;border:1px solid #93c5fd;cursor:pointer;font-family:inherit">🚨 Brunakerfi <span style="opacity:.6;margin-left:2px">✕</span></button>`
+            : `<button class="_av-toggle" data-co-id="${c.id}" data-svc="bru" data-action="add" type="button" title="Skrá í brunakerfi" style="background:#fff;color:#94a3b8;font-size:10px;font-weight:600;padding:3px 8px;border-radius:99px;border:1px dashed #cbd5e1;cursor:pointer;font-family:inherit">🚨 + Brunakerfi</button>`;
 
           const initial = (c.nafn || '?').trim().charAt(0).toUpperCase();
           const avatarColor = c._hasArs && c._hasBru ? '#7c3aed' :
@@ -290,7 +308,7 @@
                 ${c.netfang ? `<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">✉️ ${esc(c.netfang)}</div>` : ''}
                 ${c.tengiliður ? `<div>👤 ${esc(c.tengiliður)}</div>` : ''}
               </div>
-              <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px">${badges.join('')}</div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px">${arsBtn}${bruBtn}</div>
             </div>
           `;
         }).join('')}
@@ -298,14 +316,62 @@
     `;
   }
 
-  // ── Open company detail — reuse whatever modal is available ───────────
+  // ── Subscribe / unsubscribe — write to AppSettings ─────────────────────
+  // Uses the same storage keys + structure as patches 153 (arsskodun) and
+  // 147 (brunakerfi). Minimal entry on add — user can fill details in the
+  // service workspace afterwards. Remove deletes the key entirely so the
+  // customer drops out of the service workspace.
+  async function toggleService(coId, svc, action) {
+    if (!window.AppSettings || !window.AppSettings.save) {
+      alert('AppSettings ekki tilbúið');
+      return;
+    }
+    const STORAGE_KEY = svc === 'ars' ? 'arsskodun_customers' : 'brunakerfi_customers';
+    const map = Object.assign({}, window.AppSettings.path(STORAGE_KEY) || {});
+    const company = (window.Companies && Companies.list || []).find(c => +c.id === +coId);
+    const name = (company && company.nafn) || ('co#' + coId);
+
+    if (action === 'add') {
+      const svcLabel = svc === 'ars' ? 'fyrirtækjaþjónustu' : 'brunakerfi';
+      if (!confirm('Skrá "' + name + '" í ' + svcLabel + '?')) return;
+      if (svc === 'ars') {
+        // Minimal arsskodun entry — equipment object is what _hasArs checks.
+        map[String(coId)] = Object.assign({}, map[String(coId)] || {}, {
+          equipment: (map[String(coId)] && map[String(coId)].equipment) || {},
+          inspect_month: (map[String(coId)] && map[String(coId)].inspect_month) || 0,
+          last_year_inspected: (map[String(coId)] && map[String(coId)].last_year_inspected) || 0
+        });
+      } else {
+        // Minimal brunakerfi entry.
+        map[String(coId)] = Object.assign({}, map[String(coId)] || {}, {
+          co_id: +coId,
+          inspect_month: (map[String(coId)] && map[String(coId)].inspect_month) || 0,
+          unit_count: (map[String(coId)] && map[String(coId)].unit_count) || 0
+        });
+      }
+    } else if (action === 'remove') {
+      const svcLabel = svc === 'ars' ? 'fyrirtækjaþjónustu' : 'brunakerfi';
+      if (!confirm('Fjarlægja "' + name + '" úr ' + svcLabel + '?\n\n(Gögn um búnað haldast — bara samningsmerkið fer.)')) return;
+      delete map[String(coId)];
+    }
+    const ok = await window.AppSettings.save({ [STORAGE_KEY]: map });
+    if (!ok) { alert('Vista mistókst'); return; }
+    // Re-render to reflect the new state
+    const main = document.getElementById('_av-main');
+    if (main) render(main);
+  }
+
+  // ── Open the unified customer detail page (patch 158) ─────────────────
+  // This is the platform's customer view — base info + service subscriptions
+  // + units + notes in one place. Falls back to the legacy opener if
+  // patch 158 isn't loaded for any reason.
   function openDetail(coId) {
-    // Companies' standard detail modal — handles all customers regardless
-    // of contract status. Ársskoðun's modal could be richer for arsskodun
-    // customers, but for the master list we use the safe universal opener.
+    if (window.VidskDetail && typeof window.VidskDetail.show === 'function') {
+      return window.VidskDetail.show(coId);
+    }
+    // Fallback: legacy company detail
     if (window._openCompanySafe) return window._openCompanySafe(coId);
     if (window.Companies && typeof Companies.openDetail === 'function') return Companies.openDetail(coId);
-    if (window.Arsskodun && typeof window.Arsskodun.openDetail === 'function') return window.Arsskodun.openDetail(coId);
     console.warn('[allir-vidsk] no detail opener available for', coId);
   }
 
