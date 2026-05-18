@@ -94,23 +94,40 @@
     if(!window.Companies || !Companies.list || !Companies.list.length){ return false; }
     var units = (DB.cache && DB.cache.units) || [];
     var cache = readCache();
-    // Pre-tally active units by client name so we can skip companies
-    // that have no units without doing 444 × full-scan. Þjónustutæki
-    // is the UNIT field-service map — companies with no uttaeki rows
-    // shouldn't drop grey pins. Regression introduced 2026-05-18 when
-    // the shared geocode cache started filling localStorage with many
-    // contract holders that have no per-unit records yet.
+    // Pre-tally active units by client name and read the contract maps
+    // so we know which companies belong on the map at all. Þjónustutæki
+    // should show:
+    //   • Companies with active uttaeki rows (the May 2026 import set)
+    //   • Companies with a service contract (Fyrirtækjaþjónustu OR
+    //     Brunakerfi) — even without unit records yet, the driver still
+    //     drives to them; they just need their tæki logged.
+    // Companies with neither are walk-in / sale-only and don't belong.
     var hasUnits = {};
     units.forEach(function(u){
       if (u.status === 'active') hasUnits[u.client] = true;
     });
+    var arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
+    var bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
     var rendered = 0;
     Companies.list.forEach(function(c){
       if(state.markers[c.id]) return;
-      if(!hasUnits[c.nafn]) return; // skip — not a unit-based customer
+      var hasU = !!hasUnits[c.nafn];
+      var ars = arsMap[String(c.id)];
+      var bru = bruMap[String(c.id)];
+      var hasContract = !!((ars && ars.equipment) || bru);
+      if(!hasU && !hasContract) return; // skip walk-in only
       var coord = cache[c.nafn] || cache[c.heimilisfang||''] || null;
       if(!coord){ return; }
-      var status = statusFor(units, c.nafn);
+      var status;
+      if (hasU) {
+        // Has uttaeki rows — drive status from inspection dates
+        status = statusFor(units, c.nafn);
+      } else {
+        // Contract holder with no unit data yet — distinct slate-blue
+        // pin so the driver can spot "I need to log tæki here on this
+        // visit" at a glance.
+        status = { color:'#475569', label:'Á samningi · engin tæki skráð', count:0 };
+      }
       var m = makeMarker(map, c, coord, status);
       state.markers[c.id] = m;
       state.rendered[c.id] = true;
