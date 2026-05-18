@@ -88,6 +88,30 @@
     state.clickHooked = true;
   }
 
+  // Status for a contract customer whose equipment lives in
+  // arsskodun_customers[id].equipment (category counts from the
+  // 2025 Úttektarskýrsla import) — NOT in the uttaeki table.
+  // We treat the totals as real registered tæki and color the pin
+  // by inspection status (last_year_inspected + inspect_month).
+  function arsContractStatus(ars, company) {
+    var today = new Date();
+    var curYear = today.getFullYear();
+    var curMonth = today.getMonth() + 1;
+    var eq = (ars && ars.equipment) || {};
+    var totalCount = 0;
+    Object.keys(eq).forEach(function(k){ totalCount += (+eq[k] || 0); });
+    var m = +((ars||{}).inspect_month) || 0;
+    var lastYr = +((ars||{}).last_year_inspected) || 0;
+    var isDone = lastYr === curYear;
+    var isOverdue = !isDone && m > 0 && m < curMonth;
+    var isDueNow = !isDone && m === curMonth;
+    if (isDone)    return { color:'#1a7f4b', label:'Í lagi (sk. ' + curYear + ')', count: totalCount };
+    if (isOverdue) return { color:'#dc2626', label:'Útrunnið (skoda mb ' + m + ')', count: totalCount };
+    if (isDueNow)  return { color:'#b45309', label:'Rennur út í mánuði', count: totalCount };
+    if (m > 0)     return { color:'#475569', label:'Á dagskrá (mb. ' + m + ')', count: totalCount };
+    return { color:'#475569', label:'Á samningi (engin dagsetning)', count: totalCount };
+  }
+
   function instantRender(){
     var map = window._slokk_map;
     if(!map){ return false; }
@@ -123,10 +147,13 @@
         // Has uttaeki rows — drive status from inspection dates
         status = statusFor(units, c.nafn);
       } else {
-        // Contract holder with no unit data yet — distinct slate-blue
-        // pin so the driver can spot "I need to log tæki here on this
-        // visit" at a glance.
-        status = { color:'#475569', label:'Á samningi · engin tæki skráð', count:0 };
+        // Contract holder with no INDIVIDUAL uttaeki rows, but the
+        // arsskodun_customers entry has category-count equipment data
+        // (from the 2025 Úttektarskýrsla import). That counts as real
+        // registered tæki — just stored as totals not per-unit. Use
+        // inspect_month + last_year_inspected to pick a meaningful
+        // color, sum the equipment values for the popup count.
+        status = arsContractStatus(ars, c);
       }
       var m = makeMarker(map, c, coord, status);
       state.markers[c.id] = m;
