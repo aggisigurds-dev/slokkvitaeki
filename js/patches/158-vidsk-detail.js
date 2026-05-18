@@ -107,6 +107,154 @@
     }
   }
 
+  // ── Klára heimsókn — one-click visit completion ────────────────────────
+  // Driver workflow tonight (2026-05-18): after visiting a customer and
+  // checking the equipment, the driver clicks "✓ Klára heimsókn". This:
+  //
+  //   1. Asks for the technician name (saved per browser).
+  //   2. Asks: do you want to mark ALL units inspected today? Or pick?
+  //      • If "All": bulk-update every active unit's last_insp/next_insp.
+  //      • If "Pick": opens the company profile (view-companies) where
+  //        per-unit dropdowns let driver mark some as done, others as
+  //        "needs refill" → those go through Verkstæði → patch 122 receive
+  //        flow → patch 121 pickup checkout (which also bumps next_insp).
+  //   3. Updates the company's last_year_inspected so it falls out of the
+  //      Ársskoðun "needs work this year" filter.
+  //   4. Opens patch 102's Úttektarskýrsla pre-filled — driver prints or
+  //      emails the report.
+  //
+  // Net effect: the daily-route case (everything OK) is one button.
+  // The exception case (some units need refill) is one click to switch
+  // contexts to the per-unit page — still much faster than the paper
+  // alternative the drivers were threatening.
+  const LS_TECH = 'visit_tech_name';
+
+  async function completeVisit() {
+    if (!_currentId) return;
+    const c = getCompany(_currentId);
+    if (!c) return;
+
+    const units = getUnitsFor(c.nafn);
+    if (units.length === 0) {
+      const ok = confirm('Engin tæki skráð á "' + c.nafn + '". Viltu samt skrá heimsóknina (uppfærir síðasta ár í Fyrirtækjaþjónustu) og opna úttektarskýrslu?');
+      if (!ok) return;
+      await markCompanyVisited(c);
+      openReport(c.id);
+      return;
+    }
+
+    // Ask for technician name (cached)
+    let tech = localStorage.getItem(LS_TECH) || '';
+    tech = prompt('Hver gerði skoðunina?', tech);
+    if (!tech) return;
+    tech = tech.trim();
+    if (tech) localStorage.setItem(LS_TECH, tech);
+
+    // Confirmation: all-inspected vs pick
+    const msg = 'Skrá ' + units.length + ' tæki sem skoðuð í dag hjá "' + c.nafn + '"?\n\n' +
+                '• Smelltu OK til að merkja ÖLL sem skoðuð (heilsuvinsla)\n' +
+                '• Smelltu Hætta til að fara á fyrirtækjasíðuna og velja tæki';
+    if (!confirm(msg)) {
+      // Driver wants per-unit control — bounce them to the legacy company
+      // profile where the row dropdowns and Sækja-inn flow live.
+      if (window._openCompanySafe) window._openCompanySafe(_currentId);
+      return;
+    }
+
+    const today = new Date().toISOString().slice(0,10);
+    const nextYear = (parseInt(today.slice(0,4))+1) + today.slice(4);
+    const SB = window.DB && window.DB.sb;
+
+    let updated = 0;
+    let failed = 0;
+
+    // Bulk update in DB if online; otherwise just local cache.
+    if (SB) {
+      try {
+        const ids = units.map(u => u.id);
+        const { error } = await SB.from('uttaeki').update({
+          last_insp: today,
+          next_insp: nextYear
+        }).in('id', ids);
+        if (error) {
+          console.error('[vidsk-detail] bulk update failed:', error);
+          alert('Vista mistókst: ' + error.message);
+          return;
+        }
+        updated = ids.length;
+        // Best-effort skodunar_saga history rows. Failure here doesn't block
+        // the visit completion — the unit updates already landed.
+        try {
+          const histRows = ids.map(uid => ({
+            unit_id: uid,
+            date: today,
+            tech: tech,
+            result: 'pass'
+          }));
+          await SB.from('skodunar_saga').insert(histRows);
+        } catch (e) { console.warn('[vidsk-detail] saga insert failed', e); }
+      } catch (e) {
+        failed = units.length;
+        alert('Vista mistókst: ' + (e.message || e));
+        return;
+      }
+    }
+
+    // Update local cache so the page reflects new dates without a refresh.
+    units.forEach(u => {
+      u.last_insp = today;
+      u.next_insp = nextYear;
+    });
+
+    await markCompanyVisited(c);
+
+    if (window.Toast && window.Toast.show) {
+      window.Toast.show('✓ Heimsókn skráð — ' + updated + ' tæki uppfærð', 'success');
+    }
+
+    // Re-render so the unit table dates refresh
+    render();
+
+    // Open the Úttektarskýrsla pre-filled. Patch 102 picks up technician
+    // name from localStorage; we just saved it.
+    openReport(c.id);
+  }
+
+  // Stamp the company as visited this year so it leaves Ársskoðun's "due"
+  // filter immediately. Doesn't touch arsskodun if the customer isn't
+  // subscribed — caller should handle that.
+  async function markCompanyVisited(c) {
+    if (!window.AppSettings || !window.AppSettings.save) return;
+    const arsMap = Object.assign({}, window.AppSettings.path('arsskodun_customers') || {});
+    const existing = arsMap[String(c.id)];
+    if (!existing) return; // not an arsskodun customer; nothing to update
+    const curYear = new Date().getFullYear();
+    arsMap[String(c.id)] = Object.assign({}, existing, {
+      last_year_inspected: curYear
+    });
+    await window.AppSettings.save({ arsskodun_customers: arsMap });
+  }
+
+  function openReport(coId) {
+    setTimeout(() => {
+      if (window.VisitReport && typeof window.VisitReport.open === 'function') {
+        // Patch 102's modal expects to find the company via _openCompanySafe
+        // context (it reads window.Companies.current). Switch view first so
+        // the report has the right company in scope.
+        if (window._openCompanySafe) {
+          window._openCompanySafe(coId);
+          setTimeout(() => window.VisitReport.open(coId), 400);
+        } else {
+          window.VisitReport.open(coId);
+        }
+      } else if (window._openCompanySafe) {
+        // Fallback: bounce to company profile, driver clicks the visit
+        // report button themselves.
+        window._openCompanySafe(coId);
+      }
+    }, 300);
+  }
+
   // ── Subscribe / unsubscribe ────────────────────────────────────────────
   async function toggleService(svc, action) {
     if (!_currentId) return;
@@ -179,7 +327,12 @@
         <!-- Header -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:12px;flex-wrap:wrap">
           <button id="_vd-back" type="button" style="padding:6px 12px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px">‹ Til baka</button>
-          <div style="font-size:11px;color:#94a3b8">${esc(c.id)}</div>
+          ${(hasArs || hasBru) ? `
+          <button id="_vd-complete-visit" type="button" title="Skrá heimsókn: merkir öll virk tæki sem skoðuð í dag og opnar úttektarskýrslu" style="padding:9px 16px;background:#16a34a;color:#fff;border:1px solid #15803d;border-radius:10px;cursor:pointer;font:inherit;font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px;box-shadow:0 1px 2px rgba(22,163,74,0.25)">
+            ✓ Klára heimsókn
+          </button>
+          ` : ''}
+          <div style="font-size:11px;color:#94a3b8">#${esc(c.id)}</div>
         </div>
 
         <!-- Customer card -->
@@ -334,6 +487,7 @@
 
     // Wire interactions
     main.querySelector('#_vd-back')?.addEventListener('click', goBack);
+    main.querySelector('#_vd-complete-visit')?.addEventListener('click', () => completeVisit());
     main.querySelectorAll('._vd-toggle').forEach(b => b.addEventListener('click', () => {
       toggleService(b.dataset.svc, b.dataset.action);
     }));
