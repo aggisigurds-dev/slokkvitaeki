@@ -28,6 +28,15 @@
 
   const STORAGE_KEY = 'brunakerfi_customers';
   const NOTES_KEY = 'brunakerfi_notes';
+  const VIEW_KEY = 'bk_view_mode';   // localStorage: 'card' (default) | 'list'
+
+  function getViewMode() {
+    try { return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'card'; }
+    catch (_) { return 'card'; }
+  }
+  function setViewMode(m) {
+    try { localStorage.setItem(VIEW_KEY, m === 'list' ? 'list' : 'card'); } catch (_) {}
+  }
 
   function getSB() { return (window.DB && window.DB.sb) || null; }
   function esc(s) {
@@ -243,6 +252,10 @@
             <div style="font-size:12px;color:#64748b;margin-top:2px">Þjónustusamningar og ársskoðanir brunaviðvörunarkerfa — ${list.length} fyrirtæki · ${totalUnits} einingar</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div style="display:flex;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;background:#fff" title="Birting">
+              <button data-bk-vm="card" class="_bk-vm" type="button" style="padding:7px 12px;border:none;background:${getViewMode()==='card'?'#0f172a':'#fff'};color:${getViewMode()==='card'?'#fff':'#475569'};cursor:pointer;font:inherit;font-size:12px;font-weight:600">🟦 Kort</button>
+              <button data-bk-vm="list" class="_bk-vm" type="button" style="padding:7px 12px;border:none;background:${getViewMode()==='list'?'#0f172a':'#fff'};color:${getViewMode()==='list'?'#fff':'#475569'};cursor:pointer;font:inherit;font-size:12px;font-weight:600;border-left:1px solid #cbd5e1">📋 Listi</button>
+            </div>
             <button class="_bk-share" type="button" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:12px;color:#475569" title="Afrita beinan tengil á þennan tab">🔗 Afrita tengil</button>
             <button class="_bk-add" type="button" style="padding:9px 16px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">+ Bæta við fyrirtæki</button>
           </div>
@@ -263,9 +276,10 @@
             <div style="font-size:12px">Smelltu á <strong>"+ Bæta við fyrirtæki"</strong> til að bæta við fyrsta viðskiptavininum.</div>
           </div>
         ` : `
+        ${getViewMode() === 'list' ? renderTable(list) : `
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px">
           ${list.map(c => renderCard(c)).join('')}
-        </div>
+        </div>`}
 
         ${(() => {
           // Compute per-month revenue. For each month, use 2026's revenue
@@ -343,9 +357,19 @@
 
     main.querySelector('._bk-add')?.addEventListener('click', openAddDialog);
     main.querySelector('._bk-share')?.addEventListener('click', shareLink);
+    main.querySelectorAll('._bk-vm').forEach(b => b.addEventListener('click', () => {
+      setViewMode(b.dataset.bkVm);
+      renderList();
+    }));
     wireNotes(main);
-    main.querySelectorAll('._bk-card').forEach(el => {
+    main.querySelectorAll('._bk-card, ._bk-row').forEach(el => {
       const id = +el.dataset.coId;
+      if (el.classList.contains('_bk-row')) {
+        el.addEventListener('click', e => {
+          if (e.target.closest('button')) return;
+          openCompanyDetail(id);
+        });
+      }
       el.querySelector('._bk-open')?.addEventListener('click', () => openCompanyDetail(id));
       el.querySelector('._bk-skyrsla')?.addEventListener('click', e => { e.stopPropagation(); newReport(id); });
       el.querySelector('._bk-samn')?.addEventListener('click', e => { e.stopPropagation(); newContract(id); });
@@ -359,6 +383,58 @@
         await show();
       });
     });
+  }
+
+  function renderTable(list) {
+    const attsAll = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('company_attachments')) || {};
+    const th = 'text-align:left;padding:8px 10px;font-size:10.5px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;font-weight:700;border-bottom:1px solid #e2e8f0;white-space:nowrap';
+    const td = 'padding:9px 10px;font-size:12.5px;color:#0f172a;border-bottom:1px solid #f1f5f9;vertical-align:middle';
+    const rows = list.map(c => {
+      const bk = c._bk || {};
+      const m = +bk.inspect_month || 0;
+      const monthLabel = m >= 1 && m <= 12 ? MONTHS_IS[m-1] : '—';
+      const lastIns = bk.last_inspected ? fmtDate(bk.last_inspected) : '—';
+      const r26 = +bk.revenue_2026 || 0;
+      const r25 = +bk.revenue_2025 || 0;
+      const useYear = r26 > 0 ? 2026 : (r25 > 0 ? 2025 : null);
+      const useVal = r26 > 0 ? r26 : r25;
+      const revColor = r26 > 0 ? '#15803d' : (r25 > 0 ? '#92400e' : '#94a3b8');
+      const revBg = r26 > 0 ? '#dcfce7' : (r25 > 0 ? '#fef3c7' : 'transparent');
+      const attsCount = (attsAll[String(c.id)] || []).length;
+      return `<tr class="_bk-row" data-co-id="${c.id}" style="cursor:pointer" onmouseover="this.style.background='#fef2f2'" onmouseout="this.style.background='#fff'">
+        <td style="${td}">
+          <div style="font-weight:700">${esc(c.nafn || '—')}</div>
+          ${c.kennitala ? `<div style="font-size:10.5px;color:#94a3b8;font-family:monospace">kt. ${esc(c.kennitala)}</div>` : ''}
+        </td>
+        <td style="${td};color:#64748b">${esc(c.heimilisfang || '—')}</td>
+        <td style="${td};text-align:center;font-weight:700">${+bk.unit_count || 0}</td>
+        <td style="${td};color:#92400e;font-weight:600">${esc(monthLabel)}</td>
+        <td style="${td};color:#475569">${esc(lastIns)}</td>
+        <td style="${td};text-align:right;font-variant-numeric:tabular-nums">${useYear ? `<span style="background:${revBg};color:${revColor};padding:2px 7px;border-radius:99px;font-size:11px;font-weight:700">${fmtKr(useVal)} <span style="opacity:.6;font-size:9.5px">${useYear}</span></span>` : '—'}</td>
+        <td style="${td};color:#94a3b8;font-size:11px;white-space:nowrap">${attsCount} skjöl</td>
+        <td style="${td};text-align:right;white-space:nowrap">
+          <button class="_bk-skyrsla" type="button" title="Ný ársskoðun" style="background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;padding:4px 7px;cursor:pointer;font-size:11px;margin-right:2px">📋</button>
+          <button class="_bk-samn" type="button" title="Þjónustusamningur" style="background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;padding:4px 7px;cursor:pointer;font-size:11px;margin-right:2px">📜</button>
+          <button class="_bk-edit" type="button" title="Breyta" style="background:#fff;color:#64748b;border:1px solid #e2e8f0;border-radius:5px;padding:4px 7px;cursor:pointer;font-size:11px;margin-right:2px">✏️</button>
+          <button class="_bk-del" type="button" title="Fjarlægja" style="background:#fff;color:#dc2626;border:1px solid #fecaca;border-radius:5px;padding:4px 7px;cursor:pointer;font-size:11px">✕</button>
+        </td>
+      </tr>`;
+    }).join('');
+    return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04)">
+      <table style="width:100%;border-collapse:collapse;font:inherit">
+        <thead><tr style="background:#f9fafb">
+          <th style="${th}">Fyrirtæki</th>
+          <th style="${th}">Heimilisfang</th>
+          <th style="${th};text-align:center">Einingar</th>
+          <th style="${th}">Skoðun</th>
+          <th style="${th}">Síðast</th>
+          <th style="${th};text-align:right">Tekjur</th>
+          <th style="${th}">Skjöl</th>
+          <th style="${th};text-align:right">Aðgerðir</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
   }
 
   function renderCard(c) {

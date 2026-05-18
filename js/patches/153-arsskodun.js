@@ -297,6 +297,14 @@
 
   function render() {
     const main = document.getElementById('ars-main');
+    // Preserve search-box focus across re-renders: typing in #_ars-search
+    // triggers a debounced render that calls main.innerHTML=... which
+    // destroys the old input element. Without this, the user loses focus
+    // after every keystroke once they pause for >200ms.
+    const prevActive = document.activeElement;
+    const keepSearchFocus = !!(prevActive && prevActive.id === '_ars-search');
+    const selStart = keepSearchFocus ? prevActive.selectionStart : null;
+    const selEnd = keepSearchFocus ? prevActive.selectionEnd : null;
     if (!main) return;
     const all = _cache.list;
     const filtered = filteredSorted();
@@ -469,6 +477,7 @@
         if (id) openDetail(id);
       });
     });
+
     main.querySelectorAll('._ars-open-map').forEach(b => b.addEventListener('click', e => {
       e.stopPropagation();
       const id = +b.dataset.coId;
@@ -480,6 +489,16 @@
       if (window._openCompanySafe) window._openCompanySafe(id);
       else if (window.App && App.switchView) App.switchView('companies');
     }));
+
+    if (keepSearchFocus) {
+      const fresh = main.querySelector('#_ars-search');
+      if (fresh) {
+        fresh.focus();
+        try {
+          fresh.setSelectionRange(selStart ?? fresh.value.length, selEnd ?? fresh.value.length);
+        } catch (_) { /* type=search may not allow setSelectionRange in some browsers */ }
+      }
+    }
   }
 
   function attCount(coId) {

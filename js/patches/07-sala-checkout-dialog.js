@@ -163,7 +163,14 @@
       simi:  simiInput?.value.trim() || stateCust.simi || '',
       co_id: stateCust.co_id || null
     };
-    return { items, grandTotal, customer };
+    // 2026-05-18: capture discount from POS state so the printed receipt
+    // includes it. SalaInvoice.render falls back to POS.getState() but if
+    // that path ever fails we still pass it explicitly here.
+    const posState = (window.POS && typeof window.POS.getState === 'function')
+      ? window.POS.getState() : null;
+    const discount_pct = (posState && +posState.discount_pct) || 0;
+    const discount     = (posState && +posState.discount)     || 0;
+    return { items, grandTotal, customer, discount_pct, discount };
   }
 
   // --- Modal ---
@@ -345,7 +352,11 @@
         customerKt: cart.customer.kt || '',
         customerSimi: cart.customer.simi || '',
         paymentMethod: method,            // 'kort' / 'pening' / 'reikningur'
-        invoiceNum: cart.invoiceNum || '' // assigned by DB trigger on save
+        invoiceNum: cart.invoiceNum || '', // assigned by DB trigger on save
+        // 2026-05-18: pass discount explicitly so it appears on the printed
+        // receipt even if POS.getState() is unavailable or stale at render time.
+        discount_pct: cart.discount_pct || 0,
+        discount:     cart.discount     || 0
       });
       if (ok) return;
     }

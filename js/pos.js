@@ -377,6 +377,7 @@
   function buildTotalsHTML(){
     var t = totals();
     var pct = state.discount_pct || 0;
+    var disc = state.discount || 0;
     var hasDisc = (pct > 0) || (state.discount > 0);
     // Customer-discount badge: show "↺ 10% (≈ 1.200 kr)" so user sees in
     // kr what would be saved before applying.
@@ -396,10 +397,15 @@
           '<span style="display:flex;align-items:center;gap:4px">' +
             '<span id="pos-disc-kr" style="color:#dc2626;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;'+(hasDisc?'':'display:none;')+'">−'+fmtKr(t.pct_disc + t.abs_disc)+'</span>' +
             '<input id="pos-discount" type="text" inputmode="decimal" pattern="[0-9.,]*" value="' + pct + '" ' +
-              'autocomplete="off" ' +
-              'style="width:60px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;' +
+              'autocomplete="off" title="Afsláttur %"' +
+              'style="width:50px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;' +
               'text-align:right;font-variant-numeric:tabular-nums">' +
             '<span style="color:#94a3b8">%</span>' +
+            '<input id="pos-discount-kr" type="text" inputmode="decimal" pattern="[0-9.,]*" value="' + (disc || '') + '" ' +
+              'autocomplete="off" title="Afsláttur í krónum" placeholder="0"' +
+              'style="width:70px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;' +
+              'text-align:right;font-variant-numeric:tabular-nums;margin-left:6px">' +
+            '<span style="color:#94a3b8">kr</span>' +
           '</span>' +
         '</div>' +
         '<div id="pos-tot-disc-row" style="display:none"></div>' +
@@ -534,9 +540,17 @@
     // delivered keystrokes (e.g. "20" became "2"). Now we update only the
     // calculated cells in place; the input stays mounted and focused.
     document.getElementById('pos-totals').addEventListener('input', function(e){
-      var d = e.target.closest('#pos-discount'); if (!d) return;
-      var raw = String(d.value || '').replace(/[^0-9.,]/g, '').replace(',', '.');
-      state.discount_pct = Math.max(0, Math.min(100, parseFloat(raw) || 0));
+      var pctEl = e.target.closest('#pos-discount');
+      var krEl  = e.target.closest('#pos-discount-kr');
+      if (!pctEl && !krEl) return;
+      var raw = String(e.target.value || '').replace(/[^0-9.,]/g, '').replace(',', '.');
+      if (pctEl) {
+        state.discount_pct = Math.max(0, Math.min(100, parseFloat(raw) || 0));
+      } else {
+        // Clamp the kr discount so it never exceeds the cart subtotal.
+        var subEx = state.lines.reduce(function(s, l){ return s + (l.qty * l.unit_price_ex_vat); }, 0);
+        state.discount = Math.max(0, Math.min(subEx, parseFloat(raw) || 0));
+      }
       _updateTotalsCells();
       // Update checkout button label
       var t = totals();
@@ -555,7 +569,7 @@
     // Auto-select all text when user focuses the discount field, so they
     // can immediately type a replacement value without manually clearing.
     document.getElementById('pos-totals').addEventListener('focusin', function(e){
-      var d = e.target.closest('#pos-discount'); if (!d) return;
+      var d = e.target.closest('#pos-discount, #pos-discount-kr'); if (!d) return;
       setTimeout(function () { try { d.select(); } catch(_) {} }, 0);
     });
     // "Sækja afslátt viðskiptavinar" button — applies the customer's
@@ -799,7 +813,12 @@
         lines: state.lines.slice(),
         totals: t,
         method: pmLabel,
-        phone: state.customer.simi || ''
+        phone: state.customer.simi || '',
+        // 2026-05-18: snapshot discount so "Prenta aftur" shows it on the receipt.
+        // Without these, fakeSale below hardcodes afslattur=0 and the re-print
+        // silently drops the discount.
+        discount_pct: state.discount_pct || 0,
+        discount: state.discount || 0
       });
       state.customer={mode:'kt',kt:'',nafn:'',simi:'',co_id:null,afslattur_pct:0,athugasemdir:''};state.lines=[];state.notes='';state.discount=0;state.discount_pct=0;
       // Hide the customer memo box on reset so it doesn't leak into the next sale
@@ -859,19 +878,29 @@
       if (window.SalaInvoice && typeof SalaInvoice.render === 'function') {
         // Synthesise a sale row so SalaInvoice.renderFromSale produces the
         // same A4 layout that historical re-prints use.
+        // 2026-05-18: include the discount snapshot from the original sale
+        // so the re-print matches the first print. `afslattur` is the kr value
+        // applied; renderFromSale reads it as discount=afslattur, discount_pct=0.
+        var fakeAfslattur = Math.round((+info.totals?.pct_disc || 0) + (+info.totals?.abs_disc || 0));
         var fakeSale = {
           num: info.num,
           customer_nafn: info.customer,
           greitt_med: info.method,
           starfsmadur: 'Kassi',
           linur: info.lines || [],
-          afslattur: 0,
+          afslattur: fakeAfslattur,
           athugasemdir: ''
         };
         if (typeof SalaInvoice.renderFromSale === 'function') {
           SalaInvoice.renderFromSale(w, fakeSale, null);
         } else {
-          SalaInvoice.render(w, { customerName: info.customer, paymentMethod: info.method, invoiceNum: info.num });
+          SalaInvoice.render(w, {
+            customerName: info.customer,
+            paymentMethod: info.method,
+            invoiceNum: info.num,
+            discount_pct: info.discount_pct || 0,
+            discount: info.discount || fakeAfslattur || 0
+          });
         }
       } else {
         showReceipt(info.num, info.customer, info.lines || [], info.totals, 0, info.phone || '', '');
