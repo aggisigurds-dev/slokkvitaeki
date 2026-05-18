@@ -36,6 +36,7 @@ backups/
 # One-shot scratch scripts and data dumps used during data migrations
 tmp_*.mjs
 tmp_*.json
+tmp_*.txt
 
 # Netlify CLI cache (if you ever install it)
 .netlify/
