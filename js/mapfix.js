@@ -161,8 +161,17 @@
       rendered++;
     });
     if(rendered){
-      var pts = Object.values(state.markers).map(function(m){return m.getLatLng();});
-      if(pts.length > 1){ map.fitBounds(L.latLngBounds(pts).pad(0.15)); }
+      // Only fit bounds on the very first batch — re-running tick adds
+      // new markers as the geocode cache fills, but we don't want the
+      // map to keep jerking around. After the first fit, user controls
+      // pan/zoom themselves.
+      if(!state.boundsFit){
+        var pts = Object.values(state.markers).map(function(m){return m.getLatLng();});
+        if(pts.length > 1){
+          map.fitBounds(L.latLngBounds(pts).pad(0.15));
+          state.boundsFit = true;
+        }
+      }
     }
     hookClickDelegate();
     return rendered;
@@ -240,10 +249,14 @@
     var view = document.getElementById('view-field');
     if(!view || !view.classList.contains('active')) return;
     loadCompaniesIfNeeded().then(function(){
-      if(!Object.keys(state.markers).length){
-        var n = instantRender();
-        if(n) console.log('[MapFix v4] Rendered', n, 'markers from cache');
-      }
+      // Always re-run instantRender — it skips companies that already
+      // have a marker (line 'if(state.markers[c.id]) return;'). This is
+      // important because the geocode cache fills over time via the
+      // shared-pull (~10s) and the background pre-warm (1.5s per
+      // address). Without this, the first render might only see ~6
+      // matching addresses and we'd never add the other ~250.
+      var n = instantRender();
+      if(n) console.log('[MapFix v4] Added', n, 'new markers (total', Object.keys(state.markers).length + ')');
       hookUppfaeraButton();
     });
   }
