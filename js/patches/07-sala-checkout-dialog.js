@@ -239,7 +239,7 @@
           <div class="scd-section">
             <div class="scd-section-title">Prenta</div>
             <label class="scd-check">
-              <input type="checkbox" id="scd-receipt" ${(window.AppSettings && window.AppSettings.path('prentun.default_print_kvittun') !== false) ? 'checked' : ''}>
+              <input type="checkbox" id="scd-receipt" ${(window.AppSettings && window.AppSettings.path('prentun.default_print_kvittun') === true) ? 'checked' : ''}>
               <span>🧾 Prenta kvittun</span>
             </label>
             <label class="scd-check ${hasProducts ? '' : 'disabled'}">
@@ -247,7 +247,7 @@
               <span>🏷️ Prenta strikamerki fyrir tæki${hasProducts ? ' (' + productCount + ')' : ' (engin tæki í körfu)'}</span>
             </label>
             <label class="scd-check">
-              <input type="checkbox" id="scd-refill-label" ${(window.AppSettings && window.AppSettings.path('prentun.default_print_qr_label') === true) ? 'checked' : ''}>
+              <input type="checkbox" id="scd-refill-label" ${(!window.AppSettings || window.AppSettings.path('prentun.default_print_qr_label') !== false) ? 'checked' : ''}>
               <span>🏷️ Prenta QR-merki fyrir tæki í áfyllingu (24 × 100 mm)</span>
             </label>
           </div>

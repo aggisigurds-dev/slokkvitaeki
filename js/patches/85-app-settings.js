@@ -55,9 +55,9 @@
       { label: 'Akstur',               price: 3500, icon: '🚚' }
     ],
     prentun: {
-      default_print_kvittun: true,
+      default_print_kvittun: false,
       default_print_strikamerki: true,
-      default_print_qr_label: false,
+      default_print_qr_label: true,
       label_size: '54x17',
       dpi_compensation: 2
     },
