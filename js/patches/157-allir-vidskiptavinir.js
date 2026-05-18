@@ -125,11 +125,16 @@
       result = result.filter(c => c._unitCount > 0);
     }
 
-    // Free-text search
+    // Free-text search. NB: the kennitala check digit-strips both sides,
+    // but if the user typed letters the stripped search becomes '' and
+    // ''.includes('') is true — which would match every company. Guard
+    // against that by only running the kt match when the search has at
+    // least one digit.
     if (search) {
+      const ktSearch = search.replace(/\D/g, '');
       result = result.filter(c =>
         (c.nafn || '').toLowerCase().includes(search) ||
-        (c.kennitala || '').replace(/\D/g,'').includes(search.replace(/\D/g,'')) ||
+        (ktSearch && (c.kennitala || '').replace(/\D/g,'').includes(ktSearch)) ||
         (c.heimilisfang || '').toLowerCase().includes(search) ||
         (c.simi || '').includes(search) ||
         (c.farsimi || '').includes(search) ||
