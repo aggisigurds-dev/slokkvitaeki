@@ -143,6 +143,18 @@
 
   async function buildMap(container) {
     await ensureLeaflet();
+    // If we have a Leaflet map but its container has been detached from
+    // the DOM (happens when patch 153's ars-main re-renders and our
+    // wrapper gets re-injected on a fresh container), drop the stale
+    // _map and let Leaflet mount fresh on the NEW container. Without
+    // this, `if (_map) return _map;` returns a map attached to a
+    // garbage-collected container — panel is open, but no tiles, no pins.
+    if (_map && !document.body.contains(_map.getContainer())) {
+      try { _map.remove(); } catch (e) {}
+      _map = null;
+      _markers = {};
+      _lastSig = '';
+    }
     if (_map) return _map;
     _map = L.map(container).setView([64.1355, -21.8954], 11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
