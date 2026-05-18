@@ -138,7 +138,12 @@
     } else if (action === 'remove') {
       const svcLabel = svc === 'ars' ? 'fyrirtækjaþjónustu' : 'brunakerfi';
       if (!confirm('Fjarlægja "' + name + '" úr ' + svcLabel + '?\n\n(Gögn um búnað haldast — bara samningsmerkið fer.)')) return;
-      delete map[String(_currentId)];
+      // AppSettings.save() deep-merges, so `delete map[id]` doesn't
+      // propagate — the existing key would survive the merge. Set the
+      // value to null instead. Our subscription checks treat null as
+      // "not subscribed" (_hasArs requires .equipment; _hasBru requires
+      // a truthy value).
+      map[String(_currentId)] = null;
     }
     const ok = await window.AppSettings.save({ [STORAGE_KEY]: map });
     if (!ok) { alert('Vista mistókst'); return; }

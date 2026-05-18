@@ -352,7 +352,10 @@
     } else if (action === 'remove') {
       const svcLabel = svc === 'ars' ? 'fyrirtækjaþjónustu' : 'brunakerfi';
       if (!confirm('Fjarlægja "' + name + '" úr ' + svcLabel + '?\n\n(Gögn um búnað haldast — bara samningsmerkið fer.)')) return;
-      delete map[String(coId)];
+      // AppSettings.save() deep-merges; delete doesn't propagate. Set to
+      // null instead — _hasArs requires .equipment and _hasBru is !!bru
+      // so null is treated as "not subscribed".
+      map[String(coId)] = null;
     }
     const ok = await window.AppSettings.save({ [STORAGE_KEY]: map });
     if (!ok) { alert('Vista mistókst'); return; }
