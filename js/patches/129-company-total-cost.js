@@ -207,10 +207,13 @@
     let all = [];
     let from = 0, pageSize = 1000;
     while (true) {
+      // 2026-05-19: only 'active' counts toward the next-service total.
+      // Was returning i_vinnslu + active = inflated counts (e.g. IKEA
+      // showed 72 instead of 71 because of one in-workshop unit).
       const { data, error } = await sb.from('uttaeki')
         .select('id,serial,type,size,status')
         .eq('client', client)
-        .neq('status', 'urelt')
+        .eq('status', 'active')
         .range(from, from + pageSize - 1);
       if (error || !data) break;
       all = all.concat(data);
