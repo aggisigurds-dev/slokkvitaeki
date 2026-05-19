@@ -265,12 +265,18 @@
     '<div style="display:grid;grid-template-columns:1fr 380px;gap:16px;padding:0 16px 16px;min-height:calc(100vh - 160px)">' +
       '<div>' +
         '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px">' +
             '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Viðskiptavinur</div>' +
-            // 2026-05-18: single toggle between kennitala-lookup and walk-in modes.
-            // Replaces the older two-button picker. The button label reflects the
-            // OTHER mode (what you'll switch TO) so it's clearly an action.
-            '<button id="pos-mode-toggle" type="button" style="padding:6px 12px;border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px;white-space:nowrap">→ Án kennitölu</button>' +
+            // 2026-05-19: scan button between Viðskiptavinur label and Án-kennitölu
+            // toggle — scanning a tæki QR looks up its client and fills the
+            // customer box in one step.
+            '<div style="display:flex;gap:6px;align-items:center">' +
+              '<button id="pos-scan-top" type="button" title="Skanna QR / strikamerki á tæki — finnur viðskiptavin" style="padding:6px 12px;border:1px solid #cbd5e1;background:#0f172a;color:#fff;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px">📷 Skanna</button>' +
+              // 2026-05-18: single toggle between kennitala-lookup and walk-in modes.
+              // Replaces the older two-button picker. The button label reflects the
+              // OTHER mode (what you'll switch TO) so it's clearly an action.
+              '<button id="pos-mode-toggle" type="button" style="padding:6px 12px;border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px;white-space:nowrap">→ Án kennitölu</button>' +
+            '</div>' +
           '</div>' +
           '<div id="pos-kt-box">' +
             '<input id="pos-kt" placeholder="000000-0000" maxlength="11" autocomplete="off" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:16px;box-sizing:border-box;font-variant-numeric:tabular-nums">' +
@@ -530,6 +536,8 @@
     if(sEl)sEl.addEventListener('input',function(){state.customer.simi=sEl.value;});
     document.getElementById('pos-add-service').addEventListener('click',promptService);
     document.getElementById('pos-scan').addEventListener('click',scanQr);
+    var topScanBtn = document.getElementById('pos-scan-top');
+    if (topScanBtn) topScanBtn.addEventListener('click', scanQr);
     document.getElementById('pos-services').addEventListener('click',function(e){var b=e.target.closest('.pos-svc');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);var s=state.services.find(function(x){return x.id===id;});if(!s)return;state.lines.push({type:'service',desc:s.nafn,qty:1,unit_price_ex_vat:s.verd_an_vsk,vsk_pct:s.vsk_prosenta||24,ref:'',product_id:s.id});rerenderDynamic();});
     document.getElementById('pos-products').addEventListener('click',function(e){var b=e.target.closest('.pos-prod');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);addProductLine(id);});
     document.getElementById('pos-lines').addEventListener('click',function(e){var d=e.target.closest('.pos-line-del'),u=e.target.closest('.pos-qty-up'),n=e.target.closest('.pos-qty-dn');if(d){state.lines.splice(parseInt(d.getAttribute('data-idx'),10),1);rerenderDynamic();return;}if(u){var i=parseInt(u.getAttribute('data-idx'),10);state.lines[i].qty++;rerenderDynamic();return;}if(n){var j=parseInt(n.getAttribute('data-idx'),10);state.lines[j].qty--;if(state.lines[j].qty<=0)state.lines.splice(j,1);rerenderDynamic();return;}});
