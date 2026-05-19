@@ -61,6 +61,7 @@
     ['Verkstæði'],
     SEP,
     ['Þjónustutæki'],
+    ['Leiðsögn'],  // 2026-05-19: placed above Fyrirtæki í Þjónustu — driver workflow starts on map
     ['Fyrirtæki í Þjónustu', 'Fyrirtækjaþjónusta', 'Fyrirtæki'],  // patch 153 hijacks this slot — old Fyrirtæki (view-companies) is hidden
     ['Brunakerfisþjónusta'],
     ['Viðskiptavinir'],
