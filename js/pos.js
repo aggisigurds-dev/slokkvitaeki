@@ -834,21 +834,32 @@
       var verkMsgShort = skipVerk
         ? '⏭ Engar verkbeiðnir búnar til'
         : (verkCount + ' verkbeiðni' + (verkCount === 1 ? '' : 'r') + ' búin' + (verkCount === 1 ? '' : 'ar') + ' til');
-      showSaleSuccess({
-        num: num,
-        total: t.total,
-        customer: cust,
-        verkMsg: verkMsgShort,
-        lines: state.lines.slice(),
-        totals: t,
-        method: pmLabel,
-        phone: state.customer.simi || '',
-        // 2026-05-18: snapshot discount so "Prenta aftur" shows it on the receipt.
-        // Without these, fakeSale below hardcodes afslattur=0 and the re-print
-        // silently drops the discount.
-        discount_pct: state.discount_pct || 0,
-        discount: state.discount || 0
-      });
+      // 2026-05-19: Skip the "Sala kláruð" success modal when payment is
+      // "greitt_sidar" (pay when picking up). The customer doesn't need a
+      // receipt yet — the pickup-checkout flow (patch 121) will print one
+      // at pickup. Showing the success modal here is just a click-to-
+      // dismiss for the operator. Quick toast confirmation is enough.
+      if (pmCode === 'greitt_sidar') {
+        if (window.Toast && Toast.show) {
+          Toast.show('✓ Drög stofnuð — ' + num + ' · greitt við afhendingu', 'success');
+        }
+      } else {
+        showSaleSuccess({
+          num: num,
+          total: t.total,
+          customer: cust,
+          verkMsg: verkMsgShort,
+          lines: state.lines.slice(),
+          totals: t,
+          method: pmLabel,
+          phone: state.customer.simi || '',
+          // 2026-05-18: snapshot discount so "Prenta aftur" shows it on the receipt.
+          // Without these, fakeSale below hardcodes afslattur=0 and the re-print
+          // silently drops the discount.
+          discount_pct: state.discount_pct || 0,
+          discount: state.discount || 0
+        });
+      }
       state.customer={mode:'kt',kt:'',nafn:'',simi:'',co_id:null,afslattur_pct:0,athugasemdir:''};state.lines=[];state.notes='';state.discount=0;state.discount_pct=0;
       // Hide the customer memo box on reset so it doesn't leak into the next sale
       var memoBoxReset=document.getElementById('pos-customer-memo');if(memoBoxReset)memoBoxReset.style.display='none';
