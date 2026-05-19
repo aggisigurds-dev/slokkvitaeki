@@ -132,8 +132,14 @@ var Companies = {
         '</div>' +
       '</div>' +
 
-      // Action bar (other patches inject into this row via the existing buttons)
-      '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px">' +
+      // Action bar (patches 102/91/154/137/73/123 etc. inject into this row).
+      // 2026-05-19: data-co-id makes the row addressable independently of
+      // the Companies.openEdit button (which lives in the top bar now).
+      '<div data-co-id="' + c.id + '" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px">' +
+        // Hidden anchor button \u2014 patches that derive co_id from a
+        // Companies.openEdit onclick handler (e.g. patch 102) still find
+        // it here without showing a duplicate visible button.
+        '<button class="_co-edit-anchor" type="button" onclick="Companies.openEdit(' + c.id + ')" style="display:none">edit anchor</button>' +
         '<button class="btn btn-primary btn-sm" onclick="Companies.addUnit(' + c.id + ',\'' + nafn + '\')">+ B\u00e6ta vi\u00f0 t\u00e6ki</button>' +
         '<button class="btn btn-outline btn-sm" onclick="FloorPlan.load(' + c.id + ');FloorPlan.open(' + c.id + ',\'' + nafn + '\',' + 'Companies.list.find(function(x){return x.id===' + c.id + ';}) ? DB.cache.units.filter(function(u){return u.client===\'' + nafn + '\';}) : [])"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Teikning</button>' +
       '</div>';
