@@ -1693,6 +1693,11 @@ console.log('[patch-master] loaded with all fixes');
 
 
 /* ===== FYRIRTÆKI DELETE BUTTON ===== */
+// 2026-05-19: Superseded by patch 160 (company-delete) which has a
+// safer "linked uttaeki" warning + cleaner UI. Disabled here to avoid
+// rendering two Eyða buttons side-by-side in the new redesigned
+// header (features.js v20260519b). The notes-display (count chip)
+// below the company name is still useful — keep that, drop the button.
 (function(){
   function addDeleteBtn(){
     var main = document.getElementById('companies-main');
@@ -1700,6 +1705,13 @@ console.log('[patch-master] loaded with all fixes');
     // Only on detail view (has 'Breyta' button)
     var editBtn = main.querySelector('button[onclick*="openEdit"]');
     if(!editBtn || main.querySelector('._pm_delete_btn')) return;
+    // 2026-05-19: skip button — patch 160 handles delete now.
+    var SKIP_DELETE_BTN = true;
+    if (SKIP_DELETE_BTN) {
+      // Still render the notes/count display below the name (useful chip)
+      // by falling through, but mark the dataset so we don't re-do it.
+      main.dataset._pmDeleteSkipped = '1';
+    }
     // Show athugasemdir (notes) under company name
     var nameDiv = main.querySelector('div[style*="font-size:21px"]');
     if(nameDiv && !main.querySelector('._pm_notes_display')){
@@ -1745,6 +1757,8 @@ console.log('[patch-master] loaded with all fixes');
     var m = editBtn.getAttribute('onclick').match(/openEdit\((\d+)\)/);
     if(!m) return;
     var coId = parseInt(m[1],10);
+    // 2026-05-19: bail before the duplicate Ey\u00f0a button is inserted.
+    if (SKIP_DELETE_BTN) return;
     // Add delete button
     var btn = document.createElement('button');
     btn.className = 'btn btn-outline btn-sm _pm_delete_btn';
