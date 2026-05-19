@@ -492,15 +492,20 @@
               <option value="100">100 mm — löng</option>
             </select>
           </div>
-          <div style="display:flex;align-items:flex-end">
-            <button type="button" class="qrlc-btn" id="_qrlc_testpattern" style="width:100%" title="Prentar kvörðunarmynstur með hornum og krosshair fyrir að stilla prentara/límband.">
-              🎯 Prufuprent (kvörðun)
-            </button>
+          <div>
+            <label for="_qrlc_count">Fjöldi miða</label>
+            <input type="number" id="_qrlc_count" min="1" max="20" step="1" value="1" style="font-variant-numeric:tabular-nums">
           </div>
         </div>
 
+        <div style="margin-top:6px">
+          <button type="button" class="qrlc-btn" id="_qrlc_testpattern" style="width:100%" title="Prentar kvörðunarmynstur með hornum og krosshair fyrir að stilla prentara/límband.">
+            🎯 Prufuprent (kvörðun)
+          </button>
+        </div>
+
         <div class="qrlc-actions">
-          <button class="qrlc-btn" id="_qrlc_cancel">Hætta við</button>
+          <button class="qrlc-btn" id="_qrlc_cancel">Loka</button>
           <button class="qrlc-btn primary" id="_qrlc_print" disabled>🖨 Prenta</button>
         </div>
       </div>
@@ -571,12 +576,56 @@
     document.getElementById('_qrlc_print').addEventListener('click', async () => {
       const previewEl = document.getElementById('_qrlc_preview');
       const ds = previewEl.dataset;
-      const labelHTML = buildPrintLabel({
-        qrDataUrl: ds.qr || '', name: ds.name, phone: ds.phone, serial: ds.serial, extra: ds.extra
-      });
       const lengthMm = +(document.getElementById('_qrlc_length')?.value || 70);
+      const count = Math.max(1, Math.min(20, +(document.getElementById('_qrlc_count')?.value || 1)));
+
+      // Sequential-serial generation for multi-label print. Parses the
+      // current serial (e.g. "S0001") and increments for labels 2..N.
+      // If the serial doesn't match SnnnnnZ, falls back to appending "-N".
+      function nextSerial(base, n) {
+        if (n === 0) return base;
+        const m = String(base || '').match(/^([A-Za-z]*)(\d+)$/);
+        if (m) {
+          const prefix = m[1];
+          const num = parseInt(m[2], 10) + n;
+          return prefix + String(num).padStart(m[2].length, '0');
+        }
+        return base + '-' + (n + 1);
+      }
+
+      let labelHTML = '';
+      for (let i = 0; i < count; i++) {
+        const serial = nextSerial(ds.serial || '', i);
+        // Re-render the QR with the bumped serial. Re-uses the same name/
+        // phone/extra so multi-label batches are visually consistent.
+        const qrText = [ds.name, ds.phone, serial, ds.extra].filter(Boolean).join(' · ');
+        const qrUrl = await qrPNG(qrText, 320);
+        labelHTML += buildPrintLabel({
+          qrDataUrl: qrUrl, name: ds.name, phone: ds.phone, serial, extra: ds.extra
+        });
+      }
       openPrintWindow(labelHTML, lengthMm);
+
+      // Advance the visible serial input so the NEXT manual print starts
+      // from where this batch ended.
+      if (count > 1) {
+        const inp = document.getElementById('_qrlc_serial');
+        if (inp) { inp.value = nextSerial(ds.serial || '', count); refreshPreview(); }
+      }
     });
+
+    // Live-update the Prenta button label so the operator sees "Prenta 5 miða"
+    // when they bump the count.
+    const countInput = document.getElementById('_qrlc_count');
+    const printBtnEl = document.getElementById('_qrlc_print');
+    function syncCountLabel() {
+      const n = Math.max(1, Math.min(20, +(countInput?.value || 1)));
+      if (printBtnEl) printBtnEl.textContent = n > 1 ? '🖨 Prenta ' + n + ' miða' : '🖨 Prenta';
+    }
+    if (countInput) {
+      countInput.addEventListener('input', syncCountLabel);
+      syncCountLabel();
+    }
 
     // Length dropdown updates the preview caption so the user sees what they
     // are about to print.
@@ -620,12 +669,22 @@
   obs.observe(document.body, { childList: true, subtree: true });
 
   // Allow callers (e.g. patch 07 checkout) to open the dialog with a customer
-  // pre-selected and a fresh serial auto-fetched.
-  async function openWithCustomer(customer) {
+  // pre-selected and a fresh serial auto-fetched. 2026-05-19: optional
+  // labelCount pre-fills the Fjöldi miða input so a 5-tæki refill auto-
+  // batches all 5 labels with sequential serials.
+  async function openWithCustomer(customer, labelCount) {
     openDialog();
     if (customer && (customer.nafn || customer.kt || customer.simi)) {
       // Reuse selectCustomer to wire up devices & names
       selectCustomer({ nafn: customer.nafn || '', kennitala: customer.kt || '', simi: customer.simi || '' });
+    }
+    // Pre-fill label count if caller knows how many tæki to print labels for
+    if (typeof labelCount === 'number' && labelCount > 1) {
+      const cnt = document.getElementById('_qrlc_count');
+      if (cnt) {
+        cnt.value = Math.min(20, Math.max(1, Math.floor(labelCount)));
+        cnt.dispatchEvent(new Event('input'));
+      }
     }
     // Auto-populate serial with next from sequence
     const next = await fetchNextSerial();

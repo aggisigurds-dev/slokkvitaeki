@@ -328,8 +328,17 @@
     if (doReceipt) printReceipt(cart, method);
     if (doBarcodes) printBarcodes(cart);
     if (doRefillLabel && window.QrLabelCustomer && typeof QrLabelCustomer.open === 'function') {
+      // 2026-05-19: count refill lines so the dialog pre-fills Fjöldi miða.
+      // Any service line whose name contains Hleðsla/Áfylling counts as a
+      // refill tæki; multiplied by qty so 2× Hleðsla CO₂ → 2 labels.
+      const refillCount = (cart.items || []).reduce((s, l) => {
+        const name = String(l.name || '');
+        if (l.isProduct) return s;
+        if (!/hleðsla|áfylling|yfirferð|skoðun/i.test(name)) return s;
+        return s + (parseInt(l.qty, 10) || 1);
+      }, 0);
       // Open the existing 24×100mm QR-label dialog with the customer prefilled.
-      setTimeout(() => QrLabelCustomer.open(cart.customer), 100);
+      setTimeout(() => QrLabelCustomer.open(cart.customer, refillCount || 1), 100);
     }
     close();
     // Allow the original click to go through this time
