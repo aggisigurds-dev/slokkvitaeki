@@ -99,7 +99,10 @@
       for (const q of qTokens) {
         if (nTokens.some(nt => tokenMatches(q, nt))) {
           matched++;
-          if (q.length >= 4) strongMatches++;
+          // 2026-05-19: lowered from >=4 to >=3 so "co2" qualifies as a
+          // strong token. Was rejecting all CO2 matches because the token
+          // is only 3 chars long.
+          if (q.length >= 3) strongMatches++;
         }
       }
       // Need at least one "strong" semantic token match (e.g. brunaslang,
@@ -140,7 +143,10 @@
       for (const q of qTokens) {
         if (nTokens.some(nt => tokenMatches(q, nt))) {
           matched++;
-          if (q.length >= 4) strongMatches++;
+          // 2026-05-19: lowered from >=4 to >=3 so "co2" qualifies as a
+          // strong token. Was rejecting all CO2 matches because the token
+          // is only 3 chars long.
+          if (q.length >= 3) strongMatches++;
         }
       }
       if (strongMatches === 0) continue;
