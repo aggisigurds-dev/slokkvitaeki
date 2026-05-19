@@ -13,11 +13,41 @@
   if (window.__unitServicePickerInstalled) return;
   window.__unitServicePickerInstalled = true;
 
-  const CHOICE_DEFAULT = 'hledsla';
   const CHOICES = [
     { v: 'hledsla',  label: 'Hleðsla',  color: '#166534', bg: '#dcfce7' },
     { v: 'yfirferd', label: 'Yfirferð', color: '#1e40af', bg: '#dbeafe' },
     { v: 'none',     label: 'Sleppa',   color: '#64748b', bg: '#f1f5f9' }
+  ];
+
+  // 2026-05-19: type-aware default per Agnar's workflow. The Stolpi/Slökkvitæki
+  // billing model differs per agent — Duft tends to need full hleðsla, while
+  // Léttvatn and CO₂ usually only get a yfirferð.
+  function defaultForType(typeText) {
+    const t = (typeText || '').toLowerCase();
+    if (/\bduft\b|\babc\b|\bpfc\b/.test(t)) return 'hledsla';
+    if (/co2|co₂|co_?2|kolsýr|kolsyr/.test(t)) return 'yfirferd';
+    if (/léttv|lettv|abf|vatn|water/.test(t)) return 'yfirferd';
+    return 'yfirferd'; // safe default for unknowns
+  }
+
+  // Categorize a row's Tegund text into one of the chip filter buckets.
+  function typeBucket(typeText) {
+    const t = (typeText || '').toLowerCase();
+    if (/\bduft\b|\babc\b|\bpfc\b/.test(t)) return 'duft';
+    if (/co2|co₂|co_?2|kolsýr|kolsyr/.test(t)) return 'co2';
+    if (/léttv|lettv|abf|vatn|water|froð/.test(t)) return 'lettvatn';
+    if (/slang|hose/.test(t)) return 'slangur';
+    if (/reykskynj|smoke/.test(t)) return 'reyk';
+    return 'annad';
+  }
+  const BUCKETS = [
+    { v: 'all',      label: '🔘 Allt',       color: '#0f172a' },
+    { v: 'duft',     label: '🧯 Duft',       color: '#92400e' },
+    { v: 'lettvatn', label: '💧 Léttvatn',   color: '#1e40af' },
+    { v: 'co2',      label: '🌫 CO₂',        color: '#475569' },
+    { v: 'slangur',  label: '🚒 Slöngur',    color: '#b91c1c' },
+    { v: 'reyk',     label: '🚨 Reyk',       color: '#7c3aed' },
+    { v: 'annad',    label: '⚙ Annað',      color: '#64748b' }
   ];
 
   function getCompanyId() {
@@ -38,9 +68,9 @@
     try { localStorage.setItem(tripStateKey(coId), JSON.stringify(state)); } catch (_) {}
   }
 
-  function getUnitChoice(coId, unitId) {
+  function getUnitChoice(coId, unitId, typeText) {
     const st = loadTripState(coId);
-    return (st.units && st.units[unitId]) || CHOICE_DEFAULT;
+    return (st.units && st.units[unitId]) || defaultForType(typeText);
   }
   function setUnitChoice(coId, unitId, value) {
     const st = loadTripState(coId);
@@ -49,14 +79,14 @@
     saveTripState(coId, st);
   }
 
-  function selectHtml(coId, unitId) {
-    const cur = getUnitChoice(coId, unitId);
+  function selectHtml(coId, unitId, typeText) {
+    const cur = getUnitChoice(coId, unitId, typeText);
     const curDef = CHOICES.find(c => c.v === cur) || CHOICES[0];
     const opts = CHOICES.map(c =>
       '<option value="' + c.v + '"' + (c.v === cur ? ' selected' : '') + '>' + c.label + '</option>'
     ).join('');
     return '<select class="_usp-sel" data-uid="' + unitId + '" ' +
-      'style="padding:3px 6px;border:1px solid ' + curDef.bg + ';background:' + curDef.bg + ';color:' + curDef.color + ';border-radius:5px;font:inherit;font-size:11px;font-weight:600;cursor:pointer">' + opts + '</select>';
+      'style="padding:2px 6px;border:1px solid ' + curDef.bg + ';background:' + curDef.bg + ';color:' + curDef.color + ';border-radius:5px;font:inherit;font-size:11px;font-weight:600;cursor:pointer">' + opts + '</select>';
   }
 
   // Find the unit table in the company detail page.
@@ -103,6 +133,13 @@
     if (statusIdx + 1 < ths.length) headerRow.insertBefore(newTh, ths[statusIdx + 1]);
     else headerRow.appendChild(newTh);
 
+    // Detect which column has the Tegund text (header label "Tegund").
+    let tegundIdx = -1;
+    ths.forEach((th, i) => {
+      const tx = th.textContent.trim().toLowerCase();
+      if (tx === 'tegund' || tx === 'type') tegundIdx = i;
+    });
+
     // 2. For each row, look up unit_id from the action buttons (Field.openInspect(DB.getUnit(<id>))).
     const bodyRows = table.querySelectorAll('tbody tr');
     bodyRows.forEach(tr => {
@@ -116,12 +153,59 @@
         if (m) { unitId = +m[1]; break; }
       }
       if (!unitId) return;
+      const typeText = tegundIdx >= 0 ? (cells[tegundIdx]?.textContent || '') : '';
+      // Tag the row so filter chips can hide/show.
+      tr.dataset.uspBucket = typeBucket(typeText);
+      // Tighten row height per Agnar's request — easier to scroll a long list.
+      tr.style.lineHeight = '1.15';
+      Array.from(cells).forEach(td => { td.style.padding = '4px 8px'; });
       const td = document.createElement('td');
-      td.innerHTML = selectHtml(coId, unitId);
-      td.style.cssText = 'padding:6px 8px';
+      td.innerHTML = selectHtml(coId, unitId, typeText);
+      td.style.cssText = 'padding:4px 8px';
       if (statusIdx + 1 < cells.length) tr.insertBefore(td, cells[statusIdx + 1]);
       else tr.appendChild(td);
     });
+
+    // 4. Inject type-filter chips above the table (once).
+    const tableWrap = table.closest('.tcard') || table.parentElement;
+    if (tableWrap && !tableWrap.querySelector('._usp-chips')) {
+      const counts = {};
+      bodyRows.forEach(tr => {
+        const b = tr.dataset.uspBucket;
+        if (b) counts[b] = (counts[b] || 0) + 1;
+      });
+      counts.all = bodyRows.length;
+      const chipBar = document.createElement('div');
+      chipBar.className = '_usp-chips';
+      chipBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center';
+      chipBar.innerHTML = BUCKETS
+        .filter(b => b.v === 'all' || counts[b.v])
+        .map(b => {
+          const n = counts[b.v] || 0;
+          const active = b.v === 'all';
+          return '<button type="button" class="_usp-chip" data-bucket="' + b.v + '" ' +
+            'style="padding:5px 11px;border:1px solid ' + (active?'#0f172a':'#cbd5e1') +
+            ';background:' + (active?'#0f172a':'#fff') +
+            ';color:' + (active?'#fff':b.color) +
+            ';border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">' +
+            b.label + ' <span style="opacity:.65;font-weight:500">' + n + '</span></button>';
+        }).join('');
+      tableWrap.insertBefore(chipBar, tableWrap.firstChild);
+      chipBar.addEventListener('click', e => {
+        const chip = e.target.closest('._usp-chip');
+        if (!chip) return;
+        const bucket = chip.dataset.bucket;
+        chipBar.querySelectorAll('._usp-chip').forEach(c => {
+          const isOn = c.dataset.bucket === bucket;
+          c.style.background = isOn ? '#0f172a' : '#fff';
+          c.style.color = isOn ? '#fff' : (BUCKETS.find(x => x.v === c.dataset.bucket)?.color || '#475569');
+          c.style.borderColor = isOn ? '#0f172a' : '#cbd5e1';
+        });
+        table.querySelectorAll('tbody tr').forEach(tr => {
+          tr.style.display = (bucket === 'all' || tr.dataset.uspBucket === bucket) ? '' : 'none';
+        });
+      });
+    }
 
     // 3. Wire changes — update state + ask patch 129 to recompute.
     table.addEventListener('change', e => {

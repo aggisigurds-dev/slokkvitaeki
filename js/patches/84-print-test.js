@@ -99,7 +99,11 @@
   // (24×100 mm) one was meant to go — Aggi flagged this today. Now we
   // build the panel with only the kvittun + strikamerki tests.
   function init() {
-    buildPanel();
+    // 2026-05-19: floating "🧪 Prufa prentun" button disabled per Agnar —
+    // printers are set up and the FAB clutters the bottom-right corner.
+    // The print routines stay reachable via window.SalaCheckout for any
+    // future tooling.
+    // buildPanel();
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

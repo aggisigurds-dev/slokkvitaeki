@@ -106,26 +106,10 @@
     _manage();
   }
 
-  // Inject 📝 button into textareas (for note templates)
-  const obs = new MutationObserver(() => {
-    document.querySelectorAll('textarea:not([data-tpl-injected])').forEach(t => {
-      if (t.id === 'sm-content' || t.closest('.sm-modal')) return; // skip settings
-      t.dataset.tplInjected = '1';
-      const wrap = t.parentElement;
-      if (!wrap) return;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.title = 'Velja sniðmát';
-      btn.innerHTML = '📝';
-      btn.style.cssText = 'position:absolute;right:4px;top:4px;background:rgba(255,255,255,.95);border:1px solid #e2e8f0;border-radius:4px;padding:2px 6px;cursor:pointer;font-size:12px;z-index:5';
-      btn.onclick = e => { e.preventDefault(); e.stopPropagation();
-        pick('note', tpl => { t.value = (t.value ? t.value + '\n' : '') + tpl.body; t.dispatchEvent(new Event('input', { bubbles:true })); });
-      };
-      if (getComputedStyle(wrap).position === 'static') wrap.style.position = 'relative';
-      wrap.appendChild(btn);
-    });
-  });
-  obs.observe(document.body, { childList:true, subtree:true });
+  // 2026-05-19: 📝 "Velja sniðmát" button auto-injection on every textarea
+  // disabled per Agnar — clutters the UI and not in active use. The Templates
+  // API is still available for explicit callers.
+  // const obs = new MutationObserver(...);
 
   window.Templates = { pick, getAll, saveAll, _manage, _add, _del };
   console.log('[templates] installed');
