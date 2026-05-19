@@ -145,13 +145,41 @@
 
       // Happy path — but wrap in try/catch so a thrown error doesn't
       // leave the user staring at a blank "Hleður…" screen.
+      let result;
       try {
-        return orig.apply(this, arguments);
+        result = orig.apply(this, arguments);
       } catch (e) {
         console.error('[companies-open-loading-fix] openDetail threw:', e);
         showError(numId, 'Villa við að birta fyrirtæki', (e && e.message) || String(e));
         return;
       }
+
+      // 2026-05-19 (v2): Post-flight check. User reported "companies
+      // rarely open in fyrirtækjaþjónustu — opnast en festist á Hleður".
+      // Sometimes orig completes without throwing but ALSO without
+      // rendering the detail (e.g. some inner wrapper bypassed the
+      // innerHTML write, or the chain returned early). Verify the
+      // page actually got replaced; if still on loading state, retry.
+      setTimeout(() => {
+        const main = document.getElementById('companies-main');
+        if (!main) return;
+        const stillLoading = main.innerHTML.includes('class="loading-state"');
+        const hasDetailMarker = main.querySelector(
+          'button[onclick*="Companies.openEdit"], ' +
+          'button[onclick*="Companies.render"], ' +
+          'button[onclick*="Companies.addUnit"]'
+        );
+        if (stillLoading && !hasDetailMarker) {
+          console.warn('[companies-open-loading-fix] post-flight: still loading after openDetail — retrying');
+          try {
+            return orig.call(Companies, numId);
+          } catch (e) {
+            console.error('[companies-open-loading-fix] retry threw:', e);
+            showError(numId, 'Villa við að birta fyrirtæki', (e && e.message) || String(e));
+          }
+        }
+      }, 400);
+      return result;
     };
 
     // Helper: call orig.openDetail with try/catch so retries don't crash.
