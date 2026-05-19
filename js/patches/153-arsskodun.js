@@ -110,10 +110,9 @@
       try { await window.AppSettings.load(); } catch (_) {}
     }
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
+    const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
 
-    // Load ALL fyrirtaeki rows (not just árskoðun customers). This replaces
-    // the old Fyrirtæki page entirely. PostgREST paginates at 1000 rows by
-    // default, which is more than enough for current data.
+    // Load ALL fyrirtaeki rows. PostgREST paginates at 1000 rows by default.
     const { data: companies, error } = await SB.from('fyrirtaeki')
       .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida')
       .order('nafn');
@@ -121,10 +120,29 @@
     const allCompanies = companies || [];
     _cache.allCompanies = allCompanies;
     _cache.byId = Object.fromEntries(allCompanies.map(c => [c.id, c]));
-    _cache.list = allCompanies.map(c => ({
-      ...c,
-      _ars: arsMap[String(c.id)] || {}
-    })).sort((a, b) => String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is'));
+
+    // 2026-05-19: Only include companies that are ACTUALLY in service
+    // (subscribed to ársskoðun with non-zero equipment, OR subscribed to
+    // brunakerfi). Aggi reported Akstursþjónustan ehf. showing up here
+    // even though it has empty equipment {} in arsskodun — i.e. parked
+    // there during migration but never actually subscribed. Companies
+    // without any service belong in Allir Viðskiptavinir only.
+    function inService(c) {
+      const key = String(c.id);
+      const a = arsMap[key];
+      const hasArs = !!(a && a.equipment && Object.values(a.equipment).some(v => +v > 0));
+      const hasBru = !!bruMap[key];
+      return hasArs || hasBru;
+    }
+
+    _cache.list = allCompanies
+      .filter(inService)
+      .map(c => ({
+        ...c,
+        _ars: arsMap[String(c.id)] || {},
+        _bru: bruMap[String(c.id)] || null
+      }))
+      .sort((a, b) => String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is'));
   }
 
   // ── Sidebar entry ────────────────────────────────────────────────────────
