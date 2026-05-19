@@ -155,6 +155,136 @@
     _markers = {};
   }
 
+  // ── Due-now / overdue list (below the map) ──────────────────────────────
+  // 2026-05-19: driver wanted a tabular view of what needs work this month
+  // sitting directly below the map. Map = where, list = who. Always shows
+  // overdue first (most urgent), then this-month, regardless of the map
+  // filter chip state.
+  function renderDueList() {
+    const panel = document.getElementById('_lds-due-panel');
+    if (!panel) return;
+    const all = getCustomers();  // already filtered to contract customers w/ coords
+    // Pull contract customers WITHOUT coords too, so the list doesn't
+    // silently hide overdue work for un-geocoded addresses.
+    const cos = (window.Companies && Companies.list) || [];
+    const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
+    const allDue = [];
+    cos.forEach(c => {
+      const ars = arsMap[String(c.id)];
+      if (!ars || !ars.equipment) return;
+      const status = statusFor(c, ars);
+      if (status.key === 'overdue' || status.key === 'duenow') {
+        const gc = readGc();
+        const coord = gc[c.heimilisfang] || gc[c.nafn] || null;
+        allDue.push({ co: c, ars, status, coord });
+      }
+    });
+    // Group: overdue first (sorted by month — earliest month = most overdue),
+    // then duenow (this month).
+    const overdue = allDue.filter(x => x.status.key === 'overdue')
+      .sort((a, b) => (+a.ars.inspect_month || 0) - (+b.ars.inspect_month || 0)
+                    || String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
+    const duenow = allDue.filter(x => x.status.key === 'duenow')
+      .sort((a, b) => String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
+
+    const route = readRoute();
+    const inRoute = new Set(route.map(r => String(r.id)));
+
+    function rowHtml(item) {
+      const c = item.co;
+      const m = +item.ars.inspect_month || 0;
+      const monthLabel = m >= 1 && m <= 12 ? MONTHS_IS[m-1] : '—';
+      const isInRoute = inRoute.has(String(c.id));
+      const canAddToRoute = !!item.coord && !isInRoute;
+      return (
+        '<div class="_lds-due-row" data-co-id="' + c.id + '" style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:12.5px;cursor:pointer;transition:background .1s" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'transparent\'">' +
+          '<span style="width:10px;height:10px;border-radius:50%;background:' + item.status.color + ';flex-shrink:0"></span>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-weight:600;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c.nafn || '—') + '</div>' +
+            '<div style="font-size:11px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+              (c.heimilisfang ? '📍 ' + esc(c.heimilisfang) : '<span style="color:#dc2626">⚠ Ekkert heimilisfang</span>') +
+            '</div>' +
+          '</div>' +
+          '<div style="text-align:right;flex-shrink:0">' +
+            '<div style="font-size:11px;font-weight:700;color:' + item.status.color + '">' + esc(item.status.label) + '</div>' +
+            '<div style="font-size:10.5px;color:#94a3b8">' + esc(monthLabel) + '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:4px;flex-shrink:0">' +
+            (canAddToRoute
+              ? '<button class="_lds-due-add" data-co-id="' + c.id + '" data-lat="' + item.coord.lat + '" data-lng="' + item.coord.lng + '" type="button" title="Bæta á leið" style="padding:5px 9px;background:#16a34a;color:#fff;border:1px solid #15803d;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">➕</button>'
+              : isInRoute
+                ? '<span title="Á leið" style="padding:5px 9px;background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;font:inherit;font-size:11px;font-weight:700">✓</span>'
+                : '<span title="Engin staðsetning" style="padding:5px 9px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;font:inherit;font-size:11px;font-weight:700">📍?</span>') +
+            '<button class="_lds-due-open" data-co-id="' + c.id + '" type="button" title="Opna kúnna" style="padding:5px 9px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">🏢</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }
+
+    function groupHtml(title, rows, color, bg) {
+      if (!rows.length) return '';
+      return (
+        '<div style="background:' + bg + ';padding:8px 14px;font-size:11px;font-weight:700;color:' + color + ';text-transform:uppercase;letter-spacing:.04em;border-bottom:1px solid #e2e8f0">' +
+          esc(title) + ' <span style="opacity:.6;font-weight:600">(' + rows.length + ')</span>' +
+        '</div>' +
+        rows.map(rowHtml).join('')
+      );
+    }
+
+    if (!overdue.length && !duenow.length) {
+      panel.innerHTML =
+        '<div style="padding:18px;text-align:center;color:#94a3b8;font-size:13px">' +
+          '✅ Allir samningar í lagi þennan mánuðinn.' +
+        '</div>';
+      return;
+    }
+
+    panel.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:#0f172a;color:#fff">' +
+        '<div style="font-weight:700;font-size:13px">⏰ Eftir að skoða</div>' +
+        '<div style="font-size:11px;color:#cbd5e1;font-weight:600">' +
+          (overdue.length ? overdue.length + ' útrunnið' : '') +
+          (overdue.length && duenow.length ? ' · ' : '') +
+          (duenow.length ? duenow.length + ' þessi mánuður' : '') +
+        '</div>' +
+      '</div>' +
+      '<div style="max-height:420px;overflow-y:auto">' +
+        groupHtml('Útrunnið', overdue, '#b91c1c', '#fef2f2') +
+        groupHtml('Þessi mánuður', duenow, '#92400e', '#fffbeb') +
+      '</div>';
+
+    // Wire interactions
+    panel.querySelectorAll('._lds-due-row').forEach(row => {
+      row.addEventListener('click', e => {
+        if (e.target.closest('button')) return;
+        const id = +row.dataset.coId;
+        if (window.VidskDetail && typeof window.VidskDetail.show === 'function') {
+          window.VidskDetail.show(id);
+        } else if (window._openCompanySafe) {
+          window._openCompanySafe(id);
+        }
+      });
+    });
+    panel.querySelectorAll('._lds-due-add').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      const coId = b.dataset.coId;
+      const lat = parseFloat(b.dataset.lat);
+      const lng = parseFloat(b.dataset.lng);
+      const co = (window.Companies && Companies.list || []).find(c => String(c.id) === String(coId));
+      if (co) addToRoute(coId, co.nafn, co.heimilisfang || '', lat, lng);
+      renderDueList();
+    }));
+    panel.querySelectorAll('._lds-due-open').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = +b.dataset.coId;
+      if (window.VidskDetail && typeof window.VidskDetail.show === 'function') {
+        window.VidskDetail.show(id);
+      } else if (window._openCompanySafe) {
+        window._openCompanySafe(id);
+      }
+    }));
+  }
+
   function renderPins() {
     if (!_map) return;
     clearMarkers();
@@ -194,6 +324,7 @@
     r.push({ id: coId, name, addr, lat, lng });
     saveRoute(r);
     renderRoutePanel();
+    renderDueList();
     // Re-render pin's popup
     const m = _markers[coId];
     if (m) m.closePopup();
@@ -202,6 +333,7 @@
     const r = readRoute().filter(x => String(x.id) !== String(coId));
     saveRoute(r);
     renderRoutePanel();
+    renderDueList();
     const m = _markers[coId];
     if (m) m.closePopup();
   }
@@ -407,6 +539,7 @@
             }).join('') +
           '</div>' +
           '<div id="_lds-mapcanvas" style="width:100%;height:480px;background:#f1f5f9;border-radius:12px;border:1px solid #e2e8f0;overflow:hidden"></div>' +
+          '<div id="_lds-due-panel" style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"></div>' +
           '<div id="_lds-route-panel" style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"></div>' +
         '</div>';
       // Wire filter chips
@@ -440,6 +573,7 @@
     setTimeout(() => {
       try { _map && _map.invalidateSize(); } catch (_) {}
       renderPins();
+      renderDueList();
       renderRoutePanel();
     }, 100);
     hookPopupDelegate();
