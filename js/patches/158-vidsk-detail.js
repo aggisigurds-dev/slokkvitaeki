@@ -335,6 +335,15 @@
           <div style="font-size:11px;color:#94a3b8">#${esc(c.id)}</div>
         </div>
 
+        <!-- Quick action buttons (when subscribed to either service) -->
+        ${(hasArs || hasBru) ? `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+          <button id="_vd-action-report" type="button" title="Útektarskýrsla fyrir þessa heimsókn (prentanleg)" style="padding:7px 13px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px">📋 Úttektarskýrsla</button>
+          <button id="_vd-action-floorplan" type="button" title="Teikning af staðsetningu tækja" style="padding:7px 13px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px">📐 Teikning</button>
+          <button id="_vd-action-fullpage" type="button" title="Full fyrirtækisíða með öllum aðgerðum (Mörg tæki, Bæta við tæki, o.s.frv.)" style="padding:7px 13px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px">🏢 Opna fyrirtækisíðu →</button>
+        </div>
+        ` : ''}
+
         <!-- Customer card -->
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;margin-bottom:14px;box-shadow:0 1px 2px rgba(0,0,0,0.03)">
           <div style="display:flex;gap:14px;align-items:flex-start">
@@ -488,6 +497,37 @@
     // Wire interactions
     main.querySelector('#_vd-back')?.addEventListener('click', goBack);
     main.querySelector('#_vd-complete-visit')?.addEventListener('click', () => completeVisit());
+    main.querySelector('#_vd-action-report')?.addEventListener('click', () => {
+      if (window.VisitReport && typeof window.VisitReport.open === 'function') {
+        // Patch 102's modal reads from window.Companies.current; switch
+        // context first so the report has the right company.
+        if (window._openCompanySafe) {
+          window._openCompanySafe(_currentId);
+          setTimeout(() => window.VisitReport.open(_currentId), 300);
+        } else {
+          window.VisitReport.open(_currentId);
+        }
+      } else if (window._openCompanySafe) {
+        window._openCompanySafe(_currentId);
+      }
+    });
+    main.querySelector('#_vd-action-floorplan')?.addEventListener('click', () => {
+      const c = getCompany(_currentId);
+      if (!c) return;
+      const units = getUnitsFor(c.nafn);
+      if (window.FloorPlan && typeof window.FloorPlan.load === 'function' && typeof window.FloorPlan.open === 'function') {
+        try { window.FloorPlan.load(_currentId); } catch (_) {}
+        try { window.FloorPlan.open(_currentId, c.nafn, units); } catch (e) {
+          // Fallback: just open the company page where the Teikning button exists
+          if (window._openCompanySafe) window._openCompanySafe(_currentId);
+        }
+      } else if (window._openCompanySafe) {
+        window._openCompanySafe(_currentId);
+      }
+    });
+    main.querySelector('#_vd-action-fullpage')?.addEventListener('click', () => {
+      if (window._openCompanySafe) window._openCompanySafe(_currentId);
+    });
     main.querySelectorAll('._vd-toggle').forEach(b => b.addEventListener('click', () => {
       toggleService(b.dataset.svc, b.dataset.action);
     }));
