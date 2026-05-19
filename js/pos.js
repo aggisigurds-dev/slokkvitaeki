@@ -307,7 +307,13 @@
         '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
             '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Þjónusta</div>' +
-            '<button id="pos-scan" style="background:#1e293b;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">📷 Skanna QR</button>' +
+            // 2026-05-19: removed "📷 Skanna QR" button — user reported the
+            // camera scanner works poorly and the location uses a handheld
+            // laser QR scanner instead (it types into the focused field
+            // directly, no button needed). The top Skanna button in the
+            // Viðskiptavinur header is the manual fallback. Kept the id
+            // so the wireUp handler can defensively check.
+            '<button id="pos-scan" style="display:none">unused</button>' +
           '</div>' +
           '<div id="pos-services" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>' +
         '</div>' +
