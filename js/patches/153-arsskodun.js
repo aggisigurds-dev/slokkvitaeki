@@ -890,18 +890,25 @@
       // (patch 66 — incVat prices that match the per-product rows in the
       // vorur table). 2026-05-19: bumped from rough estimates to actual
       // pricelist values so revenue numbers match what the customer pays.
+      //
+      // Formula: ∑(tæki × Yfirferð) + Skýrslugerð + Akstur × N
+      //   - Skýrslugerð: 3500 + VSK = 4340 kr (per customer per year)
+      //   - Akstur: 3000 + VSK = 3720 kr × akstur_multiplier (1 by default,
+      //     2 for far-away customers — stored on entry.akstur_multiplier)
+      //   - Áminning overrides yfirferd_price and applies discount_pct.
       const parsed = entry.aminning_parsed || null;
       const PRICES = {
-        lettvatn:       3906,  // Yfirferð Léttvatn
-        duft2:          4200,  // Yfirferð Duft (sama verð fyrir 2kg og 6kg)
-        duft6_12:       4200,  // Yfirferð Duft
-        co2_2:          4055,  // Yfirferð CO2 2 kg
-        co2_5:          4055,  // Yfirferð CO2 5 kg
-        brunaslongur:   5389,  // Yfirferð Brunaslanga
-        eldvarnarteppi: 0,     // ekki á samningi/pricelist ennþá
-        reykskynjarar:  2909   // Yfirferð Reykskynjari
+        lettvatn:       3906,
+        duft2:          4200,
+        duft6_12:       4200,
+        co2_2:          4055,
+        co2_5:          4055,
+        brunaslongur:   5389,
+        eldvarnarteppi: 0,
+        reykskynjarar:  2909
       };
-      const AKSTUR = 4407;     // Akstur (3554 ex × 1.24 = 4407 incVat)
+      const SKYRSLUGERD = 4340;   // 3500 + 24% VSK
+      const AKSTUR_UNIT = 3720;   // 3000 + 24% VSK
       let total = 0;
       for (const k in PRICES) {
         const qty = +newEq[k] || 0;
@@ -910,7 +917,11 @@
         if (parsed && parsed.yfirferd_price > 0 && /^(lettvatn|duft|co2)/.test(k)) unit = parsed.yfirferd_price;
         total += qty * unit;
       }
-      if (total > 0) total += AKSTUR;
+      const aksturMult = +entry.akstur_multiplier || 1;
+      if (total > 0) {
+        total += SKYRSLUGERD;
+        total += AKSTUR_UNIT * aksturMult;
+      }
       if (parsed && parsed.discount_pct > 0) total = total * (1 - parsed.discount_pct / 100);
       entry.estimated_yearly = Math.round(total / 100) * 100;
       const map = Object.assign({}, allMap, { [String(coId)]: entry });
