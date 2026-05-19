@@ -61,8 +61,17 @@
   function todayISO() { return new Date().toISOString().slice(0, 10); }
   function in30ISO() { const d = new Date(); d.setDate(d.getDate() + 30); return d.toISOString().slice(0, 10); }
 
+  let _refreshing = false;
   async function refresh() {
     if (!window.DB || !window.DB.sb) return;
+    // 2026-05-19: guard against parallel refreshes. DB.loadAll hook fires
+    // refresh() once per DB.loadAll completion, and multiple patches call
+    // loadAll on boot — without this guard we get 6 simultaneous HEAD
+    // count requests × N concurrent refreshes = Supabase 503s. The badge
+    // count just needs to be roughly current; skipping overlapping calls
+    // is fine.
+    if (_refreshing) return;
+    _refreshing = true;
     const sb = window.DB.sb;
     try {
       // Þjónustutæki: overdue (next_insp < today) — show red, fall back to "due this month" orange.
@@ -100,6 +109,8 @@
       setBadge('geymsla', gy.count || 0, 'gray');
     } catch (e) {
       console.warn('[sb-counts] refresh failed', e);
+    } finally {
+      _refreshing = false;
     }
   }
 
