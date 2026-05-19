@@ -375,23 +375,45 @@
                 : '<span style="background:#f1f5f9;color:#64748b;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid #cbd5e1">Ekki skráð</span>'
               }
             </div>
-            ${hasArs ? `
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:11.5px;margin-bottom:10px">
-                <div>
-                  <div style="color:#94a3b8;font-size:10px;font-weight:700;text-transform:uppercase">Skoðunarmánuður</div>
-                  <div style="color:#0f172a;font-weight:600">${esc(MONTHS_IS[(+ars.inspect_month || 1) - 1] || '—')}</div>
+            ${hasArs ? (() => {
+              // 2026-05-19: simplified top-left box. Date info (skoðunarmánuður,
+              // síðasta skoðun, áætlaðar tekjur) was duplicating what shows in
+              // the units table and athugasemdir memo. Replace with a compact
+              // equipment-count grid — that's what the user actually wants to
+              // see at a glance.
+              const eq = (ars && ars.equipment) || {};
+              const eqRows = [
+                ['lettvatn', 'Léttvatn'],
+                ['duft2', 'Duft 2kg'],
+                ['duft6_12', 'Duft 6-12kg'],
+                ['co2_2', 'CO₂ 2kg'],
+                ['co2_5', 'CO₂ 5kg'],
+                ['brunaslongur', 'Brunaslöngur'],
+                ['eldvarnarteppi', 'Eldvarnarteppi'],
+                ['reykskynjarar', 'Reykskynjarar']
+              ];
+              const nonZero = eqRows.filter(([k]) => +eq[k] > 0);
+              const total = nonZero.reduce((s, [k]) => s + (+eq[k] || 0), 0);
+              if (!nonZero.length) {
+                return `<div style="font-size:11.5px;color:#92400e;margin-bottom:10px">Skráð í árlega slökkvitækjaskoðun, en engin tæki á samningi ennþá.</div>`;
+              }
+              return `
+                <div style="margin-bottom:10px">
+                  <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+                    <div style="color:#94a3b8;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em">Tæki á samningi</div>
+                    <div style="color:#b91c1c;font-size:11.5px;font-weight:700">${total} alls</div>
+                  </div>
+                  <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px">
+                    ${nonZero.map(([k, label]) => `
+                      <div style="display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #fecaca;border-radius:6px;padding:4px 8px;font-size:11px">
+                        <span style="color:#475569;font-weight:600">${esc(label)}</span>
+                        <span style="color:#0f172a;font-weight:800;font-variant-numeric:tabular-nums">${+eq[k]}</span>
+                      </div>
+                    `).join('')}
+                  </div>
                 </div>
-                <div>
-                  <div style="color:#94a3b8;font-size:10px;font-weight:700;text-transform:uppercase">Síðasta skoðun</div>
-                  <div style="color:#0f172a;font-weight:600">${ars.last_year_inspected || '—'}</div>
-                </div>
-                ${ars.estimated_yearly ? `
-                <div style="grid-column:1/-1">
-                  <div style="color:#94a3b8;font-size:10px;font-weight:700;text-transform:uppercase">Áætlaðar tekjur</div>
-                  <div style="color:#15803d;font-weight:700">${fmtKr(ars.estimated_yearly)}</div>
-                </div>` : ''}
-              </div>
-            ` : `
+              `;
+            })() : `
               <div style="font-size:11.5px;color:#64748b;margin-bottom:10px">Skráðu viðskiptavin í árlega slökkvitækjaskoðun og fáðu aðgang að tækjavinnu, kortastaðsetningu, og skýrslugerð.</div>
             `}
             <div style="display:flex;gap:6px;flex-wrap:wrap">

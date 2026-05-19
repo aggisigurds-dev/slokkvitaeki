@@ -160,25 +160,46 @@
       // rendering the detail (e.g. some inner wrapper bypassed the
       // innerHTML write, or the chain returned early). Verify the
       // page actually got replaced; if still on loading state, retry.
+      //
+      // Also rewire "Til baka" to return to Fyrirtæki í Þjónustu (arsskodun)
+      // — the only way to reach this view now is via the arsskodun modal
+      // "Opna fyrirtæki" button or the Customer Detail "Opna fyrirtækisíðu"
+      // button. Both originate from arsskodun-context. The default inline
+      // onclick="Companies.render()" tries to show the grid, which patch 127
+      // blocks while on detail → page appears stuck.
+      function rewireBackBtn() {
+        const main = document.getElementById('companies-main');
+        if (!main) return;
+        const backBtn = main.querySelector('button[onclick*="Companies.render"]');
+        if (backBtn && !backBtn.dataset._cmpRewired) {
+          backBtn.dataset._cmpRewired = '1';
+          backBtn.setAttribute('onclick', "App.switchView('arsskodun')");
+        }
+      }
       setTimeout(() => {
         const main = document.getElementById('companies-main');
         if (!main) return;
         const stillLoading = main.innerHTML.includes('class="loading-state"');
         const hasDetailMarker = main.querySelector(
           'button[onclick*="Companies.openEdit"], ' +
+          'button[onclick*="App.switchView"], ' +
           'button[onclick*="Companies.render"], ' +
           'button[onclick*="Companies.addUnit"]'
         );
         if (stillLoading && !hasDetailMarker) {
           console.warn('[companies-open-loading-fix] post-flight: still loading after openDetail — retrying');
           try {
-            return orig.call(Companies, numId);
+            orig.call(Companies, numId);
           } catch (e) {
             console.error('[companies-open-loading-fix] retry threw:', e);
             showError(numId, 'Villa við að birta fyrirtæki', (e && e.message) || String(e));
+            return;
           }
         }
+        rewireBackBtn();
       }, 400);
+      // Also rewire after patch 75 enhances (50ms timeout there)
+      setTimeout(rewireBackBtn, 120);
       return result;
     };
 
