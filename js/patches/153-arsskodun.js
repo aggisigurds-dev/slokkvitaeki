@@ -564,7 +564,7 @@
 
               <div style="display:flex;gap:5px;margin-top:3px">
                 <button class="_ars-open-fyrirt" data-co-id="${c.id}" type="button" style="flex:1;padding:5px 9px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:600">🏢 Fyrirtæki</button>
-                <button class="_ars-open-map" data-co-id="${c.id}" type="button" style="flex:1;padding:5px 9px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:600">🗺️ Þj.tæki</button>
+                <button class="_ars-open-map" data-co-id="${c.id}" type="button" style="flex:1;padding:5px 9px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:600">🗺️ Á korti</button>
               </div>
             </div>
           `;
@@ -895,8 +895,10 @@
       else if (window.App && App.switchView) App.switchView('companies');
     });
     bg.querySelector('._ars-go-map').addEventListener('click', () => {
-      bg.remove();
+      // Switch view FIRST, then remove modal — bg.remove() can trigger
+      // MutationObservers that re-render Ársskoðun and steal focus back.
       openOnMap(coId);
+      bg.remove();
     });
     bg.querySelector('._ars-go-brunakerfi').addEventListener('click', () => {
       bg.remove();
@@ -986,28 +988,13 @@
     const co = _cache.byId[coId];
     if (!co) return;
     if (!window.App || !window.App.switchView) return;
-    window.App.switchView('field');
-    if (!window.MapFix || typeof window.MapFix.focusCompany !== 'function') {
-      // Old mapfix.js without the focusCompany helper — best we can do
-      // is leave the user on the map view.
-      return;
-    }
-    const result = await window.MapFix.focusCompany(coId, { maxTries: 30, zoom: 17 });
-    if (!result.ok) {
-      const msg = result.reason === 'no-marker'
-        ? 'Þetta fyrirtæki er ekki staðsett á korti. Smelltu á "Uppfæra" hnappinn til að sækja staðsetningu.'
-        : 'Kortið er ekki tilbúið ennþá — reyndu aftur eftir nokkrar sekúndur.';
-      if (window.Toast && window.Toast.show) {
-        window.Toast.show(msg);
-      } else {
-        // Simple inline toast — keeps user informed even if the global
-        // Toast helper isn't around yet.
-        const t = document.createElement('div');
-        t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;border-radius:8px;font:13px/1.4 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:99999;max-width:340px;text-align:center';
-        t.textContent = msg;
-        document.body.appendChild(t);
-        setTimeout(() => t.remove(), 4500);
-      }
+    // 2026-05-19: Þjónustutæki (view-field) nav retired. Send users to
+    // Leiðsögn instead — same Leaflet map, plus the route planner.
+    window.App.switchView('leidsogn');
+    // Leiðsögn doesn't expose a focus-by-id API yet; the marker for this
+    // customer will be on the map. Add it to the route stack for the user.
+    if (window.Leidsogn && typeof window.Leidsogn.addToRoute === 'function') {
+      try { window.Leidsogn.addToRoute(coId); } catch (_) {}
     }
   }
 

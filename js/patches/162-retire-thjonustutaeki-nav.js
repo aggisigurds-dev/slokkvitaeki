@@ -1,13 +1,22 @@
-/* === RETIRE ÞJÓNUSTUTÆKI NAV v1 ===
+/* === RETIRE ÞJÓNUSTUTÆKI + LEGACY COMPANIES NAV v2 ===
  *
- * Hides the "Þjónustutæki" (view-field) sidebar nav entry. The map and
- * GPS routing it provided are now in Leiðsögn (patch 161). The per-unit
- * detail + Klára heimsókn + Úttektarskýrsla + Teikning are on the
- * Customer Detail Page (patch 158).
+ * Hides two sidebar entries:
+ *   • "Þjónustutæki" (data-view="field") — map/GPS now in Leiðsögn (161),
+ *     per-unit detail + Klára heimsókn on Customer Detail Page (158).
+ *   • "Fyrirtækjaþjónusta" (data-view="companies") — legacy companies
+ *     list, replaced by "Fyrirtæki í Þjónustu" (Ársskoðun, patch 153).
+ *     The underlying view-companies page is still reachable via the
+ *     "Opna fyrirtækisíðu" button from Customer Detail / Ársskoðun.
  *
- * view-field itself stays in the DOM — `_openCompanySafe`-style
- * deep-links from older code paths still work. Only the sidebar entry
- * is hidden so drivers stop bouncing between confusing equivalent views.
+ * Both views remain in the DOM so deep-links keep working. Only the
+ * sidebar entries are hidden so drivers stop bouncing between equivalent
+ * views.
+ *
+ * v2 (2026-05-19): switched from inline `style.display = 'none'` to a
+ * CSS !important rule. Patches 68 (sidebar-reorder) and 15 (sidebar
+ * counts) rebuild/touch sidebar buttons after 162 runs, which sometimes
+ * dropped the inline style. CSS survives DOM rewrites because the
+ * selector keeps matching the freshly-injected button.
  *
  * Built 2026-05-19. Reversible: just delete this patch file.
  */
@@ -15,25 +24,26 @@
   if (window.__retireThjonustutaekiInstalled) return;
   window.__retireThjonustutaekiInstalled = true;
 
-  function hide() {
-    const nav = document.querySelector('nav.view-nav, .view-nav');
-    if (!nav) { setTimeout(hide, 500); return; }
-    const btns = nav.querySelectorAll('.vnav-btn[data-view="field"]');
-    if (!btns.length) { setTimeout(hide, 500); return; }
-    btns.forEach(b => { b.style.display = 'none'; });
+  const STYLE_ID = 'retire-thjonustutaeki-style';
+  if (!document.getElementById(STYLE_ID)) {
+    const s = document.createElement('style');
+    s.id = STYLE_ID;
+    // Cover both the canonical `.vnav-btn[data-view="field"]` selector and
+    // the legacy onclick-only form some patches generate. The space before
+    // `!important` matters in older Safari builds.
+    s.textContent = `
+      .vnav-btn[data-view="field"],
+      .view-nav [data-view="field"],
+      nav.view-nav [data-view="field"],
+      .vnav-btn[data-view="companies"],
+      .view-nav [data-view="companies"],
+      nav.view-nav [data-view="companies"] {
+        display: none !important;
+      }
+    `;
+    (document.head || document.documentElement).appendChild(s);
   }
 
-  // Other patches rebuild the sidebar (patch 68 reorders); keep hiding.
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', hide);
-  } else {
-    hide();
-  }
-  setTimeout(hide, 1200);
-  setTimeout(hide, 2500);
-  // Also watch for re-injections
-  new MutationObserver(() => hide()).observe(document.body, { childList: true, subtree: true });
-
-  console.log('[retire-thjonustutaeki-nav v1] installed');
+  console.log('[retire-thjonustutaeki-nav v2] CSS-hide installed');
 })();
 /* === END RETIRE ÞJÓNUSTUTÆKI NAV === */
