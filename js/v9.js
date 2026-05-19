@@ -465,7 +465,15 @@
     _showUnit(unit);
   };
   function _showUnit(u) {
-    var typeOpts=['ABC Duft','CO2','Vatn','Froðuefni','Halon'].map(function(tp){
+    // 2026-05-19: was hardcoded to ['ABC Duft','CO2','Vatn','Froðuefni','Halon']
+    // — units with type 'Duft', 'Brunaslanga', 'Léttvatn', 'Reykskynjari',
+    // 'Eldvarnateppi' etc. silently lost their type on edit because the
+    // dropdown didn't include them. Expanded base list + always inject the
+    // unit's own current type so it survives a round-trip save.
+    var BASE_TYPES = ['Duft','ABC Duft','CO₂','CO2','Léttvatn','Vatn','Froðuefni','Halon','Brunaslanga','Reykskynjari','Eldvarnateppi'];
+    var types = BASE_TYPES.slice();
+    if (u.type && types.indexOf(u.type) < 0) types.unshift(u.type);
+    var typeOpts=types.map(function(tp){
       return '<option'+(u.type===tp?' selected':'')+'>'+tp+'</option>';
     }).join('');
     var body=fld('_em_ser',t('serial'),u.serial)+
@@ -519,7 +527,11 @@
     DB.sb.from('lanstaeki').select('*').eq('id',lid).single().then(function(r){if(r.data)_showLoan(r.data);});
   };
   function _showLoan(u) {
-    var typeOpts=['ABC Duft','CO2','Vatn','Froðuefni','Halon'].map(function(tp){
+    // 2026-05-19: same fix as _showUnit — preserve all in-use type families.
+    var BASE_TYPES = ['Duft','ABC Duft','CO₂','CO2','Léttvatn','Vatn','Froðuefni','Halon','Brunaslanga','Reykskynjari','Eldvarnateppi'];
+    var types = BASE_TYPES.slice();
+    if (u.type && types.indexOf(u.type) < 0) types.unshift(u.type);
+    var typeOpts=types.map(function(tp){
       return '<option'+(u.type===tp?' selected':'')+'>'+tp+'</option>';
     }).join('');
     var staOpts=[['til_radstofunar',t('laus')],['verkstadi',t('verkstadi')],['utleigt',t('utleigt')]].map(function(s){
