@@ -25,6 +25,23 @@
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+  // 2026-05-19: collapse brand variants into a canonical family label.
+  // "ABC Duft", "PFC Duft", "Duft" all bill the same — should bucket as
+  // one "Duft" line in the cost table. Mirrors patch 131's typeBucket()
+  // but returns a human-readable label instead of a slug.
+  function normalizeTypeFamily(t) {
+    const s = String(t || '').toLowerCase();
+    if (!s.trim()) return '—';
+    if (/\bduft\b|\babc\b|\bpfc\b/.test(s)) return 'Duft';
+    if (/co2|co₂|co_?2|kolsyr|kolsýr/.test(s)) return 'CO₂';
+    if (/léttv|lettv|abf|froð|frod/.test(s)) return 'Léttvatn';
+    if (/slang|hose/.test(s)) return 'Brunaslanga';
+    if (/reykskynj|smoke/.test(s)) return 'Reykskynjari';
+    if (/teppi|blanket/.test(s)) return 'Eldvarnateppi';
+    // Unknown — keep original label so it still shows in the table.
+    return t || '—';
+  }
+
   async function loadServices() {
     if (_services) return _services;
     if (_servicesPromise) return _servicesPromise;
@@ -257,10 +274,15 @@
     const skyrslugerdEx  = (tripState.skyrslugerd != null) ? Number(tripState.skyrslugerd) : 3500;
 
     // Aggregate by type+size, AND split count by chosen kind.
+    // 2026-05-19: normalize type-family so "ABC Duft", "PFC Duft", and "Duft"
+    // all bucket together — they are billed identically (the brand prefix is
+    // just a label, the service price is the same Hleðsla/Yfirferð Duft).
+    // Same for CO₂ vs "CO2", Léttvatn vs "ABF Léttvatn", etc.
     const agg = {};
     units.forEach(u => {
-      const key = (u.type || '—') + '|' + (u.size || '');
-      if (!agg[key]) agg[key] = { key, type: u.type || '—', size: u.size || '', hledsla: 0, yfirferd: 0, skip: 0 };
+      const typeNorm = normalizeTypeFamily(u.type);
+      const key = typeNorm + '|' + (u.size || '');
+      if (!agg[key]) agg[key] = { key, type: typeNorm, size: u.size || '', hledsla: 0, yfirferd: 0, skip: 0 };
       const choice = getUnitChoice(coId, u.id);
       if (choice === 'hledsla') agg[key].hledsla++;
       else if (choice === 'yfirferd') agg[key].yfirferd++;
