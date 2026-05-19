@@ -234,7 +234,13 @@
     const units = await fetchUnits(coNafn);
     const services = await loadServices();
     const tripState = loadTripState(coId);
-    const driveCost = Number(tripState.drive) || 0;
+    // 2026-05-19: defaults for in-service Fyrirtækjaþjónustu customers —
+    //   Akstur:      3000 kr ex VSK (× 1 — multiplier 2 = 6000)
+    //   Skýrslugerð: 3500 kr ex VSK
+    // Only seeded when the entry is brand new (=== undefined). User can
+    // clear them to 0 in the inputs if not applicable for a given trip.
+    const driveCost      = (tripState.drive      != null) ? Number(tripState.drive)      : 3000;
+    const skyrslugerdEx  = (tripState.skyrslugerd != null) ? Number(tripState.skyrslugerd) : 3500;
 
     // Aggregate by type+size, AND split count by chosen kind.
     const agg = {};
@@ -337,7 +343,24 @@
       }
     });
 
-    // Driving cost row.
+    // Skýrslugerð row (3500 + VSK by default).
+    const skyrsluVskPct = 24;
+    const skyrsluVskKr = skyrslugerdEx * (skyrsluVskPct / 100);
+    totalSubEx += skyrslugerdEx;
+    totalVsk += skyrsluVskKr;
+    rows.push(
+      '<tr style="border-top:1px dashed #86efac;background:#f0fdf4">' +
+        '<td colspan="3" style="padding:7px 10px;font-size:13px;color:#0f172a">📋 Skýrslugerð</td>' +
+        '<td style="padding:7px 10px;text-align:right">' +
+          '<input id="_ctc-skyrslu" type="number" min="0" step="1" value="' + Math.round(skyrslugerdEx) + '" ' +
+          'style="width:90px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums" placeholder="0"> kr' +
+        '</td>' +
+        '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">24%</td>' +
+        '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(skyrslugerdEx) + '</td>' +
+      '</tr>'
+    );
+
+    // Akstur row (3000 + VSK by default).
     const driveVskPct = 24;
     const driveVskKr = driveCost * (driveVskPct / 100);
     totalSubEx += driveCost;
@@ -403,6 +426,20 @@
       };
       driveInp.addEventListener('change', onDrive);
       driveInp.addEventListener('blur', onDrive);
+    }
+    // Wire Skýrslugerð input.
+    const skyrsluInp = section.querySelector('#_ctc-skyrslu');
+    if (skyrsluInp) {
+      const onSkyrslu = () => {
+        const v = parseFloat(skyrsluInp.value) || 0;
+        const st = loadTripState(coId);
+        st.skyrslugerd = v;
+        saveTripState(coId, st);
+        _lastKey = '';
+        render();
+      };
+      skyrsluInp.addEventListener('change', onSkyrslu);
+      skyrsluInp.addEventListener('blur', onSkyrslu);
     }
   }
 
