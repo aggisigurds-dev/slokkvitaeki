@@ -91,6 +91,18 @@
     const customer = (sale && sale.customer_nafn) || job.customer || 'Viðskiptavinur';
     const saleNum = (sale && sale.num) || parentSaleNum(job.num);
 
+    // 2026-05-19: Detect upfront payment. If sale was already paid at
+    // drop-off (paid_at set + greitt_med is kort/reidufe), the pickup
+    // modal must NOT show payment options — that's confusing. Show a
+    // big GREEN "GREITT" banner instead so the operator can see at a
+    // glance that no payment is needed.
+    const isAlreadyPaid = !!(sale && sale.paid_at &&
+      sale.greitt_med && /^(kort|reidufe|peningar|pening)$/i.test(sale.greitt_med));
+    const paidMethodLabel = (sale && sale.greitt_med) === 'kort'    ? '💳 Kort' :
+                            (sale && sale.greitt_med) === 'reidufe' ? '💵 Reiðufé' :
+                            (sale && sale.greitt_med) ? esc(sale.greitt_med) : '';
+    const paidWhen = sale && sale.paid_at ? new Date(sale.paid_at).toLocaleDateString('is-IS') : '';
+
     // Build initial state for unit checkboxes (default: all checked = customer takes)
     // Broken units default UNCHECKED — they're staying.
     const unitState = unitsCtx.map((ctx, i) => ({
@@ -114,18 +126,34 @@
         '</div>' +
         '<div id="_pkc-body" style="flex:1;overflow:auto;padding:18px 22px"></div>' +
         '<div id="_pkc-totals" style="padding:11px 22px;border-top:1px solid #e2e8f0;background:#f8fafc"></div>' +
-        '<div style="padding:13px 22px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">' +
-          '<button id="_pkc-cancel" type="button" style="padding:9px 18px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>' +
-          '<select id="_pkc-pay" style="padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;background:#fff">' +
-            // 2026-05-12: Default to Kort (card) — that's how the vast majority
-            // of pickups are paid in 2026. Reiðufé moved to second.
-            '<option value="kort" selected>💳 Kort</option>' +
-            '<option value="reidufe">💵 Reiðufé</option>' +
-            '<option value="reikningur">📋 Setja í reikning</option>' +
-            '<option value="greitt_sidar">⏳ Greitt síðar</option>' +
-          '</select>' +
-          '<button id="_pkc-finalize" type="button" style="padding:9px 18px;background:#059669;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">✓ Klára sölu og afhenda</button>' +
-        '</div>' +
+        (isAlreadyPaid
+          // PAID UPFRONT — green banner, no payment selector. Just deliver.
+          ? '<div style="padding:0;border-top:1px solid #166534;background:#16a34a;color:#fff;display:flex;align-items:center;gap:14px;justify-content:space-between;flex-wrap:wrap">' +
+              '<div style="padding:14px 22px;display:flex;align-items:center;gap:12px">' +
+                '<div style="font-size:28px">✓</div>' +
+                '<div>' +
+                  '<div style="font-size:15px;font-weight:800;letter-spacing:.04em">GREITT</div>' +
+                  '<div style="font-size:11px;color:#dcfce7">Greitt fyrirfram með ' + paidMethodLabel + (paidWhen ? ' · ' + paidWhen : '') + '</div>' +
+                '</div>' +
+              '</div>' +
+              '<div style="padding:11px 22px;display:flex;gap:8px;flex-wrap:wrap">' +
+                '<button id="_pkc-cancel" type="button" style="padding:9px 18px;border:1px solid rgba(255,255,255,0.4);border-radius:8px;background:transparent;color:#fff;cursor:pointer;font:inherit;font-size:13px">Hætta við</button>' +
+                '<button id="_pkc-finalize" type="button" style="padding:9px 18px;background:#fff;color:#166534;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:800">📦 Afhenda tæki</button>' +
+              '</div>' +
+            '</div>'
+          : '<div style="padding:13px 22px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">' +
+              '<button id="_pkc-cancel" type="button" style="padding:9px 18px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>' +
+              '<select id="_pkc-pay" style="padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;background:#fff">' +
+                // 2026-05-12: Default to Kort (card) — that's how the vast majority
+                // of pickups are paid in 2026. Reiðufé moved to second.
+                '<option value="kort" selected>💳 Kort</option>' +
+                '<option value="reidufe">💵 Reiðufé</option>' +
+                '<option value="reikningur">📋 Setja í reikning</option>' +
+                '<option value="greitt_sidar">⏳ Greitt síðar</option>' +
+              '</select>' +
+              '<button id="_pkc-finalize" type="button" style="padding:9px 18px;background:#059669;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">✓ Klára sölu og afhenda</button>' +
+            '</div>'
+        ) +
       '</div>';
     document.body.appendChild(dlg);
 
@@ -335,7 +363,12 @@
     // Wire finalize
     dlg.querySelector('#_pkc-finalize').addEventListener('click', async () => {
       const t = calcTotals();
-      const payMethod = dlg.querySelector('#_pkc-pay').value;
+      // If sale was paid upfront, the payment selector isn't rendered —
+      // reuse the existing greitt_med from the sale row instead.
+      const paySelect = dlg.querySelector('#_pkc-pay');
+      const payMethod = paySelect
+        ? paySelect.value
+        : ((sale && sale.greitt_med) || 'kort');
       // 2026-05-11: Capture edited customer info — user may have added kt
       // or changed name/phone since drop-off
       const customerInfo = {
