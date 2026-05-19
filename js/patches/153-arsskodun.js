@@ -886,9 +886,22 @@
       const entry = Object.assign({}, allMap[String(coId)] || {});
       entry.co_id = coId;
       entry.equipment = newEq;
-      // Re-compute estimated_yearly using cached parsed Áminning
+      // Re-compute estimated_yearly using canonical Yfirferð pricelist
+      // (patch 66 — incVat prices that match the per-product rows in the
+      // vorur table). 2026-05-19: bumped from rough estimates to actual
+      // pricelist values so revenue numbers match what the customer pays.
       const parsed = entry.aminning_parsed || null;
-      const PRICES = { lettvatn:3150, duft2:3150, duft6_12:3387, co2_2:3270, co2_5:6540, brunaslongur:4346, eldvarnarteppi:0, reykskynjarar:2346 };
+      const PRICES = {
+        lettvatn:       3906,  // Yfirferð Léttvatn
+        duft2:          4200,  // Yfirferð Duft (sama verð fyrir 2kg og 6kg)
+        duft6_12:       4200,  // Yfirferð Duft
+        co2_2:          4055,  // Yfirferð CO2 2 kg
+        co2_5:          4055,  // Yfirferð CO2 5 kg
+        brunaslongur:   5389,  // Yfirferð Brunaslanga
+        eldvarnarteppi: 0,     // ekki á samningi/pricelist ennþá
+        reykskynjarar:  2909   // Yfirferð Reykskynjari
+      };
+      const AKSTUR = 4407;     // Akstur (3554 ex × 1.24 = 4407 incVat)
       let total = 0;
       for (const k in PRICES) {
         const qty = +newEq[k] || 0;
@@ -897,8 +910,9 @@
         if (parsed && parsed.yfirferd_price > 0 && /^(lettvatn|duft|co2)/.test(k)) unit = parsed.yfirferd_price;
         total += qty * unit;
       }
+      if (total > 0) total += AKSTUR;
       if (parsed && parsed.discount_pct > 0) total = total * (1 - parsed.discount_pct / 100);
-      entry.estimated_yearly = Math.round(total);
+      entry.estimated_yearly = Math.round(total / 100) * 100;
       const map = Object.assign({}, allMap, { [String(coId)]: entry });
       const ok = await window.AppSettings.save({ [STORAGE_KEY]: map });
       if (!ok) { alert('Vista mistókst'); return; }
