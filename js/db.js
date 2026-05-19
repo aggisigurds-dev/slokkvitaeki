@@ -29,10 +29,27 @@ var DB = {
   loadAll: async function() {
     this.setSyncState('syncing');
     try {
+      // Paginate uttaeki: PostgREST default cap is 1000 rows. We now have
+      // 3,777+ active rows (after the bulk insert from arsskodun) so a
+      // single .select() returns at most 1000. Fetch in chunks via .range()
+      // until exhausted so the full cache is consistent with the DB.
+      async function loadAllUttaeki(sb) {
+        var pageSize = 1000;
+        var allRows = [];
+        for (var start = 0; ; start += pageSize) {
+          var res = await sb.from('uttaeki').select('*').order('client').range(start, start + pageSize - 1);
+          if (res.error) throw res.error;
+          var rows = res.data || [];
+          allRows = allRows.concat(rows);
+          if (rows.length < pageSize) break;
+          if (start > 50000) break; // safety stop
+        }
+        return { data: allRows };
+      }
       var [j, v, u, s, h] = await Promise.all([
         this.sb.from('verkbeidnir').select('*').order('created_at', {ascending:false}),
         this.sb.from('verklidur').select('*'),
-        this.sb.from('uttaeki').select('*').order('client'),
+        loadAllUttaeki(this.sb),
         this.sb.from('dagskra').select('*').order('date'),
         this.sb.from('skodunar_saga').select('*').order('created_at', {ascending:false}).limit(20)
       ]);
