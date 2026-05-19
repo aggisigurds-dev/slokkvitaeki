@@ -431,18 +431,30 @@
       isKt ? SB.from('vidskiptavinir').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').or(`kennitala.ilike.${digits}%`).limit(5)
            : SB.from('vidskiptavinir').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').ilike('nafn','%'+term+'%').limit(5)
     ]).then(([fy, vk]) => {
-      const all = [].concat(fy.data || [], vk.data || []);
+      // 2026-05-19: tag each row with its source table. solur.customer_id_fkey
+      // points to fyrirtaeki only, so a vidskiptavinir.id (like Stefán's
+      // walk-in row id=27) would violate the FK if assigned. We mark the
+      // source on the picker row and use it to decide whether to set
+      // customer_id at commit time.
+      const fyRows = (fy.data || []).map(r => ({ ...r, _src: 'fyrirtaeki' }));
+      const vkRows = (vk.data || []).map(r => ({ ...r, _src: 'vidskiptavinir' }));
+      const all = [].concat(fyRows, vkRows);
       if (!all.length) { alert('Engin samsvörun.'); return; }
-      const labels = all.map((c, i) => (i+1) + '. ' + c.nafn + (c.kennitala ? ' (kt ' + c.kennitala + ')' : '') + (c.afslattur_pct ? ' · ' + c.afslattur_pct + '% afsl.' : ''));
+      const labels = all.map((c, i) => (i+1) + '. ' + c.nafn + (c.kennitala ? ' (kt ' + c.kennitala + ')' : '') + (c._src === 'vidskiptavinir' ? ' [einstaklingur]' : '') + (c.afslattur_pct ? ' · ' + c.afslattur_pct + '% afsl.' : ''));
       const choice = prompt('Veldu (1-' + all.length + '):\n' + labels.join('\n'));
       const idx = parseInt(choice, 10) - 1;
       if (isNaN(idx) || idx < 0 || idx >= all.length) return;
       const picked = all[idx];
       _sale.customer_nafn = picked.nafn || '';
-      _sale.customer_id = picked.id;
+      // Only set customer_id when picked row is from fyrirtaeki — the FK
+      // constraint on solur.customer_id only allows fyrirtaeki ids. For
+      // vidskiptavinir picks (einstaklingar), leave the FK null but keep
+      // the name + kt linked via the kt column.
+      _sale.customer_id = (picked._src === 'fyrirtaeki') ? picked.id : null;
       _dlg.querySelector('#_se-nafn').value = picked.nafn || '';
       _dlg.querySelector('#_se-kt').value = picked.kennitala || '';
-      _dlg.querySelector('#_se-cust-info').value = 'ID ' + picked.id + (picked.afslattur_pct ? ' · ' + picked.afslattur_pct + '% afsl.' : '');
+      const idLabel = (picked._src === 'fyrirtaeki') ? ('Fyrirtæki ID ' + picked.id) : ('Einstaklingur ID ' + picked.id);
+      _dlg.querySelector('#_se-cust-info').value = idLabel + (picked.afslattur_pct ? ' · ' + picked.afslattur_pct + '% afsl.' : '');
       // Offer to apply discount automatically
       if (picked.afslattur_pct && _sale.linur.length) {
         if (confirm(picked.nafn + ' hefur ' + picked.afslattur_pct + '% afslátt. Beita á öllum línum?')) {
@@ -500,13 +512,12 @@
     }
 
     // Auto-resolve customer_id from kt if we have one but no link yet.
-    // Tries fyrirtaeki first (most common: business sales), then vidskiptavinir.
+    // ONLY fyrirtaeki ids are valid here — solur.customer_id_fkey enforces
+    // fyrirtaeki(id). vidskiptavinir matches keep customer_id=null and rely
+    // on customer_kt / customer_nafn for linkage.
     if (ktClean.length === 10 && !_sale.customer_id) {
       try {
-        let r = await SB.from('fyrirtaeki').select('id').eq('kennitala', ktClean).maybeSingle();
-        if (!r.data) {
-          r = await SB.from('vidskiptavinir').select('id').eq('kennitala', ktClean).maybeSingle();
-        }
+        const r = await SB.from('fyrirtaeki').select('id').eq('kennitala', ktClean).maybeSingle();
         if (r.data && r.data.id) _sale.customer_id = r.data.id;
       } catch (_) {}
     }
