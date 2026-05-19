@@ -237,9 +237,11 @@
         const nafn = _sale.customer_nafn;
         let r = await SB.from('fyrirtaeki').select('id,kennitala').eq('nafn', nafn).maybeSingle();
         let hit = r.data;
+        let hitSrc = hit ? 'fyrirtaeki' : null;
         if (!hit) {
           r = await SB.from('vidskiptavinir').select('id,kennitala').eq('nafn', nafn).maybeSingle();
           hit = r.data;
+          hitSrc = hit ? 'vidskiptavinir' : null;
         }
         if (hit && hit.kennitala) {
           if (!inp.value) {
@@ -247,8 +249,15 @@
             inp.value = raw.length === 10 ? raw.slice(0,6) + '-' + raw.slice(6) : raw;
           }
           _origCustomer.kt = hit.kennitala;
-          // Auto-link customer_id so future operations work
-          if (!_sale.customer_id) _sale.customer_id = hit.id;
+          // 2026-05-19: ONLY auto-link customer_id if the hit is from
+          // fyrirtaeki. solur.customer_id_fkey points to fyrirtaeki(id)
+          // so setting it to a vidskiptavinir.id (e.g. Stefán's walk-in
+          // row id=27) breaks the FK on the next save. For vidskiptavinir
+          // matches we keep customer_id=null and rely on customer_kt /
+          // customer_nafn for linkage.
+          if (!_sale.customer_id && hitSrc === 'fyrirtaeki') {
+            _sale.customer_id = hit.id;
+          }
         }
       } catch (_) {}
     }
