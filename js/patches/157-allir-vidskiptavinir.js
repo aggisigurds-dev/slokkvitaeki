@@ -256,6 +256,15 @@
   }
 
   function render(main) {
+    // 2026-05-19: preserve search-input focus across debounced re-renders.
+    // Typing in #_av-search fires a 200ms timeout that calls main.innerHTML=…
+    // which destroys the input. Without this, the user can only type one
+    // letter at a time — every keystroke loses focus.
+    const prevActive = document.activeElement;
+    const keepSearchFocus = !!(prevActive && prevActive.id === '_av-search');
+    const selStart = keepSearchFocus ? prevActive.selectionStart : null;
+    const selEnd   = keepSearchFocus ? prevActive.selectionEnd   : null;
+
     const all = getAll();
     const filtered = filterAll(all);
 
@@ -394,6 +403,17 @@
         toggleService(coId, svc, action);
       });
     });
+
+    // Restore search-input focus + cursor position (see top of render()).
+    if (keepSearchFocus) {
+      const fresh = main.querySelector('#_av-search');
+      if (fresh) {
+        fresh.focus();
+        try {
+          fresh.setSelectionRange(selStart ?? fresh.value.length, selEnd ?? fresh.value.length);
+        } catch (_) { /* type=text always allows setSelectionRange */ }
+      }
+    }
   }
 
   function renderCards(arr) {
