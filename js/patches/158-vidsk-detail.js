@@ -443,7 +443,7 @@
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:14px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
             <h3 style="margin:0;font-size:14px;font-weight:700;color:#0f172a">🧯 Slökkvitæki <span style="color:#94a3b8;font-weight:500">(${units.length})</span></h3>
-            <button class="_vd-open-field" type="button" style="padding:5px 10px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">Opna í Þjónustutæki →</button>
+            <button class="_vd-open-field" type="button" style="padding:5px 10px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">Opna fyrirtækisíðu →</button>
           </div>
           <div style="overflow-x:auto">
             <table style="width:100%;border-collapse:collapse;font-size:11.5px">
@@ -470,15 +470,57 @@
                 `).join('')}
               </tbody>
             </table>
-            ${units.length > 50 ? `<div style="margin-top:8px;font-size:11px;color:#94a3b8;text-align:center">Sýni 50 af ${units.length}. <button class="_vd-open-field" type="button" style="background:none;border:none;color:#1d4ed8;text-decoration:underline;cursor:pointer;font:inherit">Opna í Þjónustutæki</button> til að sjá allt.</div>` : ''}
+            ${units.length > 50 ? `<div style="margin-top:8px;font-size:11px;color:#94a3b8;text-align:center">Sýni 50 af ${units.length}. <button class="_vd-open-field" type="button" style="background:none;border:none;color:#1d4ed8;text-decoration:underline;cursor:pointer;font:inherit">Opna fyrirtækisíðu</button> til að sjá allt.</div>` : ''}
           </div>
         </div>
-        ` : (hasArs ? `
-        <!-- Empty units state for arsskodun customer -->
-        <div style="background:#fffbeb;border:1px dashed #fde68a;border-radius:12px;padding:18px;margin-bottom:14px;text-align:center;color:#92400e;font-size:12.5px">
-          🧯 Engin slökkvitæki skráð fyrir þennan viðskiptavin ennþá. <button class="_vd-open-field" type="button" style="margin-left:6px;padding:4px 10px;background:#fff;color:#92400e;border:1px solid #fde68a;border-radius:6px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">Opna í Þjónustutæki →</button>
-        </div>
-        ` : '')}
+        ` : (hasArs ? (() => {
+          // No uttaeki rows for this customer — but if they have arsskodun
+          // equipment counts (from the PDF master sheet), show those so the
+          // user sees something instead of an empty page. The counts come
+          // from the contract, not from the database — clearly labeled.
+          const eq = (ars && ars.equipment) || {};
+          const eqRows = [
+            ['lettvatn', 'Léttvatn 6 ltr.'],
+            ['duft2', 'Duft 2 kg.'],
+            ['duft6_12', 'Duft 6-12 kg.'],
+            ['co2_2', 'CO₂ 2 kg.'],
+            ['co2_5', 'CO₂ 5 kg.'],
+            ['brunaslongur', 'Brunaslöngur'],
+            ['eldvarnarteppi', 'Eldvarnarteppi'],
+            ['reykskynjarar', 'Reykskynjarar']
+          ];
+          const totalEq = eqRows.reduce((s, [k]) => s + (+eq[k] || 0), 0);
+          if (totalEq === 0) {
+            return `
+              <div style="background:#fffbeb;border:1px dashed #fde68a;border-radius:12px;padding:18px;margin-bottom:14px;text-align:center;color:#92400e;font-size:12.5px">
+                🧯 Engin slökkvitæki skráð fyrir þennan viðskiptavin ennþá. <button class="_vd-open-field" type="button" style="margin-left:6px;padding:4px 10px;background:#fff;color:#92400e;border:1px solid #fde68a;border-radius:6px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">Opna fyrirtækisíðu →</button>
+              </div>
+            `;
+          }
+          return `
+            <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:14px">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px;flex-wrap:wrap">
+                <h3 style="margin:0;font-size:14px;font-weight:700;color:#0f172a">🧯 Slökkvitæki <span style="color:#94a3b8;font-weight:500">(${totalEq} skv. samningi)</span></h3>
+                <span style="background:#fef3c7;color:#92400e;font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid #fde68a">⚠ Engin raðnúmer í kerfinu</span>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:6px">
+                ${eqRows.map(([k, label]) => {
+                  const v = +eq[k] || 0;
+                  if (!v) return '';
+                  return `<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;padding:8px 10px">
+                    <div style="font-size:9.5px;color:#64748b;font-weight:600">${esc(label)}</div>
+                    <div style="font-size:18px;font-weight:800;color:#0f172a">${v}</div>
+                  </div>`;
+                }).filter(Boolean).join('')}
+              </div>
+              <div style="margin-top:10px;font-size:11.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 11px;line-height:1.5">
+                <strong>Athugaðu:</strong> tölurnar koma úr síðasta árlegri úttekt (PDF) — engin tæki eru með raðnúmer skráð í kerfinu ennþá.
+                Smelltu á <button class="_vd-open-field" type="button" style="background:#fff;color:#92400e;border:1px solid #fde68a;border-radius:5px;padding:2px 8px;cursor:pointer;font:inherit;font-size:11px;font-weight:600;margin:0 2px">Opna fyrirtækisíðu →</button>
+                og bættu þeim við með <strong>Mörg tæki</strong> hnappnum.
+              </div>
+            </div>
+          `;
+        })() : '')}
 
         ${c.athugasemdir ? `
         <!-- Notes -->
