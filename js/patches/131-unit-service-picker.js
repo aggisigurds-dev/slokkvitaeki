@@ -178,16 +178,23 @@
       const chipBar = document.createElement('div');
       chipBar.className = '_usp-chips';
       chipBar.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;align-items:center';
+      // 2026-05-19: show ALL buckets even at 0 — grey out empty ones so the
+      // user always sees the full category set and knows what's available.
       chipBar.innerHTML = BUCKETS
-        .filter(b => b.v === 'all' || counts[b.v])
         .map(b => {
           const n = counts[b.v] || 0;
           const active = b.v === 'all';
+          const empty = n === 0 && b.v !== 'all';
+          const txtColor = active ? '#fff' : (empty ? '#cbd5e1' : b.color);
+          const bgColor  = active ? '#0f172a' : '#fff';
+          const bdColor  = active ? '#0f172a' : (empty ? '#e2e8f0' : '#cbd5e1');
           return '<button type="button" class="_usp-chip" data-bucket="' + b.v + '" ' +
-            'style="padding:5px 11px;border:1px solid ' + (active?'#0f172a':'#cbd5e1') +
-            ';background:' + (active?'#0f172a':'#fff') +
-            ';color:' + (active?'#fff':b.color) +
-            ';border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">' +
+            (empty ? 'disabled ' : '') +
+            'style="padding:5px 11px;border:1px solid ' + bdColor +
+            ';background:' + bgColor +
+            ';color:' + txtColor +
+            (empty ? ';opacity:.55;cursor:default' : ';cursor:pointer') +
+            ';border-radius:99px;font:inherit;font-size:12px;font-weight:600">' +
             b.label + ' <span style="opacity:.65;font-weight:500">' + n + '</span></button>';
         }).join('');
       tableWrap.insertBefore(chipBar, tableWrap.firstChild);
