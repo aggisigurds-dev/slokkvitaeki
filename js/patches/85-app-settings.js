@@ -57,8 +57,11 @@
     prentun: {
       default_print_kvittun: false,
       default_print_strikamerki: true,
-      // 2026-05-18: QR-miði 24x100 disabled by default per Agnar — not in use yet.
-      default_print_qr_label: false,
+      // 2026-05-19: re-enabled QR-miði 24x100 default. Aggi confirmed the
+      // post-sale QR-label dialog (with calibration test print) should
+      // still open after each sale. The 2026-05-18 disable was for the
+      // *green* test-button (patch 84) only — got conflated with this.
+      default_print_qr_label: true,
       // 2026-05-18: skip the "Skrá tæki fyrir verkbeiðni" prompt by default.
       // Read by patch 106; re-enable in Stillingar -> Prentun if needed.
       skip_unit_prompt: true,
