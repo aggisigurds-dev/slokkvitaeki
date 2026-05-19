@@ -270,12 +270,14 @@
             // 2026-05-19: scan button between Viðskiptavinur label and Án-kennitölu
             // toggle — scanning a tæki QR looks up its client and fills the
             // customer box in one step.
+            //
+            // The legacy "→ Án kennitölu" toggle (pos-mode-toggle) is now
+            // hidden — patch 114's "⚡ Án kennitölu" walk-in button (right
+            // of the search input) is the canonical control. Kept in DOM
+            // so pos.js's existing click handler attaches without erroring.
             '<div style="display:flex;gap:6px;align-items:center">' +
               '<button id="pos-scan-top" type="button" title="Skanna QR / strikamerki á tæki — finnur viðskiptavin" style="padding:6px 12px;border:1px solid #cbd5e1;background:#0f172a;color:#fff;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px">📷 Skanna</button>' +
-              // 2026-05-18: single toggle between kennitala-lookup and walk-in modes.
-              // Replaces the older two-button picker. The button label reflects the
-              // OTHER mode (what you'll switch TO) so it's clearly an action.
-              '<button id="pos-mode-toggle" type="button" style="padding:6px 12px;border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px;white-space:nowrap">→ Án kennitölu</button>' +
+              '<button id="pos-mode-toggle" type="button" style="display:none">→ Án kennitölu</button>' +
             '</div>' +
           '</div>' +
           '<div id="pos-kt-box">' +
