@@ -60,9 +60,14 @@
         return map[ch] || ch;
       })
       .replace(/[._,()]/g, ' ')
-      // Split "5kg" → "5 kg" and "kg5" → "kg 5" so number/unit tokenize separately.
+      // Split "5kg" → "5 kg" so number+unit tokenize separately.
       .replace(/(\d)([a-z])/g, '$1 $2')
-      .replace(/([a-z])(\d)/g, '$1 $2')
+      // 2026-05-19: DO NOT split letter+digit like "co2" → "co 2". That
+      // breaks chemical-compound tokens (CO2, H2O) into 1-2-char fragments
+      // which then fail the strongMatches >=3 check, so all CO2 services
+      // get rejected. Chemical names are real distinguishing tokens and
+      // should stay intact. "kg5"/"ltr5"-style anti-patterns don't exist
+      // in the actual product names.
       .replace(/\s+/g, ' ')
       .trim();
   }
