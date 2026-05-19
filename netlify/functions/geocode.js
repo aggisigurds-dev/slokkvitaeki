@@ -87,9 +87,47 @@ export default async (req) => {
     });
   }
 
-  // 2. Cache miss — call Nominatim.
-  try {
-    const target = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=${encodeURIComponent(cc)}&q=${encodeURIComponent(q)}`;
+  // 2. Cache miss — call Nominatim. Try multiple cleaned-up variants of
+  //    the address — many Icelandic addresses in this dataset have typos
+  //    (Reykkjavík), abbreviations (Grb / Grb. for Garðabær), double
+  //    postcodes (e.g. "110 Reykjavík, 222 Hafnarfirði"), or missing
+  //    street names. We try the original first, then progressively simpler
+  //    fallbacks.
+  function cleanVariants(orig) {
+    const out = [];
+    const seen = new Set();
+    function add(v) {
+      const t = (v || '').trim();
+      if (!t || seen.has(t)) return;
+      seen.add(t); out.push(t);
+    }
+    // Expand common abbreviations / fix typos
+    let s = orig
+      .replace(/\bRvk\.?\b/gi, 'Reykjavík')
+      .replace(/\bGrb\.?\b/gi, 'Garðabær')
+      .replace(/\bHfj\.?\b/gi, 'Hafnarfjörður')
+      .replace(/\bKóp\.?\b/gi, 'Kópavogur')
+      .replace(/\bReykkjavík\b/gi, 'Reykjavík');
+    add(s);
+
+    // If string has multiple postcodes, drop everything after the first one
+    // ("Grjóthálsi 10 110 Reykjavík, 222 Hafnarfirði" → "Grjóthálsi 10 110 Reykjavík")
+    const m = s.match(/^(.*?\b\d{3}\s+[A-Za-zÁÉÍÓÚÝÆÖÞÐáéíóúýæöþð]+).*/);
+    if (m && m[1] !== s) add(m[1]);
+
+    // Strip after first comma
+    const comma = s.indexOf(',');
+    if (comma > 0) add(s.slice(0, comma));
+
+    // Just the street name + first postcode region (drop apartment/floor info)
+    const street = s.replace(/[,].*$/, '').replace(/\s+(\d{3})\s+.*$/, ' $1');
+    add(street);
+
+    return out;
+  }
+
+  async function tryNominatim(query) {
+    const target = `https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=${encodeURIComponent(cc)}&q=${encodeURIComponent(query)}`;
     const r = await fetch(target, {
       headers: {
         'User-Agent': 'Slokkvitaeki/1.0 (+https://slokkvitaeki.netlify.app)',
@@ -97,33 +135,47 @@ export default async (req) => {
         'Accept-Language': 'is',
       },
     });
-    if (!r.ok) {
-      return new Response(JSON.stringify({ error: `nominatim ${r.status}` }), {
-        status: 502,
-        headers: cors(),
-      });
-    }
+    if (!r.ok) return { error: `nominatim ${r.status}` };
     const data = await r.json();
-    if (!data || !data.length) {
-      return new Response(JSON.stringify({ error: 'not-found', q }), {
+    if (!data || !data.length) return null;
+    const hit = data[0];
+    return {
+      lat: parseFloat(hit.lat),
+      lon: parseFloat(hit.lon),
+      display_name: hit.display_name || ''
+    };
+  }
+
+  try {
+    const variants = cleanVariants(q);
+    let hit = null;
+    let usedVariant = q;
+    for (const v of variants) {
+      const res = await tryNominatim(v);
+      if (res && !res.error && Number.isFinite(res.lat) && Number.isFinite(res.lon)) {
+        hit = res;
+        usedVariant = v;
+        break;
+      }
+    }
+    if (!hit) {
+      return new Response(JSON.stringify({ error: 'not-found', q, tried: variants }), {
         status: 404,
         headers: { 'Content-Type': 'application/json', ...cors(), 'Cache-Control': 'public, max-age=3600' },
       });
     }
-    const hit = data[0];
-    const lat = parseFloat(hit.lat);
-    const lon = parseFloat(hit.lon);
-    const displayName = hit.display_name || '';
 
     // 3. Write-back to shared cache for next time (fire-and-forget — don't
-    //    block the response on the cache write).
-    writeCache(q, lat, lon, displayName);
+    //    block the response on the cache write). Cache under the ORIGINAL
+    //    query so future lookups with the same (malformed) string hit cache.
+    writeCache(q, hit.lat, hit.lon, hit.display_name);
 
     return new Response(JSON.stringify({
-      lat,
-      lon,
-      display_name: displayName,
+      lat: hit.lat,
+      lon: hit.lon,
+      display_name: hit.display_name,
       source: 'nominatim',
+      matched_variant: usedVariant !== q ? usedVariant : undefined,
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', ...cors(), 'Cache-Control': 'public, max-age=86400' },
