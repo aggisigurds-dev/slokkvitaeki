@@ -476,6 +476,7 @@
     const totalInc = totalSubEx + totalVsk;
     const activeUnits = units.length - groups.reduce((s, g) => s + g.skip, 0);
 
+    const skodunaradili = (tripState.skodunaradili != null) ? String(tripState.skodunaradili) : '';
     section.innerHTML =
       '<div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">' +
         '<div>' +
@@ -483,6 +484,18 @@
           '<div style="font-size:11px;color:#15803d;margin-top:2px">' + activeUnits + ' af ' + units.length + ' tæki í þessari ferð · Veldu Hleðsla / Yfirferð / Sleppa fyrir hvert tæki í töflunni að ofan</div>' +
         '</div>' +
         '<div style="font-size:24px;font-weight:800;color:#166534;font-variant-numeric:tabular-nums">' + fmtKr(totalInc) + '</div>' +
+      '</div>' +
+      // 2026-05-20: Skoðunaraðili (inspector) input + Úttektarskýrsla button.
+      // Persisted in tripState so the field stays filled across visits.
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">' +
+        '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;flex:1;min-width:200px">' +
+          '<span style="font-weight:600;color:#166534;white-space:nowrap">🧑 Skoðunaraðili</span>' +
+          '<input id="_ctc-skodun" type="text" value="' + esc(skodunaradili) + '" placeholder="t.d. Elías" ' +
+            'style="flex:1;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
+        '</label>' +
+        '<button id="_ctc-skyrsla" type="button" ' +
+          'style="padding:7px 14px;background:#0f172a;color:#fff;border:none;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.15)">' +
+          '📄 Búa til úttektarskýrslu</button>' +
       '</div>' +
       '<div style="background:#fff;border:1px solid #86efac;border-radius:8px;overflow:hidden">' +
         '<table style="width:100%;border-collapse:collapse">' +
@@ -508,6 +521,35 @@
         '</table>' +
       '</div>' +
       (unmatched.length ? '<div style="margin-top:8px;padding:8px 10px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#78350f">⚠ ' + unmatched.length + ' tegund(ir) fundu ekki matchandi þjónustu í verðlista. Bæta við í <b>Vörur og þjónusta</b>.</div>' : '');
+
+    // Wire Skoðunaraðili input.
+    const skodunInp = section.querySelector('#_ctc-skodun');
+    if (skodunInp) {
+      const onSkodun = () => {
+        const st = loadTripState(coId);
+        st.skodunaradili = skodunInp.value;
+        saveTripState(coId, st);
+      };
+      skodunInp.addEventListener('blur', onSkodun);
+      skodunInp.addEventListener('change', onSkodun);
+    }
+    // Wire úttektarskýrsla button → patch 168.
+    const skyrsluBtn = section.querySelector('#_ctc-skyrsla');
+    if (skyrsluBtn) {
+      skyrsluBtn.addEventListener('click', () => {
+        // Save inspector first so the report picks it up.
+        if (skodunInp) {
+          const st = loadTripState(coId);
+          st.skodunaradili = skodunInp.value;
+          saveTripState(coId, st);
+        }
+        if (window.CompanyInspectionReport && CompanyInspectionReport.open) {
+          CompanyInspectionReport.open(coId);
+        } else {
+          alert('Úttektarskýrslu-mótið er ekki tiltækt.');
+        }
+      });
+    }
 
     // Wire notes textarea — autosave on blur + change (debounced via blur).
     const notesTa = notesBox.querySelector('#_ctc-notes-ta');
