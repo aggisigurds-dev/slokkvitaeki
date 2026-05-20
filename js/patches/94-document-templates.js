@@ -246,10 +246,8 @@
   .ab-doc .chk-tbl .ath { width:22% }
 </style>
 <div class="ab-doc">
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px">
-    <div style="line-height:0">${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:42, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:42px;width:126px;object-fit:contain;display:inline-block">'}</div>
-    <div style="text-align:right;font-size:10px;color:#475569">Dags: <strong>{{dagsetning}}</strong></div>
-  </div>
+  <div style="text-align:right;font-size:10px;color:#475569;margin-bottom:2px">Dags: <strong>{{dagsetning}}</strong></div>
+  <div style="text-align:center;line-height:0;margin:2px 0 8px">${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:68, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:68px;width:204px;object-fit:contain;display:inline-block">'}</div>
 
   <div style="text-align:center;margin:2px 0 6px">
     <div style="font-size:15px;font-weight:800;line-height:1.1">Viðtökupróf / Árleg prófun · Brunaviðvörunarkerfi</div>
@@ -679,7 +677,19 @@
       const v = values[k];
 
       if (t === 'checkbox') {
-        return v ? '<span style="font-size:18px;line-height:1">☒</span>' : '<span style="font-size:18px;line-height:1">☐</span>';
+        const glyph = v ? '☒' : '☐';
+        // 2026-05-20: in the editor preview, render checkboxes as click-
+        // targets so the user can toggle them by tapping the box itself
+        // (no need to hunt for the matching field on the left). On print
+        // we keep the plain glyph so no interactive attributes leak in.
+        if (forPrint) {
+          return '<span style="font-size:18px;line-height:1">' + glyph + '</span>';
+        }
+        return '<span class="_dt-chk" data-chk-field="' + esc(k) + '" ' +
+          'role="checkbox" aria-checked="' + (v ? 'true' : 'false') + '" tabindex="0" ' +
+          'style="font-size:20px;line-height:1;cursor:pointer;user-select:none;padding:2px 4px;border-radius:4px;display:inline-block">' +
+          glyph +
+        '</span>';
       }
 
       if (t === 'signature') {
@@ -1195,6 +1205,28 @@
         });
       });
     }
+
+    // 2026-05-20: click anywhere on a checkbox in the preview to toggle it.
+    // Keeps the left-side form checkbox in sync so both views stay consistent.
+    previewEl.addEventListener('click', e => {
+      const box = e.target.closest('._dt-chk');
+      if (!box) return;
+      e.preventDefault();
+      const key = box.dataset.chkField;
+      if (!key) return;
+      values[key] = !values[key];
+      const cb = formEl.querySelector('input[data-type="checkbox"][data-field="' + (window.CSS && CSS.escape ? CSS.escape(key) : key) + '"]');
+      if (cb) cb.checked = !!values[key];
+      updatePreview();
+    });
+    // Keyboard accessibility — space/enter toggles a focused checkbox.
+    previewEl.addEventListener('keydown', e => {
+      if (e.key !== ' ' && e.key !== 'Enter') return;
+      const box = e.target.closest && e.target.closest('._dt-chk');
+      if (!box) return;
+      e.preventDefault();
+      box.click();
+    });
 
     function updatePreview() {
       previewEl.innerHTML = fillTemplate(t.html, values);
