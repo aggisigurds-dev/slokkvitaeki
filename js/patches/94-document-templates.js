@@ -42,7 +42,7 @@
       html: `
 <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:780px;margin:0 auto;padding:24px 32px 28px;background:#fff;border:2px solid #0f172a">
   <div style="text-align:center;margin-bottom:4px;line-height:0">
-    <img src="/img/logo.png" alt="Slökkvitæki / Brunahólf" style="max-height:90px;max-width:100%;display:inline-block">
+    ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:90, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:90px;width:270px;object-fit:contain;display:inline-block">'}
   </div>
 
   <div style="text-align:right;font-size:13px;color:#475569;margin:0 0 6px">Dags: {{dagsetning}}</div>
@@ -117,7 +117,7 @@
       html: `
 <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:780px;margin:0 auto;padding:24px 32px 28px;background:#fff;border:2px solid #0f172a">
   <div style="text-align:center;margin-bottom:4px;line-height:0">
-    <img src="/img/logo.png" alt="Slökkvitæki / Brunahólf" style="max-height:90px;max-width:100%;display:inline-block">
+    ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:90, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:90px;width:270px;object-fit:contain;display:inline-block">'}
   </div>
 
   <div style="text-align:right;font-size:13px;color:#475569;margin:0 0 6px">Dagsetning: {{dagsetning}}</div>
@@ -178,7 +178,7 @@
       html: `
 <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:780px;margin:0 auto;padding:24px 32px 28px;background:#fff;border:2px solid #0f172a">
   <div style="text-align:center;margin-bottom:4px;line-height:0">
-    <img src="/img/logo.png" alt="Slökkvitæki / Brunahólf" style="max-height:80px;max-width:100%;display:inline-block">
+    ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:80, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:80px;width:240px;object-fit:contain;display:inline-block">'}
   </div>
 
   <div style="text-align:center;font-size:12px;color:#475569;margin:4px 0 14px">
@@ -247,7 +247,7 @@
 </style>
 <div class="ab-doc">
   <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px">
-    <div style="line-height:0"><img src="/img/logo.png" alt="Slökkvitæki / Brunahólf" style="max-height:42px"></div>
+    <div style="line-height:0">${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:42, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:42px;width:126px;object-fit:contain;display:inline-block">'}</div>
     <div style="text-align:right;font-size:10px;color:#475569">Dags: <strong>{{dagsetning}}</strong></div>
   </div>
 
@@ -343,7 +343,7 @@
       html: `
 <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:780px;margin:0 auto;padding:24px 32px 28px;background:#fff;border:2px solid #0f172a">
   <div style="text-align:center;margin-bottom:4px;line-height:0">
-    <img src="/img/logo.png" alt="Slökkvitæki / Brunahólf" style="max-height:90px;max-width:100%;display:inline-block">
+    ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:90, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:90px;width:270px;object-fit:contain;display:inline-block">'}
   </div>
 
   <div style="text-align:right;font-size:13px;color:#475569;margin:0 0 6px">Dagsetning: {{dagsetning}}</div>
@@ -398,7 +398,7 @@
       html: `
 <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:820px;margin:0 auto;padding:20px 28px 24px;background:#fff;border:2px solid #0f172a">
   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:8px">
-    <div style="line-height:0"><img src="/img/logo.png" alt="Slökkvitæki / Brunahólf" style="max-height:60px"></div>
+    <div style="line-height:0">${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:60, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:60px;width:180px;object-fit:contain;display:inline-block">'}</div>
     <div style="text-align:right;font-size:11px;color:#475569;line-height:1.4">
       Nr. 15.11.01.01 · útgáfa nr. 2<br>
       <strong style="color:#0f172a;font-size:13px">SKOÐUN Á SLÖKKVIBÚNAÐI</strong><br>

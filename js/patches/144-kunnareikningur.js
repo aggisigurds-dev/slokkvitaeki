@@ -353,7 +353,7 @@
       </style>
       </head><body>
         <div class="hd">
-          <div><img src="${window.location.origin}/img/logo.png" class="logo" onerror="this.style.display='none'"></div>
+          <div>${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:60, absoluteUrl:true}) : '<img src="' + window.location.origin + '/img/logo.png?v=20260520b" style="height:60px;width:180px;object-fit:contain" onerror="this.style.display=\'none\'">'}</div>
           <div class="meta">
             Slökkvitæki ehf · Helluhrauni 10, 220 Hafnarfirði<br>
             kt 600508-0400 · vsknr. 98107 · Sími 565-4080<br>
