@@ -84,6 +84,27 @@
     const preview = wrap.querySelector('#_sl-preview');
     const resetBtn = wrap.querySelector('#_sl-reset');
 
+    // 2026-05-20: persist IMMEDIATELY via AppSettings.save() — the settings
+    // panel's wireBranding handler only stores in a local draft until the
+    // user clicks Vista, so the previous behaviour silently lost the upload
+    // when the user closed the panel without saving.
+    async function commitLogo(dataUrl) {
+      // 1. Update the visible input + preview right away.
+      urlInp.value = dataUrl;
+      urlInp.dispatchEvent(new Event('input', { bubbles: true }));
+      urlInp.dispatchEvent(new Event('change', { bubbles: true }));
+      preview.src = dataUrl;
+      // 2. Commit to AppSettings (Supabase + localStorage cache).
+      if (window.AppSettings && typeof AppSettings.save === 'function') {
+        try {
+          await AppSettings.save({ branding: { logo_url: dataUrl } });
+          if (window.Toast && Toast.show) Toast.show('✓ Logo vistað — birtist á öllum reikningum');
+        } catch (e) {
+          alert('Tókst ekki að vista logo: ' + (e.message || e));
+        }
+      }
+    }
+
     file.addEventListener('change', () => {
       const f = file.files && file.files[0];
       if (!f) return;
@@ -94,20 +115,12 @@
       const reader = new FileReader();
       reader.onload = () => {
         const dataUrl = String(reader.result || '');
-        urlInp.value = dataUrl;
-        urlInp.dispatchEvent(new Event('input', { bubbles: true }));
-        urlInp.dispatchEvent(new Event('change', { bubbles: true }));
-        preview.src = dataUrl;
+        commitLogo(dataUrl);
       };
       reader.readAsDataURL(f);
     });
 
-    resetBtn.addEventListener('click', () => {
-      urlInp.value = DEFAULT_URL;
-      urlInp.dispatchEvent(new Event('input', { bubbles: true }));
-      urlInp.dispatchEvent(new Event('change', { bubbles: true }));
-      preview.src = DEFAULT_URL;
-    });
+    resetBtn.addEventListener('click', () => { commitLogo(DEFAULT_URL); });
 
     // Live preview when user manually edits the URL field too.
     urlInp.addEventListener('input', () => { preview.src = urlInp.value || DEFAULT_URL; });
