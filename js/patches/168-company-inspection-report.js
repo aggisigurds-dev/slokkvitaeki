@@ -170,9 +170,10 @@
           Tæki voru yfirfarin af Slökkvitæki ehf ${esc(monthPhrase)}
         </div>
 
-        <!-- Fixed equipment category table — centered and width-fit so it
-             reads as a tidy mid-page block. -->
-        <table style="margin:0 auto 22px;width:auto;border-collapse:collapse">
+        <!-- Fixed equipment category table — centered as a readable mid-
+             page block. width:75% gives a tidy middle column without
+             shrinking to "tiny" the way width:auto did. -->
+        <table style="margin:0 auto 22px;width:75%;border-collapse:collapse">
           <tbody>${rowsHtml}</tbody>
         </table>
 
