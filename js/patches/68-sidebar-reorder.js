@@ -55,8 +55,6 @@
     ['Stjórnstöð', 'Stjórnborð'],
     SEP,
     ['Sala'],
-    ['Drög'],
-    ['Til að rukka'],
     ['Afgreiðsla'],
     ['Verkstæði'],
     SEP,
@@ -65,6 +63,15 @@
     ['Fyrirtæki í Þjónustu', 'Fyrirtækjaþjónusta', 'Fyrirtæki'],  // patch 153 hijacks this slot — old Fyrirtæki (view-companies) is hidden
     ['Brunakerfisþjónusta'],
     ['Viðskiptavinir'],
+    ['Allir'],  // "Allir Viðskiptavinir" (patch 157) — substring "Allir" is unique
+    SEP,
+    // 2026-05-20: Bill-and-claim cluster — grouped together below the
+    // customer list per Agnar's request. Drög → Til að rukka → Kröfu yfirlit
+    // → Hreyfingarlisti form a natural left-to-right billing flow.
+    ['Drög'],
+    ['Til að rukka'],
+    ['Kröfu yfirlit'],
+    ['Hreyfingarlisti'],
     SEP,
     ['Geymsla'],
     ['Lánstæki'],
