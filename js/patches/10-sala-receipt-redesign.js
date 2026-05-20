@@ -429,11 +429,21 @@
               style="height:60px;width:180px;object-fit:contain;display:inline-block"
               onerror="this.style.visibility='hidden'">`;
             })()}
-            <div class="hdr-co">
-              <div class="co-name">${esc(COMPANY.nameLogo)}</div>
-              <div class="co-tag">${esc(COMPANY.tag)}</div>
-              <div class="co-kt">Kt. ${esc(COMPANY.kt)}</div>
-            </div>
+            ${(() => {
+              // 2026-05-20: With the new wordmark logo (which already prints
+              // "Slökkvitæki Brunahólf"), repeating the company name + tag in
+              // text next to it duplicates the brand. Suppress co-name + co-tag
+              // when the logo is on; keep only kt as a small caption below.
+              const showLogo = !window.AppSettings || window.AppSettings.path('kvittun.show_logo') !== false;
+              if (showLogo) {
+                return '<div class="hdr-co"><div class="co-kt">Kt. ' + esc(COMPANY.kt) + '</div></div>';
+              }
+              return '<div class="hdr-co">' +
+                '<div class="co-name">' + esc(COMPANY.nameLogo) + '</div>' +
+                '<div class="co-tag">' + esc(COMPANY.tag) + '</div>' +
+                '<div class="co-kt">Kt. ' + esc(COMPANY.kt) + '</div>' +
+              '</div>';
+            })()}
           </div>
           <div class="hdr-right">
             <div>${esc(COMPANY.name)} &nbsp;&nbsp;<span class="vsk-line">VSK nr. ${esc(COMPANY.vsk)}</span></div>
