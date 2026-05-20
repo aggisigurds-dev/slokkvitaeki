@@ -294,6 +294,9 @@
         if (window.SaleEditor && SaleEditor.openByNum) SaleEditor.openByNum(num);
       });
     });
+    main.querySelectorAll('._tr-view-invoice').forEach(b => {
+      b.addEventListener('click', () => openInvoice(b.dataset.id));
+    });
     main.querySelectorAll('._tr-switch-method').forEach(b => {
       b.addEventListener('click', async () => {
         const id = b.dataset.id;
@@ -357,6 +360,7 @@
                   ${s.greitt_med === 'greitt_sidar'
                     ? `<button class="_tr-switch-method" data-id="${s.id}" data-to="reikningur" type="button" title="Færa yfir í Kröfu yfirlit (krafa í heimabanka)" style="padding:5px 9px;background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">→ Í reikning</button>`
                     : ''}
+                  <button class="_tr-view-invoice" data-id="${s.id}" type="button" title="Skoða / prenta reikning" style="padding:5px 9px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">🖨</button>
                   <button class="_tr-open-editor" data-num="${esc(s.num)}" type="button" title="Opna í sölu-editor" style="padding:5px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">✏️</button>
                 </div>
               </div>`;
@@ -392,6 +396,30 @@
         <h2 style="margin:0 0 12px;font-size:15px;font-weight:700;color:#0f172a">${esc(title)}</h2>
         ${blocks.join('')}
       </div>`;
+  }
+
+  // ── View invoice (SalaInvoice popup) ─────────────────────────────────────
+  async function openInvoice(saleId) {
+    const SB = getSB();
+    if (!SB) return;
+    if (!window.SalaInvoice || typeof SalaInvoice.renderFromSale !== 'function') {
+      alert('Reikningsmótið er ekki tiltækt.'); return;
+    }
+    const w = window.open('', '_blank', 'width=900,height=1100');
+    if (!w) { alert('Vinsamlegast leyfðu sprettiglugga til að prenta.'); return; }
+    const r = await SB.from('solur').select('*').eq('id', saleId).single();
+    if (r.error || !r.data) { w.close(); alert('Salan fannst ekki.'); return; }
+    const sale = r.data;
+    let cust = null;
+    if (sale.customer_id) {
+      const c1 = await SB.from('fyrirtaeki').select('kennitala,heimilisfang').eq('id', sale.customer_id).maybeSingle();
+      if (c1.data) cust = c1.data;
+      if (!cust) {
+        const c2 = await SB.from('vidskiptavinir').select('kennitala,heimilisfang').eq('id', sale.customer_id).maybeSingle();
+        if (c2.data) cust = c2.data;
+      }
+    }
+    SalaInvoice.renderFromSale(w, sale, cust);
   }
 
   // ── Sidebar badge (count of items currently to-bill) ───────────────────
