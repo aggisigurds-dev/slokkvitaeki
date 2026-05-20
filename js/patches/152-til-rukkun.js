@@ -294,6 +294,21 @@
         if (window.SaleEditor && SaleEditor.openByNum) SaleEditor.openByNum(num);
       });
     });
+    main.querySelectorAll('._tr-switch-method').forEach(b => {
+      b.addEventListener('click', async () => {
+        const id = b.dataset.id;
+        const to = b.dataset.to;
+        const label = to === 'reikningur' ? 'Í reikning (krafa í heimabanka)' : 'Greitt síðar';
+        if (!confirm('Færa þessa sölu yfir í "' + label + '"?')) return;
+        const SB = getSB();
+        const r = await SB.from('solur').update({ greitt_med: to }).eq('id', id);
+        if (r.error) { alert('Villa: ' + r.error.message); return; }
+        if (window.Toast && Toast.show) Toast.show('✓ Færð í: ' + label);
+        document.dispatchEvent(new CustomEvent('sale-edited'));
+        await load(_state.month);
+        refreshBadge();
+      });
+    });
     main.querySelectorAll('._tr-open-bokhald').forEach(b => {
       b.addEventListener('click', () => {
         if (window.App && App.switchView) App.switchView('bokhalds-yfirlit');
@@ -339,6 +354,9 @@
                 <div style="text-align:right;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums">${fmtKr(s.samtals)}</div>
                 <div style="display:flex;gap:4px">
                   <button class="_tr-mark-paid" data-id="${s.id}" type="button" title="Merkja sem greitt" style="padding:5px 9px;background:#16a34a;color:#fff;border:none;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">✓ Greitt</button>
+                  ${s.greitt_med === 'greitt_sidar'
+                    ? `<button class="_tr-switch-method" data-id="${s.id}" data-to="reikningur" type="button" title="Færa yfir í Kröfu yfirlit (krafa í heimabanka)" style="padding:5px 9px;background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">→ Í reikning</button>`
+                    : ''}
                   <button class="_tr-open-editor" data-num="${esc(s.num)}" type="button" title="Opna í sölu-editor" style="padding:5px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">✏️</button>
                 </div>
               </div>`;
