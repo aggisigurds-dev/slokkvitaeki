@@ -221,7 +221,7 @@
         '<button class="btn btn-outline btn-sm" onclick="Field.openScan()" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg>Skanna tæki</button>' +
       '</div>' +
       '<div style="display:none"><div id="workshop-queue"></div></div>' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:8px;height:calc(100vh - 110px);overflow:hidden;box-sizing:border-box;min-width:0">' +
+      '<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;padding:8px;height:calc(100vh - 110px);overflow:hidden;box-sizing:border-box;min-width:0">' +
         colHtmlW('Verk',           jobs.length         + ' verk', '#64748b', wRenderJobs('all',      jobs))         +
         colHtmlW('Samningshafar',  contractJobs.length + ' verk', '#0d6efd', wRenderJobs('contract', contractJobs)) +
       '</div>' +
@@ -295,25 +295,26 @@
     const noteHtml = extraNote
       ? `<div style="font-size:11px;color:#1e3a8a;background:#dbeafe;border-left:3px solid #2563eb;padding:3px 6px;border-radius:4px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(extraNote)}">📝 ${esc(extraNote)}</div>`
       : '';
-    return '<div onclick="Workshop.select(' + j.id + ')" style="padding:10px;border-radius:10px;cursor:pointer;margin-bottom:6px;background:#fff;border:1px solid #f1f5f9;transition:all .12s" onmouseover="this.style.background=\'#f8fafc\';this.style.borderColor=\'#e2e8f0\'" onmouseout="this.style.background=\'#fff\';this.style.borderColor=\'#f1f5f9\'">' +
-      '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">' +
+    return '<div onclick="Workshop.select(' + j.id + ')" style="padding:7px 8px;border-radius:9px;cursor:pointer;margin-bottom:5px;background:#fff;border:1px solid #f1f5f9;transition:all .12s" onmouseover="this.style.background=\'#f8fafc\';this.style.borderColor=\'#e2e8f0\'" onmouseout="this.style.background=\'#fff\';this.style.borderColor=\'#f1f5f9\'">' +
+      '<div style="display:flex;justify-content:space-between;align-items:start;gap:6px">' +
         '<div style="min-width:0;flex:1">' +
-          `<div style="font-family:var(--mono,monospace);font-size:11px;color:#94a3b8;font-weight:600">${dnum(j.num)}</div>` +
-          `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
-          `<div style="font-size:11px;color:#64748b">${done}/${total} lokið · Móttekið ${(window.U && U.fd) ? U.fd(j.dropoff) : (j.dropoff || '')}</div>` +
-          svcHtml +
-          noteHtml +
+          `<div style="display:flex;gap:6px;align-items:baseline">` +
+            `<div style="font-family:var(--mono,monospace);font-size:10.5px;color:#94a3b8;font-weight:600">${dnum(j.num)}</div>` +
+            `<div style="font-size:12.5px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
+          `</div>` +
+          `<div style="font-size:10.5px;color:#64748b;margin-top:1px">${done}/${total} lokið · ${(window.U && U.fd) ? U.fd(j.dropoff) : (j.dropoff || '')}</div>` +
+          (svcHtml || noteHtml ? '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px">' + svcHtml + noteHtml + '</div>' : '') +
         '</div>' + badge +
       '</div>' +
       renderUnitChips(j) +
-      `<div style="margin-top:7px;height:4px;background:#f1f5f9;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct === 100 ? '#10b981' : '#f59e0b'};transition:width .2s"></div></div>` +
-      renderReadyButton(j) +
+      renderProgressAndReady(j, pct) +
     '</div>';
   }
 
   // ── Inline unit chip strip (mirrors Counter qcard-chips) ─────────────────
   // Click chip = toggle that unit's status. stopPropagation so we don't open
-  // the detail modal underneath.
+  // the detail modal underneath. Chips kept very tight so 8-10 fit on one row
+  // in a narrow column.
   function renderUnitChips(j) {
     if (!j.units || !j.units.length) return '';
     const chips = j.units.map(u => {
@@ -325,33 +326,34 @@
         ? ';background:#fef2f2;border-color:#fecaca;color:#991b1b'
         : '';
       const tick = isDone
-        ? '<svg style="width:11px;height:11px;stroke:var(--grn,#16a34a);fill:none;flex-shrink:0" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'
-        : isBroken ? '<span style="font-size:10px">🚫</span>' : '';
-      return `<div class="chip${isDone ? ' done' : ''}" style="cursor:pointer${extraStyle}" `
+        ? '<svg style="width:9px;height:9px;stroke:currentColor;fill:none;flex-shrink:0" viewBox="0 0 24 24" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>'
+        : isBroken ? '<span style="font-size:9px">🚫</span>' : '';
+      return `<div class="chip${isDone ? ' done' : ''}" style="cursor:pointer;padding:1px 6px;font-size:10px;gap:3px${extraStyle}" `
         + `onclick="event.stopPropagation();Workshop.toggleUnit(${j.id},${u.id})" `
         + `title="${esc((u.serial || '') + ' — ' + tp)}">`
         + tick
-        + `<span class="chip-ser">${esc(tail)}</span>`
-        + `<span class="chip-tp">${esc(u.type || '')}</span>`
+        + `<span class="chip-ser" style="font-size:10px">${esc(tail)}</span>`
         + '</div>';
     }).join('');
-    return `<div class="qcard-chips" style="margin-top:7px">${chips}</div>`;
+    return `<div class="qcard-chips" style="margin-top:4px;gap:3px">${chips}</div>`;
   }
 
-  // ── "Tilbúið" button on each workshop card ──────────────────────────────
+  // ── Progress bar + Tilbúið button in one row to save vertical space ─────
   // Hidden once the job is already 'ready' (it's about to leave the workshop
   // column anyway). Always allowed even when not all units are done — Agnar
   // can decide; Workshop.markReady cascades units to done in db.js.
-  function renderReadyButton(j) {
-    if (j.status === 'ready') return '';
-    return '<div style="display:flex;justify-content:flex-end;margin-top:8px">'
-      + `<button onclick="event.stopPropagation();Workshop.markReady(${j.id})" type="button" `
-      + 'style="padding:6px 14px;background:#16a34a;color:#fff;border:none;border-radius:7px;'
-      + 'font:inherit;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 1px 2px rgba(22,163,74,.25);'
-      + 'display:inline-flex;align-items:center;gap:5px">'
-      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="width:12px;height:12px"><polyline points="20 6 9 17 4 12"/></svg>'
-      + 'Tilbúið</button>'
-      + '</div>';
+  function renderProgressAndReady(j, pct) {
+    const bar = `<div style="flex:1;height:4px;background:#f1f5f9;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct === 100 ? '#10b981' : '#f59e0b'};transition:width .2s"></div></div>`;
+    if (j.status === 'ready') {
+      return `<div style="margin-top:6px">${bar}</div>`;
+    }
+    const btn = `<button onclick="event.stopPropagation();Workshop.markReady(${j.id})" type="button" `
+      + 'style="padding:3px 9px;background:#16a34a;color:#fff;border:none;border-radius:99px;'
+      + 'font:inherit;font-size:10.5px;font-weight:700;cursor:pointer;'
+      + 'display:inline-flex;align-items:center;gap:3px;flex-shrink:0;line-height:1.4">'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" style="width:9px;height:9px"><polyline points="20 6 9 17 4 12"/></svg>'
+      + 'Tilbúið</button>';
+    return `<div style="display:flex;gap:8px;align-items:center;margin-top:6px">${bar}${btn}</div>`;
   }
 
   function wCustomerGroup(statusKey, co) {
@@ -379,17 +381,17 @@
         const noteHtml = extraNote
           ? `<div style="font-size:11px;color:#92400e;background:#fef3c7;border-left:3px solid #f59e0b;padding:3px 6px;border-radius:4px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(extraNote)}">📝 ${esc(extraNote)}</div>`
           : '';
-        return '<div onclick="event.stopPropagation();Workshop.select(' + j.id + ')" style="display:flex;flex-direction:column;gap:6px;padding:7px 8px;border-radius:8px;cursor:pointer;margin-bottom:3px;background:#f8fafc;border:1px solid #f1f5f9" onmouseover="this.style.background=\'#eef2f7\'" onmouseout="this.style.background=\'#f8fafc\'">' +
+        const pct = total ? Math.round(done / total * 100) : 0;
+        return '<div onclick="event.stopPropagation();Workshop.select(' + j.id + ')" style="display:flex;flex-direction:column;gap:4px;padding:6px 8px;border-radius:8px;cursor:pointer;margin-bottom:3px;background:#f8fafc;border:1px solid #f1f5f9" onmouseover="this.style.background=\'#eef2f7\'" onmouseout="this.style.background=\'#f8fafc\'">' +
           '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
             '<div style="min-width:0;flex:1">' +
               `<div style="font-family:var(--mono,monospace);font-size:10px;color:#94a3b8">${dnum(j.num)}</div>` +
-              `<div style="font-size:12px;color:#0f172a;margin:1px 0">${done}/${total} lokið ${badge}</div>` +
-              svcHtml +
-              noteHtml +
+              `<div style="font-size:11.5px;color:#0f172a;margin:1px 0">${done}/${total} lokið ${badge}</div>` +
+              (svcHtml || noteHtml ? '<div style="display:flex;gap:4px;flex-wrap:wrap">' + svcHtml + noteHtml + '</div>' : '') +
             '</div>' +
           '</div>' +
           renderUnitChips(j) +
-          renderReadyButton(j) +
+          renderProgressAndReady(j, pct) +
         '</div>';
       }).join('') + '</div>';
     }
