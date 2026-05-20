@@ -125,17 +125,17 @@
     const custLine = esc(co.nafn || '—') + addrLine + ktLine;
 
     // 8 category rows, all always shown. Empty count → "x".
-    // 2026-05-20: tighter columns + centered Fjöldi / Í lagi for a cleaner
-    // mid-page look. Type label is right-aligned so it visually hugs the
-    // count columns instead of sprawling across the page.
+    // 2026-05-20: fixed-width centered table — every row left-aligned so the
+    // labels stack cleanly. Previous mixed alignment (right / center / left)
+    // produced a jagged look that read as "out of line".
     const rowsHtml = CATEGORIES.map(c => {
       const n = counts[c.k] || 0;
       const fjoldi = n > 0 ? String(n) : 'x';
       const ilagi  = n > 0 ? 'Já'      : 'x';
       return `<tr>
-        <td style="padding:6px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;text-align:right;white-space:nowrap">${esc(c.label)}</td>
-        <td style="padding:6px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;text-align:center;white-space:nowrap"><strong>Fjöldi:</strong> ${esc(fjoldi)}</td>
-        <td style="padding:6px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;text-align:left;white-space:nowrap"><strong>Í lagi:</strong> ${esc(ilagi)}</td>
+        <td style="padding:7px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;white-space:nowrap">${esc(c.label)}</td>
+        <td style="padding:7px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;white-space:nowrap;width:1%"><strong>Fjöldi:</strong> ${esc(fjoldi)}</td>
+        <td style="padding:7px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;white-space:nowrap;width:1%"><strong>Í lagi:</strong> ${esc(ilagi)}</td>
       </tr>`;
     }).join('');
 
@@ -171,9 +171,9 @@
         </div>
 
         <!-- Fixed equipment category table — centered as a readable mid-
-             page block. width:75% gives a tidy middle column without
-             shrinking to "tiny" the way width:auto did. -->
-        <table style="margin:0 auto 22px;width:75%;border-collapse:collapse">
+             page block. Width:auto + label column flex-grow gives uniform
+             rows where every "Fjöldi:" and "Í lagi:" line up vertically. -->
+        <table style="margin:0 auto 22px;border-collapse:collapse">
           <tbody>${rowsHtml}</tbody>
         </table>
 

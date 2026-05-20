@@ -44,9 +44,15 @@
     const alt = String(o.alt || 'Slökkvitæki');
     const escAlt = alt.replace(/[&<>"']/g, c =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-    const url = (o.absoluteUrl && window.location && window.location.origin)
-      ? window.location.origin + getUrl()
-      : getUrl();
+    // 2026-05-20: only prepend origin for *root-relative* paths (`/img/...`)
+    // — data URLs and absolute http(s) URLs must be left untouched, otherwise
+    // popup windows try to load `https://slokkvitaeki.netlify.appdata:image/...`
+    // which is nonsense. This was the silent-fail bug for custom PNG uploads.
+    const raw = getUrl();
+    const isAbsolute = /^(data:|https?:|blob:)/i.test(raw);
+    const url = (o.absoluteUrl && !isAbsolute && window.location && window.location.origin)
+      ? window.location.origin + raw
+      : raw;
     return '<img src="' + url + '" alt="' + escAlt + '" ' +
       'style="height:' + h + 'px;width:' + w + 'px;max-width:100%;object-fit:contain;display:inline-block;vertical-align:middle" ' +
       'onerror="this.style.visibility=\'hidden\'">';

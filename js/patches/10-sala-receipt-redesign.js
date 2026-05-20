@@ -314,7 +314,7 @@
     }
 
     .footer { margin-top: 18px; font-size: 9pt; }
-    .signature { display: flex; align-items: baseline; gap: 8px; }
+    .signature { display: flex; align-items: baseline; gap: 8px; margin-top: 28px; }
     .signature .lbl { white-space: nowrap; }
     .signature .line {
       flex: 1; max-width: 280px; border-bottom: 0.6pt solid #000; height: 1.2em;
