@@ -1,14 +1,17 @@
-/* === COMPANY INSPECTION REPORT v1 ===
+/* === COMPANY INSPECTION REPORT v2 ===
  *
- * Generates a printable A4 "úttektarskýrsla" for a company's upcoming
- * service visit. Pulls:
- *   • Company info (nafn, kt, heimilisfang, simi, netfang) from fyrirtaeki
- *   • Planned-service table from the rendered _ctc-section (patch 129)
- *   • Athugasemd from tripState.notes
- *   • Skoðunaraðili from tripState.skodunaradili
+ * Generates a printable A4 "úttektarskýrsla" matching the existing IKEA 2025
+ * paper template exactly:
+ *   • Slökkvitæki Brunahólf logo (PNG asset, no inline SVG)
+ *   • Address line + intro sentence
+ *   • Customer line (name, address, kt) pulled from fyrirtaeki
+ *   • Month label "í maí 2026"
+ *   • Fixed list of 8 equipment categories with Fjöldi / Í lagi per row
+ *   • Annað: section from the blue notes box (tripState.notes)
+ *   • Athugasemdir: section ("Engar athugasemdir" by default)
+ *   • Footer: "Fyrir hönd Slökkvitæki ehf" + Skoðunaraðili name
  *
- * Triggered by the "📄 Búa til úttektarskýrslu" button injected into the
- * green Heildarkostnaður section by patch 129.
+ * NO PRICES — this is a delivery confirmation, not an invoice.
  *
  * Public API: window.CompanyInspectionReport.open(coId)
  */
@@ -22,75 +25,64 @@
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  const MONTHS = ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
-
-  // Inline SVG logo — "Slökkvitæki Brunahólf" wordmark with the extinguisher
-  // circle icon. Kept inline so we don't need a separate asset file.
-  const LOGO_SVG =
-    '<svg width="320" height="80" viewBox="0 0 320 80" xmlns="http://www.w3.org/2000/svg">' +
-      '<circle cx="38" cy="40" r="36" fill="#000"/>' +
-      // Stylised fire-extinguisher silhouette
-      '<g fill="#fff" transform="translate(38,40)">' +
-        '<rect x="-11" y="-12" width="22" height="28" rx="3"/>' +
-        '<rect x="-4" y="-19" width="8" height="7" rx="1"/>' +
-        '<rect x="-9" y="-23" width="18" height="5" rx="1.5"/>' +
-        '<path d="M-2 -22 L-9 -28 L-11 -26 L-4 -20 Z" />' +
-        '<circle cx="0" cy="2" r="3" fill="#000"/>' +
-      '</g>' +
-      '<text x="92" y="36" font-family="Georgia, &quot;Times New Roman&quot;, serif" font-size="26" font-weight="700" fill="#000">Slökkvitæki</text>' +
-      '<text x="92" y="68" font-family="Georgia, &quot;Times New Roman&quot;, serif" font-size="26" font-weight="700" fill="#000">Brunahólf</text>' +
-    '</svg>';
+  const MONTHS_LOWER = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
 
   function loadTripState(coId) {
     try { return JSON.parse(localStorage.getItem('slokk_trip_' + coId) || '{}'); }
     catch (_) { return {}; }
   }
 
-  // ── Read the already-rendered cost table from _ctc-section ──────────────
-  // Avoids duplicating patch 129's product-matching logic — we just scrape
-  // the visible rows + totals.
-  function extractRows() {
-    const section = document.getElementById('_ctc-section');
-    if (!section) return [];
-    const trs = section.querySelectorAll('table tbody tr');
-    const rows = [];
-    trs.forEach(tr => {
-      const tds = tr.querySelectorAll('td');
-      if (tds.length < 6) return;
-      // First td has "Type / Size" + a sub-line with the product name.
-      // Read them separately so the report can show them on two lines too.
-      const firstTd = tds[0];
-      const sub = firstTd.querySelector('div');
-      const subText = sub ? sub.textContent.trim() : '';
-      const mainText = sub
-        ? firstTd.firstChild && firstTd.firstChild.textContent
-          ? firstTd.firstChild.textContent.trim()
-          : firstTd.textContent.replace(subText, '').trim()
-        : firstTd.textContent.trim();
-      rows.push({
-        main: mainText,
-        sub: subText,
-        count: tds[1].textContent.trim(),
-        kind: tds[2].textContent.trim(),
-        unitPrice: tds[3].textContent.replace(/\s+/g, ' ').trim(),
-        vskPct: tds[4].textContent.trim(),
-        subTotal: tds[5].textContent.trim()
-      });
-    });
-    return rows;
+  // ── Bucket a uttaeki row into one of the 8 PDF categories ───────────────
+  // Returns the category key, or null if the unit doesn't fit any known
+  // bucket (very rare — would be a weird type label).
+  function categorize(u) {
+    const t = String(u.type || '').toLowerCase();
+    const sizeStr = String(u.size || '').toLowerCase();
+    // Extract leading numeric part of size (e.g. "6 kg" → 6, "6-9 ltr" → 6)
+    const sizeNum = parseFloat(sizeStr.replace(',', '.')) || 0;
+
+    if (/léttv|lettv|abf|froð|frod/.test(t)) return 'lettvatn';
+    if (/\bduft\b|\babc\b|\bpfc\b/.test(t)) {
+      return sizeNum <= 3 ? 'duft_small' : 'duft_big';
+    }
+    if (/co2|co₂|co_?2|kolsyr|kolsýr/.test(t)) {
+      return sizeNum <= 3 ? 'co2_small' : 'co2_big';
+    }
+    if (/brunaslang|brunaslöng|brunaslong|slang|hose/.test(t)) return 'slang';
+    if (/teppi|blanket|eldvarn/.test(t)) return 'teppi';
+    if (/reykskynj|smoke/.test(t)) return 'reyk';
+    return null;
   }
-  function extractTotals() {
-    const section = document.getElementById('_ctc-section');
-    if (!section) return { ex: '', vsk: '', inc: '' };
-    const tfoot = section.querySelector('tfoot');
-    if (!tfoot) return { ex: '', vsk: '', inc: '' };
-    const trs = tfoot.querySelectorAll('tr');
-    const pick = i => {
-      if (!trs[i]) return '';
-      const tds = trs[i].querySelectorAll('td');
-      return tds.length ? tds[tds.length - 1].textContent.trim() : '';
-    };
-    return { ex: pick(0), vsk: pick(1), inc: pick(2) };
+
+  // Fixed display order matching the PDF — keys map to (label, sublabel)
+  const CATEGORIES = [
+    { k: 'lettvatn',  label: 'Slökkvitæki léttvatn 6-9 ltr.' },
+    { k: 'duft_small', label: 'Slökkvitæki duft 2 kg.' },
+    { k: 'duft_big',   label: 'Slökkvitæki duft 6-12 kg.' },
+    { k: 'co2_small',  label: 'Slökkvitæki Co₂ 2 kg.' },
+    { k: 'co2_big',    label: 'Slökkvitæki Co₂ 5 kg.' },
+    { k: 'slang',      label: 'Brunaslöngur' },
+    { k: 'teppi',      label: 'Eldvarnarteppi' },
+    { k: 'reyk',       label: 'Reykskynjarar' }
+  ];
+
+  async function fetchUnits(client) {
+    const sb = getSB();
+    if (!sb) return [];
+    let all = [];
+    let from = 0, pageSize = 1000;
+    while (true) {
+      const { data, error } = await sb.from('uttaeki')
+        .select('id,serial,type,size,status')
+        .eq('client', client)
+        .eq('status', 'active')
+        .range(from, from + pageSize - 1);
+      if (error || !data) break;
+      all = all.concat(data);
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+    return all;
   }
 
   // ── Open report ─────────────────────────────────────────────────────────
@@ -105,120 +97,102 @@
     if (c.error || !c.data) { alert('Fyrirtæki fannst ekki'); return; }
     const co = c.data;
 
-    const trip = loadTripState(coId);
-    const notes = trip.notes || '';
-    const skodunaradili = trip.skodunaradili || '';
+    const units = await fetchUnits(co.nafn);
+    const counts = {};
+    CATEGORIES.forEach(c => counts[c.k] = 0);
+    units.forEach(u => {
+      const k = categorize(u);
+      if (k && counts[k] != null) counts[k]++;
+    });
 
-    const rows = extractRows();
-    const totals = extractTotals();
+    const trip = loadTripState(coId);
+    const annad = (trip.notes || '').trim();
+    const athugasemdir = (trip.athugasemdir_skyrsla || '').trim() || 'Engar athugasemdir';
+    const skodunaradili = (trip.skodunaradili || '').trim();
 
     const now = new Date();
-    const monthLabel = MONTHS[now.getMonth()] + ' ' + now.getFullYear();
-    const fullDateLabel = String(now.getDate()).padStart(2, '0') + '.' +
-                         String(now.getMonth() + 1).padStart(2, '0') + '.' +
-                         now.getFullYear();
+    const monthPhrase = 'í ' + MONTHS_LOWER[now.getMonth()] + ' ' + now.getFullYear();
 
-    const html = buildReportHtml({ co, rows, totals, notes, skodunaradili, monthLabel, fullDateLabel });
+    const html = buildReportHtml({ co, counts, annad, athugasemdir, skodunaradili, monthPhrase });
     showModal(html);
   }
 
   function buildReportHtml(ctx) {
-    const { co, rows, totals, notes, skodunaradili, monthLabel, fullDateLabel } = ctx;
+    const { co, counts, annad, athugasemdir, skodunaradili, monthPhrase } = ctx;
 
-    const rowsHtml = rows.length ? rows.map(r => `<tr>
-      <td style="padding:7px 10px;font-size:12px;color:#0f172a">
-        ${esc(r.main)}
-        ${r.sub ? `<div style="font-size:10.5px;color:#64748b;margin-top:1px">${esc(r.sub)}</div>` : ''}
-      </td>
-      <td style="padding:7px 10px;font-size:12px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">${esc(r.count)}</td>
-      <td style="padding:7px 10px;font-size:11px;color:#475569">${esc(r.kind)}</td>
-      <td style="padding:7px 10px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums">${esc(r.unitPrice)}</td>
-      <td style="padding:7px 10px;font-size:11px;text-align:center;color:#64748b">${esc(r.vskPct)}</td>
-      <td style="padding:7px 10px;font-size:12px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums">${esc(r.subTotal)}</td>
-    </tr>`).join('') : '<tr><td colspan="6" style="padding:18px;text-align:center;color:#94a3b8;font-style:italic">Engin þjónusta áætluð</td></tr>';
+    const ktLine = co.kennitala ? ' kt: ' + esc(co.kennitala) : '';
+    const addrLine = co.heimilisfang ? ', ' + esc(co.heimilisfang) : '';
+    const custLine = esc(co.nafn || '—') + addrLine + ktLine;
 
-    const tfoot = totals.inc ? `<tfoot>
-      <tr><td colspan="5" style="padding:7px 10px;text-align:right;font-size:11px;color:#64748b">Án VSK:</td>
-        <td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">${esc(totals.ex)}</td></tr>
-      <tr><td colspan="5" style="padding:5px 10px;text-align:right;font-size:11px;color:#64748b">VSK:</td>
-        <td style="padding:5px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">${esc(totals.vsk)}</td></tr>
-      <tr style="background:#dcfce7">
-        <td colspan="5" style="padding:9px 10px;text-align:right;font-size:13px;font-weight:800;color:#166534">SAMTALS M. VSK:</td>
-        <td style="padding:9px 10px;text-align:right;font-weight:800;color:#166534;font-size:14px;font-variant-numeric:tabular-nums">${esc(totals.inc)}</td>
-      </tr>
-    </tfoot>` : '';
+    // 8 category rows, all always shown. Empty count → "x".
+    const rowsHtml = CATEGORIES.map(c => {
+      const n = counts[c.k] || 0;
+      const fjoldi = n > 0 ? String(n) : 'x';
+      const ilagi  = n > 0 ? 'Já'      : 'x';
+      return `<tr>
+        <td style="padding:8px 10px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;width:55%">${esc(c.label)}</td>
+        <td style="padding:8px 10px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;width:22%"><strong>Fjöldi:</strong> ${esc(fjoldi)}</td>
+        <td style="padding:8px 10px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;width:23%"><strong>Í lagi:</strong> ${esc(ilagi)}</td>
+      </tr>`;
+    }).join('');
 
     return `<!DOCTYPE html><html lang="is"><head><meta charset="utf-8">
       <title>Úttektarskýrsla — ${esc(co.nafn || '')}</title>
       <style>
-        @page { size: A4; margin: 14mm; }
-        html, body { margin:0; padding:0; font-family: Arial, Helvetica, sans-serif; color:#0f172a; background:#fff; }
-        .page { padding: 0; }
+        @page { size: A4; margin: 16mm 18mm; }
+        html, body { margin:0; padding:0; font-family: Arial, Helvetica, sans-serif; color:#0f172a; background:#fff; line-height:1.45; }
         table { width:100%; border-collapse: collapse; }
-        th { background:#f8fafc; padding:8px 10px; text-align:left; font-size:10px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.04em; border-bottom:1px solid #e2e8f0; }
-        tbody tr:nth-child(even) td { background:#fafafa; }
         @media print { .no-print { display:none !important; } }
-      </style></head><body><div class="page">
+      </style></head><body>
 
-        <!-- Header: logo + "úttektarskýrsla" tag + month + inspector -->
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #000;padding-bottom:12px;margin-bottom:22px">
-          <div>${LOGO_SVG}</div>
-          <div style="text-align:right">
-            <div style="display:inline-block;background:#000;color:#fff;padding:4px 14px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Úttektarskýrsla</div>
-            <div style="font-size:20px;font-weight:800;margin-top:10px;color:#0f172a">${esc(monthLabel)}</div>
-            <div style="font-size:11px;color:#94a3b8;margin-top:2px">Dagsetning: ${esc(fullDateLabel)}</div>
-            ${skodunaradili ? `<div style="font-size:12px;color:#475569;margin-top:6px">🧑 Skoðunaraðili: <strong style="color:#0f172a">${esc(skodunaradili)}</strong></div>` : ''}
+        <!-- Letterhead: logo on the left, address on the right -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
+          <img src="/img/slokkvitaeki-brunaholf-logo.png" alt="Slökkvitæki Brunahólf" style="height:88px;width:auto">
+          <div style="text-align:right;font-size:12px;color:#0f172a;line-height:1.5">
+            Helluhrauni 10, 220 Hafnarfjörður<br>
+            Sími: 565 4080, kt. 600508-0400
           </div>
         </div>
 
-        <!-- Customer block -->
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px 16px;margin-bottom:20px">
-          <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Viðskiptavinur</div>
-          <div style="font-size:18px;font-weight:800;color:#0f172a;margin-top:4px">${esc(co.nafn || '—')}</div>
-          <div style="font-size:12px;color:#475569;margin-top:5px;line-height:1.55">
-            ${co.kennitala ? 'kt. ' + esc(co.kennitala) : ''}
-            ${co.simi ? (co.kennitala ? ' · ' : '') + 'sími ' + esc(co.simi) : ''}
-            ${co.heimilisfang ? '<br>' + esc(co.heimilisfang) : ''}
-            ${co.netfang ? '<br>' + esc(co.netfang) : ''}
-          </div>
+        <!-- Intro sentence + customer line -->
+        <div style="font-size:13px;color:#0f172a;line-height:1.55;margin-bottom:18px">
+          Skýrsla vegna úttektar á brunaslöngum, slökkvitækjum og öðrum búnaði (ef við á) hjá fyrirtækinu
+        </div>
+        <div style="font-size:13px;color:#0f172a;border-bottom:1px solid #0f172a;padding-bottom:6px;margin-bottom:16px">
+          ${custLine}
         </div>
 
-        <!-- Planned-service table -->
-        <div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:8px">📋 Áætluð þjónusta — ${esc(monthLabel)}</div>
-        <table style="margin-bottom:20px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">
-          <thead><tr>
-            <th>Tegund / Stærð</th>
-            <th style="text-align:center;width:60px">Fjöldi</th>
-            <th style="width:90px">Þjónusta</th>
-            <th style="text-align:right">Per stk</th>
-            <th style="text-align:center;width:50px">VSK</th>
-            <th style="text-align:right">Samtals</th>
-          </tr></thead>
+        <!-- Inspection statement with date -->
+        <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:14px">
+          Tæki voru yfirfarin af Slökkvitæki ehf ${esc(monthPhrase)}
+        </div>
+
+        <!-- Fixed equipment category table -->
+        <table style="margin-bottom:20px">
           <tbody>${rowsHtml}</tbody>
-          ${tfoot}
         </table>
 
-        ${notes.trim() ? `
-        <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px;margin-bottom:28px">
-          <div style="font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.05em">📝 Athugasemd</div>
-          <div style="font-size:12.5px;color:#0f172a;margin-top:5px;line-height:1.55;white-space:pre-wrap">${esc(notes)}</div>
-        </div>` : ''}
+        <!-- Annað -->
+        <div style="font-size:13px;color:#0f172a;margin-bottom:18px">
+          <strong>Annað:</strong>
+          <div style="margin-top:4px;white-space:pre-wrap;line-height:1.6">${annad ? esc(annad) : '—'}</div>
+        </div>
+
+        <!-- Athugasemdir -->
+        <div style="font-size:13px;color:#0f172a;margin-bottom:60px">
+          <strong>Athugasemdir:</strong>
+          <div style="margin-top:4px;white-space:pre-wrap;line-height:1.6">${esc(athugasemdir)}</div>
+        </div>
 
         <!-- Sign-off -->
-        <div style="margin-top:50px;padding-top:14px;border-top:1px solid #cbd5e1">
-          <div style="font-size:12px;color:#475569;line-height:1.6">
-            Fyrir hönd <strong style="color:#0f172a">Slökkvitæki ehf</strong>
-          </div>
-          <div style="margin-top:46px;border-bottom:1px solid #0f172a;width:300px"></div>
-          <div style="font-size:11px;color:#64748b;margin-top:4px">${esc(skodunaradili || 'Nafn skoðunaraðila')}</div>
+        <div style="font-size:13px;color:#0f172a;line-height:1.7">
+          Fyrir hönd <strong>Slökkvitæki ehf</strong>
+        </div>
+        <div style="margin-top:28px;font-size:13px;color:#0f172a">
+          ${skodunaradili ? esc(skodunaradili) : '_______________________'}
         </div>
 
-        <!-- Footer -->
-        <div style="margin-top:36px;padding-top:10px;border-top:1px solid #e2e8f0;font-size:10px;color:#94a3b8;text-align:center">
-          Slökkvitæki ehf · Helluhrauni 10, 220 Hafnarfirði · kt 600508-0400 · vsknr. 98107 · Sími 565-4080 · eldklar@eldklar.is
-        </div>
-
-      </div></body></html>`;
+      </body></html>`;
   }
 
   function showModal(html) {
@@ -236,11 +210,24 @@
             '<button id="_cir-close" type="button" style="padding:7px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;color:#475569">✕ Loka</button>' +
           '</div>' +
         '</div>' +
-        '<iframe id="_cir-frame" style="flex:1;border:none;background:#fff" sandbox="allow-same-origin allow-modals allow-scripts"></iframe>' +
+        // 2026-05-20: use srcdoc as a fallback for sandboxed browsers, but
+        // the image needs to load from /img/ so we set src directly to a
+        // blob URL so the same-origin policy lets it load.
+        '<iframe id="_cir-frame" style="flex:1;border:none;background:#fff"></iframe>' +
       '</div>';
     document.body.appendChild(dlg);
     const frame = dlg.querySelector('#_cir-frame');
-    frame.srcdoc = html;
+    // Write into the iframe document so relative URLs (/img/...) resolve
+    // against the parent origin instead of about:srcdoc.
+    frame.addEventListener('load', () => {});
+    frame.src = 'about:blank';
+    setTimeout(() => {
+      const doc = frame.contentDocument || frame.contentWindow.document;
+      doc.open();
+      doc.write(html);
+      doc.close();
+    }, 30);
+
     function close() { dlg.remove(); }
     dlg.querySelector('#_cir-close').addEventListener('click', close);
     dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
@@ -254,6 +241,6 @@
   }
 
   window.CompanyInspectionReport = { open: openReport };
-  console.log('[patch-168] Company inspection report installed');
+  console.log('[patch-168] Company inspection report v2 installed — PDF-style, no prices');
 })();
-/* === END COMPANY INSPECTION REPORT === */
+/* === END COMPANY INSPECTION REPORT v2 === */
