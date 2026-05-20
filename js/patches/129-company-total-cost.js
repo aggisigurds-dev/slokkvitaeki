@@ -570,7 +570,7 @@
       notesTa.addEventListener('change', onNotes);
     }
 
-    // Wire driving input.
+    // Wire driving input (per-trip price).
     const driveInp = section.querySelector('#_ctc-drive');
     if (driveInp) {
       const onDrive = () => {
@@ -583,6 +583,20 @@
       };
       driveInp.addEventListener('change', onDrive);
       driveInp.addEventListener('blur', onDrive);
+    }
+    // Wire driving quantity input (number of trips).
+    const driveQtyInp = section.querySelector('#_ctc-drive-qty');
+    if (driveQtyInp) {
+      const onDriveQty = () => {
+        const v = Math.max(0, parseInt(driveQtyInp.value, 10) || 0);
+        const st = loadTripState(coId);
+        st.driveQty = v;
+        saveTripState(coId, st);
+        _lastKey = '';
+        render();
+      };
+      driveQtyInp.addEventListener('change', onDriveQty);
+      driveQtyInp.addEventListener('blur', onDriveQty);
     }
     // Wire Skýrslugerð input.
     const skyrsluInp = section.querySelector('#_ctc-skyrslu');

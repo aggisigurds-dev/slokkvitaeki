@@ -147,7 +147,7 @@
 
         <!-- Letterhead: logo on the left, address on the right -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
-          <img src="/img/slokkvitaeki-brunaholf-logo.png" alt="Slökkvitæki Brunahólf" style="height:88px;width:auto">
+          <img src="/img/slokkvitaeki-brunaholf-logo.png?v=20260520b" alt="Slökkvitæki Brunahólf" style="height:88px;width:auto">
           <div style="text-align:right;font-size:12px;color:#0f172a;line-height:1.5">
             Helluhrauni 10, 220 Hafnarfjörður<br>
             Sími: 565 4080, kt. 600508-0400
