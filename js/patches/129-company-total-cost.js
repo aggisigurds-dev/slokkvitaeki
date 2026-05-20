@@ -222,12 +222,15 @@
   function saveTripState(coId, state) {
     try { localStorage.setItem(tripStateKey(coId), JSON.stringify(state)); } catch (_) {}
   }
-  function getUnitChoice(coId, unitId) {
+  function getUnitChoice(coId, unitId, typeText) {
     if (window.UnitServicePicker && window.UnitServicePicker.getChoice) {
-      return window.UnitServicePicker.getChoice(coId, unitId);
+      return window.UnitServicePicker.getChoice(coId, unitId, typeText);
     }
     const st = loadTripState(coId);
-    return (st.units && st.units[unitId]) || 'hledsla';
+    if (st.units && st.units[unitId]) return st.units[unitId];
+    const t = String(typeText || '').toLowerCase();
+    if (/\bduft\b|\babc\b|\bpfc\b/.test(t)) return 'hledsla';
+    return 'yfirferd';
   }
 
   async function fetchUnits(client) {
@@ -284,7 +287,7 @@
       const typeNorm = normalizeTypeFamily(u.type);
       const key = typeNorm + '|' + (u.size || '');
       if (!agg[key]) agg[key] = { key, type: typeNorm, size: u.size || '', hledsla: 0, yfirferd: 0, skip: 0 };
-      const choice = getUnitChoice(coId, u.id);
+      const choice = getUnitChoice(coId, u.id, u.type);
       if (choice === 'hledsla') agg[key].hledsla++;
       else if (choice === 'yfirferd') agg[key].yfirferd++;
       else agg[key].skip++;
@@ -519,5 +522,5 @@
   }
   attach();
 
-  console.log('[company-total-cost] v3 installed — per-unit aggregation');
+  console.log('[company-total-cost] v4 installed — duft now defaults to hleðsla');
 })();
