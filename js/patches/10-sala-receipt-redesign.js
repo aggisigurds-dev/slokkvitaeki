@@ -418,9 +418,16 @@
               // Honor Stillingar → Kvittun → "Birta logo" toggle. When off,
               // logo is skipped entirely (the company name takes its place).
               const showLogo = !window.AppSettings || window.AppSettings.path('kvittun.show_logo') !== false;
-              return showLogo ? `<img src="${esc(LOGO_URL)}" alt="${esc(COMPANY.name)}"
-              style="width:72px;height:72px;object-fit:contain;flex-shrink:0;border-radius:50%"
-              onerror="this.outerHTML='&lt;div aria-hidden=&quot;true&quot; style=&quot;width:72px;height:72px;flex-shrink:0;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:36pt;letter-spacing:-0.02em;font-family:Arial,Helvetica,sans-serif;&quot;&gt;S&lt;/div&gt;'">` : '';
+              if (!showLogo) return '';
+              // 2026-05-20: 3:1 container so any wordmark logo fits without
+              // distortion. Was a 72x72 circle (designed for the old
+              // extinguisher icon); now reads as a horizontal brand bar.
+              if (window.SlokkLogo && SlokkLogo.imgHtml) {
+                return SlokkLogo.imgHtml({ heightPx: 60, alt: COMPANY.name, absoluteUrl: true });
+              }
+              return `<img src="${esc(LOGO_URL)}" alt="${esc(COMPANY.name)}"
+              style="height:60px;width:180px;object-fit:contain;display:inline-block"
+              onerror="this.style.visibility='hidden'">`;
             })()}
             <div class="hdr-co">
               <div class="co-name">${esc(COMPANY.nameLogo)}</div>
