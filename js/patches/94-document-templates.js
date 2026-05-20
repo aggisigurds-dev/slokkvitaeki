@@ -702,6 +702,35 @@
     return SEED_TEMPLATES.concat(userTemplates);
   }
 
+  // 2026-05-20: Hidden-template handling. User templates carry a `hidden`
+  // boolean directly. Seeds are read-only constants so we track hidden seed
+  // IDs in a separate AppSettings list. isHidden() works for both.
+  const HIDDEN_KEY = 'document_templates_hidden';
+  function getHiddenSeedIds() {
+    const stored = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(HIDDEN_KEY)) || [];
+    return Array.isArray(stored) ? stored : [];
+  }
+  function isHidden(t) {
+    if (!t) return false;
+    if (t._seed) return getHiddenSeedIds().indexOf(t.id) >= 0;
+    return !!t.hidden;
+  }
+  async function setHidden(id, hidden) {
+    const t = getTemplates().find(x => x.id === id);
+    if (!t) return false;
+    if (t._seed) {
+      const cur = getHiddenSeedIds().slice();
+      const idx = cur.indexOf(id);
+      if (hidden && idx < 0) cur.push(id);
+      else if (!hidden && idx >= 0) cur.splice(idx, 1);
+      if (!window.AppSettings || !window.AppSettings.save) return false;
+      return await window.AppSettings.save({ [HIDDEN_KEY]: cur });
+    }
+    // User template — mutate and save.
+    t.hidden = !!hidden;
+    return await saveUserTemplate(t);
+  }
+
   async function saveUserTemplate(t) {
     if (!window.AppSettings || !window.AppSettings.save) {
       alert('AppSettings ekki tilbúið');
@@ -854,14 +883,31 @@
     const templates = getTemplates();
     const cards = templates.map(t => {
       const isSeed = !!t._seed;
+      const hidden = isHidden(t);
+      const cardStyle = 'background:#fff;border:1px solid ' + (hidden ? '#cbd5e1' : '#e2e8f0') +
+        ';border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,0.04)' +
+        (hidden ? ';opacity:.6' : '');
+      const hiddenBadge = hidden
+        ? '<span title="Birtist ekki í vali í brunakerfi/Fyrirtæki" style="font-size:9px;font-weight:700;background:#f1f5f9;color:#475569;padding:2px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:0.04em;margin-left:4px">🚫 Falið</span>'
+        : '';
       return '' +
-      '<div class="_dt-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,0.04)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">' +
-          '<div style="font-weight:700;font-size:14px;color:#0f172a;line-height:1.3">' + esc(t.name) + '</div>' +
-          (isSeed ? '<span style="font-size:9px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:2px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:0.04em">forsniðið</span>'
-                  : '<span style="font-size:9px;font-weight:700;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:0.04em">eigið</span>') +
+      '<div class="_dt-card" style="' + cardStyle + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px;flex-wrap:wrap">' +
+          '<div style="font-weight:700;font-size:14px;color:#0f172a;line-height:1.3;flex:1;min-width:0">' + esc(t.name) + '</div>' +
+          '<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">' +
+            (isSeed ? '<span style="font-size:9px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:2px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:0.04em">forsniðið</span>'
+                    : '<span style="font-size:9px;font-weight:700;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:0.04em">eigið</span>') +
+            hiddenBadge +
+          '</div>' +
         '</div>' +
         '<div style="font-size:11px;color:#64748b">' + extractFields(t.html).length + ' reitir til útfyllingar</div>' +
+        // 2026-05-20: hide-from-picker checkbox. When ticked, the template
+        // stops showing up in the brunakerfi/Fyrirtæki sniðmáta-veljara,
+        // but stays editable here in Samningar.
+        '<label style="display:flex;align-items:center;gap:7px;font-size:12px;color:#475569;cursor:pointer;user-select:none;padding:5px 0">' +
+          '<input class="_dt-hide" type="checkbox" data-id="' + esc(t.id) + '"' + (hidden ? ' checked' : '') + ' style="width:15px;height:15px;cursor:pointer">' +
+          '<span>Falið — birtist ekki í vali</span>' +
+        '</label>' +
         '<div style="display:flex;gap:6px;margin-top:auto">' +
           '<button class="_dt-open btn btn-primary btn-sm" data-id="' + esc(t.id) + '" style="flex:1">📝 Opna og útfylla</button>' +
           // 2026-05-13: Seed templates get an "Afrita" button (clone into an
@@ -904,6 +950,22 @@
       }
       if (cloneBtn) { e.stopPropagation(); cloneSeedTemplate(cloneBtn.dataset.id); return; }
       if (addBtn)   { e.stopPropagation(); openTemplateEditor(null); return; }
+    });
+    // 2026-05-20: hide-from-picker checkbox change handler.
+    section.addEventListener('change', async e => {
+      const cb = e.target.closest('._dt-hide');
+      if (!cb) return;
+      e.stopPropagation();
+      const ok = await setHidden(cb.dataset.id, cb.checked);
+      if (!ok) {
+        alert('Tókst ekki að vista földunarstöðu.');
+        cb.checked = !cb.checked;
+        return;
+      }
+      if (window.Toast && Toast.show) {
+        Toast.show(cb.checked ? '🚫 Sniðmát falið — birtist ekki í vali' : '✓ Sniðmát birt aftur');
+      }
+      refreshSection();
     });
   }
 
@@ -1417,7 +1479,11 @@
     edit: openTemplateEditor,
     cloneSeed: cloneSeedTemplate,   // For UIs that want "edit a seed" semantics
     list: getTemplates,
-    refresh: refreshSection
+    refresh: refreshSection,
+    // 2026-05-20: hidden-template controls — used by the picker in patch 147
+    // to filter, and by the Samningar UI to toggle the flag.
+    isHidden,
+    setHidden
   };
   window.DocTemplates = api;
   // Alias under the more discoverable name (patches search both)

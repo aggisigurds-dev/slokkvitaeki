@@ -1181,10 +1181,13 @@
     if (!window.DocumentTemplates || !DocumentTemplates.list) return [];
     let templates;
     try { templates = DocumentTemplates.list() || []; } catch (_) { return []; }
+    // 2026-05-20: skip templates marked hidden in Samningar.
+    const isHidden = (window.DocumentTemplates && DocumentTemplates.isHidden) || (() => false);
     const out = [];
     const seen = new Set();
     for (const t of templates) {
       const name = t.name || '';
+      if (isHidden(t)) continue;
       if (matchPatterns.some(p => p.test(name)) && !seen.has(t.id)) {
         seen.add(t.id);
         out.push(t);
