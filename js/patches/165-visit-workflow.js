@@ -31,10 +31,31 @@
     return m ? +m[1] : null;
   }
   function getCompanyName() {
+    // 1. Preferred: read from Companies.list (same source patch 129 uses)
+    if (window.Companies && Array.isArray(Companies.list)) {
+      const id = getCompanyId();
+      const c = id ? Companies.list.find(x => x.id === id) : null;
+      if (c && c.nafn) return c.nafn;
+    }
+    // 2. Fallback: DOM heading scan with broader selectors
     const main = document.getElementById('companies-main');
     if (!main) return null;
-    const heading = main.querySelector('h1, h2, .company-name, [style*="font-size:21px"]');
-    return heading ? heading.textContent.trim() : null;
+    const heading = main.querySelector('h1, h2, .company-name, [style*="font-size:21px"], [style*="font-size: 21px"], [style*="font-size:22px"], [style*="font-size: 22px"]');
+    if (heading) {
+      const t = heading.textContent.trim();
+      if (t) return t;
+    }
+    return null;
+  }
+  // DB fallback when we have an id but no name in memory.
+  async function fetchCompanyName(coId) {
+    if (!coId) return null;
+    const sb = window.DB && window.DB.sb;
+    if (!sb) return null;
+    try {
+      const r = await sb.from('fyrirtaeki').select('nafn').eq('id', coId).maybeSingle();
+      return r && r.data ? r.data.nafn : null;
+    } catch (_) { return null; }
   }
   function loadTrip(coId) {
     try { return JSON.parse(localStorage.getItem(CHOICE_KEY + coId) || '{}'); }
@@ -96,19 +117,83 @@
       const k = (u.type || '—') + '|' + (u.size || '') + '|' + ch;
       grouped[k] = (grouped[k] || 0) + 1;
     }
+    // 2026-05-20: same defaults as patch 129 (3000 / 3500). The patch-129
+    // input boxes show the defaults visually but only persist to localStorage
+    // on blur — so if the user never touches them, trip.drive/skyrslugerd
+    // are undefined and we'd previously bill 0 kr for both.
     return {
       units,
       servicedIds,
       grouped,
-      drive:      +trip.drive      || 0,
-      skyrslugerd: +trip.skyrslugerd || 0
+      drive:      (trip.drive       != null) ? +trip.drive       : 3000,
+      skyrslugerd: (trip.skyrslugerd != null) ? +trip.skyrslugerd : 3500
     };
+  }
+
+  // 2026-05-20: scrape priced rows from the green Heildarkostnaður table.
+  // Uses the visible product name + per-stk price + vsk% so the previewed
+  // invoice lines match the cost table EXACTLY (instead of zero-price stubs).
+  function scrapeCostRows() {
+    const section = document.getElementById('_ctc-section');
+    if (!section) return [];
+    const out = [];
+    const trs = section.querySelectorAll('table tbody tr');
+    trs.forEach(tr => {
+      // Skip Skýrslugerð / Akstur rows (they have the inline inputs)
+      if (tr.querySelector('#_ctc-skyrslu') || tr.querySelector('#_ctc-drive')) return;
+      const tds = tr.querySelectorAll('td');
+      if (tds.length < 6) return;
+      // Skip the "Sleppt" greyed-out rows (they have colspan=3 in cells 3-5)
+      if (/sleppt/i.test(tds[2] && tds[2].textContent || '')) return;
+      const firstTd = tds[0];
+      const sub = firstTd.querySelector('div');
+      const productName = sub ? sub.textContent.trim() : '';
+      const headLine = firstTd.firstChild && firstTd.firstChild.textContent
+        ? firstTd.firstChild.textContent.trim()
+        : firstTd.textContent.replace(productName, '').trim();
+      const qty = parseInt((tds[1].textContent || '').trim().replace(/[^0-9]/g, ''), 10) || 0;
+      if (qty === 0) return;
+      const kindLabel = (tds[2].textContent || '').trim();
+      // 2026-05-20: Strip every non-digit character. This is locale-agnostic —
+      // "7.000 kr", "7,000 kr", "7 000 kr" all collapse to "7000". Previous
+      // attempt used parseFloat after a dot-strip + comma-to-dot, which broke
+      // on Chrome's "7,000" output (parseFloat treated . as decimal → 7).
+      const unitPrice = parseInt((tds[3].textContent || '').replace(/[^0-9]/g, ''), 10) || 0;
+      const vskPct = parseInt((tds[4].textContent || '').replace(/[^0-9]/g, ''), 10) || 24;
+      const desc = (kindLabel ? kindLabel + ' · ' : '') + (productName || headLine);
+      out.push({ desc, qty, unit_price_ex_vat: unitPrice, vsk_pct: vskPct });
+    });
+    return out;
+  }
+
+  function buildLinur(visit, costRows) {
+    // Prefer the scraped, priced rows. Fall back to the legacy 0-price rows
+    // only if scraping somehow yielded nothing (e.g. _ctc-section missing).
+    const linur = costRows.length ? costRows.slice() : (function () {
+      const arr = [];
+      Object.entries(visit.grouped).forEach(([k, n]) => {
+        const [type, size, kind] = k.split('|');
+        arr.push({
+          desc: (kind === 'hledsla' ? 'Hleðsla' : 'Yfirferð') + ' · ' + type + ' ' + size,
+          qty: n, unit_price_ex_vat: 0, vsk_pct: 24
+        });
+      });
+      return arr;
+    })();
+    if (visit.skyrslugerd > 0) linur.push({ desc: 'Skýrslugerð', qty: 1, unit_price_ex_vat: visit.skyrslugerd, vsk_pct: 24 });
+    if (visit.drive       > 0) linur.push({ desc: 'Akstur',      qty: 1, unit_price_ex_vat: visit.drive,       vsk_pct: 24 });
+    return linur;
   }
 
   async function runVisitWorkflow() {
     const coId = getCompanyId();
-    const coNafn = getCompanyName();
-    if (!coId || !coNafn) { alert('Fyrirtæki ekki fundið'); return; }
+    let coNafn = getCompanyName();
+    if (!coNafn && coId) coNafn = await fetchCompanyName(coId);
+    if (!coId || !coNafn) {
+      console.warn('[visit-workflow] coId=', coId, ' coNafn=', coNafn);
+      alert('Fyrirtæki ekki fundið — opnaðu fyrirtæki að nýju og reyndu aftur.');
+      return;
+    }
     let visit;
     try { visit = await collectVisit(coId, coNafn); }
     catch (e) { alert('Villa: ' + (e.message || e)); return; }
@@ -119,68 +204,126 @@
     }
 
     const totals = readTotalsFromSection();
-    const totalsStr = totals
-      ? `Án VSK: ${fmtKr(totals.subEx)} · VSK: ${fmtKr(totals.vsk)} · Samtals: ${fmtKr(totals.total)}`
-      : '(kostnaður óþekktur)';
-
-    // Build summary lines (compact)
-    const linesByKind = {};
-    Object.entries(visit.grouped).forEach(([k, n]) => {
-      const [type, size, kind] = k.split('|');
-      const key = kind === 'hledsla' ? 'Hleðsla' : 'Yfirferð';
-      linesByKind[key] = (linesByKind[key] || 0) + n;
-    });
-    const lineSummary = Object.entries(linesByKind)
-      .map(([k, n]) => `${n}× ${k}`).join(' · ');
-
     const today = todayIso();
     const next = addMonthsIso(today, 12);
 
-    const msg =
-      `Klára heimsókn hjá "${coNafn}"?\n\n` +
-      `${visit.servicedIds.length} tæki merkt (${lineSummary})\n` +
-      `Skýrslugerð: ${fmtKr(visit.skyrslugerd)} · Akstur: ${fmtKr(visit.drive)}\n` +
-      `${totalsStr}\n\n` +
-      `Næsta skoðun verður færð á ${next} (12 mán) á öllum merktum tækjum.\n` +
-      `Reikningur verður búinn til og opnaður fyrir prentun.`;
-    if (!confirm(msg)) return;
-
     const sb = window.DB.sb;
-    const trip = loadTrip(coId);
+    const costRows = scrapeCostRows();
+    const linur = buildLinur(visit, costRows);
 
-    // 1. Bump last_insp + next_insp on all serviced units.
+    // Fetch customer info so the preview invoice has kt + address.
+    let custData = null;
     try {
-      const updateRes = await sb.from('uttaeki')
-        .update({ last_insp: today, next_insp: next })
-        .in('id', visit.servicedIds);
-      if (updateRes.error) throw updateRes.error;
-    } catch (e) {
-      alert('Tókst ekki að uppfæra dagsetningar á tækjum: ' + (e.message || e));
-      return;
-    }
+      const c = await sb.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang,simi').eq('id', coId).maybeSingle();
+      if (c && c.data) custData = c.data;
+    } catch (_) {}
 
-    // 2. Insert sale in solur. Build line items from the grouped data + drive
-    //    + skyrslugerd. Set greitt_med='reikningur' since brunakerfi/ársskoðun
-    //    customers are invoiced (post-pay). Trigger assigns the num.
-    const linur = [];
-    Object.entries(visit.grouped).forEach(([k, n]) => {
-      const [type, size, kind] = k.split('|');
-      linur.push({
-        desc: (kind === 'hledsla' ? 'Hleðsla' : 'Yfirferð') + ' · ' + type + ' ' + size,
-        qty: n,
-        // unit_price_ex_vat left blank — Stolpi/operator can fill from price
-        // list. For now this is a marker that the units were serviced.
-        unit_price_ex_vat: 0,
-        vsk_pct: 24
-      });
-    });
-    if (visit.skyrslugerd > 0) linur.push({ desc: 'Skýrslugerð', qty: 1, unit_price_ex_vat: visit.skyrslugerd, vsk_pct: 24 });
-    if (visit.drive       > 0) linur.push({ desc: 'Akstur',      qty: 1, unit_price_ex_vat: visit.drive,       vsk_pct: 24 });
-
+    // Build a synthetic sale for the preview render.
     const subEx = totals ? totals.subEx : 0;
     const vsk   = totals ? totals.vsk   : 0;
     const total = totals ? totals.total : 0;
+    const previewSale = {
+      num: '(Forskoðun — óvistað)',
+      customer_nafn: coNafn,
+      customer_id: coId,
+      starfsmadur: 'Kassi',
+      linur,
+      upphaed_an_vsk: subEx,
+      vsk_upphaed: vsk,
+      samtals: total,
+      afslattur: 0,
+      greitt_med: 'reikningur',
+      athugasemdir: `Heimsókn ${today} — ${visit.servicedIds.length} tæki, næsta skoðun ${next}`,
+      created_at: new Date().toISOString()
+    };
 
+    showPreview(previewSale, custData, {
+      coId, coNafn, visit, linur, totals, today, next, sb
+    });
+  }
+
+  // ── Preview modal — shows the bill as it will look + Aftur / Staðfesta ──
+  function showPreview(previewSale, custData, ctx) {
+    const existing = document.getElementById('_vw-preview');
+    if (existing) existing.remove();
+    const dlg = document.createElement('div');
+    dlg.id = '_vw-preview';
+    dlg.style.cssText = 'position:fixed;inset:0;z-index:100050;background:rgba(15,23,42,0.7);display:flex;align-items:center;justify-content:center;padding:18px';
+    dlg.innerHTML =
+      '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,0.4);width:min(960px,calc(100vw - 32px));height:calc(100vh - 60px);display:flex;flex-direction:column;overflow:hidden">' +
+        '<div style="padding:12px 18px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#fef3c7">' +
+          '<div>' +
+            '<div style="font-size:14px;font-weight:800;color:#92400e">📄 Forskoðun reiknings — ekki vistað enn</div>' +
+            '<div style="font-size:11px;color:#78350f;margin-top:2px">Svona mun reikningurinn líta út. Smelltu „Aftur" til að breyta áfram — eða „Staðfesta" til að vista og prenta.</div>' +
+          '</div>' +
+          '<button id="_vw-close" type="button" style="background:transparent;border:none;font-size:22px;cursor:pointer;color:#78350f;line-height:1;padding:6px">✕</button>' +
+        '</div>' +
+        '<iframe id="_vw-frame" style="flex:1;border:none;background:#fff"></iframe>' +
+        '<div style="padding:14px 18px;border-top:1px solid #e2e8f0;background:#f8fafc;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">' +
+          '<button id="_vw-back" type="button" style="padding:10px 18px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">← Aftur — breyta enn</button>' +
+          '<button id="_vw-confirm" type="button" style="padding:10px 22px;background:#166534;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:800;box-shadow:0 1px 3px rgba(22,101,52,.3)">✓ Staðfesta — búa til reikning</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(dlg);
+
+    const frame = dlg.querySelector('#_vw-frame');
+    frame.src = 'about:blank';
+    // Defer until the iframe's blank document is ready, then render.
+    setTimeout(() => {
+      try {
+        if (window.SalaInvoice && typeof SalaInvoice.renderFromSale === 'function') {
+          SalaInvoice.renderFromSale(frame.contentWindow, previewSale, custData);
+        } else {
+          const doc = frame.contentDocument || frame.contentWindow.document;
+          doc.open();
+          doc.write('<div style="padding:30px;font-family:Arial;color:#dc2626">Reikningsmótið er ekki tiltækt — get ekki sýnt forskoðun.</div>');
+          doc.close();
+        }
+      } catch (e) {
+        try {
+          const doc = frame.contentDocument || frame.contentWindow.document;
+          doc.open();
+          doc.write('<div style="padding:30px;font-family:Arial;color:#dc2626">Villa: ' + esc(e.message || String(e)) + '</div>');
+          doc.close();
+        } catch (_) {}
+      }
+    }, 40);
+
+    function close() { dlg.remove(); }
+    dlg.querySelector('#_vw-close').addEventListener('click', close);
+    dlg.querySelector('#_vw-back').addEventListener('click', close);
+    dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
+    document.addEventListener('keydown', function escHandler(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escHandler); }
+    });
+
+    const confirmBtn = dlg.querySelector('#_vw-confirm');
+    confirmBtn.addEventListener('click', async () => {
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Vinn úr…';
+      try {
+        await finalizeVisit(ctx);
+        close();
+      } catch (e) {
+        confirmBtn.disabled = false;
+        confirmBtn.textContent = '✓ Staðfesta — búa til reikning';
+        alert('Villa: ' + (e.message || e));
+      }
+    });
+  }
+
+  // ── Actual save — runs only after the user confirms in the preview ─────
+  async function finalizeVisit({ coId, coNafn, visit, linur, totals, today, next, sb }) {
+    // 1. Bump last_insp + next_insp on all serviced units.
+    const updateRes = await sb.from('uttaeki')
+      .update({ last_insp: today, next_insp: next })
+      .in('id', visit.servicedIds);
+    if (updateRes.error) throw updateRes.error;
+
+    // 2. Insert sale row.
+    const subEx = totals ? totals.subEx : 0;
+    const vsk   = totals ? totals.vsk   : 0;
+    const total = totals ? totals.total : 0;
     let saleId = null;
     try {
       const ins = await sb.from('solur').insert({
@@ -200,10 +343,10 @@
       alert('Sala vistuð ekki: ' + (e.message || e) + '\n\n(Tækin þó uppfærð með nýrri dagsetningu.)');
     }
 
-    // 3. Clear trip state — next visit starts fresh.
+    // 3. Clear trip state.
     clearTrip(coId);
 
-    // 4. Open the invoice PDF for printing.
+    // 4. Open the saved invoice for printing.
     if (saleId && window.SalaInvoice && typeof SalaInvoice.renderFromSale === 'function') {
       try {
         const r = await sb.from('solur').select('*').eq('id', saleId).single();
@@ -214,7 +357,7 @@
       } catch (_) {}
     }
 
-    // 5. Refresh the company detail so user sees updated next-insp dates.
+    // 5. Refresh company detail.
     if (window.Companies && typeof Companies.openDetail === 'function') {
       setTimeout(() => Companies.openDetail(coId), 200);
     }

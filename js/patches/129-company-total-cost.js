@@ -275,6 +275,7 @@
     // Only seeded when the entry is brand new (=== undefined). User can
     // clear them to 0 in the inputs if not applicable for a given trip.
     const driveCost      = (tripState.drive      != null) ? Number(tripState.drive)      : 3000;
+    const driveQty       = (tripState.driveQty   != null) ? Math.max(0, Number(tripState.driveQty)) : 1;
     const skyrslugerdEx  = (tripState.skyrslugerd != null) ? Number(tripState.skyrslugerd) : 3500;
 
     // Aggregate by type+size, AND split count by chosen kind.
@@ -456,20 +457,26 @@
       '</tr>'
     );
 
-    // Akstur row (3000 + VSK by default).
+    // Akstur row. Quantity input lets Agnar bill multiple trips (e.g. 2× 3.000).
     const driveVskPct = 24;
-    const driveVskKr = driveCost * (driveVskPct / 100);
-    totalSubEx += driveCost;
+    const driveSubEx = driveCost * driveQty;
+    const driveVskKr = driveSubEx * (driveVskPct / 100);
+    totalSubEx += driveSubEx;
     totalVsk += driveVskKr;
     rows.push(
       '<tr style="border-top:1px dashed #86efac;background:#f0fdf4">' +
-        '<td colspan="3" style="padding:7px 10px;font-size:13px;color:#0f172a">🚗 Akstur</td>' +
+        '<td colspan="2" style="padding:7px 10px;font-size:13px;color:#0f172a">🚗 Akstur</td>' +
+        '<td style="padding:7px 10px;text-align:center">' +
+          '<input id="_ctc-drive-qty" type="number" min="0" step="1" value="' + driveQty + '" ' +
+          'title="Fjöldi ferða" ' +
+          'style="width:54px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:center;background:#fff;font-variant-numeric:tabular-nums;font-weight:700">' +
+        '</td>' +
         '<td style="padding:7px 10px;text-align:right">' +
           '<input id="_ctc-drive" type="number" min="0" step="1" value="' + Math.round(driveCost) + '" ' +
           'style="width:90px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums" placeholder="0"> kr' +
         '</td>' +
         '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">24%</td>' +
-        '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(driveCost) + '</td>' +
+        '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(driveSubEx) + '</td>' +
       '</tr>'
     );
 
