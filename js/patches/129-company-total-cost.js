@@ -35,7 +35,8 @@
     if (/\bduft\b|\babc\b|\bpfc\b/.test(s)) return 'Duft';
     if (/co2|co₂|co_?2|kolsyr|kolsýr/.test(s)) return 'CO₂';
     if (/léttv|lettv|abf|froð|frod/.test(s)) return 'Léttvatn';
-    if (/slang|hose/.test(s)) return 'Brunaslanga';
+    // brunaslang/brunaslöng singular+plural, but NOT 'slönguskápur' (separate fixture).
+    if (/brunaslang|brunaslöng|brunaslong|hose/.test(s)) return 'Brunaslanga';
     if (/reykskynj|smoke/.test(s)) return 'Reykskynjari';
     if (/teppi|blanket/.test(s)) return 'Eldvarnateppi';
     // Unknown — keep original label so it still shows in the table.

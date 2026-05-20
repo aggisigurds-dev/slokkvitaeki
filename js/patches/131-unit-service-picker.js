@@ -36,7 +36,7 @@
     if (/\bduft\b|\babc\b|\bpfc\b/.test(t)) return 'duft';
     if (/co2|co₂|co_?2|kolsýr|kolsyr/.test(t)) return 'co2';
     if (/léttv|lettv|abf|vatn|water|froð/.test(t)) return 'lettvatn';
-    if (/slang|hose/.test(t)) return 'slangur';
+    if (/brunaslang|brunaslöng|brunaslong|hose/.test(t)) return 'slangur';
     if (/reykskynj|smoke/.test(t)) return 'reyk';
     return 'annad';
   }
