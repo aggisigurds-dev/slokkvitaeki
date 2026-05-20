@@ -16,6 +16,10 @@
   const CHOICES = [
     { v: 'hledsla',  label: 'Hleðsla',  color: '#166534', bg: '#dcfce7' },
     { v: 'yfirferd', label: 'Yfirferð', color: '#1e40af', bg: '#dbeafe' },
+    // 2026-05-20: "Nýtt" = customer is getting a brand-new unit; the
+    // cost calculator (patch 129) bills the store price from vörur instead
+    // of hleðsla/yfirferð service price.
+    { v: 'nyitt',    label: 'Nýtt',     color: '#6b21a8', bg: '#f3e8ff' },
     { v: 'none',     label: 'Sleppa',   color: '#64748b', bg: '#f1f5f9' }
   ];
 
@@ -156,12 +160,12 @@
       const typeText = tegundIdx >= 0 ? (cells[tegundIdx]?.textContent || '') : '';
       // Tag the row so filter chips can hide/show.
       tr.dataset.uspBucket = typeBucket(typeText);
-      // Tighten row height per Agnar's request — easier to scroll a long list.
-      tr.style.lineHeight = '1.15';
-      Array.from(cells).forEach(td => { td.style.padding = '4px 8px'; });
+      // 2026-05-20: ~30% tighter rows for easier scrolling through long lists.
+      tr.style.lineHeight = '1.0';
+      Array.from(cells).forEach(td => { td.style.padding = '2px 6px'; td.style.fontSize = '12px'; });
       const td = document.createElement('td');
       td.innerHTML = selectHtml(coId, unitId, typeText);
-      td.style.cssText = 'padding:4px 8px';
+      td.style.cssText = 'padding:2px 6px';
       if (statusIdx + 1 < cells.length) tr.insertBefore(td, cells[statusIdx + 1]);
       else tr.appendChild(td);
     });

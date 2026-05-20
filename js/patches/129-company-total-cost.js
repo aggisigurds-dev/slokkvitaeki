@@ -286,15 +286,16 @@
     units.forEach(u => {
       const typeNorm = normalizeTypeFamily(u.type);
       const key = typeNorm + '|' + (u.size || '');
-      if (!agg[key]) agg[key] = { key, type: typeNorm, size: u.size || '', hledsla: 0, yfirferd: 0, skip: 0 };
+      if (!agg[key]) agg[key] = { key, type: typeNorm, size: u.size || '', hledsla: 0, yfirferd: 0, nyitt: 0, skip: 0 };
       const choice = getUnitChoice(coId, u.id, u.type);
       if (choice === 'hledsla') agg[key].hledsla++;
       else if (choice === 'yfirferd') agg[key].yfirferd++;
+      else if (choice === 'nyitt') agg[key].nyitt++;
       else agg[key].skip++;
     });
     const groups = Object.values(agg)
-      .filter(g => g.hledsla + g.yfirferd + g.skip > 0)
-      .sort((a, b) => (b.hledsla + b.yfirferd) - (a.hledsla + a.yfirferd));
+      .filter(g => g.hledsla + g.yfirferd + g.nyitt + g.skip > 0)
+      .sort((a, b) => (b.hledsla + b.yfirferd + b.nyitt) - (a.hledsla + a.yfirferd + a.nyitt));
 
     let section = main.querySelector('#_ctc-section');
     if (!section) {
@@ -373,6 +374,36 @@
           '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + '</td>' +
         '</tr>');
       });
+      // 2026-05-20: "Nýtt" row — bill the store price of a brand-new unit.
+      // Uses findReplacementProduct (same matcher used for Eldvarnateppi etc.)
+      // which looks for non-hleðsla/yfirferð products by type+size tokens.
+      if (g.nyitt > 0) {
+        const newProduct = findReplacementProduct(g.type, g.size, services);
+        if (newProduct) {
+          const override = findOverride(coId, newProduct.nafn);
+          const unitPrice = override ? +override.price_ex_vat : +newProduct.verd_an_vsk;
+          const vskPct = override ? (+override.vsk_pct || 24) : (+newProduct.vsk_prosenta || 24);
+          const subEx = unitPrice * g.nyitt;
+          const vskKr = subEx * (vskPct / 100);
+          totalSubEx += subEx;
+          totalVsk += vskKr;
+          rows.push('<tr>' +
+            '<td style="padding:7px 10px;font-size:13px;color:#0f172a">' + esc(g.type) + ' / ' + esc(g.size) +
+              '<div style="font-size:11px;color:#64748b">' + esc(newProduct.nafn) + '</div></td>' +
+            '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + g.nyitt + '</td>' +
+            '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f3e8ff;color:#6b21a8">Nýtt</span></td>' +
+            '<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">' + fmtKr(unitPrice) +
+              (override ? ' <span title="' + esc(override.notes || '') + '" style="margin-left:4px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') + '</td>' +
+            '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
+            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + '</td>' +
+          '</tr>');
+        } else {
+          rows.push('<tr><td style="padding:7px 10px;font-size:13px;color:#0f172a">' + esc(g.type) + ' / ' + esc(g.size) + '</td>' +
+            '<td style="padding:7px 10px;text-align:center;font-weight:600">' + g.nyitt + '</td>' +
+            '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f3e8ff;color:#6b21a8">Nýtt</span></td>' +
+            '<td colspan="3" style="padding:7px 10px;color:#dc2626;font-size:12px;font-style:italic">⚠ Engin matchandi vara í verðlista — bæta við í Vörur og þjónusta</td></tr>');
+        }
+      }
       if (g.skip > 0) {
         rows.push('<tr style="opacity:.55">' +
           '<td style="padding:5px 10px;font-size:12px;color:#94a3b8">' + esc(g.type) + ' / ' + esc(g.size) + '</td>' +
