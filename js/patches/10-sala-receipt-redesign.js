@@ -422,22 +422,22 @@
               // 2026-05-20: 3:1 container so any wordmark logo fits without
               // distortion. Was a 72x72 circle (designed for the old
               // extinguisher icon); now reads as a horizontal brand bar.
+              // 2026-05-20: bumped from 60 → 110 per Agnar's request — let
+              // the wordmark be the visual hero of the receipt.
               if (window.SlokkLogo && SlokkLogo.imgHtml) {
-                return SlokkLogo.imgHtml({ heightPx: 60, alt: COMPANY.name, absoluteUrl: true });
+                return SlokkLogo.imgHtml({ heightPx: 110, alt: COMPANY.name, absoluteUrl: true });
               }
               return `<img src="${esc(LOGO_URL)}" alt="${esc(COMPANY.name)}"
-              style="height:60px;width:180px;object-fit:contain;display:inline-block"
+              style="height:110px;width:330px;object-fit:contain;display:inline-block"
               onerror="this.style.visibility='hidden'">`;
             })()}
             ${(() => {
-              // 2026-05-20: With the new wordmark logo (which already prints
-              // "Slökkvitæki Brunahólf"), repeating the company name + tag in
-              // text next to it duplicates the brand. Suppress co-name + co-tag
-              // when the logo is on; keep only kt as a small caption below.
+              // 2026-05-20: Logo is the visual hero on the left. When the
+              // wordmark logo is on, drop ALL the duplicate text on the left
+              // (name/tag/kt). Kt now lives on the right block under the
+              // company-name line. With logo off, restore the legacy text.
               const showLogo = !window.AppSettings || window.AppSettings.path('kvittun.show_logo') !== false;
-              if (showLogo) {
-                return '<div class="hdr-co"><div class="co-kt">Kt. ' + esc(COMPANY.kt) + '</div></div>';
-              }
+              if (showLogo) return '';
               return '<div class="hdr-co">' +
                 '<div class="co-name">' + esc(COMPANY.nameLogo) + '</div>' +
                 '<div class="co-tag">' + esc(COMPANY.tag) + '</div>' +
@@ -447,6 +447,7 @@
           </div>
           <div class="hdr-right">
             <div>${esc(COMPANY.name)} &nbsp;&nbsp;<span class="vsk-line">VSK nr. ${esc(COMPANY.vsk)}</span></div>
+            <div>Kt. ${esc(COMPANY.kt)}</div>
             <div>${esc(COMPANY.addr1)}</div>
             <div>${esc(COMPANY.addr2)}</div>
           </div>
