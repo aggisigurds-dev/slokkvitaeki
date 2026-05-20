@@ -290,10 +290,10 @@
     const svcDesc = noteLines[0] || '';
     const extraNote = noteLines.slice(1).map(l => l.replace(/^—\s*/, '').trim()).filter(Boolean).join(' · ');
     const svcHtml = svcDesc
-      ? `<div style="font-size:11px;color:#475569;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(svcDesc)}</div>`
+      ? `<div style="display:inline-block;font-size:11px;font-weight:600;color:#1e3a8a;background:#eff6ff;border:1px solid #bfdbfe;padding:2px 8px;border-radius:99px;margin-top:4px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(svcDesc)}">🛠️ ${esc(svcDesc)}</div>`
       : '';
     const noteHtml = extraNote
-      ? `<div style="font-size:11px;color:#92400e;background:#fef3c7;border-left:3px solid #f59e0b;padding:3px 6px;border-radius:4px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(extraNote)}">📝 ${esc(extraNote)}</div>`
+      ? `<div style="font-size:11px;color:#1e3a8a;background:#dbeafe;border-left:3px solid #2563eb;padding:3px 6px;border-radius:4px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(extraNote)}">📝 ${esc(extraNote)}</div>`
       : '';
     return '<div onclick="Workshop.select(' + j.id + ')" style="padding:10px;border-radius:10px;cursor:pointer;margin-bottom:6px;background:#fff;border:1px solid #f1f5f9;transition:all .12s" onmouseover="this.style.background=\'#f8fafc\';this.style.borderColor=\'#e2e8f0\'" onmouseout="this.style.background=\'#fff\';this.style.borderColor=\'#f1f5f9\'">' +
       '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">' +
@@ -305,8 +305,53 @@
           noteHtml +
         '</div>' + badge +
       '</div>' +
+      renderUnitChips(j) +
       `<div style="margin-top:7px;height:4px;background:#f1f5f9;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct === 100 ? '#10b981' : '#f59e0b'};transition:width .2s"></div></div>` +
+      renderReadyButton(j) +
     '</div>';
+  }
+
+  // ── Inline unit chip strip (mirrors Counter qcard-chips) ─────────────────
+  // Click chip = toggle that unit's status. stopPropagation so we don't open
+  // the detail modal underneath.
+  function renderUnitChips(j) {
+    if (!j.units || !j.units.length) return '';
+    const chips = j.units.map(u => {
+      const isDone = u.status === 'done';
+      const isBroken = u.status === 'broken';
+      const tail = (String(u.serial || '').match(/[^-]+$/) || [u.serial || '?'])[0];
+      const tp = (u.type || '') + (u.size ? ' ' + u.size : '');
+      const extraStyle = isBroken
+        ? ';background:#fef2f2;border-color:#fecaca;color:#991b1b'
+        : '';
+      const tick = isDone
+        ? '<svg style="width:11px;height:11px;stroke:var(--grn,#16a34a);fill:none;flex-shrink:0" viewBox="0 0 24 24" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>'
+        : isBroken ? '<span style="font-size:10px">🚫</span>' : '';
+      return `<div class="chip${isDone ? ' done' : ''}" style="cursor:pointer${extraStyle}" `
+        + `onclick="event.stopPropagation();Workshop.toggleUnit(${j.id},${u.id})" `
+        + `title="${esc((u.serial || '') + ' — ' + tp)}">`
+        + tick
+        + `<span class="chip-ser">${esc(tail)}</span>`
+        + `<span class="chip-tp">${esc(u.type || '')}</span>`
+        + '</div>';
+    }).join('');
+    return `<div class="qcard-chips" style="margin-top:7px">${chips}</div>`;
+  }
+
+  // ── "Tilbúið" button on each workshop card ──────────────────────────────
+  // Hidden once the job is already 'ready' (it's about to leave the workshop
+  // column anyway). Always allowed even when not all units are done — Agnar
+  // can decide; Workshop.markReady cascades units to done in db.js.
+  function renderReadyButton(j) {
+    if (j.status === 'ready') return '';
+    return '<div style="display:flex;justify-content:flex-end;margin-top:8px">'
+      + `<button onclick="event.stopPropagation();Workshop.markReady(${j.id})" type="button" `
+      + 'style="padding:6px 14px;background:#16a34a;color:#fff;border:none;border-radius:7px;'
+      + 'font:inherit;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 1px 2px rgba(22,163,74,.25);'
+      + 'display:inline-flex;align-items:center;gap:5px">'
+      + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="width:12px;height:12px"><polyline points="20 6 9 17 4 12"/></svg>'
+      + 'Tilbúið</button>'
+      + '</div>';
   }
 
   function wCustomerGroup(statusKey, co) {
@@ -334,13 +379,17 @@
         const noteHtml = extraNote
           ? `<div style="font-size:11px;color:#92400e;background:#fef3c7;border-left:3px solid #f59e0b;padding:3px 6px;border-radius:4px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(extraNote)}">📝 ${esc(extraNote)}</div>`
           : '';
-        return '<div onclick="event.stopPropagation();Workshop.select(' + j.id + ')" style="display:flex;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;margin-bottom:3px;background:#f8fafc;border:1px solid #f1f5f9" onmouseover="this.style.background=\'#eef2f7\'" onmouseout="this.style.background=\'#f8fafc\'">' +
-          '<div style="min-width:0;flex:1">' +
-            `<div style="font-family:var(--mono,monospace);font-size:10px;color:#94a3b8">${dnum(j.num)}</div>` +
-            `<div style="font-size:12px;color:#0f172a;margin:1px 0">${done}/${total} lokið ${badge}</div>` +
-            svcHtml +
-            noteHtml +
+        return '<div onclick="event.stopPropagation();Workshop.select(' + j.id + ')" style="display:flex;flex-direction:column;gap:6px;padding:7px 8px;border-radius:8px;cursor:pointer;margin-bottom:3px;background:#f8fafc;border:1px solid #f1f5f9" onmouseover="this.style.background=\'#eef2f7\'" onmouseout="this.style.background=\'#f8fafc\'">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
+            '<div style="min-width:0;flex:1">' +
+              `<div style="font-family:var(--mono,monospace);font-size:10px;color:#94a3b8">${dnum(j.num)}</div>` +
+              `<div style="font-size:12px;color:#0f172a;margin:1px 0">${done}/${total} lokið ${badge}</div>` +
+              svcHtml +
+              noteHtml +
+            '</div>' +
           '</div>' +
+          renderUnitChips(j) +
+          renderReadyButton(j) +
         '</div>';
       }).join('') + '</div>';
     }
@@ -372,6 +421,31 @@
       '  align-items: stretch !important;' +
       '  overflow: hidden !important;' +
       '}' +
+      // 2026-05-20: Make the per-unit ✓ checkmark inside the workshop detail
+      // modal a clearly-labeled "Tilbúið" pill button. The default ws-chk in
+      // app.css is just a tiny circle which Agnar found too easy to miss.
+      '.ws-chk {' +
+      '  width: auto !important;' +
+      '  height: 32px !important;' +
+      '  min-width: 96px !important;' +
+      '  padding: 0 14px !important;' +
+      '  border-radius: 99px !important;' +
+      '  border: 1.5px solid #16a34a !important;' +
+      '  background: #f0fdf4 !important;' +
+      '  color: #166534 !important;' +
+      '  font-weight: 700 !important;' +
+      '  font-size: 12px !important;' +
+      '  letter-spacing: .02em !important;' +
+      '  gap: 6px !important;' +
+      '  transition: transform .08s, background .15s !important;' +
+      '}' +
+      '.ws-chk:hover { background: #dcfce7 !important; transform: translateY(-1px) !important; }' +
+      '.ws-chk:active { transform: translateY(0) !important; }' +
+      '.ws-chk::after { content: "Tilbúið" !important; }' +
+      '.ws-chk svg { width: 14px !important; height: 14px !important; stroke: #16a34a !important; stroke-width: 3 !important; }' +
+      '.ws-chk.done { background: #16a34a !important; border-color: #15803d !important; color: #fff !important; box-shadow: 0 1px 3px rgba(22,163,74,.3) !important; }' +
+      '.ws-chk.done::after { content: "✓ Tilbúið" !important; }' +
+      '.ws-chk.done svg { display: none !important; }' +
       '@media (max-width: 900px) {' +
       '  #view-counter > div[style*="grid-template-columns:1fr 1fr 1fr"],' +
       '  #view-workshop > div[style*="grid-template-columns:1fr 1fr"] {' +
