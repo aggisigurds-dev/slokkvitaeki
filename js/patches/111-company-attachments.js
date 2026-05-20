@@ -158,7 +158,14 @@
     if (!main) return;
     const coId = getCompanyId();
     if (!coId) return;
-    if (main.querySelector('._cat-section')) return;
+    const existing = main.querySelector('._cat-section');
+    if (existing) {
+      // 2026-05-20: already injected — make sure it stays at the very bottom
+      // of companies-main even when later patches (heildarkostnaður, notes,
+      // visit-workflow) append their own sections.
+      if (main.lastElementChild !== existing) main.appendChild(existing);
+      return;
+    }
 
     const section = document.createElement('div');
     section.className = '_cat-section';
@@ -166,7 +173,8 @@
     section.style.cssText = 'margin:18px 0 24px;padding:16px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.04)';
     section.innerHTML = renderSection(coId);
 
-    // Insert near the bottom of companies-main (before the equipment table is fine)
+    // Append last — and the early-return above re-appends on every render
+    // so it stays last.
     main.appendChild(section);
     wireSection(section, coId);
   }

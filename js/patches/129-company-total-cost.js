@@ -297,12 +297,37 @@
       .filter(g => g.hledsla + g.yfirferd + g.nyitt + g.skip > 0)
       .sort((a, b) => (b.hledsla + b.yfirferd + b.nyitt) - (a.hledsla + a.yfirferd + a.nyitt));
 
+    // 2026-05-20: blue notes box above the green cost section — free-text
+    // for the visit (e.g. "Bára vill skipta öllum á neðri hæð"). Persisted in
+    // the trip-state localStorage so it survives reload.
+    let notesBox = main.querySelector('#_ctc-notes');
+    if (!notesBox) {
+      notesBox = document.createElement('div');
+      notesBox.id = '_ctc-notes';
+      notesBox.style.cssText =
+        'margin:22px 0 12px;padding:14px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
+      // Insert before the existing cost section if it already exists, so the
+      // notes box always appears ABOVE Heildarkostnaður.
+      const existingSection = main.querySelector('#_ctc-section');
+      if (existingSection) main.insertBefore(notesBox, existingSection);
+      else main.appendChild(notesBox);
+    }
+    const tripNotes = (tripState.notes != null) ? String(tripState.notes) : '';
+    notesBox.innerHTML =
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' +
+        '<div style="font-size:13px;color:#1e3a8a;font-weight:700;text-transform:uppercase;letter-spacing:.05em">📝 Athugasemd fyrir næstu ferð</div>' +
+      '</div>' +
+      '<textarea id="_ctc-notes-ta" rows="2" placeholder="t.d. „Bára vill skipta öllum á neðri hæð" · „Hringja í Jón fyrir komu" · „Setja inn nýtt 6 kg ABC Duft"" ' +
+        'style="width:100%;padding:8px 10px;border:1px solid #bfdbfe;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
+        esc(tripNotes) +
+      '</textarea>';
+
     let section = main.querySelector('#_ctc-section');
     if (!section) {
       section = document.createElement('div');
       section.id = '_ctc-section';
       section.style.cssText =
-        'margin:22px 0 26px;padding:18px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
+        'margin:6px 0 26px;padding:18px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
       main.appendChild(section);
     }
 
@@ -483,6 +508,18 @@
         '</table>' +
       '</div>' +
       (unmatched.length ? '<div style="margin-top:8px;padding:8px 10px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#78350f">⚠ ' + unmatched.length + ' tegund(ir) fundu ekki matchandi þjónustu í verðlista. Bæta við í <b>Vörur og þjónusta</b>.</div>' : '');
+
+    // Wire notes textarea — autosave on blur + change (debounced via blur).
+    const notesTa = notesBox.querySelector('#_ctc-notes-ta');
+    if (notesTa) {
+      const onNotes = () => {
+        const st = loadTripState(coId);
+        st.notes = notesTa.value;
+        saveTripState(coId, st);
+      };
+      notesTa.addEventListener('blur', onNotes);
+      notesTa.addEventListener('change', onNotes);
+    }
 
     // Wire driving input.
     const driveInp = section.querySelector('#_ctc-drive');
