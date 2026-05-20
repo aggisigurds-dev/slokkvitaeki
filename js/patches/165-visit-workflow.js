@@ -117,7 +117,7 @@
       const k = (u.type || '—') + '|' + (u.size || '') + '|' + ch;
       grouped[k] = (grouped[k] || 0) + 1;
     }
-    // 2026-05-20: same defaults as patch 129 (3000 / 3500). The patch-129
+    // 2026-05-20: same defaults as patch 129 (3000 / 3500 / 1). The patch-129
     // input boxes show the defaults visually but only persist to localStorage
     // on blur — so if the user never touches them, trip.drive/skyrslugerd
     // are undefined and we'd previously bill 0 kr for both.
@@ -125,8 +125,10 @@
       units,
       servicedIds,
       grouped,
-      drive:      (trip.drive       != null) ? +trip.drive       : 3000,
-      skyrslugerd: (trip.skyrslugerd != null) ? +trip.skyrslugerd : 3500
+      drive:       (trip.drive       != null) ? +trip.drive       : 3000,
+      driveQty:    (trip.driveQty    != null) ? Math.max(0, +trip.driveQty) : 1,
+      skyrslugerd: (trip.skyrslugerd != null) ? +trip.skyrslugerd : 3500,
+      skodunaradili: (trip.skodunaradili || '').trim()
     };
   }
 
@@ -181,7 +183,11 @@
       return arr;
     })();
     if (visit.skyrslugerd > 0) linur.push({ desc: 'Skýrslugerð', qty: 1, unit_price_ex_vat: visit.skyrslugerd, vsk_pct: 24 });
-    if (visit.drive       > 0) linur.push({ desc: 'Akstur',      qty: 1, unit_price_ex_vat: visit.drive,       vsk_pct: 24 });
+    // 2026-05-20: Akstur qty comes from the per-company driveQty input
+    // (defaults to 1). Lets Agnar bill 2× Akstur etc. when extra trips needed.
+    if (visit.drive > 0 && visit.driveQty > 0) {
+      linur.push({ desc: 'Akstur', qty: visit.driveQty, unit_price_ex_vat: visit.drive, vsk_pct: 24 });
+    }
     return linur;
   }
 
@@ -222,11 +228,14 @@
     const subEx = totals ? totals.subEx : 0;
     const vsk   = totals ? totals.vsk   : 0;
     const total = totals ? totals.total : 0;
+    // 2026-05-20: starfsmadur now comes from the Skoðunaraðili field on the
+    // company page (e.g. "Elías"). Falls back to "Kassi" if not set.
+    const starfsmadur = visit.skodunaradili || 'Kassi';
     const previewSale = {
       num: '(Forskoðun — óvistað)',
       customer_nafn: coNafn,
       customer_id: coId,
-      starfsmadur: 'Kassi',
+      starfsmadur,
       linur,
       upphaed_an_vsk: subEx,
       vsk_upphaed: vsk,
@@ -238,7 +247,7 @@
     };
 
     showPreview(previewSale, custData, {
-      coId, coNafn, visit, linur, totals, today, next, sb
+      coId, coNafn, visit, linur, totals, today, next, sb, starfsmadur
     });
   }
 
@@ -313,7 +322,7 @@
   }
 
   // ── Actual save — runs only after the user confirms in the preview ─────
-  async function finalizeVisit({ coId, coNafn, visit, linur, totals, today, next, sb }) {
+  async function finalizeVisit({ coId, coNafn, visit, linur, totals, today, next, sb, starfsmadur }) {
     // 1. Bump last_insp + next_insp on all serviced units.
     const updateRes = await sb.from('uttaeki')
       .update({ last_insp: today, next_insp: next })
@@ -328,7 +337,7 @@
     try {
       const ins = await sb.from('solur').insert({
         customer_nafn: coNafn,
-        starfsmadur: 'Kassi',
+        starfsmadur: starfsmadur || 'Kassi',
         linur,
         upphaed_an_vsk: subEx,
         vsk_upphaed: vsk,

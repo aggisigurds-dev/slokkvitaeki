@@ -342,9 +342,11 @@
   // The receipt opens in a popup whose URL is `about:blank`, so root-relative
   // paths like "/img/logo.png" don't resolve. Build an absolute URL from the
   // parent window's origin so the logo loads correctly in print + preview.
+  // 2026-05-20: cache-bust so browsers pick up the new Slökkvitæki Brunahólf
+  // wordmark logo (replaces the small extinguisher icon).
   const LOGO_URL = (typeof window !== 'undefined' && window.location && window.location.origin)
-    ? window.location.origin + '/img/logo.png'
-    : '/img/logo.png';
+    ? window.location.origin + '/img/logo.png?v=20260520b'
+    : '/img/logo.png?v=20260520b';
 
   function buildHTML(ctx) {
     const t = ctx.totals;

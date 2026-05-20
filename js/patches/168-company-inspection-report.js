@@ -125,14 +125,17 @@
     const custLine = esc(co.nafn || '—') + addrLine + ktLine;
 
     // 8 category rows, all always shown. Empty count → "x".
+    // 2026-05-20: tighter columns + centered Fjöldi / Í lagi for a cleaner
+    // mid-page look. Type label is right-aligned so it visually hugs the
+    // count columns instead of sprawling across the page.
     const rowsHtml = CATEGORIES.map(c => {
       const n = counts[c.k] || 0;
       const fjoldi = n > 0 ? String(n) : 'x';
       const ilagi  = n > 0 ? 'Já'      : 'x';
       return `<tr>
-        <td style="padding:8px 10px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;width:55%">${esc(c.label)}</td>
-        <td style="padding:8px 10px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;width:22%"><strong>Fjöldi:</strong> ${esc(fjoldi)}</td>
-        <td style="padding:8px 10px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;width:23%"><strong>Í lagi:</strong> ${esc(ilagi)}</td>
+        <td style="padding:6px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;text-align:right;white-space:nowrap">${esc(c.label)}</td>
+        <td style="padding:6px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;text-align:center;white-space:nowrap"><strong>Fjöldi:</strong> ${esc(fjoldi)}</td>
+        <td style="padding:6px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;text-align:left;white-space:nowrap"><strong>Í lagi:</strong> ${esc(ilagi)}</td>
       </tr>`;
     }).join('');
 
@@ -167,8 +170,9 @@
           Tæki voru yfirfarin af Slökkvitæki ehf ${esc(monthPhrase)}
         </div>
 
-        <!-- Fixed equipment category table -->
-        <table style="margin-bottom:20px">
+        <!-- Fixed equipment category table — centered and width-fit so it
+             reads as a tidy mid-page block. -->
+        <table style="margin:0 auto 22px;width:auto;border-collapse:collapse">
           <tbody>${rowsHtml}</tbody>
         </table>
 
