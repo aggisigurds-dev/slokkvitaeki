@@ -275,7 +275,7 @@
       }
       rendered[j.customer] = true;
     });
-    return html;
+    return `<div style="display:flex;flex-direction:column;gap:5px">${html}</div>`;
   }
 
   function wJobCard(j) {
@@ -295,7 +295,7 @@
     const noteHtml = extraNote
       ? `<div style="font-size:11px;color:#1e3a8a;background:#dbeafe;border-left:3px solid #2563eb;padding:3px 6px;border-radius:4px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(extraNote)}">📝 ${esc(extraNote)}</div>`
       : '';
-    return '<div onclick="Workshop.select(' + j.id + ')" style="padding:7px 8px;border-radius:9px;cursor:pointer;margin-bottom:5px;background:#fff;border:1px solid #f1f5f9;transition:all .12s" onmouseover="this.style.background=\'#f8fafc\';this.style.borderColor=\'#e2e8f0\'" onmouseout="this.style.background=\'#fff\';this.style.borderColor=\'#f1f5f9\'">' +
+    return '<div onclick="Workshop.select(' + j.id + ')" style="padding:7px 8px;border-radius:9px;cursor:pointer;background:#fff;border:1px solid #f1f5f9;transition:all .12s" onmouseover="this.style.background=\'#f8fafc\';this.style.borderColor=\'#e2e8f0\'" onmouseout="this.style.background=\'#fff\';this.style.borderColor=\'#f1f5f9\'">' +
       '<div style="display:flex;justify-content:space-between;align-items:start;gap:6px">' +
         '<div style="min-width:0;flex:1">' +
           `<div style="display:flex;gap:6px;align-items:baseline">` +
@@ -396,7 +396,7 @@
       }).join('') + '</div>';
     }
     const safeKey = key.replace(/'/g, "\\'");
-    return `<div onclick="Workshop.toggleCo('${safeKey}')" style="margin-bottom:6px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;cursor:pointer">` +
+    return `<div onclick="Workshop.toggleCo('${safeKey}')" style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;cursor:pointer">` +
       '<div style="padding:10px 12px;display:flex;align-items:center;gap:8px">' +
         `<span style="color:#64748b;font-size:13px;width:14px">${caret}</span>` +
         '<div style="min-width:0;flex:1">' +
