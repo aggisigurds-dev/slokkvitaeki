@@ -263,16 +263,16 @@
     jobs.forEach(j => { (byCust[j.customer] = byCust[j.customer] || []).push(j); });
     const rendered = {};
     let html = '';
+    // 2026-05-21: unified layout — every customer (1 verk or many) renders
+    // as wCustomerGroup so the tile-strip + Tilbúið buttons look identical
+    // for everyone. The old wJobCard branch for single-verk customers is
+    // retired; users said the mixed layouts looked messy.
     jobs.forEach(j => {
       if (rendered[j.customer]) return;
       const list = byCust[j.customer];
-      if (list.length === 1) {
-        html += wJobCard(j);
-      } else {
-        const tot = list.reduce((s, jj) => s + (jj.units ? jj.units.length : 0), 0);
-        const done = list.reduce((s, jj) => s + (jj.units ? jj.units.filter(u => u.status === 'done').length : 0), 0);
-        html += wCustomerGroup(statusKey, { name: j.customer, jobs: list, totalUnits: tot, doneUnits: done });
-      }
+      const tot  = list.reduce((s, jj) => s + (jj.units ? jj.units.length : 0), 0);
+      const done = list.reduce((s, jj) => s + (jj.units ? jj.units.filter(u => u.status === 'done').length : 0), 0);
+      html += wCustomerGroup(statusKey, { name: j.customer, jobs: list, totalUnits: tot, doneUnits: done });
       rendered[j.customer] = true;
     });
     return `<div style="display:flex;flex-direction:column;gap:5px">${html}</div>`;
@@ -403,48 +403,60 @@
           `<div style="font-size:13px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(co.name)}</div>` +
           `<div style="font-size:11px;color:#64748b">${co.jobs.length} verk · ${co.doneUnits}/${co.totalUnits} lokið</div>` +
         '</div>' +
-        // 2026-05-21: per-verk tile strip — at-a-glance status of each job in
-        // the group without expanding. Click a tile to jump straight to that
-        // job's detail. Status colors:  ready → green, in-progress → amber,
-        // received/none → grey outline. Mini progress bar at the bottom.
-        renderJobTiles(co.jobs) +
+        // 2026-05-21: per-tæki tile strip — one tile per unit across all
+        // verk in this customer group. Each tile has a small "Tilbúið" green
+        // button at the bottom so you can tick units off without expanding
+        // the group or opening the detail modal.
+        renderUnitTiles(co.jobs) +
       '</div>' +
       `<div style="margin:0 12px 10px;height:4px;background:#f1f5f9;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct === 100 ? '#10b981' : '#f59e0b'};"></div></div>` +
       inner +
     '</div>';
   }
 
-  // ── Per-verk tile strip (collapsed customer-group preview) ──────────────
-  // Returns a flex-wrap row of small tiles, one per job. Each tile shows the
-  // first unit's type as a tiny label, color-coded by job status, with a 3-px
-  // progress bar at the bottom (% of units done). Click = jump to that job.
-  function renderJobTiles(jobs) {
+  // ── Per-tæki tile strip (collapsed customer-group preview) ──────────────
+  // Flattens every unit across the customer's verk into a grid of small
+  // tiles. Each tile carries:
+  //   • type label on top (truncated to fit)
+  //   • a green "Tilbúið" button at the bottom — click = mark this single
+  //     unit done (Workshop.toggleUnit), or shows a green "✓ Tilbúið" badge
+  //     once it's already done.
+  // Done tiles get a soft green tint + check mark; broken tiles get red.
+  function renderUnitTiles(jobs) {
     if (!jobs || !jobs.length) return '';
-    const tiles = jobs.map(j => {
-      const units = j.units || [];
-      const done = units.filter(u => u.status === 'done').length;
-      const total = units.length;
-      const pct = total ? Math.round(done / total * 100) : 0;
-      const isReady = j.status === 'ready';
-      const isInProgress = j.status === 'in_progress' || j.status === 'inprogress';
-      const border = isReady ? '#16a34a' : (isInProgress ? '#f59e0b' : '#cbd5e1');
-      const bg     = isReady ? '#f0fdf4' : (isInProgress ? '#fffbeb' : '#fff');
-      const txtCol = isReady ? '#166534' : (isInProgress ? '#92400e' : '#475569');
-      // First unit hint: type family + count if 2+ units
-      const firstType = units[0] ? String(units[0].type || '').split(/\s+/)[0] : '';
-      const label = total > 1 ? (firstType ? firstType + ' ×' + total : total + 'tk') : (firstType || '–');
-      return '<div onclick="event.stopPropagation();Workshop.select(' + j.id + ')" ' +
-        'title="' + esc(dnum(j.num)) + ' — ' + done + '/' + total + ' lokið" ' +
-        'style="cursor:pointer;position:relative;flex-shrink:0;' +
-          'min-width:62px;height:38px;padding:4px 7px 7px;' +
-          'border:1.5px solid ' + border + ';border-radius:6px;' +
-          'background:' + bg + ';' +
-          'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
-          'font-size:10.5px;font-weight:600;color:' + txtCol + ';line-height:1.15;overflow:hidden">' +
-        '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + esc(label) + '</div>' +
-        '<div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:' + (isReady ? '#bbf7d0' : '#f1f5f9') + '">' +
-          '<div style="height:100%;width:' + pct + '%;background:' + (pct === 100 ? '#16a34a' : '#f59e0b') + '"></div>' +
-        '</div>' +
+    const items = [];
+    jobs.forEach(j => {
+      (j.units || []).forEach(u => items.push({ jobId: j.id, unit: u }));
+    });
+    if (!items.length) return '';
+    const tiles = items.map(({ jobId, unit }) => {
+      const isDone = unit.status === 'done';
+      const isBroken = unit.status === 'broken';
+      const border = isDone ? '#16a34a' : (isBroken ? '#dc2626' : '#cbd5e1');
+      const bg     = isDone ? '#f0fdf4' : (isBroken ? '#fef2f2' : '#fff');
+      const txtCol = isDone ? '#166534' : (isBroken ? '#991b1b' : '#0f172a');
+      // Short type label — first 1-2 words of type
+      const typeRaw = String(unit.type || '—').split(/\s+/).slice(0, 2).join(' ');
+      const sizeRaw = unit.size ? String(unit.size) : '';
+      const label   = typeRaw + (sizeRaw ? ' ' + sizeRaw : '');
+      const serialShort = String(unit.serial || '').replace(/^.*-/, '').slice(0, 8);
+      const bottom = isDone
+        ? '<div style="background:#16a34a;color:#fff;font-size:10px;font-weight:700;text-align:center;padding:3px 4px;line-height:1.1">✓ Tilbúið</div>'
+        : isBroken
+          ? '<div style="background:#dc2626;color:#fff;font-size:10px;font-weight:700;text-align:center;padding:3px 4px;line-height:1.1">🚫 Ónýtt</div>'
+          : '<button onclick="event.stopPropagation();Workshop.toggleUnit(' + jobId + ',' + unit.id + ')" ' +
+            'title="Merkja sem tilbúið" ' +
+            'style="display:block;width:100%;background:#16a34a;color:#fff;font-size:10px;font-weight:700;' +
+            'border:none;cursor:pointer;padding:3px 4px;line-height:1.1">Tilbúið</button>';
+      return '<div ' +
+        'title="' + esc(unit.serial || '') + ' — ' + esc(label) + '" ' +
+        'style="flex-shrink:0;width:88px;border:1.5px solid ' + border + ';border-radius:6px;' +
+        'background:' + bg + ';color:' + txtCol + ';' +
+        'display:flex;flex-direction:column;overflow:hidden">' +
+          '<div style="flex:1;padding:5px 6px 4px;font-size:10.5px;font-weight:600;line-height:1.2;' +
+            'text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(label) + '</div>' +
+          (serialShort ? '<div style="font-size:9px;color:#94a3b8;text-align:center;padding:0 4px 2px;font-family:var(--mono,monospace)">' + esc(serialShort) + '</div>' : '') +
+          bottom +
       '</div>';
     }).join('');
     return '<div style="display:flex;flex-wrap:wrap;gap:5px;flex:1;min-width:0">' + tiles + '</div>';
