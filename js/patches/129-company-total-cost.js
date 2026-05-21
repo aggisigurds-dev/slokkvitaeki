@@ -277,6 +277,9 @@
     const driveCost      = (tripState.drive      != null) ? Number(tripState.drive)      : 3000;
     const driveQty       = (tripState.driveQty   != null) ? Math.max(0, Number(tripState.driveQty)) : 1;
     const skyrslugerdEx  = (tripState.skyrslugerd != null) ? Number(tripState.skyrslugerd) : 3500;
+    // 2026-05-21: manual line items added via "+ Bæta við vöru eða þjónustu".
+    // Each: {id, name, qty, unit_price_ex_vat, vsk_pct, vorur_id?}.
+    const extras = Array.isArray(tripState.extras) ? tripState.extras : [];
 
     // Aggregate by type+size, AND split count by chosen kind.
     // 2026-05-19: normalize type-family so "ABC Duft", "PFC Duft", and "Duft"
@@ -306,7 +309,7 @@
       notesBox = document.createElement('div');
       notesBox.id = '_ctc-notes';
       notesBox.style.cssText =
-        'margin:22px 0 12px;padding:14px 16px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
+        'margin:22px 0 12px;padding:14px 16px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
       // Insert before the existing cost section if it already exists, so the
       // notes box always appears ABOVE Heildarkostnaður.
       const existingSection = main.querySelector('#_ctc-section');
@@ -316,10 +319,10 @@
     const tripNotes = (tripState.notes != null) ? String(tripState.notes) : '';
     notesBox.innerHTML =
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' +
-        '<div style="font-size:13px;color:#1e3a8a;font-weight:700;text-transform:uppercase;letter-spacing:.05em">📝 Athugasemd fyrir næstu ferð</div>' +
+        '<div style="font-size:13px;color:#166534;font-weight:700;text-transform:uppercase;letter-spacing:.05em">📝 Upplýsingar um úttekt</div>' +
       '</div>' +
       '<textarea id="_ctc-notes-ta" rows="2" placeholder="t.d. „Bára vill skipta öllum á neðri hæð" · „Hringja í Jón fyrir komu" · „Setja inn nýtt 6 kg ABC Duft"" ' +
-        'style="width:100%;padding:8px 10px;border:1px solid #bfdbfe;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
+        'style="width:100%;padding:8px 10px;border:1px solid #86efac;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
         esc(tripNotes) +
       '</textarea>';
 
@@ -440,6 +443,35 @@
       }
     });
 
+    // 2026-05-21: Manual extras rows — rendered above Skýrslugerð/Akstur.
+    // Each has inline editable qty + price + a ✕ remove button. Total
+    // contributes to subEx/vsk so the SAMTALS at the bottom stays accurate.
+    extras.forEach((ex, exIdx) => {
+      const exQty   = Math.max(0, Number(ex.qty) || 0);
+      const exPrice = Math.max(0, Number(ex.unit_price_ex_vat) || 0);
+      const exVskPct = Number(ex.vsk_pct) || 24;
+      const exSubEx = exQty * exPrice;
+      const exVskKr = exSubEx * (exVskPct / 100);
+      totalSubEx += exSubEx;
+      totalVsk += exVskKr;
+      rows.push('<tr style="border-top:1px dashed #bfdbfe;background:#eff6ff">' +
+        '<td colspan="2" style="padding:7px 10px;font-size:13px;color:#0f172a">📦 ' + esc(ex.name) + '</td>' +
+        '<td style="padding:7px 10px;text-align:center">' +
+          '<input class="_ctc-extra-qty" data-i="' + exIdx + '" type="number" min="0" step="1" value="' + exQty + '" ' +
+          'style="width:54px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:center;background:#fff;font-variant-numeric:tabular-nums;font-weight:700">' +
+        '</td>' +
+        '<td style="padding:7px 10px;text-align:right">' +
+          '<input class="_ctc-extra-price" data-i="' + exIdx + '" type="number" min="0" step="1" value="' + Math.round(exPrice) + '" ' +
+          'style="width:90px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums"> kr' +
+        '</td>' +
+        '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + exVskPct + '%</td>' +
+        '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">' + fmtKr(exSubEx) +
+          ' <button class="_ctc-extra-rm" data-i="' + exIdx + '" type="button" title="Eyða línu" ' +
+          'style="margin-left:6px;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:15px;line-height:1;padding:0 2px;vertical-align:middle">×</button>' +
+        '</td>' +
+      '</tr>');
+    });
+
     // Skýrslugerð row (3500 + VSK by default).
     const skyrsluVskPct = 24;
     const skyrsluVskKr = skyrslugerdEx * (skyrsluVskPct / 100);
@@ -494,7 +526,7 @@
       '</div>' +
       // 2026-05-20: Skoðunaraðili (inspector) input + Úttektarskýrsla button.
       // Persisted in tripState so the field stays filled across visits.
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' +
         '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;flex:1;min-width:200px">' +
           '<span style="font-weight:600;color:#166534;white-space:nowrap">🧑 Skoðunaraðili</span>' +
           '<input id="_ctc-skodun" type="text" value="' + esc(skodunaradili) + '" placeholder="t.d. Elías" ' +
@@ -503,6 +535,13 @@
         '<button id="_ctc-skyrsla" type="button" ' +
           'style="padding:7px 14px;background:#0f172a;color:#fff;border:none;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.15)">' +
           '📄 Búa til úttektarskýrslu</button>' +
+      '</div>' +
+      // 2026-05-21: "+ Bæta við vöru eða þjónustu" button opens the shared
+      // VorurPicker (patch 117) and appends the choice to tripState.extras.
+      '<div style="display:flex;justify-content:flex-end;margin-bottom:10px">' +
+        '<button id="_ctc-add-extra" type="button" ' +
+          'style="padding:6px 12px;background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">' +
+          '+ Bæta við vöru eða þjónustu</button>' +
       '</div>' +
       '<div style="background:#fff;border:1px solid #86efac;border-radius:8px;overflow:hidden">' +
         '<table style="width:100%;border-collapse:collapse">' +
@@ -569,6 +608,76 @@
       notesTa.addEventListener('blur', onNotes);
       notesTa.addEventListener('change', onNotes);
     }
+
+    // 2026-05-21: + Bæta við vöru eða þjónustu — opens VorurPicker, appends
+    // the chosen product to tripState.extras with qty=1 + product's default
+    // price + VSK%. The user can then edit qty/price inline.
+    const addExtraBtn = section.querySelector('#_ctc-add-extra');
+    if (addExtraBtn) {
+      addExtraBtn.addEventListener('click', () => {
+        if (!window.VorurPicker || typeof VorurPicker.open !== 'function') {
+          alert('Vörulistinn er ekki tiltækur (patch 117).'); return;
+        }
+        VorurPicker.open(prod => {
+          if (!prod) return;
+          const st = loadTripState(coId);
+          if (!Array.isArray(st.extras)) st.extras = [];
+          st.extras.push({
+            name: prod.nafn || 'Vara',
+            qty: 1,
+            unit_price_ex_vat: Number(prod.verd_an_vsk) || 0,
+            vsk_pct: Number(prod.vsk_prosenta) || 24,
+            vorur_id: prod.id || null
+          });
+          saveTripState(coId, st);
+          _lastKey = '';
+          render();
+        });
+      });
+    }
+    // Wire per-extra qty / price / remove controls.
+    section.querySelectorAll('._ctc-extra-qty').forEach(inp => {
+      const onChange = () => {
+        const i = +inp.dataset.i;
+        const v = Math.max(0, parseInt(inp.value, 10) || 0);
+        const st = loadTripState(coId);
+        if (Array.isArray(st.extras) && st.extras[i]) {
+          st.extras[i].qty = v;
+          saveTripState(coId, st);
+        }
+        _lastKey = '';
+        render();
+      };
+      inp.addEventListener('change', onChange);
+      inp.addEventListener('blur', onChange);
+    });
+    section.querySelectorAll('._ctc-extra-price').forEach(inp => {
+      const onChange = () => {
+        const i = +inp.dataset.i;
+        const v = Math.max(0, parseFloat(inp.value) || 0);
+        const st = loadTripState(coId);
+        if (Array.isArray(st.extras) && st.extras[i]) {
+          st.extras[i].unit_price_ex_vat = v;
+          saveTripState(coId, st);
+        }
+        _lastKey = '';
+        render();
+      };
+      inp.addEventListener('change', onChange);
+      inp.addEventListener('blur', onChange);
+    });
+    section.querySelectorAll('._ctc-extra-rm').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = +btn.dataset.i;
+        const st = loadTripState(coId);
+        if (Array.isArray(st.extras) && st.extras[i]) {
+          st.extras.splice(i, 1);
+          saveTripState(coId, st);
+        }
+        _lastKey = '';
+        render();
+      });
+    });
 
     // Wire driving input (per-trip price).
     const driveInp = section.querySelector('#_ctc-drive');

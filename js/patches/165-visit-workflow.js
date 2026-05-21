@@ -128,7 +128,9 @@
       drive:       (trip.drive       != null) ? +trip.drive       : 3000,
       driveQty:    (trip.driveQty    != null) ? Math.max(0, +trip.driveQty) : 1,
       skyrslugerd: (trip.skyrslugerd != null) ? +trip.skyrslugerd : 3500,
-      skodunaradili: (trip.skodunaradili || '').trim()
+      skodunaradili: (trip.skodunaradili || '').trim(),
+      // 2026-05-21: manual line items added via "+ Bæta við vöru eða þjónustu"
+      extras:      Array.isArray(trip.extras) ? trip.extras : []
     };
   }
 
@@ -182,6 +184,20 @@
       });
       return arr;
     })();
+    // 2026-05-21: Manual extras come BEFORE the Skýrslugerð/Akstur lines so
+    // they sit with the equipment items on the printed invoice.
+    if (Array.isArray(visit.extras)) {
+      visit.extras.forEach(e => {
+        const q = Math.max(0, Number(e.qty) || 0);
+        if (q === 0) return;
+        linur.push({
+          desc: String(e.name || 'Vara'),
+          qty: q,
+          unit_price_ex_vat: Math.max(0, Number(e.unit_price_ex_vat) || 0),
+          vsk_pct: Number(e.vsk_pct) || 24
+        });
+      });
+    }
     if (visit.skyrslugerd > 0) linur.push({ desc: 'Skýrslugerð', qty: 1, unit_price_ex_vat: visit.skyrslugerd, vsk_pct: 24 });
     // 2026-05-20: Akstur qty comes from the per-company driveQty input
     // (defaults to 1). Lets Agnar bill 2× Akstur etc. when extra trips needed.
