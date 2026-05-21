@@ -37,15 +37,22 @@
 
   let _count = 0;
   let _items = [];
+  // 2026-05-21: persisted sort mode.
+  const DROG_SORT_KEY = '_drog_sort_v1';
+  function loadSort() {
+    try { return localStorage.getItem(DROG_SORT_KEY) || 'updated_desc'; } catch (_) { return 'updated_desc'; }
+  }
+  function saveSort(v) { try { localStorage.setItem(DROG_SORT_KEY, v); } catch (_) {} }
+  let _sortMode = loadSort();
 
   async function loadDrog() {
     const SB = getSB();
     if (!SB) return;
     try {
       const { data, error } = await SB.from('solur')
-        .select('id,num,customer_nafn,samtals,greitt_med,created_at,athugasemdir')
+        .select('id,num,customer_nafn,samtals,greitt_med,created_at,updated_at,athugasemdir')
         .eq('status', 'drog')
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(50);
       if (error) { console.warn('[drog-list] load error:', error); return; }
       _items = data || [];
@@ -93,18 +100,36 @@
     m.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;padding:14px;font-family:inherit';
     m.innerHTML = `
       <div style="background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.3);width:min(960px,calc(100vw - 28px));max-height:calc(100vh - 28px);display:flex;flex-direction:column;overflow:hidden">
-        <div style="padding:14px 22px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;display:flex;justify-content:space-between;align-items:center">
+        <div style="padding:14px 22px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
           <div>
             <h2 style="margin:0;font-size:17px;font-weight:700">📝 Drög</h2>
             <div style="font-size:12px;color:#fef3c7;margin-top:2px">Sölur sem hafa ekki verið kláraðar — birtast ekki í Bókhaldi fyrr en klárað er</div>
           </div>
-          <button id="_drog-x" type="button" style="background:transparent;border:1px solid rgba(255,255,255,0.4);color:#fff;font-size:18px;width:34px;height:34px;border-radius:7px;cursor:pointer;line-height:1">✕</button>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="_drog-sort" title="Raða" style="padding:6px 9px;border:1px solid rgba(255,255,255,0.4);border-radius:7px;background:rgba(255,255,255,0.15);color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">
+              <option value="updated_desc" style="color:#0f172a">🕐 Nýlega breytt fyrst</option>
+              <option value="created_desc" style="color:#0f172a">📅 Nýjast stofnað</option>
+              <option value="created_asc"  style="color:#0f172a">📅 Elst stofnað</option>
+              <option value="amount_desc"  style="color:#0f172a">💰 Hæsta upphæð</option>
+              <option value="amount_asc"   style="color:#0f172a">💰 Lægsta upphæð</option>
+            </select>
+            <button id="_drog-x" type="button" style="background:transparent;border:1px solid rgba(255,255,255,0.4);color:#fff;font-size:18px;width:34px;height:34px;border-radius:7px;cursor:pointer;line-height:1">✕</button>
+          </div>
         </div>
         <div id="_drog-body" style="flex:1;overflow-y:auto;background:#f8fafc"></div>
       </div>`;
     document.body.appendChild(m);
     m.querySelector('#_drog-x').addEventListener('click', () => m.remove());
     m.addEventListener('click', e => { if (e.target === m) m.remove(); });
+    const sortSel = m.querySelector('#_drog-sort');
+    if (sortSel) {
+      sortSel.value = _sortMode;
+      sortSel.addEventListener('change', e => {
+        _sortMode = e.target.value;
+        saveSort(_sortMode);
+        renderList();
+      });
+    }
     renderList();
   }
 
@@ -115,7 +140,20 @@
       body.innerHTML = '<div style="padding:32px;text-align:center;color:#94a3b8;font-style:italic;font-size:13px">Engin drög í gangi 🎉</div>';
       return;
     }
-    const rows = _items.map(s => {
+    // 2026-05-21: client-side sort so the dropdown takes effect without a
+    // round-trip. Pulled the items in updated_desc order, but the user can
+    // re-sort here.
+    const sorted = _items.slice().sort((a, b) => {
+      switch (_sortMode) {
+        case 'created_desc': return (b.created_at || '').localeCompare(a.created_at || '');
+        case 'created_asc':  return (a.created_at || '').localeCompare(b.created_at || '');
+        case 'amount_desc':  return (+b.samtals || 0) - (+a.samtals || 0);
+        case 'amount_asc':   return (+a.samtals || 0) - (+b.samtals || 0);
+        default: /* updated_desc */
+          return (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || '');
+      }
+    });
+    const rows = sorted.map(s => {
       const age = daysSince(s.created_at);
       const ageBadge = age > 14
         ? '<span style="font-size:10px;font-weight:700;background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:99px">' + age + ' daga gamalt</span>'

@@ -271,10 +271,14 @@
       const svcLabel = svc === 'ars' ? 'fyrirtækjaþjónustu' : 'brunakerfi';
       if (!confirm('Skrá "' + name + '" í ' + svcLabel + '?')) return;
       if (svc === 'ars') {
+        // 2026-05-21: explicit `subscribed: true` so patch 153 knows this is a
+        // real subscription (not a migration leftover with empty equipment).
+        // Fixes "I assigned Hátún 8 but it won't show in Fyrirtæki í þjónustu".
         map[String(_currentId)] = Object.assign({}, map[String(_currentId)] || {}, {
           equipment: (map[String(_currentId)] && map[String(_currentId)].equipment) || {},
           inspect_month: (map[String(_currentId)] && map[String(_currentId)].inspect_month) || 0,
-          last_year_inspected: (map[String(_currentId)] && map[String(_currentId)].last_year_inspected) || 0
+          last_year_inspected: (map[String(_currentId)] && map[String(_currentId)].last_year_inspected) || 0,
+          subscribed: true
         });
       } else {
         map[String(_currentId)] = Object.assign({}, map[String(_currentId)] || {}, {

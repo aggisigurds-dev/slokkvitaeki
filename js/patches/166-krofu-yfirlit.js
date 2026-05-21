@@ -99,7 +99,14 @@
   }
 
   // ── Data load ────────────────────────────────────────────────────────────
-  let _state = { month: null, all: [], vbByParent: {} };
+  // 2026-05-21: _state.sort persists the current sort across reloads via
+  // localStorage so the choice survives view-switches.
+  const SORT_KEY = '_ky_sort_v1';
+  function loadSort() {
+    try { return localStorage.getItem(SORT_KEY) || 'updated_desc'; } catch (_) { return 'updated_desc'; }
+  }
+  function saveSort(v) { try { localStorage.setItem(SORT_KEY, v); } catch (_) {} }
+  let _state = { month: null, all: [], vbByParent: {}, sort: loadSort() };
 
   function monthBounds(d) {
     const start = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -119,11 +126,12 @@
 
     // ONLY reikningur — that's the "krafa í heimabanka 10 dagar" choice.
     // 'greitt_sidar' is excluded — it has its own page (Til að rukka).
+    // 2026-05-21: pull updated_at too so the sort options can use it.
     const r = await SB.from('solur')
-      .select('id,num,customer_nafn,customer_id,samtals,greitt_med,athugasemdir,created_at,paid_at,is_credit,credit_of')
+      .select('id,num,customer_nafn,customer_id,samtals,greitt_med,athugasemdir,created_at,updated_at,paid_at,is_credit,credit_of')
       .eq('greitt_med', 'reikningur')
       .is('paid_at', null)
-      .order('created_at', { ascending: false });
+      .order('updated_at', { ascending: false });
     if (r.error) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
     _state.all = r.data || [];
 
@@ -173,14 +181,42 @@
     all.forEach(s => {
       const key = normName(s.customer_nafn) || '(ekkert nafn)';
       const display = s.customer_nafn || '(ekkert nafn)';
-      if (!grouped[key]) grouped[key] = { display, id: s.customer_id || null, sales: [], sum: 0, thisMonthSum: 0, olderSum: 0 };
+      if (!grouped[key]) grouped[key] = { display, id: s.customer_id || null, sales: [], sum: 0, thisMonthSum: 0, olderSum: 0, latestUpdated: '', latestCreated: '' };
       grouped[key].sales.push(s);
       grouped[key].sum += parseFloat(s.samtals) || 0;
       const t = new Date(s.created_at).getTime();
       if (t >= start.getTime() && t < end.getTime()) grouped[key].thisMonthSum += parseFloat(s.samtals) || 0;
       else grouped[key].olderSum += parseFloat(s.samtals) || 0;
+      // Track latest timestamps so sort modes work at company-card level too.
+      const u = s.updated_at || s.created_at || '';
+      if (u > grouped[key].latestUpdated) grouped[key].latestUpdated = u;
+      const c = s.created_at || '';
+      if (c > grouped[key].latestCreated) grouped[key].latestCreated = c;
     });
-    const companies = Object.values(grouped).sort((a, b) => b.sum - a.sum);
+    // 2026-05-21: sort companies AND the sales within each company by the
+    // chosen order. Default = nýlega breytt → claims you just touched
+    // (mark paid, switch method, save edits) jump to the top instead of
+    // staying buried by their original created_at.
+    const sortMode = _state.sort;
+    function cmpUpdated(a, b) { return (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || ''); }
+    function cmpCreatedDesc(a, b) { return (b.created_at || '').localeCompare(a.created_at || ''); }
+    function cmpCreatedAsc(a, b) { return (a.created_at || '').localeCompare(b.created_at || ''); }
+    function cmpAmtDesc(a, b) { return (+b.samtals || 0) - (+a.samtals || 0); }
+    function cmpAmtAsc(a, b)  { return (+a.samtals || 0) - (+b.samtals || 0); }
+    const saleCmp = sortMode === 'created_desc' ? cmpCreatedDesc
+                  : sortMode === 'created_asc'  ? cmpCreatedAsc
+                  : sortMode === 'amount_desc'  ? cmpAmtDesc
+                  : sortMode === 'amount_asc'   ? cmpAmtAsc
+                  : cmpUpdated; // updated_desc default
+    Object.values(grouped).forEach(g => g.sales.sort(saleCmp));
+    const companies = Object.values(grouped).sort((a, b) => {
+      if (sortMode === 'amount_asc')   return a.sum - b.sum;
+      if (sortMode === 'amount_desc')  return b.sum - a.sum;
+      if (sortMode === 'created_asc')  return (a.latestCreated || '').localeCompare(b.latestCreated || '');
+      if (sortMode === 'created_desc') return (b.latestCreated || '').localeCompare(a.latestCreated || '');
+      // updated_desc: company with the most-recently-touched sale floats up
+      return (b.latestUpdated || '').localeCompare(a.latestUpdated || '');
+    });
 
     const monthLabel = _state.month.getFullYear() + ' · ' +
       ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'][_state.month.getMonth()];
@@ -193,10 +229,17 @@
             <h1 style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">📋 Kröfu yfirlit</h1>
             <div style="font-size:12px;color:#64748b;margin-top:2px">Krafa í heimabanka — sölur með greitt_med = "Senda reikning" sem þarf að safna saman í lok mánaðar</div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button class="_ky-prev" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>
             <div style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:140px;text-align:center">${esc(monthLabel)}</div>
             <button class="_ky-next" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>
+            <select class="_ky-sort" title="Raða" style="margin-left:6px;padding:6px 9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font:inherit;font-size:12.5px;font-weight:600;color:#475569;cursor:pointer">
+              <option value="updated_desc"${_state.sort === 'updated_desc' ? ' selected' : ''}>🕐 Nýlega breytt fyrst</option>
+              <option value="created_desc"${_state.sort === 'created_desc' ? ' selected' : ''}>📅 Nýjast stofnað</option>
+              <option value="created_asc"${_state.sort === 'created_asc' ? ' selected' : ''}>📅 Elst stofnað</option>
+              <option value="amount_desc"${_state.sort === 'amount_desc' ? ' selected' : ''}>💰 Hæsta upphæð</option>
+              <option value="amount_asc"${_state.sort === 'amount_asc' ? ' selected' : ''}>💰 Lægsta upphæð</option>
+            </select>
           </div>
         </div>
 
@@ -239,6 +282,11 @@
 
       </div>`;
 
+    main.querySelector('._ky-sort')?.addEventListener('change', e => {
+      _state.sort = e.target.value;
+      saveSort(_state.sort);
+      render();
+    });
     main.querySelector('._ky-prev')?.addEventListener('click', () => {
       const m = new Date(_state.month);
       m.setMonth(m.getMonth() - 1);

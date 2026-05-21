@@ -130,7 +130,15 @@
     function inService(c) {
       const key = String(c.id);
       const a = arsMap[key];
-      const hasArs = !!(a && a.equipment && Object.values(a.equipment).some(v => +v > 0));
+      // 2026-05-21: a company qualifies if it has equipment with counts > 0
+      // (legacy migration data) OR if it was explicitly subscribed via the
+      // button (patch 158 stamps `subscribed: true`). Without this second
+      // branch, a freshly-subscribed customer with empty equipment {} (e.g.
+      // Hátún 8) silently never appears here.
+      const hasArs = !!(a && (
+        a.subscribed === true ||
+        (a.equipment && Object.values(a.equipment).some(v => +v > 0))
+      ));
       const hasBru = !!bruMap[key];
       return hasArs || hasBru;
     }
