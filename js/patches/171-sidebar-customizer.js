@@ -1,0 +1,213 @@
+/* === SIDEBAR CUSTOMIZER v1 ===
+ *
+ * Lets the user reorder the side-panel manually. Stores the chosen order in
+ * AppSettings.sidebar_order (flat array of label-substring strings, with the
+ * literal "__SEP__" entry standing in for a separator). AppSettings.sidebar_
+ * hidden stores labels the user wants hidden entirely.
+ *
+ * Trigger: a small "⚙️ Aðlaga hliðarstiku" button injected at the bottom of
+ * the side-nav. Public API window.SidebarCustomizer.open() — patches that
+ * want their own settings entry can link directly.
+ *
+ * Reorder UX: each row in the modal carries ▲ ▼ buttons + a visibility
+ * checkbox + a "+ Skil" button to insert a separator after that row. Save
+ * persists to AppSettings, which patch 68 listens for to re-render the nav.
+ */
+(() => {
+  if (window.__sidebarCustomizerInstalled) return;
+  window.__sidebarCustomizerInstalled = true;
+
+  const SEP = '__SEP__';
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+  function btnText(b) {
+    return String(b.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+  function btnLabel(b) {
+    // Strip a leading single emoji + optional space ("🧯 Sala" → "Sala") so
+    // the stored match is the readable label.
+    const t = btnText(b);
+    return t.replace(/^\s*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+\s*/u, '').trim() || t;
+  }
+
+  // Get the current applied order from the live DOM (most reliable source —
+  // captures whatever patch 68 just rendered).
+  function readCurrentOrder() {
+    const nav = document.querySelector('nav.view-nav, .view-nav');
+    if (!nav) return { items: [], all: [] };
+    const items = [];
+    const all = [];
+    Array.from(nav.children).forEach(el => {
+      if (el.classList && el.classList.contains('vnav-btn')) {
+        const label = btnLabel(el);
+        if (!label) return;
+        const isHidden = el.style.display === 'none';
+        items.push({ type: 'item', label, hidden: isHidden });
+        all.push({ type: 'item', label, hidden: isHidden });
+      } else if (el.classList && el.classList.contains('nav-sep')) {
+        items.push({ type: 'sep' });
+      }
+    });
+    // Also scan any HIDDEN buttons not present as direct children but still
+    // exist somewhere in nav (e.g. hidden via display:none).
+    Array.from(nav.querySelectorAll('.vnav-btn')).forEach(el => {
+      const label = btnLabel(el);
+      if (!label) return;
+      if (!all.some(x => x.label === label)) {
+        all.push({ type: 'item', label, hidden: true });
+        items.push({ type: 'item', label, hidden: true });
+      }
+    });
+    return { items, all };
+  }
+
+  let _state = { items: [] };
+
+  function open() {
+    document.getElementById('_sc-modal')?.remove();
+    const snap = readCurrentOrder();
+    _state.items = snap.items;
+    const dlg = document.createElement('div');
+    dlg.id = '_sc-modal';
+    dlg.style.cssText = 'position:fixed;inset:0;z-index:100070;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;padding:18px;font-family:inherit';
+    dlg.innerHTML = '' +
+      '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,0.35);' +
+        'width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 60px);' +
+        'display:flex;flex-direction:column;overflow:hidden">' +
+        '<div style="padding:14px 22px;background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;display:flex;justify-content:space-between;align-items:center">' +
+          '<div>' +
+            '<h2 style="margin:0;font-size:16px;font-weight:700">🎨 Aðlaga hliðarstiku</h2>' +
+            '<div style="font-size:11px;color:#cbd5e1;margin-top:2px">Færðu liði upp/niður · faldu þá sem þú þarft ekki</div>' +
+          '</div>' +
+          '<button id="_sc-x" type="button" style="background:transparent;border:1px solid rgba(255,255,255,0.4);color:#fff;width:32px;height:32px;border-radius:7px;cursor:pointer;font-size:16px;line-height:1">✕</button>' +
+        '</div>' +
+        '<div id="_sc-list" style="flex:1;overflow-y:auto;padding:10px 14px;background:#f8fafc"></div>' +
+        '<div style="padding:12px 18px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:space-between;background:#fff;flex-wrap:wrap">' +
+          '<button id="_sc-reset" type="button" style="padding:8px 14px;border:1px solid #cbd5e1;background:#fff;border-radius:7px;cursor:pointer;font:inherit;font-size:12.5px;color:#475569">↺ Sjálfgefið</button>' +
+          '<div style="display:flex;gap:6px">' +
+            '<button id="_sc-cancel" type="button" style="padding:8px 14px;border:1px solid #cbd5e1;background:#fff;border-radius:7px;cursor:pointer;font:inherit;font-size:12.5px;color:#475569">Hætta við</button>' +
+            '<button id="_sc-save" type="button" style="padding:8px 16px;border:none;background:#16a34a;color:#fff;border-radius:7px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700">💾 Vista röð</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(dlg);
+    dlg.addEventListener('click', e => { if (e.target === dlg) dlg.remove(); });
+    dlg.querySelector('#_sc-x').addEventListener('click', () => dlg.remove());
+    dlg.querySelector('#_sc-cancel').addEventListener('click', () => dlg.remove());
+    dlg.querySelector('#_sc-save').addEventListener('click', save);
+    dlg.querySelector('#_sc-reset').addEventListener('click', resetDefaults);
+    renderList();
+  }
+
+  function renderList() {
+    const root = document.getElementById('_sc-list');
+    if (!root) return;
+    root.innerHTML = _state.items.map((it, i) => {
+      if (it.type === 'sep') {
+        return '<div data-i="' + i + '" style="margin:4px 0;padding:6px 10px;background:#e2e8f0;border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+          '<span style="font-size:11px;font-weight:700;color:#475569;letter-spacing:.04em;text-transform:uppercase">— Skil —</span>' +
+          '<span style="display:flex;gap:4px">' +
+            '<button class="_sc-up"   data-i="' + i + '" type="button" title="Færa upp" style="background:#fff;border:1px solid #cbd5e1;border-radius:5px;width:26px;height:24px;cursor:pointer;font-size:11px">▲</button>' +
+            '<button class="_sc-down" data-i="' + i + '" type="button" title="Færa niður" style="background:#fff;border:1px solid #cbd5e1;border-radius:5px;width:26px;height:24px;cursor:pointer;font-size:11px">▼</button>' +
+            '<button class="_sc-rm"   data-i="' + i + '" type="button" title="Fjarlægja skil" style="background:#fff;border:1px solid #fecaca;color:#dc2626;border-radius:5px;width:26px;height:24px;cursor:pointer;font-size:13px;line-height:1">×</button>' +
+          '</span>' +
+        '</div>';
+      }
+      const opacity = it.hidden ? ';opacity:.45' : '';
+      return '<div data-i="' + i + '" style="padding:8px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:7px;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between;gap:8px' + opacity + '">' +
+        '<label style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;cursor:pointer;font-size:13px;color:#0f172a">' +
+          '<input class="_sc-vis" data-i="' + i + '" type="checkbox" ' + (it.hidden ? '' : 'checked') + ' style="width:16px;height:16px;cursor:pointer">' +
+          '<span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(it.label) + '</span>' +
+        '</label>' +
+        '<span style="display:flex;gap:4px">' +
+          '<button class="_sc-up"   data-i="' + i + '" type="button" title="Færa upp" style="background:#fff;border:1px solid #cbd5e1;border-radius:5px;width:26px;height:24px;cursor:pointer;font-size:11px">▲</button>' +
+          '<button class="_sc-down" data-i="' + i + '" type="button" title="Færa niður" style="background:#fff;border:1px solid #cbd5e1;border-radius:5px;width:26px;height:24px;cursor:pointer;font-size:11px">▼</button>' +
+          '<button class="_sc-sep"  data-i="' + i + '" type="button" title="Bæta við skili fyrir neðan" style="background:#fff;border:1px solid #cbd5e1;color:#64748b;border-radius:5px;height:24px;padding:0 7px;cursor:pointer;font-size:11px;font-weight:600">+ Skil</button>' +
+        '</span>' +
+      '</div>';
+    }).join('');
+    // Wire row controls
+    root.querySelectorAll('._sc-up').forEach(b => b.addEventListener('click', () => moveItem(+b.dataset.i, -1)));
+    root.querySelectorAll('._sc-down').forEach(b => b.addEventListener('click', () => moveItem(+b.dataset.i,  1)));
+    root.querySelectorAll('._sc-sep').forEach(b => b.addEventListener('click', () => insertSepAfter(+b.dataset.i)));
+    root.querySelectorAll('._sc-rm').forEach(b => b.addEventListener('click', () => removeItem(+b.dataset.i)));
+    root.querySelectorAll('._sc-vis').forEach(cb => cb.addEventListener('change', e => {
+      const i = +cb.dataset.i;
+      _state.items[i].hidden = !cb.checked;
+      renderList();
+    }));
+  }
+  function moveItem(i, delta) {
+    const j = i + delta;
+    if (j < 0 || j >= _state.items.length) return;
+    const tmp = _state.items[i];
+    _state.items[i] = _state.items[j];
+    _state.items[j] = tmp;
+    renderList();
+  }
+  function insertSepAfter(i) {
+    _state.items.splice(i + 1, 0, { type: 'sep' });
+    renderList();
+  }
+  function removeItem(i) {
+    _state.items.splice(i, 1);
+    renderList();
+  }
+
+  async function save() {
+    if (!window.AppSettings || !AppSettings.save) {
+      alert('AppSettings ekki tilbúið'); return;
+    }
+    const order = _state.items.map(it => it.type === 'sep' ? SEP : it.label);
+    const hidden = _state.items.filter(it => it.type === 'item' && it.hidden).map(it => it.label);
+    const ok = await AppSettings.save({ sidebar_order: order, sidebar_hidden: hidden });
+    if (!ok) { alert('Vista mistókst'); return; }
+    if (window.Toast && Toast.show) Toast.show('✓ Röð vistuð');
+    document.getElementById('_sc-modal')?.remove();
+    if (window.SidebarReorder && SidebarReorder.scheduleReorder) {
+      const nav = document.querySelector('nav.view-nav, .view-nav');
+      if (nav) nav.querySelectorAll('.vnav-btn').forEach(b => { b.style.display = ''; });
+      SidebarReorder.scheduleReorder();
+    }
+  }
+  async function resetDefaults() {
+    if (!window.AppSettings || !AppSettings.save) return;
+    if (!confirm('Endurstilla á sjálfgefna röð?')) return;
+    const ok = await AppSettings.save({ sidebar_order: null, sidebar_hidden: [] });
+    if (!ok) { alert('Vista mistókst'); return; }
+    if (window.Toast && Toast.show) Toast.show('✓ Endurstillt');
+    document.getElementById('_sc-modal')?.remove();
+    if (window.SidebarReorder && SidebarReorder.scheduleReorder) {
+      const nav = document.querySelector('nav.view-nav, .view-nav');
+      if (nav) nav.querySelectorAll('.vnav-btn').forEach(b => { b.style.display = ''; });
+      SidebarReorder.scheduleReorder();
+    }
+  }
+
+  // ── Inject launcher button at the bottom of the sidebar ────────────────
+  function injectLauncher() {
+    const nav = document.querySelector('nav.view-nav, .view-nav');
+    if (!nav) { setTimeout(injectLauncher, 800); return; }
+    if (nav.querySelector('._sc-launcher')) return;
+    const sample = nav.querySelector('.vnav-btn');
+    const btn = document.createElement('button');
+    btn.className = ((sample && sample.className) || 'vnav-btn').replace(/\bactive\b/g, '').trim() + ' _sc-launcher';
+    btn.innerHTML = '<span style="margin-right:6px">🎨</span>Aðlaga hliðarstiku';
+    btn.style.opacity = '0.72';
+    btn.style.fontSize = '11.5px';
+    btn.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      open();
+    });
+    nav.appendChild(btn);
+  }
+  injectLauncher();
+  setTimeout(injectLauncher, 1500);
+
+  window.SidebarCustomizer = { open };
+  console.log('[patch-171] sidebar customizer ready');
+})();
+/* === END SIDEBAR CUSTOMIZER === */
