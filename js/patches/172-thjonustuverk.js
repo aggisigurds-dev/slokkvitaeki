@@ -51,11 +51,16 @@
 
   // ── State ───────────────────────────────────────────────────────────────
   const VIEW_KEY = '_tv_view_v1';
+  const TAGS_KEY = '_tv_tags_v1';
   function loadView() {
     try { return localStorage.getItem(VIEW_KEY) || 'list'; } catch (_) { return 'list'; }
   }
   function saveView(v) { try { localStorage.setItem(VIEW_KEY, v); } catch (_) {} }
-  let _state = { cases: [], filter: 'all', view: loadView() };
+  function loadTagFilter() {
+    try { return JSON.parse(localStorage.getItem(TAGS_KEY) || '[]'); } catch (_) { return []; }
+  }
+  function saveTagFilter(arr) { try { localStorage.setItem(TAGS_KEY, JSON.stringify(arr)); } catch (_) {} }
+  let _state = { cases: [], filter: 'all', view: loadView(), tagFilter: new Set(loadTagFilter()) };
   function load() {
     const v = (window.AppSettings && AppSettings.path && AppSettings.path(STORAGE_KEY)) || {};
     _state.cases = Array.isArray(v.cases) ? v.cases : [];
@@ -276,10 +281,11 @@
   }
 
   // ── Render the case list ────────────────────────────────────────────────
-  function render() {
+  async function render() {
     const main = document.getElementById('tv-main');
     if (!main) return;
     refreshImpSet();
+    await ensureCustCache(_state.cases);
 
     // 2026-05-21: primary sort = importance DESC (red on top), secondary =
     // updated_at DESC (newest first). Lokið cases sink regardless so closed
@@ -293,7 +299,11 @@
       return (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || '');
     });
     const filter = _state.filter;
-    const filtered = filter === 'all' ? cases : cases.filter(c => c.status === filter);
+    const tagFilter = _state.tagFilter;
+    let filtered = filter === 'all' ? cases : cases.filter(c => c.status === filter);
+    if (tagFilter.size > 0) {
+      filtered = filtered.filter(c => Array.isArray(c.tags) && c.tags.some(t => tagFilter.has(t)));
+    }
 
     const counts = {
       all: cases.length,
@@ -326,7 +336,7 @@
             <button id="_tv-new" type="button" style="padding:9px 16px;background:#7c3aed;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">+ Nýtt mál</button>
           </div>
         </div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
           ${[
             ['all', 'Allt', counts.all],
             ['ny', 'Ný', counts.ny],
@@ -340,6 +350,20 @@
               ';border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">' +
               esc(lbl) + ' <span style="opacity:.65;font-weight:500">' + n + '</span></button>';
           }).join('')}
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
+          <span style="font-size:10.5px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;font-weight:700;margin-right:4px">Tög:</span>
+          ${TAGS.map(t => {
+            const on = tagFilter.has(t.v);
+            const n  = cases.filter(c => Array.isArray(c.tags) && c.tags.indexOf(t.v) >= 0).length;
+            return '<button class="_tv-tag-chip" data-v="' + t.v + '" type="button" ' +
+              'style="padding:5px 11px;border:1px solid ' + (on ? t.color : '#e2e8f0') +
+              ';background:' + (on ? t.soft : '#fff') + ';color:' + t.color +
+              ';border-radius:99px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:700;' +
+              (on ? 'box-shadow:0 0 0 1px ' + t.color + ' inset;' : '') + '">' +
+              t.emoji + ' ' + esc(t.label) + ' <span style="opacity:.65;font-weight:500;margin-left:2px">' + n + '</span></button>';
+          }).join('')}
+          ${tagFilter.size > 0 ? '<button id="_tv-tag-clear" type="button" style="padding:5px 10px;background:none;border:none;color:#94a3b8;cursor:pointer;font:inherit;font-size:11.5px;text-decoration:underline">Hreinsa</button>' : ''}
         </div>
         ${_state.view === 'cards'
           ? (filtered.length
@@ -360,6 +384,18 @@
     main.querySelectorAll('._tv-chip').forEach(c => c.addEventListener('click', () => {
       _state.filter = c.dataset.k; render();
     }));
+    main.querySelectorAll('._tv-tag-chip').forEach(b => b.addEventListener('click', () => {
+      const v = b.dataset.v;
+      if (_state.tagFilter.has(v)) _state.tagFilter.delete(v);
+      else _state.tagFilter.add(v);
+      saveTagFilter(Array.from(_state.tagFilter));
+      render();
+    }));
+    main.querySelector('#_tv-tag-clear')?.addEventListener('click', () => {
+      _state.tagFilter.clear();
+      saveTagFilter([]);
+      render();
+    });
     main.querySelectorAll('._tv-view').forEach(b => b.addEventListener('click', () => {
       _state.view = b.dataset.v;
       saveView(_state.view);
@@ -393,6 +429,54 @@
     _impSet = new Set(Array.isArray(v) ? v.map(Number) : []);
   }
   function isImportant(id) { return id != null && _impSet.has(+id); }
+
+  // 2026-05-21: per-render customer lookup cache so list renderers can
+  // include the company's athugasemdir (notes) inline on every card. Avoids
+  // 5+ async fetches per render — we batch by table and key by 'fy:<id>'
+  // and 'vk:<id>'. ensureCustCache(cases) refreshes from Supabase whenever
+  // a card was linked to a customer we haven't loaded yet.
+  const _custCache = new Map();
+  async function ensureCustCache(cases) {
+    const SB = getSB();
+    if (!SB) return;
+    const wantFy = new Set(), wantVk = new Set();
+    cases.forEach(c => {
+      if (!c.customer_id) return;
+      const key = (c.customer_source === 'vidskiptavinir' ? 'vk:' : 'fy:') + c.customer_id;
+      if (_custCache.has(key)) return;
+      if (c.customer_source === 'vidskiptavinir') wantVk.add(+c.customer_id);
+      else wantFy.add(+c.customer_id);
+    });
+    const queries = [];
+    if (wantFy.size) queries.push(
+      SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,athugasemdir').in('id', Array.from(wantFy))
+        .then(r => (r.data || []).forEach(row => _custCache.set('fy:' + row.id, row)))
+    );
+    if (wantVk.size) queries.push(
+      SB.from('vidskiptavinir').select('id,nafn,kennitala,simi,heimilisfang,athugasemdir').in('id', Array.from(wantVk))
+        .then(r => (r.data || []).forEach(row => _custCache.set('vk:' + row.id, row)))
+    );
+    if (queries.length) await Promise.all(queries);
+  }
+  function getCust(c) {
+    if (!c || !c.customer_id) return null;
+    const key = (c.customer_source === 'vidskiptavinir' ? 'vk:' : 'fy:') + c.customer_id;
+    return _custCache.get(key) || null;
+  }
+  function companyNoteBox(c, opts) {
+    const cust = getCust(c);
+    if (!cust) return '';
+    const note = (cust.athugasemdir || '').trim();
+    const imp = isImportant(c.customer_id);
+    if (!note && !imp) return '';
+    const clamp = opts && opts.clamp ? ('display:-webkit-box;-webkit-line-clamp:' + opts.clamp + ';-webkit-box-orient:vertical;overflow:hidden;') : '';
+    const tone = imp ? { bg:'#fef3c7', bd:'#fde68a', label:'⚠ Mikilvægt athugasemd' }
+                     : { bg:'#f8fafc', bd:'#cbd5e1', label:'📝 Athugasemd frá fyrirtæki' };
+    return '<div style="margin-top:6px;padding:6px 10px;background:' + tone.bg + ';border:1px ' + (imp ? 'solid' : 'dashed') + ' ' + tone.bd + ';border-radius:5px">' +
+      '<div style="font-size:9.5px;font-weight:700;color:' + (imp ? '#92400e' : '#64748b') + ';text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">' + tone.label + '</div>' +
+      '<div style="font-size:11.5px;color:#0f172a;line-height:1.45;white-space:pre-wrap;' + clamp + '">' + esc(note || '(engar athugasemdir á fyrirtæki)') + '</div>' +
+    '</div>';
+  }
   function mikilvaegtBadge() {
     return '<span title="Mikilvægt fyrirtæki" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #fde68a;padding:1px 7px;border-radius:99px;margin-left:6px">⚠ Mikilvægt</span>';
   }
@@ -427,7 +511,7 @@
           <div style="font-size:11px;color:#64748b;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((c.body || '').slice(0, 90))}</div>
         </div>
         <div>${caseCustomerHtml(c)}</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">${impPill(c)}${caseChipsHtml(c)}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">${impPill(c)}${caseTagsHtml(c, {small:true})}${caseChipsHtml(c)}</div>
         <div>${statusBadge(c.status || 'ny')}</div>
         <button class="_tv-del" data-id="${esc(c.id)}" type="button" title="Eyða" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:18px;padding:0 4px;line-height:1">×</button>
       </div>`;
@@ -450,9 +534,10 @@
     return `<div class="_tv-row" data-id="${esc(c.id)}" style="padding:14px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;${bgRule}${leftBorder}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px">
           <div style="min-width:0;flex:1">
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               ${impPill(c)}
               ${statusBadge(c.status || 'ny')}
+              ${caseTagsHtml(c, {small:true})}
               <span style="font-weight:700;color:#0f172a;font-size:14px">${esc(c.title || '(án titils)')}</span>
             </div>
             <div style="font-size:11.5px;color:#64748b;margin-top:3px">
@@ -465,6 +550,7 @@
           </div>
         </div>
         ${c.body ? `<div style="font-size:12.5px;color:#475569;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;white-space:pre-wrap">${esc(c.body)}</div>` : ''}
+        ${companyNoteBox(c, {clamp:3})}
         ${linkChipsHtml || extra ? `<div style="margin-top:7px">${linkChipsHtml}${extra}</div>` : ''}
       </div>`;
   }
@@ -496,8 +582,10 @@
             ${statusBadge(c.status || 'ny')}
           </div>
         </div>
+        ${(Array.isArray(c.tags) && c.tags.length) ? `<div style="display:flex;gap:4px;flex-wrap:wrap">${caseTagsHtml(c, {small:true})}</div>` : ''}
         ${c.body ? `<div style="font-size:12.5px;color:#475569;line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap">${esc(c.body)}</div>` : '<div style="font-size:12px;color:#cbd5e1;font-style:italic">(engin athugasemd)</div>'}
         <div style="font-size:12px;color:#0f172a">${caseCustomerHtml(c)}</div>
+        ${companyNoteBox(c, {clamp:4})}
         ${(tilbodChip || linksChip) ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:auto">${tilbodChip}${linksChip}</div>` : ''}
         <div style="display:flex;justify-content:flex-end;margin-top:-4px">
           <button class="_tv-del" data-id="${esc(c.id)}" type="button" title="Eyða" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:16px;padding:0 2px;line-height:1">×</button>
@@ -511,6 +599,7 @@
     const c = existing ? JSON.parse(JSON.stringify(existing)) : {
       id: uid(), title: '', body: '', status: 'ny',
       importance: 'green',
+      tags: [],
       customer_id: null, customer_nafn: '',
       links: [],
       tilbod: { items: [], discount_pct: 0 },
@@ -596,6 +685,20 @@
         '</div>' +
       '</div>' +
 
+      // Tag picker — multi-select toggle chips. Stored as array on the case.
+      '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Tög (mörg leyfileg)</label>' +
+      '<div id="_tv-tags" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">' +
+        TAGS.map(t => {
+          const cur = Array.isArray(c.tags) && c.tags.indexOf(t.v) >= 0;
+          return '<button class="_tv-tag-btn" data-v="' + t.v + '" type="button" ' +
+            'style="padding:6px 12px;border:1.5px solid ' + (cur ? t.color : '#e2e8f0') + ';' +
+              'background:' + (cur ? t.soft : '#fff') + ';color:' + t.color + ';' +
+              'border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;' +
+              'display:inline-flex;align-items:center;gap:5px">' +
+            t.emoji + ' ' + esc(t.label) + '</button>';
+        }).join('') +
+      '</div>' +
+
       // Importance picker — 4 buttons with colored fill matching the levels.
       '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Mikilvægi</label>' +
       '<div id="_tv-imp" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">' +
@@ -620,6 +723,19 @@
     body.querySelector('#_tv-title').addEventListener('input', e => { c.title = e.target.value; });
     body.querySelector('#_tv-body-txt').addEventListener('input', e => { c.body = e.target.value; });
     body.querySelector('#_tv-status').addEventListener('change', e => { c.status = e.target.value; });
+    // Tag toggles
+    body.querySelectorAll('._tv-tag-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        c.tags = Array.isArray(c.tags) ? c.tags.slice() : [];
+        const v = btn.dataset.v;
+        const idx = c.tags.indexOf(v);
+        if (idx >= 0) c.tags.splice(idx, 1); else c.tags.push(v);
+        const def = tagDef(v);
+        const cur = c.tags.indexOf(v) >= 0;
+        btn.style.border = '1.5px solid ' + (cur ? def.color : '#e2e8f0');
+        btn.style.background = cur ? def.soft : '#fff';
+      });
+    });
     body.querySelectorAll('._tv-imp-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         c.importance = btn.dataset.v;
