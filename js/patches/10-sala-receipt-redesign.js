@@ -628,13 +628,20 @@
     // `state.discount_pct`, `state.discount`, `state.notes` and
     // `state.customer.{nafn,kt,co_id,heimilisfang}`.
     const linur = Array.isArray(sale.linur) ? sale.linur : [];
-    // Reconstruct discount % from saved data when possible. We saved
-    // `afslattur` as the absolute kr amount applied at sale time; pass it
-    // through as discount_pct=0, discount=afslattur so the receipt totals
-    // match what was originally printed.
+    // 2026-05-21: DOUBLE-DISCOUNT BUG FIX.
+    // Old behaviour passed `sale.afslattur` as an absolute discount to
+    // subtract again from the line total. But for many sales the discount
+    // is already BAKED INTO the line's unit_price_ex_vat (with the % stored
+    // per-line as `discount_pct`). Subtracting afslattur a second time made
+    // reprinted bills show a smaller total than `samtals` (e.g. R-000166:
+    // saved samtals=52,000 but the bill rendered ~42,000 — Höldur). Detect
+    // baked-in line discounts and skip afslattur in that case. Sales that
+    // really did store the discount only at the sale level still work.
+    const linesBakeInDiscount = linur.some(l => Number(l.discount_pct) > 0);
+    const discountToApply = linesBakeInDiscount ? 0 : (+sale.afslattur || 0);
     const fakeState = {
       lines: linur,
-      discount: +sale.afslattur || 0,
+      discount: discountToApply,
       discount_pct: 0,
       notes: sale.athugasemdir || '',
       customer: {
