@@ -117,19 +117,29 @@
     return `${dd}.${mm}.${yy}`;
   }
 
+  // 2026-05-21: lookupCustomer used to blindly trust `co_id` against
+  // Companies.list (= fyrirtaeki). But solur.customer_id may have come from
+  // the SEPARATE `vidskiptavinir` table — and ids overlap between the two.
+  // Example: R-000165 (Höldur ehf.) had customer_id=513 because Höldur lives
+  // in vidskiptavinir, but fyrirtaeki ALSO has id=513 (Gólfbúðin) — so the
+  // invoice was printing "Gólfbúðin" for a Höldur bill. Fix: id-lookup only
+  // wins if the name matches what's stored on the sale; otherwise fall
+  // through to name-based matching across the actual company list.
   function lookupCustomer(state) {
     const list = (window.Companies && Companies.list) || [];
     if (!list.length) return null;
+    const rawName = state && state.customer && (state.customer.nafn || '').trim();
+    const norm = s => String(s || '').trim().toLowerCase().replace(/[\s\.,;:]+$/g, '');
+    const expected = norm(rawName);
+
     if (state && state.customer && state.customer.co_id) {
       const byId = list.find(c => c.id === state.customer.co_id);
-      if (byId) return byId;
+      // Trust the id ONLY when the names agree (or no name was stored).
+      if (byId && (!expected || norm(byId.nafn) === expected)) return byId;
     }
-    const name = state && state.customer && (state.customer.nafn || '').trim();
-    if (name) {
-      const norm = s => String(s || '').trim().toLowerCase();
-      const target = norm(name);
-      return list.find(c => norm(c.nafn) === target)
-          || list.find(c => norm(c.nafn).startsWith(target))
+    if (rawName) {
+      return list.find(c => norm(c.nafn) === expected)
+          || list.find(c => norm(c.nafn).indexOf(expected) === 0)
           || null;
     }
     const kt = state && state.customer && (state.customer.kt || '').replace(/[^0-9]/g, '');
