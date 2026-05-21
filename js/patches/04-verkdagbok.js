@@ -84,6 +84,11 @@
     btn.className = sample.className.replace(/\bactive\b/g,'').trim();
     btn.dataset.view = 'verkdagbok';
     btn.textContent = '📔 Verkdagbók';
+    // 2026-05-21: dim-amber tint + raised z-index. Same palette as Verkefni
+    // and Þjónustuverk so the three "daily work" tabs read as one cluster.
+    // z-index defends the button against patch 145's Verkefni panel close
+    // handler swallowing click bursts on Verkdagbók ("tricky to push").
+    btn.style.cssText = 'background:linear-gradient(135deg,rgba(245,158,11,0.22),rgba(217,119,6,0.18)) !important;color:#fde68a !important;font-weight:700;border:none !important;position:relative;z-index:5';
     sample.parentElement.insertBefore(btn, sample.nextSibling);
     return true;
   }

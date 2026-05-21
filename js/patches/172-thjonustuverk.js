@@ -79,9 +79,12 @@
     btn.className = (tpl.className || 'vnav-btn').replace(/\bactive\b/g, '').trim();
     btn.setAttribute('data-view', NAV_KEY);
     btn.innerHTML = '<span style="margin-right:6px">🛠</span>Þjónustuverk' +
-      ' <span class="tv-badge" style="margin-left:auto;background:#7c3aed;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;display:none"></span>';
+      ' <span class="tv-badge" style="margin-left:auto;background:#fff;color:#92400e;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px;display:none"></span>';
     btn.style.display = 'flex';
     btn.style.alignItems = 'center';
+    // 2026-05-21: dim-amber tint matching Verkdagbók + Verkefni cluster.
+    // !important needed because some patches blanket the .vnav-btn baseline.
+    btn.style.cssText += ';background:linear-gradient(135deg,rgba(245,158,11,0.22),rgba(217,119,6,0.18)) !important;color:#fde68a !important;font-weight:700;border:none !important;position:relative;z-index:5';
     btn.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
       if (window.App && App.switchView) App.switchView(NAV_KEY);
@@ -130,6 +133,60 @@
   function statusBadge(s) {
     const def = STATUSES.find(x => x.v === s) || STATUSES[0];
     return '<span style="font-size:10px;font-weight:700;background:' + def.bg + ';color:' + def.color + ';padding:2px 8px;border-radius:99px">' + def.label + '</span>';
+  }
+
+  // ── Importance levels ───────────────────────────────────────────────────
+  // Higher rank = higher in the sorted list. Each level carries a strong
+  // accent (border / badge) + a soft background hue used as a gradient on
+  // the card and a left-border accent on list rows.
+  const IMPORTANCES = [
+    { v: 'red',    rank: 4, label: 'Áríðandi', emoji: '🔴', color: '#dc2626', soft: '#fee2e2' },
+    { v: 'orange', rank: 3, label: 'Hátt',     emoji: '🟠', color: '#ea580c', soft: '#fed7aa' },
+    { v: 'yellow', rank: 2, label: 'Miðlungs', emoji: '🟡', color: '#ca8a04', soft: '#fef3c7' },
+    { v: 'green',  rank: 1, label: 'Lágt',     emoji: '🟢', color: '#16a34a', soft: '#dcfce7' }
+  ];
+  function impDef(v) { return IMPORTANCES.find(x => x.v === v) || IMPORTANCES[3]; }
+  function impRank(c) { return impDef(c && c.importance).rank; }
+  function impAccent(c) {
+    // Returns { gradient, border } for the row/card background tint.
+    const def = impDef(c.importance);
+    if (def.v === 'green') return { gradient: '#fff', border: '#e2e8f0' };
+    return {
+      gradient: 'linear-gradient(135deg,' + def.soft + ' 0%, #fff 60%)',
+      border: def.color
+    };
+  }
+  function impPill(c) {
+    const def = impDef(c.importance);
+    if (def.v === 'green' && !c.importance) return ''; // default state — no badge clutter
+    return '<span title="Mikilvægi: ' + def.label + '" style="font-size:10px;font-weight:700;background:' + def.soft + ';color:' + def.color + ';padding:2px 7px;border-radius:99px;display:inline-flex;align-items:center;gap:3px">' + def.emoji + ' ' + def.label + '</span>';
+  }
+
+  // ── Tags ─────────────────────────────────────────────────────────────────
+  // Categorical tags users can stick on a case. Each carries its own color
+  // so the chip strip on a row reads at a glance ("kvörtun on a red card =
+  // angry urgent customer"). Toggling tag-chips in the toolbar filters the
+  // list (OR-logic — case must carry at least one of the selected tags).
+  const TAGS = [
+    { v: 'tilbod',     label: 'Gera tilboð',         emoji: '🧾', color: '#6b21a8', soft: '#ede9fe' },
+    { v: 'samningur',  label: 'Þjónustusamningur',   emoji: '📜', color: '#166534', soft: '#dcfce7' },
+    { v: 'bokhald',    label: 'Bókhald',             emoji: '📊', color: '#1e40af', soft: '#dbeafe' },
+    { v: 'kvortun',    label: 'Kvörtun',             emoji: '😤', color: '#991b1b', soft: '#fee2e2' },
+    { v: 'hringja',    label: 'Hringja',             emoji: '📞', color: '#92400e', soft: '#fef3c7' },
+    { v: 'brunakerfi', label: 'Brunakerfi',          emoji: '🔥', color: '#9a3412', soft: '#fed7aa' },
+    { v: 'rukka',      label: 'Eftir að rukka',      emoji: '💰', color: '#9d174d', soft: '#fce7f3' }
+  ];
+  function tagDef(v) { return TAGS.find(t => t.v === v); }
+  function tagPill(v, opts) {
+    const def = tagDef(v); if (!def) return '';
+    const small = !!(opts && opts.small);
+    const fs = small ? '9.5px' : '10.5px';
+    const pad = small ? '1px 6px' : '2px 8px';
+    return '<span title="' + esc(def.label) + '" style="font-size:' + fs + ';font-weight:700;background:' + def.soft + ';color:' + def.color + ';padding:' + pad + ';border-radius:99px;display:inline-flex;align-items:center;gap:3px;white-space:nowrap">' + def.emoji + ' ' + esc(def.label) + '</span>';
+  }
+  function caseTagsHtml(c, opts) {
+    if (!Array.isArray(c.tags) || !c.tags.length) return '';
+    return c.tags.map(v => tagPill(v, opts)).join(' ');
   }
 
   // ── Link chip helpers ────────────────────────────────────────────────────
@@ -222,10 +279,19 @@
   function render() {
     const main = document.getElementById('tv-main');
     if (!main) return;
+    refreshImpSet();
 
-    let cases = _state.cases.slice().sort((a, b) =>
-      (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || '')
-    );
+    // 2026-05-21: primary sort = importance DESC (red on top), secondary =
+    // updated_at DESC (newest first). Lokið cases sink regardless so closed
+    // work doesn't squat at the top just because it was important.
+    let cases = _state.cases.slice().sort((a, b) => {
+      const aDone = a.status === 'lokid' ? 1 : 0;
+      const bDone = b.status === 'lokid' ? 1 : 0;
+      if (aDone !== bDone) return aDone - bDone;
+      const dr = impRank(b) - impRank(a);
+      if (dr !== 0) return dr;
+      return (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || '');
+    });
     const filter = _state.filter;
     const filtered = filter === 'all' ? cases : cases.filter(c => c.status === filter);
 
@@ -318,6 +384,19 @@
     refreshBadge();
   }
 
+  // 2026-05-21: Mikilvægt-flag lookup (set lives in AppSettings.tilkynningar.
+   // important_company_ids — written by patch 91). Cached per-render via
+   // _impSet so each renderer doesn't re-walk the array for every card.
+  let _impSet = new Set();
+  function refreshImpSet() {
+    const v = (window.AppSettings && AppSettings.path && AppSettings.path('tilkynningar.important_company_ids')) || [];
+    _impSet = new Set(Array.isArray(v) ? v.map(Number) : []);
+  }
+  function isImportant(id) { return id != null && _impSet.has(+id); }
+  function mikilvaegtBadge() {
+    return '<span title="Mikilvægt fyrirtæki" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:700;background:#fef3c7;color:#92400e;border:1px solid #fde68a;padding:1px 7px;border-radius:99px;margin-left:6px">⚠ Mikilvægt</span>';
+  }
+
   // Shared helpers used by all three view renderers
   function caseChipsHtml(c) {
     const t = computeTilbod(c.tilbod);
@@ -331,21 +410,24 @@
     return tilbodChip + linksChip;
   }
   function caseCustomerHtml(c) {
-    return c.customer_nafn
-      ? '<span style="color:#0f172a;font-weight:600">' + esc(c.customer_nafn) + '</span>'
-      : '<span style="color:#94a3b8;font-style:italic">— (engin tenging)</span>';
+    if (!c.customer_nafn) return '<span style="color:#94a3b8;font-style:italic">— (engin tenging)</span>';
+    const badge = isImportant(c.customer_id) ? mikilvaegtBadge() : '';
+    return '<span style="color:#0f172a;font-weight:600">' + esc(c.customer_nafn) + '</span>' + badge;
   }
 
   // 1) Compact list — single line, ellipsised body (the default view)
   function rowHtml(c) {
-    return `<div class="_tv-row" data-id="${esc(c.id)}" style="display:grid;grid-template-columns:90px 1fr 220px 110px 90px 40px;gap:12px;padding:11px 14px;border-bottom:1px solid #f1f5f9;cursor:pointer;align-items:center;font-size:13px" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+    const acc = impAccent(c);
+    const bg = acc.gradient === '#fff' ? '' : 'background:' + acc.gradient + ';';
+    const leftBorder = acc.gradient === '#fff' ? '' : 'border-left:4px solid ' + acc.border + ';padding-left:10px';
+    return `<div class="_tv-row" data-id="${esc(c.id)}" style="display:grid;grid-template-columns:90px 1fr 220px 110px 90px 40px;gap:12px;padding:11px 14px;border-bottom:1px solid #f1f5f9;cursor:pointer;align-items:center;font-size:13px;${bg}${leftBorder}">
         <div style="color:#64748b;font-size:11.5px">${esc(fmtDate(c.updated_at || c.created_at))}</div>
         <div style="min-width:0">
           <div style="font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.title || '(án titils)')}</div>
           <div style="font-size:11px;color:#64748b;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((c.body || '').slice(0, 90))}</div>
         </div>
         <div>${caseCustomerHtml(c)}</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">${caseChipsHtml(c)}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">${impPill(c)}${caseChipsHtml(c)}</div>
         <div>${statusBadge(c.status || 'ny')}</div>
         <button class="_tv-del" data-id="${esc(c.id)}" type="button" title="Eyða" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:18px;padding:0 4px;line-height:1">×</button>
       </div>`;
@@ -362,10 +444,14 @@
       }).join('');
     const extra = (Array.isArray(c.links) && c.links.length > 5)
       ? '<span style="font-size:10.5px;color:#94a3b8">+' + (c.links.length - 5) + '</span>' : '';
-    return `<div class="_tv-row" data-id="${esc(c.id)}" style="padding:14px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+    const acc = impAccent(c);
+    const bgRule = acc.gradient === '#fff' ? '' : 'background:' + acc.gradient + ';';
+    const leftBorder = acc.gradient === '#fff' ? '' : 'border-left:4px solid ' + acc.border + ';';
+    return `<div class="_tv-row" data-id="${esc(c.id)}" style="padding:14px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;${bgRule}${leftBorder}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px">
           <div style="min-width:0;flex:1">
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              ${impPill(c)}
               ${statusBadge(c.status || 'ny')}
               <span style="font-weight:700;color:#0f172a;font-size:14px">${esc(c.title || '(án titils)')}</span>
             </div>
@@ -394,13 +480,21 @@
     const tilbodChip = t.total > 0
       ? '<span style="font-size:11px;background:#ede9fe;color:#6b21a8;padding:2px 8px;border-radius:99px;font-weight:700">💰 ' + fmtKr(t.total) + '</span>'
       : '';
-    return `<div class="_tv-row" data-id="${esc(c.id)}" style="background:#fff;border:1px solid #e2e8f0;border-left:4px solid ${def.color};border-radius:10px;padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:transform .12s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+    // Card background: soft importance gradient (full card) instead of just
+    // a left-border accent so the level reads at a glance across the grid.
+    const acc = impAccent(c);
+    const bg = acc.gradient === '#fff' ? '#fff' : acc.gradient;
+    const borderL = acc.gradient === '#fff' ? def.color : acc.border;
+    return `<div class="_tv-row" data-id="${esc(c.id)}" style="background:${bg};border:1px solid #e2e8f0;border-left:4px solid ${borderL};border-radius:10px;padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:transform .12s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
           <div style="min-width:0">
             <div style="font-weight:700;color:#0f172a;font-size:14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(c.title || '(án titils)')}</div>
             <div style="font-size:11px;color:#64748b;margin-top:2px">${esc(fmtDate(c.updated_at || c.created_at))}</div>
           </div>
-          ${statusBadge(c.status || 'ny')}
+          <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
+            ${impPill(c)}
+            ${statusBadge(c.status || 'ny')}
+          </div>
         </div>
         ${c.body ? `<div style="font-size:12.5px;color:#475569;line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap">${esc(c.body)}</div>` : '<div style="font-size:12px;color:#cbd5e1;font-style:italic">(engin athugasemd)</div>'}
         <div style="font-size:12px;color:#0f172a">${caseCustomerHtml(c)}</div>
@@ -416,6 +510,7 @@
     document.getElementById('_tv-editor')?.remove();
     const c = existing ? JSON.parse(JSON.stringify(existing)) : {
       id: uid(), title: '', body: '', status: 'ny',
+      importance: 'green',
       customer_id: null, customer_nafn: '',
       links: [],
       tilbod: { items: [], discount_pct: 0 },
@@ -501,6 +596,20 @@
         '</div>' +
       '</div>' +
 
+      // Importance picker — 4 buttons with colored fill matching the levels.
+      '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Mikilvægi</label>' +
+      '<div id="_tv-imp" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">' +
+        IMPORTANCES.map(def => {
+          const cur = (c.importance || 'green') === def.v;
+          return '<button class="_tv-imp-btn" data-v="' + def.v + '" type="button" ' +
+            'style="padding:7px 14px;border:2px solid ' + (cur ? def.color : '#e2e8f0') + ';' +
+              'background:' + (cur ? def.soft : '#fff') + ';color:' + def.color + ';' +
+              'border-radius:99px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;' +
+              'display:inline-flex;align-items:center;gap:5px">' +
+            def.emoji + ' ' + def.label + '</button>';
+        }).join('') +
+      '</div>' +
+
       // Status
       '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Staða</label>' +
       '<select id="_tv-status" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;background:#fff">' +
@@ -511,6 +620,18 @@
     body.querySelector('#_tv-title').addEventListener('input', e => { c.title = e.target.value; });
     body.querySelector('#_tv-body-txt').addEventListener('input', e => { c.body = e.target.value; });
     body.querySelector('#_tv-status').addEventListener('change', e => { c.status = e.target.value; });
+    body.querySelectorAll('._tv-imp-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        c.importance = btn.dataset.v;
+        // Repaint just the importance row so the selected state visibly updates.
+        body.querySelectorAll('._tv-imp-btn').forEach(b => {
+          const def = impDef(b.dataset.v);
+          const cur = b.dataset.v === c.importance;
+          b.style.border  = '2px solid ' + (cur ? def.color : '#e2e8f0');
+          b.style.background = cur ? def.soft : '#fff';
+        });
+      });
+    });
 
     // Customer row
     function renderCustRow() {
