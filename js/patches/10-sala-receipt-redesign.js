@@ -628,21 +628,33 @@
     // `state.discount_pct`, `state.discount`, `state.notes` and
     // `state.customer.{nafn,kt,co_id,heimilisfang}`.
     const linur = Array.isArray(sale.linur) ? sale.linur : [];
-    // 2026-05-21: DOUBLE-DISCOUNT BUG FIX.
-    // Old behaviour passed `sale.afslattur` as an absolute discount to
-    // subtract again from the line total. But for many sales the discount
-    // is already BAKED INTO the line's unit_price_ex_vat (with the % stored
-    // per-line as `discount_pct`). Subtracting afslattur a second time made
-    // reprinted bills show a smaller total than `samtals` (e.g. R-000166:
-    // saved samtals=52,000 but the bill rendered ~42,000 — Höldur). Detect
-    // baked-in line discounts and skip afslattur in that case. Sales that
-    // really did store the discount only at the sale level still work.
-    const linesBakeInDiscount = linur.some(l => Number(l.discount_pct) > 0);
-    const discountToApply = linesBakeInDiscount ? 0 : (+sale.afslattur || 0);
+    // 2026-05-21: discount rendering — three cases.
+    //   (A) All lines share a non-zero discount_pct AND afslattur is 0:
+    //       lines carry PRE-discount prices, discount applied as % at the
+    //       totals section. Bill prints "Söluverð / Afsláttur (N%) / Til
+    //       greiðslu". This is the desired modern format.
+    //   (B) Some line has discount_pct > 0 AND afslattur > 0 (legacy data
+    //       where discount was baked into prices AND stored as afslattur):
+    //       ignore both, totalsByRate sums lines as-is. Avoids the previous
+    //       double-discount bug that miscounted R-000166 as 42k.
+    //   (C) No line discount_pct, sale-level afslattur set: legacy flat
+    //       discount. Apply afslattur as opts.discount.
+    const allPcts = linur.map(l => Number(l.discount_pct) || 0);
+    const uniformPct = allPcts.length && allPcts[0] > 0 && allPcts.every(p => p === allPcts[0])
+      ? allPcts[0] : 0;
+    const afsl = +sale.afslattur || 0;
+    let optsDiscount = 0, optsDiscountPct = 0;
+    if (uniformPct > 0 && afsl === 0) {
+      optsDiscountPct = uniformPct;                // case A
+    } else if (uniformPct > 0 && afsl > 0) {
+      /* case B — both 0 */
+    } else if (uniformPct === 0 && afsl > 0) {
+      optsDiscount = afsl;                          // case C
+    }
     const fakeState = {
       lines: linur,
-      discount: discountToApply,
-      discount_pct: 0,
+      discount: optsDiscount,
+      discount_pct: optsDiscountPct,
       notes: sale.athugasemdir || '',
       customer: {
         nafn: sale.customer_nafn || '',
