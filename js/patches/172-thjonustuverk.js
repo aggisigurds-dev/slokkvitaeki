@@ -285,7 +285,11 @@
     const main = document.getElementById('tv-main');
     if (!main) return;
     refreshImpSet();
-    await ensureCustCache(_state.cases);
+    const impIds = Array.from(_impSet);
+    await Promise.all([
+      ensureCustCache(_state.cases),
+      ensureImpNameCache(impIds)
+    ]);
 
     // 2026-05-21: primary sort = importance DESC (red on top), secondary =
     // updated_at DESC (newest first). Lokið cases sink regardless so closed
@@ -378,6 +382,7 @@
                     (filter === 'all' ? 'Engin mál enn — smelltu „+ Nýtt mál" til að byrja.' : 'Engin mál með þessa stöðu.') +
                   '</div>') +
             '</div>'}
+        ${impSectionHtml(impIds)}
       </div>`;
 
     main.querySelector('#_tv-new').addEventListener('click', () => openEditor(null));
@@ -405,6 +410,12 @@
       if (e.target.closest('._tv-del')) return;
       const id = r.dataset.id;
       openEditor(_state.cases.find(c => c.id === id));
+    }));
+    main.querySelectorAll('._tv-imp-jump').forEach(b => b.addEventListener('click', () => {
+      const id = +b.dataset.id;
+      if (!id) return;
+      if (window._openCompanySafe) window._openCompanySafe(id);
+      else if (window.Companies && Companies.openDetail) Companies.openDetail(id);
     }));
     main.querySelectorAll('._tv-del').forEach(b => b.addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -464,17 +475,44 @@
     return _custCache.get(key) || null;
   }
   function companyNoteBox(c, opts) {
-    const cust = getCust(c);
-    if (!cust) return '';
-    const note = (cust.athugasemdir || '').trim();
-    const imp = isImportant(c.customer_id);
-    if (!note && !imp) return '';
-    const clamp = opts && opts.clamp ? ('display:-webkit-box;-webkit-line-clamp:' + opts.clamp + ';-webkit-box-orient:vertical;overflow:hidden;') : '';
-    const tone = imp ? { bg:'#fef3c7', bd:'#fde68a', label:'⚠ Mikilvægt athugasemd' }
-                     : { bg:'#f8fafc', bd:'#cbd5e1', label:'📝 Athugasemd frá fyrirtæki' };
-    return '<div style="margin-top:6px;padding:6px 10px;background:' + tone.bg + ';border:1px ' + (imp ? 'solid' : 'dashed') + ' ' + tone.bd + ';border-radius:5px">' +
-      '<div style="font-size:9.5px;font-weight:700;color:' + (imp ? '#92400e' : '#64748b') + ';text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px">' + tone.label + '</div>' +
-      '<div style="font-size:11.5px;color:#0f172a;line-height:1.45;white-space:pre-wrap;' + clamp + '">' + esc(note || '(engar athugasemdir á fyrirtæki)') + '</div>' +
+    // 2026-05-21: per-case company-notes box retired — Agnar said the
+    // athugasemdir data often isn't accurate. We now show a clean list of
+    // Mikilvægt companies at the bottom of the page instead (renderImpSection).
+    return '';
+  }
+
+  // ── Mikilvæg fyrirtæki section (bottom of the page) ─────────────────────
+  // Loads names for every id in AppSettings.tilkynningar.important_company_ids
+  // and renders a row of clickable chips. Click → jumps to the company
+  // profile. Lookups batched into a tiny cache so re-renders are cheap.
+  const _impNames = new Map();
+  async function ensureImpNameCache(ids) {
+    const SB = getSB();
+    if (!SB) return;
+    const want = ids.filter(id => !_impNames.has(+id));
+    if (!want.length) return;
+    const [fy, vi] = await Promise.all([
+      SB.from('fyrirtaeki').select('id,nafn').in('id', want),
+      SB.from('vidskiptavinir').select('id,nafn').in('id', want)
+    ]);
+    (fy.data || []).forEach(r => { if (!_impNames.has(+r.id)) _impNames.set(+r.id, { id: +r.id, nafn: r.nafn, source: 'fyrirtaeki' }); });
+    (vi.data || []).forEach(r => { if (!_impNames.has(+r.id)) _impNames.set(+r.id, { id: +r.id, nafn: r.nafn, source: 'vidskiptavinir' }); });
+  }
+  function impSectionHtml(ids) {
+    if (!ids.length) return '';
+    const chips = ids.map(id => {
+      const meta = _impNames.get(+id);
+      const label = meta ? meta.nafn : ('co#' + id);
+      return '<button class="_tv-imp-jump" data-id="' + id + '" type="button" ' +
+        'style="display:inline-flex;align-items:center;gap:5px;padding:6px 12px;background:#fef3c7;border:1px solid #fde68a;color:#92400e;border-radius:99px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;margin:3px 4px 3px 0">' +
+        '⚠ ' + esc(label) + ' <span style="opacity:.6;font-size:10px">↗</span></button>';
+    }).join('');
+    return '<div style="margin-top:32px;padding-top:18px;border-top:1px solid #e2e8f0">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+        '<h2 style="margin:0;font-size:14px;color:#92400e;font-weight:700">⚠ Mikilvæg fyrirtæki</h2>' +
+        '<span style="font-size:11px;color:#94a3b8">' + ids.length + ' merkt</span>' +
+      '</div>' +
+      '<div style="display:flex;flex-wrap:wrap;align-items:center">' + chips + '</div>' +
     '</div>';
   }
   function mikilvaegtBadge() {
@@ -550,7 +588,6 @@
           </div>
         </div>
         ${c.body ? `<div style="font-size:12.5px;color:#475569;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;white-space:pre-wrap">${esc(c.body)}</div>` : ''}
-        ${companyNoteBox(c, {clamp:3})}
         ${linkChipsHtml || extra ? `<div style="margin-top:7px">${linkChipsHtml}${extra}</div>` : ''}
       </div>`;
   }
@@ -585,7 +622,6 @@
         ${(Array.isArray(c.tags) && c.tags.length) ? `<div style="display:flex;gap:4px;flex-wrap:wrap">${caseTagsHtml(c, {small:true})}</div>` : ''}
         ${c.body ? `<div style="font-size:12.5px;color:#475569;line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap">${esc(c.body)}</div>` : '<div style="font-size:12px;color:#cbd5e1;font-style:italic">(engin athugasemd)</div>'}
         <div style="font-size:12px;color:#0f172a">${caseCustomerHtml(c)}</div>
-        ${companyNoteBox(c, {clamp:4})}
         ${(tilbodChip || linksChip) ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:auto">${tilbodChip}${linksChip}</div>` : ''}
         <div style="display:flex;justify-content:flex-end;margin-top:-4px">
           <button class="_tv-del" data-id="${esc(c.id)}" type="button" title="Eyða" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:16px;padding:0 2px;line-height:1">×</button>
