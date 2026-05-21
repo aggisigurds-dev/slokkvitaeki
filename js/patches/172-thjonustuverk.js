@@ -167,6 +167,45 @@
     return '<span title="Mikilvægi: ' + def.label + '" style="font-size:10px;font-weight:700;background:' + def.soft + ';color:' + def.color + ';padding:2px 7px;border-radius:99px;display:inline-flex;align-items:center;gap:3px">' + def.emoji + ' ' + def.label + '</span>';
   }
 
+  // ── Attachments (Supabase Storage in the `samningar` bucket, same one
+  //    patch 145's Verkefni uses; path prefix keeps the two separate).
+  const ATTACH_BUCKET = 'samningar';
+  function fmtSize(b) {
+    if (!b) return '';
+    if (b < 1024) return b + ' B';
+    if (b < 1024 * 1024) return (b / 1024).toFixed(1) + ' KB';
+    return (b / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+  async function uploadAttachment(caseId, file, label) {
+    const SB = getSB();
+    if (!SB) throw new Error('Engin gagnabankatenging');
+    if (file.size > 20 * 1024 * 1024) throw new Error('Skráin er stærri en 20 MB');
+    const safe = (file.name || (label || 'attachment')).replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = 'thjonustuverk/' + caseId + '/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '-' + safe;
+    const r = await SB.storage.from(ATTACH_BUCKET).upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type || 'application/octet-stream'
+    });
+    if (r.error) throw r.error;
+    const urlR = SB.storage.from(ATTACH_BUCKET).getPublicUrl(path);
+    return {
+      id: uid(),
+      name: file.name || safe,
+      size: file.size,
+      mime: file.type || '',
+      path,
+      url: urlR.data.publicUrl,
+      created_at: nowIso()
+    };
+  }
+  async function deleteAttachment(att) {
+    const SB = getSB();
+    if (!SB || !att || !att.path) return;
+    try { await SB.storage.from(ATTACH_BUCKET).remove([att.path]); } catch (_) {}
+  }
+  function isImage(att) { return /^image\//.test(att.mime || ''); }
+
   // ── Tags ─────────────────────────────────────────────────────────────────
   // Categorical tags users can stick on a case. Each carries its own color
   // so the chip strip on a row reads at a glance ("kvörtun on a red card =
@@ -529,7 +568,11 @@
     const linksChip = linksN > 0
       ? '<span style="font-size:11px;background:#f1f5f9;color:#475569;padding:2px 7px;border-radius:99px;font-weight:600">🔗 ' + linksN + '</span>'
       : '';
-    return tilbodChip + linksChip;
+    const attN = Array.isArray(c.attachments) ? c.attachments.length : 0;
+    const attChip = attN > 0
+      ? '<span style="font-size:11px;background:#dbeafe;color:#1e40af;padding:2px 7px;border-radius:99px;font-weight:600">📎 ' + attN + '</span>'
+      : '';
+    return tilbodChip + linksChip + attChip;
   }
   function caseCustomerHtml(c) {
     if (!c.customer_nafn) return '<span style="color:#94a3b8;font-style:italic">— (engin tenging)</span>';
@@ -569,20 +612,22 @@
     const acc = impAccent(c);
     const bgRule = acc.gradient === '#fff' ? '' : 'background:' + acc.gradient + ';';
     const leftBorder = acc.gradient === '#fff' ? '' : 'border-left:4px solid ' + acc.border + ';';
+    // 2026-05-21: thick-list layout — title stays on the left; ALL the
+    // badges/tags/chips collapse to the right end of the title row. The
+    // importance pill (Áríðandi etc.) is intentionally hidden here because
+    // the row already carries its color cue via the left border + gradient,
+    // so showing the pill too is redundant.
     return `<div class="_tv-row" data-id="${esc(c.id)}" style="padding:14px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;${bgRule}${leftBorder}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px">
           <div style="min-width:0;flex:1">
-            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
-              ${impPill(c)}
-              ${statusBadge(c.status || 'ny')}
-              ${caseTagsHtml(c, {small:true})}
-              <span style="font-weight:700;color:#0f172a;font-size:14px">${esc(c.title || '(án titils)')}</span>
-            </div>
+            <div style="font-weight:700;color:#0f172a;font-size:14px;line-height:1.3">${esc(c.title || '(án titils)')}</div>
             <div style="font-size:11.5px;color:#64748b;margin-top:3px">
               ${esc(fmtDate(c.updated_at || c.created_at))} · ${caseCustomerHtml(c)}
             </div>
           </div>
-          <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+          <div style="display:flex;gap:4px;align-items:center;flex-shrink:0;flex-wrap:wrap;justify-content:flex-end;max-width:55%">
+            ${statusBadge(c.status || 'ny')}
+            ${caseTagsHtml(c, {small:true})}
             ${caseChipsHtml(c)}
             <button class="_tv-del" data-id="${esc(c.id)}" type="button" title="Eyða" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:18px;padding:0 4px;line-height:1">×</button>
           </div>
@@ -638,9 +683,11 @@
       tags: [],
       customer_id: null, customer_nafn: '',
       links: [],
+      attachments: [],
       tilbod: { items: [], discount_pct: 0 },
       created_at: nowIso(), updated_at: nowIso()
     };
+    if (!Array.isArray(c.attachments)) c.attachments = [];
     const dlg = document.createElement('div');
     dlg.id = '_tv-editor';
     dlg.style.cssText = 'position:fixed;inset:0;z-index:100070;background:rgba(15,23,42,0.65);display:flex;align-items:center;justify-content:center;padding:18px';
@@ -688,8 +735,20 @@
 
       // Body / notes
       '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Athugasemd / pósturinn</label>' +
-      '<textarea id="_tv-body-txt" rows="5" placeholder="Límdu inn pósti eða skrifaðu punkta…" ' +
-        'style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;margin-bottom:14px">' + esc(c.body || '') + '</textarea>' +
+      '<textarea id="_tv-body-txt" rows="5" placeholder="Límdu inn pósti eða skrifaðu punkta… (Ctrl/Cmd+V með mynd festir hana)" ' +
+        'style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;margin-bottom:10px">' + esc(c.body || '') + '</textarea>' +
+
+      // Attachments section — pick / drag-drop / paste-image
+      '<div id="_tv-att-zone" style="border:1.5px dashed #cbd5e1;border-radius:8px;padding:10px 12px;background:#f8fafc;margin-bottom:14px;transition:border-color .15s,background .15s">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">' +
+          '<span style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">📎 Viðhengi</span>' +
+          '<span style="font-size:10.5px;color:#94a3b8">Dragðu inn skrár · límdu skjáskot · eða smelltu Velja</span>' +
+          '<label style="margin-left:auto;padding:5px 11px;background:#fff;border:1px solid #cbd5e1;color:#475569;border-radius:6px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">' +
+            '📂 Velja skrár <input id="_tv-att-file" type="file" multiple style="display:none">' +
+          '</label>' +
+        '</div>' +
+        '<div id="_tv-att-list" style="display:flex;flex-wrap:wrap;gap:6px"></div>' +
+      '</div>' +
 
       // Customer link section
       '<div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:12px 14px;margin-bottom:14px">' +
@@ -758,6 +817,112 @@
     // Wire inputs
     body.querySelector('#_tv-title').addEventListener('input', e => { c.title = e.target.value; });
     body.querySelector('#_tv-body-txt').addEventListener('input', e => { c.body = e.target.value; });
+
+    // ── Attachments: render + wire drop/paste/pick handlers ──────────────
+    function renderAttachments() {
+      const list = body.querySelector('#_tv-att-list');
+      if (!list) return;
+      if (!c.attachments.length) {
+        list.innerHTML = '<span style="font-size:11px;color:#cbd5e1;font-style:italic;padding:2px 4px">Engin viðhengi enn</span>';
+        return;
+      }
+      list.innerHTML = c.attachments.map((att, i) => {
+        const isImg = isImage(att);
+        const thumb = isImg
+          ? '<img src="' + esc(att.url) + '" alt="' + esc(att.name || '') + '" style="height:64px;max-width:120px;object-fit:cover;border-radius:5px;display:block">'
+          : '<div style="width:64px;height:64px;border-radius:5px;background:#fff;border:1px solid #cbd5e1;display:flex;align-items:center;justify-content:center;font-size:24px;color:#64748b">📄</div>';
+        return '<div data-i="' + i + '" style="position:relative;background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:5px;display:flex;flex-direction:column;align-items:center;gap:4px;width:130px">' +
+          '<a href="' + esc(att.url) + '" target="_blank" rel="noopener" style="text-decoration:none">' + thumb + '</a>' +
+          '<div style="font-size:10px;color:#475569;text-align:center;width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="' + esc(att.name || '') + '">' + esc(att.name || '—') + '</div>' +
+          '<div style="font-size:9.5px;color:#94a3b8">' + esc(fmtSize(att.size)) + '</div>' +
+          '<button class="_tv-att-rm" data-i="' + i + '" type="button" title="Fjarlægja" style="position:absolute;top:-6px;right:-6px;background:#fff;border:1px solid #fecaca;color:#dc2626;border-radius:99px;width:20px;height:20px;cursor:pointer;font-size:12px;line-height:1;padding:0">×</button>' +
+        '</div>';
+      }).join('');
+      list.querySelectorAll('._tv-att-rm').forEach(b => b.addEventListener('click', async e => {
+        e.preventDefault();
+        const i = +b.dataset.i;
+        const att = c.attachments[i];
+        if (!att) return;
+        if (!confirm('Fjarlægja viðhengið „' + (att.name || 'skrá') + '"?')) return;
+        await deleteAttachment(att);
+        c.attachments.splice(i, 1);
+        renderAttachments();
+      }));
+    }
+    renderAttachments();
+
+    async function handleFiles(files) {
+      if (!files || !files.length) return;
+      const zone = body.querySelector('#_tv-att-zone');
+      const orig = zone ? zone.style.borderColor : null;
+      if (zone) zone.style.borderColor = '#7c3aed';
+      for (const f of Array.from(files)) {
+        try {
+          const att = await uploadAttachment(c.id, f);
+          c.attachments.push(att);
+          renderAttachments();
+        } catch (e) {
+          alert('Tókst ekki að hlaða upp „' + (f.name || 'skrá') + '": ' + (e.message || e));
+        }
+      }
+      if (zone && orig != null) zone.style.borderColor = orig;
+    }
+
+    // 1) File picker
+    const fileInp = body.querySelector('#_tv-att-file');
+    if (fileInp) fileInp.addEventListener('change', e => {
+      handleFiles(e.target.files);
+      fileInp.value = '';
+    });
+
+    // 2) Drag & drop — into the attachment zone OR over the whole editor body
+    const zone = body.querySelector('#_tv-att-zone');
+    const dropTargets = [zone, body];
+    dropTargets.forEach(el => {
+      if (!el) return;
+      el.addEventListener('dragover', e => {
+        if (!e.dataTransfer || !Array.from(e.dataTransfer.types || []).includes('Files')) return;
+        e.preventDefault();
+        if (zone) { zone.style.borderColor = '#7c3aed'; zone.style.background = '#faf5ff'; }
+      });
+      el.addEventListener('dragleave', e => {
+        if (!zone) return;
+        zone.style.borderColor = '#cbd5e1';
+        zone.style.background = '#f8fafc';
+      });
+      el.addEventListener('drop', e => {
+        if (!e.dataTransfer || !e.dataTransfer.files || !e.dataTransfer.files.length) return;
+        e.preventDefault();
+        if (zone) { zone.style.borderColor = '#cbd5e1'; zone.style.background = '#f8fafc'; }
+        handleFiles(e.dataTransfer.files);
+      });
+    });
+
+    // 3) Paste — works while focused in title, body, or even on the editor
+    const pasteHandler = e => {
+      const items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      const files = [];
+      for (const it of items) {
+        if (it.kind === 'file') {
+          const f = it.getAsFile();
+          if (f) {
+            // Give pasted screenshots a friendlier name than "image.png"
+            if (!f.name || f.name === 'image.png') {
+              try {
+                Object.defineProperty(f, 'name', { value: 'skjáskot-' + new Date().toISOString().slice(0,16).replace(/[:T]/g,'-') + '.png' });
+              } catch (_) {}
+            }
+            files.push(f);
+          }
+        }
+      }
+      if (files.length) {
+        e.preventDefault();
+        handleFiles(files);
+      }
+    };
+    body.addEventListener('paste', pasteHandler);
     body.querySelector('#_tv-status').addEventListener('change', e => { c.status = e.target.value; });
     // Tag toggles
     body.querySelectorAll('._tv-tag-btn').forEach(btn => {
