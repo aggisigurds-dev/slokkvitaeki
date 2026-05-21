@@ -71,6 +71,7 @@
   const ORDER = [
     ['Verkdagbók'],
     ['Verkefni'],
+    ['Þjónustuverk'],
     ['Fletta upp'],
     SEP,
     ['Yfirlit'],
