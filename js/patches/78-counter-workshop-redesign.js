@@ -397,16 +397,57 @@
     }
     const safeKey = key.replace(/'/g, "\\'");
     return `<div onclick="Workshop.toggleCo('${safeKey}')" style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;cursor:pointer">` +
-      '<div style="padding:10px 12px;display:flex;align-items:center;gap:8px">' +
-        `<span style="color:#64748b;font-size:13px;width:14px">${caret}</span>` +
-        '<div style="min-width:0;flex:1">' +
+      '<div style="padding:9px 10px;display:flex;align-items:center;gap:8px">' +
+        `<span style="color:#64748b;font-size:13px;width:14px;flex-shrink:0">${caret}</span>` +
+        '<div style="min-width:0;flex-shrink:1;width:140px">' +
           `<div style="font-size:13px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(co.name)}</div>` +
           `<div style="font-size:11px;color:#64748b">${co.jobs.length} verk · ${co.doneUnits}/${co.totalUnits} lokið</div>` +
         '</div>' +
+        // 2026-05-21: per-verk tile strip — at-a-glance status of each job in
+        // the group without expanding. Click a tile to jump straight to that
+        // job's detail. Status colors:  ready → green, in-progress → amber,
+        // received/none → grey outline. Mini progress bar at the bottom.
+        renderJobTiles(co.jobs) +
       '</div>' +
       `<div style="margin:0 12px 10px;height:4px;background:#f1f5f9;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct === 100 ? '#10b981' : '#f59e0b'};"></div></div>` +
       inner +
     '</div>';
+  }
+
+  // ── Per-verk tile strip (collapsed customer-group preview) ──────────────
+  // Returns a flex-wrap row of small tiles, one per job. Each tile shows the
+  // first unit's type as a tiny label, color-coded by job status, with a 3-px
+  // progress bar at the bottom (% of units done). Click = jump to that job.
+  function renderJobTiles(jobs) {
+    if (!jobs || !jobs.length) return '';
+    const tiles = jobs.map(j => {
+      const units = j.units || [];
+      const done = units.filter(u => u.status === 'done').length;
+      const total = units.length;
+      const pct = total ? Math.round(done / total * 100) : 0;
+      const isReady = j.status === 'ready';
+      const isInProgress = j.status === 'in_progress' || j.status === 'inprogress';
+      const border = isReady ? '#16a34a' : (isInProgress ? '#f59e0b' : '#cbd5e1');
+      const bg     = isReady ? '#f0fdf4' : (isInProgress ? '#fffbeb' : '#fff');
+      const txtCol = isReady ? '#166534' : (isInProgress ? '#92400e' : '#475569');
+      // First unit hint: type family + count if 2+ units
+      const firstType = units[0] ? String(units[0].type || '').split(/\s+/)[0] : '';
+      const label = total > 1 ? (firstType ? firstType + ' ×' + total : total + 'tk') : (firstType || '–');
+      return '<div onclick="event.stopPropagation();Workshop.select(' + j.id + ')" ' +
+        'title="' + esc(dnum(j.num)) + ' — ' + done + '/' + total + ' lokið" ' +
+        'style="cursor:pointer;position:relative;flex-shrink:0;' +
+          'min-width:62px;height:38px;padding:4px 7px 7px;' +
+          'border:1.5px solid ' + border + ';border-radius:6px;' +
+          'background:' + bg + ';' +
+          'display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+          'font-size:10.5px;font-weight:600;color:' + txtCol + ';line-height:1.15;overflow:hidden">' +
+        '<div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%">' + esc(label) + '</div>' +
+        '<div style="position:absolute;left:0;right:0;bottom:0;height:3px;background:' + (isReady ? '#bbf7d0' : '#f1f5f9') + '">' +
+          '<div style="height:100%;width:' + pct + '%;background:' + (pct === 100 ? '#16a34a' : '#f59e0b') + '"></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    return '<div style="display:flex;flex-wrap:wrap;gap:5px;flex:1;min-width:0">' + tiles + '</div>';
   }
 
   // Inject CSS override: app.css forces #view-counter.active and #view-workshop.active
