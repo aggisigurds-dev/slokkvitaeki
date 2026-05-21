@@ -125,17 +125,17 @@
     const custLine = esc(co.nafn || '—') + addrLine + ktLine;
 
     // 8 category rows, all always shown. Empty count → "x".
-    // 2026-05-20: fixed-width centered table — every row left-aligned so the
-    // labels stack cleanly. Previous mixed alignment (right / center / left)
-    // produced a jagged look that read as "out of line".
+    // 2026-05-21: pulled the three columns ~30% closer. Each cell trimmed
+    // to 3px horizontal padding on the inner sides so Fjöldi/Í lagi hug
+    // the label tightly. Text size + vertical padding unchanged.
     const rowsHtml = CATEGORIES.map(c => {
       const n = counts[c.k] || 0;
       const fjoldi = n > 0 ? String(n) : 'x';
       const ilagi  = n > 0 ? 'Já'      : 'x';
       return `<tr>
-        <td style="padding:7px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;white-space:nowrap">${esc(c.label)}</td>
-        <td style="padding:7px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;white-space:nowrap;width:1%"><strong>Fjöldi:</strong> ${esc(fjoldi)}</td>
-        <td style="padding:7px 14px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;white-space:nowrap;width:1%"><strong>Í lagi:</strong> ${esc(ilagi)}</td>
+        <td style="padding:7px 4px 7px 8px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;white-space:nowrap">${esc(c.label)}</td>
+        <td style="padding:7px 4px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;white-space:nowrap;width:1%"><strong>Fjöldi:</strong> ${esc(fjoldi)}</td>
+        <td style="padding:7px 8px 7px 4px;font-size:13px;color:#0f172a;border-bottom:1px solid #e2e8f0;white-space:nowrap;width:1%"><strong>Í lagi:</strong> ${esc(ilagi)}</td>
       </tr>`;
     }).join('');
 
