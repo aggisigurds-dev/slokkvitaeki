@@ -50,7 +50,12 @@
   function nowIso() { return new Date().toISOString(); }
 
   // ── State ───────────────────────────────────────────────────────────────
-  let _state = { cases: [], filter: 'all' };
+  const VIEW_KEY = '_tv_view_v1';
+  function loadView() {
+    try { return localStorage.getItem(VIEW_KEY) || 'list'; } catch (_) { return 'list'; }
+  }
+  function saveView(v) { try { localStorage.setItem(VIEW_KEY, v); } catch (_) {} }
+  let _state = { cases: [], filter: 'all', view: loadView() };
   function load() {
     const v = (window.AppSettings && AppSettings.path && AppSettings.path(STORAGE_KEY)) || {};
     _state.cases = Array.isArray(v.cases) ? v.cases : [];
@@ -238,7 +243,22 @@
             <h1 style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">🛠 Þjónustuverk</h1>
             <div style="font-size:12px;color:#64748b;margin-top:2px">Tilboð, fyrirspurnir og póstar sem þarf að fylgja eftir</div>
           </div>
-          <button id="_tv-new" type="button" style="padding:9px 16px;background:#7c3aed;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">+ Nýtt mál</button>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <div style="display:inline-flex;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;background:#fff">
+              ${[
+                ['list',  '📋', 'Þéttur listi'],
+                ['thick', '📰', 'Rúmgóður listi'],
+                ['cards', '▦',  'Spjöld']
+              ].map(([k, ic, lbl]) => {
+                const on = _state.view === k;
+                return '<button class="_tv-view" data-v="' + k + '" type="button" title="' + esc(lbl) + '" ' +
+                  'style="padding:7px 11px;border:none;background:' + (on ? '#0f172a' : '#fff') +
+                  ';color:' + (on ? '#fff' : '#475569') + ';cursor:pointer;font:inherit;font-size:13px;font-weight:600;border-right:1px solid #e2e8f0">' +
+                  ic + '</button>';
+              }).join('').replace(/border-right:1px solid #e2e8f0">([^<]*)<\/button>$/, '">$1</button>')}
+            </div>
+            <button id="_tv-new" type="button" style="padding:9px 16px;background:#7c3aed;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">+ Nýtt mál</button>
+          </div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
           ${[
@@ -255,17 +275,29 @@
               esc(lbl) + ' <span style="opacity:.65;font-weight:500">' + n + '</span></button>';
           }).join('')}
         </div>
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
-          ${filtered.length ? filtered.map(rowHtml).join('') :
-            '<div style="padding:40px;text-align:center;color:#94a3b8;font-style:italic">' +
-              (filter === 'all' ? 'Engin mál enn — smelltu „+ Nýtt mál" til að byrja.' : 'Engin mál með þessa stöðu.') +
+        ${_state.view === 'cards'
+          ? (filtered.length
+              ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">' + filtered.map(cardHtml).join('') + '</div>'
+              : '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">' +
+                  (filter === 'all' ? 'Engin mál enn — smelltu „+ Nýtt mál" til að byrja.' : 'Engin mál með þessa stöðu.') +
+                '</div>')
+          : '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">' +
+              (filtered.length
+                ? filtered.map(_state.view === 'thick' ? thickRowHtml : rowHtml).join('')
+                : '<div style="padding:40px;text-align:center;color:#94a3b8;font-style:italic">' +
+                    (filter === 'all' ? 'Engin mál enn — smelltu „+ Nýtt mál" til að byrja.' : 'Engin mál með þessa stöðu.') +
+                  '</div>') +
             '</div>'}
-        </div>
       </div>`;
 
     main.querySelector('#_tv-new').addEventListener('click', () => openEditor(null));
     main.querySelectorAll('._tv-chip').forEach(c => c.addEventListener('click', () => {
       _state.filter = c.dataset.k; render();
+    }));
+    main.querySelectorAll('._tv-view').forEach(b => b.addEventListener('click', () => {
+      _state.view = b.dataset.v;
+      saveView(_state.view);
+      render();
     }));
     main.querySelectorAll('._tv-row').forEach(r => r.addEventListener('click', e => {
       if (e.target.closest('._tv-del')) return;
@@ -286,7 +318,8 @@
     refreshBadge();
   }
 
-  function rowHtml(c) {
+  // Shared helpers used by all three view renderers
+  function caseChipsHtml(c) {
     const t = computeTilbod(c.tilbod);
     const tilbodChip = t.total > 0
       ? '<span style="font-size:11px;background:#ede9fe;color:#6b21a8;padding:2px 8px;border-radius:99px;font-weight:700">💰 ' + fmtKr(t.total) + '</span>'
@@ -295,19 +328,86 @@
     const linksChip = linksN > 0
       ? '<span style="font-size:11px;background:#f1f5f9;color:#475569;padding:2px 7px;border-radius:99px;font-weight:600">🔗 ' + linksN + '</span>'
       : '';
-    const custLabel = c.customer_nafn
+    return tilbodChip + linksChip;
+  }
+  function caseCustomerHtml(c) {
+    return c.customer_nafn
       ? '<span style="color:#0f172a;font-weight:600">' + esc(c.customer_nafn) + '</span>'
       : '<span style="color:#94a3b8;font-style:italic">— (engin tenging)</span>';
+  }
+
+  // 1) Compact list — single line, ellipsised body (the default view)
+  function rowHtml(c) {
     return `<div class="_tv-row" data-id="${esc(c.id)}" style="display:grid;grid-template-columns:90px 1fr 220px 110px 90px 40px;gap:12px;padding:11px 14px;border-bottom:1px solid #f1f5f9;cursor:pointer;align-items:center;font-size:13px" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
         <div style="color:#64748b;font-size:11.5px">${esc(fmtDate(c.updated_at || c.created_at))}</div>
         <div style="min-width:0">
           <div style="font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.title || '(án titils)')}</div>
           <div style="font-size:11px;color:#64748b;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((c.body || '').slice(0, 90))}</div>
         </div>
-        <div>${custLabel}</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">${tilbodChip}${linksChip}</div>
+        <div>${caseCustomerHtml(c)}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap">${caseChipsHtml(c)}</div>
         <div>${statusBadge(c.status || 'ny')}</div>
         <button class="_tv-del" data-id="${esc(c.id)}" type="button" title="Eyða" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:18px;padding:0 4px;line-height:1">×</button>
+      </div>`;
+  }
+
+  // 2) Thick list — taller rows, body wrapped to 2-3 lines, link chips
+  //    rendered inline so the user sees the linked items without expanding.
+  function thickRowHtml(c) {
+    const linkChipsHtml = (Array.isArray(c.links) ? c.links.slice(0, 5) : [])
+      .map(l => {
+        const ic = { gmail: '📧', sale: '🧾', company: '🏢', unit: '🧯', url: '🔗' }[l.type] || '🔗';
+        return '<span style="font-size:10.5px;background:#f1f5f9;color:#475569;padding:2px 7px;border-radius:99px;font-weight:600;margin-right:4px">' +
+          ic + ' ' + esc(String(l.label).slice(0, 24)) + '</span>';
+      }).join('');
+    const extra = (Array.isArray(c.links) && c.links.length > 5)
+      ? '<span style="font-size:10.5px;color:#94a3b8">+' + (c.links.length - 5) + '</span>' : '';
+    return `<div class="_tv-row" data-id="${esc(c.id)}" style="padding:14px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background=''">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px">
+          <div style="min-width:0;flex:1">
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              ${statusBadge(c.status || 'ny')}
+              <span style="font-weight:700;color:#0f172a;font-size:14px">${esc(c.title || '(án titils)')}</span>
+            </div>
+            <div style="font-size:11.5px;color:#64748b;margin-top:3px">
+              ${esc(fmtDate(c.updated_at || c.created_at))} · ${caseCustomerHtml(c)}
+            </div>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;flex-shrink:0">
+            ${caseChipsHtml(c)}
+            <button class="_tv-del" data-id="${esc(c.id)}" type="button" title="Eyða" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:18px;padding:0 4px;line-height:1">×</button>
+          </div>
+        </div>
+        ${c.body ? `<div style="font-size:12.5px;color:#475569;line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-top:4px;white-space:pre-wrap">${esc(c.body)}</div>` : ''}
+        ${linkChipsHtml || extra ? `<div style="margin-top:7px">${linkChipsHtml}${extra}</div>` : ''}
+      </div>`;
+  }
+
+  // 3) Card view — masonry-friendly tiles with status accent + truncated body
+  function cardHtml(c) {
+    const def = STATUSES.find(s => s.v === (c.status || 'ny')) || STATUSES[0];
+    const linkN = Array.isArray(c.links) ? c.links.length : 0;
+    const linksChip = linkN > 0
+      ? '<span style="font-size:11px;background:#f1f5f9;color:#475569;padding:2px 8px;border-radius:99px;font-weight:600">🔗 ' + linkN + '</span>'
+      : '';
+    const t = computeTilbod(c.tilbod);
+    const tilbodChip = t.total > 0
+      ? '<span style="font-size:11px;background:#ede9fe;color:#6b21a8;padding:2px 8px;border-radius:99px;font-weight:700">💰 ' + fmtKr(t.total) + '</span>'
+      : '';
+    return `<div class="_tv-row" data-id="${esc(c.id)}" style="background:#fff;border:1px solid #e2e8f0;border-left:4px solid ${def.color};border-radius:10px;padding:14px 16px;cursor:pointer;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:transform .12s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="min-width:0">
+            <div style="font-weight:700;color:#0f172a;font-size:14px;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${esc(c.title || '(án titils)')}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:2px">${esc(fmtDate(c.updated_at || c.created_at))}</div>
+          </div>
+          ${statusBadge(c.status || 'ny')}
+        </div>
+        ${c.body ? `<div style="font-size:12.5px;color:#475569;line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:pre-wrap">${esc(c.body)}</div>` : '<div style="font-size:12px;color:#cbd5e1;font-style:italic">(engin athugasemd)</div>'}
+        <div style="font-size:12px;color:#0f172a">${caseCustomerHtml(c)}</div>
+        ${(tilbodChip || linksChip) ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:auto">${tilbodChip}${linksChip}</div>` : ''}
+        <div style="display:flex;justify-content:flex-end;margin-top:-4px">
+          <button class="_tv-del" data-id="${esc(c.id)}" type="button" title="Eyða" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:16px;padding:0 2px;line-height:1">×</button>
+        </div>
       </div>`;
   }
 
