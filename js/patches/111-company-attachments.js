@@ -153,6 +153,9 @@
     return m ? +m[1] : null;
   }
 
+  // 2026-05-21: small flag so our own moveToBottom() doesn't bounce back
+  // through the MutationObserver and into patch 129's observer in a loop.
+  let _moving = false;
   function injectSection() {
     const main = document.getElementById('companies-main');
     if (!main) return;
@@ -160,10 +163,15 @@
     if (!coId) return;
     const existing = main.querySelector('._cat-section');
     if (existing) {
-      // 2026-05-20: already injected — make sure it stays at the very bottom
-      // of companies-main even when later patches (heildarkostnaður, notes,
-      // visit-workflow) append their own sections.
-      if (main.lastElementChild !== existing) main.appendChild(existing);
+      // already injected — keep at the very bottom even when later patches
+      // (heildarkostnaður, notes, visit-workflow) append their own sections.
+      if (main.lastElementChild !== existing) {
+        _moving = true;
+        main.appendChild(existing);
+        // Clear the flag after the current microtask so the MutationObserver
+        // callback (queued sync by appendChild) sees _moving=true and skips.
+        setTimeout(() => { _moving = false; }, 0);
+      }
       return;
     }
 
@@ -391,10 +399,27 @@
     const main = document.getElementById('companies-main');
     if (!main) { setTimeout(attach, 800); return; }
     let _t = 0;
-    new MutationObserver(() => {
+    // 2026-05-21: narrowed scope + self-mutation guard + bigger debounce.
+    //   • childList only (no subtree): we just need to react when sections
+    //     are added/removed at the top level, not on every text-node update
+    //     inside _ctc-section that happens every keystroke or re-render.
+    //   • _moving guard: ignore the synthetic mutation produced by our own
+    //     "move to bottom" appendChild — otherwise that mutation triggers
+    //     patch 129's observer → re-render → moves things → triggers us →
+    //     re-append → loop. Killed responsiveness on the detail view.
+    //   • 600ms debounce (was 200ms): coalesces bursts of patches that
+    //     inject their sections in rapid succession.
+    new MutationObserver((muts) => {
+      if (_moving) return;
+      // Ignore mutations where only our own ._cat-section was added/removed
+      const ours = muts.every(m => {
+        const nodes = [].concat(Array.from(m.addedNodes), Array.from(m.removedNodes));
+        return nodes.length > 0 && nodes.every(n => n.classList && n.classList.contains('_cat-section'));
+      });
+      if (ours) return;
       clearTimeout(_t);
-      _t = setTimeout(injectSection, 200);
-    }).observe(main, { childList: true, subtree: true });
+      _t = setTimeout(injectSection, 600);
+    }).observe(main, { childList: true });
   }
   attach();
   setTimeout(injectSection, 1500);
