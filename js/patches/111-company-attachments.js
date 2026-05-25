@@ -439,7 +439,10 @@
   window.CompanyAttachments = {
     list: getCompanyAttachments,
     upload: uploadAttachment,
-    delete: deleteAttachment
+    delete: deleteAttachment,
+    openPreview: openPreview,
+    download: downloadFile,
+    getPublicUrl: getPublicUrl
   };
 
   console.log('[company-attachments] installed — 📎 Skjöl & skýrslur on company detail');

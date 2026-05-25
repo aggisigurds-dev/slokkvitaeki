@@ -779,18 +779,28 @@
               <div>
                 <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px">📎 Skjöl <span style="color:#94a3b8;font-weight:500">(${list.length})</span></div>
                 <div style="display:flex;flex-direction:column;gap:4px">
-                  ${sorted.map(a => {
-                    const url = a.drive_url || (a.drive_id ? 'https://drive.google.com/file/d/' + a.drive_id + '/view' : '#');
+                  ${sorted.map((a, idx) => {
+                    // Drive-link entries get a direct <a> opening Drive viewer.
+                    // Storage entries (have `path` but no drive_url/drive_id)
+                    // get a click handler that fetches a signed URL — patch 111
+                    // before this fix rendered href="#" which reloaded the SPA
+                    // back to the list view.
+                    const isStorage = !a.drive_url && !a.drive_id && a.path;
+                    const url = a.drive_url || (a.drive_id ? 'https://drive.google.com/file/d/' + a.drive_id + '/view' : null);
                     const icon = a.kind === 'samningur' ? '📜' : '🧾';
                     const yearTag = a.year ? `<span style="background:#f0fdf4;color:#15803d;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #bbf7d0;margin-left:6px">${a.year}</span>` : '';
                     const autoTag = a.auto_matched ? '<span style="color:#94a3b8;font-size:10px" title="Sjálfkrafa pörun">✦</span>' : '';
-                    return `<a href="${esc(url)}" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:8px;background:#fafafa;border:1px solid #f1f5f9;border-radius:6px;padding:6px 10px;text-decoration:none;color:#0f172a;font-size:11.5px;transition:background .1s" onmouseover="this.style.background='#fff';this.style.borderColor='#cbd5e1'" onmouseout="this.style.background='#fafafa';this.style.borderColor='#f1f5f9'">
+                    const inner = `
                       <span style="font-size:14px">${icon}</span>
                       <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.name || 'Skjal')}</span>
                       ${yearTag}
                       ${autoTag}
-                      <span style="color:#94a3b8;font-size:10px">↗</span>
-                    </a>`;
+                      <span style="color:#94a3b8;font-size:10px">↗</span>`;
+                    const baseStyle = "display:flex;align-items:center;gap:8px;background:#fafafa;border:1px solid #f1f5f9;border-radius:6px;padding:6px 10px;text-decoration:none;color:#0f172a;font-size:11.5px;transition:background .1s;text-align:left;width:100%;font:inherit;cursor:pointer";
+                    if (isStorage) {
+                      return `<button type="button" data-ars-att-co="${coId}" data-ars-att-idx="${idx}" style="${baseStyle}" onmouseover="this.style.background='#fff';this.style.borderColor='#cbd5e1'" onmouseout="this.style.background='#fafafa';this.style.borderColor='#f1f5f9'">${inner}</button>`;
+                    }
+                    return `<a href="${esc(url || '#')}" target="_blank" rel="noopener" style="${baseStyle}" onmouseover="this.style.background='#fff';this.style.borderColor='#cbd5e1'" onmouseout="this.style.background='#fafafa';this.style.borderColor='#f1f5f9'">${inner}</a>`;
                   }).join('')}
                 </div>
               </div>
@@ -835,6 +845,29 @@
       if (e.target === bg) bg.remove();
     });
     bg.querySelector('._ars-close').addEventListener('click', () => bg.remove());
+
+    // Delegated click for storage-backed attachments (those rendered as
+    // <button data-ars-att-co data-ars-att-idx> because they have a `path`
+    // but no drive_url/drive_id). Fetch signed URL via patch 111 and open
+    // in a new tab — never let it bubble up to whatever was eating clicks
+    // and reloading the SPA.
+    bg.addEventListener('click', async e => {
+      const btn = e.target.closest('button[data-ars-att-co][data-ars-att-idx]');
+      if (!btn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const coId = +btn.dataset.arsAttCo;
+      const idx  = +btn.dataset.arsAttIdx;
+      const attsAll = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('company_attachments')) || {};
+      const list = attsAll[String(coId)] || [];
+      const sorted = list.slice().sort((a, b) => (+b.year || 0) - (+a.year || 0));
+      const att = sorted[idx];
+      if (!att || !att.path) return;
+      const CA = window.CompanyAttachments;
+      const url = CA && CA.getPublicUrl ? await CA.getPublicUrl(att.path) : null;
+      if (!url) { alert('Gat ekki opnað skjalið.'); return; }
+      window.open(url, '_blank', 'noopener');
+    });
 
     // ── Contact info editing ────────────────────────────────────────────
     const infoView = bg.querySelector('._ars-info-view');
