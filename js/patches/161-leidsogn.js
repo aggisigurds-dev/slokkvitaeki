@@ -82,13 +82,18 @@
     const curMonth = today.getMonth() + 1;
     const m = +((ars||{}).inspect_month) || 0;
     const lastYr = +((ars||{}).last_year_inspected) || 0;
+    const fieldYr = +((ars||{}).field_inspected_year) || 0;
     const isDone = lastYr === curYear;
-    const isOverdue = !isDone && m > 0 && m < curMonth;
-    const isDueNow = !isDone && m === curMonth;
-    if (isDone)    return { key:'done',     color:'#1a7f4b', label:'Í lagi ' + curYear };
-    if (isOverdue) return { key:'overdue',  color:'#dc2626', label:'Útrunnið (' + (MONTHS_IS[m-1] || '?') + ')' };
-    if (isDueNow)  return { key:'duenow',   color:'#b45309', label:'Þessi mánuður' };
-    if (m > 0)     return { key:'scheduled',color:'#475569', label:'Á dagskrá: ' + (MONTHS_IS[m-1] || '?') };
+    // 2026-05-25: "Tekið út" intermediate state — physical inspection done
+    // but paperwork pending. Shows yellow on the map instead of red.
+    const isFieldOnly = !isDone && fieldYr === curYear;
+    const isOverdue = !isDone && !isFieldOnly && m > 0 && m < curMonth;
+    const isDueNow = !isDone && !isFieldOnly && m === curMonth;
+    if (isDone)        return { key:'done',        color:'#1a7f4b', label:'Í lagi ' + curYear };
+    if (isFieldOnly)   return { key:'in_progress', color:'#f59e0b', label:'Tekið út — skjöl eftir' };
+    if (isOverdue)     return { key:'overdue',     color:'#dc2626', label:'Útrunnið (' + (MONTHS_IS[m-1] || '?') + ')' };
+    if (isDueNow)      return { key:'duenow',      color:'#b45309', label:'Þessi mánuður' };
+    if (m > 0)         return { key:'scheduled',   color:'#475569', label:'Á dagskrá: ' + (MONTHS_IS[m-1] || '?') };
     return { key:'unknown', color:'#94a3b8', label:'Engin dagsetning' };
   }
 

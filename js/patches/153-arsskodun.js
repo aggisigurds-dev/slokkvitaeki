@@ -516,6 +516,32 @@
       else if (window.App && App.switchView) App.switchView('companies');
     }));
 
+    // "Tekið út" toggle (2026-05-25): operator can mark physical inspection done
+    // without finishing the paperwork. Persists to arsskodun_customers[co].field_inspected_year.
+    main.querySelectorAll('._ars-tu-toggle').forEach(btn => btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const coId = +btn.dataset.coId;
+      if (!coId) return;
+      if (!window.AppSettings || !window.AppSettings.save) { alert('Engar stillingar tiltækar'); return; }
+      const curYear = new Date().getFullYear();
+      const allMap = (window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
+      const entry = Object.assign({}, allMap[String(coId)] || {});
+      const isCurrentlyMarked = +entry.field_inspected_year === curYear;
+      if (isCurrentlyMarked) {
+        delete entry.field_inspected_year;
+      } else {
+        entry.field_inspected_year = curYear;
+      }
+      const map = Object.assign({}, allMap, { [String(coId)]: entry });
+      btn.disabled = true;
+      const ok = await window.AppSettings.save({ [STORAGE_KEY]: map });
+      if (!ok) { alert('Vista mistókst'); btn.disabled = false; return; }
+      // Update local cache so re-render picks up the change without a full reload
+      const c = _cache.list.find(x => x.id === coId);
+      if (c) c._ars = entry;
+      render();
+    }));
+
     if (keepSearchFocus) {
       const fresh = main.querySelector('#_ars-search');
       if (fresh) {
@@ -545,16 +571,26 @@
           const m = +ars.inspect_month || 0;
           const monthLabel = m >= 1 && m <= 12 ? MONTHS_IS[m-1] : '—';
           const lastYr = +ars.last_year_inspected || 0;
+          const fieldYr = +ars.field_inspected_year || 0;     // 2026-05-25: physical inspection done, paperwork pending
           const isDone = lastYr === curYear;
-          const isOverdue = !isDone && (m > 0 && m <= curMonth);
+          const isFieldOnly = !isDone && fieldYr === curYear; // Tekið út — skjöl eftir
+          const isOverdue = !isDone && !isFieldOnly && (m > 0 && m <= curMonth);
           const aminning = cleanAminning(ars.aminning);
           const est = +ars.estimated_yearly || 0;
 
           const statusBadge = isDone
             ? '<span style="background:#dcfce7;color:#15803d;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #bbf7d0">✅ ' + curYear + '</span>'
+            : isFieldOnly
+            ? '<span style="background:#fef3c7;color:#a16207;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #fde68a">🟡 Tekið út</span>'
             : isOverdue
             ? '<span style="background:#fee2e2;color:#b91c1c;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #fecaca">⚠ Á eftir</span>'
-            : '<span style="background:#fef3c7;color:#92400e;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #fde68a">⏳ Í pípu</span>';
+            : '<span style="background:#f1f5f9;color:#475569;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #cbd5e1">⏳ Í pípu</span>';
+          // Toggle button: lets user mark "tekið út" without finishing paperwork.
+          // Click cycles: nothing → Tekið út → cleared (back to nothing) ; once "skoðað"
+          // (isDone) is set, the toggle is hidden because the work is fully done.
+          const toggleBtn = !isDone
+            ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="font-size:9.5px;padding:2px 7px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.3">${isFieldOnly ? '✓ Tekið út' : '☐ Tekið út'}</button>`
+            : '';
 
           return `
             <div class="_ars-card" data-co-id="${c.id}" style="background:#fff;border:1px solid #e2e8f0;border-radius:11px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(0,0,0,0.03);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#94a3b8';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'" onmouseout="this.style.borderColor='#e2e8f0';this.style.boxShadow='0 1px 2px rgba(0,0,0,0.03)'">
@@ -564,7 +600,7 @@
                   ${c.kennitala ? `<div style="font-size:10.5px;color:#94a3b8;font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
                   ${c.heimilisfang ? `<div style="font-size:11px;color:#64748b;margin-top:2px">📍 ${esc(c.heimilisfang)}</div>` : ''}
                 </div>
-                <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">${statusBadge}</div>
+                <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">${statusBadge}${toggleBtn}</div>
               </div>
 
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;font-size:11px;margin-top:2px">
@@ -626,11 +662,13 @@
               const totalEq = Object.values(eq).reduce((s, v) => s + (+v || 0), 0);
               const m = +ars.inspect_month || 0;
               const lastYr = +ars.last_year_inspected || 0;
+              const fieldYr = +ars.field_inspected_year || 0;
               const isDone = lastYr === curYear;
-              const isOverdue = !isDone && (m > 0 && m <= curMonth);
+              const isFieldOnly = !isDone && fieldYr === curYear;
+              const isOverdue = !isDone && !isFieldOnly && (m > 0 && m <= curMonth);
               const est = +ars.estimated_yearly || 0;
               const aminning = cleanAminning(ars.aminning);
-              const dot = isDone ? '#22c55e' : (isOverdue ? '#ef4444' : '#f59e0b');
+              const dot = isDone ? '#22c55e' : (isFieldOnly ? '#f59e0b' : (isOverdue ? '#ef4444' : '#94a3b8'));
               return `
                 <tr class="_ars-row" data-co-id="${c.id}" style="border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .1s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                   <td style="padding:8px 11px">
@@ -642,7 +680,7 @@
                   <td style="padding:8px 7px;text-align:center;font-weight:600;color:${m===curMonth?'#dc2626':'#475569'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</td>
                   <td style="padding:8px 7px;text-align:center;font-weight:700;color:#0f172a">${totalEq||'—'}</td>
                   <td style="padding:8px 7px;text-align:right;color:#15803d;font-weight:700;font-variant-numeric:tabular-nums">${fmtKrShort(est)}</td>
-                  <td style="padding:8px 7px;text-align:center"><span style="display:inline-block;width:9px;height:9px;border-radius:99px;background:${dot}"></span></td>
+                  <td style="padding:8px 7px;text-align:center;white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:99px;background:${dot}"></span>${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</td>
                   <td style="padding:8px 11px;text-align:right;white-space:nowrap">
                     <button class="_ars-open-fyrirt" data-co-id="${c.id}" type="button" title="Opna fyrirtæki" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px;margin-right:3px">🏢</button>
                     <button class="_ars-open-map" data-co-id="${c.id}" type="button" title="Sjá á korti" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px">🗺️</button>
