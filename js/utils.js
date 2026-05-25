@@ -4,7 +4,35 @@ var U={sl:function(s){var m={received:'Móttekið',inprogress:'Í vinnslu',ready
  * birtast samræmt sem R-NNNNNN óháð því hvort þau koma frá POS (R-NNNNNN-V1)
  * eða Sækja inn (R-NNNNNN). Multi-verkbeiðnir per sölu eru sjaldgæf — ef til
  * staðar, sýna þá -V1/-V2 í detail view (vbu.js renderar þau full). */
-displayNum:function(n){return String(n==null?'':n).replace(/-V\d+$/,'');}};
+displayNum:function(n){return String(n==null?'':n).replace(/-V\d+$/,'');},
+/* 2026-05-24: Standard kennitala normalisation. DB-side trigger
+ * (normalize_kennitala) also normalises every write, but doing it client-side
+ * gives the user instant visual feedback ("oh, the dash appeared as I typed"),
+ * and ensures the value sent over the wire matches what the form displays. */
+normKt:function(s){
+  var d=String(s==null?'':s).replace(/[^0-9]/g,'');
+  if(d.length===10) return d.slice(0,6)+'-'+d.slice(6);
+  return String(s==null?'':s);  /* incomplete or invalid — leave alone */
+},
+/* Wire an input element so its kt is normalised on input + blur. Pass the
+ * element or its id. Safe to call multiple times — guards via dataset flag. */
+bindKtInput:function(el){
+  if(typeof el==='string') el=document.getElementById(el);
+  if(!el||el.dataset.ktBound==='1') return;
+  el.dataset.ktBound='1';
+  var fmt=function(){
+    var caretEnd=(el.selectionEnd===el.value.length);
+    var v=U.normKt(el.value);
+    if(v!==el.value){
+      el.value=v;
+      if(caretEnd) try{el.setSelectionRange(v.length,v.length);}catch(_){}
+    }
+  };
+  el.addEventListener('input',fmt);
+  el.addEventListener('blur',fmt);
+  /* run once on attach in case the field is pre-populated with old format */
+  fmt();
+}};
 /* 2026-05-10 (L1): Toast was small, bottom-left near sidebar — easy to miss
  * after a confirmation (e.g. "Verk tilbúið" after Merkja sem tilbúið).
  * Now: bigger, centered bottom, animated, longer duration. Inline styles

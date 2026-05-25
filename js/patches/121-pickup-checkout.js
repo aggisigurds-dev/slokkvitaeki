@@ -80,6 +80,10 @@
 
   // Items added during pickup (replacements customer wants to buy)
   const pickupExtras = []; // [{name, qty, unit_price_ex_vat, vsk_pct}]
+  // 2026-05-24: Final-adjustments state — applied on top of the sale right
+  // before the draft flips to final. Both reset to defaults on modal close.
+  let pickupDiscountPct = 0;   // 0–100 (%), scales every line's unit_price
+  let pickupNote = '';         // free-text athugasemd appended to audit trail
 
   function renderPickupModal(job, sale, unitsCtx) {
     let dlg = document.getElementById('_pkc-dialog');
@@ -161,6 +165,10 @@
       dlg.remove();
       // 2026-05-10 (F3 fix): clear extras on close so a re-open starts fresh.
       pickupExtras.length = 0;
+      // 2026-05-24: same reset for the new final-adjustments fields so the
+      // next pickup starts with a clean slate (no leaked discount/note).
+      pickupDiscountPct = 0;
+      pickupNote = '';
       try { delete window._pkcRefresh; } catch(_){}
     }
     dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
@@ -256,6 +264,29 @@
       }
       html += '</div>';
 
+      // ── Section 3: Final adjustments — discount + free-text note ────────
+      // 2026-05-24: Lets the operator apply a percent discount and jot a
+      // short note before the draft sale is finalised. Discount scales every
+      // line's unit_price_ex_vat (mixed-VSK safe) and is also recorded in
+      // the `afslattur` column for reporting. Note is appended to audit.
+      html += '<div style="margin-bottom:14px;padding:12px 14px;background:#fef9c3;border:1px solid #fde68a;border-radius:8px">' +
+        '<div style="font-size:12px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Lokastilling fyrir kvittun</div>' +
+        '<div style="display:grid;grid-template-columns:auto auto 1fr;gap:8px 10px;align-items:center">' +
+          '<label style="font-size:12px;font-weight:600;color:#78350f">Afsláttur:</label>' +
+          '<div style="display:flex;align-items:center;gap:6px">' +
+            '<input id="_pkc-disc" type="number" min="0" max="100" step="1" value="' + (pickupDiscountPct || 0) + '" ' +
+              'style="width:64px;padding:5px 8px;border:1px solid #fde68a;border-radius:5px;font:inherit;font-size:13px;text-align:center;background:#fff">' +
+            '<span style="font-size:12px;color:#78350f;font-weight:600">%</span>' +
+          '</div>' +
+          '<div id="_pkc-disc-kr" style="font-size:11.5px;color:#92400e;font-style:italic">' +
+            (pickupDiscountPct ? '(reiknað þegar þú breytir % eða línum)' : '') +
+          '</div>' +
+          '<label style="font-size:12px;font-weight:600;color:#78350f;align-self:start;padding-top:5px">Athugasemd:</label>' +
+          '<textarea id="_pkc-note" rows="2" placeholder="t.d. afsláttur — fastur kúnni · kennitala send eftir á · annað" ' +
+            'style="grid-column:2 / span 2;width:100%;padding:6px 9px;border:1px solid #fde68a;border-radius:5px;font:inherit;font-size:12.5px;line-height:1.4;resize:vertical;box-sizing:border-box;background:#fff">' + esc(pickupNote || '') + '</textarea>' +
+        '</div>' +
+      '</div>';
+
       body.innerHTML = html;
 
       // Wire checkboxes
@@ -299,6 +330,28 @@
           renderTotals();
         });
       });
+      // 2026-05-24: Normalise kennitala field on input/blur so the user sees
+      // the canonical XXXXXX-XXXX format appear as they type. DB trigger also
+      // normalises on write — this is the UI-feedback half of the same fix.
+      if (window.U && typeof U.bindKtInput === 'function') {
+        const ktInp = dlg.querySelector('#_pkc-cust-kt');
+        if (ktInp) U.bindKtInput(ktInp);
+      }
+      // 2026-05-24: Wire discount + note inputs. Discount triggers a totals
+      // recompute without re-rendering the whole body (keeps caret position
+      // in the textarea). Note is just stashed; written out at finalize.
+      const discInp = body.querySelector('#_pkc-disc');
+      if (discInp) {
+        discInp.addEventListener('input', () => {
+          const v = parseFloat(discInp.value);
+          pickupDiscountPct = Number.isFinite(v) && v >= 0 ? Math.min(100, v) : 0;
+          renderTotals();
+        });
+      }
+      const noteInp = body.querySelector('#_pkc-note');
+      if (noteInp) {
+        noteInp.addEventListener('input', () => { pickupNote = noteInp.value; });
+      }
     }
 
     function calcTotals() {
@@ -322,11 +375,18 @@
       const extrasTotal = pickupExtras.reduce((s, ex) => {
         return s + (ex.qty || 1) * (ex.unit_price_ex_vat || 0) * (1 + (ex.vsk_pct || 24) / 100);
       }, 0);
-      const grand = unitsTotal + extrasTotal;
+      const subTotal = unitsTotal + extrasTotal;
+      // 2026-05-24: Apply optional pickup-time discount (0–100 %).
+      const discPct = Math.max(0, Math.min(100, +pickupDiscountPct || 0));
+      const discountKr = subTotal * discPct / 100;
+      const grand = subTotal - discountKr;
       return {
         totalUnits, takenCount, perUnit,
         unitsTotal: Math.round(unitsTotal),
         extrasTotal: Math.round(extrasTotal),
+        subTotal: Math.round(subTotal),
+        discountPct: discPct,
+        discountKr: Math.round(discountKr),
         grand: Math.round(grand)
       };
     }
@@ -342,6 +402,11 @@
           '<div style="color:#475569">' + t.takenCount + ' tæki á ' + esc(fmtKr(t.perUnit)) + ' = </div>' +
           '<div style="color:#475569;text-align:right">' + esc(fmtKr(t.unitsTotal)) + '</div>' +
           (t.extrasTotal ? '<div style="color:#475569">+ Aukalega:</div><div style="color:#475569;text-align:right">' + esc(fmtKr(t.extrasTotal)) + '</div>' : '') +
+          (t.discountKr
+            ? '<div style="color:#b45309;font-weight:600">− Afsláttur (' + t.discountPct + '%):</div>' +
+              '<div style="color:#b45309;font-weight:600;text-align:right">−' + esc(fmtKr(t.discountKr)) + '</div>'
+            : ''
+          ) +
           '<div style="font-weight:800;font-size:15px;color:#0f172a;border-top:1px solid #cbd5e1;padding-top:5px;margin-top:3px">SAMTALS:</div>' +
           '<div style="font-weight:800;font-size:15px;color:#0f172a;text-align:right;border-top:1px solid #cbd5e1;padding-top:5px;margin-top:3px">' + esc(fmtKr(t.grand)) + '</div>' +
           (original && diff !== 0
@@ -351,6 +416,13 @@
             : ''
           ) +
         '</div>';
+      // Live-update the small "kr afsláttur" hint next to the discount input
+      const krEl = dlg.querySelector('#_pkc-disc-kr');
+      if (krEl) {
+        krEl.textContent = t.discountKr
+          ? '= −' + fmtKr(t.discountKr) + ' kr'
+          : '';
+      }
     }
 
     // Expose a refresh function so openExtraDialog can re-render after
@@ -380,9 +452,15 @@
       finalBtn.disabled = true;
       finalBtn.textContent = 'Vista…';
       try {
-        await finalizePickup(job, sale, unitState, pickupExtras, payMethod, t, customerInfo);
-        // Reset extras for next pickup
+        // 2026-05-24: Pass the pickup-time discount % and free-text note
+        // captured in the modal. finalizePickup applies the discount by
+        // scaling each line's unit_price_ex_vat and stores the kr amount
+        // in `afslattur`; note is appended to the audit trail.
+        await finalizePickup(job, sale, unitState, pickupExtras, payMethod, t, customerInfo, pickupDiscountPct, pickupNote);
+        // Reset extras + final-adjustments state for next pickup
         pickupExtras.length = 0;
+        pickupDiscountPct = 0;
+        pickupNote = '';
         const saleNumForPrint = parentSaleNum(job.num);
         close();
         if (window.Toast && Toast.show) Toast.show('✓ Sótt og selt — ' + fmtKr(t.grand));
@@ -460,7 +538,7 @@
   }
 
   // ── Finalize: update solur, mark verkbeidnir collected, mark units done ─
-  async function finalizePickup(job, sale, unitState, extras, payMethod, totals, customerInfo) {
+  async function finalizePickup(job, sale, unitState, extras, payMethod, totals, customerInfo, discountPct, userNote) {
     const SB = getSB();
     if (!SB) throw new Error('Engin gagnabankatenging');
 
@@ -527,6 +605,22 @@
       });
     });
 
+    // 2026-05-24: Apply optional pickup-time discount by scaling every
+    // line's unit_price_ex_vat. Doing it on the lines (rather than just
+    // adjusting the grand total) keeps mixed-VSK math correct: each line
+    // still pays its own VSK rate, just on a discounted base. Captures
+    // the kr amount in `afslatturKr` for the `afslattur` column.
+    const discPct = Math.max(0, Math.min(100, +discountPct || 0));
+    let afslatturKr = 0;
+    if (discPct > 0 && newLinur.length) {
+      const preEx = newLinur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0), 0);
+      const preVsk = newLinur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 0) / 100), 0);
+      const preSamtals = preEx + preVsk;
+      const factor = 1 - discPct / 100;
+      newLinur.forEach(l => { l.unit_price_ex_vat = +l.unit_price_ex_vat * factor; });
+      afslatturKr = Math.round(preSamtals * discPct / 100);
+    }
+
     const newEx = newLinur.reduce(
       (a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0), 0);
     const newVsk = newLinur.reduce(
@@ -535,9 +629,12 @@
 
     const brokenList = unitState.filter(s => !s.checked).map(s => s.unit.serial).filter(Boolean);
     const extraList = extras.map(ex => ex.qty + '× ' + ex.name);
+    const trimmedNote = (userNote || '').trim();
     const auditNote = '\n\n[Sótt ' + todayISO() + ']' +
       (brokenList.length ? '\nEkki afhent: ' + brokenList.join(', ') : '') +
       (extraList.length ? '\nViðbót: ' + extraList.join(', ') : '') +
+      (afslatturKr ? '\nAfsláttur: ' + discPct + '% (−' + afslatturKr + ' kr)' : '') +
+      (trimmedNote ? '\nAthugasemd: ' + trimmedNote : '') +
       '\nGreiðsla: ' + payMethod;
 
     // 2026-05-11: Customer info captured from the pickup modal — may have
@@ -569,6 +666,8 @@
         linur: newLinur,
         upphaed_an_vsk: Math.round(newEx),
         vsk_upphaed: Math.round(newVsk),
+        // 2026-05-24: Record pickup-time discount kr; 0 if none was set.
+        afslattur: afslatturKr,
         samtals: Math.round(newSamtals),
         greitt_med: payMethod,
         paid_at: payMethod === 'greitt_sidar' || payMethod === 'reikningur' ? null : new Date().toISOString(),
@@ -596,7 +695,7 @@
         linur: newLinur,
         upphaed_an_vsk: Math.round(newEx),
         vsk_upphaed: Math.round(newVsk),
-        afslattur: 0,
+        afslattur: afslatturKr,
         samtals: Math.round(newSamtals),
         greitt_med: payMethod,
         paid_at: payMethod === 'greitt_sidar' || payMethod === 'reikningur' ? null : new Date().toISOString(),

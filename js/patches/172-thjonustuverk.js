@@ -218,7 +218,9 @@
     { v: 'kvortun',    label: 'Kvörtun',             emoji: '😤', color: '#991b1b', soft: '#fee2e2' },
     { v: 'hringja',    label: 'Hringja',             emoji: '📞', color: '#92400e', soft: '#fef3c7' },
     { v: 'brunakerfi', label: 'Brunakerfi',          emoji: '🔥', color: '#9a3412', soft: '#fed7aa' },
-    { v: 'rukka',      label: 'Eftir að rukka',      emoji: '💰', color: '#9d174d', soft: '#fce7f3' }
+    { v: 'rukka',      label: 'Eftir að rukka',      emoji: '💰', color: '#9d174d', soft: '#fce7f3' },
+    { v: 'thjonusta',  label: 'Þjónusta',            emoji: '🔧', color: '#0f766e', soft: '#ccfbf1' },
+    { v: 'sendapost',  label: 'Senda tölvupóst',     emoji: '📧', color: '#0369a1', soft: '#e0f2fe' }
   ];
   function tagDef(v) { return TAGS.find(t => t.v === v); }
   function tagPill(v, opts) {
@@ -576,8 +578,11 @@
   }
   function caseCustomerHtml(c) {
     if (!c.customer_nafn) return '<span style="color:#94a3b8;font-style:italic">— (engin tenging)</span>';
-    const badge = isImportant(c.customer_id) ? mikilvaegtBadge() : '';
-    return '<span style="color:#0f172a;font-weight:600">' + esc(c.customer_nafn) + '</span>' + badge;
+    // 2026-05-24: dropped the inline `⚠ Mikilvægt` badge per user request —
+    // case boxes already carry their own urgency via importance color stripe,
+    // and important customers are still listed in the `Mikilvæg fyrirtæki`
+    // section at the bottom of the page (impSectionHtml).
+    return '<span style="color:#0f172a;font-weight:600">' + esc(c.customer_nafn) + '</span>';
   }
 
   // 1) Compact list — single line, ellipsised body (the default view)
@@ -592,7 +597,7 @@
           <div style="font-size:11px;color:#64748b;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc((c.body || '').slice(0, 90))}</div>
         </div>
         <div>${caseCustomerHtml(c)}</div>
-        <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">${impPill(c)}${caseTagsHtml(c, {small:true})}${caseChipsHtml(c)}</div>
+        <div style="display:flex;gap:4px;flex-wrap:wrap;align-items:center">${caseTagsHtml(c, {small:true})}${caseChipsHtml(c)}</div>
         <div>${statusBadge(c.status || 'ny')}</div>
         <button class="_tv-del" data-id="${esc(c.id)}" type="button" title="Eyða" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:18px;padding:0 4px;line-height:1">×</button>
       </div>`;
@@ -660,7 +665,6 @@
             <div style="font-size:11px;color:#64748b;margin-top:2px">${esc(fmtDate(c.updated_at || c.created_at))}</div>
           </div>
           <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end">
-            ${impPill(c)}
             ${statusBadge(c.status || 'ny')}
           </div>
         </div>
@@ -738,6 +742,47 @@
       '<textarea id="_tv-body-txt" rows="5" placeholder="Límdu inn pósti eða skrifaðu punkta… (Ctrl/Cmd+V með mynd festir hana)" ' +
         'style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;margin-bottom:10px">' + esc(c.body || '') + '</textarea>' +
 
+      // Importance + Status row — sit side-by-side directly under the notes,
+      // so the user classifies urgency + workflow stage in one glance.
+      // Mikilvægi (4 colored chips) flexes; Staða dropdown anchors to the right.
+      '<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px">' +
+        '<div style="flex:1;min-width:260px">' +
+          '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Mikilvægi</label>' +
+          '<div id="_tv-imp" style="display:flex;gap:6px;flex-wrap:wrap">' +
+            IMPORTANCES.map(def => {
+              const cur = (c.importance || 'green') === def.v;
+              return '<button class="_tv-imp-btn" data-v="' + def.v + '" type="button" ' +
+                'style="padding:7px 14px;border:2px solid ' + (cur ? def.color : '#e2e8f0') + ';' +
+                  'background:' + (cur ? def.soft : '#fff') + ';color:' + def.color + ';' +
+                  'border-radius:99px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;' +
+                  'display:inline-flex;align-items:center;gap:5px">' +
+                def.emoji + ' ' + def.label + '</button>';
+            }).join('') +
+          '</div>' +
+        '</div>' +
+        '<div style="min-width:160px">' +
+          '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Staða</label>' +
+          '<select id="_tv-status" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;background:#fff">' +
+            STATUSES.map(s => '<option value="' + s.v + '"' + (c.status === s.v ? ' selected' : '') + '>' + s.label + '</option>').join('') +
+          '</select>' +
+        '</div>' +
+      '</div>' +
+
+      // Tag picker — multi-select toggle chips. Stored as array on the case.
+      // Sits right below importance so categorisation happens up-front.
+      '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Tög (mörg leyfileg)</label>' +
+      '<div id="_tv-tags" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">' +
+        TAGS.map(t => {
+          const cur = Array.isArray(c.tags) && c.tags.indexOf(t.v) >= 0;
+          return '<button class="_tv-tag-btn" data-v="' + t.v + '" type="button" ' +
+            'style="padding:6px 12px;border:1.5px solid ' + (cur ? t.color : '#e2e8f0') + ';' +
+              'background:' + (cur ? t.soft : '#fff') + ';color:' + t.color + ';' +
+              'border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;' +
+              'display:inline-flex;align-items:center;gap:5px">' +
+            t.emoji + ' ' + esc(t.label) + '</button>';
+        }).join('') +
+      '</div>' +
+
       // Attachments section — pick / drag-drop / paste-image
       '<div id="_tv-att-zone" style="border:1.5px dashed #cbd5e1;border-radius:8px;padding:10px 12px;background:#f8fafc;margin-bottom:14px;transition:border-color .15s,background .15s">' +
         '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px">' +
@@ -778,41 +823,7 @@
           '<input id="_tv-tilbod-pct" type="number" min="0" max="100" step="1" value="' + (c.tilbod && c.tilbod.discount_pct || 0) + '" style="width:60px;padding:5px 8px;border:1px solid #c4b5fd;border-radius:5px;font:inherit;font-size:12px;text-align:center"> %' +
           '<div id="_tv-tilbod-total" style="margin-left:auto;font-weight:800;color:#6b21a8;font-size:14px">' + fmtKr(t.total) + '</div>' +
         '</div>' +
-      '</div>' +
-
-      // Tag picker — multi-select toggle chips. Stored as array on the case.
-      '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Tög (mörg leyfileg)</label>' +
-      '<div id="_tv-tags" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">' +
-        TAGS.map(t => {
-          const cur = Array.isArray(c.tags) && c.tags.indexOf(t.v) >= 0;
-          return '<button class="_tv-tag-btn" data-v="' + t.v + '" type="button" ' +
-            'style="padding:6px 12px;border:1.5px solid ' + (cur ? t.color : '#e2e8f0') + ';' +
-              'background:' + (cur ? t.soft : '#fff') + ';color:' + t.color + ';' +
-              'border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;' +
-              'display:inline-flex;align-items:center;gap:5px">' +
-            t.emoji + ' ' + esc(t.label) + '</button>';
-        }).join('') +
-      '</div>' +
-
-      // Importance picker — 4 buttons with colored fill matching the levels.
-      '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Mikilvægi</label>' +
-      '<div id="_tv-imp" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">' +
-        IMPORTANCES.map(def => {
-          const cur = (c.importance || 'green') === def.v;
-          return '<button class="_tv-imp-btn" data-v="' + def.v + '" type="button" ' +
-            'style="padding:7px 14px;border:2px solid ' + (cur ? def.color : '#e2e8f0') + ';' +
-              'background:' + (cur ? def.soft : '#fff') + ';color:' + def.color + ';' +
-              'border-radius:99px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;' +
-              'display:inline-flex;align-items:center;gap:5px">' +
-            def.emoji + ' ' + def.label + '</button>';
-        }).join('') +
-      '</div>' +
-
-      // Status
-      '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px">Staða</label>' +
-      '<select id="_tv-status" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;background:#fff">' +
-        STATUSES.map(s => '<option value="' + s.v + '"' + (c.status === s.v ? ' selected' : '') + '>' + s.label + '</option>').join('') +
-      '</select>';
+      '</div>';
 
     // Wire inputs
     body.querySelector('#_tv-title').addEventListener('input', e => { c.title = e.target.value; });

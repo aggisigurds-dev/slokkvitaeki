@@ -342,6 +342,11 @@
       </div>`;
     document.body.appendChild(m);
     setTimeout(() => document.getElementById('ct-co')?.focus(), 50);
+    // 2026-05-24: Auto-format the kennitala field to XXXXXX-XXXX on input/blur.
+    // DB trigger also normalises on write — this is the UI-feedback layer.
+    if (window.U && typeof U.bindKtInput === 'function') {
+      U.bindKtInput('ct-kt');
+    }
   }
 
   // Picks a file. If a record exists already (editing), upload immediately.

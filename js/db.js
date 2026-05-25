@@ -171,7 +171,15 @@ var DB = {
   updateJobStatus: async function(id, status) {
     if (this.online) { await this.sb.from('verkbeidnir').update({status}).eq('id', id); }
     var job = this.getJob(id);
-    if (job) { job.status = status; if (status === 'ready') job.units.forEach(function(u) { u.status = 'done'; }); }
+    if (job) {
+      job.status = status;
+      // 2026-05-24: When promoting a job to 'ready', cascade any unfinished
+      // units to 'done' so the workshop column shows full progress. Broken
+      // units MUST be preserved — the pickup flow keys off `status==='broken'`
+      // to default-uncheck them in the Sókn modal. Previously this loop
+      // overwrote broken→done, silently re-delivering bad units.
+      if (status === 'ready') job.units.forEach(function(u) { if (u.status !== 'broken') u.status = 'done'; });
+    }
     App.refreshAll();
   },
 
@@ -181,6 +189,17 @@ var DB = {
     if (job) {
       var unit = job.units.find(function(u) { return u.id === unitId; });
       if (unit) unit.status = status;
+      // 2026-05-24: Auto-promote the whole verkbeidni to 'ready' (= moves
+      // to Afgreiðsla column) as soon as the last outstanding unit gets a
+      // 'done' or 'broken' click. Before this, the user had to click
+      // Tilbúið twice — once on the tile, once on the job card. Broken
+      // units count as "accounted for"; pickup flow handles non-delivery.
+      var allAccountedFor = (status === 'done' || status === 'broken')
+        && job.units.every(function(u) { return u.status === 'done' || u.status === 'broken'; });
+      if (allAccountedFor && job.status !== 'ready') {
+        await this.updateJobStatus(jobId, 'ready');
+        return;
+      }
       if (job.status === 'received') { await this.updateJobStatus(jobId, 'inprogress'); return; }
     }
     App.refreshAll();
