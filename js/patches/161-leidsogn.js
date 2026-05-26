@@ -97,6 +97,37 @@
     return { key:'unknown', color:'#94a3b8', label:'Engin dagsetning' };
   }
 
+  // ── Resolve a geocode for a fyrirtæki, trying a few key variants ────────
+  // 2026-05-25: the server-side geocode_cache uses short keys like
+  // "Ármúla 23" but DB addresses include postcode + city ("Ármúla 23, 108
+  // Reykjavík"). Without these fallbacks ~150 pins fail to drop.
+  function lookupCoord(gc, c) {
+    if (!gc || !c) return null;
+    const addr = c.heimilisfang || '';
+    const nafn = c.nafn || '';
+    if (gc[addr]) return gc[addr];
+    if (gc[nafn]) return gc[nafn];
+    // Strip ", NNN City" tail
+    const stripped = addr.replace(/,?\s*\d{3}\s+.+$/, '').trim();
+    if (stripped && gc[stripped]) return gc[stripped];
+    // First "Street Number" chunk only
+    const m = addr.match(/^([A-Za-zÁÉÍÓÚÝÆÖÞÐáéíóúýæöþð.]+\s+\d{1,3}[a-zA-Z]?)/);
+    if (m && gc[m[1]]) return gc[m[1]];
+    // Just the street word with first number (handles "Skipholti 50b, 105...")
+    if (m) {
+      const street = m[1].replace(/\s+\d.*$/, '').trim();
+      for (const k in gc) {
+        if (k.toLowerCase().startsWith(street.toLowerCase() + ' ') && gc[k]) {
+          // Only return if the number prefix matches too
+          const num = (m[1].match(/\d+/) || [''])[0];
+          const kNum = (k.match(/\d+/) || [''])[0];
+          if (num && num === kNum) return gc[k];
+        }
+      }
+    }
+    return null;
+  }
+
   // ── Build the customer list for the map ─────────────────────────────────
   function getCustomers() {
     const cos = (window.Companies && Companies.list) || [];
@@ -108,7 +139,7 @@
       const bru = bruMap[String(c.id)];
       const hasContract = (ars && ars.equipment) || !!bru;
       if (!hasContract) return null;
-      const coord = gc[c.heimilisfang] || gc[c.nafn];
+      const coord = lookupCoord(gc, c);
       if (!coord) return null;
       return { co: c, ars: ars || {}, bru: bru || {}, coord, status: statusFor(c, ars) };
     }).filter(Boolean);
