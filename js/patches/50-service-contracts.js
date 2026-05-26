@@ -168,6 +168,7 @@
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input type="text" class="ct-search" placeholder="🔍 Leita..." value="${esc(searchQuery)}" oninput="ServiceContracts._search(this.value)">
+            <a href="https://brunaholf-tilbod.netlify.app" target="_blank" rel="noopener noreferrer" class="btn btn-outline" title="Opna Brunahólf tilboðakerfið í nýjum flipa" style="text-decoration:none">📄 Tilboðakerfi ↗</a>
             <button class="btn btn-outline" onclick="ServiceContracts._open(null,'legacy')" title="Skanna eldri pappírssamninga inn í kerfið">📥 Eldri samningur</button>
             <button class="btn btn-primary" onclick="ServiceContracts._open()">+ Nýr samningur</button>
           </div>
