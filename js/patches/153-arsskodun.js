@@ -273,6 +273,13 @@
       });
     } else if (state.status === 'never') {
       arr = arr.filter(c => !c._ars.last_year_inspected);
+    } else if (state.status === 'skipped2025') {
+      // 2026-05-26: companies inspected 2024 but skipped 2025 — the "weird year"
+      // hole. Detect by last_year_inspected === 2024 (or any year < curYear-1).
+      arr = arr.filter(c => {
+        const last = +c._ars.last_year_inspected || 0;
+        return last > 0 && last < curYear - 1;
+      });
     }
     const q = state.search.trim().toLowerCase();
     if (q) {
@@ -418,6 +425,7 @@
               { v: 'all', label: 'Allt' },
               { v: 'done', label: '✅ Búið ' + curYear },
               { v: 'pending', label: '⏳ Eftir' },
+              { v: 'skipped2025', label: '🟡 Slepptir í fyrra' },
               { v: 'never', label: '⛔ Aldrei' }
             ].map(s => `
               <button data-status="${s.v}" class="_ars-st" style="padding:7px 11px;border:none;background:${state.status===s.v?'#0f172a':'#fff'};color:${state.status===s.v?'#fff':'#475569'};cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${esc(s.label)}</button>
@@ -574,7 +582,11 @@
           const fieldYr = +ars.field_inspected_year || 0;     // 2026-05-25: physical inspection done, paperwork pending
           const isDone = lastYr === curYear;
           const isFieldOnly = !isDone && fieldYr === curYear; // Tekið út — skjöl eftir
-          const isOverdue = !isDone && !isFieldOnly && (m > 0 && m <= curMonth);
+          // 2026-05-26: "skipped last year" — last inspection was 2024 (or older)
+          // even though curYear-1 (2025) should have happened. Coworker reported
+          // 2025 was a chaotic year and several locations never got visited.
+          const isSkipped = !isDone && !isFieldOnly && lastYr > 0 && lastYr < curYear - 1;
+          const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
           const aminning = cleanAminning(ars.aminning);
           const est = +ars.estimated_yearly || 0;
 
@@ -582,6 +594,8 @@
             ? '<span style="background:#dcfce7;color:#15803d;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #bbf7d0">✅ ' + curYear + '</span>'
             : isFieldOnly
             ? '<span style="background:#fef3c7;color:#a16207;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #fde68a">🟡 Tekið út</span>'
+            : isSkipped
+            ? `<span title="Síðast skoðað ${lastYr} — sleppt í fyrra" style="background:#fef3c7;color:#a16207;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #fde68a;display:inline-flex;align-items:center;gap:2px">⏰ '${String(lastYr).slice(-2)}</span>`
             : isOverdue
             ? '<span style="background:#fee2e2;color:#b91c1c;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #fecaca">⚠ Á eftir</span>'
             : '<span style="background:#f1f5f9;color:#475569;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #cbd5e1">⏳ Í pípu</span>';
@@ -674,10 +688,17 @@
               const fieldYr = +ars.field_inspected_year || 0;
               const isDone = lastYr === curYear;
               const isFieldOnly = !isDone && fieldYr === curYear;
-              const isOverdue = !isDone && !isFieldOnly && (m > 0 && m <= curMonth);
+              const isSkipped = !isDone && !isFieldOnly && lastYr > 0 && lastYr < curYear - 1;
+              const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
               const est = +ars.estimated_yearly || 0;
               const aminning = cleanAminning(ars.aminning);
-              const dot = isDone ? '#22c55e' : (isFieldOnly ? '#f59e0b' : (isOverdue ? '#ef4444' : '#94a3b8'));
+              const dot = isDone ? '#22c55e'
+                : (isFieldOnly ? '#f59e0b'
+                : (isSkipped ? '#f59e0b'
+                : (isOverdue ? '#ef4444' : '#94a3b8')));
+              const skippedBadge = isSkipped
+                ? `<span title="Síðast skoðað ${lastYr}" style="display:inline-block;margin-left:4px;background:#fef3c7;color:#a16207;font-size:8.5px;font-weight:700;padding:1px 5px;border-radius:99px;border:1px solid #fde68a;line-height:1.2">⏰ '${String(lastYr).slice(-2)}</span>`
+                : '';
               return `
                 <tr class="_ars-row" data-co-id="${c.id}" style="border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .1s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                   <td style="padding:8px 11px">
@@ -694,7 +715,7 @@
                   <td style="padding:8px 7px;text-align:center;font-weight:600;color:${m===curMonth?'#dc2626':'#475569'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</td>
                   <td style="padding:8px 7px;text-align:center;font-weight:700;color:#0f172a">${totalEq||'—'}</td>
                   <td style="padding:8px 7px;text-align:right;color:#15803d;font-weight:700;font-variant-numeric:tabular-nums">${fmtKrShort(est)}</td>
-                  <td style="padding:8px 7px;text-align:center;white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:99px;background:${dot}"></span>${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</td>
+                  <td style="padding:8px 7px;text-align:center;white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:99px;background:${dot}"></span>${skippedBadge}${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</td>
                   <td style="padding:8px 11px;text-align:right;white-space:nowrap">
                     <button class="_ars-open-fyrirt" data-co-id="${c.id}" type="button" title="Opna fyrirtæki" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px;margin-right:3px">🏢</button>
                     <button class="_ars-open-map" data-co-id="${c.id}" type="button" title="Sjá á korti" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px">🗺️</button>
