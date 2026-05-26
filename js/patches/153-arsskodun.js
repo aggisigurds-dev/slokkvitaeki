@@ -655,7 +655,6 @@
           <thead style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
             <tr style="text-align:left;color:#475569;font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.04em">
               <th style="padding:9px 11px">Fyrirtæki</th>
-              <th style="padding:9px 7px">Kt</th>
               <th style="padding:9px 7px">Heimilisfang</th>
               <th style="padding:9px 7px">Netfang</th>
               <th style="padding:9px 7px;text-align:center">Skoðun</th>
@@ -683,9 +682,9 @@
                 <tr class="_ars-row" data-co-id="${c.id}" style="border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .1s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                   <td style="padding:8px 11px">
                     <div style="font-weight:600;color:#0f172a">${esc(c.nafn || '—')}</div>
+                    ${c.kennitala ? `<div style="font-size:10.5px;color:#94a3b8;font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
                     ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''}</div>` : ''}
                   </td>
-                  <td style="padding:8px 7px;font-family:monospace;color:#64748b;font-size:11px">${esc(fmtKt(c.kennitala))}</td>
                   <td style="padding:8px 7px;color:#475569;font-size:11.5px">${esc(c.heimilisfang || '—')}</td>
                   <td style="padding:8px 7px;font-size:11px">${(() => {
                     const e = (c.netfang || '').trim();
