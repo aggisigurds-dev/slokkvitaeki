@@ -599,6 +599,15 @@
                   <div style="font-weight:700;color:#0f172a;font-size:13.5px;line-height:1.25">${esc(c.nafn || '—')}</div>
                   ${c.kennitala ? `<div style="font-size:10.5px;color:#94a3b8;font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
                   ${c.heimilisfang ? `<div style="font-size:11px;color:#64748b;margin-top:2px">📍 ${esc(c.heimilisfang)}</div>` : ''}
+                  ${(() => {
+                    // 2026-05-26: surface netfang on the card so the operator can
+                    // see at a glance which companies are missing it for the month.
+                    const email = (c.netfang || '').trim();
+                    if (email) {
+                      return `<div style="font-size:11px;color:#0369a1;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(email)}">✉ <a href="mailto:${esc(email)}" style="color:#0369a1;text-decoration:none" onclick="event.stopPropagation()">${esc(email)}</a></div>`;
+                    }
+                    return `<div style="font-size:11px;color:#dc2626;margin-top:2px;font-weight:600">✉ Netfang vantar</div>`;
+                  })()}
                 </div>
                 <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">${statusBadge}${toggleBtn}</div>
               </div>
@@ -648,6 +657,7 @@
               <th style="padding:9px 11px">Fyrirtæki</th>
               <th style="padding:9px 7px">Kt</th>
               <th style="padding:9px 7px">Heimilisfang</th>
+              <th style="padding:9px 7px">Netfang</th>
               <th style="padding:9px 7px;text-align:center">Skoðun</th>
               <th style="padding:9px 7px;text-align:center">Tæki</th>
               <th style="padding:9px 7px;text-align:right">Áætl.</th>
@@ -677,6 +687,11 @@
                   </td>
                   <td style="padding:8px 7px;font-family:monospace;color:#64748b;font-size:11px">${esc(fmtKt(c.kennitala))}</td>
                   <td style="padding:8px 7px;color:#475569;font-size:11.5px">${esc(c.heimilisfang || '—')}</td>
+                  <td style="padding:8px 7px;font-size:11px">${(() => {
+                    const e = (c.netfang || '').trim();
+                    if (e) return `<a href="mailto:${esc(e)}" style="color:#0369a1;text-decoration:none" onclick="event.stopPropagation()">${esc(e)}</a>`;
+                    return `<span style="color:#dc2626;font-weight:600">✉ vantar</span>`;
+                  })()}</td>
                   <td style="padding:8px 7px;text-align:center;font-weight:600;color:${m===curMonth?'#dc2626':'#475569'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</td>
                   <td style="padding:8px 7px;text-align:center;font-weight:700;color:#0f172a">${totalEq||'—'}</td>
                   <td style="padding:8px 7px;text-align:right;color:#15803d;font-weight:700;font-variant-numeric:tabular-nums">${fmtKrShort(est)}</td>
