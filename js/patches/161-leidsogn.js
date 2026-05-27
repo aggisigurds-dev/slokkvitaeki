@@ -340,13 +340,26 @@
   }
 
   function updateChipCounts() {
-    const all = getCustomers();
-    const cnt = { all: all.length, overdue: 0, 'this-month': 0, done: 0, scheduled: 0 };
-    all.forEach(x => {
-      if (x.status.key === 'overdue') { cnt.overdue++; cnt['this-month']++; }
-      else if (x.status.key === 'duenow') cnt['this-month']++;
-      else if (x.status.key === 'done') cnt.done++;
-      else if (x.status.key === 'scheduled') cnt.scheduled++;
+    // 2026-05-26: chip counts should reflect ALL eligible customers, including
+    // those without geocodes (otherwise the Leiðsögn count silently understates
+    // workload — Aggi noticed Leiðsögn said 48 but Fyrirtæki í þjónustu said
+    // 113 for the same filter). Map pins still only show geocoded ones, but
+    // the chip-count header should match what's "real".
+    const cos = (window.Companies && Companies.list) || [];
+    const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
+    const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
+    const cnt = { all: 0, overdue: 0, 'this-month': 0, done: 0, scheduled: 0 };
+    cos.forEach(c => {
+      const ars = arsMap[String(c.id)];
+      const bru = bruMap[String(c.id)];
+      const hasContract = (ars && ars.equipment) || !!bru;
+      if (!hasContract) return;
+      cnt.all++;
+      const status = statusFor(c, ars);
+      if (status.key === 'overdue') { cnt.overdue++; cnt['this-month']++; }
+      else if (status.key === 'duenow') cnt['this-month']++;
+      else if (status.key === 'done') cnt.done++;
+      else if (status.key === 'scheduled') cnt.scheduled++;
     });
     Object.keys(cnt).forEach(k => {
       const el = document.querySelector('._lds-chip[data-filter="' + k + '"] ._lds-count');
