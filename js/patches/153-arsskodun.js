@@ -280,6 +280,14 @@
         const last = +c._ars.last_year_inspected || 0;
         return last > 0 && last < curYear - 1;
       });
+    } else if (state.status === 'priority') {
+      // 2026-05-26: damage-control filter — show only flagged priority cases.
+      arr = arr.filter(c => +(c._ars.priority || 0) > 0);
+    }
+    // Sort by priority (red > yellow > green > none) first, then by other criteria
+    // — but only when filtering by priority (otherwise the existing sort flow wins)
+    if (state.status === 'priority') {
+      arr.sort((a, b) => (+(b._ars.priority || 0)) - (+(a._ars.priority || 0)));
     }
     const q = state.search.trim().toLowerCase();
     if (q) {
@@ -426,6 +434,7 @@
               { v: 'done', label: '✅ Búið ' + curYear },
               { v: 'pending', label: '⏳ Eftir' },
               { v: 'skipped2025', label: '🟡 Slepptir í fyrra' },
+              { v: 'priority', label: '❗ Forgangur' },
               { v: 'never', label: '⛔ Aldrei' }
             ].map(s => `
               <button data-status="${s.v}" class="_ars-st" style="padding:7px 11px;border:none;background:${state.status===s.v?'#0f172a':'#fff'};color:${state.status===s.v?'#fff':'#475569'};cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${esc(s.label)}</button>
@@ -623,7 +632,10 @@
                     return `<div style="font-size:11px;color:#dc2626;margin-top:2px;font-weight:600">✉ Netfang vantar</div>`;
                   })()}
                 </div>
-                <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">${statusBadge}${toggleBtn}</div>
+                <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">
+                  <div style="display:flex;gap:4px;align-items:center">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}${statusBadge}</div>
+                  ${toggleBtn}
+                </div>
               </div>
 
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;font-size:11px;margin-top:2px">
@@ -715,7 +727,7 @@
                   <td style="padding:8px 7px;text-align:center;font-weight:600;color:${m===curMonth?'#dc2626':'#475569'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</td>
                   <td style="padding:8px 7px;text-align:center;font-weight:700;color:#0f172a">${totalEq||'—'}</td>
                   <td style="padding:8px 7px;text-align:right;color:#15803d;font-weight:700;font-variant-numeric:tabular-nums">${fmtKrShort(est)}</td>
-                  <td style="padding:8px 7px;text-align:center;white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:99px;background:${dot}"></span>${skippedBadge}${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</td>
+                  <td style="padding:8px 7px;text-align:center;white-space:nowrap">${(window.Priority && window.Priority.btnHtml(c.id, 16)) || ''} <span style="display:inline-block;width:9px;height:9px;border-radius:99px;background:${dot}"></span>${skippedBadge}${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</td>
                   <td style="padding:8px 11px;text-align:right;white-space:nowrap">
                     <button class="_ars-open-fyrirt" data-co-id="${c.id}" type="button" title="Opna fyrirtæki" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px;margin-right:3px">🏢</button>
                     <button class="_ars-open-map" data-co-id="${c.id}" type="button" title="Sjá á korti" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px">🗺️</button>
@@ -1172,7 +1184,20 @@
   }
 
   // Expose for debugging
-  window.Arsskodun = { show, openDetail, openOnMap, _cache, version: 'v1' };
+  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, version: 'v1' };
+
+  // 2026-05-26: re-render when priority dot is cycled from anywhere
+  document.addEventListener('priority-changed', e => {
+    const co = (_cache.list || []).find(x => String(x.id) === String(e.detail.coId));
+    if (co) {
+      co._ars = co._ars || {};
+      if (e.detail.newPri > 0) co._ars.priority = e.detail.newPri;
+      else delete co._ars.priority;
+    }
+    // Only re-render if view is currently active to avoid stealing focus
+    const v = document.getElementById('view-arsskodun');
+    if (v && v.style.display !== 'none') render();
+  });
   console.log('[arsskodun] v1 ready');
 })();
 /* === END ÁRSSKOÐUN === */
