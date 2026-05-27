@@ -51,6 +51,8 @@
   const STORAGE_KEY = 'arsskodun_customers';
   const LS_VIEW = 'arsskodun_view';
   const LS_SORT = 'arsskodun_sort';
+  const LS_SORTCOL = 'arsskodun_sortCol';
+  const LS_SORTDIR = 'arsskodun_sortDir';
   const LS_MONTH = 'arsskodun_month';
   const LS_STATUS = 'arsskodun_status';
   const LS_SEARCH = 'arsskodun_search';
@@ -241,7 +243,9 @@
   // ── Filters / sort state ────────────────────────────────────────────────
   const state = {
     view: localStorage.getItem(LS_VIEW) || 'card',          // 'card' | 'list'
-    sort: localStorage.getItem(LS_SORT) || 'alpha',         // 'alpha' | 'month' | 'oldest'
+    sort: localStorage.getItem(LS_SORT) || 'alpha',         // 'alpha' | 'month' | 'oldest' (legacy)
+    sortCol: localStorage.getItem(LS_SORTCOL) || '',         // name|address|email|month|tools|estimate|priority|status|lastYr
+    sortDir: localStorage.getItem(LS_SORTDIR) || 'asc',      // asc | desc
     month: parseInt(localStorage.getItem(LS_MONTH) || '0', 10), // 0 = all
     status: localStorage.getItem(LS_STATUS) || 'all',        // 'all' | 'done' | 'pending' | 'never'
     search: localStorage.getItem(LS_SEARCH) || ''
@@ -249,6 +253,8 @@
   function saveState() {
     localStorage.setItem(LS_VIEW, state.view);
     localStorage.setItem(LS_SORT, state.sort);
+    localStorage.setItem(LS_SORTCOL, state.sortCol || '');
+    localStorage.setItem(LS_SORTDIR, state.sortDir || 'asc');
     localStorage.setItem(LS_MONTH, String(state.month));
     localStorage.setItem(LS_STATUS, state.status);
     localStorage.setItem(LS_SEARCH, state.search);
@@ -304,25 +310,66 @@
         return fold(hay).includes(qn);
       });
     }
-    if (state.sort === 'alpha') {
-      arr.sort((a, b) => String(a.nafn || '').localeCompare(b.nafn || '', 'is'));
-    } else if (state.sort === 'month') {
-      // Closest upcoming month first (wrapping). Current month at top, then
-      // next, then …, with finished-this-year pushed to bottom.
-      arr.sort((a, b) => {
+    // 2026-05-26: column-based sort. state.sortCol drives, state.sortDir is asc|desc.
+    // Falls back to legacy state.sort (alpha|month|oldest) for users with old
+    // localStorage state.
+    const SORT_COMPARATORS = {
+      name: (a, b) => String(a.nafn || '').localeCompare(b.nafn || '', 'is'),
+      address: (a, b) => String(a.heimilisfang || '').localeCompare(b.heimilisfang || '', 'is')
+                       || String(a.nafn || '').localeCompare(b.nafn || '', 'is'),
+      email: (a, b) => {
+        const ea = (a.netfang || '').trim();
+        const eb = (b.netfang || '').trim();
+        // Empty emails always last regardless of asc/desc
+        if (!ea && eb) return 1;
+        if (ea && !eb) return -1;
+        return ea.localeCompare(eb, 'is')
+            || String(a.nafn || '').localeCompare(b.nafn || '', 'is');
+      },
+      month: (a, b) => {
         const ma = +a._ars.inspect_month || 13;
         const mb = +b._ars.inspect_month || 13;
-        const da = (ma - curMonth + 12) % 12;
-        const db = (mb - curMonth + 12) % 12;
-        return da - db || String(a.nafn).localeCompare(b.nafn, 'is');
-      });
-    } else if (state.sort === 'oldest') {
-      arr.sort((a, b) => {
-        const ya = +a._ars.last_year_inspected || 0;
-        const yb = +b._ars.last_year_inspected || 0;
-        return ya - yb || String(a.nafn).localeCompare(b.nafn, 'is');
-      });
+        // Sort by closest-upcoming for month asc; raw 1-12 for explicit user click
+        return ma - mb || String(a.nafn).localeCompare(b.nafn, 'is');
+      },
+      tools: (a, b) => {
+        const ta = Object.values(a._ars.equipment || {}).reduce((s, v) => s + (+v || 0), 0);
+        const tb = Object.values(b._ars.equipment || {}).reduce((s, v) => s + (+v || 0), 0);
+        return ta - tb || String(a.nafn).localeCompare(b.nafn, 'is');
+      },
+      estimate: (a, b) => (+a._ars.estimated_yearly || 0) - (+b._ars.estimated_yearly || 0)
+                        || String(a.nafn).localeCompare(b.nafn, 'is'),
+      status: (a, b) => {
+        // 0=done, 1=fieldOnly, 2=overdue, 3=skipped, 4=pending — relevance order
+        const score = c => {
+          const ars = c._ars || {};
+          const lastYr = +ars.last_year_inspected || 0;
+          const fieldYr = +ars.field_inspected_year || 0;
+          const m = +ars.inspect_month || 0;
+          if (lastYr === curYear) return 0;
+          if (fieldYr === curYear) return 1;
+          if (lastYr > 0 && lastYr < curYear - 1) return 3;
+          if (m > 0 && m <= curMonth) return 2;
+          return 4;
+        };
+        return score(a) - score(b) || String(a.nafn).localeCompare(b.nafn, 'is');
+      },
+      priority: (a, b) => (+(b._ars.priority || 0)) - (+(a._ars.priority || 0))  // higher first
+                       || String(a.nafn).localeCompare(b.nafn, 'is'),
+      lastYr: (a, b) => (+a._ars.last_year_inspected || 0) - (+b._ars.last_year_inspected || 0)
+                       || String(a.nafn).localeCompare(b.nafn, 'is'),
+    };
+    // Legacy fallback
+    if (!state.sortCol) {
+      if (state.sort === 'alpha')  state.sortCol = 'name';
+      else if (state.sort === 'month')  state.sortCol = 'month';
+      else if (state.sort === 'oldest') state.sortCol = 'lastYr';
+      else state.sortCol = 'month';
+      state.sortDir = 'asc';
     }
+    const cmp = SORT_COMPARATORS[state.sortCol] || SORT_COMPARATORS.name;
+    arr.sort(cmp);
+    if (state.sortDir === 'desc') arr.reverse();
     return arr;
   }
 
@@ -508,6 +555,21 @@
     main.querySelectorAll('._ars-mo').forEach(b => b.addEventListener('click', () => {
       state.month = parseInt(b.dataset.month, 10); saveState(); render();
     }));
+    // 2026-05-26: column-header sort click — toggle dir if same col, else
+    // switch to col with asc as default.
+    main.querySelectorAll('._ars-sort').forEach(th => th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (state.sortCol === col) {
+        state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        state.sortCol = col;
+        // Sensible default direction per column: name/address/email ascending,
+        // numeric/priority/status descending (so biggest/most-important on top)
+        state.sortDir = (col === 'name' || col === 'address' || col === 'email' || col === 'month')
+                        ? 'asc' : 'desc';
+      }
+      saveState(); render();
+    }));
     let _searchTimer = null;
     main.querySelector('#_ars-search')?.addEventListener('input', e => {
       clearTimeout(_searchTimer);
@@ -680,14 +742,28 @@
         <table style="width:100%;border-collapse:collapse;font-size:12px">
           <thead style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
             <tr style="text-align:left;color:#475569;font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.04em">
-              <th style="padding:9px 11px">Fyrirtæki</th>
-              <th style="padding:9px 7px">Heimilisfang</th>
-              <th style="padding:9px 7px">Netfang</th>
-              <th style="padding:9px 7px;text-align:center">Skoðun</th>
-              <th style="padding:9px 7px;text-align:center">Tæki</th>
-              <th style="padding:9px 7px;text-align:right">Áætl.</th>
-              <th style="padding:9px 7px;text-align:center">${curYear}</th>
-              <th style="padding:9px 11px"></th>
+              ${(() => {
+                // 2026-05-26: clickable sort headers. Smelltu → bring upp;
+                // smelltu aftur → snúa.
+                const cur = state.sortCol;
+                const dir = state.sortDir;
+                const arrow = (col) => cur === col
+                  ? `<span style="color:#0f172a;margin-left:3px;font-weight:700">${dir==='asc' ? '▲' : '▼'}</span>`
+                  : '<span style="color:#cbd5e1;margin-left:3px;font-size:9px">⇅</span>';
+                const css = 'padding:9px 11px;cursor:pointer;user-select:none;transition:background .12s';
+                const hover = `onmouseover="this.style.background='#eef2f7'" onmouseout="this.style.background='transparent'"`;
+                return `
+                  <th data-sort="name"     class="_ars-sort" style="${css}" ${hover}>Fyrirtæki${arrow('name')}</th>
+                  <th data-sort="address"  class="_ars-sort" style="${css}" ${hover}>Heimilisfang${arrow('address')}</th>
+                  <th data-sort="email"    class="_ars-sort" style="${css}" ${hover}>Netfang${arrow('email')}</th>
+                  <th data-sort="month"    class="_ars-sort" style="${css};text-align:center" ${hover}>Skoðun${arrow('month')}</th>
+                  <th data-sort="tools"    class="_ars-sort" style="${css};text-align:center" ${hover}>Tæki${arrow('tools')}</th>
+                  <th data-sort="estimate" class="_ars-sort" style="${css};text-align:right" ${hover}>Áætl.${arrow('estimate')}</th>
+                  <th data-sort="priority" class="_ars-sort" style="${css};text-align:center" ${hover}>❗${arrow('priority')}</th>
+                  <th data-sort="status"   class="_ars-sort" style="${css};text-align:center" ${hover}>${curYear}${arrow('status')}</th>
+                  <th style="padding:9px 11px"></th>
+                `;
+              })()}
             </tr>
           </thead>
           <tbody>
@@ -727,7 +803,8 @@
                   <td style="padding:8px 7px;text-align:center;font-weight:600;color:${m===curMonth?'#dc2626':'#475569'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</td>
                   <td style="padding:8px 7px;text-align:center;font-weight:700;color:#0f172a">${totalEq||'—'}</td>
                   <td style="padding:8px 7px;text-align:right;color:#15803d;font-weight:700;font-variant-numeric:tabular-nums">${fmtKrShort(est)}</td>
-                  <td style="padding:8px 7px;text-align:center;white-space:nowrap">${(window.Priority && window.Priority.btnHtml(c.id, 16)) || ''} <span style="display:inline-block;width:9px;height:9px;border-radius:99px;background:${dot}"></span>${skippedBadge}${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</td>
+                  <td style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
+                  <td style="padding:8px 7px;text-align:center;white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:99px;background:${dot}"></span>${skippedBadge}${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</td>
                   <td style="padding:8px 11px;text-align:right;white-space:nowrap">
                     <button class="_ars-open-fyrirt" data-co-id="${c.id}" type="button" title="Opna fyrirtæki" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px;margin-right:3px">🏢</button>
                     <button class="_ars-open-map" data-co-id="${c.id}" type="button" title="Sjá á korti" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px">🗺️</button>
