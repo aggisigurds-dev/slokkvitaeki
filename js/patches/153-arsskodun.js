@@ -1100,7 +1100,11 @@
       //     2 for far-away customers — stored on entry.akstur_multiplier)
       //   - Áminning overrides yfirferd_price and applies discount_pct.
       const parsed = entry.aminning_parsed || null;
-      const PRICES = {
+      // 2026-05-27: dynamic Yfirferð pricelist — pulls live from vorur table
+      // so any price update Aggi makes in Vörur og þjónusta is reflected
+      // immediately, without a code change/deploy. Hardcoded values stay
+      // as fallback if a vorur row is missing or DB roundtrip fails.
+      const FALLBACK_PRICES = {
         lettvatn:       3906,
         duft2:          4200,
         duft6_12:       4200,
@@ -1110,6 +1114,47 @@
         eldvarnarteppi: 0,
         reykskynjarar:  2909
       };
+      // Token signatures to match against vorur.nafn — used to find the
+      // right "Yfirferð X" row for each equipment key. Each entry: must
+      // contain ALL required tokens (case-insensitive, diacritic-folded).
+      const KEY_SIGS = {
+        lettvatn:       ['yfirfer', 'lettvatn'],
+        duft2:          ['yfirfer', 'duft', '2'],
+        duft6_12:       ['yfirfer', 'duft', '6'],
+        co2_2:          ['yfirfer', 'co2', '2'],
+        co2_5:          ['yfirfer', 'co2', '5'],
+        brunaslongur:   ['yfirfer', 'brunaslang'],   // matches both "brunaslanga"/"brunaslöngur"
+        eldvarnarteppi: ['yfirfer', 'eldvarn'],
+        reykskynjarar:  ['yfirfer', 'reykskyn'],
+      };
+      function fold(s) {
+        return String(s || '').toLowerCase()
+          .normalize('NFD').replace(/\p{Diacritic}/gu, '')
+          .replace(/þ/g, 'th').replace(/ð/g, 'd')
+          .replace(/æ/g, 'ae').replace(/ö/g, 'o');
+      }
+      async function loadPricesFromVorur() {
+        try {
+          const SB = window.DB && window.DB.sb;
+          if (!SB) return FALLBACK_PRICES;
+          const r = await SB.from('vorur').select('nafn,verd_an_vsk').ilike('nafn', '%yfir%');
+          if (r.error || !Array.isArray(r.data)) return FALLBACK_PRICES;
+          const out = Object.assign({}, FALLBACK_PRICES);
+          for (const key in KEY_SIGS) {
+            const sig = KEY_SIGS[key];
+            const hit = r.data.find(p => {
+              const n = fold(p.nafn);
+              return sig.every(tok => n.includes(fold(tok)));
+            });
+            if (hit && hit.verd_an_vsk > 0) {
+              out[key] = Math.round((+hit.verd_an_vsk) * 1.24);
+            }
+          }
+          console.log('[arsskodun] live yfirferð prices:', out);
+          return out;
+        } catch (_) { return FALLBACK_PRICES; }
+      }
+      const PRICES = await loadPricesFromVorur();
       const SKYRSLUGERD = 4340;   // 3500 + 24% VSK
       const AKSTUR_UNIT = 3720;   // 3000 + 24% VSK
       let total = 0;
