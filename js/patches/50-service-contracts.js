@@ -224,7 +224,10 @@
     m.id = 'ct-modal'; m.className = 'ct-modal-wrap';
     m.dataset.id = id || '';
     m.dataset.mode = mode || '';
-    m.onclick = e => { if(e.target===m) m.remove(); };
+    // 2026-05-27: removed accidental click-outside-to-close. Aggi was losing
+    // half-filled contract forms to stray mouse/finger taps. Use the ✕ button
+    // or Loka button to close instead.
+    m.onclick = e => { /* backdrop click no longer closes — too easy to lose work */ };
     const title = isNew
       ? (isLegacy ? '📥 Skanna eldri samning' : 'Nýr þjónustusamningur')
       : 'Samningur við '+esc(c.company_nafn||'');
