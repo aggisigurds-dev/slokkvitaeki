@@ -80,6 +80,7 @@
     ['Sala'],
     ['Afgreiðsla'],
     ['Verkstæði'],
+    ['Vörur og þjónusta'],   // 2026-05-26: moved up — Aggi flýtt sögurefli
     SEP,
     ['Þjónustutæki'],
     ['Leiðsögn'],  // 2026-05-19: placed above Fyrirtæki í Þjónustu — driver workflow starts on map
@@ -94,17 +95,16 @@
     ['Drög'],
     ['Til að rukka'],
     ['Kröfu yfirlit'],
+    ['Bókhalds yfirlit', 'Bókhaldsyfirlit'],  // 2026-05-26: under Kröfu yfirlit
     ['Hreyfingarlisti'],
     SEP,
     ['Geymsla'],
     ['Lánstæki'],
     ['Birgðir'],
-    ['Vörur og þjónusta'],
     SEP,
     ['Tilboð'],
     ['Samningar'],
     SEP,
-    ['Bókhalds yfirlit', 'Bókhaldsyfirlit'],
     ['Tekjur'],
     ['Reikningar'],
     ['Kreditreikning', 'Kreditfæra'],
