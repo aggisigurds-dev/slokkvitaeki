@@ -407,12 +407,42 @@
     // paymentTerms now conveys the same info; the stamp on the receipt is just
     // duplicate noise. Keep whatever real free-form note remains.
     if (ctx.vegna) {
-      const cleaned = String(ctx.vegna)
+      let cleaned = String(ctx.vegna)
         .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]\s*verður\s+greitt\s+við\s+afhendingu\s*[—\-:]?\s*/i, '')
         .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]?\s*/i, '')
         .trim();
       if (cleaned) {
-        customerRows.push(`<div class="vegna">vegna ${esc(cleaned)}</div>`);
+        // 2026-05-27: Aggi asked to clean up the chaotic vegna line.
+        // The walk-in flow often produces strings like:
+        //   "Kt: 150486-2389 [Sótt 2026-05-27] Afsláttur: 20% (-1040 kr) Greiðsla: kort"
+        // We pull each known token out into its own row, drop the redundant
+        // "Greiðsla: ..." (already shown in Greiðsl.skilm. on the right) and
+        // drop "Afsláttur: ..." (already shown in totals at the bottom).
+        const ktMatch    = cleaned.match(/\bKt[:.]?\s*(\d{6}-?\d{4})/i);
+        const sottMatch  = cleaned.match(/\bSótt[\s:]*\[?\s*(\d{4}-\d{2}-\d{2})\s*\]?/i);
+        // Strip recognised tokens to reveal any leftover free-form note
+        let remainder = cleaned
+          .replace(/\bKt[:.]?\s*\d{6}-?\d{4}/i, '')
+          .replace(/\[?\s*Sótt[\s:]*\d{4}-\d{2}-\d{2}\s*\]?/i, '')
+          .replace(/\bAfsl(?:áttur)?[:.]?\s*[\d,.]+%?\s*\(?[-−–\s]*[\d.,]*\s*kr?\)?/i, '')
+          .replace(/\bGreiðsla[:.]?\s*\w+/i, '')
+          // Tidy leftover punctuation
+          .replace(/^\s*[,.\s]+|[,.\s]+$/g, '')
+          .replace(/\s{2,}/g, ' ')
+          .trim();
+        if (ktMatch && !co.kennitala) {
+          // Only show kt separately if it wasn't already on its own line
+          customerRows.push(`<div class="bt-line">${esc(fmtKt(ktMatch[1]))}</div>`);
+        }
+        if (sottMatch) {
+          const d = sottMatch[1];
+          // Convert YYYY-MM-DD → DD.MM.YYYY for Icelandic format
+          const [y, m, dd] = d.split('-');
+          customerRows.push(`<div class="bt-line">Sótt: ${dd}.${m}.${y}</div>`);
+        }
+        if (remainder) {
+          customerRows.push(`<div class="vegna">vegna ${esc(remainder)}</div>`);
+        }
       }
     }
 
