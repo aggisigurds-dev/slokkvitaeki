@@ -38,14 +38,43 @@
       document.head.appendChild(s);
     });
   }
-  function qrPNG(text, size) {
+  function qrPNG(text, size, opts) {
+    opts = opts || {};
+    // 2026-05-27: qrcodejs caps at 352 bytes for correctLevel.M and ~440 for L.
+    // Aggi hit "code length overflow (420>352)" when a sale's name + phone +
+    // extra exceeded the limit. Strategy:
+    //   1. Try at L (lowest error correction → most capacity ~2953 bytes)
+    //   2. If still too long, truncate the input progressively until it fits.
+    //      Keep the SERIAL token (after the last "·") since that's what the
+    //      scanner needs to identify the unit.
     return new Promise(resolve => {
-      const div = document.createElement('div');
-      new window.QRCode(div, {
-        text, width: size, height: size,
-        colorDark: '#000000', colorLight: '#ffffff',
-        correctLevel: window.QRCode.CorrectLevel.M
-      });
+      function tryBuild(t) {
+        const div = document.createElement('div');
+        try {
+          new window.QRCode(div, {
+            text: t, width: size, height: size,
+            colorDark: '#000000', colorLight: '#ffffff',
+            correctLevel: window.QRCode.CorrectLevel.L,
+          });
+          return div;
+        } catch (e) {
+          return null;
+        }
+      }
+      // Extract a "must-keep" tail: prefer the last token after " · " (serial)
+      const serialTail = (String(text).split(' · ').pop() || text).trim();
+      let attempt = String(text);
+      let div = tryBuild(attempt);
+      // If creation threw, progressively shrink until it fits or only serial remains
+      let safety = 8;
+      while (!div && safety-- > 0) {
+        if (attempt.length <= serialTail.length + 1) { attempt = serialTail; div = tryBuild(attempt); break; }
+        // Drop the LEFTMOST token each round (keeps the serial at the end intact)
+        const idx = attempt.indexOf(' · ');
+        attempt = idx >= 0 ? attempt.slice(idx + 3) : serialTail;
+        div = tryBuild(attempt);
+      }
+      if (!div) { resolve(''); return; }
       setTimeout(() => {
         const canvas = div.querySelector('canvas');
         const img = div.querySelector('img');
