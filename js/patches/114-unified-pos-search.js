@@ -127,8 +127,8 @@
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
             '<div><label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">Kennitala</label>' +
               '<div style="display:flex;gap:6px;align-items:stretch;margin-top:4px">' +
-                '<input id="_ups-new-kt" type="text" inputmode="numeric" value="' + esc(initialKt) + '" placeholder="0000000000" maxlength="11" style="flex:1;min-width:0;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;box-sizing:border-box;font-family:monospace">' +
-                '<button id="_ups-new-ktlookup" type="button" style="flex-shrink:0;padding:0 11px;border:1px solid #cbd5e1;border-radius:7px;background:#f1f5f9;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#334155;white-space:nowrap">Fletta upp</button>' +
+                '<input id="_ups-new-kt" type="text" inputmode="numeric" data-kt-lookup-wrapped="1" value="' + esc(initialKt) + '" placeholder="0000000000" maxlength="11" style="flex:1;min-width:0;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;box-sizing:border-box;font-family:monospace">' +
+                '<button id="_ups-new-ktlookup" type="button" style="flex-shrink:0;padding:0 11px;border:1px solid #cbd5e1;border-radius:7px;background:#f1f5f9;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#334155;white-space:nowrap">🔍 Fletta upp</button>' +
               '</div></div>' +
             '<div><label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">Sími</label>' +
               '<input id="_ups-new-simi" type="tel" placeholder="555 1234" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;margin-top:4px;box-sizing:border-box"></div>' +

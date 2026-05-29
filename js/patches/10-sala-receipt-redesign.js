@@ -576,22 +576,23 @@
     const opts = options || {};
     const state = (window.POS && typeof POS.getState === 'function') ? POS.getState() : null;
     let customer = lookupCustomer(state);
-    // Fallback: if no Companies.list record matched, build a synthetic customer
-    // from the POS state OR from explicit opts.customer{Name,Kt,Simi} passed
-    // by the caller (e.g. the checkout dialog reads the live form fields and
-    // hands them to us; state may not be set when the call originates there).
-    if (!customer) {
-      const sc = (state && state.customer) || {};
-      const fallbackNafn = sc.nafn || opts.customerName || '';
-      const fallbackKt   = sc.kt   || sc.kennitala || opts.customerKt || '';
-      const fallbackAddr = sc.heimilisfang || opts.customerHeimilisfang || '';
-      if (fallbackNafn || fallbackKt || fallbackAddr) {
-        customer = {
-          nafn: fallbackNafn,
-          kennitala: fallbackKt,
-          heimilisfang: fallbackAddr
-        };
-      }
+    // Build the bill-to block by MERGING the best available data for each
+    // field: the resolved Companies.list record first, then the live POS
+    // state, then explicit opts.customer{Name,Kt,Heimilisfang} passed by the
+    // caller. Previously this only filled fields when lookupCustomer returned
+    // nothing — so when it returned a partial record (or the company wasn't
+    // matched) the kennitala + heimilisfang were dropped and only the name
+    // printed. Merging unconditionally fixes that for every print path.
+    const sc = (state && state.customer) || {};
+    const billNafn = (customer && customer.nafn) || sc.nafn || opts.customerName || '';
+    const billKt   = (customer && customer.kennitala) || sc.kennitala || sc.kt || opts.customerKt || '';
+    const billAddr = (customer && customer.heimilisfang) || sc.heimilisfang || opts.customerHeimilisfang || '';
+    if (billNafn || billKt || billAddr) {
+      customer = Object.assign({}, customer, {
+        nafn: billNafn,
+        kennitala: billKt,
+        heimilisfang: billAddr
+      });
     }
     const lines = buildLines(state);
     if (!lines.length) {
