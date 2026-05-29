@@ -161,8 +161,26 @@
       kt:    ktInput?.value.trim()  || stateCust.kt   || '',
       nafn:  nafnInput?.value.trim() || stateCust.nafn || '',
       simi:  simiInput?.value.trim() || stateCust.simi || '',
+      heimilisfang: stateCust.heimilisfang || '',
       co_id: stateCust.co_id || null
     };
+    // Resolve full kennitala + heimilisfang from Companies.list (fyrirtaeki) so
+    // the printed invoice's bill-to block has them even when POS state only
+    // kept the name. Match by co_id, then kennitala, then name.
+    try {
+      const list = (window.Companies && Companies.list) || [];
+      const ktDigits = (customer.kt || '').replace(/[^0-9]/g, '');
+      const nm = (customer.nafn || '').trim().toLowerCase();
+      const co = (customer.co_id && list.find(c => +c.id === +customer.co_id))
+        || (ktDigits.length === 10 && list.find(c => String(c.kennitala || '').replace(/[^0-9]/g, '') === ktDigits))
+        || (nm && list.find(c => String(c.nafn || '').trim().toLowerCase() === nm))
+        || null;
+      if (co) {
+        if (!customer.heimilisfang) customer.heimilisfang = co.heimilisfang || '';
+        if (!customer.kt)           customer.kt = co.kennitala || '';
+        if (!customer.nafn)         customer.nafn = co.nafn || '';
+      }
+    } catch (_) {}
     // 2026-05-18: capture discount from POS state so the printed receipt
     // includes it. SalaInvoice.render falls back to POS.getState() but if
     // that path ever fails we still pass it explicitly here.
@@ -356,6 +374,7 @@
         // not meant to hold the customer's phone or kennitala).
         customerKt: cart.customer.kt || '',
         customerSimi: cart.customer.simi || '',
+        customerHeimilisfang: cart.customer.heimilisfang || '',
         paymentMethod: method,            // 'kort' / 'pening' / 'reikningur'
         invoiceNum: cart.invoiceNum || '', // assigned by DB trigger on save
         // 2026-05-18: pass discount explicitly so it appears on the printed
