@@ -392,14 +392,18 @@
       }
       window._upsOpenNewCustomer('', '');
       // The dialog (#_ups-newdlg) removes itself on save/cancel. Watch for
-      // that removal and re-render so any new data is picked up.
+      // that removal and re-render so any new data is picked up. Guard against
+      // stacking observers if the button is clicked repeatedly.
+      if (window.__avNewCustWatch) { window.__avNewCustWatch.disconnect(); window.__avNewCustWatch = null; }
       const watch = new MutationObserver(() => {
         if (!document.getElementById('_ups-newdlg')) {
           watch.disconnect();
+          if (window.__avNewCustWatch === watch) window.__avNewCustWatch = null;
           const m = document.getElementById('_av-main');
           if (m) render(m);
         }
       });
+      window.__avNewCustWatch = watch;
       watch.observe(document.body, { childList: true });
     });
     let _searchTimer = null;

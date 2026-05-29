@@ -165,3 +165,24 @@ branch `claude/determined-pasteur-H8jvj`.
 **Deploy note:** this sandbox can't reach `api.netlify.com` directly (network
 allowlist) and the Netlify MCP is intermittently 502-ing, so changes ship via
 git/PR; deploy to Netlify happens separately after merge.
+
+## Follow-up (from batch H8jvj review) — unify customer database
+
+Item 8 shipped as the "+ Nýr viðskiptavinur" button only. Review found the
+contract system is entirely keyed on `fyrirtaeki.id` (Companies.list loads only
+fyrirtaeki; `arsskodun_customers` / `brunakerfi_customers` maps + Ársskoðun (153)
++ Brunakerfi (147) + detail (158) all key off company id), while the create
+dialog (114) inserts into `vidskiptavinir` — so created individuals don't appear
+in Allir viðskiptavinir and can't be safely enrolled in samningar (id collision
+risk between the two id spaces).
+
+DECISION (Agnar, 2026-05-29): **make `fyrirtaeki` the single customer table.**
+- [ ] Retarget customer creation (shared dialog 114 + the 157 button) to insert
+      into `fyrirtaeki`.
+- [ ] Migrate existing `vidskiptavinir` individuals into `fyrirtaeki` (dedup by
+      kennitala; map columns; preserve references — solur.customer_id,
+      verkbeidnir, unit.client-by-name). REQUIRES a Supabase backup first and a
+      tested migration (run via Supabase MCP / SQL, not from the web sandbox).
+- [ ] Then Allir viðskiptavinir naturally shows everyone and the existing
+      ars/bru enrollment toggles work for all of them.
+This is a foundational data change — handle as its own task with a backup.
