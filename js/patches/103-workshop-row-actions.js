@@ -19,6 +19,41 @@
   }
   function getSB() { return (window.DB && window.DB.sb) || null; }
 
+  // ── Status label/colour extension (moved here from retired patch 176) ─────
+  // Ensures unit statuses render with proper Icelandic labels + colours via
+  // U.sl / U.sc (used by U.badge) instead of raw status strings.
+  const STATUS_LABEL = {
+    active:   'Virkt',
+    scrap:    'Ónýtt',
+    broken:   'Brotið',
+    urelt:    'Úrelt',
+    geymsla:  'Í geymslu',
+    repair:   'Þarfnast viðgerðar',
+    fail:     'Bilað',
+  };
+  const STATUS_CLASS = {
+    active:   'st-ok',
+    scrap:    'st-ov',
+    broken:   'st-ov',
+    urelt:    'st-ov',
+    geymsla:  'st-col',
+    repair:   'st-due',
+    fail:     'st-ov',
+  };
+  if (window.U && !U.__statusLabelsExtended) {
+    U.__statusLabelsExtended = true;
+    const origSl = U.sl;
+    const origSc = U.sc;
+    U.sl = function(s) {
+      if (STATUS_LABEL[s]) return STATUS_LABEL[s];
+      try { return origSl.call(U, s); } catch (_) { return s; }
+    };
+    U.sc = function(s) {
+      if (STATUS_CLASS[s]) return STATUS_CLASS[s];
+      try { return origSc.call(U, s); } catch (_) { return ''; }
+    };
+  }
+
   function unitFromRow(row) {
     // Try classic table cell .ser, then .ws-ser (workshop modal redesign)
     let serialEl = row.querySelector('.ser') || row.querySelector('.ws-ser');
@@ -127,18 +162,30 @@
   }
 
   // ── Toggle ónýtt status ───────────────────────────────────────────────────
+  // 2026-05-29: read the CURRENT status from the DB before deciding direction
+  // so reverting scrap→active works on the first click even if the cached
+  // unit.status is stale (was the root cause of the brittle 176 workaround).
   async function toggleScrap(unit, btn) {
     const SB = getSB();
     if (!SB) { alert('Engin gagnabankatenging'); return; }
-    const isScrapNow = unit.status === 'scrap';
-    const newStatus = isScrapNow ? 'active' : 'scrap';
-    if (!isScrapNow) {
-      // 2026-05-10 (B5+): Confirm.show í stað native confirm
-      if (!(await Confirm.show('Merkja tæki ' + (unit.serial || unit.id) + ' sem ÓNÝTT?\n\nÞetta merkir tækið sem brotið/ónýtt — það mun birtast með rauðum status í kerfinu.', {danger:true, okText:'Merkja ónýtt'}))) return;
-    }
     btn.disabled = true;
     btn.textContent = '...';
     try {
+      // Truth from DB — not the (possibly stale) cached unit.
+      let currentStatus = unit.status;
+      try {
+        const cur = await SB.from('uttaeki').select('status').eq('id', unit.id).single();
+        if (!cur.error && cur.data && cur.data.status != null) currentStatus = cur.data.status;
+      } catch (_) { /* fall back to cached status */ }
+      const isScrapNow = currentStatus === 'scrap';
+      const newStatus = isScrapNow ? 'active' : 'scrap';
+      if (!isScrapNow) {
+        // 2026-05-10 (B5+): Confirm.show í stað native confirm
+        if (!(await Confirm.show('Merkja tæki ' + (unit.serial || unit.id) + ' sem ÓNÝTT?\n\nÞetta merkir tækið sem brotið/ónýtt — það mun birtast með rauðum status í kerfinu.', {danger:true, okText:'Merkja ónýtt'}))) {
+          stylizeScrapBtn(btn, currentStatus);
+          return;
+        }
+      }
       const r = await SB.from('uttaeki').update({ status: newStatus }).eq('id', unit.id);
       if (r.error) throw r.error;
       unit.status = newStatus;
@@ -146,8 +193,9 @@
         const idx = window.DB.cache.units.findIndex(u => u.id === unit.id);
         if (idx >= 0) window.DB.cache.units[idx].status = newStatus;
       }
-      // Update button visual
+      // Update button + the row's Staða cell immediately.
       stylizeScrapBtn(btn, newStatus);
+      repaintStatusCell(btn, newStatus);
       if (window.Toast && Toast.show) Toast.show(newStatus === 'scrap' ? '🚫 Tæki merkt ónýtt' : '✓ Tæki merkt aftur í lagi');
     } catch (e) {
       alert('Villa: ' + (e.message || e));
@@ -155,6 +203,18 @@
     } finally {
       btn.disabled = false;
     }
+  }
+  // Repaint the row's Staða <td> (and row tint) so the change is visible
+  // immediately. Replaces the old 176 timed-repaint hack.
+  function repaintStatusCell(btn, status) {
+    const row = btn.closest && btn.closest('tr');
+    if (!row) return;
+    const cells = row.querySelectorAll('td');
+    cells.forEach(td => {
+      const span = td.querySelector('span.st');
+      if (span && window.U && U.badge) td.innerHTML = U.badge(status);
+    });
+    row.style.background = status === 'scrap' ? '#fef2f2' : '';
   }
   function stylizeScrapBtn(btn, status) {
     if (status === 'scrap') {

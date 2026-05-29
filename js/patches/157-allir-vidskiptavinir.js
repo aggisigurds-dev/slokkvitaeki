@@ -46,16 +46,17 @@
   const LS_XFILT = 'allir_vidsk_xfilter';  // extra filter — comma-separated of:
                                            //   has-email | has-gps | no-address
 
+  // 2026-05-29: search term is no longer persisted — always start blank.
+  try { localStorage.removeItem(LS_SRCH); } catch (_) {}
   const state = {
     filter:  localStorage.getItem(LS_FILT)  || 'all',
-    search:  localStorage.getItem(LS_SRCH)  || '',
+    search:  '',
     view:    localStorage.getItem(LS_VIEW)  || 'card',
     sort:    localStorage.getItem(LS_SORT)  || 'nafn',
     xfilter: (localStorage.getItem(LS_XFILT) || '').split(',').filter(Boolean)
   };
   function saveState() {
     localStorage.setItem(LS_FILT,  state.filter);
-    localStorage.setItem(LS_SRCH,  state.search);
     localStorage.setItem(LS_VIEW,  state.view);
     localStorage.setItem(LS_SORT,  state.sort);
     localStorage.setItem(LS_XFILT, state.xfilter.join(','));
@@ -301,9 +302,12 @@
 
         <!-- Toolbar: view toggle + sort -->
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
-          <div style="display:inline-flex;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;background:#fff">
-            <button data-view-mode="card" class="_av-vm" type="button" style="padding:6px 12px;background:${state.view==='card'?'#0f172a':'#fff'};color:${state.view==='card'?'#fff':'#475569'};border:none;cursor:pointer;font:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px">▦ Kort</button>
-            <button data-view-mode="list" class="_av-vm" type="button" style="padding:6px 12px;background:${state.view==='list'?'#0f172a':'#fff'};color:${state.view==='list'?'#fff':'#475569'};border:none;border-left:1px solid #cbd5e1;cursor:pointer;font:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px">☰ Listi</button>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <div style="display:inline-flex;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;background:#fff">
+              <button data-view-mode="card" class="_av-vm" type="button" style="padding:6px 12px;background:${state.view==='card'?'#0f172a':'#fff'};color:${state.view==='card'?'#fff':'#475569'};border:none;cursor:pointer;font:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px">▦ Kort</button>
+              <button data-view-mode="list" class="_av-vm" type="button" style="padding:6px 12px;background:${state.view==='list'?'#0f172a':'#fff'};color:${state.view==='list'?'#fff':'#475569'};border:none;border-left:1px solid #cbd5e1;cursor:pointer;font:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px">☰ Listi</button>
+            </div>
+            <button id="_av-new-cust" type="button" style="padding:6px 14px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px">+ Nýr viðskiptavinur</button>
           </div>
           <div style="display:flex;align-items:center;gap:7px">
             <label for="_av-sort" style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase">Raða:</label>
@@ -378,6 +382,25 @@
     }));
     main.querySelector('#_av-clear-x')?.addEventListener('click', () => {
       state.xfilter = []; saveState(); render(main);
+    });
+    // + Nýr viðskiptavinur — open the canonical shared dialog (patch 114) and
+    // refresh the list once it closes (after create/cancel).
+    main.querySelector('#_av-new-cust')?.addEventListener('click', () => {
+      if (typeof window._upsOpenNewCustomer !== 'function') {
+        if (window.Toast && Toast.show) Toast.show('Stofnunargluggi ekki tiltækur');
+        return;
+      }
+      window._upsOpenNewCustomer('', '');
+      // The dialog (#_ups-newdlg) removes itself on save/cancel. Watch for
+      // that removal and re-render so any new data is picked up.
+      const watch = new MutationObserver(() => {
+        if (!document.getElementById('_ups-newdlg')) {
+          watch.disconnect();
+          const m = document.getElementById('_av-main');
+          if (m) render(m);
+        }
+      });
+      watch.observe(document.body, { childList: true });
     });
     let _searchTimer = null;
     main.querySelector('#_av-search')?.addEventListener('input', e => {

@@ -114,30 +114,15 @@
         '<td style="padding:7px 10px;font-size:11px;color:#64748b">' + esc(p.notes || '') + '</td>' +
         '<td style="padding:7px 10px;text-align:center"><button class="_cpr-del" data-id="' + esc(p.id) + '" type="button" title="Eyða" style="background:#fff;border:1px solid #fecaca;color:#dc2626;border-radius:5px;width:24px;height:24px;cursor:pointer;font-size:11px">✕</button></td>' +
       '</tr>';
-    }).join('') : '<tr><td colspan="6" style="padding:18px;text-align:center;color:#94a3b8;font-size:13px;font-style:italic">Engin tilboðsverð skráð — smelltu „+ Bæta við" hér að neðan</td></tr>';
+    }).join('') : '<tr><td colspan="6" style="padding:18px;text-align:center;color:#94a3b8;font-size:13px;font-style:italic">Engin tilboðsverð skráð — notaðu „+ Bæta við" hér að ofan</td></tr>';
 
     return '' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
-        '<div>' +
-          '<h3 style="margin:0;font-size:15px;font-weight:700;color:#1e40af">💰 Tilboðsverð</h3>' +
-          '<div style="font-size:11px;color:#1e40af;margin-top:2px">Sérverð sem yfirstíga búðarverð sjálfvirkt í Sala fyrir þetta fyrirtæki.</div>' +
-        '</div>' +
+      '<div style="margin-bottom:14px">' +
+        '<h3 style="margin:0;font-size:15px;font-weight:700;color:#1e40af">💰 Tilboðsverð</h3>' +
+        '<div style="font-size:11px;color:#1e40af;margin-top:2px">Sérverð sem yfirstíga búðarverð sjálfvirkt í Sala fyrir þetta fyrirtæki.</div>' +
       '</div>' +
-      '<div style="background:#fff;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">' +
-        '<table style="width:100%;border-collapse:collapse">' +
-          '<thead style="background:#dbeafe"><tr>' +
-            '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em">Vara / þjónusta</th>' +
-            '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em">Verð án vsk</th>' +
-            '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em;width:60px">VSK</th>' +
-            '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em">M/VSK</th>' +
-            '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em">Athugasemd</th>' +
-            '<th style="padding:8px 10px;width:40px"></th>' +
-          '</tr></thead>' +
-          '<tbody>' + rows + '</tbody>' +
-        '</table>' +
-      '</div>' +
-      // Add new form
-      '<div style="margin-top:10px;padding:12px;background:#fff;border:1px dashed #bfdbfe;border-radius:8px">' +
+      // Add new form (now first — sits above the list as one panel)
+      '<div style="margin-bottom:14px">' +
         '<div style="font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">+ Bæta við tilboði</div>' +
         '<div style="display:grid;grid-template-columns:2fr 1fr 80px 2fr 100px;gap:6px;align-items:center">' +
           '<div style="display:flex;gap:4px">' +
@@ -150,6 +135,23 @@
           '<button class="_cpr-add" type="button" style="padding:8px 14px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">+ Bæta við</button>' +
         '</div>' +
         '<div style="margin-top:6px;font-size:11px;color:#64748b">Smelltu 🔍 til að velja úr vörulistanum (verð fyllist sjálfvirkt). Nafnið matchast við körfulínur með case-insensitive substring.</div>' +
+      '</div>' +
+      // Subtle divider, then the existing prices list (one continuous panel)
+      '<div style="border-top:1px solid #bfdbfe;padding-top:12px">' +
+        '<div style="font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Skráð tilboðsverð</div>' +
+        '<div style="background:#fff;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">' +
+          '<table style="width:100%;border-collapse:collapse">' +
+            '<thead style="background:#dbeafe"><tr>' +
+              '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em">Vara / þjónusta</th>' +
+              '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em">Verð án vsk</th>' +
+              '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em;width:60px">VSK</th>' +
+              '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em">M/VSK</th>' +
+              '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em">Athugasemd</th>' +
+              '<th style="padding:8px 10px;width:40px"></th>' +
+            '</tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table>' +
+        '</div>' +
       '</div>';
   }
 

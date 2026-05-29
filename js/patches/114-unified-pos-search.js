@@ -126,7 +126,10 @@
             '<input id="_ups-new-nafn" type="text" value="' + esc(initialNafn) + '" placeholder="Fyrirtæki eða nafn" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;margin-top:4px;box-sizing:border-box"></div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
             '<div><label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">Kennitala</label>' +
-              '<input id="_ups-new-kt" type="text" inputmode="numeric" value="' + esc(initialKt) + '" placeholder="0000000000" maxlength="11" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;margin-top:4px;box-sizing:border-box;font-family:monospace"></div>' +
+              '<div style="display:flex;gap:6px;align-items:stretch;margin-top:4px">' +
+                '<input id="_ups-new-kt" type="text" inputmode="numeric" value="' + esc(initialKt) + '" placeholder="0000000000" maxlength="11" style="flex:1;min-width:0;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;box-sizing:border-box;font-family:monospace">' +
+                '<button id="_ups-new-ktlookup" type="button" style="flex-shrink:0;padding:0 11px;border:1px solid #cbd5e1;border-radius:7px;background:#f1f5f9;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#334155;white-space:nowrap">Fletta upp</button>' +
+              '</div></div>' +
             '<div><label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">Sími</label>' +
               '<input id="_ups-new-simi" type="tel" placeholder="555 1234" style="width:100%;padding:9px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;margin-top:4px;box-sizing:border-box"></div>' +
           '</div>' +
@@ -159,6 +162,62 @@
       const raw = ktInp.value.replace(/[^0-9]/g, '').slice(0, 10);
       ktInp.value = raw.length > 6 ? raw.slice(0,6) + '-' + raw.slice(6) : raw;
     });
+
+    // RSK kennitala auto-fill. Reuses window.KtLookup.lookup (patch 19).
+    // Fills only empty fields with non-empty results; never overwrites what
+    // the user already typed. simi is usually empty on the free path.
+    const ktBtn = dlg.querySelector('#_ups-new-ktlookup');
+    let ktLookupBusy = false;
+    async function doKtLookup() {
+      if (ktLookupBusy) return;
+      const kt = ktInp.value.replace(/[^0-9]/g, '');
+      if (kt.length !== 10) {
+        if (window.Toast && Toast.show) Toast.show('Kennitalan þarf að vera 10 tölustafir');
+        return;
+      }
+      if (!(window.KtLookup && typeof KtLookup.lookup === 'function')) {
+        if (window.Toast && Toast.show) Toast.show('Uppfletting ekki tiltæk');
+        return;
+      }
+      ktLookupBusy = true;
+      const origLabel = ktBtn.textContent;
+      ktBtn.disabled = true;
+      ktBtn.textContent = '⏳';
+      try {
+        const data = await KtLookup.lookup(kt);
+        if (data) {
+          if (data.nafn && !nafnInp.value.trim()) nafnInp.value = data.nafn;
+          if (data.simi && !simiInp.value.trim()) simiInp.value = data.simi;
+          if (data.netfang && !emailInp.value.trim()) emailInp.value = data.netfang;
+          // heimilisfang from lookup is already a full string; build defensively
+          // if separate parts are returned instead.
+          let addr = data.heimilisfang || '';
+          if (!addr && (data.postnumer || data.stadur)) {
+            addr = [data.postnumer, data.stadur].filter(Boolean).join(' ');
+          } else if (addr && data.postnumer && data.stadur && !/\d{3}/.test(addr)) {
+            addr = addr + ', ' + data.postnumer + ' ' + data.stadur;
+          }
+          if (addr && !addrInp.value.trim()) addrInp.value = addr;
+          if (window.Toast && Toast.show) Toast.show('✓ ' + (data.nafn || 'Fundið'));
+        }
+      } catch (e) {
+        if (window.Toast && Toast.show) Toast.show('Uppfletting mistókst — ' + ((e && e.message) || e));
+      } finally {
+        ktLookupBusy = false;
+        ktBtn.disabled = false;
+        ktBtn.textContent = origLabel;
+      }
+    }
+    ktBtn.addEventListener('click', doKtLookup);
+    // Auto-trigger once the kt reaches 10 digits (debounced) and on blur.
+    ktInp.addEventListener('input', () => {
+      if (ktInp.value.replace(/[^0-9]/g, '').length === 10) setTimeout(doKtLookup, 300);
+    });
+    ktInp.addEventListener('blur', () => {
+      if (ktInp.value.replace(/[^0-9]/g, '').length === 10) doKtLookup();
+    });
+    // If a kt was preset, run it once on open.
+    if (initialKt && initialKt.length === 10) setTimeout(doKtLookup, 200);
 
     function showErr(msg) { errEl.textContent = msg; errEl.style.display = ''; }
 

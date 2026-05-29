@@ -45,7 +45,9 @@
                 '<option>ABC Duft</option><option>CO₂</option><option>Vatn</option><option>Léttvatn</option><option>Froðu</option><option>Blautt efni</option><option>Halon</option><option>Brunaslanga</option><option>Slönguskápur</option><option>Reykskynjari</option><option>Hitaskynjari</option>' +
               '</select></div>' +
             '<div><label style="display:block;font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:700;margin-bottom:4px">Stærð</label>' +
-              '<input id="_ba_size" placeholder="t.d. 6 kg / 30 m" style="width:100%;padding:9px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box"></div>' +
+              '<select id="_ba_size" style="width:100%;padding:9px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box">' +
+                '<option>6kg</option><option>9kg</option><option>5kg</option><option>12kg</option><option>3kg</option><option>9L</option>' +
+              '</select></div>' +
           '</div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">' +
             '<div><label style="display:block;font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:700;margin-bottom:4px">Magn</label>' +
