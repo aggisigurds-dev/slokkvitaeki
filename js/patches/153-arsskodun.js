@@ -241,6 +241,8 @@
   }
 
   // ── Filters / sort state ────────────────────────────────────────────────
+  // 2026-05-29: search term is no longer persisted — always start blank.
+  try { localStorage.removeItem(LS_SEARCH); } catch (_) {}
   const state = {
     view: localStorage.getItem(LS_VIEW) || 'card',          // 'card' | 'list'
     sort: localStorage.getItem(LS_SORT) || 'alpha',         // 'alpha' | 'month' | 'oldest' (legacy)
@@ -248,7 +250,7 @@
     sortDir: localStorage.getItem(LS_SORTDIR) || 'asc',      // asc | desc
     month: parseInt(localStorage.getItem(LS_MONTH) || '0', 10), // 0 = all
     status: localStorage.getItem(LS_STATUS) || 'all',        // 'all' | 'done' | 'pending' | 'never'
-    search: localStorage.getItem(LS_SEARCH) || ''
+    search: ''
   };
   function saveState() {
     localStorage.setItem(LS_VIEW, state.view);
@@ -257,7 +259,6 @@
     localStorage.setItem(LS_SORTDIR, state.sortDir || 'asc');
     localStorage.setItem(LS_MONTH, String(state.month));
     localStorage.setItem(LS_STATUS, state.status);
-    localStorage.setItem(LS_SEARCH, state.search);
   }
 
   function filteredSorted() {

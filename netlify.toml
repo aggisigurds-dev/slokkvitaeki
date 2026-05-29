@@ -1,0 +1,15 @@
+# Netlify configuration for Slökkvitæki (static site, no build step).
+
+# Route /api/* to the Netlify Functions under netlify/functions/*.js
+# e.g. /api/geocode -> /.netlify/functions/geocode
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+# Always revalidate index.html so a new deploy is picked up across machines.
+# JS/CSS are cache-busted via hand-written ?v= query strings.
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

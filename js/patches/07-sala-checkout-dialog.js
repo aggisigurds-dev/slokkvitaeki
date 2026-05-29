@@ -249,10 +249,6 @@
               <input type="checkbox" id="scd-receipt" ${(window.AppSettings && window.AppSettings.path('prentun.default_print_kvittun') === true) ? 'checked' : ''}>
               <span>🧾 Prenta kvittun</span>
             </label>
-            <label class="scd-check ${hasProducts ? '' : 'disabled'}">
-              <input type="checkbox" id="scd-barcodes" ${hasProducts && (!window.AppSettings || window.AppSettings.path('prentun.default_print_strikamerki') !== false) ? 'checked' : (hasProducts ? '' : 'disabled')}>
-              <span>🏷️ Prenta strikamerki fyrir tæki${hasProducts ? ' (' + productCount + ')' : ' (engin tæki í körfu)'}</span>
-            </label>
             <label class="scd-check">
               <input type="checkbox" id="scd-refill-label" ${(!window.AppSettings || window.AppSettings.path('prentun.default_print_qr_label') !== false) ? 'checked' : ''}>
               <span>🏷️ Prenta QR-merki fyrir tæki í áfyllingu (24 × 100 mm)</span>
@@ -287,7 +283,7 @@
       btn.addEventListener('click', () => {
         const method = btn.dataset.method;
         const doReceipt = modal.querySelector('#scd-receipt').checked;
-        const doBarcodes = modal.querySelector('#scd-barcodes').checked && hasProducts;
+        const doBarcodes = false; // strikamerki checkbox removed (54×17mm format retired)
         const doRefillLabel = modal.querySelector('#scd-refill-label')?.checked;
         const skipVerk = modal.querySelector('#scd-skip-verk')?.checked;
         // Pass-through to pos.js — its checkout() reads this global to decide

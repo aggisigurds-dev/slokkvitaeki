@@ -499,10 +499,11 @@
           </div>
           <div class="invoice-meta">
             <div class="inv-title-row">
-              <em>Reikningur</em>
+              <em>${ctx.isCredit ? 'KREDITREIKNINGUR' : 'Reikningur'}</em>
               <span class="inv-num">${esc(ctx.invoiceNum || '')}</span>
             </div>
             <div class="inv-meta-grid">
+              ${ctx.isCredit && ctx.creditOf ? `<div class="lbl">Vegna reiknings:</div><div class="val">${esc(ctx.creditOf)}</div>` : ''}
               <div class="lbl">Dagsetning:</div><div class="val">${esc(ctx.dateStr)}</div>
               <div class="lbl">Greiðsl.skilm.:</div><div class="val">${esc(ctx.paymentTerms)}</div>
               <div class="lbl">Afh.skilm.:</div><div class="val">${esc(ctx.deliveryTerms)}</div>
@@ -631,15 +632,19 @@
       employee: opts.employee || resolveEmployee(),
       // Tilvísun is a freeform reference field; don't auto-fill with phone.
       tilvisun: opts.tilvisun || '',
-      vegna: opts.vegna || notes
+      vegna: opts.vegna || notes,
+      // Credit-note presentation (KREDITREIKNINGUR heading + "vegna" ref).
+      isCredit: !!opts.isCredit,
+      creditOf: opts.creditOf || ''
     };
 
     try {
       const doc = win.document;
+      const docTitle = (ctx.isCredit ? 'Kreditreikningur ' : 'Reikningur ') + ctx.invoiceNum;
       doc.open();
-      doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reikningur ${esc(ctx.invoiceNum)}</title><style>${CSS}</style></head><body>${buildHTML(ctx)}</body></html>`);
+      doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(docTitle)}</title><style>${CSS}</style></head><body>${buildHTML(ctx)}</body></html>`);
       doc.close();
-      doc.title = 'Reikningur ' + ctx.invoiceNum;
+      doc.title = docTitle;
       return true;
     } catch (e) {
       console.error('[SalaInvoice] render error', e);
@@ -652,8 +657,9 @@
   // views when the user wants to re-print a historical receipt. The saved
   // row already has the correct invoice number, lines, totals, etc., so we
   // just unpack it into a synthetic POS-state shape and call render().
-  function renderFromSale(win, sale, customerLookup) {
+  function renderFromSale(win, sale, customerLookup, extraOpts) {
     if (!win || win.closed || !sale) return false;
+    const xo = extraOpts || {};
     // Build a synthetic state. The renderer reads `state.lines`,
     // `state.discount_pct`, `state.discount`, `state.notes` and
     // `state.customer.{nafn,kt,co_id,heimilisfang}`.
@@ -711,7 +717,10 @@
         employee: sale.starfsmadur || '',
         customerName: sale.customer_nafn || '',
         customerKt: customerLookup ? customerLookup.kennitala : '',
-        customerHeimilisfang: customerLookup ? customerLookup.heimilisfang : ''
+        customerHeimilisfang: customerLookup ? customerLookup.heimilisfang : '',
+        // Forward credit-note presentation flags (set by printCreditNote).
+        isCredit: !!xo.isCredit,
+        creditOf: xo.creditOf || ''
       });
     } finally {
       if (window.POS) window.POS.getState = origGetState;
