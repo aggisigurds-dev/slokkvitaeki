@@ -40,70 +40,71 @@
       type: 'thjonusta',
       _seed: true,
       html: `
-<div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:780px;margin:0 auto;padding:24px 32px 28px;background:#fff;border:2px solid #0f172a">
-  <div style="text-align:center;margin-bottom:4px;line-height:0">
-    ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:90, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:90px;width:270px;object-fit:contain;display:inline-block">'}
+<div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:780px;margin:0 auto;padding:14px 28px 16px;background:#fff;border:2px solid #0f172a">
+  <div style="text-align:center;margin-bottom:2px;line-height:0">
+    ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:56, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:56px;width:168px;object-fit:contain;display:inline-block">'}
   </div>
 
-  <div style="text-align:right;font-size:13px;color:#475569;margin:0 0 6px">Dags: {{dagsetning}}</div>
+  <div style="text-align:right;font-size:13px;color:#475569;margin:0 0 4px">Dags: {{dagsetning}}</div>
 
-  <div style="text-align:center;margin:0 0 14px">
-    <div style="font-size:24px;font-weight:800;letter-spacing:0.5px">Þjónustusamningur</div>
-    <div style="font-size:14px;font-weight:600;margin-top:4px;color:#0f172a">Hleðsla — Sala — Þjónusta</div>
-    <div style="font-size:13px;color:#475569;margin-top:2px">Sími: 565-4080</div>
+  <div style="text-align:center;margin:0 0 8px">
+    <div style="font-size:20px;font-weight:800;letter-spacing:0.5px">Þjónustusamningur</div>
+    <div style="font-size:13px;font-weight:600;margin-top:1px;color:#0f172a">Hleðsla — Sala — Þjónusta</div>
+    <div style="font-size:12px;color:#475569;margin-top:1px">Sími: 565-4080</div>
   </div>
 
-  <hr style="border:none;border-top:1px solid #cbd5e1;margin:18px 0">
+  <hr style="border:none;border-top:1px solid #cbd5e1;margin:9px 0">
 
-  <div style="font-size:14px;line-height:1.7;margin-bottom:14px">
+  <div style="font-size:13.5px;line-height:1.45;margin-bottom:6px">
     Hér með gera <strong>Slökkvitæki ehf</strong> kt: <strong>600508-0400</strong> og
   </div>
 
-  <div style="margin:14px 0;padding:12px 14px;background:#f8fafc;border-left:3px solid #0f172a;border-radius:4px">
-    <div style="font-size:14px;line-height:1.8"><strong>Nafn:</strong> {{vidskiptavinur_nafn}} &nbsp;&nbsp;<strong>kt:</strong> {{kennitala}}</div>
-    <div style="font-size:14px;line-height:1.8"><strong>Heimilisfang:</strong> {{heimilisfang}}</div>
+  <div style="margin:6px 0;padding:8px 12px;background:#f8fafc;border-left:3px solid #0f172a;border-radius:4px">
+    <div style="font-size:13.5px;line-height:1.55"><strong>Nafn:</strong> {{vidskiptavinur_nafn}} &nbsp;&nbsp;<strong>kt:</strong> {{kennitala}}</div>
+    <div style="font-size:13.5px;line-height:1.55"><strong>Heimilisfang:</strong> {{heimilisfang}}</div>
   </div>
 
-  <div style="font-size:14px;line-height:1.7;margin:14px 0">
+  <div style="font-size:13.5px;line-height:1.45;margin:6px 0">
     með sér þjónustusamning þess efnis að <strong>Slökkvitæki ehf</strong> muni sjá um árlega þjónustu slökkvitækja og tengdum búnaði.
   </div>
 
-  <div style="font-size:13px;line-height:1.6;margin-bottom:18px;color:#475569;font-style:italic">
+  <div style="font-size:12.5px;line-height:1.4;margin-bottom:8px;color:#475569;font-style:italic">
     Samningi þessum skal segja upp með minnst tveggja mánaða fyrirvara á e-mailið <strong>eldklar@eldklar.is</strong>
   </div>
 
-  <hr style="border:none;border-top:1px solid #cbd5e1;margin:18px 0">
+  <hr style="border:none;border-top:1px solid #cbd5e1;margin:9px 0">
 
-  <div style="margin-bottom:8px;font-size:14px;font-weight:700">Umsjón með:</div>
-  <div style="margin-bottom:14px;font-size:14px;line-height:2">
+  <div style="margin-bottom:4px;font-size:13.5px;font-weight:700">Umsjón með:</div>
+  <div style="margin-bottom:8px;font-size:13.5px;line-height:1.7">
     {{chk_slokkvitaeki}} &nbsp;Slökkvitækjum<br>
     {{chk_reykskynjarar}} &nbsp;Reykskynjurum<br>
-    {{chk_brunaslongur}} &nbsp;Brunaslöngum
+    {{chk_brunaslongur}} &nbsp;Brunaslöngum<br>
+    {{chk_brunavidvorun}} &nbsp;Brunaviðvörunarkerfi
   </div>
 
-  <div style="margin:18px 0 8px;font-size:14px;font-weight:700">Annað:</div>
-  <div style="border:1px solid #cbd5e1;min-height:60px;padding:10px;font-size:14px;border-radius:4px;line-height:1.5;white-space:pre-wrap">{{annad}}</div>
+  <div style="margin:8px 0 4px;font-size:13.5px;font-weight:700">Annað:</div>
+  <div style="border:1px solid #cbd5e1;min-height:34px;padding:8px;font-size:13.5px;border-radius:4px;line-height:1.45;white-space:pre-wrap">{{annad}}</div>
 
-  <hr style="border:none;border-top:1px dashed #cbd5e1;margin:26px 0 18px">
+  <hr style="border:none;border-top:1px dashed #cbd5e1;margin:12px 0 10px">
 
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:8px">
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:4px">
     <div>
-      <div style="font-size:12px;color:#475569;margin-bottom:4px;font-weight:600">Fyrir hönd Slökkvitækja ehf:</div>
-      <div style="height:60px;border-bottom:1px solid #0f172a;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px">{{sig_slokkvitaeki}}</div>
-      <div style="font-size:13px;margin-top:4px;font-weight:600">{{starfsmadur}}</div>
+      <div style="font-size:12px;color:#475569;margin-bottom:2px;font-weight:600">Fyrir hönd Slökkvitækja ehf:</div>
+      <div style="height:44px;border-bottom:1px solid #0f172a;display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px">{{sig_slokkvitaeki}}</div>
+      <div style="font-size:12.5px;margin-top:3px;font-weight:600">{{starfsmadur}}</div>
     </div>
     <div>
-      <div style="font-size:12px;color:#475569;margin-bottom:4px;font-weight:600">Fyrir hönd fyrirtækis/húsfélags:</div>
-      <div style="height:60px;border-bottom:1px solid #0f172a;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px">{{sig_vidskiptavinur}}</div>
-      <div style="font-size:13px;margin-top:4px;font-weight:600">{{vidskiptavinur_nafn}}</div>
+      <div style="font-size:12px;color:#475569;margin-bottom:2px;font-weight:600">Fyrir hönd fyrirtækis/húsfélags:</div>
+      <div style="height:44px;border-bottom:1px solid #0f172a;display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px">{{sig_vidskiptavinur}}</div>
+      <div style="font-size:12.5px;margin-top:3px;font-weight:600">{{vidskiptavinur_nafn}}</div>
     </div>
   </div>
 
-  <div style="margin-top:32px;text-align:center;font-style:italic;font-size:13px;color:#475569">
+  <div style="margin-top:14px;text-align:center;font-style:italic;font-size:12.5px;color:#475569">
     Slökkvitæki ehf leggja áherslu á persónulega og vandaða þjónustu.
   </div>
 
-  <div style="margin-top:18px;padding-top:12px;border-top:1px solid #cbd5e1;text-align:center;font-size:11px;color:#64748b;line-height:1.6">
+  <div style="margin-top:10px;padding-top:8px;border-top:1px solid #cbd5e1;text-align:center;font-size:11px;color:#64748b;line-height:1.5">
     Slökkvitæki ehf · Helluhrauni 10, 220 Hafnarfirði · vsknr. 98107<br>
     Netfang: eldklar@eldklar.is &nbsp;·&nbsp; Sími 565-4080
   </div>
@@ -573,6 +574,7 @@
     chk_slokkvitaeki: 'Slökkvitækjum',
     chk_reykskynjarar: 'Reykskynjurum',
     chk_brunaslongur: 'Brunaslöngum',
+    chk_brunavidvorun: 'Brunaviðvörunarkerfi',
     sig_slokkvitaeki: 'Undirritun (Slökkvitæki ehf)',
     sig_vidskiptavinur: 'Undirritun (viðskiptavinur)',
     sig_starfsmanns: 'Undirritun starfsmanns',
@@ -1247,7 +1249,7 @@
       const win = window.open('', 'doc-print', 'width=900,height=1100');
       if (!win) { alert('Sprettigluggi var lokaður — leyfðu sprettiglugga til að prenta.'); return; }
       win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(t.name) + '</title>' +
-        '<style>@media print{@page{size:A4;margin:14mm}}body{margin:0;padding:14mm;background:#fff;font-family:Arial,Helvetica,sans-serif}@media print{body{padding:0}}</style>' +
+        '<style>@media print{@page{size:A4;margin:10mm}}body{margin:0;padding:10mm;background:#fff;font-family:Arial,Helvetica,sans-serif}@media print{body{padding:0}}</style>' +
         '</head><body>' + html + '<scr' + 'ipt>setTimeout(function(){window.print();},250);</scr' + 'ipt></body></html>');
       win.document.close();
     }
@@ -1351,7 +1353,7 @@
     const annadParts = [];
     if (values.annad) annadParts.push(String(values.annad).trim());
     if (values.chk_brunaslongur) annadParts.push('Brunaslöngur');
-    if (template.type === 'thjonusta_brunakerfi') annadParts.push('Brunaviðvörunarkerfi');
+    if (values.chk_brunavidvorun || template.type === 'thjonusta_brunakerfi') annadParts.push('Brunaviðvörunarkerfi');
 
     const rec = {
       company_nafn: (values.vidskiptavinur_nafn || '').trim(),
