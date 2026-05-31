@@ -148,7 +148,6 @@ var Companies = {
     html += '<div class="info-grid" style="display:none"></div>';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
       '<span style="font-size:14px;font-weight:600">Sl\u00f6kkvit\u00e6ki (' + units.length + ')</span>' +
-      '<button class="btn btn-outline btn-sm" onclick="Companies.addUnit(' + c.id + ',\'' + nafn + '\')">+ B\u00e6ta vi\u00f0</button>' +
       '</div>';
     if (!units.length) {
       html += '<div class="empty-state" style="padding:24px"><div class="es-sub">Engin t\u00e6ki skr\u00e1\u00f0 fyrir \u00feetta fyrirt\u00e6ki</div></div>';
