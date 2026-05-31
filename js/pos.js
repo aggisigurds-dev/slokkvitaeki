@@ -648,7 +648,13 @@
       // 2026-05-09 (Phase B): „Greitt síðar" býr til DRÖG sem patch 121
       // (pickup-checkout) klárar við Sótt ✓. Drög birtast ekki í Tekjum/Bókhaldi.
       var saleStatus = pmCode === 'greitt_sidar' ? 'drog' : 'final';
-      var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,linur:state.lines,upphaed_an_vsk:Math.round(t.ex),vsk_upphaed:Math.round(t.vsk),afslattur:discKr,samtals:Math.round(t.total),greitt_med:pmLabel,athugasemdir:state.notes,status:saleStatus}).select().single();
+      // 2026-05-31: stamp paid_at for immediate payments (card/cash) so paid
+      // sales stop showing as "unpaid" in accounting / kröfur / pickup badge.
+      // Invoice (reikningur) and pay-later (greitt_sidar) stay unpaid until
+      // they are billed / collected.
+      var isPaidNow = (pmCode !== 'reikningur' && pmCode !== 'greitt_sidar');
+      var nowIso = new Date().toISOString();
+      var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,linur:state.lines,upphaed_an_vsk:Math.round(t.ex),vsk_upphaed:Math.round(t.vsk),afslattur:discKr,samtals:Math.round(t.total),greitt_med:pmLabel,athugasemdir:state.notes,status:saleStatus,paid_at:isPaidNow?nowIso:null,paid_method:isPaidNow?pmLabel:null}).select().single();
       if(sr.error)throw sr.error;
       var num = sr.data && sr.data.num ? sr.data.num : preNum;
       window._pendingReikningurNum = '';
