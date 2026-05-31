@@ -1000,6 +1000,7 @@
             <button class="_ars-go-fyrirt" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:#0f172a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🏢 Opna fyrirtæki</button>
             <button class="_ars-go-map" data-co-id="${c.id}" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🗺️ Sjá á korti</button>
             <button class="_ars-go-brunakerfi" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:#fff;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🚨 Brunakerfi</button>
+            <button class="_ars-go-samningur" data-co-id="${c.id}" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">📑 Þjónustusamningur</button>
           </div>
         </div>
       </div>
@@ -1195,6 +1196,13 @@
     bg.querySelector('._ars-go-brunakerfi').addEventListener('click', () => {
       bg.remove();
       if (window.App && App.switchView) App.switchView('brunakerfi');
+    });
+    // 2026-05-31: open the prefilled Þjónustusamningur (aðal) template for this
+    // company, same as the company-detail page button.
+    const _samnBtn = bg.querySelector('._ars-go-samningur');
+    if (_samnBtn) _samnBtn.addEventListener('click', () => {
+      bg.remove();
+      if (window.DocTemplates && DocTemplates.openForCompany) DocTemplates.openForCompany(coId);
     });
     document.body.appendChild(bg);
   }
