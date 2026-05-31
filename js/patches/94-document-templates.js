@@ -100,6 +100,10 @@
     </div>
   </div>
 
+  <div style="margin-top:10px;text-align:center;font-size:12.5px;font-weight:600;color:#0f172a">
+    Samþykki staðfest með tölvupósti
+  </div>
+
   <div style="margin-top:14px;text-align:center;font-style:italic;font-size:12.5px;color:#475569">
     Slökkvitæki ehf leggja áherslu á persónulega og vandaða þjónustu.
   </div>
