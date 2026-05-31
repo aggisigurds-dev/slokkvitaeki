@@ -46,7 +46,8 @@ var Counter = {
   // so staff can tell at a glance whether a customer already paid (e.g. by card
   // at drop-off) before handing the equipment back.
   _payLabel: function(m){
-    var map={kort:'Kort',reidufe:'Reiðufé',millifaersla:'Millifærsla',posi:'Kort',greitt_sidar:'Greitt síðar',greitt_sidar_pickup:'Greitt v/afhendingu',reikningur:'Reikningur',inneign:'Inneign'};
+    m=String(m||'').toLowerCase().trim();
+    var map={kort:'Kort',reidufe:'Reiðufé','reiðufé':'Reiðufé',pening:'Reiðufé',peningur:'Reiðufé',millifaersla:'Millifærsla','millifærsla':'Millifærsla',posi:'Kort',greitt_sidar:'Greitt síðar',greitt_sidar_pickup:'Greitt v/afhendingu',reikningur:'Reikningur',inneign:'Inneign'};
     return map[m]||m||'';
   },
   _fillPayBadge: async function(job){
@@ -60,10 +61,17 @@ var Counter = {
       if(r&&r.data&&r.data.length) sale=r.data[0];
     }catch(e){ badge.style.display='none'; return; }
     if(!sale){ badge.style.display='none'; return; }
-    var paid=!!sale.paid_at, gm=sale.greitt_med||'', amt=Math.round(sale.samtals||0).toLocaleString('is-IS');
+    // greitt_med is stored inconsistently (kort/Kort/reidufe/Pening…) and card/cash
+    // sales often DON'T set paid_at — so the payment METHOD is the source of truth.
+    // Immediate methods are paid at point of sale; greitt_sidar is unpaid until
+    // collected; reikningur is billed on invoice.
+    var gm=String(sale.greitt_med||'').toLowerCase().trim();
+    var paid=!!sale.paid_at;
+    var amt=Math.round(sale.samtals||0).toLocaleString('is-IS');
+    var immediate=['kort','reidufe','reiðufé','reidufé','pening','peningur','posi','millifaersla','millifærsla'];
     var label,bg,fg;
     if(gm==='reikningur'){ label='🧾 Á reikningi · '+amt+' kr'; bg='#dbeafe'; fg='#1e40af'; }
-    else if(paid){ label='✓ Greitt'+(gm?' ('+Counter._payLabel(gm)+')':'')+' · '+amt+' kr'; bg='#dcfce7'; fg='#166534'; }
+    else if(immediate.indexOf(gm)!==-1 || paid){ label='✓ Greitt'+(gm?' ('+Counter._payLabel(gm)+')':'')+' · '+amt+' kr'; bg='#dcfce7'; fg='#166534'; }
     else if(gm==='greitt_sidar'){ label='⚠ Ógreitt — greiðist v/afhendingu · '+amt+' kr'; bg='#fef3c7'; fg='#92400e'; }
     else { label='⚠ Ógreitt · '+amt+' kr'; bg='#fee2e2'; fg='#991b1b'; }
     badge.textContent=label;
