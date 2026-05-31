@@ -147,6 +147,18 @@
   function getCompanyId() {
     const main = document.getElementById('companies-main');
     if (!main) return null;
+    // 2026-05-31: Prefer the stable data-co-id on the company-detail action
+    // bar (features.js) over scraping a Companies.openEdit button. Stray
+    // openEdit buttons elsewhere in companies-main could make querySelector
+    // capture the WRONG company, filing uploaded PDFs under the wrong
+    // fyrirtæki. The :not(._cat-section) guard skips our own section, which
+    // also carries a data-co-id.
+    const idEl = main.querySelector('[data-co-id]:not(._cat-section)');
+    if (idEl) {
+      const v = idEl.getAttribute('data-co-id');
+      if (v && /^\d+$/.test(v)) return +v;
+    }
+    // Legacy fallback: scrape the hidden edit-anchor's onclick handler.
     const editBtn = main.querySelector('button[onclick*="Companies.openEdit"]');
     if (!editBtn) return null;
     const m = editBtn.getAttribute('onclick').match(/openEdit\((\d+)\)/);
