@@ -65,7 +65,7 @@
   </div>
 
   <div style="font-size:13.5px;line-height:1.45;margin:6px 0">
-    með sér þjónustusamning þess efnis að <strong>Slökkvitæki ehf</strong> muni sjá um árlega þjónustu slökkvitækja og tengdum búnaði.
+    Með sér þjónustusamningi þess efnis að <strong>Slökkvitæki ehf.</strong> annist reglubundna þjónustu, eftirlit og viðhald á þeim brunavarna- og öryggisbúnaði sem samningur þessi tekur til.
   </div>
 
   <div style="font-size:12.5px;line-height:1.4;margin-bottom:8px;color:#475569;font-style:italic">
