@@ -210,8 +210,8 @@
   function _search(v) { searchQuery = v.trim(); render(); }
 
   // ── Open (new or edit) — paper-layout form ────────────────────────────────
-  function _open(id, mode, prefill) {
-    const c = id ? contracts.find(x=>x.id===id) : (prefill || {});
+  function _open(id, mode) {
+    const c = id ? contracts.find(x=>x.id===id) : {};
     const isNew = !id;
     const isLegacy = mode === 'legacy';
     const today = new Date().toISOString().slice(0,10);
@@ -229,7 +229,7 @@
     // or Loka button to close instead.
     m.onclick = e => { /* backdrop click no longer closes — too easy to lose work */ };
     const title = isNew
-      ? (c._title ? esc(c._title) : (isLegacy ? '📥 Skanna eldri samning' : 'Nýr þjónustusamningur'))
+      ? (isLegacy ? '📥 Skanna eldri samning' : 'Nýr þjónustusamningur')
       : 'Samningur við '+esc(c.company_nafn||'');
     m.innerHTML = `
       <div class="ct-modal">
@@ -538,34 +538,10 @@
     load();
   }
 
-  // 2026-05-31: open the contract form from a company's detail page, pre-filled
-  // with that company's nafn / kt / heimilisfang. Saving writes a row in
-  // thjonustusamningar (linked to the company by nafn+kt) and — for a new
-  // contract — auto-opens the print/PDF view.
-  async function openForCompany(coId) {
-    let co = (window.Companies && Companies.list || []).find(x => +x.id === +coId);
-    if (!co) {
-      // Companies.list not loaded yet — fetch the single row directly.
-      try {
-        const SB = getSB();
-        const r = await SB.from('fyrirtaeki').select('nafn,kennitala,heimilisfang').eq('id', coId).maybeSingle();
-        co = r && r.data;
-      } catch (e) { /* fall through to empty form */ }
-    }
-    co = co || {};
-    _open(null, 'new', {
-      company_nafn: co.nafn || '',
-      kennitala:    co.kennitala || '',
-      heimilisfang: co.heimilisFang || co.heimilisfang || '',
-      umsjon_slokkvitaeki: true,
-      _title: 'Þjónustusamningar – aðal'
-    });
-  }
-
   function init() { ensureNav(); ensureView(); patchSwitch(); }
   setTimeout(init, 1000);
   setTimeout(init, 2500);
 
-  window.ServiceContracts = { load, _open, _save, _bill, _delete, _print, _search, _photoChosen, openForCompany };
+  window.ServiceContracts = { load, _open, _save, _bill, _delete, _print, _search, _photoChosen };
   console.log('[service-contracts v2] installed');
 })();

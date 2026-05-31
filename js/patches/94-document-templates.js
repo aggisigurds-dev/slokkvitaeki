@@ -1042,6 +1042,14 @@
       fields.forEach(f => {
         if (f.key === 'dagsetning') values[f.key] = dStr;
       });
+      // 2026-05-31: callers (e.g. the company detail page) can pre-fill fields
+      // such as vidskiptavinur_nafn / kennitala / heimilisfang via opts.prefill.
+      // Values stay fully editable in the form.
+      if (opts && opts.prefill) {
+        Object.keys(opts.prefill).forEach(k => {
+          if (opts.prefill[k] != null && opts.prefill[k] !== '') values[k] = opts.prefill[k];
+        });
+      }
     }
     // Track id of the filled doc we're editing (null = new)
     let filledId = existing ? existing.id : null;
@@ -1505,8 +1513,31 @@
     openTemplateForm(rec.template_id, { filledId: rec.id });
   }
 
+  // 2026-05-31: open the main "Þjónustusamningur" template (seed_thjonustusamningur)
+  // pre-filled with a company's nafn / kt / heimilisfang. Launched from the
+  // company detail page; the form stays editable and saves/prints as normal.
+  async function openForCompany(coId) {
+    let co = (window.Companies && Companies.list || []).find(x => +x.id === +coId);
+    if (!co && window.DB && window.DB.sb) {
+      try {
+        const r = await window.DB.sb.from('fyrirtaeki').select('nafn,kennitala,heimilisfang').eq('id', coId).maybeSingle();
+        co = r && r.data;
+      } catch (e) { /* fall through to empty form */ }
+    }
+    co = co || {};
+    openTemplateForm('seed_thjonustusamningur', {
+      prefill: {
+        vidskiptavinur_nafn: co.nafn || '',
+        kennitala: co.kennitala || '',
+        heimilisfang: co.heimilisFang || co.heimilisfang || '',
+        chk_slokkvitaeki: true
+      }
+    });
+  }
+
   const api = {
     open: openTemplateForm,
+    openForCompany,
     openFilled,
     edit: openTemplateEditor,
     cloneSeed: cloneSeedTemplate,   // For UIs that want "edit a seed" semantics
