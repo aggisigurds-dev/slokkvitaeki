@@ -266,7 +266,7 @@
     fileInput.addEventListener('change', async () => {
       const file = fileInput.files && fileInput.files[0];
       if (!file) return;
-      await doUpload(file);
+      await doUpload(file, coId);
       fileInput.value = '';
     });
 
