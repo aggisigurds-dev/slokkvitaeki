@@ -158,7 +158,11 @@
     // Browser can't hit Resend directly (no CORS). Proxy via /api/email-send.
     // The proxy reads RESEND_API_KEY env var on Netlify; falls back to apiKey in body for legacy.
     const apiKey = localStorage.getItem('resend_api_key') || '';
-    const from = localStorage.getItem('email_from') || 'noreply@slokkvitaeki.is';
+    // 2026-05-31: default sender aligned to the company's real, mailable domain
+    // (eldklar.is). Resend rejects any send from a domain without verified
+    // SPF/DKIM records, so this MUST match the domain verified in the Resend
+    // dashboard. A value set in Stillingar (localStorage) still overrides this.
+    const from = localStorage.getItem('email_from') || 'Slökkvitæki ehf <noreply@eldklar.is>';
     const payload = {
       from,
       to: [toEmail],
@@ -176,7 +180,13 @@
       if (err.error === 'API_KEY_MISSING') {
         throw new Error('Resend API lykill ekki stilltur — settu RESEND_API_KEY í Netlify env eða Stillingar');
       }
-      throw new Error(err.message || err.error || 'HTTP ' + r.status);
+      const msg = err.message || err.error || 'HTTP ' + r.status;
+      // Resend returns 403 + a domain message when the sender domain isn't
+      // verified — the #1 reason mail silently never arrives. Make it explicit.
+      if (/domain|not verified|verify/i.test(msg)) {
+        throw new Error(msg + '\n\n→ Sláðu inn lén sendanda (t.d. eldklar.is) í Resend og staðfestu DNS (SPF/DKIM). „Frá" netfangið verður að vera á staðfestu léni.');
+      }
+      throw new Error(msg);
     }
     return await r.json();
   }
@@ -303,7 +313,7 @@
       </div>
       <div style="margin-bottom:12px;">
         <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Sendandi netfang (Resend)</label>
-        <input id="ei-from-email" type="text" placeholder="Slökkvitæki ehf <noreply@slokkvitaeki.is>" value="${esc(curFrom)}"
+        <input id="ei-from-email" type="text" placeholder="Slökkvitæki ehf <noreply@eldklar.is>" value="${esc(curFrom)}"
           style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box;">
       </div>
       <button onclick="

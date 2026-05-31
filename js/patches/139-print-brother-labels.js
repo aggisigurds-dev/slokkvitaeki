@@ -92,12 +92,15 @@
     QLC.openPrintWindow(parts.join(''), lengthMm);
   }
 
-  const origShowJob = window.Print.showJob;
   window.Print.showJob = function(job) {
     this.job = job;
+    // 2026-05-31: NO silent fallback to the legacy stk-card renderer. The old
+    // fallback swallowed errors and printed a tiny 50px pseudo-QR, which is the
+    // "old tiny/damaged" label users saw. Surface the real error instead so the
+    // single Brother module (QrLabelCustomer) is the ONLY thing that ever prints.
     showJobBrother(job).catch(err => {
-      console.error('[patch-139]', err);
-      try { origShowJob.call(window.Print, job); } catch (_) {}
+      console.error('[patch-139] showJob:', err);
+      alert('Villa við að prenta miða: ' + (err && err.message ? err.message : err));
     });
   };
 
@@ -130,11 +133,12 @@
     QLC.openPrintWindow(labelHTML, lengthMm);
   }
 
-  const origShowQR = window.Print.showQR;
   window.Print.showQR = function(unit) {
+    // 2026-05-31: NO silent fallback to the legacy tiny-QR renderer (see
+    // showJob note above). One module for every QR label, errors surfaced.
     showUnitBrother(unit).catch(err => {
       console.error('[patch-139] showQR:', err);
-      try { origShowQR.call(window.Print, unit); } catch (_) {}
+      alert('Villa við að prenta QR-miða: ' + (err && err.message ? err.message : err));
     });
   };
 

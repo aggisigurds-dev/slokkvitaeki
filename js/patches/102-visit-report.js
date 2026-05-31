@@ -129,6 +129,13 @@
 
   // ── Inject button into companies-main detail header ───────────────────────
   function decorateCompanyDetail() {
+    // 2026-05-31: Button injection DISABLED. The company-detail (Fyrirtækjaþjónusta)
+    // page now uses the better úttektarskýrsla in the green total-cost box
+    // (patch 129 → patch 168 CompanyInspectionReport). This old "📋 Úttektarskýrsla"
+    // button at the top produced a worse report and confused users with two
+    // generators on one page. We keep window.VisitReport.open() exported below
+    // because patch 158 (viðskiptavinir detail) still calls it.
+    return;
     const main = document.getElementById('companies-main');
     if (!main) return;
     const actionsRow = main.querySelector('div[style*="display:flex"][style*="gap:7px"]');

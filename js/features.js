@@ -141,6 +141,9 @@ var Companies = {
         // it here without showing a duplicate visible button.
         '<button class="_co-edit-anchor" type="button" onclick="Companies.openEdit(' + c.id + ')" style="display:none">edit anchor</button>' +
         '<button class="btn btn-primary btn-sm" onclick="Companies.addUnit(' + c.id + ',\'' + nafn + '\')">+ B\u00e6ta vi\u00f0 t\u00e6ki</button>' +
+        // 2026-05-31: opens the \u00fej\u00f3nustusamningur form pre-filled with this
+        // company's nafn/kt/heimilisfang (ServiceContracts.openForCompany).
+        '<button class="btn btn-outline btn-sm" onclick="window.ServiceContracts&&ServiceContracts.openForCompany(' + c.id + ')">\ud83d\udcd1 \u00dej\u00f3nustusamningur</button>' +
         '<button class="btn btn-outline btn-sm" onclick="FloorPlan.load(' + c.id + ');FloorPlan.open(' + c.id + ',\'' + nafn + '\',' + 'Companies.list.find(function(x){return x.id===' + c.id + ';}) ? DB.cache.units.filter(function(u){return u.client===\'' + nafn + '\';}) : [])"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Teikning</button>' +
       '</div>';
     // Keep the legacy info-grid empty (kept for other patches that
@@ -148,7 +151,6 @@ var Companies = {
     html += '<div class="info-grid" style="display:none"></div>';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
       '<span style="font-size:14px;font-weight:600">Sl\u00f6kkvit\u00e6ki (' + units.length + ')</span>' +
-      '<button class="btn btn-outline btn-sm" onclick="Companies.addUnit(' + c.id + ',\'' + nafn + '\')">+ B\u00e6ta vi\u00f0</button>' +
       '</div>';
     if (!units.length) {
       html += '<div class="empty-state" style="padding:24px"><div class="es-sub">Engin t\u00e6ki skr\u00e1\u00f0 fyrir \u00feetta fyrirt\u00e6ki</div></div>';

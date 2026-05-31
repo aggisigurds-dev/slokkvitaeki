@@ -26,7 +26,7 @@ var Counter = {
   renderDetail: function(job) {
     var el=document.getElementById('counter-main'); if(!el) return;
     var html='<div class="jd-header"><div><div class="jd-title">'+U.e(job.customer)+' <span style="font-family:var(--mono);font-size:15px;color:var(--ink3)">'+U.e(job.num)+'</span></div><div class="jd-sub">Móttekið '+U.fd(job.dropoff)+'</div></div>';
-    html+='<div class="jd-actions">'+U.badge(job.status);
+    html+='<div class="jd-actions">'+U.badge(job.status)+'<span id="jd-pay-badge" style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:8px;font-size:12px;font-weight:600;background:#f1f5f9;color:#64748b">… greiðslustaða …</span>';
     if(job.status!=='collected') html+='<button class="btn btn-outline btn-sm" onclick="Print.showJob(DB.getJob('+job.id+'))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Prenta</button>';
     if(job.status==='ready') html+='<button class="btn btn-success btn-sm" onclick="Counter.markCollected('+job.id+')">Sótt ✓</button>';
     html+='</div></div>';
@@ -40,6 +40,42 @@ var Counter = {
     });
     html+='</tbody></table></div>';
     el.innerHTML=html;
+    Counter._fillPayBadge(job);
+  },
+  // 2026-05-31 (S2): show clear paid/unpaid status on the pickup (sótt) window,
+  // so staff can tell at a glance whether a customer already paid (e.g. by card
+  // at drop-off) before handing the equipment back.
+  _payLabel: function(m){
+    m=String(m||'').toLowerCase().trim();
+    var map={kort:'Kort',reidufe:'Reiðufé','reiðufé':'Reiðufé',pening:'Reiðufé',peningur:'Reiðufé',millifaersla:'Millifærsla','millifærsla':'Millifærsla',posi:'Kort',greitt_sidar:'Greitt síðar',greitt_sidar_pickup:'Greitt v/afhendingu',reikningur:'Reikningur',inneign:'Inneign'};
+    return map[m]||m||'';
+  },
+  _fillPayBadge: async function(job){
+    var badge=document.getElementById('jd-pay-badge');
+    if(!badge) return;
+    var saleNum=(job&&job.num)?String(job.num).replace(/-V\d+$/, ''):null;
+    if(!saleNum||!DB.sb){ badge.style.display='none'; return; }
+    var sale=null;
+    try{
+      var r=await DB.sb.from('solur').select('id,num,samtals,greitt_med,paid_at,status').eq('num',saleNum).order('created_at',{ascending:false}).limit(1);
+      if(r&&r.data&&r.data.length) sale=r.data[0];
+    }catch(e){ badge.style.display='none'; return; }
+    if(!sale){ badge.style.display='none'; return; }
+    // greitt_med is stored inconsistently (kort/Kort/reidufe/Pening…) and card/cash
+    // sales often DON'T set paid_at — so the payment METHOD is the source of truth.
+    // Immediate methods are paid at point of sale; greitt_sidar is unpaid until
+    // collected; reikningur is billed on invoice.
+    var gm=String(sale.greitt_med||'').toLowerCase().trim();
+    var paid=!!sale.paid_at;
+    var amt=Math.round(sale.samtals||0).toLocaleString('is-IS');
+    var immediate=['kort','reidufe','reiðufé','reidufé','pening','peningur','posi','millifaersla','millifærsla'];
+    var label,bg,fg;
+    if(gm==='reikningur'){ label='🧾 Á reikningi · '+amt+' kr'; bg='#dbeafe'; fg='#1e40af'; }
+    else if(immediate.indexOf(gm)!==-1 || paid){ label='✓ Greitt'+(gm?' ('+Counter._payLabel(gm)+')':'')+' · '+amt+' kr'; bg='#dcfce7'; fg='#166534'; }
+    else if(gm==='greitt_sidar'){ label='⚠ Ógreitt — greiðist v/afhendingu · '+amt+' kr'; bg='#fef3c7'; fg='#92400e'; }
+    else { label='⚠ Ógreitt · '+amt+' kr'; bg='#fee2e2'; fg='#991b1b'; }
+    badge.textContent=label;
+    badge.style.cssText='display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:8px;font-size:12px;font-weight:700;background:'+bg+';color:'+fg;
   },
   renderPrintAside: function(job) {
     var el=document.getElementById('print-aside'); if(!el) return;
