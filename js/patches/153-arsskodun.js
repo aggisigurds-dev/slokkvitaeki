@@ -646,7 +646,14 @@
     }));
     main.querySelector('#_ars-new')?.addEventListener('click', openNewCompanyDialog);
     main.querySelector('#_ars-sort')?.addEventListener('change', e => {
-      state.sort = e.target.value; saveState(); render();
+      const v = e.target.value;
+      // Drive the SAME sort path as the column headers (state.sortCol/Dir) so the
+      // choice actually re-sorts the list — and so the print, which uses
+      // filteredSorted(), matches exactly what is on screen.
+      if (v === 'alpha')       { state.sortCol = 'name';   state.sortDir = 'asc'; }
+      else if (v === 'month')  { state.sortCol = 'month';  state.sortDir = 'asc'; }
+      else if (v === 'oldest') { state.sortCol = 'lastYr'; state.sortDir = 'asc'; }
+      state.sort = v; saveState(); render();
     });
     main.querySelector('#_ars-print')?.addEventListener('click', printList);
     main.querySelectorAll('._ars-st').forEach(b => b.addEventListener('click', () => {
@@ -809,7 +816,7 @@
   .toolbar .lbl { font-size:12px; color:#64748b; margin:0 4px 0 8px; align-self:center; }
   @media print { .toolbar { display:none; } body { padding:0; } }
 </style>
-<style id="pgstyle">@page { size: A4 landscape; margin: 12mm; }</style></head><body class="landscape">
+<style id="pgstyle">@page { size: A4 portrait; margin: 12mm; }</style></head><body class="portrait">
   <div class="toolbar">
     <button class="p" onclick="window.print()">🖨 Prenta</button>
     <span class="lbl">Snið:</span>
@@ -839,7 +846,7 @@
       document.getElementById('btn-ls').classList.toggle('act', o==='landscape');
       document.getElementById('btn-pt').classList.toggle('act', o==='portrait');
     }
-    setOrient('landscape');
+    setOrient('portrait');
   <\/script>
 </body></html>`);
     win.document.close();
