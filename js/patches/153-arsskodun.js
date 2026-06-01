@@ -783,8 +783,9 @@
     const dateStr = new Date().toLocaleDateString('is-IS');
     win.document.write(`<!doctype html><html lang="is"><head><meta charset="utf-8"><title>Fyrirtæki í Þjónustu — ${esc(filterLabel)}</title>
 <style>
-  @page { size: A4 landscape; margin: 12mm; }
   * { box-sizing: border-box; }
+  body.portrait table { font-size: 10px; }
+  body.portrait th, body.portrait td { padding: 4px 5px; }
   body { font-family: 'IBM Plex Sans', system-ui, Arial, sans-serif; color:#0f172a; margin:0; padding:18px; }
   .hd { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0f172a; padding-bottom:10px; margin-bottom:12px; }
   .hd h1 { margin:0; font-size:18px; }
@@ -803,10 +804,17 @@
   .toolbar button { padding:8px 16px; font-size:13px; border:none; border-radius:7px; cursor:pointer; font-weight:600; margin-right:6px; }
   .toolbar .p { background:#dc2626; color:#fff; }
   .toolbar .x { background:#f1f5f9; color:#334155; }
+  .toolbar .o { background:#e2e8f0; color:#334155; }
+  .toolbar .o.act { background:#0f172a; color:#fff; }
+  .toolbar .lbl { font-size:12px; color:#64748b; margin:0 4px 0 8px; align-self:center; }
   @media print { .toolbar { display:none; } body { padding:0; } }
-</style></head><body>
+</style>
+<style id="pgstyle">@page { size: A4 landscape; margin: 12mm; }</style></head><body class="landscape">
   <div class="toolbar">
     <button class="p" onclick="window.print()">🖨 Prenta</button>
+    <span class="lbl">Snið:</span>
+    <button class="o" id="btn-ls" onclick="setOrient('landscape')">Langsnið</button>
+    <button class="o" id="btn-pt" onclick="setOrient('portrait')">Skammsnið</button>
     <button class="x" onclick="window.close()">Loka</button>
   </div>
   <div class="hd">
@@ -824,7 +832,15 @@
     <tbody>${rows}</tbody>
     <tfoot><tr><td></td><td>Samtals ${arr.length} fyrirtæki</td><td colspan="5"></td><td class="r">${fmtKr(totalEst)}</td><td></td></tr></tfoot>
   </table>
-  <script>setTimeout(function(){window.print();},350);<\/script>
+  <script>
+    function setOrient(o){
+      document.getElementById('pgstyle').textContent='@page{ size:A4 '+o+'; margin:12mm }';
+      document.body.className=o;
+      document.getElementById('btn-ls').classList.toggle('act', o==='landscape');
+      document.getElementById('btn-pt').classList.toggle('act', o==='portrait');
+    }
+    setOrient('landscape');
+  <\/script>
 </body></html>`);
     win.document.close();
   }
