@@ -75,20 +75,27 @@
     const row = urlInp.closest('.su-row') || urlInp.parentElement;
     if (!row) return;
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'margin-top:8px;padding:10px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;display:flex;align-items:center;gap:12px;flex-wrap:wrap';
+    wrap.style.cssText = 'margin-top:8px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;display:flex;flex-direction:column;gap:8px';
     wrap.innerHTML =
-      '<input id="_sl-file" type="file" accept="image/png,image/jpeg,image/svg+xml" style="font:inherit;font-size:12px">' +
-      '<button id="_sl-reset" type="button" style="padding:6px 10px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;color:#475569">↺ Endurstilla á sjálfgefið</button>' +
-      '<div style="flex:1;min-width:160px;display:flex;justify-content:flex-end">' +
-        '<div id="_sl-preview-frame" style="background:repeating-conic-gradient(#f1f5f9 0% 25%, #fff 0% 50%) 50% / 14px 14px;border:1px solid #cbd5e1;border-radius:6px;padding:6px;display:inline-flex;align-items:center;justify-content:center">' +
-          '<img id="_sl-preview" src="' + getUrl() + '" style="height:48px;width:144px;object-fit:contain;display:block">' +
-        '</div>' +
-      '</div>';
+      '<div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em">Logo (3:1 rammi)</div>' +
+      '<div id="_sl-drop" title="Smelltu eða dragðu logo hingað" ' +
+        'style="cursor:pointer;position:relative;background:repeating-conic-gradient(#f1f5f9 0% 25%, #fff 0% 50%) 50% / 14px 14px;' +
+        'border:2px dashed #94a3b8;border-radius:10px;padding:10px;display:flex;align-items:center;justify-content:center;min-height:96px;transition:border-color .15s,background .15s">' +
+        '<img id="_sl-preview" src="' + getUrl() + '" alt="logo" style="height:78px;width:234px;max-width:100%;object-fit:contain;display:block;pointer-events:none">' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+        '<span style="font-size:12px;color:#64748b">Dragðu mynd í rammann að ofan eða</span>' +
+        '<input id="_sl-file" type="file" accept="image/png,image/jpeg,image/svg+xml" style="font:inherit;font-size:12px">' +
+        '<button id="_sl-reset" type="button" style="padding:6px 10px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;color:#475569">↺ Endurstilla á sjálfgefið</button>' +
+      '</div>' +
+      '<div style="font-size:11px;color:#94a3b8">PNG/JPG/SVG, helst &lt; 200 KB. Birtist á samningum, reikningum og skýrslum.</div>';
     row.parentElement.insertBefore(wrap, row.nextSibling);
 
     const file = wrap.querySelector('#_sl-file');
     const preview = wrap.querySelector('#_sl-preview');
     const resetBtn = wrap.querySelector('#_sl-reset');
+    const drop = wrap.querySelector('#_sl-drop');
+    const FRAME_BG = 'repeating-conic-gradient(#f1f5f9 0% 25%, #fff 0% 50%) 50% / 14px 14px';
 
     // 2026-05-20: persist IMMEDIATELY via AppSettings.save() — the settings
     // panel's wireBranding handler only stores in a local draft until the
@@ -111,22 +118,44 @@
       }
     }
 
-    file.addEventListener('change', () => {
-      const f = file.files && file.files[0];
+    function handleFile(f) {
       if (!f) return;
+      if (!/^image\//.test(f.type || '')) { alert('Veldu myndaskrá (PNG, JPG eða SVG).'); return; }
       if (f.size > 2 * 1024 * 1024) {
         alert('Skráin er stærri en 2 MB. Veldu minni mynd (helst < 200 KB).');
         return;
       }
       const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = String(reader.result || '');
-        commitLogo(dataUrl);
-      };
+      reader.onload = () => commitLogo(String(reader.result || ''));
       reader.readAsDataURL(f);
-    });
+    }
 
+    file.addEventListener('change', () => handleFile(file.files && file.files[0]));
     resetBtn.addEventListener('click', () => { commitLogo(DEFAULT_URL); });
+
+    // Click the 3:1 frame to browse.
+    drop.addEventListener('click', () => file.click());
+
+    // Drag-and-drop a logo straight into the 3:1 frame.
+    ['dragenter', 'dragover'].forEach(ev =>
+      drop.addEventListener(ev, e => {
+        e.preventDefault(); e.stopPropagation();
+        drop.style.borderColor = '#2563eb';
+        drop.style.background = '#eff6ff';
+      }));
+    ['dragleave', 'dragend'].forEach(ev =>
+      drop.addEventListener(ev, e => {
+        e.preventDefault(); e.stopPropagation();
+        drop.style.borderColor = '#94a3b8';
+        drop.style.background = FRAME_BG;
+      }));
+    drop.addEventListener('drop', e => {
+      e.preventDefault(); e.stopPropagation();
+      drop.style.borderColor = '#94a3b8';
+      drop.style.background = FRAME_BG;
+      const dt = e.dataTransfer;
+      handleFile(dt && dt.files && dt.files[0]);
+    });
 
     // Live preview when user manually edits the URL field too.
     urlInp.addEventListener('input', () => { preview.src = urlInp.value || DEFAULT_URL; });
