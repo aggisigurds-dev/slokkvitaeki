@@ -447,6 +447,7 @@
               <option value="month" ${state.sort==='month'?'selected':''}>📅 Eftir skoðunarmánuði (næst fyrst)</option>
               <option value="oldest" ${state.sort==='oldest'?'selected':''}>⏳ Þeir elstu fyrst (lengst síðan skoðað)</option>
             </select>
+            <button id="_ars-print" type="button" title="Prenta listann eins og hann er síaður núna" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font:inherit;font-size:12px;font-weight:600;color:#0f172a;cursor:pointer">🖨 Prenta lista</button>
           </div>
         </div>
 
@@ -550,6 +551,7 @@
     main.querySelector('#_ars-sort')?.addEventListener('change', e => {
       state.sort = e.target.value; saveState(); render();
     });
+    main.querySelector('#_ars-print')?.addEventListener('click', printList);
     main.querySelectorAll('._ars-st').forEach(b => b.addEventListener('click', () => {
       state.status = b.dataset.status; saveState(); render();
     }));
@@ -631,6 +633,102 @@
         } catch (_) { /* type=search may not allow setSelectionRange in some browsers */ }
       }
     }
+  }
+
+  // ── Print the currently-filtered list ─────────────────────────────────────
+  // Prints exactly what filteredSorted() returns (same search + status + month
+  // filters and sort the user sees), as a clean A4-landscape worklist.
+  function printList() {
+    const arr = filteredSorted();
+    if (!arr.length) { alert('Engin fyrirtæki í listanum til að prenta.'); return; }
+    const curYear = new Date().getFullYear();
+    const filterLabel = state.month >= 1 && state.month <= 12
+      ? `${MONTHS_IS[state.month - 1]} ${curYear}`
+      : (state.status === 'done'        ? `Búið ${curYear}`
+       : state.status === 'pending'     ? `Eftir ${curYear}`
+       : state.status === 'never'       ? 'Aldrei skoðað'
+       : state.status === 'skipped2025' ? 'Slepptir í fyrra'
+       : state.status === 'priority'    ? 'Forgangur'
+       : `Allir mánuðir ${curYear}`);
+    const searchNote = state.search.trim() ? ` · leit: “${esc(state.search.trim())}”` : '';
+
+    let totalEst = 0;
+    const rows = arr.map((c, i) => {
+      const ars = c._ars || {};
+      const m = +ars.inspect_month || 0;
+      const lastYr = +ars.last_year_inspected || 0;
+      const fieldYr = +ars.field_inspected_year || 0;
+      const totalEq = Object.values(ars.equipment || {}).reduce((s, v) => s + (+v || 0), 0);
+      const est = +ars.estimated_yearly || 0;
+      totalEst += est;
+      const statusTxt = lastYr === curYear ? 'Búið ' + curYear
+        : fieldYr === curYear ? 'Tekið út'
+        : lastYr ? 'Eftir (síðast ' + lastYr + ')'
+        : 'Aldrei';
+      const phone = [c.simi, c.farsimi].filter(Boolean).join(' / ');
+      return `<tr>
+        <td class="num">${i + 1}</td>
+        <td><strong>${esc(c.nafn || '')}</strong>${c.kennitala ? `<div class="kt">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}</td>
+        <td>${esc(c.heimilisfang || '')}</td>
+        <td class="nowrap">${esc(phone)}</td>
+        <td>${esc(c.netfang || '')}</td>
+        <td class="c">${esc(MONTHS_IS_SHORT[m - 1] || '—')}</td>
+        <td class="c">${totalEq || ''}</td>
+        <td class="r">${est ? fmtKr(est) : ''}</td>
+        <td class="c">${esc(statusTxt)}</td>
+      </tr>`;
+    }).join('');
+
+    const win = window.open('', '_blank');
+    if (!win) { alert('Leyfðu sprettiglugga til að prenta.'); return; }
+    const logo = (window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({ heightPx: 46, alt: 'Slökkvitæki ehf' }) : '';
+    const dateStr = new Date().toLocaleDateString('is-IS');
+    win.document.write(`<!doctype html><html lang="is"><head><meta charset="utf-8"><title>Fyrirtæki í Þjónustu — ${esc(filterLabel)}</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans', system-ui, Arial, sans-serif; color:#0f172a; margin:0; padding:18px; }
+  .hd { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0f172a; padding-bottom:10px; margin-bottom:12px; }
+  .hd h1 { margin:0; font-size:18px; }
+  .hd .sub { font-size:12px; color:#475569; margin-top:3px; }
+  .hd .meta { text-align:right; font-size:11px; color:#64748b; }
+  table { width:100%; border-collapse:collapse; font-size:11px; }
+  th, td { padding:5px 7px; border-bottom:1px solid #e2e8f0; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:#475569; border-bottom:1.5px solid #cbd5e1; }
+  td.num, td.c { text-align:center; color:#64748b; }
+  td.r { text-align:right; font-variant-numeric:tabular-nums; }
+  td.nowrap { white-space:nowrap; }
+  .kt { font-size:9.5px; color:#94a3b8; font-family:monospace; }
+  tbody tr:nth-child(even) td { background:#fafbfc; }
+  tfoot td { font-weight:700; border-top:2px solid #0f172a; background:#fff; }
+  .toolbar { margin-bottom:12px; }
+  .toolbar button { padding:8px 16px; font-size:13px; border:none; border-radius:7px; cursor:pointer; font-weight:600; margin-right:6px; }
+  .toolbar .p { background:#dc2626; color:#fff; }
+  .toolbar .x { background:#f1f5f9; color:#334155; }
+  @media print { .toolbar { display:none; } body { padding:0; } }
+</style></head><body>
+  <div class="toolbar">
+    <button class="p" onclick="window.print()">🖨 Prenta</button>
+    <button class="x" onclick="window.close()">Loka</button>
+  </div>
+  <div class="hd">
+    <div>
+      <h1>Fyrirtæki í Þjónustu</h1>
+      <div class="sub">Sía: <strong>${esc(filterLabel)}</strong>${searchNote} · ${arr.length} fyrirtæki</div>
+    </div>
+    <div class="meta">${logo}<div style="margin-top:4px">Slökkvitæki ehf · ${dateStr}</div></div>
+  </div>
+  <table>
+    <thead><tr>
+      <th class="num">#</th><th>Fyrirtæki</th><th>Heimilisfang</th><th>Sími</th><th>Netfang</th>
+      <th style="text-align:center">Skoðun</th><th style="text-align:center">Tæki</th><th style="text-align:right">Áætl.</th><th style="text-align:center">Staða</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr><td></td><td>Samtals ${arr.length} fyrirtæki</td><td colspan="5"></td><td class="r">${fmtKr(totalEst)}</td><td></td></tr></tfoot>
+  </table>
+  <script>setTimeout(function(){window.print();},350);<\/script>
+</body></html>`);
+    win.document.close();
   }
 
   function attCount(coId) {
