@@ -73,6 +73,34 @@ export default async (req) => {
     });
   }
 
+  // 0. Typeahead suggestions — return up to 6 matches for an autocomplete UI
+  //    (manual-geocode tool, patch 178). Never cached: the query is partial as
+  //    the user types, so caching would pollute the exact-match cache.
+  if (url.searchParams.get('suggest')) {
+    try {
+      const target = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=0&limit=6&countrycodes=${encodeURIComponent(cc)}&q=${encodeURIComponent(q)}`;
+      const r = await fetch(target, {
+        headers: {
+          'User-Agent': 'Slokkvitaeki/1.0 (+https://slokkvitaeki.netlify.app)',
+          'Accept': 'application/json',
+          'Accept-Language': 'is',
+        },
+      });
+      const data = r.ok ? await r.json() : [];
+      const results = (Array.isArray(data) ? data : [])
+        .map(h => ({ display_name: h.display_name, lat: parseFloat(h.lat), lon: parseFloat(h.lon) }))
+        .filter(x => Number.isFinite(x.lat) && Number.isFinite(x.lon));
+      return new Response(JSON.stringify({ results }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...cors(), 'Cache-Control': 'public, max-age=3600' },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ results: [] }), {
+        status: 200, headers: { 'Content-Type': 'application/json', ...cors() },
+      });
+    }
+  }
+
   // 1. Shared Supabase cache — instant hit if any PC has resolved this before.
   const cached = await readCache(q);
   if (cached) {
