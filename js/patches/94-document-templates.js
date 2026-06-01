@@ -40,7 +40,7 @@
       type: 'thjonusta',
       _seed: true,
       html: `
-<div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:780px;margin:0 auto;padding:14px 28px 16px;background:#fff;border:2px solid #0f172a">
+<div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:780px;margin:0 auto;padding:14px 28px 16px;background:#fff;border:2px solid #0f172a;box-sizing:border-box;min-height:262mm;display:flex;flex-direction:column">
   <div style="text-align:center;margin-bottom:2px;line-height:0">
     ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:56, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:56px;width:168px;object-fit:contain;display:inline-block">'}
   </div>
@@ -85,7 +85,7 @@
   <div style="margin:8px 0 4px;font-size:13.5px;font-weight:700">Annað:</div>
   <div style="border:1px solid #cbd5e1;min-height:34px;padding:8px;font-size:13.5px;border-radius:4px;line-height:1.45;white-space:pre-wrap">{{annad}}</div>
 
-  <hr style="border:none;border-top:1px dashed #cbd5e1;margin:12px 0 10px">
+  <hr style="border:none;border-top:1px dashed #cbd5e1;margin:auto 0 10px">
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:4px">
     <div>
