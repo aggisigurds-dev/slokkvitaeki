@@ -168,6 +168,7 @@
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input type="text" class="ct-search" placeholder="🔍 Leita..." value="${esc(searchQuery)}" oninput="ServiceContracts._search(this.value)">
+            <button class="btn btn-outline" onclick="ServiceContracts._logo()" title="Hlaða upp logo (3:1) sem birtist efst á öllum samningum">🖼️ Logo</button>
             <a href="https://brunaholf-tilbod.netlify.app" target="_blank" rel="noopener noreferrer" class="btn btn-outline" title="Opna Brunahólf tilboðakerfið í nýjum flipa" style="text-decoration:none">📄 Tilboðakerfi ↗</a>
             <button class="btn btn-outline" onclick="ServiceContracts._open(null,'legacy')" title="Skanna eldri pappírssamninga inn í kerfið">📥 Eldri samningur</button>
             <button class="btn btn-primary" onclick="ServiceContracts._open()">+ Nýr samningur</button>
@@ -208,6 +209,17 @@
   }
 
   function _search(v) { searchQuery = v.trim(); render(); }
+
+  // Open the shared logo uploader (patch 169). The picked PNG/JPG/SVG is
+  // stored under branding.logo_url and flows to every samningur (and all
+  // other printed artifacts) — the on-screen preview updates live.
+  function _logo() {
+    if (window.SlokkLogo && typeof SlokkLogo.openUploader === 'function') {
+      SlokkLogo.openUploader();
+    } else {
+      alert('Logo-stillingar ekki tilbúnar — opnaðu Stillingar → Branding.');
+    }
+  }
 
   // ── Open (new or edit) — paper-layout form ────────────────────────────────
   function _open(id, mode) {
@@ -542,6 +554,6 @@
   setTimeout(init, 1000);
   setTimeout(init, 2500);
 
-  window.ServiceContracts = { load, _open, _save, _bill, _delete, _print, _search, _photoChosen };
+  window.ServiceContracts = { load, _open, _save, _bill, _delete, _print, _search, _photoChosen, _logo };
   console.log('[service-contracts v2] installed');
 })();
