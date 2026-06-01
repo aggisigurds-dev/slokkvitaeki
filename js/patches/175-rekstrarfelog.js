@@ -203,7 +203,12 @@
     var anchor=btns.find(function(b){return b.dataset.view==='allir-vidsk';})
              || btns.find(function(b){return b.dataset.view==='companies';});
     if(!anchor || !anchor.parentElement) return;
-    if(anchor.parentElement.querySelector('[data-view="rekstrarfelog"]')) return; // already present
+    var existing=document.querySelector('[data-view="rekstrarfelog"]');
+    if(existing){
+      // already present — make sure it sits right after the preferred anchor
+      if(existing.previousElementSibling!==anchor && anchor.parentNode){ anchor.parentNode.insertBefore(existing, anchor.nextSibling); }
+      return;
+    }
     var btn=anchor.cloneNode(true);
     btn.dataset.view='rekstrarfelog';
     btn.classList.remove('active');
