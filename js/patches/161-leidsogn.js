@@ -137,7 +137,10 @@
     return cos.map(c => {
       const ars = arsMap[String(c.id)];
       const bru = bruMap[String(c.id)];
-      const hasContract = (ars && ars.equipment) || !!bru;
+      // In service via manual snapshot OR real active tæki in uttaeki
+      // (patch 177 — matches the Fyrirtæki í Þjónustu list).
+      const hasContract = (ars && ars.equipment) || !!bru ||
+        (window.InServiceClients && window.InServiceClients.has(c.nafn));
       if (!hasContract) return null;
       const coord = lookupCoord(gc, c);
       if (!coord) return null;
@@ -352,7 +355,8 @@
     cos.forEach(c => {
       const ars = arsMap[String(c.id)];
       const bru = bruMap[String(c.id)];
-      const hasContract = (ars && ars.equipment) || !!bru;
+      const hasContract = (ars && ars.equipment) || !!bru ||
+        (window.InServiceClients && window.InServiceClients.has(c.nafn));
       if (!hasContract) return;
       cnt.all++;
       const status = statusFor(c, ars);
@@ -736,6 +740,13 @@
     patchSwitchView();
     setTimeout(injectSidebar, 1200);
     setTimeout(injectSidebar, 2500);
+    // When the uttaeki-based in-service set finishes loading (patch 177),
+    // refresh pins + counts if the map is already on screen.
+    if (window.InServiceClients && window.InServiceClients.onReady) {
+      window.InServiceClients.onReady(() => {
+        if (_map) { try { renderPins(); renderDueList(); } catch (_) {} }
+      });
+    }
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', boot);

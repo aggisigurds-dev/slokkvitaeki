@@ -61,14 +61,19 @@
     const companies = (window.Companies && Companies.list) || null;
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || null;
     const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || null;
+    const ISC = window.InServiceClients;
     if (!companies) return null;
-    if (!arsMap && !bruMap) return null;
+    // Proceed once we have ANY in-service signal: a manual snapshot OR the
+    // uttaeki-based set (patch 177). Without this, uttaeki-only shops were
+    // never geocoded → no pin in Leiðsögn.
+    if (!arsMap && !bruMap && !(ISC && ISC.loaded())) return null;
     return companies.filter(c => {
       const ars = arsMap && arsMap[String(c.id)];
       const bru = bruMap && bruMap[String(c.id)];
-      // Include if subscribed to either service. arsskodun needs equipment
-      // (the legacy "is contract holder" flag); brunakerfi just needs a row.
-      return (ars && ars.equipment) || bru;
+      // Include if subscribed to either service (arsskodun needs equipment —
+      // the legacy "is contract holder" flag; brunakerfi just needs a row) OR
+      // the company has real active tæki in uttaeki (matches patch 153's list).
+      return (ars && ars.equipment) || bru || (ISC && ISC.has(c.nafn));
     });
   }
 
@@ -109,6 +114,11 @@
   async function runPrewarm() {
     if (_started) return;
     _started = true;
+    // Make sure the uttaeki-based in-service set is loaded before we decide
+    // who's missing — otherwise we'd skip every uttaeki-only shop.
+    if (window.InServiceClients && window.InServiceClients.ready) {
+      try { await window.InServiceClients.ready(); } catch (_) {}
+    }
     const missing = getMissing();
     if (!missing || !missing.length) return;
     const work = missing.slice(0, MAX_PREWARM);
