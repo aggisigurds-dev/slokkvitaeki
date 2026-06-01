@@ -123,36 +123,132 @@
     _cache.allCompanies = allCompanies;
     _cache.byId = Object.fromEntries(allCompanies.map(c => [c.id, c]));
 
+    // 2026-06-01: tæki count + estimated yearly revenue are now DERIVED LIVE
+    // from the real uttaeki table (status='active'), not a hand-maintained
+    // snapshot — so every company that actually has equipment shows up with a
+    // correct count and revenue. Pricing comes from the vorur "yfirferð" rates
+    // (single source of truth) with hardcoded fallbacks. Manual inspect_month
+    // / last_year_inspected / priority etc. are preserved from arsskodun_customers.
+    const unitsByClient = await loadActiveUnitsByClient(SB);
+    const PRICE = await loadYfirferdPrices(SB);
+
     // 2026-05-19: Only include companies that are ACTUALLY in service
-    // (subscribed to ársskoðun with non-zero equipment, OR subscribed to
-    // brunakerfi). Aggi reported Akstursþjónustan ehf. showing up here
-    // even though it has empty equipment {} in arsskodun — i.e. parked
-    // there during migration but never actually subscribed. Companies
-    // without any service belong in Allir Viðskiptavinir only.
+    // (subscribed to ársskoðun, subscribed to brunakerfi, OR — new — they have
+    // real active tæki in uttaeki). Companies without any service belong in
+    // Allir Viðskiptavinir only.
     function inService(c) {
       const key = String(c.id);
       const a = arsMap[key];
-      // 2026-05-21: a company qualifies if it has equipment with counts > 0
-      // (legacy migration data) OR if it was explicitly subscribed via the
-      // button (patch 158 stamps `subscribed: true`). Without this second
-      // branch, a freshly-subscribed customer with empty equipment {} (e.g.
-      // Hátún 8) silently never appears here.
+      // A company qualifies if it has equipment with counts > 0 (legacy
+      // migration data) OR was explicitly subscribed via the button (patch 158
+      // stamps `subscribed: true`) OR has real active units in uttaeki.
       const hasArs = !!(a && (
         a.subscribed === true ||
         (a.equipment && Object.values(a.equipment).some(v => +v > 0))
       ));
       const hasBru = !!bruMap[key];
-      return hasArs || hasBru;
+      const hasUnits = (unitsByClient[foldName(c.nafn)] || []).length > 0;
+      return hasArs || hasBru || hasUnits;
     }
 
     _cache.list = allCompanies
       .filter(inService)
-      .map(c => ({
-        ...c,
-        _ars: arsMap[String(c.id)] || {},
-        _bru: bruMap[String(c.id)] || null
-      }))
+      .map(c => {
+        const manual = arsMap[String(c.id)] || {};
+        const _ars = Object.assign({}, manual);
+        const units = unitsByClient[foldName(c.nafn)] || [];
+        if (units.length) {
+          // Bucket the real tæki by category and price each at its yfirferð rate.
+          const equip = {};
+          let est = 0;
+          units.forEach(u => {
+            const cat = categoryOf(u.type);
+            equip[cat] = (equip[cat] || 0) + 1;
+            est += (PRICE[cat] != null ? PRICE[cat] : PRICE.annad);
+          });
+          _ars.equipment = equip;
+          _ars.estimated_yearly = Math.round(est);
+          _ars._unit_count = units.length;
+          _ars._derived = true;
+        }
+        return {
+          ...c,
+          _ars,
+          _bru: bruMap[String(c.id)] || null
+        };
+      })
       .sort((a, b) => String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is'));
+  }
+
+  // ── Live-equipment helpers (2026-06-01) ───────────────────────────────────
+  // Diacritic/case-folded key for matching fyrirtaeki.nafn ↔ uttaeki.client.
+  function foldName(s) {
+    return String(s || '').toLowerCase().trim()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/þ/g, 'th').replace(/ð/g, 'd').replace(/æ/g, 'ae').replace(/ö/g, 'o')
+      .replace(/\s+/g, ' ');
+  }
+  // Same, but also folds subscript digits so "CO₂" matches "CO2".
+  function foldTok(s) {
+    return foldName(s).replace(/[₀-₉]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x2080 + 48));
+  }
+  // Map a raw uttaeki.type to a canonical service category.
+  function categoryOf(type) {
+    const t = foldTok(type);
+    if (/duft|abc|pfc/.test(t)) return 'duft';
+    if (/co2|kolsyr/.test(t)) return 'co2';
+    if (/lettv|abf|frod/.test(t)) return 'lettvatn';
+    if (/brunaslang|brunaslong|hose/.test(t)) return 'brunaslanga';
+    if (/reykskynj|smoke/.test(t)) return 'reykskynjari';
+    if (/teppi|blanket/.test(t)) return 'teppi';
+    if (/slonguskap/.test(t)) return 'slonguskapur';
+    return 'annad';
+  }
+  async function loadActiveUnitsByClient(SB) {
+    const byClient = {};
+    try {
+      let from = 0; const page = 1000;
+      while (true) {
+        const { data, error } = await SB.from('uttaeki')
+          .select('type,client,status')
+          .eq('status', 'active')
+          .range(from, from + page - 1);
+        if (error || !data) break;
+        data.forEach(u => {
+          const k = foldName(u.client);
+          if (!k) return;
+          (byClient[k] = byClient[k] || []).push(u);
+        });
+        if (data.length < page) break;
+        from += page;
+      }
+    } catch (e) { console.warn('[arsskodun] units load', e); }
+    return byClient;
+  }
+  // Per-category yearly "yfirferð" price from the vorur list, with fallbacks so
+  // it never zeroes out. teppi/slonguskapur/annad use the base Skoðunargjald.
+  async function loadYfirferdPrices(SB) {
+    const FB = { lettvatn: 3150, duft: 3387, co2: 3270, brunaslanga: 4346, reykskynjari: 2346, skod: 1532 };
+    let vorur = [];
+    try {
+      const { data } = await SB.from('vorur').select('nafn,verd_an_vsk,virkt').eq('virkt', true);
+      vorur = data || [];
+    } catch (_) {}
+    const find = re => {
+      const v = vorur.find(p => re.test(foldTok(p.nafn)));
+      return v ? Math.round(+v.verd_an_vsk) : null;
+    };
+    const skod = find(/skodunargjald/) || FB.skod;
+    return {
+      lettvatn:     find(/yfirfer.*lettv|lettv.*yfirfer/) || FB.lettvatn,
+      duft:         find(/yfirfer.*duft|duft.*yfirfer/) || FB.duft,
+      co2:          find(/yfirfer.*co2|co2.*yfirfer/) || FB.co2,
+      brunaslanga:  find(/yfirfer.*brunaslang|brunaslang.*yfirfer/) || FB.brunaslanga,
+      reykskynjari: find(/yfirfer.*reykskynj|reykskynj.*yfirfer/) || FB.reykskynjari,
+      teppi:        skod,
+      slonguskapur: skod,
+      annad:        skod
+    };
   }
 
   // ── Sidebar entry ────────────────────────────────────────────────────────
