@@ -40,6 +40,17 @@
   const readGc  = () => { try { return JSON.parse(localStorage.getItem(GC_CACHE_KEY) || '{}'); } catch(e) { return {}; } };
   const writeGc = c  => { try { localStorage.setItem(GC_CACHE_KEY, JSON.stringify(c)); } catch(e) {} };
 
+  // Let any currently-open map drop newly-resolved pins live, throttled so we
+  // don't re-render on every single geocode during the background warm.
+  let _lastNotify = 0;
+  function notifyMaps(force) {
+    const now = Date.now();
+    if (!force && now - _lastNotify < 2500) return;
+    _lastNotify = now;
+    try { window.ArsMapEmbed && window.ArsMapEmbed.refresh && window.ArsMapEmbed.refresh(); } catch (_) {}
+    try { window.Leidsogn && window.Leidsogn.refresh && window.Leidsogn.refresh(); } catch (_) {}
+  }
+
   async function geocodeOne(address) {
     if (!address || address.length < 3) return null;
     try {
@@ -144,12 +155,14 @@
         gc2[co.nafn] = coord;
         if (co.heimilisfang) gc2[co.heimilisfang] = coord;
         writeGc(gc2);
+        notifyMaps();   // drop the new pin live (throttled)
       }
       _done++;
       if (i < work.length - 1) {
         await new Promise(r => setTimeout(r, THROTTLE_MS));
       }
     }
+    notifyMaps(true);   // final render to catch the last batch
     console.log('[geocode-prewarm] done — geocoded', _done, 'addresses (cap', MAX_PREWARM, ')');
   }
 

@@ -325,8 +325,11 @@
     }));
   }
 
-  function renderPins() {
+  function renderPins(opts) {
     if (!_map) return;
+    // fit:false skips the auto-zoom — used by live background refreshes so a
+    // newly-geocoded pin doesn't yank the viewport while the user is looking.
+    const fit = !opts || opts.fit !== false;
     clearMarkers();
     const list = applyFilter(getCustomers());
     list.forEach(item => {
@@ -334,13 +337,21 @@
       m.bindPopup(() => makePopupHtml(item));
       _markers[item.co.id] = m;
     });
-    if (list.length > 0) {
+    if (fit && list.length > 0) {
       const pts = list.map(x => [x.coord.lat, x.coord.lng]);
       try { _map.fitBounds(L.latLngBounds(pts).pad(0.15)); } catch (_) {}
     }
     // Update counts in chip row
     updateChipCounts();
   }
+
+  // Public hook so the background geocode pre-warm (patch 156) can drop
+  // newly-resolved pins live — without re-fitting the viewport each time.
+  window.Leidsogn = {
+    refresh: () => {
+      try { if (_map) { renderPins({ fit: false }); renderDueList(); } } catch (_) {}
+    }
+  };
 
   function updateChipCounts() {
     // 2026-05-26: chip counts should reflect ALL eligible customers, including
