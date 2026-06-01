@@ -991,7 +991,10 @@
                 : (isSkipped ? '#f59e0b'
                 : (isOverdue ? '#ef4444' : '#94a3b8')));
               const pri = (window.Priority && Priority.get) ? (Priority.get(c.id) || 0) : 0;
-              const dotColor = (pri > 0 && window.Priority) ? Priority.colorOf(pri) : dot;
+              // Dot FILL = priority colour (grey at 0, so the grey→green→yellow
+              // →red cycle visibly returns to grey). Dot RING = inspection
+              // status, so that information isn't lost.
+              const dotColor = window.Priority ? Priority.colorOf(pri) : dot;
               const skippedBadge = isSkipped
                 ? `<span title="Síðast skoðað ${lastYr}" style="display:inline-block;margin-left:4px;background:#fef3c7;color:#a16207;font-size:8.5px;font-weight:700;padding:1px 5px;border-radius:99px;border:1px solid #fde68a;line-height:1.2">⏰ '${String(lastYr).slice(-2)}</span>`
                 : '';
@@ -1012,7 +1015,7 @@
                   <td style="padding:8px 7px;text-align:center;font-weight:700;color:#0f172a">${totalEq||'—'}</td>
                   <td style="padding:8px 7px;text-align:right;color:#15803d;font-weight:700;font-variant-numeric:tabular-nums">${fmtKrShort(est)}</td>
                   <td style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
-                  <td style="padding:8px 7px;text-align:center;white-space:nowrap"><span class="_ars-pri-dot" data-co-id="${c.id}" title="Forgangur — smelltu til að lita og raða (grátt→grænt→gult→rautt)" style="display:inline-block;width:13px;height:13px;border-radius:99px;background:${dotColor};cursor:pointer;vertical-align:middle;box-shadow:0 0 0 1px rgba(0,0,0,.12)"></span>${skippedBadge}${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</td>
+                  <td style="padding:8px 7px;text-align:center;white-space:nowrap"><span class="_ars-pri-dot" data-co-id="${c.id}" title="Forgangur — smelltu til að lita og raða (grátt→grænt→gult→rautt)" style="display:inline-block;width:13px;height:13px;border-radius:99px;background:${dotColor};cursor:pointer;vertical-align:middle;box-shadow:0 0 0 2px ${dot}"></span>${skippedBadge}${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</td>
                   <td style="padding:8px 11px;text-align:right;white-space:nowrap">
                     <button class="_ars-open-fyrirt" data-co-id="${c.id}" type="button" title="Opna fyrirtæki" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px;margin-right:3px">🏢</button>
                     <button class="_ars-open-map" data-co-id="${c.id}" type="button" title="Sjá á korti" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px">🗺️</button>
@@ -1525,17 +1528,24 @@
   // Expose for debugging
   window.Arsskodun = { show, openDetail, openOnMap, _cache, render, version: 'v1' };
 
-  // 2026-05-26: re-render when priority dot is cycled from anywhere
+  // 2026-05-26: reflect a cycled priority dot from anywhere.
+  // 2026-06-01: update the dot IN PLACE instead of a full render() — the
+  // re-render reset scroll and made the list "jump". The colour is the only
+  // thing that changes; re-sorting by ❗ happens on the next natural render.
   document.addEventListener('priority-changed', e => {
-    const co = (_cache.list || []).find(x => String(x.id) === String(e.detail.coId));
+    const coId = e.detail.coId;
+    const newPri = e.detail.newPri;
+    const co = (_cache.list || []).find(x => String(x.id) === String(coId));
     if (co) {
       co._ars = co._ars || {};
-      if (e.detail.newPri > 0) co._ars.priority = e.detail.newPri;
+      if (newPri > 0) co._ars.priority = newPri;
       else delete co._ars.priority;
     }
-    // Only re-render if view is currently active to avoid stealing focus
     const v = document.getElementById('view-arsskodun');
-    if (v && v.style.display !== 'none') render();
+    if (!v || v.style.display === 'none') return;
+    const fill = window.Priority ? Priority.colorOf(newPri) : '#94a3b8';
+    v.querySelectorAll('._ars-pri-dot[data-co-id="' + coId + '"]')
+      .forEach(dotEl => { dotEl.style.background = fill; });
   });
   console.log('[arsskodun] v1 ready');
 })();
