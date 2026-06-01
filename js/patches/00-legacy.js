@@ -2974,7 +2974,7 @@ console.log('[patch-master] loaded with all fixes');
     if(!cked.length){if(bar)bar.remove();return;}
     if(!bar){bar=document.createElement('div');bar.className='_pm_batch_bar';t.parentNode.insertBefore(bar,t);}
     var srs=[];cked.forEach(function(c){if(c.dataset.serial)srs.push(c.dataset.serial);});
-    bar.innerHTML='<span>'+srs.length+' valin</span><select id="_pb_act"><option value="">Veldu...</option><option value="active">\u2192 Active</option><option value="ok">\u2192 \u00cd lagi</option><option value="geymsla">\u2192 \u00cd geymslu</option><option value="i_vinnslu">\u2192 \u00cd vinnslu</option><option value="onytt">\u2192 \u00d3n\u00fdtt</option><option value="inspect">\u2713 Sko\u00f0a\u00f0 \u00ed dag</option></select><button class="_pm_b_apply">Uppf\u00e6ra</button><button class="_pm_b_close">\u00d7</button>';
+    bar.innerHTML='<span>'+srs.length+' valin</span><select id="_pb_act"><option value="">Veldu...</option><option value="active">\u2192 Active</option><option value="ok">\u2192 \u00cd lagi</option><option value="geymsla">\u2192 \u00cd geymslu</option><option value="i_vinnslu">\u2192 \u00cd vinnslu</option><option value="onytt">\u2192 \u00d3n\u00fdtt</option><option value="inspect">\u2713 Sko\u00f0a\u00f0 \u00ed dag</option></select><button class="_pm_b_apply">Uppf\u00e6ra</button><button class="_pm_b_print" style="background:#fff;color:#1e40af">\ud83d\udda8 Prenta merki ('+srs.length+')</button><button class="_pm_b_close">\u00d7</button>';
     window._pbSrs=srs;
     bar.querySelector('._pm_b_apply').onclick=function(){
       var act=document.getElementById('_pb_act').value;if(!act){alert('Veldu a\u00f0ger\u00f0');return;}
@@ -2985,6 +2985,27 @@ console.log('[patch-master] loaded with all fixes');
         if(r.error){alert('Villa: '+r.error.message);return;}
         alert(window._pbSrs.length+' t\u00e6ki uppf\u00e6r\u00f0!');if(window._currentCompanyId&&window.Companies)window.Companies.openDetail(window._currentCompanyId);else location.reload();
       });
+    };
+    bar.querySelector('._pm_b_print').onclick=function(){
+      var serials=window._pbSrs||[];
+      if(!serials.length){alert('Engin tæki valin');return;}
+      var units=(window.DB&&DB.cache&&DB.cache.units)?DB.cache.units.filter(function(u){return serials.indexOf(u.serial)>=0;}):[];
+      if(!units.length){alert('Fann ekki tækin í skrá — reyndu aftur.');return;}
+      // Company name + phone for the labels: prefer the open company, else the
+      // shared client on the selected units (works in Geymsla/Þjónustutæki too).
+      var cust='',phone='';
+      if(window._currentCompanyId&&window.Companies&&Companies.list){
+        var co=Companies.list.find(function(x){return x.id===window._currentCompanyId;});
+        if(co){cust=co.nafn||'';phone=co.simi||'';}
+      }
+      if(!cust)cust=units[0].client||'';
+      if(!phone)phone=units[0].phone||'';
+      // Reuse the exact Brother multi-label printer Sala uses (patch 139 →
+      // patch 08). One correctly-sized 18×Nmm label per unit, company name on
+      // each, single length-picker for the whole batch.
+      if(window.Print&&typeof Print.showJob==='function'){
+        Print.showJob({customer:cust,phone:phone,units:units});
+      }else{alert('Prentun ekki tiltæk — QR-miðakerfið er ekki hlaðið.');}
     };
     bar.querySelector('._pm_b_close').onclick=function(){t.querySelectorAll('._pm_cb').forEach(function(c){c.checked=false;});bar.remove();};
   }
