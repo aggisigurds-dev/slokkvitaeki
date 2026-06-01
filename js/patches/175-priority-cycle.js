@@ -69,8 +69,11 @@
     const entry = Object.assign({}, map[String(coId)] || {});
     const cur = +entry.priority || 0;
     const next = (cur + 1) % 4;
-    if (next === 0) delete entry.priority;
-    else entry.priority = next;
+    // Always WRITE the value (incl. 0). AppSettings.save() merges via deepMerge,
+    // which can't delete keys — so `delete entry.priority` never persisted a
+    // clear-to-grey, and it reverted to the old colour on refresh. Storing 0
+    // (which get()/filters already treat as "no priority") makes the clear stick.
+    entry.priority = next;
     const ok = await window.AppSettings.save({
       [STORAGE_KEY]: Object.assign({}, map, { [String(coId)]: entry })
     });
