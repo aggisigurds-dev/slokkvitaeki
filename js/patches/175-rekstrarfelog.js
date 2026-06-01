@@ -1,5 +1,5 @@
 /* === REKSTRARFÉLÖG v1 ===
- * Adds a "Rekstrarfélög" nav tab (after Fyrirtæki) + a view that lists
+ * Adds a "Rekstrarfélög" nav tab (after Allir Viðskiptavinir) + a view that lists
  * management/parent companies that operate many buildings/húsfélög.
  *
  * - Data lives in AppSettings.rekstrarfelog (shared, server-backed, editable).
@@ -183,35 +183,43 @@
   }
 
   // ---- nav tab injection (mirrors vidskiptavinir.js pattern) ----
-  var _injected=false;
+  // NOTE: the app re-renders its nav bar (counts update etc.), which wipes any
+  // injected button. So we do NOT latch a one-time flag — instead injectTab runs
+  // on an interval and re-adds the button whenever it is missing.
+  function showOurView(btn){
+    document.querySelectorAll('[id^=view-]').forEach(function(v){ v.style.display='none'; v.classList.remove('active'); });
+    var v=viewEl();
+    if(!v){ v=document.createElement('div'); v.id='view-rekstrarfelog'; v.className='view'; v.style.cssText='padding:20px';
+      var ref=document.getElementById('view-companies')||document.getElementById('view-allir-vidsk');
+      if(ref&&ref.parentNode) ref.parentNode.insertBefore(v,ref.nextSibling); else document.body.appendChild(v); }
+    v.style.display=''; v.classList.add('active');
+    document.querySelectorAll('.vnav-btn').forEach(function(b){ b.classList.remove('active'); });
+    btn.classList.add('active');
+    renderView();
+  }
   function injectTab(){
-    if(_injected) return;
-    var fyr=Array.prototype.slice.call(document.querySelectorAll('.vnav-btn')).find(function(b){return b.dataset.view==='companies';});
-    if(!fyr) return;
-    if(fyr.parentElement.querySelector('[data-view="rekstrarfelog"]')) { _injected=true; return; }
-    var btn=document.createElement('button');
-    btn.className=fyr.className;
+    var btns=Array.prototype.slice.call(document.querySelectorAll('.vnav-btn'));
+    // prefer to sit right after "Allir Viðskiptavinir"; fall back to companies btn
+    var anchor=btns.find(function(b){return b.dataset.view==='allir-vidsk';})
+             || btns.find(function(b){return b.dataset.view==='companies';});
+    if(!anchor || !anchor.parentElement) return;
+    if(anchor.parentElement.querySelector('[data-view="rekstrarfelog"]')) return; // already present
+    var btn=anchor.cloneNode(true);
     btn.dataset.view='rekstrarfelog';
-    btn.innerHTML=fyr.innerHTML.replace(/Fyrirt[æa]ki[^<]*/i,'Rekstrarfélög');
-    var svgs=btn.querySelectorAll('svg');
-    if(svgs.length){ var sp=document.createElement('span'); sp.style.cssText='display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;font-size:14px'; sp.textContent='🏢'; svgs[0].parentNode.replaceChild(sp,svgs[0]); }
-    btn.onclick=function(){
-      document.querySelectorAll('[id^=view-]').forEach(function(v){ v.style.display='none'; v.classList.remove('active'); });
-      var v=viewEl();
-      if(!v){ v=document.createElement('div'); v.id='view-rekstrarfelog'; v.className='view'; v.style.cssText='padding:20px';
-        var ref=document.getElementById('view-companies'); if(ref&&ref.parentNode) ref.parentNode.insertBefore(v,ref.nextSibling); else document.body.appendChild(v); }
-      v.style.display=''; v.classList.add('active');
-      document.querySelectorAll('.vnav-btn').forEach(function(b){ b.classList.remove('active'); });
-      btn.classList.add('active');
-      renderView();
-    };
-    fyr.parentNode.insertBefore(btn, fyr.nextSibling);
+    btn.classList.remove('active');
+    // robust label: most nav buttons wrap text in a <span>; otherwise set textContent
+    var span=btn.querySelector('span');
+    if(span){ span.textContent='🏢 Rekstrarfélög'; } else { btn.textContent='🏢 Rekstrarfélög'; }
+    // remove any cloned badge/counter nodes
+    btn.querySelectorAll('.badge,.count,[class*="badge"],[class*="count"]').forEach(function(n){ n.remove(); });
+    btn.removeAttribute('onclick');
+    btn.onclick=function(){ showOurView(btn); };
+    anchor.parentNode.insertBefore(btn, anchor.nextSibling);
     // hide our view when another nav button is clicked
     document.querySelectorAll('.vnav-btn').forEach(function(b){ if(b===btn) return; b.addEventListener('click', function(){ var v=viewEl(); if(v){ v.style.display='none'; v.classList.remove('active'); } btn.classList.remove('active'); }); });
-    _injected=true;
     console.log('[Rekstrarfélög] tab injected');
   }
-  setInterval(injectTab, 1500);
-  setTimeout(injectTab, 900);
-  window.openRekstrarfelog=function(){ var b=document.querySelector('[data-view="rekstrarfelog"]'); if(b) b.click(); };
+  setInterval(injectTab, 1200);
+  setTimeout(injectTab, 600);
+  window.openRekstrarfelog=function(){ injectTab(); var b=document.querySelector('[data-view="rekstrarfelog"]'); if(b) b.click(); };
 })();
