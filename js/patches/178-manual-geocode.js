@@ -57,8 +57,8 @@
       ._mg-btn.pri{background:#16a34a;color:#fff;border-color:#15803d}
       ._mg-btn.pri:disabled{background:#cbd5e1;border-color:#cbd5e1;cursor:not-allowed}
       ._mg-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:12.5px}
-      ._mg-banner{display:flex;align-items:center;gap:10px;background:#fffbeb;border:1px solid #fde68a;color:#92400e;border-radius:10px;padding:10px 14px;margin-bottom:10px;font-size:13px}
-      ._mg-banner button{margin-left:auto;padding:6px 12px;background:#b45309;color:#fff;border:0;border-radius:7px;cursor:pointer;font:inherit;font-weight:700}
+      ._mg-fab{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:900;display:inline-flex;align-items:center;gap:8px;background:#b45309;color:#fff;border:0;border-radius:999px;padding:11px 18px;font:700 13px system-ui;box-shadow:0 8px 24px rgba(0,0,0,.28);cursor:pointer}
+      ._mg-fab:hover{background:#92400e}
       ._mg-prog{height:7px;background:#e2e8f0;border-radius:4px;overflow:hidden;margin:8px 0}
       ._mg-prog>i{display:block;height:100%;background:#16a34a;width:0;transition:width .2s}
     `;
@@ -384,24 +384,33 @@
 
   window.ManualGeocode = { open, openMissing, missingCount: () => missingCompanies().length };
 
-  // ── entry banner on the Leiðsögn page ───────────────────────────────────────
-  function injectBanner() {
-    const canvas = document.getElementById('_lds-mapcanvas');
-    if (!canvas || canvas.offsetParent === null) return; // view not visible
-    let b = $('_mg-banner');
-    let n = 0;
-    try { n = missingCompanies().length; } catch (_) { return; }
-    if (n === 0) { if (b) b.remove(); return; }
-    if (!b) {
-      b = document.createElement('div');
-      b.id = '_mg-banner';
-      b.className = '_mg-banner';
-      canvas.parentNode.insertBefore(b, canvas);
-      b.addEventListener('click', e => { if (e.target.closest('button')) openMissing(); });
-    }
-    b.innerHTML = '⚠ <span><b>' + n + '</b> staðsetningar vantar á kortið.</span><button type="button">Laga handvirkt</button>';
+  // ── entry point on the Leiðsögn page ────────────────────────────────────────
+  // A FIXED floating pill — never shifts the page layout or flickers when
+  // Leiðsögn re-renders (the old inline banner was injected above the map and
+  // popped in/out each tick). Persistent element; we only toggle text + display.
+  let _fab = null;
+  function ensureFab() {
+    if (_fab) return _fab;
+    _fab = document.createElement('button');
+    _fab.id = '_mg-fab';
+    _fab.type = 'button';
+    _fab.className = '_mg-fab';
+    _fab.style.display = 'none';
+    _fab.addEventListener('click', openMissing);
+    document.body.appendChild(_fab);
+    return _fab;
   }
-  setInterval(injectBanner, 1500);
+  function updateFab() {
+    const fab = ensureFab();
+    const canvas = document.getElementById('_lds-mapcanvas');
+    if (!canvas || canvas.offsetParent === null) { fab.style.display = 'none'; return; } // not on Leiðsögn
+    let n = 0;
+    try { n = missingCompanies().length; } catch (_) { fab.style.display = 'none'; return; }
+    if (n === 0) { fab.style.display = 'none'; return; }
+    fab.textContent = '📍 ' + n + ' staðsetningar vantar — Laga';
+    fab.style.display = 'inline-flex';
+  }
+  setInterval(updateFab, 1500);
 
   console.log('[manual-geocode v1] installed');
 })();
