@@ -123,36 +123,132 @@
     _cache.allCompanies = allCompanies;
     _cache.byId = Object.fromEntries(allCompanies.map(c => [c.id, c]));
 
+    // 2026-06-01: tæki count + estimated yearly revenue are now DERIVED LIVE
+    // from the real uttaeki table (status='active'), not a hand-maintained
+    // snapshot — so every company that actually has equipment shows up with a
+    // correct count and revenue. Pricing comes from the vorur "yfirferð" rates
+    // (single source of truth) with hardcoded fallbacks. Manual inspect_month
+    // / last_year_inspected / priority etc. are preserved from arsskodun_customers.
+    const unitsByClient = await loadActiveUnitsByClient(SB);
+    const PRICE = await loadYfirferdPrices(SB);
+
     // 2026-05-19: Only include companies that are ACTUALLY in service
-    // (subscribed to ársskoðun with non-zero equipment, OR subscribed to
-    // brunakerfi). Aggi reported Akstursþjónustan ehf. showing up here
-    // even though it has empty equipment {} in arsskodun — i.e. parked
-    // there during migration but never actually subscribed. Companies
-    // without any service belong in Allir Viðskiptavinir only.
+    // (subscribed to ársskoðun, subscribed to brunakerfi, OR — new — they have
+    // real active tæki in uttaeki). Companies without any service belong in
+    // Allir Viðskiptavinir only.
     function inService(c) {
       const key = String(c.id);
       const a = arsMap[key];
-      // 2026-05-21: a company qualifies if it has equipment with counts > 0
-      // (legacy migration data) OR if it was explicitly subscribed via the
-      // button (patch 158 stamps `subscribed: true`). Without this second
-      // branch, a freshly-subscribed customer with empty equipment {} (e.g.
-      // Hátún 8) silently never appears here.
+      // A company qualifies if it has equipment with counts > 0 (legacy
+      // migration data) OR was explicitly subscribed via the button (patch 158
+      // stamps `subscribed: true`) OR has real active units in uttaeki.
       const hasArs = !!(a && (
         a.subscribed === true ||
         (a.equipment && Object.values(a.equipment).some(v => +v > 0))
       ));
       const hasBru = !!bruMap[key];
-      return hasArs || hasBru;
+      const hasUnits = (unitsByClient[foldName(c.nafn)] || []).length > 0;
+      return hasArs || hasBru || hasUnits;
     }
 
     _cache.list = allCompanies
       .filter(inService)
-      .map(c => ({
-        ...c,
-        _ars: arsMap[String(c.id)] || {},
-        _bru: bruMap[String(c.id)] || null
-      }))
+      .map(c => {
+        const manual = arsMap[String(c.id)] || {};
+        const _ars = Object.assign({}, manual);
+        const units = unitsByClient[foldName(c.nafn)] || [];
+        if (units.length) {
+          // Bucket the real tæki by category and price each at its yfirferð rate.
+          const equip = {};
+          let est = 0;
+          units.forEach(u => {
+            const cat = categoryOf(u.type);
+            equip[cat] = (equip[cat] || 0) + 1;
+            est += (PRICE[cat] != null ? PRICE[cat] : PRICE.annad);
+          });
+          _ars.equipment = equip;
+          _ars.estimated_yearly = Math.round(est);
+          _ars._unit_count = units.length;
+          _ars._derived = true;
+        }
+        return {
+          ...c,
+          _ars,
+          _bru: bruMap[String(c.id)] || null
+        };
+      })
       .sort((a, b) => String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is'));
+  }
+
+  // ── Live-equipment helpers (2026-06-01) ───────────────────────────────────
+  // Diacritic/case-folded key for matching fyrirtaeki.nafn ↔ uttaeki.client.
+  function foldName(s) {
+    return String(s || '').toLowerCase().trim()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/þ/g, 'th').replace(/ð/g, 'd').replace(/æ/g, 'ae').replace(/ö/g, 'o')
+      .replace(/\s+/g, ' ');
+  }
+  // Same, but also folds subscript digits so "CO₂" matches "CO2".
+  function foldTok(s) {
+    return foldName(s).replace(/[₀-₉]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x2080 + 48));
+  }
+  // Map a raw uttaeki.type to a canonical service category.
+  function categoryOf(type) {
+    const t = foldTok(type);
+    if (/duft|abc|pfc/.test(t)) return 'duft';
+    if (/co2|kolsyr/.test(t)) return 'co2';
+    if (/lettv|abf|frod/.test(t)) return 'lettvatn';
+    if (/brunaslang|brunaslong|hose/.test(t)) return 'brunaslanga';
+    if (/reykskynj|smoke/.test(t)) return 'reykskynjari';
+    if (/teppi|blanket/.test(t)) return 'teppi';
+    if (/slonguskap/.test(t)) return 'slonguskapur';
+    return 'annad';
+  }
+  async function loadActiveUnitsByClient(SB) {
+    const byClient = {};
+    try {
+      let from = 0; const page = 1000;
+      while (true) {
+        const { data, error } = await SB.from('uttaeki')
+          .select('type,client,status')
+          .eq('status', 'active')
+          .range(from, from + page - 1);
+        if (error || !data) break;
+        data.forEach(u => {
+          const k = foldName(u.client);
+          if (!k) return;
+          (byClient[k] = byClient[k] || []).push(u);
+        });
+        if (data.length < page) break;
+        from += page;
+      }
+    } catch (e) { console.warn('[arsskodun] units load', e); }
+    return byClient;
+  }
+  // Per-category yearly "yfirferð" price from the vorur list, with fallbacks so
+  // it never zeroes out. teppi/slonguskapur/annad use the base Skoðunargjald.
+  async function loadYfirferdPrices(SB) {
+    const FB = { lettvatn: 3150, duft: 3387, co2: 3270, brunaslanga: 4346, reykskynjari: 2346, skod: 1532 };
+    let vorur = [];
+    try {
+      const { data } = await SB.from('vorur').select('nafn,verd_an_vsk,virkt').eq('virkt', true);
+      vorur = data || [];
+    } catch (_) {}
+    const find = re => {
+      const v = vorur.find(p => re.test(foldTok(p.nafn)));
+      return v ? Math.round(+v.verd_an_vsk) : null;
+    };
+    const skod = find(/skodunargjald/) || FB.skod;
+    return {
+      lettvatn:     find(/yfirfer.*lettv|lettv.*yfirfer/) || FB.lettvatn,
+      duft:         find(/yfirfer.*duft|duft.*yfirfer/) || FB.duft,
+      co2:          find(/yfirfer.*co2|co2.*yfirfer/) || FB.co2,
+      brunaslanga:  find(/yfirfer.*brunaslang|brunaslang.*yfirfer/) || FB.brunaslanga,
+      reykskynjari: find(/yfirfer.*reykskynj|reykskynj.*yfirfer/) || FB.reykskynjari,
+      teppi:        skod,
+      slonguskapur: skod,
+      annad:        skod
+    };
   }
 
   // ── Sidebar entry ────────────────────────────────────────────────────────
@@ -447,6 +543,7 @@
               <option value="month" ${state.sort==='month'?'selected':''}>📅 Eftir skoðunarmánuði (næst fyrst)</option>
               <option value="oldest" ${state.sort==='oldest'?'selected':''}>⏳ Þeir elstu fyrst (lengst síðan skoðað)</option>
             </select>
+            <button id="_ars-print" type="button" title="Prenta listann eins og hann er síaður núna" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font:inherit;font-size:12px;font-weight:600;color:#0f172a;cursor:pointer">🖨 Prenta lista</button>
           </div>
         </div>
 
@@ -550,6 +647,7 @@
     main.querySelector('#_ars-sort')?.addEventListener('change', e => {
       state.sort = e.target.value; saveState(); render();
     });
+    main.querySelector('#_ars-print')?.addEventListener('click', printList);
     main.querySelectorAll('._ars-st').forEach(b => b.addEventListener('click', () => {
       state.status = b.dataset.status; saveState(); render();
     }));
@@ -631,6 +729,102 @@
         } catch (_) { /* type=search may not allow setSelectionRange in some browsers */ }
       }
     }
+  }
+
+  // ── Print the currently-filtered list ─────────────────────────────────────
+  // Prints exactly what filteredSorted() returns (same search + status + month
+  // filters and sort the user sees), as a clean A4-landscape worklist.
+  function printList() {
+    const arr = filteredSorted();
+    if (!arr.length) { alert('Engin fyrirtæki í listanum til að prenta.'); return; }
+    const curYear = new Date().getFullYear();
+    const filterLabel = state.month >= 1 && state.month <= 12
+      ? `${MONTHS_IS[state.month - 1]} ${curYear}`
+      : (state.status === 'done'        ? `Búið ${curYear}`
+       : state.status === 'pending'     ? `Eftir ${curYear}`
+       : state.status === 'never'       ? 'Aldrei skoðað'
+       : state.status === 'skipped2025' ? 'Slepptir í fyrra'
+       : state.status === 'priority'    ? 'Forgangur'
+       : `Allir mánuðir ${curYear}`);
+    const searchNote = state.search.trim() ? ` · leit: “${esc(state.search.trim())}”` : '';
+
+    let totalEst = 0;
+    const rows = arr.map((c, i) => {
+      const ars = c._ars || {};
+      const m = +ars.inspect_month || 0;
+      const lastYr = +ars.last_year_inspected || 0;
+      const fieldYr = +ars.field_inspected_year || 0;
+      const totalEq = Object.values(ars.equipment || {}).reduce((s, v) => s + (+v || 0), 0);
+      const est = +ars.estimated_yearly || 0;
+      totalEst += est;
+      const statusTxt = lastYr === curYear ? 'Búið ' + curYear
+        : fieldYr === curYear ? 'Tekið út'
+        : lastYr ? 'Eftir (síðast ' + lastYr + ')'
+        : 'Aldrei';
+      const phone = [c.simi, c.farsimi].filter(Boolean).join(' / ');
+      return `<tr>
+        <td class="num">${i + 1}</td>
+        <td><strong>${esc(c.nafn || '')}</strong>${c.kennitala ? `<div class="kt">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}</td>
+        <td>${esc(c.heimilisfang || '')}</td>
+        <td class="nowrap">${esc(phone)}</td>
+        <td>${esc(c.netfang || '')}</td>
+        <td class="c">${esc(MONTHS_IS_SHORT[m - 1] || '—')}</td>
+        <td class="c">${totalEq || ''}</td>
+        <td class="r">${est ? fmtKr(est) : ''}</td>
+        <td class="c">${esc(statusTxt)}</td>
+      </tr>`;
+    }).join('');
+
+    const win = window.open('', '_blank');
+    if (!win) { alert('Leyfðu sprettiglugga til að prenta.'); return; }
+    const logo = (window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({ heightPx: 46, alt: 'Slökkvitæki ehf' }) : '';
+    const dateStr = new Date().toLocaleDateString('is-IS');
+    win.document.write(`<!doctype html><html lang="is"><head><meta charset="utf-8"><title>Fyrirtæki í Þjónustu — ${esc(filterLabel)}</title>
+<style>
+  @page { size: A4 landscape; margin: 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'IBM Plex Sans', system-ui, Arial, sans-serif; color:#0f172a; margin:0; padding:18px; }
+  .hd { display:flex; justify-content:space-between; align-items:flex-start; border-bottom:2px solid #0f172a; padding-bottom:10px; margin-bottom:12px; }
+  .hd h1 { margin:0; font-size:18px; }
+  .hd .sub { font-size:12px; color:#475569; margin-top:3px; }
+  .hd .meta { text-align:right; font-size:11px; color:#64748b; }
+  table { width:100%; border-collapse:collapse; font-size:11px; }
+  th, td { padding:5px 7px; border-bottom:1px solid #e2e8f0; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; font-size:9.5px; text-transform:uppercase; letter-spacing:.04em; color:#475569; border-bottom:1.5px solid #cbd5e1; }
+  td.num, td.c { text-align:center; color:#64748b; }
+  td.r { text-align:right; font-variant-numeric:tabular-nums; }
+  td.nowrap { white-space:nowrap; }
+  .kt { font-size:9.5px; color:#94a3b8; font-family:monospace; }
+  tbody tr:nth-child(even) td { background:#fafbfc; }
+  tfoot td { font-weight:700; border-top:2px solid #0f172a; background:#fff; }
+  .toolbar { margin-bottom:12px; }
+  .toolbar button { padding:8px 16px; font-size:13px; border:none; border-radius:7px; cursor:pointer; font-weight:600; margin-right:6px; }
+  .toolbar .p { background:#dc2626; color:#fff; }
+  .toolbar .x { background:#f1f5f9; color:#334155; }
+  @media print { .toolbar { display:none; } body { padding:0; } }
+</style></head><body>
+  <div class="toolbar">
+    <button class="p" onclick="window.print()">🖨 Prenta</button>
+    <button class="x" onclick="window.close()">Loka</button>
+  </div>
+  <div class="hd">
+    <div>
+      <h1>Fyrirtæki í Þjónustu</h1>
+      <div class="sub">Sía: <strong>${esc(filterLabel)}</strong>${searchNote} · ${arr.length} fyrirtæki</div>
+    </div>
+    <div class="meta">${logo}<div style="margin-top:4px">Slökkvitæki ehf · ${dateStr}</div></div>
+  </div>
+  <table>
+    <thead><tr>
+      <th class="num">#</th><th>Fyrirtæki</th><th>Heimilisfang</th><th>Sími</th><th>Netfang</th>
+      <th style="text-align:center">Skoðun</th><th style="text-align:center">Tæki</th><th style="text-align:right">Áætl.</th><th style="text-align:center">Staða</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr><td></td><td>Samtals ${arr.length} fyrirtæki</td><td colspan="5"></td><td class="r">${fmtKr(totalEst)}</td><td></td></tr></tfoot>
+  </table>
+  <script>setTimeout(function(){window.print();},350);<\/script>
+</body></html>`);
+    win.document.close();
   }
 
   function attCount(coId) {
