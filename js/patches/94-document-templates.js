@@ -33,7 +33,12 @@
   }
 
   // ── Pre-seeded templates ──────────────────────────────────────────────────
-  const SEED_TEMPLATES = [
+  // 2026-06-01: built FRESH on every call (was a const evaluated once at
+  // load) so the ${SlokkLogo.imgHtml(...)} logo is resolved at render time —
+  // otherwise a logo changed in Stillingar/Branding never reached the
+  // þjónustusamningur opened from Fyrirtæki í Þjónustu (the seed body had the
+  // default logo baked in before branding finished loading).
+  function buildSeedTemplates() { return [
     {
       id: 'seed_thjonustusamningur',
       name: 'Þjónustusamningur',
@@ -532,7 +537,7 @@
   </div>
 </div>`
     }
-  ];
+  ]; }
 
   // ── Field labels (Icelandic-friendly) ──────────────────────────────────────
   const FIELD_LABELS = {
@@ -703,7 +708,7 @@
     const stored = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || [];
     const userTemplates = Array.isArray(stored) ? stored : [];
     // Seeds first, then user-added
-    return SEED_TEMPLATES.concat(userTemplates);
+    return buildSeedTemplates().concat(userTemplates);
   }
 
   // 2026-05-20: Hidden-template handling. User templates carry a `hidden`
