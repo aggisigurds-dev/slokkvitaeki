@@ -162,7 +162,7 @@
           const equip = {};
           let est = 0;
           units.forEach(u => {
-            const cat = categoryOf(u.type);
+            const cat = categoryOf(u.type, u.size);
             equip[cat] = (equip[cat] || 0) + 1;
             est += (PRICE[cat] != null ? PRICE[cat] : PRICE.annad);
           });
@@ -193,16 +193,16 @@
     return foldName(s).replace(/[₀-₉]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x2080 + 48));
   }
   // Map a raw uttaeki.type to a canonical service category.
-  function categoryOf(type) {
+  function categoryOf(type, size) {
     const t = foldTok(type);
-    if (/duft|abc|pfc/.test(t)) return 'duft';
-    if (/co2|kolsyr/.test(t)) return 'co2';
+    const sizeNum = parseFloat(String(size || '').replace(',', '.')) || 0;
     if (/lettv|abf|frod/.test(t)) return 'lettvatn';
-    if (/brunaslang|brunaslong|hose/.test(t)) return 'brunaslanga';
-    if (/reykskynj|smoke/.test(t)) return 'reykskynjari';
-    if (/teppi|blanket/.test(t)) return 'teppi';
-    if (/slonguskap/.test(t)) return 'slonguskapur';
-    return 'annad';
+    if (/duft|abc|pfc/.test(t)) return sizeNum > 3 ? 'duft6_12' : 'duft2';
+    if (/co2|kolsyr/.test(t)) return sizeNum > 3 ? 'co2_5' : 'co2_2';
+    if (/brunaslang|brunaslong|hose/.test(t)) return 'brunaslongur';
+    if (/reykskynj|smoke/.test(t)) return 'reykskynjarar';
+    if (/teppi|blanket|eldvarn/.test(t)) return 'eldvarnarteppi';
+    return 'annad'; // Slönguskápur, Óþekkt, unmatched
   }
   async function loadActiveUnitsByClient(SB) {
     const byClient = {};
@@ -210,7 +210,7 @@
       let from = 0; const page = 1000;
       while (true) {
         const { data, error } = await SB.from('uttaeki')
-          .select('type,client,status')
+          .select('type,size,client,status')
           .eq('status', 'active')
           .range(from, from + page - 1);
         if (error || !data) break;
@@ -240,14 +240,15 @@
     };
     const skod = find(/skodunargjald/) || FB.skod;
     return {
-      lettvatn:     find(/yfirfer.*lettv|lettv.*yfirfer/) || FB.lettvatn,
-      duft:         find(/yfirfer.*duft|duft.*yfirfer/) || FB.duft,
-      co2:          find(/yfirfer.*co2|co2.*yfirfer/) || FB.co2,
-      brunaslanga:  find(/yfirfer.*brunaslang|brunaslang.*yfirfer/) || FB.brunaslanga,
-      reykskynjari: find(/yfirfer.*reykskynj|reykskynj.*yfirfer/) || FB.reykskynjari,
-      teppi:        skod,
-      slonguskapur: skod,
-      annad:        skod
+      lettvatn:       find(/yfirfer.*lettv|lettv.*yfirfer/) || FB.lettvatn,
+      duft2:          find(/yfirfer.*duft|duft.*yfirfer/) || FB.duft,
+      duft6_12:       find(/yfirfer.*duft|duft.*yfirfer/) || FB.duft,
+      co2_2:          find(/yfirfer.*co2|co2.*yfirfer/) || FB.co2,
+      co2_5:          find(/yfirfer.*co2|co2.*yfirfer/) || FB.co2,
+      brunaslongur:   find(/yfirfer.*brunaslang|brunaslang.*yfirfer/) || FB.brunaslanga,
+      reykskynjarar:  find(/yfirfer.*reykskynj|reykskynj.*yfirfer/) || FB.reykskynjari,
+      eldvarnarteppi: skod,
+      annad:          skod
     };
   }
 
@@ -682,6 +683,16 @@
       });
     });
 
+    // 2026-06-01: the Staða dot doubles as a priority control — clicking it
+    // cycles grey→green→yellow→red (patch 175) so the operator can colour-
+    // prioritise and sort by the ❗ column. Re-render handled by the existing
+    // 'priority-changed' listener.
+    main.querySelectorAll('._ars-pri-dot').forEach(el => el.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = +el.dataset.coId;
+      if (id && window.Priority && Priority.cycle) Priority.cycle(id);
+    }));
+
     main.querySelectorAll('._ars-open-map').forEach(b => b.addEventListener('click', e => {
       e.stopPropagation();
       const id = +b.dataset.coId;
@@ -979,6 +990,8 @@
                 : (isFieldOnly ? '#f59e0b'
                 : (isSkipped ? '#f59e0b'
                 : (isOverdue ? '#ef4444' : '#94a3b8')));
+              const pri = (window.Priority && Priority.get) ? (Priority.get(c.id) || 0) : 0;
+              const dotColor = (pri > 0 && window.Priority) ? Priority.colorOf(pri) : dot;
               const skippedBadge = isSkipped
                 ? `<span title="Síðast skoðað ${lastYr}" style="display:inline-block;margin-left:4px;background:#fef3c7;color:#a16207;font-size:8.5px;font-weight:700;padding:1px 5px;border-radius:99px;border:1px solid #fde68a;line-height:1.2">⏰ '${String(lastYr).slice(-2)}</span>`
                 : '';
@@ -999,7 +1012,7 @@
                   <td style="padding:8px 7px;text-align:center;font-weight:700;color:#0f172a">${totalEq||'—'}</td>
                   <td style="padding:8px 7px;text-align:right;color:#15803d;font-weight:700;font-variant-numeric:tabular-nums">${fmtKrShort(est)}</td>
                   <td style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
-                  <td style="padding:8px 7px;text-align:center;white-space:nowrap"><span style="display:inline-block;width:9px;height:9px;border-radius:99px;background:${dot}"></span>${skippedBadge}${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</td>
+                  <td style="padding:8px 7px;text-align:center;white-space:nowrap"><span class="_ars-pri-dot" data-co-id="${c.id}" title="Forgangur — smelltu til að lita og raða (grátt→grænt→gult→rautt)" style="display:inline-block;width:13px;height:13px;border-radius:99px;background:${dotColor};cursor:pointer;vertical-align:middle;box-shadow:0 0 0 1px rgba(0,0,0,.12)"></span>${skippedBadge}${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="margin-left:5px;font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</td>
                   <td style="padding:8px 11px;text-align:right;white-space:nowrap">
                     <button class="_ars-open-fyrirt" data-co-id="${c.id}" type="button" title="Opna fyrirtæki" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px;margin-right:3px">🏢</button>
                     <button class="_ars-open-map" data-co-id="${c.id}" type="button" title="Sjá á korti" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px">🗺️</button>
@@ -1032,7 +1045,8 @@
       ['co2_5', 'CO₂ 5 kg.'],
       ['brunaslongur', 'Brunaslöngur'],
       ['eldvarnarteppi', 'Eldvarnarteppi'],
-      ['reykskynjarar', 'Reykskynjarar']
+      ['reykskynjarar', 'Reykskynjarar'],
+      ['annad', 'Annað / óþekkt']
     ];
     const eqTotal = Object.values(eq).reduce((s, v) => s + (+v || 0), 0);
 
