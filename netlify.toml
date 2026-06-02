@@ -2,6 +2,12 @@
 
 # Route /api/* to the Netlify Functions under netlify/functions/*.js
 # e.g. /api/geocode -> /.netlify/functions/geocode
+# Clean alias for the bulk-geocode background function (must precede the wildcard).
+[[redirects]]
+  from = "/api/geocode-all"
+  to = "/.netlify/functions/geocode-all-background"
+  status = 200
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/:splat"
