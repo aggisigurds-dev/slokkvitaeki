@@ -160,7 +160,9 @@
         if (units.length) {
           // Bucket the real tæki by category and price each at its annual rate
           // (yfirferð + hleðsla, með VSK). Reykskynjarar and brunaslöngur are
-          // priced here too via their own categories.
+          // priced here too via their own categories. 2026-06-02: per Agnar's
+          // choice the estimate is the per-unit annual revenue (≈28 m.kr.);
+          // Skýrslugerð/Akstur add-ons are intentionally not folded in here.
           const equip = {};
           let est = 0;
           units.forEach(u => {
@@ -168,14 +170,6 @@
             equip[cat] = (equip[cat] || 0) + 1;
             est += (PRICE[cat] != null ? PRICE[cat] : PRICE.annad);
           });
-          // 2026-06-02: full annual revenue also includes the per-customer
-          // Skýrslugerð (report) and Akstur (driving) fees — með VSK, same as
-          // the customer-detail estimate. Akstur scales by akstur_multiplier
-          // (2 for far-away customers). Only added when there's equipment.
-          const SKYRSLUGERD = 4340;           // 3500 + VSK
-          const AKSTUR_UNIT = 3720;           // 3000 + VSK
-          const aksturMult = +manual.akstur_multiplier || 1;
-          est += SKYRSLUGERD + AKSTUR_UNIT * aksturMult;
           _ars.equipment = equip;
           _ars.estimated_yearly = Math.round(est);
           _ars._unit_count = units.length;
