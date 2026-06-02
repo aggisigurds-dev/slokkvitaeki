@@ -299,6 +299,15 @@
     }
     const ok = await window.AppSettings.save({ [STORAGE_KEY]: map });
     if (!ok) { alert('Vista mistókst'); return; }
+    // 2026-06-02: ársþjónusta subscription now ALSO lives on the real
+    // fyrirtaeki.er_i_thjonustu column — a per-row write that can't be
+    // clobbered by another computer's stale save of the whole settings blob.
+    if (svc === 'ars') {
+      try {
+        const sb = window.DB && window.DB.sb;
+        if (sb) await sb.from('fyrirtaeki').update({ er_i_thjonustu: action === 'add' }).eq('id', _currentId);
+      } catch (e) { console.warn('[vidsk-detail] er_i_thjonustu update failed', e); }
+    }
     render();
   }
 
