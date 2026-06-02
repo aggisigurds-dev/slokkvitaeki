@@ -1060,7 +1060,9 @@
     // 2026-06: linked inspection report (úttektarskýrsla) from the Drive master.
     const skyrsla = ars._skyrsla || '';
     const skyrslaName = skyrsla ? skyrsla.split('/').pop().replace(/\.(pdf|docx)$/i, '') : '';
-    const skyrslaUrl = skyrsla ? 'https://drive.google.com/drive/search?q=' + encodeURIComponent(skyrslaName) : '';
+    // Prefer a resolved direct Drive file URL (_skyrsla_url); else search Drive by name.
+    const skyrslaUrl = ars._skyrsla_url ? ars._skyrsla_url
+      : (skyrsla ? 'https://drive.google.com/drive/search?q=' + encodeURIComponent(skyrslaName) : '');
     const eqRows = [
       ['lettvatn', 'Léttvatn 6 ltr.'],
       ['duft2', 'Duft 2 kg.'],
