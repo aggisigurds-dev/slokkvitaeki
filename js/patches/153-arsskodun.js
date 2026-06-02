@@ -1057,6 +1057,10 @@
     const history = ars.history || [];
     const aminning = cleanAminning(ars.aminning);
     const est = +ars.estimated_yearly || 0;
+    // 2026-06: linked inspection report (úttektarskýrsla) from the Drive master.
+    const skyrsla = ars._skyrsla || '';
+    const skyrslaName = skyrsla ? skyrsla.split('/').pop().replace(/\.(pdf|docx)$/i, '') : '';
+    const skyrslaUrl = skyrsla ? 'https://drive.google.com/drive/search?q=' + encodeURIComponent(skyrslaName) : '';
     const eqRows = [
       ['lettvatn', 'Léttvatn 6 ltr.'],
       ['duft2', 'Duft 2 kg.'],
@@ -1119,6 +1123,7 @@
               <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase">Síðasta skoðun</div>
               <div style="font-size:16px;font-weight:800;color:#15803d;margin-top:2px">${ars.last_year_inspected || '—'}</div>
               ${ars.last_skodun ? `<div style="font-size:10.5px;color:#16a34a">${esc(ars.last_skodun)}</div>` : ''}
+              ${skyrsla ? `<a href="${skyrslaUrl}" target="_blank" rel="noopener" title="${esc(skyrsla)}" style="display:inline-block;margin-top:3px;font-size:10.5px;color:#2563eb;text-decoration:none;font-weight:700">📄 Skýrsla</a>` : ''}
             </div>
             <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 11px">
               <div style="font-size:10px;font-weight:700;color:#475569;text-transform:uppercase">Áætluð árstekja</div>
