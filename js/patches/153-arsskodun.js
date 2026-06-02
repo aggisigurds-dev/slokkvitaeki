@@ -190,7 +190,8 @@
     return String(s || '').toLowerCase().trim()
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/þ/g, 'th').replace(/ð/g, 'd').replace(/æ/g, 'ae').replace(/ö/g, 'o')
-      .replace(/\s+/g, ' ');
+      .replace(/[.,]/g, '')          // 2026-06-02: ignore punctuation so a rename like
+      .replace(/\s+/g, ' ').trim();  // "Dra ehf." → "Dra ehf" can't drop a company off the list
   }
   // Same, but also folds subscript digits so "CO₂" matches "CO2".
   function foldTok(s) {
