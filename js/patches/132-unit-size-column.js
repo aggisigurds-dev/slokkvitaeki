@@ -12,19 +12,31 @@
   if (window.__unitSizeColumnInstalled) return;
   window.__unitSizeColumnInstalled = true;
 
-  const COMMON_SIZES = ['2 kg', '5 kg', '6 kg', '9 kg', '12 kg', '6 L', '30 m'];
-  const DATALIST_ID = '_usc_sizes';
+  // Standard extinguisher / hose sizes shown in the dropdown. A real <select>
+  // (not an <input list=datalist>) so picking a value fires a reliable
+  // 'change' event — the old datalist often didn't emit one on mobile, which
+  // left sizes like "Óþekkt" stuck because the edit never saved.
+  const SIZE_OPTIONS = ['2 kg', '5 kg', '6 kg', '9 kg', '12 kg', '6 L', '30 m'];
 
-  function ensureDatalist() {
-    if (document.getElementById(DATALIST_ID)) return;
-    const dl = document.createElement('datalist');
-    dl.id = DATALIST_ID;
-    COMMON_SIZES.forEach(s => {
-      const o = document.createElement('option');
-      o.value = s;
-      dl.appendChild(o);
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function buildSizeSelect(unitId, cur) {
+    const c = cur || '';
+    let opts = '<option value="">—</option>';
+    // Preserve any non-standard current value (e.g. "6-12 kg", "6 ltr") so we
+    // never silently clobber it; it shows selected at the top.
+    if (c && SIZE_OPTIONS.indexOf(c) === -1) {
+      opts += '<option value="' + esc(c) + '" selected>' + esc(c) + ' (núv.)</option>';
+    }
+    SIZE_OPTIONS.forEach(s => {
+      opts += '<option value="' + s + '"' + (s === c ? ' selected' : '') + '>' + s + '</option>';
     });
-    document.body.appendChild(dl);
+    return '<select class="_usc-size" data-uid="' + unitId + '" ' +
+      'style="width:90px;padding:4px 6px;border:1px solid #e2e8f0;border-radius:5px;' +
+      'font:inherit;font-size:12px;background:#fff;cursor:pointer">' + opts + '</select>';
   }
 
   function findUnitTable() {
@@ -80,7 +92,6 @@
   }
 
   function injectColumn() {
-    ensureDatalist();
     const table = findUnitTable();
     if (!table) return;
     if (table.dataset._uscInjected === '1') return;
@@ -111,10 +122,7 @@
       const cur = getUnitSize(unitId);
       const td = document.createElement('td');
       td.style.cssText = 'padding:6px 8px';
-      td.innerHTML =
-        '<input type="text" class="_usc-size" data-uid="' + unitId + '" value="' + cur.replace(/"/g, '&quot;') + '" ' +
-        'list="' + DATALIST_ID + '" placeholder="2 kg" ' +
-        'style="width:80px;padding:4px 6px;border:1px solid #e2e8f0;border-radius:5px;font:inherit;font-size:12px;background:#fff;font-variant-numeric:tabular-nums">';
+      td.innerHTML = buildSizeSelect(unitId, cur);
       const cells = tr.children;
       if (typeIdx + 1 < cells.length) tr.insertBefore(td, cells[typeIdx + 1]);
       else tr.appendChild(td);
