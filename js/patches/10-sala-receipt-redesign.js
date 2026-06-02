@@ -5,7 +5,7 @@
  *   - Mid-row: customer block (left) | invoice meta (right) divided by a rule
  *   - Items table: Vörunúmer | Lýsing | Fjöldi | Einingaverð | Upphæð | VSK
  *   - Bottom-right totals block: Samtals fyrir Vsk + per-rate VAT lines + Til greiðslu
- *   - Footer: signature line + reglugerð disclaimer
+ *   - Footer: reglugerð disclaimer
  *
  * This module exposes window.SalaInvoice.render(win, ctx). The Sala
  * checkout dialog (patch 07) calls it when "Prenta kvittun" is checked.
@@ -344,11 +344,6 @@
     }
 
     .footer { margin-top: 18px; font-size: 9pt; }
-    .signature { display: flex; align-items: baseline; gap: 8px; margin-top: 28px; }
-    .signature .lbl { white-space: nowrap; }
-    .signature .line {
-      flex: 1; max-width: 280px; border-bottom: 0.6pt solid #000; height: 1.2em;
-    }
     .disclaimer { margin-top: 16px; font-size: 8pt; color: #444; }
 
     /* Phone preview: shrink the sheet so the user can see/print without horizontal scroll */
@@ -426,7 +421,10 @@
     // stamp. Older sales saved this into athugasemdir and the field still has it.
     // paymentTerms now conveys the same info; the stamp on the receipt is just
     // duplicate noise. Keep whatever real free-form note remains.
-    if (ctx.vegna) {
+    if (ctx.vegnaRaw) {
+      // Print the reference line exactly as supplied (e.g. visit invoices).
+      customerRows.push(`<div class="vegna">${esc(ctx.vegnaRaw)}</div>`);
+    } else if (ctx.vegna) {
       let cleaned = String(ctx.vegna)
         .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]\s*verður\s+greitt\s+við\s+afhendingu\s*[—\-:]?\s*/i, '')
         .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]?\s*/i, '')
@@ -485,10 +483,10 @@
               // 2026-05-20: bumped from 60 → 110 per Agnar's request — let
               // the wordmark be the visual hero of the receipt.
               if (window.SlokkLogo && SlokkLogo.imgHtml) {
-                return SlokkLogo.imgHtml({ heightPx: 110, alt: COMPANY.name, absoluteUrl: true });
+                return SlokkLogo.imgHtml({ heightPx: 110, alt: COMPANY.name, absoluteUrl: true, objectPosition: 'left' });
               }
               return `<img src="${esc(LOGO_URL)}" alt="${esc(COMPANY.name)}"
-              style="height:110px;width:330px;object-fit:contain;display:inline-block"
+              style="height:110px;width:330px;object-fit:contain;object-position:left;display:inline-block"
               onerror="this.style.visibility='hidden'">`;
             })()}
             ${(() => {
@@ -581,10 +579,6 @@
             const footerTxt = k.footer_text ? `<div class="footer-txt" style="margin-top:6px;text-align:center;font-size:9pt;color:#475569;font-style:italic">${esc(k.footer_text)}</div>` : '';
             return reikMsg + footerTxt;
           })()}
-          <div class="signature">
-            <span class="lbl">Móttekið/Greitt:</span>
-            <span class="line"></span>
-          </div>
           <div class="disclaimer">Þessi reikningur er rafrænt ytra frumgagn skv. reglugerð nr. 505/2013.</div>
         </div>
       </div>
@@ -654,6 +648,10 @@
       // Tilvísun is a freeform reference field; don't auto-fill with phone.
       tilvisun: opts.tilvisun || '',
       vegna: opts.vegna || notes,
+      // Verbatim reference line. When set, it's printed exactly as given
+      // (no "vegna " prefix, no token cleanup) — used by the visit-invoice
+      // flow to print "Vegna heimsókn DD.MM.YYYY".
+      vegnaRaw: opts.vegnaRaw || '',
       // Credit-note presentation (KREDITREIKNINGUR heading + "vegna" ref).
       isCredit: !!opts.isCredit,
       creditOf: opts.creditOf || ''
@@ -741,7 +739,9 @@
         customerHeimilisfang: customerLookup ? customerLookup.heimilisfang : '',
         // Forward credit-note presentation flags (set by printCreditNote).
         isCredit: !!xo.isCredit,
-        creditOf: xo.creditOf || ''
+        creditOf: xo.creditOf || '',
+        // Verbatim reference line (visit-invoice flow passes "Vegna heimsókn …").
+        vegnaRaw: xo.vegnaRaw || ''
       });
     } finally {
       if (window.POS) window.POS.getState = origGetState;

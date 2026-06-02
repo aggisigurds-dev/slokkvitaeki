@@ -25,8 +25,6 @@
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  const MONTHS_LOWER = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
-
   function loadTripState(coId) {
     try { return JSON.parse(localStorage.getItem('slokk_trip_' + coId) || '{}'); }
     catch (_) { return {}; }
@@ -111,14 +109,18 @@
     const skodunaradili = (trip.skodunaradili || '').trim();
 
     const now = new Date();
-    const monthPhrase = 'í ' + MONTHS_LOWER[now.getMonth()] + ' ' + now.getFullYear();
+    // 2026-06-02: Agnar asked for the inspection date in dd.mm.yyyy instead of
+    // the "í maí 2026" month phrase.
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const datePhrase = dd + '.' + mm + '.' + now.getFullYear();
 
-    const html = buildReportHtml({ co, counts, annad, athugasemdir, skodunaradili, monthPhrase });
+    const html = buildReportHtml({ co, counts, annad, athugasemdir, skodunaradili, datePhrase });
     showModal(html);
   }
 
   function buildReportHtml(ctx) {
-    const { co, counts, annad, athugasemdir, skodunaradili, monthPhrase } = ctx;
+    const { co, counts, annad, athugasemdir, skodunaradili, datePhrase } = ctx;
 
     const ktLine = co.kennitala ? ' kt: ' + esc(co.kennitala) : '';
     const addrLine = co.heimilisfang ? ', ' + esc(co.heimilisfang) : '';
@@ -150,7 +152,7 @@
 
         <!-- Letterhead: logo on the left, address on the right -->
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px">
-          ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:88, alt:'Slökkvitæki Brunahólf'}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki Brunahólf" style="height:88px;width:264px;object-fit:contain">'}
+          ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:88, alt:'Slökkvitæki Brunahólf', objectPosition:'left'}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki Brunahólf" style="height:88px;width:264px;object-fit:contain;object-position:left">'}
           <div style="text-align:right;font-size:12px;color:#0f172a;line-height:1.5">
             Helluhrauni 10, 220 Hafnarfjörður<br>
             Sími: 565 4080, kt. 600508-0400
@@ -167,7 +169,7 @@
 
         <!-- Inspection statement with date -->
         <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:14px">
-          Tæki voru yfirfarin af Slökkvitæki ehf ${esc(monthPhrase)}
+          Tæki voru yfirfarin af Slökkvitæki ehf ${esc(datePhrase)}
         </div>
 
         <!-- Fixed equipment category table — centered as a readable mid-

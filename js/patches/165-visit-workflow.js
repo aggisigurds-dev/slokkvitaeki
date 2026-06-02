@@ -65,6 +65,11 @@
     try { localStorage.removeItem(CHOICE_KEY + coId); } catch (_) {}
   }
   function todayIso() { return new Date().toISOString().slice(0, 10); }
+  // YYYY-MM-DD → DD.MM.YYYY for the printed "Vegna heimsókn" reference line.
+  function isoToDDMM(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || ''));
+    return m ? m[3] + '.' + m[2] + '.' + m[1] : String(iso || '');
+  }
   function addMonthsIso(iso, months) {
     const d = new Date(iso);
     d.setMonth(d.getMonth() + months);
@@ -297,7 +302,8 @@
     setTimeout(() => {
       try {
         if (window.SalaInvoice && typeof SalaInvoice.renderFromSale === 'function') {
-          SalaInvoice.renderFromSale(frame.contentWindow, previewSale, custData);
+          SalaInvoice.renderFromSale(frame.contentWindow, previewSale, custData,
+            { vegnaRaw: 'Vegna heimsókn ' + isoToDDMM(ctx.today) });
         } else {
           const doc = frame.contentDocument || frame.contentWindow.document;
           doc.open();
@@ -377,7 +383,8 @@
         const r = await sb.from('solur').select('*').eq('id', saleId).single();
         if (r.data) {
           const w = window.open('', '_blank', 'width=900,height=1100');
-          if (w) SalaInvoice.renderFromSale(w, r.data, null);
+          if (w) SalaInvoice.renderFromSale(w, r.data, null,
+            { vegnaRaw: 'Vegna heimsókn ' + isoToDDMM(today) });
         }
       } catch (_) {}
     }
