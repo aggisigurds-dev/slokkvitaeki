@@ -103,7 +103,10 @@
     html+='<div style="max-width:980px;margin:0 auto">';
     html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px">'+
           '<h1 style="font-size:22px;margin:0;font-weight:750">Rekstrarfélög</h1>'+
-          '<button id="_rf_add" class="btn btn-primary btn-sm" style="padding:8px 14px">+ Nýtt rekstrarfélag</button></div>';
+          '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
+            '<a href="/rekstrarfelog-uttektir.xlsx" download style="padding:8px 14px;text-decoration:none;border:1px solid #cbd5e1;border-radius:8px;color:#15803d;font-weight:600;font-size:13px;background:#f0fdf4">📊 Sækja aðgerðalista (Excel)</a>'+
+            '<button id="_rf_add" class="btn btn-primary btn-sm" style="padding:8px 14px">+ Nýtt rekstrarfélag</button>'+
+          '</div></div>';
     html+='<p style="color:#64748b;font-size:14px;margin:0 0 14px">Stór félög sem reka mörg húsfélög/byggingar. Smelltu á félag til að sjá byggingar, skjöl og tengiliði.</p>';
     html+='<input id="_rf_q" placeholder="🔎 Leita að félagi, byggingu eða kennitölu…" value="'+esc(_state.q)+'" style="width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:11px 12px;font-size:14px;margin-bottom:16px">';
     html+='<div id="_rf_list"></div></div>';
