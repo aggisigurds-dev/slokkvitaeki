@@ -54,7 +54,7 @@ var Companies = {
       this.render();
       return;
     }
-    var r = await DB.sb.from('fyrirtaeki').select('*').order('nafn');
+    var r = await DB.sb.from('fyrirtaeki').select('*').order('nafn').range(0, 9999);  // >1000 rows; avoid PostgREST default cap
     this.list = r.data || [];
     this.render();
   },

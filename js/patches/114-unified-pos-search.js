@@ -73,7 +73,8 @@
     _prefetchPromise = Promise.all([
       SB.from('fyrirtaeki')
         .select('id,nafn,simi,kennitala,heimilisfang,netfang,afslattur_pct,athugasemdir')
-        .order('nafn'),
+        .order('nafn')
+        .range(0, 9999),  // >1000 rows; avoid PostgREST default cap
       SB.from('vidskiptavinir')
         .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,afslattur_pct,athugasemdir')
         .order('nafn')

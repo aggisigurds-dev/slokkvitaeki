@@ -39,7 +39,7 @@
   async function loadData() {
     const [v, u, j] = await Promise.all([
       sb.from('vidskiptavinir').select('*').order('nafn'),
-      sb.from('uttaeki').select('client'),
+      sb.from('uttaeki').select('client').range(0, 9999),  // >1000 rows; avoid PostgREST default cap
       sb.from('verkbeidnir').select('customer,dropoff,created_at'),
     ]);
     State.customers = v.data || [];

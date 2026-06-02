@@ -37,7 +37,7 @@
   // ── Print QR labels for selected/all devices ──────────────────────────────
   async function printLabels(deviceIds){
     const SB = getSB(); if (!SB) return;
-    let q = SB.from('uttaeki').select('id,serial,client,type').order('serial');
+    let q = SB.from('uttaeki').select('id,serial,client,type').order('serial').range(0, 9999);  // >1000 rows; avoid PostgREST default cap
     if (deviceIds && deviceIds.length) q = q.in('id', deviceIds);
     const { data } = await q;
     if (!data || !data.length) { alert('Engin tæki fundust'); return; }

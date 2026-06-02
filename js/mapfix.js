@@ -240,7 +240,7 @@
   function loadCompaniesIfNeeded(){
     if(window.Companies && Companies.list && Companies.list.length) return Promise.resolve();
     if(!window.DB || !DB.sb) return Promise.resolve();
-    return DB.sb.from('fyrirtaeki').select('*').order('nafn').then(function(r){
+    return DB.sb.from('fyrirtaeki').select('*').order('nafn').range(0, 9999).then(function(r){  // >1000 rows; avoid PostgREST default cap
       if(r.data && window.Companies){ Companies.list = r.data; }
     });
   }

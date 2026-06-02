@@ -192,7 +192,7 @@
     });
 
     // Load company statuses
-    DB.sb.from('uttaeki').select('client,status').then(function(r){
+    DB.sb.from('uttaeki').select('client,status').range(0, 9999).then(function(r){  // >1000 rows; avoid PostgREST default cap
       var el = document.getElementById('_dash_companies');
       if (!el) return;
       var byComp = {};
@@ -687,7 +687,7 @@
           console.log('[rt]', tbl, p.eventType);
           // Refresh cache on change
           if (tbl === 'uttaeki') {
-            DB.sb.from('uttaeki').select('*').then(function(r){
+            DB.sb.from('uttaeki').select('*').range(0, 9999).then(function(r){  // >1000 rows; avoid PostgREST default cap
               DB.cache.units = r.data || [];
               // Trigger UI refresh
               try { if (App.refreshCurrentView) App.refreshCurrentView(); } catch(e){}

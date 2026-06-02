@@ -119,7 +119,8 @@
       .from('uttaeki')
       .select('id,serial,type,size,client,next_insp,location')
       .not('next_insp', 'is', null)
-      .order('next_insp', { ascending: true });
+      .order('next_insp', { ascending: true })
+      .range(0, 9999);  // uttaeki has >1000 rows; avoid PostgREST default cap
 
     units = (unitData || []).map(u => ({
       id: u.id,

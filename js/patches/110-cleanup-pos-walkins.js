@@ -50,7 +50,7 @@
   async function findCandidates() {
     const SB = getSB();
     if (!SB) return [];
-    const { data: companies, error } = await SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,heimilisFang,athugasemdir');
+    const { data: companies, error } = await SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,heimilisFang,athugasemdir').range(0, 9999);  // >1000 rows; avoid PostgREST default cap
     if (error) throw error;
     const candidates = (companies || []).filter(looksLikeWalkin);
     if (!candidates.length) return [];

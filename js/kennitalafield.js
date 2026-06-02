@@ -4,7 +4,7 @@ var _companies=null,_loadTime=0;
 async function loadCompanies(){
   if(_companies && Date.now()-_loadTime<30000) return _companies;
   _loadTime=Date.now();
-  var r=await DB.sb.from('fyrirtaeki').select('nafn,kennitala,simi,heimilisfang');
+  var r=await DB.sb.from('fyrirtaeki').select('nafn,kennitala,simi,heimilisfang').range(0, 9999);  // >1000 rows; avoid PostgREST default cap
   _companies=r.data||[];
   return _companies;
 }

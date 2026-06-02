@@ -133,7 +133,7 @@
       }
     }
     // Also load from fyrirtaeki
-    const { data: coData } = await SB.from('fyrirtaeki').select('id,nafn').order('nafn');
+    const { data: coData } = await SB.from('fyrirtaeki').select('id,nafn').order('nafn').range(0, 9999);  // >1000 rows; avoid PostgREST default cap
     for (const co of (coData || [])) {
       if (!seen.has(co.id)) seen.set(co.id, co.nafn || '—');
     }

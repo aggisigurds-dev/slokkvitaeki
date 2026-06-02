@@ -117,7 +117,8 @@
     // Load ALL fyrirtaeki rows. PostgREST paginates at 1000 rows by default.
     const { data: companies, error } = await SB.from('fyrirtaeki')
       .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu')
-      .order('nafn');
+      .order('nafn')
+      .range(0, 9999);  // PostgREST caps at 1000 by default — table has >1000 rows
     if (error) { console.error('[arsskodun] loadAll', error); return; }
     const allCompanies = companies || [];
     _cache.allCompanies = allCompanies;
