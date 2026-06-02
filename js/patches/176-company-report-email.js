@@ -107,7 +107,10 @@
 
   // ── Send via the Resend proxy (PDF attachment) ────────────────────────────
   async function sendViaResend(to, co, html) {
-    const from = localStorage.getItem('email_from') || DEFAULT_FROM;
+    // Reports always go out as the noreply sender (noreply@eldklar.is) — a
+    // dedicated `report_email_from` override, NOT the invoice mailer's
+    // `email_from`, so the report sender can't be changed by accident.
+    const from = localStorage.getItem('report_email_from') || DEFAULT_FROM;
     const apiKey = localStorage.getItem('resend_api_key') || ''; // server prefers env var
     const filename = safeFileName(co && co.nafn);
     const base64 = await htmlToPdfBase64(html, filename);
