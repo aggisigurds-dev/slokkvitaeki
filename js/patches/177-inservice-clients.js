@@ -25,7 +25,8 @@
     return String(s || '').toLowerCase().trim()
       .normalize('NFD').replace(/[̀-ͯ]/g, '')
       .replace(/þ/g, 'th').replace(/ð/g, 'd').replace(/æ/g, 'ae').replace(/ö/g, 'o')
-      .replace(/\s+/g, ' ');
+      .replace(/[.,]/g, '')          // 2026-06-02: keep identical to patch 153 — ignore
+      .replace(/\s+/g, ' ').trim();  // punctuation so renames don't break the name match
   }
 
   let _set = null;            // Set<foldedName> with ≥1 active unit
