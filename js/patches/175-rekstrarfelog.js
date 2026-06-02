@@ -152,16 +152,19 @@
     var blds=info.buildings||[];
     var equip=await getEquipIndex();
     var attMap={}; try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; } }catch(e){}
+    var linkMap={}; try{ if(window.AppSettings&&AppSettings.path){ linkMap=AppSettings.path('rf_uttekt_links')||{}; } }catch(e){}
     var today=_todayStr();
     // per-firm tally
     var n2026=0, nNeed=0, nNone=0, nOverdue=0;
     var bd='1px solid #eef1f5';
-    // year cell: done? -> tæki count (or ✓). green+📄 = úttektarskýrsla á skrá, blár = aðeins búnaðarsaga
-    function yCell(done, rep, units){
+    // year cell: done? -> tæki count (or ✓). green+📄 = úttektarskýrsla; ↗ = tengill í Drive; blár = aðeins búnaðarsaga
+    function yCell(done, rep, units, url){
       if(!done) return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#d1d5db">·</td>';
       var v = units>0 ? units : '✓';
-      if(rep) return '<td title="Úttektarskýrsla á skrá" style="padding:5px 4px;border-bottom:'+bd+';text-align:center;font-weight:700;color:#15803d;background:#f0fdf4">'+v+' 📄</td>';
-      return '<td title="Skráð í búnaðarsögu (engin skýrsla á skrá)" style="padding:5px 4px;border-bottom:'+bd+';text-align:center;font-weight:700;color:#1d4ed8;background:#eff6ff">'+v+'</td>';
+      var greenish = rep || url;
+      var style = greenish ? 'color:#15803d;background:#f0fdf4' : 'color:#1d4ed8;background:#eff6ff';
+      var inner = url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Google Drive" style="color:inherit;text-decoration:none">'+v+' 📄↗</a>' : (v+(rep?' 📄':''));
+      return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;font-weight:700;'+style+'">'+inner+'</td>';
     }
     // building table
     var rows=blds.map(function(b){
@@ -171,14 +174,20 @@
       var doc = co ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:#2563eb">skjöl</a>' : '';
       var st = equip.match(b.nafn);
       var att = (co && (attMap[co.id]||attMap[String(co.id)])) || [0,0,0];
+      var lks = linkMap[digits(b.kt)] || {};
       var units = st ? st.units : 0;
       var e24=st?st.y2024:0, e25=st?st.y2025:0, e26=st?st.y2026:0;
-      var d24=(e24>0)||!!att[0], d25=(e25>0)||!!att[1], d26=(e26>0)||!!att[2];
+      var d24=(e24>0)||!!att[0]||!!lks['2024'], d25=(e25>0)||!!att[1]||!!lks['2025'], d26=(e26>0)||!!att[2]||!!lks['2026'];
       var hasRep = !!(att[0]||att[1]||att[2]);
-      var hasData = units>0 || hasRep || d24 || d25 || d26;
+      var lkYears = Object.keys(lks);
+      var hasData = units>0 || hasRep || d24 || d25 || d26 || lkYears.length>0;
       if(!hasData) nNone++; else if(d26) n2026++; else if(d24||d25) nNeed++;
-      var unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(units>0?'font-weight:600':'color:'+(hasRep?'#cbd5e1':'#b45309'))+'">'+(units>0?units:(hasRep?'–':'0'))+'</td>';
-      var y24=yCell(d24,!!att[0],units), y25=yCell(d25,!!att[1],units), y26=yCell(d26,!!att[2],units);
+      // links for years outside the 2024-2026 columns (e.g. older skýrslur) shown after the name
+      var oldLinks = lkYears.filter(function(y){return y<'2024';}).sort().map(function(y){
+        return ' <a href="'+esc(lks[y])+'" target="_blank" rel="noopener" title="Úttektarskýrsla '+y+' í Drive" style="font-size:11px;color:#15803d;text-decoration:none;white-space:nowrap">📄'+y+'↗</a>'; }).join('');
+      link = link + oldLinks;
+      var unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(units>0?'font-weight:600':'color:'+(hasRep?'#cbd5e1':'#b45309'))+'">'+(units>0?units:(hasRep||lkYears.length?'–':'0'))+'</td>';
+      var y24=yCell(d24,!!att[0],units,lks['2024']), y25=yCell(d25,!!att[1],units,lks['2025']), y26=yCell(d26,!!att[2],units,lks['2026']);
       var nextCell;
       if(st && st.next){ var overdue = st.next < today; if(overdue && hasData) nOverdue++;
         var col = overdue ? '#b91c1c' : '#475569'; var bg = overdue ? 'background:#fef2f2;' : '';
