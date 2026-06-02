@@ -116,7 +116,7 @@
 
     // Load ALL fyrirtaeki rows. PostgREST paginates at 1000 rows by default.
     const { data: companies, error } = await SB.from('fyrirtaeki')
-      .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida')
+      .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu')
       .order('nafn');
     if (error) { console.error('[arsskodun] loadAll', error); return; }
     const allCompanies = companies || [];
@@ -142,7 +142,11 @@
       // A company qualifies if it has equipment with counts > 0 (legacy
       // migration data) OR was explicitly subscribed via the button (patch 158
       // stamps `subscribed: true`) OR has real active units in uttaeki.
-      const hasArs = !!(a && (
+      // 2026-06-02: the subscription flag now lives on the fyrirtaeki row
+      // (er_i_thjonustu column) — per-row writes, immune to the settings-blob
+      // last-write-wins race that was dropping companies. Legacy blob flags
+      // are still honoured as a fallback during the transition.
+      const hasArs = c.er_i_thjonustu === true || !!(a && (
         a.subscribed === true ||
         (a.equipment && Object.values(a.equipment).some(v => +v > 0))
       ));
