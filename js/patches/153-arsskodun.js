@@ -225,10 +225,17 @@
     } catch (e) { console.warn('[arsskodun] units load', e); }
     return byClient;
   }
-  // Per-category yearly "yfirferð" price from the vorur list, with fallbacks so
-  // it never zeroes out. teppi/slonguskapur/annad use the base Skoðunargjald.
+  // Per-category ANNUAL revenue per unit, with VSK.
+  // 2026-06-02: this used to return yfirferð only, án VSK — which understated
+  // the yearly estimate badly (~17 m.kr. instead of ~28 m.kr.). A real service
+  // year per unit is yfirferð (yearly inspection) + hleðsla (recharge), and the
+  // figure the company cares about is what it invoices, i.e. með VSK. So each
+  // category now = (yfirferð + hleðsla) × 1,24. Prices pull live from the vorur
+  // list (single source of truth) with hardcoded fallbacks so it never zeroes.
   async function loadYfirferdPrices(SB) {
-    const FB = { lettvatn: 3150, duft: 3387, co2: 3270, brunaslanga: 4346, reykskynjari: 2346, skod: 1532 };
+    const VAT = 1.24;
+    const FB_Y = { lettvatn: 3150, duft: 3387.1, co2: 3270.16, brunaslanga: 4345.97, reykskynjari: 2345.97, skod: 2016.13 };
+    const FB_H = { lettvatn: 6782.26, duft2: 4193.55, duft6_12: 6782.26, co2_2: 3400, co2_5: 6900 };
     let vorur = [];
     try {
       const { data } = await SB.from('vorur').select('nafn,verd_an_vsk,virkt').eq('virkt', true);
@@ -236,19 +243,36 @@
     } catch (_) {}
     const find = re => {
       const v = vorur.find(p => re.test(foldTok(p.nafn)));
-      return v ? Math.round(+v.verd_an_vsk) : null;
+      return v ? +v.verd_an_vsk : null;
     };
-    const skod = find(/skodunargjald/) || FB.skod;
+    // yfirferð (yearly inspection) per category
+    const y = {
+      lettvatn:     find(/yfirfer.*lettv|lettv.*yfirfer/) ?? FB_Y.lettvatn,
+      duft:         find(/yfirfer.*duft|duft.*yfirfer/)   ?? FB_Y.duft,
+      co2:          find(/yfirfer.*co2|co2.*yfirfer/)     ?? FB_Y.co2,
+      brunaslanga:  find(/yfirfer.*brunaslang|brunaslang.*yfirfer/) ?? FB_Y.brunaslanga,
+      reykskynjari: find(/yfirfer.*reykskynj|reykskynj.*yfirfer/)   ?? FB_Y.reykskynjari,
+      skod:         find(/skodunargjald/) ?? FB_Y.skod,
+    };
+    // hleðsla (recharge) per category — 0 for items that aren't recharged.
+    const h = {
+      lettvatn: find(/lettv.*hled|hled.*lettv/) ?? FB_H.lettvatn,
+      duft2:    find(/duft 2.*hled/)            ?? FB_H.duft2,
+      duft6_12: find(/duft 6.*hled/)            ?? FB_H.duft6_12,
+      co2_2:    find(/co2 2.*hled/)             ?? FB_H.co2_2,
+      co2_5:    find(/co2 5.*hled/)             ?? FB_H.co2_5,
+    };
+    const annual = (yf, hl) => Math.round((yf + (hl || 0)) * VAT);
     return {
-      lettvatn:       find(/yfirfer.*lettv|lettv.*yfirfer/) || FB.lettvatn,
-      duft2:          find(/yfirfer.*duft|duft.*yfirfer/) || FB.duft,
-      duft6_12:       find(/yfirfer.*duft|duft.*yfirfer/) || FB.duft,
-      co2_2:          find(/yfirfer.*co2|co2.*yfirfer/) || FB.co2,
-      co2_5:          find(/yfirfer.*co2|co2.*yfirfer/) || FB.co2,
-      brunaslongur:   find(/yfirfer.*brunaslang|brunaslang.*yfirfer/) || FB.brunaslanga,
-      reykskynjarar:  find(/yfirfer.*reykskynj|reykskynj.*yfirfer/) || FB.reykskynjari,
-      eldvarnarteppi: skod,
-      annad:          skod
+      lettvatn:       annual(y.lettvatn, h.lettvatn),
+      duft2:          annual(y.duft,     h.duft2),
+      duft6_12:       annual(y.duft,     h.duft6_12),
+      co2_2:          annual(y.co2,      h.co2_2),
+      co2_5:          annual(y.co2,      h.co2_5),
+      brunaslongur:   annual(y.brunaslanga, 0),
+      reykskynjarar:  annual(y.reykskynjari, 0),
+      eldvarnarteppi: annual(y.skod, 0),
+      annad:          annual(y.skod, 0),
     };
   }
 
