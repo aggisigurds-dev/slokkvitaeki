@@ -54,8 +54,8 @@ var Companies = {
       this.render();
       return;
     }
-    var r = await DB.sb.from('fyrirtaeki').select('*').order('nafn').range(0, 9999);  // >1000 rows; avoid PostgREST default cap
-    this.list = r.data || [];
+    // Page through — Supabase caps each response at 1000 rows.
+    this.list = await DB.fetchAll(function(from, to){ return DB.sb.from('fyrirtaeki').select('*').order('nafn').range(from, to); });
     this.render();
   },
   openNew: function() {
