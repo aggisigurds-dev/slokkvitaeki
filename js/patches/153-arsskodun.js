@@ -49,7 +49,7 @@
   const VIEW_ID = 'view-arsskodun';
   const NAV_KEY = 'arsskodun';
   const STORAGE_KEY = 'arsskodun_customers';
-  const LS_VIEW = 'arsskodun_view';
+  const LS_VIEW = 'arsskodun_view2';
   const LS_SORT = 'arsskodun_sort';
   const LS_SORTCOL = 'arsskodun_sortCol';
   const LS_SORTDIR = 'arsskodun_sortDir';
@@ -369,7 +369,7 @@
   // 2026-05-29: search term is no longer persisted — always start blank.
   try { localStorage.removeItem(LS_SEARCH); } catch (_) {}
   const state = {
-    view: localStorage.getItem(LS_VIEW) || 'card',          // 'card' | 'list'
+    view: localStorage.getItem(LS_VIEW) || 'list',          // 'card' | 'list' (default list)
     sort: localStorage.getItem(LS_SORT) || 'alpha',         // 'alpha' | 'month' | 'oldest' (legacy)
     sortCol: localStorage.getItem(LS_SORTCOL) || '',         // name|address|email|month|tools|estimate|priority|status|lastYr
     sortDir: localStorage.getItem(LS_SORTDIR) || 'asc',      // asc | desc

@@ -41,7 +41,7 @@
   const NAV_KEY  = 'allir-vidsk';
   const LS_FILT  = 'allir_vidsk_filter';
   const LS_SRCH  = 'allir_vidsk_search';
-  const LS_VIEW  = 'allir_vidsk_view';     // 'card' | 'list'
+  const LS_VIEW  = 'allir_vidsk_view2';    // 'card' | 'list' (default list)
   const LS_SORT  = 'allir_vidsk_sort';     // 'nafn' | 'nafn-desc' | 'kt' | 'newest' | 'units'
   const LS_XFILT = 'allir_vidsk_xfilter';  // extra filter — comma-separated of:
                                            //   has-email | has-gps | no-address
@@ -51,7 +51,7 @@
   const state = {
     filter:  localStorage.getItem(LS_FILT)  || 'all',
     search:  '',
-    view:    localStorage.getItem(LS_VIEW)  || 'card',
+    view:    localStorage.getItem(LS_VIEW)  || 'list',
     sort:    localStorage.getItem(LS_SORT)  || 'nafn',
     xfilter: (localStorage.getItem(LS_XFILT) || '').split(',').filter(Boolean)
   };

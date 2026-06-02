@@ -28,11 +28,11 @@
 
   const STORAGE_KEY = 'brunakerfi_customers';
   const NOTES_KEY = 'brunakerfi_notes';
-  const VIEW_KEY = 'bk_view_mode';   // localStorage: 'card' (default) | 'list'
+  const VIEW_KEY = 'bk_view_mode2';  // localStorage: 'card' | 'list' (default)
 
   function getViewMode() {
-    try { return localStorage.getItem(VIEW_KEY) === 'list' ? 'list' : 'card'; }
-    catch (_) { return 'card'; }
+    try { return localStorage.getItem(VIEW_KEY) === 'card' ? 'card' : 'list'; }
+    catch (_) { return 'list'; }
   }
   function setViewMode(m) {
     try { localStorage.setItem(VIEW_KEY, m === 'list' ? 'list' : 'card'); } catch (_) {}
