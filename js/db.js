@@ -4,6 +4,24 @@ var DB = {
   online: false,
   cache: { jobs: [], units: [], schedule: [], history: [] },
 
+  // Fetch ALL rows for a query, working around Supabase's server-side
+  // "Max rows" cap (1000). Pages through .range() in 1000-row chunks until a
+  // short page signals the end. `makeQuery(from, to)` must return a query
+  // builder with .range(from, to) applied. Returns a flat array (throws on err).
+  fetchAll: async function(makeQuery, pageSize) {
+    var page = pageSize || 1000, from = 0, all = [];
+    for (;;) {
+      var res = await makeQuery(from, from + page - 1);
+      if (res && res.error) throw res.error;
+      var rows = (res && res.data) || [];
+      all = all.concat(rows);
+      if (rows.length < page) break;
+      from += page;
+      if (from > 500000) break; // safety stop
+    }
+    return all;
+  },
+
   init: function() {
     if (typeof SUPABASE_URL === 'undefined' || SUPABASE_URL.includes('LÍMDU')) {
       document.getElementById('setup-banner').classList.remove('hidden');

@@ -4,8 +4,7 @@ var _companies=null,_loadTime=0;
 async function loadCompanies(){
   if(_companies && Date.now()-_loadTime<30000) return _companies;
   _loadTime=Date.now();
-  var r=await DB.sb.from('fyrirtaeki').select('nafn,kennitala,simi,heimilisfang');
-  _companies=r.data||[];
+  _companies=await DB.fetchAll(function(from,to){ return DB.sb.from('fyrirtaeki').select('nafn,kennitala,simi,heimilisfang').is('deleted_at', null).range(from,to); });  // page through 1000-row cap
   return _companies;
 }
 function fmtKt(v){var s=String(v||'').replace(/[^0-9]/g,'');if(s.length<=6)return s;return s.slice(0,6)+'-'+s.slice(6,10);}

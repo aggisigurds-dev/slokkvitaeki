@@ -39,7 +39,7 @@
   async function loadData() {
     const [v, u, j] = await Promise.all([
       sb.from('vidskiptavinir').select('*').order('nafn'),
-      sb.from('uttaeki').select('client'),
+      DB.fetchAll((from, to) => sb.from('uttaeki').select('client').range(from, to)).then(rows => ({ data: rows })),  // >1000 rows — page through cap
       sb.from('verkbeidnir').select('customer,dropoff,created_at'),
     ]);
     State.customers = v.data || [];

@@ -115,11 +115,12 @@
     if (!SB) return;
 
     // Load service units with next_insp
-    const { data: unitData } = await SB
+    const unitData = await DB.fetchAll((from, to) => SB
       .from('uttaeki')
       .select('id,serial,type,size,client,next_insp,location')
       .not('next_insp', 'is', null)
-      .order('next_insp', { ascending: true });
+      .order('next_insp', { ascending: true })
+      .range(from, to));  // uttaeki has >1000 rows — page through the Supabase cap
 
     units = (unitData || []).map(u => ({
       id: u.id,

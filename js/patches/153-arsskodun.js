@@ -114,12 +114,16 @@
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
     const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
 
-    // Load ALL fyrirtaeki rows. PostgREST paginates at 1000 rows by default.
-    const { data: companies, error } = await SB.from('fyrirtaeki')
-      .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu')
-      .order('nafn');
-    if (error) { console.error('[arsskodun] loadAll', error); return; }
-    const allCompanies = companies || [];
+    // Load ALL fyrirtaeki rows. Supabase caps each response at 1000 rows
+    // (server-side "Max rows"), so .range() alone is not enough — page through.
+    let allCompanies;
+    try {
+      allCompanies = await DB.fetchAll((from, to) => SB.from('fyrirtaeki')
+        .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu')
+        .is('deleted_at', null)
+        .order('nafn')
+        .range(from, to));
+    } catch (error) { console.error('[arsskodun] loadAll', error); return; }
     _cache.allCompanies = allCompanies;
     _cache.byId = Object.fromEntries(allCompanies.map(c => [c.id, c]));
 

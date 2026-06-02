@@ -50,8 +50,7 @@
   async function findCandidates() {
     const SB = getSB();
     if (!SB) return [];
-    const { data: companies, error } = await SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,heimilisFang,athugasemdir');
-    if (error) throw error;
+    const companies = await DB.fetchAll((from, to) => SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,heimilisFang,athugasemdir').is('deleted_at', null).range(from, to));  // page through 1000-row cap
     const candidates = (companies || []).filter(looksLikeWalkin);
     if (!candidates.length) return [];
     // Annotate candidates with unit count so the user can see what they're migrating.
