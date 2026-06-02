@@ -426,7 +426,10 @@
     // stamp. Older sales saved this into athugasemdir and the field still has it.
     // paymentTerms now conveys the same info; the stamp on the receipt is just
     // duplicate noise. Keep whatever real free-form note remains.
-    if (ctx.vegna) {
+    if (ctx.vegnaRaw) {
+      // Print the reference line exactly as supplied (e.g. visit invoices).
+      customerRows.push(`<div class="vegna">${esc(ctx.vegnaRaw)}</div>`);
+    } else if (ctx.vegna) {
       let cleaned = String(ctx.vegna)
         .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]\s*verður\s+greitt\s+við\s+afhendingu\s*[—\-:]?\s*/i, '')
         .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]?\s*/i, '')
@@ -485,10 +488,10 @@
               // 2026-05-20: bumped from 60 → 110 per Agnar's request — let
               // the wordmark be the visual hero of the receipt.
               if (window.SlokkLogo && SlokkLogo.imgHtml) {
-                return SlokkLogo.imgHtml({ heightPx: 110, alt: COMPANY.name, absoluteUrl: true });
+                return SlokkLogo.imgHtml({ heightPx: 110, alt: COMPANY.name, absoluteUrl: true, objectPosition: 'left' });
               }
               return `<img src="${esc(LOGO_URL)}" alt="${esc(COMPANY.name)}"
-              style="height:110px;width:330px;object-fit:contain;display:inline-block"
+              style="height:110px;width:330px;object-fit:contain;object-position:left;display:inline-block"
               onerror="this.style.visibility='hidden'">`;
             })()}
             ${(() => {
@@ -654,6 +657,10 @@
       // Tilvísun is a freeform reference field; don't auto-fill with phone.
       tilvisun: opts.tilvisun || '',
       vegna: opts.vegna || notes,
+      // Verbatim reference line. When set, it's printed exactly as given
+      // (no "vegna " prefix, no token cleanup) — used by the visit-invoice
+      // flow to print "Vegna heimsókn DD.MM.YYYY".
+      vegnaRaw: opts.vegnaRaw || '',
       // Credit-note presentation (KREDITREIKNINGUR heading + "vegna" ref).
       isCredit: !!opts.isCredit,
       creditOf: opts.creditOf || ''
@@ -741,7 +748,9 @@
         customerHeimilisfang: customerLookup ? customerLookup.heimilisfang : '',
         // Forward credit-note presentation flags (set by printCreditNote).
         isCredit: !!xo.isCredit,
-        creditOf: xo.creditOf || ''
+        creditOf: xo.creditOf || '',
+        // Verbatim reference line (visit-invoice flow passes "Vegna heimsókn …").
+        vegnaRaw: xo.vegnaRaw || ''
       });
     } finally {
       if (window.POS) window.POS.getState = origGetState;

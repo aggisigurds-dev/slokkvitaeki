@@ -53,8 +53,13 @@
     const url = (o.absoluteUrl && !isAbsolute && window.location && window.location.origin)
       ? window.location.origin + raw
       : raw;
+    // object-position lets callers hug the wordmark to the left of its 3:1
+    // box (default contain centers it, leaving a left gap that misaligns the
+    // logo with the body text below). Defaults to center to preserve callers
+    // that don't opt in.
+    const objPos = o.objectPosition ? String(o.objectPosition) : 'center';
     return '<img src="' + url + '" alt="' + escAlt + '" class="slokk-logo-img" ' +
-      'style="height:' + h + 'px;width:' + w + 'px;max-width:100%;object-fit:contain;display:inline-block;vertical-align:middle" ' +
+      'style="height:' + h + 'px;width:' + w + 'px;max-width:100%;object-fit:contain;object-position:' + objPos + ';display:inline-block;vertical-align:middle" ' +
       'onerror="this.style.visibility=\'hidden\'">';
   }
 
