@@ -52,6 +52,45 @@
     return [];
   }
 
+  // ---- equipment / inspection index (uttaeki.last_insp / next_insp) ----
+  // Each fire unit records its most recent inspection (last_insp) and next-due
+  // date (next_insp). We match a building name to its units (handling the messy
+  // free-text client field) and roll up per-year counts + the earliest next-due.
+  var _equip=null, _equipPromise=null;
+  function _norm(s){ return String(s||'').toLowerCase()
+      .replace(/húsfélagið|húsfélag|húsf\.?|rekstrarfélag|bílskýli|bílageymsla|sameign/g,'')
+      .replace(/ehf\.?|slf\.?|sf\.?|svf\.?/g,'')
+      .replace(/\b\d{3}\s+[a-záðéíóúýþæö]+\.?$/,'')   // trailing postcode + city
+      .replace(/[^a-z0-9áðéíóúýþæö]+/g,' ').replace(/\s+/g,' ').trim(); }
+  function _compact(s){ return _norm(s).replace(/\s+/g,''); }
+  function _streetnum(s){ var n=_norm(s); var m=n.match(/([a-záðéíóúýþæö]{3,})\s*(\d+)/); return m?(m[1]+m[2]):''; }
+  function _blank(){ return {units:0,y2024:0,y2025:0,y2026:0,next:null}; }
+  function _add(e,u){ e.units++; var y=u.last_insp?String(u.last_insp).slice(0,4):null;
+    if(y==='2024')e.y2024++; else if(y==='2025')e.y2025++; else if(y==='2026')e.y2026++;
+    if(u.next_insp&&(!e.next||u.next_insp<e.next)) e.next=u.next_insp; }
+  async function getEquipIndex(){
+    if(_equip) return _equip;
+    if(_equipPromise) return _equipPromise;
+    _equipPromise=(async function(){
+      var SB=window.__vdaSB||(window.DB&&DB.sb);
+      if(!SB){ _equip={match:function(){return null;}}; return _equip; }
+      var rows=[],from=0;
+      try{ while(true){ var r=await SB.from('uttaeki').select('client,last_insp,next_insp').range(from,from+999);
+        if(r.error)break; rows=rows.concat(r.data||[]); if(!r.data||r.data.length<1000)break; from+=1000; if(from>20000)break; } }catch(e){}
+      var base={},comp={},street={};
+      rows.forEach(function(u){ var b=_norm(u.client); if(!b)return; var c=_compact(u.client), s=_streetnum(u.client);
+        (base[b]||(base[b]=_blank())); _add(base[b],u);
+        (comp[c]||(comp[c]=_blank())); _add(comp[c],u);
+        if(s){ (street[s]||(street[s]=_blank())); _add(street[s],u); } });
+      _equip={ match:function(name){ var b=_norm(name); if(base[b])return base[b];
+        var c=_compact(name); if(comp[c])return comp[c];
+        var s=_streetnum(name); if(s&&street[s])return street[s]; return null; } };
+      return _equip;
+    })();
+    return _equipPromise;
+  }
+  function _todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
+
   // ---- view rendering ----
   var _state={ q:'' };
   function viewEl(){ return document.getElementById('view-rekstrarfelog'); }
@@ -108,16 +147,48 @@
   async function fillBody(body, name, info){
     body.innerHTML='<div style="color:#94a3b8;font-size:13px">Hleð…</div>';
     var blds=info.buildings||[];
+    var equip=await getEquipIndex();
+    var today=_todayStr();
+    // per-firm tally
+    var nWith=0, nNo=0, nOverdue=0, n2026=0;
+    var bd='1px solid #eef1f5';
+    function yc(n){ return n>0
+      ? '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#15803d;font-weight:700;background:#f0fdf4">'+n+'</td>'
+      : '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#d1d5db">·</td>'; }
     // building table
     var rows=blds.map(function(b){
       var co=companyByKt(b.kt);
       var link= co ? '<a href="#" data-coid="'+co.id+'" class="_rf_open" style="color:#2563eb;text-decoration:none">'+esc(b.nafn)+'</a>'
                    : esc(b.nafn)+' <span style="color:#cbd5e1;font-size:11px">(ekki í skrá)</span>';
       var doc = co ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:#2563eb">skjöl</a>' : '';
-      return '<tr><td style="padding:5px 6px;border-bottom:1px solid #eef1f5">'+link+'</td>'+
-             '<td style="padding:5px 6px;border-bottom:1px solid #eef1f5;color:#64748b;font-variant-numeric:tabular-nums">'+fmtKt(b.kt)+'</td>'+
-             '<td style="padding:5px 6px;border-bottom:1px solid #eef1f5;text-align:right">'+doc+'</td></tr>';
+      var st = equip.match(b.nafn);
+      var unitCell, y24, y25, y26, nextCell;
+      if(!st){
+        nNo++;
+        unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:#b45309">engin tæki</td>';
+        var dash='<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#e5e7eb">–</td>';
+        y24=dash; y25=dash; y26=dash;
+        nextCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:#cbd5e1">—</td>';
+      } else {
+        nWith++; if(st.y2026>0) n2026++;
+        unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;font-weight:600">'+st.units+'</td>';
+        y24=yc(st.y2024); y25=yc(st.y2025); y26=yc(st.y2026);
+        if(st.next){ var overdue = st.next < today; if(overdue) nOverdue++;
+          var col = overdue ? '#b91c1c' : '#475569'; var bg = overdue ? 'background:#fef2f2;' : '';
+          nextCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+bg+'color:'+col+';font-variant-numeric:tabular-nums;white-space:nowrap">'+esc(st.next)+(overdue?' ⚠':'')+'</td>';
+        } else { nextCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:#cbd5e1">—</td>'; }
+      }
+      return '<tr><td style="padding:5px 6px;border-bottom:'+bd+'">'+link+'</td>'+
+             '<td style="padding:5px 6px;border-bottom:'+bd+';color:#64748b;font-variant-numeric:tabular-nums">'+fmtKt(b.kt)+'</td>'+
+             unitCell+y24+y25+y26+nextCell+
+             '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:right">'+doc+'</td></tr>';
     }).join('');
+    var summary='<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:#475569;margin-bottom:8px">'+
+      '<span>🏠 '+blds.length+' byggingar</span>'+
+      '<span style="color:#15803d">✓ '+nWith+' með skráð tæki</span>'+
+      (nNo?'<span style="color:#b45309">⚠ '+nNo+' án skráðra tækja</span>':'')+
+      '<span style="color:#15803d">'+n2026+' með úttekt 2026</span>'+
+      (nOverdue?'<span style="color:#b91c1c;font-weight:600">⏰ '+nOverdue+' með skoðun liðna</span>':'')+'</div>';
     var docs=await listFirmDocs(name);
     var docHtml=docs.length? docs.map(function(d){
       var nm=d.name||d.file||'skjal'; var url=d.drive_url||d.url||'#';
@@ -127,12 +198,19 @@
 
     body.innerHTML=
       '<div style="display:flex;gap:18px;flex-wrap:wrap">'+
-        '<div style="flex:1;min-width:280px">'+
-          '<div style="font-weight:600;font-size:13px;color:#374151;margin-bottom:6px">Byggingar / húsfélög</div>'+
-          '<table style="width:100%;border-collapse:collapse;font-size:13.5px"><thead><tr>'+
+        '<div style="flex:1 1 100%;min-width:280px">'+
+          '<div style="font-weight:600;font-size:13px;color:#374151;margin-bottom:6px">Byggingar / húsfélög — úttektir</div>'+
+          summary+
+          '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'+
           '<th style="text-align:left;color:#64748b;font-size:12px;padding:4px 6px;border-bottom:1px solid #eef1f5">Bygging</th>'+
           '<th style="text-align:left;color:#64748b;font-size:12px;padding:4px 6px;border-bottom:1px solid #eef1f5">Kennitala</th>'+
-          '<th></th></tr></thead><tbody>'+rows+'</tbody></table>'+
+          '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 4px;border-bottom:1px solid #eef1f5">Tæki</th>'+
+          '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 4px;border-bottom:1px solid #eef1f5">2024</th>'+
+          '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 4px;border-bottom:1px solid #eef1f5">2025</th>'+
+          '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 4px;border-bottom:1px solid #eef1f5">2026</th>'+
+          '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 6px;border-bottom:1px solid #eef1f5">Næsta skoðun</th>'+
+          '<th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+          '<div style="font-size:11px;color:#94a3b8;margin-top:6px">Tölur í árdálkum = fjöldi tækja með síðustu skoðun það ár (kerfið geymir aðeins nýjustu skoðun hvers tækis). «Næsta skoðun» = fyrsti gjalddagi; ⚠ = liðinn.</div>'+
         '</div>'+
         '<div style="flex:1;min-width:260px">'+
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
