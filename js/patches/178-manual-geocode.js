@@ -29,6 +29,11 @@
 
   const readGc  = () => { try { return JSON.parse(localStorage.getItem(GC_KEY) || '{}'); } catch (_) { return {}; } };
   const writeGc = c  => { try { localStorage.setItem(GC_KEY, JSON.stringify(c)); } catch (_) {} };
+  // 2026-06-02: exact coordinates are now stored authoritatively by company id
+  // ("__co__:<id>") as well as by address/name. The id-key survives address
+  // edits and always wins over auto-geocoded variants, so a hand-placed pin
+  // (e.g. pasted from Google Maps) never drifts or disappears.
+  const coKey = id => '__co__:' + id;
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
   const path = k => (window.AppSettings && AppSettings.path && AppSettings.path(k)) || {};
   const $ = id => document.getElementById(id);
@@ -109,13 +114,14 @@
   async function saveCoord(co, coord, displayName) {
     const val = { lat: coord.lat, lng: coord.lng, display_name: displayName || null };
     const gc = readGc();
+    gc[coKey(co.id)] = val;            // authoritative, survives address edits
     if (co.heimilisfang) gc[co.heimilisfang] = val;
-    gc[co.nafn] = val;
+    if (co.nafn) gc[co.nafn] = val;
     writeGc(gc);
     if (SB_URL && SB_KEY) {
-      const rows = [];
+      const rows = [{ query: coKey(co.id), lat: coord.lat, lng: coord.lng, display_name: displayName || null, source: 'manual' }];
       if (co.heimilisfang) rows.push({ query: co.heimilisfang, lat: coord.lat, lng: coord.lng, display_name: displayName || null, source: 'manual' });
-      rows.push({ query: co.nafn, lat: coord.lat, lng: coord.lng, display_name: displayName || null, source: 'manual' });
+      if (co.nafn) rows.push({ query: co.nafn, lat: coord.lat, lng: coord.lng, display_name: displayName || null, source: 'manual' });
       try {
         await fetch(SB_URL + '/rest/v1/geocode_cache', {
           method: 'POST',
@@ -155,6 +161,7 @@
   }
   function hasCoord(c) {
     const gc = readGc();
+    if (gc[coKey(c.id)]) return true;
     if (gc[c.nafn]) return true;
     const ad = c.heimilisfang || '';
     if (ad && gc[ad]) return true;
@@ -203,7 +210,7 @@
 
     // Prefill with the existing coordinate if there is one (e.g. fine-tuning).
     const gc = readGc();
-    const existing = (co.heimilisfang && gc[co.heimilisfang]) || gc[co.nafn] || null;
+    const existing = gc[coKey(co.id)] || (co.heimilisfang && gc[co.heimilisfang]) || gc[co.nafn] || null;
     if (existing && typeof existing.lat === 'number') { _coord = { lat: existing.lat, lng: existing.lng }; _display = existing.display_name || ''; }
     addr.value = co.heimilisfang || co.nafn || '';
 
@@ -382,7 +389,14 @@
     });
   }
 
-  window.ManualGeocode = { open, openMissing, missingCount: () => missingCompanies().length };
+  // Read the stored exact coordinate for a company (id-key first), or null.
+  function coordFor(c) {
+    if (!c) return null;
+    const gc = readGc();
+    return gc[coKey(c.id)] || (c.heimilisfang && gc[c.heimilisfang]) || gc[c.nafn] || null;
+  }
+
+  window.ManualGeocode = { open, openMissing, coordFor, coKey, missingCount: () => missingCompanies().length };
 
   // ── entry point on the Leiðsögn page ────────────────────────────────────────
   // A FIXED floating pill — never shifts the page layout or flickers when

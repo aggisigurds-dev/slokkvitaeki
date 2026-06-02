@@ -103,6 +103,10 @@
   // Reykjavík"). Without these fallbacks ~150 pins fail to drop.
   function lookupCoord(gc, c) {
     if (!gc || !c) return null;
+    // 2026-06-02: a hand-placed exact coordinate (keyed by company id) always
+    // wins — it survives address edits and never gets second-guessed by the
+    // address-variant fallbacks below.
+    if (gc['__co__:' + c.id]) return gc['__co__:' + c.id];
     const addr = c.heimilisfang || '';
     const nafn = c.nafn || '';
     if (gc[addr]) return gc[addr];
@@ -185,6 +189,7 @@
             : '<button class="_lds-route-add" data-co-id="' + c.id + '" data-lat="' + item.coord.lat + '" data-lng="' + item.coord.lng + '" type="button" style="flex:1;padding:6px 10px;background:#16a34a;color:#fff;border:1px solid #15803d;border-radius:6px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:700">➕ Bæta á leið</button>') +
           '<button class="_lds-open-co" data-co-id="' + c.id + '" type="button" style="padding:6px 10px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">🏢 Opna</button>' +
         '</div>' +
+        '<button class="_lds-setloc" data-co-id="' + c.id + '" type="button" title="Setja nákvæm hnit (líma úr Google Maps eða draga pinna)" style="width:100%;margin-top:6px;padding:5px 10px;background:#fff;color:#92400e;border:1px solid #fde68a;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">📍 Laga nákvæma staðsetningu</button>' +
       '</div>'
     );
   }
@@ -214,7 +219,7 @@
       const status = statusFor(c, ars);
       if (status.key === 'overdue' || status.key === 'duenow') {
         const gc = readGc();
-        const coord = gc[c.heimilisfang] || gc[c.nafn] || null;
+        const coord = gc['__co__:' + c.id] || gc[c.heimilisfang] || gc[c.nafn] || null;
         allDue.push({ co: c, ars, status, coord });
       }
     });
@@ -254,7 +259,7 @@
               ? '<button class="_lds-due-add" data-co-id="' + c.id + '" data-lat="' + item.coord.lat + '" data-lng="' + item.coord.lng + '" type="button" title="Bæta á leið" style="padding:5px 9px;background:#16a34a;color:#fff;border:1px solid #15803d;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">➕</button>'
               : isInRoute
                 ? '<span title="Á leið" style="padding:5px 9px;background:#dcfce7;color:#15803d;border:1px solid #bbf7d0;border-radius:6px;font:inherit;font-size:11px;font-weight:700">✓</span>'
-                : '<span title="Engin staðsetning" style="padding:5px 9px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;font:inherit;font-size:11px;font-weight:700">📍?</span>') +
+                : '<button class="_lds-due-setloc" data-co-id="' + c.id + '" type="button" title="Setja staðsetningu (t.d. líma hnit úr Google Maps)" style="padding:5px 9px;background:#fef3c7;color:#92400e;border:1px solid #fde68a;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">📍 Setja</button>') +
             '<button class="_lds-due-open" data-co-id="' + c.id + '" type="button" title="Opna kúnna" style="padding:5px 9px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">🏢</button>' +
           '</div>' +
         '</div>'
@@ -322,6 +327,12 @@
       } else if (window._openCompanySafe) {
         window._openCompanySafe(id);
       }
+    }));
+    panel.querySelectorAll('._lds-due-setloc').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      const id = b.dataset.coId;
+      const co = (window.Companies && Companies.list || []).find(c => String(c.id) === String(id));
+      if (co && window.ManualGeocode) window.ManualGeocode.open(co, () => { renderPins({ fit: false }); renderDueList(); });
     }));
   }
 
@@ -473,7 +484,7 @@
       if (!ars || !ars.equipment) return;
       const status = statusFor(c, ars);
       if (status.key !== 'overdue' && status.key !== 'duenow') return;
-      const coord = gc[c.heimilisfang] || gc[c.nafn];
+      const coord = gc['__co__:' + c.id] || gc[c.heimilisfang] || gc[c.nafn];
       if (!coord) return;
       const reg = regionFor(c.heimilisfang);
       (byRegion[reg] = byRegion[reg] || []).push({
@@ -588,6 +599,13 @@
       if (rmBtn) {
         e.preventDefault(); e.stopPropagation();
         removeFromRoute(rmBtn.dataset.coId);
+        return;
+      }
+      const setBtn = e.target.closest && e.target.closest('._lds-setloc');
+      if (setBtn) {
+        e.preventDefault(); e.stopPropagation();
+        const co = (window.Companies && Companies.list || []).find(c => String(c.id) === String(setBtn.dataset.coId));
+        if (co && window.ManualGeocode) window.ManualGeocode.open(co, () => { try { renderPins({ fit: false }); renderDueList(); } catch (_) {} });
         return;
       }
       const openBtn = e.target.closest && e.target.closest('._lds-open-co');
