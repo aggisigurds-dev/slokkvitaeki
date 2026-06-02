@@ -125,26 +125,46 @@
   // invoice was printing "Gólfbúðin" for a Höldur bill. Fix: id-lookup only
   // wins if the name matches what's stored on the sale; otherwise fall
   // through to name-based matching across the actual company list.
+  //
+  // 2026-06-02: also search `vidskiptavinir`, not just `fyrirtaeki`. A sale to
+  // a vidskiptavinir-only customer (e.g. "dna bókhald ehf.") printed with the
+  // name only — its kennitala/heimilisfang were never recovered because the
+  // bill-to resolution looked at the company list alone. Match by name across
+  // BOTH tables (which also neutralises the id collision above, since the name
+  // must agree before an id match is trusted).
+  function customerPool() {
+    const fy = (window.Companies && Companies.list) || [];
+    const vk = (window.Vidskiptavinir && Vidskiptavinir.list)
+            || (window.DB && DB.cache && DB.cache.vidsk) || [];
+    return { fy, vk, all: fy.concat(vk) };
+  }
+
   function lookupCustomer(state) {
-    const list = (window.Companies && Companies.list) || [];
-    if (!list.length) return null;
-    const rawName = state && state.customer && (state.customer.nafn || '').trim();
+    const { fy, vk, all } = customerPool();
+    if (!all.length) return null;
     const norm = s => String(s || '').trim().toLowerCase().replace(/[\s\.,;:]+$/g, '');
+    const sc = (state && state.customer) || {};
+    const rawName = (sc.nafn || '').trim();
     const expected = norm(rawName);
 
-    if (state && state.customer && state.customer.co_id) {
-      const byId = list.find(c => c.id === state.customer.co_id);
-      // Trust the id ONLY when the names agree (or no name was stored).
-      if (byId && (!expected || norm(byId.nafn) === expected)) return byId;
+    // id-match — but only trust it when the stored name agrees, since ids
+    // overlap between fyrirtaeki and vidskiptavinir. Check companies first.
+    if (sc.co_id) {
+      const f = fy.find(c => +c.id === +sc.co_id);
+      if (f && (!expected || norm(f.nafn) === expected)) return f;
+      const v = vk.find(c => +c.id === +sc.co_id);
+      if (v && (!expected || norm(v.nafn) === expected)) return v;
     }
-    if (rawName) {
-      return list.find(c => norm(c.nafn) === expected)
-          || list.find(c => norm(c.nafn).indexOf(expected) === 0)
+    // name match across both tables (exact, then prefix).
+    if (expected) {
+      return all.find(c => norm(c.nafn) === expected)
+          || all.find(c => norm(c.nafn).indexOf(expected) === 0)
           || null;
     }
-    const kt = state && state.customer && (state.customer.kt || '').replace(/[^0-9]/g, '');
-    if (kt && kt.length === 10) {
-      return list.find(c => String(c.kennitala || '').replace(/[^0-9]/g, '') === kt) || null;
+    // kt match across both tables.
+    const kt = (sc.kt || sc.kennitala || '').replace(/[^0-9]/g, '');
+    if (kt.length === 10) {
+      return all.find(c => String(c.kennitala || '').replace(/[^0-9]/g, '') === kt) || null;
     }
     return null;
   }
