@@ -148,13 +148,18 @@
     body.innerHTML='<div style="color:#94a3b8;font-size:13px">Hleð…</div>';
     var blds=info.buildings||[];
     var equip=await getEquipIndex();
+    var attMap={}; try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; } }catch(e){}
     var today=_todayStr();
     // per-firm tally
-    var nWith=0, nNo=0, nOverdue=0, n2026=0;
+    var n2026=0, nNeed=0, nNone=0, nOverdue=0;
     var bd='1px solid #eef1f5';
-    function yc(n){ return n>0
-      ? '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#15803d;font-weight:700;background:#f0fdf4">'+n+'</td>'
-      : '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#d1d5db">·</td>'; }
+    // year cell: done? -> tæki count (or ✓). green+📄 = úttektarskýrsla á skrá, blár = aðeins búnaðarsaga
+    function yCell(done, rep, units){
+      if(!done) return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#d1d5db">·</td>';
+      var v = units>0 ? units : '✓';
+      if(rep) return '<td title="Úttektarskýrsla á skrá" style="padding:5px 4px;border-bottom:'+bd+';text-align:center;font-weight:700;color:#15803d;background:#f0fdf4">'+v+' 📄</td>';
+      return '<td title="Skráð í búnaðarsögu (engin skýrsla á skrá)" style="padding:5px 4px;border-bottom:'+bd+';text-align:center;font-weight:700;color:#1d4ed8;background:#eff6ff">'+v+'</td>';
+    }
     // building table
     var rows=blds.map(function(b){
       var co=companyByKt(b.kt);
@@ -162,22 +167,20 @@
                    : esc(b.nafn)+' <span style="color:#cbd5e1;font-size:11px">(ekki í skrá)</span>';
       var doc = co ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:#2563eb">skjöl</a>' : '';
       var st = equip.match(b.nafn);
-      var unitCell, y24, y25, y26, nextCell;
-      if(!st){
-        nNo++;
-        unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:#b45309">engin tæki</td>';
-        var dash='<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#e5e7eb">–</td>';
-        y24=dash; y25=dash; y26=dash;
-        nextCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:#cbd5e1">—</td>';
-      } else {
-        nWith++; if(st.y2026>0) n2026++;
-        unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;font-weight:600">'+st.units+'</td>';
-        y24=yc(st.y2024); y25=yc(st.y2025); y26=yc(st.y2026);
-        if(st.next){ var overdue = st.next < today; if(overdue) nOverdue++;
-          var col = overdue ? '#b91c1c' : '#475569'; var bg = overdue ? 'background:#fef2f2;' : '';
-          nextCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+bg+'color:'+col+';font-variant-numeric:tabular-nums;white-space:nowrap">'+esc(st.next)+(overdue?' ⚠':'')+'</td>';
-        } else { nextCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:#cbd5e1">—</td>'; }
-      }
+      var att = (co && (attMap[co.id]||attMap[String(co.id)])) || [0,0,0];
+      var units = st ? st.units : 0;
+      var e24=st?st.y2024:0, e25=st?st.y2025:0, e26=st?st.y2026:0;
+      var d24=(e24>0)||!!att[0], d25=(e25>0)||!!att[1], d26=(e26>0)||!!att[2];
+      var hasRep = !!(att[0]||att[1]||att[2]);
+      var hasData = units>0 || hasRep || d24 || d25 || d26;
+      if(!hasData) nNone++; else if(d26) n2026++; else if(d24||d25) nNeed++;
+      var unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(units>0?'font-weight:600':'color:'+(hasRep?'#cbd5e1':'#b45309'))+'">'+(units>0?units:(hasRep?'–':'0'))+'</td>';
+      var y24=yCell(d24,!!att[0],units), y25=yCell(d25,!!att[1],units), y26=yCell(d26,!!att[2],units);
+      var nextCell;
+      if(st && st.next){ var overdue = st.next < today; if(overdue && hasData) nOverdue++;
+        var col = overdue ? '#b91c1c' : '#475569'; var bg = overdue ? 'background:#fef2f2;' : '';
+        nextCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+bg+'color:'+col+';font-variant-numeric:tabular-nums;white-space:nowrap">'+esc(st.next)+(overdue?' ⚠':'')+'</td>';
+      } else { nextCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:#cbd5e1">—</td>'; }
       return '<tr><td style="padding:5px 6px;border-bottom:'+bd+'">'+link+'</td>'+
              '<td style="padding:5px 6px;border-bottom:'+bd+';color:#64748b;font-variant-numeric:tabular-nums">'+fmtKt(b.kt)+'</td>'+
              unitCell+y24+y25+y26+nextCell+
@@ -185,10 +188,10 @@
     }).join('');
     var summary='<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:#475569;margin-bottom:8px">'+
       '<span>🏠 '+blds.length+' byggingar</span>'+
-      '<span style="color:#15803d">✓ '+nWith+' með skráð tæki</span>'+
-      (nNo?'<span style="color:#b45309">⚠ '+nNo+' án skráðra tækja</span>':'')+
-      '<span style="color:#15803d">'+n2026+' með úttekt 2026</span>'+
-      (nOverdue?'<span style="color:#b91c1c;font-weight:600">⏰ '+nOverdue+' með skoðun liðna</span>':'')+'</div>';
+      '<span style="color:#15803d;font-weight:600">✓ '+n2026+' með úttekt 2026</span>'+
+      (nNeed?'<span style="color:#b7791f;font-weight:600">⏳ '+nNeed+' vantar 2026</span>':'')+
+      (nNone?'<span style="color:#b45309;font-weight:600">⚠ '+nNone+' engin gögn</span>':'')+
+      (nOverdue?'<span style="color:#b91c1c;font-weight:600">⏰ '+nOverdue+' skoðun liðin</span>':'')+'</div>';
     var docs=await listFirmDocs(name);
     var docHtml=docs.length? docs.map(function(d){
       var nm=d.name||d.file||'skjal'; var url=d.drive_url||d.url||'#';
@@ -210,7 +213,7 @@
           '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 4px;border-bottom:1px solid #eef1f5">2026</th>'+
           '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 6px;border-bottom:1px solid #eef1f5">Næsta skoðun</th>'+
           '<th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
-          '<div style="font-size:11px;color:#94a3b8;margin-top:6px">Tölur í árdálkum = fjöldi tækja með síðustu skoðun það ár (kerfið geymir aðeins nýjustu skoðun hvers tækis). «Næsta skoðun» = fyrsti gjalddagi; ⚠ = liðinn.</div>'+
+          '<div style="font-size:11px;color:#94a3b8;margin-top:6px">Árdálkar sýna fjölda tækja sem úttekt nær til. <span style="color:#15803d">Grænn + 📄</span> = úttektarskýrsla á skrá (viðhengi); <span style="color:#1d4ed8">blár</span> = aðeins skráð í búnaðarsögu. «Næsta skoðun» = fyrsti gjalddagi, ⚠ = liðinn.</div>'+
         '</div>'+
         '<div style="flex:1;min-width:260px">'+
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
