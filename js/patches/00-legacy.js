@@ -1781,7 +1781,7 @@ console.log('[patch-master] loaded with all fixes');
         if(r.error){ alert('Villa: '+r.error.message); return; }
         // Refresh companies list
         if(window.Companies){
-          window.DB.fetchAll(function(from,to){ return window.DB.sb.from('fyrirtaeki').select('*').order('nafn').range(from,to); }).then(function(rows){  // page through 1000-row cap
+          window.DB.fetchAll(function(from,to){ return window.DB.sb.from('fyrirtaeki').select('*').is('deleted_at', null).order('nafn').range(from,to); }).then(function(rows){  // page through 1000-row cap
             Companies.list = rows;
             Companies.render();
           });

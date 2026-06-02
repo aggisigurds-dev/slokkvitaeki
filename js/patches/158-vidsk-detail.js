@@ -107,6 +107,36 @@
     }
   }
 
+  // ── Soft-delete this customer ──────────────────────────────────────────
+  // Sets fyrirtaeki.deleted_at so the row drops out of every list (the loaders
+  // filter `deleted_at IS NULL`). Reversible from SQL if needed — nothing is
+  // hard-deleted, and any linked úttæki keep their place in the equipment list.
+  async function deleteCurrent() {
+    const co = ((window.Companies && Companies.list) || []).find(x => +x.id === _currentId)
+      || { id: _currentId, nafn: '' };
+    const nafn = co.nafn || ('#' + _currentId);
+    const units = (window.DB && DB.cache && Array.isArray(DB.cache.units))
+      ? DB.cache.units.filter(u => u.client === co.nafn).length : 0;
+    let msg = 'Eyða viðskiptavininum "' + nafn + '"?\n\nHann hverfur úr öllum listum.';
+    if (co.er_i_thjonustu === true) msg += '\n\n⚠ Þessi viðskiptavinur er í þjónustu.';
+    if (units > 0) msg += '\n\n⚠ ' + units + ' skráð tæki halda sér í tækjalistanum.';
+    if (!window.confirm(msg)) return;
+    const sb = window.DB && DB.sb;
+    if (!sb) { if (window.Toast && Toast.show) Toast.show('Engin nettenging'); return; }
+    try {
+      const r = await sb.from('fyrirtaeki').update({ deleted_at: new Date().toISOString() }).eq('id', _currentId);
+      if (r.error) throw r.error;
+      // Drop it from the in-memory list so the view it returns to is instantly correct.
+      if (window.Companies && Array.isArray(Companies.list)) {
+        Companies.list = Companies.list.filter(x => +x.id !== _currentId);
+      }
+      if (window.Toast && Toast.show) Toast.show('🗑 ' + nafn + ' eytt');
+      goBack();
+    } catch (e) {
+      alert('Villa við eyðingu: ' + ((e && e.message) || e));
+    }
+  }
+
   // ── Klára heimsókn — one-click visit completion ────────────────────────
   // Driver workflow tonight (2026-05-18): after visiting a customer and
   // checking the equipment, the driver clicks "✓ Klára heimsókn". This:
@@ -345,7 +375,10 @@
             ✓ Klára heimsókn
           </button>
           ` : ''}
-          <div style="font-size:11px;color:#94a3b8">#${esc(c.id)}</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <button id="_vd-delete" type="button" title="Eyða þessum viðskiptavin (felur hann úr öllum listum)" style="padding:6px 12px;background:#fff;color:#b91c1c;border:1px solid #fecaca;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px">🗑 Eyða</button>
+            <div style="font-size:11px;color:#94a3b8">#${esc(c.id)}</div>
+          </div>
         </div>
 
         <!-- Quick action buttons (when subscribed to either service) -->
@@ -573,6 +606,7 @@
 
     // Wire interactions
     main.querySelector('#_vd-back')?.addEventListener('click', goBack);
+    main.querySelector('#_vd-delete')?.addEventListener('click', () => deleteCurrent());
     main.querySelector('#_vd-complete-visit')?.addEventListener('click', () => completeVisit());
     main.querySelector('#_vd-action-report')?.addEventListener('click', () => {
       if (window.VisitReport && typeof window.VisitReport.open === 'function') {

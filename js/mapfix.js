@@ -240,7 +240,7 @@
   function loadCompaniesIfNeeded(){
     if(window.Companies && Companies.list && Companies.list.length) return Promise.resolve();
     if(!window.DB || !DB.sb) return Promise.resolve();
-    return DB.fetchAll(function(from,to){ return DB.sb.from('fyrirtaeki').select('*').order('nafn').range(from,to); }).then(function(rows){  // page through 1000-row cap
+    return DB.fetchAll(function(from,to){ return DB.sb.from('fyrirtaeki').select('*').is('deleted_at', null).order('nafn').range(from,to); }).then(function(rows){  // page through 1000-row cap
       if(window.Companies){ Companies.list = rows; }
     });
   }

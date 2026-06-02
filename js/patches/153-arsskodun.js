@@ -120,6 +120,7 @@
     try {
       allCompanies = await DB.fetchAll((from, to) => SB.from('fyrirtaeki')
         .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu')
+        .is('deleted_at', null)
         .order('nafn')
         .range(from, to));
     } catch (error) { console.error('[arsskodun] loadAll', error); return; }

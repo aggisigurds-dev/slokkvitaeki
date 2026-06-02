@@ -55,7 +55,7 @@ var Companies = {
       return;
     }
     // Page through — Supabase caps each response at 1000 rows.
-    this.list = await DB.fetchAll(function(from, to){ return DB.sb.from('fyrirtaeki').select('*').order('nafn').range(from, to); });
+    this.list = await DB.fetchAll(function(from, to){ return DB.sb.from('fyrirtaeki').select('*').is('deleted_at', null).order('nafn').range(from, to); });
     this.render();
   },
   openNew: function() {

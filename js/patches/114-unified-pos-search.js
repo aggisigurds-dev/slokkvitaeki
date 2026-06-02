@@ -75,6 +75,7 @@
       // to { data } so the consumer below stays unchanged.
       DB.fetchAll((from, to) => SB.from('fyrirtaeki')
         .select('id,nafn,simi,kennitala,heimilisfang,netfang,afslattur_pct,athugasemdir')
+        .is('deleted_at', null)
         .order('nafn')
         .range(from, to)).then(rows => ({ data: rows })),
       SB.from('vidskiptavinir')
