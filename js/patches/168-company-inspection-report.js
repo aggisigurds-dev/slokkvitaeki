@@ -116,7 +116,7 @@
     const datePhrase = dd + '.' + mm + '.' + now.getFullYear();
 
     const html = buildReportHtml({ co, counts, annad, athugasemdir, skodunaradili, datePhrase });
-    showModal(html);
+    showModal(html, co);
   }
 
   function buildReportHtml(ctx) {
@@ -202,7 +202,7 @@
       </body></html>`;
   }
 
-  function showModal(html) {
+  function showModal(html, co) {
     const existing = document.getElementById('_cir-modal');
     if (existing) existing.remove();
     const dlg = document.createElement('div');
@@ -213,6 +213,7 @@
         '<div style="padding:11px 16px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#f8fafc">' +
           '<div style="font-size:13px;font-weight:700;color:#0f172a">📄 Úttektarskýrsla</div>' +
           '<div style="display:flex;gap:8px">' +
+            '<button id="_cir-email" type="button" style="padding:7px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#334155">📧 Senda í tölvupósti</button>' +
             '<button id="_cir-print" type="button" style="padding:7px 14px;background:#0d6efd;color:#fff;border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">🖨 Prenta</button>' +
             '<button id="_cir-close" type="button" style="padding:7px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;color:#475569">✕ Loka</button>' +
           '</div>' +
@@ -244,6 +245,13 @@
     dlg.querySelector('#_cir-print').addEventListener('click', () => {
       try { frame.contentWindow.focus(); frame.contentWindow.print(); }
       catch (e) { alert('Get ekki prentað: ' + (e.message || e)); }
+    });
+    dlg.querySelector('#_cir-email').addEventListener('click', () => {
+      if (window.CompanyReportEmail && typeof CompanyReportEmail.open === 'function') {
+        CompanyReportEmail.open({ co: co, html: html });
+      } else {
+        alert('Tölvupóstseining er ekki tiltæk.');
+      }
     });
   }
 
