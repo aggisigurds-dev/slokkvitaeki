@@ -5,7 +5,7 @@
  *   - Mid-row: customer block (left) | invoice meta (right) divided by a rule
  *   - Items table: Vörunúmer | Lýsing | Fjöldi | Einingaverð | Upphæð | VSK
  *   - Bottom-right totals block: Samtals fyrir Vsk + per-rate VAT lines + Til greiðslu
- *   - Footer: signature line + reglugerð disclaimer
+ *   - Footer: reglugerð disclaimer
  *
  * This module exposes window.SalaInvoice.render(win, ctx). The Sala
  * checkout dialog (patch 07) calls it when "Prenta kvittun" is checked.
@@ -344,11 +344,6 @@
     }
 
     .footer { margin-top: 18px; font-size: 9pt; }
-    .signature { display: flex; align-items: baseline; gap: 8px; margin-top: 28px; }
-    .signature .lbl { white-space: nowrap; }
-    .signature .line {
-      flex: 1; max-width: 280px; border-bottom: 0.6pt solid #000; height: 1.2em;
-    }
     .disclaimer { margin-top: 16px; font-size: 8pt; color: #444; }
 
     /* Phone preview: shrink the sheet so the user can see/print without horizontal scroll */
@@ -584,10 +579,6 @@
             const footerTxt = k.footer_text ? `<div class="footer-txt" style="margin-top:6px;text-align:center;font-size:9pt;color:#475569;font-style:italic">${esc(k.footer_text)}</div>` : '';
             return reikMsg + footerTxt;
           })()}
-          <div class="signature">
-            <span class="lbl">Móttekið/Greitt:</span>
-            <span class="line"></span>
-          </div>
           <div class="disclaimer">Þessi reikningur er rafrænt ytra frumgagn skv. reglugerð nr. 505/2013.</div>
         </div>
       </div>
