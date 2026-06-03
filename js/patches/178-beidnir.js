@@ -30,19 +30,30 @@
 
   const state = { items: [], prices: {}, handled: new Set(), filter: 'skyrsla', showDone: false, loading: false };
 
-  // ── Classification ────────────────────────────────────────────────────────
+  // ── Categories ────────────────────────────────────────────────────────────
+  const CATS = [
+    { k: 'skyrsla',    label: '📄 Skýrslubeiðnir' },
+    { k: 'tilbod',     label: '💰 Tilboðsbeiðnir' },
+    { k: 'verk',       label: '🔧 Verkbeiðnir' },
+    { k: 'reikningur', label: '🧾 Reikningar' },
+  ];
+
   const RE_SKYRSLA = /(skýrsl|skyrsl|\breport\b|yfirlýsing\s+um\s+yfirferð|vottor|certificate|staðfesting.*yfirfer)/i;
-  const RE_TILBOD  = /(tilboð|tilbod|\bverð\b|\bverd\b|bjóð|boðið|hvað\s+kostar|kostnað|\bprice\b|\bquote\b|\boffer\b|áfyllin|refill)/i;
+  const RE_TILBOD  = /(tilboð|tilbod|verðtilboð|\bverð\b|\bverd\b|bjóð|boðið|hvað\s+kostar|kostnað|\bprice\b|\bquote\b|\boffer\b|áfyllin|refill|von\s+á\s+tilboði)/i;
+  const RE_VERK    = /(verknúmer|yfirfara\s+brunavarnir|óskað\s+eftir.*yfirferð|þjónustubeiðni|panta.*yfirferð|bóka.*yfirferð)/i;
+  const RE_REIKN   = /(\breikning|gjalddag|greiðslu|innheimt|\bkröfu|gjaldþrot|afrit\s+af\s+reikning)/i;
   const RE_NOISE_SENDER = /(google\.com|accounts\.google|no-?reply@google|postmaster|mailer-daemon)/i;
-  const RE_NOISE_SUBJ   = /(security alert|new sign-in|google data|takeout|verknúmer|password|critical security)/i;
+  const RE_NOISE_SUBJ   = /(security alert|new sign-in|google data|takeout|\bpassword\b|critical security)/i;
 
   function classify(row) {
     const subj = String(row.subject || '');
     const txt = subj + ' ' + String(row.snippet || '') + ' ' + String(row.body_preview || '');
     if (RE_NOISE_SENDER.test(row.sender_email || '') || RE_NOISE_SUBJ.test(subj)) return null;
-    // Report wins over tilboð when both hit (a report request is the clearer action).
+    // Priority: report deliverable > explicit price ask > work order > invoice.
     if (RE_SKYRSLA.test(txt)) return 'skyrsla';
     if (RE_TILBOD.test(txt))  return 'tilbod';
+    if (RE_VERK.test(txt))    return 'verk';
+    if (RE_REIKN.test(txt))   return 'reikningur';
     return null;
   }
 
@@ -195,17 +206,21 @@
     const when = row.received_at ? new Date(row.received_at).toLocaleDateString('is-IS') : '';
     const att = row.has_attachment ? ' 📎' : '';
     let actionHtml = '';
-    if (row.kind === 'tilbod') {
-      const q = parseQuote(row);
+    if (row.kind === 'skyrsla') {
+      actionHtml = `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">${companySelect(row)}
+        <button class="_bd-report" style="padding:7px 13px;background:#0d6efd;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700">📄 Senda skýrslu</button></div>`;
+    } else if (row.kind === 'tilbod' || row.kind === 'verk') {
+      const q = (row.kind === 'tilbod') ? parseQuote(row) : null;
       const draft = q
         ? `<div style="margin:8px 0;padding:8px 10px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;font-size:12.5px;color:#166534">
              Uppkast: <strong>${q.qty}×</strong> ${esc(q.nafn)} — ${fmtKr(q.unit)}/stk${q.disc ? ' <span style="color:#b91c1c">(−' + Math.round(q.disc * 100) + '%)</span>' : ''} = <strong>${fmtKr(q.lineTotal)}</strong> án vsk</div>`
-        : `<div style="margin:8px 0;font-size:12px;color:#94a3b8">Næ ekki að lesa magn — opnaðu tilboð og fylltu út.</div>`;
+        : (row.kind === 'verk'
+            ? `<div style="margin:8px 0;font-size:12px;color:#64748b">Verkbeiðni — opnaðu tilboð til að verðleggja yfirferðina.</div>`
+            : `<div style="margin:8px 0;font-size:12px;color:#94a3b8">Næ ekki að lesa magn — opnaðu tilboð og fylltu út.</div>`);
       actionHtml = draft + `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">${companySelect(row)}
         <button class="_bd-tilbod" style="padding:7px 13px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700">💰 Opna tilboð</button></div>`;
-    } else {
-      actionHtml = `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px">${companySelect(row)}
-        <button class="_bd-report" style="padding:7px 13px;background:#0d6efd;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700">📄 Senda skýrslu</button></div>`;
+    } else if (row.kind === 'reikningur') {
+      actionHtml = `<div style="margin-top:8px;font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:7px 10px">🧾 Bókhald / greiðsla — skoðaðu og merktu búið þegar afgreitt.</div>`;
     }
     return `<div class="_bd-card" data-key="${esc(key)}" style="border:1px solid #e2e8f0;border-radius:12px;padding:13px 15px;margin-bottom:10px;background:${done ? '#f8fafc' : '#fff'};${done ? 'opacity:.6' : ''}">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
@@ -224,9 +239,9 @@
   function render() {
     const main = document.getElementById('_bd-main');
     if (!main) return;
-    const visible = state.items.filter(r => r.kind === state.filter && (state.showDone || !state.handled.has(r.message_id || String(r.id))));
-    const nSky = state.items.filter(r => r.kind === 'skyrsla' && (state.showDone || !state.handled.has(r.message_id || String(r.id)))).length;
-    const nTil = state.items.filter(r => r.kind === 'tilbod' && (state.showDone || !state.handled.has(r.message_id || String(r.id)))).length;
+    const live = r => state.showDone || !state.handled.has(r.message_id || String(r.id));
+    const countFor = k => state.items.filter(r => r.kind === k && live(r)).length;
+    const visible = state.items.filter(r => r.kind === state.filter && live(r));
     const chip = (k, label, n) => `<button class="_bd-chip" data-k="${k}" style="padding:7px 14px;border-radius:99px;border:1px solid ${state.filter === k ? '#0f172a' : '#cbd5e1'};background:${state.filter === k ? '#0f172a' : '#fff'};color:${state.filter === k ? '#fff' : '#334155'};cursor:pointer;font:inherit;font-size:12.5px;font-weight:600">${label} (${n})</button>`;
     main.innerHTML = `<div style="max-width:880px;margin:0 auto;padding:18px 20px 60px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">
@@ -234,8 +249,7 @@
         <button id="_bd-refresh" style="padding:7px 13px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">↻ Sækja</button>
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
-        ${chip('skyrsla', '📄 Skýrslubeiðnir', nSky)}
-        ${chip('tilbod', '💰 Tilboðsbeiðnir', nTil)}
+        ${CATS.map(c => chip(c.k, c.label, countFor(c.k))).join('')}
         <label style="margin-left:auto;font-size:12px;color:#64748b;display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="_bd-showdone" ${state.showDone ? 'checked' : ''}> Sýna afgreiddar</label>
       </div>
       ${state.loading ? '<div style="opacity:.6;padding:20px">Hleður…</div>'
