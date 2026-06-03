@@ -77,6 +77,11 @@
   }
   const MONTHS_IS = ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
   const MONTHS_IS_SHORT = ['Jan','Feb','Mar','Apr','Maí','Jún','Júl','Ágú','Sep','Okt','Nóv','Des'];
+
+  // 2026-06: yearly estimate = Σ(tæki × Yfirferð) + these per-company add-ons.
+  // NO recharge (hleðsla) — Agnar's choice, recharge isn't a yearly cost.
+  const SKYRSLUGERD = 4340;   // Skýrslugerð: 3500 + 24% VSK (once per year)
+  const AKSTUR_UNIT = 3720;   // Akstur: 3000 + 24% VSK × akstur_multiplier
   // Filter out junk áminning entries — sometimes the sheet has "0 kr",
   // "FALSE", or short throwaway strings that aren't real notes.
   //
@@ -166,11 +171,8 @@
         const _ars = Object.assign({}, manual);
         const units = unitsByClient[foldName(c.nafn)] || [];
         if (units.length) {
-          // Bucket the real tæki by category and price each at its annual rate
-          // (yfirferð + hleðsla, með VSK). Reykskynjarar and brunaslöngur are
-          // priced here too via their own categories. 2026-06-02: per Agnar's
-          // choice the estimate is the per-unit annual revenue (≈28 m.kr.);
-          // Skýrslugerð/Akstur add-ons are intentionally not folded in here.
+          // 2026-06: estimate = Σ(tæki × Yfirferð × VSK) + Skýrslugerð + Akstur,
+          // NO recharge. Same formula the detail uses (single source of truth).
           const equip = {};
           let est = 0;
           units.forEach(u => {
@@ -178,6 +180,7 @@
             equip[cat] = (equip[cat] || 0) + 1;
             est += (PRICE[cat] != null ? PRICE[cat] : PRICE.annad);
           });
+          if (est > 0) est += SKYRSLUGERD + AKSTUR_UNIT * (+manual.akstur_multiplier || 1);
           _ars.equipment = equip;
           _ars.estimated_yearly = Math.round(est);
           _ars._unit_count = units.length;
@@ -275,7 +278,9 @@
       co2_2:    find(/co2 2.*hled/)             ?? FB_H.co2_2,
       co2_5:    find(/co2 5.*hled/)             ?? FB_H.co2_5,
     };
-    const annual = (yf, hl) => Math.round((yf + (hl || 0)) * VAT);
+    // 2026-06: Yfirferð only × VSK. Recharge (hleðsla) is NOT counted yearly;
+    // Skýrslugerð + Akstur add-ons are applied per-company (loadAll / detail).
+    const annual = (yf) => Math.round(yf * VAT);
     return {
       lettvatn:       annual(y.lettvatn, h.lettvatn),
       duft2:          annual(y.duft,     h.duft2),
@@ -1374,6 +1379,7 @@
         if (!qty) continue;
         total += qty * (PRICES[k] != null ? PRICES[k] : (PRICES.annad || 0));
       }
+      if (total > 0) total += SKYRSLUGERD + AKSTUR_UNIT * (+entry.akstur_multiplier || 1);
       entry.estimated_yearly = Math.round(total);
       const map = Object.assign({}, allMap, { [String(coId)]: entry });
       const ok = await window.AppSettings.save({ [STORAGE_KEY]: map });
