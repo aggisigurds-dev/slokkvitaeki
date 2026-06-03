@@ -27,6 +27,24 @@
   }
   function fmtKr(n) { return Math.round(Number(n) || 0).toLocaleString('is-IS') + ' kr'; }
   function toast(m) { if (window.Toast && Toast.show) Toast.show(m); else console.log('[beidnir]', m); }
+
+  // Pull the actual request out of the email body instead of just the opening
+  // line: drop greetings + signatures/quoted replies, then prefer the
+  // sentence(s) that carry the ask (skýrsla / tilboð / verð / senda …).
+  function summarize(row) {
+    let text = String(row.body_preview || row.snippet || '').replace(/\r/g, '').replace(/[ \t]+/g, ' ').trim();
+    if (!text) return '';
+    text = text.split(/\b(?:Bestu kveðjur|Kær(?:ar)? kveðj|Kveðja|Með kveðju|Virðingarfyllst|Best Regards|Kind regards|Regards|Thanks|Sent from|On .{0,40}wrote:|From:|Sent:)\b/i)[0];
+    text = text.split(/\n?[_-]{3,}\n?/)[0];
+    const parts = text.split(/(?<=[.?!])\s+|\n+/).map(s => s.trim()).filter(s => s.length > 4);
+    const isGreeting = s => /^(s[æa]l[lt]?|hæ+|halló|góðan|dear\b|hello|\bhi\b|hæhæ|komd[uð]|takk fyrir)/i.test(s) && s.length < 40;
+    const body = parts.filter(s => !isGreeting(s));
+    const KW = /skýrsl|skyrsl|tilboð|tilbod|verð|verd|senda|sent|áfyll|afyll|hægt að|getið þið|bjóð|boðið|vant|ósk|hvað kostar|kostnað|yfirfer|reikning|report|quotation|quote|\bprice\b|invoice|please|could you|need/i;
+    const hits = body.filter(s => KW.test(s));
+    const pick = (hits.length ? hits : body).slice(0, 2).join(' ').replace(/\s+/g, ' ').trim();
+    return (pick || text).slice(0, 260);
+  }
+
   // Deep-link to the real message in the eldklar Gmail (via its RFC822 id).
   function gmailUrl(row) {
     const id = String(row.message_id || '').replace(/^<|>$/g, '').trim();
@@ -262,7 +280,7 @@
         <button class="_bd-done" style="padding:5px 11px;background:${done ? '#dcfce7' : '#fff'};color:${done ? '#166534' : '#475569'};border:1px solid ${done ? '#86efac' : '#cbd5e1'};border-radius:7px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600;white-space:nowrap">${done ? '✓ Afgreidd' : 'Merkja búið'}</button>
       </div>
       <div style="font-size:13px;font-weight:600;color:#0f172a;margin-top:7px">${esc(row.subject || '(efnislaust)')}</div>
-      <div style="font-size:12.5px;color:#475569;margin-top:3px;line-height:1.5">${esc(String(row.snippet || '').slice(0, 180))}</div>
+      <div style="font-size:12.5px;color:#334155;margin-top:4px;line-height:1.5">${esc(summarize(row))}</div>
       ${fullBodyHtml}
       ${linkHtml}
       ${actionHtml}
