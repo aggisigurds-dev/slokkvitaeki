@@ -27,8 +27,14 @@
   }
   function fmtKr(n) { return Math.round(Number(n) || 0).toLocaleString('is-IS') + ' kr'; }
   function toast(m) { if (window.Toast && Toast.show) Toast.show(m); else console.log('[beidnir]', m); }
+  // Deep-link to the real message in the eldklar Gmail (via its RFC822 id).
+  function gmailUrl(row) {
+    const id = String(row.message_id || '').replace(/^<|>$/g, '').trim();
+    if (!id) return '';
+    return 'https://mail.google.com/mail/?authuser=eldklar@eldklar.is#search/rfc822msgid:' + encodeURIComponent(id);
+  }
 
-  const state = { items: [], prices: {}, handled: new Set(), filter: 'skyrsla', showDone: false, loading: false };
+  const state = { items: [], prices: {}, handled: new Set(), notes: {}, expanded: new Set(), filter: 'skyrsla', showDone: false, loading: false };
 
   // ── Categories ────────────────────────────────────────────────────────────
   const CATS = [
@@ -124,18 +130,33 @@
     } catch (e) { console.warn('[beidnir] prices', e); }
   }
 
-  async function loadHandled() {
+  async function loadActions() {
     const SB = getSB(); if (!SB) return;
     try {
-      const { data } = await SB.from('email_actions').select('email_id,status').eq('status', 'done');
-      state.handled = new Set((data || []).map(r => r.email_id));
-    } catch (e) { /* table may be locked — treat as none handled */ }
+      const { data } = await SB.from('email_actions').select('email_id,status,notes');
+      state.handled = new Set();
+      state.notes = {};
+      (data || []).forEach(r => {
+        if (r.status === 'done') state.handled.add(r.email_id);
+        if (r.notes) state.notes[r.email_id] = r.notes;
+      });
+    } catch (e) { /* table may be locked */ }
+  }
+
+  async function saveNote(key, text) {
+    const SB = getSB(); if (!SB) return;
+    state.notes[key] = text;   // keep local copy so re-renders show it
+    try {
+      await SB.from('email_actions').upsert(
+        { email_id: key, notes: text, updated_at: new Date().toISOString() },
+        { onConflict: 'email_id' });
+    } catch (e) { toast('Náði ekki að vista minnispunkt: ' + (e.message || e)); }
   }
 
   async function load() {
     const SB = getSB(); if (!SB) return;
     state.loading = true; render();
-    await Promise.all([loadPrices(), loadHandled()]);
+    await Promise.all([loadPrices(), loadActions()]);
     try {
       const { data, error } = await SB.from('email_digest')
         .select('id,message_id,sender_name,sender_email,subject,snippet,body_preview,has_attachment,received_at,folder')
@@ -222,6 +243,16 @@
     } else if (row.kind === 'reikningur') {
       actionHtml = `<div style="margin-top:8px;font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:7px 10px">🧾 Bókhald / greiðsla — skoðaðu og merktu búið þegar afgreitt.</div>`;
     }
+    // Full email + per-request notes (notes persist in email_actions.notes).
+    const full = String(row.body_preview || row.snippet || '');
+    const isOpen = state.expanded.has(key);
+    const fullBodyHtml = full.length > 180
+      ? '<button class="_bd-expand" type="button" style="margin-top:5px;background:none;border:none;color:#2563eb;cursor:pointer;font:inherit;font-size:12px;padding:0;font-weight:600">' + (isOpen ? 'Fela ↑' : 'Lesa allt ↓') + '</button>'
+        + '<div class="_bd-full" style="display:' + (isOpen ? 'block' : 'none') + ';white-space:pre-wrap;font-size:12.5px;color:#334155;line-height:1.55;margin-top:6px;padding:9px 11px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;max-height:340px;overflow:auto">' + esc(full) + '</div>'
+      : '';
+    const notesHtml = '<textarea class="_bd-note" rows="2" placeholder="✍️ Minnispunktur áður en þú svarar… (vistast sjálfkrafa)" style="width:100%;box-sizing:border-box;margin-top:10px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:12.5px;resize:vertical;background:#fffbeb">' + esc(state.notes[key] || '') + '</textarea>';
+    const gUrl = gmailUrl(row);
+    const linkHtml = gUrl ? '<div style="margin-top:5px"><a href="' + gUrl + '" target="_blank" rel="noopener" style="color:#0d6efd;font-size:12px;font-weight:600;text-decoration:none">↗ Opna póstinn í Gmail</a></div>' : '';
     return `<div class="_bd-card" data-key="${esc(key)}" style="border:1px solid #e2e8f0;border-radius:12px;padding:13px 15px;margin-bottom:10px;background:${done ? '#f8fafc' : '#fff'};${done ? 'opacity:.6' : ''}">
       <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
         <div style="min-width:0">
@@ -232,7 +263,10 @@
       </div>
       <div style="font-size:13px;font-weight:600;color:#0f172a;margin-top:7px">${esc(row.subject || '(efnislaust)')}</div>
       <div style="font-size:12.5px;color:#475569;margin-top:3px;line-height:1.5">${esc(String(row.snippet || '').slice(0, 180))}</div>
+      ${fullBodyHtml}
+      ${linkHtml}
       ${actionHtml}
+      ${notesHtml}
     </div>`;
   }
 
@@ -268,6 +302,14 @@
       cardEl.querySelector('._bd-report')?.addEventListener('click', () => sendReport(row, coSel && coSel.value));
       cardEl.querySelector('._bd-tilbod')?.addEventListener('click', () => openTilbod(row, coSel && coSel.value));
       cardEl.querySelector('._bd-done')?.addEventListener('click', () => markDone(row, !state.handled.has(key)));
+      cardEl.querySelector('._bd-expand')?.addEventListener('click', () => {
+        if (state.expanded.has(key)) state.expanded.delete(key); else state.expanded.add(key);
+        const open = state.expanded.has(key);
+        const f = cardEl.querySelector('._bd-full'); if (f) f.style.display = open ? 'block' : 'none';
+        const eb = cardEl.querySelector('._bd-expand'); if (eb) eb.textContent = open ? 'Fela ↑' : 'Lesa allt ↓';
+      });
+      const noteEl = cardEl.querySelector('._bd-note');
+      if (noteEl) noteEl.addEventListener('change', () => saveNote(key, noteEl.value.trim()));
     });
   }
 
