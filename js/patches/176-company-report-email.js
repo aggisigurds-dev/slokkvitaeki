@@ -163,7 +163,7 @@
         '<div style="padding:18px">' +
           '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 12px;font-size:12px;color:#1e40af;margin-bottom:14px">Skýrslan er send sem PDF-viðhengi beint úr appinu.</div>' +
           '<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Netfang viðtakanda</label>' +
-          '<input id="_cre-to" type="email" value="' + esc(co.netfang || '') + '" placeholder="vidskiptavinur@daemi.is" ' +
+          '<input id="_cre-to" type="email" value="' + esc((ctx && ctx.defaultTo) || co.netfang || '') + '" placeholder="vidskiptavinur@daemi.is" ' +
             'style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box">' +
           (co.nafn ? '<div style="margin-top:8px;font-size:12px;color:#64748b">Fyrirtæki: <strong style="color:#334155">' + esc(co.nafn) + '</strong></div>' : '') +
         '</div>' +

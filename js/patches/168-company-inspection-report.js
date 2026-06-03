@@ -84,7 +84,7 @@
   }
 
   // ── Open report ─────────────────────────────────────────────────────────
-  async function openReport(coId) {
+  async function openReport(coId, opts) {
     if (!coId) { alert('Ekkert fyrirtæki valið'); return; }
     const SB = getSB();
     if (!SB) { alert('Engin gagnabankatenging'); return; }
@@ -116,7 +116,7 @@
     const datePhrase = dd + '.' + mm + '.' + now.getFullYear();
 
     const html = buildReportHtml({ co, counts, annad, athugasemdir, skodunaradili, datePhrase });
-    showModal(html, co);
+    showModal(html, co, opts);
   }
 
   function buildReportHtml(ctx) {
@@ -202,7 +202,7 @@
       </body></html>`;
   }
 
-  function showModal(html, co) {
+  function showModal(html, co, opts) {
     const existing = document.getElementById('_cir-modal');
     if (existing) existing.remove();
     const dlg = document.createElement('div');
@@ -248,7 +248,7 @@
     });
     dlg.querySelector('#_cir-email').addEventListener('click', () => {
       if (window.CompanyReportEmail && typeof CompanyReportEmail.open === 'function') {
-        CompanyReportEmail.open({ co: co, html: html });
+        CompanyReportEmail.open({ co: co, html: html, defaultTo: opts && opts.emailTo });
       } else {
         alert('Tölvupóstseining er ekki tiltæk.');
       }
