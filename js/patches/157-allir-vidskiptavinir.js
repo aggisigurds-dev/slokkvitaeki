@@ -279,6 +279,8 @@
     const cntWithGps     = all.filter(c => c._hasGps).length;
     const cntNoAddress   = all.filter(c => !c.heimilisfang).length;
     const cntWithUnits   = all.filter(c => c._unitCount > 0).length;
+    const cntInService   = all.filter(c => c._hasArs || c._hasBru).length;
+    const cntNoEmail     = cntAll - cntWithEmail;
 
     main.innerHTML = `
       <div style="max-width:1200px;margin:0 auto;padding:18px 20px 60px">
@@ -298,6 +300,30 @@
           </div>
           <input id="_av-search" type="text" placeholder="🔍 Leita..." value="${esc(state.search)}"
                  style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;width:240px">
+        </div>
+
+        <!-- Summary cards (same layout as Fyrirtæki í Þjónustu) -->
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:14px">
+          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:13px 15px">
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em">Fjöldi</div>
+            <div style="font-size:25px;font-weight:800;color:#0f172a;line-height:1.1;margin-top:2px">${cntAll}</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:1px">viðskiptavinir</div>
+          </div>
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:13px 15px">
+            <div style="font-size:10px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.05em">Í þjónustu</div>
+            <div style="font-size:25px;font-weight:800;color:#16a34a;line-height:1.1;margin-top:2px">${cntInService}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:1px">${cntArs} fyrirtækjaþj. · ${cntBru} brunakerfi</div>
+          </div>
+          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:13px 15px">
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em">Með tæki</div>
+            <div style="font-size:25px;font-weight:800;color:#0f172a;line-height:1.1;margin-top:2px">${cntWithUnits}</div>
+            <div style="font-size:11px;color:#94a3b8;margin-top:1px">skráð slökkvitæki</div>
+          </div>
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:13px 15px">
+            <div style="font-size:10px;font-weight:700;color:#b45309;text-transform:uppercase;letter-spacing:.05em">Án netfangs</div>
+            <div style="font-size:25px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${cntNoEmail}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:1px">vantar tölvupóst</div>
+          </div>
         </div>
 
         <!-- Toolbar: view toggle + sort -->
@@ -458,19 +484,11 @@
             ? `<button class="_av-toggle" data-co-id="${c.id}" data-svc="bru" data-action="remove" type="button" title="Fjarlægja úr brunakerfi" style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;border:1px solid #93c5fd;cursor:pointer;font-family:inherit">🚨 Brunakerfi <span style="opacity:.6;margin-left:2px">✕</span></button>`
             : `<button class="_av-toggle" data-co-id="${c.id}" data-svc="bru" data-action="add" type="button" title="Skrá í brunakerfi" style="background:#fff;color:#94a3b8;font-size:10px;font-weight:600;padding:3px 8px;border-radius:99px;border:1px dashed #cbd5e1;cursor:pointer;font-family:inherit">🚨 + Brunakerfi</button>`;
 
-          const initial = (c.nafn || '?').trim().charAt(0).toUpperCase();
-          const avatarColor = c._hasArs && c._hasBru ? '#7c3aed' :
-                              c._hasArs ? '#b91c1c' :
-                              c._hasBru ? '#1d4ed8' : '#64748b';
-
           return `
             <div class="_av-card" data-co-id="${c.id}" style="background:#fff;border:1px solid #e2e8f0;border-radius:11px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(0,0,0,0.03);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#94a3b8';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'" onmouseout="this.style.borderColor='#e2e8f0';this.style.boxShadow='0 1px 2px rgba(0,0,0,0.03)'">
-              <div style="display:flex;gap:10px;align-items:flex-start">
-                <div style="width:34px;height:34px;flex-shrink:0;border-radius:50%;background:${avatarColor};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px">${esc(initial)}</div>
-                <div style="min-width:0;flex:1">
-                  <div style="font-weight:700;color:#0f172a;font-size:13.5px;line-height:1.25">${esc(c.nafn || '—')}</div>
-                  ${c.kennitala ? `<div style="font-size:10.5px;color:#94a3b8;font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
-                </div>
+              <div style="min-width:0">
+                <div style="font-weight:700;color:#0f172a;font-size:14px;line-height:1.25">${esc(c.nafn || '—')}</div>
+                ${c.kennitala ? `<div style="font-size:11px;color:#94a3b8;font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
               </div>
               <div style="display:flex;flex-direction:column;gap:2px;font-size:11px;color:#64748b">
                 ${c.heimilisfang ? `<div>📍 ${esc(c.heimilisfang)}</div>` : ''}
@@ -497,7 +515,6 @@
           <table style="width:100%;border-collapse:collapse;font:inherit">
             <thead>
               <tr>
-                <th style="${headerStyle};width:30px"></th>
                 <th style="${headerStyle}">Nafn</th>
                 <th style="${headerStyle}">Kennitala</th>
                 <th style="${headerStyle}">Heimilisfang</th>
@@ -509,19 +526,12 @@
             </thead>
             <tbody>
               ${arr.map(c => {
-                const avatarColor = c._hasArs && c._hasBru ? '#7c3aed' :
-                                    c._hasArs ? '#b91c1c' :
-                                    c._hasBru ? '#1d4ed8' : '#94a3b8';
-                const initial = (c.nafn || '?').trim().charAt(0).toUpperCase();
                 const badges = [];
                 if (c._hasArs) badges.push('<span style="background:#fee2e2;color:#b91c1c;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #fecaca">🔥</span>');
                 if (c._hasBru) badges.push('<span style="background:#dbeafe;color:#1d4ed8;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #93c5fd">🚨</span>');
                 if (!c._hasArs && !c._hasBru) badges.push('<span style="background:#f1f5f9;color:#94a3b8;font-size:9.5px;font-weight:600;padding:1px 6px;border-radius:99px;border:1px solid #cbd5e1">—</span>');
                 return `
                   <tr class="_av-row" data-co-id="${c.id}" style="cursor:pointer;transition:background .12s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                    <td style="${cellStyle};padding-right:0">
-                      <div style="width:24px;height:24px;border-radius:50%;background:${avatarColor};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px">${esc(initial)}</div>
-                    </td>
                     <td style="${cellStyle};font-weight:700">${esc(c.nafn || '—')}</td>
                     <td style="${cellStyle};font-family:monospace;color:#64748b;font-size:11.5px">${esc(fmtKt(c.kennitala) || '—')}</td>
                     <td style="${cellStyle};color:#475569;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.heimilisfang || '')}">${esc(c.heimilisfang || '—')}</td>
