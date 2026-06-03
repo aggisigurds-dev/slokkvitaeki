@@ -335,16 +335,7 @@
             </div>
             <button id="_av-new-cust" type="button" style="padding:6px 14px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;display:flex;align-items:center;gap:5px">+ Nýr viðskiptavinur</button>
           </div>
-          <div style="display:flex;align-items:center;gap:7px">
-            <label for="_av-sort" style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase">Raða:</label>
-            <select id="_av-sort" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:12.5px;font-weight:600;background:#fff;color:#0f172a;cursor:pointer">
-              <option value="nafn"      ${state.sort==='nafn'?'selected':''}>Nafn A → Ö</option>
-              <option value="nafn-desc" ${state.sort==='nafn-desc'?'selected':''}>Nafn Ö → A</option>
-              <option value="kt"        ${state.sort==='kt'?'selected':''}>Kennitala</option>
-              <option value="newest"    ${state.sort==='newest'?'selected':''}>Nýjast fyrst</option>
-              <option value="units"     ${state.sort==='units'?'selected':''}>Fjöldi tækja</option>
-            </select>
-          </div>
+          ${state.view === 'list' ? '<div style="font-size:11px;color:#94a3b8">Smelltu á dálkahaus til að raða</div>' : ''}
         </div>
 
         <!-- Primary service filter chips -->
@@ -396,9 +387,12 @@
     main.querySelectorAll('._av-vm').forEach(b => b.addEventListener('click', () => {
       state.view = b.dataset.viewMode; saveState(); render(main);
     }));
-    main.querySelector('#_av-sort')?.addEventListener('change', e => {
-      state.sort = e.target.value; saveState(); render(main);
-    });
+    // Sort by clicking a table column header (list view). Nafn toggles A→Ö / Ö→A.
+    main.querySelectorAll('th[data-sort]').forEach(th => th.addEventListener('click', () => {
+      const k = th.dataset.sort;
+      state.sort = (k === 'nafn') ? (state.sort === 'nafn' ? 'nafn-desc' : 'nafn') : k;
+      saveState(); render(main);
+    }));
     main.querySelectorAll('._av-xft').forEach(b => b.addEventListener('click', () => {
       const key = b.dataset.xfilter;
       const idx = state.xfilter.indexOf(key);
@@ -507,6 +501,11 @@
   // ── List (table) view — compact alternative to cards ───────────────────
   function renderList(arr) {
     const headerStyle = 'text-align:left;padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;background:#f8fafc';
+    // Clickable sort headers. Arrow shows the active column/direction.
+    const arrow = key => key === 'nafn' ? (state.sort === 'nafn' ? ' ▲' : state.sort === 'nafn-desc' ? ' ▼' : '')
+                       : key === 'kt'   ? (state.sort === 'kt'   ? ' ▲' : '')
+                       : key === 'units'? (state.sort === 'units'? ' ▼' : '') : '';
+    const sortTh = (label, key, extra) => `<th data-sort="${key}" title="Raða eftir ${esc(label)}" style="${headerStyle}${extra || ''};cursor:pointer;user-select:none">${esc(label)}<span style="color:#0f172a">${arrow(key)}</span></th>`;
     const cellStyle = 'padding:7px 10px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#0f172a;vertical-align:middle';
 
     return `
@@ -515,11 +514,11 @@
           <table style="width:100%;border-collapse:collapse;font:inherit">
             <thead>
               <tr>
-                <th style="${headerStyle}">Nafn</th>
-                <th style="${headerStyle}">Kennitala</th>
+                ${sortTh('Nafn', 'nafn')}
+                ${sortTh('Kennitala', 'kt')}
                 <th style="${headerStyle}">Heimilisfang</th>
                 <th style="${headerStyle}">Sími</th>
-                <th style="${headerStyle};text-align:center">Tæki</th>
+                ${sortTh('Tæki', 'units', ';text-align:center')}
                 <th style="${headerStyle}">Þjónusta</th>
                 <th style="${headerStyle};text-align:right;width:90px">Aðgerð</th>
               </tr>
