@@ -24,16 +24,19 @@
   const ROUTE_KEY = '_slokk_route';   // shared with navfix.js
   const GC_KEY    = '_slokk_gc';      // shared geocode cache
   const LS_FILTER = 'leidsogn_filter'; // all | overdue | this-month | done
+  const LS_MONTH  = 'leidsogn_month';  // 0 = Allir, 1-12 (inspection month)
 
   // ── State ───────────────────────────────────────────────────────────────
   let _map = null;
   let _markers = {};
   let _leafletLP = null;
   let _state = {
-    filter: localStorage.getItem(LS_FILTER) || 'this-month'
+    filter: localStorage.getItem(LS_FILTER) || 'this-month',
+    month: +localStorage.getItem(LS_MONTH) || 0
   };
   function saveState() {
     localStorage.setItem(LS_FILTER, _state.filter);
+    localStorage.setItem(LS_MONTH, _state.month);
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
@@ -47,6 +50,7 @@
     return s.length === 10 ? s.slice(0,6) + '-' + s.slice(6) : (kt || '');
   }
   const MONTHS_IS = ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
+  const MONTHS_IS_SHORT = ['Jan','Feb','Mar','Apr','Maí','Jún','Júl','Ágú','Sep','Okt','Nóv','Des'];
 
   function readGc() {
     try { return JSON.parse(localStorage.getItem(GC_KEY) || '{}'); } catch (_) { return {}; }
@@ -223,7 +227,8 @@
       const ars = arsMap[String(c.id)];
       if (!ars || !ars.equipment) return;
       const status = statusFor(c, ars);
-      if (status.key === 'overdue' || status.key === 'duenow') {
+      if ((status.key === 'overdue' || status.key === 'duenow') &&
+          (!_state.month || (+ars.inspect_month || 0) === _state.month)) {
         const gc = readGc();
         const coord = gc['__co__:' + c.id] || gc[c.heimilisfang] || gc[c.nafn] || null;
         allDue.push({ co: c, ars, status, coord });
@@ -348,7 +353,9 @@
     // newly-geocoded pin doesn't yank the viewport while the user is looking.
     const fit = !opts || opts.fit !== false;
     clearMarkers();
-    const list = applyFilter(getCustomers());
+    // When a month is picked, show every customer in that month (all statuses);
+    // otherwise honour the status filter chips.
+    const list = _state.month ? applyMonth(getCustomers()) : applyFilter(getCustomers());
     list.forEach(item => {
       const m = L.marker([item.coord.lat, item.coord.lng], { icon: makeIcon(item.status.color) }).addTo(_map);
       m.bindPopup(() => makePopupHtml(item));
@@ -482,6 +489,50 @@
       route.push(remaining.splice(bestI, 1)[0]);
     }
     return route;
+  }
+
+  // Filter a customer list down to a chosen inspection month (0 = all).
+  function applyMonth(list) {
+    if (!_state.month) return list;
+    return list.filter(x => (+((x.ars || {}).inspect_month) || 0) === _state.month);
+  }
+
+  // MÁNUÐUR chip row — same look as Fyrirtæki í Þjónustu. Clicking a month
+  // filters the map + due-list to that inspection month.
+  function renderMonthRow() {
+    const row = document.getElementById('_lds-month-row');
+    if (!row) return;
+    const cos = (window.Companies && Companies.list) || [];
+    const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
+    const inService = c => {
+      const ars = arsMap[String(c.id)];
+      return (ars && ars.equipment) || (window.InServiceClients && window.InServiceClients.has(c.nafn));
+    };
+    const counts = {};
+    cos.forEach(c => {
+      if (!inService(c)) return;
+      const m = +((arsMap[String(c.id)] || {}).inspect_month) || 0;
+      if (m >= 1 && m <= 12) counts[m] = (counts[m] || 0) + 1;
+    });
+    function moBtn(mn, label, cnt) {
+      const sel = _state.month === mn;
+      const has = cnt == null || cnt > 0;
+      return '<button data-month="' + mn + '" class="_lds-mo" type="button" style="padding:5px 10px;border:1px solid ' +
+        (sel ? '#0f172a' : (has ? '#cbd5e1' : '#e2e8f0')) + ';background:' + (sel ? '#0f172a' : '#fff') +
+        ';color:' + (sel ? '#fff' : (has ? '#0f172a' : '#cbd5e1')) + ';border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">' +
+        esc(label) + (cnt ? ' <span style="opacity:.6;font-weight:500">' + cnt + '</span>' : '') + '</button>';
+    }
+    row.innerHTML =
+      '<span style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;padding-right:3px">Mánuður:</span>' +
+      moBtn(0, 'Allir', null) +
+      MONTHS_IS_SHORT.map((m, i) => moBtn(i + 1, m, counts[i + 1] || 0)).join('');
+    row.querySelectorAll('._lds-mo').forEach(b => b.addEventListener('click', () => {
+      _state.month = +b.dataset.month || 0;
+      saveState();
+      renderMonthRow();
+      if (_map) renderPins({ fit: true });
+      renderDueList();
+    }));
   }
 
   function renderCityRow() {
@@ -731,6 +782,9 @@
               return '<button data-filter="' + k + '" class="_lds-chip" type="button" style="padding:6px 11px;border:1px solid ' + (sel?'#0f172a':'#cbd5e1') + ';background:' + (sel?'#0f172a':'#fff') + ';color:' + (sel?'#fff':'#475569') + ';border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:' + color + ';display:inline-block"></span>' + esc(lbl) + ' <span class="_lds-count" style="opacity:.7;font-weight:500">·</span></button>';
             }).join('') +
           '</div>' +
+          // Month-chip row (same format as Fyrirtæki í Þjónustu) — filters the
+          // map by inspection month. Populated by renderMonthRow().
+          '<div id="_lds-month-row" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;align-items:center"></div>' +
           // 2026-05-26: city-pick row — Aggi can fill the route with all
           // overdue customers in a single city, sorted nearest-neighbor.
           '<div id="_lds-city-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center"></div>' +
@@ -772,6 +826,7 @@
       renderDueList();
       renderRoutePanel();
       renderCityRow();
+      renderMonthRow();
     }, 100);
     hookPopupDelegate();
   }
