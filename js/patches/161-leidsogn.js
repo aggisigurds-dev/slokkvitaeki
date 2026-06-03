@@ -183,6 +183,12 @@
         (c.heimilisfang ? '<div style="margin-top:5px;color:#475569">📍 ' + esc(c.heimilisfang) + '</div>' : '') +
         '<div style="margin-top:5px;color:' + item.status.color + ';font-weight:600">' + esc(item.status.label) + '</div>' +
         '<div style="font-size:11px;color:#64748b;margin-top:2px">Skoðunarmánuður: ' + esc(monthLabel) + '</div>' +
+        // Priority mark — same 4-state cycle button as Fyrirtæki í Þjónustu,
+        // shared store (patch 175) so it syncs across both views.
+        '<div style="display:flex;align-items:center;gap:7px;margin-top:9px">' +
+          ((window.Priority && window.Priority.btnHtml(c.id, 20)) || '') +
+          '<span style="font-size:11px;color:#64748b">Forgangur — smelltu til að breyta</span>' +
+        '</div>' +
         '<div style="display:flex;gap:6px;margin-top:10px">' +
           (inRoute
             ? '<button class="_lds-route-remove" data-co-id="' + c.id + '" type="button" style="flex:1;padding:6px 10px;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:700">✕ Fjarlægja af leið</button>'
@@ -363,6 +369,14 @@
       try { if (_map) { renderPins({ fit: false }); renderDueList(); } } catch (_) {}
     }
   };
+
+  // Keep priority in sync with Fyrirtæki í Þjónustu: when a mark changes in any
+  // view, re-render the due list here so colours stay consistent. (The clicked
+  // button itself updates optimistically via patch 175's delegate; this catches
+  // changes made in the OTHER view while Leiðsögn is open.)
+  document.addEventListener('priority-changed', () => {
+    try { renderDueList(); } catch (_) {}
+  });
 
   function updateChipCounts() {
     // 2026-05-26: chip counts should reflect ALL eligible customers, including
