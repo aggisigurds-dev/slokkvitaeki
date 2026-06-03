@@ -400,13 +400,13 @@
 
   async function openQuoteModal(existingQ) {
     buildModal();
-    editingId = existingQ ? existingQ.id : null;
+    editingId = (existingQ && existingQ.id) ? existingQ.id : null;
     // Expose to other patches (e.g. 71-tilbod-photos.js needs to know which
     // quote we're editing so it can list/upload attachments under the
     // correct tilbod_id).
     window.__tilbodEditingId = editingId;
     editLines = existingQ ? JSON.parse(JSON.stringify(Array.isArray(existingQ.linur) ? existingQ.linur : [])) : [{ desc: '', qty: 1, unit_price_ex_vat: 0, vsk_pct: 24 }];
-    document.getElementById('tb-modal-title').textContent = existingQ ? 'Breyta tilboði' : 'Nýtt tilboð';
+    document.getElementById('tb-modal-title').textContent = (existingQ && existingQ.id) ? 'Breyta tilboði' : 'Nýtt tilboð';
 
     // Load companies for dropdown
     let cos = [];
@@ -573,7 +573,7 @@
   const obs = new MutationObserver(() => { ensureView(); ensureNavButton(); });
   obs.observe(document.body, { childList: true, subtree: true });
 
-  window.Tilbod = { open: switchToView };
+  window.Tilbod = { open: switchToView, openQuote: openQuoteModal };
   console.log('[tilbod-quote] installed');
 })();
 /* === END TILBOÐ QUOTE === */
