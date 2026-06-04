@@ -663,11 +663,15 @@
         // keeps multi-label print snappy.
         const serials = [];
         for (let i = 0; i < count; i++) serials.push(nextSerial(serialBase || '', i));
-        const qrTexts = serials.map(s => {
-          const t = [name, phone, s, extra].filter(Boolean).join(' · ');
-          // qrcodejs throws on empty input — always pass at least one char.
-          return t || s || '—';
-        });
+        // 2026-06-04: The QR now encodes ONLY the serial — the canonical key in
+        // uttaeki.serial. It used to encode "nafn · sími · raðnúmer · auka", so
+        // scanning a label in Verkstæði / Leita returned the whole compound
+        // string and the exact serial lookup (detailview fetchUnit) matched
+        // nothing — the symptom Aggi described as "it just reads back a number".
+        // The visible text on the printed label is unchanged (buildPrintLabel
+        // below still prints nafn/sími/raðnúmer/auka); only the QR payload is
+        // the bare serial so every window resolves the unit.
+        const qrTexts = serials.map(s => (s || '').trim() || '—');
         const qrUrls = await Promise.all(qrTexts.map(t => qrPNG(t, 320)));
 
         let labelHTML = '';
