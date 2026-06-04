@@ -78,6 +78,10 @@
     const companies = (window.Companies && Companies.list) || [];
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
     const brunMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
+    // Ferðaþjónusta — same idea as the two contract services but with NO
+    // contract and flexible/seasonal drop-offs. Stored like the other two
+    // (AppSettings map keyed by company id) so all three segments stay together.
+    const ferdaMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('ferdathjonusta_customers')) || {};
     const units = (window.DB && window.DB.cache && window.DB.cache.units) || [];
     const gc = (() => { try { return JSON.parse(localStorage.getItem('_slokk_gc') || '{}'); } catch (_) { return {}; } })();
     // Pre-tally unit counts by client name once (much faster than filtering
@@ -91,12 +95,15 @@
     return companies.map(c => {
       const ars = arsMap[String(c.id)];
       const bru = brunMap[String(c.id)];
+      const ferda = ferdaMap[String(c.id)];
       return {
         ...c,
         _hasArs: !!(ars && ars.equipment),
         _hasBru: !!bru,
+        _hasFerda: !!ferda,
         _ars: ars || {},
         _bru: bru || {},
+        _ferda: ferda || {},
         _unitCount: unitsByClient[c.nafn] || 0,
         _hasGps: !!(c.heimilisfang && gc[c.heimilisfang]) || !!(c.nafn && gc[c.nafn])
       };
@@ -110,7 +117,8 @@
     // Primary service filter (chips)
     if (state.filter === 'fyrirt') result = result.filter(c => c._hasArs);
     else if (state.filter === 'brunak') result = result.filter(c => c._hasBru);
-    else if (state.filter === 'onei') result = result.filter(c => !c._hasArs && !c._hasBru);
+    else if (state.filter === 'ferda') result = result.filter(c => c._hasFerda);
+    else if (state.filter === 'onei') result = result.filter(c => !c._hasArs && !c._hasBru && !c._hasFerda);
 
     // Secondary filters (xfilter) — additive AND
     if (state.xfilter.includes('has-email')) {
@@ -272,7 +280,8 @@
     const cntAll = all.length;
     const cntArs = all.filter(c => c._hasArs).length;
     const cntBru = all.filter(c => c._hasBru).length;
-    const cntOne = all.filter(c => !c._hasArs && !c._hasBru).length;
+    const cntFerda = all.filter(c => c._hasFerda).length;
+    const cntOne = all.filter(c => !c._hasArs && !c._hasBru && !c._hasFerda).length;
 
     // Counts for the secondary (xfilter) chips
     const cntWithEmail   = all.filter(c => !!c.netfang).length;
@@ -295,6 +304,7 @@
               ${cntAll} fyrirtæki ·
               <span style="color:#b91c1c">${cntArs} í fyrirtækjaþjónustu</span> ·
               <span style="color:#1d4ed8">${cntBru} í brunakerfi</span> ·
+              <span style="color:#0369a1">${cntFerda} í ferðaþjónustu</span> ·
               ${cntOne} án samnings
             </div>
           </div>
@@ -344,6 +354,7 @@
             ['all',    'Allir',                  cntAll],
             ['fyrirt', '🔥 Fyrirtækjaþjónusta',  cntArs],
             ['brunak', '🚨 Brunakerfi',          cntBru],
+            ['ferda',  '🚌 Ferðaþjónusta',       cntFerda],
             ['onei',   'Án samnings',            cntOne]
           ].map(([key, lbl, n]) => {
             const sel = state.filter === key;
@@ -478,6 +489,10 @@
             ? `<button class="_av-toggle" data-co-id="${c.id}" data-svc="bru" data-action="remove" type="button" title="Fjarlægja úr brunakerfi" style="background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;border:1px solid #93c5fd;cursor:pointer;font-family:inherit">🚨 Brunakerfi <span style="opacity:.6;margin-left:2px">✕</span></button>`
             : `<button class="_av-toggle" data-co-id="${c.id}" data-svc="bru" data-action="add" type="button" title="Skrá í brunakerfi" style="background:#fff;color:#94a3b8;font-size:10px;font-weight:600;padding:3px 8px;border-radius:99px;border:1px dashed #cbd5e1;cursor:pointer;font-family:inherit">🚨 + Brunakerfi</button>`;
 
+          const ferdaBtn = c._hasFerda
+            ? `<button class="_av-toggle" data-co-id="${c.id}" data-svc="ferda" data-action="remove" type="button" title="Fjarlægja úr ferðaþjónustu" style="background:#e0f2fe;color:#0369a1;font-size:10px;font-weight:700;padding:3px 8px;border-radius:99px;border:1px solid #7dd3fc;cursor:pointer;font-family:inherit">🚌 Ferðaþj. <span style="opacity:.6;margin-left:2px">✕</span></button>`
+            : `<button class="_av-toggle" data-co-id="${c.id}" data-svc="ferda" data-action="add" type="button" title="Skrá í ferðaþjónustu" style="background:#fff;color:#94a3b8;font-size:10px;font-weight:600;padding:3px 8px;border-radius:99px;border:1px dashed #cbd5e1;cursor:pointer;font-family:inherit">🚌 + Ferðaþj.</button>`;
+
           return `
             <div class="_av-card" data-co-id="${c.id}" style="background:#fff;border:1px solid #e2e8f0;border-radius:11px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(0,0,0,0.03);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#94a3b8';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'" onmouseout="this.style.borderColor='#e2e8f0';this.style.boxShadow='0 1px 2px rgba(0,0,0,0.03)'">
               <div style="min-width:0">
@@ -490,7 +505,7 @@
                 ${c.netfang ? `<div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">✉️ ${esc(c.netfang)}</div>` : ''}
                 ${c.tengiliður ? `<div>👤 ${esc(c.tengiliður)}</div>` : ''}
               </div>
-              <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px">${arsBtn}${bruBtn}</div>
+              <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px">${arsBtn}${bruBtn}${ferdaBtn}</div>
             </div>
           `;
         }).join('')}
@@ -528,7 +543,8 @@
                 const badges = [];
                 if (c._hasArs) badges.push('<span style="background:#fee2e2;color:#b91c1c;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #fecaca">🔥</span>');
                 if (c._hasBru) badges.push('<span style="background:#dbeafe;color:#1d4ed8;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #93c5fd">🚨</span>');
-                if (!c._hasArs && !c._hasBru) badges.push('<span style="background:#f1f5f9;color:#94a3b8;font-size:9.5px;font-weight:600;padding:1px 6px;border-radius:99px;border:1px solid #cbd5e1">—</span>');
+                if (c._hasFerda) badges.push('<span style="background:#e0f2fe;color:#0369a1;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #7dd3fc">🚌</span>');
+                if (!c._hasArs && !c._hasBru && !c._hasFerda) badges.push('<span style="background:#f1f5f9;color:#94a3b8;font-size:9.5px;font-weight:600;padding:1px 6px;border-radius:99px;border:1px solid #cbd5e1">—</span>');
                 return `
                   <tr class="_av-row" data-co-id="${c.id}" style="cursor:pointer;transition:background .12s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                     <td style="${cellStyle};font-weight:700">${esc(c.nafn || '—')}</td>
@@ -540,6 +556,7 @@
                     <td style="${cellStyle};text-align:right">
                       <button class="_av-toggle" data-co-id="${c.id}" data-svc="ars" data-action="${c._hasArs?'remove':'add'}" type="button" title="${c._hasArs?'Fjarlægja úr fyrirtækjaþj.':'Skrá í fyrirtækjaþjónustu'}" style="padding:3px 7px;border:1px ${c._hasArs?'solid #fecaca':'dashed #cbd5e1'};background:${c._hasArs?'#fee2e2':'#fff'};color:${c._hasArs?'#b91c1c':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🔥</button>
                       <button class="_av-toggle" data-co-id="${c.id}" data-svc="bru" data-action="${c._hasBru?'remove':'add'}" type="button" title="${c._hasBru?'Fjarlægja úr brunakerfi':'Skrá í brunakerfi'}" style="padding:3px 7px;border:1px ${c._hasBru?'solid #93c5fd':'dashed #cbd5e1'};background:${c._hasBru?'#dbeafe':'#fff'};color:${c._hasBru?'#1d4ed8':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🚨</button>
+                      <button class="_av-toggle" data-co-id="${c.id}" data-svc="ferda" data-action="${c._hasFerda?'remove':'add'}" type="button" title="${c._hasFerda?'Fjarlægja úr ferðaþjónustu':'Skrá í ferðaþjónustu'}" style="padding:3px 7px;border:1px ${c._hasFerda?'solid #7dd3fc':'dashed #cbd5e1'};background:${c._hasFerda?'#e0f2fe':'#fff'};color:${c._hasFerda?'#0369a1':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🚌</button>
                     </td>
                   </tr>
                 `;
@@ -561,13 +578,16 @@
       alert('AppSettings ekki tilbúið');
       return;
     }
-    const STORAGE_KEY = svc === 'ars' ? 'arsskodun_customers' : 'brunakerfi_customers';
+    const STORAGE_KEY = svc === 'ars' ? 'arsskodun_customers'
+                      : svc === 'ferda' ? 'ferdathjonusta_customers'
+                      : 'brunakerfi_customers';
+    const svcLabelOf = s => s === 'ars' ? 'fyrirtækjaþjónustu' : s === 'ferda' ? 'ferðaþjónustu' : 'brunakerfi';
     const map = Object.assign({}, window.AppSettings.path(STORAGE_KEY) || {});
     const company = (window.Companies && Companies.list || []).find(c => +c.id === +coId);
     const name = (company && company.nafn) || ('co#' + coId);
 
     if (action === 'add') {
-      const svcLabel = svc === 'ars' ? 'fyrirtækjaþjónustu' : 'brunakerfi';
+      const svcLabel = svcLabelOf(svc);
       if (!confirm('Skrá "' + name + '" í ' + svcLabel + '?')) return;
       if (svc === 'ars') {
         // Minimal arsskodun entry — equipment object is what _hasArs checks.
@@ -575,6 +595,14 @@
           equipment: (map[String(coId)] && map[String(coId)].equipment) || {},
           inspect_month: (map[String(coId)] && map[String(coId)].inspect_month) || 0,
           last_year_inspected: (map[String(coId)] && map[String(coId)].last_year_inspected) || 0
+        });
+      } else if (svc === 'ferda') {
+        // Ferðaþjónusta: no contract, flexible drop-offs. Any truthy entry
+        // flags _hasFerda; serviced units route through seasonal_job (§4).
+        map[String(coId)] = Object.assign({}, map[String(coId)] || {}, {
+          co_id: +coId,
+          flexible: true,
+          marked_at: (map[String(coId)] && map[String(coId)].marked_at) || new Date().toISOString().slice(0, 10)
         });
       } else {
         // Minimal brunakerfi entry.
@@ -585,7 +613,7 @@
         });
       }
     } else if (action === 'remove') {
-      const svcLabel = svc === 'ars' ? 'fyrirtækjaþjónustu' : 'brunakerfi';
+      const svcLabel = svcLabelOf(svc);
       if (!confirm('Fjarlægja "' + name + '" úr ' + svcLabel + '?\n\n(Gögn um búnað haldast — bara samningsmerkið fer.)')) return;
       // AppSettings.save() deep-merges; delete doesn't propagate. Set to
       // null instead — _hasArs requires .equipment and _hasBru is !!bru
