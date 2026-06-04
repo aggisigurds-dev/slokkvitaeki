@@ -39,10 +39,28 @@
   }
 
   async function fetchUnit(serial){
-    var s = serial.trim();
-    var r = await DB.sb.from('uttaeki').select('*').eq('serial', s).maybeSingle();
+    var raw = String(serial == null ? '' : serial).trim();
+    if (!raw) return null;
+    // Normal case: the QR now encodes the bare serial → exact match.
+    var r = await DB.sb.from('uttaeki').select('*').eq('serial', raw).maybeSingle();
     if (r.error) throw r.error;
-    return r.data;
+    if (r.data) return r.data;
+    // Tolerate labels printed BEFORE the QR-payload fix, whose QR encoded a
+    // compound string "nafn · sími · RAÐNÚMER · auka". Pull out each token and
+    // try it as a serial so already-printed miðar still resolve on scan.
+    var tokens = raw.split(/\s*·\s*|\s{2,}/).map(function(t){ return t.trim(); }).filter(Boolean);
+    for (var i = 0; i < tokens.length; i++){
+      if (tokens[i] === raw) continue;
+      var rt = await DB.sb.from('uttaeki').select('*').eq('serial', tokens[i]).maybeSingle();
+      if (!rt.error && rt.data) return rt.data;
+    }
+    // Last resort: case-insensitive on the raw value, then each token.
+    var cand = [raw].concat(tokens);
+    for (var j = 0; j < cand.length; j++){
+      var ri = await DB.sb.from('uttaeki').select('*').ilike('serial', cand[j]).limit(1);
+      if (!ri.error && ri.data && ri.data.length) return ri.data[0];
+    }
+    return null;
   }
 
   async function fetchCustomer(clientName){
