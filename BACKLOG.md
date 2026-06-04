@@ -256,6 +256,18 @@ list, not a rebuild.
 > `seasonal_job`, `vidskiptavinir`, `verkbeidnir` …) — anon-readable/writable.
 > Its own task: enable + designed policies, not bundled with the demote.
 
+### Documentation tracker (feeds the cleanup) — see `docs/customer-documents.md`
+
+Per-service-customer documentation counter: **1 samningur (sign-up) + 1
+úttektarskýrsla + 1 reikningur per year** (signup→current). Docs are scattered
+across **3 computers + Drive + email + dkPlus**, not the DB. Plan: a new
+`customer_documents` table + `customer_doc_status` counter view + a
+"least-documented" sort in "Allir viðskiptavinir"; Cowork sweeps the sources,
+files each find into the canonical `Brunakerfi/{Samningar,Skýrslur,Reikningar}`
+Drive folders, and records it. Surfaces both the real gaps **and** the zero-doc
+rows that "shouldn't be there" (feeds step 5 cleanup). Table create gated on
+backup + go-ahead. Snapshot: 562 service customers, 530 with nothing recorded.
+
 ### Read-only audit (2026-06-04) — before any migration
 
 Ran against Supabase `osfdzskyvisifcwyjkuk` (SELECT only, nothing written):
