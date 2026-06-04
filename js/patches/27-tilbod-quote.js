@@ -204,6 +204,15 @@
     return prefix + '001';
   }
 
+  // Per-row status changer — lets the user set any status directly.
+  function statusSelect(q) {
+    const sm = STATUS_META[q.status] || STATUS_META.draft;
+    const opts = Object.keys(STATUS_META).map(k =>
+      `<option value="${k}" ${q.status === k ? 'selected' : ''}>${esc(STATUS_META[k].label)}</option>`).join('');
+    return `<select class="tb-status-sel" data-tb-id="${q.id}" title="Breyta stöðu"
+      style="background:${sm.bg};color:${sm.color};border:1px solid ${sm.color};border-radius:99px;font:inherit;font-size:11px;font-weight:700;padding:3px 8px;cursor:pointer;outline:none">${opts}</select>`;
+  }
+
   // ── Render list ───────────────────────────────────────────────────────────
   function render() {
     const view = document.getElementById(VIEW_ID);
@@ -222,13 +231,6 @@
     }
 
     tbody.innerHTML = visible.map(q => {
-      const sm = STATUS_META[q.status] || STATUS_META.draft;
-      const du = daysUntil(q.valid_until);
-      let expiryInfo = '';
-      if (q.status === 'sent' && du !== null) {
-        if (du < 0) expiryInfo = `<div class="tb-expiry-expired">Útrunnið ${Math.abs(du)}d síðan</div>`;
-        else if (du <= 7) expiryInfo = `<div class="tb-expiry-warn">Rennur út eftir ${du} daga</div>`;
-      }
       let actions = '';
       if (q.status === 'draft') {
         actions = `<button class="tb-action-btn" data-tb-print="${q.id}">🖨 Prenta</button>
@@ -244,13 +246,17 @@
       } else {
         actions = `<button class="tb-action-btn" data-tb-print="${q.id}">🖨 Prenta</button>`;
       }
+      const linkIco = q.link_url
+        ? ` <a href="${esc(q.link_url)}" target="_blank" rel="noopener" title="Opna tengdan hlekk" style="text-decoration:none">🔗</a>` : '';
       return `<tr>
         <td style="font-family:monospace;font-size:12px;">${esc(q.num || '')}</td>
         <td>${esc(q.company_nafn || '—')}</td>
         <td>${esc(fmtDate(q.created_at))}</td>
-        <td>${q.valid_until ? esc(fmtDate(q.valid_until)) + expiryInfo : '—'}</td>
+        <td style="max-width:280px">${q.lysing
+          ? `<span title="${esc(q.lysing)}" style="display:inline-block;max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:bottom">${esc(q.lysing)}</span>`
+          : '<span style="color:#cbd5e1">—</span>'}${linkIco}</td>
         <td style="text-align:right;font-weight:700;">${esc(fmtKr(+q.samtals||0))}</td>
-        <td><span class="tb-status" style="background:${sm.bg};color:${sm.color};">${esc(sm.label)}</span></td>
+        <td>${statusSelect(q)}</td>
         <td><div class="tb-action-btns">${actions}</div></td>
       </tr>`;
     }).join('');
@@ -285,6 +291,13 @@
       btn.addEventListener('click', () => {
         const q = quotes.find(q => q.id == btn.dataset.tbEdit);
         if (q) openQuoteModal(q);
+      });
+    });
+    tbody.querySelectorAll('.tb-status-sel').forEach(sel => {
+      sel.addEventListener('change', async () => {
+        try { await updateStatus(parseInt(sel.dataset.tbId, 10), sel.value); }
+        catch (e) { if (window.Toast && Toast.show) Toast.show('Villa: ' + (e.message || e)); }
+        render();
       });
     });
   }
@@ -448,8 +461,12 @@
         <div><label>Heimilisfang</label><input type="text" id="tb-co-heim" class="tb-minput" value="${esc(existingQ?.heimilisfang||'')}" placeholder="Gata 1, 101 Reykjavík"></div>
       </div>
       <div class="tb-mrow">
-        <label>Gildistími til</label>
-        <input type="date" id="tb-valid" class="tb-minput" value="${existingQ?.valid_until || defValidUntil}">
+        <label>Lýsing — stutt fyrirsögn (hvað er beðið um)</label>
+        <input type="text" id="tb-lysing" class="tb-minput" value="${esc(existingQ?.lysing||'')}" placeholder="t.d. 20× Duft 6kg endurfylling + skoðun">
+      </div>
+      <div class="tb-mrow tb-co-grid">
+        <div><label>Gildistími til</label><input type="date" id="tb-valid" class="tb-minput" value="${existingQ?.valid_until || defValidUntil}"></div>
+        <div><label>Tengill (hlekkur)</label><input type="text" id="tb-link" class="tb-minput" value="${esc(existingQ?.link_url||'')}" placeholder="https://… tilboðsform eða samningur"></div>
       </div>
       <div class="tb-mrow">
         <label>Athugasemd</label>
@@ -503,6 +520,8 @@
       const netfang      = document.getElementById('tb-co-netfang')?.value.trim() || '';
       const heimilisfang = document.getElementById('tb-co-heim')?.value.trim() || '';
       const validUntil = document.getElementById('tb-valid')?.value || null;
+      const lysing = document.getElementById('tb-lysing')?.value.trim() || '';
+      const linkUrl = document.getElementById('tb-link')?.value.trim() || '';
       const notes = document.getElementById('tb-notes')?.value.trim() || '';
 
       if (!coNafn) { if (window.Toast && Toast.show) Toast.show('Sláðu inn nafn eða fyrirtæki'); return; }
@@ -517,6 +536,7 @@
         const q = {
           num, company_id: coId, company_nafn: coNafn,
           kennitala, netfang, heimilisfang, simi,
+          lysing, link_url: linkUrl,
           linur: editLines, upphaed_an_vsk: ex, vsk_upphaed: vsk, samtals: total,
           valid_until: validUntil, notes, status: existingQ?.status || 'draft'
         };
@@ -540,6 +560,54 @@
     document.getElementById('tb-modal').style.display = 'flex';
   }
 
+  // ── Links bar (above the table) ─────────────────────────────────────────────
+  // A fixed link to the public Brunahólf tilboð form + a jump to Samningar,
+  // plus any extra tilboð-form links the user adds (stored in AppSettings so
+  // the user can manage them without code changes).
+  const FIXED_LINKS = [
+    { label: '🌐 Brunahólf tilboðsform', url: 'https://brunaholf-tilbod.netlify.app/', fixed: true },
+  ];
+  function getFormLinks() {
+    try { const v = window.AppSettings && AppSettings.path && AppSettings.path('tilbod_form_links'); return Array.isArray(v) ? v : []; }
+    catch (_) { return []; }
+  }
+  async function saveFormLinks(arr) {
+    if (!window.AppSettings || !AppSettings.save) { alert('AppSettings ekki tilbúið'); return false; }
+    return await AppSettings.save({ tilbod_form_links: arr });
+  }
+  function linkChip(label, url, removable, idx) {
+    return `<a href="${esc(url)}" target="_blank" rel="noopener" title="${esc(url)}"
+      style="display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:8px;font:inherit;font-size:12.5px;font-weight:600;text-decoration:none">${esc(label)}${
+      removable ? `<span class="tb-link-del" data-idx="${idx}" title="Fjarlægja" style="margin-left:3px;color:#94a3b8;cursor:pointer;font-weight:700">✕</span>` : ''}</a>`;
+  }
+  function renderLinksBar() {
+    const bar = document.getElementById('tb-links');
+    if (!bar) return;
+    const extra = getFormLinks();
+    bar.innerHTML =
+      FIXED_LINKS.map(l => linkChip(l.label, l.url, false)).join('') +
+      extra.map((l, i) => linkChip(l.label || l.url, l.url, true, i)).join('') +
+      `<button id="tb-samningar" type="button" style="display:inline-flex;align-items:center;gap:6px;padding:7px 13px;background:#fff;border:1px solid #cbd5e1;color:#334155;border-radius:8px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">📑 Samningar →</button>` +
+      `<button id="tb-add-link" type="button" style="padding:7px 12px;background:#fff;border:1px dashed #cbd5e1;color:#64748b;border-radius:8px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">＋ Bæta við hlekk</button>`;
+
+    bar.querySelector('#tb-samningar')?.addEventListener('click', () => {
+      if (window.App && App.switchView) App.switchView('samningar');
+    });
+    bar.querySelector('#tb-add-link')?.addEventListener('click', async () => {
+      const url = prompt('Slóð á tilboðsform eða samning (https://…):');
+      if (!url || !url.trim()) return;
+      const label = (prompt('Nafn á hlekk (valfrjálst):', '') || '').trim();
+      const arr = getFormLinks().concat([{ label: label || url.trim(), url: url.trim() }]);
+      if (await saveFormLinks(arr)) renderLinksBar();
+    });
+    bar.querySelectorAll('.tb-link-del').forEach(x => x.addEventListener('click', async e => {
+      e.preventDefault(); e.stopPropagation();
+      const i = parseInt(x.dataset.idx, 10);
+      const arr = getFormLinks(); arr.splice(i, 1);
+      if (await saveFormLinks(arr)) renderLinksBar();
+    }));
+  }
+
   // ── View HTML ─────────────────────────────────────────────────────────────
   function buildViewHTML() {
     return `
@@ -549,6 +617,7 @@
           <h1>📄 Tilboð</h1>
           <button class="tb-new-btn" id="tb-new-btn">+ Nýtt tilboð</button>
         </div>
+        <div id="tb-links" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px"></div>
         <div class="tb-filters">
           <button class="tb-filter-btn active" data-tb-filter="all">Öll</button>
           <button class="tb-filter-btn" data-tb-filter="draft">Drög</button>
@@ -561,7 +630,7 @@
           <table class="tb-table">
             <thead><tr>
               <th>Númer</th><th>Viðskiptavinur</th><th>Dagsetning</th>
-              <th>Gildir til</th><th style="text-align:right;">Upphæð</th>
+              <th>Lýsing</th><th style="text-align:right;">Upphæð</th>
               <th>Staða</th><th>Aðgerðir</th>
             </tr></thead>
             <tbody id="tb-tbody">
@@ -588,6 +657,7 @@
     document.querySelectorAll('#'+VIEW_ID+' .tb-filter-btn').forEach(b => {
       b.addEventListener('click', () => { filterStatus = b.dataset.tbFilter; render(); });
     });
+    renderLinksBar();
   }
 
   function ensureNavButton() {
