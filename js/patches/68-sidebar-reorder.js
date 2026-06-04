@@ -106,8 +106,9 @@
     ['Samningar'],
     SEP,
     ['Tekjur'],
-    ['Reikningar'],
-    ['Kreditreikning', 'Kreditfæra'],
+    // 2026-06-04: "Reikningar" and "Kreditreikningur" sidebar entries retired
+    // (patch 181) — "Kröfu yfirlit" (patch 166) is now the primary receivables
+    // view. Their underlying modals stay reachable programmatically.
     SEP,
     ['Tenglar', 'Tenglir', 'Kort'],   // kort/links
     SEP,
