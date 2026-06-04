@@ -209,10 +209,15 @@ root, and `vidskiptavinir` / `fyrirtaeki` already feed it via `customer_base_id`
 back-links. Collapsing into `fyrirtaeki` (the old option b) would *unwind* a
 finished merge, so it's dropped.
 
-**Target = `customers_base` as the single root.** `fyrirtaeki` and
-`vidskiptavinir` demote to **thin service-extensions** — they keep service data
-(`er_i_thjonustu` lives on `fyrirtaeki`, plus `status` / `deleted_at` /
-equipment + attachment links) and drop only the duplicated identity columns.
+**Target = `customers_base` as the single identity root** that every customer
+shares. The two feeders are **asymmetric**, not twins:
+- `fyrirtaeki` stays the **rich service branch** (*fyrirtæki í þjónustu*): move
+  its basic identity (nafn/kt/sími/netfang) up into the root, keep the service
+  data on the branch (`er_i_thjonustu`, contracts, fleet/attachment links,
+  `status`, `deleted_at`, `customer_base_id`). Far more info than a plain
+  customer needs.
+- `vidskiptavinir` (regular/cash customers) **fold into the root**, keeping only
+  what's genuinely unique.
 Remaining work is **removing duplication + double-paths, not rebuilding.**
 
 What was earlier called "stale `customers_base`" is just feeders ahead of the
@@ -232,7 +237,9 @@ list, not a rebuild.
    `customer_id → fyrirtaeki` FK once 100% rolls through `customer_base_id` —
    this unlocks the `fyrirtaeki` demote.
 3. Point all app reads (dropdowns/lists) at `customers_base` — zero-risk, do early.
-4. Demote `fyrirtaeki` + `vidskiptavinir` to thin service-extensions.
+4. Reframe the feeders: move `fyrirtaeki`'s basic identity up into the root but
+   **keep it as the rich service branch** (service status / contracts / fleet);
+   fold `vidskiptavinir` (regular customers) into the root.
 5. Review the 325 + 23 unlinked feeders as a cleanup list in "Allir
    viðskiptavinir" — mark live/junk, **never blind-delete** (the ICS/Hjallabraut
    lesson).

@@ -104,12 +104,23 @@ Several parallel "invoice" systems overlap here:
 
 ## 4. Target model + order
 
-**Goal:** one root (`customers_base`) holding identity; everything else = thin
-layers referencing it with a single key. No double paths, one source of truth
-for sales.
+**Direction — DECIDED 2026-06-04** (Cowork analysis → Agnar → Code-verified):
+`customers_base` is the spine. **Execution stays gated** on backup + Agnar's
+go-ahead + Cowork per-step confirmation.
 
-**Principle:** the identity merge is *done*. What's left is removing duplication
-and double paths — **not** rebuilding.
+**Goal:** a lean identity root (`customers_base`) that *every* customer shares —
+kennitala, nafn, contact. On top of it sits an **optional, richer service
+branch** — *fyrirtæki í þjónustu* — carrying the heavy stuff a plain customer
+never needs: service status, contracts, the equipment fleet, inspection
+schedule, worksites, custody. A regular (cash / walk-in) customer stays minimal
+at the root. **The branches are asymmetric by design — not two copies of the
+same customer.**
+
+**Principle:** the identity merge is *done*; what's left is removing duplication
+and double paths — **not** rebuilding. `fyrirtaeki` is **not** a "thin" table —
+it's the *rich* service-profile branch; it only sheds the duplicated identity
+columns (which defer to base). `vidskiptavinir` (regular customers) are the
+genuinely thin side and mostly fold into the root.
 
 **Order (safest first, destructive last). Every destructive step is gated on
 backup + read-only confirmation from Cowork:**
@@ -119,10 +130,15 @@ backup + read-only confirmation from Cowork:**
    `customer_id → fyrirtaeki` FK once everything rolls through `customer_base_id`.
    This unlocks the `fyrirtaeki` demote.
 3. **Point all app reads at `customers_base`** (dropdowns/lists) — zero risk, do early.
-4. **Demote `fyrirtaeki` + `vidskiptavinir`** to thin service-extensions: keep
-   `er_i_thjonustu`, `status`, `deleted_at`, `customer_base_id` + equipment/
-   attachment links; drop duplicated identity (nafn/kt/sími/netfang…). Keep the
-   "in service" status + contract links — that's the service data.
+4. **Reframe the two feeders (don't flatten them):**
+   - **`fyrirtaeki` stays the rich service branch** (*fyrirtæki í þjónustu*).
+     Move its **basic identity** (nafn / kt / sími / netfang …) up into
+     `customers_base` (the root owns identity), and **keep the service data on
+     the branch**: `er_i_thjonustu`, contract links, fleet/attachment links,
+     `status`, `deleted_at`, `customer_base_id`. That's all the extra info a
+     plain customer doesn't carry.
+   - **`vidskiptavinir` (regular / cash customers) fold into the root** — keep
+     only anything genuinely unique; they don't need the service layer.
 5. **Review the 325 + 23 unlinked** as a cleanup list in "Allir viðskiptavinir" —
    mark live/junk, never blind-delete (the ICS/Hjallabraut lesson).
 6. **Merge lookup tables** into one canonical (`taekjategundir`), add
