@@ -151,10 +151,13 @@ branch `claude/determined-pasteur-H8jvj`.
   `153-arsskodun.js` (key `arsskodun_search`). Stop persisting/restoring the
   search term (init empty per view entry) and clear the stale keys.
 
-- [ ] **10. Tilboðsverð / Sérkjör — restyle into one cohesive card.** ⏳ STILL
-  OPEN — no unification found in `113-company-pricing.js` / `116-vidsk-pricing.js`
-  (still renders the list + dashed input as two separate boxes). Mostly a
-  CSS/layout task; needs a visual pass. Currently
+- [x] **10. Tilboðsverð / Sérkjör — restyle into one cohesive card.** ✅ done
+  (8ff6c75) — removed the `border:1px dashed` input box; the add-form now sits
+  first (above) and the registered-prices list follows after a `border-top`
+  divider as one continuous panel. Applied to both `113-company-pricing.js`
+  (💰 Tilboðsverð, fyrirtæki) and `116-vidsk-pricing.js` (💎 Sérkjör,
+  viðskiptavinir); empty-state hint updated "hér að neðan" → "hér að ofan".
+  Verified in the commit diff. Originally
   renders as two separate boxes (list + dashed input form), confusing. Unify
   into a single styled card with the input **above** the summary/list. Apply to
   both `113-company-pricing.js` (💰 Tilboðsverð, fyrirtæki) and
