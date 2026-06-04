@@ -103,57 +103,64 @@ UI placement decision + wiring.
 User-reported items collected in one session. Being addressed together on
 branch `claude/determined-pasteur-H8jvj`.
 
-- [ ] **1. Sala — rename "+ Eigin" → "+ Annað".** Cart "add custom line"
+- [x] **1. Sala — rename "+ Eigin" → "+ Annað".** ✅ done (8ff6c75) Cart "add custom line"
   button (`js/pos.js:331`, id `pos-add-service`). Pure label change.
 
-- [ ] **2. `/api/*` functions return 404.** `/api/geocode`, `/api/kt-lookup`,
+- [x] **2. `/api/*` functions return 404.** ✅ done — `netlify.toml` maps `/api/*` → `/.netlify/functions/:splat` (+ a dedicated `geocode-all` rule) `/api/geocode`, `/api/kt-lookup`,
   `/api/email-send` all 404 on the live site (console flooded with geocode
   404s from `156-geocode-prewarm.js`). Functions exist under
   `netlify/functions/` but there is no `_redirects` / `netlify.toml` mapping
   `/api/*` → `/.netlify/functions/:splat`. Add the redirect.
 
-- [ ] **3. Search/cache drift across computers.** Scripts are cache-busted
+- [~] **3. Search/cache drift across computers.** ⚠️ partial — addressed via a
+  `Cache-Control: public, max-age=0, must-revalidate` header in `netlify.toml`
+  (HTML always revalidates). Scripts are still cache-busted by hand-written
+  `?v=` strings *by design* (see comment in `netlify.toml`); full automatic
+  cache-busting was not implemented. Revisit only if drift recurs. Scripts are cache-busted
   with hand-written `?v=` strings; when a file changes without a bump, browsers
   serve stale copies → pages differ per machine. Move to automatic
   cache-busting (and/or a `_headers`/`netlify.toml` cache policy).
 
-- [ ] **4. Checkout — remove "🏷️ Prenta strikamerki fyrir tæki".** Delete the
+- [x] **4. Checkout — remove "🏷️ Prenta strikamerki fyrir tæki".** ✅ done — `scd-barcodes` checkbox removed; QR-merki option kept Delete the
   `scd-barcodes` checkbox (`js/patches/07-sala-checkout-dialog.js:253-254`);
   the 54×17 mm format doesn't work. Keep the QR-merki (24×100 mm) option.
 
-- [ ] **5. Create-customer dialog — add RSK kennitala lookup/auto-fill.** Wire
+- [x] **5. Create-customer dialog — add RSK kennitala lookup/auto-fill.** ✅ done — `KtLookup.lookup` (patch 19) wired into dialog 114; includes a kt-collision check across both tables Wire
   the existing `19-kennitala-lookup.js` logic into the shared new-customer
   dialog (`114-unified-pos-search.js` `openNewCustomerDialog`) so nafn /
   heimilisfang / sími auto-fill from the kennitala. Test kt: `440169-4659`.
 
-- [ ] **6. "Mörg tæki" — Stærð should be a dropdown.** Bulk-add dialog
+- [x] **6. "Mörg tæki" — Stærð should be a dropdown.** ✅ done — `_ba_size` is now a `<select>` Bulk-add dialog
   (`js/patches/73-bulk-add-units.js:48`, `_ba_size`) uses a free-text input;
   switch to a `<select>` matching the main view's size options
   (`js/scanmode.js`: 6kg / 9kg / 5kg / 12kg / 3kg / 9L).
 
-- [ ] **7. Fyrirtækjaþjónusta — "Ónýtt" can't be reverted to Virkt.** Patch 103
+- [x] **7. Fyrirtækjaþjónusta — "Ónýtt" can't be reverted to Virkt.** ✅ done — `toggleScrap` (patch 103) now reads fresh `uttaeki.status` from DB before toggling; the brittle `176-fix-onytt-revert.js` workaround was removed Patch 103
   `toggleScrap` decides direction from possibly-stale cached status; the
   existing `176-fix-onytt-revert.js` is a brittle workaround (timed repaints +
   a `window.unscrap()` console-only escape hatch). Fix properly: read truth
   from DB before toggling so revert works first time, in the UI.
 
-- [ ] **8. Allir viðskiptavinir — add "+ Nýr viðskiptavinur" button.** The
+- [x] **8. Allir viðskiptavinir — add "+ Nýr viðskiptavinur" button.** ✅ done — toolbar button opens the shared RSK-enabled create dialog (see follow-up below re: which table it writes to) The
   master list (`157-allir-vidskiptavinir.js`) has no create entry point. Add a
   toolbar button that opens the shared (RSK-enabled, #5) create dialog.
 
-- [ ] **9. Search term persists across hard refresh.** Search box keeps its
+- [x] **9. Search term persists across hard refresh.** ✅ done — both `157-allir-vidskiptavinir.js` and `153-arsskodun.js` now init `search: ''`, dropped the key from `saveState()`, and clear the stale `allir_vidsk_search` / `arsskodun_search` keys on load Search box keeps its
   value because it's saved to localStorage and restored on load — in
   `157-allir-vidskiptavinir.js` (key `allir_vidsk_search`) and
   `153-arsskodun.js` (key `arsskodun_search`). Stop persisting/restoring the
   search term (init empty per view entry) and clear the stale keys.
 
-- [ ] **10. Tilboðsverð / Sérkjör — restyle into one cohesive card.** Currently
+- [ ] **10. Tilboðsverð / Sérkjör — restyle into one cohesive card.** ⏳ STILL
+  OPEN — no unification found in `113-company-pricing.js` / `116-vidsk-pricing.js`
+  (still renders the list + dashed input as two separate boxes). Mostly a
+  CSS/layout task; needs a visual pass. Currently
   renders as two separate boxes (list + dashed input form), confusing. Unify
   into a single styled card with the input **above** the summary/list. Apply to
   both `113-company-pricing.js` (💰 Tilboðsverð, fyrirtæki) and
   `116-vidsk-pricing.js` (💎 Sérkjör, viðskiptavinir) for consistency.
 
-- [ ] **11. Kreditreikningur print preview empty on first print.** Crediting in
+- [x] **11. Kreditreikningur print preview empty on first print.** ✅ done — `printCreditNote` (patch 26) now uses `SalaInvoice.renderFromSale(...)` so the credit note renders from its own data instead of the empty live POS cart Crediting in
   Bókhaldsyfirlit opens a blank print preview the first time; reprinting from
   the row works. Root cause: `printCreditNote` (`26-credit-invoice.js:255`)
   calls `SalaInvoice.render(win, opts)`, but `render()` reads line items from
@@ -186,3 +193,53 @@ DECISION (Agnar, 2026-05-29): **make `fyrirtaeki` the single customer table.**
 - [ ] Then Allir viðskiptavinir naturally shows everyone and the existing
       ars/bru enrollment toggles work for all of them.
 This is a foundational data change — handle as its own task with a backup.
+
+### Read-only audit (2026-06-04) — before any migration
+
+Ran against Supabase `osfdzskyvisifcwyjkuk` (SELECT only, nothing written):
+
+| Table | Rows | With kt | Distinct kt |
+|---|---:|---:|---:|
+| `vidskiptavinir` (integer id) | 359 | 336 | 336 |
+| `fyrirtaeki` (bigint id) | 1097 | 808 | **772** |
+
+Key facts the migration must handle:
+
+1. **kt overlap between tables = 238.** Of the 336 `vidskiptavinir` rows that
+   have a kennitala, 238 already exist in `fyrirtaeki` by normalised kt → these
+   are **merges**, not inserts. The remaining ~98 with-kt + 23 no-kt rows
+   (~121) would be net-new inserts. Dedup key = digits-only kennitala.
+2. **`fyrirtaeki` has internal kt duplicates** — 808 rows with kt but only 772
+   distinct. ~36 duplicate-kt rows must be resolved (or chosen as the merge
+   target) before kt can be used as a unique key / enforced with a constraint.
+3. **23 `vidskiptavinir` rows have NO kennitala** — need a non-kt match strategy
+   (name + phone) or manual review; cannot be auto-deduped.
+4. **`solur.customer_id` is ambiguous across id spaces (the collision risk).**
+   `fyrirtaeki.id` is `bigint`, `vidskiptavinir.id` is `integer`, and the low
+   integer ranges overlap. Of 182 sales, only 23 carry a `customer_id`; of those
+   23, **21 resolve to a row in BOTH tables** — so the id value alone does not
+   say which table it points to. Disambiguate via `solur.customer_nafn` (and/or
+   a temporary `customer_src` tag) before/while remapping. 0 rows match neither.
+5. Other references to confirm before cutover (name-based per schema, lower
+   risk, but verify): `verkbeidnir.customer`, `uttaeki.client`, the Sérkjör
+   pricing store (patch 116) and the `arsskodun_customers` / `brunakerfi_customers`
+   maps — the latter two key off `fyrirtaeki.id` already.
+
+### Proposed migration plan (each step gated on Agnar's OK)
+
+0. **Backup first** — Supabase point-in-time / `pg_dump` of `vidskiptavinir`,
+   `fyrirtaeki`, `solur`, `verkbeidnir`, `uttaeki` (+ pricing/maps). Nothing
+   below runs until the backup is confirmed.
+1. **Resolve `fyrirtaeki` internal kt duplicates** (the 36) — pick survivors.
+2. **Build a mapping table** `vidskiptavinir.id → fyrirtaeki.id`: 238 by kt;
+   ~98 new fyrirtaeki inserts for with-kt-not-in-fyrirtaeki; 23 no-kt rows by
+   name+phone or flagged for manual review.
+3. **Disambiguate the 23 `solur.customer_id`** using `customer_nafn`, then remap
+   to the surviving `fyrirtaeki.id`.
+4. **Retarget creation** — shared dialog 114 + the 157 button insert into
+   `fyrirtaeki` (currently insert into `vidskiptavinir`).
+5. **Cutover & verify** in a transaction with rollback; spot-check Allir
+   viðskiptavinir, Ársskoðun/Brunakerfi enrollment, and sales history.
+
+All of steps 1–5 are writes and must run via the Supabase SQL path with the
+backup in hand — NOT from the web sandbox.
