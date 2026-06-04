@@ -130,6 +130,9 @@
       #tb-modal .tb-msave { padding: 9px 18px; background: #2563eb; color: #fff; border: none; border-radius: 8px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; }
       #tb-modal .tb-msave:hover { background: #1d4ed8; }
       #tb-modal .tb-msave:disabled { opacity: .5; cursor: not-allowed; }
+      #tb-modal .tb-co-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 12px; }
+      #tb-modal .tb-co-grid > div { min-width: 0; }
+      #tb-modal .tb-mtextarea { min-height: 180px; resize: vertical; line-height: 1.55; font-family: inherit; white-space: pre-wrap; }
     `;
     document.head.appendChild(s);
   }
@@ -408,28 +411,41 @@
     editLines = existingQ ? JSON.parse(JSON.stringify(Array.isArray(existingQ.linur) ? existingQ.linur : [])) : [{ desc: '', qty: 1, unit_price_ex_vat: 0, vsk_pct: 24 }];
     document.getElementById('tb-modal-title').textContent = (existingQ && existingQ.id) ? 'Breyta tilboði' : 'Nýtt tilboð';
 
-    // Load companies for dropdown
+    // Load companies for the typeahead (name → optional link + autofill).
+    // A tilboð is usually for a prospect who is NOT a registered customer, so
+    // the company link is optional — free-form names/contacts are kept as-is.
     let cos = [];
     try {
       const SB = getSB();
       if (SB) {
-        const { data } = await SB.from('fyrirtaeki').select('id,nafn').order('nafn').limit(200);
+        const { data } = await SB.from('fyrirtaeki')
+          .select('id,nafn,kennitala,netfang,simi,heimilisfang').order('nafn').limit(2000);
         cos = data || [];
       }
     } catch (_) {}
     if (!cos.length && window.Companies && Companies.list) cos = Companies.list;
 
-    const coOpts = cos.map(c => `<option value="${esc(c.id)}" data-nafn="${esc(c.nafn||'')}" ${existingQ && existingQ.company_id == c.id ? 'selected' : ''}>${esc(c.nafn||'')}</option>`).join('');
+    const foldName = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+    const coByName = {};
+    cos.forEach(c => { if (c && c.nafn) coByName[foldName(c.nafn)] = c; });
+    let selectedCompanyId = (existingQ && existingQ.company_id) || null;
+    const coOpts = cos.map(c => `<option value="${esc(c.nafn||'')}"></option>`).join('');
 
     const defValidUntil = (() => { const d = new Date(); d.setDate(d.getDate()+30); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); })();
 
     document.getElementById('tb-mbody').innerHTML = `
       <div class="tb-mrow">
-        <label>Viðskiptavinur / Fyrirtæki</label>
-        <select id="tb-co-sel" class="tb-minput">
-          <option value="">— Veldu —</option>
-          ${coOpts}
-        </select>
+        <label>Viðskiptavinur / nafn *</label>
+        <input type="text" id="tb-co-name" class="tb-minput" list="tb-co-list" autocomplete="off"
+          value="${esc(existingQ?.company_nafn||'')}" placeholder="Nafn, fyrirtæki eða hver sem er — þarf ekki að vera skráður">
+        <datalist id="tb-co-list">${coOpts}</datalist>
+        <div id="tb-co-hint" style="font-size:11px;color:#94a3b8;margin-top:5px;min-height:14px"></div>
+      </div>
+      <div class="tb-mrow tb-co-grid">
+        <div><label>Kennitala</label><input type="text" id="tb-co-kt" class="tb-minput" value="${esc(existingQ?.kennitala||'')}" placeholder="000000-0000"></div>
+        <div><label>Sími</label><input type="text" id="tb-co-simi" class="tb-minput" value="${esc(existingQ?.simi||'')}" placeholder="000 0000"></div>
+        <div><label>Netfang</label><input type="text" id="tb-co-netfang" class="tb-minput" value="${esc(existingQ?.netfang||'')}" placeholder="netfang@daemi.is"></div>
+        <div><label>Heimilisfang</label><input type="text" id="tb-co-heim" class="tb-minput" value="${esc(existingQ?.heimilisfang||'')}" placeholder="Gata 1, 101 Reykjavík"></div>
       </div>
       <div class="tb-mrow">
         <label>Gildistími til</label>
@@ -437,7 +453,7 @@
       </div>
       <div class="tb-mrow">
         <label>Athugasemd</label>
-        <input type="text" id="tb-notes" class="tb-minput" value="${esc(existingQ?.notes||'')}" placeholder="Inniheldur t.d. frekari lýsingu">
+        <textarea id="tb-notes" class="tb-minput tb-mtextarea" rows="8" placeholder="Frjáls texti — límdu inn fyrirspurn, lýsingu eða aðrar upplýsingar. Boxið er stórt og resizanlegt.">${esc(existingQ?.notes||'')}</textarea>
       </div>
       <div class="tb-lines-hd">
         <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Línur</label>
@@ -451,14 +467,45 @@
       renderModalLines();
     });
 
+    // Typeahead: when the typed name matches a registered company, link it and
+    // offer to autofill empty contact fields. Otherwise it's a free-form prospect.
+    const nameEl = document.getElementById('tb-co-name');
+    const hintEl = document.getElementById('tb-co-hint');
+    function applyCompanyMatch(autofill) {
+      const c = coByName[foldName(nameEl.value)] || null;
+      selectedCompanyId = c ? c.id : null;
+      if (c) {
+        hintEl.textContent = '✓ Tengt skráðum viðskiptavin';
+        hintEl.style.color = '#16a34a';
+        if (autofill) {
+          const set = (id, val) => { const el = document.getElementById(id); if (el && !el.value && val) el.value = val; };
+          set('tb-co-kt', c.kennitala); set('tb-co-simi', c.simi);
+          set('tb-co-netfang', c.netfang); set('tb-co-heim', c.heimilisfang);
+        }
+      } else {
+        hintEl.textContent = nameEl.value.trim() ? 'Nýr / óskráður — vistast sem frjáls texti' : '';
+        hintEl.style.color = '#94a3b8';
+      }
+    }
+    if (nameEl) {
+      nameEl.addEventListener('input', () => applyCompanyMatch(false));
+      nameEl.addEventListener('change', () => applyCompanyMatch(true));
+      applyCompanyMatch(false);
+    }
+
     document.getElementById('tb-msave').onclick = async () => {
-      const coSel = document.getElementById('tb-co-sel');
-      const coId = coSel?.value ? parseInt(coSel.value, 10) : null;
-      const coNafn = coSel?.options[coSel.selectedIndex]?.dataset.nafn || '';
+      const coNafn = (document.getElementById('tb-co-name')?.value || '').trim();
+      // Re-resolve link from the current name (covers paste / no-event cases).
+      const matched = coByName[foldName(coNafn)] || null;
+      const coId = matched ? matched.id : (selectedCompanyId || null);
+      const kennitala    = document.getElementById('tb-co-kt')?.value.trim() || '';
+      const simi         = document.getElementById('tb-co-simi')?.value.trim() || '';
+      const netfang      = document.getElementById('tb-co-netfang')?.value.trim() || '';
+      const heimilisfang = document.getElementById('tb-co-heim')?.value.trim() || '';
       const validUntil = document.getElementById('tb-valid')?.value || null;
       const notes = document.getElementById('tb-notes')?.value.trim() || '';
 
-      if (!coId) { if (window.Toast && Toast.show) Toast.show('Veldu viðskiptavin'); return; }
+      if (!coNafn) { if (window.Toast && Toast.show) Toast.show('Sláðu inn nafn eða fyrirtæki'); return; }
       if (!editLines.length) { if (window.Toast && Toast.show) Toast.show('Bættu við línum'); return; }
 
       const { ex, vsk, total } = calcTotals(editLines);
@@ -469,6 +516,7 @@
         const num = editingId ? (quotes.find(q=>q.id===editingId)?.num||'') : await nextNum();
         const q = {
           num, company_id: coId, company_nafn: coNafn,
+          kennitala, netfang, heimilisfang, simi,
           linur: editLines, upphaed_an_vsk: ex, vsk_upphaed: vsk, samtals: total,
           valid_until: validUntil, notes, status: existingQ?.status || 'draft'
         };
