@@ -197,38 +197,64 @@ DECISION (Agnar, 2026-05-29): **make `fyrirtaeki` the single customer table.**
       ars/bru enrollment toggles work for all of them.
 This is a foundational data change — handle as its own task with a backup.
 
-### ⚠️ OPEN BLOCKER (2026-06-04) — competing "single source of truth"
+### ✅ RESOLVED direction (2026-06-04) — `customers_base` is the spine
 
-A second unification layer **already exists in the live DB** and was missed in
-the first pass of this plan. Flagged by Cowork, verified read-only:
+> Full data model: **`docs/customer-db.md`** (Cowork's 58-table analysis +
+> Code's read-only verification + corrected diagram).
 
-- **`customers_base`** — 870 rows, built once from both tables (336 from
-  `vidskiptavinir` + 772 from `fyrirtaeki` − 238 overlap), with `source_v_id` /
-  `source_f_id` back-links. Plus a **`customers`** view and a
-  **`customer_id_map`** view over it. This is the Verkborð's "§3 · Phase 1 /
-  id-map — done" item, and it's wired into Brunahólf billing via
-  `customer_worksite_map.base_id → customers_base`.
-- It has **drifted stale**: ~325 live `fyrirtaeki` + 23 `vidskiptavinir` rows
-  created since the build are **not** in it.
+The "two competing masters" question is settled. Cowork's full-DB analysis
+(relayed by Agnar, verified read-only by Code) shows the **identity merge is
+already done**: `customers_base` (870 rows, 1 per kennitala, 0 dups) is the
+root, and `vidskiptavinir` / `fyrirtaeki` already feed it via `customer_base_id`
+back-links. Collapsing into `fyrirtaeki` (the old option b) would *unwind* a
+finished merge, so it's dropped.
 
-So there are **two competing masters**: the `customers_base` third-table rollup
-(already half-built, tied to the worksite model) vs. the `fyrirtaeki`-as-master
-approach below. **They cannot both be the master.** Running the `fyrirtaeki`
-migration without deciding the fate of `customers_base` / `customers` /
-`customer_id_map` will make them collide.
+**Target = `customers_base` as the single identity root** that every customer
+shares. The two feeders are **asymmetric**, not twins:
+- `fyrirtaeki` stays the **rich service branch** (*fyrirtæki í þjónustu*): move
+  its basic identity (nafn/kt/sími/netfang) up into the root, keep the service
+  data on the branch (`er_i_thjonustu`, contracts, fleet/attachment links,
+  `status`, `deleted_at`, `customer_base_id`). Far more info than a plain
+  customer needs.
+- `vidskiptavinir` (regular/cash customers) **fold into the root**, keeping only
+  what's genuinely unique.
+Remaining work is **removing duplication + double-paths, not rebuilding.**
 
-**Decision required (Agnar) — a THIRD blocker, on top of backup + go-ahead:**
-pick one target and reconcile. Either (a) adopt `customers_base` as the spine
-(refresh staleness, both apps read via the views, demote the two tables to
-feeders), or (b) keep `fyrirtaeki` as master and explicitly **retire +
-drop/repoint** `customers_base` / `customers` / `customer_id_map` (and the
-Brunahólf `base_id` link) as part of the cutover. The target diagram below
-assumes (b) but must not run until this is decided in writing.
+What was earlier called "stale `customers_base`" is just feeders ahead of the
+root (325 `fyrirtaeki` + 23 `vidskiptavinir` unlinked) — a reconcile/cleanup
+list, not a rebuild.
 
-> Separately noted (not part of this migration): all customer tables
-> (`fyrirtaeki`, `vidskiptavinir`, `customers_base`, `solur`…) have **RLS
-> disabled**. Worth fixing alongside, but needs designed policies — a separate
-> decision, not auto-applied.
+**Hard gates before ANY destructive step (unchanged):**
+1. **Backup** — no `backup_2026*` snapshot exists in the DB yet. Nothing
+   destructive runs until a fresh snapshot of all tables exists.
+2. Agnar's explicit go-ahead.
+3. Read-only confirmation from Cowork on each destructive step.
+
+**Ordered plan (safest first; see `docs/customer-db.md` for detail):**
+1. Backup first.
+2. Finish `solur → base` (93 rows still unlinked; 23 carry both the old
+   `customer_id → fyrirtaeki` and the new `customer_base_id`). Then drop the old
+   `customer_id → fyrirtaeki` FK once 100% rolls through `customer_base_id` —
+   this unlocks the `fyrirtaeki` demote.
+3. Point all app reads (dropdowns/lists) at `customers_base` — zero-risk, do early.
+4. Reframe the feeders: move `fyrirtaeki`'s basic identity up into the root but
+   **keep it as the rich service branch** (service status / contracts / fleet);
+   fold `vidskiptavinir` (regular customers) into the root.
+5. Review the 325 + 23 unlinked feeders as a cleanup list in "Allir
+   viðskiptavinir" — mark live/junk, **never blind-delete** (the ICS/Hjallabraut
+   lesson).
+6. Merge duplicate lookup tables into one canonical (`taekjategundir`), add
+   `uttaeki.type_id` FK, map the free-text `uttaeki.type` (§5d).
+7. Activate `taeki_events` in the Móttaka flow + backfill `uttaeki.worksite_id`
+   for multi-site customers.
+8. Sales source-of-truth decision: make §2 kröfuyfirlit the single overview;
+   decide whether `solur` or `invoices` is canonical and retire the other
+   (reversibly first).
+
+> Separately noted (not part of this migration): RLS is **disabled** on ~26
+> core tables (`customers_base`, `fyrirtaeki`, `uttaeki`, `solur`,
+> `seasonal_job`, `vidskiptavinir`, `verkbeidnir` …) — anon-readable/writable.
+> Its own task: enable + designed policies, not bundled with the demote.
 
 ### Read-only audit (2026-06-04) — before any migration
 
