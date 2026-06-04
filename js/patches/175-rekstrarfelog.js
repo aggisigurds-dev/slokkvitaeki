@@ -167,7 +167,7 @@
       return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;font-weight:700;'+style+'">'+inner+'</td>';
     }
     // building table
-    var rows=blds.map(function(b){
+    var rows=blds.map(function(b,_bi){
       var co=companyByKt(b.kt);
       var link= co ? '<a href="#" data-coid="'+co.id+'" class="_rf_open" style="color:#2563eb;text-decoration:none">'+esc(b.nafn)+'</a>'
                    : esc(b.nafn)+' <span style="color:#cbd5e1;font-size:11px">(ekki í skrá)</span>';
@@ -186,6 +186,7 @@
       var oldLinks = lkYears.filter(function(y){return y<'2024';}).sort().map(function(y){
         return ' <a href="'+esc(lks[y])+'" target="_blank" rel="noopener" title="Úttektarskýrsla '+y+' í Drive" style="font-size:11px;color:#15803d;text-decoration:none;white-space:nowrap">📄'+y+'↗</a>'; }).join('');
       link = link + oldLinks;
+      if(b.heimilisfang) link += '<div style="font-size:11px;color:#94a3b8;margin-top:2px">📍 '+esc(b.heimilisfang)+'</div>';
       var unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(units>0?'font-weight:600':'color:'+(hasRep?'#cbd5e1':'#b45309'))+'">'+(units>0?units:(hasRep||lkYears.length?'–':'0'))+'</td>';
       var y24=yCell(d24,!!att[0],units,lks['2024']), y25=yCell(d25,!!att[1],units,lks['2025']), y26=yCell(d26,!!att[2],units,lks['2026']);
       var nextCell;
@@ -196,7 +197,8 @@
       return '<tr><td style="padding:5px 6px;border-bottom:'+bd+'">'+link+'</td>'+
              '<td style="padding:5px 6px;border-bottom:'+bd+';color:#64748b;font-variant-numeric:tabular-nums">'+fmtKt(b.kt)+'</td>'+
              unitCell+y24+y25+y26+nextCell+
-             '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:right">'+doc+'</td></tr>';
+             '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:right;white-space:nowrap">'+doc+
+             ' <a href="#" class="_rf_delb" data-bi="'+_bi+'" title="Fjarlægja byggingu" style="color:#dc2626;text-decoration:none;font-size:12px;margin-left:6px">✕</a></td></tr>';
     }).join('');
     var summary='<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:#475569;margin-bottom:8px">'+
       '<span>🏠 '+blds.length+' byggingar</span>'+
@@ -225,6 +227,7 @@
           '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 4px;border-bottom:1px solid #eef1f5">2026</th>'+
           '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 6px;border-bottom:1px solid #eef1f5">Næsta skoðun</th>'+
           '<th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+          '<button class="_rf_addb" style="margin-top:8px;padding:6px 12px;background:#fff;border:1px dashed #cbd5e1;border-radius:8px;color:#2563eb;font-weight:600;font-size:12.5px;cursor:pointer">+ Bæta við byggingu / fyrirtæki</button>'+
           '<div style="font-size:11px;color:#94a3b8;margin-top:6px">Árdálkar sýna fjölda tækja sem úttekt nær til. <span style="color:#15803d">Grænn + 📄</span> = úttektarskýrsla á skrá (viðhengi); <span style="color:#1d4ed8">blár</span> = aðeins skráð í búnaðarsögu. «Næsta skoðun» = fyrsti gjalddagi, ⚠ = liðinn.</div>'+
         '</div>'+
         '<div style="flex:1;min-width:260px">'+
@@ -240,6 +243,30 @@
     // wire building -> company record
     body.querySelectorAll('._rf_open').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); openCompany(a.getAttribute('data-coid')); }); });
     body.querySelectorAll('._rf_docs').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); openCompany(a.getAttribute('data-coid')); }); });
+
+    // wire add / remove building — self-service editing, no code needed
+    var addB = body.querySelector('._rf_addb');
+    if (addB) addB.addEventListener('click', async function(){
+      var nafn = prompt('Nafn byggingar / fyrirtækis:'); if(!nafn || !nafn.trim()) return;
+      var kt   = (prompt('Kennitala (má sleppa):','')||'').trim();
+      var heim = (prompt('Heimilisfang (má sleppa):','')||'').trim();
+      var d = getData(); if(!d[name]) d[name]=info;
+      d[name].buildings = (d[name].buildings||[]).concat([{ nafn:nafn.trim(), kt:kt, heimilisfang:heim }]);
+      await saveData(d);
+      info.buildings = d[name].buildings;
+      fillBody(body, name, info);
+    });
+    body.querySelectorAll('._rf_delb').forEach(function(x){
+      x.addEventListener('click', async function(e){
+        e.preventDefault();
+        var bi = parseInt(x.getAttribute('data-bi'),10);
+        var b = (info.buildings||[])[bi]; if(!b) return;
+        if(!confirm('Fjarlægja "'+(b.nafn||'')+'" úr félaginu?')) return;
+        var d = getData();
+        if(d[name] && Array.isArray(d[name].buildings)){ d[name].buildings.splice(bi,1); await saveData(d); info.buildings=d[name].buildings; }
+        fillBody(body, name, info);
+      });
+    });
 
     // wire firm upload
     var fileInput=body.querySelector('._rf_file');
