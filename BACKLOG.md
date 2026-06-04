@@ -197,6 +197,39 @@ DECISION (Agnar, 2026-05-29): **make `fyrirtaeki` the single customer table.**
       ars/bru enrollment toggles work for all of them.
 This is a foundational data change — handle as its own task with a backup.
 
+### ⚠️ OPEN BLOCKER (2026-06-04) — competing "single source of truth"
+
+A second unification layer **already exists in the live DB** and was missed in
+the first pass of this plan. Flagged by Cowork, verified read-only:
+
+- **`customers_base`** — 870 rows, built once from both tables (336 from
+  `vidskiptavinir` + 772 from `fyrirtaeki` − 238 overlap), with `source_v_id` /
+  `source_f_id` back-links. Plus a **`customers`** view and a
+  **`customer_id_map`** view over it. This is the Verkborð's "§3 · Phase 1 /
+  id-map — done" item, and it's wired into Brunahólf billing via
+  `customer_worksite_map.base_id → customers_base`.
+- It has **drifted stale**: ~325 live `fyrirtaeki` + 23 `vidskiptavinir` rows
+  created since the build are **not** in it.
+
+So there are **two competing masters**: the `customers_base` third-table rollup
+(already half-built, tied to the worksite model) vs. the `fyrirtaeki`-as-master
+approach below. **They cannot both be the master.** Running the `fyrirtaeki`
+migration without deciding the fate of `customers_base` / `customers` /
+`customer_id_map` will make them collide.
+
+**Decision required (Agnar) — a THIRD blocker, on top of backup + go-ahead:**
+pick one target and reconcile. Either (a) adopt `customers_base` as the spine
+(refresh staleness, both apps read via the views, demote the two tables to
+feeders), or (b) keep `fyrirtaeki` as master and explicitly **retire +
+drop/repoint** `customers_base` / `customers` / `customer_id_map` (and the
+Brunahólf `base_id` link) as part of the cutover. The target diagram below
+assumes (b) but must not run until this is decided in writing.
+
+> Separately noted (not part of this migration): all customer tables
+> (`fyrirtaeki`, `vidskiptavinir`, `customers_base`, `solur`…) have **RLS
+> disabled**. Worth fixing alongside, but needs designed policies — a separate
+> decision, not auto-applied.
+
 ### Read-only audit (2026-06-04) — before any migration
 
 Ran against Supabase `osfdzskyvisifcwyjkuk` (SELECT only, nothing written):
