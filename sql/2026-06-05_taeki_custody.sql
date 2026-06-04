@@ -5,10 +5,15 @@
 --
 -- Custody is a SEPARATE dimension from `uttaeki.status` (which is condition:
 -- active/geymsla/i_vinnslu/ok/urelt). Owner note: "lokið/fyllt/tilbúið all basically
--- say it is ready" → the middle step describes in-service, not done. Final set:
---   móttekið → á verkstæði → tilbúið → afhent
+-- say it is ready" → the middle step describes in-service, not done. Final set with
+-- the owner's floor meaning:
+--   móttekið    = arrived (auto-stamped on scan-in)
+--   á verkstæði = received, awaiting service on the to-do shelf (not yet serviced)
+--   tilbúið     = serviced & moved to the ready-for-pickup shelf
+--                 (serviced→ready is one moment → THIS transition is billable 1×)
+--   afhent      = handed over / put back in its building
 -- 'á verkstæði' chosen for the middle (distinct from the existing condition value
--- 'i_vinnslu'). 'tilbúið' = service complete = billable once at the month-cut.
+-- 'i_vinnslu'); 'í vinnslu' is an accepted synonym if the owner prefers it.
 -- ---------------------------------------------------------------------------------
 
 alter table public.uttaeki
@@ -22,7 +27,7 @@ do $$ begin
   end if;
 end $$;
 comment on column public.uttaeki.custody_status is
-  'Chain-of-custody state (§5c), separate from condition status. móttekið→á verkstæði→tilbúið→afhent; tilbúið = service complete = billable 1×. null = not in a drop-off/custody flow.';
+  'Chain-of-custody (§5c), separate from condition status. Floor meaning: móttekið = arrived (auto on scan-in) -> á verkstæði = received, awaiting service on the to-do shelf -> tilbúið = serviced & moved to the ready-for-pickup shelf (this transition = billable 1×) -> afhent = handed over / put back in its building. null = not in a drop-off/custody flow.';
 
 -- taeki_events — scan/transition log per unit (generalizes skodunar_saga + lanstaeki_saga)
 create table if not exists public.taeki_events (
