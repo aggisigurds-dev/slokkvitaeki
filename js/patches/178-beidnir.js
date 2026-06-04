@@ -155,8 +155,8 @@
       state.handled = new Set();
       state.notes = {};
       (data || []).forEach(r => {
-        if (r.status === 'done') state.handled.add(r.email_id);
-        if (r.notes) state.notes[r.email_id] = r.notes;
+        if (r.status === 'done') state.handled.add(String(r.email_id));
+        if (r.notes) state.notes[String(r.email_id)] = r.notes;
       });
     } catch (e) { /* table may be locked */ }
   }
@@ -166,7 +166,7 @@
     state.notes[key] = text;   // keep local copy so re-renders show it
     try {
       await SB.from('email_actions').upsert(
-        { email_id: key, notes: text, updated_at: new Date().toISOString() },
+        { email_id: Number(key), notes: text, updated_at: new Date().toISOString() },
         { onConflict: 'email_id' });
     } catch (e) { toast('Náði ekki að vista minnispunkt: ' + (e.message || e)); }
   }
@@ -198,10 +198,10 @@
   // ── Actions ───────────────────────────────────────────────────────────────
   async function markDone(row, done) {
     const SB = getSB(); if (!SB) return;
-    const key = row.message_id || String(row.id);
+    const key = String(row.id);
     try {
       await SB.from('email_actions').upsert(
-        { email_id: key, status: done ? 'done' : 'open', updated_at: new Date().toISOString() },
+        { email_id: row.id, status: done ? 'done' : 'open', updated_at: new Date().toISOString() },
         { onConflict: 'email_id' });
       if (done) state.handled.add(key); else state.handled.delete(key);
       render();
@@ -240,7 +240,7 @@
   }
 
   function card(row) {
-    const key = row.message_id || String(row.id);
+    const key = String(row.id);
     const done = state.handled.has(key);
     const when = row.received_at ? new Date(row.received_at).toLocaleDateString('is-IS') : '';
     const att = row.has_attachment ? ' 📎' : '';
@@ -291,7 +291,7 @@
   function render() {
     const main = document.getElementById('_bd-main');
     if (!main) return;
-    const live = r => state.showDone || !state.handled.has(r.message_id || String(r.id));
+    const live = r => state.showDone || !state.handled.has(String(r.id));
     const countFor = k => state.items.filter(r => r.kind === k && live(r)).length;
     const visible = state.items.filter(r => r.kind === state.filter && live(r));
     const chip = (k, label, n) => `<button class="_bd-chip" data-k="${k}" style="padding:7px 14px;border-radius:99px;border:1px solid ${state.filter === k ? '#0f172a' : '#cbd5e1'};background:${state.filter === k ? '#0f172a' : '#fff'};color:${state.filter === k ? '#fff' : '#334155'};cursor:pointer;font:inherit;font-size:12.5px;font-weight:600">${label} (${n})</button>`;
@@ -314,7 +314,7 @@
     main.querySelectorAll('._bd-chip').forEach(b => b.addEventListener('click', () => { state.filter = b.dataset.k; render(); }));
     main.querySelectorAll('._bd-card').forEach(cardEl => {
       const key = cardEl.dataset.key;
-      const row = state.items.find(r => (r.message_id || String(r.id)) === key);
+      const row = state.items.find(r => String(r.id) === key);
       if (!row) return;
       const coSel = cardEl.querySelector('._bd-co');
       cardEl.querySelector('._bd-report')?.addEventListener('click', () => sendReport(row, coSel && coSel.value));
