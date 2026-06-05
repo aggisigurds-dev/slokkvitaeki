@@ -170,6 +170,12 @@
     if (state.xfilter.includes('has-units')) {
       result = result.filter(c => c._unitCount > 0);
     }
+    if (state.xfilter.includes('review')) {
+      result = result.filter(c => !!c.review_flag);
+    }
+    if (state.xfilter.includes('missing-docs')) {
+      result = result.filter(c => !c._docs || c._docs.total === 0);
+    }
 
     // Free-text search. NB: the kennitala check digit-strips both sides,
     // but if the user typed letters the stripped search becomes '' and
@@ -342,6 +348,8 @@
     const cntWithUnits   = all.filter(c => c._unitCount > 0).length;
     const cntInService   = all.filter(c => c._hasArs || c._hasBru).length;
     const cntNoEmail     = cntAll - cntWithEmail;
+    const cntReview      = all.filter(c => !!c.review_flag).length;
+    const cntMissingDocs = all.filter(c => !c._docs || c._docs.total === 0).length;
 
     main.innerHTML = `
       <div style="max-width:1200px;margin:0 auto;padding:18px 20px 60px">
@@ -418,6 +426,8 @@
         <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
           <span style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;padding-right:4px">Sía:</span>
           ${[
+            ['review',     '⚑ Til skoðunar',  cntReview],
+            ['missing-docs','📄 Vantar skjöl', cntMissingDocs],
             ['has-email',  '✉️ Netfang',      cntWithEmail],
             ['has-gps',    '📍 GPS staðsetning', cntWithGps],
             ['has-units',  '🧯 Hefur tæki',   cntWithUnits],
@@ -533,6 +543,9 @@
         toggleService(coId, svc, action);
       });
     });
+    main.querySelectorAll('._av-flag').forEach(b => {
+      b.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); toggleReview(+b.dataset.coId); });
+    });
 
     // Restore search-input focus + cursor position (see top of render()).
     if (keepSearchFocus) {
@@ -619,7 +632,7 @@
                 if (!c._hasArs && !c._hasBru && !c._hasFerda) badges.push('<span style="background:#f1f5f9;color:#94a3b8;font-size:9.5px;font-weight:600;padding:1px 6px;border-radius:99px;border:1px solid #cbd5e1">—</span>');
                 return `
                   <tr class="_av-row" data-co-id="${c.id}" style="cursor:pointer;transition:background .12s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                    <td style="${cellStyle};font-weight:700">${esc(c.nafn || '—')}</td>
+                    <td style="${cellStyle};font-weight:700">${c.review_flag ? '<span title="' + esc(c.review_note || 'Til skoðunar') + '" style="color:#f59e0b;margin-right:4px">⚑</span>' : ''}${esc(c.nafn || '—')}${c.review_flag && c.review_note ? '<div style="font-weight:500;font-size:10.5px;color:#b45309;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c.review_note) + '</div>' : ''}</td>
                     <td style="${cellStyle};font-family:monospace;color:#64748b;font-size:11.5px">${esc(fmtKt(c.kennitala) || '—')}</td>
                     <td style="${cellStyle};color:#475569;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.heimilisfang || '')}">${esc(c.heimilisfang || '—')}</td>
                     <td style="${cellStyle};color:#475569;font-family:monospace;font-size:11.5px">${esc(c.simi || c.farsimi || '—')}</td>
@@ -627,6 +640,7 @@
                     <td style="${cellStyle}"><div style="display:flex;gap:3px">${badges.join('')}</div></td>
                     <td style="${cellStyle}">${docBadge(c)}</td>
                     <td style="${cellStyle};text-align:right">
+                      <button class="_av-flag" data-co-id="${c.id}" type="button" title="${c.review_flag?'Afmerkja (til skoðunar)':'Merkja til skoðunar + nóta'}" style="padding:3px 7px;border:1px ${c.review_flag?'solid #fcd34d':'dashed #cbd5e1'};background:${c.review_flag?'#fef3c7':'#fff'};color:${c.review_flag?'#b45309':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">⚑</button>
                       <button class="_av-toggle" data-co-id="${c.id}" data-svc="ars" data-action="${c._hasArs?'remove':'add'}" type="button" title="${c._hasArs?'Fjarlægja úr fyrirtækjaþj.':'Skrá í fyrirtækjaþjónustu'}" style="padding:3px 7px;border:1px ${c._hasArs?'solid #fecaca':'dashed #cbd5e1'};background:${c._hasArs?'#fee2e2':'#fff'};color:${c._hasArs?'#b91c1c':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🔥</button>
                       <button class="_av-toggle" data-co-id="${c.id}" data-svc="bru" data-action="${c._hasBru?'remove':'add'}" type="button" title="${c._hasBru?'Fjarlægja úr brunakerfi':'Skrá í brunakerfi'}" style="padding:3px 7px;border:1px ${c._hasBru?'solid #93c5fd':'dashed #cbd5e1'};background:${c._hasBru?'#dbeafe':'#fff'};color:${c._hasBru?'#1d4ed8':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🚨</button>
                       <button class="_av-toggle" data-co-id="${c.id}" data-svc="ferda" data-action="${c._hasFerda?'remove':'add'}" type="button" title="${c._hasFerda?'Fjarlægja úr ferðaþjónustu':'Skrá í ferðaþjónustu'}" style="padding:3px 7px;border:1px ${c._hasFerda?'solid #7dd3fc':'dashed #cbd5e1'};background:${c._hasFerda?'#e0f2fe':'#fff'};color:${c._hasFerda?'#0369a1':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🚌</button>
@@ -646,6 +660,31 @@
   // 147 (brunakerfi). Minimal entry on add — user can fill details in the
   // service workspace afterwards. Remove deletes the key entirely so the
   // customer drops out of the service workspace.
+  // ⚑ Flag-for-review + per-row note. Persists to fyrirtaeki.review_flag/
+  // review_note (additive cols) and updates the in-memory Companies.list so the
+  // marker shows immediately. The note is kept even when un-flagged, so
+  // re-flagging remembers it.
+  async function toggleReview(coId) {
+    const SB = (window.DB && window.DB.sb);
+    const company = (window.Companies && Companies.list || []).find(c => +c.id === +coId);
+    if (!company) return;
+    const turningOn = !company.review_flag;
+    if (turningOn) {
+      const inp = prompt('Til skoðunar — ástæða / nóta (valfrjálst):', company.review_note || '');
+      if (inp === null) return; // cancelled
+      company.review_note = inp.trim();
+    }
+    company.review_flag = turningOn;
+    if (SB) {
+      try {
+        await SB.from('fyrirtaeki')
+          .update({ review_flag: turningOn, review_note: company.review_note || null })
+          .eq('id', coId);
+      } catch (e) { if (window.Toast && Toast.show) Toast.show('Náði ekki að vista: ' + (e.message || e)); }
+    }
+    const main = document.getElementById('_av-main'); if (main) render(main);
+  }
+
   async function toggleService(coId, svc, action) {
     if (!window.AppSettings || !window.AppSettings.save) {
       alert('AppSettings ekki tilbúið');
