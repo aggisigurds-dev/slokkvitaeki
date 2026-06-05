@@ -128,7 +128,7 @@
   async function load() {
     isLoading = true;
     try {
-      const { data: rows, error } = await getSB().from('vidskiptavinir').select('*').order('nafn', { ascending: true });
+      const { data: rows, error } = await getSB().from('vidskiptavinir').select('*').is('deleted_at', null).order('nafn', { ascending: true });
       if (error) throw error;
       // Mutate-in-place to keep external references in sync (see decl note)
       customers.length = 0;
@@ -481,13 +481,13 @@
       const ids = Array.from(selectedIds);
       const n = ids.length;
       const word = n === 1 ? 'viðskiptavini' : 'viðskiptavinum';
-      if (!confirm(`Eyða ${n} ${word}?\n\nÞetta er ekki hægt að taka til baka.`)) return;
+      if (!confirm(`Eyða ${n} ${word}?\n\nFærast í ruslið (mjúk eyðing) — hægt að endurheimta.`)) return;
       const btn = m.querySelector('#vk-bulk-delete');
       if (btn) { btn.disabled = true; btn.textContent = 'Eyði…'; }
       let ok = 0, err = 0;
       for (const id of ids) {
         try {
-          const { error } = await getSB().from('vidskiptavinir').delete().eq('id', id);
+          const { error } = await getSB().from('vidskiptavinir').update({ deleted_at: new Date().toISOString() }).eq('id', id);
           if (error) throw error;
           ok++;
           selectedIds.delete(id);
@@ -641,9 +641,9 @@
       if (c.nafn && window.SalaCustomer360?.open) window.SalaCustomer360.open(c.nafn);
     });
     m.querySelector('#vk-delete')?.addEventListener('click', async () => {
-      if (!confirm('Eyða viðskiptavini "' + (c.nafn || c.kennitala || c.id) + '"?\n\nÞetta er ekki hægt að taka til baka.')) return;
+      if (!confirm('Eyða viðskiptavini "' + (c.nafn || c.kennitala || c.id) + '"?\n\nFærist í ruslið (mjúk eyðing) — hægt að endurheimta.')) return;
       try {
-        const { error } = await getSB().from('vidskiptavinir').delete().eq('id', c.id);
+        const { error } = await getSB().from('vidskiptavinir').update({ deleted_at: new Date().toISOString() }).eq('id', c.id);
         if (error) throw error;
         view = 'list'; detailCustomer = null;
         await load();
