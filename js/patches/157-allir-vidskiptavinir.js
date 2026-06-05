@@ -74,6 +74,42 @@
   }
 
   // ── Data ───────────────────────────────────────────────────────────────
+  // ── Document counter (samningur / úttektarskýrslur / reikningar) ───────────
+  // Surfaces, per company, which service documents are on file so you can spot
+  // — while scrolling — who is still missing docs. Keyed customer_base_id
+  // (fyrirtaeki carries it) → customer_doc_status, kennitala as fallback.
+  let _docByBase = new Map(), _docByKt = new Map(), _docLoaded = false;
+  const _normKt = s => String(s == null ? '' : s).replace(/\D/g, '');
+  async function loadDocStatus() {
+    const SB = (window.DB && window.DB.sb); if (!SB) return;
+    try {
+      const { data } = await SB.from('customer_doc_status')
+        .select('customer_base_id,kennitala,has_samningur,uttektir,reikningar,total_docs');
+      _docByBase = new Map(); _docByKt = new Map();
+      (data || []).forEach(s => {
+        const rec = { samningur: !!s.has_samningur, uttektir: +s.uttektir || 0, reikningar: +s.reikningar || 0, total: +s.total_docs || 0 };
+        if (s.customer_base_id != null) _docByBase.set(String(s.customer_base_id), rec);
+        const kt = _normKt(s.kennitala); if (kt) _docByKt.set(kt, rec);
+      });
+      _docLoaded = true;
+    } catch (_) { /* view may be unavailable */ }
+  }
+  function docsFor(c) {
+    return (c.customer_base_id != null && _docByBase.get(String(c.customer_base_id))) || _docByKt.get(_normKt(c.kennitala)) || null;
+  }
+  function docPill(text, ok) {
+    return '<span style="display:inline-block;padding:1px 5px;border-radius:5px;font-size:10px;font-weight:700;' +
+      (ok ? 'color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;' : 'color:#a8b1bd;background:#f8fafc;border:1px solid #eef2f6;') + '">' + text + '</span>';
+  }
+  function docBadge(c) {
+    const d = c._docs;
+    if (!d) return '<span style="color:#cbd5e1;font-size:11px">—</span>';
+    return '<span style="display:inline-flex;gap:3px;white-space:nowrap" title="Samningur · Úttektarskýrslur · Reikningar">' +
+      docPill('S' + (d.samningur ? '✓' : '✗'), d.samningur) +
+      docPill('Ú' + d.uttektir, d.uttektir > 0) +
+      docPill('R' + d.reikningar, d.reikningar > 0) + '</span>';
+  }
+
   function getAll() {
     const companies = (window.Companies && Companies.list) || [];
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
@@ -105,7 +141,8 @@
         _bru: bru || {},
         _ferda: ferda || {},
         _unitCount: unitsByClient[c.nafn] || 0,
-        _hasGps: !!(c.heimilisfang && gc[c.heimilisfang]) || !!(c.nafn && gc[c.nafn])
+        _hasGps: !!(c.heimilisfang && gc[c.heimilisfang]) || !!(c.nafn && gc[c.nafn]),
+        _docs: docsFor(c)
       };
     });
   }
@@ -171,6 +208,16 @@
         break;
       case 'units':
         result.sort((a, b) => (b._unitCount - a._unitCount) || collator.compare(String(a.nafn || ''), String(b.nafn || '')));
+        break;
+      case 'addr':
+        result.sort((a, b) => collator.compare(String(a.heimilisfang || ''), String(b.heimilisfang || '')));
+        break;
+      case 'simi':
+        result.sort((a, b) => String(a.simi || a.farsimi || '').localeCompare(String(b.simi || b.farsimi || '')));
+        break;
+      case 'docs':
+        // Fewest docs first (so gaps surface). Nulls (no base match) sort last.
+        result.sort((a, b) => ((a._docs ? a._docs.total : 999) - (b._docs ? b._docs.total : 999)) || collator.compare(String(a.nafn || ''), String(b.nafn || '')));
         break;
       case 'nafn':
       default:
@@ -262,6 +309,11 @@
     const main = document.getElementById('_av-main');
     if (!main) { setTimeout(show, 200); return; }
     render(main);
+    // Load the document counter once, then refresh so the badges fill in.
+    if (!_docLoaded) loadDocStatus().then(() => {
+      const m = document.getElementById('_av-main');
+      if (m) render(m);
+    });
   }
 
   function render(main) {
@@ -538,8 +590,7 @@
     const headerStyle = 'text-align:left;padding:8px 10px;border-bottom:1px solid #e2e8f0;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;background:#f8fafc';
     // Clickable sort headers. Arrow shows the active column/direction.
     const arrow = key => key === 'nafn' ? (state.sort === 'nafn' ? ' ▲' : state.sort === 'nafn-desc' ? ' ▼' : '')
-                       : key === 'kt'   ? (state.sort === 'kt'   ? ' ▲' : '')
-                       : key === 'units'? (state.sort === 'units'? ' ▼' : '') : '';
+                       : (state.sort === key ? ' ▲' : '');
     const sortTh = (label, key, extra) => `<th data-sort="${key}" title="Raða eftir ${esc(label)}" style="${headerStyle}${extra || ''};cursor:pointer;user-select:none">${esc(label)}<span style="color:#0f172a">${arrow(key)}</span></th>`;
     const cellStyle = 'padding:7px 10px;border-bottom:1px solid #f1f5f9;font-size:12px;color:#0f172a;vertical-align:middle';
 
@@ -551,10 +602,11 @@
               <tr>
                 ${sortTh('Nafn', 'nafn')}
                 ${sortTh('Kennitala', 'kt')}
-                <th style="${headerStyle}">Heimilisfang</th>
-                <th style="${headerStyle}">Sími</th>
+                ${sortTh('Heimilisfang', 'addr')}
+                ${sortTh('Sími', 'simi')}
                 ${sortTh('Tæki', 'units', ';text-align:center')}
                 <th style="${headerStyle}">Þjónusta</th>
+                ${sortTh('📄 Skjöl', 'docs')}
                 <th style="${headerStyle};text-align:right;width:90px">Aðgerð</th>
               </tr>
             </thead>
@@ -573,6 +625,7 @@
                     <td style="${cellStyle};color:#475569;font-family:monospace;font-size:11.5px">${esc(c.simi || c.farsimi || '—')}</td>
                     <td style="${cellStyle};text-align:center;color:${c._unitCount>0?'#0f172a':'#cbd5e1'};font-weight:700">${c._unitCount || '·'}</td>
                     <td style="${cellStyle}"><div style="display:flex;gap:3px">${badges.join('')}</div></td>
+                    <td style="${cellStyle}">${docBadge(c)}</td>
                     <td style="${cellStyle};text-align:right">
                       <button class="_av-toggle" data-co-id="${c.id}" data-svc="ars" data-action="${c._hasArs?'remove':'add'}" type="button" title="${c._hasArs?'Fjarlægja úr fyrirtækjaþj.':'Skrá í fyrirtækjaþjónustu'}" style="padding:3px 7px;border:1px ${c._hasArs?'solid #fecaca':'dashed #cbd5e1'};background:${c._hasArs?'#fee2e2':'#fff'};color:${c._hasArs?'#b91c1c':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🔥</button>
                       <button class="_av-toggle" data-co-id="${c.id}" data-svc="bru" data-action="${c._hasBru?'remove':'add'}" type="button" title="${c._hasBru?'Fjarlægja úr brunakerfi':'Skrá í brunakerfi'}" style="padding:3px 7px;border:1px ${c._hasBru?'solid #93c5fd':'dashed #cbd5e1'};background:${c._hasBru?'#dbeafe':'#fff'};color:${c._hasBru?'#1d4ed8':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🚨</button>
