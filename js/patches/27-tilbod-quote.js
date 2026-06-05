@@ -323,6 +323,7 @@
       SalaInvoice.render(win, {
         num: q.num, isTilbod: true,
         customer: q.company_nafn || '', lines: linur,
+        discount_pct: +(q.afslattur_pct||0), discount: +(q.afslattur||0),
         total: +(q.samtals||0), ex: +(q.upphaed_an_vsk||0), vsk: +(q.vsk_upphaed||0),
         notes: q.notes || '',
         validUntil: q.valid_until ? fmtDate(q.valid_until) : ''
@@ -394,6 +395,30 @@
     return { ex, vsk, total: ex + vsk };
   }
 
+  // Totals incl. afsláttur (% first, then kr — matches SalaInvoice). VSK scales
+  // proportionally with the post-discount subtotal.
+  function tbComputeTotals() {
+    const { ex: rawEx, vsk: rawVsk } = calcTotals(editLines);
+    const pct = Math.max(0, Math.min(100, parseFloat(document.getElementById('tb-afsl-pct')?.value) || 0));
+    const abs = Math.max(0, parseFloat(document.getElementById('tb-afsl-kr')?.value) || 0);
+    const discEx = Math.min(rawEx, rawEx * pct / 100 + abs);
+    const factor = rawEx > 0 ? (rawEx - discEx) / rawEx : 1;
+    const ex = rawEx - discEx;
+    const vsk = rawVsk * factor;
+    return { rawEx, rawVsk, discEx, ex, vsk, total: ex + vsk, pct, abs };
+  }
+  function tbTotalRowHtml() {
+    const t = tbComputeTotals();
+    return `<span>Án VSK: <strong>${fmtKr(t.rawEx)}</strong></span>`
+      + (t.discEx > 0 ? `<span>Afsláttur: <strong>−${fmtKr(t.discEx)}</strong></span>` : '')
+      + `<span>VSK: <strong>${fmtKr(t.vsk)}</strong></span>`
+      + `<span>Samtals: <strong>${fmtKr(t.total)}</strong></span>`;
+  }
+  function tbUpdateTotalRow() {
+    const el = document.querySelector('#tb-lines-wrap .tb-total-row');
+    if (el) el.innerHTML = tbTotalRowHtml();
+  }
+
   function renderModalLines() {
     const wrap = document.getElementById('tb-lines-wrap');
     if (!wrap) return;
@@ -410,11 +435,7 @@
         </select>
         <button class="tb-del-line" data-del-line="${i}">✕</button>
       </div>`).join('');
-    html += `<div class="tb-total-row">
-      <span>Án VSK: <strong>${fmtKr(ex)}</strong></span>
-      <span>VSK: <strong>${fmtKr(vsk)}</strong></span>
-      <span>Samtals: <strong>${fmtKr(total)}</strong></span>
-    </div>`;
+    html += `<div class="tb-total-row">${tbTotalRowHtml()}</div>`;
     wrap.innerHTML = html;
 
     wrap.querySelectorAll('[data-del-line]').forEach(b => {
@@ -440,10 +461,8 @@
           unit_price_ex_vat: parseFloat(row.querySelector('.tb-line-price')?.value) || 0,
           vsk_pct: parseFloat(row.querySelector('.tb-line-vsk')?.value) || 0
         };
-        // Recalc total display only
-        const { ex: e2, vsk: v2, total: t2 } = calcTotals(editLines);
-        const totRow = wrap.querySelector('.tb-total-row');
-        if (totRow) totRow.innerHTML = `<span>Án VSK: <strong>${fmtKr(e2)}</strong></span><span>VSK: <strong>${fmtKr(v2)}</strong></span><span>Samtals: <strong>${fmtKr(t2)}</strong></span>`;
+        // Recalc total display only (incl. afsláttur)
+        tbUpdateTotalRow();
       });
     });
   }
@@ -508,6 +527,10 @@
         <label>Athugasemd</label>
         <textarea id="tb-notes" class="tb-minput tb-mtextarea" rows="8" placeholder="Frjáls texti — límdu inn fyrirspurn, lýsingu eða aðrar upplýsingar. Boxið er stórt og resizanlegt.">${esc(existingQ?.notes||'')}</textarea>
       </div>
+      <div class="tb-mrow tb-co-grid">
+        <div><label>Afsláttur %</label><input type="number" id="tb-afsl-pct" class="tb-minput" min="0" max="100" step="1" value="${existingQ?.afslattur_pct!=null?+existingQ.afslattur_pct:''}" placeholder="0"></div>
+        <div><label>Afsláttur kr (á heildina)</label><input type="number" id="tb-afsl-kr" class="tb-minput" min="0" step="100" value="${existingQ?.afslattur!=null?+existingQ.afslattur:''}" placeholder="0"></div>
+      </div>
       <div class="tb-lines-hd">
         <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Línur</label>
         <button class="tb-add-line-btn" id="tb-add-line">+ Bæta við línu</button>
@@ -519,6 +542,11 @@
     document.getElementById('tb-add-line').addEventListener('click', () => {
       editLines.push({ desc: '', qty: 1, unit_price_ex_vat: 0, vsk_pct: 24 });
       renderModalLines();
+    });
+    // Afsláttur → live-update the total row.
+    ['tb-afsl-pct', 'tb-afsl-kr'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', tbUpdateTotalRow);
     });
 
     // Typeahead: when the typed name matches a registered company, link it and
@@ -564,13 +592,15 @@
       if (!coNafn) { if (window.Toast && Toast.show) Toast.show('Sláðu inn nafn eða fyrirtæki'); return null; }
       if (!editLines.length) { if (window.Toast && Toast.show) Toast.show('Bættu við línum'); return null; }
 
-      const { ex, vsk, total } = calcTotals(editLines);
+      const t = tbComputeTotals();   // totals AFTER afsláttur
+      const afslPct = t.pct || null, afslKr = t.abs || null;
       const num = editingId ? (quotes.find(q=>q.id===editingId)?.num||'') : await nextNum();
       const q = {
         num, company_id: coId, company_nafn: coNafn,
         kennitala, netfang, heimilisfang, simi,
         lysing, link_url: linkUrl,
-        linur: editLines, upphaed_an_vsk: ex, vsk_upphaed: vsk, samtals: total,
+        linur: editLines, afslattur_pct: afslPct, afslattur: afslKr,
+        upphaed_an_vsk: Math.round(t.ex), vsk_upphaed: Math.round(t.vsk), samtals: Math.round(t.total),
         valid_until: validUntil, notes, status: existingQ?.status || 'draft'
       };
       if (editingId) q.id = editingId;
