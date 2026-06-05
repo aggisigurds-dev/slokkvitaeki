@@ -32,6 +32,14 @@
     const t = btnText(b);
     return t.replace(/^\s*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+\s*/u, '').trim() || t;
   }
+  // Stable id — must match patch 68's navId(): data-view (preferred) else a
+  // '#'-prefixed normalised full label. We persist this (not the label) so the
+  // saved order survives label/emoji edits and never collides across tabs.
+  function navId(b) {
+    const dv = b.getAttribute && b.getAttribute('data-view');
+    if (dv) return dv;
+    return '#' + String(b.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+  }
 
   // Get the current applied order from the live DOM (most reliable source —
   // captures whatever patch 68 just rendered).
@@ -42,23 +50,26 @@
     const all = [];
     Array.from(nav.children).forEach(el => {
       if (el.classList && el.classList.contains('vnav-btn')) {
+        if (el.classList.contains('_sc-launcher')) return; // never list our own launcher
         const label = btnLabel(el);
         if (!label) return;
         const isHidden = el.style.display === 'none';
-        items.push({ type: 'item', label, hidden: isHidden });
-        all.push({ type: 'item', label, hidden: isHidden });
+        items.push({ type: 'item', id: navId(el), label, hidden: isHidden });
+        all.push({ type: 'item', id: navId(el), label, hidden: isHidden });
       } else if (el.classList && el.classList.contains('nav-sep')) {
         items.push({ type: 'sep' });
       }
     });
     // Also scan any HIDDEN buttons not present as direct children but still
-    // exist somewhere in nav (e.g. hidden via display:none).
+    // exist somewhere in nav (e.g. hidden via display:none). Dedupe by stable id.
     Array.from(nav.querySelectorAll('.vnav-btn')).forEach(el => {
+      if (el.classList.contains('_sc-launcher')) return;
       const label = btnLabel(el);
       if (!label) return;
-      if (!all.some(x => x.label === label)) {
-        all.push({ type: 'item', label, hidden: true });
-        items.push({ type: 'item', label, hidden: true });
+      const id = navId(el);
+      if (!all.some(x => x.id === id)) {
+        all.push({ type: 'item', id, label, hidden: true });
+        items.push({ type: 'item', id, label, hidden: true });
       }
     });
     return { items, all };
@@ -161,8 +172,11 @@
     if (!window.AppSettings || !AppSettings.save) {
       alert('AppSettings ekki tilbúið'); return;
     }
-    const order = _state.items.map(it => it.type === 'sep' ? SEP : it.label);
-    const hidden = _state.items.filter(it => it.type === 'item' && it.hidden).map(it => it.label);
+    // Persist STABLE IDS (data-view), not labels — patch 68 matches by id, so
+    // the order survives label edits and never collapses tabs. Tabs that load
+    // after this snapshot simply aren't listed and flow to the tail (visible).
+    const order = _state.items.map(it => it.type === 'sep' ? SEP : it.id);
+    const hidden = _state.items.filter(it => it.type === 'item' && it.hidden).map(it => it.id);
     const ok = await AppSettings.save({ sidebar_order: order, sidebar_hidden: hidden });
     if (!ok) { alert('Vista mistókst'); return; }
     if (window.Toast && Toast.show) Toast.show('✓ Röð vistuð');

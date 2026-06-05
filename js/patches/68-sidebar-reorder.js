@@ -52,8 +52,10 @@
       if (!window.AppSettings || !AppSettings.path) return null;
       const v = AppSettings.path('sidebar_order');
       if (!Array.isArray(v) || !v.length) return null;
-      // Convert flat string array into ORDER's nested-array shape.
-      return v.map(x => x === SEP ? SEP : (Array.isArray(x) ? x : [x]));
+      // Raw entries: stable ids (data-view) or, for back-compat, old label
+      // strings — plus SEP. Matched by navId()-exact first, label substring
+      // as a fallback (see matchCustomEntry).
+      return v.slice();
     } catch (_) { return null; }
   }
   function getHidden() {
@@ -130,6 +132,28 @@
     return names.some(n => txt.indexOf(String(n).toLowerCase()) !== -1);
   }
 
+  // Stable id for a nav button: its data-view (preferred — survives label
+  // edits and emoji changes), else a '#'-prefixed normalised label so it can
+  // never collide with a real data-view value.
+  function navId(btn) {
+    const dv = btn.getAttribute && btn.getAttribute('data-view');
+    if (dv) return dv;
+    return '#' + btnText(btn);
+  }
+  // Match one custom-order entry (a stable id, or an old label string) to a
+  // not-yet-used, non-hidden button. Exact id first; old label substring as a
+  // back-compat fallback so previously-saved label orders keep working.
+  function matchCustomEntry(buttons, used, hidden, e) {
+    if (typeof e !== 'string') return null;
+    let f = buttons.find(b => !used.has(b) && !hidden.has(b) && navId(b) === e);
+    if (f) return f;
+    if (e[0] !== '#') {
+      const el = e.toLowerCase();
+      f = buttons.find(b => !used.has(b) && !hidden.has(b) && btnText(b).indexOf(el) !== -1);
+    }
+    return f || null;
+  }
+
   // Throttle so the MutationObserver doesn't loop on its own writes.
   let scheduled = false;
   let inProgress = false;
@@ -160,12 +184,24 @@
       const ordered = [];
 
       // 2026-05-21: prefer custom order from AppSettings when set.
-      const activeOrder = getCustomOrder() || ORDER;
-      const hiddenList = getHidden().map(s => String(s).toLowerCase());
+      // Custom order entries are STABLE IDS (data-view) — matched exactly so
+      // tabs can never collapse into the wrong slot the way label-substring
+      // matching did (the "tabs lost on reorder" bug). Old label-string saves
+      // still work via matchCustomEntry's fallback. The default ORDER (no
+      // custom order) keeps its label-substring arrays, unchanged.
+      const customOrder = getCustomOrder();
+      const activeOrder = customOrder || ORDER;
+      const isCustom = !!customOrder;
+      const hiddenRaw = getHidden();
       function isHiddenBtn(b) {
-        if (!hiddenList.length) return false;
+        if (!hiddenRaw.length) return false;
+        const id = navId(b);
         const txt = btnText(b);
-        return hiddenList.some(h => txt.indexOf(h) !== -1);
+        return hiddenRaw.some(h => {
+          h = String(h);
+          if (h === id) return true;                 // stable id
+          return h[0] !== '#' && txt.indexOf(h.toLowerCase()) !== -1; // old label
+        });
       }
       const hiddenButtons = new Set(buttons.filter(isHiddenBtn));
       for (const item of activeOrder) {
@@ -175,18 +211,27 @@
           const s = document.createElement('div');
           s.className = 'nav-sep nav-sep-group';
           ordered.push(s);
-        } else {
-          // Special-case: the Tenglar section matches a wider net of names
-          // (the section label says "Tenglar", any of its children also OK).
-          if (qlinks && !qlinksUsed && item.some(n => /tengl|kort|qlink/i.test(n))
-              && /tengl/i.test(qlinks.textContent || '')) {
-            ordered.push(qlinks);
-            qlinksUsed = true;
-            continue;
-          }
-          const found = buttons.find(b => !used.has(b) && !hiddenButtons.has(b) && matches(b, item));
-          if (found) { ordered.push(found); used.add(found); }
+          continue;
         }
+        if (isCustom) {
+          // Stable-id (or back-compat label) exact match. Unmatched buttons
+          // are NOT dropped — they flow to the `rest` tail below, so nothing
+          // is ever lost when reordering.
+          const found = matchCustomEntry(buttons, used, hiddenButtons, item);
+          if (found) { ordered.push(found); used.add(found); }
+          continue;
+        }
+        // Default ORDER: item is an array of label substrings.
+        // Special-case: the Tenglar section matches a wider net of names
+        // (the section label says "Tenglar", any of its children also OK).
+        if (qlinks && !qlinksUsed && item.some(n => /tengl|kort|qlink/i.test(n))
+            && /tengl/i.test(qlinks.textContent || '')) {
+          ordered.push(qlinks);
+          qlinksUsed = true;
+          continue;
+        }
+        const found = buttons.find(b => !used.has(b) && !hiddenButtons.has(b) && matches(b, item));
+        if (found) { ordered.push(found); used.add(found); }
       }
 
       // Hide hidden buttons (skip them in the ordered list).
