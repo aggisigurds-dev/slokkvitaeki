@@ -284,11 +284,26 @@
 
               <div style="font-size:13px;font-weight:600;margin:12px 0 6px">Samningi þessum skal segja upp með minnst tveggja mánaða fyrirvara í síma ${COMPANY.sími} eða á e-mailinu ${COMPANY.netfang}</div>
 
-              <div class="ct-paper-sig">
+              <div class="ct-paper-sig" id="ct-sig-block" ${c.email_confirm?'style="display:none"':''}>
                 <span>Fyrir hönd ${COMPANY.nafn}:</span>
-                <div class="line"></div>
+                <div class="line" style="display:flex;align-items:flex-end;justify-content:center;font-weight:600;font-size:13px">${esc(c.starfsmadur||'')}</div>
                 <span>Fyrir hönd fyrirtækis/húsfélags:</span>
                 <div class="line"></div>
+              </div>
+              <div id="ct-emailconf-note" style="${c.email_confirm?'':'display:none'};font-size:12.5px;color:#b91c1c;font-weight:600;margin:10px 0">
+                ✓ Samþykki staðfest með tölvupósti (engin handvirk undirritun)
+              </div>
+
+              <div style="margin-top:12px;padding-top:10px;border-top:1px dashed #cbd5e1">
+                <label style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Nafn starfsmanns (f.h. ${COMPANY.nafn})</label>
+                <input type="text" id="ct-staff" value="${esc(c.starfsmadur||'')}" placeholder="t.d. Agnar"
+                  style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;box-sizing:border-box"
+                  oninput="(function(el){var l=document.querySelector('#ct-sig-block .line');if(l)l.textContent=el.value;})(this)">
+                <label style="display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;cursor:pointer">
+                  <input type="checkbox" id="ct-emailconf" ${c.email_confirm?'checked':''} style="width:18px;height:18px"
+                    onchange="(function(ck){document.getElementById('ct-sig-block').style.display=ck.checked?'none':'';document.getElementById('ct-emailconf-note').style.display=ck.checked?'':'none';})(this)">
+                  Engin handvirk undirritun — staðfest með tölvupósti
+                </label>
               </div>
 
               <div class="ct-paper-checks">
@@ -441,7 +456,9 @@
       tidni_man:    parseInt(document.getElementById('ct-freq').value)||12,
       next_due:     document.getElementById('ct-due').value,
       signed_at:    document.getElementById('ct-signed').value || null,
-      status:       document.getElementById('ct-status').value
+      status:       document.getElementById('ct-status').value,
+      starfsmadur:  (document.getElementById('ct-staff')?.value || '').trim() || null,
+      email_confirm: !!document.getElementById('ct-emailconf')?.checked
     };
     if (!rec.company_nafn) { alert('Sláðu inn nafn viðskiptavinar'); return; }
     let saved;
@@ -513,7 +530,9 @@
   <div class="row" style="grid-template-columns:140px 1fr"><label>Heimilisfang:</label><div class="v">${esc(c.heimilisfang||'')}</div></div>
   <div class="body">með sér þjónustusamning þess efnis að ${COMPANY.nafn} muni sjá um árlega þjónustu slökkvitækja og tengdum búnaði.</div>
   <div class="term">Samningi þessum skal segja upp með minnst tveggja mánaða fyrirvara í síma ${COMPANY.sími} eða á e-mailinu <em>${COMPANY.netfang}</em></div>
-  <div class="sig"><span>Fyrir hönd ${COMPANY.nafn}:</span><div class="line"></div><span>Fyrir hönd fyrirtækis/húsfélags:</span><div class="line"></div></div>
+  ${c.email_confirm
+    ? `<div class="sig"><span>Fyrir hönd ${COMPANY.nafn}:</span><div style="font-weight:600">${esc(c.starfsmadur||'')}<div style="font-size:12px;color:#b91c1c;font-weight:600">Samþykki staðfest með tölvupósti</div></div><span>Fyrir hönd fyrirtækis/húsfélags:</span><div style="font-size:12px;color:#b91c1c;font-weight:600">Samþykki staðfest með tölvupósti</div></div>`
+    : `<div class="sig"><span>Fyrir hönd ${COMPANY.nafn}:</span><div class="line" style="display:flex;align-items:flex-end;justify-content:center;font-weight:600">${esc(c.starfsmadur||'')}</div><span>Fyrir hönd fyrirtækis/húsfélags:</span><div class="line"></div></div>`}
   <div class="checks">
     <div style="font-weight:600;margin-bottom:6px">Umsjón með:</div>
     <div class="ck"><span class="box">${c.umsjon_slokkvitaeki?'✕':''}</span> Slökkvitækjum</div>
