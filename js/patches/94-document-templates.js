@@ -84,7 +84,7 @@
     <div style="text-align:center">
       <div style="font-size:12.5px;font-weight:700;color:#b91c1c">Samþykki staðfest með tölvupósti</div>
       <div style="font-size:13px;font-weight:700;margin:4px 0 2px">eldklar@eldklar.is</div>
-      <div style="height:38px;display:flex;align-items:flex-end;justify-content:center">{{sig_slokkvitaeki}}</div>
+      <div style="height:38px;display:flex;align-items:flex-end;justify-content:center;font-weight:700;font-size:13px">{{sig_slokkvitaeki}}{{starfsmadur}}</div>
       <div style="border-top:1px solid #0f172a;padding-top:6px;font-size:12.5px;font-weight:700;text-align:left">Fyrir hönd Brunahólf Slökkvitæki ehf.:</div>
     </div>
     <div style="text-align:center">
