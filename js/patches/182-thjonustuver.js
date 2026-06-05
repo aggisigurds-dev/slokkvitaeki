@@ -458,13 +458,17 @@
       });
     }
     if (!rows.length) { toast('Engar nýjar email-beiðnir'); return; }
-    if (!confirm('Flytja inn ' + rows.length + ' nýjar email-beiðnir úr ' + EML_ACCOUNT + '?')) return;
+    // No blocking native confirm (it froze automated sessions). Import directly
+    // with inline progress on the button; idempotent, so a re-run is harmless.
+    const btn = document.getElementById('_tv-email');
+    if (btn) { btn.disabled = true; btn.textContent = '✉️ Flyt inn ' + rows.length + '…'; }
     let ok = 0;
     for (let i = 0; i < rows.length; i += 100) {
       const chunk = rows.slice(i, i + 100);
       const { error } = await SB.from('thjonustubeidni').insert(chunk);
       if (error) { toast('Innflutningur stöðvaðist: ' + error.message); break; }
       ok += chunk.length;
+      if (btn) btn.textContent = '✉️ Flyt inn ' + ok + '/' + rows.length + '…';
     }
     toast('✉️ ' + ok + ' email-beiðnir fluttar inn');
     await load();
@@ -500,7 +504,15 @@
     if (/reikning|afrit/.test(hay)) pre.add('reikningur');
     if (/skýrsl|skyrsl|úttekt|uttekt|skoðun|skodun/.test(hay)) pre.add('uttektarskyrsla');
     if (/samning/.test(hay)) pre.add('samningur');
-    const selected = new Set(docs.filter(d => pre.has(d.doc_type)).map(d => d.id));
+    // "síðasta / nýjasta / latest" → pre-select only the NEWEST of each matched
+    // type (a request for "afrit af síðasta reikningi" must not tick 20 invoices).
+    const wantsLatest = /síðast|sidast|seinast|seinasta|nýjast|nyjast|nýjasta|\blatest\b|\blast\b/.test(hay);
+    const selected = new Set();
+    pre.forEach(dt => {
+      let group = docs.filter(d => d.doc_type === dt);
+      if (wantsLatest) group = group.slice().sort((a, b) => (b.year || 0) - (a.year || 0) || (b.id - a.id)).slice(0, 1);
+      group.forEach(d => selected.add(d.id));
+    });
 
     document.getElementById('_tv-send')?.remove();
     const m = document.createElement('div');
@@ -537,29 +549,51 @@ Meðfylgjandi eru umbeðin skjöl.
 Kær kveðja,
 Slökkvitæki ehf</textarea></div>
         </div>
-        <div style="display:flex;gap:8px;justify-content:flex-end;padding:13px 20px;border-top:1px solid #e2e8f0">
+        <div id="_tv-s-foot1" style="display:flex;gap:8px;justify-content:flex-end;padding:13px 20px;border-top:1px solid #e2e8f0">
           <button id="_tv-s-cancel" style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>
           <button id="_tv-s-send" style="padding:9px 18px;border:none;background:#6d28d9;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">Forskoða &amp; senda (prufa)</button>
+        </div>
+        <div id="_tv-s-foot2" style="display:none;flex-direction:column;gap:10px;padding:13px 20px;border-top:1px solid #e2e8f0;background:#faf5ff">
+          <div id="_tv-s-summary" style="font-size:12.5px;color:#334155;line-height:1.6"></div>
+          <div style="display:flex;gap:8px;justify-content:flex-end">
+            <button id="_tv-s-back" style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;color:#475569">← Til baka</button>
+            <button id="_tv-s-go" style="padding:9px 18px;border:none;background:#6d28d9;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">Já, senda (prufa)</button>
+          </div>
         </div>
       </div>`;
     document.body.appendChild(m);
     const close = () => m.remove();
     m.querySelector('#_tv-s-x').onclick = close;
     m.querySelector('#_tv-s-cancel').onclick = close;
-    m.querySelector('#_tv-s-send').onclick = async () => {
+    const foot1 = m.querySelector('#_tv-s-foot1'), foot2 = m.querySelector('#_tv-s-foot2');
+    function gather() {
       const from = m.querySelector('#_tv-s-from').value;
       const to = (m.querySelector('#_tv-s-to').value || '').trim();
       const subject = (m.querySelector('#_tv-s-subj').value || '').trim();
       const body = m.querySelector('#_tv-s-body').value || '';
       const chosen = Array.from(m.querySelectorAll('._tv-doc')).filter(c => c.checked).map(c => +c.dataset.id);
       const atts = docs.filter(d => chosen.includes(d.id)).map(d => ({ name: (DOC_LABELS[d.doc_type] || d.doc_type) + (d.year ? ' ' + d.year : ''), url: driveUrl(d.drive_file_id) }));
-      if (!to) { toast('Vantar netfang viðtakanda'); return; }
-      if (!atts.length && !confirm('Engin skjöl valin — senda samt?')) return;
-      const preview = 'Frá: ' + from + '\nTil: ' + to + '\nEfni: ' + subject + '\nViðhengi: ' + (atts.map(a => a.name).join(', ') || '(engin)') + '\n\n— Prufuhamur: ekkert verður sent í alvöru enn.';
-      if (!confirm(preview + '\n\nStaðfesta (prufa)?')) return;
-      const res = await sendReply({ from, to, subject, body, attachments: atts });
+      return { from, to, subject, body, atts };
+    }
+    // Step 1 → in-modal preview (no blocking native dialog — that was freezing the
+    // renderer in automated sessions, and it's smoother for everyone).
+    m.querySelector('#_tv-s-send').onclick = () => {
+      const d = gather();
+      if (!d.to) { toast('Vantar netfang viðtakanda'); return; }
+      m.querySelector('#_tv-s-summary').innerHTML =
+        '<div style="font-weight:700;color:#6d28d9;margin-bottom:4px">Forskoðun — prufa (ekkert sent í alvöru enn)</div>' +
+        '<div><b>Frá:</b> ' + esc(d.from) + '</div><div><b>Til:</b> ' + esc(d.to) + '</div>' +
+        '<div><b>Efni:</b> ' + esc(d.subject) + '</div>' +
+        '<div><b>Viðhengi:</b> ' + (d.atts.length ? esc(d.atts.map(a => a.name).join(', ')) : '<span style="color:#dc2626">engin valin</span>') + '</div>';
+      foot1.style.display = 'none'; foot2.style.display = 'flex';
+    };
+    m.querySelector('#_tv-s-back').onclick = () => { foot2.style.display = 'none'; foot1.style.display = 'flex'; };
+    m.querySelector('#_tv-s-go').onclick = async () => {
+      const go = m.querySelector('#_tv-s-go'); go.disabled = true; go.textContent = 'Skrái…';
+      const d = gather();
+      const res = await sendReply({ from: d.from, to: d.to, subject: d.subject, body: d.body, attachments: d.atts });
       const stamp = new Date().toISOString().slice(0, 10);
-      const logNote = (row.notes ? row.notes + '\n\n' : '') + '[' + stamp + '] Skjöl ' + (res.dryRun ? '(PRUFA) ' : '') + 'send til ' + to + ' frá ' + from + ': ' + (atts.map(a => a.name).join(', ') || '(engin)');
+      const logNote = (row.notes ? row.notes + '\n\n' : '') + '[' + stamp + '] Skjöl ' + (res.dryRun ? '(PRUFA) ' : '') + 'send til ' + d.to + ' frá ' + d.from + ': ' + (d.atts.map(a => a.name).join(', ') || '(engin)');
       await saveRow(row.id, { status: 'lokad', notes: logNote });
       close();
       document.getElementById('_tv-modal')?.remove();
