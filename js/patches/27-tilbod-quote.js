@@ -142,6 +142,7 @@
   let filterStatus = 'all';
   let editingId = null;
   let editLines = [];
+  let tbProducts = [];   // vörur fyrir línur (datalist + verð/VSK autofill)
 
   // ── Data ──────────────────────────────────────────────────────────────────
   async function load() {
@@ -345,6 +346,7 @@
         <div class="tb-mbody" id="tb-mbody"></div>
         <div class="tb-mfoot">
           <button class="tb-mcancel" id="tb-mcancel">Hætta við</button>
+          <button class="tb-msave" id="tb-mprint" style="background:#0f766e">🖨 Vista og prenta</button>
           <button class="tb-msave" id="tb-msave">Vista tilboð</button>
         </div>
       </div>`;
@@ -375,7 +377,7 @@
     const { ex, vsk, total } = calcTotals(editLines);
     let html = editLines.map((l, i) => `
       <div class="tb-line-row" data-line="${i}">
-        <input type="text" class="tb-line-desc" value="${esc(l.desc||'')}" placeholder="Lýsing vöru/þjónustu">
+        <input type="text" class="tb-line-desc" list="tb-vorur-list" value="${esc(l.desc||'')}" placeholder="Lýsing vöru/þjónustu — eða veldu úr vörulista">
         <input type="number" class="tb-line-qty" value="${l.qty||1}" min="0.01" step="1" style="text-align:right;">
         <input type="number" class="tb-line-price" value="${+l.unit_price_ex_vat||0}" min="0" step="100" style="text-align:right;" placeholder="Verð án VSK">
         <select class="tb-line-vsk">
@@ -400,6 +402,15 @@
         const row = inp.closest('[data-line]');
         if (!row) return;
         const i = parseInt(row.dataset.line, 10);
+        // Vörulisti: ef lýsing passar nákvæmlega við skráða vöru → fylltu verð + VSK.
+        if (inp.classList.contains('tb-line-desc') && tbProducts.length) {
+          const want = inp.value.trim().toLowerCase();
+          const prod = tbProducts.find(p => String(p.nafn || '').trim().toLowerCase() === want);
+          if (prod) {
+            const pe = row.querySelector('.tb-line-price'); if (pe) pe.value = +prod.verd_an_vsk || 0;
+            const ve = row.querySelector('.tb-line-vsk'); if (ve && prod.vsk_prosenta != null) ve.value = String(+prod.vsk_prosenta);
+          }
+        }
         editLines[i] = {
           desc: row.querySelector('.tb-line-desc')?.value || '',
           qty: parseFloat(row.querySelector('.tb-line-qty')?.value) || 1,
@@ -437,6 +448,8 @@
       }
     } catch (_) {}
     if (!cos.length && window.Companies && Companies.list) cos = Companies.list;
+    // Vörur fyrir línur — datalist + sjálfvirkt verð/VSK þegar vara er valin.
+    try { const SB2 = getSB(); if (SB2) { const { data: vd } = await SB2.from('vorur').select('nafn,verd_an_vsk,vsk_prosenta').eq('virkt', true).order('nafn'); tbProducts = vd || []; } } catch (_) {}
 
     const foldName = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
     const coByName = {};
@@ -476,7 +489,8 @@
         <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Línur</label>
         <button class="tb-add-line-btn" id="tb-add-line">+ Bæta við línu</button>
       </div>
-      <div id="tb-lines-wrap"></div>`;
+      <div id="tb-lines-wrap"></div>
+      <datalist id="tb-vorur-list">${tbProducts.map(p => `<option value="${esc(p.nafn||'')}"></option>`).join('')}</datalist>`;
 
     renderModalLines();
     document.getElementById('tb-add-line').addEventListener('click', () => {
@@ -510,7 +524,7 @@
       applyCompanyMatch(false);
     }
 
-    document.getElementById('tb-msave').onclick = async () => {
+    async function doSave() {
       const coNafn = (document.getElementById('tb-co-name')?.value || '').trim();
       // Re-resolve link from the current name (covers paste / no-event cases).
       const matched = coByName[foldName(coNafn)] || null;
@@ -524,37 +538,46 @@
       const linkUrl = document.getElementById('tb-link')?.value.trim() || '';
       const notes = document.getElementById('tb-notes')?.value.trim() || '';
 
-      if (!coNafn) { if (window.Toast && Toast.show) Toast.show('Sláðu inn nafn eða fyrirtæki'); return; }
-      if (!editLines.length) { if (window.Toast && Toast.show) Toast.show('Bættu við línum'); return; }
+      if (!coNafn) { if (window.Toast && Toast.show) Toast.show('Sláðu inn nafn eða fyrirtæki'); return null; }
+      if (!editLines.length) { if (window.Toast && Toast.show) Toast.show('Bættu við línum'); return null; }
 
       const { ex, vsk, total } = calcTotals(editLines);
-      const btn = document.getElementById('tb-msave');
-      btn.disabled = true;
+      const num = editingId ? (quotes.find(q=>q.id===editingId)?.num||'') : await nextNum();
+      const q = {
+        num, company_id: coId, company_nafn: coNafn,
+        kennitala, netfang, heimilisfang, simi,
+        lysing, link_url: linkUrl,
+        linur: editLines, upphaed_an_vsk: ex, vsk_upphaed: vsk, samtals: total,
+        valid_until: validUntil, notes, status: existingQ?.status || 'draft'
+      };
+      if (editingId) q.id = editingId;
+      const saved = await saveQuote(q);
+      const out = saved || q;
+      if (!editingId) { quotes.unshift(out); }
+      else { const idx = quotes.findIndex(x => x.id === editingId); if (idx >= 0) quotes[idx] = { ...quotes[idx], ...q }; }
+      return out;
+    }
 
+    document.getElementById('tb-msave').onclick = async () => {
+      const btn = document.getElementById('tb-msave'); btn.disabled = true;
       try {
-        const num = editingId ? (quotes.find(q=>q.id===editingId)?.num||'') : await nextNum();
-        const q = {
-          num, company_id: coId, company_nafn: coNafn,
-          kennitala, netfang, heimilisfang, simi,
-          lysing, link_url: linkUrl,
-          linur: editLines, upphaed_an_vsk: ex, vsk_upphaed: vsk, samtals: total,
-          valid_until: validUntil, notes, status: existingQ?.status || 'draft'
-        };
-        if (editingId) q.id = editingId;
-        const saved = await saveQuote(q);
-        if (!editingId) {
-          quotes.unshift(saved || q);
-        } else {
-          const idx = quotes.findIndex(q => q.id === editingId);
-          if (idx >= 0) quotes[idx] = { ...quotes[idx], ...q };
-        }
-        closeTbModal();
-        render();
-        if (window.Toast && Toast.show) Toast.show('✓ Tilboð ' + num + ' vistað');
-      } catch (e) {
-        if (window.Toast && Toast.show) Toast.show('Villa: ' + (e.message || e));
-        btn.disabled = false;
-      }
+        const out = await doSave();
+        if (!out) { btn.disabled = false; return; }
+        closeTbModal(); render();
+        if (window.Toast && Toast.show) Toast.show('✓ Tilboð ' + (out.num||'') + ' vistað');
+      } catch (e) { if (window.Toast && Toast.show) Toast.show('Villa: ' + (e.message || e)); btn.disabled = false; }
+    };
+
+    const tbPrintBtn = document.getElementById('tb-mprint');
+    if (tbPrintBtn) tbPrintBtn.onclick = async () => {
+      tbPrintBtn.disabled = true;
+      try {
+        const out = await doSave();
+        if (!out) { tbPrintBtn.disabled = false; return; }
+        closeTbModal(); render();
+        if (window.Toast && Toast.show) Toast.show('✓ Tilboð ' + (out.num||'') + ' vistað — prenta…');
+        printQuote(out);
+      } catch (e) { if (window.Toast && Toast.show) Toast.show('Villa: ' + (e.message || e)); tbPrintBtn.disabled = false; }
     };
 
     document.getElementById('tb-modal').style.display = 'flex';
