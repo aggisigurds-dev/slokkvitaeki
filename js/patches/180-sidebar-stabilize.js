@@ -32,6 +32,10 @@
       body.nav-settling nav.view-nav .nav-sep,
       body.nav-settling nav.view-nav .nav-section-label,
       body.nav-settling nav.view-nav .qlinks-section { visibility: hidden !important; }
+      /* No entrance/transition flicker on the first reveal — items just appear,
+         already sorted. User-initiated open/close animations are unaffected
+         (they only run after settling is over). */
+      body.nav-settling nav.view-nav .vnav-btn { transition: none !important; animation: none !important; }
     `;
     document.head.appendChild(s);
   }
@@ -51,16 +55,31 @@
     if (document.body) document.body.classList.remove('nav-settling');
   }
 
-  // Reveal after the DOMContentLoaded injections + patch 68's first reorder
-  // (it schedules at ~200ms after DCL), so the list is complete and sorted.
+  // Reveal once the nav STOPS changing — i.e. all ~19 async injectors (some on
+  // setTimeout 600/1500/3000ms) have landed and patch 68 has ordered them — so
+  // the finished list appears in a single paint instead of popcorning in.
+  // Debounce on nav child mutations; a hard cap guarantees it never stays
+  // masked. The mask uses visibility:hidden, so the rail keeps its width/height
+  // the whole time → zero layout shift.
+  function scheduleStableReveal() {
+    const nav = document.querySelector('nav.view-nav, .view-nav');
+    if (!nav) { setTimeout(scheduleStableReveal, 150); return; }
+    let timer = setTimeout(reveal, 360);
+    const obs = new MutationObserver(() => {
+      if (revealed) { obs.disconnect(); return; }
+      clearTimeout(timer);
+      timer = setTimeout(() => { obs.disconnect(); reveal(); }, 360);
+    });
+    obs.observe(nav, { childList: true });
+  }
   function whenReady(fn) {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
     else fn();
   }
-  whenReady(() => setTimeout(reveal, 280));
+  whenReady(scheduleStableReveal);
 
   // Hard safety net — never leave the nav masked, no matter what.
-  setTimeout(reveal, 1600);
+  setTimeout(reveal, 2600);
 
   console.log('[patch-180] sidebar-stabilize installed — mask-until-settled, no popcorn');
 })();
