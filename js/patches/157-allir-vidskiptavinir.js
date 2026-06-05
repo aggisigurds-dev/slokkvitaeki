@@ -53,7 +53,8 @@
     search:  '',
     view:    localStorage.getItem(LS_VIEW)  || 'list',
     sort:    localStorage.getItem(LS_SORT)  || 'nafn',
-    xfilter: (localStorage.getItem(LS_XFILT) || '').split(',').filter(Boolean)
+    xfilter: (localStorage.getItem(LS_XFILT) || '').split(',').filter(Boolean),
+    editId:  null   // transient: company row currently in inline-edit mode
   };
   function saveState() {
     localStorage.setItem(LS_FILT,  state.filter);
@@ -546,6 +547,22 @@
     main.querySelectorAll('._av-flag').forEach(b => {
       b.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); toggleReview(+b.dataset.coId); });
     });
+    // Inline edit (kt / heimilisfang / sími)
+    main.querySelectorAll('._av-edit').forEach(b => {
+      b.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); state.editId = +b.dataset.coId; render(main); });
+    });
+    main.querySelectorAll('._av-ecancel').forEach(b => {
+      b.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); state.editId = null; render(main); });
+    });
+    main.querySelectorAll('._av-esave').forEach(b => {
+      b.addEventListener('click', e => {
+        e.stopPropagation(); e.preventDefault();
+        const row = b.closest('._av-row'); if (!row) return;
+        const vals = {};
+        row.querySelectorAll('._av-ei').forEach(inp => { vals[inp.dataset.k] = inp.value.trim(); });
+        saveEdit(+b.dataset.coId, vals);
+      });
+    });
 
     // Restore search-input focus + cursor position (see top of render()).
     if (keepSearchFocus) {
@@ -630,20 +647,28 @@
                 if (c._hasBru) badges.push('<span style="background:#dbeafe;color:#1d4ed8;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #93c5fd">🚨</span>');
                 if (c._hasFerda) badges.push('<span style="background:#e0f2fe;color:#0369a1;font-size:9.5px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #7dd3fc">🚌</span>');
                 if (!c._hasArs && !c._hasBru && !c._hasFerda) badges.push('<span style="background:#f1f5f9;color:#94a3b8;font-size:9.5px;font-weight:600;padding:1px 6px;border-radius:99px;border:1px solid #cbd5e1">—</span>');
+                const editing = state.editId === c.id;
+                const eInput = (k, v) => `<input class="_av-ei" data-k="${k}" value="${esc(v == null ? '' : v)}" onclick="event.stopPropagation()" style="width:100%;box-sizing:border-box;padding:3px 5px;border:1px solid #93c5fd;border-radius:5px;font:inherit;font-size:11.5px">`;
                 return `
                   <tr class="_av-row" data-co-id="${c.id}" style="cursor:pointer;transition:background .12s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
                     <td style="${cellStyle};font-weight:700">${c.review_flag ? '<span title="' + esc(c.review_note || 'Til skoðunar') + '" style="color:#f59e0b;margin-right:4px">⚑</span>' : ''}${esc(c.nafn || '—')}${c.review_flag && c.review_note ? '<div style="font-weight:500;font-size:10.5px;color:#b45309;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c.review_note) + '</div>' : ''}</td>
-                    <td style="${cellStyle};font-family:monospace;color:#64748b;font-size:11.5px">${esc(fmtKt(c.kennitala) || '—')}</td>
-                    <td style="${cellStyle};color:#475569;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.heimilisfang || '')}">${esc(c.heimilisfang || '—')}</td>
-                    <td style="${cellStyle};color:#475569;font-family:monospace;font-size:11.5px">${esc(c.simi || c.farsimi || '—')}</td>
+                    <td style="${cellStyle};font-family:monospace;color:#64748b;font-size:11.5px">${editing ? eInput('kennitala', c.kennitala) : (esc(fmtKt(c.kennitala) || '—'))}</td>
+                    <td style="${cellStyle};color:#475569;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.heimilisfang || '')}">${editing ? eInput('heimilisfang', c.heimilisfang) : (esc(c.heimilisfang || '—'))}</td>
+                    <td style="${cellStyle};color:#475569;font-family:monospace;font-size:11.5px">${editing ? eInput('simi', c.simi) : (esc(c.simi || c.farsimi || '—'))}</td>
                     <td style="${cellStyle};text-align:center;color:${c._unitCount>0?'#0f172a':'#cbd5e1'};font-weight:700">${c._unitCount || '·'}</td>
                     <td style="${cellStyle}"><div style="display:flex;gap:3px">${badges.join('')}</div></td>
                     <td style="${cellStyle}">${docBadge(c)}</td>
-                    <td style="${cellStyle};text-align:right">
+                    <td style="${cellStyle};text-align:right;white-space:nowrap">
+                      ${editing ? `
+                      <button class="_av-esave" data-co-id="${c.id}" type="button" title="Vista breytingar" style="padding:3px 9px;border:1px solid #86efac;background:#16a34a;color:#fff;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">✓ Vista</button>
+                      <button class="_av-ecancel" type="button" title="Hætta við" style="padding:3px 7px;border:1px solid #cbd5e1;background:#fff;color:#64748b;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">✕</button>
+                      ` : `
+                      <button class="_av-edit" data-co-id="${c.id}" type="button" title="Breyta kt / heimilisfangi / síma" style="padding:3px 7px;border:1px dashed #cbd5e1;background:#fff;color:#94a3b8;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">✏</button>
                       <button class="_av-flag" data-co-id="${c.id}" type="button" title="${c.review_flag?'Afmerkja (til skoðunar)':'Merkja til skoðunar + nóta'}" style="padding:3px 7px;border:1px ${c.review_flag?'solid #fcd34d':'dashed #cbd5e1'};background:${c.review_flag?'#fef3c7':'#fff'};color:${c.review_flag?'#b45309':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">⚑</button>
                       <button class="_av-toggle" data-co-id="${c.id}" data-svc="ars" data-action="${c._hasArs?'remove':'add'}" type="button" title="${c._hasArs?'Fjarlægja úr fyrirtækjaþj.':'Skrá í fyrirtækjaþjónustu'}" style="padding:3px 7px;border:1px ${c._hasArs?'solid #fecaca':'dashed #cbd5e1'};background:${c._hasArs?'#fee2e2':'#fff'};color:${c._hasArs?'#b91c1c':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🔥</button>
                       <button class="_av-toggle" data-co-id="${c.id}" data-svc="bru" data-action="${c._hasBru?'remove':'add'}" type="button" title="${c._hasBru?'Fjarlægja úr brunakerfi':'Skrá í brunakerfi'}" style="padding:3px 7px;border:1px ${c._hasBru?'solid #93c5fd':'dashed #cbd5e1'};background:${c._hasBru?'#dbeafe':'#fff'};color:${c._hasBru?'#1d4ed8':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🚨</button>
                       <button class="_av-toggle" data-co-id="${c.id}" data-svc="ferda" data-action="${c._hasFerda?'remove':'add'}" type="button" title="${c._hasFerda?'Fjarlægja úr ferðaþjónustu':'Skrá í ferðaþjónustu'}" style="padding:3px 7px;border:1px ${c._hasFerda?'solid #7dd3fc':'dashed #cbd5e1'};background:${c._hasFerda?'#e0f2fe':'#fff'};color:${c._hasFerda?'#0369a1':'#94a3b8'};border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">🚌</button>
+                      `}
                     </td>
                   </tr>
                 `;
@@ -682,6 +707,25 @@
           .eq('id', coId);
       } catch (e) { if (window.Toast && Toast.show) Toast.show('Náði ekki að vista: ' + (e.message || e)); }
     }
+    const main = document.getElementById('_av-main'); if (main) render(main);
+  }
+
+  // Inline-edit save → write kt / heimilisfang / sími to fyrirtaeki and update
+  // Companies.list so the change shows immediately.
+  async function saveEdit(coId, vals) {
+    const SB = (window.DB && window.DB.sb);
+    const company = (window.Companies && Companies.list || []).find(c => +c.id === +coId);
+    const upd = {
+      kennitala: (vals.kennitala || '').trim() || null,
+      heimilisfang: (vals.heimilisfang || '').trim() || null,
+      simi: (vals.simi || '').trim() || null
+    };
+    if (company) Object.assign(company, upd);
+    if (SB && company) {
+      try { await SB.from('fyrirtaeki').update(upd).eq('id', coId); if (window.Toast && Toast.show) Toast.show('✓ Vistað'); }
+      catch (e) { if (window.Toast && Toast.show) Toast.show('Náði ekki að vista: ' + (e.message || e)); }
+    }
+    state.editId = null;
     const main = document.getElementById('_av-main'); if (main) render(main);
   }
 
