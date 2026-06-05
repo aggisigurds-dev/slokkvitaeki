@@ -206,6 +206,7 @@
           <div><div style="font-size:21px;font-weight:800;color:#0f172a">🛎️ Þjónustuver</div>
             <div style="font-size:12px;color:#94a3b8">Sameiginlegt inbox — kúnna-beiðnir úr öllum farvegum</div></div>
           <div style="display:flex;gap:8px"><button id="_tv-refresh" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">↻ Sækja</button>
+            <button id="_tv-email" title="Flytja inn nýjar beiðnir úr eldklar pósthólfi" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">✉️ Sækja tölvupóst</button>
             <button id="_tv-new" style="padding:8px 15px;border:none;background:#2563eb;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">+ Ný beiðni</button></div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${QUEUES.map(qBtn).join('')}</div>
@@ -236,6 +237,7 @@
 
   function wire(main, rows) {
     main.querySelector('#_tv-refresh')?.addEventListener('click', load);
+    main.querySelector('#_tv-email')?.addEventListener('click', ingestEmail);
     main.querySelector('#_tv-new')?.addEventListener('click', () => openForm());
     main.querySelectorAll('._tv-q').forEach(b => b.addEventListener('click', () => { state.queue = b.dataset.q; state.selected.clear(); render(); }));
     let t = null;
@@ -285,7 +287,7 @@
   async function loadCompanies() {
     if (_coList.length) return;
     const SB = getSB(); if (!SB) return;
-    try { const { data } = await SB.from('fyrirtaeki').select('id,nafn,kennitala,customer_base_id').is('deleted_at', null).order('nafn').limit(3000); _coList = data || []; } catch (_) {}
+    try { const { data } = await SB.from('fyrirtaeki').select('id,nafn,kennitala,netfang,customer_base_id').is('deleted_at', null).order('nafn').limit(3000); _coList = data || []; } catch (_) {}
   }
 
   function seg(name, opts, val) {
@@ -393,6 +395,78 @@
   function openDetail(id) {
     const row = state.items.find(x => x.id === id);
     if (row) openForm(row);
+  }
+
+  // ── Email channel (slice 2): ingest eldklar inbox → thjonustubeidni ──────────
+  // Reuses the email source + a keyword classifier mapped onto the real request
+  // types, auto-matches sender → company, idempotent via channel_ref. Additive:
+  // the existing Beiðnir tab (178) is untouched; this just pulls the same mail
+  // into the CRM hub.
+  const EML_ACCOUNT = 'eldklar@eldklar.is';
+  const EML_NOISE_SENDER = /(google\.com|accounts\.google|no-?reply@google|postmaster|mailer-daemon)/i;
+  const EML_NOISE_SUBJ = /(security alert|new sign-in|google data|takeout|\bpassword\b|critical security)/i;
+  function classifyEmailType(text) {
+    if (/hringja|símtal|simtal|heyra í|hringið|hringdu/i.test(text)) return 'hringja';
+    if (/tilboð|tilbod|verðtilboð|\bverð\b|\bverd\b|kostar|kostnað|bjóð|boðið|\btæki\b|\btaeki\b/i.test(text)) return 'skodun_tilbod';
+    if (/þjónustusamning|thjonustusamning|nýr samning|nyr samning|gera samning|\bsamning/i.test(text)) return 'nyr_samningur';
+    if (/endurfyll|áfyll|afyll|hleðsl|hledsl|endurhleðsl/i.test(text)) return 'uttekt_eftirfylgni';
+    if (/skýrsl|skyrsl|úttekt|uttekt|skoðun|skodun|reikning|afrit/i.test(text)) return 'skjalabeidni';
+    return 'annad';
+  }
+  async function ingestEmail() {
+    const SB = getSB(); if (!SB) return;
+    await loadCompanies();
+    const byEmail = new Map(), byDomain = new Map();
+    _coList.forEach(c => {
+      const e = (c.netfang || '').trim().toLowerCase();
+      if (!e) return;
+      byEmail.set(e, c);
+      const d = e.split('@')[1];
+      if (d && !/gmail|hotmail|outlook|live|icloud|yahoo|me\.com/.test(d) && !byDomain.has(d)) byDomain.set(d, c);
+    });
+    let existing = [];
+    try { const { data } = await SB.from('thjonustubeidni').select('channel_ref').not('channel_ref', 'is', null); existing = data || []; } catch (_) {}
+    const seen = new Set(existing.map(r => String(r.channel_ref)));
+    let emails = [];
+    try {
+      const { data, error } = await SB.from('email_digest')
+        .select('id,sender_name,sender_email,subject,snippet,body_preview,received_at,folder')
+        .eq('account', EML_ACCOUNT).ilike('folder', '%inbox%')
+        .order('received_at', { ascending: false }).range(0, 499);
+      if (error) throw error;
+      emails = data || [];
+    } catch (e) { toast('Email-lestur mistókst: ' + (e.message || e)); return; }
+    const rows = [];
+    for (const e of emails) {
+      if (seen.has('email:' + e.id)) continue;
+      if (/eldklar/i.test(e.sender_email || '')) continue;
+      const subj = String(e.subject || '');
+      if (EML_NOISE_SENDER.test(e.sender_email || '') || EML_NOISE_SUBJ.test(subj)) continue;
+      const text = subj + ' ' + (e.snippet || '') + ' ' + (e.body_preview || '');
+      const senderEmail = (e.sender_email || '').trim().toLowerCase();
+      let co = byEmail.get(senderEmail);
+      if (!co) { const d = senderEmail.split('@')[1]; if (d) co = byDomain.get(d); }
+      rows.push({
+        source: 'email', channel_ref: 'email:' + e.id, type: classifyEmailType(text),
+        status: 'nytt', priority: 'venjulegur',
+        customer_base_id: co ? (co.customer_base_id || null) : null,
+        customer_nafn: co ? co.nafn : (e.sender_name || e.sender_email || '—'),
+        title: subj || '(efnislaust)',
+        notes: String(e.body_preview || e.snippet || '').slice(0, 2000) || null,
+        created_by: 'email', created_at: e.received_at || new Date().toISOString()
+      });
+    }
+    if (!rows.length) { toast('Engar nýjar email-beiðnir'); return; }
+    if (!confirm('Flytja inn ' + rows.length + ' nýjar email-beiðnir úr ' + EML_ACCOUNT + '?')) return;
+    let ok = 0;
+    for (let i = 0; i < rows.length; i += 100) {
+      const chunk = rows.slice(i, i + 100);
+      const { error } = await SB.from('thjonustubeidni').insert(chunk);
+      if (error) { toast('Innflutningur stöðvaðist: ' + error.message); break; }
+      ok += chunk.length;
+    }
+    toast('✉️ ' + ok + ' email-beiðnir fluttar inn');
+    await load();
   }
 
   // ── View + sidebar wiring (mirrors patch 178) ────────────────────────────────
