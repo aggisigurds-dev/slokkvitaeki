@@ -333,7 +333,7 @@
             <input id="_tv-assigned" value="${esc(ex.assigned_to != null ? ex.assigned_to : currentUser())}" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div>
         </div>
         <div style="display:flex;gap:8px;justify-content:space-between;padding:13px 20px;border-top:1px solid #e2e8f0">
-          <div>${existing ? `<button id="_tv-del" style="padding:9px 14px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">🗑 Eyða</button>` : ''}</div>
+          <div style="display:flex;gap:8px">${existing ? `<button id="_tv-del" style="padding:9px 14px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">🗑 Eyða</button>` : ''}${existing ? `<button id="_tv-docsend" style="padding:9px 14px;border:1px solid #c4b5fd;background:#f5f3ff;color:#6d28d9;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">📎 Skjöl &amp; senda</button>` : ''}</div>
           <div style="display:flex;gap:8px">
             <button id="_tv-cancel" style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>
             <button id="_tv-save" style="padding:9px 18px;border:none;background:#2563eb;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">Vista beiðni</button></div>
@@ -359,6 +359,7 @@
       if (!confirm('Eyða þessari beiðni? (mjúk eyðing — hægt að endurheimta)')) return;
       await softDelete(existing.id); close(); render();
     };
+    if (existing) m.querySelector('#_tv-docsend').onclick = () => openDocSend(existing);
     m.querySelector('#_tv-save').onclick = async () => {
       const name = (m.querySelector('#_tv-co-name').value || '').trim();
       const title = (m.querySelector('#_tv-title').value || '').trim();
@@ -467,6 +468,104 @@
     }
     toast('✉️ ' + ok + ' email-beiðnir fluttar inn');
     await load();
+  }
+
+  // ── Skjala-velja + senda til baka (slice 3) — doc picker + reply preview ─────
+  // Real email send needs a credential (Gmail send scope / SMTP for eldklar@);
+  // until that's wired this is a DRY-RUN that shows exactly what would be sent
+  // and marks the request handled. sendReply() is the single seam to go live.
+  const DOC_LABELS = { samningur: 'Samningur', uttektarskyrsla: 'Úttektarskýrsla', reikningur: 'Reikningur' };
+  const SEND_LIVE = false; // flip true once a send path (Gmail/SMTP) is connected
+  async function sendReply(payload) {
+    if (!SEND_LIVE) return { ok: true, dryRun: true };
+    // TODO: POST to a Netlify send function (Gmail API / SMTP) with `payload`.
+    return { ok: false, error: 'Send path not configured' };
+  }
+  function driveUrl(id) { return id ? 'https://drive.google.com/file/d/' + id + '/view' : ''; }
+
+  async function openDocSend(row) {
+    const SB = getSB(); if (!SB) return;
+    if (!row.customer_base_id) { toast('Tengdu fyrst viðskiptavin — engin skjöl án tengingar.'); return; }
+    await loadCompanies();
+    let docs = [];
+    try { const { data } = await SB.from('customer_documents').select('id,doc_type,year,drive_file_id,amount,notes').eq('customer_base_id', row.customer_base_id).order('year', { ascending: false }); docs = data || []; } catch (_) {}
+    let toEmail = '';
+    if (row.source === 'email' && row.channel_ref) {
+      const id = String(row.channel_ref).replace(/^email:/, '');
+      try { const { data } = await SB.from('email_digest').select('sender_email').eq('id', id).maybeSingle(); if (data) toEmail = data.sender_email || ''; } catch (_) {}
+    }
+    if (!toEmail) { const co = _coList.find(c => c.customer_base_id === row.customer_base_id) || _coList.find(c => (c.nafn || '') === row.customer_nafn); if (co) toEmail = co.netfang || ''; }
+    const hay = ((row.title || '') + ' ' + (row.notes || '')).toLowerCase();
+    const pre = new Set();
+    if (/reikning|afrit/.test(hay)) pre.add('reikningur');
+    if (/skýrsl|skyrsl|úttekt|uttekt|skoðun|skodun/.test(hay)) pre.add('uttektarskyrsla');
+    if (/samning/.test(hay)) pre.add('samningur');
+    const selected = new Set(docs.filter(d => pre.has(d.doc_type)).map(d => d.id));
+
+    document.getElementById('_tv-send')?.remove();
+    const m = document.createElement('div');
+    m.id = '_tv-send';
+    m.style.cssText = 'position:fixed;inset:0;z-index:100050;display:flex;align-items:flex-start;justify-content:center;padding-top:4vh;font-family:inherit';
+    const docRow = d => `<label style="display:flex;align-items:center;gap:9px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:6px;cursor:pointer;font-size:12.5px">
+      <input type="checkbox" class="_tv-doc" data-id="${d.id}" ${selected.has(d.id) ? 'checked' : ''} style="width:16px;height:16px">
+      <span style="font-weight:600;color:#0f172a">${esc(DOC_LABELS[d.doc_type] || d.doc_type)}${d.year ? ' ' + d.year : ''}</span>
+      ${d.amount ? `<span style="color:#64748b">· ${Math.round(d.amount).toLocaleString('is-IS')} kr</span>` : ''}
+      <span style="flex:1"></span>
+      ${d.drive_file_id ? `<a href="${driveUrl(d.drive_file_id)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#2563eb;text-decoration:none;font-size:11px">opna ↗</a>` : '<span style="color:#cbd5e1;font-size:11px">ekkert skjal</span>'}</label>`;
+    m.innerHTML = `
+      <div style="position:absolute;inset:0;background:rgba(15,23,42,.55)"></div>
+      <div style="position:relative;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:min(580px,calc(100vw - 20px));max-height:92vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid #e2e8f0"><h3 style="margin:0;font-size:17px;font-weight:700">📎 Senda skjöl til baka</h3><button id="_tv-s-x" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer">✕</button></div>
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:13px">
+          <div style="font-size:12.5px;color:#0f172a"><strong>${esc(row.customer_nafn || '')}</strong></div>
+          <div style="padding:8px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:11.5px;color:#92400e">⚠ Prufuhamur — engin raunveruleg sending fyrr en send-heimild (Gmail/SMTP fyrir eldklar@) er tengd. Sýnir nákvæmlega hvað yrði sent.</div>
+          <div style="display:grid;grid-template-columns:60px 1fr;gap:8px;align-items:center;font-size:12.5px">
+            <label style="color:#64748b">Frá</label>
+            <select id="_tv-s-from" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:12.5px"><option value="noreply@eldklar.is">noreply@eldklar.is</option><option value="eldklar@eldklar.is">eldklar@eldklar.is</option></select>
+            <label style="color:#64748b">Til</label>
+            <input id="_tv-s-to" value="${esc(toEmail)}" placeholder="netfang viðskiptavinar" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:12.5px">
+            <label style="color:#64748b">Efni</label>
+            <input id="_tv-s-subj" value="Skjöl frá Slökkvitæki ehf" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:12.5px">
+          </div>
+          <div><div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Skjöl (viðhengi) — ${docs.length}</div>
+            ${docs.length ? docs.map(docRow).join('') : '<div style="font-size:12px;color:#94a3b8;padding:6px 0">Engin skráð skjöl fyrir þennan viðskiptavin.</div>'}</div>
+          <div><div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Skilaboð</div>
+            <textarea id="_tv-s-body" rows="4" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:12.5px;box-sizing:border-box;resize:vertical">Sæl(l),
+
+Meðfylgjandi eru umbeðin skjöl.
+
+Kær kveðja,
+Slökkvitæki ehf</textarea></div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;padding:13px 20px;border-top:1px solid #e2e8f0">
+          <button id="_tv-s-cancel" style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>
+          <button id="_tv-s-send" style="padding:9px 18px;border:none;background:#6d28d9;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">Forskoða &amp; senda (prufa)</button>
+        </div>
+      </div>`;
+    document.body.appendChild(m);
+    const close = () => m.remove();
+    m.querySelector('#_tv-s-x').onclick = close;
+    m.querySelector('#_tv-s-cancel').onclick = close;
+    m.querySelector('#_tv-s-send').onclick = async () => {
+      const from = m.querySelector('#_tv-s-from').value;
+      const to = (m.querySelector('#_tv-s-to').value || '').trim();
+      const subject = (m.querySelector('#_tv-s-subj').value || '').trim();
+      const body = m.querySelector('#_tv-s-body').value || '';
+      const chosen = Array.from(m.querySelectorAll('._tv-doc')).filter(c => c.checked).map(c => +c.dataset.id);
+      const atts = docs.filter(d => chosen.includes(d.id)).map(d => ({ name: (DOC_LABELS[d.doc_type] || d.doc_type) + (d.year ? ' ' + d.year : ''), url: driveUrl(d.drive_file_id) }));
+      if (!to) { toast('Vantar netfang viðtakanda'); return; }
+      if (!atts.length && !confirm('Engin skjöl valin — senda samt?')) return;
+      const preview = 'Frá: ' + from + '\nTil: ' + to + '\nEfni: ' + subject + '\nViðhengi: ' + (atts.map(a => a.name).join(', ') || '(engin)') + '\n\n— Prufuhamur: ekkert verður sent í alvöru enn.';
+      if (!confirm(preview + '\n\nStaðfesta (prufa)?')) return;
+      const res = await sendReply({ from, to, subject, body, attachments: atts });
+      const stamp = new Date().toISOString().slice(0, 10);
+      const logNote = (row.notes ? row.notes + '\n\n' : '') + '[' + stamp + '] Skjöl ' + (res.dryRun ? '(PRUFA) ' : '') + 'send til ' + to + ' frá ' + from + ': ' + (atts.map(a => a.name).join(', ') || '(engin)');
+      await saveRow(row.id, { status: 'lokad', notes: logNote });
+      close();
+      document.getElementById('_tv-modal')?.remove();
+      render();
+      toast(res.dryRun ? '✓ Prufa skráð (engin raunveruleg sending enn) — beiðni lokað' : '✉️ Sent — beiðni lokað');
+    };
   }
 
   // ── View + sidebar wiring (mirrors patch 178) ────────────────────────────────
