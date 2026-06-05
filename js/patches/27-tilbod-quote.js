@@ -315,20 +315,30 @@
   }
 
   // ── Print quote ───────────────────────────────────────────────────────────
-  function printQuote(q) {
-    const linur = Array.isArray(q.linur) ? q.linur : [];
-    if (window.SalaInvoice && SalaInvoice.render) {
-      const win = window.open('', 'tilbod-print', 'width=900,height=1100');
-      if (!win) return;
-      SalaInvoice.render(win, {
-        num: q.num, isTilbod: true,
-        customer: q.company_nafn || '', lines: linur,
-        discount_pct: +(q.afslattur_pct||0), discount: +(q.afslattur||0),
-        total: +(q.samtals||0), ex: +(q.upphaed_an_vsk||0), vsk: +(q.vsk_upphaed||0),
-        notes: q.notes || '',
-        validUntil: q.valid_until ? fmtDate(q.valid_until) : ''
-      });
+  // `win` may be a window opened *synchronously* by the caller (so the browser's
+  // popup blocker doesn't kill it after an await). If not supplied we open one
+  // here — fine for the list "Prenta" buttons that call this straight off a click.
+  function printQuote(q, win) {
+    if (!window.SalaInvoice || !SalaInvoice.render) {
+      if (window.Toast && Toast.show) Toast.show('Prentun ekki tilbúin');
+      if (win) win.close();
+      return;
     }
+    const linur = Array.isArray(q.linur) ? q.linur : [];
+    if (!win) win = window.open('', 'tilbod-print', 'width=900,height=1100');
+    if (!win) {
+      if (window.Toast && Toast.show) Toast.show('Leyfðu sprettiglugga (popups) til að prenta');
+      else alert('Vafrinn lokaði á prentgluggann — leyfðu sprettiglugga (popups) fyrir þessa síðu.');
+      return;
+    }
+    SalaInvoice.render(win, {
+      num: q.num, isTilbod: true,
+      customer: q.company_nafn || '', lines: linur,
+      discount_pct: +(q.afslattur_pct||0), discount: +(q.afslattur||0),
+      total: +(q.samtals||0), ex: +(q.upphaed_an_vsk||0), vsk: +(q.vsk_upphaed||0),
+      notes: q.notes || '',
+      validUntil: q.valid_until ? fmtDate(q.valid_until) : ''
+    });
   }
 
   // ── Quote modal ───────────────────────────────────────────────────────────
@@ -624,13 +634,17 @@
     const tbPrintBtn = document.getElementById('tb-mprint');
     if (tbPrintBtn) tbPrintBtn.onclick = async () => {
       tbPrintBtn.disabled = true;
+      // Open the print window NOW, inside the click gesture, so the popup blocker
+      // doesn't kill it after the async save. We fill it in once the save returns.
+      const win = window.open('', 'tilbod-print', 'width=900,height=1100');
+      if (!win && window.Toast && Toast.show) Toast.show('Leyfðu sprettiglugga (popups) til að prenta');
       try {
         const out = await doSave();
-        if (!out) { tbPrintBtn.disabled = false; return; }
+        if (!out) { if (win) win.close(); tbPrintBtn.disabled = false; return; }
         closeTbModal(); render();
         if (window.Toast && Toast.show) Toast.show('✓ Tilboð ' + (out.num||'') + ' vistað — prenta…');
-        printQuote(out);
-      } catch (e) { if (window.Toast && Toast.show) Toast.show('Villa: ' + (e.message || e)); tbPrintBtn.disabled = false; }
+        printQuote(out, win || undefined);
+      } catch (e) { if (win) win.close(); if (window.Toast && Toast.show) Toast.show('Villa: ' + (e.message || e)); tbPrintBtn.disabled = false; }
     };
 
     document.getElementById('tb-modal').style.display = 'flex';
