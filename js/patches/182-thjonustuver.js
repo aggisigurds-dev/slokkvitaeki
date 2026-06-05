@@ -404,8 +404,9 @@
   // the existing Beiðnir tab (178) is untouched; this just pulls the same mail
   // into the CRM hub.
   const EML_ACCOUNT = 'eldklar@eldklar.is';
-  const EML_NOISE_SENDER = /(google\.com|accounts\.google|no-?reply@google|postmaster|mailer-daemon)/i;
-  const EML_NOISE_SUBJ = /(security alert|new sign-in|google data|takeout|\bpassword\b|critical security)/i;
+  // Skip obvious automated / system senders so they don't clog the triage pile.
+  const EML_NOISE_SENDER = /(no-?reply|noreply|do-?not-?reply|donotreply|postmaster|mailer-daemon|bounce[@.]|notification[s]?@|automated@|google\.com|accounts\.google|cloudflare|mailchimp|sendgrid|amazonses|facebookmail|linkedin\.com|news@|info@e?infodreifing)/i;
+  const EML_NOISE_SUBJ = /(security alert|new sign-in|google data|takeout|\bpassword\b|critical security|free plan|cloudflare|your invoice from|verify your email|undeliverable|delivery status|out of office|sjálfvirkt svar|automatic reply)/i;
   function classifyEmailType(text) {
     if (/hringja|símtal|simtal|heyra í|hringið|hringdu/i.test(text)) return 'hringja';
     if (/tilboð|tilbod|verðtilboð|\bverð\b|\bverd\b|kostar|kostnað|bjóð|boðið|\btæki\b|\btaeki\b/i.test(text)) return 'skodun_tilbod';
