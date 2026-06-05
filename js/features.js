@@ -59,24 +59,37 @@ var Companies = {
     this.render();
   },
   openNew: function() {
-    var ids = ['nf-nafn', 'nf-kt', 'nf-simi', 'nf-netfang', 'nf-heimilisFang', 'nf-tengiliour', 'nf-athugasemdir'];
+    var ids = ['nf-nafn', 'nf-kt', 'nf-simi', 'nf-netfang', 'nf-heimilisfang', 'nf-tengiliður', 'nf-athugasemdir'];
     ids.forEach(function(id) { var el = document.getElementById(id); if (el) el.value = ''; });
     Modal.open('modal-nyfyrirtaeki');
   },
   submitNew: async function() {
-    var nafn = document.getElementById('nf-nafn').value.trim();
+    var nafn = ((document.getElementById('nf-nafn') || {}).value || '').trim();
     if (!nafn) { Toast.show('Sl\u00e1\u00f0u inn nafn'); return; }
+    var g = function(id) { var el = document.getElementById(id); return el ? (el.value || '').trim() : ''; };
+    // NB: column names must match the table exactly (lowercase `heimilisfang`,
+    // and the id `nf-tengili\u00f0ur`/`nf-heimilisfang` from the modal). The old code
+    // sent `heimilisFang` (capital F) which is not a column, so PostgREST
+    // rejected every insert \u2014 yet the modal still closed and toasted "success",
+    // which is why new companies "disappeared" without ever saving.
     var data = {
       nafn: nafn,
-      kennitala: (document.getElementById('nf-kt') || {}).value || '',
-      simi: (document.getElementById('nf-simi') || {}).value || '',
-      netfang: (document.getElementById('nf-netfang') || {}).value || '',
-      heimilisFang: (document.getElementById('nf-heimilisFang') || {}).value || '',
-      athugasemdir: (document.getElementById('nf-athugasemdir') || {}).value || ''
+      kennitala: g('nf-kt'),
+      simi: g('nf-simi'),
+      netfang: g('nf-netfang'),
+      'tengili\u00f0ur': g('nf-tengili\u00f0ur'),
+      heimilisfang: g('nf-heimilisfang'),
+      athugasemdir: g('nf-athugasemdir')
     };
-    if (DB.online) {
+    if (DB.online && DB.sb) {
       var r = await DB.sb.from('fyrirtaeki').insert(data).select().single();
-      if (!r.error) this.list.push(r.data);
+      if (r.error) {
+        // Keep the modal open so the half-filled form isn't lost.
+        Toast.show('Villa vi\u00f0 vistun: ' + (r.error.message || r.error));
+        console.error('[Companies.submitNew]', r.error);
+        return;
+      }
+      this.list.push(r.data);
     } else {
       data.id = Date.now();
       this.list.push(data);
