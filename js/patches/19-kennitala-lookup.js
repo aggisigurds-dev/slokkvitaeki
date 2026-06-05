@@ -185,7 +185,7 @@
       try {
         const data = await fetchKt(kt);
         // Fill form fields — look for matching inputs by common id patterns
-        const form = input.closest('form, .modal-bd, .modal, [class*="modal"]') || document;
+        const form = input.closest('form, .modal-bd, .modal, [class*="modal"], [id*="modal"], #tb-modal .tb-card') || document;
         function fill(patterns, value) {
           if (!value) return;
           for (const p of patterns) {
@@ -199,7 +199,7 @@
           }
         }
         fill(['nafn', 'name'], data.nafn);
-        fill(['heimilisfang', 'address', 'adress'], data.heimilisfang);
+        fill(['heimilisfang', 'address', 'adress', 'heim'], data.heimilisfang);
         fill(['simi', 'phone', 'tel'], data.simi);
         fill(['netfang', 'email'], data.netfang);
 
