@@ -466,7 +466,7 @@
 
     return `
       <div class="no-print">
-        <button onclick="window.print()" class="btn-primary">🖨 Prenta reikning</button>
+        <button onclick="window.print()" class="btn-primary">🖨 ${ctx.isTilbod ? 'Prenta tilboð' : 'Prenta reikning'}</button>
         <button onclick="window.close()" class="btn-secondary">Loka</button>
       </div>
       <div class="sheet">
@@ -517,17 +517,20 @@
           </div>
           <div class="invoice-meta">
             <div class="inv-title-row">
-              <em>${ctx.isCredit ? 'KREDITREIKNINGUR' : 'Reikningur'}</em>
+              <em>${ctx.isTilbod ? 'TILBOÐ' : (ctx.isCredit ? 'KREDITREIKNINGUR' : 'Reikningur')}</em>
               <span class="inv-num">${esc(ctx.invoiceNum || '')}</span>
             </div>
             <div class="inv-meta-grid">
               ${ctx.isCredit && ctx.creditOf ? `<div class="lbl">Vegna reiknings:</div><div class="val">${esc(ctx.creditOf)}</div>` : ''}
               <div class="lbl">Dagsetning:</div><div class="val">${esc(ctx.dateStr)}</div>
-              <div class="lbl">Greiðsl.skilm.:</div><div class="val">${esc(ctx.paymentTerms)}</div>
+              ${ctx.isTilbod
+                ? (ctx.validUntil ? `<div class="lbl">Gildir til:</div><div class="val">${esc(ctx.validUntil)}</div>` : '')
+                  + `<div class="lbl">Starfsmaður:</div><div class="val">${esc(ctx.employee)}</div>`
+                : `<div class="lbl">Greiðsl.skilm.:</div><div class="val">${esc(ctx.paymentTerms)}</div>
               <div class="lbl">Afh.skilm.:</div><div class="val">${esc(ctx.deliveryTerms)}</div>
               <div class="lbl">Starfsmaður:</div><div class="val">${esc(ctx.employee)}</div>
               <div class="lbl">Tilvísun:</div><div class="val">${esc(ctx.tilvisun || '')}</div>
-              <div class="lbl">Raðnr.:</div><div class="val">${esc(ctx.radnr || '')}</div>
+              <div class="lbl">Raðnr.:</div><div class="val">${esc(ctx.radnr || '')}</div>`}
             </div>
           </div>
         </div>
@@ -565,7 +568,7 @@
           </div>
           ${vskBreakdown}
           <div class="totals-line grand">
-            <span class="lbl">Til greiðslu :</span>
+            <span class="lbl">${ctx.isTilbod ? 'Samtals m. VSK :' : 'Til greiðslu :'}</span>
             <span class="amt">${fmtAmt(t.total)}</span>
           </div>
         </div>
@@ -579,7 +582,9 @@
             const footerTxt = k.footer_text ? `<div class="footer-txt" style="margin-top:6px;text-align:center;font-size:9pt;color:#475569;font-style:italic">${esc(k.footer_text)}</div>` : '';
             return reikMsg + footerTxt;
           })()}
-          <div class="disclaimer">Þessi reikningur er rafrænt ytra frumgagn skv. reglugerð nr. 505/2013.</div>
+          <div class="disclaimer">${ctx.isTilbod
+            ? ('Tilboð — verð eru með VSK. Gildir' + (ctx.validUntil ? ' til ' + esc(ctx.validUntil) : ' í 30 daga') + '.')
+            : 'Þessi reikningur er rafrænt ytra frumgagn skv. reglugerð nr. 505/2013.'}</div>
         </div>
       </div>
     `;
@@ -588,7 +593,21 @@
   function render(win, options) {
     if (!win || win.closed) return false;
     const opts = options || {};
-    const state = (window.POS && typeof POS.getState === 'function') ? POS.getState() : null;
+    let state = (window.POS && typeof POS.getState === 'function') ? POS.getState() : null;
+    // Callers other than the POS checkout (e.g. the tilboð print) don't have a
+    // live POS state — they pass their own lines/customer/discount in opts.
+    // Build a synthetic state from those so buildLines/totals work the same.
+    if (Array.isArray(opts.lines) && opts.lines.length) {
+      state = {
+        lines: opts.lines,
+        customer: (opts.customer && typeof opts.customer === 'object') ? opts.customer
+                : (typeof opts.customer === 'string' && opts.customer) ? { nafn: opts.customer }
+                : null,
+        discount_pct: opts.discount_pct || 0,
+        discount: opts.discount || 0,
+        notes: opts.notes || ''
+      };
+    }
     let customer = lookupCustomer(state);
     // Build the bill-to block by MERGING the best available data for each
     // field: the resolved Companies.list record first, then the live POS
@@ -654,12 +673,17 @@
       vegnaRaw: opts.vegnaRaw || '',
       // Credit-note presentation (KREDITREIKNINGUR heading + "vegna" ref).
       isCredit: !!opts.isCredit,
-      creditOf: opts.creditOf || ''
+      creditOf: opts.creditOf || '',
+      // Tilboð (quote) presentation: "TILBOÐ" heading + Gildir-til row +
+      // tilboð footer instead of the reikningur disclaimer.
+      isTilbod: !!opts.isTilbod,
+      validUntil: opts.validUntil || ''
     };
 
     try {
       const doc = win.document;
-      const docTitle = (ctx.isCredit ? 'Kreditreikningur ' : 'Reikningur ') + ctx.invoiceNum;
+      const docTitle = ctx.isTilbod ? ('Tilboð ' + ctx.invoiceNum)
+        : (ctx.isCredit ? 'Kreditreikningur ' : 'Reikningur ') + ctx.invoiceNum;
       doc.open();
       doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(docTitle)}</title><style>${CSS}</style></head><body>${buildHTML(ctx)}</body></html>`);
       doc.close();

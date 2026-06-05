@@ -332,10 +332,14 @@
       return;
     }
     SalaInvoice.render(win, {
-      num: q.num, isTilbod: true,
-      customer: q.company_nafn || '', lines: linur,
+      isTilbod: true,
+      invoiceNum: q.num || '',
+      customer: q.company_nafn || '',
+      customerName: q.company_nafn || '',
+      customerKt: q.kennitala || '',
+      customerHeimilisfang: q.heimilisfang || '',
+      lines: linur,
       discount_pct: +(q.afslattur_pct||0), discount: +(q.afslattur||0),
-      total: +(q.samtals||0), ex: +(q.upphaed_an_vsk||0), vsk: +(q.vsk_upphaed||0),
       notes: q.notes || '',
       validUntil: q.valid_until ? fmtDate(q.valid_until) : ''
     });
