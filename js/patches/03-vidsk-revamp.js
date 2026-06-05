@@ -49,6 +49,7 @@
   const SORT_PRESETS = [
     { id: 'name-asc',     key: 'name',    dir:  1, label: 'Stafrófsröð (A → Ö)' },
     { id: 'total-desc',   key: 'total',   dir: -1, label: 'Flest tæki fyrst' },
+    { id: 'docs-asc',     key: 'docs',    dir:  1, label: 'Fæst skjöl fyrst (vantar)' },
     { id: 'created-desc', key: 'created', dir: -1, label: 'Nýjastir fyrst' },
     { id: 'created-asc',  key: 'created', dir:  1, label: 'Elstu fyrst' }
   ];
@@ -59,6 +60,49 @@
   const customers = [];
   let unitsByPhone = {};   // phone -> [units]
   let unitsByName = {};    // name -> [units]
+
+  // Document tracker (samningur / úttektarskýrslur / reikningar) per customer.
+  // Linked customers_base.source_v_id → vidskiptavinir.id, with a kennitala
+  // fallback. Surfaced as a compact badge per row so you can spot — while
+  // scrolling — who is still missing service documents (the doc-sweep gaps).
+  let docByVid = new Map();  // vidskiptavinir.id (string) -> { samningur, uttektir, reikningar, total }
+  let docByKt  = new Map();  // normalized kennitala       -> same record
+  const normKt = s => String(s == null ? '' : s).replace(/\D/g, '');
+
+  async function loadDocStatus() {
+    docByVid = new Map();
+    docByKt = new Map();
+    try {
+      const sb = getSB();
+      const [statusRes, baseRes] = await Promise.all([
+        sb.from('customer_doc_status').select('customer_base_id,kennitala,has_samningur,uttektir,reikningar,total_docs'),
+        sb.from('customers_base').select('id,source_v_id')
+      ]);
+      const byBase = new Map();
+      for (const s of (statusRes.data || [])) {
+        const rec = {
+          samningur: !!s.has_samningur,
+          uttektir: +s.uttektir || 0,
+          reikningar: +s.reikningar || 0,
+          total: +s.total_docs || 0
+        };
+        byBase.set(s.customer_base_id, rec);
+        const kt = normKt(s.kennitala);
+        if (kt) docByKt.set(kt, rec);
+      }
+      for (const b of (baseRes.data || [])) {
+        if (b.source_v_id == null) continue;
+        const rec = byBase.get(b.id);
+        if (rec) docByVid.set(String(b.source_v_id), rec);
+      }
+    } catch (e) {
+      console.warn('[VidskRevamp] doc status load failed:', e.message);
+    }
+  }
+
+  function docsFor(c) {
+    return docByVid.get(String(c.id)) || docByKt.get(normKt(c.kennitala)) || null;
+  }
   let searchTerm = '';
   let sortKey = 'name';
   let sortDir = 1;
@@ -131,6 +175,10 @@
         }
         c._counts = { ext, hose, smoke, other, total: u.length };
       });
+
+      // Service-document counts per customer (samningur / úttektir / reikningar).
+      await loadDocStatus();
+      customers.forEach(c => { c._docs = docsFor(c); });
     } finally {
       isLoading = false;
     }
@@ -145,6 +193,24 @@
 
   function counts(c) {
     return c._counts || { ext: 0, hose: 0, smoke: 0, other: 0, total: 0 };
+  }
+
+  // Compact "skjöl" badge: S = samningur, Ú = úttektarskýrslur, R = reikningar.
+  // Green when present, muted grey when missing → the muted ones are what we
+  // still need to find.
+  function docPill(text, ok, title) {
+    return `<span title="${esc(title)}" style="display:inline-block;padding:1px 5px;border-radius:5px;font-size:11px;font-weight:700;` +
+      (ok ? 'color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;'
+          : 'color:#a8b1bd;background:#f8fafc;border:1px solid #eef2f6;') + `">${text}</span>`;
+  }
+  function docBadge(c) {
+    const d = c._docs;
+    if (!d) return '<span style="color:#cbd5e1;font-size:12px;">—</span>';
+    return `<span style="display:inline-flex;gap:3px;white-space:nowrap;">` +
+      docPill('S' + (d.samningur ? '✓' : '✗'), d.samningur, 'Þjónustusamningur') +
+      docPill('Ú' + d.uttektir, d.uttektir > 0, 'Úttektarskýrslur') +
+      docPill('R' + d.reikningar, d.reikningar > 0, 'Reikningar') +
+      `</span>`;
   }
 
   function ensureMain() {
@@ -169,6 +235,7 @@
     else if (sortKey === 'hose') { av = ca.hose; bv = cb.hose; }
     else if (sortKey === 'smoke') { av = ca.smoke; bv = cb.smoke; }
     else if (sortKey === 'total') { av = ca.total; bv = cb.total; }
+    else if (sortKey === 'docs') { av = (a._docs ? a._docs.total : -1); bv = (b._docs ? b._docs.total : -1); }
     else if (sortKey === 'created') { av = a.created_at || ''; bv = b.created_at || ''; }
     else { av = (a.nafn || '').toLowerCase(); bv = (b.nafn || '').toLowerCase(); }
     if (av < bv) return -sortDir;
@@ -239,6 +306,7 @@
         ${bulkBarHTML}
         <div class="_cl_subtitle" style="margin-top:8px;color:var(--text-muted,#8891a0);font-size:13px;">
           Listi · ${filtered.length} / ${customers.length} viðskiptavinir${someSelected ? ` · ${selectedIds.size} valdir` : ''}
+          <span style="margin-left:10px;color:#94a3b8;">📄 Skjöl: <b>S</b>=samningur · <b>Ú</b>=úttektarskýrslur · <b>R</b>=reikningar (grátt = vantar)</span>
         </div>
         <table class="_cl_table" style="width:100%;border-collapse:collapse;margin-top:10px;background:#fff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden;">
           <thead>
@@ -253,12 +321,13 @@
               <th data-sort="hose" style="padding:10px 12px;text-align:right;font-size:13px;font-weight:600;cursor:pointer;border-bottom:1px solid #e5e7eb;">🚒 Slöngur${arrow('hose')}</th>
               <th data-sort="smoke" style="padding:10px 12px;text-align:right;font-size:13px;font-weight:600;cursor:pointer;border-bottom:1px solid #e5e7eb;">🚨 Reyk${arrow('smoke')}</th>
               <th data-sort="total" style="padding:10px 12px;text-align:right;font-size:13px;font-weight:600;cursor:pointer;border-bottom:1px solid #e5e7eb;">Samtals${arrow('total')}</th>
+              <th data-sort="docs" title="Þjónustuskjöl: Samningur · Úttektarskýrslur · Reikningar" style="padding:10px 12px;text-align:left;font-size:13px;font-weight:600;cursor:pointer;border-bottom:1px solid #e5e7eb;">📄 Skjöl${arrow('docs')}</th>
               <th style="padding:10px 12px;border-bottom:1px solid #e5e7eb;"></th>
             </tr>
           </thead>
           <tbody>
             ${filtered.length === 0
-              ? `<tr><td colspan="9" style="padding:24px;text-align:center;color:#888;">${customers.length===0 ? 'Engir viðskiptavinir skráðir.' : 'Enginn viðskiptavinur passar við leit.'}</td></tr>`
+              ? `<tr><td colspan="10" style="padding:24px;text-align:center;color:#888;">${customers.length===0 ? 'Engir viðskiptavinir skráðir.' : 'Enginn viðskiptavinur passar við leit.'}</td></tr>`
               : filtered.map(c => {
                   const cc = counts(c);
                   const isSel = selectedIds.has(c.id);
@@ -274,6 +343,7 @@
                     <td style="padding:10px 12px;font-size:14px;text-align:right;">${cc.hose}</td>
                     <td style="padding:10px 12px;font-size:14px;text-align:right;">${cc.smoke}</td>
                     <td style="padding:10px 12px;font-size:14px;text-align:right;font-weight:600;">${cc.total}</td>
+                    <td style="padding:10px 12px;text-align:left;">${docBadge(c)}</td>
                     <td style="padding:10px 12px;text-align:right;"><button class="btn btn-outline btn-sm vk-row-open" data-id="${esc(c.id)}">Opna</button></td>
                   </tr>`;
                 }).join('')}
@@ -297,6 +367,7 @@
           </div>
           <div class="company-card-bottom">
             <span class="company-stat"><strong>${cc.total}</strong> tæki</span>
+            <span style="margin-left:auto;margin-right:6px;">${docBadge(c)}</span>
             <div style="display:flex;gap:6px;">
               <button class="btn btn-outline btn-sm vk-view-btn" data-id="${esc(c.id)}">Skoða</button>
               <button class="btn btn-primary btn-sm vk-add-btn" data-id="${esc(c.id)}">+ Tæki</button>
