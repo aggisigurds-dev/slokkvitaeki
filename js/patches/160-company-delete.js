@@ -35,7 +35,7 @@
         + '\nÞau halda sér í tækjalistanum — bara fyrirtækisspjaldið verður eytt.'
       : '';
     const ok = window.confirm(
-      'Eyða fyrirtækinu "' + co.nafn + '"?' + warn + '\n\nÞetta er ekki hægt að afturkalla.'
+      'Eyða fyrirtækinu "' + co.nafn + '"?' + warn + '\n\nFærist í ruslið (mjúk eyðing) — hægt að endurheimta.'
     );
     if (!ok) return;
 
@@ -46,7 +46,10 @@
     }
 
     try {
-      const r = await sb.from('fyrirtaeki').delete().eq('id', coId);
+      // Soft-delete only (ákvörðun 2026-06-05): set deleted_at; the lists all
+      // filter `deleted_at is null`, so it disappears immediately but is
+      // recoverable. Permanent removal is a reviewed migration only.
+      const r = await sb.from('fyrirtaeki').update({ deleted_at: new Date().toISOString() }).eq('id', coId);
       if (r.error) throw r.error;
       if (Array.isArray(Companies.list)) {
         Companies.list = Companies.list.filter(c => c.id !== coId);
