@@ -351,15 +351,38 @@
         </div>
       </div>`;
     document.body.appendChild(el);
-    el.querySelector('.tb-back').onclick = closeTbModal;
-    el.querySelector('#tb-mx').onclick = closeTbModal;
-    el.querySelector('#tb-mcancel').onclick = closeTbModal;
+    // Backdrop no longer closes the modal — clicking the dark area was the #1 way
+    // people lost a half-filled tilboð. Close only via ✕ / Hætta við (and even
+    // then we confirm if anything's been typed).
+    el.querySelector('.tb-back').onclick = (e) => { e.stopPropagation(); };
+    el.querySelector('#tb-mx').onclick = maybeCloseTbModal;
+    el.querySelector('#tb-mcancel').onclick = maybeCloseTbModal;
   }
 
   function closeTbModal() {
     const el = document.getElementById('tb-modal');
     if (el) el.style.display = 'none';
     editingId = null; editLines = [];
+  }
+
+  // Confirm before closing only when something has actually been typed, so a
+  // stray click never silently throws away a half-filled tilboð.
+  function tbModalDirty() {
+    const v = id => (document.getElementById(id)?.value || '').trim();
+    if (v('tb-co-name') || v('tb-co-kt') || v('tb-co-simi') || v('tb-co-netfang') ||
+        v('tb-co-heim') || v('tb-lysing') || v('tb-link') || v('tb-notes')) return true;
+    if (Array.isArray(editLines) && editLines.some(l => (l.desc||'').trim() || +l.unit_price_ex_vat > 0)) return true;
+    return false;
+  }
+  function maybeCloseTbModal() {
+    if (!tbModalDirty()) { closeTbModal(); return; }
+    if (window.Confirm && Confirm.show) {
+      Confirm.show('Loka tilboðinu og henda því sem þú slóst inn?',
+        { okText: 'Henda', cancelText: 'Halda áfram', danger: true })
+        .then(ok => { if (ok) closeTbModal(); });
+    } else if (confirm('Loka tilboðinu og henda því sem þú slóst inn?')) {
+      closeTbModal();
+    }
   }
 
   function calcTotals(lines) {
