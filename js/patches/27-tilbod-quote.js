@@ -249,8 +249,11 @@
       }
       const linkIco = q.link_url
         ? ` <a href="${esc(q.link_url)}" target="_blank" rel="noopener" title="Opna tengdan hlekk" style="text-decoration:none">🔗</a>` : '';
+      const kindTag = q.kind === 'serverd'
+        ? '<span style="display:inline-block;margin-left:5px;padding:0 6px;border-radius:99px;font-size:9px;font-weight:700;background:#ccfbf1;color:#0f766e;vertical-align:middle">SÉRVERÐ</span>'
+        : '';
       return `<tr>
-        <td style="font-family:monospace;font-size:12px;">${esc(q.num || '')}</td>
+        <td style="font-family:monospace;font-size:12px;">${esc(q.num || '')}${kindTag}</td>
         <td>${esc(q.company_nafn || '—')}</td>
         <td>${esc(fmtDate(q.created_at))}</td>
         <td style="max-width:280px">${q.lysing
@@ -264,7 +267,7 @@
 
     // Wire actions
     tbody.querySelectorAll('[data-tb-print]').forEach(btn => {
-      btn.addEventListener('click', () => { const q = quotes.find(q => q.id == btn.dataset.tbPrint); if (q) printQuote(q); });
+      btn.addEventListener('click', () => { const q = quotes.find(q => q.id == btn.dataset.tbPrint); if (q) (q.kind === 'serverd' ? printServerd : printQuote)(q); });
     });
     tbody.querySelectorAll('[data-tb-status]').forEach(btn => {
       btn.addEventListener('click', async () => {
@@ -291,7 +294,7 @@
     tbody.querySelectorAll('[data-tb-edit]').forEach(btn => {
       btn.addEventListener('click', () => {
         const q = quotes.find(q => q.id == btn.dataset.tbEdit);
-        if (q) openQuoteModal(q);
+        if (q) (q.kind === 'serverd' ? openServerdModal : openQuoteModal)(q);
       });
     });
     tbody.querySelectorAll('.tb-status-sel').forEach(sel => {
@@ -654,6 +657,223 @@
     document.getElementById('tb-modal').style.display = 'flex';
   }
 
+  // ── Sérverð (afsláttarverðlisti) ───────────────────────────────────────────
+  // Like a tilboð but a discount price list: each line is a vara with its
+  // listaverð (m/vsk) and a per-line afsláttur % (default 20). Stored as a
+  // tilbod row with kind='serverd'; printed with its own column layout.
+  let svProducts = [];          // vörur fyrir Sérverð línur
+  let svLines = [];
+  let svEditingId = null;
+
+  function svFmtKr(n) { return Math.round(n || 0).toLocaleString('is-IS') + ' kr'; }
+  function svComputeLine(l) {
+    const list = +l.list_m_vsk || 0;
+    const pct = Math.max(0, Math.min(100, l.disc_pct == null ? 20 : +l.disc_pct));
+    const discAmt = list * pct / 100;
+    const after = list - discAmt;
+    return { list, pct, discAmt, after, afterEx: after / 1.24 };
+  }
+  function svTotals() {
+    let m = 0, ex = 0;
+    svLines.forEach(l => { const c = svComputeLine(l); m += c.after; ex += c.afterEx; });
+    return { samtals: m, ex, vsk: m - ex };
+  }
+  function svTotalHtml() {
+    const t = svTotals();
+    return `<span>Samtals án vsk: <strong>${svFmtKr(t.ex)}</strong></span>`
+      + `<span>VSK: <strong>${svFmtKr(t.vsk)}</strong></span>`
+      + `<span>Samtals m. VSK: <strong>${svFmtKr(t.samtals)}</strong></span>`;
+  }
+  function svRenderLines() {
+    const wrap = document.getElementById('sv-lines');
+    if (!wrap) return;
+    wrap.innerHTML = svLines.map((l, i) => {
+      const c = svComputeLine(l);
+      return `<div class="sv-row" data-i="${i}" style="display:grid;grid-template-columns:1fr 110px 64px 110px 120px 24px;gap:6px;align-items:center;margin-bottom:6px">
+        <input class="sv-desc" list="sv-vorur-list" value="${esc(l.desc||'')}" placeholder="Vara — veldu úr lista" style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:12px">
+        <input class="sv-list" type="number" min="0" step="100" value="${l.list_m_vsk||''}" placeholder="Listaverð" style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:12px;text-align:right">
+        <input class="sv-disc" type="number" min="0" max="100" step="1" value="${l.disc_pct==null?20:l.disc_pct}" title="Afsláttur %" style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:12px;text-align:right">
+        <div class="sv-after" style="text-align:right;font-size:12px;font-weight:600">${svFmtKr(c.after)}</div>
+        <div class="sv-afterex" style="text-align:right;font-size:11px;color:#64748b">${svFmtKr(c.afterEx)} án vsk</div>
+        <button class="sv-del" data-i="${i}" style="background:none;border:none;color:#94a3b8;cursor:pointer;font-size:15px">✕</button>
+      </div>`;
+    }).join('')
+      + `<div style="display:grid;grid-template-columns:1fr 110px 64px 110px 120px 24px;gap:6px;font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin-top:2px">
+           <div>Vara</div><div style="text-align:right">Listaverð</div><div style="text-align:right">Afsl%</div><div style="text-align:right">Eftir afslátt</div><div style="text-align:right">Án vsk</div><div></div>
+         </div>`
+      + `<div class="sv-total" style="background:#f8fafc;border-radius:8px;padding:10px 12px;font-size:13px;margin-top:8px;display:flex;gap:20px;flex-wrap:wrap">${svTotalHtml()}</div>`;
+
+    wrap.querySelectorAll('.sv-del').forEach(b => b.addEventListener('click', () => { svLines.splice(+b.dataset.i, 1); svRenderLines(); }));
+    wrap.querySelectorAll('.sv-row').forEach(row => {
+      const i = +row.dataset.i;
+      row.querySelectorAll('input').forEach(inp => inp.addEventListener('input', () => {
+        if (inp.classList.contains('sv-desc') && svProducts.length) {
+          const want = inp.value.trim().toLowerCase();
+          const p = svProducts.find(p => String(p.nafn||'').trim().toLowerCase() === want);
+          if (p) {
+            const mv = Math.round((+p.verd_an_vsk||0) * (1 + ((p.vsk_prosenta!=null?+p.vsk_prosenta:24)/100)));
+            const le = row.querySelector('.sv-list'); if (le && !+le.value) le.value = mv;
+          }
+        }
+        svLines[i] = {
+          desc: row.querySelector('.sv-desc').value,
+          list_m_vsk: parseFloat(row.querySelector('.sv-list').value) || 0,
+          disc_pct: row.querySelector('.sv-disc').value === '' ? 20 : parseFloat(row.querySelector('.sv-disc').value)
+        };
+        const c = svComputeLine(svLines[i]);
+        row.querySelector('.sv-after').textContent = svFmtKr(c.after);
+        row.querySelector('.sv-afterex').textContent = svFmtKr(c.afterEx) + ' án vsk';
+        const tot = wrap.querySelector('.sv-total'); if (tot) tot.innerHTML = svTotalHtml();
+      }));
+    });
+  }
+
+  function svBuildModal() {
+    if (document.getElementById('sv-modal')) return;
+    const el = document.createElement('div');
+    el.id = 'sv-modal';
+    el.style.cssText = 'position:fixed;inset:0;z-index:100010;display:none;align-items:flex-start;justify-content:center;padding-top:5vh;font-family:inherit';
+    el.innerHTML = `
+      <div style="position:absolute;inset:0;background:rgba(15,23,42,.55)"></div>
+      <div style="position:relative;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:min(720px,calc(100vw - 24px));max-height:90vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0">
+          <h3 id="sv-title" style="margin:0;font-size:17px;font-weight:700">Nýtt sérverð</h3>
+          <button id="sv-x" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer">✕</button>
+        </div>
+        <div style="padding:20px" id="sv-body"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #e2e8f0">
+          <button id="sv-cancel" style="padding:9px 18px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>
+          <button id="sv-print" style="padding:9px 18px;background:#0f766e;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">🖨 Vista og prenta</button>
+          <button id="sv-save" style="padding:9px 18px;background:#2563eb;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">Vista sérverð</button>
+        </div>
+      </div>`;
+    document.body.appendChild(el);
+    el.querySelector('#sv-x').onclick = svClose;
+    el.querySelector('#sv-cancel').onclick = svClose;
+  }
+  function svClose() { const el = document.getElementById('sv-modal'); if (el) el.style.display = 'none'; svEditingId = null; svLines = []; }
+
+  async function openServerdModal(existingQ) {
+    svBuildModal();
+    svEditingId = (existingQ && existingQ.id) ? existingQ.id : null;
+    svLines = existingQ ? JSON.parse(JSON.stringify(Array.isArray(existingQ.linur) ? existingQ.linur : []))
+                        : [{ desc: '', list_m_vsk: 0, disc_pct: 20 }];
+    document.getElementById('sv-title').textContent = svEditingId ? 'Breyta sérverði' : 'Nýtt sérverð';
+
+    // Vörur + fyrirtæki fyrir datalist
+    try { const SB = getSB(); if (SB) { const { data } = await SB.from('vorur').select('nafn,verd_an_vsk,vsk_prosenta').eq('virkt', true).order('nafn'); svProducts = data || []; } } catch (_) {}
+    let cos = [];
+    try { const SB = getSB(); if (SB) { const { data } = await SB.from('fyrirtaeki').select('nafn').is('deleted_at', null).order('nafn').limit(2000); cos = data || []; } } catch (_) {}
+
+    document.getElementById('sv-body').innerHTML = `
+      <div style="margin-bottom:12px">
+        <label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">Viðskiptavinur / nafn *</label>
+        <input id="sv-co-name" list="sv-co-list" autocomplete="off" value="${esc(existingQ?.company_nafn||'')}" placeholder="Veldu úr lista eða sláðu inn" style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box">
+        <datalist id="sv-co-list">${cos.map(c=>`<option value="${esc(c.nafn||'')}"></option>`).join('')}</datalist>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+        <div><label style="font-size:11px;font-weight:700;color:#64748b">Kennitala</label><input id="sv-co-kt" value="${esc(existingQ?.kennitala||'')}" placeholder="000000-0000" style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div>
+        <div><label style="font-size:11px;font-weight:700;color:#64748b">Sími</label><input id="sv-co-simi" value="${esc(existingQ?.simi||'')}" style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div>
+        <div><label style="font-size:11px;font-weight:700;color:#64748b">Netfang</label><input id="sv-co-netfang" value="${esc(existingQ?.netfang||'')}" style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div>
+        <div><label style="font-size:11px;font-weight:700;color:#64748b">Heimilisfang</label><input id="sv-co-heim" value="${esc(existingQ?.heimilisfang||'')}" style="width:100%;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Línur (afsláttur per línu)</label>
+        <button id="sv-add-line" style="padding:5px 12px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:12px;cursor:pointer;color:#334155">+ Bæta við línu</button>
+      </div>
+      <div id="sv-lines"></div>
+      <datalist id="sv-vorur-list">${svProducts.map(p=>`<option value="${esc(p.nafn||'')}"></option>`).join('')}</datalist>`;
+
+    svRenderLines();
+    document.getElementById('sv-add-line').addEventListener('click', () => { svLines.push({ desc: '', list_m_vsk: 0, disc_pct: 20 }); svRenderLines(); });
+
+    document.getElementById('sv-save').onclick = async () => {
+      const btn = document.getElementById('sv-save'); btn.disabled = true;
+      try { const out = await svDoSave(); if (!out) { btn.disabled = false; return; } svClose(); render(); if (window.Toast && Toast.show) Toast.show('✓ Sérverð ' + (out.num||'') + ' vistað'); }
+      catch (e) { if (window.Toast && Toast.show) Toast.show('Villa: ' + (e.message||e)); btn.disabled = false; }
+    };
+    const sp = document.getElementById('sv-print');
+    sp.onclick = async () => {
+      sp.disabled = true;
+      const win = window.open('', 'serverd-print', 'width=900,height=1100');
+      try { const out = await svDoSave(); if (!out) { if (win) win.close(); sp.disabled = false; return; } svClose(); render(); printServerd(out, win || undefined); }
+      catch (e) { if (win) win.close(); if (window.Toast && Toast.show) Toast.show('Villa: ' + (e.message||e)); sp.disabled = false; }
+    };
+
+    document.getElementById('sv-modal').style.display = 'flex';
+  }
+
+  async function svDoSave() {
+    const v = id => (document.getElementById(id)?.value || '').trim();
+    const coNafn = v('sv-co-name');
+    if (!coNafn) { if (window.Toast && Toast.show) Toast.show('Sláðu inn nafn'); return null; }
+    svLines = svLines.filter(l => (l.desc||'').trim() || +l.list_m_vsk > 0);
+    if (!svLines.length) { if (window.Toast && Toast.show) Toast.show('Bættu við línum'); return null; }
+    const t = svTotals();
+    const num = svEditingId ? (quotes.find(q => q.id === svEditingId)?.num || '') : await nextNum();
+    const q = {
+      num, kind: 'serverd', company_id: null, company_nafn: coNafn,
+      kennitala: v('sv-co-kt'), simi: v('sv-co-simi'), netfang: v('sv-co-netfang'), heimilisfang: v('sv-co-heim'),
+      lysing: 'Sérverð', linur: svLines,
+      upphaed_an_vsk: Math.round(t.ex), vsk_upphaed: Math.round(t.vsk), samtals: Math.round(t.samtals),
+      status: 'draft'
+    };
+    if (svEditingId) q.id = svEditingId;
+    const saved = await saveQuote(q);
+    const out = saved || q;
+    if (!svEditingId) quotes.unshift(out);
+    else { const idx = quotes.findIndex(x => x.id === svEditingId); if (idx >= 0) quotes[idx] = { ...quotes[idx], ...q }; }
+    return out;
+  }
+
+  function printServerd(q, win) {
+    const linur = Array.isArray(q.linur) ? q.linur : [];
+    if (!win) win = window.open('', 'serverd-print', 'width=900,height=1100');
+    if (!win) { if (window.Toast && Toast.show) Toast.show('Leyfðu sprettiglugga (popups) til að prenta'); return; }
+    const logo = (window.SlokkLogo && SlokkLogo.imgHtml)
+      ? SlokkLogo.imgHtml({ heightPx: 70, alt: 'Slökkvitæki ehf', absoluteUrl: true })
+      : `<img src="${window.location.origin}/img/logo.png" alt="Slökkvitæki" style="height:70px">`;
+    let totM = 0, totEx = 0;
+    const rows = linur.map(l => {
+      const c = svComputeLine(l); totM += c.after; totEx += c.afterEx;
+      return `<tr>
+        <td>${esc(l.desc||'')}</td>
+        <td style="text-align:right">${svFmtKr(c.list)}</td>
+        <td style="text-align:right">${svFmtKr(c.discAmt)} <small>(${c.pct}%)</small></td>
+        <td style="text-align:right">${svFmtKr(c.after)}</td>
+        <td style="text-align:right">${svFmtKr(c.afterEx)}</td>
+      </tr>`;
+    }).join('');
+    const html = `<!doctype html><html lang="is"><head><meta charset="utf-8"><title>Sérverð ${esc(q.num||'')}</title>
+<style>
+  body{font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:760px;margin:0 auto;padding:32px}
+  .hd{text-align:center;line-height:0;margin-bottom:8px}
+  h1{font-size:24px;font-weight:800;text-align:center;margin:6px 0 2px}
+  .meta{font-size:13px;margin:10px 0 4px}
+  table{width:100%;border-collapse:collapse;margin-top:14px;font-size:13px}
+  th{background:#f1f5f9;text-align:left;padding:8px;border-bottom:2px solid #0f172a;font-size:11px;text-transform:uppercase;letter-spacing:.03em}
+  td{padding:7px 8px;border-bottom:1px solid #e2e8f0}
+  tfoot td{border-top:2px solid #0f172a;font-weight:700}
+  .foot{margin-top:26px;font-size:14px;font-weight:600}
+  .no-print{margin-bottom:14px}
+  @media print{.no-print{display:none}}
+</style></head><body>
+<div class="no-print"><button onclick="window.print()" style="padding:8px 16px;background:#0f766e;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600">🖨 Prenta</button> <button onclick="window.close()" style="padding:8px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer">Loka</button></div>
+<div class="hd">${logo}</div>
+<h1>Sérverð</h1>
+<div class="meta"><strong>${esc(q.company_nafn||'')}</strong>${q.kennitala?` · kt. ${esc(q.kennitala)}`:''}</div>
+${q.heimilisfang?`<div class="meta">${esc(q.heimilisfang)}</div>`:''}
+<div class="meta" style="color:#64748b">Nr. ${esc(q.num||'')} · ${new Date().toLocaleDateString('is-IS')}</div>
+<table>
+  <thead><tr><th>Vara</th><th style="text-align:right">Listaverð</th><th style="text-align:right">Afsláttur</th><th style="text-align:right">Verð eftir afslátt</th><th style="text-align:right">Án vsk</th></tr></thead>
+  <tbody>${rows}</tbody>
+  <tfoot><tr><td colspan="3">Samtals</td><td style="text-align:right">${svFmtKr(totM)}</td><td style="text-align:right">${svFmtKr(totEx)}</td></tr></tfoot>
+</table>
+<div class="foot">Kær kveðja</div>
+</body></html>`;
+    win.document.open(); win.document.write(html); win.document.close();
+  }
+
   // ── Links bar (above the table) ─────────────────────────────────────────────
   // A fixed link to the public Brunahólf tilboð form + a jump to Samningar,
   // plus any extra tilboð-form links the user adds (stored in AppSettings so
@@ -709,7 +929,10 @@
       <div class="tb-wrap">
         <div class="tb-header">
           <h1>📄 Tilboð</h1>
-          <button class="tb-new-btn" id="tb-new-btn">+ Nýtt tilboð</button>
+          <div style="display:flex;gap:6px">
+            <button class="tb-new-btn" id="tb-new-serverd" style="background:#0f766e">+ Sérverð</button>
+            <button class="tb-new-btn" id="tb-new-btn">+ Nýtt tilboð</button>
+          </div>
         </div>
         <div id="tb-links" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px"></div>
         <div class="tb-filters">
@@ -748,6 +971,7 @@
     last.parentNode.insertBefore(view, last.nextSibling);
 
     document.getElementById('tb-new-btn').addEventListener('click', () => openQuoteModal(null));
+    document.getElementById('tb-new-serverd')?.addEventListener('click', () => openServerdModal(null));
     document.querySelectorAll('#'+VIEW_ID+' .tb-filter-btn').forEach(b => {
       b.addEventListener('click', () => { filterStatus = b.dataset.tbFilter; render(); });
     });
