@@ -54,7 +54,9 @@
     view:    localStorage.getItem(LS_VIEW)  || 'list',
     sort:    localStorage.getItem(LS_SORT)  || 'nafn',
     xfilter: (localStorage.getItem(LS_XFILT) || '').split(',').filter(Boolean),
-    editId:  null   // transient: company row currently in inline-edit mode
+    editId:  null,           // transient: company row currently in inline-edit mode
+    selectMode: false,       // transient: bulk-select toolbar on/off
+    selected: new Set()      // transient: ids picked in select mode
   };
   function saveState() {
     localStorage.setItem(LS_FILT,  state.filter);
@@ -438,7 +440,18 @@
             return `<button data-xfilter="${key}" class="_av-xft" style="padding:4px 9px;border:1px solid ${sel?'#0f172a':'#e2e8f0'};background:${sel?'#0f172a':'#f8fafc'};color:${sel?'#fff':'#64748b'};border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">${lbl} <span style="opacity:.65">${n}</span></button>`;
           }).join('')}
           ${state.xfilter.length ? `<button id="_av-clear-x" type="button" style="padding:4px 9px;border:none;background:none;color:#dc2626;cursor:pointer;font:inherit;font-size:11px;font-weight:600">Hreinsa síu ✕</button>` : ''}
+          <button id="_av-selmode" type="button" style="margin-left:auto;padding:4px 11px;border:1px solid ${state.selectMode?'#0f172a':'#cbd5e1'};background:${state.selectMode?'#0f172a':'#fff'};color:${state.selectMode?'#fff':'#475569'};border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">☑︎ ${state.selectMode?'Hætta vali':'Velja margar'}</button>
         </div>
+
+        ${state.selectMode ? `
+        <!-- Bulk action bar -->
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px;padding:10px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px">
+          <span style="font-weight:700;color:#1e40af;font-size:13px">${state.selected.size} valdir</span>
+          <button id="_av-sel-clear" type="button" style="padding:5px 11px;border:1px solid #cbd5e1;background:#fff;border-radius:7px;cursor:pointer;font:inherit;font-size:12px">Hreinsa val</button>
+          <div style="flex:1;min-width:0"></div>
+          <button id="_av-bulk-ferda" type="button" ${state.selected.size?'':'disabled'} style="padding:5px 11px;border:1px solid #7dd3fc;background:#e0f2fe;color:#0369a1;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:700${state.selected.size?'':';opacity:.5'}">🚌 Merkja Ferðaþjónustu</button>
+          <button id="_av-bulk-archive" type="button" ${state.selected.size?'':'disabled'} title="Mjúk geymsla (deleted_at). Sleppir þeim sem hafa samning/skjöl." style="padding:5px 11px;border:1px solid #fcd34d;background:#fffbeb;color:#b45309;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:700${state.selected.size?'':';opacity:.5'}">📦 Geyma (mjúkt)</button>
+        </div>` : ''}
 
         ${filtered.length === 0 ? `
           <div style="background:#fff;border:2px dashed #cbd5e1;border-radius:12px;padding:38px;text-align:center;color:#64748b">
@@ -547,6 +560,24 @@
     main.querySelectorAll('._av-flag').forEach(b => {
       b.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); toggleReview(+b.dataset.coId); });
     });
+    // Bulk select mode
+    main.querySelector('#_av-selmode')?.addEventListener('click', () => {
+      state.selectMode = !state.selectMode;
+      if (!state.selectMode) state.selected.clear();
+      render(main);
+    });
+    main.querySelector('#_av-sel-clear')?.addEventListener('click', () => { state.selected.clear(); render(main); });
+    main.querySelectorAll('._av-sel').forEach(cb => {
+      cb.addEventListener('change', e => {
+        e.stopPropagation();
+        const id = +cb.dataset.coId;
+        if (cb.checked) state.selected.add(id); else state.selected.delete(id);
+        render(main);
+      });
+    });
+    main.querySelector('#_av-bulk-ferda')?.addEventListener('click', () => bulkTagFerda());
+    main.querySelector('#_av-bulk-archive')?.addEventListener('click', () => bulkArchive());
+
     // Inline edit (kt / heimilisfang / sími)
     main.querySelectorAll('._av-edit').forEach(b => {
       b.addEventListener('click', e => { e.stopPropagation(); e.preventDefault(); state.editId = +b.dataset.coId; render(main); });
@@ -651,7 +682,7 @@
                 const eInput = (k, v) => `<input class="_av-ei" data-k="${k}" value="${esc(v == null ? '' : v)}" onclick="event.stopPropagation()" style="width:100%;box-sizing:border-box;padding:3px 5px;border:1px solid #93c5fd;border-radius:5px;font:inherit;font-size:11.5px">`;
                 return `
                   <tr class="_av-row" data-co-id="${c.id}" style="cursor:pointer;transition:background .12s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
-                    <td style="${cellStyle};font-weight:700">${c.review_flag ? '<span title="' + esc(c.review_note || 'Til skoðunar') + '" style="color:#f59e0b;margin-right:4px">⚑</span>' : ''}${esc(c.nafn || '—')}${c.review_flag && c.review_note ? '<div style="font-weight:500;font-size:10.5px;color:#b45309;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c.review_note) + '</div>' : ''}</td>
+                    <td style="${cellStyle};font-weight:700">${state.selectMode ? `<input type="checkbox" class="_av-sel" data-co-id="${c.id}" ${state.selected.has(c.id) ? 'checked' : ''} onclick="event.stopPropagation()" style="margin-right:6px;width:15px;height:15px;vertical-align:middle">` : ''}${c.review_flag ? '<span title="' + esc(c.review_note || 'Til skoðunar') + '" style="color:#f59e0b;margin-right:4px">⚑</span>' : ''}${esc(c.nafn || '—')}${c.review_flag && c.review_note ? '<div style="font-weight:500;font-size:10.5px;color:#b45309;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c.review_note) + '</div>' : ''}</td>
                     <td style="${cellStyle};font-family:monospace;color:#64748b;font-size:11.5px">${editing ? eInput('kennitala', c.kennitala) : (esc(fmtKt(c.kennitala) || '—'))}</td>
                     <td style="${cellStyle};color:#475569;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(c.heimilisfang || '')}">${editing ? eInput('heimilisfang', c.heimilisfang) : (esc(c.heimilisfang || '—'))}</td>
                     <td style="${cellStyle};color:#475569;font-family:monospace;font-size:11.5px">${editing ? eInput('simi', c.simi) : (esc(c.simi || c.farsimi || '—'))}</td>
@@ -707,6 +738,60 @@
           .eq('id', coId);
       } catch (e) { if (window.Toast && Toast.show) Toast.show('Náði ekki að vista: ' + (e.message || e)); }
     }
+    const main = document.getElementById('_av-main'); if (main) render(main);
+  }
+
+  // Bulk soft-archive (deleted_at) for the selected rows. Guardrail: NEVER
+  // archive a customer that has a samningur or any document on file, and never
+  // hard-delete. Skipped rows are reported so nothing silently disappears.
+  async function bulkArchive() {
+    const SB = (window.DB && window.DB.sb);
+    const ids = Array.from(state.selected);
+    if (!ids.length) return;
+    const list = (window.Companies && Companies.list) || [];
+    const byId = new Map(list.map(c => [+c.id, c]));
+    const protectedIds = [], doIds = [];
+    ids.forEach(id => {
+      const c = byId.get(+id);
+      const docs = c && docsFor(c);
+      // protect anyone with a samningur or any document on file
+      if (docs && (docs.samningur || docs.total > 0)) protectedIds.push(id);
+      else doIds.push(id);
+    });
+    let msg = `Geyma (mjúkt) ${doIds.length} viðskiptavin${doIds.length === 1 ? '' : 'i'}? Þeir hverfa úr listanum en er hægt að endurheimta.`;
+    if (protectedIds.length) msg += `\n\n⚠ ${protectedIds.length} sleppt — hafa samning/skjöl (má ekki geyma).`;
+    if (!doIds.length) { alert('Engir valdir mega fara í geymslu — allir hafa samning/skjöl.'); return; }
+    if (!confirm(msg)) return;
+    let ok = 0, err = 0;
+    for (const id of doIds) {
+      try {
+        const r = await SB.from('fyrirtaeki').update({ deleted_at: new Date().toISOString() }).eq('id', id);
+        if (r.error) throw r.error;
+        ok++;
+        const idx = list.findIndex(c => +c.id === +id);
+        if (idx >= 0) list.splice(idx, 1); // drop from the live cache
+        state.selected.delete(id);
+      } catch (e) { err++; console.warn('[allir-vidsk] archive failed', id, e); }
+    }
+    if (window.Toast && Toast.show) Toast.show(`📦 ${ok} sett í geymslu${err ? ' · ' + err + ' mistókust' : ''}${protectedIds.length ? ' · ' + protectedIds.length + ' vernduð' : ''}`);
+    if (!state.selected.size) state.selectMode = false;
+    const main = document.getElementById('_av-main'); if (main) render(main);
+  }
+
+  // Bulk tag selected rows as Ferðaþjónusta (additive AppSettings map, like the
+  // per-row 🚌 toggle).
+  async function bulkTagFerda() {
+    if (!window.AppSettings || !window.AppSettings.save) { alert('AppSettings ekki tilbúið'); return; }
+    const ids = Array.from(state.selected);
+    if (!ids.length) return;
+    if (!confirm(`Merkja ${ids.length} viðskiptavin${ids.length === 1 ? '' : 'i'} sem Ferðaþjónustu?`)) return;
+    const map = Object.assign({}, window.AppSettings.path('ferdathjonusta_customers') || {});
+    ids.forEach(id => {
+      map[String(id)] = Object.assign({}, map[String(id)] || {}, { co_id: +id, flexible: true, marked_at: (map[String(id)] && map[String(id)].marked_at) || new Date().toISOString().slice(0, 10) });
+    });
+    await window.AppSettings.save({ ferdathjonusta_customers: map });
+    if (window.Toast && Toast.show) Toast.show(`🚌 ${ids.length} merkt sem Ferðaþjónusta`);
+    state.selected.clear(); state.selectMode = false;
     const main = document.getElementById('_av-main'); if (main) render(main);
   }
 
