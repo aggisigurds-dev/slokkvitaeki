@@ -414,28 +414,48 @@
     main.querySelector('#_av-clear-x')?.addEventListener('click', () => {
       state.xfilter = []; saveState(); render(main);
     });
-    // + Nýr viðskiptavinur — open the canonical shared dialog (patch 114) and
-    // refresh the list once it closes (after create/cancel).
+    // + Nýr viðskiptavinur — this list renders from Companies.list (the
+    // `fyrirtaeki` table), so it MUST create the record there. The old POS
+    // quick-add (_upsOpenNewCustomer) inserted into `vidskiptavinir` instead,
+    // a table this list never reads — so new companies saved but "vanished".
+    // Use the canonical company modal (Companies.openNew → fyrirtaeki) and
+    // re-render when it closes so the new row appears immediately.
     main.querySelector('#_av-new-cust')?.addEventListener('click', () => {
-      if (typeof window._upsOpenNewCustomer !== 'function') {
-        if (window.Toast && Toast.show) Toast.show('Stofnunargluggi ekki tiltækur');
+      const reRender = () => { const m = document.getElementById('_av-main'); if (m) render(m); };
+      if (window.Companies && typeof Companies.openNew === 'function') {
+        Companies.openNew();
+        const modal = document.getElementById('modal-nyfyrirtaeki');
+        if (!modal) { reRender(); return; }
+        if (window.__avNewCustWatch) { window.__avNewCustWatch.disconnect(); window.__avNewCustWatch = null; }
+        // Modal.open adds the `open` class; Modal.close removes it. Re-render
+        // once it's gone (covers both save and cancel).
+        const watch = new MutationObserver(() => {
+          if (!modal.classList.contains('open')) {
+            watch.disconnect();
+            if (window.__avNewCustWatch === watch) window.__avNewCustWatch = null;
+            reRender();
+          }
+        });
+        window.__avNewCustWatch = watch;
+        watch.observe(modal, { attributes: true, attributeFilter: ['class'] });
         return;
       }
-      window._upsOpenNewCustomer('', '');
-      // The dialog (#_ups-newdlg) removes itself on save/cancel. Watch for
-      // that removal and re-render so any new data is picked up. Guard against
-      // stacking observers if the button is clicked repeatedly.
-      if (window.__avNewCustWatch) { window.__avNewCustWatch.disconnect(); window.__avNewCustWatch = null; }
-      const watch = new MutationObserver(() => {
-        if (!document.getElementById('_ups-newdlg')) {
-          watch.disconnect();
-          if (window.__avNewCustWatch === watch) window.__avNewCustWatch = null;
-          const m = document.getElementById('_av-main');
-          if (m) render(m);
-        }
-      });
-      window.__avNewCustWatch = watch;
-      watch.observe(document.body, { childList: true });
+      // Fallback: if Companies isn't ready, fall back to the shared quick-add.
+      if (typeof window._upsOpenNewCustomer === 'function') {
+        window._upsOpenNewCustomer('', '');
+        if (window.__avNewCustWatch) { window.__avNewCustWatch.disconnect(); window.__avNewCustWatch = null; }
+        const watch = new MutationObserver(() => {
+          if (!document.getElementById('_ups-newdlg')) {
+            watch.disconnect();
+            if (window.__avNewCustWatch === watch) window.__avNewCustWatch = null;
+            reRender();
+          }
+        });
+        window.__avNewCustWatch = watch;
+        watch.observe(document.body, { childList: true });
+      } else if (window.Toast && Toast.show) {
+        Toast.show('Stofnunargluggi ekki tiltækur');
+      }
     });
     let _searchTimer = null;
     main.querySelector('#_av-search')?.addEventListener('input', e => {
