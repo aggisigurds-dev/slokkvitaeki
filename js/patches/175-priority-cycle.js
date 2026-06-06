@@ -4,14 +4,16 @@
  * and Leiðsögn. Used for "damage control" — operator marks which forgotten
  * customers to chase first.
  *
- * States: 0 = none (grey), 1 = green (low), 2 = yellow (med), 3 = red (high)
+ * States: 0 = none (grey, initial), 1 = green (low), 2 = yellow (med), 3 = red (high)
+ * Clicking loops through the colours in a circle (green → yellow → red → green …)
+ * and never returns to grey once activated — the dot won't erase at the end.
  *
  * Stored on AppSettings.arsskodun_customers[<co_id>].priority.
  *
  * Exposes window.Priority:
  *   - get(coId)          → 0..3
  *   - btnHtml(coId, sz?) → inline-button HTML string with cycling click handler
- *   - cycle(coId, cb?)   → bump priority++ % 4, save, optional callback
+ *   - cycle(coId, cb?)   → advance to next colour (loops 1→2→3→1), save, optional callback
  *   - colorOf(p)         → CSS color for the dot
  *   - classOf(p)         → class for filtering
  *
@@ -68,11 +70,11 @@
     const map = _getMap();
     const entry = Object.assign({}, map[String(coId)] || {});
     const cur = +entry.priority || 0;
-    const next = (cur + 1) % 4;
-    // Always WRITE the value (incl. 0). AppSettings.save() merges via deepMerge,
-    // which can't delete keys — so `delete entry.priority` never persisted a
-    // clear-to-grey, and it reverted to the old colour on refresh. Storing 0
-    // (which get()/filters already treat as "no priority") makes the clear stick.
+    // Loop through the three colours in a circle (green → yellow → red → green …)
+    // and never fall back to 0/"none" once set — so the dot keeps cycling through
+    // colours instead of erasing itself at the end of the cycle. The first click
+    // on an unset (grey) dot activates it at green.
+    const next = cur === 0 ? 1 : (cur % 3) + 1;
     entry.priority = next;
     const ok = await window.AppSettings.save({
       [STORAGE_KEY]: Object.assign({}, map, { [String(coId)]: entry })
