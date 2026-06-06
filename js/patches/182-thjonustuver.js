@@ -331,9 +331,9 @@
         </td>
         <td style="${cell};font-weight:700;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.customer_nafn || '—')}</td>
         <td style="${cell}">${typeChip(r.type)}</td>
-        <td style="${cell};max-width:320px">
-          <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.title || '')}">${esc(r.title || '')}</div>
-          ${r.summary ? `<div style="font-size:10.5px;color:#7c3aed;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.summary)}">✨ ${esc(r.summary)}</div>` : ''}
+        <td style="${cell};width:100%">
+          <div style="line-height:1.45" title="${esc(r.title || '')}">${esc(r.title || '')}</div>
+          ${r.summary ? `<div style="font-size:11px;color:#7c3aed;line-height:1.4;margin-top:2px" title="${esc(r.summary)}">✨ ${esc(r.summary)}</div>` : ''}
         </td>
         <td style="${cell};text-align:center" title="${esc(src.label)}">${src.icon}</td>
         <td style="${cell};text-align:center">${r.priority === 'har' ? '<span style="color:#dc2626;font-weight:700">⚑ Hár</span>' : (r.priority === 'lagur' ? '<span style="color:#94a3b8">Lágur</span>' : 'Venjul.')}</td>
@@ -344,7 +344,7 @@
     }).join('') : `<tr><td colspan="10" style="padding:34px;text-align:center;color:#94a3b8">Engar beiðnir í þessari biðröð. 🎉</td></tr>`;
 
     main.innerHTML = `
-      <div style="max-width:1200px;margin:0 auto;padding:16px 18px 60px">
+      <div style="max-width:1600px;margin:0 auto;padding:16px 18px 60px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
           <div><div style="font-size:21px;font-weight:800;color:#0f172a">🛎️ Þjónustuver</div>
             <div style="font-size:12px;color:#94a3b8">Sameiginlegt inbox — kúnna-beiðnir úr öllum farvegum</div></div>
@@ -587,6 +587,25 @@
       `<button type="button" class="_tv-segbtn" data-name="${name}" data-val="${v}" style="padding:7px 12px;border:1px solid ${val === v ? '#2563eb' : '#cbd5e1'};background:${val === v ? '#2563eb' : '#fff'};color:${val === v ? '#fff' : '#334155'};border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600">${lbl}</button>`).join('')}</div>`;
   }
 
+  // #19 — "Opna prófíl →": jump to the customer record. There's no deep-link API
+  // for a single customer, so we open the Viðskiptavinir view and best-effort
+  // pre-fill its search with the (correct) customer name.
+  function openCustomerProfile(row) {
+    const name = (row && row.customer_nafn) || '';
+    try {
+      if (typeof window.openVidskiptavinir === 'function') window.openVidskiptavinir();
+      else if (window.App && window.App.switchView) window.App.switchView('vidskiptavinir');
+      else document.querySelector('[data-view="vidskiptavinir"]')?.click();
+    } catch (_) {}
+    document.getElementById('_tv-modal')?.remove();
+    if (!name) return;
+    setTimeout(() => {
+      const scope = document.querySelector('#view-vidskiptavinir') || document;
+      const inp = scope.querySelector('input[type="search"], input[placeholder*="eit"], input[placeholder*="Leit"], input[placeholder*="leit"]');
+      if (inp) { inp.value = name; inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('keyup', { bubbles: true })); }
+    }, 300);
+  }
+
   async function openForm(existing) {
     await loadCompanies();
     document.getElementById('_tv-modal')?.remove();
@@ -595,37 +614,49 @@
     const m = document.createElement('div');
     m.id = '_tv-modal';
     m.style.cssText = 'position:fixed;inset:0;z-index:100040;display:flex;align-items:flex-start;justify-content:center;padding-top:4vh;font-family:inherit';
+    // #19 — for an existing beiðni, lead with the customer's request (summary +
+    // FULL message) big at the top + an "Opna prófíl →" link, and demote the
+    // meta selectors (Farvegur/Tegund/Forgangur/Frestur/Ábyrgð/Staða) into a
+    // collapsible section. New beiðni keeps the entry-focused order.
+    const lbl = t => `<label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">${t}</label>`;
+    const F = {};
+    F.source = `<div>${lbl('Farvegur *')}${seg('source', SOURCE_ORDER.map(s => [s, SOURCES[s].icon + ' ' + SOURCES[s].label]), sel.source)}</div>`;
+    F.customer = `<div>${lbl('Viðskiptavinur *')}
+      <input id="_tv-co-name" list="_tv-co-list" autocomplete="off" value="${esc(ex.customer_nafn || '')}" placeholder="Veldu úr lista eða sláðu inn" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box">
+      <datalist id="_tv-co-list">${_coList.map(c => `<option value="${esc(c.nafn || '')}"></option>`).join('')}</datalist>
+      <input id="_tv-co-kt" value="${esc(ex.__kt || '')}" placeholder="Kennitala (Fletta upp)" style="width:100%;margin-top:8px;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div>`;
+    F.type = `<div>${lbl('Tegund')}${seg('type', TYPE_ORDER.map(t => [t, TYPES[t].label]), sel.type)}
+      <div id="_tv-next" style="font-size:11px;color:#94a3b8;margin-top:6px;min-height:14px">${TYPES[sel.type].next ? 'Næsta aðgerð: ' + TYPES[sel.type].next : ''}</div></div>`;
+    F.title = `<div>${lbl('Stutt lýsing *')}<input id="_tv-title" value="${esc(ex.title || '')}" placeholder="t.d. Vill tilboð í 12 tæki" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div>`;
+    F.notes = big => `<div>${lbl(big ? 'Skilaboð / ósk kúnnans' : 'Nánar')}<textarea id="_tv-notes" rows="${big ? 7 : 3}" placeholder="Valfrjálst" style="width:100%;padding:11px 13px;border:1px solid ${big ? '#cbd5e1' : '#cbd5e1'};border-radius:8px;font:inherit;font-size:${big ? 14 : 13}px;line-height:1.55;box-sizing:border-box;resize:vertical">${esc(ex.notes || '')}</textarea></div>`;
+    F.prioDue = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>${lbl('Forgangur')}${seg('priority', Object.keys(PRIORITIES).map(p => [p, PRIORITIES[p]]), sel.priority)}</div>
+      <div>${lbl('Frestur')}<input id="_tv-due" type="date" value="${ex.due_at ? String(ex.due_at).slice(0, 10) : ''}" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div></div>`;
+    F.assigned = `<div>${lbl('Ábyrgð')}<input id="_tv-assigned" value="${esc(ex.assigned_to != null ? ex.assigned_to : currentUser())}" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div>`;
+    F.status = existing ? `<div>${lbl('Staða')}${seg('status', STATUS_ORDER.map(s => [s, STATUSES[s]]), sel.status)}</div>` : '';
+    F.important = `<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:#0f172a"><input type="checkbox" id="_tv-imp" ${ex.important ? 'checked' : ''} style="width:16px;height:16px"> ⭐ Áríðandi (undanskilið auto-tiltekt)</label>`;
+    const reqPanel = existing ? `
+      <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:11px;padding:14px 15px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap">
+          <div style="font-size:17px;font-weight:800;color:#0f172a">${esc(ex.customer_nafn || '—')}</div>
+          <button id="_tv-profile" type="button" style="background:none;border:none;color:#2563eb;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;padding:2px 0">Opna prófíl →</button>
+        </div>
+        ${ex.summary ? `<div style="margin-top:9px;padding:9px 11px;border-radius:8px;background:#f5f3ff;border:1px solid #ddd6fe"><span style="font-size:10.5px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.03em">📋 Samantekt</span><div style="font-size:13px;color:#5b21b6;margin-top:3px;line-height:1.45">${esc(ex.summary)}</div></div>` : ''}
+        <div style="font-size:13px;color:#475569;margin-top:9px">${esc(ex.title || '')}</div>
+      </div>` : '';
+    const metaWrap = existing
+      ? `<details style="border:1px solid #e2e8f0;border-radius:10px;padding:0"><summary style="cursor:pointer;padding:11px 13px;font-size:12.5px;font-weight:700;color:#475569;list-style:none">⚙︎ Flokkun &amp; smáatriði</summary><div style="display:flex;flex-direction:column;gap:14px;padding:4px 13px 14px">${F.source}${F.customer}${F.type}${F.prioDue}${F.assigned}${F.status}</div></details>`
+      : '';
+    const body = existing
+      ? reqPanel + F.title + F.notes(true) + metaWrap + F.important
+      : F.source + F.customer + F.type + F.title + F.notes(false) + F.prioDue + F.assigned + F.important;
     m.innerHTML = `
       <div style="position:absolute;inset:0;background:rgba(15,23,42,.55)"></div>
       <div style="position:relative;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:min(560px,calc(100vw - 20px));max-height:92vh;overflow-y:auto">
         <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid #e2e8f0">
           <h3 style="margin:0;font-size:17px;font-weight:700">${existing ? 'Breyta beiðni' : 'Ný beiðni'}</h3>
           <button id="_tv-x" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer">✕</button></div>
-        <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px">
-          <div><label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Farvegur *</label>
-            ${seg('source', SOURCE_ORDER.map(s => [s, SOURCES[s].icon + ' ' + SOURCES[s].label]), sel.source)}</div>
-          <div><label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Viðskiptavinur *</label>
-            <input id="_tv-co-name" list="_tv-co-list" autocomplete="off" value="${esc(ex.customer_nafn || '')}" placeholder="Veldu úr lista eða sláðu inn" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box">
-            <datalist id="_tv-co-list">${_coList.map(c => `<option value="${esc(c.nafn || '')}"></option>`).join('')}</datalist>
-            <input id="_tv-co-kt" value="${esc(ex.__kt || '')}" placeholder="Kennitala (Fletta upp)" style="width:100%;margin-top:8px;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div>
-          <div><label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Tegund</label>
-            ${seg('type', TYPE_ORDER.map(t => [t, TYPES[t].label]), sel.type)}
-            <div id="_tv-next" style="font-size:11px;color:#94a3b8;margin-top:6px;min-height:14px">${TYPES[sel.type].next ? 'Næsta aðgerð: ' + TYPES[sel.type].next : ''}</div></div>
-          <div><label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Stutt lýsing *</label>
-            <input id="_tv-title" value="${esc(ex.title || '')}" placeholder="t.d. Vill tilboð í 12 tæki" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div>
-          <div><label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Nánar</label>
-            <textarea id="_tv-notes" rows="3" placeholder="Valfrjálst" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box;resize:vertical">${esc(ex.notes || '')}</textarea></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
-            <div><label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Forgangur</label>
-              ${seg('priority', Object.keys(PRIORITIES).map(p => [p, PRIORITIES[p]]), sel.priority)}</div>
-            <div><label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Frestur</label>
-              <input id="_tv-due" type="date" value="${ex.due_at ? String(ex.due_at).slice(0, 10) : ''}" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div>
-          </div>
-          <div><label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Ábyrgð</label>
-            <input id="_tv-assigned" value="${esc(ex.assigned_to != null ? ex.assigned_to : currentUser())}" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div>
-          ${existing ? `<div><label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Staða</label>${seg('status', STATUS_ORDER.map(s => [s, STATUSES[s]]), sel.status)}</div>` : ''}
-          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:#0f172a"><input type="checkbox" id="_tv-imp" ${ex.important ? 'checked' : ''} style="width:16px;height:16px"> ⭐ Áríðandi (undanskilið auto-tiltekt)</label>
-        </div>
+        <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px">${body}</div>
         <div style="display:flex;gap:8px;justify-content:space-between;padding:13px 20px;border-top:1px solid #e2e8f0">
           <div style="display:flex;gap:8px">${existing ? `<button id="_tv-del" style="padding:9px 14px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">🗑 Eyða</button>` : ''}${existing ? `<button id="_tv-sum" title="Búa til AI-samantekt (næsta aðgerð)" style="padding:9px 14px;border:1px solid #ddd6fe;background:#f5f3ff;color:#6d28d9;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">✨ Samantekt</button>` : ''}${existing ? `<button id="_tv-docsend" style="padding:9px 14px;border:1px solid #c4b5fd;background:#f5f3ff;color:#6d28d9;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">📎 Skjöl &amp; senda</button>` : ''}</div>
           <div style="display:flex;gap:8px">
@@ -654,6 +685,7 @@
       await softDelete(existing.id); close(); render();
     };
     if (existing) m.querySelector('#_tv-docsend').onclick = () => openDocSend(existing);
+    if (existing) { const pb = m.querySelector('#_tv-profile'); if (pb) pb.onclick = () => openCustomerProfile(ex); }
     if (existing) { const sb = m.querySelector('#_tv-sum'); if (sb) sb.onclick = async () => { sb.disabled = true; sb.textContent = '✨ …'; await summarizeIds([existing.id]); sb.disabled = false; sb.textContent = '✨ Samantekt'; const row = state.items.find(x => x.id === existing.id); if (row && row.summary) toast('✨ ' + row.summary); }; }
     m.querySelector('#_tv-save').onclick = async () => {
       const name = (m.querySelector('#_tv-co-name').value || '').trim();
@@ -1049,19 +1081,23 @@ Slökkvitæki ehf</textarea></div>
   function injectSidebar() {
     const nav = document.querySelector('nav.view-nav, .view-nav');
     if (!nav) { setTimeout(injectSidebar, 500); return; }
-    if (nav.querySelector('[data-view="' + NAV_KEY + '"]')) return;
-    const allBtns = Array.from(nav.querySelectorAll('.vnav-btn'));
-    // Place Þjónustuver at the TOP of the sidebar (first nav button) — it's the
-    // primary inbox, so the eigandi wants it front-and-centre.
-    const ref = allBtns[0];
-    const btn = document.createElement('button');
-    btn.className = (ref && ref.className) || 'vnav-btn';
+    // #21 — Þjónustuver must be the FIRST nav button (above Leiðsögn / Fyrirtæki
+    // í þjónustu …). Other patches inject their buttons on their own timers, so
+    // we re-assert the top position on every tick rather than only once.
+    let btn = nav.querySelector('[data-view="' + NAV_KEY + '"]');
+    const firstBtn = nav.querySelector('.vnav-btn');
+    if (btn) {
+      if (firstBtn && firstBtn !== btn && btn.parentNode === firstBtn.parentNode) firstBtn.parentNode.insertBefore(btn, firstBtn);
+      return;
+    }
+    btn = document.createElement('button');
+    btn.className = (firstBtn && firstBtn.className) || 'vnav-btn';
     btn.setAttribute('data-view', NAV_KEY);
     btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
       '<span>Þjónustuver</span></span>';
     btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (window.App && App.switchView) App.switchView(NAV_KEY); else show(); });
-    if (ref && ref.parentNode) ref.parentNode.insertBefore(btn, ref); else nav.appendChild(btn);
+    if (firstBtn && firstBtn.parentNode) firstBtn.parentNode.insertBefore(btn, firstBtn); else nav.appendChild(btn);
   }
 
   function boot() { injectSidebar(); ensureView(); patchSwitchView(); [600, 1500, 3000].forEach(t => setTimeout(injectSidebar, t)); }
