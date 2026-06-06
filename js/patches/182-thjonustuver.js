@@ -101,6 +101,7 @@
       if (/relation .* does not exist/i.test(e.message || '')) state.items = [];
     }
     state.loading = false; render();
+    autoSummarize(); // background, non-blocking — fills the last-30-day view
   }
 
   function inQueue(row, q) {
@@ -156,6 +157,44 @@
       state.items = state.items.filter(x => x.id !== id);
       state.selected.delete(id);
     } catch (e) { toast('Eyðing mistókst: ' + (e.message || e)); }
+  }
+
+  // ── AI summaries (#14.6/#32) — cached `summary`, on-demand + capped auto ──────
+  // One short Icelandic next-action line per request via /api/tv-summary (Haiku,
+  // server-side key). Generated ONCE per row, batched, never blocks the UI.
+  let _summarizing = false;
+  async function summarizeIds(ids, opts) {
+    ids = (ids || []).filter(Boolean);
+    if (!ids.length) return;
+    const SB = getSB(); if (!SB) return;
+    const items = state.items.filter(x => ids.includes(x.id))
+      .map(x => ({ id: x.id, customer_nafn: x.customer_nafn, type: x.type, title: x.title, notes: x.notes }));
+    if (!items.length) return;
+    try {
+      const r = await fetch('/api/tv-summary', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ items }) });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || (data && data.error)) { if (!(opts && opts.silent)) toast('Samantekt mistókst: ' + ((data && data.error) || r.status)); return; }
+      const sums = (data && data.summaries) || {};
+      for (const id in sums) {
+        const row = state.items.find(x => String(x.id) === id);
+        if (row) { row.summary = sums[id]; try { await SB.from('thjonustubeidni').update({ summary: sums[id] }).eq('id', +id); } catch (_) {} }
+      }
+      if (!(opts && opts.silent)) render();
+    } catch (e) { if (!(opts && opts.silent)) toast('Samantekt mistókst: ' + (e.message || e)); }
+  }
+  async function autoSummarize() {
+    if (_summarizing) return;
+    _summarizing = true;
+    try {
+      // un-summarized rows in the default 30-day view; capped so cost stays bounded.
+      const pending = state.items.filter(x => !x.summary && (x.important || ageDays(x) <= TIDY_DAYS)).slice(0, 40);
+      while (pending.length) {
+        const batch = pending.splice(0, 8).map(x => x.id);
+        await summarizeIds(batch, { silent: true });
+        const m = document.getElementById('_tv-main'); if (m && document.getElementById(VIEW_ID)?.classList.contains('active')) render();
+        await new Promise(res => setTimeout(res, 400));
+      }
+    } finally { _summarizing = false; }
   }
 
   // ── Render ──────────────────────────────────────────────────────────────────
@@ -215,7 +254,10 @@
         </td>
         <td style="${cell};font-weight:700;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.customer_nafn || '—')}</td>
         <td style="${cell}">${typeChip(r.type)}</td>
-        <td style="${cell};max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.title || '')}">${esc(r.title || '')}</td>
+        <td style="${cell};max-width:320px">
+          <div style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.title || '')}">${esc(r.title || '')}</div>
+          ${r.summary ? `<div style="font-size:10.5px;color:#7c3aed;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.summary)}">✨ ${esc(r.summary)}</div>` : ''}
+        </td>
         <td style="${cell};text-align:center" title="${esc(src.label)}">${src.icon}</td>
         <td style="${cell};text-align:center">${r.priority === 'har' ? '<span style="color:#dc2626;font-weight:700">⚑ Hár</span>' : (r.priority === 'lagur' ? '<span style="color:#94a3b8">Lágur</span>' : 'Venjul.')}</td>
         <td style="${cell};text-align:right;${od ? 'color:#dc2626;font-weight:700' : 'color:#64748b'}">${ageDays(r)} d</td>
@@ -394,6 +436,9 @@
       .replace(/\s+/g, ' ').trim();
   }
   const FREEMAIL = /gmail|hotmail|outlook|live|icloud|yahoo|me\.com|simnet|internet\.is/;
+  // Generic single words that must NOT substring-match alone (would sweep e.g.
+  // every "Hótel X" / "Húsfélag X" onto one base). Cowork accuracy guard.
+  const GENERIC = new Set(['hótel', 'hotel', 'húsfélag', 'husfelag', 'hús', 'verslun', 'verkstæði', 'bílaverkstæði', 'söluturn', 'bakarí', 'veitingar', 'kaffihús', 'skóli', 'leikskóli', 'sundlaug', 'apótek', 'heimili', 'félag', 'samtök', 'hótelið']);
   function buildCoIndex() {
     const byNorm = new Map(), byEmail = new Map(), byDomain = new Map();
     _coList.forEach(c => {
@@ -410,8 +455,18 @@
     const n = normName(name);
     if (!n) return null;
     if (idx.byNorm.has(n)) return idx.byNorm.get(n);
-    if (n.length >= 4) {
-      for (const [cn, co] of idx.byNorm) { if (cn.length >= 4 && (cn.indexOf(n) !== -1 || n.indexOf(cn) !== -1)) return co; }
+    // Substring fallback — whole-WORD match only, skip generic or short single-
+    // word company names, and prefer the longest (most specific) match.
+    if (n.length >= 5) {
+      const wb = (hay, needle) => (' ' + hay + ' ').indexOf(' ' + needle + ' ') !== -1;
+      let best = null;
+      for (const [cn, co] of idx.byNorm) {
+        const single = cn.indexOf(' ') === -1;
+        if (single && (cn.length < 6 || GENERIC.has(cn))) continue;
+        if (!single && cn.length < 5) continue;
+        if (wb(n, cn) || wb(cn, n)) { if (!best || cn.length > best.cn.length) best = { cn, co }; }
+      }
+      if (best) return best.co;
     }
     return null;
   }
@@ -461,7 +516,7 @@
           <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:#0f172a"><input type="checkbox" id="_tv-imp" ${ex.important ? 'checked' : ''} style="width:16px;height:16px"> ⭐ Áríðandi (undanskilið auto-tiltekt)</label>
         </div>
         <div style="display:flex;gap:8px;justify-content:space-between;padding:13px 20px;border-top:1px solid #e2e8f0">
-          <div style="display:flex;gap:8px">${existing ? `<button id="_tv-del" style="padding:9px 14px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">🗑 Eyða</button>` : ''}${existing ? `<button id="_tv-docsend" style="padding:9px 14px;border:1px solid #c4b5fd;background:#f5f3ff;color:#6d28d9;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">📎 Skjöl &amp; senda</button>` : ''}</div>
+          <div style="display:flex;gap:8px">${existing ? `<button id="_tv-del" style="padding:9px 14px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">🗑 Eyða</button>` : ''}${existing ? `<button id="_tv-sum" title="Búa til AI-samantekt (næsta aðgerð)" style="padding:9px 14px;border:1px solid #ddd6fe;background:#f5f3ff;color:#6d28d9;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">✨ Samantekt</button>` : ''}${existing ? `<button id="_tv-docsend" style="padding:9px 14px;border:1px solid #c4b5fd;background:#f5f3ff;color:#6d28d9;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">📎 Skjöl &amp; senda</button>` : ''}</div>
           <div style="display:flex;gap:8px">
             <button id="_tv-cancel" style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>
             <button id="_tv-save" style="padding:9px 18px;border:none;background:#2563eb;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">Vista beiðni</button></div>
@@ -488,6 +543,7 @@
       await softDelete(existing.id); close(); render();
     };
     if (existing) m.querySelector('#_tv-docsend').onclick = () => openDocSend(existing);
+    if (existing) { const sb = m.querySelector('#_tv-sum'); if (sb) sb.onclick = async () => { sb.disabled = true; sb.textContent = '✨ …'; await summarizeIds([existing.id]); sb.disabled = false; sb.textContent = '✨ Samantekt'; const row = state.items.find(x => x.id === existing.id); if (row && row.summary) toast('✨ ' + row.summary); }; }
     m.querySelector('#_tv-save').onclick = async () => {
       const name = (m.querySelector('#_tv-co-name').value || '').trim();
       const title = (m.querySelector('#_tv-title').value || '').trim();
