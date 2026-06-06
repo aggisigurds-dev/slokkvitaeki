@@ -344,7 +344,7 @@
     }).join('') : `<tr><td colspan="10" style="padding:34px;text-align:center;color:#94a3b8">Engar beiðnir í þessari biðröð. 🎉</td></tr>`;
 
     main.innerHTML = `
-      <div style="max-width:1600px;margin:0 auto;padding:16px 18px 60px">
+      <div style="max-width:none;padding:16px 22px 60px">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
           <div><div style="font-size:21px;font-weight:800;color:#0f172a">🛎️ Þjónustuver</div>
             <div style="font-size:12px;color:#94a3b8">Sameiginlegt inbox — kúnna-beiðnir úr öllum farvegum</div></div>
@@ -587,23 +587,34 @@
       `<button type="button" class="_tv-segbtn" data-name="${name}" data-val="${v}" style="padding:7px 12px;border:1px solid ${val === v ? '#2563eb' : '#cbd5e1'};background:${val === v ? '#2563eb' : '#fff'};color:${val === v ? '#fff' : '#334155'};border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600">${lbl}</button>`).join('')}</div>`;
   }
 
-  // #19 — "Opna prófíl →": jump to the customer record. There's no deep-link API
-  // for a single customer, so we open the Viðskiptavinir view and best-effort
-  // pre-fill its search with the (correct) customer name.
-  function openCustomerProfile(row) {
-    const name = (row && row.customer_nafn) || '';
+  // #19 — "Opna prófíl →": deep-link to the company's profile. Þjónustuver
+  // customers are fyrirtæki, so we use the Fyrirtæki (companies) view's
+  // Companies.openDetail(id) — matching by name (and base id when present).
+  // Falls back to opening the companies list pre-filtered by name.
+  function gotoCompanies() {
     try {
-      if (typeof window.openVidskiptavinir === 'function') window.openVidskiptavinir();
-      else if (window.App && window.App.switchView) window.App.switchView('vidskiptavinir');
-      else document.querySelector('[data-view="vidskiptavinir"]')?.click();
+      if (window.App && window.App.switchView) window.App.switchView('companies');
+      else document.querySelector('[data-view="companies"]')?.click();
     } catch (_) {}
+  }
+  function openCustomerProfile(row) {
+    const name = ((row && row.customer_nafn) || '').trim();
+    const baseId = row && row.customer_base_id;
     document.getElementById('_tv-modal')?.remove();
+    const C = window.Companies;
+    if (C && Array.isArray(C.list) && typeof C.openDetail === 'function') {
+      const L = C.list;
+      const co = (baseId != null && L.find(c => c.customer_base_id === baseId)) ||
+                 L.find(c => (c.nafn || '').trim().toLowerCase() === name.toLowerCase());
+      if (co) { gotoCompanies(); setTimeout(() => { try { C.openDetail(co.id); } catch (_) {} }, 180); return; }
+    }
+    // Fallback — open the companies list and pre-fill its search with the name.
+    gotoCompanies();
     if (!name) return;
     setTimeout(() => {
-      const scope = document.querySelector('#view-vidskiptavinir') || document;
-      const inp = scope.querySelector('input[type="search"], input[placeholder*="eit"], input[placeholder*="Leit"], input[placeholder*="leit"]');
-      if (inp) { inp.value = name; inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('keyup', { bubbles: true })); }
-    }, 300);
+      const inp = document.querySelector('#_cl_search') || document.querySelector('#view-companies input');
+      if (inp) { inp.value = name; inp.dispatchEvent(new Event('input', { bubbles: true })); }
+    }, 350);
   }
 
   async function openForm(existing) {
@@ -1043,6 +1054,9 @@ Slökkvitæki ehf</textarea></div>
     const s = document.createElement('style');
     s.id = '_tv-style';
     s.textContent =
+      // #20 — the shared .main-panel caps width at 1200px, which left a big empty
+      // strip on wide screens. Lift the cap for the Þjónustuver panel only.
+      '#_tv-main.main-panel,#_tv-main{max-width:none!important;width:auto!important}' +
       '@media (max-width:640px){' +
       '#_tv-main ._tv-actions{width:100%!important}' +
       '#_tv-main ._tv-actions button{flex:1 1 40%!important;justify-content:center!important;padding:9px 6px!important}' +
