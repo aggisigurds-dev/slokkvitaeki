@@ -51,8 +51,8 @@
   const TYPE_ORDER = ['skodun_tilbod', 'nyr_samningur', 'hringja', 'skjalabeidni', 'uttekt_eftirfylgni', 'annad'];
   const STATUSES = { nytt: 'Nýtt', i_vinnslu: 'Í vinnslu', bedid: 'Beðið', tilbuid: 'Tilbúið', lokad: 'Lokað' };
   const STATUS_ORDER = ['nytt', 'i_vinnslu', 'bedid', 'tilbuid', 'lokad'];
-  const SOURCES = { phone: { label: 'Sími', icon: '📞' }, store: { label: 'Verslun', icon: '🏪' }, field: { label: 'Vettvangur', icon: '🚐' }, email: { label: 'Tölvupóstur', icon: '✉️' } };
-  const SOURCE_ORDER = ['phone', 'store', 'field', 'email'];
+  const SOURCES = { phone: { label: 'Sími', icon: '📞' }, store: { label: 'Verslun', icon: '🏪' }, field: { label: 'Vettvangur', icon: '🚐' }, email: { label: 'Tölvupóstur', icon: '✉️' }, verkdagbok: { label: 'Verkdagbók', icon: '📓' } };
+  const SOURCE_ORDER = ['phone', 'store', 'field', 'email', 'verkdagbok'];
   const PRIORITIES = { lagur: 'Lágur', venjulegur: 'Venjulegur', har: 'Hár' };
 
   function typeChip(t) {
@@ -207,6 +207,7 @@
             <div style="font-size:12px;color:#94a3b8">Sameiginlegt inbox — kúnna-beiðnir úr öllum farvegum</div></div>
           <div style="display:flex;gap:8px"><button id="_tv-refresh" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">↻ Sækja</button>
             <button id="_tv-email" title="Flytja inn nýjar beiðnir úr eldklar pósthólfi" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">✉️ Sækja tölvupóst</button>
+            <button id="_tv-verk" title="Flytja opin follow-up úr Verkdagbók" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">📓 Sækja úr Verkdagbók</button>
             <button id="_tv-new" style="padding:8px 15px;border:none;background:#2563eb;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">+ Ný beiðni</button></div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${QUEUES.map(qBtn).join('')}</div>
@@ -238,6 +239,7 @@
   function wire(main, rows) {
     main.querySelector('#_tv-refresh')?.addEventListener('click', load);
     main.querySelector('#_tv-email')?.addEventListener('click', ingestEmail);
+    main.querySelector('#_tv-verk')?.addEventListener('click', ingestVerkdagbok);
     main.querySelector('#_tv-new')?.addEventListener('click', () => openForm());
     main.querySelectorAll('._tv-q').forEach(b => b.addEventListener('click', () => { state.queue = b.dataset.q; state.selected.clear(); render(); }));
     let t = null;
@@ -473,6 +475,67 @@
     }
     toast('✉️ ' + ok + ' email-beiðnir fluttar inn');
     await load();
+  }
+
+  // ── Verkdagbók channel (#13): import open follow-ups → thjonustubeidni ───────
+  // KEEP BOTH (Agnar): we do NOT mark the verkdagbok row done/moved — it stays
+  // visible in Verkdagbók/Þjónustuverk too while the team gets used to the hub.
+  // Idempotent via channel_ref='verkdagbok:<id>'.
+  function classifyVerkType(text) {
+    if (/hringd|hringja|símtal|simtal|heyra í/i.test(text)) return 'hringja';
+    if (/þjónustusamning|samning/i.test(text)) return 'nyr_samningur';
+    if (/skýrsl|skyrsl|úttekt|uttekt|reikning|afrit/i.test(text)) return 'skjalabeidni';
+    if (/áfyll|afyll|hleðsl|hledsl|endurfyll|endurhleðsl/i.test(text)) return 'uttekt_eftirfylgni';
+    if (/yfirfara|kíkja|kikja|skoða|skoda|\btæki\b|\btaeki\b|tilboð|tilbod|\bverð\b/i.test(text)) return 'skodun_tilbod';
+    return 'annad';
+  }
+  async function ingestVerkdagbok() {
+    const SB = getSB(); if (!SB) return;
+    await loadCompanies();
+    const byName = new Map();
+    _coList.forEach(c => { const n = (c.nafn || '').trim().toLowerCase(); if (n) byName.set(n, c); });
+    let existing = [];
+    try { const { data } = await SB.from('thjonustubeidni').select('channel_ref').not('channel_ref', 'is', null); existing = data || []; } catch (_) {}
+    const seen = new Set(existing.map(r => String(r.channel_ref)));
+    let src = [];
+    try {
+      const { data, error } = await SB.from('verkdagbok')
+        .select('id,job_date,fyrirtaeki,athugasemdir,archived,done')
+        .neq('archived', true).neq('done', true).not('athugasemdir', 'is', null)
+        .order('job_date', { ascending: false }).range(0, 999);
+      if (error) throw error;
+      src = data || [];
+    } catch (e) { toast('Verkdagbók-lestur mistókst: ' + (e.message || e)); return; }
+    const rows = [];
+    for (const v of src) {
+      const note = String(v.athugasemdir || '').trim();
+      if (!note) continue;
+      if (seen.has('verkdagbok:' + v.id)) continue;
+      const name = (v.fyrirtaeki || '').trim();
+      const co = byName.get(name.toLowerCase());
+      let ca = new Date().toISOString();
+      if (v.job_date) { const d = new Date(v.job_date); if (!isNaN(d)) ca = d.toISOString(); }
+      rows.push({
+        source: 'verkdagbok', channel_ref: 'verkdagbok:' + v.id, type: classifyVerkType(note),
+        status: 'nytt', priority: 'venjulegur',
+        customer_base_id: co ? (co.customer_base_id || null) : null,
+        customer_nafn: co ? co.nafn : (name || '—'),
+        title: note.slice(0, 80), notes: note.slice(0, 2000) || null,
+        created_by: 'verkdagbok', created_at: ca
+      });
+    }
+    if (!rows.length) { toast('Engar nýjar Verkdagbókar-beiðnir'); return; }
+    const btn = document.getElementById('_tv-verk');
+    if (btn) { btn.disabled = true; btn.textContent = '📓 Flyt inn ' + rows.length + '…'; }
+    let ok = 0;
+    for (let i = 0; i < rows.length; i += 100) {
+      const chunk = rows.slice(i, i + 100);
+      const { error } = await SB.from('thjonustubeidni').insert(chunk);
+      if (error) { toast('Innflutningur stöðvaðist: ' + error.message); break; }
+      ok += chunk.length;
+      if (btn) btn.textContent = '📓 Flyt inn ' + ok + '/' + rows.length + '…';
+    }
+    toast('📓 ' + ok + ' Verkdagbókar-beiðnir fluttar inn'); await load();
   }
 
   // ── Skjala-velja + senda til baka (slice 3) — doc picker + reply preview ─────
