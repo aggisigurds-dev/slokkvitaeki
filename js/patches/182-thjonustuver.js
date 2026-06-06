@@ -352,6 +352,7 @@
             <button id="_tv-email" title="Flytja inn nýjar beiðnir úr eldklar pósthólfi" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">✉️ Sækja tölvupóst</button>
             <button id="_tv-verk" title="Flytja opin follow-up úr Verkdagbók" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">📓 Sækja úr Verkdagbók</button>
             <button id="_tv-tidy" title="Tiltekt — fela Lokað + gömul (>30 daga) Annað sem er ekki áríðandi" style="padding:8px 12px;border:1px solid #fcd34d;background:#fffbeb;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#b45309">🧹 Tiltekt</button>
+            <button id="_tv-test" title="Senda prufupóst á aggisigurds@gmail.com gegnum Resend" style="padding:8px 12px;border:1px solid #c7d2fe;background:#eef2ff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#4338ca">✉️ Prufa send</button>
             <button id="_tv-new" style="padding:8px 15px;border:none;background:#2563eb;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">+ Ný beiðni</button></div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;margin-bottom:14px">${QUEUES.map(qBtn).join('')}
@@ -421,6 +422,7 @@
     main.querySelector('#_tv-view-list')?.addEventListener('click', () => setView('list'));
     main.querySelector('#_tv-view-cards')?.addEventListener('click', () => setView('cards'));
     main.querySelector('#_tv-tidy')?.addEventListener('click', () => doTidy());
+    main.querySelector('#_tv-test')?.addEventListener('click', () => sendTest());
 
     main.querySelectorAll('._tv-dot').forEach(b => b.addEventListener('click', async e => {
       e.stopPropagation();
@@ -825,13 +827,55 @@
   // until that's wired this is a DRY-RUN that shows exactly what would be sent
   // and marks the request handled. sendReply() is the single seam to go live.
   const DOC_LABELS = { samningur: 'Samningur', uttektarskyrsla: 'Úttektarskýrsla', reikningur: 'Reikningur' };
-  const SEND_LIVE = false; // flip true once a send path (Gmail/SMTP) is connected
+  // Live send goes through the Resend proxy (/api/email-send, RESEND_API_KEY in
+  // Netlify env). SAFETY: the default From is Resend's onboarding@resend.dev,
+  // which in an unverified Resend account can ONLY deliver to the account owner
+  // (aggisigurds@gmail.com) — so a real customer can't be emailed by accident.
+  // Switch From to noreply@eldklar.is once eldklar.is is verified in Resend.
+  const SEND_LIVE = true;
+  function bodyToHtml(t) {
+    return '<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px;color:#0f172a;white-space:pre-wrap;line-height:1.5">' +
+      esc(String(t || '')) + '</div>';
+  }
   async function sendReply(payload) {
     if (!SEND_LIVE) return { ok: true, dryRun: true };
-    // TODO: POST to a Netlify send function (Gmail API / SMTP) with `payload`.
-    return { ok: false, error: 'Send path not configured' };
+    try {
+      const from = /</.test(payload.from) ? payload.from : ('Slökkvitæki ehf <' + payload.from + '>');
+      const body = {
+        from,
+        to: Array.isArray(payload.to) ? payload.to : [payload.to],
+        subject: payload.subject || '(efnislaust)',
+        html: bodyToHtml(payload.body)
+      };
+      // Resend fetches each attachment `path` (a URL) server-side. Drive direct-
+      // download works when the file is shared; large/restricted files may fail
+      // (the email still goes) — a server-side Drive→base64 fetch is the robust
+      // follow-up once the basic path is confirmed.
+      const atts = (payload.attachments || []).filter(a => a.downloadUrl || a.url);
+      if (atts.length) body.attachments = atts.map(a => ({ filename: (a.name || 'skjal').replace(/[\\/:*?"<>|]/g, '_') + '.pdf', path: a.downloadUrl || a.url }));
+      const r = await fetch('/api/email-send', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok || (data && data.error)) return { ok: false, error: (data && (data.message || data.error)) || ('HTTP ' + r.status) };
+      return { ok: true, id: data && data.id };
+    } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
   }
   function driveUrl(id) { return id ? 'https://drive.google.com/file/d/' + id + '/view' : ''; }
+  function driveDownloadUrl(id) { return id ? 'https://drive.google.com/uc?export=download&id=' + id : ''; }
+
+  // One-click pipeline test: emails aggisigurds@gmail.com via Resend (test sender).
+  async function sendTest() {
+    const btn = document.getElementById('_tv-test');
+    if (btn) { btn.disabled = true; btn.textContent = '✉️ Sendi…'; }
+    const res = await sendReply({
+      from: 'onboarding@resend.dev',
+      to: 'aggisigurds@gmail.com',
+      subject: 'Þjónustuver — prufusending ' + new Date().toLocaleString('is-IS'),
+      body: 'Halló Agnar,\n\nÞetta er prufusending úr Þjónustuver (Resend email-pípan).\nEf þú færð þennan póst þá virkar email-sendingin. 🎉\n\n— Slökkvitæki ehf'
+    });
+    if (btn) { btn.disabled = false; btn.textContent = '✉️ Prufa send'; }
+    if (res.ok) toast('✉️ Prufa send á aggisigurds@gmail.com' + (res.id ? ' (' + res.id + ')' : ''));
+    else toast('Prufa mistókst: ' + (res.error || 'óþekkt villa'));
+  }
 
   async function openDocSend(row) {
     const SB = getSB(); if (!SB) return;
@@ -876,10 +920,10 @@
         <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid #e2e8f0"><h3 style="margin:0;font-size:17px;font-weight:700">📎 Senda skjöl til baka</h3><button id="_tv-s-x" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer">✕</button></div>
         <div style="padding:16px 20px;display:flex;flex-direction:column;gap:13px">
           <div style="font-size:12.5px;color:#0f172a"><strong>${esc(row.customer_nafn || '')}</strong></div>
-          <div style="padding:8px 10px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:11.5px;color:#92400e">⚠ Prufuhamur — engin raunveruleg sending fyrr en send-heimild (Gmail/SMTP fyrir eldklar@) er tengd. Sýnir nákvæmlega hvað yrði sent.</div>
+          <div style="padding:8px 10px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:11.5px;color:#1e40af">✉️ Raunveruleg sending um Resend. <b>onboarding@resend.dev</b> kemst AÐEINS á eiganda-netfangið (aggisigurds@gmail.com) — öruggt til prufu. Til að senda á viðskiptavini þarf <b>eldklar.is</b> staðfest í Resend, veldu þá noreply@eldklar.is.</div>
           <div style="display:grid;grid-template-columns:60px 1fr;gap:8px;align-items:center;font-size:12.5px">
             <label style="color:#64748b">Frá</label>
-            <select id="_tv-s-from" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:12.5px"><option value="noreply@eldklar.is">noreply@eldklar.is</option><option value="eldklar@eldklar.is">eldklar@eldklar.is</option></select>
+            <select id="_tv-s-from" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:12.5px"><option value="onboarding@resend.dev">Resend prufa — onboarding@resend.dev</option><option value="noreply@eldklar.is">noreply@eldklar.is (þarf staðfest lén)</option><option value="eldklar@eldklar.is">eldklar@eldklar.is (þarf staðfest lén)</option></select>
             <label style="color:#64748b">Til</label>
             <input id="_tv-s-to" value="${esc(toEmail)}" placeholder="netfang viðskiptavinar" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:12.5px">
             <label style="color:#64748b">Efni</label>
@@ -897,13 +941,13 @@ Slökkvitæki ehf</textarea></div>
         </div>
         <div id="_tv-s-foot1" style="display:flex;gap:8px;justify-content:flex-end;padding:13px 20px;border-top:1px solid #e2e8f0">
           <button id="_tv-s-cancel" style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>
-          <button id="_tv-s-send" style="padding:9px 18px;border:none;background:#6d28d9;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">Forskoða &amp; senda (prufa)</button>
+          <button id="_tv-s-send" style="padding:9px 18px;border:none;background:#6d28d9;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">Forskoða &amp; senda →</button>
         </div>
         <div id="_tv-s-foot2" style="display:none;flex-direction:column;gap:10px;padding:13px 20px;border-top:1px solid #e2e8f0;background:#faf5ff">
           <div id="_tv-s-summary" style="font-size:12.5px;color:#334155;line-height:1.6"></div>
           <div style="display:flex;gap:8px;justify-content:flex-end">
             <button id="_tv-s-back" style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;color:#475569">← Til baka</button>
-            <button id="_tv-s-go" style="padding:9px 18px;border:none;background:#6d28d9;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">Já, senda (prufa)</button>
+            <button id="_tv-s-go" style="padding:9px 18px;border:none;background:#16a34a;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">✉️ Já, senda núna</button>
           </div>
         </div>
       </div>`;
@@ -918,7 +962,7 @@ Slökkvitæki ehf</textarea></div>
       const subject = (m.querySelector('#_tv-s-subj').value || '').trim();
       const body = m.querySelector('#_tv-s-body').value || '';
       const chosen = Array.from(m.querySelectorAll('._tv-doc')).filter(c => c.checked).map(c => +c.dataset.id);
-      const atts = docs.filter(d => chosen.includes(d.id)).map(d => ({ name: (DOC_LABELS[d.doc_type] || d.doc_type) + (d.year ? ' ' + d.year : ''), url: driveUrl(d.drive_file_id) }));
+      const atts = docs.filter(d => chosen.includes(d.id)).map(d => ({ name: (DOC_LABELS[d.doc_type] || d.doc_type) + (d.year ? ' ' + d.year : ''), url: driveUrl(d.drive_file_id), downloadUrl: driveDownloadUrl(d.drive_file_id) }));
       return { from, to, subject, body, atts };
     }
     // Step 1 → in-modal preview (no blocking native dialog — that was freezing the
@@ -926,25 +970,34 @@ Slökkvitæki ehf</textarea></div>
     m.querySelector('#_tv-s-send').onclick = () => {
       const d = gather();
       if (!d.to) { toast('Vantar netfang viðtakanda'); return; }
+      const dvUrl = d.from === 'onboarding@resend.dev' && !/aggisigurds@gmail\.com/i.test(d.to)
+        ? '<div style="color:#dc2626;margin-top:4px">⚠ onboarding@resend.dev kemst aðeins á aggisigurds@gmail.com — annað netfang skilar villu.</div>' : '';
       m.querySelector('#_tv-s-summary').innerHTML =
-        '<div style="font-weight:700;color:#6d28d9;margin-bottom:4px">Forskoðun — prufa (ekkert sent í alvöru enn)</div>' +
+        '<div style="font-weight:700;color:#16a34a;margin-bottom:4px">Tilbúið að senda</div>' +
         '<div><b>Frá:</b> ' + esc(d.from) + '</div><div><b>Til:</b> ' + esc(d.to) + '</div>' +
         '<div><b>Efni:</b> ' + esc(d.subject) + '</div>' +
-        '<div><b>Viðhengi:</b> ' + (d.atts.length ? esc(d.atts.map(a => a.name).join(', ')) : '<span style="color:#dc2626">engin valin</span>') + '</div>';
+        '<div><b>Viðhengi:</b> ' + (d.atts.length ? esc(d.atts.map(a => a.name).join(', ')) : '<span style="color:#94a3b8">engin valin</span>') + '</div>' + dvUrl;
       foot1.style.display = 'none'; foot2.style.display = 'flex';
     };
     m.querySelector('#_tv-s-back').onclick = () => { foot2.style.display = 'none'; foot1.style.display = 'flex'; };
     m.querySelector('#_tv-s-go').onclick = async () => {
-      const go = m.querySelector('#_tv-s-go'); go.disabled = true; go.textContent = 'Skrái…';
+      const go = m.querySelector('#_tv-s-go'); go.disabled = true; go.textContent = 'Sendi…';
       const d = gather();
       const res = await sendReply({ from: d.from, to: d.to, subject: d.subject, body: d.body, attachments: d.atts });
+      if (!res.ok && !res.dryRun) {
+        go.disabled = false; go.textContent = '✉️ Já, senda núna';
+        m.querySelector('#_tv-s-summary').insertAdjacentHTML('beforeend',
+          '<div style="margin-top:8px;padding:7px 10px;background:#fef2f2;border:1px solid #fecaca;border-radius:7px;color:#b91c1c">Sending mistókst: ' + esc(res.error || 'óþekkt villa') + '</div>');
+        toast('Sending mistókst: ' + (res.error || ''));
+        return; // do NOT close the request — let the user retry / fix recipient
+      }
       const stamp = new Date().toISOString().slice(0, 10);
-      const logNote = (row.notes ? row.notes + '\n\n' : '') + '[' + stamp + '] Skjöl ' + (res.dryRun ? '(PRUFA) ' : '') + 'send til ' + d.to + ' frá ' + d.from + ': ' + (d.atts.map(a => a.name).join(', ') || '(engin)');
+      const logNote = (row.notes ? row.notes + '\n\n' : '') + '[' + stamp + '] Skjöl ' + (res.dryRun ? '(PRUFA) ' : '') + 'send til ' + d.to + ' frá ' + d.from + (res.id ? ' (Resend ' + res.id + ')' : '') + ': ' + (d.atts.map(a => a.name).join(', ') || '(engin)');
       await saveRow(row.id, { status: 'lokad', notes: logNote });
       close();
       document.getElementById('_tv-modal')?.remove();
       render();
-      toast(res.dryRun ? '✓ Prufa skráð (engin raunveruleg sending enn) — beiðni lokað' : '✉️ Sent — beiðni lokað');
+      toast(res.dryRun ? '✓ Prufa skráð — beiðni lokað' : '✉️ Sent — beiðni lokað');
     };
   }
 
