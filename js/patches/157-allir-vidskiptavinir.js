@@ -449,6 +449,7 @@
           <span style="font-weight:700;color:#1e40af;font-size:13px">${state.selected.size} valdir</span>
           <button id="_av-sel-clear" type="button" style="padding:5px 11px;border:1px solid #cbd5e1;background:#fff;border-radius:7px;cursor:pointer;font:inherit;font-size:12px">Hreinsa val</button>
           <div style="flex:1;min-width:0"></div>
+          <button id="_av-bulk-merge" type="button" ${state.selected.size === 2 ? '' : 'disabled'} title="Sameina tvö fyrirtæki sem eru sama viðskiptavinurinn (færir tæki + skjöl yfir á það sem heldur; hitt fer í geymslu). Veldu nákvæmlega 2." style="padding:5px 11px;border:1px solid #c4b5fd;background:#f5f3ff;color:#6d28d9;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:700${state.selected.size === 2 ? '' : ';opacity:.5'}">🔗 Sameina ${state.selected.size === 2 ? 'tvö' : '(veldu 2)'}</button>
           <button id="_av-bulk-ferda" type="button" ${state.selected.size?'':'disabled'} style="padding:5px 11px;border:1px solid #7dd3fc;background:#e0f2fe;color:#0369a1;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:700${state.selected.size?'':';opacity:.5'}">🚌 Merkja Ferðaþjónustu</button>
           <button id="_av-bulk-archive" type="button" ${state.selected.size?'':'disabled'} title="Mjúk geymsla (deleted_at). Sleppir þeim sem hafa samning/skjöl." style="padding:5px 11px;border:1px solid #fcd34d;background:#fffbeb;color:#b45309;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:700${state.selected.size?'':';opacity:.5'}">📦 Geyma (mjúkt)</button>
         </div>` : ''}
@@ -577,6 +578,10 @@
     });
     main.querySelector('#_av-bulk-ferda')?.addEventListener('click', () => bulkTagFerda());
     main.querySelector('#_av-bulk-archive')?.addEventListener('click', () => bulkArchive());
+    main.querySelector('#_av-bulk-merge')?.addEventListener('click', () => {
+      const ids = Array.from(state.selected);
+      if (ids.length === 2) openMergeModal(ids[0], ids[1]);
+    });
 
     // Inline edit (kt / heimilisfang / sími)
     main.querySelectorAll('._av-edit').forEach(b => {
@@ -776,6 +781,132 @@
     if (window.Toast && Toast.show) Toast.show(`📦 ${ok} sett í geymslu${err ? ' · ' + err + ' mistókust' : ''}${protectedIds.length ? ' · ' + protectedIds.length + ' vernduð' : ''}`);
     if (!state.selected.size) state.selectMode = false;
     const main = document.getElementById('_av-main'); if (main) render(main);
+  }
+
+  // ── Merge two duplicate companies ──────────────────────────────────────
+  // The owner picks two rows that are the SAME customer; this folds the loser
+  // into the keeper: equipment (uttaeki/lanstaeki, keyed by client NAME) and
+  // name-based history move to the keeper's name, documents/beiðnir move to the
+  // keeper's base id, the keeper's empty fields are filled from the loser, the
+  // service marks move over, and the loser is soft-archived (deleted_at) with a
+  // note — recoverable, nothing hard-deleted.
+  function openMergeModal(idA, idB) {
+    const list = (window.Companies && Companies.list) || [];
+    const a = list.find(c => +c.id === +idA), b = list.find(c => +c.id === +idB);
+    if (!a || !b) { if (window.Toast && Toast.show) Toast.show('Fann ekki bæði fyrirtækin'); return; }
+    // Default keeper = more units, then more complete, then lower id (older).
+    const score = c => (c._unitCount || 0) * 100 + ['kennitala','netfang','heimilisfang','simi','customer_base_id'].filter(k => c[k]).length;
+    let keeperId = (score(a) > score(b)) ? a.id : (score(b) > score(a)) ? b.id : Math.min(a.id, b.id);
+
+    document.getElementById('_av-merge')?.remove();
+    const m = document.createElement('div');
+    m.id = '_av-merge';
+    m.style.cssText = 'position:fixed;inset:0;z-index:100060;display:flex;align-items:flex-start;justify-content:center;padding-top:5vh;font-family:inherit';
+    const col = (c, sel) => `
+      <label style="flex:1;min-width:0;display:block;border:2px solid ${sel ? '#6d28d9' : '#e2e8f0'};background:${sel ? '#faf5ff' : '#fff'};border-radius:11px;padding:12px 13px;cursor:pointer">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <input type="radio" name="_av-keep" value="${c.id}" ${sel ? 'checked' : ''} style="width:16px;height:16px">
+          <span style="font-weight:800;font-size:14px;color:#0f172a">${esc(c.nafn || '—')}</span>
+        </div>
+        <div style="font-size:11.5px;color:#64748b;line-height:1.7">
+          ${c.kennitala ? 'kt. ' + esc(fmtKt(c.kennitala)) + '<br>' : '<span style=\"color:#cbd5e1\">engin kt</span><br>'}
+          ${c.heimilisfang ? '📍 ' + esc(c.heimilisfang) + '<br>' : ''}
+          ${c.simi || c.farsimi ? '📞 ' + esc(c.simi || c.farsimi) + '<br>' : ''}
+          ${c.netfang ? '✉️ ' + esc(c.netfang) + '<br>' : ''}
+          🧯 <strong style="color:#0f172a">${c._unitCount || 0}</strong> tæki · ${docBadge(c)}
+        </div>
+        <div style="margin-top:6px;font-size:10.5px;font-weight:700;color:${sel ? '#6d28d9' : '#94a3b8'}">${sel ? '✓ HELDUR — hitt færist hingað' : 'fer í geymslu'}</div>
+      </label>`;
+    const draw = () => {
+      m.querySelector('#_av-merge-cols').innerHTML = col(a, keeperId === a.id) + col(b, keeperId === b.id);
+      const keeper = keeperId === a.id ? a : b, loser = keeperId === a.id ? b : a;
+      m.querySelector('#_av-merge-preview').innerHTML =
+        `<strong>${esc(loser.nafn)}</strong> (${loser._unitCount || 0} tæki) sameinast inn í <strong>${esc(keeper.nafn)}</strong>. ` +
+        `Tæki, skjöl og saga færast yfir; ${esc(loser.nafn)} fer í geymslu (endurheimtanlegt).` +
+        (loser._unitCount ? `<div style="margin-top:5px;color:#b45309">⚠ ${loser._unitCount} tæki verða endurmerkt á „${esc(keeper.nafn)}“.</div>` : '');
+      m.querySelectorAll('input[name="_av-keep"]').forEach(r => r.onchange = () => { keeperId = +r.value; draw(); });
+    };
+    m.innerHTML = `
+      <div style="position:absolute;inset:0;background:rgba(15,23,42,.55)"></div>
+      <div style="position:relative;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:min(620px,calc(100vw - 20px));max-height:90vh;overflow-y:auto">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid #e2e8f0">
+          <h3 style="margin:0;font-size:17px;font-weight:700">🔗 Sameina tvö fyrirtæki</h3>
+          <button id="_av-merge-x" style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer">✕</button>
+        </div>
+        <div style="padding:16px 20px;display:flex;flex-direction:column;gap:13px">
+          <div style="font-size:12.5px;color:#475569">Veldu hvort skráin á að <strong>halda</strong> — hin sameinast inn í hana og fer í geymslu.</div>
+          <div id="_av-merge-cols" style="display:flex;gap:12px;align-items:stretch"></div>
+          <div id="_av-merge-preview" style="font-size:12px;color:#334155;background:#f8fafc;border:1px solid #e2e8f0;border-radius:9px;padding:10px 12px;line-height:1.5"></div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;padding:13px 20px;border-top:1px solid #e2e8f0">
+          <button id="_av-merge-cancel" style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>
+          <button id="_av-merge-go" style="padding:9px 18px;border:none;background:#6d28d9;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">🔗 Sameina núna</button>
+        </div>
+      </div>`;
+    document.body.appendChild(m);
+    draw();
+    const close = () => m.remove();
+    m.querySelector('#_av-merge-x').onclick = close;
+    m.querySelector('#_av-merge-cancel').onclick = close;
+    m.querySelector('#_av-merge-go').onclick = async () => {
+      const go = m.querySelector('#_av-merge-go'); go.disabled = true; go.textContent = 'Sameina…';
+      const keeper = keeperId === a.id ? a : b, loser = keeperId === a.id ? b : a;
+      const res = await doMerge(keeper, loser);
+      close();
+      if (res && res.ok) {
+        if (window.Toast && Toast.show) Toast.show('🔗 Sameinað → ' + keeper.nafn + (res.units ? ' (' + res.units + ' tæki færð)' : ''));
+        state.selected.clear(); state.selectMode = false;
+      } else if (window.Toast && Toast.show) Toast.show('Sameining mistókst: ' + ((res && res.error) || 'óþekkt'));
+      const main = document.getElementById('_av-main'); if (main) render(main);
+    };
+  }
+
+  async function doMerge(keeper, loser) {
+    const SB = (window.DB && window.DB.sb); if (!SB) return { error: 'DB ekki tilbúið' };
+    try {
+      let units = 0;
+      // 1) Equipment + name-based history → keeper's name.
+      if (loser.nafn && keeper.nafn && loser.nafn !== keeper.nafn) {
+        const moved = await SB.from('uttaeki').update({ client: keeper.nafn }).eq('client', loser.nafn).select('id');
+        units = (moved && moved.data && moved.data.length) || 0;
+        await SB.from('lanstaeki').update({ client: keeper.nafn }).eq('client', loser.nafn);
+        for (const [tbl, colName] of [['solur', 'customer_nafn'], ['verkbeidnir', 'customer'], ['sala_transactions', 'customer']]) {
+          try { await SB.from(tbl).update({ [colName]: keeper.nafn }).eq(colName, loser.nafn); } catch (_) {}
+        }
+      }
+      // 2) Documents + beiðnir → keeper's base id (only when both have one).
+      if (loser.customer_base_id && keeper.customer_base_id && loser.customer_base_id !== keeper.customer_base_id) {
+        try { await SB.from('customer_documents').update({ customer_base_id: keeper.customer_base_id }).eq('customer_base_id', loser.customer_base_id); } catch (_) {}
+        try { await SB.from('thjonustubeidni').update({ customer_base_id: keeper.customer_base_id }).eq('customer_base_id', loser.customer_base_id); } catch (_) {}
+      }
+      // 3) Fill the keeper's empty identity/contact fields from the loser.
+      const fill = {};
+      ['kennitala', 'heimilisfang', 'simi', 'farsimi', 'netfang', 'tengiliður', 'customer_base_id'].forEach(k => {
+        if ((keeper[k] == null || keeper[k] === '') && loser[k]) fill[k] = loser[k];
+      });
+      if (Object.keys(fill).length) { try { await SB.from('fyrirtaeki').update(fill).eq('id', keeper.id); Object.assign(keeper, fill); } catch (_) {} }
+      // 4) Move service-subscription marks (AppSettings maps keyed by company id).
+      if (window.AppSettings && window.AppSettings.save) {
+        const patch = {};
+        ['arsskodun_customers', 'brunakerfi_customers', 'ferdathjonusta_customers'].forEach(key => {
+          const map = Object.assign({}, window.AppSettings.path(key) || {});
+          if (map[String(loser.id)]) {
+            if (!map[String(keeper.id)]) map[String(keeper.id)] = map[String(loser.id)];
+            map[String(loser.id)] = null;
+            patch[key] = map;
+          }
+        });
+        if (Object.keys(patch).length) { try { await window.AppSettings.save(patch); } catch (_) {} }
+      }
+      // 5) Soft-archive the loser with a merge note (recoverable).
+      const stamp = new Date().toISOString();
+      const note = '[sameinað ' + stamp.slice(0, 10) + '] → ' + keeper.nafn + ' (#' + keeper.id + ')';
+      try { await SB.from('fyrirtaeki').update({ deleted_at: stamp, review_flag: false, review_note: note }).eq('id', loser.id); } catch (_) {}
+      // 6) Drop the loser from the in-memory list so the UI updates immediately.
+      const list = (window.Companies && Companies.list) || [];
+      const li = list.findIndex(c => +c.id === +loser.id); if (li >= 0) list.splice(li, 1);
+      return { ok: true, units };
+    } catch (e) { return { error: (e && e.message) || String(e) }; }
   }
 
   // Bulk tag selected rows as Ferðaþjónusta (additive AppSettings map, like the
