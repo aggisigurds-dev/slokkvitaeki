@@ -81,6 +81,7 @@
     queue: 'open',                 // nytt | mine | overdue | bedid | open
     search: '',
     fType: '', fPriority: '', fSource: '', fImportant: false,
+    fSourceGroup: '',              // '' | beint | verkdagbok | email — quick source filter (chips by the queue boxes)
     showOlder: false,              // default view = last 30 days (Áríðandi exempt)
     selected: new Set(),
     sort: 'new',                   // new | old | age | priority | important | type | customer
@@ -118,6 +119,21 @@
   function olderHiddenCount() {
     return state.items.filter(x => inQueue(x, state.queue) && !x.important && ageDays(x) > TIDY_DAYS).length;
   }
+  // Source groups for the quick filter chips: email (Eldklar pósthólf),
+  // verkdagbok (úr Verk/þjónustubók), beint (allt sem er skráð beint inn í
+  // Þjónustuver — sími/búð/vettvangur). Lets the eigandi isolate the few
+  // hand-entered erindi from the flood of emails.
+  function srcGroup(r) {
+    if (r.source === 'email') return 'email';
+    if (r.source === 'verkdagbok') return 'verkdagbok';
+    return 'beint';
+  }
+  function sourceGroupCounts() {
+    const base = state.items.filter(x => inQueue(x, state.queue) && (state.showOlder || x.important || ageDays(x) <= TIDY_DAYS));
+    const c = { beint: 0, verkdagbok: 0, email: 0 };
+    for (const x of base) c[srcGroup(x)]++;
+    return c;
+  }
   function visibleRows() {
     let r = state.items.filter(x => inQueue(x, state.queue));
     // Default view = last 30 days; older tucked away (Áríðandi always shown).
@@ -126,6 +142,7 @@
     if (state.fType) r = r.filter(x => x.type === state.fType);
     if (state.fPriority) r = r.filter(x => x.priority === state.fPriority);
     if (state.fSource) r = r.filter(x => x.source === state.fSource);
+    if (state.fSourceGroup) r = r.filter(x => srcGroup(x) === state.fSourceGroup);
     const s = state.search.trim().toLowerCase();
     if (s) r = r.filter(x => [x.customer_nafn, x.title, x.notes, x.assigned_to].some(f => (f || '').toLowerCase().includes(s)));
     const pr = { har: 0, venjulegur: 1, lagur: 2 };
@@ -275,6 +292,19 @@
     const qBtn = ([k, lbl, n, col]) => `<button class="_tv-q" data-q="${k}" style="display:flex;flex-direction:column;gap:2px;padding:9px 14px;border:1px solid ${state.queue === k ? col : '#e2e8f0'};background:${state.queue === k ? col : '#fff'};color:${state.queue === k ? '#fff' : '#334155'};border-radius:10px;cursor:pointer;font:inherit;min-width:84px">
       <span style="font-size:19px;font-weight:800;line-height:1">${n}</span><span style="font-size:11px;font-weight:600;opacity:${state.queue === k ? 1 : .8}">${lbl}</span></button>`;
 
+    // Quick source-filter chips (same row as the queue boxes). Toggle on/off.
+    const sc = sourceGroupCounts();
+    const SRC_GROUPS = [
+      ['beint', '✍️ Skráð beint', sc.beint, '#0f766e'],
+      ['verkdagbok', '📓 Verk/þjónustubók', sc.verkdagbok, '#7c3aed'],
+      ['email', '✉️ Tölvupóstur', sc.email, '#2563eb']
+    ];
+    const srcChip = ([k, lbl, n, col]) => {
+      const on = state.fSourceGroup === k;
+      return `<button class="_tv-srcg" data-srcg="${k}" title="Sía á farveg — smelltu aftur til að hreinsa" style="display:flex;align-items:center;gap:6px;padding:9px 13px;border:1px solid ${on ? col : '#e2e8f0'};background:${on ? col : '#fff'};color:${on ? '#fff' : '#475569'};border-radius:10px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600">
+        <span>${lbl}</span><span style="font-size:12px;font-weight:800;opacity:${on ? 1 : .65}">${n}</span></button>`;
+    };
+
     const selN = state.selected.size;
     const bulk = selN ? `
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:9px 12px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;margin-bottom:12px">
@@ -324,7 +354,8 @@
             <button id="_tv-tidy" title="Tiltekt — fela Lokað + gömul (>30 daga) Annað sem er ekki áríðandi" style="padding:8px 12px;border:1px solid #fcd34d;background:#fffbeb;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#b45309">🧹 Tiltekt</button>
             <button id="_tv-new" style="padding:8px 15px;border:none;background:#2563eb;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">+ Ný beiðni</button></div>
         </div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${QUEUES.map(qBtn).join('')}</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;margin-bottom:14px">${QUEUES.map(qBtn).join('')}
+          <div style="width:1px;background:#e2e8f0;margin:2px 4px"></div>${SRC_GROUPS.map(srcChip).join('')}</div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px">
           <input id="_tv-search" type="search" placeholder="🔍 Leita…" value="${esc(state.search)}" style="flex:1;min-width:160px;padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px">
           <select id="_tv-ftype" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:12px"><option value="">Allar tegundir</option>${TYPE_ORDER.map(t => `<option value="${t}" ${state.fType === t ? 'selected' : ''}>${TYPES[t].label}</option>`).join('')}</select>
@@ -376,6 +407,7 @@
     main.querySelector('#_tv-verk')?.addEventListener('click', ingestVerkdagbok);
     main.querySelector('#_tv-new')?.addEventListener('click', () => openForm());
     main.querySelectorAll('._tv-q').forEach(b => b.addEventListener('click', () => { state.queue = b.dataset.q; state.selected.clear(); render(); }));
+    main.querySelectorAll('._tv-srcg').forEach(b => b.addEventListener('click', () => { state.fSourceGroup = state.fSourceGroup === b.dataset.srcg ? '' : b.dataset.srcg; render(); }));
     let t = null;
     main.querySelector('#_tv-search')?.addEventListener('input', e => { clearTimeout(t); t = setTimeout(() => { state.search = e.target.value; render(); }, 180); });
     main.querySelector('#_tv-ftype')?.addEventListener('change', e => { state.fType = e.target.value; render(); });
