@@ -382,6 +382,40 @@
     try { const { data } = await SB.from('fyrirtaeki').select('id,nafn,kennitala,netfang,customer_base_id').is('deleted_at', null).order('nafn').limit(3000); _coList = data || []; } catch (_) {}
   }
 
+  // ── Shared customer matcher (round 2) — normalize + substring fallback ───────
+  // Loosens the ~50% link rate: strip " ehf"/punctuation/whitespace, fold accents,
+  // then exact-normalized, then substring either-direction (min 4 chars). For
+  // email also try sender netfang exact → company domain.
+  function normName(s) {
+    return String(s == null ? '' : s).toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[.,;:!?'"()/\\\-]+/g, ' ')
+      .replace(/\b(ehf|hf|sf|slf|ohf)\b/g, ' ')
+      .replace(/\s+/g, ' ').trim();
+  }
+  const FREEMAIL = /gmail|hotmail|outlook|live|icloud|yahoo|me\.com|simnet|internet\.is/;
+  function buildCoIndex() {
+    const byNorm = new Map(), byEmail = new Map(), byDomain = new Map();
+    _coList.forEach(c => {
+      const n = normName(c.nafn); if (n && !byNorm.has(n)) byNorm.set(n, c);
+      const e = (c.netfang || '').trim().toLowerCase();
+      if (e) { byEmail.set(e, c); const d = e.split('@')[1]; if (d && !FREEMAIL.test(d) && !byDomain.has(d)) byDomain.set(d, c); }
+    });
+    return { byNorm, byEmail, byDomain };
+  }
+  function matchCompany(idx, name, email) {
+    email = (email || '').trim().toLowerCase();
+    if (email && idx.byEmail.has(email)) return idx.byEmail.get(email);
+    if (email) { const d = email.split('@')[1]; if (d && idx.byDomain.has(d)) return idx.byDomain.get(d); }
+    const n = normName(name);
+    if (!n) return null;
+    if (idx.byNorm.has(n)) return idx.byNorm.get(n);
+    if (n.length >= 4) {
+      for (const [cn, co] of idx.byNorm) { if (cn.length >= 4 && (cn.indexOf(n) !== -1 || n.indexOf(cn) !== -1)) return co; }
+    }
+    return null;
+  }
+
   function seg(name, opts, val) {
     return `<div class="_tv-seg" data-name="${name}" style="display:flex;gap:6px;flex-wrap:wrap">${opts.map(([v, lbl]) =>
       `<button type="button" class="_tv-segbtn" data-name="${name}" data-val="${v}" style="padding:7px 12px;border:1px solid ${val === v ? '#2563eb' : '#cbd5e1'};background:${val === v ? '#2563eb' : '#fff'};color:${val === v ? '#fff' : '#334155'};border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600">${lbl}</button>`).join('')}</div>`;
@@ -513,14 +547,7 @@
   async function ingestEmail() {
     const SB = getSB(); if (!SB) return;
     await loadCompanies();
-    const byEmail = new Map(), byDomain = new Map();
-    _coList.forEach(c => {
-      const e = (c.netfang || '').trim().toLowerCase();
-      if (!e) return;
-      byEmail.set(e, c);
-      const d = e.split('@')[1];
-      if (d && !/gmail|hotmail|outlook|live|icloud|yahoo|me\.com/.test(d) && !byDomain.has(d)) byDomain.set(d, c);
-    });
+    const idx = buildCoIndex();
     let existing = [];
     try { const { data } = await SB.from('thjonustubeidni').select('channel_ref').not('channel_ref', 'is', null); existing = data || []; } catch (_) {}
     const seen = new Set(existing.map(r => String(r.channel_ref)));
@@ -540,9 +567,7 @@
       const subj = String(e.subject || '');
       if (EML_NOISE_SENDER.test(e.sender_email || '') || EML_NOISE_SUBJ.test(subj)) continue;
       const text = subj + ' ' + (e.snippet || '') + ' ' + (e.body_preview || '');
-      const senderEmail = (e.sender_email || '').trim().toLowerCase();
-      let co = byEmail.get(senderEmail);
-      if (!co) { const d = senderEmail.split('@')[1]; if (d) co = byDomain.get(d); }
+      const co = matchCompany(idx, e.sender_name, e.sender_email);
       rows.push({
         source: 'email', channel_ref: 'email:' + e.id, type: classifyEmailType(text),
         status: 'nytt', priority: 'venjulegur',
@@ -585,8 +610,7 @@
   async function ingestVerkdagbok() {
     const SB = getSB(); if (!SB) return;
     await loadCompanies();
-    const byName = new Map();
-    _coList.forEach(c => { const n = (c.nafn || '').trim().toLowerCase(); if (n) byName.set(n, c); });
+    const idx = buildCoIndex();
     let existing = [];
     try { const { data } = await SB.from('thjonustubeidni').select('channel_ref').not('channel_ref', 'is', null); existing = data || []; } catch (_) {}
     const seen = new Set(existing.map(r => String(r.channel_ref)));
@@ -605,7 +629,7 @@
       if (!note) continue;
       if (seen.has('verkdagbok:' + v.id)) continue;
       const name = (v.fyrirtaeki || '').trim();
-      const co = byName.get(name.toLowerCase());
+      const co = matchCompany(idx, name, null);
       let ca = new Date().toISOString();
       if (v.job_date) { const d = new Date(v.job_date); if (!isNaN(d)) ca = d.toISOString(); }
       rows.push({
