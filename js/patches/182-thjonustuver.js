@@ -86,8 +86,8 @@
     selected: new Set(),
     sort: 'new',                   // new | old | age | priority | important | type | customer
     // #15 skiptanleg sýn: 'list' = þétt tafla · 'cards' = ítarleg kort (meira pláss).
-    // Geymt í localStorage svo valið helst milli heimsókna.
-    view: (function () { try { return localStorage.getItem('_tv_view') === 'cards' ? 'cards' : 'list'; } catch (_) { return 'list'; } })()
+    // Sjálfgefið = Ítarlegt (rúmgott); geymt í localStorage svo valið helst.
+    view: (function () { try { return localStorage.getItem('_tv_view') === 'list' ? 'list' : 'cards'; } catch (_) { return 'cards'; } })()
   };
 
   // ── Data ────────────────────────────────────────────────────────────────────
@@ -348,7 +348,7 @@
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px">
           <div><div style="font-size:21px;font-weight:800;color:#0f172a">🛎️ Þjónustuver</div>
             <div style="font-size:12px;color:#94a3b8">Sameiginlegt inbox — kúnna-beiðnir úr öllum farvegum</div></div>
-          <div style="display:flex;gap:8px"><button id="_tv-refresh" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">↻ Sækja</button>
+          <div class="_tv-actions" style="display:flex;gap:8px;flex-wrap:wrap"><button id="_tv-refresh" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">↻ Sækja</button>
             <button id="_tv-email" title="Flytja inn nýjar beiðnir úr eldklar pósthólfi" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">✉️ Sækja tölvupóst</button>
             <button id="_tv-verk" title="Flytja opin follow-up úr Verkdagbók" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">📓 Sækja úr Verkdagbók</button>
             <button id="_tv-tidy" title="Tiltekt — fela Lokað + gömul (>30 daga) Annað sem er ekki áríðandi" style="padding:8px 12px;border:1px solid #fcd34d;background:#fffbeb;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#b45309">🧹 Tiltekt</button>
@@ -380,6 +380,7 @@
         </div>
         ${bulk}
         ${state.view === 'cards' ? `
+        ${rows.length && !state.loading ? `<label style="display:inline-flex;align-items:center;gap:7px;margin-bottom:9px;font-size:12px;color:#64748b;cursor:pointer;user-select:none"><input type="checkbox" id="_tv-all" style="width:15px;height:15px" ${rows.every(r => state.selected.has(r.id)) ? 'checked' : ''}>Velja allar (${rows.length})</label>` : ''}
         <div>${state.loading ? '<div style="padding:30px;text-align:center;color:#94a3b8">Hleður…</div>' : (rows.length ? renderCards(rows) : '<div style="padding:34px;text-align:center;color:#94a3b8;background:#fff;border:1px solid #e2e8f0;border-radius:11px">Engar beiðnir í þessari biðröð. 🎉</div>')}</div>
         ` : `
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:11px;overflow:hidden">
@@ -948,7 +949,21 @@ Slökkvitæki ehf</textarea></div>
   }
 
   // ── View + sidebar wiring (mirrors patch 178) ────────────────────────────────
+  // One-time responsive styles. Inline styles win over normal stylesheet rules,
+  // so the mobile overrides use !important to take effect on small screens.
+  function injectStyle() {
+    if (document.getElementById('_tv-style')) return;
+    const s = document.createElement('style');
+    s.id = '_tv-style';
+    s.textContent =
+      '@media (max-width:640px){' +
+      '#_tv-main ._tv-actions{width:100%!important}' +
+      '#_tv-main ._tv-actions button{flex:1 1 40%!important;justify-content:center!important;padding:9px 6px!important}' +
+      '}';
+    document.head.appendChild(s);
+  }
   function ensureView() {
+    injectStyle();
     if (document.getElementById(VIEW_ID)) return;
     const sample = document.getElementById('view-beidnir') || document.getElementById('view-companies') || document.querySelector('.view');
     if (!sample || !sample.parentElement) return;
