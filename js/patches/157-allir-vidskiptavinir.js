@@ -100,6 +100,20 @@
   function docsFor(c) {
     return (c.customer_base_id != null && _docByBase.get(String(c.customer_base_id))) || _docByKt.get(_normKt(c.kennitala)) || null;
   }
+
+  // Bank-import-only payer rows (PR1 / framhald 48A): fyrirtaeki flagged
+  // is_bank_only — no kt, no tæki, no samningur, just a name + bank note. They
+  // inflated "Allir" + "Vantar skjöl", so they're hidden from every view except
+  // the dedicated "Greiðendur (bank)" filter. Reversible (the flag, not delete).
+  let _bankOnlyIds = new Set(), _bankLoaded = false;
+  async function loadBankOnly() {
+    const SB = (window.DB && window.DB.sb); if (!SB) return;
+    try {
+      const { data } = await SB.from('fyrirtaeki').select('id').eq('is_bank_only', true);
+      _bankOnlyIds = new Set((data || []).map(r => +r.id));
+      _bankLoaded = true;
+    } catch (_) { /* column may not exist yet on older deploys */ }
+  }
   function docPill(text, ok) {
     return '<span style="display:inline-block;padding:1px 5px;border-radius:5px;font-size:10px;font-weight:700;' +
       (ok ? 'color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;' : 'color:#a8b1bd;background:#f8fafc;border:1px solid #eef2f6;') + '">' + text + '</span>';
@@ -145,7 +159,8 @@
         _ferda: ferda || {},
         _unitCount: unitsByClient[c.nafn] || 0,
         _hasGps: !!(c.heimilisfang && gc[c.heimilisfang]) || !!(c.nafn && gc[c.nafn]),
-        _docs: docsFor(c)
+        _docs: docsFor(c),
+        _bankOnly: _bankOnlyIds.has(+c.id)
       };
     });
   }
@@ -154,11 +169,17 @@
     const search = (state.search || '').trim().toLowerCase();
     let result = arr.slice();
 
-    // Primary service filter (chips)
-    if (state.filter === 'fyrirt') result = result.filter(c => c._hasArs);
-    else if (state.filter === 'brunak') result = result.filter(c => c._hasBru);
-    else if (state.filter === 'ferda') result = result.filter(c => c._hasFerda);
-    else if (state.filter === 'onei') result = result.filter(c => !c._hasArs && !c._hasBru && !c._hasFerda);
+    // Primary service filter (chips). Bank-import-only payers are hidden from
+    // every view except their own "Greiðendur (bank)" filter.
+    if (state.filter === 'bank') {
+      result = result.filter(c => c._bankOnly);
+    } else {
+      result = result.filter(c => !c._bankOnly);
+      if (state.filter === 'fyrirt') result = result.filter(c => c._hasArs);
+      else if (state.filter === 'brunak') result = result.filter(c => c._hasBru);
+      else if (state.filter === 'ferda') result = result.filter(c => c._hasFerda);
+      else if (state.filter === 'onei') result = result.filter(c => !c._hasArs && !c._hasBru && !c._hasFerda);
+    }
 
     // Secondary filters (xfilter) — additive AND
     if (state.xfilter.includes('has-email')) {
@@ -323,6 +344,11 @@
       const m = document.getElementById('_av-main');
       if (m) render(m);
     });
+    // Load the bank-only flag set once, then refresh so they drop out of view.
+    if (!_bankLoaded) loadBankOnly().then(() => {
+      const m = document.getElementById('_av-main');
+      if (m) render(m);
+    });
   }
 
   function render(main) {
@@ -338,21 +364,24 @@
     const all = getAll();
     const filtered = filterAll(all);
 
-    const cntAll = all.length;
-    const cntArs = all.filter(c => c._hasArs).length;
-    const cntBru = all.filter(c => c._hasBru).length;
-    const cntFerda = all.filter(c => c._hasFerda).length;
-    const cntOne = all.filter(c => !c._hasArs && !c._hasBru && !c._hasFerda).length;
+    // Headline counts exclude bank-import-only payers (they get their own chip).
+    const nonBank = all.filter(c => !c._bankOnly);
+    const cntBank = all.length - nonBank.length;
+    const cntAll = nonBank.length;
+    const cntArs = nonBank.filter(c => c._hasArs).length;
+    const cntBru = nonBank.filter(c => c._hasBru).length;
+    const cntFerda = nonBank.filter(c => c._hasFerda).length;
+    const cntOne = nonBank.filter(c => !c._hasArs && !c._hasBru && !c._hasFerda).length;
 
     // Counts for the secondary (xfilter) chips
-    const cntWithEmail   = all.filter(c => !!c.netfang).length;
-    const cntWithGps     = all.filter(c => c._hasGps).length;
-    const cntNoAddress   = all.filter(c => !c.heimilisfang).length;
-    const cntWithUnits   = all.filter(c => c._unitCount > 0).length;
-    const cntInService   = all.filter(c => c._hasArs || c._hasBru).length;
+    const cntWithEmail   = nonBank.filter(c => !!c.netfang).length;
+    const cntWithGps     = nonBank.filter(c => c._hasGps).length;
+    const cntNoAddress   = nonBank.filter(c => !c.heimilisfang).length;
+    const cntWithUnits   = nonBank.filter(c => c._unitCount > 0).length;
+    const cntInService   = nonBank.filter(c => c._hasArs || c._hasBru).length;
     const cntNoEmail     = cntAll - cntWithEmail;
-    const cntReview      = all.filter(c => !!c.review_flag).length;
-    const cntMissingDocs = all.filter(c => !c._docs || c._docs.total === 0).length;
+    const cntReview      = nonBank.filter(c => !!c.review_flag).length;
+    const cntMissingDocs = nonBank.filter(c => !c._docs || c._docs.total === 0).length;
 
     main.innerHTML = `
       <div style="max-width:1200px;margin:0 auto;padding:18px 20px 60px">
@@ -419,7 +448,7 @@
             ['brunak', '🚨 Brunakerfi',          cntBru],
             ['ferda',  '🚌 Ferðaþjónusta',       cntFerda],
             ['onei',   'Án samnings',            cntOne]
-          ].map(([key, lbl, n]) => {
+          ].concat(cntBank ? [['bank', '🏦 Greiðendur (bank)', cntBank]] : []).map(([key, lbl, n]) => {
             const sel = state.filter === key;
             return `<button data-filter="${key}" class="_av-ft" style="padding:6px 12px;border:1px solid ${sel?'#0f172a':'#cbd5e1'};background:${sel?'#0f172a':'#fff'};color:${sel?'#fff':'#475569'};border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">${lbl} <span style="opacity:.65;font-weight:500">${n}</span></button>`;
           }).join('')}
@@ -463,7 +492,7 @@
         ` : (state.view === 'list' ? renderList(filtered) : renderCards(filtered))}
 
         <div style="margin-top:18px;font-size:11px;color:#94a3b8;text-align:center">
-          Sýni <strong style="color:#475569">${filtered.length}</strong> af ${all.length} viðskiptavinum
+          Sýni <strong style="color:#475569">${filtered.length}</strong> af ${state.filter === 'bank' ? cntBank : cntAll} viðskiptavinum${cntBank && state.filter !== 'bank' ? ` · ${cntBank} bank-greiðendur faldir` : ''}
         </div>
       </div>
     `;
