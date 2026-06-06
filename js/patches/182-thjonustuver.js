@@ -68,15 +68,22 @@
     if (row.due_at && new Date(row.due_at) < new Date()) return true;
     return ageDays(row) >= 14; // SLA: nothing should rot
   }
+  // Status-dot (#14): grár Nýtt · blár Í vinnslu · gulur Beðið · grænn Tilbúið/
+  // Lokað · rauður = útrunnið eða áríðandi. Click advances to the next status.
+  const STATUS_COLORS = { nytt: '#94a3b8', i_vinnslu: '#2563eb', bedid: '#d97706', tilbuid: '#16a34a', lokad: '#16a34a' };
+  function statusColor(r) { return (r.important || isOverdue(r)) ? '#dc2626' : (STATUS_COLORS[r.status] || '#94a3b8'); }
+  function nextStatus(s) { const i = STATUS_ORDER.indexOf(s); return STATUS_ORDER[(i + 1) % STATUS_ORDER.length]; }
+  const TIDY_DAYS = 30; // default-view window + Tiltekt age threshold
 
   // ── State ───────────────────────────────────────────────────────────────────
   const state = {
     items: [], loading: false,
     queue: 'open',                 // nytt | mine | overdue | bedid | open
     search: '',
-    fType: '', fPriority: '', fSource: '',
+    fType: '', fPriority: '', fSource: '', fImportant: false,
+    showOlder: false,              // default view = last 30 days (Áríðandi exempt)
     selected: new Set(),
-    sort: 'new'                    // new | old | age | priority
+    sort: 'new'                    // new | old | age | priority | important | type | customer
   };
 
   // ── Data ────────────────────────────────────────────────────────────────────
@@ -104,19 +111,31 @@
     if (q === 'bedid') return row.status === 'bedid';
     return row.status !== 'lokad'; // open
   }
+  function olderHiddenCount() {
+    return state.items.filter(x => inQueue(x, state.queue) && !x.important && ageDays(x) > TIDY_DAYS).length;
+  }
   function visibleRows() {
     let r = state.items.filter(x => inQueue(x, state.queue));
+    // Default view = last 30 days; older tucked away (Áríðandi always shown).
+    if (!state.showOlder) r = r.filter(x => x.important || ageDays(x) <= TIDY_DAYS);
+    if (state.fImportant) r = r.filter(x => x.important);
     if (state.fType) r = r.filter(x => x.type === state.fType);
     if (state.fPriority) r = r.filter(x => x.priority === state.fPriority);
     if (state.fSource) r = r.filter(x => x.source === state.fSource);
     const s = state.search.trim().toLowerCase();
     if (s) r = r.filter(x => [x.customer_nafn, x.title, x.notes, x.assigned_to].some(f => (f || '').toLowerCase().includes(s)));
     const pr = { har: 0, venjulegur: 1, lagur: 2 };
+    const coll = new Intl.Collator('is', { sensitivity: 'base' });
     r.sort((a, b) => {
-      if (state.sort === 'old') return new Date(a.created_at) - new Date(b.created_at);
-      if (state.sort === 'age') return ageDays(b) - ageDays(a);
-      if (state.sort === 'priority') return (pr[a.priority] ?? 1) - (pr[b.priority] ?? 1) || (new Date(b.created_at) - new Date(a.created_at));
-      return new Date(b.created_at) - new Date(a.created_at);
+      switch (state.sort) {
+        case 'old': return new Date(a.created_at) - new Date(b.created_at);
+        case 'age': return ageDays(b) - ageDays(a);
+        case 'priority': return (pr[a.priority] ?? 1) - (pr[b.priority] ?? 1) || (new Date(b.created_at) - new Date(a.created_at));
+        case 'important': return (b.important ? 1 : 0) - (a.important ? 1 : 0) || (new Date(b.created_at) - new Date(a.created_at));
+        case 'type': return TYPE_ORDER.indexOf(a.type) - TYPE_ORDER.indexOf(b.type) || coll.compare(a.customer_nafn || '', b.customer_nafn || '');
+        case 'customer': return coll.compare(a.customer_nafn || '', b.customer_nafn || '');
+        default: return new Date(b.created_at) - new Date(a.created_at);
+      }
     });
     return r;
   }
@@ -159,6 +178,7 @@
     const keepSearch = prevActive && prevActive.id === '_tv-search';
     const c = queueCounts();
     const rows = visibleRows();
+    const olderHidden = olderHiddenCount();
     const QUEUES = [
       ['nytt', '🆕 Nýtt', c.nytt, '#2563eb'],
       ['mine', '👤 Mínar', c.mine, '#0f766e'],
@@ -189,16 +209,20 @@
       const initials = (r.assigned_to || '').split(/\s+/).filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase();
       return `<tr class="_tv-row" data-id="${r.id}" style="cursor:pointer;${od ? 'background:#fef2f2;' : ''}">
         <td style="${cell};text-align:center"><input type="checkbox" class="_tv-cb" data-id="${r.id}" ${sel ? 'checked' : ''} onclick="event.stopPropagation()" style="width:15px;height:15px"></td>
+        <td style="${cell};white-space:nowrap">
+          <button class="_tv-dot" data-id="${r.id}" title="${STATUSES[r.status]} — smelltu til að færa áfram" onclick="event.stopPropagation()" style="width:14px;height:14px;border-radius:50%;border:none;background:${statusColor(r)};cursor:pointer;padding:0;vertical-align:middle"></button>
+          <button class="_tv-star" data-id="${r.id}" title="${r.important ? 'Áríðandi — afmerkja' : 'Merkja áríðandi'}" onclick="event.stopPropagation()" style="background:none;border:none;cursor:pointer;font-size:14px;line-height:1;padding:0 0 0 4px;vertical-align:middle">${r.important ? '⭐' : '☆'}</button>
+        </td>
         <td style="${cell};font-weight:700;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(r.customer_nafn || '—')}</td>
         <td style="${cell}">${typeChip(r.type)}</td>
-        <td style="${cell};max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.title || '')}">${esc(r.title || '')}</td>
+        <td style="${cell};max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${esc(r.title || '')}">${esc(r.title || '')}</td>
         <td style="${cell};text-align:center" title="${esc(src.label)}">${src.icon}</td>
         <td style="${cell};text-align:center">${r.priority === 'har' ? '<span style="color:#dc2626;font-weight:700">⚑ Hár</span>' : (r.priority === 'lagur' ? '<span style="color:#94a3b8">Lágur</span>' : 'Venjul.')}</td>
-        <td style="${cell}"><select class="_tv-status" data-id="${r.id}" onclick="event.stopPropagation()" style="padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:11.5px">${STATUS_ORDER.map(s => `<option value="${s}" ${r.status === s ? 'selected' : ''}>${STATUSES[s]}</option>`).join('')}</select></td>
         <td style="${cell};text-align:right;${od ? 'color:#dc2626;font-weight:700' : 'color:#64748b'}">${ageDays(r)} d</td>
         <td style="${cell};text-align:center"><span title="${esc(r.assigned_to || '')}" style="display:inline-block;min-width:22px;font-size:10.5px;font-weight:700;color:#475569">${esc(initials || '—')}</span></td>
+        <td style="${cell};text-align:center"><button class="_tv-arch" data-id="${r.id}" title="Fjarlægja af síðu (archive — endurheimtanlegt)" onclick="event.stopPropagation()" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:14px;line-height:1;padding:0">✕</button></td>
       </tr>`;
-    }).join('') : `<tr><td colspan="9" style="padding:34px;text-align:center;color:#94a3b8">Engar beiðnir í þessari biðröð. 🎉</td></tr>`;
+    }).join('') : `<tr><td colspan="10" style="padding:34px;text-align:center;color:#94a3b8">Engar beiðnir í þessari biðröð. 🎉</td></tr>`;
 
     main.innerHTML = `
       <div style="max-width:1200px;margin:0 auto;padding:16px 18px 60px">
@@ -208,6 +232,7 @@
           <div style="display:flex;gap:8px"><button id="_tv-refresh" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">↻ Sækja</button>
             <button id="_tv-email" title="Flytja inn nýjar beiðnir úr eldklar pósthólfi" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">✉️ Sækja tölvupóst</button>
             <button id="_tv-verk" title="Flytja opin follow-up úr Verkdagbók" style="padding:8px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#475569">📓 Sækja úr Verkdagbók</button>
+            <button id="_tv-tidy" title="Tiltekt — fela Lokað + gömul (>30 daga) Annað sem er ekki áríðandi" style="padding:8px 12px;border:1px solid #fcd34d;background:#fffbeb;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:#b45309">🧹 Tiltekt</button>
             <button id="_tv-new" style="padding:8px 15px;border:none;background:#2563eb;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">+ Ný beiðni</button></div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">${QUEUES.map(qBtn).join('')}</div>
@@ -216,20 +241,32 @@
           <select id="_tv-ftype" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:12px"><option value="">Allar tegundir</option>${TYPE_ORDER.map(t => `<option value="${t}" ${state.fType === t ? 'selected' : ''}>${TYPES[t].label}</option>`).join('')}</select>
           <select id="_tv-fpri" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:12px"><option value="">Forgangur</option>${Object.keys(PRIORITIES).map(p => `<option value="${p}" ${state.fPriority === p ? 'selected' : ''}>${PRIORITIES[p]}</option>`).join('')}</select>
           <select id="_tv-fsrc" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:12px"><option value="">Farvegur</option>${SOURCE_ORDER.map(s => `<option value="${s}" ${state.fSource === s ? 'selected' : ''}>${SOURCES[s].icon} ${SOURCES[s].label}</option>`).join('')}</select>
-          <select id="_tv-sort" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:12px"><option value="new" ${state.sort === 'new' ? 'selected' : ''}>Nýjast fyrst</option><option value="old" ${state.sort === 'old' ? 'selected' : ''}>Elst fyrst</option><option value="age" ${state.sort === 'age' ? 'selected' : ''}>Aldur</option><option value="priority" ${state.sort === 'priority' ? 'selected' : ''}>Forgangur</option></select>
+          <select id="_tv-sort" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:12px">
+            <option value="new" ${state.sort === 'new' ? 'selected' : ''}>Nýjast fyrst</option>
+            <option value="old" ${state.sort === 'old' ? 'selected' : ''}>Elst fyrst</option>
+            <option value="priority" ${state.sort === 'priority' ? 'selected' : ''}>Forgangur</option>
+            <option value="important" ${state.sort === 'important' ? 'selected' : ''}>Áríðandi fyrst</option>
+            <option value="type" ${state.sort === 'type' ? 'selected' : ''}>Eftir tegund</option>
+            <option value="customer" ${state.sort === 'customer' ? 'selected' : ''}>Eftir kúnna</option>
+            <option value="age" ${state.sort === 'age' ? 'selected' : ''}>Aldur / SLA</option>
+          </select>
+          <button id="_tv-fimp" style="padding:7px 11px;border:1px solid ${state.fImportant ? '#f59e0b' : '#cbd5e1'};background:${state.fImportant ? '#fffbeb' : '#fff'};color:${state.fImportant ? '#b45309' : '#475569'};border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">⭐ Áríðandi</button>
+          ${(olderHidden > 0 || state.showOlder) ? `<button id="_tv-older" style="padding:7px 11px;border:1px solid ${state.showOlder ? '#0f172a' : '#cbd5e1'};background:${state.showOlder ? '#0f172a' : '#fff'};color:${state.showOlder ? '#fff' : '#475569'};border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">${state.showOlder ? 'Fela eldri' : 'Sýna eldri (' + olderHidden + ')'}</button>` : ''}
         </div>
         ${bulk}
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:11px;overflow:hidden">
           <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
             <thead><tr>
               <th style="${th};text-align:center;width:34px"><input type="checkbox" id="_tv-all" style="width:15px;height:15px"></th>
+              <th style="${th};width:58px">Staða</th>
               <th style="${th}">Viðskiptavinur</th><th style="${th}">Tegund</th><th style="${th}">Lýsing</th>
-              <th style="${th};text-align:center">Farv.</th><th style="${th};text-align:center">Forgangur</th>
-              <th style="${th}">Staða</th><th style="${th};text-align:right">Aldur</th><th style="${th};text-align:center">Ábyrgð</th>
-            </tr></thead><tbody>${state.loading ? '<tr><td colspan="9" style="padding:30px;text-align:center;color:#94a3b8">Hleður…</td></tr>' : body}</tbody>
+              <th style="${th};text-align:center">Farv.</th><th style="${th};text-align:center">Forg.</th>
+              <th style="${th};text-align:right">Aldur</th><th style="${th};text-align:center">Ábyrgð</th>
+              <th style="${th};width:30px"></th>
+            </tr></thead><tbody>${state.loading ? '<tr><td colspan="10" style="padding:30px;text-align:center;color:#94a3b8">Hleður…</td></tr>' : body}</tbody>
           </table></div>
         </div>
-        <div style="margin-top:10px;font-size:11px;color:#94a3b8;text-align:center">${rows.length} beiðnir í þessari sýn · ${state.items.length} opnar/virkar alls</div>
+        <div style="margin-top:10px;font-size:11px;color:#94a3b8;text-align:center">${rows.length} beiðnir í þessari sýn · ${state.items.length} alls${state.showOlder ? '' : (olderHidden ? ' · síðustu 30 dagar (' + olderHidden + ' eldri faldar)' : '')}</div>
       </div>`;
 
     wire(main, rows);
@@ -248,10 +285,25 @@
     main.querySelector('#_tv-fpri')?.addEventListener('change', e => { state.fPriority = e.target.value; render(); });
     main.querySelector('#_tv-fsrc')?.addEventListener('change', e => { state.fSource = e.target.value; render(); });
     main.querySelector('#_tv-sort')?.addEventListener('change', e => { state.sort = e.target.value; render(); });
+    main.querySelector('#_tv-fimp')?.addEventListener('click', () => { state.fImportant = !state.fImportant; render(); });
+    main.querySelector('#_tv-older')?.addEventListener('click', () => { state.showOlder = !state.showOlder; render(); });
+    main.querySelector('#_tv-tidy')?.addEventListener('click', () => doTidy());
 
-    main.querySelectorAll('._tv-status').forEach(sel => sel.addEventListener('change', async e => {
+    main.querySelectorAll('._tv-dot').forEach(b => b.addEventListener('click', async e => {
       e.stopPropagation();
-      await saveRow(+sel.dataset.id, { status: sel.value });
+      const row = state.items.find(x => x.id === +b.dataset.id); if (!row) return;
+      await saveRow(row.id, { status: nextStatus(row.status) });
+      render();
+    }));
+    main.querySelectorAll('._tv-star').forEach(b => b.addEventListener('click', async e => {
+      e.stopPropagation();
+      const row = state.items.find(x => x.id === +b.dataset.id); if (!row) return;
+      await saveRow(row.id, { important: !row.important });
+      render();
+    }));
+    main.querySelectorAll('._tv-arch').forEach(b => b.addEventListener('click', async e => {
+      e.stopPropagation();
+      await softDelete(+b.dataset.id);
       render();
     }));
     main.querySelectorAll('._tv-row').forEach(row => row.addEventListener('click', e => {
@@ -284,6 +336,44 @@
     });
   }
 
+  // ── Tiltekt (bulk cleanup, #14.5) — archive Lokað + stale Annað ──────────────
+  // Soft-delete only, never touches Áríðandi, never auto-archives a typed item
+  // (only generic 'Annað' once it's >30 days idle) so real work isn't hidden.
+  function tidyCandidates() {
+    return state.items.filter(x =>
+      x.deleted_at == null && !x.important &&
+      (x.status === 'lokad' || (ageDays(x) > TIDY_DAYS && x.type === 'annad'))
+    );
+  }
+  function doTidy() {
+    const cands = tidyCandidates();
+    if (!cands.length) { toast('Ekkert til að taka til (allt nýlegt/áríðandi/flokkað).'); return; }
+    document.getElementById('_tv-tidybar')?.remove();
+    const bar = document.createElement('div');
+    bar.id = '_tv-tidybar';
+    bar.style.cssText = 'position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:100060;background:#0f172a;color:#fff;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.35);padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font:inherit;font-size:13px;max-width:calc(100vw - 24px)';
+    bar.innerHTML = `<span>🧹 Tiltekt: fela <b>${cands.length}</b> (Lokað + gömul Annað, ekki áríðandi)? Endurheimtanlegt.</span>
+      <button id="_tv-tidy-cancel" style="padding:6px 12px;border:1px solid #475569;background:transparent;color:#cbd5e1;border-radius:7px;cursor:pointer;font:inherit;font-size:12px">Hætta við</button>
+      <button id="_tv-tidy-go" style="padding:6px 12px;border:none;background:#f59e0b;color:#111;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">Já, fela</button>`;
+    document.body.appendChild(bar);
+    bar.querySelector('#_tv-tidy-cancel').onclick = () => bar.remove();
+    bar.querySelector('#_tv-tidy-go').onclick = async () => {
+      const go = bar.querySelector('#_tv-tidy-go'); go.disabled = true; go.textContent = 'Fel…';
+      const ids = cands.map(x => x.id);
+      const SB = getSB();
+      for (let i = 0; i < ids.length; i += 200) {
+        const chunk = ids.slice(i, i + 200);
+        try { const r = await SB.from('thjonustubeidni').update({ deleted_at: new Date().toISOString() }).in('id', chunk); if (r.error) throw r.error; }
+        catch (e) { toast('Tiltekt stöðvaðist: ' + (e.message || e)); break; }
+        go.textContent = 'Fel… ' + Math.min(i + 200, ids.length) + '/' + ids.length;
+      }
+      const idset = new Set(ids);
+      state.items = state.items.filter(x => !idset.has(x.id));
+      bar.remove(); render();
+      toast('🧹 ' + ids.length + ' faldar (endurheimtanlegt)');
+    };
+  }
+
   // ── + Ný beiðni / detail form (shared modal) ─────────────────────────────────
   let _coList = [];
   async function loadCompanies() {
@@ -301,7 +391,7 @@
     await loadCompanies();
     document.getElementById('_tv-modal')?.remove();
     const ex = existing || {};
-    const sel = { source: ex.source || 'phone', type: ex.type || 'annad', priority: ex.priority || 'venjulegur' };
+    const sel = { source: ex.source || 'phone', type: ex.type || 'annad', priority: ex.priority || 'venjulegur', status: ex.status || 'nytt' };
     const m = document.createElement('div');
     m.id = '_tv-modal';
     m.style.cssText = 'position:fixed;inset:0;z-index:100040;display:flex;align-items:flex-start;justify-content:center;padding-top:4vh;font-family:inherit';
@@ -333,6 +423,8 @@
           </div>
           <div><label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Ábyrgð</label>
             <input id="_tv-assigned" value="${esc(ex.assigned_to != null ? ex.assigned_to : currentUser())}" style="width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box"></div>
+          ${existing ? `<div><label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Staða</label>${seg('status', STATUS_ORDER.map(s => [s, STATUSES[s]]), sel.status)}</div>` : ''}
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;color:#0f172a"><input type="checkbox" id="_tv-imp" ${ex.important ? 'checked' : ''} style="width:16px;height:16px"> ⭐ Áríðandi (undanskilið auto-tiltekt)</label>
         </div>
         <div style="display:flex;gap:8px;justify-content:space-between;padding:13px 20px;border-top:1px solid #e2e8f0">
           <div style="display:flex;gap:8px">${existing ? `<button id="_tv-del" style="padding:9px 14px;border:1px solid #fca5a5;background:#fff;color:#dc2626;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">🗑 Eyða</button>` : ''}${existing ? `<button id="_tv-docsend" style="padding:9px 14px;border:1px solid #c4b5fd;background:#f5f3ff;color:#6d28d9;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">📎 Skjöl &amp; senda</button>` : ''}</div>
@@ -375,7 +467,8 @@
       if (kt && SB) { try { const { data } = await SB.from('customers_base').select('id').eq('kennitala', kt.length === 10 ? kt.slice(0, 6) + '-' + kt.slice(6) : kt).maybeSingle(); if (data) baseId = data.id; } catch (_) {} }
       if (!baseId) { const co = _coList.find(c => (c.nafn || '').trim().toLowerCase() === name.toLowerCase() || normKt(c.kennitala) === kt); if (co) baseId = co.customer_base_id || null; }
       const rec = {
-        source: sel.source, type: sel.type, priority: sel.priority,
+        source: sel.source, type: sel.type, priority: sel.priority, status: sel.status,
+        important: !!m.querySelector('#_tv-imp')?.checked,
         customer_nafn: name, customer_base_id: baseId,
         title, notes: (m.querySelector('#_tv-notes').value || '').trim() || null,
         assigned_to: (m.querySelector('#_tv-assigned').value || '').trim() || null,
@@ -384,7 +477,7 @@
       try {
         if (existing) { await saveRow(existing.id, rec); }
         else {
-          rec.status = 'nytt'; rec.created_by = currentUser();
+          rec.created_by = currentUser();
           const { data, error } = await SB.from('thjonustubeidni').insert(rec).select().single();
           if (error) throw error;
           if (data) state.items.unshift(data);
