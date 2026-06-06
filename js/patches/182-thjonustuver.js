@@ -83,7 +83,10 @@
     fType: '', fPriority: '', fSource: '', fImportant: false,
     showOlder: false,              // default view = last 30 days (Áríðandi exempt)
     selected: new Set(),
-    sort: 'new'                    // new | old | age | priority | important | type | customer
+    sort: 'new',                   // new | old | age | priority | important | type | customer
+    // #15 skiptanleg sýn: 'list' = þétt tafla · 'cards' = ítarleg kort (meira pláss).
+    // Geymt í localStorage svo valið helst milli heimsókna.
+    view: (function () { try { return localStorage.getItem('_tv_view') === 'cards' ? 'cards' : 'list'; } catch (_) { return 'list'; } })()
   };
 
   // ── Data ────────────────────────────────────────────────────────────────────
@@ -210,6 +213,46 @@
     return c;
   }
 
+  // ── Ítarleg sýn (#15): rúmgóð kort í stað þéttu töflunnar ────────────────────
+  // Endurnýtir sömu control-klasa og taflan (_tv-cb/_tv-dot/_tv-star/_tv-arch +
+  // _tv-row) svo wire() virkar óbreytt. Stærri texti, lýsing fær að vefjast,
+  // áberandi samantektar-reitur.
+  function renderCards(rows) {
+    return '<div style="display:flex;flex-direction:column;gap:10px">' + rows.map(r => {
+      const od = isOverdue(r);
+      const src = SOURCES[r.source] || SOURCES.phone;
+      const sel = state.selected.has(r.id);
+      const pri = r.priority === 'har' ? '<span style="color:#dc2626;font-weight:700">⚑ Hár forgangur</span>'
+        : (r.priority === 'lagur' ? '<span style="color:#94a3b8">Lágur forgangur</span>' : '');
+      const contact = [r.contact_name, r.contact_email || r.contact_phone].filter(Boolean).map(esc).join(' · ');
+      return `<div class="_tv-row" data-id="${r.id}" style="cursor:pointer;background:#fff;border:1px solid ${od ? '#fecaca' : '#e2e8f0'};border-left:4px solid ${statusColor(r)};border-radius:11px;padding:13px 15px;${od ? 'background:#fffafa;' : ''}">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <input type="checkbox" class="_tv-cb" data-id="${r.id}" ${sel ? 'checked' : ''} onclick="event.stopPropagation()" style="width:16px;height:16px;flex:none">
+          <button class="_tv-dot" data-id="${r.id}" title="${STATUSES[r.status]} — smelltu til að færa áfram" onclick="event.stopPropagation()" style="width:15px;height:15px;border-radius:50%;border:none;background:${statusColor(r)};cursor:pointer;padding:0;flex:none"></button>
+          <span style="font-size:15.5px;font-weight:800;color:#0f172a">${esc(r.customer_nafn || '—')}</span>
+          ${typeChip(r.type)}
+          <button class="_tv-star" data-id="${r.id}" title="${r.important ? 'Áríðandi — afmerkja' : 'Merkja áríðandi'}" onclick="event.stopPropagation()" style="background:none;border:none;cursor:pointer;font-size:16px;line-height:1;padding:0;flex:none">${r.important ? '⭐' : '☆'}</button>
+          <div style="flex:1;min-width:8px"></div>
+          <span title="${esc(src.label)}" style="font-size:13px;color:#64748b">${src.icon} ${esc(src.label)}</span>
+          <span style="font-size:12px;font-weight:700;color:${od ? '#dc2626' : '#94a3b8'}">${ageDays(r)} d</span>
+          <button class="_tv-arch" data-id="${r.id}" title="Fjarlægja af síðu (archive — endurheimtanlegt)" onclick="event.stopPropagation()" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:15px;line-height:1;padding:0;flex:none">✕</button>
+        </div>
+        <div style="font-size:14.5px;font-weight:600;color:#0f172a;margin-top:9px">${esc(r.title || '(efnislaust)')}</div>
+        ${r.notes ? `<div style="font-size:13px;color:#475569;margin-top:4px;line-height:1.5;white-space:pre-wrap;word-break:break-word">${esc(String(r.notes).slice(0, 600))}${String(r.notes).length > 600 ? '…' : ''}</div>` : ''}
+        <div style="margin-top:9px;padding:9px 11px;border-radius:8px;background:${r.summary ? '#f5f3ff' : '#f8fafc'};border:1px solid ${r.summary ? '#ddd6fe' : '#eef2f7'}">
+          <span style="font-size:11px;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.03em">📋 Samantekt</span>
+          <div style="font-size:13px;color:${r.summary ? '#5b21b6' : '#94a3b8'};margin-top:3px;line-height:1.45">${r.summary ? esc(r.summary) : 'Útbý samantekt…'}</div>
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:9px;font-size:12px;color:#64748b">
+          ${contact ? `<span>👤 ${contact}</span>` : ''}
+          ${pri ? `<span>${pri}</span>` : ''}
+          ${r.assigned_to ? `<span>Ábyrgð: <strong style="color:#334155">${esc(r.assigned_to)}</strong></span>` : '<span style="color:#cbd5e1">Óúthlutað</span>'}
+          ${r.due_at ? `<span style="${od ? 'color:#dc2626;font-weight:700' : ''}">⏰ ${esc(String(r.due_at).slice(0, 10))}</span>` : ''}
+        </div>
+      </div>`;
+    }).join('') + '</div>';
+  }
+
   function render() {
     const main = document.getElementById('_tv-main');
     if (!main) return;
@@ -294,8 +337,16 @@
           </select>
           <button id="_tv-fimp" style="padding:7px 11px;border:1px solid ${state.fImportant ? '#f59e0b' : '#cbd5e1'};background:${state.fImportant ? '#fffbeb' : '#fff'};color:${state.fImportant ? '#b45309' : '#475569'};border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">⭐ Áríðandi</button>
           ${(olderHidden > 0 || state.showOlder) ? `<button id="_tv-older" style="padding:7px 11px;border:1px solid ${state.showOlder ? '#0f172a' : '#cbd5e1'};background:${state.showOlder ? '#0f172a' : '#fff'};color:${state.showOlder ? '#fff' : '#475569'};border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">${state.showOlder ? 'Fela eldri' : 'Sýna eldri (' + olderHidden + ')'}</button>` : ''}
+          <div style="flex:1;min-width:0"></div>
+          <div style="display:inline-flex;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden">
+            <button id="_tv-view-list" title="Þétt tafla" style="padding:7px 11px;border:none;background:${state.view === 'list' ? '#0f172a' : '#fff'};color:${state.view === 'list' ? '#fff' : '#475569'};cursor:pointer;font:inherit;font-size:12px;font-weight:600">☰ Þétt</button>
+            <button id="_tv-view-cards" title="Ítarleg kort — meira pláss og samantekt" style="padding:7px 11px;border:none;border-left:1px solid #cbd5e1;background:${state.view === 'cards' ? '#0f172a' : '#fff'};color:${state.view === 'cards' ? '#fff' : '#475569'};cursor:pointer;font:inherit;font-size:12px;font-weight:600">▤ Ítarlegt</button>
+          </div>
         </div>
         ${bulk}
+        ${state.view === 'cards' ? `
+        <div>${state.loading ? '<div style="padding:30px;text-align:center;color:#94a3b8">Hleður…</div>' : (rows.length ? renderCards(rows) : '<div style="padding:34px;text-align:center;color:#94a3b8;background:#fff;border:1px solid #e2e8f0;border-radius:11px">Engar beiðnir í þessari biðröð. 🎉</div>')}</div>
+        ` : `
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:11px;overflow:hidden">
           <div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse">
             <thead><tr>
@@ -307,7 +358,7 @@
               <th style="${th};width:30px"></th>
             </tr></thead><tbody>${state.loading ? '<tr><td colspan="10" style="padding:30px;text-align:center;color:#94a3b8">Hleður…</td></tr>' : body}</tbody>
           </table></div>
-        </div>
+        </div>`}
         <div style="margin-top:10px;font-size:11px;color:#94a3b8;text-align:center">${rows.length} beiðnir í þessari sýn · ${state.items.length} alls${state.showOlder ? '' : (olderHidden ? ' · síðustu 30 dagar (' + olderHidden + ' eldri faldar)' : '')}</div>
       </div>`;
 
@@ -329,6 +380,9 @@
     main.querySelector('#_tv-sort')?.addEventListener('change', e => { state.sort = e.target.value; render(); });
     main.querySelector('#_tv-fimp')?.addEventListener('click', () => { state.fImportant = !state.fImportant; render(); });
     main.querySelector('#_tv-older')?.addEventListener('click', () => { state.showOlder = !state.showOlder; render(); });
+    const setView = v => { if (state.view === v) return; state.view = v; try { localStorage.setItem('_tv_view', v); } catch (_) {} render(); if (v === 'cards') autoSummarize(); };
+    main.querySelector('#_tv-view-list')?.addEventListener('click', () => setView('list'));
+    main.querySelector('#_tv-view-cards')?.addEventListener('click', () => setView('cards'));
     main.querySelector('#_tv-tidy')?.addEventListener('click', () => doTidy());
 
     main.querySelectorAll('._tv-dot').forEach(b => b.addEventListener('click', async e => {
@@ -891,8 +945,9 @@ Slökkvitæki ehf</textarea></div>
     if (!nav) { setTimeout(injectSidebar, 500); return; }
     if (nav.querySelector('[data-view="' + NAV_KEY + '"]')) return;
     const allBtns = Array.from(nav.querySelectorAll('.vnav-btn'));
-    const ref = allBtns.find(b => b.getAttribute('data-view') === 'beidnir') ||
-                allBtns.find(b => /viðskiptavinir/i.test(b.textContent)) || allBtns[allBtns.length - 1];
+    // Place Þjónustuver at the TOP of the sidebar (first nav button) — it's the
+    // primary inbox, so the eigandi wants it front-and-centre.
+    const ref = allBtns[0];
     const btn = document.createElement('button');
     btn.className = (ref && ref.className) || 'vnav-btn';
     btn.setAttribute('data-view', NAV_KEY);
@@ -900,7 +955,7 @@ Slökkvitæki ehf</textarea></div>
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>' +
       '<span>Þjónustuver</span></span>';
     btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (window.App && App.switchView) App.switchView(NAV_KEY); else show(); });
-    if (ref && ref.parentNode) ref.parentNode.insertBefore(btn, ref.nextSibling); else nav.appendChild(btn);
+    if (ref && ref.parentNode) ref.parentNode.insertBefore(btn, ref); else nav.appendChild(btn);
   }
 
   function boot() { injectSidebar(); ensureView(); patchSwitchView(); [600, 1500, 3000].forEach(t => setTimeout(injectSidebar, t)); }
