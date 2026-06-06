@@ -224,12 +224,16 @@
       const sel = state.selected.has(r.id);
       const pri = r.priority === 'har' ? '<span style="color:#dc2626;font-weight:700">⚑ Hár forgangur</span>'
         : (r.priority === 'lagur' ? '<span style="color:#94a3b8">Lágur forgangur</span>' : '');
-      const contact = [r.contact_name, r.contact_email || r.contact_phone].filter(Boolean).map(esc).join(' · ');
+      const created = r.created_at ? new Date(r.created_at).toLocaleDateString('is-IS') : '';
+      const linkBadge = r.customer_base_id
+        ? '<span title="Tengt skráðum viðskiptavin" style="font-size:10.5px;font-weight:700;color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:99px;padding:1px 7px">✓ tengt</span>'
+        : '<span title="Ekki tengt viðskiptavin — flettu upp í smáatriðum" style="font-size:10.5px;font-weight:600;color:#94a3b8;background:#f8fafc;border:1px solid #e2e8f0;border-radius:99px;padding:1px 7px">ótengt</span>';
       return `<div class="_tv-row" data-id="${r.id}" style="cursor:pointer;background:#fff;border:1px solid ${od ? '#fecaca' : '#e2e8f0'};border-left:4px solid ${statusColor(r)};border-radius:11px;padding:13px 15px;${od ? 'background:#fffafa;' : ''}">
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <input type="checkbox" class="_tv-cb" data-id="${r.id}" ${sel ? 'checked' : ''} onclick="event.stopPropagation()" style="width:16px;height:16px;flex:none">
           <button class="_tv-dot" data-id="${r.id}" title="${STATUSES[r.status]} — smelltu til að færa áfram" onclick="event.stopPropagation()" style="width:15px;height:15px;border-radius:50%;border:none;background:${statusColor(r)};cursor:pointer;padding:0;flex:none"></button>
           <span style="font-size:15.5px;font-weight:800;color:#0f172a">${esc(r.customer_nafn || '—')}</span>
+          ${linkBadge}
           ${typeChip(r.type)}
           <button class="_tv-star" data-id="${r.id}" title="${r.important ? 'Áríðandi — afmerkja' : 'Merkja áríðandi'}" onclick="event.stopPropagation()" style="background:none;border:none;cursor:pointer;font-size:16px;line-height:1;padding:0;flex:none">${r.important ? '⭐' : '☆'}</button>
           <div style="flex:1;min-width:8px"></div>
@@ -244,7 +248,7 @@
           <div style="font-size:13px;color:${r.summary ? '#5b21b6' : '#94a3b8'};margin-top:3px;line-height:1.45">${r.summary ? esc(r.summary) : 'Útbý samantekt…'}</div>
         </div>
         <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:9px;font-size:12px;color:#64748b">
-          ${contact ? `<span>👤 ${contact}</span>` : ''}
+          ${created ? `<span>📅 ${esc(created)}</span>` : ''}
           ${pri ? `<span>${pri}</span>` : ''}
           ${r.assigned_to ? `<span>Ábyrgð: <strong style="color:#334155">${esc(r.assigned_to)}</strong></span>` : '<span style="color:#cbd5e1">Óúthlutað</span>'}
           ${r.due_at ? `<span style="${od ? 'color:#dc2626;font-weight:700' : ''}">⏰ ${esc(String(r.due_at).slice(0, 10))}</span>` : ''}
