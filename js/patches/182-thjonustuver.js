@@ -847,12 +847,11 @@
         subject: payload.subject || '(efnislaust)',
         html: bodyToHtml(payload.body)
       };
-      // Resend fetches each attachment `path` (a URL) server-side. Drive direct-
-      // download works when the file is shared; large/restricted files may fail
-      // (the email still goes) — a server-side Drive→base64 fetch is the robust
-      // follow-up once the basic path is confirmed.
-      const atts = (payload.attachments || []).filter(a => a.downloadUrl || a.url);
-      if (atts.length) body.attachments = atts.map(a => ({ filename: (a.name || 'skjal').replace(/[\\/:*?"<>|]/g, '_') + '.pdf', path: a.downloadUrl || a.url }));
+      // Attachments go up as { filename, driveId }; the email-send function
+      // resolves each via the brunaholf drive-download endpoint (server-side
+      // Google OAuth) into base64 — so even restricted Drive PDFs attach.
+      const atts = (payload.attachments || []).filter(a => a.fileId);
+      if (atts.length) body.attachments = atts.map(a => ({ filename: (a.name || 'skjal').replace(/[\\/:*?"<>|]/g, '_') + '.pdf', driveId: a.fileId }));
       const r = await fetch('/api/email-send', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
       const data = await r.json().catch(() => ({}));
       if (!r.ok || (data && data.error)) return { ok: false, error: (data && (data.message || data.error)) || ('HTTP ' + r.status) };
@@ -860,9 +859,11 @@
     } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
   }
   function driveUrl(id) { return id ? 'https://drive.google.com/file/d/' + id + '/view' : ''; }
-  function driveDownloadUrl(id) { return id ? 'https://drive.google.com/uc?export=download&id=' + id : ''; }
 
-  // One-click pipeline test: emails aggisigurds@gmail.com via Resend (test sender).
+  // One-click pipeline test: emails aggisigurds@gmail.com via Resend (test
+  // sender) WITH a small PDF attachment so the whole chain — Drive→base64
+  // (server-side) → Resend — is exercised in one click. The sample is the
+  // Thai Lindin þjónustusamningur (~313 kB) from the customer_documents trove.
   async function sendTest() {
     const btn = document.getElementById('_tv-test');
     if (btn) { btn.disabled = true; btn.textContent = '✉️ Sendi…'; }
@@ -870,10 +871,11 @@
       from: 'onboarding@resend.dev',
       to: 'aggisigurds@gmail.com',
       subject: 'Þjónustuver — prufusending ' + new Date().toLocaleString('is-IS'),
-      body: 'Halló Agnar,\n\nÞetta er prufusending úr Þjónustuver (Resend email-pípan).\nEf þú færð þennan póst þá virkar email-sendingin. 🎉\n\n— Slökkvitæki ehf'
+      body: 'Halló Agnar,\n\nÞetta er prufusending úr Þjónustuver (Resend email-pípan) með PDF-viðhengi.\nEf þú færð þennan póst MEÐ viðhengi þá virkar bæði email- og skjala-sendingin. 🎉\n\n— Slökkvitæki ehf',
+      attachments: [{ name: 'Prufa - Þjónustusamningur Thai Lindin', fileId: '1MGyQx87eQGFptuzYoaYmtrvv7d_Dxg57' }]
     });
     if (btn) { btn.disabled = false; btn.textContent = '✉️ Prufa send'; }
-    if (res.ok) toast('✉️ Prufa send á aggisigurds@gmail.com' + (res.id ? ' (' + res.id + ')' : ''));
+    if (res.ok) toast('✉️ Prufa send (m. PDF) á aggisigurds@gmail.com' + (res.id ? ' (' + res.id + ')' : ''));
     else toast('Prufa mistókst: ' + (res.error || 'óþekkt villa'));
   }
 
@@ -962,7 +964,7 @@ Slökkvitæki ehf</textarea></div>
       const subject = (m.querySelector('#_tv-s-subj').value || '').trim();
       const body = m.querySelector('#_tv-s-body').value || '';
       const chosen = Array.from(m.querySelectorAll('._tv-doc')).filter(c => c.checked).map(c => +c.dataset.id);
-      const atts = docs.filter(d => chosen.includes(d.id)).map(d => ({ name: (DOC_LABELS[d.doc_type] || d.doc_type) + (d.year ? ' ' + d.year : ''), url: driveUrl(d.drive_file_id), downloadUrl: driveDownloadUrl(d.drive_file_id) }));
+      const atts = docs.filter(d => chosen.includes(d.id)).map(d => ({ name: (DOC_LABELS[d.doc_type] || d.doc_type) + (d.year ? ' ' + d.year : ''), fileId: d.drive_file_id, url: driveUrl(d.drive_file_id) }));
       return { from, to, subject, body, atts };
     }
     // Step 1 → in-modal preview (no blocking native dialog — that was freezing the
