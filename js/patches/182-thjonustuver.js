@@ -439,13 +439,31 @@
   // Generic single words that must NOT substring-match alone (would sweep e.g.
   // every "Hótel X" / "Húsfélag X" onto one base). Cowork accuracy guard.
   const GENERIC = new Set(['hótel', 'hotel', 'húsfélag', 'husfelag', 'hús', 'verslun', 'verkstæði', 'bílaverkstæði', 'söluturn', 'bakarí', 'veitingar', 'kaffihús', 'skóli', 'leikskóli', 'sundlaug', 'apótek', 'heimili', 'félag', 'samtök', 'hótelið']);
+  // Property-management / agency domains: one domain fronts MANY end-customers
+  // (Eignaumsjón sits on 50+ húsfélög, Heimaleiga/Eignarekstur/Rekstrarumsjón
+  // likewise). Never domain-match these — it collapses many customers onto one.
+  // Belt-and-suspenders: the unique-domain rule below already drops any domain
+  // that appears on >1 fyrirtaeki, which catches these automatically + future ones.
+  const AGENCY = new Set(['eignaumsjon.is', 'eignarekstur.is', 'rekstrarumsjon.is', 'fjoleignir.is', 'heimaleiga.is', 'logborg.is', 'eignamidlun.is', 'eignaumsjón.is']);
   function buildCoIndex() {
-    const byNorm = new Map(), byEmail = new Map(), byDomain = new Map();
+    const byNorm = new Map(), byEmail = new Map();
+    const domCos = new Map(); // domain -> Set(company id) to detect ambiguity
+    const domOne = new Map(); // domain -> last company (used only when unique)
     _coList.forEach(c => {
       const n = normName(c.nafn); if (n && !byNorm.has(n)) byNorm.set(n, c);
       const e = (c.netfang || '').trim().toLowerCase();
-      if (e) { byEmail.set(e, c); const d = e.split('@')[1]; if (d && !FREEMAIL.test(d) && !byDomain.has(d)) byDomain.set(d, c); }
+      if (!e || e.indexOf('@') === -1) return;
+      byEmail.set(e, c); // exact sender-email match stays precise even for agencies
+      let d = (e.split('@')[1] || '').split(/[ ,;<>]/)[0].trim(); // tolerate malformed "voov.is , yfirlit"
+      if (!d || FREEMAIL.test(d) || AGENCY.has(d)) return;
+      if (!domCos.has(d)) domCos.set(d, new Set());
+      domCos.get(d).add(c.id);
+      domOne.set(d, c);
     });
+    // Only keep domains owned by exactly ONE company — ambiguous (multi-tenant /
+    // agency / chain) domains are dropped so they can't mis-link.
+    const byDomain = new Map();
+    domCos.forEach((ids, d) => { if (ids.size === 1) byDomain.set(d, domOne.get(d)); });
     return { byNorm, byEmail, byDomain };
   }
   function matchCompany(idx, name, email) {
