@@ -659,7 +659,7 @@
       ? `<details style="border:1px solid #e2e8f0;border-radius:10px;padding:0"><summary style="cursor:pointer;padding:11px 13px;font-size:12.5px;font-weight:700;color:#475569;list-style:none">⚙︎ Flokkun &amp; smáatriði</summary><div style="display:flex;flex-direction:column;gap:14px;padding:4px 13px 14px">${F.source}${F.customer}${F.type}${F.prioDue}${F.assigned}${F.status}</div></details>`
       : '';
     const body = existing
-      ? reqPanel + F.title + F.notes(true) + metaWrap + F.important
+      ? reqPanel + F.title + F.notes(true) + metaWrap + '<div id="_tv-attach"></div>' + F.important
       : F.source + F.customer + F.type + F.title + F.notes(false) + F.prioDue + F.assigned + F.important;
     m.innerHTML = `
       <div style="position:absolute;inset:0;background:rgba(15,23,42,.55)"></div>
@@ -696,6 +696,7 @@
       await softDelete(existing.id); close(); render();
     };
     if (existing) m.querySelector('#_tv-docsend').onclick = () => openDocSend(existing);
+    if (existing && window.TvAttach) { const ae = m.querySelector('#_tv-attach'); if (ae) window.TvAttach.wire(ae, existing.id); }
     if (existing) { const pb = m.querySelector('#_tv-profile'); if (pb) pb.onclick = () => openCustomerProfile(ex); }
     if (existing) { const sb = m.querySelector('#_tv-sum'); if (sb) sb.onclick = async () => { sb.disabled = true; sb.textContent = '✨ …'; await summarizeIds([existing.id]); sb.disabled = false; sb.textContent = '✨ Samantekt'; const row = state.items.find(x => x.id === existing.id); if (row && row.summary) toast('✨ ' + row.summary); }; }
     m.querySelector('#_tv-save').onclick = async () => {

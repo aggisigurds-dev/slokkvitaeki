@@ -20,6 +20,19 @@
   if (window.__companiesBackFixInstalled) return;
   window.__companiesBackFixInstalled = true;
 
+  // 2026-06-07 DISABLED — obsolete and now harmful.
+  // This patch existed back when the company-detail "Til baka" button called
+  // Companies.render() (the grid) and patch 127's edit-guard blocked that
+  // render, so back "did nothing". The detail header (features.js) now uses
+  //   onclick="App.switchView('arsskodun')"
+  // i.e. it correctly returns to Fyrirtæki í þjónustu. But this capture-phase
+  // handler still fired first, called stopImmediatePropagation()+preventDefault(),
+  // and forced Companies.render() — hijacking the user into the OLD "Fyrirtæki"
+  // grid instead of "Fyrirtæki í þjónustu". switchView() is not Companies.render(),
+  // so the edit-guard never blocks it; letting the button's own onclick run is
+  // both correct and sufficient.
+  return;
+
   function isTilBakaInCompanies(btn) {
     if (!btn) return false;
     const txt = (btn.textContent || '').trim();
