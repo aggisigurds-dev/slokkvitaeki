@@ -34,9 +34,14 @@
     if (!boxEl) return;
     const table  = boxEl.querySelector('table');
     const totals = boxEl.querySelector('._ovr-totals');
+    // Use the same logo the invoice / tilboð forms use (branding.logo_url).
     let logo = '';
-    const img = document.querySelector('img[src*="logo" i]') || document.querySelector('.brand-logo, .sb-logo img, header img');
-    if (img && img.src) logo = img.src; else logo = location.origin + '/img/logo.jpg';
+    try {
+      const b = (window.AppSettings && AppSettings.path) ? AppSettings.path('branding') : null;
+      if (b) logo = b.logo_url || b.banner_image_2x_url || b.banner_image_url || '';
+    } catch(e){}
+    if (!logo) { const img = document.querySelector('img[src*="logo" i]'); if (img && img.src) logo = img.src; }
+    if (!logo) logo = location.origin + '/img/logo.jpg';
     const d = new Date();
     const ds = d.getFullYear() + '-' + pad(d.getMonth()+1) + '-' + pad(d.getDate());
     const rows = table ? table.querySelectorAll('tbody tr').length : 0;

@@ -42,8 +42,9 @@
     });
   }
 
-  let t = null;
-  const obs = new MutationObserver(() => { if (t) clearTimeout(t); t = setTimeout(process, 220); });
-  obs.observe(document.body, { childList: true, subtree: true });
-  setTimeout(process, 1500);
+  // Interval is more reliable than a MutationObserver here — the list patch
+  // rebuilds its tbody on sort/filter; new rows lack [data-yrb] so they get
+  // the badge on the next tick. (Cheap: only un-badged _ars-row are touched.)
+  setInterval(process, 1500);
+  setTimeout(process, 800);
 })();
