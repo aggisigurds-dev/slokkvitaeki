@@ -568,6 +568,7 @@
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <button class="btn btn-sm" id="vk-promote" style="background:#16a34a;color:#fff;border:1px solid #16a34a;">⬆ Gera að fyrirtæki í þjónustu</button>
           <button class="btn btn-outline btn-sm" id="vk-edit">Breyta</button>
           <button class="btn btn-outline btn-sm" id="vk-delete">🗑️ Eyða</button>
           <button class="btn btn-outline btn-sm" id="vk-c360">Staða</button>
@@ -651,6 +652,18 @@
       } catch (e) { alert('Villa við eyðingu: ' + e.message); }
     });
     m.querySelector('#vk-edit')?.addEventListener('click', () => openEditModal(c));
+    m.querySelector('#vk-promote')?.addEventListener('click', () => {
+      if (!window.PromoteCustomer || typeof window.PromoteCustomer.run !== 'function') {
+        alert('Promote-einingin er ekki hlaðin — reyndu að endurhlaða síðuna.');
+        return;
+      }
+      window.PromoteCustomer.run({
+        kennitala: c.kennitala, nafn: c.nafn, simi: c.simi, farsimi: c.farsimi,
+        netfang: c.netfang, vefsida: c.vefsida, heimilisfang: c.heimilisfang,
+        tengilidur: c.tengilidur, greidsluskilmali: c.greidsluskilmali,
+        afslattur_pct: c.afslattur_pct, athugasemdir: c.athugasemdir, vidsk_id: c.id
+      });
+    });
   }
 
   // -------- edit modal --------
