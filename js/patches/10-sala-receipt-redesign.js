@@ -660,7 +660,9 @@
       // Raðnr. = the device/serial number for this receipt. NOT the kennitala
       // (that belongs in the bill-to block). Leave blank unless caller passes one.
       radnr: opts.radnr || '',
-      dateStr: fmtDate(now),
+      // 2026-06-09: callers (e.g. the visit-invoice flow) may pass an explicit
+      // date string to print instead of today's date.
+      dateStr: opts.dateStr || fmtDate(now),
       paymentTerms: derivedTerms,
       deliveryTerms: opts.deliveryTerms || DEFAULTS.deliveryTerms,
       employee: opts.employee || resolveEmployee(),
@@ -765,7 +767,9 @@
         isCredit: !!xo.isCredit,
         creditOf: xo.creditOf || '',
         // Verbatim reference line (visit-invoice flow passes "Vegna heimsókn …").
-        vegnaRaw: xo.vegnaRaw || ''
+        vegnaRaw: xo.vegnaRaw || '',
+        // Optional explicit invoice date (visit flow passes the custom date).
+        dateStr: xo.dateStr || ''
       });
     } finally {
       if (window.POS) window.POS.getState = origGetState;

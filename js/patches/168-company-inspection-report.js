@@ -111,16 +111,23 @@
     const now = new Date();
     // 2026-06-02: Agnar asked for the inspection date in dd.mm.yyyy instead of
     // the "í maí 2026" month phrase.
+    // 2026-06-09: the date is now driven by the custom "Dagsetning" field on
+    // the company page (falls back to today). The optional "Skoðun framkvæmd"
+    // month field adds a "Framkvæmd í Maí 2026" line under the statement.
     const dd = String(now.getDate()).padStart(2, '0');
     const mm = String(now.getMonth() + 1).padStart(2, '0');
-    const datePhrase = dd + '.' + mm + '.' + now.getFullYear();
+    const vd = (window.SlokkVisitDate && window.SlokkVisitDate.get)
+      ? window.SlokkVisitDate.get(coId) : null;
+    const datePhrase = (vd && vd.dags) ? vd.dags
+      : dd + '.' + mm + '.' + now.getFullYear();
+    const framkvaemdPhrase = vd ? vd.phrase : '';
 
-    const html = buildReportHtml({ co, counts, annad, athugasemdir, skodunaradili, datePhrase });
+    const html = buildReportHtml({ co, counts, annad, athugasemdir, skodunaradili, datePhrase, framkvaemdPhrase });
     showModal(html, co, opts);
   }
 
   function buildReportHtml(ctx) {
-    const { co, counts, annad, athugasemdir, skodunaradili, datePhrase } = ctx;
+    const { co, counts, annad, athugasemdir, skodunaradili, datePhrase, framkvaemdPhrase } = ctx;
 
     const ktLine = co.kennitala ? ' kt: ' + esc(co.kennitala) : '';
     const addrLine = co.heimilisfang ? ', ' + esc(co.heimilisfang) : '';
@@ -168,9 +175,10 @@
         </div>
 
         <!-- Inspection statement with date -->
-        <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:14px">
+        <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:${framkvaemdPhrase ? '4px' : '14px'}">
           Tæki voru yfirfarin af Slökkvitæki ehf ${esc(datePhrase)}
         </div>
+        ${framkvaemdPhrase ? `<div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:14px">${esc(framkvaemdPhrase)}</div>` : ''}
 
         <!-- Fixed equipment category table — centered as a readable mid-
              page block. Width:auto + label column flex-grow gives uniform
