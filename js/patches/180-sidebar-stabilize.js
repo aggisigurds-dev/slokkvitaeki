@@ -64,11 +64,14 @@
   function scheduleStableReveal() {
     const nav = document.querySelector('nav.view-nav, .view-nav');
     if (!nav) { setTimeout(scheduleStableReveal, 150); return; }
-    let timer = setTimeout(reveal, 360);
+    // 2026-06-09: settle window widened 360→700ms — injector timers run at
+    // 600/800/1200/1500ms intervals, and 360ms gaps between them leaked an
+    // early reveal mid-assembly (the "multi-layered build-up" on refresh).
+    let timer = setTimeout(reveal, 700);
     const obs = new MutationObserver(() => {
       if (revealed) { obs.disconnect(); return; }
       clearTimeout(timer);
-      timer = setTimeout(() => { obs.disconnect(); reveal(); }, 360);
+      timer = setTimeout(() => { obs.disconnect(); reveal(); }, 700);
     });
     obs.observe(nav, { childList: true });
   }
@@ -79,7 +82,10 @@
   whenReady(scheduleStableReveal);
 
   // Hard safety net — never leave the nav masked, no matter what.
-  setTimeout(reveal, 2600);
+  // 3800ms: must outlast patch 68's final reorder pass at 3000ms (+ its own
+  // 200-800ms scheduling delay); the old 2600ms cap revealed BEFORE that pass,
+  // so the last reshuffle always happened in plain view.
+  setTimeout(reveal, 3800);
 
   console.log('[patch-180] sidebar-stabilize installed — mask-until-settled, no popcorn');
 })();

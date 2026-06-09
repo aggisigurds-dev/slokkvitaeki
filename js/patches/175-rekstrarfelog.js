@@ -489,8 +489,10 @@
     if(!anchor || !anchor.parentElement) return;
     var existing=document.querySelector('[data-view="rekstrarfelog"]');
     if(existing){
-      // already present — make sure it sits right after the preferred anchor
-      if(existing.previousElementSibling!==anchor && anchor.parentNode){ anchor.parentNode.insertBefore(existing, anchor.nextSibling); }
+      // 2026-06-09: already present → do NOTHING. The old behaviour yanked the
+      // button back next to the anchor on every 1.2s tick, which fought patch
+      // 68's (custom) ordering forever — the sidebar visibly reshuffled on
+      // every refresh. Position is patch 68's job, not ours.
       return;
     }
     var btn=anchor.cloneNode(true);
