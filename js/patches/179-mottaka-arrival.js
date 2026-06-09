@@ -214,13 +214,16 @@
           ? 'Ekkert QR fannst — nýtt raðnúmer búið til. Prentaðu miða og límdu á tækið.'
           : 'Skannað raðnúmer fannst ekki í kerfinu — skráðu það sem nýtt tæki.'}</div>
         <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 4px;text-transform:uppercase;letter-spacing:.04em">Raðnúmer</label>
-        <input id="_mt-serial" value="${esc(serialVal)}" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;font-family:monospace;text-transform:uppercase;margin-bottom:12px">
+        <input id="_mt-serial" value="${esc(serialVal)}" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;font-family:monospace;text-transform:uppercase;margin-bottom:4px">
+        <div id="_mt-serialhint" style="font-size:11px;color:#94a3b8;min-height:0;margin-bottom:12px"></div>
         <div style="display:flex;gap:10px;margin-bottom:12px">
           <div style="flex:1"><label style="display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 4px;text-transform:uppercase">Tegund</label>
             <input id="_mt-type" list="_mt-types" placeholder="Duft / CO₂ / Léttvatn…" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box">
             <datalist id="_mt-types"><option value="Duft"><option value="CO₂"><option value="Léttvatn"><option value="ABF"><option value="Vatn"><option value="Eldvarnateppi"></datalist></div>
-          <div style="width:120px"><label style="display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 4px;text-transform:uppercase">Stærð</label>
+          <div style="width:96px"><label style="display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 4px;text-transform:uppercase">Stærð</label>
             <input id="_mt-size" placeholder="6 kg" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box"></div>
+          <div style="width:84px"><label style="display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 4px;text-transform:uppercase">Fjöldi</label>
+            <input id="_mt-qty" type="number" min="1" step="1" value="1" title="Fjöldi tækja sem koma inn — býr til raðnúmer + miða fyrir hvert" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;text-align:center;font-weight:700"></div>
         </div>
         <label style="display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 4px;text-transform:uppercase">Fyrirtæki (eigandi)</label>
         <input id="_mt-base" list="_mt-bases" placeholder="Leitaðu að fyrirtæki…" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;margin-bottom:4px">
@@ -252,14 +255,44 @@
       baseHint.style.color = b ? '#16a34a' : '#94a3b8';
     });
 
-    m.querySelector('#_mt-save').addEventListener('click', async () => {
-      const serial = (m.querySelector('#_mt-serial').value || '').trim().toUpperCase();
-      if (!serial) { toast('Raðnúmer vantar'); return; }
+    // Fjöldi (quantity): when >1, raðnúmer are generated automatically per unit
+    // (the single serial field no longer applies), and N labels print in one go.
+    const qtyInp = m.querySelector('#_mt-qty');
+    const serialInp = m.querySelector('#_mt-serial');
+    const serialHint = m.querySelector('#_mt-serialhint');
+    const saveBtn = m.querySelector('#_mt-save');
+    const readQty = () => Math.max(1, parseInt(qtyInp.value, 10) || 1);
+    const syncQtyUI = () => {
+      const n = readQty();
+      if (n > 1) {
+        serialInp.disabled = true;
+        serialInp.style.opacity = '.5';
+        serialHint.textContent = `Raðnúmer verða búin til sjálfkrafa fyrir hvert tæki (${n} stk).`;
+        saveBtn.textContent = `📥 Skrá ${n} móttekin`;
+      } else {
+        serialInp.disabled = false;
+        serialInp.style.opacity = '1';
+        serialHint.textContent = '';
+        saveBtn.textContent = '📥 Skrá móttekið';
+      }
+    };
+    qtyInp.addEventListener('input', syncQtyUI);
+    qtyInp.addEventListener('change', syncQtyUI);
+
+    saveBtn.addEventListener('click', async () => {
       const type = (m.querySelector('#_mt-type').value || '').trim();
       const size = (m.querySelector('#_mt-size').value || '').trim();
       const base = resolveBase();
       const clientName = base ? base.nafn : (baseInp.value || '').trim();
       const doPrint = m.querySelector('#_mt-print').checked;
+      const qty = readQty();
+      if (qty > 1) {
+        close();
+        await createNewUnitsBatch({ count: qty, type, size, baseId: base ? base.id : null, clientName, doPrint });
+        return;
+      }
+      const serial = (serialInp.value || '').trim().toUpperCase();
+      if (!serial) { toast('Raðnúmer vantar'); return; }
       close();
       await createNewUnit({ serial, type, size, baseId: base ? base.id : null, clientName, doPrint });
     });
@@ -289,6 +322,68 @@
     } catch (e) { toast('Villa við skráningu: ' + (e.message || e)); return; }
     if (doPrint && window.Print && Print.showQR) {
       try { Print.showQR(saved); } catch (e) { console.warn('[mottaka] print', e); }
+    }
+    await load();
+  }
+
+  // Generate `count` serials that are unique within the batch AND not already
+  // in uttaeki (checked in bulk), so a whole arrival of identical tæki each
+  // gets its own raðnúmer + label.
+  async function genUniqueSerials(count) {
+    const SB = getSB();
+    const out = new Set();
+    let guard = 0;
+    while (out.size < count && guard < 60) {
+      guard++;
+      const need = count - out.size;
+      const cand = [];
+      for (let i = 0; i < need; i++) {
+        let s; do { s = genSerial(); } while (cand.includes(s) || out.has(s));
+        cand.push(s);
+      }
+      const existing = new Set();
+      if (SB && cand.length) {
+        try {
+          const { data } = await SB.from('uttaeki').select('serial').in('serial', cand);
+          (data || []).forEach(r => existing.add(String(r.serial || '').toUpperCase()));
+        } catch (_) { /* if the lookup fails, fall through — insert guard is the backstop */ }
+      }
+      cand.forEach(s => { if (!existing.has(s.toUpperCase())) out.add(s); });
+    }
+    return Array.from(out).slice(0, count);
+  }
+
+  // Batch intake: N identical tæki in one go → N units (unique serials) on the
+  // same customer/job, all móttekið, then one print job with N Brother labels.
+  async function createNewUnitsBatch({ count, type, size, baseId, clientName, doPrint }) {
+    const SB = getSB(); if (!SB) return;
+    const n = Math.max(1, count | 0);
+    const jobId = await findOrCreateJob(baseId);
+    const serials = await genUniqueSerials(n);
+    if (!serials.length) { toast('Gat ekki búið til raðnúmer'); return; }
+    const rows = serials.map(serial => ({
+      serial, type: type || null, size: size || null,
+      client: clientName || null, customer_base_id: baseId || null,
+      seasonal_job_id: jobId || null, custody_status: 'móttekið', status: 'ok',
+    }));
+    let saved = [];
+    try {
+      const { data, error } = await SB.from('uttaeki').insert(rows).select();
+      if (error) throw error;
+      saved = data || [];
+      for (const u of saved) await logEvent(u, 'arrival', 'móttekið');
+      const spec = [type, size].filter(Boolean).join(' ');
+      toast('➕ Skráð & móttekið: ' + saved.length + ' tæki' + (spec ? ' · ' + spec : ''));
+    } catch (e) { toast('Villa við skráningu: ' + (e.message || e)); return; }
+    // Print all labels in ONE job (single length-picker + print window).
+    if (doPrint && saved.length && window.Print && Print.showJob) {
+      try {
+        Print.showJob({
+          customer: clientName || '—',
+          phone: '',
+          units: saved.map(u => ({ serial: u.serial, type: u.type, size: u.size })),
+        });
+      } catch (e) { console.warn('[mottaka] print batch', e); }
     }
     await load();
   }
