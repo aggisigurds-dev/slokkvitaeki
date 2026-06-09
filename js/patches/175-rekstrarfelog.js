@@ -51,6 +51,24 @@
     try { if(window.CompanyAttachments && CompanyAttachments.list) return (await CompanyAttachments.list(firmAttachId(firm)))||[]; } catch(e){}
     return [];
   }
+  // Per-building attach key: the company record id when the building is in the
+  // customer registry, else a synthetic 'rfb:<kt>' namespace (same
+  // company_attachments storage either way).
+  function bldAttachKey(b, co){
+    if(co) return String(co.id);
+    var d=digits(b.kt); return 'rfb:'+(d||_compact(b.nafn||''));
+  }
+  // Year-tagged uploaded file for a (building, year): explicit tag wins, then
+  // filename detection for untagged files; year==='0' = explicitly cleared.
+  function fileForYear(caMap, key, y){
+    var list = caMap[key]; if(!Array.isArray(list)) return null;
+    return list.find(function(x){ return String(x.year)===y; }) ||
+           list.find(function(x){ return x.year==null && new RegExp('\\b'+y+'\\b').test(String(x.name||'')); }) || null;
+  }
+  function getCaMap(){
+    try { if(window.AppSettings&&AppSettings.path) return AppSettings.path('company_attachments')||{}; } catch(e){}
+    return {};
+  }
 
   // ---- equipment / inspection index (uttaeki.last_insp / next_insp) ----
   // Each fire unit records its most recent inspection (last_insp) and next-due
@@ -135,28 +153,33 @@
   }
 
   // ---- combined overview: all buildings across all firms (totals + flat table) ----
-  function computeBldStatus(b, equip, attMap, linkMap, today){
+  function computeBldStatus(b, equip, attMap, linkMap, today, caMap){
     var co=companyByKt(b.kt);
     var st=equip.match(b.nafn);
     var att=(co&&(attMap[co.id]||attMap[String(co.id)]))||[0,0,0];
     var lks=linkMap[digits(b.kt)]||{};
+    var akey=bldAttachKey(b,co);
+    var f23=fileForYear(caMap,akey,'2023'),f24=fileForYear(caMap,akey,'2024'),
+        f25=fileForYear(caMap,akey,'2025'),f26=fileForYear(caMap,akey,'2026');
     var units=st?st.units:0;
     var e24=st?st.y2024:0,e25=st?st.y2025:0,e26=st?st.y2026:0;
-    var d24=(e24>0)||!!att[0]||!!lks['2024'], d25=(e25>0)||!!att[1]||!!lks['2025'], d26=(e26>0)||!!att[2]||!!lks['2026'];
-    var hasRep=!!(att[0]||att[1]||att[2]);
+    var d24=(e24>0)||!!att[0]||!!lks['2024']||!!f24, d25=(e25>0)||!!att[1]||!!lks['2025']||!!f25, d26=(e26>0)||!!att[2]||!!lks['2026']||!!f26;
+    var hasRep=!!(att[0]||att[1]||att[2]||f24||f25||f26);
     var lkYears=Object.keys(lks);
-    var hasData=units>0||hasRep||d24||d25||d26||lkYears.length>0;
+    var hasData=units>0||hasRep||d24||d25||d26||lkYears.length>0||!!f23;
     var next=st?st.next:null;
     var overdue=!!(next&&next<today&&hasData);
     var cls = !hasData?'none':(d26?'done':((d24||d25)?'need':'other'));
-    return {co:co,units:units,att:att,lks:lks,d23:!!lks['2023'],d24:d24,d25:d25,d26:d26,hasRep:hasRep,next:next,overdue:overdue,cls:cls,hasData:hasData};
+    return {co:co,units:units,att:att,lks:lks,akey:akey,f23:f23,f24:f24,f25:f25,f26:f26,d23:(!!lks['2023'])||!!f23,d24:d24,d25:d25,d26:d26,hasRep:hasRep,next:next,overdue:overdue,cls:cls,hasData:hasData};
   }
-  function yCellO(done, rep, units, url){
+  function yCellO(done, rep, units, url, file, y){
     var bd='1px solid #eef1f5';
     if(!done) return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#d1d5db">·</td>';
-    var v=units>0?units:'✓'; var greenish=rep||url;
+    var v=units>0?units:'✓'; var greenish=rep||url||file;
     var style=greenish?'color:#15803d;background:#f0fdf4':'color:#1d4ed8;background:#eff6ff';
-    var inner=url?'<a href="'+esc(url)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+v+' 📄↗</a>':(v+(rep?' 📄':''));
+    var inner=url?'<a href="'+esc(url)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+v+' 📄↗</a>'
+      : (file?'<a href="#" class="_yr-att" data-path="'+esc(file.path||'')+'" title="'+esc(file.name||'')+' — skjal tengt við '+y+' í fyrirtækinu" style="color:inherit;text-decoration:none">'+v+' 📄</a>'
+      : (v+(rep?' 📄':'')));
     return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;font-weight:700;'+style+'">'+inner+'</td>';
   }
   async function renderOverview(){
@@ -165,10 +188,11 @@
     var data=getData(); var equip=await getEquipIndex();
     var attMap={},linkMap={};
     try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; linkMap=AppSettings.path('rf_uttekt_links')||{}; } }catch(e){}
+    var caMap=getCaMap();
     var today=_todayStr();
     var all=[], firms=0;
     Object.keys(data).forEach(function(name){ var blds=(data[name].buildings)||[]; if(blds.length) firms++;
-      blds.forEach(function(b,bi){ all.push({firm:name,b:b,bi:bi,s:computeBldStatus(b,equip,attMap,linkMap,today)}); }); });
+      blds.forEach(function(b,bi){ all.push({firm:name,b:b,bi:bi,s:computeBldStatus(b,equip,attMap,linkMap,today,caMap)}); }); });
     var tot={byg:all.length,done:0,need:0,none:0,overdue:0};
     all.forEach(function(r){ if(r.s.cls==='done')tot.done++; else if(r.s.cls==='need')tot.need++; else if(r.s.cls==='none')tot.none++; if(r.s.overdue)tot.overdue++; });
     var f=_state.fltr||'all', q=_state.q.toLowerCase().trim();
@@ -192,7 +216,7 @@
       var b=r.b, s=r.s;
       var bname = s.co ? '<a href="#" data-coid="'+s.co.id+'" class="_rf_open" style="color:#2563eb;text-decoration:none">'+esc(b.nafn)+'</a>' : esc(b.nafn)+' <span style="color:#cbd5e1;font-size:11px">(ekki í skrá)</span>';
       var unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(s.units>0?'font-weight:600':'color:#b45309')+'">'+(s.units>0?s.units:(s.hasRep?'–':'0'))+'</td>';
-      var y23=yCellO(s.d23,false,s.units,s.lks['2023']),y24=yCellO(s.d24,!!s.att[0],s.units,s.lks['2024']),y25=yCellO(s.d25,!!s.att[1],s.units,s.lks['2025']),y26=yCellO(s.d26,!!s.att[2],s.units,s.lks['2026']);
+      var y23=yCellO(s.d23,false,s.units,s.lks['2023'],s.f23,'2023'),y24=yCellO(s.d24,!!s.att[0],s.units,s.lks['2024'],s.f24,'2024'),y25=yCellO(s.d25,!!s.att[1],s.units,s.lks['2025'],s.f25,'2025'),y26=yCellO(s.d26,!!s.att[2],s.units,s.lks['2026'],s.f26,'2026');
       var nextCell = s.next ? '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(s.overdue?'background:#fef2f2;color:#b91c1c;':'color:#475569;')+'font-variant-numeric:tabular-nums;white-space:nowrap">'+esc(s.next)+(s.overdue?' ⚠':'')+'</td>' : '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:#cbd5e1">—</td>';
       return '<tr>'+
         '<td style="padding:5px 6px;border-bottom:'+bd+';color:#475569;white-space:nowrap">'+esc(r.firm)+'</td>'+
@@ -255,17 +279,20 @@
     var equip=await getEquipIndex();
     var attMap={}; try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; } }catch(e){}
     var linkMap={}; try{ if(window.AppSettings&&AppSettings.path){ linkMap=AppSettings.path('rf_uttekt_links')||{}; } }catch(e){}
+    var caMap=getCaMap();
     var today=_todayStr();
     // per-firm tally
     var n2026=0, nNeed=0, nNone=0, nOverdue=0;
     var bd='1px solid #eef1f5';
     // year cell: done? -> tæki count (or ✓). green+📄 = úttektarskýrsla; ↗ = tengill í Drive; blár = aðeins búnaðarsaga
-    function yCell(done, rep, units, url){
+    function yCell(done, rep, units, url, file, y){
       if(!done) return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#d1d5db">·</td>';
       var v = units>0 ? units : '✓';
-      var greenish = rep || url;
+      var greenish = rep || url || file;
       var style = greenish ? 'color:#15803d;background:#f0fdf4' : 'color:#1d4ed8;background:#eff6ff';
-      var inner = url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Google Drive" style="color:inherit;text-decoration:none">'+v+' 📄↗</a>' : (v+(rep?' 📄':''));
+      var inner = url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Google Drive" style="color:inherit;text-decoration:none">'+v+' 📄↗</a>'
+        : (file ? '<a href="#" class="_yr-att" data-path="'+esc(file.path||'')+'" title="'+esc(file.name||'')+' — skjal tengt við '+y+' í fyrirtækinu" style="color:inherit;text-decoration:none">'+v+' 📄</a>'
+        : (v+(rep?' 📄':'')));
       return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;font-weight:700;'+style+'">'+inner+'</td>';
     }
     // building table
@@ -277,13 +304,16 @@
       var st = equip.match(b.nafn);
       var att = (co && (attMap[co.id]||attMap[String(co.id)])) || [0,0,0];
       var lks = linkMap[digits(b.kt)] || {};
+      var akey = bldAttachKey(b, co);
+      var f23=fileForYear(caMap,akey,'2023'), f24=fileForYear(caMap,akey,'2024'),
+          f25=fileForYear(caMap,akey,'2025'), f26=fileForYear(caMap,akey,'2026');
       var units = st ? st.units : 0;
       var e24=st?st.y2024:0, e25=st?st.y2025:0, e26=st?st.y2026:0;
-      var d23=!!lks['2023'];
-      var d24=(e24>0)||!!att[0]||!!lks['2024'], d25=(e25>0)||!!att[1]||!!lks['2025'], d26=(e26>0)||!!att[2]||!!lks['2026'];
-      var hasRep = !!(att[0]||att[1]||att[2]);
+      var d23=!!lks['2023']||!!f23;
+      var d24=(e24>0)||!!att[0]||!!lks['2024']||!!f24, d25=(e25>0)||!!att[1]||!!lks['2025']||!!f25, d26=(e26>0)||!!att[2]||!!lks['2026']||!!f26;
+      var hasRep = !!(att[0]||att[1]||att[2]||f24||f25||f26);
       var lkYears = Object.keys(lks);
-      var hasData = units>0 || hasRep || d24 || d25 || d26 || lkYears.length>0;
+      var hasData = units>0 || hasRep || d24 || d25 || d26 || lkYears.length>0 || !!f23;
       if(!hasData) nNone++; else if(d26) n2026++; else if(d24||d25) nNeed++;
       // links for years outside the 2024-2026 columns (e.g. older skýrslur) shown after the name
       var oldLinks = lkYears.filter(function(y){return y<'2023';}).sort().map(function(y){
@@ -291,7 +321,7 @@
       link = link + oldLinks;
       if(b.heimilisfang) link += '<div style="font-size:11px;color:#94a3b8;margin-top:2px">📍 '+esc(b.heimilisfang)+'</div>';
       var unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(units>0?'font-weight:600':'color:'+(hasRep?'#cbd5e1':'#b45309'))+'">'+(units>0?units:(hasRep||lkYears.length?'–':'0'))+'</td>';
-      var y23=yCell(d23,false,units,lks['2023']), y24=yCell(d24,!!att[0],units,lks['2024']), y25=yCell(d25,!!att[1],units,lks['2025']), y26=yCell(d26,!!att[2],units,lks['2026']);
+      var y23=yCell(d23,false,units,lks['2023'],f23,'2023'), y24=yCell(d24,!!att[0],units,lks['2024'],f24,'2024'), y25=yCell(d25,!!att[1],units,lks['2025'],f25,'2025'), y26=yCell(d26,!!att[2],units,lks['2026'],f26,'2026');
       var nextCell;
       if(st && st.next){ var overdue = st.next < today; if(overdue && hasData) nOverdue++;
         var col = overdue ? '#b91c1c' : '#475569'; var bg = overdue ? 'background:#fef2f2;' : '';
