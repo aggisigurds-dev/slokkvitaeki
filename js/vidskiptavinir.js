@@ -29,6 +29,27 @@ async function loadIndividuals(){
     if(j.customer && (!byKt[kt].name || byKt[kt].name==='Óþekkt'))byKt[kt].name=j.customer;
     if(j.phone && !byKt[kt].phone)byKt[kt].phone=j.phone;
   });
+  // 2026-06-09: also pull rows straight from the `vidskiptavinir` table so
+  // Sala-created customers (incl. company kennitölur the verkbeiðni scan skips)
+  // show up here and can be promoted to Fyrirtækjaþjónusta.
+  try{
+    var vr=await DB.sb.from('vidskiptavinir')
+      .select('id,nafn,kennitala,simi,netfang,heimilisfang,athugasemdir,created_at,deleted_at')
+      .is('deleted_at',null);
+    (vr.data||[]).forEach(function(c){
+      var kt=String(c.kennitala||'').replace(/[^0-9]/g,'');
+      if(kt.length<10)return;
+      if(!byKt[kt])byKt[kt]={kennitala:kt, name:c.nafn||'Óþekkt', phone:c.simi||'', jobs:[], lastDate:c.created_at||null};
+      var p=byKt[kt];
+      if((!p.name||p.name==='Óþekkt')&&c.nafn)p.name=c.nafn;
+      if(!p.phone&&c.simi)p.phone=c.simi;
+      if(!p.lastDate)p.lastDate=c.created_at||null;
+      p.vidsk_id=c.id;
+      p.netfang=c.netfang||p.netfang||'';
+      p.heimilisfang=c.heimilisfang||p.heimilisfang||'';
+      p.athugasemdir=c.athugasemdir||p.athugasemdir||'';
+    });
+  }catch(e){console.warn('[Vidskiptavinir] table load',e);}
   return Object.values(byKt);
 }
 
@@ -37,9 +58,12 @@ async function showHistory(person){
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;display:flex;align-items:center;justify-content:center;padding:20px;';
   var box=document.createElement('div');
   box.style.cssText='background:#fff;border-radius:14px;width:680px;max-width:95vw;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 12px 40px rgba(0,0,0,.3);';
-  var hdr='<div style="padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:flex-start">'+
+  var hdr='<div style="padding:16px 20px;border-bottom:1px solid #e5e7eb;display:flex;justify-content:space-between;align-items:flex-start;gap:12px">'+
     '<div><h2 style="margin:0 0 4px 0;font-size:18px">'+escHtml(person.name)+'</h2><div style="font-size:12px;color:#6b7280;font-family:monospace">Kt: '+fmtKt(person.kennitala)+(person.phone?' · '+escHtml(person.phone):'')+'</div></div>'+
-    '<button id="_vk_x" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280">✕</button></div>';
+    '<div style="display:flex;gap:8px;align-items:center;flex-shrink:0">'+
+      '<button id="_vk_promote" style="padding:8px 12px;border:1px solid #16a34a;background:#16a34a;color:#fff;border-radius:8px;cursor:pointer;font-size:12.5px;font-weight:700;white-space:nowrap">⬆ Gera að fyrirtæki í þjónustu</button>'+
+      '<button id="_vk_x" style="background:none;border:none;font-size:20px;cursor:pointer;color:#6b7280">✕</button>'+
+    '</div></div>';
   // Get all units associated with this person's verkbeiðnir
   var jobIds=person.jobs.map(function(j){return j.id;});
   var unitsRes=await DB.sb.from('verklidur').select('*').in('job_id',jobIds);
@@ -68,6 +92,19 @@ async function showHistory(person){
   function close(){ov.remove();}
   document.getElementById('_vk_x').onclick=close;
   ov.onclick=function(e){if(e.target===ov)close();};
+  var pb=document.getElementById('_vk_promote');
+  if(pb){pb.onclick=function(){
+    if(!window.PromoteCustomer||typeof PromoteCustomer.run!=='function'){alert('Promote-einingin er ekki hlaðin.');return;}
+    PromoteCustomer.run({
+      kennitala: person.kennitala,
+      nafn: person.name,
+      simi: person.phone,
+      netfang: person.netfang,
+      heimilisfang: person.heimilisfang,
+      athugasemdir: person.athugasemdir,
+      vidsk_id: person.vidsk_id
+    }, { onDone: function(){ close(); } });
+  };}
 }
 
 function applySort(rows){
@@ -96,7 +133,7 @@ async function renderView(){
   var people=await loadIndividuals();
   var visible=applySort(applySearch(people.slice()));
   var html='<div style="padding:0 0 20px 0">';
-  html+='<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px"><div><h1 style="margin:0;font-size:22px;color:#111">Viðskiptavinir</h1><div style="font-size:12px;color:#6b7280;margin-top:2px">'+visible.length+' / '+people.length+' einstaklingar</div></div></div>';
+  html+='<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px"><div><h1 style="margin:0;font-size:22px;color:#111">Viðskiptavinir</h1><div style="font-size:12px;color:#6b7280;margin-top:2px">'+visible.length+' / '+people.length+' viðskiptavinir</div></div></div>';
   html+='<div style="display:flex;gap:10px;margin-bottom:10px;align-items:center;flex-wrap:wrap"><input id="_vk_search" placeholder="🔎 Leita eftir nafni, kennitölu eða síma..." value="'+escHtml(_state.search)+'" style="flex:1;min-width:200px;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:14px;background:#fff"><button id="_vk_clear" style="background:#f3f4f6;border:none;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;color:#374151">Hreinsa</button></div>';
   if(visible.length===0){
     html+='<div style="padding:60px 20px;text-align:center;color:#9ca3af;background:#f9fafb;border-radius:10px"><div style="font-size:48px;margin-bottom:14px">👥</div><h3 style="margin:0 0 6px 0;color:#374151;font-weight:600">Engir viðskiptavinir með kennitölu enn</h3><div style="font-size:13px">Þegar þú skráir nýja verkbeiðni og setur inn kennitölu birtast einstaklingar hér.</div></div>';
