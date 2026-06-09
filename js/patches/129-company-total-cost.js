@@ -214,6 +214,24 @@
     return c ? c.nafn : '';
   }
 
+  // 2026-06-09: shared accessor for the custom inspection date so patches 165
+  // (invoice) and 168 (úttektarskýrsla) build the exact same "Framkvæmd í Maí
+  // 2026" phrase + exact date from the per-company trip state.
+  window.SlokkVisitDate = {
+    get(coId) {
+      let st = {};
+      try { st = JSON.parse(localStorage.getItem('slokk_trip_' + coId) || '{}'); }
+      catch (_) {}
+      const manudur = String(st.skodun_manudur || '').trim();
+      const dags    = String(st.skodun_dagsetning || '').trim();
+      // Year for the phrase: from the typed date if it carries one, else now.
+      const ym = dags.match(/(\d{4})/);
+      const year = ym ? ym[1] : String(new Date().getFullYear());
+      const phrase = manudur ? ('Framkvæmd í ' + manudur + ' ' + year) : '';
+      return { manudur, dags, year, phrase };
+    }
+  };
+
   function tripStateKey(coId) { return 'slokk_trip_' + coId; }
   function loadTripState(coId) {
     try { return JSON.parse(localStorage.getItem(tripStateKey(coId)) || '{}'); }
@@ -516,6 +534,16 @@
     const activeUnits = units.length - groups.reduce((s, g) => s + g.skip, 0);
 
     const skodunaradili = (tripState.skodunaradili != null) ? String(tripState.skodunaradili) : '';
+    // 2026-06-09: custom inspection date — Agnar wants to bill/report for the
+    // actual month the visit happened, not "today". Two free-text fields:
+    //   • skodun_manudur  — month label (e.g. "Maí") → "Framkvæmd í Maí 2026"
+    //   • skodun_dagsetning — exact date (e.g. "09.06.2026") → invoice right
+    //     side "Dagsetning:" + the úttektarskýrsla "yfirfarin" line.
+    const skodunManudur = (tripState.skodun_manudur != null) ? String(tripState.skodun_manudur) : '';
+    const skodunDags    = (tripState.skodun_dagsetning != null) ? String(tripState.skodun_dagsetning) : '';
+    const _td = new Date();
+    const todayDDMM = String(_td.getDate()).padStart(2, '0') + '.' +
+      String(_td.getMonth() + 1).padStart(2, '0') + '.' + _td.getFullYear();
     section.innerHTML =
       '<div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">' +
         '<div>' +
@@ -527,10 +555,22 @@
       // 2026-05-20: Skoðunaraðili (inspector) input + Úttektarskýrsla button.
       // Persisted in tripState so the field stays filled across visits.
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' +
-        '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;flex:1;min-width:200px">' +
+        '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;flex:1;min-width:160px">' +
           '<span style="font-weight:600;color:#166534;white-space:nowrap">🧑 Skoðunaraðili</span>' +
           '<input id="_ctc-skodun" type="text" value="' + esc(skodunaradili) + '" placeholder="t.d. Elías" ' +
-            'style="flex:1;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
+            'style="flex:1;min-width:80px;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
+        '</label>' +
+        // 2026-06-09: Skoðun framkvæmd (month) + exact date — used on the
+        // úttektarskýrsla and invoice instead of today's date.
+        '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;flex:1;min-width:170px">' +
+          '<span style="font-weight:600;color:#166534;white-space:nowrap">📅 Skoðun framkvæmd</span>' +
+          '<input id="_ctc-manudur" type="text" value="' + esc(skodunManudur) + '" placeholder="t.d. Maí" ' +
+            'style="flex:1;min-width:70px;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
+        '</label>' +
+        '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;min-width:150px">' +
+          '<span style="font-weight:600;color:#166534;white-space:nowrap">Dagsetning</span>' +
+          '<input id="_ctc-dags" type="text" value="' + esc(skodunDags) + '" placeholder="' + esc(todayDDMM) + '" ' +
+            'style="width:110px;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
         '</label>' +
         '<button id="_ctc-skyrsla" type="button" ' +
           'style="padding:7px 14px;background:#0f172a;color:#fff;border:none;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.15)">' +
@@ -579,14 +619,37 @@
       skodunInp.addEventListener('blur', onSkodun);
       skodunInp.addEventListener('change', onSkodun);
     }
+    // Wire Skoðun framkvæmd (month) + Dagsetning inputs.
+    const manudurInp = section.querySelector('#_ctc-manudur');
+    if (manudurInp) {
+      const onManudur = () => {
+        const st = loadTripState(coId);
+        st.skodun_manudur = manudurInp.value;
+        saveTripState(coId, st);
+      };
+      manudurInp.addEventListener('blur', onManudur);
+      manudurInp.addEventListener('change', onManudur);
+    }
+    const dagsInp = section.querySelector('#_ctc-dags');
+    if (dagsInp) {
+      const onDags = () => {
+        const st = loadTripState(coId);
+        st.skodun_dagsetning = dagsInp.value;
+        saveTripState(coId, st);
+      };
+      dagsInp.addEventListener('blur', onDags);
+      dagsInp.addEventListener('change', onDags);
+    }
     // Wire úttektarskýrsla button → patch 168.
     const skyrsluBtn = section.querySelector('#_ctc-skyrsla');
     if (skyrsluBtn) {
       skyrsluBtn.addEventListener('click', () => {
-        // Save inspector first so the report picks it up.
-        if (skodunInp) {
+        // Save inspector + custom date first so the report picks them up.
+        if (skodunInp || manudurInp || dagsInp) {
           const st = loadTripState(coId);
-          st.skodunaradili = skodunInp.value;
+          if (skodunInp)  st.skodunaradili     = skodunInp.value;
+          if (manudurInp) st.skodun_manudur    = manudurInp.value;
+          if (dagsInp)    st.skodun_dagsetning = dagsInp.value;
           saveTripState(coId, st);
         }
         if (window.CompanyInspectionReport && CompanyInspectionReport.open) {

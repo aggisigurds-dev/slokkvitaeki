@@ -78,6 +78,19 @@
   function fmtKr(n) {
     return Math.round(Number(n) || 0).toLocaleString('is-IS') + ' kr';
   }
+  // 2026-06-09: build the renderFromSale reference + date options from the
+  // custom inspection date (patch 129's SlokkVisitDate). When a month is set
+  // the left-side reference reads "Framkvæmd í Maí 2026" and the right-side
+  // "Dagsetning:" uses the exact typed date; otherwise we keep the legacy
+  // "Vegna heimsókn DD.MM.YYYY" line and today's date.
+  function visitInvoiceOpts(vd, today) {
+    const o = {
+      vegnaRaw: (vd && vd.phrase) ? vd.phrase
+        : 'Vegna heimsókn ' + isoToDDMM(today)
+    };
+    if (vd && vd.dags) o.dateStr = vd.dags;
+    return o;
+  }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -267,8 +280,11 @@
       created_at: new Date().toISOString()
     };
 
+    const vd = (window.SlokkVisitDate && window.SlokkVisitDate.get)
+      ? window.SlokkVisitDate.get(coId) : null;
+
     showPreview(previewSale, custData, {
-      coId, coNafn, visit, linur, totals, today, next, sb, starfsmadur
+      coId, coNafn, visit, linur, totals, today, next, sb, starfsmadur, vd
     });
   }
 
@@ -303,7 +319,7 @@
       try {
         if (window.SalaInvoice && typeof SalaInvoice.renderFromSale === 'function') {
           SalaInvoice.renderFromSale(frame.contentWindow, previewSale, custData,
-            { vegnaRaw: 'Vegna heimsókn ' + isoToDDMM(ctx.today) });
+            visitInvoiceOpts(ctx.vd, ctx.today));
         } else {
           const doc = frame.contentDocument || frame.contentWindow.document;
           doc.open();
@@ -344,7 +360,7 @@
   }
 
   // ── Actual save — runs only after the user confirms in the preview ─────
-  async function finalizeVisit({ coId, coNafn, visit, linur, totals, today, next, sb, starfsmadur }) {
+  async function finalizeVisit({ coId, coNafn, visit, linur, totals, today, next, sb, starfsmadur, vd }) {
     // 1. Bump last_insp + next_insp on all serviced units.
     const updateRes = await sb.from('uttaeki')
       .update({ last_insp: today, next_insp: next })
@@ -384,7 +400,7 @@
         if (r.data) {
           const w = window.open('', '_blank', 'width=900,height=1100');
           if (w) SalaInvoice.renderFromSale(w, r.data, null,
-            { vegnaRaw: 'Vegna heimsókn ' + isoToDDMM(today) });
+            visitInvoiceOpts(vd, today));
         }
       } catch (_) {}
     }
