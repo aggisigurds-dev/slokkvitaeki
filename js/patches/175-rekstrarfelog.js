@@ -172,13 +172,21 @@
     var cls = !hasData?'none':(d26?'done':((d24||d25)?'need':'other'));
     return {co:co,units:units,att:att,lks:lks,akey:akey,f23:f23,f24:f24,f25:f25,f26:f26,d23:(!!lks['2023'])||!!f23,d24:d24,d25:d25,d26:d26,hasRep:hasRep,next:next,overdue:overdue,cls:cls,hasData:hasData};
   }
+  // shared link renderer for a year-tagged file: Drive-external files
+  // (drive_url, no Storage path) link straight out; Storage uploads open via
+  // a signed URL through patch 187's _yr-att handler.
+  function fileLinkA(file, y, label){
+    var title=esc(file.name||'')+' — skjal tengt við '+y+' í fyrirtækinu';
+    if(file.drive_url||file.url) return '<a href="'+esc(file.drive_url||file.url)+'" target="_blank" rel="noopener" title="'+title+'" style="color:inherit;text-decoration:none">'+label+' 📄↗</a>';
+    return '<a href="#" class="_yr-att" data-path="'+esc(file.path||'')+'" title="'+title+'" style="color:inherit;text-decoration:none">'+label+' 📄</a>';
+  }
   function yCellO(done, rep, units, url, file, y){
     var bd='1px solid #eef1f5';
     if(!done) return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#d1d5db">·</td>';
     var v=units>0?units:'✓'; var greenish=rep||url||file;
     var style=greenish?'color:#15803d;background:#f0fdf4':'color:#1d4ed8;background:#eff6ff';
     var inner=url?'<a href="'+esc(url)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+v+' 📄↗</a>'
-      : (file?'<a href="#" class="_yr-att" data-path="'+esc(file.path||'')+'" title="'+esc(file.name||'')+' — skjal tengt við '+y+' í fyrirtækinu" style="color:inherit;text-decoration:none">'+v+' 📄</a>'
+      : (file?fileLinkA(file,y,v)
       : (v+(rep?' 📄':'')));
     return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;font-weight:700;'+style+'">'+inner+'</td>';
   }
@@ -291,7 +299,7 @@
       var greenish = rep || url || file;
       var style = greenish ? 'color:#15803d;background:#f0fdf4' : 'color:#1d4ed8;background:#eff6ff';
       var inner = url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Google Drive" style="color:inherit;text-decoration:none">'+v+' 📄↗</a>'
-        : (file ? '<a href="#" class="_yr-att" data-path="'+esc(file.path||'')+'" title="'+esc(file.name||'')+' — skjal tengt við '+y+' í fyrirtækinu" style="color:inherit;text-decoration:none">'+v+' 📄</a>'
+        : (file ? fileLinkA(file,y,v)
         : (v+(rep?' 📄':'')));
       return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;font-weight:700;'+style+'">'+inner+'</td>';
     }
@@ -418,14 +426,36 @@
     });
   }
 
+  var _cameFromRf = false;
   function openCompany(id){
     if(!id) return;
     var nid = isNaN(id)? id : parseInt(id,10);
+    // Hide our view first — Companies.openDetail switches views
+    // programmatically (no nav-button click), so without this the
+    // rekstrarfélög content stays visible beside the company page.
+    var v=viewEl();
+    if(v){ v.style.display='none'; v.classList.remove('active'); }
+    var ourBtn=document.querySelector('[data-view="rekstrarfelog"]');
+    if(ourBtn) ourBtn.classList.remove('active');
+    _cameFromRf = true;
     try {
       if(window.Companies && Companies.openDetail){ Companies.openDetail(nid); return; }
       if(window.App && App.switchView){ App.switchView('companies'); }
     } catch(e){ console.warn('openCompany failed', e); }
   }
+  // "Til baka" on a company page opened FROM rekstrarfélög returns here
+  // instead of the companies list. Capture phase so we win over the detail
+  // page's own back handler. Any nav-button click cancels the breadcrumb.
+  document.addEventListener('click', function(e){
+    var el=e.target.closest('button, a');
+    if(!el) return;
+    if(el.classList && el.classList.contains('vnav-btn')){ _cameFromRf=false; return; }
+    if(!_cameFromRf) return;
+    if(!/til baka/i.test(el.textContent||'')) return;
+    e.preventDefault(); e.stopImmediatePropagation();
+    _cameFromRf=false;
+    if(window.openRekstrarfelog) window.openRekstrarfelog();
+  }, true);
 
   async function addFirm(){
     var name=prompt('Nafn rekstrarfélags:'); if(!name) return;
