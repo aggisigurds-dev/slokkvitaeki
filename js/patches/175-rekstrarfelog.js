@@ -92,7 +92,7 @@
   function _todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
 
   // ---- view rendering ----
-  var _state={ q:'' };
+  var _state={ q:'', mode:'firms', fltr:'all' };
   function viewEl(){ return document.getElementById('view-rekstrarfelog'); }
 
   async function renderView(){
@@ -108,12 +108,112 @@
             '<button id="_rf_add" class="btn btn-primary btn-sm" style="padding:8px 14px">+ Nýtt rekstrarfélag</button>'+
           '</div></div>';
     html+='<p style="color:#64748b;font-size:14px;margin:0 0 14px">Stór félög sem reka mörg húsfélög/byggingar. Smelltu á félag til að sjá byggingar, skjöl og tengiliði.</p>';
+    html+='<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">'+
+          '<button id="_rf_m_firms" class="_rf_modebtn">🏢 Eftir félögum</button>'+
+          '<button id="_rf_m_all" class="_rf_modebtn">📋 Allar byggingar (yfirlit)</button>'+
+          '</div>';
     html+='<input id="_rf_q" placeholder="🔎 Leita að félagi, byggingu eða kennitölu…" value="'+esc(_state.q)+'" style="width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:11px 12px;font-size:14px;margin-bottom:16px">';
-    html+='<div id="_rf_list"></div></div>';
+    html+='<div id="_rf_list"></div><div id="_rf_overview" style="display:none"></div></div>';
     v.innerHTML=html;
-    v.querySelector('#_rf_q').addEventListener('input', function(e){ _state.q=e.target.value; renderList(); });
+    function styleModeBtns(){
+      [['_rf_m_firms','firms'],['_rf_m_all','all']].forEach(function(p){
+        var b=v.querySelector('#'+p[0]); if(!b) return; var on=_state.mode===p[1];
+        b.style.cssText='padding:8px 14px;border:1px solid '+(on?'#0f172a':'#cbd5e1')+';background:'+(on?'#0f172a':'#fff')+';color:'+(on?'#fff':'#475569')+';border-radius:9px;font-size:13px;font-weight:600;cursor:pointer';
+      });
+    }
+    function applyMode(){
+      var list=v.querySelector('#_rf_list'), ov=v.querySelector('#_rf_overview');
+      if(_state.mode==='all'){ list.style.display='none'; ov.style.display=''; renderOverview(); }
+      else { ov.style.display='none'; list.style.display=''; renderList(); }
+      styleModeBtns();
+    }
+    v.querySelector('#_rf_q').addEventListener('input', function(e){ _state.q=e.target.value; if(_state.mode==='all') renderOverview(); else renderList(); });
     v.querySelector('#_rf_add').addEventListener('click', addFirm);
-    renderList();
+    v.querySelector('#_rf_m_firms').addEventListener('click', function(){ _state.mode='firms'; applyMode(); });
+    v.querySelector('#_rf_m_all').addEventListener('click', function(){ _state.mode='all'; applyMode(); });
+    applyMode();
+  }
+
+  // ---- combined overview: all buildings across all firms (totals + flat table) ----
+  function computeBldStatus(b, equip, attMap, linkMap, today){
+    var co=companyByKt(b.kt);
+    var st=equip.match(b.nafn);
+    var att=(co&&(attMap[co.id]||attMap[String(co.id)]))||[0,0,0];
+    var lks=linkMap[digits(b.kt)]||{};
+    var units=st?st.units:0;
+    var e24=st?st.y2024:0,e25=st?st.y2025:0,e26=st?st.y2026:0;
+    var d24=(e24>0)||!!att[0]||!!lks['2024'], d25=(e25>0)||!!att[1]||!!lks['2025'], d26=(e26>0)||!!att[2]||!!lks['2026'];
+    var hasRep=!!(att[0]||att[1]||att[2]);
+    var lkYears=Object.keys(lks);
+    var hasData=units>0||hasRep||d24||d25||d26||lkYears.length>0;
+    var next=st?st.next:null;
+    var overdue=!!(next&&next<today&&hasData);
+    var cls = !hasData?'none':(d26?'done':((d24||d25)?'need':'other'));
+    return {co:co,units:units,att:att,lks:lks,d24:d24,d25:d25,d26:d26,hasRep:hasRep,next:next,overdue:overdue,cls:cls,hasData:hasData};
+  }
+  function yCellO(done, rep, units, url){
+    var bd='1px solid #eef1f5';
+    if(!done) return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#d1d5db">·</td>';
+    var v=units>0?units:'✓'; var greenish=rep||url;
+    var style=greenish?'color:#15803d;background:#f0fdf4':'color:#1d4ed8;background:#eff6ff';
+    var inner=url?'<a href="'+esc(url)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+v+' 📄↗</a>':(v+(rep?' 📄':''));
+    return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;font-weight:700;'+style+'">'+inner+'</td>';
+  }
+  async function renderOverview(){
+    var v=viewEl(); if(!v) return; var box=v.querySelector('#_rf_overview'); if(!box) return;
+    box.innerHTML='<div style="color:#94a3b8;padding:16px">Hleð…</div>';
+    var data=getData(); var equip=await getEquipIndex();
+    var attMap={},linkMap={};
+    try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; linkMap=AppSettings.path('rf_uttekt_links')||{}; } }catch(e){}
+    var today=_todayStr();
+    var all=[], firms=0;
+    Object.keys(data).forEach(function(name){ var blds=(data[name].buildings)||[]; if(blds.length) firms++;
+      blds.forEach(function(b,bi){ all.push({firm:name,b:b,bi:bi,s:computeBldStatus(b,equip,attMap,linkMap,today)}); }); });
+    var tot={byg:all.length,done:0,need:0,none:0,overdue:0};
+    all.forEach(function(r){ if(r.s.cls==='done')tot.done++; else if(r.s.cls==='need')tot.need++; else if(r.s.cls==='none')tot.none++; if(r.s.overdue)tot.overdue++; });
+    var f=_state.fltr||'all', q=_state.q.toLowerCase().trim();
+    var rows=all.filter(function(r){
+      if(q && !(r.firm.toLowerCase().indexOf(q)>=0 || (r.b.nafn||'').toLowerCase().indexOf(q)>=0 || digits(r.b.kt).indexOf(q.replace(/\D/g,''))>=0)) return false;
+      if(f==='done')return r.s.cls==='done'; if(f==='need')return r.s.cls==='need'; if(f==='none')return r.s.cls==='none'; if(f==='overdue')return r.s.overdue; return true;
+    });
+    rows.sort(function(a,b){ if(a.firm!==b.firm)return a.firm<b.firm?-1:1; return (a.b.nafn||'')<(b.b.nafn||'')?-1:1; });
+    var totHtml='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 14px;font-size:13px"><b>'+firms+'</b> félög · <b>'+tot.byg+'</b> byggingar</div>'+
+      '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 14px;font-size:13px;color:#15803d">✓ <b>'+tot.done+'</b> með úttekt 2026</div>'+
+      '<div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:8px 14px;font-size:13px;color:#b7791f">⏳ <b>'+tot.need+'</b> vantar 2026</div>'+
+      '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:8px 14px;font-size:13px;color:#b45309">⚠ <b>'+tot.none+'</b> engin gögn</div>'+
+      '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:8px 14px;font-size:13px;color:#b91c1c">⏰ <b>'+tot.overdue+'</b> skoðun liðin</div>'+
+      '</div>';
+    function chip(key,label){ var on=f===key; return '<button class="_rf_fchip" data-f="'+key+'" style="padding:6px 12px;border:1px solid '+(on?'#0f172a':'#cbd5e1')+';background:'+(on?'#0f172a':'#fff')+';color:'+(on?'#fff':'#475569')+';border-radius:99px;font-size:12.5px;font-weight:600;cursor:pointer">'+label+'</button>'; }
+    var chips='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">'+
+      chip('all','Allir ('+all.length+')')+chip('done','✓ Með úttekt 2026 ('+tot.done+')')+chip('need','⏳ Vantar 2026 ('+tot.need+')')+chip('none','⚠ Engin gögn ('+tot.none+')')+chip('overdue','⏰ Skoðun liðin ('+tot.overdue+')')+'</div>';
+    var bd='1px solid #eef1f5';
+    var trs=rows.map(function(r){
+      var b=r.b, s=r.s;
+      var bname = s.co ? '<a href="#" data-coid="'+s.co.id+'" class="_rf_open" style="color:#2563eb;text-decoration:none">'+esc(b.nafn)+'</a>' : esc(b.nafn)+' <span style="color:#cbd5e1;font-size:11px">(ekki í skrá)</span>';
+      var unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(s.units>0?'font-weight:600':'color:#b45309')+'">'+(s.units>0?s.units:(s.hasRep?'–':'0'))+'</td>';
+      var y24=yCellO(s.d24,!!s.att[0],s.units,s.lks['2024']),y25=yCellO(s.d25,!!s.att[1],s.units,s.lks['2025']),y26=yCellO(s.d26,!!s.att[2],s.units,s.lks['2026']);
+      var nextCell = s.next ? '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(s.overdue?'background:#fef2f2;color:#b91c1c;':'color:#475569;')+'font-variant-numeric:tabular-nums;white-space:nowrap">'+esc(s.next)+(s.overdue?' ⚠':'')+'</td>' : '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:#cbd5e1">—</td>';
+      return '<tr>'+
+        '<td style="padding:5px 6px;border-bottom:'+bd+';color:#475569;white-space:nowrap">'+esc(r.firm)+'</td>'+
+        '<td style="padding:5px 6px;border-bottom:'+bd+'">'+bname+'</td>'+
+        '<td style="padding:5px 6px;border-bottom:'+bd+';color:#64748b;font-variant-numeric:tabular-nums;white-space:nowrap">'+fmtKt(b.kt)+'</td>'+
+        unitCell+y24+y25+y26+nextCell+'</tr>';
+    }).join('');
+    if(!trs) trs='<tr><td colspan="8" style="padding:16px;text-align:center;color:#94a3b8">Ekkert fannst.</td></tr>';
+    box.innerHTML=totHtml+chips+
+      '<div style="overflow-x:auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'+
+      '<th style="text-align:left;color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">Rekstrarfélag</th>'+
+      '<th style="text-align:left;color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">Bygging</th>'+
+      '<th style="text-align:left;color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">Kennitala</th>'+
+      '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">Tæki</th>'+
+      '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">2024</th>'+
+      '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">2025</th>'+
+      '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">2026</th>'+
+      '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">Næsta skoðun</th>'+
+      '</tr></thead><tbody>'+trs+'</tbody></table></div>';
+    box.querySelectorAll('._rf_fchip').forEach(function(c){ c.addEventListener('click', function(){ _state.fltr=c.getAttribute('data-f'); renderOverview(); }); });
+    box.querySelectorAll('._rf_open').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); openCompany(a.getAttribute('data-coid')); }); });
   }
 
   function renderList(){
