@@ -94,7 +94,7 @@
     return null;
   }
 
-  async function uploadAttachment(coId, file) {
+  async function uploadAttachment(coId, file, opts) {
     const SB = getSB();
     if (!SB) { alert('Engin gagnabankatenging'); return null; }
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
@@ -114,17 +114,23 @@
         alert('Villa við upphlaðningu: ' + r.error.message);
         return null;
       }
+      // Year: explicit (year-cell upload from the 23/24/25/26 columns) wins,
+      // else auto-tag from the filename (e.g. "Rjúpufell 2025.pdf") so it
+      // lights up in the year columns without manual tagging.
+      const ym = (opts && opts.year) ? [null, String(opts.year)] : file.name.match(/\b(20[2-3][0-9])\b/);
       const meta = {
         id: 'a_' + ts + '_' + Math.random().toString(36).slice(2,8),
         name: file.name,
         path,
         content_type: file.type || '',
         size: file.size,
-        uploaded_at: new Date().toISOString()
+        uploaded_at: new Date().toISOString(),
+        year: ym ? ym[1] : null
       };
       const list = getCompanyAttachments(coId);
       list.unshift(meta);
       await saveCompanyAttachments(coId, list);
+      if (meta.year) { try { document.dispatchEvent(new CustomEvent('attachment-year-changed')); } catch (_) {} }
       return meta;
     } catch (e) {
       alert('Villa: ' + (e.message || String(e)));
@@ -213,6 +219,19 @@
           '</div>' +
           '<span style="font-size:9px;font-weight:700;background:' + ic.color + '15;color:' + ic.color + ';padding:2px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:0.04em;flex-shrink:0">' + ic.label + '</span>' +
         '</div>' +
+        (() => {
+          // Effective year: explicit tag, else auto-detected from the filename
+          // (year === '0' = user explicitly cleared — no auto-detection).
+          const nm = (f.year == null && (String(f.name||'').match(/\b(20[2-3][0-9])\b/) || [])[1]) || null;
+          const eff = (f.year && f.year !== '0') ? String(f.year) : nm;
+          return '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#64748b">' +
+          'Ár:' +
+          '<select class="_cat-year" data-id="' + esc(f.id) + '" onclick="event.stopPropagation()" style="font:inherit;font-size:11px;padding:2px 4px;border:1px solid ' + (eff ? '#86efac' : '#e2e8f0') + ';border-radius:6px;background:' + (eff ? '#f0fdf4' : '#fff') + ';color:#0f172a">' +
+            '<option value=""' + (!eff ? ' selected' : '') + '>—</option>' +
+            ['2023','2024','2025','2026'].map(y => '<option value="' + y + '"' + (eff === y ? ' selected' : '') + '>' + y + '</option>').join('') +
+          '</select>' +
+          (eff ? '<span title="Birtist í ' + esc(eff) + ' dálki í Fyrirtæki í þjónustu listanum' + (f.year ? '' : ' (sjálfvirkt af skráarnafni)') + '" style="color:#15803d;font-weight:700">📄→' + esc(eff.slice(2)) + (f.year ? '' : '<span style="color:#94a3b8;font-weight:500"> sjálfv.</span>') + '</span>' : '') +
+        '</div>'; })() +
         '<div style="display:flex;gap:4px;margin-top:auto;flex-wrap:wrap">' +
           (isPreviewable(f.content_type, f.name)
             ? '<button class="_cat-open btn btn-primary btn-sm" data-id="' + esc(f.id) + '" style="flex:1;font-size:11px">📂 Opna</button>'
@@ -273,6 +292,23 @@
         }
         return;
       }
+    });
+
+    // Year tag changed on a card → persist + tell the year-columns patch (187)
+    // so the 23/24/25/26 view refreshes its icons.
+    section.addEventListener('change', async e => {
+      const sel = e.target.closest('._cat-year');
+      if (!sel) return;
+      e.stopPropagation();
+      const list = getCompanyAttachments(coId);
+      const f = list.find(x => x.id === sel.dataset.id);
+      if (!f) return;
+      // '' (—) stores '0' = explicitly none, so filename auto-detection
+      // doesn't resurrect a cleared tag.
+      f.year = sel.value === '' ? '0' : sel.value;
+      await saveCompanyAttachments(coId, list);
+      try { document.dispatchEvent(new CustomEvent('attachment-year-changed')); } catch (_) {}
+      refreshSection(section, coId);
     });
 
     fileInput.addEventListener('change', async () => {
