@@ -28,7 +28,7 @@
       const tbl = htr.closest('table');
       if (!tbl || !tbl.querySelector('tr._ars-row')) return;      // only the árskoðun table
       if (htr.querySelector('th[data-yrcol]')) return;            // already done this render
-      const ref = htr.children[5] || null;
+      const ref = htr.children[1] || null;   // right after the "Fyrirtæki" name column
       YEARS.forEach(y => {
         const th = document.createElement('th');
         th.setAttribute('data-yrcol','1');
@@ -44,7 +44,7 @@
       const c = byId[String(tr.getAttribute('data-co-id'))];
       const kt = c ? digits(c.kennitala) : '';
       const rec = uf[kt] || {};
-      const ref = tr.children[5] || null;
+      const ref = tr.children[1] || null;   // right after the company name cell
       YEARS.forEach(y => {
         const u = rec[y];
         const td = document.createElement('td');
