@@ -71,7 +71,9 @@
         } else if (f) {
           td.innerHTML = '<a href="#" class="_yr-att" data-path="' + String(f.path||'').replace(/"/g,'&quot;') + '" title="' + String(f.name||'').replace(/"/g,'&quot;') + ' (' + y + ' — upphlaðið skjal)" style="color:#15803d;font-weight:700;text-decoration:none">📄</a>';
         } else {
-          td.innerHTML = '<span style="color:#d1d5db">·</span>';
+          // Empty cell = attach point: click to upload a skýrsla straight
+          // into this (company, year). Hover shows a "+".
+          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Hengja skýrslu við ' + y + '" style="color:#d1d5db;text-decoration:none;display:inline-block;min-width:14px" onmouseover="this.textContent=\'+\';this.style.color=\'#15803d\';this.style.fontWeight=\'700\'" onmouseout="this.textContent=\'·\';this.style.color=\'#d1d5db\';this.style.fontWeight=\'400\'">·</a>';
         }
         tr.insertBefore(td, ref);
       });
@@ -94,6 +96,35 @@
     } catch (_) {}
     if (w) w.close();
     alert('Náði ekki að opna skjalið.');
+  });
+
+  // Clicking an empty year cell: pick a file and attach it to that
+  // (company, year) via patch 111's uploader — the cell lights up when done.
+  document.addEventListener('click', e => {
+    const a = e.target.closest('._yr-add');
+    if (!a) return;
+    e.preventDefault(); e.stopPropagation();
+    if (!window.CompanyAttachments || !CompanyAttachments.upload) { alert('Skjalaeining (patch 111) ekki hlaðin.'); return; }
+    const coId = a.dataset.coId, year = a.dataset.year;
+    const inp = document.createElement('input');
+    inp.type = 'file';
+    inp.accept = '.pdf,.doc,.docx,.xls,.xlsx,image/*';
+    inp.style.display = 'none';
+    document.body.appendChild(inp);
+    inp.addEventListener('change', async () => {
+      const file = inp.files && inp.files[0];
+      inp.remove();
+      if (!file) return;
+      a.textContent = '⏳';
+      const meta = await CompanyAttachments.upload(+coId, file, { year });
+      if (meta) {
+        // upload dispatches attachment-year-changed (year is set) → cells rebuild
+        try { if (window.Toast && Toast.show) Toast.show('✓ Skýrsla tengd við ' + year); } catch (_) {}
+      } else {
+        a.textContent = '·';
+      }
+    });
+    inp.click();
   });
 
   // Year tag changed in Skjöl & skýrslur (patch 111) → rebuild all year cells.

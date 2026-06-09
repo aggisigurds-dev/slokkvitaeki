@@ -94,7 +94,7 @@
     return null;
   }
 
-  async function uploadAttachment(coId, file) {
+  async function uploadAttachment(coId, file, opts) {
     const SB = getSB();
     if (!SB) { alert('Engin gagnabankatenging'); return null; }
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
@@ -114,9 +114,10 @@
         alert('Villa við upphlaðningu: ' + r.error.message);
         return null;
       }
-      // Auto-tag the report year from the filename (e.g. "Rjúpufell 2025.pdf")
-      // so it lights up in the 23/24/25/26 columns without manual tagging.
-      const ym = file.name.match(/\b(20[2-3][0-9])\b/);
+      // Year: explicit (year-cell upload from the 23/24/25/26 columns) wins,
+      // else auto-tag from the filename (e.g. "Rjúpufell 2025.pdf") so it
+      // lights up in the year columns without manual tagging.
+      const ym = (opts && opts.year) ? [null, String(opts.year)] : file.name.match(/\b(20[2-3][0-9])\b/);
       const meta = {
         id: 'a_' + ts + '_' + Math.random().toString(36).slice(2,8),
         name: file.name,
