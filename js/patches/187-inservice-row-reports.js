@@ -57,7 +57,12 @@
       const ref = tr.children[1] || null;   // right after the company name cell
       YEARS.forEach(y => {
         const u = rec[y];
-        const f = files.find(x => String(x.year) === y);
+        // Explicit year tag wins; untagged files (year == null) fall back to a
+        // year found in the filename ("Rjúpufell 2025.pdf" → 2025) so old
+        // uploads light up without manual tagging. year === '0' = explicitly
+        // cleared by the user — never auto-matched.
+        const f = files.find(x => String(x.year) === y) ||
+                  files.find(x => x.year == null && new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
         const td = document.createElement('td');
         td.setAttribute('data-yrcell','1');
         td.style.cssText = 'padding:6px 5px;text-align:center;font-size:11px;' + ((u || f) ? 'background:#f0fdf4' : '');
