@@ -363,7 +363,14 @@
     });
     if (fit && list.length > 0) {
       const pts = list.map(x => [x.coord.lat, x.coord.lng]);
-      try { _map.fitBounds(L.latLngBounds(pts).pad(0.15)); } catch (_) {}
+      // Fit to the greater-capital cluster (where ~all customers are) and
+      // ignore far outliers (Akureyri / Selfoss / Vogar) so the view doesn't
+      // zoom all the way out to cover Iceland. maxZoom keeps a lone pin from
+      // over-zooming. Falls back to all points if none are in the capital box.
+      const RVK = [64.13, -21.90];
+      const near = pts.filter(p => Math.abs(p[0] - RVK[0]) < 0.18 && Math.abs(p[1] - RVK[1]) < 0.45);
+      const usePts = near.length ? near : pts;
+      try { _map.fitBounds(L.latLngBounds(usePts).pad(0.12), { maxZoom: 14 }); } catch (_) {}
     }
     // Update counts in chip row
     updateChipCounts();
