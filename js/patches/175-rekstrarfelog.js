@@ -177,7 +177,7 @@
       if(f==='done')return r.s.cls==='done'; if(f==='need')return r.s.cls==='need'; if(f==='none')return r.s.cls==='none'; if(f==='overdue')return r.s.overdue; return true;
     });
     rows.sort(function(a,b){ if(a.firm!==b.firm)return a.firm<b.firm?-1:1; return (a.b.nafn||'')<(b.b.nafn||'')?-1:1; });
-    var totHtml='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
+    var totHtml='<div class="_ovr-totals" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
       '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 14px;font-size:13px"><b>'+firms+'</b> félög · <b>'+tot.byg+'</b> byggingar</div>'+
       '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 14px;font-size:13px;color:#15803d">✓ <b>'+tot.done+'</b> með úttekt 2026</div>'+
       '<div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:8px 14px;font-size:13px;color:#b7791f">⏳ <b>'+tot.need+'</b> vantar 2026</div>'+
@@ -201,7 +201,7 @@
         unitCell+y24+y25+y26+nextCell+'</tr>';
     }).join('');
     if(!trs) trs='<tr><td colspan="8" style="padding:16px;text-align:center;color:#94a3b8">Ekkert fannst.</td></tr>';
-    box.innerHTML=totHtml+chips+
+    box.innerHTML='<div class="noprint" style="display:flex;justify-content:flex-end;margin-bottom:8px"><button id="_rf_print" style="padding:7px 13px;border:1px solid #0f172a;background:#0f172a;color:#fff;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">🖨 Prenta skýrslu</button></div>'+totHtml+chips+
       '<div style="overflow-x:auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'+
       '<th style="text-align:left;color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">Rekstrarfélag</th>'+
       '<th style="text-align:left;color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">Bygging</th>'+
@@ -214,6 +214,7 @@
       '</tr></thead><tbody>'+trs+'</tbody></table></div>';
     box.querySelectorAll('._rf_fchip').forEach(function(c){ c.addEventListener('click', function(){ _state.fltr=c.getAttribute('data-f'); renderOverview(); }); });
     box.querySelectorAll('._rf_open').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); openCompany(a.getAttribute('data-coid')); }); });
+    var _pb=box.querySelector('#_rf_print'); if(_pb) _pb.onclick=function(){ if(window.SlokkPrint) window.SlokkPrint('Rekstrarfélög — byggingar og úttektir', box); };
   }
 
   function renderList(){

@@ -103,8 +103,9 @@
       '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">'+
         '<button id="_isy-back" style="padding:7px 13px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">‹ Til baka</button>'+
         '<h2 style="margin:0;font-size:18px;font-weight:750">Staða — yfirlit (öll fyrirtæki í þjónustu)</h2>'+
+        '<button id="_isy-print" style="margin-left:auto;padding:7px 13px;border:1px solid #0f172a;background:#0f172a;color:#fff;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">🖨 Prenta skýrslu</button>'+
       '</div>'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
+      '<div class="_ovr-totals" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
         '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 14px;font-size:13px"><b>'+tot.n+'</b> fyrirtæki</div>'+
         '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 14px;font-size:13px;color:#15803d">✓ <b>'+tot.done+'</b> með úttekt 2026</div>'+
         '<div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:8px 14px;font-size:13px;color:#b7791f">⏳ <b>'+tot.need+'</b> vantar 2026</div>'+
@@ -118,6 +119,7 @@
       ['Fyrirtæki','Kennitala','Tæki','2024','2025','2026','Næsta skoðun'].map(function(h,i){ return '<th style="text-align:'+(i<2?'left':'center')+';color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">'+h+'</th>'; }).join('')+
       '</tr></thead><tbody>'+trs+'</tbody></table></div>';
     box.querySelector('#_isy-back').onclick=function(){ closeOverview(); };
+    var _pb=box.querySelector('#_isy-print'); if(_pb) _pb.onclick=function(){ if(window.SlokkPrint) window.SlokkPrint('Fyrirtæki í þjónustu — staða og úttektir', box); };
     box.querySelectorAll('._isy-chip').forEach(function(c){ c.onclick=function(){ _fltr=c.getAttribute('data-f'); renderOverview(box); }; });
     box.querySelectorAll('._isy-open').forEach(function(a){ a.onclick=function(e){ e.preventDefault(); var id=a.getAttribute('data-coid');
       try{ if(window.Companies&&Companies.openDetail) Companies.openDetail(isNaN(id)?id:parseInt(id,10)); else if(window.VidskDetail&&VidskDetail.show) VidskDetail.show(parseInt(id,10)); }catch(err){} }; });
