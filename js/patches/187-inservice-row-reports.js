@@ -1,17 +1,19 @@
-/* === FYRIRTÆKI Í ÞJÓNUSTU — úttekt 24/25/26 á hverja línu v1 ===
- * Adds a compact "Skýrslur: 24 25 26" status to every row of the árleg-skoðun
- * list (patch 153, tr._ars-row), green + clickable when an úttektarskýrsla for
- * that year exists on Drive, grey when it's missing. So the report status is
- * visible right in the main view — not just in the yfirlit overlay.
+/* === FYRIRTÆKI Í ÞJÓNUSTU — úttekt 23/24/25/26 dálkar í aðallistanum v2 ===
+ * Injects real 2023/2024/2025/2026 columns into the árleg-skoðun table
+ * (patch 153) — right after "Tæki" — green 📄 + clickable when an
+ * úttektarskýrsla for that year exists on Drive, grey "·" when missing. So the
+ * report history shows as columns in the main view, like in Rekstrarfélög.
  *
- * Report data comes from AppSettings.uttekt_files (kt → {year:url}, parsed from
- * the úttektarskýrslu filenames). No DB query. Survives list re-renders via a
- * debounced MutationObserver. Self-contained; touches no core file.
+ * Report data: AppSettings.uttekt_files (kt → {year:url}). No DB query.
+ * Re-injects after the list re-renders (sort/filter) via an interval. Cells +
+ * header are appended in matching positions so column alignment is preserved.
+ * Self-contained; touches no core file.
  */
 (() => {
   if (window.__inserviceRowReportsInstalled) return;
   window.__inserviceRowReportsInstalled = true;
 
+  const YEARS = ['2023','2024','2025','2026'];
   function digits(s){ return String(s||'').replace(/\D/g,''); }
 
   function process(){
@@ -20,31 +22,45 @@
     const cos = (window.Companies && Companies.list) || [];
     if (!cos.length) return;
     const byId = {}; cos.forEach(c => { byId[String(c.id)] = c; });
-    const rows = document.querySelectorAll('tr._ars-row:not([data-yrb])');
-    rows.forEach(tr => {
-      tr.setAttribute('data-yrb','1');
+
+    // 1) header — add the four year columns after the 5th column ("Tæki")
+    document.querySelectorAll('table thead tr').forEach(htr => {
+      const tbl = htr.closest('table');
+      if (!tbl || !tbl.querySelector('tr._ars-row')) return;      // only the árskoðun table
+      if (htr.querySelector('th[data-yrcol]')) return;            // already done this render
+      const ref = htr.children[5] || null;
+      YEARS.forEach(y => {
+        const th = document.createElement('th');
+        th.setAttribute('data-yrcol','1');
+        th.style.cssText = 'padding:9px 5px;text-align:center;color:#475569;font-weight:700;font-size:10px;text-transform:none;letter-spacing:0';
+        th.textContent = y;
+        htr.insertBefore(th, ref);
+      });
+    });
+
+    // 2) each company row — add the four year cells at the same position
+    document.querySelectorAll('tr._ars-row:not([data-yrcol])').forEach(tr => {
+      tr.setAttribute('data-yrcol','1');
       const c = byId[String(tr.getAttribute('data-co-id'))];
-      if (!c) return;
-      const kt = digits(c.kennitala);
+      const kt = c ? digits(c.kennitala) : '';
       const rec = uf[kt] || {};
-      const cell = tr.querySelector('td');
-      if (!cell) return;
-      function yr(short){
-        const k = '20' + short; const u = rec[k];
-        return u
-          ? '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Úttektarskýrsla ' + k + ' í Drive" style="color:#15803d;font-weight:700;text-decoration:none">📄' + short + '</a>'
-          : '<span style="color:#cbd5e1;font-weight:600">' + short + '</span>';
-      }
-      const badge = document.createElement('div');
-      badge.style.cssText = 'margin-top:2px;display:flex;gap:7px;align-items:center;font-size:10px;flex-wrap:wrap';
-      badge.innerHTML = '<span style="color:#94a3b8">Skýrslur:</span>' + yr('23') + yr('24') + yr('25') + yr('26');
-      cell.appendChild(badge);
+      const ref = tr.children[5] || null;
+      YEARS.forEach(y => {
+        const u = rec[y];
+        const td = document.createElement('td');
+        td.setAttribute('data-yrcell','1');
+        td.style.cssText = 'padding:6px 5px;text-align:center;font-size:11px;' + (u ? 'background:#f0fdf4' : '');
+        td.innerHTML = u
+          ? '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Úttektarskýrsla ' + y + ' í Drive" style="color:#15803d;font-weight:700;text-decoration:none">📄</a>'
+          : '<span style="color:#d1d5db">·</span>';
+        tr.insertBefore(td, ref);
+      });
     });
   }
 
-  // Interval is more reliable than a MutationObserver here — the list patch
-  // rebuilds its tbody on sort/filter; new rows lack [data-yrb] so they get
-  // the badge on the next tick. (Cheap: only un-badged _ars-row are touched.)
+  // Interval: the list patch rebuilds on sort/filter; new thead/rows lack the
+  // markers so they get the columns again on the next tick (cheap — already
+  // marked nodes are skipped).
   setInterval(process, 1500);
   setTimeout(process, 800);
 })();
