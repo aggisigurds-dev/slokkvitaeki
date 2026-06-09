@@ -123,11 +123,19 @@
       try{ if(window.Companies&&Companies.openDetail) Companies.openDetail(isNaN(id)?id:parseInt(id,10)); else if(window.VidskDetail&&VidskDetail.show) VidskDetail.show(parseInt(id,10)); }catch(err){} }; });
   }
 
-  function host(){ var m=document.getElementById('companies-main'); return m?m.parentElement:null; }
-  function closeOverview(){ var ov=document.getElementById('_isy-view'); var m=document.getElementById('companies-main'); if(ov)ov.style.display='none'; if(m)m.style.display=''; }
-  function openOverview(){ var h=host(); if(!h) return; var m=document.getElementById('companies-main');
-    var ov=document.getElementById('_isy-view'); if(!ov){ ov=document.createElement('div'); ov.id='_isy-view'; ov.style.cssText='padding:18px 20px 60px;max-width:1100px;margin:0 auto'; h.appendChild(ov); }
-    if(m)m.style.display='none'; ov.style.display=''; renderOverview(ov); }
+  function closeOverview(){ var ov=document.getElementById('_isy-view'); if(ov) ov.style.display='none'; }
+  function openOverview(){
+    // Render into a fixed, body-level overlay so the page re-rendering its
+    // own list area can never wipe or hide it.
+    var ov=document.getElementById('_isy-view');
+    if(!ov){
+      ov=document.createElement('div'); ov.id='_isy-view';
+      ov.style.cssText='position:fixed;inset:0;background:#f8fafc;z-index:99999;overflow:auto;padding:18px 20px 60px';
+      var inner=document.createElement('div'); inner.id='_isy-inner'; inner.style.cssText='max-width:1100px;margin:0 auto';
+      ov.appendChild(inner); document.body.appendChild(ov);
+    }
+    ov.style.display=''; renderOverview(document.getElementById('_isy-inner'));
+  }
 
   function ensureButton(){
     var m=document.getElementById('companies-main'); if(!m||!m.parentElement) return;
