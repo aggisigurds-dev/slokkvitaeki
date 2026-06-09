@@ -149,7 +149,7 @@
     var next=st?st.next:null;
     var overdue=!!(next&&next<today&&hasData);
     var cls = !hasData?'none':(d26?'done':((d24||d25)?'need':'other'));
-    return {co:co,units:units,att:att,lks:lks,d24:d24,d25:d25,d26:d26,hasRep:hasRep,next:next,overdue:overdue,cls:cls,hasData:hasData};
+    return {co:co,units:units,att:att,lks:lks,d23:!!lks['2023'],d24:d24,d25:d25,d26:d26,hasRep:hasRep,next:next,overdue:overdue,cls:cls,hasData:hasData};
   }
   function yCellO(done, rep, units, url){
     var bd='1px solid #eef1f5';
@@ -192,21 +192,22 @@
       var b=r.b, s=r.s;
       var bname = s.co ? '<a href="#" data-coid="'+s.co.id+'" class="_rf_open" style="color:#2563eb;text-decoration:none">'+esc(b.nafn)+'</a>' : esc(b.nafn)+' <span style="color:#cbd5e1;font-size:11px">(ekki í skrá)</span>';
       var unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(s.units>0?'font-weight:600':'color:#b45309')+'">'+(s.units>0?s.units:(s.hasRep?'–':'0'))+'</td>';
-      var y24=yCellO(s.d24,!!s.att[0],s.units,s.lks['2024']),y25=yCellO(s.d25,!!s.att[1],s.units,s.lks['2025']),y26=yCellO(s.d26,!!s.att[2],s.units,s.lks['2026']);
+      var y23=yCellO(s.d23,false,s.units,s.lks['2023']),y24=yCellO(s.d24,!!s.att[0],s.units,s.lks['2024']),y25=yCellO(s.d25,!!s.att[1],s.units,s.lks['2025']),y26=yCellO(s.d26,!!s.att[2],s.units,s.lks['2026']);
       var nextCell = s.next ? '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(s.overdue?'background:#fef2f2;color:#b91c1c;':'color:#475569;')+'font-variant-numeric:tabular-nums;white-space:nowrap">'+esc(s.next)+(s.overdue?' ⚠':'')+'</td>' : '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:#cbd5e1">—</td>';
       return '<tr>'+
         '<td style="padding:5px 6px;border-bottom:'+bd+';color:#475569;white-space:nowrap">'+esc(r.firm)+'</td>'+
         '<td style="padding:5px 6px;border-bottom:'+bd+'">'+bname+'</td>'+
         '<td style="padding:5px 6px;border-bottom:'+bd+';color:#64748b;font-variant-numeric:tabular-nums;white-space:nowrap">'+fmtKt(b.kt)+'</td>'+
-        unitCell+y24+y25+y26+nextCell+'</tr>';
+        unitCell+y23+y24+y25+y26+nextCell+'</tr>';
     }).join('');
-    if(!trs) trs='<tr><td colspan="8" style="padding:16px;text-align:center;color:#94a3b8">Ekkert fannst.</td></tr>';
+    if(!trs) trs='<tr><td colspan="9" style="padding:16px;text-align:center;color:#94a3b8">Ekkert fannst.</td></tr>';
     box.innerHTML='<div class="noprint" style="display:flex;justify-content:flex-end;margin-bottom:8px"><button id="_rf_print" style="padding:7px 13px;border:1px solid #0f172a;background:#0f172a;color:#fff;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">🖨 Prenta skýrslu</button></div>'+totHtml+chips+
       '<div style="overflow-x:auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'+
       '<th style="text-align:left;color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">Rekstrarfélag</th>'+
       '<th style="text-align:left;color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">Bygging</th>'+
       '<th style="text-align:left;color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">Kennitala</th>'+
       '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">Tæki</th>'+
+      '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">2023</th>'+
       '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">2024</th>'+
       '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">2025</th>'+
       '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">2026</th>'+
@@ -278,18 +279,19 @@
       var lks = linkMap[digits(b.kt)] || {};
       var units = st ? st.units : 0;
       var e24=st?st.y2024:0, e25=st?st.y2025:0, e26=st?st.y2026:0;
+      var d23=!!lks['2023'];
       var d24=(e24>0)||!!att[0]||!!lks['2024'], d25=(e25>0)||!!att[1]||!!lks['2025'], d26=(e26>0)||!!att[2]||!!lks['2026'];
       var hasRep = !!(att[0]||att[1]||att[2]);
       var lkYears = Object.keys(lks);
       var hasData = units>0 || hasRep || d24 || d25 || d26 || lkYears.length>0;
       if(!hasData) nNone++; else if(d26) n2026++; else if(d24||d25) nNeed++;
       // links for years outside the 2024-2026 columns (e.g. older skýrslur) shown after the name
-      var oldLinks = lkYears.filter(function(y){return y<'2024';}).sort().map(function(y){
+      var oldLinks = lkYears.filter(function(y){return y<'2023';}).sort().map(function(y){
         return ' <a href="'+esc(lks[y])+'" target="_blank" rel="noopener" title="Úttektarskýrsla '+y+' í Drive" style="font-size:11px;color:#15803d;text-decoration:none;white-space:nowrap">📄'+y+'↗</a>'; }).join('');
       link = link + oldLinks;
       if(b.heimilisfang) link += '<div style="font-size:11px;color:#94a3b8;margin-top:2px">📍 '+esc(b.heimilisfang)+'</div>';
       var unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(units>0?'font-weight:600':'color:'+(hasRep?'#cbd5e1':'#b45309'))+'">'+(units>0?units:(hasRep||lkYears.length?'–':'0'))+'</td>';
-      var y24=yCell(d24,!!att[0],units,lks['2024']), y25=yCell(d25,!!att[1],units,lks['2025']), y26=yCell(d26,!!att[2],units,lks['2026']);
+      var y23=yCell(d23,false,units,lks['2023']), y24=yCell(d24,!!att[0],units,lks['2024']), y25=yCell(d25,!!att[1],units,lks['2025']), y26=yCell(d26,!!att[2],units,lks['2026']);
       var nextCell;
       if(st && st.next){ var overdue = st.next < today; if(overdue && hasData) nOverdue++;
         var col = overdue ? '#b91c1c' : '#475569'; var bg = overdue ? 'background:#fef2f2;' : '';
@@ -297,7 +299,7 @@
       } else { nextCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:#cbd5e1">—</td>'; }
       return '<tr><td style="padding:5px 6px;border-bottom:'+bd+'">'+link+'</td>'+
              '<td style="padding:5px 6px;border-bottom:'+bd+';color:#64748b;font-variant-numeric:tabular-nums">'+fmtKt(b.kt)+'</td>'+
-             unitCell+y24+y25+y26+nextCell+
+             unitCell+y23+y24+y25+y26+nextCell+
              '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:right;white-space:nowrap">'+doc+
              ' <a href="#" class="_rf_delb" data-bi="'+_bi+'" title="Fjarlægja byggingu" style="color:#dc2626;text-decoration:none;font-size:12px;margin-left:6px">✕</a></td></tr>';
     }).join('');
@@ -323,6 +325,7 @@
           '<th style="text-align:left;color:#64748b;font-size:12px;padding:4px 6px;border-bottom:1px solid #eef1f5">Bygging</th>'+
           '<th style="text-align:left;color:#64748b;font-size:12px;padding:4px 6px;border-bottom:1px solid #eef1f5">Kennitala</th>'+
           '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 4px;border-bottom:1px solid #eef1f5">Tæki</th>'+
+          '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 4px;border-bottom:1px solid #eef1f5">2023</th>'+
           '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 4px;border-bottom:1px solid #eef1f5">2024</th>'+
           '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 4px;border-bottom:1px solid #eef1f5">2025</th>'+
           '<th style="text-align:center;color:#64748b;font-size:12px;padding:4px 4px;border-bottom:1px solid #eef1f5">2026</th>'+

@@ -77,11 +77,12 @@
     var all=inServiceList().map(function(c){
       var kt=digits(c.kennitala); var st=equip.match(c.nafn)||null; var lks=uf[kt]||{};
       var units=st?st.units:0;
+      var d23=!!lks['2023'];
       var d24=(st&&st.y2024>0)||!!lks['2024'], d25=(st&&st.y2025>0)||!!lks['2025'], d26=(st&&st.y2026>0)||!!lks['2026'];
       var hasData=units>0||d24||d25||d26;
       var next=st?st.next:null; var overdue=!!(next&&next<today&&hasData);
       var cls=!hasData?'none':(d26?'done':((d24||d25)?'need':'other'));
-      return {c:c,kt:kt,units:units,d24:d24,d25:d25,d26:d26,lks:lks,next:next,overdue:overdue,cls:cls,hasData:hasData};
+      return {c:c,kt:kt,units:units,d23:d23,d24:d24,d25:d25,d26:d26,lks:lks,next:next,overdue:overdue,cls:cls,hasData:hasData};
     });
     var tot={n:all.length,done:0,need:0,none:0,overdue:0};
     all.forEach(function(r){ if(r.cls==='done')tot.done++; else if(r.cls==='need')tot.need++; else if(r.cls==='none')tot.none++; if(r.overdue)tot.overdue++; });
@@ -96,9 +97,9 @@
       var nextCell = r.next ? '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(r.overdue?'background:#fef2f2;color:#b91c1c;':'color:#475569;')+'font-variant-numeric:tabular-nums;white-space:nowrap">'+esc(r.next)+(r.overdue?' ⚠':'')+'</td>' : '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:#cbd5e1">—</td>';
       return '<tr><td style="padding:5px 6px;border-bottom:'+bd+'">'+nm+'</td>'+
         '<td style="padding:5px 6px;border-bottom:'+bd+';color:#64748b;font-variant-numeric:tabular-nums;white-space:nowrap">'+esc(fmtKt(r.kt))+'</td>'+
-        unitCell+yCell(r.d24,r.units,r.lks['2024'])+yCell(r.d25,r.units,r.lks['2025'])+yCell(r.d26,r.units,r.lks['2026'])+nextCell+'</tr>';
+        unitCell+yCell(r.d23,r.units,r.lks['2023'])+yCell(r.d24,r.units,r.lks['2024'])+yCell(r.d25,r.units,r.lks['2025'])+yCell(r.d26,r.units,r.lks['2026'])+nextCell+'</tr>';
     }).join('');
-    if(!trs) trs='<tr><td colspan="7" style="padding:18px;text-align:center;color:#94a3b8">Ekkert fannst.</td></tr>';
+    if(!trs) trs='<tr><td colspan="8" style="padding:18px;text-align:center;color:#94a3b8">Ekkert fannst.</td></tr>';
     box.innerHTML=
       '<div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">'+
         '<button id="_isy-back" style="padding:7px 13px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">‹ Til baka</button>'+
@@ -116,7 +117,7 @@
         chip('all','Allir ('+all.length+')')+chip('done','✓ Með úttekt 2026 ('+tot.done+')')+chip('need','⏳ Vantar 2026 ('+tot.need+')')+chip('none','⚠ Engin gögn ('+tot.none+')')+chip('overdue','⏰ Skoðun liðin ('+tot.overdue+')')+
       '</div>'+
       '<div style="overflow-x:auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'+
-      ['Fyrirtæki','Kennitala','Tæki','2024','2025','2026','Næsta skoðun'].map(function(h,i){ return '<th style="text-align:'+(i<2?'left':'center')+';color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">'+h+'</th>'; }).join('')+
+      ['Fyrirtæki','Kennitala','Tæki','2023','2024','2025','2026','Næsta skoðun'].map(function(h,i){ return '<th style="text-align:'+(i<2?'left':'center')+';color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">'+h+'</th>'; }).join('')+
       '</tr></thead><tbody>'+trs+'</tbody></table></div>';
     box.querySelector('#_isy-back').onclick=function(){ closeOverview(); };
     var _pb=box.querySelector('#_isy-print'); if(_pb) _pb.onclick=function(){ if(window.SlokkPrint) window.SlokkPrint('Fyrirtæki í þjónustu — staða og úttektir', box); };

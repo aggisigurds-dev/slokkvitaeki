@@ -37,7 +37,7 @@
       }
       const badge = document.createElement('div');
       badge.style.cssText = 'margin-top:2px;display:flex;gap:7px;align-items:center;font-size:10px;flex-wrap:wrap';
-      badge.innerHTML = '<span style="color:#94a3b8">Skýrslur:</span>' + yr('24') + yr('25') + yr('26');
+      badge.innerHTML = '<span style="color:#94a3b8">Skýrslur:</span>' + yr('23') + yr('24') + yr('25') + yr('26');
       cell.appendChild(badge);
     });
   }
