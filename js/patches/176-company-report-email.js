@@ -65,20 +65,23 @@
     // renders an off-screen element as a blank page (the "empty PDF" bug). A
     // zero-height, overflow-hidden wrapper at (0,0) hides it from the user while
     // the full-size inner holder (passed to html2pdf) still captures correctly.
+    const W = 794; // A4 width in px @96dpi — fixed so html2canvas captures it all
     const wrap = document.createElement('div');
-    wrap.style.cssText = 'position:fixed;top:0;left:0;width:210mm;height:0;overflow:hidden;z-index:-1;opacity:0;pointer-events:none';
+    wrap.style.cssText = 'position:fixed;top:0;left:0;width:' + W + 'px;height:0;overflow:hidden;z-index:-1;opacity:0;pointer-events:none';
     const holder = document.createElement('div');
-    holder.style.cssText = 'width:210mm;background:#fff';
+    holder.style.cssText = 'width:' + W + 'px;background:#fff';
     holder.innerHTML = (styles ? '<style>' + styles + '</style>' : '') + parsed.body.innerHTML;
     wrap.appendChild(holder);
     document.body.appendChild(wrap);
     try {
       await waitForImages(holder);
       const opt = {
-        margin: [12, 14, 14, 14], // mm — top, left, bottom, right
+        margin: [12, 12, 12, 12], // mm — top, left, bottom, right
         filename: filename || 'Uttektarskyrsla.pdf',
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+        // width + windowWidth pin the capture to W so nothing on the right is
+        // clipped (the "right third cut off" bug).
+        html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: W, windowWidth: W },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
       const dataUri = await window.html2pdf().set(opt).from(holder).outputPdf('datauristring');
@@ -198,18 +201,19 @@
         const parsed = new DOMParser().parseFromString(html, 'text/html');
         const styles = Array.from(parsed.querySelectorAll('style')).map(s => s.textContent).join('\n');
         // Render at the viewport origin (not -10000px → blank). See htmlToPdfBase64.
+        const W = 794;
         const wrap = document.createElement('div');
-        wrap.style.cssText = 'position:fixed;top:0;left:0;width:210mm;height:0;overflow:hidden;z-index:-1;opacity:0;pointer-events:none';
+        wrap.style.cssText = 'position:fixed;top:0;left:0;width:' + W + 'px;height:0;overflow:hidden;z-index:-1;opacity:0;pointer-events:none';
         const holder = document.createElement('div');
-        holder.style.cssText = 'width:210mm;background:#fff';
+        holder.style.cssText = 'width:' + W + 'px;background:#fff';
         holder.innerHTML = (styles ? '<style>' + styles + '</style>' : '') + parsed.body.innerHTML;
         wrap.appendChild(holder);
         document.body.appendChild(wrap);
         await waitForImages(holder);
         const opt = {
-          margin: [12, 14, 14, 14], filename: safeFileName(co.nafn),
+          margin: [12, 12, 12, 12], filename: safeFileName(co.nafn),
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff', width: W, windowWidth: W },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         await window.html2pdf().set(opt).from(holder).save();
