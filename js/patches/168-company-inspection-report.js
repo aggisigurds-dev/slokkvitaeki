@@ -260,15 +260,30 @@
     dlg.querySelector('#_cir-save').addEventListener('click', async () => {
       const cy = new Date().getFullYear();
       const btn = dlg.querySelector('#_cir-save');
-      if (!window.CompanyReportEmail || !CompanyReportEmail.htmlToPdfBase64) { alert('PDF-eining ekki tiltæk.'); return; }
       if (!window.CompanyAttachments || !CompanyAttachments.upload) { alert('Skjalaeining ekki tiltæk.'); return; }
       const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ Vista…';
       try {
-        const b64 = await CompanyReportEmail.htmlToPdfBase64(html, 'Uttektarskyrsla.pdf');
-        const bin = atob(b64); const arr = new Uint8Array(bin.length);
-        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        // 2026-06-10: render the PDF straight from the on-screen preview iframe
+        // (which is already painted + laid out correctly), NOT from a re-parsed
+        // off-screen holder — that gave blank captures.
+        const H2P = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js';
+        if (!window.html2pdf) {
+          await new Promise((res, rej) => { const s = document.createElement('script'); s.src = H2P; s.onload = res; s.onerror = () => rej(new Error('PDF-eining hlóðst ekki.')); document.head.appendChild(s); });
+        }
+        const fdoc = frame.contentDocument || frame.contentWindow.document;
+        const target = fdoc.body;
+        // wait for the logo image inside the iframe to be ready
+        const imgs = Array.from(target.querySelectorAll('img'));
+        await Promise.all(imgs.map(img => (img.complete && img.naturalWidth) ? Promise.resolve() : new Promise(r => { img.onload = img.onerror = () => r(); })));
+        const opt = {
+          margin: [10, 10, 10, 10],
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+        const blob = await window.html2pdf().set(opt).from(target).outputPdf('blob');
         const fname = 'Úttektarskýrsla ' + (co.nafn || 'fyrirtæki') + ' ' + cy + '.pdf';
-        const file = new File([arr], fname, { type: 'application/pdf' });
+        const file = new File([blob], fname, { type: 'application/pdf' });
         const meta = await CompanyAttachments.upload(co.id, file, { year: String(cy) });
         if (meta) { btn.textContent = '✓ Vistuð sem ' + cy; if (window.Toast && Toast.show) Toast.show('✓ Skýrsla vistuð sem ' + cy); }
         else { btn.disabled = false; btn.textContent = orig; }
