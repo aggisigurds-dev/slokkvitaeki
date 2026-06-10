@@ -61,10 +61,17 @@
     // offscreen A4-width holder so html2canvas can lay it out and capture it.
     const parsed = new DOMParser().parseFromString(html, 'text/html');
     const styles = Array.from(parsed.querySelectorAll('style')).map(s => s.textContent).join('\n');
+    // 2026-06-10: render at the VIEWPORT ORIGIN, not at left:-10000px — html2canvas
+    // renders an off-screen element as a blank page (the "empty PDF" bug). A
+    // zero-height, overflow-hidden wrapper at (0,0) hides it from the user while
+    // the full-size inner holder (passed to html2pdf) still captures correctly.
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:fixed;top:0;left:0;width:210mm;height:0;overflow:hidden;z-index:-1;opacity:0;pointer-events:none';
     const holder = document.createElement('div');
-    holder.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;background:#fff;z-index:-1';
+    holder.style.cssText = 'width:210mm;background:#fff';
     holder.innerHTML = (styles ? '<style>' + styles + '</style>' : '') + parsed.body.innerHTML;
-    document.body.appendChild(holder);
+    wrap.appendChild(holder);
+    document.body.appendChild(wrap);
     try {
       await waitForImages(holder);
       const opt = {
@@ -77,7 +84,7 @@
       const dataUri = await window.html2pdf().set(opt).from(holder).outputPdf('datauristring');
       return String(dataUri).split(',')[1] || '';
     } finally {
-      holder.remove();
+      wrap.remove();
     }
   }
 
@@ -190,10 +197,14 @@
         await loadHtml2Pdf();
         const parsed = new DOMParser().parseFromString(html, 'text/html');
         const styles = Array.from(parsed.querySelectorAll('style')).map(s => s.textContent).join('\n');
+        // Render at the viewport origin (not -10000px → blank). See htmlToPdfBase64.
+        const wrap = document.createElement('div');
+        wrap.style.cssText = 'position:fixed;top:0;left:0;width:210mm;height:0;overflow:hidden;z-index:-1;opacity:0;pointer-events:none';
         const holder = document.createElement('div');
-        holder.style.cssText = 'position:fixed;left:-10000px;top:0;width:210mm;background:#fff;z-index:-1';
+        holder.style.cssText = 'width:210mm;background:#fff';
         holder.innerHTML = (styles ? '<style>' + styles + '</style>' : '') + parsed.body.innerHTML;
-        document.body.appendChild(holder);
+        wrap.appendChild(holder);
+        document.body.appendChild(wrap);
         await waitForImages(holder);
         const opt = {
           margin: [12, 14, 14, 14], filename: safeFileName(co.nafn),
@@ -202,7 +213,7 @@
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
         };
         await window.html2pdf().set(opt).from(holder).save();
-        holder.remove();
+        wrap.remove();
       } catch (e) {
         toast('Villa: ' + (e.message || e));
       } finally {
