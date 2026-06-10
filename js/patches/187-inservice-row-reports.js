@@ -138,5 +138,5 @@
   // markers so they get the columns again on the next tick (cheap — already
   // marked nodes are skipped).
   setInterval(process, 1500);
-  setTimeout(process, 800);
+  setTimeout(process, 120); setTimeout(process, 500);
 })();
