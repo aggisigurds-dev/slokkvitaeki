@@ -547,6 +547,9 @@
     // 2026-06-10: free-text line that prints on the reikningur (the "Vegna…"
     // line), e.g. "Vinna vegna skoðunar á Dalvegi 10". Overrides the default.
     const invoiceText   = (tripState.invoice_text != null) ? String(tripState.invoice_text) : '';
+    // 2026-06-10: free-text that appears in the "Athugasemdir:" section of the
+    // úttektarskýrsla ONLY (not on the reikningur).
+    const athSkyrsla    = (tripState.athugasemdir_skyrsla != null) ? String(tripState.athugasemdir_skyrsla) : '';
     const _td = new Date();
     const todayDDMM = String(_td.getDate()).padStart(2, '0') + '.' +
       String(_td.getMonth() + 1).padStart(2, '0') + '.' + _td.getFullYear();
@@ -590,6 +593,15 @@
             'style="flex:1;min-width:120px;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
         '</label>' +
         '<div style="font-size:10.5px;color:#16a34a;margin-top:3px;margin-left:2px">Sést sem „Vegna…" lína á reikningnum (yfirskrifar sjálfgefið).</div>' +
+      '</div>' +
+      // 2026-06-10: free-text shown only in the úttektarskýrsla Athugasemdir.
+      '<div style="margin-bottom:10px">' +
+        '<label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#0f172a">' +
+          '<span style="font-weight:600;color:#166534;white-space:nowrap;padding-top:6px">✍ Athugasemdir á skýrslu</span>' +
+          '<textarea id="_ctc-athskyrsla" rows="2" placeholder="t.d. Mælt með að skipta út 2 tækjum á næsta ári" ' +
+            'style="flex:1;min-width:120px;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff;resize:vertical;box-sizing:border-box">' + esc(athSkyrsla) + '</textarea>' +
+        '</label>' +
+        '<div style="font-size:10.5px;color:#16a34a;margin-top:3px;margin-left:2px">Sést í „Athugasemdir" á úttektarskýrslunni (ekki á reikningnum).</div>' +
       '</div>' +
       // 2026-05-21: "+ Bæta við vöru eða þjónustu" button opens the shared
       // VorurPicker (patch 117) and appends the choice to tripState.extras.
@@ -654,6 +666,13 @@
       };
       dagsInp.addEventListener('blur', onDags);
       dagsInp.addEventListener('change', onDags);
+    }
+    // Wire report-Athugasemdir textarea.
+    const athInp = section.querySelector('#_ctc-athskyrsla');
+    if (athInp) {
+      const onAth = () => { const st = loadTripState(coId); st.athugasemdir_skyrsla = athInp.value; saveTripState(coId, st); };
+      athInp.addEventListener('blur', onAth);
+      athInp.addEventListener('change', onAth);
     }
     // Wire invoice-text input.
     const invTextInp = section.querySelector('#_ctc-invtext');
