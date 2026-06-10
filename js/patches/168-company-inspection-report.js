@@ -64,6 +64,127 @@
     { k: 'reyk',       label: 'Reykskynjarar' }
   ];
 
+  // ── jsPDF vector renderer ───────────────────────────────────────────────
+  // 2026-06-10: html2canvas renders BLANK in Agnar's browser no matter where
+  // the source element lives (off-screen, iframe, behind-modal). So we stop
+  // rasterizing the DOM entirely and draw the report as vector text with
+  // jsPDF — works in every browser, tiny, and the text stays selectable.
+  function loadJsPDF() {
+    if (window.jspdf && window.jspdf.jsPDF) return Promise.resolve();
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      s.onload = () => (window.jspdf && window.jspdf.jsPDF) ? res() : rej(new Error('jsPDF hlóðst ekki.'));
+      s.onerror = () => rej(new Error('jsPDF hlóðst ekki.'));
+      document.head.appendChild(s);
+    });
+  }
+
+  // Fetch /img/logo.png → dataURL (so jsPDF.addImage can embed it). Returns
+  // { dataUri, w, h } or null on any failure (report still renders, sans logo).
+  function logoDataUri() {
+    return new Promise(resolve => {
+      try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          try {
+            const cv = document.createElement('canvas');
+            cv.width = img.naturalWidth; cv.height = img.naturalHeight;
+            cv.getContext('2d').drawImage(img, 0, 0);
+            resolve({ dataUri: cv.toDataURL('image/png'), w: img.naturalWidth, h: img.naturalHeight });
+          } catch (_) { resolve(null); }
+        };
+        img.onerror = () => resolve(null);
+        img.src = '/img/logo.png?v=20260520b';
+      } catch (_) { resolve(null); }
+    });
+  }
+
+  // jsPDF default Helvetica encodes WinAnsi/Latin-1, which covers Icelandic
+  // (þ ð æ ö á é í ó ú ý) — but NOT the subscript ₂, so map Co₂ → Co2.
+  function pdfText(s) { return String(s == null ? '' : s).replace(/₂/g, '2'); }
+
+  async function buildReportPdfBlob(ctx) {
+    await loadJsPDF();
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
+    const { co, counts, annad, athugasemdir, skodunaradili, monthPhrase } = ctx;
+
+    const PAGE_W = 210, ML = 18, MR = 18, CW = PAGE_W - ML - MR;
+    let y = 18;
+
+    // Letterhead — logo left, address right
+    const logo = await logoDataUri();
+    if (logo) {
+      const hMM = 22; // ~88px tall in the preview
+      const wMM = logo.w && logo.h ? (logo.w / logo.h) * hMM : 66;
+      try { doc.addImage(logo.dataUri, 'PNG', ML, y, wMM, hMM); } catch (_) {}
+    }
+    doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(15, 23, 42);
+    doc.text('Helluhrauni 10, 220 Hafnarfjörður', PAGE_W - MR, y + 7, { align: 'right' });
+    doc.text('Sími: 565 4080, kt. 600508-0400', PAGE_W - MR, y + 12, { align: 'right' });
+    y += 30;
+
+    // Intro sentence
+    doc.setFontSize(10.5);
+    const intro = 'Skýrsla vegna úttektar á brunaslöngum, slökkvitækjum og öðrum búnaði (ef við á) hjá fyrirtækinu';
+    doc.splitTextToSize(pdfText(intro), CW).forEach(line => { doc.text(line, ML, y); y += 5.5; });
+    y += 3;
+
+    // Customer line + underline
+    const ktLine = co.kennitala ? '  kt: ' + co.kennitala : '';
+    const addrLine = co.heimilisfang ? ', ' + co.heimilisfang : '';
+    const custLine = (co.nafn || '—') + addrLine + ktLine;
+    doc.setFontSize(11);
+    doc.splitTextToSize(pdfText(custLine), CW).forEach(line => { doc.text(line, ML, y); y += 5.5; });
+    y += 1.5;
+    doc.setDrawColor(15, 23, 42).setLineWidth(0.3).line(ML, y, PAGE_W - MR, y);
+    y += 10;
+
+    // Inspection statement (bold)
+    doc.setFont('helvetica', 'bold').setFontSize(12);
+    doc.text(pdfText('Tæki voru yfirfarin af Slökkvitæki ehf ' + monthPhrase), ML, y);
+    doc.setFont('helvetica', 'normal');
+    y += 11;
+
+    // Equipment category rows
+    doc.setFontSize(10.5);
+    const labelX = ML + 4, fjoldiX = ML + 92, ilagiX = ML + 130;
+    CATEGORIES.forEach(c => {
+      const n = counts[c.k] || 0;
+      const fjoldi = n > 0 ? String(n) : 'x';
+      const ilagi  = n > 0 ? 'Já' : 'x';
+      doc.text(pdfText(c.label), labelX, y);
+      doc.text('Fjöldi: ' + fjoldi, fjoldiX, y);
+      doc.text(pdfText('Í lagi: ' + ilagi), ilagiX, y);
+      y += 3;
+      doc.setDrawColor(226, 232, 240).setLineWidth(0.2).line(labelX, y, PAGE_W - MR, y);
+      y += 6;
+    });
+    y += 6;
+
+    // Annað
+    doc.setFontSize(10.5).setFont('helvetica', 'bold');
+    doc.text('Annað:', ML, y); y += 5.5;
+    doc.setFont('helvetica', 'normal');
+    doc.splitTextToSize(pdfText(annad || '—'), CW).forEach(line => { doc.text(line, ML, y); y += 5.2; });
+    y += 8;
+
+    // Athugasemdir
+    doc.setFont('helvetica', 'bold');
+    doc.text('Athugasemdir:', ML, y); y += 5.5;
+    doc.setFont('helvetica', 'normal');
+    doc.splitTextToSize(pdfText(athugasemdir), CW).forEach(line => { doc.text(line, ML, y); y += 5.2; });
+    y += 18;
+
+    // Sign-off
+    doc.text(pdfText('Fyrir hönd Slökkvitæki ehf'), ML, y); y += 16;
+    doc.text(pdfText(skodunaradili || '_______________________'), ML, y);
+
+    return doc.output('blob');
+  }
+
   async function fetchUnits(client) {
     const sb = getSB();
     if (!sb) return [];
@@ -122,8 +243,9 @@
     const arYear  = (vd && vd.year)    ? vd.year    : now.getFullYear();
     const monthPhrase = 'í ' + manudur + ' ' + arYear;
 
-    const html = buildReportHtml({ co, counts, annad, athugasemdir, skodunaradili, monthPhrase });
-    showModal(html, co, opts);
+    const ctx = { co, counts, annad, athugasemdir, skodunaradili, monthPhrase };
+    const html = buildReportHtml(ctx);
+    showModal(html, co, opts, ctx);
   }
 
   function buildReportHtml(ctx) {
@@ -209,7 +331,7 @@
       </body></html>`;
   }
 
-  function showModal(html, co, opts) {
+  function showModal(html, co, opts, ctx) {
     const existing = document.getElementById('_cir-modal');
     if (existing) existing.remove();
     const dlg = document.createElement('div');
@@ -263,25 +385,10 @@
       if (!window.CompanyAttachments || !CompanyAttachments.upload) { alert('Skjalaeining ekki tiltæk.'); return; }
       const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ Vista…';
       try {
-        // 2026-06-10: render the PDF straight from the on-screen preview iframe
-        // (which is already painted + laid out correctly), NOT from a re-parsed
-        // off-screen holder — that gave blank captures.
-        const H2P = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js';
-        if (!window.html2pdf) {
-          await new Promise((res, rej) => { const s = document.createElement('script'); s.src = H2P; s.onload = res; s.onerror = () => rej(new Error('PDF-eining hlóðst ekki.')); document.head.appendChild(s); });
-        }
-        const fdoc = frame.contentDocument || frame.contentWindow.document;
-        const target = fdoc.body;
-        // wait for the logo image inside the iframe to be ready
-        const imgs = Array.from(target.querySelectorAll('img'));
-        await Promise.all(imgs.map(img => (img.complete && img.naturalWidth) ? Promise.resolve() : new Promise(r => { img.onload = img.onerror = () => r(); })));
-        const opt = {
-          margin: [10, 10, 10, 10],
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        const blob = await window.html2pdf().set(opt).from(target).outputPdf('blob');
+        // 2026-06-10: draw the PDF with jsPDF vector text (no DOM
+        // rasterization). html2canvas rendered blank in this browser no matter
+        // the source element, so we skip it entirely.
+        const blob = await buildReportPdfBlob(ctx);
         const fname = 'Úttektarskýrsla ' + (co.nafn || 'fyrirtæki') + ' ' + cy + '.pdf';
         const file = new File([blob], fname, { type: 'application/pdf' });
         const meta = await CompanyAttachments.upload(co.id, file, { year: String(cy) });
