@@ -60,6 +60,12 @@
   const customers = [];
   let unitsByPhone = {};   // phone -> [units]
   let unitsByName = {};    // name -> [units]
+  // 2026-06-10: signature of the last-rendered detail page. refresh() can fire
+  // 7-8× while the view loads (nav enter + maybeRefresh + external prefetchers
+  // + realtime), and each call re-ran renderDetail → m.innerHTML, repainting
+  // the Tæki overview over and over (visible flicker). We now skip the rewrite
+  // when the rendered content is byte-identical to what's already on screen.
+  let _detailSig = '';
 
   // Document tracker (samningur / úttektarskýrslur / reikningar) per customer.
   // Linked customers_base.source_v_id → vidskiptavinir.id, with a kennitala
@@ -553,6 +559,18 @@
     const cc = counts(c);
     const summary = `🧯 Slökkvi: ${cc.ext}  |  🚒 Slöngur: ${cc.hose}  |  🚨 Reyk: ${cc.smoke}` +
       (cc.other > 0 ? `  |  Annað: ${cc.other}` : '');
+
+    // Skip the repaint when nothing visible changed. Signature covers the
+    // customer fields shown, the counts, and every unit row's volatile cells.
+    // The `#vk-add-tæki` check ensures we still render when the main currently
+    // holds the LIST (e.g. first open) rather than this detail.
+    const _sig = [c.id, cc.ext, cc.hose, cc.smoke, cc.other, detailUnits.length,
+      c.nafn, c.kennitala, c.simi, c.farsimi, c.netfang, c.vefsida, c.heimilisfang,
+      c.tengilidur, c.greidsluskilmali, c.afslattur_pct, c.athugasemdir].join('') +
+      '' + detailUnits.map(u => [u.id || u.serial, u.type, u.size, u.location,
+        u.last_insp, u.next_insp, u.status].join('')).join('');
+    if (_sig === _detailSig && m.querySelector('#vk-add-tæki')) return;
+    _detailSig = _sig;
 
     const headerHTML = `
       <button class="btn btn-ghost btn-sm" id="vk-back" style="display:inline-flex;align-items:center;gap:6px;margin-bottom:12px;">
