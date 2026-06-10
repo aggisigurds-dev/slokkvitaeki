@@ -809,7 +809,7 @@
       const est = +ars.estimated_yearly || 0;
       totalEst += est;
       const statusTxt = lastYr === curYear ? 'Búið ' + curYear
-        : fieldYr === curYear ? 'Tekið út'
+        : fieldYr === curYear ? 'Í vinnslu'
         : lastYr ? 'Eftir (síðast ' + lastYr + ')'
         : 'Aldrei';
       const phone = [c.simi, c.farsimi].filter(Boolean).join(' / ');
@@ -926,7 +926,7 @@
           const statusBadge = isDone
             ? '<span style="background:#dcfce7;color:#15803d;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #bbf7d0">✅ ' + curYear + '</span>'
             : isFieldOnly
-            ? '<span style="background:#fef3c7;color:#a16207;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #fde68a">🟡 Tekið út</span>'
+            ? '<span style="background:#dbeafe;color:#1d4ed8;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #93c5fd">🔵 Í vinnslu</span>'
             : isSkipped
             ? `<span title="Síðast skoðað ${lastYr} — sleppt í fyrra" style="background:#fef3c7;color:#a16207;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #fde68a;display:inline-flex;align-items:center;gap:2px">⏰ '${String(lastYr).slice(-2)}</span>`
             : isOverdue
@@ -936,7 +936,7 @@
           // Click cycles: nothing → Tekið út → cleared (back to nothing) ; once "skoðað"
           // (isDone) is set, the toggle is hidden because the work is fully done.
           const toggleBtn = !isDone
-            ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="font-size:9.5px;padding:2px 7px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.3">${isFieldOnly ? '✓ Tekið út' : '☐ Tekið út'}</button>`
+            ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki í vinnslu' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}" style="font-size:9.5px;padding:2px 7px;border-radius:99px;border:1px solid ${isFieldOnly ? '#60a5fa' : '#cbd5e1'};background:${isFieldOnly ? '#dbeafe' : '#fff'};color:${isFieldOnly ? '#1d4ed8' : '#475569'};cursor:pointer;font-weight:600;line-height:1.3">${isFieldOnly ? '✓ Í vinnslu' : '☐ Í vinnslu'}</button>`
             : '';
 
           return `
@@ -1043,11 +1043,11 @@
               const est = +ars.estimated_yearly || 0;
               const aminning = cleanAminning(ars.aminning);
               const dot = isDone ? '#22c55e'
-                : (isFieldOnly ? '#f59e0b'
+                : (isFieldOnly ? '#3b82f6'        // 2026-06-10: blár = Í vinnslu (skjöl/skýrsla eftir)
                 : (isSkipped ? '#f59e0b'
                 : (isOverdue ? '#ef4444' : '#94a3b8')));
               const statusTitle = isDone ? ('Skoðað ' + curYear)
-                : (isFieldOnly ? 'Tekið út — skjöl eftir'
+                : (isFieldOnly ? 'Í vinnslu — skoðun hafin, skýrsla/reikningur eftir'
                 : (isSkipped ? ('Síðast skoðað ' + lastYr)
                 : (isOverdue ? 'Útrunnið' : 'Á dagskrá')));
               const skippedBadge = isSkipped
@@ -1072,8 +1072,8 @@
                   <td style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
                   <td style="padding:8px 7px"><div style="display:flex;align-items:center;justify-content:center;gap:5px">
                     <span style="width:46px;display:inline-flex;justify-content:flex-end;flex-shrink:0">${skippedBadge}</span>
-                    <span title="${statusTitle}" style="display:inline-block;width:13px;height:13px;border-radius:99px;background:${dot};box-shadow:0 0 0 1px rgba(0,0,0,.12);flex-shrink:0"></span>
-                    <span style="width:24px;display:inline-flex;justify-content:center;flex-shrink:0">${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki búið að taka út' : 'Merkja sem tekið út (skjöl eftir)'}" style="font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#fbbf24' : '#cbd5e1'};background:${isFieldOnly ? '#fef3c7' : '#fff'};color:${isFieldOnly ? '#a16207' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</span>
+                    <span ${!isDone ? `class="_ars-tu-toggle" data-co-id="${c.id}"` : ''} title="${statusTitle}${!isDone ? ' · smelltu til að rúlla Í vinnslu ↔ á dagskrá' : ''}" style="display:inline-block;width:13px;height:13px;border-radius:99px;background:${dot};box-shadow:0 0 0 1px rgba(0,0,0,.12);flex-shrink:0${!isDone ? ';cursor:pointer' : ''}"></span>
+                    <span style="width:24px;display:inline-flex;justify-content:center;flex-shrink:0">${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki í vinnslu' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}" style="font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#60a5fa' : '#cbd5e1'};background:${isFieldOnly ? '#dbeafe' : '#fff'};color:${isFieldOnly ? '#1d4ed8' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</span>
                   </div></td>
                   <td style="padding:8px 11px;text-align:right;white-space:nowrap">
                     <button class="_ars-open-fyrirt" data-co-id="${c.id}" type="button" title="Opna fyrirtæki" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px;margin-right:3px">🏢</button>
