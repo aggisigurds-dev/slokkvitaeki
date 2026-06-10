@@ -2663,6 +2663,16 @@ console.log('[patch-master] loaded with all fixes');
         var cell = cells[statusIdx];
         var serial = cells[0] ? cells[0].textContent.trim() : '';
         if(!serial) return;
+        // 2026-06-10: this injector is for EQUIPMENT tables (uttaeki) only,
+        // keyed by an equipment serial in column 0. Financial lists
+        // (Hreyfingarlisti, Bókhalds yfirlit, Kröfuyfirlit) also have a
+        // "Staða" column, but their column 0 is a sale-number or a date/time
+        // — never an equipment serial. Bail on those rows so the
+        // equipment-status dropdown (Active / Í geymslu / …) stops leaking
+        // into the money views and clobbering the real ⚠ Ógreitt badge.
+        if(/^R-?\d/i.test(serial) ||
+           /^\d{1,2}[\/.]\d{1,2}[\/.]\d{2,4}/.test(serial) ||
+           /\d{1,2}:\d{2}/.test(serial)) return;
         var currentStatus = cell.textContent.trim().toLowerCase();
         
         // Style ónýtt specially

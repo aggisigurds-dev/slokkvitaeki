@@ -406,7 +406,12 @@
     const curMonth = today.getMonth() + 1;
     let arr = _cache.list.slice();
 
-    if (state.month >= 1 && state.month <= 12) {
+    // 2026-06-10: a free-text search always looks across the WHOLE customer
+    // base — it ignores the month chips so you can find any company by name/kt/
+    // address no matter which inspection month it sits in. The month filter
+    // only applies when the search box is empty.
+    const hasSearch = !!state.search.trim();
+    if (!hasSearch && state.month >= 1 && state.month <= 12) {
       arr = arr.filter(c => +c._ars.inspect_month === state.month);
     }
     if (state.status === 'done') {
