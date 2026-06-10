@@ -270,6 +270,9 @@
               <input type="search" id="by-search" class="by-input by-search" placeholder="Salnúmer, viðskiptavinur, vöruheiti, kennitala…">
               <select id="by-payment" class="by-input"><option value="">— Allar greiðslur —</option></select>
               <select id="by-staff" class="by-input"><option value="">— Allir starfsmenn —</option></select>
+              <label style="display:inline-flex;align-items:center;gap:6px;min-width:0;font-size:12px;color:#475569;font-weight:600;text-transform:none;letter-spacing:0;cursor:pointer;user-select:none;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:6px 10px">
+                <input type="checkbox" id="by-include-drafts" style="cursor:pointer">📝 Sýna drög
+              </label>
             </div>
           </div>
 
@@ -335,7 +338,9 @@
     const SB = getSB();
     if (!SB) throw new Error('Supabase not initialized');
     const [salesRes, custRes, prodRes, vbRes] = await Promise.all([
-      SB.from('solur').select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,paid_at,paid_method').neq('status','drog').order('created_at', { ascending: false }),
+      // 2026-06-10: also fetch drög so the "Sýna drög" filter can surface
+      // unfinished sales for finishing in place. void + hidden stay excluded.
+      SB.from('solur').select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,paid_at,paid_method,status').neq('status','void').neq('hidden', true).order('created_at', { ascending: false }),
       SB.from('vidskiptavinir').select('id,kennitala,nafn,simi,netfang'),
       SB.from('vorur').select('id,nafn,flokkur'),
       // Pickup status for greitt_sidar / reikningur sales: read verkbeidnir
@@ -357,6 +362,8 @@
       return {
         id: s.id,
         num: s.num || '',
+        status: s.status || 'final',
+        isDraft: s.status === 'drog',
         date: s.created_at,
         customer: s.customer_nafn || '',
         customer_id: s.customer_id,
@@ -397,9 +404,12 @@
     const q = (document.getElementById('by-search')?.value || '').trim().toLowerCase();
     const pay = document.getElementById('by-payment')?.value || '';
     const staff = document.getElementById('by-staff')?.value || '';
+    const includeDrafts = !!document.getElementById('by-include-drafts')?.checked;
     const fromTs = from ? new Date(from + 'T00:00:00').getTime() : -Infinity;
     const toTs = to ? new Date(to + 'T23:59:59').getTime() : Infinity;
     filtered = allSales.filter(s => {
+      // Drafts only appear when "Sýna drög" is on.
+      if (s.isDraft && !includeDrafts) return false;
       const ts = new Date(s.date).getTime();
       if (ts < fromTs || ts > toTs) return false;
       if (pay && s.payment !== pay) return false;
@@ -485,11 +495,15 @@
   // ----- Render -----
   function renderSummary() {
     const cards = [];
-    const totalSamtals = filtered.reduce((a, s) => a + (s.total || 0), 0);
-    const totalEx = filtered.reduce((a, s) => a + (s.ex || 0), 0);
+    // Drafts are NOT real revenue — exclude them from every accounting total
+    // so the headline numbers stay correct even while drög are displayed.
+    const real = filtered.filter(s => !s.isDraft);
+    const drafts = filtered.filter(s => s.isDraft);
+    const totalSamtals = real.reduce((a, s) => a + (s.total || 0), 0);
+    const totalEx = real.reduce((a, s) => a + (s.ex || 0), 0);
     // Per-rate VSK breakdown
     const byRate = new Map();
-    for (const s of filtered) {
+    for (const s of real) {
       for (const l of s.lines) {
         const rate = +l.vsk_pct || 0;
         const lineEx = (+l.qty||0) * (+l.unit_price_ex_vat||0);
@@ -500,10 +514,10 @@
       }
     }
     const customers = new Set();
-    for (const s of filtered) {
+    for (const s of real) {
       customers.add(s.customer_id || s.customer || '');
     }
-    cards.push({ lbl: 'Heildarsala', val: fmtKr(totalSamtals), cls: 'accent', sub: filtered.length + (filtered.length === 1 ? ' sala' : ' sölur') });
+    cards.push({ lbl: 'Heildarsala', val: fmtKr(totalSamtals), cls: 'accent', sub: real.length + (real.length === 1 ? ' sala' : ' sölur') });
     cards.push({ lbl: 'Án VSK', val: fmtKr(totalEx) });
     // VSK by rate
     const sortedRates = [...byRate.keys()].sort((a,b) => b - a);
@@ -511,7 +525,12 @@
       const v = byRate.get(rate);
       cards.push({ lbl: 'VSK ' + rate + '%', val: fmtKr(v.vsk), sub: 'af ' + fmtKr(v.ex) });
     }
-    cards.push({ lbl: 'Viðskiptavinir', val: customers.size + '', sub: filtered.length ? Math.round(filtered.length / customers.size * 10) / 10 + ' sölur að meðaltali' : '' });
+    cards.push({ lbl: 'Viðskiptavinir', val: customers.size + '', sub: real.length && customers.size ? Math.round(real.length / customers.size * 10) / 10 + ' sölur að meðaltali' : '' });
+    // Drafts card — only when drög are currently shown.
+    if (drafts.length) {
+      const draftSum = drafts.reduce((a, s) => a + (s.total || 0), 0);
+      cards.push({ lbl: '📝 Drög', val: fmtKr(draftSum), cls: 'warn', sub: drafts.length + (drafts.length === 1 ? ' óklárað' : ' ókláruð') + ' · ekki í tekjum' });
+    }
     const html = cards.map(c =>
       '<div class="by-card' + (c.cls ? ' ' + c.cls : '') + '">'
       + '<div class="lbl">' + esc(c.lbl) + '</div>'
@@ -542,9 +561,12 @@
     const rows = [];
     for (const s of filtered) {
       const isOpen = expanded.has(String(s.id));
+      const draftBadge = s.isDraft
+        ? ' <span style="font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:99px;vertical-align:middle">DRÖG</span>'
+        : '';
       rows.push(
-        '<tr class="by-sale-row' + (isOpen ? ' expanded' : '') + '" data-id="' + esc(s.id) + '">'
-        + '<td class="by-num-cell">' + esc(s.num) + '</td>'
+        '<tr class="by-sale-row' + (isOpen ? ' expanded' : '') + '" data-id="' + esc(s.id) + '"' + (s.isDraft ? ' style="background:#fffbeb"' : '') + '>'
+        + '<td class="by-num-cell">' + esc(s.num) + draftBadge + '</td>'
         // 2026-05-12 (#8): For paid greitt_sidar / reikningur sales, show
         // the date of payment (when the customer actually picked up & paid)
         // — not the date the verkbeiðni was created. That way the row
@@ -564,10 +586,11 @@
           // For unpaid greitt_sidar / reikningur, show a tiny pickup-status
           // chip so the user knows at a glance whether to bill the customer
           // (✅ Sótt) or wait (🏪 Hjá þér).
-          !s.paid_at && (s.payment === 'greitt_sidar' || s.payment === 'reikningur')
+          !s.isDraft && !s.paid_at && (s.payment === 'greitt_sidar' || s.payment === 'reikningur')
             ? (() => { const ps = pickupStatusFor(s.num); return ps ? '<div style="display:inline-block;margin-left:6px;font-size:11px;color:' + ps.color + ';font-weight:600;white-space:nowrap" title="Pickup status">' + ps.icon + ' ' + esc(ps.label) + '</div>' : ''; })()
             : ''
           )
+        + (s.isDraft ? ' <button class="by-finish-draft" data-sale-id="' + esc(s.id) + '" type="button" style="margin-left:6px;padding:3px 9px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✅ Klára</button>' : '')
         + '</td>'
         + '</tr>'
       );
@@ -615,7 +638,21 @@
           })()}
           <div class="item"><span class="lbl">Kennitala</span><span class="val">${esc(getKt(sale) || '—')}</span></div>
           <div class="item"><span class="lbl">Starfsmaður</span><span class="val">${esc(sale.staff || '—')}</span></div>
-          <div class="item"><span class="lbl">Greiðsluaðferð</span><span class="val">${esc(sale.payment || '—')}</span></div>
+          <div class="item"><span class="lbl">Greiðsluaðferð</span><span class="val">${(() => {
+            // Inline editable payment method. Switching to "Reikningur" makes
+            // the sale show up in Kröfuyfirlit (krafa í heimabanka); the
+            // change saves instantly to solur.greitt_med.
+            const cur = (() => { const x = String(sale.payment||'').toLowerCase();
+              if (x==='reikningur') return 'reikningur';
+              if (x==='greitt_sidar') return 'greitt_sidar';
+              if (x==='kort') return 'kort';
+              if (x==='reidufe'||x==='pening'||x==='reiðufé') return 'reidufe';
+              return ''; })();
+            const PAY = [['reikningur','Reikningur (senda kröfu)'],['greitt_sidar','Greitt síðar'],['kort','Kort'],['reidufe','Reiðufé']];
+            const opts = (cur ? '' : '<option value="" selected>'+esc(sale.payment||'—')+'</option>')
+              + PAY.map(p => '<option value="'+p[0]+'"'+(p[0]===cur?' selected':'')+'>'+p[1]+'</option>').join('');
+            return '<select class="by-payment-select" data-sale-id="'+esc(sale.id)+'" style="padding:4px 8px;border:1px solid '+(cur==='reikningur'?'#0ea5e9':'#cbd5e1')+';border-radius:6px;font:inherit;font-size:12.5px;background:'+(cur==='reikningur'?'#f0f9ff':'#fff')+';color:#0f172a;cursor:pointer">'+opts+'</select>';
+          })()}</span></div>
           ${(() => {
             const isInvoice = sale.payment === 'reikningur' || sale.payment === 'greitt_sidar';
             if (!isInvoice) return '';
@@ -816,6 +853,7 @@
     document.getElementById('by-search')?.addEventListener('input', onChange);
     document.getElementById('by-payment')?.addEventListener('change', onChange);
     document.getElementById('by-staff')?.addEventListener('change', onChange);
+    document.getElementById('by-include-drafts')?.addEventListener('change', onChange);
 
     document.querySelectorAll('#'+VIEW_ID+' .by-preset').forEach(b => {
       b.addEventListener('click', () => { applyPreset(b.dataset.preset); onChange(); });
@@ -963,12 +1001,53 @@
           return;
         }
 
+        // "✅ Klára" on a draft row — open the Sale Editor to finish it.
+        const finishBtn = e.target.closest('.by-finish-draft');
+        if (finishBtn) {
+          e.stopPropagation();
+          const sid = finishBtn.getAttribute('data-sale-id');
+          if (window.SaleEditor && typeof window.SaleEditor.openById === 'function') {
+            window.SaleEditor.openById(sid);
+          } else {
+            alert('Söluritillinn er ekki tiltækur.');
+          }
+          return;
+        }
+
         const tr = e.target.closest('.by-sale-row');
         if (!tr || !tbody.contains(tr)) return;
         const id = tr.dataset.id;
         if (expanded.has(id)) expanded.delete(id);
         else expanded.add(id);
         renderTable();
+      });
+
+      // Inline payment-method change in the expanded detail. Saves greitt_med
+      // straight away; switching to "reikningur" surfaces the sale in
+      // Kröfuyfirlit (krafa í heimabanka).
+      tbody.addEventListener('change', async (e) => {
+        const sel = e.target.closest('.by-payment-select');
+        if (!sel) return;
+        const sid = sel.getAttribute('data-sale-id');
+        const val = sel.value;
+        const sale = allSales.find(s => String(s.id) === String(sid));
+        if (!sale || !val) return;
+        sel.disabled = true;
+        try {
+          const SB = getSB();
+          if (!SB) throw new Error('Engin gagnabankatenging');
+          const { error } = await SB.from('solur').update({ greitt_med: val }).eq('id', sid);
+          if (error) throw error;
+          sale.payment = val;
+          if (window.Toast && Toast.show) Toast.show('✓ Greiðslumáti uppfærður → ' + (val === 'reikningur' ? 'Reikningur' : val === 'greitt_sidar' ? 'Greitt síðar' : val === 'kort' ? 'Kort' : 'Reiðufé'));
+          // Re-render so the pill + krafa eligibility reflect the change.
+          applyFilters(); renderAll();
+          try { if (window.KrofuYfirlit) { KrofuYfirlit.refreshBadge && KrofuYfirlit.refreshBadge(); KrofuYfirlit.load && KrofuYfirlit.load(); } } catch (_) {}
+          try { document.dispatchEvent(new CustomEvent('sale-edited', { detail: { id: sid } })); } catch (_) {}
+        } catch (err) {
+          alert('Villa við að breyta greiðslumáta: ' + (err.message || err));
+          sel.disabled = false;
+        }
       });
     }
 
