@@ -2974,8 +2974,42 @@ console.log('[patch-master] loaded with all fixes');
     if(!cked.length){if(bar)bar.remove();return;}
     if(!bar){bar=document.createElement('div');bar.className='_pm_batch_bar';t.parentNode.insertBefore(bar,t);}
     var srs=[];cked.forEach(function(c){if(c.dataset.serial)srs.push(c.dataset.serial);});
-    bar.innerHTML='<span>'+srs.length+' valin</span><select id="_pb_act"><option value="">Veldu...</option><option value="active">\u2192 Active</option><option value="ok">\u2192 \u00cd lagi</option><option value="geymsla">\u2192 \u00cd geymslu</option><option value="i_vinnslu">\u2192 \u00cd vinnslu</option><option value="onytt">\u2192 \u00d3n\u00fdtt</option><option value="inspect">\u2713 Sko\u00f0a\u00f0 \u00ed dag</option></select><button class="_pm_b_apply">Uppf\u00e6ra</button><button class="_pm_b_print" style="background:#fff;color:#1e40af">\ud83d\udda8 Prenta merki ('+srs.length+')</button><button class="_pm_b_close">\u00d7</button>';
+    bar.innerHTML='<span>'+srs.length+' valin</span>'
+      +'<button class="_pm_b_inspect" style="background:#16a34a;color:#fff;border:none">\u2713 Merkja sko\u00f0a\u00f0</button>'
+      +'<button class="_pm_b_print" style="background:#fff;color:#1e40af">\ud83d\udda8 Prenta merki ('+srs.length+')</button>'
+      +'<button class="_pm_b_delete" style="background:#fff;color:#dc2626;border:1px solid #fecaca">\ud83d\uddd1 Ey\u00f0a</button>'
+      +'<select id="_pb_act" style="margin-left:8px"><option value="">Sta\u00f0a\u2026</option><option value="ok">\u2192 \u00cd lagi</option><option value="geymsla">\u2192 \u00cd geymslu</option><option value="i_vinnslu">\u2192 \u00cd vinnslu</option><option value="onytt">\u2192 \u00d3n\u00fdtt</option></select><button class="_pm_b_apply">Uppf\u00e6ra</button>'
+      +'<button class="_pm_b_close">\u00d7</button>';
     window._pbSrs=srs;
+    // Resolve selected serials \u2192 unit rows (scoped to the open company when one
+    // is open, so a shared serial can never touch another customer's t\u00e6ki).
+    function _pbUnits(){
+      var srs=window._pbSrs||[];
+      var co=(window._currentCompanyId&&window.Companies&&Companies.list)?Companies.list.find(function(x){return x.id===window._currentCompanyId;}):null;
+      var all=(window.DB&&DB.cache&&DB.cache.units)?DB.cache.units:[];
+      return all.filter(function(u){return srs.indexOf(u.serial)>=0 && (!co||u.client===co.nafn);});
+    }
+    function _pbReload(){ if(window._currentCompanyId&&window.Companies)window.Companies.openDetail(window._currentCompanyId);else location.reload(); }
+    // \u2713 Merkja sko\u00f0a\u00f0 \u2014 stamp last_insp today + next_insp +1 yr.
+    bar.querySelector('._pm_b_inspect').onclick=function(){
+      var srs=window._pbSrs||[];if(!srs.length)return;
+      var d=new Date().toISOString().split('T')[0];var ny=new Date();ny.setFullYear(ny.getFullYear()+1);
+      window.DB.sb.from('uttaeki').update({last_insp:d,next_insp:ny.toISOString().split('T')[0]}).in('serial',srs).then(function(r){
+        if(r.error){alert('Villa: '+r.error.message);return;}
+        alert(srs.length+' t\u00e6ki merkt sko\u00f0u\u00f0 \u00ed dag');_pbReload();
+      });
+    };
+    // \ud83d\uddd1 Ey\u00f0a \u2014 delete the selected units (by id, scoped to the open company).
+    bar.querySelector('._pm_b_delete').onclick=function(){
+      var units=_pbUnits();var ids=units.map(function(u){return u.id;});
+      if(!ids.length){alert('Fann ekki t\u00e6kin \u00ed skr\u00e1 \u2014 reyndu aftur.');return;}
+      if(!confirm('Ey\u00f0a '+ids.length+' t\u00e6ki'+(ids.length>1?'um':'')+' varanlega? \u00deetta er ekki afturkr\u00e6ft.'))return;
+      window.DB.sb.from('uttaeki').delete().in('id',ids).then(function(r){
+        if(r.error){alert('Villa: '+r.error.message);return;}
+        if(window.DB.cache&&window.DB.cache.units)window.DB.cache.units=window.DB.cache.units.filter(function(u){return ids.indexOf(u.id)<0;});
+        alert(ids.length+' t\u00e6ki eytt');_pbReload();
+      });
+    };
     bar.querySelector('._pm_b_apply').onclick=function(){
       var act=document.getElementById('_pb_act').value;if(!act){alert('Veldu a\u00f0ger\u00f0');return;}
       var upd={};

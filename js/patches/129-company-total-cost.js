@@ -228,7 +228,10 @@
       const ym = dags.match(/(\d{4})/);
       const year = ym ? ym[1] : String(new Date().getFullYear());
       const phrase = manudur ? ('Framkvæmd í ' + manudur + ' ' + year) : '';
-      return { manudur, dags, year, phrase };
+      // 2026-06-10: optional free-text invoice line ("Vegna…"). Kept separate
+      // from `phrase` so the úttektarskýrsla keeps its Framkvæmd-í-… wording.
+      const invoice_text = String(st.invoice_text || '').trim();
+      return { manudur, dags, year, phrase, invoice_text };
     }
   };
 
@@ -541,6 +544,9 @@
     //     side "Dagsetning:" + the úttektarskýrsla "yfirfarin" line.
     const skodunManudur = (tripState.skodun_manudur != null) ? String(tripState.skodun_manudur) : '';
     const skodunDags    = (tripState.skodun_dagsetning != null) ? String(tripState.skodun_dagsetning) : '';
+    // 2026-06-10: free-text line that prints on the reikningur (the "Vegna…"
+    // line), e.g. "Vinna vegna skoðunar á Dalvegi 10". Overrides the default.
+    const invoiceText   = (tripState.invoice_text != null) ? String(tripState.invoice_text) : '';
     const _td = new Date();
     const todayDDMM = String(_td.getDate()).padStart(2, '0') + '.' +
       String(_td.getMonth() + 1).padStart(2, '0') + '.' + _td.getFullYear();
@@ -575,6 +581,15 @@
         '<button id="_ctc-skyrsla" type="button" ' +
           'style="padding:7px 14px;background:#0f172a;color:#fff;border:none;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.15)">' +
           '📄 Búa til úttektarskýrslu</button>' +
+      '</div>' +
+      // 2026-06-10: free-text line printed on the reikningur.
+      '<div style="margin-bottom:10px">' +
+        '<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#0f172a">' +
+          '<span style="font-weight:600;color:#166534;white-space:nowrap">🧾 Texti á reikning</span>' +
+          '<input id="_ctc-invtext" type="text" value="' + esc(invoiceText) + '" placeholder="t.d. Vinna vegna skoðunar á Dalvegi 10" ' +
+            'style="flex:1;min-width:120px;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
+        '</label>' +
+        '<div style="font-size:10.5px;color:#16a34a;margin-top:3px;margin-left:2px">Sést sem „Vegna…" lína á reikningnum (yfirskrifar sjálfgefið).</div>' +
       '</div>' +
       // 2026-05-21: "+ Bæta við vöru eða þjónustu" button opens the shared
       // VorurPicker (patch 117) and appends the choice to tripState.extras.
@@ -639,6 +654,13 @@
       };
       dagsInp.addEventListener('blur', onDags);
       dagsInp.addEventListener('change', onDags);
+    }
+    // Wire invoice-text input.
+    const invTextInp = section.querySelector('#_ctc-invtext');
+    if (invTextInp) {
+      const onInv = () => { const st = loadTripState(coId); st.invoice_text = invTextInp.value; saveTripState(coId, st); };
+      invTextInp.addEventListener('blur', onInv);
+      invTextInp.addEventListener('change', onInv);
     }
     // Wire úttektarskýrsla button → patch 168.
     const skyrsluBtn = section.querySelector('#_ctc-skyrsla');

@@ -85,7 +85,10 @@
   // "Vegna heimsókn DD.MM.YYYY" line and today's date.
   function visitInvoiceOpts(vd, today) {
     const o = {
-      vegnaRaw: (vd && vd.phrase) ? vd.phrase
+      // The "🧾 Texti á reikning" free-text line wins when set, else the
+      // Framkvæmd-í-… phrase, else a default.
+      vegnaRaw: (vd && vd.invoice_text) ? vd.invoice_text
+        : (vd && vd.phrase) ? vd.phrase
         : 'Vegna heimsókn ' + isoToDDMM(today)
     };
     if (vd && vd.dags) o.dateStr = vd.dags;
