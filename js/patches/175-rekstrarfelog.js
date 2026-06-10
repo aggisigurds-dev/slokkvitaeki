@@ -58,6 +58,13 @@
     if(co) return String(co.id);
     var d=digits(b.kt); return 'rfb:'+(d||_compact(b.nafn||''));
   }
+  // 2026-06-10: per-building úttektarskýrslu link key. Several buildings can
+  // share ONE kennitala (e.g. Heimaleiga ehf operates Laugavegur 1/18,
+  // Urðarhvarf 2/4, Hamraborg 7, …) so a kt-only key would collapse them onto
+  // the same link. Key by kt + the exact building name instead; the lookups
+  // fall back to the legacy kt-only key so existing single-building links keep
+  // working untouched.
+  function bldLinkKey(b){ return digits(b.kt)+'::'+String(b.nafn||''); }
   // Year-tagged uploaded file for a (building, year): explicit tag wins, then
   // filename detection for untagged files; year==='0' = explicitly cleared.
   function fileForYear(caMap, key, y){
@@ -157,7 +164,7 @@
     var co=companyByKt(b.kt);
     var st=equip.match(b.nafn);
     var att=(co&&(attMap[co.id]||attMap[String(co.id)]))||[0,0,0];
-    var lks=linkMap[digits(b.kt)]||{};
+    var lks=linkMap[bldLinkKey(b)]||linkMap[digits(b.kt)]||{};
     var akey=bldAttachKey(b,co);
     var f23=fileForYear(caMap,akey,'2023'),f24=fileForYear(caMap,akey,'2024'),
         f25=fileForYear(caMap,akey,'2025'),f26=fileForYear(caMap,akey,'2026');
@@ -262,12 +269,14 @@
         blds.some(function(b){return (b.nafn||'').toLowerCase().indexOf(q)>=0 || digits(b.kt).indexOf(q.replace(/\D/g,''))>=0;});
       if(!match) return; shown++;
       var card=document.createElement('div');
+      card.className='_rf_card';
       card.style.cssText='background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(16,24,40,.04)';
       var emails=(info.emails||[]).map(function(e){return '<a href="mailto:'+esc(e)+'" style="color:#2563eb;text-decoration:none">'+esc(e)+'</a>';}).join(' · ');
+      var ktLine=info.kt?('<span style="color:#475569">🆔 '+esc(fmtKt(info.kt))+'</span> &nbsp;·&nbsp; '):'';
       card.innerHTML=
         '<div class="_rf_head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;cursor:pointer">'+
           '<div><div style="font-size:17px;font-weight:700">'+esc(name)+'</div>'+
-          '<div style="font-size:13px;color:#64748b;margin-top:3px">📧 '+(emails||'—')+(info.domain?' &nbsp;·&nbsp; '+esc(info.domain):'')+'</div></div>'+
+          '<div class="_rf_emailline" style="font-size:13px;color:#64748b;margin-top:3px">'+ktLine+'📧 '+(emails||'—')+(info.domain?' &nbsp;·&nbsp; '+esc(info.domain):'')+'</div></div>'+
           '<div style="flex:none;background:#eef4ff;color:#2563eb;border-radius:20px;padding:4px 12px;font-size:13px;font-weight:700;white-space:nowrap">'+blds.length+' byggingar</div>'+
         '</div>'+
         '<div class="_rf_toggle" style="font-size:12.5px;color:#2563eb;font-weight:600;margin-top:8px;cursor:pointer">Sjá nánar ▾</div>'+
@@ -311,7 +320,7 @@
       var doc = co ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:#2563eb">skjöl</a>' : '';
       var st = equip.match(b.nafn);
       var att = (co && (attMap[co.id]||attMap[String(co.id)])) || [0,0,0];
-      var lks = linkMap[digits(b.kt)] || {};
+      var lks = linkMap[bldLinkKey(b)] || linkMap[digits(b.kt)] || {};
       var akey = bldAttachKey(b, co);
       var f23=fileForYear(caMap,akey,'2023'), f24=fileForYear(caMap,akey,'2024'),
           f25=fileForYear(caMap,akey,'2025'), f26=fileForYear(caMap,akey,'2026');
@@ -354,7 +363,35 @@
              '<span>📄 '+esc(nm)+'</span>'+(url&&url!=='#'?'<a href="'+esc(url)+'" target="_blank" style="color:#2563eb">opna</a>':'')+'</div>';
     }).join('') : '<div style="color:#94a3b8;font-size:13px;padding:4px 0">Engin skjöl skráð á félagið ennþá.</div>';
 
+    // Editable rekstrarfélag info card (kennitala / netföng / lén / nótur).
+    var fEmails=(info.emails||[]).join(', ');
+    var inS='width:100%;padding:6px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box;margin-top:2px';
+    var infoPanel=
+      '<div class="_rf_info" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
+          '<div style="font-size:11px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.04em">Upplýsingar um rekstrarfélag</div>'+
+          '<button class="_rf_info_edit" type="button" style="font-size:12px;padding:4px 10px;background:#fff;border:1px solid #86efac;border-radius:7px;color:#15803d;font-weight:600;cursor:pointer">✏️ Breyta</button>'+
+        '</div>'+
+        '<div class="_rf_info_view" style="font-size:13px;color:#334155;line-height:1.6">'+
+          '<div><b>Kennitala:</b> '+(info.kt?esc(fmtKt(info.kt)):'—')+'</div>'+
+          '<div><b>Netföng:</b> '+(emails||'—')+(info.domain?' &nbsp;·&nbsp; <span style="color:#64748b">'+esc(info.domain)+'</span>':'')+'</div>'+
+          '<div style="margin-top:4px"><b>Athugasemdir:</b><div style="white-space:pre-wrap;color:#475569;margin-top:2px">'+(info.notes?esc(info.notes):'—')+'</div></div>'+
+        '</div>'+
+        '<div class="_rf_info_form" style="display:none">'+
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
+            '<label style="flex:1;min-width:150px;font-size:12px;color:#475569">Kennitala<input class="_rf_f_kt" value="'+esc(info.kt||'')+'" placeholder="000000-0000" style="'+inS+'"></label>'+
+            '<label style="flex:1;min-width:150px;font-size:12px;color:#475569">Lén<input class="_rf_f_domain" value="'+esc(info.domain||'')+'" placeholder="domain.is" style="'+inS+'"></label>'+
+          '</div>'+
+          '<label style="display:block;font-size:12px;color:#475569;margin-bottom:8px">Netföng (aðgreind með kommu)<input class="_rf_f_emails" value="'+esc(fEmails)+'" placeholder="reikningar@... , umsjon@..." style="'+inS+'"></label>'+
+          '<label style="display:block;font-size:12px;color:#475569;margin-bottom:8px">Athugasemdir / viðbótargögn<textarea class="_rf_f_notes" rows="4" style="'+inS+';resize:vertical">'+esc(info.notes||'')+'</textarea></label>'+
+          '<div style="display:flex;gap:8px;justify-content:flex-end">'+
+            '<button class="_rf_info_cancel" type="button" style="padding:6px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:7px;color:#475569;font-weight:600;font-size:12.5px;cursor:pointer">Hætta við</button>'+
+            '<button class="_rf_info_save" type="button" style="padding:6px 16px;background:#16a34a;color:#fff;border:none;border-radius:7px;font-weight:700;font-size:12.5px;cursor:pointer">💾 Vista</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
     body.innerHTML=
+      infoPanel+
       '<div style="display:flex;gap:18px;flex-wrap:wrap">'+
         '<div style="flex:1 1 100%;min-width:280px">'+
           '<div style="font-weight:600;font-size:13px;color:#374151;margin-bottom:6px">Byggingar / húsfélög — úttektir</div>'+
@@ -381,6 +418,32 @@
           '<input type="file" class="_rf_file" style="display:none">'+
         '</div>'+
       '</div>';
+
+    // wire the editable rekstrarfélag info card
+    var infoEditBtn=body.querySelector('._rf_info_edit');
+    var infoViewEl=body.querySelector('._rf_info_view');
+    var infoFormEl=body.querySelector('._rf_info_form');
+    function showInfoForm(on){ if(!infoFormEl||!infoViewEl||!infoEditBtn) return;
+      infoFormEl.style.display=on?'':'none'; infoViewEl.style.display=on?'none':'';
+      infoEditBtn.textContent=on?'✕ Loka':'✏️ Breyta'; }
+    if(infoEditBtn) infoEditBtn.addEventListener('click', function(){ showInfoForm(infoFormEl.style.display==='none'); });
+    var infoCancel=body.querySelector('._rf_info_cancel');
+    if(infoCancel) infoCancel.addEventListener('click', function(){ showInfoForm(false); });
+    var infoSave=body.querySelector('._rf_info_save');
+    if(infoSave) infoSave.addEventListener('click', async function(){
+      var kt=(body.querySelector('._rf_f_kt').value||'').trim();
+      var domain=(body.querySelector('._rf_f_domain').value||'').trim();
+      var emailsRaw=(body.querySelector('._rf_f_emails').value||'').trim();
+      var notes=(body.querySelector('._rf_f_notes').value||'');
+      var emailsArr=emailsRaw?emailsRaw.split(/[,;\n]+/).map(function(s){return s.trim();}).filter(Boolean):[];
+      infoSave.disabled=true; infoSave.textContent='Vista…';
+      var d=getData(); if(!d[name]) d[name]=info;
+      d[name].kt=kt; d[name].domain=domain; d[name].emails=emailsArr; d[name].notes=notes;
+      try{ await saveData(d); }catch(e){}
+      info.kt=kt; info.domain=domain; info.emails=emailsArr; info.notes=notes;
+      if(window.Toast&&Toast.show) Toast.show('✓ Upplýsingar vistaðar');
+      fillBody(body,name,info); // re-render with the new values
+    });
 
     // wire building -> company record
     body.querySelectorAll('._rf_open').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); openCompany(a.getAttribute('data-coid')); }); });
