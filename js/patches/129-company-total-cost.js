@@ -338,6 +338,7 @@
       else main.appendChild(notesBox);
     }
     const tripNotes = (tripState.notes != null) ? String(tripState.notes) : '';
+    const athSkyrslaBox = (tripState.athugasemdir_skyrsla != null) ? String(tripState.athugasemdir_skyrsla) : '';
     notesBox.innerHTML =
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' +
         '<div style="font-size:13px;color:#166534;font-weight:700;text-transform:uppercase;letter-spacing:.05em">📝 Upplýsingar um úttekt</div>' +
@@ -345,6 +346,12 @@
       '<textarea id="_ctc-notes-ta" rows="2" placeholder="t.d. „Bára vill skipta öllum á neðri hæð" · „Hringja í Jón fyrir komu" · „Setja inn nýtt 6 kg ABC Duft"" ' +
         'style="width:100%;padding:8px 10px;border:1px solid #86efac;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
         esc(tripNotes) +
+      '</textarea>' +
+      // 2026-06-10: report-only Athugasemdir, grouped here with the notes.
+      '<div style="font-size:12px;color:#166534;font-weight:600;margin:10px 0 4px">✍ Athugasemdir á skýrslu <span style="font-weight:400;color:#16a34a">(sést í „Athugasemdir" á úttektarskýrslunni, ekki á reikningnum)</span></div>' +
+      '<textarea id="_ctc-athskyrsla" rows="2" placeholder="t.d. Mælt með að skipta út 2 tækjum á næsta ári" ' +
+        'style="width:100%;padding:8px 10px;border:1px solid #86efac;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
+        esc(athSkyrslaBox) +
       '</textarea>';
 
     let section = main.querySelector('#_ctc-section');
@@ -547,9 +554,6 @@
     // 2026-06-10: free-text line that prints on the reikningur (the "Vegna…"
     // line), e.g. "Vinna vegna skoðunar á Dalvegi 10". Overrides the default.
     const invoiceText   = (tripState.invoice_text != null) ? String(tripState.invoice_text) : '';
-    // 2026-06-10: free-text that appears in the "Athugasemdir:" section of the
-    // úttektarskýrsla ONLY (not on the reikningur).
-    const athSkyrsla    = (tripState.athugasemdir_skyrsla != null) ? String(tripState.athugasemdir_skyrsla) : '';
     const _td = new Date();
     const todayDDMM = String(_td.getDate()).padStart(2, '0') + '.' +
       String(_td.getMonth() + 1).padStart(2, '0') + '.' + _td.getFullYear();
@@ -593,15 +597,6 @@
             'style="flex:1;min-width:120px;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
         '</label>' +
         '<div style="font-size:10.5px;color:#16a34a;margin-top:3px;margin-left:2px">Sést sem „Vegna…" lína á reikningnum (yfirskrifar sjálfgefið).</div>' +
-      '</div>' +
-      // 2026-06-10: free-text shown only in the úttektarskýrsla Athugasemdir.
-      '<div style="margin-bottom:10px">' +
-        '<label style="display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#0f172a">' +
-          '<span style="font-weight:600;color:#166534;white-space:nowrap;padding-top:6px">✍ Athugasemdir á skýrslu</span>' +
-          '<textarea id="_ctc-athskyrsla" rows="2" placeholder="t.d. Mælt með að skipta út 2 tækjum á næsta ári" ' +
-            'style="flex:1;min-width:120px;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff;resize:vertical;box-sizing:border-box">' + esc(athSkyrsla) + '</textarea>' +
-        '</label>' +
-        '<div style="font-size:10.5px;color:#16a34a;margin-top:3px;margin-left:2px">Sést í „Athugasemdir" á úttektarskýrslunni (ekki á reikningnum).</div>' +
       '</div>' +
       // 2026-05-21: "+ Bæta við vöru eða þjónustu" button opens the shared
       // VorurPicker (patch 117) and appends the choice to tripState.extras.
@@ -668,7 +663,7 @@
       dagsInp.addEventListener('change', onDags);
     }
     // Wire report-Athugasemdir textarea.
-    const athInp = section.querySelector('#_ctc-athskyrsla');
+    const athInp = notesBox.querySelector('#_ctc-athskyrsla');
     if (athInp) {
       const onAth = () => { const st = loadTripState(coId); st.athugasemdir_skyrsla = athInp.value; saveTripState(coId, st); };
       athInp.addEventListener('blur', onAth);
