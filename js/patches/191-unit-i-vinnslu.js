@@ -176,6 +176,7 @@
         setActual(coId, uid, next);
         if (td) td.innerHTML = cellHtml(coId, uid, typeText);
         notifyChange();
+        if (next.done > 0) ensureCompanyInProgress(coId);
       });
       table.addEventListener('change', e => {
         const sel = e.target.closest('._ivi-sel');
@@ -185,6 +186,7 @@
         setActual(coId, uid, { done: 2, value: sel.value });
         if (td) td.innerHTML = cellHtml(coId, uid, td.dataset.type);
         notifyChange();
+        ensureCompanyInProgress(coId);
       });
     }
   }
@@ -204,6 +206,22 @@
     // let the cost panel / future billing know actuals changed
     try { document.dispatchEvent(new CustomEvent('unit-ivinnslu-changed')); } catch (_) {}
     if (typeof window.recomputeCompanyTotalCost === 'function') { try { window.recomputeCompanyTotalCost(); } catch (_) {} }
+  }
+
+  // Marking a unit Í vinnslu flips the whole company to the blue "Í vinnslu"
+  // status (patch 153 flag) so it shows up on the 🔵 Í vinnslu page (192) to
+  // finish skýrsla/reikningur. One coherent pipeline — no separate board.
+  async function ensureCompanyInProgress(coId) {
+    try {
+      if (!window.AppSettings || !AppSettings.save || !AppSettings.path) return;
+      const KEY = 'arsskodun_customers';
+      const cy = new Date().getFullYear();
+      const map = AppSettings.path(KEY) || {};
+      const e = Object.assign({}, map[String(coId)] || {});
+      if (+e.last_year_inspected === cy || +e.field_inspected_year === cy) return; // already done / blue
+      e.field_inspected_year = cy;
+      await AppSettings.save({ [KEY]: Object.assign({}, map, { [String(coId)]: e }) });
+    } catch (_) {}
   }
 
   function attach() {
