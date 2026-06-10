@@ -1072,7 +1072,7 @@
                   <td style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
                   <td style="padding:8px 7px"><div style="display:flex;align-items:center;justify-content:center;gap:5px">
                     <span style="width:46px;display:inline-flex;justify-content:flex-end;flex-shrink:0">${skippedBadge}</span>
-                    <span ${!isDone ? `class="_ars-tu-toggle" data-co-id="${c.id}"` : ''} title="${statusTitle}${!isDone ? ' · smelltu til að rúlla Í vinnslu ↔ á dagskrá' : ''}" style="display:inline-block;width:13px;height:13px;border-radius:99px;background:${dot};box-shadow:0 0 0 1px rgba(0,0,0,.12);flex-shrink:0${!isDone ? ';cursor:pointer' : ''}"></span>
+                    <span title="${statusTitle}" style="display:inline-block;width:13px;height:13px;border-radius:99px;background:${dot};box-shadow:0 0 0 1px rgba(0,0,0,.12);flex-shrink:0"></span>
                     <span style="width:24px;display:inline-flex;justify-content:center;flex-shrink:0">${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki í vinnslu' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}" style="font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#60a5fa' : '#cbd5e1'};background:${isFieldOnly ? '#dbeafe' : '#fff'};color:${isFieldOnly ? '#1d4ed8' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</span>
                   </div></td>
                   <td style="padding:8px 11px;text-align:right;white-space:nowrap">
