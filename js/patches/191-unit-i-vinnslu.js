@@ -191,15 +191,18 @@
     }
   }
 
-  // Hide the redundant "Staða" (Active) column — header + every row cell.
+  // Hide redundant columns — "Staða" (Active) + "Staðsetning" (just repeats the
+  // company address) — header + every row cell, so the table breathes.
+  function hideCol(table, ths, names) {
+    const idx = colIndex(ths, names);
+    if (idx === -1) return;
+    if (ths[idx]) ths[idx].style.display = 'none';
+    table.querySelectorAll('tbody tr').forEach(tr => { if (tr.children[idx]) tr.children[idx].style.display = 'none'; });
+  }
   function hideStada(table) {
     const ths = Array.from(table.querySelectorAll('thead tr th'));
-    const idx = colIndex(ths, ['staða', 'stada', 'status']);
-    if (idx === -1) return;
-    ths[idx].style.display = 'none';
-    table.querySelectorAll('tbody tr').forEach(tr => {
-      if (tr.children[idx]) tr.children[idx].style.display = 'none';
-    });
+    hideCol(table, ths, ['staða', 'stada', 'status']);
+    hideCol(table, ths, ['staðsetning', 'stadsetning', 'location']);
   }
 
   function notifyChange() {
@@ -228,7 +231,7 @@
     const main = document.getElementById('companies-main');
     if (!main) { setTimeout(attach, 800); return; }
     let t = 0;
-    new MutationObserver(() => { clearTimeout(t); t = setTimeout(inject, 300); }).observe(main, { childList: true, subtree: true });
+    new MutationObserver(() => { clearTimeout(t); t = setTimeout(inject, 80); }).observe(main, { childList: true, subtree: true });
     inject();
   }
   attach();

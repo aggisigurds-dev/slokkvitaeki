@@ -242,7 +242,7 @@
     let _t = 0;
     new MutationObserver(() => {
       clearTimeout(_t);
-      _t = setTimeout(injectColumn, 250);
+      _t = setTimeout(injectColumn, 80);
     }).observe(main, { childList: true, subtree: true });
     injectColumn();
   }

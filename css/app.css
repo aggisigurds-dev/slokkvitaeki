@@ -3536,3 +3536,7 @@ html, body { overflow-y: auto !important; overflow-x: hidden; }
   .rcpt-ln span:last-child { white-space: nowrap !important; }
   .rcpt-ln { gap: 8px !important; }
 }
+
+/* 2026-06-10: wider Fyrirtæki-í-þjónustu detail so the tæki table (Áætlað +
+   Í vinnslu + Umfylling columns) fits without cramping. */
+#view-companies.active .main-panel { max-width: 1600px !important; }
