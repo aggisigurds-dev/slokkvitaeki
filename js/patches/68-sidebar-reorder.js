@@ -234,7 +234,10 @@
         if (found) { ordered.push(found); used.add(found); }
       }
 
-      // Hide hidden buttons (skip them in the ordered list).
+      // Hide hidden buttons — but KEEP them in the DOM (display:none) by adding
+      // them to `ordered`. If we drop them entirely, their own injector patch
+      // sees the button missing and re-creates it VISIBLE on the next tick —
+      // which is why hidden items "popped back" after a refresh.
       hiddenButtons.forEach(b => { b.style.display = 'none'; });
 
       // "rest" — any nav-button not explicitly placed stays at the end.
@@ -275,6 +278,9 @@
         }
       });
       ordered.forEach(el => nav.appendChild(el));
+      // Keep hidden buttons attached (invisible) so their injectors don't
+      // resurrect them. They sit at the end, display:none.
+      hiddenButtons.forEach(b => { b.style.display = 'none'; nav.appendChild(b); });
 
       // Restore scroll position
       nav.scrollTop = savedScrollTop;

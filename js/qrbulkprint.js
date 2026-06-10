@@ -134,7 +134,7 @@ function injectButton(){
   btn.id='_qb_btn';
   btn.className='vnav-btn';
   btn.innerHTML='<span style="display:inline-flex;align-items:center;gap:8px">🏷️ Prenta QR miða</span>';
-  btn.style.cssText='display:flex;align-items:center;width:100%;text-align:left;background:none;border:none;padding:8px 12px;font-size:13px;color:inherit;cursor:pointer;border-radius:6px;';
+  btn.style.cssText='display:flex;align-items:center;width:100%;text-align:left;background:none;border:none;padding:8px 12px;font-size:13px;color:var(--sidebar-text);cursor:pointer;border-radius:6px;';
   btn.onmouseover=function(){this.style.background='rgba(0,0,0,.05)';};
   btn.onmouseout=function(){this.style.background='';};
   btn.onclick=showDialog;
