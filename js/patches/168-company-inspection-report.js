@@ -114,20 +114,20 @@
     // 2026-06-09: the date is now driven by the custom "Dagsetning" field on
     // the company page (falls back to today). The optional "Skoðun framkvæmd"
     // month field adds a "Framkvæmd í Maí 2026" line under the statement.
-    const dd = String(now.getDate()).padStart(2, '0');
-    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    // 2026-06-10: month only on the report (no exact date), e.g. "í Maí 2026".
+    const MONTHS_IS = ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
     const vd = (window.SlokkVisitDate && window.SlokkVisitDate.get)
       ? window.SlokkVisitDate.get(coId) : null;
-    const datePhrase = (vd && vd.dags) ? vd.dags
-      : dd + '.' + mm + '.' + now.getFullYear();
-    const framkvaemdPhrase = vd ? vd.phrase : '';
+    const manudur = (vd && vd.manudur) ? vd.manudur : MONTHS_IS[now.getMonth()];
+    const arYear  = (vd && vd.year)    ? vd.year    : now.getFullYear();
+    const monthPhrase = 'í ' + manudur + ' ' + arYear;
 
-    const html = buildReportHtml({ co, counts, annad, athugasemdir, skodunaradili, datePhrase, framkvaemdPhrase });
+    const html = buildReportHtml({ co, counts, annad, athugasemdir, skodunaradili, monthPhrase });
     showModal(html, co, opts);
   }
 
   function buildReportHtml(ctx) {
-    const { co, counts, annad, athugasemdir, skodunaradili, datePhrase, framkvaemdPhrase } = ctx;
+    const { co, counts, annad, athugasemdir, skodunaradili, monthPhrase } = ctx;
 
     const ktLine = co.kennitala ? ' kt: ' + esc(co.kennitala) : '';
     const addrLine = co.heimilisfang ? ', ' + esc(co.heimilisfang) : '';
@@ -174,11 +174,10 @@
           ${custLine}
         </div>
 
-        <!-- Inspection statement with date -->
-        <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:${framkvaemdPhrase ? '4px' : '14px'}">
-          Tæki voru yfirfarin af Slökkvitæki ehf ${esc(datePhrase)}
+        <!-- Inspection statement — month only -->
+        <div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:14px">
+          Tæki voru yfirfarin af Slökkvitæki ehf ${esc(monthPhrase)}
         </div>
-        ${framkvaemdPhrase ? `<div style="font-size:15px;font-weight:700;color:#0f172a;margin-bottom:14px">${esc(framkvaemdPhrase)}</div>` : ''}
 
         <!-- Fixed equipment category table — centered as a readable mid-
              page block. Width:auto + label column flex-grow gives uniform
@@ -221,6 +220,7 @@
         '<div style="padding:11px 16px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;background:#f8fafc">' +
           '<div style="font-size:13px;font-weight:700;color:#0f172a">📄 Úttektarskýrsla</div>' +
           '<div style="display:flex;gap:8px">' +
+            '<button id="_cir-save" type="button" style="padding:7px 14px;background:#16a34a;color:#fff;border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">💾 Vista sem ' + new Date().getFullYear() + ' skýrslu</button>' +
             '<button id="_cir-email" type="button" style="padding:7px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#334155">📧 Senda í tölvupósti</button>' +
             '<button id="_cir-print" type="button" style="padding:7px 14px;background:#0d6efd;color:#fff;border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">🖨 Prenta</button>' +
             '<button id="_cir-close" type="button" style="padding:7px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;color:#475569">✕ Loka</button>' +
@@ -253,6 +253,26 @@
     dlg.querySelector('#_cir-print').addEventListener('click', () => {
       try { frame.contentWindow.focus(); frame.contentWindow.print(); }
       catch (e) { alert('Get ekki prentað: ' + (e.message || e)); }
+    });
+    // 2026-06-10: save the report as the year's úttektarskýrsla — renders the
+    // PDF (reusing patch 176) and uploads it as a year-tagged company
+    // attachment, which lights up the 📄 box in that year's column (patch 187).
+    dlg.querySelector('#_cir-save').addEventListener('click', async () => {
+      const cy = new Date().getFullYear();
+      const btn = dlg.querySelector('#_cir-save');
+      if (!window.CompanyReportEmail || !CompanyReportEmail.htmlToPdfBase64) { alert('PDF-eining ekki tiltæk.'); return; }
+      if (!window.CompanyAttachments || !CompanyAttachments.upload) { alert('Skjalaeining ekki tiltæk.'); return; }
+      const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ Vista…';
+      try {
+        const b64 = await CompanyReportEmail.htmlToPdfBase64(html, 'Uttektarskyrsla.pdf');
+        const bin = atob(b64); const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        const fname = 'Úttektarskýrsla ' + (co.nafn || 'fyrirtæki') + ' ' + cy + '.pdf';
+        const file = new File([arr], fname, { type: 'application/pdf' });
+        const meta = await CompanyAttachments.upload(co.id, file, { year: String(cy) });
+        if (meta) { btn.textContent = '✓ Vistuð sem ' + cy; if (window.Toast && Toast.show) Toast.show('✓ Skýrsla vistuð sem ' + cy); }
+        else { btn.disabled = false; btn.textContent = orig; }
+      } catch (e) { alert('Villa við vistun: ' + (e.message || e)); btn.disabled = false; btn.textContent = orig; }
     });
     dlg.querySelector('#_cir-email').addEventListener('click', () => {
       if (window.CompanyReportEmail && typeof CompanyReportEmail.open === 'function') {
