@@ -202,15 +202,31 @@
     // Pull all companies — search lives client-side. Service-contract holders
     // are highlighted but the user can pick any company. fyrirtaeki has the
     // same shape as vidskiptavinir for our purposes here.
-    const [coRes, contractRes] = await Promise.all([
-      SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang').order('nafn'),
+    // 2026-06-10: page through fyrirtaeki — there are >1000 rows and Supabase
+    // caps a single select at 1000, so without paging the alphabetically-late
+    // companies (e.g. "Test fyrirtæki") were silently missing from the picker.
+    async function fetchAllCompanies() {
+      const out = [];
+      const PAGE = 1000;
+      for (let from = 0; from < 20000; from += PAGE) {
+        const r = await SB.from('fyrirtaeki')
+          .select('id,nafn,kennitala,simi,heimilisfang,deleted_at')
+          .order('nafn').range(from, from + PAGE - 1);
+        if (r.error || !r.data || !r.data.length) break;
+        out.push(...r.data);
+        if (r.data.length < PAGE) break;
+      }
+      return out.filter(c => !c.deleted_at);
+    }
+    const [coAll, contractRes] = await Promise.all([
+      fetchAllCompanies(),
       SB.from('thjonustusamningar').select('company_nafn').eq('status', 'virkur')
     ]);
     const contractSet = new Set(
       (contractRes && contractRes.data ? contractRes.data : [])
         .map(c => (c.company_nafn || '').trim().toLowerCase()).filter(Boolean)
     );
-    _companies = (coRes && coRes.data ? coRes.data : []).map(c => ({
+    _companies = coAll.map(c => ({
       ...c,
       isContract: contractSet.has((c.nafn || '').trim().toLowerCase())
     }));
