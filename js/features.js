@@ -177,7 +177,7 @@ var Companies = {
           '<td>' + U.e(u.type) + '</td>' +
           '<td>' + U.e(u.location || '') + '</td>' +
           '<td>' + U.fd(u.next_insp) + '</td>' +
-          '<td>' + U.badge(u.status) + '</td>' +
+          '<td>' + Companies._unitStatusSelect(u) + '</td>' +
           '<td><button class="btn btn-ghost btn-sm" onclick="Field.openInspect(DB.getUnit(' + u.id + '))" title="Skr\u00e1 sko\u00f0un">' +
             '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="20 6 9 17 4 12"/></svg>' +
           '</button>' +
@@ -189,6 +189,52 @@ var Companies = {
       html += '</tbody></table></div>';
     }
     el.innerHTML = html;
+  },
+  // 2026-06-11: stable per-tæki status dropdown rendered as part of the
+  // canonical company-detail HTML (was previously bolted on by a 2s
+  // setInterval in 00-legacy, which flickered/was wiped on every re-render).
+  // 'onytt'/'geymsla'/'urelt' fall out of the bill below (patch 129 only
+  // counts status='active').
+  _STATUS_STYLE: {
+    active:    { bg: '#dcfce7', fg: '#166534', label: '✓ Virkt' },
+    i_vinnslu: { bg: '#fef3c7', fg: '#92400e', label: '⏳ Í vinnslu' },
+    geymsla:   { bg: '#dbeafe', fg: '#1e40af', label: '📦 Í geymslu' },
+    urelt:     { bg: '#fee2e2', fg: '#b91c1c', label: '♻ Úrelt' },
+    onytt:     { bg: '#fecaca', fg: '#991b1b', label: '🚫 Ónýtt' }
+  },
+  _normStatus: function(s) {
+    var c = String(s == null ? '' : s).toLowerCase();
+    if (c === 'onytt' || c === 'ónýtt') return 'onytt';
+    if (c === 'geymsla' || c === 'í geymslu' || c === 'i_geymslu' || c === 'i geymslu') return 'geymsla';
+    if (c === 'urelt' || c === 'úrelt') return 'urelt';
+    if (c === 'i_vinnslu' || c === 'í vinnslu' || c === 'i vinnslu') return 'i_vinnslu';
+    return 'active'; // active / ok / null all show (and bill) as virkt
+  },
+  _unitStatusSelect: function(u) {
+    var val = Companies._normStatus(u.status);
+    var st = Companies._STATUS_STYLE[val] || Companies._STATUS_STYLE.active;
+    var order = ['active', 'i_vinnslu', 'geymsla', 'urelt', 'onytt'];
+    var opts = order.map(function(k) {
+      return '<option value="' + k + '"' + (k === val ? ' selected' : '') + '>' +
+        Companies._STATUS_STYLE[k].label + '</option>';
+    }).join('');
+    return '<select class="_pm_status_sel _co-status" data-uid="' + u.id + '" ' +
+      'onchange="Companies.setUnitStatus(this,' + u.id + ')" ' +
+      'style="padding:3px 7px;border:1px solid ' + st.bg + ';background:' + st.bg + ';color:' + st.fg +
+      ';border-radius:5px;font:inherit;font-size:11px;font-weight:600;cursor:pointer">' + opts + '</select>';
+  },
+  setUnitStatus: function(sel, id) {
+    var v = sel.value;
+    var st = Companies._STATUS_STYLE[v] || Companies._STATUS_STYLE.active;
+    sel.style.background = st.bg; sel.style.borderColor = st.bg; sel.style.color = st.fg;
+    var tr = sel.closest('tr'); if (tr) tr.style.opacity = (v === 'active') ? '1' : '0.55';
+    DB.sb.from('uttaeki').update({ status: v }).eq('id', id).then(function(r) {
+      if (r.error) { alert('Villa við að vista stöðu: ' + r.error.message); return; }
+      var u = DB.cache && DB.cache.units && DB.cache.units.find(function(x) { return x.id === id; });
+      if (u) u.status = v;
+      // ónýtt/geymsla/úrelt drop out of the bill → recompute the total below.
+      if (typeof window.recomputeCompanyTotalCost === 'function') window.recomputeCompanyTotalCost();
+    });
   },
   addUnit: function(id, nafn) {
     document.getElementById('au-client').value = nafn;
