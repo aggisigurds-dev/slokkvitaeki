@@ -2986,9 +2986,12 @@ console.log('[patch-master] loaded with all fixes');
     var srs=[];cked.forEach(function(c){if(c.dataset.serial)srs.push(c.dataset.serial);});
     bar.innerHTML='<span>'+srs.length+' valin</span>'
       +'<button class="_pm_b_inspect" style="background:#16a34a;color:#fff;border:none">\u2713 Merkja sko\u00f0a\u00f0</button>'
+      +'<button class="_pm_b_vinnsla" style="background:#16a34a;color:#fff;border:none">\u2713 \u00cd vinnslu\u2192Virkt</button>'
       +'<button class="_pm_b_print" style="background:#fff;color:#1e40af">\ud83d\udda8 Prenta merki ('+srs.length+')</button>'
       +'<button class="_pm_b_delete" style="background:#fff;color:#dc2626;border:1px solid #fecaca">\ud83d\uddd1 Ey\u00f0a</button>'
-      +'<select id="_pb_act" style="margin-left:8px"><option value="">Sta\u00f0a\u2026</option><option value="ok">\u2192 \u00cd lagi</option><option value="geymsla">\u2192 \u00cd geymslu</option><option value="i_vinnslu">\u2192 \u00cd vinnslu</option><option value="onytt">\u2192 \u00d3n\u00fdtt</option></select><button class="_pm_b_apply">Uppf\u00e6ra</button>'
+      +'<select id="_pb_act" style="margin-left:8px"><option value="">Sta\u00f0a\u2026</option><option value="ok">\u2192 \u00cd lagi</option><option value="geymsla">\u2192 \u00cd geymslu</option><option value="i_vinnslu">\u2192 \u00cd vinnslu</option><option value="onytt">\u2192 \u00d3n\u00fdtt</option><option value="setdate">\ud83d\udcc5 N\u00e6sta sko\u00f0un = dags.</option></select>'
+      +'<input type="date" id="_pb_date" title="N\u00e6sta sko\u00f0un fyrir valin t\u00e6ki" style="padding:4px 6px;border-radius:4px;border:none;font-size:12px">'
+      +'<button class="_pm_b_apply">Uppf\u00e6ra</button>'
       +'<button class="_pm_b_close">\u00d7</button>';
     window._pbSrs=srs;
     // Resolve selected serials \u2192 unit rows (scoped to the open company when one
@@ -3021,13 +3024,27 @@ console.log('[patch-master] loaded with all fixes');
       });
     };
     bar.querySelector('._pm_b_apply').onclick=function(){
-      var act=document.getElementById('_pb_act').value;if(!act){alert('Veldu a\u00f0ger\u00f0');return;}
+      var act=document.getElementById('_pb_act').value;
+      var pbDate=document.getElementById('_pb_date');var dd=pbDate?pbDate.value:'';
+      // If a date is picked but no action chosen, assume "set n\u00e6sta sko\u00f0un".
+      if(!act&&dd)act='setdate';
+      if(!act){alert('Veldu a\u00f0ger\u00f0 (e\u00f0a dagsetningu fyrir n\u00e6stu sko\u00f0un)');return;}
       var upd={};
       if(act==='inspect'){var d=new Date().toISOString().split('T')[0];var ny=new Date();ny.setFullYear(ny.getFullYear()+1);upd={last_insp:d,next_insp:ny.toISOString().split('T')[0]};}
+      else if(act==='setdate'){if(!dd){alert('Veldu dagsetningu fyrir n\u00e6stu sko\u00f0un');return;}upd={next_insp:dd};}
       else upd={status:act};
       window.DB.sb.from('uttaeki').update(upd).in('serial',window._pbSrs).then(function(r){
         if(r.error){alert('Villa: '+r.error.message);return;}
         alert(window._pbSrs.length+' t\u00e6ki uppf\u00e6r\u00f0!');if(window._currentCompanyId&&window.Companies)window.Companies.openDetail(window._currentCompanyId);else location.reload();
+      });
+    };
+    // \u2713 \u00cd vinnslu \u2192 Virkt: flip the selected t\u00e6ki that are 'i_vinnslu' to active (green).
+    bar.querySelector('._pm_b_vinnsla').onclick=function(){
+      var serials=window._pbSrs||[];if(!serials.length){alert('Engin t\u00e6ki valin');return;}
+      window.DB.sb.from('uttaeki').update({status:'active'}).in('serial',serials).eq('status','i_vinnslu').then(function(r){
+        if(r.error){alert('Villa: '+r.error.message);return;}
+        alert('T\u00e6ki \u00ed vinnslu eru n\u00fa virk (gr\u00e6n).');
+        if(window._currentCompanyId&&window.Companies)window.Companies.openDetail(window._currentCompanyId);else location.reload();
       });
     };
     bar.querySelector('._pm_b_print').onclick=function(){
