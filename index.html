@@ -232,9 +232,10 @@
   <div class="modal-bd">
     <div class="frow2">
       <div class="fg"><label class="fl">Tegund</label>
-        <select class="fi" id="au-type"><option>Duft</option><option>ABC Duft</option><option>CO₂</option><option>Léttvatn</option><option>Vatn</option><option>Froðu</option><option>Blautt efni</option><option>Brunaslanga</option><option>Reykskynjari</option><option>Eldvarnateppi</option></select>
+        <select class="fi" id="au-type" onchange="if(/Brunaslanga|Reykskynjari|Eldvarnateppi/.test(this.value)){var s=document.getElementById('au-size');if(s&&!s.value.trim())s.value='----';}"><option>Duft</option><option>ABC Duft</option><option>CO₂</option><option>Léttvatn</option><option>Vatn</option><option>Froðu</option><option>Blautt efni</option><option>Brunaslanga</option><option>Reykskynjari</option><option>Eldvarnateppi</option></select>
       </div>
-      <div class="fg"><label class="fl">Stærð</label><input class="fi" id="au-size" placeholder="6 kg"/></div>
+      <div class="fg"><label class="fl">Stærð</label><input class="fi" id="au-size" list="au-size-list" placeholder="6 kg eða ----"/>
+        <datalist id="au-size-list"><option value="----">---- (engin stærð / brunaslanga, reykskynjari)</option><option value="1 kg"></option><option value="2 kg"></option><option value="4 kg"></option><option value="6 kg"></option><option value="9 kg"></option><option value="12 kg"></option><option value="50 kg"></option><option value="2 ltr"></option><option value="6 ltr"></option><option value="9 ltr"></option><option value="25 m"></option></datalist></div>
     </div>
     <div class="fg"><label class="fl">Viðskiptavinur / Staðsetning</label><input class="fi" id="au-client" placeholder="Harpa — Aðalsal"/></div>
     <div class="fg"><label class="fl">Nákvæm staðsetning</label><input class="fi" id="au-loc" placeholder="1. hæð, við aðalinngang"/></div>
