@@ -416,13 +416,13 @@
               : '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">' +
                   (filter === 'all' ? 'Engin mál enn — smelltu „+ Nýtt mál" til að byrja.' : 'Engin mál með þessa stöðu.') +
                 '</div>')
-          : '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">' +
-              (filtered.length
-                ? filtered.map(_state.view === 'thick' ? thickRowHtml : rowHtml).join('')
-                : '<div style="padding:40px;text-align:center;color:#94a3b8;font-style:italic">' +
+          : (filtered.length
+                ? '<div style="display:flex;flex-direction:column;gap:8px">' +
+                    filtered.map(_state.view === 'thick' ? thickRowHtml : rowHtml).join('') +
+                  '</div>'
+                : '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">' +
                     (filter === 'all' ? 'Engin mál enn — smelltu „+ Nýtt mál" til að byrja.' : 'Engin mál með þessa stöðu.') +
-                  '</div>') +
-            '</div>'}
+                  '</div>')}
         ${impSectionHtml(impIds)}
       </div>`;
 
@@ -590,7 +590,7 @@
     const acc = impAccent(c);
     const bg = acc.gradient === '#fff' ? '' : 'background:' + acc.gradient + ';';
     const leftBorder = acc.gradient === '#fff' ? '' : 'border-left:4px solid ' + acc.border + ';padding-left:10px';
-    return `<div class="_tv-row" data-id="${esc(c.id)}" style="display:grid;grid-template-columns:90px 1fr 220px 110px 90px 40px;gap:12px;padding:11px 14px;border-bottom:1px solid #f1f5f9;cursor:pointer;align-items:center;font-size:13px;${bg}${leftBorder}">
+    return `<div class="_tv-row" data-id="${esc(c.id)}" style="display:grid;grid-template-columns:90px 1fr 220px 110px 90px 40px;gap:12px;padding:11px 14px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;cursor:pointer;align-items:center;font-size:13px;${bg}${leftBorder}">
         <div style="color:#64748b;font-size:11.5px">${esc(fmtDate(c.updated_at || c.created_at))}</div>
         <div style="min-width:0">
           <div style="font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.title || '(án titils)')}</div>
@@ -622,7 +622,7 @@
     // importance pill (Áríðandi etc.) is intentionally hidden here because
     // the row already carries its color cue via the left border + gradient,
     // so showing the pill too is redundant.
-    return `<div class="_tv-row" data-id="${esc(c.id)}" style="padding:14px 16px;border-bottom:1px solid #f1f5f9;cursor:pointer;${bgRule}${leftBorder}">
+    return `<div class="_tv-row" data-id="${esc(c.id)}" style="padding:14px 16px;border:1px solid #e2e8f0;border-radius:10px;background:#fff;cursor:pointer;${bgRule}${leftBorder}">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:6px">
           <div style="min-width:0;flex:1">
             <div style="font-weight:700;color:#0f172a;font-size:14px;line-height:1.3">${esc(c.title || '(án titils)')}</div>
