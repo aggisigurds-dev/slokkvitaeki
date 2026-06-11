@@ -129,7 +129,16 @@ var DB = {
       var viewsNeedingJobs = ['workshop', 'counter', 'sala', 'field', 'dashboard', 'home'];
       var viewsNeedingUnits = ['companies', 'field', 'lanstaeki', 'workshop', 'home', 'dashboard'];
       var needsJobs = tables.some(function(t){return t==='verkbeidnir'||t==='verklidur';}) && viewsNeedingJobs.indexOf(activeId) >= 0;
-      var needsUnits = tables.indexOf('uttaeki') >= 0 && viewsNeedingUnits.indexOf(activeId) >= 0;
+      // 2026-06-11: when a company DETAIL is open, its own edit handlers
+      // already update DB.cache + re-render in place. Running a full loadAll()
+      // (all ~5k units across 5 tables) + App.refreshAll() on every uttaeki
+      // write just re-fetches everything and re-decorates the whole profile —
+      // that was the "company profile reloads / loads popping up and changing"
+      // slowness. Skip the heavy reload while a detail is open.
+      var _coMain = document.getElementById('companies-main');
+      var _coDetailOpen = !!(_coMain && _coMain.querySelector('button[onclick*="Companies.openEdit"], button[onclick*="Companies.render"]'));
+      var needsUnits = tables.indexOf('uttaeki') >= 0 && viewsNeedingUnits.indexOf(activeId) >= 0
+        && !(activeId === 'companies' && _coDetailOpen);
       if (needsJobs || needsUnits) {
         self.loadAll();
       }
@@ -148,7 +157,9 @@ var DB = {
       var t = payload && payload.table;
       if (t) _pendingTables.add(t);
       if (_debounce) clearTimeout(_debounce);
-      _debounce = setTimeout(applyChange, 3000);
+      // 2026-06-11: 3s → 5s so a burst of edits (e.g. flipping several tæki
+      // statuses) coalesces into one refresh instead of several.
+      _debounce = setTimeout(applyChange, 5000);
     }).subscribe();
   },
 
