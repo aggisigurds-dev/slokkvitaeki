@@ -72,6 +72,32 @@
         items.push({ type: 'item', id, label, hidden: true });
       }
     });
+    // 2026-06-12 (Todoist „Sidepannel bug"): DOM-röðin er EKKI áreiðanleg
+    // fyrstu sekúndurnar — injector-patchar bæta tökkum við á víð og dreif
+    // þangað til patch 68 hefur raðað. Ef editorinn opnast í þeim glugga
+    // sýndi hann hringlaða röð, og „Vista röð" festi hana. Notum því vistuðu
+    // röðina úr AppSettings sem grunn þegar hún er til; nýir takkar sem hún
+    // þekkir ekki leggjast aftast (ekkert týnist).
+    const saved = (window.AppSettings && AppSettings.path && AppSettings.path('sidebar_order')) || null;
+    if (Array.isArray(saved) && saved.length) {
+      const onlyItems = all.filter(x => x.type === 'item');
+      const byId = {};
+      onlyItems.forEach(x => { if (byId[x.id] == null) byId[x.id] = x; });
+      const usedIds = new Set();
+      const rebased = [];
+      saved.forEach(entry => {
+        if (entry === '__SEP__') { rebased.push({ type: 'sep' }); return; }
+        const e = String(entry);
+        let hit = byId[e] || null;
+        if (!hit && e[0] !== '#') {
+          // back-compat: old saves stored label substrings
+          hit = onlyItems.find(x => !usedIds.has(x.id) && x.label.toLowerCase().indexOf(e.toLowerCase()) !== -1) || null;
+        }
+        if (hit && !usedIds.has(hit.id)) { rebased.push(hit); usedIds.add(hit.id); }
+      });
+      onlyItems.forEach(x => { if (!usedIds.has(x.id)) rebased.push(x); });
+      return { items: rebased, all };
+    }
     return { items, all };
   }
 
