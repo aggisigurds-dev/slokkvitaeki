@@ -334,6 +334,28 @@
       else alert('Vafrinn lokaði á prentgluggann — leyfðu sprettiglugga (popups) fyrir þessa síðu.');
       return;
     }
+    // 2026-06-12: kr-afsláttur á nýjum tilboðum er m. vsk (af lokaverði);
+    // eldri tilboð geymdu án-vsk upphæð. Vistaða `samtals` sker úr um hvora
+    // merkinguna þetta tilboð notar (sama aðferð og renderFromSale á sölum).
+    const _pct = +(q.afslattur_pct || 0), _abs = +(q.afslattur || 0);
+    let discGross = true;
+    if (_abs > 0) {
+      let _rawEx = 0, _rawVsk = 0;
+      linur.forEach(l => {
+        const le = (Number(l.qty) || 0) * (Number(l.unit_price_ex_vat) || 0);
+        _rawEx += le;
+        _rawVsk += le * ((Number(l.vsk_pct) || 0) / 100);
+      });
+      const _f1 = _rawEx > 0 ? Math.max(0, _rawEx - _rawEx * _pct / 100) / _rawEx : 1;
+      const _gAfterPct = (_rawEx + _rawVsk) * _f1;
+      const grossTotal = Math.max(0, _gAfterPct - _abs);
+      const _discExLegacy = Math.min(_rawEx, _rawEx * _pct / 100 + _abs);
+      const exTotal = (_rawEx + _rawVsk) * (_rawEx > 0 ? (_rawEx - _discExLegacy) / _rawEx : 1);
+      const saved = Number(q.samtals);
+      if (isFinite(saved) && saved > 0) {
+        discGross = Math.abs(grossTotal - saved) <= Math.abs(exTotal - saved);
+      }
+    }
     SalaInvoice.render(win, {
       isTilbod: true,
       invoiceNum: q.num || '',
@@ -342,7 +364,7 @@
       customerKt: q.kennitala || '',
       customerHeimilisfang: q.heimilisfang || '',
       lines: linur,
-      discount_pct: +(q.afslattur_pct||0), discount: +(q.afslattur||0),
+      discount_pct: _pct, discount: _abs, discount_gross: discGross,
       notes: q.notes || '',
       validUntil: q.valid_until ? fmtDate(q.valid_until) : ''
     });
@@ -414,20 +436,28 @@
 
   // Totals incl. afsláttur (% first, then kr — matches SalaInvoice). VSK scales
   // proportionally with the post-discount subtotal.
+  // 2026-06-12: kr-afslátturinn dregst af LOKAVERÐINU m. vsk (sama hegðun og
+  // POS karfan) svo tilboðsupphæðin endi á sléttri tölu: 5.200 − 200 = 5.000.
   function tbComputeTotals() {
     const { ex: rawEx, vsk: rawVsk } = calcTotals(editLines);
     const pct = Math.max(0, Math.min(100, parseFloat(document.getElementById('tb-afsl-pct')?.value) || 0));
     const abs = Math.max(0, parseFloat(document.getElementById('tb-afsl-kr')?.value) || 0);
-    const discEx = Math.min(rawEx, rawEx * pct / 100 + abs);
-    const factor = rawEx > 0 ? (rawEx - discEx) / rawEx : 1;
-    const ex = rawEx - discEx;
+    const f1 = rawEx > 0 ? Math.max(0, rawEx - rawEx * pct / 100) / rawEx : 1;
+    const grossAfterPct = (rawEx + rawVsk) * f1;
+    const f2 = grossAfterPct > 0 ? Math.max(0, grossAfterPct - abs) / grossAfterPct : 1;
+    const factor = f1 * f2;
+    const ex = rawEx * factor;
     const vsk = rawVsk * factor;
-    return { rawEx, rawVsk, discEx, ex, vsk, total: ex + vsk, pct, abs };
+    return {
+      rawEx, rawVsk, discEx: rawEx - ex,
+      discGross: (rawEx + rawVsk) - (ex + vsk),  // kr m. vsk sem kúnninn sparar
+      ex, vsk, total: ex + vsk, pct, abs
+    };
   }
   function tbTotalRowHtml() {
     const t = tbComputeTotals();
     return `<span>Án VSK: <strong>${fmtKr(t.rawEx)}</strong></span>`
-      + (t.discEx > 0 ? `<span>Afsláttur: <strong>−${fmtKr(t.discEx)}</strong></span>` : '')
+      + (t.discGross > 0.005 ? `<span>Afsláttur (m. vsk): <strong>−${fmtKr(t.discGross)}</strong></span>` : '')
       + `<span>VSK: <strong>${fmtKr(t.vsk)}</strong></span>`
       + `<span>Samtals: <strong>${fmtKr(t.total)}</strong></span>`;
   }
@@ -546,7 +576,7 @@
       </div>
       <div class="tb-mrow tb-co-grid">
         <div><label>Afsláttur %</label><input type="number" id="tb-afsl-pct" class="tb-minput" min="0" max="100" step="1" value="${existingQ?.afslattur_pct!=null?+existingQ.afslattur_pct:''}" placeholder="0"></div>
-        <div><label>Afsláttur kr (á heildina)</label><input type="number" id="tb-afsl-kr" class="tb-minput" min="0" step="100" value="${existingQ?.afslattur!=null?+existingQ.afslattur:''}" placeholder="0"></div>
+        <div><label>Afsláttur kr (af lokaverði m. vsk)</label><input type="number" id="tb-afsl-kr" class="tb-minput" min="0" step="100" value="${existingQ?.afslattur!=null?+existingQ.afslattur:''}" placeholder="0"></div>
       </div>
       <div class="tb-lines-hd">
         <label style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;">Línur</label>

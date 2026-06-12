@@ -123,6 +123,9 @@
   function findAddButton(scope) {
     const buttons = (scope || document).querySelectorAll('button');
     for (const b of buttons) {
+      // Skip our own injected button — since 2026-06-12 it carries the
+      // "+ Bæta við tæki" name itself (the original is hidden).
+      if (b.classList && b.classList.contains('_bulkadd_btn')) continue;
       const t = (b.textContent || '').trim();
       if (/^\+\s*Bæta við tæki\b/i.test(t)) return b;
     }
@@ -161,10 +164,13 @@
     }
     if (!nafn) return;
 
+    // 2026-06-12 (Todoist): gamli stak-tækis takkinn tvítók hlutverkið — bara
+    // bulk-flæðið er notað. Okkar takki tekur nafnið „+ Bæta við tæki" og
+    // verður blár; sá gamli er falinn hér að neðan.
     const btn = document.createElement('button');
-    btn.className = '_bulkadd_btn btn btn-outline btn-sm';
-    btn.style.cssText = 'margin-right:6px';
-    btn.textContent = '+ Mörg tæki';
+    btn.className = '_bulkadd_btn btn btn-sm';
+    btn.style.cssText = 'margin-right:6px;background:#2563eb;color:#fff;border:1px solid #2563eb';
+    btn.textContent = '+ Bæta við tæki';
     btn.onclick = (e) => {
       e.stopPropagation();
       // Pick the right refresh callback for the surface we're on
@@ -182,6 +188,10 @@
       openBulkModal(nafn, refreshFn);
     };
     addBtn.parentNode.insertBefore(btn, addBtn);
+    // Hide the original single-unit button — but ONLY on the company/customer
+    // detail surfaces where we resolved a proper name from it. The Verkstæði
+    // modal (patch 104) has its own "+ Bæta við tæki" that must stay.
+    if (idMatch || isVidsk) addBtn.style.display = 'none';
   }
 
   // Watch the whole document for the "+ Bæta við tæki" button to appear (on company/customer detail open)
