@@ -58,7 +58,7 @@
     const st = document.createElement('style');
     st.id = 'eftirfylgni-style';
     st.textContent = `
-      #view-eftirfylgni .ef-wrap { max-width: 1560px; margin: 0 auto; padding: 18px 16px 60px; }
+      #view-eftirfylgni .ef-wrap { max-width: none; margin: 0 auto; padding: 18px 22px 60px; }
       /* 2026-06-12 (Todoist): samningar vinstra megin, skýrslur hægra megin */
       #view-eftirfylgni .ef-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start; }
       @media (max-width: 1100px) { #view-eftirfylgni .ef-grid { grid-template-columns:1fr; } }
@@ -268,6 +268,8 @@
             value="${esc(st.note || '')}" placeholder="Áminning — t.d. hringja á undan, hvað á að taka með…"></td>
         <td style="text-align:center" title="${st.done_at ? 'Farið í úttekt ' + fmtDate(st.done_at) : 'Haka við þegar búið er að fara í úttekt'}">
           <input type="checkbox" class="ef-chk" data-kind="samningar" data-key="${c.id}" ${r.done ? 'checked' : ''}></td>
+        <td style="text-align:center;width:34px"><button class="ef-del" data-cid="${c.id}" title="Eyða samningnum (t.d. tvítekning)"
+            style="background:none;border:none;color:#cbd5e1;font-size:15px;cursor:pointer;padding:2px 6px">✕</button></td>
       </tr>`;
     };
 
@@ -306,11 +308,11 @@
           <span class="ef-count ${cPending.length ? '' : 'ok'}">${cPending.length ? cPending.length + ' bíða' : 'allt klárt ✓'}</span>
           <button class="ef-refresh" id="ef-reload">↺ Endurhlaða</button>
         </div>
-        ${tbl('<th style="width:90px">Dags</th><th>Viðskiptavinur</th><th>Áminning</th><th style="width:120px;text-align:center">Farið í úttekt</th>',
+        ${tbl('<th style="width:90px">Dags</th><th>Viðskiptavinur</th><th>Áminning</th><th style="width:120px;text-align:center">Farið í úttekt</th><th style="width:34px"></th>',
               cPending.map(cRow), 'Engir samningar bíða eftir úttekt 🎉')}
         ${cDone.length ? `<button class="ef-toggle" data-t="s">${_showDoneS ? '▾ Fela kláraða' : '▸ Sýna kláraða (' + cDone.length + ')'}</button>` : ''}
         ${_showDoneS && cDone.length
-          ? tbl('<th style="width:90px">Dags</th><th>Viðskiptavinur</th><th>Áminning</th><th style="width:120px;text-align:center">Farið í úttekt</th>', cDone.map(cRow), '')
+          ? tbl('<th style="width:90px">Dags</th><th>Viðskiptavinur</th><th>Áminning</th><th style="width:120px;text-align:center">Farið í úttekt</th><th style="width:34px"></th>', cDone.map(cRow), '')
           : ''}
       </div>
 
@@ -338,6 +340,23 @@
     // Nafn → fyrirtækjasíðan
     main.querySelectorAll('a.ef-co').forEach(a => {
       a.onclick = e => { e.preventDefault(); openCompany(+a.dataset.co); };
+    });
+
+    // ✕ — eyða samningi (t.d. tvítekning sem var stofnuð of oft)
+    main.querySelectorAll('button.ef-del').forEach(b => {
+      b.onclick = async () => {
+        const cid = +b.dataset.cid;
+        const c = _contracts.find(x => x.id === cid);
+        const nafn = (c && c.company_nafn) || ('#' + cid);
+        const q = 'Eyða þjónustusamningi fyrir „' + nafn + '"?\n\nÞetta fjarlægir samninginn úr samningakerfinu (ekki bara af þessum lista).';
+        const ok = window.Confirm && Confirm.show ? await Confirm.show(q) : confirm(q);
+        if (!ok) return;
+        const SB = getSB();
+        const r = await SB.from('thjonustusamningar').delete().eq('id', cid);
+        if (r.error) { alert('Villa: ' + r.error.message); return; }
+        if (window.Toast && Toast.show) Toast.show('🗑 Samningi eytt — ' + nafn);
+        load();
+      };
     });
 
     main.querySelectorAll('.ef-toggle').forEach(b => {
