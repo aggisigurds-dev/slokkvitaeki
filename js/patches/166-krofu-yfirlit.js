@@ -128,7 +128,7 @@
     // 'greitt_sidar' is excluded — it has its own page (Til að rukka).
     // 2026-05-21: pull updated_at too so the sort options can use it.
     const r = await SB.from('solur')
-      .select('id,num,customer_nafn,customer_id,samtals,greitt_med,athugasemdir,created_at,updated_at,paid_at,is_credit,credit_of')
+      .select('id,num,customer_nafn,customer_id,samtals,greitt_med,athugasemdir,created_at,updated_at,paid_at,krafa_sent_at,is_credit,credit_of')
       .eq('greitt_med', 'reikningur')
       .is('paid_at', null)
       .order('updated_at', { ascending: false });
@@ -298,6 +298,19 @@
       load(m);
     });
 
+    // 2026-06-12 (Todoist): „Krafa send" hak per kröfu — togglar krafa_sent_at.
+    main.querySelectorAll('._ky-krafa-toggle').forEach(b => {
+      b.addEventListener('click', async () => {
+        const id = b.dataset.id;
+        const isOn = b.dataset.on === '1';
+        if (isOn && !confirm('Afhaka „Krafa send"?')) return;
+        const SB = getSB();
+        const r = await SB.from('solur').update({ krafa_sent_at: isOn ? null : new Date().toISOString() }).eq('id', id);
+        if (r.error) { alert('Villa: ' + r.error.message); return; }
+        if (window.Toast && Toast.show) Toast.show(isOn ? 'Krafa send — afhakað' : '🏦 ✓ Krafa send');
+        await load(_state.month);
+      });
+    });
     main.querySelectorAll('._ky-mark-paid').forEach(b => {
       b.addEventListener('click', async () => {
         const id = b.dataset.id;
@@ -383,6 +396,9 @@
                 <div style="color:#94a3b8;font-size:11px">${da != null ? da + ' d.' : ''}</div>
                 <div style="text-align:right;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums">${fmtKr(s.samtals)}</div>
                 <div style="display:flex;gap:4px">
+                  ${s.krafa_sent_at
+                    ? `<button class="_ky-krafa-toggle" data-id="${s.id}" data-on="1" type="button" title="Krafa send ${fmtDate(s.krafa_sent_at)} — smelltu til að afhaka" style="padding:5px 9px;background:#dcfce7;color:#14532d;border:1px solid #86efac;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;white-space:nowrap">🏦 ✓ Krafa send</button>`
+                    : `<button class="_ky-krafa-toggle" data-id="${s.id}" type="button" title="Haka við þegar krafan hefur verið stofnuð í heimabankanum" style="padding:5px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600;white-space:nowrap">🏦 Krafa send</button>`}
                   <button class="_ky-mark-paid" data-id="${s.id}" type="button" title="Merkja sem greitt" style="padding:5px 9px;background:#16a34a;color:#fff;border:none;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">✓</button>
                   <button class="_ky-view-invoice" data-id="${s.id}" type="button" title="Skoða / prenta reikning" style="padding:5px 9px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">🖨</button>
                   <button class="_ky-open-editor" data-num="${esc(s.num)}" type="button" title="Opna í sölu-editor" style="padding:5px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">✏️</button>

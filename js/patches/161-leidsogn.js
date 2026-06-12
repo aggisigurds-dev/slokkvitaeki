@@ -29,6 +29,7 @@
   // leidsogn_month) eru ekki lesnir lengur.
   const LS_YEAR   = 'leidsogn_year';   // 'all' | '2024' | '2025' | '2026'
   const LS_MONTHS = 'leidsogn_months'; // csv: "2,3,5" — tómt = allir
+  const LS_FLOKK  = 'leidsogn_flokkur'; // all | klarad | oklarad | aridandi
 
   // ── State ───────────────────────────────────────────────────────────────
   let _map = null;
@@ -37,11 +38,13 @@
   let _state = {
     year: localStorage.getItem(LS_YEAR) || 'all',
     months: String(localStorage.getItem(LS_MONTHS) || '')
-      .split(',').map(n => +n).filter(n => n >= 1 && n <= 12)
+      .split(',').map(n => +n).filter(n => n >= 1 && n <= 12),
+    flokkur: localStorage.getItem(LS_FLOKK) || 'all'
   };
   function saveState() {
     localStorage.setItem(LS_YEAR, _state.year);
     localStorage.setItem(LS_MONTHS, _state.months.join(','));
+    localStorage.setItem(LS_FLOKK, _state.flokkur);
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
@@ -172,6 +175,16 @@
     if (!_state.year || _state.year === 'all') return list;
     const y = +_state.year;
     return list.filter(x => yearOf(x.ars) === y);
+  }
+  // 2026-06-12 (Todoist): auka-flokkar — Klárað (búið í ár), Óklárað og
+  // 🚩 Áríðandi (Forgangur-merkið úr Fyrirtæki í Þjónustu, patch 175:
+  // arsskodun_customers[id].priority > 0).
+  function applyFlokkur(list) {
+    if (!_state.flokkur || _state.flokkur === 'all') return list;
+    if (_state.flokkur === 'klarad')  return list.filter(x => x.status.key === 'done');
+    if (_state.flokkur === 'oklarad') return list.filter(x => x.status.key !== 'done');
+    if (_state.flokkur === 'aridandi') return list.filter(x => +((x.ars || {}).priority) > 0);
+    return list;
   }
 
   // ── Map & pins ──────────────────────────────────────────────────────────
@@ -362,9 +375,9 @@
     // newly-geocoded pin doesn't yank the viewport while the user is looking.
     const fit = !opts || opts.fit !== false;
     clearMarkers();
-    // Ár-chips og mánaðar-fjölval vinna saman: sía fyrst eftir ári, svo
-    // eftir völdum mánuðum. Tómt val = engin sía.
-    const list = applyMonths(applyYear(getCustomers()));
+    // Ár-chips, flokkur og mánaðar-fjölval vinna saman: ár → flokkur →
+    // valdir mánuðir. Tómt val = engin sía.
+    const list = applyMonths(applyFlokkur(applyYear(getCustomers())));
     list.forEach(item => {
       const m = L.marker([item.coord.lat, item.coord.lng], { icon: makeIcon(item.status.color) }).addTo(_map);
       m.bindPopup(() => makePopupHtml(item));
@@ -411,6 +424,7 @@
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
     const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
     const cnt = { all: 0, 2024: 0, 2025: 0, 2026: 0 };
+    const cnt2 = { klarad: 0, oklarad: 0, aridandi: 0 };
     cos.forEach(c => {
       const ars = arsMap[String(c.id)];
       const bru = bruMap[String(c.id)];
@@ -420,10 +434,17 @@
       cnt.all++;
       const y = yearOf(ars);
       if (cnt[y] != null) cnt[y]++;
+      const status = statusFor(c, ars);
+      if (status.key === 'done') cnt2.klarad++; else cnt2.oklarad++;
+      if (+((ars || {}).priority) > 0) cnt2.aridandi++;
     });
     Object.keys(cnt).forEach(k => {
       const el = document.querySelector('._lds-chip[data-year="' + k + '"] ._lds-count');
       if (el) el.textContent = cnt[k];
+    });
+    Object.keys(cnt2).forEach(k => {
+      const el = document.querySelector('._lds-chip[data-flokk="' + k + '"] ._lds-count');
+      if (el) el.textContent = cnt2[k];
     });
   }
 
@@ -804,6 +825,15 @@
               const sel = _state.year === k;
               return '<button data-year="' + k + '" class="_lds-chip" type="button" style="padding:6px 11px;border:1px solid ' + (sel?'#0f172a':'#cbd5e1') + ';background:' + (sel?'#0f172a':'#fff') + ';color:' + (sel?'#fff':'#475569') + ';border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:' + color + ';display:inline-block"></span>' + esc(lbl) + ' <span class="_lds-count" style="opacity:.7;font-weight:500">·</span></button>';
             }).join('') +
+            '<span style="width:1px;align-self:stretch;background:#e2e8f0;margin:0 4px"></span>' +
+            [
+              ['klarad',   '✅ Klárað'],
+              ['oklarad',  '⏳ Óklárað'],
+              ['aridandi', '🚩 Áríðandi']
+            ].map(([k, lbl]) => {
+              const sel = _state.flokkur === k;
+              return '<button data-flokk="' + k + '" class="_lds-chip" type="button" title="Smelltu aftur til að hreinsa" style="padding:6px 11px;border:1px solid ' + (sel?'#0f172a':'#cbd5e1') + ';background:' + (sel?'#0f172a':'#fff') + ';color:' + (sel?'#fff':'#475569') + ';border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">' + esc(lbl) + ' <span class="_lds-count" style="opacity:.7;font-weight:500">·</span></button>';
+            }).join('') +
           '</div>' +
           // Month-chip row (same format as Fyrirtæki í Þjónustu) — filters the
           // map by inspection month. Populated by renderMonthRow().
@@ -815,9 +845,14 @@
           '<div id="_lds-due-panel" style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"></div>' +
           '<div id="_lds-route-panel" style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"></div>' +
         '</div>';
-      // Wire year chips
+      // Wire year + flokkur chips
       main.querySelectorAll('._lds-chip').forEach(b => b.addEventListener('click', () => {
-        _state.year = b.dataset.year || 'all';
+        if (b.dataset.flokk) {
+          // toggle: smellt aftur á valinn flokk hreinsar hann
+          _state.flokkur = _state.flokkur === b.dataset.flokk ? 'all' : b.dataset.flokk;
+        } else {
+          _state.year = b.dataset.year || 'all';
+        }
         saveState();
         show(); // re-render
       }));

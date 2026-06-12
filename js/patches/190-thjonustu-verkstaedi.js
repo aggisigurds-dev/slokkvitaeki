@@ -161,7 +161,10 @@
       const sumHtml = sum > 0 ? ' · <span title="Samtals áætlaðar tekjur í dálknum (yfirferðir + skýrslugerð + akstur, m. vsk)" style="opacity:.75">~' + fmtSum(sum) + '</span>' : '';
       const cards = rows.map(r => cardHtml(r, col.key, col.bar)).join('') ||
         '<div style="color:#cbd5e1;font-size:12.5px;padding:16px;text-align:center;border:1px dashed #e2e8f0;border-radius:10px">—</div>';
-      return '<div style="flex:1;min-width:260px"><div style="background:' + col.head + ';color:' + col.tx + ';border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;margin-bottom:10px">' + col.label + ' · ' + rows.length + sumHtml + '</div><div style="display:flex;flex-direction:column;gap:9px">' + cards + '</div></div>';
+      // 2026-06-12 (Todoist): Í vinnslu er aðal-vinnusvæðið — fær tvöfalda
+      // breidd á kostnað hliðardálkanna.
+      const colStyle = col.key === 'vinnsla' ? 'flex:2.2;min-width:430px' : 'flex:1;min-width:240px';
+      return '<div style="' + colStyle + '"><div style="background:' + col.head + ';color:' + col.tx + ';border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;margin-bottom:10px">' + col.label + ' · ' + rows.length + sumHtml + '</div><div style="display:flex;flex-direction:column;gap:9px">' + cards + '</div></div>';
     }).join('');
     v.innerHTML = '<div style="max-width:1400px;margin:0 auto">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:6px"><h1 style="font-size:22px;margin:0;font-weight:750">🔧 ÞjónustuVerkstæði</h1></div>' +
