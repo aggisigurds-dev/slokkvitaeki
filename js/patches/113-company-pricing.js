@@ -88,7 +88,8 @@
     const section = document.createElement('div');
     section.className = '_cpr-section';
     section.dataset.coId = coId;
-    section.style.cssText = 'margin:18px 0 22px;padding:16px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;box-shadow:0 1px 3px rgba(0,0,0,0.04)';
+    // 2026-06-12 (Todoist): þéttara spjald — minni padding/bil
+    section.style.cssText = 'margin:14px 0 16px;padding:12px 14px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;box-shadow:0 1px 3px rgba(0,0,0,0.04)';
     section.innerHTML = renderSection(coId);
 
     // Insert near the bottom (before the company-attachments section if present)
@@ -117,13 +118,12 @@
     }).join('') : '<tr><td colspan="6" style="padding:18px;text-align:center;color:#94a3b8;font-size:13px;font-style:italic">Engin tilboðsverð skráð — notaðu „+ Bæta við" hér að ofan</td></tr>';
 
     return '' +
-      '<div style="margin-bottom:14px">' +
-        '<h3 style="margin:0;font-size:15px;font-weight:700;color:#1e40af">💰 Tilboðsverð</h3>' +
-        '<div style="font-size:11px;color:#1e40af;margin-top:2px">Sérverð sem yfirstíga búðarverð sjálfvirkt í Sala fyrir þetta fyrirtæki.</div>' +
+      '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;flex-wrap:wrap">' +
+        '<h3 style="margin:0;font-size:14px;font-weight:700;color:#1e40af">💰 Tilboðsverð</h3>' +
+        '<div style="font-size:11px;color:#3b82f6">Sérverð sem yfirstíga búðarverð sjálfvirkt í Sala.</div>' +
       '</div>' +
       // Add new form (now first — sits above the list as one panel)
-      '<div style="margin-bottom:14px">' +
-        '<div style="font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">+ Bæta við tilboði</div>' +
+      '<div style="margin-bottom:10px">' +
         '<div style="display:grid;grid-template-columns:2fr 1fr 80px 2fr 100px;gap:6px;align-items:center">' +
           '<div style="display:flex;gap:4px">' +
             '<input id="_cpr-name" type="text" placeholder="t.d. Hleðsla tilboðsverð" style="flex:1;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box;min-width:0">' +
@@ -134,11 +134,11 @@
           '<input id="_cpr-notes" type="text" placeholder="Athugasemd (valkvætt)" style="padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box">' +
           '<button class="_cpr-add" type="button" style="padding:8px 14px;background:#1e40af;color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">+ Bæta við</button>' +
         '</div>' +
-        '<div style="margin-top:6px;font-size:11px;color:#64748b">Smelltu 🔍 til að velja úr vörulistanum (verð fyllist sjálfvirkt). Nafnið matchast við körfulínur með case-insensitive substring.</div>' +
+        '<div style="margin-top:4px;font-size:10.5px;color:#64748b">🔍 velur úr vörulistanum — verð fyllist sjálfvirkt.</div>' +
       '</div>' +
       // Subtle divider, then the existing prices list (one continuous panel)
-      '<div style="border-top:1px solid #bfdbfe;padding-top:12px">' +
-        '<div style="font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Skráð tilboðsverð</div>' +
+      '<div style="border-top:1px solid #bfdbfe;padding-top:8px">' +
+        '<div style="font-size:11px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Skráð tilboðsverð</div>' +
         '<div style="background:#fff;border:1px solid #bfdbfe;border-radius:8px;overflow:hidden">' +
           '<table style="width:100%;border-collapse:collapse">' +
             '<thead style="background:#dbeafe"><tr>' +

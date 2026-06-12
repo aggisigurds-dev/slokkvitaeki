@@ -329,8 +329,11 @@
     if (!notesBox) {
       notesBox = document.createElement('div');
       notesBox.id = '_ctc-notes';
+      // 2026-06-12 (Todoist): notes-boxið og Heildarkostnaður runnu áður sem
+      // tvö aðskilin spjöld — nú efri helmingur af EINU samfelldu spjaldi
+      // (engin neðri brún/radius hér; section tekur við fyrir neðan).
       notesBox.style.cssText =
-        'margin:22px 0 12px;padding:14px 16px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
+        'margin:22px 0 0;padding:12px 16px 10px;background:#f0fdf4;border:1px solid #86efac;border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 1px 3px rgba(0,0,0,.04)';
       // Insert before the existing cost section if it already exists, so the
       // notes box always appears ABOVE Heildarkostnaður.
       const existingSection = main.querySelector('#_ctc-section');
@@ -340,15 +343,15 @@
     const tripNotes = (tripState.notes != null) ? String(tripState.notes) : '';
     const athSkyrslaBox = (tripState.athugasemdir_skyrsla != null) ? String(tripState.athugasemdir_skyrsla) : '';
     notesBox.innerHTML =
-      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' +
-        '<div style="font-size:13px;color:#166534;font-weight:700;text-transform:uppercase;letter-spacing:.05em">📝 Upplýsingar um úttekt</div>' +
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">' +
+        '<div style="font-size:12.5px;color:#166534;font-weight:700;text-transform:uppercase;letter-spacing:.05em">📝 Upplýsingar um úttekt</div>' +
       '</div>' +
       '<textarea id="_ctc-notes-ta" rows="2" placeholder="t.d. „Bára vill skipta öllum á neðri hæð" · „Hringja í Jón fyrir komu" · „Setja inn nýtt 6 kg ABC Duft"" ' +
         'style="width:100%;padding:8px 10px;border:1px solid #86efac;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
         esc(tripNotes) +
       '</textarea>' +
       // 2026-06-10: report-only Athugasemdir, grouped here with the notes.
-      '<div style="font-size:12px;color:#166534;font-weight:600;margin:10px 0 4px">✍ Athugasemdir á skýrslu <span style="font-weight:400;color:#16a34a">(sést í „Athugasemdir" á úttektarskýrslunni, ekki á reikningnum)</span></div>' +
+      '<div style="font-size:12px;color:#166534;font-weight:600;margin:8px 0 3px">✍ Athugasemdir á skýrslu <span style="font-weight:400;color:#16a34a">(sést í „Athugasemdir" á úttektarskýrslunni, ekki á reikningnum)</span></div>' +
       '<textarea id="_ctc-athskyrsla" rows="2" placeholder="t.d. Mælt með að skipta út 2 tækjum á næsta ári" ' +
         'style="width:100%;padding:8px 10px;border:1px solid #86efac;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
         esc(athSkyrslaBox) +
@@ -358,8 +361,9 @@
     if (!section) {
       section = document.createElement('div');
       section.id = '_ctc-section';
+      // Neðri helmingur sama spjalds og _ctc-notes — dashed lína skilur að.
       section.style.cssText =
-        'margin:6px 0 26px;padding:18px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
+        'margin:0 0 26px;padding:14px 18px 18px;background:#f0fdf4;border:1px solid #86efac;border-top:1px dashed #bbf7d0;border-radius:0 0 12px 12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
       main.appendChild(section);
     }
 
