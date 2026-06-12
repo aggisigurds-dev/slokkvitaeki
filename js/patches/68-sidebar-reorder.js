@@ -308,6 +308,11 @@
   document.addEventListener('DOMContentLoaded', scheduleReorder);
   setTimeout(scheduleReorder, 1500);
   setTimeout(scheduleReorder, 3000);
+  // 2026-06-12: late safety passes — a few injectors (and slow AppSettings
+  // loads) can land after the 3s pass; without these the late arrivals sat
+  // unordered at the tail until the next mutation ("sidepanel shuffles").
+  setTimeout(scheduleReorder, 6000);
+  setTimeout(scheduleReorder, 12000);
 
   // Safety-net delegated click handler on the nav itself. If the inline
   // onclick on a button gets lost for any reason (e.g. detach + re-attach

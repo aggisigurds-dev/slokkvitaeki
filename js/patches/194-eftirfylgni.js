@@ -58,8 +58,13 @@
     const st = document.createElement('style');
     st.id = 'eftirfylgni-style';
     st.textContent = `
-      #view-eftirfylgni .ef-wrap { max-width: 1180px; margin: 0 auto; padding: 18px 16px 60px; }
+      #view-eftirfylgni .ef-wrap { max-width: 1560px; margin: 0 auto; padding: 18px 16px 60px; }
+      /* 2026-06-12 (Todoist): samningar vinstra megin, skýrslur hægra megin */
+      #view-eftirfylgni .ef-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; align-items:start; }
+      @media (max-width: 1100px) { #view-eftirfylgni .ef-grid { grid-template-columns:1fr; } }
       #view-eftirfylgni .ef-card { background:#fff; border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,.06); margin-bottom:22px; overflow:hidden; }
+      #view-eftirfylgni a.ef-co { color:#1d4ed8; text-decoration:none; }
+      #view-eftirfylgni a.ef-co:hover { text-decoration:underline; }
       #view-eftirfylgni .ef-hd { display:flex; align-items:center; gap:10px; padding:14px 18px; border-bottom:1px solid #f1f5f9; }
       #view-eftirfylgni .ef-hd h3 { margin:0; font-size:15px; color:#0f172a; }
       #view-eftirfylgni .ef-count { background:#fef3c7; color:#92400e; border-radius:99px; padding:2px 10px; font-size:12px; font-weight:700; }
@@ -132,6 +137,27 @@
   let _contracts = [];
   let _reports = [];   // unified: {key, date, nafn, sub, url|null, urlMeta|null, autoDone}
   let _showDoneS = false, _showDoneR = false;
+  let _coByKt = {}, _coByName = {};   // fyrirtaeki resolver — opnar fyrirtækjasíðuna
+
+  function foldName(s) {
+    return String(s || '').toLowerCase().trim()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/þ/g, 'th').replace(/ð/g, 'd').replace(/æ/g, 'ae').replace(/ö/g, 'o')
+      .replace(/[.,]/g, '').replace(/\s+/g, ' ').trim();
+  }
+  function digits(s) { return String(s || '').replace(/\D/g, ''); }
+  function resolveCo(kt, nafn) {
+    return _coByKt[digits(kt)] || _coByName[foldName(nafn)] || null;
+  }
+  function openCompany(id) {
+    if (window.VidskDetail && VidskDetail.show) return VidskDetail.show(id);
+    if (window.Companies && Companies.openDetail) return Companies.openDetail(id);
+  }
+  function coLink(id, nafn) {
+    return id
+      ? '<a href="#" class="ef-co" data-co="' + id + '" title="Opna fyrirtækjasíðuna">' + esc(nafn) + '</a>'
+      : esc(nafn);
+  }
 
   async function load() {
     const main = document.getElementById('ef-main');
@@ -141,13 +167,24 @@
     if (!SB) { main.innerHTML = '<div class="ef-empty">Engin gagnabankatenging</div>'; return; }
 
     try {
-      const [cr, vr] = await Promise.all([
+      const [cr, vr, fr0] = await Promise.all([
         SB.from('thjonustusamningar').select('*').order('id', { ascending: false }),
         SB.from('service_visits')
           .select('id,customer_nafn,customer_kt,completed_at,started_at,report_url,invoiced_at,dk_invoice_id,technician')
           .not('report_url', 'is', null)
-          .order('id', { ascending: false })
+          .order('id', { ascending: false }),
+        // fyrirtaeki resolver — paged (Supabase caps at 1000/response)
+        (window.DB && DB.fetchAll)
+          ? DB.fetchAll((from, to) => SB.from('fyrirtaeki').select('id,nafn,kennitala').is('deleted_at', null).range(from, to))
+          : SB.from('fyrirtaeki').select('id,nafn,kennitala').is('deleted_at', null).range(0, 999).then(r => r.data || [])
       ]);
+      _coByKt = {}; _coByName = {};
+      (Array.isArray(fr0) ? fr0 : []).forEach(f => {
+        const k = digits(f.kennitala);
+        if (k && _coByKt[k] == null) _coByKt[k] = f.id;
+        const n = foldName(f.nafn);
+        if (n && _coByName[n] == null) _coByName[n] = f.id;
+      });
       _contracts = (cr.data || []);
       if (cr.error) console.warn('[eftirfylgni] samningar:', cr.error.message);
       if (vr.error) console.warn('[eftirfylgni] service_visits:', vr.error.message);
@@ -157,6 +194,7 @@
         key: 'sv:' + v.id,
         date: v.completed_at || v.started_at,
         nafn: v.customer_nafn || v.customer_kt || '—',
+        coId: resolveCo(v.customer_kt, v.customer_nafn),
         sub: 'ÞjónustuVerkstæði' + (v.technician ? ' · ' + v.technician : ''),
         url: v.report_url,
         urlMeta: null,
@@ -185,6 +223,7 @@
             key: 'att:' + f.id,
             date: f.uploaded_at,
             nafn: coNames[+coId] || ('Fyrirtæki #' + coId),
+            coId: +coId || null,
             sub: f.name + (f.year ? ' · ' + f.year : ''),
             url: null,
             urlMeta: f,
@@ -217,11 +256,15 @@
     const cRow = r => {
       const c = r.c, st = r.st;
       const date = c.signed_at || c.created_at;
+      const coId = resolveCo(c.kennitala, c.company_nafn);
+      const pdf = c.photo_url
+        ? ' · <a class="ef-doclink" href="' + esc(c.photo_url) + '" target="_blank" rel="noopener" title="Opna undirritaða samninginn">📄 Samningur</a>'
+        : '';
       return `<tr class="${r.done ? 'ef-done' : ''}" data-cid="${c.id}">
         <td style="white-space:nowrap">${fmtDate(date)}</td>
-        <td><div class="ef-name">${esc(c.company_nafn || '—')}</div>
-            <div class="ef-sub">${esc(c.heimilisfang || '')}${c.kennitala ? ' · kt ' + esc(c.kennitala) : ''}</div></td>
-        <td style="min-width:200px"><input class="ef-note" data-kind="samningar" data-key="${c.id}"
+        <td><div class="ef-name">${coLink(coId, c.company_nafn || '—')}</div>
+            <div class="ef-sub">${esc(c.heimilisfang || '')}${c.kennitala ? ' · kt ' + esc(c.kennitala) : ''}${pdf}</div></td>
+        <td style="min-width:170px"><input class="ef-note" data-kind="samningar" data-key="${c.id}"
             value="${esc(st.note || '')}" placeholder="Áminning — t.d. hringja á undan, hvað á að taka með…"></td>
         <td style="text-align:center" title="${st.done_at ? 'Farið í úttekt ' + fmtDate(st.done_at) : 'Haka við þegar búið er að fara í úttekt'}">
           <input type="checkbox" class="ef-chk" data-kind="samningar" data-key="${c.id}" ${r.done ? 'checked' : ''}></td>
@@ -245,7 +288,7 @@
              title="${st.done_at ? 'Reikningur sendur ' + fmtDate(st.done_at) : 'Haka við þegar reikningur hefur verið sendur'}">`;
       return `<tr class="${r.done ? 'ef-done' : ''}">
         <td style="white-space:nowrap">${fmtDate(rep.date)}</td>
-        <td><div class="ef-name">${esc(rep.nafn)}</div><div class="ef-sub">${esc(rep.sub || '')}</div></td>
+        <td><div class="ef-name">${coLink(rep.coId, rep.nafn)}</div><div class="ef-sub">${esc(rep.sub || '')}</div></td>
         <td>${docCell}</td>
         <td style="text-align:center">${chkCell}</td>
       </tr>`;
@@ -256,6 +299,7 @@
       : `<div class="ef-empty">${emptyMsg}</div>`;
 
     main.innerHTML = `
+      <div class="ef-grid">
       <div class="ef-card">
         <div class="ef-hd">
           <h3>📑 Nýir þjónustusamningar — fara í úttekt</h3>
@@ -281,6 +325,7 @@
         ${_showDoneR && rDone.length
           ? tbl('<th style="width:90px">Dags</th><th>Viðskiptavinur</th><th>Skýrsla</th><th style="width:130px;text-align:center">Reikningur sendur</th>', rDone.map(rRow), '')
           : ''}
+      </div>
       </div>`;
 
     bind(main);
@@ -289,6 +334,11 @@
   function bind(main) {
     const reload = main.querySelector('#ef-reload');
     if (reload) reload.onclick = load;
+
+    // Nafn → fyrirtækjasíðan
+    main.querySelectorAll('a.ef-co').forEach(a => {
+      a.onclick = e => { e.preventDefault(); openCompany(+a.dataset.co); };
+    });
 
     main.querySelectorAll('.ef-toggle').forEach(b => {
       b.onclick = () => {
