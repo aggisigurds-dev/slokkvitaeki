@@ -23,20 +23,25 @@
   const NAV_KEY = 'leidsogn';
   const ROUTE_KEY = '_slokk_route';   // shared with navfix.js
   const GC_KEY    = '_slokk_gc';      // shared geocode cache
-  const LS_FILTER = 'leidsogn_filter'; // all | overdue | this-month | done
-  const LS_MONTH  = 'leidsogn_month';  // 0 = Allir, 1-12 (inspection month)
+  // 2026-06-12: status-chips skipt út fyrir ÁR-chips (Allt / 2024 / 2025 /
+  // 2026 = hvenær síðast var skoðað) og mánuðirnir urðu FJÖLVAL — hægt að
+  // haka við marga mánuði í einu. Gömlu lyklarnir (leidsogn_filter /
+  // leidsogn_month) eru ekki lesnir lengur.
+  const LS_YEAR   = 'leidsogn_year';   // 'all' | '2024' | '2025' | '2026'
+  const LS_MONTHS = 'leidsogn_months'; // csv: "2,3,5" — tómt = allir
 
   // ── State ───────────────────────────────────────────────────────────────
   let _map = null;
   let _markers = {};
   let _leafletLP = null;
   let _state = {
-    filter: localStorage.getItem(LS_FILTER) || 'this-month',
-    month: +localStorage.getItem(LS_MONTH) || 0
+    year: localStorage.getItem(LS_YEAR) || 'all',
+    months: String(localStorage.getItem(LS_MONTHS) || '')
+      .split(',').map(n => +n).filter(n => n >= 1 && n <= 12)
   };
   function saveState() {
-    localStorage.setItem(LS_FILTER, _state.filter);
-    localStorage.setItem(LS_MONTH, _state.month);
+    localStorage.setItem(LS_YEAR, _state.year);
+    localStorage.setItem(LS_MONTHS, _state.months.join(','));
   }
 
   // ── Helpers ─────────────────────────────────────────────────────────────
@@ -156,13 +161,17 @@
     }).filter(Boolean);
   }
 
-  function applyFilter(list) {
-    if (_state.filter === 'all') return list;
-    if (_state.filter === 'overdue') return list.filter(x => x.status.key === 'overdue');
-    if (_state.filter === 'this-month') return list.filter(x => x.status.key === 'duenow' || x.status.key === 'overdue');
-    if (_state.filter === 'done') return list.filter(x => x.status.key === 'done');
-    if (_state.filter === 'scheduled') return list.filter(x => x.status.key === 'scheduled');
-    return list;
+  // Ár-sía: 'all' sýnir allt; annars kúnnar sem voru síðast skoðaðir
+  // (eða teknir út á staðnum) viðkomandi ár. Pinnaliturinn sýnir áfram
+  // stöðuna (útrunnið/þessi mánuður/búið …).
+  function yearOf(ars) {
+    const a = ars || {};
+    return Math.max(+a.last_year_inspected || 0, +a.field_inspected_year || 0);
+  }
+  function applyYear(list) {
+    if (!_state.year || _state.year === 'all') return list;
+    const y = +_state.year;
+    return list.filter(x => yearOf(x.ars) === y);
   }
 
   // ── Map & pins ──────────────────────────────────────────────────────────
@@ -228,7 +237,7 @@
       if (!ars || !ars.equipment) return;
       const status = statusFor(c, ars);
       if ((status.key === 'overdue' || status.key === 'duenow') &&
-          (!_state.month || (+ars.inspect_month || 0) === _state.month)) {
+          (!_state.months.length || _state.months.includes(+ars.inspect_month || 0))) {
         const gc = readGc();
         const coord = gc['__co__:' + c.id] || gc[c.heimilisfang] || gc[c.nafn] || null;
         allDue.push({ co: c, ars, status, coord });
@@ -353,9 +362,9 @@
     // newly-geocoded pin doesn't yank the viewport while the user is looking.
     const fit = !opts || opts.fit !== false;
     clearMarkers();
-    // When a month is picked, show every customer in that month (all statuses);
-    // otherwise honour the status filter chips.
-    const list = _state.month ? applyMonth(getCustomers()) : applyFilter(getCustomers());
+    // Ár-chips og mánaðar-fjölval vinna saman: sía fyrst eftir ári, svo
+    // eftir völdum mánuðum. Tómt val = engin sía.
+    const list = applyMonths(applyYear(getCustomers()));
     list.forEach(item => {
       const m = L.marker([item.coord.lat, item.coord.lng], { icon: makeIcon(item.status.color) }).addTo(_map);
       m.bindPopup(() => makePopupHtml(item));
@@ -401,7 +410,7 @@
     const cos = (window.Companies && Companies.list) || [];
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
     const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
-    const cnt = { all: 0, overdue: 0, 'this-month': 0, done: 0, scheduled: 0 };
+    const cnt = { all: 0, 2024: 0, 2025: 0, 2026: 0 };
     cos.forEach(c => {
       const ars = arsMap[String(c.id)];
       const bru = bruMap[String(c.id)];
@@ -409,14 +418,11 @@
         (window.InServiceClients && window.InServiceClients.has(c.nafn));
       if (!hasContract) return;
       cnt.all++;
-      const status = statusFor(c, ars);
-      if (status.key === 'overdue') { cnt.overdue++; cnt['this-month']++; }
-      else if (status.key === 'duenow') cnt['this-month']++;
-      else if (status.key === 'done') cnt.done++;
-      else if (status.key === 'scheduled') cnt.scheduled++;
+      const y = yearOf(ars);
+      if (cnt[y] != null) cnt[y]++;
     });
     Object.keys(cnt).forEach(k => {
-      const el = document.querySelector('._lds-chip[data-filter="' + k + '"] ._lds-count');
+      const el = document.querySelector('._lds-chip[data-year="' + k + '"] ._lds-count');
       if (el) el.textContent = cnt[k];
     });
   }
@@ -498,10 +504,11 @@
     return route;
   }
 
-  // Filter a customer list down to a chosen inspection month (0 = all).
-  function applyMonth(list) {
-    if (!_state.month) return list;
-    return list.filter(x => (+((x.ars || {}).inspect_month) || 0) === _state.month);
+  // Filter a customer list down to the chosen inspection months (fjölval —
+  // empty selection = all months).
+  function applyMonths(list) {
+    if (!_state.months.length) return list;
+    return list.filter(x => _state.months.includes(+((x.ars || {}).inspect_month) || 0));
   }
 
   // MÁNUÐUR chip row — same look as Fyrirtæki í Þjónustu. Clicking a month
@@ -521,20 +528,30 @@
       const m = +((arsMap[String(c.id)] || {}).inspect_month) || 0;
       if (m >= 1 && m <= 12) counts[m] = (counts[m] || 0) + 1;
     });
+    // 2026-06-12: fjölval — smellur togglar mánuðinn án þess að afvelja hina;
+    // „Allir" hreinsar valið. ✓ sýnir valda mánuði.
     function moBtn(mn, label, cnt) {
-      const sel = _state.month === mn;
+      const sel = mn === 0 ? _state.months.length === 0 : _state.months.includes(mn);
       const has = cnt == null || cnt > 0;
       return '<button data-month="' + mn + '" class="_lds-mo" type="button" style="padding:5px 10px;border:1px solid ' +
         (sel ? '#0f172a' : (has ? '#cbd5e1' : '#e2e8f0')) + ';background:' + (sel ? '#0f172a' : '#fff') +
         ';color:' + (sel ? '#fff' : (has ? '#0f172a' : '#cbd5e1')) + ';border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">' +
-        esc(label) + (cnt ? ' <span style="opacity:.6;font-weight:500">' + cnt + '</span>' : '') + '</button>';
+        (sel && mn !== 0 ? '✓ ' : '') + esc(label) + (cnt ? ' <span style="opacity:.6;font-weight:500">' + cnt + '</span>' : '') + '</button>';
     }
     row.innerHTML =
       '<span style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;padding-right:3px">Mánuður:</span>' +
       moBtn(0, 'Allir', null) +
       MONTHS_IS_SHORT.map((m, i) => moBtn(i + 1, m, counts[i + 1] || 0)).join('');
     row.querySelectorAll('._lds-mo').forEach(b => b.addEventListener('click', () => {
-      _state.month = +b.dataset.month || 0;
+      const mn = +b.dataset.month || 0;
+      if (mn === 0) {
+        _state.months = [];
+      } else if (_state.months.includes(mn)) {
+        _state.months = _state.months.filter(x => x !== mn);
+      } else {
+        _state.months.push(mn);
+        _state.months.sort((a, b) => a - b);
+      }
       saveState();
       renderMonthRow();
       if (_map) renderPins({ fit: true });
@@ -776,17 +793,16 @@
               '<div style="font-size:12.5px;color:#64748b">Smelltu á pinn → bætt á leið → keyra. Engin önnur trufla.</div>' +
             '</div>' +
           '</div>' +
-          // Filter chips
+          // Ár-chips (síðast skoðað): Allt / 2024 / 2025 / 2026
           '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">' +
             [
-              ['this-month',  'Þessi mánuður + útrunnið', '#b45309'],
-              ['overdue',     'Aðeins útrunnið',          '#dc2626'],
-              ['scheduled',   'Á dagskrá síðar',          '#475569'],
-              ['done',        'Búið ' + new Date().getFullYear(), '#1a7f4b'],
-              ['all',         'Allir',                    '#0f172a']
+              ['all',  'Allt',  '#0f172a'],
+              ['2024', '2024',  '#dc2626'],
+              ['2025', '2025',  '#b45309'],
+              ['2026', '2026',  '#1a7f4b']
             ].map(([k, lbl, color]) => {
-              const sel = _state.filter === k;
-              return '<button data-filter="' + k + '" class="_lds-chip" type="button" style="padding:6px 11px;border:1px solid ' + (sel?'#0f172a':'#cbd5e1') + ';background:' + (sel?'#0f172a':'#fff') + ';color:' + (sel?'#fff':'#475569') + ';border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:' + color + ';display:inline-block"></span>' + esc(lbl) + ' <span class="_lds-count" style="opacity:.7;font-weight:500">·</span></button>';
+              const sel = _state.year === k;
+              return '<button data-year="' + k + '" class="_lds-chip" type="button" style="padding:6px 11px;border:1px solid ' + (sel?'#0f172a':'#cbd5e1') + ';background:' + (sel?'#0f172a':'#fff') + ';color:' + (sel?'#fff':'#475569') + ';border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:' + color + ';display:inline-block"></span>' + esc(lbl) + ' <span class="_lds-count" style="opacity:.7;font-weight:500">·</span></button>';
             }).join('') +
           '</div>' +
           // Month-chip row (same format as Fyrirtæki í Þjónustu) — filters the
@@ -799,9 +815,9 @@
           '<div id="_lds-due-panel" style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"></div>' +
           '<div id="_lds-route-panel" style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"></div>' +
         '</div>';
-      // Wire filter chips
+      // Wire year chips
       main.querySelectorAll('._lds-chip').forEach(b => b.addEventListener('click', () => {
-        _state.filter = b.dataset.filter;
+        _state.year = b.dataset.year || 'all';
         saveState();
         show(); // re-render
       }));

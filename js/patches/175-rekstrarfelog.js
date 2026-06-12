@@ -117,7 +117,8 @@
   function _todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
 
   // ---- view rendering ----
-  var _state={ q:'', mode:'firms', fltr:'all' };
+  // sortKey/'sortDir': röðun yfirlitstöflunnar — '' = sjálfgefin (félag+bygging)
+  var _state={ q:'', mode:'firms', fltr:'all', sortKey:'', sortDir:1 };
   function viewEl(){ return document.getElementById('view-rekstrarfelog'); }
 
   async function renderView(){
@@ -215,7 +216,30 @@
       if(q && !(r.firm.toLowerCase().indexOf(q)>=0 || (r.b.nafn||'').toLowerCase().indexOf(q)>=0 || digits(r.b.kt).indexOf(q.replace(/\D/g,''))>=0)) return false;
       if(f==='done')return r.s.cls==='done'; if(f==='need')return r.s.cls==='need'; if(f==='none')return r.s.cls==='none'; if(f==='overdue')return r.s.overdue; return true;
     });
-    rows.sort(function(a,b){ if(a.firm!==b.firm)return a.firm<b.firm?-1:1; return (a.b.nafn||'')<(b.b.nafn||'')?-1:1; });
+    // 2026-06-12 (Todoist): smellt á dálkhaus raðar eftir honum (▲/▼ togglar);
+    // án vals gildir gamla röðunin félag → bygging.
+    function sortVal(r,k){
+      switch(k){
+        case 'firm':  return r.firm||'';
+        case 'byg':   return r.b.nafn||'';
+        case 'kt':    return digits(r.b.kt)||'';
+        case 'taeki': return +r.s.units||0;
+        case 'y23':   return (r.s.d23?1:0)*100000+(+r.s.units||0);
+        case 'y24':   return (r.s.d24?1:0)*100000+(+r.s.units||0);
+        case 'y25':   return (r.s.d25?1:0)*100000+(+r.s.units||0);
+        case 'y26':   return (r.s.d26?1:0)*100000+(+r.s.units||0);
+        case 'next':  return r.s.next||'9999-12-31';
+        default: return '';
+      }
+    }
+    rows.sort(function(a,b){
+      if(_state.sortKey){
+        var va=sortVal(a,_state.sortKey), vb=sortVal(b,_state.sortKey);
+        var c = (typeof va==='number' && typeof vb==='number') ? (va-vb) : String(va).localeCompare(String(vb),'is');
+        if(c!==0) return c*_state.sortDir;
+      }
+      if(a.firm!==b.firm)return a.firm<b.firm?-1:1; return (a.b.nafn||'')<(b.b.nafn||'')?-1:1;
+    });
     var totHtml='<div class="_ovr-totals" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
       '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 14px;font-size:13px"><b>'+firms+'</b> félög · <b>'+tot.byg+'</b> byggingar</div>'+
       '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 14px;font-size:13px;color:#15803d">✓ <b>'+tot.done+'</b> með úttekt 2026</div>'+
@@ -242,16 +266,27 @@
     if(!trs) trs='<tr><td colspan="9" style="padding:16px;text-align:center;color:#94a3b8">Ekkert fannst.</td></tr>';
     box.innerHTML='<div class="noprint" style="display:flex;justify-content:flex-end;margin-bottom:8px"><button id="_rf_print" style="padding:7px 13px;border:1px solid #0f172a;background:#0f172a;color:#fff;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">🖨 Prenta skýrslu</button></div>'+totHtml+chips+
       '<div style="overflow-x:auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'+
-      '<th style="text-align:left;color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">Rekstrarfélag</th>'+
-      '<th style="text-align:left;color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">Bygging</th>'+
-      '<th style="text-align:left;color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">Kennitala</th>'+
-      '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">Tæki</th>'+
-      '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">2023</th>'+
-      '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">2024</th>'+
-      '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">2025</th>'+
-      '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 4px;border-bottom:1px solid #eef1f5">2026</th>'+
-      '<th style="text-align:center;color:#64748b;font-size:12px;padding:8px 6px;border-bottom:1px solid #eef1f5">Næsta skoðun</th>'+
+      sth('firm','Rekstrarfélag','left','6px')+
+      sth('byg','Bygging','left','6px')+
+      sth('kt','Kennitala','left','6px')+
+      sth('taeki','Tæki','center','4px')+
+      sth('y23','2023','center','4px')+
+      sth('y24','2024','center','4px')+
+      sth('y25','2025','center','4px')+
+      sth('y26','2026','center','4px')+
+      sth('next','Næsta skoðun','center','6px')+
       '</tr></thead><tbody>'+trs+'</tbody></table></div>';
+    function sth(k,label,align,pad){
+      var on=_state.sortKey===k;
+      var arrow=on?(_state.sortDir===1?' ▲':' ▼'):'';
+      return '<th class="_rf_sth" data-k="'+k+'" title="Raða eftir '+esc(label)+'" style="text-align:'+align+';color:'+(on?'#0f172a':'#64748b')+';font-size:12px;padding:8px '+pad+';border-bottom:1px solid #eef1f5;cursor:pointer;user-select:none;white-space:nowrap">'+esc(label)+arrow+'</th>';
+    }
+    box.querySelectorAll('._rf_sth').forEach(function(h){ h.addEventListener('click', function(){
+      var k=h.getAttribute('data-k');
+      if(_state.sortKey===k){ if(_state.sortDir===1){ _state.sortDir=-1; } else { _state.sortKey=''; _state.sortDir=1; } }
+      else { _state.sortKey=k; _state.sortDir=1; }
+      renderOverview();
+    }); });
     box.querySelectorAll('._rf_fchip').forEach(function(c){ c.addEventListener('click', function(){ _state.fltr=c.getAttribute('data-f'); renderOverview(); }); });
     box.querySelectorAll('._rf_open').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); openCompany(a.getAttribute('data-coid')); }); });
     var _pb=box.querySelector('#_rf_print'); if(_pb) _pb.onclick=function(){ if(window.SlokkPrint) window.SlokkPrint('Rekstrarfélög — byggingar og úttektir', box); };

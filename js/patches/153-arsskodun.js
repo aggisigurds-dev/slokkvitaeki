@@ -1527,7 +1527,9 @@
   }
 
   // Expose for debugging
-  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, version: 'v1' };
+  // loadAll exported 2026-06-12 so ÞjónustuVerkstæði (patch 190) can pull the
+  // same live equipment counts + estimated yearly revenue per company.
+  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, version: 'v1' };
 
   // Keep the cached priority in sync when the ❗ control is cycled (patch 175),
   // so sorting by ❗ stays correct. The ❗ button updates itself in place — no
