@@ -164,6 +164,24 @@
     }).filter(Boolean);
   }
 
+  // Same as getCustomers but KEEPS rows without a geocode (coord:null) — used
+  // by the "Eftir að skoða" box so a filtered selection lists every matching
+  // customer, geocoded or not (un-geocoded ones get the 📍 Setja button).
+  function buildAllWithStatus() {
+    const cos = (window.Companies && Companies.list) || [];
+    const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
+    const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
+    const gc = readGc();
+    return cos.map(c => {
+      const ars = arsMap[String(c.id)];
+      const bru = bruMap[String(c.id)];
+      const hasContract = (ars && ars.equipment) || !!bru ||
+        (window.InServiceClients && window.InServiceClients.has(c.nafn));
+      if (!hasContract) return null;
+      return { co: c, ars: ars || {}, bru: bru || {}, coord: lookupCoord(gc, c), status: statusFor(c, ars) };
+    }).filter(Boolean);
+  }
+
   // Ár-sía: 'all' sýnir allt; annars kúnnar sem voru síðast skoðaðir
   // (eða teknir út á staðnum) viðkomandi ár. Pinnaliturinn sýnir áfram
   // stöðuna (útrunnið/þessi mánuður/búið …).
@@ -239,30 +257,6 @@
   function renderDueList() {
     const panel = document.getElementById('_lds-due-panel');
     if (!panel) return;
-    const all = getCustomers();  // already filtered to contract customers w/ coords
-    // Pull contract customers WITHOUT coords too, so the list doesn't
-    // silently hide overdue work for un-geocoded addresses.
-    const cos = (window.Companies && Companies.list) || [];
-    const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
-    const allDue = [];
-    cos.forEach(c => {
-      const ars = arsMap[String(c.id)];
-      if (!ars || !ars.equipment) return;
-      const status = statusFor(c, ars);
-      if ((status.key === 'overdue' || status.key === 'duenow') &&
-          (!_state.months.length || _state.months.includes(+ars.inspect_month || 0))) {
-        const gc = readGc();
-        const coord = gc['__co__:' + c.id] || gc[c.heimilisfang] || gc[c.nafn] || null;
-        allDue.push({ co: c, ars, status, coord });
-      }
-    });
-    // Group: overdue first (sorted by month — earliest month = most overdue),
-    // then duenow (this month).
-    const overdue = allDue.filter(x => x.status.key === 'overdue')
-      .sort((a, b) => (+a.ars.inspect_month || 0) - (+b.ars.inspect_month || 0)
-                    || String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
-    const duenow = allDue.filter(x => x.status.key === 'duenow')
-      .sort((a, b) => String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
 
     const route = readRoute();
     const inRoute = new Set(route.map(r => String(r.id)));
@@ -309,29 +303,94 @@
       );
     }
 
-    if (!overdue.length && !duenow.length) {
+    // 2026-06-12 (Todoist): when any filter chip is active (ár / flokkur /
+    // mánuðir) the box mirrors that filtered selection — every matching
+    // customer with a ➕ Bæta á leið takka — instead of only Útrunnið/Þessi
+    // mánuður. No filter → the original due-now/overdue view.
+    const hasFilter = _state.year !== 'all' || _state.flokkur !== 'all' || _state.months.length > 0;
+
+    if (hasFilter) {
+      const list = applyMonths(applyFlokkur(applyYear(buildAllWithStatus())));
+      const ORD = { overdue: 0, duenow: 1, scheduled: 2, in_progress: 3, done: 4, unknown: 5 };
+      list.sort((a, b) =>
+        ((ORD[a.status.key] != null ? ORD[a.status.key] : 9) - (ORD[b.status.key] != null ? ORD[b.status.key] : 9))
+        || ((+a.ars.inspect_month || 0) - (+b.ars.inspect_month || 0))
+        || String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
+      const lblParts = [];
+      if (_state.year !== 'all') lblParts.push(_state.year);
+      if (_state.flokkur !== 'all') lblParts.push({ klarad: '✅ Klárað', oklarad: '⏳ Óklárað', aridandi: '🚩 Áríðandi' }[_state.flokkur]);
+      if (_state.months.length) lblParts.push(_state.months.slice().sort((a, b) => a - b).map(m => MONTHS_IS_SHORT[m - 1]).join(', '));
+      const filterLabel = lblParts.join(' · ') || 'Sía';
+      const noCoord = list.filter(x => !x.coord).length;
       panel.innerHTML =
-        '<div style="padding:18px;text-align:center;color:#94a3b8;font-size:13px">' +
-          '✅ Allir samningar í lagi þennan mánuðinn.' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 14px;background:#0f172a;color:#fff">' +
+          '<div style="font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px;min-width:0">' +
+            '<span style="flex-shrink:0">🔎 Sía</span>' +
+            '<span style="font-weight:600;color:#cbd5e1;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(filterLabel) + '</span>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">' +
+            '<span style="font-size:11px;color:#cbd5e1;font-weight:600;white-space:nowrap">' + list.length + ' staðir' + (noCoord ? ' · ' + noCoord + ' án hnita' : '') + '</span>' +
+            '<button id="_lds-clearfilter" type="button" title="Hreinsa síu" style="padding:3px 9px;background:#1e293b;color:#fff;border:1px solid #334155;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">✕ Hreinsa</button>' +
+          '</div>' +
+        '</div>' +
+        (list.length
+          ? '<div style="max-height:420px;overflow-y:auto">' + list.map(rowHtml).join('') + '</div>'
+          : '<div style="padding:18px;text-align:center;color:#94a3b8;font-size:13px">Engir staðir passa við síuna.</div>');
+    } else {
+      // Default (engin sía): Útrunnið + Þessi mánuður, eins og áður. Tekur líka
+      // með kúnna án hnita svo útrunnin vinna feli sig ekki.
+      const cos = (window.Companies && Companies.list) || [];
+      const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
+      const gc = readGc();
+      const allDue = [];
+      cos.forEach(c => {
+        const ars = arsMap[String(c.id)];
+        if (!ars || !ars.equipment) return;
+        const status = statusFor(c, ars);
+        if (status.key === 'overdue' || status.key === 'duenow') {
+          const coord = gc['__co__:' + c.id] || gc[c.heimilisfang] || gc[c.nafn] || null;
+          allDue.push({ co: c, ars, status, coord });
+        }
+      });
+      const overdue = allDue.filter(x => x.status.key === 'overdue')
+        .sort((a, b) => (+a.ars.inspect_month || 0) - (+b.ars.inspect_month || 0)
+                      || String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
+      const duenow = allDue.filter(x => x.status.key === 'duenow')
+        .sort((a, b) => String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
+
+      if (!overdue.length && !duenow.length) {
+        panel.innerHTML =
+          '<div style="padding:18px;text-align:center;color:#94a3b8;font-size:13px">' +
+            '✅ Allir samningar í lagi þennan mánuðinn.' +
+          '</div>';
+        return;
+      }
+
+      panel.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:#0f172a;color:#fff">' +
+          '<div style="font-weight:700;font-size:13px">⏰ Eftir að skoða</div>' +
+          '<div style="font-size:11px;color:#cbd5e1;font-weight:600">' +
+            (overdue.length ? overdue.length + ' útrunnið' : '') +
+            (overdue.length && duenow.length ? ' · ' : '') +
+            (duenow.length ? duenow.length + ' þessi mánuður' : '') +
+          '</div>' +
+        '</div>' +
+        '<div style="max-height:420px;overflow-y:auto">' +
+          groupHtml('Útrunnið', overdue, '#b91c1c', '#fef2f2') +
+          groupHtml('Þessi mánuður', duenow, '#92400e', '#fffbeb') +
         '</div>';
-      return;
     }
 
-    panel.innerHTML =
-      '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 14px;background:#0f172a;color:#fff">' +
-        '<div style="font-weight:700;font-size:13px">⏰ Eftir að skoða</div>' +
-        '<div style="font-size:11px;color:#cbd5e1;font-weight:600">' +
-          (overdue.length ? overdue.length + ' útrunnið' : '') +
-          (overdue.length && duenow.length ? ' · ' : '') +
-          (duenow.length ? duenow.length + ' þessi mánuður' : '') +
-        '</div>' +
-      '</div>' +
-      '<div style="max-height:420px;overflow-y:auto">' +
-        groupHtml('Útrunnið', overdue, '#b91c1c', '#fef2f2') +
-        groupHtml('Þessi mánuður', duenow, '#92400e', '#fffbeb') +
-      '</div>';
-
     // Wire interactions
+    const clearBtn = document.getElementById('_lds-clearfilter');
+    if (clearBtn) clearBtn.addEventListener('click', () => {
+      _state.year = 'all'; _state.flokkur = 'all'; _state.months = [];
+      saveState();
+      renderFilterChips();
+      renderMonthRow();
+      if (_map) renderPins({ fit: true });
+      renderDueList();
+    });
     panel.querySelectorAll('._lds-due-row').forEach(row => {
       row.addEventListener('click', e => {
         if (e.target.closest('button')) return;
@@ -814,27 +873,9 @@
               '<div style="font-size:12.5px;color:#64748b">Smelltu á pinn → bætt á leið → keyra. Engin önnur trufla.</div>' +
             '</div>' +
           '</div>' +
-          // Ár-chips (síðast skoðað): Allt / 2024 / 2025 / 2026
-          '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">' +
-            [
-              ['all',  'Allt',  '#0f172a'],
-              ['2024', '2024',  '#dc2626'],
-              ['2025', '2025',  '#b45309'],
-              ['2026', '2026',  '#1a7f4b']
-            ].map(([k, lbl, color]) => {
-              const sel = _state.year === k;
-              return '<button data-year="' + k + '" class="_lds-chip" type="button" style="padding:6px 11px;border:1px solid ' + (sel?'#0f172a':'#cbd5e1') + ';background:' + (sel?'#0f172a':'#fff') + ';color:' + (sel?'#fff':'#475569') + ';border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:' + color + ';display:inline-block"></span>' + esc(lbl) + ' <span class="_lds-count" style="opacity:.7;font-weight:500">·</span></button>';
-            }).join('') +
-            '<span style="width:1px;align-self:stretch;background:#e2e8f0;margin:0 4px"></span>' +
-            [
-              ['klarad',   '✅ Klárað'],
-              ['oklarad',  '⏳ Óklárað'],
-              ['aridandi', '🚩 Áríðandi']
-            ].map(([k, lbl]) => {
-              const sel = _state.flokkur === k;
-              return '<button data-flokk="' + k + '" class="_lds-chip" type="button" title="Smelltu aftur til að hreinsa" style="padding:6px 11px;border:1px solid ' + (sel?'#0f172a':'#cbd5e1') + ';background:' + (sel?'#0f172a':'#fff') + ';color:' + (sel?'#fff':'#475569') + ';border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">' + esc(lbl) + ' <span class="_lds-count" style="opacity:.7;font-weight:500">·</span></button>';
-            }).join('') +
-          '</div>' +
+          // Filter chips (ár + flokkur) — populated/restyled by renderFilterChips()
+          // on every show() so the selected chip lights up when clicked.
+          '<div id="_lds-chip-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;align-items:center"></div>' +
           // Month-chip row (same format as Fyrirtæki í Þjónustu) — filters the
           // map by inspection month. Populated by renderMonthRow().
           '<div id="_lds-month-row" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px;align-items:center"></div>' +
@@ -845,18 +886,8 @@
           '<div id="_lds-due-panel" style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"></div>' +
           '<div id="_lds-route-panel" style="margin-top:12px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden"></div>' +
         '</div>';
-      // Wire year + flokkur chips
-      main.querySelectorAll('._lds-chip').forEach(b => b.addEventListener('click', () => {
-        if (b.dataset.flokk) {
-          // toggle: smellt aftur á valinn flokk hreinsar hann
-          _state.flokkur = _state.flokkur === b.dataset.flokk ? 'all' : b.dataset.flokk;
-        } else {
-          _state.year = b.dataset.year || 'all';
-        }
-        saveState();
-        show(); // re-render
-      }));
     }
+    renderFilterChips();
     // Build the Leaflet map (lazy)
     const canvas = document.getElementById('_lds-mapcanvas');
     if (canvas && !_map) {
@@ -880,6 +911,7 @@
     }
     setTimeout(() => {
       try { _map && _map.invalidateSize(); } catch (_) {}
+      renderFilterChips();
       renderPins();
       renderDueList();
       renderRoutePanel();
@@ -887,6 +919,46 @@
       renderMonthRow();
     }, 100);
     hookPopupDelegate();
+  }
+
+  // ── Filter chip bar (ár + flokkur) — re-rendered each show() so the
+  //    selected chip lights up immediately when clicked (Todoist fix). ──────
+  function renderFilterChips() {
+    const row = document.getElementById('_lds-chip-row');
+    if (!row) return;
+    const yearChips = [
+      ['all',  'Allt',  '#0f172a'],
+      ['2024', '2024',  '#dc2626'],
+      ['2025', '2025',  '#b45309'],
+      ['2026', '2026',  '#1a7f4b']
+    ].map(([k, lbl, color]) => {
+      const sel = _state.year === k;
+      return '<button data-year="' + k + '" class="_lds-chip" type="button" style="padding:6px 11px;border:1px solid ' + (sel?'#0f172a':'#cbd5e1') + ';background:' + (sel?'#0f172a':'#fff') + ';color:' + (sel?'#fff':'#475569') + ';border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:' + color + ';display:inline-block"></span>' + esc(lbl) + ' <span class="_lds-count" style="opacity:.7;font-weight:500">·</span></button>';
+    }).join('');
+    const flokkChips = [
+      ['klarad',   '✅ Klárað'],
+      ['oklarad',  '⏳ Óklárað'],
+      ['aridandi', '🚩 Áríðandi']
+    ].map(([k, lbl]) => {
+      const sel = _state.flokkur === k;
+      return '<button data-flokk="' + k + '" class="_lds-chip" type="button" title="Smelltu aftur til að hreinsa" style="padding:6px 11px;border:1px solid ' + (sel?'#0f172a':'#cbd5e1') + ';background:' + (sel?'#0f172a':'#fff') + ';color:' + (sel?'#fff':'#475569') + ';border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">' + esc(lbl) + ' <span class="_lds-count" style="opacity:.7;font-weight:500">·</span></button>';
+    }).join('');
+    row.innerHTML = yearChips +
+      '<span style="width:1px;align-self:stretch;background:#e2e8f0;margin:0 4px"></span>' +
+      flokkChips;
+    row.querySelectorAll('._lds-chip').forEach(b => b.addEventListener('click', () => {
+      if (b.dataset.flokk) {
+        // toggle: smellt aftur á valinn flokk hreinsar hann
+        _state.flokkur = _state.flokkur === b.dataset.flokk ? 'all' : b.dataset.flokk;
+      } else {
+        _state.year = b.dataset.year || 'all';
+      }
+      saveState();
+      renderFilterChips();          // restyle selected chip immediately
+      if (_map) renderPins({ fit: true });
+      renderDueList();              // box mirrors the active filter
+    }));
+    updateChipCounts();
   }
 
   // ── Boot ────────────────────────────────────────────────────────────────
