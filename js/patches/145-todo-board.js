@@ -86,7 +86,8 @@
     // 2026-05-21: dim-amber to match Verkdagbók + Þjónustuverk (same cluster).
     // Was a bright solid gradient that visually screamed louder than the
     // other top-level tabs. z-index protects the click area from any overlay.
-    btn.style.cssText = 'background:linear-gradient(135deg,rgba(245,158,11,0.22),rgba(217,119,6,0.18)) !important;color:#fde68a !important;font-weight:700;border:none !important;position:relative;z-index:5';
+    // 2026-06-12 (Todoist): tók út amber-tintinn svo flipinn líti eins út og hinir.
+    btn.style.cssText = 'position:relative;z-index:5';
     btn.innerHTML = '<span style="margin-right:6px">📋</span>Verkefni <span class="_tb-count" style="display:none;margin-left:6px;background:#fff;color:#92400e;font-size:10px;font-weight:800;padding:1px 7px;border-radius:99px"></span>';
     btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); open(); });
     // Insert AFTER the anchor (Verkdagbók) — i.e. before its nextSibling
