@@ -111,7 +111,13 @@
         var c=_compact(name); if(comp[c])return comp[c];
         var s=_streetnum(name); if(s&&street[s])return street[s]; return null; } };
       return _equip;
-    })();
+    })().catch(function(e){
+      // 2026-06-12: höfnuð promise sat áður föst í cache-inu — hver einasta
+      // útvíkkun eftir það strandaði á „Hleð…". Hreinsa svo retry virki.
+      console.warn('[rekstrarfelog] equip index', e);
+      _equipPromise=null;
+      return { match:function(){return null;} };
+    });
     return _equipPromise;
   }
   function _todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
@@ -308,25 +314,55 @@
       card.style.cssText='background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(16,24,40,.04)';
       var emails=(info.emails||[]).map(function(e){return '<a href="mailto:'+esc(e)+'" style="color:#2563eb;text-decoration:none">'+esc(e)+'</a>';}).join(' · ');
       var ktLine=info.kt?('<span style="color:#475569">🆔 '+esc(fmtKt(info.kt))+'</span> &nbsp;·&nbsp; '):'';
+      var extraLine=(info.simi||info.tengilidur)
+        ? '<div style="font-size:12.5px;color:#64748b;margin-top:2px">'+(info.simi?'📞 '+esc(info.simi):'')+(info.simi&&info.tengilidur?' &nbsp;·&nbsp; ':'')+(info.tengilidur?'👤 '+esc(info.tengilidur):'')+'</div>'
+        : '';
       card.innerHTML=
         '<div class="_rf_head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;cursor:pointer">'+
           '<div><div style="font-size:17px;font-weight:700">'+esc(name)+'</div>'+
-          '<div class="_rf_emailline" style="font-size:13px;color:#64748b;margin-top:3px">'+ktLine+'📧 '+(emails||'—')+(info.domain?' &nbsp;·&nbsp; '+esc(info.domain):'')+'</div></div>'+
+          '<div class="_rf_emailline" style="font-size:13px;color:#64748b;margin-top:3px">'+ktLine+'📧 '+(emails||'—')+(info.domain?' &nbsp;·&nbsp; '+esc(info.domain):'')+'</div>'+extraLine+'</div>'+
           '<div style="flex:none;background:#eef4ff;color:#2563eb;border-radius:20px;padding:4px 12px;font-size:13px;font-weight:700;white-space:nowrap">'+blds.length+' byggingar</div>'+
         '</div>'+
+        // 2026-06-12 (Todoist): athugasemd beint á borðanum — vistast sjálfkrafa
+        '<input class="_rf_note" value="'+esc(info.notes||'')+'" placeholder="Athugasemd um rekstraraðilann — vistast sjálfkrafa" '+
+          'style="display:block;width:100%;max-width:640px;margin-top:8px;padding:6px 9px;border:1px solid #e2e8f0;border-radius:7px;font:inherit;font-size:12.5px;background:#fffef5;box-sizing:border-box">'+
         '<div class="_rf_toggle" style="font-size:12.5px;color:#2563eb;font-weight:600;margin-top:8px;cursor:pointer">Sjá nánar ▾</div>'+
         '<div class="_rf_body" style="display:none;margin-top:12px;border-top:1px solid #eef1f5;padding-top:10px"></div>';
       var body=card.querySelector('._rf_body');
       function flip(){ var open=body.style.display==='none'; body.style.display=open?'':'none'; card.querySelector('._rf_toggle').textContent=open?'Fela ▴':'Sjá nánar ▾'; if(open) fillBody(body,name,info); }
       card.querySelector('._rf_head').addEventListener('click',flip);
       card.querySelector('._rf_toggle').addEventListener('click',flip);
+      var noteInp=card.querySelector('._rf_note');
+      noteInp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); noteInp.blur(); } });
+      noteInp.addEventListener('blur',async function(){
+        var val=noteInp.value.trim();
+        var d=getData(); if(!d[name]) d[name]=info;
+        if((d[name].notes||'')===val) return;
+        d[name].notes=val; info.notes=val;
+        await saveData(d);
+        if(window.Toast&&Toast.show) Toast.show('✓ Vistað');
+      });
       box.appendChild(card);
     });
     if(!shown) box.innerHTML='<div style="color:#64748b;padding:16px">Ekkert fannst.</div>';
   }
 
+  // 2026-06-12 (Todoist „wont open"): fillBody gat strandað á „Hleð…" að
+  // eilífu ef eitthvað í samsetningunni kastaði (equip-index, skjalalisti,
+  // gölluð byggingarröð). Nú: try/catch utan um allt + ↺ Reyna aftur.
   async function fillBody(body, name, info){
     body.innerHTML='<div style="color:#94a3b8;font-size:13px">Hleð…</div>';
+    try {
+      await _fillBodyInner(body, name, info);
+    } catch (e) {
+      console.warn('[rekstrarfelog] fillBody', e);
+      body.innerHTML='<div style="color:#b91c1c;font-size:13px;padding:6px 0">⚠ Villa við að hlaða: '+esc((e&&e.message)||String(e))+
+        ' <button class="_rf_retry" type="button" style="margin-left:8px;padding:4px 10px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;cursor:pointer;font:inherit;font-size:12px">↺ Reyna aftur</button></div>';
+      var rb=body.querySelector('._rf_retry');
+      if(rb) rb.onclick=function(){ fillBody(body,name,info); };
+    }
+  }
+  async function _fillBodyInner(body, name, info){
     var blds=info.buildings||[];
     var equip=await getEquipIndex();
     var attMap={}; try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; } }catch(e){}
@@ -391,7 +427,8 @@
       (nNeed?'<span style="color:#b7791f;font-weight:600">⏳ '+nNeed+' vantar 2026</span>':'')+
       (nNone?'<span style="color:#b45309;font-weight:600">⚠ '+nNone+' engin gögn</span>':'')+
       (nOverdue?'<span style="color:#b91c1c;font-weight:600">⏰ '+nOverdue+' skoðun liðin</span>':'')+'</div>';
-    var docs=await listFirmDocs(name);
+    var docs=[];
+    try{ docs=(await listFirmDocs(name))||[]; }catch(e){ console.warn('[rekstrarfelog] docs',e); }
     var docHtml=docs.length? docs.map(function(d){
       var nm=d.name||d.file||'skjal'; var url=d.drive_url||d.url||'#';
       return '<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;border-bottom:1px solid #f1f5f9;font-size:13px">'+
@@ -410,12 +447,17 @@
         '<div class="_rf_info_view" style="font-size:13px;color:#334155;line-height:1.6">'+
           '<div><b>Kennitala:</b> '+(info.kt?esc(fmtKt(info.kt)):'—')+'</div>'+
           '<div><b>Netföng:</b> '+(emails||'—')+(info.domain?' &nbsp;·&nbsp; <span style="color:#64748b">'+esc(info.domain)+'</span>':'')+'</div>'+
+          '<div><b>Sími:</b> '+(info.simi?esc(info.simi):'—')+' &nbsp;·&nbsp; <b>Tengiliður:</b> '+(info.tengilidur?esc(info.tengilidur):'—')+'</div>'+
           '<div style="margin-top:4px"><b>Athugasemdir:</b><div style="white-space:pre-wrap;color:#475569;margin-top:2px">'+(info.notes?esc(info.notes):'—')+'</div></div>'+
         '</div>'+
         '<div class="_rf_info_form" style="display:none">'+
           '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
             '<label style="flex:1;min-width:150px;font-size:12px;color:#475569">Kennitala<input class="_rf_f_kt" value="'+esc(info.kt||'')+'" placeholder="000000-0000" style="'+inS+'"></label>'+
             '<label style="flex:1;min-width:150px;font-size:12px;color:#475569">Lén<input class="_rf_f_domain" value="'+esc(info.domain||'')+'" placeholder="domain.is" style="'+inS+'"></label>'+
+          '</div>'+
+          '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
+            '<label style="flex:1;min-width:150px;font-size:12px;color:#475569">Sími<input class="_rf_f_simi" value="'+esc(info.simi||'')+'" placeholder="555-0000" style="'+inS+'"></label>'+
+            '<label style="flex:1;min-width:150px;font-size:12px;color:#475569">Tengiliður<input class="_rf_f_tengil" value="'+esc(info.tengilidur||'')+'" placeholder="Nafn tengiliðar" style="'+inS+'"></label>'+
           '</div>'+
           '<label style="display:block;font-size:12px;color:#475569;margin-bottom:8px">Netföng (aðgreind með kommu)<input class="_rf_f_emails" value="'+esc(fEmails)+'" placeholder="reikningar@... , umsjon@..." style="'+inS+'"></label>'+
           '<label style="display:block;font-size:12px;color:#475569;margin-bottom:8px">Athugasemdir / viðbótargögn<textarea class="_rf_f_notes" rows="4" style="'+inS+';resize:vertical">'+esc(info.notes||'')+'</textarea></label>'+
@@ -468,14 +510,18 @@
     if(infoSave) infoSave.addEventListener('click', async function(){
       var kt=(body.querySelector('._rf_f_kt').value||'').trim();
       var domain=(body.querySelector('._rf_f_domain').value||'').trim();
+      var simi=(body.querySelector('._rf_f_simi').value||'').trim();
+      var tengil=(body.querySelector('._rf_f_tengil').value||'').trim();
       var emailsRaw=(body.querySelector('._rf_f_emails').value||'').trim();
       var notes=(body.querySelector('._rf_f_notes').value||'');
       var emailsArr=emailsRaw?emailsRaw.split(/[,;\n]+/).map(function(s){return s.trim();}).filter(Boolean):[];
       infoSave.disabled=true; infoSave.textContent='Vista…';
       var d=getData(); if(!d[name]) d[name]=info;
       d[name].kt=kt; d[name].domain=domain; d[name].emails=emailsArr; d[name].notes=notes;
+      d[name].simi=simi; d[name].tengilidur=tengil;
       try{ await saveData(d); }catch(e){}
       info.kt=kt; info.domain=domain; info.emails=emailsArr; info.notes=notes;
+      info.simi=simi; info.tengilidur=tengil;
       if(window.Toast&&Toast.show) Toast.show('✓ Upplýsingar vistaðar');
       fillBody(body,name,info); // re-render with the new values
     });
