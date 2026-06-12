@@ -109,6 +109,11 @@ solur            25+ sales as of 2026-05-01
                  (id, num, starfsmadur, customer_nafn, customer_id, linur (JSON),
                   upphaed_an_vsk, vsk_upphaed, afslattur, samtals, greitt_med,
                   athugasemdir, created_at)
+                 NB `afslattur`: since 2026-06-12 the POS kr-discount comes off
+                 the FINAL price m. vsk (5.200 − 200 = 5.000) and `afslattur`
+                 stores that m.vsk saved amount; pre-2026-06-12 rows stored the
+                 ex-VAT kr value. SalaInvoice.renderFromSale auto-detects per
+                 row by checking which interpretation reproduces `samtals`.
 sala_transactions  32 rows; older sales-tracking table
                    (id, customer, kennitala, items, total, type, status,
                     invoice_amount, paid_at, notes, created_at)

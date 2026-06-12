@@ -379,8 +379,10 @@
         invoiceNum: cart.invoiceNum || '', // assigned by DB trigger on save
         // 2026-05-18: pass discount explicitly so it appears on the printed
         // receipt even if POS.getState() is unavailable or stale at render time.
+        // 2026-06-12: the POS kr discount is m. vsk (off the final price).
         discount_pct: cart.discount_pct || 0,
-        discount:     cart.discount     || 0
+        discount:     cart.discount     || 0,
+        discount_gross: true
       });
       if (ok) return;
     }

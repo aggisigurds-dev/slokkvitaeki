@@ -213,12 +213,27 @@
     // Apply discount: % first, then absolute kr. Both clamp at zero. The
     // discount is split across VSK rates proportionally so the breakdown
     // (e.g. "Sala með 24% Vsk") reflects the post-discount amounts.
+    // 2026-06-12: two semantics for the absolute kr discount —
+    //   legacy (default):          abs comes off the ex-VAT subtotal
+    //   opts.discount_gross=true:  abs comes off the FINAL price m. vsk, so
+    //   the bottom line lands on a round number (5.200 − 200 = 5.000). The
+    //   POS stores new sales this way; renderFromSale auto-detects per row.
     const pct = Math.max(0, Math.min(100, parseFloat(opts && opts.discount_pct) || 0));
     const abs = Math.max(0, parseFloat(opts && opts.discount) || 0);
     const pctDiscEx = rawEx * pct / 100;
-    const totalDiscEx = Math.min(rawEx, pctDiscEx + abs);
-    const subEx = Math.max(0, rawEx - totalDiscEx);
-    const factor = rawEx > 0 ? subEx / rawEx : 1;
+    const grossMode = !!(opts && opts.discount_gross);
+    let factor;
+    if (grossMode) {
+      const f1 = rawEx > 0 ? Math.max(0, rawEx - pctDiscEx) / rawEx : 1;
+      const grossAfterPct = (rawEx + rawVsk) * f1;
+      const f2 = grossAfterPct > 0 ? Math.max(0, grossAfterPct - abs) / grossAfterPct : 1;
+      factor = f1 * f2;
+    } else {
+      const totalDiscExLegacy = Math.min(rawEx, pctDiscEx + abs);
+      factor = rawEx > 0 ? Math.max(0, rawEx - totalDiscExLegacy) / rawEx : 1;
+    }
+    const subEx = rawEx * factor;
+    const totalDiscEx = rawEx - subEx;
     let vsk = 0;
     Object.keys(byRate).forEach(k => {
       byRate[k].ex *= factor;
@@ -227,7 +242,11 @@
     });
     return {
       subEx, vsk, total: subEx + vsk, byRate,
-      rawEx, rawVsk, discountEx: totalDiscEx, discountPct: pct, discountAbs: abs
+      rawEx, rawVsk, discountEx: totalDiscEx, discountPct: pct, discountAbs: abs,
+      grossMode,
+      rawGross: rawEx + rawVsk,
+      // kr m. vsk the customer saves — shown on the bill in gross mode
+      discountGross: (rawEx + rawVsk) - (subEx + vsk)
     };
   }
 
@@ -552,7 +571,16 @@
         <div class="spacer"></div>
 
         <div class="totals-block">
-          ${(t.discountEx > 0) ? `
+          ${(t.discountEx > 0.005) ? (t.grossMode ? `
+            <div class="totals-line">
+              <span class="lbl">Samtals fyrir afslátt (m. VSK):</span>
+              <span class="amt">${fmtAmt(t.rawGross)}</span>
+            </div>
+            <div class="totals-line" style="color:#b91c1c">
+              <span class="lbl">Afsláttur${t.discountPct > 0 ? ' ('+t.discountPct+'%)' : ''}:</span>
+              <span class="amt">−${fmtAmt(t.discountGross)}</span>
+            </div>
+          ` : `
             <div class="totals-line">
               <span class="lbl">Samtals fyrir afslátt:</span>
               <span class="amt">${fmtAmt(t.rawEx)}</span>
@@ -561,7 +589,7 @@
               <span class="lbl">Afsláttur${t.discountPct > 0 ? ' ('+t.discountPct+'%)' : ''}:</span>
               <span class="amt">−${fmtAmt(t.discountEx)}</span>
             </div>
-          ` : ''}
+          `) : ''}
           <div class="totals-line">
             <span class="lbl">Samtals fyrir Vsk.:</span>
             <span class="amt">${fmtAmt(t.subEx)}</span>
@@ -605,6 +633,7 @@
                 : null,
         discount_pct: opts.discount_pct || 0,
         discount: opts.discount || 0,
+        discount_gross: !!opts.discount_gross,
         notes: opts.notes || ''
       };
     }
@@ -638,7 +667,11 @@
       discount_pct: (opts.discount_pct != null) ? opts.discount_pct
                   : (state && state.discount_pct) || 0,
       discount:     (opts.discount != null) ? opts.discount
-                  : (state && state.discount) || 0
+                  : (state && state.discount) || 0,
+      // gross semantics: explicit opt-in wins; otherwise follow the state
+      // marker (live POS state carries discount_gross:true since 2026-06-12)
+      discount_gross: (opts.discount_gross != null) ? !!opts.discount_gross
+                  : !!(state && state.discount_gross)
     });
     const now = new Date();
     const notes = (state && state.notes) || '';
@@ -732,10 +765,32 @@
     } else if (uniformPct === 0 && afsl > 0) {
       optsDiscount = afsl;                          // case C
     }
+    // 2026-06-12: the POS kr discount changed semantics — new sales store
+    // `afslattur` as the kr saved off the FINAL price m. vsk; older sales
+    // stored the ex-VAT kr value. The saved `samtals` is ground truth:
+    // re-print with whichever interpretation reproduces it (ties → gross,
+    // which is also the going-forward default).
+    let discountGross = true;
+    if (optsDiscount > 0) {
+      let _rawEx = 0, _rawVsk = 0;
+      linur.forEach(l => {
+        const le = (Number(l.qty) || 0) * (Number(l.unit_price_ex_vat) || 0);
+        _rawEx += le;
+        _rawVsk += le * ((Number(l.vsk_pct) || 24) / 100);
+      });
+      const grossTotal = Math.max(0, (_rawEx + _rawVsk) - optsDiscount);
+      const exFactor = _rawEx > 0 ? Math.max(0, _rawEx - optsDiscount) / _rawEx : 1;
+      const exTotal = (_rawEx + _rawVsk) * exFactor;
+      const savedSamtals = Number(sale.samtals);
+      if (isFinite(savedSamtals) && savedSamtals > 0) {
+        discountGross = Math.abs(grossTotal - savedSamtals) <= Math.abs(exTotal - savedSamtals);
+      }
+    }
     const fakeState = {
       lines: linur,
       discount: optsDiscount,
       discount_pct: optsDiscountPct,
+      discount_gross: discountGross,
       notes: sale.athugasemdir || '',
       customer: {
         nafn: sale.customer_nafn || '',

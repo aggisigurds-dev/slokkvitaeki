@@ -4,9 +4,13 @@
   console.log('[POS v3] Script loaded');
   var state = {
     customer: { mode:'kt', kt:'', nafn:'', simi:'', co_id:null, afslattur_pct: 0, athugasemdir: '' },
-    // discount       = absolute kr off subtotal (legacy field, still supported)
-    // discount_pct   = % off subtotal (new, set per sale or pulled from customer)
-    lines: [], discount: 0, discount_pct: 0, notes: '',
+    // discount       = absolute kr off the FINAL price m. vsk (2026-06-12 —
+    //                  changed from ex-VAT so the total lands on a round
+    //                  number: 5.200 kr karfa − 200 kr afsl = 5.000 kr)
+    // discount_pct   = % off subtotal (set per sale or pulled from customer)
+    // discount_gross = marker for SalaInvoice: this state's kr discount is
+    //                  m. vsk, not the legacy ex-VAT semantics
+    lines: [], discount: 0, discount_pct: 0, discount_gross: true, notes: '',
     products: [], services: []
   };
   var ICONS = {
@@ -102,14 +106,21 @@
   function totals(){
     var ex=0,vsk=0;
     state.lines.forEach(function(l){var le=l.qty*l.unit_price_ex_vat;ex+=le;vsk+=le*(l.vsk_pct||24)/100;});
-    // Apply % discount first (off the without-VAT subtotal), then any
-    // absolute kr discount. Both are clamped so the total never goes
-    // negative.
+    // % discount first, off the without-VAT subtotal (unchanged). The kr
+    // discount then comes off the FINAL price m. vsk, so the operator can
+    // punch 200 on a 5.200 kr cart and charge exactly 5.000 kr. ex/vsk are
+    // scaled back proportionally from the new total (handles mixed VAT rates).
     var pctDisc = ex * (parseFloat(state.discount_pct)||0) / 100;
-    var absDisc = parseFloat(state.discount)||0;
-    var ad = Math.max(0, ex - pctDisc - absDisc);
-    var av = ex>0 ? ad * (vsk/ex) : 0;
-    return { ex:ad, vsk:av, total:ad+av, raw_ex:ex, pct_disc:pctDisc, abs_disc:absDisc };
+    var ad1 = Math.max(0, ex - pctDisc);
+    var av1 = ex>0 ? ad1 * (vsk/ex) : 0;
+    var gross1 = ad1 + av1;
+    var absDisc = Math.max(0, Math.min(gross1, parseFloat(state.discount)||0));
+    var f = gross1>0 ? (gross1 - absDisc) / gross1 : 0;
+    var ad = ad1*f, av = av1*f;
+    // saved = total kr the customer saves off the m.vsk price — the number
+    // shown in the cart and stored on solur.afslattur.
+    var saved = (ex + vsk) - (ad + av);
+    return { ex:ad, vsk:av, total:ad+av, raw_ex:ex, raw_vsk:vsk, pct_disc:pctDisc, abs_disc:absDisc, saved:saved };
   }
   function render(){var v=document.getElementById('view-sala');if(!v)return;if(v.getAttribute('data-pos-v3')==='1')return;v.innerHTML=buildHTML();v.setAttribute('data-pos-v3','1');bindEvents();rerenderCatalog();rerenderDynamic();}
   // 2026-05-08: rerenderCatalog (vörur+þjónustur) er aðskilið frá
@@ -372,18 +383,23 @@
           '<div style="flex:1;min-width:0;font-weight:600;color:#0f172a;font-size:13px;line-height:1.25;overflow-wrap:break-word;word-break:break-word">'+esc(l.desc)+(l.ref?'<div style="font-weight:400;font-size:11px;color:#64748b;margin-top:1px">'+esc(l.ref)+'</div>':'')+'</div>' +
           '<button class="pos-line-del" data-idx="'+idx+'" title="Fjarlægja" style="background:none;color:#cbd5e1;border:none;cursor:pointer;font-size:18px;padding:0 2px;line-height:1;flex-shrink:0">×</button>' +
         '</div>' +
-        // Row 2 — qty stepper + price input + line total (indented under name)
-        '<div style="display:flex;align-items:center;gap:6px;margin-top:5px;margin-left:34px">' +
-          '<button class="pos-qty-dn" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b">−</button>' +
+        // Row 2 — qty stepper + price input + line total (indented under name).
+        // flex-wrap + shrinkable price input: gram-based lines (CO₂ 100 gr)
+        // have 3-4 digit qty, which used to push the fixed-width children
+        // over each other / out of the 380px cart column on the afgreiðslu
+        // computer. Now the line total wraps to its own right-aligned line
+        // instead of overlapping the price.
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:5px;margin-left:34px;flex-wrap:wrap">' +
+          '<button class="pos-qty-dn" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b;flex-shrink:0">−</button>' +
           '<span style="font-weight:600;font-size:13px;min-width:18px;text-align:center">'+l.qty+'</span>' +
-          '<button class="pos-qty-up" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b">+</button>' +
+          '<button class="pos-qty-up" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b;flex-shrink:0">+</button>' +
           '<span style="color:#94a3b8;font-size:11px;margin:0 1px">×</span>' +
           '<input class="pos-price-edit" data-idx="'+idx+'" type="number" min="0" step="1" value="'+l.unit_price_ex_vat+'" ' +
             'title="Smelltu til að breyta verði (án VSK)" ' +
-            'style="width:64px;padding:2px 5px;border:1px solid #e2e8f0;border-radius:4px;font:inherit;font-size:11px;text-align:right;font-variant-numeric:tabular-nums">' +
+            'style="width:64px;min-width:0;flex:0 1 64px;padding:2px 5px;border:1px solid #e2e8f0;border-radius:4px;font:inherit;font-size:11px;text-align:right;font-variant-numeric:tabular-nums">' +
           '<span style="color:#94a3b8;font-size:11px">kr</span>' +
-          '<div style="flex:1"></div>' +
-          '<div style="font-weight:700;color:#0f172a;font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums">'+fmtKr(lineTotal)+'</div>' +
+          '<div style="flex:1 1 0;min-width:4px"></div>' +
+          '<div style="font-weight:700;color:#0f172a;font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums;margin-left:auto">'+fmtKr(lineTotal)+'</div>' +
         '</div>' +
       '</div>';
     }).join('');
@@ -409,14 +425,14 @@
         '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;color:#64748b;font-size:13px">' +
           '<span>Afsláttur:' + custDisc + '</span>' +
           '<span style="display:flex;align-items:center;gap:4px">' +
-            '<span id="pos-disc-kr" style="color:#dc2626;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;'+(hasDisc?'':'display:none;')+'">−'+fmtKr(t.pct_disc + t.abs_disc)+'</span>' +
+            '<span id="pos-disc-kr" style="color:#dc2626;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;'+(hasDisc?'':'display:none;')+'">−'+fmtKr(t.saved)+'</span>' +
             '<input id="pos-discount" type="text" inputmode="decimal" pattern="[0-9.,]*" value="' + pct + '" ' +
               'autocomplete="off" title="Afsláttur %"' +
               'style="width:50px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;' +
               'text-align:right;font-variant-numeric:tabular-nums">' +
             '<span style="color:#94a3b8">%</span>' +
             '<input id="pos-discount-kr" type="text" inputmode="decimal" pattern="[0-9.,]*" value="' + (disc || '') + '" ' +
-              'autocomplete="off" title="Afsláttur í krónum" placeholder="0"' +
+              'autocomplete="off" title="Afsláttur í kr — dregst af lokaverðinu (m. vsk) svo upphæðin endi á sléttri tölu" placeholder="0"' +
               'style="width:70px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;' +
               'text-align:right;font-variant-numeric:tabular-nums;margin-left:6px">' +
             '<span style="color:#94a3b8">kr</span>' +
@@ -441,7 +457,7 @@
     setText('pos-tot-total', fmtKr(t.total));
     var krEl = document.getElementById('pos-disc-kr');
     if (krEl) {
-      krEl.textContent = '−' + fmtKr(t.pct_disc + t.abs_disc);
+      krEl.textContent = '−' + fmtKr(t.saved);
       krEl.style.display = hasDisc ? '' : 'none';
     }
   }
@@ -576,9 +592,10 @@
       if (pctEl) {
         state.discount_pct = Math.max(0, Math.min(100, parseFloat(raw) || 0));
       } else {
-        // Clamp the kr discount so it never exceeds the cart subtotal.
-        var subEx = state.lines.reduce(function(s, l){ return s + (l.qty * l.unit_price_ex_vat); }, 0);
-        state.discount = Math.max(0, Math.min(subEx, parseFloat(raw) || 0));
+        // Clamp the kr discount so it never exceeds the cart total m. vsk
+        // (the kr discount comes off the final price, not the ex-VAT subtotal).
+        var subInc = state.lines.reduce(function(s, l){ return s + (l.qty * l.unit_price_ex_vat * (1 + (l.vsk_pct||24)/100)); }, 0);
+        state.discount = Math.max(0, Math.min(subInc, parseFloat(raw) || 0));
       }
       _updateTotalsCells();
       // Update checkout button label
@@ -641,10 +658,13 @@
                   : pmCode === 'greitt_sidar' ? 'greitt_sidar'
                   : pmCode === 'pening'       ? 'Pening'
                                               : 'Kort';
-      // Compute total kr value of all discounts (% + absolute) and store
-      // that as `afslattur` on solur for backward-compatibility with the
-      // existing accounting/Bókhald yfirlit reports.
-      var discKr = Math.round((t.pct_disc || 0) + (t.abs_disc || 0));
+      // Store the total kr discount m. vsk (what the customer actually saved
+      // off the final price) as `afslattur` on solur. Receipts list line
+      // totals m. vsk, so this is the number that makes the receipt add up.
+      // (Pre-2026-06-12 rows stored the ex-VAT kr value instead —
+      // SalaInvoice.renderFromSale detects which semantics a row uses by
+      // checking which one reproduces the saved samtals.)
+      var discKr = Math.round(t.saved || 0);
       // 2026-05-09 (Phase B): „Greitt síðar" býr til DRÖG sem patch 121
       // (pickup-checkout) klárar við Sótt ✓. Drög birtast ekki í Tekjum/Bókhaldi.
       var saleStatus = pmCode === 'greitt_sidar' ? 'drog' : 'final';
@@ -927,7 +947,9 @@
         // 2026-05-18: include the discount snapshot from the original sale
         // so the re-print matches the first print. `afslattur` is the kr value
         // applied; renderFromSale reads it as discount=afslattur, discount_pct=0.
-        var fakeAfslattur = Math.round((+info.totals?.pct_disc || 0) + (+info.totals?.abs_disc || 0));
+        // 2026-06-12: afslattur is now the m.vsk saved amount; samtals is
+        // included so renderFromSale's semantics detection picks gross.
+        var fakeAfslattur = Math.round(+(info.totals && info.totals.saved) || 0);
         var fakeSale = {
           num: info.num,
           customer_nafn: info.customer,
@@ -935,6 +957,7 @@
           starfsmadur: 'Kassi',
           linur: info.lines || [],
           afslattur: fakeAfslattur,
+          samtals: Math.round(+(info.totals && info.totals.total) || 0),
           athugasemdir: ''
         };
         if (typeof SalaInvoice.renderFromSale === 'function') {
@@ -945,7 +968,8 @@
             paymentMethod: info.method,
             invoiceNum: info.num,
             discount_pct: info.discount_pct || 0,
-            discount: info.discount || fakeAfslattur || 0
+            discount: info.discount || fakeAfslattur || 0,
+            discount_gross: true
           });
         }
       } else {
