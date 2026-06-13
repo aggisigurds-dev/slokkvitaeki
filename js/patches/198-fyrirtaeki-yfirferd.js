@@ -1,4 +1,4 @@
-/* === FYRIRTÆKI · YFIRFERÐ v1 ===
+/* === FYRIRTÆKI · YFIRFERÐ v2 ===
  *
  * Viðskiptavina-/fyrirtækja fix-síða. Tveir flipar:
  *   • Fyrirtæki (fyrirtaeki + rekstrarfélag úr customers_base): síur Í þjónustu ·
@@ -7,13 +7,15 @@
  *     (+ review_flag=true). Aðgerðir (afturkræfar): Flagga/Afflagga,
  *     Í/Úr þjónustu (er_i_thjonustu), Fjarlægja/Endurheimta (deleted_at).
  *   • Viðskiptavinir / einstaklingar (vidskiptavinir): Walk-in án kt →
- *     "Tengja Staðgreitt" (customer_base_id=870). "Uppfæra í þjónustu" og
- *     "Sameina við #id" eru CROSS-TABLE aðgerðir — teknar sem BEIÐNIR
- *     (cowork_review_notes, kind='vidsk') sem Code framkvæmir með afriti, frekar
- *     en að giska á áhættusama live-færslu. (Sjá fh.73; staðfest við Cowork.)
+ *     "Tengja Staðgreitt" (customer_base_id=870). "Uppfæra í þjónustu" = LIVE
+ *     gegnum window.PromoteCustomer (stofnar fyrirtaeki + customers_base, afturkræft).
  *
- * Port af Cowork-frumgerð `fyrirtaeki-yfirferd` (Drive). Notar DB.sb. Scaffolding
- * speglar patch 166/197.
+ * SAMEINING (v2, Agnar): hak í línur (checkbox) + "Sameina valin (N)" í haus →
+ *   öruggt, atómískt, afritað merge gegnum RPC `merge_customers` (dry-run
+ *   forskoðun í staðfestingu, repoint solur.customer_id + grunn-tengingar,
+ *   mjúk-eyðing afgangs, afrit í cowork_merge_backups). Sama-tafla per flipa.
+ *
+ * Notar DB.sb. Scaffolding speglar patch 166/197.
  */
 (() => {
   if (window.__fyrirtaekiYfirferdInstalled) return;
@@ -47,10 +49,13 @@
       #${VIEW_ID} .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
       #${VIEW_ID} .bar input[type=search]{padding:7px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px}
       #${VIEW_ID} .meta{font-size:12px;color:#94a3b8}
+      #${VIEW_ID} .merge-btn{padding:7px 12px;border:1px solid #7c3aed;border-radius:8px;background:#7c3aed;color:#fff;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}
+      #${VIEW_ID} .merge-btn:disabled{background:#e2e8f0;border-color:#e2e8f0;color:#94a3b8;cursor:default}
       #${VIEW_ID} table{width:100%;border-collapse:collapse;font-size:12.5px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
       #${VIEW_ID} th{text-align:left;padding:8px 10px;font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:#64748b;background:#f8fafc;border-bottom:1px solid #e2e8f0}
       #${VIEW_ID} td{padding:7px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
       #${VIEW_ID} tr.dim td{opacity:.5}
+      #${VIEW_ID} tr.picked td{background:#f5f3ff}
       #${VIEW_ID} .miss{color:#dc2626;font-size:11px}
       #${VIEW_ID} .ok{color:#16a34a}
       #${VIEW_ID} .note-in{width:100%;min-width:90px;padding:4px 7px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:12px}
@@ -90,23 +95,34 @@
     v.innerHTML = `
       <main class="main-panel"><div class="fyr-wrap">
         <h1>🏢 Fyrirtæki · yfirferð</h1>
-        <div class="sub">Lagaðu viðskiptavina-grunninn — vantar kt/heimili/netfang/samning, ótengt grunni, tvíteknir. Athugasemd per línu (Claude les & framkvæmir). Allt afturkræft.</div>
+        <div class="sub">Lagaðu viðskiptavina-grunninn — vantar kt/heimili/netfang/samning, ótengt grunni, tvíteknir. Hakaðu við tvítekna og veldu „Sameina valin". Allt afturkræft.</div>
         <div class="tabs">
           <div class="tab active" data-tab="fyr">Fyrirtæki</div>
           <div class="tab" data-tab="vid">Viðskiptavinir / einstaklingar</div>
         </div>
         <section data-sec="fyr">
           <div class="chips" id="fyr-chips"></div>
-          <div class="bar"><input id="fyr-q" type="search" placeholder="Leita: nafn, kt…"><span class="meta" id="fyr-count"></span></div>
+          <div class="bar">
+            <input id="fyr-q" type="search" placeholder="Leita: nafn, kt…">
+            <button class="merge-btn" id="fyr-merge" disabled>🔗 Sameina valin (0)</button>
+            <span class="meta" id="fyr-count"></span>
+          </div>
           <div id="fyr-app"><div class="skel">Sæki fyrirtæki…</div></div>
         </section>
         <section data-sec="vid" style="display:none">
-          <div class="bar"><input id="vid-q" type="search" placeholder="Leita: nafn, kt…"><label style="font-size:12.5px;color:#475569;display:flex;align-items:center;gap:5px"><input type="checkbox" id="vid-onlywalkin"> Bara án kt (walk-in)</label><span class="meta" id="vid-count"></span></div>
+          <div class="bar">
+            <input id="vid-q" type="search" placeholder="Leita: nafn, kt…">
+            <label style="font-size:12.5px;color:#475569;display:flex;align-items:center;gap:5px"><input type="checkbox" id="vid-onlywalkin"> Bara án kt (walk-in)</label>
+            <button class="merge-btn" id="vid-merge" disabled>🔗 Sameina valin (0)</button>
+            <span class="meta" id="vid-count"></span>
+          </div>
           <div id="vid-app"><div class="skel">Sæki viðskiptavini…</div></div>
         </section>
       </div></main>`;
     sample.parentElement.appendChild(v);
     v.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+    v.querySelector('#fyr-merge').addEventListener('click', () => mergeFlow('fyrirtaeki', fSel, FROWS, () => { fSel.clear(); load(); }));
+    v.querySelector('#vid-merge').addEventListener('click', () => mergeFlow('vidskiptavinir', vidSel, VROWS, () => { vidSel.clear(); loadVid(); }));
   }
 
   function patchSwitchView() {
@@ -150,11 +166,11 @@
   let fFilter = 'all';
 
   let FROWS = [], VROWS = [], BASE_REK = {}, _vidLoaded = false;
+  const fSel = new Set(), vidSel = new Set();
 
   async function load() {
     const SB = getSB(); const app = document.getElementById('fyr-app');
     if (!SB) { if (app) app.innerHTML = '<div class="skel" style="color:#dc2626">Engin gagnabankatenging.</div>'; return; }
-    // rekstrarfélag map from customers_base
     const cb = await SB.from('customers_base').select('id,rekstrarfelag');
     BASE_REK = {};
     (cb.data || []).forEach(b => { if (b.rekstrarfelag) BASE_REK[b.id] = b.rekstrarfelag; });
@@ -170,6 +186,7 @@
   // ── generic sortable table (click any header to sort, click again = reverse) ─
   let fSort = { key: 'nafn', dir: 1 }, vidSort = { key: 'nafn', dir: 1 };
   const COLS_FYR = [
+    { label: '', sortable: false },
     { key: 'nafn', label: 'Nafn', get: f => f.nafn },
     { key: 'kennitala', label: 'Kt', get: f => f.kennitala },
     { key: 'heimilisfang', label: 'Heimili', get: f => f.heimilisfang },
@@ -180,6 +197,7 @@
     { label: '', sortable: false }
   ];
   const COLS_VID = [
+    { label: '', sortable: false },
     { key: 'nafn', label: 'Nafn', get: v => v.nafn },
     { key: 'kennitala', label: 'Kt', get: v => v.kennitala },
     { key: 'simi', label: 'Sími', get: v => v.simi },
@@ -196,7 +214,7 @@
     });
     const thead = '<thead><tr>' + cols.map(col => {
       const al = col.align === 'right' ? 'text-align:right;' : '';
-      if (col.sortable === false) return `<th style="${al}"></th>`;
+      if (col.sortable === false) return `<th style="${al}">${esc(col.label || '')}</th>`;
       const ar = st.key === col.key ? (st.dir > 0 ? ' ▲' : ' ▼') : '';
       return `<th class="th-sort" data-key="${esc(col.key)}" style="cursor:pointer;white-space:nowrap;${al}">${esc(col.label)}<span style="color:#1d4ed8;font-size:10px">${ar}</span></th>`;
     }).join('') + '</tr></thead>';
@@ -209,11 +227,26 @@
       rerender();
     });
   }
+  function selCell(sel, id) { return `<td><input type="checkbox" class="msel" data-id="${id}" ${sel.has(Number(id)) ? 'checked' : ''}></td>`; }
+  function updateMergeBtn(which) {
+    const sel = which === 'fyr' ? fSel : vidSel;
+    const btn = document.getElementById(which + '-merge');
+    if (!btn) return;
+    btn.textContent = '🔗 Sameina valin (' + sel.size + ')';
+    btn.disabled = sel.size < 2;
+  }
+  function bindSel(scope, sel, which) {
+    scope.querySelectorAll('.msel').forEach(cb => cb.addEventListener('change', () => {
+      const id = Number(cb.dataset.id);
+      if (cb.checked) sel.add(id); else sel.delete(id);
+      const tr = cb.closest('tr'); if (tr) tr.classList.toggle('picked', cb.checked);
+      updateMergeBtn(which);
+    }));
+  }
 
   function renderFyr() {
     const app = document.getElementById('fyr-app'); if (!app) return;
     const live = FROWS.filter(f => !f.deleted_at);
-    // chips with counts
     const chipsEl = document.getElementById('fyr-chips');
     chipsEl.innerHTML = FILTERS.map(f => {
       const n = (f.k === 'all') ? live.length : FROWS.filter(x => !x.deleted_at && f.test(x)).length;
@@ -228,13 +261,16 @@
     app.innerHTML = buildTable(rows, COLS_FYR, fSort, rowFyr);
     bindFyrRows(app);
     bindSort(app, fSort, renderFyr);
+    bindSel(app, fSel, 'fyr');
+    updateMergeBtn('fyr');
   }
   function rowFyr(f) {
     const acts = `
       <button class="ab" data-act="${B(f.review_flag) ? 'unflag' : 'flag'}" data-id="${f.id}">${B(f.review_flag) ? 'Afflagga' : '⚑ Flagga'}</button>
       <button class="ab" data-act="${B(f.er_i_thjonustu) ? 'outsvc' : 'insvc'}" data-id="${f.id}">${B(f.er_i_thjonustu) ? 'Úr þjónustu' : 'Í þjónustu'}</button>
       <button class="ab" data-act="del" data-id="${f.id}">Fjarlægja</button>`;
-    return `<tr>
+    return `<tr class="${fSel.has(Number(f.id)) ? 'picked' : ''}">
+      ${selCell(fSel, f.id)}
       <td style="font-weight:600;color:#0f172a">${esc(f.nafn || '(nafnlaust)')}${B(f.review_flag) ? ' ⚑' : ''}${f._rek ? ' <span style="font-size:10px;color:#7c3aed">· ' + esc(f._rek) + '</span>' : ''}</td>
       <td>${f.kennitala ? esc(f.kennitala) : '<span class="miss">vantar</span>'}</td>
       <td>${f.heimilisfang ? esc(f.heimilisfang) : '<span class="miss">vantar</span>'}</td>
@@ -266,25 +302,25 @@
     app.innerHTML = buildTable(rows, COLS_VID, vidSort, rowVid);
     bindVidRows(app);
     bindSort(app, vidSort, renderVid);
+    bindSel(app, vidSel, 'vid');
+    updateMergeBtn('vid');
   }
   function rowVid(v) {
     const linkStad = v.customer_base_id === STADGREITT_BASE
       ? '<span class="ok" style="font-size:11px">✓ Staðgreitt</span>'
       : (!v.kennitala ? `<button class="ab" data-act="stad" data-id="${v.id}">Tengja Staðgreitt</button>` : '');
-    return `<tr>
+    const upgrade = v.kennitala ? `<button class="ab" data-act="upgrade" data-id="${v.id}" title="Stofna sem fyrirtæki í þjónustu (afturkræft)">⬆ Uppfæra í þjónustu</button>` : '';
+    return `<tr class="${vidSel.has(Number(v.id)) ? 'picked' : ''}">
+      ${selCell(vidSel, v.id)}
       <td style="font-weight:600;color:#0f172a">${esc(v.nafn || '(nafnlaust)')}</td>
       <td>${v.kennitala ? esc(v.kennitala) : '<span class="miss">vantar (walk-in)</span>'}</td>
       <td style="color:#64748b">${esc(v.simi || '—')}</td>
       <td>${v.customer_base_id != null ? '#' + v.customer_base_id : '—'}</td>
-      <td style="white-space:nowrap">
-        ${linkStad}
-        <button class="ab" data-act="upgrade" data-id="${v.id}" title="Beiðni: uppfæra í fyrirtækjaþjónustu (Code framkvæmir m/afriti)">⬆ Uppfæra í þjónustu</button>
-        <button class="ab" data-act="merge" data-id="${v.id}" title="Beiðni: sameina við annað id">⛓ Sameina…</button>
-      </td>
+      <td style="white-space:nowrap">${linkStad} ${upgrade}</td>
     </tr>`;
   }
 
-  // ── actions ───────────────────────────────────────────────────────────────
+  // ── row actions ───────────────────────────────────────────────────────────
   function armBtn(btn, go) {
     if (btn.dataset.armed !== '1') {
       document.querySelectorAll('#' + VIEW_ID + ' .ab.armed').forEach(x => { x.classList.remove('armed'); x.dataset.armed = '0'; x.textContent = x.dataset.lbl || x.textContent; });
@@ -315,7 +351,9 @@
   }
   async function fyrNote(id, text, inp) {
     const SB = getSB(); if (!SB) return;
-    const r = await SB.from('fyrirtaeki').update({ review_note: text, review_flag: !!String(text).trim() || undefined }).eq('id', id);
+    const patch = { review_note: text };
+    if (String(text).trim()) patch.review_flag = true;
+    const r = await SB.from('fyrirtaeki').update(patch).eq('id', id);
     if (r.error) { toast('Villa: ' + r.error.message); return; }
     const f = FROWS.find(x => Number(x.id) === id); if (f) { f.review_note = text; if (String(text).trim()) f.review_flag = true; }
     if (inp) inp.classList.toggle('has', !!String(text).trim());
@@ -325,11 +363,7 @@
     scope.querySelectorAll('.ab[data-act]').forEach(b => b.onclick = () => {
       const id = Number(b.dataset.id), act = b.dataset.act;
       if (act === 'stad') armBtn(b, () => vidLinkStad(id));
-      else if (act === 'upgrade') vidRequest(id, 'UPPFÆRA-Í-ÞJÓNUSTU');
-      else if (act === 'merge') {
-        const target = prompt('Sameina þennan viðskiptavin við annað id?\nSláðu inn id (fyrirtaeki/vidskiptavinir) sem á að halda:');
-        if (target && String(target).trim()) vidRequest(id, 'SAMEINA→#' + String(target).trim());
-      }
+      else if (act === 'upgrade') vidUpgrade(id);
     });
   }
   async function vidLinkStad(id) {
@@ -339,12 +373,40 @@
     const v = VROWS.find(x => Number(x.id) === id); if (v) v.customer_base_id = STADGREITT_BASE;
     toast('Tengt við Staðgreitt (870) ✓'); renderVid();
   }
-  // Cross-table ops captured as reviewable requests (Code executes with backup).
-  async function vidRequest(id, reqText) {
+  function vidUpgrade(id) {
+    const v = VROWS.find(x => Number(x.id) === id); if (!v) return;
+    if (!window.PromoteCustomer || !PromoteCustomer.run) { toast('Promote-eining ekki tiltæk'); return; }
+    PromoteCustomer.run(
+      { kennitala: v.kennitala, nafn: v.nafn, simi: v.simi, netfang: v.netfang, heimilisfang: v.heimilisfang, vidsk_id: v.id },
+      { onDone: () => loadVid() }
+    );
+  }
+
+  // ── MERGE (checkbox-select + header button → atomic backed-up RPC) ──────────
+  async function mergeFlow(table, sel, rows, reload) {
     const SB = getSB(); if (!SB) return;
-    const r = await SB.from('cowork_review_notes').upsert({ kind: 'vidsk', sale_id: id, note: reqText, updated_at: nowISO() }, { onConflict: 'kind,sale_id' });
-    if (r.error) { toast('Villa: ' + r.error.message); return; }
-    toast('Beiðni skráð: ' + reqText + ' (Code framkvæmir)');
+    const ids = [...sel];
+    if (ids.length < 2) { toast('Veldu a.m.k. 2 línur til að sameina'); return; }
+    const byId = id => rows.find(r => Number(r.id) === Number(id));
+    // survivor = best record: has base + kt, then has base, then lowest id
+    const score = r => (r && r.customer_base_id != null ? 2 : 0) + (r && r.kennitala ? 1 : 0);
+    const survivor = ids.slice().sort((a, b) => (score(byId(b)) - score(byId(a))) || (Number(a) - Number(b)))[0];
+    const dead = ids.filter(i => Number(i) !== Number(survivor)).map(Number);
+    const dry = await SB.rpc('merge_customers', { p_table: table, p_survivor: Number(survivor), p_dead: dead, p_dry: true });
+    if (dry.error) { toast('Villa (forskoðun): ' + dry.error.message); return; }
+    const s = byId(survivor) || {};
+    const deadNames = dead.map(i => (byId(i) || {}).nafn || ('#' + i)).join(', ');
+    const d = dry.data || {};
+    const msg = 'SAMEINA ' + ids.length + ' línur:\n\n'
+      + 'HALDA: ' + (s.nafn || ('#' + survivor)) + '  (#' + survivor + ')\n'
+      + 'Sameina inn (verða falin, afturkræft): ' + deadNames + '\n\n'
+      + 'Færir ' + (d.solur_customer_id_repoint || 0) + ' sölur á þann sem heldur og sameinar grunn-tengingar.\n'
+      + 'Afrit vistað í cowork_merge_backups.\n\nStaðfesta sameiningu?';
+    if (!window.confirm(msg)) return;
+    const r = await SB.rpc('merge_customers', { p_table: table, p_survivor: Number(survivor), p_dead: dead, p_dry: false });
+    if (r.error) { toast('Villa við sameiningu: ' + r.error.message); return; }
+    toast('✓ Sameinað → ' + (s.nafn || ('#' + survivor)));
+    reload();
   }
 
   // ── filter wiring ─────────────────────────────────────────────────────────
@@ -358,6 +420,6 @@
   ensureView();
   patchSwitchView();
   window.FyrirtaekiYfirferd = { show, load };
-  console.log('[patch-198] Fyrirtæki · yfirferð installed (fyrirtaeki + vidskiptavinir fix)');
+  console.log('[patch-198] Fyrirtæki · yfirferð v2 installed (fix + live upgrade + checkbox merge)');
 })();
 /* === END FYRIRTÆKI · YFIRFERÐ === */
