@@ -13,9 +13,20 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
-# Always revalidate index.html so a new deploy is picked up across machines.
-# JS/CSS are cache-busted via hand-written ?v= query strings.
+# Always revalidate the HTML entry points so a new deploy is picked up across
+# machines. JS/CSS are cache-busted via hand-written ?v= query strings.
+#
+# 2026-06-13: the rule was scoped to "/index.html", but the app is opened at
+# "/" — Netlify matches header rules by REQUEST path, so the root document "/"
+# fell through to the default long cache. That stranded users on stale cached
+# JS for every deploy (the recurring "fixes don't show up" gremlin). Cover the
+# root and every *.html page so the entry document always revalidates.
 [[headers]]
-  for = "/index.html"
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
