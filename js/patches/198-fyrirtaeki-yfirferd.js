@@ -167,6 +167,49 @@
     renderFyr();
   }
 
+  // ── generic sortable table (click any header to sort, click again = reverse) ─
+  let fSort = { key: 'nafn', dir: 1 }, vidSort = { key: 'nafn', dir: 1 };
+  const COLS_FYR = [
+    { key: 'nafn', label: 'Nafn', get: f => f.nafn },
+    { key: 'kennitala', label: 'Kt', get: f => f.kennitala },
+    { key: 'heimilisfang', label: 'Heimili', get: f => f.heimilisfang },
+    { key: 'netfang', label: 'Netfang', get: f => f.netfang },
+    { key: 'er_i_thjonustu', label: 'Þjón.', type: 'num', get: f => B(f.er_i_thjonustu) ? 1 : 0 },
+    { key: 'customer_base_id', label: 'Grunnur', type: 'num', get: f => f.customer_base_id == null ? -1 : f.customer_base_id },
+    { key: 'review_note', label: 'Athugasemd', get: f => f.review_note },
+    { label: '', sortable: false }
+  ];
+  const COLS_VID = [
+    { key: 'nafn', label: 'Nafn', get: v => v.nafn },
+    { key: 'kennitala', label: 'Kt', get: v => v.kennitala },
+    { key: 'simi', label: 'Sími', get: v => v.simi },
+    { key: 'customer_base_id', label: 'Grunnur', type: 'num', get: v => v.customer_base_id == null ? -1 : v.customer_base_id },
+    { label: '', sortable: false }
+  ];
+  function buildTable(rows, cols, st, rowFn) {
+    const c = cols.find(x => x.key === st.key) || cols.find(x => x.sortable !== false);
+    let sorted = rows;
+    if (c) sorted = rows.slice().sort((a, b) => {
+      const va = c.get(a), vb = c.get(b);
+      if (c.type === 'num') return ((Number(va) || 0) - (Number(vb) || 0)) * st.dir;
+      return String(va == null ? '' : va).localeCompare(String(vb == null ? '' : vb), 'is', { numeric: true }) * st.dir;
+    });
+    const thead = '<thead><tr>' + cols.map(col => {
+      const al = col.align === 'right' ? 'text-align:right;' : '';
+      if (col.sortable === false) return `<th style="${al}"></th>`;
+      const ar = st.key === col.key ? (st.dir > 0 ? ' ▲' : ' ▼') : '';
+      return `<th class="th-sort" data-key="${esc(col.key)}" style="cursor:pointer;white-space:nowrap;${al}">${esc(col.label)}<span style="color:#1d4ed8;font-size:10px">${ar}</span></th>`;
+    }).join('') + '</tr></thead>';
+    return '<table>' + thead + '<tbody>' + sorted.map(rowFn).join('') + '</tbody></table>';
+  }
+  function bindSort(scope, st, rerender) {
+    scope.querySelectorAll('.th-sort').forEach(th => th.onclick = () => {
+      const k = th.dataset.key;
+      if (st.key === k) st.dir = -st.dir; else { st.key = k; st.dir = 1; }
+      rerender();
+    });
+  }
+
   function renderFyr() {
     const app = document.getElementById('fyr-app'); if (!app) return;
     const live = FROWS.filter(f => !f.deleted_at);
@@ -182,10 +225,9 @@
     let rows = FROWS.filter(f => !f.deleted_at && flt.test(f) && (!q || (f.nafn || '').toLowerCase().includes(q) || (f.kennitala || '').includes(q)));
     document.getElementById('fyr-count').textContent = rows.length + ' / ' + live.length + ' fyrirtæki';
     if (!rows.length) { app.innerHTML = '<div class="skel">Engin fyrirtæki í þessari síu.</div>'; return; }
-    app.innerHTML = `<table><thead><tr>
-      <th>Nafn</th><th>Kt</th><th>Heimili</th><th>Netfang</th><th>Þjón.</th><th>Grunnur</th><th>Athugasemd</th><th></th>
-    </tr></thead><tbody>${rows.map(rowFyr).join('')}</tbody></table>`;
+    app.innerHTML = buildTable(rows, COLS_FYR, fSort, rowFyr);
     bindFyrRows(app);
+    bindSort(app, fSort, renderFyr);
   }
   function rowFyr(f) {
     const acts = `
@@ -221,10 +263,9 @@
     let rows = VROWS.filter(v => (!onlyWalkin || !v.kennitala) && (!q || (v.nafn || '').toLowerCase().includes(q) || (v.kennitala || '').includes(q)));
     document.getElementById('vid-count').textContent = rows.length + ' / ' + VROWS.length + ' viðskiptavinir';
     if (!rows.length) { app.innerHTML = '<div class="skel">Engir viðskiptavinir í þessari síu.</div>'; return; }
-    app.innerHTML = `<table><thead><tr>
-      <th>Nafn</th><th>Kt</th><th>Sími</th><th>Grunnur</th><th></th>
-    </tr></thead><tbody>${rows.map(rowVid).join('')}</tbody></table>`;
+    app.innerHTML = buildTable(rows, COLS_VID, vidSort, rowVid);
     bindVidRows(app);
+    bindSort(app, vidSort, renderVid);
   }
   function rowVid(v) {
     const linkStad = v.customer_base_id === STADGREITT_BASE

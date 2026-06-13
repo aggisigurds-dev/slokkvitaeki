@@ -326,6 +326,54 @@
   }
 
   // ── render: SÖLUR ─────────────────────────────────────────────────────────
+  // ── generic sortable table (click any header to sort, click again = reverse) ─
+  let sSort = { key: 'dags', dir: -1 }, vSort = { key: 'dropoff', dir: -1 };
+  const COLS_SALA = [
+    { key: 'num', label: 'Nr', get: r => r.num },
+    { key: 'dags', label: 'Dags', type: 'date', get: r => r.dags },
+    { key: 'kunni', label: 'Kúnni', get: r => r.kunni },
+    { key: 'greitt_med', label: 'Greiðsla', get: r => r.greitt_med },
+    { key: 'stada', label: 'Staða', get: r => r.stada },
+    { key: 'amt', label: 'Upphæð', type: 'num', align: 'right', get: r => r.amt },
+    { key: '_cat', label: 'Flokkur', get: r => (CATS[r._cat] || {}).label || r._cat },
+    { key: 'note', label: 'Athugasemd', get: r => r.note },
+    { label: '', sortable: false }
+  ];
+  const COLS_VERK = [
+    { key: 'num', label: 'Nr', get: v => v.num },
+    { key: 'kunni', label: 'Kúnni', get: v => v.kunni },
+    { key: 'phone', label: 'Sími', get: v => v.phone },
+    { key: 'dropoff', label: 'Móttekið', type: 'date', get: v => v.dropoff },
+    { key: 'pickup', label: 'Sótt', type: 'date', get: v => v.pickup },
+    { key: '_cat', label: 'Flokkur', get: v => (VCATS[v._cat] || {}).label || v._cat },
+    { key: 'verd', label: 'Verð', type: 'num', align: 'right', get: v => v.verd },
+    { key: 'note', label: 'Athugasemd', get: v => v.note },
+    { label: '', sortable: false }
+  ];
+  function buildTable(rows, cols, st, rowFn) {
+    const c = cols.find(x => x.key === st.key) || cols.find(x => x.sortable !== false);
+    let sorted = rows;
+    if (c) sorted = rows.slice().sort((a, b) => {
+      const va = c.get(a), vb = c.get(b);
+      if (c.type === 'num') return ((Number(va) || 0) - (Number(vb) || 0)) * st.dir;
+      return String(va == null ? '' : va).localeCompare(String(vb == null ? '' : vb), 'is', { numeric: true }) * st.dir;
+    });
+    const thead = '<thead><tr>' + cols.map(col => {
+      const al = col.align === 'right' ? 'text-align:right;' : '';
+      if (col.sortable === false) return `<th style="${al}"></th>`;
+      const ar = st.key === col.key ? (st.dir > 0 ? ' ▲' : ' ▼') : '';
+      return `<th class="th-sort" data-key="${esc(col.key)}" style="cursor:pointer;white-space:nowrap;${al}">${esc(col.label)}<span style="color:#1d4ed8;font-size:10px">${ar}</span></th>`;
+    }).join('') + '</tr></thead>';
+    return '<table>' + thead + '<tbody>' + sorted.map(rowFn).join('') + '</tbody></table>';
+  }
+  function bindSort(scope, st, rerender) {
+    scope.querySelectorAll('.th-sort').forEach(th => th.onclick = () => {
+      const k = th.dataset.key;
+      if (st.key === k) st.dir = -st.dir; else { st.key = k; st.dir = 1; }
+      rerender();
+    });
+  }
+
   function sBase() {
     const showHidden = document.getElementById('bky-fHidden')?.checked;
     return showHidden ? ROWS : ROWS.filter(r => !r.hidden);
@@ -369,10 +417,9 @@
     });
     document.getElementById('bky-countS').textContent = rows.length + ' / ' + base.length + ' sölur';
     if (!rows.length) { app.innerHTML = '<div class="skel">Engar sölur í þessari síu.</div>'; return; }
-    app.innerHTML = `<table><thead><tr>
-        <th>Nr</th><th>Dags</th><th>Kúnni</th><th>Greiðsla</th><th>Staða</th><th style="text-align:right">Upphæð</th><th>Flokkur</th><th>Athugasemd</th><th></th>
-      </tr></thead><tbody>${rows.map(rowSala).join('')}</tbody></table>`;
+    app.innerHTML = buildTable(rows, COLS_SALA, sSort, rowSala);
     bindActions(app);
+    bindSort(app, sSort, renderSala);
   }
   function rowSala(r) {
     const c = CATS[r._cat] || CATS.annad;
@@ -417,10 +464,9 @@
     });
     document.getElementById('bky-countV').textContent = rows.length + ' / ' + VROWS.length + ' verkbeiðnir';
     if (!rows.length) { app.innerHTML = '<div class="skel">Engar verkbeiðnir í þessari síu.</div>'; return; }
-    app.innerHTML = `<table><thead><tr>
-        <th>Nr</th><th>Kúnni</th><th>Sími</th><th>Móttekið</th><th>Sótt</th><th>Flokkur</th><th style="text-align:right">Verð</th><th>Athugasemd</th><th></th>
-      </tr></thead><tbody>${rows.map(rowVerk).join('')}</tbody></table>`;
+    app.innerHTML = buildTable(rows, COLS_VERK, vSort, rowVerk);
     bindActions(app);
+    bindSort(app, vSort, renderVerk);
   }
   let vCat = 'all';
   function rowVerk(v) {
