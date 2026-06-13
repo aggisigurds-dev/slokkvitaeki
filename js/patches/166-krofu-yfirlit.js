@@ -58,8 +58,7 @@
     btn.style.alignItems = 'center';
     btn.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
-      if (window.App && App.switchView) App.switchView(NAV_KEY);
-      else show();
+      show();
     });
     if (rukkBtn && rukkBtn.parentNode) rukkBtn.parentNode.insertBefore(btn, rukkBtn.nextSibling);
     else nav.appendChild(btn);
@@ -457,12 +456,42 @@
 
   function show() {
     ensureView();
-    if (window.App && App.switchView) App.switchView(NAV_KEY);
-    else load();
+    // Try the normal route first…
+    try { if (window.App && App.switchView) App.switchView(NAV_KEY); } catch (_) {}
+    // …then FORCE our view visible regardless. If a later patch replaced
+    // App.switchView without chaining our case, the core would have hidden all
+    // views and shown nothing ("shuts itself off"). This belt-and-suspenders
+    // step guarantees the Kröfu yfirlit page is the one showing.
+    try {
+      document.querySelectorAll('[id^="view-"]').forEach(v => {
+        const mine = v.id === VIEW_ID;
+        v.style.display = mine ? 'block' : 'none';
+        v.classList.toggle('active', mine);
+      });
+      document.querySelectorAll('.vnav-btn').forEach(b =>
+        b.classList.toggle('active', b.getAttribute('data-view') === NAV_KEY));
+    } catch (_) {}
+    load();
+  }
+
+  // 2026-06-13: keep the nav button alive. It must never be in sidebar_hidden
+  // for it to "shut off" — but to be bulletproof against ANY patch removing it,
+  // re-inject if it ever goes missing (injectNav is idempotent — it no-ops when
+  // the button is already present, so this is cheap). Debounced so a burst of
+  // nav mutations on load collapses into one check.
+  function guardButton() {
+    const nav = document.querySelector('nav.view-nav, .view-nav');
+    if (!nav) { setTimeout(guardButton, 400); return; }
+    let t = null;
+    new MutationObserver(() => { clearTimeout(t); t = setTimeout(injectNav, 250); })
+      .observe(nav, { childList: true, subtree: false });
   }
 
   injectNav();
   setTimeout(injectNav, 1000);
+  setTimeout(injectNav, 3000);
+  setTimeout(injectNav, 6000);
+  guardButton();
   ensureView();
   patchSwitchView();
   setTimeout(refreshBadge, 2500);
