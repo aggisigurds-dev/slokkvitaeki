@@ -290,9 +290,9 @@
     const s = r.data;
     let lines = s.linur; if (typeof lines === 'string') { try { lines = JSON.parse(lines); } catch (_e) { lines = []; } } if (!Array.isArray(lines)) lines = [];
     const N = n => Number(n) || 0;
-    const lname = l => l.nafn || l.name || l.label || l.text || l.vara || l.heiti || '—';
-    const lqty = l => N(l.magn != null ? l.magn : (l.qty != null ? l.qty : (l.fjoldi != null ? l.fjoldi : 1)));
-    const lprice = l => N(l.verd != null ? l.verd : (l.verd_an_vsk != null ? l.verd_an_vsk : (l.price != null ? l.price : l.upphaed)));
+    const lname = l => l.desc || l.nafn || l.name || l.label || l.text || l.vara || l.heiti || l.ref || '—';
+    const lqty = l => N(l.qty != null ? l.qty : (l.magn != null ? l.magn : (l.fjoldi != null ? l.fjoldi : 1)));
+    const lprice = l => N(l.unit_price_ex_vat != null ? l.unit_price_ex_vat : (l.verd != null ? l.verd : (l.verd_an_vsk != null ? l.verd_an_vsk : (l.price != null ? l.price : l.upphaed))));
     const ltot = l => l.samtals != null ? N(l.samtals) : (l.total != null ? N(l.total) : Math.round(lqty(l) * lprice(l)));
     const bt = 'border-top:1px solid #f1f5f9';
     const lrows = lines.length
