@@ -82,12 +82,15 @@
     window.App.switchView = function (view) {
       if (view === NAV_KEY) {
         ensureView();
+        // 2026-06-13: class-based like the core (.view.active{display:block}).
+        // Clear any stale inline display so switching AWAY later (core toggles
+        // the class only) doesn't leave other views stranded as display:none.
         document.querySelectorAll('[id^="view-"]').forEach(v => {
-          v.style.display = 'none';
           v.classList.remove('active');
+          v.style.display = '';
         });
         const v = document.getElementById(VIEW_ID);
-        if (v) { v.style.display = 'block'; v.classList.add('active'); }
+        if (v) { v.classList.add('active'); v.style.display = 'block'; }
         document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === NAV_KEY));
         load();
         return;
@@ -458,19 +461,19 @@
     ensureView();
     // Try the normal route first…
     try { if (window.App && App.switchView) App.switchView(NAV_KEY); } catch (_) {}
-    // …then FORCE our view visible regardless. If a later patch replaced
-    // App.switchView without chaining our case, the core would have hidden all
-    // views and shown nothing ("shuts itself off"). This belt-and-suspenders
-    // step guarantees the Kröfu yfirlit page is the one showing.
-    try {
-      document.querySelectorAll('[id^="view-"]').forEach(v => {
-        const mine = v.id === VIEW_ID;
-        v.style.display = mine ? 'block' : 'none';
-        v.classList.toggle('active', mine);
-      });
-      document.querySelectorAll('.vnav-btn').forEach(b =>
-        b.classList.toggle('active', b.getAttribute('data-view') === NAV_KEY));
-    } catch (_) {}
+    // …then, ONLY if that didn't activate our view (e.g. a later patch replaced
+    // App.switchView without chaining our case → the core hid all views and
+    // showed nothing, "shuts itself off"), force it the class-based way the
+    // core uses — clearing stale inline display so nothing strands.
+    const v = document.getElementById(VIEW_ID);
+    if (v && !v.classList.contains('active')) {
+      try {
+        document.querySelectorAll('[id^="view-"]').forEach(x => { x.classList.remove('active'); x.style.display = ''; });
+        v.classList.add('active'); v.style.display = 'block';
+        document.querySelectorAll('.vnav-btn').forEach(b =>
+          b.classList.toggle('active', b.getAttribute('data-view') === NAV_KEY));
+      } catch (_) {}
+    }
     load();
   }
 
