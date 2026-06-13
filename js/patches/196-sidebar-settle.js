@@ -16,6 +16,12 @@
   if (window.__sidebarSettleInstalled) return;
   window.__sidebarSettleInstalled = true;
 
+  // 2026-06-13: NEUTRALISED. The opacity-fade was a band-aid for the old
+  // DOM-wipe reorder (patch 68), which now positions buttons via CSS `order`
+  // with zero DOM moves — there's no shuffle to hide, and the .35 fade itself
+  // read as "tabs dim/disappear on load". No-op now.
+  return;
+
   const QUIET_MS = 700;
   const CAP_MS = 4000;
 
