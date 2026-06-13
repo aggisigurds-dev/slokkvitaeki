@@ -35,6 +35,12 @@
           margin: 10px 6px !important;
         }
       }
+      /* 2026-06-13: CSS-order engine — group gaps via a top-margin on the
+         first button of each group (no separator DOM nodes get moved). */
+      nav.view-nav .vnav-btn.nav-grp-start { margin-top: 14px !important; }
+      @media (max-width: 900px) {
+        nav.view-nav .vnav-btn.nav-grp-start { margin-top: 10px !important; }
+      }
     `;
     document.head.appendChild(s);
   }
@@ -167,28 +173,23 @@
     setTimeout(() => { scheduled = false; reorder(); }, delay);
   }
 
+  // 2026-06-13: SOLID rewrite. Position nav buttons with CSS `order` instead
+  // of wiping + re-appending the DOM. The wipe was the root of every sidebar
+  // complaint — buttons jumped/disappeared, clicks were swallowed mid-shuffle,
+  // scroll bounced, and late arrivals popcorned to the tail. With CSS `order`
+  // every button drops straight into its canonical slot the instant it exists,
+  // WITHOUT ever moving in the DOM. We only set style/class (never add/remove
+  // children), so this is idempotent and loop-free — safe to run on a live
+  // MutationObserver. (.view-nav is display:flex column, so `order` applies.)
   function reorder() {
     const nav = document.querySelector('nav.view-nav, .view-nav');
     if (!nav) return;
     const buttons = Array.from(nav.querySelectorAll('.vnav-btn'));
     if (!buttons.length) return;
-    // The "Tenglar" group is rendered as a single .qlinks-section block
-    // (a div containing all the link items). Treat it like a button when
-    // matching positions in ORDER.
     const qlinks = nav.querySelector('.qlinks-section');
 
     inProgress = true;
     try {
-      const used = new Set();
-      let qlinksUsed = false;
-      const ordered = [];
-
-      // 2026-05-21: prefer custom order from AppSettings when set.
-      // Custom order entries are STABLE IDS (data-view) — matched exactly so
-      // tabs can never collapse into the wrong slot the way label-substring
-      // matching did (the "tabs lost on reorder" bug). Old label-string saves
-      // still work via matchCustomEntry's fallback. The default ORDER (no
-      // custom order) keeps its label-substring arrays, unchanged.
       const customOrder = getCustomOrder();
       const activeOrder = customOrder || ORDER;
       const isCustom = !!customOrder;
@@ -204,86 +205,53 @@
         });
       }
       const hiddenButtons = new Set(buttons.filter(isHiddenBtn));
+
+      // Reset per pass: clear group marks; show non-hidden, hide hidden.
+      buttons.forEach(b => {
+        b.classList.remove('nav-grp-start');
+        if (hiddenButtons.has(b)) b.style.display = 'none';
+        else if (b.style.display === 'none') b.style.display = '';
+      });
+      // Static separators + section labels (from index.html) have no `order`
+      // → they'd sort to the very top (order:0). We render group spacing via
+      // margins instead, so hide them (matches the old wipe, which removed them).
+      nav.querySelectorAll('.nav-sep, .nav-section-label').forEach(el => { el.style.display = 'none'; });
+
+      const used = new Set();
+      let qlinksUsed = false;
+      let pos = 10;
+      let groupStart = false;   // first group has no extra top-margin
+
+      function place(el) {
+        el.style.order = String(pos++);
+        if (groupStart) { if (el.classList) el.classList.add('nav-grp-start'); groupStart = false; }
+      }
+
       for (const item of activeOrder) {
-        if (item === SEP) {
-          // Marked with `nav-sep-group` so our injected CSS gives it more
-          // breathing room than the default thin-line separator.
-          const s = document.createElement('div');
-          s.className = 'nav-sep nav-sep-group';
-          ordered.push(s);
-          continue;
-        }
+        if (item === SEP) { groupStart = true; continue; }
         if (isCustom) {
-          // Stable-id (or back-compat label) exact match. Unmatched buttons
-          // are NOT dropped — they flow to the `rest` tail below, so nothing
-          // is ever lost when reordering.
           const found = matchCustomEntry(buttons, used, hiddenButtons, item);
-          if (found) { ordered.push(found); used.add(found); }
+          if (found) { place(found); used.add(found); }
           continue;
         }
-        // Default ORDER: item is an array of label substrings.
-        // Special-case: the Tenglar section matches a wider net of names
-        // (the section label says "Tenglar", any of its children also OK).
+        // Default ORDER: array of label substrings. Tenglar section special-case.
         if (qlinks && !qlinksUsed && item.some(n => /tengl|kort|qlink/i.test(n))
             && /tengl/i.test(qlinks.textContent || '')) {
-          ordered.push(qlinks);
-          qlinksUsed = true;
-          continue;
+          place(qlinks); qlinksUsed = true; continue;
         }
         const found = buttons.find(b => !used.has(b) && !hiddenButtons.has(b) && matches(b, item));
-        if (found) { ordered.push(found); used.add(found); }
+        if (found) { place(found); used.add(found); }
       }
 
-      // Hide hidden buttons — but KEEP them in the DOM (display:none) by adding
-      // them to `ordered`. If we drop them entirely, their own injector patch
-      // sees the button missing and re-creates it VISIBLE on the next tick —
-      // which is why hidden items "popped back" after a refresh.
-      hiddenButtons.forEach(b => { b.style.display = 'none'; });
-
-      // "rest" — any nav-button not explicitly placed stays at the end.
-      const rest = buttons.filter(b => !used.has(b) && !hiddenButtons.has(b));
-      if (rest.length || (qlinks && !qlinksUsed)) {
-        const last = ordered[ordered.length - 1];
-        if (!last || !last.classList?.contains('nav-sep')) {
-          const s = document.createElement('div');
-          s.className = 'nav-sep';
-          ordered.push(s);
-        }
-        rest.forEach(b => ordered.push(b));
-        if (qlinks && !qlinksUsed) ordered.push(qlinks);
-      }
-
-      // The very last separator before the "rest" tail also gets the bigger
-      // gap so the trailing group is visually distinct.
-      ordered.forEach(el => {
-        if (el.classList?.contains('nav-sep') && !el.classList.contains('nav-sep-group')) {
-          el.classList.add('nav-sep-group');
-        }
+      // "rest" — any button not explicitly placed flows after the known
+      // cluster, keeping its current DOM order, with one group gap before it.
+      let restPos = 9000, firstRest = true;
+      buttons.forEach(b => {
+        if (used.has(b) || hiddenButtons.has(b)) return;
+        b.style.order = String(restPos++);
+        if (firstRest) { b.classList.add('nav-grp-start'); firstRest = false; }
       });
-
-      // Save sidebar scroll position so user doesn't get bounced to top when
-      // we wipe + reappend (this is what was making nav clicks feel laggy —
-      // a late reorder fired during a click and the button moved away).
-      const savedScrollTop = nav.scrollTop;
-
-      // Wipe existing buttons / separators / section labels / qlinks and
-      // re-append in the new order. Anything else inside the nav (e.g. a
-      // brand block, if present) is left in place.
-      Array.from(nav.children).forEach(child => {
-        if (child.classList?.contains('vnav-btn')
-         || child.classList?.contains('nav-sep')
-         || child.classList?.contains('nav-section-label')
-         || child.classList?.contains('qlinks-section')) {
-          child.remove();
-        }
-      });
-      ordered.forEach(el => nav.appendChild(el));
-      // Keep hidden buttons attached (invisible) so their injectors don't
-      // resurrect them. They sit at the end, display:none.
-      hiddenButtons.forEach(b => { b.style.display = 'none'; nav.appendChild(b); });
-
-      // Restore scroll position
-      nav.scrollTop = savedScrollTop;
+      if (qlinks && !qlinksUsed) qlinks.style.order = String(restPos++);
     } finally {
       inProgress = false;
     }
@@ -313,6 +281,20 @@
   // unordered at the tail until the next mutation ("sidepanel shuffles").
   setTimeout(scheduleReorder, 6000);
   setTimeout(scheduleReorder, 12000);
+
+  // 2026-06-13: with the CSS-order engine there are no DOM moves and no
+  // click-swallowing, so a permanent observer is now safe — and it finally
+  // kills late-arrival shuffle for good: any nav button added at ANY time is
+  // placed into its slot the instant it appears (we only set style/class, so
+  // this never re-triggers itself). childList+subtree:false so badge-count
+  // text changes inside buttons don't fire it.
+  (function observeNav(tries) {
+    const nav = document.querySelector('nav.view-nav, .view-nav');
+    if (!nav) { if ((tries || 0) < 40) setTimeout(() => observeNav((tries || 0) + 1), 300); return; }
+    let t = null;
+    new MutationObserver(() => { clearTimeout(t); t = setTimeout(reorder, 120); })
+      .observe(nav, { childList: true, subtree: false });
+  })(0);
 
   // Safety-net delegated click handler on the nav itself. If the inline
   // onclick on a button gets lost for any reason (e.g. detach + re-attach
