@@ -264,6 +264,51 @@
       else { const r = ROWS.find(x => Number(x.id) === id); doSaleAct(act, id, r); }
     }));
     scope.querySelectorAll('.note-in').forEach(inp => inp.addEventListener('change', () => saveNote(inp.dataset.k, Number(inp.dataset.id), inp.value, inp)));
+    scope.querySelectorAll('[data-sopen]').forEach(b => b.onclick = () => openSaleDetail(Number(b.dataset.sopen)));
+  }
+
+  // ── open a sale in a popup right here (review without leaving the page) ──────
+  async function openSaleDetail(id) {
+    const SB = getSB(); if (!SB) return;
+    const row = ROWS.find(x => Number(x.id) === Number(id)) || {};
+    const prev = document.getElementById('bky-detail'); if (prev) prev.remove();
+    const bg = document.createElement('div'); bg.id = 'bky-detail';
+    bg.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:99999;display:flex;align-items:flex-start;justify-content:center;padding:36px 14px;overflow:auto';
+    bg.innerHTML = '<div style="background:#fff;border-radius:14px;max-width:640px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden">'
+      + '<div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid #e2e8f0">'
+      + '<strong style="font-size:16px;color:#0f172a">Sala ' + esc(row.num || '') + '</strong><span style="flex:1"></span>'
+      + '<button id="bky-detail-x" style="border:none;background:none;font-size:24px;line-height:1;cursor:pointer;color:#64748b">&times;</button></div>'
+      + '<div id="bky-detail-body" style="padding:18px"><div class="skel">Sæki…</div></div></div>';
+    document.body.appendChild(bg);
+    const close = () => bg.remove();
+    bg.addEventListener('click', e => { if (e.target === bg) close(); });
+    document.getElementById('bky-detail-x').onclick = close;
+    document.addEventListener('keydown', function onEsc(e) { if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onEsc); } });
+    const r = await SB.from('solur').select('*').eq('id', id).single();
+    const body = document.getElementById('bky-detail-body'); if (!body) return;
+    if (r.error || !r.data) { body.innerHTML = '<div style="color:#dc2626">Villa við að sækja sölu: ' + esc(r.error ? r.error.message : 'fannst ekki') + '</div>'; return; }
+    const s = r.data;
+    let lines = s.linur; if (typeof lines === 'string') { try { lines = JSON.parse(lines); } catch (_e) { lines = []; } } if (!Array.isArray(lines)) lines = [];
+    const N = n => Number(n) || 0;
+    const lname = l => l.nafn || l.name || l.label || l.text || l.vara || l.heiti || '—';
+    const lqty = l => N(l.magn != null ? l.magn : (l.qty != null ? l.qty : (l.fjoldi != null ? l.fjoldi : 1)));
+    const lprice = l => N(l.verd != null ? l.verd : (l.verd_an_vsk != null ? l.verd_an_vsk : (l.price != null ? l.price : l.upphaed)));
+    const ltot = l => l.samtals != null ? N(l.samtals) : (l.total != null ? N(l.total) : Math.round(lqty(l) * lprice(l)));
+    const bt = 'border-top:1px solid #f1f5f9';
+    const lrows = lines.length
+      ? lines.map(l => '<tr><td style="padding:5px 6px;' + bt + '">' + esc(lname(l)) + '</td><td style="padding:5px 6px;text-align:right;' + bt + '">' + lqty(l) + '</td><td style="padding:5px 6px;text-align:right;' + bt + '">' + fmtKr(lprice(l)) + '</td><td style="padding:5px 6px;text-align:right;font-weight:600;' + bt + '">' + fmtKr(ltot(l)) + '</td></tr>').join('')
+      : '<tr><td colspan="4" style="padding:10px;color:#94a3b8">Engar línur skráðar á þessa sölu.</td></tr>';
+    const meta = (k, v) => '<div style="display:flex;justify-content:space-between;gap:12px;padding:3px 0"><span style="color:#64748b">' + k + '</span><span style="font-weight:600;color:#0f172a">' + v + '</span></div>';
+    let html = '<div style="margin-bottom:14px">' + meta('Kúnni', esc(s.customer_nafn || row.kunni || '—')) + meta('Dagsetning', esc((s.created_at || '').slice(0, 10))) + meta('Greiðsla', esc(s.greitt_med || '—')) + meta('Staða', esc(s.status || '—')) + '</div>';
+    html += '<table style="width:100%;border-collapse:collapse;font-size:13px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden"><thead><tr style="background:#f8fafc;color:#64748b;font-size:11px;text-transform:uppercase"><th style="text-align:left;padding:6px">Vara</th><th style="text-align:right;padding:6px">Magn</th><th style="text-align:right;padding:6px">Verð</th><th style="text-align:right;padding:6px">Samtals</th></tr></thead><tbody>' + lrows + '</tbody></table>';
+    html += '<div style="margin-top:12px;border-top:1px solid #e2e8f0;padding-top:10px">';
+    if (s.upphaed_an_vsk != null) html += meta('Án vsk', fmtKr(s.upphaed_an_vsk));
+    if (s.vsk_upphaed != null) html += meta('VSK', fmtKr(s.vsk_upphaed));
+    if (N(s.afslattur)) html += meta('Afsláttur', '−' + fmtKr(s.afslattur));
+    html += '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0"><span style="font-weight:700;font-size:15px">Samtals m. vsk</span><span style="font-weight:800;font-size:15px;color:#0f172a">' + fmtKr(s.samtals) + '</span></div></div>';
+    if (s.athugasemdir) html += '<div style="margin-top:12px;background:#f8fafc;border-radius:8px;padding:10px;font-size:13px;color:#334155"><b>Athugasemd sölu:</b> ' + esc(s.athugasemdir) + '</div>';
+    if (row.note) html += '<div style="margin-top:8px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:10px;font-size:13px;color:#92400e"><b>Yfirferð:</b> ' + esc(row.note) + '</div>';
+    body.innerHTML = html;
   }
 
   // ── data ───────────────────────────────────────────────────────────────
@@ -439,7 +484,7 @@
       <td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums">${fmtKr(r.amt)}</td>
       <td><span class="pill" style="${pillCls}">${esc(c.label)}</span></td>
       <td><input class="note-in${r.note ? ' has' : ''}" data-k="sala" data-id="${r.id}" value="${esc(r.note)}" placeholder="skrifa…"></td>
-      <td style="white-space:nowrap">${acts}${acts2}</td>
+      <td style="white-space:nowrap"><button class="ab ab-open" data-sopen="${r.id}" title="Skoða þessa sölu — línur, upphæðir, athugasemd">👁 Opna</button>${acts}${acts2}</td>
     </tr>`;
   }
 
