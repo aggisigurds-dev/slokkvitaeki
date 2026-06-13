@@ -354,8 +354,25 @@
   // 2026-05-21: re-apply when the user saves a new sidebar order via the
   // customizer modal (patch 171). Show any previously-hidden buttons too so
   // toggling visibility off→on works without a reload.
+  //
+  // 2026-06-13: GATE on the sidebar keys actually changing. AppSettings.notify()
+  // fires EVERY listener on EVERY save() — and ~30 unrelated patches save
+  // settings constantly (notes, todo board, prices, ársskoðun, customer
+  // subscriptions, geocode cache…). Each of those used to rebuild the whole nav
+  // (un-hide all + full reorder) at an arbitrary mid-session moment — which is
+  // what made tabs "sometimes move around" long after load, and made any hidden
+  // tabs flash back in on every autosave. The load-time settling layers
+  // (patches 180/189/196) don't cover these because they only run for the first
+  // few seconds. Now we react ONLY when sidebar_order / sidebar_hidden actually
+  // differ from last time — i.e. when the user really reorders (patch 171).
+  // Late-arriving nav buttons are still placed by the guardian (patch 189),
+  // which watches nav membership directly, so nothing is lost by gating here.
   if (window.AppSettings && typeof AppSettings.onChange === 'function') {
+    let _lastSidebarSig = JSON.stringify([getCustomOrder(), getHidden()]);
     AppSettings.onChange(() => {
+      const sig = JSON.stringify([getCustomOrder(), getHidden()]);
+      if (sig === _lastSidebarSig) return;   // unrelated settings save — leave the nav alone
+      _lastSidebarSig = sig;
       const nav = document.querySelector('nav.view-nav, .view-nav');
       if (nav) nav.querySelectorAll('.vnav-btn').forEach(b => { b.style.display = ''; });
       scheduleReorder();
