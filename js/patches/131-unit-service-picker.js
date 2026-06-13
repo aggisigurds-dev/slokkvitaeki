@@ -20,7 +20,10 @@
     // cost calculator (patch 129) bills the store price from vörur instead
     // of hleðsla/yfirferð service price.
     { v: 'nyitt',    label: 'Nýtt',     color: '#6b21a8', bg: '#f3e8ff' },
-    { v: 'none',     label: 'Sleppa',   color: '#64748b', bg: '#f1f5f9' }
+    { v: 'none',     label: 'Sleppa',   color: '#64748b', bg: '#f1f5f9' },
+    // 2026-06-12: "Ónýtt" = tækið er ónothæft → er ekki rukkað (patch 129
+    // telur það sem skip, eins og Sleppa).
+    { v: 'onytt',    label: 'Ónýtt',    color: '#991b1b', bg: '#fecaca' }
   ];
 
   // 2026-05-19: type-aware default per Agnar's workflow. The Stolpi/Slökkvitæki
