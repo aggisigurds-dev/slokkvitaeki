@@ -437,6 +437,7 @@
 
     // Editable rekstrarfélag info card (kennitala / netföng / lén / nótur).
     var fEmails=(info.emails||[]).join(', ');
+    var emails=(info.emails||[]).map(function(e){return '<a href="mailto:'+esc(e)+'" style="color:#2563eb;text-decoration:none">'+esc(e)+'</a>';}).join(' · ');
     var inS='width:100%;padding:6px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box;margin-top:2px';
     var infoPanel=
       '<div class="_rf_info" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
