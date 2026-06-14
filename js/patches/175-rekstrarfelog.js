@@ -122,6 +122,45 @@
   }
   function _todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
 
+  // 2026-06-14 (Todoist): shared-kennitala report bleed. Heimaleiga ehf (kt
+  // 510117-0690) runs many buildings (Freyjugata 16, Laugavegur 1/18, Urðarhvarf
+  // 2/4, Hamraborg 7 …). Úttektarskýrslur are attached to the *company* record
+  // (matched by kt), so every sibling building showed the same report — e.g.
+  // Freyjugata's on all of them. For a SHARED kt we now only show a report whose
+  // file name matches that building's street + house-number. Unique-kt buildings
+  // are completely untouched (fall through to the original fileForYear).
+  function sharedKtSet(){
+    var data=getData(), counts={}, set={};
+    Object.keys(data).forEach(function(n){ (((data[n]||{}).buildings)||[]).forEach(function(b){
+      var d=digits(b.kt); if(d) counts[d]=(counts[d]||0)+1; }); });
+    Object.keys(counts).forEach(function(d){ if(counts[d]>1) set[d]=true; });
+    return set;
+  }
+  // street prefix (declension-proof) + house number that identifies one building
+  function _bldSig(b){
+    var m=_norm(((b&&b.nafn)||'')+' '+((b&&b.heimilisfang)||'')).match(/([a-záðéíóúýþæö]{4,})\s*(\d+)[a-d]?/);
+    return m ? { street:m[1].slice(0,6), num:m[2] } : null;
+  }
+  function fileMatchesBuilding(file,b){
+    var hay=_norm(file&&(file.name||file.file||'')); if(!hay) return false;
+    // (a) street prefix + house number both present in the file name
+    var sig=_bldSig(b);
+    if(sig && hay.indexOf(sig.street)>=0 && new RegExp('(^|\\D)'+sig.num+'(\\D|$)').test(hay)) return true;
+    // (b) a parenthetical building alias, e.g. "Laugavegur 1 (Ice Apartments)"
+    //     → matches a report named "ice apartments …" that carries no address.
+    var al=(String((b&&b.nafn)||'').match(/\(([^)]+)\)/)||[])[1];
+    if(al){ al=_norm(al); if(al.length>=4 && hay.indexOf(al)>=0) return true; }
+    return false;
+  }
+  // building-aware fileForYear: when the kt is shared, require the file name to
+  // match THIS building; otherwise identical to the plain fileForYear.
+  function fileForYearBld(caMap,key,y,b,ktShared){
+    if(!ktShared) return fileForYear(caMap,key,y);
+    var list=caMap[key]; if(!Array.isArray(list)) return null;
+    return list.find(function(x){ return String(x.year)===y && fileMatchesBuilding(x,b); }) ||
+           list.find(function(x){ return x.year==null && new RegExp('\\b'+y+'\\b').test(String(x.name||'')) && fileMatchesBuilding(x,b); }) || null;
+  }
+
   // ---- view rendering ----
   // sortKey/'sortDir': röðun yfirlitstöflunnar — '' = sjálfgefin (félag+bygging)
   var _state={ q:'', mode:'firms', fltr:'all', sortKey:'', sortDir:1 };
@@ -167,14 +206,15 @@
   }
 
   // ---- combined overview: all buildings across all firms (totals + flat table) ----
-  function computeBldStatus(b, equip, attMap, linkMap, today, caMap){
+  function computeBldStatus(b, equip, attMap, linkMap, today, caMap, sharedKt){
     var co=companyByKt(b.kt);
     var st=equip.match(b.nafn);
-    var att=(co&&(attMap[co.id]||attMap[String(co.id)]))||[0,0,0];
-    var lks=linkMap[bldLinkKey(b)]||linkMap[digits(b.kt)]||{};
+    var ktShared=!!(sharedKt&&sharedKt[digits(b.kt)]);
+    var att=((!ktShared)&&co&&(attMap[co.id]||attMap[String(co.id)]))||[0,0,0];
+    var lks=linkMap[bldLinkKey(b)]||(ktShared?null:linkMap[digits(b.kt)])||{};
     var akey=bldAttachKey(b,co);
-    var f23=fileForYear(caMap,akey,'2023'),f24=fileForYear(caMap,akey,'2024'),
-        f25=fileForYear(caMap,akey,'2025'),f26=fileForYear(caMap,akey,'2026');
+    var f23=fileForYearBld(caMap,akey,'2023',b,ktShared),f24=fileForYearBld(caMap,akey,'2024',b,ktShared),
+        f25=fileForYearBld(caMap,akey,'2025',b,ktShared),f26=fileForYearBld(caMap,akey,'2026',b,ktShared);
     var units=st?st.units:0;
     var e24=st?st.y2024:0,e25=st?st.y2025:0,e26=st?st.y2026:0;
     var d24=(e24>0)||!!att[0]||!!lks['2024']||!!f24, d25=(e25>0)||!!att[1]||!!lks['2025']||!!f25, d26=(e26>0)||!!att[2]||!!lks['2026']||!!f26;
@@ -211,10 +251,11 @@
     var attMap={},linkMap={};
     try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; linkMap=AppSettings.path('rf_uttekt_links')||{}; } }catch(e){}
     var caMap=getCaMap();
+    var sharedKt=sharedKtSet();
     var today=_todayStr();
     var all=[], firms=0;
     Object.keys(data).forEach(function(name){ var blds=(data[name].buildings)||[]; if(blds.length) firms++;
-      blds.forEach(function(b,bi){ all.push({firm:name,b:b,bi:bi,s:computeBldStatus(b,equip,attMap,linkMap,today,caMap)}); }); });
+      blds.forEach(function(b,bi){ all.push({firm:name,b:b,bi:bi,s:computeBldStatus(b,equip,attMap,linkMap,today,caMap,sharedKt)}); }); });
     var tot={byg:all.length,done:0,need:0,none:0,overdue:0};
     all.forEach(function(r){ if(r.s.cls==='done')tot.done++; else if(r.s.cls==='need')tot.need++; else if(r.s.cls==='none')tot.none++; if(r.s.overdue)tot.overdue++; });
     var f=_state.fltr||'all', q=_state.q.toLowerCase().trim();
@@ -368,6 +409,7 @@
     var attMap={}; try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; } }catch(e){}
     var linkMap={}; try{ if(window.AppSettings&&AppSettings.path){ linkMap=AppSettings.path('rf_uttekt_links')||{}; } }catch(e){}
     var caMap=getCaMap();
+    var sharedKt=sharedKtSet();
     var today=_todayStr();
     // per-firm tally
     var n2026=0, nNeed=0, nNone=0, nOverdue=0;
@@ -390,11 +432,12 @@
                    : esc(b.nafn)+' <span style="color:#cbd5e1;font-size:11px">(ekki í skrá)</span>';
       var doc = co ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:#2563eb">skjöl</a>' : '';
       var st = equip.match(b.nafn);
-      var att = (co && (attMap[co.id]||attMap[String(co.id)])) || [0,0,0];
-      var lks = linkMap[bldLinkKey(b)] || linkMap[digits(b.kt)] || {};
+      var ktShared = !!(sharedKt && sharedKt[digits(b.kt)]);
+      var att = ((!ktShared) && co && (attMap[co.id]||attMap[String(co.id)])) || [0,0,0];
+      var lks = linkMap[bldLinkKey(b)] || (ktShared?null:linkMap[digits(b.kt)]) || {};
       var akey = bldAttachKey(b, co);
-      var f23=fileForYear(caMap,akey,'2023'), f24=fileForYear(caMap,akey,'2024'),
-          f25=fileForYear(caMap,akey,'2025'), f26=fileForYear(caMap,akey,'2026');
+      var f23=fileForYearBld(caMap,akey,'2023',b,ktShared), f24=fileForYearBld(caMap,akey,'2024',b,ktShared),
+          f25=fileForYearBld(caMap,akey,'2025',b,ktShared), f26=fileForYearBld(caMap,akey,'2026',b,ktShared);
       var units = st ? st.units : 0;
       var e24=st?st.y2024:0, e25=st?st.y2025:0, e26=st?st.y2026:0;
       var d23=!!lks['2023']||!!f23;
