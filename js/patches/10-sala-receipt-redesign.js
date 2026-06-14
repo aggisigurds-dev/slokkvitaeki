@@ -794,8 +794,8 @@
       notes: sale.athugasemdir || '',
       customer: {
         nafn: sale.customer_nafn || '',
-        kt: '',
-        kennitala: '',
+        kt: (sale.customer_kt || '').replace(/^(\d{6})[- ]?(\d{4})$/, '$1-$2'),
+        kennitala: (sale.customer_kt || '').replace(/^(\d{6})[- ]?(\d{4})$/, '$1-$2'),
         heimilisfang: '',
         co_id: sale.customer_id || null
       }
