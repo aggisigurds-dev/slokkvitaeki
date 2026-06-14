@@ -79,6 +79,9 @@
       #${VIEW_ID} .note-in{width:100%;min-width:90px;padding:4px 7px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:12px}
       #${VIEW_ID} .note-in.has{border-color:#f59e0b;background:#fffbeb}
       #${VIEW_ID} .ab{padding:4px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;cursor:pointer;font:inherit;font-size:11px;font-weight:600;margin-right:3px;white-space:nowrap}
+      #${VIEW_ID} tr.rett td{background:#f0fdf4}
+      #${VIEW_ID} .rett-chk{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#166534;cursor:pointer;margin-right:8px;white-space:nowrap}
+      #${VIEW_ID} .rett-chk input{cursor:pointer;margin:0}
       #${VIEW_ID} .ab.armed{background:#dc2626;color:#fff;border-color:#dc2626}
       #${VIEW_ID} .skel{padding:30px;text-align:center;color:#94a3b8}`;
     document.head.appendChild(s);
@@ -246,6 +249,18 @@
     if (inp) inp.classList.toggle('has', !!String(text).trim());
     toast('Athugasemd vistuð ✓');
   }
+  // "✓ Rétt" — mark a row reviewed/correct (writes cowork_review_notes.resolved; note preserved)
+  async function saveResolved(kind, id, val, inp) {
+    const SB = getSB(); if (!SB) return;
+    const r = await SB.from('cowork_review_notes')
+      .upsert({ kind, sale_id: id, resolved: val, updated_at: nowISO() }, { onConflict: 'kind,sale_id' });
+    if (r.error) { toast('Villa: ' + r.error.message); if (inp) inp.checked = !val; return; }
+    const arr = kind === 'verk' ? VROWS : ROWS;
+    const row = arr.find(x => Number(x.id) === Number(id));
+    if (row) row.resolved = val;
+    const tr = inp && inp.closest('tr'); if (tr) tr.classList.toggle('rett', val);
+    toast(val ? '✓ Merkt rétt' : 'Hak tekið af');
+  }
 
   // two-step confirm
   function armBtn(btn, go) {
@@ -264,6 +279,7 @@
       else { const r = ROWS.find(x => Number(x.id) === id); doSaleAct(act, id, r); }
     }));
     scope.querySelectorAll('.note-in').forEach(inp => inp.addEventListener('change', () => saveNote(inp.dataset.k, Number(inp.dataset.id), inp.value, inp)));
+    scope.querySelectorAll('.rett-in').forEach(inp => inp.addEventListener('change', () => saveResolved(inp.dataset.k, Number(inp.dataset.id), inp.checked, inp)));
     scope.querySelectorAll('[data-sopen]').forEach(b => b.onclick = () => openSaleDetail(Number(b.dataset.sopen)));
   }
 
@@ -312,7 +328,7 @@
   }
 
   // ── data ───────────────────────────────────────────────────────────────
-  let ROWS = [], VROWS = [], NOTES = { sala: {}, verk: {} }, _verkLoaded = false;
+  let ROWS = [], VROWS = [], NOTES = { sala: {}, verk: {} }, RESOLVED = { sala: {}, verk: {} }, _verkLoaded = false;
   let sCat = 'all';
 
   async function load() {
@@ -320,9 +336,9 @@
     const appS = document.getElementById('bky-appS');
     if (!SB) { if (appS) appS.innerHTML = '<div class="skel" style="color:#dc2626">Engin gagnabankatenging.</div>'; return; }
     // notes
-    const n = await SB.from('cowork_review_notes').select('kind,sale_id,note');
-    NOTES = { sala: {}, verk: {} };
-    (n.data || []).forEach(x => { (NOTES[x.kind] || (NOTES[x.kind] = {}))[x.sale_id] = x.note; });
+    const n = await SB.from('cowork_review_notes').select('kind,sale_id,note,resolved');
+    NOTES = { sala: {}, verk: {} }; RESOLVED = { sala: {}, verk: {} };
+    (n.data || []).forEach(x => { (NOTES[x.kind] || (NOTES[x.kind] = {}))[x.sale_id] = x.note; (RESOLVED[x.kind] || (RESOLVED[x.kind] = {}))[x.sale_id] = !!x.resolved; });
     // sales
     const r = await SB.from('solur')
       .select('id,num,created_at,customer_nafn,greitt_med,status,samtals,customer_base_id,paid_at,is_credit,krafa_sent_at,hidden')
@@ -334,7 +350,7 @@
       greitt_med: s.greitt_med || '', stada: s.status || '', amt: Number(s.samtals) || 0,
       base_id: s.customer_base_id, paid: s.paid_at != null, is_credit: !!s.is_credit,
       krafa_sent: s.krafa_sent_at != null, hidden: !!s.hidden, created_at: s.created_at,
-      note: NOTES.sala[s.id] || ''
+      note: NOTES.sala[s.id] || '', resolved: !!(RESOLVED.sala && RESOLVED.sala[s.id])
     }));
     ROWS.forEach(r => r._cat = cat(r));
     // build per-customer sale-date index for verk picked_up
@@ -356,7 +372,7 @@
     VROWS = (r.data || []).map(v => {
       const dates = _saleDatesByCust[normName(v.customer)] || [];
       const picked_up = !!v.dropoff && dates.some(d => d && d >= v.dropoff);
-      return { id: v.id, num: v.num || '', kunni: (v.customer && v.customer.trim()) || '(óþekktur)', phone: v.phone || '', dropoff: v.dropoff, pickup: v.pickup, status: v.status || '', verd: Number(v.verd) || 0, picked_up, note: NOTES.verk[v.id] || '' };
+      return { id: v.id, num: v.num || '', kunni: (v.customer && v.customer.trim()) || '(óþekktur)', phone: v.phone || '', dropoff: v.dropoff, pickup: v.pickup, status: v.status || '', verd: Number(v.verd) || 0, picked_up, note: NOTES.verk[v.id] || '', resolved: !!(RESOLVED.verk && RESOLVED.verk[v.id]) };
     });
     VROWS.forEach(v => v._cat = vcat(v));
     fillSelect('bky-fVstatus', VROWS.map(v => v.status).filter(Boolean));
@@ -475,7 +491,7 @@
     const acts2 = r.stada === 'void'
       ? `<button class="ab" data-act="gild" data-id="${r.id}">Gilt</button>`
       : `<button class="ab" data-act="void" data-id="${r.id}">Ógilt</button>`;
-    return `<tr class="${r.hidden || r.stada === 'void' ? 'dim' : ''} ${r._dup ? 'dup' : ''}">
+    return `<tr class="${r.hidden || r.stada === 'void' ? 'dim' : ''} ${r._dup ? 'dup' : ''} ${r.resolved ? 'rett' : ''}">
       <td style="font-family:monospace;color:#475569">${esc(r.num)}${r._dup ? ' <span class="pill" style="background:#fed7aa;color:#9a3412">🔗${r._dup}</span>' : ''}</td>
       <td style="color:#64748b">${esc(r.dags)}</td>
       <td style="font-weight:600;color:#0f172a">${esc(r.kunni)}</td>
@@ -484,7 +500,7 @@
       <td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums">${fmtKr(r.amt)}</td>
       <td><span class="pill" style="${pillCls}">${esc(c.label)}</span></td>
       <td><input class="note-in${r.note ? ' has' : ''}" data-k="sala" data-id="${r.id}" value="${esc(r.note)}" placeholder="skrifa…"></td>
-      <td style="white-space:nowrap"><button class="ab ab-open" data-sopen="${r.id}" title="Skoða þessa sölu — línur, upphæðir, athugasemd">👁 Opna</button>${acts}${acts2}</td>
+      <td style="white-space:nowrap"><label class="rett-chk" title="Hakaðu þegar þú hefur yfirfarið og þetta er rétt"><input type="checkbox" class="rett-in" data-k="sala" data-id="${r.id}" ${r.resolved ? 'checked' : ''}>✓ Rétt</label><button class="ab ab-open" data-sopen="${r.id}" title="Skoða þessa sölu — línur, upphæðir, athugasemd">👁 Opna</button>${acts}${acts2}</td>
     </tr>`;
   }
 
@@ -520,7 +536,7 @@
     const acts = v.status === 'collected'
       ? `<button class="ab" data-act="vopen" data-id="${v.id}">Opna</button>`
       : `<button class="ab" data-act="vcollect" data-id="${v.id}">Merkja sótt</button>`;
-    return `<tr>
+    return `<tr class="${v.resolved ? 'rett' : ''}">
       <td style="font-family:monospace;color:#475569">${esc(v.num)}</td>
       <td style="font-weight:600;color:#0f172a">${esc(v.kunni)}</td>
       <td style="color:#64748b">${esc(v.phone || '—')}</td>
@@ -529,7 +545,7 @@
       <td><span class="pill" style="${pillCls}">${esc(c.label)}</span></td>
       <td style="text-align:right;font-variant-numeric:tabular-nums">${v.verd ? fmtKr(v.verd) : '—'}</td>
       <td><input class="note-in${v.note ? ' has' : ''}" data-k="verk" data-id="${v.id}" value="${esc(v.note)}" placeholder="skrifa…"></td>
-      <td style="white-space:nowrap">${acts}</td>
+      <td style="white-space:nowrap"><label class="rett-chk" title="Hakaðu þegar yfirfarið og rétt"><input type="checkbox" class="rett-in" data-k="verk" data-id="${v.id}" ${v.resolved ? 'checked' : ''}>✓ Rétt</label>${acts}</td>
     </tr>`;
   }
 
