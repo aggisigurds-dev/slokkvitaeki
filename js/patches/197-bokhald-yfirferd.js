@@ -82,6 +82,8 @@
       #${VIEW_ID} tr.rett td{background:#f0fdf4}
       #${VIEW_ID} .rett-chk{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#166534;cursor:pointer;margin-right:8px;white-space:nowrap}
       #${VIEW_ID} .rett-chk input{cursor:pointer;margin:0}
+      #${VIEW_ID} .krafa-chk{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:#1d4ed8;cursor:pointer;margin-right:8px;white-space:nowrap}
+      #${VIEW_ID} .krafa-chk input{cursor:pointer;margin:0}
       #${VIEW_ID} .ab.armed{background:#dc2626;color:#fff;border-color:#dc2626}
       #${VIEW_ID} .skel{padding:30px;text-align:center;color:#94a3b8}`;
     document.head.appendChild(s);
@@ -261,6 +263,25 @@
     const tr = inp && inp.closest('tr'); if (tr) tr.classList.toggle('rett', val);
     toast(val ? '✓ Merkt rétt' : 'Hak tekið af');
   }
+  // "Krafa" — set greitt_med='reikningur' so the sale flows into Kröfu yfirlit (reversible via greitt_med_prev)
+  async function saveKrafa(id, val, inp) {
+    const SB = getSB(); if (!SB) return;
+    const row = ROWS.find(x => Number(x.id) === Number(id)); if (!row) return;
+    let patch;
+    if (val) {
+      patch = { greitt_med: 'reikningur' };
+      if (row.greitt_med !== 'reikningur') patch.greitt_med_prev = row.greitt_med || null;
+    } else {
+      patch = { greitt_med: row.greitt_med_prev || 'greitt_sidar', greitt_med_prev: null };
+    }
+    const r = await SB.from('solur').update(patch).eq('id', id);
+    if (r.error) { toast('Villa: ' + r.error.message); if (inp) inp.checked = !val; return; }
+    if ('greitt_med_prev' in patch) row.greitt_med_prev = patch.greitt_med_prev;
+    row.greitt_med = patch.greitt_med;
+    row._cat = cat(row);
+    toast(val ? 'Merkt sem krafa → Kröfu yfirlit' : 'Tekið úr kröfum (' + row.greitt_med + ')');
+    renderSala();
+  }
 
   // two-step confirm
   function armBtn(btn, go) {
@@ -280,6 +301,7 @@
     }));
     scope.querySelectorAll('.note-in').forEach(inp => inp.addEventListener('change', () => saveNote(inp.dataset.k, Number(inp.dataset.id), inp.value, inp)));
     scope.querySelectorAll('.rett-in').forEach(inp => inp.addEventListener('change', () => saveResolved(inp.dataset.k, Number(inp.dataset.id), inp.checked, inp)));
+    scope.querySelectorAll('.krafa-in').forEach(inp => inp.addEventListener('change', () => saveKrafa(Number(inp.dataset.id), inp.checked, inp)));
     scope.querySelectorAll('[data-sopen]').forEach(b => b.onclick = () => openSaleDetail(Number(b.dataset.sopen)));
   }
 
@@ -341,13 +363,13 @@
     (n.data || []).forEach(x => { (NOTES[x.kind] || (NOTES[x.kind] = {}))[x.sale_id] = x.note; (RESOLVED[x.kind] || (RESOLVED[x.kind] = {}))[x.sale_id] = !!x.resolved; });
     // sales
     const r = await SB.from('solur')
-      .select('id,num,created_at,customer_nafn,greitt_med,status,samtals,customer_base_id,paid_at,is_credit,krafa_sent_at,hidden')
+      .select('id,num,created_at,customer_nafn,greitt_med,greitt_med_prev,status,samtals,customer_base_id,paid_at,is_credit,krafa_sent_at,hidden')
       .order('created_at', { ascending: false });
     if (r.error) { if (appS) appS.innerHTML = '<div class="skel" style="color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
     ROWS = (r.data || []).map(s => ({
       id: s.id, num: s.num || '', dags: (s.created_at || '').slice(0, 10),
       kunni: (s.customer_nafn && s.customer_nafn.trim()) || '(óþekktur)',
-      greitt_med: s.greitt_med || '', stada: s.status || '', amt: Number(s.samtals) || 0,
+      greitt_med: s.greitt_med || '', greitt_med_prev: s.greitt_med_prev || '', stada: s.status || '', amt: Number(s.samtals) || 0,
       base_id: s.customer_base_id, paid: s.paid_at != null, is_credit: !!s.is_credit,
       krafa_sent: s.krafa_sent_at != null, hidden: !!s.hidden, created_at: s.created_at,
       note: NOTES.sala[s.id] || '', resolved: !!(RESOLVED.sala && RESOLVED.sala[s.id])
@@ -500,7 +522,7 @@
       <td style="text-align:right;font-weight:700;font-variant-numeric:tabular-nums">${fmtKr(r.amt)}</td>
       <td><span class="pill" style="${pillCls}">${esc(c.label)}</span></td>
       <td><input class="note-in${r.note ? ' has' : ''}" data-k="sala" data-id="${r.id}" value="${esc(r.note)}" placeholder="skrifa…"></td>
-      <td style="white-space:nowrap"><label class="rett-chk" title="Hakaðu þegar þú hefur yfirfarið og þetta er rétt"><input type="checkbox" class="rett-in" data-k="sala" data-id="${r.id}" ${r.resolved ? 'checked' : ''}>✓ Rétt</label><button class="ab ab-open" data-sopen="${r.id}" title="Skoða þessa sölu — línur, upphæðir, athugasemd">👁 Opna</button>${acts}${acts2}</td>
+      <td style="white-space:nowrap"><label class="krafa-chk" title="Merkja sem reikning/kröfu → birtist í Kröfu yfirlit"><input type="checkbox" class="krafa-in" data-id="${r.id}" ${r.greitt_med === 'reikningur' ? 'checked' : ''}>Krafa</label><label class="rett-chk" title="Hakaðu þegar þú hefur yfirfarið og þetta er rétt"><input type="checkbox" class="rett-in" data-k="sala" data-id="${r.id}" ${r.resolved ? 'checked' : ''}>✓ Rétt</label><button class="ab ab-open" data-sopen="${r.id}" title="Skoða þessa sölu — línur, upphæðir, athugasemd">👁 Opna</button>${acts}${acts2}</td>
     </tr>`;
   }
 
