@@ -31,6 +31,7 @@ var DB = {
     }
     try {
       this.sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      var _sb = document.getElementById('setup-banner'); if(_sb){ _sb.classList.add('hidden'); _sb.style.display='none'; }
       document.getElementById('sync-dot').className = 'sync-dot syncing';
       this.loadAll();
       this.subscribeRealtime();

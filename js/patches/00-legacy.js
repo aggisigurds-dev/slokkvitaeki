@@ -227,7 +227,8 @@ function fixBanner(){
   // Hide setup banner if config looks valid
   var b=document.getElementById('setup-banner');
   if(!b)return;
-  if(window.SUPABASE_URL && window.SUPABASE_URL.indexOf('http')===0 && window.SUPABASE_ANON_KEY && window.SUPABASE_ANON_KEY.length>20){
+  var _k = window.SUPABASE_KEY || window.SUPABASE_ANON_KEY || '';
+  if(window.SUPABASE_URL && window.SUPABASE_URL.indexOf('http')===0 && _k.length>20){
     b.style.display='none';
   }
 }
