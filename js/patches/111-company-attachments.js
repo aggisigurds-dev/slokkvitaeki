@@ -233,10 +233,15 @@
           (eff ? '<span title="Birtist í ' + esc(eff) + ' dálki í Fyrirtæki í þjónustu listanum' + (f.year ? '' : ' (sjálfvirkt af skráarnafni)') + '" style="color:#15803d;font-weight:700">📄→' + esc(eff.slice(2)) + (f.year ? '' : '<span style="color:#94a3b8;font-weight:500"> sjálfv.</span>') + '</span>' : '') +
         '</div>'; })() +
         '<div style="display:flex;gap:4px;margin-top:auto;flex-wrap:wrap">' +
-          (isPreviewable(f.content_type, f.name)
-            ? '<button class="_cat-open btn btn-primary btn-sm" data-id="' + esc(f.id) + '" style="flex:1;font-size:11px">📂 Opna</button>'
-            : '<button class="_cat-download btn btn-primary btn-sm" data-id="' + esc(f.id) + '" style="flex:1;font-size:11px">⬇ Sækja</button>') +
-          '<button class="_cat-download2 btn btn-outline btn-sm" data-id="' + esc(f.id) + '" title="Sækja" style="font-size:11px">⬇</button>' +
+          // Only show open/download when an actual file is attached. Marker rows
+          // (e.g. "Þjónustusamningur skráður (Samningar.xlsx …)") have no
+          // drive_url/drive_id/path — a button there built …/file/d/undefined/view.
+          ((f.drive_url || f.drive_id || f.path)
+            ? ((isPreviewable(f.content_type, f.name)
+                ? '<button class="_cat-open btn btn-primary btn-sm" data-id="' + esc(f.id) + '" style="flex:1;font-size:11px">📂 Opna</button>'
+                : '<button class="_cat-download btn btn-primary btn-sm" data-id="' + esc(f.id) + '" style="flex:1;font-size:11px">⬇ Sækja</button>') +
+               '<button class="_cat-download2 btn btn-outline btn-sm" data-id="' + esc(f.id) + '" title="Sækja" style="font-size:11px">⬇</button>')
+            : '<span style="flex:1;font-size:10.5px;color:#94a3b8;align-self:center">Skráning · ekkert skjal viðhengt</span>') +
           '<button class="_cat-del btn btn-outline btn-sm" data-id="' + esc(f.id) + '" style="color:#dc2626;border-color:#fecaca;font-size:11px" title="Eyða">✕</button>' +
         '</div>' +
       '</div>';
@@ -366,11 +371,10 @@
     // session 2026-05-15) carry `drive_url` / `drive_id` instead of a Supabase
     // Storage `path`. Open them directly in Drive viewer — patch 111's
     // preview lightbox can't host Google Drive content securely anyway.
-    if (file && (file.drive_url || file.drive_id || file.external)) {
-      const driveUrl = file.drive_url || ('https://drive.google.com/file/d/' + file.drive_id + '/view');
-      window.open(driveUrl, '_blank', 'noopener');
-      return;
-    }
+    const driveUrl = (file && file.drive_url) ? file.drive_url
+      : (file && file.drive_id ? 'https://drive.google.com/file/d/' + file.drive_id + '/view' : '');
+    if (driveUrl) { window.open(driveUrl, '_blank', 'noopener'); return; }
+    if (!file || !file.path) { alert('Engin skrá fylgir þessari færslu — þetta er skráning (t.d. úr Samningar.xlsx), ekki upphlaðið skjal.'); return; }
     const url = await getPublicUrl(file.path);
     if (!url) { alert('Gat ekki opnað skrá. Athugaðu nettengingu.'); return; }
     const ic = iconForType(file.content_type, file.name);
@@ -424,12 +428,12 @@
   }
 
   async function downloadFile(file) {
-    if (file && (file.drive_url || file.drive_id || file.external)) {
-      // Drive files — open the viewer; Drive handles download itself.
-      const driveUrl = file.drive_url || ('https://drive.google.com/file/d/' + file.drive_id + '/view');
-      window.open(driveUrl, '_blank', 'noopener');
-      return;
-    }
+    // Drive files — open the viewer; Drive handles download itself. Only when a
+    // real reference exists, so marker rows don't build …/file/d/undefined/view.
+    const driveUrl = (file && file.drive_url) ? file.drive_url
+      : (file && file.drive_id ? 'https://drive.google.com/file/d/' + file.drive_id + '/view' : '');
+    if (driveUrl) { window.open(driveUrl, '_blank', 'noopener'); return; }
+    if (!file || !file.path) { alert('Engin skrá fylgir þessari færslu — þetta er skráning (t.d. úr Samningar.xlsx), ekki upphlaðið skjal.'); return; }
     const url = await getPublicUrl(file.path);
     if (!url) { alert('Gat ekki sótt skrá.'); return; }
     const a = document.createElement('a');
