@@ -48,8 +48,35 @@
   }
   async function fetchDocs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,invoice_number,amount').eq('customer_base_id', baseId);
+    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,invoice_number,amount,notes').eq('customer_base_id', baseId);
       return r.data||[]; }catch(e){ return []; }
+  }
+  // Multi-location support: one kennitala can have several staðir (Aðalskoðun:
+  // Skemmuvegi/Grjótháls/Skeifan/Hjallahraun). Split the kt's docs per location by
+  // matching each doc's filename (notes) to the location's heimilisfang.
+  async function siblingsForKt(kt){
+    var sb=SB(); if(!sb) return [];
+    try{ var r=await sb.from('fyrirtaeki').select('id,nafn,heimilisfang').eq('kennitala', dash(kt)); return r.data||[]; }
+    catch(e){ return []; }
+  }
+  function addrKeys(h){
+    h=String(h||'');
+    var sw=(h.match(/[A-Za-zÁÉÍÓÚÝÆÖÞÐáéíóúýæöþð]{3,}/)||[''])[0];
+    var streetStem=sw.toLowerCase().replace(/(ur|inn|num|i|a)$/,'');
+    var postcode=(h.match(/\b(\d{3})\b/)||[])[1]||'';
+    var cm=h.match(/\d{3}\s+([A-ZÁÉÍÓÚÝÆÖÞÐ][a-záéíóúýæöþð]{3,})/)||h.match(/,\s*([A-ZÁÉÍÓÚÝÆÖÞÐ][a-záéíóúýæöþð]{3,})\s*$/);
+    var city=(cm?cm[1]:'').toLowerCase().replace(/(ur|inn|i)$/,'');
+    return {streetStem:streetStem, postcode:postcode, city:city};
+  }
+  // A doc belongs to a location if its notes contain the street (always), or the
+  // postcode/city ONLY when that postcode/city is unique among the kt's locations
+  // (so two Reykjavík staðir don't steal each other's docs — postcode 110 vs 108).
+  function docMatchesLoc(notes, my, all){
+    var n=String(notes||'').toLowerCase();
+    if(my.streetStem && my.streetStem.length>=4 && n.indexOf(my.streetStem)>=0) return true;
+    if(my.postcode){ var pcShared=all.some(function(k){return k!==my && k.postcode===my.postcode && k.streetStem!==my.streetStem;}); if(!pcShared && n.indexOf(my.postcode)>=0) return true; }
+    if(my.city && my.city.length>=4){ var cityShared=all.some(function(k){return k!==my && k.city===my.city && k.streetStem!==my.streetStem;}); if(!cityShared && n.indexOf(my.city)>=0) return true; }
+    return false;
   }
 
   function cell(docs){
@@ -76,6 +103,22 @@
       return;
     }
     var docs=await fetchDocs(baseId);
+    var locNote='';
+    var sibs=await siblingsForKt(kt);
+    if(sibs.length>1){
+      var keys=sibs.map(function(s){return {id:s.id, k:addrKeys(s.heimilisfang)};});
+      var allK=keys.map(function(x){return x.k;});
+      var mine=keys.filter(function(x){return +x.id===+coId;})[0];
+      if(mine){
+        var before=docs.length;
+        docs=docs.filter(function(d){
+          var matched=keys.filter(function(x){return docMatchesLoc(d.notes, x.k, allK);});
+          if(!matched.length) return true;            // óvíst staðsetning → birt á öllum stöðum
+          return matched.some(function(x){return +x.id===+coId;});
+        });
+        locNote=' · 📍 síað eftir staðsetningu ('+docs.length+' af '+before+')';
+      }
+    }
     var th='text-align:center;color:#64748b;font-size:12px;padding:6px 10px;border:1px solid #eef1f5;background:#f8fafc';
     var rh='font-weight:600;color:#374151;font-size:13px;padding:6px 12px;border:1px solid #eef1f5;white-space:nowrap;text-align:left';
     function byTY(type,y){ return docs.filter(function(d){ return d.doc_type===type && String(d.year)===String(y); }); }
@@ -85,7 +128,7 @@
       + '<tr><td style="'+rh+'">Úttektarskýrsla</td>'+YEARS.map(function(y){return cell(byTY('uttektarskyrsla',y));}).join('')+'</tr>'
       + '<tr><td style="'+rh+'">Reikningur</td>'+YEARS.map(function(y){return cell(byTY('reikningur',y));}).join('')+'</tr>'
       + '</tbody></table></div>'
-      + '<div style="font-size:11px;color:#94a3b8;margin-top:6px">Grænn ✓ = skjal á skrá (smelltu til að opna í Drive). Sjálfkrafa úr customer_documents.</div>';
+      + '<div style="font-size:11px;color:#94a3b8;margin-top:6px">Grænn ✓ = skjal á skrá (smelltu til að opna í Drive). Sjálfkrafa úr customer_documents'+locNote+'.</div>';
     section.innerHTML=html;
   }
 
