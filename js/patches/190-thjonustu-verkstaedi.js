@@ -12,7 +12,9 @@
  * service_visits table needed — ticking units Í vinnslu auto-moves a company
  * into the 🔵 column; finishing it (✓ Búið) moves it to ✅.
  *
- * Per card: 🏢 Opna · 📄 Skýrsla · ✓ Búið (▶ í vinnslu on Á-dagskrá cards).
+ * Per card: 🏢 Opna · 📄 Skýrsla · ✓ Búið · ✕ Afmerkja (▶ í vinnslu on
+ * Á-dagskrá cards). Afmerkja er andhverfan á bláa hnappnum á Fyrirtæki í
+ * þjónustu — fjarlægir field_inspected_year svo kortið fer úr 🔵 dálknum.
  */
 (() => {
   if (window.__thjonustuVerkstaediInstalled) return;
@@ -99,6 +101,10 @@
   const startVinnsla = id => setFlag(id, { field_inspected_year: curYear, _delete: ['last_year_inspected'] });
   const markBuid     = id => setFlag(id, { last_year_inspected: curYear, _delete: ['field_inspected_year'] });
   const reopen       = id => setFlag(id, { _delete: ['field_inspected_year', 'last_year_inspected'] });
+  // Afmerkja: andhverfan á bláa hnappnum — fjarlægir bara vinnslu-flaggið svo
+  // kortið dettur úr 🔵 dálknum (fer í ⏳ Á dagskrá ef skoðunarmánuður er kominn,
+  // annars alveg af borðinu). Heldur last_year_inspected ef það er til (saga).
+  const unVinnsla    = id => setFlag(id, { _delete: ['field_inspected_year'] });
 
   function openCompany(id) { if (window.VidskDetail && VidskDetail.show) return VidskDetail.show(id); if (window.Companies && Companies.openDetail) return Companies.openDetail(id); }
   function openReport(id) { if (window.CompanyInspectionReport && CompanyInspectionReport.open) return CompanyInspectionReport.open(id); if (window.VisitReport && VisitReport.open) return VisitReport.open(id); openCompany(id); }
@@ -112,7 +118,7 @@
   function cardHtml(r, colKey, bar) {
     let acts = '<button class="_sv-act" data-act="open" data-id="' + r.id + '" style="' + btn('#fff','#475569','#cbd5e1') + '">🏢 Opna</button>';
     if (colKey === 'dagskra') acts += '<button class="_sv-act" data-act="start" data-id="' + r.id + '" style="' + btn('#dbeafe','#1e3a8a','#93c5fd') + '">▶ Í vinnslu</button>';
-    else if (colKey === 'vinnsla') acts += '<button class="_sv-act" data-act="report" data-id="' + r.id + '" style="' + btn('#ede9fe','#5b21b6','#ddd6fe') + '">📄 Skýrsla</button><button class="_sv-act" data-act="buid" data-id="' + r.id + '" style="' + btn('#dcfce7','#14532d','#86efac') + '">✓ Búið</button>';
+    else if (colKey === 'vinnsla') acts += '<button class="_sv-act" data-act="report" data-id="' + r.id + '" style="' + btn('#ede9fe','#5b21b6','#ddd6fe') + '">📄 Skýrsla</button><button class="_sv-act" data-act="buid" data-id="' + r.id + '" style="' + btn('#dcfce7','#14532d','#86efac') + '">✓ Búið</button><button class="_sv-act" data-act="unstart" data-id="' + r.id + '" title="Afmerkja — taka úr vinnslu og af verkstæðinu" style="' + btn('#fef2f2','#b91c1c','#fecaca') + '">✕ Afmerkja</button>';
     else acts += '<button class="_sv-act" data-act="reopen" data-id="' + r.id + '" style="' + btn('#f1f5f9','#475569','#cbd5e1') + '">↩ Opna aftur</button>';
     // Einingar + áætlaðar tekjur — efst til hægri á Í-vinnslu kortum
     const meta = (colKey === 'vinnsla' && (r.units > 0 || r.tekjur > 0))
@@ -178,6 +184,7 @@
       else if (act === 'start') startVinnsla(id);
       else if (act === 'buid') markBuid(id);
       else if (act === 'reopen') reopen(id);
+      else if (act === 'unstart') unVinnsla(id);
     }));
     // Eftirfylgni-skref: toggla + vista; þegar öll fjögur eru ✓ → sjálfkrafa Búið
     v.querySelectorAll('._sv-step').forEach(bn => bn.addEventListener('click', async e => {
