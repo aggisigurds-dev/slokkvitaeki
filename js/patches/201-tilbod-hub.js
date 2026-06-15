@@ -30,8 +30,9 @@
   // ---- color themes (rotating button, top-right) ----
   const THEMES = [
     { id: 'fire', name: '🔥 Eldur', dark: '#1b1b1b', primary: '#C0341D', accent: '#F07A1E', tint: '#fbeee7', tintb: '#F07A1E' },
-    { id: 'blue', name: '🔵 Bisness', dark: '#0f2747', primary: '#1d4ed8', accent: '#0ea5e9', tint: '#eff6ff', tintb: '#1d4ed8' },
+    { id: 'blue', name: '🔵 Business', dark: '#0f2747', primary: '#1d4ed8', accent: '#0ea5e9', tint: '#eff6ff', tintb: '#1d4ed8' },
     { id: 'emerald', name: '💎 Smaragð', dark: '#14302b', primary: '#0d7d6e', accent: '#E8A317', tint: '#e8f7f3', tintb: '#0d7d6e' },
+    { id: 'grey', name: '◻️ Grátt', dark: '#374151', primary: '#475569', accent: '#94a3b8', tint: '#f1f5f9', tintb: '#94a3b8' },
   ];
   let themeIdx = 0;
   try { const s = localStorage.getItem('th_theme'); const i = THEMES.findIndex(t => t.id === s); if (i >= 0) themeIdx = i; } catch (e) {}
@@ -113,7 +114,7 @@
     ov.id = '_th-print-modal';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:100000;display:flex;flex-direction:column;padding:18px';
     ov.innerHTML = '<div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:10px">' +
-      '<button id="_th-pp" type="button" style="padding:9px 18px;border:none;border-radius:8px;background:#C0341D;color:#fff;font-weight:700;cursor:pointer">🖨 Prenta</button>' +
+      '<button id="_th-pp" type="button" style="padding:9px 18px;border:none;border-radius:8px;background:var(--th-primary);color:#fff;font-weight:700;cursor:pointer">🖨 Prenta</button>' +
       '<button id="_th-pc" type="button" style="padding:9px 18px;border:none;border-radius:8px;background:#fff;color:#475569;font-weight:700;cursor:pointer">Loka</button></div>' +
       '<iframe id="_th-frame" style="flex:1;border:none;background:#fff;border-radius:10px" sandbox="allow-same-origin allow-modals allow-scripts"></iframe>';
     document.body.appendChild(ov);
@@ -147,15 +148,15 @@
     let showOthers = false;
     const body = custFields(c) +
       '<div style="overflow:auto;border:1px solid #e2e8f0;border-radius:10px;max-height:40vh"><table><thead><tr style="background:var(--th-tint);border-bottom:2px solid var(--th-tintb)">' +
-        '<th style="text-align:left;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Vara / lýsing</th>' +
-        '<th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Magn</th>' +
-        '<th style="text-align:right;padding:8px;font-size:10px;color:#C0341D;text-transform:uppercase;font-weight:800">Verð án vsk</th>' +
-        '<th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Afsl %</th>' +
-        '<th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Samtals</th><th></th>' +
+        '<th style="text-align:left;padding:8px;font-size:10px;color:var(--th-dark);text-transform:uppercase;font-weight:800">Vara / lýsing</th>' +
+        '<th style="text-align:right;padding:8px;font-size:10px;color:var(--th-dark);text-transform:uppercase;font-weight:800">Magn</th>' +
+        '<th style="text-align:right;padding:8px;font-size:10px;color:var(--th-primary);text-transform:uppercase;font-weight:800">Verð án vsk</th>' +
+        '<th style="text-align:right;padding:8px;font-size:10px;color:var(--th-dark);text-transform:uppercase;font-weight:800">Afsl %</th>' +
+        '<th style="text-align:right;padding:8px;font-size:10px;color:var(--th-dark);text-transform:uppercase;font-weight:800">Samtals</th><th></th>' +
       '</tr></thead><tbody id="_th-tbody"></tbody></table></div>' +
       '<div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">' +
         '<button id="_th-others" type="button" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#f8fafc;color:#475569;cursor:pointer;font:inherit;font-size:12px;font-weight:700">▾ Sjá aðrar vörur</button>' +
-        '<button id="_th-addrow" type="button" style="padding:7px 12px;border:1px dashed #C0341D;border-radius:7px;background:#fff;color:#C0341D;cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Bæta við vöru / línu</button>' +
+        '<button id="_th-addrow" type="button" style="padding:7px 12px;border:1px dashed var(--th-primary);border-radius:7px;background:#fff;color:var(--th-primary);cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Bæta við vöru / línu</button>' +
       '</div>' +
       totalsBlock();
     const m = modal('🧯 Slökkvitæki — tilboð' + (o ? ' <span style="font-size:12px;color:#fbbf24;font-weight:400">· breyti</span>' : ''), body, footBtns);
@@ -164,7 +165,7 @@
       return `<tr data-i="${i}" data-primary="${l.primary ? 1 : 0}" class="${l.primary ? '' : '_th-other'}">
         <td style="padding:4px 6px"><input data-f="lysing" type="text" value="${esc(l.lysing || '')}" placeholder="Lýsing á vöru / þjónustu" style="width:100%;min-width:220px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;box-sizing:border-box"></td>
         <td style="padding:4px 6px"><input data-f="magn" type="number" min="0" step="1" value="${l.magn != null ? l.magn : 1}" style="width:58px;padding:6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right"></td>
-        <td style="padding:4px 6px"><input data-f="verd" type="text" inputmode="numeric" value="${grp(l.verd)}" style="width:92px;padding:6px;border:1px solid #e0a58f;border-radius:6px;font:inherit;font-size:12px;text-align:right;font-weight:600;color:#C0341D"></td>
+        <td style="padding:4px 6px"><input data-f="verd" type="text" inputmode="numeric" value="${grp(l.verd)}" style="width:92px;padding:6px;border:1px solid var(--th-tintb);border-radius:6px;font:inherit;font-size:12px;text-align:right;font-weight:600;color:var(--th-primary)"></td>
         <td style="padding:4px 6px"><input data-f="afsl" type="number" min="0" max="100" step="1" value="${l.afsl || ''}" placeholder="0" style="width:52px;padding:6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right"></td>
         <td data-cell="line" style="padding:4px 8px;font-size:12px;text-align:right;font-weight:600;white-space:nowrap">—</td>
         <td style="padding:4px 6px"><button data-del type="button" style="border:none;background:#fef2f2;color:#dc2626;border-radius:6px;width:26px;height:26px;cursor:pointer">×</button></td>
@@ -241,14 +242,14 @@
       '<div style="font-size:11.5px;color:#64748b;margin-bottom:8px">Hakaðu við tækin sem fá sérverð, settu afslátt — sérverð (m.vsk) reiknast per tæki. Ekkert heildarsamtala.</div>' +
       '<div style="overflow:auto;border:1px solid #e2e8f0;border-radius:10px;max-height:46vh"><table><thead><tr style="background:var(--th-tint);border-bottom:2px solid var(--th-tintb)">' +
         '<th style="width:34px"></th>' +
-        '<th style="text-align:left;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Tæki / vara</th>' +
-        '<th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Fullt verð</th>' +
-        '<th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Afsl %</th>' +
-        '<th style="text-align:right;padding:8px;font-size:10px;color:#C0341D;text-transform:uppercase;font-weight:800">Sérverð m.vsk</th><th></th>' +
+        '<th style="text-align:left;padding:8px;font-size:10px;color:var(--th-dark);text-transform:uppercase;font-weight:800">Tæki / vara</th>' +
+        '<th style="text-align:right;padding:8px;font-size:10px;color:var(--th-dark);text-transform:uppercase;font-weight:800">Fullt verð</th>' +
+        '<th style="text-align:right;padding:8px;font-size:10px;color:var(--th-dark);text-transform:uppercase;font-weight:800">Afsl %</th>' +
+        '<th style="text-align:right;padding:8px;font-size:10px;color:var(--th-primary);text-transform:uppercase;font-weight:800">Sérverð m.vsk</th><th></th>' +
       '</tr></thead><tbody id="_th-tbody"></tbody></table></div>' +
       '<div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">' +
         '<button id="_th-others" type="button" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#f8fafc;color:#475569;cursor:pointer;font:inherit;font-size:12px;font-weight:700">▾ Sjá aðrar vörur</button>' +
-        '<button id="_th-addrow" type="button" style="padding:7px 12px;border:1px dashed #C0341D;border-radius:7px;background:#fff;color:#C0341D;cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Bæta við tæki / línu</button>' +
+        '<button id="_th-addrow" type="button" style="padding:7px 12px;border:1px dashed var(--th-primary);border-radius:7px;background:#fff;color:var(--th-primary);cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Bæta við tæki / línu</button>' +
       '</div>';
     const m = modal('🏷 Slökkvitæki — sérverð' + (o ? ' <span style="font-size:12px;color:#fbbf24;font-weight:400">· breyti</span>' : ''), body, footBtns);
     const ov = m.ov, tbody = ov.querySelector('#_th-tbody');
@@ -259,7 +260,7 @@
         <td style="padding:4px 6px"><input data-f="n" type="text" value="${esc(l.n || '')}" placeholder="Tæki / vara" style="width:100%;min-width:210px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;box-sizing:border-box"></td>
         <td style="padding:4px 6px"><input data-f="full" type="text" inputmode="numeric" value="${grp(l.full)}" style="${inSt};width:94px"></td>
         <td style="padding:4px 6px"><input data-f="afsl" type="number" min="0" max="100" step="1" value="${l.afsl || ''}" placeholder="0" style="${inSt};width:54px"></td>
-        <td data-cell="final" style="padding:4px 8px;font-size:12.5px;text-align:right;font-weight:700;color:#C0341D;white-space:nowrap">${fmtKr(fin)}</td>
+        <td data-cell="final" style="padding:4px 8px;font-size:12.5px;text-align:right;font-weight:700;color:var(--th-primary);white-space:nowrap">${fmtKr(fin)}</td>
         <td style="padding:4px 6px"><button data-del type="button" style="border:none;background:#fef2f2;color:#dc2626;border-radius:6px;width:26px;height:26px;cursor:pointer">×</button></td>
       </tr>`;
     }
@@ -325,7 +326,7 @@
     const body = custFields(c) +
       '<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:12px">' +
         '<label style="font-size:11px;color:#64748b;font-weight:700">Þjónusta' + inp('_th-thjon', d.thjonusta || 'Árleg skoðun og þjónusta slökkvitækja og brunakerfa', '') + '</label>' +
-        '<label style="font-size:11px;color:#64748b;font-weight:700">Verð án vsk / ár<input id="_th-verd" type="text" inputmode="numeric" value="' + grp(d.verd || 0) + '" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid #e0a58f;border-radius:7px;font:inherit;font-size:13px;font-weight:600;color:#C0341D;box-sizing:border-box"></label>' +
+        '<label style="font-size:11px;color:#64748b;font-weight:700">Verð án vsk / ár<input id="_th-verd" type="text" inputmode="numeric" value="' + grp(d.verd || 0) + '" style="width:100%;margin-top:3px;padding:8px 10px;border:1px solid var(--th-tintb);border-radius:7px;font:inherit;font-size:13px;font-weight:600;color:var(--th-primary);box-sizing:border-box"></label>' +
         '<label style="font-size:11px;color:#64748b;font-weight:700">Tíðni' + inp('_th-tidni', d.tidni || 'Árlega', '') + '</label>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
@@ -406,7 +407,7 @@
     const btn = (id, c, t) => `<button id="${id}" type="button" style="padding:11px 16px;border:none;border-radius:9px;background:${c};color:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.12)">${t}</button>`;
     main.innerHTML = `<div style="max-width:1100px;margin:0 auto;padding:22px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px">
-        <div><h1 style="margin:0;font-size:22px;color:#1b1b1b;display:flex;align-items:center;gap:10px">📑 Tilboð &amp; samningar</h1>
+        <div><h1 style="margin:0;font-size:22px;color:var(--th-dark);display:flex;align-items:center;gap:10px">📑 Tilboð &amp; samningar</h1>
           <div style="font-size:12px;color:#64748b;margin-top:2px">Tilboðs- og samningsform — vistast og samhæfast milli ykkar.</div></div>
         <div style="display:flex;gap:8px;align-items:center">
           <button id="_th-theme" type="button" title="Skipta um lit (þema)" style="padding:9px 12px;border:1px solid var(--th-tintb);border-radius:8px;background:var(--th-tint);color:var(--th-dark);cursor:pointer;font:inherit;font-size:12px;font-weight:700">${theme().name}</button>
@@ -414,17 +415,17 @@
         </div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 20px">
-        ${btn('_th-new-bk', 'linear-gradient(95deg,#1b1b1b,#C0341D)', '🔥 Nýtt brunakerfi-tilboð')}
-        ${btn('_th-new-sl', 'linear-gradient(95deg,#C0341D,#F07A1E)', '🧯 Nýtt slökkvitæki-tilboð')}
-        ${btn('_th-new-sv', 'linear-gradient(95deg,#0369a1,#0ea5e9)', '🏷 Nýtt sérverð')}
-        ${btn('_th-new-mn', 'linear-gradient(95deg,#b45309,#F07A1E)', '📜 Nýr þjónustusamningur')}
+        ${btn('_th-new-bk', 'var(--th-gb)', '🔥 Nýtt brunakerfi-tilboð')}
+        ${btn('_th-new-sl', 'var(--th-gb)', '🧯 Nýtt slökkvitæki-tilboð')}
+        ${btn('_th-new-sv', 'var(--th-gb)', '🏷 Nýtt sérverð')}
+        ${btn('_th-new-mn', 'var(--th-gb)', '📜 Nýr þjónustusamningur')}
       </div>
       <a href="https://docs.google.com/spreadsheets/d/1g36r9NL8bcKZOweav4NSRy0rl6zTdhVY/edit?usp=sharing&ouid=104349985258847227699&rtpof=true&sd=true" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:11px;text-decoration:none;background:#fff;border:1px solid var(--th-tintb);border-left:4px solid var(--th-primary);border-radius:10px;padding:12px 16px;margin-bottom:18px;max-width:520px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
         <span style="font-size:21px">📊</span>
-        <div style="flex:1"><div style="font-weight:700;color:#1b1b1b;font-size:13.5px">Verðskrá — Google Sheet</div><div style="font-size:11px;color:#64748b">Opna tengt verðskrár-/vöruskjal í Google Sheets</div></div>
+        <div style="flex:1"><div style="font-weight:700;color:var(--th-dark);font-size:13.5px">Verðskrá — Google Sheet</div><div style="font-size:11px;color:#64748b">Opna tengt verðskrár-/vöruskjal í Google Sheets</div></div>
         <span style="color:var(--th-primary);font-weight:700;font-size:13px;white-space:nowrap">Opna ↗</span>
       </a>
-      <h2 style="font-size:15px;color:#1b1b1b;margin:0 0 8px">Vistuð form <span style="font-size:12px;color:#64748b;font-weight:400">· ${forms.length}</span></h2>
+      <h2 style="font-size:15px;color:var(--th-dark);margin:0 0 8px">Vistuð form <span style="font-size:12px;color:#64748b;font-weight:400">· ${forms.length}</span></h2>
       <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">${forms.length ? forms.map(rowFor).join('') : '<div style="padding:22px;text-align:center;color:#94a3b8;font-size:13px">Engin form enn — búðu til hér að ofan.</div>'}</div>
     </div>`;
     main.querySelector('#_th-new-bk').onclick = () => { if (window.BrunakerfiTilbod) { window.BrunakerfiTilbod.open(); afterModal(); } else alert('Brunakerfi-tilboð ekki tiltækt'); };
@@ -448,7 +449,7 @@
       <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${tm.chip};color:${tm.col};white-space:nowrap">${tm.icon} ${tm.label}</span>
       <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.customer && f.customer.nafn || '—')}</div>
         <div style="font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(fmtDate(f.date))} · ${sub}</div></div>
-      <div style="font-size:14px;font-weight:800;color:#1b1b1b;white-space:nowrap;font-variant-numeric:tabular-nums">${amount}</div>
+      <div style="font-size:14px;font-weight:800;color:var(--th-dark);white-space:nowrap;font-variant-numeric:tabular-nums">${amount}</div>
       <button data-act="edit" type="button" style="padding:6px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12px" title="Breyta">✏️</button>
       <button data-act="print" type="button" style="padding:6px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12px" title="Prenta PDF">🖨</button>
       <button data-act="del" type="button" style="padding:6px 11px;border:1px solid #fecaca;border-radius:7px;background:#fef2f2;cursor:pointer;font:inherit;font-size:12px;color:#dc2626" title="Eyða">🗑</button>
