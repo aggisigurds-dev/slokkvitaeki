@@ -69,6 +69,11 @@
   }
   const branding = () => (window.AppSettings && window.AppSettings.path && window.AppSettings.path('branding')) || {};
   const num = v => { const n = parseFloat(String(v).replace(',', '.')); return isFinite(n) ? n : 0; };
+  // grouped number (16670 → "16.670") + parser that ignores thousand-dots
+  const grp = n => { const v = Math.round(Number(n) || 0); return v.toLocaleString('is-IS').replace(/,/g, '.'); };
+  const pn = v => { const s = String(v == null ? '' : v).replace(/[.\s]/g, '').replace(',', '.'); const n = parseFloat(s); return isFinite(n) ? n : 0; };
+  // Brunahólf litir: svart · rautt · appelsínugult
+  const BRAND = { black: '#1b1b1b', red: '#C0341D', orange: '#F07A1E' };
 
   function getOffers() {
     const a = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(KEY)) || [];
@@ -110,16 +115,16 @@
       <tr data-i="${i}">
         <td style="padding:5px 8px;font-size:12px;color:#0f172a">${esc(r.n)}</td>
         <td style="padding:5px 6px"><input data-f="magn" type="number" min="0" step="1" value="${r.magn || ''}" placeholder="0" style="width:62px;padding:5px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right"></td>
-        <td style="padding:5px 6px"><input data-f="verd" type="number" min="0" step="1" value="${r.verd}" style="width:88px;padding:5px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right"></td>
+        <td style="padding:5px 6px"><input data-f="verd" type="text" inputmode="numeric" value="${grp(r.verd)}" style="width:94px;padding:5px 6px;border:1px solid #e0a58f;border-radius:6px;font:inherit;font-size:12px;text-align:right;font-weight:600;color:#C0341D"></td>
         <td style="padding:5px 6px"><input data-f="afsl" type="number" min="0" max="100" step="1" value="${r.afsl || ''}" placeholder="0" style="width:54px;padding:5px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right"></td>
         <td data-cell="line" style="padding:5px 8px;font-size:12px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;color:#0f172a;white-space:nowrap">—</td>
       </tr>`).join('');
 
     ov.innerHTML = `
       <div style="background:#fff;border-radius:14px;max-width:920px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.3);margin:auto">
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #e2e8f0;position:sticky;top:0;background:#fff;border-radius:14px 14px 0 0;z-index:2">
-          <h2 style="margin:0;font-size:17px;color:#0f172a">📋 Tilboð — Brunaviðvörunarkerfi${offer ? ' <span style="font-size:12px;color:#64748b;font-weight:400">· breyti vistuðu</span>' : ''}</h2>
-          <button id="_bt-x" type="button" style="border:none;background:#f1f5f9;border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:18px;color:#475569">×</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;background:linear-gradient(95deg,#1b1b1b 0%,#3a1d14 55%,#C0341D 120%);border-bottom:3px solid #F07A1E;position:sticky;top:0;border-radius:14px 14px 0 0;z-index:2">
+          <h2 style="margin:0;font-size:17px;color:#fff;display:flex;align-items:center;gap:8px">🔥 Tilboð — Brunaviðvörunarkerfi${offer ? ' <span style="font-size:12px;color:#fbbf24;font-weight:400">· breyti vistuðu</span>' : ''}</h2>
+          <button id="_bt-x" type="button" style="border:none;background:rgba(255,255,255,.16);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:18px;color:#fff">×</button>
         </div>
         <div style="padding:18px 20px">
           <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
@@ -130,12 +135,12 @@
           </div>
           <div style="overflow:auto;border:1px solid #e2e8f0;border-radius:10px;max-height:42vh">
             <table style="width:100%;border-collapse:collapse">
-              <thead><tr style="position:sticky;top:0;background:#f8fafc;z-index:1">
-                <th style="text-align:left;padding:8px;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Liður</th>
-                <th style="text-align:right;padding:8px;font-size:10px;color:#64748b;text-transform:uppercase">Magn</th>
-                <th style="text-align:right;padding:8px;font-size:10px;color:#64748b;text-transform:uppercase">Verð án vsk</th>
-                <th style="text-align:right;padding:8px;font-size:10px;color:#64748b;text-transform:uppercase">Afsl %</th>
-                <th style="text-align:right;padding:8px;font-size:10px;color:#64748b;text-transform:uppercase">Samtals án vsk</th>
+              <thead><tr style="position:sticky;top:0;background:#fbeee7;z-index:1;border-bottom:2px solid #F07A1E">
+                <th style="text-align:left;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;letter-spacing:.04em;font-weight:800">Liður</th>
+                <th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Magn</th>
+                <th style="text-align:right;padding:8px;font-size:10px;color:#C0341D;text-transform:uppercase;font-weight:800">Verð án vsk</th>
+                <th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Afsl %</th>
+                <th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Samtals án vsk</th>
               </tr></thead>
               <tbody id="_bt-tbody">${rowHtml}</tbody>
             </table>
@@ -150,14 +155,14 @@
               </div>
               <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569;border-top:1px solid #e2e8f0"><span>Án vsk eftir afslátt</span><span id="_bt-an" style="font-variant-numeric:tabular-nums">—</span></div>
               <div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569"><span>VSK 24%</span><span id="_bt-vsk" style="font-variant-numeric:tabular-nums">—</span></div>
-              <div style="display:flex;justify-content:space-between;padding:9px 0;font-size:17px;font-weight:800;color:#0f172a;border-top:2px solid #0f172a;margin-top:4px"><span>Samtals m. vsk</span><span id="_bt-tot" style="font-variant-numeric:tabular-nums">—</span></div>
+              <div style="display:flex;justify-content:space-between;padding:9px 0;font-size:18px;font-weight:800;color:#C0341D;border-top:3px solid #1b1b1b;margin-top:4px"><span>Samtals m. vsk</span><span id="_bt-tot" style="font-variant-numeric:tabular-nums">—</span></div>
             </div>
           </div>
         </div>
         <div style="display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid #e2e8f0;position:sticky;bottom:0;background:#fff;border-radius:0 0 14px 14px">
           <button id="_bt-cancel" type="button" style="padding:10px 16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Loka</button>
           <button id="_bt-print" type="button" style="padding:10px 16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#0f172a;font-weight:700">🖨 Prenta PDF</button>
-          <button id="_bt-save" type="button" style="padding:10px 18px;border:none;border-radius:8px;background:#16a34a;color:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:700">💾 Vista</button>
+          <button id="_bt-save" type="button" style="padding:10px 20px;border:none;border-radius:8px;background:linear-gradient(95deg,#C0341D,#F07A1E);color:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(192,52,29,.3)">💾 Vista</button>
         </div>
       </div>`;
     document.body.appendChild(ov);
@@ -167,7 +172,7 @@
       const out = [];
       tbody.querySelectorAll('tr').forEach(tr => {
         const i = +tr.dataset.i;
-        out.push({ n: rows[i].n, magn: num(tr.querySelector('[data-f="magn"]').value), verd: num(tr.querySelector('[data-f="verd"]').value), afsl: num(tr.querySelector('[data-f="afsl"]').value) });
+        out.push({ n: rows[i].n, magn: num(tr.querySelector('[data-f="magn"]').value), verd: pn(tr.querySelector('[data-f="verd"]').value), afsl: num(tr.querySelector('[data-f="afsl"]').value) });
       });
       return out;
     }
@@ -186,7 +191,9 @@
       ov.querySelector('#_bt-vsk').textContent = fmtKr(t.vsk);
       ov.querySelector('#_bt-tot').textContent = fmtKr(t.m_vsk);
     }
-    ov.addEventListener('input', e => { if (e.target.matches('input[type="number"]')) recompute(); });
+    ov.addEventListener('input', e => { if (e.target.tagName === 'INPUT') recompute(); });
+    // reformat price with thousand dots when leaving the field
+    ov.addEventListener('blur', e => { if (e.target.matches && e.target.matches('[data-f="verd"]')) e.target.value = grp(pn(e.target.value)); }, true);
     recompute();
 
     const close = () => ov.remove();
@@ -245,11 +252,12 @@
         '<td style="padding:7px 9px;font-size:12px;text-align:right;font-weight:600;border-bottom:1px solid #f1f5f9">' + fmtKr(lt) + '</td>' +
         '</tr>';
     }).join('');
-    const totRow = (l, v, big) => '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:' + (big ? '16px;font-weight:800;border-top:2px solid #0f172a;margin-top:4px;padding-top:8px' : '12.5px;color:#475569') + '"><span>' + l + '</span><span>' + v + '</span></div>';
+    const totRow = (l, v, big) => '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:' + (big ? '17px;font-weight:800;border-top:2px solid #1b1b1b;color:#C0341D;margin-top:4px;padding-top:8px' : '12.5px;color:#475569') + '"><span>' + l + '</span><span>' + v + '</span></div>';
     return '<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><title>Tilboð — ' + esc(o.customer.nafn || '') + '</title>' +
-      '<style>@page{size:A4;margin:14mm}html,body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#0f172a;background:#fff}' +
+      '<style>@page{size:A4;margin:12mm}html,body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#0f172a;background:#eef1f4}' +
+      '.sheet{max-width:760px;margin:22px auto;background:#fff;padding:28px 34px;box-shadow:0 6px 24px rgba(0,0,0,.14);border-radius:5px}' +
       '.btn{padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:700}' +
-      '@media print{.no-print{display:none!important}}</style></head><body style="padding:6mm">' +
+      '@media print{body{background:#fff}.sheet{margin:0;max-width:none;box-shadow:none;border-radius:0;padding:0}.no-print{display:none!important}}</style></head><body><div class="sheet">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid ' + primary + ';padding-bottom:10px;margin-bottom:16px">' +
         '<div>' + head +
           '<div style="font-size:11px;color:#475569;margin-top:8px;line-height:1.4">' +
@@ -285,7 +293,7 @@
       '</div></div>' +
       '<div style="margin-top:24px;font-size:11px;color:#64748b">Tilboð þetta gildir í 30 daga. Verð eru með fyrirvara um breytingar á umfangi kerfis.</div>' +
       '<div class="no-print" style="margin-top:24px;text-align:center"><button class="btn" style="background:' + primary + ';color:#fff" onclick="window.print()">🖨 Prenta / vista PDF</button></div>' +
-      '</body></html>';
+      '</div></body></html>';
   }
 
   function printOffer(o) {
