@@ -27,6 +27,24 @@
   const branding = () => (window.AppSettings && window.AppSettings.path && window.AppSettings.path('branding')) || {};
   const BRAND = { black: '#1b1b1b', red: '#C0341D', orange: '#F07A1E' };
 
+  // ---- color themes (rotating button, top-right) ----
+  const THEMES = [
+    { id: 'fire', name: '🔥 Eldur', dark: '#1b1b1b', primary: '#C0341D', accent: '#F07A1E', tint: '#fbeee7', tintb: '#F07A1E' },
+    { id: 'blue', name: '🔵 Bisness', dark: '#0f2747', primary: '#1d4ed8', accent: '#0ea5e9', tint: '#eff6ff', tintb: '#1d4ed8' },
+    { id: 'emerald', name: '💎 Smaragð', dark: '#14302b', primary: '#0d7d6e', accent: '#E8A317', tint: '#e8f7f3', tintb: '#0d7d6e' },
+  ];
+  let themeIdx = 0;
+  try { const s = localStorage.getItem('th_theme'); const i = THEMES.findIndex(t => t.id === s); if (i >= 0) themeIdx = i; } catch (e) {}
+  const theme = () => THEMES[themeIdx];
+  function applyTheme() {
+    const t = theme(), r = document.documentElement.style;
+    r.setProperty('--th-dark', t.dark); r.setProperty('--th-primary', t.primary); r.setProperty('--th-accent', t.accent);
+    r.setProperty('--th-tint', t.tint); r.setProperty('--th-tintb', t.tintb);
+    r.setProperty('--th-gh', 'linear-gradient(95deg,' + t.dark + ' 0%,' + t.primary + ' 130%)');
+    r.setProperty('--th-gb', 'linear-gradient(95deg,' + t.primary + ',' + t.accent + ')');
+  }
+  function cycleTheme() { themeIdx = (themeIdx + 1) % THEMES.length; try { localStorage.setItem('th_theme', theme().id); } catch (e) {} applyTheme(); render(); toast(theme().name); }
+
   const getHub = () => { const a = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(KEY)) || []; return Array.isArray(a) ? a.slice() : []; };
   const getBk = () => { const a = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(BK_KEY)) || []; return Array.isArray(a) ? a.slice() : []; };
   async function saveHub(arr) { if (!window.AppSettings || !window.AppSettings.save) { alert('Vista ekki tiltæk'); return false; } return await window.AppSettings.save({ [KEY]: arr }); }
@@ -39,7 +57,7 @@
     ov.id = '_th-modal';
     ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:99999;display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:24px 12px';
     ov.innerHTML = `<div style="background:#fff;border-radius:14px;max-width:920px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.3);margin:auto">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;background:linear-gradient(95deg,#1b1b1b 0%,#3a1d14 55%,#C0341D 120%);border-bottom:3px solid #F07A1E;position:sticky;top:0;border-radius:14px 14px 0 0;z-index:2">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;background:var(--th-gh);border-bottom:3px solid var(--th-accent);position:sticky;top:0;border-radius:14px 14px 0 0;z-index:2">
         <h2 style="margin:0;font-size:17px;color:#fff;display:flex;align-items:center;gap:8px">${titleHtml}</h2>
         <button id="_th-x" type="button" style="border:none;background:rgba(255,255,255,.16);border-radius:8px;width:32px;height:32px;cursor:pointer;font-size:18px;color:#fff">×</button>
       </div>
@@ -61,7 +79,7 @@
   const readCust = ov => ({ nafn: ov.querySelector('#_th-nafn').value.trim(), kennitala: ov.querySelector('#_th-kt').value.trim(), heimilisfang: ov.querySelector('#_th-addr').value.trim() });
   const footBtns = `<button id="_th-cancel" type="button" style="padding:10px 16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Loka</button>
     <button id="_th-print" type="button" style="padding:10px 16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#0f172a;font-weight:700">🖨 Prenta PDF</button>
-    <button id="_th-save" type="button" style="padding:10px 20px;border:none;border-radius:8px;background:linear-gradient(95deg,#C0341D,#F07A1E);color:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(192,52,29,.3)">💾 Vista</button>`;
+    <button id="_th-save" type="button" style="padding:10px 20px;border:none;border-radius:8px;background:var(--th-gb);color:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(0,0,0,.22)">💾 Vista</button>`;
 
   // ---------- print (A4 sheet, brand) ----------
   function docShell(titleBadge, dateStr, custBlock, inner) {
@@ -105,13 +123,15 @@
   }
 
   // ====================== SLÖKKVITÆKI TILBOÐ (free lines) ======================
-  // Aðal-slökkvitæki (sýnd sjálfgefið): Duft · Léttvatn · Kolsýra (CO₂)
+  // Aðal-slökkvitæki (sýnd sjálfgefið): Duft · Léttvatn · Kolsýra (CO₂) — en AÐEINS
+  // raunveruleg tæki (nafn inniheldur „slökkvitæki"), ekki gjöld/hleðslur.
   const PRIMARY_RE = /duft|léttvatn|lettvatn|co2|co₂|kolsýr|kolsyr/i;
+  const isPrimary = n => PRIMARY_RE.test(n || '') && /sl[öo]kkvit/i.test(n || '');
   async function loadVorur() {
     try {
       if (window.DB && DB.sb) {
         const r = await DB.sb.from('vorur').select('nafn,verd_an_vsk,flokkur,virkt').order('flokkur', { ascending: true }).order('nafn', { ascending: true });
-        const arr = (r.data || []).filter(p => p.virkt !== false).map(p => ({ lysing: p.nafn, magn: 0, verd: Math.round(p.verd_an_vsk || 0), afsl: 0, primary: PRIMARY_RE.test(p.nafn || '') }));
+        const arr = (r.data || []).filter(p => p.virkt !== false).map(p => ({ lysing: p.nafn, magn: 0, verd: Math.round(p.verd_an_vsk || 0), afsl: 0, primary: isPrimary(p.nafn) }));
         arr.sort((a, b) => (b.primary ? 1 : 0) - (a.primary ? 1 : 0)); // aðaltæki efst
         return arr;
       }
@@ -126,7 +146,7 @@
     if (!lines.length) lines = [{ lysing: '', magn: 1, verd: 0, afsl: 0, primary: true }];
     let showOthers = false;
     const body = custFields(c) +
-      '<div style="overflow:auto;border:1px solid #e2e8f0;border-radius:10px;max-height:40vh"><table><thead><tr style="background:#fbeee7;border-bottom:2px solid #F07A1E">' +
+      '<div style="overflow:auto;border:1px solid #e2e8f0;border-radius:10px;max-height:40vh"><table><thead><tr style="background:var(--th-tint);border-bottom:2px solid var(--th-tintb)">' +
         '<th style="text-align:left;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Vara / lýsing</th>' +
         '<th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Magn</th>' +
         '<th style="text-align:right;padding:8px;font-size:10px;color:#C0341D;text-transform:uppercase;font-weight:800">Verð án vsk</th>' +
@@ -219,7 +239,7 @@
     const inSt = 'padding:6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right';
     const body = custFields(c) +
       '<div style="font-size:11.5px;color:#64748b;margin-bottom:8px">Hakaðu við tækin sem fá sérverð, settu afslátt — sérverð (m.vsk) reiknast per tæki. Ekkert heildarsamtala.</div>' +
-      '<div style="overflow:auto;border:1px solid #e2e8f0;border-radius:10px;max-height:46vh"><table><thead><tr style="background:#fbeee7;border-bottom:2px solid #F07A1E">' +
+      '<div style="overflow:auto;border:1px solid #e2e8f0;border-radius:10px;max-height:46vh"><table><thead><tr style="background:var(--th-tint);border-bottom:2px solid var(--th-tintb)">' +
         '<th style="width:34px"></th>' +
         '<th style="text-align:left;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Tæki / vara</th>' +
         '<th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Fullt verð</th>' +
@@ -316,7 +336,7 @@
       '<div style="display:flex;justify-content:flex-end;margin-top:14px"><div style="min-width:280px">' +
         '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569"><span>Verð án vsk / ár</span><span id="_th-s-an">—</span></div>' +
         '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569"><span>VSK 24%</span><span id="_th-s-vsk">—</span></div>' +
-        '<div style="display:flex;justify-content:space-between;padding:9px 0;font-size:17px;font-weight:800;color:#C0341D;border-top:3px solid #1b1b1b;margin-top:4px"><span>Samtals m. vsk / ár</span><span id="_th-s-tot">—</span></div>' +
+        '<div style="display:flex;justify-content:space-between;padding:9px 0;font-size:17px;font-weight:800;color:var(--th-primary);border-top:3px solid var(--th-dark);margin-top:4px"><span>Samtals m. vsk / ár</span><span id="_th-s-tot">—</span></div>' +
       '</div></div>';
     const m = modal('📜 Þjónustusamningur' + (o ? ' <span style="font-size:12px;color:#fbbf24;font-weight:400">· breyti</span>' : ''), body, footBtns);
     const ov = m.ov;
@@ -361,7 +381,7 @@
       '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:13px;color:#475569"><span>Heildarafsláttur</span><span><input id="_th-tdisc" type="number" min="0" max="100" step="1" value="" placeholder="0" style="width:56px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right"> % <span id="_th-disc" style="margin-left:8px;color:#dc2626"></span></span></div>' +
       '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569;border-top:1px solid #e2e8f0"><span>Án vsk eftir afslátt</span><span id="_th-an">—</span></div>' +
       '<div style="display:flex;justify-content:space-between;padding:5px 0;font-size:13px;color:#475569"><span>VSK 24%</span><span id="_th-vsk">—</span></div>' +
-      '<div style="display:flex;justify-content:space-between;padding:9px 0;font-size:18px;font-weight:800;color:#C0341D;border-top:3px solid #1b1b1b;margin-top:4px"><span>Samtals m. vsk</span><span id="_th-tot">—</span></div>' +
+      '<div style="display:flex;justify-content:space-between;padding:9px 0;font-size:18px;font-weight:800;color:var(--th-primary);border-top:3px solid var(--th-dark);margin-top:4px"><span>Samtals m. vsk</span><span id="_th-tot">—</span></div>' +
       '</div></div>';
   }
   function paintTotals(ov, lines) { const t = totals(lines, pn(ov.querySelector('#_th-tdisc').value)); ov.querySelector('#_th-sub').textContent = fmtKr(t.sub); ov.querySelector('#_th-disc').textContent = t.disc > 0 ? '− ' + fmtKr(t.disc) : ''; ov.querySelector('#_th-an').textContent = fmtKr(t.an); ov.querySelector('#_th-vsk').textContent = fmtKr(t.vsk); ov.querySelector('#_th-tot').textContent = fmtKr(t.m_vsk); }
@@ -381,13 +401,17 @@
   }
   function render() {
     const main = document.getElementById('tilbodhub-main'); if (!main) return;
+    applyTheme();
     const forms = allForms();
     const btn = (id, c, t) => `<button id="${id}" type="button" style="padding:11px 16px;border:none;border-radius:9px;background:${c};color:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.12)">${t}</button>`;
     main.innerHTML = `<div style="max-width:1100px;margin:0 auto;padding:22px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px">
         <div><h1 style="margin:0;font-size:22px;color:#1b1b1b;display:flex;align-items:center;gap:10px">📑 Tilboð &amp; samningar</h1>
           <div style="font-size:12px;color:#64748b;margin-top:2px">Tilboðs- og samningsform — vistast og samhæfast milli ykkar.</div></div>
-        <button id="_th-send" type="button" style="padding:9px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:12px;color:#475569" title="Senda starfsmanni tengil sem opnar AÐEINS þessa síðu">📤 Senda starfsmanni</button>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="_th-theme" type="button" title="Skipta um lit (þema)" style="padding:9px 12px;border:1px solid var(--th-tintb);border-radius:8px;background:var(--th-tint);color:var(--th-dark);cursor:pointer;font:inherit;font-size:12px;font-weight:700">${theme().name}</button>
+          <button id="_th-send" type="button" style="padding:9px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:12px;color:#475569" title="Senda starfsmanni tengil sem opnar AÐEINS þessa síðu">📤 Senda starfsmanni</button>
+        </div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 20px">
         ${btn('_th-new-bk', 'linear-gradient(95deg,#1b1b1b,#C0341D)', '🔥 Nýtt brunakerfi-tilboð')}
@@ -403,6 +427,7 @@
     main.querySelector('#_th-new-sv').onclick = () => openServerd();
     main.querySelector('#_th-new-mn').onclick = () => openSamn();
     main.querySelector('#_th-send').onclick = sendLink;
+    main.querySelector('#_th-theme').onclick = cycleTheme;
     forms.forEach(f => {
       const row = main.querySelector('.th-row[data-id="' + f.id + '"][data-type="' + f.type + '"]'); if (!row) return;
       row.querySelector('[data-act="edit"]').onclick = () => editForm(f);
@@ -487,6 +512,7 @@
     document.body.appendChild(chip);
   }
 
+  applyTheme();
   injectNav();
   hookSwitch();
   document.addEventListener('DOMContentLoaded', () => { injectNav(); deepLink(); });
