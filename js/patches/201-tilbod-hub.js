@@ -31,7 +31,7 @@
   const THEMES = [
     { id: 'fire', name: '🔥 Eldur', dark: '#1b1b1b', primary: '#C0341D', accent: '#F07A1E', tint: '#fbeee7', tintb: '#F07A1E' },
     { id: 'blue', name: '🔵 Business', dark: '#0f2747', primary: '#1d4ed8', accent: '#0ea5e9', tint: '#eff6ff', tintb: '#1d4ed8' },
-    { id: 'emerald', name: '💎 Smaragð', dark: '#14302b', primary: '#0d7d6e', accent: '#E8A317', tint: '#e8f7f3', tintb: '#0d7d6e' },
+    { id: 'white', name: '⬜ Hvítt', dark: '#52525b', primary: '#71717a', accent: '#d4d4d8', tint: '#fafafa', tintb: '#e4e4e7' },
     { id: 'grey', name: '◻️ Grátt', dark: '#374151', primary: '#475569', accent: '#94a3b8', tint: '#f1f5f9', tintb: '#94a3b8' },
   ];
   let themeIdx = 0;
