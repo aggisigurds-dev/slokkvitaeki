@@ -397,7 +397,7 @@
       document.head.appendChild(st);
     }
     document.body.classList.add('bk-fokus');
-    if (!document.getElementById('_bk-fokus-chip')) {
+    if (/[?&]tab=brunakerfi/.test(location.search) && !document.getElementById('_bk-fokus-chip')) {
       const chip = document.createElement('div');
       chip.id = '_bk-fokus-chip';
       chip.title = 'Smelltu til að opna allt kerfið';
@@ -411,5 +411,5 @@
   document.addEventListener('DOMContentLoaded', applyFocus);
   setTimeout(applyFocus, 900);
 
-  window.BrunakerfiTilbod = { open, mount, refreshSaved, sendLink };
+  window.BrunakerfiTilbod = { open, mount, refreshSaved, sendLink, printOffer };
 })();
