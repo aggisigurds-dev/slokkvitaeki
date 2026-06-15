@@ -257,6 +257,8 @@
               <button data-bk-vm="list" class="_bk-vm" type="button" style="padding:7px 12px;border:none;background:${getViewMode()==='list'?'#0f172a':'#fff'};color:${getViewMode()==='list'?'#fff':'#475569'};cursor:pointer;font:inherit;font-size:12px;font-weight:600;border-left:1px solid #cbd5e1">📋 Listi</button>
             </div>
             <button class="_bk-share" type="button" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:12px;color:#475569" title="Afrita beinan tengil á þennan tab">🔗 Afrita tengil</button>
+            <button class="_bk-send" type="button" style="padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:12px;color:#475569" title="Senda starfsmanni tengil sem opnar AÐEINS þessa síðu (felur valmynd)">📤 Senda starfsmanni</button>
+            <button class="_bk-tilbod" type="button" style="padding:8px 12px;border:1px solid #2563eb;border-radius:8px;background:#eff6ff;cursor:pointer;font:inherit;font-size:12px;color:#1d4ed8;font-weight:700" title="Reikna, vista og prenta tilboð fyrir brunaviðvörunarkerfi">📋 Tilboð</button>
             <button class="_bk-add" type="button" style="padding:9px 16px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">+ Bæta við fyrirtæki</button>
           </div>
         </div>
@@ -357,6 +359,8 @@
 
     main.querySelector('._bk-add')?.addEventListener('click', openAddDialog);
     main.querySelector('._bk-share')?.addEventListener('click', shareLink);
+    main.querySelector('._bk-tilbod')?.addEventListener('click', () => { try { window.BrunakerfiTilbod && window.BrunakerfiTilbod.open(); } catch (e) { alert('Villa: ' + (e.message || e)); } });
+    main.querySelector('._bk-send')?.addEventListener('click', () => { try { window.BrunakerfiTilbod && window.BrunakerfiTilbod.sendLink(); } catch (e) { alert('Villa: ' + (e.message || e)); } });
     main.querySelectorAll('._bk-vm').forEach(b => b.addEventListener('click', () => {
       setViewMode(b.dataset.bkVm);
       renderList();
@@ -383,6 +387,8 @@
         await show();
       });
     });
+    // Saved-offers section (Tilboð) rendered at the bottom of the page.
+    try { window.BrunakerfiTilbod && window.BrunakerfiTilbod.mount && window.BrunakerfiTilbod.mount(main); } catch (e) {}
   }
 
   function renderTable(list) {
