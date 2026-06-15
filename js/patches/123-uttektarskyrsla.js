@@ -159,13 +159,25 @@
           '</tr></thead>' +
           '<tbody>' + rowsHtml + '</tbody>' +
         '</table>' +
-        // Totals
+        // Totals + live discount
         '<div style="display:flex;justify-content:flex-end;margin-bottom:24px">' +
-          '<div style="min-width:240px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">' +
+          '<div style="min-width:280px;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">' +
             '<div style="padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase">Reikningur</div>' +
-            '<div style="padding:6px 12px;display:flex;justify-content:space-between;font-size:12px;color:#475569"><span>Án VSK</span><span style="font-variant-numeric:tabular-nums">' + esc(fmtKr(ex)) + '</span></div>' +
-            '<div style="padding:6px 12px;display:flex;justify-content:space-between;font-size:12px;color:#475569"><span>VSK</span><span style="font-variant-numeric:tabular-nums">' + esc(fmtKr(vsk)) + '</span></div>' +
-            '<div style="padding:9px 12px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:#0f172a"><span>Samtals</span><span style="font-variant-numeric:tabular-nums">' + esc(fmtKr(total)) + '</span></div>' +
+            '<div class="no-print" style="padding:6px 12px;display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#475569;border-bottom:1px solid #f1f5f9">' +
+              '<span>Afsláttur</span>' +
+              '<div style="display:flex;align-items:center;gap:4px">' +
+                '<input id="_disc" type="number" min="0" max="100" step="1" value="0" ' +
+                  'style="width:56px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:5px;font-size:12px;text-align:right">' +
+                '<span style="font-size:12px;color:#64748b">%</span>' +
+              '</div>' +
+            '</div>' +
+            '<div id="_disc-row" style="display:none;padding:6px 12px;justify-content:space-between;font-size:12px;color:#dc2626">' +
+              '<span id="_disc-lbl">Afsláttur</span>' +
+              '<span id="_disc-amt" style="font-variant-numeric:tabular-nums"></span>' +
+            '</div>' +
+            '<div style="padding:6px 12px;display:flex;justify-content:space-between;font-size:12px;color:#475569"><span>Án VSK</span><span id="_ex" style="font-variant-numeric:tabular-nums">' + esc(fmtKr(ex)) + '</span></div>' +
+            '<div style="padding:6px 12px;display:flex;justify-content:space-between;font-size:12px;color:#475569"><span>VSK</span><span id="_vsk" style="font-variant-numeric:tabular-nums">' + esc(fmtKr(vsk)) + '</span></div>' +
+            '<div style="padding:9px 12px;background:#f8fafc;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;font-size:14px;font-weight:800;color:#0f172a"><span>Samtals</span><span id="_tot" style="font-variant-numeric:tabular-nums">' + esc(fmtKr(total)) + '</span></div>' +
           '</div>' +
         '</div>' +
         // Sign-off
@@ -186,6 +198,23 @@
           (email ? ' · ' + esc(email) : '') +
           ' · Úttektarskýrsla prentuð ' + fmtDate(new Date().toISOString()) +
         '</div>' +
+        '<script>(function(){' +
+          'var rEx=' + ex + ',rVsk=' + vsk + ',rTot=' + total + ';' +
+          'function f(n){return Math.round(Math.abs(n)).toLocaleString("is-IS")+" kr";}' +
+          'document.getElementById("_disc").addEventListener("input",function(){' +
+            'var p=Math.max(0,Math.min(100,parseFloat(this.value)||0));' +
+            'var k=1-p/100;' +
+            'document.getElementById("_ex").textContent=f(rEx*k);' +
+            'document.getElementById("_vsk").textContent=f(rVsk*k);' +
+            'document.getElementById("_tot").textContent=f(rTot*k);' +
+            'var dr=document.getElementById("_disc-row");' +
+            'if(p>0){' +
+              'dr.style.display="flex";' +
+              'document.getElementById("_disc-lbl").textContent="Afsláttur ("+p+"%)";' +
+              'document.getElementById("_disc-amt").textContent="−"+f(rTot*(p/100));' +
+            '}else{dr.style.display="none";}' +
+          '});' +
+        '})();<' + '/script>' +
       '</div></body></html>';
   }
 
