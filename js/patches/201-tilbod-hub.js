@@ -85,9 +85,9 @@
   // ---------- print (A4 sheet, brand) ----------
   function docShell(titleBadge, dateStr, custBlock, inner) {
     const b = branding();
-    const primary = (b.primary_color || '#C0341D').trim();
+    const primary = theme().primary, dark = theme().dark;
     const logo = (b.logo_url || '').trim();
-    const head = logo ? `<img src="${esc(logo)}" alt="" style="max-height:56px;max-width:240px">` : `<div style="font-size:24px;font-weight:800;color:#1b1b1b">${esc(b.company_name || 'Slökkvitæki ehf')}</div>`;
+    const head = logo ? `<img src="${esc(logo)}" alt="" style="max-height:56px;max-width:240px">` : `<div style="font-size:24px;font-weight:800;color:${dark}">${esc(b.company_name || 'Slökkvitæki ehf')}</div>`;
     return '<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><title>' + esc(titleBadge) + '</title>' +
       '<style>@page{size:A4;margin:12mm}html,body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#0f172a;background:#eef1f4}' +
       '.sheet{max-width:760px;margin:22px auto;background:#fff;padding:28px 34px;box-shadow:0 6px 24px rgba(0,0,0,.14);border-radius:5px}' +
@@ -301,11 +301,12 @@
     };
   }
   function serverdHtml(o) {
+    const tp = theme().primary;
     const rows = o.lines.map(l => { const fin = l.full * (1 - (l.afsl || 0) / 100); return '<tr>' +
       '<td style="padding:7px 9px;font-size:12px;border-bottom:1px solid #f1f5f9">' + esc(l.n) + '</td>' +
       '<td style="padding:7px 9px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#94a3b8;text-decoration:' + (l.afsl ? 'line-through' : 'none') + '">' + fmtKr(l.full) + '</td>' +
       '<td style="padding:7px 9px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9">' + (l.afsl ? l.afsl + '%' : '—') + '</td>' +
-      '<td style="padding:7px 9px;font-size:13px;text-align:right;font-weight:800;color:#C0341D;border-bottom:1px solid #f1f5f9">' + fmtKr(fin) + '</td></tr>'; }).join('');
+      '<td style="padding:7px 9px;font-size:13px;text-align:right;font-weight:800;color:' + tp + ';border-bottom:1px solid #f1f5f9">' + fmtKr(fin) + '</td></tr>'; }).join('');
     const inner = '<div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:6px">Sérverð á slökkvitækjum — verð m. vsk</div>' +
       '<table><thead><tr style="background:#f8fafc">' +
         '<th style="text-align:left;padding:7px 9px;font-size:10px;color:#64748b;text-transform:uppercase">Tæki / vara</th>' +
@@ -358,18 +359,19 @@
     };
   }
   function samnHtml(o) {
+    const tp = theme().primary, tdk = theme().dark;
     const row = (k, v) => '<tr><td style="padding:6px 9px;font-size:12px;color:#64748b;width:38%">' + esc(k) + '</td><td style="padding:6px 9px;font-size:12px;font-weight:600">' + v + '</td></tr>';
     const inner = '<table style="margin-bottom:14px">' +
         row('Þjónusta', esc(o.thjonusta || '')) + row('Tíðni', esc(o.tidni || '')) +
         row('Gildir frá', esc(fmtDate(o.gildir_fra))) + row('Uppsagnarfrestur', esc(o.uppsogn || '')) +
         row('Verð án vsk / ár', fmtKr(o.an_vsk)) + row('VSK 24%', fmtKr(o.vsk)) +
-        row('Samtals m. vsk / ár', '<span style="color:#C0341D;font-weight:800">' + fmtKr(o.m_vsk) + '</span>') +
+        row('Samtals m. vsk / ár', '<span style="color:' + tp + ';font-weight:800">' + fmtKr(o.m_vsk) + '</span>') +
       '</table>' +
-      '<div style="font-size:11px;font-weight:700;color:#1b1b1b;margin:14px 0 4px;text-transform:uppercase;letter-spacing:.04em">Skilmálar</div>' +
+      '<div style="font-size:11px;font-weight:700;color:' + tdk + ';margin:14px 0 4px;text-transform:uppercase;letter-spacing:.04em">Skilmálar</div>' +
       '<div style="font-size:12px;line-height:1.55;color:#0f172a;white-space:pre-wrap">' + esc(o.skilmalar || '') + '</div>' +
       '<div style="display:flex;justify-content:space-between;gap:40px;margin-top:40px">' +
-        '<div style="flex:1;border-top:1px solid #1b1b1b;padding-top:6px;font-size:11px;color:#64748b">Verktaki</div>' +
-        '<div style="flex:1;border-top:1px solid #1b1b1b;padding-top:6px;font-size:11px;color:#64748b">Viðskiptavinur</div>' +
+        '<div style="flex:1;border-top:1px solid ' + tdk + ';padding-top:6px;font-size:11px;color:#64748b">Verktaki</div>' +
+        '<div style="flex:1;border-top:1px solid ' + tdk + ';padding-top:6px;font-size:11px;color:#64748b">Viðskiptavinur</div>' +
       '</div>';
     return docShell('Þjónustusamningur', fmtDate(o.date), custPrintBlock(o.customer), inner);
   }
@@ -386,7 +388,7 @@
       '</div></div>';
   }
   function paintTotals(ov, lines) { const t = totals(lines, pn(ov.querySelector('#_th-tdisc').value)); ov.querySelector('#_th-sub').textContent = fmtKr(t.sub); ov.querySelector('#_th-disc').textContent = t.disc > 0 ? '− ' + fmtKr(t.disc) : ''; ov.querySelector('#_th-an').textContent = fmtKr(t.an); ov.querySelector('#_th-vsk').textContent = fmtKr(t.vsk); ov.querySelector('#_th-tot').textContent = fmtKr(t.m_vsk); }
-  function totRows(t, td) { const r = (l, v, big) => '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:' + (big ? '17px;font-weight:800;border-top:2px solid #1b1b1b;color:#C0341D;margin-top:4px;padding-top:8px' : '12.5px;color:#475569') + '"><span>' + l + '</span><span>' + v + '</span></div>'; return '<div style="display:flex;justify-content:flex-end;margin-top:16px"><div style="min-width:300px">' + r('Samtals án vsk', fmtKr(t.sub)) + (t.disc > 0 ? r('Heildarafsláttur (' + td + '%)', '− ' + fmtKr(t.disc)) : '') + r('Án vsk', fmtKr(t.an)) + r('VSK 24%', fmtKr(t.vsk)) + r('Samtals m. vsk', fmtKr(t.m_vsk), true) + '</div></div>'; }
+  function totRows(t, td) { const tp = theme().primary, tdk = theme().dark; const r = (l, v, big) => '<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:' + (big ? ('17px;font-weight:800;border-top:2px solid ' + tdk + ';color:' + tp + ';margin-top:4px;padding-top:8px') : '12.5px;color:#475569') + '"><span>' + l + '</span><span>' + v + '</span></div>'; return '<div style="display:flex;justify-content:flex-end;margin-top:16px"><div style="min-width:300px">' + r('Samtals án vsk', fmtKr(t.sub)) + (t.disc > 0 ? r('Heildarafsláttur (' + td + '%)', '− ' + fmtKr(t.disc)) : '') + r('Án vsk', fmtKr(t.an)) + r('VSK 24%', fmtKr(t.vsk)) + r('Samtals m. vsk', fmtKr(t.m_vsk), true) + '</div></div>'; }
 
   // ====================== PAGE RENDER ======================
   const TYPE_META = {
