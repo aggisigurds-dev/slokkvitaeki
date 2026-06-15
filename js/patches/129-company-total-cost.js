@@ -283,6 +283,11 @@
   async function render() {
     const main = document.getElementById('companies-main');
     if (!main) return;
+    // Don't re-render while the user is typing in a green trip-note field — a
+    // rebuild would wipe in-progress text ("dettur út"). The field's own input
+    // listener keeps tripState current; render runs again once they blur.
+    const _ae = document.activeElement;
+    if (_ae && /^_ctc-(notes-ta|athskyrsla|skodun|manudur|dags|invtext)$/.test(_ae.id || '')) return;
     const coId = getCompanyId();
     const coNafn = getCompanyName();
     if (!coId || !coNafn) return;
@@ -642,6 +647,7 @@
         st.skodunaradili = skodunInp.value;
         saveTripState(coId, st);
       };
+      skodunInp.addEventListener('input', onSkodun);
       skodunInp.addEventListener('blur', onSkodun);
       skodunInp.addEventListener('change', onSkodun);
     }
@@ -653,6 +659,7 @@
         st.skodun_manudur = manudurInp.value;
         saveTripState(coId, st);
       };
+      manudurInp.addEventListener('input', onManudur);
       manudurInp.addEventListener('blur', onManudur);
       manudurInp.addEventListener('change', onManudur);
     }
@@ -663,6 +670,7 @@
         st.skodun_dagsetning = dagsInp.value;
         saveTripState(coId, st);
       };
+      dagsInp.addEventListener('input', onDags);
       dagsInp.addEventListener('blur', onDags);
       dagsInp.addEventListener('change', onDags);
     }
@@ -670,6 +678,7 @@
     const athInp = notesBox.querySelector('#_ctc-athskyrsla');
     if (athInp) {
       const onAth = () => { const st = loadTripState(coId); st.athugasemdir_skyrsla = athInp.value; saveTripState(coId, st); };
+      athInp.addEventListener('input', onAth);
       athInp.addEventListener('blur', onAth);
       athInp.addEventListener('change', onAth);
     }
@@ -677,6 +686,7 @@
     const invTextInp = section.querySelector('#_ctc-invtext');
     if (invTextInp) {
       const onInv = () => { const st = loadTripState(coId); st.invoice_text = invTextInp.value; saveTripState(coId, st); };
+      invTextInp.addEventListener('input', onInv);
       invTextInp.addEventListener('blur', onInv);
       invTextInp.addEventListener('change', onInv);
     }
@@ -708,6 +718,7 @@
         st.notes = notesTa.value;
         saveTripState(coId, st);
       };
+      notesTa.addEventListener('input', onNotes);
       notesTa.addEventListener('blur', onNotes);
       notesTa.addEventListener('change', onNotes);
     }
