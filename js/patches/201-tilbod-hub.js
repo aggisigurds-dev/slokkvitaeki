@@ -105,11 +105,15 @@
   }
 
   // ====================== SLÖKKVITÆKI TILBOÐ (free lines) ======================
+  // Aðal-slökkvitæki (sýnd sjálfgefið): Duft · Léttvatn · Kolsýra (CO₂)
+  const PRIMARY_RE = /duft|léttvatn|lettvatn|co2|co₂|kolsýr|kolsyr/i;
   async function loadVorur() {
     try {
       if (window.DB && DB.sb) {
         const r = await DB.sb.from('vorur').select('nafn,verd_an_vsk,flokkur,virkt').order('flokkur', { ascending: true }).order('nafn', { ascending: true });
-        return (r.data || []).filter(p => p.virkt !== false).map(p => ({ lysing: p.nafn, magn: 0, verd: Math.round(p.verd_an_vsk || 0), afsl: 0 }));
+        const arr = (r.data || []).filter(p => p.virkt !== false).map(p => ({ lysing: p.nafn, magn: 0, verd: Math.round(p.verd_an_vsk || 0), afsl: 0, primary: PRIMARY_RE.test(p.nafn || '') }));
+        arr.sort((a, b) => (b.primary ? 1 : 0) - (a.primary ? 1 : 0)); // aðaltæki efst
+        return arr;
       }
     } catch (e) {}
     return [];
@@ -118,8 +122,9 @@
     const o = existing ? JSON.parse(JSON.stringify(existing)) : null;
     const c = Object.assign({}, (o && o.customer) || {}, { _date: (o && o.date) || todayISO() });
     // New tilboð: prefill with the live vörur price list (editable); editing: saved lines.
-    let lines = (o && o.lines && o.lines.length) ? o.lines.slice() : await loadVorur();
-    if (!lines.length) lines = [{ lysing: '', magn: 1, verd: 0, afsl: 0 }];
+    let lines = (o && o.lines && o.lines.length) ? o.lines.map(l => ({ ...l, primary: true })) : await loadVorur();
+    if (!lines.length) lines = [{ lysing: '', magn: 1, verd: 0, afsl: 0, primary: true }];
+    let showOthers = false;
     const body = custFields(c) +
       '<div style="overflow:auto;border:1px solid #e2e8f0;border-radius:10px;max-height:40vh"><table><thead><tr style="background:#fbeee7;border-bottom:2px solid #F07A1E">' +
         '<th style="text-align:left;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Vara / lýsing</th>' +
@@ -128,12 +133,15 @@
         '<th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Afsl %</th>' +
         '<th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Samtals</th><th></th>' +
       '</tr></thead><tbody id="_th-tbody"></tbody></table></div>' +
-      '<button id="_th-addrow" type="button" style="margin-top:8px;padding:7px 12px;border:1px dashed #C0341D;border-radius:7px;background:#fff;color:#C0341D;cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Bæta við vöru / línu</button>' +
+      '<div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">' +
+        '<button id="_th-others" type="button" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#f8fafc;color:#475569;cursor:pointer;font:inherit;font-size:12px;font-weight:700">▾ Sjá aðrar vörur</button>' +
+        '<button id="_th-addrow" type="button" style="padding:7px 12px;border:1px dashed #C0341D;border-radius:7px;background:#fff;color:#C0341D;cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Bæta við vöru / línu</button>' +
+      '</div>' +
       totalsBlock();
     const m = modal('🧯 Slökkvitæki — tilboð' + (o ? ' <span style="font-size:12px;color:#fbbf24;font-weight:400">· breyti</span>' : ''), body, footBtns);
     const ov = m.ov, tbody = ov.querySelector('#_th-tbody');
     function rowHtml(l, i) {
-      return `<tr data-i="${i}">
+      return `<tr data-i="${i}" data-primary="${l.primary ? 1 : 0}" class="${l.primary ? '' : '_th-other'}">
         <td style="padding:4px 6px"><input data-f="lysing" type="text" value="${esc(l.lysing || '')}" placeholder="Lýsing á vöru / þjónustu" style="width:100%;min-width:220px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;box-sizing:border-box"></td>
         <td style="padding:4px 6px"><input data-f="magn" type="number" min="0" step="1" value="${l.magn != null ? l.magn : 1}" style="width:58px;padding:6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right"></td>
         <td style="padding:4px 6px"><input data-f="verd" type="text" inputmode="numeric" value="${grp(l.verd)}" style="width:92px;padding:6px;border:1px solid #e0a58f;border-radius:6px;font:inherit;font-size:12px;text-align:right;font-weight:600;color:#C0341D"></td>
@@ -142,10 +150,16 @@
         <td style="padding:4px 6px"><button data-del type="button" style="border:none;background:#fef2f2;color:#dc2626;border-radius:6px;width:26px;height:26px;cursor:pointer">×</button></td>
       </tr>`;
     }
-    function draw() { tbody.innerHTML = lines.map(rowHtml).join(''); recompute(); }
+    function draw() { tbody.innerHTML = lines.map(rowHtml).join(''); recompute(); applyOtherVis(); }
+    function applyOtherVis() {
+      const others = tbody.querySelectorAll('._th-other');
+      others.forEach(tr => { tr.style.display = showOthers ? '' : 'none'; });
+      const ob = ov.querySelector('#_th-others');
+      if (ob) { ob.style.display = others.length ? '' : 'none'; ob.textContent = showOthers ? '▴ Fela aðrar vörur' : ('▾ Sjá aðrar vörur (' + others.length + ')'); }
+    }
     function collect() {
       const out = [];
-      tbody.querySelectorAll('tr').forEach(tr => out.push({ lysing: tr.querySelector('[data-f="lysing"]').value.trim(), magn: num(tr.querySelector('[data-f="magn"]').value), verd: pn(tr.querySelector('[data-f="verd"]').value), afsl: num(tr.querySelector('[data-f="afsl"]').value) }));
+      tbody.querySelectorAll('tr').forEach(tr => out.push({ lysing: tr.querySelector('[data-f="lysing"]').value.trim(), magn: num(tr.querySelector('[data-f="magn"]').value), verd: pn(tr.querySelector('[data-f="verd"]').value), afsl: num(tr.querySelector('[data-f="afsl"]').value), primary: tr.dataset.primary === '1' }));
       return out;
     }
     function recompute() {
@@ -156,7 +170,8 @@
     ov.addEventListener('input', e => { if (e.target.tagName === 'INPUT') recompute(); });
     ov.addEventListener('blur', e => { if (e.target.matches && e.target.matches('[data-f="verd"]')) e.target.value = grp(pn(e.target.value)); }, true);
     tbody.addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) { lines = collect(); lines.splice(+b.closest('tr').dataset.i, 1); draw(); } });
-    ov.querySelector('#_th-addrow').onclick = () => { lines = collect(); lines.push({ lysing: '', magn: 1, verd: 0, afsl: 0 }); draw(); };
+    ov.querySelector('#_th-addrow').onclick = () => { lines = collect(); lines.push({ lysing: '', magn: 1, verd: 0, afsl: 0, primary: true }); draw(); };
+    ov.querySelector('#_th-others').onclick = () => { showOthers = !showOthers; applyOtherVis(); };
     draw();
     function build() {
       const ls = collect().filter(l => l.lysing && l.verd >= 0 && (l.magn > 0));
@@ -197,9 +212,10 @@
     const o = existing ? JSON.parse(JSON.stringify(existing)) : null;
     const c = Object.assign({}, (o && o.customer) || {}, { _date: (o && o.date) || todayISO() });
     let lines;
-    if (o && o.lines && o.lines.length) lines = o.lines.slice();
-    else { const v = await loadVorur(); lines = v.map(p => ({ n: p.lysing, full: Math.round((p.verd || 0) * (1 + VSK)), afsl: 0, include: false })); }
-    if (!lines.length) lines = [{ n: '', full: 0, afsl: 0, include: true }];
+    if (o && o.lines && o.lines.length) lines = o.lines.map(l => ({ ...l, primary: true }));
+    else { const v = await loadVorur(); lines = v.map(p => ({ n: p.lysing, full: Math.round((p.verd || 0) * (1 + VSK)), afsl: 0, include: false, primary: p.primary })); }
+    if (!lines.length) lines = [{ n: '', full: 0, afsl: 0, include: true, primary: true }];
+    let showOthers = false;
     const inSt = 'padding:6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right';
     const body = custFields(c) +
       '<div style="font-size:11.5px;color:#64748b;margin-bottom:8px">Hakaðu við tækin sem fá sérverð, settu afslátt — sérverð (m.vsk) reiknast per tæki. Ekkert heildarsamtala.</div>' +
@@ -210,12 +226,15 @@
         '<th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Afsl %</th>' +
         '<th style="text-align:right;padding:8px;font-size:10px;color:#C0341D;text-transform:uppercase;font-weight:800">Sérverð m.vsk</th><th></th>' +
       '</tr></thead><tbody id="_th-tbody"></tbody></table></div>' +
-      '<button id="_th-addrow" type="button" style="margin-top:8px;padding:7px 12px;border:1px dashed #C0341D;border-radius:7px;background:#fff;color:#C0341D;cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Bæta við tæki / línu</button>';
+      '<div style="display:flex;gap:8px;margin-top:8px;align-items:center;flex-wrap:wrap">' +
+        '<button id="_th-others" type="button" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#f8fafc;color:#475569;cursor:pointer;font:inherit;font-size:12px;font-weight:700">▾ Sjá aðrar vörur</button>' +
+        '<button id="_th-addrow" type="button" style="padding:7px 12px;border:1px dashed #C0341D;border-radius:7px;background:#fff;color:#C0341D;cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Bæta við tæki / línu</button>' +
+      '</div>';
     const m = modal('🏷 Slökkvitæki — sérverð' + (o ? ' <span style="font-size:12px;color:#fbbf24;font-weight:400">· breyti</span>' : ''), body, footBtns);
     const ov = m.ov, tbody = ov.querySelector('#_th-tbody');
     function rowHtml(l, i) {
       const fin = (l.full || 0) * (1 - (l.afsl || 0) / 100);
-      return `<tr data-i="${i}" style="${l.include ? 'background:#f0fdf4' : ''}">
+      return `<tr data-i="${i}" data-primary="${l.primary ? 1 : 0}" class="${l.primary ? '' : '_th-other'}" style="${l.include ? 'background:#f0fdf4' : ''}">
         <td style="text-align:center;padding:4px 6px"><input data-f="inc" type="checkbox" ${l.include ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
         <td style="padding:4px 6px"><input data-f="n" type="text" value="${esc(l.n || '')}" placeholder="Tæki / vara" style="width:100%;min-width:210px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;box-sizing:border-box"></td>
         <td style="padding:4px 6px"><input data-f="full" type="text" inputmode="numeric" value="${grp(l.full)}" style="${inSt};width:94px"></td>
@@ -224,10 +243,16 @@
         <td style="padding:4px 6px"><button data-del type="button" style="border:none;background:#fef2f2;color:#dc2626;border-radius:6px;width:26px;height:26px;cursor:pointer">×</button></td>
       </tr>`;
     }
-    function draw() { tbody.innerHTML = lines.map(rowHtml).join(''); recompute(); }
+    function draw() { tbody.innerHTML = lines.map(rowHtml).join(''); recompute(); applyOtherVis(); }
+    function applyOtherVis() {
+      const others = tbody.querySelectorAll('._th-other');
+      others.forEach(tr => { tr.style.display = showOthers ? '' : 'none'; });
+      const ob = ov.querySelector('#_th-others');
+      if (ob) { ob.style.display = others.length ? '' : 'none'; ob.textContent = showOthers ? '▴ Fela aðrar vörur' : ('▾ Sjá aðrar vörur (' + others.length + ')'); }
+    }
     function collect() {
       const out = [];
-      tbody.querySelectorAll('tr').forEach(tr => out.push({ n: tr.querySelector('[data-f="n"]').value.trim(), full: pn(tr.querySelector('[data-f="full"]').value), afsl: num(tr.querySelector('[data-f="afsl"]').value), include: tr.querySelector('[data-f="inc"]').checked }));
+      tbody.querySelectorAll('tr').forEach(tr => out.push({ n: tr.querySelector('[data-f="n"]').value.trim(), full: pn(tr.querySelector('[data-f="full"]').value), afsl: num(tr.querySelector('[data-f="afsl"]').value), include: tr.querySelector('[data-f="inc"]').checked, primary: tr.dataset.primary === '1' }));
       return out;
     }
     function recompute() {
@@ -238,7 +263,8 @@
     ov.addEventListener('change', e => { if (e.target.matches && e.target.matches('[data-f="inc"]')) recompute(); });
     ov.addEventListener('blur', e => { if (e.target.matches && e.target.matches('[data-f="full"]')) e.target.value = grp(pn(e.target.value)); }, true);
     tbody.addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) { lines = collect(); lines.splice(+b.closest('tr').dataset.i, 1); draw(); } });
-    ov.querySelector('#_th-addrow').onclick = () => { lines = collect(); lines.push({ n: '', full: 0, afsl: 0, include: true }); draw(); };
+    ov.querySelector('#_th-addrow').onclick = () => { lines = collect(); lines.push({ n: '', full: 0, afsl: 0, include: true, primary: true }); draw(); };
+    ov.querySelector('#_th-others').onclick = () => { showOthers = !showOthers; applyOtherVis(); };
     draw();
     function build() {
       const ls = collect().filter(l => l.include && l.n);
