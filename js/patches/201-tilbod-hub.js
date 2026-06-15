@@ -192,6 +192,84 @@
     return docShell('Tilboð', fmtDate(o.date), custPrintBlock(o.customer), inner);
   }
 
+  // ====================== SLÖKKVITÆKI SÉRVERÐ (per-unit, no grand total) ======================
+  async function openServerd(existing) {
+    const o = existing ? JSON.parse(JSON.stringify(existing)) : null;
+    const c = Object.assign({}, (o && o.customer) || {}, { _date: (o && o.date) || todayISO() });
+    let lines;
+    if (o && o.lines && o.lines.length) lines = o.lines.slice();
+    else { const v = await loadVorur(); lines = v.map(p => ({ n: p.lysing, full: Math.round((p.verd || 0) * (1 + VSK)), afsl: 0, include: false })); }
+    if (!lines.length) lines = [{ n: '', full: 0, afsl: 0, include: true }];
+    const inSt = 'padding:6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right';
+    const body = custFields(c) +
+      '<div style="font-size:11.5px;color:#64748b;margin-bottom:8px">Hakaðu við tækin sem fá sérverð, settu afslátt — sérverð (m.vsk) reiknast per tæki. Ekkert heildarsamtala.</div>' +
+      '<div style="overflow:auto;border:1px solid #e2e8f0;border-radius:10px;max-height:46vh"><table><thead><tr style="background:#fbeee7;border-bottom:2px solid #F07A1E">' +
+        '<th style="width:34px"></th>' +
+        '<th style="text-align:left;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Tæki / vara</th>' +
+        '<th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Fullt verð</th>' +
+        '<th style="text-align:right;padding:8px;font-size:10px;color:#1b1b1b;text-transform:uppercase;font-weight:800">Afsl %</th>' +
+        '<th style="text-align:right;padding:8px;font-size:10px;color:#C0341D;text-transform:uppercase;font-weight:800">Sérverð m.vsk</th><th></th>' +
+      '</tr></thead><tbody id="_th-tbody"></tbody></table></div>' +
+      '<button id="_th-addrow" type="button" style="margin-top:8px;padding:7px 12px;border:1px dashed #C0341D;border-radius:7px;background:#fff;color:#C0341D;cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Bæta við tæki / línu</button>';
+    const m = modal('🏷 Slökkvitæki — sérverð' + (o ? ' <span style="font-size:12px;color:#fbbf24;font-weight:400">· breyti</span>' : ''), body, footBtns);
+    const ov = m.ov, tbody = ov.querySelector('#_th-tbody');
+    function rowHtml(l, i) {
+      const fin = (l.full || 0) * (1 - (l.afsl || 0) / 100);
+      return `<tr data-i="${i}" style="${l.include ? 'background:#f0fdf4' : ''}">
+        <td style="text-align:center;padding:4px 6px"><input data-f="inc" type="checkbox" ${l.include ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+        <td style="padding:4px 6px"><input data-f="n" type="text" value="${esc(l.n || '')}" placeholder="Tæki / vara" style="width:100%;min-width:210px;padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;box-sizing:border-box"></td>
+        <td style="padding:4px 6px"><input data-f="full" type="text" inputmode="numeric" value="${grp(l.full)}" style="${inSt};width:94px"></td>
+        <td style="padding:4px 6px"><input data-f="afsl" type="number" min="0" max="100" step="1" value="${l.afsl || ''}" placeholder="0" style="${inSt};width:54px"></td>
+        <td data-cell="final" style="padding:4px 8px;font-size:12.5px;text-align:right;font-weight:700;color:#C0341D;white-space:nowrap">${fmtKr(fin)}</td>
+        <td style="padding:4px 6px"><button data-del type="button" style="border:none;background:#fef2f2;color:#dc2626;border-radius:6px;width:26px;height:26px;cursor:pointer">×</button></td>
+      </tr>`;
+    }
+    function draw() { tbody.innerHTML = lines.map(rowHtml).join(''); recompute(); }
+    function collect() {
+      const out = [];
+      tbody.querySelectorAll('tr').forEach(tr => out.push({ n: tr.querySelector('[data-f="n"]').value.trim(), full: pn(tr.querySelector('[data-f="full"]').value), afsl: num(tr.querySelector('[data-f="afsl"]').value), include: tr.querySelector('[data-f="inc"]').checked }));
+      return out;
+    }
+    function recompute() {
+      const ls = collect();
+      tbody.querySelectorAll('tr').forEach((tr, i) => { tr.querySelector('[data-cell="final"]').textContent = fmtKr(ls[i].full * (1 - ls[i].afsl / 100)); tr.style.background = ls[i].include ? '#f0fdf4' : ''; });
+    }
+    ov.addEventListener('input', e => { if (e.target.tagName === 'INPUT') recompute(); });
+    ov.addEventListener('change', e => { if (e.target.matches && e.target.matches('[data-f="inc"]')) recompute(); });
+    ov.addEventListener('blur', e => { if (e.target.matches && e.target.matches('[data-f="full"]')) e.target.value = grp(pn(e.target.value)); }, true);
+    tbody.addEventListener('click', e => { const b = e.target.closest('[data-del]'); if (b) { lines = collect(); lines.splice(+b.closest('tr').dataset.i, 1); draw(); } });
+    ov.querySelector('#_th-addrow').onclick = () => { lines = collect(); lines.push({ n: '', full: 0, afsl: 0, include: true }); draw(); };
+    draw();
+    function build() {
+      const ls = collect().filter(l => l.include && l.n);
+      return { id: (o && o.id) || ('V' + Date.now()), type: 'serverd', created_at: (o && o.created_at) || new Date().toISOString(), updated_at: new Date().toISOString(), date: ov.querySelector('#_th-date').value || todayISO(), customer: readCust(ov), lines: ls, m_vsk: 0 };
+    }
+    ov.querySelector('#_th-print').onclick = () => printDoc(serverdHtml(build()));
+    ov.querySelector('#_th-save').onclick = async () => {
+      const f = build();
+      if (!f.customer.nafn) { alert('Sláðu inn viðskiptavin.'); return; }
+      if (!f.lines.length) { alert('Hakaðu við a.m.k. eitt tæki.'); return; }
+      const arr = getHub(); const i = arr.findIndex(x => x.id === f.id); if (i >= 0) arr[i] = f; else arr.unshift(f);
+      if (await saveHub(arr) !== false) { m.close(); render(); }
+    };
+  }
+  function serverdHtml(o) {
+    const rows = o.lines.map(l => { const fin = l.full * (1 - (l.afsl || 0) / 100); return '<tr>' +
+      '<td style="padding:7px 9px;font-size:12px;border-bottom:1px solid #f1f5f9">' + esc(l.n) + '</td>' +
+      '<td style="padding:7px 9px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9;color:#94a3b8;text-decoration:' + (l.afsl ? 'line-through' : 'none') + '">' + fmtKr(l.full) + '</td>' +
+      '<td style="padding:7px 9px;font-size:12px;text-align:right;border-bottom:1px solid #f1f5f9">' + (l.afsl ? l.afsl + '%' : '—') + '</td>' +
+      '<td style="padding:7px 9px;font-size:13px;text-align:right;font-weight:800;color:#C0341D;border-bottom:1px solid #f1f5f9">' + fmtKr(fin) + '</td></tr>'; }).join('');
+    const inner = '<div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:6px">Sérverð á slökkvitækjum — verð m. vsk</div>' +
+      '<table><thead><tr style="background:#f8fafc">' +
+        '<th style="text-align:left;padding:7px 9px;font-size:10px;color:#64748b;text-transform:uppercase">Tæki / vara</th>' +
+        '<th style="text-align:right;padding:7px 9px;font-size:10px;color:#64748b;text-transform:uppercase">Fullt verð</th>' +
+        '<th style="text-align:right;padding:7px 9px;font-size:10px;color:#64748b;text-transform:uppercase">Afsláttur</th>' +
+        '<th style="text-align:right;padding:7px 9px;font-size:10px;color:#64748b;text-transform:uppercase">Sérverð</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '<div style="margin-top:20px;font-size:11px;color:#64748b">Verð eru m. vsk og gilda á meðan samningur er í gildi. Ekkert heildarverð — verð per tæki.</div>';
+    return docShell('Sérverð', fmtDate(o.date), custPrintBlock(o.customer), inner);
+  }
+
   // ====================== ÞJÓNUSTUSAMNINGUR ======================
   function openSamn(existing) {
     const o = existing ? JSON.parse(JSON.stringify(existing)) : null;
@@ -267,6 +345,7 @@
   const TYPE_META = {
     brunakerfi: { label: 'Brunaviðvörunarkerfi', icon: '🔥', chip: '#fbeee7', col: '#C0341D' },
     slokkvitaeki: { label: 'Slökkvitæki', icon: '🧯', chip: '#fee2e2', col: '#b91c1c' },
+    serverd: { label: 'Sérverð', icon: '🏷', chip: '#e0f2fe', col: '#0369a1' },
     samningur: { label: 'Þjónustusamningur', icon: '📜', chip: '#fef3c7', col: '#b45309' },
   };
   function allForms() {
@@ -287,6 +366,7 @@
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 20px">
         ${btn('_th-new-bk', 'linear-gradient(95deg,#1b1b1b,#C0341D)', '🔥 Nýtt brunakerfi-tilboð')}
         ${btn('_th-new-sl', 'linear-gradient(95deg,#C0341D,#F07A1E)', '🧯 Nýtt slökkvitæki-tilboð')}
+        ${btn('_th-new-sv', 'linear-gradient(95deg,#0369a1,#0ea5e9)', '🏷 Nýtt sérverð')}
         ${btn('_th-new-mn', 'linear-gradient(95deg,#b45309,#F07A1E)', '📜 Nýr þjónustusamningur')}
       </div>
       <h2 style="font-size:15px;color:#1b1b1b;margin:0 0 8px">Vistuð form <span style="font-size:12px;color:#64748b;font-weight:400">· ${forms.length}</span></h2>
@@ -294,6 +374,7 @@
     </div>`;
     main.querySelector('#_th-new-bk').onclick = () => { if (window.BrunakerfiTilbod) { window.BrunakerfiTilbod.open(); afterModal(); } else alert('Brunakerfi-tilboð ekki tiltækt'); };
     main.querySelector('#_th-new-sl').onclick = () => openSlokk();
+    main.querySelector('#_th-new-sv').onclick = () => openServerd();
     main.querySelector('#_th-new-mn').onclick = () => openSamn();
     main.querySelector('#_th-send').onclick = sendLink;
     forms.forEach(f => {
@@ -305,19 +386,20 @@
   }
   function rowFor(f) {
     const tm = TYPE_META[f.type] || TYPE_META.slokkvitaeki;
-    const sub = f.type === 'samningur' ? esc(f.thjonusta || '') : ((f.lines ? f.lines.length : 0) + ' liðir');
+    const sub = f.type === 'samningur' ? esc(f.thjonusta || '') : ((f.lines ? f.lines.length : 0) + (f.type === 'serverd' ? ' tæki' : ' liðir'));
+    const amount = f.type === 'serverd' ? '<span style="color:#0369a1;font-size:12px">sérverð</span>' : fmtKr(f.m_vsk);
     return `<div class="th-row" data-id="${esc(f.id)}" data-type="${f.type}" style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid #f1f5f9">
       <span style="font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;background:${tm.chip};color:${tm.col};white-space:nowrap">${tm.icon} ${tm.label}</span>
       <div style="flex:1;min-width:0"><div style="font-size:13.5px;font-weight:700;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(f.customer && f.customer.nafn || '—')}</div>
         <div style="font-size:11px;color:#64748b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(fmtDate(f.date))} · ${sub}</div></div>
-      <div style="font-size:14px;font-weight:800;color:#1b1b1b;white-space:nowrap;font-variant-numeric:tabular-nums">${fmtKr(f.m_vsk)}</div>
+      <div style="font-size:14px;font-weight:800;color:#1b1b1b;white-space:nowrap;font-variant-numeric:tabular-nums">${amount}</div>
       <button data-act="edit" type="button" style="padding:6px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12px" title="Breyta">✏️</button>
       <button data-act="print" type="button" style="padding:6px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12px" title="Prenta PDF">🖨</button>
       <button data-act="del" type="button" style="padding:6px 11px;border:1px solid #fecaca;border-radius:7px;background:#fef2f2;cursor:pointer;font:inherit;font-size:12px;color:#dc2626" title="Eyða">🗑</button>
     </div>`;
   }
-  function editForm(f) { if (f.type === 'brunakerfi') { window.BrunakerfiTilbod && window.BrunakerfiTilbod.open(f); afterModal(); } else if (f.type === 'samningur') openSamn(f); else openSlokk(f); }
-  function printForm(f) { if (f.type === 'brunakerfi') window.BrunakerfiTilbod && window.BrunakerfiTilbod.printOffer(f); else if (f.type === 'samningur') printDoc(samnHtml(f)); else printDoc(slokkHtml(f)); }
+  function editForm(f) { if (f.type === 'brunakerfi') { window.BrunakerfiTilbod && window.BrunakerfiTilbod.open(f); afterModal(); } else if (f.type === 'samningur') openSamn(f); else if (f.type === 'serverd') openServerd(f); else openSlokk(f); }
+  function printForm(f) { if (f.type === 'brunakerfi') window.BrunakerfiTilbod && window.BrunakerfiTilbod.printOffer(f); else if (f.type === 'samningur') printDoc(samnHtml(f)); else if (f.type === 'serverd') printDoc(serverdHtml(f)); else printDoc(slokkHtml(f)); }
   async function delForm(f) {
     if (!confirm('Eyða þessu formi fyrir "' + (f.customer && f.customer.nafn || '') + '"?')) return;
     if (f.type === 'brunakerfi') { await saveBk(getBk().filter(x => x.id !== f.id)); window.BrunakerfiTilbod && window.BrunakerfiTilbod.refreshSaved(); }
