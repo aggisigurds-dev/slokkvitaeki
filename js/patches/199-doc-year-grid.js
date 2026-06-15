@@ -38,6 +38,14 @@
       var id=(r.data&&r.data[0])?r.data[0].id:null; _baseCache[d]=id; return id; }
     catch(e){ return null; }
   }
+  var _ktCache={};
+  async function ktForCoId(coId){
+    if(_ktCache[coId]!==undefined) return _ktCache[coId];
+    var sb=SB(); if(!sb) return null;
+    try{ var r=await sb.from('fyrirtaeki').select('kennitala').eq('id', coId).maybeSingle();
+      var kt=(r.data&&r.data.kennitala)||null; _ktCache[coId]=kt; return kt; }
+    catch(e){ return null; }
+  }
   async function fetchDocs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
     try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,invoice_number,amount').eq('customer_base_id', baseId);
@@ -55,11 +63,14 @@
   }
 
   async function render(section, coId){
-    var co=getCompany(coId); if(!co){ section.innerHTML=''; return; }
     var head='<div style="font-weight:700;font-size:14px;color:#0f172a;margin-bottom:8px">📅 Skjöl eftir ári</div>';
     section.innerHTML=head+'<div style="color:#94a3b8;font-size:13px">Hleð…</div>';
-    var kt=co.kennitala;
-    var baseId = kt ? await baseIdForKt(kt) : null;
+    var co=getCompany(coId);
+    // The visit-workflow page (patch 165) doesn't populate window.Companies.list,
+    // so fall back to reading the kennitala straight from fyrirtaeki by id.
+    var kt = co ? co.kennitala : await ktForCoId(coId);
+    if(!kt){ section.innerHTML=head+'<div style="color:#94a3b8;font-size:13px">Vantar kennitölu.</div>'; return; }
+    var baseId = await baseIdForKt(kt);
     if(!baseId){
       section.innerHTML=head+'<div style="color:#94a3b8;font-size:13px">Ekki enn tengt grunnskrá (customers_base)'+(kt?(' · kt '+esc(dash(kt))):' · vantar kennitölu')+' — því engin árayfirlit hér.</div>';
       return;
