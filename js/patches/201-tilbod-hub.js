@@ -419,6 +419,11 @@
         ${btn('_th-new-sv', 'linear-gradient(95deg,#0369a1,#0ea5e9)', '🏷 Nýtt sérverð')}
         ${btn('_th-new-mn', 'linear-gradient(95deg,#b45309,#F07A1E)', '📜 Nýr þjónustusamningur')}
       </div>
+      <a href="https://docs.google.com/spreadsheets/d/1g36r9NL8bcKZOweav4NSRy0rl6zTdhVY/edit?usp=sharing&ouid=104349985258847227699&rtpof=true&sd=true" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:11px;text-decoration:none;background:#fff;border:1px solid var(--th-tintb);border-left:4px solid var(--th-primary);border-radius:10px;padding:12px 16px;margin-bottom:18px;max-width:520px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
+        <span style="font-size:21px">📊</span>
+        <div style="flex:1"><div style="font-weight:700;color:#1b1b1b;font-size:13.5px">Verðskrá — Google Sheet</div><div style="font-size:11px;color:#64748b">Opna tengt verðskrár-/vöruskjal í Google Sheets</div></div>
+        <span style="color:var(--th-primary);font-weight:700;font-size:13px;white-space:nowrap">Opna ↗</span>
+      </a>
       <h2 style="font-size:15px;color:#1b1b1b;margin:0 0 8px">Vistuð form <span style="font-size:12px;color:#64748b;font-weight:400">· ${forms.length}</span></h2>
       <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">${forms.length ? forms.map(rowFor).join('') : '<div style="padding:22px;text-align:center;color:#94a3b8;font-size:13px">Engin form enn — búðu til hér að ofan.</div>'}</div>
     </div>`;
