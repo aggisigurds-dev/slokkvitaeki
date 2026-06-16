@@ -5,15 +5,16 @@
  * customers to chase first.
  *
  * States: 0 = none (grey, initial), 1 = green (low), 2 = yellow (med), 3 = red (high)
- * Clicking loops through the colours in a circle (green → yellow → red → green …)
- * and never returns to grey once activated — the dot won't erase at the end.
+ * Clicking loops through all four states in a circle
+ * (grey → green → yellow → red → grey …) so the dot CAN be cleared back to grey
+ * by cycling one more time past red.
  *
  * Stored on AppSettings.arsskodun_customers[<co_id>].priority.
  *
  * Exposes window.Priority:
  *   - get(coId)          → 0..3
  *   - btnHtml(coId, sz?) → inline-button HTML string with cycling click handler
- *   - cycle(coId, cb?)   → advance to next colour (loops 1→2→3→1), save, optional callback
+ *   - cycle(coId, cb?)   → advance to next state (loops 0→1→2→3→0), save, optional callback
  *   - colorOf(p)         → CSS color for the dot
  *   - classOf(p)         → class for filtering
  *
@@ -70,11 +71,11 @@
     const map = _getMap();
     const entry = Object.assign({}, map[String(coId)] || {});
     const cur = +entry.priority || 0;
-    // Loop through the three colours in a circle (green → yellow → red → green …)
-    // and never fall back to 0/"none" once set — so the dot keeps cycling through
-    // colours instead of erasing itself at the end of the cycle. The first click
-    // on an unset (grey) dot activates it at green.
-    const next = cur === 0 ? 1 : (cur % 3) + 1;
+    // Loop through all four states in a circle (grey → green → yellow → red → grey …)
+    // so the dot can be cleared back to grey/"none" by cycling one more time past
+    // red. The first click on an unset (grey) dot activates it at green; clicking a
+    // red dot returns it to grey.
+    const next = (cur + 1) % 4;
     entry.priority = next;
     const ok = await window.AppSettings.save({
       [STORAGE_KEY]: Object.assign({}, map, { [String(coId)]: entry })
