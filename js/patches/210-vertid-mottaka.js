@@ -1,24 +1,26 @@
-/* === VERTÍÐ — fjöl-fyrirtækja móttöku-vinnuborð (seasonal bulk intake) v1 ===
+/* === VERTÍÐ — fjöl-fyrirtækja móttöku-vinnuborð (seasonal bulk intake) v2 ===
  *
  * Vandamálið (Agnar, vertíðin): rútu-/ferðafyrirtæki (Hagvagnar þjónusta o.fl.)
  * koma með hundruð slökkvitækja í einu — 15 fyrirtæki, 300+ tæki á einni viku,
- * bara skrifað á blað. Sölu-karfan og fyrirtækjaspjaldið ráða ekki við þetta:
- * ég þarf MÖRG fyrirtæki opin í einu, hvert með sinn vaxandi tækjalista, sem
- * helst opið dögum saman á meðan ég hringi/yfirfer — og í lokin EINN reikningur
- * (krafa í banka) á hvert fyrirtæki.
+ * stundum 10 í einu og sótt 7 til baka, bara skrifað á blað. Sölu-karfan og
+ * fyrirtækjaspjaldið ráða ekki við þetta: það þarf MÖRG fyrirtæki opin í einu,
+ * hvert með sinn vaxandi tækjalista, sem helst opið dögum saman á meðan hringt
+ * er/yfirfarið — og í lokin EINN reikningur (krafa í banka) á hvert fyrirtæki.
  *
- * Þetta er sérstök síða sem tengir saman það sem þegar er til:
+ * Sérstök síða sem tengir saman það sem þegar er til:
  *   • customers_base  → fyrirtækin (Hagvagnar þjónusta er þar nú þegar)
  *   • seasonal_job    → ein opin "vertíð" (drög) per fyrirtæki  (úr patch 179)
  *   • uttaeki         → tækin, hengd á vertíðina (seasonal_job_id), með
- *                       service_choice (DB-vistað, samstillt milli tækja/síma)
+ *                       service_choice + received_at/picked_up_at (DB-vistað)
  *   • QR-prentun      → Print.showQR / Print.showJob  (patch 139)
- *   • verðvél         → sömu föll og patch 129 (hleðsla/yfirferð/nýtt verð)
- *   • reikningur      → solur-færsla greitt_med='reikningur' + SalaInvoice
- *                       (sama leið og patch 165 "Klára heimsókn")
+ *   • verðvél         → sömu föll og patch 129 + CompanyPricing tilboðsverð
+ *   • reikningur      → solur greitt_med='reikningur' + SalaInvoice (patch 165)
  *
- * service_choice gildi:  'hledsla' | 'yfirferd' | 'nyitt' | 'onytt' | 'none'.
- * Allt DB-vistað → opnast í símanum úti og á tölvunum inni, lifir endurhleðslu.
+ * v2 bætir við:
+ *   • Innskráning / útskráning (móttöku-dags + "Sækja" útskráning per tæki).
+ *   • Tilboðsverð fyrirtækis (patch 113) sjálfvirkt + breytanleg verð + afsláttur
+ *     (kr eða %) í reikningsglugga áður en vistað er.
+ *   • Fyrri reikningar fyrirtækis — opna aftur og prenta sem PDF hvenær sem er.
  */
 (() => {
   if (window.__vertidInstalled) return;
@@ -40,6 +42,7 @@
   function setTech(v) { try { localStorage.setItem('mt_tech', v || ''); } catch (_) {} }
   function todayIso() { return new Date().toISOString().slice(0, 10); }
   function addMonthsIso(iso, m) { const d = new Date(iso); d.setMonth(d.getMonth() + m); return d.toISOString().slice(0, 10); }
+  function ddmm(iso) { const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso || '')); return m ? m[3] + '.' + m[2] : ''; }
 
   // ── per-unit service choices (mirror patch 131) ──────────────────────────
   const CHOICES = [
@@ -58,7 +61,6 @@
   }
   function choiceOf(u) { return u.service_choice || defaultForType(u.type); }
 
-  // Type-filter chips (mirror patch 131).
   function typeBucket(typeText) {
     const t = (typeText || '').toLowerCase();
     if (/\bduft\b|\babc\b|\bpfc\b/.test(t)) return 'duft';
@@ -78,8 +80,7 @@
     { v: 'annad',    label: '⚙ Annað' },
   ];
 
-  // ── pricing engine — copied verbatim from patch 129 so the reikningur is
-  //    priced EXACTLY like the company-card calculator. ───────────────────────
+  // ── pricing engine — copied from patch 129 so reikningurinn verðleggst eins.
   function normalizeTypeFamily(t) {
     const s = String(t || '').toLowerCase();
     if (!s.trim()) return '—';
@@ -156,49 +157,84 @@
     }
     return best ? best.product : null;
   }
+  // Per-company Tilboðsverð override (patch 113) — coId = originating fyrirtæki id.
+  function findOverride(coId, productName) {
+    if (!coId || !productName) return null;
+    if (!window.CompanyPricing || !window.CompanyPricing.list) return null;
+    const list = window.CompanyPricing.list(coId);
+    if (!list || !list.length) return null;
+    const n = String(productName).toLowerCase().trim();
+    let best = null;
+    for (const o of list) {
+      const oName = String(o.name || '').toLowerCase().trim();
+      if (!oName) continue;
+      if (n.indexOf(oName) >= 0 || oName.indexOf(n) >= 0) {
+        if (!best || oName.length > String(best.name).length) best = o;
+      }
+    }
+    return best;
+  }
 
-  // Price one unit given its current choice. Returns a billable line spec or a
-  // non-billable marker (onytt/sleppa, or unmatched in the price list).
-  function priceForUnit(u) {
+  // Price one unit by its choice. coId = base.source_f_id (for tilboðsverð).
+  function priceForUnit(u, coId) {
     const ch = choiceOf(u);
     const services = state.services || [];
-    if (ch === 'hledsla' || ch === 'yfirferd') {
-      const prod = pickByKind(findMatchingServices(u.type, u.size, services), ch);
-      if (prod) return { billable: true, productName: prod.nafn, unit_price_ex_vat: +prod.verd_an_vsk || 0, vsk_pct: +prod.vsk_prosenta || 24 };
-      return { billable: false, unmatched: true };
-    }
-    if (ch === 'nyitt') {
-      const prod = findReplacementProduct(u.type, u.size, services);
-      if (prod) return { billable: true, productName: prod.nafn, unit_price_ex_vat: +prod.verd_an_vsk || 0, vsk_pct: +prod.vsk_prosenta || 24 };
-      return { billable: false, unmatched: true };
-    }
-    return { billable: false }; // onytt / none
+    let prod = null;
+    if (ch === 'hledsla' || ch === 'yfirferd') prod = pickByKind(findMatchingServices(u.type, u.size, services), ch);
+    else if (ch === 'nyitt') prod = findReplacementProduct(u.type, u.size, services);
+    else return { billable: false }; // onytt / none
+    if (!prod) return { billable: false, unmatched: true };
+    const ov = findOverride(coId, prod.nafn);
+    return {
+      billable: true, productName: prod.nafn,
+      unit_price_ex_vat: ov ? +ov.price_ex_vat || 0 : +prod.verd_an_vsk || 0,
+      vsk_pct: ov ? (+ov.vsk_pct || 24) : (+prod.vsk_prosenta || 24),
+      deal: !!ov,
+    };
   }
 
   // Aggregate a job's units into invoice lines + totals.
-  function billFor(units) {
+  function billFor(units, coId) {
     const groups = {};
-    let billed = 0, unmatched = 0;
+    let billed = 0, unmatched = 0, deal = false;
     units.forEach(u => {
       const ch = choiceOf(u);
       if (ch === 'onytt' || ch === 'none') return;
-      const p = priceForUnit(u);
+      const p = priceForUnit(u, coId);
       if (!p.billable) { if (p.unmatched) unmatched++; return; }
-      billed++;
+      billed++; if (p.deal) deal = true;
       const key = p.productName + '|' + p.unit_price_ex_vat + '|' + p.vsk_pct;
-      if (!groups[key]) groups[key] = { desc: p.productName, qty: 0, unit_price_ex_vat: p.unit_price_ex_vat, vsk_pct: p.vsk_pct };
+      if (!groups[key]) groups[key] = { desc: p.productName, qty: 0, unit_price_ex_vat: p.unit_price_ex_vat, vsk_pct: p.vsk_pct, deal: p.deal };
       groups[key].qty++;
     });
     const linur = Object.values(groups).sort((a, b) => b.qty - a.qty);
     let subEx = 0, vsk = 0;
     linur.forEach(l => { const s = l.qty * l.unit_price_ex_vat; subEx += s; vsk += s * (l.vsk_pct / 100); });
-    return { linur, subEx, vsk, total: subEx + vsk, billed, unmatched };
+    return { linur, subEx, vsk, total: subEx + vsk, billed, unmatched, deal };
+  }
+
+  // Totals for an (optionally edited) line set + a discount spec.
+  // discount = { mode:'kr'|'pct', value:number }. kr is taken off the FINAL m. VSK.
+  function computeTotals(linur, discount) {
+    let rawEx = 0, rawVsk = 0;
+    linur.forEach(l => { const s = (+l.qty || 0) * (+l.unit_price_ex_vat || 0); rawEx += s; rawVsk += s * ((+l.vsk_pct || 24) / 100); });
+    const rawGross = rawEx + rawVsk;
+    let factor = 1, pct = 0, kr = 0;
+    if (discount && discount.mode === 'pct') {
+      pct = Math.max(0, Math.min(100, +discount.value || 0));
+      factor = 1 - pct / 100;
+    } else if (discount && discount.mode === 'kr') {
+      kr = Math.max(0, Math.min(rawGross, +discount.value || 0));
+      factor = rawGross > 0 ? (rawGross - kr) / rawGross : 1;
+    }
+    const subEx = rawEx * factor, vsk = rawVsk * factor;
+    return { rawEx, rawVsk, rawGross, subEx, vsk, total: subEx + vsk, pct, kr };
   }
 
   // ── state ────────────────────────────────────────────────────────────────
   const state = {
     jobs: [], bases: [], baseById: {}, services: null,
-    selectedJobId: null, loading: false, filter: 'all',
+    selectedJobId: null, loading: false, filter: 'all', custodyFilter: 'all',
   };
 
   async function loadServices() {
@@ -226,7 +262,7 @@
     let units = [];
     if (ids.length) {
       const { data } = await SB.from('uttaeki')
-        .select('id,serial,type,size,client,service_choice,custody_status,customer_base_id,seasonal_job_id')
+        .select('id,serial,type,size,client,service_choice,custody_status,received_at,picked_up_at,customer_base_id,seasonal_job_id')
         .in('seasonal_job_id', ids);
       units = data || [];
     }
@@ -236,7 +272,8 @@
     state.jobs.forEach(j => {
       j.units = (byJob[j.id] || []).sort((a, b) => String(a.serial || '').localeCompare(String(b.serial || '')));
       j.base = state.baseById[j.customer_base_id] || null;
-      j.bill = billFor(j.units);
+      j.coId = j.base ? j.base.source_f_id : null;
+      j.bill = billFor(j.units, j.coId);
     });
   }
   async function loadAll() {
@@ -313,10 +350,7 @@
       const q = fold(inp.value);
       const qd = inp.value.replace(/\D/g, '');
       let list = state.bases;
-      if (q) {
-        list = state.bases.filter(b =>
-          fold(b.nafn).includes(q) || (qd && String(b.kennitala || '').replace(/\D/g, '').includes(qd)));
-      }
+      if (q) list = state.bases.filter(b => fold(b.nafn).includes(q) || (qd && String(b.kennitala || '').replace(/\D/g, '').includes(qd)));
       list = list.slice(0, 40);
       if (!list.length) { res.innerHTML = '<div style="padding:14px;color:#94a3b8;font-style:italic;text-align:center">Engin samsvörun</div>'; return; }
       res.innerHTML = list.map(b => {
@@ -404,12 +438,12 @@
     const SB = getSB(); if (!SB) return;
     const serials = await genUniqueSerials(qty);
     if (!serials.length) { toast('Gat ekki búið til raðnúmer'); return; }
-    const base = job.base;
+    const base = job.base; const today = todayIso();
     const rows = serials.map(serial => ({
       serial, type: type || null, size: size || null,
       client: base ? base.nafn : null, customer_base_id: job.customer_base_id || null,
       seasonal_job_id: job.id, custody_status: 'móttekið', status: 'active',
-      service_choice: defaultForType(type),
+      service_choice: defaultForType(type), received_at: today,
     }));
     let saved = [];
     try {
@@ -433,6 +467,7 @@
   }
   async function handleScan(job, serial) {
     const SB = getSB(); if (!SB || !serial) return;
+    const today = todayIso();
     let unit = null;
     try { const { data } = await SB.from('uttaeki').select('*').ilike('serial', serial).limit(1); unit = data && data[0]; } catch (_) {}
     if (unit) {
@@ -442,19 +477,19 @@
         seasonal_job_id: job.id, customer_base_id: job.customer_base_id || unit.customer_base_id,
         client: base ? base.nafn : unit.client, custody_status: 'móttekið',
         service_choice: unit.service_choice || defaultForType(unit.type),
+        received_at: today, picked_up_at: null,
       }).eq('id', unit.id);
       unit.seasonal_job_id = job.id;
       await logEvent(unit, 'arrival', 'móttekið');
       toast('📥 ' + serial + ' bætt við');
       await loadAll();
     } else {
-      // Unknown serial → register it on this job (keep the scanned serial).
       const base = job.base;
       try {
         const { data, error } = await SB.from('uttaeki').insert({
           serial: serial.toUpperCase(), client: base ? base.nafn : null,
           customer_base_id: job.customer_base_id || null, seasonal_job_id: job.id,
-          custody_status: 'móttekið', status: 'active',
+          custody_status: 'móttekið', status: 'active', received_at: today,
         }).select().single();
         if (error) throw error;
         await logEvent(data, 'arrival', 'móttekið');
@@ -469,10 +504,29 @@
     const job = selectedJob(); if (!job) return;
     const u = job.units.find(x => String(x.id) === String(unitId));
     if (u) u.service_choice = value;       // optimistic
-    job.bill = billFor(job.units);
+    job.bill = billFor(job.units, job.coId);
     renderDetailSubtotal(job);
     try { await SB.from('uttaeki').update({ service_choice: value }).eq('id', unitId); }
     catch (e) { toast('Villa við vistun: ' + (e.message || e)); }
+  }
+
+  // Check-out / check-in toggle for a single tæki.
+  async function togglePickup(unitId) {
+    const SB = getSB(); if (!SB) return;
+    const job = selectedJob(); if (!job) return;
+    const u = job.units.find(x => String(x.id) === String(unitId)); if (!u) return;
+    if (u.picked_up_at) {
+      await SB.from('uttaeki').update({ picked_up_at: null, custody_status: 'móttekið' }).eq('id', unitId);
+      u.picked_up_at = null; u.custody_status = 'móttekið';
+      await logEvent(u, 'custody', 'móttekið');
+    } else {
+      const today = todayIso();
+      await SB.from('uttaeki').update({ picked_up_at: today, custody_status: 'afhent' }).eq('id', unitId);
+      u.picked_up_at = today; u.custody_status = 'afhent';
+      await logEvent(u, 'pickup', 'afhent');
+      toast('📦 Sótt: ' + (u.serial || ''));
+    }
+    render();
   }
 
   async function removeUnit(unitId) {
@@ -488,47 +542,130 @@
     if (u && window.Print && Print.showQR) { try { Print.showQR(u); } catch (_) {} }
   }
 
-  // ── invoice (one reikningur per company → solur greitt_med='reikningur') ────
-  async function makeInvoice(job) {
-    const bill = billFor(job.units);
-    if (!bill.linur.length) { alert('Engin rukkanleg tæki — veldu Hleðsla / Yfirferð / Nýtt á einhverju tæki fyrst.'); return; }
+  // ── invoice — editable lines + discount, then save reikningur ───────────────
+  function openInvoiceModal(job) {
     const base = job.base || {};
-    const warn = bill.unmatched ? '\n⚠ ' + bill.unmatched + ' tæki fundu ekki verð í verðlista og eru ekki á reikningnum.' : '';
-    const summary = bill.linur.map(l => '  • ' + l.qty + '× ' + l.desc + ' — ' + fmtKr(l.qty * l.unit_price_ex_vat)).join('\n');
-    if (!confirm('Búa til reikning (krafa í banka) fyrir „' + (base.nafn || '') + '“?\n\n' + summary +
-      '\n\nSamtals m. VSK: ' + fmtKr(bill.total) + warn)) return;
+    const b0 = billFor(job.units, job.coId);
+    if (!b0.linur.length) { alert('Engin rukkanleg tæki — veldu Hleðsla / Yfirferð / Nýtt á einhverju tæki fyrst.'); return; }
+    // Editable working copy of the lines.
+    const lines = b0.linur.map(l => ({ desc: l.desc, qty: l.qty, unit_price_ex_vat: l.unit_price_ex_vat, vsk_pct: l.vsk_pct, deal: l.deal }));
+    let discount = { mode: 'kr', value: 0 };
 
-    const SB = getSB();
+    document.getElementById('_vt-inv')?.remove();
+    const m = document.createElement('div');
+    m.id = '_vt-inv';
+    m.style.cssText = 'position:fixed;inset:0;z-index:10070;background:rgba(15,23,42,.6);display:flex;align-items:center;justify-content:center;padding:16px';
+    m.innerHTML =
+      '<div style="background:#fff;border-radius:14px;width:min(720px,100%);max-height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(0,0,0,.4);overflow:hidden">' +
+        '<div style="padding:14px 20px;background:#166534;color:#fff;display:flex;justify-content:space-between;align-items:center">' +
+          '<div><div style="font-size:16px;font-weight:800">🧾 Reikningur — ' + esc(base.nafn || '') + '</div>' +
+          '<div style="font-size:11.5px;color:#bbf7d0;margin-top:2px">Breyttu verðum og settu afslátt áður en þú vistar. Krafa í banka.</div></div>' +
+          '<button id="_vt-inv-x" style="background:transparent;border:1px solid rgba(255,255,255,.4);color:#fff;width:30px;height:30px;border-radius:7px;cursor:pointer">✕</button>' +
+        '</div>' +
+        '<div style="padding:14px 18px;overflow:auto" id="_vt-inv-body"></div>' +
+        '<div style="padding:14px 18px;border-top:1px solid #e2e8f0;background:#f8fafc;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center">' +
+          '<button id="_vt-inv-cancel" style="padding:10px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>' +
+          '<button id="_vt-inv-ok" style="padding:11px 22px;background:#166534;color:#fff;border:none;border-radius:9px;cursor:pointer;font:inherit;font-size:14px;font-weight:800">✓ Vista & opna reikning</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(m);
+    const close = () => m.remove();
+    m.querySelector('#_vt-inv-x').addEventListener('click', close);
+    m.querySelector('#_vt-inv-cancel').addEventListener('click', close);
+    m.addEventListener('click', e => { if (e.target === m) close(); });
+
+    const body = m.querySelector('#_vt-inv-body');
+    function paint() {
+      const t = computeTotals(lines, discount);
+      body.innerHTML =
+        (b0.unmatched ? '<div style="margin-bottom:10px;padding:8px 10px;background:#fef3c7;border:1px solid #fde68a;border-radius:7px;font-size:12px;color:#78350f">⚠ ' + b0.unmatched + ' tæki fundu ekki verð í verðlista og eru ekki á reikningnum.</div>' : '') +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+          '<thead><tr style="text-align:left;color:#64748b;font-size:10px;text-transform:uppercase">' +
+            '<th style="padding:6px 6px">Lýsing</th><th style="padding:6px 6px;text-align:center;width:50px">Fjöldi</th>' +
+            '<th style="padding:6px 6px;text-align:right;width:120px">Einingaverð án VSK</th><th style="padding:6px 6px;text-align:right;width:60px">VSK</th>' +
+            '<th style="padding:6px 6px;text-align:right;width:100px">Upphæð</th></tr></thead>' +
+          '<tbody>' + lines.map((l, i) =>
+            '<tr style="border-top:1px solid #f1f5f9">' +
+              '<td style="padding:6px 6px">' + esc(l.desc) + (l.deal ? ' <span style="font-size:9px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;padding:1px 5px;font-weight:700">💰 tilboð</span>' : '') + '</td>' +
+              '<td style="padding:6px 6px;text-align:center"><input class="_vt-l-qty" data-i="' + i + '" type="number" min="0" step="1" value="' + l.qty + '" style="width:46px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:center"></td>' +
+              '<td style="padding:6px 6px;text-align:right"><input class="_vt-l-price" data-i="' + i + '" type="number" min="0" step="1" value="' + Math.round(l.unit_price_ex_vat) + '" style="width:100px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right"></td>' +
+              '<td style="padding:6px 6px;text-align:right;color:#64748b">' + l.vsk_pct + '%</td>' +
+              '<td style="padding:6px 6px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(l.qty * l.unit_price_ex_vat) + '</td>' +
+            '</tr>').join('') + '</tbody>' +
+        '</table>' +
+        '<div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap">' +
+          '<span style="font-size:13px;color:#475569;font-weight:600">Afsláttur:</span>' +
+          '<input id="_vt-disc-val" type="number" min="0" step="1" value="' + (discount.value || 0) + '" style="width:110px;padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;text-align:right">' +
+          '<select id="_vt-disc-mode" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px">' +
+            '<option value="kr"' + (discount.mode === 'kr' ? ' selected' : '') + '>kr (m. VSK)</option>' +
+            '<option value="pct"' + (discount.mode === 'pct' ? ' selected' : '') + '>%</option>' +
+          '</select>' +
+        '</div>' +
+        '<div style="margin-top:12px;border-top:2px solid #166534;padding-top:10px;display:flex;flex-direction:column;gap:3px;align-items:flex-end;font-variant-numeric:tabular-nums">' +
+          '<div style="font-size:12.5px;color:#475569">Án VSK: <b>' + fmtKr(t.subEx) + '</b></div>' +
+          '<div style="font-size:12.5px;color:#475569">VSK: <b>' + fmtKr(t.vsk) + '</b></div>' +
+          ((t.pct > 0 || t.kr > 0) ? '<div style="font-size:12.5px;color:#b91c1c">Afsláttur: −' + fmtKr(t.rawGross - t.total) + '</div>' : '') +
+          '<div style="font-size:18px;font-weight:800;color:#166534;margin-top:2px">Til greiðslu: ' + fmtKr(t.total) + '</div>' +
+        '</div>';
+      body.querySelectorAll('._vt-l-qty').forEach(inp => inp.addEventListener('input', () => { lines[+inp.dataset.i].qty = Math.max(0, parseInt(inp.value, 10) || 0); paint(); }));
+      body.querySelectorAll('._vt-l-price').forEach(inp => inp.addEventListener('input', () => { lines[+inp.dataset.i].unit_price_ex_vat = Math.max(0, parseFloat(inp.value) || 0); paint(); }));
+      body.querySelector('#_vt-disc-val').addEventListener('input', e => { discount.value = Math.max(0, parseFloat(e.target.value) || 0); recalcOnly(); });
+      body.querySelector('#_vt-disc-mode').addEventListener('change', e => { discount.mode = e.target.value; paint(); });
+    }
+    // Light recompute of just the totals block without rebuilding inputs (keeps focus).
+    function recalcOnly() {
+      const t = computeTotals(lines, discount);
+      const foot = body.lastElementChild;
+      if (!foot) return;
+      foot.innerHTML =
+        '<div style="font-size:12.5px;color:#475569">Án VSK: <b>' + fmtKr(t.subEx) + '</b></div>' +
+        '<div style="font-size:12.5px;color:#475569">VSK: <b>' + fmtKr(t.vsk) + '</b></div>' +
+        ((t.pct > 0 || t.kr > 0) ? '<div style="font-size:12.5px;color:#b91c1c">Afsláttur: −' + fmtKr(t.rawGross - t.total) + '</div>' : '') +
+        '<div style="font-size:18px;font-weight:800;color:#166534;margin-top:2px">Til greiðslu: ' + fmtKr(t.total) + '</div>';
+    }
+    paint();
+
+    m.querySelector('#_vt-inv-ok').addEventListener('click', async () => {
+      const okBtn = m.querySelector('#_vt-inv-ok');
+      const finalLines = lines.filter(l => l.qty > 0);
+      if (!finalLines.length) { toast('Engar línur með fjölda > 0'); return; }
+      okBtn.disabled = true; okBtn.textContent = 'Vista…';
+      try {
+        await saveInvoice(job, finalLines, discount);
+        close();
+      } catch (e) { okBtn.disabled = false; okBtn.textContent = '✓ Vista & opna reikning'; alert('Villa: ' + (e.message || e)); }
+    });
+  }
+
+  async function saveInvoice(job, lines, discount) {
+    const SB = getSB(); const base = job.base || {};
+    const t = computeTotals(lines, discount);
     const today = todayIso();
     const next = addMonthsIso(today, 12);
-    // Bump inspection dates on the serviced (hleðsla/yfirferð/nýtt) units.
+    // Bump inspection dates on serviced units.
     const servicedIds = job.units.filter(u => { const c = choiceOf(u); return c === 'hledsla' || c === 'yfirferd' || c === 'nyitt'; }).map(u => u.id);
-    if (servicedIds.length) {
-      try { await SB.from('uttaeki').update({ last_insp: today, next_insp: next }).in('id', servicedIds); } catch (_) {}
-    }
-    // customer_id → originating fyrirtæki id so it joins in Kúnnareikningur/Bókhald.
-    const custId = base.source_f_id || null;
-    let saleId = null;
-    try {
-      const ins = await SB.from('solur').insert({
-        customer_nafn: base.nafn || null,
-        customer_id: custId,
-        starfsmadur: getTech() || 'Kassi',
-        linur: bill.linur,
-        upphaed_an_vsk: Math.round(bill.subEx),
-        vsk_upphaed: Math.round(bill.vsk),
-        samtals: Math.round(bill.total),
-        afslattur: 0,
-        greitt_med: 'reikningur',
-        athugasemdir: 'Vertíð ' + today + ' — ' + bill.billed + ' tæki',
-      }).select('id,num').single();
-      if (ins.error) throw ins.error;
-      saleId = ins.data && ins.data.id;
-      toast('🧾 Reikningur ' + (ins.data && ins.data.num ? ins.data.num : '') + ' búinn til');
-    } catch (e) { alert('Reikningur vistaðist ekki: ' + (e.message || e)); return; }
+    if (servicedIds.length) { try { await SB.from('uttaeki').update({ last_insp: today, next_insp: next }).in('id', servicedIds); } catch (_) {} }
 
-    // Open the saved invoice for printing (same path as patch 165).
-    if (saleId && window.SalaInvoice && typeof SalaInvoice.renderFromSale === 'function') {
+    // linur shape matches SalaInvoice.renderFromSale: per-line discount_pct for %,
+    // or sale-level afslattur (kr off gross) — auto-detected on re-print.
+    const pct = t.pct;
+    const linur = lines.map(l => ({ desc: l.desc, qty: l.qty, unit_price_ex_vat: l.unit_price_ex_vat, vsk_pct: l.vsk_pct, discount_pct: pct > 0 ? pct : 0 }));
+    const custId = base.source_f_id || null;
+    let saleId = null, saleNum = '';
+    const ins = await SB.from('solur').insert({
+      customer_nafn: base.nafn || null, customer_id: custId,
+      starfsmadur: getTech() || 'Kassi', linur,
+      upphaed_an_vsk: Math.round(t.subEx), vsk_upphaed: Math.round(t.vsk), samtals: Math.round(t.total),
+      afslattur: pct > 0 ? 0 : Math.round(t.kr),
+      greitt_med: 'reikningur',
+      athugasemdir: 'Vertíð ' + new Date().getFullYear() + ' — ' + lines.reduce((s, l) => s + l.qty, 0) + ' tæki',
+    }).select('id,num').single();
+    if (ins.error) throw ins.error;
+    saleId = ins.data && ins.data.id; saleNum = ins.data && ins.data.num;
+    toast('🧾 Reikningur ' + (saleNum || '') + ' búinn til');
+
+    // Open for printing (→ Save as PDF).
+    if (saleId && window.SalaInvoice && SalaInvoice.renderFromSale) {
       try {
         const r = await SB.from('solur').select('*').eq('id', saleId).single();
         if (r.data) {
@@ -538,15 +675,45 @@
         }
       } catch (_) {}
     }
-    // Offer to close the vertíð for this company now that it's invoiced.
-    setTimeout(() => closeJob(job), 300);
+    await loadAll();
+    setTimeout(() => { const j = state.jobs.find(x => String(x.id) === String(job.id)); if (j) closeJob(j); }, 300);
+  }
+
+  // Re-open a previously saved reikningur (from the company's past invoices).
+  async function reopenInvoice(saleId, base) {
+    const SB = getSB(); if (!SB) return;
+    try {
+      const r = await SB.from('solur').select('*').eq('id', saleId).single();
+      if (r.data && window.SalaInvoice && SalaInvoice.renderFromSale) {
+        const custData = base ? { id: base.source_f_id, nafn: base.nafn, kennitala: base.kennitala, heimilisfang: base.heimilisfang, simi: base.simi } : null;
+        const w = window.open('', '_blank', 'width=900,height=1100');
+        if (w) SalaInvoice.renderFromSale(w, r.data, custData, {});
+      }
+    } catch (e) { toast('Villa: ' + (e.message || e)); }
+  }
+  async function loadPastInvoices(job) {
+    const SB = getSB(); if (!SB) return [];
+    const base = job.base || {};
+    const seen = new Map();
+    try {
+      if (base.source_f_id) {
+        const a = await SB.from('solur').select('id,num,created_at,samtals,greitt_med,paid_at').eq('customer_id', base.source_f_id).order('created_at', { ascending: false }).limit(40);
+        (a.data || []).forEach(r => seen.set(r.id, r));
+      }
+      if (base.nafn) {
+        const b = await SB.from('solur').select('id,num,created_at,samtals,greitt_med,paid_at').eq('customer_nafn', base.nafn).order('created_at', { ascending: false }).limit(40);
+        (b.data || []).forEach(r => seen.set(r.id, r));
+      }
+    } catch (_) {}
+    return Array.from(seen.values()).sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
   }
 
   // ── render: board (all companies) ──────────────────────────────────────────
   function jobCard(j) {
-    const b = j.base; const n = (j.units || []).length;
+    const b = j.base; const units = j.units || []; const n = units.length;
+    const inHouse = units.filter(u => !u.picked_up_at).length;
     const counts = { hledsla: 0, yfirferd: 0, nyitt: 0, onytt: 0 };
-    (j.units || []).forEach(u => { const c = choiceOf(u); if (counts[c] != null) counts[c]++; });
+    units.forEach(u => { const c = choiceOf(u); if (counts[c] != null) counts[c]++; });
     const chip = (lbl, v, bg, fg) => v ? '<span style="background:' + bg + ';color:' + fg + ';font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px">' + lbl + ' ' + v + '</span>' : '';
     return '<div class="_vt-card" data-id="' + j.id + '" style="border:1px solid #e2e8f0;border-radius:13px;padding:15px 16px;background:#fff;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.04);transition:box-shadow .12s" onmouseover="this.style.boxShadow=\'0 4px 14px rgba(0,0,0,.10)\'" onmouseout="this.style.boxShadow=\'0 1px 3px rgba(0,0,0,.04)\'">' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">' +
@@ -560,7 +727,7 @@
         (n === 0 ? '<span style="font-size:11px;color:#cbd5e1;font-style:italic">engin tæki enn</span>' : '') +
       '</div>' +
       '<div style="display:flex;justify-content:space-between;align-items:baseline;margin-top:12px;padding-top:10px;border-top:1px dashed #e2e8f0">' +
-        '<div style="font-size:11px;color:#64748b">Áætlaður reikningur</div>' +
+        '<div style="font-size:11px;color:#64748b">' + inHouse + ' í húsi · áætl. reikn.</div>' +
         '<div style="font-size:17px;font-weight:800;color:#166534;font-variant-numeric:tabular-nums">' + fmtKr(j.bill ? j.bill.total : 0) + '</div>' +
       '</div>' +
     '</div>';
@@ -588,9 +755,7 @@
     main.querySelector('#_vt-addco')?.addEventListener('click', openCompanyPicker);
     const techEl = main.querySelector('#_vt-tech');
     techEl?.addEventListener('change', () => setTech(techEl.value.trim()));
-    main.querySelectorAll('._vt-card').forEach(c => c.addEventListener('click', () => {
-      state.selectedJobId = c.dataset.id; render();
-    }));
+    main.querySelectorAll('._vt-card').forEach(c => c.addEventListener('click', () => { state.selectedJobId = c.dataset.id; render(); }));
   }
 
   // ── render: company detail ─────────────────────────────────────────────────
@@ -598,13 +763,19 @@
     const cur = choiceOf(u);
     const cd = CHOICES.find(c => c.v === cur) || CHOICES[0];
     const opts = CHOICES.map(c => '<option value="' + c.v + '"' + (c.v === cur ? ' selected' : '') + '>' + c.label + '</option>').join('');
-    return '<tr data-bucket="' + typeBucket(u.type) + '" style="border-top:1px solid #f1f5f9">' +
+    const picked = !!u.picked_up_at;
+    const pickCell = picked
+      ? '<button class="_vt-pick-toggle" data-id="' + u.id + '" title="Afturkalla sókn" style="background:#dcfce7;border:1px solid #86efac;color:#166534;border-radius:6px;padding:3px 8px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✓ Sótt ' + esc(ddmm(u.picked_up_at)) + '</button>'
+      : '<button class="_vt-pick-toggle" data-id="' + u.id + '" title="Skrá sótt" style="background:#fff;border:1px solid #cbd5e1;color:#475569;border-radius:6px;padding:3px 8px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">Sækja</button>';
+    return '<tr data-bucket="' + typeBucket(u.type) + '" data-picked="' + (picked ? '1' : '0') + '" style="border-top:1px solid #f1f5f9' + (picked ? ';opacity:.6' : '') + '">' +
       '<td style="padding:6px 10px;font-family:monospace;font-size:12.5px;font-weight:700;color:#0f172a">' + esc(u.serial || '—') + '</td>' +
       '<td style="padding:6px 10px;font-size:13px;color:#334155">' + esc(u.type || '') + '</td>' +
       '<td style="padding:6px 10px;font-size:13px;color:#64748b">' + esc(u.size || '') + '</td>' +
+      '<td style="padding:6px 10px;font-size:11.5px;color:#94a3b8;white-space:nowrap">' + esc(ddmm(u.received_at)) + '</td>' +
       '<td style="padding:6px 10px">' +
         '<select class="_vt-choice" data-id="' + u.id + '" style="padding:3px 7px;border:1px solid ' + cd.bg + ';background:' + cd.bg + ';color:' + cd.color + ';border-radius:6px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">' + opts + '</select>' +
       '</td>' +
+      '<td style="padding:6px 10px;text-align:center">' + pickCell + '</td>' +
       '<td style="padding:6px 10px;text-align:right;white-space:nowrap">' +
         '<button class="_vt-qr" data-id="' + u.id + '" title="Prenta QR" style="background:none;border:1px solid #e2e8f0;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:13px">🖨</button>' +
         '<button class="_vt-rm" data-id="' + u.id + '" title="Taka af vertíð" style="background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:16px;margin-left:4px">×</button>' +
@@ -615,16 +786,17 @@
   function renderDetailSubtotal(job) {
     const el = document.getElementById('_vt-subtotal');
     if (!el) return;
-    const b = job.bill || billFor(job.units);
-    el.innerHTML = b.billed + ' tæki rukkuð' + (b.unmatched ? ' · <span style="color:#b45309">⚠ ' + b.unmatched + ' án verðs</span>' : '') +
+    const b = job.bill || billFor(job.units, job.coId);
+    el.innerHTML = b.billed + ' tæki rukkuð' + (b.deal ? ' · 💰 tilboðsverð' : '') + (b.unmatched ? ' · <span style="color:#b45309">⚠ ' + b.unmatched + ' án verðs</span>' : '') +
       ' · <b style="color:#166534;font-size:16px">' + fmtKr(b.total) + '</b> <span style="color:#94a3b8">m. VSK</span>';
   }
 
-  function renderDetail(main) {
+  async function renderDetail(main) {
     const job = selectedJob();
     if (!job) { state.selectedJobId = null; renderBoard(main); return; }
     const b = job.base || {};
     const units = (job.units || []);
+    const inHouse = units.filter(u => !u.picked_up_at).length;
     const counts = {};
     units.forEach(u => { const k = typeBucket(u.type); counts[k] = (counts[k] || 0) + 1; });
     const chips = BUCKETS.map(bk => {
@@ -633,13 +805,17 @@
       const on = bk.v === state.filter;
       return '<button class="_vt-chip" data-b="' + bk.v + '" style="padding:5px 11px;border:1px solid ' + (on ? '#0f172a' : '#cbd5e1') + ';background:' + (on ? '#0f172a' : '#fff') + ';color:' + (on ? '#fff' : '#475569') + ';border-radius:99px;font:inherit;font-size:12px;font-weight:600;cursor:pointer">' + bk.label + ' <span style="opacity:.65">' + nn + '</span></button>';
     }).join('');
+    const custChips = [['all', 'Allt'], ['inhouse', 'Í húsi ' + inHouse], ['picked', 'Sótt ' + (units.length - inHouse)]].map(([v, lbl]) => {
+      const on = v === state.custodyFilter;
+      return '<button class="_vt-cust" data-c="' + v + '" style="padding:5px 11px;border:1px solid ' + (on ? '#0d6efd' : '#cbd5e1') + ';background:' + (on ? '#0d6efd' : '#fff') + ';color:' + (on ? '#fff' : '#475569') + ';border-radius:99px;font:inherit;font-size:12px;font-weight:600;cursor:pointer">' + lbl + '</button>';
+    }).join('');
 
     main.innerHTML = '<div style="max-width:1000px;margin:0 auto;padding:16px 20px 70px">' +
       '<button id="_vt-back" style="background:none;border:none;color:#0d6efd;font:inherit;font-size:13px;font-weight:600;cursor:pointer;padding:4px 0;margin-bottom:8px">← Til baka á vinnuborðið</button>' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap">' +
         '<div>' +
           '<div style="font-size:21px;font-weight:800;color:#0f172a">' + esc(b.nafn || 'Óþekkt') + '</div>' +
-          '<div style="font-size:12px;color:#94a3b8;margin-top:2px">' + (b.kennitala ? 'kt. ' + esc(b.kennitala) : '') + (b.simi ? ' · 📞 ' + esc(b.simi) : '') + ' · ' + units.length + ' tæki</div>' +
+          '<div style="font-size:12px;color:#94a3b8;margin-top:2px">' + (b.kennitala ? 'kt. ' + esc(b.kennitala) : '') + (b.simi ? ' · 📞 ' + esc(b.simi) : '') + ' · ' + units.length + ' tæki · ' + inHouse + ' í húsi</div>' +
         '</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
           '<button id="_vt-scan" style="padding:9px 14px;background:#0d6efd;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700;color:#fff">📷 Skanna</button>' +
@@ -647,22 +823,19 @@
           '<button id="_vt-close" style="padding:9px 12px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;color:#64748b">Loka vertíð</button>' +
         '</div>' +
       '</div>' +
-      (units.length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 8px">' + chips + '</div>' : '') +
+      (units.length ? '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 4px;align-items:center">' + chips + '<span style="width:1px;height:18px;background:#e2e8f0;margin:0 4px"></span>' + custChips + '</div>' : '') +
       (units.length ?
-        '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-top:4px">' +
+        '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin-top:6px">' +
           '<table style="width:100%;border-collapse:collapse">' +
             '<thead style="background:#f8fafc"><tr>' +
-              '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Raðnúmer</th>' +
-              '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Tegund</th>' +
-              '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Stærð</th>' +
-              '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Þjónusta</th>' +
-              '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">QR</th>' +
+              ['Raðnúmer', 'Tegund', 'Stærð', 'Móttekið', 'Þjónusta', 'Sókn', ''].map((h, i) =>
+                '<th style="padding:8px 10px;text-align:' + (i === 6 ? 'right' : (i === 5 ? 'center' : 'left')) + ';font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">' + h + '</th>').join('') +
             '</tr></thead>' +
             '<tbody id="_vt-rows">' + units.map(unitRow).join('') + '</tbody>' +
           '</table>' +
         '</div>' :
         '<div style="text-align:center;padding:44px 20px;color:#94a3b8;margin-top:14px"><div style="font-size:36px">🧯</div><div style="margin-top:8px">Engin tæki enn — skannaðu eða „Bæta tækjum".</div></div>') +
-      // sticky footer: subtotal + invoice button
+      '<div id="_vt-past" style="margin-top:18px"></div>' +
       '<div style="position:sticky;bottom:0;margin-top:16px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:13px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 -2px 8px rgba(0,0,0,.04)">' +
         '<div id="_vt-subtotal" style="font-size:13px;color:#166534"></div>' +
         '<button id="_vt-invoice" style="padding:11px 20px;background:#166534;color:#fff;border:none;border-radius:9px;cursor:pointer;font:inherit;font-size:14px;font-weight:800;box-shadow:0 1px 3px rgba(22,101,52,.3)">🧾 Búa til reikning</button>' +
@@ -672,24 +845,51 @@
     renderDetailSubtotal(job);
     applyFilter();
 
-    main.querySelector('#_vt-back')?.addEventListener('click', () => { state.selectedJobId = null; state.filter = 'all'; render(); });
+    main.querySelector('#_vt-back')?.addEventListener('click', () => { state.selectedJobId = null; state.filter = 'all'; state.custodyFilter = 'all'; render(); });
     main.querySelector('#_vt-scan')?.addEventListener('click', startScan);
     main.querySelector('#_vt-add')?.addEventListener('click', openAddModal);
     main.querySelector('#_vt-close')?.addEventListener('click', () => closeJob(job));
-    main.querySelector('#_vt-invoice')?.addEventListener('click', () => makeInvoice(job));
+    main.querySelector('#_vt-invoice')?.addEventListener('click', () => openInvoiceModal(job));
     main.querySelectorAll('._vt-chip').forEach(c => c.addEventListener('click', () => { state.filter = c.dataset.b; render(); }));
+    main.querySelectorAll('._vt-cust').forEach(c => c.addEventListener('click', () => { state.custodyFilter = c.dataset.c; render(); }));
     main.querySelectorAll('._vt-choice').forEach(s => s.addEventListener('change', e => {
       const sel = e.target; const cd = CHOICES.find(c => c.v === sel.value) || CHOICES[0];
       sel.style.background = cd.bg; sel.style.color = cd.color; sel.style.borderColor = cd.bg;
       setChoice(sel.dataset.id, sel.value);
     }));
+    main.querySelectorAll('._vt-pick-toggle').forEach(b2 => b2.addEventListener('click', () => togglePickup(b2.dataset.id)));
     main.querySelectorAll('._vt-qr').forEach(b2 => b2.addEventListener('click', () => printUnit(b2.dataset.id)));
     main.querySelectorAll('._vt-rm').forEach(b2 => b2.addEventListener('click', () => removeUnit(b2.dataset.id)));
+
+    // Past invoices (re-openable to print as PDF).
+    const pastEl = main.querySelector('#_vt-past');
+    const past = await loadPastInvoices(job);
+    if (pastEl && past.length) {
+      pastEl.innerHTML = '<div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">🧾 Fyrri reikningar</div>' +
+        '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">' +
+          past.slice(0, 12).map(r => {
+            const paid = !!r.paid_at;
+            return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 12px;border-top:1px solid #f1f5f9">' +
+              '<div style="font-family:monospace;font-size:12.5px;font-weight:700;color:#0f172a">' + esc(r.num || '') + ' <span style="font-family:inherit;font-weight:400;color:#94a3b8">' + esc(ddmm(r.created_at)) + '.' + new Date(r.created_at).getFullYear() + '</span></div>' +
+              '<div style="display:flex;align-items:center;gap:10px">' +
+                '<span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:99px;background:' + (paid ? '#dcfce7' : '#fef3c7') + ';color:' + (paid ? '#166534' : '#92400e') + '">' + (paid ? '✓ Greitt' : 'Ógreitt') + '</span>' +
+                '<span style="font-variant-numeric:tabular-nums;font-weight:600;font-size:13px">' + fmtKr(r.samtals) + '</span>' +
+                '<button class="_vt-reopen" data-id="' + r.id + '" style="padding:4px 10px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#0d6efd">Opna / prenta</button>' +
+              '</div>' +
+            '</div>';
+          }).join('') +
+        '</div>';
+      pastEl.querySelectorAll('._vt-reopen').forEach(btn => btn.addEventListener('click', () => reopenInvoice(+btn.dataset.id, job.base)));
+    }
   }
 
   function applyFilter() {
     document.querySelectorAll('#_vt-rows tr').forEach(tr => {
-      tr.style.display = (state.filter === 'all' || tr.dataset.bucket === state.filter) ? '' : 'none';
+      const typeOk = state.filter === 'all' || tr.dataset.bucket === state.filter;
+      const custOk = state.custodyFilter === 'all' ||
+        (state.custodyFilter === 'inhouse' && tr.dataset.picked === '0') ||
+        (state.custodyFilter === 'picked' && tr.dataset.picked === '1');
+      tr.style.display = (typeOk && custOk) ? '' : 'none';
     });
   }
 
@@ -758,6 +958,6 @@
   else boot();
 
   window.Vertid = { open: show, reload: loadAll };
-  console.log('[patch-210] Vertíð (seasonal bulk intake) installed');
+  console.log('[patch-210] Vertíð v2 (seasonal bulk intake) installed');
 })();
 /* === END VERTÍÐ === */
