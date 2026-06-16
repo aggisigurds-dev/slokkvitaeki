@@ -12,6 +12,14 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet"/>
 <link rel="stylesheet" href="css/app.css?v=20260610a"/>
 <link rel="stylesheet" href="/css/mobile.css?v=1776797624642">
+<style>
+/* Manual-typed number fields (2026-06-16): hide the up/down spinner on every
+   number input so quantity / discount / amount fields are entered by typing.
+   Keyboard up/down arrows still step the value for anyone who prefers it. */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+</style>
 </head>
 <body>
 
