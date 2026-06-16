@@ -422,6 +422,23 @@
               }
             </div>
             ${hasArs ? (() => {
+              // 2026-06-16: inspection-year status — mirrors the list/leiðsögn so
+              // "Tekið út 2026 (skjöl eftir)" / "Skoðað 2026" shows here too, instead
+              // of the detail silently disagreeing with the main list.
+              const curYear = new Date().getFullYear();
+              const lastYr = +((ars||{}).last_year_inspected) || 0;
+              const fieldYr = +((ars||{}).field_inspected_year) || 0;
+              const im = +((ars||{}).inspect_month) || 0;
+              const moLabel = im >= 1 && im <= 12 ? MONTHS_IS[im-1] : '';
+              const base = 'font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:99px;';
+              let pill;
+              if (lastYr === curYear) pill = `<span style="${base}background:#dcfce7;color:#15803d;border:1px solid #bbf7d0">✓ Skoðað ${curYear}</span>`;
+              else if (fieldYr === curYear) pill = `<span style="${base}background:#dbeafe;color:#1e40af;border:1px solid #bfdbfe">🔵 Tekið út ${curYear} — skjöl eftir</span>`;
+              else if (lastYr > 0) pill = `<span style="${base}background:#fef3c7;color:#92400e;border:1px solid #fde68a">Síðast skoðað ${lastYr}</span>`;
+              else pill = `<span style="${base}background:#f1f5f9;color:#64748b;border:1px solid #cbd5e1">Engin skoðun skráð</span>`;
+              return `<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${pill}${moLabel ? `<span style="font-size:10.5px;color:#64748b">📅 ${esc(moLabel)}</span>` : ''}</div>`;
+            })() : ''}
+            ${hasArs ? (() => {
               // 2026-05-19: simplified top-left box. Date info (skoðunarmánuður,
               // síðasta skoðun, áætlaðar tekjur) was duplicating what shows in
               // the units table and athugasemdir memo. Replace with a compact

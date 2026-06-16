@@ -823,11 +823,9 @@
         <td><strong>${esc(c.nafn || '')}</strong>${c.kennitala ? `<div class="kt">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}</td>
         <td>${esc(c.heimilisfang || '')}</td>
         <td class="nowrap">${esc(phone)}</td>
-        <td>${esc(c.netfang || '')}</td>
         <td class="c">${esc(MONTHS_IS_SHORT[m - 1] || '—')}</td>
         <td class="c">${totalEq || ''}</td>
         <td class="r">${est ? fmtKr(est) : ''}</td>
-        <td class="c">${esc(statusTxt)}</td>
       </tr>`;
     }).join('');
 
@@ -880,11 +878,11 @@
   </div>
   <table>
     <thead><tr>
-      <th class="num">#</th><th>Fyrirtæki</th><th>Heimilisfang</th><th>Sími</th><th>Netfang</th>
-      <th style="text-align:center">Skoðun</th><th style="text-align:center">Tæki</th><th style="text-align:right">Áætl.</th><th style="text-align:center">Staða</th>
+      <th class="num">#</th><th>Fyrirtæki</th><th>Heimilisfang</th><th>Sími</th>
+      <th style="text-align:center">Skoðun</th><th style="text-align:center">Tæki</th><th style="text-align:right">Áætl.</th>
     </tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr><td></td><td>Samtals ${arr.length} fyrirtæki</td><td colspan="5"></td><td class="r">${fmtKr(totalEst)}</td><td></td></tr></tfoot>
+    <tfoot><tr><td></td><td>Samtals ${arr.length} fyrirtæki</td><td colspan="4"></td><td class="r">${fmtKr(totalEst)}</td></tr></tfoot>
   </table>
   <script>
     function setOrient(o){
