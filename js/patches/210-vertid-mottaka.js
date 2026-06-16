@@ -153,16 +153,24 @@
   }
   function findReplacementProduct(type, size, services) {
     const qTokens = norm(type + ' ' + size).split(' ').filter(Boolean);
+    // 2026-06-16: size-conflict guard (kept in sync with patch 129). A size
+    // token starts with a digit ("6","9","19") — not "co2"/"kg". If query and
+    // candidate both carry size tokens and none agree, skip so we don't bill
+    // the wrong size's price; the line surfaces as unmatched instead.
+    const isSize = t => /^\d/.test(t);
+    const qHasSize = qTokens.some(isSize);
     let best = null;
     for (const p of services) {
       const n = norm(p.nafn);
       if (/hledsla|yfirferd/.test(n)) continue;
       const nTokens = n.split(' ').filter(Boolean);
-      let matched = 0, strong = 0;
+      let matched = 0, strong = 0, sizeAgrees = false;
       for (const q of qTokens) {
-        if (nTokens.some(nt => tokenMatches(q, nt))) { matched++; if (q.length >= 3) strong++; }
+        if (nTokens.some(nt => tokenMatches(q, nt))) { matched++; if (q.length >= 3) strong++; if (isSize(q)) sizeAgrees = true; }
       }
       if (strong === 0) continue;
+      const pHasSize = nTokens.some(isSize);
+      if (qHasSize && pHasSize && !sizeAgrees) continue; // size conflict → don't mis-bill
       const score = matched / Math.max(1, qTokens.length);
       if (score >= 0.5 && (!best || score > best.score)) best = { product: p, score };
     }
@@ -314,7 +322,7 @@
   }
   async function closeJob(job) {
     const SB = getSB(); if (!SB) return;
-    if (!confirm('Loka vertíð fyrir „' + (job.base ? job.base.nafn : '') + '“? Tækin haldast skráð, en fyrirtækið dettur af borðinu.')) return;
+    if (!await Confirm.show('Loka vertíð fyrir „' + (job.base ? job.base.nafn : '') + '“? Tækin haldast skráð, en fyrirtækið dettur af borðinu.')) return;
     await SB.from('seasonal_job').update({ status: 'closed', closed_at: new Date().toISOString() }).eq('id', job.id);
     state.selectedJobId = null;
     toast('Vertíð lokað');
@@ -552,7 +560,7 @@
 
   async function removeUnit(unitId) {
     const SB = getSB(); if (!SB) return;
-    if (!confirm('Taka tækið af þessari vertíð? (Raðnúmerið helst í kerfinu.)')) return;
+    if (!await Confirm.show('Taka tækið af þessari vertíð? (Raðnúmerið helst í kerfinu.)')) return;
     await SB.from('uttaeki').update({ seasonal_job_id: null, custody_status: null }).eq('id', unitId);
     await loadAll();
   }

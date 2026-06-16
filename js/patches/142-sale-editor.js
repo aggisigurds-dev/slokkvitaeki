@@ -427,51 +427,92 @@
   }
 
   // ── Customer lookup ───────────────────────────────────────────────────────
+  // 2026-06-16: replaced the two stacked native prompt()s (search term + "type
+  // the number 1-N" picker) with a themed search-and-click modal — the numbered
+  // prompt was near-unusable on the phone (S26) and easy to mis-type.
   function openCustomerLookup() {
-    const term = prompt('Leita að viðskiptavini eða fyrirtæki (nafn eða kennitala):');
-    if (!term) return;
     const SB = getSB();
     if (!SB) return;
-    const digits = String(term).replace(/[^0-9]/g, '');
-    const isKt = digits.length >= 6;
-    Promise.all([
-      isKt ? SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').or(`kennitala.ilike.${digits}%`).limit(5)
-           : SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').ilike('nafn', '%'+term+'%').limit(5),
-      isKt ? SB.from('vidskiptavinir').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').or(`kennitala.ilike.${digits}%`).limit(5)
-           : SB.from('vidskiptavinir').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').ilike('nafn','%'+term+'%').limit(5)
-    ]).then(([fy, vk]) => {
-      // 2026-05-19: tag each row with its source table. solur.customer_id_fkey
-      // points to fyrirtaeki only, so a vidskiptavinir.id (like Stefán's
-      // walk-in row id=27) would violate the FK if assigned. We mark the
-      // source on the picker row and use it to decide whether to set
-      // customer_id at commit time.
-      const fyRows = (fy.data || []).map(r => ({ ...r, _src: 'fyrirtaeki' }));
-      const vkRows = (vk.data || []).map(r => ({ ...r, _src: 'vidskiptavinir' }));
-      const all = [].concat(fyRows, vkRows);
-      if (!all.length) { alert('Engin samsvörun.'); return; }
-      const labels = all.map((c, i) => (i+1) + '. ' + c.nafn + (c.kennitala ? ' (kt ' + c.kennitala + ')' : '') + (c._src === 'vidskiptavinir' ? ' [einstaklingur]' : '') + (c.afslattur_pct ? ' · ' + c.afslattur_pct + '% afsl.' : ''));
-      const choice = prompt('Veldu (1-' + all.length + '):\n' + labels.join('\n'));
-      const idx = parseInt(choice, 10) - 1;
-      if (isNaN(idx) || idx < 0 || idx >= all.length) return;
-      const picked = all[idx];
-      _sale.customer_nafn = picked.nafn || '';
-      // Only set customer_id when picked row is from fyrirtaeki — the FK
-      // constraint on solur.customer_id only allows fyrirtaeki ids. For
-      // vidskiptavinir picks (einstaklingar), leave the FK null but keep
-      // the name + kt linked via the kt column.
-      _sale.customer_id = (picked._src === 'fyrirtaeki') ? picked.id : null;
-      _dlg.querySelector('#_se-nafn').value = picked.nafn || '';
-      _dlg.querySelector('#_se-kt').value = picked.kennitala || '';
-      const idLabel = (picked._src === 'fyrirtaeki') ? ('Fyrirtæki ID ' + picked.id) : ('Einstaklingur ID ' + picked.id);
-      _dlg.querySelector('#_se-cust-info').value = idLabel + (picked.afslattur_pct ? ' · ' + picked.afslattur_pct + '% afsl.' : '');
-      // Offer to apply discount automatically
-      if (picked.afslattur_pct && _sale.linur.length) {
-        if (confirm(picked.nafn + ' hefur ' + picked.afslattur_pct + '% afslátt. Beita á öllum línum?')) {
-          _sale.linur.forEach(l => { l.discount_pct = picked.afslattur_pct; });
-          renderLines();
-        }
-      }
-    });
+    const ov = document.createElement('div');
+    ov.id = '_se-cl-ov';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100060;display:flex;align-items:flex-start;justify-content:center;padding:40px 12px;backdrop-filter:blur(2px)';
+    ov.innerHTML =
+      '<div style="background:#fff;border-radius:16px;width:480px;max-width:96vw;max-height:84vh;display:flex;flex-direction:column;box-shadow:0 24px 70px rgba(0,0,0,.3);overflow:hidden">'+
+        '<div style="padding:16px 18px;border-bottom:1px solid #eef2f7;display:flex;gap:8px;align-items:center">'+
+          '<input id="_se-cl-q" type="text" placeholder="Leita: nafn eða kennitala…" '+
+            'style="flex:1;min-width:0;padding:10px 12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;font-size:14px">'+
+          '<button id="_se-cl-go" type="button" style="padding:10px 16px;background:#2563eb;color:#fff;border:none;border-radius:9px;cursor:pointer;font:inherit;font-size:13px;font-weight:700;flex-shrink:0">Leita</button>'+
+          '<button id="_se-cl-x" type="button" style="padding:10px 12px;background:#f1f5f9;color:#475569;border:none;border-radius:9px;cursor:pointer;font:inherit;font-size:13px;flex-shrink:0">✕</button>'+
+        '</div>'+
+        '<div id="_se-cl-res" style="overflow-y:auto;padding:8px;flex:1"><div style="color:#94a3b8;font-size:13px;padding:18px;text-align:center">Sláðu inn leitarorð…</div></div>'+
+      '</div>';
+    document.body.appendChild(ov);
+    const qEl = ov.querySelector('#_se-cl-q');
+    const resEl = ov.querySelector('#_se-cl-res');
+    function closeOv(){ ov.remove(); document.removeEventListener('keydown', onKey); }
+    function onKey(e){ if (e.key === 'Escape') closeOv(); }
+    document.addEventListener('keydown', onKey);
+    ov.addEventListener('click', e => { if (e.target === ov) closeOv(); });
+    ov.querySelector('#_se-cl-x').addEventListener('click', closeOv);
+    setTimeout(() => { try { qEl.focus(); } catch(_){} }, 30);
+
+    function runSearch(){
+      const term = qEl.value.trim();
+      if (!term) { resEl.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:18px;text-align:center">Sláðu inn leitarorð…</div>'; return; }
+      resEl.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:18px;text-align:center">Leita…</div>';
+      const digits = String(term).replace(/[^0-9]/g, '');
+      const isKt = digits.length >= 6;
+      Promise.all([
+        isKt ? SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').or(`kennitala.ilike.${digits}%`).limit(8)
+             : SB.from('fyrirtaeki').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').ilike('nafn', '%'+term+'%').limit(8),
+        isKt ? SB.from('vidskiptavinir').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').or(`kennitala.ilike.${digits}%`).limit(8)
+             : SB.from('vidskiptavinir').select('id,nafn,kennitala,simi,heimilisfang,afslattur_pct').ilike('nafn','%'+term+'%').limit(8)
+      ]).then(([fy, vk]) => {
+        // 2026-05-19: tag each row with its source table. solur.customer_id_fkey
+        // points to fyrirtaeki only, so a vidskiptavinir.id (like Stefán's
+        // walk-in row id=27) would violate the FK if assigned. We mark the
+        // source on the picker row and use it to decide whether to set
+        // customer_id at commit time.
+        const fyRows = (fy.data || []).map(r => ({ ...r, _src: 'fyrirtaeki' }));
+        const vkRows = (vk.data || []).map(r => ({ ...r, _src: 'vidskiptavinir' }));
+        const all = [].concat(fyRows, vkRows);
+        if (!all.length) { resEl.innerHTML = '<div style="color:#94a3b8;font-size:13px;padding:18px;text-align:center">Engin samsvörun.</div>'; return; }
+        resEl.innerHTML = all.map((c, i) =>
+          '<button type="button" class="_se-cl-pick" data-i="'+i+'" style="display:block;width:100%;text-align:left;padding:11px 12px;margin:4px 0;border:1px solid #e2e8f0;border-radius:10px;background:#fff;cursor:pointer;font:inherit">'+
+            '<div style="font-weight:700;font-size:14px;color:#0f172a">'+esc(c.nafn||'')+(c._src==='vidskiptavinir'?' <span style="font-weight:600;font-size:11px;color:#7c3aed">· einstaklingur</span>':'')+'</div>'+
+            '<div style="font-size:12px;color:#64748b;margin-top:2px">'+(c.kennitala?('kt '+esc(c.kennitala)):'')+(c.afslattur_pct?(' · '+c.afslattur_pct+'% afsl.'):'')+(c.heimilisfang?(' · '+esc(c.heimilisfang)):'')+'</div>'+
+          '</button>'
+        ).join('');
+        resEl.querySelectorAll('._se-cl-pick').forEach(btn => {
+          btn.addEventListener('click', async () => {
+            const picked = all[parseInt(btn.getAttribute('data-i'),10)];
+            if (!picked) return;
+            _sale.customer_nafn = picked.nafn || '';
+            // Only set customer_id when picked row is from fyrirtaeki — the FK
+            // constraint on solur.customer_id only allows fyrirtaeki ids. For
+            // vidskiptavinir picks (einstaklingar), leave the FK null but keep
+            // the name + kt linked via the kt column.
+            _sale.customer_id = (picked._src === 'fyrirtaeki') ? picked.id : null;
+            _dlg.querySelector('#_se-nafn').value = picked.nafn || '';
+            _dlg.querySelector('#_se-kt').value = picked.kennitala || '';
+            const idLabel = (picked._src === 'fyrirtaeki') ? ('Fyrirtæki ID ' + picked.id) : ('Einstaklingur ID ' + picked.id);
+            _dlg.querySelector('#_se-cust-info').value = idLabel + (picked.afslattur_pct ? ' · ' + picked.afslattur_pct + '% afsl.' : '');
+            closeOv();
+            // Offer to apply discount automatically
+            if (picked.afslattur_pct && _sale.linur.length) {
+              if (await Confirm.show(picked.nafn + ' hefur ' + picked.afslattur_pct + '% afslátt. Beita á öllum línum?')) {
+                _sale.linur.forEach(l => { l.discount_pct = picked.afslattur_pct; });
+                renderLines();
+              }
+            }
+          });
+        });
+      }).catch(() => {
+        resEl.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:18px;text-align:center">Villa við leit.</div>';
+      });
+    }
+    ov.querySelector('#_se-cl-go').addEventListener('click', runSearch);
+    qEl.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); runSearch(); } });
   }
 
   // ── Footer + actions ──────────────────────────────────────────────────────

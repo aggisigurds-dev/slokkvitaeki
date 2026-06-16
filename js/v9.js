@@ -112,7 +112,7 @@
       '<div style="background:#fff;border-radius:20px;padding:30px;width:800px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 28px 80px rgba(0,0,0,.35);">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:22px;">'+
           '<div><h2 style="margin:0;font-size:21px;font-weight:800;color:#111;">'+t('dashboard')+'</h2>'+
-            '<p style="margin:3px 0 0;font-size:12px;color:#999;">19. apríl 2026 · Slökkvitæki ehf</p></div>'+
+            '<p style="margin:3px 0 0;font-size:12px;color:#999;">'+new Date().toLocaleDateString('is-IS',{day:'numeric',month:'long',year:'numeric'})+' · Slökkvitæki ehf</p></div>'+
           '<button id="_dash_close" style="border:none;background:#f3f4f6;border-radius:10px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;color:#374151;">✕ Loka</button>'+
         '</div>'+
 
@@ -140,7 +140,7 @@
             '<div style="display:grid;gap:8px;">'+
               _statRow('🏢', _lang==='en'?'Companies':'Fyrirtæki', (function(){var s={};units.forEach(function(u){if(u.client)s[u.client]=1;});return Object.keys(s).length;})())+
               _statRow('🧯', _lang==='en'?'Field units':'Þjónustutæki', fieldUnits+' tæki')+
-              _statRow('🔗', _lang==='en'?'Loan units':'Lánstæki', '4 tæki')+
+              _statRow('🔗', _lang==='en'?'Loan units':'Lánstæki', '<span id="_dash_loan">…</span>')+
               _statRow('💰', _lang==='en'?'Revenue (jobs)':'Tekjur (verk)', '<span id="_dash_rev">hleður...</span>')+
               _statRow('📋', _lang==='en'?'Active jobs':'Virk verk', jobs.length+' verk')+
             '</div>'+
@@ -164,8 +164,15 @@
     ov.onclick = function(e){ if(e.target===ov) ov.remove(); };
     document.getElementById('_dash_close').onclick = function(){ ov.remove(); };
 
+    // Load loan-unit count (real, not hardcoded)
+    DB.sb.from('lanstaeki').select('id').then(function(r){
+      var el = document.getElementById('_dash_loan');
+      if (!el) return;
+      el.textContent = ((r.data||[]).length) + ' tæki';
+    });
+
     // Load visits
-    DB.sb.from('dagskra').select('*').gte('date','2026-04-19').order('date').limit(6).then(function(r){
+    DB.sb.from('dagskra').select('*').gte('date',new Date().toISOString().substring(0,10)).order('date').limit(6).then(function(r){
       var el = document.getElementById('_dash_visits');
       if (!el) return;
       var visits = r.data || [];
@@ -191,20 +198,24 @@
       el.textContent = total>0 ? Math.round(total).toLocaleString('is-IS')+' kr' : '0 kr';
     });
 
-    // Load company statuses
-    DB.fetchAll(function(from,to){ return DB.sb.from('uttaeki').select('client,status').range(from,to); }).then(function(_rows){  // page through 1000-row cap
-      var r = { data: _rows };
+    // Company statuses — from the already-loaded cache (no second full uttaeki fetch;
+    // the old re-fetch also omitted next_insp, so its overdue count was always 0)
+    (function(){
       var el = document.getElementById('_dash_companies');
       if (!el) return;
       var byComp = {};
-      (r.data||[]).forEach(function(u){
+      var _td = new Date().toISOString().substring(0,10);
+      units.forEach(function(u){
         if (!byComp[u.client]) byComp[u.client]={ok:0,overdue:0,total:0};
         byComp[u.client].total++;
-        var _td = new Date().toISOString().substring(0,10);
         if (u.status==='active' && u.next_insp && u.next_insp<_td) byComp[u.client].overdue++;
         else if (u.status==='active' && u.next_insp && u.next_insp>=_td) byComp[u.client].ok++;
       });
-      var companies = ['Harpa tónlistarhús','Kópavogsbær','Ríkisútvarpið','Sundlaug Laugardals','Menntaskólinn við Tjörn'];
+      var companies = Object.keys(byComp).filter(function(c){return c;}).sort(function(a,b){
+        var A=byComp[a], B=byComp[b];
+        return (B.overdue-A.overdue) || (B.total-A.total);
+      }).slice(0,5);
+      if (!companies.length) { el.innerHTML='<p style="color:#aaa;font-size:12px;margin:0;grid-column:1/-1;">'+(_lang==='en'?'No companies':'Engin fyrirtæki')+'</p>'; return; }
       el.innerHTML = companies.map(function(co){
         var stats = byComp[co]||{ok:0,overdue:0,total:0};
         var hasIssue = stats.overdue > 0;
@@ -215,7 +226,7 @@
           '<div style="font-size:11px;color:'+(hasIssue?'#dc2626':'#059669')+';font-weight:700;">'+(hasIssue?stats.overdue+' útrunni':'Í lagi')+'</div>'+
         '</div>';
       }).join('');
-    });
+    })();
 
     // Load Geymsla units with customer+phone
     DB.sb.from('uttaeki').select('serial,type,size,client,phone,location,next_insp').eq('status','geymsla').order('serial').then(function(r){
@@ -626,16 +637,18 @@
 
   /* ── PERIODIC INJECTION ─────────────────────────────────────── */
   var _cnt=0, _ti=setInterval(function(){
+    if(document.hidden) return;   // don't churn while the tab/screen is in the background
     inject();
     buildDashBtn();
-    if(++_cnt>=30){clearInterval(_ti);setInterval(function(){ inject(); buildDashBtn(); },5000);}
+    if(++_cnt>=30){clearInterval(_ti);setInterval(function(){ if(document.hidden) return; inject(); buildDashBtn(); },5000);}
   },1500);
 
   /* ── MUTATION OBSERVER ─────────────────────────────────────── */
   var _db2=null;
   new MutationObserver(function(muts){
+    if(document.hidden) return;
     if(muts.some(function(m){return m.addedNodes.length>0;})){
-      clearTimeout(_db2);_db2=setTimeout(function(){ inject(); buildDashBtn(); },250);
+      clearTimeout(_db2);_db2=setTimeout(function(){ if(!document.hidden){ inject(); buildDashBtn(); } },250);
     }
   }).observe(document.body,{childList:true,subtree:true});
 
@@ -804,14 +817,15 @@
     });
   }
 
-  // Run all on interval
+  // Run all on interval (skip while the tab/screen is backgrounded)
   setInterval(function(){
+    if(document.hidden) return;
     fixGeymslaAge();
     injectSearchBoxes();
     setupMobileNav();
     addPrintBtn();
     showKennitala();
-  }, 2000);
+  }, 3000);
   setTimeout(setupRealtime, 1500);
 
   console.log('[v9] ready + enhancements | lang:',_lang);

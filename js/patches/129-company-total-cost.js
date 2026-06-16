@@ -155,6 +155,14 @@
   // Eldvarnateppi where the customer is charged the replacement price.
   function findReplacementProduct(type, size, services) {
     const qTokens = norm(type + ' ' + size).split(' ').filter(Boolean);
+    // 2026-06-16: size-conflict guard. The customer is billed THIS product's
+    // price, so the SIZE must agree. A "size token" is one starting with a
+    // digit ("6", "9", "19", '3/4"') — NOT "co2"/"kg"/"ltr". If both the query
+    // and a candidate carry size tokens and none of them agree, skip that
+    // candidate so we never bill e.g. a 9 kg price for a 6 kg unit. Such lines
+    // then fall through to the unmatched list (surfaced) instead of mis-billing.
+    const isSize = t => /^\d/.test(t);
+    const qHasSize = qTokens.some(isSize);
     let best = null;
     for (const p of services) {
       const n = norm(p.nafn);
@@ -163,6 +171,7 @@
       const nTokens = n.split(' ').filter(Boolean);
       let matched = 0;
       let strongMatches = 0;
+      let sizeAgrees = false;
       for (const q of qTokens) {
         if (nTokens.some(nt => tokenMatches(q, nt))) {
           matched++;
@@ -170,9 +179,12 @@
           // strong token. Was rejecting all CO2 matches because the token
           // is only 3 chars long.
           if (q.length >= 3) strongMatches++;
+          if (isSize(q)) sizeAgrees = true;
         }
       }
       if (strongMatches === 0) continue;
+      const pHasSize = nTokens.some(isSize);
+      if (qHasSize && pHasSize && !sizeAgrees) continue; // size conflict → don't mis-bill
       const score = matched / Math.max(1, qTokens.length);
       if (score >= 0.5 && (!best || score > best.score)) {
         best = { product: p, score };

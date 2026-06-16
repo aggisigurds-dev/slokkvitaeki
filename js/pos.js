@@ -394,7 +394,7 @@
           '<span style="font-weight:600;font-size:13px;min-width:18px;text-align:center">'+l.qty+'</span>' +
           '<button class="pos-qty-up" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b;flex-shrink:0">+</button>' +
           '<span style="color:#94a3b8;font-size:11px;margin:0 1px">×</span>' +
-          '<input class="pos-price-edit" data-idx="'+idx+'" type="number" min="0" step="1" value="'+l.unit_price_ex_vat+'" ' +
+          '<input class="pos-price-edit" data-idx="'+idx+'" type="text" inputmode="decimal" value="'+l.unit_price_ex_vat+'" ' +
             'title="Smelltu til að breyta verði (án VSK)" ' +
             'style="width:64px;min-width:0;flex:0 1 64px;padding:2px 5px;border:1px solid #e2e8f0;border-radius:4px;font:inherit;font-size:11px;text-align:right;font-variant-numeric:tabular-nums">' +
           '<span style="color:#94a3b8;font-size:11px">kr</span>' +
@@ -570,7 +570,11 @@
       var p = e.target.closest('.pos-price-edit'); if (!p) return;
       var i = parseInt(p.getAttribute('data-idx'), 10);
       if (state.lines[i]) {
-        state.lines[i].unit_price_ex_vat = parseFloat(p.value) || 0;
+        // comma/dot-tolerant: "1.234,5" → 1234.5, "4032,26" → 4032.26, "4032.26" → 4032.26
+        var raw = String(p.value).replace(/[^0-9.,]/g,'');
+        if (raw.indexOf('.')>=0 && raw.indexOf(',')>=0) raw = raw.replace(/\./g,'').replace(',', '.');
+        else raw = raw.replace(',', '.');
+        state.lines[i].unit_price_ex_vat = parseFloat(raw) || 0;
         // Re-render only the totals; don't redraw the inputs (cursor jumps).
         var tEl = document.getElementById('pos-totals'); if (tEl) tEl.innerHTML = buildTotalsHTML();
         var cb = document.getElementById('pos-checkout');
