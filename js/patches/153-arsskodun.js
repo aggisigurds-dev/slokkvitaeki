@@ -794,6 +794,7 @@
     const arr = filteredSorted();
     if (!arr.length) { alert('Engin fyrirtæki í listanum til að prenta.'); return; }
     const curYear = new Date().getFullYear();
+    const curMonth = new Date().getMonth() + 1;
     const filterLabel = state.month >= 1 && state.month <= 12
       ? `${MONTHS_IS[state.month - 1]} ${curYear}`
       : (state.status === 'done'        ? `Búið ${curYear}`
@@ -813,10 +814,17 @@
       const totalEq = Object.values(ars.equipment || {}).reduce((s, v) => s + (+v || 0), 0);
       const est = +ars.estimated_yearly || 0;
       totalEst += est;
-      const statusTxt = lastYr === curYear ? 'Búið ' + curYear
-        : fieldYr === curYear ? 'Í vinnslu'
-        : lastYr ? 'Eftir (síðast ' + lastYr + ')'
-        : 'Aldrei';
+      // Mirror the on-screen "${curYear}" status dot exactly (same flags,
+      // colours and meaning) so the printed list matches what's on screen.
+      const isDone = lastYr === curYear;
+      const isFieldOnly = !isDone && fieldYr === curYear;
+      const isSkipped = !isDone && !isFieldOnly && lastYr > 0 && lastYr < curYear - 1;
+      const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
+      const dot = isDone ? '#22c55e' : (isFieldOnly ? '#3b82f6' : (isSkipped ? '#f59e0b' : (isOverdue ? '#ef4444' : '#94a3b8')));
+      const statusLabel = isDone ? ('Skoðað ' + curYear)
+        : (isFieldOnly ? 'Í vinnslu'
+        : (isSkipped ? ('Sleppt · síðast ' + lastYr)
+        : (isOverdue ? 'Útrunnið' : 'Á dagskrá')));
       const phone = [c.simi, c.farsimi].filter(Boolean).join(' / ');
       return `<tr>
         <td class="num">${i + 1}</td>
@@ -826,6 +834,7 @@
         <td class="c">${esc(MONTHS_IS_SHORT[m - 1] || '—')}</td>
         <td class="c">${totalEq || ''}</td>
         <td class="r">${est ? fmtKr(est) : ''}</td>
+        <td class="st"><span class="dot" style="background:${dot}"></span>${esc(statusLabel)}</td>
       </tr>`;
     }).join('');
 
@@ -835,7 +844,7 @@
     const dateStr = new Date().toLocaleDateString('is-IS');
     win.document.write(`<!doctype html><html lang="is"><head><meta charset="utf-8"><title>Fyrirtæki í Þjónustu — ${esc(filterLabel)}</title>
 <style>
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   body.portrait table { font-size: 10px; }
   body.portrait th, body.portrait td { padding: 4px 5px; }
   body { font-family: 'IBM Plex Sans', system-ui, Arial, sans-serif; color:#0f172a; margin:0; padding:18px; }
@@ -850,6 +859,8 @@
   td.r { text-align:right; font-variant-numeric:tabular-nums; }
   td.nowrap { white-space:nowrap; }
   .kt { font-size:9.5px; color:#94a3b8; font-family:monospace; }
+  td.st { white-space:nowrap; }
+  .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle; box-shadow:0 0 0 1px rgba(0,0,0,.12); }
   tbody tr:nth-child(even) td { background:#fafbfc; }
   tfoot td { font-weight:700; border-top:2px solid #0f172a; background:#fff; }
   .toolbar { margin-bottom:12px; }
@@ -880,9 +891,10 @@
     <thead><tr>
       <th class="num">#</th><th>Fyrirtæki</th><th>Heimilisfang</th><th>Sími</th>
       <th style="text-align:center">Skoðun</th><th style="text-align:center">Tæki</th><th style="text-align:right">Áætl.</th>
+      <th>Staða ${curYear}</th>
     </tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr><td></td><td>Samtals ${arr.length} fyrirtæki</td><td colspan="4"></td><td class="r">${fmtKr(totalEst)}</td></tr></tfoot>
+    <tfoot><tr><td></td><td>Samtals ${arr.length} fyrirtæki</td><td colspan="4"></td><td class="r">${fmtKr(totalEst)}</td><td></td></tr></tfoot>
   </table>
   <script>
     function setOrient(o){
