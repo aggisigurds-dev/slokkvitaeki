@@ -130,26 +130,42 @@ verkdagbok       (id uuid PK, created_at, job_date, fyrirtaeki, athugasemdir,
 
 - ✅ `js/patch-master.js` split into `js/patches/*.js`
 - ✅ `verkdagbok_attachments` table + `verkdagbok-attachments` storage bucket exist in Supabase
-- ✅ `deploy.js` (Netlify API push from Node.js) — see workflow section below
+- ⚠️ `deploy.js` is DEPRECATED & guarded off — it wipes the serverless functions. Deploy via `git push` → GitHub Actions ONLY (see Deploy workflow)
 - ✅ Private GitHub repo at `aggisigurds-dev/slokkvitaeki`
 
 ---
 
-## Deploy workflow (NEW — replaces the old browser dance)
+## Deploy workflow — `git push` ONLY (4 machines, must stay in sync)
 
-```powershell
-# from project folder
-node deploy.js
+The ONLY supported way to deploy is to commit and push to `master`. GitHub
+Actions (`.github/workflows/deploy.yml`) then runs `build-dist.js` and publishes
+the static site **and the serverless functions together**, atomically:
+
+```bash
+git pull origin master      # ALWAYS pull first — never deploy stale code over a teammate's work
+# …make changes, commit…
+git push origin master      # CI deploys site + functions to slokkvitaeki.netlify.app
 ```
 
-The script:
-1. Reads all files in the project folder
-2. Computes SHA-1 hashes
-3. POSTs a deploy spec to Netlify API
-4. PUTs only changed files
-5. Confirms deploy succeeded
+⚠️ **NEVER run `node deploy.js`.** It uploads only the *static* files from the
+local machine and **silently deletes every serverless function** (`kt-lookup`,
+`geocode`, `email-send`, …) — breaking kennitala lookup, maps and email until the
+next `git push` rebuilds them — and it overwrites the live site with whatever
+stale code that one machine has. (The script is now guarded to refuse to run.)
 
-Old workflow was: gzip+base64 the patch, stream chunked into a browser tab, build a fetch() orchestrator inside that tab. That's no longer needed — Node.js can hit api.netlify.com directly.
+**Why git-only matters:** this app is edited from 4 machines, each running Claude
+Code. If any machine deploys its local folder directly, it clobbers the others'
+work and wipes the functions. `git push → CI` is the single source of truth, so
+every machine deploys the same committed code, functions included. Pull before
+you start; push to deploy.
+
+If CI is down and you MUST deploy by hand, use the SAME command CI uses (never
+`deploy.js`) so the functions come along:
+
+```bash
+node build-dist.js
+npx netlify-cli@latest deploy --prod --dir=dist --functions=netlify/functions --site=d22039b2-75f2-4206-b543-7c6176f2d181
+```
 
 ---
 
