@@ -611,7 +611,7 @@
               '<td style="padding:6px 6px;text-align:center"><input class="_vt-l-qty" data-i="' + i + '" type="number" min="0" step="1" value="' + l.qty + '" style="width:46px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:center"></td>' +
               '<td style="padding:6px 6px;text-align:right"><input class="_vt-l-price" data-i="' + i + '" type="number" min="0" step="1" value="' + Math.round(l.unit_price_ex_vat) + '" style="width:100px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right"></td>' +
               '<td style="padding:6px 6px;text-align:right;color:#64748b">' + l.vsk_pct + '%</td>' +
-              '<td style="padding:6px 6px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(l.qty * l.unit_price_ex_vat) + '</td>' +
+              '<td class="_vt-l-amt" data-i="' + i + '" style="padding:6px 6px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(l.qty * l.unit_price_ex_vat) + '</td>' +
             '</tr>').join('') + '</tbody>' +
         '</table>' +
         '<div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap">' +
@@ -628,8 +628,11 @@
           ((t.pct > 0 || t.kr > 0) ? '<div style="font-size:12.5px;color:#b91c1c">Afsláttur: −' + fmtKr(t.rawGross - t.total) + '</div>' : '') +
           '<div style="font-size:18px;font-weight:800;color:#166534;margin-top:2px">Til greiðslu: ' + fmtKr(t.total) + '</div>' +
         '</div>';
-      body.querySelectorAll('._vt-l-qty').forEach(inp => inp.addEventListener('input', () => { lines[+inp.dataset.i].qty = Math.max(0, parseInt(inp.value, 10) || 0); paint(); }));
-      body.querySelectorAll('._vt-l-price').forEach(inp => inp.addEventListener('input', () => { lines[+inp.dataset.i].unit_price_ex_vat = Math.max(0, parseFloat(inp.value) || 0); paint(); }));
+      // Update the line's amount cell + totals foot in place (no full paint() —
+      // rebuilding the inputs on each keystroke stole focus / dropped digits).
+      const repriceLine = i => { const a = body.querySelector('._vt-l-amt[data-i="' + i + '"]'); if (a) a.textContent = fmtKr(lines[i].qty * lines[i].unit_price_ex_vat); recalcOnly(); };
+      body.querySelectorAll('._vt-l-qty').forEach(inp => inp.addEventListener('input', () => { const i = +inp.dataset.i; lines[i].qty = Math.max(0, parseInt(inp.value, 10) || 0); repriceLine(i); }));
+      body.querySelectorAll('._vt-l-price').forEach(inp => inp.addEventListener('input', () => { const i = +inp.dataset.i; lines[i].unit_price_ex_vat = Math.max(0, parseFloat(inp.value) || 0); repriceLine(i); }));
       body.querySelector('#_vt-disc-val').addEventListener('input', e => { discount.value = Math.max(0, parseFloat(e.target.value) || 0); recalcOnly(); });
       body.querySelector('#_vt-disc-mode').addEventListener('change', e => { discount.mode = e.target.value; paint(); });
     }

@@ -126,41 +126,55 @@ function applySearch(rows){
   return rows.filter(function(r){return r.name.toLowerCase().indexOf(q)>=0 || r.kennitala.indexOf(q.replace(/-/g,''))>=0 || (r.phone||'').indexOf(q)>=0;});
 }
 
+var _people=null;  // cached customer list — search/sort filter this in place (no DB refetch per keystroke)
+
 async function renderView(){
   var v=document.getElementById('view-vidskiptavinir');
   if(!v)return;
   v.innerHTML='<div style="padding:20px;color:#6b7280">Hleður...</div>';
-  var people=await loadIndividuals();
-  var visible=applySort(applySearch(people.slice()));
-  var html='<div style="padding:0 0 20px 0">';
-  html+='<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px"><div><h1 style="margin:0;font-size:22px;color:#111">Viðskiptavinir</h1><div style="font-size:12px;color:#6b7280;margin-top:2px">'+visible.length+' / '+people.length+' viðskiptavinir</div></div></div>';
-  html+='<div style="display:flex;gap:10px;margin-bottom:10px;align-items:center;flex-wrap:wrap"><input id="_vk_search" placeholder="🔎 Leita eftir nafni, kennitölu eða síma..." value="'+escHtml(_state.search)+'" style="flex:1;min-width:200px;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:14px;background:#fff"><button id="_vk_clear" style="background:#f3f4f6;border:none;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;color:#374151">Hreinsa</button></div>';
-  if(visible.length===0){
-    html+='<div style="padding:60px 20px;text-align:center;color:#9ca3af;background:#f9fafb;border-radius:10px"><div style="font-size:48px;margin-bottom:14px">👥</div><h3 style="margin:0 0 6px 0;color:#374151;font-weight:600">Engir viðskiptavinir með kennitölu enn</h3><div style="font-size:13px">Þegar þú skráir nýja verkbeiðni og setur inn kennitölu birtast einstaklingar hér.</div></div>';
-  } else {
-    var thStyle='cursor:pointer;text-align:center;padding:12px 10px;font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:700;user-select:none';
-    var thLeft='cursor:pointer;text-align:left;padding:12px 14px;font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:700;user-select:none';
-    html+='<table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)"><thead><tr style="background:#f9fafb;border-bottom:2px solid #e5e7eb"><th data-sort="name" style="'+thLeft+'">Nafn</th><th data-sort="kt" style="'+thLeft+'">Kennitala</th><th style="'+thLeft+'">Sími</th><th data-sort="jobs" style="'+thStyle+'">Verk</th><th data-sort="last" style="'+thLeft+'">Síðasta heimsókn</th><th style="text-align:right;padding:12px 14px"></th></tr></thead><tbody>';
-    visible.forEach(function(r){
-      html+='<tr data-kt="'+r.kennitala+'" style="border-bottom:1px solid #f3f4f6;cursor:pointer" onmouseover="this.style.background=\'#f9fafb\'" onmouseout="this.style.background=\'\'">';
-      html+='<td style="padding:12px 14px;font-weight:600;color:#111">'+escHtml(r.name)+'</td>';
-      html+='<td style="padding:12px 14px;font-family:monospace;color:#374151">'+fmtKt(r.kennitala)+'</td>';
-      html+='<td style="padding:12px 14px;color:#374151">'+(r.phone?'<a href="tel:'+r.phone.replace(/[^0-9+]/g,'')+'" style="color:#2563eb;text-decoration:none" onclick="event.stopPropagation()">'+escHtml(r.phone)+'</a>':'-')+'</td>';
-      html+='<td style="padding:12px 10px;text-align:center;font-weight:700">'+r.jobs.length+'</td>';
-      html+='<td style="padding:12px 14px;color:#374151">'+fmtDate(r.lastDate)+'</td>';
-      html+='<td style="padding:12px 14px;text-align:right;color:#9ca3af">›</td>';
-      html+='</tr>';
-    });
-    html+='</tbody></table>';
-  }
-  html+='</div>';
-  v.innerHTML=html;
+  _people=await loadIndividuals();   // reload once per tab-open (not per keystroke)
+  // Shell rendered once; the search input stays mounted so typing keeps focus.
+  v.innerHTML='<div style="padding:0 0 20px 0">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px"><div><h1 style="margin:0;font-size:22px;color:#111">Viðskiptavinir</h1><div id="_vk_count" style="font-size:12px;color:#6b7280;margin-top:2px"></div></div></div>'+
+    '<div style="display:flex;gap:10px;margin-bottom:10px;align-items:center;flex-wrap:wrap"><input id="_vk_search" placeholder="🔎 Leita eftir nafni, kennitölu eða síma..." value="'+escHtml(_state.search)+'" style="flex:1;min-width:200px;padding:10px 14px;border:1.5px solid #e5e7eb;border-radius:9px;font-size:14px;background:#fff"><button id="_vk_clear" style="background:#f3f4f6;border:none;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;color:#374151">Hreinsa</button></div>'+
+    '<div id="_vk_results"></div>'+
+  '</div>';
   var inp=document.getElementById('_vk_search');
-  if(inp){inp.addEventListener('input',function(e){_state.search=e.target.value;renderView();});}
+  if(inp){inp.addEventListener('input',function(e){_state.search=e.target.value;paintResults();});}
   var clr=document.getElementById('_vk_clear');
-  if(clr){clr.onclick=function(){_state.search='';renderView();};}
-  v.querySelectorAll('th[data-sort]').forEach(function(th){th.onclick=function(){var k=th.dataset.sort;if(_state.sortBy===k){_state.sortDir=_state.sortDir==='asc'?'desc':'asc';}else{_state.sortBy=k;_state.sortDir=k==='name'?'asc':'desc';}renderView();};});
-  v.querySelectorAll('tr[data-kt]').forEach(function(tr){tr.onclick=function(){var kt=tr.dataset.kt;var p=people.find(function(x){return x.kennitala===kt;});if(p)showHistory(p);};});
+  if(clr){clr.onclick=function(){_state.search='';var s=document.getElementById('_vk_search');if(s)s.value='';paintResults();};}
+  paintResults();
+}
+
+// Re-filter + re-sort the cached people and repaint ONLY the results table + count.
+function paintResults(){
+  var people=_people||[];
+  var visible=applySort(applySearch(people.slice()));
+  var cnt=document.getElementById('_vk_count');
+  if(cnt)cnt.textContent=visible.length+' / '+people.length+' viðskiptavinir';
+  var box=document.getElementById('_vk_results');
+  if(!box)return;
+  if(visible.length===0){
+    box.innerHTML='<div style="padding:60px 20px;text-align:center;color:#9ca3af;background:#f9fafb;border-radius:10px"><div style="font-size:48px;margin-bottom:14px">👥</div><h3 style="margin:0 0 6px 0;color:#374151;font-weight:600">'+(_state.search?'Engin samsvörun':'Engir viðskiptavinir með kennitölu enn')+'</h3><div style="font-size:13px">'+(_state.search?'Prófaðu annað leitarorð.':'Þegar þú skráir nýja verkbeiðni og setur inn kennitölu birtast einstaklingar hér.')+'</div></div>';
+    return;
+  }
+  var thStyle='cursor:pointer;text-align:center;padding:12px 10px;font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:700;user-select:none';
+  var thLeft='cursor:pointer;text-align:left;padding:12px 14px;font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:700;user-select:none';
+  var html='<table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)"><thead><tr style="background:#f9fafb;border-bottom:2px solid #e5e7eb"><th data-sort="name" style="'+thLeft+'">Nafn</th><th data-sort="kt" style="'+thLeft+'">Kennitala</th><th style="'+thLeft+'">Sími</th><th data-sort="jobs" style="'+thStyle+'">Verk</th><th data-sort="last" style="'+thLeft+'">Síðasta heimsókn</th><th style="text-align:right;padding:12px 14px"></th></tr></thead><tbody>';
+  visible.forEach(function(r){
+    html+='<tr data-kt="'+r.kennitala+'" style="border-bottom:1px solid #f3f4f6;cursor:pointer" onmouseover="this.style.background=\'#f9fafb\'" onmouseout="this.style.background=\'\'">';
+    html+='<td style="padding:12px 14px;font-weight:600;color:#111">'+escHtml(r.name)+'</td>';
+    html+='<td style="padding:12px 14px;font-family:monospace;color:#374151">'+fmtKt(r.kennitala)+'</td>';
+    html+='<td style="padding:12px 14px;color:#374151">'+(r.phone?'<a href="tel:'+r.phone.replace(/[^0-9+]/g,'')+'" style="color:#2563eb;text-decoration:none" onclick="event.stopPropagation()">'+escHtml(r.phone)+'</a>':'-')+'</td>';
+    html+='<td style="padding:12px 10px;text-align:center;font-weight:700">'+r.jobs.length+'</td>';
+    html+='<td style="padding:12px 14px;color:#374151">'+fmtDate(r.lastDate)+'</td>';
+    html+='<td style="padding:12px 14px;text-align:right;color:#9ca3af">›</td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table>';
+  box.innerHTML=html;
+  box.querySelectorAll('th[data-sort]').forEach(function(th){th.onclick=function(){var k=th.dataset.sort;if(_state.sortBy===k){_state.sortDir=_state.sortDir==='asc'?'desc':'asc';}else{_state.sortBy=k;_state.sortDir=k==='name'?'asc':'desc';}paintResults();};});
+  box.querySelectorAll('tr[data-kt]').forEach(function(tr){tr.onclick=function(){var kt=tr.dataset.kt;var p=(_people||[]).find(function(x){return x.kennitala===kt;});if(p)showHistory(p);};});
 }
 
 function injectTabAndView(){

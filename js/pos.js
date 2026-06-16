@@ -628,8 +628,38 @@
     document.getElementById('pos-notes').addEventListener('input',function(e){state.notes=e.target.value;});
     document.getElementById('pos-checkout').addEventListener('click',checkout);
   }
-  function promptService(){var d=prompt('Lýsing:','Önnur þjónusta');if(!d)return;var p=prompt('Verð án VSK:','5000');if(!p)return;var pr=parseFloat(p.replace(/[^0-9.]/g,''));if(isNaN(pr)){alert('Ógilt verð');return;}state.lines.push({type:'service',desc:d,qty:1,unit_price_ex_vat:pr,vsk_pct:24,ref:''});rerenderDynamic();}
-  function scanQr(){if(!window.Scanner||typeof Scanner.open!=='function'){alert('QR skanni ekki tilbúinn');return;}Scanner.open(function(code){if(!code)return;DB.sb.from('uttaeki').select('*').eq('serial',code).maybeSingle().then(function(r){if(r.data){var u=r.data;state.lines.push({type:'service',desc:'Áfylling · '+(u.type||'')+' '+(u.size||''),qty:1,unit_price_ex_vat:8900,vsk_pct:24,ref:u.serial});}else{state.lines.push({type:'service',desc:'Þjónusta',qty:1,unit_price_ex_vat:8900,vsk_pct:24,ref:code});}rerenderDynamic();});});}
+  function promptService(){
+    var old=document.getElementById('pos-svc-modal'); if(old)old.remove();
+    var m=document.createElement('div');
+    m.id='pos-svc-modal';
+    m.style.cssText='position:fixed;inset:0;z-index:10060;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    m.innerHTML='<div style="background:#fff;border-radius:14px;padding:22px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25)">'+
+      '<h2 style="margin:0 0 14px;font-size:17px;color:#0f172a">➕ Önnur þjónusta</h2>'+
+      '<label style="display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 4px;text-transform:uppercase">Lýsing</label>'+
+      '<input id="pos-svc-desc" value="Önnur þjónusta" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;margin-bottom:12px">'+
+      '<label style="display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 4px;text-transform:uppercase">Verð án VSK</label>'+
+      '<input id="pos-svc-price" type="text" inputmode="decimal" value="5000" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;text-align:right">'+
+      '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">'+
+        '<button id="pos-svc-x" style="padding:9px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;cursor:pointer">Hætta við</button>'+
+        '<button id="pos-svc-ok" style="padding:9px 18px;border-radius:8px;border:1px solid #16a34a;background:#16a34a;color:#fff;font-weight:700;cursor:pointer">Bæta við</button>'+
+      '</div>'+
+    '</div>';
+    document.body.appendChild(m);
+    var close=function(){m.remove();};
+    m.querySelector('#pos-svc-x').addEventListener('click',close);
+    m.addEventListener('click',function(e){if(e.target===m)close();});
+    m.querySelector('#pos-svc-ok').addEventListener('click',function(){
+      var d=(m.querySelector('#pos-svc-desc').value||'').trim();
+      var p=(m.querySelector('#pos-svc-price').value||'').replace(/\./g,'').replace(',','.').replace(/[^0-9.]/g,'');
+      var pr=parseFloat(p);
+      if(!d){alert('Lýsing vantar');return;}
+      if(isNaN(pr)){alert('Ógilt verð');return;}
+      state.lines.push({type:'service',desc:d,qty:1,unit_price_ex_vat:pr,vsk_pct:24,ref:''});
+      close();rerenderDynamic();
+    });
+    setTimeout(function(){var f=m.querySelector('#pos-svc-desc');if(f){f.focus();f.select();}},40);
+  }
+  function scanQr(){if(!window.Scanner||typeof Scanner.open!=='function'){alert('QR skanni ekki tilbúinn');return;}var toast=function(msg){if(window.Toast&&Toast.show)Toast.show(msg);};Scanner.open(function(code){if(!code)return;DB.sb.from('uttaeki').select('serial,type,size').eq('serial',code).maybeSingle().then(function(r){if(r.data){var u=r.data;state.lines.push({type:'service',desc:'Áfylling · '+(u.type||'')+' '+(u.size||''),qty:1,unit_price_ex_vat:8900,vsk_pct:24,ref:u.serial});toast('✓ '+(u.serial||code)+' bætt við');}else{state.lines.push({type:'service',desc:'Þjónusta',qty:1,unit_price_ex_vat:8900,vsk_pct:24,ref:code});toast('Tæki „'+code+'" fannst ekki — bætt við sem þjónustu');}rerenderDynamic();}).catch(function(e){toast('Villa við skönnun: '+(e.message||e));});});}
   function addProductLine(pid){var p=state.products.find(function(x){return x.id===pid;});if(!p)return;var ex=state.lines.find(function(l){return l.type==='product'&&l.product_id===pid;});if(ex){ex.qty++;}else state.lines.push({type:'product',desc:p.nafn,qty:1,unit_price_ex_vat:p.verd_an_vsk,vsk_pct:p.vsk_prosenta||24,product_id:p.id,ref:''});rerenderDynamic();}
   async function checkout(){
     if(!state.lines.length){alert('Engar línur');return;}
@@ -697,14 +727,22 @@
         } else if(cleanKt.length===10){
           var custNm=state.customer.nafn||(state.customer.kt?'Viðskiptavinur':'Staðgreitt');
           try{
-            // Re-use existing viðskiptavinur if same kennitala already in DB
-            var existing=await DB.sb.from('vidskiptavinir').select('id,nafn').eq('kennitala',cleanKt).limit(1).maybeSingle();
             var custId=null;
-            if(existing&&existing.data&&existing.data.id){
-              custId=existing.data.id;
+            // If this kt already belongs to a COMPANY (fyrirtaeki), link the sale to it
+            // instead of creating a duplicate row in vidskiptavinir.
+            var dashedKt=cleanKt.slice(0,6)+'-'+cleanKt.slice(6);
+            var fyMatch=await DB.sb.from('fyrirtaeki').select('id,nafn').or('kennitala.eq.'+dashedKt+',kennitala.eq.'+cleanKt).limit(1).maybeSingle();
+            if(fyMatch&&fyMatch.data&&fyMatch.data.id){
+              custId=fyMatch.data.id;
             }else{
-              var cr=await DB.sb.from('vidskiptavinir').insert({nafn:custNm,kennitala:cleanKt,simi:state.customer.simi||''}).select().single();
-              if(cr.data) custId=cr.data.id;
+              // Re-use existing viðskiptavinur if same kennitala already in DB
+              var existing=await DB.sb.from('vidskiptavinir').select('id,nafn').eq('kennitala',cleanKt).limit(1).maybeSingle();
+              if(existing&&existing.data&&existing.data.id){
+                custId=existing.data.id;
+              }else{
+                var cr=await DB.sb.from('vidskiptavinir').insert({nafn:custNm,kennitala:cleanKt,simi:state.customer.simi||''}).select().single();
+                if(cr.data) custId=cr.data.id;
+              }
             }
             if(custId){
               state.customer.co_id=custId;

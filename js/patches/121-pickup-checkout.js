@@ -185,7 +185,7 @@
       // for their receipt. Allow editing here so user can update without
       // having to cancel + recreate the sale.
       const curNafn = (sale && sale.customer_nafn) || job.customer || '';
-      const curKt = ((sale && sale.linur && sale.linur[0] && sale.linur[0].customer_kt) || '');
+      const curKt = (sale && (sale.customer_kt || (sale.linur && sale.linur[0] && sale.linur[0].customer_kt))) || '';
       const curSimi = (job.phone || '');
       html += '<div style="margin-bottom:14px;padding:11px 13px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px">' +
         '<div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Upplýsingar á reikning</div>' +
@@ -355,23 +355,26 @@
     }
 
     function calcTotals() {
-      // Original sale: take all linur as-is. Reduce qty for broken units?
-      // Simpler: ignore original linur for unit-rows (they're abstract per-line),
-      // and instead price the unit rows individually by:
-      // - Per-unit price = sale.samtals / total units (if sale has it)
-      // - Otherwise use job.verd / units in that job
       const allUnits = unitState;
       const totalUnits = allUnits.length;
-      const taken = allUnits.filter(s => s.checked);
-      const takenCount = taken.length;
-      // Per-unit price from sale or job
-      let perUnit = 0;
-      if (sale && sale.samtals && totalUnits > 0) {
-        perUnit = +sale.samtals / totalUnits;
+      const takenCount = allUnits.filter(s => s.checked).length;
+      // Mirror finalizePickup so the preview matches what is actually charged:
+      // peel the UNCHECKED units off the largest-qty lines (the old
+      // samtals/totalUnits estimate diverged on sales mixing units + products).
+      let unitsTotal = 0;
+      const oldLinur = (sale && Array.isArray(sale.linur)) ? sale.linur.map(l => ({ ...l, qty: +l.qty || 0 })) : [];
+      if (oldLinur.length) {
+        let toRemove = totalUnits - takenCount;
+        if (toRemove > 0) {
+          const order = oldLinur.map((l, i) => ({ i, qty: l.qty })).sort((a, b) => b.qty - a.qty);
+          for (const e of order) { if (toRemove <= 0) break; const take = Math.min(toRemove, oldLinur[e.i].qty); oldLinur[e.i].qty -= take; toRemove -= take; }
+          if (toRemove > 0 && totalUnits > 0) { const ratio = takenCount / totalUnits; oldLinur.forEach(l => { l.qty = Math.max(0, Math.round(l.qty * ratio)); }); }
+        }
+        unitsTotal = oldLinur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 + (+l.vsk_pct || 24) / 100), 0);
       } else if (job.verd && (job.units || []).length > 0) {
-        perUnit = +job.verd / (job.units || []).length;
+        unitsTotal = (+job.verd / (job.units || []).length) * takenCount;
       }
-      const unitsTotal = perUnit * takenCount;
+      const perUnit = takenCount > 0 ? unitsTotal / takenCount : 0;
       const extrasTotal = pickupExtras.reduce((s, ex) => {
         return s + (ex.qty || 1) * (ex.unit_price_ex_vat || 0) * (1 + (ex.vsk_pct || 24) / 100);
       }, 0);

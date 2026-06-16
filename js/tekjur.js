@@ -3,15 +3,18 @@
   'use strict';
   console.log('[Tekjur v2] Script loaded');
   var _sales = [];
+  var _loaded = false;
   var _view = 'overview'; // 'overview' | 'detail'
   var _selectedSale = null;
 
   function fmtKr(n){var s=Math.round(n).toString();var p=[];while(s.length>3){p.unshift(s.slice(-3));s=s.slice(0,-3);}p.unshift(s);return p.join('.')+' kr';}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 
-  async function loadSales(){
-    var r = await DB.sb.from('solur').select('*').neq('status','drog').order('created_at',{ascending:false});
+  async function loadSales(force){
+    if(_loaded && !force) return;   // cache — don't refetch the whole table on every poll
+    var r = await DB.sb.from('solur').select('id,num,customer_nafn,starfsmadur,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,status').neq('status','drog').order('created_at',{ascending:false});
     _sales = r.data || [];
+    _loaded = true;
   }
 
   function getMonthlyData(){
@@ -47,6 +50,7 @@
   function renderOverview(){
     var v = document.getElementById('view-income');
     if(!v) return;
+    v.dataset.tkRendered = '1';
     var monthly = getMonthlyData();
     var breakdown = getProductBreakdown();
     var totalRev = _sales.reduce(function(s,x){return s+(x.samtals||0);},0);
@@ -257,10 +261,11 @@
   function watchView(){
     setInterval(function(){
       var v = document.getElementById('view-income');
-      if(v && v.classList.contains('active') && !v.querySelector('.tekjur-sale') && !v.querySelector('[style*="Tekjur"]')){
-        loadSales().then(renderOverview);
-      }
-    }, 500);
+      if(!v) return;
+      if(v.classList.contains('active')){
+        if(!v.dataset.tkRendered){ loadSales().then(renderOverview); }   // render once per activation, from cache
+      } else if(v.dataset.tkRendered){ v.dataset.tkRendered = ''; }        // reset so it re-renders next time it's opened
+    }, 800);
   }
 
   function init(){
@@ -268,7 +273,7 @@
     var tekjurBtn = document.querySelector('[data-view="income"]');
     if(tekjurBtn){
       tekjurBtn.addEventListener('click', function(){
-        setTimeout(function(){ loadSales().then(renderOverview); }, 100);
+        setTimeout(function(){ loadSales(true).then(renderOverview); }, 100);   // fresh data each time the tab is opened
       });
     }
     watchView();
