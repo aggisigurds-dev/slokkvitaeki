@@ -27,6 +27,27 @@ if (!TOKEN) {
 const API   = 'https://api.netlify.com/api/v1';
 const ROOT  = process.cwd();
 
+// ⚠️ DEPRECATED & DISABLED. `node deploy.js` uploads STATIC FILES ONLY and
+// silently deletes the Netlify serverless functions (kt-lookup, geocode,
+// email-send), which breaks kennitala lookup / maps / email until the next CI
+// deploy — and it publishes whatever stale code the local machine has, clobbering
+// the other machines' work. With 4 machines editing this app, the single source
+// of truth is `git push` → GitHub Actions (.github/workflows/deploy.yml), which
+// deploys the site AND the functions together. This guard stops accidental
+// function-wiping deploys.
+if (process.env.DEPLOY_ALLOW_STATIC_ONLY !== 'I_KNOW_THIS_WIPES_FUNCTIONS') {
+  console.error('\n⛔  node deploy.js is disabled — it deploys STATIC FILES ONLY and');
+  console.error('    WIPES the serverless functions (kt-lookup, geocode, email-send).\n');
+  console.error('    ✅ Deploy by pushing to git instead:');
+  console.error('        git pull origin master    # always pull first — stay in sync');
+  console.error('        git push origin master    # CI deploys site + functions\n');
+  console.error('    🛟 Manual deploy WITH functions (only if CI is down):');
+  console.error('        node build-dist.js');
+  console.error('        npx netlify-cli@latest deploy --prod --dir=dist \\');
+  console.error('          --functions=netlify/functions --site=' + SITE + '\n');
+  process.exit(1);
+}
+
 const SKIP_DIRS = new Set(['node_modules', '.git', '.netlify', '.vscode', '.idea', 'tmp', 'scratch', '.claude', 'backups']);
 const SKIP_FILES = new Set(['.DS_Store', 'Thumbs.db', 'desktop.ini', '.gitignore', '.env', '.env.local', 'package.json', 'package-lock.json', 'deploy.js', 'verify.js', 'backup-supabase.mjs']);
 
