@@ -4,6 +4,11 @@ on:
   push:
     branches: [master]
 
+# Never let two deploys race (a manual push + the 15-min auto-sync). Queue them.
+concurrency:
+  group: netlify-deploy
+  cancel-in-progress: false
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -12,6 +17,17 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: node deploy.js
+
+      # Assemble the public bundle. Keeps CLAUDE.md (Netlify token + Supabase
+      # info), *.sql schema and _* PII/source assets OUT of what gets published.
+      - name: Build publish folder
+        run: node build-dist.js
+
+      # Deploy the static site (./dist) AND the serverless functions in ONE
+      # deploy. The Netlify CLI bundles netlify/functions (kt-lookup, geocode,
+      # email-send, geocode-all-background, tv-summary) correctly — which the old
+      # `node deploy.js` never did, so every push silently wiped them.
+      - name: Deploy to Netlify (static + functions)
+        run: npx --yes netlify-cli@latest deploy --prod --dir=dist --functions=netlify/functions --site=d22039b2-75f2-4206-b543-7c6176f2d181
         env:
-          NETLIFY_TOKEN: ${{ secrets.NETLIFY_TOKEN }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_TOKEN }}

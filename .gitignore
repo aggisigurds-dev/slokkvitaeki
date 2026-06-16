@@ -2,6 +2,9 @@
 node_modules/
 npm-debug.log*
 
+# CI build output — assembled by build-dist.js, deployed via the Netlify CLI
+dist/
+
 # Environment
 .env
 .env.local
