@@ -205,6 +205,54 @@
     return list;
   }
 
+  // ── Leiðsögn row extras: tæki-fjöldi, skýrslu-merki, minnispunktar ────────
+  // (2026-06-16, Aggi) Geymt í arsskodun_customers[id] gegnum AppSettings.save,
+  // sem deep-merge-ar — að vista eina athugasemd yfirskrifar ekki aðra.
+  function nowYear() { return new Date().getFullYear(); }
+  function arsAll() { return (window.AppSettings && AppSettings.path && AppSettings.path('arsskodun_customers')) || {}; }
+  async function arsSave(coId, patch) {
+    if (!window.AppSettings || !AppSettings.save) return false;
+    return await AppSettings.save({ arsskodun_customers: { [String(coId)]: patch } });
+  }
+  function unitCount(c) {
+    const byClient = window.DB && DB.cache && DB.cache.unitsByClient;
+    if (byClient && c && c.nafn && byClient[c.nafn]) return byClient[c.nafn].length;
+    const eq = (arsAll()[String(c && c.id)] || {}).equipment;     // fallback: snapshot counts
+    if (eq && typeof eq === 'object') return Object.values(eq).reduce((s, n) => s + (+n || 0), 0);
+    return 0;
+  }
+  function openNote(coId) {
+    const co = (window.Companies && Companies.list || []).find(c => String(c.id) === String(coId));
+    const cur = arsAll()[String(coId)] || {};
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100070;display:flex;align-items:center;justify-content:center;padding:16px';
+    ov.innerHTML =
+      '<div style="background:#fff;border-radius:14px;width:440px;max-width:96vw;box-shadow:0 24px 70px rgba(0,0,0,.3);overflow:hidden">' +
+        '<div style="padding:14px 16px;border-bottom:1px solid #eef2f7;font-weight:700;font-size:14px;color:#0f172a">📝 Minnispunktar — ' + esc(co ? co.nafn : '') + '</div>' +
+        '<div style="padding:14px 16px">' +
+          '<textarea id="_lds-note-ta" rows="6" placeholder="Áminningar, t.d.:&#10;• Hringja á undan&#10;• Lykill hjá húsverði&#10;• Bílastæði í bakgarði" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;line-height:1.5;resize:vertical;box-sizing:border-box">' + esc(cur.notes || '') + '</textarea>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end;padding:0 16px 14px">' +
+          '<button id="_lds-note-x" type="button" style="padding:9px 16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>' +
+          '<button id="_lds-note-save" type="button" style="padding:9px 18px;border:none;border-radius:8px;background:#16a34a;color:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:700">💾 Vista</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    const closeOv = () => ov.remove();
+    ov.addEventListener('click', e => { if (e.target === ov) closeOv(); });
+    ov.querySelector('#_lds-note-x').addEventListener('click', closeOv);
+    setTimeout(() => { try { ov.querySelector('#_lds-note-ta').focus(); } catch (_) {} }, 30);
+    ov.querySelector('#_lds-note-save').addEventListener('click', async () => {
+      const val = ov.querySelector('#_lds-note-ta').value;
+      const btn = ov.querySelector('#_lds-note-save');
+      btn.textContent = '… vista'; btn.disabled = true;
+      const ok = await arsSave(coId, { notes: val });
+      closeOv();
+      renderDueList();
+      if (window.Toast && Toast.show) Toast.show(ok ? '📝 Minnispunktar vistaðir' : 'Villa við vistun');
+    });
+  }
+
   // ── Map & pins ──────────────────────────────────────────────────────────
   function makeIcon(color) {
     return L.divIcon({
@@ -263,25 +311,40 @@
 
     function rowHtml(item) {
       const c = item.co;
-      const m = +item.ars.inspect_month || 0;
+      const a = item.ars || {};
+      const m = +a.inspect_month || 0;
       const monthLabel = m >= 1 && m <= 12 ? MONTHS_IS[m-1] : '—';
       const isInRoute = inRoute.has(String(c.id));
       const canAddToRoute = !!item.coord && !isInRoute;
+      const nUnits = unitCount(c);
+      const insYear = yearOf(a);
+      const curYear = nowYear();
+      const reportDone = +a.report_year === curYear;
+      const noteOne = (a.notes ? String(a.notes).split('\n').map(s => s.trim()).filter(Boolean)[0] : '');
+      const yrBadge = insYear ? '<span title="Síðast skoðað" style="font-weight:700;color:' + (insYear >= curYear ? '#16a34a' : '#94a3b8') + '">’' + String(insYear).slice(-2) + '</span>' : '';
       return (
-        '<div class="_lds-due-row" data-co-id="' + c.id + '" style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:12.5px;cursor:pointer;transition:background .1s" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'transparent\'">' +
-          '<span style="width:10px;height:10px;border-radius:50%;background:' + item.status.color + ';flex-shrink:0"></span>' +
+        '<div class="_lds-due-row" data-co-id="' + c.id + '" style="display:flex;align-items:flex-start;gap:10px;padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:12.5px;cursor:pointer;transition:background .1s" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'transparent\'">' +
+          '<span style="width:10px;height:10px;border-radius:50%;background:' + item.status.color + ';flex-shrink:0;margin-top:3px"></span>' +
           ((window.Priority && window.Priority.btnHtml(c.id, 18)) || '') +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-weight:600;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c.nafn || '—') + '</div>' +
             '<div style="font-size:11px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
               (c.heimilisfang ? '📍 ' + esc(c.heimilisfang) : '<span style="color:#dc2626">⚠ Ekkert heimilisfang</span>') +
             '</div>' +
+            // meta: tæki-fjöldi · síðast skoðað ár · skýrslu-merki · minnispunktar
+            '<div style="display:flex;align-items:center;gap:9px;margin-top:3px;font-size:10.5px;color:#94a3b8;flex-wrap:wrap">' +
+              '<span title="Fjöldi tækja">🧯 ' + nUnits + '</span>' +
+              (yrBadge || '') +
+              '<button class="_lds-report" data-co-id="' + c.id + '" type="button" title="Skýrsla tilbúin í ár? — smelltu til að breyta" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700;color:' + (reportDone ? '#16a34a' : '#cbd5e1') + '">📄 Skýrsla ' + (reportDone ? '✓' : '–') + '</button>' +
+              '<button class="_lds-note" data-co-id="' + c.id + '" type="button" title="Minnispunktar / áminningar" style="border:none;background:none;padding:0;cursor:pointer;font:inherit;font-size:11.5px;color:' + (noteOne ? '#f59e0b' : '#cbd5e1') + '">📝</button>' +
+            '</div>' +
+            (noteOne ? '<div style="font-size:10.5px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:5px;padding:2px 6px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(noteOne) + '</div>' : '') +
           '</div>' +
-          '<div style="text-align:right;flex-shrink:0">' +
+          '<div style="text-align:right;flex-shrink:0;margin-top:1px">' +
             '<div style="font-size:11px;font-weight:700;color:' + item.status.color + '">' + esc(item.status.label) + '</div>' +
             '<div style="font-size:10.5px;color:#94a3b8">' + esc(monthLabel) + '</div>' +
           '</div>' +
-          '<div style="display:flex;gap:4px;flex-shrink:0">' +
+          '<div style="display:flex;gap:4px;flex-shrink:0;margin-top:1px">' +
             (canAddToRoute
               ? '<button class="_lds-due-add" data-co-id="' + c.id + '" data-lat="' + item.coord.lat + '" data-lng="' + item.coord.lng + '" type="button" title="Bæta á leið" style="padding:5px 9px;background:#16a34a;color:#fff;border:1px solid #15803d;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">➕</button>'
               : isInRoute
@@ -425,6 +488,23 @@
       const id = b.dataset.coId;
       const co = (window.Companies && Companies.list || []).find(c => String(c.id) === String(id));
       if (co && window.ManualGeocode) window.ManualGeocode.open(co, () => { renderPins({ fit: false }); renderDueList(); });
+    }));
+    // Skýrslu-merki: toggla report_year milli núverandi árs og 0.
+    panel.querySelectorAll('._lds-report').forEach(b => b.addEventListener('click', async e => {
+      e.stopPropagation();
+      const id = b.dataset.coId;
+      const cur = arsAll()[String(id)] || {};
+      const curYear = nowYear();
+      const newVal = (+cur.report_year === curYear) ? 0 : curYear;
+      b.style.color = newVal ? '#16a34a' : '#cbd5e1';        // optimistic
+      b.textContent = '📄 Skýrsla ' + (newVal ? '✓' : '–');
+      await arsSave(id, { report_year: newVal });
+      renderDueList();
+    }));
+    // Minnispunktar: opna nótu-glugga.
+    panel.querySelectorAll('._lds-note').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      openNote(b.dataset.coId);
     }));
   }
 
