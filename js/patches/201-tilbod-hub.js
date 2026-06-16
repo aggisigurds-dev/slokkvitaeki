@@ -92,7 +92,7 @@
       '<style>@page{size:A4;margin:12mm}html,body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#0f172a;background:#eef1f4}' +
       '.sheet{max-width:760px;margin:22px auto;background:#fff;padding:28px 34px;box-shadow:0 6px 24px rgba(0,0,0,.14);border-radius:5px}' +
       'table{width:100%;border-collapse:collapse}.btn{padding:9px 18px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-weight:700}' +
-      '@media print{body{background:#fff}.sheet{margin:0;max-width:none;box-shadow:none;border-radius:0;padding:0}.no-print{display:none!important}}</style></head><body><div class="sheet">' +
+      '@media print{html,body{background:#fff}.sheet{margin:0;max-width:none;box-shadow:none;border-radius:0;padding:0}.no-print{display:none!important}}</style></head><body><div class="sheet">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid ' + primary + ';padding-bottom:10px;margin-bottom:16px">' +
         '<div>' + head + '<div style="font-size:11px;color:#475569;margin-top:8px;line-height:1.4">' +
           (b.address1 ? esc(b.address1) + (b.address2 ? ', ' + esc(b.address2) : '') + '<br>' : '') +
