@@ -194,14 +194,26 @@
       const { data, error } = await sb.from('uttaeki')
         .select('id,serial,type,size,status')
         .eq('client', client)
-        .eq('status', 'active')
         .range(from, from + pageSize - 1);
       if (error || !data) break;
       all = all.concat(data);
       if (data.length < pageSize) break;
       from += pageSize;
     }
-    return all;
+    // 2026-06-16: list the SAME units the company-detail table + cost calc
+    // (patch 129) use — exclude only onytt/geymsla/úrelt/í-vinnslu, so 'fail'
+    // / 'ok' / null count (they render as ✓ Virkt). Keeps the úttektarskýrsla
+    // in lock-step with the reikningur. Mirrors patch 129's fetchUnits.
+    const NONBILL = { onytt: 1, geymsla: 1, urelt: 1, i_vinnslu: 1 };
+    const normSt = (window.Companies && Companies._normStatus) ? Companies._normStatus : function (s) {
+      const c = String(s == null ? '' : s).toLowerCase();
+      if (c === 'onytt' || c === 'ónýtt') return 'onytt';
+      if (/geymsl/.test(c)) return 'geymsla';
+      if (c === 'urelt' || c === 'úrelt') return 'urelt';
+      if (/vinnsl/.test(c)) return 'i_vinnslu';
+      return 'active';
+    };
+    return all.filter(u => !NONBILL[normSt(u.status)]);
   }
 
   // ── Open report ─────────────────────────────────────────────────────────

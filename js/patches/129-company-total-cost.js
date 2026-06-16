@@ -272,20 +272,33 @@
     let all = [];
     let from = 0, pageSize = 1000;
     while (true) {
-      // 2026-05-19: only 'active' counts toward the next-service total.
-      // Was returning i_vinnslu + active = inflated counts (e.g. IKEA
-      // showed 72 instead of 71 because of one in-workshop unit).
       const { data, error } = await sb.from('uttaeki')
         .select('id,serial,type,size,status')
         .eq('client', client)
-        .eq('status', 'active')
         .range(from, from + pageSize - 1);
       if (error || !data) break;
       all = all.concat(data);
       if (data.length < pageSize) break;
       from += pageSize;
     }
-    return all;
+    // 2026-06-16: bill the SAME units the company-detail table shows. Was a
+    // server-side .eq('status','active'), which silently dropped any unit
+    // whose RAW status wasn't exactly 'active' — e.g. 'fail' (Bilað, patch 90),
+    // 'ok', or null — even though Companies._normStatus renders them as
+    // "✓ Virkt" and the user sets Hleðsla/Yfirferð on them. That caused
+    // "3 tæki í skrá en 2 í kostnaði". Only onytt/geymsla/úrelt/í-vinnslu fall
+    // out of the bill (still excludes the in-workshop unit per the old IKEA
+    // 72→71 fix); the per-unit Sleppa/Ónýtt choice handles the rest.
+    const NONBILL = { onytt: 1, geymsla: 1, urelt: 1, i_vinnslu: 1 };
+    const normSt = (window.Companies && Companies._normStatus) ? Companies._normStatus : function (s) {
+      const c = String(s == null ? '' : s).toLowerCase();
+      if (c === 'onytt' || c === 'ónýtt') return 'onytt';
+      if (/geymsl/.test(c)) return 'geymsla';
+      if (c === 'urelt' || c === 'úrelt') return 'urelt';
+      if (/vinnsl/.test(c)) return 'i_vinnslu';
+      return 'active';
+    };
+    return all.filter(u => !NONBILL[normSt(u.status)]);
   }
 
   let _lastKey = '';
