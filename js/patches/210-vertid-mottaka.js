@@ -70,6 +70,17 @@
     if (/reykskynj|smoke/.test(t)) return 'reyk';
     return 'annad';
   }
+  // Common sizes per type — fed into the "Bæta tækjum" size datalist so sizes
+  // "come in" as suggestions instead of having to be typed blind.
+  function sizesForType(typeText) {
+    const b = typeBucket(typeText);
+    if (b === 'duft')     return ['1 kg', '2 kg', '4 kg', '6 kg', '9 kg', '12 kg', '25 kg', '50 kg'];
+    if (b === 'co2')      return ['2 kg', '5 kg', '10 kg'];
+    if (b === 'lettvatn') return ['6 ltr', '9 ltr', '25 ltr', '50 ltr'];
+    if (b === 'slangur')  return ['19 mm', '25 mm', '3/4"', '1"'];
+    if (b === 'reyk')     return [];
+    return ['2 kg', '6 kg', '9 ltr', '6 ltr'];
+  }
   const BUCKETS = [
     { v: 'all',      label: '🔘 Allt' },
     { v: 'duft',     label: '🧯 Duft' },
@@ -408,10 +419,14 @@
             '<input id="_vt-type" list="_vt-types" placeholder="Duft / CO₂ / Léttvatn…" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box">' +
             '<datalist id="_vt-types"><option value="Duft"><option value="CO₂"><option value="Léttvatn"><option value="ABF"><option value="Brunaslanga"><option value="Eldvarnateppi"></datalist></div>' +
           '<div style="width:96px"><label style="display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 4px;text-transform:uppercase">Stærð</label>' +
-            '<input id="_vt-size" placeholder="6 kg" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box"></div>' +
+            '<input id="_vt-size" list="_vt-sizes" placeholder="6 kg" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box"><datalist id="_vt-sizes"></datalist></div>' +
           '<div style="width:84px"><label style="display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 4px;text-transform:uppercase">Fjöldi</label>' +
             '<input id="_vt-qty" type="number" min="1" step="1" value="1" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;text-align:center;font-weight:700"></div>' +
         '</div>' +
+        '<div style="margin-bottom:14px"><label style="display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 4px;text-transform:uppercase">Þjónusta</label>' +
+          '<select id="_vt-choice" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;background:#fff">' +
+            '<option value="">Sjálfvirkt eftir tegund</option>' + CHOICES.map(c => '<option value="' + c.v + '">' + c.label + '</option>').join('') +
+          '</select></div>' +
         '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#334155;margin-bottom:16px;cursor:pointer"><input type="checkbox" id="_vt-print" checked> 🖨 Prenta QR-miða</label>' +
         '<div style="display:flex;gap:8px;justify-content:flex-end">' +
           '<button id="_vt-add-x" style="padding:9px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;cursor:pointer">Hætta við</button>' +
@@ -422,19 +437,25 @@
     const close = () => m.remove();
     m.querySelector('#_vt-add-x').addEventListener('click', close);
     m.addEventListener('click', e => { if (e.target === m) close(); });
+    // Type-aware size suggestions — sizes "come in" as a dropdown as you pick a type.
+    const typeEl = m.querySelector('#_vt-type');
+    const sizeDl = m.querySelector('#_vt-sizes');
+    const fillSizes = () => { sizeDl.innerHTML = sizesForType(typeEl.value).map(s => '<option value="' + esc(s) + '">').join(''); };
+    typeEl.addEventListener('input', fillSizes); fillSizes();
     m.querySelector('#_vt-add-ok').addEventListener('click', async () => {
-      const type = (m.querySelector('#_vt-type').value || '').trim();
+      const type = (typeEl.value || '').trim();
       const size = (m.querySelector('#_vt-size').value || '').trim();
       const qty = Math.max(1, parseInt(m.querySelector('#_vt-qty').value, 10) || 1);
+      const choice = m.querySelector('#_vt-choice').value || '';   // '' = sjálfvirkt eftir tegund
       const doPrint = m.querySelector('#_vt-print').checked;
       if (!type) { toast('Tegund vantar'); return; }
       close();
-      await addUnits(job, { type, size, qty, doPrint });
+      await addUnits(job, { type, size, qty, doPrint, choice });
     });
-    setTimeout(() => m.querySelector('#_vt-type').focus(), 40);
+    setTimeout(() => typeEl.focus(), 40);
   }
 
-  async function addUnits(job, { type, size, qty, doPrint }) {
+  async function addUnits(job, { type, size, qty, doPrint, choice }) {
     const SB = getSB(); if (!SB) return;
     const serials = await genUniqueSerials(qty);
     if (!serials.length) { toast('Gat ekki búið til raðnúmer'); return; }
@@ -443,7 +464,7 @@
       serial, type: type || null, size: size || null,
       client: base ? base.nafn : null, customer_base_id: job.customer_base_id || null,
       seasonal_job_id: job.id, custody_status: 'móttekið', status: 'active',
-      service_choice: defaultForType(type), received_at: today,
+      service_choice: choice || defaultForType(type), received_at: today,
     }));
     let saved = [];
     try {
