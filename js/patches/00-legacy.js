@@ -3018,10 +3018,21 @@ console.log('[patch-master] loaded with all fixes');
       var units=_pbUnits();var ids=units.map(function(u){return u.id;});
       if(!ids.length){alert('Fann ekki t\u00e6kin \u00ed skr\u00e1 \u2014 reyndu aftur.');return;}
       if(!confirm('Ey\u00f0a '+ids.length+' t\u00e6ki'+(ids.length>1?'um':'')+' varanlega? \u00deetta er ekki afturkr\u00e6ft.'))return;
-      window.DB.sb.from('uttaeki').delete().in('id',ids).then(function(r){
-        if(r.error){alert('Villa: '+r.error.message);return;}
-        if(window.DB.cache&&window.DB.cache.units)window.DB.cache.units=window.DB.cache.units.filter(function(u){return ids.indexOf(u.id)<0;});
-        alert(ids.length+' t\u00e6ki eytt');_pbReload();
+      // 2026-06-16: uttaeki.id is referenced by taeki_events.unit_id and
+      // skodunar_saga.unit_id (FK, no cascade) \u2014 a bare delete throws
+      // "violates foreign key constraint". Clear the children first, then the unit.
+      var _sb=window.DB.sb;
+      Promise.all([
+        _sb.from('taeki_events').delete().in('unit_id',ids),
+        _sb.from('skodunar_saga').delete().in('unit_id',ids)
+      ]).then(function(res){
+        var ce=res.find(function(x){return x&&x.error;});
+        if(ce){alert('Villa vi\u00f0 a\u00f0 hreinsa tengd g\u00f6gn: '+ce.error.message);return;}
+        _sb.from('uttaeki').delete().in('id',ids).then(function(r){
+          if(r.error){alert('Villa: '+r.error.message);return;}
+          if(window.DB.cache&&window.DB.cache.units)window.DB.cache.units=window.DB.cache.units.filter(function(u){return ids.indexOf(u.id)<0;});
+          alert(ids.length+' t\u00e6ki eytt');_pbReload();
+        });
       });
     };
     bar.querySelector('._pm_b_apply').onclick=function(){

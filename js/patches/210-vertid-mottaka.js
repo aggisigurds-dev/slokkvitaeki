@@ -73,6 +73,8 @@
   // Common sizes per type — fed into the "Bæta tækjum" size datalist so sizes
   // "come in" as suggestions instead of having to be typed blind.
   function sizesForType(typeText) {
+    // Eldvarnateppi/reykskynjari have no kg/ltr size — don't suggest kg for them.
+    if (/teppi|blanket/.test(String(typeText || '').toLowerCase())) return ['1 m', '1,2 m', '1,8 m'];
     const b = typeBucket(typeText);
     if (b === 'duft')     return ['1 kg', '2 kg', '4 kg', '6 kg', '9 kg', '12 kg', '25 kg', '50 kg'];
     if (b === 'co2')      return ['2 kg', '5 kg', '10 kg'];

@@ -291,7 +291,7 @@
     // ── Wire Upplýsingar Vista ─────────────────────────────────────────────
     body.querySelector('#_ud-save-info').addEventListener('click', async () => {
       const patch = {
-        type: body.querySelector('#_ud-type').value || null,
+        type: body.querySelector('#_ud-type').value || unit.type || 'Annað', // type is NOT NULL — never blank it
         size: body.querySelector('#_ud-size').value || null,
         location: body.querySelector('#_ud-loc').value || null,
         pressure: parseInt(body.querySelector('#_ud-pressure').value) || null,
@@ -461,7 +461,12 @@
   function inputField(id, label, value, type, options) {
     const v = value == null ? '' : value;
     if (type === 'select' && Array.isArray(options)) {
-      const opts = options.map(o => '<option' + (v === o ? ' selected' : '') + '>' + esc(o) + '</option>').join('');
+      // Keep the unit's existing value selectable even if it isn't one of the
+      // predefined options (e.g. an imported type like "10") — otherwise the
+      // <select> renders blank and saving would wipe a NOT-NULL field.
+      const optList = options.slice();
+      if (v !== '' && optList.indexOf(v) < 0) optList.unshift(v);
+      const opts = optList.map(o => '<option' + (v === o ? ' selected' : '') + '>' + esc(o) + '</option>').join('');
       return '<div>' +
         '<label style="display:block;font-size:11px;font-weight:600;color:#64748b;margin-bottom:3px">' + esc(label) + '</label>' +
         '<select id="' + id + '" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box;background:#fff">' +
