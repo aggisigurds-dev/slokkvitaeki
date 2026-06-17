@@ -217,6 +217,32 @@ It ignores `key=value` hashes (`#device=`, `#portal=`, `#tab=`) and the legacy
 slug hash so a deep link is not overridden by the remembered last view — keep
 that cooperation if you touch either file. Add new pretty names to `ALIAS`.
 
+## Bílstjóri (Drivers app) — `js/patches/219-bilstjori.js`
+
+Mobile-first driver page (`view-bilstjori`, slug `#bilstjori`/`#drivers`). Fuses
+Leiðsögn (patch 161) + Fyrirtæki í þjónustu + the `uttaeki` inspection model and
+**reads/writes the same stores** (no parallel data):
+- **Driving list** — in-service customers needing work (Útrunnið / Þessi mánuður /
+  🚩 Áríðandi), coloured by the SAME `statusFor` rule as Leiðsögn (computed from
+  `arsskodun_customers[id]` via `AppSettings`). "📋 Dagsins verk" vs "🏢 Allir í
+  þjónustu" toggle + search.
+- **Company sheet** — "🧭 Keyra þangað" (Google Maps, reuses the `_slokk_gc`
+  geocode cache + `Leidsogn.addToRoute/launchNav`), tel: call, shared
+  **minnispunktar** + an 🚨 **urgent** message (both saved to
+  `arsskodun_customers[id]` via `AppSettings.save`, so they sync office↔driver and
+  appear in Leiðsögn), and the **tækjalisti**: each tæki has a tap-to-roll chip
+  ⚪ Óskoðað → 🟢 Yfirfarið → 🔵 Á verkstæði, writing `uttaeki.status`
+  (+`last_insp`/`next_insp` on Yfirfarið — same columns `DB.addInspection`/patch 90
+  write; `loaned` = á verkstæði/hleðsla).
+- "✅ Tekið út" sets `field_inspected_year` (the amber "tekið út — skjöl eftir"
+  state the office report flow then turns green). "🚗 Keyra leið dagsins" routes
+  the due list via Leiðsögn.
+
+Mobile rules applied: ≥44px targets, ≥16px text, primary actions in the bottom
+thumb-zone, stack nav (top-left back), loading/error/offline (DB.cache) states.
+Wired like patch 161 (sidebar button + `App.switchView('bilstjori')` hook + mirrors
+`#bilstjori` into the hash). Linkable via patch 218 ALIAS.
+
 ## Related projects (in case Agnar mentions them)
 
 - **Brunahólf** — sister business, separate ecosystem (Google Sheets + Apps Script
