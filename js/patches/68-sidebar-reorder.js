@@ -218,12 +218,15 @@
       nav.querySelectorAll('.nav-sep, .nav-section-label').forEach(el => { el.style.display = 'none'; });
 
       const used = new Set();
+      const placedOrder = new Map();   // button -> numeric CSS order it received
       let qlinksUsed = false;
       let pos = 10;
       let groupStart = false;   // first group has no extra top-margin
 
       function place(el) {
-        el.style.order = String(pos++);
+        el.style.order = String(pos);
+        placedOrder.set(el, pos);
+        pos += 10;               // leave gaps so heal-placed buttons slot between
         if (groupStart) { if (el.classList) el.classList.add('nav-grp-start'); groupStart = false; }
       }
 
@@ -243,11 +246,46 @@
         if (found) { place(found); used.add(found); }
       }
 
-      // "rest" — any button not explicitly placed flows after the known
-      // cluster, keeping its current DOM order, with one group gap before it.
+      // Leftover buttons — anything the active order didn't place.
+      //  • KNOWN buttons (present in the built-in ORDER) that are merely missing
+      //    from a STALE custom order are slotted into their CANONICAL position —
+      //    right after the nearest built-in neighbour that DID get placed — so a
+      //    newer button like "Drög" lands in its proper cluster instead of
+      //    falling to the very bottom. This self-heals an outdated saved order
+      //    without the user having to re-customise. (The old code dumped every
+      //    such button to order:9000, which is why "Drög" kept sinking.)
+      //  • Truly UNKNOWN buttons flow to the tail as before.
+      function defaultIdx(btn) {
+        for (let j = 0; j < ORDER.length; j++) {
+          if (ORDER[j] === SEP) continue;
+          if (matches(btn, ORDER[j])) return j;
+        }
+        return -1;
+      }
+      const leftovers = buttons.filter(b => !used.has(b) && !hiddenButtons.has(b));
+      const known = [], unknown = [];
+      leftovers.forEach(b => { (defaultIdx(b) >= 0 ? known : unknown).push(b); });
+
+      // Place known leftovers in built-in order, each just after its nearest
+      // preceding PLACED neighbour (chains through earlier heal-placed ones).
+      known.sort((a, b) => defaultIdx(a) - defaultIdx(b));
+      const bump = new Map();
+      known.forEach(b => {
+        const di = defaultIdx(b);
+        let anchorOrder = 5, best = -1;   // 5 = before everything if no earlier neighbour
+        placedOrder.forEach((ord, pb) => {
+          const pdi = defaultIdx(pb);
+          if (pdi >= 0 && pdi < di && pdi > best) { best = pdi; anchorOrder = ord; }
+        });
+        const n = (bump.get(anchorOrder) || 0) + 1;
+        bump.set(anchorOrder, n);
+        b.style.order = String(anchorOrder + n);   // up to 9 slots between placed (×10) items
+        placedOrder.set(b, anchorOrder + n);
+      });
+
+      // Unknown buttons → tail (one group gap before them).
       let restPos = 9000, firstRest = true;
-      buttons.forEach(b => {
-        if (used.has(b) || hiddenButtons.has(b)) return;
+      unknown.forEach(b => {
         b.style.order = String(restPos++);
         if (firstRest) { b.classList.add('nav-grp-start'); firstRest = false; }
       });
