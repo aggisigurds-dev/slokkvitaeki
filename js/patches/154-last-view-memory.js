@@ -82,7 +82,11 @@
 
   function restoreLastView() {
     if (!TARGET) return true;
-    if (location.hash && /^#?view-/.test(location.hash)) return true;
+    // Yield when a deep link is present: the legacy #view-… form OR any clean
+    // slug hash the url-routing patch (218) handles (e.g. #leidsogn, #sala) —
+    // i.e. any non key=value hash. The router applies it; we must not yank the
+    // user back to the last-used view on reload.
+    if (location.hash && location.hash.length > 1 && location.hash.indexOf('=') === -1) return true;
     if (!window.App || typeof window.App.switchView !== 'function') return false;
     if (isOnTarget()) return true;
     try {

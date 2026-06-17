@@ -202,6 +202,21 @@ curl -X POST \
 
 ---
 
+## URL routing (deep links) — `js/patches/218-url-routing.js`
+
+Views are deep-linkable by an ascii page name in the hash, e.g.
+`slokkvitaeki.netlify.app/#leidsogn` (Leiðsögn), `#sala`, `#afgreidsla`.
+The router wraps `App.switchView` (the nav fn in `js/modal.js`) to mirror the
+current view into `location.hash` via `replaceState`, and applies an incoming
+`#slug` on boot + on `hashchange`. `ALIAS` (in the patch) maps pretty ascii
+slugs → internal view ids (`leidsogn→field`, `afgreidsla→counter`,
+`fyrirtaeki→companies`, `tekjur→income`, `bokhald→bokhalds-yfirlit`, …); any
+view without an alias is linkable by its own id (`#vorur`, `#companies`).
+It ignores `key=value` hashes (`#device=`, `#portal=`, `#tab=`) and the legacy
+`#view-…` form. Patch **154** (last-view-memory) was made to yield to any clean
+slug hash so a deep link is not overridden by the remembered last view — keep
+that cooperation if you touch either file. Add new pretty names to `ALIAS`.
+
 ## Related projects (in case Agnar mentions them)
 
 - **Brunahólf** — sister business, separate ecosystem (Google Sheets + Apps Script
