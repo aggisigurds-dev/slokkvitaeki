@@ -1,30 +1,30 @@
-/* === BÍLSTJÓRI (Drivers app) v1 ===
+/* === BÍLSTJÓRI (Drivers app) v2 ===
  *
- * A mobile-first page for the drivers: the day's driving list + on-site
- * equipment check-off + notes, in one thumb-friendly screen. Fuses Leiðsögn
- * (the map/route engine, patch 161) with Fyrirtæki í þjónustu (the per-company
- * service data) and the uttaeki inspection model — it READS AND WRITES THE SAME
- * DATA as those views (no parallel store):
+ * A full-screen, sidebar-less mobile page for the drivers. Per the owner:
+ * "we don't need the side panel or anything in the app — only Leiðsögn and a
+ * soft version of Fyrirtæki í þjónustu." So this view is a full-screen overlay
+ * (covers the sidebar) with two stacked surfaces, the same map-then-list shape
+ * Leiðsögn already uses:
  *
- *   • Driving list   — contract customers that need work (Útrunnið / Þessi
- *     mánuður / 🚩 Áríðandi), coloured green/amber/red by the SAME statusFor
- *     rule Leiðsögn uses. Tap a card → company sheet.
- *   • Company sheet  — address + "🧭 Keyra þangað", phone, shared minnispunktar
- *     and an 🚨 urgent message (both stored in arsskodun_customers[id] via
- *     AppSettings.save, so they sync office↔driver and show up in Leiðsögn too),
- *     and the TÆKJALISTI: each tæki has a tap-to-roll status chip
- *       ⚪ Óskoðað → 🟢 Yfirfarið → 🔵 Á verkstæði → ⚪ …
- *     writing uttaeki.status (+ last_insp/next_insp on Yfirfarið) — the same
- *     columns DB.addInspection / patch 90 write.
- *   • "✅ Tekið út" finishes the visit → sets field_inspected_year (the amber
- *     "tekið út — skjöl eftir" state the office report flow then turns green).
- *   • "🚗 Keyra leið dagsins" hands the list to Leiðsögn's route + Google Maps.
+ *   1. 🗺️ Leiðsögn — a Leaflet map of the in-service customers, pins coloured
+ *      by the SAME statusFor rule (green/amber/red). Tap a pin → company sheet.
+ *      "🚗 Keyra leið dagsins" routes the due stops via Google Maps.
+ *   2. 🏢 Fyrirtæki (soft) — a simplified in-service list (search + Dagsins verk
+ *      / Allir). Tap a row → company sheet.
  *
- * Mobile-first: ≥44px tap targets, ≥16px text, primary actions in the bottom
- * thumb-zone, stack navigation (top-left back), loading/error/offline states.
- * Deep-linkable as #bilstjori (patch 218).
+ * Company sheet (slide-in, back top-left): "Keyra þangað", call, shared
+ * minnispunktar + an 🚨 urgent message (both saved to arsskodun_customers[id]
+ * via AppSettings.save → sync office↔driver, also shown in Leiðsögn), and the
+ * tækjalisti with a tap-to-roll chip ⚪ Óskoðað → 🟢 Yfirfarið → 🔵 Á verkstæði
+ * writing uttaeki.status (+ last_insp/next_insp on Yfirfarið). "✅ Tekið út"
+ * sets field_inspected_year.
  *
- * Built 2026-06-17 at the owner's request ("app for the Drivers").
+ * Styling uses the app's css/app.css design tokens (--brand, --font, --grn …)
+ * so it looks native. Reuses Leiðsögn's getCustomers / addToRoute / launchNav
+ * and the geocode cache (no parallel data). Deep-linkable #bilstjori (patch 218).
+ *
+ * Mobile-first: ≥44px targets, ≥16px text, bottom thumb-zone actions, stack
+ * nav, loading/error/offline (DB.cache) states.
  */
 (() => {
   if (window.__bilstjoriInstalled) return;
@@ -32,9 +32,9 @@
 
   const VIEW_ID = 'view-bilstjori';
   const NAV_KEY = 'bilstjori';
-  const GC_KEY  = '_slokk_gc';   // shared geocode cache (with patch 161)
+  const GC_KEY  = '_slokk_gc';
 
-  // ── tiny helpers ─────────────────────────────────────────────────────────
+  // ── helpers ──────────────────────────────────────────────────────────────
   function esc(s) {
     return String(s ?? '').replace(/[&<>"']/g, c => ({
       '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -50,7 +50,6 @@
   const curYear = () => new Date().getFullYear();
   function readGc() { try { return JSON.parse(localStorage.getItem(GC_KEY) || '{}'); } catch (_) { return {}; } }
 
-  // ── shared service-data accessors (same stores as Leiðsögn / patch 175) ───
   function companies() { return (window.Companies && Companies.list) || []; }
   function arsAll() { return (window.AppSettings && AppSettings.path && AppSettings.path('arsskodun_customers')) || {}; }
   function bruAll() { return (window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_customers')) || {}; }
@@ -63,9 +62,6 @@
     return (ars && ars.equipment) || !!bru ||
       (window.InServiceClients && window.InServiceClients.has && window.InServiceClients.has(c.nafn));
   }
-
-  // Status colour rule — kept identical to patch 161 statusFor so the driver
-  // list and the Leiðsögn map agree to the pixel.
   function statusFor(ars) {
     const a = ars || {};
     const cy = curYear(), cm = new Date().getMonth() + 1;
@@ -77,18 +73,15 @@
     const isOverdue = !isDone && !isFieldOnly && m > 0 && m < cm;
     const isDueNow = !isDone && !isFieldOnly && m === cm;
     if (isDone)      return { key:'done',        color:'#1a7f4b', label:'Í lagi ' + cy };
-    if (isFieldOnly) return { key:'in_progress', color:'#f59e0b', label:'Tekið út — skjöl eftir' };
-    if (isOverdue)   return { key:'overdue',     color:'#dc2626', label:'Útrunnið (' + (MONTHS_IS[m-1] || '?') + ')' };
+    if (isFieldOnly) return { key:'in_progress', color:'#b45309', label:'Tekið út — skjöl eftir' };
+    if (isOverdue)   return { key:'overdue',     color:'#C93C1D', label:'Útrunnið (' + (MONTHS_IS[m-1] || '?') + ')' };
     if (isDueNow)    return { key:'duenow',      color:'#b45309', label:'Þessi mánuður' };
-    if (m > 0)       return { key:'scheduled',   color:'#475569', label:'Á dagskrá: ' + (MONTHS_IS[m-1] || '?') };
-    return { key:'unknown', color:'#94a3b8', label:'Engin dagsetning' };
+    if (m > 0)       return { key:'scheduled',   color:'#404550', label:'Á dagskrá: ' + (MONTHS_IS[m-1] || '?') };
+    return { key:'unknown', color:'#8891a0', label:'Engin dagsetning' };
   }
   function phoneOf(c) { return c.simi || c['sími'] || c.phone || c.telefon || ''; }
   function coordOf(c, gc) { gc = gc || readGc(); return gc['__co__:' + c.id] || gc[c.heimilisfang] || gc[c.nafn] || null; }
 
-  // Build the driver work-list: every in-service customer, with status; the
-  // ones needing attention first. Includes no-coord customers (search still
-  // reaches them; the drive button just falls back to an address query).
   function buildList() {
     const ars = arsAll(), bru = bruAll(), gc = readGc();
     const out = [];
@@ -101,8 +94,27 @@
     return out;
   }
 
-  // ── equipment (uttaeki) — the same table the inspection flow writes ───────
-  // Driver-facing state derived from uttaeki.status (+ last_insp year).
+  // current filtered + sorted list (shared by the map pins and the list)
+  let _seg = 'today';   // 'today' | 'all'
+  let _search = '';
+  const DUE = { overdue:0, duenow:1, scheduled:2, in_progress:3, done:4, unknown:5 };
+  function currentList() {
+    if (!(window.Companies && Companies.list)) return { ready:false, list:[] };
+    let list = buildList();
+    if (_seg === 'today') list = list.filter(x => x.status.key === 'overdue' || x.status.key === 'duenow' || x.priority);
+    const q = _search.trim().toLowerCase();
+    if (q) list = list.filter(x =>
+      (x.co.nafn || '').toLowerCase().includes(q) ||
+      (x.co.heimilisfang || '').toLowerCase().includes(q) ||
+      String(x.co.kennitala || '').replace(/\D/g,'').includes(q.replace(/\D/g,'')));
+    list.sort((a, b) =>
+      (a.priority === b.priority ? 0 : (a.priority ? -1 : 1)) ||
+      ((DUE[a.status.key] ?? 9) - (DUE[b.status.key] ?? 9)) ||
+      String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
+    return { ready:true, list };
+  }
+
+  // ── equipment (uttaeki) ──────────────────────────────────────────────────
   function unitState(u) {
     const st = (u.status || '').toLowerCase();
     if (st === 'loaned') return 'verkstaedi';
@@ -118,7 +130,7 @@
   function updateForState(next) {
     if (next === 'yfirfarid') return { status:'ok', last_insp: today(), next_insp: nextYearIso() };
     if (next === 'verkstaedi') return { status:'loaned' };
-    return { status:'active' }; // óskoðað = normal in-field
+    return { status:'active' };
   }
   async function loadUnits(c) {
     const name = c.nafn || '';
@@ -128,14 +140,12 @@
           .select('id,serial,type,size,location,status,last_insp,next_insp')
           .order('type', { ascending: true });
         const kt = String(c.kennitala || '').replace(/\D/g,'');
-        // match by client name, or by kennitala if uttaeki.client holds the kt
         q = (kt.length === 10) ? q.or('client.ilike.' + JSON.stringify(name) + ',client.eq.' + kt)
                                : q.ilike('client', name);
         const r = await q;
         if (!r.error && Array.isArray(r.data)) return r.data;
       } catch (_) {}
     }
-    // offline / no client: fall back to cache
     const cache = (window.DB && DB.cache) || {};
     if (cache.unitsByClient && cache.unitsByClient[name]) return cache.unitsByClient[name];
     if (Array.isArray(cache.units)) return cache.units.filter(u => (u.client || '') === name);
@@ -147,7 +157,6 @@
       const r = await DB.sb.from('uttaeki').update(upd).eq('id', unitId);
       if (r && r.error) throw new Error(r.error.message || 'update villa');
     }
-    // keep DB.cache in sync if present
     try {
       const cache = (window.DB && DB.cache) || {};
       const u = (cache.units || []).find(x => String(x.id) === String(unitId));
@@ -156,7 +165,7 @@
     return true;
   }
 
-  // ── view container ────────────────────────────────────────────────────────
+  // ── view container + styles ──────────────────────────────────────────────
   function ensureView() {
     if (document.getElementById(VIEW_ID)) return;
     const sample = document.getElementById('view-leidsogn') ||
@@ -176,15 +185,20 @@
     const s = document.createElement('style');
     s.id = '_bs-styles';
     s.textContent = [
-      '._bs-root{max-width:680px;margin:0 auto;padding:0 0 100px;font-family:var(--font,Inter,system-ui,sans-serif);font-size:16px;color:var(--ink1,#0f1117);background:var(--bg,#f5f5f7);min-height:100vh;-webkit-tap-highlight-color:transparent}',
-      '._bs-top{position:sticky;top:0;z-index:5;background:var(--sidebar-bg,#1a1f2e);color:#fff;padding:16px 16px 14px;display:flex;flex-direction:column;gap:11px;border-bottom:2px solid var(--brand,#C93C1D)}',
-      '._bs-top h1{margin:0;font-size:19px;font-weight:700;letter-spacing:-.02em;display:flex;align-items:center;gap:9px}',
-      '._bs-search{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:12px 14px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.08);color:#fff}',
-      '._bs-search::placeholder{color:rgba(255,255,255,.5)}',
-      '._bs-search:focus{outline:none;border-color:var(--brand,#C93C1D);background:rgba(255,255,255,.12)}',
-      '._bs-seg{display:flex;gap:5px;background:rgba(255,255,255,.07);padding:4px;border-radius:11px}',
-      '._bs-seg button{flex:1;min-height:38px;font:inherit;font-size:13.5px;font-weight:600;border:none;border-radius:8px;background:transparent;color:rgba(255,255,255,.7);cursor:pointer}',
-      '._bs-seg button.on{background:#fff;color:var(--ink1,#0f1117);box-shadow:0 1px 2px rgba(0,0,0,.18)}',
+      // full-screen overlay — covers the sidebar + all app chrome
+      '#' + VIEW_ID + '{position:fixed!important;inset:0!important;z-index:200;background:var(--bg,#f5f5f7);overflow-y:auto;-webkit-overflow-scrolling:touch}',
+      '._bs-root{display:flex;flex-direction:column;min-height:100%;max-width:720px;margin:0 auto;font-family:var(--font,Inter,system-ui,sans-serif);font-size:16px;color:var(--ink1,#0f1117);-webkit-tap-highlight-color:transparent}',
+      '._bs-top{position:sticky;top:0;z-index:6;background:var(--sidebar-bg,#1a1f2e);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:2px solid var(--brand,#C93C1D)}',
+      '._bs-top h1{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em;display:flex;align-items:center;gap:9px;flex:1}',
+      '._bs-exit{min-height:36px;padding:0 12px;font:inherit;font-size:13px;font-weight:600;border:1px solid rgba(255,255,255,.18);border-radius:9px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.85);cursor:pointer}',
+      '._bs-map{width:100%;height:240px;background:#e9eaee;border-bottom:1px solid var(--brd,#e4e6ea)}',
+      '._bs-pin{background:transparent;border:0}',
+      '._bs-controls{position:sticky;top:51px;z-index:5;background:var(--bg,#f5f5f7);padding:12px 14px 8px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--brd,#e4e6ea)}',
+      '._bs-search{width:100%;box-sizing:border-box;font:inherit;font-size:16px;padding:12px 14px;border:1px solid var(--brd2,#d0d4da);border-radius:10px;background:var(--surface,#fff);color:var(--ink1,#0f1117)}',
+      '._bs-search:focus{outline:none;border-color:var(--brand,#C93C1D)}',
+      '._bs-seg{display:flex;gap:5px;background:var(--bg3,#efefef);padding:4px;border-radius:11px}',
+      '._bs-seg button{flex:1;min-height:38px;font:inherit;font-size:13.5px;font-weight:600;border:none;border-radius:8px;background:transparent;color:var(--ink2,#404550);cursor:pointer}',
+      '._bs-seg button.on{background:var(--surface,#fff);color:var(--ink1,#0f1117);box-shadow:var(--shadow-sm,0 1px 2px rgba(0,0,0,.1))}',
       '._bs-list{padding:12px 14px;display:flex;flex-direction:column;gap:9px}',
       '._bs-card{display:flex;gap:13px;align-items:center;width:100%;text-align:left;background:var(--surface,#fff);border:1px solid var(--brd,#e4e6ea);border-radius:var(--radius-lg,14px);padding:14px 15px;min-height:64px;cursor:pointer;box-shadow:var(--shadow-sm,0 1px 3px rgba(0,0,0,.06));transition:background .12s,box-shadow .12s}',
       '._bs-card:active{background:var(--surface2,#f8f8fa);box-shadow:var(--shadow-md,0 4px 12px rgba(0,0,0,.08))}',
@@ -195,15 +209,15 @@
       '._bs-card-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;font-size:12.5px;font-weight:600}',
       '._bs-badge{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--red-bg,#fff0ed);color:var(--red,#C93C1D);border:1px solid var(--red-bd,#fca5a5)}',
       '._bs-chev{font-size:23px;color:var(--ink4,#bcc3cc);flex:none;line-height:1}',
-      '._bs-empty{padding:48px 24px;text-align:center;color:var(--ink3,#8891a0);font-size:15px}',
+      '._bs-empty{padding:42px 24px;text-align:center;color:var(--ink3,#8891a0);font-size:15px}',
       '._bs-err{margin:12px 14px;padding:14px;border-radius:12px;background:var(--red-bg,#fff0ed);border:1px solid var(--red-bd,#fca5a5);color:var(--brand-dk,#a83018);font-size:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}',
-      '._bs-bottom{position:fixed;left:0;right:0;bottom:0;z-index:20;background:linear-gradient(to top,var(--bg,#f5f5f7) 62%,rgba(245,245,247,0));padding:14px 14px calc(14px + env(safe-area-inset-bottom));display:flex;justify-content:center}',
-      '._bs-bottom .inner{width:100%;max-width:652px}',
-      '._bs-primary{width:100%;box-sizing:border-box;min-height:54px;font:inherit;font-size:16.5px;font-weight:700;letter-spacing:-.01em;border:none;border-radius:var(--radius-lg,14px);background:var(--brand,#C93C1D);color:#fff;cursor:pointer;box-shadow:var(--shadow-md,0 4px 12px rgba(0,0,0,.12))}',
+      '._bs-bottom{position:fixed;left:0;right:0;bottom:0;z-index:210;background:linear-gradient(to top,var(--bg,#f5f5f7) 64%,rgba(245,245,247,0));padding:13px 14px calc(13px + env(safe-area-inset-bottom));display:flex;justify-content:center;pointer-events:none}',
+      '._bs-bottom .inner{width:100%;max-width:692px;pointer-events:auto}',
+      '._bs-primary{width:100%;box-sizing:border-box;min-height:54px;font:inherit;font-size:16.5px;font-weight:700;letter-spacing:-.01em;border:none;border-radius:var(--radius-lg,14px);background:var(--brand,#C93C1D);color:#fff;cursor:pointer;box-shadow:var(--shadow-md,0 4px 12px rgba(0,0,0,.16))}',
       '._bs-primary:active{background:var(--brand-dk,#a83018)}',
       '._bs-primary[disabled]{background:var(--ink4,#bcc3cc);box-shadow:none;cursor:default}',
-      // company sheet (slide-in stack)
-      '._bs-sheet{position:fixed;inset:0;z-index:30;background:var(--bg,#f5f5f7);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .24s cubic-bezier(.32,.72,0,1);overflow:hidden}',
+      // company sheet
+      '._bs-sheet{position:fixed;inset:0;z-index:300;background:var(--bg,#f5f5f7);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .24s cubic-bezier(.32,.72,0,1);overflow:hidden}',
       '._bs-sheet.in{transform:translateX(0)}',
       '._bs-sheet-top{position:sticky;top:0;background:var(--sidebar-bg,#1a1f2e);color:#fff;padding:12px;display:flex;align-items:center;gap:11px;border-bottom:2px solid var(--brand,#C93C1D)}',
       '._bs-back{min-width:44px;min-height:44px;border:none;border-radius:11px;background:rgba(255,255,255,.1);color:#fff;font-size:22px;line-height:1;cursor:pointer;flex:none}',
@@ -235,72 +249,124 @@
     document.head.appendChild(s);
   }
 
-  // ── state ────────────────────────────────────────────────────────────────
-  let _seg = 'today';     // 'today' | 'all'
-  let _search = '';
-
-  // ── home: driving list ────────────────────────────────────────────────────
-  const DUE = { overdue:0, duenow:1, scheduled:2, in_progress:3, done:4, unknown:5 };
-  function render() {
-    ensureView();
-    const root = document.getElementById('_bs-root');
-    if (!root) { setTimeout(render, 150); return; }
-
-    const ready = !!(window.Companies && Companies.list);
-    const all = ready ? buildList() : [];
-    const q = _search.trim().toLowerCase();
-
-    let list = all.slice();
-    if (_seg === 'today') {
-      list = list.filter(x => x.status.key === 'overdue' || x.status.key === 'duenow' || x.priority);
-    }
-    if (q) {
-      list = list.filter(x =>
-        (x.co.nafn || '').toLowerCase().includes(q) ||
-        (x.co.heimilisfang || '').toLowerCase().includes(q) ||
-        String(x.co.kennitala || '').replace(/\D/g,'').includes(q.replace(/\D/g,'')));
-    }
-    list.sort((a, b) =>
-      (a.priority === b.priority ? 0 : (a.priority ? -1 : 1)) ||
-      ((DUE[a.status.key] ?? 9) - (DUE[b.status.key] ?? 9)) ||
-      String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
-
-    const driveCount = list.filter(x => x.coord && (x.status.key === 'overdue' || x.status.key === 'duenow' || x.priority)).length;
-
-    root.innerHTML =
-      '<div class="_bs-top">' +
-        '<h1><span>🚚</span><span>Bílstjóri</span></h1>' +
-        '<input id="_bs-q" class="_bs-search" type="search" inputmode="search" placeholder="Leita að fyrirtæki, heimilisfangi, kt…" value="' + esc(_search) + '">' +
-        '<div class="_bs-seg">' +
-          '<button data-seg="today" class="' + (_seg==='today'?'on':'') + '" type="button">📋 Dagsins verk</button>' +
-          '<button data-seg="all" class="' + (_seg==='all'?'on':'') + '" type="button">🏢 Allir í þjónustu</button>' +
-        '</div>' +
-      '</div>' +
-      (!ready
-        ? '<div class="_bs-empty">⏳ Sæki gögn…</div>'
-        : (list.length
-            ? '<div class="_bs-list">' + list.map(cardHtml).join('') + '</div>'
-            : '<div class="_bs-empty">' + (_seg==='today' ? '✅ Ekkert áríðandi eftir í dag.' : 'Engin fyrirtæki fundust.') + '</div>')) +
-      '<div class="_bs-bottom"><div class="inner">' +
-        '<button id="_bs-drive" class="_bs-primary" type="button"' + (driveCount ? '' : ' disabled') + '>🚗 Keyra leið dagsins' + (driveCount ? ' (' + driveCount + ')' : '') + '</button>' +
-      '</div></div>';
-
-    // wire
-    const qEl = document.getElementById('_bs-q');
-    if (qEl) qEl.addEventListener('input', e => {
-      _search = e.target.value || '';
-      // re-render list body only (keep focus): simplest is full re-render w/ focus restore
-      const pos = qEl.selectionStart; render();
-      const q2 = document.getElementById('_bs-q'); if (q2) { q2.focus(); try { q2.setSelectionRange(pos, pos); } catch (_) {} }
+  // ── Leaflet (lazy, shared CDN with patch 161) ────────────────────────────
+  let _leafletLP = null;
+  function ensureLeaflet() {
+    if (window.L && window.L.map) return Promise.resolve();
+    if (_leafletLP) return _leafletLP;
+    _leafletLP = new Promise(resolve => {
+      const css = document.createElement('link');
+      css.rel = 'stylesheet'; css.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+      document.head.appendChild(css);
+      const sc = document.createElement('script');
+      sc.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      sc.onload = () => resolve();
+      document.head.appendChild(sc);
     });
-    root.querySelectorAll('._bs-seg button').forEach(b => b.addEventListener('click', () => {
-      _seg = b.dataset.seg; _search = ''; render();
-    }));
-    root.querySelectorAll('._bs-card').forEach(card => card.addEventListener('click', () => {
-      openCompany(+card.dataset.id);
-    }));
+    return _leafletLP;
+  }
+  let _map = null, _markers = [];
+  function makeIcon(color) {
+    return L.divIcon({ className: '_bs-pin',
+      html: '<div style="background:' + color + ';width:15px;height:15px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.45)"></div>',
+      iconSize: [19,19], iconAnchor: [9.5,9.5] });
+  }
+  function renderPins() {
+    if (!_map || !window.L) return;
+    _markers.forEach(m => { try { _map.removeLayer(m); } catch (_) {} });
+    _markers = [];
+    const { list } = currentList();
+    const pts = [];
+    list.forEach(x => {
+      if (!x.coord) return;
+      const m = L.marker([x.coord.lat, x.coord.lng], { icon: makeIcon(x.status.color) }).addTo(_map);
+      m.on('click', () => openCompany(x.co.id));
+      _markers.push(m); pts.push([x.coord.lat, x.coord.lng]);
+    });
+    if (pts.length) {
+      const RVK = [64.13, -21.90];
+      const near = pts.filter(p => Math.abs(p[0]-RVK[0]) < 0.18 && Math.abs(p[1]-RVK[1]) < 0.45);
+      try { _map.fitBounds(L.latLngBounds(near.length ? near : pts).pad(0.15), { maxZoom: 13 }); } catch (_) {}
+    }
+  }
+
+  // ── shell + list ─────────────────────────────────────────────────────────
+  function show() {
+    ensureView();
+    document.querySelectorAll('[id^="view-"]').forEach(v => { v.style.display='none'; v.classList.remove('active'); });
+    const v = document.getElementById(VIEW_ID);
+    if (v) { v.style.display='block'; v.classList.add('active'); }
+    document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === NAV_KEY));
+    try { localStorage.setItem('lastView', NAV_KEY); } catch (_) {}
+    try { if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
+
+    const root = document.getElementById('_bs-root');
+    if (!root) { setTimeout(show, 150); return; }
+
+    if (!root.querySelector('#_bs-mapcanvas')) {
+      root.innerHTML =
+        '<div class="_bs-top"><h1><span>🚚</span><span>Bílstjóri</span></h1>' +
+          '<button id="_bs-exit" type="button" title="Til baka í forritið">✕ Loka</button></div>' +
+        '<div id="_bs-mapcanvas" class="_bs-map"></div>' +
+        '<div class="_bs-controls">' +
+          '<input id="_bs-q" class="_bs-search" type="search" inputmode="search" placeholder="Leita að fyrirtæki, heimilisfangi, kt…">' +
+          '<div class="_bs-seg">' +
+            '<button data-seg="today" type="button">📋 Dagsins verk</button>' +
+            '<button data-seg="all" type="button">🏢 Allir í þjónustu</button>' +
+          '</div>' +
+        '</div>' +
+        '<div id="_bs-list" class="_bs-list"></div>' +
+        '<div class="_bs-bottom"><div class="inner"><button id="_bs-drive" class="_bs-primary" type="button">🚗 Keyra leið dagsins</button></div></div>';
+
+      root.querySelector('#_bs-exit').addEventListener('click', () => {
+        if (window.App && App.switchView) App.switchView('leidsogn');
+      });
+      const qEl = root.querySelector('#_bs-q');
+      qEl.addEventListener('input', e => { _search = e.target.value || ''; renderList(); renderPins(); });
+      root.querySelectorAll('._bs-seg button').forEach(b => b.addEventListener('click', () => {
+        _seg = b.dataset.seg; renderList(); renderPins();
+      }));
+      root.querySelector('#_bs-drive').addEventListener('click', () => driveDay(currentList().list));
+    }
+
+    // (re)build the map
+    const canvas = document.getElementById('_bs-mapcanvas');
+    if (canvas && !_map) {
+      ensureLeaflet().then(() => {
+        if (_map) return;
+        _map = L.map(canvas, { zoomControl: false }).setView([64.1355, -21.8954], 11);
+        L.control.zoom({ position: 'bottomright' }).addTo(_map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(_map);
+        setTimeout(() => { try { _map.invalidateSize(); } catch (_) {} renderPins(); }, 60);
+      });
+    } else if (_map) {
+      setTimeout(() => { try { _map.invalidateSize(); } catch (_) {} renderPins(); }, 60);
+    }
+
+    renderList();
+  }
+
+  function renderList() {
+    const box = document.getElementById('_bs-list');
+    if (!box) return;
+    // reflect segment buttons
+    document.querySelectorAll('._bs-seg button').forEach(b => b.classList.toggle('on', b.dataset.seg === _seg));
+    const qEl = document.getElementById('_bs-q');
+    if (qEl && qEl.value !== _search) qEl.value = _search;
+
+    const { ready, list } = currentList();
+    if (!ready) { box.innerHTML = '<div class="_bs-empty">⏳ Sæki gögn…</div>'; return; }
+    box.innerHTML = list.length
+      ? list.map(cardHtml).join('')
+      : '<div class="_bs-empty">' + (_seg === 'today' ? '✅ Ekkert áríðandi eftir í dag.' : 'Engin fyrirtæki fundust.') + '</div>';
+    box.querySelectorAll('._bs-card').forEach(card => card.addEventListener('click', () => openCompany(+card.dataset.id)));
+
     const drive = document.getElementById('_bs-drive');
-    if (drive) drive.addEventListener('click', () => driveDay(list));
+    if (drive) {
+      const n = list.filter(x => x.coord && (x.status.key==='overdue' || x.status.key==='duenow' || x.priority)).length;
+      drive.disabled = !n;
+      drive.textContent = '🚗 Keyra leið dagsins' + (n ? ' (' + n + ')' : '');
+    }
   }
 
   function cardHtml(x) {
@@ -310,10 +376,10 @@
         '<span class="_bs-dot" style="background:' + x.status.color + '"></span>' +
         '<span class="_bs-card-main">' +
           '<span class="_bs-card-name">' + (x.priority ? '🚩 ' : '') + esc(c.nafn || '—') + '</span>' +
-          '<span class="_bs-card-sub">' + (c.heimilisfang ? '📍 ' + esc(c.heimilisfang) : '<span style="color:#dc2626">⚠ Ekkert heimilisfang</span>') + '</span>' +
+          '<span class="_bs-card-sub">' + (c.heimilisfang ? '📍 ' + esc(c.heimilisfang) : '<span style="color:var(--brand,#C93C1D)">⚠ Ekkert heimilisfang</span>') + '</span>' +
           '<span class="_bs-card-meta">' +
-            '<span style="color:' + x.status.color + ';font-weight:700">' + esc(x.status.label) + '</span>' +
-            (x.urgent ? '<span class="_bs-badge" style="background:#fef2f2;color:#b91c1c">🚨 Áríðandi skilaboð</span>' : '') +
+            '<span style="color:' + x.status.color + '">' + esc(x.status.label) + '</span>' +
+            (x.urgent ? '<span class="_bs-badge">🚨 Skilaboð</span>' : '') +
           '</span>' +
         '</span>' +
         '<span class="_bs-chev">›</span>' +
@@ -326,14 +392,8 @@
       .map(x => ({ id: x.co.id, name: x.co.nafn, addr: x.co.heimilisfang || '', lat: x.coord.lat, lng: x.coord.lng }));
     if (!stops.length) return;
     if (window.Leidsogn && Leidsogn.clearRoute && Leidsogn.addToRoute && Leidsogn.launchNav) {
-      try {
-        Leidsogn.clearRoute();
-        stops.forEach(s => Leidsogn.addToRoute(s.id, s.name, s.addr, s.lat, s.lng));
-        Leidsogn.launchNav();
-        return;
-      } catch (_) {}
+      try { Leidsogn.clearRoute(); stops.forEach(s => Leidsogn.addToRoute(s.id, s.name, s.addr, s.lat, s.lng)); Leidsogn.launchNav(); return; } catch (_) {}
     }
-    // fallback: open Google Maps directly with waypoints
     const dest = stops[stops.length - 1];
     const wp = stops.slice(0, -1).map(s => s.lat + ',' + s.lng).join('|');
     let url = 'https://www.google.com/maps/dir/?api=1&destination=' + dest.lat + ',' + dest.lng + '&travelmode=driving';
@@ -341,15 +401,11 @@
     window.open(url, '_blank');
   }
 
-  // ── company sheet (stack) ─────────────────────────────────────────────────
+  // ── company sheet ────────────────────────────────────────────────────────
   function navTo(co, lat, lng) {
     let url;
-    if (lat != null && lng != null) {
-      url = 'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng + '&travelmode=driving';
-    } else {
-      const addr = [co.nafn, co.heimilisfang].filter(Boolean).join(', ');
-      url = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(addr) + '&travelmode=driving';
-    }
+    if (lat != null && lng != null) url = 'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng + '&travelmode=driving';
+    else url = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent([co.nafn, co.heimilisfang].filter(Boolean).join(', ')) + '&travelmode=driving';
     window.open(url, '_blank');
   }
 
@@ -374,21 +430,18 @@
         (c.heimilisfang ? '<div class="_bs-addr">📍 ' + esc(c.heimilisfang) + '</div>' : '') +
         '<div class="_bs-actrow">' +
           '<button class="_bs-act go" id="_bs-nav" type="button">🧭 Keyra þangað</button>' +
-          (phone ? '<a class="_bs-act call" href="tel:' + esc(String(phone).replace(/\s/g,'')) + '">📞 Hringja</a>' : '') +
+          (phone ? '<a class="_bs-act" href="tel:' + esc(String(phone).replace(/\s/g,'')) + '">📞 Hringja</a>' : '') +
         '</div>' +
-
         '<div class="_bs-sec _bs-urgent">' +
           '<h3><span>🚨 Áríðandi skilaboð</span></h3>' +
           '<textarea class="_bs-ta" id="_bs-urgent-ta" placeholder="Brýn skilaboð fyrir bílstjóra / skrifstofu (sést á forsíðu listans)…">' + esc(a.urgent || '') + '</textarea>' +
           '<button class="_bs-save" id="_bs-urgent-save" type="button">💾 Vista skilaboð</button>' +
         '</div>' +
-
         '<div class="_bs-sec">' +
           '<h3><span>📝 Minnispunktar</span><span style="font-weight:600;color:var(--ink3,#8891a0);font-size:12px;text-transform:none;letter-spacing:0">deilt með Leiðsögn</span></h3>' +
           '<textarea class="_bs-ta" id="_bs-note-ta" placeholder="Áminningar: hringja á undan, lykill hjá húsverði, bílastæði í bakgarði…">' + esc(a.notes || '') + '</textarea>' +
           '<button class="_bs-save" id="_bs-note-save" type="button">💾 Vista</button>' +
         '</div>' +
-
         '<div class="_bs-sec">' +
           '<h3><span>🧯 Tækjalisti</span><span class="_bs-prog" id="_bs-prog">…</span></h3>' +
           '<div id="_bs-units"><div class="_bs-empty" style="padding:18px">⏳ Sæki tæki…</div></div>' +
@@ -396,48 +449,38 @@
       '</div>' +
       '<div class="_bs-bottom"><div class="inner" style="display:flex;gap:10px">' +
         '<button class="_bs-primary" id="_bs-add-route" style="background:var(--ink2,#404550);box-shadow:none;flex:1">➕ Á leið</button>' +
-        '<button class="_bs-primary" id="_bs-done" style="flex:2">✅ Tekið út (klára heimsókn)</button>' +
+        '<button class="_bs-primary" id="_bs-done" style="flex:2">✅ Tekið út</button>' +
       '</div></div>';
 
     document.body.appendChild(sheet);
     requestAnimationFrame(() => sheet.classList.add('in'));
-
-    const close = () => { sheet.classList.remove('in'); setTimeout(() => sheet.remove(), 230); };
+    const close = () => { sheet.classList.remove('in'); setTimeout(() => sheet.remove(), 240); };
     sheet.querySelector('._bs-back').addEventListener('click', close);
-
     sheet.querySelector('#_bs-nav').addEventListener('click', () => navTo(c, coord && coord.lat, coord && coord.lng));
-
     sheet.querySelector('#_bs-add-route').addEventListener('click', () => {
-      if (coord && window.Leidsogn && Leidsogn.addToRoute) {
-        Leidsogn.addToRoute(c.id, c.nafn, c.heimilisfang || '', coord.lat, coord.lng);
-        toast('➕ Bætt á leið');
-      } else { toast('⚠ Vantar staðsetningu'); }
+      if (coord && window.Leidsogn && Leidsogn.addToRoute) { Leidsogn.addToRoute(c.id, c.nafn, c.heimilisfang || '', coord.lat, coord.lng); toast('➕ Bætt á leið'); }
+      else toast('⚠ Vantar staðsetningu');
     });
-
-    // urgent + notes save (synced via AppSettings, shared with Leiðsögn)
     sheet.querySelector('#_bs-urgent-save').addEventListener('click', async e => {
-      const v = sheet.querySelector('#_bs-urgent-ta').value;
+      const val = sheet.querySelector('#_bs-urgent-ta').value;
       e.target.textContent = '… vista'; e.target.disabled = true;
-      const ok = await arsSave(coId, { urgent: v });
+      const ok = await arsSave(coId, { urgent: val });
       e.target.textContent = ok ? '✓ Vistað' : '⚠ Villa'; setTimeout(() => { e.target.textContent = '💾 Vista skilaboð'; e.target.disabled = false; }, 1400);
+      renderList();
     });
     sheet.querySelector('#_bs-note-save').addEventListener('click', async e => {
-      const v = sheet.querySelector('#_bs-note-ta').value;
+      const val = sheet.querySelector('#_bs-note-ta').value;
       e.target.textContent = '… vista'; e.target.disabled = true;
-      const ok = await arsSave(coId, { notes: v });
+      const ok = await arsSave(coId, { notes: val });
       e.target.textContent = ok ? '✓ Vistað' : '⚠ Villa'; setTimeout(() => { e.target.textContent = '💾 Vista'; e.target.disabled = false; }, 1400);
     });
-
     sheet.querySelector('#_bs-done').addEventListener('click', async e => {
       e.target.textContent = '… vista'; e.target.disabled = true;
       const ok = await arsSave(coId, { field_inspected_year: curYear() });
       toast(ok ? '✅ Skráð sem tekið út' : '⚠ Villa við vistun');
       try { if (window.Leidsogn && Leidsogn.refresh) Leidsogn.refresh(); } catch (_) {}
-      close();
-      render();
+      close(); renderList(); renderPins();
     });
-
-    // load equipment
     loadUnitsInto(sheet, c);
   }
 
@@ -447,48 +490,33 @@
     let units;
     try { units = await loadUnits(c); }
     catch (e) {
-      box.innerHTML = '<div class="_bs-err">Villa við að sækja tæki.<button class="_bs-save" style="background:#b91c1c" type="button">↻ Reyna aftur</button></div>';
+      box.innerHTML = '<div class="_bs-err">Villa við að sækja tæki.<button class="_bs-save" style="background:var(--brand,#C93C1D)" type="button">↻ Reyna aftur</button></div>';
       box.querySelector('button').addEventListener('click', () => loadUnitsInto(sheet, c));
       return;
     }
-    if (!units.length) {
-      box.innerHTML = '<div class="_bs-empty" style="padding:18px">Engin skráð tæki á þessu fyrirtæki.</div>';
-      if (prog) prog.textContent = '0 tæki';
-      return;
-    }
+    if (!units.length) { box.innerHTML = '<div class="_bs-empty" style="padding:18px">Engin skráð tæki á þessu fyrirtæki.</div>'; if (prog) prog.textContent = '0 tæki'; return; }
     const draw = () => {
       const done = units.filter(u => unitState(u) === 'yfirfarid').length;
       if (prog) prog.textContent = 'Yfirfarin: ' + done + '/' + units.length;
       box.innerHTML = units.map(u => {
-        const stt = unitState(u);
-        const m = STATE_META[stt];
+        const m = STATE_META[unitState(u)];
         const sub = [u.size, u.location, u.serial].filter(Boolean).map(esc).join(' · ');
-        return (
-          '<div class="_bs-unit">' +
-            '<div class="_bs-unit-main">' +
-              '<div class="_bs-unit-t">' + esc(u.type || 'Tæki') + '</div>' +
-              (sub ? '<div class="_bs-unit-s">' + sub + '</div>' : '') +
-            '</div>' +
-            '<button class="_bs-chip" data-id="' + u.id + '" type="button" style="background:' + m.bg + ';color:' + m.fg + ';border-color:' + m.bd + '">' + m.icon + ' ' + m.label + '</button>' +
-          '</div>'
-        );
+        return '<div class="_bs-unit"><div class="_bs-unit-main">' +
+          '<div class="_bs-unit-t">' + esc(u.type || 'Tæki') + '</div>' + (sub ? '<div class="_bs-unit-s">' + sub + '</div>' : '') +
+          '</div><button class="_bs-chip" data-id="' + u.id + '" type="button" style="background:' + m.bg + ';color:' + m.fg + ';border-color:' + m.bd + '">' + m.icon + ' ' + m.label + '</button></div>';
       }).join('');
       box.querySelectorAll('._bs-chip').forEach(btn => btn.addEventListener('click', async () => {
-        const id = btn.dataset.id;
-        const u = units.find(x => String(x.id) === String(id));
+        const u = units.find(x => String(x.id) === String(btn.dataset.id));
         if (!u) return;
-        const next = ROLL[unitState(u)];
-        const meta = STATE_META[next];
-        btn.style.background = meta.bg; btn.style.color = meta.fg; btn.style.borderColor = meta.bd; btn.textContent = meta.icon + ' ' + meta.label; // optimistic
+        const next = ROLL[unitState(u)]; const meta = STATE_META[next];
+        btn.style.background = meta.bg; btn.style.color = meta.fg; btn.style.borderColor = meta.bd; btn.textContent = meta.icon + ' ' + meta.label;
         Object.assign(u, updateForState(next));
-        try { await saveUnitState(id, next); draw(); }
-        catch (_) { toast('⚠ Vistun mistókst'); }
+        try { await saveUnitState(btn.dataset.id, next); draw(); } catch (_) { toast('⚠ Vistun mistókst'); }
       }));
     };
     draw();
   }
 
-  // ── toast ─────────────────────────────────────────────────────────────────
   function toast(msg) {
     if (window.Toast && Toast.show) { try { Toast.show(msg); return; } catch (_) {} }
     const t = document.createElement('div');
@@ -498,7 +526,7 @@
     setTimeout(() => t.remove(), 1800);
   }
 
-  // ── nav button + view switch hook + boot ──────────────────────────────────
+  // ── nav button + switchView hook + boot ──────────────────────────────────
   function injectSidebar() {
     const nav = document.querySelector('nav.view-nav, .view-nav');
     if (!nav) { setTimeout(injectSidebar, 600); return; }
@@ -511,35 +539,22 @@
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18">' +
         '<path d="M1 3h15v13H1zM16 8h4l3 3v5h-7z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>' +
       '</svg><span>Bílstjóri</span></span>';
-    btn.addEventListener('click', e => {
-      e.preventDefault(); e.stopPropagation();
-      if (window.App && App.switchView) App.switchView(NAV_KEY); else show();
-    });
+    btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (window.App && App.switchView) App.switchView(NAV_KEY); else show(); });
     if (ref && ref.parentNode) ref.parentNode.insertBefore(btn, ref.nextSibling);
     else nav.insertBefore(btn, nav.firstChild);
   }
 
-  function show() {
-    ensureView();
-    document.querySelectorAll('[id^="view-"]').forEach(v => { v.style.display='none'; v.classList.remove('active'); });
-    const v = document.getElementById(VIEW_ID);
-    if (v) { v.style.display='block'; v.classList.add('active'); }
-    document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === NAV_KEY));
-    try { localStorage.setItem('lastView', NAV_KEY); } catch (_) {}
-    // mirror into the url (#bilstjori) — patch 218 doesn't see this branch
-    try { if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
-    render();
-  }
-
   function patchSwitchView() {
-    if (!window.App || window.App._bilstjoriPatched) { if (!window.App) return setTimeout(patchSwitchView, 120); }
+    if (!window.App) { setTimeout(patchSwitchView, 120); return; }
     if (window.App._bilstjoriPatched) return;
     const orig = window.App.switchView;
     window.App.switchView = function (view) {
       if (view === NAV_KEY) { show(); return; }
-      if (orig) return orig.apply(this, arguments);
+      const r = orig ? orig.apply(this, arguments) : undefined;
+      // leaving the driver app: make sure the overlay is hidden so the app shows
+      try { const v = document.getElementById(VIEW_ID); if (v) { v.style.display = 'none'; v.classList.remove('active'); } } catch (_) {}
+      return r;
     };
-    // carry flags so patch 154 / 218 don't re-wrap
     for (const k in orig) { try { window.App.switchView[k] = orig[k]; } catch (_) {} }
     window.App._bilstjoriPatched = true;
   }
@@ -554,7 +569,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  window.Bilstjori = { show, render, version: 'v1' };
-  console.log('[bilstjori v1] installed');
+  window.Bilstjori = { show, render: show, renderList, version: 'v2' };
+  console.log('[bilstjori v2] installed');
 })();
 /* === END BÍLSTJÓRI === */
