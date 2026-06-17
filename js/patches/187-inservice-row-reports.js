@@ -40,8 +40,8 @@
       YEARS.forEach(y => {
         const th = document.createElement('th');
         th.setAttribute('data-yrcol','1');
-        th.style.cssText = 'padding:9px 5px;text-align:center;color:#475569;font-weight:700;font-size:10px;text-transform:none;letter-spacing:0';
-        th.textContent = y;
+        th.style.cssText = "padding:9px 5px;text-align:center;color:#9A9CA2;font-weight:700;font-size:10px;font-family:'Space Mono',monospace;text-transform:none;letter-spacing:0";
+        th.textContent = "'" + y.slice(-2);
         htr.insertBefore(th, ref);
       });
     });
@@ -63,17 +63,26 @@
         // cleared by the user — never auto-matched.
         const f = files.find(x => String(x.year) === y) ||
                   files.find(x => x.year == null && new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
+        // Inspection-tag styling (matches the redesign): legible '23–'26 tag,
+        // green = report on file, grey = none, amber = current year still due.
+        const yy = y.slice(-2);
+        const TAG = "display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 9px 0 7px;border-radius:3px 9px 9px 3px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;text-decoration:none;border:1px solid transparent;box-sizing:border-box;";
+        const dotGreen = '<span style="width:4px;height:4px;border-radius:50%;background:#1C8F60;flex:0 0 auto"></span>';
         const td = document.createElement('td');
         td.setAttribute('data-yrcell','1');
-        td.style.cssText = 'padding:6px 5px;text-align:center;font-size:11px;' + ((u || f) ? 'background:#f0fdf4' : '');
+        td.style.cssText = 'padding:6px 4px;text-align:center;';
         if (u) {
-          td.innerHTML = '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Úttektarskýrsla ' + y + ' í Drive" style="color:#15803d;font-weight:700;text-decoration:none">📄</a>';
+          td.innerHTML = '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Úttektarskýrsla ' + y + ' í Drive" style="' + TAG + 'background:#DBEEE3;border-color:rgba(28,143,96,.35);color:#0F5E3F">' + dotGreen + yy + '</a>';
         } else if (f) {
-          td.innerHTML = '<a href="#" class="_yr-att" data-path="' + String(f.path||'').replace(/"/g,'&quot;') + '" title="' + String(f.name||'').replace(/"/g,'&quot;') + ' (' + y + ' — upphlaðið skjal)" style="color:#15803d;font-weight:700;text-decoration:none">📄</a>';
+          td.innerHTML = '<a href="#" class="_yr-att" data-path="' + String(f.path||'').replace(/"/g,'&quot;') + '" title="' + String(f.name||'').replace(/"/g,'&quot;') + ' (' + y + ' — upphlaðið skjal)" style="' + TAG + 'background:#DBEEE3;border-color:rgba(28,143,96,.35);color:#0F5E3F">' + dotGreen + yy + '</a>';
         } else {
-          // Empty cell = attach point: click to upload a skýrsla straight
-          // into this (company, year). Hover shows a "+".
-          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Hengja skýrslu við ' + y + '" style="color:#d1d5db;text-decoration:none;display:inline-block;min-width:14px" onmouseover="this.textContent=\'+\';this.style.color=\'#15803d\';this.style.fontWeight=\'700\'" onmouseout="this.textContent=\'·\';this.style.color=\'#d1d5db\';this.style.fontWeight=\'400\'">·</a>';
+          // Empty = attach point: click to upload a skýrsla into (company, year).
+          const due = (y === '2026');
+          const bg = due ? '#FBEAC6' : '#F0EFEA', bd = due ? 'rgba(217,146,6,.5)' : '#E2DFD6', col = due ? '#8A5C04' : '#9CA0A6';
+          const eye = due
+            ? '<span style="width:4px;height:4px;border-radius:50%;background:#D99206;flex:0 0 auto"></span>'
+            : '<span style="width:4px;height:4px;border-radius:50%;box-shadow:inset 0 0 0 1.5px #B9B6AC;flex:0 0 auto"></span>';
+          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Hengja skýrslu við ' + y + '" style="' + TAG + 'background:' + bg + ';border-color:' + bd + ';color:' + col + '">' + eye + yy + '</a>';
         }
         tr.insertBefore(td, ref);
       });
