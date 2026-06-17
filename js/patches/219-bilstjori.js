@@ -94,7 +94,19 @@
     return out;
   }
 
-  // current filtered + sorted list (shared by the map pins and the list)
+  // tæki-count (same source as Leiðsögn unitCount): live cache by client name,
+  // else the manual arsskodun equipment snapshot. last-inspected year =
+  // max(last_year_inspected, field_inspected_year).
+  function unitCount(x) {
+    const byClient = window.DB && DB.cache && DB.cache.unitsByClient;
+    const nafn = x.co && x.co.nafn;
+    if (byClient && nafn && byClient[nafn]) return byClient[nafn].length;
+    const eq = (x.ars || {}).equipment;
+    if (eq && typeof eq === 'object') return Object.values(eq).reduce((s, n) => s + (+n || 0), 0);
+    return 0;
+  }
+  function yearOf(a) { a = a || {}; return Math.max(+a.last_year_inspected || 0, +a.field_inspected_year || 0); }
+
   let _seg = 'today';   // 'today' | 'all'
   let _search = '';
   const DUE = { overdue:0, duenow:1, scheduled:2, in_progress:3, done:4, unknown:5 };
@@ -207,6 +219,7 @@
       '._bs-card-name{font-weight:600;font-size:16px;line-height:1.3;color:var(--ink1,#0f1117);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '._bs-card-sub{font-size:13.5px;color:var(--ink3,#8891a0);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '._bs-card-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;font-size:12.5px;font-weight:600}',
+      '._bs-card-extra{display:block;margin-top:5px;font-size:12px;color:var(--ink3,#8891a0);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '._bs-badge{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--red-bg,#fff0ed);color:var(--red,#C93C1D);border:1px solid var(--red-bd,#fca5a5)}',
       '._bs-chev{font-size:23px;color:var(--ink4,#bcc3cc);flex:none;line-height:1}',
       '._bs-empty{padding:42px 24px;text-align:center;color:var(--ink3,#8891a0);font-size:15px}',
@@ -371,6 +384,13 @@
 
   function cardHtml(x) {
     const c = x.co;
+    const m = +((x.ars || {}).inspect_month) || 0;
+    const monthName = (m >= 1 && m <= 12) ? MONTHS_IS[m - 1] : '';
+    const insYear = yearOf(x.ars);
+    const nUnits = unitCount(x);
+    const extra = '🧯 ' + nUnits + ' tæki'
+      + (monthName ? ' · 📅 ' + monthName : '')
+      + ' · ' + (insYear ? 'síðast ' + insYear : 'óskoðað');
     return (
       '<button class="_bs-card" type="button" data-id="' + c.id + '">' +
         '<span class="_bs-dot" style="background:' + x.status.color + '"></span>' +
@@ -381,6 +401,7 @@
             '<span style="color:' + x.status.color + '">' + esc(x.status.label) + '</span>' +
             (x.urgent ? '<span class="_bs-badge">🚨 Skilaboð</span>' : '') +
           '</span>' +
+          '<span class="_bs-card-extra">' + esc(extra) + '</span>' +
         '</span>' +
         '<span class="_bs-chev">›</span>' +
       '</button>'
