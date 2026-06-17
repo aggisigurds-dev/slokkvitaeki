@@ -50,7 +50,8 @@
     // identity entries — listed so the reverse map keeps these tidy names
     sala: 'sala', vorur: 'vorur', geymsla: 'geymsla', beidnir: 'beidnir',
     brunakerfi: 'brunakerfi', verkdagbok: 'verkdagbok', arsskodun: 'arsskodun',
-    vidskiptavinir: 'vidskiptavinir', yfirlit: 'yfirlit'
+    vidskiptavinir: 'vidskiptavinir', yfirlit: 'yfirlit',
+    bilstjori: 'bilstjori', drivers: 'bilstjori'
   };
 
   // internal view id -> preferred ascii slug (first alias wins).
