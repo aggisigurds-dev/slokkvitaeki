@@ -241,7 +241,17 @@ Leiðsögn (patch 161) + Fyrirtæki í þjónustu + the `uttaeki` inspection mod
 Mobile rules applied: ≥44px targets, ≥16px text, primary actions in the bottom
 thumb-zone, stack nav (top-left back), loading/error/offline (DB.cache) states.
 Wired like patch 161 (sidebar button + `App.switchView('bilstjori')` hook + mirrors
-`#bilstjori` into the hash). Linkable via patch 218 ALIAS.
+`#bilstjori` into the hash). Linkable via patch 218 ALIAS. Full-screen: the view is
+appended to `<body>` (so the `position:fixed` overlay isn't trapped by the content
+panel's transformed ancestor) at `z-index:1000`, and `body.bs-active` hides the
+sidebar; the company sheet sits at `z-index:1100`.
+
+**Locked driver mode (`?driver`)**: the share link + the PWA `start_url` are
+`/?driver`. When that param is present (`LOCKED`), the app opens straight into
+Bílstjóri, drops the ✕ exit button, and any `App.switchView` away snaps back —
+so a driver can only see Bílstjóri. The office keeps full access via the bare URL.
+It's a focus lock, not security (client-side, anon Supabase key). The 🔗 button and
+the boot deep-link re-assert (outlasts the sala.js boot-lander) live here too.
 
 ## Related projects (in case Agnar mentions them)
 
