@@ -1009,7 +1009,51 @@
     `;
   }
 
+  // ── Status pill (unified) ───────────────────────────────────────────────
+  // 2026-06: the right side of the list used to be three loose bits — a
+  // floating "⏰ '24" badge, a bare colour dot and a ☐ toggle — plus two
+  // never-used action buttons (🏢 🗺️). Replaced by ONE cohesive status pill
+  // (icon + text) + a quiet hover-only "Í vinnslu" button; the action buttons
+  // are gone (the whole row is still clickable to open the company).
+  const _PILL_ICON = {
+    done:  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    work:  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0 5 5l-9 9a2.8 2.8 0 1 1-4-4l9-9z"/></svg>',
+    skip:  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>',
+    over:  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
+    queue: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>'
+  };
+  const _PILL_C = {
+    done:  ['#f0fdf4', '#bbf7d0', '#15803d'],
+    work:  ['#eff6ff', '#bfdbfe', '#1d4ed8'],
+    skip:  ['#fffbeb', '#fde68a', '#a16207'],
+    over:  ['#fef2f2', '#fecaca', '#b91c1c'],
+    queue: ['#f8fafc', '#cbd5e1', '#475569']
+  };
+  function statusPill(state, label, title) {
+    const c = _PILL_C[state] || _PILL_C.queue;
+    return '<span title="' + esc(title || label) + '" style="display:inline-flex;align-items:center;gap:5px;'
+      + 'font-size:10.5px;font-weight:700;line-height:1;padding:4px 9px;border-radius:99px;white-space:nowrap;'
+      + 'background:' + c[0] + ';color:' + c[2] + ';border:1px solid ' + c[1] + '">'
+      + (_PILL_ICON[state] || '') + esc(label) + '</span>';
+  }
+  // One-time CSS for the hover-reveal "Í vinnslu" button (kept out of inline
+  // styles since :hover can't be expressed inline).
+  function _ensureStatusCss() {
+    if (document.getElementById('_ars-status-css')) return;
+    const s = document.createElement('style');
+    s.id = '_ars-status-css';
+    s.textContent =
+      '._ars-mark{opacity:0;font:600 10px/1 inherit;color:#94a3b8;background:#fff;'
+      + 'border:1px dashed #cbd5e1;border-radius:99px;padding:3px 9px;cursor:pointer;white-space:nowrap;'
+      + 'transition:opacity .15s,color .15s,background .15s,border-color .15s}'
+      + 'tr._ars-row:hover ._ars-mark,._ars-mark:focus-visible{opacity:1}'
+      + '._ars-mark:hover{color:#1d4ed8;background:#eff6ff;border-color:#1d4ed8;border-style:solid}'
+      + '._ars-mark.on{opacity:1;color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe;border-style:solid}';
+    document.head.appendChild(s);
+  }
+
   function renderTable(arr) {
+    _ensureStatusCss();
     const today = new Date();
     const curYear = today.getFullYear();
     const curMonth = today.getMonth() + 1;
@@ -1037,8 +1081,7 @@
                   <th data-sort="tools"    class="_ars-sort" style="${css};text-align:center" ${hover}>Tæki${arrow('tools')}</th>
                   <th data-sort="estimate" class="_ars-sort" style="${css};text-align:right" ${hover}>Áætl.${arrow('estimate')}</th>
                   <th data-sort="priority" class="_ars-sort" style="${css};text-align:center" ${hover}>❗${arrow('priority')}</th>
-                  <th data-sort="status"   class="_ars-sort" style="${css};text-align:center" ${hover}>${curYear}${arrow('status')}</th>
-                  <th style="padding:9px 11px"></th>
+                  <th data-sort="status"   class="_ars-sort" style="${css};text-align:right" ${hover}>${curYear}${arrow('status')}</th>
                 `;
               })()}
             </tr>
@@ -1057,16 +1100,18 @@
               const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
               const est = +ars.estimated_yearly || 0;
               const aminning = cleanAminning(ars.aminning);
-              const dot = isDone ? '#22c55e'
-                : (isFieldOnly ? '#3b82f6'        // 2026-06-10: blár = Í vinnslu (skjöl/skýrsla eftir)
-                : (isSkipped ? '#f59e0b'
-                : (isOverdue ? '#ef4444' : '#94a3b8')));
-              const statusTitle = isDone ? ('Skoðað ' + curYear)
-                : (isFieldOnly ? 'Í vinnslu — skoðun hafin, skýrsla/reikningur eftir'
-                : (isSkipped ? ('Síðast skoðað ' + lastYr)
-                : (isOverdue ? 'Útrunnið' : 'Á dagskrá')));
-              const skippedBadge = isSkipped
-                ? `<span title="Síðast skoðað ${lastYr}" style="display:inline-block;margin-left:4px;background:#fef3c7;color:#a16207;font-size:8.5px;font-weight:700;padding:1px 5px;border-radius:99px;border:1px solid #fde68a;line-height:1.2">⏰ '${String(lastYr).slice(-2)}</span>`
+              const stState = isDone ? 'done' : isFieldOnly ? 'work' : isSkipped ? 'skip' : isOverdue ? 'over' : 'queue';
+              const stLabel = isDone ? ('Skoðað ' + curYear)
+                : isFieldOnly ? 'Í vinnslu'
+                : isSkipped ? ("Sleppt '" + String(lastYr).slice(-2))
+                : isOverdue ? 'Á eftir'
+                : 'Á dagskrá';
+              const stTitle = isDone ? ('Skoðað ' + curYear)
+                : isFieldOnly ? 'Í vinnslu — skoðun hafin, skýrsla/reikningur eftir'
+                : isSkipped ? ('Síðast skoðað ' + lastYr)
+                : isOverdue ? 'Útrunnið' : 'Á dagskrá';
+              const markBtn = !isDone
+                ? `<button class="_ars-tu-toggle _ars-mark${isFieldOnly ? ' on' : ''}" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki í vinnslu' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}">${isFieldOnly ? '✓ Í vinnslu' : '+ Í vinnslu'}</button>`
                 : '';
               return `
                 <tr class="_ars-row" data-co-id="${c.id}" style="border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .1s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
@@ -1085,14 +1130,11 @@
                   <td style="padding:8px 7px;text-align:center;font-weight:700;color:#0f172a">${totalEq||'—'}</td>
                   <td style="padding:8px 7px;text-align:right;color:#15803d;font-weight:700;font-variant-numeric:tabular-nums">${fmtKrShort(est)}</td>
                   <td style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
-                  <td style="padding:8px 7px"><div style="display:flex;align-items:center;justify-content:center;gap:5px">
-                    <span style="width:46px;display:inline-flex;justify-content:flex-end;flex-shrink:0">${skippedBadge}</span>
-                    <span title="${statusTitle}" style="display:inline-block;width:13px;height:13px;border-radius:99px;background:${dot};box-shadow:0 0 0 1px rgba(0,0,0,.12);flex-shrink:0"></span>
-                    <span style="width:24px;display:inline-flex;justify-content:center;flex-shrink:0">${!isDone ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki í vinnslu' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}" style="font-size:9px;padding:1px 5px;border-radius:99px;border:1px solid ${isFieldOnly ? '#60a5fa' : '#cbd5e1'};background:${isFieldOnly ? '#dbeafe' : '#fff'};color:${isFieldOnly ? '#1d4ed8' : '#475569'};cursor:pointer;font-weight:600;line-height:1.2">${isFieldOnly ? '✓' : '☐'}</button>` : ''}</span>
-                  </div></td>
-                  <td style="padding:8px 11px;text-align:right;white-space:nowrap">
-                    <button class="_ars-open-fyrirt" data-co-id="${c.id}" type="button" title="Opna fyrirtæki" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px;margin-right:3px">🏢</button>
-                    <button class="_ars-open-map" data-co-id="${c.id}" type="button" title="Sjá á korti" style="padding:3px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:10.5px">🗺️</button>
+                  <td style="padding:8px 11px">
+                    <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
+                      ${markBtn}
+                      ${statusPill(stState, stLabel, stTitle)}
+                    </div>
                   </td>
                 </tr>
               `;
