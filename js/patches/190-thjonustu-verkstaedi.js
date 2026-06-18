@@ -175,7 +175,7 @@
     if (!(r.units > 0 || r.tekjur > 0)) return '';
     return '<div style="display:flex;gap:5px;flex-wrap:wrap">' +
       (r.units > 0 ? '<span style="background:#eff6ff;color:#1d4ed8;border-radius:99px;padding:1px 8px;font-size:10px;font-weight:700;white-space:nowrap">🧯 ' + r.units + ' einingar</span>' : '') +
-      (r.tekjur > 0 ? '<span style="background:#eff6ff;color:#1d4ed8;border-radius:99px;padding:1px 8px;font-size:10px;font-weight:700;white-space:nowrap" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">~' + fmtKr(r.tekjur) + '</span>' : '') +
+      (r.tekjur > 0 ? '<span style="background:#eff6ff;color:#1d4ed8;border-radius:99px;padding:1px 8px;font-size:10px;font-weight:700;white-space:nowrap" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">áætl. ' + fmtKr(r.tekjur) + '</span>' : '') +
       '</div>';
   }
   // gamli stíllinn — skref sem pillur (list mode)
@@ -280,7 +280,7 @@
         '<h1 style="font-size:22px;margin:0;font-weight:750">🔧 ÞjónustuVerkstæði</h1>' +
         '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>☰ Listi</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>▦ Spjöld</button></div>' +
       '</div>' +
-      '<p style="color:#64748b;font-size:14px;margin:0 0 14px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · <span title="Samtals áætlaðar tekjur, m. vsk">~' + fmtSum(vinnslaSum) + '</span>' : '') + '.</p>' +
+      '<p style="color:#64748b;font-size:14px;margin:0 0 14px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · <span title="Samtals áætlaðar tekjur, m. vsk">áætl. ' + fmtSum(vinnslaSum) + '</span>' : '') + '.</p>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">' +
         '<span class="sv-chip" style="background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;font-weight:800">🔵 <span class="n" style="color:#1d4ed8">' + b.vinnsla.length + '</span> í vinnslu</span>' +
         '<span class="sv-chip" data-toggle="dagskra">⏳ <span class="n">' + b.dagskra.length + '</span> á dagskrá ' + (_openDagskra ? '▾' : '▸') + '</span>' +
