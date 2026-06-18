@@ -941,7 +941,7 @@
           const statusBadge = isDone
             ? '<span style="background:#dcfce7;color:#15803d;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #bbf7d0">✅ ' + curYear + '</span>'
             : isFieldOnly
-            ? '<span style="background:#dbeafe;color:#1d4ed8;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #93c5fd">🔵 Í vinnslu</span>'
+            ? '<span style="background:#dbeafe;color:#1d4ed8;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #93c5fd">🔵 Í skýrslugerð</span>'
             : isSkipped
             ? `<span title="Síðast skoðað ${lastYr} — sleppt í fyrra" style="background:#fef3c7;color:#a16207;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #fde68a;display:inline-flex;align-items:center;gap:2px">⏰ '${String(lastYr).slice(-2)}</span>`
             : isOverdue
@@ -1102,7 +1102,7 @@
               const aminning = cleanAminning(ars.aminning);
               const stState = isDone ? 'done' : isFieldOnly ? 'work' : isSkipped ? 'skip' : isOverdue ? 'over' : 'queue';
               const stLabel = isDone ? ('Skoðað ' + curYear)
-                : isFieldOnly ? 'Í vinnslu'
+                : isFieldOnly ? 'Í skýrslugerð'
                 : isSkipped ? ("Sleppt '" + String(lastYr).slice(-2))
                 : isOverdue ? 'Á eftir'
                 : 'Á dagskrá';
