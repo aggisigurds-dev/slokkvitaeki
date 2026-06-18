@@ -733,7 +733,14 @@
       el.addEventListener('click', e => {
         if (e.target.closest('button, a')) return;
         const id = +el.dataset.coId;
-        if (id) openDetail(id);
+        if (!id) return;
+        // 2026-06-18: skip the intermediate quick-view modal — go straight to
+        // the company page (same as the modal's "🏢 Opna fyrirtæki" button).
+        // The modal (openDetail) is still reachable programmatically (deep
+        // links / other patches) but a row tap no longer stops on it.
+        if (window._openCompanySafe) window._openCompanySafe(id);
+        else if (window.App && App.switchView) { App.switchView('companies'); setTimeout(() => { if (window.Companies && Companies.openDetail) Companies.openDetail(id); }, 200); }
+        else openDetail(id);
       });
     });
 

@@ -172,18 +172,18 @@
     var q=_state.q.toLowerCase().trim();
     var html='';
     html+='<div style="max-width:980px;margin:0 auto">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px">'+
-          '<h1 style="font-size:22px;margin:0;font-weight:750">Rekstrarfélög</h1>'+
+    html+='<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:4px">'+
+          '<h1 style="font-size:24px;margin:0;font-weight:800;letter-spacing:-.02em;color:#0f172a">Rekstrarfélög</h1>'+
           '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
-            '<a href="/rekstrarfelog-uttektir.xlsx" download style="padding:8px 14px;text-decoration:none;border:1px solid #cbd5e1;border-radius:8px;color:#15803d;font-weight:600;font-size:13px;background:#f0fdf4">📊 Sækja aðgerðalista (Excel)</a>'+
-            '<button id="_rf_add" class="btn btn-primary btn-sm" style="padding:8px 14px">+ Nýtt rekstrarfélag</button>'+
+            '<a href="/rekstrarfelog-uttektir.xlsx" download style="padding:8px 14px;text-decoration:none;border:1px solid #e2e8f0;border-radius:9px;color:#475569;font-weight:600;font-size:13px;background:#fff">📊 Aðgerðalisti (Excel)</a>'+
+            '<button id="_rf_add" class="btn btn-primary btn-sm" style="padding:8px 14px;border-radius:9px">+ Nýtt rekstrarfélag</button>'+
           '</div></div>';
-    html+='<p style="color:#64748b;font-size:14px;margin:0 0 14px">Stór félög sem reka mörg húsfélög/byggingar. Smelltu á félag til að sjá byggingar, skjöl og tengiliði.</p>';
-    html+='<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">'+
+    html+='<p style="color:#64748b;font-size:13.5px;margin:0 0 16px;max-width:640px">Stór félög sem reka mörg húsfélög/byggingar. Smelltu á félag til að sjá byggingar, skjöl og tengiliði.</p>';
+    html+='<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+
           '<button id="_rf_m_firms" class="_rf_modebtn">🏢 Eftir félögum</button>'+
           '<button id="_rf_m_all" class="_rf_modebtn">📋 Allar byggingar (yfirlit)</button>'+
           '</div>';
-    html+='<input id="_rf_q" placeholder="🔎 Leita að félagi, byggingu eða kennitölu…" value="'+esc(_state.q)+'" style="width:100%;border:1px solid #e2e8f0;border-radius:10px;padding:11px 12px;font-size:14px;margin-bottom:16px">';
+    html+='<input id="_rf_q" placeholder="🔎 Leita að félagi, byggingu eða kennitölu…" value="'+esc(_state.q)+'" style="width:100%;border:1px solid #e2e8f0;border-radius:11px;padding:12px 14px;font-size:14px;margin-bottom:18px;background:#fff;box-sizing:border-box;outline:none">';
     html+='<div id="_rf_list"></div><div id="_rf_overview" style="display:none"></div></div>';
     v.innerHTML=html;
     function styleModeBtns(){
@@ -236,13 +236,15 @@
   }
   function yCellO(done, rep, units, url, file, y){
     var bd='1px solid #eef1f5';
-    if(!done) return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#d1d5db">·</td>';
+    if(!done) return '<td style="padding:6px 4px;border-bottom:'+bd+';text-align:center;color:#d1d5db">·</td>';
     var v=units>0?units:'✓'; var greenish=rep||url||file;
-    var style=greenish?'color:#15803d;background:#f0fdf4':'color:#1d4ed8;background:#eff6ff';
+    var col=greenish?'#15803d':'#1d4ed8', dot=greenish?'#1C8F60':'#3b82f6';
     var inner=url?'<a href="'+esc(url)+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+v+' 📄↗</a>'
       : (file?fileLinkA(file,y,v)
       : (v+(rep?' 📄':'')));
-    return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;font-weight:700;'+style+'">'+inner+'</td>';
+    return '<td style="padding:6px 4px;border-bottom:'+bd+';text-align:center">'+
+      '<span style="display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:12.5px;color:'+col+'">'+
+      '<span style="width:6px;height:6px;border-radius:50%;background:'+dot+';flex:0 0 auto"></span>'+inner+'</span></td>';
   }
   async function renderOverview(){
     var v=viewEl(); if(!v) return; var box=v.querySelector('#_rf_overview'); if(!box) return;
@@ -287,12 +289,21 @@
       }
       if(a.firm!==b.firm)return a.firm<b.firm?-1:1; return (a.b.nafn||'')<(b.b.nafn||'')?-1:1;
     });
-    var totHtml='<div class="_ovr-totals" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
-      '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 14px;font-size:13px"><b>'+firms+'</b> félög · <b>'+tot.byg+'</b> byggingar</div>'+
-      '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 14px;font-size:13px;color:#15803d">✓ <b>'+tot.done+'</b> með úttekt 2026</div>'+
-      '<div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:8px 14px;font-size:13px;color:#b7791f">⏳ <b>'+tot.need+'</b> vantar 2026</div>'+
-      '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:8px 14px;font-size:13px;color:#b45309">⚠ <b>'+tot.none+'</b> engin gögn</div>'+
-      '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:8px 14px;font-size:13px;color:#b91c1c">⏰ <b>'+tot.overdue+'</b> skoðun liðin</div>'+
+    // 2026-06-18: calmer stat bar — one card with dot-coded stats + dividers,
+    // instead of five separate multicolour "sticker" boxes.
+    function stat(dot,num,lab,col){
+      return '<div style="display:flex;align-items:center;gap:8px">'+
+        (dot?'<span style="width:8px;height:8px;border-radius:50%;background:'+dot+';flex:0 0 auto"></span>':'')+
+        '<span style="font-size:18px;font-weight:800;color:'+(col||'#0f172a')+';font-variant-numeric:tabular-nums">'+num+'</span>'+
+        '<span style="font-size:12px;color:#64748b">'+lab+'</span></div>';
+    }
+    var sep='<span style="width:1px;height:26px;background:#eef1f5"></span>';
+    var totHtml='<div class="_ovr-totals" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(16,24,40,.04)">'+
+      stat('',firms,'félög')+sep+stat('#94a3b8',tot.byg,'byggingar')+sep+
+      stat('#1C8F60',tot.done,'með úttekt 2026','#15803d')+
+      stat('#D99206',tot.need,'vantar 2026','#b7791f')+
+      stat('#f97316',tot.none,'engin gögn','#b45309')+
+      stat('#ef4444',tot.overdue,'skoðun liðin','#b91c1c')+
       '</div>';
     function chip(key,label){ var on=f===key; return '<button class="_rf_fchip" data-f="'+key+'" style="padding:6px 12px;border:1px solid '+(on?'#0f172a':'#cbd5e1')+';background:'+(on?'#0f172a':'#fff')+';color:'+(on?'#fff':'#475569')+';border-radius:99px;font-size:12.5px;font-weight:600;cursor:pointer">'+label+'</button>'; }
     var chips='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">'+
@@ -362,7 +373,7 @@
         '<div class="_rf_head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;cursor:pointer">'+
           '<div><div style="font-size:17px;font-weight:700">'+esc(name)+'</div>'+
           '<div class="_rf_emailline" style="font-size:13px;color:#64748b;margin-top:3px">'+ktLine+'📧 '+(emails||'—')+(info.domain?' &nbsp;·&nbsp; '+esc(info.domain):'')+'</div>'+extraLine+'</div>'+
-          '<div style="flex:none;background:#eef4ff;color:#2563eb;border-radius:20px;padding:4px 12px;font-size:13px;font-weight:700;white-space:nowrap">'+blds.length+' byggingar</div>'+
+          '<div style="flex:none;background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;border-radius:20px;padding:4px 12px;font-size:12.5px;font-weight:700;white-space:nowrap">'+blds.length+' byggingar</div>'+
         '</div>'+
         // 2026-06-12 (Todoist): athugasemd beint á borðanum — vistast sjálfkrafa
         '<input class="_rf_note" value="'+esc(info.notes||'')+'" placeholder="Athugasemd um rekstraraðilann — vistast sjálfkrafa" '+
@@ -416,14 +427,16 @@
     var bd='1px solid #eef1f5';
     // year cell: done? -> tæki count (or ✓). green+📄 = úttektarskýrsla; ↗ = tengill í Drive; blár = aðeins búnaðarsaga
     function yCell(done, rep, units, url, file, y){
-      if(!done) return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;color:#d1d5db">·</td>';
+      if(!done) return '<td style="padding:6px 4px;border-bottom:'+bd+';text-align:center;color:#d1d5db">·</td>';
       var v = units>0 ? units : '✓';
       var greenish = rep || url || file;
-      var style = greenish ? 'color:#15803d;background:#f0fdf4' : 'color:#1d4ed8;background:#eff6ff';
+      var col = greenish ? '#15803d' : '#1d4ed8', dot = greenish ? '#1C8F60' : '#3b82f6';
       var inner = url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Google Drive" style="color:inherit;text-decoration:none">'+v+' 📄↗</a>'
         : (file ? fileLinkA(file,y,v)
         : (v+(rep?' 📄':'')));
-      return '<td style="padding:5px 4px;border-bottom:'+bd+';text-align:center;font-weight:700;'+style+'">'+inner+'</td>';
+      return '<td style="padding:6px 4px;border-bottom:'+bd+';text-align:center">'+
+        '<span style="display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:12.5px;color:'+col+'">'+
+        '<span style="width:6px;height:6px;border-radius:50%;background:'+dot+';flex:0 0 auto"></span>'+inner+'</span></td>';
     }
     // building table
     var rows=blds.map(function(b,_bi){
@@ -483,10 +496,10 @@
     var emails=(info.emails||[]).map(function(e){return '<a href="mailto:'+esc(e)+'" style="color:#2563eb;text-decoration:none">'+esc(e)+'</a>';}).join(' · ');
     var inS='width:100%;padding:6px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box;margin-top:2px';
     var infoPanel=
-      '<div class="_rf_info" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
+      '<div class="_rf_info" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
-          '<div style="font-size:11px;font-weight:700;color:#15803d;text-transform:uppercase;letter-spacing:.04em">Upplýsingar um rekstrarfélag</div>'+
-          '<button class="_rf_info_edit" type="button" style="font-size:12px;padding:4px 10px;background:#fff;border:1px solid #86efac;border-radius:7px;color:#15803d;font-weight:600;cursor:pointer">✏️ Breyta</button>'+
+          '<div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:.04em">Upplýsingar um rekstrarfélag</div>'+
+          '<button class="_rf_info_edit" type="button" style="font-size:12px;padding:4px 10px;background:#fff;border:1px solid #cbd5e1;border-radius:7px;color:#475569;font-weight:600;cursor:pointer">✏️ Breyta</button>'+
         '</div>'+
         '<div class="_rf_info_view" style="font-size:13px;color:#334155;line-height:1.6">'+
           '<div><b>Kennitala:</b> '+(info.kt?esc(fmtKt(info.kt)):'—')+'</div>'+
