@@ -136,10 +136,10 @@
   }
 
   function readyCard(j) {
-    return '<div style="display:flex;gap:8px;padding:10px;border-radius:10px;margin-bottom:6px;background:#f0fdf4;border:1px solid #bbf7d0">' +
-      '<div onclick="Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
+    return '<div class="cw-rcard" style="display:flex;gap:8px;padding:10px;border-radius:10px;margin-bottom:6px;background:#f0fdf4;border:1px solid #bbf7d0">' +
+      '<div class="cw-rcard-info" onclick="Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
         `<div style="font-family:var(--mono,monospace);font-size:11px;color:#059669;font-weight:600">${dnum(j.num)}</div>` +
-        `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
+        `<div class="cw-rcard-name" style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
         `<div style="font-size:11px;color:#059669">${live(j.units).length} slökkvitæki</div>` +
       '</div>' +
       `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;margin-right:6px;padding:4px 9px;background:#fff;border:1px solid #fbbf24;color:#92400e;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
@@ -157,8 +157,8 @@
         const badge = (window.U && U.badge) ? U.badge(j.status) : '';
         const dot = (window.U && U.dc) ? U.dc(j.status) : '';
         if (isReady) {
-          return '<div style="display:flex;gap:8px;padding:7px 8px;border-radius:8px;margin-bottom:3px;background:#f0fdf4;border:1px solid #bbf7d0">' +
-            '<div onclick="event.stopPropagation();Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
+          return '<div class="cw-rcard" style="display:flex;gap:8px;padding:7px 8px;border-radius:8px;margin-bottom:3px;background:#f0fdf4;border:1px solid #bbf7d0">' +
+            '<div class="cw-rcard-info" onclick="event.stopPropagation();Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
               `<div style="font-family:var(--mono,monospace);font-size:10px;color:#059669;font-weight:600">${dnum(j.num)}</div>` +
               `<div style="font-size:12px;color:#0f172a;margin:1px 0">${live(j.units).length} slökkvitæki</div>` +
             '</div>' +
@@ -568,6 +568,18 @@
       '    grid-template-columns: 1fr !important;' +
       '  }' +
       '  #counter-detail-modal aside { display: none !important; }' +
+      '}' +
+      // 2026-06-18: phone view — the Tilbúin cards crammed customer name +
+      // 3 action buttons (← Verkstæði · Hilla · Sótt ✓) onto one row, so
+      // names truncated to "Kal…" and the Hilla select clipped off-screen.
+      // On ≤640px, let the info take a full first row (name wraps, R-nr on one
+      // line) and the buttons flow onto a second row sharing the width.
+      '@media (max-width: 640px) {' +
+      '  .cw-rcard { flex-wrap: wrap !important; gap: 8px 6px !important; align-items: center !important; }' +
+      '  .cw-rcard-info { flex: 1 1 100% !important; }' +
+      '  .cw-rcard-name { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }' +
+      '  .cw-rcard > button { flex: 1 1 auto !important; min-height: 40px !important; font-size: 13px !important; }' +
+      '  .cw-rcard > select[data-shelf-dd] { min-height: 40px !important; }' +
       '}';
     document.head.appendChild(css);
   }
