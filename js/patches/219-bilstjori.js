@@ -237,6 +237,9 @@
       '._bs-card-extra{display:block;margin-top:5px;font-size:12px;color:var(--ink3,#8891a0);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '._bs-badge{font-size:11.5px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--red-bg,#fff0ed);color:var(--red,#C93C1D);border:1px solid var(--red-bd,#fca5a5)}',
       '._bs-chev{font-size:23px;color:var(--ink4,#bcc3cc);flex:none;line-height:1}',
+      '._bs-check{width:38px;height:38px;flex:none;border-radius:10px;border:2px solid var(--blu,#1d4ed8);background:var(--surface,#fff);color:#fff;font-size:19px;font-weight:800;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}',
+      '._bs-check.on{background:var(--blu,#1d4ed8)}',
+      '._bs-check:active{filter:brightness(.94)}',
       '._bs-empty{padding:42px 24px;text-align:center;color:var(--ink3,#8891a0);font-size:15px}',
       '._bs-err{margin:12px 14px;padding:14px;border-radius:12px;background:var(--red-bg,#fff0ed);border:1px solid var(--red-bd,#fca5a5);color:var(--brand-dk,#a83018);font-size:14px;display:flex;justify-content:space-between;align-items:center;gap:10px}',
       '._bs-bottom{position:fixed;left:0;right:0;bottom:0;z-index:210;background:linear-gradient(to top,var(--bg,#f5f5f7) 64%,rgba(245,245,247,0));padding:13px 14px calc(13px + env(safe-area-inset-bottom));display:flex;justify-content:center;pointer-events:none}',
@@ -398,7 +401,23 @@
     box.innerHTML = list.length
       ? list.map(cardHtml).join('')
       : '<div class="_bs-empty">' + (_seg === 'today' ? '✅ Ekkert áríðandi eftir í dag.' : 'Engin fyrirtæki fundust.') + '</div>';
-    box.querySelectorAll('._bs-card').forEach(card => card.addEventListener('click', () => openCompany(+card.dataset.id)));
+    box.querySelectorAll('._bs-card').forEach(card => card.addEventListener('click', e => {
+      if (e.target.closest('._bs-check')) return;           // blue check handled below
+      openCompany(+card.dataset.id);
+    }));
+    // Blue check → toggle field_inspected_year (🔵 Í vinnslu). Sends the company
+    // to ÞjónustuVerkstæði "Í vinnslu" (finish report) and drops it from the
+    // driving list (status becomes in_progress) — same flag as patch 190.
+    box.querySelectorAll('._bs-check').forEach(btn => btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const id = btn.dataset.id;
+      const wasOn = (+((arsAll()[String(id)] || {}).field_inspected_year) === curYear());
+      btn.classList.toggle('on', !wasOn); btn.textContent = !wasOn ? '✓' : '';   // optimistic
+      const ok = await arsSave(id, { field_inspected_year: wasOn ? 0 : curYear() });
+      try { if (window.Leidsogn && Leidsogn.refresh) Leidsogn.refresh(); } catch (_) {}
+      toast(ok ? (wasOn ? '↩︎ Tekið úr vinnslu' : '🔵 Sent í vinnslu — skýrsla eftir') : '⚠ Villa við vistun');
+      renderList(); renderPins();
+    }));
 
     const drive = document.getElementById('_bs-drive');
     if (drive) {
@@ -414,11 +433,12 @@
     const monthName = (m >= 1 && m <= 12) ? MONTHS_IS[m - 1] : '';
     const insYear = yearOf(x.ars);
     const nUnits = unitCount(x);
+    const inVinnsla = (+((x.ars || {}).field_inspected_year) === curYear());  // 🔵 blue flag (þjónustuverkstæði)
     const extra = '🧯 ' + nUnits + ' tæki'
       + (monthName ? ' · 📅 ' + monthName : '')
       + ' · ' + (insYear ? 'síðast ' + insYear : 'óskoðað');
     return (
-      '<button class="_bs-card" type="button" data-id="' + c.id + '">' +
+      '<div class="_bs-card" role="button" tabindex="0" data-id="' + c.id + '">' +
         '<span class="_bs-dot" style="background:' + x.status.color + '"></span>' +
         '<span class="_bs-card-main">' +
           '<span class="_bs-card-name">' + (x.priority ? '🚩 ' : '') + esc(c.nafn || '—') + '</span>' +
@@ -429,8 +449,11 @@
           '</span>' +
           '<span class="_bs-card-extra">' + esc(extra) + '</span>' +
         '</span>' +
+        '<button class="_bs-check' + (inVinnsla ? ' on' : '') + '" type="button" data-id="' + c.id + '" ' +
+          'title="' + (inVinnsla ? 'Í vinnslu (þjónustuverkstæði) — smelltu til að taka úr' : 'Senda í vinnslu — þjónustuverkstæði (dettur úr leiðsögn)') + '" ' +
+          'aria-label="Senda í vinnslu">' + (inVinnsla ? '✓' : '') + '</button>' +
         '<span class="_bs-chev">›</span>' +
-      '</button>'
+      '</div>'
     );
   }
 
