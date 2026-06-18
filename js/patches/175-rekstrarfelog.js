@@ -287,12 +287,21 @@
       }
       if(a.firm!==b.firm)return a.firm<b.firm?-1:1; return (a.b.nafn||'')<(b.b.nafn||'')?-1:1;
     });
-    var totHtml='<div class="_ovr-totals" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+
-      '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:8px 14px;font-size:13px"><b>'+firms+'</b> félög · <b>'+tot.byg+'</b> byggingar</div>'+
-      '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:8px 14px;font-size:13px;color:#15803d">✓ <b>'+tot.done+'</b> með úttekt 2026</div>'+
-      '<div style="background:#fefce8;border:1px solid #fde68a;border-radius:10px;padding:8px 14px;font-size:13px;color:#b7791f">⏳ <b>'+tot.need+'</b> vantar 2026</div>'+
-      '<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:8px 14px;font-size:13px;color:#b45309">⚠ <b>'+tot.none+'</b> engin gögn</div>'+
-      '<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:8px 14px;font-size:13px;color:#b91c1c">⏰ <b>'+tot.overdue+'</b> skoðun liðin</div>'+
+    // 2026-06-18: calmer stat bar — one card with dot-coded stats + dividers,
+    // instead of five separate multicolour "sticker" boxes.
+    function stat(dot,num,lab,col){
+      return '<div style="display:flex;align-items:center;gap:8px">'+
+        (dot?'<span style="width:8px;height:8px;border-radius:50%;background:'+dot+';flex:0 0 auto"></span>':'')+
+        '<span style="font-size:18px;font-weight:800;color:'+(col||'#0f172a')+';font-variant-numeric:tabular-nums">'+num+'</span>'+
+        '<span style="font-size:12px;color:#64748b">'+lab+'</span></div>';
+    }
+    var sep='<span style="width:1px;height:26px;background:#eef1f5"></span>';
+    var totHtml='<div class="_ovr-totals" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px 18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(16,24,40,.04)">'+
+      stat('',firms,'félög')+sep+stat('#94a3b8',tot.byg,'byggingar')+sep+
+      stat('#1C8F60',tot.done,'með úttekt 2026','#15803d')+
+      stat('#D99206',tot.need,'vantar 2026','#b7791f')+
+      stat('#f97316',tot.none,'engin gögn','#b45309')+
+      stat('#ef4444',tot.overdue,'skoðun liðin','#b91c1c')+
       '</div>';
     function chip(key,label){ var on=f===key; return '<button class="_rf_fchip" data-f="'+key+'" style="padding:6px 12px;border:1px solid '+(on?'#0f172a':'#cbd5e1')+';background:'+(on?'#0f172a':'#fff')+';color:'+(on?'#fff':'#475569')+';border-radius:99px;font-size:12.5px;font-weight:600;cursor:pointer">'+label+'</button>'; }
     var chips='<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">'+
