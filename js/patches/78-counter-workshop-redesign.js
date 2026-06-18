@@ -449,9 +449,9 @@
     }
     const safeKey = key.replace(/'/g, "\\'");
     return `<div onclick="Workshop.toggleCo('${safeKey}')" style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;cursor:pointer">` +
-      '<div style="padding:9px 10px;display:flex;align-items:center;gap:8px">' +
+      '<div class="cw-wgroup-head" style="padding:9px 10px;display:flex;align-items:center;gap:8px">' +
         `<span style="color:#64748b;font-size:13px;width:14px;flex-shrink:0">${caret}</span>` +
-        '<div style="min-width:0;flex-shrink:1;width:140px">' +
+        '<div class="cw-wgroup-name" style="min-width:0;flex-shrink:1;width:140px">' +
           `<div style="font-size:13px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(co.name)}</div>` +
           `<div style="font-size:11px;color:#64748b">${co.jobs.length} verk · ${co.doneUnits}/${co.totalUnits} lokið</div>` +
         '</div>' +
@@ -512,7 +512,7 @@
           bottom +
       '</div>';
     }).join('');
-    return '<div style="display:flex;flex-wrap:wrap;gap:5px;flex:1;min-width:0">' + tiles + '</div>';
+    return '<div class="cw-wtiles" style="display:flex;flex-wrap:wrap;gap:5px;flex:1;min-width:0">' + tiles + '</div>';
   }
 
   // Inject CSS override: app.css forces #view-counter.active and #view-workshop.active
@@ -556,11 +556,13 @@
       '.ws-chk.done svg { display: none !important; }' +
       '@media (max-width: 900px) {' +
       '  #view-counter > div[style*="grid-template-columns:1fr 1fr 1fr"],' +
-      '  #view-workshop > div[style*="grid-template-columns:1fr 1fr"] {' +
+      '  #view-workshop > div[style*="grid-template-columns:2fr 1fr"] {' +
       '    grid-template-columns: 1fr !important;' +
       '    height: auto !important;' +
       '    overflow: auto !important;' +
       '  }' +
+      // clearance so the fixed "Eydd tæki" bar doesn't hide the last card
+      '  #view-workshop > div[style*="grid-template-columns:2fr 1fr"] { padding-bottom: 70px !important; }' +
       '  #counter-detail-modal > div, #workshop-detail-modal > div {' +
       '    max-width: 96vw !important;' +
       '  }' +
@@ -580,6 +582,12 @@
       '  .cw-rcard-name { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }' +
       '  .cw-rcard > button { flex: 1 1 auto !important; min-height: 40px !important; font-size: 13px !important; }' +
       '  .cw-rcard > select[data-shelf-dd] { min-height: 40px !important; }' +
+      // Verkstæði customer-group header: let the name use the full first row and
+      // the per-tæki tile strip wrap onto its own full-width row below it (the
+      // fixed 140px name + squeezed tiles looked cramped on a phone).
+      '  .cw-wgroup-head { flex-wrap: wrap !important; }' +
+      '  .cw-wgroup-name { width: auto !important; flex: 1 1 auto !important; }' +
+      '  .cw-wtiles { flex-basis: 100% !important; margin-top: 4px !important; }' +
       '}';
     document.head.appendChild(css);
   }
