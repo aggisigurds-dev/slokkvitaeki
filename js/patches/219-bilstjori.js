@@ -607,12 +607,38 @@
     window.App._bilstjoriPatched = true;
   }
 
+  // Own the #bilstjori / #drivers deep link: re-assert the driver view until we
+  // reach it OR the user interacts. This outlasts boot-time auto-landers — e.g.
+  // sala.js switches to Sala ~1.5s in; without this it stole the deep link and
+  // the URL ended up on #sala (the main site) instead of the driver app.
+  let _userTook = false;
+  ['pointerdown', 'mousedown', 'keydown', 'touchstart'].forEach(ev =>
+    window.addEventListener(ev, () => { _userTook = true; }, { capture: true, passive: true }));
+  function hashIsMine() {
+    const h = (location.hash || '').replace(/^#/, '').toLowerCase();
+    return h === NAV_KEY || h === 'drivers';
+  }
+  function openFromHash() {
+    if (!hashIsMine()) return;
+    const deadline = Date.now() + 5000;
+    (function tick() {
+      if (_userTook || Date.now() > deadline) return;          // user took over / gave up
+      try {
+        const active = document.querySelector('.view.active');
+        if (!active || active.id !== VIEW_ID) show();           // re-assert if a lander stole focus
+      } catch (_) {}
+      setTimeout(tick, 70);
+    })();
+  }
+
   function boot() {
     ensureView();
     injectSidebar();
     patchSwitchView();
     setTimeout(injectSidebar, 1400);
     setTimeout(injectSidebar, 3000);
+    openFromHash();                               // deep-link on first load
+    window.addEventListener('hashchange', openFromHash);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
