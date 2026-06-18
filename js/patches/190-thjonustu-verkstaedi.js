@@ -76,6 +76,15 @@
       '#' + VIEW_ID + ' .sv-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}',
       '@media(max-width:760px){#' + VIEW_ID + ' .sv-grid{grid-template-columns:1fr}}',
       '#' + VIEW_ID + ' .sv-list{display:flex;flex-direction:column;gap:10px;max-width:640px}',
+      // wide mode — full-width, short rows; note + actions on the right
+      '#' + VIEW_ID + ' .sv-list-wide{display:flex;flex-direction:column;gap:8px}',
+      '#' + VIEW_ID + ' .sv-card.wide{flex-direction:row;align-items:stretch;gap:16px;padding:11px 14px}',
+      '#' + VIEW_ID + ' .sv-wide-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;justify-content:center}',
+      '#' + VIEW_ID + ' .sv-wide-r{flex:0 0 300px;display:flex;flex-direction:column;gap:7px}',
+      '#' + VIEW_ID + ' .sv-wide-r .sv-note{flex:1;min-height:34px;margin:0}',
+      '#' + VIEW_ID + ' .sv-wide-r .sv-acts{border-top:0;padding-top:0}',
+      '#' + VIEW_ID + ' .sv-wide-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      '@media(max-width:720px){#' + VIEW_ID + ' .sv-card.wide{flex-direction:column}#' + VIEW_ID + ' .sv-wide-r{flex-basis:auto}}',
       '#' + VIEW_ID + ' .sv-card{background:#fff;border:1px solid #e2e8f0;border-left:4px solid #3b82f6;border-radius:13px;padding:13px 14px;box-shadow:0 1px 2px rgba(16,24,40,.04);display:flex;flex-direction:column;gap:10px;transition:opacity .15s}',
       '#' + VIEW_ID + ' .sv-card.haett{opacity:.55;border-left-color:#dc2626}',
       // stepper
@@ -234,6 +243,17 @@
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' + nameBlock(r, true) + metaChips(r) + '</div>' +
       stepper(r) + marks(r) + note(r) + aminningLine(r, 90) + vinnslaActs(r) + '</div>';
   }
+  // Í-vinnslu kort — wide mode (breið, lág röð; nóta + aðgerðir hægra megin)
+  function wideCard(r) {
+    return '<div class="sv-card wide' + (r.mark === 'haett' ? ' haett' : '') + '">' +
+      '<div class="sv-wide-l">' +
+        '<div class="sv-wide-row" style="justify-content:space-between">' + nameBlock(r, false) + metaChips(r) + '</div>' +
+        '<div class="sv-wide-row">' + stepPills(r) + marks(r) + '</div>' +
+        aminningLine(r) +
+      '</div>' +
+      '<div class="sv-wide-r">' + note(r) + vinnslaActs(r) + '</div>' +
+    '</div>';
+  }
 
   function viewEl() { return document.getElementById(VIEW_ID); }
   function ensureView() {
@@ -270,15 +290,15 @@
 
     // The blue work area — list (default) or cards.
     const body = b.vinnsla.length
-      ? (_mode === 'cards'
-          ? '<div class="sv-grid">' + b.vinnsla.map(gridCard).join('') + '</div>'
-          : '<div class="sv-list">' + b.vinnsla.map(listCard).join('') + '</div>')
+      ? (_mode === 'cards' ? '<div class="sv-grid">' + b.vinnsla.map(gridCard).join('') + '</div>'
+        : _mode === 'wide' ? '<div class="sv-list-wide">' + b.vinnsla.map(wideCard).join('') + '</div>'
+        : '<div class="sv-list">' + b.vinnsla.map(listCard).join('') + '</div>')
       : '<div style="color:#cbd5e1;font-size:13px;padding:26px;text-align:center;border:1px dashed #e2e8f0;border-radius:12px">Ekkert í vinnslu núna.</div>';
 
     v.innerHTML = '<div style="max-width:1080px;margin:0 auto">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">' +
         '<h1 style="font-size:22px;margin:0;font-weight:750">🔧 ÞjónustuVerkstæði</h1>' +
-        '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>☰ Listi</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>▦ Spjöld</button></div>' +
+        '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>☰ Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>▭ Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>▦ Spjöld</button></div>' +
       '</div>' +
       '<p style="color:#64748b;font-size:14px;margin:0 0 14px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · <span title="Samtals áætlaðar tekjur, m. vsk">áætl. ' + fmtSum(vinnslaSum) + '</span>' : '') + '.</p>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">' +
