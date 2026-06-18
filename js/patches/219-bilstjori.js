@@ -180,16 +180,16 @@
   // ── view container + styles ──────────────────────────────────────────────
   function ensureView() {
     if (document.getElementById(VIEW_ID)) return;
-    const sample = document.getElementById('view-leidsogn') ||
-                   document.getElementById('view-arsskodun') ||
-                   document.getElementById('view-counter');
-    if (!sample || !sample.parentElement) return;
+    injectStyles();
     const v = document.createElement('div');
     v.id = VIEW_ID;
-    v.className = (sample.className || 'view').replace(/\bactive\b/g, '').trim();
+    v.style.display = 'none';
     v.innerHTML = '<div id="_bs-root" class="_bs-root"></div>';
-    sample.parentElement.appendChild(v);
-    injectStyles();
+    // Append to <body> (NOT the content panel): the content panel is a
+    // transformed/positioned ancestor, which would confine our position:fixed
+    // overlay to the area right of the sidebar. On <body> it covers the whole
+    // viewport — sidebar included.
+    (document.body || document.documentElement).appendChild(v);
   }
 
   function injectStyles() {
@@ -198,7 +198,9 @@
     s.id = '_bs-styles';
     s.textContent = [
       // full-screen overlay — covers the sidebar + all app chrome
-      '#' + VIEW_ID + '{position:fixed!important;inset:0!important;z-index:200;background:var(--bg,#f5f5f7);overflow-y:auto;-webkit-overflow-scrolling:touch}',
+      '#' + VIEW_ID + '{position:fixed!important;inset:0!important;z-index:1000;background:var(--bg,#f5f5f7);overflow-y:auto;-webkit-overflow-scrolling:touch}',
+      'body.bs-active{overflow:hidden}',
+      'body.bs-active .topbar,body.bs-active nav.view-nav,body.bs-active .sidebar{display:none!important}',
       '._bs-root{display:flex;flex-direction:column;min-height:100%;max-width:720px;margin:0 auto;font-family:var(--font,Inter,system-ui,sans-serif);font-size:16px;color:var(--ink1,#0f1117);-webkit-tap-highlight-color:transparent}',
       '._bs-top{position:sticky;top:0;z-index:6;background:var(--sidebar-bg,#1a1f2e);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:2px solid var(--brand,#C93C1D)}',
       '._bs-top h1{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em;display:flex;align-items:center;gap:9px;flex:1}',
@@ -232,7 +234,7 @@
       '._bs-primary:active{background:var(--brand-dk,#a83018)}',
       '._bs-primary[disabled]{background:var(--ink4,#bcc3cc);box-shadow:none;cursor:default}',
       // company sheet
-      '._bs-sheet{position:fixed;inset:0;z-index:300;background:var(--bg,#f5f5f7);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .24s cubic-bezier(.32,.72,0,1);overflow:hidden}',
+      '._bs-sheet{position:fixed;inset:0;z-index:1100;background:var(--bg,#f5f5f7);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .24s cubic-bezier(.32,.72,0,1);overflow:hidden}',
       '._bs-sheet.in{transform:translateX(0)}',
       '._bs-sheet-top{position:sticky;top:0;background:var(--sidebar-bg,#1a1f2e);color:#fff;padding:12px;display:flex;align-items:center;gap:11px;border-bottom:2px solid var(--brand,#C93C1D)}',
       '._bs-back{min-width:48px;min-height:48px;border:none;border-radius:11px;background:rgba(255,255,255,.1);color:#fff;font-size:22px;line-height:1;cursor:pointer;flex:none}',
@@ -311,6 +313,7 @@
     document.querySelectorAll('[id^="view-"]').forEach(v => { v.style.display='none'; v.classList.remove('active'); });
     const v = document.getElementById(VIEW_ID);
     if (v) { v.style.display='block'; v.classList.add('active'); }
+    document.body.classList.add('bs-active');   // hides the sidebar (see CSS)
     document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === NAV_KEY));
     try { localStorage.setItem('lastView', NAV_KEY); } catch (_) {}
     try { if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
@@ -599,8 +602,8 @@
     window.App.switchView = function (view) {
       if (view === NAV_KEY) { show(); return; }
       const r = orig ? orig.apply(this, arguments) : undefined;
-      // leaving the driver app: make sure the overlay is hidden so the app shows
-      try { const v = document.getElementById(VIEW_ID); if (v) { v.style.display = 'none'; v.classList.remove('active'); } } catch (_) {}
+      // leaving the driver app: hide the overlay + restore the sidebar
+      try { const v = document.getElementById(VIEW_ID); if (v) { v.style.display = 'none'; v.classList.remove('active'); } document.body.classList.remove('bs-active'); } catch (_) {}
       return r;
     };
     for (const k in orig) { try { window.App.switchView[k] = orig[k]; } catch (_) {} }
