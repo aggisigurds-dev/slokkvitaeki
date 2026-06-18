@@ -125,7 +125,8 @@
       inp.remove();
       if (!file) return;
       a.textContent = '⏳';
-      const meta = await CompanyAttachments.upload(+coId, file, { year });
+      // kind:'skyrsla' → patch 111 also lights up the skoðað-marking for the year
+      const meta = await CompanyAttachments.upload(+coId, file, { year, kind: 'skyrsla' });
       if (meta) {
         // upload dispatches attachment-year-changed (year is set) → cells rebuild
         try { if (window.Toast && Toast.show) Toast.show('✓ Skýrsla tengd við ' + year); } catch (_) {}

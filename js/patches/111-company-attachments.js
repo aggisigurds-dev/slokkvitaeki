@@ -80,6 +80,28 @@
     all[String(coId)] = list;
     return await window.AppSettings.save({ [STORAGE_KEY]: all });
   }
+
+  // 2026-06-18: when an úttektarskýrsla is attached for a year, light up the
+  // "skoðað" marking for that company so the Fyrirtæki-í-þjónustu status pill
+  // matches reality — the done state is EVIDENCED by the report, not a loose
+  // manual flag (this is the Heimaleiga fix: attach the right report → it
+  // counts as serviced). Only bumps forward (never un-marks a newer year).
+  async function markInspectedFromReport(coId, year) {
+    if (!window.AppSettings || !window.AppSettings.save) return;
+    const y = parseInt(year, 10);
+    if (!y) return;
+    const ARS = 'arsskodun_customers';
+    const all = (window.AppSettings.path && window.AppSettings.path(ARS)) || {};
+    const cur = Object.assign({}, all[String(coId)] || {});
+    const existing = parseInt(cur.last_year_inspected, 10) || 0;
+    if (y <= existing) return;            // already marked this year or newer
+    cur.co_id = coId;
+    cur.last_year_inspected = String(y);
+    // AppSettings.save deep-merges, so this only touches last_year_inspected.
+    await window.AppSettings.save({ [ARS]: { [String(coId)]: cur } });
+    try { document.dispatchEvent(new CustomEvent('arsskodun-marking-changed', { detail: { coId, year: y } })); } catch (_) {}
+    try { if (window.Arsskodun && Arsskodun.render) Arsskodun.render(); } catch (_) {}
+  }
   async function getPublicUrl(path) {
     const SB = getSB();
     if (!SB) return null;
@@ -125,12 +147,19 @@
         content_type: file.type || '',
         size: file.size,
         uploaded_at: new Date().toISOString(),
-        year: ym ? ym[1] : null
+        year: ym ? ym[1] : null,
+        // explicit doc kind from the year-grid attach buttons ('skyrsla' /
+        // 'reikningur'); null when uploaded via the generic picker.
+        kind: (opts && opts.kind) || null
       };
       const list = getCompanyAttachments(coId);
       list.unshift(meta);
       await saveCompanyAttachments(coId, list);
       if (meta.year) { try { document.dispatchEvent(new CustomEvent('attachment-year-changed')); } catch (_) {} }
+      // úttektarskýrsla attached → light up the skoðað-marking for that year.
+      if (meta.year && (opts && opts.kind) === 'skyrsla') {
+        try { await markInspectedFromReport(coId, meta.year); } catch (_) {}
+      }
       return meta;
     } catch (e) {
       alert('Villa: ' + (e.message || String(e)));
@@ -216,9 +245,12 @@
       const yr = (f.year && f.year !== '0') ? String(f.year) : ((nm.match(/\b(20[2-3][0-9])\b/) || [])[1] || null);
       if (!yr) return;
       if (!(f.drive_url || f.drive_id || f.path)) return; // skráningar án skjals sleppt
-      let type = null;
-      if (/reikn|r-?\s?\d{3,}/i.test(nm)) type = 'reikningur';
-      else if (/sko(ð|d)un|(ú|u)ttekt|sk(ý|y)rsl/i.test(nm)) type = 'skyrsla';
+      // explicit kind (from the cell attach buttons) wins over name-sniffing
+      let type = (f.kind === 'skyrsla' || f.kind === 'reikningur') ? f.kind : null;
+      if (!type) {
+        if (/reikn|r-?\s?\d{3,}/i.test(nm)) type = 'reikningur';
+        else if (/sko(ð|d)un|(ú|u)ttekt|sk(ý|y)rsl/i.test(nm)) type = 'skyrsla';
+      }
       if (!type) return;
       (cell[yr] = cell[yr] || {});
       (cell[yr][type] = cell[yr][type] || []).push(f);
@@ -233,15 +265,19 @@
         'style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:8px;cursor:pointer;margin:2px 2px 0 0;' +
         'background:' + c.bg + ';border:1px solid ' + c.bd + ';color:' + c.col + '">' + c.ico + ' ' + esc(c.lab) + '</button>';
     };
-    const dash = '<span style="color:#cbd5e1">—</span>';
+    // Per-cell attach/change button — uploads the picked file pre-tagged with
+    // (year, kind). Attaching an úttektarskýrsla lights up the skoðað-marking.
+    const addBtn = (y, kind, has) => '<button class="_cat-cell-add" data-year="' + y + '" data-kind="' + kind + '" ' +
+      'title="' + (has ? 'Bæta við / skipta um ' : 'Tengja ') + (kind === 'skyrsla' ? 'úttektarskýrslu' : 'reikning') + ' fyrir ' + y + '" ' +
+      'style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;margin:2px 2px 0 0;background:#fff;border:1px dashed ' + (has ? '#cbd5e1' : '#94a3b8') + ';color:#64748b">＋' + (has ? '' : ' Tengja') + '</button>';
     const rows = YEARS.map(y => {
       const sk = (cell[y] && cell[y].skyrsla) || [];
       const re = (cell[y] && cell[y].reikningur) || [];
       const isCur = (y === new Date().getFullYear());
       return '<tr style="border-top:1px solid #f1f5f9">' +
         '<td style="padding:8px 12px;font-weight:700;color:' + (isCur ? '#1d4ed8' : '#0f172a') + '">' + y + '</td>' +
-        '<td style="padding:6px 12px">' + (sk.length ? sk.map(f => chip(f, 'skyrsla')).join('') : dash) + '</td>' +
-        '<td style="padding:6px 12px">' + (re.length ? re.map(f => chip(f, 'reikningur')).join('') : dash) + '</td>' +
+        '<td style="padding:6px 12px">' + sk.map(f => chip(f, 'skyrsla')).join('') + addBtn(y, 'skyrsla', sk.length) + '</td>' +
+        '<td style="padding:6px 12px">' + re.map(f => chip(f, 'reikningur')).join('') + addBtn(y, 'reikningur', re.length) + '</td>' +
       '</tr>';
     }).join('');
     return '<div style="margin-bottom:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">' +
@@ -317,14 +353,24 @@
   function wireSection(section, coId) {
     const fileInput = section.querySelector('._cat-file-input');
     const dropzone = section.querySelector('._cat-dropzone');
+    // pending attach context from a year-grid cell button ({year, kind})
+    let _pendingCtx = null;
 
     section.addEventListener('click', async e => {
       const upBtn = e.target.closest('._cat-upload');
+      const cellAdd = e.target.closest('._cat-cell-add');
       const openBtn = e.target.closest('._cat-open');
       const dlBtn = e.target.closest('._cat-download, ._cat-download2');
       const delBtn = e.target.closest('._cat-del');
 
-      if (upBtn) { e.stopPropagation(); fileInput.click(); return; }
+      if (upBtn) { e.stopPropagation(); _pendingCtx = null; fileInput.click(); return; }
+
+      if (cellAdd) {
+        e.stopPropagation();
+        _pendingCtx = { year: cellAdd.dataset.year, kind: cellAdd.dataset.kind };
+        fileInput.click();
+        return;
+      }
 
       if (openBtn) {
         e.stopPropagation();
@@ -373,7 +419,8 @@
     fileInput.addEventListener('change', async () => {
       const file = fileInput.files && fileInput.files[0];
       if (!file) return;
-      await doUpload(file);
+      const ctx = _pendingCtx; _pendingCtx = null;
+      await doUpload(file, ctx);
       fileInput.value = '';
     });
 
@@ -402,13 +449,16 @@
       });
     }
 
-    async function doUpload(file) {
+    async function doUpload(file, opts) {
       const upBtn = section.querySelector('._cat-upload');
       if (upBtn) { upBtn.disabled = true; upBtn.textContent = '⏳ Hleður upp...'; }
-      const result = await uploadAttachment(coId, file);
+      const result = await uploadAttachment(coId, file, opts);
       if (upBtn) { upBtn.disabled = false; upBtn.textContent = '+ Hlaða inn skjali'; }
       if (result) {
-        if (window.Toast && Toast.show) Toast.show('✓ Skjal hlaðið inn');
+        const msg = (opts && opts.kind === 'skyrsla') ? '✓ Úttektarskýrsla tengd ' + (opts.year || '')
+                  : (opts && opts.kind === 'reikningur') ? '✓ Reikningur tengdur ' + (opts.year || '')
+                  : '✓ Skjal hlaðið inn';
+        if (window.Toast && Toast.show) Toast.show(msg.trim());
         refreshSection(section, coId);
       }
     }
