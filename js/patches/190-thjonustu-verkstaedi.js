@@ -155,13 +155,15 @@
     await AppSettings.save({ [KEY]: Object.assign({}, map, { [String(coId)]: e }) });
     if (!(opts && opts.silent)) render();   // note edits save silently (keep focus)
   }
-  const startVinnsla = id => setFlag(id, { field_inspected_year: curYear, _delete: ['last_year_inspected'] });
-  const markBuid     = id => setFlag(id, { last_year_inspected: curYear, _delete: ['field_inspected_year'] });
-  const reopen       = id => setFlag(id, { _delete: ['field_inspected_year', 'last_year_inspected'] });
-  // Afmerkja: andhverfan á bláa hnappnum — fjarlægir bara vinnslu-flaggið svo
-  // kortið dettur úr 🔵 dálknum (fer í ⏳ Á dagskrá ef skoðunarmánuður er kominn,
-  // annars alveg af borðinu). Heldur last_year_inspected ef það er til (saga).
-  const unVinnsla    = id => setFlag(id, { _delete: ['field_inspected_year'] });
+  // NB: AppSettings.save() DEEP-MERGES — deleting a key does NOT propagate to
+  // the server (see patches 157/158). So every transition must SET the flags to
+  // 0 (which all readers treat as "not set" via `|| 0`), never rely on _delete.
+  const startVinnsla = id => setFlag(id, { field_inspected_year: curYear, last_year_inspected: 0 });
+  const markBuid     = id => setFlag(id, { last_year_inspected: curYear, field_inspected_year: 0 });
+  const reopen       = id => setFlag(id, { field_inspected_year: 0, last_year_inspected: 0 });
+  // Afmerkja: andhverfan á bláa hnappnum — núllar vinnslu-flaggið svo kortið
+  // dettur úr 🔵 (fer í ⏳ Á dagskrá ef skoðunarmánuður er kominn, annars af borðinu).
+  const unVinnsla    = id => setFlag(id, { field_inspected_year: 0 });
 
   function openCompany(id) { if (window.VidskDetail && VidskDetail.show) return VidskDetail.show(id); if (window.Companies && Companies.openDetail) return Companies.openDetail(id); }
   function openReport(id) { if (window.CompanyInspectionReport && CompanyInspectionReport.open) return CompanyInspectionReport.open(id); if (window.VisitReport && VisitReport.open) return VisitReport.open(id); openCompany(id); }
