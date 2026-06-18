@@ -100,7 +100,7 @@
       const a = ars[String(c.id)], b = bru[String(c.id)];
       if (!inService(c, a, b)) return;
       out.push({ co: c, ars: a || {}, status: statusFor(a), coord: coordOf(c, gc),
-                 priority: +((a || {}).priority) > 0, urgent: (a && a.urgent) ? String(a.urgent).trim() : '' });
+                 priority: +((a || {}).priority) || 0, urgent: (a && a.urgent) ? String(a.urgent).trim() : '' });
     });
     return out;
   }
@@ -131,7 +131,7 @@
       (x.co.heimilisfang || '').toLowerCase().includes(q) ||
       String(x.co.kennitala || '').replace(/\D/g,'').includes(q.replace(/\D/g,'')));
     list.sort((a, b) =>
-      (a.priority === b.priority ? 0 : (a.priority ? -1 : 1)) ||
+      ((+b.priority || 0) - (+a.priority || 0)) ||   // higher forgangur first (3→2→1→0)
       ((DUE[a.status.key] ?? 9) - (DUE[b.status.key] ?? 9)) ||
       String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
     return { ready:true, list };
@@ -230,6 +230,11 @@
       '._bs-card{display:flex;gap:13px;align-items:center;width:100%;text-align:left;background:var(--surface,#fff);border:1px solid var(--brd,#e4e6ea);border-radius:var(--radius-lg,14px);padding:14px 15px;min-height:64px;cursor:pointer;box-shadow:var(--shadow-sm,0 1px 3px rgba(0,0,0,.06));transition:background .12s,box-shadow .12s}',
       '._bs-card:active{background:var(--surface2,#f8f8fa);box-shadow:var(--shadow-md,0 4px 12px rgba(0,0,0,.08))}',
       '._bs-dot{width:12px;height:12px;border-radius:50%;flex:none;box-shadow:0 0 0 3px rgba(0,0,0,.04)}',
+      // drive-order marker — number = recommended order; colour = forgangur level
+      '._bs-seq{width:32px;height:32px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14.5px;font-weight:800;color:#fff;background:#94a3b8;font-variant-numeric:tabular-nums;box-shadow:0 0 0 3px rgba(0,0,0,.04)}',
+      '._bs-seq.p1{background:#16a34a}._bs-seq.p2{background:#d97706}._bs-seq.p3{background:#dc2626}',
+      // unified status pill (matches Ársskoðun)
+      '._bs-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;line-height:1;padding:4px 10px;border-radius:999px;border:1px solid;white-space:nowrap}',
       '._bs-card-main{flex:1;min-width:0}',
       '._bs-card-name{font-weight:600;font-size:16px;line-height:1.3;color:var(--ink1,#0f1117);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '._bs-card-sub{font-size:13.5px;color:var(--ink3,#8891a0);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
@@ -399,7 +404,7 @@
     const { ready, list } = currentList();
     if (!ready) { box.innerHTML = '<div class="_bs-empty">⏳ Sæki gögn…</div>'; return; }
     box.innerHTML = list.length
-      ? list.map(cardHtml).join('')
+      ? list.map((x, i) => cardHtml(x, i + 1)).join('')
       : '<div class="_bs-empty">' + (_seg === 'today' ? '✅ Ekkert áríðandi eftir í dag.' : 'Engin fyrirtæki fundust.') + '</div>';
     box.querySelectorAll('._bs-card').forEach(card => card.addEventListener('click', e => {
       if (e.target.closest('._bs-check')) return;           // blue check handled below
@@ -427,24 +432,44 @@
     }
   }
 
-  function cardHtml(x) {
+  // Unified status pill — same colour system as Ársskoðun, mapped from the
+  // statusFor() key. Mobile-clean: colour + label, no icon (the drive-order
+  // marker on the left already carries the forgangur).
+  const _BS_PILL = {
+    done:        ['#f0fdf4', '#bbf7d0', '#15803d'],
+    overdue:     ['#fef2f2', '#fecaca', '#b91c1c'],
+    duenow:      ['#fffbeb', '#fde68a', '#a16207'],
+    in_progress: ['#eff6ff', '#bfdbfe', '#1d4ed8'],
+    scheduled:   ['#f1f5f9', '#cbd5e1', '#475569'],
+    unknown:     ['#f1f5f9', '#cbd5e1', '#475569']
+  };
+  function statusPill(st) {
+    const c = _BS_PILL[st.key] || _BS_PILL.unknown;
+    return '<span class="_bs-pill" style="background:' + c[0] + ';border-color:' + c[1] + ';color:' + c[2] + '">' + esc(st.label) + '</span>';
+  }
+
+  function cardHtml(x, seq) {
     const c = x.co;
     const m = +((x.ars || {}).inspect_month) || 0;
     const monthName = (m >= 1 && m <= 12) ? MONTHS_IS[m - 1] : '';
     const insYear = yearOf(x.ars);
     const nUnits = unitCount(x);
     const inVinnsla = (+((x.ars || {}).field_inspected_year) === curYear());  // 🔵 blue flag (þjónustuverkstæði)
+    const lvl = +x.priority || 0;
     const extra = '🧯 ' + nUnits + ' tæki'
       + (monthName ? ' · 📅 ' + monthName : '')
       + ' · ' + (insYear ? 'síðast ' + insYear : 'óskoðað');
+    // Left marker: in "Dagsins verk" it's the drive-order number; in "Allir" it's
+    // a forgangur badge (! when set, · otherwise). Colour = forgangur level.
+    const mark = (_seg === 'today') ? (seq || '·') : (lvl > 0 ? '!' : '·');
     return (
       '<div class="_bs-card" role="button" tabindex="0" data-id="' + c.id + '">' +
-        '<span class="_bs-dot" style="background:' + x.status.color + '"></span>' +
+        '<span class="_bs-seq p' + lvl + '" title="' + (lvl ? 'Forgangur ' + lvl : 'Enginn forgangur') + '">' + mark + '</span>' +
         '<span class="_bs-card-main">' +
-          '<span class="_bs-card-name">' + (x.priority ? '🚩 ' : '') + esc(c.nafn || '—') + '</span>' +
+          '<span class="_bs-card-name">' + esc(c.nafn || '—') + '</span>' +
           '<span class="_bs-card-sub">' + (c.heimilisfang ? '📍 ' + esc(c.heimilisfang) : '<span style="color:var(--brand,#C93C1D)">⚠ Ekkert heimilisfang</span>') + '</span>' +
           '<span class="_bs-card-meta">' +
-            '<span style="color:' + x.status.color + '">' + esc(x.status.label) + '</span>' +
+            statusPill(x.status) +
             (x.urgent ? '<span class="_bs-badge">🚨 Skilaboð</span>' : '') +
           '</span>' +
           '<span class="_bs-card-extra">' + esc(extra) + '</span>' +

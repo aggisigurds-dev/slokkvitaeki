@@ -108,6 +108,22 @@
     if (m > 0)         return { key:'scheduled',   color:'#475569', label:'Á dagskrá: ' + (MONTHS_IS[m-1] || '?') };
     return { key:'unknown', color:'#94a3b8', label:'Engin dagsetning' };
   }
+  // Unified status pill (same colour system as Ársskoðun / Bílstjóri) — mapped
+  // from the statusFor() key so the whole driver flow looks the same.
+  const _LDS_PILL = {
+    done:        ['#f0fdf4', '#bbf7d0', '#15803d'],
+    overdue:     ['#fef2f2', '#fecaca', '#b91c1c'],
+    duenow:      ['#fffbeb', '#fde68a', '#a16207'],
+    in_progress: ['#eff6ff', '#bfdbfe', '#1d4ed8'],
+    scheduled:   ['#f1f5f9', '#cbd5e1', '#475569'],
+    unknown:     ['#f1f5f9', '#cbd5e1', '#475569']
+  };
+  function statusPill(st) {
+    const c = _LDS_PILL[(st && st.key)] || _LDS_PILL.unknown;
+    return '<span style="display:inline-flex;align-items:center;font-size:10.5px;font-weight:700;line-height:1;'
+      + 'padding:4px 9px;border-radius:999px;white-space:nowrap;background:' + c[0] + ';border:1px solid ' + c[1] + ';color:' + c[2] + '">'
+      + esc((st && st.label) || '') + '</span>';
+  }
 
   // ── Resolve a geocode for a fyrirtæki, trying a few key variants ────────
   // 2026-05-25: the server-side geocode_cache uses short keys like
@@ -273,8 +289,8 @@
         '<div style="font-weight:700;font-size:14px;color:#0f172a">' + esc(c.nafn || '—') + '</div>' +
         (c.kennitala ? '<div style="font-size:11px;color:#94a3b8;font-family:monospace">kt. ' + esc(fmtKt(c.kennitala)) + '</div>' : '') +
         (c.heimilisfang ? '<div style="margin-top:5px;color:#475569">📍 ' + esc(c.heimilisfang) + '</div>' : '') +
-        '<div style="margin-top:5px;color:' + item.status.color + ';font-weight:600">' + esc(item.status.label) + '</div>' +
-        '<div style="font-size:11px;color:#64748b;margin-top:2px">Skoðunarmánuður: ' + esc(monthLabel) + '</div>' +
+        '<div style="margin-top:7px">' + statusPill(item.status) + '</div>' +
+        '<div style="font-size:11px;color:#64748b;margin-top:4px">Skoðunarmánuður: ' + esc(monthLabel) + '</div>' +
         // Priority mark — same 4-state cycle button as Fyrirtæki í Þjónustu,
         // shared store (patch 175) so it syncs across both views.
         '<div style="display:flex;align-items:center;gap:7px;margin-top:9px">' +
@@ -324,8 +340,7 @@
       const yrBadge = insYear ? '<span title="Síðast skoðað" style="font-weight:700;color:' + (insYear >= curYear ? '#16a34a' : '#94a3b8') + '">’' + String(insYear).slice(-2) + '</span>' : '';
       return (
         '<div class="_lds-due-row" data-co-id="' + c.id + '" style="display:flex;align-items:flex-start;gap:10px;padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:12.5px;cursor:pointer;transition:background .1s" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'transparent\'">' +
-          '<span style="width:10px;height:10px;border-radius:50%;background:' + item.status.color + ';flex-shrink:0;margin-top:3px"></span>' +
-          ((window.Priority && window.Priority.btnHtml(c.id, 18)) || '') +
+          '<span style="margin-top:1px">' + ((window.Priority && window.Priority.btnHtml(c.id, 18)) || '') + '</span>' +
           '<div style="flex:1;min-width:0">' +
             '<div style="font-weight:600;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c.nafn || '—') + '</div>' +
             '<div style="font-size:11px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
@@ -340,8 +355,8 @@
             '</div>' +
             (noteOne ? '<div style="font-size:10.5px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:5px;padding:2px 6px;margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(noteOne) + '</div>' : '') +
           '</div>' +
-          '<div style="text-align:right;flex-shrink:0;margin-top:1px">' +
-            '<div style="font-size:11px;font-weight:700;color:' + item.status.color + '">' + esc(item.status.label) + '</div>' +
+          '<div style="flex-shrink:0;margin-top:1px;display:flex;flex-direction:column;align-items:flex-end;gap:3px">' +
+            statusPill(item.status) +
             '<div style="font-size:10.5px;color:#94a3b8">' + esc(monthLabel) + '</div>' +
           '</div>' +
           '<div style="display:flex;gap:4px;flex-shrink:0;margin-top:1px">' +
