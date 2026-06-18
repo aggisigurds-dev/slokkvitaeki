@@ -84,6 +84,21 @@
     r.setProperty('--thm-font', FONTS[s.font] || FONTS.system);
     document.documentElement.setAttribute('data-thm-density', s.density);
     document.documentElement.setAttribute('data-thm-preset', s.preset);
+
+    // ── Stage 2: drive the app's OWN design tokens (css/app.css :root) from the
+    // theme, so the whole app — which already references --brand/--ink1/--bg/--brd
+    // everywhere — re-skins in one shot. Colours only (typography/layout left to
+    // the app) so light themes stay safe. Inline-styled one-off pages keep their
+    // look until individually migrated.
+    r.setProperty('--brand', t.primary);
+    r.setProperty('--brand-dk', t.brand);
+    r.setProperty('--ink1', t.ink);
+    r.setProperty('--ink2', t.muted);
+    r.setProperty('--bg', t.bg);
+    r.setProperty('--bg2', t.card);
+    r.setProperty('--surface', t.card);
+    r.setProperty('--brd', t.line);
+    r.setProperty('--sidebar-active-border', t.primary);
   }
   apply(S); // apply ASAP on script load (before most views render)
 
