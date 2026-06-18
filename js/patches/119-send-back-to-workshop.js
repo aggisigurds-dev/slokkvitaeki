@@ -80,6 +80,10 @@
   // ── Inject "↩ Verkstæði" button into ready cards ──────────────────────
   function injectButton(card) {
     if (!card || card.dataset._sbwDone === '1') return;
+    // Patch 78 (counter-workshop redesign) now renders its OWN inline
+    // "← Verkstæði" button (._sbw-inline) on ready cards. Skip those so we
+    // don't end up with two send-back buttons side by side.
+    if (card.querySelector('._sbw-inline')) { card.dataset._sbwDone = '1'; return; }
     // Find the "Sótt ✓" sibling button to position next to it
     const sottBtn = card.querySelector('button[onclick*="markCollected"]');
     if (!sottBtn) return;

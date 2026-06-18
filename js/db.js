@@ -208,7 +208,7 @@ var DB = {
       // units MUST be preserved — the pickup flow keys off `status==='broken'`
       // to default-uncheck them in the Sókn modal. Previously this loop
       // overwrote broken→done, silently re-delivering bad units.
-      if (status === 'ready') job.units.forEach(function(u) { if (u.status !== 'broken') u.status = 'done'; });
+      if (status === 'ready') job.units.forEach(function(u) { if (u.status !== 'broken' && u.status !== 'eytt') u.status = 'done'; });
     }
     App.refreshAll();
   },
@@ -225,7 +225,7 @@ var DB = {
       // Tilbúið twice — once on the tile, once on the job card. Broken
       // units count as "accounted for"; pickup flow handles non-delivery.
       var allAccountedFor = (status === 'done' || status === 'broken')
-        && job.units.every(function(u) { return u.status === 'done' || u.status === 'broken'; });
+        && job.units.every(function(u) { return u.status === 'done' || u.status === 'broken' || u.status === 'eytt'; });
       if (allAccountedFor && job.status !== 'ready') {
         await this.updateJobStatus(jobId, 'ready');
         return;
