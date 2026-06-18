@@ -54,6 +54,14 @@
   // View mode — "list" (gamla miðjan, sjálfgefið / uppáhald) eða "cards".
   let _mode = (function () { try { return localStorage.getItem('sv_mode') || 'list'; } catch (_) { return 'list'; } })();
   function setMode(m) { _mode = m; try { localStorage.setItem('sv_mode', m); } catch (_) {} render(); }
+  // Röðun á Í-vinnslu listanum — "name" | "revenue" | "marked".
+  let _sort = (function () { try { return localStorage.getItem('sv_sort') || 'name'; } catch (_) { return 'name'; } })();
+  function setSort(s) { _sort = s; try { localStorage.setItem('sv_sort', s); } catch (_) {} render(); }
+  const SORTERS = {
+    name:    (x, y) => String(x.nafn).localeCompare(y.nafn, 'is'),
+    revenue: (x, y) => ((+y.tekjur || 0) - (+x.tekjur || 0)) || String(x.nafn).localeCompare(y.nafn, 'is'),
+    marked:  (x, y) => ((+y.markedAt || 0) - (+x.markedAt || 0)) || String(x.nafn).localeCompare(y.nafn, 'is'),
+  };
   // Collapsible hliðar-dálkar — collapsed by default ("collapse both of each side").
   let _openDagskra = false, _openBuid = false;
 
@@ -143,6 +151,7 @@
         steps: a[STEPS_KEY] || {},
         mark: a.sv_mark || '',          // bráðabirgða-merking (single-select)
         note: a.sv_note || '',          // bráðabirgða-minnispunktur (frítexti)
+        markedAt: +a.sv_mark_at || 0,   // hvenær síðast merkt (fyrir "Nýlega merkt" röðun)
         units: +info._unit_count || 0,
         tekjur: +info.estimated_yearly || 0
       };
@@ -266,6 +275,7 @@
     ensureView(); injectStyles();
     const v = viewEl(); if (!v) return;
     const b = buckets();
+    b.vinnsla.sort(SORTERS[_sort] || SORTERS.name);   // röðun valin af notanda
     const fmtSum = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.', ',') + ' m.kr.' : (n > 0 ? Math.round(n / 1000) + ' þ.kr.' : '');
     const vinnslaSum = b.vinnsla.reduce((s, r) => s + (+r.tekjur || 0), 0);
 
@@ -305,11 +315,19 @@
         '<span class="sv-chip" style="background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;font-weight:800">🔵 <span class="n" style="color:#1d4ed8">' + b.vinnsla.length + '</span> í vinnslu</span>' +
         '<span class="sv-chip" data-toggle="dagskra">⏳ <span class="n">' + b.dagskra.length + '</span> á dagskrá ' + (_openDagskra ? '▾' : '▸') + '</span>' +
         '<span class="sv-chip" data-toggle="buid">✅ <span class="n">' + b.buid.length + '</span> búin í ár ' + (_openBuid ? '▾' : '▸') + '</span>' +
+        '<select class="sv-sort" title="Raða Í-vinnslu listanum" style="margin-left:auto;font:inherit;font-size:12.5px;font-weight:600;color:#475569;border:1px solid #e2e8f0;border-radius:99px;padding:7px 30px 7px 13px;background:#fff;cursor:pointer">' +
+          '<option value="name"' + (_sort === 'name' ? ' selected' : '') + '>↕ Nafn (A–Ö)</option>' +
+          '<option value="revenue"' + (_sort === 'revenue' ? ' selected' : '') + '>↕ Hæstu tekjur</option>' +
+          '<option value="marked"' + (_sort === 'marked' ? ' selected' : '') + '>↕ Nýlega merkt</option>' +
+        '</select>' +
       '</div>' +
       dagskraDrawer + buidDrawer + body + '</div>';
 
     // view-mode toggle
     v.querySelectorAll('.sv-seg button').forEach(bn => bn.addEventListener('click', () => setMode(bn.dataset.mode)));
+    // sort
+    const sortSel = v.querySelector('.sv-sort');
+    if (sortSel) sortSel.addEventListener('change', e => setSort(e.target.value));
     // collapse/expand sides
     v.querySelectorAll('.sv-chip[data-toggle]').forEach(ch => ch.addEventListener('click', () => {
       if (ch.dataset.toggle === 'dagskra') _openDagskra = !_openDagskra; else _openBuid = !_openBuid;
@@ -340,7 +358,9 @@
       e.stopPropagation();
       const id = +bn.dataset.id, k = bn.dataset.mark;
       const cur = (arsMap()[String(id)] || {}).sv_mark || '';
-      setFlag(id, { sv_mark: cur === k ? '' : k });
+      const next = cur === k ? '' : k;
+      // stimpla hvenær merkt (fyrir "Nýlega merkt" röðun); núllað þegar afmerkt
+      setFlag(id, { sv_mark: next, sv_mark_at: next ? Date.now() : 0 });
     }));
     // note — save on blur, no re-render (keep focus while typing)
     v.querySelectorAll('.sv-note').forEach(ta => ta.addEventListener('change', e => {
