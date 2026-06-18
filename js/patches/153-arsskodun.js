@@ -822,7 +822,7 @@
       const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
       const dot = isDone ? '#22c55e' : (isFieldOnly ? '#3b82f6' : (isSkipped ? '#f59e0b' : (isOverdue ? '#ef4444' : '#94a3b8')));
       const statusLabel = isDone ? ('Skoðað ' + curYear)
-        : (isFieldOnly ? 'Í vinnslu'
+        : (isFieldOnly ? 'Í skýrslugerð'
         : (isSkipped ? ('Sleppt · síðast ' + lastYr)
         : (isOverdue ? 'Útrunnið' : 'Á dagskrá')));
       const phone = [c.simi, c.farsimi].filter(Boolean).join(' / ');
