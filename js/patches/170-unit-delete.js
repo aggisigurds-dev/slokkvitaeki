@@ -44,7 +44,10 @@
   function getCompanyId() {
     const main = document.getElementById('companies-main');
     if (!main) return null;
-    const editBtn = main.querySelector('button[onclick*="Companies.openEdit"]');
+    // 2026-06: stable data-co-id first (see patch 129).
+    const idEl = main.querySelector('[data-co-id]:not(._cat-section)');
+    if (idEl) { const v = idEl.getAttribute('data-co-id'); if (v && /^\d+$/.test(v)) return +v; }
+    const editBtn = main.querySelector('button._co-edit-anchor[onclick*="Companies.openEdit"]') || main.querySelector('button[onclick*="Companies.openEdit"]');
     if (!editBtn) return null;
     const m = editBtn.getAttribute('onclick').match(/openEdit\((\d+)/);
     return m ? +m[1] : null;
