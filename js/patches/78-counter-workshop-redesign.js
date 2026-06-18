@@ -31,6 +31,11 @@
   // Detail views still get the full num via DB.getJob(id).
   function dnum(n) { return esc(String(n == null ? '' : n).replace(/-V\d+$/, '')); }
 
+  // A tæki soft-deleted via "🗑 Eyða" gets status 'eytt'. Hide it from the
+  // workshop everywhere (tiles, chips, counts); it lives only in the
+  // "Eydd tæki" archive at the bottom of Verkstæði until restored.
+  function live(units) { return (units || []).filter(u => u && u.status !== 'eytt'); }
+
   // ----- Counter (Afgreiðsla) -----
 
   function counterRender() {
@@ -135,8 +140,9 @@
       '<div onclick="Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
         `<div style="font-family:var(--mono,monospace);font-size:11px;color:#059669;font-weight:600">${dnum(j.num)}</div>` +
         `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
-        `<div style="font-size:11px;color:#059669">${j.units ? j.units.length : 0} slökkvitæki</div>` +
+        `<div style="font-size:11px;color:#059669">${live(j.units).length} slökkvitæki</div>` +
       '</div>' +
+      `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;margin-right:6px;padding:4px 9px;background:#fff;border:1px solid #fbbf24;color:#92400e;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
       `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt ✓</button>` +
     '</div>';
   }
@@ -154,8 +160,9 @@
           return '<div style="display:flex;gap:8px;padding:7px 8px;border-radius:8px;margin-bottom:3px;background:#f0fdf4;border:1px solid #bbf7d0">' +
             '<div onclick="event.stopPropagation();Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
               `<div style="font-family:var(--mono,monospace);font-size:10px;color:#059669;font-weight:600">${dnum(j.num)}</div>` +
-              `<div style="font-size:12px;color:#0f172a;margin:1px 0">${j.units ? j.units.length : 0} slökkvitæki</div>` +
+              `<div style="font-size:12px;color:#0f172a;margin:1px 0">${live(j.units).length} slökkvitæki</div>` +
             '</div>' +
+            `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;margin-right:5px;padding:3px 8px;background:#fff;border:1px solid #fbbf24;color:#92400e;border-radius:99px;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
             `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt ✓</button>` +
           '</div>';
         }
@@ -207,6 +214,48 @@
     return _contractSet.has((name || '').trim().toLowerCase());
   }
 
+  // 2026-06-18: "Eydd tæki" — soft-deleted units (verklidur.status='eytt')
+  // collapsed into a bottom bar so the office can review/restore later.
+  function archiveBar() {
+    const jobs = (window.DB && DB.getWorkshopJobs ? DB.getWorkshopJobs() : []);
+    const all  = (window.DB && DB.cache && DB.cache.jobs) ? DB.cache.jobs : jobs;
+    const items = [];
+    all.forEach(j => (j.units || []).forEach(u => {
+      if (u && u.status === 'eytt') items.push({ job: j, unit: u });
+    }));
+    const open = Workshop._archiveOpen === true;
+    let list;
+    if (!items.length) {
+      list = '<div style="padding:14px 16px;color:#94a3b8;font-size:12px;text-align:center">Engin eydd tæki.</div>';
+    } else {
+      list = items.map(({ job, unit }) => {
+        const t = [unit.type, unit.size].filter(Boolean).join(' · ');
+        const cust = job.customer || job.num || '';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-top:1px solid #f1f5f9">' +
+            '<span style="font-size:13px;color:#475569;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+              '<span style="font-weight:600;color:#0f172a">' + esc(t || 'Tæki') + '</span>' +
+              '<span style="color:#94a3b8"> — ' + esc(cust) + '</span>' +
+            '</span>' +
+            '<button onclick="Workshop.restoreUnit(' + job.id + ',' + jsv(unit.id) + ')" ' +
+              'style="border:1px solid #cbd5e1;background:#fff;border-radius:8px;padding:5px 11px;font-size:12px;cursor:pointer;white-space:nowrap;color:#0f172a">↩ Endurheimta</button>' +
+          '</div>';
+      }).join('');
+    }
+    return '<div style="position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid #e5e7eb;box-shadow:0 -6px 20px rgba(0,0,0,.08)">' +
+        '<div onclick="Workshop.toggleArchive()" style="padding:11px 16px;cursor:pointer;display:flex;align-items:center;gap:9px;user-select:none">' +
+          '<span>🗑️</span>' +
+          '<span style="font-weight:700;flex:1;font-size:13px;color:#0f172a">Eydd tæki (' + items.length + ')</span>' +
+          '<span style="font-size:12px;color:#64748b">' + (open ? 'Loka ▾' : 'Sjá ▴') + '</span>' +
+        '</div>' +
+        (open ? '<div style="max-height:48vh;overflow-y:auto;border-top:1px solid #f1f5f9">' + list + '</div>' : '') +
+      '</div>';
+  }
+
+  // serialize a unit id for inline onclick (numeric → bare, else quoted string)
+  function jsv(v) {
+    return (typeof v === 'number') ? v : "'" + String(v).replace(/'/g, "\\'") + "'";
+  }
+
   function workshopRender() {
     const container = document.getElementById('view-workshop');
     if (!container) return;
@@ -221,7 +270,7 @@
         '<button class="btn btn-outline btn-sm" onclick="Field.openScan()" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg>Skanna tæki</button>' +
       '</div>' +
       '<div style="display:none"><div id="workshop-queue"></div></div>' +
-      '<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;padding:8px;height:calc(100vh - 110px);overflow:hidden;box-sizing:border-box;min-width:0">' +
+      '<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;padding:8px;height:calc(100vh - 154px);overflow:hidden;box-sizing:border-box;min-width:0">' +
         colHtmlW('Verk',           jobs.length         + ' verk', '#64748b', wRenderJobs('all',      jobs))         +
         colHtmlW('Samningshafar',  contractJobs.length + ' verk', '#0d6efd', wRenderJobs('contract', contractJobs)) +
       '</div>' +
@@ -232,7 +281,8 @@
           '</div>' +
           '<div id="workshop-detail" style="overflow-y:auto;flex:1"></div>' +
         '</div>' +
-      '</div>';
+      '</div>' +
+      archiveBar();
     container.innerHTML = html;
 
     if (Workshop.sel) {
@@ -270,10 +320,11 @@
     jobs.forEach(j => {
       if (rendered[j.customer]) return;
       const list = byCust[j.customer];
-      const tot  = list.reduce((s, jj) => s + (jj.units ? jj.units.length : 0), 0);
-      const done = list.reduce((s, jj) => s + (jj.units ? jj.units.filter(u => u.status === 'done').length : 0), 0);
-      html += wCustomerGroup(statusKey, { name: j.customer, jobs: list, totalUnits: tot, doneUnits: done });
+      const tot  = list.reduce((s, jj) => s + live(jj.units).length, 0);
+      const done = list.reduce((s, jj) => s + live(jj.units).filter(u => u.status === 'done').length, 0);
       rendered[j.customer] = true;
+      if (tot === 0) return;   // every tæki deleted → drop the customer from the workshop
+      html += wCustomerGroup(statusKey, { name: j.customer, jobs: list, totalUnits: tot, doneUnits: done });
     });
     return `<div style="display:flex;flex-direction:column;gap:5px">${html}</div>`;
   }
@@ -316,8 +367,9 @@
   // the detail modal underneath. Chips kept very tight so 8-10 fit on one row
   // in a narrow column.
   function renderUnitChips(j) {
-    if (!j.units || !j.units.length) return '';
-    const chips = j.units.map(u => {
+    const us = live(j.units);
+    if (!us.length) return '';
+    const chips = us.map(u => {
       const isDone = u.status === 'done';
       const isBroken = u.status === 'broken';
       const tail = (String(u.serial || '').match(/[^-]+$/) || [u.serial || '?'])[0];
@@ -364,8 +416,8 @@
     let inner = '';
     if (expanded) {
       inner = '<div style="padding:4px 4px 8px 18px">' + co.jobs.map(j => {
-        const done = j.units ? j.units.filter(u => u.status === 'done').length : 0;
-        const total = j.units ? j.units.length : 0;
+        const done = live(j.units).filter(u => u.status === 'done').length;
+        const total = live(j.units).length;
         const badge = (window.U && U.badge) ? U.badge(j.status) : '';
         // 2026-05-11: also surface the service description + any customer
         // note so the user doesn't have to open every job to know what's
@@ -426,7 +478,7 @@
     if (!jobs || !jobs.length) return '';
     const items = [];
     jobs.forEach(j => {
-      (j.units || []).forEach(u => items.push({ jobId: j.id, unit: u }));
+      live(j.units).forEach(u => items.push({ jobId: j.id, unit: u }));
     });
     if (!items.length) return '';
     const tiles = items.map(({ jobId, unit }) => {
@@ -450,10 +502,11 @@
             'border:none;cursor:pointer;padding:3px 4px;line-height:1.1">Tilbúið</button>';
       return '<div ' +
         'title="' + esc(unit.serial || '') + ' — ' + esc(label) + '" ' +
-        'style="flex-shrink:0;width:88px;border:1.5px solid ' + border + ';border-radius:6px;' +
+        'style="position:relative;flex-shrink:0;width:88px;border:1.5px solid ' + border + ';border-radius:6px;' +
         'background:' + bg + ';color:' + txtCol + ';' +
         'display:flex;flex-direction:column;overflow:hidden">' +
-          '<div style="flex:1;padding:5px 6px 4px;font-size:10.5px;font-weight:600;line-height:1.2;' +
+          '<button onclick="event.stopPropagation();Workshop.deleteUnit(' + jobId + ',' + unit.id + ')" title="Eyða tæki (fer í Eydd tæki)" style="position:absolute;top:0;right:0;width:17px;height:17px;line-height:1;padding:0;border:none;border-radius:0 0 0 6px;background:rgba(15,23,42,.05);color:#9aa3af;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2">✕</button>' +
+          '<div style="flex:1;padding:5px 15px 4px 6px;font-size:10.5px;font-weight:600;line-height:1.2;' +
             'text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(label) + '</div>' +
           (serialShort ? '<div style="font-size:9px;color:#94a3b8;text-align:center;padding:0 4px 2px;font-family:var(--mono,monospace)">' + esc(serialShort) + '</div>' : '') +
           bottom +
@@ -560,6 +613,29 @@
     Workshop.toggleCo   = function(key) { Workshop.expandedCos[key] = !Workshop.expandedCos[key]; Workshop.render(); };
     Workshop.openDetail = function() { const m = document.getElementById('workshop-detail-modal'); if (m) m.style.display = 'flex'; };
     Workshop.closeDetail= function() { const m = document.getElementById('workshop-detail-modal'); if (m) m.style.display = 'none'; Workshop.sel = null; };
+
+    // 2026-06-18: soft-delete a workshop unit (verklidur.status='eytt') + the
+    // "Eydd tæki" archive bar. Direct verklidur write (NOT DB.updateUnitStatus,
+    // which auto-promotes the job to inprogress/ready — unwanted on delete).
+    Workshop._archiveOpen = Workshop._archiveOpen || false;
+    Workshop.toggleArchive = function() { Workshop._archiveOpen = !Workshop._archiveOpen; Workshop.render(); };
+    Workshop.deleteUnit = async function(jobId, unitId) {
+      if (!window.confirm('Eyða þessu tæki af verkstæðinu?\n(fer í „Eydd tæki" — hægt að endurheimta síðar)')) return;
+      try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update({ status: 'eytt' }).eq('id', unitId); }
+      catch (e) { console.warn('[deleteUnit]', e); }
+      const job = DB.getJob(jobId);
+      if (job && job.units) { const u = job.units.find(function(u){ return u.id === unitId; }); if (u) u.status = 'eytt'; }
+      if (window.Toast && Toast.show) Toast.show('🗑 Tæki sett í „Eydd tæki"');
+      Workshop.render();
+    };
+    Workshop.restoreUnit = async function(jobId, unitId) {
+      try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update({ status: 'received' }).eq('id', unitId); }
+      catch (e) { console.warn('[restoreUnit]', e); }
+      const job = DB.getJob(jobId);
+      if (job && job.units) { const u = job.units.find(function(u){ return u.id === unitId; }); if (u) u.status = 'received'; }
+      if (window.Toast && Toast.show) Toast.show('↩ Tæki endurheimt');
+      Workshop.render();
+    };
 
     Workshop.select = function(id) {
       Workshop.sel = id;
