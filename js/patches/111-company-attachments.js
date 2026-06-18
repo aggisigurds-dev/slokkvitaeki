@@ -205,6 +205,59 @@
     wireSection(section, coId);
   }
 
+  // 2026-06: yfirlits-grid — úttektarskýrslur + reikningar per ár (2023–2026)
+  // úr SÖMU skjölum (flokkað eftir ári + heiti). Chip-arnir endurnýta sömu
+  // _cat-open/_cat-download smelli-meðhöndlun og listinn að neðan.
+  function docYearGridHtml(list) {
+    const YEARS = [2026, 2025, 2024, 2023];
+    const cell = {}; // cell[year][type] = [files]
+    (list || []).forEach(f => {
+      const nm = String(f.name || '');
+      const yr = (f.year && f.year !== '0') ? String(f.year) : ((nm.match(/\b(20[2-3][0-9])\b/) || [])[1] || null);
+      if (!yr) return;
+      if (!(f.drive_url || f.drive_id || f.path)) return; // skráningar án skjals sleppt
+      let type = null;
+      if (/reikn|r-?\s?\d{3,}/i.test(nm)) type = 'reikningur';
+      else if (/sko(ð|d)un|(ú|u)ttekt|sk(ý|y)rsl/i.test(nm)) type = 'skyrsla';
+      if (!type) return;
+      (cell[yr] = cell[yr] || {});
+      (cell[yr][type] = cell[yr][type] || []).push(f);
+    });
+    const chip = (f, kind) => {
+      const prev = isPreviewable(f.content_type, f.name);
+      const nm = String(f.name || '');
+      const c = kind === 'reikningur'
+        ? { bg: '#f0fdf4', bd: '#bbf7d0', col: '#15803d', ico: '🧾', lab: (nm.match(/R-?\s?\d{3,}/i) || ['Reikningur'])[0].replace(/\s+/g, '') }
+        : { bg: '#f5f3ff', bd: '#ddd6fe', col: '#6d28d9', ico: '📄', lab: 'Skoðun' };
+      return '<button class="' + (prev ? '_cat-open' : '_cat-download') + '" data-id="' + esc(f.id) + '" title="' + esc(nm) + '" ' +
+        'style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:8px;cursor:pointer;margin:2px 2px 0 0;' +
+        'background:' + c.bg + ';border:1px solid ' + c.bd + ';color:' + c.col + '">' + c.ico + ' ' + esc(c.lab) + '</button>';
+    };
+    const dash = '<span style="color:#cbd5e1">—</span>';
+    const rows = YEARS.map(y => {
+      const sk = (cell[y] && cell[y].skyrsla) || [];
+      const re = (cell[y] && cell[y].reikningur) || [];
+      const isCur = (y === new Date().getFullYear());
+      return '<tr style="border-top:1px solid #f1f5f9">' +
+        '<td style="padding:8px 12px;font-weight:700;color:' + (isCur ? '#1d4ed8' : '#0f172a') + '">' + y + '</td>' +
+        '<td style="padding:6px 12px">' + (sk.length ? sk.map(f => chip(f, 'skyrsla')).join('') : dash) + '</td>' +
+        '<td style="padding:6px 12px">' + (re.length ? re.map(f => chip(f, 'reikningur')).join('') : dash) + '</td>' +
+      '</tr>';
+    }).join('');
+    return '<div style="margin-bottom:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid #e2e8f0">' +
+        '<h3 style="margin:0;font-size:14px;font-weight:800;color:#0f172a">📁 Skjöl eftir ári</h3>' +
+        '<span style="font-size:11px;color:#94a3b8">2023–2026</span>' +
+      '</div>' +
+      '<table style="width:100%;border-collapse:collapse;font-size:12.5px">' +
+        '<thead><tr style="background:#f8fafc;color:#475569;font-size:10px;text-transform:uppercase;letter-spacing:.04em">' +
+          '<th style="padding:8px 12px;text-align:left">Ár</th>' +
+          '<th style="padding:8px 12px;text-align:left">Úttektarskýrsla</th>' +
+          '<th style="padding:8px 12px;text-align:left">Reikningur</th>' +
+        '</tr></thead><tbody>' + rows + '</tbody>' +
+      '</table></div>';
+  }
+
   function renderSection(coId) {
     const list = getCompanyAttachments(coId);
     const cards = list.length ? list.map(f => {
@@ -248,6 +301,7 @@
     }).join('') : '<div style="grid-column:1/-1;padding:30px;text-align:center;color:#94a3b8;font-size:13px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px">Engin skjöl tengd þessu fyrirtæki ennþá — smelltu á <strong>+ Hlaða inn skjali</strong> til að byrja</div>';
 
     return '' +
+      docYearGridHtml(list) +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
         '<div>' +
           '<h3 style="margin:0;font-size:15px;font-weight:700;color:#0f172a">📎 Skjöl & skýrslur</h3>' +
