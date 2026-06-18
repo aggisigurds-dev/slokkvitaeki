@@ -328,6 +328,8 @@
     const driveCost      = (tripState.drive      != null) ? Number(tripState.drive)      : 3000;
     const driveQty       = (tripState.driveQty   != null) ? Math.max(0, Number(tripState.driveQty)) : 1;
     const skyrslugerdEx  = (tripState.skyrslugerd != null) ? Number(tripState.skyrslugerd) : 3500;
+    // 2026-06: afsláttur (%) á heildina — dregst af án-vsk og vsk hlutfallslega.
+    const discountPct    = (tripState.discount_pct != null) ? Math.max(0, Math.min(100, Number(tripState.discount_pct) || 0)) : 0;
     // 2026-05-21: manual line items added via "+ Bæta við vöru eða þjónustu".
     // Each: {id, name, qty, unit_price_ex_vat, vsk_pct, vorur_id?}.
     const extras = Array.isArray(tripState.extras) ? tripState.extras : [];
@@ -574,7 +576,12 @@
       '</tr>'
     );
 
-    const totalInc = totalSubEx + totalVsk;
+    // Afsláttur dreginn hlutfallslega af án-vsk og vsk (totalSubEx/totalVsk eru
+    // brúttó; netto fer í VSK-línu + SAMTALS).
+    const discountEx = totalSubEx * (discountPct / 100);
+    const netSubEx   = totalSubEx - discountEx;
+    const netVsk     = totalVsk * (1 - discountPct / 100);
+    const totalInc   = netSubEx + netVsk;
     const activeUnits = units.length - groups.reduce((s, g) => s + g.skip, 0);
 
     const skodunaradili = (tripState.skodunaradili != null) ? String(tripState.skodunaradili) : '';
@@ -655,8 +662,13 @@
               '<td colspan="5" style="padding:8px 10px;font-size:12px;color:#475569;text-align:right">Án vsk:</td>' +
               '<td style="padding:8px 10px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums">' + fmtKr(totalSubEx) + '</td>' +
             '</tr>' +
+            // Afsláttur (%) — alltaf sýnilegt svo hægt sé að slá inn; upphæð birtist þegar > 0.
+            '<tr><td colspan="5" style="padding:5px 10px;font-size:12px;color:#475569;text-align:right">' +
+                'Afsláttur <input id="_ctc-discount" type="number" min="0" max="100" step="1" value="' + discountPct + '" ' +
+                'style="width:46px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;-moz-appearance:textfield" /> %</td>' +
+              '<td style="padding:5px 10px;text-align:right;font-weight:600;color:#b91c1c;font-variant-numeric:tabular-nums">' + (discountEx > 0 ? '−' + fmtKr(discountEx) : '—') + '</td></tr>' +
             '<tr><td colspan="5" style="padding:5px 10px;font-size:12px;color:#475569;text-align:right">VSK:</td>' +
-              '<td style="padding:5px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(totalVsk) + '</td></tr>' +
+              '<td style="padding:5px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(netVsk) + '</td></tr>' +
             '<tr style="background:#dcfce7"><td colspan="5" style="padding:10px;font-size:14px;font-weight:800;color:#166534;text-align:right">SAMTALS M. VSK:</td>' +
               '<td style="padding:10px;text-align:right;font-weight:800;color:#166534;font-size:16px;font-variant-numeric:tabular-nums">' + fmtKr(totalInc) + '</td></tr>' +
           '</tfoot>' +
@@ -859,6 +871,20 @@
       };
       skyrsluInp.addEventListener('change', onSkyrslu);
       skyrsluInp.addEventListener('blur', onSkyrslu);
+    }
+    // Wire Afsláttur (%) input.
+    const discInp = section.querySelector('#_ctc-discount');
+    if (discInp) {
+      const onDisc = () => {
+        const v = Math.max(0, Math.min(100, Math.round(Number(discInp.value) || 0)));
+        const st = loadTripState(coId);
+        st.discount_pct = v;
+        saveTripState(coId, st);
+        _lastKey = '';
+        render();
+      };
+      discInp.addEventListener('change', onDisc);
+      discInp.addEventListener('blur', onDisc);
     }
   }
 
