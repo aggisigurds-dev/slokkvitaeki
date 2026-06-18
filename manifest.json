@@ -2,7 +2,7 @@
   "name": "Slökkvitæki ehf — Brunakerfi",
   "short_name": "Slökkvitæki",
   "description": "Vinnukerfi fyrir slökkvitækjaþjónustu — afgreiðsla, verkstæði, þjónustutæki, sala, bókhald.",
-  "start_url": "/#bilstjori",
+  "start_url": "/?driver",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",

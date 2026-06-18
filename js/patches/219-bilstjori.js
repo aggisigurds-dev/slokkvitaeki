@@ -34,6 +34,17 @@
   const NAV_KEY = 'bilstjori';
   const GC_KEY  = '_slokk_gc';
 
+  // Locked "driver mode": when the URL carries ?driver the app opens straight
+  // into Bílstjóri and the driver cannot leave — no exit button, the sidebar is
+  // hidden, and any attempt to navigate to another view snaps back here. The
+  // office keeps full access via the bare URL (no ?driver). This is a focus
+  // lock for the shared driver link / installed app, not security.
+  const LOCKED = (() => {
+    try { return new URLSearchParams(location.search).has('driver'); }
+    catch (_) { return /[?&]driver(?:$|[=&])/.test(location.search || ''); }
+  })();
+  const DRIVER_LINK = () => location.origin + '/?driver';
+
   // ── helpers ──────────────────────────────────────────────────────────────
   function esc(s) {
     return String(s ?? '').replace(/[&<>"']/g, c => ({
@@ -326,7 +337,8 @@
         '<div class="_bs-top"><h1><span>🚚</span><span>Bílstjóri</span></h1>' +
           '<button id="_bs-full" class="_bs-iconbtn" type="button" title="Allur skjár (fela vafra)">⛶</button>' +
           '<button id="_bs-share" class="_bs-iconbtn" type="button" title="Afrita hlekk til að senda á bílstjóra">🔗</button>' +
-          '<button id="_bs-exit" class="_bs-iconbtn" type="button" title="Til baka í forritið / vefsíðu">✕</button></div>' +
+          (LOCKED ? '' : '<button id="_bs-exit" class="_bs-iconbtn" type="button" title="Til baka í forritið / vefsíðu">✕</button>') +
+          '</div>' +
         '<div id="_bs-mapcanvas" class="_bs-map"></div>' +
         '<div class="_bs-controls">' +
           '<input id="_bs-q" class="_bs-search" type="search" inputmode="search" placeholder="Leita að fyrirtæki, heimilisfangi, kt…">' +
@@ -339,12 +351,13 @@
         '<div id="_bs-list" class="_bs-list"></div>' +
         '<div class="_bs-bottom"><div class="inner"><button id="_bs-drive" class="_bs-primary" type="button">🚗 Keyra leið dagsins</button></div></div>';
 
-      root.querySelector('#_bs-exit').addEventListener('click', () => {
+      const exitBtn = root.querySelector('#_bs-exit');
+      if (exitBtn) exitBtn.addEventListener('click', () => {
         if (window.App && App.switchView) App.switchView('leidsogn');
       });
       root.querySelector('#_bs-full').addEventListener('click', toggleFullscreen);
       root.querySelector('#_bs-share').addEventListener('click', () => {
-        const url = location.origin + '/#' + NAV_KEY;
+        const url = DRIVER_LINK();   // the locked driver link to send out
         copyText(url).then(ok => toast(ok ? '✓ Hlekkur afritaður — sendu á bílstjóra' : url));
       });
       const qEl = root.querySelector('#_bs-q');
@@ -601,6 +614,11 @@
     const orig = window.App.switchView;
     window.App.switchView = function (view) {
       if (view === NAV_KEY) { show(); return; }
+      if (LOCKED) {                               // locked driver mode: never leave
+        try { if (orig) orig.apply(this, arguments); } catch (_) {}  // let lazy data-loads run
+        show();                                   // …but keep Bílstjóri on top
+        return;
+      }
       const r = orig ? orig.apply(this, arguments) : undefined;
       // leaving the driver app: hide the overlay + restore the sidebar
       try { const v = document.getElementById(VIEW_ID); if (v) { v.style.display = 'none'; v.classList.remove('active'); } document.body.classList.remove('bs-active'); } catch (_) {}
@@ -618,6 +636,7 @@
   ['pointerdown', 'mousedown', 'keydown', 'touchstart'].forEach(ev =>
     window.addEventListener(ev, () => { _userTook = true; }, { capture: true, passive: true }));
   function hashIsMine() {
+    if (LOCKED) return true;
     const h = (location.hash || '').replace(/^#/, '').toLowerCase();
     return h === NAV_KEY || h === 'drivers';
   }
