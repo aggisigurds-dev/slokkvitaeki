@@ -523,7 +523,7 @@
     ensureView();
     const main = document.getElementById('ars-main');
     if (!main) return;
-    main.innerHTML = '<div style="padding:24px;color:#94a3b8">Hleður…</div>';
+    main.innerHTML = '<div style="padding:24px;color:var(--ink4)">Hleður…</div>';
     await loadAll();
     render();
   }
@@ -577,29 +577,29 @@
       <div style="max-width:1400px;margin:0 auto;padding:18px 22px 60px">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:14px">
           <div>
-            <h1 style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">🏢 Fyrirtæki í Þjónustu</h1>
-            <div style="font-size:12px;color:#64748b;margin-top:2px">${all.length} fyrirtæki · ${arsAll.length} í árlegri slökkvitækjaskoðun</div>
+            <h1 style="margin:0;font-size:22px;color:var(--ink1);display:flex;align-items:center;gap:10px">🏢 Fyrirtæki í Þjónustu</h1>
+            <div style="font-size:12px;color:var(--ink3);margin-top:2px">${all.length} fyrirtæki · ${arsAll.length} í árlegri slökkvitækjaskoðun</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button id="_ars-new" type="button" style="padding:7px 14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Nýtt fyrirtæki</button>
-            <div style="display:flex;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;background:#fff">
-              <button data-view-mode="card" class="_ars-vm" style="padding:7px 14px;border:none;background:${state.view==='card'?'#0f172a':'#fff'};color:${state.view==='card'?'#fff':'#475569'};cursor:pointer;font:inherit;font-size:12px;font-weight:600">🟦 Kort</button>
-              <button data-view-mode="list" class="_ars-vm" style="padding:7px 14px;border:none;background:${state.view==='list'?'#0f172a':'#fff'};color:${state.view==='list'?'#fff':'#475569'};cursor:pointer;font:inherit;font-size:12px;font-weight:600;border-left:1px solid #cbd5e1">📋 Listi</button>
+            <div style="display:flex;border:1px solid var(--brd2);border-radius:8px;overflow:hidden;background:var(--surface)">
+              <button data-view-mode="card" class="_ars-vm" style="padding:7px 14px;border:none;background:${state.view==='card'?'var(--brand)':'var(--surface)'};color:${state.view==='card'?'#fff':'var(--ink2)'};cursor:pointer;font:inherit;font-size:12px;font-weight:600">🟦 Kort</button>
+              <button data-view-mode="list" class="_ars-vm" style="padding:7px 14px;border:none;background:${state.view==='list'?'var(--brand)':'var(--surface)'};color:${state.view==='list'?'#fff':'var(--ink2)'};cursor:pointer;font:inherit;font-size:12px;font-weight:600;border-left:1px solid var(--brd2)">📋 Listi</button>
             </div>
-            <select id="_ars-sort" style="padding:7px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font:inherit;font-size:12px;color:#0f172a;cursor:pointer">
+            <select id="_ars-sort" style="padding:7px 10px;border:1px solid var(--brd2);border-radius:8px;background:var(--surface);font:inherit;font-size:12px;color:var(--ink1);cursor:pointer">
               <option value="alpha" ${state.sort==='alpha'?'selected':''}>↕️ Stafrófsröð</option>
               <option value="month" ${state.sort==='month'?'selected':''}>📅 Eftir skoðunarmánuði (næst fyrst)</option>
               <option value="oldest" ${state.sort==='oldest'?'selected':''}>⏳ Þeir elstu fyrst (lengst síðan skoðað)</option>
             </select>
-            <button id="_ars-print" type="button" title="Prenta listann eins og hann er síaður núna" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;font:inherit;font-size:12px;font-weight:600;color:#0f172a;cursor:pointer">🖨 Prenta lista</button>
+            <button id="_ars-print" type="button" title="Prenta listann eins og hann er síaður núna" style="padding:7px 12px;border:1px solid var(--brd2);border-radius:8px;background:var(--surface);font:inherit;font-size:12px;font-weight:600;color:var(--ink1);cursor:pointer">🖨 Prenta lista</button>
           </div>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
-          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:11px 13px">
-            <div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Fjöldi</div>
-            <div style="font-size:22px;font-weight:800;color:#0f172a;line-height:1.1;margin-top:2px">${all.length}</div>
-            <div style="font-size:10.5px;color:#64748b">${arsAll.length} í ársskoðun</div>
+          <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;padding:11px 13px">
+            <div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Fjöldi</div>
+            <div style="font-size:22px;font-weight:800;color:var(--ink1);line-height:1.1;margin-top:2px">${all.length}</div>
+            <div style="font-size:10.5px;color:var(--ink3)">${arsAll.length} í ársskoðun</div>
           </div>
           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Búið ${curYear}</div>
@@ -611,8 +611,8 @@
             <div style="font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${arsAll.length - doneThisYear}</div>
             <div style="font-size:10.5px;color:#b45309">í pípunni</div>
           </div>
-          <div style="background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;border:1px solid #0f172a;border-radius:10px;padding:11px 13px">
-            <div style="font-size:10px;font-weight:700;color:#cbd5e1;text-transform:uppercase;letter-spacing:.05em">Áætlaðar tekjur ${curYear}</div>
+          <div style="background:var(--thm-sumh);color:#fff;border:1px solid var(--brand);border-radius:10px;padding:11px 13px">
+            <div style="font-size:10px;font-weight:700;color:var(--brd2);text-transform:uppercase;letter-spacing:.05em">Áætlaðar tekjur ${curYear}</div>
             <div style="font-size:22px;font-weight:800;color:#fff;line-height:1.1;margin-top:2px;font-variant-numeric:tabular-nums">${fmtKr(totalEstimate)}</div>
             <div style="font-size:10.5px;color:#86efac">${fmtKr(estDoneThisYear)} þegar innheimt</div>
           </div>
@@ -620,8 +620,8 @@
 
         <!-- Filter strip -->
         <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-          <input id="_ars-search" type="search" placeholder="🔎 Leita í nafni, kt eða heimilisfangi…" value="${esc(state.search)}" style="flex:1;min-width:220px;padding:8px 11px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;background:#fff;color:#0f172a;outline:none"/>
-          <div style="display:flex;gap:5px;border:1px solid #cbd5e1;border-radius:8px;overflow:hidden;background:#fff">
+          <input id="_ars-search" type="search" placeholder="🔎 Leita í nafni, kt eða heimilisfangi…" value="${esc(state.search)}" style="flex:1;min-width:220px;padding:8px 11px;border:1px solid var(--brd2);border-radius:8px;font:inherit;font-size:13px;background:var(--surface);color:var(--ink1);outline:none"/>
+          <div style="display:flex;gap:5px;border:1px solid var(--brd2);border-radius:8px;overflow:hidden;background:var(--surface)">
             ${[
               { v: 'all', label: 'Allt' },
               { v: 'done', label: '✅ Búið ' + curYear },
@@ -630,41 +630,41 @@
               { v: 'priority', label: '❗ Forgangur' },
               { v: 'never', label: '⛔ Aldrei' }
             ].map(s => `
-              <button data-status="${s.v}" class="_ars-st" style="padding:7px 11px;border:none;background:${state.status===s.v?'#0f172a':'#fff'};color:${state.status===s.v?'#fff':'#475569'};cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${esc(s.label)}</button>
+              <button data-status="${s.v}" class="_ars-st" style="padding:7px 11px;border:none;background:${state.status===s.v?'var(--brand)':'var(--surface)'};color:${state.status===s.v?'#fff':'var(--ink2)'};cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${esc(s.label)}</button>
             `).join('')}
           </div>
         </div>
 
         <!-- Month chip row -->
         <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
-          <span style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;padding-right:3px">Mánuður:</span>
-          <button data-month="0" class="_ars-mo" style="padding:5px 11px;border:1px solid ${state.month===0?'#0f172a':'#cbd5e1'};background:${state.month===0?'#0f172a':'#fff'};color:${state.month===0?'#fff':'#475569'};border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">Allir</button>
+          <span style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;padding-right:3px">Mánuður:</span>
+          <button data-month="0" class="_ars-mo" style="padding:5px 11px;border:1px solid ${state.month===0?'var(--brand)':'var(--brd2)'};background:${state.month===0?'var(--brand)':'var(--surface)'};color:${state.month===0?'#fff':'var(--ink2)'};border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">Allir</button>
           ${MONTHS_IS_SHORT.map((m, i) => {
             const mn = i + 1;
             const cnt = monthCounts[mn];
             const sel = state.month === mn;
-            return `<button data-month="${mn}" class="_ars-mo" style="padding:5px 10px;border:1px solid ${sel?'#0f172a':(cnt?'#cbd5e1':'#e2e8f0')};background:${sel?'#0f172a':'#fff'};color:${sel?'#fff':(cnt?'#0f172a':'#cbd5e1')};border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">${esc(m)} ${cnt?`<span style="opacity:.6;font-weight:500">${cnt}</span>`:''}</button>`;
+            return `<button data-month="${mn}" class="_ars-mo" style="padding:5px 10px;border:1px solid ${sel?'var(--brand)':(cnt?'var(--brd2)':'var(--brd)')};background:${sel?'var(--brand)':'var(--surface)'};color:${sel?'#fff':(cnt?'var(--ink1)':'var(--brd2)')};border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">${esc(m)} ${cnt?`<span style="opacity:.6;font-weight:500">${cnt}</span>`:''}</button>`;
           }).join('')}
         </div>
 
         ${filtered.length === 0 ? `
-          <div style="background:#fff;border:2px dashed #cbd5e1;border-radius:12px;padding:38px;text-align:center;color:#64748b">
+          <div style="background:var(--surface);border:2px dashed var(--brd2);border-radius:12px;padding:38px;text-align:center;color:var(--ink3)">
             <div style="font-size:30px;margin-bottom:8px">🔍</div>
-            <div style="font-size:14px;font-weight:600;color:#0f172a;margin-bottom:3px">Engin fyrirtæki passa við þessa síu</div>
+            <div style="font-size:14px;font-weight:600;color:var(--ink1);margin-bottom:3px">Engin fyrirtæki passa við þessa síu</div>
             <div style="font-size:12px">Reyndu að breyta sía eða leitarstreng.</div>
           </div>
         ` : (state.view === 'card' ? renderCards(filtered) : renderTable(filtered))}
 
         ${filteredAars.length > 0 ? `
-        <div style="margin-top:14px;padding:13px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
+        <div style="margin-top:14px;padding:13px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
           <div>
-            <div style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Samantekt — ${esc(filterLabel)}</div>
-            <div style="font-size:13px;color:#475569;margin-top:3px">${filteredAars.length} fyrirtæki í ársskoðun</div>
+            <div style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Samantekt — ${esc(filterLabel)}</div>
+            <div style="font-size:13px;color:var(--ink2);margin-top:3px">${filteredAars.length} fyrirtæki í ársskoðun</div>
           </div>
           <div style="display:flex;gap:22px;flex-wrap:wrap">
             <div style="text-align:right">
-              <div style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Áætlaðar tekjur</div>
-              <div style="font-size:18px;font-weight:800;color:#0f172a;font-variant-numeric:tabular-nums">${fmtKr(filteredTotal)}</div>
+              <div style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Áætlaðar tekjur</div>
+              <div style="font-size:18px;font-weight:800;color:var(--ink1);font-variant-numeric:tabular-nums">${fmtKr(filteredTotal)}</div>
             </div>
             ${filteredDone > 0 ? `
             <div style="text-align:right">
@@ -681,8 +681,8 @@
         </div>
         ` : ''}
 
-        <div style="margin-top:18px;font-size:11px;color:#94a3b8;text-align:center">
-          Sýni <strong style="color:#475569">${filtered.length}</strong> af ${all.length} viðskiptavinum
+        <div style="margin-top:18px;font-size:11px;color:var(--ink4);text-align:center">
+          Sýni <strong style="color:var(--ink2)">${filtered.length}</strong> af ${all.length} viðskiptavinum
         </div>
       </div>
     `;
@@ -948,26 +948,26 @@
           const statusBadge = isDone
             ? '<span style="background:#dcfce7;color:#15803d;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #bbf7d0">✅ ' + curYear + '</span>'
             : isFieldOnly
-            ? '<span style="background:#dbeafe;color:#1d4ed8;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #93c5fd">🔵 Í skýrslugerð</span>'
+            ? '<span style="background:#dbeafe;color:var(--brand);font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #93c5fd">🔵 Í skýrslugerð</span>'
             : isSkipped
             ? `<span title="Síðast skoðað ${lastYr} — sleppt í fyrra" style="background:#fef3c7;color:#a16207;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #fde68a;display:inline-flex;align-items:center;gap:2px">⏰ '${String(lastYr).slice(-2)}</span>`
             : isOverdue
             ? '<span style="background:#fee2e2;color:#b91c1c;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #fecaca">⚠ Á eftir</span>'
-            : '<span style="background:#f1f5f9;color:#475569;font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid #cbd5e1">⏳ Í pípu</span>';
+            : '<span style="background:var(--brd);color:var(--ink2);font-size:9.5px;font-weight:700;padding:2px 7px;border-radius:99px;border:1px solid var(--brd2)">⏳ Í pípu</span>';
           // Toggle button: lets user mark "tekið út" without finishing paperwork.
           // Click cycles: nothing → Tekið út → cleared (back to nothing) ; once "skoðað"
           // (isDone) is set, the toggle is hidden because the work is fully done.
           const toggleBtn = !isDone
-            ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki í vinnslu' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}" style="font-size:9.5px;padding:2px 7px;border-radius:99px;border:1px solid ${isFieldOnly ? '#60a5fa' : '#cbd5e1'};background:${isFieldOnly ? '#dbeafe' : '#fff'};color:${isFieldOnly ? '#1d4ed8' : '#475569'};cursor:pointer;font-weight:600;line-height:1.3">${isFieldOnly ? '✓ Í vinnslu' : '☐ Í vinnslu'}</button>`
+            ? `<button class="_ars-tu-toggle" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki í vinnslu' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}" style="font-size:9.5px;padding:2px 7px;border-radius:99px;border:1px solid ${isFieldOnly ? '#60a5fa' : 'var(--brd2)'};background:${isFieldOnly ? '#dbeafe' : 'var(--surface)'};color:${isFieldOnly ? 'var(--brand)' : 'var(--ink2)'};cursor:pointer;font-weight:600;line-height:1.3">${isFieldOnly ? '✓ Í vinnslu' : '☐ Í vinnslu'}</button>`
             : '';
 
           return `
-            <div class="_ars-card" data-co-id="${c.id}" style="background:#fff;border:1px solid #e2e8f0;border-radius:11px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(0,0,0,0.03);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='#94a3b8';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'" onmouseout="this.style.borderColor='#e2e8f0';this.style.boxShadow='0 1px 2px rgba(0,0,0,0.03)'">
+            <div class="_ars-card" data-co-id="${c.id}" style="background:var(--surface);border:1px solid var(--brd);border-radius:11px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(0,0,0,0.03);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--ink4)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'" onmouseout="this.style.borderColor='var(--brd)';this.style.boxShadow='0 1px 2px rgba(0,0,0,0.03)'">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
                 <div style="min-width:0;flex:1">
-                  <div style="font-weight:700;color:#0f172a;font-size:13.5px;line-height:1.25">${esc(c.nafn || '—')}</div>
-                  ${c.kennitala ? `<div style="font-size:10.5px;color:#94a3b8;font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
-                  ${c.heimilisfang ? `<div style="font-size:11px;color:#64748b;margin-top:2px">📍 ${esc(c.heimilisfang)}</div>` : ''}
+                  <div style="font-weight:700;color:var(--ink1);font-size:13.5px;line-height:1.25">${esc(c.nafn || '—')}</div>
+                  ${c.kennitala ? `<div style="font-size:10.5px;color:var(--ink4);font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
+                  ${c.heimilisfang ? `<div style="font-size:11px;color:var(--ink3);margin-top:2px">📍 ${esc(c.heimilisfang)}</div>` : ''}
                   ${(() => {
                     // 2026-05-26: surface netfang on the card so the operator can
                     // see at a glance which companies are missing it for the month.
@@ -985,13 +985,13 @@
               </div>
 
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;font-size:11px;margin-top:2px">
-                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px">
-                  <div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase">Skoðun</div>
-                  <div style="font-size:12px;font-weight:700;color:${m===curMonth?'#dc2626':'#0f172a'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</div>
+                <div style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:4px 7px">
+                  <div style="font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase">Skoðun</div>
+                  <div style="font-size:12px;font-weight:700;color:${m===curMonth?'#dc2626':'var(--ink1)'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</div>
                 </div>
-                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:4px 7px">
-                  <div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase">Tæki</div>
-                  <div style="font-size:12px;font-weight:700;color:#0f172a">${totalEq}</div>
+                <div style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:4px 7px">
+                  <div style="font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase">Tæki</div>
+                  <div style="font-size:12px;font-weight:700;color:var(--ink1)">${totalEq}</div>
                 </div>
                 <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:4px 7px">
                   <div style="font-size:9px;font-weight:700;color:#166534;text-transform:uppercase">Áætl.</div>
@@ -1001,13 +1001,13 @@
 
               ${(() => {
                 const ac = attCount(c.id);
-                return ac > 0 ? `<div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:#64748b"><span style="background:#dbeafe;color:#1d4ed8;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #93c5fd">📎 ${ac} ${ac === 1 ? 'skjal' : 'skjöl'}</span></div>` : '';
+                return ac > 0 ? `<div style="display:flex;align-items:center;gap:5px;font-size:10.5px;color:var(--ink3)"><span style="background:#dbeafe;color:var(--brand);font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #93c5fd">📎 ${ac} ${ac === 1 ? 'skjal' : 'skjöl'}</span></div>` : '';
               })()}
               ${aminning ? `<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:5px 8px;font-size:10.5px;color:#92400e;line-height:1.35"><strong style="font-weight:700">📌 Áminning:</strong> ${esc(aminning.slice(0, 140))}${aminning.length>140?'…':''}</div>` : ''}
 
               <div style="display:flex;gap:5px;margin-top:3px">
-                <button class="_ars-open-fyrirt" data-co-id="${c.id}" type="button" style="flex:1;padding:5px 9px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:600">🏢 Fyrirtæki</button>
-                <button class="_ars-open-map" data-co-id="${c.id}" type="button" style="flex:1;padding:5px 9px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:600">🗺️ Á korti</button>
+                <button class="_ars-open-fyrirt" data-co-id="${c.id}" type="button" style="flex:1;padding:5px 9px;background:var(--surface);color:var(--ink1);border:1px solid var(--brd2);border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:600">🏢 Fyrirtæki</button>
+                <button class="_ars-open-map" data-co-id="${c.id}" type="button" style="flex:1;padding:5px 9px;background:var(--surface);color:var(--ink1);border:1px solid var(--brd2);border-radius:6px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:600">🗺️ Á korti</button>
               </div>
             </div>
           `;
@@ -1031,10 +1031,10 @@
   };
   const _PILL_C = {
     done:  ['#f0fdf4', '#bbf7d0', '#15803d'],
-    work:  ['#eff6ff', '#bfdbfe', '#1d4ed8'],
+    work:  ['#eff6ff', '#bfdbfe', 'var(--brand)'],
     skip:  ['#fffbeb', '#fde68a', '#a16207'],
     over:  ['#fef2f2', '#fecaca', '#b91c1c'],
-    queue: ['#f8fafc', '#cbd5e1', '#475569']
+    queue: ['var(--bg)', 'var(--brd2)', 'var(--ink2)']
   };
   function statusPill(state, label, title) {
     const c = _PILL_C[state] || _PILL_C.queue;
@@ -1050,12 +1050,12 @@
     const s = document.createElement('style');
     s.id = '_ars-status-css';
     s.textContent =
-      '._ars-mark{opacity:0;font:600 10px/1 inherit;color:#94a3b8;background:#fff;'
-      + 'border:1px dashed #cbd5e1;border-radius:99px;padding:3px 9px;cursor:pointer;white-space:nowrap;'
+      '._ars-mark{opacity:0;font:600 10px/1 inherit;color:var(--ink4);background:var(--surface);'
+      + 'border:1px dashed var(--brd2);border-radius:99px;padding:3px 9px;cursor:pointer;white-space:nowrap;'
       + 'transition:opacity .15s,color .15s,background .15s,border-color .15s}'
       + 'tr._ars-row:hover ._ars-mark,._ars-mark:focus-visible{opacity:1}'
-      + '._ars-mark:hover{color:#1d4ed8;background:#eff6ff;border-color:#1d4ed8;border-style:solid}'
-      + '._ars-mark.on{opacity:1;color:#1d4ed8;background:#eff6ff;border-color:#bfdbfe;border-style:solid}';
+      + '._ars-mark:hover{color:var(--brand);background:#eff6ff;border-color:var(--brand);border-style:solid}'
+      + '._ars-mark.on{opacity:1;color:var(--brand);background:#eff6ff;border-color:#bfdbfe;border-style:solid}';
     document.head.appendChild(s);
   }
 
@@ -1065,19 +1065,19 @@
     const curYear = today.getFullYear();
     const curMonth = today.getMonth() + 1;
     return `
-      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
+      <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;overflow:hidden">
         <div style="overflow-x:auto">
         <table style="width:100%;border-collapse:collapse;font-size:12px">
-          <thead style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
-            <tr style="text-align:left;color:#475569;font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.04em">
+          <thead style="background:var(--bg);border-bottom:1px solid var(--brd)">
+            <tr style="text-align:left;color:var(--ink2);font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.04em">
               ${(() => {
                 // 2026-05-26: clickable sort headers. Smelltu → bring upp;
                 // smelltu aftur → snúa.
                 const cur = state.sortCol;
                 const dir = state.sortDir;
                 const arrow = (col) => cur === col
-                  ? `<span style="color:#0f172a;margin-left:3px;font-weight:700">${dir==='asc' ? '▲' : '▼'}</span>`
-                  : '<span style="color:#cbd5e1;margin-left:3px;font-size:9px">⇅</span>';
+                  ? `<span style="color:var(--ink1);margin-left:3px;font-weight:700">${dir==='asc' ? '▲' : '▼'}</span>`
+                  : '<span style="color:var(--brd2);margin-left:3px;font-size:9px">⇅</span>';
                 const css = 'padding:9px 11px;cursor:pointer;user-select:none;transition:background .12s';
                 const hover = `onmouseover="this.style.background='#eef2f7'" onmouseout="this.style.background='transparent'"`;
                 return `
@@ -1121,20 +1121,20 @@
                 ? `<button class="_ars-tu-toggle _ars-mark${isFieldOnly ? ' on' : ''}" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki í vinnslu' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}">${isFieldOnly ? '✓ Í vinnslu' : '+ Í vinnslu'}</button>`
                 : '';
               return `
-                <tr class="_ars-row" data-co-id="${c.id}" style="border-bottom:1px solid #f1f5f9;cursor:pointer;transition:background .1s" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='transparent'">
+                <tr class="_ars-row" data-co-id="${c.id}" style="border-bottom:1px solid var(--brd);cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
                   <td style="padding:8px 11px">
-                    <div style="font-weight:600;color:#0f172a">${esc(c.nafn || '—')}</div>
-                    ${c.kennitala ? `<div style="font-size:10.5px;color:#94a3b8;font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
+                    <div style="font-weight:600;color:var(--ink1)">${esc(c.nafn || '—')}</div>
+                    ${c.kennitala ? `<div style="font-size:10.5px;color:var(--ink4);font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
                     ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''}</div>` : ''}
                   </td>
-                  <td style="padding:8px 7px;color:#475569;font-size:11.5px">${esc(c.heimilisfang || '—')}</td>
+                  <td style="padding:8px 7px;color:var(--ink2);font-size:11.5px">${esc(c.heimilisfang || '—')}</td>
                   <td style="padding:8px 7px;font-size:11px">${(() => {
                     const e = (c.netfang || '').trim();
                     if (e) return `<a href="mailto:${esc(e)}" style="color:#0369a1;text-decoration:none" onclick="event.stopPropagation()">${esc(e)}</a>`;
                     return `<span style="color:#dc2626;font-weight:600">✉ vantar</span>`;
                   })()}</td>
-                  <td style="padding:8px 7px;text-align:center;font-weight:600;color:${m===curMonth?'#dc2626':'#475569'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</td>
-                  <td style="padding:8px 7px;text-align:center;font-weight:700;color:#0f172a">${totalEq||'—'}</td>
+                  <td style="padding:8px 7px;text-align:center;font-weight:600;color:${m===curMonth?'#dc2626':'var(--ink2)'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</td>
+                  <td style="padding:8px 7px;text-align:center;font-weight:700;color:var(--ink1)">${totalEq||'—'}</td>
                   <td style="padding:8px 7px;text-align:right;color:#15803d;font-weight:700;font-variant-numeric:tabular-nums">${fmtKrShort(est)}</td>
                   <td style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
                   <td style="padding:8px 11px">
@@ -1188,35 +1188,35 @@
     bg.className = '_ars-modal-bg';
     bg.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto';
     bg.innerHTML = `
-      <div class="_ars-modal" style="background:#fff;border-radius:14px;max-width:780px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,0.4);overflow:hidden">
-        <div style="padding:16px 20px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+      <div class="_ars-modal" style="background:var(--surface);border-radius:14px;max-width:780px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,0.4);overflow:hidden">
+        <div style="padding:16px 20px;border-bottom:1px solid var(--brd);display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
           <div style="flex:1;min-width:0">
             <div class="_ars-info-view">
-              <div style="font-size:18px;font-weight:700;color:#0f172a">${esc(c.nafn || '—')}</div>
-              <div style="font-size:11.5px;color:#64748b;margin-top:3px">${esc(fmtKt(c.kennitala) || '—')}${c.heimilisfang ? ' · 📍 ' + esc(c.heimilisfang) : ''}</div>
-              ${c.simi || c.farsimi ? `<div style="font-size:11px;color:#64748b;margin-top:1px">📞 ${esc([c.simi, c.farsimi].filter(Boolean).join(' / '))}</div>` : ''}
-              ${c.netfang ? `<div style="font-size:11px;color:#64748b;margin-top:1px">✉️ ${esc(c.netfang)}</div>` : ''}
-              ${c['tengiliður'] ? `<div style="font-size:11px;color:#64748b;margin-top:1px">👤 ${esc(c['tengiliður'])}</div>` : ''}
+              <div style="font-size:18px;font-weight:700;color:var(--ink1)">${esc(c.nafn || '—')}</div>
+              <div style="font-size:11.5px;color:var(--ink3);margin-top:3px">${esc(fmtKt(c.kennitala) || '—')}${c.heimilisfang ? ' · 📍 ' + esc(c.heimilisfang) : ''}</div>
+              ${c.simi || c.farsimi ? `<div style="font-size:11px;color:var(--ink3);margin-top:1px">📞 ${esc([c.simi, c.farsimi].filter(Boolean).join(' / '))}</div>` : ''}
+              ${c.netfang ? `<div style="font-size:11px;color:var(--ink3);margin-top:1px">✉️ ${esc(c.netfang)}</div>` : ''}
+              ${c['tengiliður'] ? `<div style="font-size:11px;color:var(--ink3);margin-top:1px">👤 ${esc(c['tengiliður'])}</div>` : ''}
             </div>
             <div class="_ars-info-edit" style="display:none">
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px">
-                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Nafn<input data-field="nafn" value="${esc(c.nafn || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none"/></label>
-                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Kennitala<input data-field="kennitala" value="${esc(c.kennitala || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none;font-family:monospace"/></label>
-                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase;grid-column:1/-1">Heimilisfang<input data-field="heimilisfang" value="${esc(c.heimilisfang || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none"/></label>
-                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Sími<input data-field="simi" value="${esc(c.simi || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none"/></label>
-                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Farsími<input data-field="farsimi" value="${esc(c.farsimi || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none"/></label>
-                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Netfang<input data-field="netfang" type="email" value="${esc(c.netfang || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none"/></label>
-                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:#64748b;font-weight:700;text-transform:uppercase">Tengiliður<input data-field="tengiliður" value="${esc(c['tengiliður'] || '')}" style="padding:6px 9px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;color:#0f172a;background:#fff;outline:none"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Nafn<input data-field="nafn" value="${esc(c.nafn || '')}" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Kennitala<input data-field="kennitala" value="${esc(c.kennitala || '')}" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none;font-family:monospace"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase;grid-column:1/-1">Heimilisfang<input data-field="heimilisfang" value="${esc(c.heimilisfang || '')}" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Sími<input data-field="simi" value="${esc(c.simi || '')}" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Farsími<input data-field="farsimi" value="${esc(c.farsimi || '')}" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Netfang<input data-field="netfang" type="email" value="${esc(c.netfang || '')}" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Tengiliður<input data-field="tengiliður" value="${esc(c['tengiliður'] || '')}" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none"/></label>
               </div>
               <div style="display:flex;gap:6px;margin-top:8px">
                 <button class="_ars-info-save" type="button" style="padding:6px 14px;background:#15803d;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">💾 Vista</button>
-                <button class="_ars-info-cancel" type="button" style="padding:6px 14px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:12px">Hætta við</button>
+                <button class="_ars-info-cancel" type="button" style="padding:6px 14px;background:var(--surface);color:var(--ink2);border:1px solid var(--brd2);border-radius:6px;cursor:pointer;font:inherit;font-size:12px">Hætta við</button>
               </div>
             </div>
           </div>
           <div style="display:flex;gap:4px;flex-shrink:0">
-            <button class="_ars-info-toggle" type="button" title="Breyta upplýsingum" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;border-radius:5px;width:28px;height:28px;cursor:pointer;font-size:13px;padding:0">✏️</button>
-            <button class="_ars-close" type="button" style="background:transparent;border:none;font-size:24px;color:#94a3b8;cursor:pointer;line-height:1;padding:0 4px">×</button>
+            <button class="_ars-info-toggle" type="button" title="Breyta upplýsingum" style="background:var(--brd);border:1px solid var(--brd);color:var(--ink2);border-radius:5px;width:28px;height:28px;cursor:pointer;font-size:13px;padding:0">✏️</button>
+            <button class="_ars-close" type="button" style="background:transparent;border:none;font-size:24px;color:var(--ink4);cursor:pointer;line-height:1;padding:0 4px">×</button>
           </div>
         </div>
 
@@ -1231,11 +1231,11 @@
               <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase">Síðasta skoðun</div>
               <div style="font-size:16px;font-weight:800;color:#15803d;margin-top:2px">${ars.last_year_inspected || '—'}</div>
               ${ars.last_skodun ? `<div style="font-size:10.5px;color:#16a34a">${esc(ars.last_skodun)}</div>` : ''}
-              ${skyrsla ? `<a href="${skyrslaUrl}" target="_blank" rel="noopener" title="${esc(skyrsla)}" style="display:inline-block;margin-top:3px;font-size:10.5px;color:#2563eb;text-decoration:none;font-weight:700">📄 Skýrsla</a>` : ''}
+              ${skyrsla ? `<a href="${skyrslaUrl}" target="_blank" rel="noopener" title="${esc(skyrsla)}" style="display:inline-block;margin-top:3px;font-size:10.5px;color:var(--brand);text-decoration:none;font-weight:700">📄 Skýrsla</a>` : ''}
             </div>
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:8px 11px">
-              <div style="font-size:10px;font-weight:700;color:#475569;text-transform:uppercase">Áætluð árstekja</div>
-              <div style="font-size:16px;font-weight:800;color:#0f172a;margin-top:2px;font-variant-numeric:tabular-nums">${fmtKr(est)}</div>
+            <div style="background:var(--bg);border:1px solid var(--brd);border-radius:8px;padding:8px 11px">
+              <div style="font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase">Áætluð árstekja</div>
+              <div style="font-size:16px;font-weight:800;color:var(--ink1);margin-top:2px;font-variant-numeric:tabular-nums">${fmtKr(est)}</div>
               ${ars.aminning_parsed && ars.aminning_parsed.discount_pct ? `<div style="font-size:10.5px;color:#dc2626">−${ars.aminning_parsed.discount_pct}% afsl.</div>` : ''}
             </div>
           </div>
@@ -1246,29 +1246,29 @@
             <div style="font-size:12px;color:#78350f;line-height:1.5;white-space:pre-wrap">${esc(aminning)}</div>
             ${ars.aminning_parsed && (ars.aminning_parsed.yfirferd_price || ars.aminning_parsed.hledsla_price) ? `
               <div style="margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;font-size:10.5px;color:#92400e">
-                ${ars.aminning_parsed.yfirferd_price ? `<span style="background:#fff;border:1px solid #fde68a;border-radius:5px;padding:2px 7px"><strong>Yfirferð:</strong> ${fmtKr(ars.aminning_parsed.yfirferd_price)}</span>` : ''}
-                ${ars.aminning_parsed.hledsla_price ? `<span style="background:#fff;border:1px solid #fde68a;border-radius:5px;padding:2px 7px"><strong>Hleðsla:</strong> ${fmtKr(ars.aminning_parsed.hledsla_price)}</span>` : ''}
+                ${ars.aminning_parsed.yfirferd_price ? `<span style="background:var(--surface);border:1px solid #fde68a;border-radius:5px;padding:2px 7px"><strong>Yfirferð:</strong> ${fmtKr(ars.aminning_parsed.yfirferd_price)}</span>` : ''}
+                ${ars.aminning_parsed.hledsla_price ? `<span style="background:var(--surface);border:1px solid #fde68a;border-radius:5px;padding:2px 7px"><strong>Hleðsla:</strong> ${fmtKr(ars.aminning_parsed.hledsla_price)}</span>` : ''}
               </div>` : ''}
           </div>` : ''}
 
           <div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-              <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase">🧰 Þjónustutæki  <span class="_ars-eq-total" style="color:#94a3b8;font-weight:500">(${eqTotal} alls)</span></div>
-              <button class="_ars-eq-toggle" type="button" title="Breyta tölum" style="background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;border-radius:5px;padding:3px 8px;cursor:pointer;font:inherit;font-size:11px">✏️ Breyta</button>
+              <div style="font-size:11px;font-weight:700;color:var(--ink2);text-transform:uppercase">🧰 Þjónustutæki  <span class="_ars-eq-total" style="color:var(--ink4);font-weight:500">(${eqTotal} alls)</span></div>
+              <button class="_ars-eq-toggle" type="button" title="Breyta tölum" style="background:var(--brd);border:1px solid var(--brd);color:var(--ink2);border-radius:5px;padding:3px 8px;cursor:pointer;font:inherit;font-size:11px">✏️ Breyta</button>
             </div>
             <div class="_ars-eq-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">
               ${eqRows.map(([k, label]) => {
                 const v = +eq[k] || 0;
-                return `<div data-eq-cell="${k}" style="background:${v?'#f8fafc':'#fff'};border:1px solid ${v?'#cbd5e1':'#f1f5f9'};border-radius:7px;padding:7px 9px;text-align:center;position:relative">
-                  <div style="font-size:9.5px;color:#64748b;font-weight:600;line-height:1.2">${esc(label)}</div>
-                  <div class="_ars-eq-val" style="font-size:18px;font-weight:800;color:${v?'#0f172a':'#cbd5e1'};margin-top:2px">${v||'·'}</div>
-                  <input class="_ars-eq-input" data-eq="${k}" type="number" min="0" step="1" value="${v}" style="display:none;width:100%;padding:4px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:14px;font-weight:700;color:#0f172a;background:#fff;outline:none;text-align:center;margin-top:2px;box-sizing:border-box;-moz-appearance:textfield"/>
+                return `<div data-eq-cell="${k}" style="background:${v?'var(--bg)':'var(--surface)'};border:1px solid ${v?'var(--brd2)':'var(--brd)'};border-radius:7px;padding:7px 9px;text-align:center;position:relative">
+                  <div style="font-size:9.5px;color:var(--ink3);font-weight:600;line-height:1.2">${esc(label)}</div>
+                  <div class="_ars-eq-val" style="font-size:18px;font-weight:800;color:${v?'var(--ink1)':'var(--brd2)'};margin-top:2px">${v||'·'}</div>
+                  <input class="_ars-eq-input" data-eq="${k}" type="number" min="0" step="1" value="${v}" style="display:none;width:100%;padding:4px 6px;border:1px solid var(--brd2);border-radius:5px;font:inherit;font-size:14px;font-weight:700;color:var(--ink1);background:var(--surface);outline:none;text-align:center;margin-top:2px;box-sizing:border-box;-moz-appearance:textfield"/>
                 </div>`;
               }).join('')}
             </div>
             <div class="_ars-eq-actions" style="display:none;gap:6px;margin-top:8px">
               <button class="_ars-eq-save" type="button" style="padding:6px 14px;background:#15803d;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">💾 Vista breytingar</button>
-              <button class="_ars-eq-cancel" type="button" style="padding:6px 14px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:12px">Hætta við</button>
+              <button class="_ars-eq-cancel" type="button" style="padding:6px 14px;background:var(--surface);color:var(--ink2);border:1px solid var(--brd2);border-radius:6px;cursor:pointer;font:inherit;font-size:12px">Hætta við</button>
             </div>
           </div>
 
@@ -1281,7 +1281,7 @@
             const sorted = list.slice().sort((a, b) => (+b.year || 0) - (+a.year || 0));
             return `
               <div>
-                <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px">📎 Skjöl <span style="color:#94a3b8;font-weight:500">(${list.length})</span></div>
+                <div style="font-size:11px;font-weight:700;color:var(--ink2);text-transform:uppercase;margin-bottom:6px">📎 Skjöl <span style="color:var(--ink4);font-weight:500">(${list.length})</span></div>
                 <div style="display:flex;flex-direction:column;gap:4px">
                   ${sorted.map((a, idx) => {
                     // Drive-link entries get a direct <a> opening Drive viewer.
@@ -1293,18 +1293,18 @@
                     const url = a.drive_url || (a.drive_id ? 'https://drive.google.com/file/d/' + a.drive_id + '/view' : null);
                     const icon = a.kind === 'samningur' ? '📜' : '🧾';
                     const yearTag = a.year ? `<span style="background:#f0fdf4;color:#15803d;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #bbf7d0;margin-left:6px">${a.year}</span>` : '';
-                    const autoTag = a.auto_matched ? '<span style="color:#94a3b8;font-size:10px" title="Sjálfkrafa pörun">✦</span>' : '';
+                    const autoTag = a.auto_matched ? '<span style="color:var(--ink4);font-size:10px" title="Sjálfkrafa pörun">✦</span>' : '';
                     const inner = `
                       <span style="font-size:14px">${icon}</span>
                       <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(a.name || 'Skjal')}</span>
                       ${yearTag}
                       ${autoTag}
-                      <span style="color:#94a3b8;font-size:10px">↗</span>`;
-                    const baseStyle = "display:flex;align-items:center;gap:8px;background:#fafafa;border:1px solid #f1f5f9;border-radius:6px;padding:6px 10px;text-decoration:none;color:#0f172a;font-size:11.5px;transition:background .1s;text-align:left;width:100%;font:inherit;cursor:pointer";
+                      <span style="color:var(--ink4);font-size:10px">↗</span>`;
+                    const baseStyle = "display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;text-decoration:none;color:var(--ink1);font-size:11.5px;transition:background .1s;text-align:left;width:100%;font:inherit;cursor:pointer";
                     if (isStorage) {
-                      return `<button type="button" data-ars-att-co="${coId}" data-ars-att-idx="${idx}" style="${baseStyle}" onmouseover="this.style.background='#fff';this.style.borderColor='#cbd5e1'" onmouseout="this.style.background='#fafafa';this.style.borderColor='#f1f5f9'">${inner}</button>`;
+                      return `<button type="button" data-ars-att-co="${coId}" data-ars-att-idx="${idx}" style="${baseStyle}" onmouseover="this.style.background='var(--surface)';this.style.borderColor='var(--brd2)'" onmouseout="this.style.background='var(--bg)';this.style.borderColor='var(--brd)'">${inner}</button>`;
                     }
-                    return `<a href="${esc(url || '#')}" target="_blank" rel="noopener" style="${baseStyle}" onmouseover="this.style.background='#fff';this.style.borderColor='#cbd5e1'" onmouseout="this.style.background='#fafafa';this.style.borderColor='#f1f5f9'">${inner}</a>`;
+                    return `<a href="${esc(url || '#')}" target="_blank" rel="noopener" style="${baseStyle}" onmouseover="this.style.background='var(--surface)';this.style.borderColor='var(--brd2)'" onmouseout="this.style.background='var(--bg)';this.style.borderColor='var(--brd)'">${inner}</a>`;
                   }).join('')}
                 </div>
               </div>
@@ -1325,23 +1325,23 @@
             const rows = Object.values(seen).sort((a, b) => String(b.year).localeCompare(String(a.year)));
             return `
             <div>
-              <div style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase;margin-bottom:6px">📜 Saga <span style="color:#94a3b8;font-weight:500">(${rows.length})</span></div>
+              <div style="font-size:11px;font-weight:700;color:var(--ink2);text-transform:uppercase;margin-bottom:6px">📜 Saga <span style="color:var(--ink4);font-weight:500">(${rows.length})</span></div>
               <div style="display:flex;flex-direction:column;gap:4px">
                 ${rows.map(h => `
-                  <div style="background:#fafafa;border:1px solid #f1f5f9;border-radius:6px;padding:6px 10px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:11.5px">
-                    <div><strong style="color:#0f172a">${esc(String(h.year))}</strong> <span style="color:#64748b">${esc(h.skodun || '')}</span></div>
-                    <div style="color:#475569;font-size:11px">${esc((h.stada||'').replace(/_/g, ' ')) || ''}</div>
+                  <div style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:11.5px">
+                    <div><strong style="color:var(--ink1)">${esc(String(h.year))}</strong> <span style="color:var(--ink3)">${esc(h.skodun || '')}</span></div>
+                    <div style="color:var(--ink2);font-size:11px">${esc((h.stada||'').replace(/_/g, ' ')) || ''}</div>
                   </div>
                 `).join('')}
               </div>
             </div>`;
           })()}
 
-          <div style="display:flex;gap:7px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #f1f5f9">
-            <button class="_ars-go-fyrirt" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:#0f172a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🏢 Opna fyrirtæki</button>
-            <button class="_ars-go-map" data-co-id="${c.id}" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🗺️ Sjá á korti</button>
-            <button class="_ars-go-brunakerfi" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:#fff;color:#dc2626;border:1px solid #fca5a5;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🚨 Brunakerfi</button>
-            <button class="_ars-go-samningur" data-co-id="${c.id}" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">📑 Þjónustusamningur</button>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;padding-top:8px;border-top:1px solid var(--brd)">
+            <button class="_ars-go-fyrirt" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:var(--brand);color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🏢 Opna fyrirtæki</button>
+            <button class="_ars-go-map" data-co-id="${c.id}" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:var(--surface);color:var(--ink1);border:1px solid var(--brd2);border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🗺️ Sjá á korti</button>
+            <button class="_ars-go-brunakerfi" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:var(--surface);color:#dc2626;border:1px solid #fca5a5;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🚨 Brunakerfi</button>
+            <button class="_ars-go-samningur" data-co-id="${c.id}" type="button" style="flex:1;min-width:140px;padding:8px 12px;background:var(--surface);color:var(--ink1);border:1px solid var(--brd2);border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">📑 Þjónustusamningur</button>
           </div>
         </div>
       </div>
@@ -1488,24 +1488,24 @@
     bg.className = '_ars-modal-bg';
     bg.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:9999;display:flex;align-items:flex-start;justify-content:center;padding:60px 16px;overflow-y:auto';
     bg.innerHTML = `
-      <div style="background:#fff;border-radius:14px;max-width:520px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,0.4);overflow:hidden">
-        <div style="padding:14px 18px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:16px;font-weight:700;color:#0f172a">+ Nýtt fyrirtæki</div>
-          <button class="_ars-new-close" type="button" style="background:transparent;border:none;font-size:24px;color:#94a3b8;cursor:pointer;line-height:1;padding:0 4px">×</button>
+      <div style="background:var(--surface);border-radius:14px;max-width:520px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,0.4);overflow:hidden">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--brd);display:flex;justify-content:space-between;align-items:center">
+          <div style="font-size:16px;font-weight:700;color:var(--ink1)">+ Nýtt fyrirtæki</div>
+          <button class="_ars-new-close" type="button" style="background:transparent;border:none;font-size:24px;color:var(--ink4);cursor:pointer;line-height:1;padding:0 4px">×</button>
         </div>
         <div style="padding:18px;display:flex;flex-direction:column;gap:10px">
-          <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#475569;font-weight:700;text-transform:uppercase">Nafn *<input data-f="nafn" required style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;color:#0f172a;background:#fff;outline:none"/></label>
-          <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#475569;font-weight:700;text-transform:uppercase">Kennitala<input data-f="kennitala" placeholder="123456-7890" style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;color:#0f172a;background:#fff;outline:none;font-family:monospace"/></label>
-          <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#475569;font-weight:700;text-transform:uppercase">Heimilisfang<input data-f="heimilisfang" style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;color:#0f172a;background:#fff;outline:none"/></label>
+          <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Nafn *<input data-f="nafn" required style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none"/></label>
+          <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Kennitala<input data-f="kennitala" placeholder="123456-7890" style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none;font-family:monospace"/></label>
+          <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Heimilisfang<input data-f="heimilisfang" style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none"/></label>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-            <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#475569;font-weight:700;text-transform:uppercase">Sími<input data-f="simi" style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;color:#0f172a;background:#fff;outline:none"/></label>
-            <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#475569;font-weight:700;text-transform:uppercase">Netfang<input data-f="netfang" type="email" style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;color:#0f172a;background:#fff;outline:none"/></label>
+            <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Sími<input data-f="simi" style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none"/></label>
+            <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Netfang<input data-f="netfang" type="email" style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none"/></label>
           </div>
-          <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:#475569;font-weight:700;text-transform:uppercase">Tengiliður<input data-f="tengiliður" style="padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:14px;color:#0f172a;background:#fff;outline:none"/></label>
+          <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Tengiliður<input data-f="tengiliður" style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none"/></label>
           <div class="_ars-new-err" style="color:#dc2626;font-size:12px;display:none"></div>
           <div style="display:flex;gap:8px;margin-top:6px">
             <button class="_ars-new-save" type="button" style="flex:1;padding:9px 14px;background:#15803d;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">💾 Vista</button>
-            <button class="_ars-new-cancel" type="button" style="padding:9px 14px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:13px">Hætta við</button>
+            <button class="_ars-new-cancel" type="button" style="padding:9px 14px;background:var(--surface);color:var(--ink2);border:1px solid var(--brd2);border-radius:8px;cursor:pointer;font:inherit;font-size:13px">Hætta við</button>
           </div>
         </div>
       </div>
