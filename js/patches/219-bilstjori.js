@@ -202,7 +202,9 @@
       '._bs-root{display:flex;flex-direction:column;min-height:100%;max-width:720px;margin:0 auto;font-family:var(--font,Inter,system-ui,sans-serif);font-size:16px;color:var(--ink1,#0f1117);-webkit-tap-highlight-color:transparent}',
       '._bs-top{position:sticky;top:0;z-index:6;background:var(--sidebar-bg,#1a1f2e);color:#fff;padding:14px 16px;display:flex;align-items:center;gap:10px;border-bottom:2px solid var(--brand,#C93C1D)}',
       '._bs-top h1{margin:0;font-size:18px;font-weight:700;letter-spacing:-.02em;display:flex;align-items:center;gap:9px;flex:1}',
-      '._bs-exit{min-height:36px;padding:0 12px;font:inherit;font-size:13px;font-weight:600;border:1px solid rgba(255,255,255,.18);border-radius:9px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.85);cursor:pointer}',
+      '._bs-iconbtn{min-width:44px;min-height:44px;padding:0 10px;font:inherit;font-size:17px;line-height:1;border:1px solid rgba(255,255,255,.18);border-radius:10px;background:rgba(255,255,255,.08);color:#fff;cursor:pointer;flex:none}',
+      '._bs-iconbtn:active{background:rgba(255,255,255,.2)}',
+      '._bs-hint{font-size:11.5px;color:var(--ink3,#8891a0);line-height:1.45;padding:1px 2px 0}',
       '._bs-map{width:100%;height:240px;background:#e9eaee;border-bottom:1px solid var(--brd,#e4e6ea)}',
       '._bs-pin{background:transparent;border:0}',
       '._bs-controls{position:sticky;top:51px;z-index:5;background:var(--bg,#f5f5f7);padding:12px 14px 8px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--brd,#e4e6ea)}',
@@ -319,7 +321,9 @@
     if (!root.querySelector('#_bs-mapcanvas')) {
       root.innerHTML =
         '<div class="_bs-top"><h1><span>🚚</span><span>Bílstjóri</span></h1>' +
-          '<button id="_bs-exit" type="button" title="Til baka í forritið">✕ Loka</button></div>' +
+          '<button id="_bs-full" class="_bs-iconbtn" type="button" title="Allur skjár (fela vafra)">⛶</button>' +
+          '<button id="_bs-share" class="_bs-iconbtn" type="button" title="Afrita hlekk til að senda á bílstjóra">🔗</button>' +
+          '<button id="_bs-exit" class="_bs-iconbtn" type="button" title="Til baka í forritið / vefsíðu">✕</button></div>' +
         '<div id="_bs-mapcanvas" class="_bs-map"></div>' +
         '<div class="_bs-controls">' +
           '<input id="_bs-q" class="_bs-search" type="search" inputmode="search" placeholder="Leita að fyrirtæki, heimilisfangi, kt…">' +
@@ -327,12 +331,18 @@
             '<button data-seg="today" type="button">📋 Dagsins verk</button>' +
             '<button data-seg="all" type="button">🏢 Allir í þjónustu</button>' +
           '</div>' +
+          '<div class="_bs-hint">🔗 Afritaðu hlekkinn og sendu á bílstjóra · ⛶ opnar í fullum skjá · eða „Bæta á heimaskjá" fyrir app-ham.</div>' +
         '</div>' +
         '<div id="_bs-list" class="_bs-list"></div>' +
         '<div class="_bs-bottom"><div class="inner"><button id="_bs-drive" class="_bs-primary" type="button">🚗 Keyra leið dagsins</button></div></div>';
 
       root.querySelector('#_bs-exit').addEventListener('click', () => {
         if (window.App && App.switchView) App.switchView('leidsogn');
+      });
+      root.querySelector('#_bs-full').addEventListener('click', toggleFullscreen);
+      root.querySelector('#_bs-share').addEventListener('click', () => {
+        const url = location.origin + '/#' + NAV_KEY;
+        copyText(url).then(ok => toast(ok ? '✓ Hlekkur afritaður — sendu á bílstjóra' : url));
       });
       const qEl = root.querySelector('#_bs-q');
       qEl.addEventListener('input', e => { _search = e.target.value || ''; renderList(); renderPins(); });
@@ -428,6 +438,23 @@
     if (lat != null && lng != null) url = 'https://www.google.com/maps/dir/?api=1&destination=' + lat + ',' + lng + '&travelmode=driving';
     else url = 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent([co.nafn, co.heimilisfang].filter(Boolean).join(', ')) + '&travelmode=driving';
     window.open(url, '_blank');
+  }
+
+  function copyText(t) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText)
+        return navigator.clipboard.writeText(t).then(() => true).catch(() => { try { window.prompt('Afritaðu hlekkinn:', t); } catch (_) {} return false; });
+    } catch (_) {}
+    try { window.prompt('Afritaðu hlekkinn:', t); } catch (_) {}
+    return Promise.resolve(false);
+  }
+  function toggleFullscreen() {
+    const d = document, el = d.documentElement;
+    const fsEl = d.fullscreenElement || d.webkitFullscreenElement;
+    try {
+      if (fsEl) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); }
+      else { (el.requestFullscreen || el.webkitRequestFullscreen).call(el); }
+    } catch (_) { toast('Fullur skjár ekki studdur hér — notaðu „Bæta á heimaskjá".'); }
   }
 
   function openCompany(coId) {
