@@ -55,8 +55,8 @@
     if (c.includes('word') || /\.(docx?|odt|rtf)$/.test(n)) return { ico: '📝', label: 'Word', color: '#2563eb' };
     if (c.includes('excel') || c.includes('spreadsheet') || /\.(xlsx?|ods|csv)$/.test(n)) return { ico: '📊', label: 'Excel', color: '#16a34a' };
     if (c.includes('zip') || /\.(zip|rar|7z)$/.test(n)) return { ico: '📦', label: 'Zip', color: '#a855f7' };
-    if (c.includes('text') || /\.(txt|md)$/.test(n)) return { ico: '📃', label: 'Texti', color: '#64748b' };
-    return { ico: '📎', label: 'Skjal', color: '#475569' };
+    if (c.includes('text') || /\.(txt|md)$/.test(n)) return { ico: '📃', label: 'Texti', color: 'var(--ink3)' };
+    return { ico: '📎', label: 'Skjal', color: 'var(--ink2)' };
   }
   function isPreviewable(ct, name) {
     const c = String(ct || '').toLowerCase();
@@ -225,7 +225,7 @@
     const section = document.createElement('div');
     section.className = '_cat-section';
     section.dataset.coId = coId;
-    section.style.cssText = 'margin:18px 0 24px;padding:16px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.04)';
+    section.style.cssText = 'margin:18px 0 24px;padding:16px;border:1px solid var(--brd);border-radius:12px;background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,0.04)';
     section.innerHTML = renderSection(coId);
 
     // Append last — and the early-return above re-appends on every render
@@ -269,24 +269,24 @@
     // (year, kind). Attaching an úttektarskýrsla lights up the skoðað-marking.
     const addBtn = (y, kind, has) => '<button class="_cat-cell-add" data-year="' + y + '" data-kind="' + kind + '" ' +
       'title="' + (has ? 'Bæta við / skipta um ' : 'Tengja ') + (kind === 'skyrsla' ? 'úttektarskýrslu' : 'reikning') + ' fyrir ' + y + '" ' +
-      'style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;margin:2px 2px 0 0;background:#fff;border:1px dashed ' + (has ? '#cbd5e1' : '#94a3b8') + ';color:#64748b">＋' + (has ? '' : ' Tengja') + '</button>';
+      'style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;margin:2px 2px 0 0;background:var(--surface);border:1px dashed ' + (has ? 'var(--brd2)' : 'var(--ink4)') + ';color:var(--ink3)">＋' + (has ? '' : ' Tengja') + '</button>';
     const rows = YEARS.map(y => {
       const sk = (cell[y] && cell[y].skyrsla) || [];
       const re = (cell[y] && cell[y].reikningur) || [];
       const isCur = (y === new Date().getFullYear());
-      return '<tr style="border-top:1px solid #f1f5f9">' +
+      return '<tr style="border-top:1px solid var(--brd)">' +
         '<td style="padding:8px 12px;font-weight:700;color:' + (isCur ? '#1d4ed8' : '#0f172a') + '">' + y + '</td>' +
         '<td style="padding:6px 12px">' + sk.map(f => chip(f, 'skyrsla')).join('') + addBtn(y, 'skyrsla', sk.length) + '</td>' +
         '<td style="padding:6px 12px">' + re.map(f => chip(f, 'reikningur')).join('') + addBtn(y, 'reikningur', re.length) + '</td>' +
       '</tr>';
     }).join('');
-    return '<div style="margin-bottom:16px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid #e2e8f0">' +
-        '<h3 style="margin:0;font-size:14px;font-weight:800;color:#0f172a">📁 Skjöl eftir ári</h3>' +
-        '<span style="font-size:11px;color:#94a3b8">2023–2026</span>' +
+    return '<div style="margin-bottom:16px;background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 14px;border-bottom:1px solid var(--brd)">' +
+        '<h3 style="margin:0;font-size:14px;font-weight:800;color:var(--ink1)">📁 Skjöl eftir ári</h3>' +
+        '<span style="font-size:11px;color:var(--ink4)">2023–2026</span>' +
       '</div>' +
       '<table style="width:100%;border-collapse:collapse;font-size:12.5px">' +
-        '<thead><tr style="background:#f8fafc;color:#475569;font-size:10px;text-transform:uppercase;letter-spacing:.04em">' +
+        '<thead><tr style="background:var(--bg);color:var(--ink2);font-size:10px;text-transform:uppercase;letter-spacing:.04em">' +
           '<th style="padding:8px 12px;text-align:left">Ár</th>' +
           '<th style="padding:8px 12px;text-align:left">Úttektarskýrsla</th>' +
           '<th style="padding:8px 12px;text-align:left">Reikningur</th>' +
@@ -299,12 +299,12 @@
     const cards = list.length ? list.map(f => {
       const ic = iconForType(f.content_type, f.name);
       return '' +
-      '<div class="_cat-card" data-id="' + esc(f.id) + '" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 2px rgba(0,0,0,0.03)">' +
+      '<div class="_cat-card" data-id="' + esc(f.id) + '" style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;padding:12px;display:flex;flex-direction:column;gap:6px;box-shadow:0 1px 2px rgba(0,0,0,0.03)">' +
         '<div style="display:flex;align-items:flex-start;gap:8px">' +
           '<div style="font-size:24px;line-height:1;flex-shrink:0">' + ic.ico + '</div>' +
           '<div style="min-width:0;flex:1">' +
-            '<div style="font-weight:700;font-size:13px;color:#0f172a;line-height:1.3;word-break:break-word">' + esc(f.name) + '</div>' +
-            '<div style="font-size:11px;color:#64748b;margin-top:2px">' + fmtSize(f.size) + ' · ' + fmtDate(f.uploaded_at) + '</div>' +
+            '<div style="font-weight:700;font-size:13px;color:var(--ink1);line-height:1.3;word-break:break-word">' + esc(f.name) + '</div>' +
+            '<div style="font-size:11px;color:var(--ink3);margin-top:2px">' + fmtSize(f.size) + ' · ' + fmtDate(f.uploaded_at) + '</div>' +
           '</div>' +
           '<span style="font-size:9px;font-weight:700;background:' + ic.color + '15;color:' + ic.color + ';padding:2px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:0.04em;flex-shrink:0">' + ic.label + '</span>' +
         '</div>' +
@@ -313,13 +313,13 @@
           // (year === '0' = user explicitly cleared — no auto-detection).
           const nm = (f.year == null && (String(f.name||'').match(/\b(20[2-3][0-9])\b/) || [])[1]) || null;
           const eff = (f.year && f.year !== '0') ? String(f.year) : nm;
-          return '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#64748b">' +
+          return '<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink3)">' +
           'Ár:' +
-          '<select class="_cat-year" data-id="' + esc(f.id) + '" onclick="event.stopPropagation()" style="font:inherit;font-size:11px;padding:2px 4px;border:1px solid ' + (eff ? '#86efac' : '#e2e8f0') + ';border-radius:6px;background:' + (eff ? '#f0fdf4' : '#fff') + ';color:#0f172a">' +
+          '<select class="_cat-year" data-id="' + esc(f.id) + '" onclick="event.stopPropagation()" style="font:inherit;font-size:11px;padding:2px 4px;border:1px solid ' + (eff ? '#86efac' : 'var(--brd)') + ';border-radius:6px;background:' + (eff ? '#f0fdf4' : '#fff') + ';color:var(--ink1)">' +
             '<option value=""' + (!eff ? ' selected' : '') + '>—</option>' +
             ['2023','2024','2025','2026'].map(y => '<option value="' + y + '"' + (eff === y ? ' selected' : '') + '>' + y + '</option>').join('') +
           '</select>' +
-          (eff ? '<span title="Birtist í ' + esc(eff) + ' dálki í Fyrirtæki í þjónustu listanum' + (f.year ? '' : ' (sjálfvirkt af skráarnafni)') + '" style="color:#15803d;font-weight:700">📄→' + esc(eff.slice(2)) + (f.year ? '' : '<span style="color:#94a3b8;font-weight:500"> sjálfv.</span>') + '</span>' : '') +
+          (eff ? '<span title="Birtist í ' + esc(eff) + ' dálki í Fyrirtæki í þjónustu listanum' + (f.year ? '' : ' (sjálfvirkt af skráarnafni)') + '" style="color:#15803d;font-weight:700">📄→' + esc(eff.slice(2)) + (f.year ? '' : '<span style="color:var(--ink4);font-weight:500"> sjálfv.</span>') + '</span>' : '') +
         '</div>'; })() +
         '<div style="display:flex;gap:4px;margin-top:auto;flex-wrap:wrap">' +
           // Only show open/download when an actual file is attached. Marker rows
@@ -330,25 +330,25 @@
                 ? '<button class="_cat-open btn btn-primary btn-sm" data-id="' + esc(f.id) + '" style="flex:1;font-size:11px">📂 Opna</button>'
                 : '<button class="_cat-download btn btn-primary btn-sm" data-id="' + esc(f.id) + '" style="flex:1;font-size:11px">⬇ Sækja</button>') +
                '<button class="_cat-download2 btn btn-outline btn-sm" data-id="' + esc(f.id) + '" title="Sækja" style="font-size:11px">⬇</button>')
-            : '<span style="flex:1;font-size:10.5px;color:#94a3b8;align-self:center">Skráning · ekkert skjal viðhengt</span>') +
+            : '<span style="flex:1;font-size:10.5px;color:var(--ink4);align-self:center">Skráning · ekkert skjal viðhengt</span>') +
           '<button class="_cat-del btn btn-outline btn-sm" data-id="' + esc(f.id) + '" style="color:#dc2626;border-color:#fecaca;font-size:11px" title="Eyða">✕</button>' +
         '</div>' +
       '</div>';
-    }).join('') : '<div style="grid-column:1/-1;padding:30px;text-align:center;color:#94a3b8;font-size:13px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px">Engin skjöl tengd þessu fyrirtæki ennþá — smelltu á <strong>+ Hlaða inn skjali</strong> til að byrja</div>';
+    }).join('') : '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--ink4);font-size:13px;background:var(--bg);border:1px dashed var(--brd2);border-radius:10px">Engin skjöl tengd þessu fyrirtæki ennþá — smelltu á <strong>+ Hlaða inn skjali</strong> til að byrja</div>';
 
     return '' +
       // docYearGridHtml removed — patch 199 now renders the canonical v6
       // "Skjöl eftir ári" grid (from customer_documents). Keep only uploads here.
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
         '<div>' +
-          '<h3 style="margin:0;font-size:15px;font-weight:700;color:#0f172a">📎 Skjöl & skýrslur</h3>' +
-          '<div style="font-size:11px;color:#64748b;margin-top:2px">Eldri úttektarskýrslur, samningar, myndir, og önnur skjöl tengd þessu fyrirtæki.</div>' +
+          '<h3 style="margin:0;font-size:15px;font-weight:700;color:var(--ink1)">📎 Skjöl & skýrslur</h3>' +
+          '<div style="font-size:11px;color:var(--ink3);margin-top:2px">Eldri úttektarskýrslur, samningar, myndir, og önnur skjöl tengd þessu fyrirtæki.</div>' +
         '</div>' +
         '<button class="_cat-upload btn btn-primary btn-sm" style="padding:8px 14px">+ Hlaða inn skjali</button>' +
       '</div>' +
       '<div class="_cat-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">' + cards + '</div>' +
       '<input type="file" class="_cat-file-input" accept="*/*" style="display:none">' +
-      '<div class="_cat-dropzone" style="margin-top:10px;padding:14px;text-align:center;font-size:12px;color:#94a3b8;border:2px dashed transparent;border-radius:8px;transition:all .15s">Eða dragðu skjal hingað til að hlaða inn</div>';
+      '<div class="_cat-dropzone" style="margin-top:10px;padding:14px;text-align:center;font-size:12px;color:var(--ink4);border:2px dashed transparent;border-radius:8px;transition:all .15s">Eða dragðu skjal hingað til að hlaða inn</div>';
   }
 
   function wireSection(section, coId) {
@@ -440,7 +440,7 @@
           e.preventDefault();
           dropzone.style.borderColor = 'transparent';
           dropzone.style.background = '';
-          dropzone.style.color = '#94a3b8';
+          dropzone.style.color = 'var(--ink4)';
         })
       );
       dropzone.addEventListener('drop', async e => {
@@ -492,24 +492,24 @@
     dlg.id = '_cat-preview';
     dlg.style.cssText = 'position:fixed;inset:0;z-index:100023;background:rgba(0,0,0,0.85);display:flex;flex-direction:column;padding:0';
     dlg.innerHTML =
-      '<div style="padding:12px 18px;background:#0f172a;color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
+      '<div style="padding:12px 18px;background:var(--brand);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
         '<div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1">' +
           '<span style="font-size:22px;line-height:1">' + ic.ico + '</span>' +
           '<div style="min-width:0">' +
             '<div style="font-weight:700;font-size:14px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(file.name) + '</div>' +
-            '<div style="font-size:11px;color:#94a3b8;margin-top:2px">' + fmtSize(file.size) + ' · ' + fmtDate(file.uploaded_at) + '</div>' +
+            '<div style="font-size:11px;color:var(--ink4);margin-top:2px">' + fmtSize(file.size) + ' · ' + fmtDate(file.uploaded_at) + '</div>' +
           '</div>' +
         '</div>' +
         '<div style="display:flex;gap:8px;flex-shrink:0">' +
-          (isPdf || isImg ? '<button class="_catp-print" type="button" style="padding:8px 14px;background:#fff;color:#0f172a;border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">🖨 Prenta</button>' : '') +
-          '<a href="' + esc(url) + '" download="' + esc(file.name) + '" target="_blank" rel="noopener" style="padding:8px 14px;background:#1e293b;color:#fff;border:1px solid #475569;border-radius:7px;text-decoration:none;font-size:13px;font-weight:600">⬇ Sækja</a>' +
-          '<button id="_catp-x" type="button" style="background:none;border:1px solid #475569;color:#cbd5e1;font-size:20px;width:38px;height:38px;border-radius:7px;cursor:pointer;line-height:1">✕</button>' +
+          (isPdf || isImg ? '<button class="_catp-print" type="button" style="padding:8px 14px;background:var(--surface);color:var(--ink1);border:none;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">🖨 Prenta</button>' : '') +
+          '<a href="' + esc(url) + '" download="' + esc(file.name) + '" target="_blank" rel="noopener" style="padding:8px 14px;background:var(--ink1);color:#fff;border:1px solid var(--ink2);border-radius:7px;text-decoration:none;font-size:13px;font-weight:600">⬇ Sækja</a>' +
+          '<button id="_catp-x" type="button" style="background:none;border:1px solid var(--ink2);color:var(--brd2);font-size:20px;width:38px;height:38px;border-radius:7px;cursor:pointer;line-height:1">✕</button>' +
         '</div>' +
       '</div>' +
-      '<div style="flex:1;background:#1e293b;display:flex;align-items:center;justify-content:center;padding:0;overflow:hidden">' +
-        (isPdf ? '<iframe src="' + esc(url) + '" style="width:100%;height:100%;border:none;background:#fff"></iframe>'
+      '<div style="flex:1;background:var(--ink1);display:flex;align-items:center;justify-content:center;padding:0;overflow:hidden">' +
+        (isPdf ? '<iframe src="' + esc(url) + '" style="width:100%;height:100%;border:none;background:var(--surface)"></iframe>'
          : isImg ? '<img src="' + esc(url) + '" alt="' + esc(file.name) + '" style="max-width:100%;max-height:100%;object-fit:contain">'
-         : '<div style="color:#cbd5e1;text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:12px">' + ic.ico + '</div><div>Forskoðun ekki tiltæk fyrir þetta skjal.</div><div style="margin-top:8px;font-size:13px;color:#94a3b8">Sæktu skjalið með ⬇ Sækja takkanum.</div></div>') +
+         : '<div style="color:var(--brd2);text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:12px">' + ic.ico + '</div><div>Forskoðun ekki tiltæk fyrir þetta skjal.</div><div style="margin-top:8px;font-size:13px;color:var(--ink4)">Sæktu skjalið með ⬇ Sækja takkanum.</div></div>') +
       '</div>';
     document.body.appendChild(dlg);
     function close() { dlg.remove(); }
@@ -525,7 +525,7 @@
         if (isPdf) {
           win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(file.name) + '</title><style>html,body{margin:0;height:100%;background:#525659}iframe{border:none;width:100%;height:100%}</style></head><body><iframe src="' + esc(url) + '" onload="setTimeout(function(){try{this.contentWindow.print();}catch(e){window.print();}},500)"></iframe></body></html>');
         } else {
-          win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(file.name) + '</title><style>@media print{@page{size:A4;margin:14mm}}body{margin:0;padding:14mm;background:#fff;text-align:center;font-family:Arial,Helvetica,sans-serif}img{max-width:100%;max-height:90vh;object-fit:contain}@media print{body{padding:0}img{max-height:none}}</style></head><body><img src="' + esc(url) + '" alt="' + esc(file.name) + '" onload="setTimeout(function(){window.print();},250)"></body></html>');
+          win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(file.name) + '</title><style>@media print{@page{size:A4;margin:14mm}}body{margin:0;padding:14mm;background:var(--surface);text-align:center;font-family:Arial,Helvetica,sans-serif}img{max-width:100%;max-height:90vh;object-fit:contain}@media print{body{padding:0}img{max-height:none}}</style></head><body><img src="' + esc(url) + '" alt="' + esc(file.name) + '" onload="setTimeout(function(){window.print();},250)"></body></html>');
         }
         win.document.close();
       });
