@@ -47,20 +47,42 @@
 
   function tmpSerial(){ return 'TMP-'+Math.random().toString(36).slice(2,8).toUpperCase(); }
 
+  // Bucket an EXISTING uttaeki row into the same category keys as CATMAP, so the
+  // import can reconcile the report counts against what's already registered.
+  function catOf(u){
+    var t=(u.type||'').toLowerCase(), s=(u.size||'').toLowerCase();
+    if(/reyk|smoke/.test(t)) return 'reyk';
+    if(/teppi|blanket/.test(t)) return 'teppi';
+    if(/slang|slöng|hose/.test(t)) return 'slanga';
+    if(/co2|co₂|kolsýr|kolsyr/.test(t)) return /\b5\b|5\s*kg/.test(s)?'co2_5':'co2_2';
+    if(/léttv|lettv|abf|vatn|water|froð|frod/.test(t)) return 'lettvatn';
+    if(/duft|abc|pfc/.test(t)) return /\b(6|9|12)\b/.test(s)?'duft6':'duft2';
+    return null;
+  }
+
   async function createFromLines(coId, nafn, lines){
     var sb=SB(); if(!sb) { alert('Engin tenging'); return; }
     var today=new Date(); var y=lines[0]&&lines[0].year ? lines[0].year : today.getFullYear();
     var lastInsp=y+'-06-01';
     var nextInsp=(y+1)+'-06-01';
-    var rows=[], used={};
+    // Count what is ALREADY registered for this company, per category, so we
+    // only add the tæki that are missing (no duplicates).
+    var existing=((window.DB&&DB.cache&&DB.cache.units)||[]).filter(function(u){return u.client===nafn;});
+    var have={}; existing.forEach(function(u){ var c=catOf(u); if(c) have[c]=(have[c]||0)+1; });
+    var rows=[], used={}, summary=[];
     lines.forEach(function(l){
       var m=CATMAP[l.category]; var n=parseInt(l.cnt,10)||0; if(!m||n<=0) return;
-      for(var i=0;i<n;i++){ var s; do{ s=tmpSerial(); }while(used[s]); used[s]=1;
+      var existN=have[l.category]||0;
+      var add=Math.max(0, n-existN);
+      var label=m[0]+(m[1]?' '+m[1]:'');
+      summary.push('• '+label+': skýrsla '+n+' · skráð '+existN+' → '+(add>0?('bæti við '+add):'fullt ✓'));
+      for(var i=0;i<add;i++){ var s; do{ s=tmpSerial(); }while(used[s]); used[s]=1;
         rows.push({ serial:s, type:m[0], size:m[1], client:nafn, location:'',
           last_insp:lastInsp, next_insp:nextInsp, status:'active', pressure:14 }); }
     });
-    if(!rows.length){ alert('Engin tæki í skýrslunni.'); return; }
-    if(!confirm('Bæta ' + rows.length + ' tækjum við „' + nafn + '" úr skýrslu ' + y + '?\nHvert fær tímabundið TMP-númer (uppfært við fyrstu skoðun).')) return;
+    if(!summary.length){ alert('Engin tæki í skýrslunni.'); return; }
+    if(!rows.length){ alert('✓ Öll tæki úr skýrslu '+y+' eru þegar skráð — ekkert bætt við.\n\n'+summary.join('\n')); return; }
+    if(!confirm('Skýrsla '+y+' — samræmt við skráð tæki hjá „'+nafn+'":\n\n'+summary.join('\n')+'\n\nBæta '+rows.length+' tækjum við sem vantar? (TMP-númer, uppfært við fyrstu skoðun)')) return;
     try{
       var r=await sb.from('uttaeki').insert(rows).select();
       if(r.error) throw r.error;
