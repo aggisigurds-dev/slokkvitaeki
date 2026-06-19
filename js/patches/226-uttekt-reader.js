@@ -87,6 +87,50 @@
     createFromLines(coId, nafn, lines);
   }
 
+  // ── PDF reading (úttektarskýrsla → counts) ───────────────────────────────
+  // Loads pdf.js on first use, extracts the text, and parses the standard
+  // Slökkvitæki úttektarskýrsla layout: "<tegund>. Fjöldi: N Í lagi: …".
+  function ensurePdfJs(){
+    if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if(window.__pdfjsLoading) return window.__pdfjsLoading;
+    window.__pdfjsLoading=new Promise(function(res,rej){
+      var s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+      s.onload=function(){ try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'; }catch(_){ } res(window.pdfjsLib); };
+      s.onerror=function(){ rej(new Error('Gat ekki hlaðið PDF-lesara (net?)')); };
+      document.head.appendChild(s);
+    });
+    return window.__pdfjsLoading;
+  }
+  async function readPdfText(file){
+    var lib=await ensurePdfJs();
+    var buf=await file.arrayBuffer();
+    var pdf=await lib.getDocument({data:buf}).promise;
+    var out='';
+    for(var p=1;p<=pdf.numPages;p++){
+      var page=await pdf.getPage(p);
+      var tc=await page.getTextContent();
+      out+=tc.items.map(function(it){return it.str;}).join(' ')+'\n';
+    }
+    return out;
+  }
+  function parseReportText(text){
+    var t=String(text||'').replace(/ /g,' ').replace(/[₀-₉]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-0x2080+48);});
+    function grab(re){ var m=t.match(re); if(!m) return null; if(/^x$/i.test(m[1])) return 0; var n=parseInt(m[1],10); return isNaN(n)?null:n; }
+    var counts={
+      lettvatn: grab(/l[eé]ttvatn[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      duft2:    grab(/duft\s*2\s*kg[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      duft6:    grab(/duft\s*6[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      co2_2:    grab(/co2\s*2\s*kg[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      co2_5:    grab(/co2\s*5\s*kg[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      slanga:   grab(/brunasl[öo]ng[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      teppi:    grab(/eldvarnart?eppi[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      reyk:     grab(/reykskynjar[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i)
+    };
+    var ym=t.match(/yfirfarin[\s\S]{0,40}?(20\d{2})/i)||t.match(/\b(20\d{2})\b/);
+    return { counts:counts, year: ym?parseInt(ym[1],10):null };
+  }
+
   function manualFormHtml(){
     var rows=Object.keys(CATMAP).map(function(k){
       var m=CATMAP[k]; var lab=m[0]+(m[1]?(' '+m[1]):'');
@@ -94,7 +138,12 @@
         '<input type="number" min="0" step="1" class="rdr-cnt" data-cat="'+k+'" placeholder="0"></label>';
     }).join('');
     return '<div class="rdr-man">'+
-      '<div class="rdr-lab" style="margin-bottom:6px">📝 Skrá fjölda úr skýrslu — handvirkt</div>'+
+      '<div class="rdr-pdfrow">'+
+        '<input type="file" accept="application/pdf,.pdf" class="rdr-pdf-input" style="display:none">'+
+        '<button type="button" class="rdr-pdfbtn">📄 Lesa úr PDF skýrslu</button>'+
+        '<span class="rdr-pdf-status rdr-muted"></span>'+
+      '</div>'+
+      '<div class="rdr-lab" style="margin:10px 0 6px">📝 Fjöldi (les úr PDF eða sláðu inn)</div>'+
       '<div class="rdr-grid">'+rows+'</div>'+
       '<div class="rdr-manrow">'+
         '<label class="rdr-yrlab">Ár skýrslu <input type="number" id="_rdr-man-year" class="rdr-yrin" value="'+(new Date().getFullYear()-1)+'"></label>'+
@@ -103,13 +152,35 @@
     '</div>';
   }
   function wireManual(body, coId, nafn){
-    var btn=body.querySelector('#_rdr-man-add'); if(!btn) return;
-    btn.onclick=function(){
+    var btn=body.querySelector('#_rdr-man-add');
+    if(btn) btn.onclick=function(){
       var counts={};
       body.querySelectorAll('.rdr-cnt').forEach(function(inp){ counts[inp.dataset.cat]=inp.value; });
       var y=parseInt((body.querySelector('#_rdr-man-year')||{}).value,10)||new Date().getFullYear();
       createFromCounts(coId, nafn, y, counts);
     };
+    var pdfBtn=body.querySelector('.rdr-pdfbtn'), pdfInp=body.querySelector('.rdr-pdf-input'), pdfStat=body.querySelector('.rdr-pdf-status');
+    if(pdfBtn&&pdfInp){
+      pdfBtn.onclick=function(){ pdfInp.click(); };
+      pdfInp.onchange=async function(){
+        var f=pdfInp.files&&pdfInp.files[0]; pdfInp.value='';
+        if(!f) return;
+        if(pdfStat){ pdfStat.textContent='⏳ Les PDF…'; }
+        try{
+          var text=await readPdfText(f);
+          var pr=parseReportText(text);
+          var filled=0;
+          body.querySelectorAll('.rdr-cnt').forEach(function(inp){
+            var c=pr.counts[inp.dataset.cat];
+            if(c!=null && c>0){ inp.value=c; filled++; }
+          });
+          if(pr.year){ var yi=body.querySelector('#_rdr-man-year'); if(yi) yi.value=pr.year; }
+          if(pdfStat){ pdfStat.textContent = filled
+            ? ('✓ Las '+filled+' tegund'+(filled===1?'':'ir')+(pr.year?(' · '+pr.year):'')+' — yfirfarðu og smelltu „Bæta tækjum við"')
+            : '⚠ Fann engar „Fjöldi"-tölur í PDF — sláðu inn handvirkt'; }
+        }catch(e){ if(pdfStat){ pdfStat.textContent='⚠ '+(e.message||e); } }
+      };
+    }
   }
 
   async function render(box, coId){
@@ -177,6 +248,9 @@
       '.rdr-btn{width:100%;border:0;border-radius:10px;padding:11px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;background:var(--brand);color:#fff}',
       '.rdr-btn:disabled{opacity:.5;cursor:not-allowed}',
       '.rdr-btn-sm{width:auto;padding:9px 14px;white-space:nowrap}',
+      '.rdr-pdfrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      '.rdr-pdfbtn{border:1px solid var(--brand);background:var(--bg);color:var(--brand);border-radius:9px;padding:9px 14px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}',
+      '.rdr-pdf-status{font-size:11.5px;flex:1;min-width:120px}',
       '.rdr-div{height:1px;background:var(--brd);margin:14px 0 12px}',
       '.rdr-man{}',
       '.rdr-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px 10px;margin-bottom:10px}',
