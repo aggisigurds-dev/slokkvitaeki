@@ -84,7 +84,7 @@
   .taeki-head{display:flex;align-items:center;padding:11px 15px 7px;border-bottom:1px solid var(--line2)}
   .taeki-head .sp{flex:1}
   .taeki-head .h-last{width:112px;text-align:right;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint);white-space:nowrap}
-  .taeki-head .h-now{flex:none;width:240px;margin-left:18px;padding-left:18px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
+  .taeki-head .h-now{flex:none;width:292px;margin-left:18px;padding-left:18px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--faint)}
   /* last report — single clean chip (matches the current-status style) */
   .last-col{flex:none;width:112px;display:flex;justify-content:flex-end}
   .lasttag{display:inline-block;font-size:11px;font-weight:700;padding:3px 11px;border-radius:99px;white-space:nowrap;font-variant-numeric:tabular-nums}
@@ -93,8 +93,19 @@
   .lasttag.n{background:var(--brand-bg);color:var(--brand)}
   .lasttag.old{background:var(--brand-bg);color:var(--brand)} /* eldri en í fyrra → áberandi */
   /* current report group, set apart with a divider; ✓ sits left of the control */
-  .now-col{display:flex;align-items:center;gap:8px;flex:none;margin-left:18px;padding-left:18px;border-left:1px solid var(--line)}
+  .now-col{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex:none;width:292px;margin-left:18px;padding-left:18px;border-left:1px solid var(--line)}
   .u-right{display:flex;align-items:center;flex:none}
+  /* collapsible type groups (for long lists) */
+  .grp-h{width:100%;display:flex;align-items:center;gap:10px;padding:9px 15px;background:var(--line2);border:0;border-top:1px solid var(--line);cursor:pointer;font:inherit;text-align:left}
+  .grp:first-child .grp-h{border-top:0}
+  .grp-nm{font-weight:800;font-size:13.5px;color:var(--ink)}
+  .grp-cnt{font-size:11.5px;color:var(--muted);font-weight:600}
+  .grp-chev{margin-left:auto;color:var(--faint);font-size:12px}
+  .grp-body .unit{border-top:1px solid var(--line2)}
+  /* invoice text field */
+  .notefield input.reiktxt{width:100%;box-sizing:border-box;font:inherit;font-size:13px;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:#faf9f8}
+  .notefield input.reiktxt:focus{outline:none;border-color:var(--primary);background:#fff}
+  .notefield .hint{font-size:11px;color:var(--muted);margin-top:5px}
   .svc{display:inline-flex;background:#f0eeeb;border-radius:9px;padding:3px;gap:2px}
   .svc button{border:0;background:transparent;font:inherit;font-size:11px;font-weight:700;color:var(--muted);padding:5px 9px;border-radius:7px;cursor:pointer;white-space:nowrap}
   .svc button.on.yfir{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
@@ -263,6 +274,11 @@
       <div class="notefield"><label>Minnispunktar (þessi heimsókn)</label><textarea placeholder="t.d. Bára vill skipta öllum á neðri hæð…"></textarea></div>
       <div class="notefield"><label>Athugasemdir á úttektarskýrslu</label><textarea placeholder="Birtist á skýrslunni — ekki á reikningi"></textarea></div>
     </div>
+    <div class="notefield" style="padding:0 14px 14px">
+      <label>🧾 Texti á reikning</label>
+      <input type="text" class="reiktxt" placeholder="t.d. Vinna vegna skoðunar á Dalvegi 10">
+      <div class="hint">Sést sem „Vegna…" lína á reikningnum (yfirskrifar sjálfgefið).</div>
+    </div>
   </div>
 
   <div class="cardbox">
@@ -324,37 +340,68 @@ let UNITS=[
   mk('co2_5','CO-551','Rafmagnstafla','yfirferd',25),
   mk('slanga','BS-12','Stigahús','yfirferd',24)
 ];
+// seed up to ~50 tæki to preview the layout at scale
+(function seedMore(){
+  var locs=['Gangur 1.h','Eldhús','Lager','Bílskúr','Skrifstofa','Rafmagnstafla','Stigahús','2. hæð','3. hæð','Kjallari','Móttaka','Geymsla','Kaffistofa','Anddyri','Þvottahús','Tæknirými','Matsalur','Gangur 2.h','Inngangur','Bóka­safn'];
+  var defs=['duft6','duft6','duft6','lettv','lettv','duft2','co2_5','duft6','lettv','slanga','duft6','co2_5'];
+  var pre={duft6:'DF',duft2:'DF',lettv:'LV',co2_5:'CO',slanga:'BS'};
+  var yrs=[25,25,25,24,23,26,25],svcs=['yfirferd','hledsla','yfirferd','nytt','yfirferd','hledsla'];
+  for(var i=0;i<43;i++){var ty=defs[i%defs.length];UNITS.push(mk(ty,pre[ty]+'-'+(1300+i),locs[i%locs.length],svcs[i%svcs.length],yrs[i%yrs.length]));}
+})();
 const SVC=[['yfirferd','Yfirferð','yfir'],['hledsla','Hleðsla','hled'],['nytt','Nýtt','nytt']]; // engin Sleppa
 const SVCNAME={yfirferd:'Yfirferð',hledsla:'Hleðsla',nytt:'Nýtt'};
 const kr=n=>Math.round(n).toLocaleString('is-IS')+' kr';
 
+const FAMILY={duft:'🧯 Duft',lettv:'💧 Léttvatn',co2:'❄️ CO²',slanga:'🚒 Brunaslanga'};
+const FAMORDER=['duft','lettv','co2','slanga'];
+const COLLAPSED=new Set();
+let SEARCH='';
+function rowHtml(u){
+  const T=TYPES[u.ty];
+  const segs=SVC.map(([v,l,c])=>{if(v==='hledsla'&&T.hled===0)return '';return '<button class="'+c+(!u.onytt&&u.svc===v?' on':'')+'" data-id="'+u.id+'" data-v="'+v+'">'+l+'</button>';}).join('');
+  const tagCls={yfirferd:'y',hledsla:'h',nytt:'n'}[u.lastSvc]||'y';
+  const lastOld=u.lastYr<25;
+  const lastchip='<div class="last-col"><span class="lasttag '+tagCls+(lastOld?' old':'')+'">'+SVCNAME[u.lastSvc]+' ’'+u.lastYr+'</span></div>';
+  return '<div class="unit'+(u.onytt?' onytt':'')+(u.sel?' sel':'')+'">'+
+    '<input type="checkbox" class="chk" data-sel="'+u.id+'"'+(u.sel?' checked':'')+'>'+
+    '<div class="ico '+T.cls+'">'+T.ico+'</div>'+
+    '<div class="u-main"><div class="u-t">'+T.t+'</div><div class="u-sub">'+u.sn+' · '+u.loc+'</div></div>'+
+    '<div class="u-right">'+lastchip+
+      '<div class="now-col">'+
+        '<button class="done'+(u.done?' on':'')+'" data-done="'+u.id+'" title="Merkja yfirfarið">✓</button>'+
+        (u.onytt?'':'<div class="svc">'+segs+'</div>')+
+        '<button class="onyttbtn'+(u.onytt?' on':'')+'" data-onytt="'+u.id+'" title="Merkja ónýtt">🚫 Ónýtt</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
 function renderUnits(){
   document.getElementById('ucount').textContent='· '+UNITS.length+' tæki';
-  document.getElementById('taeki').innerHTML=UNITS.map((u)=>{
-    const T=TYPES[u.ty];
-    const segs=SVC.map(([v,l,c])=>{if(v==='hledsla'&&T.hled===0)return '';return '<button class="'+c+(!u.onytt&&u.svc===v?' on':'')+'" data-id="'+u.id+'" data-v="'+v+'">'+l+'</button>';}).join('');
-    const tagCls={yfirferd:'y',hledsla:'h',nytt:'n'}[u.lastSvc]||'y';
-    const lastOld=u.lastYr<25; // eldri en í fyrra (núv. ár 2026 → í fyrra '25)
-    const lastchip='<div class="last-col"><span class="lasttag '+tagCls+(lastOld?' old':'')+'">'+SVCNAME[u.lastSvc]+' ’'+u.lastYr+'</span></div>';
-    return '<div class="unit'+(u.onytt?' onytt':'')+(u.sel?' sel':'')+'">'+
-      '<input type="checkbox" class="chk" data-sel="'+u.id+'"'+(u.sel?' checked':'')+'>'+
-      '<div class="ico '+T.cls+'">'+T.ico+'</div>'+
-      '<div class="u-main"><div class="u-t">'+T.t+'</div><div class="u-sub">'+u.sn+' · '+u.loc+'</div></div>'+
-      '<div class="u-right">'+lastchip+
-        '<div class="now-col">'+
-          '<button class="done'+(u.done?' on':'')+'" data-done="'+u.id+'" title="Merkja yfirfarið">✓</button>'+
-          (u.onytt?'':'<div class="svc">'+segs+'</div>')+
-          '<button class="onyttbtn'+(u.onytt?' on':'')+'" data-onytt="'+u.id+'" title="Merkja ónýtt">🚫 Ónýtt</button>'+
-        '</div>'+
-      '</div>'+
+  const q=SEARCH.toLowerCase().trim();
+  const match=u=>!q||(TYPES[u.ty].t+' '+u.sn+' '+u.loc).toLowerCase().indexOf(q)>=0;
+  const groups={};UNITS.forEach(u=>{const f=TYPES[u.ty].cls;(groups[f]=groups[f]||[]).push(u);});
+  let html='';
+  FAMORDER.forEach(f=>{
+    const arr=(groups[f]||[]).filter(match);if(!arr.length)return;
+    const col=COLLAPSED.has(f);const nm=FAMILY[f]||f;const ic=nm.split(' ')[0];const lab=nm.split(' ').slice(1).join(' ');
+    const done=arr.filter(u=>u.done).length, sel=arr.filter(u=>u.sel).length;
+    html+='<div class="grp">'+
+      '<button class="grp-h" data-grp="'+f+'">'+
+        '<span class="ico '+f+'" style="width:28px;height:28px;font-size:15px">'+ic+'</span>'+
+        '<span class="grp-nm">'+lab+'</span>'+
+        '<span class="grp-cnt">'+arr.length+' tæki'+(done?' · '+done+' ✓':'')+(sel?' · '+sel+' valin':'')+'</span>'+
+        '<span class="grp-chev">'+(col?'▸':'▾')+'</span>'+
+      '</button>'+
+      (col?'':'<div class="grp-body">'+arr.map(rowHtml).join('')+'</div>')+
     '</div>';
-  }).join('');
+  });
+  document.getElementById('taeki').innerHTML=html||'<div style="padding:18px 15px;color:var(--faint);font-size:13px">Engin tæki passa við leit.</div>';
   const by=id=>UNITS.find(x=>x.id==id);
   document.querySelectorAll('.svc button').forEach(b=>b.onclick=()=>{by(b.dataset.id).svc=b.dataset.v;paint();});
   document.querySelectorAll('[data-onytt]').forEach(b=>b.onclick=()=>{const u=by(b.dataset.onytt);u.onytt=!u.onytt;paint();});
   document.querySelectorAll('[data-done]').forEach(b=>b.onclick=()=>{const u=by(b.dataset.done);u.done=!u.done;paint();});
   document.querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>{by(b.dataset.sel).sel=b.checked;paint();});
-  // bulk bar
+  document.querySelectorAll('.grp-h').forEach(b=>b.onclick=e=>{if(e.target.closest('.chk'))return;const f=b.dataset.grp;COLLAPSED.has(f)?COLLAPSED.delete(f):COLLAPSED.add(f);renderUnits();});
   const n=UNITS.filter(u=>u.sel).length;
   const bb=document.getElementById('bulkbar');bb.classList.toggle('show',n>0);
   document.getElementById('bulkcnt').textContent=n+' valin';
@@ -390,6 +437,7 @@ function bulkDate(){const d=prompt('Ný skoðunardagsetning fyrir '+selUnits().l
 function bulkType(){const t=prompt('Breyta tegund í (duft6/duft2/lettv/co2_5/slanga):','duft6');if(t&&TYPES[t]){selUnits().forEach(u=>{u.ty=t;u.svc=u.svc==='hledsla'&&TYPES[t].hled===0?'yfirferd':u.svc;u.sel=false;});paint();}}
 function toggleTilbod(){const b=document.getElementById('tilbodBody'),h=document.getElementById('tilbodH');const open=b.style.display==='none';b.style.display=open?'block':'none';h.classList.toggle('open',open);}
 ['skyr','aksturQ','akstur','disc'].forEach(id=>document.getElementById(id).addEventListener('input',renderSummary));
+var _sf=document.querySelector('.tk-search input');if(_sf)_sf.addEventListener('input',e=>{SEARCH=e.target.value;renderUnits();});
 paint();
 </script>
 </body>
