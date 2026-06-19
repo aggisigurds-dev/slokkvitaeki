@@ -108,6 +108,12 @@ var Companies = {
     var addr = U.e(c.heimilisFang || c.heimilisfang || '');
     var simi = c.simi ? U.e(c.simi) : '';
     var netfang = c.netfang ? U.e(c.netfang) : '';
+    // Inspection-month chip for the banner (from the visit-date helper if present).
+    var inspBadge = '';
+    try {
+      var _vd = (window.SlokkVisitDate && SlokkVisitDate.get) ? SlokkVisitDate.get(c.id) : null;
+      if (_vd && _vd.manudur) inspBadge = '📅 Skoðun: ' + U.e(_vd.manudur);
+    } catch (_e) {}
     // 2026-05-19: redesigned header \u2014 company name gets its own line at
     // the top (no longer squeezed next to a row of 8 action buttons),
     // info chips below, then a clean wrap-friendly action bar. Patches
@@ -129,20 +135,22 @@ var Companies = {
         '</div>' +
       '</div>' +
 
-      // Header card: avatar + name + info chips
-      '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 22px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,0.03)">' +
-        '<div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">' +
-          '<div class="company-initials" style="width:58px;height:58px;font-size:22px;border-radius:14px;flex-shrink:0">' + c.nafn.slice(0, 2).toUpperCase() + '</div>' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-size:22px;font-weight:700;color:#0f172a;line-height:1.2;margin-bottom:3px">' + nafn + '</div>' +
-            (kt ? '<div style="font-size:12px;color:#64748b;font-family:monospace;margin-bottom:8px">kt. ' + kt + '</div>' : '<div style="margin-bottom:8px"></div>') +
-            '<div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:#475569">' +
-              (addr    ? '<div><span style="color:#94a3b8">\ud83d\udccd </span>' + addr + '</div>' : '') +
-              (simi    ? '<div><span style="color:#94a3b8">\ud83d\udcde </span><a href="tel:' + simi + '" style="color:#475569;text-decoration:none">' + simi + '</a></div>' : '') +
-              (netfang ? '<div><span style="color:#94a3b8">\u2709 </span><a href="mailto:' + netfang + '" style="color:#475569;text-decoration:none">' + netfang + '</a></div>' : '') +
+      // Header banner (v6 design \u2014 dark theme-aware gradient + monogram).
+      // Styled by patch 223 (.co-banner*); adapts to the active \u2699\ufe0f \u00datlit theme.
+      '<div class="co-banner">' +
+        '<div class="co-banner-id">' +
+          '<div class="co-banner-mono">' + c.nafn.slice(0, 2).toUpperCase() + '</div>' +
+          '<div style="min-width:0">' +
+            '<div class="co-banner-name">' + nafn + '</div>' +
+            (kt ? '<div class="co-banner-kt">kt. ' + kt + '</div>' : '') +
+            '<div class="co-banner-facts">' +
+              (addr    ? '<span>\ud83d\udccd <b>' + addr + '</b></span>' : '') +
+              (simi    ? '<span>\ud83d\udcde <a href="tel:' + simi + '">' + simi + '</a></span>' : '') +
+              (netfang ? '<span>\u2709 <a href="mailto:' + netfang + '">' + netfang + '</a></span>' : '') +
             '</div>' +
           '</div>' +
         '</div>' +
+        (inspBadge ? '<div class="co-banner-right"><span class="co-banner-badge">' + inspBadge + '</span></div>' : '') +
       '</div>' +
 
       // Action bar (patches 102/91/154/137/73/123 etc. inject into this row).
