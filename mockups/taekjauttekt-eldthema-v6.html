@@ -80,7 +80,14 @@
   .u-main{flex:1;min-width:0}.u-t{font-weight:700;font-size:13.5px}
   .u-sub{font-size:11px;color:var(--faint);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .lastyr{display:inline-flex;gap:3px;font-size:10.5px;font-weight:700;color:var(--primary-d);background:var(--fire-bg);border:1px solid var(--fire-bd);border-radius:99px;padding:1px 7px;margin-left:4px}
-  .u-right{display:flex;align-items:center;gap:8px;flex:none}
+  /* latest report, stacked vertically (replaces the old inline "í fyrra" pill) */
+  .lastrep{flex:none;text-align:right;line-height:1.2;min-width:78px;padding-right:2px}
+  .lastrep .lab{font-size:8.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
+  .lastrep .typ{font-size:12px;font-weight:700;margin-top:1px;color:var(--ink)}
+  .lastrep .typ.hled{color:var(--primary-d)} .lastrep .typ.nytt{color:var(--brand)}
+  .lastrep .yr{font-size:10.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+  .lastrep .yr.old{color:var(--brand)} /* eldri en í fyrra → áberandi */
+  .u-right{display:flex;align-items:center;gap:10px;flex:none}
   .svc{display:inline-flex;background:#f0eeeb;border-radius:9px;padding:3px;gap:2px}
   .svc button{border:0;background:transparent;font:inherit;font-size:11px;font-weight:700;color:var(--muted);padding:5px 9px;border-radius:7px;cursor:pointer;white-space:nowrap}
   .svc button.on.yfir{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
@@ -285,12 +292,17 @@ function renderUnits(){
   document.getElementById('taeki').innerHTML=UNITS.map((u)=>{
     const T=TYPES[u.ty];
     const segs=SVC.map(([v,l,c])=>{if(v==='hledsla'&&T.hled===0)return '';return '<button class="'+c+(!u.onytt&&u.svc===v?' on':'')+'" data-id="'+u.id+'" data-v="'+v+'">'+l+'</button>';}).join('');
+    const lastCls=(SVC.find(s=>s[0]===u.lastSvc)||['','','yfir'])[2];
+    const lastOld=u.lastYr<25; // eldri en í fyrra (núv. ár 2026 → í fyrra '25)
+    const lastrep='<div class="lastrep"><div class="lab">↺ Síðasta skýrsla</div>'+
+      '<div class="typ '+lastCls+'">'+SVCNAME[u.lastSvc]+'</div>'+
+      '<div class="yr'+(lastOld?' old':'')+'">20'+u.lastYr+'</div></div>';
     return '<div class="unit'+(u.onytt?' onytt':'')+(u.sel?' sel':'')+'">'+
       '<input type="checkbox" class="chk" data-sel="'+u.id+'"'+(u.sel?' checked':'')+'>'+
       '<button class="done'+(u.done?' on':'')+'" data-done="'+u.id+'" title="Merkja yfirfarið">✓</button>'+
       '<div class="ico '+T.cls+'">'+T.ico+'</div>'+
-      '<div class="u-main"><div class="u-t">'+T.t+'</div><div class="u-sub">'+u.sn+' · '+u.loc+' <span class="lastyr">↺ í fyrra: '+SVCNAME[u.lastSvc]+' ’'+u.lastYr+'</span></div></div>'+
-      '<div class="u-right">'+(u.onytt?'':'<div class="svc">'+segs+'</div>')+'<button class="onyttbtn'+(u.onytt?' on':'')+'" data-onytt="'+u.id+'" title="Merkja ónýtt">🚫 Ónýtt</button></div>'+
+      '<div class="u-main"><div class="u-t">'+T.t+'</div><div class="u-sub">'+u.sn+' · '+u.loc+'</div></div>'+
+      '<div class="u-right">'+lastrep+(u.onytt?'':'<div class="svc">'+segs+'</div>')+'<button class="onyttbtn'+(u.onytt?' on':'')+'" data-onytt="'+u.id+'" title="Merkja ónýtt">🚫 Ónýtt</button></div>'+
     '</div>';
   }).join('');
   const by=id=>UNITS.find(x=>x.id==id);
