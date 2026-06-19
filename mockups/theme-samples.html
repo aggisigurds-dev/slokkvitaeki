@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="is" data-theme="slate" data-mode="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Þema-sýnishorn — ÞjónustuVerkstæði</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ===== shared schema (status + derived accents adapt per theme) ===== */
+:root{
+  --radius:15px;
+  --accent-soft:color-mix(in srgb, var(--accent) 13%, var(--surface));
+  --accent-bd:color-mix(in srgb, var(--accent) 40%, var(--surface));
+}
+[data-mode="light"]{
+  --ok:#059669; --warn:#d97706; --bad:#dc2626; --info:#2563eb;
+  --line:color-mix(in srgb, var(--ink1) 9%, transparent);
+  --line2:color-mix(in srgb, var(--ink1) 15%, transparent);
+  --shadow:0 14px 30px -20px rgba(15,23,42,.35);
+}
+[data-mode="dark"]{
+  --ok:#34d399; --warn:#fbbf24; --bad:#f87171; --info:#60a5fa;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --shadow:0 16px 36px -22px rgba(0,0,0,.9);
+}
+
+/* ===================== 7 PROFESSIONAL THEMES ===================== */
+/* light */
+[data-theme="slate"]  {--bg:#eef2f7;--glow:rgba(37,99,235,.10);--surface:#fff;--surface2:#f7f9fc;--ink1:#0f172a;--ink2:#475569;--ink3:#94a3b8;--accent:#2563eb;--accent2:#3b82f6;--hero1:#0f172a;--hero2:#1e3a8a;}
+[data-theme="nordic"] {--bg:#eef3f3;--glow:rgba(13,148,136,.10);--surface:#fff;--surface2:#f5f9f8;--ink1:#0f2a2a;--ink2:#3f5b5b;--ink3:#8aa3a3;--accent:#0d9488;--accent2:#14b8a6;--hero1:#0d2626;--hero2:#115e59;}
+[data-theme="ember"]  {--bg:#f7f3ef;--glow:rgba(194,65,12,.10);--surface:#fff;--surface2:#faf6f2;--ink1:#1c1410;--ink2:#574a42;--ink3:#9c8b80;--accent:#c2410c;--accent2:#ea580c;--hero1:#1c1008;--hero2:#7c2d12;}
+[data-theme="indigo"] {--bg:#f0effa;--glow:rgba(79,70,229,.10);--surface:#fff;--surface2:#f7f6fd;--ink1:#1e1b34;--ink2:#4b466b;--ink3:#9893b5;--accent:#4f46e5;--accent2:#6366f1;--hero1:#1e1b34;--hero2:#3730a3;}
+/* dark */
+[data-theme="midnight"]  {--bg:#0b1220;--glow:rgba(59,130,246,.18);--surface:#131c2e;--surface2:#16203a;--ink1:#e8eef9;--ink2:#9fb0c9;--ink3:#647389;--accent:#60a5fa;--accent2:#93c5fd;--hero1:#070b16;--hero2:#16306e;}
+[data-theme="graphite"]  {--bg:#151517;--glow:rgba(129,140,248,.15);--surface:#1e1e22;--surface2:#26262c;--ink1:#ededf0;--ink2:#a8a8b3;--ink3:#6c6c78;--accent:#818cf8;--accent2:#a5b4fc;--hero1:#0d0d10;--hero2:#2e2e3a;}
+[data-theme="emberdark"] {--bg:#14100e;--glow:rgba(249,115,22,.15);--surface:#1d1714;--surface2:#241b16;--ink1:#f0ebe6;--ink2:#b8a89c;--ink3:#7c6e62;--accent:#fb923c;--accent2:#fdba74;--hero1:#0d0709;--hero2:#7c2d12;}
+
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink1);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;min-height:100vh;transition:background .3s,color .2s;
+  background:radial-gradient(1100px 600px at 80% -10%,var(--glow),transparent 60%),var(--bg);background-attachment:fixed;
+}
+.num{font-variant-numeric:tabular-nums}
+svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.i.sm{width:14px;height:14px}
+button{font-family:inherit;cursor:pointer}
+.wrap{max-width:1060px;margin:0 auto;padding:24px 22px 70px}
+
+/* ===== theme picker ===== */
+.picker-head{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);margin:2px 2px 10px}
+.swatches{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.sw{display:flex;flex-direction:column;gap:7px;width:118px;padding:8px;border-radius:12px;border:1px solid var(--line2);background:var(--surface);box-shadow:var(--shadow);transition:transform .14s,border-color .14s}
+.sw:hover{transform:translateY(-2px)}
+.sw.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft),var(--shadow)}
+.sw .bar{height:34px;border-radius:8px;border:1px solid rgba(0,0,0,.08)}
+.sw .nm{font-size:12px;font-weight:700;color:var(--ink1);display:flex;align-items:center;justify-content:space-between}
+.sw .tag{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);border:1px solid var(--line2);border-radius:5px;padding:1px 5px}
+
+/* ===== hero ===== */
+.hero{position:relative;border-radius:20px;padding:22px 24px;overflow:hidden;margin:18px 0 4px;
+  background:linear-gradient(125deg,var(--hero1) 0%,var(--hero2) 135%);border:1px solid var(--line2);
+  box-shadow:0 24px 56px -26px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.07)}
+.hero-top{display:flex;align-items:center;gap:14px}
+.hero-ico{width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.16);color:#fff}
+.hero-ico svg{width:24px;height:24px}
+.hero h1{margin:0;font-size:22px;font-weight:800;letter-spacing:-.02em;color:#fff}
+.hero .sub{margin-top:3px;font-size:13px;color:rgba(255,255,255,.66)}
+.hero .sub b{color:#fff;font-weight:700}
+.hero-bar{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}
+.stat{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:8px 13px}
+.stat .d{width:8px;height:8px;border-radius:50%}.stat .n{font-size:16px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums}.stat .l{font-size:12px;color:rgba(255,255,255,.62)}
+
+.toolbar{display:flex;align-items:center;gap:10px;margin:18px 2px 12px}
+.toolbar .ttl{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.toolbar .rule{flex:1;height:1px;background:var(--line)}
+
+/* ===== cards ===== */
+.list{display:flex;flex-direction:column;gap:13px}
+.card{position:relative;display:flex;gap:18px;padding:15px 17px 15px 19px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);transition:border-color .15s,box-shadow .15s,transform .15s}
+.card::before{content:"";position:absolute;left:0;top:13px;bottom:13px;width:3px;border-radius:0 3px 3px 0;background:var(--accent)}
+.card.done::before{background:var(--ok)} .card.stopped::before{background:var(--bad)} .card.stopped{opacity:.6}
+.card:hover{border-color:var(--accent-bd);box-shadow:0 0 0 1px var(--accent-soft),var(--shadow);transform:translateY(-1px)}
+.card-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:11px}
+.card-r{flex:0 0 280px;display:flex;flex-direction:column;gap:8px}
+@media(max-width:760px){.card{flex-direction:column}.card-r{flex-basis:auto}}
+.co{display:flex;align-items:center;gap:12px}
+.ava{width:42px;height:42px;border-radius:11px;display:grid;place-items:center;font-weight:800;font-size:14px;color:#fff;border:1px solid var(--line2);background:linear-gradient(135deg,var(--hero1),var(--accent))}
+.co .nm{font-size:15.5px;font-weight:700;color:var(--ink1);line-height:1.2}.co .kt{font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums;margin-top:1px}
+.co-meta{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;border-radius:8px;padding:4px 9px;border:1px solid var(--line2);background:var(--surface2);color:var(--ink2);white-space:nowrap}
+.chip svg{width:13px;height:13px;color:var(--ink3)}
+.chip.accent{color:var(--accent);border-color:var(--accent-bd);background:var(--accent-soft)}.chip.accent svg{color:var(--accent)}
+.chip.warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 36%,var(--surface));background:color-mix(in srgb,var(--warn) 13%,var(--surface))}.chip.warn svg{color:var(--warn)}
+.steps{display:flex;align-items:flex-start}
+.step{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative}
+.step .ln{position:absolute;top:13px;left:-50%;width:100%;height:2px;background:var(--line2);z-index:0}.step:first-child .ln{display:none}.step.on .ln{background:var(--ok)}
+.step .nd{position:relative;z-index:1;width:27px;height:27px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;border:2px solid var(--line2);background:var(--surface2);color:var(--ink3)}
+.step.on .nd{background:var(--ok);border-color:var(--ok);color:#fff}
+.step.cur .nd{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.step .lb{font-size:10px;font-weight:700;color:var(--ink3)}.step.on .lb{color:var(--ok)}.step.cur .lb{color:var(--accent)}
+.marks{display:flex;gap:6px;flex-wrap:wrap}
+.mark{font-size:10.5px;font-weight:700;border-radius:99px;padding:4px 10px;border:1px solid var(--line2);background:var(--surface2);color:var(--ink3)}
+.mark.on-bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 36%,var(--surface));background:color-mix(in srgb,var(--bad) 12%,var(--surface))}
+.mark.on-info{color:var(--info);border-color:color-mix(in srgb,var(--info) 36%,var(--surface));background:color-mix(in srgb,var(--info) 12%,var(--surface))}
+.note{width:100%;flex:1;min-height:50px;resize:none;font:inherit;font-size:12.5px;color:var(--ink1);background:var(--surface2);border:1px solid var(--line2);border-radius:10px;padding:8px 10px}
+.note::placeholder{color:var(--ink3)}.note:focus{outline:none;border-color:var(--accent-bd)}
+.acts{display:flex;gap:6px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;border-radius:9px;padding:7px 10px;border:1px solid var(--line2);background:var(--surface2);color:var(--ink2);transition:background .14s}
+.btn svg{width:14px;height:14px}.btn:hover{border-color:var(--accent-bd)}
+.btn.accent{color:var(--accent);border-color:var(--accent-bd);background:var(--accent-soft)}
+.btn.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 36%,var(--surface));background:color-mix(in srgb,var(--ok) 12%,var(--surface))}
+.btn.bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 34%,var(--surface));background:color-mix(in srgb,var(--bad) 11%,var(--surface))}
+.foot{margin-top:24px;text-align:center;font-size:12px;color:var(--ink3)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.1 2.1-2.4-.6-.6-2.4 2.1-2.1z"/></symbol>
+ <symbol id="i-tube" viewBox="0 0 24 24"><path d="M9 2v17.5A2.5 2.5 0 0 0 14 19.5V2"/><path d="M7 2h9M9 12h5"/></symbol>
+ <symbol id="i-zap" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+ <symbol id="i-edit" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h6M14 2v6h6M18.4 13.6a2 2 0 0 1 2.8 2.8L17 20.5l-3 .5.5-3z"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+ <symbol id="i-building" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4"/></symbol>
+ <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+</svg>
+
+<div class="wrap">
+  <div class="picker-head">Veldu þema — sýnishorn af ÞjónustuVerkstæði</div>
+  <div class="swatches" id="sw"></div>
+
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-ico"><svg><use href="#i-wrench"/></svg></div>
+      <div><h1>ÞjónustuVerkstæði</h1><div class="sub">Það sem er í vinnslu núna · áætl. <b>2,0 m.kr.</b></div></div>
+    </div>
+    <div class="hero-bar">
+      <span class="stat"><span class="d" style="background:var(--info)"></span><span class="n">42</span><span class="l">í vinnslu</span></span>
+      <span class="stat"><span class="d" style="background:var(--warn)"></span><span class="n">60</span><span class="l">á dagskrá</span></span>
+      <span class="stat"><span class="d" style="background:var(--ok)"></span><span class="n">156</span><span class="l">búin í ár</span></span>
+    </div>
+  </div>
+
+  <div class="toolbar"><span class="ttl">Í vinnslu</span><span class="rule"></span></div>
+
+  <div class="list">
+    <div class="card">
+      <div class="card-l">
+        <div class="co"><div class="ava">AÐ</div><div><div class="nm">Aðalskoðun hf. Skeifan</div><div class="kt">kt. 548994-2269</div></div>
+          <div class="co-meta"><span class="chip warn"><svg><use href="#i-edit"/></svg> óklárað vistað</span><span class="chip accent"><svg><use href="#i-tube"/></svg> 4 einingar</span><span class="chip"><svg><use href="#i-zap"/></svg> áætl. 25.316 kr</span></div></div>
+        <div class="steps">
+          <div class="step on"><span class="ln"></span><span class="nd"><svg class="i sm" style="stroke:#fff"><use href="#i-check"/></svg></span><span class="lb">Úttekt</span></div>
+          <div class="step cur"><span class="ln"></span><span class="nd">2</span><span class="lb">Skýrsla</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">3</span><span class="lb">Send</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">4</span><span class="lb">Reikn.</span></div></div>
+        <div class="marks"><span class="mark">Hætt</span><span class="mark">Eftir að uppfæra dags.</span><span class="mark on-info">● Reikningur sendur áður</span></div>
+      </div>
+      <div class="card-r"><textarea class="note" placeholder="Minnispunktur…"></textarea>
+        <div class="acts"><button class="btn"><svg><use href="#i-building"/></svg> Opna</button><button class="btn accent"><svg><use href="#i-file"/></svg> Skýrsla</button><button class="btn ok"><svg><use href="#i-check"/></svg> Búið</button><button class="btn bad"><svg><use href="#i-x"/></svg> Afmerkja</button></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-l">
+        <div class="co"><div class="ava">AS</div><div><div class="nm">Aspafell 2-12</div><div class="kt">kt. 678575-8479</div></div>
+          <div class="co-meta"><span class="chip accent"><svg><use href="#i-tube"/></svg> 30 einingar</span><span class="chip"><svg><use href="#i-zap"/></svg> áætl. 134.432 kr</span></div></div>
+        <div class="steps">
+          <div class="step on"><span class="ln"></span><span class="nd"><svg class="i sm" style="stroke:#fff"><use href="#i-check"/></svg></span><span class="lb">Úttekt</span></div>
+          <div class="step on"><span class="ln"></span><span class="nd"><svg class="i sm" style="stroke:#fff"><use href="#i-check"/></svg></span><span class="lb">Skýrsla</span></div>
+          <div class="step cur"><span class="ln"></span><span class="nd">3</span><span class="lb">Send</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">4</span><span class="lb">Reikn.</span></div></div>
+        <div class="marks"><span class="mark">Hætt</span><span class="mark">Eftir að uppfæra dags.</span><span class="mark">Reikningur sendur áður</span></div>
+      </div>
+      <div class="card-r"><textarea class="note" placeholder="Minnispunktur…"></textarea>
+        <div class="acts"><button class="btn"><svg><use href="#i-building"/></svg> Opna</button><button class="btn accent"><svg><use href="#i-file"/></svg> Skýrsla</button><button class="btn ok"><svg><use href="#i-check"/></svg> Búið</button><button class="btn bad"><svg><use href="#i-x"/></svg> Afmerkja</button></div></div>
+    </div>
+
+    <div class="card stopped">
+      <div class="card-l">
+        <div class="co"><div class="ava">BO</div><div><div class="nm">Body shop</div><div class="kt">kt. 570591-1429</div></div>
+          <div class="co-meta"><span class="chip accent"><svg><use href="#i-tube"/></svg> 5 einingar</span><span class="chip"><svg><use href="#i-zap"/></svg> áætl. 29.073 kr</span></div></div>
+        <div class="steps">
+          <div class="step cur"><span class="ln"></span><span class="nd">1</span><span class="lb">Úttekt</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">2</span><span class="lb">Skýrsla</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">3</span><span class="lb">Send</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">4</span><span class="lb">Reikn.</span></div></div>
+        <div class="marks"><span class="mark on-bad">● Hætt</span><span class="mark">Eftir að uppfæra dags.</span><span class="mark">Reikningur sendur áður</span></div>
+      </div>
+      <div class="card-r"><textarea class="note" placeholder="Minnispunktur…"></textarea>
+        <div class="acts"><button class="btn"><svg><use href="#i-building"/></svg> Opna</button><button class="btn accent"><svg><use href="#i-file"/></svg> Skýrsla</button><button class="btn ok"><svg><use href="#i-check"/></svg> Búið</button><button class="btn bad"><svg><use href="#i-x"/></svg> Afmerkja</button></div></div>
+    </div>
+  </div>
+
+  <div class="foot">7 fagleg þemu · smelltu á sýnishorn að ofan. Status-litir haldast: grænt=búið, accent=í vinnslu, gult=bíður, rautt=hætt.</div>
+</div>
+
+<script>
+  const THEMES = [
+    { id:'slate',    name:'Slate',     mode:'light', g:['#0f172a','#1e3a8a'] },
+    { id:'nordic',   name:'Nordic',    mode:'light', g:['#0d2626','#115e59'] },
+    { id:'ember',    name:'Ember',     mode:'light', g:['#1c1008','#7c2d12'] },
+    { id:'indigo',   name:'Indigo',    mode:'light', g:['#1e1b34','#3730a3'] },
+    { id:'midnight', name:'Midnight',  mode:'dark',  g:['#070b16','#16306e'] },
+    { id:'graphite', name:'Graphite',  mode:'dark',  g:['#0d0d10','#2e2e3a'] },
+    { id:'emberdark',name:'Ember Dark', mode:'dark', g:['#0d0709','#7c2d12'] },
+  ];
+  const sw = document.getElementById('sw');
+  function apply(t){
+    document.documentElement.dataset.theme = t.id;
+    document.documentElement.dataset.mode = t.mode;
+    sw.querySelectorAll('.sw').forEach(e=>e.classList.toggle('on', e.dataset.id===t.id));
+  }
+  THEMES.forEach(t=>{
+    const b = document.createElement('button');
+    b.className = 'sw'; b.dataset.id = t.id;
+    b.innerHTML = '<div class="bar" style="background:linear-gradient(125deg,'+t.g[0]+','+t.g[1]+')"></div>'+
+                  '<div class="nm">'+t.name+' <span class="tag">'+(t.mode==='dark'?'dökkt':'ljóst')+'</span></div>';
+    b.addEventListener('click', ()=>apply(t));
+    sw.appendChild(b);
+  });
+  apply(THEMES[0]);
+</script>
+</body>
+</html>
