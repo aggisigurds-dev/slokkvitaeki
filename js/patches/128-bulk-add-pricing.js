@@ -66,9 +66,13 @@
   }
 
   // Map type+size+kind ('hledsla'|'yfirferd') to the best matching service.
+  // Sizeless service families have a single "Yfirferð X" entry with no size;
+  // including the size ("30 m") would dilute the match below threshold.
+  const SIZELESS_SVC = /brunaslang|brunaslöng|brunaslong|hose|reykskynj|hitaskynj|smoke|teppi|blanket/i;
   function pickService(type, size, services, kind) {
     kind = kind || 'hledsla';
-    const queryTokens = norm(type + ' ' + size).split(' ').filter(Boolean);
+    const effSize = SIZELESS_SVC.test(type) ? '' : size;
+    const queryTokens = norm(type + ' ' + effSize).split(' ').filter(Boolean);
     let best = null;
     for (const p of services) {
       const nameTokens = norm(p.nafn).split(' ').filter(Boolean);
@@ -234,6 +238,20 @@
     // Then the price preview section.
     const section = buildSection();
     body.appendChild(section);
+
+    // Default the service to Yfirferð for families that never get a Hleðsla
+    // (Brunaslanga, skynjarar, teppi) and for CO₂/Léttvatn/ABF — matches the
+    // cost-calculator defaults so a slanga doesn't bill as Hleðsla/new.
+    function syncChoiceDefault() {
+      const sel = modal.querySelector('#_bap-choice');
+      const t = (modal.querySelector('#_ba_type') || {}).value || '';
+      if (!sel) return;
+      const yfirferdDefault = SIZELESS_SVC.test(t) || /co2|co₂|kolsýr|kolsyr|léttv|lettv|abf|vatn|froð|frod/i.test(t);
+      sel.value = yfirferdDefault ? 'yfirferd' : 'hledsla';
+    }
+    const typeEl = modal.querySelector('#_ba_type');
+    if (typeEl) typeEl.addEventListener('change', () => { syncChoiceDefault(); recompute(modal, nafn); });
+    syncChoiceDefault();
 
     // Wire input changes (recompute on every change).
     const onChange = () => recompute(modal, nafn);
