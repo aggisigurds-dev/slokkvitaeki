@@ -1,17 +1,17 @@
 /* 224-uttekt-taeki.js — Stage 2 of the v6 design: the tæki list on the company
- * page rendered as the v6 two-column rows (last report vs current service),
- * grouped collapsibly by type.
+ * page as the v6 two-column rows (last report vs current service), grouped
+ * collapsibly by type, with multi-select.
+ *
+ * Row order (per Agnar): icon · name/sub · "Frá síðustu skýrslur" chip │
+ *   ✓ (skrá skoðun) · current-service segmented · 🚫 Ónýtt │ ▦ QR · ☑ velja(far right)
  *
  * Reuses ALL existing billing logic:
- *   • current service choice  → window.UnitServicePicker.getChoice/setChoice
- *   • cost recompute          → window.recomputeCompanyTotalCost()
- *   • inspect / QR actions    → Field.openInspect / Print.showQR (DB.getUnit)
- * So the cost panel (patch 129) reads exactly the same choices. Patch 131's
- * <select>-into-table injection just no-ops (no table is rendered) but its
- * UnitServicePicker API stays in use.
- *
- * Companies.openDetail (js/features.js) calls UttektTaeki.buildHtml(coId, units)
- * in place of the old <table>; falls back to the table if this patch is absent.
+ *   • current service choice → window.UnitServicePicker.getChoice/setChoice
+ *   • cost recompute         → window.recomputeCompanyTotalCost()
+ *   • inspect / QR           → Field.openInspect / Print.showQR (DB.getUnit)
+ * Companies.openDetail calls UttektTaeki.buildHtml(coId, units) instead of the
+ * old <table> (falls back to it if this patch is absent). Patch 131's
+ * <select>-into-table injection no-ops (no table); its API stays in use.
  */
 (function () {
   if (window.UttektTaeki) return;
@@ -34,33 +34,36 @@
   }
   var SVC = [['yfirferd','Yfirferð'],['hledsla','Hleðsla'],['nyitt','Nýtt']];
 
-  var _collapsed = {};   // key coId+'|'+fam -> true
+  var _collapsed = {};   // coId+'|'+fam -> true
+  var _sel = {};         // unitId -> true  (multi-select)
+
+  function getChoice(coId,u){ try{ return window.UnitServicePicker ? UnitServicePicker.getChoice(coId,u.id,u.type) : 'yfirferd'; }catch(_){ return 'yfirferd'; } }
 
   function lastChip(u){
     var y = u.last_insp ? parseInt(String(u.last_insp).slice(0,4),10) : 0;
     if(!y) return '<span class="ut-last none">Ný / óskoðuð</span>';
-    var old = y < CUR-1;
-    return '<span class="ut-last'+(old?' old':'')+'">↺ Skoðun ’'+String(y).slice(-2)+'</span>';
+    return '<span class="ut-last'+(y<CUR-1?' old':'')+'">↺ Skoðun ’'+String(y).slice(-2)+'</span>';
   }
 
   function rowHtml(coId, u){
-    var f = fam(u.type), cur = '';
-    try { cur = window.UnitServicePicker ? UnitServicePicker.getChoice(coId, u.id, u.type) : 'yfirferd'; } catch(_){ cur='yfirferd'; }
-    var onytt = cur==='onytt';
+    var f = fam(u.type), cur = getChoice(coId,u), onytt = cur==='onytt', sel = !!_sel[u.id];
     var segs = SVC.map(function(s){
       var on = (!onytt && cur===s[0]);
       return '<button class="ut-svc'+(on?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-v="'+s[0]+'">'+s[1]+'</button>';
     }).join('');
-    return '<div class="ut-row'+(onytt?' onytt':'')+'">'+
+    return '<div class="ut-row'+(onytt?' onytt':'')+(sel?' sel':'')+'">'+
+      '<input type="checkbox" class="ut-chk" data-co="'+coId+'" data-uid="'+u.id+'"'+(sel?' checked':'')+' title="Velja">'+
       '<div class="ut-ico '+f+'">'+FAM[f][0]+'</div>'+
       '<div class="ut-main"><div class="ut-t">'+esc(u.type)+'</div>'+
-        '<div class="ut-sub">'+esc(u.serial||'')+(u.location?' · '+esc(u.location):'')+(u.next_insp?' · næsta '+fd(u.next_insp):'')+'</div></div>'+
+        '<div class="ut-sub">'+esc(u.serial||'')+(u.next_insp?' · næsta '+fd(u.next_insp):'')+'</div></div>'+
       '<div class="ut-right">'+
         '<div class="ut-lastcol">'+lastChip(u)+'</div>'+
         '<div class="ut-now">'+
+          '<button class="ut-act" onclick="Field.openInspect(DB.getUnit('+u.id+'))" title="Skrá skoðun">✓</button>'+
           '<div class="ut-svcseg">'+segs+'</div>'+
           '<button class="ut-onytt'+(onytt?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-ty="'+esc(u.type)+'" title="Merkja ónýtt — ekki rukkað">🚫</button>'+
-          '<button class="ut-act" onclick="Field.openInspect(DB.getUnit('+u.id+'))" title="Skrá skoðun">✓</button>'+
+        '</div>'+
+        '<div class="ut-far">'+
           '<button class="ut-act" onclick="Print.showQR(DB.getUnit('+u.id+'))" title="Prenta QR-miða">▦</button>'+
         '</div>'+
       '</div>'+
@@ -68,74 +71,94 @@
   }
 
   function inner(coId, units){
+    var n = units.filter(function(u){return _sel[u.id];}).length;
+    var bulk = '<div class="ut-bulk'+(n?' show':'')+'">'+
+      '<span class="ut-bulk-cnt">'+n+' valin</span>'+
+      '<button class="ut-bulk-act" data-bulk="yfirferd" data-co="'+coId+'">Allt → Yfirferð</button>'+
+      '<button class="ut-bulk-act" data-bulk="hledsla" data-co="'+coId+'">Allt → Hleðsla</button>'+
+      '<button class="ut-bulk-act" data-bulk="onytt" data-co="'+coId+'">🚫 Ónýtt</button>'+
+      '<button class="ut-bulk-clear" data-co="'+coId+'" title="Hætta við val">✕</button>'+
+    '</div>';
     var groups = {};
     units.forEach(function(u){ var f=fam(u.type); (groups[f]=groups[f]||[]).push(u); });
-    var html = '<div class="ut-head"><span class="sp"></span><span class="h-last">Frá síðustu skýrslur</span><span class="h-now">Þessi skoðun</span></div>';
+    var head = '<div class="ut-head"><span class="sp"></span><span class="h-last">Frá síðustu skýrslur</span><span class="h-now">Þessi skoðun</span><span class="h-far"></span></div>';
+    var body = '';
     FAMORDER.forEach(function(f){
       var arr = groups[f]; if(!arr||!arr.length) return;
       var key = coId+'|'+f, col = !!_collapsed[key];
-      html += '<div class="ut-grp">'+
+      var selN = arr.filter(function(u){return _sel[u.id];}).length;
+      body += '<div class="ut-grp">'+
         '<button class="ut-grp-h" data-k="'+key+'" data-co="'+coId+'">'+
           '<span class="ut-ico '+f+'" style="width:26px;height:26px;font-size:14px">'+FAM[f][0]+'</span>'+
           '<span class="ut-grp-nm">'+FAM[f][1]+'</span>'+
-          '<span class="ut-grp-cnt">'+arr.length+' tæki</span>'+
+          '<span class="ut-grp-cnt">'+arr.length+' tæki'+(selN?' · '+selN+' valin':'')+'</span>'+
           '<span class="ut-grp-chev">'+(col?'▸':'▾')+'</span>'+
         '</button>'+
         (col?'':'<div class="ut-grp-body">'+arr.map(function(u){return rowHtml(coId,u);}).join('')+'</div>')+
       '</div>';
     });
-    return html;
+    return bulk + head + body;
   }
 
   window.UttektTaeki = {
-    buildHtml: function(coId, units){
-      return '<div class="ut-list" data-uw-co="'+coId+'">'+inner(coId, units)+'</div>';
-    },
+    buildHtml: function(coId, units){ return '<div class="ut-list" data-uw-co="'+coId+'">'+inner(coId, units)+'</div>'; },
     rerender: function(coId){
       var wrap = document.querySelector('.ut-list[data-uw-co="'+coId+'"]'); if(!wrap) return;
       var c = window.Companies && Companies.list && Companies.list.find(function(x){return x.id==coId;}); if(!c) return;
-      var units = DB.cache.units.filter(function(u){return u.client===c.nafn;});
-      wrap.innerHTML = inner(coId, units);
+      wrap.innerHTML = inner(coId, DB.cache.units.filter(function(u){return u.client===c.nafn;}));
     }
   };
 
-  // One delegated handler for the interactive controls.
+  function unitsFor(coId){ var c=Companies.list.find(function(x){return x.id==coId;}); return c?DB.cache.units.filter(function(u){return u.client===c.nafn;}):[]; }
+  function recompute(){ try{ if(window.recomputeCompanyTotalCost) recomputeCompanyTotalCost(); }catch(_){} }
+
   document.addEventListener('click', function(e){
     var b;
     if((b=e.target.closest('.ut-svc'))){
-      var co=+b.dataset.co, uid=+b.dataset.uid, v=b.dataset.v;
-      try{ UnitServicePicker.setChoice(co,uid,v); }catch(_){}
-      try{ if(window.recomputeCompanyTotalCost) recomputeCompanyTotalCost(); }catch(_){}
-      UttektTaeki.rerender(co); return;
+      try{ UnitServicePicker.setChoice(+b.dataset.co,+b.dataset.uid,b.dataset.v); }catch(_){}
+      recompute(); UttektTaeki.rerender(+b.dataset.co); return;
     }
     if((b=e.target.closest('.ut-onytt'))){
-      var co2=+b.dataset.co, uid2=+b.dataset.uid, ty=b.dataset.ty, cur='';
-      try{ cur=UnitServicePicker.getChoice(co2,uid2,ty); }catch(_){}
-      try{ UnitServicePicker.setChoice(co2,uid2, cur==='onytt'?'yfirferd':'onytt'); }catch(_){}
-      try{ if(window.recomputeCompanyTotalCost) recomputeCompanyTotalCost(); }catch(_){}
-      UttektTaeki.rerender(co2); return;
+      var co=+b.dataset.co, uid=+b.dataset.uid, cur='';
+      try{ cur=UnitServicePicker.getChoice(co,uid,b.dataset.ty); }catch(_){}
+      try{ UnitServicePicker.setChoice(co,uid, cur==='onytt'?'yfirferd':'onytt'); }catch(_){}
+      recompute(); UttektTaeki.rerender(co); return;
     }
-    if((b=e.target.closest('.ut-grp-h'))){
-      _collapsed[b.dataset.k] = !_collapsed[b.dataset.k];
-      UttektTaeki.rerender(+b.dataset.co); return;
+    if(e.target.classList && e.target.classList.contains('ut-chk')){
+      var cuid=+e.target.dataset.uid, cco=+e.target.dataset.co;
+      if(e.target.checked) _sel[cuid]=true; else delete _sel[cuid];
+      UttektTaeki.rerender(cco); return;
     }
+    if((b=e.target.closest('.ut-bulk-act'))){
+      var bco=+b.dataset.co, v=b.dataset.bulk;
+      unitsFor(bco).forEach(function(u){ if(_sel[u.id]){ try{UnitServicePicker.setChoice(bco,u.id,v);}catch(_){} } });
+      recompute(); UttektTaeki.rerender(bco); return;
+    }
+    if((b=e.target.closest('.ut-bulk-clear'))){ _sel={}; UttektTaeki.rerender(+b.dataset.co); return; }
+    if((b=e.target.closest('.ut-grp-h'))){ _collapsed[b.dataset.k]=!_collapsed[b.dataset.k]; UttektTaeki.rerender(+b.dataset.co); return; }
   });
 
-  // ---- styles ----
   if (!document.getElementById('uttekt-taeki-css')) {
     var css = [
       '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
+      '.ut-bulk{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 15px;background:var(--ink1);color:#fff}',
+      '.ut-bulk.show{display:flex}',
+      '.ut-bulk-cnt{font-weight:800;font-size:13px}',
+      '.ut-bulk-act{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
+      '.ut-bulk-clear{margin-left:auto;background:transparent;border:0;color:rgba(255,255,255,.7);font-size:16px;cursor:pointer}',
       '.ut-head{display:flex;align-items:center;padding:11px 15px 7px;border-bottom:1px solid var(--brd)}',
       '.ut-head .sp{flex:1}',
       '.ut-head .h-last{width:118px;text-align:right;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
-      '.ut-head .h-now{width:316px;margin-left:18px;padding-left:18px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
-      '@media(max-width:820px){.ut-head{display:none}}',
+      '.ut-head .h-now{width:252px;margin-left:18px;padding-left:18px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
+      '.ut-head .h-far{width:40px;margin-left:14px}',
+      '@media(max-width:860px){.ut-head{display:none}}',
       '.ut-grp-h{width:100%;display:flex;align-items:center;gap:10px;padding:9px 15px;background:var(--bg);border:0;border-top:1px solid var(--brd);cursor:pointer;font:inherit;text-align:left}',
       '.ut-grp:first-child .ut-grp-h{border-top:0}',
       '.ut-grp-nm{font-weight:800;font-size:13.5px;color:var(--ink1)}',
       '.ut-grp-cnt{font-size:11.5px;color:var(--ink3);font-weight:600}',
       '.ut-grp-chev{margin-left:auto;color:var(--ink3);font-size:12px}',
-      '.ut-row{display:flex;align-items:center;gap:12px;padding:10px 15px;border-top:1px solid var(--bg)}',
+      '.ut-row{display:flex;align-items:center;gap:12px;padding:10px 15px 10px 26px;border-top:1px solid var(--bg)}',
+      '.ut-row.sel{background:var(--brand-lt,#eef4ff)}',
       '.ut-row.onytt{opacity:.55}.ut-row.onytt .ut-t{text-decoration:line-through}',
       '.ut-ico{flex:none;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px}',
       '.ut-ico.duft{background:#fdeecb}.ut-ico.lettv{background:#dbeafe}.ut-ico.co2{background:#e0e7ff}.ut-ico.slanga{background:#fde2dd}.ut-ico.reyk{background:#ede9fe}.ut-ico.annad{background:#eef0f2}',
@@ -146,15 +169,17 @@
       '.ut-last{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap;background:#eef0f2;color:var(--ink2)}',
       '.ut-last.old{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d)}',
       '.ut-last.none{background:transparent;color:var(--ink4);font-weight:600}',
-      '.ut-now{display:flex;align-items:center;gap:7px;flex:none;width:316px;justify-content:flex-end;margin-left:18px;padding-left:18px;border-left:1px solid var(--brd)}',
+      '.ut-now{display:flex;align-items:center;gap:7px;flex:none;width:252px;justify-content:flex-end;margin-left:18px;padding-left:18px;border-left:1px solid var(--brd)}',
       '.ut-svcseg{display:inline-flex;background:var(--bg);border:1px solid var(--brd);border-radius:9px;padding:3px;gap:2px}',
       '.ut-svc{border:0;background:transparent;font:inherit;font-size:11.5px;font-weight:700;color:var(--ink3);padding:5px 10px;border-radius:7px;cursor:pointer;white-space:nowrap}',
       '.ut-svc.on{background:var(--brand);color:#fff}',
       '.ut-onytt{border:1px solid var(--brd);background:var(--surface);color:var(--ink3);border-radius:8px;padding:5px 8px;font-size:13px;cursor:pointer}',
       '.ut-onytt.on{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d);border-color:var(--red-bd,#fca5a5)}',
+      '.ut-far{display:flex;align-items:center;margin-left:14px;width:40px;justify-content:flex-end}',
       '.ut-act{border:1px solid var(--brd);background:var(--surface);color:var(--ink2);border-radius:8px;width:30px;height:30px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}',
       '.ut-act:hover{border-color:var(--brand);color:var(--brand)}',
-      '@media(max-width:820px){.ut-right{flex-wrap:wrap;justify-content:flex-end;gap:8px}.ut-now{width:auto;border-left:0;margin-left:0;padding-left:0}.ut-lastcol{width:auto}}'
+      '.ut-chk{width:18px;height:18px;cursor:pointer;accent-color:var(--brand);flex:none}',
+      '@media(max-width:860px){.ut-right{flex-wrap:wrap;justify-content:flex-end;gap:8px}.ut-now,.ut-lastcol,.ut-far{width:auto}.ut-now{border-left:0;margin-left:0;padding-left:0}}'
     ].join('\n');
     var st=document.createElement('style'); st.id='uttekt-taeki-css'; st.textContent=css; document.head.appendChild(st);
   }
