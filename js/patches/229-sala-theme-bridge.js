@@ -41,7 +41,12 @@
     // muted / secondary text
     V+'[style*="color:#475569"],'+V+'[style*="color:#64748b"],'+V+'[style*="color:#6b7280"],'+V+'[style*="color:#9ca3af"],'+V+'[style*="color:#94a3b8"],'+V+'[style*="color:#666"],'+V+'[style*="color:#888"],'+V+'[style*="color:#999"]{color:var(--thm-muted)!important}',
     // neutral borders → themed line
-    V+'[style*="#e2e8f0"],'+V+'[style*="#cbd5e1"],'+V+'[style*="#e5e7eb"],'+V+'[style*="#e6eaf0"],'+V+'[style*="#eef2f7"],'+V+'[style*="solid #ccc"],'+V+'[style*="solid #ddd"],'+V+'[style*="solid #eee"]{border-color:var(--thm-line)!important}'
+    V+'[style*="#e2e8f0"],'+V+'[style*="#cbd5e1"],'+V+'[style*="#e5e7eb"],'+V+'[style*="#e6eaf0"],'+V+'[style*="#eef2f7"],'+V+'[style*="solid #ccc"],'+V+'[style*="solid #ddd"],'+V+'[style*="solid #eee"]{border-color:var(--thm-line)!important}',
+    // 2026-06-19: under any DARK theme give EVERY content page the premium look
+    // from Rekstrarfélög — a black → brand gradient backdrop (Grafít/Miðnætti =
+    // svart+dökkblár, Glóð = svart+glóð, o.s.frv.) + dark buttons / white text.
+    'html[data-thm-dark="1"] .view{background:radial-gradient(900px 520px at 85% -8%,color-mix(in srgb,var(--thm-brand) 42%,transparent),transparent 62%),linear-gradient(168deg,#05070d 0%,color-mix(in srgb,var(--thm-brand) 26%,#05070d) 125%)!important}',
+    'html[data-thm-dark="1"] .view .btn:not(.btn-primary):not(.btn-success),html[data-thm-dark="1"] .view a[download]{background:color-mix(in srgb,var(--thm-ink) 9%,var(--thm-card))!important;color:#fff!important;border-color:var(--thm-line)!important}'
   ].join('');
   const st = document.createElement('style');
   st.id = 'theme-bridge';
