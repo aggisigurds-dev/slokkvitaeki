@@ -33,7 +33,16 @@
     hlutlaust: { nm:'🌿 Hlutlaust', desc:'Slate + grænt — lágstemmt.', sw:['#334155','#0f766e','#eef2f1','#0f172a'],
       t:{ bg:'#f5f6f7',card:'#fff',ink:'#0f172a',muted:'#64748b',line:'#e7eaec',brand:'#334155',primary:'#0f766e',h1:'#0f172a',h2:'#334155',h3:'#94a3b8' } },
     dokkt:     { nm:'🌙 Dökkt',     desc:'Dökkur grunnur — gott í bíl/myrkri.', sw:['#0f1115','#f59e0b','#1b1f27','#e5e7eb'],
-      t:{ bg:'#0f1115',card:'#1b1f27',ink:'#e5e7eb',muted:'#9aa3af',line:'#2a2f3a',brand:'#f59e0b',primary:'#f59e0b',h1:'#f3f4f6',h2:'#cbd0d8',h3:'#8b93a1' } }
+      t:{ bg:'#0f1115',card:'#1b1f27',ink:'#e5e7eb',muted:'#9aa3af',line:'#2a2f3a',brand:'#f59e0b',primary:'#f59e0b',h1:'#f3f4f6',h2:'#cbd0d8',h3:'#8b93a1' } },
+    // 2026-06-19: fagleg viðbótarþemu (úr þema-sýnishornunum).
+    midnight:  { nm:'🌌 Miðnætti',  desc:'Fágað dökkblátt — faglegt næturþema.', sw:['#2563eb','#60a5fa','#0b1220','#e8eef9'],
+      t:{ bg:'#0b1220',card:'#131c2e',ink:'#e8eef9',muted:'#9fb0c9',line:'#22304a',brand:'#2563eb',primary:'#60a5fa',h1:'#e8eef9',h2:'#b3c2da',h3:'#6f7f96' } },
+    glod:      { nm:'🔥 Glóð',      desc:'Dökkt + brennt appelsínugult — eldur að nóttu.', sw:['#c2410c','#f97316','#14100e','#f0ebe6'],
+      t:{ bg:'#14100e',card:'#1d1714',ink:'#f0ebe6',muted:'#b8a89c',line:'#2f261f',brand:'#c2410c',primary:'#f97316',h1:'#f0ebe6',h2:'#d2c1b3',h3:'#8a7c70' } },
+    grafit:    { nm:'⬛ Grafít',    desc:'Hlutlaust koldökkt — slétt og rólegt.', sw:['#6366f1','#818cf8','#151517','#ededf0'],
+      t:{ bg:'#151517',card:'#1f1f24',ink:'#ededf0',muted:'#a8a8b3',line:'#2e2e36',brand:'#6366f1',primary:'#818cf8',h1:'#ededf0',h2:'#c4c4ce',h3:'#7c7c88' } },
+    indigo:    { nm:'🔷 Indigo',    desc:'Bjart + indígó — ferskt og faglegt.', sw:['#3730a3','#4f46e5','#f0effa','#1e1b34'],
+      t:{ bg:'#f0effa',card:'#ffffff',ink:'#1e1b34',muted:'#4b466b',line:'#e6e3f5',brand:'#3730a3',primary:'#4f46e5',h1:'#1e1b34',h2:'#4b466b',h3:'#9893b5' } }
   };
   const ACCENTS = ['#c96a2f','#a8322a','#2563eb','#0f766e','#16a34a','#7c3aed','#334155'];
   const FONTS = {
