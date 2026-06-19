@@ -78,19 +78,57 @@
       .join(' · ');
   }
 
+  // Build synthetic lines from manually-typed counts and reuse createFromLines.
+  function createFromCounts(coId, nafn, year, counts){
+    var lines=Object.keys(counts)
+      .filter(function(k){return (parseInt(counts[k],10)||0)>0;})
+      .map(function(k){ return { category:k, cnt:parseInt(counts[k],10)||0, year:year }; });
+    if(!lines.length){ alert('Sláðu inn fjölda á a.m.k. einni tegund.'); return; }
+    createFromLines(coId, nafn, lines);
+  }
+
+  function manualFormHtml(){
+    var rows=Object.keys(CATMAP).map(function(k){
+      var m=CATMAP[k]; var lab=m[0]+(m[1]?(' '+m[1]):'');
+      return '<label class="rdr-cat"><span>'+esc(lab)+'</span>'+
+        '<input type="number" min="0" step="1" class="rdr-cnt" data-cat="'+k+'" placeholder="0"></label>';
+    }).join('');
+    return '<div class="rdr-man">'+
+      '<div class="rdr-lab" style="margin-bottom:6px">📝 Skrá fjölda úr skýrslu — handvirkt</div>'+
+      '<div class="rdr-grid">'+rows+'</div>'+
+      '<div class="rdr-manrow">'+
+        '<label class="rdr-yrlab">Ár skýrslu <input type="number" id="_rdr-man-year" class="rdr-yrin" value="'+(new Date().getFullYear()-1)+'"></label>'+
+        '<button id="_rdr-man-add" class="rdr-btn rdr-btn-sm">📥 Bæta tækjum við (TMP-númer)</button>'+
+      '</div>'+
+    '</div>';
+  }
+  function wireManual(body, coId, nafn){
+    var btn=body.querySelector('#_rdr-man-add'); if(!btn) return;
+    btn.onclick=function(){
+      var counts={};
+      body.querySelectorAll('.rdr-cnt').forEach(function(inp){ counts[inp.dataset.cat]=inp.value; });
+      var y=parseInt((body.querySelector('#_rdr-man-year')||{}).value,10)||new Date().getFullYear();
+      createFromCounts(coId, nafn, y, counts);
+    };
+  }
+
   async function render(box, coId){
     var bodyId='_rdr-body';
-    box.innerHTML='<div class="rdr-h">📄 Sjálfvirk útfylling úr úttektarskýrslu</div><div id="'+bodyId+'" class="rdr-body">Hleð…</div>';
+    box.innerHTML='<div class="rdr-h">📄 Útfylling tækjalista úr úttektarskýrslu</div><div id="'+bodyId+'" class="rdr-body">Hleð…</div>';
     var body=box.querySelector('#'+bodyId);
     var co=getCo(coId); if(!co){ body.innerHTML='<span class="rdr-muted">—</span>'; return; }
     var baseId=await baseIdForKt(co.kennitala);
     var lines = baseId ? await fetchLines(baseId) : [];
+
+    // No auto-parsed report yet → manual entry is the primary path.
     if(!lines.length){
-      body.innerHTML='<div class="rdr-muted">Engin lesin úttektarskýrsla fundin fyrir þetta fyrirtæki ennþá.</div>'+
-        '<div class="rdr-muted" style="margin-top:4px">Tengdu réttu skýrsluna í <b>Skjöl &amp; viðhengi</b> hér að neðan — hún les sjálfkrafa inn tækin.</div>';
+      body.innerHTML='<div class="rdr-muted">Engin <b>sjálf-lesin</b> skýrsla fundin ennþá — skráðu fjöldann af síðustu skýrslu hér að neðan, eða tengdu skýrsluna í <b>Skjöl &amp; viðhengi</b>.</div>'+
+        manualFormHtml();
+      wireManual(body, coId, co.nafn);
       return;
     }
-    // group by year, default newest
+
+    // Auto-parsed lines exist → show them + the manual form underneath.
     var byYear={}; lines.forEach(function(l){ var yy=l.year||0; (byYear[yy]=byYear[yy]||[]).push(l); });
     var years=Object.keys(byYear).map(Number).sort(function(a,b){return b-a;});
     var sel=years[0];
@@ -104,9 +142,12 @@
           (years.length>1 ? '<select id="_rdr-year" class="rdr-sel">'+years.map(function(y){return '<option value="'+y+'"'+(y===sel?' selected':'')+'>Skýrsla '+y+'</option>';}).join('')+'</select>' : '<span class="rdr-yr">Skýrsla '+sel+'</span>')+
         '</div>'+
         '<button id="_rdr-fill" class="rdr-btn"'+(n?'':' disabled')+'>📥 Lesa úr skýrslu → bæta '+n+' tækjum við (TMP-númer)</button>'+
-        '<div class="rdr-muted" style="margin-top:6px">Rangt fyrirtæki/skýrsla? Tengdu rétta úttektarskýrslu í <b>Skjöl &amp; viðhengi</b> að neðan.</div>';
+        '<div class="rdr-muted" style="margin-top:6px">Rangt fyrirtæki/skýrsla? Tengdu rétta úttektarskýrslu í <b>Skjöl &amp; viðhengi</b> að neðan.</div>'+
+        '<div class="rdr-div"></div>'+
+        manualFormHtml();
       var ys=body.querySelector('#_rdr-year'); if(ys) ys.onchange=function(){ sel=+ys.value; paint(); };
       var fb=body.querySelector('#_rdr-fill'); if(fb) fb.onclick=function(){ createFromLines(coId, co.nafn, byYear[sel]||[]); };
+      wireManual(body, coId, co.nafn);
     }
     paint();
   }
@@ -134,7 +175,18 @@
       '.rdr-sel{font:inherit;font-size:12.5px;padding:5px 8px;border:1px solid var(--brd);border-radius:8px;background:var(--surface);color:var(--ink1)}',
       '.rdr-yr{font-size:12px;font-weight:700;color:var(--ink2)}',
       '.rdr-btn{width:100%;border:0;border-radius:10px;padding:11px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;background:var(--brand);color:#fff}',
-      '.rdr-btn:disabled{opacity:.5;cursor:not-allowed}'
+      '.rdr-btn:disabled{opacity:.5;cursor:not-allowed}',
+      '.rdr-btn-sm{width:auto;padding:9px 14px;white-space:nowrap}',
+      '.rdr-div{height:1px;background:var(--brd);margin:14px 0 12px}',
+      '.rdr-man{}',
+      '.rdr-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px 10px;margin-bottom:10px}',
+      '.rdr-cat{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--ink1)}',
+      '.rdr-cat span{flex:1;min-width:0}',
+      '.rdr-cnt{width:64px;padding:7px 8px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;text-align:center;background:var(--surface);color:var(--ink1)}',
+      '.rdr-manrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:4px}',
+      '.rdr-yrlab{font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:6px}',
+      '.rdr-yrin{width:78px;padding:7px 8px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;text-align:center;background:var(--surface);color:var(--ink1)}',
+      '@media(max-width:520px){.rdr-grid{grid-template-columns:1fr}.rdr-manrow{flex-direction:column;align-items:stretch}.rdr-btn-sm{width:100%}}'
     ].join('\n');
     var st=document.createElement('style'); st.id='uttekt-reader-css'; st.textContent=css; document.head.appendChild(st);
   }
