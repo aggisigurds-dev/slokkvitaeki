@@ -198,15 +198,18 @@
     }).join('') + addChip('samningur','','+ samningur');
 
     // ── year table rows ──
+    // Every cell carries a manual attach button — a compact ＋ when docs already
+    // exist (so a wrong/auto-indexed year can be corrected by hand), or the
+    // full „vantar"/„+ skýrsla" prompt when empty.
     function repCell(y){
       var arr=repByY[y]||[];
-      if(arr.length){ return arr.map(function(x){ return x._att?repAttChip(x._att):repDocChip(x); }).join(''); }
+      if(arr.length){ return arr.map(function(x){ return x._att?repAttChip(x._att):repDocChip(x); }).join('')+addChip('skyrsla',y,'＋'); }
       if(y===NOW) return '<span class="sk-doc prog" title="Skoðun ársins ekki enn skjalfest">⏳ Í vinnslu</span>'+addChip('skyrsla',y,'+ skýrsla');
       return addChip('skyrsla',y,'vantar');
     }
     function invCell(y){
       var arr=invByY[y]||[];
-      if(arr.length){ return arr.map(function(x){ return x._att?invAttChip(x._att):invDocChip(x); }).join(''); }
+      if(arr.length){ return arr.map(function(x){ return x._att?invAttChip(x._att):invDocChip(x); }).join('')+addChip('reikningur',y,'＋'); }
       if(y===NOW) return addChip('reikningur',y,'+ reikningur');
       return addChip('reikningur',y,'vantar');
     }
