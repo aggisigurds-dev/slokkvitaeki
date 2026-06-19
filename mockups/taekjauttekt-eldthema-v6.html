@@ -83,9 +83,11 @@
   /* latest report, stacked vertically (replaces the old inline "í fyrra" pill) */
   .lastrep{flex:none;text-align:right;line-height:1.2;min-width:78px;padding-right:2px}
   .lastrep .lab{font-size:8.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--faint)}
-  .lastrep .typ{font-size:12px;font-weight:700;margin-top:1px;color:var(--ink)}
-  .lastrep .typ.hled{color:var(--primary-d)} .lastrep .typ.nytt{color:var(--brand)}
-  .lastrep .yr{font-size:10.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums}
+  .lastrep .lasttag{display:inline-block;margin-top:3px;font-size:11px;font-weight:700;padding:2px 10px;border-radius:99px}
+  .lastrep .lasttag.y{background:#eef0f2;color:var(--ink)}
+  .lastrep .lasttag.h{background:var(--fire-bg);color:var(--primary-d)}
+  .lastrep .lasttag.n{background:var(--brand-bg);color:var(--brand)}
+  .lastrep .yr{font-size:10.5px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;margin-top:2px}
   .lastrep .yr.old{color:var(--brand)} /* eldri en í fyrra → áberandi */
   .u-right{display:flex;align-items:center;gap:10px;flex:none}
   .svc{display:inline-flex;background:#f0eeeb;border-radius:9px;padding:3px;gap:2px}
@@ -134,6 +136,17 @@
   .doc.inv{background:var(--ok-bg);color:var(--ok);border-color:var(--ok-bd)}
   .doc.prog{background:#eef0f2;color:var(--ink);border-color:var(--line)}
   .doc.add{background:#fff;color:var(--faint);border:1px dashed var(--line);font-weight:600}
+  .vidh-add{font-size:12px;font-weight:700;border:0;background:var(--primary);color:#fff;border-radius:8px;padding:7px 13px;cursor:pointer}
+  .docstrip{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 14px;border-top:1px solid var(--line2)}
+  .docstrip-l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);min-width:148px}
+  .docstrip-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1}
+  /* year-status pills — SAME component as the Rekstrarfélög / Fyrirtæki-í-þjónustu overview */
+  .yrpills{display:flex;gap:7px;flex-wrap:wrap}
+  .yrpill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:99px;border:1px solid var(--line);background:#fff;color:var(--faint);font-variant-numeric:tabular-nums}
+  .yrpill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--faint)}
+  .yrpill.ok{border-color:var(--ok-bd);background:var(--ok-bg);color:var(--ok)} .yrpill.ok::before{background:var(--ok)}
+  .yrpill.now{border-color:var(--fire-bd);background:var(--fire-bg);color:var(--primary-d)} .yrpill.now::before{background:var(--primary)}
+  .yrpill.none{opacity:.55}
 
   .note{margin-top:14px;color:var(--muted);font-size:12.5px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:13px 15px}.note b{color:var(--ink)}
   /* Tilboðsverð — one-button expandable */
@@ -196,6 +209,7 @@
           <button class="act" onclick="bulkDate()">📅 Uppfæra skoðunardags</button>
           <button class="act" onclick="bulkType()">🔁 Breyta tegund</button>
           <button class="act" onclick="bulkOnytt()">🚫 Ónýtt</button>
+          <button class="act" onclick="bulkPrintCode()">🖨 Prenta kóða</button>
           <button class="act del" onclick="bulkDelete()">🗑 Eyða</button>
           <button class="x" onclick="clearSel()" title="Hætta við val">✕</button>
         </div>
@@ -246,7 +260,23 @@
   </div>
 
   <div class="cardbox">
-    <div class="cardbox-h"><h2>📁 Skjöl eftir ári</h2><span style="font-size:11px;color:var(--faint)">2023–2026</span></div>
+    <div class="cardbox-h"><h2>📁 Skjöl &amp; viðhengi</h2>
+      <button class="vidh-add" onclick="alert('Hlaða upp / tengja viðhengi (sýnidæmi)')">+ Viðhengi</button></div>
+    <!-- year status — same pills as the Rekstrarfélög / Fyrirtæki-í-þjónustu overview -->
+    <div class="docstrip">
+      <div class="docstrip-l">📊 Staða eftir ári</div>
+      <div class="docstrip-r yrpills">
+        <span class="yrpill ok" title="2023 — skýrsla á skrá">23</span>
+        <span class="yrpill ok" title="2024 — skýrsla + reikningur">24</span>
+        <span class="yrpill ok" title="2025 — skýrsla + reikningur">25</span>
+        <span class="yrpill now" title="2026 — í vinnslu">26</span>
+      </div>
+    </div>
+    <!-- one-time service contract -->
+    <div class="docstrip">
+      <div class="docstrip-l">📑 Þjónustusamningur</div>
+      <div class="docstrip-r"><a class="doc rep">📄 Samningur 2019</a><span class="doc add">+ samningur</span></div>
+    </div>
     <table class="docgrid">
       <thead><tr><th>Ár</th><th>Úttektarskýrsla</th><th>Reikningur</th></tr></thead>
       <tbody>
@@ -256,6 +286,11 @@
         <tr><td>2023</td><td><a class="doc rep">📄 Skoðun</a></td><td><span class="doc add">vantar</span></td></tr>
       </tbody>
     </table>
+    <!-- other attachments -->
+    <div class="docstrip">
+      <div class="docstrip-l">📎 Önnur viðhengi</div>
+      <div class="docstrip-r"><a class="doc prog">🖼 mynd–mælir.jpg</a><a class="doc prog">📄 ástandsskýrsla.pdf</a><span class="doc add">+ Viðhengi</span></div>
+    </div>
   </div>
 
   <div class="note">
@@ -292,10 +327,10 @@ function renderUnits(){
   document.getElementById('taeki').innerHTML=UNITS.map((u)=>{
     const T=TYPES[u.ty];
     const segs=SVC.map(([v,l,c])=>{if(v==='hledsla'&&T.hled===0)return '';return '<button class="'+c+(!u.onytt&&u.svc===v?' on':'')+'" data-id="'+u.id+'" data-v="'+v+'">'+l+'</button>';}).join('');
-    const lastCls=(SVC.find(s=>s[0]===u.lastSvc)||['','','yfir'])[2];
+    const tagCls={yfirferd:'y',hledsla:'h',nytt:'n'}[u.lastSvc]||'y';
     const lastOld=u.lastYr<25; // eldri en í fyrra (núv. ár 2026 → í fyrra '25)
     const lastrep='<div class="lastrep"><div class="lab">↺ Síðasta skýrsla</div>'+
-      '<div class="typ '+lastCls+'">'+SVCNAME[u.lastSvc]+'</div>'+
+      '<span class="lasttag '+tagCls+'">'+SVCNAME[u.lastSvc]+'</span>'+
       '<div class="yr'+(lastOld?' old':'')+'">20'+u.lastYr+'</div></div>';
     return '<div class="unit'+(u.onytt?' onytt':'')+(u.sel?' sel':'')+'">'+
       '<input type="checkbox" class="chk" data-sel="'+u.id+'"'+(u.sel?' checked':'')+'>'+
@@ -341,6 +376,7 @@ function selUnits(){return UNITS.filter(u=>u.sel);}
 function clearSel(){UNITS.forEach(u=>u.sel=false);paint();}
 function bulkDelete(){const n=selUnits().length;if(n&&confirm('Eyða '+n+' tækjum?')){UNITS=UNITS.filter(u=>!u.sel);paint();}}
 function bulkOnytt(){selUnits().forEach(u=>{u.onytt=true;u.sel=false;});paint();}
+function bulkPrintCode(){const n=selUnits().length;alert('Prenta QR-kóða / merkimiða fyrir '+n+' tæki (Brother PT-P750W) — sýnidæmi.');}
 function bulkDate(){const d=prompt('Ný skoðunardagsetning fyrir '+selUnits().length+' tæki:','18.06.2026');if(d){selUnits().forEach(u=>{u.done=true;u.sel=false;});paint();alert('Skoðunardags uppfærð (sýnidæmi).');}}
 function bulkType(){const t=prompt('Breyta tegund í (duft6/duft2/lettv/co2_5/slanga):','duft6');if(t&&TYPES[t]){selUnits().forEach(u=>{u.ty=t;u.svc=u.svc==='hledsla'&&TYPES[t].hled===0?'yfirferd':u.svc;u.sel=false;});paint();}}
 function toggleTilbod(){const b=document.getElementById('tilbodBody'),h=document.getElementById('tilbodH');const open=b.style.display==='none';b.style.display=open?'block':'none';h.classList.toggle('open',open);}
