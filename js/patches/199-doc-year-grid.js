@@ -129,15 +129,22 @@
   }
 
   // ── chips ─────────────────────────────────────────────────────────────────
+  // Wrap a customer_documents chip with a ✕ that removes the (often wrong-named /
+  // mis-yeared) entry from the page — deletes the customer_documents row.
+  function docWrap(chip, id){
+    return '<span class="sk-att-wrap">'+chip+'<button type="button" class="sk-att-x" data-deldoc="'+esc(id)+'" title="Eyða skráningu af síðunni">✕</button></span>';
+  }
   function repDocChip(d){
     var u=driveUrl(d.drive_file_id);
-    return u ? '<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Drive">📄 Skoðun</a>'
-             : '<span class="sk-doc rep" title="Skýrsla á skrá (engin Drive-slóð)">📄 Skoðun</span>';
+    var chip = u ? '<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Drive">📄 Skoðun</a>'
+                 : '<span class="sk-doc rep" title="Skýrsla á skrá (engin Drive-slóð)">📄 Skoðun</span>';
+    return docWrap(chip, d.id);
   }
   function invDocChip(d){
     var u=driveUrl(d.drive_file_id); var lab=invLabel(d.invoice_number);
-    return u ? '<a class="sk-doc inv" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna reikning í Drive">🧾 '+esc(lab)+'</a>'
-             : '<span class="sk-doc inv">🧾 '+esc(lab)+'</span>';
+    var chip = u ? '<a class="sk-doc inv" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna reikning í Drive">🧾 '+esc(lab)+'</a>'
+                 : '<span class="sk-doc inv">🧾 '+esc(lab)+'</span>';
+    return docWrap(chip, d.id);
   }
   function repAttChip(a){ return '<button type="button" class="sk-doc rep" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">📄 Skoðun</button>'; }
   function invAttChip(a){ var m=String(a.name||'').match(/R-?\s?\d{3,}/i); return '<button type="button" class="sk-doc inv" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>'; }
@@ -193,7 +200,7 @@
     samn.sort(function(a,b){return (b.year||0)-(a.year||0);});
     var samnHtml = samn.map(function(s){
       if(s.src==='doc'){ var u=driveUrl(s.d.drive_file_id); var lab='Samningur'+(s.year?(' '+s.year):'');
-        return u?'<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener">📑 '+esc(lab)+'</a>':'<span class="sk-doc rep">📑 '+esc(lab)+'</span>'; }
+        return docWrap(u?'<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener">📑 '+esc(lab)+'</a>':'<span class="sk-doc rep">📑 '+esc(lab)+'</span>', s.d.id); }
       return '<button type="button" class="sk-doc rep" data-att="'+esc(s.a.id)+'" title="'+esc(s.a.name)+'">📑 Samningur'+(s.year?(' '+s.year):'')+'</button>';
     }).join('') + addChip('samningur','','+ samningur');
 
@@ -258,6 +265,16 @@
         if(!f) return;
         var ok = (window.Confirm&&Confirm.show) ? await Confirm.show('Eyða viðhengi „'+f.name+'"?') : window.confirm('Eyða viðhengi „'+f.name+'"?');
         if(ok){ await CompanyAttachments.delete(coId, f); render(section, coId); }
+        return;
+      }
+      // Delete a customer_documents entry (wrong name / wrong year). Removes the
+      // record from the page; the underlying Drive file is left in Drive.
+      var delDoc=e.target.closest('[data-deldoc]');
+      if(delDoc){
+        e.preventDefault();
+        var did=delDoc.getAttribute('data-deldoc');
+        var ok2 = (window.Confirm&&Confirm.show) ? await Confirm.show('Eyða þessari skráningu af síðunni?\n(skjalið sjálft helst í Google Drive)') : window.confirm('Eyða þessari skráningu af síðunni?');
+        if(ok2){ var sb=SB(); if(sb){ try{ await sb.from('customer_documents').delete().eq('id', did); }catch(err){ alert('Villa við eyðingu: '+(err.message||err)); } } render(section, coId); }
         return;
       }
       var attEl=e.target.closest('[data-att]');

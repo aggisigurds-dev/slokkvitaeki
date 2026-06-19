@@ -60,7 +60,7 @@
     return '<div class="ut-row'+(onytt?' onytt':'')+(sel?' sel':'')+'">'+
       '<input type="checkbox" class="ut-chk" data-co="'+coId+'" data-uid="'+u.id+'"'+(sel?' checked':'')+' title="Velja">'+
       '<div class="ut-ico '+f+'">'+FAM[f][0]+'</div>'+
-      '<div class="ut-main"><div class="ut-t">'+esc(u.type)+'</div>'+
+      '<div class="ut-main"><div class="ut-t">'+esc(u.type)+(u.size?' '+esc(u.size):'')+'</div>'+
         '<div class="ut-sub">'+esc(u.serial||'')+(u.next_insp?' · næsta '+fd(u.next_insp):'')+'</div></div>'+
       '<div class="ut-right">'+
         '<div class="ut-lastcol">'+lastChip(u)+'</div>'+
