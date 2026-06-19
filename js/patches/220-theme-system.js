@@ -95,6 +95,14 @@
     r.setProperty('--thm-font', FONTS[s.font] || FONTS.system);
     document.documentElement.setAttribute('data-thm-density', s.density);
     document.documentElement.setAttribute('data-thm-preset', s.preset);
+    // 2026-06-19: generic light/dark flag (luminance of the bg) so any page can
+    // add per-theme treatments via html[data-thm-dark="1"].
+    try {
+      let _h = String(t.bg || '').replace('#', '');
+      if (_h.length === 3) _h = _h[0]+_h[0]+_h[1]+_h[1]+_h[2]+_h[2];
+      const _l = 0.299*parseInt(_h.slice(0,2),16) + 0.587*parseInt(_h.slice(2,4),16) + 0.114*parseInt(_h.slice(4,6),16);
+      document.documentElement.setAttribute('data-thm-dark', _l < 128 ? '1' : '0');
+    } catch (_) {}
 
     // ── Stage 2: drive the app's OWN design tokens (css/app.css :root) from the
     // theme, so the whole app — which already references --brand/--ink1/--bg/--brd

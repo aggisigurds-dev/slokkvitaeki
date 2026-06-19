@@ -70,7 +70,16 @@
       P+'.rf-tbl thead th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);padding:9px 10px;border-bottom:1px solid var(--brd);background:var(--surface2);white-space:nowrap}',
       P+'.rf-tbl thead th.c{text-align:center}',
       P+'.rf-tbl tbody tr{transition:background .12s}',
-      P+'.rf-tbl tbody tr:hover{background:var(--surface2)}'
+      P+'.rf-tbl tbody tr:hover{background:var(--surface2)}',
+      // 2026-06-19: under any DARK theme give the page a rich black → brand
+      // gradient (Grafít/Miðnætti brand = dökkblátt → svart+dökkblár stigull).
+      'html[data-thm-dark="1"] #view-rekstrarfelog{background:radial-gradient(900px 520px at 85% -8%,color-mix(in srgb,var(--thm-brand) 45%,transparent),transparent 62%),linear-gradient(168deg,#05070d 0%,color-mix(in srgb,var(--thm-brand) 26%,#05070d) 125%)!important}',
+      'html[data-thm-dark="1"] #view-rekstrarfelog .rf-card{box-shadow:0 16px 40px -22px rgba(0,0,0,.95)}',
+      'html[data-thm-dark="1"] #view-rekstrarfelog .rf-card:hover{box-shadow:0 22px 50px -22px rgba(0,0,0,1),0 0 0 1px var(--accent-soft,rgba(255,255,255,.05))}',
+      // dark theme: dark buttons + white letters (secondary buttons + Excel link)
+      'html[data-thm-dark="1"] #view-rekstrarfelog button,html[data-thm-dark="1"] #view-rekstrarfelog a[download],html[data-thm-dark="1"] #view-rekstrarfelog a.btn{background:color-mix(in srgb,var(--thm-ink) 9%,var(--thm-card))!important;color:#fff!important;border:1px solid var(--thm-line)!important}',
+      // primary / active-mode buttons keep the accent, white letters
+      'html[data-thm-dark="1"] #view-rekstrarfelog .btn-primary,html[data-thm-dark="1"] #view-rekstrarfelog [style*="background:var(--brand)"]{background:var(--thm-primary)!important;color:#fff!important;border-color:var(--thm-primary)!important}'
     ].join('');
     document.head.appendChild(s);
   }
