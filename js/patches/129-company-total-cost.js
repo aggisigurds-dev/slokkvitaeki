@@ -830,6 +830,7 @@
       };
       inp.addEventListener('change', onChange);
       inp.addEventListener('blur', onChange);
+      inp.addEventListener('input', () => { const i = +inp.dataset.i; const st = loadTripState(coId); if (Array.isArray(st.extras) && st.extras[i]) { st.extras[i].qty = Math.max(0, parseInt(inp.value, 10) || 0); saveTripState(coId, st); } });
     });
     section.querySelectorAll('._ctc-extra-price').forEach(inp => {
       const onChange = () => {
@@ -845,6 +846,7 @@
       };
       inp.addEventListener('change', onChange);
       inp.addEventListener('blur', onChange);
+      inp.addEventListener('input', () => { const i = +inp.dataset.i; const st = loadTripState(coId); if (Array.isArray(st.extras) && st.extras[i]) { st.extras[i].unit_price_ex_vat = Math.max(0, parseFloat(inp.value) || 0); saveTripState(coId, st); } });
     });
     section.querySelectorAll('._ctc-extra-rm').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -872,6 +874,8 @@
       };
       driveInp.addEventListener('change', onDrive);
       driveInp.addEventListener('blur', onDrive);
+      // Per-keystroke save (no render → no cursor jump); total recomputes on blur.
+      driveInp.addEventListener('input', () => { const st = loadTripState(coId); st.drive = parseFloat(driveInp.value) || 0; saveTripState(coId, st); });
     }
     // Wire driving quantity input (number of trips).
     const driveQtyInp = section.querySelector('#_ctc-drive-qty');
@@ -886,6 +890,7 @@
       };
       driveQtyInp.addEventListener('change', onDriveQty);
       driveQtyInp.addEventListener('blur', onDriveQty);
+      driveQtyInp.addEventListener('input', () => { const st = loadTripState(coId); st.driveQty = Math.max(0, parseInt(driveQtyInp.value, 10) || 0); saveTripState(coId, st); });
     }
     // Wire Skýrslugerð input.
     const skyrsluInp = section.querySelector('#_ctc-skyrslu');
@@ -900,6 +905,7 @@
       };
       skyrsluInp.addEventListener('change', onSkyrslu);
       skyrsluInp.addEventListener('blur', onSkyrslu);
+      skyrsluInp.addEventListener('input', () => { const st = loadTripState(coId); st.skyrslugerd = parseFloat(skyrsluInp.value) || 0; saveTripState(coId, st); });
     }
     // Wire Afsláttur (%) input.
     const discInp = section.querySelector('#_ctc-discount');
@@ -914,6 +920,7 @@
       };
       discInp.addEventListener('change', onDisc);
       discInp.addEventListener('blur', onDisc);
+      discInp.addEventListener('input', () => { const st = loadTripState(coId); st.discount_pct = Math.max(0, Math.min(100, Math.round(Number(discInp.value) || 0))); saveTripState(coId, st); });
     }
   }
 
