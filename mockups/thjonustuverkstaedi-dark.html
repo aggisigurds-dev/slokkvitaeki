@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="is" data-theme="blue">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ÞjónustuVerkstæði — dökkt þema (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ===================== DARK THEMES ===================== */
+:root{
+  --ink1:#eef2fb; --ink2:#aab4c8; --ink3:#717c92; --ink4:#4d5670;
+  --ok:#34d399; --ok-bg:rgba(52,211,153,.12); --ok-bd:rgba(52,211,153,.35);
+  --warn:#fbbf24; --warn-bg:rgba(251,191,36,.12); --warn-bd:rgba(251,191,36,.32);
+  --bad:#f87171; --bad-bg:rgba(248,113,113,.12); --bad-bd:rgba(248,113,113,.32);
+  --info:#60a5fa; --info-bg:rgba(96,165,250,.12); --info-bd:rgba(96,165,250,.32);
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.13);
+  --radius:15px;
+}
+:root[data-theme="blue"]{
+  --bg0:#05070e; --bg1:#0a1024; --glow:rgba(37,99,235,.18);
+  --hero1:#070b16; --hero2:#16306e; --hero-edge:rgba(96,165,250,.55);
+  --card:#0e1426; --card2:#10172c;
+  --accent:#3b82f6; --accent2:#60a5fa; --accent-soft:rgba(59,130,246,.14); --accent-bd:rgba(59,130,246,.4);
+}
+:root[data-theme="red"]{
+  --bg0:#08060a; --bg1:#1c0d12; --glow:rgba(244,63,94,.16);
+  --hero1:#0d0709; --hero2:#7f1d1d; --hero-edge:rgba(251,113,133,.5);
+  --card:#160e13; --card2:#1a1016;
+  --accent:#f97316; --accent2:#fb923c; --accent-soft:rgba(249,115,22,.14); --accent-bd:rgba(249,115,22,.4);
+}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%}
+body{
+  font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  color:var(--ink1); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased;
+  background:
+    radial-gradient(1100px 620px at 78% -8%, var(--glow), transparent 60%),
+    linear-gradient(170deg, var(--bg0) 0%, var(--bg1) 100%);
+  background-attachment:fixed; min-height:100vh;
+}
+.num{font-variant-numeric:tabular-nums}
+svg.i{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+svg.i.sm{width:14px;height:14px}
+button{font-family:inherit;cursor:pointer}
+
+.wrap{max-width:1080px;margin:0 auto;padding:26px 22px 70px}
+
+/* ============ HERO ============ */
+.hero{
+  position:relative; border-radius:20px; padding:24px 26px; overflow:hidden;
+  background:linear-gradient(125deg, var(--hero1) 0%, var(--hero2) 130%);
+  border:1px solid var(--line2);
+  box-shadow:0 24px 60px -24px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.07);
+}
+.hero::after{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,var(--hero-edge),transparent)}
+.hero-top{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap}
+.hero-ico{width:48px;height:48px;border-radius:13px;flex:none;display:grid;place-items:center;
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:#fff;backdrop-filter:blur(4px)}
+.hero-ico svg{width:25px;height:25px}
+.hero h1{margin:0;font-size:23px;font-weight:800;letter-spacing:-.02em;color:#fff}
+.hero .sub{margin-top:4px;font-size:13.5px;color:rgba(255,255,255,.66)}
+.hero .sub b{color:var(--accent2);font-weight:700}
+.hero-spacer{flex:1}
+.theme-switch{display:inline-flex;gap:6px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.12);border-radius:11px;padding:4px}
+.theme-switch button{border:0;background:none;color:rgba(255,255,255,.6);font:inherit;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;display:inline-flex;align-items:center;gap:7px}
+.theme-switch button .sw{width:11px;height:11px;border-radius:50%}
+.theme-switch button[data-t="blue"] .sw{background:linear-gradient(135deg,#1e3a8a,#3b82f6)}
+.theme-switch button[data-t="red"] .sw{background:linear-gradient(135deg,#7f1d1d,#f97316)}
+:root[data-theme="blue"] .theme-switch button[data-t="blue"],
+:root[data-theme="red"]  .theme-switch button[data-t="red"]{background:rgba(255,255,255,.14);color:#fff}
+
+.hero-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:18px}
+.stat{display:inline-flex;align-items:center;gap:9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:9px 14px}
+.stat .d{width:9px;height:9px;border-radius:50%}
+.stat .n{font-size:17px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums}
+.stat .l{font-size:12.5px;color:rgba(255,255,255,.6)}
+.stat.on{background:rgba(255,255,255,.11);border-color:rgba(255,255,255,.2)}
+.seg{display:inline-flex;gap:3px;background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.1);border-radius:11px;padding:4px;margin-left:auto}
+.seg button{border:0;background:none;color:rgba(255,255,255,.6);font:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:8px;display:inline-flex;align-items:center;gap:6px}
+.seg button.on{background:rgba(255,255,255,.13);color:#fff}
+.seg svg{width:15px;height:15px}
+
+.toolbar2{display:flex;align-items:center;gap:10px;margin:18px 2px 4px}
+.toolbar2 .ttl{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.toolbar2 .rule{flex:1;height:1px;background:var(--line)}
+.sortsel{font:inherit;font-size:12.5px;font-weight:600;color:var(--ink2);background:var(--card);border:1px solid var(--line2);border-radius:10px;padding:8px 12px}
+
+/* ============ CARD (Breitt) ============ */
+.list{display:flex;flex-direction:column;gap:14px;margin-top:14px}
+.card{
+  position:relative;display:flex;gap:18px;padding:16px 18px 16px 20px;
+  background:linear-gradient(180deg,var(--card),var(--card2));
+  border:1px solid var(--line); border-radius:var(--radius);
+  box-shadow:0 14px 34px -22px rgba(0,0,0,.9);
+  transition:border-color .16s, box-shadow .16s, transform .16s;
+}
+.card::before{content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;background:var(--accent);box-shadow:0 0 14px -1px var(--accent)}
+.card.done::before{background:var(--ok);box-shadow:0 0 14px -1px var(--ok)}
+.card.stopped::before{background:var(--bad)}
+.card.stopped{opacity:.6}
+.card:hover{border-color:var(--accent-bd);box-shadow:0 20px 44px -22px rgba(0,0,0,.95), 0 0 0 1px var(--accent-soft);transform:translateY(-1px)}
+.card-l{flex:1;min-width:0;display:flex;flex-direction:column;gap:12px}
+.card-r{flex:0 0 290px;display:flex;flex-direction:column;gap:9px}
+@media(max-width:760px){.card{flex-direction:column}.card-r{flex-basis:auto}}
+
+.co{display:flex;align-items:center;gap:13px}
+.ava{width:44px;height:44px;border-radius:12px;flex:none;display:grid;place-items:center;font-weight:800;font-size:15px;color:#fff;
+  background:linear-gradient(135deg,var(--hero1),var(--accent));border:1px solid var(--line2);letter-spacing:.02em}
+.co .nm{font-size:16px;font-weight:700;color:var(--ink1);line-height:1.2}
+.co .kt{font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums;margin-top:2px;font-family:'Inter',monospace}
+.co-meta{display:flex;gap:7px;flex-wrap:wrap;margin-left:auto}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;border-radius:8px;padding:4px 9px;border:1px solid var(--line2);background:rgba(255,255,255,.04);color:var(--ink2);white-space:nowrap}
+.chip svg{width:13px;height:13px;color:var(--ink3)}
+.chip.units{color:var(--accent2);border-color:var(--accent-bd);background:var(--accent-soft)}
+.chip.units svg{color:var(--accent2)}
+.chip.draft{color:var(--warn);border-color:var(--warn-bd);background:var(--warn-bg)}
+.chip.draft svg{color:var(--warn)}
+
+/* stepper */
+.steps{display:flex;align-items:flex-start;margin:2px 2px}
+.step{flex:1;display:flex;flex-direction:column;align-items:center;gap:7px;position:relative}
+.step .ln{position:absolute;top:14px;left:-50%;width:100%;height:2px;background:var(--line2);z-index:0}
+.step:first-child .ln{display:none}
+.step.on .ln{background:var(--ok)}
+.step .nd{position:relative;z-index:1;width:29px;height:29px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;
+  border:2px solid var(--line2);background:var(--card2);color:var(--ink3)}
+.step.on .nd{background:var(--ok);border-color:var(--ok);color:#05221a;box-shadow:0 0 12px -2px var(--ok)}
+.step.cur .nd{border-color:var(--accent);color:var(--accent2);background:var(--accent-soft);box-shadow:0 0 12px -2px var(--accent)}
+.step .lb{font-size:10px;font-weight:700;color:var(--ink3);text-align:center;letter-spacing:.02em}
+.step.on .lb{color:var(--ok)}
+.step.cur .lb{color:var(--accent2)}
+
+/* marks */
+.marks{display:flex;gap:7px;flex-wrap:wrap}
+.mark{font-size:10.5px;font-weight:700;border-radius:99px;padding:5px 11px;border:1px solid var(--line2);background:rgba(255,255,255,.03);color:var(--ink3)}
+.mark.on-bad{color:var(--bad);border-color:var(--bad-bd);background:var(--bad-bg)}
+.mark.on-warn{color:var(--warn);border-color:var(--warn-bd);background:var(--warn-bg)}
+.mark.on-info{color:var(--info);border-color:var(--info-bd);background:var(--info-bg)}
+
+/* right column */
+.note{width:100%;flex:1;min-height:54px;resize:none;font:inherit;font-size:12.5px;color:var(--ink1);
+  background:rgba(255,255,255,.03);border:1px solid var(--line2);border-radius:10px;padding:9px 11px}
+.note::placeholder{color:var(--ink4)}
+.note:focus{outline:none;border-color:var(--accent-bd);background:rgba(255,255,255,.05)}
+.acts{display:flex;gap:7px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;border-radius:9px;padding:7px 11px;
+  border:1px solid var(--line2);background:rgba(255,255,255,.04);color:var(--ink2);transition:background .14s,border-color .14s,color .14s}
+.btn:hover{background:rgba(255,255,255,.09);color:var(--ink1)}
+.btn svg{width:14px;height:14px}
+.btn.report{color:var(--accent2);border-color:var(--accent-bd);background:var(--accent-soft)}
+.btn.ok{color:var(--ok);border-color:var(--ok-bd);background:var(--ok-bg)}
+.btn.ok:hover{background:rgba(52,211,153,.2)}
+.btn.bad{color:var(--bad);border-color:var(--bad-bd);background:var(--bad-bg)}
+
+.foot-note{margin-top:26px;text-align:center;font-size:12px;color:var(--ink3)}
+.foot-note b{color:var(--accent2)}
+
+/* mockup ribbon */
+.ribbon{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--accent2);background:var(--accent-soft);border:1px solid var(--accent-bd);border-radius:99px;padding:5px 13px;margin-bottom:16px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+ <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.1 2.1-2.4-.6-.6-2.4 2.1-2.1z"/></symbol>
+ <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+ <symbol id="i-rows" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="6" rx="1"/><rect x="3" y="13" width="18" height="6" rx="1"/></symbol>
+ <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></symbol>
+ <symbol id="i-tube" viewBox="0 0 24 24"><path d="M9 2v17.5A2.5 2.5 0 0 0 14 19.5V2"/><path d="M7 2h9M9 12h5"/></symbol>
+ <symbol id="i-zap" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+ <symbol id="i-edit" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h6"/><path d="M14 2v6h6"/><path d="M18.4 13.6a2 2 0 0 1 2.8 2.8L17 20.5l-3 .5.5-3z"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+ <symbol id="i-building" viewBox="0 0 24 24"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 22v-4h6v4M9 6h.01M15 6h.01M9 10h.01M15 10h.01M9 14h.01M15 14h.01"/></symbol>
+ <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></symbol>
+ <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+</svg>
+
+<div class="wrap">
+  <div class="ribbon">Mockup · dökkt þema · veldu Blár / Rauður að ofan</div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-ico"><svg><use href="#i-wrench"/></svg></div>
+      <div>
+        <h1>ÞjónustuVerkstæði</h1>
+        <div class="sub">Það sem er í vinnslu núna · áætl. <b>2,0 m.kr.</b></div>
+      </div>
+      <div class="hero-spacer"></div>
+      <div class="theme-switch">
+        <button data-t="blue"><span class="sw"></span> Blár</button>
+        <button data-t="red"><span class="sw"></span> Rauður</button>
+      </div>
+    </div>
+    <div class="hero-bar">
+      <span class="stat on"><span class="d" style="background:var(--info)"></span><span class="n">42</span><span class="l">í vinnslu</span></span>
+      <span class="stat"><span class="d" style="background:var(--warn)"></span><span class="n">60</span><span class="l">á dagskrá</span></span>
+      <span class="stat"><span class="d" style="background:var(--ok)"></span><span class="n">156</span><span class="l">búin í ár</span></span>
+      <div class="seg">
+        <button><svg><use href="#i-list"/></svg> Listi</button>
+        <button class="on"><svg><use href="#i-rows"/></svg> Breitt</button>
+        <button><svg><use href="#i-grid"/></svg> Spjöld</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toolbar2">
+    <span class="ttl">Í vinnslu</span>
+    <span class="rule"></span>
+    <select class="sortsel"><option>↕ Nafn (A–Ö)</option><option>↕ Hæstu tekjur</option><option>↕ Nýlega merkt</option></select>
+  </div>
+
+  <!-- CARDS -->
+  <div class="list">
+
+    <!-- 1 -->
+    <div class="card">
+      <div class="card-l">
+        <div class="co">
+          <div class="ava">AÐ</div>
+          <div><div class="nm">Aðalskoðun hf. Skeifan</div><div class="kt">kt. 548994-2269</div></div>
+          <div class="co-meta">
+            <span class="chip draft"><svg><use href="#i-edit"/></svg> óklárað vistað</span>
+            <span class="chip units"><svg><use href="#i-tube"/></svg> 4 einingar</span>
+            <span class="chip"><svg><use href="#i-zap"/></svg> áætl. 25.316 kr</span>
+          </div>
+        </div>
+        <div class="steps">
+          <div class="step on"><span class="ln"></span><span class="nd"><svg class="i sm" style="stroke:#05221a"><use href="#i-check"/></svg></span><span class="lb">Úttekt</span></div>
+          <div class="step cur"><span class="ln"></span><span class="nd">2</span><span class="lb">Skýrsla</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">3</span><span class="lb">Send</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">4</span><span class="lb">Reikn.</span></div>
+        </div>
+        <div class="marks">
+          <span class="mark">Hætt</span>
+          <span class="mark">Eftir að uppfæra dags.</span>
+          <span class="mark on-info">● Reikningur sendur áður</span>
+        </div>
+      </div>
+      <div class="card-r">
+        <textarea class="note" placeholder="Minnispunktur…"></textarea>
+        <div class="acts">
+          <button class="btn"><svg><use href="#i-building"/></svg> Opna</button>
+          <button class="btn report"><svg><use href="#i-file"/></svg> Skýrsla</button>
+          <button class="btn ok"><svg><use href="#i-check"/></svg> Búið</button>
+          <button class="btn bad"><svg><use href="#i-x"/></svg> Afmerkja</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2 -->
+    <div class="card">
+      <div class="card-l">
+        <div class="co">
+          <div class="ava">AS</div>
+          <div><div class="nm">Aspafell 2-12</div><div class="kt">kt. 678575-8479</div></div>
+          <div class="co-meta">
+            <span class="chip units"><svg><use href="#i-tube"/></svg> 30 einingar</span>
+            <span class="chip"><svg><use href="#i-zap"/></svg> áætl. 134.432 kr</span>
+          </div>
+        </div>
+        <div class="steps">
+          <div class="step on"><span class="ln"></span><span class="nd"><svg class="i sm" style="stroke:#05221a"><use href="#i-check"/></svg></span><span class="lb">Úttekt</span></div>
+          <div class="step on"><span class="ln"></span><span class="nd"><svg class="i sm" style="stroke:#05221a"><use href="#i-check"/></svg></span><span class="lb">Skýrsla</span></div>
+          <div class="step cur"><span class="ln"></span><span class="nd">3</span><span class="lb">Send</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">4</span><span class="lb">Reikn.</span></div>
+        </div>
+        <div class="marks">
+          <span class="mark">Hætt</span>
+          <span class="mark">Eftir að uppfæra dags.</span>
+          <span class="mark">Reikningur sendur áður</span>
+        </div>
+      </div>
+      <div class="card-r">
+        <textarea class="note" placeholder="Minnispunktur…"></textarea>
+        <div class="acts">
+          <button class="btn"><svg><use href="#i-building"/></svg> Opna</button>
+          <button class="btn report"><svg><use href="#i-file"/></svg> Skýrsla</button>
+          <button class="btn ok"><svg><use href="#i-check"/></svg> Búið</button>
+          <button class="btn bad"><svg><use href="#i-x"/></svg> Afmerkja</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3 -->
+    <div class="card">
+      <div class="card-l">
+        <div class="co">
+          <div class="ava">BB</div>
+          <div><div class="nm">Bílabúð Benna ehf</div><div class="kt">kt. 711292-2929</div></div>
+          <div class="co-meta">
+            <span class="chip draft"><svg><use href="#i-edit"/></svg> óklárað vistað</span>
+            <span class="chip units"><svg><use href="#i-tube"/></svg> 17 einingar</span>
+            <span class="chip"><svg><use href="#i-zap"/></svg> áætl. 81.280 kr</span>
+          </div>
+        </div>
+        <div class="steps">
+          <div class="step cur"><span class="ln"></span><span class="nd">1</span><span class="lb">Úttekt</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">2</span><span class="lb">Skýrsla</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">3</span><span class="lb">Send</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">4</span><span class="lb">Reikn.</span></div>
+        </div>
+        <div class="marks">
+          <span class="mark">Hætt</span>
+          <span class="mark">Eftir að uppfæra dags.</span>
+          <span class="mark">Reikningur sendur áður</span>
+        </div>
+      </div>
+      <div class="card-r">
+        <textarea class="note" placeholder="Minnispunktur…"></textarea>
+        <div class="acts">
+          <button class="btn"><svg><use href="#i-building"/></svg> Opna</button>
+          <button class="btn report"><svg><use href="#i-file"/></svg> Skýrsla</button>
+          <button class="btn ok"><svg><use href="#i-check"/></svg> Búið</button>
+          <button class="btn bad"><svg><use href="#i-x"/></svg> Afmerkja</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4 -->
+    <div class="card">
+      <div class="card-l">
+        <div class="co">
+          <div class="ava">BS</div>
+          <div><div class="nm">Bílasmiðurinn</div><div class="kt">kt. 541298-2159</div></div>
+          <div class="co-meta">
+            <span class="chip units"><svg><use href="#i-tube"/></svg> 3 einingar</span>
+            <span class="chip"><svg><use href="#i-zap"/></svg> áætl. 20.366 kr</span>
+          </div>
+        </div>
+        <div class="steps">
+          <div class="step cur"><span class="ln"></span><span class="nd">1</span><span class="lb">Úttekt</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">2</span><span class="lb">Skýrsla</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">3</span><span class="lb">Send</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">4</span><span class="lb">Reikn.</span></div>
+        </div>
+        <div class="marks">
+          <span class="mark">Hætt</span>
+          <span class="mark">Eftir að uppfæra dags.</span>
+          <span class="mark">Reikningur sendur áður</span>
+        </div>
+      </div>
+      <div class="card-r">
+        <textarea class="note" placeholder="Minnispunktur…"></textarea>
+        <div class="acts">
+          <button class="btn"><svg><use href="#i-building"/></svg> Opna</button>
+          <button class="btn report"><svg><use href="#i-file"/></svg> Skýrsla</button>
+          <button class="btn ok"><svg><use href="#i-check"/></svg> Búið</button>
+          <button class="btn bad"><svg><use href="#i-x"/></svg> Afmerkja</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5 — stopped -->
+    <div class="card stopped">
+      <div class="card-l">
+        <div class="co">
+          <div class="ava">BO</div>
+          <div><div class="nm">Body shop</div><div class="kt">kt. 570591-1429</div></div>
+          <div class="co-meta">
+            <span class="chip units"><svg><use href="#i-tube"/></svg> 5 einingar</span>
+            <span class="chip"><svg><use href="#i-zap"/></svg> áætl. 29.073 kr</span>
+          </div>
+        </div>
+        <div class="steps">
+          <div class="step cur"><span class="ln"></span><span class="nd">1</span><span class="lb">Úttekt</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">2</span><span class="lb">Skýrsla</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">3</span><span class="lb">Send</span></div>
+          <div class="step"><span class="ln"></span><span class="nd">4</span><span class="lb">Reikn.</span></div>
+        </div>
+        <div class="marks">
+          <span class="mark on-bad">● Hætt</span>
+          <span class="mark">Eftir að uppfæra dags.</span>
+          <span class="mark">Reikningur sendur áður</span>
+        </div>
+      </div>
+      <div class="card-r">
+        <textarea class="note" placeholder="Minnispunktur…"></textarea>
+        <div class="acts">
+          <button class="btn"><svg><use href="#i-building"/></svg> Opna</button>
+          <button class="btn report"><svg><use href="#i-file"/></svg> Skýrsla</button>
+          <button class="btn ok"><svg><use href="#i-check"/></svg> Búið</button>
+          <button class="btn bad"><svg><use href="#i-x"/></svg> Afmerkja</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="foot-note">Skiptu um þema að ofan: <b>Blár</b> (svart → dökkblátt) eða <b>Rauður</b> (svart → dökkrautt). · Status: grænt = búið, blátt/appelsínugult = í vinnslu, gult = bíður, rautt = hætt.</div>
+</div>
+
+<script>
+  document.querySelectorAll('.theme-switch button').forEach(b=>{
+    b.addEventListener('click',()=>{ document.documentElement.dataset.theme = b.dataset.t; });
+  });
+</script>
+</body>
+</html>
