@@ -318,10 +318,21 @@
         var dpn = window.AppSettings && window.AppSettings.path && window.AppSettings.path('sala.deleted_product_names');
         if (Array.isArray(dpn)) dpn.forEach(function(n){ tombstoned[String(n||'').trim().toLowerCase()] = true; });
       } catch(_){}
+      // 2026-06-19: permanently retired duplicate catalog entries — deleted
+      // from `vorur` (ids 260–276) at Agnar's request. They duplicated the
+      // canonical "<tegund> hleðsla/yfirferð" products and kept re-appearing
+      // because this seeder re-inserts per-browser. Never re-seed them on any
+      // machine, regardless of the localStorage flag.
+      var RETIRED = {
+        'slökkvitæki léttvatn 6 ltr':1,'slökkvitæki duft 6 kg':1,'slökkvitæki duft 2 kg':1,
+        'slökkvitæki abf 6 ltr':1,'slökkvitæki co₂ 5 kg':1,'slökkvitæki co₂ 2 kg':1,
+        'yfirferð léttvatn':1,'yfirferð duft':1,'yfirferð abf 6 ltr':1,'yfirferð co₂ 5 kg':1,'yfirferð co₂ 2 kg':1,
+        'hleðsla léttvatn':1,'hleðsla duft':1,'hleðsla duft 2 kg':1,'hleðsla abf 6 ltr':1,'hleðsla co₂ 5 kg':1,'hleðsla co₂ 2 kg':1
+      };
       var rows = products
         .filter(function (p) {
           var key = p.nafn.toLowerCase();
-          return !existingByName[key] && !tombstoned[key];
+          return !existingByName[key] && !tombstoned[key] && !RETIRED[key];
         })
         .map(function (p) {
           return {
