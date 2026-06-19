@@ -145,6 +145,8 @@
       const fy = +a.field_inspected_year || 0;
       const m  = +a.inspect_month || 0;
       const info = arsInfo(co.id);
+      // A saved (óklárað) report in the cloud (patch 227/228) = work in progress.
+      const hasDraft = !!(window.SavedReports && SavedReports.has && SavedReports.has(co.id));
       const card = {
         id: co.id, nafn: co.nafn || ('#' + co.id), kennitala: co.kennitala || '',
         month: m, aminning: (a.aminning || '').trim(),
@@ -153,10 +155,11 @@
         note: a.sv_note || '',          // bráðabirgða-minnispunktur (frítexti)
         markedAt: +a.sv_mark_at || 0,   // hvenær síðast merkt (fyrir "Nýlega merkt" röðun)
         units: +info._unit_count || 0,
-        tekjur: +info.estimated_yearly || 0
+        tekjur: +info.estimated_yearly || 0,
+        hasDraft: hasDraft
       };
       if (ly === curYear) out.buid.push(card);
-      else if (fy === curYear) out.vinnsla.push(card);
+      else if (fy === curYear || hasDraft) out.vinnsla.push(card);   // started OR has a saved draft
       else if (m > 0 && m <= curMonth) out.dagskra.push(card);   // due/overdue, not started
     });
     const byName = (x, y) => String(x.nafn).localeCompare(y.nafn, 'is');
@@ -190,8 +193,10 @@
 
   // ── Shared card pieces (used by both list + cards mode) ──────────────────
   function metaChips(r) {
-    if (!(r.units > 0 || r.tekjur > 0)) return '';
+    const draftChip = r.hasDraft ? '<span title="Óklárað úttekt vistuð — heldur áfram á fyrirtækjasíðunni" style="background:#fffbeb;color:#a16207;border:1px solid #fde68a;border-radius:99px;padding:1px 8px;font-size:10px;font-weight:700;white-space:nowrap">📝 óklárað vistað</span>' : '';
+    if (!(r.units > 0 || r.tekjur > 0 || draftChip)) return '';
     return '<div style="display:flex;gap:5px;flex-wrap:wrap">' +
+      draftChip +
       (r.units > 0 ? '<span style="background:#eff6ff;color:#1d4ed8;border-radius:99px;padding:1px 8px;font-size:10px;font-weight:700;white-space:nowrap">🧯 ' + r.units + ' einingar</span>' : '') +
       (r.tekjur > 0 ? '<span style="background:#eff6ff;color:#1d4ed8;border-radius:99px;padding:1px 8px;font-size:10px;font-weight:700;white-space:nowrap" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">áætl. ' + fmtKr(r.tekjur) + '</span>' : '') +
       '</div>';
