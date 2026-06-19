@@ -22,14 +22,31 @@
   // Which report the tækjalisti was built from — saved per company (synced via
   // AppSettings) so the proof shows on every device.
   function getSource(coId){ try{ if(window.AppSettings&&AppSettings.path){ var all=AppSettings.path('inspection_source')||{}; return all[String(coId)]||null; } }catch(_){} return null; }
-  function saveSource(coId, src){ try{ if(window.AppSettings&&AppSettings.save){ var o={inspection_source:{}}; o.inspection_source[String(coId)]=src; return AppSettings.save(o); } }catch(_){} }
-  function sourceFooter(coId){
-    var s=getSource(coId); if(!s||!s.name) return '';
+  function saveSource(coId, src){ try{ if(window.AppSettings&&AppSettings.save){ var o={inspection_source:{}}; o.inspection_source[String(coId)]=src; return AppSettings.save(o); } }catch(_){} return Promise.resolve(); }
+  async function fetchReportDocs(baseId){
+    var sb=SB(); if(!sb||!baseId) return [];
+    try{ var r=await sb.from('customer_documents').select('year,drive_file_id,notes').eq('customer_base_id',baseId).eq('doc_type','uttektarskyrsla'); return r.data||[]; }catch(e){ return []; }
+  }
+  // The report the tækjalisti is based on: prefer the recorded import source,
+  // else the newest attached úttektarskýrsla, else the newest report on file.
+  function computeSrc(coId, repDocs){
+    var rec=getSource(coId); if(rec&&rec.name) return Object.assign({_basis:true}, rec);
+    var atts=((window.CompanyAttachments&&CompanyAttachments.list(coId))||[]).filter(function(a){
+      var k=a.kind||''; return k==='skyrsla' || /sko(ð|d)un|(ú|u)ttekt|sk(ý|y)rsl/i.test(a.name||'');
+    });
+    if(atts.length){ atts.sort(function(x,y){return (Date.parse(y.uploaded_at||0)||0)-(Date.parse(x.uploaded_at||0)||0);}); var a=atts[0]; return {name:a.name, att_id:a.id, year:a.year}; }
+    if(repDocs&&repDocs.length){ var ds=repDocs.slice().sort(function(x,y){return (+y.year||0)-(+x.year||0);}); var d=ds[0]; return {name:(d.notes||('Skýrsla '+(d.year||''))), drive_file_id:d.drive_file_id, year:d.year}; }
+    return null;
+  }
+  function sourceFooter(s){
+    if(!s||!s.name) return '';
+    var lab=s._basis?'Tækjalisti byggður á':'Tengd skýrsla';
     var when=s.ts?(' · '+new Date(s.ts).toLocaleDateString('is-IS')):'';
-    var link = s.drive_file_id ? '<a href="'+esc(driveUrl(s.drive_file_id))+'" target="_blank" rel="noopener" class="rdr-srcname">📄 '+esc(s.name)+' ↗</a>'
-             : (s.att_id ? '<button type="button" class="rdr-srcname" data-srcatt="'+esc(s.att_id)+'">📄 '+esc(s.name)+'</button>'
-             : '<span class="rdr-srcname">📄 '+esc(s.name)+'</span>');
-    return '<div class="rdr-srcbar">📌 Tækjalisti byggður á: '+link+when+'</div>';
+    var nm=esc(String(s.name).length>46?String(s.name).slice(0,44)+'…':s.name);
+    var link = s.drive_file_id ? '<a href="'+esc(driveUrl(s.drive_file_id))+'" target="_blank" rel="noopener" class="rdr-srcname">📄 '+nm+' ↗</a>'
+             : (s.att_id ? '<button type="button" class="rdr-srcname" data-srcatt="'+esc(s.att_id)+'">📄 '+nm+'</button>'
+             : '<span class="rdr-srcname">📄 '+nm+'</span>');
+    return '<div class="rdr-srcbar">📌 '+lab+': '+link+when+'</div>';
   }
 
   var CATMAP = {
@@ -97,7 +114,7 @@
     if(!summary.length){ alert('Engin tæki í skýrslunni.'); return; }
     // Remember which report this came from (proof), even if nothing new is added.
     var src = Object.assign({ name:'Skýrsla '+y, year:y, ts:Date.now() }, source||{});
-    try{ saveSource(coId, src); }catch(_){}
+    try{ await saveSource(coId, src); }catch(_){}
     if(!rows.length){ alert('✓ Öll tæki úr skýrslu '+y+' eru þegar skráð — ekkert bætt við.\n\n'+summary.join('\n')); try{ if(window.Companies&&Companies.openDetail) Companies.openDetail(coId); }catch(_){} return; }
     if(!confirm('Skýrsla '+y+' — samræmt við skráð tæki hjá „'+nafn+'":\n\n'+summary.join('\n')+'\n\nBæta '+rows.length+' tækjum við sem vantar? (TMP-númer, uppfært við fyrstu skoðun)')) return;
     try{
@@ -212,11 +229,13 @@
     var co=getCo(coId); if(!co){ body.innerHTML='<span class="rdr-muted">—</span>'; return; }
     var baseId=await baseIdForKt(co.kennitala);
     var lines = baseId ? await fetchLines(baseId) : [];
+    var repDocs = baseId ? await fetchReportDocs(baseId) : [];
+    var footer = sourceFooter(computeSrc(coId, repDocs));
 
     // No auto-parsed report yet → manual entry is the primary path.
     if(!lines.length){
       body.innerHTML='<div class="rdr-muted">Engin <b>sjálf-lesin</b> skýrsla fundin ennþá — skráðu fjöldann af síðustu skýrslu hér að neðan, eða tengdu skýrsluna í <b>Skjöl &amp; viðhengi</b>.</div>'+
-        manualFormHtml()+sourceFooter(coId);
+        manualFormHtml()+footer;
       wireManual(body, coId, co.nafn);
       return;
     }
@@ -237,7 +256,7 @@
         '<button id="_rdr-fill" class="rdr-btn"'+(n?'':' disabled')+'>📥 Lesa úr skýrslu → bæta '+n+' tækjum við (TMP-númer)</button>'+
         '<div class="rdr-muted" style="margin-top:6px">Rangt fyrirtæki/skýrsla? Tengdu rétta úttektarskýrslu í <b>Skjöl &amp; viðhengi</b> að neðan.</div>'+
         '<div class="rdr-div"></div>'+
-        manualFormHtml()+sourceFooter(coId);
+        manualFormHtml()+footer;
       var ys=body.querySelector('#_rdr-year'); if(ys) ys.onchange=function(){ sel=+ys.value; paint(); };
       var fb=body.querySelector('#_rdr-fill'); if(fb) fb.onclick=function(){ var ls=byYear[sel]||[]; createFromLines(coId, co.nafn, ls, {name:'Skýrsla '+sel, year:sel, drive_file_id:(ls[0]&&ls[0].drive_file_id)||null, ts:Date.now()}); };
       wireManual(body, coId, co.nafn);
@@ -280,6 +299,10 @@
     var f=((window.CompanyAttachments&&CompanyAttachments.list(coId))||[]).find(function(x){return x.id===id;});
     if(f&&window.CompanyAttachments&&CompanyAttachments.openPreview) CompanyAttachments.openPreview(f);
   });
+  // Re-render the open reader when settings sync (source/attachments arrive).
+  try{ if(window.AppSettings&&AppSettings.onChange) AppSettings.onChange(function(){
+    var box=document.querySelector('.rdr-box'); if(box&&box.dataset.open==='1'){ var b=box.querySelector('.rdr-bodywrap'); if(b) render(b, +box.dataset.co); }
+  }); }catch(_){}
 
   if(!document.getElementById('uttekt-reader-css')){
     var css=[
