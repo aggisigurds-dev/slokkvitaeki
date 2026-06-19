@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tæki & skýrsla — sniðmát</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ——— design tokens (mirror these into js/patches/220 theme later) ——— */
+    --bg:#F4F4F0;            /* warm neutral page */
+    --card:#FFFFFF;
+    --ink:#15181E;           /* near-black */
+    --ink2:#525A67;          /* secondary text */
+    --ink3:#8C93A0;          /* muted / labels */
+    --line:#ECEAE3;          /* warm hairline */
+    --line2:#F3F1EA;
+    --brand:#DA2A1E;         /* red accent (TÆKI icon, header stripe) */
+    --navy:#1B2330;          /* dark summary band + primary action */
+    --blue:#2563EB;          /* secondary action + totals */
+    --blue-sft:#EAF1FF;
+    --grn:#15803D; --grn-sft:#E7F6EC;
+    --amb:#B45309; --amb-sft:#FBF1E0;
+    --gold:#B08A4F;          /* mono eyebrow accent */
+    --radius:14px;
+    --shadow:0 1px 2px rgba(20,22,28,.05), 0 12px 30px -22px rgba(20,22,28,.35);
+    --font:'Public Sans',system-ui,sans-serif;
+    --display:'Space Grotesk',var(--font);
+    --mono:'Space Mono',ui-monospace,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);
+       font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1160px;margin:0 auto;padding:26px 22px 60px}
+
+  /* ——— shared component classes (the design system) ——— */
+  .ds-card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);
+           box-shadow:var(--shadow)}
+  .ds-eyebrow{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.13em;
+              text-transform:uppercase;color:var(--ink);display:flex;align-items:center;gap:9px}
+  .ds-eyebrow .dot{width:9px;height:9px;border-radius:2px;background:var(--brand)}
+  .ds-eyebrow .cnt{color:var(--ink3);font-weight:400;letter-spacing:.1em}
+  .ds-pill{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
+           padding:3px 10px;border-radius:999px;border:1px solid var(--line);color:var(--ink2);background:#fff}
+  .ds-pill.blue{background:var(--blue-sft);border-color:#CFE0FF;color:var(--blue)}
+  h1{font-family:var(--display);font-size:25px;font-weight:700;letter-spacing:-.02em;margin:0}
+
+  /* ——— header card ——— */
+  .head{position:relative;padding:18px 22px;margin-bottom:18px;overflow:hidden}
+  .head::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--brand)}
+  .head .kt{font-family:var(--mono);font-size:11.5px;color:var(--ink3);letter-spacing:.04em;margin-top:3px}
+  .head .meta{display:flex;flex-wrap:wrap;gap:18px;margin-top:11px;color:var(--ink2);font-size:13px}
+  .head .meta b{color:var(--ink);font-weight:600}
+  .head .topright{position:absolute;top:18px;right:22px;display:flex;align-items:center;gap:10px}
+  .iconbtn{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:#fff;
+           color:var(--ink3);display:grid;place-items:center;cursor:pointer;font-size:14px}
+
+  /* ——— main two-column grid ——— */
+  .grid{display:grid;grid-template-columns:1fr 372px;gap:18px;align-items:start}
+  @media(max-width:920px){.grid{grid-template-columns:1fr}}
+
+  .panel-h{display:flex;justify-content:space-between;align-items:center;gap:12px;
+           padding:15px 18px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+  .seg{display:inline-flex;background:#F1F0EA;border:1px solid var(--line);border-radius:10px;padding:3px;gap:2px}
+  .seg button{border:0;background:transparent;font:inherit;font-size:12px;font-weight:600;color:var(--ink2);
+              padding:6px 12px;border-radius:7px;cursor:pointer}
+  .seg button.on{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+
+  .toolbar{display:flex;gap:10px;padding:13px 18px;border-bottom:1px solid var(--line2)}
+  .search{flex:1;display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;
+          padding:9px 12px;color:var(--ink3);font-size:13px}
+  .search input{border:0;outline:0;font:inherit;flex:1;color:var(--ink)}
+  .btn-blue{background:var(--blue);color:#fff;border:0;border-radius:10px;padding:9px 14px;font:inherit;
+            font-weight:600;font-size:13px;cursor:pointer;white-space:nowrap}
+
+  /* ——— tæki rows ——— */
+  .row{display:grid;grid-template-columns:auto auto auto 1fr auto auto;align-items:center;gap:13px;
+       padding:11px 18px;border-bottom:1px solid var(--line2)}
+  .row:last-child{border-bottom:0}
+  .row:hover{background:#FBFAF6}
+  .chk{width:17px;height:17px;border:1.5px solid var(--line);border-radius:5px;background:#fff;cursor:pointer}
+  .rad{width:17px;height:17px;border:1.5px solid var(--line);border-radius:50%;background:#fff;cursor:pointer}
+  .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:15px}
+  .ic.water{background:#E8F1FE}.ic.duft{background:#FBE9E5}.ic.co2{background:#E9F0FB}.ic.hose{background:#FBE9E5}
+  .nm{font-weight:600;font-size:14px;color:var(--ink)}
+  .sub{font-size:12px;color:var(--ink3);margin-top:1px}
+  .sub .sn{font-family:var(--mono);font-size:11px;color:var(--ink2)}
+
+  /* THE CHANGE: latest report as a vertical stacked block (was an inline "í fyrra" pill) */
+  .last{min-width:104px;text-align:right;line-height:1.25}
+  .last .lab{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.12em;
+             text-transform:uppercase;color:var(--ink3)}
+  .last .typ{font-size:12.5px;font-weight:600;color:var(--ink);margin-top:1px}
+  .last .dt{font-size:11px;color:var(--ink2)}
+  .last.stale .typ{color:var(--amb)}      /* older than last year → amber */
+
+  .status{display:inline-flex;gap:2px;background:#F1F0EA;border:1px solid var(--line);border-radius:9px;padding:3px}
+  .status button{border:0;background:transparent;font:inherit;font-size:12px;font-weight:600;color:var(--ink2);
+                 padding:6px 11px;border-radius:6px;cursor:pointer}
+  .status button.on{background:var(--navy);color:#fff}
+  .status button.on.yf{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.14)}
+  .onytt{border:1px solid var(--line);background:#fff;color:var(--ink3);border-radius:8px;
+         padding:6px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+
+  /* ——— right: cost panel ——— */
+  .cost{overflow:hidden}
+  .cost .band{background:var(--navy);color:#fff;padding:15px 18px;display:flex;justify-content:space-between;align-items:flex-start}
+  .cost .band .t{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;opacity:.85;max-width:160px;line-height:1.35}
+  .cost .band .big{font-family:var(--display);font-size:25px;font-weight:700;letter-spacing:-.02em}
+  .cost .who{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:13px 18px;border-bottom:1px solid var(--line2)}
+  .cost .who .k{font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3)}
+  .cost .who .v{font-size:12.5px;font-weight:600;margin-top:2px}
+  .cost .lines{padding:6px 18px}
+  .cline{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line2);font-size:13px}
+  .cline:last-child{border-bottom:0}
+  .cline .l{display:flex;align-items:center;gap:7px;color:var(--ink2)}
+  .cline .l b{color:var(--ink);font-weight:600}
+  .cline .amt{font-variant-numeric:tabular-nums;font-weight:600}
+  .tag{font-size:10px;font-weight:600;padding:1px 7px;border-radius:999px}
+  .tag.yf{background:var(--blue-sft);color:var(--blue)} .tag.hl{background:var(--grn-sft);color:var(--grn)}
+  .miniin{width:42px;border:1px solid var(--line);border-radius:6px;padding:3px 6px;font:inherit;font-size:12px;text-align:center}
+  .sumrow{display:flex;justify-content:space-between;padding:6px 18px;font-size:13px;color:var(--ink2)}
+  .sumrow.tot{padding:12px 18px;border-top:1px solid var(--line);margin-top:4px}
+  .sumrow.tot .lab{font-weight:700;color:var(--blue);font-size:15px}
+  .sumrow.tot .val{font-family:var(--display);font-weight:700;color:var(--blue);font-size:21px;font-variant-numeric:tabular-nums}
+  .actions{padding:14px 18px 18px;display:flex;flex-direction:column;gap:10px}
+  .btn-xl{border:0;border-radius:11px;padding:13px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;
+          display:flex;flex-direction:column;align-items:center;gap:2px;color:#fff}
+  .btn-xl small{font-weight:500;font-size:11px;opacity:.78}
+  .btn-xl.navy{background:var(--navy)} .btn-xl.blue{background:var(--blue)}
+
+  /* ——— tilboðsverð ——— */
+  .tilbod{margin-top:18px;overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  thead th{font-family:var(--mono);font-size:9.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+           color:var(--ink3);text-align:left;padding:11px 18px;border-bottom:1px solid var(--line);background:#FAF9F5}
+  tbody td{padding:11px 18px;border-bottom:1px solid var(--line2);font-size:13px}
+  tbody tr:last-child td{border-bottom:0}
+  td.r{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+  td.x{text-align:center;color:var(--ink3);cursor:pointer}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER CARD -->
+  <div class="ds-card head">
+    <h1>Aðalskoðun skeifan</h1>
+    <div class="kt">kt. 540994-2269</div>
+    <div class="meta">
+      <span>📍 <b>Grjóthálsi 10</b>, 110 Rvk</span>
+      <span>📞 <b>545 0500</b></span>
+      <span>✉ adal@adal.is</span>
+    </div>
+    <div class="topright">
+      <span class="ds-pill blue">🗓 Skoðun: Júní</span>
+      <button class="iconbtn" title="Upplýsingar">!</button>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- LEFT: TÆKI -->
+    <div class="ds-card">
+      <div class="panel-h">
+        <div class="ds-eyebrow"><span class="dot"></span>TÆKI <span class="cnt">· 7 TÆKI</span></div>
+        <div class="seg">
+          <button class="on">Allt → Yfirferð</button>
+          <button>Áætlun frá í fyrra</button>
+        </div>
+      </div>
+      <div class="toolbar">
+        <label class="search">🔎 <input placeholder="Leita / fletta upp tæki…"></label>
+        <button class="btn-blue">+ Mörg tæki</button>
+      </div>
+
+      <!-- rows: latest report now STACKED vertically (was inline "í fyrra" pill) -->
+      <div class="row">
+        <span class="chk"></span><span class="rad"></span>
+        <span class="ic water">💧</span>
+        <div><div class="nm">Léttvatn 6 ltr</div><div class="sub"><span class="sn">LV-2231</span> · Gangur 1.h</div></div>
+        <div class="last"><div class="lab">↻ Síðasta skýrsla</div><div class="typ">Yfirferð</div><div class="dt">18.06.2025</div></div>
+        <div class="status"><button class="on yf">Yfirferð</button><button>Hleðsla</button><button>Nýtt</button></div>
+        <button class="onytt">⊘ Ónýtt</button>
+      </div>
+
+      <div class="row">
+        <span class="chk"></span><span class="rad"></span>
+        <span class="ic water">💧</span>
+        <div><div class="nm">Léttvatn 6 ltr</div><div class="sub"><span class="sn">LV-2240</span> · Eldhús</div></div>
+        <div class="last"><div class="lab">↻ Síðasta skýrsla</div><div class="typ">Yfirferð</div><div class="dt">18.06.2025</div></div>
+        <div class="status"><button class="on yf">Yfirferð</button><button>Hleðsla</button><button>Nýtt</button></div>
+        <button class="onytt">⊘ Ónýtt</button>
+      </div>
+
+      <div class="row">
+        <span class="chk"></span><span class="rad"></span>
+        <span class="ic duft">🧯</span>
+        <div><div class="nm">Duft 6 kg</div><div class="sub"><span class="sn">DF-1180</span> · Lager</div></div>
+        <div class="last"><div class="lab">↻ Síðasta skýrsla</div><div class="typ">Hleðsla</div><div class="dt">12.05.2025</div></div>
+        <div class="status"><button>Yfirferð</button><button class="on">Hleðsla</button><button>Nýtt</button></div>
+        <button class="onytt">⊘ Ónýtt</button>
+      </div>
+
+      <div class="row">
+        <span class="chk"></span><span class="rad"></span>
+        <span class="ic duft">🧯</span>
+        <div><div class="nm">Duft 6 kg</div><div class="sub"><span class="sn">DF-1182</span> · Bílskúr</div></div>
+        <div class="last stale"><div class="lab">↻ Síðasta skýrsla</div><div class="typ">Hleðsla</div><div class="dt">09.05.2023</div></div>
+        <div class="status"><button>Yfirferð</button><button class="on">Hleðsla</button><button>Nýtt</button></div>
+        <button class="onytt">⊘ Ónýtt</button>
+      </div>
+
+      <div class="row">
+        <span class="chk"></span><span class="rad"></span>
+        <span class="ic duft">🧯</span>
+        <div><div class="nm">Duft 2 kg</div><div class="sub"><span class="sn">DF-2099</span> · Skrifstofa</div></div>
+        <div class="last"><div class="lab">↻ Síðasta skýrsla</div><div class="typ">Yfirferð</div><div class="dt">18.06.2025</div></div>
+        <div class="status"><button class="on yf">Yfirferð</button><button>Hleðsla</button><button>Nýtt</button></div>
+        <button class="onytt">⊘ Ónýtt</button>
+      </div>
+
+      <div class="row">
+        <span class="chk"></span><span class="rad"></span>
+        <span class="ic co2">❄️</span>
+        <div><div class="nm">CO₂ 5 kg</div><div class="sub"><span class="sn">CO-551</span> · Rafmagnstafla</div></div>
+        <div class="last"><div class="lab">↻ Síðasta skýrsla</div><div class="typ">Yfirferð</div><div class="dt">18.06.2025</div></div>
+        <div class="status"><button class="on yf">Yfirferð</button><button>Hleðsla</button><button>Nýtt</button></div>
+        <button class="onytt">⊘ Ónýtt</button>
+      </div>
+
+      <div class="row">
+        <span class="chk"></span><span class="rad"></span>
+        <span class="ic hose">🚒</span>
+        <div><div class="nm">Brunaslanga</div><div class="sub"><span class="sn">BS-12</span> · Stigahús</div></div>
+        <div class="last"><div class="lab">↻ Síðasta skýrsla</div><div class="typ">Yfirferð</div><div class="dt">20.07.2024</div></div>
+        <div class="status"><button class="on yf">Yfirferð</button><button>Nýtt</button></div>
+        <button class="onytt">⊘ Ónýtt</button>
+      </div>
+    </div>
+
+    <!-- RIGHT: COST -->
+    <div class="ds-card cost">
+      <div class="band">
+        <div class="t">Heildarkostnaður næstu þjónustu</div>
+        <div class="big">46.335 kr</div>
+      </div>
+      <div class="who">
+        <div><div class="k">Skoðunaraðili</div><div class="v">Elías</div></div>
+        <div><div class="k">Mánuður</div><div class="v">Júní</div></div>
+        <div><div class="k">Dags.</div><div class="v">18.06.26</div></div>
+      </div>
+      <div class="lines">
+        <div class="cline"><span class="l"><b>2×</b> Léttvatn 6 ltr <span class="tag yf">Yfirferð</span></span><span class="amt">6.300 kr</span></div>
+        <div class="cline"><span class="l"><b>2×</b> Duft 6 kg <span class="tag hl">Hleðsla</span></span><span class="amt">13.564 kr</span></div>
+        <div class="cline"><span class="l"><b>1×</b> Duft 2 kg <span class="tag yf">Yfirferð</span></span><span class="amt">3.387 kr</span></div>
+        <div class="cline"><span class="l"><b>1×</b> CO₂ 5 kg <span class="tag yf">Yfirferð</span></span><span class="amt">3.270 kr</span></div>
+        <div class="cline"><span class="l"><b>1×</b> Brunaslanga <span class="tag yf">Yfirferð</span></span><span class="amt">4.346 kr</span></div>
+        <div class="cline"><span class="l">📄 Skýrslugerð</span><span class="amt">3.500 kr</span></div>
+        <div class="cline"><span class="l">🚗 Akstur <input class="miniin" value="1"> ×</span><span class="amt">3.000 kr</span></div>
+      </div>
+      <div class="sumrow"><span>Án vsk</span><span class="amt">37.367 kr</span></div>
+      <div class="sumrow"><span>Afsláttur <input class="miniin" value="0"> %</span><span>—</span></div>
+      <div class="sumrow"><span>VSK (24%)</span><span class="amt">8.968 kr</span></div>
+      <div class="sumrow tot"><span class="lab">Samtals m. vsk</span><span class="val">46.335 kr</span></div>
+      <div class="actions">
+        <button class="btn-xl navy">📄 Búa til úttektarskýrslu<small>vistast sjálfkrafa í 2026</small></button>
+        <button class="btn-xl blue">🧾 Stofna reikning</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TILBOÐSVERÐ -->
+  <div class="ds-card tilbod">
+    <div class="panel-h">
+      <div class="ds-eyebrow"><span class="dot" style="background:var(--gold)"></span>TILBOÐSVERÐ <span class="cnt">· 3 sérverð</span></div>
+      <span style="color:var(--ink3);cursor:pointer">▾</span>
+    </div>
+    <table>
+      <thead><tr><th>Vara / þjónusta</th><th class="r">Verð án vsk</th><th>VSK</th><th>Athugasemd</th><th></th></tr></thead>
+      <tbody>
+        <tr><td>Yfirferð Duft 6 kg</td><td class="r">2.990 kr</td><td>24%</td><td>Samningsverð 2024</td><td class="x">✕</td></tr>
+        <tr><td>Hleðsla Duft 6 kg</td><td class="r">5.900 kr</td><td>24%</td><td>—</td><td class="x">✕</td></tr>
+        <tr><td>Yfirferð CO₂ 5 kg</td><td class="r">3.270 kr</td><td>24%</td><td>Samningsverð 2024</td><td class="x">✕</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+</body>
+</html>
