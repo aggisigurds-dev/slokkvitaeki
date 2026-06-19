@@ -200,10 +200,23 @@
     return m ? +m[1] : null;
   }
 
+  // 2026-06-19: the standalone "📎 Skjöl & skýrslur" card is now SUPPRESSED —
+  // patch 199 renders the single unified "📁 Skjöl & viðhengi" card (the v6
+  // mockup) and reuses this file purely as the engine (upload / list / preview /
+  // delete / pick via window.CompanyAttachments). Flip to false to bring the
+  // standalone manager card back.
+  const SUPPRESS_CARD = true;
+
   // 2026-05-21: small flag so our own moveToBottom() doesn't bounce back
   // through the MutationObserver and into patch 129's observer in a loop.
   let _moving = false;
   function injectSection() {
+    if (SUPPRESS_CARD) {
+      // Clean up a stale card if a previous build left one behind.
+      const old = document.querySelector('._cat-section');
+      if (old) old.remove();
+      return;
+    }
     const main = document.getElementById('companies-main');
     if (!main) return;
     const coId = getCompanyId();
@@ -593,9 +606,50 @@
     });
   }
 
+  // Programmatic file picker for the unified card (patch 199). Opens the OS file
+  // dialog, uploads the chosen file pre-tagged with {year, kind}, and resolves
+  // with the new attachment meta (or null if cancelled). kind ∈
+  // 'skyrsla'|'reikningur'|'samningur'|undefined.
+  function pickAttachment(coId, opts) {
+    return new Promise(resolve => {
+      if (!coId) { resolve(null); return; }
+      const inp = document.createElement('input');
+      inp.type = 'file';
+      inp.accept = '*/*';
+      inp.style.display = 'none';
+      document.body.appendChild(inp);
+      let done = false;
+      inp.addEventListener('change', async () => {
+        done = true;
+        const file = inp.files && inp.files[0];
+        inp.remove();
+        if (!file) { resolve(null); return; }
+        const meta = await uploadAttachment(coId, file, opts || {});
+        if (meta) {
+          try { document.dispatchEvent(new CustomEvent('attachment-year-changed')); } catch (_) {}
+          if (window.Toast && Toast.show) {
+            const k = (opts && opts.kind) || '';
+            Toast.show(k === 'skyrsla' ? '✓ Úttektarskýrsla tengd'
+                     : k === 'reikningur' ? '✓ Reikningur tengdur'
+                     : k === 'samningur' ? '✓ Samningur tengdur'
+                     : '✓ Viðhengi tengt');
+          }
+        }
+        resolve(meta);
+      });
+      // Safety: if the dialog is dismissed without choosing (no change event),
+      // clean up the input on next focus.
+      window.addEventListener('focus', function cleanup() {
+        setTimeout(() => { if (!done && inp.parentNode) { inp.remove(); resolve(null); } window.removeEventListener('focus', cleanup); }, 400);
+      });
+      inp.click();
+    });
+  }
+
   window.CompanyAttachments = {
     list: getCompanyAttachments,
     upload: uploadAttachment,
+    pick: pickAttachment,
     delete: deleteAttachment,
     openPreview: openPreview,
     download: downloadFile,

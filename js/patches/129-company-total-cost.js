@@ -373,9 +373,13 @@
       notesBox.style.cssText =
         'margin:22px 0 0;padding:12px 16px 10px;background:var(--bg);border:1px solid var(--brd);border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 1px 3px rgba(0,0,0,.04)';
       // Insert before the existing cost section if it already exists, so the
-      // notes box always appears ABOVE Heildarkostnaður.
+      // notes box always appears ABOVE Heildarkostnaður. Guard: patch 224 may
+      // have relocated #_ctc-section into the right-column slot (#_ctc-slot), so
+      // it's no longer a direct child of main — insertBefore would THROW
+      // (NotFoundError) and abort render() before the total is set. Only use it
+      // when the section really is a child of main; otherwise append.
       const existingSection = main.querySelector('#_ctc-section');
-      if (existingSection) main.insertBefore(notesBox, existingSection);
+      if (existingSection && existingSection.parentNode === main) main.insertBefore(notesBox, existingSection);
       else main.appendChild(notesBox);
     }
     const tripNotes = (tripState.notes != null) ? String(tripState.notes) : '';

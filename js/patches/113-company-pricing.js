@@ -91,9 +91,10 @@
     const section = document.createElement('div');
     section.className = '_cpr-section';
     section.dataset.coId = coId;
-    // 2026-06-12 (Todoist): þéttara spjald — minni padding/bil
-    section.style.cssText = 'margin:14px 0 16px;padding:12px 14px;border:1px solid var(--brd);border-radius:12px;background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,0.04)';
-    section.innerHTML = renderSection(coId);
+    section.dataset.open = '0';
+    // 2026-06-12 (Todoist): þéttara spjald — minni padding/bil. Collapsed default.
+    section.style.cssText = 'margin:14px 0 16px;padding:10px 14px;border:1px solid var(--brd);border-radius:12px;background:var(--surface);box-shadow:0 1px 3px rgba(0,0,0,0.04)';
+    section.innerHTML = renderSection(coId, false);
 
     // Insert near the bottom (before the company-attachments section if present)
     const catSection = main.querySelector('._cat-section');
@@ -105,36 +106,50 @@
     wireSection(section, coId);
   }
 
-  function renderSection(coId) {
+  // Collapsed by default (most companies have no tilboðsverð). Remembered per
+  // section instance via the dataset; the toggle flips it.
+  function renderSection(coId, open) {
     const list = getCompanyPricing(coId);
+    const cnt = list.length;
+    const badge = cnt
+      ? '<span style="font-size:11px;font-weight:700;color:var(--brand);background:var(--bg);border:1px solid var(--brd);border-radius:99px;padding:1px 8px">' + cnt + '</span>'
+      : '<span style="font-size:11px;color:var(--ink4)">engin</span>';
+    const header =
+      '<button class="_cpr-toggle" type="button" aria-expanded="' + (open ? 'true' : 'false') + '" style="all:unset;box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;cursor:pointer">' +
+        '<span style="font-size:13px;transition:transform .15s;transform:rotate(' + (open ? '90' : '0') + 'deg);color:var(--ink3)">▸</span>' +
+        '<span style="font-size:13px;font-weight:700;color:var(--brand)">💰 Tilboðsverð</span>' +
+        badge +
+        '<span style="margin-left:auto;font-size:10.5px;color:var(--ink3)">sérverð sem yfirstíga búðarverð í Sala</span>' +
+      '</button>';
+    if (!open) return header;
 
+    return header + '<div style="margin-top:10px">' + renderBody(coId, list) + '</div>';
+  }
+
+  function renderBody(coId, list) {
     const rows = list.length ? list.map(p => {
       const totalIncVat = (+p.price_ex_vat || 0) * (1 + (+p.vsk_pct || 24) / 100);
       return '<tr data-id="' + esc(p.id) + '">' +
-        '<td style="padding:7px 10px;font-size:13px;font-weight:600;color:var(--ink1)">' + esc(p.name) + '</td>' +
-        '<td style="padding:7px 10px;font-size:13px;text-align:right;color:var(--brand);font-weight:700;font-variant-numeric:tabular-nums">' + fmtKr(p.price_ex_vat) + '</td>' +
-        '<td style="padding:7px 10px;font-size:12px;text-align:center;color:var(--ink2)">' + (p.vsk_pct != null ? p.vsk_pct : 24) + '%</td>' +
-        '<td style="padding:7px 10px;font-size:13px;text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums">' + fmtKr(totalIncVat) + '</td>' +
-        '<td style="padding:7px 10px;font-size:11px;color:var(--ink3)">' + esc(p.notes || '') + '</td>' +
-        '<td style="padding:7px 10px;text-align:center"><button class="_cpr-del" data-id="' + esc(p.id) + '" type="button" title="Eyða" style="background:var(--surface);border:1px solid #fecaca;color:#dc2626;border-radius:5px;width:24px;height:24px;cursor:pointer;font-size:11px">✕</button></td>' +
+        '<td style="padding:5px 9px;font-size:13px;font-weight:600;color:var(--ink1)">' + esc(p.name) + '</td>' +
+        '<td style="padding:5px 9px;font-size:13px;text-align:right;color:var(--brand);font-weight:700;font-variant-numeric:tabular-nums">' + fmtKr(p.price_ex_vat) + '</td>' +
+        '<td style="padding:5px 9px;font-size:12px;text-align:center;color:var(--ink2)">' + (p.vsk_pct != null ? p.vsk_pct : 24) + '%</td>' +
+        '<td style="padding:5px 9px;font-size:13px;text-align:right;color:var(--ink2);font-variant-numeric:tabular-nums">' + fmtKr(totalIncVat) + '</td>' +
+        '<td style="padding:5px 9px;font-size:11px;color:var(--ink3)">' + esc(p.notes || '') + '</td>' +
+        '<td style="padding:5px 9px;text-align:center"><button class="_cpr-del" data-id="' + esc(p.id) + '" type="button" title="Eyða" style="background:var(--surface);border:1px solid #fecaca;color:#dc2626;border-radius:5px;width:24px;height:24px;cursor:pointer;font-size:11px">✕</button></td>' +
       '</tr>';
     }).join('') : '<tr><td colspan="6" style="padding:18px;text-align:center;color:var(--ink4);font-size:13px;font-style:italic">Engin tilboðsverð skráð — notaðu „+ Bæta við" hér að ofan</td></tr>';
 
     return '' +
-      '<div style="display:flex;align-items:baseline;gap:8px;margin-bottom:8px;flex-wrap:wrap">' +
-        '<h3 style="margin:0;font-size:14px;font-weight:700;color:var(--brand)">💰 Tilboðsverð</h3>' +
-        '<div style="font-size:11px;color:var(--brand)">Sérverð sem yfirstíga búðarverð sjálfvirkt í Sala.</div>' +
-      '</div>' +
       // Add new form (now first — sits above the list as one panel)
       '<div style="margin-bottom:10px">' +
         '<div style="display:grid;grid-template-columns:2fr 1fr 80px 2fr 100px;gap:6px;align-items:center">' +
           '<div style="display:flex;gap:4px">' +
-            '<input id="_cpr-name" type="text" placeholder="t.d. Hleðsla tilboðsverð" style="flex:1;padding:8px 10px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box;min-width:0">' +
-            '<button class="_cpr-pick" type="button" title="Leita að vöru / þjónustu" style="padding:8px 10px;background:var(--bg);border:1px solid var(--brd);color:var(--brand);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0">🔍</button>' +
+            '<input id="_cpr-name" type="text" placeholder="t.d. Hleðsla tilboðsverð" style="flex:1;padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box;min-width:0">' +
+            '<button class="_cpr-pick" type="button" title="Leita að vöru / þjónustu" style="padding:6px 9px;background:var(--bg);border:1px solid var(--brd);color:var(--brand);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0">🔍</button>' +
           '</div>' +
-          '<input id="_cpr-price" type="number" placeholder="Verð án VSK" min="0" step="1" style="padding:8px 10px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box;text-align:right">' +
-          '<input id="_cpr-vsk" type="number" value="24" min="0" max="100" placeholder="VSK%" style="padding:8px 10px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box;text-align:center">' +
-          '<input id="_cpr-notes" type="text" placeholder="Athugasemd (valkvætt)" style="padding:8px 10px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box">' +
+          '<input id="_cpr-price" type="number" placeholder="Verð án VSK" min="0" step="1" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box;text-align:right">' +
+          '<input id="_cpr-vsk" type="number" value="24" min="0" max="100" placeholder="VSK%" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box;text-align:center">' +
+          '<input id="_cpr-notes" type="text" placeholder="Athugasemd (valkvætt)" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box">' +
           '<button class="_cpr-add" type="button" style="padding:8px 14px;background:var(--brand);color:#fff;border:none;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600">+ Bæta við</button>' +
         '</div>' +
         '<div style="margin-top:4px;font-size:10.5px;color:var(--ink3)">🔍 velur úr vörulistanum — verð fyllist sjálfvirkt.</div>' +
@@ -145,12 +160,12 @@
         '<div style="background:var(--surface);border:1px solid var(--brd);border-radius:8px;overflow:hidden">' +
           '<table style="width:100%;border-collapse:collapse">' +
             '<thead style="background:var(--bg)"><tr>' +
-              '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em">Vara / þjónusta</th>' +
-              '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em">Verð án vsk</th>' +
-              '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em;width:60px">VSK</th>' +
-              '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em">M/VSK</th>' +
-              '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em">Athugasemd</th>' +
-              '<th style="padding:8px 10px;width:40px"></th>' +
+              '<th style="padding:6px 9px;text-align:left;font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em">Vara / þjónusta</th>' +
+              '<th style="padding:6px 9px;text-align:right;font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em">Verð án vsk</th>' +
+              '<th style="padding:6px 9px;text-align:center;font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em;width:60px">VSK</th>' +
+              '<th style="padding:6px 9px;text-align:right;font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em">M/VSK</th>' +
+              '<th style="padding:6px 9px;text-align:left;font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em">Athugasemd</th>' +
+              '<th style="padding:6px 9px;width:40px"></th>' +
             '</tr></thead>' +
             '<tbody>' + rows + '</tbody>' +
           '</table>' +
@@ -160,6 +175,14 @@
 
   function wireSection(section, coId) {
     section.addEventListener('click', async e => {
+      const toggle = e.target.closest('._cpr-toggle');
+      if (toggle) {
+        e.stopPropagation();
+        const open = section.dataset.open !== '1';
+        section.dataset.open = open ? '1' : '0';
+        section.innerHTML = renderSection(coId, open);
+        return;
+      }
       const delBtn = e.target.closest('._cpr-del');
       const addBtn = e.target.closest('._cpr-add');
       const pickBtn = e.target.closest('._cpr-pick');
@@ -211,8 +234,8 @@
   }
 
   function refreshSection(section, coId) {
-    section.innerHTML = renderSection(coId);
-    wireSection(section, coId);
+    // Listener is delegated on `section` and survives innerHTML swaps — don't re-wire.
+    section.innerHTML = renderSection(coId, section.dataset.open === '1');
   }
 
   // ── Watch for company detail rendering ─────────────────────────────────

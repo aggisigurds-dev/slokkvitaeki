@@ -205,12 +205,17 @@
     ].join('\n');
     var st=document.createElement('style'); st.id='uttekt-taeki-css'; st.textContent=css; document.head.appendChild(st);
   }
-  // Relocate the cost calculator (patch 129's #_ctc-section) into the right
-  // column slot so the page reads tæki(left) | calculator(right) like the v6 mockup.
+  // Relocate the cost calculator (patch 129's #_ctc-notes + #_ctc-section) into
+  // the right column slot so the page reads tæki(left) | notes+calculator(right)
+  // like the v6 mockup. Both must move — moving only the section stranded the
+  // "📝 Upplýsingar um úttekt" notes box at the very bottom of the page.
   function relocateCost(){
     var main=document.getElementById('companies-main'); if(!main) return;
-    var slot=main.querySelector('#_ctc-slot'), sec=main.querySelector('#_ctc-section');
-    if(slot && sec && sec.parentElement!==slot){ slot.appendChild(sec); }
+    var slot=main.querySelector('#_ctc-slot'); if(!slot) return;
+    var notes=main.querySelector('#_ctc-notes');
+    var sec=main.querySelector('#_ctc-section');
+    if(notes && notes.parentElement!==slot) slot.appendChild(notes); // notes first
+    if(sec && sec.parentElement!==slot) slot.appendChild(sec);       // then the total/table
   }
   (function watchCost(){
     var main=document.getElementById('companies-main');
