@@ -12,6 +12,7 @@
     --fire:#c96a2f;--fire-bg:#f8f0e9;--fire-bd:#ecd3bd;               /* clay/burnt orange (mýkra) */
     --ok:#15803d;--ok-bg:#f0fdf4;--ok-bd:#bbf7d0;                     /* keep a green tick for "done" */
     --headbg:linear-gradient(180deg,#fff,#fbf9f7);--headbar:var(--brand);
+    --head-banner:linear-gradient(118deg,#17120f 0%,#5b1f18 52%,#a8322a 100%); /* svört→múrrautt */
     --sum-h:linear-gradient(135deg,#a8322a,#c96a2f);                 /* receipt header: red→orange (mýkra) */
     --primary:var(--fire);--primary-d:#a8531f;
   }
@@ -22,6 +23,7 @@
     --fire:#2563eb;--fire-bg:#eff4ff;--fire-bd:#c7d7f5;              /* faglegur blár accent */
     --ok:#15803d;--ok-bg:#f0fdf4;--ok-bd:#bbf7d0;
     --headbg:#fff;--headbar:#1e3a5f;
+    --head-banner:linear-gradient(118deg,#0c1626 0%,#173153 52%,#2563eb 100%); /* svört→navy→blár */
     --sum-h:#27313f;                                                  /* receipt header: slate */
     --primary:#2563eb;--primary-d:#1d4ed8;
   }
@@ -34,13 +36,17 @@
   .themebar .seg button{border:0;background:transparent;color:var(--muted);font:700 12.5px/1 inherit;padding:8px 15px;border-radius:99px;cursor:pointer}
   .themebar .seg button.on{background:var(--brand);color:#fff}
 
-  .cohead{background:var(--headbg);border:1px solid var(--line);border-radius:16px;padding:17px 20px;box-shadow:0 1px 2px rgba(0,0,0,.05),0 14px 34px -24px rgba(0,0,0,.4);display:flex;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:14px;position:relative;overflow:hidden}
-  .cohead::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;background:var(--headbar)}
-  .cohead h1{margin:0;font-size:21px;font-weight:800;letter-spacing:-.02em}
-  .cohead .kt{font-size:12px;color:var(--faint);font-family:ui-monospace,Menlo,monospace;margin-top:2px}
-  .cohead .facts{display:flex;gap:15px;flex-wrap:wrap;margin-top:9px;font-size:12.5px;color:var(--muted)}.cohead .facts b{color:var(--ink);font-weight:600}
-  .mbadge{display:inline-flex;align-items:center;gap:6px;background:var(--fire-bg);border:1px solid var(--fire-bd);color:var(--primary-d);font-weight:700;font-size:12px;padding:6px 12px;border-radius:99px}
-  .pri{width:26px;height:26px;border-radius:50%;border:2px solid var(--brand);color:var(--brand);background:var(--brand-bg);font:800 14px/22px serif;text-align:center;cursor:pointer}
+  .cohead{background:var(--head-banner);color:#fff;border:1px solid rgba(0,0,0,.12);border-radius:16px;padding:18px 22px;box-shadow:0 1px 2px rgba(0,0,0,.05),0 18px 42px -26px rgba(0,0,0,.55);display:flex;justify-content:space-between;align-items:flex-start;gap:18px;flex-wrap:wrap;margin-bottom:14px;position:relative;overflow:hidden}
+  .cohead::before{content:"";position:absolute;right:-70px;top:-90px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.16),transparent 64%);pointer-events:none}
+  .cohead::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(122deg,transparent 0 26px,rgba(255,255,255,.05) 26px 27px);pointer-events:none}
+  .cohead>*{position:relative;z-index:1}
+  .co-id{display:flex;align-items:center;gap:14px}
+  .co-mono{width:48px;height:48px;border-radius:13px;flex:none;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:800;color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28)}
+  .cohead h1{margin:0;font-size:21px;font-weight:800;letter-spacing:-.02em;color:#fff}
+  .cohead .kt{font-size:12px;color:rgba(255,255,255,.62);font-family:ui-monospace,Menlo,monospace;margin-top:2px}
+  .cohead .facts{display:flex;gap:15px;flex-wrap:wrap;margin-top:9px;font-size:12.5px;color:rgba(255,255,255,.82)}.cohead .facts b{color:#fff;font-weight:600}
+  .mbadge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-weight:700;font-size:12px;padding:6px 12px;border-radius:99px}
+  .pri{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.55);color:#fff;background:rgba(255,255,255,.12);font:800 14px/22px serif;text-align:center;cursor:pointer}
 
   .layout{display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start}
   @media(max-width:900px){.layout{grid-template-columns:1fr}}
@@ -187,10 +193,13 @@
   </div>
 
   <div class="cohead">
-    <div>
-      <h1>Aðalskoðun skeifan</h1>
-      <div class="kt">kt. 540994-2269</div>
-      <div class="facts"><span>📍 <b>Grjóthálsi 10</b>, 110 Rvk</span><span>📞 <b>545 0500</b></span><span>✉ <b>adal@adal.is</b></span></div>
+    <div class="co-id">
+      <div class="co-mono">A</div>
+      <div>
+        <h1>Aðalskoðun skeifan</h1>
+        <div class="kt">kt. 540994-2269</div>
+        <div class="facts"><span>📍 <b>Grjóthálsi 10</b>, 110 Rvk</span><span>📞 <b>545 0500</b></span><span>✉ <b>adal@adal.is</b></span></div>
+      </div>
     </div>
     <div style="display:flex;align-items:center;gap:10px"><span class="mbadge">📅 Skoðun: Júní</span><span class="pri" title="Forgangur: hár">!</span></div>
   </div>
