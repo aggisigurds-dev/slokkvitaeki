@@ -152,6 +152,13 @@
   if (!document.getElementById('uttekt-taeki-css')) {
     var css = [
       '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
+      /* two-column layout: tæki left, cost calculator right */
+      '.uttekt-cols{display:flex;gap:16px;align-items:flex-start}',
+      '.uttekt-col-l{flex:1;min-width:0}',
+      '.uttekt-col-r{flex:0 0 440px;max-width:440px;min-width:0}',
+      '#_ctc-section{margin:0 !important}',
+      '.uttekt-col-r #_ctc-section table{font-size:11px}',
+      '@media(max-width:1080px){.uttekt-cols{flex-direction:column}.uttekt-col-r{flex:1 1 auto;max-width:none;width:100%}}',
       '.ut-bulk{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 15px;background:var(--ink1);color:#fff}',
       '.ut-bulk.show{display:flex}',
       '.ut-bulk-cnt{font-weight:800;font-size:13px}',
@@ -198,5 +205,19 @@
     ].join('\n');
     var st=document.createElement('style'); st.id='uttekt-taeki-css'; st.textContent=css; document.head.appendChild(st);
   }
-  console.log('[patch-224] tæki-úttekt rows (Stage 2) installed');
+  // Relocate the cost calculator (patch 129's #_ctc-section) into the right
+  // column slot so the page reads tæki(left) | calculator(right) like the v6 mockup.
+  function relocateCost(){
+    var main=document.getElementById('companies-main'); if(!main) return;
+    var slot=main.querySelector('#_ctc-slot'), sec=main.querySelector('#_ctc-section');
+    if(slot && sec && sec.parentElement!==slot){ slot.appendChild(sec); }
+  }
+  (function watchCost(){
+    var main=document.getElementById('companies-main');
+    if(!main){ setTimeout(watchCost, 700); return; }
+    new MutationObserver(function(){ relocateCost(); }).observe(main, { childList:true });
+    relocateCost();
+  })();
+
+  console.log('[patch-224] tæki-úttekt rows (Stage 2) + cost relocate installed');
 })();

@@ -170,6 +170,7 @@ var Companies = {
     // Keep the legacy info-grid empty (kept for other patches that
     // selectorize into it). S\u00edmi + netfang already shown in the card above.
     html += '<div class="info-grid" style="display:none"></div>';
+    html += '<div class="uttekt-cols"><div class="uttekt-col-l">';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
       '<span style="font-size:14px;font-weight:600">Sl\u00f6kkvit\u00e6ki (' + units.length + ')</span>' +
       '</div>';
@@ -200,6 +201,7 @@ var Companies = {
       });
       html += '</tbody></table></div>';
     }
+    html += '</div><div class="uttekt-col-r" id="_ctc-slot"></div></div>';
     el.innerHTML = html;
   },
   // 2026-06-11: stable per-tæki status dropdown rendered as part of the

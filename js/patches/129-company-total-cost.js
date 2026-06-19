@@ -371,7 +371,7 @@
       // tvö aðskilin spjöld — nú efri helmingur af EINU samfelldu spjaldi
       // (engin neðri brún/radius hér; section tekur við fyrir neðan).
       notesBox.style.cssText =
-        'margin:22px 0 0;padding:12px 16px 10px;background:#f0fdf4;border:1px solid #86efac;border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 1px 3px rgba(0,0,0,.04)';
+        'margin:22px 0 0;padding:12px 16px 10px;background:var(--bg);border:1px solid var(--brd);border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 1px 3px rgba(0,0,0,.04)';
       // Insert before the existing cost section if it already exists, so the
       // notes box always appears ABOVE Heildarkostnaður.
       const existingSection = main.querySelector('#_ctc-section');
@@ -382,16 +382,16 @@
     const athSkyrslaBox = (tripState.athugasemdir_skyrsla != null) ? String(tripState.athugasemdir_skyrsla) : '';
     notesBox.innerHTML =
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">' +
-        '<div style="font-size:12.5px;color:#166534;font-weight:700;text-transform:uppercase;letter-spacing:.05em">📝 Upplýsingar um úttekt</div>' +
+        '<div style="font-size:12.5px;color:var(--ink2);font-weight:700;text-transform:uppercase;letter-spacing:.05em">📝 Upplýsingar um úttekt</div>' +
       '</div>' +
       '<textarea id="_ctc-notes-ta" rows="2" placeholder="t.d. „Bára vill skipta öllum á neðri hæð" · „Hringja í Jón fyrir komu" · „Setja inn nýtt 6 kg ABC Duft"" ' +
-        'style="width:100%;padding:8px 10px;border:1px solid #86efac;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
+        'style="width:100%;padding:8px 10px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
         esc(tripNotes) +
       '</textarea>' +
       // 2026-06-10: report-only Athugasemdir, grouped here with the notes.
-      '<div style="font-size:12px;color:#166534;font-weight:600;margin:8px 0 3px">✍ Athugasemdir á skýrslu <span style="font-weight:400;color:#16a34a">(sést í „Athugasemdir" á úttektarskýrslunni, ekki á reikningnum)</span></div>' +
+      '<div style="font-size:12px;color:var(--ink2);font-weight:600;margin:8px 0 3px">✍ Athugasemdir á skýrslu <span style="font-weight:400;color:var(--ink3)">(sést í „Athugasemdir" á úttektarskýrslunni, ekki á reikningnum)</span></div>' +
       '<textarea id="_ctc-athskyrsla" rows="2" placeholder="t.d. Mælt með að skipta út 2 tækjum á næsta ári" ' +
-        'style="width:100%;padding:8px 10px;border:1px solid #86efac;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
+        'style="width:100%;padding:8px 10px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
         esc(athSkyrslaBox) +
       '</textarea>';
 
@@ -401,12 +401,12 @@
       section.id = '_ctc-section';
       // Neðri helmingur sama spjalds og _ctc-notes — dashed lína skilur að.
       section.style.cssText =
-        'margin:0 0 26px;padding:14px 18px 18px;background:#f0fdf4;border:1px solid #86efac;border-top:1px dashed #bbf7d0;border-radius:0 0 12px 12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
+        'margin:0 0 26px;padding:14px 18px 18px;background:var(--bg);border:1px solid var(--brd);border-top:1px dashed #bbf7d0;border-radius:0 0 12px 12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
       main.appendChild(section);
     }
 
     if (!groups.length) {
-      section.innerHTML = '<div style="font-size:13px;color:#166534;font-weight:700">💵 Heildarkostnaður næstu þjónustu</div>' +
+      section.innerHTML = '<div style="font-size:13px;color:var(--ink2);font-weight:700">💵 Heildarkostnaður næstu þjónustu</div>' +
         '<div style="padding:14px 0;color:#94a3b8;font-style:italic">Engin skráð tæki — kostnaður er 0 kr.</div>';
       return;
     }
@@ -465,7 +465,7 @@
             '<div style="font-size:11px;color:#64748b">' + esc(product.nafn) + '</div></td>' +
           '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + n + '</td>' +
           '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;' +
-            (kindKey === 'hledsla' ? 'background:#dcfce7;color:#166534' : 'background:#dbeafe;color:#1e40af') + '">' +
+            (kindKey === 'hledsla' ? 'background:var(--bg);color:var(--ink2)' : 'background:#dbeafe;color:#1e40af') + '">' +
             kindLabel + '</span></td>' +
           '<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">' + fmtKr(unitPrice) +
             (override ? ' <span title="' + esc(override.notes || '') + '" style="margin-left:4px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') + '</td>' +
@@ -548,7 +548,7 @@
     totalSubEx += skyrslugerdEx;
     totalVsk += skyrsluVskKr;
     rows.push(
-      '<tr style="border-top:1px dashed #86efac;background:#f0fdf4">' +
+      '<tr style="border-top:1px dashed var(--brd);background:var(--bg)">' +
         '<td colspan="3" style="padding:7px 10px;font-size:13px;color:#0f172a">📋 Skýrslugerð</td>' +
         '<td style="padding:7px 10px;text-align:right">' +
           '<input id="_ctc-skyrslu" type="number" min="0" step="1" value="' + Math.round(skyrslugerdEx) + '" ' +
@@ -566,7 +566,7 @@
     totalSubEx += driveSubEx;
     totalVsk += driveVskKr;
     rows.push(
-      '<tr style="border-top:1px dashed #86efac;background:#f0fdf4">' +
+      '<tr style="border-top:1px dashed var(--brd);background:var(--bg)">' +
         '<td colspan="2" style="padding:7px 10px;font-size:13px;color:#0f172a">🚗 Akstur</td>' +
         '<td style="padding:7px 10px;text-align:center">' +
           '<input id="_ctc-drive-qty" type="number" min="0" step="1" value="' + driveQty + '" ' +
@@ -605,32 +605,32 @@
     const todayDDMM = String(_td.getDate()).padStart(2, '0') + '.' +
       String(_td.getMonth() + 1).padStart(2, '0') + '.' + _td.getFullYear();
     section.innerHTML =
-      '<div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">' +
+      '<div style="background:var(--thm-sumh,#1e3a5f);color:#fff;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">' +
         '<div>' +
-          '<div style="font-size:13px;color:#166534;font-weight:700;text-transform:uppercase;letter-spacing:.05em">💵 Heildarkostnaður næstu þjónustu</div>' +
-          '<div style="font-size:11px;color:#15803d;margin-top:2px">' + activeUnits + ' af ' + units.length + ' tæki í þessari ferð · Veldu Hleðsla / Yfirferð / Sleppa fyrir hvert tæki í töflunni að ofan</div>' +
+          '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.9">Heildarkostnaður næstu þjónustu</div>' +
+          '<div style="font-size:11px;opacity:.75;margin-top:2px">' + activeUnits + ' af ' + units.length + ' tæki í þessari ferð</div>' +
         '</div>' +
-        '<div style="font-size:24px;font-weight:800;color:#166534;font-variant-numeric:tabular-nums">' + fmtKr(totalInc) + '</div>' +
+        '<div style="font-size:23px;font-weight:800;font-variant-numeric:tabular-nums">' + fmtKr(totalInc) + '</div>' +
       '</div>' +
       // 2026-05-20: Skoðunaraðili (inspector) input + Úttektarskýrsla button.
       // Persisted in tripState so the field stays filled across visits.
       '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' +
         '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;flex:1;min-width:160px">' +
-          '<span style="font-weight:600;color:#166534;white-space:nowrap">🧑 Skoðunaraðili</span>' +
+          '<span style="font-weight:600;color:var(--ink2);white-space:nowrap">🧑 Skoðunaraðili</span>' +
           '<input id="_ctc-skodun" type="text" value="' + esc(skodunaradili) + '" placeholder="t.d. Elías" ' +
-            'style="flex:1;min-width:80px;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
+            'style="flex:1;min-width:80px;padding:6px 10px;border:1px solid var(--brd);border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
         '</label>' +
         // 2026-06-09: Skoðun framkvæmd (month) + exact date — used on the
         // úttektarskýrsla and invoice instead of today's date.
         '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;flex:1;min-width:170px">' +
-          '<span style="font-weight:600;color:#166534;white-space:nowrap">📅 Skoðun framkvæmd</span>' +
+          '<span style="font-weight:600;color:var(--ink2);white-space:nowrap">📅 Skoðun framkvæmd</span>' +
           '<input id="_ctc-manudur" type="text" value="' + esc(skodunManudur) + '" placeholder="t.d. Maí" ' +
-            'style="flex:1;min-width:70px;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
+            'style="flex:1;min-width:70px;padding:6px 10px;border:1px solid var(--brd);border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
         '</label>' +
         '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;min-width:150px">' +
-          '<span style="font-weight:600;color:#166534;white-space:nowrap">Dagsetning</span>' +
+          '<span style="font-weight:600;color:var(--ink2);white-space:nowrap">Dagsetning</span>' +
           '<input id="_ctc-dags" type="text" value="' + esc(skodunDags) + '" placeholder="' + esc(todayDDMM) + '" ' +
-            'style="width:110px;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
+            'style="width:110px;padding:6px 10px;border:1px solid var(--brd);border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
         '</label>' +
         '<button id="_ctc-skyrsla" type="button" ' +
           'style="padding:7px 14px;background:#0f172a;color:#fff;border:none;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.15)">' +
@@ -639,11 +639,11 @@
       // 2026-06-10: free-text line printed on the reikningur.
       '<div style="margin-bottom:10px">' +
         '<label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#0f172a">' +
-          '<span style="font-weight:600;color:#166534;white-space:nowrap">🧾 Texti á reikning</span>' +
+          '<span style="font-weight:600;color:var(--ink2);white-space:nowrap">🧾 Texti á reikning</span>' +
           '<input id="_ctc-invtext" type="text" value="' + esc(invoiceText) + '" placeholder="t.d. Vinna vegna skoðunar á Dalvegi 10" ' +
-            'style="flex:1;min-width:120px;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
+            'style="flex:1;min-width:120px;padding:6px 10px;border:1px solid var(--brd);border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
         '</label>' +
-        '<div style="font-size:10.5px;color:#16a34a;margin-top:3px;margin-left:2px">Sést sem „Vegna…" lína á reikningnum (yfirskrifar sjálfgefið).</div>' +
+        '<div style="font-size:10.5px;color:var(--ink3);margin-top:3px;margin-left:2px">Sést sem „Vegna…" lína á reikningnum (yfirskrifar sjálfgefið).</div>' +
       '</div>' +
       // 2026-05-21: "+ Bæta við vöru eða þjónustu" button opens the shared
       // VorurPicker (patch 117) and appends the choice to tripState.extras.
@@ -652,19 +652,19 @@
           'style="padding:6px 12px;background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">' +
           '+ Bæta við vöru eða þjónustu</button>' +
       '</div>' +
-      '<div style="background:#fff;border:1px solid #86efac;border-radius:8px;overflow:hidden">' +
+      '<div style="background:#fff;border:1px solid var(--brd);border-radius:8px;overflow:hidden">' +
         '<table style="width:100%;border-collapse:collapse">' +
-          '<thead style="background:#dcfce7"><tr>' +
-            '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Tegund / Stærð</th>' +
-            '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em;width:60px">Fjöldi</th>' +
-            '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em;width:90px">Þjónusta</th>' +
-            '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Per stk</th>' +
-            '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em;width:50px">VSK</th>' +
-            '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Samtals</th>' +
+          '<thead style="background:var(--bg)"><tr>' +
+            '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em">Tegund / Stærð</th>' +
+            '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;width:60px">Fjöldi</th>' +
+            '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;width:90px">Þjónusta</th>' +
+            '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em">Per stk</th>' +
+            '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;width:50px">VSK</th>' +
+            '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em">Samtals</th>' +
           '</tr></thead>' +
           '<tbody>' + rows.join('') + '</tbody>' +
           '<tfoot>' +
-            '<tr style="border-top:2px solid #166534;background:#f0fdf4">' +
+            '<tr style="border-top:2px solid var(--ink2);background:var(--bg)">' +
               '<td colspan="5" style="padding:8px 10px;font-size:12px;color:#475569;text-align:right">Án vsk:</td>' +
               '<td style="padding:8px 10px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums">' + fmtKr(totalSubEx) + '</td>' +
             '</tr>' +
@@ -675,8 +675,8 @@
               '<td style="padding:5px 10px;text-align:right;font-weight:600;color:#b91c1c;font-variant-numeric:tabular-nums">' + (discountEx > 0 ? '−' + fmtKr(discountEx) : '—') + '</td></tr>' +
             '<tr><td colspan="5" style="padding:5px 10px;font-size:12px;color:#475569;text-align:right">VSK:</td>' +
               '<td style="padding:5px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(netVsk) + '</td></tr>' +
-            '<tr style="background:#dcfce7"><td colspan="5" style="padding:10px;font-size:14px;font-weight:800;color:#166534;text-align:right">SAMTALS M. VSK:</td>' +
-              '<td style="padding:10px;text-align:right;font-weight:800;color:#166534;font-size:16px;font-variant-numeric:tabular-nums">' + fmtKr(totalInc) + '</td></tr>' +
+            '<tr style="background:var(--bg)"><td colspan="5" style="padding:10px;font-size:14px;font-weight:800;color:var(--ink2);text-align:right">SAMTALS M. VSK:</td>' +
+              '<td style="padding:10px;text-align:right;font-weight:800;color:var(--ink2);font-size:16px;font-variant-numeric:tabular-nums">' + fmtKr(totalInc) + '</td></tr>' +
           '</tfoot>' +
         '</table>' +
       '</div>' +
