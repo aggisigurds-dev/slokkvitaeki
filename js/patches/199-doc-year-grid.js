@@ -48,7 +48,7 @@
   }
   async function fetchDocs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,invoice_number,amount,notes').eq('customer_base_id', baseId);
+    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,invoice_number,amount,notes,fyrirtaeki_id').eq('customer_base_id', baseId);
       return r.data||[]; }catch(e){ return []; }
   }
   // Multi-location support: one kennitala can have several staðir (Aðalskoðun:
@@ -90,16 +90,14 @@
   }
 
   async function render(section, coId){
-    var head='<div style="font-weight:700;font-size:14px;color:#0f172a;margin-bottom:8px">📅 Skjöl eftir ári</div>';
-    section.innerHTML=head+'<div style="color:#94a3b8;font-size:13px">Hleð…</div>';
+    var head='<div style="font-family:\'Space Mono\',ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink1);margin-bottom:10px;display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:2px;background:var(--brand);display:inline-block"></span>Skjöl eftir ári</div>';
+    section.innerHTML=head+'<div style="color:var(--ink3);font-size:13px">Hleð…</div>';
     var co=getCompany(coId);
-    // The visit-workflow page (patch 165) doesn't populate window.Companies.list,
-    // so fall back to reading the kennitala straight from fyrirtaeki by id.
     var kt = co ? co.kennitala : await ktForCoId(coId);
-    if(!kt){ section.innerHTML=head+'<div style="color:#94a3b8;font-size:13px">Vantar kennitölu.</div>'; return; }
+    if(!kt){ section.innerHTML=head+'<div style="color:var(--ink3);font-size:13px">Vantar kennitölu.</div>'; return; }
     var baseId = await baseIdForKt(kt);
     if(!baseId){
-      section.innerHTML=head+'<div style="color:#94a3b8;font-size:13px">Ekki enn tengt grunnskrá (customers_base)'+(kt?(' · kt '+esc(dash(kt))):' · vantar kennitölu')+' — því engin árayfirlit hér.</div>';
+      section.innerHTML=head+'<div style="color:var(--ink3);font-size:13px">Ekki enn tengt grunnskrá (customers_base)'+(kt?(' · kt '+esc(dash(kt))):' · vantar kennitölu')+' — því engin árayfirlit hér.</div>';
       return;
     }
     var docs=await fetchDocs(baseId);
@@ -112,6 +110,10 @@
       if(mine){
         var before=docs.length;
         docs=docs.filter(function(d){
+          // Precise: Cowork's report→location map sets fyrirtaeki_id. When present,
+          // the doc belongs strictly to that location row.
+          if(d.fyrirtaeki_id!=null) return +d.fyrirtaeki_id===+coId;
+          // Unmapped → fall back to matching the report's address (notes).
           var matched=keys.filter(function(x){return docMatchesLoc(d.notes, x.k, allK);});
           if(!matched.length) return true;            // óvíst staðsetning → birt á öllum stöðum
           return matched.some(function(x){return +x.id===+coId;});
@@ -119,16 +121,31 @@
         locNote=' · 📍 síað eftir staðsetningu ('+docs.length+' af '+before+')';
       }
     }
-    var th='text-align:center;color:#64748b;font-size:12px;padding:6px 10px;border:1px solid #eef1f5;background:#f8fafc';
-    var rh='font-weight:600;color:#374151;font-size:13px;padding:6px 12px;border:1px solid #eef1f5;white-space:nowrap;text-align:left';
+    // Dynamic year set: the last 4 years PLUS any year that actually has a doc
+    // (so OLD úttektarskýrslur show up, not just the recent window).
+    var ySet={}; for(var i=0;i<4;i++) ySet[NOW-3+i]=1;
+    docs.forEach(function(d){ var y=parseInt(d.year,10); if(y>=2000&&y<=NOW+1) ySet[y]=1; });
+    var YEARS=Object.keys(ySet).map(Number).sort(function(a,b){return a-b;});
     function byTY(type,y){ return docs.filter(function(d){ return d.doc_type===type && String(d.year)===String(y); }); }
+    // year-status pills (same language as the Rekstrarfélög / Fyrirtæki overview)
+    var pills=YEARS.map(function(y){
+      var has=byTY('uttektarskyrsla',y).length>0;
+      var cls=has?'ok':(y===NOW?'now':'none');
+      var bg=has?'background:var(--grn-bg,#edfaf3);border-color:var(--grn-bd,#a7e8c5);color:var(--grn,#15803d)'
+              :(y===NOW?'background:var(--amb-bg,#fffbeb);border-color:var(--amb-bd,#fcd34d);color:var(--amb,#b45309)'
+                       :'color:var(--ink4);opacity:.7');
+      return '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:99px;border:1px solid var(--brd);'+bg+'">'+y+'</span>';
+    }).join('');
+    var th='text-align:center;color:var(--ink3);font-size:11px;font-weight:700;padding:7px 10px;border-bottom:1px solid var(--brd);text-transform:uppercase;letter-spacing:.04em';
+    var rh='font-weight:600;color:var(--ink2);font-size:12.5px;padding:8px 12px;border-bottom:1px solid var(--line2,#f1f5f9);white-space:nowrap;text-align:left';
     var html=head
-      + '<div style="overflow:auto"><table style="border-collapse:collapse;font-size:13px">'
-      + '<thead><tr><th style="'+th+'"></th>'+YEARS.map(function(y){return '<th style="'+th+'">'+y+'</th>';}).join('')+'</tr></thead><tbody>'
-      + '<tr><td style="'+rh+'">Úttektarskýrsla</td>'+YEARS.map(function(y){return cell(byTY('uttektarskyrsla',y));}).join('')+'</tr>'
-      + '<tr><td style="'+rh+'">Reikningur</td>'+YEARS.map(function(y){return cell(byTY('reikningur',y));}).join('')+'</tr>'
+      + '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">'+pills+'</div>'
+      + '<div style="overflow:auto"><table style="border-collapse:collapse;font-size:13px;width:100%">'
+      + '<thead><tr><th style="'+th+';text-align:left"></th>'+YEARS.map(function(y){return '<th style="'+th+'">'+y+'</th>';}).join('')+'</tr></thead><tbody>'
+      + '<tr><td style="'+rh+'">📄 Úttektarskýrsla</td>'+YEARS.map(function(y){return cell(byTY('uttektarskyrsla',y));}).join('')+'</tr>'
+      + '<tr><td style="'+rh+';border-bottom:0">🧾 Reikningur</td>'+YEARS.map(function(y){return cell(byTY('reikningur',y));}).join('')+'</tr>'
       + '</tbody></table></div>'
-      + '<div style="font-size:11px;color:#94a3b8;margin-top:6px">Grænn ✓ = skjal á skrá (smelltu til að opna í Drive). Sjálfkrafa úr customer_documents'+locNote+'.</div>';
+      + '<div style="font-size:11px;color:var(--ink4);margin-top:8px">Grænn ✓ = skjal á skrá (smelltu til að opna í Drive). Sjálfkrafa úr customer_documents'+locNote+'.</div>';
     section.innerHTML=html;
   }
 
