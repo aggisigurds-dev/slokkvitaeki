@@ -37,6 +37,40 @@
   var _collapsed = {};   // coId+'|'+fam -> true
   var _sel = {};         // unitId -> true  (multi-select)
   var _done = {};        // unitId -> true  (yfirfarið toggle, this round)
+  var _bulkDate = '';    // remembered date in the bulk "Uppfæra dags" picker
+
+  // ── bulk QR print (selected units' real serials) ──────────────────────────
+  function ensureQR(cb){
+    if(window.QRCode){ cb(); return; }
+    var s=document.createElement('script');
+    s.src='https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js';
+    s.onload=cb; s.onerror=function(){ alert('Gat ekki hlaðið QR-einingu (net?)'); };
+    document.head.appendChild(s);
+  }
+  function qrPNG(text){
+    var d=document.createElement('div');
+    new QRCode(d,{text:String(text),width:200,height:200,correctLevel:QRCode.CorrectLevel.M});
+    var cv=d.querySelector('canvas'), img=d.querySelector('img');
+    return cv?cv.toDataURL('image/png'):(img?img.src:'');
+  }
+  function bulkPrintQR(uns){
+    if(!uns.length) return;
+    ensureQR(function(){
+      var win=window.open('','qrbulk','width=900,height=1100');
+      if(!win){ alert('Leyfðu sprettiglugga til að prenta QR-miða.'); return; }
+      var cells=uns.map(function(u){
+        return '<div style="display:inline-flex;flex-direction:column;align-items:center;border:1px dashed #aaa;border-radius:4px;padding:4mm 2mm;margin:2mm;width:42mm;break-inside:avoid">'+
+          '<img src="'+qrPNG(u.serial)+'" style="width:36mm;height:36mm">'+
+          '<div style="font-family:monospace;font-size:8pt;font-weight:700;margin-top:1mm">'+esc(u.serial||'')+'</div>'+
+          '<div style="font-size:7pt;color:#555">'+esc((u.type||'')+(u.size?(' '+u.size):''))+'</div>'+
+        '</div>';
+      }).join('');
+      win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>QR miðar</title></head>'+
+        '<body style="font-family:Arial;margin:8mm" onload="setTimeout(function(){window.print();},500)">'+
+        '<div style="display:flex;flex-wrap:wrap">'+cells+'</div></body></html>');
+      win.document.close();
+    });
+  }
 
   function getChoice(coId,u){ try{ return window.UnitServicePicker ? UnitServicePicker.getChoice(coId,u.id,u.type) : 'yfirferd'; }catch(_){ return 'yfirferd'; } }
 
@@ -78,12 +112,22 @@
 
   function inner(coId, units){
     var n = units.filter(function(u){return _sel[u.id];}).length;
-    var bulk = '<div class="ut-bulk'+(n?' show':'')+'">'+
+    var allSel = units.length>0 && n===units.length;
+    // Bulk bar is ALWAYS visible (so "Velja allt" works on mobile too); the
+    // actions appear once something is selected.
+    var bulk = '<div class="ut-bulk show">'+
+      '<button class="ut-selall" data-co="'+coId+'">'+(allSel?'☑ Hreinsa val':'☑ Velja allt')+'</button>'+
       '<span class="ut-bulk-cnt">'+n+' valin</span>'+
-      '<button class="ut-bulk-act" data-bulk="yfirferd" data-co="'+coId+'">Allt → Yfirferð</button>'+
-      '<button class="ut-bulk-act" data-bulk="hledsla" data-co="'+coId+'">Allt → Hleðsla</button>'+
-      '<button class="ut-bulk-act" data-bulk="onytt" data-co="'+coId+'">🚫 Ónýtt</button>'+
-      '<button class="ut-bulk-clear" data-co="'+coId+'" title="Hætta við val">✕</button>'+
+      (n ? (
+        '<button class="ut-bulk-act" data-bulk="yfirferd" data-co="'+coId+'">→ Yfirferð</button>'+
+        '<button class="ut-bulk-act" data-bulk="hledsla" data-co="'+coId+'">→ Hleðsla</button>'+
+        '<button class="ut-bulk-act" data-bulk="onytt" data-co="'+coId+'">🚫 Ónýtt</button>'+
+        '<input type="date" class="ut-bulk-date" value="'+(_bulkDate||'')+'" title="Næsta skoðun">'+
+        '<button class="ut-bulk-dateset" data-co="'+coId+'">🗓 Uppfæra dags</button>'+
+        '<button class="ut-bulk-qr" data-co="'+coId+'">▦ Prenta QR</button>'+
+        '<button class="ut-bulk-del" data-co="'+coId+'" title="Eyða völdum tækjum">🗑 Eyða</button>'+
+        '<button class="ut-bulk-clear" data-co="'+coId+'" title="Hætta við val">✕</button>'
+      ) : '')+
     '</div>';
     var groups = {};
     units.forEach(function(u){ var f=fam(u.type); (groups[f]=groups[f]||[]).push(u); });
@@ -145,8 +189,64 @@
       unitsFor(bco).forEach(function(u){ if(_sel[u.id]){ try{UnitServicePicker.setChoice(bco,u.id,v);}catch(_){} } });
       recompute(); UttektTaeki.rerender(bco); return;
     }
+    if((b=e.target.closest('.ut-selall'))){
+      var sco=+b.dataset.co; var us=unitsFor(sco);
+      var allSel=us.length>0 && us.every(function(u){return _sel[u.id];});
+      if(allSel){ us.forEach(function(u){ delete _sel[u.id]; }); }
+      else { us.forEach(function(u){ _sel[u.id]=true; }); }
+      UttektTaeki.rerender(sco); return;
+    }
+    if(e.target.classList && e.target.classList.contains('ut-bulk-date')){ _bulkDate=e.target.value; return; }
+    if((b=e.target.closest('.ut-bulk-dateset'))){
+      var nco=+b.dataset.co;
+      var di=document.querySelector('.ut-bulk-date'); var nd=(di&&di.value)||_bulkDate;
+      if(!nd){ alert('Veldu dagsetningu fyrst.'); return; }
+      var nids=unitsFor(nco).filter(function(u){return _sel[u.id];}).map(function(u){return u.id;});
+      if(!nids.length) return;
+      (async function(){
+        try{
+          var sb=(window.DB&&DB.sb); if(!sb) throw new Error('Engin tenging');
+          var r=await sb.from('uttaeki').update({next_insp:nd}).in('id', nids);
+          if(r.error) throw r.error;
+          if(window.DB&&DB.cache&&DB.cache.units){ DB.cache.units.forEach(function(u){ if(nids.indexOf(u.id)>=0) u.next_insp=nd; }); }
+          UttektTaeki.rerender(nco);
+          if(window.Toast&&Toast.show) Toast.show('🗓 Næsta skoðun uppfærð á '+nids.length+' tækjum');
+        }catch(err){ alert('Villa: '+(err.message||err)); }
+      })();
+      return;
+    }
+    if((b=e.target.closest('.ut-bulk-qr'))){
+      var qco=+b.dataset.co;
+      var qus=unitsFor(qco).filter(function(u){return _sel[u.id];});
+      if(qus.length) bulkPrintQR(qus);
+      return;
+    }
+    if((b=e.target.closest('.ut-bulk-del'))){
+      var dco=+b.dataset.co;
+      var ids=unitsFor(dco).filter(function(u){return _sel[u.id];}).map(function(u){return u.id;});
+      if(!ids.length) return;
+      (async function(){
+        var ok=(window.Confirm&&Confirm.show)?await Confirm.show('Eyða '+ids.length+' völdum tækjum? Þetta er ekki afturkræft.'):window.confirm('Eyða '+ids.length+' völdum tækjum?');
+        if(!ok) return;
+        try{
+          var sb=(window.DB&&DB.sb); if(!sb) throw new Error('Engin tenging');
+          var r=await sb.from('uttaeki').delete().in('id', ids);
+          if(r.error) throw r.error;
+          if(window.DB&&DB.cache&&DB.cache.units){ DB.cache.units=DB.cache.units.filter(function(u){return ids.indexOf(u.id)<0;}); }
+          ids.forEach(function(id){ delete _sel[id]; delete _done[id]; });
+          UttektTaeki.rerender(dco);
+          try{ if(window.recomputeCompanyTotalCost) recomputeCompanyTotalCost(); }catch(_){}
+          if(window.Toast&&Toast.show) Toast.show('🗑 '+ids.length+' tæki eytt');
+        }catch(err){ alert('Villa við eyðingu: '+(err.message||err)); }
+      })();
+      return;
+    }
     if((b=e.target.closest('.ut-bulk-clear'))){ _sel={}; UttektTaeki.rerender(+b.dataset.co); return; }
     if((b=e.target.closest('.ut-grp-h'))){ _collapsed[b.dataset.k]=!_collapsed[b.dataset.k]; UttektTaeki.rerender(+b.dataset.co); return; }
+  });
+  // Remember the bulk date across re-renders.
+  document.addEventListener('change', function(e){
+    if(e.target && e.target.classList && e.target.classList.contains('ut-bulk-date')) _bulkDate=e.target.value;
   });
 
   if (!document.getElementById('uttekt-taeki-css')) {
@@ -163,6 +263,10 @@
       '.ut-bulk.show{display:flex}',
       '.ut-bulk-cnt{font-weight:800;font-size:13px}',
       '.ut-bulk-act{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
+      '.ut-selall{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
+      '.ut-bulk-dateset,.ut-bulk-qr{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
+      '.ut-bulk-date{border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.92);color:#0f172a;border-radius:8px;padding:5px 8px;font:inherit;font-size:12px}',
+      '.ut-bulk-del{border:1px solid rgba(252,165,165,.6);background:rgba(220,38,38,.25);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
       '.ut-bulk-clear{margin-left:auto;background:transparent;border:0;color:rgba(255,255,255,.7);font-size:16px;cursor:pointer}',
       '.ut-head{display:flex;align-items:center;padding:11px 15px 7px;border-bottom:1px solid var(--brd)}',
       '.ut-head .sp{flex:1}',

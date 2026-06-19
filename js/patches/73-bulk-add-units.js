@@ -73,13 +73,33 @@
     document.getElementById('_ba_cancel').onclick = close;
     m.onclick = (e) => { if (e.target === m) close(); };
     document.getElementById('_ba_save').onclick = () => submitBulk(nafn, refreshFn);
+
+    // Type-aware Stærð — Brunaslanga uses metre lengths (30 m), skynjarar/skápur
+    // have no size (—); the kg list only makes sense for handslökkvitæki.
+    const typeSel = document.getElementById('_ba_type');
+    const sizeSel = document.getElementById('_ba_size');
+    function sizesFor(t) {
+      t = (t || '').toLowerCase();
+      if (/duft|abc|pfc/.test(t)) return ['2 kg', '6 kg', '12 kg', '9 kg', '1 kg'];
+      if (/co2|co₂|kolsýr|kolsyr/.test(t)) return ['2 kg', '5 kg'];
+      if (/léttv|lettv|vatn|froð|frod|halon|blautt/.test(t)) return ['6 L', '9 L'];
+      if (/brunaslang|brunaslöng|slanga/.test(t)) return ['30 m', '25 m', '20 m'];
+      if (/skynjar|skáp|skap/.test(t)) return ['—'];
+      return ['2 kg', '5 kg', '6 kg', '9 kg', '12 kg', '6 L', '30 m'];
+    }
+    function syncSizes() {
+      if (!typeSel || !sizeSel) return;
+      sizeSel.innerHTML = sizesFor(typeSel.value).map(s => '<option>' + s + '</option>').join('');
+    }
+    if (typeSel) { typeSel.addEventListener('change', syncSizes); syncSizes(); }
   }
 
   async function submitBulk(nafn, refreshFn) {
     const qty = parseInt(document.getElementById('_ba_qty').value, 10);
     if (!qty || qty < 1 || qty > 200) { alert('Magn verður að vera milli 1 og 200'); return; }
     const type = document.getElementById('_ba_type').value;
-    const size = document.getElementById('_ba_size').value.trim() || null;
+    let size = document.getElementById('_ba_size').value.trim();
+    size = (!size || size === '—') ? null : size;   // skynjarar/skápur: no size
     const loc  = document.getElementById('_ba_loc').value.trim() || null;
     const nextInsp = document.getElementById('_ba_next').value || null;
     const today = new Date().toISOString().slice(0, 10);

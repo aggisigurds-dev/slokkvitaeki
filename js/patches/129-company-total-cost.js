@@ -420,8 +420,15 @@
     let unmatched = [];
     const rows = [];
 
+    // Sizeless service families (Brunaslanga, Reykskynjari, Eldvarnateppi…) have
+    // a single "Yfirferð X" service with NO size. Matching with the unit's size
+    // (e.g. "30 m") dilutes the token score below the 0.5 threshold, so the unit
+    // wrongly falls through to the new-unit (Vara) price — i.e. it bills as a
+    // brand-new tæki. Drop the size for these when looking up the service price.
+    const SIZELESS_SVC = /brunaslang|brunaslöng|brunaslong|hose|reykskynj|hitaskynj|smoke|teppi|blanket/i;
     groups.forEach(g => {
-      const matching = findMatchingServices(g.type, g.size, services);
+      const matchSize = SIZELESS_SVC.test(g.type) ? '' : g.size;
+      const matching = findMatchingServices(g.type, matchSize, services);
       if (!matching.length && (g.hledsla > 0 || g.yfirferd > 0)) {
         // Fallback: try replacement product (Eldvarnateppi, Reykskynjari etc.)
         const replacement = findReplacementProduct(g.type, g.size, services);
