@@ -36,17 +36,23 @@
 
   var _collapsed = {};   // coId+'|'+fam -> true
   var _sel = {};         // unitId -> true  (multi-select)
+  var _done = {};        // unitId -> true  (yfirfarið toggle, this round)
 
   function getChoice(coId,u){ try{ return window.UnitServicePicker ? UnitServicePicker.getChoice(coId,u.id,u.type) : 'yfirferd'; }catch(_){ return 'yfirferd'; } }
 
   function lastChip(u){
     var y = u.last_insp ? parseInt(String(u.last_insp).slice(0,4),10) : 0;
     if(!y) return '<span class="ut-last none">Ný / óskoðuð</span>';
-    return '<span class="ut-last'+(y<CUR-1?' old':'')+'">↺ Skoðun ’'+String(y).slice(-2)+'</span>';
+    // best-effort last-service label from the unit status (no per-unit service
+    // history is stored): á verkstæði / hleðsla → Hleðsla, else Yfirfarið.
+    var s = (u.status||'').toLowerCase();
+    var hled = /loan|hle[ðd]sl|verkst|charge/.test(s);
+    var lab = hled ? 'Hleðsla' : 'Yfirfarið';
+    return '<span class="ut-last'+(hled?' h':'')+(y<CUR-1?' old':'')+'">↺ '+lab+' ’'+String(y).slice(-2)+'</span>';
   }
 
   function rowHtml(coId, u){
-    var f = fam(u.type), cur = getChoice(coId,u), onytt = cur==='onytt', sel = !!_sel[u.id];
+    var f = fam(u.type), cur = getChoice(coId,u), onytt = cur==='onytt', sel = !!_sel[u.id], done = !!_done[u.id];
     var segs = SVC.map(function(s){
       var on = (!onytt && cur===s[0]);
       return '<button class="ut-svc'+(on?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-v="'+s[0]+'">'+s[1]+'</button>';
@@ -59,7 +65,7 @@
       '<div class="ut-right">'+
         '<div class="ut-lastcol">'+lastChip(u)+'</div>'+
         '<div class="ut-now">'+
-          '<button class="ut-act" onclick="Field.openInspect(DB.getUnit('+u.id+'))" title="Skrá skoðun">✓</button>'+
+          '<button class="ut-check'+(done?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" title="Merkja yfirfarið">✓</button>'+
           '<div class="ut-svcseg">'+segs+'</div>'+
           '<button class="ut-onytt'+(onytt?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-ty="'+esc(u.type)+'" title="Merkja ónýtt — ekki rukkað">🚫</button>'+
         '</div>'+
@@ -124,6 +130,11 @@
       try{ UnitServicePicker.setChoice(co,uid, cur==='onytt'?'yfirferd':'onytt'); }catch(_){}
       recompute(); UttektTaeki.rerender(co); return;
     }
+    if((b=e.target.closest('.ut-check'))){
+      var duid=+b.dataset.uid, dco=+b.dataset.co;
+      if(_done[duid]) delete _done[duid]; else _done[duid]=true;
+      UttektTaeki.rerender(dco); return;
+    }
     if(e.target.classList && e.target.classList.contains('ut-chk')){
       var cuid=+e.target.dataset.uid, cco=+e.target.dataset.co;
       if(e.target.checked) _sel[cuid]=true; else delete _sel[cuid];
@@ -167,6 +178,7 @@
       '.ut-right{display:flex;align-items:center;flex:none}',
       '.ut-lastcol{width:118px;display:flex;justify-content:flex-end;flex:none}',
       '.ut-last{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap;background:#eef0f2;color:var(--ink2)}',
+      '.ut-last.h{background:#fdeecb;color:#9a5b1a}',
       '.ut-last.old{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d)}',
       '.ut-last.none{background:transparent;color:var(--ink4);font-weight:600}',
       '.ut-now{display:flex;align-items:center;gap:7px;flex:none;width:252px;justify-content:flex-end;margin-left:18px;padding-left:18px;border-left:1px solid var(--brd)}',
@@ -178,6 +190,9 @@
       '.ut-far{display:flex;align-items:center;margin-left:14px;width:40px;justify-content:flex-end}',
       '.ut-act{border:1px solid var(--brd);background:var(--surface);color:var(--ink2);border-radius:8px;width:30px;height:30px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}',
       '.ut-act:hover{border-color:var(--brand);color:var(--brand)}',
+      '.ut-check{flex:none;width:40px;height:40px;border-radius:50%;border:2px solid var(--brd);background:var(--surface);color:var(--ink4);font-size:21px;font-weight:800;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}',
+      '.ut-check:hover{border-color:var(--grn,#15803d);color:var(--grn,#15803d)}',
+      '.ut-check.on{background:var(--grn,#15803d);border-color:var(--grn,#15803d);color:#fff}',
       '.ut-chk{width:18px;height:18px;cursor:pointer;accent-color:var(--brand);flex:none}',
       '@media(max-width:860px){.ut-right{flex-wrap:wrap;justify-content:flex-end;gap:8px}.ut-now,.ut-lastcol,.ut-far{width:auto}.ut-now{border-left:0;margin-left:0;padding-left:0}}'
     ].join('\n');
