@@ -41,6 +41,8 @@
       t:{ bg:'#14100e',card:'#1d1714',ink:'#f0ebe6',muted:'#b8a89c',line:'#2f261f',brand:'#c2410c',primary:'#f97316',h1:'#f0ebe6',h2:'#d2c1b3',h3:'#8a7c70' } },
     grafit:    { nm:'⬛ Grafít',    desc:'Hlutlaust koldökkt — slétt og rólegt.', sw:['#6366f1','#818cf8','#151517','#ededf0'],
       t:{ bg:'#151517',card:'#1f1f24',ink:'#ededf0',muted:'#a8a8b3',line:'#2e2e36',brand:'#6366f1',primary:'#818cf8',h1:'#ededf0',h2:'#c4c4ce',h3:'#7c7c88' } },
+    grafitljost:{ nm:'⬜ Grafít ljóst', desc:'Hlutlaust ljóst — hvít-grátt + indígó, létt og loftgott.', sw:['#4338ca','#6366f1','#f7f7f9','#1a1a1f'],
+      t:{ bg:'#f7f7f9',card:'#ffffff',ink:'#1a1a1f',muted:'#6e6e78',line:'#e8e8ec',brand:'#4338ca',primary:'#6366f1',h1:'#1a1a1f',h2:'#4a4a55',h3:'#9a9aa6' } },
     indigo:    { nm:'🔷 Indigo',    desc:'Bjart + indígó — ferskt og faglegt.', sw:['#3730a3','#4f46e5','#f0effa','#1e1b34'],
       t:{ bg:'#f0effa',card:'#ffffff',ink:'#1e1b34',muted:'#4b466b',line:'#e6e3f5',brand:'#3730a3',primary:'#4f46e5',h1:'#1e1b34',h2:'#4b466b',h3:'#9893b5' } }
   };
