@@ -87,7 +87,7 @@
     var lines = baseId ? await fetchLines(baseId) : [];
     if(!lines.length){
       body.innerHTML='<div class="rdr-muted">Engin lesin úttektarskýrsla fundin fyrir þetta fyrirtæki ennþá.</div>'+
-        '<div class="rdr-muted" style="margin-top:4px">Tengdu réttu skýrsluna í <b>Skjöl &amp; skýrslur</b> hér að neðan — hún les sjálfkrafa inn tækin.</div>';
+        '<div class="rdr-muted" style="margin-top:4px">Tengdu réttu skýrsluna í <b>Skjöl &amp; viðhengi</b> hér að neðan — hún les sjálfkrafa inn tækin.</div>';
       return;
     }
     // group by year, default newest
@@ -104,7 +104,7 @@
           (years.length>1 ? '<select id="_rdr-year" class="rdr-sel">'+years.map(function(y){return '<option value="'+y+'"'+(y===sel?' selected':'')+'>Skýrsla '+y+'</option>';}).join('')+'</select>' : '<span class="rdr-yr">Skýrsla '+sel+'</span>')+
         '</div>'+
         '<button id="_rdr-fill" class="rdr-btn"'+(n?'':' disabled')+'>📥 Lesa úr skýrslu → bæta '+n+' tækjum við (TMP-númer)</button>'+
-        '<div class="rdr-muted" style="margin-top:6px">Rangt fyrirtæki/skýrsla? Tengdu rétta úttektarskýrslu í <b>Skjöl &amp; skýrslur</b> að neðan.</div>';
+        '<div class="rdr-muted" style="margin-top:6px">Rangt fyrirtæki/skýrsla? Tengdu rétta úttektarskýrslu í <b>Skjöl &amp; viðhengi</b> að neðan.</div>';
       var ys=body.querySelector('#_rdr-year'); if(ys) ys.onchange=function(){ sel=+ys.value; paint(); };
       var fb=body.querySelector('#_rdr-fill'); if(fb) fb.onclick=function(){ createFromLines(coId, co.nafn, byYear[sel]||[]); };
     }

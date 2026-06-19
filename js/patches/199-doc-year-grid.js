@@ -1,11 +1,24 @@
-/* === DOC YEAR GRID v1 ===
- * Per-company "year × document-type" grid in the customer detail page —
- * the layout Agnar mocked up on Miro:
- *     rows: Úttektarskýrsla, Reikningur   ·   columns: last 4 years
- * Source of truth: Supabase `customer_documents` (auto-filled from Drive by the
- * brunaholf indexers), bridged via company.kennitala -> customers_base.id.
- * Each filled cell is a green link that opens the doc in Drive. Injected into
- * #companies-main the same way as patch 111 (Skjöl & skýrslur); read-only v1.
+/* === DOC YEAR GRID v2 — unified "Skjöl & viðhengi" card ===
+ * The single document card on the company detail page, matching the v6 mockup
+ * (mockups/taekjauttekt-eldthema-v6.html → "📁 Skjöl & viðhengi"):
+ *
+ *   📁 Skjöl & viðhengi                                    [+ Viðhengi]
+ *   📊 Staða eftir ári   ·  year pills (ok / í vinnslu / vantar)
+ *   📑 Þjónustusamningur ·  📄 Samningur 2019   + samningur
+ *   ┌ Ár │ Úttektarskýrsla │ Reikningur ┐   (newest year first)
+ *   │ 2026 │ ⏳ Í vinnslu    │ + reikningur │
+ *   │ 2025 │ 📄 Skoðun       │ 🧾 R-000244  │
+ *   📎 Önnur viðhengi    ·  chips + Viðhengi
+ *
+ * Two data sources are merged per (year, doc-type):
+ *   • customer_documents — auto-indexed from Drive cloud-side (úttektarskýrslur,
+ *     reikningar, samningar). Scoped per site via fyrirtaeki_id (Cowork's
+ *     report→location map) so multi-location kts show the right reports.
+ *   • company_attachments — manual uploads via patch 111 (window.CompanyAttachments),
+ *     tagged with {year, kind}. The "+" / "vantar" buttons attach into here.
+ *
+ * Patch 111 is the engine (upload/preview/delete/pick); its standalone card is
+ * suppressed so this is the only document card.
  */
 (function(){
   'use strict';
@@ -17,13 +30,11 @@
   function digits(s){ return String(s||'').replace(/\D/g,''); }
   function dash(kt){ var d=digits(kt); return d.length>=10 ? d.slice(0,6)+'-'+d.slice(6,10) : d; }
   function driveUrl(id){ return id ? 'https://drive.google.com/file/d/'+id+'/view' : ''; }
-
   var NOW = new Date().getFullYear();
-  var YEARS = [NOW-3, NOW-2, NOW-1, NOW];
 
   function getCompanyId(){
     var main=document.getElementById('companies-main'); if(!main) return null;
-    var el=main.querySelector('[data-co-id]:not(._cat-section):not(._dyg-section)');
+    var el=main.querySelector('[data-co-id]:not(._cat-section):not(._dyg-section):not(._cpr-section)');
     if(el){ var v=el.getAttribute('data-co-id'); if(v&&/^\d+$/.test(v)) return +v; }
     return null;
   }
@@ -48,12 +59,12 @@
   }
   async function fetchDocs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,invoice_number,amount,notes,fyrirtaeki_id').eq('customer_base_id', baseId);
+    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,invoice_number,amount,doc_date,notes,fyrirtaeki_id').eq('customer_base_id', baseId);
       return r.data||[]; }catch(e){ return []; }
   }
-  // Multi-location support: one kennitala can have several staðir (Aðalskoðun:
-  // Skemmuvegi/Grjótháls/Skeifan/Hjallahraun). Split the kt's docs per location by
-  // matching each doc's filename (notes) to the location's heimilisfang.
+  // Multi-location support: one kennitala can have several staðir. Split the kt's
+  // docs per location by fyrirtaeki_id (precise, Cowork's map) or by matching the
+  // doc's filename (notes) to the location heimilisfang (fallback).
   async function siblingsForKt(kt){
     var sb=SB(); if(!sb) return [];
     try{ var r=await sb.from('fyrirtaeki').select('id,nafn,heimilisfang').eq('kennitala', dash(kt)); return r.data||[]; }
@@ -68,9 +79,6 @@
     var city=(cm?cm[1]:'').toLowerCase().replace(/(ur|inn|i)$/,'');
     return {streetStem:streetStem, postcode:postcode, city:city};
   }
-  // A doc belongs to a location if its notes contain the street (always), or the
-  // postcode/city ONLY when that postcode/city is unique among the kt's locations
-  // (so two Reykjavík staðir don't steal each other's docs — postcode 110 vs 108).
   function docMatchesLoc(notes, my, all){
     var n=String(notes||'').toLowerCase();
     if(my.streetStem && my.streetStem.length>=4 && n.indexOf(my.streetStem)>=0) return true;
@@ -78,75 +86,181 @@
     if(my.city && my.city.length>=4){ var cityShared=all.some(function(k){return k!==my && k.city===my.city && k.streetStem!==my.streetStem;}); if(!cityShared && n.indexOf(my.city)>=0) return true; }
     return false;
   }
+  async function filterDocsToLocation(docs, kt, coId){
+    var sibs=await siblingsForKt(kt);
+    if(sibs.length<=1) return docs;
+    var keys=sibs.map(function(s){return {id:s.id, k:addrKeys(s.heimilisfang)};});
+    var allK=keys.map(function(x){return x.k;});
+    var mine=keys.filter(function(x){return +x.id===+coId;})[0];
+    if(!mine) return docs;
+    return docs.filter(function(d){
+      if(d.fyrirtaeki_id!=null) return +d.fyrirtaeki_id===+coId;     // precise map
+      var matched=keys.filter(function(x){return docMatchesLoc(d.notes, x.k, allK);});
+      if(!matched.length) return true;                               // óvíst → birt á öllum
+      return matched.some(function(x){return +x.id===+coId;});
+    });
+  }
 
-  function cell(docs){
-    var bd='border:1px solid #eef1f5;padding:8px;text-align:center';
-    if(!docs.length) return '<td style="'+bd+';color:#d1d5db">·</td>';
-    var d=docs[0]; var url=driveUrl(d.drive_file_id);
-    var label='✓'+(docs.length>1?(' ×'+docs.length):'');
-    var inner=url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener" title="Opna í Drive" style="color:#15803d;font-weight:700;text-decoration:none">'+label+' 📄</a>'
-                  : '<span style="color:#15803d;font-weight:700">'+label+'</span>';
-    return '<td style="'+bd+';background:#f0fdf4;border-color:#bbf7d0">'+inner+'</td>';
+  // ── attachment helpers (company_attachments via patch 111) ────────────────
+  function attList(coId){ try{ return (window.CompanyAttachments&&CompanyAttachments.list(coId))||[]; }catch(e){ return []; } }
+  function attYear(a){
+    if(a.year && a.year!=='0') return String(a.year);
+    var m=String(a.name||'').match(/\b(20[2-3][0-9])\b/); return m?m[1]:null;
+  }
+  // Classify a manual attachment into a slot: 'skyrsla' | 'reikningur' |
+  // 'samningur' | 'other'. Explicit kind wins, else sniff the filename.
+  function attKind(a){
+    if(a.kind==='skyrsla'||a.kind==='reikningur'||a.kind==='samningur') return a.kind;
+    var nm=String(a.name||'');
+    if(/samning/i.test(nm)) return 'samningur';
+    if(/reikn|r-?\s?\d{3,}/i.test(nm)) return 'reikningur';
+    if(/sko(ð|d)un|(ú|u)ttekt|sk(ý|y)rsl/i.test(nm)) return 'skyrsla';
+    return 'other';
+  }
+  function invLabel(s){
+    var t=String(s||'').trim(); if(!t) return 'Reikningur';
+    if(/^r/i.test(t)) return t.toUpperCase().replace(/\s+/g,'');
+    return 'R-'+t.replace(/\s+/g,'');
+  }
+
+  // ── chips ─────────────────────────────────────────────────────────────────
+  function repDocChip(d){
+    var u=driveUrl(d.drive_file_id);
+    return u ? '<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Drive">📄 Skoðun</a>'
+             : '<span class="sk-doc rep" title="Skýrsla á skrá (engin Drive-slóð)">📄 Skoðun</span>';
+  }
+  function invDocChip(d){
+    var u=driveUrl(d.drive_file_id); var lab=invLabel(d.invoice_number);
+    return u ? '<a class="sk-doc inv" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna reikning í Drive">🧾 '+esc(lab)+'</a>'
+             : '<span class="sk-doc inv">🧾 '+esc(lab)+'</span>';
+  }
+  function repAttChip(a){ return '<button type="button" class="sk-doc rep" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">📄 Skoðun</button>'; }
+  function invAttChip(a){ var m=String(a.name||'').match(/R-?\s?\d{3,}/i); return '<button type="button" class="sk-doc inv" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>'; }
+  function addChip(kind, year, label){ return '<button type="button" class="sk-doc add" data-pick="1" data-kind="'+esc(kind)+'"'+(year?' data-year="'+esc(year)+'"':'')+'>'+esc(label)+'</button>'; }
+
+  function pill(y, hasReport){
+    var cls=hasReport?'ok':(y===NOW?'now':'none');
+    var tip=hasReport?(y+' — skýrsla á skrá'):(y===NOW?(y+' — í vinnslu'):(y+' — engin skýrsla'));
+    return '<span class="sk-pill '+cls+'" title="'+esc(tip)+'">'+String(y).slice(2)+'</span>';
   }
 
   async function render(section, coId){
-    var head='<div style="font-family:\'Space Mono\',ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink1);margin-bottom:10px;display:flex;align-items:center;gap:8px"><span style="width:9px;height:9px;border-radius:2px;background:var(--brand);display:inline-block"></span>Skjöl eftir ári</div>';
-    section.innerHTML=head+'<div style="color:var(--ink3);font-size:13px">Hleð…</div>';
+    var hdr='<div class="sk-h"><h3>📁 Skjöl &amp; viðhengi</h3>'+
+            '<button type="button" class="sk-add-btn" data-pick="1">+ Viðhengi</button></div>';
+    section.innerHTML=hdr+'<div style="padding:14px;color:var(--ink3);font-size:13px">Hleð…</div>';
+
     var co=getCompany(coId);
     var kt = co ? co.kennitala : await ktForCoId(coId);
-    if(!kt){ section.innerHTML=head+'<div style="color:var(--ink3);font-size:13px">Vantar kennitölu.</div>'; return; }
-    var baseId = await baseIdForKt(kt);
-    if(!baseId){
-      section.innerHTML=head+'<div style="color:var(--ink3);font-size:13px">Ekki enn tengt grunnskrá (customers_base)'+(kt?(' · kt '+esc(dash(kt))):' · vantar kennitölu')+' — því engin árayfirlit hér.</div>';
-      return;
+    var baseId = kt ? await baseIdForKt(kt) : null;
+    var docs = baseId ? await fetchDocs(baseId) : [];
+    if(baseId && kt) docs = await filterDocsToLocation(docs, kt, coId);
+
+    // ── group customer_documents per year/type ──
+    var repByY={}, invByY={}, samn=[];
+    docs.forEach(function(d){
+      var t=d.doc_type, y=parseInt(d.year,10);
+      if(t==='samningur'){ samn.push({src:'doc',d:d,year:y||null}); return; }
+      if(!(y>=2000&&y<=NOW+1)) return;
+      if(t==='uttektarskyrsla') (repByY[y]=repByY[y]||[]).push(d);
+      else if(t==='reikningur') (invByY[y]=invByY[y]||[]).push(d);
+    });
+
+    // ── merge manual attachments (company_attachments) ──
+    var atts=attList(coId), other=[];
+    atts.forEach(function(a){
+      var k=attKind(a), y=parseInt(attYear(a),10);
+      if(k==='samningur'){ samn.push({src:'att',a:a,year:y||null}); return; }
+      if(k==='other' || !(y>=2000&&y<=NOW+1)){ other.push(a); return; }
+      if(k==='skyrsla') (repByY[y]=repByY[y]||[]).push({_att:a});
+      else if(k==='reikningur') (invByY[y]=invByY[y]||[]).push({_att:a});
+    });
+
+    // ── year set: every year with anything + the current year, newest first ──
+    var ySet={}; ySet[NOW]=1;
+    Object.keys(repByY).forEach(function(y){ySet[y]=1;});
+    Object.keys(invByY).forEach(function(y){ySet[y]=1;});
+    var YEARS=Object.keys(ySet).map(Number).sort(function(a,b){return b-a;});
+
+    // ── status pills ──
+    var pills=YEARS.map(function(y){ return pill(y, (repByY[y]||[]).length>0); }).join('');
+
+    // ── samningur strip ──
+    samn.sort(function(a,b){return (b.year||0)-(a.year||0);});
+    var samnHtml = samn.map(function(s){
+      if(s.src==='doc'){ var u=driveUrl(s.d.drive_file_id); var lab='Samningur'+(s.year?(' '+s.year):'');
+        return u?'<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener">📑 '+esc(lab)+'</a>':'<span class="sk-doc rep">📑 '+esc(lab)+'</span>'; }
+      return '<button type="button" class="sk-doc rep" data-att="'+esc(s.a.id)+'" title="'+esc(s.a.name)+'">📑 Samningur'+(s.year?(' '+s.year):'')+'</button>';
+    }).join('') + addChip('samningur','','+ samningur');
+
+    // ── year table rows ──
+    function repCell(y){
+      var arr=repByY[y]||[];
+      if(arr.length){ return arr.map(function(x){ return x._att?repAttChip(x._att):repDocChip(x); }).join(''); }
+      if(y===NOW) return '<span class="sk-doc prog" title="Skoðun ársins ekki enn skjalfest">⏳ Í vinnslu</span>'+addChip('skyrsla',y,'+ skýrsla');
+      return addChip('skyrsla',y,'vantar');
     }
-    var docs=await fetchDocs(baseId);
-    var locNote='';
-    var sibs=await siblingsForKt(kt);
-    if(sibs.length>1){
-      var keys=sibs.map(function(s){return {id:s.id, k:addrKeys(s.heimilisfang)};});
-      var allK=keys.map(function(x){return x.k;});
-      var mine=keys.filter(function(x){return +x.id===+coId;})[0];
-      if(mine){
-        var before=docs.length;
-        docs=docs.filter(function(d){
-          // Precise: Cowork's report→location map sets fyrirtaeki_id. When present,
-          // the doc belongs strictly to that location row.
-          if(d.fyrirtaeki_id!=null) return +d.fyrirtaeki_id===+coId;
-          // Unmapped → fall back to matching the report's address (notes).
-          var matched=keys.filter(function(x){return docMatchesLoc(d.notes, x.k, allK);});
-          if(!matched.length) return true;            // óvíst staðsetning → birt á öllum stöðum
-          return matched.some(function(x){return +x.id===+coId;});
-        });
-        locNote=' · 📍 síað eftir staðsetningu ('+docs.length+' af '+before+')';
-      }
+    function invCell(y){
+      var arr=invByY[y]||[];
+      if(arr.length){ return arr.map(function(x){ return x._att?invAttChip(x._att):invDocChip(x); }).join(''); }
+      if(y===NOW) return addChip('reikningur',y,'+ reikningur');
+      return addChip('reikningur',y,'vantar');
     }
-    // Dynamic year set: the last 4 years PLUS any year that actually has a doc
-    // (so OLD úttektarskýrslur show up, not just the recent window).
-    var ySet={}; for(var i=0;i<4;i++) ySet[NOW-3+i]=1;
-    docs.forEach(function(d){ var y=parseInt(d.year,10); if(y>=2000&&y<=NOW+1) ySet[y]=1; });
-    var YEARS=Object.keys(ySet).map(Number).sort(function(a,b){return a-b;});
-    function byTY(type,y){ return docs.filter(function(d){ return d.doc_type===type && String(d.year)===String(y); }); }
-    // year-status pills (same language as the Rekstrarfélög / Fyrirtæki overview)
-    var pills=YEARS.map(function(y){
-      var has=byTY('uttektarskyrsla',y).length>0;
-      var cls=has?'ok':(y===NOW?'now':'none');
-      var bg=has?'background:var(--grn-bg,#edfaf3);border-color:var(--grn-bd,#a7e8c5);color:var(--grn,#15803d)'
-              :(y===NOW?'background:var(--amb-bg,#fffbeb);border-color:var(--amb-bd,#fcd34d);color:var(--amb,#b45309)'
-                       :'color:var(--ink4);opacity:.7');
-      return '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:99px;border:1px solid var(--brd);'+bg+'">'+y+'</span>';
+    var rows=YEARS.map(function(y){
+      var cur=(y===NOW);
+      return '<tr><td'+(cur?' style="color:var(--brand)"':'')+'>'+y+'</td>'+
+        '<td>'+repCell(y)+'</td>'+
+        '<td>'+invCell(y)+'</td></tr>';
     }).join('');
-    var th='text-align:center;color:var(--ink3);font-size:11px;font-weight:700;padding:7px 10px;border-bottom:1px solid var(--brd);text-transform:uppercase;letter-spacing:.04em';
-    var rh='font-weight:600;color:var(--ink2);font-size:12.5px;padding:8px 12px;border-bottom:1px solid var(--line2,#f1f5f9);white-space:nowrap;text-align:left';
-    var html=head
-      + '<div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px">'+pills+'</div>'
-      + '<div style="overflow:auto"><table style="border-collapse:collapse;font-size:13px;width:100%">'
-      + '<thead><tr><th style="'+th+';text-align:left"></th>'+YEARS.map(function(y){return '<th style="'+th+'">'+y+'</th>';}).join('')+'</tr></thead><tbody>'
-      + '<tr><td style="'+rh+'">📄 Úttektarskýrsla</td>'+YEARS.map(function(y){return cell(byTY('uttektarskyrsla',y));}).join('')+'</tr>'
-      + '<tr><td style="'+rh+';border-bottom:0">🧾 Reikningur</td>'+YEARS.map(function(y){return cell(byTY('reikningur',y));}).join('')+'</tr>'
-      + '</tbody></table></div>'
-      + '<div style="font-size:11px;color:var(--ink4);margin-top:8px">Grænn ✓ = skjal á skrá (smelltu til að opna í Drive). Sjálfkrafa úr customer_documents'+locNote+'.</div>';
-    section.innerHTML=html;
+
+    // ── önnur viðhengi strip ──
+    var otherHtml = (other.length
+      ? other.map(function(a){ var ic=/\.(jpg|jpeg|png|gif|webp|bmp)$/i.test(a.name)?'🖼':(/\.pdf$/i.test(a.name)?'📄':'📎');
+          return '<span class="sk-att-wrap"><button type="button" class="sk-doc prog" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">'+ic+' '+esc(a.name.length>22?a.name.slice(0,20)+'…':a.name)+'</button>'+
+                 '<button type="button" class="sk-att-x" data-del="'+esc(a.id)+'" title="Eyða viðhengi">✕</button></span>'; }).join('')
+      : '') + addChip('', '', '+ Viðhengi');
+
+    var notLinked = !baseId ? '<div class="sk-strip" style="color:var(--ink4);font-size:11.5px">Ekki enn tengt grunnskrá (customers_base)'+(kt?(' · kt '+esc(dash(kt))):'')+' — sjálfvirkar skýrslur birtast þegar tengt.</div>' : '';
+
+    section.innerHTML = hdr +
+      '<div class="sk-strip"><div class="sk-strip-l">📊 Staða eftir ári</div><div class="sk-strip-r">'+ (pills||'<span style="color:var(--ink4);font-size:12px">engin gögn</span>') +'</div></div>'+
+      '<div class="sk-strip"><div class="sk-strip-l">📑 Þjónustusamningur</div><div class="sk-strip-r">'+samnHtml+'</div></div>'+
+      '<table class="sk-grid"><thead><tr><th>Ár</th><th>Úttektarskýrsla</th><th>Reikningur</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<div class="sk-strip"><div class="sk-strip-l">📎 Önnur viðhengi</div><div class="sk-strip-r">'+otherHtml+'</div></div>'+
+      notLinked;
+  }
+
+  function wire(section){
+    section.addEventListener('click', async function(e){
+      var coId=+section.dataset.coId; if(!coId) return;
+      var pickEl=e.target.closest('[data-pick]');
+      if(pickEl){
+        e.preventDefault();
+        if(!(window.CompanyAttachments&&CompanyAttachments.pick)){ alert('Skjalakerfi ekki tilbúið — endurhladdu síðunni.'); return; }
+        var kind=pickEl.getAttribute('data-kind')||undefined;
+        var year=pickEl.getAttribute('data-year')||undefined;
+        await CompanyAttachments.pick(coId, {year:year, kind:kind});
+        render(section, coId);
+        return;
+      }
+      var delEl=e.target.closest('[data-del]');
+      if(delEl){
+        e.preventDefault();
+        var id=delEl.getAttribute('data-del');
+        var f=attList(coId).find(function(x){return x.id===id;});
+        if(!f) return;
+        var ok = (window.Confirm&&Confirm.show) ? await Confirm.show('Eyða viðhengi „'+f.name+'"?') : window.confirm('Eyða viðhengi „'+f.name+'"?');
+        if(ok){ await CompanyAttachments.delete(coId, f); render(section, coId); }
+        return;
+      }
+      var attEl=e.target.closest('[data-att]');
+      if(attEl){
+        e.preventDefault();
+        var aid=attEl.getAttribute('data-att');
+        var a=attList(coId).find(function(x){return x.id===aid;});
+        if(a&&window.CompanyAttachments&&CompanyAttachments.openPreview) CompanyAttachments.openPreview(a);
+        return;
+      }
+    });
   }
 
   function inject(){
@@ -155,16 +269,54 @@
     var existing=main.querySelector('._dyg-section');
     if(existing){ if(String(existing.dataset.coId)!==String(coId)){ existing.dataset.coId=coId; render(existing,coId); } return; }
     var section=document.createElement('div');
-    section.className='_dyg-section';
+    section.className='_dyg-section sk-card';
     section.dataset.coId=coId;
-    section.style.cssText='background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:16px 18px;margin:14px 0;box-shadow:0 1px 2px rgba(16,24,40,.04)';
-    var att=main.querySelector('._cat-section');
-    if(att) main.insertBefore(section, att); else main.appendChild(section);
+    wire(section);
+    // Place at the bottom of the detail (after pricing / cost sections).
+    var cat=main.querySelector('._cat-section');
+    if(cat) main.insertBefore(section, cat); else main.appendChild(section);
     render(section, coId);
   }
 
   var _t=0;
   var mo=new MutationObserver(function(){ clearTimeout(_t); _t=setTimeout(inject, 500); });
   (function start(){ var main=document.getElementById('companies-main'); if(!main){ setTimeout(start,800); return; } mo.observe(main,{childList:true}); inject(); })();
+  // Re-render when a manual attachment is added/changed (patch 111 dispatches this).
+  document.addEventListener('attachment-year-changed', function(){
+    var s=document.querySelector('._dyg-section'); if(s) render(s, +s.dataset.coId);
+  });
+
+  if(!document.getElementById('sk-card-css')){
+    var css=[
+      '.sk-card{background:var(--surface);border:1px solid var(--brd);border-radius:14px;margin:14px 0;overflow:hidden;box-shadow:0 1px 3px rgba(16,24,40,.04)}',
+      '.sk-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 15px;border-bottom:1px solid var(--brd)}',
+      '.sk-h h3{margin:0;font-size:15px;font-weight:800;color:var(--ink1);display:flex;align-items:center;gap:8px}',
+      '.sk-add-btn{font-size:12px;font-weight:700;border:0;background:var(--brand);color:#fff;border-radius:8px;padding:7px 13px;cursor:pointer}',
+      '.sk-strip{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 14px;border-top:1px solid var(--brd2,#f1f5f9)}',
+      '.sk-strip-l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);min-width:148px}',
+      '.sk-strip-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1}',
+      '.sk-doc{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid;cursor:pointer;margin:2px 4px 2px 0;text-decoration:none;font-family:inherit;line-height:1.2}',
+      '.sk-doc.rep{background:var(--bg);color:var(--brand);border-color:var(--brd)}',
+      '.sk-doc.inv{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}',
+      '.sk-doc.prog{background:var(--bg);color:var(--ink2);border-color:var(--brd)}',
+      '.sk-doc.add{background:var(--surface);color:var(--ink4);border:1px dashed var(--brd2);font-weight:600}',
+      '.sk-doc.add:hover{color:var(--brand);border-color:var(--brand)}',
+      '.sk-att-wrap{display:inline-flex;align-items:center;margin:2px 4px 2px 0}',
+      '.sk-att-wrap .sk-doc{margin:0}',
+      '.sk-att-x{border:1px solid var(--brd);border-left:0;background:var(--surface);color:var(--ink4);cursor:pointer;font-size:10px;padding:4px 6px;border-radius:0 8px 8px 0;line-height:1.2}',
+      '.sk-att-x:hover{color:#dc2626;border-color:#fecaca}',
+      '.sk-grid{width:100%;border-collapse:collapse;font-size:12.5px}',
+      '.sk-grid th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);font-weight:700;padding:8px 14px;text-align:left;background:var(--bg)}',
+      '.sk-grid td{padding:7px 14px;border-top:1px solid var(--brd2,#f1f5f9);vertical-align:middle}',
+      '.sk-grid td:first-child{font-weight:700;color:var(--ink1);width:64px}',
+      '.sk-pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:99px;border:1px solid var(--brd);background:var(--surface);color:var(--ink4);font-variant-numeric:tabular-nums}',
+      '.sk-pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--ink4)}',
+      '.sk-pill.ok{border-color:#bbf7d0;background:#f0fdf4;color:#15803d}.sk-pill.ok::before{background:#15803d}',
+      '.sk-pill.now{border-color:var(--brd);background:var(--bg);color:var(--brand)}.sk-pill.now::before{background:var(--brand)}',
+      '.sk-pill.none{opacity:.55}'
+    ].join('\n');
+    var st=document.createElement('style'); st.id='sk-card-css'; st.textContent=css; document.head.appendChild(st);
+  }
+  console.log('[patch-199] unified Skjöl & viðhengi card installed');
 })();
 /* === END DOC YEAR GRID === */
