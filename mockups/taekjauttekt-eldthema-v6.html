@@ -329,9 +329,8 @@ function renderUnits(){
     const segs=SVC.map(([v,l,c])=>{if(v==='hledsla'&&T.hled===0)return '';return '<button class="'+c+(!u.onytt&&u.svc===v?' on':'')+'" data-id="'+u.id+'" data-v="'+v+'">'+l+'</button>';}).join('');
     const tagCls={yfirferd:'y',hledsla:'h',nytt:'n'}[u.lastSvc]||'y';
     const lastOld=u.lastYr<25; // eldri en í fyrra (núv. ár 2026 → í fyrra '25)
-    const lastrep='<div class="lastrep"><div class="lab">↺ Síðasta skýrsla</div>'+
-      '<span class="lasttag '+tagCls+'">'+SVCNAME[u.lastSvc]+'</span>'+
-      '<div class="yr'+(lastOld?' old':'')+'">20'+u.lastYr+'</div></div>';
+    const lastrep='<div class="lastrep"><div class="lab'+(lastOld?' old':'')+'">↺ Skýrsla 20'+u.lastYr+'</div>'+
+      '<span class="lasttag '+tagCls+'">'+SVCNAME[u.lastSvc]+'</span></div>';
     return '<div class="unit'+(u.onytt?' onytt':'')+(u.sel?' sel':'')+'">'+
       '<input type="checkbox" class="chk" data-sel="'+u.id+'"'+(u.sel?' checked':'')+'>'+
       '<button class="done'+(u.done?' on':'')+'" data-done="'+u.id+'" title="Merkja yfirfarið">✓</button>'+
