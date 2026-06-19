@@ -46,7 +46,13 @@
     // from Rekstrarfélög — a black → brand gradient backdrop (Grafít/Miðnætti =
     // svart+dökkblár, Glóð = svart+glóð, o.s.frv.) + dark buttons / white text.
     'html[data-thm-dark="1"] .view{background:radial-gradient(900px 520px at 85% -8%,color-mix(in srgb,var(--thm-brand) 42%,transparent),transparent 62%),linear-gradient(168deg,#05070d 0%,color-mix(in srgb,var(--thm-brand) 26%,#05070d) 125%)!important}',
-    'html[data-thm-dark="1"] .view .btn:not(.btn-primary):not(.btn-success),html[data-thm-dark="1"] .view a[download]{background:color-mix(in srgb,var(--thm-ink) 9%,var(--thm-card))!important;color:#fff!important;border-color:var(--thm-line)!important}'
+    // metallic buttons — brushed gunmetal, brand-tinted (blued steel / bronze / brass per theme)
+    'html[data-thm-dark="1"] .view .btn:not(.btn-primary):not(.btn-success),html[data-thm-dark="1"] .view button:not(.btn-primary):not(.btn-success),html[data-thm-dark="1"] .view a[download]{background:linear-gradient(180deg,color-mix(in srgb,var(--thm-brand) 18%,#363b45) 0%,color-mix(in srgb,var(--thm-brand) 9%,#21252c) 49%,#181b21 51%,color-mix(in srgb,var(--thm-brand) 13%,#262b33) 100%)!important;border:1px solid color-mix(in srgb,var(--thm-brand) 24%,#3a404a)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),inset 0 -1px 0 rgba(0,0,0,.45),0 2px 5px rgba(0,0,0,.4)!important;color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.5)!important}',
+    // metallic primary / accent button (polished)
+    'html[data-thm-dark="1"] .view .btn-primary,html[data-thm-dark="1"] .view [style*="background:var(--brand)"]{background:linear-gradient(180deg,color-mix(in srgb,var(--thm-primary) 78%,#fff) 0%,var(--thm-primary) 49%,color-mix(in srgb,var(--thm-primary) 75%,#000) 51%,var(--thm-primary) 100%)!important;border:1px solid color-mix(in srgb,var(--thm-primary) 55%,#000)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 3px 8px rgba(0,0,0,.45)!important;color:#fff!important;text-shadow:0 1px 1px rgba(0,0,0,.45)!important}',
+    // sheen on hover, pressed on active
+    'html[data-thm-dark="1"] .view .btn:hover,html[data-thm-dark="1"] .view button:hover,html[data-thm-dark="1"] .view a[download]:hover{filter:brightness(1.13)}',
+    'html[data-thm-dark="1"] .view .btn:active,html[data-thm-dark="1"] .view button:active{box-shadow:inset 0 2px 5px rgba(0,0,0,.6)!important;filter:brightness(.96)}'
   ].join('');
   const st = document.createElement('style');
   st.id = 'theme-bridge';

@@ -74,12 +74,9 @@
       // 2026-06-19: under any DARK theme give the page a rich black → brand
       // gradient (Grafít/Miðnætti brand = dökkblátt → svart+dökkblár stigull).
       'html[data-thm-dark="1"] #view-rekstrarfelog{background:radial-gradient(900px 520px at 85% -8%,color-mix(in srgb,var(--thm-brand) 45%,transparent),transparent 62%),linear-gradient(168deg,#05070d 0%,color-mix(in srgb,var(--thm-brand) 26%,#05070d) 125%)!important}',
-      'html[data-thm-dark="1"] #view-rekstrarfelog .rf-card{box-shadow:0 16px 40px -22px rgba(0,0,0,.95)}',
-      'html[data-thm-dark="1"] #view-rekstrarfelog .rf-card:hover{box-shadow:0 22px 50px -22px rgba(0,0,0,1),0 0 0 1px var(--accent-soft,rgba(255,255,255,.05))}',
-      // dark theme: dark buttons + white letters (secondary buttons + Excel link)
-      'html[data-thm-dark="1"] #view-rekstrarfelog button,html[data-thm-dark="1"] #view-rekstrarfelog a[download],html[data-thm-dark="1"] #view-rekstrarfelog a.btn{background:color-mix(in srgb,var(--thm-ink) 9%,var(--thm-card))!important;color:#fff!important;border:1px solid var(--thm-line)!important}',
-      // primary / active-mode buttons keep the accent, white letters
-      'html[data-thm-dark="1"] #view-rekstrarfelog .btn-primary,html[data-thm-dark="1"] #view-rekstrarfelog [style*="background:var(--brand)"]{background:var(--thm-primary)!important;color:#fff!important;border-color:var(--thm-primary)!important}'
+      // metallic "plate" look for the cards under dark themes (beveled, brand-tinted)
+      'html[data-thm-dark="1"] #view-rekstrarfelog .rf-card{background:linear-gradient(176deg,color-mix(in srgb,var(--thm-brand) 13%,#1b1f26) 0%,#15181d 60%,#101319 100%)!important;border:1px solid color-mix(in srgb,var(--thm-brand) 20%,#2b303a)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 18px 42px -22px rgba(0,0,0,.95)!important}',
+      'html[data-thm-dark="1"] #view-rekstrarfelog .rf-card:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 24px 54px -22px rgba(0,0,0,1),0 0 0 1px color-mix(in srgb,var(--thm-brand) 30%,transparent)!important}'
     ].join('');
     document.head.appendChild(s);
   }
