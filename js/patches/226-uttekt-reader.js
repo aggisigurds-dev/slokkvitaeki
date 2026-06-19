@@ -78,19 +78,127 @@
       .join(' · ');
   }
 
-  async function render(box, coId){
-    var bodyId='_rdr-body';
-    box.innerHTML='<div class="rdr-h">📄 Sjálfvirk útfylling úr úttektarskýrslu</div><div id="'+bodyId+'" class="rdr-body">Hleð…</div>';
-    var body=box.querySelector('#'+bodyId);
+  // Build synthetic lines from manually-typed counts and reuse createFromLines.
+  function createFromCounts(coId, nafn, year, counts){
+    var lines=Object.keys(counts)
+      .filter(function(k){return (parseInt(counts[k],10)||0)>0;})
+      .map(function(k){ return { category:k, cnt:parseInt(counts[k],10)||0, year:year }; });
+    if(!lines.length){ alert('Sláðu inn fjölda á a.m.k. einni tegund.'); return; }
+    createFromLines(coId, nafn, lines);
+  }
+
+  // ── PDF reading (úttektarskýrsla → counts) ───────────────────────────────
+  // Loads pdf.js on first use, extracts the text, and parses the standard
+  // Slökkvitæki úttektarskýrsla layout: "<tegund>. Fjöldi: N Í lagi: …".
+  function ensurePdfJs(){
+    if(window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if(window.__pdfjsLoading) return window.__pdfjsLoading;
+    window.__pdfjsLoading=new Promise(function(res,rej){
+      var s=document.createElement('script');
+      s.src='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js';
+      s.onload=function(){ try{ window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js'; }catch(_){ } res(window.pdfjsLib); };
+      s.onerror=function(){ rej(new Error('Gat ekki hlaðið PDF-lesara (net?)')); };
+      document.head.appendChild(s);
+    });
+    return window.__pdfjsLoading;
+  }
+  async function readPdfText(file){
+    var lib=await ensurePdfJs();
+    var buf=await file.arrayBuffer();
+    var pdf=await lib.getDocument({data:buf}).promise;
+    var out='';
+    for(var p=1;p<=pdf.numPages;p++){
+      var page=await pdf.getPage(p);
+      var tc=await page.getTextContent();
+      out+=tc.items.map(function(it){return it.str;}).join(' ')+'\n';
+    }
+    return out;
+  }
+  function parseReportText(text){
+    var t=String(text||'').replace(/ /g,' ').replace(/[₀-₉]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-0x2080+48);});
+    function grab(re){ var m=t.match(re); if(!m) return null; if(/^x$/i.test(m[1])) return 0; var n=parseInt(m[1],10); return isNaN(n)?null:n; }
+    var counts={
+      lettvatn: grab(/l[eé]ttvatn[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      duft2:    grab(/duft\s*2\s*kg[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      duft6:    grab(/duft\s*6[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      co2_2:    grab(/co2\s*2\s*kg[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      co2_5:    grab(/co2\s*5\s*kg[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      slanga:   grab(/brunasl[öo]ng[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      teppi:    grab(/eldvarnart?eppi[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i),
+      reyk:     grab(/reykskynjar[\s\S]*?Fj[öo]ldi:\s*(x|\d+)/i)
+    };
+    var ym=t.match(/yfirfarin[\s\S]{0,40}?(20\d{2})/i)||t.match(/\b(20\d{2})\b/);
+    return { counts:counts, year: ym?parseInt(ym[1],10):null };
+  }
+
+  function manualFormHtml(){
+    var rows=Object.keys(CATMAP).map(function(k){
+      var m=CATMAP[k]; var lab=m[0]+(m[1]?(' '+m[1]):'');
+      return '<label class="rdr-cat"><span>'+esc(lab)+'</span>'+
+        '<input type="number" min="0" step="1" class="rdr-cnt" data-cat="'+k+'" placeholder="0"></label>';
+    }).join('');
+    return '<div class="rdr-man">'+
+      '<div class="rdr-pdfrow">'+
+        '<input type="file" accept="application/pdf,.pdf" class="rdr-pdf-input" style="display:none">'+
+        '<button type="button" class="rdr-pdfbtn">📄 Lesa úr PDF skýrslu</button>'+
+        '<span class="rdr-pdf-status rdr-muted"></span>'+
+      '</div>'+
+      '<div class="rdr-lab" style="margin:10px 0 6px">📝 Fjöldi (les úr PDF eða sláðu inn)</div>'+
+      '<div class="rdr-grid">'+rows+'</div>'+
+      '<div class="rdr-manrow">'+
+        '<label class="rdr-yrlab">Ár skýrslu <input type="number" id="_rdr-man-year" class="rdr-yrin" value="'+(new Date().getFullYear()-1)+'"></label>'+
+        '<button id="_rdr-man-add" class="rdr-btn rdr-btn-sm">📥 Bæta tækjum við (TMP-númer)</button>'+
+      '</div>'+
+    '</div>';
+  }
+  function wireManual(body, coId, nafn){
+    var btn=body.querySelector('#_rdr-man-add');
+    if(btn) btn.onclick=function(){
+      var counts={};
+      body.querySelectorAll('.rdr-cnt').forEach(function(inp){ counts[inp.dataset.cat]=inp.value; });
+      var y=parseInt((body.querySelector('#_rdr-man-year')||{}).value,10)||new Date().getFullYear();
+      createFromCounts(coId, nafn, y, counts);
+    };
+    var pdfBtn=body.querySelector('.rdr-pdfbtn'), pdfInp=body.querySelector('.rdr-pdf-input'), pdfStat=body.querySelector('.rdr-pdf-status');
+    if(pdfBtn&&pdfInp){
+      pdfBtn.onclick=function(){ pdfInp.click(); };
+      pdfInp.onchange=async function(){
+        var f=pdfInp.files&&pdfInp.files[0]; pdfInp.value='';
+        if(!f) return;
+        if(pdfStat){ pdfStat.textContent='⏳ Les PDF…'; }
+        try{
+          var text=await readPdfText(f);
+          var pr=parseReportText(text);
+          var filled=0;
+          body.querySelectorAll('.rdr-cnt').forEach(function(inp){
+            var c=pr.counts[inp.dataset.cat];
+            if(c!=null && c>0){ inp.value=c; filled++; }
+          });
+          if(pr.year){ var yi=body.querySelector('#_rdr-man-year'); if(yi) yi.value=pr.year; }
+          if(pdfStat){ pdfStat.textContent = filled
+            ? ('✓ Las '+filled+' tegund'+(filled===1?'':'ir')+(pr.year?(' · '+pr.year):'')+' — yfirfarðu og smelltu „Bæta tækjum við"')
+            : '⚠ Fann engar „Fjöldi"-tölur í PDF — sláðu inn handvirkt'; }
+        }catch(e){ if(pdfStat){ pdfStat.textContent='⚠ '+(e.message||e); } }
+      };
+    }
+  }
+
+  async function render(host, coId){
+    host.innerHTML='<div class="rdr-muted">Hleð…</div>';
+    var body=host;
     var co=getCo(coId); if(!co){ body.innerHTML='<span class="rdr-muted">—</span>'; return; }
     var baseId=await baseIdForKt(co.kennitala);
     var lines = baseId ? await fetchLines(baseId) : [];
+
+    // No auto-parsed report yet → manual entry is the primary path.
     if(!lines.length){
-      body.innerHTML='<div class="rdr-muted">Engin lesin úttektarskýrsla fundin fyrir þetta fyrirtæki ennþá.</div>'+
-        '<div class="rdr-muted" style="margin-top:4px">Tengdu réttu skýrsluna í <b>Skjöl &amp; viðhengi</b> hér að neðan — hún les sjálfkrafa inn tækin.</div>';
+      body.innerHTML='<div class="rdr-muted">Engin <b>sjálf-lesin</b> skýrsla fundin ennþá — skráðu fjöldann af síðustu skýrslu hér að neðan, eða tengdu skýrsluna í <b>Skjöl &amp; viðhengi</b>.</div>'+
+        manualFormHtml();
+      wireManual(body, coId, co.nafn);
       return;
     }
-    // group by year, default newest
+
+    // Auto-parsed lines exist → show them + the manual form underneath.
     var byYear={}; lines.forEach(function(l){ var yy=l.year||0; (byYear[yy]=byYear[yy]||[]).push(l); });
     var years=Object.keys(byYear).map(Number).sort(function(a,b){return b-a;});
     var sel=years[0];
@@ -104,28 +212,52 @@
           (years.length>1 ? '<select id="_rdr-year" class="rdr-sel">'+years.map(function(y){return '<option value="'+y+'"'+(y===sel?' selected':'')+'>Skýrsla '+y+'</option>';}).join('')+'</select>' : '<span class="rdr-yr">Skýrsla '+sel+'</span>')+
         '</div>'+
         '<button id="_rdr-fill" class="rdr-btn"'+(n?'':' disabled')+'>📥 Lesa úr skýrslu → bæta '+n+' tækjum við (TMP-númer)</button>'+
-        '<div class="rdr-muted" style="margin-top:6px">Rangt fyrirtæki/skýrsla? Tengdu rétta úttektarskýrslu í <b>Skjöl &amp; viðhengi</b> að neðan.</div>';
+        '<div class="rdr-muted" style="margin-top:6px">Rangt fyrirtæki/skýrsla? Tengdu rétta úttektarskýrslu í <b>Skjöl &amp; viðhengi</b> að neðan.</div>'+
+        '<div class="rdr-div"></div>'+
+        manualFormHtml();
       var ys=body.querySelector('#_rdr-year'); if(ys) ys.onchange=function(){ sel=+ys.value; paint(); };
       var fb=body.querySelector('#_rdr-fill'); if(fb) fb.onclick=function(){ createFromLines(coId, co.nafn, byYear[sel]||[]); };
+      wireManual(body, coId, co.nafn);
     }
     paint();
   }
 
   function inject(){
     var main=document.getElementById('companies-main'); if(!main) return;
-    var col=main.querySelector('.uttekt-col-l'); if(!col) return;
     var coId=getCoId(); if(!coId) return;
-    var box=col.querySelector('.rdr-box');
-    if(box){ if(String(box.dataset.co)!==String(coId)){ box.dataset.co=coId; render(box,coId); } return; }
-    box=document.createElement('div'); box.className='rdr-box'; box.dataset.co=coId;
-    col.appendChild(box); render(box,coId);
+    var box=main.querySelector('.rdr-box');
+    if(box){
+      if(String(box.dataset.co)!==String(coId)){ box.dataset.co=coId; render(box.querySelector('.rdr-bodywrap'), coId); }
+      if(main.lastElementChild!==box) main.appendChild(box); // keep at very bottom
+      return;
+    }
+    box=document.createElement('div'); box.className='rdr-box'; box.dataset.co=coId; box.dataset.open='0';
+    box.innerHTML=
+      '<button class="rdr-toggle" type="button" aria-expanded="false">'+
+        '<span class="rdr-chev">▸</span>'+
+        '<span class="rdr-ttl">📋 Útfylling tækjalista úr úttektarskýrslu</span>'+
+      '</button>'+
+      '<div class="rdr-bodywrap" style="display:none"></div>';
+    var tg=box.querySelector('.rdr-toggle');
+    tg.onclick=function(){
+      var open=box.dataset.open!=='1'; box.dataset.open=open?'1':'0';
+      box.querySelector('.rdr-bodywrap').style.display=open?'block':'none';
+      box.querySelector('.rdr-chev').textContent=open?'▾':'▸';
+      tg.setAttribute('aria-expanded', open?'true':'false');
+    };
+    main.appendChild(box); // bottom of the page
+    render(box.querySelector('.rdr-bodywrap'), coId);
   }
   (function start(){ var m=document.getElementById('companies-main'); if(!m){ setTimeout(start,700); return; }
     var t=0; new MutationObserver(function(){ clearTimeout(t); t=setTimeout(inject,300); }).observe(m,{childList:true,subtree:true}); inject(); })();
 
   if(!document.getElementById('uttekt-reader-css')){
     var css=[
-      '.rdr-box{background:var(--surface);border:1px dashed var(--brd2);border-radius:12px;padding:14px 16px;margin-top:14px}',
+      '.rdr-box{background:var(--surface);border:1px dashed var(--brd2);border-radius:12px;margin:14px 0}',
+      '.rdr-toggle{width:100%;display:flex;align-items:center;gap:9px;background:none;border:0;cursor:pointer;padding:11px 15px;font:inherit;text-align:left}',
+      '.rdr-chev{color:var(--ink3);font-size:12px;width:12px;flex:none}',
+      '.rdr-ttl{font-family:"Space Mono",ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink1)}',
+      '.rdr-bodywrap{padding:0 15px 14px}',
       '.rdr-h{font-family:"Space Mono",ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink1);margin-bottom:10px}',
       '.rdr-muted{font-size:12px;color:var(--ink3)}',
       '.rdr-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}',
@@ -134,7 +266,21 @@
       '.rdr-sel{font:inherit;font-size:12.5px;padding:5px 8px;border:1px solid var(--brd);border-radius:8px;background:var(--surface);color:var(--ink1)}',
       '.rdr-yr{font-size:12px;font-weight:700;color:var(--ink2)}',
       '.rdr-btn{width:100%;border:0;border-radius:10px;padding:11px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;background:var(--brand);color:#fff}',
-      '.rdr-btn:disabled{opacity:.5;cursor:not-allowed}'
+      '.rdr-btn:disabled{opacity:.5;cursor:not-allowed}',
+      '.rdr-btn-sm{width:auto;padding:9px 14px;white-space:nowrap}',
+      '.rdr-pdfrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      '.rdr-pdfbtn{border:1px solid var(--brand);background:var(--bg);color:var(--brand);border-radius:9px;padding:9px 14px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}',
+      '.rdr-pdf-status{font-size:11.5px;flex:1;min-width:120px}',
+      '.rdr-div{height:1px;background:var(--brd);margin:14px 0 12px}',
+      '.rdr-man{}',
+      '.rdr-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px 10px;margin-bottom:10px}',
+      '.rdr-cat{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12.5px;color:var(--ink1)}',
+      '.rdr-cat span{flex:1;min-width:0}',
+      '.rdr-cnt{width:64px;padding:7px 8px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;text-align:center;background:var(--surface);color:var(--ink1)}',
+      '.rdr-manrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:4px}',
+      '.rdr-yrlab{font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:6px}',
+      '.rdr-yrin{width:78px;padding:7px 8px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;text-align:center;background:var(--surface);color:var(--ink1)}',
+      '@media(max-width:520px){.rdr-grid{grid-template-columns:1fr}.rdr-manrow{flex-direction:column;align-items:stretch}.rdr-btn-sm{width:100%}}'
     ].join('\n');
     var st=document.createElement('style'); st.id='uttekt-reader-css'; st.textContent=css; document.head.appendChild(st);
   }

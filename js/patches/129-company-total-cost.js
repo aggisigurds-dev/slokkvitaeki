@@ -388,8 +388,8 @@
       '<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">' +
         '<div style="font-size:12.5px;color:var(--ink2);font-weight:700;text-transform:uppercase;letter-spacing:.05em">📝 Upplýsingar um úttekt</div>' +
       '</div>' +
-      '<textarea id="_ctc-notes-ta" rows="2" placeholder="t.d. „Bára vill skipta öllum á neðri hæð" · „Hringja í Jón fyrir komu" · „Setja inn nýtt 6 kg ABC Duft"" ' +
-        'style="width:100%;padding:8px 10px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
+      '<textarea id="_ctc-notes-ta" rows="4" placeholder="t.d. „Bára vill skipta öllum á neðri hæð" · „Hringja í Jón fyrir komu" · „Setja inn nýtt 6 kg ABC Duft"" ' +
+        'style="width:100%;padding:8px 10px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a;min-height:92px">' +
         esc(tripNotes) +
       '</textarea>' +
       // 2026-06-10: report-only Athugasemdir, grouped here with the notes.
