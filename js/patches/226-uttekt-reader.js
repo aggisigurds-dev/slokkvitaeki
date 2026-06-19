@@ -132,55 +132,31 @@
   }
 
   function manualFormHtml(){
-    var rows=Object.keys(CATMAP).map(function(k){
-      var m=CATMAP[k]; var lab=m[0]+(m[1]?(' '+m[1]):'');
-      return '<label class="rdr-cat"><span>'+esc(lab)+'</span>'+
-        '<input type="number" min="0" step="1" class="rdr-cnt" data-cat="'+k+'" placeholder="0"></label>';
-    }).join('');
     return '<div class="rdr-man">'+
       '<div class="rdr-pdfrow">'+
         '<input type="file" accept="application/pdf,.pdf" class="rdr-pdf-input" style="display:none">'+
-        '<button type="button" class="rdr-pdfbtn">📄 Lesa úr PDF skýrslu</button>'+
+        '<button type="button" class="rdr-pdfbtn">📄 Lesa úr PDF skýrslu → bæta tækjum við</button>'+
         '<span class="rdr-pdf-status rdr-muted"></span>'+
-      '</div>'+
-      '<div class="rdr-lab" style="margin:10px 0 6px">📝 Fjöldi (les úr PDF eða sláðu inn)</div>'+
-      '<div class="rdr-grid">'+rows+'</div>'+
-      '<div class="rdr-manrow">'+
-        '<label class="rdr-yrlab">Ár skýrslu <input type="number" id="_rdr-man-year" class="rdr-yrin" value="'+(new Date().getFullYear()-1)+'"></label>'+
-        '<button id="_rdr-man-add" class="rdr-btn rdr-btn-sm">📥 Bæta tækjum við (TMP-númer)</button>'+
       '</div>'+
     '</div>';
   }
   function wireManual(body, coId, nafn){
-    var btn=body.querySelector('#_rdr-man-add');
-    if(btn) btn.onclick=function(){
-      var counts={};
-      body.querySelectorAll('.rdr-cnt').forEach(function(inp){ counts[inp.dataset.cat]=inp.value; });
-      var y=parseInt((body.querySelector('#_rdr-man-year')||{}).value,10)||new Date().getFullYear();
-      createFromCounts(coId, nafn, y, counts);
-    };
     var pdfBtn=body.querySelector('.rdr-pdfbtn'), pdfInp=body.querySelector('.rdr-pdf-input'), pdfStat=body.querySelector('.rdr-pdf-status');
-    if(pdfBtn&&pdfInp){
-      pdfBtn.onclick=function(){ pdfInp.click(); };
-      pdfInp.onchange=async function(){
-        var f=pdfInp.files&&pdfInp.files[0]; pdfInp.value='';
-        if(!f) return;
-        if(pdfStat){ pdfStat.textContent='⏳ Les PDF…'; }
-        try{
-          var text=await readPdfText(f);
-          var pr=parseReportText(text);
-          var filled=0;
-          body.querySelectorAll('.rdr-cnt').forEach(function(inp){
-            var c=pr.counts[inp.dataset.cat];
-            if(c!=null && c>0){ inp.value=c; filled++; }
-          });
-          if(pr.year){ var yi=body.querySelector('#_rdr-man-year'); if(yi) yi.value=pr.year; }
-          if(pdfStat){ pdfStat.textContent = filled
-            ? ('✓ Las '+filled+' tegund'+(filled===1?'':'ir')+(pr.year?(' · '+pr.year):'')+' — yfirfarðu og smelltu „Bæta tækjum við"')
-            : '⚠ Fann engar „Fjöldi"-tölur í PDF — sláðu inn handvirkt'; }
-        }catch(e){ if(pdfStat){ pdfStat.textContent='⚠ '+(e.message||e); } }
-      };
-    }
+    if(!pdfBtn||!pdfInp) return;
+    pdfBtn.onclick=function(){ pdfInp.click(); };
+    pdfInp.onchange=async function(){
+      var f=pdfInp.files&&pdfInp.files[0]; pdfInp.value='';
+      if(!f) return;
+      if(pdfStat){ pdfStat.textContent='⏳ Les PDF…'; }
+      try{
+        var text=await readPdfText(f);
+        var pr=parseReportText(text);
+        var total=0; Object.keys(pr.counts).forEach(function(k){ if(pr.counts[k]>0) total+=pr.counts[k]; });
+        if(!total){ if(pdfStat){ pdfStat.textContent='⚠ Fann engar „Fjöldi"-tölur í þessari PDF'; } return; }
+        if(pdfStat){ pdfStat.textContent='✓ Las '+total+' tæki'+(pr.year?(' · '+pr.year):'')+''; }
+        createFromCounts(coId, nafn, pr.year||new Date().getFullYear(), pr.counts);
+      }catch(e){ if(pdfStat){ pdfStat.textContent='⚠ '+(e.message||e); } }
+    };
   }
 
   async function render(host, coId){
