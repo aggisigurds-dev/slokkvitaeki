@@ -1,0 +1,162 @@
+/* 224-uttekt-taeki.js — Stage 2 of the v6 design: the tæki list on the company
+ * page rendered as the v6 two-column rows (last report vs current service),
+ * grouped collapsibly by type.
+ *
+ * Reuses ALL existing billing logic:
+ *   • current service choice  → window.UnitServicePicker.getChoice/setChoice
+ *   • cost recompute          → window.recomputeCompanyTotalCost()
+ *   • inspect / QR actions    → Field.openInspect / Print.showQR (DB.getUnit)
+ * So the cost panel (patch 129) reads exactly the same choices. Patch 131's
+ * <select>-into-table injection just no-ops (no table is rendered) but its
+ * UnitServicePicker API stays in use.
+ *
+ * Companies.openDetail (js/features.js) calls UttektTaeki.buildHtml(coId, units)
+ * in place of the old <table>; falls back to the table if this patch is absent.
+ */
+(function () {
+  if (window.UttektTaeki) return;
+
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c];}); }
+  function fd(d){ try { return (window.U&&U.fd)?U.fd(d):''; } catch(_){ return ''; } }
+  var CUR = new Date().getFullYear();
+
+  var FAM = { duft:['🧯','Duft'], lettv:['💧','Léttvatn'], co2:['❄️','CO₂'],
+              slanga:['🚒','Brunaslöngur'], reyk:['🚨','Reykskynjarar'], annad:['⚙️','Annað'] };
+  var FAMORDER = ['duft','lettv','co2','slanga','reyk','annad'];
+  function fam(type){
+    var t=(type||'').toLowerCase();
+    if(/duft|abc|pfc/.test(t)) return 'duft';
+    if(/co2|co₂|kolsýr|kolsyr/.test(t)) return 'co2';
+    if(/léttv|lettv|abf|vatn|water|froð|frod/.test(t)) return 'lettv';
+    if(/brunaslang|brunaslöng|brunaslong|hose|slang/.test(t)) return 'slanga';
+    if(/reykskynj|smoke|reyk/.test(t)) return 'reyk';
+    return 'annad';
+  }
+  var SVC = [['yfirferd','Yfirferð'],['hledsla','Hleðsla'],['nyitt','Nýtt']];
+
+  var _collapsed = {};   // key coId+'|'+fam -> true
+
+  function lastChip(u){
+    var y = u.last_insp ? parseInt(String(u.last_insp).slice(0,4),10) : 0;
+    if(!y) return '<span class="ut-last none">Ný / óskoðuð</span>';
+    var old = y < CUR-1;
+    return '<span class="ut-last'+(old?' old':'')+'">↺ Skoðun ’'+String(y).slice(-2)+'</span>';
+  }
+
+  function rowHtml(coId, u){
+    var f = fam(u.type), cur = '';
+    try { cur = window.UnitServicePicker ? UnitServicePicker.getChoice(coId, u.id, u.type) : 'yfirferd'; } catch(_){ cur='yfirferd'; }
+    var onytt = cur==='onytt';
+    var segs = SVC.map(function(s){
+      var on = (!onytt && cur===s[0]);
+      return '<button class="ut-svc'+(on?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-v="'+s[0]+'">'+s[1]+'</button>';
+    }).join('');
+    return '<div class="ut-row'+(onytt?' onytt':'')+'">'+
+      '<div class="ut-ico '+f+'">'+FAM[f][0]+'</div>'+
+      '<div class="ut-main"><div class="ut-t">'+esc(u.type)+'</div>'+
+        '<div class="ut-sub">'+esc(u.serial||'')+(u.location?' · '+esc(u.location):'')+(u.next_insp?' · næsta '+fd(u.next_insp):'')+'</div></div>'+
+      '<div class="ut-right">'+
+        '<div class="ut-lastcol">'+lastChip(u)+'</div>'+
+        '<div class="ut-now">'+
+          '<div class="ut-svcseg">'+segs+'</div>'+
+          '<button class="ut-onytt'+(onytt?' on':'')+'" data-co="'+coId+'" data-uid="'+u.id+'" data-ty="'+esc(u.type)+'" title="Merkja ónýtt — ekki rukkað">🚫</button>'+
+          '<button class="ut-act" onclick="Field.openInspect(DB.getUnit('+u.id+'))" title="Skrá skoðun">✓</button>'+
+          '<button class="ut-act" onclick="Print.showQR(DB.getUnit('+u.id+'))" title="Prenta QR-miða">▦</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }
+
+  function inner(coId, units){
+    var groups = {};
+    units.forEach(function(u){ var f=fam(u.type); (groups[f]=groups[f]||[]).push(u); });
+    var html = '<div class="ut-head"><span class="sp"></span><span class="h-last">Frá síðustu skýrslur</span><span class="h-now">Þessi skoðun</span></div>';
+    FAMORDER.forEach(function(f){
+      var arr = groups[f]; if(!arr||!arr.length) return;
+      var key = coId+'|'+f, col = !!_collapsed[key];
+      html += '<div class="ut-grp">'+
+        '<button class="ut-grp-h" data-k="'+key+'" data-co="'+coId+'">'+
+          '<span class="ut-ico '+f+'" style="width:26px;height:26px;font-size:14px">'+FAM[f][0]+'</span>'+
+          '<span class="ut-grp-nm">'+FAM[f][1]+'</span>'+
+          '<span class="ut-grp-cnt">'+arr.length+' tæki</span>'+
+          '<span class="ut-grp-chev">'+(col?'▸':'▾')+'</span>'+
+        '</button>'+
+        (col?'':'<div class="ut-grp-body">'+arr.map(function(u){return rowHtml(coId,u);}).join('')+'</div>')+
+      '</div>';
+    });
+    return html;
+  }
+
+  window.UttektTaeki = {
+    buildHtml: function(coId, units){
+      return '<div class="ut-list" data-uw-co="'+coId+'">'+inner(coId, units)+'</div>';
+    },
+    rerender: function(coId){
+      var wrap = document.querySelector('.ut-list[data-uw-co="'+coId+'"]'); if(!wrap) return;
+      var c = window.Companies && Companies.list && Companies.list.find(function(x){return x.id==coId;}); if(!c) return;
+      var units = DB.cache.units.filter(function(u){return u.client===c.nafn;});
+      wrap.innerHTML = inner(coId, units);
+    }
+  };
+
+  // One delegated handler for the interactive controls.
+  document.addEventListener('click', function(e){
+    var b;
+    if((b=e.target.closest('.ut-svc'))){
+      var co=+b.dataset.co, uid=+b.dataset.uid, v=b.dataset.v;
+      try{ UnitServicePicker.setChoice(co,uid,v); }catch(_){}
+      try{ if(window.recomputeCompanyTotalCost) recomputeCompanyTotalCost(); }catch(_){}
+      UttektTaeki.rerender(co); return;
+    }
+    if((b=e.target.closest('.ut-onytt'))){
+      var co2=+b.dataset.co, uid2=+b.dataset.uid, ty=b.dataset.ty, cur='';
+      try{ cur=UnitServicePicker.getChoice(co2,uid2,ty); }catch(_){}
+      try{ UnitServicePicker.setChoice(co2,uid2, cur==='onytt'?'yfirferd':'onytt'); }catch(_){}
+      try{ if(window.recomputeCompanyTotalCost) recomputeCompanyTotalCost(); }catch(_){}
+      UttektTaeki.rerender(co2); return;
+    }
+    if((b=e.target.closest('.ut-grp-h'))){
+      _collapsed[b.dataset.k] = !_collapsed[b.dataset.k];
+      UttektTaeki.rerender(+b.dataset.co); return;
+    }
+  });
+
+  // ---- styles ----
+  if (!document.getElementById('uttekt-taeki-css')) {
+    var css = [
+      '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
+      '.ut-head{display:flex;align-items:center;padding:11px 15px 7px;border-bottom:1px solid var(--brd)}',
+      '.ut-head .sp{flex:1}',
+      '.ut-head .h-last{width:118px;text-align:right;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
+      '.ut-head .h-now{width:316px;margin-left:18px;padding-left:18px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
+      '@media(max-width:820px){.ut-head{display:none}}',
+      '.ut-grp-h{width:100%;display:flex;align-items:center;gap:10px;padding:9px 15px;background:var(--bg);border:0;border-top:1px solid var(--brd);cursor:pointer;font:inherit;text-align:left}',
+      '.ut-grp:first-child .ut-grp-h{border-top:0}',
+      '.ut-grp-nm{font-weight:800;font-size:13.5px;color:var(--ink1)}',
+      '.ut-grp-cnt{font-size:11.5px;color:var(--ink3);font-weight:600}',
+      '.ut-grp-chev{margin-left:auto;color:var(--ink3);font-size:12px}',
+      '.ut-row{display:flex;align-items:center;gap:12px;padding:10px 15px;border-top:1px solid var(--bg)}',
+      '.ut-row.onytt{opacity:.55}.ut-row.onytt .ut-t{text-decoration:line-through}',
+      '.ut-ico{flex:none;width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px}',
+      '.ut-ico.duft{background:#fdeecb}.ut-ico.lettv{background:#dbeafe}.ut-ico.co2{background:#e0e7ff}.ut-ico.slanga{background:#fde2dd}.ut-ico.reyk{background:#ede9fe}.ut-ico.annad{background:#eef0f2}',
+      '.ut-main{flex:1;min-width:0}.ut-t{font-weight:700;font-size:13.5px;color:var(--ink1)}',
+      '.ut-sub{font-size:11.5px;color:var(--ink3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.ut-right{display:flex;align-items:center;flex:none}',
+      '.ut-lastcol{width:118px;display:flex;justify-content:flex-end;flex:none}',
+      '.ut-last{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap;background:#eef0f2;color:var(--ink2)}',
+      '.ut-last.old{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d)}',
+      '.ut-last.none{background:transparent;color:var(--ink4);font-weight:600}',
+      '.ut-now{display:flex;align-items:center;gap:7px;flex:none;width:316px;justify-content:flex-end;margin-left:18px;padding-left:18px;border-left:1px solid var(--brd)}',
+      '.ut-svcseg{display:inline-flex;background:var(--bg);border:1px solid var(--brd);border-radius:9px;padding:3px;gap:2px}',
+      '.ut-svc{border:0;background:transparent;font:inherit;font-size:11.5px;font-weight:700;color:var(--ink3);padding:5px 10px;border-radius:7px;cursor:pointer;white-space:nowrap}',
+      '.ut-svc.on{background:var(--brand);color:#fff}',
+      '.ut-onytt{border:1px solid var(--brd);background:var(--surface);color:var(--ink3);border-radius:8px;padding:5px 8px;font-size:13px;cursor:pointer}',
+      '.ut-onytt.on{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d);border-color:var(--red-bd,#fca5a5)}',
+      '.ut-act{border:1px solid var(--brd);background:var(--surface);color:var(--ink2);border-radius:8px;width:30px;height:30px;font-size:13px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center}',
+      '.ut-act:hover{border-color:var(--brand);color:var(--brand)}',
+      '@media(max-width:820px){.ut-right{flex-wrap:wrap;justify-content:flex-end;gap:8px}.ut-now{width:auto;border-left:0;margin-left:0;padding-left:0}.ut-lastcol{width:auto}}'
+    ].join('\n');
+    var st=document.createElement('style'); st.id='uttekt-taeki-css'; st.textContent=css; document.head.appendChild(st);
+  }
+  console.log('[patch-224] tæki-úttekt rows (Stage 2) installed');
+})();

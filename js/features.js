@@ -175,6 +175,10 @@ var Companies = {
       '</div>';
     if (!units.length) {
       html += '<div class="empty-state" style="padding:24px"><div class="es-sub">Engin t\u00e6ki skr\u00e1\u00f0 fyrir \u00feetta fyrirt\u00e6ki</div></div>';
+    } else if (window.UttektTaeki && UttektTaeki.buildHtml) {
+      // v6 design (patch 224): grouped two-column rows, wired to the same
+      // UnitServicePicker billing choices the cost panel reads.
+      html += UttektTaeki.buildHtml(c.id, units);
     } else {
       html += '<div class="tcard"><table class="dtbl"><thead><tr>' +
         '<th>Ra\u00f0n\u00famer</th><th>Tegund</th><th>Sta\u00f0setning</th><th>N\u00e6sta sko\u00f0un</th><th>Sta\u00f0a</th><th></th>' +
