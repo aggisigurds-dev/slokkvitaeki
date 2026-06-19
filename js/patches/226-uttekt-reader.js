@@ -183,10 +183,9 @@
     }
   }
 
-  async function render(box, coId){
-    var bodyId='_rdr-body';
-    box.innerHTML='<div class="rdr-h">📄 Útfylling tækjalista úr úttektarskýrslu</div><div id="'+bodyId+'" class="rdr-body">Hleð…</div>';
-    var body=box.querySelector('#'+bodyId);
+  async function render(host, coId){
+    host.innerHTML='<div class="rdr-muted">Hleð…</div>';
+    var body=host;
     var co=getCo(coId); if(!co){ body.innerHTML='<span class="rdr-muted">—</span>'; return; }
     var baseId=await baseIdForKt(co.kennitala);
     var lines = baseId ? await fetchLines(baseId) : [];
@@ -225,19 +224,40 @@
 
   function inject(){
     var main=document.getElementById('companies-main'); if(!main) return;
-    var col=main.querySelector('.uttekt-col-l'); if(!col) return;
     var coId=getCoId(); if(!coId) return;
-    var box=col.querySelector('.rdr-box');
-    if(box){ if(String(box.dataset.co)!==String(coId)){ box.dataset.co=coId; render(box,coId); } return; }
-    box=document.createElement('div'); box.className='rdr-box'; box.dataset.co=coId;
-    col.appendChild(box); render(box,coId);
+    var box=main.querySelector('.rdr-box');
+    if(box){
+      if(String(box.dataset.co)!==String(coId)){ box.dataset.co=coId; render(box.querySelector('.rdr-bodywrap'), coId); }
+      if(main.lastElementChild!==box) main.appendChild(box); // keep at very bottom
+      return;
+    }
+    box=document.createElement('div'); box.className='rdr-box'; box.dataset.co=coId; box.dataset.open='0';
+    box.innerHTML=
+      '<button class="rdr-toggle" type="button" aria-expanded="false">'+
+        '<span class="rdr-chev">▸</span>'+
+        '<span class="rdr-ttl">📋 Útfylling tækjalista úr úttektarskýrslu</span>'+
+      '</button>'+
+      '<div class="rdr-bodywrap" style="display:none"></div>';
+    var tg=box.querySelector('.rdr-toggle');
+    tg.onclick=function(){
+      var open=box.dataset.open!=='1'; box.dataset.open=open?'1':'0';
+      box.querySelector('.rdr-bodywrap').style.display=open?'block':'none';
+      box.querySelector('.rdr-chev').textContent=open?'▾':'▸';
+      tg.setAttribute('aria-expanded', open?'true':'false');
+    };
+    main.appendChild(box); // bottom of the page
+    render(box.querySelector('.rdr-bodywrap'), coId);
   }
   (function start(){ var m=document.getElementById('companies-main'); if(!m){ setTimeout(start,700); return; }
     var t=0; new MutationObserver(function(){ clearTimeout(t); t=setTimeout(inject,300); }).observe(m,{childList:true,subtree:true}); inject(); })();
 
   if(!document.getElementById('uttekt-reader-css')){
     var css=[
-      '.rdr-box{background:var(--surface);border:1px dashed var(--brd2);border-radius:12px;padding:14px 16px;margin-top:14px}',
+      '.rdr-box{background:var(--surface);border:1px dashed var(--brd2);border-radius:12px;margin:14px 0}',
+      '.rdr-toggle{width:100%;display:flex;align-items:center;gap:9px;background:none;border:0;cursor:pointer;padding:11px 15px;font:inherit;text-align:left}',
+      '.rdr-chev{color:var(--ink3);font-size:12px;width:12px;flex:none}',
+      '.rdr-ttl{font-family:"Space Mono",ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink1)}',
+      '.rdr-bodywrap{padding:0 15px 14px}',
       '.rdr-h{font-family:"Space Mono",ui-monospace,monospace;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink1);margin-bottom:10px}',
       '.rdr-muted{font-size:12px;color:var(--ink3)}',
       '.rdr-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}',
