@@ -94,7 +94,12 @@
     var mine=keys.filter(function(x){return +x.id===+coId;})[0];
     if(!mine) return docs;
     return docs.filter(function(d){
-      if(d.fyrirtaeki_id!=null) return +d.fyrirtaeki_id===+coId;     // precise map
+      if(d.fyrirtaeki_id!=null) return +d.fyrirtaeki_id===+coId;     // precise map (Cowork)
+      // Reikningar + samningar are issued company-wide (one per kt, not per
+      // starfsstöð) and are rarely location-tagged — show them on every site of
+      // the kt rather than guessing an address from the filename. Only the
+      // per-site úttektarskýrslur get the address (notes) filter.
+      if(d.doc_type==='reikningur' || d.doc_type==='samningur') return true;
       var matched=keys.filter(function(x){return docMatchesLoc(d.notes, x.k, allK);});
       if(!matched.length) return true;                               // óvíst → birt á öllum
       return matched.some(function(x){return +x.id===+coId;});
