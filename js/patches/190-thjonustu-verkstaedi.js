@@ -70,16 +70,16 @@
     const s = document.createElement('style');
     s.id = '_sv-styles';
     s.textContent = [
-      '#' + VIEW_ID + ' .sv-seg{display:inline-flex;background:#eef2f7;border-radius:10px;padding:3px;gap:3px}',
-      '#' + VIEW_ID + ' .sv-seg button{border:0;background:transparent;color:#64748b;font:inherit;font-size:12.5px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer}',
-      '#' + VIEW_ID + ' .sv-seg button.on{background:#fff;color:#0f172a;box-shadow:0 1px 2px rgba(0,0,0,.12)}',
-      '#' + VIEW_ID + ' .sv-chip{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid #e2e8f0;border-radius:99px;padding:7px 13px;font-size:12.5px;font-weight:600;color:#475569;cursor:pointer}',
-      '#' + VIEW_ID + ' .sv-chip .n{font-weight:800;color:#0f172a}',
-      '#' + VIEW_ID + ' .sv-drawer{background:#fff;border:1px solid #e2e8f0;border-radius:12px;margin-bottom:14px;overflow:hidden}',
-      '#' + VIEW_ID + ' .sv-drawer-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #f1f5f9;font-size:13px}',
+      '#' + VIEW_ID + ' .sv-seg{display:inline-flex;background:var(--brd);border-radius:10px;padding:3px;gap:3px}',
+      '#' + VIEW_ID + ' .sv-seg button{border:0;background:transparent;color:var(--ink3);font:inherit;font-size:12.5px;font-weight:700;padding:6px 14px;border-radius:8px;cursor:pointer}',
+      '#' + VIEW_ID + ' .sv-seg button.on{background:var(--surface);color:var(--ink1);box-shadow:0 1px 2px rgba(0,0,0,.12)}',
+      '#' + VIEW_ID + ' .sv-chip{display:inline-flex;align-items:center;gap:7px;background:var(--surface);border:1px solid var(--brd);border-radius:99px;padding:7px 13px;font-size:12.5px;font-weight:600;color:var(--ink2);cursor:pointer}',
+      '#' + VIEW_ID + ' .sv-chip .n{font-weight:800;color:var(--ink1)}',
+      '#' + VIEW_ID + ' .sv-drawer{background:var(--surface);border:1px solid var(--brd);border-radius:12px;margin-bottom:14px;overflow:hidden}',
+      '#' + VIEW_ID + ' .sv-drawer-row{display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid var(--brd);font-size:13px}',
       '#' + VIEW_ID + ' .sv-drawer-row:last-child{border-bottom:0}',
-      '#' + VIEW_ID + ' .sv-drawer-row .nm{flex:1;font-weight:600;color:#0f172a}',
-      '#' + VIEW_ID + ' .sv-drawer-row .mn{color:#94a3b8;font-size:12px}',
+      '#' + VIEW_ID + ' .sv-drawer-row .nm{flex:1;font-weight:600;color:var(--ink1)}',
+      '#' + VIEW_ID + ' .sv-drawer-row .mn{color:var(--ink4);font-size:12px}',
       // grid (cards mode)
       '#' + VIEW_ID + ' .sv-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}',
       '@media(max-width:760px){#' + VIEW_ID + ' .sv-grid{grid-template-columns:1fr}}',
@@ -93,25 +93,25 @@
       '#' + VIEW_ID + ' .sv-wide-r .sv-acts{border-top:0;padding-top:0}',
       '#' + VIEW_ID + ' .sv-wide-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
       '@media(max-width:720px){#' + VIEW_ID + ' .sv-card.wide{flex-direction:column}#' + VIEW_ID + ' .sv-wide-r{flex-basis:auto}}',
-      '#' + VIEW_ID + ' .sv-card{background:#fff;border:1px solid #e2e8f0;border-left:4px solid #3b82f6;border-radius:13px;padding:13px 14px;box-shadow:0 1px 2px rgba(16,24,40,.04);display:flex;flex-direction:column;gap:10px;transition:opacity .15s}',
+      '#' + VIEW_ID + ' .sv-card{background:var(--surface);border:1px solid var(--brd);border-left:4px solid #3b82f6;border-radius:13px;padding:13px 14px;box-shadow:0 1px 2px rgba(16,24,40,.04);display:flex;flex-direction:column;gap:10px;transition:opacity .15s}',
       '#' + VIEW_ID + ' .sv-card.haett{opacity:.55;border-left-color:#dc2626}',
       // stepper
       '#' + VIEW_ID + ' .sv-steps{display:flex;align-items:flex-start;gap:0}',
       '#' + VIEW_ID + ' .sv-step{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;cursor:pointer;background:none;border:0;padding:0;font:inherit}',
-      '#' + VIEW_ID + ' .sv-step .ln{position:absolute;top:13px;left:-50%;width:100%;height:3px;background:#e2e8f0;z-index:0}',
+      '#' + VIEW_ID + ' .sv-step .ln{position:absolute;top:13px;left:-50%;width:100%;height:3px;background:var(--brd);z-index:0}',
       '#' + VIEW_ID + ' .sv-step:first-child .ln{display:none}',
       '#' + VIEW_ID + ' .sv-step.on .ln{background:#16a34a}',
-      '#' + VIEW_ID + ' .sv-step .nd{position:relative;z-index:1;width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;border:2px solid #e2e8f0;background:#fff;color:#94a3b8}',
+      '#' + VIEW_ID + ' .sv-step .nd{position:relative;z-index:1;width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;border:2px solid var(--brd);background:var(--surface);color:var(--ink4)}',
       '#' + VIEW_ID + ' .sv-step.on .nd{background:#16a34a;border-color:#16a34a;color:#fff}',
-      '#' + VIEW_ID + ' .sv-step .lb{font-size:10px;font-weight:700;color:#64748b;text-align:center;line-height:1.2}',
+      '#' + VIEW_ID + ' .sv-step .lb{font-size:10px;font-weight:700;color:var(--ink3);text-align:center;line-height:1.2}',
       '#' + VIEW_ID + ' .sv-step.on .lb{color:#15803d}',
       // marks
       '#' + VIEW_ID + ' .sv-marks{display:flex;gap:6px;flex-wrap:wrap}',
-      '#' + VIEW_ID + ' .sv-mark{border:1px solid #e2e8f0;background:#f8fafc;color:#94a3b8;border-radius:99px;padding:4px 11px;font-size:10.5px;font-weight:700;cursor:pointer}',
+      '#' + VIEW_ID + ' .sv-mark{border:1px solid var(--brd);background:var(--bg);color:var(--ink4);border-radius:99px;padding:4px 11px;font-size:10.5px;font-weight:700;cursor:pointer}',
       // note
-      '#' + VIEW_ID + ' .sv-note{width:100%;box-sizing:border-box;font:inherit;font-size:12.5px;line-height:1.45;padding:7px 9px;border:1px solid #e2e8f0;border-radius:9px;resize:vertical;min-height:38px;color:#0f172a;background:#f8fafc}',
-      '#' + VIEW_ID + ' .sv-note:focus{outline:none;border-color:#3b82f6;background:#fff}',
-      '#' + VIEW_ID + ' .sv-acts{display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid #f1f5f9;padding-top:9px}'
+      '#' + VIEW_ID + ' .sv-note{width:100%;box-sizing:border-box;font:inherit;font-size:12.5px;line-height:1.45;padding:7px 9px;border:1px solid var(--brd);border-radius:9px;resize:vertical;min-height:38px;color:var(--ink1);background:var(--bg)}',
+      '#' + VIEW_ID + ' .sv-note:focus{outline:none;border-color:#3b82f6;background:var(--surface)}',
+      '#' + VIEW_ID + ' .sv-acts{display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--brd);padding-top:9px}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -203,7 +203,7 @@
         const on = !!r.steps[k];
         return '<button class="_sv-step" data-id="' + r.id + '" data-step="' + k + '" title="' + esc(label) + (on ? ' — smelltu til að afhaka' : '') + '" ' +
           'style="padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid ' +
-          (on ? '#86efac;background:#dcfce7;color:#14532d' : '#e2e8f0;background:#f8fafc;color:#94a3b8') + '">' +
+          (on ? '#86efac;background:#dcfce7;color:#14532d' : 'var(--brd);background:var(--bg);color:var(--ink4)') + '">' +
           (on ? '✓ ' : '○ ') + esc(label) + '</button>';
       }).join('') + '</div>';
   }
@@ -229,15 +229,15 @@
   }
   function vinnslaActs(r) {
     return '<div class="sv-acts">' +
-      '<button class="_sv-act" data-act="open" data-id="' + r.id + '" style="' + btn('#fff','#475569','#cbd5e1') + '">🏢 Opna</button>' +
+      '<button class="_sv-act" data-act="open" data-id="' + r.id + '" style="' + btn('var(--surface)','var(--ink2)','var(--brd2)') + '">🏢 Opna</button>' +
       '<button class="_sv-act" data-act="report" data-id="' + r.id + '" style="' + btn('#ede9fe','#5b21b6','#ddd6fe') + '">📄 Skýrsla</button>' +
       '<button class="_sv-act" data-act="buid" data-id="' + r.id + '" style="' + btn('#dcfce7','#14532d','#86efac') + '">✓ Búið</button>' +
       '<button class="_sv-act" data-act="unstart" data-id="' + r.id + '" title="Afmerkja — taka úr vinnslu og af verkstæðinu" style="' + btn('#fef2f2','#b91c1c','#fecaca') + '">✕ Afmerkja</button>' +
       '</div>';
   }
   function nameBlock(r, big) {
-    return '<div><div style="font-weight:700;font-size:' + (big ? '15px' : '13.5px') + ';color:#0f172a;line-height:1.25">' + esc(r.nafn) + '</div>' +
-      (r.kennitala ? '<div style="font-size:10px;color:#94a3b8;font-family:monospace;margin-top:1px">kt. ' + esc(fmtKt(r.kennitala)) + '</div>' : '') + '</div>';
+    return '<div><div style="font-weight:700;font-size:' + (big ? '15px' : '13.5px') + ';color:var(--ink1);line-height:1.25">' + esc(r.nafn) + '</div>' +
+      (r.kennitala ? '<div style="font-size:10px;color:var(--ink4);font-family:monospace;margin-top:1px">kt. ' + esc(fmtKt(r.kennitala)) + '</div>' : '') + '</div>';
   }
   function aminningLine(r, n) { return r.aminning ? '<div style="font-size:10.5px;color:#b45309">📌 ' + esc(r.aminning.slice(0, n || 80)) + '</div>' : ''; }
 
@@ -287,7 +287,7 @@
           '<span class="mn">' + (r.units > 0 ? '🧯 ' + r.units : '') + '</span>' +
           (withStart
             ? '<button class="_sv-act" data-act="start" data-id="' + r.id + '" style="' + btn('#dbeafe','#1e3a8a','#93c5fd') + '">▶ Hefja vinnslu</button>'
-            : '<button class="_sv-act" data-act="open" data-id="' + r.id + '" style="' + btn('#fff','#475569','#cbd5e1') + '">🏢 Opna</button>') +
+            : '<button class="_sv-act" data-act="open" data-id="' + r.id + '" style="' + btn('var(--surface)','var(--ink2)','var(--brd2)') + '">🏢 Opna</button>') +
         '</div>'
       ).join('');
     }
@@ -303,19 +303,19 @@
       ? (_mode === 'cards' ? '<div class="sv-grid">' + b.vinnsla.map(gridCard).join('') + '</div>'
         : _mode === 'wide' ? '<div class="sv-list-wide">' + b.vinnsla.map(wideCard).join('') + '</div>'
         : '<div class="sv-list">' + b.vinnsla.map(listCard).join('') + '</div>')
-      : '<div style="color:#cbd5e1;font-size:13px;padding:26px;text-align:center;border:1px dashed #e2e8f0;border-radius:12px">Ekkert í vinnslu núna.</div>';
+      : '<div style="color:var(--brd2);font-size:13px;padding:26px;text-align:center;border:1px dashed var(--brd);border-radius:12px">Ekkert í vinnslu núna.</div>';
 
     v.innerHTML = '<div style="max-width:1080px;margin:0 auto">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">' +
         '<h1 style="font-size:22px;margin:0;font-weight:750">🔧 ÞjónustuVerkstæði</h1>' +
         '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>☰ Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>▭ Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>▦ Spjöld</button></div>' +
       '</div>' +
-      '<p style="color:#64748b;font-size:14px;margin:0 0 14px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · <span title="Samtals áætlaðar tekjur, m. vsk">áætl. ' + fmtSum(vinnslaSum) + '</span>' : '') + '.</p>' +
+      '<p style="color:var(--ink3);font-size:14px;margin:0 0 14px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · <span title="Samtals áætlaðar tekjur, m. vsk">áætl. ' + fmtSum(vinnslaSum) + '</span>' : '') + '.</p>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">' +
         '<span class="sv-chip" style="background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;font-weight:800">🔵 <span class="n" style="color:#1d4ed8">' + b.vinnsla.length + '</span> í vinnslu</span>' +
         '<span class="sv-chip" data-toggle="dagskra">⏳ <span class="n">' + b.dagskra.length + '</span> á dagskrá ' + (_openDagskra ? '▾' : '▸') + '</span>' +
         '<span class="sv-chip" data-toggle="buid">✅ <span class="n">' + b.buid.length + '</span> búin í ár ' + (_openBuid ? '▾' : '▸') + '</span>' +
-        '<select class="sv-sort" title="Raða Í-vinnslu listanum" style="margin-left:auto;font:inherit;font-size:12.5px;font-weight:600;color:#475569;border:1px solid #e2e8f0;border-radius:99px;padding:7px 30px 7px 13px;background:#fff;cursor:pointer">' +
+        '<select class="sv-sort" title="Raða Í-vinnslu listanum" style="margin-left:auto;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink2);border:1px solid var(--brd);border-radius:99px;padding:7px 30px 7px 13px;background:var(--surface);cursor:pointer">' +
           '<option value="name"' + (_sort === 'name' ? ' selected' : '') + '>↕ Nafn (A–Ö)</option>' +
           '<option value="revenue"' + (_sort === 'revenue' ? ' selected' : '') + '>↕ Hæstu tekjur</option>' +
           '<option value="marked"' + (_sort === 'marked' ? ' selected' : '') + '>↕ Nýlega merkt</option>' +
