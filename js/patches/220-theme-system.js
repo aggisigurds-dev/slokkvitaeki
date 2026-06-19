@@ -39,14 +39,14 @@
       t:{ bg:'#0b1220',card:'#131c2e',ink:'#e8eef9',muted:'#9fb0c9',line:'#22304a',brand:'#2563eb',primary:'#60a5fa',h1:'#e8eef9',h2:'#b3c2da',h3:'#6f7f96' } },
     glod:      { nm:'🔥 Glóð',      desc:'Dökkt + brennt appelsínugult — eldur að nóttu.', sw:['#c2410c','#f97316','#14100e','#f0ebe6'],
       t:{ bg:'#14100e',card:'#1d1714',ink:'#f0ebe6',muted:'#b8a89c',line:'#2f261f',brand:'#c2410c',primary:'#f97316',h1:'#f0ebe6',h2:'#d2c1b3',h3:'#8a7c70' } },
-    grafit:    { nm:'⬛ Grafít',    desc:'Hlutlaust koldökkt — slétt og rólegt.', sw:['#6366f1','#818cf8','#151517','#ededf0'],
-      t:{ bg:'#151517',card:'#1f1f24',ink:'#ededf0',muted:'#a8a8b3',line:'#2e2e36',brand:'#6366f1',primary:'#818cf8',h1:'#ededf0',h2:'#c4c4ce',h3:'#7c7c88' } },
-    grafitljost:{ nm:'⬜ Grafít ljóst', desc:'Hlutlaust ljóst — hvít-grátt + indígó, létt og loftgott.', sw:['#4338ca','#6366f1','#f7f7f9','#1a1a1f'],
-      t:{ bg:'#f7f7f9',card:'#ffffff',ink:'#1a1a1f',muted:'#6e6e78',line:'#e8e8ec',brand:'#4338ca',primary:'#6366f1',h1:'#1a1a1f',h2:'#4a4a55',h3:'#9a9aa6' } },
-    indigo:    { nm:'🔷 Indigo',    desc:'Bjart + indígó — ferskt og faglegt.', sw:['#3730a3','#4f46e5','#f0effa','#1e1b34'],
-      t:{ bg:'#f0effa',card:'#ffffff',ink:'#1e1b34',muted:'#4b466b',line:'#e6e3f5',brand:'#3730a3',primary:'#4f46e5',h1:'#1e1b34',h2:'#4b466b',h3:'#9893b5' } }
+    grafit:    { nm:'⬛ Grafít',    desc:'Svart + dökkblátt + dökkgrátt — slétt og faglegt.', sw:['#1e3a8a','#3b82f6','#121317','#e9eaee'],
+      t:{ bg:'#121317',card:'#1b1d22',ink:'#e9eaee',muted:'#a3a7b0',line:'#2c2f37',brand:'#1e3a8a',primary:'#3b82f6',h1:'#e9eaee',h2:'#c2c5cd',h3:'#7e828c' } },
+    grafitljost:{ nm:'⬜ Grafít ljóst', desc:'Hvítur grunnur + grátt + dökkblátt — létt og faglegt.', sw:['#1e3a8a','#2563eb','#fafbfc','#16181d'],
+      t:{ bg:'#fafbfc',card:'#ffffff',ink:'#16181d',muted:'#5b6270',line:'#e7e9ee',brand:'#1e3a8a',primary:'#2563eb',h1:'#16181d',h2:'#444b59',h3:'#98a0ae' } },
+    grafitraudt:{ nm:'🟥 Grafít rautt', desc:'Svart + dökkgrátt + dökkrautt — kraftmikið og faglegt.', sw:['#991b1b','#ef4444','#131316','#ededee'],
+      t:{ bg:'#131316',card:'#1c1c20',ink:'#ededee',muted:'#a6a6ad',line:'#2e2e34',brand:'#991b1b',primary:'#ef4444',h1:'#ededee',h2:'#c4c4ca',h3:'#7e7e86' } }
   };
-  const ACCENTS = ['#c96a2f','#a8322a','#2563eb','#0f766e','#16a34a','#7c3aed','#334155'];
+  const ACCENTS = ['#c96a2f','#a8322a','#2563eb','#0f766e','#16a34a','#b91c1c','#334155'];
   const FONTS = {
     system:'-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
     serif:'Georgia,"Times New Roman",serif',

@@ -1,59 +1,52 @@
-/* === 229-sala-theme-bridge.js — Sala (#view-sala) follows the Útlit theme =====
+/* === 229-theme-bridge.js — app-wide theme bridge (content views) ============
  *
- * Light-touch "theme pass" for the POS page. Sala (js/pos.js) is older and
- * hardcodes ~320 colours inline with ZERO theme tokens, so picking a theme in
- * Útlit re-skinned the sidebar/shell but not Sala itself.
+ * Makes theme-switching ACTUALLY re-skin the app. The app pre-dates the theme
+ * system and hardcodes the same house "slate" palette inline across nearly every
+ * page (#fff panels, #f1f5f9 areas, #0f172a/#64748b text, #e2e8f0/#cbd5e1
+ * borders…), so patch 220 only re-skinned the few token-based bits — themes felt
+ * like "a few buttons here and there".
  *
- * Rather than rewrite pos.js (risky — same hex is reused for panels, white
- * button text AND the print receipt), this maps ONLY the neutral surfaces
- * INSIDE #view-sala to the theme tokens (--thm-bg/-card/-ink/-muted/-line) via
- * inline-style attribute selectors with !important. Accent/status colours
- * (greens, reds, brand orange, the dark action button) keep their hardcoded
- * look on purpose. The print receipt + modals are position:fixed on <body>
- * (outside #view-sala) so they stay white/fixed for printing — untouched.
+ * This maps those NEUTRAL house colours → the theme tokens (--thm-bg/-card/-ink/
+ * -muted/-line) for everything inside `.view` (the main content pages), via
+ * inline-style attribute selectors with !important. So pick a dark theme and the
+ * whole content area goes dark, readable (bg→card pairs with text→ink/muted).
  *
- * Tokens are always set by patch 220, so in the default light theme Sala looks
- * essentially identical; pick a dark theme and Sala's frame + text follow it,
- * staying readable (bg→--thm-card pairs with text→--thm-ink/-muted).
+ * Deliberately untouched:
+ *   • ACCENT / STATUS colours (greens, reds, brand orange, blues) — kept so the
+ *     UI still has colour pops on the themed surface.
+ *   • The sidebar (`nav.view-nav` — not `.view`) — has its own treatment.
+ *   • Modals + the print receipt — position:fixed on <body>, outside `.view`,
+ *     so they stay white/fixed (receipt must print white).
  *
- * Purely additive + reversible: delete this file + its <script> tag.
+ * In the default LIGHT theme the tokens ≈ the originals, so the app looks the
+ * same; the difference shows when you pick a darker/other theme. CSS-only,
+ * layout-safe (no reflow), fully reversible: delete this file + its <script>.
  * =========================================================================== */
 (() => {
-  if (document.getElementById('sala-theme-bridge')) return;
-  const S = '#view-sala ';
+  if (document.getElementById('theme-bridge')) return;
+  // #view-sala is created/managed by pos.js; make sure it carries `.view` so the
+  // scope below reaches it too.
+  (function tag(t){ const v=document.getElementById('view-sala'); if(v) v.classList.add('view'); else if((t||0)<40) setTimeout(()=>tag((t||0)+1),300); })(0);
+
+  const V = '.view ';
   const css = [
-    // the view's own page background
-    '#view-sala{background:var(--thm-bg)!important}',
-    // panels / cards (white) → themed surface
-    S + '[style*="background:#fff"]{background:var(--thm-card)!important}',
-    S + '[style*="background: #fff"]{background:var(--thm-card)!important}',
-    // light slate areas → page bg
-    S + '[style*="background:#f1f5f9"]{background:var(--thm-bg)!important}',
-    S + '[style*="background:#f8fafc"]{background:var(--thm-bg)!important}',
+    // page background of the active content view
+    '.view{background:var(--thm-bg)!important}',
+    // white panels / cards → themed surface
+    V+'[style*="background:#fff"],'+V+'[style*="background: #fff"],'+V+'[style*="background:#ffffff"]{background:var(--thm-card)!important}',
+    // light-grey surfaces → page bg
+    V+'[style*="background:#f8fafc"],'+V+'[style*="background:#f1f5f9"],'+V+'[style*="background:#f8f9fa"],'+V+'[style*="background:#f9fafb"],'+V+'[style*="background:#f3f4f6"],'+V+'[style*="background:#f5f5f7"],'+V+'[style*="background:#f5f6f7"]{background:var(--thm-bg)!important}',
     // primary text
-    S + '[style*="color:#0f172a"]{color:var(--thm-ink)!important}',
-    S + '[style*="color:#1e293b"]{color:var(--thm-ink)!important}',
-    S + '[style*="color:#334155"]{color:var(--thm-ink)!important}',
-    S + '[style*="color:#111"]{color:var(--thm-ink)!important}',
+    V+'[style*="color:#0f172a"],'+V+'[style*="color:#1e293b"],'+V+'[style*="color:#111827"],'+V+'[style*="color:#1a1a1f"],'+V+'[style*="color:#16181d"],'+V+'[style*="color:#111"],'+V+'[style*="color:#334155"]{color:var(--thm-ink)!important}',
     // muted / secondary text
-    S + '[style*="color:#475569"]{color:var(--thm-muted)!important}',
-    S + '[style*="color:#64748b"]{color:var(--thm-muted)!important}',
-    S + '[style*="color:#6b7280"]{color:var(--thm-muted)!important}',
-    S + '[style*="color:#666"]{color:var(--thm-muted)!important}',
-    S + '[style*="color:#888"]{color:var(--thm-muted)!important}',
-    S + '[style*="color:#999"]{color:var(--thm-muted)!important}',
-    S + '[style*="color:#94a3b8"]{color:var(--thm-muted)!important}',
+    V+'[style*="color:#475569"],'+V+'[style*="color:#64748b"],'+V+'[style*="color:#6b7280"],'+V+'[style*="color:#9ca3af"],'+V+'[style*="color:#94a3b8"],'+V+'[style*="color:#666"],'+V+'[style*="color:#888"],'+V+'[style*="color:#999"]{color:var(--thm-muted)!important}',
     // neutral borders → themed line
-    S + '[style*="#cbd5e1"]{border-color:var(--thm-line)!important}',
-    S + '[style*="#e2e8f0"]{border-color:var(--thm-line)!important}',
-    S + '[style*="solid #ccc"]{border-color:var(--thm-line)!important}',
-    S + '[style*="solid #ddd"]{border-color:var(--thm-line)!important}',
-    S + '[style*="solid #eee"]{border-color:var(--thm-line)!important}'
+    V+'[style*="#e2e8f0"],'+V+'[style*="#cbd5e1"],'+V+'[style*="#e5e7eb"],'+V+'[style*="#e6eaf0"],'+V+'[style*="#eef2f7"],'+V+'[style*="solid #ccc"],'+V+'[style*="solid #ddd"],'+V+'[style*="solid #eee"]{border-color:var(--thm-line)!important}'
   ].join('');
   const st = document.createElement('style');
-  st.id = 'sala-theme-bridge';
+  st.id = 'theme-bridge';
   st.textContent = css;
   (document.head || document.documentElement).appendChild(st);
-  console.log('[patch-229] sala theme bridge installed');
+  console.log('[patch-229] app-wide theme bridge installed');
 })();
-/* === END SALA THEME BRIDGE === */
+/* === END THEME BRIDGE === */
