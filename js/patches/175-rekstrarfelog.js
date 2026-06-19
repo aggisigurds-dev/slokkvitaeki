@@ -23,6 +23,58 @@
   function fmtKt(k){ if(!k) return ''; var c=String(k).replace(/\D/g,''); return c.length>=10? c.slice(0,6)+'-'+c.slice(6,10):c; }
   function digits(s){ return String(s||'').replace(/\D/g,''); }
 
+  // ---- inline SVG icons (Lucide-style) + scoped styles for the redesigned cards ----
+  // 2026-06-19: cleaner master cards (icon avatar + email chips + building count)
+  // + a tidier detail table. Colours come from var(--brand) so the active theme
+  // (ember by default, or the user's custom accent) is respected — nothing hardcoded.
+  var SVG = {
+    building:'<svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/><path d="M9 9h.01M9 12h.01M9 15h.01M9 18h.01"/></svg>',
+    layers:'<svg viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg>',
+    mail:'<svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg>',
+    globe:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/></svg>',
+    hash:'<svg viewBox="0 0 24 24"><path d="M4 9h16M4 15h16M10 3 8 21M16 3l-2 18"/></svg>',
+    phone:'<svg viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+    user:'<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    chev:'<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>'
+  };
+  function injectStyles(){
+    if(document.getElementById('_rf-styles')) return;
+    var s=document.createElement('style'); s.id='_rf-styles';
+    var P='#view-rekstrarfelog ';
+    s.textContent=[
+      // master card
+      P+'.rf-card{background:var(--surface);border:1px solid var(--brd);border-radius:14px;margin-bottom:14px;box-shadow:0 1px 2px rgba(16,24,40,.04);overflow:hidden;transition:box-shadow .15s,border-color .15s}',
+      P+'.rf-card:hover{box-shadow:0 4px 16px rgba(16,24,40,.08);border-color:var(--brd2)}',
+      P+'.rf-head{display:flex;align-items:center;gap:14px;padding:15px 17px;cursor:pointer}',
+      P+'.rf-ava{width:42px;height:42px;border-radius:11px;flex:none;display:grid;place-items:center;color:var(--brand);background:color-mix(in srgb,var(--brand) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--brand) 24%,var(--surface))}',
+      P+'.rf-ava svg{width:22px;height:22px}',
+      P+'.rf-name{font-size:16px;font-weight:700;color:var(--ink1);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      P+'.rf-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}',
+      P+'.rf-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:7px;padding:3px 8px;border:1px solid var(--brd);background:var(--surface2);color:var(--ink2);text-decoration:none;max-width:260px}',
+      P+'.rf-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      P+'.rf-chip svg{width:12px;height:12px;opacity:.7;flex:none}',
+      P+'a.rf-chip.mail{color:var(--brand);background:color-mix(in srgb,var(--brand) 8%,var(--surface));border-color:color-mix(in srgb,var(--brand) 22%,var(--surface))}',
+      P+'a.rf-chip.mail:hover{background:color-mix(in srgb,var(--brand) 16%,var(--surface))}',
+      P+'a.rf-chip.mail svg{opacity:.95}',
+      P+'.rf-count{flex:none;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--ink2);background:var(--surface2);border:1px solid var(--brd);border-radius:99px;padding:6px 13px;white-space:nowrap}',
+      P+'.rf-count b{color:var(--ink1);font-variant-numeric:tabular-nums}',
+      P+'.rf-count svg{width:15px;height:15px;color:var(--ink3);flex:none}',
+      P+'.rf-chev{flex:none;color:var(--ink3);display:grid;place-items:center;transition:transform .2s}',
+      P+'.rf-chev svg{width:20px;height:20px}',
+      P+'.rf-notewrap{padding:0 17px 14px}',
+      P+'.rf-body{border-top:1px solid var(--brd);padding:15px 17px}',
+      P+'.rf-ava svg,'+P+'.rf-chip svg,'+P+'.rf-count svg,'+P+'.rf-chev svg{stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}',
+      // tidy detail table
+      P+'.rf-tblwrap{overflow-x:auto;border:1px solid var(--brd);border-radius:11px;background:var(--surface)}',
+      P+'.rf-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}',
+      P+'.rf-tbl thead th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);padding:9px 10px;border-bottom:1px solid var(--brd);background:var(--surface2);white-space:nowrap}',
+      P+'.rf-tbl thead th.c{text-align:center}',
+      P+'.rf-tbl tbody tr{transition:background .12s}',
+      P+'.rf-tbl tbody tr:hover{background:var(--surface2)}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+
   // ---- data load/save via AppSettings (fallback to localStorage) ----
   function getData(){
     try {
@@ -168,6 +220,7 @@
 
   async function renderView(){
     var v=viewEl(); if(!v) return;
+    injectStyles();
     var data=getData();
     var q=_state.q.toLowerCase().trim();
     var html='';
@@ -362,28 +415,33 @@
         blds.some(function(b){return (b.nafn||'').toLowerCase().indexOf(q)>=0 || digits(b.kt).indexOf(q.replace(/\D/g,''))>=0;});
       if(!match) return; shown++;
       var card=document.createElement('div');
-      card.className='_rf_card';
-      card.style.cssText='background:var(--surface);border:1px solid var(--brd);border-radius:14px;padding:16px 18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(16,24,40,.04)';
-      var emails=(info.emails||[]).map(function(e){return '<a href="mailto:'+esc(e)+'" style="color:var(--brand);text-decoration:none">'+esc(e)+'</a>';}).join(' · ');
-      var ktLine=info.kt?('<span style="color:var(--ink2)">🆔 '+esc(fmtKt(info.kt))+'</span> &nbsp;·&nbsp; '):'';
-      var extraLine=(info.simi||info.tengilidur)
-        ? '<div style="font-size:12.5px;color:var(--ink3);margin-top:2px">'+(info.simi?'📞 '+esc(info.simi):'')+(info.simi&&info.tengilidur?' &nbsp;·&nbsp; ':'')+(info.tengilidur?'👤 '+esc(info.tengilidur):'')+'</div>'
-        : '';
+      card.className='_rf_card rf-card';
+      var chips='';
+      (info.emails||[]).forEach(function(e){ chips+='<a class="rf-chip mail _rf_email" href="mailto:'+esc(e)+'" title="'+esc(e)+'">'+SVG.mail+'<span>'+esc(e)+'</span></a>'; });
+      if(info.domain) chips+='<span class="rf-chip">'+SVG.globe+'<span>'+esc(info.domain)+'</span></span>';
+      if(info.kt) chips+='<span class="rf-chip">'+SVG.hash+'<span>'+esc(fmtKt(info.kt))+'</span></span>';
+      if(info.simi) chips+='<span class="rf-chip">'+SVG.phone+'<span>'+esc(info.simi)+'</span></span>';
+      if(info.tengilidur) chips+='<span class="rf-chip">'+SVG.user+'<span>'+esc(info.tengilidur)+'</span></span>';
+      if(!chips) chips='<span class="rf-chip" style="opacity:.7">Engin netföng skráð</span>';
       card.innerHTML=
-        '<div class="_rf_head" style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;cursor:pointer">'+
-          '<div><div style="font-size:17px;font-weight:700">'+esc(name)+'</div>'+
-          '<div class="_rf_emailline" style="font-size:13px;color:var(--ink3);margin-top:3px">'+ktLine+'📧 '+(emails||'—')+(info.domain?' &nbsp;·&nbsp; '+esc(info.domain):'')+'</div>'+extraLine+'</div>'+
-          '<div style="flex:none;background:var(--brd);color:var(--ink2);border:1px solid var(--brd);border-radius:20px;padding:4px 12px;font-size:12.5px;font-weight:700;white-space:nowrap">'+blds.length+' byggingar</div>'+
+        '<div class="_rf_head rf-head">'+
+          '<div class="rf-ava">'+SVG.building+'</div>'+
+          '<div style="flex:1;min-width:0">'+
+            '<div class="rf-name">'+esc(name)+'</div>'+
+            '<div class="_rf_emailline rf-chips">'+chips+'</div>'+
+          '</div>'+
+          '<div class="rf-count">'+SVG.layers+'<b>'+blds.length+'</b> byggingar</div>'+
+          '<div class="_rf_chev rf-chev">'+SVG.chev+'</div>'+
         '</div>'+
         // 2026-06-12 (Todoist): athugasemd beint á borðanum — vistast sjálfkrafa
-        '<input class="_rf_note" value="'+esc(info.notes||'')+'" placeholder="Athugasemd um rekstraraðilann — vistast sjálfkrafa" '+
-          'style="display:block;width:100%;max-width:640px;margin-top:8px;padding:6px 9px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:12.5px;background:var(--surface);box-sizing:border-box">'+
-        '<div class="_rf_toggle" style="font-size:12.5px;color:var(--brand);font-weight:600;margin-top:8px;cursor:pointer">Sjá nánar ▾</div>'+
-        '<div class="_rf_body" style="display:none;margin-top:12px;border-top:1px solid var(--brd);padding-top:10px"></div>';
+        '<div class="rf-notewrap"><input class="_rf_note" value="'+esc(info.notes||'')+'" placeholder="Athugasemd um rekstraraðilann — vistast sjálfkrafa" '+
+          'style="display:block;width:100%;padding:7px 10px;border:1px solid var(--brd);border-radius:8px;font:inherit;font-size:12.5px;background:var(--surface);box-sizing:border-box"></div>'+
+        '<div class="_rf_body rf-body" style="display:none"></div>';
       var body=card.querySelector('._rf_body');
-      function flip(){ var open=body.style.display==='none'; body.style.display=open?'':'none'; card.querySelector('._rf_toggle').textContent=open?'Fela ▴':'Sjá nánar ▾'; if(open) fillBody(body,name,info); }
+      var chev=card.querySelector('._rf_chev');
+      function flip(){ var open=body.style.display==='none'; body.style.display=open?'':'none'; if(chev) chev.style.transform=open?'rotate(180deg)':''; if(open) fillBody(body,name,info); }
       card.querySelector('._rf_head').addEventListener('click',flip);
-      card.querySelector('._rf_toggle').addEventListener('click',flip);
+      card.querySelectorAll('._rf_email').forEach(function(a){ a.addEventListener('click',function(e){ e.stopPropagation(); }); });
       var noteInp=card.querySelector('._rf_note');
       noteInp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); noteInp.blur(); } });
       noteInp.addEventListener('blur',async function(){
@@ -530,15 +588,15 @@
         '<div style="flex:1 1 100%;min-width:280px">'+
           '<div style="font-weight:600;font-size:13px;color:var(--ink2);margin-bottom:6px">Byggingar / húsfélög — úttektir</div>'+
           summary+
-          '<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr>'+
-          '<th style="text-align:left;color:var(--ink3);font-size:12px;padding:4px 6px;border-bottom:1px solid var(--brd)">Bygging</th>'+
-          '<th style="text-align:left;color:var(--ink3);font-size:12px;padding:4px 6px;border-bottom:1px solid var(--brd)">Kennitala</th>'+
-          '<th style="text-align:center;color:var(--ink3);font-size:12px;padding:4px 4px;border-bottom:1px solid var(--brd)">Tæki</th>'+
-          '<th style="text-align:center;color:var(--ink3);font-size:12px;padding:4px 4px;border-bottom:1px solid var(--brd)">2023</th>'+
-          '<th style="text-align:center;color:var(--ink3);font-size:12px;padding:4px 4px;border-bottom:1px solid var(--brd)">2024</th>'+
-          '<th style="text-align:center;color:var(--ink3);font-size:12px;padding:4px 4px;border-bottom:1px solid var(--brd)">2025</th>'+
-          '<th style="text-align:center;color:var(--ink3);font-size:12px;padding:4px 4px;border-bottom:1px solid var(--brd)">2026</th>'+
-          '<th style="text-align:center;color:var(--ink3);font-size:12px;padding:4px 6px;border-bottom:1px solid var(--brd)">Næsta skoðun</th>'+
+          '<div class="rf-tblwrap"><table class="rf-tbl"><thead><tr>'+
+          '<th>Bygging</th>'+
+          '<th>Kennitala</th>'+
+          '<th class="c">Tæki</th>'+
+          '<th class="c">2023</th>'+
+          '<th class="c">2024</th>'+
+          '<th class="c">2025</th>'+
+          '<th class="c">2026</th>'+
+          '<th class="c">Næsta skoðun</th>'+
           '<th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
           '<button class="_rf_addb" style="margin-top:8px;padding:6px 12px;background:var(--surface);border:1px dashed var(--brd2);border-radius:8px;color:var(--brand);font-weight:600;font-size:12.5px;cursor:pointer">+ Bæta við byggingu / fyrirtæki</button>'+
           '<div style="font-size:11px;color:var(--ink4);margin-top:6px">Árdálkar sýna fjölda tækja sem úttekt nær til. <span style="color:#15803d">Grænn + 📄</span> = úttektarskýrsla á skrá (viðhengi); <span style="color:var(--brand)">blár</span> = aðeins skráð í búnaðarsögu. «Næsta skoðun» = fyrsti gjalddagi, ⚠ = liðinn.</div>'+
