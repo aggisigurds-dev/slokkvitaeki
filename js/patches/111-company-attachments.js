@@ -337,7 +337,8 @@
     }).join('') : '<div style="grid-column:1/-1;padding:30px;text-align:center;color:#94a3b8;font-size:13px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px">Engin skjöl tengd þessu fyrirtæki ennþá — smelltu á <strong>+ Hlaða inn skjali</strong> til að byrja</div>';
 
     return '' +
-      docYearGridHtml(list) +
+      // docYearGridHtml removed — patch 199 now renders the canonical v6
+      // "Skjöl eftir ári" grid (from customer_documents). Keep only uploads here.
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
         '<div>' +
           '<h3 style="margin:0;font-size:15px;font-weight:700;color:#0f172a">📎 Skjöl & skýrslur</h3>' +
