@@ -41,87 +41,12 @@
       @media (max-width: 900px) {
         nav.view-nav .vnav-btn.nav-grp-start { margin-top: 10px !important; }
       }
-      /* 2026-06-19: section headers — the header now carries the group
-         separation, so neutralise the old gap + gold hairline (patch 216). */
-      nav.view-nav .nav-sec-hdr {
-        font-size: 10px; font-weight: 700; letter-spacing: .08em;
-        text-transform: uppercase; color: rgba(148,163,184,.85);
-        padding: 4px 14px 3px; margin: 13px 0 1px;
-        pointer-events: none; white-space: nowrap; user-select: none;
-      }
-      nav.view-nav .nav-sec-hdr.nav-sec-first { margin-top: 4px; }
-      body.light-theme nav.view-nav .nav-sec-hdr { color: #64748b; }
-      nav.view-nav .vnav-btn.nav-grp-start { margin-top: 3px !important; padding-top: 0 !important; }
-      nav.view-nav .vnav-btn.nav-grp-start::after { display: none !important; }
-      @media (max-width: 900px) {
-        nav.view-nav .nav-sec-hdr { display: none !important; }
-        nav.view-nav .vnav-btn.nav-grp-start { margin-top: 9px !important; }
-      }
     `;
     document.head.appendChild(s);
   }
 
   // Sentinel for visual separators between groups.
   const SEP = '__SEP__';
-
-  // === 2026-06-19: canonical grouped layout + section headers =============
-  // "Fresh grouped layout + headers". LAYOUT is the new DEFAULT order, keyed by
-  // stable data-view ids → exact match, so the Þjónustu-trio / Verkstæði never
-  // collide the way substring matching does. It applies whenever there is no
-  // *versioned* user order, so a pre-update custom order is superseded
-  // automatically — NO settings write, nothing mutated on load (safe on the
-  // deploy-preview, which shares the live DB). When the user re-customises via
-  // patch 171, that order is stamped with LAYOUT_V and honoured again. Headers
-  // are rendered from LAYOUT against the real placement.
-  const LAYOUT_V = '2026-06-19';
-  const LAYOUT = [
-    ['Yfirlit',           ['stjornstod', 'bokhalds-yfirlit', 'krofu-yfirlit', 'hreyfingarlisti']],
-    ['Dagleg vinna',      ['sala', 'counter', 'mottaka', 'workshop', 'vorur', 'verkdagbok', 'Verkefni']],
-    ['Þjónusta & skoðun', ['arsskodun', 'thjonustu-verkstaedi', 'brunakerfi', 'thjonustuver', 'beidnir', 'thjonustuverk', 'leidsogn', 'bilstjori', 'vertid']],
-    ['Viðskiptavinir',    ['allir-vidsk', 'rekstrarfelog', 'Drög', 'tilbodhub']],
-    ['Bókhald',           ['til-rukkun', 'fyrirtaeki-yfirferd', 'bokhald-yfirferd', 'income']],
-    ['Birgðir & kerfi',   ['lanstaeki', 'geymsla', 'settings', 'utlit']]
-  ];
-  function flattenLayout() {
-    const out = [];
-    LAYOUT.forEach((sec, i) => { if (i) out.push(SEP); sec[1].forEach(id => out.push(id)); });
-    return out;
-  }
-  // Which section a placed button belongs to — exact data-view id first, then
-  // label-substring fallback (for entries that aren't ids, e.g. 'Verkefni').
-  function sectionOf(btn) {
-    const id = navId(btn);
-    for (const sec of LAYOUT) if (sec[1].indexOf(id) !== -1) return sec[0];
-    const txt = btnText(btn);
-    for (const sec of LAYOUT)
-      for (const e of sec[1])
-        if (e[0] !== '#' && txt.indexOf(String(e).toLowerCase()) !== -1) return sec[0];
-    return null;
-  }
-  // Pooled section-header elements (created once, repositioned each pass).
-  const _secEls = {};
-  function renderSectionLabels(nav, placedOrder) {
-    Object.keys(_secEls).forEach(k => { _secEls[k].style.display = 'none'; });
-    const arr = [];
-    placedOrder.forEach((ord, btn) => {
-      if (btn.classList && btn.classList.contains('vnav-btn') && btn.style.display !== 'none') arr.push([ord, btn]);
-    });
-    arr.sort((a, b) => a[0] - b[0]);
-    let prev = null, first = true;
-    for (const [ord, btn] of arr) {
-      const sec = sectionOf(btn);
-      if (sec && sec !== prev) {
-        let el = _secEls[sec];
-        if (!el) { el = document.createElement('div'); el.className = 'nav-sec-hdr'; el.textContent = sec; _secEls[sec] = el; }
-        if (el.parentNode !== nav) nav.appendChild(el);
-        el.style.display = '';
-        el.style.order = String(ord - 1);
-        el.classList.toggle('nav-sec-first', first);
-        prev = sec; first = false;
-      }
-    }
-  }
-  // =======================================================================
 
   // 2026-05-21: a user-supplied ORDER (from AppSettings.sidebar_order) trumps
   // the default. Format: array of items, where each item is either '__SEP__'
@@ -133,9 +58,6 @@
       if (!window.AppSettings || !AppSettings.path) return null;
       const v = AppSettings.path('sidebar_order');
       if (!Array.isArray(v) || !v.length) return null;
-      // 2026-06-19: ignore a pre-update order (no LAYOUT_V stamp) so the fresh
-      // grouped layout supersedes it; honour orders the user saves from now on.
-      if (AppSettings.path('sidebar_order_v') !== LAYOUT_V) return null;
       // Raw entries: stable ids (data-view) or, for back-compat, old label
       // strings — plus SEP. Matched by navId()-exact first, label substring
       // as a fallback (see matchCustomEntry).
@@ -269,8 +191,8 @@
     inProgress = true;
     try {
       const customOrder = getCustomOrder();
-      const activeOrder = customOrder || flattenLayout();
-      const isCustom = true;   // LAYOUT default + any saved order both match by id/substring
+      const activeOrder = customOrder || ORDER;
+      const isCustom = !!customOrder;
       const hiddenRaw = getHidden();
       function isHiddenBtn(b) {
         if (!hiddenRaw.length) return false;
@@ -368,9 +290,6 @@
         if (firstRest) { b.classList.add('nav-grp-start'); firstRest = false; }
       });
       if (qlinks && !qlinksUsed) qlinks.style.order = String(restPos++);
-
-      // 2026-06-19: render section headers from the final placement.
-      try { renderSectionLabels(nav, placedOrder); } catch (_) {}
     } finally {
       inProgress = false;
     }
@@ -410,13 +329,8 @@
   (function observeNav(tries) {
     const nav = document.querySelector('nav.view-nav, .view-nav');
     if (!nav) { if ((tries || 0) < 40) setTimeout(() => observeNav((tries || 0) + 1), 300); return; }
-    // 2026-06-19: reorder SYNCHRONOUSLY in the observer's microtask (before the
-    // browser paints) instead of a 120ms setTimeout. The deferred reorder WAS
-    // the "popcorn": a late-injected nav button painted at its raw DOM position
-    // first, then jumped 120ms later. Running here positions it (CSS `order`)
-    // before paint, so it appears directly in its slot — no jump. reorder only
-    // sets style/class (never childList) so it can't loop on itself.
-    new MutationObserver(() => { try { reorder(); } catch (_) {} })
+    let t = null;
+    new MutationObserver(() => { clearTimeout(t); t = setTimeout(reorder, 120); })
       .observe(nav, { childList: true, subtree: false });
   })(0);
 

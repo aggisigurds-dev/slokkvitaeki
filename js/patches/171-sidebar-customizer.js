@@ -203,9 +203,7 @@
     // after this snapshot simply aren't listed and flow to the tail (visible).
     const order = _state.items.map(it => it.type === 'sep' ? SEP : it.id);
     const hidden = _state.items.filter(it => it.type === 'item' && it.hidden).map(it => it.id);
-    // 2026-06-19: stamp the layout version (must match patch 68 LAYOUT_V) so
-    // patch 68 honours THIS saved order over the new grouped default.
-    const ok = await AppSettings.save({ sidebar_order: order, sidebar_hidden: hidden, sidebar_order_v: '2026-06-19' });
+    const ok = await AppSettings.save({ sidebar_order: order, sidebar_hidden: hidden });
     if (!ok) { alert('Vista mistókst'); return; }
     if (window.Toast && Toast.show) Toast.show('✓ Röð vistuð');
     document.getElementById('_sc-modal')?.remove();
