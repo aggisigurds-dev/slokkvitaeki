@@ -48,7 +48,7 @@
   }
   async function fetchDocs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,invoice_number,amount,notes').eq('customer_base_id', baseId);
+    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,invoice_number,amount,notes,fyrirtaeki_id').eq('customer_base_id', baseId);
       return r.data||[]; }catch(e){ return []; }
   }
   // Multi-location support: one kennitala can have several staðir (Aðalskoðun:
@@ -110,6 +110,10 @@
       if(mine){
         var before=docs.length;
         docs=docs.filter(function(d){
+          // Precise: Cowork's report→location map sets fyrirtaeki_id. When present,
+          // the doc belongs strictly to that location row.
+          if(d.fyrirtaeki_id!=null) return +d.fyrirtaeki_id===+coId;
+          // Unmapped → fall back to matching the report's address (notes).
           var matched=keys.filter(function(x){return docMatchesLoc(d.notes, x.k, allK);});
           if(!matched.length) return true;            // óvíst staðsetning → birt á öllum stöðum
           return matched.some(function(x){return +x.id===+coId;});
