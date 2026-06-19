@@ -636,6 +636,9 @@
           '<input id="_ctc-dags" type="text" value="' + esc(skodunDags) + '" placeholder="' + esc(todayDDMM) + '" ' +
             'style="width:110px;padding:6px 10px;border:1px solid var(--brd);border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
         '</label>' +
+        '<button id="_ctc-vista" type="button" title="Vista óklárað — opnast sjálfkrafa næst, líka í síma" ' +
+          'style="padding:7px 14px;background:#fff;color:var(--ink1);border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">' +
+          '💾 Vista óklárað</button>' +
         '<button id="_ctc-skyrsla" type="button" ' +
           'style="padding:7px 14px;background:#0f172a;color:#fff;border:none;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.15)">' +
           '📄 Búa til úttektarskýrslu</button>' +
@@ -736,6 +739,22 @@
       invTextInp.addEventListener('input', onInv);
       invTextInp.addEventListener('blur', onInv);
       invTextInp.addEventListener('change', onInv);
+    }
+    // Wire "💾 Vista óklárað" — the working state is already in localStorage
+    // (saved on every edit); push it to the cloud now so it's safe + reopens on
+    // any device. Patch 227 provides TripCloudSync.
+    const vistaBtn = section.querySelector('#_ctc-vista');
+    if (vistaBtn) {
+      vistaBtn.addEventListener('click', () => {
+        const p = (window.TripCloudSync && window.TripCloudSync.saveNow)
+          ? window.TripCloudSync.saveNow(coId) : Promise.resolve(true);
+        vistaBtn.disabled = true; vistaBtn.textContent = '⏳ Vista…';
+        Promise.resolve(p).then(() => {
+          vistaBtn.textContent = '✓ Vistað';
+          if (window.Toast && Toast.show) Toast.show('💾 Óklárað vistað — opnast sjálfkrafa næst (líka í síma).');
+          setTimeout(() => { vistaBtn.disabled = false; vistaBtn.textContent = '💾 Vista óklárað'; }, 1800);
+        });
+      });
     }
     // Wire úttektarskýrsla button → patch 168.
     const skyrsluBtn = section.querySelector('#_ctc-skyrsla');

@@ -1,0 +1,101 @@
+/* 227-trip-cloud-sync.js — keep the company-inspection working state SAFE.
+ *
+ * All inspection progress on the fyrirtæki page (per-tæki Hleðsla/Yfirferð/Nýtt
+ * choices + the cost-calculator trip state: notes, skoðunaraðili, mánuður/dags,
+ * akstur, skýrslugerð, afsláttur, aukalínur) is stored by patches 129 & 131 in
+ *   localStorage['slokk_trip_<coId>']
+ * — instant, but LOCAL ONLY. If the phone clears its cache, the app is reopened
+ * on another device, or you switch mid-route, that work is gone.
+ *
+ * This patch mirrors every slokk_trip_* write to the cloud (Supabase via
+ * AppSettings.inspection_trips) and restores it on any device — newest-wins by a
+ * stamped _ts. No change needed in 129/131: we wrap localStorage.setItem, so
+ * every existing save is automatically backed up. "Always on the run" → safe.
+ */
+(function () {
+  'use strict';
+  if (window.__tripCloudSync) return;
+  window.__tripCloudSync = true;
+
+  var KEY = 'inspection_trips';      // AppSettings (Supabase) key
+  var PREFIX = 'slokk_trip_';
+  function AS() { return window.AppSettings; }
+
+  var origSet = localStorage.setItem.bind(localStorage);
+  var origGet = localStorage.getItem.bind(localStorage);
+
+  // Stamp an _ts into the stored trip object so newest-wins works across devices.
+  function stamp(v) {
+    try { var o = JSON.parse(v); if (o && typeof o === 'object') { o._ts = Date.now(); return JSON.stringify(o); } } catch (_) {}
+    return v;
+  }
+
+  // ── local write → cloud mirror (debounced) ──────────────────────────────
+  var pending = {}, timer = 0;
+  localStorage.setItem = function (k, v) {
+    if (typeof k === 'string' && k.indexOf(PREFIX) === 0) {
+      v = stamp(v);
+      origSet(k, v);                          // store stamped copy locally too
+      pending[k.slice(PREFIX.length)] = v;
+      clearTimeout(timer); timer = setTimeout(flush, 1200);
+      return;
+    }
+    return origSet(k, v);
+  };
+
+  function flush() {
+    var as = AS();
+    if (!(as && as.save)) { setTimeout(flush, 1000); return; }   // AppSettings not ready yet
+    var patch = {}, any = false;
+    Object.keys(pending).forEach(function (co) {
+      try { patch[co] = JSON.parse(pending[co]); any = true; } catch (_) {}
+    });
+    pending = {};
+    if (any) { var o = {}; o[KEY] = patch; try { as.save(o); } catch (_) {} } // deep-merges per coId
+  }
+
+  // ── cloud → local restore (newest-wins) ─────────────────────────────────
+  function applyCloud(cloud) {
+    if (!cloud || typeof cloud !== 'object') return;
+    Object.keys(cloud).forEach(function (co) {
+      var c = cloud[co]; if (!c || typeof c !== 'object') return;
+      var lk = PREFIX + co, local = null;
+      try { local = JSON.parse(origGet(lk) || 'null'); } catch (_) {}
+      var ct = +(c._ts || 0), lt = +((local && local._ts) || 0);
+      // Only overwrite when the cloud copy is strictly newer (so active local
+      // edits are never clobbered by a stale cloud snapshot).
+      if (!local || ct > lt) { try { origSet(lk, JSON.stringify(c)); } catch (_) {} }
+    });
+  }
+
+  function boot() {
+    var as = AS();
+    if (!(as && as.path)) { setTimeout(boot, 800); return; }
+    try { applyCloud(as.path(KEY) || {}); } catch (_) {}
+    // Re-restore whenever cloud data syncs in (another device saved) — the
+    // newest-wins guard keeps the current device's in-progress edits.
+    if (as.onChange) as.onChange(function () { try { applyCloud(as.path(KEY) || {}); } catch (_) {} });
+  }
+  boot();
+
+  // Immediate, explicit save of one company's in-progress (óklárað) report —
+  // used by the "💾 Vista óklárað" button (patch 129). Pushes straight to the
+  // cloud now instead of waiting for the debounce. Returns a Promise.
+  function saveNow(coId) {
+    var as = AS();
+    if (!coId || !(as && as.save)) return Promise.resolve(false);
+    var raw; try { raw = origGet(PREFIX + coId); } catch (_) {}
+    if (!raw) return Promise.resolve(false);
+    var obj; try { obj = JSON.parse(raw); } catch (_) { return Promise.resolve(false); }
+    if (obj && typeof obj === 'object') { obj._ts = Date.now(); try { origSet(PREFIX + coId, JSON.stringify(obj)); } catch (_) {} }
+    var o = {}; o[KEY] = {}; o[KEY][coId] = obj;
+    try { return Promise.resolve(as.save(o)); } catch (_) { return Promise.resolve(false); }
+  }
+
+  window.TripCloudSync = {
+    saveNow: saveNow,
+    flush: function () { clearTimeout(timer); flush(); }
+  };
+
+  console.log('[patch-227] inspection trip-state cloud-sync installed');
+})();
