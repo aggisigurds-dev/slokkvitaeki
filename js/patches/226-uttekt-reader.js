@@ -17,6 +17,37 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function digits(s){ return String(s||'').replace(/\D/g,''); }
   function dash(kt){ var d=digits(kt); return d.length>=10?d.slice(0,6)+'-'+d.slice(6,10):d; }
+  function driveUrl(id){ return id?'https://drive.google.com/file/d/'+id+'/view':''; }
+
+  // Which report the tækjalisti was built from — saved per company (synced via
+  // AppSettings) so the proof shows on every device.
+  function getSource(coId){ try{ if(window.AppSettings&&AppSettings.path){ var all=AppSettings.path('inspection_source')||{}; return all[String(coId)]||null; } }catch(_){} return null; }
+  function saveSource(coId, src){ try{ if(window.AppSettings&&AppSettings.save){ var o={inspection_source:{}}; o.inspection_source[String(coId)]=src; return AppSettings.save(o); } }catch(_){} return Promise.resolve(); }
+  async function fetchReportDocs(baseId){
+    var sb=SB(); if(!sb||!baseId) return [];
+    try{ var r=await sb.from('customer_documents').select('year,drive_file_id,notes').eq('customer_base_id',baseId).eq('doc_type','uttektarskyrsla'); return r.data||[]; }catch(e){ return []; }
+  }
+  // The report the tækjalisti is based on: prefer the recorded import source,
+  // else the newest attached úttektarskýrsla, else the newest report on file.
+  function computeSrc(coId, repDocs){
+    var rec=getSource(coId); if(rec&&rec.name) return Object.assign({_basis:true}, rec);
+    var atts=((window.CompanyAttachments&&CompanyAttachments.list(coId))||[]).filter(function(a){
+      var k=a.kind||''; return k==='skyrsla' || /sko(ð|d)un|(ú|u)ttekt|sk(ý|y)rsl/i.test(a.name||'');
+    });
+    if(atts.length){ atts.sort(function(x,y){return (Date.parse(y.uploaded_at||0)||0)-(Date.parse(x.uploaded_at||0)||0);}); var a=atts[0]; return {name:a.name, att_id:a.id, year:a.year}; }
+    if(repDocs&&repDocs.length){ var ds=repDocs.slice().sort(function(x,y){return (+y.year||0)-(+x.year||0);}); var d=ds[0]; return {name:(d.notes||('Skýrsla '+(d.year||''))), drive_file_id:d.drive_file_id, year:d.year}; }
+    return null;
+  }
+  function sourceFooter(s){
+    if(!s||!s.name) return '';
+    var lab=s._basis?'Tækjalisti byggður á':'Tengd skýrsla';
+    var when=s.ts?(' · '+new Date(s.ts).toLocaleDateString('is-IS')):'';
+    var nm=esc(String(s.name).length>46?String(s.name).slice(0,44)+'…':s.name);
+    var link = s.drive_file_id ? '<a href="'+esc(driveUrl(s.drive_file_id))+'" target="_blank" rel="noopener" class="rdr-srcname">📄 '+nm+' ↗</a>'
+             : (s.att_id ? '<button type="button" class="rdr-srcname" data-srcatt="'+esc(s.att_id)+'">📄 '+nm+'</button>'
+             : '<span class="rdr-srcname">📄 '+nm+'</span>');
+    return '<div class="rdr-srcbar">📌 '+lab+': '+link+when+'</div>';
+  }
 
   var CATMAP = {
     lettvatn:['Léttvatn','6 ltr'], duft2:['Duft','2 kg'], duft6:['Duft','6 kg'],
@@ -60,7 +91,7 @@
     return null;
   }
 
-  async function createFromLines(coId, nafn, lines){
+  async function createFromLines(coId, nafn, lines, source){
     var sb=SB(); if(!sb) { alert('Engin tenging'); return; }
     var today=new Date(); var y=lines[0]&&lines[0].year ? lines[0].year : today.getFullYear();
     var lastInsp=y+'-06-01';
@@ -81,7 +112,10 @@
           last_insp:lastInsp, next_insp:nextInsp, status:'active', pressure:14 }); }
     });
     if(!summary.length){ alert('Engin tæki í skýrslunni.'); return; }
-    if(!rows.length){ alert('✓ Öll tæki úr skýrslu '+y+' eru þegar skráð — ekkert bætt við.\n\n'+summary.join('\n')); return; }
+    // Remember which report this came from (proof), even if nothing new is added.
+    var src = Object.assign({ name:'Skýrsla '+y, year:y, ts:Date.now() }, source||{});
+    try{ await saveSource(coId, src); }catch(_){}
+    if(!rows.length){ alert('✓ Öll tæki úr skýrslu '+y+' eru þegar skráð — ekkert bætt við.\n\n'+summary.join('\n')); try{ if(window.Companies&&Companies.openDetail) Companies.openDetail(coId); }catch(_){} return; }
     if(!confirm('Skýrsla '+y+' — samræmt við skráð tæki hjá „'+nafn+'":\n\n'+summary.join('\n')+'\n\nBæta '+rows.length+' tækjum við sem vantar? (TMP-númer, uppfært við fyrstu skoðun)')) return;
     try{
       var r=await sb.from('uttaeki').insert(rows).select();
@@ -101,12 +135,12 @@
   }
 
   // Build synthetic lines from manually-typed counts and reuse createFromLines.
-  function createFromCounts(coId, nafn, year, counts){
+  function createFromCounts(coId, nafn, year, counts, source){
     var lines=Object.keys(counts)
       .filter(function(k){return (parseInt(counts[k],10)||0)>0;})
       .map(function(k){ return { category:k, cnt:parseInt(counts[k],10)||0, year:year }; });
     if(!lines.length){ alert('Sláðu inn fjölda á a.m.k. einni tegund.'); return; }
-    createFromLines(coId, nafn, lines);
+    createFromLines(coId, nafn, lines, source);
   }
 
   // ── PDF reading (úttektarskýrsla → counts) ───────────────────────────────
@@ -176,7 +210,15 @@
         var total=0; Object.keys(pr.counts).forEach(function(k){ if(pr.counts[k]>0) total+=pr.counts[k]; });
         if(!total){ if(pdfStat){ pdfStat.textContent='⚠ Fann engar „Fjöldi"-tölur í þessari PDF'; } return; }
         if(pdfStat){ pdfStat.textContent='✓ Las '+total+' tæki'+(pr.year?(' · '+pr.year):'')+''; }
-        createFromCounts(coId, nafn, pr.year||new Date().getFullYear(), pr.counts);
+        // Keep the PDF as proof — upload it as that year's úttektarskýrslu so it
+        // shows in Skjöl & viðhengi too, and record it as the tækjalisti source.
+        var src={ name:f.name, year:pr.year||null, ts:Date.now() };
+        if(window.CompanyAttachments&&CompanyAttachments.upload){
+          try{ var meta=await CompanyAttachments.upload(coId, f, {kind:'skyrsla', year:String(pr.year||'')});
+            if(meta){ src.att_id=meta.id; } if(pdfStat){ pdfStat.textContent='✓ Las '+total+' tæki · PDF vistuð sem viðhengi'; }
+          }catch(_){}
+        }
+        createFromCounts(coId, nafn, pr.year||new Date().getFullYear(), pr.counts, src);
       }catch(e){ if(pdfStat){ pdfStat.textContent='⚠ '+(e.message||e); } }
     };
   }
@@ -187,11 +229,13 @@
     var co=getCo(coId); if(!co){ body.innerHTML='<span class="rdr-muted">—</span>'; return; }
     var baseId=await baseIdForKt(co.kennitala);
     var lines = baseId ? await fetchLines(baseId) : [];
+    var repDocs = baseId ? await fetchReportDocs(baseId) : [];
+    var footer = sourceFooter(computeSrc(coId, repDocs));
 
     // No auto-parsed report yet → manual entry is the primary path.
     if(!lines.length){
       body.innerHTML='<div class="rdr-muted">Engin <b>sjálf-lesin</b> skýrsla fundin ennþá — skráðu fjöldann af síðustu skýrslu hér að neðan, eða tengdu skýrsluna í <b>Skjöl &amp; viðhengi</b>.</div>'+
-        manualFormHtml();
+        manualFormHtml()+footer;
       wireManual(body, coId, co.nafn);
       return;
     }
@@ -212,9 +256,9 @@
         '<button id="_rdr-fill" class="rdr-btn"'+(n?'':' disabled')+'>📥 Lesa úr skýrslu → bæta '+n+' tækjum við (TMP-númer)</button>'+
         '<div class="rdr-muted" style="margin-top:6px">Rangt fyrirtæki/skýrsla? Tengdu rétta úttektarskýrslu í <b>Skjöl &amp; viðhengi</b> að neðan.</div>'+
         '<div class="rdr-div"></div>'+
-        manualFormHtml();
+        manualFormHtml()+footer;
       var ys=body.querySelector('#_rdr-year'); if(ys) ys.onchange=function(){ sel=+ys.value; paint(); };
-      var fb=body.querySelector('#_rdr-fill'); if(fb) fb.onclick=function(){ createFromLines(coId, co.nafn, byYear[sel]||[]); };
+      var fb=body.querySelector('#_rdr-fill'); if(fb) fb.onclick=function(){ var ls=byYear[sel]||[]; createFromLines(coId, co.nafn, ls, {name:'Skýrsla '+sel, year:sel, drive_file_id:(ls[0]&&ls[0].drive_file_id)||null, ts:Date.now()}); };
       wireManual(body, coId, co.nafn);
     }
     paint();
@@ -248,6 +292,17 @@
   }
   (function start(){ var m=document.getElementById('companies-main'); if(!m){ setTimeout(start,700); return; }
     var t=0; new MutationObserver(function(){ clearTimeout(t); t=setTimeout(inject,300); }).observe(m,{childList:true,subtree:true}); inject(); })();
+  // Open the saved source PDF (company_attachments) when its chip is clicked.
+  document.addEventListener('click', function(e){
+    var b=e.target.closest && e.target.closest('[data-srcatt]'); if(!b) return;
+    var coId=getCoId(); var id=b.getAttribute('data-srcatt');
+    var f=((window.CompanyAttachments&&CompanyAttachments.list(coId))||[]).find(function(x){return x.id===id;});
+    if(f&&window.CompanyAttachments&&CompanyAttachments.openPreview) CompanyAttachments.openPreview(f);
+  });
+  // Re-render the open reader when settings sync (source/attachments arrive).
+  try{ if(window.AppSettings&&AppSettings.onChange) AppSettings.onChange(function(){
+    var box=document.querySelector('.rdr-box'); if(box&&box.dataset.open==='1'){ var b=box.querySelector('.rdr-bodywrap'); if(b) render(b, +box.dataset.co); }
+  }); }catch(_){}
 
   if(!document.getElementById('uttekt-reader-css')){
     var css=[
@@ -278,7 +333,9 @@
       '.rdr-manrow{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:4px}',
       '.rdr-yrlab{font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:6px}',
       '.rdr-yrin{width:78px;padding:7px 8px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;text-align:center;background:var(--surface);color:var(--ink1)}',
-      '@media(max-width:520px){.rdr-grid{grid-template-columns:1fr}.rdr-manrow{flex-direction:column;align-items:stretch}.rdr-btn-sm{width:100%}}'
+      '@media(max-width:520px){.rdr-grid{grid-template-columns:1fr}.rdr-manrow{flex-direction:column;align-items:stretch}.rdr-btn-sm{width:100%}}',
+      '.rdr-srcbar{margin-top:12px;padding-top:10px;border-top:1px dashed var(--brd);font-size:11.5px;color:var(--ink3);display:flex;align-items:center;gap:6px;flex-wrap:wrap}',
+      '.rdr-srcname{font-size:11.5px;font-weight:700;color:var(--brand);text-decoration:none;background:none;border:0;padding:0;cursor:pointer;font-family:inherit}'
     ].join('\n');
     var st=document.createElement('style'); st.id='uttekt-reader-css'; st.textContent=css; document.head.appendChild(st);
   }
