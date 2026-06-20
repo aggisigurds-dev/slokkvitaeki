@@ -346,9 +346,22 @@
   (function observeNav(tries) {
     const nav = document.querySelector('nav.view-nav, .view-nav');
     if (!nav) { if ((tries || 0) < 40) setTimeout(() => observeNav((tries || 0) + 1), 300); return; }
-    let t = null;
-    new MutationObserver(() => { clearTimeout(t); t = setTimeout(reorder, 120); })
-      .observe(nav, { childList: true, subtree: false });
+    // 2026-06-20: place via requestAnimationFrame (before the next paint) instead
+    // of a 120ms setTimeout. Some patches inject their nav button late (on a timer
+    // or after data loads); with the old debounce the button painted at its
+    // DEFAULT position (no CSS order yet → order:0 → TOP of the rail) for up to
+    // 120ms before the reorder dropped it into place — the "page name flashes at
+    // the top one-at-a-time then jumps into its slot" glitch. rAF runs in the
+    // render step of the SAME frame as the injecting task, so the button receives
+    // its order before it is ever painted → it appears directly in its slot.
+    let raf = 0, fb = 0;
+    const doReorder = () => { if (raf) { cancelAnimationFrame(raf); raf = 0; } if (fb) { clearTimeout(fb); fb = 0; } reorder(); };
+    const schedule = () => {
+      if (!raf) raf = requestAnimationFrame(doReorder);   // foreground: runs before the next paint → button never paints unplaced
+      if (!fb)  fb  = setTimeout(doReorder, 150);          // fallback: rAF is paused in a background tab, so guarantee placement anyway
+    };
+    new MutationObserver(schedule).observe(nav, { childList: true, subtree: false });
+    schedule(); // position whatever buttons already exist before the first paint
   })(0);
 
   // Safety-net delegated click handler on the nav itself. If the inline
