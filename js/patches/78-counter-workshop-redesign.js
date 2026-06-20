@@ -283,9 +283,8 @@
     // Left: all workshop jobs (received + inprogress). Right: same set, filtered to contract holders.
     const contractJobs = jobs.filter(j => isContractCustomer(j.customer));
 
-    // 2026-06-20: single-column layout (mockup verkstaedi-reorg.html). The
-    // Samningshafar súlan is now a dropdown on the right instead of a 2nd column.
-    const shOpen = Workshop._shOpen === true;
+    // 2026-06-20: single-column VERK card + permanent Samningshafar panel
+    // docked on the right (mockup verkstaedi-reorg.html + user screenshot).
     const html =
       '<div class="bw-page-hdr">' +
         '<div class="bw-page-titles">' +
@@ -293,18 +292,6 @@
           `<div class="bw-page-sub"><b>${jobs.length}</b> verk í vinnslu</div>` +
         '</div>' +
         '<div class="bw-hdr-actions">' +
-          '<div class="bw-sh-wrap">' +
-            `<button class="bw-sh-toggle${shOpen ? ' on' : ''}" onclick="event.stopPropagation();Workshop.toggleSH()">🤝 Samningshafar · ${contractJobs.length} <span class="bw-sh-caret">${shOpen ? '▴' : '▾'}</span></button>` +
-            (shOpen
-              ? '<div class="bw-sh-panel">' +
-                  '<div class="bw-sh-head">' +
-                    '<div class="cw-col-title" style="font-size:12px;font-weight:700;color:#0d6efd;text-transform:uppercase;letter-spacing:.06em">Samningshafar</div>' +
-                    `<div class="cw-col-sub" style="font-size:11px;color:#94a3b8;margin-top:2px">${contractJobs.length} verk í vinnslu</div>` +
-                  '</div>' +
-                  `<div class="bw-sh-body">${wRenderJobs('contract', contractJobs)}</div>` +
-                '</div>'
-              : '') +
-          '</div>' +
           '<button class="bw-scan" onclick="Field.openScan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg> Skanna tæki</button>' +
         '</div>' +
       '</div>' +
@@ -313,6 +300,13 @@
         '<div class="bw-card">' +
           `<div class="bw-chd"><b>VERK</b><span class="bw-cnum">${jobs.length} verk</span></div>` +
           wRenderJobs('all', jobs) +
+        '</div>' +
+        '<div class="bw-sh-col">' +
+          '<div class="bw-sh-head cw-col-head">' +
+            '<div class="cw-col-title" style="font-size:12px;font-weight:700;color:#0d6efd;text-transform:uppercase;letter-spacing:.06em">Samningshafar</div>' +
+            `<div class="cw-col-sub" style="font-size:11px;color:#94a3b8;margin-top:2px">${contractJobs.length} verk í vinnslu</div>` +
+          '</div>' +
+          `<div class="bw-sh-body">${wRenderJobs('contract', contractJobs)}</div>` +
         '</div>' +
       '</div>' +
       '<div id="workshop-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;padding:24px">' +
@@ -657,22 +651,20 @@
       '.bw-hdr-actions{margin-left:auto;display:flex;align-items:center;gap:10px}' +
       '.bw-scan{display:flex;align-items:center;gap:7px;height:40px;padding:0 16px;border-radius:11px;border:1px solid #cbd5e1;background:#fff;color:#11141c;cursor:pointer;font:600 13px/1 inherit;white-space:nowrap}' +
       '.bw-scan:hover{background:#f1f5f9}' +
-      '.bw-sh-wrap{display:inline-flex}' +
-      '.bw-sh-toggle{display:flex;align-items:center;gap:7px;height:40px;padding:0 14px;border-radius:11px;border:1px solid #cbd5e1;background:#fff;color:#11141c;cursor:pointer;font:600 13px/1 inherit;white-space:nowrap}' +
-      '.bw-sh-toggle:hover{background:#f1f5f9}' +
-      '.bw-sh-toggle.on{background:#eef2ff;border-color:#9bb0e6}' +
-      '.bw-sh-caret{font-size:11px;color:#94a3b8}' +
-      '.bw-sh-panel{position:absolute;top:calc(100% - 2px);right:22px;width:min(460px,92vw);max-height:72vh;overflow:auto;background:#fff;border:1px solid rgba(20,24,34,.12);border-radius:14px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);z-index:60}' +
-      '.bw-sh-head{padding:12px 14px;border-bottom:1px solid #f1f5f9;background:linear-gradient(180deg,#f8fafc,#fff);position:sticky;top:0}' +
-      '.bw-sh-body{padding:10px}' +
+      /* VERK card + Samningshafar panel side by side (panel docked right) */
+      '.bw-flow{flex:1;overflow-y:auto;padding:2px 22px 76px;min-height:0;display:flex;align-items:flex-start;gap:14px}' +
+      '.bw-card{flex:1;min-width:0;background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:16px;box-shadow:0 10px 28px -16px rgba(25,35,60,.18);padding:16px 18px 18px}' +
+      '.bw-sh-col{width:336px;flex-shrink:0;align-self:flex-start;position:sticky;top:0;display:flex;flex-direction:column;max-height:calc(100vh - 168px);background:#fff;border:1px solid rgba(20,24,34,.10);border-radius:14px;overflow:hidden;box-shadow:0 10px 28px -16px rgba(25,35,60,.28)}' +
+      '.bw-sh-head{padding:12px 14px;border-bottom:1px solid #f1f5f9;background:linear-gradient(180deg,#f8fafc,#fff);flex-shrink:0}' +
+      '.bw-sh-body{padding:10px;overflow-y:auto;flex:1;min-height:0}' +
       '.bw-sh-body .bw-row:last-child{margin-bottom:0}' +
-      '.bw-flow{flex:1;overflow-y:auto;padding:2px 22px 76px;min-height:0}' +
-      '.bw-card{background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:16px;box-shadow:0 10px 28px -16px rgba(25,35,60,.18);padding:16px 18px 18px}' +
+      '.bw-sh-body .empty,.bw-sh-body>div[style*="text-align:center"]{padding:18px 8px}' +
       '.bw-chd{display:flex;align-items:center;gap:10px;margin-bottom:12px}' +
       '.bw-chd b{font-size:14px;font-weight:700;letter-spacing:.12em;color:#3a4250}' +
       '.bw-cnum{margin-left:auto;font-family:"Space Mono",var(--mono,monospace);font-size:12px;color:#9098a6}' +
+      '@media (max-width:900px){.bw-flow{flex-direction:column;align-items:stretch}.bw-card{flex:none}.bw-sh-col{width:auto;position:static;max-height:none}}' +
       '@media (max-width:640px){.bw-cinfo{flex:1 1 100%}.bw-tiles{flex:1 1 100%}' +
-        '.bw-page-hdr{flex-wrap:wrap;padding:8px 14px}.bw-hdr-actions{width:100%}.bw-scan{flex:1}.bw-flow{padding:2px 12px 76px}.bw-sh-panel{width:min(440px,94vw)}}';
+        '.bw-page-hdr{flex-wrap:wrap;padding:8px 14px}.bw-hdr-actions{width:100%}.bw-scan{flex:1}.bw-flow{padding:2px 12px 76px}}';
     document.head.appendChild(bw);
   }
 
