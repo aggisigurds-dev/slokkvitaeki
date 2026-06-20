@@ -223,15 +223,14 @@
       '#bstal-banner .bb-word{font-family:"Sora",sans-serif;font-weight:700;font-size:17px;letter-spacing:.14em;color:#fff;'
         +'margin-top:6px;white-space:nowrap;text-shadow:0 2px 6px rgba(0,0,0,.85)}',
       '#bstal-banner .bb-word b{font-weight:500;color:rgba(255,255,255,.7)}',
-      /* right cluster: page label · live LED clock · date (the clock back in its place) */
-      '#bstal-banner .bb-right{position:relative;z-index:5;margin-left:auto;text-align:right;white-space:nowrap}',
-      '#bstal-banner .bb-right::before{content:"";position:absolute;z-index:-1;inset:-10px -18px -10px -38px;background:radial-gradient(closest-side at 74% 50%,rgba(0,0,0,.74),transparent 88%)}',
-      '#bstal-banner .bb-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.16em;color:rgba(255,255,255,.55)}',
-      /* LED-style clock — glowing red-amber digits (like an alarm-clock display) */
-      '#bstal-banner .bb-clock{font-family:"Space Mono",monospace;font-size:33px;font-weight:700;color:#ff5b2e;line-height:1.0;font-variant-numeric:tabular-nums;letter-spacing:1px;text-shadow:0 0 6px rgba(255,110,40,.95),0 0 16px rgba(255,70,20,.6),0 0 2px rgba(255,190,150,.9);contain:layout style}',
-      '#bstal-banner .bb-date{font-size:11px;color:rgba(255,255,255,.62);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}',
-      '#bstal-banner .bb-sw{position:relative;z-index:5;display:flex;gap:6px;margin-left:18px}',
-      '#bstal-banner .bb-sw button{width:26px;height:20px;border-radius:6px;cursor:pointer;padding:0;border:2px solid rgba(255,255,255,.18);opacity:.5;transition:opacity .15s,border-color .15s}',
+      /* right cluster: theme-swatch box + recessed LED clock (per bannerexport.html) */
+      '#bstal-banner .bb-rightwrap{position:relative;z-index:5;margin-left:auto;display:flex;align-items:center;gap:12px}',
+      '#bstal-banner .bb-clockbox{text-align:right;padding:8px 16px;border-radius:12px;background:#050607;border:1px solid #000;box-shadow:inset 0 2px 10px #000,inset 0 0 30px rgba(255,160,40,.06)}',
+      '#bstal-banner .bb-eyebrow{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.22em;color:rgba(255,178,77,.55)}',
+      '#bstal-banner .bb-clock{font-family:"Space Mono",monospace;font-size:28px;font-weight:700;line-height:1.05;color:#ffb24d;font-variant-numeric:tabular-nums;letter-spacing:.5px;text-shadow:0 0 14px rgba(255,160,40,.85);contain:layout style}',
+      '#bstal-banner .bb-date{font-size:10px;color:rgba(255,178,77,.5);font-family:"Space Mono",monospace;margin-top:1px;text-transform:uppercase}',
+      '#bstal-banner .bb-sw{display:flex;gap:4px;padding:4px;border-radius:12px;background:#070809;border:1px solid #000;box-shadow:inset 0 2px 6px #000}',
+      '#bstal-banner .bb-sw button{width:28px;height:22px;border-radius:7px;cursor:pointer;padding:0;border:2px solid rgba(255,255,255,.18);opacity:.5;transition:opacity .15s,border-color .15s}',
       '#bstal-banner .bb-sw button.on{opacity:1;border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.18)}',
       '#bstal-banner .bb-sw button.red{background:linear-gradient(145deg,#0d0102,#6c0d10 50%,#971515 60%,#100102)}',
       '#bstal-banner .bb-sw button.blue{background:linear-gradient(145deg,#03040a,#1d3c80 52%,#264c9e 60%,#03060d)}',
@@ -267,15 +266,17 @@
           '<img src="/img/theme/brunaholf-mark.png" alt="Brunahólf">'+
           '<div class="bb-word">SLÖKKVITÆKI <b>EHF.</b></div>'+
         '</div>'+
-        '<div class="bb-right">'+
-          '<div class="bb-eyebrow" id="bstal-title">KASSAKERFI</div>'+
-          '<div class="bb-clock" id="bstal-clock">--:--:--</div>'+
-          '<div class="bb-date" id="bstal-date">—</div>'+
-        '</div>'+
-        '<div class="bb-sw" id="bstal-sw">'+
-          '<button class="red'+(acc==='red'?' on':'')+'" data-acc="red" title="Rautt"></button>'+
-          '<button class="blue'+(acc==='blue'?' on':'')+'" data-acc="blue" title="Blátt"></button>'+
-          '<button class="gold'+(acc==='gold'?' on':'')+'" data-acc="gold" title="Gyllt"></button>'+
+        '<div class="bb-rightwrap">'+
+          '<div class="bb-sw" id="bstal-sw">'+
+            '<button class="blue'+(acc==='blue'?' on':'')+'" data-acc="blue" title="Blátt"></button>'+
+            '<button class="red'+(acc==='red'?' on':'')+'" data-acc="red" title="Rautt"></button>'+
+            '<button class="gold'+(acc==='gold'?' on':'')+'" data-acc="gold" title="Gyllt"></button>'+
+          '</div>'+
+          '<div class="bb-clockbox">'+
+            '<div class="bb-eyebrow">KASSAKERFI</div>'+
+            '<div class="bb-clock" id="bstal-clock">--:--</div>'+
+            '<div class="bb-date" id="bstal-date">—</div>'+
+          '</div>'+
         '</div>'+
       '</div>';
     const ember = document.createElement('div'); ember.id = 'bstal-ember';
