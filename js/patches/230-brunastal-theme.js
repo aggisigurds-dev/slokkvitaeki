@@ -238,6 +238,11 @@
       P+'.ut-grp-h{background:#f6f8fb!important}',
       P+'.ut-svcseg{background:#f1f4f8!important}',
       /* ── Allir viðskiptavinir (#view-allir-vidsk) — light page, fix off-theme bits ── */
+      /* This view has an info-banner above the title, which pushed the white h1
+         down onto the LIGHT part of the backdrop (faint). Stretch the dark zone
+         so the header reads. */
+      P+'#view-allir-vidsk{background:linear-gradient(180deg,#060607 0px,#060607 178px,#aeb4be 470px,#9ba1ad 100%)!important}',
+      P+'#view-allir-vidsk h1 + div{color:rgba(255,255,255,.82)!important}',
       P+'.view #_av-new-cust{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:0 0 14px -4px var(--bstal-glow),inset 0 1px 0 rgba(255,255,255,.16)!important}',
       P+'.view ._av-ft[style*="background:#0f172a"],'+P+'.view ._av-xft[style*="background:#0f172a"],'+P+'.view ._av-vm[style*="background:#0f172a"]{background:'+METAL_BLACK+'!important;border-color:#0a0b0d!important}',
       /* ── Rekstrarfélög (#view-rekstrarfelog) ── */
