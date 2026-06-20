@@ -1052,12 +1052,15 @@
     const s = document.createElement('style');
     s.id = '_ars-status-css';
     s.textContent =
-      '._ars-mark{opacity:0;font:600 10px/1 inherit;color:var(--ink4);background:var(--surface);'
-      + 'border:1px dashed var(--brd2);border-radius:99px;padding:3px 9px;cursor:pointer;white-space:nowrap;'
-      + 'transition:opacity .15s,color .15s,background .15s,border-color .15s}'
+      // 2026-06-20: compact checkmark toggle (grey → blue) instead of the large
+      // "✓ Í vinnslu" text pill. Off = grey ✓ (hover-revealed, markable);
+      // on = blue ✓ (the "Í skýrslugerð" status pill is hidden for this state).
+      '._ars-mark{opacity:0;width:26px;height:26px;flex:none;display:inline-flex;align-items:center;justify-content:center;'
+      + 'font:800 14px/1 inherit;color:#9aa3af;background:#fff;border:1.5px solid #cbd5e1;border-radius:50%;cursor:pointer;'
+      + 'transition:opacity .15s,color .15s,background .15s,border-color .15s,box-shadow .15s}'
       + 'tr._ars-row:hover ._ars-mark,._ars-mark:focus-visible{opacity:1}'
-      + '._ars-mark:hover{color:var(--brand);background:#eff6ff;border-color:var(--brand);border-style:solid}'
-      + '._ars-mark.on{opacity:1;color:var(--brand);background:#eff6ff;border-color:#bfdbfe;border-style:solid}';
+      + '._ars-mark:hover{color:#2f5fe0;background:#eef3ff;border-color:#9bb0e6}'
+      + '._ars-mark.on{opacity:1;color:#fff;background:linear-gradient(150deg,#4f74dc,#16306f);border-color:#16306f;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 2px 6px -2px rgba(20,40,120,.5)}';
     document.head.appendChild(s);
   }
 
@@ -1120,7 +1123,7 @@
                 : isSkipped ? ('Síðast skoðað ' + lastYr)
                 : isOverdue ? 'Útrunnið' : 'Á dagskrá';
               const markBtn = !isDone
-                ? `<button class="_ars-tu-toggle _ars-mark${isFieldOnly ? ' on' : ''}" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki í vinnslu' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}">${isFieldOnly ? '✓ Í vinnslu' : '+ Í vinnslu'}</button>`
+                ? `<button class="_ars-tu-toggle _ars-mark${isFieldOnly ? ' on' : ''}" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Í vinnslu (skýrslugerð) — smelltu til að hreinsa' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}">✓</button>`
                 : '';
               return `
                 <tr class="_ars-row" data-co-id="${c.id}" style="border-bottom:1px solid var(--brd);cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
@@ -1142,7 +1145,7 @@
                   <td style="padding:8px 11px">
                     <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
                       ${markBtn}
-                      ${statusPill(stState, stLabel, stTitle)}
+                      ${stState === 'work' ? '' : statusPill(stState, stLabel, stTitle)}
                     </div>
                   </td>
                 </tr>
