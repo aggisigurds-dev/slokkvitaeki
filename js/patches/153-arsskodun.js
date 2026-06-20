@@ -578,7 +578,7 @@
         <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:14px">
           <div>
             <h1 style="margin:0;font-size:22px;color:var(--ink1);display:flex;align-items:center;gap:10px">🏢 Fyrirtæki í Þjónustu</h1>
-            <div style="font-size:12px;color:var(--ink3);margin-top:2px">${all.length} fyrirtæki · ${arsAll.length} í árlegri slökkvitækjaskoðun</div>
+            <div class="_ars-sub" style="font-size:12px;color:var(--ink3);margin-top:2px">${all.length} fyrirtæki · ${arsAll.length} í árlegri slökkvitækjaskoðun</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button id="_ars-new" type="button" style="padding:7px 14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Nýtt fyrirtæki</button>
@@ -656,7 +656,7 @@
         ` : (state.view === 'card' ? renderCards(filtered) : renderTable(filtered))}
 
         ${filteredAars.length > 0 ? `
-        <div style="margin-top:14px;padding:13px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
+        <div class="_ars-summary" style="margin-top:14px;padding:13px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
           <div>
             <div style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Samantekt — ${esc(filterLabel)}</div>
             <div style="font-size:13px;color:var(--ink2);margin-top:3px">${filteredAars.length} fyrirtæki í ársskoðun</div>
@@ -1029,18 +1029,20 @@
     over:  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
     queue: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>'
   };
+  // 2026-06-20: saturated glossy gradient pills (match FyrirtaekiiThjonustu
+  // mockup) — was light tints which washed out on the metallic backdrop.
   const _PILL_C = {
-    done:  ['#f0fdf4', '#bbf7d0', '#15803d'],
-    work:  ['#eff6ff', '#bfdbfe', 'var(--brand)'],
-    skip:  ['#fffbeb', '#fde68a', '#a16207'],
-    over:  ['#fef2f2', '#fecaca', '#b91c1c'],
-    queue: ['var(--bg)', 'var(--brd2)', 'var(--ink2)']
+    done:  ['linear-gradient(150deg,#1f9d57,#0a4a26)', '#0c5e31', '#fff'],
+    work:  ['linear-gradient(150deg,#4f74dc,#16306f)', '#16306f', '#fff'],
+    skip:  ['linear-gradient(150deg,#e0a93e,#9a6a14)', '#8a5e12', '#fff'],
+    over:  ['linear-gradient(150deg,#e25555,#a01818)', '#7a1212', '#fff'],
+    queue: ['linear-gradient(150deg,#e0a93e,#9a6a14)', '#8a5e12', '#fff']
   };
   function statusPill(state, label, title) {
     const c = _PILL_C[state] || _PILL_C.queue;
     return '<span title="' + esc(title || label) + '" style="display:inline-flex;align-items:center;gap:5px;'
       + 'font-size:10.5px;font-weight:700;line-height:1;padding:4px 9px;border-radius:99px;white-space:nowrap;'
-      + 'background:' + c[0] + ';color:' + c[2] + ';border:1px solid ' + c[1] + '">'
+      + 'background:' + c[0] + ';color:' + c[2] + ';border:1px solid ' + c[1] + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.4)">'
       + (_PILL_ICON[state] || '') + esc(label) + '</span>';
   }
   // One-time CSS for the hover-reveal "Í vinnslu" button (kept out of inline
@@ -1050,12 +1052,15 @@
     const s = document.createElement('style');
     s.id = '_ars-status-css';
     s.textContent =
-      '._ars-mark{opacity:0;font:600 10px/1 inherit;color:var(--ink4);background:var(--surface);'
-      + 'border:1px dashed var(--brd2);border-radius:99px;padding:3px 9px;cursor:pointer;white-space:nowrap;'
-      + 'transition:opacity .15s,color .15s,background .15s,border-color .15s}'
+      // 2026-06-20: compact checkmark toggle (grey → blue) instead of the large
+      // "✓ Í vinnslu" text pill. Off = grey ✓ (hover-revealed, markable);
+      // on = blue ✓ (the "Í skýrslugerð" status pill is hidden for this state).
+      '._ars-mark{opacity:0;width:26px;height:26px;flex:none;display:inline-flex;align-items:center;justify-content:center;'
+      + 'font:800 14px/1 inherit;color:#9aa3af;background:#fff;border:1.5px solid #cbd5e1;border-radius:50%;cursor:pointer;'
+      + 'transition:opacity .15s,color .15s,background .15s,border-color .15s,box-shadow .15s}'
       + 'tr._ars-row:hover ._ars-mark,._ars-mark:focus-visible{opacity:1}'
-      + '._ars-mark:hover{color:var(--brand);background:#eff6ff;border-color:var(--brand);border-style:solid}'
-      + '._ars-mark.on{opacity:1;color:var(--brand);background:#eff6ff;border-color:#bfdbfe;border-style:solid}';
+      + '._ars-mark:hover{color:#2f5fe0;background:#eef3ff;border-color:#9bb0e6}'
+      + '._ars-mark.on{opacity:1;color:#fff;background:linear-gradient(150deg,#4f74dc,#16306f);border-color:#16306f;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 2px 6px -2px rgba(20,40,120,.5)}';
     document.head.appendChild(s);
   }
 
@@ -1118,7 +1123,7 @@
                 : isSkipped ? ('Síðast skoðað ' + lastYr)
                 : isOverdue ? 'Útrunnið' : 'Á dagskrá';
               const markBtn = !isDone
-                ? `<button class="_ars-tu-toggle _ars-mark${isFieldOnly ? ' on' : ''}" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Hreinsa — ekki í vinnslu' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}">${isFieldOnly ? '✓ Í vinnslu' : '+ Í vinnslu'}</button>`
+                ? `<button class="_ars-tu-toggle _ars-mark${isFieldOnly ? ' on' : ''}" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Í vinnslu (skýrslugerð) — smelltu til að hreinsa' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}">✓</button>`
                 : '';
               return `
                 <tr class="_ars-row" data-co-id="${c.id}" style="border-bottom:1px solid var(--brd);cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
@@ -1140,7 +1145,7 @@
                   <td style="padding:8px 11px">
                     <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
                       ${markBtn}
-                      ${statusPill(stState, stLabel, stTitle)}
+                      ${stState === 'work' ? '' : statusPill(stState, stLabel, stTitle)}
                     </div>
                   </td>
                 </tr>

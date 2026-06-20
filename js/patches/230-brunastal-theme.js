@@ -217,6 +217,26 @@
       P+'.view .bw-scan:hover,'+P+'.view .bw-sh-toggle:hover{filter:brightness(1.22)!important}',
       P+'.view .bw-sh-toggle.on{filter:brightness(1.32)!important;border-color:var(--bstal-ring)!important}',
       P+'.view .bw-sh-caret{color:rgba(255,255,255,.6)!important}',
+      /* ── Fyrirtæki í þjónustu (#view-arsskodun) — match FyrirtaekiiThjonustu
+         mockup: LIGHT page, inactive buttons light/silver w/ dark text, only the
+         active one stands out (status=metallic, view/month=accent). */
+      P+'.view ._ars-sub{color:rgba(255,255,255,.74)!important}',
+      P+'.view ._ars-vm,'+P+'.view ._ars-st,'+P+'.view #_ars-sort,'+P+'.view #_ars-print{background:linear-gradient(180deg,#fdfdfe,#e3e7ee)!important;border:1px solid rgba(20,24,34,.14)!important;color:#3a4250!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(20,30,60,.08)!important}',
+      P+'.view ._ars-mo{background:#fff!important;border:1px solid rgba(20,24,34,.12)!important;color:#3a4250!important;box-shadow:none!important}',
+      P+'.view ._ars-st[style*="var(--brand)"]{background:linear-gradient(145deg,#08080a,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709)!important;border:1px solid #0a0b0d!important;color:#fff!important}',
+      P+'.view ._ars-vm[style*="var(--brand)"],'+P+'.view ._ars-mo[style*="var(--brand)"]{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 14px -5px var(--bstal-glow)!important}',
+      P+'.view ._ars-card{background:#fff!important;border:1px solid rgba(20,24,34,.12)!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.2)!important}',
+      P+'.view ._ars-summary{background:#fff!important;border:1px solid rgba(20,24,34,.12)!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.2)!important}',
+      /* ── ÞjónustuVerkstæði úttekt (tæki-listi + „Upplýsingar um úttekt" form) ──
+         The list (.ut-list) + notes/cost panel (#_ctc-notes/#_ctc-section) are
+         house light cards whose labels (var(--ink2)) went low-contrast on the
+         grey backdrop. Force clean white cards so dark labels read; the harsh
+         flat-black .ut-bulk bar becomes a metallic one. */
+      P+'.ut-list,'+P+'#_ctc-notes,'+P+'#_ctc-section{background:#fff!important;border-color:rgba(20,24,34,.10)!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.22)!important}',
+      P+'#_ctc-section{border-top:1px dashed #cfe8d8!important}',
+      P+'.ut-bulk{background:'+METAL_BLACK+'!important;border-bottom:1px solid #000!important}',
+      P+'.ut-grp-h{background:#f6f8fb!important}',
+      P+'.ut-svcseg{background:#f1f4f8!important}',
       /* empty / loading / error states readable on the grey backdrop */
       P+'.view .loading-state,'+P+'.view .empty-state,'+P+'.view .empty{color:#3a4250!important}',
       /* hero metallic-blue total card (opt-in: add class .bstal-hero) */
