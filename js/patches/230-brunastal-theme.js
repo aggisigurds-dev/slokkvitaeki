@@ -319,7 +319,7 @@
             '<button class="red'+(acc==='red'?' on':'')+'" data-acc="red" title="Rautt"></button>'+
             '<button class="gold'+(acc==='gold'?' on':'')+'" data-acc="gold" title="Gyllt"></button>'+
           '</div>'+
-          '<button class="bb-themebtn" id="bstal-themebtn" title="Skipta yfir í sjálfgefið þema (slökkva á Brunastáls-útliti)">🎨 <span>Sjálfgefið</span></button>'+
+          '<button class="bb-themebtn" id="bstal-themebtn" title="Til baka í venjulegt útlit (slökkva á Brunastáli)">🎨 <span>Venjulegt útlit</span></button>'+
           '<div class="bb-clockbox">'+
             '<div class="bb-eyebrow">KASSAKERFI</div>'+
             '<div class="bb-clock" id="bstal-clock">--:--</div>'+
@@ -347,8 +347,10 @@
     r.id = 'bstal-restore';
     r.type = 'button';
     r.title = 'Kveikja á Brunastáls-útliti';
-    r.innerHTML = '🔥 <span>Brunastál þema</span>';
-    r.style.cssText = 'display:none;position:fixed;right:16px;bottom:16px;z-index:9998;align-items:center;gap:7px;height:40px;padding:0 16px;border-radius:12px;cursor:pointer;font:700 13px/1 system-ui,sans-serif;color:#fff;border:1px solid #971515;background:linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102);box-shadow:0 6px 20px -6px rgba(160,16,16,.6)';
+    r.innerHTML = '🔥 <span>Brunastál útlit</span>';
+    // Top-right — same corner as the banner clock, so the theme toggle lives in
+    // one consistent spot whether Brunastál is on (🎨 by the clock) or off.
+    r.style.cssText = 'display:none;position:fixed;right:16px;top:14px;z-index:9998;align-items:center;gap:7px;height:38px;padding:0 15px;border-radius:11px;cursor:pointer;font:700 13px/1 system-ui,sans-serif;color:#fff;border:1px solid #971515;background:linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102);box-shadow:0 6px 20px -6px rgba(160,16,16,.6)';
     r.addEventListener('click', goBrunastal);
     document.body.appendChild(r);
   }
