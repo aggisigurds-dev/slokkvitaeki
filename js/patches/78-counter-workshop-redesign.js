@@ -283,16 +283,37 @@
     // Left: all workshop jobs (received + inprogress). Right: same set, filtered to contract holders.
     const contractJobs = jobs.filter(j => isContractCustomer(j.customer));
 
+    // 2026-06-20: single-column layout (mockup verkstaedi-reorg.html). The
+    // Samningshafar súlan is now a dropdown on the right instead of a 2nd column.
+    const shOpen = Workshop._shOpen === true;
     const html =
-      '<div class="cw-toolbar" style="padding:10px 16px;border-bottom:1px solid var(--brd,#e4e6ea);display:flex;align-items:center;gap:10px;background:#f8f9fb;flex-wrap:wrap">' +
-        '<div style="font-size:13px;font-weight:600;color:#0f172a">Verkröð</div>' +
-        `<span style="font-size:12px;color:var(--ink3,#8891a0)">${jobs.length} verk í vinnslu</span>` +
-        '<button class="btn btn-outline btn-sm" onclick="Field.openScan()" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg>Skanna tæki</button>' +
+      '<div class="bw-page-hdr">' +
+        '<div class="bw-page-titles">' +
+          '<h1 class="bw-page-h1">Verkröð</h1>' +
+          `<div class="bw-page-sub"><b>${jobs.length}</b> verk í vinnslu</div>` +
+        '</div>' +
+        '<div class="bw-hdr-actions">' +
+          '<div class="bw-sh-wrap">' +
+            `<button class="bw-sh-toggle${shOpen ? ' on' : ''}" onclick="event.stopPropagation();Workshop.toggleSH()">🤝 Samningshafar · ${contractJobs.length} <span class="bw-sh-caret">${shOpen ? '▴' : '▾'}</span></button>` +
+            (shOpen
+              ? '<div class="bw-sh-panel">' +
+                  '<div class="bw-sh-head">' +
+                    '<div class="cw-col-title" style="font-size:12px;font-weight:700;color:#0d6efd;text-transform:uppercase;letter-spacing:.06em">Samningshafar</div>' +
+                    `<div class="cw-col-sub" style="font-size:11px;color:#94a3b8;margin-top:2px">${contractJobs.length} verk í vinnslu</div>` +
+                  '</div>' +
+                  `<div class="bw-sh-body">${wRenderJobs('contract', contractJobs)}</div>` +
+                '</div>'
+              : '') +
+          '</div>' +
+          '<button class="bw-scan" onclick="Field.openScan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg> Skanna tæki</button>' +
+        '</div>' +
       '</div>' +
       '<div style="display:none"><div id="workshop-queue"></div></div>' +
-      '<div style="display:grid;grid-template-columns:2fr 1fr;gap:8px;padding:8px;height:calc(100vh - 154px);overflow:hidden;box-sizing:border-box;min-width:0">' +
-        colHtmlW('Verk',           jobs.length         + ' verk', '#64748b', wRenderJobs('all',      jobs))         +
-        colHtmlW('Samningshafar',  contractJobs.length + ' verk', '#0d6efd', wRenderJobs('contract', contractJobs)) +
+      '<div class="bw-flow">' +
+        '<div class="bw-card">' +
+          `<div class="bw-chd"><b>VERK</b><span class="bw-cnum">${jobs.length} verk</span></div>` +
+          wRenderJobs('all', jobs) +
+        '</div>' +
       '</div>' +
       '<div id="workshop-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;padding:24px">' +
         '<div style="background:#fff;border-radius:16px;max-width:780px;width:100%;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 28px 80px rgba(0,0,0,.35)">' +
@@ -627,7 +648,31 @@
       '.bw-arow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px}' +
       '.bw-arow .rm{background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:16px}' +
       '.bw-atot{display:flex;justify-content:space-between;font-weight:800;font-size:14px;margin-top:8px;padding-top:8px;border-top:2px solid #0f172a}' +
-      '@media (max-width:640px){.bw-cinfo{flex:1 1 100%}.bw-tiles{flex:1 1 100%}}';
+      /* ── single-column page layout (mockup verkstaedi-reorg.html) ── */
+      '.bw-page-hdr{display:flex;align-items:center;gap:14px;padding:8px 22px 12px;position:relative;flex-shrink:0}' +
+      '.bw-page-titles{min-width:0}' +
+      '.bw-page-h1{font-size:26px;font-weight:700;margin:0;line-height:1.1;color:#11141c}' +
+      '.bw-page-sub{font-family:"Space Mono",var(--mono,monospace);font-size:13px;color:#6b7280;margin-top:3px}' +
+      '.bw-page-sub b{color:#2f5fe0}' +
+      '.bw-hdr-actions{margin-left:auto;display:flex;align-items:center;gap:10px;position:relative}' +
+      '.bw-scan{display:flex;align-items:center;gap:7px;height:40px;padding:0 16px;border-radius:11px;border:1px solid #cbd5e1;background:#fff;color:#11141c;cursor:pointer;font:600 13px/1 inherit;white-space:nowrap}' +
+      '.bw-scan:hover{background:#f1f5f9}' +
+      '.bw-sh-wrap{position:relative}' +
+      '.bw-sh-toggle{display:flex;align-items:center;gap:7px;height:40px;padding:0 14px;border-radius:11px;border:1px solid #cbd5e1;background:#fff;color:#11141c;cursor:pointer;font:600 13px/1 inherit;white-space:nowrap}' +
+      '.bw-sh-toggle:hover{background:#f1f5f9}' +
+      '.bw-sh-toggle.on{background:#eef2ff;border-color:#9bb0e6}' +
+      '.bw-sh-caret{font-size:11px;color:#94a3b8}' +
+      '.bw-sh-panel{position:absolute;top:calc(100% + 8px);right:0;width:min(460px,92vw);max-height:72vh;overflow:auto;background:#fff;border:1px solid rgba(20,24,34,.12);border-radius:14px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);z-index:60}' +
+      '.bw-sh-head{padding:12px 14px;border-bottom:1px solid #f1f5f9;background:linear-gradient(180deg,#f8fafc,#fff);position:sticky;top:0}' +
+      '.bw-sh-body{padding:10px}' +
+      '.bw-sh-body .bw-row:last-child{margin-bottom:0}' +
+      '.bw-flow{flex:1;overflow-y:auto;padding:2px 22px 76px;min-height:0}' +
+      '.bw-card{background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:16px;box-shadow:0 10px 28px -16px rgba(25,35,60,.18);padding:16px 18px 18px}' +
+      '.bw-chd{display:flex;align-items:center;gap:10px;margin-bottom:12px}' +
+      '.bw-chd b{font-size:14px;font-weight:700;letter-spacing:.12em;color:#3a4250}' +
+      '.bw-cnum{margin-left:auto;font-family:"Space Mono",var(--mono,monospace);font-size:12px;color:#9098a6}' +
+      '@media (max-width:640px){.bw-cinfo{flex:1 1 100%}.bw-tiles{flex:1 1 100%}' +
+        '.bw-page-hdr{flex-wrap:wrap;padding:8px 14px}.bw-hdr-actions{width:100%}.bw-scan{flex:1}.bw-flow{padding:2px 12px 76px}.bw-sh-panel{width:min(440px,94vw)}}';
     document.head.appendChild(bw);
   }
 
@@ -734,6 +779,9 @@
     // which auto-promotes the job to inprogress/ready — unwanted on delete).
     Workshop._archiveOpen = Workshop._archiveOpen || false;
     Workshop.toggleArchive = function() { Workshop._archiveOpen = !Workshop._archiveOpen; Workshop.render(); };
+    // 2026-06-20: Samningshafar dropdown (replaces the 2nd column).
+    Workshop._shOpen = Workshop._shOpen || false;
+    Workshop.toggleSH = function() { Workshop._shOpen = !Workshop._shOpen; Workshop.render(); };
     Workshop.deleteUnit = async function(jobId, unitId) {
       if (!window.confirm('Eyða þessu tæki af verkstæðinu?\n(fer í „Eydd tæki" — hægt að endurheimta síðar)')) return false;
       try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update({ status: 'eytt' }).eq('id', unitId); }

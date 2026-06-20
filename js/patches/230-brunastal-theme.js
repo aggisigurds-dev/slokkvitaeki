@@ -209,6 +209,14 @@
       /* „Sækja inn úr fyrirtæki" → follow the accent (metal-red default, blue/gold) */
       P+'.view ._sr-btn{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:0 0 16px -4px var(--bstal-glow),inset 0 1px 0 rgba(255,255,255,.16)!important;text-shadow:0 1px 1px rgba(0,0,0,.4)}',
       P+'.view ._sr-btn:hover{filter:brightness(1.15)}',
+      /* Verkstæði single-column header (mockup): white title, metallic buttons.
+         .bw-page-h1 is an <h1> so it already turns white via the .view h1 rule. */
+      P+'.view .bw-page-sub{color:rgba(255,255,255,.78)!important}',
+      P+'.view .bw-page-sub b{color:#82a4ff!important}',
+      P+'.view .bw-scan,'+P+'.view .bw-sh-toggle{background:'+METAL_BLACK+'!important;border:1px solid #0a0b0d!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)!important}',
+      P+'.view .bw-scan:hover,'+P+'.view .bw-sh-toggle:hover{filter:brightness(1.22)!important}',
+      P+'.view .bw-sh-toggle.on{filter:brightness(1.32)!important;border-color:var(--bstal-ring)!important}',
+      P+'.view .bw-sh-caret{color:rgba(255,255,255,.6)!important}',
       /* empty / loading / error states readable on the grey backdrop */
       P+'.view .loading-state,'+P+'.view .empty-state,'+P+'.view .empty{color:#3a4250!important}',
       /* hero metallic-blue total card (opt-in: add class .bstal-hero) */
