@@ -45,9 +45,13 @@
   .tile .chk.no{background:#fff;color:#64748b}
   .tile .chk.yes{background:linear-gradient(160deg,#1f9d57,#0a4a26);color:#fff}
   .tile .chk.broken{background:linear-gradient(150deg,#e25555,#a01818);color:#fff}
-  .prog{height:5px;border-radius:3px;background:#e6e9ef;overflow:hidden;margin-top:12px}
+  .prog{height:5px;border-radius:3px;background:#e6e9ef;overflow:hidden}
   .prog>div{height:100%;background:linear-gradient(90deg,#e0a020,#c77a16)}
   .prog.full>div{background:linear-gradient(90deg,#7aa0ff,#2f5fe0)}
+  .prow{display:flex;align-items:center;gap:12px;margin-top:12px}
+  .sendbtn{flex:none;height:34px;padding:0 14px;border-radius:9px;border:1px solid #0a0b0d;cursor:pointer;font:700 12px/1 'Space Grotesk';color:#fff;white-space:nowrap;
+           background:linear-gradient(145deg,#08080a,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709)}
+  .sendbtn.ready{background:linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102);border-color:#971515;box-shadow:0 0 14px -4px rgba(160,16,16,.55)}
   .hint{color:rgba(255,255,255,.8);font-size:12.5px;text-align:center;margin-top:14px}
   .hint b{color:#ffd24a}
   /* ===== Tæki modal ===== */
@@ -177,12 +181,20 @@
           <div class="cinfo"><div class="nm">${c.name}</div><div class="mt">${c.note} · ${done}/${n} lokið</div></div>
           <div class="tiles">${tiles}</div>
         </div>
-        <div class="prog ${pct===100?'full':''}"><div style="width:${pct}%"></div></div>
+        <div class="prow">
+          <div class="prog ${pct===100?'full':''}" style="flex:1"><div style="width:${pct}%"></div></div>
+          <button class="sendbtn ${pct===100?'ready':''}" onclick="event.stopPropagation();sendAfgr(${ci})">📤 Senda í afgreiðslu</button>
+        </div>
       </div>`;
     }).join('');
     document.getElementById('vcount').textContent = tot+' verk';
   }
   function quick(ci,di){ const d=CUSTOMERS[ci].devices[di]; d[3]= d[3]==='done'?'pending':'done'; render(); }
+  function sendAfgr(ci){
+    const c=CUSTOMERS[ci], done=c.devices.filter(d=>d[3]==='done').length, n=c.devices.length;
+    if(done<n && !confirm(c.name+': '+done+'/'+n+' tilbúin. Senda samt í afgreiðslu?')) return;
+    CUSTOMERS.splice(ci,1); render();   // (mockup) verkið færist í Afgreiðslu
+  }
 
   // ---- Tæki modal ----
   function openM(ci,di){
