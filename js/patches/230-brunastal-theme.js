@@ -279,9 +279,8 @@
       '#bstal-banner .bb-sw button.red{background:linear-gradient(145deg,#0d0102,#6c0d10 50%,#971515 60%,#100102)}',
       '#bstal-banner .bb-sw button.blue{background:linear-gradient(145deg,#03040a,#1d3c80 52%,#264c9e 60%,#03060d)}',
       '#bstal-banner .bb-sw button.gold{background:linear-gradient(145deg,#0d0802,#5c4413 52%,#82661f 60%,#100b03)}',
-      '#bstal-banner .bb-themebtn{display:flex;align-items:center;gap:6px;height:34px;padding:0 13px;border-radius:11px;cursor:pointer;color:#fff;border:1px solid #000;font:600 12px/1 "Space Grotesk",system-ui,sans-serif;background:'+METAL_BLACK+';box-shadow:inset 0 1px 0 rgba(255,255,255,.07);white-space:nowrap}',
-      '#bstal-banner .bb-themebtn:hover{filter:brightness(1.18)}',
-      '@media (max-width:760px){#bstal-banner .bb-themebtn span{display:none}}',
+      '#bstal-banner .bb-themebtn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:11px;cursor:pointer;font-size:18px;line-height:1;border:1px solid #000;background:'+METAL_BLACK+';box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}',
+      '#bstal-banner .bb-themebtn:hover{filter:brightness(1.25)}',
       /* ember underglow bleeding below the banner */
       '#bstal-ember{position:fixed;top:146px;left:calc(var(--sidebar-w,220px) + 8%);right:8%;height:60px;z-index:39;pointer-events:none;'
         +'background:radial-gradient(62% 100% at 50% 0%,rgba(255,110,30,.32),rgba(255,80,20,.08) 55%,transparent 76%);filter:blur(13px);display:none;'
@@ -319,7 +318,7 @@
             '<button class="red'+(acc==='red'?' on':'')+'" data-acc="red" title="Rautt"></button>'+
             '<button class="gold'+(acc==='gold'?' on':'')+'" data-acc="gold" title="Gyllt"></button>'+
           '</div>'+
-          '<button class="bb-themebtn" id="bstal-themebtn" title="Til baka í venjulegt útlit (slökkva á Brunastáli)">🎨 <span>Venjulegt útlit</span></button>'+
+          '<button class="bb-themebtn" id="bstal-themebtn" title="Til baka í venjulegt útlit (slökkva á Brunastáli)">🔥</button>'+
           '<div class="bb-clockbox">'+
             '<div class="bb-eyebrow">KASSAKERFI</div>'+
             '<div class="bb-clock" id="bstal-clock">--:--</div>'+
@@ -347,10 +346,10 @@
     r.id = 'bstal-restore';
     r.type = 'button';
     r.title = 'Kveikja á Brunastáls-útliti';
-    r.innerHTML = '🔥 <span>Brunastál útlit</span>';
-    // Top-right — same corner as the banner clock, so the theme toggle lives in
-    // one consistent spot whether Brunastál is on (🎨 by the clock) or off.
-    r.style.cssText = 'display:none;position:fixed;right:16px;top:14px;z-index:9998;align-items:center;gap:7px;height:38px;padding:0 15px;border-radius:11px;cursor:pointer;font:700 13px/1 system-ui,sans-serif;color:#fff;border:1px solid #971515;background:linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102);box-shadow:0 6px 20px -6px rgba(160,16,16,.6)';
+    r.innerHTML = '🔥';
+    // Icon-only, top-right — same corner as the banner clock/toggle, so the
+    // flame switch lives in one consistent spot whether Brunastál is on or off.
+    r.style.cssText = 'display:none;position:fixed;right:16px;top:14px;z-index:9998;align-items:center;justify-content:center;width:40px;height:40px;border-radius:11px;cursor:pointer;font-size:19px;line-height:1;color:#fff;border:1px solid #971515;background:linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102);box-shadow:0 6px 20px -6px rgba(160,16,16,.6)';
     r.addEventListener('click', goBrunastal);
     document.body.appendChild(r);
   }
