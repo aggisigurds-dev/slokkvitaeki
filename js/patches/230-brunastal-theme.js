@@ -143,6 +143,41 @@
       /* ── numbers in Space Mono where the app marks them ─────────────────── */
       P+'.view .kr,'+P+'.view .price,'+P+'.view .amount,'+P+'.view .total,'+P+'.view .mono{font-family:"Space Mono",monospace}',
 
+      /* ═══ SITE-WIDE RECIPES (Cowork audit §C/§D/§E) ══════════════════════ */
+      /* focus rings (a11y) */
+      P+'.view input:focus,'+P+'.view textarea:focus,'+P+'.view select:focus,'+P+'.view .btn:focus-visible,'+P+'.view button:focus-visible{outline:none!important;box-shadow:0 0 0 3px var(--bstal-ring)!important;border-color:var(--bstal-accent)!important}',
+      /* checkboxes / radios take the accent */
+      P+'.view input[type=checkbox],'+P+'.view input[type=radio]{accent-color:var(--bstal-accent)}',
+      /* glossy success / danger buttons — so Afgreiðsla actions aren't flat (Cowork §3) */
+      P+'.view .btn-success,'+P+'.modal .btn-success{background:linear-gradient(150deg,#1f9d57,#0a4a26)!important;border:1px solid #0a4a26!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 5px rgba(0,0,0,.3)!important;text-shadow:0 1px 1px rgba(0,0,0,.4)}',
+      P+'.view .btn-danger,'+P+'.modal .btn-danger{background:linear-gradient(150deg,#e25555,#a01818)!important;border:1px solid #7a1212!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 5px rgba(0,0,0,.3)!important;text-shadow:0 1px 1px rgba(0,0,0,.4)}',
+      /* filter chips / tabs / segmented: brushed-silver default, metallic-black active */
+      P+'.view .filter-chip,'+P+'.view .seg button,'+P+'.view .thm-seg button,'+P+'.view .tab{background:linear-gradient(180deg,#fdfdfe,#e3e7ee)!important;color:#11141c!important;border:1px solid rgba(20,24,34,.12)!important}',
+      P+'.view .filter-chip.active,'+P+'.view .seg button.on,'+P+'.view .thm-seg button.on,'+P+'.view .tab.active{background:'+METAL_BLACK+'!important;color:#fff!important;border:1px solid #0a0b0d!important}',
+      /* TABLES: white body, metallic-dark header, row hover (Cowork §D data-table recipe) */
+      P+'.view table{background:#fff!important;border-color:rgba(20,24,34,.10)!important}',
+      P+'.view table thead th{background:linear-gradient(180deg,#2b2f37,#15171c)!important;color:#eef1f4!important;border-color:#0a0b0d!important}',
+      P+'.view table td,'+P+'.view table th{border-color:rgba(20,24,34,.08)!important}',
+      P+'.view table tbody tr:hover td{background:rgba(20,24,34,.035)!important}',
+      /* empty / loading / error states readable on the grey backdrop */
+      P+'.view .loading-state,'+P+'.view .empty-state,'+P+'.view .empty{color:#3a4250!important}',
+      /* hero metallic-blue total card (opt-in: add class .bstal-hero) */
+      P+'.view .bstal-hero,'+P+'.view .hero-stat,'+P+'.view .stat-card.total{background:linear-gradient(150deg,#6f97ff 0%,#2f5fe0 34%,#1c3d8c 60%,#0b1838 100%)!important;color:#fff!important;border:none!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 14px 34px -18px rgba(0,0,0,.7)!important}',
+      P+'.view .bstal-hero *{color:#fff!important}',
+      /* MODALS (outside .view): white body, metallic header + buttons. The print
+       * receipt uses a separate print window, so it is unaffected. */
+      P+'.modal{background:#fff!important;border:1px solid rgba(20,24,34,.1)!important;box-shadow:0 30px 80px -20px rgba(0,0,0,.6)!important}',
+      P+'.modal-hd{background:'+METAL_BLACK+'!important;border-bottom:1px solid #0a0b0d!important}',
+      P+'.modal-hd h2,'+P+'.modal-hd .modal-x,'+P+'.modal-hd *{color:#fff!important}',
+      P+'.modal .fi,'+P+'.modal input:not([type=checkbox]):not([type=radio]),'+P+'.modal textarea,'+P+'.modal select{background:#eef1f6!important;border:1px solid rgba(20,24,34,.14)!important;color:#141822!important}',
+      P+'.modal .btn:not(.btn-primary):not(.btn-success):not(.btn-danger):not(.btn-brand),'+P+'.modal .btn-outline{background:'+METAL_BLACK+'!important;border:1px solid #0a0b0d!important;color:#fff!important}',
+      P+'.modal .btn-primary{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important}',
+      /* toasts → dark glossy */
+      P+'.toast{background:linear-gradient(180deg,#1c1f25,#0e1014)!important;color:#fff!important;border:1px solid rgba(255,255,255,.08)!important;box-shadow:0 12px 30px -10px rgba(0,0,0,.7)!important}',
+      /* hide the duplicate generic accent dots under Brunastál — the accent lives
+       * in the banner swatches (Cowork §B1: unify accents). */
+      'html[data-thm-preset="'+PRESET+'"] #view-utlit .thm-card:has(#thm-accents){display:none}',
+
       /* ═══ THE STEEL BANNER ═══════════════════════════════════════════════ */
       '#bstal-banner{position:fixed;top:0;left:var(--sidebar-w,220px);right:0;height:104px;z-index:40;'
         +'padding:7px;border-radius:0 0 16px 16px;'
