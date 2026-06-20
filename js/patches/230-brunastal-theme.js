@@ -206,6 +206,9 @@
       P+'.cw-col-title[style*="#0d6efd"]{color:#6ea8ff!important}',
       P+'.cw-archive{background:'+METAL_BLACK+'!important;border-top:1px solid #000!important}',
       P+'.cw-archive span{color:#e7eaf0!important}',
+      /* „Sækja inn úr fyrirtæki" → follow the accent (metal-red default, blue/gold) */
+      P+'.view ._sr-btn{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:0 0 16px -4px var(--bstal-glow),inset 0 1px 0 rgba(255,255,255,.16)!important;text-shadow:0 1px 1px rgba(0,0,0,.4)}',
+      P+'.view ._sr-btn:hover{filter:brightness(1.15)}',
       /* empty / loading / error states readable on the grey backdrop */
       P+'.view .loading-state,'+P+'.view .empty-state,'+P+'.view .empty{color:#3a4250!important}',
       /* hero metallic-blue total card (opt-in: add class .bstal-hero) */
