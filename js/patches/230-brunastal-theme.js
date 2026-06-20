@@ -237,6 +237,19 @@
       P+'.ut-bulk{background:'+METAL_BLACK+'!important;border-bottom:1px solid #000!important}',
       P+'.ut-grp-h{background:#f6f8fb!important}',
       P+'.ut-svcseg{background:#f1f4f8!important}',
+      /* ── Allir viðskiptavinir (#view-allir-vidsk) — light page, fix off-theme bits ── */
+      /* An info-banner sits ABOVE the title, pushing it down onto the LIGHT part
+         of the backdrop — so the global white h1 was unreadable. Per the mockup
+         the title is DARK on the light content (not white-on-dark): override the
+         global `.view h1{color:#fff}` for this view + keep the subtitle muted. */
+      P+'#view-allir-vidsk h1{color:#11141c!important;text-shadow:none!important}',
+      P+'#view-allir-vidsk h1 + div{color:#5b6472!important}',
+      P+'.view #_av-new-cust{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:0 0 14px -4px var(--bstal-glow),inset 0 1px 0 rgba(255,255,255,.16)!important}',
+      P+'.view ._av-ft[style*="background:#0f172a"],'+P+'.view ._av-xft[style*="background:#0f172a"],'+P+'.view ._av-vm[style*="background:#0f172a"]{background:'+METAL_BLACK+'!important;border-color:#0a0b0d!important}',
+      /* ── Rekstrarfélög (#view-rekstrarfelog) ── */
+      P+'.view .rf-ava{background:var(--bstal-grad)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 12px -6px rgba(0,0,0,.5)!important}',
+      P+'.view .rf-ava svg{stroke:#fff!important}',
+      P+'.view ._rf_modebtn[style*="var(--surface)"],'+P+'.view ._rf_fchip[style*="var(--surface)"]{background:linear-gradient(180deg,#fdfdfe,#e3e7ee)!important;border:1px solid rgba(20,24,34,.14)!important;color:#3a4250!important}',
       /* empty / loading / error states readable on the grey backdrop */
       P+'.view .loading-state,'+P+'.view .empty-state,'+P+'.view .empty{color:#3a4250!important}',
       /* hero metallic-blue total card (opt-in: add class .bstal-hero) */
