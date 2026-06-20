@@ -76,7 +76,7 @@
 
       /* ── page backdrop: UNIFORM brushed steel-grey (no dark zone around the
        *    content/products — the fixed banner supplies the black at the top). */
-      P+'.view{background:linear-gradient(180deg,#aab0ba 0%,#9aa0ab 220px,#949aa6 100%)!important}',
+      P+'.view{background:linear-gradient(180deg,#060607 0px,#060607 85px,#aeb4be 360px,#9ba1ad 100%)!important}',
       /* the POS draws its own colourful banner — hide it; the steel one replaces it. */
       P+'.pos-banner{display:none!important}',
 
@@ -104,7 +104,7 @@
 
       /* ── WHITE cards (kept light) with the spec's soft shadow ───────────── */
       P+'.view .tcard,'+P+'.view .card,'+P+'.view [class*="-card"]{background:#fff!important;border:1px solid rgba(20,24,34,.08)!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)!important}',
-      P+'.view h1{color:#11141c!important}',
+      P+'.view h1{color:#fff!important;text-shadow:0 2px 8px rgba(0,0,0,.55)}',
 
       /* ── BUTTONS: only real .btn-style buttons get the metal finish, so tiny
        *    icon/utility <button>s are NOT turned into black blobs. ─────────── */
