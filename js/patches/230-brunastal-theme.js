@@ -134,8 +134,9 @@
       P+'.view .badge,'+P+'.view .pill,'+P+'.view .chip,'+P+'.view .tag{'
         +'background:linear-gradient(180deg,#fdfdfe,#e3e7ee)!important;color:#11141c!important;border:1px solid rgba(20,24,34,.12)!important;'
         +'box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 1px 2px rgba(0,0,0,.12)!important}',
-      P+'.view .badge-success,'+P+'.view .pill-green,'+P+'.view .status-done,'+P+'.view [class*="-tilbuin"],'+P+'.view [class*="-buid"]{background:linear-gradient(150deg,#1f9d57,#0a4a26)!important;color:#fff!important;border:none!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)!important}',
-      P+'.view .badge-info,'+P+'.view .pill-blue,'+P+'.view .status-progress,'+P+'.view [class*="-vinnslu"]{background:linear-gradient(150deg,#4f74dc,#16306f)!important;color:#fff!important;border:none!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)!important}',
+      P+'.view .badge-success,'+P+'.view .pill-green,'+P+'.view .status-done,'+P+'.view [class*="-tilbuin"],'+P+'.view [class*="-buid"],'
+        +P+'.view .chip.done,'+P+'.view .ws-chk.done,'+P+'.view ._sc_pill_done,'+P+'.view .vd-stat.done,'+P+'.view .ef-done,'+P+'.view ._bd-done{background:linear-gradient(150deg,#1f9d57,#0a4a26)!important;color:#fff!important;border:none!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)!important}',
+      P+'.view .badge-info,'+P+'.view .pill-blue,'+P+'.view .status-progress,'+P+'.view [class*="vinnsl"]{background:linear-gradient(150deg,#4f74dc,#16306f)!important;color:#fff!important;border:none!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)!important}',
       P+'.view .badge-warning,'+P+'.view .pill-amber,'+P+'.view .status-pending,'+P+'.view [class*="-bidur"]{background:linear-gradient(150deg,#e0a93e,#9a6a14)!important;color:#fff!important;border:none!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)!important}',
       P+'.view .badge-danger,'+P+'.view .pill-red,'+P+'.view .status-overdue,'+P+'.view [class*="-utrunnin"],'+P+'.view [class*="-haett"]{background:linear-gradient(150deg,#e25555,#a01818)!important;color:#fff!important;border:none!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)!important}',
 
@@ -156,7 +157,8 @@
         +'background:radial-gradient(circle at 35% 30%,#9aa1ab,#26282d 70%);box-shadow:inset 0 1px 1px rgba(255,255,255,.6),0 1px 2px #000}',
       '#bstal-banner .bb-flames{position:absolute;left:0;right:0;bottom:-2px;height:78px;z-index:1;pointer-events:none;'
         +'background:url("/img/theme/fire-flames.png") repeat-x bottom left;background-size:auto 100%;'
-        +'-webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 32%);mask-image:linear-gradient(180deg,transparent 0%,#000 32%)}',
+        +'-webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 32%);mask-image:linear-gradient(180deg,transparent 0%,#000 32%);'
+        +'transform:translateZ(0);will-change:transform}',  /* own GPU layer — not re-painted on clock tick */
       '#bstal-banner .bb-logo{position:relative;z-index:5;padding:6px 30px 6px 6px;margin-top:-4px}',
       '#bstal-banner .bb-logo::before{content:"";position:absolute;inset:-10px -30px -10px -20px;z-index:-1;'
         +'background:radial-gradient(closest-side at 36% 50%,rgba(0,0,0,.74),transparent 80%)}',
@@ -167,7 +169,7 @@
       /* right cluster: page label · live LED clock · date (the clock back in its place) */
       '#bstal-banner .bb-right{position:relative;z-index:5;margin-left:auto;text-align:right;white-space:nowrap}',
       '#bstal-banner .bb-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.55)}',
-      '#bstal-banner .bb-clock{font-family:"Space Mono",monospace;font-size:25px;font-weight:700;color:#fff;line-height:1.1;font-variant-numeric:tabular-nums;text-shadow:0 2px 8px rgba(0,0,0,.7)}',
+      '#bstal-banner .bb-clock{font-family:"Space Mono",monospace;font-size:25px;font-weight:700;color:#fff;line-height:1.1;font-variant-numeric:tabular-nums;text-shadow:0 2px 8px rgba(0,0,0,.7);contain:layout style}',
       '#bstal-banner .bb-date{font-size:11px;color:rgba(255,255,255,.6);margin-top:1px}',
       '#bstal-banner .bb-sw{position:relative;z-index:5;display:flex;gap:6px;margin-left:18px}',
       '#bstal-banner .bb-sw button{width:26px;height:20px;border-radius:6px;cursor:pointer;padding:0;border:2px solid rgba(255,255,255,.18);opacity:.5;transition:opacity .15s,border-color .15s}',
@@ -177,7 +179,8 @@
       '#bstal-banner .bb-sw button.gold{background:linear-gradient(145deg,#0d0802,#5c4413 52%,#82661f 60%,#100b03)}',
       /* ember underglow bleeding below the banner */
       '#bstal-ember{position:fixed;top:104px;left:calc(var(--sidebar-w,220px) + 8%);right:8%;height:60px;z-index:39;pointer-events:none;'
-        +'background:radial-gradient(62% 100% at 50% 0%,rgba(255,110,30,.32),rgba(255,80,20,.08) 55%,transparent 76%);filter:blur(13px);display:none}',
+        +'background:radial-gradient(62% 100% at 50% 0%,rgba(255,110,30,.32),rgba(255,80,20,.08) 55%,transparent 76%);filter:blur(13px);display:none;'
+        +'transform:translateZ(0);will-change:transform}',  /* isolate the costly blur to its own layer (painted once) */
       'html[data-bstal-banner="on"] #bstal-ember{display:block}',
 
       /* mobile: full-width banner, slimmer + smaller insets */
