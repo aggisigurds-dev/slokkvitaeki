@@ -227,6 +227,16 @@
       P+'.view ._ars-vm[style*="var(--brand)"],'+P+'.view ._ars-mo[style*="var(--brand)"]{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 14px -5px var(--bstal-glow)!important}',
       P+'.view ._ars-card{background:#fff!important;border:1px solid rgba(20,24,34,.12)!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.2)!important}',
       P+'.view ._ars-summary{background:#fff!important;border:1px solid rgba(20,24,34,.12)!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.2)!important}',
+      /* ── ÞjónustuVerkstæði úttekt (tæki-listi + „Upplýsingar um úttekt" form) ──
+         The list (.ut-list) + notes/cost panel (#_ctc-notes/#_ctc-section) are
+         house light cards whose labels (var(--ink2)) went low-contrast on the
+         grey backdrop. Force clean white cards so dark labels read; the harsh
+         flat-black .ut-bulk bar becomes a metallic one. */
+      P+'.ut-list,'+P+'#_ctc-notes,'+P+'#_ctc-section{background:#fff!important;border-color:rgba(20,24,34,.10)!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.22)!important}',
+      P+'#_ctc-section{border-top:1px dashed #cfe8d8!important}',
+      P+'.ut-bulk{background:'+METAL_BLACK+'!important;border-bottom:1px solid #000!important}',
+      P+'.ut-grp-h{background:#f6f8fb!important}',
+      P+'.ut-svcseg{background:#f1f4f8!important}',
       /* empty / loading / error states readable on the grey backdrop */
       P+'.view .loading-state,'+P+'.view .empty-state,'+P+'.view .empty{color:#3a4250!important}',
       /* hero metallic-blue total card (opt-in: add class .bstal-hero) */
