@@ -113,10 +113,10 @@
   }
 
   function colHtml(title, sub, titleCol, bgGrad, body) {
-    return '<div style="display:flex;flex-direction:column;background:#fff;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden;min-height:0;min-width:0">' +
-      `<div style="padding:8px 12px;border-bottom:1px solid #f1f5f9;background:linear-gradient(180deg,${bgGrad} 0%,#fff 100%);flex-shrink:0">` +
-        `<div style="font-size:11px;font-weight:700;color:${titleCol};text-transform:uppercase;letter-spacing:.06em">${esc(title)}</div>` +
-        `<div style="font-size:10px;color:#94a3b8;margin-top:1px">${esc(sub)}</div>` +
+    return '<div class="cw-col" style="display:flex;flex-direction:column;background:#fff;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden;min-height:0;min-width:0">' +
+      `<div class="cw-col-head" style="padding:8px 12px;border-bottom:1px solid #f1f5f9;background:linear-gradient(180deg,${bgGrad} 0%,#fff 100%);flex-shrink:0">` +
+        `<div class="cw-col-title" style="font-size:11px;font-weight:700;color:${titleCol};text-transform:uppercase;letter-spacing:.06em">${esc(title)}</div>` +
+        `<div class="cw-col-sub" style="font-size:10px;color:#94a3b8;margin-top:1px">${esc(sub)}</div>` +
       '</div>' +
       `<div style="overflow-y:auto;padding:6px;flex:1;min-height:0">${body}</div>` +
     '</div>';
@@ -261,7 +261,7 @@
           '</div>';
       }).join('');
     }
-    return '<div style="position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid #e5e7eb;box-shadow:0 -6px 20px rgba(0,0,0,.08)">' +
+    return '<div class="cw-archive" style="position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid #e5e7eb;box-shadow:0 -6px 20px rgba(0,0,0,.08)">' +
         '<div onclick="Workshop.toggleArchive()" style="padding:11px 16px;cursor:pointer;display:flex;align-items:center;gap:9px;user-select:none">' +
           '<span>🗑️</span>' +
           '<span style="font-weight:700;flex:1;font-size:13px;color:#0f172a">Eydd tæki (' + items.length + ')</span>' +
@@ -284,7 +284,7 @@
     const contractJobs = jobs.filter(j => isContractCustomer(j.customer));
 
     const html =
-      '<div style="padding:10px 16px;border-bottom:1px solid var(--brd,#e4e6ea);display:flex;align-items:center;gap:10px;background:#f8f9fb;flex-wrap:wrap">' +
+      '<div class="cw-toolbar" style="padding:10px 16px;border-bottom:1px solid var(--brd,#e4e6ea);display:flex;align-items:center;gap:10px;background:#f8f9fb;flex-wrap:wrap">' +
         '<div style="font-size:13px;font-weight:600;color:#0f172a">Verkröð</div>' +
         `<span style="font-size:12px;color:var(--ink3,#8891a0)">${jobs.length} verk í vinnslu</span>` +
         '<button class="btn btn-outline btn-sm" onclick="Field.openScan()" style="margin-left:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg>Skanna tæki</button>' +
@@ -318,10 +318,10 @@
   }
 
   function colHtmlW(title, sub, titleCol, body) {
-    return '<div style="display:flex;flex-direction:column;background:#fff;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden;min-height:0;min-width:0">' +
-      '<div style="padding:12px 14px;border-bottom:1px solid #f1f5f9;background:linear-gradient(180deg,#f8fafc 0%,#fff 100%);flex-shrink:0">' +
-        `<div style="font-size:12px;font-weight:700;color:${titleCol};text-transform:uppercase;letter-spacing:.06em">${esc(title)}</div>` +
-        `<div style="font-size:11px;color:#94a3b8;margin-top:2px">${esc(sub)}</div>` +
+    return '<div class="cw-col" style="display:flex;flex-direction:column;background:#fff;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden;min-height:0;min-width:0">' +
+      '<div class="cw-col-head" style="padding:12px 14px;border-bottom:1px solid #f1f5f9;background:linear-gradient(180deg,#f8fafc 0%,#fff 100%);flex-shrink:0">' +
+        `<div class="cw-col-title" style="font-size:12px;font-weight:700;color:${titleCol};text-transform:uppercase;letter-spacing:.06em">${esc(title)}</div>` +
+        `<div class="cw-col-sub" style="font-size:11px;color:#94a3b8;margin-top:2px">${esc(sub)}</div>` +
       '</div>' +
       `<div style="overflow-y:auto;padding:8px;flex:1;min-height:0">${body}</div>` +
     '</div>';

@@ -191,6 +191,21 @@
       P+'.view table thead th{background:linear-gradient(180deg,#2b2f37,#15171c)!important;color:#eef1f4!important;border-color:#0a0b0d!important}',
       P+'.view table td,'+P+'.view table th{border-color:rgba(20,24,34,.08)!important}',
       P+'.view table tbody tr:hover td{background:rgba(20,24,34,.035)!important}',
+      /* ── Afgreiðsla (#view-counter) + Verkstæði (#view-workshop) chrome ──
+         The kanban toolbars/columns/headers use inline house styles; pull them
+         into the metallic theme so the bespoke flex pages match the rest. */
+      P+'#counter-sidebar,'+P+'.cw-toolbar{background:'+METAL_BLACK+'!important;border-bottom:1px solid #000!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}',
+      P+'#counter-sidebar>span,'+P+'.cw-toolbar>div:first-child,'+P+'.cw-toolbar>span{color:#cfd4dc!important}',
+      P+'.cw-col{background:#fff!important;border:1px solid rgba(20,24,34,.14)!important;box-shadow:0 12px 30px -16px rgba(0,0,0,.55)!important}',
+      P+'.cw-col-head{background:'+METAL_BLACK+'!important;border-bottom:1px solid #000!important}',
+      P+'.cw-col-sub{color:#9aa3b3!important}',
+      /* keep status colour-coding but brightened so it reads on the dark header */
+      P+'.cw-col-title[style*="#64748b"]{color:#aeb6c4!important}',
+      P+'.cw-col-title[style*="#d97706"]{color:#f6b545!important}',
+      P+'.cw-col-title[style*="#059669"]{color:#34d399!important}',
+      P+'.cw-col-title[style*="#0d6efd"]{color:#6ea8ff!important}',
+      P+'.cw-archive{background:'+METAL_BLACK+'!important;border-top:1px solid #000!important}',
+      P+'.cw-archive span{color:#e7eaf0!important}',
       /* empty / loading / error states readable on the grey backdrop */
       P+'.view .loading-state,'+P+'.view .empty-state,'+P+'.view .empty{color:#3a4250!important}',
       /* hero metallic-blue total card (opt-in: add class .bstal-hero) */
