@@ -611,7 +611,7 @@
             <div style="font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${arsAll.length - doneThisYear}</div>
             <div style="font-size:10.5px;color:#b45309">í pípunni</div>
           </div>
-          <div style="background:var(--thm-sumh);color:#fff;border:1px solid var(--brand);border-radius:10px;padding:11px 13px">
+          <div class="bstal-hero" style="background:var(--thm-sumh);color:#fff;border:1px solid var(--brand);border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:var(--brd2);text-transform:uppercase;letter-spacing:.05em">Áætlaðar tekjur ${curYear}</div>
             <div style="font-size:22px;font-weight:800;color:#fff;line-height:1.1;margin-top:2px;font-variant-numeric:tabular-nums">${fmtKr(totalEstimate)}</div>
             <div style="font-size:10.5px;color:#86efac">${fmtKr(estDoneThisYear)} þegar innheimt</div>

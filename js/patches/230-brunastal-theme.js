@@ -76,7 +76,7 @@
 
       /* ── page backdrop: UNIFORM brushed steel-grey (no dark zone around the
        *    content/products — the fixed banner supplies the black at the top). */
-      P+'.view{background:linear-gradient(180deg,#aab0ba 0%,#9aa0ab 220px,#949aa6 100%)!important}',
+      P+'.view{background:linear-gradient(180deg,#060607 0px,#060607 85px,#aeb4be 360px,#9ba1ad 100%)!important}',
       /* the POS draws its own colourful banner — hide it; the steel one replaces it. */
       P+'.pos-banner{display:none!important}',
 
@@ -96,15 +96,15 @@
       /* ── scroll model: standard block pages → one deterministic scroller below
        *    the banner. box-sizing:border-box (app default) makes the inner
        *    .main-panel fit exactly beneath the banner with no clipping. */
-      ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){height:100vh!important;overflow-y:auto!important;padding-top:118px!important}',
+      ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){height:100vh!important;overflow-y:auto!important;padding-top:160px!important}',
       ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel{height:100%!important;overflow-y:auto!important;max-width:none}',
       /* bespoke FLEX pages (map / kanban / workshop) → keep native flex+scroll,
        * just inset below the banner (border-box shrinks the inner panes to fit). */
-      ON+'#view-field.active,'+ON+'#view-counter.active,'+ON+'#view-workshop.active{padding-top:110px!important}',
+      ON+'#view-field.active,'+ON+'#view-counter.active,'+ON+'#view-workshop.active{padding-top:152px!important}',
 
       /* ── WHITE cards (kept light) with the spec's soft shadow ───────────── */
       P+'.view .tcard,'+P+'.view .card,'+P+'.view [class*="-card"]{background:#fff!important;border:1px solid rgba(20,24,34,.08)!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)!important}',
-      P+'.view h1{color:#11141c!important}',
+      P+'.view h1{color:#fff!important;text-shadow:0 2px 8px rgba(0,0,0,.55)}',
 
       /* ── BUTTONS: only real .btn-style buttons get the metal finish, so tiny
        *    icon/utility <button>s are NOT turned into black blobs. ─────────── */
@@ -166,6 +166,28 @@
       P+'.view .bstal-hero *{color:#fff!important}',
       /* SVG bar charts (Tekjur o.fl.) — red bars → accent */
       P+'.view svg rect[fill="#dc2626"]{fill:var(--bstal-accent)!important}',
+      /* Fyrirtæki í þjónustu (#153): „+ Nýtt fyrirtæki" flat red → accent metal CTA */
+      P+'.view #_ars-new{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:0 0 16px -4px var(--bstal-glow),inset 0 1px 0 rgba(255,255,255,.16)!important;text-shadow:0 1px 1px rgba(0,0,0,.4)}',
+
+      /* ═══ SALA (POS) — replicate the Dark-Metallic design faithfully ═════ */
+      /* right „KARFA" box → dark panel */
+      P+'.view .pos-cart{background:#14171d!important;border:1px solid rgba(255,255,255,.06)!important;box-shadow:0 18px 44px -24px #000!important;color:rgba(255,255,255,.85)!important}',
+      /* cart text → light (override dark inline colours + the 229 bridge) */
+      P+'.view .pos-cart [style*="color:#64748b"],'+P+'.view .pos-cart [style*="color:#94a3b8"],'+P+'.view .pos-cart [style*="color:#334155"]{color:rgba(255,255,255,.6)!important}',
+      P+'.view .pos-cart [style*="color:#0f172a"],'+P+'.view .pos-cart [style*="color:#111"],'+P+'.view .pos-cart [style*="color:#1e293b"]{color:#fff!important}',
+      /* empty-cart dashed box → dark */
+      P+'.view .pos-cart [style*="dashed"]{border-color:rgba(255,255,255,.14)!important;background:rgba(255,255,255,.03)!important}',
+      /* „+ Annað" + „🧾 Bókhald" → metallic black */
+      P+'.view #pos-add-service,'+P+'.view ._sala_shortcut_by{background:'+METAL_BLACK+'!important;color:#fff!important;border:1px solid #0a0b0d!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important}',
+      /* section headers Viðskiptavinur / Þjónusta / Vörur → bigger + darker (per design) */
+      P+'.view .pos-sec{font-size:14px!important;color:#3a4250!important;letter-spacing:.08em!important}',
+      /* „ÁFRAM" + „Án kennitölu" walk-in → accent CTA (were green) */
+      P+'.view #pos-checkout,'+P+'.view #_ups-walkin{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:0 0 18px -4px var(--bstal-glow),inset 0 1px 0 rgba(255,255,255,.18)!important;text-shadow:0 1px 1px rgba(0,0,0,.4)}',
+      /* „Skanna" → metallic black */
+      P+'.view #pos-scan-top{background:'+METAL_BLACK+'!important;border:1px solid #0a0b0d!important;color:#fff!important}',
+      /* POS service/product tiles → brushed metal plate */
+      P+'.view .pos-svc,'+P+'.view .pos-prod{background-color:var(--bstal-plate)!important;background-image:var(--bstal-plate-img)!important;border:1px solid rgba(20,24,34,.09)!important;box-shadow:0 4px 12px -6px rgba(25,35,60,.12)!important}',
+      P+'.view .pos-svc:hover,'+P+'.view .pos-prod:hover{border-color:var(--bstal-ring)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 16px 34px -16px var(--bstal-glow)!important;transform:translateY(-3px)}',
       /* MODALS (outside .view): white body, metallic header + buttons. The print
        * receipt uses a separate print window, so it is unaffected. */
       P+'.modal{background:#fff!important;border:1px solid rgba(20,24,34,.1)!important;box-shadow:0 30px 80px -20px rgba(0,0,0,.6)!important}',
@@ -181,8 +203,8 @@
       'html[data-thm-preset="'+PRESET+'"] #view-utlit .thm-card:has(#thm-accents){display:none}',
 
       /* ═══ THE STEEL BANNER ═══════════════════════════════════════════════ */
-      '#bstal-banner{position:fixed;top:0;left:var(--sidebar-w,220px);right:0;height:104px;z-index:40;'
-        +'padding:7px;border-radius:0 0 16px 16px;'
+      '#bstal-banner{position:fixed;top:10px;left:calc(var(--sidebar-w,220px) + 14px);right:14px;height:134px;z-index:40;'
+        +'padding:7px;border-radius:16px;'
         +'background:linear-gradient(180deg,#26282d 0%,#121316 42%,#070708 100%);'
         +'box-shadow:inset 0 2px 0 rgba(255,255,255,.14),inset 0 -4px 8px rgba(0,0,0,.85),0 22px 40px -18px #000;'
         +'display:none}',
@@ -192,7 +214,7 @@
         +'display:flex;align-items:center;gap:18px;padding:0 22px}',
       '#bstal-banner .bb-bolt{position:absolute;width:12px;height:12px;border-radius:50%;z-index:6;'
         +'background:radial-gradient(circle at 35% 30%,#9aa1ab,#26282d 70%);box-shadow:inset 0 1px 1px rgba(255,255,255,.6),0 1px 2px #000}',
-      '#bstal-banner .bb-flames{position:absolute;left:0;right:0;bottom:-2px;height:78px;z-index:1;pointer-events:none;'
+      '#bstal-banner .bb-flames{position:absolute;left:0;right:0;bottom:-2px;height:106px;z-index:1;pointer-events:none;'
         +'background:url("/img/theme/fire-flames.png") repeat-x bottom left;background-size:auto 100%;'
         +'-webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 32%);mask-image:linear-gradient(180deg,transparent 0%,#000 32%);'
         +'transform:translateZ(0);will-change:transform}',  /* own GPU layer — not re-painted on clock tick */
@@ -203,27 +225,28 @@
       '#bstal-banner .bb-word{font-family:"Sora",sans-serif;font-weight:700;font-size:17px;letter-spacing:.14em;color:#fff;'
         +'margin-top:6px;white-space:nowrap;text-shadow:0 2px 6px rgba(0,0,0,.85)}',
       '#bstal-banner .bb-word b{font-weight:500;color:rgba(255,255,255,.7)}',
-      /* right cluster: page label · live LED clock · date (the clock back in its place) */
-      '#bstal-banner .bb-right{position:relative;z-index:5;margin-left:auto;text-align:right;white-space:nowrap}',
-      '#bstal-banner .bb-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.55)}',
-      '#bstal-banner .bb-clock{font-family:"Space Mono",monospace;font-size:25px;font-weight:700;color:#fff;line-height:1.1;font-variant-numeric:tabular-nums;text-shadow:0 2px 8px rgba(0,0,0,.7);contain:layout style}',
-      '#bstal-banner .bb-date{font-size:11px;color:rgba(255,255,255,.6);margin-top:1px}',
-      '#bstal-banner .bb-sw{position:relative;z-index:5;display:flex;gap:6px;margin-left:18px}',
-      '#bstal-banner .bb-sw button{width:26px;height:20px;border-radius:6px;cursor:pointer;padding:0;border:2px solid rgba(255,255,255,.18);opacity:.5;transition:opacity .15s,border-color .15s}',
+      /* right cluster: theme-swatch box + recessed LED clock (per bannerexport.html) */
+      '#bstal-banner .bb-rightwrap{position:relative;z-index:5;margin-left:auto;display:flex;align-items:center;gap:12px}',
+      '#bstal-banner .bb-clockbox{text-align:right;padding:8px 16px;border-radius:12px;background:#050607;border:1px solid #000;box-shadow:inset 0 2px 10px #000,inset 0 0 30px rgba(255,160,40,.06)}',
+      '#bstal-banner .bb-eyebrow{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.22em;color:rgba(255,178,77,.55)}',
+      '#bstal-banner .bb-clock{font-family:"Space Mono",monospace;font-size:28px;font-weight:700;line-height:1.05;color:#ffb24d;font-variant-numeric:tabular-nums;letter-spacing:.5px;text-shadow:0 0 14px rgba(255,160,40,.85);contain:layout style}',
+      '#bstal-banner .bb-date{font-size:10px;color:rgba(255,178,77,.5);font-family:"Space Mono",monospace;margin-top:1px;text-transform:uppercase}',
+      '#bstal-banner .bb-sw{display:flex;gap:4px;padding:4px;border-radius:12px;background:#070809;border:1px solid #000;box-shadow:inset 0 2px 6px #000}',
+      '#bstal-banner .bb-sw button{width:28px;height:22px;border-radius:7px;cursor:pointer;padding:0;border:2px solid rgba(255,255,255,.18);opacity:.5;transition:opacity .15s,border-color .15s}',
       '#bstal-banner .bb-sw button.on{opacity:1;border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.18)}',
       '#bstal-banner .bb-sw button.red{background:linear-gradient(145deg,#0d0102,#6c0d10 50%,#971515 60%,#100102)}',
       '#bstal-banner .bb-sw button.blue{background:linear-gradient(145deg,#03040a,#1d3c80 52%,#264c9e 60%,#03060d)}',
       '#bstal-banner .bb-sw button.gold{background:linear-gradient(145deg,#0d0802,#5c4413 52%,#82661f 60%,#100b03)}',
       /* ember underglow bleeding below the banner */
-      '#bstal-ember{position:fixed;top:104px;left:calc(var(--sidebar-w,220px) + 8%);right:8%;height:60px;z-index:39;pointer-events:none;'
+      '#bstal-ember{position:fixed;top:146px;left:calc(var(--sidebar-w,220px) + 8%);right:8%;height:60px;z-index:39;pointer-events:none;'
         +'background:radial-gradient(62% 100% at 50% 0%,rgba(255,110,30,.32),rgba(255,80,20,.08) 55%,transparent 76%);filter:blur(13px);display:none;'
         +'transform:translateZ(0);will-change:transform}',  /* isolate the costly blur to its own layer (painted once) */
       'html[data-bstal-banner="on"] #bstal-ember{display:block}',
 
       /* mobile: full-width banner, slimmer + smaller insets */
-      '@media(max-width:760px){#bstal-banner{left:0;height:84px}#bstal-banner .bb-logo img{height:34px}#bstal-banner .bb-word{font-size:13px}#bstal-banner .bb-clock{font-size:20px}#bstal-ember{left:0;right:0;top:84px}'
-        +ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:96px!important}'
-        +ON+'#view-field.active,'+ON+'#view-counter.active,'+ON+'#view-workshop.active{padding-top:90px!important}}'
+      '@media(max-width:760px){#bstal-banner{left:10px;right:10px;top:8px;height:104px}#bstal-banner .bb-logo img{height:34px}#bstal-banner .bb-word{font-size:13px}#bstal-banner .bb-clock{font-size:24px}#bstal-banner .bb-flames{height:80px}#bstal-ember{left:10px;right:10px;top:114px}'
+        +ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:120px!important}'
+        +ON+'#view-field.active,'+ON+'#view-counter.active,'+ON+'#view-workshop.active{padding-top:114px!important}}'
     ].join('\n');
     const st = document.createElement('style'); st.id='bstal-css'; st.textContent = css;
     (document.head||document.documentElement).appendChild(st);
@@ -245,15 +268,17 @@
           '<img src="/img/theme/brunaholf-mark.png" alt="Brunahólf">'+
           '<div class="bb-word">SLÖKKVITÆKI <b>EHF.</b></div>'+
         '</div>'+
-        '<div class="bb-right">'+
-          '<div class="bb-eyebrow" id="bstal-title">Slökkvitæki</div>'+
-          '<div class="bb-clock" id="bstal-clock">--:--:--</div>'+
-          '<div class="bb-date" id="bstal-date">—</div>'+
-        '</div>'+
-        '<div class="bb-sw" id="bstal-sw">'+
-          '<button class="red'+(acc==='red'?' on':'')+'" data-acc="red" title="Rautt"></button>'+
-          '<button class="blue'+(acc==='blue'?' on':'')+'" data-acc="blue" title="Blátt"></button>'+
-          '<button class="gold'+(acc==='gold'?' on':'')+'" data-acc="gold" title="Gyllt"></button>'+
+        '<div class="bb-rightwrap">'+
+          '<div class="bb-sw" id="bstal-sw">'+
+            '<button class="blue'+(acc==='blue'?' on':'')+'" data-acc="blue" title="Blátt"></button>'+
+            '<button class="red'+(acc==='red'?' on':'')+'" data-acc="red" title="Rautt"></button>'+
+            '<button class="gold'+(acc==='gold'?' on':'')+'" data-acc="gold" title="Gyllt"></button>'+
+          '</div>'+
+          '<div class="bb-clockbox">'+
+            '<div class="bb-eyebrow">KASSAKERFI</div>'+
+            '<div class="bb-clock" id="bstal-clock">--:--</div>'+
+            '<div class="bb-date" id="bstal-date">—</div>'+
+          '</div>'+
         '</div>'+
       '</div>';
     const ember = document.createElement('div'); ember.id = 'bstal-ember';
@@ -268,13 +293,20 @@
 
   // ── live clock ──────────────────────────────────────────────────────────────
   let clockTimer = null;
+  function staffName() {
+    try {
+      const l = window.AppSettings && AppSettings.path && AppSettings.path('starfsmenn');
+      if (Array.isArray(l)) { const f = l.find(s => s && s.name && String(s.name).trim()); if (f) return String(f.name).trim(); }
+    } catch (_) {}
+    return '';
+  }
   function tickClock() {
     const c = document.getElementById('bstal-clock'); if (!c) return;
     const n = new Date();
     const p = (x) => String(x).padStart(2, '0');
-    c.textContent = p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds());
+    c.textContent = p(n.getHours())+':'+p(n.getMinutes());
     const d = document.getElementById('bstal-date');
-    if (d) d.textContent = WK[n.getDay()]+' '+n.getDate()+'. '+MO[n.getMonth()];
+    if (d) { const st = staffName(); d.textContent = WK[n.getDay()]+' '+n.getDate()+'. '+MO[n.getMonth()] + (st ? ' · ' + st : ''); }
   }
 
   // ── show/hide + live page title ─────────────────────────────────────────────
@@ -285,18 +317,8 @@
     fonts(); styles(); buildBanner();
     document.documentElement.setAttribute('data-bstal-banner', 'on');
     if (!clockTimer) { tickClock(); clockTimer = setInterval(tickClock, 1000); }
-    // live page title: nice map → active nav label → brand title
-    const active = document.querySelector('.view.active');
-    const id = active ? (active.id || '').replace(/^view-/, '') : '';
-    let title = VIEW_TITLES[id];
-    if (!title) {
-      const navSpan = document.querySelector('.vnav-btn.active span');
-      title = navSpan && navSpan.textContent ? navSpan.textContent.trim() : '';
-      title = title.replace(/^[^\p{L}\p{N}]+/u, '').trim();
-    }
-    title = title || 'Slökkvitæki';
-    if (title === lastTitle) return; lastTitle = title;
-    const tEl = document.getElementById('bstal-title'); if (tEl) tEl.textContent = title;
+    // The eyebrow is a static „KASSAKERFI" label (LED-clock widget); no per-page
+    // title update needed.
   }
 
   // ── hooks: theme attr changes + every view switch ───────────────────────────

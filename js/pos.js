@@ -277,7 +277,7 @@
       '<div>' +
         '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px">' +
-            '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Viðskiptavinur</div>' +
+            '<div class="pos-sec" style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Viðskiptavinur</div>' +
             // 2026-05-19: scan button between Viðskiptavinur label and Án-kennitölu
             // toggle — scanning a tæki QR looks up its client and fills the
             // customer box in one step.
@@ -319,7 +319,7 @@
         '</div>' +
         '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-            '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Þjónusta</div>' +
+            '<div class="pos-sec" style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Þjónusta</div>' +
             // 2026-05-19: removed "📷 Skanna QR" button — user reported the
             // camera scanner works poorly and the location uses a handheld
             // laser QR scanner instead (it types into the focused field
@@ -331,12 +331,12 @@
           '<div id="pos-services" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>' +
         '</div>' +
         '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
-          '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Vörur</div>' +
+          '<div class="pos-sec" style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Vörur</div>' +
           '<div id="pos-products" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>' +
         '</div>' +
       '</div>' +
       '<div>' +
-        '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9;position:sticky;top:12px;display:flex;flex-direction:column;max-height:calc(100vh - 200px)">' +
+        '<div class="pos-cart" style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9;position:sticky;top:12px;display:flex;flex-direction:column;max-height:calc(100vh - 200px)">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
             '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Karfa</div>' +
             '<button id="pos-add-service" style="background:#f1f5f9;color:#334155;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600">+ Annað</button>' +
