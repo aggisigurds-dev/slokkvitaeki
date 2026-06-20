@@ -1,92 +1,39 @@
-/* === SIDEBAR STABILIZE — anti-"popcorn" load v1 ===
+/* === SIDEBAR STABILIZE — NEUTRALISED 2026-06-20 ===
  *
- * The side-nav buttons used to visibly "popcorn" in on load: ~19 patches inject
- * their own nav button on DOMContentLoaded (after first paint), and patch 68
- * (sidebar-reorder) then wipes + rebuilds the whole nav up to three times
- * (DOMContentLoaded / +1.5s / +3s) to sort the late arrivals — so buttons
- * appear and jump between paints.
+ * This patch used to MASK the whole side-nav (visibility:hidden on every
+ * .vnav-btn via `body.nav-settling`) until it "stopped changing", revealing it
+ * only after a 700ms-quiet debounce with a hard 3800ms cap.
  *
- * Rather than rewrite all 19 injectors to render statically (high regression
- * risk — each has its own dedup guard + click wiring), we make the load LOOK
- * static: mask the nav *contents* until they've been injected and ordered once,
- * then reveal the finished list in a single step — no entrance animation.
+ * It was built for the OLD patch-68 engine, which wiped + rebuilt the nav DOM
+ * up to three times on load ("popcorn"). Patch 68 was rewritten 2026-06-13 to
+ * position buttons with CSS `order` (zero DOM moves) + a permanent observer that
+ * drops every button straight into its slot the instant it exists — so there is
+ * no popcorn to hide anymore.
  *
- * The sidebar rail keeps its fixed width while masked, so there is zero
- * horizontal reflow. A hard timeout guarantees the nav is ALWAYS revealed even
- * if anything errors — the nav can never get stuck hidden.
+ * The mask had become the single biggest cause of "the sidebar is very slow to
+ * load": because this script runs late in the load order, it hid the nav AFTER
+ * it had already painted, so the user saw buttons flash in → the whole sidebar
+ * go blank for ~2 seconds → reappear at ~3.4s. Instrumented load timeline
+ * (2026-06-20) confirmed buttons were ready by ~1.2s but stayed masked to ~3.4s.
  *
- * Purely additive: does not touch the injector patches or patch 68's logic.
+ * NEUTRALISED: the nav now paints as soon as its buttons exist. Correct,
+ * stable order from the first paint is guaranteed by patch 68's CSS-`order`
+ * engine + a localStorage cache of the saved order (no late Supabase reshuffle).
+ * Kept as a no-op (not deleted) so the change is trivially reversible.
  */
 (() => {
   if (window.__sidebarStabilizeInstalled) return;
   window.__sidebarStabilizeInstalled = true;
 
-  const STYLE_ID = 'sidebar-stabilize-style';
-  if (!document.getElementById(STYLE_ID)) {
-    const s = document.createElement('style');
-    s.id = STYLE_ID;
-    // Hide only the nav's items while settling — the rail (background + fixed
-    // width) stays, so layout width is unchanged.
-    s.textContent = `
-      body.nav-settling nav.view-nav .vnav-btn,
-      body.nav-settling nav.view-nav .nav-sep,
-      body.nav-settling nav.view-nav .nav-section-label,
-      body.nav-settling nav.view-nav .qlinks-section { visibility: hidden !important; }
-      /* No entrance/transition flicker on the first reveal — items just appear,
-         already sorted. User-initiated open/close animations are unaffected
-         (they only run after settling is over). */
-      body.nav-settling nav.view-nav .vnav-btn { transition: none !important; animation: none !important; }
-    `;
-    document.head.appendChild(s);
-  }
-
-  // Begin masking as early as possible (this script parses before first paint).
-  (function startMask() {
-    if (document.body) document.body.classList.add('nav-settling');
-    else requestAnimationFrame(startMask);
-  })();
-
-  let revealed = false;
-  function reveal() {
-    if (revealed) return;
-    revealed = true;
-    // Force one final ordering pass so the nav appears already-sorted.
-    try { if (window.SidebarReorder && SidebarReorder.reorder) SidebarReorder.reorder(); } catch (_) {}
+  // Safety: if any older build left the masking class/style behind (e.g. a
+  // cached index.html with body class="nav-settling"), clear it so the nav can
+  // never get stuck hidden.
+  try {
     if (document.body) document.body.classList.remove('nav-settling');
-  }
+    const old = document.getElementById('sidebar-stabilize-style');
+    if (old) old.remove();
+  } catch (_) {}
 
-  // Reveal once the nav STOPS changing — i.e. all ~19 async injectors (some on
-  // setTimeout 600/1500/3000ms) have landed and patch 68 has ordered them — so
-  // the finished list appears in a single paint instead of popcorning in.
-  // Debounce on nav child mutations; a hard cap guarantees it never stays
-  // masked. The mask uses visibility:hidden, so the rail keeps its width/height
-  // the whole time → zero layout shift.
-  function scheduleStableReveal() {
-    const nav = document.querySelector('nav.view-nav, .view-nav');
-    if (!nav) { setTimeout(scheduleStableReveal, 150); return; }
-    // 2026-06-09: settle window widened 360→700ms — injector timers run at
-    // 600/800/1200/1500ms intervals, and 360ms gaps between them leaked an
-    // early reveal mid-assembly (the "multi-layered build-up" on refresh).
-    let timer = setTimeout(reveal, 700);
-    const obs = new MutationObserver(() => {
-      if (revealed) { obs.disconnect(); return; }
-      clearTimeout(timer);
-      timer = setTimeout(() => { obs.disconnect(); reveal(); }, 700);
-    });
-    obs.observe(nav, { childList: true });
-  }
-  function whenReady(fn) {
-    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', fn, { once: true });
-    else fn();
-  }
-  whenReady(scheduleStableReveal);
-
-  // Hard safety net — never leave the nav masked, no matter what.
-  // 3800ms: must outlast patch 68's final reorder pass at 3000ms (+ its own
-  // 200-800ms scheduling delay); the old 2600ms cap revealed BEFORE that pass,
-  // so the last reshuffle always happened in plain view.
-  setTimeout(reveal, 3800);
-
-  console.log('[patch-180] sidebar-stabilize installed — mask-until-settled, no popcorn');
+  console.log('[patch-180] sidebar-stabilize NEUTRALISED — nav paints immediately (no mask)');
 })();
 /* === END SIDEBAR STABILIZE === */

@@ -53,23 +53,40 @@
   // (separator) or a string (one of the user's nav-button labels). Items in
   // settings.sidebar_hidden are skipped entirely. Items not listed flow to
   // the tail as before (so newly-shipped nav buttons aren't lost).
+  // 2026-06-20: cache the saved order/hidden in localStorage. AppSettings loads
+  // from Supabase a few seconds into the page, so on first paint it isn't ready
+  // and the nav was laid out in the DEFAULT order, then visibly RE-SHUFFLED when
+  // the real order arrived (the big late layout jump). Reading a localStorage
+  // cache makes the user's order available SYNCHRONOUSLY from the first reorder,
+  // so the nav lands in its final order immediately and never jumps. The cache
+  // is refreshed every time AppSettings does have the value.
   function getCustomOrder() {
     try {
-      if (!window.AppSettings || !AppSettings.path) return null;
-      const v = AppSettings.path('sidebar_order');
-      if (!Array.isArray(v) || !v.length) return null;
-      // Raw entries: stable ids (data-view) or, for back-compat, old label
-      // strings — plus SEP. Matched by navId()-exact first, label substring
-      // as a fallback (see matchCustomEntry).
-      return v.slice();
-    } catch (_) { return null; }
+      if (window.AppSettings && AppSettings.path) {
+        const v = AppSettings.path('sidebar_order');
+        if (Array.isArray(v) && v.length) {
+          try { localStorage.setItem('sb_order_cache', JSON.stringify(v)); } catch (_) {}
+          return v.slice();
+        }
+      }
+      const c = localStorage.getItem('sb_order_cache');
+      if (c) { const a = JSON.parse(c); if (Array.isArray(a) && a.length) return a; }
+    } catch (_) {}
+    return null;
   }
   function getHidden() {
     try {
-      if (!window.AppSettings || !AppSettings.path) return [];
-      const v = AppSettings.path('sidebar_hidden');
-      return Array.isArray(v) ? v : [];
-    } catch (_) { return []; }
+      if (window.AppSettings && AppSettings.path) {
+        const v = AppSettings.path('sidebar_hidden');
+        if (Array.isArray(v)) {
+          try { localStorage.setItem('sb_hidden_cache', JSON.stringify(v)); } catch (_) {}
+          return v;
+        }
+      }
+      const c = localStorage.getItem('sb_hidden_cache');
+      if (c) { const a = JSON.parse(c); if (Array.isArray(a)) return a; }
+    } catch (_) {}
+    return [];
   }
 
   // Each entry is either SEP (insert a divider) or an array of substrings
@@ -314,11 +331,11 @@
   document.addEventListener('DOMContentLoaded', scheduleReorder);
   setTimeout(scheduleReorder, 1500);
   setTimeout(scheduleReorder, 3000);
-  // 2026-06-12: late safety passes — a few injectors (and slow AppSettings
-  // loads) can land after the 3s pass; without these the late arrivals sat
-  // unordered at the tail until the next mutation ("sidepanel shuffles").
-  setTimeout(scheduleReorder, 6000);
-  setTimeout(scheduleReorder, 12000);
+  // 2026-06-20: the old 6s/12s "late safety" passes were removed. The permanent
+  // observer below already places any button into its slot the instant it is
+  // injected, so those passes were redundant — and being the only reorders that
+  // ran AFTER first paint + AFTER the user might be interacting, they were the
+  // ones that visibly re-shuffled the nav seconds into the session.
 
   // 2026-06-13: with the CSS-order engine there are no DOM moves and no
   // click-swallowing, so a permanent observer is now safe — and it finally
