@@ -96,11 +96,11 @@
       /* ── scroll model: standard block pages → one deterministic scroller below
        *    the banner. box-sizing:border-box (app default) makes the inner
        *    .main-panel fit exactly beneath the banner with no clipping. */
-      ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){height:100vh!important;overflow-y:auto!important;padding-top:118px!important}',
+      ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){height:100vh!important;overflow-y:auto!important;padding-top:160px!important}',
       ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel{height:100%!important;overflow-y:auto!important;max-width:none}',
       /* bespoke FLEX pages (map / kanban / workshop) → keep native flex+scroll,
        * just inset below the banner (border-box shrinks the inner panes to fit). */
-      ON+'#view-field.active,'+ON+'#view-counter.active,'+ON+'#view-workshop.active{padding-top:110px!important}',
+      ON+'#view-field.active,'+ON+'#view-counter.active,'+ON+'#view-workshop.active{padding-top:152px!important}',
 
       /* ── WHITE cards (kept light) with the spec's soft shadow ───────────── */
       P+'.view .tcard,'+P+'.view .card,'+P+'.view [class*="-card"]{background:#fff!important;border:1px solid rgba(20,24,34,.08)!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)!important}',
@@ -175,8 +175,10 @@
       P+'.view .pos-cart [style*="color:#0f172a"],'+P+'.view .pos-cart [style*="color:#111"],'+P+'.view .pos-cart [style*="color:#1e293b"]{color:#fff!important}',
       /* empty-cart dashed box → dark */
       P+'.view .pos-cart [style*="dashed"]{border-color:rgba(255,255,255,.14)!important;background:rgba(255,255,255,.03)!important}',
-      /* „+ Annað" → metallic black */
-      P+'.view #pos-add-service{background:'+METAL_BLACK+'!important;color:#fff!important;border:1px solid #0a0b0d!important}',
+      /* „+ Annað" + „🧾 Bókhald" → metallic black */
+      P+'.view #pos-add-service,'+P+'.view ._sala_shortcut_by{background:'+METAL_BLACK+'!important;color:#fff!important;border:1px solid #0a0b0d!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)!important}',
+      /* section headers Viðskiptavinur / Þjónusta / Vörur → bigger + darker (per design) */
+      P+'.view .pos-sec{font-size:14px!important;color:#3a4250!important;letter-spacing:.08em!important}',
       /* „ÁFRAM" + „Án kennitölu" walk-in → accent CTA (were green) */
       P+'.view #pos-checkout,'+P+'.view #_ups-walkin{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:0 0 18px -4px var(--bstal-glow),inset 0 1px 0 rgba(255,255,255,.18)!important;text-shadow:0 1px 1px rgba(0,0,0,.4)}',
       /* „Skanna" → metallic black */
@@ -199,8 +201,8 @@
       'html[data-thm-preset="'+PRESET+'"] #view-utlit .thm-card:has(#thm-accents){display:none}',
 
       /* ═══ THE STEEL BANNER ═══════════════════════════════════════════════ */
-      '#bstal-banner{position:fixed;top:0;left:var(--sidebar-w,220px);right:0;height:104px;z-index:40;'
-        +'padding:7px;border-radius:0 0 16px 16px;'
+      '#bstal-banner{position:fixed;top:10px;left:calc(var(--sidebar-w,220px) + 14px);right:14px;height:134px;z-index:40;'
+        +'padding:7px;border-radius:16px;'
         +'background:linear-gradient(180deg,#26282d 0%,#121316 42%,#070708 100%);'
         +'box-shadow:inset 0 2px 0 rgba(255,255,255,.14),inset 0 -4px 8px rgba(0,0,0,.85),0 22px 40px -18px #000;'
         +'display:none}',
@@ -210,7 +212,7 @@
         +'display:flex;align-items:center;gap:18px;padding:0 22px}',
       '#bstal-banner .bb-bolt{position:absolute;width:12px;height:12px;border-radius:50%;z-index:6;'
         +'background:radial-gradient(circle at 35% 30%,#9aa1ab,#26282d 70%);box-shadow:inset 0 1px 1px rgba(255,255,255,.6),0 1px 2px #000}',
-      '#bstal-banner .bb-flames{position:absolute;left:0;right:0;bottom:-2px;height:78px;z-index:1;pointer-events:none;'
+      '#bstal-banner .bb-flames{position:absolute;left:0;right:0;bottom:-2px;height:106px;z-index:1;pointer-events:none;'
         +'background:url("/img/theme/fire-flames.png") repeat-x bottom left;background-size:auto 100%;'
         +'-webkit-mask-image:linear-gradient(180deg,transparent 0%,#000 32%);mask-image:linear-gradient(180deg,transparent 0%,#000 32%);'
         +'transform:translateZ(0);will-change:transform}',  /* own GPU layer — not re-painted on clock tick */
@@ -223,9 +225,11 @@
       '#bstal-banner .bb-word b{font-weight:500;color:rgba(255,255,255,.7)}',
       /* right cluster: page label · live LED clock · date (the clock back in its place) */
       '#bstal-banner .bb-right{position:relative;z-index:5;margin-left:auto;text-align:right;white-space:nowrap}',
-      '#bstal-banner .bb-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:rgba(255,255,255,.55)}',
-      '#bstal-banner .bb-clock{font-family:"Space Mono",monospace;font-size:25px;font-weight:700;color:#fff;line-height:1.1;font-variant-numeric:tabular-nums;text-shadow:0 2px 8px rgba(0,0,0,.7);contain:layout style}',
-      '#bstal-banner .bb-date{font-size:11px;color:rgba(255,255,255,.6);margin-top:1px}',
+      '#bstal-banner .bb-right::before{content:"";position:absolute;z-index:-1;inset:-10px -18px -10px -38px;background:radial-gradient(closest-side at 74% 50%,rgba(0,0,0,.74),transparent 88%)}',
+      '#bstal-banner .bb-eyebrow{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.16em;color:rgba(255,255,255,.55)}',
+      /* LED-style clock — glowing red-amber digits (like an alarm-clock display) */
+      '#bstal-banner .bb-clock{font-family:"Space Mono",monospace;font-size:33px;font-weight:700;color:#ff5b2e;line-height:1.0;font-variant-numeric:tabular-nums;letter-spacing:1px;text-shadow:0 0 6px rgba(255,110,40,.95),0 0 16px rgba(255,70,20,.6),0 0 2px rgba(255,190,150,.9);contain:layout style}',
+      '#bstal-banner .bb-date{font-size:11px;color:rgba(255,255,255,.62);margin-top:2px;text-transform:uppercase;letter-spacing:.05em}',
       '#bstal-banner .bb-sw{position:relative;z-index:5;display:flex;gap:6px;margin-left:18px}',
       '#bstal-banner .bb-sw button{width:26px;height:20px;border-radius:6px;cursor:pointer;padding:0;border:2px solid rgba(255,255,255,.18);opacity:.5;transition:opacity .15s,border-color .15s}',
       '#bstal-banner .bb-sw button.on{opacity:1;border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.18)}',
@@ -233,15 +237,15 @@
       '#bstal-banner .bb-sw button.blue{background:linear-gradient(145deg,#03040a,#1d3c80 52%,#264c9e 60%,#03060d)}',
       '#bstal-banner .bb-sw button.gold{background:linear-gradient(145deg,#0d0802,#5c4413 52%,#82661f 60%,#100b03)}',
       /* ember underglow bleeding below the banner */
-      '#bstal-ember{position:fixed;top:104px;left:calc(var(--sidebar-w,220px) + 8%);right:8%;height:60px;z-index:39;pointer-events:none;'
+      '#bstal-ember{position:fixed;top:146px;left:calc(var(--sidebar-w,220px) + 8%);right:8%;height:60px;z-index:39;pointer-events:none;'
         +'background:radial-gradient(62% 100% at 50% 0%,rgba(255,110,30,.32),rgba(255,80,20,.08) 55%,transparent 76%);filter:blur(13px);display:none;'
         +'transform:translateZ(0);will-change:transform}',  /* isolate the costly blur to its own layer (painted once) */
       'html[data-bstal-banner="on"] #bstal-ember{display:block}',
 
       /* mobile: full-width banner, slimmer + smaller insets */
-      '@media(max-width:760px){#bstal-banner{left:0;height:84px}#bstal-banner .bb-logo img{height:34px}#bstal-banner .bb-word{font-size:13px}#bstal-banner .bb-clock{font-size:20px}#bstal-ember{left:0;right:0;top:84px}'
-        +ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:96px!important}'
-        +ON+'#view-field.active,'+ON+'#view-counter.active,'+ON+'#view-workshop.active{padding-top:90px!important}}'
+      '@media(max-width:760px){#bstal-banner{left:10px;right:10px;top:8px;height:104px}#bstal-banner .bb-logo img{height:34px}#bstal-banner .bb-word{font-size:13px}#bstal-banner .bb-clock{font-size:24px}#bstal-banner .bb-flames{height:80px}#bstal-ember{left:10px;right:10px;top:114px}'
+        +ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:120px!important}'
+        +ON+'#view-field.active,'+ON+'#view-counter.active,'+ON+'#view-workshop.active{padding-top:114px!important}}'
     ].join('\n');
     const st = document.createElement('style'); st.id='bstal-css'; st.textContent = css;
     (document.head||document.documentElement).appendChild(st);
@@ -264,7 +268,7 @@
           '<div class="bb-word">SLÖKKVITÆKI <b>EHF.</b></div>'+
         '</div>'+
         '<div class="bb-right">'+
-          '<div class="bb-eyebrow" id="bstal-title">Slökkvitæki</div>'+
+          '<div class="bb-eyebrow" id="bstal-title">KASSAKERFI</div>'+
           '<div class="bb-clock" id="bstal-clock">--:--:--</div>'+
           '<div class="bb-date" id="bstal-date">—</div>'+
         '</div>'+
@@ -286,13 +290,20 @@
 
   // ── live clock ──────────────────────────────────────────────────────────────
   let clockTimer = null;
+  function staffName() {
+    try {
+      const l = window.AppSettings && AppSettings.path && AppSettings.path('starfsmenn');
+      if (Array.isArray(l)) { const f = l.find(s => s && s.name && String(s.name).trim()); if (f) return String(f.name).trim(); }
+    } catch (_) {}
+    return '';
+  }
   function tickClock() {
     const c = document.getElementById('bstal-clock'); if (!c) return;
     const n = new Date();
     const p = (x) => String(x).padStart(2, '0');
-    c.textContent = p(n.getHours())+':'+p(n.getMinutes())+':'+p(n.getSeconds());
+    c.textContent = p(n.getHours())+':'+p(n.getMinutes());
     const d = document.getElementById('bstal-date');
-    if (d) d.textContent = WK[n.getDay()]+' '+n.getDate()+'. '+MO[n.getMonth()];
+    if (d) { const st = staffName(); d.textContent = WK[n.getDay()]+' '+n.getDate()+'. '+MO[n.getMonth()] + (st ? ' · ' + st : ''); }
   }
 
   // ── show/hide + live page title ─────────────────────────────────────────────
@@ -303,18 +314,8 @@
     fonts(); styles(); buildBanner();
     document.documentElement.setAttribute('data-bstal-banner', 'on');
     if (!clockTimer) { tickClock(); clockTimer = setInterval(tickClock, 1000); }
-    // live page title: nice map → active nav label → brand title
-    const active = document.querySelector('.view.active');
-    const id = active ? (active.id || '').replace(/^view-/, '') : '';
-    let title = VIEW_TITLES[id];
-    if (!title) {
-      const navSpan = document.querySelector('.vnav-btn.active span');
-      title = navSpan && navSpan.textContent ? navSpan.textContent.trim() : '';
-      title = title.replace(/^[^\p{L}\p{N}]+/u, '').trim();
-    }
-    title = title || 'Slökkvitæki';
-    if (title === lastTitle) return; lastTitle = title;
-    const tEl = document.getElementById('bstal-title'); if (tEl) tEl.textContent = title;
+    // The eyebrow is a static „KASSAKERFI" label (LED-clock widget); no per-page
+    // title update needed.
   }
 
   // ── hooks: theme attr changes + every view switch ───────────────────────────
