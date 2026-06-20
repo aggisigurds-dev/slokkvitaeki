@@ -166,6 +166,8 @@
       P+'.view .bstal-hero *{color:#fff!important}',
       /* SVG bar charts (Tekjur o.fl.) — red bars → accent */
       P+'.view svg rect[fill="#dc2626"]{fill:var(--bstal-accent)!important}',
+      /* Fyrirtæki í þjónustu (#153): „+ Nýtt fyrirtæki" flat red → accent metal CTA */
+      P+'.view #_ars-new{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:0 0 16px -4px var(--bstal-glow),inset 0 1px 0 rgba(255,255,255,.16)!important;text-shadow:0 1px 1px rgba(0,0,0,.4)}',
 
       /* ═══ SALA (POS) — replicate the Dark-Metallic design faithfully ═════ */
       /* right „KARFA" box → dark panel */
