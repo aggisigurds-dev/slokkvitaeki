@@ -29,6 +29,36 @@
 
   const PRESET = 'brunastal';
   const ACC_LS = 'brunastal_accent';
+  const PREV_LS = 'bstal_prev_preset';   // remembers the non-brunastal preset to return to
+
+  // ── theme switch (Brunastál ⇄ sjálfgefið) ───────────────────────────────────
+  function curPreset() { return document.documentElement.getAttribute('data-thm-preset') || ''; }
+  // Apply a preset live (Theme API) AND persist it the same way ⚙️ Útlit does
+  // (localStorage 'slokk_theme' + AppSettings 'ui_theme') so the choice sticks
+  // across reloads and syncs across the machines.
+  function setPreset(name) {
+    try {
+      if (window.Theme && typeof Theme.set === 'function') {
+        Theme.set({ preset: name });
+        const st = (Theme.get && Theme.get()) || { preset: name };
+        try { localStorage.setItem('slokk_theme', JSON.stringify(st)); } catch (_) {}
+        try { if (window.AppSettings && AppSettings.save) AppSettings.save({ ui_theme: st }); } catch (_) {}
+      } else {
+        document.documentElement.setAttribute('data-thm-preset', name);
+      }
+    } catch (_) {}
+  }
+  function prevPreset() {
+    let p = 'klassiskt';
+    try { p = localStorage.getItem(PREV_LS) || 'klassiskt'; } catch (_) {}
+    return p === PRESET ? 'klassiskt' : p;
+  }
+  function goDefault() { setPreset(prevPreset()); }      // brunastal → sjálfgefið
+  function goBrunastal() {                               // sjálfgefið → brunastal
+    const c = curPreset();
+    if (c && c !== PRESET) { try { localStorage.setItem(PREV_LS, c); } catch (_) {} }
+    setPreset(PRESET);
+  }
   // Nice page titles for the banner (fallback: active nav label, then brand).
   const VIEW_TITLES = {
     sala:'Sala', counter:'Afgreiðsla', workshop:'Verkstæði', field:'Leiðsögn',
@@ -161,6 +191,32 @@
       P+'.view table thead th{background:linear-gradient(180deg,#2b2f37,#15171c)!important;color:#eef1f4!important;border-color:#0a0b0d!important}',
       P+'.view table td,'+P+'.view table th{border-color:rgba(20,24,34,.08)!important}',
       P+'.view table tbody tr:hover td{background:rgba(20,24,34,.035)!important}',
+      /* ── Afgreiðsla (#view-counter) + Verkstæði (#view-workshop) chrome ──
+         The kanban toolbars/columns/headers use inline house styles; pull them
+         into the metallic theme so the bespoke flex pages match the rest. */
+      P+'#counter-sidebar,'+P+'.cw-toolbar{background:'+METAL_BLACK+'!important;border-bottom:1px solid #000!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}',
+      P+'#counter-sidebar>span,'+P+'.cw-toolbar>div:first-child,'+P+'.cw-toolbar>span{color:#cfd4dc!important}',
+      P+'.cw-col{background:#fff!important;border:1px solid rgba(20,24,34,.14)!important;box-shadow:0 12px 30px -16px rgba(0,0,0,.55)!important}',
+      P+'.cw-col-head{background:'+METAL_BLACK+'!important;border-bottom:1px solid #000!important}',
+      P+'.cw-col-sub{color:#9aa3b3!important}',
+      /* keep status colour-coding but brightened so it reads on the dark header */
+      P+'.cw-col-title[style*="#64748b"]{color:#aeb6c4!important}',
+      P+'.cw-col-title[style*="#d97706"]{color:#f6b545!important}',
+      P+'.cw-col-title[style*="#059669"]{color:#34d399!important}',
+      P+'.cw-col-title[style*="#0d6efd"]{color:#6ea8ff!important}',
+      P+'.cw-archive{background:'+METAL_BLACK+'!important;border-top:1px solid #000!important}',
+      P+'.cw-archive span{color:#e7eaf0!important}',
+      /* „Sækja inn úr fyrirtæki" → follow the accent (metal-red default, blue/gold) */
+      P+'.view ._sr-btn{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:0 0 16px -4px var(--bstal-glow),inset 0 1px 0 rgba(255,255,255,.16)!important;text-shadow:0 1px 1px rgba(0,0,0,.4)}',
+      P+'.view ._sr-btn:hover{filter:brightness(1.15)}',
+      /* Verkstæði single-column header (mockup): white title, metallic buttons.
+         .bw-page-h1 is an <h1> so it already turns white via the .view h1 rule. */
+      P+'.view .bw-page-sub{color:rgba(255,255,255,.78)!important}',
+      P+'.view .bw-page-sub b{color:#82a4ff!important}',
+      P+'.view .bw-scan,'+P+'.view .bw-sh-toggle{background:'+METAL_BLACK+'!important;border:1px solid #0a0b0d!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)!important}',
+      P+'.view .bw-scan:hover,'+P+'.view .bw-sh-toggle:hover{filter:brightness(1.22)!important}',
+      P+'.view .bw-sh-toggle.on{filter:brightness(1.32)!important;border-color:var(--bstal-ring)!important}',
+      P+'.view .bw-sh-caret{color:rgba(255,255,255,.6)!important}',
       /* empty / loading / error states readable on the grey backdrop */
       P+'.view .loading-state,'+P+'.view .empty-state,'+P+'.view .empty{color:#3a4250!important}',
       /* hero metallic-blue total card (opt-in: add class .bstal-hero) */
@@ -249,6 +305,8 @@
       '#bstal-banner .bb-sw button.red{background:linear-gradient(145deg,#0d0102,#6c0d10 50%,#971515 60%,#100102)}',
       '#bstal-banner .bb-sw button.blue{background:linear-gradient(145deg,#03040a,#1d3c80 52%,#264c9e 60%,#03060d)}',
       '#bstal-banner .bb-sw button.gold{background:linear-gradient(145deg,#0d0802,#5c4413 52%,#82661f 60%,#100b03)}',
+      '#bstal-banner .bb-themebtn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:11px;cursor:pointer;font-size:18px;line-height:1;border:1px solid #000;background:'+METAL_BLACK+';box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}',
+      '#bstal-banner .bb-themebtn:hover{filter:brightness(1.25)}',
       /* ember underglow bleeding below the banner */
       '#bstal-ember{position:fixed;top:146px;left:calc(var(--sidebar-w,220px) + 8%);right:8%;height:60px;z-index:39;pointer-events:none;'
         +'background:radial-gradient(62% 100% at 50% 0%,rgba(255,110,30,.32),rgba(255,80,20,.08) 55%,transparent 76%);filter:blur(13px);display:none;'
@@ -286,6 +344,7 @@
             '<button class="red'+(acc==='red'?' on':'')+'" data-acc="red" title="Rautt"></button>'+
             '<button class="gold'+(acc==='gold'?' on':'')+'" data-acc="gold" title="Gyllt"></button>'+
           '</div>'+
+          '<button class="bb-themebtn" id="bstal-themebtn" title="Til baka í venjulegt útlit (slökkva á Brunastáli)">🔥</button>'+
           '<div class="bb-clockbox">'+
             '<div class="bb-eyebrow">KASSAKERFI</div>'+
             '<div class="bb-clock" id="bstal-clock">--:--</div>'+
@@ -301,6 +360,24 @@
       try { localStorage.setItem(ACC_LS, btn.dataset.acc); } catch (_) {}
       b.querySelectorAll('#bstal-sw button').forEach(x => x.classList.toggle('on', x === btn));
     });
+    const tb = b.querySelector('#bstal-themebtn');
+    if (tb) tb.addEventListener('click', goDefault);
+  }
+
+  // Always-present floating chip to turn Brunastál back ON when it's off
+  // (the banner — and its toggle — only exist while brunastal is active).
+  function ensureRestore() {
+    if (document.getElementById('bstal-restore')) return;
+    const r = document.createElement('button');
+    r.id = 'bstal-restore';
+    r.type = 'button';
+    r.title = 'Kveikja á Brunastáls-útliti';
+    r.innerHTML = '🔥';
+    // Icon-only, top-right — same corner as the banner clock/toggle, so the
+    // flame switch lives in one consistent spot whether Brunastál is on or off.
+    r.style.cssText = 'display:none;position:fixed;right:16px;top:14px;z-index:9998;align-items:center;justify-content:center;width:40px;height:40px;border-radius:11px;cursor:pointer;font-size:19px;line-height:1;color:#fff;border:1px solid #971515;background:linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102);box-shadow:0 6px 20px -6px rgba(160,16,16,.6)';
+    r.addEventListener('click', goBrunastal);
+    document.body.appendChild(r);
   }
 
   // ── live clock ──────────────────────────────────────────────────────────────
@@ -325,6 +402,9 @@
   let lastTitle = '';
   function refresh() {
     const on = document.documentElement.getAttribute('data-thm-preset') === PRESET;
+    ensureRestore();
+    const rst = document.getElementById('bstal-restore');
+    if (rst) rst.style.display = on ? 'none' : 'flex';
     if (!on) { document.documentElement.removeAttribute('data-bstal-banner'); lastTitle=''; return; }
     fonts(); styles(); buildBanner();
     document.documentElement.setAttribute('data-bstal-banner', 'on');

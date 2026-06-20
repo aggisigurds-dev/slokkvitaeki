@@ -72,6 +72,24 @@
       (j.units || []).forEach(u => allUnits.push({ jobId: j.id, jobNum: j.num, unit: u }));
     });
 
+    // 2026-06-20: Pre-load spare parts the Verkstæði added to each tæki
+    // (verklidur.parts) as billable extras, so they land on the reikningur at
+    // Sókn. Reset first so re-opening the modal never double-adds. The operator
+    // still confirms/edits them before the draft flips to final ("sótt").
+    pickupExtras.length = 0;
+    allUnits.forEach(({ unit }) => {
+      const parts = Array.isArray(unit.parts) ? unit.parts : [];
+      parts.forEach(p => {
+        pickupExtras.push({
+          name: p.nafn,
+          qty: +p.qty || 1,
+          unit_price_ex_vat: +p.verd_an_vsk || 0,
+          vsk_pct: +p.vsk_prosenta || 24,
+          _fromWorkshop: true
+        });
+      });
+    });
+
     // Async: fetch the original sale row
     fetchSaleByNum(saleNum).then(sale => {
       renderPickupModal(job, sale, allUnits);
@@ -245,9 +263,12 @@
         pickupExtras.forEach((ex, i) => {
           const lineTotal = (ex.qty || 1) * (ex.unit_price_ex_vat || 0) * (1 + (ex.vsk_pct || 24) / 100);
           // F1 fix: qty is now an inline editable input.
+          const wsTag = ex._fromWorkshop
+            ? ' <span style="font-size:9px;background:#fee2e2;color:#991b1b;padding:1px 7px;border-radius:99px;font-weight:700;vertical-align:middle">🔧 frá verkstæði</span>'
+            : '';
           html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid #f1f5f9">' +
             '<div style="flex:1;min-width:0">' +
-              '<div style="font-size:13px;font-weight:600;color:#0f172a">' + esc(ex.name) + '</div>' +
+              '<div style="font-size:13px;font-weight:600;color:#0f172a">' + esc(ex.name) + wsTag + '</div>' +
               '<div style="font-size:11px;color:#64748b;margin-top:2px">' + esc(fmtKr(ex.unit_price_ex_vat || 0)) + ' án vsk · vsk ' + (ex.vsk_pct || 24) + '%</div>' +
             '</div>' +
             '<div style="display:flex;align-items:center;gap:6px">' +
