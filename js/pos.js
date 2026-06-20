@@ -336,7 +336,7 @@
         '</div>' +
       '</div>' +
       '<div>' +
-        '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9;position:sticky;top:12px;display:flex;flex-direction:column;max-height:calc(100vh - 200px)">' +
+        '<div class="pos-cart" style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9;position:sticky;top:12px;display:flex;flex-direction:column;max-height:calc(100vh - 200px)">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
             '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Karfa</div>' +
             '<button id="pos-add-service" style="background:#f1f5f9;color:#334155;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600">+ Annað</button>' +

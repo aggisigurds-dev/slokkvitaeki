@@ -166,6 +166,24 @@
       P+'.view .bstal-hero *{color:#fff!important}',
       /* SVG bar charts (Tekjur o.fl.) — red bars → accent */
       P+'.view svg rect[fill="#dc2626"]{fill:var(--bstal-accent)!important}',
+
+      /* ═══ SALA (POS) — replicate the Dark-Metallic design faithfully ═════ */
+      /* right „KARFA" box → dark panel */
+      P+'.view .pos-cart{background:#14171d!important;border:1px solid rgba(255,255,255,.06)!important;box-shadow:0 18px 44px -24px #000!important;color:rgba(255,255,255,.85)!important}',
+      /* cart text → light (override dark inline colours + the 229 bridge) */
+      P+'.view .pos-cart [style*="color:#64748b"],'+P+'.view .pos-cart [style*="color:#94a3b8"],'+P+'.view .pos-cart [style*="color:#334155"]{color:rgba(255,255,255,.6)!important}',
+      P+'.view .pos-cart [style*="color:#0f172a"],'+P+'.view .pos-cart [style*="color:#111"],'+P+'.view .pos-cart [style*="color:#1e293b"]{color:#fff!important}',
+      /* empty-cart dashed box → dark */
+      P+'.view .pos-cart [style*="dashed"]{border-color:rgba(255,255,255,.14)!important;background:rgba(255,255,255,.03)!important}',
+      /* „+ Annað" → metallic black */
+      P+'.view #pos-add-service{background:'+METAL_BLACK+'!important;color:#fff!important;border:1px solid #0a0b0d!important}',
+      /* „ÁFRAM" + „Án kennitölu" walk-in → accent CTA (were green) */
+      P+'.view #pos-checkout,'+P+'.view #_ups-walkin{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:0 0 18px -4px var(--bstal-glow),inset 0 1px 0 rgba(255,255,255,.18)!important;text-shadow:0 1px 1px rgba(0,0,0,.4)}',
+      /* „Skanna" → metallic black */
+      P+'.view #pos-scan-top{background:'+METAL_BLACK+'!important;border:1px solid #0a0b0d!important;color:#fff!important}',
+      /* POS service/product tiles → brushed metal plate */
+      P+'.view .pos-svc,'+P+'.view .pos-prod{background-color:var(--bstal-plate)!important;background-image:var(--bstal-plate-img)!important;border:1px solid rgba(20,24,34,.09)!important;box-shadow:0 4px 12px -6px rgba(25,35,60,.12)!important}',
+      P+'.view .pos-svc:hover,'+P+'.view .pos-prod:hover{border-color:var(--bstal-ring)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 16px 34px -16px var(--bstal-glow)!important;transform:translateY(-3px)}',
       /* MODALS (outside .view): white body, metallic header + buttons. The print
        * receipt uses a separate print window, so it is unaffected. */
       P+'.modal{background:#fff!important;border:1px solid rgba(20,24,34,.1)!important;box-shadow:0 30px 80px -20px rgba(0,0,0,.6)!important}',
