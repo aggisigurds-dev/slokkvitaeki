@@ -246,6 +246,10 @@
       P+'#view-allir-vidsk h1 + div{color:#5b6472!important}',
       P+'.view #_av-new-cust{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:0 0 14px -4px var(--bstal-glow),inset 0 1px 0 rgba(255,255,255,.16)!important}',
       P+'.view ._av-ft[style*="background:#0f172a"],'+P+'.view ._av-xft[style*="background:#0f172a"],'+P+'.view ._av-vm[style*="background:#0f172a"]{background:'+METAL_BLACK+'!important;border-color:#0a0b0d!important}',
+      /* INACTIVE filter/Sía/view-mode chips were near-white on the grey backdrop
+         (esp. the Sía row ._av-xft #f8fafc) → washed out. Light-silver button w/
+         dark text so they read as real buttons (matches the #188 treatment). */
+      P+'.view ._av-ft[style*="background:#fff"],'+P+'.view ._av-vm[style*="background:#fff"],'+P+'.view #_av-selmode[style*="background:#fff"],'+P+'.view ._av-xft[style*="background:#f8fafc"]{background:linear-gradient(180deg,#fdfdfe,#e3e7ee)!important;border:1px solid rgba(20,24,34,.16)!important;color:#3a4250!important}',
       /* ── Rekstrarfélög (#view-rekstrarfelog) ── */
       P+'.view .rf-ava{background:var(--bstal-grad)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 6px 12px -6px rgba(0,0,0,.5)!important}',
       P+'.view .rf-ava svg{stroke:#fff!important}',
