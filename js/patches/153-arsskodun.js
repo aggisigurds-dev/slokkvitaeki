@@ -578,7 +578,7 @@
         <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:14px">
           <div>
             <h1 style="margin:0;font-size:22px;color:var(--ink1);display:flex;align-items:center;gap:10px">🏢 Fyrirtæki í Þjónustu</h1>
-            <div style="font-size:12px;color:var(--ink3);margin-top:2px">${all.length} fyrirtæki · ${arsAll.length} í árlegri slökkvitækjaskoðun</div>
+            <div class="_ars-sub" style="font-size:12px;color:var(--ink3);margin-top:2px">${all.length} fyrirtæki · ${arsAll.length} í árlegri slökkvitækjaskoðun</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button id="_ars-new" type="button" style="padding:7px 14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Nýtt fyrirtæki</button>
@@ -656,7 +656,7 @@
         ` : (state.view === 'card' ? renderCards(filtered) : renderTable(filtered))}
 
         ${filteredAars.length > 0 ? `
-        <div style="margin-top:14px;padding:13px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
+        <div class="_ars-summary" style="margin-top:14px;padding:13px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
           <div>
             <div style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Samantekt — ${esc(filterLabel)}</div>
             <div style="font-size:13px;color:var(--ink2);margin-top:3px">${filteredAars.length} fyrirtæki í ársskoðun</div>

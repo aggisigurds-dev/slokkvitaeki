@@ -217,6 +217,16 @@
       P+'.view .bw-scan:hover,'+P+'.view .bw-sh-toggle:hover{filter:brightness(1.22)!important}',
       P+'.view .bw-sh-toggle.on{filter:brightness(1.32)!important;border-color:var(--bstal-ring)!important}',
       P+'.view .bw-sh-caret{color:rgba(255,255,255,.6)!important}',
+      /* ── Fyrirtæki í þjónustu (#view-arsskodun) ──
+         h1 + grey backdrop + table + search already themed by the .view rules.
+         Here: light header subtitle, metallic toolbar/filter buttons (accent when
+         active = inline var(--brand)), white cards + summary band. */
+      P+'.view ._ars-sub{color:rgba(255,255,255,.74)!important}',
+      P+'.view ._ars-vm,'+P+'.view #_ars-sort,'+P+'.view #_ars-print{background:'+METAL_BLACK+'!important;border:1px solid #0a0b0d!important;color:#e7eaf0!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.06)!important}',
+      P+'.view ._ars-st,'+P+'.view ._ars-mo{background:'+METAL_BLACK+'!important;border:1px solid #0a0b0d!important;color:#cfd4dc!important}',
+      P+'.view ._ars-vm[style*="var(--brand)"],'+P+'.view ._ars-st[style*="var(--brand)"],'+P+'.view ._ars-mo[style*="var(--brand)"]{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 0 14px -5px var(--bstal-glow)!important}',
+      P+'.view ._ars-card{background:#fff!important;border:1px solid rgba(20,24,34,.12)!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.26)!important}',
+      P+'.view ._ars-summary{background:#fff!important;border:1px solid rgba(20,24,34,.12)!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.2)!important}',
       /* empty / loading / error states readable on the grey backdrop */
       P+'.view .loading-state,'+P+'.view .empty-state,'+P+'.view .empty{color:#3a4250!important}',
       /* hero metallic-blue total card (opt-in: add class .bstal-hero) */
