@@ -170,7 +170,9 @@
     if (typeof e !== 'string') return null;
     let f = buttons.find(b => !used.has(b) && !hidden.has(b) && navId(b) === e);
     if (f) return f;
-    if (e[0] !== '#') {
+    // Don't loose-substring-match an entry that is itself a real data-view id:
+    // "yfirlit" must only ever match its own button, not "Kröfu yfirlit" etc.
+    if (e[0] !== '#' && !buttons.some(b => b.getAttribute && b.getAttribute('data-view') === e)) {
       const el = e.toLowerCase();
       f = buttons.find(b => !used.has(b) && !hidden.has(b) && btnText(b).indexOf(el) !== -1);
     }
@@ -211,14 +213,21 @@
       const activeOrder = customOrder || ORDER;
       const isCustom = !!customOrder;
       const hiddenRaw = getHidden();
+      // Set of every real data-view id present. A hidden entry that IS a data-view
+      // id (e.g. "yfirlit") must match ONLY its own button by id — never loosely
+      // by label substring, which is what wrongly hid "Kröfu yfirlit" and
+      // "Bókhalds yfirlit" (their labels merely contain the word "yfirlit").
+      const allViewIds = new Set(buttons.map(b => b.getAttribute && b.getAttribute('data-view')).filter(Boolean));
       function isHiddenBtn(b) {
         if (!hiddenRaw.length) return false;
         const id = navId(b);
         const txt = btnText(b);
         return hiddenRaw.some(h => {
           h = String(h);
-          if (h === id) return true;                 // stable id
-          return h[0] !== '#' && txt.indexOf(h.toLowerCase()) !== -1; // old label
+          if (h === id) return true;                 // exact stable-id (data-view) match
+          if (h[0] === '#') return false;            // '#label' ids only match via navId (handled above)
+          if (allViewIds.has(h)) return false;       // h is another view's id → never substring-match it as a label
+          return txt.indexOf(h.toLowerCase()) !== -1; // legacy plain-label entry → substring match
         });
       }
       const hiddenButtons = new Set(buttons.filter(isHiddenBtn));
