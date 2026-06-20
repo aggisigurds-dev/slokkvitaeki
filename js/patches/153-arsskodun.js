@@ -1029,18 +1029,20 @@
     over:  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/></svg>',
     queue: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>'
   };
+  // 2026-06-20: saturated glossy gradient pills (match FyrirtaekiiThjonustu
+  // mockup) — was light tints which washed out on the metallic backdrop.
   const _PILL_C = {
-    done:  ['#f0fdf4', '#bbf7d0', '#15803d'],
-    work:  ['#eff6ff', '#bfdbfe', 'var(--brand)'],
-    skip:  ['#fffbeb', '#fde68a', '#a16207'],
-    over:  ['#fef2f2', '#fecaca', '#b91c1c'],
-    queue: ['var(--bg)', 'var(--brd2)', 'var(--ink2)']
+    done:  ['linear-gradient(150deg,#1f9d57,#0a4a26)', '#0c5e31', '#fff'],
+    work:  ['linear-gradient(150deg,#4f74dc,#16306f)', '#16306f', '#fff'],
+    skip:  ['linear-gradient(150deg,#e0a93e,#9a6a14)', '#8a5e12', '#fff'],
+    over:  ['linear-gradient(150deg,#e25555,#a01818)', '#7a1212', '#fff'],
+    queue: ['linear-gradient(150deg,#e0a93e,#9a6a14)', '#8a5e12', '#fff']
   };
   function statusPill(state, label, title) {
     const c = _PILL_C[state] || _PILL_C.queue;
     return '<span title="' + esc(title || label) + '" style="display:inline-flex;align-items:center;gap:5px;'
       + 'font-size:10.5px;font-weight:700;line-height:1;padding:4px 9px;border-radius:99px;white-space:nowrap;'
-      + 'background:' + c[0] + ';color:' + c[2] + ';border:1px solid ' + c[1] + '">'
+      + 'background:' + c[0] + ';color:' + c[2] + ';border:1px solid ' + c[1] + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.4)">'
       + (_PILL_ICON[state] || '') + esc(label) + '</span>';
   }
   // One-time CSS for the hover-reveal "Í vinnslu" button (kept out of inline
