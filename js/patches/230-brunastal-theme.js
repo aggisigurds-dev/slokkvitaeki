@@ -164,6 +164,8 @@
       /* hero metallic-blue total card (opt-in: add class .bstal-hero) */
       P+'.view .bstal-hero,'+P+'.view .hero-stat,'+P+'.view .stat-card.total{background:linear-gradient(150deg,#6f97ff 0%,#2f5fe0 34%,#1c3d8c 60%,#0b1838 100%)!important;color:#fff!important;border:none!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 14px 34px -18px rgba(0,0,0,.7)!important}',
       P+'.view .bstal-hero *{color:#fff!important}',
+      /* SVG bar charts (Tekjur o.fl.) — red bars → accent */
+      P+'.view svg rect[fill="#dc2626"]{fill:var(--bstal-accent)!important}',
       /* MODALS (outside .view): white body, metallic header + buttons. The print
        * receipt uses a separate print window, so it is unaffected. */
       P+'.modal{background:#fff!important;border:1px solid rgba(20,24,34,.1)!important;box-shadow:0 30px 80px -20px rgba(0,0,0,.6)!important}',
