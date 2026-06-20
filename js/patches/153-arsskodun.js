@@ -519,13 +519,63 @@
   }
 
   // ── Render ───────────────────────────────────────────────────────────────
+  // 2026-06-20 (perf): re-entry is INSTANT. This view's DOM survives while it is
+  // hidden, so coming BACK to "Fyrirtæki í þjónustu" used to needlessly wipe the
+  // table to "Hleður…", re-fetch from Supabase, and rebuild all ~743 rows
+  // (~1.5–2s of main-thread work) every single time. Now we keep the already-
+  // rendered table on screen and refresh in the BACKGROUND, re-rendering only if
+  // the underlying data actually changed (cheap signature compare), throttled so
+  // rapid back-and-forth doesn't hammer the DB.
+  let _rendered = false;
+  let _lastDataSig = '';
+  let _lastLoad = 0;
+  let _bgRefreshing = false;
+
+  // Cheap fingerprint of what the table draws — id + the few fields that change
+  // (inspection status/month, derived unit count/estimate, priority). Far cheaper
+  // than a re-render; lets a background refresh skip rebuilding when nothing
+  // material changed.
+  function dataSig() {
+    const a = (_cache && _cache.list) || [];
+    let s = a.length + ':';
+    for (let i = 0; i < a.length; i++) {
+      const c = a[i], x = c._ars || {};
+      s += c.id + ',' + (x.last_year_inspected || '') + ',' + (x.inspect_month || '')
+         + ',' + (x._unit_count || '') + ',' + (x.estimated_yearly || '') + ',' + (x.priority || '') + ';';
+    }
+    return s;
+  }
+
+  async function backgroundRefresh() {
+    if (_bgRefreshing) return;
+    if (Date.now() - _lastLoad < 8000) return;   // rapid back-and-forth → skip the refetch
+    _bgRefreshing = true;
+    try {
+      await loadAll();
+      _lastLoad = Date.now();
+      const ns = dataSig();
+      if (ns !== _lastDataSig) render();          // only rebuild if the data really changed
+      _lastDataSig = ns;
+    } catch (_) {} finally { _bgRefreshing = false; }
+  }
+
   async function show() {
     ensureView();
     const main = document.getElementById('ars-main');
     if (!main) return;
+    // Fast path: already rendered (toolbar present) and DOM intact → show it
+    // instantly and refresh in the background. No "Hleður…" flash, no blocking
+    // rebuild of 743 rows.
+    if (_rendered && document.getElementById('_ars-search')) {
+      backgroundRefresh();
+      return;
+    }
     main.innerHTML = '<div style="padding:24px;color:var(--ink4)">Hleður…</div>';
     await loadAll();
+    _lastLoad = Date.now();
     render();
+    _rendered = true;
+    _lastDataSig = dataSig();
   }
 
   function render() {
