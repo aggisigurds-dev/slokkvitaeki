@@ -44,7 +44,13 @@
     grafitljost:{ nm:'⬜ Grafít ljóst', desc:'Hvítur grunnur + grátt + dökkblátt — létt og faglegt.', sw:['#1e3a8a','#2563eb','#fafbfc','#16181d'],
       t:{ bg:'#fafbfc',card:'#ffffff',ink:'#16181d',muted:'#5b6270',line:'#e7e9ee',brand:'#1e3a8a',primary:'#2563eb',h1:'#16181d',h2:'#444b59',h3:'#98a0ae' } },
     grafitraudt:{ nm:'🟥 Grafít rautt', desc:'Svart + dökkgrátt + dökkrautt — kraftmikið og faglegt.', sw:['#991b1b','#ef4444','#131316','#ededee'],
-      t:{ bg:'#131316',card:'#1c1c20',ink:'#ededee',muted:'#a6a6ad',line:'#2e2e34',brand:'#991b1b',primary:'#ef4444',h1:'#ededee',h2:'#c4c4ca',h3:'#7e7e86' } }
+      t:{ bg:'#131316',card:'#1c1c20',ink:'#ededee',muted:'#a6a6ad',line:'#2e2e34',brand:'#991b1b',primary:'#ef4444',h1:'#ededee',h2:'#c4c4ca',h3:'#7e7e86' } },
+    // 2026-06-20: high-fidelity „eldvarna-stjórnborð" útlit — brushed stál-banner
+    // með alvöru eldi + Brunahólf-merki, kolsvört hlið, svartur→grár grunnur,
+    // hvít spjöld, málm-takkar. Skiptanlegur áherslulitur (rautt/blátt/gyllt) í
+    // banner-borðanum. Allt útlitið keyrt af patch 230 (data-thm-preset=brunastal).
+    brunastal: { nm:'🔥 Brunastál', desc:'Brushed stál-banner + eldur, kolsvört hlið, málm-takkar — eins og stjórnborð.', sw:['#c92a2a','#0c0d10','#9ba1ad','#ffffff'],
+      t:{ bg:'#9ba1ad',card:'#ffffff',ink:'#11141c',muted:'#9098a6',line:'#e3e7ee',brand:'#c92a2a',primary:'#c92a2a',h1:'#11141c',h2:'#3a4250',h3:'#9098a6' } }
   };
   const ACCENTS = ['#c96a2f','#a8322a','#2563eb','#0f766e','#16a34a','#b91c1c','#334155'];
   const FONTS = {
