@@ -30,6 +30,9 @@
   // 2026-05-10 (#3): Strip -V1 suffix for display in cards.
   // Detail views still get the full num via DB.getJob(id).
   function dnum(n) { return esc(String(n == null ? '' : n).replace(/-V\d+$/, '')); }
+  function fmtKr(n) { return Math.round(Number(n) || 0).toLocaleString('is-IS') + ' kr'; }
+  // m. vsk line total for a stored spare part {qty,verd_an_vsk,vsk_prosenta}
+  function partTotal(p) { return (+p.qty || 1) * (+p.verd_an_vsk || 0) * (1 + (+p.vsk_prosenta || 24) / 100); }
 
   // A tæki soft-deleted via "🗑 Eyða" gets status 'eytt'. Hide it from the
   // workshop everywhere (tiles, chips, counts); it lives only in the
@@ -41,17 +44,34 @@
   function counterRender() {
     const container = document.getElementById('view-counter');
     if (!container) return;
-    const all   = window.DB && DB.getActiveJobs ? DB.getActiveJobs() : [];
+    const allActive = window.DB && DB.getActiveJobs ? DB.getActiveJobs() : [];
+    // 2026-06-20: search bar — find the customer that's picking up a tæki.
+    const q = String(Counter.search || '').trim().toLowerCase();
+    const all = q
+      ? allActive.filter(j =>
+          String(j.customer || '').toLowerCase().includes(q) ||
+          String(j.num || '').toLowerCase().includes(q))
+      : allActive;
     const byStatus = { received: [], inprogress: [], ready: [] };
     all.forEach(j => {
       const s = j.status === 'in_progress' ? 'inprogress' : j.status;
       (byStatus[s] || byStatus.received).push(j);
     });
+    // 2026-06-20: sort every column alphabetically by customer name (is_IS).
+    const byName = (a, b) => String(a.customer || '').localeCompare(String(b.customer || ''), 'is', { sensitivity: 'base' });
+    byStatus.received.sort(byName);
+    byStatus.inprogress.sort(byName);
+    byStatus.ready.sort(byName);
 
     const html =
       '<div id="counter-sidebar" style="padding:10px 16px;border-bottom:1px solid var(--brd,#e4e6ea);display:flex;align-items:center;gap:10px;background:#f8f9fb;flex-wrap:wrap">' +
         '<button class="btn btn-primary btn-sm" onclick="Counter.openNew()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ný verk</button>' +
-        `<span style="font-size:12px;color:var(--ink3,#8891a0)">${all.length} virk verk · ${byStatus.ready.length} tilbúin</span>` +
+        `<span style="font-size:12px;color:var(--ink3,#8891a0)">${q ? all.length + ' af ' + allActive.length : allActive.length} virk verk · ${byStatus.ready.length} tilbúin</span>` +
+        '<div style="position:relative;flex:1;min-width:180px">' +
+          '<span style="position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:13px;color:#94a3b8;pointer-events:none">🔍</span>' +
+          `<input id="counter-search" type="text" autocomplete="off" placeholder="Leita að viðskiptavin sem sækir…" value="${esc(Counter.search || '')}" oninput="Counter.setSearch(this.value)" style="width:100%;padding:8px 30px 8px 32px;border:1px solid var(--brd,#cbd5e1);border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box;background:#fff">` +
+          (q ? '<button onclick="Counter.setSearch(\'\')" title="Hreinsa" style="position:absolute;right:7px;top:50%;transform:translateY(-50%);border:none;background:#e2e8f0;color:#475569;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1">✕</button>' : '') +
+        '</div>' +
       '</div>' +
       // Legacy IDs kept alive (hidden) so editjobbutton.js, searchbox.js work
       '<div style="display:none"><div id="job-list"></div><div id="sidebar-ready"></div></div>' +
@@ -408,73 +428,37 @@
     return `<div style="display:flex;gap:8px;align-items:center;margin-top:6px">${bar}${btn}</div>`;
   }
 
+  // ── Customer group (Verkstæði) — 2026-06-20 reorg ───────────────────────
+  // One card per customer (mockup verkstaedi-reorg.html). No click-to-expand
+  // dropdown any more — every tæki shows as a tile (click upper part → Tæki
+  // modal), and a "📤 Senda í afgreiðslu" button on the right marks the whole
+  // customer's verk ready.
   function wCustomerGroup(statusKey, co) {
-    const key = statusKey + ':' + co.name;
-    const expanded = Workshop.expandedCos[key] === true;
-    const caret = expanded ? '▼' : '▶';
     const pct = co.totalUnits ? Math.round(co.doneUnits / co.totalUnits * 100) : 0;
-    let inner = '';
-    if (expanded) {
-      inner = '<div style="padding:4px 4px 8px 18px">' + co.jobs.map(j => {
-        const done = live(j.units).filter(u => u.status === 'done').length;
-        const total = live(j.units).length;
-        const badge = (window.U && U.badge) ? U.badge(j.status) : '';
-        // 2026-05-11: also surface the service description + any customer
-        // note so the user doesn't have to open every job to know what's
-        // in it. j.notes is "<service desc>\n— <state.notes>" from pos.js
-        // (or just the service desc on older jobs).
-        const rawNotes = String(j.notes || '');
-        const noteLines = rawNotes.split('\n').map(l => l.trim()).filter(Boolean);
-        const svcDesc = noteLines[0] || '';
-        const extraNote = noteLines.slice(1).map(l => l.replace(/^—\s*/, '').trim()).filter(Boolean).join(' · ');
-        const svcHtml = svcDesc
-          ? `<div style="font-size:11px;color:#475569;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(svcDesc)}</div>`
-          : '';
-        const noteHtml = extraNote
-          ? `<div style="font-size:11px;color:#92400e;background:#fef3c7;border-left:3px solid #f59e0b;padding:3px 6px;border-radius:4px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${esc(extraNote)}">📝 ${esc(extraNote)}</div>`
-          : '';
-        const pct = total ? Math.round(done / total * 100) : 0;
-        return '<div onclick="event.stopPropagation();Workshop.select(' + j.id + ')" style="display:flex;flex-direction:column;gap:4px;padding:6px 8px;border-radius:8px;cursor:pointer;margin-bottom:3px;background:#f8fafc;border:1px solid #f1f5f9" onmouseover="this.style.background=\'#eef2f7\'" onmouseout="this.style.background=\'#f8fafc\'">' +
-          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">' +
-            '<div style="min-width:0;flex:1">' +
-              `<div style="font-family:var(--mono,monospace);font-size:10px;color:#94a3b8">${dnum(j.num)}</div>` +
-              `<div style="font-size:11.5px;color:#0f172a;margin:1px 0">${done}/${total} lokið ${badge}</div>` +
-              (svcHtml || noteHtml ? '<div style="display:flex;gap:4px;flex-wrap:wrap">' + svcHtml + noteHtml + '</div>' : '') +
-            '</div>' +
+    const ready = pct === 100;
+    const jobIds = co.jobs.map(j => j.id).join(',');
+    return '<div class="bw-row">' +
+        '<div class="bw-row-top">' +
+          '<div class="bw-cinfo">' +
+            `<div class="bw-cname">${esc(co.name)}</div>` +
+            `<div class="bw-cmeta">${co.jobs.length} verk · ${co.doneUnits}/${co.totalUnits} lokið</div>` +
           '</div>' +
-          renderUnitChips(j) +
-          renderProgressAndReady(j, pct) +
-        '</div>';
-      }).join('') + '</div>';
-    }
-    const safeKey = key.replace(/'/g, "\\'");
-    return `<div onclick="Workshop.toggleCo('${safeKey}')" style="background:#fff;border:1px solid #e5e7eb;border-radius:10px;cursor:pointer">` +
-      '<div class="cw-wgroup-head" style="padding:9px 10px;display:flex;align-items:center;gap:8px">' +
-        `<span style="color:#64748b;font-size:13px;width:14px;flex-shrink:0">${caret}</span>` +
-        '<div class="cw-wgroup-name" style="min-width:0;flex-shrink:1;width:140px">' +
-          `<div style="font-size:13px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(co.name)}</div>` +
-          `<div style="font-size:11px;color:#64748b">${co.jobs.length} verk · ${co.doneUnits}/${co.totalUnits} lokið</div>` +
+          renderUnitTiles(co.jobs) +
         '</div>' +
-        // 2026-05-21: per-tæki tile strip — one tile per unit across all
-        // verk in this customer group. Each tile has a small "Tilbúið" green
-        // button at the bottom so you can tick units off without expanding
-        // the group or opening the detail modal.
-        renderUnitTiles(co.jobs) +
-      '</div>' +
-      `<div style="margin:0 12px 10px;height:4px;background:#f1f5f9;border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${pct === 100 ? '#10b981' : '#f59e0b'};"></div></div>` +
-      inner +
-    '</div>';
+        '<div class="bw-prow">' +
+          `<div class="bw-prog${ready ? ' full' : ''}"><div style="width:${pct}%"></div></div>` +
+          `<button class="bw-send${ready ? ' ready' : ''}" onclick="event.stopPropagation();Workshop.sendGroupToAfgreidsla([${jobIds}])">📤 Senda í afgreiðslu</button>` +
+        '</div>' +
+      '</div>';
   }
 
-  // ── Per-tæki tile strip (collapsed customer-group preview) ──────────────
-  // Flattens every unit across the customer's verk into a grid of small
-  // tiles. Each tile carries:
-  //   • type label on top (truncated to fit)
-  //   • an empty "☐ Tilbúið" checkbox-button at the bottom (neutral/white) —
-  //     click = mark this single unit done (Workshop.toggleUnit); once done it
-  //     flips to a green "✓ Tilbúið" badge. (Not-done tiles stay white so they
-  //     don't look ready — 2026-06-20.)
-  // Done tiles get a soft green tint + check mark; broken tiles get red.
+  // ── Per-tæki tile strip ─────────────────────────────────────────────────
+  // Flattens every unit across the customer's verk into a grid of tiles.
+  // Each tile:
+  //   • upper body (type + serial + "🔧 N hlutir" if spare parts added) is
+  //     CLICKABLE → opens the Tæki modal (✓ Tilbúið · 🚫 Ónýtt · 🔧 Laga · 🗑)
+  //   • bottom = one-tap quick toggle ☐/✓ Tilbúið (Workshop.toggleUnit)
+  //   • ✕ top-right soft-deletes the tæki (→ Eydd tæki)
   function renderUnitTiles(jobs) {
     if (!jobs || !jobs.length) return '';
     const items = [];
@@ -485,35 +469,33 @@
     const tiles = items.map(({ jobId, unit }) => {
       const isDone = unit.status === 'done';
       const isBroken = unit.status === 'broken';
-      const border = isDone ? '#16a34a' : (isBroken ? '#dc2626' : '#cbd5e1');
-      const bg     = isDone ? '#f0fdf4' : (isBroken ? '#fef2f2' : '#fff');
-      const txtCol = isDone ? '#166534' : (isBroken ? '#991b1b' : '#0f172a');
-      // Short type label — first 1-2 words of type
+      const cls = isDone ? 'yes' : (isBroken ? 'broken' : 'no');
+      const txt = isDone ? '✓ Tilbúið' : (isBroken ? '🚫 Ónýtt' : '☐ Tilbúið');
       const typeRaw = String(unit.type || '—').split(/\s+/).slice(0, 2).join(' ');
       const sizeRaw = unit.size ? String(unit.size) : '';
       const label   = typeRaw + (sizeRaw ? ' ' + sizeRaw : '');
       const serialShort = String(unit.serial || '').replace(/^.*-/, '').slice(0, 8);
-      const bottom = isDone
-        ? '<div style="background:#16a34a;color:#fff;font-size:10px;font-weight:700;text-align:center;padding:3px 4px;line-height:1.1">✓ Tilbúið</div>'
-        : isBroken
-          ? '<div style="background:#dc2626;color:#fff;font-size:10px;font-weight:700;text-align:center;padding:3px 4px;line-height:1.1">🚫 Ónýtt</div>'
-          : '<button onclick="event.stopPropagation();Workshop.toggleUnit(' + jobId + ',' + unit.id + ')" ' +
-            'title="Smelltu til að merkja tilbúið" ' +
-            'style="display:block;width:100%;background:#fff;color:#64748b;font-size:10px;font-weight:700;' +
-            'border:none;border-top:1px solid #e2e8f0;cursor:pointer;padding:3px 4px;line-height:1.1">☐ Tilbúið</button>';
-      return '<div ' +
-        'title="' + esc(unit.serial || '') + ' — ' + esc(label) + '" ' +
-        'style="position:relative;flex-shrink:0;width:88px;border:1.5px solid ' + border + ';border-radius:6px;' +
-        'background:' + bg + ';color:' + txtCol + ';' +
-        'display:flex;flex-direction:column;overflow:hidden">' +
-          '<button onclick="event.stopPropagation();Workshop.deleteUnit(' + jobId + ',' + unit.id + ')" title="Eyða tæki (fer í Eydd tæki)" style="position:absolute;top:0;right:0;width:17px;height:17px;line-height:1;padding:0;border:none;border-radius:0 0 0 6px;background:rgba(15,23,42,.05);color:#9aa3af;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2">✕</button>' +
-          '<div style="flex:1;padding:5px 15px 4px 6px;font-size:10.5px;font-weight:600;line-height:1.2;' +
-            'text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(label) + '</div>' +
-          (serialShort ? '<div style="font-size:9px;color:#94a3b8;text-align:center;padding:0 4px 2px;font-family:var(--mono,monospace)">' + esc(serialShort) + '</div>' : '') +
-          bottom +
-      '</div>';
+      const parts = Array.isArray(unit.parts) ? unit.parts : [];
+      const partCount = parts.reduce((s, p) => s + (+p.qty || 1), 0);
+      const partInd = partCount
+        ? `<div class="bw-tile-parts">🔧 ${partCount} ${partCount === 1 ? 'hlutur' : 'hlutir'}</div>`
+        : '<div class="bw-tile-parts"></div>';
+      // broken tile's quick button reopens the modal (deliberate un-break);
+      // done/not-done quick-toggle directly.
+      const chkClick = isBroken
+        ? `Workshop.openUnitModal(${jobId},${unit.id})`
+        : `Workshop.toggleUnit(${jobId},${unit.id})`;
+      return '<div class="bw-tile" title="' + esc((unit.serial || '') + ' — ' + label) + '">' +
+          `<button class="bw-tile-x" onclick="event.stopPropagation();Workshop.deleteUnit(${jobId},${unit.id})" title="Eyða tæki (fer í Eydd tæki)">✕</button>` +
+          `<div class="bw-tile-body" onclick="event.stopPropagation();Workshop.openUnitModal(${jobId},${unit.id})">` +
+            `<div class="bw-tile-ty">${esc(label)}</div>` +
+            (serialShort ? `<div class="bw-tile-ser">${esc(serialShort)}</div>` : '') +
+            partInd +
+          '</div>' +
+          `<button class="bw-chk ${cls}" onclick="event.stopPropagation();${chkClick}">${txt}</button>` +
+        '</div>';
     }).join('');
-    return '<div class="cw-wtiles" style="display:flex;flex-wrap:wrap;gap:5px;flex:1;min-width:0">' + tiles + '</div>';
+    return '<div class="bw-tiles">' + tiles + '</div>';
   }
 
   // Inject CSS override: app.css forces #view-counter.active and #view-workshop.active
@@ -593,6 +575,109 @@
     document.head.appendChild(css);
   }
 
+  // ── 2026-06-20 Verkstæði reorg styles (from mockups/verkstaedi-reorg.html) ──
+  if (!document.getElementById('_bw_css')) {
+    const bw = document.createElement('style');
+    bw.id = '_bw_css';
+    bw.textContent =
+      // customer row card
+      '.bw-row{border:1px solid rgba(20,24,34,.10);border-left:3px solid #2f5fe0;border-radius:12px;padding:11px 13px;margin-bottom:9px;background:linear-gradient(180deg,#fff,#eef1f6);box-shadow:0 2px 6px -4px rgba(25,35,60,.12)}' +
+      '.bw-row-top{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}' +
+      '.bw-cinfo{width:150px;flex:1 1 150px;min-width:0}' +
+      '.bw-cname{font-size:14px;font-weight:600;color:#11141c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.bw-cmeta{font-size:11.5px;color:#9098a6;margin-top:2px}' +
+      '.bw-tiles{flex:2 1 60%;min-width:0;display:flex;flex-wrap:wrap;gap:7px}' +
+      // device tile
+      '.bw-tile{width:92px;flex:none;border:1px solid rgba(20,24,34,.12);border-radius:9px;overflow:hidden;background:linear-gradient(180deg,#eef1f6,#dde1e9);transition:transform .12s,box-shadow .12s,border-color .12s;position:relative}' +
+      '.bw-tile:hover{transform:translateY(-2px);box-shadow:0 8px 18px -8px rgba(20,30,60,.4);border-color:#9bb0e6}' +
+      '.bw-tile-x{position:absolute;top:0;right:0;width:18px;height:18px;line-height:1;padding:0;border:none;border-radius:0 0 0 7px;background:rgba(15,23,42,.06);color:#9aa3af;font-size:11px;font-weight:700;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center}' +
+      '.bw-tile-body{padding:7px 14px 4px 6px;text-align:center;cursor:pointer}' +
+      '.bw-tile-ty{font-size:10px;font-weight:600;color:#11141c;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.bw-tile-ser{font-family:"Space Mono",var(--mono,monospace);font-size:9.5px;color:#7a8493;margin-top:2px}' +
+      '.bw-tile-parts{font-size:9px;color:#16a34a;font-weight:700;margin-top:2px;min-height:11px}' +
+      '.bw-chk{display:block;width:100%;border:none;border-top:1px solid #e2e8f0;cursor:pointer;font-weight:700;font-size:10px;padding:4px;line-height:1.1}' +
+      '.bw-chk.no{background:#fff;color:#64748b}' +
+      '.bw-chk.yes{background:linear-gradient(160deg,#1f9d57,#0a4a26);color:#fff}' +
+      '.bw-chk.broken{background:linear-gradient(150deg,#e25555,#a01818);color:#fff}' +
+      // progress + send
+      '.bw-prow{display:flex;align-items:center;gap:11px;margin-top:10px}' +
+      '.bw-prog{flex:1;height:5px;border-radius:3px;background:#e6e9ef;overflow:hidden}' +
+      '.bw-prog>div{height:100%;background:linear-gradient(90deg,#e0a020,#c77a16)}' +
+      '.bw-prog.full>div{background:linear-gradient(90deg,#7aa0ff,#2f5fe0)}' +
+      '.bw-send{flex:none;height:32px;padding:0 13px;border-radius:9px;border:1px solid #0a0b0d;cursor:pointer;font-weight:700;font-size:12px;color:#fff;white-space:nowrap;background:linear-gradient(145deg,#08080a,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709)}' +
+      '.bw-send.ready{background:linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102);border-color:#971515;box-shadow:0 0 14px -4px rgba(160,16,16,.55)}' +
+      // Tæki modal
+      '.bw-ov{position:fixed;inset:0;background:rgba(8,10,14,.55);display:flex;align-items:center;justify-content:center;padding:20px;z-index:9000}' +
+      '.bw-modal{width:520px;max-width:100%;max-height:92vh;overflow:auto;background:#fff;border-radius:16px;box-shadow:0 30px 80px -20px #000}' +
+      '.bw-mh{background:linear-gradient(145deg,#08080a,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709);color:#fff;padding:15px 20px;display:flex;align-items:center;gap:12px}' +
+      '.bw-mh .ser{font-family:"Space Mono",var(--mono,monospace);font-size:15px;font-weight:700}' +
+      '.bw-mh .ty{font-size:12px;color:rgba(255,255,255,.6);margin-top:2px}' +
+      '.bw-mh .x{margin-left:auto;background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px}' +
+      '.bw-mb{padding:18px 20px 22px}' +
+      '.bw-lab{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8a93a5;margin:0 0 8px}' +
+      '.bw-acts{display:grid;grid-template-columns:1fr 1fr;gap:9px}' +
+      '.bw-act{display:flex;align-items:center;justify-content:center;gap:7px;height:46px;border-radius:11px;cursor:pointer;font-weight:700;font-size:14px;border:1px solid transparent;text-align:center}' +
+      '.bw-act.ok{background:#fff;color:#166534;border-color:#bbf7d0}' +
+      '.bw-act.ok.on{background:linear-gradient(160deg,#1f9d57,#0a4a26);color:#fff;border-color:transparent}' +
+      '.bw-act.broken{background:#fff;color:#a01818;border:1px solid #fecaca}' +
+      '.bw-act.broken.on{background:linear-gradient(150deg,#e25555,#a01818);color:#fff;border-color:transparent}' +
+      '.bw-act.laga{background:linear-gradient(145deg,#0d0102,#6c0d10 50%,#971515 60%,#100102);color:#fff;grid-column:1/-1;height:48px;font-size:13.5px}' +
+      '.bw-act.del{background:#fff;color:#64748b;border:1px solid #e2e8f0;grid-column:1/-1;height:40px;font-size:12.5px}' +
+      '.bw-ta{width:100%;min-height:56px;margin-top:6px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#f6f8fb;font:inherit;font-size:13px;resize:vertical;box-sizing:border-box}' +
+      '.bw-arow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px}' +
+      '.bw-arow .rm{background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:16px}' +
+      '.bw-atot{display:flex;justify-content:space-between;font-weight:800;font-size:14px;margin-top:8px;padding-top:8px;border-top:2px solid #0f172a}' +
+      '@media (max-width:640px){.bw-cinfo{flex:1 1 100%}.bw-tiles{flex:1 1 100%}}';
+    document.head.appendChild(bw);
+  }
+
+  // Persist a tæki's spare-parts list to verklidur.parts (draft — billed at Sókn).
+  async function persistParts(unitId, parts) {
+    try { if (window.DB && DB.online && DB.sb) await DB.sb.from('verklidur').update({ parts }).eq('id', unitId); }
+    catch (e) { console.warn('[persistParts]', e); }
+  }
+
+  // Build the Tæki modal body for a (job, unit).
+  function unitModalHtml(job, u) {
+    const parts = Array.isArray(u.parts) ? u.parts : [];
+    const tot = parts.reduce((s, p) => s + partTotal(p), 0);
+    const svc = [u.type, u.size, u.service].filter(Boolean).join(' · ') || '—';
+    const isDone = u.status === 'done', isBroken = u.status === 'broken';
+    let partsHtml;
+    if (parts.length) {
+      partsHtml = parts.map((p, i) =>
+        '<div class="bw-arow"><span>🔧 ' + esc(p.nafn) + ((+p.qty || 1) > 1 ? ' ×' + (+p.qty) : '') + '</span>' +
+          '<span><b style="font-variant-numeric:tabular-nums">' + esc(fmtKr(partTotal(p))) + '</b> ' +
+          '<button class="rm" title="Eyða" onclick="Workshop.removePartFromUnit(' + job.id + ',' + u.id + ',' + i + ')">×</button></span></div>'
+      ).join('') +
+      '<div class="bw-atot"><span>Varahlutir samtals m. vsk</span><span style="font-variant-numeric:tabular-nums">' + esc(fmtKr(tot)) + '</span></div>';
+    } else {
+      partsHtml = '<div style="color:#9098a6;font-size:12px;padding:6px 0">Engir varahlutir skráðir enn — smelltu „🔧 Laga".</div>';
+    }
+    return '<div class="bw-modal">' +
+        '<div class="bw-mh"><div><div class="ser">' + esc(u.serial || '—') + '</div>' +
+          '<div class="ty">' + esc([u.type, u.size].filter(Boolean).join(' · ') || 'Tæki') + '</div></div>' +
+          '<button class="x" onclick="Workshop.closeUnitModal()">✕</button></div>' +
+        '<div class="bw-mb">' +
+          '<p class="bw-lab">Þjónusta</p>' +
+          '<div style="font-size:14px;font-weight:600;color:#11141c;margin-bottom:14px">' + esc(svc) + '</div>' +
+          '<p class="bw-lab">Staða tækis</p>' +
+          '<div class="bw-acts">' +
+            '<div class="bw-act ok' + (isDone ? ' on' : '') + '" onclick="Workshop.setUnitStatusToggle(' + job.id + ',' + u.id + ',\'done\')">✓ Tilbúið</div>' +
+            '<div class="bw-act broken' + (isBroken ? ' on' : '') + '" onclick="Workshop.setUnitStatusToggle(' + job.id + ',' + u.id + ',\'broken\')">🚫 Ónýtt</div>' +
+            '<div class="bw-act laga" onclick="Workshop.addPartToUnit(' + job.id + ',' + u.id + ')">🔧 Laga — bæta við varahlut / þjónustu</div>' +
+            '<div class="bw-act del" onclick="Workshop.deleteUnitFromModal(' + job.id + ',' + u.id + ')">🗑 Eyða tæki</div>' +
+          '</div>' +
+          '<div style="margin-top:14px">' +
+            '<p class="bw-lab">Varahlutir / þjónusta á þetta tæki</p>' +
+            '<div id="bw-parts">' + partsHtml + '</div>' +
+          '</div>' +
+          '<p class="bw-lab" style="margin-top:16px">Athugasemd</p>' +
+          '<textarea class="bw-ta" id="bw-note" placeholder="t.d. skipti um ventil, þrýstiprófað…">' + esc(u.notes || '') + '</textarea>' +
+        '</div>' +
+      '</div>';
+  }
+
   function install() {
     if (!window.Counter || !window.Workshop || typeof Counter.render !== 'function' || typeof Workshop.render !== 'function') {
       setTimeout(install, 300);
@@ -602,8 +687,17 @@
     window.__counterWorkshopRedesignInstalled = true;
 
     Counter.expandedCos = Counter.expandedCos || {};
+    Counter.search = Counter.search || '';
     Counter.render = counterRender;
     Counter.toggleCo = function(key) { Counter.expandedCos[key] = !Counter.expandedCos[key]; Counter.render(); };
+    // 2026-06-20: Afgreiðsla customer search. Re-render then restore focus +
+    // caret so typing isn't interrupted by the innerHTML rebuild.
+    Counter.setSearch = function(val) {
+      Counter.search = val;
+      Counter.render();
+      const inp = document.getElementById('counter-search');
+      if (inp) { inp.focus(); const n = inp.value.length; try { inp.setSelectionRange(n, n); } catch (_) {} }
+    };
     Counter.openJobModal  = function() { const m = document.getElementById('counter-detail-modal'); if (m) m.style.display = 'flex'; };
     Counter.closeJobModal = function() { const m = document.getElementById('counter-detail-modal'); if (m) m.style.display = 'none'; Counter.sel = null; };
 
@@ -641,13 +735,14 @@
     Workshop._archiveOpen = Workshop._archiveOpen || false;
     Workshop.toggleArchive = function() { Workshop._archiveOpen = !Workshop._archiveOpen; Workshop.render(); };
     Workshop.deleteUnit = async function(jobId, unitId) {
-      if (!window.confirm('Eyða þessu tæki af verkstæðinu?\n(fer í „Eydd tæki" — hægt að endurheimta síðar)')) return;
+      if (!window.confirm('Eyða þessu tæki af verkstæðinu?\n(fer í „Eydd tæki" — hægt að endurheimta síðar)')) return false;
       try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update({ status: 'eytt' }).eq('id', unitId); }
       catch (e) { console.warn('[deleteUnit]', e); }
       const job = DB.getJob(jobId);
       if (job && job.units) { const u = job.units.find(function(u){ return u.id === unitId; }); if (u) u.status = 'eytt'; }
       if (window.Toast && Toast.show) Toast.show('🗑 Tæki sett í „Eydd tæki"');
       Workshop.render();
+      return true;
     };
     Workshop.restoreUnit = async function(jobId, unitId) {
       try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update({ status: 'received' }).eq('id', unitId); }
@@ -664,6 +759,138 @@
       if (!job) return;
       if (Workshop.renderDetail) Workshop.renderDetail(job);
       Workshop.openDetail();
+    };
+
+    // ── 2026-06-20 Verkstæði reorg: per-tæki status + spare parts ──────────
+    // Direct verklidur write, NO job auto-promote. The whole verk only moves
+    // to Afgreiðslu when the user clicks "📤 Senda í afgreiðslu" (explicit),
+    // which fixed the old "looks ready but isn't" confusion.
+    Workshop.setUnitStatus = async function(jobId, unitId, status) {
+      try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update({ status }).eq('id', unitId); }
+      catch (e) { console.warn('[setUnitStatus]', e); }
+      const job = DB.getJob(jobId);
+      if (job && job.units) { const u = job.units.find(u => u.id === unitId); if (u) u.status = status; }
+      // Bump received → inprogress (signal that work started) but NEVER
+      // auto-promote to 'ready' — that's the explicit "📤 Senda í afgreiðslu".
+      if (job && job.status === 'received' && (status === 'done' || status === 'broken')) {
+        try { await DB.updateJobStatus(jobId, 'inprogress'); } catch (_) {}
+      }
+      if (Workshop._unitCtx) Workshop._renderUnitModal();
+      Workshop.render();
+    };
+    // Quick tile toggle: done ↔ received (no auto-promote).
+    Workshop.toggleUnit = function(jobId, unitId) {
+      const job = DB.getJob(jobId); if (!job) return;
+      const u = (job.units || []).find(u => u.id === unitId); if (!u) return;
+      Workshop.setUnitStatus(jobId, unitId, u.status === 'done' ? 'received' : 'done');
+    };
+    // Modal status buttons: clicking the active status again clears it.
+    Workshop.setUnitStatusToggle = function(jobId, unitId, status) {
+      const job = DB.getJob(jobId); if (!job) return;
+      const u = (job.units || []).find(u => u.id === unitId); if (!u) return;
+      Workshop.setUnitStatus(jobId, unitId, u.status === status ? 'received' : status);
+    };
+
+    // ── Tæki modal (one window per device) ────────────────────────────────
+    Workshop.openUnitModal = function(jobId, unitId) {
+      Workshop._unitCtx = { jobId, unitId };
+      Workshop._renderUnitModal();
+    };
+    Workshop.closeUnitModal = function() {
+      const ov = document.getElementById('bw-unit-ov');
+      if (ov) ov.remove();
+      Workshop._unitCtx = null;
+      Workshop.render();
+    };
+    Workshop._renderUnitModal = function() {
+      const ctx = Workshop._unitCtx; if (!ctx) return;
+      const job = DB.getJob(ctx.jobId); if (!job) { Workshop.closeUnitModal(); return; }
+      const u = (job.units || []).find(x => x.id === ctx.unitId);
+      if (!u || u.status === 'eytt') { Workshop.closeUnitModal(); return; }
+      let ov = document.getElementById('bw-unit-ov');
+      if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'bw-unit-ov';
+        ov.className = 'bw-ov';
+        ov.addEventListener('click', e => { if (e.target === ov) Workshop.closeUnitModal(); });
+        document.body.appendChild(ov);
+      }
+      ov.innerHTML = unitModalHtml(job, u);
+      const ta = ov.querySelector('#bw-note');
+      if (ta) {
+        const save = () => Workshop.saveUnitNote(ctx.jobId, ctx.unitId, ta.value);
+        ta.addEventListener('change', save);
+        ta.addEventListener('blur', save);
+      }
+    };
+    Workshop.saveUnitNote = async function(jobId, unitId, note) {
+      note = String(note || '');
+      const job = DB.getJob(jobId);
+      const u = job && (job.units || []).find(x => x.id === unitId);
+      if (u && (u.notes || '') === note) return;
+      try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update({ notes: note }).eq('id', unitId); }
+      catch (e) { console.warn('[saveUnitNote]', e); }
+      if (u) u.notes = note;
+    };
+    Workshop.deleteUnitFromModal = async function(jobId, unitId) {
+      const ok = await Workshop.deleteUnit(jobId, unitId);
+      if (ok) Workshop.closeUnitModal();
+    };
+
+    // ── 🔧 Laga → spare part / þjónusta picker → verklidur.parts ───────────
+    // Parts are stored on the tæki as a draft. They are NOT billed yet — at
+    // Sókn (pickup) patch 121 pre-loads them as billable extras so the
+    // operator confirms them onto the reikningur. "Draft until sótt".
+    Workshop.addPartToUnit = function(jobId, unitId) {
+      if (!window.VorurPicker || typeof VorurPicker.open !== 'function') {
+        alert('Vörulisti ekki tilbúinn — endurhladdu síðunni og prófaðu aftur.');
+        return;
+      }
+      VorurPicker.open(async p => {
+        const job = DB.getJob(jobId); if (!job) return;
+        const u = (job.units || []).find(x => x.id === unitId); if (!u) return;
+        const parts = Array.isArray(u.parts) ? u.parts.slice() : [];
+        const ex = parts.find(x => String(x.vara_id) === String(p.id) && x.nafn === p.nafn);
+        if (ex) ex.qty = (+ex.qty || 1) + 1;
+        else parts.push({ vara_id: p.id, nafn: p.nafn, verd_an_vsk: +p.verd_an_vsk || 0, vsk_prosenta: +p.vsk_prosenta || 24, qty: 1 });
+        await persistParts(unitId, parts);
+        u.parts = parts;
+        if (Workshop._unitCtx) Workshop._renderUnitModal();
+        Workshop.render();
+        if (window.Toast && Toast.show) Toast.show('🔧 ' + p.nafn + ' bætt við');
+      });
+    };
+    Workshop.removePartFromUnit = async function(jobId, unitId, idx) {
+      const job = DB.getJob(jobId);
+      const u = job && (job.units || []).find(x => x.id === unitId); if (!u) return;
+      const parts = Array.isArray(u.parts) ? u.parts.slice() : [];
+      parts.splice(idx, 1);
+      await persistParts(unitId, parts);
+      u.parts = parts;
+      if (Workshop._unitCtx) Workshop._renderUnitModal();
+      Workshop.render();
+    };
+
+    // ── 📤 Senda í afgreiðslu (per customer group) ────────────────────────
+    Workshop.sendGroupToAfgreidsla = async function(jobIds) {
+      if (!Array.isArray(jobIds) || !jobIds.length) return;
+      let total = 0, done = 0, name = '';
+      jobIds.forEach(id => {
+        const j = DB.getJob(id);
+        if (j) { name = j.customer || name; live(j.units).forEach(u => { total++; if (u.status === 'done') done++; }); }
+      });
+      if (done < total) {
+        const msg = name + ': ' + done + '/' + total + ' tilbúin. Senda samt í afgreiðslu?';
+        const ok = (window.Confirm && Confirm.show)
+          ? await Confirm.show(msg, { okText: 'Senda' })
+          : window.confirm(msg);
+        if (!ok) return;
+      }
+      for (const id of jobIds) {
+        try { await DB.updateJobStatus(id, 'ready'); } catch (e) { console.warn('[sendGroup]', e); }
+      }
+      if (window.Toast && Toast.show) Toast.show('📤 Sent í afgreiðslu');
+      Workshop.render();
     };
 
     // 2026-05-10 (L3 fix): Hydrate contract list and re-render Workshop so
