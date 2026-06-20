@@ -70,7 +70,13 @@
       P+'.rf-tbl thead th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);padding:9px 10px;border-bottom:1px solid var(--brd);background:var(--surface2);white-space:nowrap}',
       P+'.rf-tbl thead th.c{text-align:center}',
       P+'.rf-tbl tbody tr{transition:background .12s}',
-      P+'.rf-tbl tbody tr:hover{background:var(--surface2)}'
+      P+'.rf-tbl tbody tr:hover{background:var(--surface2)}',
+      // 2026-06-19: under any DARK theme give the page a rich black → brand
+      // gradient (Grafít/Miðnætti brand = dökkblátt → svart+dökkblár stigull).
+      'html[data-thm-dark="1"] #view-rekstrarfelog{background:radial-gradient(900px 520px at 85% -8%,color-mix(in srgb,var(--thm-brand) 45%,transparent),transparent 62%),linear-gradient(168deg,#05070d 0%,color-mix(in srgb,var(--thm-brand) 26%,#05070d) 125%)!important}',
+      // metallic "plate" look for the cards under dark themes (beveled, brand-tinted)
+      'html[data-thm-dark="1"] #view-rekstrarfelog .rf-card{background:linear-gradient(176deg,color-mix(in srgb,var(--thm-brand) 13%,#1b1f26) 0%,#15181d 60%,#101319 100%)!important;border:1px solid color-mix(in srgb,var(--thm-brand) 20%,#2b303a)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 18px 42px -22px rgba(0,0,0,.95)!important}',
+      'html[data-thm-dark="1"] #view-rekstrarfelog .rf-card:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 24px 54px -22px rgba(0,0,0,1),0 0 0 1px color-mix(in srgb,var(--thm-brand) 30%,transparent)!important}'
     ].join('');
     document.head.appendChild(s);
   }

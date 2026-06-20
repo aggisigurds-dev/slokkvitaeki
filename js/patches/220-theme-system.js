@@ -33,9 +33,26 @@
     hlutlaust: { nm:'🌿 Hlutlaust', desc:'Slate + grænt — lágstemmt.', sw:['#334155','#0f766e','#eef2f1','#0f172a'],
       t:{ bg:'#f5f6f7',card:'#fff',ink:'#0f172a',muted:'#64748b',line:'#e7eaec',brand:'#334155',primary:'#0f766e',h1:'#0f172a',h2:'#334155',h3:'#94a3b8' } },
     dokkt:     { nm:'🌙 Dökkt',     desc:'Dökkur grunnur — gott í bíl/myrkri.', sw:['#0f1115','#f59e0b','#1b1f27','#e5e7eb'],
-      t:{ bg:'#0f1115',card:'#1b1f27',ink:'#e5e7eb',muted:'#9aa3af',line:'#2a2f3a',brand:'#f59e0b',primary:'#f59e0b',h1:'#f3f4f6',h2:'#cbd0d8',h3:'#8b93a1' } }
+      t:{ bg:'#0f1115',card:'#1b1f27',ink:'#e5e7eb',muted:'#9aa3af',line:'#2a2f3a',brand:'#f59e0b',primary:'#f59e0b',h1:'#f3f4f6',h2:'#cbd0d8',h3:'#8b93a1' } },
+    // 2026-06-19: fagleg viðbótarþemu (úr þema-sýnishornunum).
+    midnight:  { nm:'🌌 Miðnætti',  desc:'Fágað dökkblátt — faglegt næturþema.', sw:['#2563eb','#60a5fa','#0b1220','#e8eef9'],
+      t:{ bg:'#0b1220',card:'#131c2e',ink:'#e8eef9',muted:'#9fb0c9',line:'#22304a',brand:'#2563eb',primary:'#60a5fa',h1:'#e8eef9',h2:'#b3c2da',h3:'#6f7f96' } },
+    glod:      { nm:'🔥 Glóð',      desc:'Dökkt + brennt appelsínugult — eldur að nóttu.', sw:['#c2410c','#f97316','#14100e','#f0ebe6'],
+      t:{ bg:'#14100e',card:'#1d1714',ink:'#f0ebe6',muted:'#b8a89c',line:'#2f261f',brand:'#c2410c',primary:'#f97316',h1:'#f0ebe6',h2:'#d2c1b3',h3:'#8a7c70' } },
+    grafit:    { nm:'⬛ Grafít',    desc:'Svart + dökkblátt + dökkgrátt — slétt og faglegt.', sw:['#1e3a8a','#3b82f6','#121317','#e9eaee'],
+      t:{ bg:'#121317',card:'#1b1d22',ink:'#e9eaee',muted:'#a3a7b0',line:'#2c2f37',brand:'#1e3a8a',primary:'#3b82f6',h1:'#e9eaee',h2:'#c2c5cd',h3:'#7e828c' } },
+    grafitljost:{ nm:'⬜ Grafít ljóst', desc:'Hvítur grunnur + grátt + dökkblátt — létt og faglegt.', sw:['#1e3a8a','#2563eb','#fafbfc','#16181d'],
+      t:{ bg:'#fafbfc',card:'#ffffff',ink:'#16181d',muted:'#5b6270',line:'#e7e9ee',brand:'#1e3a8a',primary:'#2563eb',h1:'#16181d',h2:'#444b59',h3:'#98a0ae' } },
+    grafitraudt:{ nm:'🟥 Grafít rautt', desc:'Svart + dökkgrátt + dökkrautt — kraftmikið og faglegt.', sw:['#991b1b','#ef4444','#131316','#ededee'],
+      t:{ bg:'#131316',card:'#1c1c20',ink:'#ededee',muted:'#a6a6ad',line:'#2e2e34',brand:'#991b1b',primary:'#ef4444',h1:'#ededee',h2:'#c4c4ca',h3:'#7e7e86' } },
+    // 2026-06-20: high-fidelity „eldvarna-stjórnborð" útlit — brushed stál-banner
+    // með alvöru eldi + Brunahólf-merki, kolsvört hlið, svartur→grár grunnur,
+    // hvít spjöld, málm-takkar. Skiptanlegur áherslulitur (rautt/blátt/gyllt) í
+    // banner-borðanum. Allt útlitið keyrt af patch 230 (data-thm-preset=brunastal).
+    brunastal: { nm:'🔥 Brunastál', desc:'Brushed stál-banner + eldur, kolsvört hlið, málm-takkar — eins og stjórnborð.', sw:['#c92a2a','#0c0d10','#9ba1ad','#ffffff'],
+      t:{ bg:'#9ba1ad',card:'#ffffff',ink:'#11141c',muted:'#9098a6',line:'#e3e7ee',brand:'#c92a2a',primary:'#c92a2a',h1:'#11141c',h2:'#3a4250',h3:'#9098a6' } }
   };
-  const ACCENTS = ['#c96a2f','#a8322a','#2563eb','#0f766e','#16a34a','#7c3aed','#334155'];
+  const ACCENTS = ['#c96a2f','#a8322a','#2563eb','#0f766e','#16a34a','#b91c1c','#334155'];
   const FONTS = {
     system:'-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',
     serif:'Georgia,"Times New Roman",serif',
@@ -84,6 +101,14 @@
     r.setProperty('--thm-font', FONTS[s.font] || FONTS.system);
     document.documentElement.setAttribute('data-thm-density', s.density);
     document.documentElement.setAttribute('data-thm-preset', s.preset);
+    // 2026-06-19: generic light/dark flag (luminance of the bg) so any page can
+    // add per-theme treatments via html[data-thm-dark="1"].
+    try {
+      let _h = String(t.bg || '').replace('#', '');
+      if (_h.length === 3) _h = _h[0]+_h[0]+_h[1]+_h[1]+_h[2]+_h[2];
+      const _l = 0.299*parseInt(_h.slice(0,2),16) + 0.587*parseInt(_h.slice(2,4),16) + 0.114*parseInt(_h.slice(4,6),16);
+      document.documentElement.setAttribute('data-thm-dark', _l < 128 ? '1' : '0');
+    } catch (_) {}
 
     // ── Stage 2: drive the app's OWN design tokens (css/app.css :root) from the
     // theme, so the whole app — which already references --brand/--ink1/--bg/--brd

@@ -81,7 +81,7 @@
       '</div>' +
       // Summary cards
       '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px">' +
-        summaryCard('Heildartekjur', fmtKr(totalRev), '#dc2626') +
+        summaryCard('Heildartekjur', fmtKr(totalRev), '#dc2626', 'bstal-hero') +
         summaryCard('Án VSK', fmtKr(totalEx), '#0d6efd') +
         summaryCard('VSK samtals', fmtKr(totalVsk), '#b45309') +
         summaryCard('Fjöldi sölur', _sales.length+'', '#1a7f4b') +
@@ -141,8 +141,8 @@
     bindOverviewEvents();
   }
 
-  function summaryCard(label, value, color){
-    return '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9;border-left:4px solid '+color+'">' +
+  function summaryCard(label, value, color, cls){
+    return '<div class="'+(cls||'')+'" style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9;border-left:4px solid '+color+'">' +
       '<div style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">'+label+'</div>' +
       '<div style="font-size:22px;font-weight:800;color:#0f172a;margin-top:4px">'+value+'</div>' +
     '</div>';
