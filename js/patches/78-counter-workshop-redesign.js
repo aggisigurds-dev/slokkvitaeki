@@ -470,9 +470,10 @@
   // Flattens every unit across the customer's verk into a grid of small
   // tiles. Each tile carries:
   //   • type label on top (truncated to fit)
-  //   • a green "Tilbúið" button at the bottom — click = mark this single
-  //     unit done (Workshop.toggleUnit), or shows a green "✓ Tilbúið" badge
-  //     once it's already done.
+  //   • an empty "☐ Tilbúið" checkbox-button at the bottom (neutral/white) —
+  //     click = mark this single unit done (Workshop.toggleUnit); once done it
+  //     flips to a green "✓ Tilbúið" badge. (Not-done tiles stay white so they
+  //     don't look ready — 2026-06-20.)
   // Done tiles get a soft green tint + check mark; broken tiles get red.
   function renderUnitTiles(jobs) {
     if (!jobs || !jobs.length) return '';
@@ -497,9 +498,9 @@
         : isBroken
           ? '<div style="background:#dc2626;color:#fff;font-size:10px;font-weight:700;text-align:center;padding:3px 4px;line-height:1.1">🚫 Ónýtt</div>'
           : '<button onclick="event.stopPropagation();Workshop.toggleUnit(' + jobId + ',' + unit.id + ')" ' +
-            'title="Merkja sem tilbúið" ' +
-            'style="display:block;width:100%;background:#16a34a;color:#fff;font-size:10px;font-weight:700;' +
-            'border:none;cursor:pointer;padding:3px 4px;line-height:1.1">Tilbúið</button>';
+            'title="Smelltu til að merkja tilbúið" ' +
+            'style="display:block;width:100%;background:#fff;color:#64748b;font-size:10px;font-weight:700;' +
+            'border:none;border-top:1px solid #e2e8f0;cursor:pointer;padding:3px 4px;line-height:1.1">☐ Tilbúið</button>';
       return '<div ' +
         'title="' + esc(unit.serial || '') + ' — ' + esc(label) + '" ' +
         'style="position:relative;flex-shrink:0;width:88px;border:1.5px solid ' + border + ';border-radius:6px;' +

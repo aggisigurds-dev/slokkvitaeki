@@ -84,6 +84,8 @@
       P+'.topbar{background:linear-gradient(180deg,#141519,#0c0d10)!important;border-right:1px solid #050506!important;box-shadow:6px 0 24px -14px #000}',
       P+'.brand{border-bottom:1px solid #060708!important}',
       P+'.brand-logo{background:#0a0b0d!important;border:1px solid #060708;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}',
+      // top sidebar logo → the flame mark in warm orange (app-icon look)
+      P+'.brand-logo svg{stroke:#ff7a1a!important;fill:#ff7a1a!important;width:20px!important;height:22px!important;filter:drop-shadow(0 1px 2px rgba(255,120,20,.5))}',
       P+'.brand-name{color:#eef1f4!important}',
       P+'.nav-section-label{color:rgba(255,255,255,.3)!important}',
       P+'.vnav-btn{color:rgba(255,255,255,.62)!important;border-radius:9px}',
@@ -188,6 +190,16 @@
       /* POS service/product tiles → brushed metal plate */
       P+'.view .pos-svc,'+P+'.view .pos-prod{background-color:var(--bstal-plate)!important;background-image:var(--bstal-plate-img)!important;border:1px solid rgba(20,24,34,.09)!important;box-shadow:0 4px 12px -6px rgba(25,35,60,.12)!important}',
       P+'.view .pos-svc:hover,'+P+'.view .pos-prod:hover{border-color:var(--bstal-ring)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 16px 34px -16px var(--bstal-glow)!important;transform:translateY(-3px)}',
+      /* metallic ic-*.png on matching ÞJÓNUSTA tiles (pos.js tags them data-bstic) */
+      P+'.view .pos-tile-ic[data-bstic]{width:50px!important;height:50px!important;background-color:transparent!important;background-repeat:no-repeat;background-position:center;background-size:cover;border-radius:13px!important;box-shadow:inset 0 2px 0 rgba(255,255,255,.18),0 7px 14px -6px rgba(20,30,60,.5)!important}',
+      P+'.view .pos-tile-ic[data-bstic] svg{display:none!important}',
+      P+'.view .pos-tile-ic[data-bstic="b"]{background-image:url(/img/theme/ic-b.png)}',
+      P+'.view .pos-tile-ic[data-bstic="r"]{background-image:url(/img/theme/ic-r.png)}',
+      P+'.view .pos-tile-ic[data-bstic="rr"]{background-image:url(/img/theme/ic-rr.png)}',
+      P+'.view .pos-tile-ic[data-bstic="g"]{background-image:url(/img/theme/ic-g.png)}',
+      P+'.view .pos-tile-ic[data-bstic="gb"]{background-image:url(/img/theme/ic-gb.png)}',
+      P+'.view .pos-tile-ic[data-bstic="br"]{background-image:url(/img/theme/ic-br.png)}',
+      P+'.view .pos-tile-ic[data-bstic="y"]{background-image:url(/img/theme/ic-y.png)}',
       /* MODALS (outside .view): white body, metallic header + buttons. The print
        * receipt uses a separate print window, so it is unaffected. */
       P+'.modal{background:#fff!important;border:1px solid rgba(20,24,34,.1)!important;box-shadow:0 30px 80px -20px rgba(0,0,0,.6)!important}',

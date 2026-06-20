@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Verkstæði — endurskipulag (mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Space Grotesk',system-ui,sans-serif;color:#11141c;
+       background:linear-gradient(180deg,#060607 0,#0b0c0f 70px,#aeb4be 320px,#9ba1ad 100%);min-height:100vh}
+  .wrap{max-width:1080px;margin:0 auto;padding:22px 22px 80px}
+  .mono{font-family:'Space Mono',monospace}
+  /* header */
+  .hdr{display:flex;align-items:center;gap:14px;margin:6px 0 18px}
+  .hdr h1{font-size:28px;font-weight:700;color:#fff;margin:0;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+  .hdr .sub{font-family:'Space Mono',monospace;font-size:13px;color:rgba(255,255,255,.72);margin-top:3px}
+  .scan{margin-left:auto;height:40px;padding:0 16px;border-radius:11px;border:1px solid #0a0b0d;color:#fff;cursor:pointer;font:600 13px/1 'Space Grotesk';
+        background:linear-gradient(145deg,#08080a,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709)}
+  /* card */
+  .card{background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:16px;box-shadow:0 10px 28px -16px rgba(25,35,60,.16);padding:18px 20px 20px}
+  .card-h{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .card-h b{font-size:14px;font-weight:700;letter-spacing:.12em;color:#3a4250}
+  .card-h .n{margin-left:auto;font-family:'Space Mono',monospace;font-size:12px;color:#9098a6}
+  /* customer row */
+  .crow{border:1px solid rgba(20,24,34,.09);border-left:3px solid #2f5fe0;border-radius:12px;padding:13px 15px;margin-bottom:12px;
+        background:linear-gradient(180deg,#fff,#eef1f6);box-shadow:0 2px 6px -4px rgba(25,35,60,.12)}
+  .crow-top{display:flex;gap:16px;align-items:flex-start}
+  .cinfo{width:190px;flex:none}
+  .cinfo .nm{font-size:15px;font-weight:600;color:#11141c}
+  .cinfo .mt{font-size:12px;color:#9098a6;margin-top:2px}
+  .tiles{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:8px}
+  /* device tile */
+  .tile{width:96px;flex:none;border:1px solid rgba(20,24,34,.12);border-radius:10px;overflow:hidden;
+        background:linear-gradient(180deg,#eef1f6,#dde1e9);cursor:pointer;transition:transform .12s,box-shadow .12s,border-color .12s;position:relative}
+  .tile:hover{transform:translateY(-2px);box-shadow:0 8px 18px -8px rgba(20,30,60,.4);border-color:#9bb0e6}
+  .tile .body{padding:8px 6px 4px;text-align:center}
+  .tile .ser{font-family:'Space Mono',monospace;font-size:10.5px;color:#7a8493;letter-spacing:.04em}
+  .tile .ty{font-size:9.5px;color:#9098a6;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tile .pc{font-size:9px;color:#16a34a;font-weight:700;margin-top:2px;min-height:11px}
+  /* the one-tap quick toggle at the bottom */
+  .tile .chk{display:block;width:100%;border:none;border-top:1px solid #e2e8f0;cursor:pointer;font:700 10px/1.1 'Space Grotesk';padding:4px}
+  .tile .chk.no{background:#fff;color:#64748b}
+  .tile .chk.yes{background:linear-gradient(160deg,#1f9d57,#0a4a26);color:#fff}
+  .tile .chk.broken{background:linear-gradient(150deg,#e25555,#a01818);color:#fff}
+  .prog{height:5px;border-radius:3px;background:#e6e9ef;overflow:hidden}
+  .prog>div{height:100%;background:linear-gradient(90deg,#e0a020,#c77a16)}
+  .prog.full>div{background:linear-gradient(90deg,#7aa0ff,#2f5fe0)}
+  .prow{display:flex;align-items:center;gap:12px;margin-top:12px}
+  .sendbtn{flex:none;height:34px;padding:0 14px;border-radius:9px;border:1px solid #0a0b0d;cursor:pointer;font:700 12px/1 'Space Grotesk';color:#fff;white-space:nowrap;
+           background:linear-gradient(145deg,#08080a,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709)}
+  .sendbtn.ready{background:linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102);border-color:#971515;box-shadow:0 0 14px -4px rgba(160,16,16,.55)}
+  .hint{color:rgba(255,255,255,.8);font-size:12.5px;text-align:center;margin-top:14px}
+  .hint b{color:#ffd24a}
+  /* ===== Tæki modal ===== */
+  .ov{position:fixed;inset:0;background:rgba(8,10,14,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:50}
+  .ov.on{display:flex}
+  .modal{width:520px;max-width:100%;max-height:92vh;overflow:auto;background:#fff;border-radius:16px;box-shadow:0 30px 80px -20px #000}
+  .m-h{background:linear-gradient(145deg,#08080a,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709);color:#fff;padding:16px 20px;display:flex;align-items:center;gap:12px}
+  .m-h .ser{font-family:'Space Mono',monospace;font-size:15px;font-weight:700}
+  .m-h .ty{font-size:12px;color:rgba(255,255,255,.6)}
+  .m-h .x{margin-left:auto;background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px}
+  .m-b{padding:18px 20px 22px}
+  .m-lab{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#8a93a5;margin:0 0 8px}
+  .acts{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .act{display:flex;align-items:center;justify-content:center;gap:7px;height:46px;border-radius:11px;cursor:pointer;font:700 14px/1 'Space Grotesk';border:1px solid transparent}
+  .act.ok{background:linear-gradient(160deg,#1f9d57,#0a4a26);color:#fff}
+  .act.ok.off{background:#fff;color:#166534;border-color:#bbf7d0}
+  .act.broken{background:#fff;color:#a01818;border:1px solid #fecaca}
+  .act.broken.on{background:linear-gradient(150deg,#e25555,#a01818);color:#fff;border-color:transparent}
+  .act.laga{background:linear-gradient(145deg,#0d0102,#6c0d10 50%,#971515 60%,#100102);color:#fff;grid-column:1/-1;height:48px}
+  .act.del{background:#fff;color:#64748b;border:1px solid #e2e8f0;grid-column:1/-1;height:40px;font-size:12.5px}
+  .ta{width:100%;min-height:56px;margin-top:6px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#eef1f6;font:inherit;font-size:13px;resize:vertical}
+  /* parts picker */
+  .parts{display:none;margin-top:14px;border-top:1px dashed #e2e8f0;padding-top:14px}
+  .parts.on{display:block}
+  .psearch{width:100%;height:40px;padding:0 12px;border:1px solid #e2e8f0;border-radius:9px;background:#eef1f6;font:inherit;font-size:13px;margin-bottom:10px}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:7px;max-height:190px;overflow:auto}
+  .pitem{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 11px;border:1px solid #e2e8f0;border-radius:9px;background:#fff;cursor:pointer;font-size:12.5px}
+  .pitem:hover{border-color:#9bb0e6;background:#f6f9ff}
+  .pitem .pr{font-family:'Space Mono',monospace;color:#11141c;font-weight:700;font-size:11.5px}
+  .added{margin-top:12px}
+  .arow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px}
+  .arow .rm{background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:16px}
+  .atot{display:flex;justify-content:space-between;font-weight:800;font-size:14px;margin-top:8px;padding-top:8px;border-top:2px solid #0f172a}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="hdr">
+    <div><h1>Verkröð</h1><div class="sub"><b style="color:#82a4ff">71</b> verk í vinnslu</div></div>
+    <button class="scan">📷 Skanna tæki</button>
+  </div>
+
+  <div class="card">
+    <div class="card-h"><b>VERK</b><span class="n" id="vcount">— verk</span></div>
+    <div id="rows"></div>
+    <div class="hint">Smelltu á <b>efri hluta flís</b> til að opna Tæki-glugga · neðsta reitinn til að haka beint í „tilbúið".</div>
+  </div>
+</div>
+
+<!-- Tæki modal -->
+<div class="ov" id="ov">
+  <div class="modal">
+    <div class="m-h">
+      <div><div class="ser" id="m-ser">—</div><div class="ty" id="m-ty">—</div></div>
+      <button class="x" onclick="closeM()">✕</button>
+    </div>
+    <div class="m-b">
+      <p class="m-lab">Þjónusta</p>
+      <div id="m-svc" style="font-size:14px;font-weight:600;color:#11141c;margin-bottom:14px">—</div>
+
+      <p class="m-lab">Staða tækis</p>
+      <div class="acts">
+        <div class="act ok" id="a-ok" onclick="setStatus('done')">✓ Tilbúið</div>
+        <div class="act broken" id="a-broken" onclick="setStatus('broken')">🚫 Ónýtt</div>
+        <div class="act laga" onclick="toggleParts()">🔧 Laga — bæta við varahlut / þjónustu</div>
+        <div class="act del" onclick="alert('(mockup) Eyða tæki → fer í Eydd tæki')">🗑 Eyða tæki</div>
+      </div>
+
+      <!-- spare-part / þjónusta picker (opens on Laga) -->
+      <div class="parts" id="parts">
+        <p class="m-lab">Bæta við varahlut / þjónustu á þetta tæki</p>
+        <input class="psearch" id="psearch" placeholder="🔎 Leita að varahlut eða þjónustu…" oninput="renderParts()">
+        <div class="pgrid" id="pgrid"></div>
+        <div class="added" id="added"></div>
+      </div>
+
+      <p class="m-lab" style="margin-top:16px">Athugasemd</p>
+      <textarea class="ta" id="m-note" placeholder="t.d. skipti um ventil, þrýstiprófað…"></textarea>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- sample data ----
+  const PARTS = [
+    ['O-hringa sett', 890],['Ventill / loki', 2450],['Þrýstimælir', 3200],['Öryggispinni + innsigli', 380],
+    ['Duft áfylling 6 kg', 4200],['CO₂ áfylling 5 kg', 6900],['Slanga + stútur', 2980],['Háls/ventilhús', 5400],
+    ['Yfirferð / skoðun', 2500],['Þrýstiprófun (vottun)', 3500],['Nýr merkimiði', 250],['Vinna (klst.)', 6900]
+  ];
+  const CUSTOMERS = [
+    { name:'Teitur Jónasson ehf', note:'1 verk', devices:[
+      ['VFQ95W','Duft 6kg','ABC yfirferð','done'],['4DQ9DS','Duft 6kg','ABC yfirferð','pending'],
+      ['FKEVQJ','Duft 6kg','ABC yfirferð','pending'],['RC3NWT','Duft 6kg','ABC yfirferð','pending'],
+      ['9GAW5G','Duft 6kg','ABC yfirferð','pending'],['BQ4YV3','Duft 6kg','ABC yfirferð','done'],
+      ['T25MQF','Duft 6kg','ABC yfirferð','done'],['V42DNP','CO₂ 5kg','yfirferð','done'],
+      ['88ZLYC','Duft 6kg','ABC yfirferð','pending'],['46SBYC','Duft 6kg','ABC yfirferð','done'],
+      ['UBEV8W','Duft 6kg','ABC yfirferð','done'],['FGAEZK','Duft 6kg','ABC yfirferð','broken'] ]},
+    { name:'Elli', note:'1 verk', devices:[ ['NRCSWW','Léttvatn 6kg','yfirferð','done'] ]},
+    { name:'Grettisstillur ehf.', note:'2 verk', devices:[
+      ['K5H5VT','Duft 2kg','ABC hleðsla','done'],['TLJQ83','Duft 6kg','yfirferð','done'],
+      ['6H9FLM','CO₂ 2kg','hleðsla','done'],['6GZVD5','Duft 6kg','yfirferð','done'] ]},
+    { name:'OTTO', note:'1 verk', devices:[ ['EGZXK5','Duft 6kg','ABC yfirferð','pending'] ]},
+  ];
+  let cur = null; // current device
+
+  // ---- render rows ----
+  function statusCls(s){ return s==='done'?'yes':s==='broken'?'broken':'no'; }
+  function statusTxt(s){ return s==='done'?'✓ Tilbúið':s==='broken'?'🚫 Ónýtt':'☐ Tilbúið'; }
+  function render(){
+    let tot=0;
+    document.getElementById('rows').innerHTML = CUSTOMERS.map((c,ci)=>{
+      const done=c.devices.filter(d=>d[3]==='done').length, n=c.devices.length; tot+=n;
+      const pct=Math.round(done/n*100);
+      const tiles=c.devices.map((d,di)=>{
+        const partCount=(d[4]||[]).length;
+        return `<div class="tile">
+          <div class="body" onclick="openM(${ci},${di})">
+            <div class="ser">${d[0]}</div>
+            <div class="ty">${d[1]}</div>
+            <div class="pc">${partCount?('🔧 '+partCount+' hlutir'):''}</div>
+          </div>
+          <button class="chk ${statusCls(d[3])}" onclick="quick(${ci},${di})">${statusTxt(d[3])}</button>
+        </div>`;
+      }).join('');
+      return `<div class="crow">
+        <div class="crow-top">
+          <div class="cinfo"><div class="nm">${c.name}</div><div class="mt">${c.note} · ${done}/${n} lokið</div></div>
+          <div class="tiles">${tiles}</div>
+        </div>
+        <div class="prow">
+          <div class="prog ${pct===100?'full':''}" style="flex:1"><div style="width:${pct}%"></div></div>
+          <button class="sendbtn ${pct===100?'ready':''}" onclick="event.stopPropagation();sendAfgr(${ci})">📤 Senda í afgreiðslu</button>
+        </div>
+      </div>`;
+    }).join('');
+    document.getElementById('vcount').textContent = tot+' verk';
+  }
+  function quick(ci,di){ const d=CUSTOMERS[ci].devices[di]; d[3]= d[3]==='done'?'pending':'done'; render(); }
+  function sendAfgr(ci){
+    const c=CUSTOMERS[ci], done=c.devices.filter(d=>d[3]==='done').length, n=c.devices.length;
+    if(done<n && !confirm(c.name+': '+done+'/'+n+' tilbúin. Senda samt í afgreiðslu?')) return;
+    CUSTOMERS.splice(ci,1); render();   // (mockup) verkið færist í Afgreiðslu
+  }
+
+  // ---- Tæki modal ----
+  function openM(ci,di){
+    cur=CUSTOMERS[ci].devices[di]; cur._ci=ci; cur._di=di;
+    document.getElementById('m-ser').textContent=cur[0];
+    document.getElementById('m-ty').textContent=cur[1];
+    document.getElementById('m-svc').textContent=cur[1]+' · '+cur[2];
+    document.getElementById('m-note').value='';
+    document.getElementById('parts').classList.remove('on');
+    document.getElementById('psearch').value='';
+    syncStatus(); renderAdded();
+    document.getElementById('ov').classList.add('on');
+  }
+  function closeM(){ document.getElementById('ov').classList.remove('on'); render(); }
+  function syncStatus(){
+    document.getElementById('a-ok').classList.toggle('off', cur[3]!=='done');
+    document.getElementById('a-broken').classList.toggle('on', cur[3]==='broken');
+  }
+  function setStatus(s){ cur[3]= cur[3]===s?'pending':s; syncStatus(); }
+  function toggleParts(){ document.getElementById('parts').classList.toggle('on'); renderParts(); }
+
+  // ---- parts picker ----
+  function renderParts(){
+    const q=(document.getElementById('psearch').value||'').toLowerCase();
+    document.getElementById('pgrid').innerHTML = PARTS.filter(p=>p[0].toLowerCase().includes(q)).map((p,i)=>
+      `<div class="pitem" onclick="addPart('${p[0].replace(/'/g,"")}',${p[1]})"><span>${p[0]}</span><span class="pr">${fmt(p[1])}</span></div>`).join('');
+  }
+  function addPart(name,price){ if(!cur[4])cur[4]=[]; cur[4].push([name,price]); renderAdded(); }
+  function rmPart(i){ cur[4].splice(i,1); renderAdded(); }
+  function renderAdded(){
+    const list=cur && cur[4]||[];
+    const tot=list.reduce((s,x)=>s+x[1],0);
+    document.getElementById('added').innerHTML = list.length
+      ? list.map((x,i)=>`<div class="arow"><span>🔧 ${x[0]}</span><span><b class="mono">${fmt(x[1])}</b> <button class="rm" onclick="rmPart(${i})">×</button></span></div>`).join('')
+        + `<div class="atot"><span>Varahlutir samtals</span><span class="mono">${fmt(tot)}</span></div>`
+      : '<div style="color:#9098a6;font-size:12px;padding:6px 0">Engir varahlutir skráðir enn.</div>';
+  }
+  function fmt(n){ return n.toLocaleString('is-IS').replace(/,/g,'.')+' kr'; }
+
+  document.getElementById('ov').addEventListener('click',e=>{ if(e.target.id==='ov') closeM(); });
+  render();
+</script>
+</body>
+</html>
