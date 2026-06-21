@@ -178,6 +178,12 @@
      this stylesheet loads, so we need higher specificity (html body …) to win. */
   html body #_mobnav_btn, html body #_mobnav_back{ display:none !important; }
   html body.has-mobnav .topbar{ padding-left:0 !important; }
+  /* ...and a THIRD mobile nav from js/v9.js: #_slokk_hamb makes .view-nav its OWN
+     fixed drawer (z7999), fighting the .topbar drawer above. Hide that hamburger
+     and keep .view-nav in normal flow INSIDE .topbar, so mobilenav.js's drawer is
+     the single mobile nav. (nav.view-nav out-specifies v9's .view-nav rule.) */
+  #_slokk_hamb{ display:none !important; }
+  nav.view-nav{ position:static !important; transform:none !important; height:auto !important; z-index:auto !important; box-shadow:none !important; transition:none !important; }
 
   /* (2) "Sala not full screen": the brunastál banner is position:fixed at
      left:calc(var(--sidebar-w)+14px); on a phone the sidebar is a hidden drawer,
