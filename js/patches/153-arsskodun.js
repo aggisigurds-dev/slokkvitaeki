@@ -113,33 +113,41 @@
   async function loadAll() {
     const SB = getSB();
     if (!SB) return;
-    if (window.AppSettings && window.AppSettings.load) {
-      try { await window.AppSettings.load(); } catch (_) {}
-    }
+
+    // 2026-06-21 (perf): kick off the INDEPENDENT loads CONCURRENTLY instead of
+    // awaiting them one-by-one. The cold open spent ~3s here because AppSettings,
+    // fyrirtaeki, uttaeki (6 pages) and vorur were fetched sequentially even
+    // though none depends on another — running them in parallel collapses the
+    // wall-clock to the slowest single chain. (Paging WITHIN each fetch is still
+    // sequential, as it must be.)
+    const appSettingsP = (window.AppSettings && window.AppSettings.load)
+      ? Promise.resolve(window.AppSettings.load()).catch(() => {})
+      : Promise.resolve();
+    // Load ALL fyrirtaeki rows. Supabase caps each response at 1000 rows
+    // (server-side "Max rows"), so .range() alone is not enough — page through.
+    const companiesP = DB.fetchAll((from, to) => SB.from('fyrirtaeki')
+      .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu')
+      .is('deleted_at', null)
+      .order('nafn')
+      .range(from, to)).catch(error => { console.error('[arsskodun] loadAll', error); return null; });
+    // 2026-06-01: tæki count + estimated yearly revenue are DERIVED LIVE from the
+    // real uttaeki table (status='active'); pricing from the vorur "yfirferð"
+    // rates (single source of truth) with hardcoded fallbacks. Both run in
+    // parallel with the company + settings loads.
+    const unitsP = loadActiveUnitsByClient(SB).catch(() => ({}));
+    const priceP = loadYfirferdPrices(SB).catch(() => ({}));
+
+    await appSettingsP;
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
     const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
 
-    // Load ALL fyrirtaeki rows. Supabase caps each response at 1000 rows
-    // (server-side "Max rows"), so .range() alone is not enough — page through.
-    let allCompanies;
-    try {
-      allCompanies = await DB.fetchAll((from, to) => SB.from('fyrirtaeki')
-        .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu')
-        .is('deleted_at', null)
-        .order('nafn')
-        .range(from, to));
-    } catch (error) { console.error('[arsskodun] loadAll', error); return; }
+    const allCompanies = await companiesP;
+    if (!allCompanies) return;   // fetch failed — keep the previous cache (same early-out as before)
     _cache.allCompanies = allCompanies;
     _cache.byId = Object.fromEntries(allCompanies.map(c => [c.id, c]));
 
-    // 2026-06-01: tæki count + estimated yearly revenue are now DERIVED LIVE
-    // from the real uttaeki table (status='active'), not a hand-maintained
-    // snapshot — so every company that actually has equipment shows up with a
-    // correct count and revenue. Pricing comes from the vorur "yfirferð" rates
-    // (single source of truth) with hardcoded fallbacks. Manual inspect_month
-    // / last_year_inspected / priority etc. are preserved from arsskodun_customers.
-    const unitsByClient = await loadActiveUnitsByClient(SB);
-    const PRICE = await loadYfirferdPrices(SB);
+    const unitsByClient = await unitsP;
+    const PRICE = await priceP;
 
     // 2026-05-19: Only include companies that are ACTUALLY in service
     // (subscribed to ársskoðun, subscribed to brunakerfi, OR — new — they have
