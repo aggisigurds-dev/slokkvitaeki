@@ -133,8 +133,11 @@ function bundleIndexHtml() {
   for (let i = 0; i < parts.length; i++) {
     const p = parts[i];
     if (p.t === 'script' && p.bundleable) { run.push(p); continue; }
-    // Whitespace between two bundleable scripts can be absorbed into the bundle.
-    if (p.t === 'html' && p.s.trim() === '' && run.length) {
+    // Whitespace — or HTML comments, e.g. "hibernated" markers left where a
+    // disabled patch's <script> used to be — between two bundleable scripts can
+    // be absorbed into the bundle without breaking the run (so hibernating a
+    // patch doesn't fragment the bundle into many small files).
+    if (p.t === 'html' && p.s.replace(/<!--[\s\S]*?-->/g, '').trim() === '' && run.length) {
       const next = parts[i + 1];
       if (next && next.t === 'script' && next.bundleable) continue;
     }
