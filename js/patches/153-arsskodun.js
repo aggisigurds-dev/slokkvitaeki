@@ -599,6 +599,12 @@
     if (!main) return;
     const all = _cache.list;
     const filtered = filteredSorted();
+    // 2026-06-21 (mobile): on a phone-width screen force the CARD layout — the
+    // wide 8-column table scrolls sideways and is unusable with a thumb. Desktop
+    // keeps the user's chosen view (state.view).
+    _ensureArsMobileCss();
+    const isPhone = (window.innerWidth || document.documentElement.clientWidth) <= 768;
+    const effView = isPhone ? 'card' : state.view;
     // Stats restricted to companies that ARE in árskoðun (have equipment).
     // The full list still includes everyone — the user wanted the whole
     // fyrirtækjaregistur in one tab, but tiles only count the ones that
@@ -711,7 +717,7 @@
             <div style="font-size:14px;font-weight:600;color:var(--ink1);margin-bottom:3px">Engin fyrirtæki passa við þessa síu</div>
             <div style="font-size:12px">Reyndu að breyta sía eða leitarstreng.</div>
           </div>
-        ` : (state.view === 'card' ? renderCards(filtered) : renderTable(filtered))}
+        ` : (effView === 'card' ? renderCards(filtered) : renderTable(filtered))}
 
         ${filteredAars.length > 0 ? `
         <div class="_ars-summary" style="margin-top:14px;padding:13px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
@@ -984,7 +990,7 @@
     const curYear = today.getFullYear();
     const curMonth = today.getMonth() + 1;
     return `
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:11px">
+      <div class="_ars-cardgrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:11px">
         ${arr.map(c => {
           const ars = c._ars || {};
           const eq = ars.equipment || {};
@@ -1023,9 +1029,9 @@
             <div class="_ars-card" data-co-id="${c.id}" style="background:var(--surface);border:1px solid var(--brd);border-radius:11px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(0,0,0,0.03);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--ink4)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'" onmouseout="this.style.borderColor='var(--brd)';this.style.boxShadow='0 1px 2px rgba(0,0,0,0.03)'">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
                 <div style="min-width:0;flex:1">
-                  <div style="font-weight:700;color:var(--ink1);font-size:13.5px;line-height:1.25">${esc(c.nafn || '—')}</div>
+                  <div class="_ars-cn" style="font-weight:700;color:var(--ink1);font-size:13.5px;line-height:1.25">${esc(c.nafn || '—')}</div>
                   ${c.kennitala ? `<div style="font-size:10.5px;color:var(--ink4);font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
-                  ${c.heimilisfang ? `<div style="font-size:11px;color:var(--ink3);margin-top:2px">📍 ${esc(c.heimilisfang)}</div>` : ''}
+                  ${c.heimilisfang ? `<div class="_ars-ca" style="font-size:11px;color:var(--ink3);margin-top:2px">📍 ${esc(c.heimilisfang)}</div>` : ''}
                   ${(() => {
                     // 2026-05-26: surface netfang on the card so the operator can
                     // see at a glance which companies are missing it for the month.
@@ -1042,7 +1048,7 @@
                 </div>
               </div>
 
-              <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;font-size:11px;margin-top:2px">
+              <div class="_ars-cgrid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;font-size:11px;margin-top:2px">
                 <div style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:4px 7px">
                   <div style="font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase">Skoðun</div>
                   <div style="font-size:12px;font-weight:700;color:${m===curMonth?'#dc2626':'var(--ink1)'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</div>
@@ -1119,6 +1125,34 @@
       + 'tr._ars-row:hover ._ars-mark,._ars-mark:focus-visible{opacity:1}'
       + '._ars-mark:hover{color:#2f5fe0;background:#eef3ff;border-color:#9bb0e6}'
       + '._ars-mark.on{opacity:1;color:#fff;background:linear-gradient(150deg,#4f74dc,#16306f);border-color:#16306f;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 2px 6px -2px rgba(20,40,120,.5)}';
+    document.head.appendChild(s);
+  }
+
+  // 2026-06-21: phone styling for this screen. The card grid is already single-
+  // column at phone width; this makes the cards + toolbar genuinely thumb-usable
+  // (readable text, ≥44px tap targets, 16px search input so the browser doesn't
+  // zoom on focus). Scoped to #view-arsskodun + a max-width media query, so it
+  // never touches desktop.
+  function _ensureArsMobileCss() {
+    if (document.getElementById('_ars-mobile-css')) return;
+    const s = document.createElement('style');
+    s.id = '_ars-mobile-css';
+    s.textContent =
+      '@media (max-width:768px){' +
+        '#view-arsskodun ._ars-vm{display:none!important}' +
+        '#view-arsskodun ._ars-cardgrid{grid-template-columns:1fr!important;gap:9px!important}' +
+        '#view-arsskodun ._ars-card{padding:14px 15px!important;gap:10px!important;border-radius:13px!important}' +
+        '#view-arsskodun ._ars-cn{font-size:16px!important;line-height:1.3!important}' +
+        '#view-arsskodun ._ars-ca{font-size:13px!important}' +
+        '#view-arsskodun ._ars-cgrid{gap:7px!important;font-size:12px!important}' +
+        '#view-arsskodun ._ars-cgrid>div{padding:8px 9px!important}' +
+        '#view-arsskodun ._ars-cgrid>div>div:last-child{font-size:15px!important}' +
+        '#view-arsskodun ._ars-card ._ars-open-fyrirt,#view-arsskodun ._ars-card ._ars-open-map{min-height:44px!important;font-size:13px!important;border-radius:9px!important}' +
+        '#view-arsskodun ._ars-card ._ars-tu-toggle{min-height:38px!important;font-size:12.5px!important;padding:7px 12px!important}' +
+        '#view-arsskodun #_ars-search{font-size:16px!important;padding:12px 13px!important;border-radius:10px!important;width:100%!important;box-sizing:border-box!important}' +
+        '#view-arsskodun #_ars-new,#view-arsskodun #_ars-print,#view-arsskodun #_ars-sort{min-height:44px!important;font-size:13px!important}' +
+        '#view-arsskodun ._ars-st,#view-arsskodun ._ars-mo,#view-arsskodun .by-preset{min-height:38px!important;font-size:12.5px!important;padding:7px 11px!important}' +
+      '}';
     document.head.appendChild(s);
   }
 
