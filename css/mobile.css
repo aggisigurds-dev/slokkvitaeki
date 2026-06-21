@@ -161,3 +161,49 @@
   .field-body{display:block !important}
   .field-col{width:100% !important;margin-bottom:14px}
 }
+
+/* ============================================================ */
+/* MOBILE SHELL FIXES — 2026-06-21                              */
+/* Applies across the WHOLE mobile range (≤900), not just ≤480, */
+/* because large phones (e.g. Galaxy S26) report 481–900px CSS  */
+/* width and were missing the phone fixes.                      */
+/* ============================================================ */
+@media (max-width: 900px){
+  /* (1) "Sidebar overlapping": two mobile-nav systems shipped over time and
+     both run — mobilenav.js (#_mnav_btn) AND a legacy drawer in 00-legacy.js
+     (#_mobnav_btn + #_mobnav_back + a has-mobnav topbar shift). That's the
+     duplicate hamburger + competing backdrops. Keep the newer mobilenav.js
+     and retire the legacy one. */
+  /* NB 00-legacy.js injects "#_mobnav_btn{display:flex!important}" via JS AFTER
+     this stylesheet loads, so we need higher specificity (html body …) to win. */
+  html body #_mobnav_btn, html body #_mobnav_back{ display:none !important; }
+  html body.has-mobnav .topbar{ padding-left:0 !important; }
+
+  /* (2) "Sala not full screen": the brunastál banner is position:fixed at
+     left:calc(var(--sidebar-w)+14px); on a phone the sidebar is a hidden
+     drawer, so the banner is shoved against the right edge and cut off. Hide
+     it on phones (it's decorative) — reclaims ~134px of height for content. */
+  #bstal-banner, #bstal-ember{ display:none !important; }
+
+  /* (3) Hard stop on any sideways bleed at every mobile width (was ≤480 only). */
+  html, body{ overflow-x:hidden !important; }
+
+  /* (4) Sala POS: stack products over the cart + stack the banner across the
+     whole mobile range (these fixes were ≤480-only, so they missed larger
+     phones, leaving the cart beside the grid → sideways scroll / cut-off). */
+  .pos-banner{ flex-direction:column !important; min-height:0 !important; }
+  #view-sala > div:nth-child(2){ grid-template-columns:1fr !important; gap:8px !important; }
+  #view-sala > div:nth-child(2) > div:last-child > div{ position:static !important; max-height:none !important; }
+
+  /* (5) "Not full screen" / dead gutter: <body> is display:flex (sidebar +
+     content). On mobile the sidebar is a fixed drawer (out of flow), but the
+     content view keeps its desktop width and leaves an empty strip on the right.
+     Make the active view grow to fill the whole width. */
+  .view{ flex:1 1 auto !important; width:auto !important; max-width:100% !important; }
+
+  /* (6) Reclaim the banner's reserved top space. The brunastál theme reserves
+     padding-top:160px on views for its fixed banner — which we hide on phones,
+     leaving a big dark gap. Out-specify the theme's :not(#id)x3 selector
+     (4x :not(#id) → one more id in the specificity) to pull content back up. */
+  html[data-bstal-banner="on"] .view.active:not(#_a):not(#_b):not(#_c):not(#_d){ padding-top:62px !important; }
+}
