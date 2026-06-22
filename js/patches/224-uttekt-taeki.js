@@ -305,13 +305,28 @@
          dökka svæðið hverfur sjónrænt → uniform dökkur litur. Sjálfgefið
          (scroll) festir stigulinn við .view-ramman → dökkur 0→95px alltaf
          efst sjáanlegt, ljósgrár frá 200px niður. */
-      /* Stál-grái stigullinn ætti að koma frá patch 230 (Brunastál) en CSS-stríð
-         við patch 229 (.view{background:var(--thm-bg)}) gerir margar síður cream/
-         tan í stað grás. Hér setjum við stigulinn á ALLAR .view-síður með
-         „html body [id^=view-].view" — sértækni (0,2,2) sem slær báða þema-
-         keppinauta (0,2,1) örugglega. Ein regla, allar listasíður — engin
-         nauðsyn að telja upp ID hver fyrir sig. */
-      'html body [id^="view-"].view{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
+      /* Stál-grái stigullinn á ALLAR .view-síður. Tvær lög til að duga við þema-stríð:
+         1) almenna reglan með „html body div.view[id^=view-]" — sértækni (0,2,3),
+            slær báða þema-keppinauta (patch 229 og 230, báðar 0,2,1) örugglega.
+         2) ID-fallback fyrir kraftaverk — explicit fyrir hverja dynamic view sem
+            sumir aðrir patches setja á (þjónustu-verkstæði var dökk eftir merge,
+            þrátt fyrir að id passi við [id^=view-]). ID gefur (1,1,0) sértækni. */
+      'html body div.view[id^="view-"]{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
+      'html body #view-thjonustu-verkstaedi.view,'+
+      'html body #view-bokhalds-yfirlit.view,'+
+      'html body #view-thjonustuverk.view,'+
+      'html body #view-beidnir.view,'+
+      'html body #view-verkbord.view,'+
+      'html body #view-bakendi.view,'+
+      'html body #view-utlit.view,'+
+      'html body #view-tilbod.view,'+
+      'html body #view-vertid.view,'+
+      'html body #view-vsk-report.view,'+
+      'html body #view-bokhald-yfirferd.view,'+
+      'html body #view-kerfi.view,'+
+      'html body #view-vidsk-detail.view,'+
+      'html body #view-hreyfingarlisti.view'+
+        '{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
       'html body [id^="view-"]>.main-panel{background:transparent!important}',
       '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
       /* two-column layout: tæki left, cost calculator right */
