@@ -291,6 +291,14 @@
 
   if (!document.getElementById('uttekt-taeki-css')) {
     var css = [
+      /* 2026-06-22: page-backdrop fix. The company-detail (úttekt) view shows
+         transparent spjöld beint á .view-bakgrunninum, svo .view-liturinn sést.
+         Patch 230 (Brunastál) setur stál-gráa stigulinn á .view EN patch 229
+         (data-thm-dark) setur dökkan stigul á .view með SÖMU sértækni — sá sem
+         hleðst síðar vinnur, og hér vann sá dökki → bakgrunnurinn varð svartur.
+         Þetta #id-val (hærri sértækni en báðar .view-reglurnar) festir gráa
+         stigulinn — sama og á öðrum Brunastál-síðum. */
+      'html[data-thm-preset="brunastal"] #view-companies.view{background:linear-gradient(180deg,#060607 0px,#060607 85px,#aeb4be 360px,#9ba1ad 100%)!important}',
       '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
       /* two-column layout: tæki left, cost calculator right */
       '.uttekt-cols{display:flex;gap:16px;align-items:flex-start}',
