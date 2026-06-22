@@ -122,6 +122,7 @@
         '<button class="ut-bulk-act" data-bulk="yfirferd" data-co="'+coId+'">→ Yfirferð</button>'+
         '<button class="ut-bulk-act" data-bulk="hledsla" data-co="'+coId+'">→ Hleðsla</button>'+
         '<button class="ut-bulk-act" data-bulk="onytt" data-co="'+coId+'">🚫 Ónýtt</button>'+
+        '<button class="ut-bulk-size" data-co="'+coId+'" title="Breyta stærð á völdum tækjum (t.d. 6-9 ltr → 6 ltr)">📏 Breyta stærð</button>'+
         '<input type="date" class="ut-bulk-date" value="'+(_bulkDate||'')+'" title="Næsta skoðun">'+
         '<button class="ut-bulk-dateset" data-co="'+coId+'">🗓 Uppfæra dags</button>'+
         '<button class="ut-bulk-qr" data-co="'+coId+'">▦ Prenta QR</button>'+
@@ -165,7 +166,7 @@
   (function(){ if(document.getElementById('sk-utlock-css'))return; var s=document.createElement('style'); s.id='sk-utlock-css';
     s.textContent='.ut-listlock{display:block;width:100%;margin-top:12px;padding:13px;border-radius:12px;border:1px solid #c7ccd3;background:#eef1f4;color:#2b313a;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}'
       +'.ut-listlock.on{background:linear-gradient(180deg,#2f5d3f,#173524);color:#daffe8;border-color:#0e2417;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(0,0,0,.25)}'
-      +'.ut-list.locked .ut-svc,.ut-list.locked .ut-onytt,.ut-list.locked .ut-check,.ut-list.locked .ut-chk,.ut-list.locked .ut-selall,.ut-list.locked .ut-bulk-act,.ut-list.locked .ut-bulk-date,.ut-list.locked .ut-bulk-dateset,.ut-list.locked .ut-bulk-qr,.ut-list.locked .ut-bulk-del,.ut-list.locked .ut-bulk-clear,.ut-list.locked .ut-grp-h{pointer-events:none;opacity:.5}';
+      +'.ut-list.locked .ut-svc,.ut-list.locked .ut-onytt,.ut-list.locked .ut-check,.ut-list.locked .ut-chk,.ut-list.locked .ut-selall,.ut-list.locked .ut-bulk-act,.ut-list.locked .ut-bulk-size,.ut-list.locked .ut-bulk-date,.ut-list.locked .ut-bulk-dateset,.ut-list.locked .ut-bulk-qr,.ut-list.locked .ut-bulk-del,.ut-list.locked .ut-bulk-clear,.ut-list.locked .ut-grp-h{pointer-events:none;opacity:.5}';
     document.head.appendChild(s); })();
   function unitsFor(coId){ var c=Companies.list.find(function(x){return x.id==coId;}); return c?DB.cache.units.filter(function(u){return u.client===c.nafn;}):[]; }
   function recompute(){ try{ if(window.recomputeCompanyTotalCost) recomputeCompanyTotalCost(); }catch(_){} }
@@ -230,6 +231,30 @@
       })();
       return;
     }
+    if((b=e.target.closest('.ut-bulk-size'))){
+      var zco=+b.dataset.co;
+      var zunits=unitsFor(zco).filter(function(u){return _sel[u.id];});
+      if(!zunits.length) return;
+      // Forfylla með núverandi stærð ef öll völdu tækin deila einni (annars autt).
+      var zsizes={}; zunits.forEach(function(u){ zsizes[(u.size||'').trim()]=1; });
+      var zcur=Object.keys(zsizes).length===1?Object.keys(zsizes)[0]:'';
+      var nz=window.prompt('Ný stærð fyrir '+zunits.length+' valin tæki (t.d. „6 ltr"):', zcur);
+      if(nz==null) return;                 // hætt við
+      nz=String(nz).trim();
+      var zids=zunits.map(function(u){return u.id;});
+      (async function(){
+        try{
+          var sb=(window.DB&&DB.sb); if(!sb) throw new Error('Engin tenging');
+          var r=await sb.from('uttaeki').update({size:nz}).in('id', zids);
+          if(r.error) throw r.error;
+          if(window.DB&&DB.cache&&DB.cache.units){ DB.cache.units.forEach(function(u){ if(zids.indexOf(u.id)>=0) u.size=nz; }); }
+          UttektTaeki.rerender(zco);
+          recompute();
+          if(window.Toast&&Toast.show) Toast.show('📏 Stærð uppfærð á '+zids.length+' tækjum'+(nz?(' → '+nz):''));
+        }catch(err){ alert('Villa: '+(err.message||err)); }
+      })();
+      return;
+    }
     if((b=e.target.closest('.ut-bulk-qr'))){
       var qco=+b.dataset.co;
       var qus=unitsFor(qco).filter(function(u){return _sel[u.id];});
@@ -273,13 +298,16 @@
       '.uttekt-col-r{flex:0 0 440px;max-width:440px;min-width:0}',
       '#_ctc-section{margin:0 !important}',
       '.uttekt-col-r #_ctc-section table{font-size:11px}',
+      /* þétt reit-bil svo 6-dálka línutaflan rúmist í 440px hægri-dálkinum án þess
+         að klippast (TEGUND/STÆRÐ-hausinn + Samtals-dálkurinn) */
+      '.uttekt-col-r #_ctc-section table th,.uttekt-col-r #_ctc-section table td{padding:6px 7px !important}',
       '@media(max-width:1080px){.uttekt-cols{flex-direction:column}.uttekt-col-r{flex:1 1 auto;max-width:none;width:100%}}',
       '.ut-bulk{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 15px;background:var(--ink1);color:#fff}',
       '.ut-bulk.show{display:flex}',
       '.ut-bulk-cnt{font-weight:800;font-size:13px}',
       '.ut-bulk-act{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
       '.ut-selall{border:1px solid rgba(255,255,255,.35);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
-      '.ut-bulk-dateset,.ut-bulk-qr{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
+      '.ut-bulk-dateset,.ut-bulk-qr,.ut-bulk-size{border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.12);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
       '.ut-bulk-date{border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.92);color:#0f172a;border-radius:8px;padding:5px 8px;font:inherit;font-size:12px}',
       '.ut-bulk-del{border:1px solid rgba(252,165,165,.6);background:rgba(220,38,38,.25);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}',
       '.ut-bulk-clear{margin-left:auto;background:transparent;border:0;color:rgba(255,255,255,.7);font-size:16px;cursor:pointer}',
