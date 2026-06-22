@@ -616,12 +616,9 @@
     const todayDDMM = String(_td.getDate()).padStart(2, '0') + '.' +
       String(_td.getMonth() + 1).padStart(2, '0') + '.' + _td.getFullYear();
     section.innerHTML =
-      '<div style="background:var(--thm-sumh,#1e3a5f);color:#fff;border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px">' +
-        '<div>' +
-          '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;opacity:.9">Heildarkostnaður næstu þjónustu</div>' +
-          '<div style="font-size:11px;opacity:.75;margin-top:2px">' + activeUnits + ' af ' + units.length + ' tæki í þessari ferð</div>' +
-        '</div>' +
-        '<div style="font-size:23px;font-weight:800;font-variant-numeric:tabular-nums">' + fmtKr(totalInc) + '</div>' +
+      '<div style="background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 16px -10px rgba(0,0,0,.6)">' +
+        '<div style="font-size:13px;font-weight:800;letter-spacing:.06em;display:flex;align-items:center;gap:7px">🧾 REIKNINGUR</div>' +
+        '<div style="font-size:11px;opacity:.78;font-weight:600">' + activeUnits + ' af ' + units.length + ' tæki í ferð</div>' +
       '</div>' +
       // 2026-05-20: Skoðunaraðili (inspector) input + Úttektarskýrsla button.
       // Persisted in tripState so the field stays filled across visits.
@@ -647,7 +644,7 @@
           'style="padding:7px 14px;background:#fff;color:var(--ink1);border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">' +
           '💾 Vista óklárað</button>' +
         '<button id="_ctc-skyrsla" type="button" ' +
-          'style="padding:7px 14px;background:#0f172a;color:#fff;border:none;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.15)">' +
+          'style="padding:7px 14px;background:linear-gradient(145deg,#093a20 0%,#16613a 30%,#1f7a48 52%,#0d4226 76%,#062815 100%);color:#fff;border:1px solid #0a3a20;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 1px 2px rgba(0,0,0,.25)">' +
           '📄 Búa til úttektarskýrslu</button>' +
       '</div>' +
       // 2026-06-10: free-text line printed on the reikningur.
@@ -689,8 +686,8 @@
               '<td style="padding:5px 10px;text-align:right;font-weight:600;color:#b91c1c;font-variant-numeric:tabular-nums">' + (discountEx > 0 ? '−' + fmtKr(discountEx) : '—') + '</td></tr>' +
             '<tr><td colspan="5" style="padding:5px 10px;font-size:12px;color:#475569;text-align:right">VSK:</td>' +
               '<td style="padding:5px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(netVsk) + '</td></tr>' +
-            '<tr style="background:var(--bg)"><td colspan="5" style="padding:10px;font-size:14px;font-weight:800;color:var(--ink2);text-align:right">SAMTALS M. VSK:</td>' +
-              '<td style="padding:10px;text-align:right;font-weight:800;color:var(--ink2);font-size:16px;font-variant-numeric:tabular-nums">' + fmtKr(totalInc) + '</td></tr>' +
+            '<tr style="background:linear-gradient(110deg,#0c1018,#13203f 45%,#274a9e)"><td colspan="5" style="padding:12px 10px;font-size:13px;font-weight:800;color:#fff;text-align:right;letter-spacing:.04em">SAMTALS M. VSK</td>' +
+              '<td style="padding:12px 10px;text-align:right;font-weight:800;color:#fff;font-size:18px;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace">' + fmtKr(totalInc) + '</td></tr>' +
           '</tfoot>' +
         '</table>' +
       '</div>' +
