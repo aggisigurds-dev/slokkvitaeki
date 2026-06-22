@@ -613,13 +613,15 @@
             'style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;font-weight:400;text-transform:none;letter-spacing:normal;color:#0f172a;background:#fff">' +
         '</label>' +
       '</div>' +
+      // 2026-06-22: skipa takkana eins og á mockup-inu — stóri græni Úttektar-
+      // skýrslu-takkinn LEFT (flex:1), Vista óklárað RIGHT (flex:0 0 auto, mjór).
       '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">' +
-        '<button id="_ctc-vista" type="button" title="Vista óklárað — opnast sjálfkrafa næst, líka í síma" ' +
-          'style="flex:0 0 auto;padding:8px 14px;background:#fff;color:var(--ink1);border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">' +
-          '💾 Vista óklárað</button>' +
         '<button id="_ctc-skyrsla" type="button" ' +
           'style="flex:1;min-width:180px;padding:8px 14px;background:linear-gradient(145deg,#093a20 0%,#16613a 30%,#1f7a48 52%,#0d4226 76%,#062815 100%);color:#fff;border:1px solid #0a3a20;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 1px 2px rgba(0,0,0,.25)">' +
           '📄 Búa til úttektarskýrslu</button>' +
+        '<button id="_ctc-vista" type="button" title="Vista óklárað — opnast sjálfkrafa næst, líka í síma" ' +
+          'style="flex:0 0 auto;padding:8px 14px;background:#fff;color:var(--ink1);border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">' +
+          '💾 Vista óklárað</button>' +
       '</div>' +
       // 2026-06-10: free-text line printed on the reikningur.
       '<div style="margin-bottom:10px">' +

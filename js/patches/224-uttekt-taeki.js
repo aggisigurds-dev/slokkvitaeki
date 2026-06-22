@@ -360,7 +360,9 @@
       '.ut-now{display:flex;align-items:center;gap:7px;flex:none;width:252px;justify-content:flex-end;margin-left:18px;padding-left:18px;border-left:1px solid var(--brd)}',
       '.ut-svcseg{display:inline-flex;background:var(--bg);border:1px solid var(--brd);border-radius:9px;padding:3px;gap:2px}',
       '.ut-svc{border:0;background:transparent;font:inherit;font-size:11.5px;font-weight:700;color:var(--ink3);padding:5px 10px;border-radius:7px;cursor:pointer;white-space:nowrap}',
-      '.ut-svc.on{background:var(--brand);color:#fff}',
+      /* 2026-06-22: active service pill — glæsileg gradient eins og á mockup-inu
+         (málm-rauður/svartur), ekki flatur brand-litur. Passar við Brunastál. */
+      '.ut-svc.on{background:linear-gradient(180deg,color-mix(in srgb,var(--brand) 85%,#fff) 0%,var(--brand) 48%,color-mix(in srgb,var(--brand) 78%,#000) 52%,color-mix(in srgb,var(--brand) 65%,#000) 100%)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.32),inset 0 -1px 0 rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.25);text-shadow:0 1px 1px rgba(0,0,0,.4)}',
       '.ut-onytt{border:1px solid var(--brd);background:var(--surface);color:var(--ink3);border-radius:8px;padding:5px 8px;font-size:13px;cursor:pointer}',
       '.ut-onytt.on{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d);border-color:var(--red-bd,#fca5a5)}',
       '.ut-far{display:flex;align-items:center;margin-left:14px;width:40px;justify-content:flex-end}',
