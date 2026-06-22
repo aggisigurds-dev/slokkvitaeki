@@ -107,7 +107,7 @@
       '#' + VIEW_ID + ' .sv-step.on .lb{color:#15803d}',
       // marks
       '#' + VIEW_ID + ' .sv-marks{display:flex;gap:6px;flex-wrap:wrap}',
-      '#' + VIEW_ID + ' .sv-mark{border:1px solid var(--brd);background:var(--bg);color:var(--ink2);border-radius:99px;padding:4px 11px;font-size:10.5px;font-weight:700;cursor:pointer}',
+      '#' + VIEW_ID + ' .sv-mark{border:1px solid #cbd5e1;background:#eef2f7;color:#334155;border-radius:99px;padding:5px 11px;font-size:11px;font-weight:700;cursor:pointer}',
       // note
       '#' + VIEW_ID + ' .sv-note{width:100%;box-sizing:border-box;font:inherit;font-size:12.5px;line-height:1.45;padding:7px 9px;border:1px solid var(--brd);border-radius:9px;resize:vertical;min-height:38px;color:var(--ink1);background:var(--bg)}',
       '#' + VIEW_ID + ' .sv-note:focus{outline:none;border-color:#3b82f6;background:var(--surface)}',
@@ -207,8 +207,8 @@
       STEP_DEFS.map(([k, label]) => {
         const on = !!r.steps[k];
         return '<button class="_sv-step" data-id="' + r.id + '" data-step="' + k + '" title="' + esc(label) + (on ? ' — smelltu til að afhaka' : '') + '" ' +
-          'style="padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid ' +
-          (on ? '#86efac;background:#dcfce7;color:#14532d' : 'var(--brd);background:var(--bg);color:var(--ink2)') + '">' +
+          'style="padding:4px 9px;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid ' +
+          (on ? '#86efac;background:#dcfce7;color:#14532d' : '#cbd5e1;background:#eef2f7;color:#334155') + '">' +
           (on ? '✓ ' : '○ ') + esc(label) + '</button>';
       }).join('') + '</div>';
   }

@@ -244,6 +244,8 @@
       /* theme typeface reaches form controls + buttons (UA controls don't
          inherit the .view font-family). */
       P+'.view button,'+P+'.view input,'+P+'.view select,'+P+'.view textarea{font-family:"Space Grotesk",system-ui,-apple-system,sans-serif}',
+      /* reikningur (úttekt) line-item amount column → mono numbers per the guide */
+      P+'#_ctc-section tbody td:last-child,'+P+'#_ctc-section tfoot td:last-child{font-family:"Space Mono",monospace}',
       /* ── Allir viðskiptavinir (#view-allir-vidsk) — light page, fix off-theme bits ── */
       /* An info-banner sits ABOVE the title, pushing it down onto the LIGHT part
          of the backdrop — so the global white h1 was unreadable. Per the mockup

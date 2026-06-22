@@ -253,6 +253,43 @@ so a driver can only see Bílstjóri. The office keeps full access via the bare 
 It's a focus lock, not security (client-side, anon Supabase key). The 🔗 button and
 the boot deep-link re-assert (outlasts the sala.js boot-lander) live here too.
 
+## Verkborð (unified work board) — `js/patches/231-verkbord.js`
+
+One tool that replaces the cluster of overlapping top-of-sidebar lists
+(Verkefni #145 · Þjónustuverk #172 · Beiðnir/Þjónustuver #182 · Eftirfylgni
+#194) and folds in Verkdagbók #04. Slug `#verkbord` (and `#verkefni` → same).
+
+- **Data: BEINT í `thjonustubeidni`** (the same table Beiðnir #182 already uses —
+  no new table). Reads `select('*').is('deleted_at',null)`, inserts via quick-add,
+  `update().eq('id',…)`, soft-delete sets `deleted_at`. Verkdagbók entries are read
+  **live** from `verkdagbok` (done=false, archived=false) as read-through pseudo-rows
+  (`id='vd:<uuid>'`, type `verkdagbok`) — clicking opens Verkdagbók to edit; ✓ writes
+  `verkdagbok.done`. Structure of #04 is preserved (not copied/flattened).
+- **Fast capture** front-and-center: type + Enter inserts a `thjonustubeidni` row
+  (`status:'nytt'`, `source:'beint'`). One-tap type chips (Tilboð/Póstur/Skýrsla/
+  Heimsókn/Annað → `type`).
+- **Queues**: Í dag (important OR due≤today) · Allt opið · Lokað, + type-filter chips.
+  Sort = áríðandi → útrunnið → gjalddagi → forgangur → nýjast. `due_at` drives the
+  overdue (red) pill via `dueInfo()`.
+- **TYPES** map includes the legacy #182 keys (`skodun_tilbod`/`nyr_samningur`/
+  `uttekt_eftirfylgni`) so old rows still chip correctly; `TYPE_GROUP` maps filter →
+  real type values.
+- **AI**: reuses the existing `/api/tv-summary` (Haiku) endpoint — shows cached
+  `summary` and a per-item ✨ Tillaga button. Deeper/auto AI is phase 2 (the schema
+  already has `summary`; no migration was needed).
+- **Migration** (explicit, idempotent): „⬇︎ Flytja inn úr gömlu" imports OPEN items
+  from `AppSettings.todo` (cards) + `AppSettings.thjonustuverk` (cases), deduped by
+  `channel_ref='imp:verkefni:<id>'`/`'imp:tverk:<id>'`. Beiðnir already live in the
+  table; Eftirfylgni is derived state (not imported).
+- **Retire-old (once, reversible)**: on first open, adds
+  `['verkefni','thjonustuverk','thjonustuver','eftirfylgni']` to `sidebar_hidden`
+  and prepends `verkbord` to a custom `sidebar_order` if one exists, guarded by
+  `settings.verkbord.retired_v1`. Un-hide anytime in Stillingar → Valmynd. Old
+  patches/data are untouched. Placed at the **top** of the sidebar via patch 68's
+  ORDER (`['Verkborð']` first).
+- Wired the 3 standard spots: `<script>` in index.html (after 230), `App.switchView`
+  hook (`patchSwitchView`), and patch 218 ALIAS. `window.Verkbord = {open,reload,importOld}`.
+
 ## Related projects (in case Agnar mentions them)
 
 - **Brunahólf** — sister business, separate ecosystem (Google Sheets + Apps Script

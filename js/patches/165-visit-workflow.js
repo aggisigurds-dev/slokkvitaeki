@@ -107,14 +107,27 @@
   function readTotalsFromSection() {
     const section = document.getElementById('_ctc-section');
     if (!section) return null;
-    const cells = section.querySelectorAll('tfoot td');
-    // tfoot layout: row 1 = Án vsk, row 2 = VSK, row 3 = SAMTALS
     const parseKr = txt => parseInt(String(txt).replace(/[^0-9]/g, ''), 10) || 0;
+    // 2026-06: patch 129 moved the totals out of the (clippable) <tfoot> into a
+    // full-width summary block with stable ids — read those first.
+    const subEl = section.querySelector('#_ctc-sum-subex');
+    const vskEl = section.querySelector('#_ctc-sum-vsk');
+    const totEl = section.querySelector('#_ctc-sum-total');
+    if (subEl && totEl) {
+      return {
+        subEx: parseKr(subEl.textContent),
+        vsk: parseKr(vskEl ? vskEl.textContent : '0'),
+        total: parseKr(totEl.textContent)
+      };
+    }
+    // Legacy fallback: old <tfoot> (Án vsk / Afsláttur / VSK / SAMTALS → 8 cells).
+    const cells = section.querySelectorAll('tfoot td');
     if (cells.length < 6) return null;
+    const n = cells.length;
     return {
       subEx: parseKr(cells[1].textContent),
-      vsk: parseKr(cells[3].textContent),
-      total: parseKr(cells[5].textContent)
+      vsk: parseKr(cells[n >= 8 ? 5 : 3].textContent),
+      total: parseKr(cells[n >= 8 ? 7 : 5].textContent)
     };
   }
 

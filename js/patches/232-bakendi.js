@@ -1,4 +1,4 @@
-/* === BAKENDI — gagnalíkans-stjórnborð v1 (231) =============================
+/* === BAKENDI — gagnalíkans-stjórnborð v1 (232) =============================
  *
  * Admin / "backend" síða yfir gagnalíkanið. Fimm flipar:
  *   📊 Yfirlit       — talningar per töflu + gagnaheilsa (vantar kt, ótengt FK)
@@ -463,6 +463,6 @@
   window.addEventListener('hashchange', () => { if (hashIsMine()) show(); });
 
   window.Bakendi = { open: show, reload: load };
-  console.log('[patch-231] Bakendi · gagnalíkans-stjórnborð installed');
+  console.log('[patch-232] Bakendi · gagnalíkans-stjórnborð installed');
 })();
 /* === END BAKENDI === */
