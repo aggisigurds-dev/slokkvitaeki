@@ -425,7 +425,11 @@
     // (e.g. "30 m") dilutes the token score below the 0.5 threshold, so the unit
     // wrongly falls through to the new-unit (Vara) price — i.e. it bills as a
     // brand-new tæki. Drop the size for these when looking up the service price.
-    const SIZELESS_SVC = /brunaslang|brunaslöng|brunaslong|hose|reykskynj|hitaskynj|smoke|teppi|blanket/i;
+    // 2026-06-22: Léttvatn / Froða / ABF are single-price in the verðlista — there
+    // is ONE "Léttvatnstæki yfirferð/hleðsla" (no per-size variant), so a unit size
+    // like "6-9 ltr" must NOT dilute the token-match below the 0.5 threshold (it was
+    // landing on "⚠ Engin matchandi þjónusta"). Treat them as sizeless like Brunaslanga.
+    const SIZELESS_SVC = /léttv|lettv|abf|froð|frod|brunaslang|brunaslöng|brunaslong|hose|reykskynj|hitaskynj|smoke|teppi|blanket/i;
     groups.forEach(g => {
       const matchSize = SIZELESS_SVC.test(g.type) ? '' : g.size;
       const matching = findMatchingServices(g.type, matchSize, services);
@@ -553,45 +557,15 @@
       '</tr>');
     });
 
-    // Skýrslugerð row (3500 + VSK by default).
-    const skyrsluVskPct = 24;
-    const skyrsluVskKr = skyrslugerdEx * (skyrsluVskPct / 100);
+    // Skýrslugerð + Akstur eru EKKI lengur línur í töflunni — þær eru færðar niður
+    // í heildartölu-blokkina sem flex-raðir (reitirnir línast þá upp við Afslátt).
+    // Reikningurinn sjálfur (patch 165) bætir þeim við úr trip-state, ekki töflunni.
     totalSubEx += skyrslugerdEx;
-    totalVsk += skyrsluVskKr;
-    rows.push(
-      '<tr style="border-top:1px dashed var(--brd);background:var(--bg)">' +
-        '<td colspan="3" style="padding:7px 10px;font-size:13px;color:#0f172a">📋 Skýrslugerð</td>' +
-        '<td style="padding:7px 10px;text-align:right">' +
-          '<input id="_ctc-skyrslu" type="number" min="0" step="1" value="' + Math.round(skyrslugerdEx) + '" ' +
-          'style="width:90px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums" placeholder="0"> kr' +
-        '</td>' +
-        '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">24%</td>' +
-        '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(skyrslugerdEx) + '</td>' +
-      '</tr>'
-    );
+    totalVsk += skyrslugerdEx * 0.24;
 
-    // Akstur row. Quantity input lets Agnar bill multiple trips (e.g. 2× 3.000).
-    const driveVskPct = 24;
     const driveSubEx = driveCost * driveQty;
-    const driveVskKr = driveSubEx * (driveVskPct / 100);
     totalSubEx += driveSubEx;
-    totalVsk += driveVskKr;
-    rows.push(
-      '<tr style="border-top:1px dashed var(--brd);background:var(--bg)">' +
-        '<td colspan="2" style="padding:7px 10px;font-size:13px;color:#0f172a">🚗 Akstur</td>' +
-        '<td style="padding:7px 10px;text-align:center">' +
-          '<input id="_ctc-drive-qty" type="number" min="0" step="1" value="' + driveQty + '" ' +
-          'title="Fjöldi ferða" ' +
-          'style="width:54px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:center;background:#fff;font-variant-numeric:tabular-nums;font-weight:700">' +
-        '</td>' +
-        '<td style="padding:7px 10px;text-align:right">' +
-          '<input id="_ctc-drive" type="number" min="0" step="1" value="' + Math.round(driveCost) + '" ' +
-          'style="width:90px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums" placeholder="0"> kr' +
-        '</td>' +
-        '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">24%</td>' +
-        '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(driveSubEx) + '</td>' +
-      '</tr>'
-    );
+    totalVsk += driveSubEx * 0.24;
 
     // Afsláttur dreginn hlutfallslega af án-vsk og vsk (totalSubEx/totalVsk eru
     // brúttó; netto fer í VSK-línu + SAMTALS).
@@ -622,30 +596,32 @@
       '</div>' +
       // 2026-05-20: Skoðunaraðili (inspector) input + Úttektarskýrsla button.
       // Persisted in tripState so the field stays filled across visits.
-      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' +
-        '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;flex:1;min-width:160px">' +
-          '<span style="font-weight:600;color:var(--ink2);white-space:nowrap">🧑 Skoðunaraðili</span>' +
+      // 2026-06-22: inspector fields as a 3-col grid (labels ABOVE inputs) so the
+      // reitir línast upp — áður voru þetta inline-merki sem brotnuðu ósamræmt á
+      // mjóa hægri-dálkinum ("boxes don't line up"). Takkar fá sína eigin röð.
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
+        '<label style="display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">🧑 Skoðunaraðili' +
           '<input id="_ctc-skodun" type="text" value="' + esc(skodunaradili) + '" placeholder="t.d. Elías" ' +
-            'style="flex:1;min-width:80px;padding:6px 10px;border:1px solid var(--brd);border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
+            'style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;font-weight:400;text-transform:none;letter-spacing:normal;color:#0f172a;background:#fff">' +
         '</label>' +
-        // 2026-06-09: Skoðun framkvæmd (month) + exact date — used on the
-        // úttektarskýrsla and invoice instead of today's date.
-        '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;flex:1;min-width:170px">' +
-          '<span style="font-weight:600;color:var(--ink2);white-space:nowrap">📅 Skoðun framkvæmd</span>' +
+        '<label style="display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">📅 Framkvæmd' +
           '<input id="_ctc-manudur" type="text" value="' + esc(skodunManudur) + '" placeholder="t.d. Maí" ' +
-            'style="flex:1;min-width:70px;padding:6px 10px;border:1px solid var(--brd);border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
+            'style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;font-weight:400;text-transform:none;letter-spacing:normal;color:#0f172a;background:#fff">' +
         '</label>' +
-        '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;min-width:150px">' +
-          '<span style="font-weight:600;color:var(--ink2);white-space:nowrap">Dagsetning</span>' +
+        '<label style="display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">Dags.' +
           '<input id="_ctc-dags" type="text" value="' + esc(skodunDags) + '" placeholder="' + esc(todayDDMM) + '" ' +
-            'style="width:110px;padding:6px 10px;border:1px solid var(--brd);border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
+            'style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;font-weight:400;text-transform:none;letter-spacing:normal;color:#0f172a;background:#fff">' +
         '</label>' +
-        '<button id="_ctc-vista" type="button" title="Vista óklárað — opnast sjálfkrafa næst, líka í síma" ' +
-          'style="padding:7px 14px;background:#fff;color:var(--ink1);border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">' +
-          '💾 Vista óklárað</button>' +
+      '</div>' +
+      // 2026-06-22: skipa takkana eins og á mockup-inu — stóri græni Úttektar-
+      // skýrslu-takkinn LEFT (flex:1), Vista óklárað RIGHT (flex:0 0 auto, mjór).
+      '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">' +
         '<button id="_ctc-skyrsla" type="button" ' +
-          'style="padding:7px 14px;background:linear-gradient(145deg,#093a20 0%,#16613a 30%,#1f7a48 52%,#0d4226 76%,#062815 100%);color:#fff;border:1px solid #0a3a20;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 1px 2px rgba(0,0,0,.25)">' +
+          'style="flex:1;min-width:180px;padding:8px 14px;background:linear-gradient(145deg,#093a20 0%,#16613a 30%,#1f7a48 52%,#0d4226 76%,#062815 100%);color:#fff;border:1px solid #0a3a20;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 1px 2px rgba(0,0,0,.25)">' +
           '📄 Búa til úttektarskýrslu</button>' +
+        '<button id="_ctc-vista" type="button" title="Vista óklárað — opnast sjálfkrafa næst, líka í síma" ' +
+          'style="flex:0 0 auto;padding:8px 14px;background:#fff;color:var(--ink1);border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">' +
+          '💾 Vista óklárað</button>' +
       '</div>' +
       // 2026-06-10: free-text line printed on the reikningur.
       '<div style="margin-bottom:10px">' +
@@ -667,7 +643,7 @@
       // aldrei af; heildartölurnar eru í fullbreiðu spjaldi fyrir neðan (sem
       // klippist aldrei — sjá #_ctc-sum-*).
       '<div style="background:#fff;border:1px solid var(--brd);border-bottom:none;border-radius:8px 8px 0 0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch">' +
-        '<table style="width:100%;border-collapse:collapse;min-width:430px">' +
+        '<table style="width:100%;border-collapse:collapse">' +
           '<thead style="background:var(--bg)"><tr>' +
             '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em">Tegund / Stærð</th>' +
             '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;width:60px">Fjöldi</th>' +
@@ -681,6 +657,27 @@
       '</div>' +
       // Heildartölur — fullbreitt, alltaf sýnilegt (klippist ekki), texti vinstri / upphæð hægri.
       '<div style="background:#fff;border:1px solid var(--brd);border-top:none;border-radius:0 0 8px 8px;overflow:hidden">' +
+        // Skýrslugerð — flex-röð svo reiturinn línist upp við Akstur + Afslátt.
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 12px;border-top:1px dashed var(--brd)">' +
+          '<span style="font-size:12px;color:#475569">📋 Skýrslugerð</span>' +
+          '<span style="display:flex;align-items:center;gap:5px;white-space:nowrap">' +
+            '<input id="_ctc-skyrslu" type="number" min="0" step="1" value="' + Math.round(skyrslugerdEx) + '" placeholder="0" ' +
+              'style="width:84px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums">' +
+            '<span style="font-size:12px;color:#475569">kr</span>' +
+          '</span>' +
+        '</div>' +
+        // Akstur — fjöldi ferða × verð; báðir reitir hægra megin (línast upp).
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 12px">' +
+          '<span style="font-size:12px;color:#475569">🚗 Akstur</span>' +
+          '<span style="display:flex;align-items:center;gap:5px;white-space:nowrap">' +
+            '<input id="_ctc-drive-qty" type="number" min="0" step="1" value="' + driveQty + '" title="Fjöldi ferða" ' +
+              'style="width:42px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:center;background:#fff;font-variant-numeric:tabular-nums;font-weight:700">' +
+            '<span style="font-size:12px;color:#94a3b8">×</span>' +
+            '<input id="_ctc-drive" type="number" min="0" step="1" value="' + Math.round(driveCost) + '" placeholder="0" ' +
+              'style="width:84px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums">' +
+            '<span style="font-size:12px;color:#475569">kr</span>' +
+          '</span>' +
+        '</div>' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 12px;border-top:2px solid var(--ink2)">' +
           '<span style="font-size:12px;color:#475569">Án vsk</span>' +
           '<span id="_ctc-sum-subex" style="font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace">' + fmtKr(totalSubEx) + '</span>' +
