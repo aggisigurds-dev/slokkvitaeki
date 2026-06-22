@@ -300,7 +300,12 @@
            dökk→ljósgrár 95→200px, hreinn ljósgrár 200+ → bakgrunnurinn á
            BAK VIÐ kortin er stál-grár eins og á mockup-inu.
          • Ekkert !important slagsmál — sértæknin sér um pörunina. */
-      '#view-companies.view{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important;background-attachment:local!important}',
+      /* 2026-06-22 (v3): NB ekki nota background-attachment:local — .view hefur
+         overflow-y:auto svo `local` lætur stigulinn fljóta með skruninu og
+         dökka svæðið hverfur sjónrænt → uniform dökkur litur. Sjálfgefið
+         (scroll) festir stigulinn við .view-ramman → dökkur 0→95px alltaf
+         efst sjáanlegt, ljósgrár frá 200px niður. */
+      '#view-companies.view{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
       '#view-companies>.main-panel{background:transparent!important}',
       '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
       /* two-column layout: tæki left, cost calculator right */

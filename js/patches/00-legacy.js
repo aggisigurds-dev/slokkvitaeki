@@ -2297,7 +2297,14 @@ console.log('[patch-master] loaded with all fixes');
         btn.textContent = '\u2705 Merkja sko\u00f0un';
       }
     };
-    editBtn.parentNode.insertBefore(btn, editBtn.nextSibling.nextSibling);
+    // 2026-06-22: features.js endurnefði aðgerðaslána — Breyta-takkinn er nú
+    // EINI takkinn í sínum wrapper, svo editBtn.nextSibling er null og chaining
+    // varpaði „Cannot read properties of null (reading 'nextSibling')" í hverri
+    // einustu DOM-breytingu (MutationObserver). appendChild dugar í þessari nýju
+    // útsetningu og er ósmellinn ef siblings vantar.
+    var ref = editBtn.nextSibling && editBtn.nextSibling.nextSibling;
+    if (ref) editBtn.parentNode.insertBefore(btn, ref);
+    else editBtn.parentNode.appendChild(btn);
   }
   var mo = new MutationObserver(function(){ addQuickInspect(); });
   var vc = document.getElementById('view-companies');
