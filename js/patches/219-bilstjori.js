@@ -544,6 +544,7 @@
           '<button class="_bs-act go" id="_bs-nav" type="button">🧭 Keyra þangað</button>' +
           (phone ? '<a class="_bs-act" href="tel:' + esc(String(phone).replace(/\s/g,'')) + '">📞 Hringja</a>' : '') +
           (LOCKED ? '' : '<button class="_bs-act" id="_bs-open-co" type="button">🏢 Opna fyrirtæki</button>') +
+          (LOCKED ? '' : '<button class="_bs-act" id="_bs-verkst" type="button">📋 Verkstæði</button>') +
         '</div>' +
         '<div class="_bs-sec _bs-urgent">' +
           '<h3><span>🚨 Áríðandi skilaboð</span></h3>' +
@@ -558,6 +559,7 @@
         '<div class="_bs-sec">' +
           '<h3><span>🧯 Tækjalisti</span><span class="_bs-prog" id="_bs-prog">…</span></h3>' +
           '<div id="_bs-units"><div class="_bs-empty" style="padding:18px">⏳ Sæki tæki…</div></div>' +
+          '<button class="_bs-listlock" id="_bs-lock" type="button">✅ Staðfesta lista</button>' +
         '</div>' +
       '</div>' +
       '<div class="_bs-bottom"><div class="inner" style="display:flex;gap:10px">' +
@@ -608,6 +610,33 @@
       try { if (window.Leidsogn && Leidsogn.refresh) Leidsogn.refresh(); } catch (_) {}
       close(); renderList(); renderPins();
     });
+    // Side link: jump to the Þjónustuverkstæði (ársskoðun) office list.
+    const verkBtn = sheet.querySelector('#_bs-verkst');
+    if (verkBtn) verkBtn.addEventListener('click', () => { close(); try { if (window.App && App.switchView) App.switchView('arsskodun'); } catch (_) {} });
+    // List-lock: "Staðfesta lista" turns dark metal green + locks every tæki
+    // choice (persisted per company via localStorage); tap again to open. CSS
+    // disables ._bs-chip while the sheet carries ._bs-locked.
+    const lockKey = 'sk_bs_lock_' + coId;
+    const applyLock = () => {
+      let on = false; try { on = localStorage.getItem(lockKey) === '1'; } catch (_) {}
+      sheet.classList.toggle('_bs-locked', on);
+      const lb = sheet.querySelector('#_bs-lock');
+      if (lb) { lb.classList.toggle('on', on); lb.textContent = on ? '🔒 Listi staðfestur — smelltu til að opna' : '✅ Staðfesta lista'; }
+    };
+    sheet.querySelector('#_bs-lock').addEventListener('click', () => {
+      let on = false; try { on = localStorage.getItem(lockKey) === '1'; } catch (_) {}
+      try { on ? localStorage.removeItem(lockKey) : localStorage.setItem(lockKey, '1'); } catch (_) {}
+      applyLock();
+    });
+    applyLock();
+    if (!document.getElementById('sk-bslock-css')) {
+      const s = document.createElement('style'); s.id = 'sk-bslock-css';
+      s.textContent = '._bs-listlock{display:block;width:100%;margin-top:10px;padding:13px;border-radius:12px;border:1px solid #c7ccd3;background:#eef1f4;color:#2b313a;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}'
+        + '._bs-listlock:active{transform:translateY(1px)}'
+        + '._bs-sheet._bs-locked ._bs-chip{pointer-events:none;opacity:.5}'
+        + '._bs-listlock.on{background:linear-gradient(180deg,#2f5d3f,#173524);color:#daffe8;border-color:#0e2417;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(0,0,0,.25)}';
+      document.head.appendChild(s);
+    }
     loadUnitsInto(sheet, c);
   }
 

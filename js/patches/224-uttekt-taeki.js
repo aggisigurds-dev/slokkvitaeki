@@ -147,11 +147,13 @@
         (col?'':'<div class="ut-grp-body">'+arr.map(function(u){return rowHtml(coId,u);}).join('')+'</div>')+
       '</div>';
     });
-    return bulk + head + body;
+    var locked = isUtLocked(coId);
+    var lock = '<button class="ut-listlock'+(locked?' on':'')+'" data-co="'+coId+'" type="button">'+(locked?'🔒 Listi staðfestur — smelltu til að opna':'✅ Staðfesta lista')+'</button>';
+    return bulk + head + body + lock;
   }
 
   window.UttektTaeki = {
-    buildHtml: function(coId, units){ return '<div class="ut-list" data-uw-co="'+coId+'">'+inner(coId, units)+'</div>'; },
+    buildHtml: function(coId, units){ return '<div class="ut-list'+(isUtLocked(coId)?' locked':'')+'" data-uw-co="'+coId+'">'+inner(coId, units)+'</div>'; },
     rerender: function(coId){
       var wrap = document.querySelector('.ut-list[data-uw-co="'+coId+'"]'); if(!wrap) return;
       var c = window.Companies && Companies.list && Companies.list.find(function(x){return x.id==coId;}); if(!c) return;
@@ -159,11 +161,24 @@
     }
   };
 
+  function isUtLocked(coId){ try{ return localStorage.getItem('sk_ut_lock_'+coId)==='1'; }catch(_){ return false; } }
+  (function(){ if(document.getElementById('sk-utlock-css'))return; var s=document.createElement('style'); s.id='sk-utlock-css';
+    s.textContent='.ut-listlock{display:block;width:100%;margin-top:12px;padding:13px;border-radius:12px;border:1px solid #c7ccd3;background:#eef1f4;color:#2b313a;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}'
+      +'.ut-listlock.on{background:linear-gradient(180deg,#2f5d3f,#173524);color:#daffe8;border-color:#0e2417;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(0,0,0,.25)}'
+      +'.ut-list.locked .ut-svc,.ut-list.locked .ut-onytt,.ut-list.locked .ut-check,.ut-list.locked .ut-chk,.ut-list.locked .ut-selall,.ut-list.locked .ut-bulk-act,.ut-list.locked .ut-bulk-date,.ut-list.locked .ut-bulk-dateset,.ut-list.locked .ut-bulk-qr,.ut-list.locked .ut-bulk-del,.ut-list.locked .ut-bulk-clear,.ut-list.locked .ut-grp-h{pointer-events:none;opacity:.5}';
+    document.head.appendChild(s); })();
   function unitsFor(coId){ var c=Companies.list.find(function(x){return x.id==coId;}); return c?DB.cache.units.filter(function(u){return u.client===c.nafn;}):[]; }
   function recompute(){ try{ if(window.recomputeCompanyTotalCost) recomputeCompanyTotalCost(); }catch(_){} }
 
   document.addEventListener('click', function(e){
     var b;
+    if((b=e.target.closest('.ut-listlock'))){
+      var lco=+b.dataset.co, k='sk_ut_lock_'+lco, on=false;
+      try{ on=localStorage.getItem(k)==='1'; }catch(_){}
+      try{ on?localStorage.removeItem(k):localStorage.setItem(k,'1'); }catch(_){}
+      var w=document.querySelector('.ut-list[data-uw-co="'+lco+'"]'); if(w) w.classList.toggle('locked', !on);
+      UttektTaeki.rerender(lco); return;
+    }
     if((b=e.target.closest('.ut-svc'))){
       try{ UnitServicePicker.setChoice(+b.dataset.co,+b.dataset.uid,b.dataset.v); }catch(_){}
       recompute(); UttektTaeki.rerender(+b.dataset.co); return;
