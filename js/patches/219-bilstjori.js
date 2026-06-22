@@ -543,6 +543,7 @@
         '<div class="_bs-actrow">' +
           '<button class="_bs-act go" id="_bs-nav" type="button">🧭 Keyra þangað</button>' +
           (phone ? '<a class="_bs-act" href="tel:' + esc(String(phone).replace(/\s/g,'')) + '">📞 Hringja</a>' : '') +
+          (LOCKED ? '' : '<button class="_bs-act" id="_bs-open-co" type="button">🏢 Opna fyrirtæki</button>') +
         '</div>' +
         '<div class="_bs-sec _bs-urgent">' +
           '<h3><span>🚨 Áríðandi skilaboð</span></h3>' +
@@ -569,6 +570,20 @@
     const close = () => { sheet.classList.remove('in'); setTimeout(() => sheet.remove(), 240); };
     sheet.querySelector('._bs-back').addEventListener('click', close);
     sheet.querySelector('#_bs-nav').addEventListener('click', () => navTo(c, coord && coord.lat, coord && coord.lng));
+    // Office only (hidden in locked driver mode): jump to this company's main
+    // page in the office app. switchView leaves the Bílstjóri overlay (the
+    // patchSwitchView hook hides it when !LOCKED), then open the detail.
+    const openCoBtn = sheet.querySelector('#_bs-open-co');
+    if (openCoBtn) openCoBtn.addEventListener('click', () => {
+      close();
+      try { if (window.App && App.switchView) App.switchView('companies'); } catch (_) {}
+      setTimeout(() => {
+        try {
+          if (window.Companies && Companies.openDetail) Companies.openDetail(coId);
+          else if (window.VidskDetail && VidskDetail.show) VidskDetail.show(coId);
+        } catch (_) {}
+      }, 80);
+    });
     sheet.querySelector('#_bs-add-route').addEventListener('click', () => {
       if (coord && window.Leidsogn && Leidsogn.addToRoute) { Leidsogn.addToRoute(c.id, c.nafn, c.heimilisfang || '', coord.lat, coord.lng); toast('➕ Bætt á leið'); }
       else toast('⚠ Vantar staðsetningu');
