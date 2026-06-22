@@ -18,6 +18,11 @@
     overflow-y:auto !important;
   }
   body.mobile-nav-open .topbar{transform:translateX(0)}
+  /* The open drawer is wide and shows full labels, but app.css's ≤900px
+     icon-rail rule centres .vnav-btn — which scatters the labels (messy).
+     Left-align them here; badges keep their margin-left:auto (flush right). */
+  body.mobile-nav-open .vnav-btn{justify-content:flex-start !important;padding:11px 16px !important;text-align:left}
+  body.mobile-nav-open .vnav-btn svg{margin:0 !important}
   /* Overlay backdrop when open */
   body.mobile-nav-open::before{
     content:'';
