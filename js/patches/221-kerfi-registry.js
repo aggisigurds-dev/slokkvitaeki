@@ -48,6 +48,7 @@
     thjonustuverk:{cls:'check',note:'Þjónustuverk (172) — skarast við 182'},
     thjonustuver:{cls:'check',note:'Þjónustuver (182) — skarast við 172'},
     mottaka:{cls:'ok',note:'Móttaka'}, beidnir:{cls:'ok',note:'Beiðnir'},
+    bakendi:{cls:'special',note:'Bakendi — gagnalíkans-stjórnborð'},
     'krofu-yfirlit':{cls:'ok',note:'Kröfu yfirlit'}, hreyfingarlisti:{cls:'ok',note:'Hreyfingarlisti'},
     tilbod:{cls:'ok',note:'Tilboð'}, tilbodhub:{cls:'ok',note:'Tilboð hub'},
     vertid:{cls:'ok',note:'Vertíð / móttaka'},
