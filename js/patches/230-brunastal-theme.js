@@ -237,6 +237,13 @@
       P+'.ut-bulk{background:'+METAL_BLACK+'!important;border-bottom:1px solid #000!important}',
       P+'.ut-grp-h{background:#f6f8fb!important}',
       P+'.ut-svcseg{background:#f1f4f8!important}',
+      /* tæki-list secondary labels were var(--ink3)/(--ink4) → faint on the
+         white card. One step darker so headers/serial/counts read. (Always on
+         a white card, so safe — unlike the dark-header .cw-col-sub.) */
+      P+'.ut-head .h-last,'+P+'.ut-head .h-now,'+P+'.ut-grp-cnt,'+P+'.ut-sub{color:var(--ink2)!important}',
+      /* theme typeface reaches form controls + buttons (UA controls don't
+         inherit the .view font-family). */
+      P+'.view button,'+P+'.view input,'+P+'.view select,'+P+'.view textarea{font-family:"Space Grotesk",system-ui,-apple-system,sans-serif}',
       /* ── Allir viðskiptavinir (#view-allir-vidsk) — light page, fix off-theme bits ── */
       /* An info-banner sits ABOVE the title, pushing it down onto the LIGHT part
          of the backdrop — so the global white h1 was unreadable. Per the mockup

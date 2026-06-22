@@ -116,11 +116,11 @@
   }
   function docPill(text, ok) {
     return '<span style="display:inline-block;padding:1px 5px;border-radius:5px;font-size:10px;font-weight:700;' +
-      (ok ? 'color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;' : 'color:#a8b1bd;background:#f8fafc;border:1px solid #eef2f6;') + '">' + text + '</span>';
+      (ok ? 'color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;' : 'color:#5b6472;background:#eef1f6;border:1px solid #d7dde6;') + '">' + text + '</span>';
   }
   function docBadge(c) {
     const d = c._docs;
-    if (!d) return '<span style="color:#cbd5e1;font-size:11px">—</span>';
+    if (!d) return '<span style="color:#8891a0;font-size:11px">—</span>';
     return '<span style="display:inline-flex;gap:3px;white-space:nowrap" title="Samningur · Úttektarskýrslur · Reikningar">' +
       docPill('S' + (d.samningur ? '✓' : '✗'), d.samningur) +
       docPill('Ú' + d.uttektir, d.uttektir > 0) +
