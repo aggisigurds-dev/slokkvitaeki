@@ -49,6 +49,7 @@
     lan:           'lanstaeki',        // Lánstæki
     // identity entries — listed so the reverse map keeps these tidy names
     sala: 'sala', vorur: 'vorur', geymsla: 'geymsla', beidnir: 'beidnir',
+    verkbord: 'verkbord', verkefni: 'verkbord',   // sameinað verkborð (patch 231)
     brunakerfi: 'brunakerfi', verkdagbok: 'verkdagbok', arsskodun: 'arsskodun',
     vidskiptavinir: 'vidskiptavinir', yfirlit: 'yfirlit',
     bilstjori: 'bilstjori', drivers: 'bilstjori'
