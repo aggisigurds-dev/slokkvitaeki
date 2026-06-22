@@ -45,7 +45,7 @@
 
   const TABS = [
     { k: 'yfirlit',       label: '📊 Yfirlit' },
-    { k: 'uttektir',      label: '🧯 Úttæki' },
+    { k: 'uttektir',      label: '🔗 Client-greining' },
     { k: 'rekstrarfelog', label: '🏢 Rekstrarfélög' },
     { k: 'skema',         label: '🗺️ Skema' },
     { k: 'endurhonnun',   label: '🛠️ Endurhönnun' }
@@ -137,11 +137,12 @@
   // ── tab renderers (return HTML strings) ──────────────────────────────────────
   function tabYfirlit() {
     const o = state.overview || {}, lc = stateCounts();
-    const stat = (n, l) => '<div class="bk-stat"><div class="n">' + fmtNum(n) + '</div><div class="l">' + l + '</div></div>';
+    const stat = (n, l, sub) => '<div class="bk-stat"><div class="n">' + fmtNum(n) + '</div><div class="l">' + l + '</div>' + (sub ? '<div class="sub">' + sub + '</div>' : '') + '</div>';
+    const delSub = d => (Number(d) > 0 ? fmtNum(d) + ' eytt (falin)' : '');
     const stats = [
       stat(o.uttaeki, 'Úttæki'),
-      stat(o.fyrirtaeki, 'Fyrirtæki'),
-      stat(o.vidskiptavinir, 'Viðskiptavinir'),
+      stat(o.fyrirtaeki, 'Fyrirtæki', delSub(o.fyrirtaeki_deleted)),
+      stat(o.vidskiptavinir, 'Viðskiptavinir', delSub(o.vidskiptavinir_deleted)),
       stat(o.customers_base, 'Grunnskrá (rót)'),
       stat(o.rekstrarfelog, 'Rekstrarfélög'),
       stat(o.solur, 'Sölur'),
@@ -257,15 +258,17 @@
     ).join('');
     return '<div class="bk-sech">Þekkt vandamál og tillögur</div>' + probs +
       '<div class="bk-sech" style="margin-top:22px">Vantar kennitölu — lifandi listi (' + fmtNum((state.missing || []).length) + ')</div>' +
+      '<p class="bk-note" style="margin:-2px 0 10px">Raðað eftir tækjafjölda — þeir sem eiga tæki (rukkun / skýrslur) eru efst.</p>' +
       '<input class="bk-search" id="_bk-miss-q" placeholder="🔎 Leita að nafni eða netfangi…" value="' + esc(state.missingQ) + '">' +
-      '<div class="bk-panel"><table><thead><tr><th>Heimild</th><th>Nafn</th><th>Netfang</th><th>Sími</th><th class="c">Skráð</th></tr></thead><tbody id="_bk-miss-rows"></tbody></table></div>';
+      '<div class="bk-panel"><table><thead><tr><th>Heimild</th><th>Nafn</th><th class="c">Tæki</th><th>Netfang</th><th>Sími</th><th class="c">Skráð</th></tr></thead><tbody id="_bk-miss-rows"></tbody></table></div>';
   }
   function paintMissRows() {
     const tb = document.getElementById('_bk-miss-rows'); if (!tb) return;
     let rows = (state.missing || []).slice();
     const q = state.missingQ.trim().toLowerCase();
     if (q) rows = rows.filter(r => (String(r.nafn || '') + ' ' + String(r.netfang || '')).toLowerCase().indexOf(q) >= 0);
-    rows.sort((a, b) => String(a.src).localeCompare(String(b.src)) || String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is'));
+    // Þeir sem eiga tæki eru áríðandi (rukkun/skýrslur) → efst; tóm húsfélög neðar.
+    rows.sort((a, b) => ((+b.n_units || 0) - (+a.n_units || 0)) || String(a.src).localeCompare(String(b.src)) || String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is'));
     const srcBadge = s => {
       const m = ({
         fyrirtaeki: ['#eff6ff', '#bfdbfe', '#1d4ed8'],
@@ -279,11 +282,13 @@
       const name = r.src === 'fyrirtaeki'
         ? '<a href="#" class="bk-link" data-coid="' + r.id + '">' + esc(r.nafn || '(nafnlaust)') + '</a>'
         : '<span class="nm">' + esc(r.nafn || '(nafnlaust)') + '</span>';
-      return '<tr><td>' + srcBadge(r.src) + '</td><td>' + name + '</td>' +
+      const units = +r.n_units || 0;
+      const unitCell = '<td class="c" style="' + (units > 0 ? 'font-weight:700;color:#b45309' : 'color:var(--ink3,#94a3b8)') + '">' + (units > 0 ? fmtNum(units) : '·') + '</td>';
+      return '<tr><td>' + srcBadge(r.src) + '</td><td>' + name + '</td>' + unitCell +
         '<td>' + esc(r.netfang || '—') + '</td><td>' + esc(r.simi || '—') + '</td>' +
         '<td class="c">' + fmtDate(r.created_at) + '</td></tr>';
-    }).join('') || '<tr><td colspan="5" style="padding:18px;text-align:center;color:var(--ink3,#94a3b8)">Ekkert fannst — allt með kt. 🎉</td></tr>';
-    if (rows.length > cap) tb.innerHTML += '<tr><td colspan="5" style="text-align:center;color:var(--ink3,#94a3b8);font-size:12px">Sýni ' + cap + ' af ' + fmtNum(rows.length) + '.</td></tr>';
+    }).join('') || '<tr><td colspan="6" style="padding:18px;text-align:center;color:var(--ink3,#94a3b8)">Ekkert fannst — allt með kt. 🎉</td></tr>';
+    if (rows.length > cap) tb.innerHTML += '<tr><td colspan="6" style="text-align:center;color:var(--ink3,#94a3b8);font-size:12px">Sýni ' + cap + ' af ' + fmtNum(rows.length) + '.</td></tr>';
     tb.querySelectorAll('[data-coid]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openCompany(a.getAttribute('data-coid')); }));
   }
 
@@ -350,6 +355,7 @@
       P + '.bk-stat{background:var(--surface,#fff);border:1px solid var(--brd,#e6eaf0);border-radius:13px;padding:13px 15px}',
       P + '.bk-stat .n{font-size:24px;font-weight:800;color:var(--ink1,#0f172a);font-variant-numeric:tabular-nums;line-height:1.1}',
       P + '.bk-stat .l{font-size:12px;color:var(--ink3,#94a3b8);margin-top:3px}',
+      P + '.bk-stat .sub{font-size:10.5px;color:var(--ink3,#94a3b8);margin-top:2px;opacity:.85}',
       P + '.bk-health{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:11px;margin-bottom:8px}',
       P + '.bk-hcard{border-radius:12px;padding:13px 15px;border:1px solid}',
       P + '.bk-hcard .n{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.1}',
@@ -434,11 +440,27 @@
     });
   }
 
-  function boot() { injectStyles(); ensureView(); patchSwitchView(); injectSidebar(); }
+  function hashIsMine() { return (location.hash || '').replace(/^#/, '') === NAV_KEY; }
+  // Cold-load deep-link (#bakendi): the app's boot-landers (sala.js fires up to
+  // ~1.5s) and url-routing's wrapper can race our switchView patch, so on a fresh
+  // load that carries our hash we re-assert show() for ~2.7s to win — same idea as
+  // patch 219 (bílstjóri)'s boot deep-link re-assert.
+  function bootDeepLink() {
+    if (!hashIsMine()) return;
+    let tries = 0;
+    (function tick() {
+      if (!hashIsMine()) return;              // user navigated away → stop
+      show();
+      if (++tries < 30) setTimeout(tick, 90); // ~2.7s window, outlasts the boot-landers
+    })();
+  }
+
+  function boot() { injectStyles(); ensureView(); patchSwitchView(); injectSidebar(); bootDeepLink(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true });
   else boot();
   [400, 900, 1600, 3000].forEach(t => setTimeout(() => { patchSwitchView(); injectSidebar(); }, t));
   setInterval(injectSidebar, 2500);
+  window.addEventListener('hashchange', () => { if (hashIsMine()) show(); });
 
   window.Bakendi = { open: show, reload: load };
   console.log('[patch-231] Bakendi · gagnalíkans-stjórnborð installed');
