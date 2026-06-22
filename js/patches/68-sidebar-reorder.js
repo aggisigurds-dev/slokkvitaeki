@@ -94,6 +94,7 @@
   // gets placed at this position. Multiple substrings let us tolerate
   // the user's typos (e.g. "Stjórnborð" vs "Stjórnstöð") and short forms.
   const ORDER = [
+    ['Verkborð'],            // 2026-06-22: sameinaði verkborðið (patch 231) efst
     ['Verkdagbók'],
     ['Verkefni'],
     ['Þjónustuverk'],
