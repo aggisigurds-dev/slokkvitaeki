@@ -663,8 +663,11 @@
           'style="padding:6px 12px;background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">' +
           '+ Bæta við vöru eða þjónustu</button>' +
       '</div>' +
-      '<div style="background:#fff;border:1px solid var(--brd);border-radius:8px;overflow:hidden">' +
-        '<table style="width:100%;border-collapse:collapse">' +
+      // Línur — láréttt skrunanlegt á mjóum skjá svo „Samtals"-dálkurinn klippist
+      // aldrei af; heildartölurnar eru í fullbreiðu spjaldi fyrir neðan (sem
+      // klippist aldrei — sjá #_ctc-sum-*).
+      '<div style="background:#fff;border:1px solid var(--brd);border-bottom:none;border-radius:8px 8px 0 0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch">' +
+        '<table style="width:100%;border-collapse:collapse;min-width:430px">' +
           '<thead style="background:var(--bg)"><tr>' +
             '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em">Tegund / Stærð</th>' +
             '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;width:60px">Fjöldi</th>' +
@@ -674,22 +677,29 @@
             '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em">Samtals</th>' +
           '</tr></thead>' +
           '<tbody>' + rows.join('') + '</tbody>' +
-          '<tfoot>' +
-            '<tr style="border-top:2px solid var(--ink2);background:var(--bg)">' +
-              '<td colspan="5" style="padding:8px 10px;font-size:12px;color:#475569;text-align:right">Án vsk:</td>' +
-              '<td style="padding:8px 10px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums">' + fmtKr(totalSubEx) + '</td>' +
-            '</tr>' +
-            // Afsláttur (%) — alltaf sýnilegt svo hægt sé að slá inn; upphæð birtist þegar > 0.
-            '<tr><td colspan="5" style="padding:5px 10px;font-size:12px;color:#475569;text-align:right">' +
-                'Afsláttur <input id="_ctc-discount" type="number" min="0" max="100" step="1" value="' + discountPct + '" ' +
-                'style="width:46px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;-moz-appearance:textfield" /> %</td>' +
-              '<td style="padding:5px 10px;text-align:right;font-weight:600;color:#b91c1c;font-variant-numeric:tabular-nums">' + (discountEx > 0 ? '−' + fmtKr(discountEx) : '—') + '</td></tr>' +
-            '<tr><td colspan="5" style="padding:5px 10px;font-size:12px;color:#475569;text-align:right">VSK:</td>' +
-              '<td style="padding:5px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(netVsk) + '</td></tr>' +
-            '<tr style="background:linear-gradient(110deg,#0c1018,#13203f 45%,#274a9e)"><td colspan="5" style="padding:12px 10px;font-size:13px;font-weight:800;color:#fff;text-align:right;letter-spacing:.04em">SAMTALS M. VSK</td>' +
-              '<td style="padding:12px 10px;text-align:right;font-weight:800;color:#fff;font-size:18px;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace">' + fmtKr(totalInc) + '</td></tr>' +
-          '</tfoot>' +
         '</table>' +
+      '</div>' +
+      // Heildartölur — fullbreitt, alltaf sýnilegt (klippist ekki), texti vinstri / upphæð hægri.
+      '<div style="background:#fff;border:1px solid var(--brd);border-top:none;border-radius:0 0 8px 8px;overflow:hidden">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 12px;border-top:2px solid var(--ink2)">' +
+          '<span style="font-size:12px;color:#475569">Án vsk</span>' +
+          '<span id="_ctc-sum-subex" style="font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace">' + fmtKr(totalSubEx) + '</span>' +
+        '</div>' +
+        // Afsláttur (%) — alltaf sýnilegt svo hægt sé að slá inn; upphæð birtist þegar > 0.
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 12px">' +
+          '<span style="font-size:12px;color:#475569">Afsláttur ' +
+            '<input id="_ctc-discount" type="number" min="0" max="100" step="1" value="' + discountPct + '" ' +
+            'style="width:48px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;-moz-appearance:textfield"> %</span>' +
+          '<span style="font-weight:600;color:#b91c1c;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace">' + (discountEx > 0 ? '−' + fmtKr(discountEx) : '—') + '</span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 12px">' +
+          '<span style="font-size:12px;color:#475569">VSK</span>' +
+          '<span id="_ctc-sum-vsk" style="font-weight:600;color:#0f172a;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace">' + fmtKr(netVsk) + '</span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;background:linear-gradient(110deg,#0c1018,#13203f 45%,#274a9e);color:#fff">' +
+          '<span style="font-size:13px;font-weight:800;letter-spacing:.04em">SAMTALS M. VSK</span>' +
+          '<span id="_ctc-sum-total" style="font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace;white-space:nowrap">' + fmtKr(totalInc) + '</span>' +
+        '</div>' +
       '</div>' +
       (unmatched.length ? '<div style="margin-top:8px;padding:8px 10px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#78350f">⚠ ' + unmatched.length + ' tegund(ir) fundu ekki matchandi þjónustu í verðlista. Bæta við í <b>Vörur og þjónusta</b>.</div>' : '');
 
