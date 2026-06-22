@@ -290,6 +290,33 @@ One tool that replaces the cluster of overlapping top-of-sidebar lists
 - Wired the 3 standard spots: `<script>` in index.html (after 230), `App.switchView`
   hook (`patchSwitchView`), and patch 218 ALIAS. `window.Verkbord = {open,reload,importOld}`.
 
+## Bakendi (gagnalíkans-stjórnborð) — `js/patches/232-bakendi.js`
+
+Admin / „backend" page over the data model. View `view-bakendi`, deep-link
+`#bakendi` (patch 218 ALIAS). Five tabs:
+- **📊 Yfirlit** — per-table row counts + „gagnaheilsa" cards (clickable → jump
+  to the relevant tab): fyrirtæki without kt, úttæki not linked to
+  `customers_base`, orphan client strings, viðskiptavinir without kt.
+- **🔗 Client-greining** — data genealogy: every `uttaeki.client` free-text
+  string classified 🟢 linked to `customers_base` / 🟡 name-match only / 🔴
+  orphan, with search + filter; links through to the company page.
+- **🏢 Rekstrarfélög** — rollup from `customers_base.rekstrarfelag` + equipment
+  count; links to the Rekstrarfélög page.
+- **🗺️ Skema** — the data model + FK relationships with live row counts; flags
+  the `tengiliður`/`tengilidur` duplicate column on `fyrirtaeki`.
+- **🛠️ Endurhönnun** — known data problems + suggestions, and a live „vantar
+  kennitölu" list (sorted by equipment count — those that own tæki first).
+
+**Data: four read-only Postgres views** (created 2026-06-22, `SELECT` to `anon`):
+`v_bakendi_overview` · `v_bakendi_uttaeki_clients` · `v_bakendi_rekstrarfelog` ·
+`v_bakendi_missing_kt`. The frontend only does `DB.sb.from(view).select('*')` —
+no writes, no schema change.
+
+Wiring mirrors kerfi-registry (221): new `view-bakendi` div, cloned sidebar
+button, `App.switchView` patched for the `#bakendi` deep-link + boot re-assert.
+`window.Bakendi = {open, reload}`. NB built in a parallel session as patch 231,
+then renumbered to **232** because Verkborð (#196) landed on slot 231 first.
+
 ## Related projects (in case Agnar mentions them)
 
 - **Brunahólf** — sister business, separate ecosystem (Google Sheets + Apps Script
