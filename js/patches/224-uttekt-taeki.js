@@ -305,8 +305,10 @@
          dökka svæðið hverfur sjónrænt → uniform dökkur litur. Sjálfgefið
          (scroll) festir stigulinn við .view-ramman → dökkur 0→95px alltaf
          efst sjáanlegt, ljósgrár frá 200px niður. */
-      '#view-companies.view{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
-      '#view-companies>.main-panel{background:transparent!important}',
+      /* Sama fix líka fyrir „Fyrirtæki í Þjónustu" listann (#view-arsskodun) sem
+         lendir í sömu sértækni-baráttu og sýndi cream/tan í stað stál-grás. */
+      '#view-companies.view,#view-arsskodun.view{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
+      '#view-companies>.main-panel,#view-arsskodun>.main-panel{background:transparent!important}',
       '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
       /* two-column layout: tæki left, cost calculator right */
       '.uttekt-cols{display:flex;gap:16px;align-items:flex-start}',
