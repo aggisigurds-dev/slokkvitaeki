@@ -101,13 +101,13 @@
       '#' + VIEW_ID + ' .sv-step .ln{position:absolute;top:13px;left:-50%;width:100%;height:3px;background:var(--brd);z-index:0}',
       '#' + VIEW_ID + ' .sv-step:first-child .ln{display:none}',
       '#' + VIEW_ID + ' .sv-step.on .ln{background:#16a34a}',
-      '#' + VIEW_ID + ' .sv-step .nd{position:relative;z-index:1;width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;border:2px solid var(--brd);background:var(--surface);color:var(--ink4)}',
+      '#' + VIEW_ID + ' .sv-step .nd{position:relative;z-index:1;width:27px;height:27px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;border:2px solid var(--brd);background:var(--surface);color:var(--ink2)}',
       '#' + VIEW_ID + ' .sv-step.on .nd{background:#16a34a;border-color:#16a34a;color:#fff}',
       '#' + VIEW_ID + ' .sv-step .lb{font-size:10px;font-weight:700;color:var(--ink3);text-align:center;line-height:1.2}',
       '#' + VIEW_ID + ' .sv-step.on .lb{color:#15803d}',
       // marks
       '#' + VIEW_ID + ' .sv-marks{display:flex;gap:6px;flex-wrap:wrap}',
-      '#' + VIEW_ID + ' .sv-mark{border:1px solid var(--brd);background:var(--bg);color:var(--ink4);border-radius:99px;padding:4px 11px;font-size:10.5px;font-weight:700;cursor:pointer}',
+      '#' + VIEW_ID + ' .sv-mark{border:1px solid var(--brd);background:var(--bg);color:var(--ink2);border-radius:99px;padding:4px 11px;font-size:10.5px;font-weight:700;cursor:pointer}',
       // note
       '#' + VIEW_ID + ' .sv-note{width:100%;box-sizing:border-box;font:inherit;font-size:12.5px;line-height:1.45;padding:7px 9px;border:1px solid var(--brd);border-radius:9px;resize:vertical;min-height:38px;color:var(--ink1);background:var(--bg)}',
       '#' + VIEW_ID + ' .sv-note:focus{outline:none;border-color:#3b82f6;background:var(--surface)}',
@@ -208,7 +208,7 @@
         const on = !!r.steps[k];
         return '<button class="_sv-step" data-id="' + r.id + '" data-step="' + k + '" title="' + esc(label) + (on ? ' — smelltu til að afhaka' : '') + '" ' +
           'style="padding:3px 8px;border-radius:99px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid ' +
-          (on ? '#86efac;background:#dcfce7;color:#14532d' : 'var(--brd);background:var(--bg);color:var(--ink4)') + '">' +
+          (on ? '#86efac;background:#dcfce7;color:#14532d' : 'var(--brd);background:var(--bg);color:var(--ink2)') + '">' +
           (on ? '✓ ' : '○ ') + esc(label) + '</button>';
       }).join('') + '</div>';
   }
