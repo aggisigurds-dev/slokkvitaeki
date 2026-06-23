@@ -336,15 +336,21 @@
         '</div>' +
       '</div>' +
       '<div>' +
-        '<div class="pos-cart" style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9;position:sticky;top:12px;display:flex;flex-direction:column;max-height:calc(100vh - 200px)">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
-            '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Karfa</div>' +
-            '<button id="pos-add-service" style="background:#f1f5f9;color:#334155;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600">+ Annað</button>' +
+        '<div class="pos-cart" style="background:#fff;border-radius:18px;padding:16px;box-shadow:0 14px 34px -18px rgba(10,15,25,.5);border:3px solid #0c0d10;position:sticky;top:12px;display:flex;flex-direction:column;max-height:calc(100vh - 200px)">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:13px">' +
+            '<div style="display:flex;align-items:center;gap:9px">' +
+              '<span style="width:11px;height:11px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.18)"></span>' +
+              '<span style="font-size:15px;font-weight:800;letter-spacing:.13em;color:#0f172a">KARFA</span>' +
+            '</div>' +
+            '<div style="display:flex;gap:8px">' +
+              '<button id="pos-add-service" style="background:linear-gradient(180deg,#2b2b31,#0c0d10);color:#fff;border:1px solid #000;padding:7px 13px;border-radius:10px;font-size:12.5px;cursor:pointer;font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)">+ Annað</button>' +
+              '<button id="pos-bokhald" style="background:#fff;color:#334155;border:1px solid #cbd5e1;padding:7px 13px;border-radius:10px;font-size:12.5px;cursor:pointer;font-weight:700">Bókhald</button>' +
+            '</div>' +
           '</div>' +
           '<div id="pos-lines" style="overflow-y:auto;flex:1;min-height:100px"></div>' +
-          '<div id="pos-totals" style="margin-top:10px"></div>' +
-          '<textarea id="pos-notes" placeholder="Athugasemdir..." style="width:100%;min-height:44px;margin-top:10px;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical"></textarea>' +
-          '<button id="pos-checkout" style="width:100%;margin-top:10px;background:linear-gradient(180deg,#16a34a,#15803d);color:#fff;border:none;padding:14px;border-radius:10px;font-weight:700;font-size:15px;cursor:pointer;box-shadow:0 2px 6px rgba(22,163,74,0.25)">✓ ÁFRAM</button>' +
+          '<textarea id="pos-notes" placeholder="Athugasemdir..." style="width:100%;min-height:40px;margin-top:8px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical;background:#f8fafc"></textarea>' +
+          '<div id="pos-totals" style="margin-top:8px"></div>' +
+          '<button id="pos-checkout" style="width:100%;margin-top:14px;background:linear-gradient(180deg,#1f7a48 0%,#16613a 52%,#0d4226 100%);color:#fff;border:1px solid #0a3a20;padding:16px;border-radius:14px;font-weight:800;font-size:16px;letter-spacing:.03em;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 18px -8px rgba(13,66,38,.6)">✓ ÁFRAM</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -378,40 +384,40 @@
   function buildServicesHTML(){if(!state.services.length)return'<div style="color:#94a3b8;font-size:13px;text-align:center;padding:16px;grid-column:1/-1">Engin þjónusta skráð. Bættu við í Vörur og þjónusta tab.</div>';return state.services.map(function(s){return renderTile(s,true);}).join('');}
   function buildProductsHTML(){if(!state.products.length)return'<div style="color:#94a3b8;font-size:13px;text-align:center;padding:16px;grid-column:1/-1">Engar vörur skráðar.</div>';return state.products.map(function(p){return renderTile(p,false);}).join('');}
   function buildLinesHTML(){
-    if(!state.lines.length)return'<div style="color:#94a3b8;text-align:center;padding:32px 16px;font-size:13px;border:2px dashed #e2e8f0;border-radius:8px">Karfan er tóm<br><span style="font-size:11px">Smelltu á flísar til að bæta við</span></div>';
-    // 2026-05-12: Two-row layout. Old layout crammed icon + name + qty +
-    // price + total + delete onto one flex row, which made the name wrap
-    // ugly in the narrow cart column. Now: row 1 = icon + name + delete;
-    // row 2 = qty stepper + price input + line total. Name gets the full
-    // row width so it never wraps mid-word.
+    if(!state.lines.length)return'<div style="color:#94a3b8;text-align:center;padding:30px 16px;font-size:13px;border:2px dashed #e2e8f0;border-radius:12px">Karfan er tóm<br><span style="font-size:11px">Smelltu á flísar til að bæta við</span></div>';
+    // 2026-06-22: KARFA endurhönnun — hver lína er „pill" með lit-rönd vinstra
+    // megin (CO₂ rauð · Duft blá · léttvatn ljósblá o.s.frv.), nafn + „magn ×
+    // einingarverð" undirtexti (mono, einingarverðið er ennþá ritanlegt inline),
+    // hreinn magn-stepper og línutala. Línutalan er ÁN VSK (magn × einingarverð)
+    // svo línurnar leggjast saman í „ÁN VSK" að neðan — eins og á hönnunar-mock;
+    // VSK bætist við einu sinni neðst. (.pos-line-del/.pos-qty-up/-dn/.pos-price-
+    // edit + data-idx haldast óbreytt svo atburða-bindingar virka áfram.)
     return state.lines.map(function(l,idx){
-      var lineTotal=l.qty*l.unit_price_ex_vat*(1+(l.vsk_pct||24)/100);
-      var col=l.type==='service'?'#b45309':'#0d6efd';
-      return '<div style="padding:8px 0;border-bottom:1px solid #f1f5f9">' +
-        // Row 1 — icon + name + delete
-        '<div style="display:flex;align-items:flex-start;gap:8px">' +
-          '<div style="width:26px;height:26px;background:'+col+'15;color:'+col+';border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">'+(l.type==='service'?'🔧':'🛒')+'</div>' +
-          '<div style="flex:1;min-width:0;font-weight:600;color:#0f172a;font-size:13px;line-height:1.25;overflow-wrap:break-word;word-break:break-word">'+esc(l.desc)+(l.ref?'<div style="font-weight:400;font-size:11px;color:#64748b;margin-top:1px">'+esc(l.ref)+'</div>':'')+'</div>' +
-          '<button class="pos-line-del" data-idx="'+idx+'" title="Fjarlægja" style="background:none;color:#cbd5e1;border:none;cursor:pointer;font-size:18px;padding:0 2px;line-height:1;flex-shrink:0">×</button>' +
+      var lineEx = l.qty * l.unit_price_ex_vat;
+      var dn = (l.desc||'').toLowerCase();
+      var col = /co₂|co2|kolsýr|kolsyr/.test(dn) ? '#dc2626'
+              : /duft|abc|pfc/.test(dn) ? '#1d4ed8'
+              : /léttv|lettv|froð|frod|abf/.test(dn) ? '#0ea5e9'
+              : /reyk|skynjari/.test(dn) ? '#ea580c'
+              : (colorFromNafn(l.desc) || '#475569');
+      return '<div style="display:flex;align-items:center;gap:10px;background:#f4f6f9;border:1px solid #e8edf2;border-left:4px solid '+col+';border-radius:12px;padding:9px 11px;margin-bottom:8px">' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-weight:700;color:#0f172a;font-size:13.5px;line-height:1.25;overflow-wrap:break-word;word-break:break-word">'+esc(l.desc)+(l.ref?'<span style="font-weight:400;font-size:11px;color:#94a3b8"> · '+esc(l.ref)+'</span>':'')+'</div>' +
+          '<div style="display:flex;align-items:center;gap:3px;margin-top:2px;font-size:11.5px;color:#94a3b8;font-family:\'Space Mono\',monospace">' +
+            '<span>'+l.qty+' ×</span>' +
+            '<input class="pos-price-edit" data-idx="'+idx+'" type="text" inputmode="decimal" value="'+l.unit_price_ex_vat+'" ' +
+              'title="Smelltu til að breyta einingarverði (án VSK)" ' +
+              'style="width:58px;padding:0 2px;border:none;border-bottom:1px dotted #cbd5e1;background:transparent;font:inherit;font-size:11.5px;color:#64748b;text-align:right;font-variant-numeric:tabular-nums">' +
+            '<span>kr</span>' +
+          '</div>' +
         '</div>' +
-        // Row 2 — qty stepper + price input + line total (indented under name).
-        // flex-wrap + shrinkable price input: gram-based lines (CO₂ 100 gr)
-        // have 3-4 digit qty, which used to push the fixed-width children
-        // over each other / out of the 380px cart column on the afgreiðslu
-        // computer. Now the line total wraps to its own right-aligned line
-        // instead of overlapping the price.
-        '<div style="display:flex;align-items:center;gap:6px;margin-top:5px;margin-left:34px;flex-wrap:wrap">' +
-          '<button class="pos-qty-dn" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b;flex-shrink:0">−</button>' +
-          '<span style="font-weight:600;font-size:13px;min-width:18px;text-align:center">'+l.qty+'</span>' +
-          '<button class="pos-qty-up" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b;flex-shrink:0">+</button>' +
-          '<span style="color:#94a3b8;font-size:11px;margin:0 1px">×</span>' +
-          '<input class="pos-price-edit" data-idx="'+idx+'" type="text" inputmode="decimal" value="'+l.unit_price_ex_vat+'" ' +
-            'title="Smelltu til að breyta verði (án VSK)" ' +
-            'style="width:64px;min-width:0;flex:0 1 64px;padding:2px 5px;border:1px solid #e2e8f0;border-radius:4px;font:inherit;font-size:11px;text-align:right;font-variant-numeric:tabular-nums">' +
-          '<span style="color:#94a3b8;font-size:11px">kr</span>' +
-          '<div style="flex:1 1 0;min-width:4px"></div>' +
-          '<div style="font-weight:700;color:#0f172a;font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums;margin-left:auto">'+fmtKr(lineTotal)+'</div>' +
+        '<div style="display:flex;align-items:center;background:#fff;border:1px solid #dbe2ea;border-radius:9px;overflow:hidden;flex-shrink:0">' +
+          '<button class="pos-qty-dn" data-idx="'+idx+'" style="background:#fff;border:none;width:30px;height:30px;cursor:pointer;font-weight:800;color:#475569;font-size:17px;line-height:1">−</button>' +
+          '<span style="min-width:24px;text-align:center;font-weight:800;font-size:14px;color:#0f172a;font-variant-numeric:tabular-nums">'+l.qty+'</span>' +
+          '<button class="pos-qty-up" data-idx="'+idx+'" style="background:#fff;border:none;width:30px;height:30px;cursor:pointer;font-weight:800;color:#475569;font-size:17px;line-height:1">+</button>' +
         '</div>' +
+        '<div style="flex-shrink:0;font-weight:800;color:#0f172a;font-size:15px;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace;white-space:nowrap;text-align:right;min-width:50px">'+fmtKr(lineEx)+'</div>' +
+        '<button class="pos-line-del" data-idx="'+idx+'" title="Fjarlægja" style="background:none;color:#cbd5e1;border:none;cursor:pointer;font-size:17px;padding:0;line-height:1;flex-shrink:0">×</button>' +
       '</div>';
     }).join('');
   }
@@ -431,28 +437,36 @@
          + 'padding:2px 8px;font-size:11px;font-weight:600;cursor:pointer;margin-left:6px">'
          + '↺ ' + custDiscPct + '% (≈ ' + fmtKr(custDiscKr) + ')</button>';
     }
-    return '<div style="border-top:2px solid #e2e8f0;padding-top:10px;font-variant-numeric:tabular-nums">' +
-        '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>Án VSK:</span><span id="pos-tot-raw">'+fmtKr(t.raw_ex)+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;color:#64748b;font-size:13px">' +
-          '<span>Afsláttur:' + custDisc + '</span>' +
-          '<span style="display:flex;align-items:center;gap:4px">' +
-            '<span id="pos-disc-kr" style="color:#dc2626;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;'+(hasDisc?'':'display:none;')+'">−'+fmtKr(t.saved)+'</span>' +
-            '<input id="pos-discount" type="text" inputmode="decimal" pattern="[0-9.,]*" value="' + pct + '" ' +
-              'autocomplete="off" title="Afsláttur %"' +
-              'style="width:50px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;' +
-              'text-align:right;font-variant-numeric:tabular-nums">' +
-            '<span style="color:#94a3b8">%</span>' +
-            '<input id="pos-discount-kr" type="text" inputmode="decimal" pattern="[0-9.,]*" value="' + (disc || '') + '" ' +
-              'autocomplete="off" title="Afsláttur í kr — dregst af lokaverðinu (m. vsk) svo upphæðin endi á sléttri tölu" placeholder="0"' +
-              'style="width:70px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;' +
-              'text-align:right;font-variant-numeric:tabular-nums;margin-left:6px">' +
-            '<span style="color:#94a3b8">kr</span>' +
+    // 2026-06-22: KARFA-stíll á heildartölum — uppercase grá merki, mono tölur,
+    // afsláttur sem tvær „pill" (% + kr), Samtals stórt. Hér eru engar Án-VSK-
+    // eftir-afslátt línur (mock sýnir ekki) en #pos-tot-ex/#pos-tot-disc-row eru
+    // höfð falin svo _updateTotalsCells og eldri kóði sem leitar að þeim brotni ekki.
+    var rates = state.lines.length ? Array.from(new Set(state.lines.map(function(l){return l.vsk_pct||24;}))) : [24];
+    var vskLabel = rates.length === 1 ? ('VSK ' + rates[0] + '%') : 'VSK';
+    var lbl  = 'font-size:12px;font-weight:700;letter-spacing:.07em;color:#94a3b8';
+    var num  = "font-size:14px;font-weight:700;color:#334155;font-family:'Space Mono',monospace;font-variant-numeric:tabular-nums";
+    var pill = 'display:inline-flex;align-items:center;gap:3px;background:#f4f6f9;border:1px solid #dbe2ea;border-radius:9px;padding:3px 9px';
+    var pinp = "border:none;background:transparent;font:inherit;font-size:13px;text-align:right;font-variant-numeric:tabular-nums;color:#0f172a;outline:none";
+    return '<div style="border-top:1px solid #e2e8f0;padding-top:12px">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">' +
+          '<span style="'+lbl+'">ÁN VSK</span><span id="pos-tot-raw" style="'+num+'">'+fmtKr(t.raw_ex)+'</span>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;gap:8px">' +
+          '<span style="'+lbl+';display:flex;align-items:center">AFSLÁTTUR' + custDisc + '</span>' +
+          '<span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">' +
+            '<span id="pos-disc-kr" style="color:#dc2626;font-weight:700;font-size:12px;font-family:\'Space Mono\',monospace;'+(hasDisc?'':'display:none;')+'">−'+fmtKr(t.saved)+'</span>' +
+            '<span style="'+pill+'"><input id="pos-discount" type="text" inputmode="decimal" pattern="[0-9.,]*" value="'+pct+'" autocomplete="off" title="Afsláttur %" style="'+pinp+';width:28px"><span style="color:#94a3b8;font-size:12px">%</span></span>' +
+            '<span style="'+pill+'"><input id="pos-discount-kr" type="text" inputmode="decimal" pattern="[0-9.,]*" value="'+(disc||'')+'" autocomplete="off" placeholder="0" title="Afsláttur í kr — dregst af lokaverðinu (m. vsk) svo upphæðin endi á sléttri tölu" style="'+pinp+';width:46px"><span style="color:#94a3b8;font-size:12px">kr</span></span>' +
           '</span>' +
         '</div>' +
-        '<div id="pos-tot-disc-row" style="display:none"></div>' +
-        '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>Án VSK (eftir afslátt):</span><span id="pos-tot-ex">'+fmtKr(t.ex)+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>VSK:</span><span id="pos-tot-vsk">'+fmtKr(t.vsk)+'</span></div>' +
-        '<div style="display:flex;justify-content:space-between;padding:6px 0;font-weight:700;font-size:18px;color:#0f172a;margin-top:4px;border-top:1px solid #f1f5f9"><span>Samtals:</span><span id="pos-tot-total">'+fmtKr(t.total)+'</span></div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">' +
+          '<span style="'+lbl+'">'+vskLabel+'</span><span id="pos-tot-vsk" style="'+num+'">'+fmtKr(t.vsk)+'</span>' +
+        '</div>' +
+        '<span id="pos-tot-ex" style="display:none">'+fmtKr(t.ex)+'</span><span id="pos-tot-disc-row" style="display:none"></span>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:11px 0 2px;margin-top:7px;border-top:1px solid #eef1f5">' +
+          '<span style="font-size:19px;font-weight:800;color:#0f172a">Samtals</span>' +
+          '<span id="pos-tot-total" style="font-size:24px;font-weight:800;color:#0f172a;font-family:\'Space Mono\',monospace;font-variant-numeric:tabular-nums;white-space:nowrap">'+fmtKr(t.total)+'</span>' +
+        '</div>' +
       '</div>';
   }
   // In-place update of the calculated cells — does NOT touch the discount input,
@@ -570,6 +584,9 @@
     if(nEl)nEl.addEventListener('input',function(){state.customer.nafn=nEl.value;});
     if(sEl)sEl.addEventListener('input',function(){state.customer.simi=sEl.value;});
     document.getElementById('pos-add-service').addEventListener('click',promptService);
+    // KARFA-haus „Bókhald"-takki → opnar Bókhalds-yfirlit (App.switchView, fallback á #bokhald deep-link).
+    var bokhaldBtn=document.getElementById('pos-bokhald');
+    if(bokhaldBtn)bokhaldBtn.addEventListener('click',function(){try{if(window.App&&App.switchView){App.switchView('bokhalds-yfirlit');return;}}catch(_){}location.hash='#bokhald';});
     document.getElementById('pos-scan').addEventListener('click',scanQr);
     var topScanBtn = document.getElementById('pos-scan-top');
     if (topScanBtn) topScanBtn.addEventListener('click', scanQr);
