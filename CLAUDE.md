@@ -317,6 +317,43 @@ button, `App.switchView` patched for the `#bakendi` deep-link + boot re-assert.
 `window.Bakendi = {open, reload}`. NB built in a parallel session as patch 231,
 then renumbered to **232** because Verkborð (#196) landed on slot 231 first.
 
+## Sjálfvirk PDF-vistun úttektar-skjala — `js/patches/233-uttekt-pdf-autosave.js` (+168/165)
+
+Þegar **úttektarskýrsla** er búin til (patch 168, „📄 Búa til úttektarskýrslu") eða
+**heimsókn kláruð með reikningi** (patch 165 `finalizeVisit`, „✓ Klára heimsókn") er
+skjalið teiknað sem PDF (jsPDF vektor-texti) og vistað **SJÁLFKRAFA** sem ársmerkt
+fyrirtækjaviðhengi gegnum `CompanyAttachments.upload(coId, file, {year, kind})` →
+birtist strax í „Skjöl & viðhengi" árstöflunni (patch 199), í úttektarskýrslu-
+(`kind:'skyrsla'`) eða reikningsdálki (`kind:'reikningur'`) ársins.
+
+- **Skráarheiti:** `<Fyrirtæki> - <kt> - <ár> - úttektarskýrsla.pdf` ·
+  `<Fyrirtæki> - <kt> - <ár> - R-xxxxxx.pdf`.
+- **Reikningurinn** er teiknaður í patch 233 (`window.UttektInvoicePdf.saveForSale(coId, sale)`)
+  sem **vektor-eftirmynd af prent-forskoðuninni** (SalaInvoice): logo + seljandi
+  (branding úr `AppSettings`), kaupandi m/ heimilisfang+kt, reiknings-haus
+  (dags./greiðsluskilmáli/starfsmaður), línutafla (Vörunr./Lýsing/Fjöldi/Einingav./
+  Upphæð/VSK-kóði) og „Samtals fyrir Vsk" + VSK-sundurliðun per taxta + „Til
+  greiðslu" + reglugerðar-fótur. Sækir nafn+kt+**heimilisfang** úr `fyrirtaeki`,
+  línur/tölur úr `solur`-röðinni; seljandi Slökkvitæki ehf kt 600508-0400.
+  **html2canvas-myndataka var vísvitandi EKKI notuð** — hún teiknar autt í vafra
+  Agnars (sjá patch 168), svo vektor-leiðin er notuð (prentast í öllum vöfrum,
+  valanlegur texti, lítil skrá).
+- **Totals-leiðrétting (patch 165 `finalizeVisit`):** salan er nú vistuð með
+  `upphaed_an_vsk`/`vsk_upphaed`/`samtals` **reiknuð beint úr `linur`**
+  (`totalsFromLinur` = sama stærðfræði og SalaInvoice prentar), EKKI lengur skafin
+  úr patch-129 DOM-inu (`readTotalsFromSection` fjarlægt). Eldra skröpið setti VSK-
+  upphæðina sem heildartölu (vsk_upphaed=0, samtals = án-vsk × 0,24) — sást á
+  Bókhalds-yfirliti; 7 raðir (R-000356/357/358/363/365/371/372) voru líka
+  leiðréttar í gagnagrunni úr `linur`.
+- Patch 168 fær líka **rétt skráarheiti á handvirka „💾 Vista" takkanum** + sjálfvirka
+  vistun við opnun, með **tvíritunarvörn** (sleppir sjálfvirkri vistun ef
+  úttektarskýrsla ársins er þegar til; reikningur ef R-númerið er þegar vistað).
+- **NB geymslustaður:** vistast í Supabase `samningar` bucket (sama og handvirk
+  viðhengi patch 111), **EKKI í Google Drive „Allt" möppuna** — þessi vefur hefur
+  ekki Drive-aðgang (engin googleapis/OAuth Netlify-function). Drive-pörunin lifir í
+  Brunahólf-appinu (sjá „Laga pörun í Brunahólf →" hlekkinn á skjalaspjaldinu). Ef
+  á að lenda í Drive þarf að flytja Drive-OAuth + upload-function úr Brunahólf.
+
 ## Related projects (in case Agnar mentions them)
 
 - **Brunahólf** — sister business, separate ecosystem (Google Sheets + Apps Script

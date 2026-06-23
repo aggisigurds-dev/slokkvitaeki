@@ -255,7 +255,7 @@
     const arYear  = (vd && vd.year)    ? vd.year    : now.getFullYear();
     const monthPhrase = 'í ' + manudur + ' ' + arYear;
 
-    const ctx = { co, counts, annad, athugasemdir, skodunaradili, monthPhrase };
+    const ctx = { co, counts, annad, athugasemdir, skodunaradili, monthPhrase, ar: arYear };
     const html = buildReportHtml(ctx);
     showModal(html, co, opts, ctx);
   }
@@ -391,23 +391,43 @@
     // 2026-06-10: save the report as the year's úttektarskýrsla — renders the
     // PDF (reusing patch 176) and uploads it as a year-tagged company
     // attachment, which lights up the 📄 box in that year's column (patch 187).
-    dlg.querySelector('#_cir-save').addEventListener('click', async () => {
-      const cy = new Date().getFullYear();
-      const btn = dlg.querySelector('#_cir-save');
-      if (!window.CompanyAttachments || !CompanyAttachments.upload) { alert('Skjalaeining ekki tiltæk.'); return; }
-      const orig = btn.textContent; btn.disabled = true; btn.textContent = '⏳ Vista…';
+    // 2026-06-23: vista úttektarskýrsluna sem ársmerkt PDF í skjalakassann —
+    // SJÁLFKRAFA þegar skýrslan er búin til (eins og Agnar bað um) OG gegnum
+    // „💾 Vista" takkann. Skráarheiti: "<Fyrirtæki> - <kt> - <ár> - úttektarskýrsla.pdf".
+    // Vistast í Supabase 'samningar' bucket (þessi vefur hefur ekki Drive-aðgang).
+    const _cirSaveBtn = dlg.querySelector('#_cir-save');
+    async function _cirSaveReport(auto) {
+      const ar = String((ctx && ctx.ar) || new Date().getFullYear());
+      if (!window.CompanyAttachments || !CompanyAttachments.upload) { if (!auto) alert('Skjalaeining ekki tiltæk.'); return; }
+      // Sjálfvirk vistun: sleppa ef úttektarskýrsla þessa árs er þegar til (svo
+      // endurteknar forskoðanir tvírita ekki). Handvirki takkinn vistar samt.
+      if (auto) {
+        try {
+          const have = (CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [];
+          if (have.some(a => a && a.kind === 'skyrsla' && String(a.year) === ar)) {
+            if (_cirSaveBtn) { _cirSaveBtn.disabled = true; _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar; }
+            return;
+          }
+        } catch (_) {}
+      }
+      const orig = _cirSaveBtn ? _cirSaveBtn.textContent : '';
+      if (_cirSaveBtn) { _cirSaveBtn.disabled = true; _cirSaveBtn.textContent = '⏳ Vista…'; }
       try {
-        // 2026-06-10: draw the PDF with jsPDF vector text (no DOM
-        // rasterization). html2canvas rendered blank in this browser no matter
-        // the source element, so we skip it entirely.
+        // jsPDF vektor-texti (engin DOM-rösterun — html2canvas birti autt í þessum vafra).
         const blob = await buildReportPdfBlob(ctx);
-        const fname = 'Úttektarskýrsla ' + (co.nafn || 'fyrirtæki') + ' ' + cy + '.pdf';
+        const n = String(co.nafn || 'fyrirtæki').replace(/\s+/g, ' ').trim();
+        const ktD = String(co.kennitala || '').replace(/[^0-9]/g, '');
+        const ktDash = ktD.length === 10 ? ktD.slice(0, 6) + '-' + ktD.slice(6) : (co.kennitala || '');
+        const fname = [n, ktDash, ar, 'úttektarskýrsla'].filter(Boolean).join(' - ') + '.pdf';
         const file = new File([blob], fname, { type: 'application/pdf' });
-        const meta = await CompanyAttachments.upload(co.id, file, { year: String(cy) });
-        if (meta) { btn.textContent = '✓ Vistuð sem ' + cy; if (window.Toast && Toast.show) Toast.show('✓ Skýrsla vistuð sem ' + cy); }
-        else { btn.disabled = false; btn.textContent = orig; }
-      } catch (e) { alert('Villa við vistun: ' + (e.message || e)); btn.disabled = false; btn.textContent = orig; }
-    });
+        const meta = await CompanyAttachments.upload(co.id, file, { year: ar, kind: 'skyrsla' });
+        if (meta) { if (_cirSaveBtn) _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar; if (window.Toast && Toast.show) Toast.show('✓ Skýrsla vistuð sem ' + ar); }
+        else if (_cirSaveBtn) { _cirSaveBtn.disabled = false; _cirSaveBtn.textContent = orig; }
+      } catch (e) { if (!auto) alert('Villa við vistun: ' + (e.message || e)); if (_cirSaveBtn) { _cirSaveBtn.disabled = false; _cirSaveBtn.textContent = orig; } }
+    }
+    if (_cirSaveBtn) _cirSaveBtn.addEventListener('click', () => _cirSaveReport(false));
+    // Sjálfvirk vistun þegar skýrslan opnast (= er búin til); tvíritunarvörn að ofan.
+    setTimeout(() => _cirSaveReport(true), 450);
     dlg.querySelector('#_cir-email').addEventListener('click', () => {
       if (window.CompanyReportEmail && typeof CompanyReportEmail.open === 'function') {
         CompanyReportEmail.open({ co: co, html: html, defaultTo: opts && opts.emailTo });
