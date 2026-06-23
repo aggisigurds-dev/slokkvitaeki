@@ -122,7 +122,31 @@
     var saved = (ex + vsk) - (ad + av);
     return { ex:ad, vsk:av, total:ad+av, raw_ex:ex, raw_vsk:vsk, pct_disc:pctDisc, abs_disc:absDisc, saved:saved };
   }
-  function render(){var v=document.getElementById('view-sala');if(!v)return;if(v.getAttribute('data-pos-v3')==='1')return;v.innerHTML=buildHTML();v.setAttribute('data-pos-v3','1');bindEvents();rerenderCatalog();rerenderDynamic();}
+  function injectKarfaSkin(){
+    if(document.getElementById('pos-karfa-skin'))return;
+    var s=document.createElement('style');s.id='pos-karfa-skin';
+    // KARFA er alltaf ljós „kvittunar-eyja" — yfirskrifar Brunastál/dökk-þema:
+    // patch 229 endurkortlagði background:#fff → --thm-card (dökkt) og takka án
+    // .btn-success → dökkan málm/rauðan. ID-sértækni (#view-sala .pos-cart …)
+    // slær .view-reglur patch 229 svo karfan helst hvít eins og á hönnunar-mock.
+    s.textContent=[
+      '#view-sala .pos-cart{background:#fff!important;border:3px solid #0c0d10!important;box-shadow:0 14px 34px -18px rgba(10,15,25,.5)!important}',
+      '#view-sala .pos-cart [style*="background:#fff"]{background:#fff!important}',
+      '#view-sala .pos-cart [style*="color:#0f172a"]{color:#0f172a!important}',
+      '#view-sala .pos-cart [style*="color:#334155"]{color:#334155!important}',
+      '#view-sala .pos-cart [style*="color:#475569"]{color:#475569!important}',
+      '#view-sala .pos-cart [style*="color:#64748b"]{color:#64748b!important}',
+      '#view-sala .pos-cart [style*="color:#94a3b8"]{color:#94a3b8!important}',
+      '#view-sala .pos-cart [style*="#e2e8f0"]{border-color:#e2e8f0!important}',
+      '#view-sala .pos-cart .pos-qty-up,#view-sala .pos-cart .pos-qty-dn{background:#fff!important;color:#475569!important;border:none!important;box-shadow:none!important;text-shadow:none!important}',
+      '#view-sala .pos-cart .pos-line-del{background:none!important;color:#cbd5e1!important;border:none!important;box-shadow:none!important;text-shadow:none!important}',
+      '#view-sala .pos-cart #pos-add-service{background:linear-gradient(180deg,#2b2b31,#0c0d10)!important;color:#fff!important;border:1px solid #000!important;text-shadow:none!important}',
+      '#view-sala .pos-cart #pos-bokhald{background:#fff!important;color:#334155!important;border:1px solid #cbd5e1!important;text-shadow:none!important;box-shadow:none!important}',
+      '#view-sala .pos-cart #pos-checkout{background:linear-gradient(180deg,#1f7a48 0%,#16613a 52%,#0d4226 100%)!important;color:#fff!important;border:1px solid #0a3a20!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 18px -8px rgba(13,66,38,.6)!important;text-shadow:none!important}'
+    ].join('\n');
+    (document.head||document.documentElement).appendChild(s);
+  }
+  function render(){var v=document.getElementById('view-sala');if(!v)return;injectKarfaSkin();if(v.getAttribute('data-pos-v3')==='1')return;v.innerHTML=buildHTML();v.setAttribute('data-pos-v3','1');bindEvents();rerenderCatalog();rerenderDynamic();}
   // 2026-05-08: rerenderCatalog (vörur+þjónustur) er aðskilið frá
   // rerenderDynamic (karfa+totals). Áður var allt í einu sem þýddi að í
   // hvert sinn sem notandi bætti vöru í körfu var ALLUR vörulistinn
