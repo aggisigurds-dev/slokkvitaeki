@@ -306,6 +306,24 @@
     if (!tbody || tbody.dataset.ciHooked) return;
     tbody.dataset.ciHooked = '1';
     tbody.addEventListener('click', async e => {
+      const creBtn = e.target.closest('.cre-btn[data-cre-sale]');
+      if (creBtn) {
+        e.stopPropagation();
+        let sale = null;
+        try {
+          const SB = getSB();
+          if (SB) {
+            const { data } = await SB.from('solur').select('*').eq('id', creBtn.dataset.creSale).single();
+            if (data) sale = {
+              id: data.id, num: data.num, customer: data.customer_nafn, customer_id: data.customer_id,
+              customer_kt: data.customer_kt || null, total: +(data.samtals || 0), ex: +(data.upphaed_an_vsk || 0),
+              vsk: +(data.vsk_upphaed || 0), lines: Array.isArray(data.linur) ? data.linur : [], payment: data.greitt_med
+            };
+          }
+        } catch (_) {}
+        if (sale) openCreditEditDialog(sale);
+        return;
+      }
       const btn = e.target.closest('.ci-btn[data-ci-sale]');
       if (!btn) return;
       e.stopPropagation();
@@ -358,6 +376,15 @@
       lastTd.style.flexWrap = 'wrap';
       lastTd.style.alignItems = 'center';
       lastTd.appendChild(btn);
+      // 2026-06-23: "✏️ Kredit + breyta" — credit the original AND issue a new
+      // corrected invoice (reopen lines editable → klára sölu → gamli kreditfærður).
+      const btn2 = document.createElement('button');
+      btn2.className = 'ci-btn cre-btn';
+      btn2.dataset.creSale = id;
+      btn2.title = 'Kreditfæra gamla reikninginn og gefa út nýjan, leiðréttan';
+      btn2.style.cssText = 'background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8';
+      btn2.textContent = '✏️ Kredit + breyta';
+      lastTd.appendChild(btn2);
     });
   }
 
@@ -380,7 +407,139 @@
   setTimeout(watchTbody, 1000);
   setTimeout(watchTbody, 3000);
 
-  window.CreditInvoice = { open: openCreditDialog, print: printCreditNote };
+  // ── 2026-06-23: Kreditfæra OG breyta — reopen the invoice lines editable,
+  // issue a corrected NEW invoice, and full-credit the original. ──────────────
+  function payOpt(v, label, cur) {
+    const c = String(cur || '').toLowerCase();
+    const sel = (c === v || (v === 'kort' && (c === 'kort' || c === 'card')) || (v === 'reidufe' && /rei[dð]uf|pening/.test(c))) ? ' selected' : '';
+    return '<option value="' + v + '"' + sel + '>' + label + '</option>';
+  }
+
+  async function createCorrectedSale(origSale, lines, payMethod) {
+    const SB = getSB(); if (!SB) throw new Error('Engin gagnabankatenging');
+    const ex = lines.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0), 0);
+    const vsk = lines.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 0) / 100), 0);
+    const paid = (payMethod !== 'reikningur' && payMethod !== 'greitt_sidar');
+    const row = {
+      starfsmadur: 'Kassi',
+      customer_id: origSale.customer_id || null,
+      customer_nafn: origSale.customer || '',
+      customer_kt: origSale.customer_kt || null,
+      linur: lines,
+      upphaed_an_vsk: Math.round(ex),
+      vsk_upphaed: Math.round(vsk),
+      samtals: Math.round(ex + vsk),
+      greitt_med: payMethod || 'reikningur',
+      athugasemdir: 'Leiðréttur reikningur (kredit á ' + (origSale.num || '') + ')',
+      status: 'final',
+      paid_at: paid ? new Date().toISOString() : null
+    };
+    let r = await SB.from('solur').insert(row).select().single();
+    if (r.error && /(status|customer_kt|paid_at).*(does not exist|schema cache)/i.test((r.error.message || '') + ' ' + (r.error.details || ''))) {
+      delete row.status; delete row.customer_kt; delete row.paid_at;
+      r = await SB.from('solur').insert(row).select().single();
+    }
+    if (r.error) throw r.error;
+    return r.data;
+  }
+
+  function openCreditEditDialog(sale) {
+    const old = document.getElementById('cre-modal'); if (old) old.remove();
+    let eLines = (sale.lines || []).map(l => ({
+      desc: l.desc || '', qty: +l.qty || 0, unit_price_ex_vat: +l.unit_price_ex_vat || 0,
+      vsk_pct: (l.vsk_pct == null ? 24 : +l.vsk_pct), ref: l.ref || '', product_id: l.product_id, type: l.type
+    }));
+    const dlg = document.createElement('div');
+    dlg.id = 'cre-modal';
+    dlg.style.cssText = 'position:fixed;inset:0;z-index:100012;display:flex;align-items:center;justify-content:center;font-family:inherit';
+    dlg.innerHTML =
+      '<div style="position:absolute;inset:0;background:rgba(15,23,42,.6)" data-cre-back></div>' +
+      '<div style="position:relative;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:min(620px,calc(100vw - 24px));max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid #e2e8f0;background:linear-gradient(135deg,#eff6ff,#fff)">' +
+          '<h3 style="margin:0;font-size:17px;font-weight:700;color:#1e40af">✏️ Kreditfæra og breyta reikning</h3>' +
+          '<button data-cre-x style="background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer;padding:2px 8px;border-radius:6px">✕</button>' +
+        '</div>' +
+        '<div style="padding:16px 20px;overflow-y:auto;flex:1">' +
+          '<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:11px 13px;margin-bottom:12px;font-size:13px;color:#1e3a8a"><b>Upprunalegur reikningur:</b> ' + esc(sale.num || '') + ' &nbsp;|&nbsp; <b>Viðskiptavinur:</b> ' + esc(sale.customer || '—') + ' &nbsp;|&nbsp; <b>Upphæð:</b> ' + fmtKr(sale.total) + '</div>' +
+          '<p style="font-size:12.5px;color:#475569;margin:0 0 10px">Breyttu línunum og smelltu „Klára" — gamli reikningurinn verður kreditfærður og nýr, leiðréttur reikningur gefinn út.</p>' +
+          '<div id="cre-lines"></div>' +
+          '<button id="cre-add" type="button" style="margin-top:8px;padding:6px 12px;background:#f1f5f9;border:1px solid #cbd5e1;color:#334155;border-radius:7px;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">+ Bæta við línu</button>' +
+          '<div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:16px">' +
+            '<div style="flex:1;min-width:150px"><label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Greiðslumáti</label>' +
+              '<select id="cre-pay" style="width:100%;padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;background:#fff">' + payOpt('kort', '💳 Kort', sale.payment) + payOpt('reidufe', '💵 Reiðufé', sale.payment) + payOpt('reikningur', '📋 Reikningur', sale.payment) + payOpt('greitt_sidar', '⏳ Greitt síðar', sale.payment) + '</select></div>' +
+            '<div style="flex:2;min-width:190px"><label style="display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Ástæða kreditfærslu</label>' +
+              '<input id="cre-reason" type="text" placeholder="t.d. rangt magn, rangt verð…" style="width:100%;padding:8px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 20px;border-top:1px solid #e2e8f0;background:#f8fafc;flex-wrap:wrap">' +
+          '<div style="font-size:13px;color:#475569">Nýr reikningur: <b id="cre-total" style="font-size:16px;color:#0f172a">0 kr</b></div>' +
+          '<div style="display:flex;gap:8px"><button data-cre-cancel style="padding:9px 16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>' +
+            '<button id="cre-confirm" style="padding:9px 18px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">✓ Klára — nýr reikningur + kredit</button></div>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(dlg);
+    function close() { dlg.remove(); }
+    dlg.querySelector('[data-cre-back]').onclick = close;
+    dlg.querySelector('[data-cre-x]').onclick = close;
+    dlg.querySelector('[data-cre-cancel]').onclick = close;
+
+    const linesEl = dlg.querySelector('#cre-lines');
+    function calc() { let ex = 0, vsk = 0; eLines.forEach(l => { const le = (+l.qty || 0) * (+l.unit_price_ex_vat || 0); ex += le; vsk += le * ((+l.vsk_pct || 0) / 100); }); return { ex, vsk, total: ex + vsk }; }
+    function renderLines() {
+      linesEl.innerHTML =
+        '<div style="display:grid;grid-template-columns:1fr 52px 84px 84px 26px;gap:6px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;padding:0 2px 5px"><div>Lýsing</div><div style="text-align:right">Magn</div><div style="text-align:right">Einingav.</div><div style="text-align:right">Samtals</div><div></div></div>' +
+        eLines.map((l, i) => {
+          const le = (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 + (+l.vsk_pct || 0) / 100);
+          return '<div style="display:grid;grid-template-columns:1fr 52px 84px 84px 26px;gap:6px;align-items:center;margin-bottom:5px">' +
+            '<input data-i="' + i + '" data-f="desc" value="' + esc(l.desc) + '" style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:12.5px;min-width:0">' +
+            '<input data-i="' + i + '" data-f="qty" type="text" inputmode="decimal" value="' + esc(String(l.qty)) + '" style="padding:6px 4px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:12.5px;text-align:right">' +
+            '<input data-i="' + i + '" data-f="unit_price_ex_vat" type="text" inputmode="decimal" value="' + esc(String(l.unit_price_ex_vat)) + '" style="padding:6px 4px;border:1px solid #e2e8f0;border-radius:6px;font:inherit;font-size:12.5px;text-align:right">' +
+            '<div class="cre-lt" style="text-align:right;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">' + fmtKr(le) + '</div>' +
+            '<button data-rm="' + i + '" title="Fjarlægja" style="background:none;border:none;color:#cbd5e1;font-size:16px;cursor:pointer;padding:0">✕</button>' +
+          '</div>';
+        }).join('');
+      const tot = dlg.querySelector('#cre-total'); if (tot) tot.textContent = fmtKr(calc().total);
+    }
+    linesEl.addEventListener('input', e => {
+      const inp = e.target.closest('input[data-i]'); if (!inp) return;
+      const i = +inp.dataset.i, f = inp.dataset.f; if (!eLines[i]) return;
+      if (f === 'desc') eLines[i].desc = inp.value;
+      else { const raw = String(inp.value).replace(/[^0-9.,]/g, '').replace(',', '.'); eLines[i][f] = parseFloat(raw) || 0; }
+      const rowEl = inp.closest('div[style*="grid-template-columns"]');
+      const lt = rowEl && rowEl.querySelector('.cre-lt');
+      if (lt) lt.textContent = fmtKr((+eLines[i].qty || 0) * (+eLines[i].unit_price_ex_vat || 0) * (1 + (+eLines[i].vsk_pct || 0) / 100));
+      const tot = dlg.querySelector('#cre-total'); if (tot) tot.textContent = fmtKr(calc().total);
+    });
+    linesEl.addEventListener('click', e => { const rm = e.target.closest('[data-rm]'); if (!rm) return; eLines.splice(+rm.dataset.rm, 1); renderLines(); });
+    dlg.querySelector('#cre-add').onclick = () => { eLines.push({ desc: '', qty: 1, unit_price_ex_vat: 0, vsk_pct: 24 }); renderLines(); };
+    renderLines();
+
+    dlg.querySelector('#cre-confirm').onclick = async () => {
+      const cbtn = dlg.querySelector('#cre-confirm');
+      const lines = eLines.filter(l => (+l.qty || 0) !== 0 && (l.desc || '').trim());
+      if (!lines.length) { if (window.Toast && Toast.show) Toast.show('Engar gildar línur'); return; }
+      const payMethod = dlg.querySelector('#cre-pay').value;
+      const reason = (dlg.querySelector('#cre-reason').value || '').trim();
+      cbtn.disabled = true; cbtn.textContent = 'Vinn…';
+      try {
+        const newSale = await createCorrectedSale(sale, lines, payMethod);
+        try {
+          await createCreditNote(sale, sale.lines || [], reason || ('Leiðrétt → ' + (newSale.num || '')));
+        } catch (ce) {
+          alert('Nýr reikningur ' + (newSale.num || '') + ' búinn til, EN kreditfærsla á ' + (sale.num || '') + ' mistókst: ' + ((ce && ce.message) || ce) + '\nNotaðu „↩ Kredit" takkann handvirkt á gamla reikninginn.');
+        }
+        close();
+        if (window.Toast && Toast.show) Toast.show('✓ Nýr reikningur ' + (newSale.num || '') + ' · gamli ' + (sale.num || '') + ' kreditfærður');
+        try { if (window.BokhaldsYfirlit && BokhaldsYfirlit.refresh) BokhaldsYfirlit.refresh(); } catch (_) {}
+        setTimeout(() => { try { if (window.SalaInvoice && SalaInvoice.renderFromSale) { const w = window.open('', 'corrected', 'width=900,height=1100'); if (w) SalaInvoice.renderFromSale(w, newSale, null, {}); } } catch (_) {} }, 300);
+      } catch (e) {
+        cbtn.disabled = false; cbtn.textContent = '✓ Klára — nýr reikningur + kredit';
+        alert('Villa: ' + ((e && e.message) || e));
+      }
+    };
+  }
+
+  window.CreditInvoice = { open: openCreditDialog, openEdit: openCreditEditDialog, print: printCreditNote };
   console.log('[credit-invoice] installed');
 })();
 /* === END CREDIT INVOICE === */
