@@ -348,7 +348,7 @@
             '</div>' +
           '</div>' +
           '<div id="pos-lines" style="overflow-y:auto;flex:1;min-height:100px"></div>' +
-          '<textarea id="pos-notes" placeholder="Athugasemdir..." style="width:100%;min-height:40px;margin-top:8px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical;background:#f8fafc"></textarea>' +
+          '<textarea id="pos-notes" placeholder="Athugasemdir..." style="width:100%;min-height:40px;margin-top:8px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
           '<div id="pos-totals" style="margin-top:8px"></div>' +
           '<button id="pos-checkout" style="width:100%;margin-top:14px;background:linear-gradient(180deg,#1f7a48 0%,#16613a 52%,#0d4226 100%);color:#fff;border:1px solid #0a3a20;padding:16px;border-radius:14px;font-weight:800;font-size:16px;letter-spacing:.03em;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 18px -8px rgba(13,66,38,.6)">✓ ÁFRAM</button>' +
         '</div>' +
@@ -400,7 +400,7 @@
               : /léttv|lettv|froð|frod|abf/.test(dn) ? '#0ea5e9'
               : /reyk|skynjari/.test(dn) ? '#ea580c'
               : (colorFromNafn(l.desc) || '#475569');
-      return '<div style="display:flex;align-items:center;gap:10px;background:#f4f6f9;border:1px solid #e8edf2;border-left:4px solid '+col+';border-radius:12px;padding:9px 11px;margin-bottom:8px">' +
+      return '<div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e9eef3;border-left:4px solid '+col+';border-radius:12px;padding:9px 11px;margin-bottom:8px;box-shadow:0 1px 2px rgba(16,24,40,.05)">' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-weight:700;color:#0f172a;font-size:13.5px;line-height:1.25;overflow-wrap:break-word;word-break:break-word">'+esc(l.desc)+(l.ref?'<span style="font-weight:400;font-size:11px;color:#94a3b8"> · '+esc(l.ref)+'</span>':'')+'</div>' +
           '<div style="display:flex;align-items:center;gap:3px;margin-top:2px;font-size:11.5px;color:#94a3b8;font-family:\'Space Mono\',monospace">' +
@@ -445,7 +445,7 @@
     var vskLabel = rates.length === 1 ? ('VSK ' + rates[0] + '%') : 'VSK';
     var lbl  = 'font-size:12px;font-weight:700;letter-spacing:.07em;color:#94a3b8';
     var num  = "font-size:14px;font-weight:700;color:#334155;font-family:'Space Mono',monospace;font-variant-numeric:tabular-nums";
-    var pill = 'display:inline-flex;align-items:center;gap:3px;background:#f4f6f9;border:1px solid #dbe2ea;border-radius:9px;padding:3px 9px';
+    var pill = 'display:inline-flex;align-items:center;gap:3px;background:#fff;border:1px solid #dbe2ea;border-radius:9px;padding:3px 9px';
     var pinp = "border:none;background:transparent;font:inherit;font-size:13px;text-align:right;font-variant-numeric:tabular-nums;color:#0f172a;outline:none";
     return '<div style="border-top:1px solid #e2e8f0;padding-top:12px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">' +
