@@ -10,7 +10,7 @@
     // discount_pct   = % off subtotal (set per sale or pulled from customer)
     // discount_gross = marker for SalaInvoice: this state's kr discount is
     //                  m. vsk, not the legacy ex-VAT semantics
-    lines: [], discount: 0, discount_pct: 0, discount_gross: true, notes: '',
+    lines: [], discount: 0, discount_pct: 0, discount_gross: true, notes: '', beidninumer: '',
     products: [], services: []
   };
   var ICONS = {
@@ -65,13 +65,23 @@
     return Promise.all([
       DB.sb.from('fyrirtaeki')
         .select('id,nafn,simi,kennitala,heimilisfang,afslattur_pct,athugasemdir')
-        .eq('kennitala', kt).maybeSingle(),
+        .eq('kennitala', kt).order('afslattur_pct', { ascending: false }).limit(20),
       DB.sb.from('vidskiptavinir')
         .select('id,nafn,simi,kennitala,heimilisfang,afslattur_pct,athugasemdir')
-        .eq('kennitala', kt).maybeSingle()
+        .eq('kennitala', kt).order('afslattur_pct', { ascending: false }).limit(20)
     ]).then(function (results) {
-      var fy = results[0] && results[0].data;
-      var vk = results[1] && results[1].data;
+      // 2026-06-23 (#2): a kt can have several rows (multi-site customers like
+      // Colas — 5 starfsstöðvar). maybeSingle() errored on those, so the saved
+      // discount never applied. Fetch all, pick the row with the highest
+      // afslattur_pct (prefer one carrying an id for co_id linkage).
+      function pickBest(arr){
+        arr = (arr || []).slice();
+        if (!arr.length) return null;
+        arr.sort(function(a,b){ return ((+b.afslattur_pct||0) - (+a.afslattur_pct||0)) || ((b.id?1:0) - (a.id?1:0)); });
+        return arr[0];
+      }
+      var fy = pickBest(results[0] && results[0].data);
+      var vk = pickBest(results[1] && results[1].data);
       if (fy || vk) {
         var fyDisc = +(fy && fy.afslattur_pct) || 0;
         var vkDisc = +(vk && vk.afslattur_pct) || 0;
@@ -168,7 +178,7 @@
     var l=document.getElementById('pos-lines');if(l)l.innerHTML=buildLinesHTML();
     var t=document.getElementById('pos-totals');if(t)t.innerHTML=buildTotalsHTML();
     var cb=document.getElementById('pos-checkout');
-    if(cb){var tt=totals();cb.innerHTML=tt.total>0?('✓ ÁFRAM · '+fmtKr(tt.total)):'✓ ÁFRAM';cb.disabled=tt.total===0;}
+    if(cb){var tt=totals();cb.innerHTML=tt.total>0?('✓ ÁFRAM · '+fmtKr(tt.total)):'✓ ÁFRAM';cb.disabled=tt.total===0 || !beidniOk();}
   }
   function buildBannerHTML(){
     var now = new Date();
@@ -445,6 +455,14 @@
       '</div>';
     }).join('');
   }
+  // 2026-06-23 (#1 smálagfæring): Reykjavíkurborg (kt 530269-7609) leggur fram
+  // pappírs-BEIÐNI með beiðninúmeri sem verður að fylgja reikningi. Þegar þessi
+  // kt er valinn → skylda að slá inn beiðninúmer áður en salan er kláruð, og það
+  // prentast á reikninginn (fremst í athugasemd → vegna-lína).
+  var REYKJAVIKURBORG_KT = '5302697609';
+  function needsBeidni(){ return String((state.customer && state.customer.kt) || '').replace(/[^0-9]/g,'') === REYKJAVIKURBORG_KT; }
+  function beidniOk(){ return !needsBeidni() || !!String(state.beidninumer || '').trim(); }
+
   function buildTotalsHTML(){
     var t = totals();
     var pct = state.discount_pct || 0;
@@ -471,7 +489,14 @@
     var num  = "font-size:14px;font-weight:700;color:#334155;font-family:'Space Mono',monospace;font-variant-numeric:tabular-nums";
     var pill = 'display:inline-flex;align-items:center;gap:3px;background:#fff;border:1px solid #dbe2ea;border-radius:9px;padding:3px 9px';
     var pinp = "border:none;background:transparent;font:inherit;font-size:13px;text-align:right;font-variant-numeric:tabular-nums;color:#0f172a;outline:none";
-    return '<div style="border-top:1px solid #e2e8f0;padding-top:12px">' +
+    var beidniField = needsBeidni() ? (
+      '<div style="margin-bottom:10px;padding:9px 11px;background:#fffbeb;border:1px solid #fcd34d;border-radius:10px">' +
+        '<label style="display:block;font-size:11px;font-weight:700;color:#92400e;margin-bottom:4px">⚠ Beiðninúmer Reykjavíkurborgar (skylda)</label>' +
+        '<input id="pos-beidni" type="text" inputmode="numeric" value="' + esc(String(state.beidninumer || '')) + '" placeholder="t.d. 0406559" autocomplete="off" style="width:100%;padding:8px 10px;border:1.5px solid ' + (String(state.beidninumer || '').trim() ? '#10b981' : '#f59e0b') + ';border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;font-variant-numeric:tabular-nums">' +
+        '<div style="font-size:10px;color:#b45309;margin-top:3px">Frumrit beiðni verður að fylgja reikningi — prentast á reikninginn.</div>' +
+      '</div>'
+    ) : '';
+    return beidniField + '<div style="border-top:1px solid #e2e8f0;padding-top:12px">' +
         '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">' +
           '<span style="'+lbl+'">ÁN VSK</span><span id="pos-tot-raw" style="'+num+'">'+fmtKr(t.raw_ex)+'</span>' +
         '</div>' +
@@ -641,6 +666,14 @@
     // delivered keystrokes (e.g. "20" became "2"). Now we update only the
     // calculated cells in place; the input stays mounted and focused.
     document.getElementById('pos-totals').addEventListener('input', function(e){
+      var beidniEl = e.target.closest('#pos-beidni');
+      if (beidniEl) {
+        state.beidninumer = beidniEl.value;
+        beidniEl.style.borderColor = String(state.beidninumer || '').trim() ? '#10b981' : '#f59e0b';
+        var cbB = document.getElementById('pos-checkout');
+        if (cbB) { var ttB = totals(); cbB.disabled = ttB.total === 0 || !beidniOk(); }
+        return;
+      }
       var pctEl = e.target.closest('#pos-discount');
       var krEl  = e.target.closest('#pos-discount-kr');
       if (!pctEl && !krEl) return;
@@ -719,6 +752,7 @@
   function addProductLine(pid){var p=state.products.find(function(x){return x.id===pid;});if(!p)return;var ex=state.lines.find(function(l){return l.type==='product'&&l.product_id===pid;});if(ex){ex.qty++;}else state.lines.push({type:'product',desc:p.nafn,qty:1,unit_price_ex_vat:p.verd_an_vsk,vsk_pct:p.vsk_prosenta||24,product_id:p.id,ref:''});rerenderDynamic();}
   async function checkout(){
     if(!state.lines.length){alert('Engar línur');return;}
+    if(!beidniOk()){alert('Sláðu inn Beiðninúmer Reykjavíkurborgar áður en salan er kláruð.\n(Frumrit beiðni verður að fylgja reikningi.)');var _be=document.getElementById('pos-beidni');if(_be)_be.focus();return;}
     var cust=state.customer.nafn.trim();
     // 2026-05-11: For walk-in (kt 999999-9999), if user didn't type a name
     // we want "Staðgreitt" on the receipt — NOT "kt: 999999-9999" which
@@ -761,7 +795,10 @@
       var isPaidNow = (pmCode !== 'reikningur' && pmCode !== 'greitt_sidar');
       var nowIso = new Date().toISOString();
       var custKt=(state.customer.kt||'').trim(); if(custKt.replace(/[^0-9]/g,'')==='9999999999')custKt='';
-      var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,customer_kt:custKt||null,linur:state.lines,upphaed_an_vsk:Math.round(t.ex),vsk_upphaed:Math.round(t.vsk),afslattur:discKr,samtals:Math.round(t.total),greitt_med:pmLabel,athugasemdir:state.notes,status:saleStatus,paid_at:isPaidNow?nowIso:null,paid_method:isPaidNow?pmLabel:null}).select().single();
+      // #1: prepend the Reykjavíkurborg beiðninúmer so it prints on the reikningur.
+      var _beidni=(needsBeidni() && String(state.beidninumer||'').trim()) ? String(state.beidninumer).trim() : '';
+      var saleNotes = _beidni ? ('Beiðni ' + _beidni + (state.notes ? '\n' + state.notes : '')) : state.notes;
+      var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,customer_kt:custKt||null,linur:state.lines,upphaed_an_vsk:Math.round(t.ex),vsk_upphaed:Math.round(t.vsk),afslattur:discKr,samtals:Math.round(t.total),greitt_med:pmLabel,athugasemdir:saleNotes,status:saleStatus,paid_at:isPaidNow?nowIso:null,paid_method:isPaidNow?pmLabel:null}).select().single();
       if(sr.error)throw sr.error;
       var num = sr.data && sr.data.num ? sr.data.num : preNum;
       window._pendingReikningurNum = '';
@@ -981,7 +1018,7 @@
           discount: state.discount || 0
         });
       }
-      state.customer={mode:'kt',kt:'',nafn:'',simi:'',co_id:null,afslattur_pct:0,athugasemdir:''};state.lines=[];state.notes='';state.discount=0;state.discount_pct=0;
+      state.customer={mode:'kt',kt:'',nafn:'',simi:'',co_id:null,afslattur_pct:0,athugasemdir:''};state.lines=[];state.notes='';state.discount=0;state.discount_pct=0;state.beidninumer='';
       // Hide the customer memo box on reset so it doesn't leak into the next sale
       var memoBoxReset=document.getElementById('pos-customer-memo');if(memoBoxReset)memoBoxReset.style.display='none';
       var v=document.getElementById('view-sala');v.removeAttribute('data-pos-v3');render();
