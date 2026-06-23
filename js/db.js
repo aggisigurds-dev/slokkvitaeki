@@ -167,7 +167,7 @@ var DB = {
   // ---- JOBS ----
   getJobs: function() { return this.cache.jobs; },
   getJob: function(id) { return this.cache.jobs.find(function(j) { return j.id === id; }); },
-  getActiveJobs: function() { return this.cache.jobs.filter(function(j) { return j.status !== 'collected'; }); },
+  getActiveJobs: function() { return this.cache.jobs.filter(function(j) { return j.status !== 'collected' && j.status !== 'eytt'; }); },
   getReadyJobs: function() { return this.cache.jobs.filter(function(j) { return j.status === 'ready'; }); },
   getWorkshopJobs: function() { return this.cache.jobs.filter(function(j) { return j.status === 'received' || j.status === 'inprogress'; }); },
 
