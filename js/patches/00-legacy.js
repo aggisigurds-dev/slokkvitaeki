@@ -2652,7 +2652,7 @@ console.log('[patch-master] loaded with all fixes');
       // 2026-05-14: Skip when the table is inside modals that have their own
       // "Staða" column meaning (kúnnareikningur statement, bókhald yfirlit
       // detail, etc.) — they show transaction status, not equipment status.
-      if (table.closest('#_kr-statement, #_kr-picker, #ci-modal, #_se-dlg, #_drog-list-modal, #counter-detail-modal, #workshop-detail-modal')) return;
+      if (table.closest('#_kr-statement, #_kr-picker, #ci-modal, #_se-dlg, #_drog-list-modal, #counter-detail-modal, #workshop-detail-modal, #view-bakendi')) return;
       // Check if this table has STAÐA column
       var ths = table.querySelectorAll('th');
       var statusIdx = -1;
