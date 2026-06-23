@@ -101,7 +101,7 @@
   }
 
   // ── Data load ────────────────────────────────────────────────────────────
-  let _state = { month: null, all: [], filter: 'all' };
+  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'created_at', sortDir: 'desc' };
 
   function monthBounds(d) {
     const start = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -139,12 +139,48 @@
     return rows;
   }
 
+  // 2026-06-23 (#4 smálagfæring): free-text search + clickable column sort.
+  function searchMatch(s, q) {
+    if (!q) return true;
+    return [s.num, s.customer_nafn, s.greitt_med, s.starfsmadur, s.samtals]
+      .map(x => String(x == null ? '' : x).toLowerCase()).join(' ').includes(q);
+  }
+  function sortRows(rows) {
+    const k = _state.sortKey, dir = _state.sortDir === 'asc' ? 1 : -1;
+    const val = s => {
+      switch (k) {
+        case 'num':            return String(s.num || '');
+        case 'customer_nafn':  return String(s.customer_nafn || '').toLowerCase();
+        case 'greitt_med':     return String(s.greitt_med || '');
+        case 'tegund':         return s.is_credit ? 1 : 0;
+        case 'stada':          return s.is_credit ? 2 : (s.paid_at ? 0 : 1);
+        case 'samtals':        return s.is_credit ? -Math.abs(+s.samtals || 0) : (+s.samtals || 0);
+        default:               return String(s.created_at || '');
+      }
+    };
+    return rows.slice().sort((a, b) => {
+      const va = val(a), vb = val(b);
+      if (va < vb) return -dir;
+      if (va > vb) return dir;
+      // tiebreak: newest first (keeps "skjal most recent on top" intuitive)
+      return String(b.created_at || '').localeCompare(String(a.created_at || ''));
+    });
+  }
+  function sortArrow(key) {
+    if (_state.sortKey !== key) return '<span style="opacity:.3">↕</span>';
+    return _state.sortDir === 'asc' ? '▲' : '▼';
+  }
+  function th(key, label, align) {
+    return `<th class="_hr-sort" data-k="${key}" style="padding:9px 10px;text-align:${align || 'left'};font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;user-select:none;white-space:nowrap">${esc(label)} <span style="font-size:9px;font-weight:400">${sortArrow(key)}</span></th>`;
+  }
+
   function render() {
     const main = document.getElementById('hr-main');
     if (!main) return;
 
     const all = _state.all;
-    const rows = applyFilter(all);
+    const q = String(_state.search || '').trim().toLowerCase();
+    const rows = sortRows(applyFilter(all).filter(r => searchMatch(r, q)));
 
     // Totals computed against the FULL month, not the filter — gives a stable
     // picture of the month while the chips slice the visible list.
@@ -182,6 +218,7 @@
             <button class="_hr-prev" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>
             <div style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:140px;text-align:center">${esc(monthLabel)}</div>
             <button class="_hr-next" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>
+            <input class="_hr-search" type="text" placeholder="🔍 Leita…" value="${esc(_state.search)}" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;min-width:170px;margin-left:6px">
             <button class="_hr-csv" type="button" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#475569;margin-left:6px">📥 CSV</button>
           </div>
         </div>
@@ -208,13 +245,13 @@
         <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
           <table style="width:100%;border-collapse:collapse;font-size:13px">
             <thead><tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
-              <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Dags · Tími</th>
-              <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Skjal</th>
-              <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Viðskiptavinur</th>
-              <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Tegund</th>
-              <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Greiðslumáti</th>
-              <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Staða</th>
-              <th style="padding:9px 10px;text-align:right;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Upphæð</th>
+              ${th('created_at', 'Dags · Tími', 'left')}
+              ${th('num', 'Skjal', 'left')}
+              ${th('customer_nafn', 'Viðskiptavinur', 'left')}
+              ${th('tegund', 'Tegund', 'left')}
+              ${th('greitt_med', 'Greiðslumáti', 'left')}
+              ${th('stada', 'Staða', 'left')}
+              ${th('samtals', 'Upphæð', 'right')}
               <th style="padding:9px 10px"></th>
             </tr></thead>
             <tbody>
@@ -236,6 +273,21 @@
     main.querySelector('._hr-csv')?.addEventListener('click', exportCSV);
     main.querySelectorAll('._hr-chip').forEach(c => {
       c.addEventListener('click', () => { _state.filter = c.dataset.k; render(); });
+    });
+    main.querySelectorAll('._hr-sort').forEach(h => {
+      h.addEventListener('click', () => {
+        const k = h.dataset.k;
+        if (_state.sortKey === k) _state.sortDir = _state.sortDir === 'asc' ? 'desc' : 'asc';
+        else { _state.sortKey = k; _state.sortDir = (k === 'created_at' || k === 'samtals') ? 'desc' : 'asc'; }
+        render();
+      });
+    });
+    const _si = main.querySelector('._hr-search');
+    if (_si) _si.addEventListener('input', () => {
+      _state.search = _si.value;
+      render();
+      const el = document.querySelector('._hr-search');
+      if (el) { el.focus(); const n = el.value.length; try { el.setSelectionRange(n, n); } catch (_) {} }
     });
     main.querySelectorAll('._hr-view').forEach(b => {
       b.addEventListener('click', () => openInvoice(b.dataset.id));
