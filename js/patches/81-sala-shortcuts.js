@@ -1,53 +1,31 @@
-/* === SALA SHORTCUTS v2 ===
- * Adds a "🧾 Bókhald" link next to the cart header's "+ Eigin" button so
- * the user can jump straight to Bókhalds yfirlit without rummaging through
- * the sidebar. The earlier v1 floated this button on the .pos-banner — that
- * stopped looking clean once banner_style = 'mynd' (custom PNG) was added,
- * so the button now lives in the cart toolbar area where it doesn't fight
- * with the banner artwork.
+/* === SALA SHORTCUTS v3 — duplicate removed ===
+ * v1/v2 added a "🧾 Bókhald" shortcut button into the cart (KARFA) header,
+ * next to "+ Annað". pos.js now renders its OWN "Bókhald" button there
+ * (id=pos-bokhald → opens Bókhalds yfirlit), so this shortcut became a
+ * DUPLICATE (the black button that popped in ~1s after load, styled by the
+ * brunastal theme). Vefrýni 2026-06-23: Agnar flagged the double button.
+ *
+ * v3 no longer adds a button and actively REMOVES any "_sala_shortcut_by" that
+ * an older cached copy may have inserted — leaving the single native
+ * pos-bokhald button.
  */
 (() => {
   if (window.__salaShortcutsInstalled) return;
   window.__salaShortcutsInstalled = true;
 
-  function ensure() {
-    // Remove the v1 banner-floating button if any older version left one in place.
-    document.querySelectorAll('.pos-banner ._sala_shortcut_by').forEach(b => b.remove());
-
-    const addEigin = document.getElementById('pos-add-service');
-    if (!addEigin) return;
-    const header = addEigin.parentElement;
-    if (!header) return;
-    if (header.querySelector('._sala_shortcut_by')) return;
-
-    const btn = document.createElement('button');
-    btn.className = '_sala_shortcut_by';
-    btn.type = 'button';
-    btn.innerHTML = '🧾 Bókhald';
-    btn.title = 'Bókhalds yfirlit';
-    btn.style.cssText = 'background:#f1f5f9;color:#334155;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;margin-left:6px';
-    btn.addEventListener('click', () => {
-      // 2026-05-09 (F-3): App.switchView only flips the view's active
-      // class — it doesn't trigger Bókhalds yfirlit's init/loadAllSales,
-      // so the table stayed stuck on the static "Hleður sölum…"
-      // placeholder. BokhaldsYfirlit.open() is the proper entry point
-      // (patch 11) that calls switchToView → init → loadAllSales.
-      if (window.BokhaldsYfirlit && BokhaldsYfirlit.open) {
-        BokhaldsYfirlit.open();
-      } else if (window.App && App.switchView) {
-        App.switchView('bokhalds-yfirlit');
-      }
-    });
-    addEigin.insertAdjacentElement('afterend', btn);
+  function cleanup() {
+    document.querySelectorAll('._sala_shortcut_by').forEach(b => b.remove());
   }
 
-  ensure();
+  cleanup();
   document.addEventListener('view-shown', e => {
-    if (e && e.detail && e.detail.name === 'sala') setTimeout(ensure, 100);
+    if (e && e.detail && e.detail.name === 'sala') setTimeout(cleanup, 100);
   });
-  // Light retry chain for first paint
-  setTimeout(ensure, 500);
-  setTimeout(ensure, 1500);
-  console.log('[sala-shortcuts v2] installed');
+  // mirror the old retry chain so the duplicate is removed whenever it would
+  // previously have been (re-)added.
+  setTimeout(cleanup, 500);
+  setTimeout(cleanup, 1500);
+  setTimeout(cleanup, 2500);
+  console.log('[sala-shortcuts v3] duplicate Bókhald button removed');
 })();
-/* === END SALA SHORTCUTS v2 === */
+/* === END SALA SHORTCUTS === */
