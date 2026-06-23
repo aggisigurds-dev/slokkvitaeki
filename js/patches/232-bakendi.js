@@ -199,10 +199,78 @@
         '<td class="c"' + (r.n_unlinked > 0 ? ' style="color:#b45309;font-weight:600"' : '') + '>' + fmtNum(r.n_unlinked) + '</td>' +
         '<td class="c">' + fmtDate(r.last_insp) + '</td>' +
         '<td class="c">' + fmtDate(r.next_insp) + '</td>' +
-        '<td>' + badge(r.link_state) + '</td></tr>';
+        '<td style="white-space:nowrap">' + badge(r.link_state) +
+          (r.n_unlinked > 0 ? ' <button class="_bk-link-btn" data-client="' + esc(r.client || '') + '" title="Tengja ótengd úttæki við grunnskrá" style="margin-left:6px;padding:3px 9px;background:var(--brand,#0d6efd);color:#fff;border:none;border-radius:7px;font:inherit;font-size:11px;font-weight:700;cursor:pointer">🔗 Tengja</button>' : '') +
+        '</td></tr>';
     }).join('') || '<tr><td colspan="7" style="padding:18px;text-align:center;color:var(--ink3,#94a3b8)">Ekkert fannst.</td></tr>';
     if (rows.length > cap) tb.innerHTML += '<tr><td colspan="7" style="text-align:center;color:var(--ink3,#94a3b8);font-size:12px">Sýni ' + cap + ' af ' + fmtNum(rows.length) + '.</td></tr>';
     tb.querySelectorAll('[data-coid]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openCompany(a.getAttribute('data-coid')); }));
+    tb.querySelectorAll('._bk-link-btn').forEach(b => b.addEventListener('click', () => openLinkPicker(b.getAttribute('data-client'))));
+  }
+
+  // ── 2026-06-23: inline „Tengja" — link an orphan / name-only client string to
+  // a customers_base row; sets uttaeki.customer_base_id on all its UNLINKED tæki.
+  function openLinkPicker(clientStr) {
+    clientStr = clientStr || '';
+    const old = document.getElementById('_bk-link-modal'); if (old) old.remove();
+    const dlg = document.createElement('div');
+    dlg.id = '_bk-link-modal';
+    dlg.style.cssText = 'position:fixed;inset:0;z-index:100040;background:rgba(15,23,42,.55);display:flex;align-items:flex-start;justify-content:center;padding:40px 16px';
+    dlg.innerHTML =
+      '<div style="background:var(--surface,#fff);border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,.35);width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 80px);display:flex;flex-direction:column;overflow:hidden">' +
+        '<div style="padding:14px 18px;border-bottom:1px solid var(--brd,#e6eaf0);display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
+          '<div><div style="font-size:14px;font-weight:800;color:var(--ink1,#0f172a)">🔗 Tengja „' + esc(clientStr) + '"</div>' +
+            '<div style="font-size:11px;color:var(--ink3,#94a3b8);margin-top:2px">Veldu fyrirtæki/viðskiptavin úr grunnskrá — öll ÓTENGD úttæki með þennan client fá customer_base_id.</div></div>' +
+          '<button id="_bk-link-x" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--ink3,#94a3b8);line-height:1;flex-shrink:0">✕</button>' +
+        '</div>' +
+        '<div style="padding:14px 18px 8px"><input id="_bk-link-q" placeholder="🔎 Leita í grunnskrá (nafn eða kt)…" style="width:100%;border:1px solid var(--brd,#cbd5e1);border-radius:10px;padding:10px 13px;font:inherit;font-size:14px;box-sizing:border-box;color:var(--ink1,#0f172a);outline:none"></div>' +
+        '<div id="_bk-link-results" style="flex:1;overflow-y:auto;padding:4px 12px 14px"></div>' +
+      '</div>';
+    document.body.appendChild(dlg);
+    function close() { dlg.remove(); }
+    dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
+    dlg.querySelector('#_bk-link-x').addEventListener('click', close);
+    const q = dlg.querySelector('#_bk-link-q');
+    const res = dlg.querySelector('#_bk-link-results');
+    let timer = 0;
+    function doSearch() {
+      const term = q.value.trim();
+      if (term.length < 2) { res.innerHTML = '<div style="padding:16px;color:var(--ink3,#94a3b8);font-size:13px;text-align:center">Sláðu inn a.m.k. 2 stafi…</div>'; return; }
+      res.innerHTML = '<div style="padding:16px;color:var(--ink3,#94a3b8);font-size:13px;text-align:center">Leita…</div>';
+      const SB = getSB(); if (!SB) return;
+      const like = '%' + term.replace(/[%,]/g, ' ').trim() + '%';
+      SB.from('customers_base').select('id,nafn,kennitala').or('nafn.ilike.' + like + ',kennitala.ilike.' + like).limit(30).then(r => {
+        if (q.value.trim() !== term) return;
+        if (r.error) { res.innerHTML = '<div style="padding:16px;color:#b91c1c;font-size:13px">Villa: ' + esc(r.error.message) + '</div>'; return; }
+        const rows = r.data || [];
+        if (!rows.length) { res.innerHTML = '<div style="padding:16px;color:var(--ink3,#94a3b8);font-size:13px;text-align:center">Ekkert fannst í grunnskrá.</div>'; return; }
+        res.innerHTML = rows.map(c =>
+          '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--brd,#eef1f5);border-radius:9px;margin-bottom:6px">' +
+            '<div style="min-width:0"><div style="font-weight:700;color:var(--ink1,#0f172a);font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.nafn || '(nafnlaust)') + '</div>' +
+              '<div style="font-size:11.5px;color:var(--ink3,#94a3b8);font-variant-numeric:tabular-nums">' + (c.kennitala ? esc(c.kennitala) : 'engin kt') + '</div></div>' +
+            '<button class="_bk-pick" data-bid="' + esc(String(c.id)) + '" style="flex-shrink:0;padding:6px 13px;background:#16a34a;color:#fff;border:none;border-radius:8px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer">Velja</button>' +
+          '</div>'
+        ).join('');
+        res.querySelectorAll('._bk-pick').forEach(b => b.addEventListener('click', () => linkClientToBase(clientStr, b.getAttribute('data-bid'), close)));
+      });
+    }
+    q.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(doSearch, 220); });
+    q.value = clientStr;
+    doSearch();
+    setTimeout(() => { try { q.focus(); q.select(); } catch (_) {} }, 30);
+  }
+
+  async function linkClientToBase(clientStr, baseId, done) {
+    const SB = getSB(); if (!SB || !baseId) return;
+    try {
+      const r = await SB.from('uttaeki').update({ customer_base_id: baseId }).eq('client', clientStr).is('customer_base_id', null);
+      if (r.error) throw r.error;
+      if (window.Toast && Toast.show) Toast.show('🔗 Úttæki tengd við grunnskrá');
+      if (typeof done === 'function') done();
+      load();
+    } catch (e) {
+      alert('Villa við að tengja: ' + ((e && e.message) || e));
+    }
   }
 
   function tabRek() {
