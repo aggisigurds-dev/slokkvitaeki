@@ -258,9 +258,9 @@
     ).join('');
     return '<div class="bk-sech">Þekkt vandamál og tillögur</div>' + probs +
       '<div class="bk-sech" style="margin-top:22px">Vantar kennitölu — lifandi listi (' + fmtNum((state.missing || []).length) + ')</div>' +
-      '<p class="bk-note" style="margin:-2px 0 10px">Raðað eftir tækjafjölda — þeir sem eiga tæki (rukkun / skýrslur) eru efst.</p>' +
+      '<p class="bk-note" style="margin:-2px 0 10px">Raðað eftir tækjafjölda — þeir sem eiga tæki (rukkun / skýrslur) eru efst. Sláðu kennitölu í reitinn og ýttu <b>Vista</b> til að laga beint.</p>' +
       '<input class="bk-search" id="_bk-miss-q" placeholder="🔎 Leita að nafni eða netfangi…" value="' + esc(state.missingQ) + '">' +
-      '<div class="bk-panel"><table><thead><tr><th>Heimild</th><th>Nafn</th><th class="c">Tæki</th><th>Netfang</th><th>Sími</th><th class="c">Skráð</th></tr></thead><tbody id="_bk-miss-rows"></tbody></table></div>';
+      '<div class="bk-panel"><table><thead><tr><th>Heimild</th><th>Nafn</th><th class="c">Tæki</th><th>Netfang</th><th>Sími</th><th class="c">Skráð</th><th class="c">Setja kennitölu</th></tr></thead><tbody id="_bk-miss-rows"></tbody></table></div>';
   }
   function paintMissRows() {
     const tb = document.getElementById('_bk-miss-rows'); if (!tb) return;
@@ -286,10 +286,57 @@
       const unitCell = '<td class="c" style="' + (units > 0 ? 'font-weight:700;color:#b45309' : 'color:var(--ink3,#94a3b8)') + '">' + (units > 0 ? fmtNum(units) : '·') + '</td>';
       return '<tr><td>' + srcBadge(r.src) + '</td><td>' + name + '</td>' + unitCell +
         '<td>' + esc(r.netfang || '—') + '</td><td>' + esc(r.simi || '—') + '</td>' +
-        '<td class="c">' + fmtDate(r.created_at) + '</td></tr>';
-    }).join('') || '<tr><td colspan="6" style="padding:18px;text-align:center;color:var(--ink3,#94a3b8)">Ekkert fannst — allt með kt. 🎉</td></tr>';
-    if (rows.length > cap) tb.innerHTML += '<tr><td colspan="6" style="text-align:center;color:var(--ink3,#94a3b8);font-size:12px">Sýni ' + cap + ' af ' + fmtNum(rows.length) + '.</td></tr>';
+        '<td class="c">' + fmtDate(r.created_at) + '</td>' +
+        '<td class="c" style="white-space:nowrap">' +
+          '<input class="_bk-kt-inp" data-src="' + esc(r.src) + '" data-id="' + esc(String(r.id)) + '" placeholder="000000-0000" maxlength="11" inputmode="numeric" style="width:108px;padding:5px 8px;border:1px solid var(--brd,#cbd5e1);border-radius:7px;font:inherit;font-size:12.5px;font-variant-numeric:tabular-nums">' +
+          '<button class="_bk-kt-save" data-src="' + esc(r.src) + '" data-id="' + esc(String(r.id)) + '" style="margin-left:5px;padding:5px 10px;background:#16a34a;color:#fff;border:none;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">Vista</button>' +
+        '</td></tr>';
+    }).join('') || '<tr><td colspan="7" style="padding:18px;text-align:center;color:var(--ink3,#94a3b8)">Ekkert fannst — allt með kt. 🎉</td></tr>';
+    if (rows.length > cap) tb.innerHTML += '<tr><td colspan="7" style="text-align:center;color:var(--ink3,#94a3b8);font-size:12px">Sýni ' + cap + ' af ' + fmtNum(rows.length) + '.</td></tr>';
     tb.querySelectorAll('[data-coid]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); openCompany(a.getAttribute('data-coid')); }));
+    // 2026-06-23: inline kennitölu-fix — type kt + Vista writes to the source table.
+    tb.querySelectorAll('._bk-kt-inp').forEach(inp => {
+      inp.addEventListener('input', () => {
+        let v = inp.value.replace(/[^0-9]/g, '').slice(0, 10);
+        if (v.length > 6) v = v.slice(0, 6) + '-' + v.slice(6);
+        inp.value = v;
+      });
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { const b = inp.parentNode.querySelector('._bk-kt-save'); if (b) saveMissingKt(b); }
+      });
+    });
+    tb.querySelectorAll('._bk-kt-save').forEach(b => b.addEventListener('click', () => saveMissingKt(b)));
+  }
+
+  // Write a typed kennitala straight to the source table (fyrirtaeki /
+  // vidskiptavinir / customers_base) and drop the row from the live list.
+  async function saveMissingKt(btn) {
+    const SB = getSB(); if (!SB) { alert('Enginn gagnagrunnur tengdur.'); return; }
+    const src = btn.getAttribute('data-src');
+    const id = btn.getAttribute('data-id');
+    const tr = btn.closest('tr');
+    const inp = tr && tr.querySelector('._bk-kt-inp');
+    const raw = ((inp && inp.value) || '').replace(/[^0-9]/g, '');
+    if (raw.length !== 10) { alert('Kennitala þarf að vera 10 tölustafir.'); if (inp) inp.focus(); return; }
+    const ktDashed = raw.slice(0, 6) + '-' + raw.slice(6);
+    const table = (src === 'fyrirtaeki' || src === 'vidskiptavinir' || src === 'customers_base') ? src : null;
+    if (!table) { alert('Óþekkt heimild: ' + src); return; }
+    btn.disabled = true; const old = btn.textContent; btn.textContent = '…';
+    try {
+      const r = await SB.from(table).update({ kennitala: ktDashed }).eq('id', id);
+      if (r.error) throw r.error;
+      state.missing = (state.missing || []).filter(x => !(String(x.id) === String(id) && x.src === src));
+      if (state.overview) {
+        if (src === 'fyrirtaeki' && state.overview.fyrirtaeki_no_kt > 0) state.overview.fyrirtaeki_no_kt--;
+        else if (src === 'vidskiptavinir' && state.overview.vidskiptavinir_no_kt > 0) state.overview.vidskiptavinir_no_kt--;
+        else if (src === 'customers_base' && state.overview.customers_base_no_kt > 0) state.overview.customers_base_no_kt--;
+      }
+      if (window.Toast && Toast.show) Toast.show('✓ Kennitala vistuð: ' + ktDashed);
+      render();
+    } catch (e) {
+      btn.disabled = false; btn.textContent = old;
+      alert('Villa við að vista kennitölu: ' + ((e && e.message) || e));
+    }
   }
 
   function errHtml() {

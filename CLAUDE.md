@@ -310,7 +310,7 @@ Admin / „backend" page over the data model. View `view-bakendi`, deep-link
 **Data: four read-only Postgres views** (created 2026-06-22, `SELECT` to `anon`):
 `v_bakendi_overview` · `v_bakendi_uttaeki_clients` · `v_bakendi_rekstrarfelog` ·
 `v_bakendi_missing_kt`. The frontend only does `DB.sb.from(view).select('*')` —
-no writes, no schema change.
+reads stay view-based — but **2026-06-23** the „Vantar kennitölu" list (Endurhönnun tab) is inline-editable: type a kt + „Vista" → `saveMissingKt` writes it to the source table (`fyrirtaeki`/`vidskiptavinir`/`customers_base`, `update({kennitala}).eq('id',…)`) and drops the row + decrements the count. No schema change.
 
 Wiring mirrors kerfi-registry (221): new `view-bakendi` div, cloned sidebar
 button, `App.switchView` patched for the `#bakendi` deep-link + boot re-assert.
