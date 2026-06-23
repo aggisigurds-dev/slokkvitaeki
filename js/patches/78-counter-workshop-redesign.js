@@ -199,6 +199,14 @@
     const bg = isReady ? '#f0fdf4' : '#fff';
     const border = isReady ? '#bbf7d0' : '#e5e7eb';
     const nameCol = isReady ? '#065f46' : '#111';
+    // 2026-06-23: collapsed Tilbúin groups get a "Sótt ✓" button too (matches
+    // the single readyCard). Reuses Counter.markCollected, which opens the
+    // pickup-checkout for the whole sale (all -V units), so one click on a
+    // multi-tæki single-sale group collects them all. stopPropagation so the
+    // button doesn't also toggle the expander.
+    const groupCollect = isReady
+      ? `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${co.jobs[0].id})" style="flex-shrink:0;align-self:center" title="Sækja — opnar afgreiðslu">Sótt ✓</button>`
+      : '';
     return `<div onclick="Counter.toggleCo('${safeKey}')" style="margin-bottom:6px;background:${bg};border:1px solid ${border};border-radius:10px;cursor:pointer">` +
       '<div style="padding:10px 12px;display:flex;align-items:center;gap:8px">' +
         `<span style="color:#64748b;font-size:13px;width:14px">${caret}</span>` +
@@ -206,6 +214,7 @@
           `<div style="font-size:13px;font-weight:600;color:${nameCol};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(co.name)}</div>` +
           `<div style="font-size:11px;color:#64748b">${co.jobs.length} verk · ${co.totalUnits} tæki</div>` +
         '</div>' +
+        groupCollect +
       '</div>' +
       inner +
     '</div>';
