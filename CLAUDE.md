@@ -329,8 +329,22 @@ birtist strax í „Skjöl & viðhengi" árstöflunni (patch 199), í úttektars
 - **Skráarheiti:** `<Fyrirtæki> - <kt> - <ár> - úttektarskýrsla.pdf` ·
   `<Fyrirtæki> - <kt> - <ár> - R-xxxxxx.pdf`.
 - **Reikningurinn** er teiknaður í patch 233 (`window.UttektInvoicePdf.saveForSale(coId, sale)`)
-  — sækir nafn+kt úr `fyrirtaeki`, línur/tölur úr `solur`-röðinni; seljandi
-  Slökkvitæki ehf kt 600508-0400.
+  sem **vektor-eftirmynd af prent-forskoðuninni** (SalaInvoice): logo + seljandi
+  (branding úr `AppSettings`), kaupandi m/ heimilisfang+kt, reiknings-haus
+  (dags./greiðsluskilmáli/starfsmaður), línutafla (Vörunr./Lýsing/Fjöldi/Einingav./
+  Upphæð/VSK-kóði) og „Samtals fyrir Vsk" + VSK-sundurliðun per taxta + „Til
+  greiðslu" + reglugerðar-fótur. Sækir nafn+kt+**heimilisfang** úr `fyrirtaeki`,
+  línur/tölur úr `solur`-röðinni; seljandi Slökkvitæki ehf kt 600508-0400.
+  **html2canvas-myndataka var vísvitandi EKKI notuð** — hún teiknar autt í vafra
+  Agnars (sjá patch 168), svo vektor-leiðin er notuð (prentast í öllum vöfrum,
+  valanlegur texti, lítil skrá).
+- **Totals-leiðrétting (patch 165 `finalizeVisit`):** salan er nú vistuð með
+  `upphaed_an_vsk`/`vsk_upphaed`/`samtals` **reiknuð beint úr `linur`**
+  (`totalsFromLinur` = sama stærðfræði og SalaInvoice prentar), EKKI lengur skafin
+  úr patch-129 DOM-inu (`readTotalsFromSection` fjarlægt). Eldra skröpið setti VSK-
+  upphæðina sem heildartölu (vsk_upphaed=0, samtals = án-vsk × 0,24) — sást á
+  Bókhalds-yfirliti; 7 raðir (R-000356/357/358/363/365/371/372) voru líka
+  leiðréttar í gagnagrunni úr `linur`.
 - Patch 168 fær líka **rétt skráarheiti á handvirka „💾 Vista" takkanum** + sjálfvirka
   vistun við opnun, með **tvíritunarvörn** (sleppir sjálfvirkri vistun ef
   úttektarskýrsla ársins er þegar til; reikningur ef R-númerið er þegar vistað).

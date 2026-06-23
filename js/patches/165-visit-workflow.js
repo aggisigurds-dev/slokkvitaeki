@@ -102,33 +102,26 @@
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  // Read the bottom-row totals from patch 129's section. Hacky but avoids
-  // re-computing — patch 129 already knows the right answer.
-  function readTotalsFromSection() {
-    const section = document.getElementById('_ctc-section');
-    if (!section) return null;
-    const parseKr = txt => parseInt(String(txt).replace(/[^0-9]/g, ''), 10) || 0;
-    // 2026-06: patch 129 moved the totals out of the (clippable) <tfoot> into a
-    // full-width summary block with stable ids — read those first.
-    const subEl = section.querySelector('#_ctc-sum-subex');
-    const vskEl = section.querySelector('#_ctc-sum-vsk');
-    const totEl = section.querySelector('#_ctc-sum-total');
-    if (subEl && totEl) {
-      return {
-        subEx: parseKr(subEl.textContent),
-        vsk: parseKr(vskEl ? vskEl.textContent : '0'),
-        total: parseKr(totEl.textContent)
-      };
-    }
-    // Legacy fallback: old <tfoot> (Án vsk / Afsláttur / VSK / SAMTALS → 8 cells).
-    const cells = section.querySelectorAll('tfoot td');
-    if (cells.length < 6) return null;
-    const n = cells.length;
-    return {
-      subEx: parseKr(cells[1].textContent),
-      vsk: parseKr(cells[n >= 8 ? 5 : 3].textContent),
-      total: parseKr(cells[n >= 8 ? 7 : 5].textContent)
-    };
+  // Canonical invoice totals computed straight from the line items — the SAME
+  // math SalaInvoice uses to PRINT the bill (subEx = Σ qty·einingaverð,
+  // vsk = Σ línu·vsk%, samtals = subEx + vsk). Storing these on the sale keeps
+  // the saved totals identical to the printed/PDF invoice.
+  //
+  // Replaces the old DOM-scrape (readTotalsFromSection) that read patch 129's
+  // summary block: in a since-replaced layout it captured the VSK figure as the
+  // grand total, so heimsóknir were saved with vsk_upphaed=0 and
+  // samtals = án-vsk × 0,24 (the VAT amount) instead of án-vsk + vsk.
+  function totalsFromLinur(linur) {
+    let subEx = 0, vsk = 0;
+    (linur || []).forEach(l => {
+      const qty  = Number(l.qty) || 0;
+      const unit = Number(l.unit_price_ex_vat) || 0;
+      const pct  = (l.vsk_pct == null ? 24 : Number(l.vsk_pct)) || 0;
+      const lineEx = qty * unit;
+      subEx += lineEx;
+      vsk   += lineEx * pct / 100;
+    });
+    return { subEx: Math.round(subEx), vsk: Math.round(vsk), total: Math.round(subEx + vsk) };
   }
 
   // Pull all visible unit-rows + their Áætlað choice. Returns line summaries
@@ -262,13 +255,15 @@
       return;
     }
 
-    const totals = readTotalsFromSection();
     const today = todayIso();
     const next = addMonthsIso(today, 12);
 
     const sb = window.DB.sb;
     const costRows = scrapeCostRows();
     const linur = buildLinur(visit, costRows);
+    // Totals come from the invoice lines themselves (not a DOM scrape) so the
+    // saved sale always matches the printed reikningur. See totalsFromLinur.
+    const tot = totalsFromLinur(linur);
 
     // Fetch customer info so the preview invoice has kt + address.
     let custData = null;
@@ -278,9 +273,9 @@
     } catch (_) {}
 
     // Build a synthetic sale for the preview render.
-    const subEx = totals ? totals.subEx : 0;
-    const vsk   = totals ? totals.vsk   : 0;
-    const total = totals ? totals.total : 0;
+    const subEx = tot.subEx;
+    const vsk   = tot.vsk;
+    const total = tot.total;
     // 2026-05-20: starfsmadur now comes from the Skoðunaraðili field on the
     // company page (e.g. "Elías"). Falls back to "Kassi" if not set.
     const starfsmadur = visit.skodunaradili || 'Kassi';
@@ -303,7 +298,7 @@
       ? window.SlokkVisitDate.get(coId) : null;
 
     showPreview(previewSale, custData, {
-      coId, coNafn, visit, linur, totals, today, next, sb, starfsmadur, vd
+      coId, coNafn, visit, linur, today, next, sb, starfsmadur, vd
     });
   }
 
@@ -379,17 +374,16 @@
   }
 
   // ── Actual save — runs only after the user confirms in the preview ─────
-  async function finalizeVisit({ coId, coNafn, visit, linur, totals, today, next, sb, starfsmadur, vd }) {
+  async function finalizeVisit({ coId, coNafn, visit, linur, today, next, sb, starfsmadur, vd }) {
     // 1. Bump last_insp + next_insp on all serviced units.
     const updateRes = await sb.from('uttaeki')
       .update({ last_insp: today, next_insp: next })
       .in('id', visit.servicedIds);
     if (updateRes.error) throw updateRes.error;
 
-    // 2. Insert sale row.
-    const subEx = totals ? totals.subEx : 0;
-    const vsk   = totals ? totals.vsk   : 0;
-    const total = totals ? totals.total : 0;
+    // 2. Insert sale row. Totals are derived from the line items (see
+    //    totalsFromLinur) so vsk_upphaed/samtals always match the printed bill.
+    const { subEx, vsk, total } = totalsFromLinur(linur);
     let saleId = null;
     try {
       const ins = await sb.from('solur').insert({
