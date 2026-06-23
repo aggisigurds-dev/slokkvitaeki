@@ -444,8 +444,10 @@
     const thead = '<thead><tr>' + cols.map(col => {
       const al = col.align === 'right' ? 'text-align:right;' : '';
       if (col.sortable === false) return `<th style="${al}"></th>`;
-      const ar = st.key === col.key ? (st.dir > 0 ? ' ▲' : ' ▼') : '';
-      return `<th class="th-sort" data-key="${esc(col.key)}" style="cursor:pointer;white-space:nowrap;${al}">${esc(col.label)}<span style="color:#1d4ed8;font-size:10px">${ar}</span></th>`;
+      const _act = st.key === col.key;
+      const ar = _act ? (st.dir > 0 ? ' ▲' : ' ▼') : '';
+      const arHtml = _act ? `<span style="color:#1d4ed8;font-size:10px">${ar}</span>` : `<span style="color:#cbd5e1;font-size:9px"> ⇅</span>`;
+      return `<th class="th-sort" data-key="${esc(col.key)}" style="cursor:pointer;white-space:nowrap;${al}">${esc(col.label)}${arHtml}</th>`;
     }).join('') + '</tr></thead>';
     return '<table>' + thead + '<tbody>' + sorted.map(rowFn).join('') + '</tbody></table>';
   }

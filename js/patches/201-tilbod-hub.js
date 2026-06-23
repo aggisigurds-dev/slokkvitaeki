@@ -406,7 +406,7 @@
     const main = document.getElementById('tilbodhub-main'); if (!main) return;
     applyTheme();
     const forms = allForms();
-    const btn = (id, c, t) => `<button id="${id}" type="button" style="padding:11px 16px;border:none;border-radius:9px;background:${c};color:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.12)">${t}</button>`;
+    const btn = (id, c, t) => `<button id="${id}" type="button" style="padding:11px 16px;border:none;border-radius:9px;background:${c};color:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:700;box-shadow:0 0 14px -4px rgba(160,16,16,.5),0 2px 8px rgba(0,0,0,.22)">${t}</button>`;
     main.innerHTML = `<div style="max-width:1100px;margin:0 auto;padding:22px">
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:6px">
         <div><h1 style="margin:0;font-size:22px;color:var(--th-dark);display:flex;align-items:center;gap:10px">📑 Tilboð &amp; samningar</h1>
@@ -417,10 +417,10 @@
         </div>
       </div>
       <div style="display:flex;gap:10px;flex-wrap:wrap;margin:14px 0 20px">
-        ${btn('_th-new-bk', 'var(--th-gb)', '🔥 Nýtt brunakerfi-tilboð')}
-        ${btn('_th-new-sl', 'var(--th-gb)', '🧯 Nýtt slökkvitæki-tilboð')}
-        ${btn('_th-new-sv', 'var(--th-gb)', '🏷 Nýtt sérverð')}
-        ${btn('_th-new-mn', 'var(--th-gb)', '📜 Nýr þjónustusamningur')}
+        ${btn('_th-new-bk', 'linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102)', '🔥 Nýtt brunakerfi-tilboð')}
+        ${btn('_th-new-sl', 'linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102)', '🧯 Nýtt slökkvitæki-tilboð')}
+        ${btn('_th-new-sv', 'linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102)', '🏷 Nýtt sérverð')}
+        ${btn('_th-new-mn', 'linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102)', '📜 Nýr þjónustusamningur')}
       </div>
       <a href="https://docs.google.com/spreadsheets/d/1g36r9NL8bcKZOweav4NSRy0rl6zTdhVY/edit?usp=sharing&ouid=104349985258847227699&rtpof=true&sd=true" target="_blank" rel="noopener" style="display:flex;align-items:center;gap:11px;text-decoration:none;background:#fff;border:1px solid var(--th-tintb);border-left:4px solid var(--th-primary);border-radius:10px;padding:12px 16px;margin-bottom:18px;max-width:520px;box-shadow:0 1px 3px rgba(0,0,0,.05)">
         <span style="font-size:21px">📊</span>

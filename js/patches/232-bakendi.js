@@ -364,7 +364,7 @@
       P + '.bk-note{font-size:12px;color:var(--ink3,#94a3b8);margin:10px 0 0}',
       P + '.bk-panel{background:var(--surface,#fff);border:1px solid var(--brd,#e6eaf0);border-radius:13px;overflow:hidden}',
       P + 'table{width:100%;border-collapse:collapse;font-size:13px}',
-      P + 'th{background:var(--surface2,#f8fafc);color:var(--ink3,#94a3b8);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:9px 13px;border-bottom:1px solid var(--brd,#e6eaf0);white-space:nowrap}',
+      P + 'th{background:var(--surface2,#f8fafc);color:var(--ink2,#475569);font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;text-align:left;padding:9px 13px;border-bottom:1px solid var(--brd,#e6eaf0);white-space:nowrap}',
       P + 'th.c,' + P + 'td.c{text-align:center}',
       P + 'th.r,' + P + 'td.r{text-align:right}',
       P + 'td{padding:8px 13px;border-top:1px solid var(--brd,#eef1f5);vertical-align:middle;color:var(--ink2,#475569)}',

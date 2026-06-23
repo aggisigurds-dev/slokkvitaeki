@@ -1116,10 +1116,10 @@
     const s = document.createElement('style');
     s.id = '_ars-status-css';
     s.textContent =
-      // 2026-06-20: compact checkmark toggle (grey → blue) instead of the large
-      // "✓ Í vinnslu" text pill. Off = grey ✓ (hover-revealed, markable);
-      // on = blue ✓ (the "Í skýrslugerð" status pill is hidden for this state).
-      '._ars-mark{opacity:0;width:26px;height:26px;flex:none;display:inline-flex;align-items:center;justify-content:center;'
+      // 2026-06-20: compact checkmark toggle (grey → blue). 2026-06-23 (vefrýni):
+      // always-visible grey ✓ (discoverable); click → blue ✓ + the status pill
+      // flips to "Í vinnslu"; unchecking reverts to the normal status pill.
+      '._ars-mark{opacity:.6;width:26px;height:26px;flex:none;display:inline-flex;align-items:center;justify-content:center;'
       + 'font:800 14px/1 inherit;color:#9aa3af;background:#fff;border:1.5px solid #cbd5e1;border-radius:50%;cursor:pointer;'
       + 'transition:opacity .15s,color .15s,background .15s,border-color .15s,box-shadow .15s}'
       + 'tr._ars-row:hover ._ars-mark,._ars-mark:focus-visible{opacity:1}'
@@ -1206,7 +1206,7 @@
               const aminning = cleanAminning(ars.aminning);
               const stState = isDone ? 'done' : isFieldOnly ? 'work' : isSkipped ? 'skip' : isOverdue ? 'over' : 'queue';
               const stLabel = isDone ? ('Skoðað ' + curYear)
-                : isFieldOnly ? 'Í skýrslugerð'
+                : isFieldOnly ? 'Í vinnslu'
                 : isSkipped ? ("Sleppt '" + String(lastYr).slice(-2))
                 : isOverdue ? 'Á eftir'
                 : 'Á dagskrá';
@@ -1237,7 +1237,7 @@
                   <td style="padding:8px 11px">
                     <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
                       ${markBtn}
-                      ${stState === 'work' ? '' : statusPill(stState, stLabel, stTitle)}
+                      ${statusPill(stState, stLabel, stTitle)}
                     </div>
                   </td>
                 </tr>

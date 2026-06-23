@@ -166,6 +166,7 @@
       }
       #${VIEW_ID} .by-table thead th:hover { background: #f1f5f9; }
       #${VIEW_ID} .by-table th .arr { color: #94a3b8; margin-left: 4px; font-size: 10px; }
+      #${VIEW_ID} .by-table th[data-sort] .arr:empty::after { content: '⇅'; color: #cbd5e1; }
       #${VIEW_ID} .by-table th.sorted .arr { color: #2563eb; }
       #${VIEW_ID} .by-table th.num-col { text-align: right; }
       #${VIEW_ID} .by-table tbody td {
@@ -296,7 +297,7 @@
                   <th data-sort="ex" class="num-col">Án VSK<span class="arr"></span></th>
                   <th data-sort="vsk" class="num-col">VSK<span class="arr"></span></th>
                   <th data-sort="total" class="num-col">Samtals<span class="arr"></span></th>
-                  <th data-sort="payment">Greitt</th>
+                  <th data-sort="payment">Greitt<span class="arr"></span></th>
                 </tr>
               </thead>
               <tbody id="by-tbody">
