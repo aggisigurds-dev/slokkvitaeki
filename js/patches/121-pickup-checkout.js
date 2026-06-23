@@ -92,6 +92,11 @@
 
     // Async: fetch the original sale row
     fetchSaleByNum(saleNum).then(sale => {
+      // 2026-06-23: seed the editable "Athugasemd á reikning" from the sale's
+      // own note (print ON by default). Done here (once per open) so re-renders
+      // don't clobber the operator's edits.
+      pickupSaleNote = extractSaleNote(sale && sale.athugasemdir);
+      pickupPrintNote = true;
       renderPickupModal(job, sale, allUnits);
     });
   }
@@ -102,6 +107,19 @@
   // before the draft flips to final. Both reset to defaults on modal close.
   let pickupDiscountPct = 0;   // 0–100 (%), scales every line's unit_price
   let pickupNote = '';         // free-text athugasemd appended to audit trail
+  // 2026-06-23: the sale's OWN athugasemd (typed in KARFA, e.g. "Beiðnisnúmer
+  // nr 9847265"). Surfaced in the Sótt window so the operator can edit it and
+  // tick whether it prints on the reikningur (left side, under the customer).
+  let pickupSaleNote = '';
+  let pickupPrintNote = true;  // checkbox default ON
+
+  // Pull the ORIGINAL operator note out of a sale's athugasemd, dropping any
+  // pickup-audit tokens appended on a previous Sótt (Kt:/[Sótt …]/Greiðsla: …).
+  function extractSaleNote(raw) {
+    const s = String(raw == null ? '' : raw).replace(/\r/g, '');
+    const i = s.search(/\n\s*Kt:|\[Sótt|\nGreiðsla:|\nViðbót:|\nAfsláttur:|\nEkki afhent:|\n?\[20\d\d-\d\d-\d\d/);
+    return (i >= 0 ? s.slice(0, i) : s).trim();
+  }
 
   function renderPickupModal(job, sale, unitsCtx) {
     let dlg = document.getElementById('_pkc-dialog');
@@ -187,6 +205,8 @@
       // next pickup starts with a clean slate (no leaked discount/note).
       pickupDiscountPct = 0;
       pickupNote = '';
+      pickupSaleNote = '';
+      pickupPrintNote = true;
       try { delete window._pkcRefresh; } catch(_){}
     }
     dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
@@ -252,6 +272,18 @@
         html += '<div style="padding:20px;text-align:center;color:#94a3b8;font-size:13px;border:1px dashed #cbd5e1;border-radius:8px">Engin tæki á þessari verkbeiðni</div>';
       }
       html += '</div>';
+
+      // 2026-06-23: sale note → prints on the reikningur (left, under customer).
+      // The athugasemd typed in KARFA; editable here, the checkbox decides if it
+      // prints (handed to SalaInvoice as vegnaRaw at print time).
+      html += '<div style="margin-bottom:14px">' +
+        '<label style="display:flex;align-items:center;gap:8px;margin-bottom:6px;cursor:pointer">' +
+          '<input type="checkbox" id="_pkc-printnote"' + (pickupPrintNote ? ' checked' : '') + ' style="width:17px;height:17px;cursor:pointer;flex-shrink:0">' +
+          '<span style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">Athugasemd á reikning</span>' +
+        '</label>' +
+        '<textarea id="_pkc-salenote" rows="2" placeholder="t.d. Beiðnisnúmer nr 9847265" style="width:100%;padding:8px 11px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box;resize:vertical">' + esc(pickupSaleNote) + '</textarea>' +
+        '<div style="font-size:10px;color:#94a3b8;margin-top:3px">Hakað → prentast vinstra megin á reikningnum, undir viðskiptavininn.</div>' +
+      '</div>';
 
       // ── Section 2: Replacement / extra products to add ──────────────────
       html += '<div style="margin-bottom:14px"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
@@ -373,6 +405,11 @@
       if (noteInp) {
         noteInp.addEventListener('input', () => { pickupNote = noteInp.value; });
       }
+      // 2026-06-23: editable sale-note + "prentast á reikning" checkbox.
+      const saleNoteInp = body.querySelector('#_pkc-salenote');
+      if (saleNoteInp) saleNoteInp.addEventListener('input', () => { pickupSaleNote = saleNoteInp.value; });
+      const printChk = body.querySelector('#_pkc-printnote');
+      if (printChk) printChk.addEventListener('change', () => { pickupPrintNote = printChk.checked; });
     }
 
     function calcTotals() {
@@ -486,12 +523,15 @@
         pickupDiscountPct = 0;
         pickupNote = '';
         const saleNumForPrint = parentSaleNum(job.num);
+        // 2026-06-23: capture the printable sale-note + checkbox BEFORE close()
+        // resets the modal state; '' means "don't print a vegna line".
+        const printVegna = pickupPrintNote ? String(pickupSaleNote || '').trim() : '';
         close();
         if (window.Toast && Toast.show) Toast.show('✓ Sótt og selt — ' + fmtKr(t.grand));
         // 2026-05-12 (#9): After pickup, offer to print the receipt. The sale
         // was just updated with final linur + paid_at, so we re-fetch and
         // hand it to SalaInvoice.renderFromSale (same template as Sala).
-        setTimeout(() => offerReceiptPrint(saleNumForPrint), 400);
+        setTimeout(() => offerReceiptPrint(saleNumForPrint, printVegna), 400);
       } catch (e) {
         finalBtn.disabled = false;
         finalBtn.textContent = '✓ Klára sölu og afhenda';
@@ -800,7 +840,7 @@
   // ── 2026-05-12 (#9): Receipt print prompt after pickup ──────────────────
   // Shows a small dialog with "🖨 Prenta kvittun" + "Sleppa" so the user can
   // hand the customer a receipt right after the Sótt-flow completes.
-  async function offerReceiptPrint(saleNum) {
+  async function offerReceiptPrint(saleNum, vegnaText) {
     const SB = getSB();
     if (!SB || !saleNum) return;
     let sale = null;
@@ -847,7 +887,13 @@
           }
         } catch (_) {}
       }
-      try { SalaInvoice.renderFromSale(win, sale, cust); } catch (e) { alert('Villa: ' + (e.message || e)); }
+      // 2026-06-23: print the operator's sale-note (vegnaText) verbatim under
+      // the customer block when "Athugasemd á reikning" was left checked. Clear
+      // the sale's athugasemd for printing so audit tokens / the auto-vegna
+      // don't also appear (vegnaText='' → no note line at all).
+      const printSale = Object.assign({}, sale, { athugasemdir: '' });
+      try { SalaInvoice.renderFromSale(win, printSale, cust, { vegnaRaw: vegnaText || '' }); }
+      catch (e) { alert('Villa: ' + (e.message || e)); }
       closePrompt();
     }
     dlg.querySelector('#_pkc-print-go').addEventListener('click', doPrint);
