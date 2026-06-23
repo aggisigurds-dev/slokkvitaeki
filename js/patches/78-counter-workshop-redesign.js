@@ -31,6 +31,20 @@
   // Detail views still get the full num via DB.getJob(id).
   function dnum(n) { return esc(String(n == null ? '' : n).replace(/-V\d+$/, '')); }
   function fmtKr(n) { return Math.round(Number(n) || 0).toLocaleString('is-IS') + ' kr'; }
+  // 2026-06-23: date shown on each Afgreiðsla card. Reuse U.fd if present,
+  // else format YYYY-MM-DD → DD.MM.YYYY. jobDate uses the received (dropoff)
+  // date, falling back to created_at; groupDate = earliest in a collapsed group.
+  function fmtD(d) {
+    if (!d) return '';
+    if (window.U && typeof U.fd === 'function') { try { const s = U.fd(d); if (s) return s; } catch (_) {} }
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(d));
+    return m ? m[3] + '.' + m[2] + '.' + m[1] : String(d);
+  }
+  function jobDate(j) { return fmtD(j && (j.dropoff || j.created_at)); }
+  function groupDate(jobs) {
+    const ds = (jobs || []).map(j => j && (j.dropoff || j.created_at)).filter(Boolean).sort();
+    return ds.length ? fmtD(ds[0]) : '';
+  }
   // m. vsk line total for a stored spare part {qty,verd_an_vsk,vsk_prosenta}
   function partTotal(p) { return (+p.qty || 1) * (+p.verd_an_vsk || 0) * (1 + (+p.vsk_prosenta || 24) / 100); }
 
@@ -150,7 +164,7 @@
       '<div style="min-width:0;flex:1">' +
         `<div style="font-family:var(--mono,monospace);font-size:11px;color:#94a3b8;font-weight:600">${dnum(j.num)}</div>` +
         `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
-        `<div style="font-size:11px;color:#64748b">${j.units ? j.units.length : 0} slökkvitæki ${badge}</div>` +
+        `<div style="font-size:11px;color:#64748b">${j.units ? j.units.length : 0} slökkvitæki${jobDate(j) ? ' · ' + jobDate(j) : ''} ${badge}</div>` +
       '</div>' +
     '</div>';
   }
@@ -160,7 +174,7 @@
       '<div class="cw-rcard-info" onclick="Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
         `<div style="font-family:var(--mono,monospace);font-size:11px;color:#059669;font-weight:600">${dnum(j.num)}</div>` +
         `<div class="cw-rcard-name" style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
-        `<div style="font-size:11px;color:#059669">${live(j.units).length} slökkvitæki</div>` +
+        `<div style="font-size:11px;color:#059669">${live(j.units).length} slökkvitæki${jobDate(j) ? ' · ' + jobDate(j) : ''}</div>` +
       '</div>' +
       `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;margin-right:6px;padding:4px 9px;background:#fff;border:1px solid #fbbf24;color:#92400e;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
       `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt ✓</button>` +
@@ -212,7 +226,7 @@
         `<span style="color:#64748b;font-size:13px;width:14px">${caret}</span>` +
         '<div style="min-width:0;flex:1">' +
           `<div style="font-size:13px;font-weight:600;color:${nameCol};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(co.name)}</div>` +
-          `<div style="font-size:11px;color:#64748b">${co.jobs.length} verk · ${co.totalUnits} tæki</div>` +
+          `<div style="font-size:11px;color:#64748b">${co.jobs.length} verk · ${co.totalUnits} tæki${groupDate(co.jobs) ? ' · ' + groupDate(co.jobs) : ''}</div>` +
         '</div>' +
         groupCollect +
       '</div>' +
