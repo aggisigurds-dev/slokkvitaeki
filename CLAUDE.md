@@ -317,6 +317,29 @@ button, `App.switchView` patched for the `#bakendi` deep-link + boot re-assert.
 `window.Bakendi = {open, reload}`. NB built in a parallel session as patch 231,
 then renumbered to **232** because Verkborð (#196) landed on slot 231 first.
 
+## Sjálfvirk PDF-vistun úttektar-skjala — `js/patches/233-uttekt-pdf-autosave.js` (+168/165)
+
+Þegar **úttektarskýrsla** er búin til (patch 168, „📄 Búa til úttektarskýrslu") eða
+**heimsókn kláruð með reikningi** (patch 165 `finalizeVisit`, „✓ Klára heimsókn") er
+skjalið teiknað sem PDF (jsPDF vektor-texti) og vistað **SJÁLFKRAFA** sem ársmerkt
+fyrirtækjaviðhengi gegnum `CompanyAttachments.upload(coId, file, {year, kind})` →
+birtist strax í „Skjöl & viðhengi" árstöflunni (patch 199), í úttektarskýrslu-
+(`kind:'skyrsla'`) eða reikningsdálki (`kind:'reikningur'`) ársins.
+
+- **Skráarheiti:** `<Fyrirtæki> - <kt> - <ár> - úttektarskýrsla.pdf` ·
+  `<Fyrirtæki> - <kt> - <ár> - R-xxxxxx.pdf`.
+- **Reikningurinn** er teiknaður í patch 233 (`window.UttektInvoicePdf.saveForSale(coId, sale)`)
+  — sækir nafn+kt úr `fyrirtaeki`, línur/tölur úr `solur`-röðinni; seljandi
+  Slökkvitæki ehf kt 600508-0400.
+- Patch 168 fær líka **rétt skráarheiti á handvirka „💾 Vista" takkanum** + sjálfvirka
+  vistun við opnun, með **tvíritunarvörn** (sleppir sjálfvirkri vistun ef
+  úttektarskýrsla ársins er þegar til; reikningur ef R-númerið er þegar vistað).
+- **NB geymslustaður:** vistast í Supabase `samningar` bucket (sama og handvirk
+  viðhengi patch 111), **EKKI í Google Drive „Allt" möppuna** — þessi vefur hefur
+  ekki Drive-aðgang (engin googleapis/OAuth Netlify-function). Drive-pörunin lifir í
+  Brunahólf-appinu (sjá „Laga pörun í Brunahólf →" hlekkinn á skjalaspjaldinu). Ef
+  á að lenda í Drive þarf að flytja Drive-OAuth + upload-function úr Brunahólf.
+
 ## Related projects (in case Agnar mentions them)
 
 - **Brunahólf** — sister business, separate ecosystem (Google Sheets + Apps Script

@@ -412,14 +412,21 @@
     // 3. Clear trip state.
     clearTrip(coId);
 
-    // 4. Open the saved invoice for printing.
-    if (saleId && window.SalaInvoice && typeof SalaInvoice.renderFromSale === 'function') {
+    // 4. Open the saved invoice for printing + vista reikninginn sem PDF.
+    if (saleId) {
       try {
         const r = await sb.from('solur').select('*').eq('id', saleId).single();
         if (r.data) {
-          const w = window.open('', '_blank', 'width=900,height=1100');
-          if (w) SalaInvoice.renderFromSale(w, r.data, null,
-            visitInvoiceOpts(vd, today));
+          // 2026-06-23: vista reikninginn sjálfkrafa sem ársmerkt PDF í skjala-
+          // kassann (patch 233) — birtist í „Skjöl & viðhengi" reikningsdálki
+          // ársins. Keyrir óháð því hvort SalaInvoice-prentgluggi opnast.
+          if (window.UttektInvoicePdf && UttektInvoicePdf.saveForSale) {
+            UttektInvoicePdf.saveForSale(coId, r.data).catch(function () {});
+          }
+          if (window.SalaInvoice && typeof SalaInvoice.renderFromSale === 'function') {
+            const w = window.open('', '_blank', 'width=900,height=1100');
+            if (w) SalaInvoice.renderFromSale(w, r.data, null, visitInvoiceOpts(vd, today));
+          }
         }
       } catch (_) {}
     }
