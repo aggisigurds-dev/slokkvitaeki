@@ -1371,12 +1371,12 @@
           </div>
 
           ${(() => {
-            // 2026-06-24: per-tæki list with soft-delete. The aggregate count grid
+            // 2026-06-24: per-tæki list with delete. The aggregate count grid
             // above is DERIVED LIVE from uttaeki, so reducing a number there never
             // sticks (it's recomputed on every render). To really remove a tæki the
-            // uttaeki row itself must change — so list the units and let the user
-            // delete each one (status='urelt' — recoverable, drops out of the
-            // active count right away).
+            // uttaeki row itself must go — so list the units and let the user
+            // hard-delete each one (FK-safe: clears taeki_events + skodunar_saga
+            // first). Permanent so the tæki is also gone from the invoice/úttekt flow.
             const units = (ars._units || []).slice().sort((a, b) => String(a.serial || '').localeCompare(String(b.serial || ''), 'is'));
             if (!units.length) return '';
             return `
@@ -1391,7 +1391,7 @@
                     return `<div class="_ars-unit-row" data-unit-id="${esc(u.id)}" style="display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;font-size:11.5px">
                       <span style="font-family:monospace;color:var(--ink2);min-width:84px">${esc(u.serial || '—')}</span>
                       <span style="flex:1;min-width:0;color:var(--ink1)">${esc(u.type || '—')}${u.size ? ' · ' + esc(u.size) : ''}</span>
-                      <button class="_ars-unit-del" data-unit-id="${esc(u.id)}" data-unit-serial="${esc(u.serial || '')}" data-unit-cat="${esc(cat)}" type="button" title="Eyða þessu tæki (úrelt — afturkræft)" style="padding:4px 9px;background:var(--surface);border:1px solid #fecaca;color:#dc2626;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">🗑</button>
+                      <button class="_ars-unit-del" data-unit-id="${esc(u.id)}" data-unit-serial="${esc(u.serial || '')}" data-unit-cat="${esc(cat)}" type="button" title="Eyða þessu tæki varanlega" style="padding:4px 9px;background:var(--surface);border:1px solid #fecaca;color:#dc2626;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">🗑</button>
                     </div>`;
                   }).join('')}
                 </div>
@@ -1602,11 +1602,11 @@
       let ok;
       if (window.Confirm && typeof Confirm.show === 'function') {
         ok = await Confirm.show(
-          'Eyða tækinu „' + serial + '"?\n\nTækið er merkt úrelt og hverfur úr ársskoðun + tækjatalningu. Þetta er afturkræft (hægt að virkja aftur á fyrirtækjasíðunni).',
+          'Eyða tækinu „' + serial + '" varanlega?\n\nTækið og öll saga þess er fjarlægð úr kerfinu. Þetta er EKKI afturkræft.',
           { danger: true, okText: 'Eyða' }
         );
       } else {
-        ok = confirm('Eyða tækinu "' + serial + '"? (afturkræft — merkt úrelt)');
+        ok = confirm('Eyða tækinu "' + serial + '" varanlega? Þetta er EKKI afturkræft.');
       }
       if (!ok) return;
       const SB = window.DB && window.DB.sb;
@@ -1614,14 +1614,23 @@
       delBtn.disabled = true;
       const prevTxt = delBtn.textContent; delBtn.textContent = '…';
       try {
-        const r = await SB.from('uttaeki').update({ status: 'urelt' }).eq('id', unitId);
+        // Hard delete. uttaeki.id is referenced by taeki_events.unit_id +
+        // skodunar_saga.unit_id (FK, no cascade) — clear the children first or
+        // the delete throws "violates foreign key constraint".
+        const _ce = await Promise.all([
+          SB.from('taeki_events').delete().eq('unit_id', unitId),
+          SB.from('skodunar_saga').delete().eq('unit_id', unitId)
+        ]);
+        const _cerr = _ce.find(x => x && x.error);
+        if (_cerr) throw _cerr.error;
+        const r = await SB.from('uttaeki').delete().eq('id', unitId);
         if (r.error) throw r.error;
       } catch (err) {
         alert('Tókst ekki að eyða: ' + (err.message || err));
         delBtn.disabled = false; delBtn.textContent = prevTxt;
         return;
       }
-      if (window.Toast && Toast.show) Toast.show('🗑 Tæki „' + serial + '" eytt (úrelt)');
+      if (window.Toast && Toast.show) Toast.show('🗑 Tæki „' + serial + '" eytt');
       // Anti-flash: drop from the DB unit cache if present.
       try {
         if (window.DB && DB.cache && Array.isArray(DB.cache.units)) {
