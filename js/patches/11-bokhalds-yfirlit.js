@@ -180,6 +180,9 @@
       #${VIEW_ID} .by-table tbody tr.by-sale-row:hover { background: #f8fafc; }
       #${VIEW_ID} .by-table tbody tr.by-sale-row.expanded { background: #eff6ff; }
       #${VIEW_ID} .by-table tbody tr.by-sale-row.expanded td { border-bottom: none; }
+      #${VIEW_ID} .by-table tbody tr.by-ogreitt-head { cursor: pointer; background: #fef2f2; }
+      #${VIEW_ID} .by-table tbody tr.by-ogreitt-head:hover { background: #fee2e2; }
+      #${VIEW_ID} .by-table tbody tr.by-ogreitt-head td { padding: 9px 14px; font-weight: 700; color: #b91c1c; border-bottom: 1px solid #fecaca; font-size: 13px; }
       #${VIEW_ID} .by-table tbody tr.by-detail-row td {
         background: #f8fafc; padding: 0; border-bottom: 1px solid #e2e8f0;
       }
@@ -333,6 +336,7 @@
   let sortDir = 'desc';
   const expanded = new Set();
   let activePreset = 'all';
+  let _ogreittOpen = false;   // collapsible „Ógreitt" group — collapsed on each view load
 
   // ----- Data load -----
   async function loadAllSales() {
@@ -560,13 +564,20 @@
     }
     document.getElementById('by-count').textContent = filtered.length + ' sölur';
     const rows = [];
-    for (const s of filtered) {
+    // 2026-06-24: unpaid (ógreitt) reikningur/greitt_síðar pile up at the TOP of
+    // the date sort (recent bills are usually still unpaid), burying the paid
+    // history. Group them into a collapsible „Ógreitt" section, COLLAPSED by
+    // default, so the full history is reachable immediately — while the recent
+    // unpaid bills (the ones most likely to need a kredit/endurprentun) stay one
+    // click away at the very top with a live count + total. Summary totals are
+    // unaffected (they run off `filtered`, which is left intact).
+    const isUnpaid = s => !s.isDraft && !s.paid_at && (s.payment === 'reikningur' || s.payment === 'greitt_sidar');
+    const rowHtml = (s) => {
       const isOpen = expanded.has(String(s.id));
       const draftBadge = s.isDraft
         ? ' <span style="font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:99px;vertical-align:middle">DRÖG</span>'
         : '';
-      rows.push(
-        '<tr class="by-sale-row' + (isOpen ? ' expanded' : '') + '" data-id="' + esc(s.id) + '"' + (s.isDraft ? ' style="background:#fffbeb"' : '') + '>'
+      let h = '<tr class="by-sale-row' + (isOpen ? ' expanded' : '') + '" data-id="' + esc(s.id) + '"' + (s.isDraft ? ' style="background:#fffbeb"' : '') + '>'
         + '<td class="by-num-cell">' + esc(s.num) + draftBadge + '</td>'
         // 2026-05-12 (#8): For paid greitt_sidar / reikningur sales, show
         // the date of payment (when the customer actually picked up & paid)
@@ -593,12 +604,26 @@
           )
         + (s.isDraft ? ' <button class="by-finish-draft" data-sale-id="' + esc(s.id) + '" type="button" style="margin-left:6px;padding:3px 9px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✅ Klára</button>' : '')
         + '</td>'
-        + '</tr>'
+        + '</tr>';
+      if (isOpen) h += '<tr class="by-detail-row"><td colspan="9">' + renderDetail(s) + '</td></tr>';
+      return h;
+    };
+    const unpaidList = filtered.filter(isUnpaid);
+    const paidList = filtered.filter(s => !isUnpaid(s));
+    const showUnpaid = _ogreittOpen || paidList.length === 0;
+    if (unpaidList.length) {
+      const unpaidTotal = unpaidList.reduce((a, s) => a + (s.total || 0), 0);
+      rows.push(
+        '<tr class="by-ogreitt-head by-ogreitt-toggle"><td colspan="9">'
+        + '<span style="display:inline-block;width:15px">' + (showUnpaid ? '▾' : '▸') + '</span>'
+        + '🔴 Ógreitt — ' + unpaidList.length + (unpaidList.length === 1 ? ' reikningur' : ' reikningar')
+        + ' · ' + fmtKr(unpaidTotal)
+        + '<span style="font-weight:500;color:#94a3b8;margin-left:10px;font-size:12px">' + (showUnpaid ? 'smelltu til að fela' : 'smelltu til að sjá') + '</span>'
+        + '</td></tr>'
       );
-      if (isOpen) {
-        rows.push('<tr class="by-detail-row"><td colspan="9">' + renderDetail(s) + '</td></tr>');
-      }
+      if (showUnpaid) for (const s of unpaidList) rows.push(rowHtml(s));
     }
+    for (const s of paidList) rows.push(rowHtml(s));
     tbody.innerHTML = rows.join('');
     // Row toggle is wired via delegation on tbody (in init), not per-row
   }
@@ -892,6 +917,10 @@
         if (btn) btn.click();
       });
       tbody.addEventListener('click', async (e) => {
+        // „Ógreitt" group header — toggle the collapsible unpaid section.
+        const ogToggle = e.target.closest('.by-ogreitt-toggle');
+        if (ogToggle) { e.stopPropagation(); _ogreittOpen = !_ogreittOpen; renderTable(); return; }
+
         // "Merkja greitt" button — open the mark-paid modal for unpaid
         // invoice/pay-later sales. Don't bubble to the row toggle.
         const mpBtn = e.target.closest('.by-markpaid-btn');
