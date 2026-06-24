@@ -68,7 +68,9 @@
           } catch (_) { resolve(null); }
         };
         img.onerror = function () { resolve(null); };
-        img.src = '/img/logo.png?v=20260520b';
+        // Use the CURRENT logo (branding.logo_url via patch 169) so the SAVED PDF
+        // matches the print preview — not the old static /img/logo.png.
+        img.src = (window.SlokkLogo && SlokkLogo.getUrl) ? SlokkLogo.getUrl() : '/img/logo.png?v=20260520b';
       } catch (_) { resolve(null); }
     });
   }

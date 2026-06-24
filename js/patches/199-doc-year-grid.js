@@ -134,10 +134,20 @@
   function docWrap(chip, id){
     return '<span class="sk-att-wrap">'+chip+'<button type="button" class="sk-att-x" data-deldoc="'+esc(id)+'" title="Eyða skráningu af síðunni">✕</button></span>';
   }
+  // 2026-06-24: show the report's FILE NAME (from notes, minus the " · kt …"
+  // suffix) instead of a generic „Skoðun" — so a wrong-matched report is spotted
+  // at a glance and deleted with the ✕, without opening each one.
+  function docName(d){
+    // Trim only the redundant " · kt 123456-7890" suffix the indexer appends —
+    // keep the rest of the filename verbatim (company · address · month · year).
+    var nm=String(d.notes||'').replace(/\s*[·•]\s*kt\b.*$/i,'').trim();
+    return nm || ('Skoðun'+(d.year?(' '+d.year):''));
+  }
   function repDocChip(d){
-    var u=driveUrl(d.drive_file_id);
-    var chip = u ? '<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Drive">📄 Skoðun</a>'
-                 : '<span class="sk-doc rep" title="Skýrsla á skrá (engin Drive-slóð)">📄 Skoðun</span>';
+    var u=driveUrl(d.drive_file_id), full=docName(d);
+    var disp=full.length>46?full.slice(0,44)+'…':full;
+    var chip = u ? '<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="'+esc(full)+' — opna í Drive">📄 '+esc(disp)+'</a>'
+                 : '<span class="sk-doc rep" title="'+esc(full)+' (engin Drive-slóð)">📄 '+esc(disp)+'</span>';
     return docWrap(chip, d.id);
   }
   function invDocChip(d){
@@ -146,7 +156,7 @@
                  : '<span class="sk-doc inv">🧾 '+esc(lab)+'</span>';
     return docWrap(chip, d.id);
   }
-  function repAttChip(a){ return '<button type="button" class="sk-doc rep" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">📄 Skoðun</button>'; }
+  function repAttChip(a){ var nm=String(a.name||'Skoðun'); var disp=nm.length>46?nm.slice(0,44)+'…':nm; return '<button type="button" class="sk-doc rep" data-att="'+esc(a.id)+'" title="'+esc(nm)+'">📄 '+esc(disp)+'</button>'; }
   function invAttChip(a){ var m=String(a.name||'').match(/R-?\s?\d{3,}/i); return '<button type="button" class="sk-doc inv" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>'; }
   function addChip(kind, year, label){ return '<button type="button" class="sk-doc add" data-pick="1" data-kind="'+esc(kind)+'"'+(year?' data-year="'+esc(year)+'"':'')+'>'+esc(label)+'</button>'; }
 

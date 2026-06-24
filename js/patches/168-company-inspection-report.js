@@ -96,7 +96,9 @@
           } catch (_) { resolve(null); }
         };
         img.onerror = () => resolve(null);
-        img.src = '/img/logo.png?v=20260520b';
+        // Use the CURRENT logo (branding.logo_url via patch 169) so the SAVED PDF
+        // matches the print preview — not the old static /img/logo.png.
+        img.src = (window.SlokkLogo && SlokkLogo.getUrl) ? SlokkLogo.getUrl() : '/img/logo.png?v=20260520b';
       } catch (_) { resolve(null); }
     });
   }
@@ -355,6 +357,7 @@
           '<div style="font-size:13px;font-weight:700;color:#0f172a">📄 Úttektarskýrsla</div>' +
           '<div style="display:flex;gap:8px">' +
             '<button id="_cir-save" type="button" style="padding:7px 14px;background:#16a34a;color:#fff;border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">💾 Vista sem ' + new Date().getFullYear() + ' skýrslu</button>' +
+            '<button id="_cir-download" type="button" style="padding:7px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#334155">⬇ Sækja PDF</button>' +
             '<button id="_cir-email" type="button" style="padding:7px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#334155">📧 Senda í tölvupósti</button>' +
             '<button id="_cir-print" type="button" style="padding:7px 14px;background:#0d6efd;color:#fff;border:none;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">🖨 Prenta</button>' +
             '<button id="_cir-close" type="button" style="padding:7px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;color:#475569">✕ Loka</button>' +
@@ -418,7 +421,8 @@
         const n = String(co.nafn || 'fyrirtæki').replace(/\s+/g, ' ').trim();
         const ktD = String(co.kennitala || '').replace(/[^0-9]/g, '');
         const ktDash = ktD.length === 10 ? ktD.slice(0, 6) + '-' + ktD.slice(6) : (co.kennitala || '');
-        const fname = [n, ktDash, ar, 'úttektarskýrsla'].filter(Boolean).join(' - ') + '.pdf';
+        const _mIS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'][new Date().getMonth()];
+        const fname = [n, ktDash, ar, _mIS, 'úttektarskýrsla'].filter(Boolean).join(' - ') + '.pdf';
         const file = new File([blob], fname, { type: 'application/pdf' });
         const meta = await CompanyAttachments.upload(co.id, file, { year: ar, kind: 'skyrsla' });
         if (meta) { if (_cirSaveBtn) _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar; if (window.Toast && Toast.show) Toast.show('✓ Skýrsla vistuð sem ' + ar); }
@@ -426,6 +430,27 @@
       } catch (e) { if (!auto) alert('Villa við vistun: ' + (e.message || e)); if (_cirSaveBtn) { _cirSaveBtn.disabled = false; _cirSaveBtn.textContent = orig; } }
     }
     if (_cirSaveBtn) _cirSaveBtn.addEventListener('click', () => _cirSaveReport(false));
+    // 2026-06-24: straight download — same vector PDF, filename
+    // "<Fyrirtæki> - <kt> - <ár> - úttektarskýrsla.pdf".
+    const _cirDlBtn = dlg.querySelector('#_cir-download');
+    if (_cirDlBtn) _cirDlBtn.addEventListener('click', async () => {
+      const ar = String((ctx && ctx.ar) || new Date().getFullYear());
+      const orig = _cirDlBtn.textContent;
+      _cirDlBtn.disabled = true; _cirDlBtn.textContent = '⏳ …';
+      try {
+        const blob = await buildReportPdfBlob(ctx);
+        const n = String(co.nafn || 'fyrirtæki').replace(/\s+/g, ' ').trim();
+        const ktD = String(co.kennitala || '').replace(/[^0-9]/g, '');
+        const ktDash = ktD.length === 10 ? ktD.slice(0, 6) + '-' + ktD.slice(6) : (co.kennitala || '');
+        const _mIS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'][new Date().getMonth()];
+        const fname = [n, ktDash, ar, _mIS, 'úttektarskýrsla'].filter(Boolean).join(' - ') + '.pdf';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = fname;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      } catch (e) { alert('Villa við að sækja PDF: ' + (e.message || e)); }
+      _cirDlBtn.disabled = false; _cirDlBtn.textContent = orig;
+    });
     // Sjálfvirk vistun þegar skýrslan opnast (= er búin til); tvíritunarvörn að ofan.
     setTimeout(() => _cirSaveReport(true), 450);
     dlg.querySelector('#_cir-email').addEventListener('click', () => {
