@@ -72,6 +72,15 @@
     if (!ok) return false;
 
     try {
+      // 2026-06-24: uttaeki.id is referenced by taeki_events.unit_id +
+      // skodunar_saga.unit_id (FK, no cascade) — clear the children first or the
+      // delete throws "violates foreign key constraint" (same fix as patch 00).
+      const ce = await Promise.all([
+        SB.from('taeki_events').delete().eq('unit_id', unitId),
+        SB.from('skodunar_saga').delete().eq('unit_id', unitId)
+      ]);
+      const cerr = ce.find(x => x && x.error);
+      if (cerr) throw cerr.error;
       const r = await SB.from('uttaeki').delete().eq('id', unitId);
       if (r.error) throw r.error;
     } catch (e) {

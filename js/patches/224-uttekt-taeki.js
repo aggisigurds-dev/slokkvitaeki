@@ -270,6 +270,16 @@
         if(!ok) return;
         try{
           var sb=(window.DB&&DB.sb); if(!sb) throw new Error('Engin tenging');
+          // 2026-06-24: uttaeki.id is referenced by taeki_events.unit_id +
+          // skodunar_saga.unit_id (FK, no cascade) — a bare delete throws
+          // "violates foreign key constraint". Clear the children first (same
+          // fix as the legacy per-company bulk delete in patch 00).
+          var _childRes=await Promise.all([
+            sb.from('taeki_events').delete().in('unit_id', ids),
+            sb.from('skodunar_saga').delete().in('unit_id', ids)
+          ]);
+          var _childErr=_childRes.find(function(x){return x&&x.error;});
+          if(_childErr) throw _childErr.error;
           var r=await sb.from('uttaeki').delete().in('id', ids);
           if(r.error) throw r.error;
           if(window.DB&&DB.cache&&DB.cache.units){ DB.cache.units=DB.cache.units.filter(function(u){return ids.indexOf(u.id)<0;}); }
