@@ -134,6 +134,12 @@
   function docWrap(chip, id){
     return '<span class="sk-att-wrap">'+chip+'<button type="button" class="sk-att-x" data-deldoc="'+esc(id)+'" title="Eyða skráningu af síðunni">✕</button></span>';
   }
+  // 2026-06-24: same ✕ for MANUAL / auto-saved attachments (company_attachments)
+  // so the úttektarskýrslu/reikninga-reitir geta líka eytt þeim — áður var ✕
+  // bara á sjálfvirkt-skráðu customer_documents. data-del → CompanyAttachments.delete.
+  function attWrap(chip, id){
+    return '<span class="sk-att-wrap">'+chip+'<button type="button" class="sk-att-x" data-del="'+esc(id)+'" title="Eyða viðhengi">✕</button></span>';
+  }
   // 2026-06-24: show the report's FILE NAME (from notes, minus the " · kt …"
   // suffix) instead of a generic „Skoðun" — so a wrong-matched report is spotted
   // at a glance and deleted with the ✕, without opening each one.
@@ -156,8 +162,8 @@
                  : '<span class="sk-doc inv">🧾 '+esc(lab)+'</span>';
     return docWrap(chip, d.id);
   }
-  function repAttChip(a){ var nm=String(a.name||'Skoðun'); var disp=nm.length>46?nm.slice(0,44)+'…':nm; return '<button type="button" class="sk-doc rep" data-att="'+esc(a.id)+'" title="'+esc(nm)+'">📄 '+esc(disp)+'</button>'; }
-  function invAttChip(a){ var m=String(a.name||'').match(/R-?\s?\d{3,}/i); return '<button type="button" class="sk-doc inv" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>'; }
+  function repAttChip(a){ var nm=String(a.name||'Skoðun'); var disp=nm.length>46?nm.slice(0,44)+'…':nm; return attWrap('<button type="button" class="sk-doc rep" data-att="'+esc(a.id)+'" title="'+esc(nm)+'">📄 '+esc(disp)+'</button>', a.id); }
+  function invAttChip(a){ var m=String(a.name||'').match(/R-?\s?\d{3,}/i); return attWrap('<button type="button" class="sk-doc inv" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>', a.id); }
   function addChip(kind, year, label){ return '<button type="button" class="sk-doc add" data-pick="1" data-kind="'+esc(kind)+'"'+(year?' data-year="'+esc(year)+'"':'')+'>'+esc(label)+'</button>'; }
 
   function pill(y, hasReport){
