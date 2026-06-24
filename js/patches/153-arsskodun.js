@@ -178,6 +178,7 @@
         const manual = arsMap[String(c.id)] || {};
         const _ars = Object.assign({}, manual);
         const units = unitsByClient[foldName(c.nafn)] || [];
+        _ars._units = units;   // keep the raw uttaeki rows so the modal can list + delete individual tæki
         if (units.length) {
           // 2026-06: estimate = Σ(tæki × Yfirferð × VSK) + Skýrslugerð + Akstur,
           // NO recharge. Same formula the detail uses (single source of truth).
@@ -234,7 +235,7 @@
       let from = 0; const page = 1000;
       while (true) {
         const { data, error } = await SB.from('uttaeki')
-          .select('type,size,client,status')
+          .select('id,serial,type,size,client,status')
           .eq('status', 'active')
           .range(from, from + page - 1);
         if (error || !data) break;
@@ -1370,6 +1371,34 @@
           </div>
 
           ${(() => {
+            // 2026-06-24: per-tæki list with soft-delete. The aggregate count grid
+            // above is DERIVED LIVE from uttaeki, so reducing a number there never
+            // sticks (it's recomputed on every render). To really remove a tæki the
+            // uttaeki row itself must change — so list the units and let the user
+            // delete each one (status='urelt' — recoverable, drops out of the
+            // active count right away).
+            const units = (ars._units || []).slice().sort((a, b) => String(a.serial || '').localeCompare(String(b.serial || ''), 'is'));
+            if (!units.length) return '';
+            return `
+              <div>
+                <div class="_ars-units-toggle" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;cursor:pointer;user-select:none">
+                  <div style="font-size:11px;font-weight:700;color:var(--ink2);text-transform:uppercase">🧯 Stök tæki <span class="_ars-units-count" style="color:var(--ink4);font-weight:500">(${units.length})</span></div>
+                  <span class="_ars-units-caret" style="color:var(--ink3);font-size:11px;font-weight:600">▸ Sýna / eyða</span>
+                </div>
+                <div class="_ars-units-list" style="display:none;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto">
+                  ${units.map(u => {
+                    const cat = categoryOf(u.type, u.size);
+                    return `<div class="_ars-unit-row" data-unit-id="${esc(u.id)}" style="display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;font-size:11.5px">
+                      <span style="font-family:monospace;color:var(--ink2);min-width:84px">${esc(u.serial || '—')}</span>
+                      <span style="flex:1;min-width:0;color:var(--ink1)">${esc(u.type || '—')}${u.size ? ' · ' + esc(u.size) : ''}</span>
+                      <button class="_ars-unit-del" data-unit-id="${esc(u.id)}" data-unit-serial="${esc(u.serial || '')}" data-unit-cat="${esc(cat)}" type="button" title="Eyða þessu tæki (úrelt — afturkræft)" style="padding:4px 9px;background:var(--surface);border:1px solid #fecaca;color:#dc2626;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">🗑</button>
+                    </div>`;
+                  }).join('')}
+                </div>
+              </div>`;
+          })()}
+
+          ${(() => {
             // Pull Drive-link attachments from AppSettings.company_attachments
             const attsAll = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('company_attachments')) || {};
             const list = attsAll[String(coId)] || [];
@@ -1550,6 +1579,82 @@
       bg.remove();
       render();
     });
+
+    // ── Stök tæki: expand/collapse + per-unit soft-delete (status='urelt') ──
+    const unitsToggle = bg.querySelector('._ars-units-toggle');
+    const unitsListEl = bg.querySelector('._ars-units-list');
+    if (unitsToggle && unitsListEl) {
+      unitsToggle.addEventListener('click', () => {
+        const open = unitsListEl.style.display !== 'none';
+        unitsListEl.style.display = open ? 'none' : 'flex';
+        const caret = bg.querySelector('._ars-units-caret');
+        if (caret) caret.textContent = open ? '▸ Sýna / eyða' : '▾ Fela';
+      });
+    }
+    bg.addEventListener('click', async e => {
+      const delBtn = e.target.closest('._ars-unit-del');
+      if (!delBtn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const unitId = delBtn.dataset.unitId;
+      const serial = delBtn.dataset.unitSerial || ('tæki #' + unitId);
+      const cat = delBtn.dataset.unitCat;
+      let ok;
+      if (window.Confirm && typeof Confirm.show === 'function') {
+        ok = await Confirm.show(
+          'Eyða tækinu „' + serial + '"?\n\nTækið er merkt úrelt og hverfur úr ársskoðun + tækjatalningu. Þetta er afturkræft (hægt að virkja aftur á fyrirtækjasíðunni).',
+          { danger: true, okText: 'Eyða' }
+        );
+      } else {
+        ok = confirm('Eyða tækinu "' + serial + '"? (afturkræft — merkt úrelt)');
+      }
+      if (!ok) return;
+      const SB = window.DB && window.DB.sb;
+      if (!SB) { alert('Engin gagnabankatenging'); return; }
+      delBtn.disabled = true;
+      const prevTxt = delBtn.textContent; delBtn.textContent = '…';
+      try {
+        const r = await SB.from('uttaeki').update({ status: 'urelt' }).eq('id', unitId);
+        if (r.error) throw r.error;
+      } catch (err) {
+        alert('Tókst ekki að eyða: ' + (err.message || err));
+        delBtn.disabled = false; delBtn.textContent = prevTxt;
+        return;
+      }
+      if (window.Toast && Toast.show) Toast.show('🗑 Tæki „' + serial + '" eytt (úrelt)');
+      // Anti-flash: drop from the DB unit cache if present.
+      try {
+        if (window.DB && DB.cache && Array.isArray(DB.cache.units)) {
+          const i = DB.cache.units.findIndex(u => String(u.id) === String(unitId));
+          if (i >= 0) DB.cache.units.splice(i, 1);
+        }
+      } catch (_) {}
+      // In-place modal update so the user can keep deleting without a flash.
+      const row = delBtn.closest('._ars-unit-row');
+      if (row) row.remove();
+      const remaining = bg.querySelectorAll('._ars-unit-row').length;
+      const cntEl = bg.querySelector('._ars-units-count');
+      if (cntEl) cntEl.textContent = '(' + remaining + ')';
+      const eqTotalEl = bg.querySelector('._ars-eq-total');
+      if (eqTotalEl) {
+        const n = Math.max(0, (parseInt((eqTotalEl.textContent.match(/\d+/) || ['0'])[0], 10) || 0) - 1);
+        eqTotalEl.textContent = '(' + n + ' alls)';
+      }
+      if (cat) {
+        const cell = bg.querySelector('[data-eq-cell="' + cat + '"]');
+        if (cell) {
+          const valEl = cell.querySelector('._ars-eq-val');
+          const inp = cell.querySelector('._ars-eq-input');
+          const nv = Math.max(0, (parseInt((valEl && valEl.textContent) || '0', 10) || 0) - 1);
+          if (valEl) valEl.textContent = nv || '·';
+          if (inp) inp.value = nv;
+        }
+      }
+      // Refresh underlying data + background list. The modal lives on
+      // document.body, so render() (which only rewrites #ars-main) keeps it open.
+      try { await loadAll(); render(); } catch (_) {}
+    });
+
     bg.querySelector('._ars-go-fyrirt').addEventListener('click', () => {
       bg.remove();
       if (window._openCompanySafe) window._openCompanySafe(coId);
