@@ -35,6 +35,41 @@
     return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
   }
 
+  // 2026-06-24: show WHERE each draft's work currently sits. Verkbeiðnir nums are
+  // "<saleNum>-V<n>"; their status maps to a column:
+  //   received/inprogress → Verkstæði · ready → Afgreiðsla ·
+  //   collected → already picked up (just finalize) · none → bara drög.
+  const LOC = {
+    verkstaedi: { label:'Verkstæði',   emoji:'🔧', color:'#92400e', bg:'#fef3c7', bd:'#fde68a' },
+    afgreidsla: { label:'Afgreiðsla',  emoji:'📦', color:'#166534', bg:'#dcfce7', bd:'#bbf7d0' },
+    sott:       { label:'Sótt · klára', emoji:'✅', color:'#1e40af', bg:'#dbeafe', bd:'#bfdbfe' },
+    drog:       { label:'Bara drög',   emoji:'📝', color:'#475569', bg:'#f1f5f9', bd:'#e2e8f0' },
+  };
+  function locFor(statuses) {
+    if (!statuses || !statuses.size) return LOC.drog;
+    if (statuses.has('received') || statuses.has('inprogress') || statuses.has('in_progress')) return LOC.verkstaedi;
+    if (statuses.has('ready')) return LOC.afgreidsla;
+    if (statuses.has('collected')) return LOC.sott;
+    return LOC.drog;
+  }
+  function locBadge(loc) {
+    loc = loc || LOC.drog;
+    return '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:99px;white-space:nowrap;background:' +
+      loc.bg + ';color:' + loc.color + ';border:1px solid ' + loc.bd + '">' + loc.emoji + ' ' + loc.label + '</span>';
+  }
+  async function attachLocations(SB) {
+    try {
+      const { data } = await SB.from('verkbeidnir').select('num,status').limit(5000);
+      const map = {};
+      (data || []).forEach(v => {
+        const parent = String(v.num || '').replace(/-V\d+$/, '');
+        if (!parent) return;
+        (map[parent] = map[parent] || new Set()).add(v.status);
+      });
+      _items.forEach(s => { s._loc = locFor(map[s.num]); });
+    } catch (e) { console.warn('[drog-list] locations:', e); _items.forEach(s => { s._loc = LOC.drog; }); }
+  }
+
   let _count = 0;
   let _items = [];
   // 2026-05-21: persisted sort mode.
@@ -57,6 +92,7 @@
       if (error) { console.warn('[drog-list] load error:', error); return; }
       _items = data || [];
       _count = _items.length;
+      await attachLocations(SB);
       updateBadge();
     } catch (e) {
       console.warn('[drog-list] load exception:', e);
@@ -163,6 +199,7 @@
         <tr data-id="${s.id}">
           <td style="padding:11px 14px;font-family:monospace;font-size:12px;color:#475569">${esc(s.num || '—')}</td>
           <td style="padding:11px 14px;font-weight:600;color:#0f172a">${esc(s.customer_nafn || '—')}</td>
+          <td style="padding:11px 14px">${locBadge(s._loc)}</td>
           <td style="padding:11px 14px;color:#475569;font-size:12.5px">${esc(s.greitt_med || '—')}</td>
           <td style="padding:11px 14px;color:#475569;font-size:12px">${esc(fmtDate(s.created_at))} · ${ageBadge}</td>
           <td style="padding:11px 14px;text-align:right;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums">${fmtKr(s.samtals)}</td>
@@ -177,6 +214,7 @@
         <thead><tr style="background:#fff;text-align:left;border-bottom:1px solid #e2e8f0">
           <th style="padding:10px 14px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Num</th>
           <th style="padding:10px 14px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Viðskiptavinur</th>
+          <th style="padding:10px 14px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Staðsetning</th>
           <th style="padding:10px 14px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Greiðsla</th>
           <th style="padding:10px 14px;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Stofnað</th>
           <th style="padding:10px 14px;text-align:right;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Upphæð</th>

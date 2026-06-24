@@ -379,6 +379,7 @@
             '<div style="display:flex;gap:8px">' +
               '<button id="pos-add-service" style="background:linear-gradient(180deg,#2b2b31,#0c0d10);color:#fff;border:1px solid #000;padding:7px 13px;border-radius:10px;font-size:12.5px;cursor:pointer;font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)">+ Annað</button>' +
               '<button id="pos-bokhald" style="background:#fff;color:#334155;border:1px solid #cbd5e1;padding:7px 13px;border-radius:10px;font-size:12.5px;cursor:pointer;font-weight:700">Bókhald</button>' +
+              '<button id="pos-drog" style="background:#fff;color:#92400e;border:1px solid #fcd34d;padding:7px 13px;border-radius:10px;font-size:12.5px;cursor:pointer;font-weight:700">📝 Drög</button>' +
             '</div>' +
           '</div>' +
           '<div id="pos-lines" style="overflow-y:auto;flex:1;min-height:100px"></div>' +
@@ -636,6 +637,8 @@
     // KARFA-haus „Bókhald"-takki → opnar Bókhalds-yfirlit (App.switchView, fallback á #bokhald deep-link).
     var bokhaldBtn=document.getElementById('pos-bokhald');
     if(bokhaldBtn)bokhaldBtn.addEventListener('click',function(){try{if(window.App&&App.switchView){App.switchView('bokhalds-yfirlit');return;}}catch(_){}location.hash='#bokhald';});
+    var drogBtn=document.getElementById('pos-drog');
+    if(drogBtn)drogBtn.addEventListener('click',function(){try{if(window.DrogList&&DrogList.open){DrogList.open();}}catch(_){}});
     document.getElementById('pos-scan').addEventListener('click',scanQr);
     var topScanBtn = document.getElementById('pos-scan-top');
     if (topScanBtn) topScanBtn.addEventListener('click', scanQr);
