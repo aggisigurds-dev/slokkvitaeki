@@ -79,19 +79,20 @@
   }
   function saveSort(v) { try { localStorage.setItem(DROG_SORT_KEY, v); } catch (_) {} }
   let _sortMode = loadSort();
+  let _showDeleted = false;   // 2026-06-24: reveal soft-deleted (hidden) drög
 
   async function loadDrog() {
     const SB = getSB();
     if (!SB) return;
     try {
-      const { data, error } = await SB.from('solur')
-        .select('id,num,customer_nafn,samtals,greitt_med,created_at,updated_at,athugasemdir')
-        .eq('status', 'drog')
-        .order('updated_at', { ascending: false })
-        .limit(50);
+      let q = SB.from('solur')
+        .select('id,num,customer_nafn,samtals,greitt_med,created_at,updated_at,athugasemdir,hidden')
+        .eq('status', 'drog');
+      if (!_showDeleted) q = q.neq('hidden', true);   // soft-deleted drög hidden by default
+      const { data, error } = await q.order('updated_at', { ascending: false }).limit(100);
       if (error) { console.warn('[drog-list] load error:', error); return; }
       _items = data || [];
-      _count = _items.length;
+      _count = _items.filter(s => !s.hidden).length;   // badge = active (non-deleted) drög
       await attachLocations(SB);
       updateBadge();
     } catch (e) {
@@ -142,6 +143,7 @@
             <div style="font-size:12px;color:#fef3c7;margin-top:2px">Sölur sem hafa ekki verið kláraðar — birtast ekki í Bókhaldi fyrr en klárað er</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
+            <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#fff;cursor:pointer;white-space:nowrap"><input type="checkbox" id="_drog-showdel" ${_showDeleted ? 'checked' : ''} style="cursor:pointer"> Sýna eydd</label>
             <select id="_drog-sort" title="Raða" style="padding:6px 9px;border:1px solid rgba(255,255,255,0.4);border-radius:7px;background:rgba(255,255,255,0.15);color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">
               <option value="updated_desc" style="color:#0f172a">🕐 Nýlega breytt fyrst</option>
               <option value="created_desc" style="color:#0f172a">📅 Nýjast stofnað</option>
@@ -166,6 +168,8 @@
         renderList();
       });
     }
+    const showDel = m.querySelector('#_drog-showdel');
+    if (showDel) showDel.addEventListener('change', async e => { _showDeleted = e.target.checked; await loadDrog(); renderList(); });
     renderList();
   }
 
@@ -195,18 +199,20 @@
         ? '<span style="font-size:10px;font-weight:700;background:#fee2e2;color:#991b1b;padding:2px 7px;border-radius:99px">' + age + ' daga gamalt</span>'
         : (age > 7 ? '<span style="font-size:10px;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 7px;border-radius:99px">' + age + ' daga</span>'
                    : '<span style="font-size:10px;color:#64748b">' + age + ' d</span>');
+      const actions = s.hidden
+        ? '<button data-act="restore" type="button" style="padding:6px 12px;background:#0f766e;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">↩ Endurheimta</button>'
+        : '<button data-act="edit" type="button" style="padding:6px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;margin-right:4px">✏️ Breyta</button>' +
+          '<button data-act="finalize" type="button" style="padding:6px 12px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;margin-right:4px">✅ Klára</button>' +
+          '<button data-act="delete" type="button" title="Eyða drögum (hægt að endurheimta)" style="padding:6px 11px;background:#fff;border:1px solid #fecaca;color:#dc2626;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">🗑</button>';
       return `
-        <tr data-id="${s.id}">
+        <tr data-id="${s.id}" style="${s.hidden ? 'opacity:.55;background:#fff7ed' : ''}">
           <td style="padding:11px 14px;font-family:monospace;font-size:12px;color:#475569">${esc(s.num || '—')}</td>
-          <td style="padding:11px 14px;font-weight:600;color:#0f172a">${esc(s.customer_nafn || '—')}</td>
+          <td style="padding:11px 14px;font-weight:600;color:#0f172a">${esc(s.customer_nafn || '—')}${s.hidden ? ' <span style="font-size:10px;font-weight:700;color:#dc2626">· eytt</span>' : ''}</td>
           <td style="padding:11px 14px">${locBadge(s._loc)}</td>
           <td style="padding:11px 14px;color:#475569;font-size:12.5px">${esc(s.greitt_med || '—')}</td>
           <td style="padding:11px 14px;color:#475569;font-size:12px">${esc(fmtDate(s.created_at))} · ${ageBadge}</td>
           <td style="padding:11px 14px;text-align:right;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums">${fmtKr(s.samtals)}</td>
-          <td style="padding:9px 12px;text-align:right;white-space:nowrap">
-            <button data-act="edit" type="button" style="padding:6px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;margin-right:4px">✏️ Breyta</button>
-            <button data-act="finalize" type="button" style="padding:6px 12px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">✅ Klára</button>
-          </td>
+          <td style="padding:9px 12px;text-align:right;white-space:nowrap">${actions}</td>
         </tr>`;
     }).join('');
     body.innerHTML = `
@@ -225,14 +231,23 @@
 
     body.querySelectorAll('tbody tr').forEach(tr => {
       const id = tr.dataset.id;
-      tr.querySelector('button[data-act="edit"]').addEventListener('click', () => {
-        document.getElementById('_drog-list-modal')?.remove();
-        if (window.SaleEditor) window.SaleEditor.openById(id);
+      const on = (act, fn) => { const b = tr.querySelector('button[data-act="' + act + '"]'); if (b) b.addEventListener('click', fn); };
+      on('edit', () => { document.getElementById('_drog-list-modal')?.remove(); if (window.SaleEditor) window.SaleEditor.openById(id); });
+      on('finalize', () => { document.getElementById('_drog-list-modal')?.remove(); if (window.SaleEditor) window.SaleEditor.openById(id); });
+      on('delete', async () => {
+        if (!window.confirm('Eyða þessum drögum?\n\nÞau hverfa af listanum en hægt er að endurheimta (haka í „Sýna eydd").')) return;
+        const SB = getSB(); if (!SB) return;
+        try { await SB.from('solur').update({ hidden: true, hidden_at: new Date().toISOString() }).eq('id', id); }
+        catch (e) { alert('Tókst ekki að eyða: ' + (e.message || e)); return; }
+        if (window.Toast && Toast.show) Toast.show('🗑 Drögum eytt');
+        await loadDrog(); renderList();
       });
-      tr.querySelector('button[data-act="finalize"]').addEventListener('click', () => {
-        document.getElementById('_drog-list-modal')?.remove();
-        // Open editor and immediately let user review before finalize
-        if (window.SaleEditor) window.SaleEditor.openById(id);
+      on('restore', async () => {
+        const SB = getSB(); if (!SB) return;
+        try { await SB.from('solur').update({ hidden: false, hidden_at: null }).eq('id', id); }
+        catch (e) { alert('Tókst ekki að endurheimta: ' + (e.message || e)); return; }
+        if (window.Toast && Toast.show) Toast.show('↩ Drög endurheimt');
+        await loadDrog(); renderList();
       });
     });
   }
