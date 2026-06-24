@@ -47,6 +47,8 @@
     s.id = 'bky-style';
     s.textContent = `
       #${VIEW_ID} .bky-wrap{max-width:1240px;margin:0 auto;padding:20px}
+      #${VIEW_ID} .bky-dk-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;background:#1d4ed8;color:#fff;border-radius:8px;text-decoration:none;font-size:13px;font-weight:700;white-space:nowrap}
+      #${VIEW_ID} .bky-dk-btn:hover{background:#1e40af}
       #${VIEW_ID} h1{margin:0;font-size:21px;color:#0f172a;display:flex;align-items:center;gap:9px}
       #${VIEW_ID} .sub{font-size:12.5px;color:#64748b;margin:2px 0 14px}
       #${VIEW_ID} .tabs{display:flex;gap:6px;margin-bottom:14px;border-bottom:2px solid #e2e8f0}
@@ -122,7 +124,7 @@
     v.className = sample.className.replace(/\bactive\b/g, '').trim();
     v.innerHTML = `
       <main class="main-panel"><div class="bky-wrap">
-        <h1>📊 Bókhald · yfirferð</h1>
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap"><h1 style="margin:0">📊 Bókhald · yfirferð</h1><a href="https://brunaholf.netlify.app/reikningar-bid.html" target="_blank" rel="noopener" class="bky-dk-btn" title="Stofnar óbókuð drög í dk fyrir ósendar reikningur-sölur. Ekkert fer í banka fyrr en þú bókar í dk og býrð til kröfu í Innheimtu.">🧾 Senda reikninga í dk →</a></div>
         <div class="sub">Sölur + verkbeiðnir á einum stað — síaðu, finndu tvítekningar, skrifaðu athugasemd, lagaðu beint. Allt afturkræft.</div>
         <div class="tabs">
           <div class="tab active" data-tab="sala">Sölur</div>
