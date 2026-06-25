@@ -560,16 +560,16 @@
     var emails=(info.emails||[]).map(function(e){return '<a href="mailto:'+esc(e)+'" style="color:var(--brand);text-decoration:none">'+esc(e)+'</a>';}).join(' · ');
     var inS='width:100%;padding:6px 9px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box;margin-top:2px';
     var infoPanel=
-      '<div class="_rf_info" style="background:var(--bg);border:1px solid var(--brd);border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
+      '<div class="_rf_info" style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
-          '<div style="font-size:11px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em">Upplýsingar um rekstrarfélag</div>'+
-          '<button class="_rf_info_edit" type="button" style="font-size:12px;padding:4px 10px;background:var(--surface);border:1px solid var(--brd2);border-radius:7px;color:var(--ink2);font-weight:600;cursor:pointer">✏️ Breyta</button>'+
+          '<div style="font-size:11px;font-weight:700;color:var(--ink1);text-transform:uppercase;letter-spacing:.04em">Upplýsingar um rekstrarfélag</div>'+
+          '<button class="_rf_info_edit" type="button" style="font-size:12px;padding:4px 10px;background:var(--surface);border:1px solid var(--brd2);border-radius:7px;color:var(--ink1);font-weight:600;cursor:pointer">✏️ Breyta</button>'+
         '</div>'+
-        '<div class="_rf_info_view" style="font-size:13px;color:var(--ink2);line-height:1.6">'+
-          '<div><b>Kennitala:</b> '+(info.kt?esc(fmtKt(info.kt)):'—')+'</div>'+
-          '<div><b>Netföng:</b> '+(emails||'—')+(info.domain?' &nbsp;·&nbsp; <span style="color:var(--ink3)">'+esc(info.domain)+'</span>':'')+'</div>'+
-          '<div><b>Sími:</b> '+(info.simi?esc(info.simi):'—')+' &nbsp;·&nbsp; <b>Tengiliður:</b> '+(info.tengilidur?esc(info.tengilidur):'—')+'</div>'+
-          '<div style="margin-top:4px"><b>Athugasemdir:</b><div style="white-space:pre-wrap;color:var(--ink2);margin-top:2px">'+(info.notes?esc(info.notes):'—')+'</div></div>'+
+        '<div class="_rf_info_view" style="font-size:13px;color:var(--ink1);line-height:1.6">'+
+          '<div><b style="color:var(--ink1)">Kennitala:</b> '+(info.kt?esc(fmtKt(info.kt)):'—')+'</div>'+
+          '<div><b style="color:var(--ink1)">Netföng:</b> '+(emails||'—')+(info.domain?' &nbsp;·&nbsp; <span style="color:var(--ink2)">'+esc(info.domain)+'</span>':'')+'</div>'+
+          '<div><b style="color:var(--ink1)">Sími:</b> '+(info.simi?esc(info.simi):'—')+' &nbsp;·&nbsp; <b style="color:var(--ink1)">Tengiliður:</b> '+(info.tengilidur?esc(info.tengilidur):'—')+'</div>'+
+          '<div style="margin-top:4px"><b style="color:var(--ink1)">Athugasemdir:</b><div style="white-space:pre-wrap;color:var(--ink1);margin-top:2px">'+(info.notes?esc(info.notes):'—')+'</div></div>'+
         '</div>'+
         '<div class="_rf_info_form" style="display:none">'+
           '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
