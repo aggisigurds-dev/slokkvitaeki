@@ -342,13 +342,13 @@
       /* two-column layout: tæki left, cost calculator right */
       '.uttekt-cols{display:flex;gap:16px;align-items:flex-start}',
       '.uttekt-col-l{flex:1;min-width:0}',
-      '.uttekt-col-r{flex:0 0 440px;max-width:440px;min-width:0}',
+      '.uttekt-col-r{flex:0 0 560px;max-width:560px;min-width:0}',
       '#_ctc-section{margin:0 !important}',
-      '.uttekt-col-r #_ctc-section table{font-size:11px}',
-      /* þétt reit-bil svo 6-dálka línutaflan rúmist í 440px hægri-dálkinum án þess
-         að klippast (TEGUND/STÆRÐ-hausinn + Samtals-dálkurinn) */
-      '.uttekt-col-r #_ctc-section table th,.uttekt-col-r #_ctc-section table td{padding:6px 7px !important}',
-      '@media(max-width:1080px){.uttekt-cols{flex-direction:column}.uttekt-col-r{flex:1 1 auto;max-width:none;width:100%}}',
+      '.uttekt-col-r #_ctc-section table{font-size:12px}',
+      /* aðeins meira loft í dálkum nú þegar hægri-spjaldið er 560px — Tegund/Stærð
+         þarf ekki að línast í 3 línur lengur */
+      '.uttekt-col-r #_ctc-section table th,.uttekt-col-r #_ctc-section table td{padding:8px 10px !important}',
+      '@media(max-width:1240px){.uttekt-cols{flex-direction:column}.uttekt-col-r{flex:1 1 auto;max-width:none;width:100%}}',
       '.ut-bulk{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 15px;background:var(--ink1);color:#fff}',
       '.ut-bulk.show{display:flex}',
       '.ut-bulk-cnt{font-weight:800;font-size:13px}',
@@ -385,9 +385,9 @@
       '.ut-now{display:flex;align-items:center;gap:7px;flex:none;width:252px;justify-content:flex-end;margin-left:18px;padding-left:18px;border-left:1px solid var(--brd)}',
       '.ut-svcseg{display:inline-flex;background:var(--bg);border:1px solid var(--brd);border-radius:9px;padding:3px;gap:2px}',
       '.ut-svc{border:0;background:transparent;font:inherit;font-size:11.5px;font-weight:700;color:var(--ink3);padding:5px 10px;border-radius:7px;cursor:pointer;white-space:nowrap}',
-      /* 2026-06-22: active service pill — glæsileg gradient eins og á mockup-inu
-         (málm-rauður/svartur), ekki flatur brand-litur. Passar við Brunastál. */
-      '.ut-svc.on{background:linear-gradient(180deg,color-mix(in srgb,var(--brand) 85%,#fff) 0%,var(--brand) 48%,color-mix(in srgb,var(--brand) 78%,#000) 52%,color-mix(in srgb,var(--brand) 65%,#000) 100%)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.32),inset 0 -1px 0 rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.25);text-shadow:0 1px 1px rgba(0,0,0,.4)}',
+      /* 2026-06-25: active service pill — málm-blár, sama litur fyrir Yfirferð /
+         Hleðsla / Nýtt (var áður brand-rauður og leit út eins og viðvörun). */
+      '.ut-svc.on{background:linear-gradient(180deg,#60a5fa 0%,#2563eb 48%,#1e40af 52%,#1e3a8a 100%)!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.32),inset 0 -1px 0 rgba(0,0,0,.35),0 1px 2px rgba(0,0,0,.25);text-shadow:0 1px 1px rgba(0,0,0,.4);border:1px solid #1e3a8a!important}',
       '.ut-onytt{border:1px solid var(--brd);background:var(--surface);color:var(--ink3);border-radius:8px;padding:5px 8px;font-size:13px;cursor:pointer}',
       '.ut-onytt.on{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d);border-color:var(--red-bd,#fca5a5)}',
       '.ut-far{display:flex;align-items:center;margin-left:14px;width:40px;justify-content:flex-end}',
