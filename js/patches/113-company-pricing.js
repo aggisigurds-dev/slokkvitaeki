@@ -117,7 +117,7 @@
     const header =
       '<button class="_cpr-toggle" type="button" aria-expanded="' + (open ? 'true' : 'false') + '" style="all:unset;box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;cursor:pointer">' +
         '<span style="font-size:13px;transition:transform .15s;transform:rotate(' + (open ? '90' : '0') + 'deg);color:var(--ink3)">▸</span>' +
-        '<span style="font-size:13px;font-weight:700;color:var(--brand)">💰 Tilboðsverð</span>' +
+        '<span style="font-size:13px;font-weight:700;color:#1e3a8a">💰 Tilboðsverð</span>' +
         badge +
         '<span style="margin-left:auto;font-size:10.5px;color:var(--ink3)">sérverð sem yfirstíga búðarverð í Sala</span>' +
       '</button>';
@@ -156,7 +156,7 @@
       '</div>' +
       // Subtle divider, then the existing prices list (one continuous panel)
       '<div style="border-top:1px solid var(--brd);padding-top:8px">' +
-        '<div style="font-size:11px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Skráð tilboðsverð</div>' +
+        '<div style="font-size:11px;font-weight:700;color:#1e3a8a;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Skráð tilboðsverð</div>' +
         '<div style="background:var(--surface);border:1px solid var(--brd);border-radius:8px;overflow:hidden">' +
           '<table style="width:100%;border-collapse:collapse">' +
             '<thead style="background:var(--bg)"><tr>' +

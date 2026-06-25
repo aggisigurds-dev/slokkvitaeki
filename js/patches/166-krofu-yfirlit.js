@@ -347,6 +347,36 @@
     main.querySelectorAll('._ky-view-invoice').forEach(b => {
       b.addEventListener('click', () => openInvoice(b.dataset.id));
     });
+    main.querySelectorAll('._ky-kredit').forEach(b => {
+      b.addEventListener('click', async () => {
+        if (!window.CreditInvoice || !CreditInvoice.open) {
+          alert('Kreditfærslueining ekki tiltæk.'); return;
+        }
+        const SB = getSB(); if (!SB) return;
+        const r = await SB.from('solur')
+          .select('id,num,customer_nafn,customer_id,samtals,upphaed_an_vsk,vsk_upphaed,linur,greitt_med')
+          .eq('id', b.dataset.id).single();
+        if (r.error || !r.data) { alert('Salan fannst ekki.'); return; }
+        const d = r.data;
+        CreditInvoice.open({
+          id: d.id, num: d.num, customer: d.customer_nafn, customer_id: d.customer_id,
+          total: +(d.samtals || 0), ex: +(d.upphaed_an_vsk || 0), vsk: +(d.vsk_upphaed || 0),
+          lines: Array.isArray(d.linur) ? d.linur : [], payment: d.greitt_med
+        });
+        // Patch 26 hides the modal on confirm/cancel — refresh on close.
+        setTimeout(() => {
+          const modal = document.getElementById('ci-modal');
+          if (!modal) return;
+          const obs = new MutationObserver(() => {
+            if (modal.style.display === 'none') {
+              obs.disconnect();
+              setTimeout(() => load(_state.month), 250);
+            }
+          });
+          obs.observe(modal, { attributes: true, attributeFilter: ['style'] });
+        }, 250);
+      });
+    });
     main.querySelectorAll('._ky-copy-total').forEach(b => {
       b.addEventListener('click', async () => {
         const v = b.dataset.value;
@@ -383,7 +413,7 @@
               <div style="font-size:20px;font-weight:800;color:#1d4ed8;font-variant-numeric:tabular-nums">${fmtKr(grp.sum)}</div>
             </div>
             <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð án vsk-formúleringa" style="padding:6px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:11px">📋</button>
-            <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" style="padding:7px 12px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">✓ Allar greiddar</button>
+            <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt" style="padding:7px 12px;background:#f8fafc;color:#15803d;border:1.5px solid #86efac;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">✓ Allar greiddar</button>
           </div>
         </div>
         <div>
@@ -401,9 +431,10 @@
                   ${s.krafa_sent_at
                     ? `<button class="_ky-krafa-toggle" data-id="${s.id}" data-on="1" type="button" title="Krafa send ${fmtDate(s.krafa_sent_at)} — smelltu til að afhaka" style="padding:5px 9px;background:#dcfce7;color:#14532d;border:1px solid #86efac;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;white-space:nowrap">🏦 ✓ Krafa send</button>`
                     : `<button class="_ky-krafa-toggle" data-id="${s.id}" type="button" title="Haka við þegar krafan hefur verið stofnuð í heimabankanum" style="padding:5px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600;white-space:nowrap">🏦 Krafa send</button>`}
-                  <button class="_ky-mark-paid" data-id="${s.id}" type="button" title="Merkja sem greitt" style="padding:5px 9px;background:#16a34a;color:#fff;border:none;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">✓</button>
+                  <button class="_ky-mark-paid" data-id="${s.id}" type="button" title="Merkja sem greitt" style="padding:5px 9px;background:#f8fafc;color:#15803d;border:1.5px solid #86efac;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✓</button>
                   <button class="_ky-view-invoice" data-id="${s.id}" type="button" title="Skoða / prenta reikning" style="padding:5px 9px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">🖨</button>
                   <button class="_ky-open-editor" data-num="${esc(s.num)}" type="button" title="Opna í sölu-editor" style="padding:5px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">✏️</button>
+                  <button class="_ky-kredit" data-id="${s.id}" type="button" title="Kreditfæra reikninginn" style="padding:5px 9px;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">↩ Kredit</button>
                 </div>
               </div>`;
           }).join('')}

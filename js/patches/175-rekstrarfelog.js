@@ -53,9 +53,9 @@
       P+'.rf-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:7px;padding:3px 8px;border:1px solid var(--brd);background:var(--surface2);color:var(--ink2);text-decoration:none;max-width:260px}',
       P+'.rf-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       P+'.rf-chip svg{width:12px;height:12px;opacity:.7;flex:none}',
-      P+'a.rf-chip.mail{color:var(--brand);background:color-mix(in srgb,var(--brand) 8%,var(--surface));border-color:color-mix(in srgb,var(--brand) 22%,var(--surface))}',
-      P+'a.rf-chip.mail:hover{background:color-mix(in srgb,var(--brand) 16%,var(--surface))}',
-      P+'a.rf-chip.mail svg{opacity:.95}',
+      P+'a.rf-chip.mail{color:var(--ink1);background:var(--surface2);border-color:var(--brd)}',
+      P+'a.rf-chip.mail:hover{background:var(--bg);border-color:var(--brd2)}',
+      P+'a.rf-chip.mail svg{opacity:.7;color:var(--ink3)}',
       P+'.rf-count{flex:none;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--ink2);background:var(--surface2);border:1px solid var(--brd);border-radius:99px;padding:6px 13px;white-space:nowrap}',
       P+'.rf-count b{color:var(--ink1);font-variant-numeric:tabular-nums}',
       P+'.rf-count svg{width:15px;height:15px;color:var(--ink3);flex:none}',
@@ -505,9 +505,9 @@
     // building table
     var rows=blds.map(function(b,_bi){
       var co=companyByKt(b.kt);
-      var link= co ? '<a href="#" data-coid="'+co.id+'" class="_rf_open" style="color:var(--brand);text-decoration:none">'+esc(b.nafn)+'</a>'
-                   : esc(b.nafn)+' <span style="color:var(--brd2);font-size:11px">(ekki í skrá)</span>';
-      var doc = co ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:var(--brand)">skjöl</a>' : '';
+      var link= co ? '<a href="#" data-coid="'+co.id+'" class="_rf_open" style="color:var(--ink1);text-decoration:none;font-weight:600">'+esc(b.nafn)+'</a>'
+                   : '<span style="color:var(--ink1);font-weight:600">'+esc(b.nafn)+'</span> <span style="color:var(--ink3);font-size:11px">(ekki í skrá)</span>';
+      var doc = co ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:#1d4ed8;text-decoration:underline">skjöl</a>' : '';
       var st = equip.match(b.nafn);
       var ktShared = !!(sharedKt && sharedKt[digits(b.kt)]);
       var att = ((!ktShared) && co && (attMap[co.id]||attMap[String(co.id)])) || [0,0,0];
@@ -527,7 +527,7 @@
       var oldLinks = lkYears.filter(function(y){return y<'2023';}).sort().map(function(y){
         return ' <a href="'+esc(lks[y])+'" target="_blank" rel="noopener" title="Úttektarskýrsla '+y+' í Drive" style="font-size:11px;color:#15803d;text-decoration:none;white-space:nowrap">📄'+y+'↗</a>'; }).join('');
       link = link + oldLinks;
-      if(b.heimilisfang) link += '<div style="font-size:11px;color:var(--ink4);margin-top:2px">📍 '+esc(b.heimilisfang)+'</div>';
+      if(b.heimilisfang) link += '<div style="font-size:11px;color:var(--ink3);margin-top:2px">📍 '+esc(b.heimilisfang)+'</div>';
       var unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(units>0?'font-weight:600':'color:'+(hasRep?'var(--brd2)':'#b45309'))+'">'+(units>0?units:(hasRep||lkYears.length?'–':'0'))+'</td>';
       var y23=yCell(d23,false,units,lks['2023'],f23,'2023'), y24=yCell(d24,!!att[0],units,lks['2024'],f24,'2024'), y25=yCell(d25,!!att[1],units,lks['2025'],f25,'2025'), y26=yCell(d26,!!att[2],units,lks['2026'],f26,'2026');
       var nextCell;
@@ -557,19 +557,19 @@
 
     // Editable rekstrarfélag info card (kennitala / netföng / lén / nótur).
     var fEmails=(info.emails||[]).join(', ');
-    var emails=(info.emails||[]).map(function(e){return '<a href="mailto:'+esc(e)+'" style="color:var(--brand);text-decoration:none">'+esc(e)+'</a>';}).join(' · ');
+    var emails=(info.emails||[]).map(function(e){return '<a href="mailto:'+esc(e)+'" style="color:var(--ink1);text-decoration:none;font-weight:600">'+esc(e)+'</a>';}).join(' · ');
     var inS='width:100%;padding:6px 9px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box;margin-top:2px';
     var infoPanel=
-      '<div class="_rf_info" style="background:var(--bg);border:1px solid var(--brd);border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
+      '<div class="_rf_info" style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'+
-          '<div style="font-size:11px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em">Upplýsingar um rekstrarfélag</div>'+
-          '<button class="_rf_info_edit" type="button" style="font-size:12px;padding:4px 10px;background:var(--surface);border:1px solid var(--brd2);border-radius:7px;color:var(--ink2);font-weight:600;cursor:pointer">✏️ Breyta</button>'+
+          '<div style="font-size:11px;font-weight:700;color:var(--ink1);text-transform:uppercase;letter-spacing:.04em">Upplýsingar um rekstrarfélag</div>'+
+          '<button class="_rf_info_edit" type="button" style="font-size:12px;padding:4px 10px;background:var(--surface);border:1px solid var(--brd2);border-radius:7px;color:var(--ink1);font-weight:600;cursor:pointer">✏️ Breyta</button>'+
         '</div>'+
-        '<div class="_rf_info_view" style="font-size:13px;color:var(--ink2);line-height:1.6">'+
-          '<div><b>Kennitala:</b> '+(info.kt?esc(fmtKt(info.kt)):'—')+'</div>'+
-          '<div><b>Netföng:</b> '+(emails||'—')+(info.domain?' &nbsp;·&nbsp; <span style="color:var(--ink3)">'+esc(info.domain)+'</span>':'')+'</div>'+
-          '<div><b>Sími:</b> '+(info.simi?esc(info.simi):'—')+' &nbsp;·&nbsp; <b>Tengiliður:</b> '+(info.tengilidur?esc(info.tengilidur):'—')+'</div>'+
-          '<div style="margin-top:4px"><b>Athugasemdir:</b><div style="white-space:pre-wrap;color:var(--ink2);margin-top:2px">'+(info.notes?esc(info.notes):'—')+'</div></div>'+
+        '<div class="_rf_info_view" style="font-size:13px;color:var(--ink1);line-height:1.6">'+
+          '<div><b style="color:var(--ink1)">Kennitala:</b> '+(info.kt?esc(fmtKt(info.kt)):'—')+'</div>'+
+          '<div><b style="color:var(--ink1)">Netföng:</b> '+(emails||'—')+(info.domain?' &nbsp;·&nbsp; <span style="color:var(--ink2)">'+esc(info.domain)+'</span>':'')+'</div>'+
+          '<div><b style="color:var(--ink1)">Sími:</b> '+(info.simi?esc(info.simi):'—')+' &nbsp;·&nbsp; <b style="color:var(--ink1)">Tengiliður:</b> '+(info.tengilidur?esc(info.tengilidur):'—')+'</div>'+
+          '<div style="margin-top:4px"><b style="color:var(--ink1)">Athugasemdir:</b><div style="white-space:pre-wrap;color:var(--ink1);margin-top:2px">'+(info.notes?esc(info.notes):'—')+'</div></div>'+
         '</div>'+
         '<div class="_rf_info_form" style="display:none">'+
           '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
