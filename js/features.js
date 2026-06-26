@@ -150,7 +150,20 @@ var Companies = {
             '</div>' +
           '</div>' +
         '</div>' +
-        (inspBadge ? '<div class="co-banner-right"><span class="co-banner-badge">' + inspBadge + '</span></div>' : '') +
+        // Right side: optional inspection badge + an always-editable banner
+        // note (black box, white letters) that saves immediately (patch:
+        // 2026-06-26). Stored in fyrirtaeki.banner_note.
+        '<div class="co-banner-right">' +
+          (inspBadge ? '<span class="co-banner-badge">' + inspBadge + '</span>' : '') +
+          '<textarea class="co-banner-note" placeholder="✍ Athugasemd…" rows="2" ' +
+            'oninput="Companies.onBannerNoteInput(' + c.id + ', this.value)" ' +
+            'onblur="Companies.saveBannerNote(' + c.id + ', this.value)" ' +
+            'style="background:#000;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:8px;' +
+            'padding:7px 10px;font-size:12.5px;line-height:1.35;width:210px;max-width:48vw;min-height:44px;' +
+            'resize:vertical;font-family:inherit;outline:none;box-shadow:0 1px 4px rgba(0,0,0,.45);">' +
+            U.e(c.banner_note || '') +
+          '</textarea>' +
+        '</div>' +
       '</div>' +
 
       // Action bar (patches 102/91/154/137/73/123 etc. inject into this row).
@@ -203,6 +216,27 @@ var Companies = {
     }
     html += '</div><div class="uttekt-col-r" id="_ctc-slot"></div></div>';
     el.innerHTML = html;
+  },
+  // Banner note (the black box in the company header) — saves immediately.
+  // oninput debounces ~500ms; onblur flushes. Writes fyrirtaeki.banner_note
+  // and keeps the in-memory list row in sync so re-renders show the text.
+  _bnTimers: {},
+  onBannerNoteInput: function(id, value) {
+    var self = this;
+    clearTimeout(this._bnTimers[id]);
+    this._bnTimers[id] = setTimeout(function() { self.saveBannerNote(id, value); }, 500);
+  },
+  saveBannerNote: function(id, value) {
+    clearTimeout(this._bnTimers[id]);
+    var c = this.list.find(function(x) { return x.id === id; });
+    var val = (value == null ? '' : String(value)).trim();
+    if (c && (c.banner_note || '') === val) return; // no change → skip write
+    if (c) c.banner_note = val;
+    try {
+      DB.sb.from('fyrirtaeki').update({ banner_note: val || null }).eq('id', id)
+        .then(function(r) { if (r && r.error) console.warn('banner_note save', r.error); },
+              function(e) { console.warn('banner_note save', e); });
+    } catch (e) { console.warn('banner_note save', e); }
   },
   // 2026-06-11: stable per-tæki status dropdown rendered as part of the
   // canonical company-detail HTML (was previously bolted on by a 2s
