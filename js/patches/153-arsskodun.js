@@ -660,7 +660,7 @@
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
+        <div class="_ars-statgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
           <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Fjöldi</div>
             <div style="font-size:22px;font-weight:800;color:var(--ink1);line-height:1.1;margin-top:2px">${all.length}</div>
@@ -684,9 +684,9 @@
         </div>
 
         <!-- Filter strip -->
-        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <div class="_ars-filterstrip" style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
           <input id="_ars-search" type="search" placeholder="🔎 Leita í nafni, kt eða heimilisfangi…" value="${esc(state.search)}" style="flex:1;min-width:220px;padding:8px 11px;border:1px solid var(--brd2);border-radius:8px;font:inherit;font-size:13px;background:var(--surface);color:var(--ink1);outline:none"/>
-          <div style="display:flex;gap:5px;border:1px solid var(--brd2);border-radius:8px;overflow:hidden;background:var(--surface)">
+          <div class="_ars-statusrow" style="display:flex;gap:5px;border:1px solid var(--brd2);border-radius:8px;overflow:hidden;background:var(--surface)">
             ${[
               { v: 'all', label: 'Allt' },
               { v: 'done', label: '✅ Búið ' + curYear },
@@ -1153,6 +1153,14 @@
         '#view-arsskodun #_ars-search{font-size:16px!important;padding:12px 13px!important;border-radius:10px!important;width:100%!important;box-sizing:border-box!important}' +
         '#view-arsskodun #_ars-new,#view-arsskodun #_ars-print,#view-arsskodun #_ars-sort{min-height:44px!important;font-size:13px!important}' +
         '#view-arsskodun ._ars-st,#view-arsskodun ._ars-mo,#view-arsskodun .by-preset{min-height:38px!important;font-size:12.5px!important;padding:7px 11px!important}' +
+        /* 2026-06-28: stat-card grid was repeat(4,1fr) — overflowed S26.
+           Collapse to 2 columns on mobile so all 4 cards fit. */
+        '#view-arsskodun ._ars-statgrid{grid-template-columns:1fr 1fr!important;gap:8px!important}' +
+        /* Status-filter row was a fixed flex row inside an overflow:hidden
+           wrapper — clipped on narrow screens. Let it scroll horizontally
+           and snap each chip into the visible area. */
+        '#view-arsskodun ._ars-statusrow{overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;max-width:100%}' +
+        '#view-arsskodun ._ars-statusrow>button{scroll-snap-align:start;flex:0 0 auto!important;white-space:nowrap}' +
       '}';
     document.head.appendChild(s);
   }
