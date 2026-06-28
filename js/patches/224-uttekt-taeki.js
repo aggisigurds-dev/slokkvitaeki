@@ -301,26 +301,11 @@
 
   if (!document.getElementById('uttekt-taeki-css')) {
     var css = [
-      /* 2026-06-22 (v2): page-backdrop fix — bulletproof.
-         • Sértæknin (1,1,0 frá #id + class) slær hver einustu .view-reglu
-           í patch 229/230 (sértækni 0,2,1) — óþarfi að nefna data-thm-*.
-         • Stigullinn í patch 230 endar í gráu á 360px → efnið (sem byrjar
-           á y≈160) situr enn í dökka svæðinu = svartur bakgrunnur sjáanlegt.
-           Hér styttum stigulinn: dökkur 0→95px (banner-svæðið), brattur
-           dökk→ljósgrár 95→200px, hreinn ljósgrár 200+ → bakgrunnurinn á
-           BAK VIÐ kortin er stál-grár eins og á mockup-inu.
-         • Ekkert !important slagsmál — sértæknin sér um pörunina. */
-      /* 2026-06-22 (v3): NB ekki nota background-attachment:local — .view hefur
-         overflow-y:auto svo `local` lætur stigulinn fljóta með skruninu og
-         dökka svæðið hverfur sjónrænt → uniform dökkur litur. Sjálfgefið
-         (scroll) festir stigulinn við .view-ramman → dökkur 0→95px alltaf
-         efst sjáanlegt, ljósgrár frá 200px niður. */
-      /* Stál-grái stigullinn á ALLAR .view-síður. Tvær lög til að duga við þema-stríð:
-         1) almenna reglan með „html body div.view[id^=view-]" — sértækni (0,2,3),
-            slær báða þema-keppinauta (patch 229 og 230, báðar 0,2,1) örugglega.
-         2) ID-fallback fyrir kraftaverk — explicit fyrir hverja dynamic view sem
-            sumir aðrir patches setja á (þjónustu-verkstæði var dökk eftir merge,
-            þrátt fyrir að id passi við [id^=view-]). ID gefur (1,1,0) sértækni. */
+      /* Stál-grái stigullinn á ALLAR .view-síður. Tvær lög:
+         1) almenn regla með „html body div.view[id^=view-]" — sértækni (0,2,3)
+            slær báða þema-keppinauta (patch 229 og 230, báðar 0,2,1).
+         2) ID-fallback fyrir dynamic views sem aðrir patches setja á (þjónustu-
+            verkstæði var dökk eftir merge þrátt fyrir id^=view-). ID gefur (1,1,0). */
       'html body div.view[id^="view-"]{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
       'html body #view-thjonustu-verkstaedi.view,'+
       'html body #view-bokhalds-yfirlit.view,'+
@@ -338,6 +323,37 @@
       'html body #view-hreyfingarlisti.view'+
         '{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
       'html body [id^="view-"]>.main-panel{background:transparent!important}',
+      /* 2026-06-28: text-on-gradient contrast fix.
+         The gradient is BLACK 0→95 px then medium-grey 200 px+. Page titles
+         were rendered as direct children of `.main-panel` using --ink1 (dark
+         navy) → black-on-black on the dark band. Subtitles use --ink3
+         (#8891a0) → invisible on grey. Catch the common page-header
+         patterns and light them up. White cards INSIDE the view keep their
+         own dark text — these selectors don't reach into cards because
+         every patch's card uses a class (`card`, `tile`, `vb-row`,
+         `ut-list`, …) or an inline `background:#fff` that we sidestep. */
+
+      /* page TITLES — light on the dark band */
+      'html body div.view[id^="view-"] main.main-panel > div > h1,'+
+      'html body div.view[id^="view-"] main.main-panel > div > div > h1,'+
+      'html body div.view[id^="view-"] main.main-panel > div > div > div > h1,'+
+      'html body div.view[id^="view-"] main.main-panel > div > div:first-child > div[style*="font-size:19px"],'+
+      'html body div.view[id^="view-"] main.main-panel > div > div:first-child > div[style*="font-size:21px"],'+
+      'html body div.view[id^="view-"] main.main-panel > div > div:first-child > div[style*="font-size:22px"],'+
+      'html body div.view[id^="view-"] main.main-panel > div:first-child > div:first-child > div[style*="font-size:19px"],'+
+      'html body div.view[id^="view-"] main.main-panel > div > div > h2,'+
+      'html body div.view[id^="view-"] > .bw-page-hdr,'+
+      'html body div.view[id^="view-"] > .bw-page-hdr .bw-page-h1,'+
+      'html body div.view[id^="view-"] > .bw-page-hdr .bw-page-sub,'+
+      'html body div.view[id^="view-"] > .bw-page-hdr .bw-page-sub b,'+
+      'html body div.view[id^="view-"] main.main-panel > div > div > .bw-page-h1,'+
+      'html body div.view[id^="view-"] main.main-panel > div ._ars-sub'+
+        '{color:#f5f5f7!important}',
+
+      /* subtitle pattern: `<div style="font-size:13px;color:var(--ink3)">…</div>` */
+      'html body div.view[id^="view-"] main.main-panel > div > div:first-child > div[style*="color:var(--ink3)"],'+
+      'html body div.view[id^="view-"] main.main-panel > div > div > div[style*="color:var(--ink3)"]'+
+        '{color:#d0d4da!important}',
       '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
       /* two-column layout: tæki left, cost calculator right */
       '.uttekt-cols{display:flex;gap:16px;align-items:flex-start}',

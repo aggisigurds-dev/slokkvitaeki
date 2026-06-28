@@ -48,7 +48,7 @@
       P+'.rf-head{display:flex;align-items:center;gap:14px;padding:15px 17px;cursor:pointer}',
       P+'.rf-ava{width:42px;height:42px;border-radius:11px;flex:none;display:grid;place-items:center;color:var(--brand);background:color-mix(in srgb,var(--brand) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--brand) 24%,var(--surface))}',
       P+'.rf-ava svg{width:22px;height:22px}',
-      P+'.rf-name{font-size:16px;font-weight:700;color:var(--ink1);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      P+'.rf-name{flex:1 1 0;min-width:0;font-size:16px;font-weight:700;color:var(--ink1);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       P+'.rf-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}',
       P+'.rf-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:7px;padding:3px 8px;border:1px solid var(--brd);background:var(--surface2);color:var(--ink2);text-decoration:none;max-width:260px}',
       P+'.rf-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',

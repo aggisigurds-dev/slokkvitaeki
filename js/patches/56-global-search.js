@@ -110,8 +110,8 @@
     const btn = document.createElement('button');
     btn.id='gs-trigger';
     btn.title='Alheimsleit (Ctrl+K)';
-    btn.style.cssText='background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:8px;padding:6px 12px;color:rgba(255,255,255,.85);cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;margin:0 6px';
-    btn.innerHTML='🔍 Leita... <kbd style="background:rgba(255,255,255,.15);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:10px">⌘K</kbd>';
+    btn.style.cssText='background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.22);border-radius:8px;padding:6px 12px;color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:6px;margin:0 6px';
+    btn.innerHTML='🔍 Leita... <kbd style="background:rgba(255,255,255,.22);padding:1px 5px;border-radius:3px;font-family:monospace;font-size:10px;color:#fff">⌘K</kbd>';
     btn.onclick=open;
     topbar.appendChild(btn);
   }

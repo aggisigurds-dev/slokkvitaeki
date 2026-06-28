@@ -500,8 +500,8 @@
       #view-verkbord .vb-btn { font:inherit; font-size:13px; padding:8px 13px; border-radius:8px; cursor:pointer; min-height:40px; border:1px solid #cbd5e1; background:#fff; color:#334155; }
       #view-verkbord .vb-btn.red { border-color:#fecaca; color:#dc2626; }
       #view-verkbord .vb-btn.green { background:#16a34a; color:#fff; border-color:#16a34a; font-weight:700; }
-      #view-verkbord .vb-empty { text-align:center; color:#94a3b8; padding:44px 18px; font-size:15px; }
-      #view-verkbord .vb-hint { font-size:12px; color:#94a3b8; margin:2px 2px 0; }
+      #view-verkbord .vb-empty { text-align:center; color:#1e293b; padding:44px 18px; font-size:15px; font-weight:600; }
+      #view-verkbord .vb-hint { font-size:12px; color:#334155; margin:2px 2px 0; font-weight:600; }
       @media (max-width:640px){ #view-verkbord .vb-wrap{ padding:12px 12px 90px; } #view-verkbord .vb-q{ flex:1; text-align:center; } }
     `;
     document.head.appendChild(s);

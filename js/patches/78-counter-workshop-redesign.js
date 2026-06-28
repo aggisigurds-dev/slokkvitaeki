@@ -628,7 +628,8 @@
       // device tile
       '.bw-tile{width:92px;flex:none;border:1px solid rgba(20,24,34,.12);border-radius:9px;overflow:hidden;background:linear-gradient(180deg,#eef1f6,#dde1e9);transition:transform .12s,box-shadow .12s,border-color .12s;position:relative}' +
       '.bw-tile:hover{transform:translateY(-2px);box-shadow:0 8px 18px -8px rgba(20,30,60,.4);border-color:#9bb0e6}' +
-      '.bw-tile-x{position:absolute;top:0;right:0;width:18px;height:18px;line-height:1;padding:0;border:none;border-radius:0 0 0 7px;background:rgba(15,23,42,.06);color:#9aa3af;font-size:11px;font-weight:700;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center}' +
+      '.bw-tile-x{position:absolute;top:0;right:0;width:28px;height:28px;line-height:1;padding:0;border:none;border-radius:0 0 0 7px;background:rgba(15,23,42,.06);color:#475569;font-size:13px;font-weight:700;cursor:pointer;z-index:2;display:flex;align-items:center;justify-content:center}' +
+      '.bw-tile-x:hover{background:rgba(220,38,38,.18);color:#b91c1c}' +
       '.bw-tile-body{padding:7px 14px 4px 6px;text-align:center;cursor:pointer}' +
       '.bw-tile-ty{font-size:10px;font-weight:600;color:#11141c;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
       '.bw-tile-ser{font-family:"Space Mono",var(--mono,monospace);font-size:9.5px;color:#7a8493;margin-top:2px}' +
