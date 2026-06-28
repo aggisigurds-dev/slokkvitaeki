@@ -354,6 +354,26 @@
       'html body div.view[id^="view-"] main.main-panel > div > div:first-child > div[style*="color:var(--ink3)"],'+
       'html body div.view[id^="view-"] main.main-panel > div > div > div[style*="color:var(--ink3)"]'+
         '{color:#d0d4da!important}',
+
+      /* 2026-06-28 round 2: UPPERCASE LABELS sitting on the gradient
+         (e.g. "STAÐA:", "KORT:", "MÁNUÐUR:") use --ink3 / #94a3b8 with
+         text-transform:uppercase — wash out on grey. Force dark slate
+         so they read on the medium-grey #9ba1ad body. */
+      'html body div.view[id^="view-"] main.main-panel [style*="text-transform:uppercase"][style*="color:var(--ink3)"],'+
+      'html body div.view[id^="view-"] main.main-panel [style*="text-transform:uppercase"][style*="color:#94a3b8"],'+
+      'html body div.view[id^="view-"] > .bw-page-hdr [style*="text-transform:uppercase"]'+
+        '{color:#1e293b!important}',
+
+      /* Empty-state pattern (Engin fyrirtæki / Engin tæki / …) wrapper
+         class is `.empty-state` from css/app.css — defaults to --ink3
+         which is invisible on grey. Force ink2 (#404550) when shown
+         directly on the gradient (not inside a card). White cards inside
+         the view that contain an empty-state stay readable: --ink2 on
+         white is ~9.5:1, still semantically muted vs body text. */
+      'html body div.view[id^="view-"] .empty-state,'+
+      'html body div.view[id^="view-"] .empty-state .es-sub,'+
+      'html body div.view[id^="view-"] .empty-state .es-title'+
+        '{color:#1e293b!important}',
       '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
       /* two-column layout: tæki left, cost calculator right */
       '.uttekt-cols{display:flex;gap:16px;align-items:flex-start}',
