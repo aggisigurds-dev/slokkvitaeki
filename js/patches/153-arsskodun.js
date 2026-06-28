@@ -1151,7 +1151,8 @@
         '#view-arsskodun ._ars-card ._ars-open-fyrirt,#view-arsskodun ._ars-card ._ars-open-map{min-height:44px!important;font-size:13px!important;border-radius:9px!important}' +
         '#view-arsskodun ._ars-card ._ars-tu-toggle{min-height:38px!important;font-size:12.5px!important;padding:7px 12px!important}' +
         '#view-arsskodun #_ars-search{font-size:16px!important;padding:12px 13px!important;border-radius:10px!important;width:100%!important;box-sizing:border-box!important}' +
-        '#view-arsskodun #_ars-new,#view-arsskodun #_ars-print,#view-arsskodun #_ars-sort{min-height:44px!important;font-size:13px!important}' +
+        '#view-arsskodun #_ars-new,#view-arsskodun #_ars-print{min-height:44px!important;font-size:13px!important}' +
+        '#view-arsskodun #_ars-sort{min-height:44px!important;font-size:16px!important}' +
         '#view-arsskodun ._ars-st,#view-arsskodun ._ars-mo,#view-arsskodun .by-preset{min-height:38px!important;font-size:12.5px!important;padding:7px 11px!important}' +
         /* 2026-06-28: stat-card grid was repeat(4,1fr) — overflowed S26.
            Collapse to 2 columns on mobile so all 4 cards fit. */
