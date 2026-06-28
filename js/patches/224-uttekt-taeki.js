@@ -301,43 +301,22 @@
 
   if (!document.getElementById('uttekt-taeki-css')) {
     var css = [
-      /* 2026-06-22 (v2): page-backdrop fix — bulletproof.
-         • Sértæknin (1,1,0 frá #id + class) slær hver einustu .view-reglu
-           í patch 229/230 (sértækni 0,2,1) — óþarfi að nefna data-thm-*.
-         • Stigullinn í patch 230 endar í gráu á 360px → efnið (sem byrjar
-           á y≈160) situr enn í dökka svæðinu = svartur bakgrunnur sjáanlegt.
-           Hér styttum stigulinn: dökkur 0→95px (banner-svæðið), brattur
-           dökk→ljósgrár 95→200px, hreinn ljósgrár 200+ → bakgrunnurinn á
-           BAK VIÐ kortin er stál-grár eins og á mockup-inu.
-         • Ekkert !important slagsmál — sértæknin sér um pörunina. */
-      /* 2026-06-22 (v3): NB ekki nota background-attachment:local — .view hefur
-         overflow-y:auto svo `local` lætur stigulinn fljóta með skruninu og
-         dökka svæðið hverfur sjónrænt → uniform dökkur litur. Sjálfgefið
-         (scroll) festir stigulinn við .view-ramman → dökkur 0→95px alltaf
-         efst sjáanlegt, ljósgrár frá 200px niður. */
-      /* Stál-grái stigullinn á ALLAR .view-síður. Tvær lög til að duga við þema-stríð:
-         1) almenna reglan með „html body div.view[id^=view-]" — sértækni (0,2,3),
-            slær báða þema-keppinauta (patch 229 og 230, báðar 0,2,1) örugglega.
-         2) ID-fallback fyrir kraftaverk — explicit fyrir hverja dynamic view sem
-            sumir aðrir patches setja á (þjónustu-verkstæði var dökk eftir merge,
-            þrátt fyrir að id passi við [id^=view-]). ID gefur (1,1,0) sértækni. */
-      'html body div.view[id^="view-"]{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
-      'html body #view-thjonustu-verkstaedi.view,'+
-      'html body #view-bokhalds-yfirlit.view,'+
-      'html body #view-thjonustuverk.view,'+
-      'html body #view-beidnir.view,'+
-      'html body #view-verkbord.view,'+
-      'html body #view-bakendi.view,'+
-      'html body #view-utlit.view,'+
-      'html body #view-tilbod.view,'+
-      'html body #view-vertid.view,'+
-      'html body #view-vsk-report.view,'+
-      'html body #view-bokhald-yfirferd.view,'+
-      'html body #view-kerfi.view,'+
-      'html body #view-vidsk-detail.view,'+
-      'html body #view-hreyfingarlisti.view'+
-        '{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
-      'html body [id^="view-"]>.main-panel{background:transparent!important}',
+      /* 2026-06-28: REMOVED universal `.view` backdrop.
+         Earlier revisions of this patch painted a steel-grey gradient
+         (#060607 → #9ba1ad) onto every `.view` via
+         `html body div.view[id^="view-"]{...!important}`, plus an explicit
+         ID-list to win the specificity war against patches 229 and 230.
+         That made every page's heading text (which still uses --ink1 = dark
+         navy) sit black-on-black at the top 95 px, and every empty-state
+         label (light slate) wash out on the medium grey below — site-wide
+         contrast failure across 25+ views (audit 2026-06-28).
+         The Brunastál steel look IS still available — patch 230 owns it,
+         scoped to `html[data-thm-preset="brunastal"] .view`, so it appears
+         only when the user picks 🔥 Brunastál in ⚙️ Útlit. Patch 229's
+         theme bridge handles the rest of the presets. This patch should
+         NOT override either — it's the úttekt-tæki feature patch, not a
+         theme. The úttekt UI itself lives inside the company-detail card
+         in view-companies and inherits its parent's background fine. */
       '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
       /* two-column layout: tæki left, cost calculator right */
       '.uttekt-cols{display:flex;gap:16px;align-items:flex-start}',
