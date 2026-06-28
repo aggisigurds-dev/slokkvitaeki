@@ -42,6 +42,22 @@
     V+'[style*="color:#475569"],'+V+'[style*="color:#64748b"],'+V+'[style*="color:#6b7280"],'+V+'[style*="color:#9ca3af"],'+V+'[style*="color:#94a3b8"],'+V+'[style*="color:#666"],'+V+'[style*="color:#888"],'+V+'[style*="color:#999"]{color:var(--thm-muted)!important}',
     // neutral borders → themed line
     V+'[style*="#e2e8f0"],'+V+'[style*="#cbd5e1"],'+V+'[style*="#e5e7eb"],'+V+'[style*="#e6eaf0"],'+V+'[style*="#eef2f7"],'+V+'[style*="solid #ccc"],'+V+'[style*="solid #ddd"],'+V+'[style*="solid #eee"]{border-color:var(--thm-line)!important}',
+
+    // 2026-06-28 round 4: STATUS-TINTED cards (patch 78 Counter/Afgreiðsla and
+    // similar) use very light status pastels — green #f0fdf4 for Tilbúin,
+    // amber #fffbeb / #fef9c3 for Í vinnslu, blue #eff6ff for queued,
+    // red #fef2f2 for danger. Under dark themes the inner text gets remapped
+    // to light by the rule above, but the bg stays a light pastel → white
+    // text on light pastel = invisible (the audit r3 caught "Jón Sigurðsson"
+    // and "Bryndís H…" failing in Dökkt at ratio ~1.1). Map the pastels to
+    // a darker, more saturated tint of the same hue that still reads the
+    // status colour but accepts the light text. Light themes are unaffected.
+    'html[data-thm-dark="1"] '+V+'[style*="background:#f0fdf4"]{background:rgba(34,197,94,.18)!important;border-color:rgba(34,197,94,.35)!important}',
+    'html[data-thm-dark="1"] '+V+'[style*="background:#fffbeb"],'+
+      'html[data-thm-dark="1"] '+V+'[style*="background:#fef9c3"]{background:rgba(245,158,11,.18)!important;border-color:rgba(245,158,11,.35)!important}',
+    'html[data-thm-dark="1"] '+V+'[style*="background:#eff6ff"]{background:rgba(59,130,246,.18)!important;border-color:rgba(59,130,246,.35)!important}',
+    'html[data-thm-dark="1"] '+V+'[style*="background:#fef2f2"],'+
+      'html[data-thm-dark="1"] '+V+'[style*="background:#fee2e2"]{background:rgba(239,68,68,.18)!important;border-color:rgba(239,68,68,.35)!important}',
     // 2026-06-19: under any DARK theme give EVERY content page the premium look
     // from Rekstrarfélög — a black → brand gradient backdrop (Grafít/Miðnætti =
     // svart+dökkblár, Glóð = svart+glóð, o.s.frv.) + dark buttons / white text.
