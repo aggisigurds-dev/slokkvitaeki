@@ -358,22 +358,37 @@
       /* 2026-06-28 round 2: UPPERCASE LABELS sitting on the gradient
          (e.g. "STAÐA:", "KORT:", "MÁNUÐUR:") use --ink3 / #94a3b8 with
          text-transform:uppercase — wash out on grey. Force dark slate
-         so they read on the medium-grey #9ba1ad body. */
+         so they read on the medium-grey #9ba1ad body (light/Brunastál).
+         Round-3 (2026-06-28): in DARK themes the gradient is still grey
+         but the surrounding `.view` gets a dark overlay from patch 229
+         (radial-gradient backdrop) — slate-700 starts to fight that.
+         Override with a light slate in dark presets so it reads either
+         way. */
       'html body div.view[id^="view-"] main.main-panel [style*="text-transform:uppercase"][style*="color:var(--ink3)"],'+
       'html body div.view[id^="view-"] main.main-panel [style*="text-transform:uppercase"][style*="color:#94a3b8"],'+
       'html body div.view[id^="view-"] > .bw-page-hdr [style*="text-transform:uppercase"]'+
         '{color:#1e293b!important}',
+      'html[data-thm-dark="1"] body div.view[id^="view-"] main.main-panel [style*="text-transform:uppercase"][style*="color:var(--ink3)"],'+
+      'html[data-thm-dark="1"] body div.view[id^="view-"] main.main-panel [style*="text-transform:uppercase"][style*="color:#94a3b8"],'+
+      'html[data-thm-dark="1"] body div.view[id^="view-"] > .bw-page-hdr [style*="text-transform:uppercase"]'+
+        '{color:#cbd5e1!important}',
 
-      /* Empty-state pattern (Engin fyrirtæki / Engin tæki / …) wrapper
-         class is `.empty-state` from css/app.css — defaults to --ink3
-         which is invisible on grey. Force ink2 (#404550) when shown
-         directly on the gradient (not inside a card). White cards inside
-         the view that contain an empty-state stay readable: --ink2 on
-         white is ~9.5:1, still semantically muted vs body text. */
+      /* Empty-state pattern (Engin fyrirtæki / Engin tæki / …) — light
+         themes use slate-700 so it shows on the grey gradient body;
+         dark themes flip to slate-300 so it shows on the dark backdrop. */
       'html body div.view[id^="view-"] .empty-state,'+
       'html body div.view[id^="view-"] .empty-state .es-sub,'+
       'html body div.view[id^="view-"] .empty-state .es-title'+
         '{color:#1e293b!important}',
+      'html[data-thm-dark="1"] body div.view[id^="view-"] .empty-state,'+
+      'html[data-thm-dark="1"] body div.view[id^="view-"] .empty-state .es-sub,'+
+      'html[data-thm-dark="1"] body div.view[id^="view-"] .empty-state .es-title'+
+        '{color:#cbd5e1!important}',
+      /* Same idea for the verkbord empty-state class (#view-verkbord .vb-empty)
+         and its hint: round-2 hard-coded #1e293b which becomes invisible in
+         dark themes. Flip to slate-300 there. */
+      'html[data-thm-dark="1"] #view-verkbord .vb-empty,'+
+      'html[data-thm-dark="1"] #view-verkbord .vb-hint{color:#cbd5e1!important}',
       '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
       /* two-column layout: tæki left, cost calculator right */
       '.uttekt-cols{display:flex;gap:16px;align-items:flex-start}',
