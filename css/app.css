@@ -1413,6 +1413,23 @@ textarea.fi { resize: vertical; min-height: 72px; }
   padding:0 8px;
   font-size:11px; color:rgba(255,255,255,.35);
 }
+/* 2026-06-28: bottom-sidebar widgets render with text inherited from body
+   (--ink1 dark navy) which made the user-avatar "JS", "Jón S." label,
+   notif-bell 🔔 and dark-toggle 🌙 dark-on-dark in every preset — visually
+   missing. Force a light text colour so they read on the dark sidebar. */
+.topbar .user-chip,
+.topbar .user-chip span,
+.topbar .notif-bell,
+.topbar #notif-bell,
+.topbar .dark-toggle,
+.topbar #dark-toggle { color:rgba(255,255,255,.85) !important; }
+.topbar .user-avatar {
+  width:30px; height:30px; border-radius:50%;
+  background:var(--brand);
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:800; color:#fff !important;
+  flex-shrink:0;
+}
 
 /* === FIELD VIEW === */
 #view-field.active { display:flex !important; flex-direction:column !important; }
@@ -3148,6 +3165,23 @@ textarea.fi { resize: vertical; min-height: 72px; }
   display:flex; align-items:center; gap:5px;
   padding:0 8px;
   font-size:11px; color:rgba(255,255,255,.35);
+}
+/* 2026-06-28: bottom-sidebar widgets render with text inherited from body
+   (--ink1 dark navy) which made the user-avatar "JS", "Jón S." label,
+   notif-bell 🔔 and dark-toggle 🌙 dark-on-dark in every preset — visually
+   missing. Force a light text colour so they read on the dark sidebar. */
+.topbar .user-chip,
+.topbar .user-chip span,
+.topbar .notif-bell,
+.topbar #notif-bell,
+.topbar .dark-toggle,
+.topbar #dark-toggle { color:rgba(255,255,255,.85) !important; }
+.topbar .user-avatar {
+  width:30px; height:30px; border-radius:50%;
+  background:var(--brand);
+  display:flex; align-items:center; justify-content:center;
+  font-size:11px; font-weight:800; color:#fff !important;
+  flex-shrink:0;
 }
 
 /* === FIELD VIEW === */
