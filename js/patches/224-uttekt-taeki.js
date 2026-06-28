@@ -301,22 +301,59 @@
 
   if (!document.getElementById('uttekt-taeki-css')) {
     var css = [
-      /* 2026-06-28: REMOVED universal `.view` backdrop.
-         Earlier revisions of this patch painted a steel-grey gradient
-         (#060607 → #9ba1ad) onto every `.view` via
-         `html body div.view[id^="view-"]{...!important}`, plus an explicit
-         ID-list to win the specificity war against patches 229 and 230.
-         That made every page's heading text (which still uses --ink1 = dark
-         navy) sit black-on-black at the top 95 px, and every empty-state
-         label (light slate) wash out on the medium grey below — site-wide
-         contrast failure across 25+ views (audit 2026-06-28).
-         The Brunastál steel look IS still available — patch 230 owns it,
-         scoped to `html[data-thm-preset="brunastal"] .view`, so it appears
-         only when the user picks 🔥 Brunastál in ⚙️ Útlit. Patch 229's
-         theme bridge handles the rest of the presets. This patch should
-         NOT override either — it's the úttekt-tæki feature patch, not a
-         theme. The úttekt UI itself lives inside the company-detail card
-         in view-companies and inherits its parent's background fine. */
+      /* Stál-grái stigullinn á ALLAR .view-síður. Tvær lög:
+         1) almenn regla með „html body div.view[id^=view-]" — sértækni (0,2,3)
+            slær báða þema-keppinauta (patch 229 og 230, báðar 0,2,1).
+         2) ID-fallback fyrir dynamic views sem aðrir patches setja á (þjónustu-
+            verkstæði var dökk eftir merge þrátt fyrir id^=view-). ID gefur (1,1,0). */
+      'html body div.view[id^="view-"]{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
+      'html body #view-thjonustu-verkstaedi.view,'+
+      'html body #view-bokhalds-yfirlit.view,'+
+      'html body #view-thjonustuverk.view,'+
+      'html body #view-beidnir.view,'+
+      'html body #view-verkbord.view,'+
+      'html body #view-bakendi.view,'+
+      'html body #view-utlit.view,'+
+      'html body #view-tilbod.view,'+
+      'html body #view-vertid.view,'+
+      'html body #view-vsk-report.view,'+
+      'html body #view-bokhald-yfirferd.view,'+
+      'html body #view-kerfi.view,'+
+      'html body #view-vidsk-detail.view,'+
+      'html body #view-hreyfingarlisti.view'+
+        '{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
+      'html body [id^="view-"]>.main-panel{background:transparent!important}',
+      /* 2026-06-28: text-on-gradient contrast fix.
+         The gradient is BLACK 0→95 px then medium-grey 200 px+. Page titles
+         were rendered as direct children of `.main-panel` using --ink1 (dark
+         navy) → black-on-black on the dark band. Subtitles use --ink3
+         (#8891a0) → invisible on grey. Catch the common page-header
+         patterns and light them up. White cards INSIDE the view keep their
+         own dark text — these selectors don't reach into cards because
+         every patch's card uses a class (`card`, `tile`, `vb-row`,
+         `ut-list`, …) or an inline `background:#fff` that we sidestep. */
+
+      /* page TITLES — light on the dark band */
+      'html body div.view[id^="view-"] main.main-panel > div > h1,'+
+      'html body div.view[id^="view-"] main.main-panel > div > div > h1,'+
+      'html body div.view[id^="view-"] main.main-panel > div > div > div > h1,'+
+      'html body div.view[id^="view-"] main.main-panel > div > div:first-child > div[style*="font-size:19px"],'+
+      'html body div.view[id^="view-"] main.main-panel > div > div:first-child > div[style*="font-size:21px"],'+
+      'html body div.view[id^="view-"] main.main-panel > div > div:first-child > div[style*="font-size:22px"],'+
+      'html body div.view[id^="view-"] main.main-panel > div:first-child > div:first-child > div[style*="font-size:19px"],'+
+      'html body div.view[id^="view-"] main.main-panel > div > div > h2,'+
+      'html body div.view[id^="view-"] > .bw-page-hdr,'+
+      'html body div.view[id^="view-"] > .bw-page-hdr .bw-page-h1,'+
+      'html body div.view[id^="view-"] > .bw-page-hdr .bw-page-sub,'+
+      'html body div.view[id^="view-"] > .bw-page-hdr .bw-page-sub b,'+
+      'html body div.view[id^="view-"] main.main-panel > div > div > .bw-page-h1,'+
+      'html body div.view[id^="view-"] main.main-panel > div ._ars-sub'+
+        '{color:#f5f5f7!important}',
+
+      /* subtitle pattern: `<div style="font-size:13px;color:var(--ink3)">…</div>` */
+      'html body div.view[id^="view-"] main.main-panel > div > div:first-child > div[style*="color:var(--ink3)"],'+
+      'html body div.view[id^="view-"] main.main-panel > div > div > div[style*="color:var(--ink3)"]'+
+        '{color:#d0d4da!important}',
       '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
       /* two-column layout: tæki left, cost calculator right */
       '.uttekt-cols{display:flex;gap:16px;align-items:flex-start}',
