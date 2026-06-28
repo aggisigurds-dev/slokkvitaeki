@@ -651,7 +651,7 @@
               <button data-view-mode="card" class="_ars-vm" style="padding:7px 14px;border:none;background:${state.view==='card'?'var(--brand)':'var(--surface)'};color:${state.view==='card'?'#fff':'var(--ink2)'};cursor:pointer;font:inherit;font-size:12px;font-weight:600">🟦 Kort</button>
               <button data-view-mode="list" class="_ars-vm" style="padding:7px 14px;border:none;background:${state.view==='list'?'var(--brand)':'var(--surface)'};color:${state.view==='list'?'#fff':'var(--ink2)'};cursor:pointer;font:inherit;font-size:12px;font-weight:600;border-left:1px solid var(--brd2)">📋 Listi</button>
             </div>
-            <select id="_ars-sort" style="padding:7px 10px;border:1px solid var(--brd2);border-radius:8px;background:var(--surface);font:inherit;font-size:12px;color:var(--ink1);cursor:pointer">
+            <select id="_ars-sort" aria-label="Raða eftir" title="Raða eftir" style="padding:7px 10px;border:1px solid var(--brd2);border-radius:8px;background:var(--surface);font:inherit;font-size:12px;color:var(--ink1);cursor:pointer">
               <option value="alpha" ${state.sort==='alpha'?'selected':''}>↕️ Stafrófsröð</option>
               <option value="month" ${state.sort==='month'?'selected':''}>📅 Eftir skoðunarmánuði (næst fyrst)</option>
               <option value="oldest" ${state.sort==='oldest'?'selected':''}>⏳ Þeir elstu fyrst (lengst síðan skoðað)</option>
