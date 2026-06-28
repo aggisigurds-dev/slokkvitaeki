@@ -356,6 +356,19 @@
   document.addEventListener('sale-edited', loadReview);
   setInterval(loadReview, 45000);
 
+  // 2026-06-28: dismiss the modal on view switch + Esc, otherwise it stayed
+  // open across navigation and dimmed every subsequent page (the .55-alpha
+  // backdrop is fixed-position-inset-0).
+  function closeIfOpen() { document.getElementById('_payrev-modal')?.remove(); }
+  try {
+    if (window.App && typeof App.switchView === 'function' && !App.switchView.__payrev_hooked) {
+      const orig = App.switchView;
+      App.switchView = function () { closeIfOpen(); return orig.apply(this, arguments); };
+      App.switchView.__payrev_hooked = true;
+    }
+  } catch (_) {}
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeIfOpen(); });
+
   injectSidebar();
   setTimeout(injectSidebar, 1000);
   setTimeout(loadReview, 700);

@@ -80,9 +80,9 @@
     const allBtn = `<button class="_mis-all" type="button" style="padding:7px 13px;background:${allActive?'var(--app-primary,#C93C1D)':'#fff'};color:${allActive?'#fff':'#475569'};border:1px solid ${allActive?'transparent':'#e2e8f0'};border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .12s">📅 Allt árið</button>`;
     const yearLabel = `<span style="font-size:13px;font-weight:700;color:#0f172a;padding:0 10px;display:flex;align-items:center">${year}</span>`;
     const yearControls = `
-      <button class="_mis-year-prev" type="button" title="Fyrra ár" style="padding:6px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font:inherit;font-size:13px">‹</button>
+      <button class="_mis-year-prev" type="button" title="Fyrra ár" style="min-width:40px;min-height:40px;padding:6px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font:inherit;font-size:15px;font-weight:600">‹</button>
       ${yearLabel}
-      <button class="_mis-year-next" type="button" title="Næsta ár" style="padding:6px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font:inherit;font-size:13px">›</button>
+      <button class="_mis-year-next" type="button" title="Næsta ár" style="min-width:40px;min-height:40px;padding:6px 12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;cursor:pointer;font:inherit;font-size:15px;font-weight:600">›</button>
     `;
     return `
       <div style="display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:10px 16px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin:12px 20px 0;box-shadow:0 1px 3px rgba(0,0,0,0.04)">

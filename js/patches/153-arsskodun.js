@@ -708,7 +708,7 @@
             const mn = i + 1;
             const cnt = monthCounts[mn];
             const sel = state.month === mn;
-            return `<button data-month="${mn}" class="_ars-mo" style="padding:5px 10px;border:1px solid ${sel?'var(--brand)':(cnt?'var(--brd2)':'var(--brd)')};background:${sel?'var(--brand)':'var(--surface)'};color:${sel?'#fff':(cnt?'var(--ink1)':'var(--brd2)')};border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">${esc(m)} ${cnt?`<span style="opacity:.6;font-weight:500">${cnt}</span>`:''}</button>`;
+            return `<button data-month="${mn}" class="_ars-mo" style="padding:5px 10px;border:1px solid ${sel?'var(--brand)':(cnt?'var(--brd2)':'var(--brd)')};background:${sel?'var(--brand)':'var(--surface)'};color:${sel?'#fff':(cnt?'var(--ink1)':'#64748b')};border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">${esc(m)} ${cnt?`<span style="opacity:.6;font-weight:500">${cnt}</span>`:''}</button>`;
           }).join('')}
         </div>
 
