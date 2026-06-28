@@ -2523,14 +2523,20 @@ console.log('[patch-master] loaded with all fixes');
       if(!r.data){alert('Fyrirtaeki ekki fundid');return;}
       var c=r.data;
       var m=document.createElement('div');m.className='_pm_modal';
-      m.innerHTML='<div class="_pm_modal_box"><h3>Breyta: '+c.nafn+'</h3>'+
-        '<label>Nafn</label><input id="_ed_nafn" value="'+(c.nafn||'')+'">'+
-        '<label>Kennitala</label><input id="_ed_kt" value="'+(c.kennitala||'')+'">'+
-        '<label>S\u00edmi</label><input id="_ed_simi" value="'+(c.simi||'')+'">'+
-        '<label>Netfang (t\u00f6lvup\u00f3stur)</label><input id="_ed_email" value="'+(c.netfang||'')+'">'+
-        '<label>Heimilisfang</label><input id="_ed_addr" value="'+(c.heimilisfang||'')+'">'+
-        '<label>Tengilid\u00f0ur</label><input id="_ed_contact" value="'+(c.tengiliður||'')+'">'+
-        '<label>Athugasemdir</label><textarea id="_ed_notes">'+(c.athugasemdir||'')+'</textarea>'+
+      // 2026-06-28: HTML-escape every customer field. Previously c.nafn /
+      // c.kennitala / c.athugasemdir were concatenated straight into
+      // innerHTML — a stored XSS hole. A name like <img src=x onerror=...>
+      // would execute; an attribute like " onfocus="..." would break out
+      // of value="...". Use existing U.e() if available, else fallback.
+      var _e=(window.U&&U.e)?U.e:function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(ch){return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];});};
+      m.innerHTML='<div class="_pm_modal_box"><h3>Breyta: '+_e(c.nafn)+'</h3>'+
+        '<label>Nafn</label><input id="_ed_nafn" value="'+_e(c.nafn||'')+'">'+
+        '<label>Kennitala</label><input id="_ed_kt" value="'+_e(c.kennitala||'')+'">'+
+        '<label>S\u00edmi</label><input id="_ed_simi" value="'+_e(c.simi||'')+'">'+
+        '<label>Netfang (t\u00f6lvup\u00f3stur)</label><input id="_ed_email" value="'+_e(c.netfang||'')+'">'+
+        '<label>Heimilisfang</label><input id="_ed_addr" value="'+_e(c.heimilisfang||'')+'">'+
+        '<label>Tengilid\u00f0ur</label><input id="_ed_contact" value="'+_e(c.tengiliður||'')+'">'+
+        '<label>Athugasemdir</label><textarea id="_ed_notes">'+_e(c.athugasemdir||'')+'</textarea>'+
         '<div class="_pm_modal_btns"><button class="_pm_cancel">H\u00e6tta vid</button><button class="_pm_save">Vista</button></div></div>';
       document.body.appendChild(m);
       m.querySelector('._pm_cancel').onclick=function(){m.remove();};
