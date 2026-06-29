@@ -60,6 +60,8 @@
     dupSales: [],
     staleDrafts: [],
     overdueEq: [],
+    workshop: [],
+    emails: [],
     watch: [],
     snoozed: new Set(),
   };
@@ -170,6 +172,41 @@
     } catch (e) { console.warn('findStaleDrafts', e); return []; }
   }
 
+  async function findStaleWorkshop() {
+    // Equipment on the bench (status='loaned' = á verkstæði) loaned > 14 daga.
+    const SB = getSB(); if (!SB) return [];
+    try {
+      const cutoff = daysAgoISO(14);
+      const r = await SB.from('uttaeki').select('id,serial,type,client,loaned_at,custody_status,status')
+        .or('status.eq.loaned,custody_status.eq.workshop').lt('loaned_at', cutoff).is('deleted_at', null).limit(100);
+      if (r.error) throw r.error;
+      const out = (r.data || []).map(u => ({
+        kind: 'workshop', id: 'ws_' + u.id,
+        title: '🔧 ' + (u.serial || '?') + ' · ' + (u.type || '') + ' í verkstæði',
+        sub: (u.client || '?') + ' · síðan ' + relTime(u.loaned_at),
+      }));
+      return out.sort((a, b) => a.sub.localeCompare(b.sub));
+    } catch (e) { console.warn('findStaleWorkshop', e); return []; }
+  }
+
+  async function findPriorityEmails() {
+    // Fetch from brunaholf — recent_emails filtered to priority accounts.
+    try {
+      const r = await fetch('https://brunaholf.netlify.app/api/data-sources-status');
+      if (!r.ok) return [];
+      const d = await r.json();
+      const PRI = new Set(['eldklar@eldklar.is', 'brunaholf@brunaholf.is']);
+      const rows = (d.recent_emails || [])
+        .filter(e => PRI.has((e.account || '').toLowerCase()))
+        .slice(0, 8);
+      return rows.map((e, i) => ({
+        kind: 'email', id: 'eml_' + (e.received_at || i) + '_' + (e.account || ''),
+        title: '📧 ' + (e.from || e.sender_email || '?') + ' · ' + (e.subject || '(án efnis)').slice(0, 80),
+        sub: (e.account || '') + ' · ' + relTime(e.received_at),
+      }));
+    } catch (e) { console.warn('findPriorityEmails', e); return []; }
+  }
+
   async function findOverdueEquipment() {
     // Customers with overdue uttaeki count > 3 (only flag a heavy load)
     const SB = getSB(); if (!SB) return [];
@@ -215,16 +252,20 @@
     state.loading = true; state.err = null; render();
     loadSnoozed();
     try {
-      const [u, d, s, o] = await Promise.all([
+      const [u, d, s, o, w, em] = await Promise.all([
         findUrgent(),
         findDuplicateSales(),
         findStaleDrafts(),
         findOverdueEquipment(),
+        findStaleWorkshop(),
+        findPriorityEmails(),
       ]);
       state.urgent = u;
       state.dupSales = d;
       state.staleDrafts = s;
       state.overdueEq = o;
+      state.workshop = w;
+      state.emails = em;
       state.watch = loadWatch();
     } catch (e) {
       state.err = (e && e.message) || String(e);
@@ -323,22 +364,28 @@
     const td = state.dupSales.filter(r => !isSnoozed(r.id)).length;
     const ts = state.staleDrafts.filter(r => !isSnoozed(r.id)).length;
     const to = state.overdueEq.filter(r => !isSnoozed(r.id)).length;
+    const tws = state.workshop.filter(r => !isSnoozed(r.id)).length;
+    const tem = state.emails.filter(r => !isSnoozed(r.id)).length;
     const tw = state.watch.length;
-    const total = tu + td + ts + to + tw;
+    const total = tu + td + ts + to + tws + tem + tw;
 
     const countsHTML = '<div class="am-counts">' +
       '<span class="am-count ' + (tu ? 'bad' : '') + '">🚨 Áríðandi: <b>' + tu + '</b></span>' +
       '<span class="am-count ' + (td ? 'warn' : '') + '">🔄 Tvítekningar: <b>' + td + '</b></span>' +
       '<span class="am-count ' + (ts ? 'warn' : '') + '">📋 Óloknar: <b>' + ts + '</b></span>' +
       '<span class="am-count ' + (to ? 'warn' : '') + '">🧯 Útrunnin: <b>' + to + '</b></span>' +
+      '<span class="am-count ' + (tws ? 'warn' : '') + '">🔧 Verkstæði: <b>' + tws + '</b></span>' +
+      '<span class="am-count">📧 Póstar: <b>' + tem + '</b></span>' +
       '<span class="am-count">🤖 Watchlist: <b>' + tw + '</b></span>' +
       '<span class="am-count" style="margin-left:auto;font-weight:800">Samtals: <b>' + total + '</b></span>' +
       '</div>';
 
     const sections = [
       sectionHTML('🚨 Áríðandi', state.urgent, 'Allt rólegt í dag. ✨'),
+      sectionHTML('📧 Mikilvægir póstar (eldklar/brunaholf)', state.emails, 'Engar nýjar póstrispur frá forgangs-reikningum.'),
       sectionHTML('🔄 Líklegir tvítekningar (sölur sömu daginn)', state.dupSales, 'Engin tvítekning fundin í síðustu 60 dögum.'),
       sectionHTML('📋 Sölu-drög > 7 daga gömul', state.staleDrafts, 'Engin gömul drög.'),
+      sectionHTML('🔧 Tæki á verkstæði > 14 daga', state.workshop, 'Allt í gegn.'),
       sectionHTML('🧯 Fyrirtæki með ≥4 útrunnin tæki', state.overdueEq, 'Engir kúnnar með háa útrunna talningu.'),
       watchSectionHTML(state.watch),
     ].join('');
