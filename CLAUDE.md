@@ -3,6 +3,11 @@
 This file is read by Claude Code at the start of every session in this folder.
 It contains everything Claude Code needs to know to be useful immediately.
 
+> **📖 ALSO READ**: [`docs/CLAUDE-LEIDBEININGAR.md`](docs/CLAUDE-LEIDBEININGAR.md) — operational playbook
+> covering the customer-DB architecture, Verkfærakassi, walk-in convention (kt
+> `999999-9999`), rekstrarfélög-staðsettningar rule, email priorities, and known
+> gotchas. Updated continuously as Agnar gives new context.
+
 ---
 
 ## What this project is
@@ -353,6 +358,45 @@ birtist strax í „Skjöl & viðhengi" árstöflunni (patch 199), í úttektars
   ekki Drive-aðgang (engin googleapis/OAuth Netlify-function). Drive-pörunin lifir í
   Brunahólf-appinu (sjá „Laga pörun í Brunahólf →" hlekkinn á skjalaspjaldinu). Ef
   á að lenda í Drive þarf að flytja Drive-OAuth + upload-function úr Brunahólf.
+
+## Customer-base sameining — `js/patches/236-customer-sameining.js`
+
+Sjálfstæð síða (view `view-sameining`, slug `#sameining`, hliðarstiku-hnappur
+„🔗 Sameining") sem klárar **`customer_base_id` FK-tengingu** sem byrjaði 2026-06-04
+en var hálf-flutt. Þrír undirflipar:
+
+- **🏢 Fyrirtæki** — 325 raðir með `customer_base_id IS NULL`
+- **👤 Viðskiptavinir** — 23 raðir með `customer_base_id IS NULL`
+- **💳 Sölur** — 93 raðir með `customer_base_id IS NULL` (gamla `customer_id → fyrirtaeki`)
+
+Suggestion engine flaggar TILLÖGU per röð:
+- 🟢 high = nákvæmt kt-match (digits-only í gegnum `ktDigits()`)
+- 🟡 med = nákvæmt nafn-match (case-fold + NFD)
+- 🟠 low = fuzzy nafn (Levenshtein ≤ 2 og lengd ≥ 4)
+- 🔴 none = enginn match → býður „🆕 Ný base"
+
+Aðgerðir per röð: 🔗 Tengja · 🔍 Leita · 🆕 Ný base · × Sleppa.
+**Bulk-takkar**: „🚀 Tengja allt augljóst" (high+med í einum batch),
+„🚶 Sameina alla walk-ins" (allir með kt `999999-9999` eða án kt → eitt
+canonical base).
+
+**Walk-in convention** (Agnar 2026-06-29): POS-walk-ins (greiðir og fer)
+eiga ALLIR að lenda á einni base-röð með kt `999999-9999` (snið með striki).
+Patch býr til/finnur þá base (`'Walk-in / nafnlaus sala'`) með upsert.
+
+**Rekstrarfélög með margar staðsettningar** (Agnar 2026-06-29): Sameining MÁ
+ALDREI eyða eða sameina staðsettningar — bara setja sama `customer_base_id`.
+Tólið sýnir „📍 N staðsettningar" badge þegar sama kt birtist í 2+ röðum og
+banner-note efst. Notar EKKI patch 157 `doMerge()` (sem á við þegar tvær raðir
+ÆTTU að vera sömu, sem á ekki við um rekstrarfélög-staðsettningar).
+
+**Útitækjanúmer** (Agnar 2026-06-29): `uttaeki.serial` er auto-generated placeholder
+— má eyða/breyta/skrifa yfir án afleiðinga. Serial-árekstrar við úttækjatilfærslu
+eru ekki vandi.
+
+Wiring: nýr `<script>` í index.html (eftir 235), `App.switchView('sameining')`
+hook, patch 218 ALIAS update fyrir `#sameining` deep-link, klónaður
+hliðarstiku-hnappur frá Bakendi. `window.Sameining = {open, reload}`.
 
 ## Related projects (in case Agnar mentions them)
 

@@ -52,7 +52,8 @@
     verkbord: 'verkbord', verkefni: 'verkbord',   // sameinað verkborð (patch 231)
     brunakerfi: 'brunakerfi', verkdagbok: 'verkdagbok', arsskodun: 'arsskodun',
     vidskiptavinir: 'vidskiptavinir', yfirlit: 'yfirlit',
-    bilstjori: 'bilstjori', drivers: 'bilstjori', bakendi: 'bakendi'
+    bilstjori: 'bilstjori', drivers: 'bilstjori', bakendi: 'bakendi',
+    sameining: 'sameining'
   };
 
   // internal view id -> preferred ascii slug (first alias wins).
