@@ -3,6 +3,11 @@
 This file is read by Claude Code at the start of every session in this folder.
 It contains everything Claude Code needs to know to be useful immediately.
 
+> **📖 ALSO READ**: [`docs/CLAUDE-LEIDBEININGAR.md`](docs/CLAUDE-LEIDBEININGAR.md) — operational playbook
+> covering the customer-DB architecture, Verkfærakassi, walk-in convention (kt
+> `999999-9999`), rekstrarfélög-staðsettningar rule, email priorities, and known
+> gotchas. Updated continuously as Agnar gives new context.
+
 ---
 
 ## What this project is
@@ -353,6 +358,80 @@ birtist strax í „Skjöl & viðhengi" árstöflunni (patch 199), í úttektars
   ekki Drive-aðgang (engin googleapis/OAuth Netlify-function). Drive-pörunin lifir í
   Brunahólf-appinu (sjá „Laga pörun í Brunahólf →" hlekkinn á skjalaspjaldinu). Ef
   á að lenda í Drive þarf að flytja Drive-OAuth + upload-function úr Brunahólf.
+
+## Customer-base sameining — `js/patches/236-customer-sameining.js`
+
+Sjálfstæð síða (view `view-sameining`, slug `#sameining`, hliðarstiku-hnappur
+„🔗 Sameining") sem klárar **`customer_base_id` FK-tengingu** sem byrjaði 2026-06-04
+en var hálf-flutt. Þrír undirflipar:
+
+- **🏢 Fyrirtæki** — 325 raðir með `customer_base_id IS NULL`
+- **👤 Viðskiptavinir** — 23 raðir með `customer_base_id IS NULL`
+- **💳 Sölur** — 93 raðir með `customer_base_id IS NULL` (gamla `customer_id → fyrirtaeki`)
+
+Suggestion engine flaggar TILLÖGU per röð:
+- 🟢 high = nákvæmt kt-match (digits-only í gegnum `ktDigits()`)
+- 🟡 med = nákvæmt nafn-match (case-fold + NFD)
+- 🟠 low = fuzzy nafn (Levenshtein ≤ 2 og lengd ≥ 4)
+- 🔴 none = enginn match → býður „🆕 Ný base"
+
+Aðgerðir per röð: 🔗 Tengja · 🔍 Leita · 🆕 Ný base · × Sleppa.
+**Bulk-takkar**: „🚀 Tengja allt augljóst" (high+med í einum batch),
+„🚶 Sameina alla walk-ins" (allir með kt `999999-9999` eða án kt → eitt
+canonical base).
+
+**Walk-in convention** (Agnar 2026-06-29): POS-walk-ins (greiðir og fer)
+eiga ALLIR að lenda á einni base-röð með kt `999999-9999` (snið með striki).
+Patch býr til/finnur þá base (`'Walk-in / nafnlaus sala'`) með upsert.
+
+**Rekstrarfélög með margar staðsettningar** (Agnar 2026-06-29): Sameining MÁ
+ALDREI eyða eða sameina staðsettningar — bara setja sama `customer_base_id`.
+Tólið sýnir „📍 N staðsettningar" badge þegar sama kt birtist í 2+ röðum og
+banner-note efst. Notar EKKI patch 157 `doMerge()` (sem á við þegar tvær raðir
+ÆTTU að vera sömu, sem á ekki við um rekstrarfélög-staðsettningar).
+
+**Útitækjanúmer** (Agnar 2026-06-29): `uttaeki.serial` er auto-generated placeholder
+— má eyða/breyta/skrifa yfir án afleiðinga. Serial-árekstrar við úttækjatilfærslu
+eru ekki vandi.
+
+Wiring: nýr `<script>` í index.html (eftir 235), `App.switchView('sameining')`
+hook, patch 218 ALIAS update fyrir `#sameining` deep-link, klónaður
+hliðarstiku-hnappur frá Bakendi. `window.Sameining = {open, reload}`.
+
+## Aðstoðarmaður (Fasi 1) — `js/patches/237-customer-brief.js` + `238-adstod-banner.js`
+
+Fyrsta lag af „AI-aðstoðarmaður" vísíóninni (Agnar 2026-06-29). Sjá fulla
+útlistun í `docs/CLAUDE-LEIDBEININGAR.md` §10.
+
+**Patch 237 — Customer brief:**
+- Lítill litaður **dot** (🔴 rauður = áríðandi skilaboð · 🟠 amber = forgangur ≥3)
+  birtist ÞIN á þeim kúnna-röðum sem þurfa athygli. Engir dotar á hreinum.
+- Smella → popup með „Síðasta úttekt 11 mán síðan · 14 tæki · 2 útrunnin · ✓ greitt upp"
+- `quickFlag()` keyrir synchronously á AppSettings (engin DB-call)
+- Full `compute()` pullar úr fyrirtaeki/uttaeki/solur með 5-mín cache
+- Mutation observer decorerar alla `[data-co-id]` raðir
+- companieslist.js fékk 2-lína breytingu til að setja data-co-id á <tr>
+- Public API: `window.CustomerBrief = { compute, show, invalidate, close, quickFlag, refreshFlags, setDotsHidden, getDotsHidden }`
+
+**Patch 238 — 🤖 Aðstoðar-spjald í banner:**
+- 🤖 takki festur í Brunastál-banner **rétt fyrir klukkuna** (sjá `.bb-clockbox`)
+- Rauður badge sýnir fjölda opinna watchlist-punkta
+- Smella → popover (`#_ad-panel`) með:
+  - „Sýna dots á kúnnum" toggle (stýrir patch 237)
+  - „🔔 Mín watchlist" listi
+  - „➕ Bæta við punkti" form með 4 flokk-chip-um:
+    - 🔔 Áminning · 🎯 Mynstur · ⚖️ Regla · 🐛 Bug
+- Form: flokkur (chip) + titill (skylda) + valkv. target (kt/sendandi) + valkv. lýsing
+- Geymsla: localStorage `adstod_watchlist_v1`
+- ⤓ „Flytja út" til JSON
+- Þegar Brunastál er slökkt: 🤖 birtist fljótandi við 🔥 restore-takka
+- MutationObserver endurtengir 🤖 takka þegar banner er endurbyggt
+- Public API: `window.AdstodHub = { open, close, toggle, addWatch, removeWatch, listWatch, exportJSON }`
+
+**Næstu fasar (planað):**
+- Fasi 2: brunaholf `/api/adstod-run` (Claude Sonnet) les watchlist + DB-state, skrifar tip í `adstod_tips` Supabase tafla
+- Fasi 3: „hugsanaský" — reglur breyta hegðun AI í næstu yfirferð
+- Fasi 4: Domain analyzers (duplicate sölur/reikningar, mikilvægir póstar, tilboð úr fyrirspurnum)
 
 ## Related projects (in case Agnar mentions them)
 
