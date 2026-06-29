@@ -598,7 +598,9 @@
               state.customer.heimilisfang = m.heimilisfang || '';
               state.customer.afslattur_pct = m.afslattur_pct || 0;
               state.customer.athugasemdir = m.athugasemdir || '';
-              if (m.afslattur_pct > 0) state.discount_pct = m.afslattur_pct;
+              // Always overwrite — `if (>0) set` left old customer's discount in place
+              // when switching to a customer with no discount, overcharging-saving them.
+              state.discount_pct = m.afslattur_pct || 0;
               var discNote = m.afslattur_pct > 0 ? ' · <span style="color:#16a34a;font-weight:600">' + m.afslattur_pct + '% afsláttur</span>' : '';
               // Tag where the data came from so the user knows whether it
               // was already in the system (✓) or pulled live from RSK (📋).

@@ -211,15 +211,26 @@
     const SB = getSB();
     if (!SB) return;
 
-    // 2) Resolve via customer_id
+    // 2) Resolve via customer_id — but disambiguate. fyrirtaeki and
+    // vidskiptavinir have independent bigserials, so low ids overlap.
+    // Pull both rows and pick the one whose nafn matches sale.customer_nafn.
     if (_sale.customer_id) {
       try {
-        let r = await SB.from('vidskiptavinir').select('kennitala').eq('id', _sale.customer_id).maybeSingle();
-        let kt = r.data?.kennitala || '';
-        if (!kt) {
-          r = await SB.from('fyrirtaeki').select('kennitala').eq('id', _sale.customer_id).maybeSingle();
-          kt = r.data?.kennitala || '';
+        const [vRes, fRes] = await Promise.all([
+          SB.from('vidskiptavinir').select('nafn,kennitala').eq('id', _sale.customer_id).maybeSingle(),
+          SB.from('fyrirtaeki').select('nafn,kennitala').eq('id', _sale.customer_id).maybeSingle(),
+        ]);
+        const v = vRes.data, f = fRes.data;
+        const norm = s => String(s || '').trim().toLowerCase();
+        const saleNafn = norm(_sale.customer_nafn);
+        let kt = '';
+        if (saleNafn) {
+          if (f && norm(f.nafn) === saleNafn) kt = f.kennitala || '';
+          else if (v && norm(v.nafn) === saleNafn) kt = v.kennitala || '';
         }
+        // Last-resort: prefer fyrirtaeki (sales-to-fyrirtaeki dominate; the
+        // vidskiptavinir branch is mostly walk-ins).
+        if (!kt) kt = (f && f.kennitala) || (v && v.kennitala) || '';
         if (kt) {
           if (!inp.value) {
             const raw = String(kt).replace(/[^0-9]/g, '');

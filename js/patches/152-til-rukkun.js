@@ -412,12 +412,20 @@
     const sale = r.data;
     let cust = null;
     if (sale.customer_id) {
-      const c1 = await SB.from('fyrirtaeki').select('kennitala,heimilisfang').eq('id', sale.customer_id).maybeSingle();
-      if (c1.data) cust = c1.data;
-      if (!cust) {
-        const c2 = await SB.from('vidskiptavinir').select('kennitala,heimilisfang').eq('id', sale.customer_id).maybeSingle();
-        if (c2.data) cust = c2.data;
+      // fyrirtaeki + vidskiptavinir have independent bigserials → low ids
+      // overlap. Pull both and disambiguate by matching sale.customer_nafn.
+      const [fRes, vRes] = await Promise.all([
+        SB.from('fyrirtaeki').select('nafn,kennitala,heimilisfang').eq('id', sale.customer_id).maybeSingle(),
+        SB.from('vidskiptavinir').select('nafn,kennitala,heimilisfang').eq('id', sale.customer_id).maybeSingle(),
+      ]);
+      const f = fRes.data, v = vRes.data;
+      const norm = s => String(s || '').trim().toLowerCase();
+      const saleNafn = norm(sale.customer_nafn);
+      if (saleNafn) {
+        if (f && norm(f.nafn) === saleNafn) cust = f;
+        else if (v && norm(v.nafn) === saleNafn) cust = v;
       }
+      if (!cust) cust = f || v || null;
     }
     SalaInvoice.renderFromSale(w, sale, cust);
   }
