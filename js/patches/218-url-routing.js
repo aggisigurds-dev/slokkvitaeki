@@ -53,7 +53,7 @@
     brunakerfi: 'brunakerfi', verkdagbok: 'verkdagbok', arsskodun: 'arsskodun',
     vidskiptavinir: 'vidskiptavinir', yfirlit: 'yfirlit',
     bilstjori: 'bilstjori', drivers: 'bilstjori', bakendi: 'bakendi',
-    sameining: 'sameining'
+    sameining: 'sameining', adstod: 'adstod'
   };
 
   // internal view id -> preferred ascii slug (first alias wins).
