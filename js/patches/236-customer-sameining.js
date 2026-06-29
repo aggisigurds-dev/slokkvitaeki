@@ -124,10 +124,11 @@
   const WALKIN_KT_DIGITS = '9999999999';
   function isWalkin(row) {
     const kt = ktDigits(row.kennitala || row.customer_kt);
-    if (kt === WALKIN_KT_DIGITS) return true;
-    // No kt at all + has a name → almost certainly walk-in (per Agnar 2026-06-29)
-    if (!kt && (row.nafn || row.customer_nafn)) return true;
-    return false;
+    // ONLY explicit kt 999999-9999 is a walk-in. The earlier heuristic
+    // ("no kt at all + has a name → walk-in") swept up the "Vantar kennitölu"
+    // batch (legit companies missing kt) — would have merged them all under
+    // one Walk-in row, destroying their identity.
+    return kt === WALKIN_KT_DIGITS;
   }
   function getOrPlanWalkinBase() {
     // returns existing customers_base row with kt 9999999999, or null (then we create on demand)
@@ -551,11 +552,12 @@
     if (!confirm(`Búa til nýja base-röð fyrir "${nafn}" (${kt || 'engin kt'})?`)) return;
     const SB = getSB();
     try {
-      const ins = await SB.from('customers_base').insert({
-        nafn: nafn || null,
-        kennitala: kt || null,
-        [kind === 'fyrirtaeki' ? 'source_f_id' : kind === 'vidskiptavinir' ? 'source_v_id' : 'source_s_id']: row.id,
-      }).select('id,nafn,kennitala').single();
+      // customers_base has source_f_id + source_v_id ONLY (no source_s_id).
+      // Sölur tab can't back-link the source row — just create the base record.
+      const payload = { nafn: nafn || null, kennitala: kt || null };
+      if (kind === 'fyrirtaeki') payload.source_f_id = row.id;
+      else if (kind === 'vidskiptavinir') payload.source_v_id = row.id;
+      const ins = await SB.from('customers_base').insert(payload).select('id,nafn,kennitala').single();
       if (ins.error) throw ins.error;
       state.bases.push(ins.data);
       const k = ktDigits(ins.data.kennitala);

@@ -217,9 +217,13 @@
       const r = await SB.from('uttaeki').select('fyrirtaeki_id,client').lte('next_insp', today)
         .is('deleted_at', null).limit(5000);
       if (r.error) throw r.error;
+      // Only count rows that point to a concrete fyrirtaeki — falling back to
+      // free-text `client` collapsed distinct rekstrarfélög-locations sharing
+      // the same name into one bucket and inflated the tip count.
       const cnt = new Map();
       for (const u of r.data || []) {
-        const k = String(u.fyrirtaeki_id || u.client || '?');
+        if (!u.fyrirtaeki_id) continue;
+        const k = String(u.fyrirtaeki_id);
         cnt.set(k, (cnt.get(k) || 0) + 1);
       }
       const cos = (window.Companies && Companies.list) || [];
