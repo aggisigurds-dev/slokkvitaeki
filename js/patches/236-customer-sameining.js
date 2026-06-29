@@ -224,7 +224,10 @@
     v = document.createElement('div');
     v.id = VIEW_ID;
     v.className = 'view';
+    // NB: CSS sets .view{display:none} — must use style.display='block' (not '')
+    // to override + add .active class for consistency with the rest of the app.
     v.style.display = 'none';
+    v.classList.remove('active');
     document.body.appendChild(v); // sit alongside other views
     return v;
   }
@@ -593,9 +596,10 @@
     const orig = App.switchView.bind(App);
     App.switchView = function (k) {
       if (k === NAV_KEY) {
-        document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+        document.querySelectorAll('.view').forEach(v => { v.style.display = 'none'; v.classList.remove('active'); });
         const v = viewEl();
-        v.style.display = '';
+        v.style.display = 'block';
+        v.classList.add('active');
         render();
         if (!state.loaded && !state.loading) load();
         try { location.hash = '#' + NAV_KEY; } catch (_) {}
