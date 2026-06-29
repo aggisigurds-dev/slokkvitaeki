@@ -193,7 +193,80 @@ Krítískt sem þarf að sannreyna á live:
 - [ ] CORS prófun raunveruleg
 - [ ] Notification permission í Safari
 
-## 10. Stutt orðabók / glossary
+## 10. „Aðstoðarmaður"-vísíón (Agnar 2026-06-29)
+
+Stór feature-stack sem byggist í áföngum. Hugmyndin: AI-aðstoðarmaður lag YFIR
+appið sem gefur ábendingar, varnaðar, og lærir reglur frá Agnari.
+
+### Fasi 1A — Customer brief á hover (KLÁRT, patch 237)
+
+- ℹ︎ takki á öllum `[data-co-id]` röðum
+- Smella → popup með: „Síðasta úttekt 11 mán síðan · 14 tæki · 2 útrunnin · ✓ greitt upp"
+- Reglu-byggt, engin AI-call, 5 mín cache
+- Banner-toggle 👁/🙈 í topbar felur/sýnir öll briefar (localStorage `cb_hidden_v1`)
+
+### Fasi 1B — Aðstoðarmiðstöð skeleton (NÆST, patch 238 væntanlegt)
+
+- View `#adstod` — central staður fyrir tip-yfirlit
+- Reglu-byggt fyrst: vantar kt, ótengt í base, útrunnin tæki, duplicate sölur
+- Banner-strimill efst með „X ábendingar"
+
+### Fasi 2 — AI daglegt yfirferð (síðar)
+
+- Netlify function `/api/adstod-run` (Claude Sonnet, daglega cron)
+- Pullar DB-state → biður Claude um að finna:
+  - Duplicate sölur/reikningar
+  - Óloknar skýrslur sem þurfa reikninga
+  - Mikilvægir póstar (priority email)
+  - Skjöl beðin um í póstum (parser + match)
+  - Tilboð / verðreikningur úr fyrirspurnum
+  - Bug greining (rangar tengingar, illa skráð)
+- Skrifar tip í `adstod_tips` töflu
+- Handvirk takki „🤖 Keyra yfirferð núna" í Aðstoðarmiðstöð
+
+### Fasi 3 — Reglur og hugsanaský (síðar)
+
+- `adstod_rules` tafla: condition + action (suppress|auto-resolve|notify-only)
+- „Eyða tipi + búa til reglu" í einum klikki
+- Hugsanaský view: listi yfir allar reglur + hve oft hver fired
+- AI les hugsanaský í næstu keyrslu og veit hvað á að sleppa
+
+### Fasi 4 — Domain analyzers
+
+- Duplicate detection (customers, sölur, reikningar)
+- Óloknar reikningar f/skýrslum (cross-ref customer_documents + solur)
+- Mikilvægir póstar (priority/sender flags)
+- Tilboð úr fyrirspurnum (LLM extracts pricing intent from email body)
+
+### Töflu-skissa (þegar byggt)
+
+```
+adstod_tips
+  id pk · created_at · type (duplicate|missing|overdue|email|quote|bug)
+  · severity (info|warn|error)
+  · target_kind (customer|sale|invoice|email|equipment)
+  · target_id · title · body · suggested_action
+  · status (pending|resolved|dismissed)
+  · resolved_at · resolved_by_rule_id fk
+
+adstod_rules
+  id pk · created_at · scope (type|sender|kt|topic)
+  · condition (jsonb) · action (suppress|auto-resolve|prioritize)
+  · reason · times_fired · last_fired
+
+adstod_runs
+  id pk · started_at · finished_at · model
+  · prompt_tokens · completion_tokens · tips_created · status
+```
+
+### Public API til ímyndar
+
+```js
+window.CustomerBrief = { compute(coId), show(coId, anchor), invalidate(coId), close() }
+window.AdstodHub     = { open(), reload(), resolveTip(id), createRule(tipId) }  // Fasi 1B
+```
+
+## 11. Stutt orðabók / glossary
 
 | Hugtak | Hvað |
 |---|---|
