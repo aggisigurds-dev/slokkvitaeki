@@ -275,7 +275,7 @@
               <select id="by-payment" class="by-input"><option value="">— Allar greiðslur —</option></select>
               <select id="by-staff" class="by-input"><option value="">— Allir starfsmenn —</option></select>
               <label style="display:inline-flex;align-items:center;gap:6px;min-width:0;font-size:12px;color:#475569;font-weight:600;text-transform:none;letter-spacing:0;cursor:pointer;user-select:none;background:#fff;border:1px solid #cbd5e1;border-radius:6px;padding:6px 10px">
-                <input type="checkbox" id="by-include-drafts" style="cursor:pointer">📝 Sýna drög
+                <input type="checkbox" id="by-include-drafts" style="cursor:pointer" checked>📝 Sýna drög
               </label>
             </div>
           </div>
@@ -1123,7 +1123,12 @@
     if (view) view.classList.add('active');
     const btn = document.querySelector('.vnav-btn[data-bokhalds]');
     if (btn) btn.classList.add('active');
-    setTimeout(init, 50);
+    // Reset per-visit defaults: collapse Ógreitt every time the view is opened.
+    _ogreittOpen = false;
+    setTimeout(() => {
+      init();
+      if (initialized) { try { applyFilters(); renderAll(); } catch (_) {} }
+    }, 50);
   }
 
   ensureView();
