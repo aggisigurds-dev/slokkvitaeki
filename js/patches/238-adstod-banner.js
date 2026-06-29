@@ -199,6 +199,9 @@
   let _formOpen = false;
   let _formCategory = 'pattern';
   let _formCtx = null;  // {kind:'customer'|'view', id, name} or null
+  let _tab = 'watch';  // 'watch' | 'assist'
+  let _assistTask = '';
+  let _assistResult = null;  // {ts, mock:true, ...}
 
   function renderPanel() {
     styles();
@@ -269,9 +272,15 @@
           '</div>';
         }).join('') + '</div>';
 
-    p.innerHTML =
-      '<div class="ad-hd"><h4>🤖 Aðstoðarmaður</h4><button class="ad-x" type="button" id="_ad-x" aria-label="Loka">✕</button></div>' +
-      '<div class="ad-bd">' +
+    const tabStrip =
+      '<div style="display:flex;gap:0;border-bottom:1px solid var(--brd,#e6eaf0);background:var(--surface2,#f8fafc)">' +
+        '<button type="button" id="_ad-tab-watch" style="flex:1;padding:9px 0;background:' + (_tab==='watch'?'var(--surface,#fff)':'transparent') + ';border:none;border-bottom:2px solid ' + (_tab==='watch'?'var(--brand,#0d6efd)':'transparent') + ';color:' + (_tab==='watch'?'var(--ink1,#0f172a)':'var(--ink3,#94a3b8)') + ';font:inherit;font-size:13px;font-weight:700;cursor:pointer">🔔 Watchlist' + (list.length?' ('+list.length+')':'') + '</button>' +
+        '<button type="button" id="_ad-tab-assist" style="flex:1;padding:9px 0;background:' + (_tab==='assist'?'var(--surface,#fff)':'transparent') + ';border:none;border-bottom:2px solid ' + (_tab==='assist'?'var(--brand,#0d6efd)':'transparent') + ';color:' + (_tab==='assist'?'var(--ink1,#0f172a)':'var(--ink3,#94a3b8)') + ';font:inherit;font-size:13px;font-weight:700;cursor:pointer">🪄 Aðstoð</button>' +
+      '</div>';
+
+    let bodyHTML;
+    if (_tab === 'watch') {
+      bodyHTML =
         '<div class="ad-sec">' +
           '<label class="ad-tog">' +
             '<input type="checkbox" id="_ad-dots"' + (dotsHidden ? '' : ' checked') + '>' +
@@ -284,25 +293,87 @@
           '</div>' +
           listHTML +
           formHTML +
-        '</div>' +
-      '</div>' +
-      '<div class="ad-foot">Vistað staðbundið. AI mun lesa í næstu yfirferð (Fasi 2).</div>';
+        '</div>';
+    } else {
+      // 🪄 Aðstoð tab — task-execution helper (Fasi 1 scaffold, Fasi 2 = real Claude)
+      const ctxLine = _ctxAtOpen
+        ? '<div style="padding:6px 10px;background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;border-radius:8px;font-size:12px;font-weight:600;margin-bottom:8px">📍 Samhengi: ' +
+            (_ctxAtOpen.kind === 'customer' ? '🏢' : '📄') + ' ' + esc(_ctxAtOpen.name) +
+          '</div>'
+        : '<div style="font-size:11.5px;color:var(--ink3,#94a3b8);margin-bottom:8px">📍 Ekkert samhengi — gefur generic svör. Opnaðu kúnna fyrst fyrir betri tillögur.</div>';
+
+      const taTaskHTML =
+        '<textarea class="ad-in" id="_ad-task" placeholder="Skrifaðu verkefnið. T.d. „Senda Eykt póst með verði á 20× ABC duft 6kg" eða „Finna skýrslu Colas 2024 og setja attachment"" rows="4" style="resize:vertical;min-height:80px">' + esc(_assistTask) + '</textarea>';
+
+      let resultHTML = '';
+      if (_assistResult && _assistResult.mock) {
+        resultHTML =
+          '<div style="margin-top:10px;padding:12px;background:linear-gradient(135deg,#eef2ff,#f0f9ff);border:1px solid #c7d2fe;border-radius:10px">' +
+            '<div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:#4338ca;font-weight:700;margin-bottom:8px">🤖 Tillaga AI (PRUFA — Claude tenging í Fasa 2)</div>' +
+            '<div style="display:flex;flex-direction:column;gap:8px;font-size:12.5px;color:var(--ink1,#0f172a)">' +
+              '<div><b>📄 Skýrsla:</b> <span style="color:var(--ink3,#94a3b8)">leitar í <code style="font-size:10.5px;background:rgba(0,0,0,.05);padding:1px 4px;border-radius:3px">customer_documents</code> + Drive móttöku eftir „' + esc(_assistResult.companyHint || '?') + '" → hlekkur á PDF</span></div>' +
+              '<div><b>💰 Verð:</b> <span style="color:var(--ink3,#94a3b8)">flettir upp <code style="font-size:10.5px;background:rgba(0,0,0,.05);padding:1px 4px;border-radius:3px">vorur</code> sem passa „' + esc(_assistResult.itemsHint || '?') + '" + reiknar fjölda × einingaverð + VSK</span></div>' +
+              '<div><b>✉️ Drög að pósti:</b> <span style="color:var(--ink3,#94a3b8)">samansetur greinargóðan tilboðstexta með nafni, líklega greinendum, dagsetningu, samtalstilvísun</span></div>' +
+            '</div>' +
+            '<div style="margin-top:10px;display:flex;gap:6px;justify-content:flex-end">' +
+              '<button class="ad-btn alt" type="button" id="_ad-assist-reset" style="padding:5px 11px">↻ Hreinsa</button>' +
+            '</div>' +
+          '</div>';
+      }
+
+      bodyHTML =
+        '<div class="ad-sec">' +
+          ctxLine +
+          taTaskHTML +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;gap:8px">' +
+            '<span style="font-size:11px;color:var(--ink3,#94a3b8)">⌘⏎ til að keyra</span>' +
+            '<button class="ad-btn go" type="button" id="_ad-assist-run">🪄 Fá aðstoð</button>' +
+          '</div>' +
+          resultHTML +
+        '</div>';
+    }
+
+    p.innerHTML =
+      '<div class="ad-hd"><h4>🤖 Aðstoðarmaður</h4><button class="ad-x" type="button" id="_ad-x" aria-label="Loka">✕</button></div>' +
+      tabStrip +
+      '<div class="ad-bd">' + bodyHTML + '</div>' +
+      '<div class="ad-foot">' +
+        (_tab === 'watch'
+          ? 'Vistað staðbundið. AI mun lesa í næstu yfirferð (Fasi 2).'
+          : '🪄 Fasi 1: UI scaffold. Fasi 2: tengist Claude í gegnum brunaholf <code>/api/adstod-assist</code>.')
+      + '</div>';
 
     // Wire events
     p.querySelector('#_ad-x').addEventListener('click', closePanel);
-    const dotsCb = p.querySelector('#_ad-dots');
-    if (dotsCb) dotsCb.addEventListener('change', () => {
-      if (window.CustomerBrief && CustomerBrief.setDotsHidden) CustomerBrief.setDotsHidden(!dotsCb.checked);
-    });
-    p.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => removeWatch(b.dataset.del)));
-    p.querySelectorAll('.ad-tgt[data-co]').forEach(a => a.addEventListener('click', e => {
-      e.preventDefault();
-      const coId = a.getAttribute('data-co');
-      closePanel();
-      if (window.App && App.switchView) App.switchView('companies');
-      setTimeout(() => { try { if (window.Companies && Companies.openDetail) Companies.openDetail(+coId); } catch (_) {} }, 60);
-    }));
-    const ex = p.querySelector('#_ad-export'); if (ex) ex.addEventListener('click', exportJSON);
+    // Tab switching
+    const tw = p.querySelector('#_ad-tab-watch'); if (tw) tw.addEventListener('click', () => { _tab = 'watch'; renderPanel(); });
+    const ta = p.querySelector('#_ad-tab-assist'); if (ta) ta.addEventListener('click', () => { _tab = 'assist'; renderPanel(); setTimeout(() => { const el = document.getElementById('_ad-task'); if (el) el.focus(); }, 30); });
+
+    if (_tab === 'watch') {
+      const dotsCb = p.querySelector('#_ad-dots');
+      if (dotsCb) dotsCb.addEventListener('change', () => {
+        if (window.CustomerBrief && CustomerBrief.setDotsHidden) CustomerBrief.setDotsHidden(!dotsCb.checked);
+      });
+      p.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => removeWatch(b.dataset.del)));
+      p.querySelectorAll('.ad-tgt[data-co]').forEach(a => a.addEventListener('click', e => {
+        e.preventDefault();
+        const coId = a.getAttribute('data-co');
+        closePanel();
+        if (window.App && App.switchView) App.switchView('companies');
+        setTimeout(() => { try { if (window.Companies && Companies.openDetail) Companies.openDetail(+coId); } catch (_) {} }, 60);
+      }));
+      const ex = p.querySelector('#_ad-export'); if (ex) ex.addEventListener('click', exportJSON);
+    } else {
+      const ta = p.querySelector('#_ad-task');
+      if (ta) ta.addEventListener('input', e => { _assistTask = e.target.value; });
+      const runBtn = p.querySelector('#_ad-assist-run');
+      if (runBtn) runBtn.addEventListener('click', runAssist);
+      if (ta) ta.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); runAssist(); }
+      });
+      const rst = p.querySelector('#_ad-assist-reset');
+      if (rst) rst.addEventListener('click', () => { _assistResult = null; renderPanel(); });
+    }
 
     if (_formOpen) {
       p.querySelectorAll('[data-cat]').forEach(c => c.addEventListener('click', () => {
@@ -356,6 +427,28 @@
     if (top + pr.height > window.innerHeight - margin) top = Math.max(margin, window.innerHeight - pr.height - margin);
     p.style.top = top + 'px';
     p.style.left = left + 'px';
+  }
+
+  // 🪄 Aðstoð runner — Fasi 1 stub. Does cheap keyword extraction client-side
+  // to make the mock result feel contextual. Fasi 2 will POST this same shape
+  // to brunaholf /api/adstod-assist and replace the static cells with real
+  // results (Drive search, product lookup, email composition).
+  function runAssist() {
+    const text = (_assistTask || '').trim();
+    if (!text) return;
+    // Extract crude hints — a company name (capitalized word) and an item phrase
+    const words = text.split(/\s+/);
+    const company = (words.find(w => /^[A-ZÁÉÍÓÚÝÞÆÖ]/.test(w) && w.length > 2) || (_ctxAtOpen && _ctxAtOpen.name) || '?').replace(/[.,]$/, '');
+    const itemMatch = text.match(/(\d+\s*[×x*]\s*[A-Za-zÁÉÍÓÚÝÞÆÖáéíóúýþæö0-9.\s]+(?:duft|froðu|kolsýru|skápur|skynjari)[A-Za-z0-9\s]*)/i);
+    const items = itemMatch ? itemMatch[1].trim() : text.length > 50 ? text.slice(0, 50) + '…' : text;
+    _assistResult = {
+      mock: true,
+      ts: Date.now(),
+      taskText: text,
+      companyHint: company,
+      itemsHint: items,
+    };
+    renderPanel();
   }
 
   function togglePanel() {
