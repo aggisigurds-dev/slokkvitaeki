@@ -463,7 +463,7 @@
     // a forgangur badge (! when set, · otherwise). Colour = forgangur level.
     const mark = (_seg === 'today') ? (seq || '·') : (lvl > 0 ? '!' : '·');
     return (
-      '<div class="_bs-card" role="button" tabindex="0" data-id="' + c.id + '">' +
+      '<div class="_bs-card" role="button" tabindex="0" data-id="' + c.id + '" data-co-id="' + c.id + '">' +
         '<span class="_bs-seq p' + lvl + '" title="' + (lvl ? 'Forgangur ' + lvl : 'Enginn forgangur') + '">' + mark + '</span>' +
         '<span class="_bs-card-main">' +
           '<span class="_bs-card-name">' + esc(c.nafn || '—') + '</span>' +
