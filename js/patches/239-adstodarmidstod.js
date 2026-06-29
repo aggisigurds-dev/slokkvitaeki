@@ -23,7 +23,9 @@
   if (window.__adstodMidstodInstalled) return;
   window.__adstodMidstodInstalled = true;
 
-  const VIEW_ID = 'view-adstodarmidstod';
+  // NB: VIEW_ID must be `view-{NAV_KEY}` so patch 218 URL router can find it
+  // via the slug → view-id convention when no ALIAS entry rewrites the slug.
+  const VIEW_ID = 'view-adstod';
   const NAV_KEY = 'adstod';
 
   function getSB() { return (window.DB && window.DB.sb) || window.__vdaSB || null; }
@@ -420,19 +422,31 @@
 
   // ── wiring ──────────────────────────────────────────────────────────────
   function ensureSidebarButton() {
-    if (document.querySelector('[data-view="' + NAV_KEY + '"]')) return;
-    const sib = document.querySelector('[data-view="bakendi"]') || document.querySelector('[data-view="sameining"]');
-    if (!sib) return;
+    if (document.querySelector('[data-view="' + NAV_KEY + '"]')) return true;
+    // Try a few anchor candidates — Bakendi, then Sameining, then any sidebar entry
+    const sib = document.querySelector('[data-view="bakendi"]')
+             || document.querySelector('[data-view="sameining"]')
+             || document.querySelector('[data-view="settings"]')
+             || document.querySelector('[data-view]');
+    if (!sib) return false;
     const btn = sib.cloneNode(true);
     btn.dataset.view = NAV_KEY;
-    const txt = btn.querySelector('span') || btn.lastChild;
-    if (txt && txt.nodeType === 1) txt.textContent = '🤖 Aðstoðarmiðstöð';
-    else if (txt && txt.nodeType === 3) txt.nodeValue = ' 🤖 Aðstoðarmiðstöð';
-    btn.addEventListener('click', e => { e.preventDefault(); if (window.App && App.switchView) App.switchView(NAV_KEY); });
+    // Replace text content — find the inner text node/element
+    const txtSpan = btn.querySelector('span:not([class*="icon"]):not([class*="badge"])');
+    if (txtSpan) txtSpan.textContent = '🤖 Aðstoðarmiðstöð';
+    else {
+      // Walk to text node
+      for (const c of btn.childNodes) if (c.nodeType === 3 && c.nodeValue.trim()) { c.nodeValue = ' 🤖 Aðstoðarmiðstöð'; break; }
+    }
+    // Strip any badge spans (count/notification chips inherited from clone)
+    btn.querySelectorAll('.count, .badge, [class*="badge"], [class*="count"]').forEach(n => n.remove());
+    btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (window.App && App.switchView) App.switchView(NAV_KEY); });
     sib.parentNode.insertBefore(btn, sib.nextSibling);
+    return true;
   }
   function hookSwitch() {
-    if (!window.App || !App.switchView || App.__amPatched) return;
+    if (!window.App || !App.switchView) return false;
+    if (App.__amPatched) return true;
     const orig = App.switchView.bind(App);
     App.switchView = function (k) {
       if (k === NAV_KEY) {
@@ -446,12 +460,28 @@
       return orig(k);
     };
     App.__amPatched = true;
+    return true;
   }
   function init() {
     viewEl();
-    hookSwitch();
-    ensureSidebarButton();
-    if (location.hash === '#' + NAV_KEY) setTimeout(() => { if (window.App && App.switchView) App.switchView(NAV_KEY); }, 100);
+    let sw = hookSwitch();
+    let sb = ensureSidebarButton();
+    // Patches load after sidebar/App init — keep trying for a bit
+    const tries = [200, 600, 1500, 3500, 7000];
+    tries.forEach(ms => setTimeout(() => {
+      if (!sw) sw = hookSwitch();
+      if (!sb) sb = ensureSidebarButton();
+    }, ms));
+    // Boot deep-link
+    if ((location.hash || '').replace(/^#/, '') === NAV_KEY) {
+      setTimeout(() => { if (window.App && App.switchView) App.switchView(NAV_KEY); }, 250);
+    }
+    // Listen to hashchange in case URL router beats us
+    window.addEventListener('hashchange', () => {
+      if ((location.hash || '').replace(/^#/, '') === NAV_KEY) {
+        if (window.App && App.switchView) App.switchView(NAV_KEY);
+      }
+    });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
