@@ -55,22 +55,31 @@
     const SB = getSB();
     if (!SB) return { line: '— gagnagrunnur ótengdur —', parts: {}, warnings: [] };
 
-    // Pull: fyrirtæki + customer_base + úttæki (count + min next_insp + max last_insp) + síðasta sala
-    const today = todayISO();
-    const [coRes, ucountRes, ulastRes, uoverdueRes, salesRes] = await Promise.all([
-      SB.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang,customer_base_id,deleted_at').eq('id', coId).maybeSingle(),
-      SB.from('uttaeki').select('id', { count: 'exact', head: true }).eq('fyrirtaeki_id', coId).is('deleted_at', null),
-      SB.from('uttaeki').select('last_insp,next_insp').eq('fyrirtaeki_id', coId).is('deleted_at', null).order('last_insp', { ascending: false, nullsFirst: false }).limit(1),
-      SB.from('uttaeki').select('id', { count: 'exact', head: true }).eq('fyrirtaeki_id', coId).lte('next_insp', today).is('deleted_at', null),
-      SB.from('solur').select('id,num,created_at,samtals,status,greitt_med').eq('customer_id', coId).order('created_at', { ascending: false }).limit(1),
-    ]);
-
-    const co = coRes && coRes.data || null;
+    // Step 1: resolve the fyrirtaeki row FIRST — we need its kennitala to
+    // disambiguate solur (where customer_id is ambiguous between fyrirtaeki
+    // and vidskiptavinir tables sharing low-numbered ids).
+    const co = (await SB.from('fyrirtaeki')
+      .select('id,nafn,kennitala,heimilisfang,customer_base_id,deleted_at')
+      .eq('id', coId).maybeSingle()).data;
     if (!co) {
       const empty = { line: '(fannst ekki)', parts: {}, warnings: [] };
       CACHE.set(coId, { ts: Date.now(), brief: empty });
       return empty;
     }
+
+    // Step 2: úttæki (unambiguous via fyrirtaeki_id FK) + solur filtered by
+    // customer_kt match so we don't pull a sale that actually belongs to a
+    // vidskiptavinir row sharing the id.
+    const today = todayISO();
+    let salesQ = SB.from('solur').select('id,num,created_at,samtals,status,greitt_med')
+      .eq('customer_id', coId).order('created_at', { ascending: false }).limit(1);
+    if (co.kennitala) salesQ = salesQ.eq('customer_kt', co.kennitala);
+    const [ucountRes, ulastRes, uoverdueRes, salesRes] = await Promise.all([
+      SB.from('uttaeki').select('id', { count: 'exact', head: true }).eq('fyrirtaeki_id', coId).is('deleted_at', null),
+      SB.from('uttaeki').select('last_insp,next_insp').eq('fyrirtaeki_id', coId).is('deleted_at', null).order('last_insp', { ascending: false, nullsFirst: false }).limit(1),
+      SB.from('uttaeki').select('id', { count: 'exact', head: true }).eq('fyrirtaeki_id', coId).lte('next_insp', today).is('deleted_at', null),
+      salesQ,
+    ]);
 
     const total = ucountRes && ucountRes.count != null ? ucountRes.count : 0;
     const lastInspISO = ulastRes && ulastRes.data && ulastRes.data[0] && ulastRes.data[0].last_insp;
