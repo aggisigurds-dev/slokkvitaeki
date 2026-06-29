@@ -315,47 +315,28 @@ html[data-cb-hidden="1"] .cb-dot{display:none}
     obs.observe(document.body, { childList: true, subtree: true });
   }
 
-  // Banner toggle in topbar — 👁 sýnir öll briefar, 🙈 felur þau
+  // Dot-visibility state — controlled by patch 238 Aðstoðar-spjald
   const TOGGLE_KEY = 'cb_hidden_v1';
   function applyToggleState() {
     const hidden = localStorage.getItem(TOGGLE_KEY) === '1';
     document.documentElement.setAttribute('data-cb-hidden', hidden ? '1' : '0');
-    const btn = document.getElementById('_cb-toggle');
-    if (btn) {
-      btn.textContent = hidden ? '🙈' : '👁';
-      btn.title = hidden ? 'Sýna briefar' : 'Fela briefar';
-    }
   }
-  function ensureToggle() {
-    if (document.getElementById('_cb-toggle')) return;
-    // Find topbar / header — try multiple selectors
-    const host = document.querySelector('.topbar, header.topbar, #topbar, .top-bar, header');
-    if (!host) return;
-    const btn = document.createElement('button');
-    btn.id = '_cb-toggle';
-    btn.type = 'button';
-    btn.className = 'cb-toggle';
-    btn.style.cssText = 'background:transparent;border:1px solid rgba(255,255,255,.15);color:inherit;width:30px;height:30px;border-radius:8px;font-size:14px;cursor:pointer;margin:0 4px;padding:0;display:inline-flex;align-items:center;justify-content:center';
-    btn.addEventListener('click', e => {
-      e.preventDefault(); e.stopPropagation();
-      const cur = localStorage.getItem(TOGGLE_KEY) === '1';
-      localStorage.setItem(TOGGLE_KEY, cur ? '0' : '1');
-      applyToggleState();
-    });
-    host.appendChild(btn);
+  function setDotsHidden(hidden) {
+    localStorage.setItem(TOGGLE_KEY, hidden ? '1' : '0');
     applyToggleState();
+  }
+  function getDotsHidden() {
+    return localStorage.getItem(TOGGLE_KEY) === '1';
   }
 
   // boot
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => { bootMutationObserver(); ensureToggle(); });
+    document.addEventListener('DOMContentLoaded', () => { bootMutationObserver(); applyToggleState(); });
   } else {
     bootMutationObserver();
-    ensureToggle();
+    applyToggleState();
   }
-  // Re-attempt toggle insertion after topbar may have been built by another patch
-  setTimeout(ensureToggle, 1500);
 
-  // public API
-  window.CustomerBrief = { compute, show, invalidate, close: closePopup, quickFlag, refreshFlags };
+  // public API — patch 238 uses setDotsHidden/getDotsHidden to drive the toggle UI
+  window.CustomerBrief = { compute, show, invalidate, close: closePopup, quickFlag, refreshFlags, setDotsHidden, getDotsHidden };
 })();

@@ -216,11 +216,20 @@ hávaði. Bara LITLA PUNKTA á þeim sem þurfa athygli, og staff getur slökkt
 - Síðar má bæta við fleiri merkingum: útrunnin tæki rauð, missing kt
   amber, etc.
 
-### Fasi 1B — Aðstoðarmiðstöð skeleton (NÆST, patch 238 væntanlegt)
+### Fasi 1B — 🤖 Aðstoðar-spjald í banner (KLÁRT, patch 238)
 
-- View `#adstod` — central staður fyrir tip-yfirlit
-- Reglu-byggt fyrst: vantar kt, ótengt í base, útrunnin tæki, duplicate sölur
-- Banner-strimill efst með „X ábendingar"
+- Lítill **🤖 takki** festur í Brunastál-bannernum **rétt fyrir klukkuna**.
+- Smella → opnast lítið spjald (popover, ekki full síða) með:
+  - Toggle „Sýna dots á kúnnum" (stýrir patch 237 dot-visibility)
+  - „🔔 Mín watchlist" — listi af punktum Agnars
+  - „➕ Bæta við punkti" form
+- **Flokk-chip-ar**: 🔔 Áminning · 🎯 Mynstur · ⚖️ Regla · 🐛 Bug
+- Form: flokkur + titill (skylda) + valkv. target (kt/sendandi) + valkv. lýsing
+- Geymsla: localStorage `adstod_watchlist_v1` (síðar Supabase í Fasa 3)
+- ⤓ „Flytja út" til JSON svo Agnar getur skoðað eða flutt yfir í annað kerfi
+- Rauður badge á 🤖 takka með fjölda opinna punkta
+- Banner ekki sýnilegur → 🤖 takki birtist samt sem fljótandi við 🔥 restore takka
+- Public API: `window.AdstodHub = { open, close, toggle, addWatch, removeWatch, listWatch, exportJSON }`
 
 ### Fasi 2 — AI daglegt yfirferð (síðar)
 

@@ -398,6 +398,41 @@ Wiring: nýr `<script>` í index.html (eftir 235), `App.switchView('sameining')`
 hook, patch 218 ALIAS update fyrir `#sameining` deep-link, klónaður
 hliðarstiku-hnappur frá Bakendi. `window.Sameining = {open, reload}`.
 
+## Aðstoðarmaður (Fasi 1) — `js/patches/237-customer-brief.js` + `238-adstod-banner.js`
+
+Fyrsta lag af „AI-aðstoðarmaður" vísíóninni (Agnar 2026-06-29). Sjá fulla
+útlistun í `docs/CLAUDE-LEIDBEININGAR.md` §10.
+
+**Patch 237 — Customer brief:**
+- Lítill litaður **dot** (🔴 rauður = áríðandi skilaboð · 🟠 amber = forgangur ≥3)
+  birtist ÞIN á þeim kúnna-röðum sem þurfa athygli. Engir dotar á hreinum.
+- Smella → popup með „Síðasta úttekt 11 mán síðan · 14 tæki · 2 útrunnin · ✓ greitt upp"
+- `quickFlag()` keyrir synchronously á AppSettings (engin DB-call)
+- Full `compute()` pullar úr fyrirtaeki/uttaeki/solur með 5-mín cache
+- Mutation observer decorerar alla `[data-co-id]` raðir
+- companieslist.js fékk 2-lína breytingu til að setja data-co-id á <tr>
+- Public API: `window.CustomerBrief = { compute, show, invalidate, close, quickFlag, refreshFlags, setDotsHidden, getDotsHidden }`
+
+**Patch 238 — 🤖 Aðstoðar-spjald í banner:**
+- 🤖 takki festur í Brunastál-banner **rétt fyrir klukkuna** (sjá `.bb-clockbox`)
+- Rauður badge sýnir fjölda opinna watchlist-punkta
+- Smella → popover (`#_ad-panel`) með:
+  - „Sýna dots á kúnnum" toggle (stýrir patch 237)
+  - „🔔 Mín watchlist" listi
+  - „➕ Bæta við punkti" form með 4 flokk-chip-um:
+    - 🔔 Áminning · 🎯 Mynstur · ⚖️ Regla · 🐛 Bug
+- Form: flokkur (chip) + titill (skylda) + valkv. target (kt/sendandi) + valkv. lýsing
+- Geymsla: localStorage `adstod_watchlist_v1`
+- ⤓ „Flytja út" til JSON
+- Þegar Brunastál er slökkt: 🤖 birtist fljótandi við 🔥 restore-takka
+- MutationObserver endurtengir 🤖 takka þegar banner er endurbyggt
+- Public API: `window.AdstodHub = { open, close, toggle, addWatch, removeWatch, listWatch, exportJSON }`
+
+**Næstu fasar (planað):**
+- Fasi 2: brunaholf `/api/adstod-run` (Claude Sonnet) les watchlist + DB-state, skrifar tip í `adstod_tips` Supabase tafla
+- Fasi 3: „hugsanaský" — reglur breyta hegðun AI í næstu yfirferð
+- Fasi 4: Domain analyzers (duplicate sölur/reikningar, mikilvægir póstar, tilboð úr fyrirspurnum)
+
 ## Related projects (in case Agnar mentions them)
 
 - **Brunahólf** — sister business, separate ecosystem (Google Sheets + Apps Script
