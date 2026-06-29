@@ -198,12 +198,23 @@ Krítískt sem þarf að sannreyna á live:
 Stór feature-stack sem byggist í áföngum. Hugmyndin: AI-aðstoðarmaður lag YFIR
 appið sem gefur ábendingar, varnaðar, og lærir reglur frá Agnari.
 
-### Fasi 1A — Customer brief á hover (KLÁRT, patch 237)
+### Fasi 1A — Customer brief á dot-merkjum (KLÁRT, patch 237)
 
-- ℹ︎ takki á öllum `[data-co-id]` röðum
-- Smella → popup með: „Síðasta úttekt 11 mán síðan · 14 tæki · 2 útrunnin · ✓ greitt upp"
-- Reglu-byggt, engin AI-call, 5 mín cache
-- Banner-toggle 👁/🙈 í topbar felur/sýnir öll briefar (localStorage `cb_hidden_v1`)
+**Hönnunarforsenda (Agnar 2026-06-29)**: ekki ℹ︎ á öllum röðum — það er
+hávaði. Bara LITLA PUNKTA á þeim sem þurfa athygli, og staff getur slökkt
+úr banner.
+
+- `quickFlag(coId)` keyrir samstundis á AppSettings-gögnum (engin DB-call):
+  - 🔴 rauður dot = áríðandi skilaboð (`a.urgent`)
+  - 🟠 amber dot = forgangur ≥ 3 (`a.priority`)
+  - engin dot = í lagi (langflestar raðir)
+- Smella á dot → popup með: „Síðasta úttekt 11 mán síðan · 14 tæki · 2
+  útrunnin · ✓ greitt upp" (full brief, DB-call lazy, 5 mín cache)
+- Banner-toggle 👁/🙈 í topbar felur/sýnir öll dots (localStorage `cb_hidden_v1`)
+- Mutation observer decorerar alla `[data-co-id]` röðum — companieslist.js
+  fékk litla breyting (2 línur) til að setja `data-co-id` á `<tr>`
+- Síðar má bæta við fleiri merkingum: útrunnin tæki rauð, missing kt
+  amber, etc.
 
 ### Fasi 1B — Aðstoðarmiðstöð skeleton (NÆST, patch 238 væntanlegt)
 

@@ -148,10 +148,13 @@
 .cb-popover .cb-foot{margin-top:10px;display:flex;gap:6px;justify-content:flex-end}
 .cb-popover .cb-foot a{font-size:12px;color:var(--brand,#0d6efd);text-decoration:none;font-weight:600;padding:4px 10px;border-radius:99px;background:rgba(13,110,253,.08)}
 .cb-popover .cb-foot a:hover{background:rgba(13,110,253,.15)}
-.cb-icon{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;background:rgba(15,23,42,.06);color:var(--ink2,#475569);font-size:12px;border:none;cursor:pointer;margin-left:6px;vertical-align:middle;flex-shrink:0;line-height:1;padding:0}
-.cb-icon:hover{background:rgba(13,110,253,.15);color:var(--brand,#0d6efd)}
-@media (max-width:520px){.cb-icon{width:28px;height:28px;font-size:13px}}
-html[data-cb-hidden="1"] .cb-icon{display:none}
+.cb-dot{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:2px solid #fff;cursor:pointer;margin-left:6px;vertical-align:middle;flex-shrink:0;line-height:0;padding:0;font-size:0;color:transparent;box-shadow:0 0 0 1px rgba(0,0,0,.1)}
+.cb-dot.red{background:#dc2626}
+.cb-dot.amber{background:#f59e0b}
+.cb-dot.info{background:#2563eb}
+.cb-dot:hover{transform:scale(1.25);transition:transform .12s}
+@media (max-width:520px){.cb-dot{width:16px;height:16px}}
+html[data-cb-hidden="1"] .cb-dot{display:none}
 .cb-spin{display:inline-block;width:11px;height:11px;border:2px solid #cbd5e1;border-top-color:var(--brand,#0d6efd);border-radius:50%;animation:cb-rot .7s linear infinite;vertical-align:middle}
 @keyframes cb-rot{to{transform:rotate(360deg)}}
 `;
@@ -226,7 +229,7 @@ html[data-cb-hidden="1"] .cb-icon{display:none}
   function _outside(e) {
     if (!_activePopup) return;
     if (_activePopup.contains(e.target)) return;
-    if (e.target.closest && e.target.closest('.cb-icon')) return;
+    if (e.target.closest && e.target.closest('.cb-dot')) return;
     closePopup();
   }
   function _esc(e) {
@@ -240,33 +243,55 @@ html[data-cb-hidden="1"] .cb-icon{display:none}
     }
   }, true);
 
-  // ── auto-decorate [data-co-id] elements with an ℹ️ button ─────────────────
+  // ── quick warning flag (synchronous, AppSettings-only — no DB call) ──────
+  // Returns null when row is fine, or { color, reason } when attention needed.
+  function quickFlag(coId) {
+    try {
+      const ars = (window.AppSettings && AppSettings.path && AppSettings.path('arsskodun_customers')) || {};
+      const a = ars[String(coId)] || {};
+      const urgent = (a.urgent || '').trim();
+      const priority = +a.priority || 0;
+      if (urgent) return { color: 'red', reason: '🚨 áríðandi skilaboð' };
+      if (priority >= 3) return { color: 'amber', reason: 'forgangur ' + priority };
+      return null;
+    } catch (_) { return null; }
+  }
+
+  // ── auto-decorate [data-co-id] elements with a colored dot — only if quickFlag
   function decorate(el) {
     if (!el || el.dataset.cbDecorated) return;
     const coId = el.getAttribute('data-co-id');
     if (!coId || !/^\d+$/.test(coId)) return;
-    // Avoid decorating action buttons (data-co-id on a button = it does something)
     if (el.tagName === 'BUTTON' || el.tagName === 'A') return;
     el.dataset.cbDecorated = '1';
 
-    // Find a good place to put the icon: prefer a heading/strong within the row
+    const flag = quickFlag(coId);
+    if (!flag) return; // No dot for healthy rows — only highlight what needs attention.
+
     let host = el.querySelector('h1,h2,h3,h4,h5,strong,.nm,.title,._cb-host');
-    if (!host) host = el; // fallback: hang off the row itself
+    if (!host) host = el;
+    if (host.querySelector(':scope > .cb-dot')) return;
 
-    // Don't double-add
-    if (host.querySelector(':scope > .cb-icon')) return;
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'cb-icon';
-    btn.title = 'Sýna brief (ℹ︎)';
-    btn.setAttribute('aria-label', 'Brief');
-    btn.textContent = 'ℹ︎';
-    btn.addEventListener('click', e => {
+    const dot = document.createElement('button');
+    dot.type = 'button';
+    dot.className = 'cb-dot ' + flag.color;
+    dot.title = flag.reason + ' — smelltu fyrir brief';
+    dot.setAttribute('aria-label', flag.reason);
+    dot.addEventListener('click', e => {
       e.stopPropagation(); e.preventDefault();
-      show(coId, btn);
+      show(coId, dot);
     });
-    host.appendChild(btn);
+    host.appendChild(dot);
+  }
+
+  // Re-decorate when AppSettings changes (urgent message added/cleared elsewhere)
+  function refreshFlags() {
+    document.querySelectorAll('[data-co-id][data-cb-decorated]').forEach(el => {
+      const dot = el.querySelector(':scope > .cb-dot, :scope * > .cb-dot');
+      if (dot) dot.remove();
+      delete el.dataset.cbDecorated;
+    });
+    scan(document);
   }
 
   function scan(root) {
@@ -332,5 +357,5 @@ html[data-cb-hidden="1"] .cb-icon{display:none}
   setTimeout(ensureToggle, 1500);
 
   // public API
-  window.CustomerBrief = { compute, show, invalidate, close: closePopup };
+  window.CustomerBrief = { compute, show, invalidate, close: closePopup, quickFlag, refreshFlags };
 })();
