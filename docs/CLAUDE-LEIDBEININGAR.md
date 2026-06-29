@@ -216,7 +216,19 @@ hávaði. Bara LITLA PUNKTA á þeim sem þurfa athygli, og staff getur slökkt
 - Síðar má bæta við fleiri merkingum: útrunnin tæki rauð, missing kt
   amber, etc.
 
-### Fasi 1B — 🤖 Aðstoðar-spjald í banner (KLÁRT, patch 238)
+### Fasi 1B — 🤖 Aðstoðarmiðstöð view (KLÁRT, patch 239)
+
+Sjálfstæð síða `#adstod` sem safnar **öllum** ábendingum á einn stað. Reglu-byggt
+fyrst (engin AI-call):
+- 🚨 Áríðandi (urgent message / priority ≥3 á kúnna)
+- 🔄 Líklegir tvítekningar (sölur sama daginn + svipuð upphæð)
+- 📋 Sölu-drög > 7 daga gömul
+- 🧯 Fyrirtæki með ≥4 útrunnin tæki
+- 🤖 Watchlist (forwarder fyrir patch 238 punkta)
+Hver röð með Snooze (24 klst, localStorage) og Opna takkar. Þegar AI-tips
+bætast í Fasa 2, lenda þeir efst.
+
+### Fasi 1C — 🤖 Aðstoðar-spjald í banner (KLÁRT, patch 238)
 
 - Lítill **🤖 takki** festur í Brunastál-bannernum **rétt fyrir klukkuna**.
 - Smella → opnast lítið spjald (popover, ekki full síða) með:
