@@ -318,7 +318,8 @@
     v = document.createElement('div');
     v.id = VIEW_ID;
     v.className = 'view';
-    v.style.display = 'none';
+    // NB: CSS sets `.view{display:none}` and only `.view.active{display:block}`
+    // shows it. Don't set inline display — toggle .active class instead.
     document.body.appendChild(v);
     return v;
   }
@@ -450,13 +451,18 @@
     const orig = App.switchView.bind(App);
     App.switchView = function (k) {
       if (k === NAV_KEY) {
-        document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
-        const v = viewEl(); v.style.display = '';
+        document.querySelectorAll('.view').forEach(v => { v.style.display = 'none'; v.classList.remove('active'); });
+        const v = viewEl();
+        v.style.display = 'block';
+        v.classList.add('active');
         render();
         if (!state.loaded && !state.loading) load();
-        try { location.hash = '#' + NAV_KEY; } catch (_) {}
+        try { history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
         return;
       }
+      // Returning to a different view — make sure ours is hidden again
+      const me = document.getElementById(VIEW_ID);
+      if (me) { me.style.display = 'none'; me.classList.remove('active'); }
       return orig(k);
     };
     App.__amPatched = true;
