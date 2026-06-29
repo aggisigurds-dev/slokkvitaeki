@@ -209,7 +209,33 @@
     var subEx = 0, vsk = 0;
     Object.keys(byRate).forEach(function (k) { subEx += byRate[k].ex; vsk += byRate[k].vsk; });
     var afsl = Number(sale.afslattur) || 0;
-    var total = subEx + vsk - afsl;
+    // afslattur semantics flipped 2026-06-12: legacy = ex-VAT discount,
+    // post-2026-06-12 = final m.vsk discount. Auto-detect by reproducing
+    // sale.samtals (mirrors SalaInvoice.renderFromSale logic).
+    var total;
+    if (afsl > 0) {
+      var grossTotal = subEx + vsk - afsl;
+      var exFactor = subEx > 0 ? Math.max(0, subEx - afsl) / subEx : 1;
+      var exTotal = (subEx + vsk) * exFactor;
+      var savedSamtals = Number(sale.samtals);
+      var grossMode = true;
+      if (isFinite(savedSamtals) && savedSamtals > 0) {
+        grossMode = Math.abs(grossTotal - savedSamtals) <= Math.abs(exTotal - savedSamtals);
+      }
+      total = grossMode ? grossTotal : exTotal;
+      // If legacy ex-VAT semantics, scale the per-rate buckets so VSK lines
+      // match the actual collected amounts (ex × factor, vsk × factor).
+      if (!grossMode) {
+        Object.keys(byRate).forEach(function (k) {
+          byRate[k].ex *= exFactor;
+          byRate[k].vsk *= exFactor;
+        });
+        subEx *= exFactor;
+        vsk *= exFactor;
+      }
+    } else {
+      total = subEx + vsk;
+    }
 
     y += 3; doc.setDrawColor(15, 23, 42).setLineWidth(0.3).line(110, y, RX, y); y += 6;
     var tLabelR = 150, tValR = RX;
