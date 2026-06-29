@@ -45,6 +45,42 @@
     try { localStorage.setItem(WATCH_KEY, JSON.stringify(list)); } catch (_) {}
   }
 
+  // Detect what the user is currently looking at so we can pre-link the punkt.
+  // Tries (in order): open company detail · open sale · active view slug · null.
+  function getCurrentContext() {
+    // 1. Visible company detail with [data-co-id]
+    const allCoEls = document.querySelectorAll('[data-co-id]');
+    for (const el of allCoEls) {
+      // Skip elements inside hidden views
+      let p = el; let hidden = false;
+      while (p && p !== document.body) {
+        if (p.style && p.style.display === 'none') { hidden = true; break; }
+        if (p.classList && (p.classList.contains('view') || p.id && p.id.indexOf('view-') === 0)) {
+          if (p.style.display === 'none' || !p.offsetParent) hidden = true;
+          break;
+        }
+        p = p.parentNode;
+      }
+      if (hidden) continue;
+      // Prefer detail-modal/panel hosts (not list rows)
+      const isDetail = el.classList && (el.classList.contains('detail') || el.id && el.id.indexOf('detail') >= 0);
+      if (!isDetail && !el.closest('.detail, .modal, [class*="detail"]')) continue;
+      const id = el.getAttribute('data-co-id');
+      if (!id || !/^\d+$/.test(id)) continue;
+      let name = '';
+      try {
+        const co = window.Companies && Companies.list && Companies.list.find(c => String(c.id) === id);
+        if (co) name = co.nafn || '';
+      } catch (_) {}
+      return { kind: 'customer', id, name: name || ('Fyrirtæki ' + id) };
+    }
+    // 2. Active view slug from URL hash
+    const slug = (location.hash || '').replace(/^#/, '').split(/[?&\/]/)[0];
+    if (slug) return { kind: 'view', id: slug, name: slug };
+    return null;
+  }
+  let _ctxAtOpen = null;
+
   const CATEGORIES = [
     { k: 'remind', ico: '🔔', label: 'Áminning', desc: 'Eitt skipti todo' },
     { k: 'pattern', ico: '🎯', label: 'Mynstur',  desc: 'Endurtekið vandamál sem AI á að vakta' },
@@ -108,7 +144,7 @@
     const item = Object.assign({
       id: newId(), created_at: nowISO(), status: 'open',
       category: 'pattern', severity: 'info', title: '', body: '',
-      target_kind: null, target_value: null,
+      target_kind: null, target_value: null, target_name: null,
     }, partial || {});
     if (!item.title) throw new Error('title required');
     const list = loadWatch();
@@ -116,6 +152,8 @@
     saveWatch(list);
     updateBadge();
     if (document.getElementById(PANEL_ID)) renderPanel();
+    // Refresh patch 237 dots since new linked watchpoints may now flag a customer
+    try { if (window.CustomerBrief && CustomerBrief.refreshFlags) CustomerBrief.refreshFlags(); } catch (_) {}
     return item;
   }
   function removeWatch(id) {
@@ -123,6 +161,7 @@
     saveWatch(list);
     updateBadge();
     if (document.getElementById(PANEL_ID)) renderPanel();
+    try { if (window.CustomerBrief && CustomerBrief.refreshFlags) CustomerBrief.refreshFlags(); } catch (_) {}
   }
   function exportJSON() {
     const blob = new Blob([JSON.stringify(loadWatch(), null, 2)], { type: 'application/json' });
@@ -159,6 +198,7 @@
 
   let _formOpen = false;
   let _formCategory = 'pattern';
+  let _formCtx = null;  // {kind:'customer'|'view', id, name} or null
 
   function renderPanel() {
     styles();
@@ -177,13 +217,27 @@
     const chips = CATEGORIES.map(c =>
       '<button class="ad-chip' + (c.k === _formCategory ? ' on' : '') + '" data-cat="' + c.k + '" title="' + esc(c.desc) + '">' + c.ico + ' ' + esc(c.label) + '</button>'
     ).join('');
+    // Context chip — pre-filled with whatever the user was looking at when 🤖 was opened
+    const ctxChip = _formCtx
+      ? '<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;background:#dbeafe;color:#1e40af;border:1px solid #93c5fd;border-radius:8px;font-size:12px;font-weight:600">' +
+          '<span>📍 Tengt við:</span>' +
+          '<span style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+            (_formCtx.kind === 'customer' ? '🏢' : '📄') + ' ' + esc(_formCtx.name) +
+            (_formCtx.kind === 'customer' ? ' <span style="font-weight:400;opacity:.7">(co ' + esc(_formCtx.id) + ')</span>' : '') +
+          '</span>' +
+          '<button type="button" id="_ad-ctx-clear" title="Engin tenging — generic punktur" style="background:none;border:none;color:#1e40af;cursor:pointer;font-size:14px;padding:0 4px;line-height:1">×</button>' +
+        '</div>'
+      : '<div style="font-size:11.5px;color:var(--ink3,#94a3b8);padding:0 2px">📍 Generic punktur (ekki tengdur við neinn ákveðinn kúnna)</div>';
+
     const formHTML = _formOpen ? (
       '<div class="ad-form">' +
+        ctxChip +
         '<div class="ad-chips">' + chips + '</div>' +
         '<input class="ad-in" id="_ad-title" placeholder="t.d. Skýrslur á röngum stöðum" maxlength="120" autocomplete="off">' +
-        '<div class="ad-row2">' +
-          '<input class="ad-in" id="_ad-target" placeholder="(valkv.) kennitala / sendandi" maxlength="80" autocomplete="off">' +
-        '</div>' +
+        (_formCtx ? '' :
+          '<div class="ad-row2">' +
+            '<input class="ad-in" id="_ad-target" placeholder="(valkv.) kennitala / sendandi" maxlength="80" autocomplete="off">' +
+          '</div>') +
         '<textarea class="ad-in" id="_ad-body" placeholder="(valkv.) lýsing / dæmi" rows="2" style="resize:vertical;min-height:50px"></textarea>' +
         '<div class="ad-actions">' +
           '<button class="ad-btn alt" type="button" id="_ad-cancel">Hætta við</button>' +
@@ -196,15 +250,21 @@
       ? '<div class="ad-empty">Engir punktar ennþá. Bættu við þínum fyrsta.</div>'
       : '<div class="ad-list">' + list.map(it => {
           const cat = CATEGORIES.find(c => c.k === it.category) || CATEGORIES[1];
-          const meta = [
-            cat.label,
-            it.target_value ? esc(it.target_value) : null,
-            it.body ? esc(it.body).slice(0, 80) + (it.body.length > 80 ? '…' : '') : null,
-          ].filter(Boolean).join(' · ');
+          // Target chip — clickable when it's a customer
+          let targetChip = '';
+          if (it.target_kind === 'customer' && it.target_value) {
+            targetChip = '<a href="#" class="ad-tgt" data-co="' + esc(it.target_value) + '" style="text-decoration:none;display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:99px;background:#dbeafe;color:#1e40af;font-weight:600;margin-right:5px">🏢 ' + esc(it.target_name || it.target_value) + '</a>';
+          } else if (it.target_kind === 'view' && it.target_value) {
+            targetChip = '<span style="font-size:10.5px;padding:1px 7px;border-radius:99px;background:#e0e7ff;color:#3730a3;font-weight:600;margin-right:5px">📄 ' + esc(it.target_name || it.target_value) + '</span>';
+          } else if (it.target_value) {
+            targetChip = '<span style="font-size:10.5px;padding:1px 7px;border-radius:99px;background:#f1f5f9;color:#475569;font-weight:600;margin-right:5px">📌 ' + esc(it.target_value) + '</span>';
+          }
+          const metaParts = [cat.label];
+          if (it.body) metaParts.push(esc(it.body).slice(0, 80) + (it.body.length > 80 ? '…' : ''));
           return '<div class="ad-row">' +
             '<div class="ad-cat" title="' + esc(cat.label) + '">' + cat.ico + '</div>' +
             '<div class="ad-body"><div class="ad-title">' + esc(it.title) + '</div>' +
-              '<div class="ad-meta">' + meta + '</div></div>' +
+              '<div class="ad-meta">' + targetChip + metaParts.join(' · ') + '</div></div>' +
             '<button class="ad-del" type="button" data-del="' + esc(it.id) + '" title="Eyða">×</button>' +
           '</div>';
         }).join('') + '</div>';
@@ -235,6 +295,13 @@
       if (window.CustomerBrief && CustomerBrief.setDotsHidden) CustomerBrief.setDotsHidden(!dotsCb.checked);
     });
     p.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', () => removeWatch(b.dataset.del)));
+    p.querySelectorAll('.ad-tgt[data-co]').forEach(a => a.addEventListener('click', e => {
+      e.preventDefault();
+      const coId = a.getAttribute('data-co');
+      closePanel();
+      if (window.App && App.switchView) App.switchView('companies');
+      setTimeout(() => { try { if (window.Companies && Companies.openDetail) Companies.openDetail(+coId); } catch (_) {} }, 60);
+    }));
     const ex = p.querySelector('#_ad-export'); if (ex) ex.addEventListener('click', exportJSON);
 
     if (_formOpen) {
@@ -242,25 +309,33 @@
         _formCategory = c.dataset.cat; renderPanel();
         setTimeout(() => { const t = document.getElementById('_ad-title'); if (t) t.focus(); }, 20);
       }));
-      p.querySelector('#_ad-cancel').addEventListener('click', () => { _formOpen = false; renderPanel(); });
+      const ctxClear = p.querySelector('#_ad-ctx-clear');
+      if (ctxClear) ctxClear.addEventListener('click', () => { _formCtx = null; renderPanel(); });
+      p.querySelector('#_ad-cancel').addEventListener('click', () => { _formOpen = false; _formCtx = _ctxAtOpen; renderPanel(); });
       const submit = () => {
         const t = p.querySelector('#_ad-title').value.trim();
         if (!t) { p.querySelector('#_ad-title').focus(); return; }
         try {
+          const targetField = p.querySelector('#_ad-target');
+          const tk = _formCtx ? _formCtx.kind : null;
+          const tv = _formCtx ? _formCtx.id : (targetField ? targetField.value.trim() || null : null);
+          const tn = _formCtx ? _formCtx.name : null;
           addWatch({
             category: _formCategory,
             title: t,
-            target_value: p.querySelector('#_ad-target').value.trim() || null,
+            target_kind: tk,
+            target_value: tv,
+            target_name: tn,
             body: p.querySelector('#_ad-body').value.trim() || null,
           });
-          _formOpen = false; renderPanel();
+          _formOpen = false; _formCtx = _ctxAtOpen; renderPanel();
         } catch (e) { console.warn('addWatch', e); }
       };
       p.querySelector('#_ad-save').addEventListener('click', submit);
       p.querySelector('#_ad-title').addEventListener('keydown', e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) submit(); });
       setTimeout(() => { try { p.querySelector('#_ad-title').focus(); } catch (_) {} }, 30);
     } else {
-      p.querySelector('#_ad-open-form').addEventListener('click', () => { _formOpen = true; renderPanel(); });
+      p.querySelector('#_ad-open-form').addEventListener('click', () => { _formCtx = _ctxAtOpen; _formOpen = true; renderPanel(); });
     }
   }
 
@@ -287,6 +362,9 @@
     const p = document.getElementById(PANEL_ID);
     if (p) { closePanel(); return; }
     _formOpen = false;
+    // Capture what user was looking at BEFORE the panel covers anything
+    _ctxAtOpen = getCurrentContext();
+    _formCtx = _ctxAtOpen;
     renderPanel();
     const btn = document.getElementById(BTN_ID); if (btn) btn.classList.add('open');
     setTimeout(() => {

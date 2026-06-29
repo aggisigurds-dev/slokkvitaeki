@@ -209,10 +209,22 @@ html[data-cb-hidden="1"] .cb-dot{display:none}
     const urgentMsg = (brief.parts && brief.parts.urgent)
       ? '<div class="cb-warn cb-urgent">🚨 ' + esc(brief.parts.urgent) + '</div>'
       : '';
+    // Watchpoints linked to this customer (from patch 238)
+    const wpts = watchpointsFor(coId);
+    const CAT_ICO = { remind: '🔔', pattern: '🎯', rule: '⚖️', bug: '🐛' };
+    const wptHTML = wpts.length
+      ? '<div style="margin-top:8px;border-top:1px solid var(--brd,#eef1f5);padding-top:8px">' +
+          '<div style="font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3,#94a3b8);font-weight:700;margin-bottom:4px">🤖 Mínir punktar</div>' +
+          wpts.map(w => '<div style="display:flex;gap:6px;font-size:12px;padding:3px 0">' +
+            '<span style="flex-shrink:0">' + (CAT_ICO[w.category] || '📌') + '</span>' +
+            '<span style="flex:1">' + esc(w.title) + '</span>' +
+          '</div>').join('') +
+        '</div>'
+      : '';
     pop.innerHTML =
       '<h4><span>' + esc(co.nafn || '(fannst ekki)') + '</span><button class="cb-x" type="button" aria-label="Loka">✕</button></h4>' +
       '<div class="cb-line">' + esc(brief.line) + '</div>' +
-      urgentMsg + warns +
+      urgentMsg + warns + wptHTML +
       '<div class="cb-foot">' +
         '<a href="#" data-co-open="' + esc(String(coId)) + '">Opna fyrirtæki →</a>' +
       '</div>';
@@ -253,8 +265,23 @@ html[data-cb-hidden="1"] .cb-dot{display:none}
       const priority = +a.priority || 0;
       if (urgent) return { color: 'red', reason: '🚨 áríðandi skilaboð' };
       if (priority >= 3) return { color: 'amber', reason: 'forgangur ' + priority };
+      // Check for watchpoints from patch 238
+      const watch = watchpointsFor(coId);
+      if (watch.length) {
+        const bug = watch.find(w => w.category === 'bug');
+        return { color: bug ? 'red' : 'info', reason: watch.length + ' ' + (watch.length === 1 ? 'punktur' : 'punktar') };
+      }
       return null;
     } catch (_) { return null; }
+  }
+
+  function watchpointsFor(coId) {
+    try {
+      const raw = localStorage.getItem('adstod_watchlist_v1');
+      if (!raw) return [];
+      const list = JSON.parse(raw) || [];
+      return list.filter(w => w.status === 'open' && w.target_kind === 'customer' && String(w.target_value) === String(coId));
+    } catch (_) { return []; }
   }
 
   // ── auto-decorate [data-co-id] elements with a colored dot — only if quickFlag
