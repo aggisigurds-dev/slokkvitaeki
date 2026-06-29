@@ -162,6 +162,7 @@
     updateBadge();
     if (document.getElementById(PANEL_ID)) renderPanel();
     try { if (window.CustomerBrief && CustomerBrief.refreshFlags) CustomerBrief.refreshFlags(); } catch (_) {}
+    setTimeout(refreshMarkers, 100);
   }
   function exportJSON() {
     const blob = new Blob([JSON.stringify(loadWatch(), null, 2)], { type: 'application/json' });
@@ -198,10 +199,11 @@
 
   let _formOpen = false;
   let _formCategory = 'pattern';
-  let _formCtx = null;  // {kind:'customer'|'view', id, name} or null
+  let _formCtx = null;  // {kind:'customer'|'view'|'pinned', id, name} or null
   let _tab = 'watch';  // 'watch' | 'assist'
   let _assistTask = '';
   let _assistResult = null;  // {ts, mock:true, ...}
+  let _pinData = null;  // {selector, text, viewSlug, scrollY} when about to save a pinned punkt
 
   function renderPanel() {
     styles();
@@ -247,16 +249,20 @@
           '<button class="ad-btn go" type="button" id="_ad-save">💾 Bæta við</button>' +
         '</div>' +
       '</div>'
-    ) : '<button class="ad-add" type="button" id="_ad-open-form">➕ Bæta við punkti</button>';
+    ) : '<div style="display:flex;gap:6px"><button class="ad-add" type="button" id="_ad-open-form" style="flex:1">➕ Bæta við punkti</button><button class="ad-add" type="button" id="_ad-open-pin" title="Smella á stað á síðunni" style="flex:0 0 auto;padding:9px 12px;background:#7c3aed">📌</button></div>';
 
     const listHTML = list.length === 0
       ? '<div class="ad-empty">Engir punktar ennþá. Bættu við þínum fyrsta.</div>'
       : '<div class="ad-list">' + list.map(it => {
           const cat = CATEGORIES.find(c => c.k === it.category) || CATEGORIES[1];
-          // Target chip — clickable when it's a customer
+          // Target chip — clickable when it points somewhere navigable
           let targetChip = '';
           if (it.target_kind === 'customer' && it.target_value) {
             targetChip = '<a href="#" class="ad-tgt" data-co="' + esc(it.target_value) + '" style="text-decoration:none;display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:99px;background:#dbeafe;color:#1e40af;font-weight:600;margin-right:5px">🏢 ' + esc(it.target_name || it.target_value) + '</a>';
+          } else if (it.target_kind === 'pinned' && it.target_value) {
+            let pin = null; try { pin = JSON.parse(it.target_value); } catch (_) {}
+            const label = (it.target_name || (pin && pin.text) || 'pin').slice(0, 40);
+            targetChip = '<a href="#" class="ad-pin-jump" data-w="' + esc(it.id) + '" style="text-decoration:none;display:inline-block;font-size:10.5px;padding:1px 7px;border-radius:99px;background:#ede9fe;color:#6d28d9;font-weight:600;margin-right:5px">📌 ' + (pin ? esc(pin.viewSlug) + ' › ' : '') + esc(label) + '</a>';
           } else if (it.target_kind === 'view' && it.target_value) {
             targetChip = '<span style="font-size:10.5px;padding:1px 7px;border-radius:99px;background:#e0e7ff;color:#3730a3;font-weight:600;margin-right:5px">📄 ' + esc(it.target_name || it.target_value) + '</span>';
           } else if (it.target_value) {
@@ -362,6 +368,36 @@
         if (window.App && App.switchView) App.switchView('companies');
         setTimeout(() => { try { if (window.Companies && Companies.openDetail) Companies.openDetail(+coId); } catch (_) {} }, 60);
       }));
+      p.querySelectorAll('.ad-pin-jump[data-w]').forEach(a => a.addEventListener('click', e => {
+        e.preventDefault();
+        const wid = a.getAttribute('data-w');
+        const item = loadWatch().find(x => x.id === wid);
+        if (!item) return;
+        let pin = null; try { pin = JSON.parse(item.target_value); } catch (_) { return; }
+        if (!pin) return;
+        closePanel();
+        // Navigate to the saved view, then scroll + flash
+        location.hash = '#' + pin.viewSlug;
+        setTimeout(() => {
+          let el = null;
+          try { el = pin.selector && document.querySelector(pin.selector); } catch (_) {}
+          if (!el && pin.text) {
+            const all = document.querySelectorAll('tr, .row, .card, li, div');
+            for (const c of all) {
+              const t = (c.textContent || '').trim().replace(/\s+/g, ' ');
+              if (t.indexOf(pin.text.slice(0, 60)) === 0) { el = c; break; }
+            }
+          }
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('ad-pin-flash');
+            setTimeout(() => el.classList.remove('ad-pin-flash'), 1700);
+          } else {
+            window.scrollTo({ top: pin.scrollY || 0, behavior: 'smooth' });
+          }
+          refreshMarkers();
+        }, 400);
+      }));
       const ex = p.querySelector('#_ad-export'); if (ex) ex.addEventListener('click', exportJSON);
     } else {
       const ta = p.querySelector('#_ad-task');
@@ -389,7 +425,13 @@
         try {
           const targetField = p.querySelector('#_ad-target');
           const tk = _formCtx ? _formCtx.kind : null;
-          const tv = _formCtx ? _formCtx.id : (targetField ? targetField.value.trim() || null : null);
+          // For 'pinned' context, store the captured pin data JSON in target_value
+          let tv;
+          if (tk === 'pinned' && _pinData) {
+            tv = JSON.stringify(_pinData);
+          } else {
+            tv = _formCtx ? _formCtx.id : (targetField ? targetField.value.trim() || null : null);
+          }
           const tn = _formCtx ? _formCtx.name : null;
           addWatch({
             category: _formCategory,
@@ -399,7 +441,9 @@
             target_name: tn,
             body: p.querySelector('#_ad-body').value.trim() || null,
           });
-          _formOpen = false; _formCtx = _ctxAtOpen; renderPanel();
+          _formOpen = false; _formCtx = _ctxAtOpen; _pinData = null;
+          renderPanel();
+          setTimeout(refreshMarkers, 100);
         } catch (e) { console.warn('addWatch', e); }
       };
       p.querySelector('#_ad-save').addEventListener('click', submit);
@@ -407,6 +451,8 @@
       setTimeout(() => { try { p.querySelector('#_ad-title').focus(); } catch (_) {} }, 30);
     } else {
       p.querySelector('#_ad-open-form').addEventListener('click', () => { _formCtx = _ctxAtOpen; _formOpen = true; renderPanel(); });
+      const pinBtn = p.querySelector('#_ad-open-pin');
+      if (pinBtn) pinBtn.addEventListener('click', enterPinMode);
     }
   }
 
@@ -428,6 +474,155 @@
     p.style.top = top + 'px';
     p.style.left = left + 'px';
   }
+
+  // ── 📌 Pin mode — click anywhere on the page to attach a punkt there ─────
+  function buildSelector(el) {
+    // Build a chain up to a stable anchor (id, view-id, body)
+    const parts = [];
+    let n = el;
+    let depth = 0;
+    while (n && n.nodeType === 1 && n !== document.body && depth < 8) {
+      let sel = n.tagName.toLowerCase();
+      if (n.id) { sel += '#' + n.id; parts.unshift(sel); break; }
+      const cls = (n.className && typeof n.className === 'string')
+        ? n.className.split(/\s+/).filter(c => c && c.indexOf(':') < 0 && !/^_?(sam|cb|ad|bk|bs)-/.test(c)).slice(0,2).join('.')
+        : '';
+      if (cls) sel += '.' + cls;
+      // nth-of-type so we pick the right sibling
+      let sib = n; let i = 0;
+      while ((sib = sib.previousElementSibling)) if (sib.tagName === n.tagName) i++;
+      if (i > 0) sel += ':nth-of-type(' + (i + 1) + ')';
+      parts.unshift(sel);
+      n = n.parentElement;
+      depth++;
+    }
+    return parts.join(' > ');
+  }
+  function elementSnippet(el) {
+    const t = (el.textContent || '').trim().replace(/\s+/g, ' ');
+    return t.slice(0, 140);
+  }
+  function currentViewSlug() {
+    return (location.hash || '#').replace(/^#/, '').split(/[?&\/]/)[0] || 'unknown';
+  }
+
+  function enterPinMode() {
+    closePanel();
+    document.documentElement.classList.add('ad-pin-mode');
+    if (!document.getElementById('_ad-pin-style')) {
+      const st = document.createElement('style');
+      st.id = '_ad-pin-style';
+      st.textContent =
+        '.ad-pin-mode, .ad-pin-mode *{cursor:crosshair !important}' +
+        '.ad-pin-bnr{position:fixed;top:0;left:0;right:0;z-index:100200;padding:12px 16px;background:linear-gradient(90deg,#7c3aed,#6d28d9);color:#fff;text-align:center;font:inherit;font-size:14px;font-weight:700;box-shadow:0 4px 14px rgba(0,0,0,.4);display:flex;justify-content:center;align-items:center;gap:14px}' +
+        '.ad-pin-bnr button{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:5px 13px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700}' +
+        '.ad-pin-bnr button:hover{background:rgba(255,255,255,.28)}' +
+        '.ad-pin-hover{outline:2px dashed #7c3aed !important;outline-offset:2px !important;background:rgba(124,58,237,.08) !important}' +
+        '.ad-pin-marker{position:absolute;z-index:99990;display:inline-flex;align-items:center;gap:5px;background:#7c3aed;color:#fff;border-radius:99px;padding:3px 10px;font:inherit;font-size:11.5px;font-weight:700;box-shadow:0 4px 14px rgba(124,58,237,.5);cursor:pointer;text-decoration:none;border:none;pointer-events:auto;animation:ad-pin-pop .3s ease-out}' +
+        '.ad-pin-marker:hover{background:#6d28d9;transform:scale(1.05)}' +
+        '@keyframes ad-pin-pop{from{transform:scale(.6);opacity:0}to{transform:scale(1);opacity:1}}' +
+        '.ad-pin-flash{animation:ad-pin-flash 1.6s ease-out}' +
+        '@keyframes ad-pin-flash{0%,100%{outline:0 solid rgba(124,58,237,0)}25%{outline:4px solid rgba(124,58,237,.6)}}';
+      document.head.appendChild(st);
+    }
+    const bnr = document.createElement('div');
+    bnr.className = 'ad-pin-bnr';
+    bnr.id = '_ad-pin-bnr';
+    bnr.innerHTML = '<span>📌 Smelltu á það sem þú vilt pinna</span><button type="button" id="_ad-pin-cancel">Hætta við</button>';
+    document.body.appendChild(bnr);
+    bnr.querySelector('#_ad-pin-cancel').addEventListener('click', exitPinMode);
+    // Hover highlight
+    document.addEventListener('mouseover', _pinHoverIn, true);
+    document.addEventListener('mouseout', _pinHoverOut, true);
+    document.addEventListener('click', _pinCapture, true);
+    document.addEventListener('keydown', _pinEsc, true);
+  }
+  function exitPinMode() {
+    document.documentElement.classList.remove('ad-pin-mode');
+    const bnr = document.getElementById('_ad-pin-bnr'); if (bnr) bnr.remove();
+    document.querySelectorAll('.ad-pin-hover').forEach(el => el.classList.remove('ad-pin-hover'));
+    document.removeEventListener('mouseover', _pinHoverIn, true);
+    document.removeEventListener('mouseout', _pinHoverOut, true);
+    document.removeEventListener('click', _pinCapture, true);
+    document.removeEventListener('keydown', _pinEsc, true);
+  }
+  function _pinHoverIn(e) {
+    if (e.target.closest && (e.target.closest('.ad-pin-bnr') || e.target.closest('#' + PANEL_ID))) return;
+    if (e.target.classList) e.target.classList.add('ad-pin-hover');
+  }
+  function _pinHoverOut(e) {
+    if (e.target.classList) e.target.classList.remove('ad-pin-hover');
+  }
+  function _pinEsc(e) { if (e.key === 'Escape') exitPinMode(); }
+  function _pinCapture(e) {
+    // Allow the cancel button to work
+    if (e.target.closest && (e.target.closest('.ad-pin-bnr') || e.target.closest('#' + PANEL_ID))) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const el = e.target;
+    _pinData = {
+      selector: buildSelector(el),
+      text: elementSnippet(el),
+      viewSlug: currentViewSlug(),
+      scrollY: window.scrollY,
+      ts: Date.now(),
+    };
+    exitPinMode();
+    // Reopen panel with form prefilled in "pinned" mode
+    _ctxAtOpen = { kind: 'pinned', id: 'pin_' + _pinData.ts, name: (_pinData.text || _pinData.viewSlug).slice(0, 50) };
+    _formCtx = _ctxAtOpen;
+    _formOpen = true;
+    _tab = 'watch';
+    togglePanel();
+  }
+
+  // ── Re-attach floating 📌 markers when navigating to a view that has pinned punkts
+  function refreshMarkers() {
+    document.querySelectorAll('.ad-pin-marker').forEach(m => m.remove());
+    const slug = currentViewSlug();
+    const list = loadWatch().filter(w => w.status === 'open' && w.target_kind === 'pinned');
+    for (const w of list) {
+      let pin;
+      try { pin = JSON.parse(w.target_value); } catch (_) { continue; }
+      if (!pin || pin.viewSlug !== slug) continue;
+      let el = null;
+      try { el = pin.selector && document.querySelector(pin.selector); } catch (_) {}
+      // Fallback: text content search within the active view
+      if (!el && pin.text) {
+        const viewEl = document.querySelector('.view:not([style*="display: none"]), #view-' + slug + ':not([style*="display: none"])');
+        const root = viewEl || document.body;
+        // Find first element whose direct textContent starts with the pinned text
+        const all = root.querySelectorAll('tr, .row, .card, li, div, h1, h2, h3, h4, p');
+        for (const c of all) {
+          const t = (c.textContent || '').trim().replace(/\s+/g, ' ');
+          if (t.indexOf(pin.text.slice(0, 60)) === 0) { el = c; break; }
+        }
+      }
+      if (!el) continue;
+      const rect = el.getBoundingClientRect();
+      const marker = document.createElement('a');
+      marker.className = 'ad-pin-marker';
+      marker.href = '#';
+      marker.dataset.w = w.id;
+      marker.innerHTML = '📌 <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(w.title) + '</span>';
+      marker.title = w.title + (w.body ? ' — ' + w.body : '');
+      marker.style.top = (rect.top + window.scrollY - 10) + 'px';
+      marker.style.left = (rect.right + window.scrollX + 6) + 'px';
+      marker.addEventListener('click', e => {
+        e.preventDefault();
+        if (window.AdstodHub) AdstodHub.toggle();
+      });
+      document.body.appendChild(marker);
+    }
+  }
+  // Re-attach on view/hash change
+  window.addEventListener('hashchange', () => setTimeout(refreshMarkers, 200));
+  // Also on scroll/resize — keep markers anchored
+  let _markerTimer = 0;
+  window.addEventListener('scroll', () => { clearTimeout(_markerTimer); _markerTimer = setTimeout(refreshMarkers, 100); }, { passive: true });
+  window.addEventListener('resize', () => { clearTimeout(_markerTimer); _markerTimer = setTimeout(refreshMarkers, 100); });
+  // Initial sweep
+  setTimeout(refreshMarkers, 1500);
 
   // 🪄 Aðstoð runner — Fasi 1 stub. Does cheap keyword extraction client-side
   // to make the mock result feel contextual. Fasi 2 will POST this same shape
