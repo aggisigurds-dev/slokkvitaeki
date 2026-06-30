@@ -131,6 +131,7 @@ function buildPayload(sale, customer, sendEmail) {
   const name = sale.customer_nafn || (customer && customer.nafn) || '';
   const email = (customer && customer.netfang) || '';
   const address = (customer && customer.heimilisfang) || '';
+  const phone = (customer && customer.simi) || '';
   return {
     invoiceDate: isoToday,
     dueDate: due.toISOString().slice(0, 10),
@@ -140,6 +141,7 @@ function buildPayload(sale, customer, sendEmail) {
       name,
       email,
       address,
+      phone,
     },
     lines: linur.map(l => {
       const price = num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0);
@@ -182,7 +184,7 @@ async function fetchFyrirtaeki(id) {
   return rows[0] || null;
 }
 async function fetchCustomerBase(id) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/customers_base?id=eq.${encodeURIComponent(id)}&select=id,nafn,kennitala,netfang,heimilisfang`, {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/customers_base?id=eq.${encodeURIComponent(id)}&select=id,nafn,kennitala,netfang,heimilisfang,simi`, {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
   });
   if (!r.ok) return null;
@@ -266,6 +268,7 @@ async function findOrCreateCustomer(token, custObj) {
       ssn: custObj.ssn,
       email: custObj.email || undefined,
       address: custObj.address || undefined,
+      phone: custObj.phone || undefined,
     }),
   });
   const txt = await createR.text();
