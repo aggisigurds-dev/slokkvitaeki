@@ -29,7 +29,7 @@
     '</svg>';
 
   function activeBrunastal() {
-    return document.documentElement.getAttribute('data-thm-preset') === 'brunastal';
+    return true /* always apply */;
   }
 
   function ensure() {
