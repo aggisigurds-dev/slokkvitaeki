@@ -89,12 +89,16 @@ exports.handler = async (event) => {
     if (dry) return json(200, { ok: true, dry: true, payload, sale, customer });
 
     const token = await getAccessToken();
+    // Payday requires customer to exist first — find by ssn or create.
+    const customerId = await findOrCreateCustomer(token, payload.customer);
+    payload.customerId = customerId;
+    delete payload.customer; // Payday expects customerId, not inline customer
     const created = await createInvoice(token, payload);
 
     // Writeback: merkja söluna sem invoiced
     await markSaleInvoiced(sale.id, created);
 
-    return json(200, { ok: true, payload, created });
+    return json(200, { ok: true, payload, created, customerId });
   } catch (e) {
     return json(500, { error: String(e.message || e) });
   }
@@ -204,6 +208,45 @@ async function getAccessToken() {
   const exp_ts = Date.now() + (expSec * 1000) - 60_000;
   await writeCachedToken({ access_token: access, exp_ts }).catch(()=>{});
   return access;
+}
+
+async function findOrCreateCustomer(token, custObj) {
+  if (!custObj || !custObj.ssn) throw new Error('Customer ssn vantar í payload — get ekki stofnað kúnna í Payday');
+  // Try lookup by ssn first
+  const lookupUrl = API_BASE + '/customers?ssn=' + encodeURIComponent(custObj.ssn);
+  const lookup = await fetch(lookupUrl, {
+    headers: {
+      Authorization: `Bearer ${token}`, Accept: 'application/json',
+      'Api-Version': API_VERSION,
+    },
+  });
+  if (lookup.ok) {
+    const data = await lookup.json();
+    const items = Array.isArray(data) ? data : (data.data || data.items || data.customers || []);
+    if (items.length && (items[0].id || items[0].customerId)) {
+      return items[0].id || items[0].customerId;
+    }
+  }
+  // Create
+  const createR = await fetch(API_BASE + '/customers', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json', Accept: 'application/json',
+      Authorization: `Bearer ${token}`, 'Api-Version': API_VERSION,
+    },
+    body: JSON.stringify({
+      name: custObj.name,
+      ssn: custObj.ssn,
+      email: custObj.email || undefined,
+      address: custObj.address || undefined,
+    }),
+  });
+  const txt = await createR.text();
+  let data; try { data = JSON.parse(txt); } catch(_) { data = { raw: txt }; }
+  if (!createR.ok) throw new Error(`Payday customer create ${createR.status}: ${txt.slice(0,500)}`);
+  const id = data.id || data.customerId || (data.customer && data.customer.id);
+  if (!id) throw new Error('Payday customer id vantar í svar: ' + txt.slice(0, 300));
+  return id;
 }
 
 async function createInvoice(token, payload) {
