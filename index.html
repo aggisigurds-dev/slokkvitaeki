@@ -877,9 +877,6 @@ var Lanstaeki = {
   document.addEventListener('DOMContentLoaded', function(){ setTimeout(update, 2000); });
 })();
 </script>
-<!-- PERF: throttle MutationObservers BEFORE any observer is constructed.
-     Must run synchronously before newfeatures.js + every patch boots. -->
-<script src="/js/patches/252-mo-throttle.js?v=20260630a"></script>
 <script src="/js/newfeatures.js?v=20260510f"></script>
     <script src="/js/mapfix.js?v=20260602e"></script>
     <script src="/js/floorplanfix.js?v=1776869886801"></script>
