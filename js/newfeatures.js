@@ -304,13 +304,16 @@ function _coFpInject(id) {
   img.src=fp.imageUrl;
 }
 
-/* 3. LOGO: Upgrade sidebar brand logo */
+/* 3. LOGO: Upgrade sidebar brand logo (skips when the Sidebar.dc gradient
+ * flame mark with id="sbfl" is already in place — Brunastál ships that SVG
+ * via index.html). */
 (function(){
   function patch(){
     var logo=document.querySelector('.brand-logo');
     if(!logo||logo.dataset.v6)return;
+    if(logo.querySelector('#sbfl, [id^="sbfl"]')) { logo.dataset.v6='1'; return; }
     logo.dataset.v6='1';
-    logo.innerHTML='<svg viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" style="width:40px;height:40px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.25));"><rect width="36" height="36" rx="9" fill="#c93c1d"/><rect x="14" y="3" width="8" height="4" rx="2" fill="white" opacity=".95"/><rect x="15.5" y="7" width="5" height="2" rx="1" fill="white" opacity=".6"/><rect x="11.5" y="9" width="13" height="20" rx="4" fill="white"/><rect x="13.5" y="12" width="9" height="4" rx="1.5" fill="#c93c1d"/><rect x="14" y="21" width="8" height="5" rx="1.5" fill="#c93c1d" opacity=".5"/><rect x="14.5" y="28.5" width="7" height="3.5" rx="1.75" fill="white" opacity=".85"/><circle cx="25" cy="15" r="3.5" fill="#f59e0b" stroke="white" stroke-width="1.5"/></svg>';
+    logo.innerHTML='<svg viewBox="0 0 36 48" xmlns="http://www.w3.org/2000/svg" style="width:22px;height:26px;filter:drop-shadow(0 1px 2px rgba(255,120,20,.5));"><defs><linearGradient id="sbfl-nf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd24a"/><stop offset=".4" stop-color="#ff7a1a"/><stop offset="1" stop-color="#e5231f"/></linearGradient></defs><path d="M18 3c1.6 6 8 8 8 17a8 8 0 0 1-16 0c0-2 .6-3.4 1.7-5 .3 3.2 2.4 4.2 3.2 3.2 1.3-1.6-1.6-5 3.1-15.4z" fill="url(#sbfl-nf)"/></svg>';
   }
   patch();
   new MutationObserver(patch).observe(document.body,{childList:true,subtree:true});

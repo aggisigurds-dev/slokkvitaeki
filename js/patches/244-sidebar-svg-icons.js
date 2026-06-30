@@ -1,13 +1,20 @@
-/* === SIDEBAR SVG ICONS v1 ===
+/* === SIDEBAR SVG ICONS v2 ===
  * Replaces leading emoji-icons in sidebar nav buttons with 16px line-SVGs
  * from the Design's Sidebar.dc.html reference. Each known label gets the
  * exact SVG path the reference specifies, and the spec's color (most are
  * currentColor; a handful are accent-colored per spec §5).
  *
+ * v2 (bug-fix): patch 220/221 etc. inject „Útlit" / „Kerfi" by `cloneNode`-ing
+ * the LAST nav-button, which copies that button's <svg> and only swaps the
+ * <span> text → the resulting button has BOTH a wrong cloned <svg> AND the
+ * emoji '⚙️' as a prefix in its label. v1 bailed in that case, leaving 2
+ * icons + the emoji. v2 ALWAYS replaces the first leading <svg>/<img>/
+ * .vnav-icon-norm with the canonical icon for the label, and ALWAYS strips
+ * leading emoji from EVERY leading text/element until none remain.
+ *
  * Pure visual: no click handlers touched, label text and badges preserved.
  *
- * Runs after patch 243 (icon-align) which ensures any icon — SVG or
- * leftover emoji — sits in a 22px slot.
+ * Runs after patch 243 (icon-align) which ensures the icon sits in a 22px slot.
  */
 (() => {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
@@ -60,10 +67,26 @@
     'Google Sheet':          { d: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>', color: '#3ec77a' },
     'Google Drive':          { d: '<path d="M6 2h12l4 7-6 11H8L2 9z"/><path d="m2 9 6 11M22 9 8 9M6 2l6 11"/>', color: '#5b86ff' },
     'QR-miði (18×70mm)':     { d: '<path d="M20.59 13.41 13.42 20.58a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><circle cx="7" cy="7" r="1"/>' },
+    'Fyrirtæki':             { d: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/>' },
+    'Tekjur':                { d: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>', color: '#2fcf63' },
+    'Lánstæki':              { d: '<path d="M16 16l3-8 3 8"/><path d="M14 12h8M3 8h10v13H3z"/><path d="M8 8V5"/>' },
+    'Geymsla':               { d: '<path d="M5 8h14M5 8a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8M10 12h4"/>' },
+    'Þjónustutæki':          { d: '<rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/>' },
   };
 
-  // Strip leading emoji + whitespace from text content, leave the rest.
+  // Leading emoji/symbol cluster (with variation selector + ZWJ for compound).
+  // Used in a /^…/ repeat-strip loop so MULTIPLE leading emoji are stripped.
   const LEAD_EMOJI_RE = /^\s*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{2300}-\u{23FF}\u{2B00}-\u{2BFF}\u{1F1E6}-\u{1F1FF}][\u{FE0F}\u{200D}\u{1F3FB}-\u{1F3FF}\u{20E3}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]*\s*/u;
+
+  function stripLeadingEmoji(str) {
+    if (!str) return str;
+    let prev = null, cur = str;
+    while (cur !== prev) {
+      prev = cur;
+      cur = cur.replace(LEAD_EMOJI_RE, '');
+    }
+    return cur;
+  }
 
   function buildSvg(spec) {
     const svg = document.createElementNS(SVG_NS, 'svg');
@@ -80,6 +103,13 @@
     return svg;
   }
 
+  function isBadgeEl(el) {
+    if (!el || el.nodeType !== 1) return false;
+    if (el.id === 'alert-badge') return true;
+    const cls = (typeof el.className === 'string') ? el.className : '';
+    return /\b(sb-badge|badge|count|mip-badge)\b/i.test(cls);
+  }
+
   function getLabel(btn) {
     // Walk children, collecting text only from text nodes / span / generic
     // wrappers — skip SVG, IMG, and badge/count pills.
@@ -90,81 +120,100 @@
       } else if (n.nodeType === 1) {
         const tag = n.tagName;
         if (tag === 'SVG' || tag === 'IMG') continue;
-        const cls = (n.className && typeof n.className === 'string') ? n.className : '';
-        if (/\b(sb-badge|badge|count|mip-badge)\b/i.test(cls)) continue;
-        if (n.id === 'alert-badge') continue;
+        if (isBadgeEl(n)) continue;
+        // Skip our own icon slot wrappers so their old emoji content doesn't
+        // pollute the label.
+        if (n.classList && n.classList.contains('vnav-icon-norm')) continue;
         parts.push(n.textContent || '');
       }
     }
-    const raw = parts.join(' ').replace(LEAD_EMOJI_RE, '').replace(/\s+/g, ' ').trim();
+    const raw = stripLeadingEmoji(parts.join(' ')).replace(/\s+/g, ' ').trim();
     return raw;
   }
 
-  function decorate(btn) {
-    if (!btn || btn.dataset.sbSvgDone === '1') return;
-
-    // Detect existing SVG icon — if present and looks like a proper one (16px
-    // or so), leave it alone (these are the index.html-defined buttons).
-    const existingSvg = btn.querySelector(':scope > svg');
-    if (existingSvg && !existingSvg.hasAttribute('data-sb-svg')) {
-      btn.dataset.sbSvgDone = '1';
-      return;
-    }
-
-    const label = getLabel(btn);
-    if (!label) return;
-
-    // Try exact match, then fuzzy (label starts with key, or key starts with
-    // label) to handle wrappers like "QR-miði (18×70mm)" with extra chars.
-    let spec = ICONS[label];
-    if (!spec) {
-      for (const k of Object.keys(ICONS)) {
-        if (label === k || label.startsWith(k) || k.startsWith(label)) {
-          spec = ICONS[k];
-          break;
-        }
-      }
-    }
-    if (!spec) return;
-
-    // Remove any leading emoji from first text node, and remove an existing
-    // generated svg if present (re-apply).
-    const oldGen = btn.querySelector(':scope > svg[data-sb-svg]');
-    if (oldGen) oldGen.remove();
-
+  // Strip ALL leading emoji from the button's label markup. Walks element
+  // children in order, peeling emoji off the front of text/element content
+  // until a non-emoji character (or a badge / svg / img) is hit.
+  function stripAllLeadingEmoji(btn) {
     for (const n of Array.from(btn.childNodes)) {
-      if (n.nodeType === 3) {
-        const stripped = n.nodeValue.replace(LEAD_EMOJI_RE, '');
-        if (stripped !== n.nodeValue) {
-          n.nodeValue = stripped;
+      if (n.nodeType === 1) {
+        const tag = n.tagName;
+        if (tag === 'SVG' || tag === 'IMG') continue;
+        if (isBadgeEl(n)) return; // badge encountered → stop
+        if (n.classList && n.classList.contains('vnav-icon-norm')) {
+          // remove emoji-only wrappers entirely (we own the icon now)
+          n.remove();
+          continue;
         }
-        break;
-      } else if (n.nodeType === 1) {
-        // Element first — might contain emoji as text. Strip leading emoji
-        // from its first text node.
+        // strip from this element's first text node, then its full textContent
         const first = n.firstChild;
         if (first && first.nodeType === 3) {
-          first.nodeValue = first.nodeValue.replace(LEAD_EMOJI_RE, '');
+          first.nodeValue = stripLeadingEmoji(first.nodeValue);
         }
-        // Also strip leading emoji from this element's text content if it's
-        // just plain text.
-        if (n.children.length === 0) {
+        if (n.children && n.children.length === 0) {
           const t = n.textContent || '';
-          const cleaned = t.replace(LEAD_EMOJI_RE, '');
+          const cleaned = stripLeadingEmoji(t);
           if (cleaned !== t) n.textContent = cleaned;
         }
-        break;
+        // If the element is now empty, drop it so the next iteration keeps going
+        if (!(n.textContent || '').trim()) {
+          n.remove();
+          continue;
+        }
+        // Found non-emoji content in a label element — stop further peeling
+        return;
+      } else if (n.nodeType === 3) {
+        const stripped = stripLeadingEmoji(n.nodeValue);
+        if (stripped !== n.nodeValue) n.nodeValue = stripped;
+        if ((n.nodeValue || '').trim()) return; // real text → stop
+        // else keep peeling
       }
     }
+  }
 
-    // Also strip any leftover .vnav-icon-norm span (from patch 243) that
-    // contained only an emoji — we own the icon now.
-    const oldNorm = btn.querySelector(':scope > .vnav-icon-norm');
-    if (oldNorm) oldNorm.remove();
+  function findIconSpec(label) {
+    if (!label) return null;
+    if (ICONS[label]) return ICONS[label];
+    for (const k of Object.keys(ICONS)) {
+      if (label === k) return ICONS[k];
+      if (label.startsWith(k) || k.startsWith(label)) return ICONS[k];
+    }
+    return null;
+  }
 
-    // Insert the SVG at the very start
-    const svg = buildSvg(spec);
-    btn.insertBefore(svg, btn.firstChild);
+  function decorate(btn) {
+    if (!btn) return;
+    const label = getLabel(btn);
+    if (!label) return;
+    const spec = findIconSpec(label);
+    if (!spec) return;
+
+    // Signature so we re-run if the label changes (e.g. dynamic clones)
+    const sig = label + '|' + (spec.d.length);
+    if (btn.dataset.sbSvgSig === sig) return;
+
+    // 1. Remove EVERY leading svg / img / .vnav-icon-norm before the first
+    //    real label element. We don't want any cloned-from-anchor SVGs left.
+    for (const n of Array.from(btn.childNodes)) {
+      if (n.nodeType !== 1) continue;
+      const tag = n.tagName;
+      if (tag === 'SVG' || tag === 'IMG' ||
+          (n.classList && n.classList.contains('vnav-icon-norm'))) {
+        n.remove();
+        continue;
+      }
+      if (isBadgeEl(n)) continue; // badges can come at the end — keep
+      // hit a real label element → stop peeling
+      break;
+    }
+
+    // 2. Strip leading emoji from whatever remains
+    stripAllLeadingEmoji(btn);
+
+    // 3. Insert the canonical SVG at the very start
+    btn.insertBefore(buildSvg(spec), btn.firstChild);
+
+    btn.dataset.sbSvgSig = sig;
     btn.dataset.sbSvgDone = '1';
   }
 
@@ -188,7 +237,7 @@
         decorateAll();
       });
     });
-    obs.observe(nav, { childList: true, subtree: true });
+    obs.observe(nav, { childList: true, subtree: true, characterData: true });
   }
 
   if (document.readyState === 'loading') {
