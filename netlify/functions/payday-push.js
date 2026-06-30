@@ -131,8 +131,8 @@ function buildPayload(sale, customer, sendEmail) {
     lines: linur.map(l => ({
       description: l.desc || l.nafn || l.lysing || l.text || l.description || 'Vara',
       quantity: num(l.qty || l.fjoldi || l.quantity || 1),
-      unitAmount: num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0),
-      vatRate: num(l.vsk_pct || l.vsk_prosenta || l.vat || l.vatRate || 24),
+      unitPriceExcludingVat: num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0),
+      vatPercent: num(l.vsk_pct || l.vsk_prosenta || l.vat || l.vatRate || 24),
     })),
     reference: sale.num ? String(sale.num) : null,
     sendEmail: !!sendEmail && !!((customer && customer.netfang)),
