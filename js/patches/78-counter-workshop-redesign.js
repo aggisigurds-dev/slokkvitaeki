@@ -170,14 +170,14 @@
   }
 
   function readyCard(j) {
-    return '<div class="cw-rcard" style="display:flex;gap:8px;padding:10px;border-radius:10px;margin-bottom:6px;background:#f0fdf4;border:1px solid #bbf7d0">' +
+    return '<div class="cw-rcard" style="display:flex;gap:8px;padding:11px 12px;border-radius:11px;margin-bottom:6px;background:#ecfdf5;border:1px solid #a7f3d0">' +
       '<div class="cw-rcard-info" onclick="Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
-        `<div style="font-family:var(--mono,monospace);font-size:11px;color:#059669;font-weight:600">${dnum(j.num)}</div>` +
-        `<div class="cw-rcard-name" style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
-        `<div style="font-size:11px;color:#059669">${live(j.units).length} slökkvitæki${jobDate(j) ? ' · ' + jobDate(j) : ''}</div>` +
+        `<div style="font-family:'Space Mono',monospace;font-size:11px;color:#047857;font-weight:700">${dnum(j.num)}</div>` +
+        `<div class="cw-rcard-name" style="font-size:13.5px;font-weight:600;color:#11141c;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
+        `<div style="font-family:'Space Mono',monospace;font-size:11px;color:#047857">${live(j.units).length} slökkvitæki${jobDate(j) ? ' · ' + jobDate(j) : ''}</div>` +
       '</div>' +
-      `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;margin-right:6px;padding:4px 9px;background:#fff;border:1px solid #fbbf24;color:#92400e;border-radius:99px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
-      `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt ✓</button>` +
+      `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;margin-right:6px;padding:5px 10px;background:#fffbeb;border:1px solid #fde68a;color:#b45309;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
+      `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center;height:34px;padding:0 13px;border-radius:10px;border:1px solid #156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;font-weight:700;font-size:12.5px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);cursor:pointer">Sótt ✓</button>` +
     '</div>';
   }
 
@@ -541,6 +541,40 @@
   // (which is one of several sibling children) into a single column on the left.
   // Force flex-direction:column so our children stack toolbar�?'grid�?'modal vertically.
   // Also: at �?�900px (mobile), columns get too narrow to read, so stack them too.
+  // Spec-aligned theme overrides for the Afgreiðsla (Counter) board — matches
+  // THEME-SPEC.md surface cards, mono numbers, status chips. Verkstæði (Workshop)
+  // is already styled by the .bw-* block further down which mirrors the spec.
+  if (!document.getElementById('_cw_theme_overrides')) {
+    const t = document.createElement('style');
+    t.id = '_cw_theme_overrides';
+    t.textContent =
+      // Column container — spec surface card
+      '#view-counter .cw-col, #view-workshop .cw-col{' +
+      '  background:#fff!important;border:1px solid rgba(20,24,34,.08)!important;' +
+      '  border-radius:16px!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)!important;' +
+      '}' +
+      '#view-counter .cw-col-head, #view-workshop .cw-col-head{padding:14px 16px!important;border-bottom:1px solid rgba(20,24,34,.06)!important}' +
+      '#view-counter .cw-col-title, #view-workshop .cw-col-title{font-size:11px!important;letter-spacing:.12em!important;color:#8a93a5!important}' +
+      '#view-counter .cw-col-sub, #view-workshop .cw-col-sub{font-family:"Space Mono",monospace!important;color:#9098a6!important;font-size:11px!important;margin-top:2px!important}' +
+      // Job card — soft surface
+      '#view-counter .cw-col [onclick^="Counter.select"]{border:1px solid rgba(20,24,34,.08)!important;background:#fff!important;border-radius:11px!important;padding:11px 12px!important;transition:background .12s ease!important}' +
+      '#view-counter .cw-col [onclick^="Counter.select"]:hover{background:#f3f6fc!important}' +
+      // Search input — spec input style
+      '#counter-search{height:38px!important;padding:0 30px 0 32px!important;border:1px solid rgba(20,24,34,.12)!important;border-radius:11px!important;background:#fff!important;color:#141822!important;font-size:13.5px!important}' +
+      '#counter-search:focus{border-color:#2f5fe0!important;box-shadow:0 0 0 3px rgba(47,95,224,.12)!important;outline:none!important}' +
+      // Counter sidebar toolbar — clean white surface
+      '#counter-sidebar{background:#fff!important;border-bottom:1px solid rgba(20,24,34,.08)!important}' +
+      // Numbers in mono
+      '#view-counter [style*="font-family:var(--mono"], #view-workshop [style*="font-family:var(--mono"]{font-family:"Space Mono",monospace!important}' +
+      // Modal — spec surface
+      '#counter-detail-modal>div, #workshop-detail-modal>div{border-radius:16px!important;box-shadow:0 28px 80px rgba(8,10,14,.4)!important}' +
+      // "✕ Loka" buttons
+      '#counter-detail-modal button[onclick="Counter.closeJobModal()"], #workshop-detail-modal button[onclick="Workshop.closeDetail()"]{' +
+      '  border:1px solid rgba(20,24,34,.14)!important;background:#f1f5f9!important;color:#3a4250!important;' +
+      '  border-radius:10px!important;padding:7px 14px!important;font-weight:600!important;font-size:12.5px!important;' +
+      '}';
+    document.head.appendChild(t);
+  }
   if (!document.getElementById('_cw_redesign_css')) {
     const css = document.createElement('style');
     css.id = '_cw_redesign_css';

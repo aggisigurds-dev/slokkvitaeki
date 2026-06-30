@@ -38,64 +38,89 @@
   function injectStyles() {
     if (document.getElementById(STYLE_ID)) return;
     const css = `
-      .sm-overlay { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:9000;
-        display:flex; align-items:flex-start; justify-content:center; padding:16px; overflow-y:auto; }
-      .sm-modal { background:#fff; border-radius:12px; max-width:720px; width:100%;
-        box-shadow:0 20px 60px rgba(0,0,0,.3); margin:24px auto; }
-      .sm-head { padding:14px 18px; border-bottom:1px solid #e5e7eb;
+      .sm-overlay { position:fixed; inset:0; background:rgba(8,10,14,.55); z-index:9000;
+        display:flex; align-items:flex-start; justify-content:center; padding:16px; overflow-y:auto;
+        font-family:'Space Grotesk',system-ui,sans-serif; }
+      /* Modal — spec surface card with stronger shadow */
+      .sm-modal { background:#fff; border-radius:16px; max-width:720px; width:100%;
+        box-shadow:0 28px 80px -16px rgba(8,10,14,.55), 0 10px 28px -16px rgba(25,35,60,.3);
+        margin:24px auto; color:#11141c; }
+      .sm-head { padding:16px 20px; border-bottom:1px solid rgba(20,24,34,.06);
         display:flex; align-items:center; justify-content:space-between; gap:8px; }
-      .sm-head h3 { margin:0; font-size:17px; }
-      .sm-x { background:none; border:none; font-size:26px; line-height:1; cursor:pointer; color:#6b7280; padding:2px 8px; }
-      .sm-body { padding:14px 18px; }
-      .sm-foot { padding:12px 18px; border-top:1px solid #e5e7eb;
-        display:flex; gap:8px; justify-content:flex-end; flex-wrap:wrap; }
-      .sm-input, .sm-select { width:100%; padding:10px 12px; border:1px solid #d1d5db;
-        border-radius:8px; font-size:14px; box-sizing:border-box; background:#fff; }
-      .sm-input:focus, .sm-select:focus { outline:none; border-color:#2563eb;
-        box-shadow:0 0 0 3px rgba(37,99,235,.15); }
-      .sm-row { display:flex; gap:8px; flex-wrap:wrap; }
+      .sm-head h3 { margin:0; font-size:17px; font-weight:700; color:#11141c; letter-spacing:-.005em; }
+      .sm-x { background:#f1f5f9; border:1px solid rgba(20,24,34,.14); font-size:18px; line-height:1; cursor:pointer; color:#5b6472;
+        width:32px; height:32px; border-radius:9px; display:flex; align-items:center; justify-content:center; }
+      .sm-x:hover { background:#e2e8f0; }
+      .sm-body { padding:16px 20px; }
+      .sm-foot { padding:14px 20px; border-top:1px solid rgba(20,24,34,.06);
+        display:flex; gap:9px; justify-content:flex-end; flex-wrap:wrap; }
+      /* Inputs — spec input shape */
+      .sm-input, .sm-select { width:100%; height:42px; padding:0 14px; border:1px solid rgba(20,24,34,.12);
+        border-radius:11px; font-size:14px; box-sizing:border-box; background:#fff; color:#141822;
+        font-family:inherit; }
+      .sm-input:focus, .sm-select:focus { outline:none; border-color:#2f5fe0;
+        box-shadow:0 0 0 3px rgba(47,95,224,.14); background:#fff; }
+      .sm-row { display:flex; gap:9px; flex-wrap:wrap; }
       .sm-row > * { flex:1 1 140px; }
-      .sm-label { display:block; font-size:12px; font-weight:600; color:#374151; margin:0 0 4px; }
-      .sm-results { max-height:340px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:8px; margin-top:8px; }
-      .sm-result { padding:10px 12px; border-bottom:1px solid #f3f4f6; cursor:pointer;
-        display:flex; justify-content:space-between; align-items:center; gap:8px; }
+      .sm-label { display:block; font-size:10.5px; font-weight:700; color:#8a93a5; letter-spacing:.12em;
+        text-transform:uppercase; margin:0 0 5px; }
+      .sm-results { max-height:340px; overflow-y:auto; border:1px solid rgba(20,24,34,.08);
+        border-radius:12px; margin-top:10px; background:#fff;
+        box-shadow:0 8px 22px -16px rgba(25,35,60,.16); }
+      .sm-result { padding:11px 14px; border-bottom:1px solid rgba(20,24,34,.05); cursor:pointer;
+        display:flex; justify-content:space-between; align-items:center; gap:8px; transition:background .12s ease; }
       .sm-result:last-child { border-bottom:none; }
-      .sm-result:hover, .sm-result.active { background:#f3f4f6; }
+      .sm-result:hover, .sm-result.active { background:#f3f6fc; }
       .sm-result-main { flex:1; min-width:0; }
-      .sm-result-name { font-weight:600; }
-      .sm-result-meta { font-size:12px; color:#6b7280; margin-top:2px; }
-      .sm-badge { padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; white-space:nowrap; }
-      .sm-badge-cust  { background:#dbeafe; color:#1e40af; }
-      .sm-badge-comp  { background:#fef3c7; color:#92400e; }
-      .sm-badge-known { background:#d1fae5; color:#065f46; }
-      .sm-badge-new   { background:#e0e7ff; color:#3730a3; }
-      .sm-btn { padding:10px 14px; border-radius:8px; border:1px solid #d1d5db; background:#fff;
-        cursor:pointer; font-size:14px; font-weight:500; }
-      .sm-btn:hover { background:#f9fafb; }
-      .sm-btn-pri { background:#2563eb; color:#fff; border-color:#2563eb; }
-      .sm-btn-pri:hover { background:#1d4ed8; }
-      .sm-btn-pri:disabled { background:#9ca3af; border-color:#9ca3af; cursor:not-allowed; }
-      .sm-btn-danger { color:#b91c1c; border-color:#fecaca; }
-      .sm-btn-danger:hover { background:#fef2f2; }
-      .sm-toolbtn { padding:10px 14px; border-radius:8px; border:1px solid #2563eb;
-        background:#2563eb; color:#fff; cursor:pointer; font-weight:600; font-size:14px; }
-      .sm-tile { background:#f9fafb; border:1px solid #e5e7eb; border-radius:10px; padding:12px; margin-bottom:8px; }
+      .sm-result-name { font-weight:600; font-size:13.5px; color:#11141c; }
+      .sm-result-meta { font-family:'Space Mono',monospace; font-size:11px; color:#9098a6; margin-top:2px; }
+      /* Status chips per spec §3 — filled colour on tinted bg with 1px border */
+      .sm-badge { padding:3px 9px; border-radius:7px; font-size:11.5px; font-weight:600; white-space:nowrap; border:1px solid; }
+      .sm-badge-cust  { background:#eef3ff; color:#2f5fe0; border-color:#c6d6ff; }
+      .sm-badge-comp  { background:#fffbeb; color:#b45309; border-color:#fde68a; }
+      .sm-badge-known { background:#ecfdf5; color:#047857; border-color:#a7f3d0; }
+      .sm-badge-new   { background:#f5f3ff; color:#6d28d9; border-color:#ddd6fe; }
+      /* Tertiary button (D — light neutral) */
+      .sm-btn { height:42px; padding:0 16px; border-radius:11px; border:1px solid rgba(20,24,34,.14);
+        background:#f1f5f9; color:#3a4250; cursor:pointer; font-size:13px; font-weight:600; font-family:inherit; }
+      .sm-btn:hover { background:#e2e8f0; }
+      /* Primary action — accent metallic blue per spec --btn-grad */
+      .sm-btn-pri { background:linear-gradient(145deg,#03040a 0%,#0c1730 24%,#1d3c80 48%,#264c9e 56%,#0f2042 78%,#03060d 100%);
+        color:#fff; border:1px solid rgba(110,155,255,.55); font-weight:700;
+        box-shadow:0 0 16px -4px rgba(64,113,240,.5), inset 0 1px 0 rgba(255,255,255,.16); }
+      .sm-btn-pri:hover { filter:brightness(1.14); }
+      .sm-btn-pri:disabled { filter:grayscale(.6) brightness(.7); cursor:not-allowed; box-shadow:none; }
+      .sm-btn-danger { color:#c0241f; border-color:#f3c6c4; background:#fdecec; }
+      .sm-btn-danger:hover { background:#fbd9d8; }
+      /* Metallic black toolbar button (spec A) */
+      .sm-toolbtn { height:42px; padding:0 16px; border-radius:11px; border:1px solid #0a0b0d;
+        background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);
+        color:#fff; cursor:pointer; font-weight:600; font-size:13px; font-family:inherit; }
+      .sm-toolbtn:hover { filter:brightness(1.18); }
+      /* Tile — soft card */
+      .sm-tile { background:#fff; border:1px solid rgba(20,24,34,.08); border-radius:12px; padding:14px; margin-bottom:10px;
+        box-shadow:0 4px 14px -10px rgba(25,35,60,.16); }
       .sm-tile-head { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; gap:8px; }
-      .sm-tile-title { font-weight:600; }
-      .sm-empty { text-align:center; color:#6b7280; padding:20px; font-size:13px; }
-      .sm-customer-card { background:#eff6ff; border:1px solid #bfdbfe; border-radius:8px;
-        padding:12px; margin-bottom:14px; display:flex; justify-content:space-between; align-items:center; gap:8px; }
-      .sm-radios { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
-      .sm-radio { flex:1 1 200px; border:1px solid #d1d5db; border-radius:8px; padding:10px 12px;
-        cursor:pointer; display:flex; gap:10px; align-items:center; background:#fff; }
-      .sm-radio.active { background:#eff6ff; border-color:#2563eb; }
+      .sm-tile-title { font-weight:600; font-size:13.5px; color:#11141c; }
+      .sm-empty { text-align:center; color:#5b6472; padding:24px; font-size:13px;
+        border:1px dashed rgba(20,24,34,.12); border-radius:12px; background:#fff; }
+      .sm-customer-card { background:linear-gradient(110deg,#0c1018 0%,#13203f 45%,#274a9e 100%);
+        color:#fff; border-radius:12px; padding:14px 16px; margin-bottom:16px;
+        display:flex; justify-content:space-between; align-items:center; gap:8px;
+        box-shadow:0 10px 28px -16px rgba(11,24,56,.5); }
+      .sm-radios { display:flex; gap:9px; flex-wrap:wrap; margin-bottom:14px; }
+      .sm-radio { flex:1 1 200px; border:1px solid rgba(20,24,34,.12); border-radius:12px; padding:11px 14px;
+        cursor:pointer; display:flex; gap:10px; align-items:center; background:#fff; font-size:13.5px; color:#3a4250; }
+      .sm-radio.active { background:#eef3ff; border-color:#2f5fe0; color:#11141c; }
       .sm-radio input { margin:0; }
-      .sm-success { background:#d1fae5; border:1px solid #10b981; border-radius:8px; padding:18px; text-align:center; }
-      .sm-success-title { font-size:18px; font-weight:700; color:#065f46; margin-bottom:6px; }
-      .sm-success-num { font-family:ui-monospace,Menlo,Consolas,monospace; font-size:24px;
-        color:#065f46; font-weight:700; letter-spacing:.5px; }
-      .sm-err { background:#fee2e2; border:1px solid #fca5a5; color:#991b1b;
-        padding:10px; border-radius:8px; margin:8px 0; font-size:13px; }
+      /* Success — green tinted card */
+      .sm-success { background:linear-gradient(180deg,#eaf7ef,#fff); border:1px solid #a7f3d0; border-radius:12px;
+        padding:20px; text-align:center; }
+      .sm-success-title { font-size:18px; font-weight:700; color:#047857; margin-bottom:6px; }
+      .sm-success-num { font-family:'Space Mono',monospace; font-size:24px;
+        color:#1f9d57; font-weight:700; letter-spacing:.5px; }
+      .sm-err { background:#fff1f2; border:1px solid #fecdd3; color:#be123c;
+        padding:11px 13px; border-radius:10px; margin:8px 0; font-size:13px; font-weight:600; }
       .sm-spacer-sm { height:6px; }
       .sm-spacer-md { height:10px; }
       @media (max-width: 600px) {

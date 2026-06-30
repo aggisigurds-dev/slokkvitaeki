@@ -26,7 +26,7 @@
   s.id = ID;
 
   // Scope prefix — every selector starts here so non-brunastal themes pass through.
-  const P = 'html[data-thm-preset="brunastal"] ';
+  const P = '';
 
   // Sidebar logo CSS already lives in patch 230. Patch 246 owns the
   // markup-level swap (handles dynamic re-rendering).

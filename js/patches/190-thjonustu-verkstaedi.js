@@ -67,6 +67,57 @@
 
   function injectStyles() {
     if (document.getElementById('_sv-styles')) return;
+    // Spec theme overrides — match THEME-SPEC.md (sticky-header table, tinted stat chips,
+    // metallic black filter chips, accent green confirm buttons, Space Mono numbers,
+    // surface cards). Injected first so the local .sv-* rules can still tweak layout.
+    if (!document.getElementById('_sv-theme')) {
+      const t = document.createElement('style');
+      t.id = '_sv-theme';
+      t.textContent = [
+        // page heading on white-area (we render below the banner, not on the dark band)
+        '#' + VIEW_ID + ' h1{font-family:"Space Grotesk",system-ui,sans-serif;letter-spacing:-.01em;color:#11141c}',
+        // Card surface (the wrapper card for each Í-vinnslu row)
+        '#' + VIEW_ID + ' .sv-card{background:#fff!important;border:1px solid rgba(20,24,34,.08)!important;border-left:3px solid #2f5fe0!important;border-radius:16px!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)!important;padding:18px 20px!important}',
+        '#' + VIEW_ID + ' .sv-card.haett{border-left-color:#c0241f!important}',
+        // Segmented mode-switch (Listi / Breitt / Spjöld) — metallic black pill (filter-chip style)
+        '#' + VIEW_ID + ' .sv-seg{background:#fff;border:1px solid rgba(20,24,34,.14);border-radius:11px;padding:3px;gap:3px;box-shadow:0 1px 2px rgba(0,0,0,.04)}',
+        '#' + VIEW_ID + ' .sv-seg button{font-family:"Space Grotesk",system-ui,sans-serif;font-size:13px;font-weight:600;color:#3a4250;padding:7px 14px;border-radius:9px;cursor:pointer;background:transparent;border:0}',
+        '#' + VIEW_ID + ' .sv-seg button.on{background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;box-shadow:0 1px 2px rgba(0,0,0,.18)}',
+        // Tinted stat chips (Í vinnslu blue, Á dagskrá amber, Búið green) matching spec
+        '#' + VIEW_ID + ' .sv-chip{font-family:"Space Grotesk",system-ui,sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#3a4250;cursor:pointer;display:inline-flex;align-items:center;gap:8px}',
+        '#' + VIEW_ID + ' .sv-chip .n{font-family:"Space Mono",monospace;font-weight:700;color:inherit}',
+        // Sort select — pill style
+        '#' + VIEW_ID + ' .sv-sort{height:36px;border:1px solid rgba(20,24,34,.14)!important;border-radius:11px!important;background:#fff!important;color:#3a4250!important;font-weight:600!important;font-size:12.5px!important;cursor:pointer}',
+        // Drawer (Á dagskrá / Búið expanded list)
+        '#' + VIEW_ID + ' .sv-drawer{background:#fff!important;border:1px solid rgba(20,24,34,.08)!important;border-radius:14px!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)!important}',
+        '#' + VIEW_ID + ' .sv-drawer-row{border-bottom:1px solid rgba(20,24,34,.06)!important;font-size:13.5px;color:#3a4250}',
+        '#' + VIEW_ID + ' .sv-drawer-row .nm{font-weight:600!important;color:#11141c!important}',
+        '#' + VIEW_ID + ' .sv-drawer-row .mn{font-family:"Space Mono",monospace!important;color:#9098a6!important}',
+        // Stepper — green check filled when ON
+        '#' + VIEW_ID + ' .sv-steps{background:#f8fafc;border:1px solid rgba(20,24,34,.06);border-radius:12px;padding:14px 16px}',
+        '#' + VIEW_ID + ' .sv-step .nd{width:24px!important;height:24px!important;border:2px solid #cbd5e1!important;color:#64748b!important;font-size:11px!important}',
+        '#' + VIEW_ID + ' .sv-step.on .nd{background:linear-gradient(150deg,#2bbf6c,#0f6e3a)!important;border-color:#0f6e3a!important;color:#fff!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.4)}',
+        '#' + VIEW_ID + ' .sv-step .lb{font-size:11px!important;font-weight:600!important;color:#64748b!important;text-transform:none!important;letter-spacing:0!important}',
+        '#' + VIEW_ID + ' .sv-step.on .lb{color:#0f6e3a!important}',
+        '#' + VIEW_ID + ' .sv-step.on .ln{background:#2bbf6c!important}',
+        // Marks (Hætt / Eftir að uppfæra / Reikningur áður)
+        '#' + VIEW_ID + ' .sv-mark{font-family:"Space Grotesk",system-ui,sans-serif;font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:8px;border:1px solid rgba(20,24,34,.14);background:#f6f8fb;color:#5b6472;cursor:pointer;white-space:nowrap}',
+        // Note textarea
+        '#' + VIEW_ID + ' .sv-note{background:#f6f8fb!important;border:1px solid rgba(20,24,34,.14)!important;border-radius:11px!important;padding:11px 13px!important;color:#141822!important;font-family:"Space Grotesk",system-ui,sans-serif!important;font-size:13px!important;line-height:1.45!important}',
+        '#' + VIEW_ID + ' .sv-note:focus{outline:none!important;border-color:#2f5fe0!important;background:#fff!important;box-shadow:0 0 0 3px rgba(47,95,224,.12)!important}',
+        // Action row
+        '#' + VIEW_ID + ' .sv-acts{border-top:0!important;padding-top:0!important;gap:8px!important}',
+        '#' + VIEW_ID + ' .sv-acts ._sv-act{height:36px!important;padding:0 13px!important;border-radius:10px!important;border:1px solid rgba(20,24,34,.14)!important;background:#f1f5f9!important;color:#3a4250!important;font-family:"Space Grotesk",system-ui,sans-serif!important;font-size:12.5px!important;font-weight:600!important;cursor:pointer!important}',
+        '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="buid"]{border:1px solid #156e3a!important;background:linear-gradient(150deg,#2bbf6c,#0f6e3a)!important;color:#fff!important;font-weight:700!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)!important}',
+        '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="unstart"]{border:1px solid #f3c6c4!important;background:#fdecec!important;color:#c0241f!important}',
+        '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="report"]{background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)!important;border-color:#0a0b0d!important;color:#fff!important}',
+        // Wide-mode right pane — make action stack tidy
+        '#' + VIEW_ID + ' .sv-wide-r{gap:9px!important}',
+        // Numbers in mono
+        '#' + VIEW_ID + ' [data-mono],#' + VIEW_ID + ' .sv-kt{font-family:"Space Mono",monospace}'
+      ].join('');
+      document.head.appendChild(t);
+    }
     const s = document.createElement('style');
     s.id = '_sv-styles';
     s.textContent = [
@@ -193,12 +244,12 @@
 
   // ── Shared card pieces (used by both list + cards mode) ──────────────────
   function metaChips(r) {
-    const draftChip = r.hasDraft ? '<span title="Óklárað úttekt vistuð — heldur áfram á fyrirtækjasíðunni" style="background:#fffbeb;color:#a16207;border:1px solid #fde68a;border-radius:99px;padding:1px 8px;font-size:10px;font-weight:700;white-space:nowrap">📝 óklárað vistað</span>' : '';
+    const draftChip = r.hasDraft ? '<span title="Óklárað úttekt vistuð — heldur áfram á fyrirtækjasíðunni" style="font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;background:#fffbeb;color:#b45309;border:1px solid #fde68a;white-space:nowrap">📝 óklárað vistað</span>' : '';
     if (!(r.units > 0 || r.tekjur > 0 || draftChip)) return '';
-    return '<div style="display:flex;gap:5px;flex-wrap:wrap">' +
+    return '<div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">' +
       draftChip +
-      (r.units > 0 ? '<span style="background:#eff6ff;color:#1d4ed8;border-radius:99px;padding:1px 8px;font-size:10px;font-weight:700;white-space:nowrap">🧯 ' + r.units + ' einingar</span>' : '') +
-      (r.tekjur > 0 ? '<span style="background:#eff6ff;color:#1d4ed8;border-radius:99px;padding:1px 8px;font-size:10px;font-weight:700;white-space:nowrap" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">áætl. ' + fmtKr(r.tekjur) + '</span>' : '') +
+      (r.units > 0 ? '<span style="font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;white-space:nowrap">🧯 ' + r.units + ' einingar</span>' : '') +
+      (r.tekjur > 0 ? '<span style="font-family:\'Space Mono\',monospace;font-size:12px;font-weight:700;color:#11141c;align-self:center" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">áætl. ' + fmtKr(r.tekjur) + '</span>' : '') +
       '</div>';
   }
   // gamli stíllinn — skref sem pillur (list mode)
@@ -241,8 +292,8 @@
       '</div>';
   }
   function nameBlock(r, big) {
-    return '<div><div style="font-weight:700;font-size:' + (big ? '15px' : '13.5px') + ';color:var(--ink1);line-height:1.25">' + esc(r.nafn) + '</div>' +
-      (r.kennitala ? '<div style="font-size:10px;color:var(--ink4);font-family:monospace;margin-top:1px">kt. ' + esc(fmtKt(r.kennitala)) + '</div>' : '') + '</div>';
+    return '<div><div style="font-weight:700;font-size:' + (big ? '15.5px' : '13.5px') + ';color:#11141c;line-height:1.25;letter-spacing:-.005em">' + esc(r.nafn) + '</div>' +
+      (r.kennitala ? '<div style="font-family:\'Space Mono\',monospace;font-size:11px;color:#9098a6;margin-top:1px">kt. ' + esc(fmtKt(r.kennitala)) + '</div>' : '') + '</div>';
   }
   function aminningLine(r, n) { return r.aminning ? '<div style="font-size:10.5px;color:#b45309">📌 ' + esc(r.aminning.slice(0, n || 80)) + '</div>' : ''; }
 
@@ -308,18 +359,18 @@
       ? (_mode === 'cards' ? '<div class="sv-grid">' + b.vinnsla.map(gridCard).join('') + '</div>'
         : _mode === 'wide' ? '<div class="sv-list-wide">' + b.vinnsla.map(wideCard).join('') + '</div>'
         : '<div class="sv-list">' + b.vinnsla.map(listCard).join('') + '</div>')
-      : '<div style="color:var(--brd2);font-size:13px;padding:26px;text-align:center;border:1px dashed var(--brd);border-radius:12px">Ekkert í vinnslu núna.</div>';
+      : '<div style="color:#8a93a5;font-size:13px;padding:30px;text-align:center;border:1px dashed rgba(20,24,34,.12);border-radius:14px;background:#fff">Ekkert í vinnslu núna.</div>';
 
-    v.innerHTML = '<div style="max-width:1080px;margin:0 auto">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px">' +
-        '<h1 style="font-size:22px;margin:0;font-weight:750">🔧 ÞjónustuVerkstæði</h1>' +
+    v.innerHTML = '<div style="max-width:1180px;margin:0 auto">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:8px">' +
+        '<h1 style="font-size:26px;margin:0;font-weight:700;color:#11141c;letter-spacing:-.01em">🔧 ÞjónustuVerkstæði</h1>' +
         '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>☰ Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>▭ Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>▦ Spjöld</button></div>' +
       '</div>' +
-      '<p style="color:var(--ink3);font-size:14px;margin:0 0 14px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · <span title="Samtals áætlaðar tekjur, m. vsk">áætl. ' + fmtSum(vinnslaSum) + '</span>' : '') + '.</p>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px">' +
-        '<span class="sv-chip" style="background:#eff6ff;border-color:#bfdbfe;color:#1d4ed8;font-weight:800">🔵 <span class="n" style="color:#1d4ed8">' + b.vinnsla.length + '</span> í vinnslu</span>' +
-        '<span class="sv-chip" data-toggle="dagskra">⏳ <span class="n">' + b.dagskra.length + '</span> á dagskrá ' + (_openDagskra ? '▾' : '▸') + '</span>' +
-        '<span class="sv-chip" data-toggle="buid">✅ <span class="n">' + b.buid.length + '</span> búin í ár ' + (_openBuid ? '▾' : '▸') + '</span>' +
+      '<p style="color:#5b6472;font-size:13px;margin:4px 0 16px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · <span title="Samtals áætlaðar tekjur, m. vsk">áætl. <b style="font-family:\'Space Mono\',monospace;color:#11141c">' + fmtSum(vinnslaSum) + '</b></span>' : '') + '.</p>' +
+      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px">' +
+        '<span class="sv-chip" style="background:#eef3ff;border-color:#c6d6ff;color:#2f5fe0"><span style="width:9px;height:9px;border-radius:50%;background:#2f5fe0"></span><span class="n" style="color:#2f5fe0">' + b.vinnsla.length + '</span> í vinnslu</span>' +
+        '<span class="sv-chip" data-toggle="dagskra" style="background:#fffbeb;border-color:#fde68a;color:#b45309"><span style="width:9px;height:9px;border-radius:50%;background:#b45309"></span><span class="n" style="color:#b45309">' + b.dagskra.length + '</span> á dagskrá ' + (_openDagskra ? '▾' : '▸') + '</span>' +
+        '<span class="sv-chip" data-toggle="buid" style="background:#ecfdf5;border-color:#a7f3d0;color:#047857"><span style="width:9px;height:9px;border-radius:50%;background:#047857"></span><span class="n" style="color:#047857">' + b.buid.length + '</span> búin í ár ' + (_openBuid ? '▾' : '▸') + '</span>' +
         '<select class="sv-sort" title="Raða Í-vinnslu listanum" style="margin-left:auto;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink2);border:1px solid var(--brd);border-radius:99px;padding:7px 30px 7px 13px;background:var(--surface);cursor:pointer">' +
           '<option value="name"' + (_sort === 'name' ? ' selected' : '') + '>↕ Nafn (A–Ö)</option>' +
           '<option value="revenue"' + (_sort === 'revenue' ? ' selected' : '') + '>↕ Hæstu tekjur</option>' +

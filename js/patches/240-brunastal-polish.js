@@ -1,6 +1,6 @@
 /* === BRUNASTAL POLISH v1 ===
  * Brunastál-only re-skin: spec-aligned tokens + readability fixes.
- * Every selector scoped to html[data-thm-preset="brunastal"] so the other
+ * Every selector scoped to so the other
  * 9 themes are untouched. Every property uses !important to beat the
  * earlier patch cascade (15, 76, 213, 229, 230 inline styles, 229 token map).
  *
@@ -16,7 +16,7 @@
 /* ============================================================
    Brunastál — spec-aligned tokens + aliases
    ============================================================ */
-html[data-thm-preset="brunastal"]{
+:root{
   /* Spec-aligned aliases so spec snippets using --accent work as-is */
   --accent: var(--bstal-accent, #c92a2a) !important;
   --accent-2: var(--bstal-accent2, #8d1b1b) !important;
@@ -46,33 +46,33 @@ html[data-thm-preset="brunastal"]{
    Heading contrast — fix .view h1 white-on-light from patch 230
    Only the banner keeps white text.
    ============================================================ */
-html[data-thm-preset="brunastal"] .view h1{
+.view h1{
   color:#11141c !important;
   font-family:'Space Grotesk', system-ui, sans-serif !important;
   font-weight:700 !important;
   letter-spacing:-.01em !important;
 }
-html[data-thm-preset="brunastal"] .view h2{
+.view h2{
   color:#1f2530 !important;
   font-family:'Space Grotesk', system-ui, sans-serif !important;
   font-weight:600 !important;
 }
-html[data-thm-preset="brunastal"] .view h3{
+.view h3{
   color:#3a4250 !important;
   font-family:'Space Grotesk', system-ui, sans-serif !important;
   font-weight:600 !important;
 }
 /* Banner h1/h2 explicitly white (only inside the eldbanner) */
-html[data-thm-preset="brunastal"] #bstal-banner h1,
-html[data-thm-preset="brunastal"] #bstal-banner h2,
-html[data-thm-preset="brunastal"] #bstal-banner .bb-word{
+#bstal-banner h1,
+#bstal-banner h2,
+#bstal-banner .bb-word{
   color:#fff !important;
 }
 
 /* Beat patch 213's plain h1/h2 font rules with attr-selector specificity */
-html[data-thm-preset="brunastal"] h1,
-html[data-thm-preset="brunastal"] h2,
-html[data-thm-preset="brunastal"] h3{
+h1,
+h2,
+h3{
   font-family:'Space Grotesk', system-ui, sans-serif !important;
 }
 
@@ -80,26 +80,26 @@ html[data-thm-preset="brunastal"] h3{
    Muted-text readability — beat patch 229 token mapping and
    inline #64748b/#94a3b8/#9ca3af/#6b7280 colors.
    ============================================================ */
-html[data-thm-preset="brunastal"] [style*="color:#64748b"],
-html[data-thm-preset="brunastal"] [style*="color: #64748b"],
-html[data-thm-preset="brunastal"] [style*="color:#94a3b8"],
-html[data-thm-preset="brunastal"] [style*="color: #94a3b8"],
-html[data-thm-preset="brunastal"] [style*="color:#9ca3af"],
-html[data-thm-preset="brunastal"] [style*="color: #9ca3af"],
-html[data-thm-preset="brunastal"] [style*="color:#6b7280"],
-html[data-thm-preset="brunastal"] [style*="color: #6b7280"]{
+[style*="color:#64748b"],
+[style*="color: #64748b"],
+[style*="color:#94a3b8"],
+[style*="color: #94a3b8"],
+[style*="color:#9ca3af"],
+[style*="color: #9ca3af"],
+[style*="color:#6b7280"],
+[style*="color: #6b7280"]{
   color:#3a4250 !important;
 }
-html[data-thm-preset="brunastal"] .muted,
-html[data-thm-preset="brunastal"] .text-muted,
-html[data-thm-preset="brunastal"] small{
+.muted,
+.text-muted,
+small{
   color:#3a4250 !important;
 }
 
 /* ============================================================
    Table recipe — sticky header + horizontal overflow
    ============================================================ */
-html[data-thm-preset="brunastal"] .view table{
+.view table{
   display:block !important;
   overflow-x:auto !important;
   max-width:100% !important;
@@ -108,12 +108,12 @@ html[data-thm-preset="brunastal"] .view table{
   border-radius:10px !important;
   border:1px solid #e3e7ee !important;
 }
-html[data-thm-preset="brunastal"] .view table thead{
+.view table thead{
   position:sticky !important;
   top:0 !important;
   z-index:2 !important;
 }
-html[data-thm-preset="brunastal"] .view table thead th{
+.view table thead th{
   background:linear-gradient(180deg,#1b1d23,#0e0f13) !important;
   color:#fff !important;
   font-weight:600 !important;
@@ -124,13 +124,13 @@ html[data-thm-preset="brunastal"] .view table thead th{
   text-transform:uppercase !important;
   border:0 !important;
 }
-html[data-thm-preset="brunastal"] .view table tbody td{
+.view table tbody td{
   padding:10px 12px !important;
   border-top:1px solid #eef1f6 !important;
   color:#11141c !important;
   background:#fff !important;
 }
-html[data-thm-preset="brunastal"] .view table tbody tr:hover td{
+.view table tbody tr:hover td{
   background:#f5f7fb !important;
 }
 
@@ -138,48 +138,48 @@ html[data-thm-preset="brunastal"] .view table tbody tr:hover td{
    Status chip soft tints (spec §3) — replace heavy gradient
    with readable flat backgrounds.
    ============================================================ */
-html[data-thm-preset="brunastal"] .chip.done,
-html[data-thm-preset="brunastal"] .pill.done,
-html[data-thm-preset="brunastal"] .badge.done,
-html[data-thm-preset="brunastal"] [data-status="done"]{
+.chip.done,
+.pill.done,
+.badge.done,
+[data-status="done"]{
   background:#ecfdf5 !important;
   color:#047857 !important;
   border:1px solid #a7f3d0 !important;
   background-image:none !important;
   text-shadow:none !important;
 }
-html[data-thm-preset="brunastal"] .chip.in-progress,
-html[data-thm-preset="brunastal"] .chip.progress,
-html[data-thm-preset="brunastal"] .pill.in-progress,
-html[data-thm-preset="brunastal"] [data-status="in-progress"]{
+.chip.in-progress,
+.chip.progress,
+.pill.in-progress,
+[data-status="in-progress"]{
   background:#eff6ff !important;
   color:#1d4ed8 !important;
   border:1px solid #bfdbfe !important;
   background-image:none !important;
   text-shadow:none !important;
 }
-html[data-thm-preset="brunastal"] .chip.pending,
-html[data-thm-preset="brunastal"] .chip.warning,
-html[data-thm-preset="brunastal"] .pill.pending,
-html[data-thm-preset="brunastal"] [data-status="pending"]{
+.chip.pending,
+.chip.warning,
+.pill.pending,
+[data-status="pending"]{
   background:#fffbeb !important;
   color:#92400e !important;
   border:1px solid #fde68a !important;
   background-image:none !important;
   text-shadow:none !important;
 }
-html[data-thm-preset="brunastal"] .chip.overdue,
-html[data-thm-preset="brunastal"] .chip.danger,
-html[data-thm-preset="brunastal"] .pill.overdue,
-html[data-thm-preset="brunastal"] [data-status="overdue"]{
+.chip.overdue,
+.chip.danger,
+.pill.overdue,
+[data-status="overdue"]{
   background:#fef2f2 !important;
   color:#b91c1c !important;
   border:1px solid #fecaca !important;
   background-image:none !important;
   text-shadow:none !important;
 }
-html[data-thm-preset="brunastal"] .chip.neutral,
-html[data-thm-preset="brunastal"] [data-status="neutral"]{
+.chip.neutral,
+[data-status="neutral"]{
   background:#f1f5f9 !important;
   color:#334155 !important;
   border:1px solid #cbd5e1 !important;
@@ -190,11 +190,11 @@ html[data-thm-preset="brunastal"] [data-status="neutral"]{
 /* ============================================================
    Sidebar hover — beat patch 76 white-tinted hover.
    ============================================================ */
-html[data-thm-preset="brunastal"] .view-nav .vnav-btn:hover{
+.view-nav .vnav-btn:hover{
   background:rgba(255,255,255,.08) !important;
   color:#fff !important;
 }
-html[data-thm-preset="brunastal"] .view-nav .vnav-btn.active{
+.view-nav .vnav-btn.active{
   background:linear-gradient(180deg,#2a2d35,#1a1c22) !important;
   color:#fff !important;
   border-left:3px solid var(--bstal-accent,#c92a2a) !important;
@@ -203,7 +203,7 @@ html[data-thm-preset="brunastal"] .view-nav .vnav-btn.active{
 /* ============================================================
    Topbar — beat patch 213 plain .topbar selector
    ============================================================ */
-html[data-thm-preset="brunastal"] .topbar{
+.topbar{
   background:linear-gradient(180deg,#1b1d23,#0e0f13) !important;
   color:#fff !important;
   border-bottom:1px solid var(--steel-line,#1e2128) !important;
@@ -213,14 +213,14 @@ html[data-thm-preset="brunastal"] .topbar{
    Ársskoðun modal widening — DOES NOT touch markup;
    only overrides inline max-width via theme CSS.
    ============================================================ */
-html[data-thm-preset="brunastal"] ._ars-modal{
+._ars-modal{
   max-width:min(1100px,96vw) !important;
   width:100% !important;
 }
-html[data-thm-preset="brunastal"] ._ars-modal-bg{
+._ars-modal-bg{
   padding:24px 16px !important;
 }
-html[data-thm-preset="brunastal"] #_ars-search{
+#_ars-search{
   background:#fff !important;
   color:#11141c !important;
   border:1px solid #cbd5e1 !important;
@@ -228,7 +228,7 @@ html[data-thm-preset="brunastal"] #_ars-search{
   padding:8px 12px !important;
   font-size:14px !important;
 }
-html[data-thm-preset="brunastal"] #_ars-search:focus{
+#_ars-search:focus{
   outline:none !important;
   border-color:var(--bstal-accent,#c92a2a) !important;
   box-shadow:0 0 0 3px rgba(201,42,42,.18) !important;
@@ -238,41 +238,41 @@ html[data-thm-preset="brunastal"] #_ars-search:focus{
    Bilstjóri overlay — lives outside .view scope, give it
    the same readable colour scheme.
    ============================================================ */
-html[data-thm-preset="brunastal"] #view-bilstjori{
+#view-bilstjori{
   background:linear-gradient(180deg,#9ba1ad 0%,#8a929e 100%) !important;
   color:#11141c !important;
 }
-html[data-thm-preset="brunastal"] #view-bilstjori .bs-card,
-html[data-thm-preset="brunastal"] #view-bilstjori [class*="card"]{
+#view-bilstjori .bs-card,
+#view-bilstjori [class*="card"]{
   background:#fff !important;
   color:#11141c !important;
   border:1px solid #e3e7ee !important;
   border-radius:10px !important;
 }
-html[data-thm-preset="brunastal"] #view-bilstjori h1,
-html[data-thm-preset="brunastal"] #view-bilstjori h2,
-html[data-thm-preset="brunastal"] #view-bilstjori h3{
+#view-bilstjori h1,
+#view-bilstjori h2,
+#view-bilstjori h3{
   color:#11141c !important;
 }
 
 /* ============================================================
    Input shapes — spec §1 input recipe.
    ============================================================ */
-html[data-thm-preset="brunastal"] .view input[type="text"],
-html[data-thm-preset="brunastal"] .view input[type="search"],
-html[data-thm-preset="brunastal"] .view input[type="number"],
-html[data-thm-preset="brunastal"] .view input[type="tel"],
-html[data-thm-preset="brunastal"] .view input[type="email"],
-html[data-thm-preset="brunastal"] .view textarea,
-html[data-thm-preset="brunastal"] .view select{
+.view input[type="text"],
+.view input[type="search"],
+.view input[type="number"],
+.view input[type="tel"],
+.view input[type="email"],
+.view textarea,
+.view select{
   background:#fff !important;
   color:#11141c !important;
   border:1px solid #cbd5e1 !important;
   border-radius:8px !important;
 }
-html[data-thm-preset="brunastal"] .view input:focus,
-html[data-thm-preset="brunastal"] .view textarea:focus,
-html[data-thm-preset="brunastal"] .view select:focus{
+.view input:focus,
+.view textarea:focus,
+.view select:focus{
   outline:none !important;
   border-color:var(--bstal-accent,#c92a2a) !important;
   box-shadow:0 0 0 3px rgba(201,42,42,.18) !important;
