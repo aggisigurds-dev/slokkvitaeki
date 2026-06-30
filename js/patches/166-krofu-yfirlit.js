@@ -137,6 +137,15 @@
     if (r.error) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
     _state.all = r.data || [];
 
+    // 2026-06-30: pull kt + netfang fyrir hvern customer_id svo Payday-vinnan
+    // sjái strax hvort gögn vanti. Birtist undir nafni fyrirtækisins.
+    const cidSet = Array.from(new Set((_state.all || []).map(s => s.customer_id).filter(Boolean)));
+    _state.fyrirtMap = {};
+    if (cidSet.length) {
+      const fy = await SB.from('fyrirtaeki').select('id,kennitala,netfang').in('id', cidSet);
+      (fy.data || []).forEach(f => { _state.fyrirtMap[f.id] = f; });
+    }
+
     // Verkbeidnir for pickup status (same approach as patch 152).
     const vb = await SB.from('verkbeidnir').select('num,status').like('num', 'R-%-V%');
     _state.vbByParent = {};
@@ -396,11 +405,23 @@
     const ids = sales.map(s => s.id).join(',');
     const totalStr = String(Math.round(grp.sum));
 
+    // 2026-06-30: sýna kt + email fyrir Payday-undirbúning.
+    const fy = grp.id ? (_state.fyrirtMap || {})[grp.id] : null;
+    const kt = fy && fy.kennitala ? fy.kennitala : null;
+    const email = fy && fy.netfang ? fy.netfang : null;
+    const meta = [
+      kt ? '<span style="color:#475569;font-family:ui-monospace,Menlo,monospace;font-size:11px">' + esc(kt) + '</span>'
+         : '<span style="color:#dc2626;font-weight:700">⚠️ vantar kt</span>',
+      email ? '<span style="color:#0369a1">📧 ' + esc(email) + '</span>'
+            : '<span style="color:#b45309">⚠️ vantar netfang</span>',
+    ].join(' · ');
+
     return `
       <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
         <div style="padding:12px 16px;background:linear-gradient(135deg,#f8fafc,#eff6ff);border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
           <div>
             <div style="font-weight:800;color:#0f172a;font-size:15px">${esc(grp.display)}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:2px">${meta}</div>
             <div style="font-size:11px;color:#64748b;margin-top:2px">${sales.length} kröfur ·
               ${grp.thisMonthSum > 0 ? '<span style="color:#1d4ed8">þessi mán: ' + fmtKr(grp.thisMonthSum) + '</span>' : ''}
               ${grp.thisMonthSum > 0 && grp.olderSum > 0 ? ' · ' : ''}
