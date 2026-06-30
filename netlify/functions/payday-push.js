@@ -92,9 +92,7 @@ exports.handler = async (event) => {
     // Payday requires customer to exist first — find by ssn or create.
     const custResult = await findOrCreateCustomer(token, payload.customer);
     const customerId = custResult.customerId;
-    // Send all known variants so Payday reads whichever it expects.
-    payload.customerId = customerId;
-    payload.customerID = customerId;
+    // Payday wants customer object with guid id (docs verified 2026-06-30).
     payload.customer = { id: customerId };
     let created;
     try {
@@ -148,18 +146,16 @@ function buildPayload(sale, customer, sendEmail) {
       const vat = num(l.vsk_pct || l.vsk_prosenta || l.vat || l.vatRate || 24);
       const desc = l.desc || l.nafn || l.lysing || l.text || l.description || 'Vara';
       const qty = num(l.qty || l.fjoldi || l.quantity || 1);
-      // Send multiple field-name variants; Payday will read whichever it expects.
       return {
         description: desc,
         quantity: qty,
-        unitPriceExcludingVAT: price,
         unitPriceExcludingVat: price,
-        unitPriceExVat: price,
-        priceExcludingVAT: price,
-        vatPercent: vat,
-        vatRate: vat,
+        vatPercentage: vat,
+        discountPercentage: 0,
       };
     }),
+    currencyCode: 'ISK',
+    status: 'DRAFT',
     reference: sale.num ? String(sale.num) : null,
     sendEmail: !!sendEmail && !!((customer && customer.netfang)),
     createClaim: true,
