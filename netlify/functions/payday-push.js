@@ -191,7 +191,8 @@ async function fetchCustomerBase(id) {
 }
 async function markSaleInvoiced(saleId, created) {
   const payloadId = created && (created.id || created.invoiceId || created.number) || null;
-  const body = { invoiced_at: new Date().toISOString() };
+  const now = new Date().toISOString();
+  const body = { invoiced_at: now, krafa_sent_at: now };
   if (payloadId) body.dk_invoice_id = String(payloadId);
   return fetch(`${SUPABASE_URL}/rest/v1/solur?id=eq.${encodeURIComponent(saleId)}`, {
     method: 'PATCH',
