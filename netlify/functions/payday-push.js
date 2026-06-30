@@ -90,12 +90,25 @@ exports.handler = async (event) => {
 
     const token = await getAccessToken();
     // Payday requires customer to exist first — find by ssn or create.
-    const customerId = await findOrCreateCustomer(token, payload.customer);
+    const custResult = await findOrCreateCustomer(token, payload.customer);
+    const customerId = custResult.customerId;
     // Send all known variants so Payday reads whichever it expects.
     payload.customerId = customerId;
     payload.customerID = customerId;
     payload.customer = { id: customerId };
-    const created = await createInvoice(token, payload);
+    let created;
+    try {
+      created = await createInvoice(token, payload);
+    } catch (invErr) {
+      // Surface customer-create response so we can debug field names.
+      return json(502, {
+        error: String(invErr.message || invErr),
+        customer_lookup: custResult.lookup,
+        customer_created: custResult.created,
+        customerId,
+        payload,
+      });
+    }
 
     // Writeback: merkja söluna sem invoiced
     await markSaleInvoiced(sale.id, created);
@@ -225,6 +238,7 @@ async function getAccessToken() {
 
 async function findOrCreateCustomer(token, custObj) {
   if (!custObj || !custObj.ssn) throw new Error('Customer ssn vantar í payload — get ekki stofnað kúnna í Payday');
+  const out = { lookup: null, created: null, customerId: null };
   // Try lookup by ssn first
   const lookupUrl = API_BASE + '/customers?ssn=' + encodeURIComponent(custObj.ssn);
   const lookup = await fetch(lookupUrl, {
@@ -233,11 +247,14 @@ async function findOrCreateCustomer(token, custObj) {
       'Api-Version': API_VERSION,
     },
   });
+  const lookupTxt = await lookup.text();
+  try { out.lookup = JSON.parse(lookupTxt); } catch(_) { out.lookup = { raw: lookupTxt }; }
   if (lookup.ok) {
-    const data = await lookup.json();
-    const items = Array.isArray(data) ? data : (data.data || data.items || data.customers || []);
-    if (items.length && (items[0].id || items[0].customerId)) {
-      return items[0].id || items[0].customerId;
+    const items = Array.isArray(out.lookup) ? out.lookup : (out.lookup.data || out.lookup.items || out.lookup.customers || []);
+    if (items.length) {
+      const it = items[0];
+      out.customerId = it.id || it.customerId || it.ID || (it.uuid) || null;
+      if (out.customerId) return out;
     }
   }
   // Create
@@ -255,11 +272,12 @@ async function findOrCreateCustomer(token, custObj) {
     }),
   });
   const txt = await createR.text();
-  let data; try { data = JSON.parse(txt); } catch(_) { data = { raw: txt }; }
+  try { out.created = JSON.parse(txt); } catch(_) { out.created = { raw: txt }; }
   if (!createR.ok) throw new Error(`Payday customer create ${createR.status}: ${txt.slice(0,500)}`);
-  const id = data.id || data.customerId || (data.customer && data.customer.id);
-  if (!id) throw new Error('Payday customer id vantar í svar: ' + txt.slice(0, 300));
-  return id;
+  const d = out.created;
+  out.customerId = d.id || d.customerId || d.ID || d.uuid || (d.customer && (d.customer.id || d.customer.customerId)) || (d.data && (d.data.id || d.data.customerId)) || null;
+  if (!out.customerId) throw new Error('Payday customer id vantar í svar: ' + txt.slice(0, 300));
+  return out;
 }
 
 async function createInvoice(token, payload) {
