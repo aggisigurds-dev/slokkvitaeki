@@ -40,9 +40,11 @@
         height: auto !important;
         padding: 1px 8px !important;
         border-radius: 20px !important;
+        font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace !important;
         font-size: 11px !important;
         font-weight: 700 !important;
         line-height: 1.4 !important;
+        font-variant-numeric: tabular-nums !important;
         margin-left: auto !important;
         display: inline-block !important;
         box-shadow: none !important;
