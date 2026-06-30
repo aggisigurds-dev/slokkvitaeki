@@ -68,6 +68,15 @@ exports.handler = async (event) => {
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch (_) { return json(400, { error: 'Ógilt JSON' }); }
 
+  // Cancel/delete-mode: tekur payday_invoice_id og eyðir drögum úr Payday.
+  if (body.action === 'cancel' && body.payday_invoice_id) {
+    try {
+      const token = await getAccessToken();
+      const result = await cancelInvoice(token, body.payday_invoice_id);
+      return json(200, { ok: true, cancelled: body.payday_invoice_id, result });
+    } catch (e) { return json(500, { error: String(e.message || e) }); }
+  }
+
   const saleId = body.sale_id;
   const dry = !!body.dry;
   const sendEmail = !!body.sendEmail;
@@ -302,6 +311,36 @@ async function findOrCreateCustomer(token, custObj) {
     throw new Error('Payday skilaði kúnna með RANGA kennitölu (' + createdSsn + ' vs ' + targetSsn + ')');
   }
   return out;
+}
+
+async function cancelInvoice(token, invoiceId) {
+  // Reyna fyrst DELETE /invoices/{id}; ef Payday styður ekki, falla á PATCH status='DELETED' eða 'CANCELLED'
+  const tryReq = async (method, body) => {
+    const opts = {
+      method,
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`, 'Api-Version': API_VERSION,
+        ...(body ? {'Content-Type':'application/json'} : {}),
+      },
+    };
+    if (body) opts.body = JSON.stringify(body);
+    const r = await fetch(API_BASE + '/invoices/' + encodeURIComponent(invoiceId), opts);
+    const txt = await r.text();
+    let data; try { data = JSON.parse(txt); } catch(_) { data = { raw: txt }; }
+    return { ok: r.ok, status: r.status, data, txt };
+  };
+  const attempts = [];
+  // DELETE
+  let r = await tryReq('DELETE'); attempts.push({method:'DELETE', status:r.status});
+  if (r.ok) return { method: 'DELETE', ...r.data };
+  // PATCH status=DELETED
+  r = await tryReq('PATCH', { status: 'DELETED' }); attempts.push({method:'PATCH-DELETED', status:r.status});
+  if (r.ok) return { method: 'PATCH-DELETED', ...r.data };
+  // PATCH status=CANCELLED
+  r = await tryReq('PATCH', { status: 'CANCELLED' }); attempts.push({method:'PATCH-CANCELLED', status:r.status});
+  if (r.ok) return { method: 'PATCH-CANCELLED', ...r.data };
+  throw new Error('Payday cancel mistókst — reyndi DELETE + PATCH variants. Sjá log: ' + JSON.stringify(attempts));
 }
 
 async function createInvoice(token, payload) {
