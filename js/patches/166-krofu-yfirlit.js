@@ -108,7 +108,7 @@
     try { return localStorage.getItem(SORT_KEY) || 'updated_desc'; } catch (_) { return 'updated_desc'; }
   }
   function saveSort(v) { try { localStorage.setItem(SORT_KEY, v); } catch (_) {} }
-  let _state = { month: null, all: [], vbByParent: {}, sort: loadSort() };
+  let _state = { month: null, all: [], vbByParent: {}, sort: loadSort(), selected: new Set() };
 
   function monthBounds(d) {
     const start = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -336,6 +336,16 @@
           ? companies.map(renderCompany).join('')
           : '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">Engar útistandandi kröfur 🎉</div>'}
 
+      </div>
+
+      <div id="_ky-bulk-bar" style="position:sticky;bottom:0;left:0;right:0;display:none;background:linear-gradient(135deg,#0c4a6e,#1d4ed8);color:#fff;padding:12px 20px;box-shadow:0 -4px 18px rgba(0,0,0,.18);z-index:50">
+        <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+            <div style="font-size:14px;font-weight:700"><span id="_ky-bulk-n">0</span> kröfur valdar · <span id="_ky-bulk-sum">0 kr</span></div>
+            <button id="_ky-bulk-clear" type="button" style="padding:6px 12px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">✕ Hreinsa val</button>
+          </div>
+          <button id="_ky-bulk-send" type="button" style="padding:10px 18px;background:#16a34a;color:#fff;border:1px solid #15803d;border-radius:8px;cursor:pointer;font:inherit;font-size:14px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.2)">📤 Senda valdar í Payday</button>
+        </div>
       </div>`;
 
     main.querySelector('._ky-sort')?.addEventListener('change', e => {
@@ -490,6 +500,90 @@
       });
     });
 
+    // 2026-06-30: bulk Payday push — fjölval með tickbox + neðstu aðgerðastiku.
+    // Selecting state lives in _state.selected (Set of sale.id), preserved
+    // across re-renders within the session. Each tick updates the bar; Send →
+    // POST /api/payday-push fyrir hvert valið ID í röð (sama endpoint og
+    // einstaki takkinn). Reload í lokin sækir nýju krafa_sent_at færslurnar.
+    function pruneSelected() {
+      const live = new Set((_state.all || []).filter(s => !s.krafa_sent_at).map(s => s.id));
+      Array.from(_state.selected).forEach(id => { if (!live.has(id)) _state.selected.delete(id); });
+    }
+    function refreshBulkBar() {
+      pruneSelected();
+      const bar = document.getElementById('_ky-bulk-bar');
+      if (!bar) return;
+      const n = _state.selected.size;
+      if (n === 0) { bar.style.display = 'none'; return; }
+      const sum = (_state.all || []).filter(s => _state.selected.has(s.id))
+        .reduce((acc, s) => acc + (parseFloat(s.samtals) || 0), 0);
+      const nEl = document.getElementById('_ky-bulk-n');
+      const sEl = document.getElementById('_ky-bulk-sum');
+      if (nEl) nEl.textContent = String(n);
+      if (sEl) sEl.textContent = fmtKr(sum);
+      bar.style.display = 'block';
+    }
+    main.querySelectorAll('._ky-select').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const id = cb.dataset.id;
+        if (cb.checked) _state.selected.add(id); else _state.selected.delete(id);
+        refreshBulkBar();
+      });
+    });
+    main.querySelectorAll('._ky-select-all').forEach(b => {
+      b.addEventListener('click', () => {
+        const ids = (b.dataset.ids || '').split(',').filter(Boolean);
+        const allSelected = ids.length && ids.every(id => _state.selected.has(id));
+        if (allSelected) ids.forEach(id => _state.selected.delete(id));
+        else ids.forEach(id => _state.selected.add(id));
+        main.querySelectorAll('._ky-select').forEach(cb => {
+          cb.checked = _state.selected.has(cb.dataset.id);
+        });
+        refreshBulkBar();
+      });
+    });
+    document.getElementById('_ky-bulk-clear')?.addEventListener('click', () => {
+      _state.selected.clear();
+      main.querySelectorAll('._ky-select').forEach(cb => { cb.checked = false; });
+      refreshBulkBar();
+    });
+    document.getElementById('_ky-bulk-send')?.addEventListener('click', async () => {
+      const ids = Array.from(_state.selected);
+      if (!ids.length) return;
+      if (!confirm('Senda ' + ids.length + ' kröfur í Payday núna?\n\n(Hver salan verður sitt eigið drag — ekki sjálfvirkt sent á kúnna.)')) return;
+      const btn = document.getElementById('_ky-bulk-send');
+      const bar = document.getElementById('_ky-bulk-bar');
+      let ok = 0, failed = [];
+      for (let i = 0; i < ids.length; i++) {
+        const id = ids[i];
+        if (btn) btn.textContent = '⏳ ' + (i + 1) + ' / ' + ids.length + '…';
+        try {
+          const r = await fetch('/api/payday-push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sale_id: id }),
+          });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+          ok++;
+          _state.selected.delete(id);
+        } catch (e) {
+          const s = (_state.all || []).find(x => x.id === id);
+          failed.push({ num: s ? s.num : id, msg: (e && e.message) || String(e) });
+        }
+      }
+      if (btn) btn.textContent = '📤 Senda valdar í Payday';
+      const okMsg = ok ? '✓ ' + ok + ' kröfur sendar í Payday' : '';
+      if (failed.length) {
+        const list = failed.map(f => '• ' + f.num + ' — ' + f.msg).join('\n');
+        alert((okMsg ? okMsg + '\n\n' : '') + failed.length + ' kröfur misheppnaðar:\n\n' + list);
+      } else if (window.Toast && Toast.show) {
+        Toast.show(okMsg);
+      }
+      await load(_state.month);
+    });
+    refreshBulkBar();
+
     refreshBadge();
   }
 
@@ -497,6 +591,8 @@
     // Sort sales chronological asc within the company card for easier review.
     const sales = grp.sales.slice().sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
     const ids = sales.map(s => s.id).join(',');
+    // 2026-06-30: bulk-Payday — ósentar (engin krafa_sent_at) sem fá tickbox.
+    const unsentIds = sales.filter(s => !s.krafa_sent_at).map(s => s.id);
     const totalStr = String(Math.round(grp.sum));
 
     // 2026-06-30: sýna kt + email fyrir Payday-undirbúning. Lestir í þessari röð:
@@ -538,6 +634,7 @@
               <div style="font-size:20px;font-weight:800;color:#1d4ed8;font-variant-numeric:tabular-nums">${fmtKr(grp.sum)}</div>
             </div>
             <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð án vsk-formúleringa" style="padding:6px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:11px">📋</button>
+            ${unsentIds.length ? `<button class="_ky-select-all" data-ids="${unsentIds.join(',')}" type="button" title="Velja allar ósentar kröfur þessa fyrirtækis fyrir Payday-push" style="padding:6px 10px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:700">☑ Velja ${unsentIds.length}</button>` : ''}
             <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt" style="padding:7px 12px;background:#f8fafc;color:#15803d;border:1.5px solid #86efac;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">✓ Allar greiddar</button>
           </div>
         </div>
@@ -569,8 +666,13 @@
                 }
               }
             } catch (_) {}
+            const isChecked = _state.selected.has(s.id);
+            const checkboxCell = s.krafa_sent_at
+              ? '<div></div>'
+              : `<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0"><input type="checkbox" class="_ky-select" data-id="${s.id}" ${isChecked ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:#1d4ed8"></label>`;
             return `
-              <div style="display:grid;grid-template-columns:100px 80px 1fr 90px 1fr auto;gap:10px;padding:9px 16px;border-bottom:1px solid #f1f5f9;font-size:12.5px;align-items:center">
+              <div style="display:grid;grid-template-columns:28px 100px 80px 1fr 90px 1fr auto;gap:10px;padding:9px 16px;border-bottom:1px solid #f1f5f9;font-size:12.5px;align-items:center">
+                ${checkboxCell}
                 <div style="font-family:monospace;color:#475569">${esc(s.num || '')}</div>
                 <div style="color:#64748b">${fmtDate(s.created_at)}</div>
                 <div style="color:${st.color};font-weight:600">${st.icon} ${esc(st.label)}</div>
