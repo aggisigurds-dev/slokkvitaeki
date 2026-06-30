@@ -320,17 +320,39 @@
       });
     });
 
-    // 2026-06-12 (Todoist): „Krafa send" hak per kröfu — togglar krafa_sent_at.
+    // 2026-06-30: „Krafa send" hnappur sendir núna kröfuna í Payday gegnum
+    // /api/payday-push (sem setur invoiced_at + krafa_sent_at + dk_invoice_id).
+    // Afhökun (going from on → off) er ennþá bara local toggle á krafa_sent_at —
+    // hún dregur EKKI til baka Payday-drögin.
     main.querySelectorAll('._ky-krafa-toggle').forEach(b => {
       b.addEventListener('click', async () => {
         const id = b.dataset.id;
         const isOn = b.dataset.on === '1';
-        if (isOn && !confirm('Afhaka „Krafa send"?')) return;
-        const SB = getSB();
-        const r = await SB.from('solur').update({ krafa_sent_at: isOn ? null : new Date().toISOString() }).eq('id', id);
-        if (r.error) { alert('Villa: ' + r.error.message); return; }
-        if (window.Toast && Toast.show) Toast.show(isOn ? 'Krafa send — afhakað' : '🏦 ✓ Krafa send');
-        await load(_state.month);
+        if (isOn) {
+          if (!confirm('Afhaka „Krafa send"? (NB Payday-dragið helst óbreytt)')) return;
+          const SB = getSB();
+          const r = await SB.from('solur').update({ krafa_sent_at: null }).eq('id', id);
+          if (r.error) { alert('Villa: ' + r.error.message); return; }
+          if (window.Toast && Toast.show) Toast.show('Krafa send — afhakað');
+          await load(_state.month);
+          return;
+        }
+        if (!confirm('Senda kröfu í Payday núna? (drag verður stofnað, ekki sjálfvirkt sent á kúnna)')) return;
+        b.disabled = true; b.textContent = '⏳ Sendir…';
+        try {
+          const r = await fetch('/api/payday-push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sale_id: id }),
+          });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+          if (window.Toast && Toast.show) Toast.show('🏦 ✓ Krafa send í Payday');
+          await load(_state.month);
+        } catch (e) {
+          alert('Payday push villa: ' + (e.message || e));
+          b.disabled = false;
+        }
       });
     });
     main.querySelectorAll('._ky-mark-paid').forEach(b => {
