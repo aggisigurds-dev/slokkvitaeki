@@ -194,6 +194,10 @@
     const thisMonthTotal = sum(thisMonth);
     const olderTotal = sum(older);
     const grandTotal = thisMonthTotal + olderTotal;
+    // 2026-06-30: telja sendar kröfur (úr Payday eða manual toggle á krafa_sent_at)
+    const sent = (all || []).filter(s => s.krafa_sent_at);
+    const sentTotal = sum(sent);
+    const sentCompanies = new Set(sent.map(s => normName(s.customer_nafn) || '(ekkert)')).size;
 
     // Group by company across the whole dataset for the per-company section.
     const grouped = {};
@@ -287,6 +291,14 @@
             </div>
             <div style="font-size:26px;font-weight:800">${fmtKr(grandTotal)}</div>
             <div style="font-size:11px;color:#bfdbfe;margin-top:2px">${all.length} sölur · ${companies.length} fyrirtæki</div>
+          </div>
+          <div style="background:linear-gradient(135deg,#14532d,#16a34a);color:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+              <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px">🏦</div>
+              <div style="font-size:11px;color:#bbf7d0;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Sendar kröfur</div>
+            </div>
+            <div style="font-size:26px;font-weight:800">${fmtKr(sentTotal)}</div>
+            <div style="font-size:11px;color:#bbf7d0;margin-top:2px">${sent.length} sölur · ${sentCompanies} fyrirtæki</div>
           </div>
         </div>
 
