@@ -250,7 +250,9 @@ async function getAccessToken() {
 async function findOrCreateCustomer(token, custObj) {
   if (!custObj || !custObj.ssn) throw new Error('Customer ssn vantar í payload — get ekki stofnað kúnna í Payday');
   const out = { lookup: null, created: null, customerId: null };
-  // Try lookup by ssn first
+  const targetSsn = String(custObj.ssn).replace(/\D/g, '');
+  // Try lookup by ssn first — NB Payday's ?ssn= filter virkar EKKI sem útilokari
+  // (skilar öllum kúnnum); þess vegna FILTRUM við niðurstöðurnar handvirkt eftir.
   const lookupUrl = API_BASE + '/customers?ssn=' + encodeURIComponent(custObj.ssn);
   const lookup = await fetch(lookupUrl, {
     headers: {
@@ -262,13 +264,18 @@ async function findOrCreateCustomer(token, custObj) {
   try { out.lookup = JSON.parse(lookupTxt); } catch(_) { out.lookup = { raw: lookupTxt }; }
   if (lookup.ok) {
     const items = Array.isArray(out.lookup) ? out.lookup : (out.lookup.data || out.lookup.items || out.lookup.customers || []);
-    if (items.length) {
-      const it = items[0];
-      out.customerId = it.id || it.customerId || it.ID || (it.uuid) || null;
+    // CRITICAL: filter items by actual ssn match (Payday hunsar ?ssn= filter)
+    const matched = items.filter(it => {
+      const iSsn = String(it.ssn || it.SSN || it.ssNumber || '').replace(/\D/g, '');
+      return iSsn === targetSsn;
+    });
+    if (matched.length) {
+      const it = matched[0];
+      out.customerId = it.id || it.customerId || it.ID || it.uuid || null;
       if (out.customerId) return out;
     }
   }
-  // Create
+  // Engin match í lookup → stofna nýjan
   const createR = await fetch(API_BASE + '/customers', {
     method: 'POST',
     headers: {
@@ -289,6 +296,11 @@ async function findOrCreateCustomer(token, custObj) {
   const d = out.created;
   out.customerId = d.id || d.customerId || d.ID || d.uuid || (d.customer && (d.customer.id || d.customer.customerId)) || (d.data && (d.data.id || d.data.customerId)) || null;
   if (!out.customerId) throw new Error('Payday customer id vantar í svar: ' + txt.slice(0, 300));
+  // SAFETY: verify the created customer has the right ssn (catch bug-like Agnar-leak)
+  const createdSsn = String(d.ssn || d.SSN || '').replace(/\D/g, '');
+  if (createdSsn && createdSsn !== targetSsn) {
+    throw new Error('Payday skilaði kúnna með RANGA kennitölu (' + createdSsn + ' vs ' + targetSsn + ')');
+  }
   return out;
 }
 
