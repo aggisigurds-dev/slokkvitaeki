@@ -79,7 +79,11 @@ exports.handler = async (event) => {
     if (sale.dk_invoice_id || sale.invoiced_at) {
       return json(409, { error: 'Sala þegar í reikningi (' + (sale.dk_invoice_id || sale.invoiced_at) + ')' });
     }
-    const customer = sale.customer_id ? await fetchFyrirtaeki(sale.customer_id) : null;
+    // Customer enrichment — try in order: customer_base_id → customer_id (fyrirtaeki).
+    // sale.customer_kt + sale.customer_nafn are authoritative if present (POS writes them).
+    let customer = null;
+    if (sale.customer_base_id) customer = await fetchCustomerBase(sale.customer_base_id);
+    if (!customer && sale.customer_id) customer = await fetchFyrirtaeki(sale.customer_id);
 
     const payload = buildPayload(sale, customer, sendEmail);
     if (dry) return json(200, { ok: true, dry: true, payload, sale, customer });
@@ -105,15 +109,20 @@ function buildPayload(sale, customer, sendEmail) {
   const due = new Date(today); due.setDate(due.getDate() + 14);
   const final = new Date(today); final.setDate(final.getDate() + 30);
 
+  // sale.customer_kt / customer_nafn first (POS writes them); fall back to enriched customer row.
+  const ktRaw = sale.customer_kt || (customer && customer.kennitala) || '';
+  const name = sale.customer_nafn || (customer && customer.nafn) || '';
+  const email = (customer && customer.netfang) || '';
+  const address = (customer && customer.heimilisfang) || '';
   return {
     invoiceDate: isoToday,
     dueDate: due.toISOString().slice(0, 10),
     finalDueDate: final.toISOString().slice(0, 10),
     customer: {
-      ssn: (customer && customer.kennitala || sale.customer_nafn ? digits(customer && customer.kennitala) : '') || '',
-      name: (customer && customer.nafn) || sale.customer_nafn || '',
-      email: (customer && customer.netfang) || '',
-      address: (customer && customer.heimilisfang) || '',
+      ssn: digits(ktRaw),
+      name,
+      email,
+      address,
     },
     lines: linur.map(l => ({
       description: l.nafn || l.lysing || l.text || '',
@@ -140,6 +149,14 @@ async function fetchSale(id) {
 }
 async function fetchFyrirtaeki(id) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/fyrirtaeki?id=eq.${encodeURIComponent(id)}&select=id,nafn,kennitala,netfang,heimilisfang`, {
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+  });
+  if (!r.ok) return null;
+  const rows = await r.json();
+  return rows[0] || null;
+}
+async function fetchCustomerBase(id) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/customers_base?id=eq.${encodeURIComponent(id)}&select=id,nafn,kennitala,netfang,heimilisfang`, {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
   });
   if (!r.ok) return null;
