@@ -143,19 +143,31 @@ function buildPayload(sale, customer, sendEmail) {
       address,
       phone,
     },
-    lines: linur.map(l => {
-      const price = num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0);
-      const vat = num(l.vsk_pct || l.vsk_prosenta || l.vat || l.vatRate || 24);
-      const desc = l.desc || l.nafn || l.lysing || l.text || l.description || 'Vara';
-      const qty = num(l.qty || l.fjoldi || l.quantity || 1);
-      return {
-        description: desc,
-        quantity: qty,
-        unitPriceExcludingVat: price,
-        vatPercentage: vat,
-        discountPercentage: 0,
-      };
-    }),
+    lines: (() => {
+      // Auto-detect hvort POS hafi þegar bakað afslátt í line-verð eða ekki.
+      // Sjá CLAUDE.md: SalaInvoice.renderFromSale gerir sama auto-detect.
+      const lineTotalMvsk = linur.reduce((s, l) => {
+        const lvat = num(l.vsk_pct || l.vsk_prosenta || l.vat || l.vatRate || 24);
+        const lqty = num(l.qty || l.fjoldi || l.quantity || 1);
+        const lpx = num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0);
+        return s + lqty * lpx * (1 + lvat/100);
+      }, 0);
+      const samtals = num(sale.samtals);
+      const afslattur = num(sale.afslattur);
+      const matchAsIs = Math.abs(lineTotalMvsk - samtals) < 1;
+      const matchDiscounted = Math.abs(lineTotalMvsk - afslattur - samtals) < 1;
+      let lineDiscountPct = 0;
+      if (!matchAsIs && matchDiscounted && lineTotalMvsk > 0) {
+        lineDiscountPct = Math.min(100, (afslattur / lineTotalMvsk) * 100);
+      }
+      return linur.map(l => ({
+        description: l.desc || l.nafn || l.lysing || l.text || l.description || 'Vara',
+        quantity: num(l.qty || l.fjoldi || l.quantity || 1),
+        unitPriceExcludingVat: num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0),
+        vatPercentage: num(l.vsk_pct || l.vsk_prosenta || l.vat || l.vatRate || 24),
+        discountPercentage: lineDiscountPct,
+      }));
+    })(),
     currencyCode: 'ISK',
     status: 'DRAFT',
     reference: sale.num ? String(sale.num) : null,
