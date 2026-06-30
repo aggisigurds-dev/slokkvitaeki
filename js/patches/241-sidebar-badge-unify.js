@@ -21,7 +21,9 @@
     const s = document.createElement('style');
     s.id = STYLE_ID;
     s.textContent = `
-      /* Muted-grey pill — consistent across all themes */
+      /* Muted-grey pill — consistent across all themes.
+       * Keep margin-left:auto so the badge sits on the RIGHT edge of the
+       * nav-button → all labels align in a straight column on the LEFT. */
       .view-nav .vnav-btn .sb-badge,
       .view-nav .vnav-btn .sb-badge.red,
       .view-nav .vnav-btn .sb-badge.orange,
@@ -41,16 +43,23 @@
         font-size: 11px !important;
         font-weight: 700 !important;
         line-height: 1.4 !important;
-        margin-left: 6px !important;
+        margin-left: auto !important;
         display: inline-block !important;
         box-shadow: none !important;
         border: 0 !important;
         text-align: center !important;
         vertical-align: middle !important;
+        flex: 0 0 auto !important;
       }
       /* Preserve zero-state hiding */
       .view-nav .vnav-btn .sb-badge.zero,
       .view-nav .vnav-btn .sb-badge:empty {
+        display: none !important;
+      }
+      /* Hide the legacy patch-20 .mip-badge (Tekjur ógreitt) — its inline
+       * bright-red bg is jarring next to the unified grey pills and the
+       * count is already covered by .sb-badge on the same nav item. */
+      .view-nav .vnav-btn .sb-badge.mip-badge {
         display: none !important;
       }
     `;
