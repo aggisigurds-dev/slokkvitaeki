@@ -128,12 +128,23 @@ function buildPayload(sale, customer, sendEmail) {
       email,
       address,
     },
-    lines: linur.map(l => ({
-      description: l.desc || l.nafn || l.lysing || l.text || l.description || 'Vara',
-      quantity: num(l.qty || l.fjoldi || l.quantity || 1),
-      unitPriceExcludingVat: num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0),
-      vatPercent: num(l.vsk_pct || l.vsk_prosenta || l.vat || l.vatRate || 24),
-    })),
+    lines: linur.map(l => {
+      const price = num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0);
+      const vat = num(l.vsk_pct || l.vsk_prosenta || l.vat || l.vatRate || 24);
+      const desc = l.desc || l.nafn || l.lysing || l.text || l.description || 'Vara';
+      const qty = num(l.qty || l.fjoldi || l.quantity || 1);
+      // Send multiple field-name variants; Payday will read whichever it expects.
+      return {
+        description: desc,
+        quantity: qty,
+        unitPriceExcludingVAT: price,
+        unitPriceExcludingVat: price,
+        unitPriceExVat: price,
+        priceExcludingVAT: price,
+        vatPercent: vat,
+        vatRate: vat,
+      };
+    }),
     reference: sale.num ? String(sale.num) : null,
     sendEmail: !!sendEmail && !!((customer && customer.netfang)),
     createClaim: true,
