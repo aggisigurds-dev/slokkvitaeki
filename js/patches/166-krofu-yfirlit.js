@@ -309,6 +309,17 @@
       load(m);
     });
 
+    // 2026-06-30: smella á nafn fyrirtækisins → opna fyrirtækjasíðu
+    main.querySelectorAll('._ky-co-link').forEach(a => {
+      a.addEventListener('click', (ev) => {
+        ev.preventDefault();
+        const id = a.dataset.coId;
+        if (id && typeof window._openCompanySafe === 'function') {
+          window._openCompanySafe(id);
+        }
+      });
+    });
+
     // 2026-06-12 (Todoist): „Krafa send" hak per kröfu — togglar krafa_sent_at.
     main.querySelectorAll('._ky-krafa-toggle').forEach(b => {
       b.addEventListener('click', async () => {
@@ -416,11 +427,16 @@
             : '<span style="color:#b45309">⚠️ vantar netfang</span>',
     ].join(' · ');
 
+    // Smella á nafn fyrirtækisins → opna fyrirtækjasíðu (data-co-id click handler binds below)
+    const nameHtml = grp.id
+      ? `<a href="#" class="_ky-co-link" data-co-id="${grp.id}" style="color:#0f172a;text-decoration:none;border-bottom:1px dotted #94a3b8;cursor:pointer">${esc(grp.display)}</a>`
+      : esc(grp.display);
+
     return `
       <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
         <div style="padding:12px 16px;background:linear-gradient(135deg,#f8fafc,#eff6ff);border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
           <div>
-            <div style="font-weight:800;color:#0f172a;font-size:15px">${esc(grp.display)}</div>
+            <div style="font-weight:800;color:#0f172a;font-size:15px">${nameHtml}</div>
             <div style="font-size:11px;color:#64748b;margin-top:2px">${meta}</div>
             <div style="font-size:11px;color:#64748b;margin-top:2px">${sales.length} kröfur ·
               ${grp.thisMonthSum > 0 ? '<span style="color:#1d4ed8">þessi mán: ' + fmtKr(grp.thisMonthSum) + '</span>' : ''}
