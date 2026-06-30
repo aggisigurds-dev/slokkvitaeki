@@ -565,7 +565,7 @@
                   if (hit) { skyrsla = hit; hitCoId = coId; break; }
                 }
                 if (skyrsla && hitCoId) {
-                  skyrslaBtn = `<button class="_ky-skyrsla" data-co-id="${hitCoId}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="padding:5px 9px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;white-space:nowrap">📎 Skýrsla ${yr}</button>`;
+                  skyrslaBtn = `<button class="_ky-skyrsla" data-co-id="${hitCoId}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="padding:3px 7px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:600;white-space:nowrap">📎 Skýrsla ${yr}</button>`;
                 }
               }
             } catch (_) {}
