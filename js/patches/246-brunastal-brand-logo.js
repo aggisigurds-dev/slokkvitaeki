@@ -65,15 +65,19 @@
 
   function install() {
     tick();
-    // Re-assert whenever the topbar / brand area changes (newfeatures.js's
-    // body-wide MO is the main offender).
-    const root = document.querySelector('.topbar') || document.body;
+    // 2026-06-30 PERF: was observing document.body subtree+characterData
+    // → fired on EVERY POS cart change. Now scope tight: only the .topbar
+    // element, only childList, NO subtree, NO characterData. The brand
+    // area never has nested mutations we need to react to.
+    const root = document.querySelector('.topbar');
     if (root) {
+      let scheduled = false;
       const obs = new MutationObserver(() => {
-        // De-bounce by next-frame; avoids feedback loops with newfeatures.js.
-        requestAnimationFrame(tick);
+        if (scheduled) return;
+        scheduled = true;
+        requestAnimationFrame(() => { scheduled = false; tick(); });
       });
-      obs.observe(root, { childList: true, subtree: true, characterData: true });
+      obs.observe(root, { childList: true });
     }
     // Also re-assert on theme switches.
     const htmlObs = new MutationObserver(tick);
