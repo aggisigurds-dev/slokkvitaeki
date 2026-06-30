@@ -130,7 +130,7 @@
     // 'greitt_sidar' is excluded — it has its own page (Til að rukka).
     // 2026-05-21: pull updated_at too so the sort options can use it.
     const r = await SB.from('solur')
-      .select('id,num,customer_nafn,customer_id,samtals,greitt_med,athugasemdir,created_at,updated_at,paid_at,krafa_sent_at,is_credit,credit_of')
+      .select('id,num,customer_nafn,customer_id,customer_base_id,customer_kt,samtals,greitt_med,athugasemdir,created_at,updated_at,paid_at,invoiced_at,krafa_sent_at,dk_invoice_id,is_credit,credit_of')
       .eq('greitt_med', 'reikningur')
       .is('paid_at', null)
       .order('updated_at', { ascending: false });
@@ -144,6 +144,14 @@
     if (cidSet.length) {
       const fy = await SB.from('fyrirtaeki').select('id,kennitala,netfang').in('id', cidSet);
       (fy.data || []).forEach(f => { _state.fyrirtMap[f.id] = f; });
+    }
+    // 2026-06-30: líka pull úr customers_base ef customer_base_id er sett —
+    // einstaklingskúnnar (eins og Agnar 425) eru ekki í fyrirtaeki, bara í base.
+    const baseSet = Array.from(new Set((_state.all || []).map(s => s.customer_base_id).filter(Boolean)));
+    _state.baseMap = {};
+    if (baseSet.length) {
+      const bb = await SB.from('customers_base').select('id,kennitala,netfang').in('id', baseSet);
+      (bb.data || []).forEach(b => { _state.baseMap[b.id] = b; });
     }
 
     // Verkbeidnir for pickup status (same approach as patch 152).
@@ -438,10 +446,15 @@
     const ids = sales.map(s => s.id).join(',');
     const totalStr = String(Math.round(grp.sum));
 
-    // 2026-06-30: sýna kt + email fyrir Payday-undirbúning.
+    // 2026-06-30: sýna kt + email fyrir Payday-undirbúning. Lestir í þessari röð:
+    // 1) solur.customer_kt — POS-authoritative
+    // 2) fyrirtaeki via customer_id
+    // 3) customers_base via customer_base_id (einstaklings-kúnnar lenda hér)
     const fy = grp.id ? (_state.fyrirtMap || {})[grp.id] : null;
-    const kt = fy && fy.kennitala ? fy.kennitala : null;
-    const email = fy && fy.netfang ? fy.netfang : null;
+    const firstSale = sales[0] || {};
+    const baseRow = firstSale.customer_base_id ? (_state.baseMap || {})[firstSale.customer_base_id] : null;
+    const kt = (firstSale.customer_kt) || (fy && fy.kennitala) || (baseRow && baseRow.kennitala) || null;
+    const email = (fy && fy.netfang) || (baseRow && baseRow.netfang) || null;
     const meta = [
       kt ? '<span style="color:#475569;font-family:ui-monospace,Menlo,monospace;font-size:11px">' + esc(kt) + '</span>'
          : '<span style="color:#dc2626;font-weight:700">⚠️ vantar kt</span>',
