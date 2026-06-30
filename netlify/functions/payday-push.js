@@ -91,8 +91,10 @@ exports.handler = async (event) => {
     const token = await getAccessToken();
     // Payday requires customer to exist first — find by ssn or create.
     const customerId = await findOrCreateCustomer(token, payload.customer);
+    // Send all known variants so Payday reads whichever it expects.
     payload.customerId = customerId;
-    delete payload.customer; // Payday expects customerId, not inline customer
+    payload.customerID = customerId;
+    payload.customer = { id: customerId };
     const created = await createInvoice(token, payload);
 
     // Writeback: merkja söluna sem invoiced
