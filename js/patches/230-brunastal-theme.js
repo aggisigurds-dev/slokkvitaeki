@@ -113,9 +113,9 @@
       /* ── SIDEBAR → near-black brushed metal ─────────────────────────────── */
       P+'.topbar{background:linear-gradient(180deg,#141519,#0c0d10)!important;border-right:1px solid #050506!important;box-shadow:6px 0 24px -14px #000}',
       P+'.brand{border-bottom:1px solid #060708!important}',
-      P+'.brand-logo{background:#0a0b0d!important;border:1px solid #060708;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}',
-      // top sidebar logo → the flame mark in warm orange (app-icon look)
-      P+'.brand-logo svg{stroke:#ff7a1a!important;fill:#ff7a1a!important;width:20px!important;height:22px!important;filter:drop-shadow(0 1px 2px rgba(255,120,20,.5))}',
+      P+'.brand-logo{width:40px!important;height:40px!important;flex:none!important;border-radius:12px!important;background:#0a0b0d!important;border:1px solid #060708!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 4px 10px -4px #000!important;display:flex!important;align-items:center!important;justify-content:center!important}',
+      // top sidebar logo → flame mark with the design's gradient (yellow→orange→red)
+      P+'.brand-logo svg{width:22px!important;height:26px!important;filter:drop-shadow(0 1px 2px rgba(255,120,20,.5))}',
       P+'.brand-name{color:#eef1f4!important}',
       P+'.nav-section-label{color:rgba(255,255,255,.3)!important}',
       P+'.vnav-btn{color:rgba(255,255,255,.62)!important;border-radius:9px}',
