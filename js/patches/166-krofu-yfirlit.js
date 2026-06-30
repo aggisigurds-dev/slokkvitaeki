@@ -340,6 +340,22 @@
       });
     });
 
+    // 2026-06-30: 📎 Skýrsla hnappur — opnar úttektarskýrslu PDF í preview
+    main.querySelectorAll('._ky-skyrsla').forEach(b => {
+      b.addEventListener('click', async () => {
+        try {
+          const coId = b.dataset.coId;
+          const attId = b.dataset.attId;
+          if (!coId || !window.CompanyAttachments) return;
+          const atts = CompanyAttachments.list(coId) || [];
+          const file = atts.find(a => String(a.id) === String(attId));
+          if (!file) { alert('Skjal fannst ekki — hefur þú endurnýjað kröfu yfirlitið?'); return; }
+          if (CompanyAttachments.openPreview) CompanyAttachments.openPreview(coId, file);
+          else if (CompanyAttachments.download) CompanyAttachments.download(coId, file);
+        } catch (e) { alert('Villa: ' + (e.message || e)); }
+      });
+    });
+
     // 2026-06-30: „Krafa send" hnappur sendir núna kröfuna í Payday gegnum
     // /api/payday-push (sem setur invoiced_at + krafa_sent_at + dk_invoice_id).
     // Afhökun (going from on → off) er ennþá bara local toggle á krafa_sent_at —
@@ -504,6 +520,19 @@
           ${sales.map(s => {
             const st = pickupStatus(s.num);
             const da = daysAgo(s.created_at);
+            // 2026-06-30: 📎 fylgiskjal — leita úttektarskýrslu sömu ár á sama
+            // fyrirtaeki via CompanyAttachments. Birtist bara þegar match finnst.
+            let skyrslaBtn = '';
+            try {
+              if (s.customer_id && window.CompanyAttachments && CompanyAttachments.list) {
+                const yr = String(new Date(s.created_at).getFullYear());
+                const atts = CompanyAttachments.list(s.customer_id) || [];
+                const skyrsla = atts.find(a => a && a.kind === 'skyrsla' && String(a.year || '') === yr);
+                if (skyrsla) {
+                  skyrslaBtn = `<button class="_ky-skyrsla" data-co-id="${s.customer_id}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="padding:5px 9px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;white-space:nowrap">📎 Skýrsla</button>`;
+                }
+              }
+            } catch (_) {}
             return `
               <div style="display:grid;grid-template-columns:100px 80px 1fr 90px 1fr auto;gap:10px;padding:9px 16px;border-bottom:1px solid #f1f5f9;font-size:12.5px;align-items:center">
                 <div style="font-family:monospace;color:#475569">${esc(s.num || '')}</div>
@@ -512,6 +541,7 @@
                 <div style="color:#94a3b8;font-size:11px">${da != null ? da + ' d.' : ''}</div>
                 <div style="text-align:right;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums">${fmtKr(s.samtals)}</div>
                 <div style="display:flex;gap:4px">
+                  ${skyrslaBtn}
                   ${s.krafa_sent_at
                     ? `<button class="_ky-krafa-toggle" data-id="${s.id}" data-on="1" type="button" title="Krafa send ${fmtDate(s.krafa_sent_at)} — smelltu til að afhaka" style="padding:5px 9px;background:#dcfce7;color:#14532d;border:1px solid #86efac;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;white-space:nowrap">🏦 ✓ Krafa send</button>`
                     : `<button class="_ky-krafa-toggle" data-id="${s.id}" type="button" title="Haka við þegar krafan hefur verið stofnuð í heimabankanum" style="padding:5px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600;white-space:nowrap">🏦 Krafa send</button>`}
