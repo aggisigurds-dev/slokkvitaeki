@@ -291,39 +291,39 @@
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:22px">
-          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid #1d4ed8">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-              <div style="width:32px;height:32px;border-radius:8px;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:18px">📋</div>
-              <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Þessi mánuður</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:16px">
+          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid #1d4ed8">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+              <div style="width:26px;height:26px;border-radius:7px;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:15px">📋</div>
+              <div style="font-size:10.5px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Þessi mánuður</div>
             </div>
-            <div style="font-size:26px;font-weight:800;color:#1d4ed8">${fmtKr(thisMonthTotal)}</div>
-            <div style="font-size:11px;color:#94a3b8;margin-top:2px">${thisMonth.length} kröfur</div>
+            <div style="font-size:22px;font-weight:800;color:#1d4ed8">${fmtKr(thisMonthTotal)}</div>
+            <div style="font-size:10.5px;color:#94a3b8;margin-top:1px">${thisMonth.length} kröfur</div>
           </div>
           ${olderTotal !== 0 ? `
-          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid #b45309">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-              <div style="width:32px;height:32px;border-radius:8px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:18px">🕓</div>
-              <div style="font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Eldri ógreitt</div>
+          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid #b45309">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+              <div style="width:26px;height:26px;border-radius:7px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:15px">🕓</div>
+              <div style="font-size:10.5px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Eldri ógreitt</div>
             </div>
-            <div style="font-size:26px;font-weight:800;color:#b45309">${fmtKr(olderTotal)}</div>
-            <div style="font-size:11px;color:#94a3b8;margin-top:2px">${older.length} kröfur</div>
+            <div style="font-size:22px;font-weight:800;color:#b45309">${fmtKr(olderTotal)}</div>
+            <div style="font-size:10.5px;color:#94a3b8;margin-top:1px">${older.length} kröfur</div>
           </div>` : ''}
-          <div style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8);color:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-              <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px">💰</div>
-              <div style="font-size:11px;color:#bfdbfe;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Heildarkröfur</div>
+          <div style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8);color:#fff;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+              <div style="width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:15px">💰</div>
+              <div style="font-size:10.5px;color:#bfdbfe;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Heildarkröfur</div>
             </div>
-            <div style="font-size:26px;font-weight:800">${fmtKr(grandTotal)}</div>
-            <div style="font-size:11px;color:#bfdbfe;margin-top:2px">${all.length} sölur · ${companies.length} fyrirtæki</div>
+            <div style="font-size:22px;font-weight:800">${fmtKr(grandTotal)}</div>
+            <div style="font-size:10.5px;color:#bfdbfe;margin-top:1px">${all.length} sölur · ${companies.length} fyrirtæki</div>
           </div>
-          <div style="background:linear-gradient(135deg,#14532d,#16a34a);color:#fff;border-radius:12px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-              <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px">🏦</div>
-              <div style="font-size:11px;color:#bbf7d0;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Sendar kröfur</div>
+          <div style="background:linear-gradient(135deg,#0c4a6e,#0284c7);color:#fff;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+              <div style="width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:15px">🏦</div>
+              <div style="font-size:10.5px;color:#bae6fd;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Sendar kröfur</div>
             </div>
-            <div style="font-size:26px;font-weight:800">${fmtKr(sentTotal)}</div>
-            <div style="font-size:11px;color:#bbf7d0;margin-top:2px">${sent.length} sölur · ${sentCompanies} fyrirtæki</div>
+            <div style="font-size:22px;font-weight:800">${fmtKr(sentTotal)}</div>
+            <div style="font-size:10.5px;color:#bae6fd;margin-top:1px">${sent.length} sölur · ${sentCompanies} fyrirtæki</div>
           </div>
         </div>
 
