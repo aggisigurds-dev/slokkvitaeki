@@ -153,6 +153,31 @@
       const bb = await SB.from('customers_base').select('id,kennitala,netfang').in('id', baseSet);
       (bb.data || []).forEach(b => { _state.baseMap[b.id] = b; });
     }
+    // 2026-06-30: byggja kt → fyrirtaeki[] map fyrir úttektarskýrslu-lookup.
+    // CompanyAttachments er per-fyrirtaeki, en sölur hafa oft bara customer_kt
+    // (engan customer_id). Þá þurfum við að finna öll fyrirtaeki með sama kt
+    // og spyrja CompanyAttachments fyrir hvert.
+    const ktSet = Array.from(new Set((_state.all || []).map(s => (s.customer_kt || '').trim()).filter(Boolean)));
+    _state.fyrirtIdsByKt = {};
+    if (ktSet.length) {
+      const fy2 = await SB.from('fyrirtaeki').select('id,kennitala,customer_base_id').in('kennitala', ktSet);
+      (fy2.data || []).forEach(f => {
+        const k = (f.kennitala || '').trim();
+        if (!k) return;
+        (_state.fyrirtIdsByKt[k] = _state.fyrirtIdsByKt[k] || []).push(f.id);
+      });
+      // Líka með customer_base_id — finna öll fyrirtaeki undir sama base
+      const baseIds = (_state.all || []).map(s => s.customer_base_id).filter(Boolean);
+      if (baseIds.length) {
+        const fy3 = await SB.from('fyrirtaeki').select('id,kennitala,customer_base_id').in('customer_base_id', Array.from(new Set(baseIds)));
+        (fy3.data || []).forEach(f => {
+          const k = (f.kennitala || '').trim();
+          if (!k) return;
+          (_state.fyrirtIdsByKt[k] = _state.fyrirtIdsByKt[k] || []);
+          if (!_state.fyrirtIdsByKt[k].includes(f.id)) _state.fyrirtIdsByKt[k].push(f.id);
+        });
+      }
+    }
 
     // Verkbeidnir for pickup status (same approach as patch 152).
     const vb = await SB.from('verkbeidnir').select('num,status').like('num', 'R-%-V%');
@@ -520,16 +545,27 @@
           ${sales.map(s => {
             const st = pickupStatus(s.num);
             const da = daysAgo(s.created_at);
-            // 2026-06-30: 📎 fylgiskjal — leita úttektarskýrslu sömu ár á sama
-            // fyrirtaeki via CompanyAttachments. Birtist bara þegar match finnst.
+            // 2026-06-30: 📎 fylgiskjal — leita úttektarskýrslu sömu ár.
+            // Reynir customer_id fyrst, svo öll fyrirtaeki með sama kt eða
+            // customer_base_id (vegna að nýjar POS-sölur hafa oft engan customer_id).
             let skyrslaBtn = '';
             try {
-              if (s.customer_id && window.CompanyAttachments && CompanyAttachments.list) {
+              if (window.CompanyAttachments && CompanyAttachments.list) {
                 const yr = String(new Date(s.created_at).getFullYear());
-                const atts = CompanyAttachments.list(s.customer_id) || [];
-                const skyrsla = atts.find(a => a && a.kind === 'skyrsla' && String(a.year || '') === yr);
-                if (skyrsla) {
-                  skyrslaBtn = `<button class="_ky-skyrsla" data-co-id="${s.customer_id}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="padding:5px 9px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;white-space:nowrap">📎 Skýrsla</button>`;
+                const candidateIds = [];
+                if (s.customer_id) candidateIds.push(s.customer_id);
+                const kt = (s.customer_kt || '').trim();
+                if (kt && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[kt]) {
+                  _state.fyrirtIdsByKt[kt].forEach(id => { if (!candidateIds.includes(id)) candidateIds.push(id); });
+                }
+                let skyrsla = null, hitCoId = null;
+                for (const coId of candidateIds) {
+                  const atts = CompanyAttachments.list(coId) || [];
+                  const hit = atts.find(a => a && a.kind === 'skyrsla' && String(a.year || '') === yr);
+                  if (hit) { skyrsla = hit; hitCoId = coId; break; }
+                }
+                if (skyrsla && hitCoId) {
+                  skyrslaBtn = `<button class="_ky-skyrsla" data-co-id="${hitCoId}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="padding:5px 9px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;white-space:nowrap">📎 Skýrsla ${yr}</button>`;
                 }
               }
             } catch (_) {}
