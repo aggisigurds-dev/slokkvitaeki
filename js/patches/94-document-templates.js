@@ -1070,8 +1070,14 @@
           '<div id="_dt-form" style="padding:16px;overflow:auto;background:#f8fafc;border-right:1px solid #e2e8f0"></div>' +
           '<div id="_dt-preview" style="padding:18px;overflow:auto;background:#fff"></div>' +
         '</div>' +
-        '<div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #e2e8f0;background:#f8fafc">' +
+        '<div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #e2e8f0;background:#f8fafc;flex-wrap:wrap">' +
           '<button id="_dt-cancel" type="button" style="padding:9px 16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Loka</button>' +
+          // 2026-06-30: Senda link á kúnna — generates a tokenized fill URL
+          // via brunaholf /api/skoda and copies it to clipboard. Visible only
+          // for the Ársskoðun brunakerfa template (the remote-fill flow).
+          (t.type === 'arsskodun_brunakerfa'
+            ? '<button id="_dt-sendlink" type="button" title="Búa til tokenized tengil og senda kúnnanum til útfyllingar í síma" style="padding:9px 16px;background:#0ea5e9;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">📨 Senda link á kúnna</button>'
+            : '') +
           // 2026-05-13: Vista í kerfi — saves the filled-in values into
           // AppSettings.skjalasnidmat_filled so the doc can be reopened
           // and edited later from the "Vistuð skjöl" list in Samningar.
@@ -1264,6 +1270,85 @@
       fields.forEach(f => { if (f.type === 'signature') blank[f.key] = ''; });
       openPrintWindow(blank);
     });
+
+    // 2026-06-30: 📨 Senda link á kúnna — generates a tokenized fill URL via the
+    // brunaholf /api/skoda endpoint. Carries whatever the user has already filled
+    // in (verkkaupi/kt/heimilisfang/etc.) so the form is pre-populated for the
+    // customer's employee. Visible only for arsskodun_brunakerfa.
+    const sendlinkBtn = dlg.querySelector('#_dt-sendlink');
+    if (sendlinkBtn) {
+      sendlinkBtn.addEventListener('click', async () => {
+        const verkkaupi = (values.verkkaupi || values.vidskiptavinur_nafn || '').toString().trim();
+        if (!verkkaupi) {
+          alert('Sláðu inn „Verkkaupi" áður en þú sendir tengilinn.');
+          return;
+        }
+        sendlinkBtn.disabled = true;
+        const orig = sendlinkBtn.textContent;
+        sendlinkBtn.textContent = '⏳ Sendir…';
+        try {
+          const r = await fetch('https://brunaholf.netlify.app/api/skoda', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'invite',
+              template_id: 'arsskodun-brunakerfa',
+              verkkaupi,
+              kennitala: (values.kennitala || '').toString().trim(),
+              simi: (values.simi || '').toString().trim(),
+              tengilidur: (values.tengilidur || '').toString().trim(),
+              heimilisfang: (values.heimilisfang || '').toString().trim(),
+              postnumer: (values.postnr || values.postnumer || '').toString().trim(),
+              created_by: 'slokkvitaeki-app',
+            }),
+          });
+          const j = await r.json();
+          if (!r.ok || !j.url) throw new Error(j.error || ('HTTP ' + r.status));
+          const url = j.url;
+          // Copy to clipboard immediately.
+          try { await navigator.clipboard.writeText(url); } catch (_) {}
+          // Pop a tiny inline dialog with the URL + actions.
+          let pop = document.getElementById('_dt-sendlink-pop');
+          if (pop) pop.remove();
+          pop = document.createElement('div');
+          pop.id = '_dt-sendlink-pop';
+          pop.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(15,23,42,0.5);display:flex;align-items:center;justify-content:center;padding:20px';
+          pop.innerHTML =
+            '<div style="background:#fff;border-radius:12px;padding:22px;max-width:560px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3)">' +
+              '<div style="font-size:18px;font-weight:750;margin-bottom:6px">✅ Tengill tilbúinn</div>' +
+              '<div style="color:#475569;font-size:13px;margin-bottom:14px">Tengillinn hefur verið afritaður í klippiborð. Sendu hann á kúnnann — gildir í 14 daga.</div>' +
+              '<input value="' + esc(url) + '" readonly style="width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:8px;font-family:monospace;font-size:12px;margin-bottom:12px" id="_dt-sendlink-url">' +
+              '<div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">' +
+                '<button id="_dt-sendlink-copy" type="button" style="padding:9px 14px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:600">📋 Afrita aftur</button>' +
+                '<button id="_dt-sendlink-mail" type="button" style="padding:9px 14px;border:none;background:#0ea5e9;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">✉️ Opna Gmail</button>' +
+                '<button id="_dt-sendlink-close" type="button" style="padding:9px 14px;border:none;background:#0f172a;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">Loka</button>' +
+              '</div>' +
+            '</div>';
+          document.body.appendChild(pop);
+          pop.querySelector('#_dt-sendlink-close').onclick = () => pop.remove();
+          pop.addEventListener('click', e => { if (e.target === pop) pop.remove(); });
+          pop.querySelector('#_dt-sendlink-copy').onclick = () => {
+            const inp = pop.querySelector('#_dt-sendlink-url');
+            inp.select();
+            navigator.clipboard && navigator.clipboard.writeText(url);
+            pop.querySelector('#_dt-sendlink-copy').textContent = 'Afritað ✓';
+          };
+          pop.querySelector('#_dt-sendlink-mail').onclick = () => {
+            const subj = encodeURIComponent('Brunakerfi skoðun — ' + verkkaupi);
+            const body = encodeURIComponent(
+              'Sæll/sæl,\n\nHér er tengill til að fylla út árlega skoðun á brunakerfinu hjá ' + verkkaupi + ':\n\n' + url +
+              '\n\nGildir í 14 daga.\n\nKveðja,\nSlökkvitæki ehf'
+            );
+            window.location.href = 'mailto:?subject=' + subj + '&body=' + body;
+          };
+        } catch (e) {
+          alert('Villa: ' + (e.message || e));
+        } finally {
+          sendlinkBtn.disabled = false;
+          sendlinkBtn.textContent = orig;
+        }
+      });
+    }
 
     // 2026-05-13: Vista í kerfi — store the filled values so we can come
     // back later. If editing an existing filled doc (filledId set) we
