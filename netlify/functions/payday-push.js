@@ -153,21 +153,19 @@ function buildPayload(sale, customer, sendEmail) {
       phone,
     },
     lines: (() => {
-      // Auto-detect hvort POS hafi þegar bakað afslátt í line-verð eða ekki.
-      // Sjá CLAUDE.md: SalaInvoice.renderFromSale gerir sama auto-detect.
-      const lineTotalMvsk = linur.reduce((s, l) => {
-        const lvat = num(l.vsk_pct || l.vsk_prosenta || l.vat || l.vatRate || 24);
+      // Reikna discount % út frá samtali line-verða ex-VAT vs solur.upphaed_an_vsk
+      // (sem er final ex-VAT eftir afslátt). Þetta handlar alla 3 POS-vistunar-
+      // hætti: (a) afslattur=0, (b) afslattur ex-VAT (pre-2026-06-12),
+      // (c) afslattur m.vsk (post-2026-06-12, með ratio bakaðri í line-verð líka).
+      const lineTotalEx = linur.reduce((s, l) => {
         const lqty = num(l.qty || l.fjoldi || l.quantity || 1);
         const lpx = num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0);
-        return s + lqty * lpx * (1 + lvat/100);
+        return s + lqty * lpx;
       }, 0);
-      const samtals = num(sale.samtals);
-      const afslattur = num(sale.afslattur);
-      const matchAsIs = Math.abs(lineTotalMvsk - samtals) < 1;
-      const matchDiscounted = Math.abs(lineTotalMvsk - afslattur - samtals) < 1;
+      const targetExVat = num(sale.upphaed_an_vsk);
       let lineDiscountPct = 0;
-      if (!matchAsIs && matchDiscounted && lineTotalMvsk > 0) {
-        lineDiscountPct = Math.min(100, (afslattur / lineTotalMvsk) * 100);
+      if (lineTotalEx > 0 && targetExVat > 0 && targetExVat < lineTotalEx - 0.5) {
+        lineDiscountPct = Math.max(0, Math.min(100, (1 - targetExVat / lineTotalEx) * 100));
       }
       return linur.map(l => ({
         description: l.desc || l.nafn || l.lysing || l.text || l.description || 'Vara',
