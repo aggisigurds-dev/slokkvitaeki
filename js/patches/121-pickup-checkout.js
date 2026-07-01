@@ -273,6 +273,38 @@
       }
       html += '</div>';
 
+      // ── Section 1b: Verð á seldum tækjum (2026-07-01) ───────────────────
+      // The original sale lines are the actual charge. Expose each line's unit
+      // price as an editable field so the operator can adjust a price at Sótt
+      // (not just apply a blanket % afsláttur). saleLinur === sale.linur by
+      // reference, and both calcTotals() and finalizePickup() read sale.linur
+      // live — so an in-place edit here flows straight into the totals and the
+      // finalised sale with no extra plumbing.
+      if (saleLinur.length) {
+        html += '<div style="margin-bottom:14px"><div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Verð á seldum tækjum</div>' +
+          '<div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden">';
+        saleLinur.forEach((l, li) => {
+          const q = +l.qty || 0;
+          const price = +l.unit_price_ex_vat || 0;
+          const vsk = (l.vsk_pct == null ? 24 : +l.vsk_pct);
+          const lineTot = q * price * (1 + vsk / 100);
+          html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid #f1f5f9">' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-size:13px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(l.desc || l.name || 'Lína') + '</div>' +
+              '<div style="font-size:11px;color:#64748b;margin-top:3px;display:flex;align-items:center;gap:5px">' +
+                '<input class="_pkc-line-price" data-li="' + li + '" type="number" min="0" step="1" value="' + Math.round(price) + '" style="width:84px;padding:3px 7px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right;font-variant-numeric:tabular-nums">' +
+                '<span>kr án vsk · vsk ' + vsk + '%</span>' +
+              '</div>' +
+            '</div>' +
+            '<div style="color:#94a3b8;font-size:12px;font-variant-numeric:tabular-nums">×' + q + '</div>' +
+            '<div class="_pkc-line-tot" style="font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;min-width:80px;text-align:right">' + esc(fmtKr(lineTot)) + '</div>' +
+          '</div>';
+        });
+        html += '</div>' +
+          '<div style="font-size:10px;color:#94a3b8;margin-top:3px">Breyttu einingaverði án vsk — uppfærist strax í samtölunni. Afsláttur (%) að neðan reiknast ofan á þetta.</div>' +
+        '</div>';
+      }
+
       // 2026-06-23: sale note → prints on the reikningur (left, under customer).
       // The athugasemd typed in KARFA; editable here, the checkbox decides if it
       // prints (handed to SalaInvoice as vegnaRaw at print time).
@@ -301,7 +333,14 @@
           html += '<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid #f1f5f9">' +
             '<div style="flex:1;min-width:0">' +
               '<div style="font-size:13px;font-weight:600;color:#0f172a">' + esc(ex.name) + wsTag + '</div>' +
-              '<div style="font-size:11px;color:#64748b;margin-top:2px">' + esc(fmtKr(ex.unit_price_ex_vat || 0)) + ' án vsk · vsk ' + (ex.vsk_pct || 24) + '%</div>' +
+              // 2026-07-01: unit price is now inline-editable so the operator can
+              // adjust what a replacement/extra costs at Sótt (before this only qty
+              // could change; price was locked to the vörulisti). Blank/invalid is
+              // ignored on input — the last valid value stays.
+              '<div style="font-size:11px;color:#64748b;margin-top:3px;display:flex;align-items:center;gap:5px">' +
+                '<input class="_pkc-extra-price" data-i="' + i + '" type="number" min="0" step="1" value="' + Math.round(ex.unit_price_ex_vat || 0) + '" style="width:84px;padding:3px 7px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right;font-variant-numeric:tabular-nums">' +
+                '<span>kr án vsk · vsk ' + (ex.vsk_pct || 24) + '%</span>' +
+              '</div>' +
             '</div>' +
             '<div style="display:flex;align-items:center;gap:6px">' +
               '<input class="_pkc-extra-qty" data-i="' + i + '" type="number" min="1" step="1" value="' + (ex.qty || 1) + '" style="width:56px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;text-align:center;font-variant-numeric:tabular-nums">' +
@@ -371,6 +410,51 @@
                 const lt = (ex.qty || 1) * (ex.unit_price_ex_vat || 0) * (1 + (ex.vsk_pct || 24) / 100);
                 totalEl.textContent = fmtKr(lt);
               }
+            }
+          }
+        });
+      });
+      // Wire unit-price edit on extras (2026-07-01). Mirrors the qty wiring —
+      // updates the stored line price, recomputes the totals band + the discount
+      // hint, and refreshes just this line's total cell so the caret is kept.
+      body.querySelectorAll('._pkc-extra-price').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const i = +inp.dataset.i;
+          const v = parseFloat(inp.value);
+          if (!Number.isFinite(v) || v < 0) return;
+          if (pickupExtras[i]) {
+            pickupExtras[i].unit_price_ex_vat = v;
+            renderTotals();
+            const cell = inp.closest('div[style*="padding:9px"]');
+            if (cell) {
+              const totalEl = cell.querySelector('div[style*="min-width:80px"]');
+              if (totalEl) {
+                const ex = pickupExtras[i];
+                const lt = (ex.qty || 1) * (ex.unit_price_ex_vat || 0) * (1 + (ex.vsk_pct || 24) / 100);
+                totalEl.textContent = fmtKr(lt);
+              }
+            }
+          }
+        });
+      });
+      // Wire unit-price edit on the original sale lines (2026-07-01). Mutates
+      // sale.linur in place (saleLinur === sale.linur), which calcTotals() and
+      // finalizePickup() both read live, then refreshes the totals band + this
+      // line's own total cell without a full re-render (keeps the caret).
+      body.querySelectorAll('._pkc-line-price').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const li = +inp.dataset.li;
+          const v = parseFloat(inp.value);
+          if (!Number.isFinite(v) || v < 0) return;
+          if (saleLinur[li]) {
+            saleLinur[li].unit_price_ex_vat = v;
+            renderTotals();
+            const cell = inp.closest('div[style*="padding:9px"]');
+            const totEl = cell && cell.querySelector('._pkc-line-tot');
+            if (totEl) {
+              const l = saleLinur[li];
+              const vsk = (l.vsk_pct == null ? 24 : +l.vsk_pct);
+              totEl.textContent = fmtKr((+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 + vsk / 100));
             }
           }
         });
