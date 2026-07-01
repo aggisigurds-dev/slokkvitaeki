@@ -24,13 +24,24 @@
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
   function btnText(b) {
+    // RAW label incl. any badge text — kept identical to patch 68's btnText so
+    // the '#label' fallback navId matches on both sides (buttons without a
+    // data-view). Do NOT strip badges here.
     return String(b.textContent || '').replace(/\s+/g, ' ').trim();
   }
   function btnLabel(b) {
-    // Strip a leading single emoji + optional space ("🧯 Sala" → "Sala") so
-    // the stored match is the readable label.
-    const t = btnText(b);
-    return t.replace(/^\s*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+\s*/u, '').trim() || t;
+    // DISPLAY label: drop the live badge/count node (e.g. "Afgreiðsla 65" →
+    // "Afgreiðsla", "Þjónustutæki 3293" → "Þjónustutæki") and the leading emoji
+    // so the editor row reads clean. Display-only — never used for the saved id.
+    let t;
+    try {
+      const c = b.cloneNode(true);
+      c.querySelectorAll('.badge,.count,[class*="badge"],[class*="count"]').forEach(n => n.remove());
+      t = String(c.textContent || '').replace(/\s+/g, ' ').trim();
+    } catch (_) { t = btnText(b); }
+    t = t.replace(/^\s*[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+\s*/u, '').trim();
+    t = t.replace(/\s+\d+$/, '').trim();   // strip a trailing badge number not in a badge node
+    return t || btnText(b);
   }
   // Stable id — must match patch 68's navId(): data-view (preferred) else a
   // '#'-prefixed normalised full label. We persist this (not the label) so the
@@ -41,63 +52,49 @@
     return '#' + String(b.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
   }
 
-  // Get the current applied order from the live DOM (most reliable source —
-  // captures whatever patch 68 just rendered).
+  // Read the ACTUAL visual order the user sees. 2026-07-01: patch 68 v2 positions
+  // nav buttons with CSS `order` and NEVER moves DOM nodes — so `nav.children`
+  // order is just injection order, unrelated to what's on screen. Rebasing that
+  // against the saved order (old approach) drifted further still: buttons not in
+  // the saved list got tail-appended here, but patch 68 heals them into their
+  // canonical slot — so the editor listed a different order than the real rail.
+  // Now we sort by the effective CSS `order` value (that IS the on-screen order)
+  // and rebuild the group separators from patch 68's `.nav-grp-start` marks, so
+  // the editor mirrors the sidebar exactly.
   function readCurrentOrder() {
     const nav = document.querySelector('nav.view-nav, .view-nav');
     if (!nav) return { items: [], all: [] };
-    const items = [];
-    const all = [];
-    Array.from(nav.children).forEach(el => {
-      if (el.classList && el.classList.contains('vnav-btn')) {
-        if (el.classList.contains('_sc-launcher')) return; // never list our own launcher
-        const label = btnLabel(el);
-        if (!label) return;
-        const isHidden = el.style.display === 'none';
-        items.push({ type: 'item', id: navId(el), label, hidden: isHidden });
-        all.push({ type: 'item', id: navId(el), label, hidden: isHidden });
-      } else if (el.classList && el.classList.contains('nav-sep')) {
-        items.push({ type: 'sep' });
-      }
-    });
-    // Also scan any HIDDEN buttons not present as direct children but still
-    // exist somewhere in nav (e.g. hidden via display:none). Dedupe by stable id.
-    Array.from(nav.querySelectorAll('.vnav-btn')).forEach(el => {
-      if (el.classList.contains('_sc-launcher')) return;
+    const hiddenRaw = (window.AppSettings && AppSettings.path && AppSettings.path('sidebar_hidden')) || [];
+    const btns = Array.from(nav.querySelectorAll('.vnav-btn'))
+      .filter(el => !el.classList.contains('_sc-launcher'));
+    const seen = new Set();
+    const entries = [];
+    let anyPlaced = false;
+    btns.forEach((el, domIdx) => {
+      const id = navId(el);
+      if (seen.has(id)) return;          // dedupe re-cloned/duplicate buttons
+      seen.add(id);
       const label = btnLabel(el);
       if (!label) return;
-      const id = navId(el);
-      if (!all.some(x => x.id === id)) {
-        all.push({ type: 'item', id, label, hidden: true });
-        items.push({ type: 'item', id, label, hidden: true });
-      }
+      let ord = parseFloat(el.style.order || (window.getComputedStyle(el).order));
+      if (Number.isFinite(ord) && ord > 0) anyPlaced = true;
+      // Unplaced/hidden (order 0) → park at the tail in DOM order so nothing is
+      // lost and hidden items are reachable to re-enable.
+      if (!Number.isFinite(ord) || ord <= 0) ord = 1e6 + domIdx;
+      const hidden = el.style.display === 'none' || hiddenRaw.some(h => String(h) === id);
+      entries.push({ id, label, hidden, ord, domIdx, grpStart: el.classList.contains('nav-grp-start') });
     });
-    // 2026-06-12 (Todoist „Sidepannel bug"): DOM-röðin er EKKI áreiðanleg
-    // fyrstu sekúndurnar — injector-patchar bæta tökkum við á víð og dreif
-    // þangað til patch 68 hefur raðað. Ef editorinn opnast í þeim glugga
-    // sýndi hann hringlaða röð, og „Vista röð" festi hana. Notum því vistuðu
-    // röðina úr AppSettings sem grunn þegar hún er til; nýir takkar sem hún
-    // þekkir ekki leggjast aftast (ekkert týnist).
-    const saved = (window.AppSettings && AppSettings.path && AppSettings.path('sidebar_order')) || null;
-    if (Array.isArray(saved) && saved.length) {
-      const onlyItems = all.filter(x => x.type === 'item');
-      const byId = {};
-      onlyItems.forEach(x => { if (byId[x.id] == null) byId[x.id] = x; });
-      const usedIds = new Set();
-      const rebased = [];
-      saved.forEach(entry => {
-        if (entry === '__SEP__') { rebased.push({ type: 'sep' }); return; }
-        const e = String(entry);
-        let hit = byId[e] || null;
-        if (!hit && e[0] !== '#') {
-          // back-compat: old saves stored label substrings
-          hit = onlyItems.find(x => !usedIds.has(x.id) && x.label.toLowerCase().indexOf(e.toLowerCase()) !== -1) || null;
-        }
-        if (hit && !usedIds.has(hit.id)) { rebased.push(hit); usedIds.add(hit.id); }
-      });
-      onlyItems.forEach(x => { if (!usedIds.has(x.id)) rebased.push(x); });
-      return { items: rebased, all };
-    }
+    // If patch 68 hasn't placed anything yet (very early open), fall back to DOM
+    // order so we still show a sane list instead of everything in the tail.
+    entries.sort((a, b) => (anyPlaced ? (a.ord - b.ord) : (a.domIdx - b.domIdx)) || a.domIdx - b.domIdx);
+    const items = [];
+    const all = [];
+    entries.forEach((e, i) => {
+      if (anyPlaced && e.grpStart && items.length) items.push({ type: 'sep' });
+      const it = { type: 'item', id: e.id, label: e.label, hidden: e.hidden };
+      items.push(it);
+      all.push({ type: 'item', id: e.id, label: e.label, hidden: e.hidden });
+    });
     return { items, all };
   }
 

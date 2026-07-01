@@ -604,6 +604,11 @@
                 state.customer.simi = m.simi;
               }
               state.customer.co_id = m.co_id;
+              // 2026-07-01: carry the picked customer's kennitala so it isn't
+              // lost on checkout (the Gjörvaverk bug — co_id was set but kt
+              // stayed empty, so the sale saved customer_kt=null). Only set when
+              // the match actually carries a kt, to avoid clobbering a typed kt.
+              if (m.kennitala || m.kt) state.customer.kt = m.kennitala || m.kt;
               state.customer.heimilisfang = m.heimilisfang || '';
               state.customer.afslattur_pct = m.afslattur_pct || 0;
               state.customer.athugasemdir = m.athugasemdir || '';
@@ -808,11 +813,37 @@
       // they are billed / collected.
       var isPaidNow = (pmCode !== 'reikningur' && pmCode !== 'greitt_sidar');
       var nowIso = new Date().toISOString();
-      var custKt=(state.customer.kt||'').trim(); if(custKt.replace(/[^0-9]/g,'')==='9999999999')custKt='';
+      // 2026-07-01 (Agnar rule): a sale ALWAYS gets a kennitala. A real customer
+      // keeps their kt — and if the row was picked by name and the kt wasn't
+      // carried, resolve it from the system (the Gjörvaverk bug). A sale with
+      // only name/phone is a walk-in → the synthetic 999999-9999.
+      var custKt;
+      var _ktd=(state.customer.kt||'').replace(/[^0-9]/g,'');
+      if(_ktd.length===10 && _ktd!=='9999999999'){
+        custKt=state.customer.kt.trim();
+      } else if(state.customer.co_id){
+        custKt='';
+        try{
+          var _nm=(state.customer.nafn||'').trim().toLowerCase();
+          var _rs=await Promise.all([
+            DB.sb.from('fyrirtaeki').select('nafn,kennitala').eq('id',state.customer.co_id).maybeSingle(),
+            DB.sb.from('vidskiptavinir').select('nafn,kennitala').eq('id',state.customer.co_id).maybeSingle()
+          ]);
+          var _f=_rs[0]&&_rs[0].data, _v=_rs[1]&&_rs[1].data, _pick=null;
+          if(_f && (!_nm||String(_f.nafn||'').trim().toLowerCase()===_nm))_pick=_f;
+          else if(_v && (!_nm||String(_v.nafn||'').trim().toLowerCase()===_nm))_pick=_v;
+          if(!_pick)_pick=_f||_v;
+          var _k=_pick&&String(_pick.kennitala||'').replace(/[^0-9]/g,'');
+          if(_k&&_k.length===10&&_k!=='9999999999')custKt=_pick.kennitala;
+        }catch(_){}
+        if(!custKt)custKt='999999-9999';
+      } else {
+        custKt='999999-9999';
+      }
       // #1: prepend the Reykjavíkurborg beiðninúmer so it prints on the reikningur.
       var _beidni=(needsBeidni() && String(state.beidninumer||'').trim()) ? String(state.beidninumer).trim() : '';
       var saleNotes = _beidni ? ('Beiðni ' + _beidni + (state.notes ? '\n' + state.notes : '')) : state.notes;
-      var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,customer_kt:custKt||null,linur:state.lines,upphaed_an_vsk:Math.round(t.ex),vsk_upphaed:Math.round(t.vsk),afslattur:discKr,samtals:Math.round(t.total),greitt_med:pmLabel,athugasemdir:saleNotes,status:saleStatus,paid_at:isPaidNow?nowIso:null,paid_method:isPaidNow?pmLabel:null}).select().single();
+      var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,customer_kt:custKt,linur:state.lines,upphaed_an_vsk:Math.round(t.ex),vsk_upphaed:Math.round(t.vsk),afslattur:discKr,samtals:Math.round(t.total),greitt_med:pmLabel,athugasemdir:saleNotes,status:saleStatus,paid_at:isPaidNow?nowIso:null,paid_method:isPaidNow?pmLabel:null}).select().single();
       if(sr.error)throw sr.error;
       var num = sr.data && sr.data.num ? sr.data.num : preNum;
       window._pendingReikningurNum = '';

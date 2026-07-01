@@ -116,7 +116,91 @@
   }
 
   // ── Data load ────────────────────────────────────────────────────────────
-  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'created_at', sortDir: 'desc' };
+  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'created_at', sortDir: 'desc', mode: 'month', ktInfo: null };
+
+  // 2026-07-01: customer lookup by NAME or KENNITALA — pull a customer's WHOLE
+  // sölu-/reikningasaga (all time, not month-bounded) so "sendu mér kvittun frá
+  // í síðustu viku" is one search. Must accept the NAME too, not just kt: many
+  // POS sales stored the name but lost the kt/customer_id (see Gjörvaverk), so a
+  // kt-only lookup would miss exactly those receipts. kt is also stored
+  // inconsistently (with/without dash), so match both forms.
+  function ktDigits(s) { return String(s == null ? '' : s).replace(/\D/g, ''); }
+  function ktDashed(d) { return d && d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : d; }
+  // Kennitala cell: real kt → dashed mono; walk-in 999999-9999 → subtle badge;
+  // empty (legacy, not yet backfilled) → dash.
+  function ktCell(kt) {
+    const d = ktDigits(kt);
+    if (d === '9999999999') return '<span style="background:#f1f5f9;color:#64748b;padding:1px 7px;border-radius:99px;font-size:10px">Staðgr.</span>';
+    if (d.length === 10) return '<span style="font-family:\'Space Mono\',monospace;font-size:11px;color:#475569">' + esc(ktDashed(d)) + '</span>';
+    return kt ? '<span style="font-family:monospace;font-size:11px;color:#475569">' + esc(kt) + '</span>' : '<span style="color:#cbd5e1">—</span>';
+  }
+  // Sanitise a value for embedding inside a PostgREST .or() list (commas /
+  // parens / quotes are the delimiters there).
+  function orSafe(s) { return String(s == null ? '' : s).replace(/["(),*]/g, ' ').trim(); }
+
+  async function lookupCustomer(qRaw) {
+    const main = document.getElementById('hr-main');
+    if (!main) return;
+    const q = String(qRaw == null ? '' : qRaw).trim();
+    if (q.length < 2) { if (window.Toast && Toast.show) Toast.show('Sláðu inn nafn eða kennitölu'); return; }
+    const SB = getSB();
+    if (!SB) return;
+    main.innerHTML = '<div style="padding:32px;text-align:center;color:#94a3b8">Leita að sögu kúnna…</div>';
+    const kt = ktDigits(q);
+    const isKt = kt.length >= 7;                 // ≥7 digits → treat as kennitala
+    const dashed = ktDashed(kt);
+
+    // 1) Resolve the customer row(s) — by kt (exact, both forms) or by name (ilike).
+    const custFilter = isKt
+      ? 'kennitala.eq.' + kt + (dashed !== kt ? ',kennitala.eq.' + dashed : '')
+      : 'nafn.ilike.*' + orSafe(q) + '*';
+    const [fR, vR] = await Promise.all([
+      SB.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang').is('deleted_at', null).or(custFilter),
+      SB.from('vidskiptavinir').select('id,nafn,kennitala,heimilisfang').or(custFilter),
+    ]);
+    const custRows = [...(fR.data || []), ...(vR.data || [])];
+    const ids = custRows.map(r => r.id).filter(x => x != null);
+    const names = [...new Set(custRows.map(r => r.nafn).filter(Boolean))];
+    const kts = [...new Set(custRows.map(r => ktDigits(r.kennitala)).filter(x => x && x.length === 10))];
+    if (isKt && kt.length === 10 && !kts.includes(kt)) kts.push(kt);
+
+    // 2) Match sales: by id-set OR exact/loose name OR a kt stamped in the note
+    //    (name-only recovery). Include the typed name too, so a walk-in sale that
+    //    was never linked to a customer row is still found.
+    const parts = [];
+    if (ids.length) parts.push('customer_id.in.(' + ids.join(',') + ')');
+    const nameSet = [...new Set([...names, ...(isKt ? [] : [q])])].map(orSafe).filter(Boolean);
+    if (nameSet.length) parts.push('customer_nafn.in.(' + nameSet.map(n => '"' + n + '"').join(',') + ')');
+    if (!isKt) parts.push('customer_nafn.ilike.*' + orSafe(q) + '*');
+    // The customer_kt column is now the reliable link (POS writes it + backfill).
+    // Match it directly, plus the legacy kt-in-note fallback.
+    kts.forEach(k => {
+      const d = ktDashed(k);
+      parts.push('customer_kt.eq.' + k); if (d !== k) parts.push('customer_kt.eq.' + d);
+      parts.push('athugasemdir.ilike.*' + k + '*'); if (d !== k) parts.push('athugasemdir.ilike.*' + d + '*');
+    });
+    if (!parts.length) { main.innerHTML = '<div style="padding:40px;text-align:center;color:#94a3b8">Enginn kúnni fannst fyrir „' + esc(q) + '".</div>'; return; }
+
+    const r = await SB.from('solur')
+      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,paid_at,is_credit,credit_of,starfsmadur')
+      .or(parts.join(','))
+      .order('created_at', { ascending: false })
+      .limit(1000);
+    if (r.error) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
+    const nafn = (custRows[0] && custRows[0].nafn) || (r.data && r.data[0] && r.data[0].customer_nafn) || q;
+    _state.mode = 'kt';
+    _state.ktInfo = { query: q, nafn, ktFmt: kts[0] ? ktDashed(kts[0]) : (isKt ? dashed : ''), locs: custRows.length };
+    _state.filter = 'all';
+    _state.search = '';
+    _state.all = r.data || [];
+    render();
+  }
+
+  function exitKt() {
+    _state.mode = 'month';
+    _state.ktInfo = null;
+    load(_state.month || new Date());
+  }
 
   function monthBounds(d) {
     const start = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -136,7 +220,7 @@
     const { start, end } = monthBounds(m);
 
     const r = await SB.from('solur')
-      .select('id,num,customer_nafn,customer_id,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,paid_at,is_credit,credit_of,starfsmadur')
+      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,paid_at,is_credit,credit_of,starfsmadur')
       .gte('created_at', start.toISOString())
       .lt('created_at', end.toISOString())
       .order('created_at', { ascending: false });
@@ -227,21 +311,26 @@
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:18px">
           <div>
             <h1 class="hl-h1" style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">📜 Hreyfingarlisti</h1>
-            <div class="hl-sub" style="font-size:12px;color:#64748b;margin-top:2px">Tímaröð yfir allar færslur — sölur og kreditfærslur</div>
+            ${_state.mode === 'kt' && _state.ktInfo
+              ? `<div class="hl-sub" style="font-size:12.5px;color:#334155;margin-top:3px">👤 <b>${esc(_state.ktInfo.nafn)}</b>${_state.ktInfo.ktFmt ? ' · <span style="font-family:monospace">kt. ' + esc(_state.ktInfo.ktFmt) + '</span>' : ''} · ${_state.all.length} færslur${_state.ktInfo.locs > 1 ? ' · 📍 ' + _state.ktInfo.locs + ' staðsetningar' : ''}</div>`
+              : `<div class="hl-sub" style="font-size:12px;color:#64748b;margin-top:2px">Tímaröð yfir allar færslur — sölur og kreditfærslur</div>`}
           </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="_hr-prev hl-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>
-            <div class="hl-month" style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:140px;text-align:center">${esc(monthLabel)}</div>
-            <button class="_hr-next hl-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>
-            <input class="_hr-search" type="text" placeholder="🔍 Leita…" value="${esc(_state.search)}" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;min-width:170px;margin-left:6px">
-            <button class="_hr-csv" type="button" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#475569;margin-left:6px">📥 CSV</button>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+            ${_state.mode === 'kt'
+              ? `<button class="_hr-back hl-navbtn" type="button" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:600;color:#475569">← Mánaðaryfirlit</button>`
+              : `<button class="_hr-prev hl-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>
+                 <div class="hl-month" style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:140px;text-align:center">${esc(monthLabel)}</div>
+                 <button class="_hr-next hl-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>`}
+            <input class="_hr-ktlookup" type="text" placeholder="🔎 Kennitala eða nafn — öll saga" value="${_state.mode === 'kt' && _state.ktInfo ? esc(_state.ktInfo.query) : ''}" title="Sláðu inn kennitölu eða nafn og ýttu á Enter til að sjá ALLAR sölur/reikninga kúnnans" style="padding:7px 11px;border:1.5px solid #1d4ed8;border-radius:7px;font:inherit;font-size:13px;min-width:230px;margin-left:6px">
+            <input class="_hr-search" type="text" placeholder="🔍 Sía lista…" value="${esc(_state.search)}" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;min-width:130px">
+            <button class="_hr-csv" type="button" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#475569">📥 CSV</button>
           </div>
         </div>
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px">
           ${statCard('Sölur', sales, '#1d4ed8', '#dbeafe', '💰')}
           ${statCard('Kreditfært', -credits, '#dc2626', '#fee2e2', '↩️')}
-          ${statCard('Greitt í mán.', paidIn, '#16a34a', '#dcfce7', '✓')}
+          ${statCard(_state.mode === 'kt' ? 'Greitt' : 'Greitt í mán.', paidIn, '#16a34a', '#dcfce7', '✓')}
           ${statCard('Ógreitt', unpaidOut, '#b45309', '#fef3c7', '⏳')}
           ${statCard('Nettó', net, net >= 0 ? '#0f172a' : '#dc2626', '#f1f5f9', 'Σ')}
         </div>
@@ -263,6 +352,7 @@
               ${th('created_at', 'Dags · Tími', 'left')}
               ${th('num', 'Skjal', 'left')}
               ${th('customer_nafn', 'Viðskiptavinur', 'left')}
+              <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Kennitala</th>
               ${th('tegund', 'Tegund', 'left')}
               ${th('greitt_med', 'Greiðslumáti', 'left')}
               ${th('stada', 'Staða', 'left')}
@@ -272,7 +362,7 @@
             <tbody>
               ${rows.length
                 ? rows.map(rowHtml).join('')
-                : '<tr><td colspan="8" style="padding:30px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar á þessu tímabili</td></tr>'}
+                : '<tr><td colspan="9" style="padding:30px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar</td></tr>'}
             </tbody>
           </table>
         </div>
@@ -307,6 +397,27 @@
     main.querySelectorAll('._hr-view').forEach(b => {
       b.addEventListener('click', () => openInvoice(b.dataset.id));
     });
+    main.querySelectorAll('._hr-send').forEach(b => {
+      b.addEventListener('click', () => sendReceipt(b.dataset.id));
+    });
+    // Kennitala/nafn lookup — Enter pulls the customer's whole history.
+    const _kl = main.querySelector('._hr-ktlookup');
+    if (_kl) _kl.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); lookupCustomer(_kl.value); }
+    });
+    main.querySelector('._hr-back')?.addEventListener('click', exitKt);
+    // Company name → fyrirtækjaspjald. solur.customer_id is a fyrirtaeki id (FK),
+    // which is exactly what _openCompanySafe / Companies.openDetail expect. Use
+    // the loading-safe opener (patch 164) when present.
+    main.querySelectorAll('._hr-co').forEach(a => a.addEventListener('click', e => {
+      e.preventDefault();
+      const id = +a.dataset.id;
+      try {
+        if (typeof window._openCompanySafe === 'function') window._openCompanySafe(id);
+        else if (window.Companies && typeof Companies.openDetail === 'function') Companies.openDetail(id);
+        else location.hash = '#company/' + id;
+      } catch (_) { location.hash = '#company/' + id; }
+    }));
   }
 
   function statCard(label, value, color, bg, icon) {
@@ -346,13 +457,20 @@
         ${esc(fmtDate(s.created_at))}<span style="color:#94a3b8;margin-left:5px">${esc(fmtTime(s.created_at))}</span>
       </td>
       <td style="padding:8px 10px;font-family:monospace;font-size:11.5px;color:#0f172a;font-weight:600">${esc(s.num || '')}</td>
-      <td style="padding:8px 10px;font-size:12.5px;color:#0f172a">${esc(s.customer_nafn || '—')}</td>
+      <td style="padding:8px 10px;font-size:12.5px;color:#0f172a">${
+        s.customer_id
+          ? `<a class="_hr-co" data-id="${s.customer_id}" href="#company/${s.customer_id}" title="Opna fyrirtækjaspjald" style="color:#1d4ed8;text-decoration:none;border-bottom:1px dotted #93c5fd;cursor:pointer">${esc(s.customer_nafn || '—')}</a>`
+          : esc(s.customer_nafn || '—')
+      }</td>
+      <td style="padding:8px 10px;white-space:nowrap">${ktCell(s.customer_kt)}</td>
       <td style="padding:8px 10px">${typeBadge}</td>
       <td style="padding:8px 10px;font-size:11.5px;color:#475569">${methodLabel(s.greitt_med)}</td>
       <td style="padding:8px 10px">${status}</td>
       <td style="padding:8px 10px;text-align:right">${amountCol}</td>
-      <td style="padding:8px 10px;text-align:right">
-        <button class="_hr-view" data-id="${s.id}" type="button" title="Skoða reikning"
+      <td style="padding:8px 10px;text-align:right;white-space:nowrap">
+        <button class="_hr-send" data-id="${s.id}" type="button" title="Senda kvittun í tölvupósti"
+          style="padding:4px 8px;background:#fff;color:#0f766e;border:1px solid #99f6e4;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;margin-right:4px">📧</button>
+        <button class="_hr-view" data-id="${s.id}" type="button" title="Skoða / prenta / vista PDF"
           style="padding:4px 8px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">🖨</button>
       </td>
     </tr>`;
@@ -390,10 +508,23 @@
     SalaInvoice.renderFromSale(w, sale, cust);
   }
 
+  // ── Send receipt/invoice by email ────────────────────────────────────────
+  // The email sender (Gmail/Microsoft Graph) is being set up. When connected it
+  // will expose window.ReceiptSender.send(saleId) — this button then sends the
+  // PDF straight from the app. Until then it opens the invoice so the user can
+  // print or save-as-PDF and attach it manually (nothing is blocked meanwhile).
+  async function sendReceipt(saleId) {
+    if (window.ReceiptSender && typeof window.ReceiptSender.send === 'function') {
+      try { await window.ReceiptSender.send(saleId); return; } catch (_) { /* fall through to manual */ }
+    }
+    if (window.Toast && Toast.show) Toast.show('📧 Bein tölvupóstsending er ekki tengd enn — opna reikninginn til að prenta eða vista sem PDF.');
+    openInvoice(saleId);
+  }
+
   // ── CSV export ──────────────────────────────────────────────────────────
   function exportCSV() {
     const rows = applyFilter(_state.all);
-    const header = ['Dags','Tími','Skjal','Viðskiptavinur','Tegund','Greiðslumáti','Staða','Án VSK','VSK','Samtals','Starfsmaður','Athugasemdir'];
+    const header = ['Dags','Tími','Skjal','Viðskiptavinur','Kennitala','Tegund','Greiðslumáti','Staða','Án VSK','VSK','Samtals','Starfsmaður','Athugasemdir'];
     const lines = [header];
     rows.forEach(s => {
       const isCredit = !!s.is_credit;
@@ -406,6 +537,7 @@
         fmtTime(s.created_at),
         s.num || '',
         s.customer_nafn || '',
+        s.customer_kt || '',
         isCredit ? 'Kreditfærsla' : 'Sala',
         s.greitt_med || '',
         status,

@@ -29,6 +29,12 @@
     s.id = ID;
     const B = 'html[data-thm-preset="brunastal"] #view-krofu-yfirlit ';
     s.textContent =
+      // 2026-07-01 (Agnar): stretch the page to fill the content area and hug the
+      // sidebar + top banner — was capped at 1200px centred (22px pad) which left
+      // a wide right gutter + a top gap. Applies in every theme (not Brunastál-
+      // scoped). The inner wrapper now contributes no padding; the view owns a
+      // tight, uniform margin.
+      '#view-krofu-yfirlit{padding:12px 18px 26px !important;max-width:none !important;box-sizing:border-box}' +
       B + '.ky-h1{color:#fff !important;font-size:26px !important;font-weight:800 !important;text-shadow:0 2px 8px rgba(0,0,0,.55)}' +
       B + '.ky-sub{color:rgba(255,255,255,.62) !important}' +
       B + '.ky-month{color:#fff !important}' +
@@ -377,7 +383,7 @@
       ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'][_state.month.getMonth()];
 
     main.innerHTML = `
-      <div style="max-width:1200px;margin:0 auto;padding:22px">
+      <div style="max-width:none;margin:0;padding:0;width:100%">
 
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:18px">
           <div>
