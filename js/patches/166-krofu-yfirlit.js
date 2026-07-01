@@ -270,81 +270,73 @@
       ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'][_state.month.getMonth()];
 
     main.innerHTML = `
-      <div style="max-width:1200px;margin:0 auto;padding:22px">
-
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:18px">
-          <div>
-            <h1 style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">📋 Kröfu yfirlit</h1>
-            <div style="font-size:12px;color:#64748b;margin-top:2px">Krafa í heimabanka — sölur með greitt_med = "Senda reikning" sem þarf að safna saman í lok mánaðar</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="_ky-prev" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>
-            <div style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:140px;text-align:center">${esc(monthLabel)}</div>
-            <button class="_ky-next" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>
-            <select class="_ky-sort" title="Raða" style="margin-left:6px;padding:6px 9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font:inherit;font-size:12.5px;font-weight:600;color:#475569;cursor:pointer">
-              <option value="updated_desc"${_state.sort === 'updated_desc' ? ' selected' : ''}>🕐 Nýlega breytt fyrst</option>
-              <option value="created_desc"${_state.sort === 'created_desc' ? ' selected' : ''}>📅 Nýjast stofnað</option>
-              <option value="created_asc"${_state.sort === 'created_asc' ? ' selected' : ''}>📅 Elst stofnað</option>
-              <option value="amount_desc"${_state.sort === 'amount_desc' ? ' selected' : ''}>💰 Hæsta upphæð</option>
-              <option value="amount_asc"${_state.sort === 'amount_asc' ? ' selected' : ''}>💰 Lægsta upphæð</option>
-            </select>
+      <div class="bh-page">
+        <div class="bh-title-band">
+          <div class="bh-container" style="padding-bottom:0">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px">
+              <div>
+                <h1>Kröfu yfirlit</h1>
+                <div class="bh-subtitle">Krafa í heimabanka — sölur með greitt_med „Senda reikning" sem þarf að safna saman í lok mánaðar</div>
+              </div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <button class="_ky-prev bh-btn bh-btn--metal bh-btn--sm" type="button" aria-label="Fyrri mánuður">◀</button>
+                <div class="bh-mono" style="font-size:14px;font-weight:700;padding:0 8px;min-width:150px;text-align:center;color:#fff">${esc(monthLabel)}</div>
+                <button class="_ky-next bh-btn bh-btn--metal bh-btn--sm" type="button" aria-label="Næsti mánuður">▶</button>
+                <select class="_ky-sort bh-select bh-select--sm" title="Raða" style="margin-left:6px;background:#0a0b0d;color:#fff;border-color:#0a0b0d;font-weight:600">
+                  <option value="updated_desc"${_state.sort === 'updated_desc' ? ' selected' : ''}>Nýlega breytt fyrst</option>
+                  <option value="created_desc"${_state.sort === 'created_desc' ? ' selected' : ''}>Nýjast stofnað</option>
+                  <option value="created_asc"${_state.sort === 'created_asc' ? ' selected' : ''}>Elst stofnað</option>
+                  <option value="amount_desc"${_state.sort === 'amount_desc' ? ' selected' : ''}>Hæsta upphæð</option>
+                  <option value="amount_asc"${_state.sort === 'amount_asc' ? ' selected' : ''}>Lægsta upphæð</option>
+                </select>
+              </div>
+            </div>
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:16px">
-          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid #1d4ed8">
-            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
-              <div style="width:26px;height:26px;border-radius:7px;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:15px">📋</div>
-              <div style="font-size:10.5px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Þessi mánuður</div>
+        <div class="bh-container">
+          <div class="bh-stats">
+            <div class="bh-stat">
+              <div class="bh-stat-label">Þessi mánuður</div>
+              <div class="bh-stat-value">${fmtKr(thisMonthTotal)}</div>
+              <div class="bh-stat-sub"><span class="bh-mono">${thisMonth.length}</span> kröfur</div>
             </div>
-            <div style="font-size:22px;font-weight:800;color:#1d4ed8">${fmtKr(thisMonthTotal)}</div>
-            <div style="font-size:10.5px;color:#94a3b8;margin-top:1px">${thisMonth.length} kröfur</div>
+            ${olderTotal !== 0 ? `
+            <div class="bh-stat bh-stat--amber">
+              <div class="bh-stat-label">Eldri ógreitt</div>
+              <div class="bh-stat-value">${fmtKr(olderTotal)}</div>
+              <div class="bh-stat-sub"><span class="bh-mono">${older.length}</span> kröfur</div>
+            </div>` : ''}
+            <div class="bh-stat bh-stat--hero">
+              <div class="bh-stat-label">Heildarkröfur</div>
+              <div class="bh-stat-value">${fmtKr(grandTotal)}</div>
+              <div class="bh-stat-sub"><span class="bh-mono">${all.length}</span> sölur · <span class="bh-mono">${companies.length}</span> fyrirtæki</div>
+            </div>
+            <div class="bh-stat bh-stat--green">
+              <div class="bh-stat-label">Sendar kröfur</div>
+              <div class="bh-stat-value">${fmtKr(sentTotal)}</div>
+              <div class="bh-stat-sub"><span class="bh-mono">${sent.length}</span> sölur · <span class="bh-mono">${sentCompanies}</span> fyrirtæki</div>
+            </div>
           </div>
-          ${olderTotal !== 0 ? `
-          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid #b45309">
-            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
-              <div style="width:26px;height:26px;border-radius:7px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:15px">🕓</div>
-              <div style="font-size:10.5px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Eldri ógreitt</div>
-            </div>
-            <div style="font-size:22px;font-weight:800;color:#b45309">${fmtKr(olderTotal)}</div>
-            <div style="font-size:10.5px;color:#94a3b8;margin-top:1px">${older.length} kröfur</div>
-          </div>` : ''}
-          <div style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8);color:#fff;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
-              <div style="width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:15px">💰</div>
-              <div style="font-size:10.5px;color:#bfdbfe;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Heildarkröfur</div>
-            </div>
-            <div style="font-size:22px;font-weight:800">${fmtKr(grandTotal)}</div>
-            <div style="font-size:10.5px;color:#bfdbfe;margin-top:1px">${all.length} sölur · ${companies.length} fyrirtæki</div>
+
+          <div class="bh-card" style="padding:12px 16px;font-size:13px;color:${'#3a4250'};line-height:1.5;margin-bottom:14px">
+            💡 Þessar tölur eru útistandandi kröfur per fyrirtæki sem þarf að setja í heimabankann.
+            Þegar krafan hefur verið mynduð, tikkaðu ósentar kröfur og notaðu <b>„📤 Senda valdar í Payday"</b> stikuna, eða smelltu <b>„✓ Allar greiddar"</b> þegar greitt hefur borist.
           </div>
-          <div style="background:linear-gradient(135deg,#0c4a6e,#0284c7);color:#fff;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
-              <div style="width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:15px">🏦</div>
-              <div style="font-size:10.5px;color:#bae6fd;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Sendar kröfur</div>
-            </div>
-            <div style="font-size:22px;font-weight:800">${fmtKr(sentTotal)}</div>
-            <div style="font-size:10.5px;color:#bae6fd;margin-top:1px">${sent.length} sölur · ${sentCompanies} fyrirtæki</div>
-          </div>
+
+          ${companies.length
+            ? companies.map(renderCompany).join('')
+            : '<div class="bh-empty">Engar útistandandi kröfur 🎉</div>'}
         </div>
-
-        <div style="font-size:13px;color:#475569;margin-bottom:10px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;line-height:1.5">
-          💡 Þessar tölur eru útistandandi kröfur per fyrirtæki sem þarf að setja í heimabankann.
-          Þegar krafan hefur verið mynduð fyrir fyrirtæki, smelltu <b>"✓ Allar greiddar"</b> til að hreinsa þær út.
-        </div>
-
-        ${companies.length
-          ? companies.map(renderCompany).join('')
-          : '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">Engar útistandandi kröfur 🎉</div>'}
-
       </div>
 
-      <div id="_ky-bulk-bar" style="position:sticky;bottom:0;left:0;right:0;display:none;background:linear-gradient(135deg,#0c4a6e,#1d4ed8);color:#fff;padding:12px 20px;box-shadow:0 -4px 18px rgba(0,0,0,.18);z-index:50">
-        <div style="max-width:1200px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">
+      <div id="_ky-bulk-bar" class="bh-bulkbar" style="display:none">
+        <div class="bh-bulkbar-inner">
           <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-            <div style="font-size:14px;font-weight:700"><span id="_ky-bulk-n">0</span> kröfur valdar · <span id="_ky-bulk-sum">0 kr</span></div>
-            <button id="_ky-bulk-clear" type="button" style="padding:6px 12px;background:rgba(255,255,255,.12);color:#fff;border:1px solid rgba(255,255,255,.25);border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">✕ Hreinsa val</button>
+            <div class="bh-bulkbar-count"><span id="_ky-bulk-n" class="bh-mono">0</span> kröfur valdar · <span id="_ky-bulk-sum" class="bh-mono">0 kr</span></div>
+            <button id="_ky-bulk-clear" type="button" class="bh-btn bh-btn--sm" style="background:rgba(255,255,255,.12);color:#fff;border-color:rgba(255,255,255,.25);font-weight:600">✕ Hreinsa val</button>
           </div>
-          <button id="_ky-bulk-send" type="button" style="padding:10px 18px;background:#16a34a;color:#fff;border:1px solid #15803d;border-radius:8px;cursor:pointer;font:inherit;font-size:14px;font-weight:800;box-shadow:0 2px 6px rgba(0,0,0,.2)">📤 Senda valdar í Payday</button>
+          <button id="_ky-bulk-send" type="button" class="bh-btn bh-btn--green">📤 Senda valdar í Payday</button>
         </div>
       </div>`;
 
@@ -613,83 +605,105 @@
 
     // Smella á nafn fyrirtækisins → opna fyrirtækjasíðu (data-co-id click handler binds below)
     const nameHtml = grp.id
-      ? `<a href="#" class="_ky-co-link" data-co-id="${grp.id}" style="color:#0f172a;text-decoration:none;border-bottom:1px dotted #94a3b8;cursor:pointer">${esc(grp.display)}</a>`
+      ? `<a href="#" class="_ky-co-link" data-co-id="${grp.id}">${esc(grp.display)}</a>`
       : esc(grp.display);
+    const metaLine2 = [
+      grp.thisMonthSum > 0 ? '<span style="color:#2f5fe0">þessi mán: <span class="bh-mono">' + fmtKr(grp.thisMonthSum) + '</span></span>' : '',
+      grp.olderSum > 0 ? '<span style="color:#b45309">eldra: <span class="bh-mono">' + fmtKr(grp.olderSum) + '</span></span>' : '',
+    ].filter(Boolean).join(' · ');
 
     return `
-      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-        <div style="padding:12px 16px;background:linear-gradient(135deg,#f8fafc,#eff6ff);border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <div>
-            <div style="font-weight:800;color:#0f172a;font-size:15px">${nameHtml}</div>
-            <div style="font-size:11px;color:#64748b;margin-top:2px">${meta}</div>
-            <div style="font-size:11px;color:#64748b;margin-top:2px">${sales.length} kröfur ·
-              ${grp.thisMonthSum > 0 ? '<span style="color:#1d4ed8">þessi mán: ' + fmtKr(grp.thisMonthSum) + '</span>' : ''}
-              ${grp.thisMonthSum > 0 && grp.olderSum > 0 ? ' · ' : ''}
-              ${grp.olderSum > 0 ? '<span style="color:#b45309">eldra: ' + fmtKr(grp.olderSum) + '</span>' : ''}
-            </div>
+      <div class="bh-group">
+        <div class="bh-group-head">
+          <div style="min-width:0;flex:1">
+            <div class="bh-group-name">${nameHtml}</div>
+            <div class="bh-group-meta">${meta}</div>
+            <div class="bh-group-meta"><span class="bh-mono">${sales.length}</span> kröfur${metaLine2 ? ' · ' + metaLine2 : ''}</div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <div style="text-align:right">
-              <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Krafa</div>
-              <div style="font-size:20px;font-weight:800;color:#1d4ed8;font-variant-numeric:tabular-nums">${fmtKr(grp.sum)}</div>
+              <div class="bh-group-total-label">Krafa</div>
+              <div class="bh-group-total">${fmtKr(grp.sum)}</div>
             </div>
-            <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð án vsk-formúleringa" style="padding:6px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:11px">📋</button>
-            ${unsentIds.length ? `<button class="_ky-select-all" data-ids="${unsentIds.join(',')}" type="button" title="Velja allar ósentar kröfur þessa fyrirtækis fyrir Payday-push" style="padding:6px 10px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:700">☑ Velja ${unsentIds.length}</button>` : ''}
-            <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt" style="padding:7px 12px;background:#f8fafc;color:#15803d;border:1.5px solid #86efac;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">✓ Allar greiddar</button>
+            <button class="_ky-copy-total bh-btn bh-btn--light bh-btn--sm" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð">📋</button>
+            ${unsentIds.length ? `<button class="_ky-select-all bh-btn bh-btn--sm" data-ids="${unsentIds.join(',')}" type="button" title="Velja allar ósentar kröfur þessa fyrirtækis fyrir Payday-push" style="background:#eef3ff;color:#2f5fe0;border-color:#c6d6ff;font-weight:700">☑ Velja <span class="bh-mono">${unsentIds.length}</span></button>` : ''}
+            <button class="_ky-mark-all-paid bh-btn bh-btn--green bh-btn--sm" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt">✓ Allar greiddar</button>
           </div>
         </div>
-        <div>
-          ${sales.map(s => {
-            const st = pickupStatus(s.num);
-            const da = daysAgo(s.created_at);
-            // 2026-06-30: 📎 fylgiskjal — leita úttektarskýrslu sömu ár.
-            // Reynir customer_id fyrst, svo öll fyrirtaeki með sama kt eða
-            // customer_base_id (vegna að nýjar POS-sölur hafa oft engan customer_id).
-            let skyrslaBtn = '';
-            try {
-              if (window.CompanyAttachments && CompanyAttachments.list) {
-                const yr = String(new Date(s.created_at).getFullYear());
-                const candidateIds = [];
-                if (s.customer_id) candidateIds.push(s.customer_id);
-                const kt = (s.customer_kt || '').trim();
-                if (kt && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[kt]) {
-                  _state.fyrirtIdsByKt[kt].forEach(id => { if (!candidateIds.includes(id)) candidateIds.push(id); });
-                }
-                let skyrsla = null, hitCoId = null;
-                for (const coId of candidateIds) {
-                  const atts = CompanyAttachments.list(coId) || [];
-                  const hit = atts.find(a => a && a.kind === 'skyrsla' && String(a.year || '') === yr);
-                  if (hit) { skyrsla = hit; hitCoId = coId; break; }
-                }
-                if (skyrsla && hitCoId) {
-                  skyrslaBtn = `<button class="_ky-skyrsla" data-co-id="${hitCoId}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="padding:3px 7px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:4px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:600;white-space:nowrap">📎 Skýrsla ${yr}</button>`;
-                }
-              }
-            } catch (_) {}
-            const isChecked = _state.selected.has(s.id);
-            const checkboxCell = s.krafa_sent_at
-              ? '<div></div>'
-              : `<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0"><input type="checkbox" class="_ky-select" data-id="${s.id}" ${isChecked ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:#1d4ed8"></label>`;
-            return `
-              <div style="display:grid;grid-template-columns:28px 100px 80px 1fr 90px 1fr auto;gap:10px;padding:9px 16px;border-bottom:1px solid #f1f5f9;font-size:12.5px;align-items:center">
-                ${checkboxCell}
-                <div style="font-family:monospace;color:#475569">${esc(s.num || '')}</div>
-                <div style="color:#64748b">${fmtDate(s.created_at)}</div>
-                <div style="color:${st.color};font-weight:600">${st.icon} ${esc(st.label)}</div>
-                <div style="color:#94a3b8;font-size:11px">${da != null ? da + ' d.' : ''}</div>
-                <div style="text-align:right;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums">${fmtKr(s.samtals)}</div>
-                <div style="display:flex;gap:4px">
-                  ${skyrslaBtn}
-                  ${s.krafa_sent_at
-                    ? `<button class="_ky-krafa-toggle" data-id="${s.id}" data-on="1" type="button" title="Krafa send ${fmtDate(s.krafa_sent_at)} — smelltu til að afhaka" style="padding:5px 9px;background:#dcfce7;color:#14532d;border:1px solid #86efac;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;white-space:nowrap">🏦 ✓ Krafa send</button>`
-                    : `<button class="_ky-krafa-toggle" data-id="${s.id}" type="button" title="Haka við þegar krafan hefur verið stofnuð í heimabankanum" style="padding:5px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600;white-space:nowrap">🏦 Krafa send</button>`}
-                  <button class="_ky-mark-paid" data-id="${s.id}" type="button" title="Merkja sem greitt" style="padding:5px 9px;background:#f8fafc;color:#15803d;border:1.5px solid #86efac;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✓</button>
-                  <button class="_ky-view-invoice" data-id="${s.id}" type="button" title="Skoða / prenta reikning" style="padding:5px 9px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">🖨</button>
-                  <button class="_ky-open-editor" data-num="${esc(s.num)}" type="button" title="Opna í sölu-editor" style="padding:5px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">✏️</button>
-                  <button class="_ky-kredit" data-id="${s.id}" type="button" title="Kreditfæra reikninginn" style="padding:5px 9px;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">↩ Kredit</button>
-                </div>
-              </div>`;
-          }).join('')}
+        <div class="bh-table-wrap" style="border-radius:0;border:none;box-shadow:none">
+          <div class="bh-table-scroll">
+            <table class="bh-table" style="min-width:780px">
+              <thead>
+                <tr>
+                  <th style="width:28px;padding-left:16px"></th>
+                  <th style="width:100px">Nr.</th>
+                  <th style="width:88px">Dags.</th>
+                  <th>Staða</th>
+                  <th class="cen" style="width:80px">Aldur</th>
+                  <th class="num" style="width:130px">Upphæð</th>
+                  <th class="cen" style="width:240px">Aðgerðir</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sales.map(s => {
+                  const st = pickupStatus(s.num);
+                  const da = daysAgo(s.created_at);
+                  // 2026-06-30: 📎 fylgiskjal — leita úttektarskýrslu sömu ár.
+                  let skyrslaBtn = '';
+                  try {
+                    if (window.CompanyAttachments && CompanyAttachments.list) {
+                      const yr = String(new Date(s.created_at).getFullYear());
+                      const candidateIds = [];
+                      if (s.customer_id) candidateIds.push(s.customer_id);
+                      const kt2 = (s.customer_kt || '').trim();
+                      if (kt2 && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[kt2]) {
+                        _state.fyrirtIdsByKt[kt2].forEach(id => { if (!candidateIds.includes(id)) candidateIds.push(id); });
+                      }
+                      let skyrsla = null, hitCoId = null;
+                      for (const coId of candidateIds) {
+                        const atts = CompanyAttachments.list(coId) || [];
+                        const hit = atts.find(a => a && a.kind === 'skyrsla' && String(a.year || '') === yr);
+                        if (hit) { skyrsla = hit; hitCoId = coId; break; }
+                      }
+                      if (skyrsla && hitCoId) {
+                        skyrslaBtn = `<button class="_ky-skyrsla bh-btn bh-btn--xs" data-co-id="${hitCoId}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="background:#eef3ff;color:#2f5fe0;border-color:#c6d6ff">📎 <span class="bh-mono">${yr}</span></button>`;
+                      }
+                    }
+                  } catch (_) {}
+                  const isChecked = _state.selected.has(s.id);
+                  const checkboxCell = s.krafa_sent_at
+                    ? ''
+                    : `<label style="display:flex;align-items:center;justify-content:center;cursor:pointer;margin:0"><input type="checkbox" class="_ky-select" data-id="${s.id}" ${isChecked ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer;accent-color:#2f5fe0"></label>`;
+                  const statusChipCls = st.color === '#16a34a' ? 'bh-chip--done'
+                                      : st.color === '#dc2626' ? 'bh-chip--overdue'
+                                      : st.color === '#f59e0b' ? 'bh-chip--pending'
+                                      : 'bh-chip--neutral';
+                  const krafaBtn = s.krafa_sent_at
+                    ? `<button class="_ky-krafa-toggle bh-btn bh-btn--xs" data-id="${s.id}" data-on="1" type="button" title="Krafa send ${fmtDate(s.krafa_sent_at)} — smelltu til að afhaka" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;font-weight:700">🏦 ✓ Send</button>`
+                    : `<button class="_ky-krafa-toggle bh-btn bh-btn--xs bh-btn--light" data-id="${s.id}" type="button" title="Haka við þegar krafan hefur verið stofnuð í heimabankanum">🏦 Krafa</button>`;
+                  return `
+                    <tr>
+                      <td style="padding-left:16px">${checkboxCell}</td>
+                      <td class="mono" style="color:#3a4250;font-size:12.5px">${esc(s.num || '')}</td>
+                      <td class="mono" style="color:#5b6472;font-size:12px">${fmtDate(s.created_at)}</td>
+                      <td><span class="bh-chip ${statusChipCls}">${st.icon} ${esc(st.label)}</span></td>
+                      <td class="cen mono" style="color:#9098a6;font-size:11.5px">${da != null ? da + ' d.' : ''}</td>
+                      <td class="num mono" style="font-weight:700;color:#11141c;font-size:13px">${fmtKr(s.samtals)}</td>
+                      <td>
+                        <div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap">
+                          ${skyrslaBtn}
+                          ${krafaBtn}
+                          <button class="_ky-mark-paid bh-btn bh-btn--xs" data-id="${s.id}" type="button" title="Merkja sem greitt" style="background:#ecfdf5;color:#047857;border-color:#a7f3d0;font-weight:700">✓</button>
+                          <button class="_ky-view-invoice bh-btn bh-btn--xs bh-btn--light" data-id="${s.id}" type="button" title="Skoða / prenta reikning" style="color:#2f5fe0">🖨</button>
+                          <button class="_ky-open-editor bh-btn bh-btn--xs bh-btn--light" data-num="${esc(s.num)}" type="button" title="Opna í sölu-editor">✏️</button>
+                          <button class="_ky-kredit bh-btn bh-btn--xs" data-id="${s.id}" type="button" title="Kreditfæra reikninginn" style="background:#fff7ed;color:#c2410c;border-color:#fed7aa">↩</button>
+                        </div>
+                      </td>
+                    </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>`;
   }
