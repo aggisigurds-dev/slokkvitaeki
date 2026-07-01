@@ -672,6 +672,7 @@
             ? (() => { const ps = pickupStatusFor(s.num); return ps ? '<div style="display:inline-block;margin-left:6px;font-size:11px;color:' + ps.color + ';font-weight:600;white-space:nowrap" title="Pickup status">' + ps.icon + ' ' + esc(ps.label) + '</div>' : ''; })()
             : ''
           )
+        + (s.isDraft ? ' <button class="by-edit-draft" data-sale-id="' + esc(s.id) + '" type="button" title="Breyta drögunum (verð, línur, viðskiptavinur)" style="margin-left:6px;padding:3px 9px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✏️ Breyta</button>' : '')
         + (s.isDraft ? ' <button class="by-finish-draft" data-sale-id="' + esc(s.id) + '" type="button" style="margin-left:6px;padding:3px 9px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✅ Klára</button>' : '')
         + '</td>'
         + '</tr>';
@@ -1101,11 +1102,13 @@
           return;
         }
 
-        // "✅ Klára" on a draft row — open the Sale Editor to finish it.
-        const finishBtn = e.target.closest('.by-finish-draft');
-        if (finishBtn) {
+        // "✏️ Breyta" / "✅ Klára" on a draft row — both open the Sale Editor,
+        // which lets you change prices, lines and the customer on a draft
+        // (and finish it there). Breyta is the discoverable "edit" entry.
+        const editBtn = e.target.closest('.by-edit-draft') || e.target.closest('.by-finish-draft');
+        if (editBtn) {
           e.stopPropagation();
-          const sid = finishBtn.getAttribute('data-sale-id');
+          const sid = editBtn.getAttribute('data-sale-id');
           if (window.SaleEditor && typeof window.SaleEditor.openById === 'function') {
             window.SaleEditor.openById(sid);
           } else {
