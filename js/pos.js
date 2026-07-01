@@ -454,7 +454,7 @@
           '<div style="display:flex;align-items:center;gap:2px;margin-top:1px;font-size:11px;color:#64748b;font-family:\'Space Mono\',monospace">' +
             '<input class="pos-price-edit" data-idx="'+idx+'" type="text" inputmode="decimal" value="'+l.unit_price_ex_vat+'" ' +
               'title="Smelltu til að breyta einingarverði (án VSK)" ' +
-              'style="width:48px;padding:0 1px;border:none;border-bottom:1px dotted #cbd5e1;background:transparent;font:inherit;font-size:11px;color:#64748b;text-align:right;font-variant-numeric:tabular-nums">' +
+              'style="width:62px;padding:0 1px;border:none;border-bottom:1px dotted #cbd5e1;background:transparent;font:inherit;font-size:11px;color:#64748b;text-align:right;font-variant-numeric:tabular-nums">' +
             '<span>kr/stk</span>' +
           '</div>' +
         '</div>' +
