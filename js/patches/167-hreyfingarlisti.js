@@ -116,7 +116,7 @@
   }
 
   // ── Data load ────────────────────────────────────────────────────────────
-  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'created_at', sortDir: 'desc', mode: 'month', ktInfo: null };
+  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'created_at', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'month' };
 
   // 2026-07-01: customer lookup by NAME or KENNITALA — pull a customer's WHOLE
   // sölu-/reikningasaga (all time, not month-bounded) so "sendu mér kvittun frá
@@ -217,13 +217,21 @@
 
     const m = filterMonth || _state.month || new Date();
     _state.month = m;
-    const { start, end } = monthBounds(m);
 
-    const r = await SB.from('solur')
+    // 2026-07-01: scope — Mánuður (default) · Ár (whole year) · Allt (all time).
+    let q = SB.from('solur')
       .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,paid_at,is_credit,credit_of,starfsmadur')
-      .gte('created_at', start.toISOString())
-      .lt('created_at', end.toISOString())
       .order('created_at', { ascending: false });
+    if (_state.scope === 'all') {
+      q = q.limit(5000);
+    } else if (_state.scope === 'year') {
+      const ys = new Date(m.getFullYear(), 0, 1), ye = new Date(m.getFullYear() + 1, 0, 1);
+      q = q.gte('created_at', ys.toISOString()).lt('created_at', ye.toISOString()).limit(5000);
+    } else {
+      const { start, end } = monthBounds(m);
+      q = q.gte('created_at', start.toISOString()).lt('created_at', end.toISOString());
+    }
+    const r = await q;
     if (r.error) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
     _state.all = r.data || [];
 
@@ -297,6 +305,9 @@
 
     const monthLabel = _state.month.getFullYear() + ' · ' +
       ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'][_state.month.getMonth()];
+    const scopeLabel = _state.scope === 'all' ? 'Allar færslur'
+      : _state.scope === 'year' ? String(_state.month.getFullYear())
+      : monthLabel;
 
     const chipDef = [
       ['all',    'Allt',       all.length],
@@ -318,9 +329,13 @@
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
             ${_state.mode === 'kt'
               ? `<button class="_hr-back hl-navbtn" type="button" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:600;color:#475569">← Mánaðaryfirlit</button>`
-              : `<button class="_hr-prev hl-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>
-                 <div class="hl-month" style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:140px;text-align:center">${esc(monthLabel)}</div>
-                 <button class="_hr-next hl-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>`}
+              : `${_state.scope !== 'all' ? '<button class="_hr-prev hl-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>' : ''}
+                 <div class="hl-month" style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:${_state.scope === 'all' ? '110' : '140'}px;text-align:center">${esc(scopeLabel)}</div>
+                 ${_state.scope !== 'all' ? '<button class="_hr-next hl-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>' : ''}
+                 <div style="display:inline-flex;border:1px solid #cbd5e1;border-radius:7px;overflow:hidden;margin-left:4px">
+                   ${['month','year','all'].map(s => { const on = _state.scope === s; const lbl = { month: 'Mán', year: 'Ár', all: 'Allt' }[s];
+                     return '<button class="_hr-scope" data-s="' + s + '" type="button" style="padding:7px 11px;border:none;' + (s !== 'month' ? 'border-left:1px solid #e2e8f0;' : '') + 'background:' + (on ? '#0f172a' : '#fff') + ';color:' + (on ? '#fff' : '#475569') + ';cursor:pointer;font:inherit;font-size:12px;font-weight:600">' + lbl + '</button>'; }).join('')}
+                 </div>`}
             <input class="_hr-ktlookup" type="text" placeholder="🔎 Kennitala eða nafn — öll saga" value="${_state.mode === 'kt' && _state.ktInfo ? esc(_state.ktInfo.query) : ''}" title="Sláðu inn kennitölu eða nafn og ýttu á Enter til að sjá ALLAR sölur/reikninga kúnnans" style="padding:7px 11px;border:1.5px solid #1d4ed8;border-radius:7px;font:inherit;font-size:13px;min-width:230px;margin-left:6px">
             <input class="_hr-search" type="text" placeholder="🔍 Sía lista…" value="${esc(_state.search)}" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;min-width:130px">
             <button class="_hr-csv" type="button" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#475569">📥 CSV</button>
@@ -330,7 +345,7 @@
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px">
           ${statCard('Sölur', sales, '#1d4ed8', '#dbeafe', '💰')}
           ${statCard('Kreditfært', -credits, '#dc2626', '#fee2e2', '↩️')}
-          ${statCard(_state.mode === 'kt' ? 'Greitt' : 'Greitt í mán.', paidIn, '#16a34a', '#dcfce7', '✓')}
+          ${statCard(_state.mode === 'kt' || _state.scope !== 'month' ? 'Greitt' : 'Greitt í mán.', paidIn, '#16a34a', '#dcfce7', '✓')}
           ${statCard('Ógreitt', unpaidOut, '#b45309', '#fef3c7', '⏳')}
           ${statCard('Nettó', net, net >= 0 ? '#0f172a' : '#dc2626', '#f1f5f9', 'Σ')}
         </div>
@@ -369,12 +384,20 @@
 
       </div>`;
 
-    main.querySelector('._hr-prev')?.addEventListener('click', () => {
-      const m = new Date(_state.month); m.setMonth(m.getMonth() - 1); load(m);
-    });
-    main.querySelector('._hr-next')?.addEventListener('click', () => {
-      const m = new Date(_state.month); m.setMonth(m.getMonth() + 1); load(m);
-    });
+    // Prev/next step by month (Mán scope) or year (Ár scope). Hidden in Allt.
+    const _step = dir => {
+      const m = new Date(_state.month);
+      if (_state.scope === 'year') m.setFullYear(m.getFullYear() + dir);
+      else m.setMonth(m.getMonth() + dir);
+      load(m);
+    };
+    main.querySelector('._hr-prev')?.addEventListener('click', () => _step(-1));
+    main.querySelector('._hr-next')?.addEventListener('click', () => _step(1));
+    main.querySelectorAll('._hr-scope').forEach(b => b.addEventListener('click', () => {
+      if (_state.scope === b.dataset.s) return;
+      _state.scope = b.dataset.s;
+      load(_state.month || new Date());
+    }));
     main.querySelector('._hr-csv')?.addEventListener('click', exportCSV);
     main.querySelectorAll('._hr-chip').forEach(c => {
       c.addEventListener('click', () => { _state.filter = c.dataset.k; render(); });
@@ -552,9 +575,12 @@
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    const monthSlug = _state.month.getFullYear() + '-' + String(_state.month.getMonth()+1).padStart(2,'0');
+    const slug = _state.mode === 'kt' ? ('kunni_' + (_state.ktInfo && _state.ktInfo.ktFmt ? ktDigits(_state.ktInfo.ktFmt) : 'saga'))
+      : _state.scope === 'all' ? 'allt'
+      : _state.scope === 'year' ? String(_state.month.getFullYear())
+      : _state.month.getFullYear() + '-' + String(_state.month.getMonth()+1).padStart(2,'0');
     a.href = url;
-    a.download = 'Hreyfingarlisti_' + monthSlug + '.csv';
+    a.download = 'Hreyfingarlisti_' + slug + '.csv';
     document.body.appendChild(a);
     a.click();
     setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 200);
