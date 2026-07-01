@@ -17,6 +17,27 @@
   if (window.__krofuYfirlitInstalled) return;
   window.__krofuYfirlitInstalled = true;
 
+  // ── Brunastál-scoped skin ──────────────────────────────────────────────────
+  // The page title/subtitle/month sit on the dark top band of the Brunastál
+  // page gradient, where the default dark ink is invisible. Under that preset
+  // only, flip the title band to white (per THEME-SPEC) and give figures the
+  // Space Mono treatment. Scoped so the light themes are untouched.
+  (function injectSkin() {
+    const ID = 'ky-brunastal-skin';
+    if (document.getElementById(ID)) return;
+    const s = document.createElement('style');
+    s.id = ID;
+    const B = 'html[data-thm-preset="brunastal"] #view-krofu-yfirlit ';
+    s.textContent =
+      B + '.ky-h1{color:#fff !important;font-size:26px !important;font-weight:800 !important;text-shadow:0 2px 8px rgba(0,0,0,.55)}' +
+      B + '.ky-sub{color:rgba(255,255,255,.62) !important}' +
+      B + '.ky-month{color:#fff !important}' +
+      B + '.ky-navbtn{background:linear-gradient(145deg,#0b0b0d,#2a2a30 30%,#3c3c44 52%,#1a1a1f 74%,#08080a) !important;color:#fff !important;border-color:#0a0b0d !important}' +
+      '#view-krofu-yfirlit .ky-num{font-variant-numeric:tabular-nums}' +
+      B + ".ky-num{font-family:'Space Mono',ui-monospace,SFMono-Regular,Menlo,monospace !important}";
+    (document.head || document.documentElement).appendChild(s);
+  })();
+
   const VIEW_ID = 'view-krofu-yfirlit';
   const NAV_KEY = 'krofu-yfirlit';
 
@@ -342,13 +363,13 @@
 
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:18px">
           <div>
-            <h1 style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">📋 Kröfu yfirlit</h1>
-            <div style="font-size:12px;color:#64748b;margin-top:2px">Krafa í heimabanka — sölur með greitt_med = "Senda reikning" sem þarf að safna saman í lok mánaðar</div>
+            <h1 class="ky-h1" style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">📋 Kröfu yfirlit</h1>
+            <div class="ky-sub" style="font-size:12px;color:#64748b;margin-top:2px">Krafa í heimabanka — sölur með greitt_med = "Senda reikning" sem þarf að safna saman í lok mánaðar</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="_ky-prev" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>
-            <div style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:140px;text-align:center">${esc(monthLabel)}</div>
-            <button class="_ky-next" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>
+            <button class="_ky-prev ky-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>
+            <div class="ky-month" style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:140px;text-align:center">${esc(monthLabel)}</div>
+            <button class="_ky-next ky-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>
             <select class="_ky-sort" title="Raða" style="margin-left:6px;padding:6px 9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font:inherit;font-size:12.5px;font-weight:600;color:#475569;cursor:pointer">
               <option value="updated_desc"${_state.sort === 'updated_desc' ? ' selected' : ''}>🕐 Nýlega breytt fyrst</option>
               <option value="created_desc"${_state.sort === 'created_desc' ? ' selected' : ''}>📅 Nýjast stofnað</option>
@@ -365,7 +386,7 @@
               <div style="width:26px;height:26px;border-radius:7px;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:15px">📋</div>
               <div style="font-size:10.5px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Þessi mánuður</div>
             </div>
-            <div style="font-size:22px;font-weight:800;color:#1d4ed8">${fmtKr(thisMonthTotal)}</div>
+            <div class="ky-num" style="font-size:22px;font-weight:800;color:#1d4ed8">${fmtKr(thisMonthTotal)}</div>
             <div style="font-size:10.5px;color:#94a3b8;margin-top:1px">${thisMonth.length} kröfur</div>
           </div>
           ${olderTotal !== 0 ? `
@@ -374,7 +395,7 @@
               <div style="width:26px;height:26px;border-radius:7px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:15px">🕓</div>
               <div style="font-size:10.5px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Eldri ógreitt</div>
             </div>
-            <div style="font-size:22px;font-weight:800;color:#b45309">${fmtKr(olderTotal)}</div>
+            <div class="ky-num" style="font-size:22px;font-weight:800;color:#b45309">${fmtKr(olderTotal)}</div>
             <div style="font-size:10.5px;color:#94a3b8;margin-top:1px">${older.length} kröfur</div>
           </div>` : ''}
           <div style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8);color:#fff;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
@@ -382,7 +403,7 @@
               <div style="width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:15px">💰</div>
               <div style="font-size:10.5px;color:#bfdbfe;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Heildarkröfur</div>
             </div>
-            <div style="font-size:22px;font-weight:800">${fmtKr(grandTotal)}</div>
+            <div class="ky-num" style="font-size:22px;font-weight:800">${fmtKr(grandTotal)}</div>
             <div style="font-size:10.5px;color:#bfdbfe;margin-top:1px">${all.length} sölur · ${companies.length} fyrirtæki</div>
           </div>
           <div style="background:linear-gradient(135deg,#0c4a6e,#0284c7);color:#fff;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
@@ -390,7 +411,7 @@
               <div style="width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:15px">🏦</div>
               <div style="font-size:10.5px;color:#bae6fd;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Sendar kröfur</div>
             </div>
-            <div style="font-size:22px;font-weight:800">${fmtKr(sentTotal)}</div>
+            <div class="ky-num" style="font-size:22px;font-weight:800">${fmtKr(sentTotal)}</div>
             <div style="font-size:10.5px;color:#bae6fd;margin-top:1px">${sent.length} sölur · ${sentCompanies} fyrirtæki</div>
           </div>
         </div>
@@ -785,7 +806,7 @@
           <div style="display:flex;gap:8px;align-items:center">
             <div style="text-align:right">
               <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Krafa</div>
-              <div style="font-size:20px;font-weight:800;color:#1d4ed8;font-variant-numeric:tabular-nums">${fmtKr(grp.sum)}</div>
+              <div class="ky-num" style="font-size:20px;font-weight:800;color:#1d4ed8;font-variant-numeric:tabular-nums">${fmtKr(grp.sum)}</div>
             </div>
             <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð án vsk-formúleringa" style="padding:6px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:11px">📋</button>
             <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt" style="padding:7px 12px;background:#f8fafc;color:#15803d;border:1.5px solid #86efac;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">✓ Allar greiddar</button>
@@ -828,7 +849,7 @@
                 <div style="color:#64748b">${fmtDate(s.created_at)}</div>
                 <div style="color:${st.color};font-weight:600">${st.icon} ${esc(st.label)}</div>
                 <div style="color:#94a3b8;font-size:11px">${da != null ? da + ' d.' : ''}</div>
-                <div style="text-align:right;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums">${fmtKr(s.samtals)}</div>
+                <div class="ky-num" style="text-align:right;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums">${fmtKr(s.samtals)}</div>
                 <div style="display:flex;gap:4px">
                   ${skyrslaBtn}
                   ${s.krafa_sent_at
