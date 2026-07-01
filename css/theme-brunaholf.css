@@ -35,38 +35,23 @@
 
 /* ----- 2. Page background wrapper ----- */
 /*
- * `.bh-page` is the CONTENT area of one view. The gradient is applied
- * both to the wrapper AND — via `.bh-host` on the PARENT `<main>` —
- * to any outer padding the app.css layout normally reserves for
- * `.main-panel` (max-width:1200px; padding:28px 32px). Applying the
- * gradient only to `.bh-page` leaves the outer `.main-panel` area
- * showing the body `--bg` — that's the "two backgrounds" bug.
- *
- * Rule: whenever you use `.bh-page` inside a `.main-panel`, add
- * `bh-host` to that main-panel so the theme bleeds edge-to-edge
- * and drops the constraints. If the parent isn't a main-panel,
- * `.bh-page` still tints itself so it works standalone.
+ * Wrap the CONTENT AREA of a view (the <main> or the outermost div
+ * of the view's innerHTML) in `.bh-page`. Gives the page:
+ *   • Space Grotesk body font
+ *   • the black-to-grey vertical gradient (spec §1)
+ *   • padding for the outer title band + content
+ * Does NOT touch banner (`.brunastal-banner` etc.) or sidebar —
+ * those keep their own theming above/beside this container.
  */
-.bh-host,
-.main-panel.bh-host,
-main.bh-host {
-  max-width: none !important;
-  padding: 0 !important;
-  background: linear-gradient(180deg, #060607 0px, #060607 95px, #aeb4be 360px, #9ba1ad 100%) !important;
-  min-height: 100%;
-}
 .bh-page {
   font-family: 'Space Grotesk', system-ui, sans-serif;
   color: var(--bh-ink3);
   background: linear-gradient(180deg, #060607 0px, #060607 95px, #aeb4be 360px, #9ba1ad 100%);
+  background-attachment: local;
   min-height: 100%;
   padding: 0;
 }
 .bh-page * { box-sizing: border-box; }
-/* When inside a .bh-host, .bh-page's own background is redundant
- * (host already paints the gradient). Suppress it to avoid any
- * seam where the two would ever misalign. */
-.bh-host .bh-page { background: transparent; }
 
 /* Mono helper — apply to any inline element carrying numbers, dates,
  * kt, amounts, IDs. Falls back to IBM Plex Mono then system mono. */
