@@ -448,23 +448,23 @@
       // title + „<einingarverð> kr/stk" undirtexti (verðið er ennþá ritanlegt
       // inline), pillulaga magn-stepper og stór línutala hægra megin. Sömu
       // klassar/ data-idx haldast svo bindingar (patch 113 tilboðsverð o.fl.) virki.
-      return '<div style="position:relative;display:flex;align-items:center;gap:10px;background:#f8fafc;border:1px solid #e9eef3;border-left:4px solid '+col+';border-radius:12px;padding:11px 12px;margin-bottom:7px;box-shadow:0 1px 2px rgba(16,24,40,.05)">' +
+      return '<div style="position:relative;display:flex;align-items:center;gap:7px;background:#f8fafc;border:1px solid #e9eef3;border-left:4px solid '+col+';border-radius:10px;padding:7px 9px;margin-bottom:6px;box-shadow:0 1px 2px rgba(16,24,40,.05)">' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-weight:700;color:#0f172a;font-size:14px;line-height:1.25;overflow-wrap:break-word;word-break:break-word;padding-right:14px">'+esc(l.desc)+(l.ref?'<span style="font-weight:400;font-size:11px;color:#94a3b8"> · '+esc(l.ref)+'</span>':'')+'</div>' +
-          '<div style="display:flex;align-items:center;gap:2px;margin-top:3px;font-size:12px;color:#64748b;font-family:\'Space Mono\',monospace">' +
+          '<div style="font-weight:700;color:#0f172a;font-size:12.5px;line-height:1.2;overflow-wrap:break-word;word-break:break-word;padding-right:12px">'+esc(l.desc)+(l.ref?'<span style="font-weight:400;font-size:10px;color:#94a3b8"> · '+esc(l.ref)+'</span>':'')+'</div>' +
+          '<div style="display:flex;align-items:center;gap:2px;margin-top:1px;font-size:11px;color:#64748b;font-family:\'Space Mono\',monospace">' +
             '<input class="pos-price-edit" data-idx="'+idx+'" type="text" inputmode="decimal" value="'+l.unit_price_ex_vat+'" ' +
               'title="Smelltu til að breyta einingarverði (án VSK)" ' +
-              'style="width:56px;padding:0 1px;border:none;border-bottom:1px dotted #cbd5e1;background:transparent;font:inherit;font-size:12px;color:#64748b;text-align:right;font-variant-numeric:tabular-nums">' +
+              'style="width:48px;padding:0 1px;border:none;border-bottom:1px dotted #cbd5e1;background:transparent;font:inherit;font-size:11px;color:#64748b;text-align:right;font-variant-numeric:tabular-nums">' +
             '<span>kr/stk</span>' +
           '</div>' +
         '</div>' +
-        '<div style="display:flex;align-items:center;background:#fff;border:1px solid #dbe2ea;border-radius:9px;overflow:hidden;flex-shrink:0">' +
-          '<button class="pos-qty-dn" data-idx="'+idx+'" style="background:#fff;border:none;width:30px;height:30px;cursor:pointer;font-weight:800;color:#475569;font-size:16px;line-height:1">−</button>' +
-          '<span style="min-width:24px;text-align:center;font-weight:800;font-size:14px;color:#0f172a;font-variant-numeric:tabular-nums">'+l.qty+'</span>' +
-          '<button class="pos-qty-up" data-idx="'+idx+'" style="background:#fff;border:none;width:30px;height:30px;cursor:pointer;font-weight:800;color:#475569;font-size:16px;line-height:1">+</button>' +
+        '<div style="display:flex;align-items:center;background:#fff;border:1px solid #dbe2ea;border-radius:8px;overflow:hidden;flex-shrink:0">' +
+          '<button class="pos-qty-dn" data-idx="'+idx+'" style="background:#fff;border:none;width:24px;height:24px;cursor:pointer;font-weight:800;color:#475569;font-size:14px;line-height:1">−</button>' +
+          '<span style="min-width:18px;text-align:center;font-weight:800;font-size:13px;color:#0f172a;font-variant-numeric:tabular-nums">'+l.qty+'</span>' +
+          '<button class="pos-qty-up" data-idx="'+idx+'" style="background:#fff;border:none;width:24px;height:24px;cursor:pointer;font-weight:800;color:#475569;font-size:14px;line-height:1">+</button>' +
         '</div>' +
-        '<div style="flex-shrink:0;font-weight:800;color:#0f172a;font-size:15px;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace;white-space:nowrap;text-align:right;min-width:56px">'+fmtKr(lineEx)+'</div>' +
-        '<button class="pos-line-del" data-idx="'+idx+'" title="Fjarlægja" style="position:absolute;top:5px;right:6px;background:none;color:#cbd5e1;border:none;cursor:pointer;font-size:15px;padding:0;line-height:1;flex-shrink:0">×</button>' +
+        '<div style="flex-shrink:0;font-weight:800;color:#0f172a;font-size:13px;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace;white-space:nowrap;text-align:right">'+fmtKr(lineEx)+'</div>' +
+        '<button class="pos-line-del" data-idx="'+idx+'" title="Fjarlægja" style="position:absolute;top:3px;right:5px;background:none;color:#cbd5e1;border:none;cursor:pointer;font-size:14px;padding:0;line-height:1;flex-shrink:0">×</button>' +
       '</div>';
     }).join('');
   }
