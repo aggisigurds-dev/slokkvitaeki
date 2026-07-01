@@ -13,6 +13,21 @@
   const VIEW_ID = 'view-hreyfingarlisti';
   const NAV_KEY = 'hreyfingarlisti';
 
+  // Brunastál: the title/subtitle/month sit on the dark page band where the
+  // default dark ink is invisible. Flip them to white under that preset only.
+  (function injectSkin() {
+    if (document.getElementById('hl-brunastal-skin')) return;
+    const s = document.createElement('style');
+    s.id = 'hl-brunastal-skin';
+    const B = 'html[data-thm-preset="brunastal"] #view-hreyfingarlisti ';
+    s.textContent =
+      B + '.hl-h1{color:#fff !important;font-size:26px !important;font-weight:800 !important;text-shadow:0 2px 8px rgba(0,0,0,.55)}' +
+      B + '.hl-sub{color:rgba(255,255,255,.62) !important}' +
+      B + '.hl-month{color:#fff !important}' +
+      B + '.hl-navbtn{background:linear-gradient(145deg,#0b0b0d,#2a2a30 30%,#3c3c44 52%,#1a1a1f 74%,#08080a) !important;color:#fff !important;border-color:#0a0b0d !important}';
+    (document.head || document.documentElement).appendChild(s);
+  })();
+
   function getSB() { return (window.DB && window.DB.sb) || null; }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
@@ -211,13 +226,13 @@
 
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:18px">
           <div>
-            <h1 style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">📜 Hreyfingarlisti</h1>
-            <div style="font-size:12px;color:#64748b;margin-top:2px">Tímaröð yfir allar færslur — sölur og kreditfærslur</div>
+            <h1 class="hl-h1" style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">📜 Hreyfingarlisti</h1>
+            <div class="hl-sub" style="font-size:12px;color:#64748b;margin-top:2px">Tímaröð yfir allar færslur — sölur og kreditfærslur</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="_hr-prev" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>
-            <div style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:140px;text-align:center">${esc(monthLabel)}</div>
-            <button class="_hr-next" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>
+            <button class="_hr-prev hl-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>
+            <div class="hl-month" style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:140px;text-align:center">${esc(monthLabel)}</div>
+            <button class="_hr-next hl-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>
             <input class="_hr-search" type="text" placeholder="🔍 Leita…" value="${esc(_state.search)}" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;min-width:170px;margin-left:6px">
             <button class="_hr-csv" type="button" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#475569;margin-left:6px">📥 CSV</button>
           </div>

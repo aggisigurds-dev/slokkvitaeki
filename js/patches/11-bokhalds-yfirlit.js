@@ -82,6 +82,15 @@
       #${VIEW_ID} .by-sub {
         font-size: 13px; color: #5b6472; margin-top: 4px;
       }
+      /* Brunastál: the header sits on the dark page band → flip to white so it
+         is not dark-on-dark. !important to beat patch 240's global
+         .view h1 color rule. Scoped; light themes untouched. */
+      html[data-thm-preset="brunastal"] #${VIEW_ID} .by-header h1 {
+        color: #fff !important; text-shadow: 0 2px 8px rgba(0,0,0,.55);
+      }
+      html[data-thm-preset="brunastal"] #${VIEW_ID} .by-sub {
+        color: rgba(255,255,255,.62) !important;
+      }
       #${VIEW_ID} .by-summary {
         display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
         gap: 12px; margin-bottom: 20px;
