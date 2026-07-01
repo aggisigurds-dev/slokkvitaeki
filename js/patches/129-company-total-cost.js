@@ -480,7 +480,7 @@
             '<div style="font-size:11px;color:#64748b">' + esc(product.nafn) + '</div></td>' +
           '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + n + '</td>' +
           '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;' +
-            (kindKey === 'hledsla' ? 'background:var(--bg);color:var(--ink2)' : 'background:#dbeafe;color:#1e40af') + '">' +
+            (kindKey === 'hledsla' ? 'background:#dcfce7;color:#166534' : 'background:#dbeafe;color:#1e40af') + '">' +
             kindLabel + '</span></td>' +
           '<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">' + fmtKr(unitPrice) +
             (override ? ' <span title="' + esc(override.notes || '') + '" style="margin-left:4px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') + '</td>' +

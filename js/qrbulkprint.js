@@ -129,7 +129,12 @@ function renderInlinePrintView(qrs,layout,prefix){
 }
 function injectButton(){
   if(document.getElementById('_qb_btn')) return;
-  var sb=document.querySelector('aside.sidebar, .topbar nav, [class*="view-nav"]');
+  // Prefer the real nav so the button is a DIRECT flex child — that lets the
+  // sidebar-reorder engine (patch 68) place/hide it via CSS `order` and the
+  // customizer (patch 171) list it as a normal, movable item. The old wrapper
+  // <div> made it a nested element that CSS `order` couldn't touch, so the user
+  // couldn't move or hide it (and it could even trap the Kerfi tab inside it).
+  var sb=document.querySelector('nav.view-nav, .view-nav') || document.querySelector('aside.sidebar, .topbar nav, [class*="view-nav"]');
   var btn=document.createElement('button');
   btn.id='_qb_btn';
   btn.className='vnav-btn';
@@ -138,7 +143,7 @@ function injectButton(){
   btn.onmouseover=function(){this.style.background='rgba(0,0,0,.05)';};
   btn.onmouseout=function(){this.style.background='';};
   btn.onclick=showDialog;
-  if(sb){var div=document.createElement('div');div.style.cssText='border-top:1px solid rgba(0,0,0,.08);margin:8px 0;padding-top:8px';div.appendChild(btn);sb.appendChild(div);}
+  if(sb){sb.appendChild(btn);}
 }
 setInterval(injectButton,1500);
 setTimeout(injectButton,800);

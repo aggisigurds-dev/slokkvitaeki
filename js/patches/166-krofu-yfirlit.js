@@ -140,7 +140,7 @@
   }
   function saveSort(v) { try { localStorage.setItem(SORT_KEY, v); } catch (_) {} }
   let _state = { month: null, all: [], vbByParent: {}, sort: loadSort(),
-                 selected: new Set(), sending: false, stop: false };
+                 selected: new Set(), sending: false, stop: false, search: '' };
 
   // A sale is "sendanleg" (queueable) if it hasn't already been pushed to
   // Payday. krafa_sent_at / invoiced_at / dk_invoice_id all mark a sent claim —
@@ -355,6 +355,24 @@
       return (b.latestUpdated || '').localeCompare(a.latestUpdated || '');
     });
 
+    // ── Search filter — matches company name, kt (any source incl. recovered),
+    //    or a sale/reikningur number. Numeric query also matches kt digits. ──
+    const q = (_state.search || '').trim().toLowerCase();
+    const qDigits = q.replace(/\D/g, '');
+    function coKt(g) {
+      const s0 = g.sales[0] || {};
+      const fy = g.id ? (_state.fyrirtMap || {})[g.id] : null;
+      const baseRow = s0.customer_base_id ? (_state.baseMap || {})[s0.customer_base_id] : null;
+      const rec = (_state.nameKt || {})[keyName(g.display)];
+      return (s0.customer_kt) || (fy && fy.kennitala) || (baseRow && baseRow.kennitala) || (rec && rec.kt) || '';
+    }
+    const shown = !q ? companies : companies.filter(g => {
+      if (normName(g.display).indexOf(q) !== -1) return true;
+      if (qDigits.length >= 3 && ktDigits(coKt(g)).indexOf(qDigits) !== -1) return true;
+      if (g.sales.some(s => String(s.num || '').toLowerCase().indexOf(q) !== -1)) return true;
+      return false;
+    });
+
     const monthLabel = _state.month.getFullYear() + ' · ' +
       ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'][_state.month.getMonth()];
 
@@ -377,6 +395,7 @@
               <option value="amount_desc"${_state.sort === 'amount_desc' ? ' selected' : ''}>💰 Hæsta upphæð</option>
               <option value="amount_asc"${_state.sort === 'amount_asc' ? ' selected' : ''}>💰 Lægsta upphæð</option>
             </select>
+            <input class="_ky-search" type="search" placeholder="🔍 Leita (nafn · kt · R-nr)…" value="${esc(_state.search)}" style="margin-left:6px;padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font:inherit;font-size:13px;min-width:210px">
           </div>
         </div>
 
@@ -421,9 +440,13 @@
           Þegar krafan hefur verið mynduð fyrir fyrirtæki, smelltu <b>"✓ Allar greiddar"</b> til að hreinsa þær út.
         </div>
 
-        ${companies.length
-          ? companies.map(renderCompany).join('')
-          : '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">Engar útistandandi kröfur 🎉</div>'}
+        ${q && companies.length ? `<div style="font-size:12px;color:#64748b;margin-bottom:10px">🔍 ${shown.length} af ${companies.length} fyrirtækjum passa við „${esc(_state.search)}"</div>` : ''}
+
+        ${shown.length
+          ? shown.map(renderCompany).join('')
+          : (q
+              ? '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">Ekkert fyrirtæki passar við „' + esc(_state.search) + '"</div>'
+              : '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">Engar útistandandi kröfur 🎉</div>')}
 
       </div>
       <div id="ky-bulkbar"></div>`;
@@ -432,6 +455,13 @@
       _state.sort = e.target.value;
       saveSort(_state.sort);
       render();
+    });
+    main.querySelector('._ky-search')?.addEventListener('input', e => {
+      _state.search = e.target.value;
+      render();
+      // render() rebuilds innerHTML → the input is replaced; restore focus+caret.
+      const el = document.querySelector('#ky-main ._ky-search');
+      if (el) { el.focus(); try { const n = el.value.length; el.setSelectionRange(n, n); } catch (_) {} }
     });
     main.querySelector('._ky-prev')?.addEventListener('click', () => {
       const m = new Date(_state.month);

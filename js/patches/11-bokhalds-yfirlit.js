@@ -82,6 +82,15 @@
       #${VIEW_ID} .by-sub {
         font-size: 13px; color: #5b6472; margin-top: 4px;
       }
+      /* Brunastál: the header sits on the dark page band → flip to white so it
+         is not dark-on-dark. !important to beat patch 240's global
+         .view h1 color rule. Scoped; light themes untouched. */
+      html[data-thm-preset="brunastal"] #${VIEW_ID} .by-header h1 {
+        color: #fff !important; text-shadow: 0 2px 8px rgba(0,0,0,.55);
+      }
+      html[data-thm-preset="brunastal"] #${VIEW_ID} .by-sub {
+        color: rgba(255,255,255,.62) !important;
+      }
       #${VIEW_ID} .by-summary {
         display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
         gap: 12px; margin-bottom: 20px;
@@ -347,7 +356,9 @@
 
   // ----- State -----
   let allSales = [];
-  let customerMap = new Map(); // id -> { kennitala, simi, netfang, ... }
+  let customerMap = new Map(); // id -> { kennitala, simi, netfang, ... } (vidskiptavinir)
+  let companyMap = new Map();  // id -> { kennitala, nafn } (fyrirtaeki)
+  let ktByName = new Map();     // normName -> kt (unambiguous across both tables)
   let vbByParent = {};         // R-NNN -> [status1, status2, ...] from verkbeidnir
 
   // Pickup-status helper: returns { icon, label, color } based on whether all
@@ -368,21 +379,52 @@
   let sortDir = 'desc';
   const expanded = new Set();
   let activePreset = 'all';
+  let _loadedMode = 'recent';   // 'recent' (newest 400) | 'range' | 'all'
+  // Re-query the server for whatever period the toolbar currently shows, then
+  // re-render. Date presets / custom range → bounded query; „Allt" → full.
+  async function reloadForCurrentRange() {
+    const { from, to } = getRangeFromInputs();
+    const range = (from || to) ? { from, to } : (activePreset === 'all' ? 'all' : undefined);
+    await loadAllSales(range);
+    populateFilterDropdowns();
+    applyFilters();
+    renderAll();
+  }
   let _ogreittOpen = false;   // collapsible „Ógreitt" group — collapsed on each view load
 
   // ----- Data load -----
-  async function loadAllSales() {
+  async function loadAllSales(range) {
     const SB = getSB();
     if (!SB) throw new Error('Supabase not initialized');
-    const [salesRes, custRes, prodRes, vbRes] = await Promise.all([
-      // 2026-06-10: also fetch drög so the "Sýna drög" filter can surface
-      // unfinished sales for finishing in place. void + hidden stay excluded.
-      SB.from('solur').select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,paid_at,paid_method,status').neq('status','void').neq('hidden', true).order('created_at', { ascending: false }),
+    // 2026-07-01: this view used to fetch EVERY sale (+ its linur JSON) on open,
+    // which was slow. Now it's fast by default (newest 400) so the user can
+    // eyeball recent reikningar/drög immediately; date presets/ranges re-query
+    // server-side (bounded) and „Allt" loads the full history on demand — so the
+    // accounting periods stay complete.
+    let salesQ = SB.from('solur')
+      .select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,paid_at,paid_method,status')
+      .neq('status','void').neq('hidden', true).order('created_at', { ascending: false });
+    if (range === 'all') {
+      _loadedMode = 'all';                       // full history, no limit
+    } else if (range && (range.from || range.to)) {
+      if (range.from) salesQ = salesQ.gte('created_at', range.from + 'T00:00:00');
+      if (range.to)   salesQ = salesQ.lte('created_at', range.to + 'T23:59:59.999');
+      salesQ = salesQ.limit(3000);
+      _loadedMode = 'range';
+    } else {
+      salesQ = salesQ.limit(400);                // fast default: newest 400
+      _loadedMode = 'recent';
+    }
+    const [salesRes, custRes, prodRes, vbRes, coRes] = await Promise.all([
+      salesQ,
       SB.from('vidskiptavinir').select('id,kennitala,nafn,simi,netfang'),
       SB.from('vorur').select('id,nafn,flokkur'),
       // Pickup status for greitt_sidar / reikningur sales: read verkbeidnir
       // status per parent sale-number so the row can show 🏪 Hjá þér / ✅ Sótt.
-      SB.from('verkbeidnir').select('num,status').like('num', 'R-%-V%')
+      SB.from('verkbeidnir').select('num,status').like('num', 'R-%-V%'),
+      // 2026-07-01: also fetch fyrirtaeki — COMPANY sales link customer_id to
+      // fyrirtaeki (not vidskiptavinir), so their kt lived nowhere in this view.
+      SB.from('fyrirtaeki').select('id,kennitala,nafn')
     ]);
     if (salesRes.error) throw salesRes.error;
     // Build a (parent → statuses[]) map for pickup-status lookup later.
@@ -418,12 +460,36 @@
     });
     customerMap = new Map((custRes.data || []).map(c => [c.id, c]));
     productMap = new Map((prodRes.data || []).map(p => [p.id, p]));
+    companyMap = new Map(((coRes && coRes.data) || []).map(c => [c.id, c]));
+    // Unambiguous name→kt index across BOTH tables (a name with one distinct kt).
+    (function buildKtByName() {
+      const acc = {};
+      const add = (nafn, kt) => {
+        const k = String(nafn || '').trim().toLowerCase();
+        const d = String(kt || '').replace(/\D/g, '');
+        if (!k || d.length !== 10) return;
+        (acc[k] = acc[k] || new Set()).add(d.slice(0, 6) + '-' + d.slice(6));
+      };
+      (custRes.data || []).forEach(c => add(c.nafn, c.kennitala));
+      ((coRes && coRes.data) || []).forEach(c => add(c.nafn, c.kennitala));
+      ktByName = new Map();
+      Object.keys(acc).forEach(k => { if (acc[k].size === 1) ktByName.set(k, Array.from(acc[k])[0]); });
+    })();
   }
 
   function getKt(sale) {
-    if (sale.customer_id && customerMap.has(sale.customer_id)) {
-      return customerMap.get(sale.customer_id).kennitala || '';
+    const wantName = String(sale.customer || '').trim().toLowerCase();
+    const nm = s => String(s || '').trim().toLowerCase();
+    // id-based, verified against the name to dodge the vidskiptavinir /
+    // fyrirtaeki id overlap (both are independent bigserials that collide).
+    if (sale.customer_id) {
+      const v = customerMap.get(sale.customer_id);
+      if (v && v.kennitala && (!wantName || nm(v.nafn) === wantName)) return v.kennitala;
+      const c = companyMap.get(sale.customer_id);
+      if (c && c.kennitala && (!wantName || nm(c.nafn) === wantName)) return c.kennitala;
     }
+    // exact name match across both tables (unambiguous only)
+    if (wantName && ktByName.has(wantName)) return ktByName.get(wantName);
     return ktFromName(sale.customer);
   }
 
@@ -594,7 +660,8 @@
       document.getElementById('by-count').textContent = '';
       return;
     }
-    document.getElementById('by-count').textContent = filtered.length + ' sölur';
+    document.getElementById('by-count').textContent = filtered.length + ' sölur'
+      + (_loadedMode === 'recent' ? ' · sýni nýjustu 400 — veldu tímabil eða „Allt" fyrir eldri/heild' : '');
     const rows = [];
     // 2026-06-24: unpaid (ógreitt) reikningur/greitt_síðar pile up at the TOP of
     // the date sort (recent bills are usually still unpaid), burying the paid
@@ -634,6 +701,7 @@
             ? (() => { const ps = pickupStatusFor(s.num); return ps ? '<div style="display:inline-block;margin-left:6px;font-size:11px;color:' + ps.color + ';font-weight:600;white-space:nowrap" title="Pickup status">' + ps.icon + ' ' + esc(ps.label) + '</div>' : ''; })()
             : ''
           )
+        + (s.isDraft ? ' <button class="by-edit-draft" data-sale-id="' + esc(s.id) + '" type="button" title="Breyta drögunum (verð, línur, viðskiptavinur)" style="margin-left:6px;padding:3px 9px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✏️ Breyta</button>' : '')
         + (s.isDraft ? ' <button class="by-finish-draft" data-sale-id="' + esc(s.id) + '" type="button" style="margin-left:6px;padding:3px 9px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✅ Klára</button>' : '')
         + '</td>'
         + '</tr>';
@@ -906,15 +974,15 @@
     populateFilterDropdowns();
 
     const onChange = () => { applyFilters(); renderAll(); };
-    document.getElementById('by-from')?.addEventListener('change', () => { activePreset = 'custom'; document.querySelectorAll('#'+VIEW_ID+' .by-preset').forEach(b => b.classList.remove('active')); onChange(); });
-    document.getElementById('by-to')?.addEventListener('change', () => { activePreset = 'custom'; document.querySelectorAll('#'+VIEW_ID+' .by-preset').forEach(b => b.classList.remove('active')); onChange(); });
+    document.getElementById('by-from')?.addEventListener('change', () => { activePreset = 'custom'; document.querySelectorAll('#'+VIEW_ID+' .by-preset').forEach(b => b.classList.remove('active')); reloadForCurrentRange(); });
+    document.getElementById('by-to')?.addEventListener('change', () => { activePreset = 'custom'; document.querySelectorAll('#'+VIEW_ID+' .by-preset').forEach(b => b.classList.remove('active')); reloadForCurrentRange(); });
     document.getElementById('by-search')?.addEventListener('input', onChange);
     document.getElementById('by-payment')?.addEventListener('change', onChange);
     document.getElementById('by-staff')?.addEventListener('change', onChange);
     document.getElementById('by-include-drafts')?.addEventListener('change', onChange);
 
     document.querySelectorAll('#'+VIEW_ID+' .by-preset').forEach(b => {
-      b.addEventListener('click', () => { applyPreset(b.dataset.preset); onChange(); });
+      b.addEventListener('click', () => { applyPreset(b.dataset.preset); reloadForCurrentRange(); });
     });
 
     document.querySelectorAll('#'+VIEW_ID+' .by-table thead th[data-sort]').forEach(th => {
@@ -932,7 +1000,7 @@
     document.getElementById('by-refresh')?.addEventListener('click', async () => {
       const btn = document.getElementById('by-refresh');
       btn.disabled = true; btn.textContent = '🔄 Hleður…';
-      try { await loadAllSales(); populateFilterDropdowns(); applyFilters(); renderAll(); }
+      try { await reloadForCurrentRange(); }
       finally { btn.disabled = false; btn.textContent = '🔄 Endurnýja'; }
     });
 
@@ -1063,11 +1131,13 @@
           return;
         }
 
-        // "✅ Klára" on a draft row — open the Sale Editor to finish it.
-        const finishBtn = e.target.closest('.by-finish-draft');
-        if (finishBtn) {
+        // "✏️ Breyta" / "✅ Klára" on a draft row — both open the Sale Editor,
+        // which lets you change prices, lines and the customer on a draft
+        // (and finish it there). Breyta is the discoverable "edit" entry.
+        const editBtn = e.target.closest('.by-edit-draft') || e.target.closest('.by-finish-draft');
+        if (editBtn) {
           e.stopPropagation();
-          const sid = finishBtn.getAttribute('data-sale-id');
+          const sid = editBtn.getAttribute('data-sale-id');
           if (window.SaleEditor && typeof window.SaleEditor.openById === 'function') {
             window.SaleEditor.openById(sid);
           } else {
@@ -1172,7 +1242,7 @@
 
   window.BokhaldsYfirlit = {
     open: switchToView,
-    refresh: async () => { await loadAllSales(); populateFilterDropdowns(); applyFilters(); renderAll(); },
+    refresh: async () => { await reloadForCurrentRange(); },
     version: 'v1.1'
   };
 })();

@@ -187,7 +187,12 @@
     const span=btn.querySelector('span'); if(span) span.textContent='⚙️ Kerfi'; else btn.textContent='⚙️ Kerfi';
     btn.querySelectorAll('.badge,.count,[class*="badge"],[class*="count"]').forEach(n=>n.remove());
     btn.removeAttribute('onclick'); btn.onclick=openView;
-    anchor.parentNode.insertBefore(btn, anchor.nextSibling);
+    // Append as a DIRECT child of the nav (not anchor.parentNode — the anchor
+    // may itself be a nested button like the div-wrapped „Prenta QR miða", which
+    // would trap Kerfi inside that wrapper and break CSS-order move/hide). As a
+    // direct flex child, patch 68 can place/hide it and patch 171 lists it.
+    const navEl=anchor.closest('nav.view-nav, .view-nav')||anchor.parentNode;
+    navEl.appendChild(btn);
     document.querySelectorAll('.vnav-btn').forEach(b=>{ if(b===btn) return; b.addEventListener('click',()=>{ const vv=viewEl(); if(vv){vv.style.display='none';vv.classList.remove('active');} btn.classList.remove('active'); }); });
     console.log('[kerfi] tab injected');
   }
