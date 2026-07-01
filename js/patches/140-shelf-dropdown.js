@@ -66,11 +66,15 @@
     const bg = hasShelf ? (isReady ? '#dcfce7' : '#dbeafe') : '#fff';
     const fg = hasShelf ? (isReady ? '#166534' : '#1e40af') : '#94a3b8';
     const bd = hasShelf ? (isReady ? '#86efac' : '#93c5fd') : '#cbd5e1';
+    // NB size-critical props are !important so the Brunastál input skin
+    // (patch 245 forces .view select to height:42px;padding:0 14px;font:14px)
+    // can't override them — that padding clips the G1/G2 value out of view.
     sel.style.cssText =
-      'flex-shrink:0;align-self:center;padding:3px 4px;font-size:11px;font-weight:700;' +
-      'border:1px solid ' + bd + ';background:' + bg + ';color:' + fg + ';' +
-      'border-radius:6px;cursor:pointer;font-family:inherit;outline:none;' +
-      'min-width:46px;max-width:54px;text-align:center;';
+      'flex-shrink:0;align-self:center;height:auto!important;min-height:0!important;' +
+      'padding:3px 6px!important;font-size:12px!important;font-weight:700;line-height:1.2!important;' +
+      'border:1px solid ' + bd + '!important;background:' + bg + '!important;color:' + fg + '!important;' +
+      'border-radius:6px!important;cursor:pointer;font-family:inherit;outline:none;' +
+      'min-width:58px!important;max-width:74px!important;width:auto!important;text-align:center;';
 
     // Empty option (— = unassigned)
     const emptyOpt = document.createElement('option');
