@@ -151,7 +151,7 @@
       '#view-sala .pos-cart .pos-qty-up,#view-sala .pos-cart .pos-qty-dn{background:#fff!important;color:#475569!important;border:none!important;box-shadow:none!important;text-shadow:none!important}',
       '#view-sala .pos-cart .pos-line-del{background:none!important;color:#cbd5e1!important;border:none!important;box-shadow:none!important;text-shadow:none!important}',
       '#view-sala .pos-cart #pos-add-service{background:linear-gradient(180deg,#2b2b31,#0c0d10)!important;color:#fff!important;border:1px solid #000!important;text-shadow:none!important}',
-      '#view-sala .pos-cart #pos-bokhald{background:#fff!important;color:#334155!important;border:1px solid #cbd5e1!important;text-shadow:none!important;box-shadow:none!important}',
+      '#view-sala .pos-cart #pos-hreyf{background:#fff!important;color:#334155!important;border:1px solid #cbd5e1!important;text-shadow:none!important;box-shadow:none!important}',
       '#view-sala .pos-cart #pos-checkout{background:linear-gradient(180deg,#1f7a48 0%,#16613a 52%,#0d4226 100%)!important;color:#fff!important;border:1px solid #0a3a20!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 18px -8px rgba(13,66,38,.6)!important;text-shadow:none!important}',
       // The Brunastál skin (patch 245) styles EVERY .view input as a 42px-tall,
       // 14px-padded box. That balloons the cart's tiny inline inputs (unit-price
@@ -387,7 +387,7 @@
             '</div>' +
             '<div style="display:flex;gap:8px">' +
               '<button id="pos-add-service" style="background:linear-gradient(180deg,#2b2b31,#0c0d10);color:#fff;border:1px solid #000;padding:7px 13px;border-radius:10px;font-size:12.5px;cursor:pointer;font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)">+ Annað</button>' +
-              '<button id="pos-bokhald" style="background:#fff;color:#334155;border:1px solid #cbd5e1;padding:7px 13px;border-radius:10px;font-size:12.5px;cursor:pointer;font-weight:700">Bókhald</button>' +
+              '<button id="pos-hreyf" title="Hreyfingar / viðskiptasaga þessa viðskiptavinar" style="background:#fff;color:#334155;border:1px solid #cbd5e1;padding:7px 13px;border-radius:10px;font-size:12.5px;cursor:pointer;font-weight:700">📊 Hreyfingar</button>' +
               '<button id="pos-drog" style="background:#fff;color:#92400e;border:1px solid #fcd34d;padding:7px 13px;border-radius:10px;font-size:12.5px;cursor:pointer;font-weight:700">📝 Drög</button>' +
             '</div>' +
           '</div>' +
@@ -444,24 +444,27 @@
               : /léttv|lettv|froð|frod|abf/.test(dn) ? '#0ea5e9'
               : /reyk|skynjari/.test(dn) ? '#ea580c'
               : (colorFromNafn(l.desc) || '#475569');
-      return '<div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e9eef3;border-left:4px solid '+col+';border-radius:10px;padding:6px 10px;margin-bottom:5px;box-shadow:0 1px 2px rgba(16,24,40,.05)">' +
+      // 2026-07-01: cleaner „karfa" line per Agnar's mock — roomier light card,
+      // title + „<einingarverð> kr/stk" undirtexti (verðið er ennþá ritanlegt
+      // inline), pillulaga magn-stepper og stór línutala hægra megin. Sömu
+      // klassar/ data-idx haldast svo bindingar (patch 113 tilboðsverð o.fl.) virki.
+      return '<div style="position:relative;display:flex;align-items:center;gap:10px;background:#f8fafc;border:1px solid #e9eef3;border-left:4px solid '+col+';border-radius:12px;padding:11px 12px;margin-bottom:7px;box-shadow:0 1px 2px rgba(16,24,40,.05)">' +
         '<div style="flex:1;min-width:0">' +
-          '<div style="font-weight:700;color:#0f172a;font-size:13px;line-height:1.2;overflow-wrap:break-word;word-break:break-word">'+esc(l.desc)+(l.ref?'<span style="font-weight:400;font-size:11px;color:#94a3b8"> · '+esc(l.ref)+'</span>':'')+'</div>' +
-          '<div style="display:flex;align-items:center;gap:3px;margin-top:1px;font-size:11px;color:#94a3b8;font-family:\'Space Mono\',monospace">' +
-            '<span>'+l.qty+' ×</span>' +
+          '<div style="font-weight:700;color:#0f172a;font-size:14px;line-height:1.25;overflow-wrap:break-word;word-break:break-word;padding-right:14px">'+esc(l.desc)+(l.ref?'<span style="font-weight:400;font-size:11px;color:#94a3b8"> · '+esc(l.ref)+'</span>':'')+'</div>' +
+          '<div style="display:flex;align-items:center;gap:2px;margin-top:3px;font-size:12px;color:#64748b;font-family:\'Space Mono\',monospace">' +
             '<input class="pos-price-edit" data-idx="'+idx+'" type="text" inputmode="decimal" value="'+l.unit_price_ex_vat+'" ' +
               'title="Smelltu til að breyta einingarverði (án VSK)" ' +
-              'style="width:56px;padding:0 2px;border:none;border-bottom:1px dotted #cbd5e1;background:transparent;font:inherit;font-size:11px;color:#64748b;text-align:right;font-variant-numeric:tabular-nums">' +
-            '<span>kr</span>' +
+              'style="width:56px;padding:0 1px;border:none;border-bottom:1px dotted #cbd5e1;background:transparent;font:inherit;font-size:12px;color:#64748b;text-align:right;font-variant-numeric:tabular-nums">' +
+            '<span>kr/stk</span>' +
           '</div>' +
         '</div>' +
-        '<div style="display:flex;align-items:center;background:#fff;border:1px solid #dbe2ea;border-radius:8px;overflow:hidden;flex-shrink:0">' +
-          '<button class="pos-qty-dn" data-idx="'+idx+'" style="background:#fff;border:none;width:26px;height:26px;cursor:pointer;font-weight:800;color:#475569;font-size:15px;line-height:1">−</button>' +
-          '<span style="min-width:20px;text-align:center;font-weight:800;font-size:13px;color:#0f172a;font-variant-numeric:tabular-nums">'+l.qty+'</span>' +
-          '<button class="pos-qty-up" data-idx="'+idx+'" style="background:#fff;border:none;width:26px;height:26px;cursor:pointer;font-weight:800;color:#475569;font-size:15px;line-height:1">+</button>' +
+        '<div style="display:flex;align-items:center;background:#fff;border:1px solid #dbe2ea;border-radius:9px;overflow:hidden;flex-shrink:0">' +
+          '<button class="pos-qty-dn" data-idx="'+idx+'" style="background:#fff;border:none;width:30px;height:30px;cursor:pointer;font-weight:800;color:#475569;font-size:16px;line-height:1">−</button>' +
+          '<span style="min-width:24px;text-align:center;font-weight:800;font-size:14px;color:#0f172a;font-variant-numeric:tabular-nums">'+l.qty+'</span>' +
+          '<button class="pos-qty-up" data-idx="'+idx+'" style="background:#fff;border:none;width:30px;height:30px;cursor:pointer;font-weight:800;color:#475569;font-size:16px;line-height:1">+</button>' +
         '</div>' +
-        '<div style="flex-shrink:0;font-weight:800;color:#0f172a;font-size:14px;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace;white-space:nowrap;text-align:right;min-width:48px">'+fmtKr(lineEx)+'</div>' +
-        '<button class="pos-line-del" data-idx="'+idx+'" title="Fjarlægja" style="background:none;color:#cbd5e1;border:none;cursor:pointer;font-size:16px;padding:0;line-height:1;flex-shrink:0">×</button>' +
+        '<div style="flex-shrink:0;font-weight:800;color:#0f172a;font-size:15px;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace;white-space:nowrap;text-align:right;min-width:56px">'+fmtKr(lineEx)+'</div>' +
+        '<button class="pos-line-del" data-idx="'+idx+'" title="Fjarlægja" style="position:absolute;top:5px;right:6px;background:none;color:#cbd5e1;border:none;cursor:pointer;font-size:15px;padding:0;line-height:1;flex-shrink:0">×</button>' +
       '</div>';
     }).join('');
   }
@@ -650,9 +653,22 @@
     if(nEl)nEl.addEventListener('input',function(){state.customer.nafn=nEl.value;});
     if(sEl)sEl.addEventListener('input',function(){state.customer.simi=sEl.value;});
     document.getElementById('pos-add-service').addEventListener('click',promptService);
-    // KARFA-haus „Bókhald"-takki → opnar Bókhalds-yfirlit (App.switchView, fallback á #bokhald deep-link).
-    var bokhaldBtn=document.getElementById('pos-bokhald');
-    if(bokhaldBtn)bokhaldBtn.addEventListener('click',function(){try{if(window.App&&App.switchView){App.switchView('bokhalds-yfirlit');return;}}catch(_){}location.hash='#bokhald';});
+    // KARFA-haus „📊 Hreyfingar"-takki → opnar Hreyfingarlista fyrir viðskiptavininn
+    // í körfunni (patch 167). Deep-link hash-ið (#hreyfingarlisti/<kt-eða-nafn>)
+    // kveikir á handleDeepLink í 167 sem skiptir í view-ið OG flettir kúnnanum upp.
+    // Enginn kúnni valinn → opnar bara listann tóman.
+    var hreyfBtn=document.getElementById('pos-hreyf');
+    if(hreyfBtn)hreyfBtn.addEventListener('click',function(){
+      var q='';
+      try{
+        var c=state.customer||{};
+        var kt=String(c.kt||'').replace(/[^0-9]/g,'');
+        q=(kt.length===10&&kt!=='9999999999')?kt:String(c.nafn||'').trim();
+        if(q==='Staðgreitt')q='';
+      }catch(_){}
+      if(q){location.hash='#hreyfingarlisti/'+encodeURIComponent(q);}
+      else{try{if(window.App&&App.switchView){App.switchView('hreyfingarlisti');return;}}catch(_){}location.hash='#hreyfingarlisti';}
+    });
     var drogBtn=document.getElementById('pos-drog');
     if(drogBtn)drogBtn.addEventListener('click',function(){try{if(window.DrogList&&DrogList.open){DrogList.open();}}catch(_){}});
     document.getElementById('pos-scan').addEventListener('click',scanQr);
