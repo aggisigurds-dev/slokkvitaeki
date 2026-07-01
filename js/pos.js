@@ -32,13 +32,44 @@
   function colorFromNafn(n){n=(n||'').toLowerCase();if(/co2|co₂/i.test(n))return'#dc2626';if(/áfyll|afyll/i.test(n))return'#dc2626';if(/ársk|skoð/i.test(n))return'#b45309';if(/viðhald|viðger|vidger/i.test(n))return'#6b7280';if(/slökk|tæki/i.test(n))return'#dc2626';if(/reyk/i.test(n))return'#ea580c';if(/teppi|blanket/i.test(n))return'#059669';if(/veggfesting|festing/i.test(n))return'#7c3aed';return'#475569';}
   function fmtKr(n){var s=Math.round(n).toString();var parts=[];while(s.length>3){parts.unshift(s.slice(-3));s=s.slice(0,-3);}parts.unshift(s);return parts.join('.')+' kr';}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  // 2026-07-01: dedupe/cache the virki-vörulisti fetch. The watch() interval
+  // below fires every 300ms while Sala is active and pos-checkout is missing,
+  // calling loadAll().then(render). Because loadAll is async and had no
+  // in-flight guard, a slow DB let identical `vorur?select=*&virkt=eq.true&
+  // order=nafn.asc` queries stack up — dozens of concurrent copies per page
+  // load — saturating browser connections and Postgres until it hit
+  // 'canceling statement due to statement timeout', which then meant render
+  // never created pos-checkout so the watcher kept re-firing forever (frozen
+  // Sala page). Now: one shared in-flight promise coalesces concurrent
+  // callers, and a short TTL reuses the last result instead of re-querying on
+  // every tick / re-entry.
+  var _vorurInflight = null;   // shared in-flight promise (request coalescing)
+  var _vorurTs = 0;            // ms timestamp of last successful fetch
+  var VORUR_TTL_MS = 60000;    // reuse cached list for 60s (matches other tabs)
   function loadAll(){
-    return DB.sb.from('vorur').select('*').eq('virkt',true).order('nafn').then(function(r){
+    // Serve from the in-memory cache while it's fresh — the periodic watcher
+    // must not fire a new network request on every tick.
+    if (_vorurTs && (Date.now() - _vorurTs) < VORUR_TTL_MS &&
+        (state.products.length || state.services.length)) {
+      return Promise.resolve();
+    }
+    // Coalesce concurrent/rapid callers onto a single request.
+    if (_vorurInflight) return _vorurInflight;
+    _vorurInflight = DB.sb.from('vorur').select('*').eq('virkt',true).order('nafn').then(function(r){
       var all = r.data || [];
       state.services = all.filter(function(p){return p.flokkur==='Þjónusta';});
       state.products = all.filter(function(p){return p.flokkur!=='Þjónusta';});
-    }).catch(function(e){state.products=[];state.services=[];});
+      _vorurTs = Date.now();
+    }).catch(function(e){
+      // Keep any previously-loaded catalog on a transient error (e.g. a
+      // statement timeout) instead of blanking the tiles; only start empty
+      // if we never loaded anything.
+      if (!state.products.length && !state.services.length) { state.products=[]; state.services=[]; }
+    }).then(function(){ _vorurInflight = null; });
+    return _vorurInflight;
   }
+  // Let product edits (Stillingar / Vörur) force the next loadAll to re-fetch.
+  function invalidateVorur(){ _vorurTs = 0; _vorurInflight = null; }
   function lookupKt(kt){
     kt = kt.replace(/[^0-9]/g, '');
     if (kt.length !== 10) return Promise.resolve(null);
@@ -1203,7 +1234,7 @@
     w.document.close();
   }
   function watch(){setInterval(function(){var v=document.getElementById('view-sala');if(!v||!v.classList.contains('active'))return;if(!document.getElementById('pos-checkout')){v.removeAttribute('data-pos-v3');loadAll().then(render);}},300);}
-  window.POS = { getState: function(){ return state; }, totals: totals, rerenderDynamic: rerenderDynamic };
+  window.POS = { getState: function(){ return state; }, totals: totals, rerenderDynamic: rerenderDynamic, invalidateVorur: invalidateVorur };
   function init(){watch();console.log('[POS v3] Ready');}
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 })();
