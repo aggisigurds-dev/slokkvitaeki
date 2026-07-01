@@ -597,7 +597,29 @@
   ensureView();
   patchSwitchView();
 
-  window.Hreyfingarlisti = { show, load };
+  // ── Deep-link: #hreyfingarlisti/<kennitala-eða-nafn> ──────────────────────
+  // Opens the view and runs the customer lookup — so a shareable link (or the
+  // Sala „🧾 Fyrri" button in patch 253) lands straight on a customer's whole
+  // sölu-/reikningasaga. Waits for the view + DB before running the lookup.
+  function handleDeepLink() {
+    const h = location.hash || '';
+    const m = h.match(/^#(?:hreyfingarlisti|hreyfingar)\/(.+)$/i);
+    if (!m) return;
+    let q = '';
+    try { q = decodeURIComponent(m[1].replace(/\+/g, ' ')).trim(); } catch (_) { q = m[1].trim(); }
+    if (!q) return;
+    try { if (window.App && App.switchView) App.switchView(NAV_KEY); } catch (_) {}
+    ensureView();
+    let tries = 0;
+    (function run() {
+      if (getSB() && document.getElementById('hr-main') && typeof lookupCustomer === 'function') { lookupCustomer(q); return; }
+      if (tries++ < 50) setTimeout(run, 200);
+    })();
+  }
+  window.addEventListener('hashchange', handleDeepLink);
+  setTimeout(handleDeepLink, 1400);
+
+  window.Hreyfingarlisti = { show, load, lookup: lookupCustomer };
   console.log('[patch-167] Hreyfingarlisti installed');
 })();
 /* === END HREYFINGARLISTI === */
