@@ -152,7 +152,16 @@
       '#view-sala .pos-cart .pos-line-del{background:none!important;color:#cbd5e1!important;border:none!important;box-shadow:none!important;text-shadow:none!important}',
       '#view-sala .pos-cart #pos-add-service{background:linear-gradient(180deg,#2b2b31,#0c0d10)!important;color:#fff!important;border:1px solid #000!important;text-shadow:none!important}',
       '#view-sala .pos-cart #pos-bokhald{background:#fff!important;color:#334155!important;border:1px solid #cbd5e1!important;text-shadow:none!important;box-shadow:none!important}',
-      '#view-sala .pos-cart #pos-checkout{background:linear-gradient(180deg,#1f7a48 0%,#16613a 52%,#0d4226 100%)!important;color:#fff!important;border:1px solid #0a3a20!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 18px -8px rgba(13,66,38,.6)!important;text-shadow:none!important}'
+      '#view-sala .pos-cart #pos-checkout{background:linear-gradient(180deg,#1f7a48 0%,#16613a 52%,#0d4226 100%)!important;color:#fff!important;border:1px solid #0a3a20!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 18px -8px rgba(13,66,38,.6)!important;text-shadow:none!important}',
+      // The Brunastál skin (patch 245) styles EVERY .view input as a 42px-tall,
+      // 14px-padded box. That balloons the cart's tiny inline inputs (unit-price
+      // edit, and the 28/46px discount % / kr fields — the padding hides their
+      // value entirely → "percentage doesn't show"). Re-assert the compact style
+      // for just those inputs (higher specificity + !important beats patch 245).
+      '#view-sala .pos-cart .pos-price-edit{height:auto!important;min-height:0!important;padding:0 2px!important;border:none!important;border-bottom:1px dotted #cbd5e1!important;border-radius:0!important;background:transparent!important;font-size:11px!important;width:56px!important;text-align:right!important}',
+      '#view-sala .pos-cart #pos-discount,#view-sala .pos-cart #pos-discount-kr{height:auto!important;min-height:0!important;padding:0!important;border:none!important;border-radius:0!important;background:transparent!important;font-size:13px!important;text-align:right!important}',
+      '#view-sala .pos-cart #pos-discount{width:30px!important}',
+      '#view-sala .pos-cart #pos-discount-kr{width:46px!important}'
     ].join('\n');
     (document.head||document.documentElement).appendChild(s);
   }
