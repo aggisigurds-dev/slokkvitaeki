@@ -158,7 +158,7 @@
       // edit, and the 28/46px discount % / kr fields — the padding hides their
       // value entirely → "percentage doesn't show"). Re-assert the compact style
       // for just those inputs (higher specificity + !important beats patch 245).
-      '#view-sala .pos-cart .pos-price-edit{height:auto!important;min-height:0!important;padding:0 2px!important;border:none!important;border-bottom:1px dotted #cbd5e1!important;border-radius:0!important;background:transparent!important;font-size:11px!important;width:56px!important;text-align:right!important}',
+      '#view-sala .pos-cart .pos-price-edit{height:auto!important;min-height:0!important;padding:0 2px!important;border:none!important;border-bottom:1px dotted #cbd5e1!important;border-radius:0!important;background:transparent!important;font-size:11px!important;width:64px!important;text-align:right!important}',
       '#view-sala .pos-cart #pos-discount,#view-sala .pos-cart #pos-discount-kr{height:auto!important;min-height:0!important;padding:0!important;border:none!important;border-radius:0!important;background:transparent!important;font-size:13px!important;text-align:right!important}',
       '#view-sala .pos-cart #pos-discount{width:30px!important}',
       '#view-sala .pos-cart #pos-discount-kr{width:46px!important}'
@@ -452,7 +452,7 @@
         '<div style="flex:1;min-width:0">' +
           '<div style="font-weight:700;color:#0f172a;font-size:12.5px;line-height:1.2;overflow-wrap:break-word;word-break:break-word;padding-right:12px">'+esc(l.desc)+(l.ref?'<span style="font-weight:400;font-size:10px;color:#94a3b8"> · '+esc(l.ref)+'</span>':'')+'</div>' +
           '<div style="display:flex;align-items:center;gap:2px;margin-top:1px;font-size:11px;color:#64748b;font-family:\'Space Mono\',monospace">' +
-            '<input class="pos-price-edit" data-idx="'+idx+'" type="text" inputmode="decimal" value="'+l.unit_price_ex_vat+'" ' +
+            '<input class="pos-price-edit" data-idx="'+idx+'" type="text" inputmode="decimal" value="'+Math.round(l.unit_price_ex_vat)+'" ' +
               'title="Smelltu til að breyta einingarverði (án VSK)" ' +
               'style="width:62px;padding:0 1px;border:none;border-bottom:1px dotted #cbd5e1;background:transparent;font:inherit;font-size:11px;color:#64748b;text-align:right;font-variant-numeric:tabular-nums">' +
             '<span>kr/stk</span>' +
