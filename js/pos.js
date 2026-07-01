@@ -849,6 +849,37 @@
           }catch(ce){console.warn('[POS] Auto-create customer:',ce);}
         }
       }
+      // 2026-07-01: manual-name safety net. A sale saved from the "Án kennitölu"
+      // box (or kt-mode with no kt) lands with no customer_kt AND no customer_id
+      // — which strips its kt in Kröfu yfirlit and blocks the Payday push. If the
+      // typed name matches ONE company/customer on file (a single distinct kt),
+      // backfill kt + links now. Exact case-insensitive name, unambiguous only —
+      // never guesses a kt onto a bill.
+      if(!custKt && !state.customer.co_id && cust && cust!=='Staðgreitt' && !/^kt:/.test(cust)){
+        try{
+          var _nm=cust.trim(); var _hits=[];
+          var _fy=await DB.sb.from('fyrirtaeki').select('id,kennitala,customer_base_id').ilike('nafn',_nm).not('kennitala','is',null);
+          (_fy.data||[]).forEach(function(r){_hits.push({kt:r.kennitala,coId:r.id,baseId:r.customer_base_id});});
+          if(!_hits.length){
+            var _cb=await DB.sb.from('customers_base').select('id,kennitala').ilike('nafn',_nm).not('kennitala','is',null);
+            (_cb.data||[]).forEach(function(r){_hits.push({kt:r.kennitala,coId:null,baseId:r.id});});
+          }
+          if(!_hits.length){
+            var _vd=await DB.sb.from('vidskiptavinir').select('id,kennitala,customer_base_id').ilike('nafn',_nm).not('kennitala','is',null);
+            (_vd.data||[]).forEach(function(r){_hits.push({kt:r.kennitala,coId:r.id,baseId:r.customer_base_id});});
+          }
+          var _kts={}; _hits.forEach(function(h){var d=String(h.kt||'').replace(/\D/g,'');if(d.length===10)_kts[d]=h;});
+          var _keys=Object.keys(_kts);
+          if(_keys.length===1){
+            var _h=_kts[_keys[0]]; var _dashed=_keys[0].slice(0,6)+'-'+_keys[0].slice(6);
+            var _upd={customer_kt:_dashed};
+            if(_h.coId!=null)_upd.customer_id=_h.coId;
+            if(_h.baseId!=null)_upd.customer_base_id=_h.baseId;
+            await DB.sb.from('solur').update(_upd).eq('id',sr.data.id);
+            state.customer.co_id=_h.coId||state.customer.co_id;
+          }
+        }catch(_e){console.warn('[POS] name-kt backfill:',_e);}
+      }
       var svc=state.lines.filter(function(l){return l.type==='service';});
       // The checkout dialog's "Sleppa að búa til verkbeiðnir" checkbox sets
       // window._pendingSkipVerk = true. Useful when a refill/hleðsla
