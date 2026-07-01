@@ -72,7 +72,7 @@
     const v = document.createElement('div');
     v.id = VIEW_ID;
     v.className = sample.className.replace(/\bactive\b/g, '').trim();
-    v.innerHTML = '<main id="ky-main" class="main-panel"></main>';
+    v.innerHTML = '<main id="ky-main" class="main-panel bh-host"></main>';
     sample.parentElement.appendChild(v);
   }
 
