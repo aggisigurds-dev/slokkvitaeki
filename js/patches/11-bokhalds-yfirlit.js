@@ -356,7 +356,9 @@
 
   // ----- State -----
   let allSales = [];
-  let customerMap = new Map(); // id -> { kennitala, simi, netfang, ... }
+  let customerMap = new Map(); // id -> { kennitala, simi, netfang, ... } (vidskiptavinir)
+  let companyMap = new Map();  // id -> { kennitala, nafn } (fyrirtaeki)
+  let ktByName = new Map();     // normName -> kt (unambiguous across both tables)
   let vbByParent = {};         // R-NNN -> [status1, status2, ...] from verkbeidnir
 
   // Pickup-status helper: returns { icon, label, color } based on whether all
@@ -383,7 +385,7 @@
   async function loadAllSales() {
     const SB = getSB();
     if (!SB) throw new Error('Supabase not initialized');
-    const [salesRes, custRes, prodRes, vbRes] = await Promise.all([
+    const [salesRes, custRes, prodRes, vbRes, coRes] = await Promise.all([
       // 2026-06-10: also fetch drög so the "Sýna drög" filter can surface
       // unfinished sales for finishing in place. void + hidden stay excluded.
       SB.from('solur').select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,paid_at,paid_method,status').neq('status','void').neq('hidden', true).order('created_at', { ascending: false }),
@@ -391,7 +393,10 @@
       SB.from('vorur').select('id,nafn,flokkur'),
       // Pickup status for greitt_sidar / reikningur sales: read verkbeidnir
       // status per parent sale-number so the row can show 🏪 Hjá þér / ✅ Sótt.
-      SB.from('verkbeidnir').select('num,status').like('num', 'R-%-V%')
+      SB.from('verkbeidnir').select('num,status').like('num', 'R-%-V%'),
+      // 2026-07-01: also fetch fyrirtaeki — COMPANY sales link customer_id to
+      // fyrirtaeki (not vidskiptavinir), so their kt lived nowhere in this view.
+      SB.from('fyrirtaeki').select('id,kennitala,nafn')
     ]);
     if (salesRes.error) throw salesRes.error;
     // Build a (parent → statuses[]) map for pickup-status lookup later.
@@ -427,12 +432,36 @@
     });
     customerMap = new Map((custRes.data || []).map(c => [c.id, c]));
     productMap = new Map((prodRes.data || []).map(p => [p.id, p]));
+    companyMap = new Map(((coRes && coRes.data) || []).map(c => [c.id, c]));
+    // Unambiguous name→kt index across BOTH tables (a name with one distinct kt).
+    (function buildKtByName() {
+      const acc = {};
+      const add = (nafn, kt) => {
+        const k = String(nafn || '').trim().toLowerCase();
+        const d = String(kt || '').replace(/\D/g, '');
+        if (!k || d.length !== 10) return;
+        (acc[k] = acc[k] || new Set()).add(d.slice(0, 6) + '-' + d.slice(6));
+      };
+      (custRes.data || []).forEach(c => add(c.nafn, c.kennitala));
+      ((coRes && coRes.data) || []).forEach(c => add(c.nafn, c.kennitala));
+      ktByName = new Map();
+      Object.keys(acc).forEach(k => { if (acc[k].size === 1) ktByName.set(k, Array.from(acc[k])[0]); });
+    })();
   }
 
   function getKt(sale) {
-    if (sale.customer_id && customerMap.has(sale.customer_id)) {
-      return customerMap.get(sale.customer_id).kennitala || '';
+    const wantName = String(sale.customer || '').trim().toLowerCase();
+    const nm = s => String(s || '').trim().toLowerCase();
+    // id-based, verified against the name to dodge the vidskiptavinir /
+    // fyrirtaeki id overlap (both are independent bigserials that collide).
+    if (sale.customer_id) {
+      const v = customerMap.get(sale.customer_id);
+      if (v && v.kennitala && (!wantName || nm(v.nafn) === wantName)) return v.kennitala;
+      const c = companyMap.get(sale.customer_id);
+      if (c && c.kennitala && (!wantName || nm(c.nafn) === wantName)) return c.kennitala;
     }
+    // exact name match across both tables (unambiguous only)
+    if (wantName && ktByName.has(wantName)) return ktByName.get(wantName);
     return ktFromName(sale.customer);
   }
 
