@@ -40,6 +40,16 @@
     return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
   }
   function normName(s) { return String(s || '').toLowerCase().replace(/\s+/g, ' ').trim(); }
+  // Aggressive name key for cross-table matching: lowercase, strip diacritics,
+  // drop punctuation (so "hf" == "hf."), collapse spaces. Used to recover a kt
+  // for sales that were saved name-only (no kt/customer_id) — but ONLY when the
+  // match is unambiguous (a single distinct kt for that key).
+  function keyName(s) {
+    return String(s || '')
+      .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
+  }
+  function ktDigits(s) { return String(s || '').replace(/\D+/g, ''); }
 
   // ── Sidebar entry ────────────────────────────────────────────────────────
   function injectNav() {
@@ -108,7 +118,15 @@
     try { return localStorage.getItem(SORT_KEY) || 'updated_desc'; } catch (_) { return 'updated_desc'; }
   }
   function saveSort(v) { try { localStorage.setItem(SORT_KEY, v); } catch (_) {} }
-  let _state = { month: null, all: [], vbByParent: {}, sort: loadSort() };
+  let _state = { month: null, all: [], vbByParent: {}, sort: loadSort(),
+                 selected: new Set(), sending: false, stop: false };
+
+  // A sale is "sendanleg" (queueable) if it hasn't already been pushed to
+  // Payday. krafa_sent_at / invoiced_at / dk_invoice_id all mark a sent claim —
+  // re-sending would 409 in payday-push, so those rows get no checkbox.
+  function isSendable(s) {
+    return !s.krafa_sent_at && !s.invoiced_at && !s.dk_invoice_id;
+  }
 
   function monthBounds(d) {
     const start = new Date(d.getFullYear(), d.getMonth(), 1);
@@ -136,6 +154,14 @@
       .order('updated_at', { ascending: false });
     if (r.error) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
     _state.all = r.data || [];
+
+    // Reconcile any pending selection against the freshly-loaded rows: drop ids
+    // that are gone or no longer sendable (e.g. just pushed), so the bulk bar
+    // count never counts a stale/sent claim.
+    if (_state.selected.size) {
+      const sendableIds = new Set((_state.all || []).filter(isSendable).map(s => String(s.id)));
+      _state.selected.forEach(id => { if (!sendableIds.has(String(id))) _state.selected.delete(id); });
+    }
 
     // 2026-06-30: pull kt + netfang fyrir hvern customer_id svo Payday-vinnan
     // sjái strax hvort gögn vanti. Birtist undir nafni fyrirtækisins.
@@ -175,6 +201,48 @@
           if (!k) return;
           (_state.fyrirtIdsByKt[k] = _state.fyrirtIdsByKt[k] || []);
           if (!_state.fyrirtIdsByKt[k].includes(f.id)) _state.fyrirtIdsByKt[k].push(f.id);
+        });
+      }
+    }
+
+    // ── Recover kt for sales saved name-only ────────────────────────────────
+    // Some reikningur sales arrive with no customer_kt AND no usable id/base
+    // link (the company name was typed free-hand in the POS "Án kennitölu" box).
+    // Look the name up in fyrirtaeki / customers_base and remember the kt IF the
+    // match is unambiguous (one distinct kt). This drives the display and, at
+    // send time, a write-back so the Payday push has a kt to work with.
+    _state.nameKt = {};   // keyName -> { kt, coId, baseId }
+    {
+      const hasKt = (s) => {
+        if (s.customer_kt) return true;
+        const fy = s.customer_id ? (_state.fyrirtMap || {})[s.customer_id] : null;
+        if (fy && fy.kennitala) return true;
+        const bb = s.customer_base_id ? (_state.baseMap || {})[s.customer_base_id] : null;
+        return !!(bb && bb.kennitala);
+      };
+      const needKeys = new Set((_state.all || []).filter(s => !hasKt(s)).map(s => keyName(s.customer_nafn)).filter(Boolean));
+      if (needKeys.size) {
+        const acc = {};   // key -> { kts:Set, coId, baseId }
+        const add = (nafn, kt, coId, baseId) => {
+          const k = keyName(nafn); if (!k || !needKeys.has(k)) return;
+          const d = ktDigits(kt); if (d.length !== 10) return;
+          const e = acc[k] || (acc[k] = { kts: new Set(), coId: null, baseId: null });
+          e.kts.add(d);
+          if (coId != null && e.coId == null) e.coId = coId;
+          if (baseId != null && e.baseId == null) e.baseId = baseId;
+        };
+        const [fyAll, baseAll] = await Promise.all([
+          SB.from('fyrirtaeki').select('id,nafn,kennitala,customer_base_id'),
+          SB.from('customers_base').select('id,nafn,kennitala'),
+        ]);
+        (fyAll.data || []).forEach(r => add(r.nafn, r.kennitala, r.id, r.customer_base_id));
+        (baseAll.data || []).forEach(r => add(r.nafn, r.kennitala, null, r.id));
+        Object.keys(acc).forEach(k => {
+          const e = acc[k];
+          if (e.kts.size === 1) {   // unambiguous only — never guess a kt onto a bill
+            const d = Array.from(e.kts)[0];
+            _state.nameKt[k] = { kt: d.slice(0, 6) + '-' + d.slice(6), coId: e.coId, baseId: e.baseId };
+          }
         });
       }
     }
@@ -336,7 +404,8 @@
           ? companies.map(renderCompany).join('')
           : '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">Engar útistandandi kröfur 🎉</div>'}
 
-      </div>`;
+      </div>
+      <div id="ky-bulkbar"></div>`;
 
     main.querySelector('._ky-sort')?.addEventListener('change', e => {
       _state.sort = e.target.value;
@@ -401,6 +470,11 @@
         if (!confirm('Senda kröfu í Payday núna? (drag verður stofnað, ekki sjálfvirkt sent á kúnna)')) return;
         b.disabled = true; b.textContent = '⏳ Sendir…';
         try {
+          const sale = (_state.all || []).find(s => String(s.id) === String(id));
+          if (sale) {
+            const ke = await ensureKtForSale(sale);
+            if (!ke.ok) throw new Error('Vantar kennitölu — fannst ekki út frá nafni. Skráðu kt á kúnnann fyrst.');
+          }
           const r = await fetch('/api/payday-push', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -490,6 +564,167 @@
       });
     });
 
+    // ── Bulk-select checkboxes → selection set + sticky send bar ─────────────
+    main.querySelectorAll('._ky-pick').forEach(cb => {
+      cb.checked = _state.selected.has(String(cb.dataset.id));
+      cb.addEventListener('change', () => {
+        const id = String(cb.dataset.id);
+        if (cb.checked) _state.selected.add(id); else _state.selected.delete(id);
+        syncCoChecks(); updateBulkBar();
+      });
+    });
+    main.querySelectorAll('._ky-pick-co').forEach(cb => {
+      cb.addEventListener('change', () => {
+        const ids = String(cb.dataset.ids || '').split(',').filter(Boolean);
+        if (cb.checked) ids.forEach(id => _state.selected.add(String(id)));
+        else ids.forEach(id => _state.selected.delete(String(id)));
+        syncRowChecks(); syncCoChecks(); updateBulkBar();
+      });
+    });
+    syncCoChecks();
+    updateBulkBar();
+
+    refreshBadge();
+  }
+
+  // ── Bulk Payday send helpers ───────────────────────────────────────────────
+  function kyMain() { return document.getElementById('ky-main'); }
+  function syncRowChecks() {
+    const main = kyMain(); if (!main) return;
+    main.querySelectorAll('._ky-pick').forEach(rc => { rc.checked = _state.selected.has(String(rc.dataset.id)); });
+  }
+  function syncCoChecks() {
+    const main = kyMain(); if (!main) return;
+    main.querySelectorAll('._ky-pick-co').forEach(cb => {
+      const ids = String(cb.dataset.ids || '').split(',').filter(Boolean);
+      const sel = ids.filter(id => _state.selected.has(String(id)));
+      cb.checked = ids.length > 0 && sel.length === ids.length;
+      cb.indeterminate = sel.length > 0 && sel.length < ids.length;
+    });
+  }
+  function selectedSales() {
+    return (_state.all || []).filter(s => _state.selected.has(String(s.id)) && isSendable(s));
+  }
+
+  // Make sure the sale row carries a kt before we push to Payday. If the sale
+  // was saved name-only, write back the unambiguous name-matched kt (+ links)
+  // first — that's the fix for POS "Án kennitölu" claims losing their kt.
+  async function ensureKtForSale(sale) {
+    if (sale.customer_kt) return { ok: true };
+    const fy = sale.customer_id ? (_state.fyrirtMap || {})[sale.customer_id] : null;
+    if (fy && fy.kennitala) return { ok: true };
+    const bb = sale.customer_base_id ? (_state.baseMap || {})[sale.customer_base_id] : null;
+    if (bb && bb.kennitala) return { ok: true };
+    const rec = (_state.nameKt || {})[keyName(sale.customer_nafn)];
+    if (!rec || !rec.kt) return { ok: false };
+    const SB = getSB(); if (!SB) return { ok: false };
+    const patch = { customer_kt: rec.kt };
+    if (rec.coId != null && sale.customer_id == null) patch.customer_id = rec.coId;
+    if (rec.baseId != null && sale.customer_base_id == null) patch.customer_base_id = rec.baseId;
+    const r = await SB.from('solur').update(patch).eq('id', sale.id);
+    if (r.error) return { ok: false, error: r.error.message };
+    Object.assign(sale, patch);   // reflect locally so the UI updates on reload
+    return { ok: true, linked: true, kt: rec.kt };
+  }
+
+  // Cancellable delay — resolves early if the user hits ⏹ Stöðva.
+  function sleep(ms) {
+    return new Promise(resolve => {
+      let done = false;
+      const finish = () => { if (done) return; done = true; clearInterval(iv); clearTimeout(t); resolve(); };
+      const t = setTimeout(finish, ms);
+      const iv = setInterval(() => { if (_state.stop) finish(); }, 120);
+    });
+  }
+
+  function updateBulkBar() {
+    const bar = document.getElementById('ky-bulkbar');
+    if (!bar || _state.sending) return;   // the queue owns the bar while sending
+    const sel = selectedSales();
+    if (!sel.length) { bar.style.display = 'none'; bar.innerHTML = ''; return; }
+    const total = sel.reduce((s, x) => s + (parseFloat(x.samtals) || 0), 0);
+    // How many of the selected still need a kt recovered / are unresolvable.
+    const noKt = sel.filter(s => {
+      if (s.customer_kt) return false;
+      const fy = s.customer_id ? (_state.fyrirtMap || {})[s.customer_id] : null;
+      if (fy && fy.kennitala) return false;
+      const bb = s.customer_base_id ? (_state.baseMap || {})[s.customer_base_id] : null;
+      if (bb && bb.kennitala) return false;
+      return !((_state.nameKt || {})[keyName(s.customer_nafn)]);
+    }).length;
+    bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:100060;background:#0f172a;color:#fff;box-shadow:0 -8px 24px rgba(0,0,0,.28);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap';
+    bar.innerHTML =
+      '<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">'
+      + '<span style="font-weight:800;font-size:15px">🏦 ' + sel.length + ' ' + (sel.length === 1 ? 'krafa valin' : 'kröfur valdar') + '</span>'
+      + '<span style="font-family:ui-monospace,monospace;font-size:14px;color:#bae6fd">' + fmtKr(total) + '</span>'
+      + (noKt ? '<span style="font-size:11.5px;color:#fca5a5;background:#450a0a;border:1px solid #7f1d1d;padding:2px 8px;border-radius:99px">⚠️ ' + noKt + ' án kt</span>' : '')
+      + '</div>'
+      + '<div style="display:flex;align-items:center;gap:8px">'
+      + '<button id="_ky-bulk-clear" type="button" style="padding:8px 12px;border:1px solid #334155;background:transparent;color:#cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:13px">Hreinsa</button>'
+      + '<button id="_ky-bulk-send" type="button" style="padding:9px 16px;border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13.5px;font-weight:700">🏦 Senda valdar í Payday</button>'
+      + '</div>';
+    bar.style.display = '';
+    bar.querySelector('#_ky-bulk-clear').addEventListener('click', () => {
+      _state.selected.clear(); syncRowChecks(); syncCoChecks(); updateBulkBar();
+    });
+    bar.querySelector('#_ky-bulk-send').addEventListener('click', sendSelectedQueue);
+  }
+
+  async function sendSelectedQueue() {
+    if (_state.sending) return;
+    const sel = selectedSales();
+    if (!sel.length) return;
+    if (!confirm('Senda ' + sel.length + ' ' + (sel.length === 1 ? 'kröfu' : 'kröfur') + ' í Payday?\n\nEin og ein, ~6 sek á milli. Drög verða stofnuð — ekki sjálfkrafa send á kúnna.')) return;
+    _state.sending = true; _state.stop = false;
+    const bar = document.getElementById('ky-bulkbar');
+    const DELAY = 6000;
+    const results = [];
+    function renderProgress(done, statusText) {
+      if (!bar) return;
+      const pct = Math.round((done / sel.length) * 100);
+      bar.style.cssText = 'position:fixed;left:0;right:0;bottom:0;z-index:100060;background:#0f172a;color:#fff;box-shadow:0 -8px 24px rgba(0,0,0,.28);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap';
+      bar.style.display = '';
+      bar.innerHTML =
+        '<div style="flex:1;min-width:220px">'
+        + '<div style="font-weight:700;font-size:14px;margin-bottom:6px">🏦 Sendi kröfur í Payday… ' + done + '/' + sel.length + '</div>'
+        + '<div style="height:6px;background:#1e293b;border-radius:99px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:linear-gradient(90deg,#2563eb,#38bdf8);transition:width .3s"></div></div>'
+        + '<div style="font-size:11.5px;color:#94a3b8;margin-top:5px">' + esc(statusText || '') + '</div>'
+        + '</div>'
+        + '<button id="_ky-bulk-stop" type="button" style="padding:9px 14px;border:1px solid #7f1d1d;background:#450a0a;color:#fecaca;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">⏹ Stöðva</button>';
+      const sb = bar.querySelector('#_ky-bulk-stop');
+      if (sb) sb.addEventListener('click', () => { _state.stop = true; sb.textContent = '⏹ Stöðva… (klára núverandi)'; sb.disabled = true; });
+    }
+    renderProgress(0, 'Undirbý…');
+    let sent = 0, failed = 0, skipped = 0;
+    for (let i = 0; i < sel.length; i++) {
+      if (_state.stop) { skipped = sel.length - i; break; }
+      const sale = sel[i];
+      renderProgress(i, (sale.num || '') + ' · ' + (sale.customer_nafn || ''));
+      try {
+        const ke = await ensureKtForSale(sale);
+        if (!ke.ok) { failed++; results.push({ num: sale.num, ok: false, error: 'vantar kt' }); }
+        else {
+          const r = await fetch('/api/payday-push', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sale_id: sale.id }),
+          });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+          sent++; results.push({ num: sale.num, ok: true });
+          _state.selected.delete(String(sale.id));
+        }
+      } catch (e) {
+        failed++; results.push({ num: sale.num, ok: false, error: (e.message || String(e)) });
+      }
+      renderProgress(i + 1, '✓ Sendar: ' + sent + ' · ✗ Villur: ' + failed);
+      if (i < sel.length - 1 && !_state.stop) await sleep(DELAY);
+    }
+    _state.sending = false; _state.stop = false;
+    const failLines = results.filter(r => !r.ok).map(r => '• ' + (r.num || '?') + ': ' + (r.error || 'villa')).join('\n');
+    alert('🏦 Payday sendingar\n\n✓ Sendar: ' + sent + '\n✗ Villur: ' + failed +
+      (skipped ? ('\n⏸ Sleppt (stöðvað): ' + skipped) : '') +
+      (failLines ? ('\n\n' + failLines) : ''));
+    await load(_state.month);
     refreshBadge();
   }
 
@@ -498,6 +733,9 @@
     const sales = grp.sales.slice().sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
     const ids = sales.map(s => s.id).join(',');
     const totalStr = String(Math.round(grp.sum));
+    // Ids of claims not yet pushed to Payday — these get a pick checkbox and are
+    // what the company "select all" toggles.
+    const sendableIds = sales.filter(isSendable).map(s => s.id);
 
     // 2026-06-30: sýna kt + email fyrir Payday-undirbúning. Lestir í þessari röð:
     // 1) solur.customer_kt — POS-authoritative
@@ -506,11 +744,18 @@
     const fy = grp.id ? (_state.fyrirtMap || {})[grp.id] : null;
     const firstSale = sales[0] || {};
     const baseRow = firstSale.customer_base_id ? (_state.baseMap || {})[firstSale.customer_base_id] : null;
-    const kt = (firstSale.customer_kt) || (fy && fy.kennitala) || (baseRow && baseRow.kennitala) || null;
+    const directKt = (firstSale.customer_kt) || (fy && fy.kennitala) || (baseRow && baseRow.kennitala) || null;
+    // Name-recovered kt (only when nothing direct) — shown with 🔗 so it's clear
+    // it was auto-matched by name; it gets written back on Payday send.
+    const recovered = !directKt ? (_state.nameKt || {})[keyName(grp.display)] : null;
     const email = (fy && fy.netfang) || (baseRow && baseRow.netfang) || null;
+    const ktHtml = directKt
+      ? '<span style="color:#475569;font-family:ui-monospace,Menlo,monospace;font-size:11px">' + esc(directKt) + '</span>'
+      : recovered
+        ? '<span title="kt fannst sjálfkrafa út frá nafni — vistast við sendingu í Payday" style="color:#b45309;font-family:ui-monospace,Menlo,monospace;font-size:11px">🔗 ' + esc(recovered.kt) + '</span>'
+        : '<span style="color:#dc2626;font-weight:700">⚠️ vantar kt</span>';
     const meta = [
-      kt ? '<span style="color:#475569;font-family:ui-monospace,Menlo,monospace;font-size:11px">' + esc(kt) + '</span>'
-         : '<span style="color:#dc2626;font-weight:700">⚠️ vantar kt</span>',
+      ktHtml,
       email ? '<span style="color:#0369a1">📧 ' + esc(email) + '</span>'
             : '<span style="color:#b45309">⚠️ vantar netfang</span>',
     ].join(' · ');
@@ -523,13 +768,18 @@
     return `
       <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
         <div style="padding:12px 16px;background:linear-gradient(135deg,#f8fafc,#eff6ff);border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <div>
-            <div style="font-weight:800;color:#0f172a;font-size:15px">${nameHtml}</div>
-            <div style="font-size:11px;color:#64748b;margin-top:2px">${meta}</div>
-            <div style="font-size:11px;color:#64748b;margin-top:2px">${sales.length} kröfur ·
-              ${grp.thisMonthSum > 0 ? '<span style="color:#1d4ed8">þessi mán: ' + fmtKr(grp.thisMonthSum) + '</span>' : ''}
-              ${grp.thisMonthSum > 0 && grp.olderSum > 0 ? ' · ' : ''}
-              ${grp.olderSum > 0 ? '<span style="color:#b45309">eldra: ' + fmtKr(grp.olderSum) + '</span>' : ''}
+          <div style="display:flex;align-items:flex-start;gap:11px">
+            ${sendableIds.length
+              ? `<label style="display:flex;align-items:center;padding-top:3px;cursor:pointer" title="Velja allar ósendar kröfur hjá ${esc(grp.display)}"><input type="checkbox" class="_ky-pick-co" data-ids="${sendableIds.join(',')}" style="width:17px;height:17px;cursor:pointer;accent-color:#1d4ed8"></label>`
+              : ''}
+            <div>
+              <div style="font-weight:800;color:#0f172a;font-size:15px">${nameHtml}</div>
+              <div style="font-size:11px;color:#64748b;margin-top:2px">${meta}</div>
+              <div style="font-size:11px;color:#64748b;margin-top:2px">${sales.length} kröfur ·
+                ${grp.thisMonthSum > 0 ? '<span style="color:#1d4ed8">þessi mán: ' + fmtKr(grp.thisMonthSum) + '</span>' : ''}
+                ${grp.thisMonthSum > 0 && grp.olderSum > 0 ? ' · ' : ''}
+                ${grp.olderSum > 0 ? '<span style="color:#b45309">eldra: ' + fmtKr(grp.olderSum) + '</span>' : ''}
+              </div>
             </div>
           </div>
           <div style="display:flex;gap:8px;align-items:center">
@@ -570,7 +820,10 @@
               }
             } catch (_) {}
             return `
-              <div style="display:grid;grid-template-columns:100px 80px 1fr 90px 1fr auto;gap:10px;padding:9px 16px;border-bottom:1px solid #f1f5f9;font-size:12.5px;align-items:center">
+              <div style="display:grid;grid-template-columns:26px 100px 80px 1fr 90px 1fr auto;gap:10px;padding:9px 16px;border-bottom:1px solid #f1f5f9;font-size:12.5px;align-items:center">
+                <div style="display:flex;align-items:center;justify-content:center">${isSendable(s)
+                  ? `<input type="checkbox" class="_ky-pick" data-id="${s.id}" data-amount="${Math.round(parseFloat(s.samtals) || 0)}" title="Velja kröfu í Payday-sendingu" style="width:16px;height:16px;cursor:pointer;accent-color:#1d4ed8">`
+                  : ''}</div>
                 <div style="font-family:monospace;color:#475569">${esc(s.num || '')}</div>
                 <div style="color:#64748b">${fmtDate(s.created_at)}</div>
                 <div style="color:${st.color};font-weight:600">${st.icon} ${esc(st.label)}</div>
