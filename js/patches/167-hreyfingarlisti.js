@@ -13,18 +13,28 @@
   const VIEW_ID = 'view-hreyfingarlisti';
   const NAV_KEY = 'hreyfingarlisti';
 
-  // Brunastál: the title/subtitle/month sit on the dark page band where the
-  // default dark ink is invisible. Flip them to white under that preset only.
+  // v3 "dark gradients" skin (handoff 2026-07-02): fonts + hover/abtn5 recipes.
+  // The header bar is always dark now, so the title reads white on every theme.
   (function injectSkin() {
     if (document.getElementById('hl-brunastal-skin')) return;
+    if (!document.getElementById('hl-fonts')) {
+      const l = document.createElement('link');
+      l.id = 'hl-fonts'; l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap';
+      (document.head || document.documentElement).appendChild(l);
+    }
     const s = document.createElement('style');
     s.id = 'hl-brunastal-skin';
-    const B = 'html[data-thm-preset="brunastal"] #view-hreyfingarlisti ';
+    const V = '#view-hreyfingarlisti ';
     s.textContent =
-      B + '.hl-h1{color:#fff !important;font-size:26px !important;font-weight:800 !important;text-shadow:0 2px 8px rgba(0,0,0,.55)}' +
-      B + '.hl-sub{color:rgba(255,255,255,.62) !important}' +
-      B + '.hl-month{color:#fff !important}' +
-      B + '.hl-navbtn{background:linear-gradient(145deg,#0b0b0d,#2a2a30 30%,#3c3c44 52%,#1a1a1f 74%,#08080a) !important;color:#fff !important;border-color:#0a0b0d !important}';
+      V + '.hl-mono{font-family:\'Space Mono\',ui-monospace,monospace}' +
+      V + 'tbody tr{transition:background .12s ease}' +
+      V + 'tbody tr:hover{background:#f3f6fc}' +
+      V + '.darkfield::placeholder{color:rgba(255,255,255,.55)}' +
+      V + '._hr-sort{transition:background .12s ease}' +
+      V + '._hr-sort:hover{background:rgba(255,255,255,.07)}' +
+      V + '.abtn5{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:50px;height:44px;padding:0 8px;border-radius:10px;border:1px solid rgba(20,24,34,.22);background:linear-gradient(180deg,#ffffff,#dbe0e9);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 3px 7px -3px rgba(20,30,60,.32);cursor:pointer;font:inherit;transition:transform .12s ease,box-shadow .12s ease}' +
+      V + '.abtn5:hover{transform:translateY(-1px);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 6px 13px -4px rgba(20,30,60,.42)}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
@@ -56,6 +66,29 @@
     if (m === 'reikningur') return '📋 Reikningur';
     if (m === 'greitt_sidar') return '⏳ Greitt síðar';
     return esc(m || '—');
+  }
+
+  // ── v3 metallic status/tag buttons (filled gradient + white text) ──────────
+  const GRAD = {
+    sala:   'linear-gradient(145deg,#2a4c8f,#183363 45%,#0a1a3a 75%,#122750)',
+    green:  'linear-gradient(145deg,#2f9d63,#166b3c 42%,#083f22 72%,#125a32)',
+    blue:   'linear-gradient(145deg,#5a86e0,#2f5fe0 42%,#1a3a8c 72%,#2d55c4)',
+    gold:   'linear-gradient(145deg,#d4a94f,#ab7f2a 42%,#775213 72%,#9c7828)',
+    purple: 'linear-gradient(145deg,#a98ff0,#7c53d6 42%,#4c2b9e 72%,#7a52cc)',
+    slate:  'linear-gradient(145deg,#6b7280,#3f4650 45%,#23282f 75%,#3a4048)'
+  };
+  function metalBtn(label, grad) {
+    return '<span style="display:inline-block;font-family:inherit;font-size:12px;font-weight:600;color:#fff;' +
+      'border-radius:8px;padding:3px 11px;background:' + grad +
+      ';box-shadow:inset 0 1.5px 0 rgba(255,255,255,.4),inset 0 -2px 4px rgba(0,0,0,.24),0 2px 5px -2px rgba(20,30,60,.4);' +
+      'text-shadow:0 1px 1px rgba(0,0,0,.3);filter:saturate(.74);white-space:nowrap">' + esc(label) + '</span>';
+  }
+  function methodBtn(m) {
+    if (m === 'kort') return metalBtn('Kort', GRAD.green);
+    if (m === 'reikningur') return metalBtn('Reikningur', GRAD.blue);
+    if (m === 'greitt_sidar') return metalBtn('Greitt síðar', GRAD.gold);
+    if (m === 'pening' || m === 'reidufe' || m === 'peningar') return metalBtn('Reiðufé', GRAD.green);
+    return m ? metalBtn(String(m), GRAD.slate) : '<span style="color:#cbd5e1">—</span>';
   }
 
   // ── Sidebar entry ────────────────────────────────────────────────────────
@@ -278,7 +311,10 @@
     return _state.sortDir === 'asc' ? '▲' : '▼';
   }
   function th(key, label, align) {
-    return `<th class="_hr-sort" data-k="${key}" style="padding:9px 10px;text-align:${align || 'left'};font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;cursor:pointer;user-select:none;white-space:nowrap">${esc(label)} <span style="font-size:9px;font-weight:400">${sortArrow(key)}</span></th>`;
+    return `<th class="_hr-sort" data-k="${key}" style="padding:12px 14px;text-align:${align || 'left'};font-size:10px;font-weight:700;color:#e8ecf4;text-transform:uppercase;letter-spacing:.11em;cursor:pointer;user-select:none;white-space:nowrap;text-shadow:0 1px 1px rgba(0,0,0,.4)">${esc(label)} <span style="font-size:9px;font-weight:400;opacity:.75">${sortArrow(key)}</span></th>`;
+  }
+  function thPlain(label, align) {
+    return `<th style="padding:12px 14px;text-align:${align || 'left'};font-size:10px;font-weight:700;color:#e8ecf4;text-transform:uppercase;letter-spacing:.11em;white-space:nowrap;text-shadow:0 1px 1px rgba(0,0,0,.4)">${esc(label)}</th>`;
   }
 
   function render() {
@@ -316,70 +352,83 @@
       ['credit', 'Kredit',     all.filter(r => r.is_credit).length]
     ];
 
+    const greittLabel = (_state.mode === 'kt' || _state.scope !== 'month') ? 'Greitt' : 'Greitt í mán.';
+    const darkBtn = 'padding:8px 11px;border:1px solid rgba(255,255,255,.16);border-radius:9px;background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font:inherit;font-size:13px';
     main.innerHTML = `
-      <div style="max-width:1200px;margin:0 auto;padding:22px">
+      <div style="max-width:1320px;margin:0 auto;padding:20px 22px 40px;font-family:'Space Grotesk',system-ui,sans-serif">
 
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:18px">
-          <div>
-            <h1 class="hl-h1" style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">📜 Hreyfingarlisti</h1>
-            ${_state.mode === 'kt' && _state.ktInfo
-              ? `<div class="hl-sub" style="font-size:12.5px;color:#334155;margin-top:3px">👤 <b>${esc(_state.ktInfo.nafn)}</b>${_state.ktInfo.ktFmt ? ' · <span style="font-family:monospace">kt. ' + esc(_state.ktInfo.ktFmt) + '</span>' : ''} · ${_state.all.length} færslur${_state.ktInfo.locs > 1 ? ' · 📍 ' + _state.ktInfo.locs + ' staðsetningar' : ''}</div>`
-              : `<div class="hl-sub" style="font-size:12px;color:#64748b;margin-top:2px">Tímaröð yfir allar færslur — sölur og kreditfærslur</div>`}
+        <!-- Dark metallic header bar -->
+        <div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:16px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 14px 32px -18px rgba(0,0,0,.65);margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:13px;min-width:0">
+            <div style="width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">📜</div>
+            <div style="min-width:0">
+              <h1 class="hl-h1" style="margin:0;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.1">Hreyfingarlisti</h1>
+              ${_state.mode === 'kt' && _state.ktInfo
+                ? `<div class="hl-sub" style="font-size:12.5px;color:rgba(255,255,255,.7);margin-top:2px">👤 <b>${esc(_state.ktInfo.nafn)}</b>${_state.ktInfo.ktFmt ? ' · <span class="hl-mono">kt. ' + esc(_state.ktInfo.ktFmt) + '</span>' : ''} · ${_state.all.length} færslur${_state.ktInfo.locs > 1 ? ' · 📍 ' + _state.ktInfo.locs + ' staðsetningar' : ''}</div>`
+                : `<div class="hl-sub" style="font-size:12.5px;color:rgba(255,255,255,.6);margin-top:2px">Tímaröð yfir allar færslur — smelltu á dálk til að raða</div>`}
+            </div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
             ${_state.mode === 'kt'
-              ? `<button class="_hr-back hl-navbtn" type="button" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px;font-weight:600;color:#475569">← Mánaðaryfirlit</button>`
-              : `${_state.scope !== 'all' ? '<button class="_hr-prev hl-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>' : ''}
-                 <div class="hl-month" style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:${_state.scope === 'all' ? '110' : '140'}px;text-align:center">${esc(scopeLabel)}</div>
-                 ${_state.scope !== 'all' ? '<button class="_hr-next hl-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>' : ''}
-                 <div style="display:inline-flex;border:1px solid #cbd5e1;border-radius:7px;overflow:hidden;margin-left:4px">
+              ? `<button class="_hr-back" type="button" style="${darkBtn};font-weight:600">← Mánaðaryfirlit</button>`
+              : `${_state.scope !== 'all' ? '<button class="_hr-prev" type="button" style="' + darkBtn + '">◀</button>' : ''}
+                 <div class="hl-month hl-mono" style="font-size:13px;font-weight:700;color:#fff;padding:0 6px;min-width:${_state.scope === 'all' ? '96' : '132'}px;text-align:center">${esc(scopeLabel)}</div>
+                 ${_state.scope !== 'all' ? '<button class="_hr-next" type="button" style="' + darkBtn + '">▶</button>' : ''}
+                 <div style="display:inline-flex;border:1px solid rgba(255,255,255,.16);border-radius:9px;overflow:hidden">
                    ${['month','year','all'].map(s => { const on = _state.scope === s; const lbl = { month: 'Mán', year: 'Ár', all: 'Allt' }[s];
-                     return '<button class="_hr-scope" data-s="' + s + '" type="button" style="padding:7px 11px;border:none;' + (s !== 'month' ? 'border-left:1px solid #e2e8f0;' : '') + 'background:' + (on ? '#0f172a' : '#fff') + ';color:' + (on ? '#fff' : '#475569') + ';cursor:pointer;font:inherit;font-size:12px;font-weight:600">' + lbl + '</button>'; }).join('')}
+                     return '<button class="_hr-scope" data-s="' + s + '" type="button" style="padding:8px 13px;border:none;' + (s !== 'month' ? 'border-left:1px solid rgba(255,255,255,.12);' : '') + 'background:' + (on ? '#c92a2a' : 'transparent') + ';color:' + (on ? '#fff' : 'rgba(255,255,255,.68)') + ';cursor:pointer;font:inherit;font-size:12px;font-weight:700">' + lbl + '</button>'; }).join('')}
                  </div>`}
-            <input class="_hr-ktlookup" type="text" placeholder="🔎 Kennitala eða nafn — öll saga" value="${_state.mode === 'kt' && _state.ktInfo ? esc(_state.ktInfo.query) : ''}" title="Sláðu inn kennitölu eða nafn og ýttu á Enter til að sjá ALLAR sölur/reikninga kúnnans" style="padding:7px 11px;border:1.5px solid #1d4ed8;border-radius:7px;font:inherit;font-size:13px;min-width:230px;margin-left:6px">
-            <input class="_hr-search" type="text" placeholder="🔍 Sía lista…" value="${esc(_state.search)}" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;min-width:130px">
-            <button class="_hr-csv" type="button" style="padding:7px 12px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:12px;font-weight:600;color:#475569">📥 CSV</button>
+            <input class="_hr-ktlookup darkfield" type="text" placeholder="🔎 Kennitala eða nafn…" value="${_state.mode === 'kt' && _state.ktInfo ? esc(_state.ktInfo.query) : ''}" title="Sláðu inn kennitölu eða nafn og ýttu á Enter til að sjá ALLAR sölur/reikninga kúnnans" style="padding:8px 12px;border:1px solid rgba(120,160,255,.5);border-radius:9px;background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:13px;min-width:220px">
+            <button class="_hr-csv" type="button" style="${darkBtn};font-weight:600;display:inline-flex;align-items:center;gap:6px">⬇ CSV</button>
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px">
-          ${statCard('Sölur', sales, '#1d4ed8', '#dbeafe', '💰')}
-          ${statCard('Kreditfært', -credits, '#dc2626', '#fee2e2', '↩️')}
-          ${statCard(_state.mode === 'kt' || _state.scope !== 'month' ? 'Greitt' : 'Greitt í mán.', paidIn, '#16a34a', '#dcfce7', '✓')}
-          ${statCard('Ógreitt', unpaidOut, '#b45309', '#fef3c7', '⏳')}
-          ${statCard('Nettó', net, net >= 0 ? '#0f172a' : '#dc2626', '#f1f5f9', 'Σ')}
+        <!-- 3D stat cards -->
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          ${statCard3d('Sölur', sales, 'blue')}
+          ${statCard3d('Kreditfært', -credits, 'red')}
+          ${statCard3d(greittLabel, paidIn, 'green')}
+          ${statCard3d('Ógreitt', unpaidOut, 'gold')}
+          ${statCard3d('Nettó', net, 'hero')}
         </div>
 
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">
+        <!-- Filter chips + list search -->
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
+          <div style="display:flex;gap:7px;flex-wrap:wrap">
           ${chipDef.map(([k, label, n]) => {
             const on = _state.filter === k;
             return `<button class="_hr-chip" data-k="${k}" type="button"
-              style="padding:6px 12px;border:1px solid ${on ? '#0f172a' : '#cbd5e1'};
-                background:${on ? '#0f172a' : '#fff'};color:${on ? '#fff' : '#475569'};
-                border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">
-              ${esc(label)} <span style="opacity:.65;font-weight:500">${n}</span></button>`;
+              style="padding:8px 15px;border-radius:10px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;${on
+                ? 'border:1px solid #0a0b0d;background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5)'
+                : 'border:1px solid rgba(20,24,34,.14);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#3a4250'}">
+              ${esc(label)} <span style="opacity:.6;font-weight:500">${n}</span></button>`;
           }).join('')}
+          </div>
+          <input class="_hr-search" type="text" placeholder="🔍 Sía lista…" value="${esc(_state.search)}" style="margin-left:auto;padding:9px 13px;border:1px solid rgba(20,24,34,.14);border-radius:10px;background:#fff;font:inherit;font-size:13px;min-width:200px;box-shadow:0 1px 2px rgba(15,23,42,.06)">
         </div>
 
-        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
-          <table style="width:100%;border-collapse:collapse;font-size:13px">
-            <thead><tr style="background:#f8fafc;border-bottom:1px solid #e2e8f0">
-              ${th('created_at', 'Dags · Tími', 'left')}
-              ${th('num', 'Skjal', 'left')}
-              ${th('customer_nafn', 'Viðskiptavinur', 'left')}
-              <th style="padding:9px 10px;text-align:left;font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap">Kennitala</th>
-              ${th('tegund', 'Tegund', 'left')}
-              ${th('greitt_med', 'Greiðslumáti', 'left')}
-              ${th('stada', 'Staða', 'left')}
-              ${th('samtals', 'Upphæð', 'right')}
-              <th style="padding:9px 10px"></th>
-            </tr></thead>
-            <tbody>
-              ${rows.length
-                ? rows.map(rowHtml).join('')
-                : '<tr><td colspan="9" style="padding:30px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar</td></tr>'}
-            </tbody>
-          </table>
+        <!-- Table (dark metallic header, sticky) -->
+        <div style="border-radius:16px;border:1px solid rgba(20,24,34,.08);background:#fff;box-shadow:0 10px 28px -16px rgba(25,35,60,.16);overflow:hidden">
+          <div style="overflow-x:auto">
+            <table style="width:100%;min-width:1080px;border-collapse:collapse;font-size:13px">
+              <thead style="position:sticky;top:0;z-index:2"><tr style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22)">
+                ${th('created_at', 'Dags · Tími', 'left')}
+                ${th('num', 'Skjal', 'left')}
+                ${th('customer_nafn', 'Viðskiptavinur', 'left')}
+                ${thPlain('Kennitala', 'left')}
+                ${th('tegund', 'Tegund', 'left')}
+                ${th('greitt_med', 'Greiðslumáti', 'left')}
+                ${th('stada', 'Staða', 'left')}
+                ${th('samtals', 'Upphæð', 'right')}
+                <th style="padding:12px 16px;text-align:right;font-size:10px;font-weight:700;color:#e8ecf4;text-transform:uppercase;letter-spacing:.11em;white-space:nowrap;text-shadow:0 1px 1px rgba(0,0,0,.4);border-left:1px solid rgba(255,255,255,.12)">Aðgerðir</th>
+              </tr></thead>
+              <tbody>
+                ${rows.length
+                  ? rows.map(rowHtml).join('')
+                  : '<tr><td colspan="9" style="padding:44px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar</td></tr>'}
+              </tbody>
+            </table>
+          </div>
         </div>
 
       </div>`;
@@ -480,14 +529,39 @@
     }));
   }
 
-  function statCard(label, value, color, bg, icon) {
-    return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px">
-      <div style="width:34px;height:34px;border-radius:8px;background:${bg};color:${color};display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0">${icon}</div>
-      <div style="min-width:0">
-        <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600">${esc(label)}</div>
-        <div style="font-size:17px;font-weight:800;color:${color};font-variant-numeric:tabular-nums">${esc(fmtKr(value))}</div>
-      </div>
-    </div>`;
+  function statCard3d(label, value, kind) {
+    const K = {
+      blue:  { ic: '💰', icbg: 'linear-gradient(180deg,#5a86e0,#2f5fe0)', glow: 'rgba(47,95,224,.5)',  val: '#11141c' },
+      red:   { ic: '↩',  icbg: 'linear-gradient(180deg,#f0584c,#c62f26)', glow: 'rgba(198,47,38,.45)', val: '#be123c' },
+      green: { ic: '✓',  icbg: 'linear-gradient(180deg,#2f9d63,#0f6e3a)', glow: 'rgba(15,110,58,.45)', val: '#0f7a43' },
+      gold:  { ic: '⏳', icbg: 'linear-gradient(180deg,#d4a94f,#ab7f2a)', glow: 'rgba(171,127,42,.45)', val: '#b45309' }
+    };
+    const shadow = '0 1px 1px rgba(15,23,42,.05),0 8px 16px -8px rgba(15,23,42,.15),0 24px 44px -20px rgba(15,23,42,.3),inset 0 2px 0 rgba(255,255,255,.95),inset 0 -10px 20px -14px rgba(15,23,42,.14)';
+    const wrap = (bg, extraShadow, iconTile, labelCol, valCol) =>
+      '<div style="flex:1 1 240px;min-width:240px;border-radius:18px;padding:15px 17px;display:flex;align-items:center;gap:13px;background:' + bg + ';box-shadow:' + extraShadow + '">' +
+        iconTile +
+        '<div style="min-width:0">' +
+          '<div style="font-size:10.5px;font-weight:700;letter-spacing:.14em;color:' + labelCol + ';text-transform:uppercase">' + esc(label) + '</div>' +
+          '<div class="hl-mono" style="font-size:25px;font-weight:700;color:' + valCol + ';margin-top:3px;white-space:nowrap">' + esc(fmtKr(value)) + '</div>' +
+        '</div>' +
+      '</div>';
+    if (kind === 'hero') {
+      const tile = '<div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;background:rgba(255,255,255,.16);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.2)">Σ</div>';
+      return wrap('linear-gradient(150deg,#6f97ff 0%,#2f5fe0 34%,#1c3d8c 60%,#0b1838 100%)',
+        '0 1px 1px rgba(15,23,42,.05),0 10px 20px -8px rgba(15,23,42,.25),0 26px 46px -20px rgba(20,40,120,.5),inset 0 1px 0 rgba(255,255,255,.45)',
+        tile, 'rgba(255,255,255,.72)', '#fff');
+    }
+    const k = K[kind] || K.blue;
+    const tile = '<div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;background:' + k.icbg + ';box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.25),0 4px 10px -3px ' + k.glow + '">' + k.ic + '</div>';
+    return wrap('linear-gradient(180deg,#ffffff,#eef1f6)', shadow, tile, '#8a93a5', k.val);
+  }
+
+  // One light-metallic action button (icon + tiny colored label).
+  function abtn(cls, extra, glyph, label, color, title) {
+    return '<button class="' + cls + ' abtn5" ' + extra + ' type="button" title="' + esc(title) + '">' +
+      '<span style="font-size:15px;line-height:1;color:' + color + '">' + glyph + '</span>' +
+      '<span style="font-size:8.5px;font-weight:700;letter-spacing:.02em;color:' + color + '">' + esc(label) + '</span>' +
+    '</button>';
   }
 
   function rowHtml(s) {
@@ -496,48 +570,46 @@
     const isPaid = !!s.paid_at;
     const total = +s.samtals || 0;
 
-    const typeBadge = isCredit
-      ? '<span style="font-size:10px;font-weight:700;background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:99px">↩ Kredit</span>'
-      : '<span style="font-size:10px;font-weight:700;background:#dbeafe;color:#1e40af;padding:2px 8px;border-radius:99px">Sala</span>';
-
-    const status = isCredit
-      ? '<span style="color:#991b1b;font-size:11px">—</span>'
+    const typeBtn = isCredit ? metalBtn('↩ Kredit', GRAD.purple) : metalBtn('Sala', GRAD.sala);
+    const statusBtn = isCredit
+      ? metalBtn('↩ Kredit', GRAD.purple)
       : isPaid
-        ? '<span style="font-size:10px;font-weight:700;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:99px">✓ Greitt</span>'
+        ? metalBtn('✓ Greitt', GRAD.green)
         : isInvoice
-          ? '<span style="font-size:10px;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:99px">⚠ Ógreitt</span>'
-          : '<span style="font-size:10px;font-weight:700;background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:99px">—</span>';
+          ? metalBtn('⚠ Ógreitt', GRAD.gold)
+          : '<span style="color:#94a3b8;font-size:12px">—</span>';
 
     const amountCol = isCredit
-      ? `<span style="color:#dc2626;font-weight:700;font-variant-numeric:tabular-nums">${esc(fmtKr(-Math.abs(total)))}</span>`
-      : `<span style="color:#0f172a;font-weight:700;font-variant-numeric:tabular-nums">${esc(fmtKr(total))}</span>`;
+      ? `<span class="hl-mono" style="color:#dc2626;font-weight:700">${esc(fmtKr(-Math.abs(total)))}</span>`
+      : `<span class="hl-mono" style="color:#11141c;font-weight:700">${esc(fmtKr(total))}</span>`;
 
-    return `<tr style="border-bottom:1px solid #f1f5f9">
-      <td style="padding:8px 10px;font-size:12px;color:#475569;white-space:nowrap">
-        ${esc(fmtDate(s.created_at))}<span style="color:#94a3b8;margin-left:5px">${esc(fmtTime(s.created_at))}</span>
+    const acts = [];
+    acts.push(abtn('_hr-send', 'data-id="' + s.id + '"', '✉', 'Kvittun', '#2f5fe0', 'Senda kvittun í tölvupósti'));
+    acts.push(abtn('_hr-view', 'data-id="' + s.id + '"', '🖨', 'PDF', '#475569', 'Skoða / prenta / vista PDF'));
+    if (!isCredit) {
+      acts.push(abtn('_hr-edit', 'data-id="' + s.id + '"', '✎', 'Breyta', '#c2410c', 'Breyta sölu — óSENDA reikninga má breyta beint'));
+      acts.push(abtn('_hr-bakfaera', 'data-id="' + s.id + '"', '↩', 'Kredit', '#dc2626', 'Bakfæra (kreditfæra) þennan reikning'));
+    }
+    acts.push(abtn('_hr-nyjan', 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', '＋', 'Nýr + kredit', '#0f7a43', 'Ný sala fyrir þennan viðskiptavin (opnar Sölu, afsláttur bætist sjálfkrafa)'));
+
+    return `<tr style="border-bottom:1px solid #eef1f6">
+      <td style="padding:10px 14px;white-space:nowrap">
+        <span class="hl-mono" style="font-size:12px;color:#334155">${esc(fmtDate(s.created_at))}</span>
+        <span class="hl-mono" style="display:block;font-size:10.5px;color:#94a3b8;margin-top:1px">${esc(fmtTime(s.created_at))}</span>
       </td>
-      <td style="padding:8px 10px;font-family:monospace;font-size:11.5px;color:#0f172a;font-weight:600">${esc(s.num || '')}</td>
-      <td style="padding:8px 10px;font-size:12.5px;color:#0f172a">${
+      <td style="padding:10px 14px"><span class="hl-mono" style="font-size:12px;color:#1d4ed8;font-weight:700">${esc(s.num || '')}</span></td>
+      <td style="padding:10px 14px;font-size:13.5px;font-weight:600;color:#11141c">${
         s.customer_id
-          ? `<a class="_hr-co" data-id="${s.customer_id}" href="#company/${s.customer_id}" title="Opna fyrirtækjaspjald" style="color:#1d4ed8;text-decoration:none;border-bottom:1px dotted #93c5fd;cursor:pointer">${esc(s.customer_nafn || '—')}</a>`
+          ? `<a class="_hr-co" data-id="${s.customer_id}" href="#company/${s.customer_id}" title="Opna fyrirtækjaspjald" style="color:#1d4ed8;text-decoration:none;cursor:pointer">${esc(s.customer_nafn || '—')}</a>`
           : esc(s.customer_nafn || '—')
       }</td>
-      <td style="padding:8px 10px;white-space:nowrap">${ktCell(s.customer_kt)}</td>
-      <td style="padding:8px 10px">${typeBadge}</td>
-      <td style="padding:8px 10px;font-size:11.5px;color:#475569">${methodLabel(s.greitt_med)}</td>
-      <td style="padding:8px 10px">${status}</td>
-      <td style="padding:8px 10px;text-align:right">${amountCol}</td>
-      <td style="padding:8px 10px;text-align:right;white-space:nowrap">
-        <button class="_hr-send" data-id="${s.id}" type="button" title="Senda kvittun í tölvupósti"
-          style="padding:4px 8px;background:#fff;color:#0f766e;border:1px solid #99f6e4;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;margin-right:4px">📧</button>
-        <button class="_hr-view" data-id="${s.id}" type="button" title="Skoða / prenta / vista PDF"
-          style="padding:4px 8px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;margin-right:4px">🖨</button>
-        ${s.is_credit ? '' : `<button class="_hr-edit" data-id="${s.id}" type="button" title="Breyta sölu — óSENDA reikninga má breyta beint (t.d. bæta afslætti)"
-          style="padding:4px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;margin-right:4px">✏️</button>`}
-        ${s.is_credit ? '' : `<button class="_hr-bakfaera" data-id="${s.id}" type="button" title="Bakfæra (kreditfæra) þennan reikning"
-          style="padding:4px 8px;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;margin-right:4px">↩</button>`}
-        <button class="_hr-nyjan" data-kt="${esc(s.customer_kt || '')}" data-nafn="${esc(s.customer_nafn || '')}" type="button" title="Ný sala fyrir þennan viðskiptavin (opnar Sölu, afsláttur bætist sjálfkrafa)"
-          style="padding:4px 8px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">＋</button>
+      <td style="padding:10px 14px;white-space:nowrap">${ktCell(s.customer_kt)}</td>
+      <td style="padding:10px 14px">${typeBtn}</td>
+      <td style="padding:10px 14px">${methodBtn(s.greitt_med)}</td>
+      <td style="padding:10px 14px">${statusBtn}</td>
+      <td style="padding:10px 14px;text-align:right">${amountCol}</td>
+      <td style="padding:7px 14px;border-left:1px solid #eef1f6">
+        <div style="display:flex;gap:6px;justify-content:flex-end">${acts.join('')}</div>
       </td>
     </tr>`;
   }
