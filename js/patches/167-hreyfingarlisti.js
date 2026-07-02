@@ -423,6 +423,12 @@
     main.querySelectorAll('._hr-send').forEach(b => {
       b.addEventListener('click', () => sendReceipt(b.dataset.id));
     });
+    main.querySelectorAll('._hr-edit').forEach(b => {
+      b.addEventListener('click', () => {
+        if (window.SaleEditor && SaleEditor.openById) SaleEditor.openById(b.dataset.id);
+        else alert('Sölu-editor ekki tiltækur.');
+      });
+    });
     main.querySelectorAll('._hr-nyjan').forEach(b => {
       b.addEventListener('click', () => {
         if (typeof window.SalaNyjan === 'function') window.SalaNyjan(b.dataset.kt, b.dataset.nafn);
@@ -526,6 +532,8 @@
           style="padding:4px 8px;background:#fff;color:#0f766e;border:1px solid #99f6e4;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;margin-right:4px">📧</button>
         <button class="_hr-view" data-id="${s.id}" type="button" title="Skoða / prenta / vista PDF"
           style="padding:4px 8px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;margin-right:4px">🖨</button>
+        ${s.is_credit ? '' : `<button class="_hr-edit" data-id="${s.id}" type="button" title="Breyta sölu — óSENDA reikninga má breyta beint (t.d. bæta afslætti)"
+          style="padding:4px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;margin-right:4px">✏️</button>`}
         ${s.is_credit ? '' : `<button class="_hr-bakfaera" data-id="${s.id}" type="button" title="Bakfæra (kreditfæra) þennan reikning"
           style="padding:4px 8px;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;margin-right:4px">↩</button>`}
         <button class="_hr-nyjan" data-kt="${esc(s.customer_kt || '')}" data-nafn="${esc(s.customer_nafn || '')}" type="button" title="Ný sala fyrir þennan viðskiptavin (opnar Sölu, afsláttur bætist sjálfkrafa)"
