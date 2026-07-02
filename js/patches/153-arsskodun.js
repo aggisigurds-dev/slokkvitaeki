@@ -229,6 +229,49 @@
     if (/teppi|blanket|eldvarn/.test(t)) return 'eldvarnarteppi';
     return 'annad'; // Slönguskápur, Óþekkt, unmatched
   }
+  // 2026-07-02 (Agnar): roll the fine-grained categories up into the three
+  // service groups the office lists per place —
+  //   SLT = öll slökkvitæki (Duft + Léttvatn + CO₂)
+  //   BSL = Brunaslöngur
+  //   RS  = Reykskynjarar
+  // (eldvarnarteppi / annað fall into `other`, kept out of the three columns
+  // but still counted in `total`).
+  function eqGroups(equipment) {
+    const e = equipment || {};
+    const n = k => +e[k] || 0;
+    const slt = n('lettvatn') + n('duft2') + n('duft6_12') + n('co2_2') + n('co2_5');
+    const bsl = n('brunaslongur');
+    const rs  = n('reykskynjarar');
+    const other = n('eldvarnarteppi') + n('annad');
+    return { slt, bsl, rs, other, total: slt + bsl + rs + other };
+  }
+  // Compact SLT/BSL/RS trio for a table cell. `mode`:'screen' → stacked mini
+  // stats w/ theme tokens; 'print' → plain inline text for the print sheet.
+  function eqTrioHtml(equipment, mode) {
+    const g = eqGroups(equipment);
+    if (!g.total) return mode === 'print' ? '' : '—';
+    const cell = (val, label, title) => {
+      const dim = val ? '' : 'opacity:.35;';
+      return '<span title="' + title + '" style="display:inline-flex;flex-direction:column;align-items:center;line-height:1.04;' + dim + '">' +
+        '<span style="font-weight:800;color:var(--ink1);font-size:13px;font-variant-numeric:tabular-nums">' + val + '</span>' +
+        '<span style="font-size:8px;font-weight:700;color:var(--ink3);letter-spacing:.04em">' + label + '</span>' +
+      '</span>';
+    };
+    if (mode === 'print') {
+      const parts = [];
+      if (g.slt) parts.push('SLT ' + g.slt);
+      if (g.bsl) parts.push('BSL ' + g.bsl);
+      if (g.rs)  parts.push('RS ' + g.rs);
+      if (g.other) parts.push('Annað ' + g.other);
+      return parts.join(' · ');
+    }
+    return '<span style="display:inline-flex;gap:9px;align-items:center;justify-content:center">' +
+      cell(g.slt, 'SLT', 'Slökkvitæki (Duft + Léttvatn + CO₂)') +
+      cell(g.bsl, 'BSL', 'Brunaslöngur') +
+      cell(g.rs,  'RS',  'Reykskynjarar') +
+      (g.other ? cell(g.other, 'Annað', 'Eldvarnarteppi / annað') : '') +
+    '</span>';
+  }
   async function loadActiveUnitsByClient(SB) {
     const byClient = {};
     try {
@@ -904,7 +947,7 @@
         <td>${esc(c.heimilisfang || '')}</td>
         <td class="nowrap">${esc(phone)}</td>
         <td class="c">${esc(MONTHS_IS_SHORT[m - 1] || '—')}</td>
-        <td class="c">${totalEq || ''}</td>
+        <td class="c nowrap">${eqTrioHtml(ars.equipment, 'print') || ''}</td>
         <td class="r">${est ? fmtKr(est) : ''}</td>
         <td class="st"><span class="dot" style="background:${dot}"></span>${esc(statusLabel)}</td>
       </tr>`;
@@ -962,7 +1005,7 @@
   <table>
     <thead><tr>
       <th class="num">#</th><th>Fyrirtæki</th><th>Heimilisfang</th><th>Sími</th>
-      <th style="text-align:center">Skoðun</th><th style="text-align:center">Tæki</th><th style="text-align:right">Áætl.</th>
+      <th style="text-align:center">Skoðun</th><th style="text-align:center">Tæki (SLT·BSL·RS)</th><th style="text-align:right">Áætl.</th>
       <th>Staða ${curYear}</th>
     </tr></thead>
     <tbody>${rows}</tbody>
@@ -1056,7 +1099,7 @@
                 </div>
                 <div style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:4px 7px">
                   <div style="font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase">Tæki</div>
-                  <div style="font-size:12px;font-weight:700;color:var(--ink1)">${totalEq}</div>
+                  <div style="margin-top:1px">${eqTrioHtml(eq, 'screen')}</div>
                 </div>
                 <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:4px 7px">
                   <div style="font-size:9px;font-weight:700;color:#166534;text-transform:uppercase">Áætl.</div>
@@ -1241,7 +1284,7 @@
                     return `<span style="color:#dc2626;font-weight:600">✉ vantar</span>`;
                   })()}</td>
                   <td style="padding:8px 7px;text-align:center;font-weight:600;color:${m===curMonth?'#dc2626':'var(--ink2)'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</td>
-                  <td style="padding:8px 7px;text-align:center;font-weight:700;color:var(--ink1)">${totalEq||'—'}</td>
+                  <td style="padding:8px 7px;text-align:center">${eqTrioHtml(c._ars && c._ars.equipment, 'screen')}</td>
                   <td style="padding:8px 7px;text-align:right;color:#15803d;font-weight:700;font-variant-numeric:tabular-nums">${fmtKrShort(est)}</td>
                   <td style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
                   <td style="padding:8px 11px">
