@@ -88,6 +88,7 @@
     return null;
   }
 
+  let _lastViewId = null, _stableAt = 0;
   function apply() {
     const view = activeView();
     if (!view || SKIP.has(view.id)) return;
@@ -103,6 +104,13 @@
       return (h.textContent || '').trim().length > 1 && h.offsetParent !== null;
     });
     if (hasOwnTitle) { if (bar) bar.remove(); return; }
+
+    // Stability gate: when a view just became active its own title may not have
+    // rendered yet (async data load). Don't add a bar until the view has been
+    // active + title-less for a beat — that kills the "bar flashes then vanishes"
+    // flicker on pages like Fyrirtæki í Þjónustu that render their <h1> late.
+    if (view.id !== _lastViewId) { _lastViewId = view.id; _stableAt = Date.now(); if (bar) bar.remove(); return; }
+    if (!bar && (Date.now() - _stableAt) < 1200) return;
 
     const title = navTitle();
     if (!title) return;
