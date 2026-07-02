@@ -380,7 +380,7 @@
           '<div style="font-family:\'Space Mono\',monospace;font-size:26px;font-weight:700;color:' + k.val + ';margin-top:1px">' + count + '</div>' + sub + '</div>' +
       '</div>';
     };
-    v.innerHTML = '<div style="max-width:1320px;margin:0 auto;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
+    v.innerHTML = '<div style="max-width:none;margin:0;width:100%;box-sizing:border-box;padding:4px 6px;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
       '<div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:16px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 14px 32px -18px rgba(0,0,0,.65);margin-bottom:16px">' +
         '<div style="display:flex;align-items:center;gap:13px;min-width:0">' +
           '<div style="width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">🔧</div>' +

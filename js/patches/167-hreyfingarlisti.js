@@ -163,7 +163,7 @@
   // empty (legacy, not yet backfilled) → dash.
   function ktCell(kt) {
     const d = ktDigits(kt);
-    if (d === '9999999999') return '<span style="background:#f1f5f9;color:#64748b;padding:1px 7px;border-radius:99px;font-size:10px">Staðgr.</span>';
+    if (d === '9999999999') return '<span style="background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;padding:1px 8px;border-radius:99px;font-size:10px;font-weight:700">Staðgr.</span>';
     if (d.length === 10) return '<span style="font-family:\'Space Mono\',monospace;font-size:11px;color:#475569">' + esc(ktDashed(d)) + '</span>';
     return kt ? '<span style="font-family:monospace;font-size:11px;color:#475569">' + esc(kt) + '</span>' : '<span style="color:#cbd5e1">—</span>';
   }
@@ -355,7 +355,7 @@
     const greittLabel = (_state.mode === 'kt' || _state.scope !== 'month') ? 'Greitt' : 'Greitt í mán.';
     const darkBtn = 'padding:8px 11px;border:1px solid rgba(255,255,255,.16);border-radius:9px;background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font:inherit;font-size:13px';
     main.innerHTML = `
-      <div style="max-width:1320px;margin:0 auto;padding:20px 22px 40px;font-family:'Space Grotesk',system-ui,sans-serif">
+      <div style="max-width:none;margin:0;padding:14px 20px 40px;width:100%;box-sizing:border-box;font-family:'Space Grotesk',system-ui,sans-serif">
 
         <!-- Dark metallic header bar -->
         <div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:16px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 14px 32px -18px rgba(0,0,0,.65);margin-bottom:16px">
