@@ -236,16 +236,22 @@
     }
   }
 
-  setInterval(tryInject, 1000);
+  // 2026-07-02 (Agnar): the top yellow banner ate vertical space and pushed
+  // every page down away from the banner. Stop auto-injecting it. The data-
+  // quality feature is NOT removed — the list is still one call away via
+  // window.DataQuality.openList() (and any banner already on-screen is cleared).
+  document.querySelectorAll('._dq-banner').forEach(b => b.remove());
+  // setInterval(tryInject, 1000);   // disabled — no more auto banner
 
-  // Expose for debugging
+  // Expose for debugging + on-demand access to the address-quality list.
   window.DataQuality = {
     missing: getMissingAddr,
     suspicious: getSuspiciousAddr,
     diagnose: diagnoseAddress,
+    openList: openModal,
     version: 'v2'
   };
 
-  console.log('[data-quality-banner v2] installed');
+  console.log('[data-quality-banner v2] installed (banner auto-inject disabled; DataQuality.openList())');
 })();
 /* === END DATA QUALITY BANNER === */
