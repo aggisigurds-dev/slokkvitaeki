@@ -142,8 +142,12 @@
   document.addEventListener('click', e => { if (e.target.closest('.vnav-btn')) debounced(); }, true);
   setTimeout(apply, 1200);
   setTimeout(apply, 3000);
+  // Safety net: view panels re-render (which can wipe the bar) and the observer
+  // can get debounce-starved under bursty mutations. A cheap idempotent tick
+  // guarantees the bar lands within ~1.4s on every view + after re-renders.
+  setInterval(apply, 1400);
 
   window.GlobalTitlebar = { apply };
-  console.log('[patch-252] Global title bar (Brunastál) installed');
+  console.log('[patch-260] Global title bar (Brunastál) installed');
 })();
 /* === END GLOBAL TITLE BAR === */
