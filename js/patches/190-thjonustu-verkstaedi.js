@@ -248,7 +248,7 @@
     if (!(r.units > 0 || r.tekjur > 0 || draftChip)) return '';
     return '<div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">' +
       draftChip +
-      (r.units > 0 ? '<span style="font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;white-space:nowrap">🧯 ' + r.units + ' einingar</span>' : '') +
+      (r.units > 0 ? '<span style="font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;background:#eef1f6;color:#475569;border:1px solid #cbd5e1;white-space:nowrap">🧯 ' + r.units + ' einingar</span>' : '') +
       (r.tekjur > 0 ? '<span style="font-family:\'Space Mono\',monospace;font-size:12px;font-weight:700;color:#11141c;align-self:center" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">áætl. ' + fmtKr(r.tekjur) + '</span>' : '') +
       '</div>';
   }
