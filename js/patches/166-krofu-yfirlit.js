@@ -581,6 +581,9 @@
     main.querySelectorAll('._ky-view-invoice').forEach(b => {
       b.addEventListener('click', () => openInvoice(b.dataset.id));
     });
+    main.querySelectorAll('._ky-nyjan').forEach(b => {
+      b.addEventListener('click', () => openNewSaleFor(b.dataset.kt, b.dataset.nafn));
+    });
     main.querySelectorAll('._ky-kredit').forEach(b => {
       b.addEventListener('click', async () => {
         if (!window.CreditInvoice || !CreditInvoice.open) {
@@ -894,13 +897,37 @@
                   <button class="_ky-mark-paid" data-id="${s.id}" type="button" title="Merkja sem greitt" style="padding:5px 9px;background:#f8fafc;color:#15803d;border:1.5px solid #86efac;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✓</button>
                   <button class="_ky-view-invoice" data-id="${s.id}" type="button" title="Skoða / prenta reikning" style="padding:5px 9px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">🖨</button>
                   <button class="_ky-open-editor" data-num="${esc(s.num)}" type="button" title="Opna í sölu-editor" style="padding:5px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">✏️</button>
-                  <button class="_ky-kredit" data-id="${s.id}" type="button" title="Kreditfæra reikninginn" style="padding:5px 9px;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">↩ Kredit</button>
+                  <button class="_ky-kredit" data-id="${s.id}" type="button" title="Bakfæra (kreditfæra) reikninginn" style="padding:5px 9px;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">↩ Bakfæra</button>
+                  <button class="_ky-nyjan" data-kt="${esc(s.customer_kt || '')}" data-nafn="${esc(s.customer_nafn || '')}" type="button" title="Ný sala fyrir þennan viðskiptavin (opnar Sölu með kt tilbúið — afsláttur bætist sjálfkrafa)" style="padding:5px 9px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">＋ Nýjan</button>
                 </div>
               </div>`;
           }).join('')}
         </div>
       </div>`;
   }
+
+  // ── „＋ Nýjan" — open Sala (POS) for this customer to redo the sale ───────
+  // Prefills the kt so pos.js's lookup loads the customer + auto-applies their
+  // saved afsláttur (patch 255). Exposed as window.SalaNyjan so Hreyfingarlisti
+  // reuses the exact same behaviour.
+  function openNewSaleFor(kt, nafn) {
+    const digits = String(kt || '').replace(/[^0-9]/g, '');
+    try { if (window.App && App.switchView) App.switchView('sala'); } catch (_) {}
+    let tries = 0;
+    (function go() {
+      const ktInp = document.getElementById('pos-kt');
+      if (ktInp) {
+        if (digits.length === 10 && digits !== '9999999999') {
+          ktInp.value = digits.slice(0, 6) + '-' + digits.slice(6);
+          ktInp.dispatchEvent(new Event('input', { bubbles: true }));
+        }
+        return;
+      }
+      if (tries === 1) { try { location.hash = '#sala'; } catch (_) {} }  // fallback nav
+      if (tries++ < 40) setTimeout(go, 150);
+    })();
+  }
+  window.SalaNyjan = openNewSaleFor;
 
   // ── View invoice (SalaInvoice popup) ─────────────────────────────────────
   async function openInvoice(saleId) {
