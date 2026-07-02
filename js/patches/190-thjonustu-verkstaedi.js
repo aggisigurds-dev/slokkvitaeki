@@ -361,21 +361,47 @@
         : '<div class="sv-list">' + b.vinnsla.map(listCard).join('') + '</div>')
       : '<div style="color:#8a93a5;font-size:13px;padding:30px;text-align:center;border:1px dashed rgba(20,24,34,.12);border-radius:14px;background:#fff">Ekkert í vinnslu núna.</div>';
 
-    v.innerHTML = '<div style="max-width:1180px;margin:0 auto">' +
-      '<div style="display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap;margin-bottom:8px">' +
-        '<h1 style="font-size:26px;margin:0;font-weight:700;color:#11141c;letter-spacing:-.01em">🔧 ÞjónustuVerkstæði</h1>' +
-        '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>☰ Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>▭ Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>▦ Spjöld</button></div>' +
+    // v3 dark-gradient handoff: dark metallic header bar + 3D stat tiles
+    // (mirrors Hreyfingarlisti). The á-dagskrá / búin tiles keep data-toggle so
+    // the existing expand-drawer wiring still fires.
+    const cardShadow = '0 1px 1px rgba(15,23,42,.05),0 8px 16px -8px rgba(15,23,42,.15),0 24px 44px -20px rgba(15,23,42,.3),inset 0 2px 0 rgba(255,255,255,.95),inset 0 -10px 20px -14px rgba(15,23,42,.14)';
+    const TILE = {
+      blue:  { icbg: 'linear-gradient(180deg,#5a86e0,#2f5fe0)', glow: 'rgba(47,95,224,.5)',  val: '#11141c', ic: '🔧' },
+      gold:  { icbg: 'linear-gradient(180deg,#d4a94f,#ab7f2a)', glow: 'rgba(171,127,42,.45)', val: '#b45309', ic: '⏳' },
+      green: { icbg: 'linear-gradient(180deg,#2f9d63,#0f6e3a)', glow: 'rgba(15,110,58,.45)', val: '#0f7a43', ic: '✓' }
+    };
+    const statTile = (label, count, kind, opts) => {
+      opts = opts || {}; const k = TILE[kind] || TILE.blue; const clk = !!opts.toggle;
+      const arrow = clk ? (' <span style="color:#9098a6;font-size:11px">' + (opts.open ? '▾' : '▸') + '</span>') : '';
+      const sub = opts.sub ? ('<div style="font-size:11px;color:#9098a6;margin-top:1px;font-family:\'Space Mono\',monospace">' + esc(opts.sub) + '</div>') : '';
+      return '<div ' + (clk ? 'data-toggle="' + opts.toggle + '" ' : '') + 'style="flex:1 1 220px;min-width:220px;border-radius:18px;padding:15px 17px;display:flex;align-items:center;gap:13px;background:linear-gradient(180deg,#ffffff,#eef1f6);box-shadow:' + cardShadow + ';' + (clk ? 'cursor:pointer' : '') + '">' +
+        '<div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;background:' + k.icbg + ';box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.25),0 4px 10px -3px ' + k.glow + '">' + k.ic + '</div>' +
+        '<div style="min-width:0"><div style="font-size:10.5px;font-weight:700;letter-spacing:.14em;color:#8a93a5;text-transform:uppercase">' + esc(label) + arrow + '</div>' +
+          '<div style="font-family:\'Space Mono\',monospace;font-size:26px;font-weight:700;color:' + k.val + ';margin-top:1px">' + count + '</div>' + sub + '</div>' +
+      '</div>';
+    };
+    v.innerHTML = '<div style="max-width:1320px;margin:0 auto;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
+      '<div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:16px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 14px 32px -18px rgba(0,0,0,.65);margin-bottom:16px">' +
+        '<div style="display:flex;align-items:center;gap:13px;min-width:0">' +
+          '<div style="width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">🔧</div>' +
+          '<div style="min-width:0">' +
+            '<h1 style="margin:0;font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:24px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.1">ÞjónustuVerkstæði</h1>' +
+            '<div style="font-size:12.5px;color:rgba(255,255,255,.6);margin-top:2px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · áætl. <b style="font-family:\'Space Mono\',monospace;color:#fff">' + fmtSum(vinnslaSum) + '</b>' : '') + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">' +
+          '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>☰ Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>▭ Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>▦ Spjöld</button></div>' +
+          '<select class="sv-sort" title="Raða Í-vinnslu listanum">' +
+            '<option value="name"' + (_sort === 'name' ? ' selected' : '') + '>↕ Nafn (A–Ö)</option>' +
+            '<option value="revenue"' + (_sort === 'revenue' ? ' selected' : '') + '>↕ Hæstu tekjur</option>' +
+            '<option value="marked"' + (_sort === 'marked' ? ' selected' : '') + '>↕ Nýlega merkt</option>' +
+          '</select>' +
+        '</div>' +
       '</div>' +
-      '<p style="color:#5b6472;font-size:13px;margin:4px 0 16px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · <span title="Samtals áætlaðar tekjur, m. vsk">áætl. <b style="font-family:\'Space Mono\',monospace;color:#11141c">' + fmtSum(vinnslaSum) + '</b></span>' : '') + '.</p>' +
       '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px">' +
-        '<span class="sv-chip" style="background:#eef3ff;border-color:#c6d6ff;color:#2f5fe0"><span style="width:9px;height:9px;border-radius:50%;background:#2f5fe0"></span><span class="n" style="color:#2f5fe0">' + b.vinnsla.length + '</span> í vinnslu</span>' +
-        '<span class="sv-chip" data-toggle="dagskra" style="background:#fffbeb;border-color:#fde68a;color:#b45309"><span style="width:9px;height:9px;border-radius:50%;background:#b45309"></span><span class="n" style="color:#b45309">' + b.dagskra.length + '</span> á dagskrá ' + (_openDagskra ? '▾' : '▸') + '</span>' +
-        '<span class="sv-chip" data-toggle="buid" style="background:#ecfdf5;border-color:#a7f3d0;color:#047857"><span style="width:9px;height:9px;border-radius:50%;background:#047857"></span><span class="n" style="color:#047857">' + b.buid.length + '</span> búin í ár ' + (_openBuid ? '▾' : '▸') + '</span>' +
-        '<select class="sv-sort" title="Raða Í-vinnslu listanum" style="margin-left:auto;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink2);border:1px solid var(--brd);border-radius:99px;padding:7px 30px 7px 13px;background:var(--surface);cursor:pointer">' +
-          '<option value="name"' + (_sort === 'name' ? ' selected' : '') + '>↕ Nafn (A–Ö)</option>' +
-          '<option value="revenue"' + (_sort === 'revenue' ? ' selected' : '') + '>↕ Hæstu tekjur</option>' +
-          '<option value="marked"' + (_sort === 'marked' ? ' selected' : '') + '>↕ Nýlega merkt</option>' +
-        '</select>' +
+        statTile('Í vinnslu', b.vinnsla.length, 'blue') +
+        statTile('Á dagskrá', b.dagskra.length, 'gold', { toggle: 'dagskra', open: _openDagskra }) +
+        statTile('Búin í ár', b.buid.length, 'green', { toggle: 'buid', open: _openBuid }) +
       '</div>' +
       dagskraDrawer + buidDrawer + body + '</div>';
 
@@ -385,7 +411,7 @@
     const sortSel = v.querySelector('.sv-sort');
     if (sortSel) sortSel.addEventListener('change', e => setSort(e.target.value));
     // collapse/expand sides
-    v.querySelectorAll('.sv-chip[data-toggle]').forEach(ch => ch.addEventListener('click', () => {
+    v.querySelectorAll('[data-toggle]').forEach(ch => ch.addEventListener('click', () => {
       if (ch.dataset.toggle === 'dagskra') _openDagskra = !_openDagskra; else _openBuid = !_openBuid;
       render();
     }));
