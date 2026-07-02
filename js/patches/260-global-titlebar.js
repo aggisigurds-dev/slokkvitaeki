@@ -91,29 +91,28 @@
   function apply() {
     const view = activeView();
     if (!view || SKIP.has(view.id)) return;
-    if (!isBrunastal()) {                     // theme changed away → tear down
-      const old = view.querySelector(':scope > [' + BAR_ATTR + ']');
-      if (old) old.remove();
-      view.querySelectorAll('[data-ghhide]').forEach(h => { h.style.display = ''; h.removeAttribute('data-ghhide'); });
-      return;
-    }
+    const bar = view.querySelector(':scope > [' + BAR_ATTR + ']');
+    if (!isBrunastal()) { if (bar) bar.remove(); return; }   // theme changed away → tear down
+
+    // Only add the bar to pages that DON'T already render their own title —
+    // otherwise we'd duplicate a header the page already draws (Fyrirtæki í
+    // Þjónustu, Bókhald, …). Those keep their own header (patch 245 whitens it
+    // on the band). The bar is for the title-LESS outliers (Þjónustutæki etc.).
+    const hasOwnTitle = Array.from(view.querySelectorAll('h1, h2')).some(h => {
+      if (bar && bar.contains(h)) return false;
+      return (h.textContent || '').trim().length > 1 && h.offsetParent !== null;
+    });
+    if (hasOwnTitle) { if (bar) bar.remove(); return; }
+
     const title = navTitle();
     if (!title) return;
-
-    // Hide the page's own duplicate title (survives re-renders via re-apply).
-    const own = ownHeading(view, title);
-    const icon = ICONS[view.id] || leadingEmoji(title) || (own ? leadingEmoji(own.textContent) : '') || '📄';
-
-    let bar = view.querySelector(':scope > [' + BAR_ATTR + ']');
+    const icon = ICONS[view.id] || leadingEmoji(title) || '📄';
     if (!bar) {
-      bar = buildBar(icon, stripEmoji(title) || title, '');
-      view.insertBefore(bar, view.firstChild);
+      view.insertBefore(buildBar(icon, stripEmoji(title) || title, ''), view.firstChild);
     } else {
-      // keep title fresh if the nav label changed
       const h1 = bar.querySelector('h1');
       if (h1 && h1.textContent !== (stripEmoji(title) || title)) h1.textContent = stripEmoji(title) || title;
     }
-    if (own && own.style.display !== 'none') { own.setAttribute('data-ghhide', '1'); own.style.display = 'none'; }
   }
 
   // ── wiring: view-switch hook + observer + boot ────────────────────────────
