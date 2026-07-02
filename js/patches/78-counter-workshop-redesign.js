@@ -45,6 +45,26 @@
     const ds = (jobs || []).map(j => j && (j.dropoff || j.created_at)).filter(Boolean).sort();
     return ds.length ? fmtD(ds[0]) : '';
   }
+
+  // 2026-07-02 (critical): group verk by CUSTOMER IDENTITY, not by the name
+  // string alone. Walk-ins have no kennitala, so three DIFFERENT people all
+  // called "Arni" used to collapse into one "Arni · 3 verk" group — mixing
+  // strangers' extinguishers together on both the Afgreiðsla and Verkstæði
+  // boards. The phone number is the reliable discriminator we already store,
+  // so: same name + same phone = same person; a different phone = a different
+  // person (kept apart). Multi-tæki from ONE drop-off share the phone (or, if
+  // no phone was entered, the R-number base R-000485 from R-000485-V1), so
+  // they still group. Companies are phone-less but have a unique name, so they
+  // keep merging by name exactly as before.
+  function digitsOnly(s) { return String(s || '').replace(/\D/g, ''); }
+  function baseNum(n) { return String(n || '').trim().replace(/-V\d+$/i, ''); }
+  function custKey(j) {
+    const name = String(j && j.customer || '').trim().toLowerCase();
+    const ph = digitsOnly(j && j.phone);
+    if (ph) return 'p|' + name + '|' + ph;        // named walk-in / customer with a phone
+    if (name) return 'n|' + name;                 // named, no phone → merge by name (companies)
+    return 'b|' + baseNum(j && j.num);            // truly anonymous → keep each drop-off apart
+  }
   // m. vsk line total for a stored spare part {qty,verd_an_vsk,vsk_prosenta}
   function partTotal(p) { return (+p.qty || 1) * (+p.verd_an_vsk || 0) * (1 + (+p.vsk_prosenta || 24) / 100); }
 
@@ -139,19 +159,20 @@
   function renderJobs(statusKey, jobs, isReady) {
     if (!jobs.length) return '<div style="padding:20px;color:#94a3b8;font-size:12px;text-align:center">Engin verk</div>';
     const byCust = {};
-    jobs.forEach(j => { (byCust[j.customer] = byCust[j.customer] || []).push(j); });
+    jobs.forEach(j => { const k = custKey(j); (byCust[k] = byCust[k] || []).push(j); });
     const rendered = {};
     let html = '';
     jobs.forEach(j => {
-      if (rendered[j.customer]) return;
-      const list = byCust[j.customer];
+      const k = custKey(j);
+      if (rendered[k]) return;
+      const list = byCust[k];
       if (list.length === 1) {
         html += isReady ? readyCard(j) : jobCard(j);
       } else {
         const totalUnits = list.reduce((s, jj) => s + (jj.units ? jj.units.length : 0), 0);
-        html += customerGroup(statusKey, { name: j.customer, jobs: list, totalUnits }, isReady);
+        html += customerGroup(statusKey, { name: j.customer, key: k, jobs: list, totalUnits }, isReady);
       }
-      rendered[j.customer] = true;
+      rendered[k] = true;
     });
     return html;
   }
@@ -164,7 +185,7 @@
       '<div style="min-width:0;flex:1">' +
         `<div style="font-family:var(--mono,monospace);font-size:11px;color:#94a3b8;font-weight:600">${dnum(j.num)}</div>` +
         `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
-        `<div style="font-size:11px;color:#64748b">${j.units ? j.units.length : 0} slökkvitæki${jobDate(j) ? ' · ' + jobDate(j) : ''} ${badge}</div>` +
+        `<div style="font-size:11px;color:#64748b">${j.units ? j.units.length : 0} slökkvitæki${digitsOnly(j.phone) ? ' · ☎ ' + esc(digitsOnly(j.phone)) : ''}${jobDate(j) ? ' · ' + jobDate(j) : ''} ${badge}</div>` +
       '</div>' +
     '</div>';
   }
@@ -182,7 +203,7 @@
   }
 
   function customerGroup(statusKey, co, isReady) {
-    const key = statusKey + ':' + co.name;
+    const key = statusKey + ':' + (co.key || co.name);
     const expanded = Counter.expandedCos[key] === true;
     const caret = expanded ? '▼' : '▶';
     let inner = '';
@@ -226,7 +247,7 @@
         `<span style="color:#64748b;font-size:13px;width:14px">${caret}</span>` +
         '<div style="min-width:0;flex:1">' +
           `<div style="font-size:13px;font-weight:600;color:${nameCol};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(co.name)}</div>` +
-          `<div style="font-size:11px;color:#64748b">${co.jobs.length} verk · ${co.totalUnits} tæki${groupDate(co.jobs) ? ' · ' + groupDate(co.jobs) : ''}</div>` +
+          `<div style="font-size:11px;color:#64748b">${co.jobs.length} verk · ${co.totalUnits} tæki${co.jobs[0] && digitsOnly(co.jobs[0].phone) ? ' · ☎ ' + esc(digitsOnly(co.jobs[0].phone)) : ''}${groupDate(co.jobs) ? ' · ' + groupDate(co.jobs) : ''}</div>` +
         '</div>' +
         groupCollect +
       '</div>' +
@@ -368,7 +389,7 @@
   function wRenderJobs(statusKey, jobs) {
     if (!jobs.length) return '<div style="padding:20px;color:#94a3b8;font-size:12px;text-align:center">Engin verk í vinnslu</div>';
     const byCust = {};
-    jobs.forEach(j => { (byCust[j.customer] = byCust[j.customer] || []).push(j); });
+    jobs.forEach(j => { const k = custKey(j); (byCust[k] = byCust[k] || []).push(j); });
     const rendered = {};
     let html = '';
     // 2026-05-21: unified layout — every customer (1 verk or many) renders
@@ -376,13 +397,14 @@
     // for everyone. The old wJobCard branch for single-verk customers is
     // retired; users said the mixed layouts looked messy.
     jobs.forEach(j => {
-      if (rendered[j.customer]) return;
-      const list = byCust[j.customer];
+      const k = custKey(j);
+      if (rendered[k]) return;
+      const list = byCust[k];
       const tot  = list.reduce((s, jj) => s + live(jj.units).length, 0);
       const done = list.reduce((s, jj) => s + live(jj.units).filter(u => u.status === 'done').length, 0);
-      rendered[j.customer] = true;
+      rendered[k] = true;
       if (tot === 0) return;   // every tæki deleted → drop the customer from the workshop
-      html += wCustomerGroup(statusKey, { name: j.customer, jobs: list, totalUnits: tot, doneUnits: done });
+      html += wCustomerGroup(statusKey, { name: j.customer, key: k, jobs: list, totalUnits: tot, doneUnits: done });
     });
     return `<div style="display:flex;flex-direction:column;gap:5px">${html}</div>`;
   }
@@ -479,7 +501,7 @@
         '<div class="bw-row-top">' +
           '<div class="bw-cinfo">' +
             `<div class="bw-cname">${esc(co.name)}</div>` +
-            `<div class="bw-cmeta">${co.jobs.length} verk · ${co.doneUnits}/${co.totalUnits} lokið</div>` +
+            `<div class="bw-cmeta">${co.jobs.length} verk · ${co.doneUnits}/${co.totalUnits} lokið${co.jobs[0] && digitsOnly(co.jobs[0].phone) ? ' · ☎ ' + esc(digitsOnly(co.jobs[0].phone)) : ''}</div>` +
           '</div>' +
           renderUnitTiles(co.jobs) +
         '</div>' +
