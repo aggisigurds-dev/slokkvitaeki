@@ -323,7 +323,7 @@
   function viewEl() { return document.getElementById(VIEW_ID); }
   function ensureView() {
     if (viewEl()) return;
-    const v = document.createElement('div'); v.id = VIEW_ID; v.className = 'view'; v.style.cssText = 'padding:20px';
+    const v = document.createElement('div'); v.id = VIEW_ID; v.className = 'view'; v.style.cssText = 'padding:10px 16px 34px';
     const ref = document.getElementById('view-workshop') || document.getElementById('view-counter');
     if (ref && ref.parentNode) ref.parentNode.insertBefore(v, ref.nextSibling); else document.body.appendChild(v);
   }
@@ -374,19 +374,19 @@
       opts = opts || {}; const k = TILE[kind] || TILE.blue; const clk = !!opts.toggle;
       const arrow = clk ? (' <span style="color:#9098a6;font-size:11px">' + (opts.open ? '▾' : '▸') + '</span>') : '';
       const sub = opts.sub ? ('<div style="font-size:11px;color:#9098a6;margin-top:1px;font-family:\'Space Mono\',monospace">' + esc(opts.sub) + '</div>') : '';
-      return '<div ' + (clk ? 'data-toggle="' + opts.toggle + '" ' : '') + 'style="flex:1 1 220px;min-width:220px;border-radius:18px;padding:15px 17px;display:flex;align-items:center;gap:13px;background:linear-gradient(180deg,#ffffff,#eef1f6);box-shadow:' + cardShadow + ';' + (clk ? 'cursor:pointer' : '') + '">' +
-        '<div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;background:' + k.icbg + ';box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.25),0 4px 10px -3px ' + k.glow + '">' + k.ic + '</div>' +
-        '<div style="min-width:0"><div style="font-size:10.5px;font-weight:700;letter-spacing:.14em;color:#8a93a5;text-transform:uppercase">' + esc(label) + arrow + '</div>' +
-          '<div style="font-family:\'Space Mono\',monospace;font-size:26px;font-weight:700;color:' + k.val + ';margin-top:1px">' + count + '</div>' + sub + '</div>' +
+      return '<div ' + (clk ? 'data-toggle="' + opts.toggle + '" ' : '') + 'style="flex:1 1 195px;min-width:195px;border-radius:15px;padding:11px 14px;display:flex;align-items:center;gap:11px;background:linear-gradient(180deg,#ffffff,#eef1f6);box-shadow:' + cardShadow + ';' + (clk ? 'cursor:pointer' : '') + '">' +
+        '<div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;background:' + k.icbg + ';box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.25),0 4px 10px -3px ' + k.glow + '">' + k.ic + '</div>' +
+        '<div style="min-width:0"><div style="font-size:9.5px;font-weight:700;letter-spacing:.12em;color:#8a93a5;text-transform:uppercase">' + esc(label) + arrow + '</div>' +
+          '<div style="font-family:\'Space Mono\',monospace;font-size:20px;font-weight:700;color:' + k.val + ';margin-top:2px">' + count + '</div>' + sub + '</div>' +
       '</div>';
     };
     v.innerHTML = '<div style="max-width:none;margin:0;width:100%;box-sizing:border-box;padding:4px 6px;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
-      '<div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:16px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 14px 32px -18px rgba(0,0,0,.65);margin-bottom:16px">' +
-        '<div style="display:flex;align-items:center;gap:13px;min-width:0">' +
-          '<div style="width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">🔧</div>' +
+      '<div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:14px;padding:9px 15px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 12px 28px -18px rgba(0,0,0,.65);margin-bottom:13px">' +
+        '<div style="display:flex;align-items:center;gap:11px;min-width:0">' +
+          '<div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">🔧</div>' +
           '<div style="min-width:0">' +
-            '<h1 style="margin:0;font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:24px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.1">ÞjónustuVerkstæði</h1>' +
-            '<div style="font-size:12.5px;color:rgba(255,255,255,.6);margin-top:2px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · áætl. <b style="font-family:\'Space Mono\',monospace;color:#fff">' + fmtSum(vinnslaSum) + '</b>' : '') + '</div>' +
+            '<h1 style="margin:0;font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">ÞjónustuVerkstæði</h1>' +
+            '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · áætl. <b style="font-family:\'Space Mono\',monospace;color:#fff">' + fmtSum(vinnslaSum) + '</b>' : '') + '</div>' +
           '</div>' +
         '</div>' +
         '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">' +
@@ -398,7 +398,7 @@
           '</select>' +
         '</div>' +
       '</div>' +
-      '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:18px">' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:13px">' +
         statTile('Í vinnslu', b.vinnsla.length, 'blue') +
         statTile('Á dagskrá', b.dagskra.length, 'gold', { toggle: 'dagskra', open: _openDagskra }) +
         statTile('Búin í ár', b.buid.length, 'green', { toggle: 'buid', open: _openBuid }) +
