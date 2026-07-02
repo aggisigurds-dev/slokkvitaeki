@@ -355,14 +355,14 @@
     const greittLabel = (_state.mode === 'kt' || _state.scope !== 'month') ? 'Greitt' : 'Greitt í mán.';
     const darkBtn = 'padding:8px 11px;border:1px solid rgba(255,255,255,.16);border-radius:9px;background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font:inherit;font-size:13px';
     main.innerHTML = `
-      <div style="max-width:none;margin:0;padding:14px 20px 40px;width:100%;box-sizing:border-box;font-family:'Space Grotesk',system-ui,sans-serif">
+      <div style="max-width:none;margin:0;padding:10px 18px 34px;width:100%;box-sizing:border-box;font-family:'Space Grotesk',system-ui,sans-serif">
 
         <!-- Dark metallic header bar -->
-        <div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:16px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 14px 32px -18px rgba(0,0,0,.65);margin-bottom:16px">
-          <div style="display:flex;align-items:center;gap:13px;min-width:0">
-            <div style="width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">📜</div>
+        <div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:14px;padding:9px 15px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 12px 28px -18px rgba(0,0,0,.65);margin-bottom:13px">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0">
+            <div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">📜</div>
             <div style="min-width:0">
-              <h1 class="hl-h1" style="margin:0;font-family:'Space Grotesk',sans-serif;font-size:24px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.1">Hreyfingarlisti</h1>
+              <h1 class="hl-h1" style="margin:0;font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">Hreyfingarlisti</h1>
               ${_state.mode === 'kt' && _state.ktInfo
                 ? `<div class="hl-sub" style="font-size:12.5px;color:rgba(255,255,255,.7);margin-top:2px">👤 <b>${esc(_state.ktInfo.nafn)}</b>${_state.ktInfo.ktFmt ? ' · <span class="hl-mono">kt. ' + esc(_state.ktInfo.ktFmt) + '</span>' : ''} · ${_state.all.length} færslur${_state.ktInfo.locs > 1 ? ' · 📍 ' + _state.ktInfo.locs + ' staðsetningar' : ''}</div>`
                 : `<div class="hl-sub" style="font-size:12.5px;color:rgba(255,255,255,.6);margin-top:2px">Tímaröð yfir allar færslur — smelltu á dálk til að raða</div>`}
@@ -384,7 +384,7 @@
         </div>
 
         <!-- 3D stat cards -->
-        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
           ${statCard3d('Sölur', sales, 'blue')}
           ${statCard3d('Kreditfært', -credits, 'red')}
           ${statCard3d(greittLabel, paidIn, 'green')}
@@ -538,21 +538,21 @@
     };
     const shadow = '0 1px 1px rgba(15,23,42,.05),0 8px 16px -8px rgba(15,23,42,.15),0 24px 44px -20px rgba(15,23,42,.3),inset 0 2px 0 rgba(255,255,255,.95),inset 0 -10px 20px -14px rgba(15,23,42,.14)';
     const wrap = (bg, extraShadow, iconTile, labelCol, valCol) =>
-      '<div style="flex:1 1 240px;min-width:240px;border-radius:18px;padding:15px 17px;display:flex;align-items:center;gap:13px;background:' + bg + ';box-shadow:' + extraShadow + '">' +
+      '<div style="flex:1 1 195px;min-width:195px;border-radius:15px;padding:11px 14px;display:flex;align-items:center;gap:11px;background:' + bg + ';box-shadow:' + extraShadow + '">' +
         iconTile +
         '<div style="min-width:0">' +
-          '<div style="font-size:10.5px;font-weight:700;letter-spacing:.14em;color:' + labelCol + ';text-transform:uppercase">' + esc(label) + '</div>' +
-          '<div class="hl-mono" style="font-size:25px;font-weight:700;color:' + valCol + ';margin-top:3px;white-space:nowrap">' + esc(fmtKr(value)) + '</div>' +
+          '<div style="font-size:9.5px;font-weight:700;letter-spacing:.12em;color:' + labelCol + ';text-transform:uppercase">' + esc(label) + '</div>' +
+          '<div class="hl-mono" style="font-size:20px;font-weight:700;color:' + valCol + ';margin-top:2px;white-space:nowrap">' + esc(fmtKr(value)) + '</div>' +
         '</div>' +
       '</div>';
     if (kind === 'hero') {
-      const tile = '<div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff;background:rgba(255,255,255,.16);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.2)">Σ</div>';
+      const tile = '<div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;background:rgba(255,255,255,.16);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.2)">Σ</div>';
       return wrap('linear-gradient(150deg,#6f97ff 0%,#2f5fe0 34%,#1c3d8c 60%,#0b1838 100%)',
-        '0 1px 1px rgba(15,23,42,.05),0 10px 20px -8px rgba(15,23,42,.25),0 26px 46px -20px rgba(20,40,120,.5),inset 0 1px 0 rgba(255,255,255,.45)',
+        '0 1px 1px rgba(15,23,42,.05),0 8px 16px -8px rgba(15,23,42,.25),0 20px 38px -20px rgba(20,40,120,.5),inset 0 1px 0 rgba(255,255,255,.45)',
         tile, 'rgba(255,255,255,.72)', '#fff');
     }
     const k = K[kind] || K.blue;
-    const tile = '<div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;background:' + k.icbg + ';box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.25),0 4px 10px -3px ' + k.glow + '">' + k.ic + '</div>';
+    const tile = '<div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;background:' + k.icbg + ';box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.25),0 4px 10px -3px ' + k.glow + '">' + k.ic + '</div>';
     return wrap('linear-gradient(180deg,#ffffff,#eef1f6)', shadow, tile, '#8a93a5', k.val);
   }
 
