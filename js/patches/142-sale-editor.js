@@ -44,7 +44,15 @@
     if (sale.paid_at) return false;
     return sale.status === 'drog' || !sale.status; // allow rows where status NULL = drög too
   }
-  function isLocked(sale) { return !isDraft(sale); }
+  // A reikningur that is FINAL but has NOT been sent yet (no Payday/krafa/dk push,
+  // not paid, not a credit note) is safe to edit IN PLACE — nothing has left the
+  // building. Lets Agnar fix a forgotten discount without a credit note.
+  function isUnsentFinal(sale) {
+    if (!sale) return false;
+    return sale.status === 'final' && !sale.is_credit && !sale.paid_at
+      && !sale.invoiced_at && !sale.krafa_sent_at && !sale.dk_invoice_id;
+  }
+  function isLocked(sale) { return !isDraft(sale) && !isUnsentFinal(sale); }
 
   // ── Open ──────────────────────────────────────────────────────────────────
   async function openById(id) {
@@ -138,7 +146,9 @@
 
     const lockNote = locked
       ? '<div style="margin-bottom:14px;padding:10px 13px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;font-size:12.5px;color:#78350f">🔒 Þessi sala er lokuð (' + (_sale.is_credit ? 'kreditfærsla' : 'kláruð') + '). Notaðu kreditfærslu til að breyta.</div>'
-      : '';
+      : (isUnsentFinal(_sale)
+        ? '<div style="margin-bottom:14px;padding:10px 13px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;font-size:12.5px;color:#1e40af">✏️ Þessi reikningur er <b>tilbúinn en óSENDUR</b> — óhætt að breyta beint (t.d. bæta við afslætti). Engin kreditfærsla þörf fyrr en hann hefur verið sendur.</div>'
+        : '');
 
     body.innerHTML = `
       ${lockNote}
@@ -531,9 +541,12 @@
     const f = _dlg.querySelector('#_se-foot');
     const locked = isLocked(_sale);
     let html = '<button id="_se-close" type="button" style="padding:9px 18px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Loka</button>';
-    if (!locked) {
+    if (isDraft(_sale)) {
       html += '<button id="_se-save" type="button" style="padding:9px 18px;background:#f59e0b;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">💾 Vista sem drög</button>';
       html += '<button id="_se-finalize" type="button" style="padding:9px 20px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">✅ Klára sölu</button>';
+    } else if (isUnsentFinal(_sale)) {
+      // Unsent reikningur → save the changes straight onto it (keeps status final).
+      html += '<button id="_se-save" type="button" title="Vista breytingar á þessum óSENDA reikningi (t.d. afsláttur)" style="padding:9px 20px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">💾 Vista breytingar</button>';
     } else if (!_sale.is_credit) {
       html += '<button id="_se-credit" type="button" style="padding:9px 18px;background:#c2410c;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">↩ Kreditfæra</button>';
     }

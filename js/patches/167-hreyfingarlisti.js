@@ -423,6 +423,43 @@
     main.querySelectorAll('._hr-send').forEach(b => {
       b.addEventListener('click', () => sendReceipt(b.dataset.id));
     });
+    main.querySelectorAll('._hr-edit').forEach(b => {
+      b.addEventListener('click', () => {
+        if (window.SaleEditor && SaleEditor.openById) SaleEditor.openById(b.dataset.id);
+        else alert('Sölu-editor ekki tiltækur.');
+      });
+    });
+    main.querySelectorAll('._hr-nyjan').forEach(b => {
+      b.addEventListener('click', () => {
+        if (typeof window.SalaNyjan === 'function') window.SalaNyjan(b.dataset.kt, b.dataset.nafn);
+        else { try { if (window.App && App.switchView) App.switchView('sala'); } catch (_) {} }
+      });
+    });
+    main.querySelectorAll('._hr-bakfaera').forEach(b => {
+      b.addEventListener('click', async () => {
+        if (!window.CreditInvoice || !CreditInvoice.open) { alert('Kreditfærslueining ekki tiltæk.'); return; }
+        const SB = getSB(); if (!SB) return;
+        const r = await SB.from('solur')
+          .select('id,num,customer_nafn,customer_id,samtals,upphaed_an_vsk,vsk_upphaed,linur,greitt_med')
+          .eq('id', b.dataset.id).single();
+        if (r.error || !r.data) { alert('Salan fannst ekki.'); return; }
+        const d = r.data;
+        CreditInvoice.open({
+          id: d.id, num: d.num, customer: d.customer_nafn, customer_id: d.customer_id,
+          total: +(d.samtals || 0), ex: +(d.upphaed_an_vsk || 0), vsk: +(d.vsk_upphaed || 0),
+          lines: Array.isArray(d.linur) ? d.linur : [], payment: d.greitt_med
+        });
+        // Refresh the list once the credit modal closes.
+        setTimeout(() => {
+          const modal = document.getElementById('ci-modal');
+          if (!modal) return;
+          const obs = new MutationObserver(() => {
+            if (modal.style.display === 'none' || !document.body.contains(modal)) { obs.disconnect(); load(_state.month || new Date()); }
+          });
+          obs.observe(modal, { attributes: true, attributeFilter: ['style'] });
+        }, 300);
+      });
+    });
     // Kennitala/nafn lookup — Enter pulls the customer's whole history.
     const _kl = main.querySelector('._hr-ktlookup');
     if (_kl) _kl.addEventListener('keydown', e => {
@@ -494,7 +531,13 @@
         <button class="_hr-send" data-id="${s.id}" type="button" title="Senda kvittun í tölvupósti"
           style="padding:4px 8px;background:#fff;color:#0f766e;border:1px solid #99f6e4;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;margin-right:4px">📧</button>
         <button class="_hr-view" data-id="${s.id}" type="button" title="Skoða / prenta / vista PDF"
-          style="padding:4px 8px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">🖨</button>
+          style="padding:4px 8px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;margin-right:4px">🖨</button>
+        ${s.is_credit ? '' : `<button class="_hr-edit" data-id="${s.id}" type="button" title="Breyta sölu — óSENDA reikninga má breyta beint (t.d. bæta afslætti)"
+          style="padding:4px 8px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;margin-right:4px">✏️</button>`}
+        ${s.is_credit ? '' : `<button class="_hr-bakfaera" data-id="${s.id}" type="button" title="Bakfæra (kreditfæra) þennan reikning"
+          style="padding:4px 8px;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;margin-right:4px">↩</button>`}
+        <button class="_hr-nyjan" data-kt="${esc(s.customer_kt || '')}" data-nafn="${esc(s.customer_nafn || '')}" type="button" title="Ný sala fyrir þennan viðskiptavin (opnar Sölu, afsláttur bætist sjálfkrafa)"
+          style="padding:4px 8px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">＋</button>
       </td>
     </tr>`;
   }
