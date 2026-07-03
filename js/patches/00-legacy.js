@@ -1243,7 +1243,10 @@ function wireNav(){
       e.preventDefault();
       e.stopPropagation();
       openVidModal();
-    } else if(/Reikning/i.test(view)){
+    } else if(/Reikning/i.test(view) && !/p[oó]stur/i.test(view)){
+      // NB do NOT hijack the "📧 Reikninga-póstur" page nav (patch 240) — that is a
+      // real view, not the legacy floating Reikningar modal. Only the old
+      // "Reikningar" nav should open openReikModal().
       e.preventDefault();
       e.stopPropagation();
       openReikModal();
