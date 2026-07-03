@@ -124,7 +124,11 @@
       (sl.data || []).forEach(s => { if (s.num) saleByNum[String(s.num).toUpperCase()] = s; });
       state.saleByNum = saleByNum;
 
-      state.emails = (em.data || []).map(classify);
+      // Drop content-less rows: browser-extension partial scrapes capture only a
+      // sender (no subject / body / snippet) → useless „(ekkert efni)" cards. The
+      // real content-bearing copy (Thunderbird bridge / cloud) stays.
+      state.emails = (em.data || []).map(classify)
+        .filter(m => (m.subject && m.subject.trim()) || (m.body_preview && m.body_preview.trim()) || (m.snippet && m.snippet.trim()));
       state.loaded = true; state.err = null;
     } catch (e) { state.err = String((e && e.message) || e); }
     state.loading = false; render();
@@ -491,8 +495,12 @@
       : '<span class="rp-badge wait">⏳ Ósvarað</span>');
     if (m.has_attachment) badges.push('<span class="rp-badge att">📎</span>');
     if (m._threadCount > 1) badges.push('<button class="rp-threadb _rp-thread" data-k="' + esc(m.threadKey) + '" type="button" title="Sýna allt samtalið">💬 ' + m._threadCount + '</button>');
-    const subj = m.subject || '(ekkert efni)';
-    const snip = (m.clean || m.snippet || m.body_preview || '').replace(/\s+/g, ' ').trim();
+    // Subject/snippet fall back to a thread sibling that DOES carry text, so a
+    // thread whose newest message is a bare scrape still shows something.
+    const sib = (m._thread || []).find(o => (o.clean || o.snippet || o.body_preview || '').trim()) || null;
+    const subj = m.subject || (sib && sib.subject) || '(ekkert efni)';
+    const snip = ((m.clean || m.snippet || m.body_preview || '')
+      || (sib ? (sib.clean || sib.snippet || sib.body_preview || '') : '')).replace(/\s+/g, ' ').trim();
     const custHTML = m.cust
       ? '<a class="rp-cust" ' + (m.cust.coId ? 'data-co="' + esc(String(m.cust.coId)) + '" ' : '') + (m.cust.kt ? 'data-kt="' + esc(ktDigits(m.cust.kt)) + '" ' : '') + 'title="Opna kúnna">' + esc(m.cust.name || '—') + '<span class="by">tengt: ' + esc(m.matchBy || '') + (m.sale ? ' · ' + esc(m.sale.num) : '') + '</span></a>'
       : '<span class="rp-nomatch">enginn kúnni fannst</span>';
