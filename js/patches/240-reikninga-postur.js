@@ -626,19 +626,27 @@
   }
 
   // ── wiring (mirrors patch 239) ──────────────────────────────────────────
+  const NAV_LABEL = '📧 Reikninga-póstur';
   function ensureSidebarButton() {
-    if (document.querySelector('[data-view="' + NAV_KEY + '"]')) return true;
-    const sib = document.querySelector('[data-view="krofu-yfirlit"]')
-      || document.querySelector('[data-view="hreyfingarlisti"]')
+    const existing = document.querySelector('[data-view="' + NAV_KEY + '"]');
+    if (existing) {
+      // A sidebar rebuild (patch 68/180/244) can revert the label to the clone
+      // source's text — re-assert it every tick so it never reads "Kröfu yfirlit".
+      if ((existing.textContent || '').indexOf('Reikninga-póstur') === -1) existing.textContent = NAV_LABEL;
+      return true;
+    }
+    // Clone a SIMPLE text-label button (Hreyfingarlisti/Bakendi) — NOT Kröfu
+    // yfirlit (patch 166), whose icon-span + text-node + badge markup made the
+    // old piecemeal relabel leave a stray "Kröfu yfirlit" text → a duplicate nav.
+    const sib = document.querySelector('[data-view="hreyfingarlisti"]')
       || document.querySelector('[data-view="bakendi"]')
+      || document.querySelector('[data-view="krofu-yfirlit"]')
       || document.querySelector('[data-view]');
     if (!sib) return false;
     const btn = sib.cloneNode(true);
     btn.dataset.view = NAV_KEY;
-    const txtSpan = btn.querySelector('span:not([class*="icon"]):not([class*="badge"])');
-    if (txtSpan) txtSpan.textContent = '📧 Reikninga-póstur';
-    else for (const c of btn.childNodes) if (c.nodeType === 3 && c.nodeValue.trim()) { c.nodeValue = ' 📧 Reikninga-póstur'; break; }
-    btn.querySelectorAll('.count, .badge, [class*="badge"], [class*="count"]').forEach(n => n.remove());
+    // Rebuild the label from scratch: one clean text node, no leftover markup.
+    btn.textContent = NAV_LABEL;
     btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (window.App && App.switchView) App.switchView(NAV_KEY); });
     sib.parentNode.insertBefore(btn, sib.nextSibling);
     return true;
