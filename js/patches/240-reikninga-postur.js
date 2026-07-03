@@ -15,7 +15,14 @@
  *   • „🧾 Sendir reikningar" = afrit reikninga sem VIÐ sendum (delivery@payday.is).
  *   • „Allt" = allt.
  *
- * READ-ONLY: engin sending/skrif í þessari útgáfu. Aðgerðir opna kúnna / sögu.
+ * Aðgerðir per póst:
+ *   • Opna / Saga           — opna kúnna eða hreyfingarlista (read).
+ *   • ✉️ Senda              — velja reikning kúnnans, teikna PDF (patch 233
+ *                             UttektInvoicePdf) og senda gegnum /api/email-send
+ *                             (Resend) á hvaða netfang sem er.
+ *   • ✏️ Breyta             — opna reikninginn í sölu-ritli (patch 142 SaleEditor).
+ *   • 🤖 Svar               — Claude semur íslenskt uppkast að svari
+ *                             (/api/postur-reply, Haiku) sem má yfirfara + senda.
  * Public API: window.ReikningaPostur = { open, reload }.
  * ========================================================================== */
 (() => {
@@ -183,6 +190,53 @@
       V + '.rp-btn:hover{background:#eef3ff;color:#1d4ed8;border-color:#c6d6ff}',
       V + '.rp-empty{padding:44px;text-align:center;color:#64748b;background:rgba(255,255,255,.75);border-radius:14px}',
       V + '.rp-err{padding:20px;color:#fecaca;background:#450a0a;border:1px solid #7f1d1d;border-radius:12px}',
+      V + '.rp-btn.prim{background:linear-gradient(180deg,#3b82f6,#1d4ed8);color:#fff;border-color:#1d4ed8}',
+      V + '.rp-btn.prim:hover{background:linear-gradient(180deg,#2563eb,#1e40af);color:#fff}',
+      V + '.rp-btn.ai{background:linear-gradient(180deg,#fff,#f3e8ff);color:#7c3aed;border-color:#ddd6fe}',
+      V + '.rp-btn.ai:hover{background:#f5f0ff;color:#6d28d9;border-color:#c4b5fd}',
+      // ── modal (appended to body — outside .view so patch-245 can't touch it) ──
+      '#_rp-modal{position:fixed;inset:0;z-index:100050;display:flex;align-items:center;justify-content:center;font-family:"Space Grotesk",system-ui,sans-serif}',
+      '#_rp-modal .rpm-back{position:absolute;inset:0;background:rgba(6,7,10,.62);backdrop-filter:blur(2px)}',
+      '#_rp-modal .rpm-card{position:relative;background:#fff;border-radius:16px;box-shadow:0 30px 80px -20px rgba(0,0,0,.6);width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden}',
+      '#_rp-modal .rpm-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 20px;border-bottom:1px solid #eef1f6}',
+      '#_rp-modal .rpm-head h3{margin:0;font-size:16px;font-weight:700;color:#11141c}',
+      '#_rp-modal .rpm-head .sub{font-size:11.5px;color:#94a3b8;font-weight:500;margin-top:1px}',
+      '#_rp-modal .rpm-x{background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer;padding:2px 8px;border-radius:8px;line-height:1}',
+      '#_rp-modal .rpm-x:hover{background:#f1f5f9;color:#334155}',
+      '#_rp-modal .rpm-body{padding:18px 20px;overflow:auto}',
+      '#_rp-modal .rpm-lbl{display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:0 0 5px}',
+      '#_rp-modal .rpm-row{margin-bottom:14px}',
+      '#_rp-modal input[type=email],#_rp-modal input[type=text],#_rp-modal textarea{width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;font-size:13.5px;color:#11141c;box-sizing:border-box;background:#fff}',
+      '#_rp-modal input:focus,#_rp-modal textarea:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}',
+      '#_rp-modal textarea{resize:vertical;min-height:150px;line-height:1.5}',
+      '#_rp-modal textarea.reply{min-height:230px;font-size:13.5px}',
+      '#_rp-modal .rpm-invs{display:flex;flex-direction:column;gap:6px;max-height:210px;overflow:auto;border:1px solid #eef1f6;border-radius:10px;padding:7px}',
+      '#_rp-modal .rpm-inv{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;cursor:pointer;border:1px solid transparent}',
+      '#_rp-modal .rpm-inv:hover{background:#f8fafc}',
+      '#_rp-modal .rpm-inv.sel{background:#eef3ff;border-color:#c6d6ff}',
+      '#_rp-modal .rpm-inv input{width:auto;flex:none}',
+      '#_rp-modal .rpm-inv .n{font-weight:700;color:#11141c;font-size:13px}',
+      '#_rp-modal .rpm-inv .meta{font-size:11.5px;color:#64748b;margin-left:auto;text-align:right}',
+      '#_rp-modal .rpm-inv .paid{color:#059669;font-weight:700}',
+      '#_rp-modal .rpm-src{font-size:11.5px;color:#475569;background:#f8fafc;border:1px solid #eef1f6;border-radius:9px;padding:10px 12px;line-height:1.5;max-height:120px;overflow:auto}',
+      '#_rp-modal .rpm-src b{color:#11141c}',
+      '#_rp-modal .rpm-note{font-size:12px;color:#94a3b8;margin:-6px 0 12px}',
+      '#_rp-modal .rpm-ai-tip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}',
+      '#_rp-modal .rpm-ai-tip button{font:inherit;font-size:11.5px;padding:5px 10px;border-radius:16px;border:1px solid #ddd6fe;background:#f5f0ff;color:#7c3aed;cursor:pointer}',
+      '#_rp-modal .rpm-ai-tip button:hover{background:#ede4ff}',
+      '#_rp-modal .rpm-foot{display:flex;align-items:center;gap:9px;justify-content:flex-end;padding:13px 20px;border-top:1px solid #eef1f6;flex-wrap:wrap}',
+      '#_rp-modal .rpm-foot .spacer{margin-right:auto}',
+      '#_rp-modal .rpm-btn{font:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:9px;border:1px solid #cbd5e1;background:#fff;color:#475569;cursor:pointer}',
+      '#_rp-modal .rpm-btn:hover{background:#f8fafc}',
+      '#_rp-modal .rpm-btn.prim{background:linear-gradient(180deg,#3b82f6,#1d4ed8);color:#fff;border:none}',
+      '#_rp-modal .rpm-btn.prim:hover{background:linear-gradient(180deg,#2563eb,#1e40af)}',
+      '#_rp-modal .rpm-btn.ai{background:linear-gradient(180deg,#8b5cf6,#6d28d9);color:#fff;border:none}',
+      '#_rp-modal .rpm-btn.ai:hover{background:linear-gradient(180deg,#7c3aed,#5b21b6)}',
+      '#_rp-modal .rpm-btn:disabled{opacity:.55;cursor:not-allowed}',
+      '#_rp-modal .rpm-msg{font-size:12.5px;font-weight:600}',
+      '#_rp-modal .rpm-msg.ok{color:#059669}',
+      '#_rp-modal .rpm-msg.bad{color:#dc2626}',
+      '#_rp-modal .rpm-load{padding:34px;text-align:center;color:#64748b;font-size:13px}',
     ].join('');
     const tag = document.createElement('style');
     tag.id = '_rp-styles'; tag.textContent = css;
@@ -220,7 +274,7 @@
     return rows;
   }
 
-  function rowHTML(m) {
+  function rowHTML(m, i) {
     const cls = 'rp-card' + (m.is_question ? ' q' : (m.cust ? ' matched' : ''));
     const badges = [];
     if (m.is_question) badges.push('<span class="rp-badge q">❓ Spurning</span>');
@@ -232,6 +286,13 @@
       ? '<a class="rp-cust" ' + (m.cust.coId ? 'data-co="' + esc(String(m.cust.coId)) + '" ' : '') + (m.cust.kt ? 'data-kt="' + esc(ktDigits(m.cust.kt)) + '" ' : '') + 'title="Opna kúnna">' + esc(m.cust.name || '—') + '<span class="by">tengt: ' + esc(m.matchBy || '') + (m.sale ? ' · ' + esc(m.sale.num) : '') + '</span></a>'
       : '<span class="rp-nomatch">enginn kúnni fannst</span>';
     const acts = [];
+    const di = ' data-i="' + i + '"';
+    // Tier 3 — draft a reply to anything that landed in the inbox (real people).
+    if (m.category === 'inbox' && !m.isSystem) acts.push('<button class="rp-btn ai _rp-reply"' + di + ' type="button" title="Semja svar með Claude">🤖 Svar</button>');
+    // Tier 2 — resend an invoice PDF (needs a customer to list invoices, or a matched sale).
+    if (m.cust || m.sale) acts.push('<button class="rp-btn prim _rp-send"' + di + ' type="button" title="Senda reikning sem PDF">✉️ Senda</button>');
+    // Tier 2 — jump straight into the matched invoice to change it.
+    if (m.sale) acts.push('<button class="rp-btn _rp-edit"' + di + ' type="button" title="Breyta reikningi">✏️ Breyta</button>');
     if (m.cust && (m.cust.coId || m.cust.kt)) {
       acts.push('<button class="rp-btn _rp-open" ' + (m.cust.coId ? 'data-co="' + esc(String(m.cust.coId)) + '" ' : '') + (m.cust.kt ? 'data-kt="' + esc(ktDigits(m.cust.kt)) + '" ' : '') + 'type="button">Opna</button>');
       if (m.cust.kt) acts.push('<button class="rp-btn _rp-saga" data-kt="' + esc(ktDigits(m.cust.kt)) + '" type="button">Saga</button>');
@@ -258,14 +319,15 @@
     else if (state.loading && !state.loaded) body = '<div class="rp-empty">Sæki pósta…</div>';
     else {
       const rows = currentRows();
-      body = rows.length ? '<div class="rp-list">' + rows.map(rowHTML).join('') + '</div>'
+      state._rows = rows;   // handlers below look up the message by data-i
+      body = rows.length ? '<div class="rp-list">' + rows.map((m, i) => rowHTML(m, i)).join('') + '</div>'
         : '<div class="rp-empty">' + (state.search ? 'Enginn póstur passar við leitina.' : 'Engir póstar í þessum flokki.') + '</div>';
     }
 
     v.innerHTML =
       '<div class="rp-main">' +
         '<div class="rp-head">' +
-          '<div class="rp-title"><h1>📧 Reikninga-póstur</h1><p>Póstar til eldklar@eldklar.is tengdir við kúnna og reikninga — það sem þarf svar efst.</p></div>' +
+          '<div class="rp-title"><h1>📧 Reikninga-póstur</h1><p>Póstar til eldklar@eldklar.is tengdir við kúnna — svaraðu, sendu reikning eða breyttu honum beint héðan.</p></div>' +
           '<button class="rp-reload" id="_rp-reload" type="button">↻ Endurhlaða</button>' +
         '</div>' +
         '<div class="rp-tools">' +
@@ -288,6 +350,10 @@
     });
     v.querySelectorAll('.rp-cust[data-co],.rp-cust[data-kt],._rp-open').forEach(a => a.addEventListener('click', () => openCustomer(a.dataset.co, a.dataset.kt)));
     v.querySelectorAll('._rp-saga').forEach(b => b.addEventListener('click', () => openSaga(b.dataset.kt)));
+    const rowFor = el => (state._rows || [])[+el.dataset.i];
+    v.querySelectorAll('._rp-send').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) openSendModal(m); }));
+    v.querySelectorAll('._rp-edit').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) editSale(m); }));
+    v.querySelectorAll('._rp-reply').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) openReplyModal(m); }));
   }
 
   function openCustomer(coId, kt) {
@@ -302,6 +368,261 @@
     kt = ktDigits(kt);
     try { if (window.App && App.switchView) App.switchView('hreyfingarlisti'); } catch (_) {}
     if (kt) setTimeout(() => { try { location.hash = '#hreyfingarlisti/' + kt; } catch (_) {} }, 80);
+  }
+
+  // ── Tier 2: ✏️ Breyta reikningi → open the sale in the sale editor (patch 142)
+  function editSale(m) {
+    try {
+      if (m.sale && window.SaleEditor) {
+        if (m.sale.id != null && SaleEditor.openById) return void SaleEditor.openById(m.sale.id);
+        if (m.sale.num && SaleEditor.openByNum) return void SaleEditor.openByNum(m.sale.num);
+      }
+    } catch (_) {}
+    // no specific invoice matched → drop the office on the customer so they pick it
+    openCustomer(m.cust && m.cust.coId, m.cust && m.cust.kt);
+  }
+
+  // ── shared modal shell ────────────────────────────────────────────────────
+  function modalEl() {
+    let el = document.getElementById('_rp-modal');
+    if (el) return el;
+    el = document.createElement('div');
+    el.id = '_rp-modal'; el.style.display = 'none';
+    el.innerHTML = '<div class="rpm-back"></div><div class="rpm-card"></div>';
+    document.body.appendChild(el);
+    el.querySelector('.rpm-back').addEventListener('click', closeModal);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+    return el;
+  }
+  function openModal(html) { const el = modalEl(); el.querySelector('.rpm-card').innerHTML = html; el.style.display = 'flex'; return el.querySelector('.rpm-card'); }
+  function closeModal() { const el = document.getElementById('_rp-modal'); if (el) el.style.display = 'none'; }
+
+  function blobToB64(blob) {
+    return new Promise((res, rej) => {
+      const fr = new FileReader();
+      fr.onload = () => { const s = String(fr.result || ''); const i = s.indexOf(','); res(i >= 0 ? s.slice(i + 1) : s); };
+      fr.onerror = rej; fr.readAsDataURL(blob);
+    });
+  }
+  function emailFrom() { return localStorage.getItem('email_from') || 'Slökkvitæki ehf <reikningar@eldklar.is>'; }
+  function fmtKr(n) { return (Math.round(Number(n) || 0)).toLocaleString('is-IS') + ' kr'; }
+
+  async function getFullSale(id) {
+    const SB = getSB(); if (!SB || id == null) return null;
+    try { const r = await SB.from('solur').select('*').eq('id', id).maybeSingle(); return (r && r.data) || null; } catch (_) { return null; }
+  }
+  async function getCustomerInvoices(kt) {
+    const SB = getSB(); const k = ktDigits(kt); if (!SB || !k) return [];
+    try {
+      const r = await SB.from('solur').select('*').eq('customer_kt', k).order('created_at', { ascending: false }).limit(40);
+      return (r && r.data) || [];
+    } catch (_) { return []; }
+  }
+  async function coForSale(sale, m) {
+    const SB = getSB();
+    const coId = m && m.cust && m.cust.coId;
+    if (SB && coId != null) {
+      try { const r = await SB.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang').eq('id', coId).maybeSingle(); if (r && r.data) return r.data; } catch (_) {}
+    }
+    return { nafn: (sale && sale.customer_nafn) || (m && m.cust && m.cust.name) || '', kennitala: (m && m.cust && m.cust.kt) || (sale && sale.customer_kt) || '', heimilisfang: '' };
+  }
+
+  // ── Tier 2: ✉️ Senda reikning — resend an invoice PDF to any address ────────
+  async function openSendModal(m) {
+    openModal('<div class="rpm-load">Sæki reikninga…</div>');
+    let invs = [];
+    const kt = m.cust && ktDigits(m.cust.kt);
+    if (kt) invs = await getCustomerInvoices(kt);
+    if (m.sale && !invs.some(s => String(s.id) === String(m.sale.id))) invs.unshift(m.sale);
+    // fyrst ógreiddir reikningur-sölur, svo eftir dagsetningu (nýjast fyrst)
+    invs = invs.filter(s => s && s.num);
+    const preId = m.sale ? String(m.sale.id) : (invs[0] ? String(invs[0].id) : '');
+    renderSendModal(m, invs, preId);
+  }
+  function renderSendModal(m, invs, selId) {
+    const to = m.from || '';
+    const invRows = invs.length ? invs.map(s =>
+      '<label class="rpm-inv' + (String(s.id) === selId ? ' sel' : '') + '" data-id="' + esc(String(s.id)) + '">' +
+        '<input type="radio" name="rpinv" value="' + esc(String(s.id)) + '"' + (String(s.id) === selId ? ' checked' : '') + '>' +
+        '<span class="n">' + esc(s.num || '—') + '</span>' +
+        '<span class="meta">' + fmtKr(s.samtals) + '<br>' + esc(fmtDate(s.created_at)) + (s.paid_at ? ' · <span class="paid">greitt</span>' : '') + '</span>' +
+      '</label>'
+    ).join('') : '<div class="rpm-note" style="margin:0">Engir reikningar fundust á þennan viðskiptavin.</div>';
+
+    openModal(
+      '<div class="rpm-head"><div><h3>✉️ Senda reikning</h3><div class="sub">' + esc((m.cust && m.cust.name) || m.sender_name || '') + '</div></div><button class="rpm-x" type="button">✕</button></div>' +
+      '<div class="rpm-body">' +
+        '<div class="rpm-row"><label class="rpm-lbl">Senda á netfang</label><input id="_rpm-to" type="email" value="' + esc(to) + '" placeholder="netfang@daemi.is"></div>' +
+        '<div class="rpm-row"><label class="rpm-lbl">Hvaða reikning?</label><div class="rpm-invs">' + invRows + '</div></div>' +
+        '<div class="rpm-row"><label class="rpm-lbl">Skilaboð (valkvæmt)</label><textarea id="_rpm-note" placeholder="Stutt skilaboð sem fylgja með…"></textarea></div>' +
+      '</div>' +
+      '<div class="rpm-foot"><span class="rpm-msg" id="_rpm-msg"></span><button class="rpm-btn" type="button" id="_rpm-cancel">Hætta við</button><button class="rpm-btn prim" type="button" id="_rpm-send">📤 Senda reikning</button></div>'
+    );
+    const card = modalEl();
+    card.querySelector('.rpm-x').onclick = closeModal;
+    card.querySelector('#_rpm-cancel').onclick = closeModal;
+    card.querySelectorAll('.rpm-inv').forEach(l => l.addEventListener('click', () => {
+      card.querySelectorAll('.rpm-inv').forEach(x => x.classList.remove('sel'));
+      l.classList.add('sel'); const r = l.querySelector('input'); if (r) r.checked = true;
+    }));
+    card.querySelector('#_rpm-send').onclick = () => doSend(m, invs);
+    setTimeout(() => { const t = card.querySelector('#_rpm-to'); if (t && !t.value) t.focus(); }, 80);
+  }
+  function buildEmailHtml(sale, co, note) {
+    const noteHtml = note ? '<p style="color:#334155;font-size:13.5px;white-space:pre-wrap;margin:0 0 14px">' + esc(note) + '</p>' : '';
+    return '<!DOCTYPE html><html><head><meta charset="utf-8"></head>' +
+      '<body style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:22px;color:#0f172a">' +
+      '<div style="background:#C93C1D;padding:16px 20px;border-radius:10px 10px 0 0"><h1 style="margin:0;color:#fff;font-size:18px">Slökkvitæki ehf</h1>' +
+      '<p style="margin:4px 0 0;color:rgba(255,255,255,.85);font-size:13px">Reikningur ' + esc(sale.num || '') + '</p></div>' +
+      '<div style="background:#fff;border:1px solid #e2e8f0;border-top:none;padding:20px;border-radius:0 0 10px 10px">' +
+        '<p style="color:#334155;font-size:13.5px;margin:0 0 14px">Sæl/l,</p>' +
+        noteHtml +
+        '<p style="color:#334155;font-size:13.5px;margin:0 0 14px">Meðfylgjandi er reikningur <strong>' + esc(sale.num || '') + '</strong>' +
+          (co && co.nafn ? ' fyrir ' + esc(co.nafn) : '') + ', að upphæð <strong>' + fmtKr(sale.samtals) + '</strong>.</p>' +
+        '<p style="color:#64748b;font-size:12.5px;margin:18px 0 0">Kær kveðja,<br><strong>Slökkvitæki ehf</strong><br>eldklar@eldklar.is</p>' +
+      '</div></body></html>';
+  }
+  async function doSend(m, invs) {
+    const card = modalEl();
+    const msg = card.querySelector('#_rpm-msg');
+    const btn = card.querySelector('#_rpm-send');
+    const to = (card.querySelector('#_rpm-to').value || '').trim();
+    const note = (card.querySelector('#_rpm-note').value || '').trim();
+    const sel = card.querySelector('input[name=rpinv]:checked');
+    const setMsg = (t, cls) => { msg.textContent = t; msg.className = 'rpm-msg ' + (cls || ''); };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) { setMsg('Skráðu gilt netfang', 'bad'); return; }
+    if (!sel) { setMsg('Veldu reikning', 'bad'); return; }
+    if (!window.UttektInvoicePdf || !UttektInvoicePdf.buildInvoiceBlob) { setMsg('PDF-teiknari ekki tiltækur', 'bad'); return; }
+    btn.disabled = true; setMsg('Teikna PDF…', '');
+    try {
+      let sale = invs.find(s => String(s.id) === sel.value);
+      const full = await getFullSale(sel.value);
+      if (full) sale = full;
+      const co = await coForSale(sale, m);
+      const blob = await UttektInvoicePdf.buildInvoiceBlob(sale, co);
+      const b64 = await blobToB64(blob);
+      const fname = [(co.nafn || 'reikningur').replace(/\s+/g, ' ').trim(), sale.num || ''].filter(Boolean).join(' - ') + '.pdf';
+      setMsg('Sendi…', '');
+      const payload = {
+        from: emailFrom(), to: [to],
+        subject: 'Reikningur ' + (sale.num || '') + ' frá Slökkvitæki ehf',
+        html: buildEmailHtml(sale, co, note),
+        attachments: [{ filename: fname, content: b64 }],
+        apiKey: localStorage.getItem('resend_api_key') || undefined,
+      };
+      const r = await fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({}));
+        let mm = e.message || e.error || ('HTTP ' + r.status);
+        if (e.error === 'API_KEY_MISSING') mm = 'Resend API lykill ekki stilltur (RESEND_API_KEY í Netlify).';
+        else if (/domain|not verified|verify/i.test(mm)) mm = 'Sendandalén ekki staðfest í Resend (' + emailFrom() + ').';
+        throw new Error(mm);
+      }
+      setMsg('✓ Reikningur sendur á ' + to, 'ok');
+      if (window.Toast && Toast.show) Toast.show('✓ Reikningur ' + (sale.num || '') + ' sendur á ' + to);
+      setTimeout(closeModal, 1100);
+    } catch (e) {
+      setMsg('Villa: ' + String((e && e.message) || e), 'bad');
+      btn.disabled = false;
+    }
+  }
+
+  // ── Tier 3: 🤖 Semja svar — AI-drafted reply (office reviews before sending) ─
+  async function openReplyModal(m) {
+    openModal(
+      '<div class="rpm-head"><div><h3>🤖 Semja svar</h3><div class="sub">' + esc(m.sender_name || m.from) + ' · ' + esc(m.from) + '</div></div><button class="rpm-x" type="button">✕</button></div>' +
+      '<div class="rpm-body">' +
+        '<div class="rpm-row"><label class="rpm-lbl">Upprunalegur póstur</label>' +
+          '<div class="rpm-src"><b>' + esc(m.subject || '(ekkert efni)') + '</b><br>' + esc((m.body_preview || m.snippet || '').replace(/\s+/g, ' ').slice(0, 400)) + '</div></div>' +
+        '<div class="rpm-ai-tip" id="_rpm-tips">' +
+          '<button type="button" data-t="Staðfestu að við sendum reikninginn sem viðhengi.">Sendi reikning</button>' +
+          '<button type="button" data-t="Biddu um netfang eða kt til að finna réttan reikning.">Bið um uppl.</button>' +
+          '<button type="button" data-t="Segðu að við lögum reikninginn og sendum leiðréttan.">Leiðrétti reikning</button>' +
+          '<button type="button" data-t="Þakkaðu fyrir greiðsluna og staðfestu að hún sé móttekin.">Staðfesti greiðslu</button>' +
+        '</div>' +
+        '<div class="rpm-row"><label class="rpm-lbl">Efni</label><input id="_rpm-subj" type="text" value="Re: ' + esc(m.subject || '') + '"></div>' +
+        '<div class="rpm-row"><label class="rpm-lbl">Svar (yfirfarðu áður en þú sendir)</label><textarea id="_rpm-reply" class="reply" placeholder="Smelltu á ✨ Semja svar…"></textarea></div>' +
+      '</div>' +
+      '<div class="rpm-foot"><span class="rpm-msg" id="_rpm-msg"></span>' +
+        '<button class="rpm-btn ai" type="button" id="_rpm-gen">✨ Semja svar</button>' +
+        '<span class="spacer"></span>' +
+        '<button class="rpm-btn" type="button" id="_rpm-copy">📋 Afrita</button>' +
+        '<button class="rpm-btn prim" type="button" id="_rpm-reply-send">📤 Senda svar</button></div>'
+    );
+    const card = modalEl();
+    let instruction = '';
+    card.querySelector('.rpm-x').onclick = closeModal;
+    card.querySelectorAll('#_rpm-tips button').forEach(b => b.addEventListener('click', () => { instruction = b.dataset.t; genReply(m, () => instruction); }));
+    card.querySelector('#_rpm-gen').onclick = () => genReply(m, () => instruction);
+    card.querySelector('#_rpm-copy').onclick = () => {
+      const ta = card.querySelector('#_rpm-reply');
+      try { navigator.clipboard.writeText(ta.value); if (window.Toast && Toast.show) Toast.show('✓ Afritað'); } catch (_) { ta.select(); document.execCommand('copy'); }
+    };
+    card.querySelector('#_rpm-reply-send').onclick = () => sendReply(m);
+    // auto-draft on open
+    genReply(m, () => '');
+  }
+  async function customerInvContext(m) {
+    const kt = m.cust && ktDigits(m.cust.kt);
+    if (!kt) return [];
+    const rows = await getCustomerInvoices(kt);
+    return rows.slice(0, 12).map(s => ({ num: s.num, date: fmtDate(s.created_at), samtals: s.samtals, paid: !!s.paid_at }));
+  }
+  async function genReply(m, getInstruction) {
+    const card = modalEl();
+    const ta = card.querySelector('#_rpm-reply');
+    const subj = card.querySelector('#_rpm-subj');
+    const msg = card.querySelector('#_rpm-msg');
+    const gen = card.querySelector('#_rpm-gen');
+    if (!ta) return;
+    const setMsg = (t, cls) => { if (msg) { msg.textContent = t; msg.className = 'rpm-msg ' + (cls || ''); } };
+    gen.disabled = true; setMsg('Claude semur svar…', '');
+    try {
+      const invoices = await customerInvContext(m);
+      const r = await fetch('/api/postur-reply', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: { sender_name: m.sender_name, sender_email: m.from, subject: m.subject, body: m.body_preview || m.snippet || '' },
+          customer: m.cust ? { name: m.cust.name, kt: ktDashed(m.cust.kt) } : null,
+          invoices,
+          instruction: (getInstruction && getInstruction()) || '',
+        }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+      if (d.body) ta.value = d.body;
+      if (d.subject && subj) subj.value = d.subject;
+      setMsg('✓ Uppkast tilbúið — yfirfarðu það', 'ok');
+    } catch (e) {
+      setMsg('Villa: ' + String((e && e.message) || e), 'bad');
+    } finally { gen.disabled = false; }
+  }
+  async function sendReply(m) {
+    const card = modalEl();
+    const msg = card.querySelector('#_rpm-msg');
+    const btn = card.querySelector('#_rpm-reply-send');
+    const to = m.from;
+    const subject = (card.querySelector('#_rpm-subj').value || '').trim() || ('Re: ' + (m.subject || ''));
+    const bodyTxt = (card.querySelector('#_rpm-reply').value || '').trim();
+    const setMsg = (t, cls) => { msg.textContent = t; msg.className = 'rpm-msg ' + (cls || ''); };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to || '')) { setMsg('Sendandanetfang ógilt', 'bad'); return; }
+    if (!bodyTxt) { setMsg('Svarið er tómt', 'bad'); return; }
+    btn.disabled = true; setMsg('Sendi…', '');
+    const html = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#0f172a;white-space:pre-wrap;line-height:1.6">' + esc(bodyTxt) + '</div>';
+    try {
+      const payload = { from: emailFrom(), to: [to], subject, html, apiKey: localStorage.getItem('resend_api_key') || undefined };
+      const r = await fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({}));
+        let mm = e.message || e.error || ('HTTP ' + r.status);
+        if (e.error === 'API_KEY_MISSING') mm = 'Resend API lykill ekki stilltur (RESEND_API_KEY í Netlify).';
+        else if (/domain|not verified|verify/i.test(mm)) mm = 'Sendandalén ekki staðfest í Resend.';
+        throw new Error(mm);
+      }
+      setMsg('✓ Svar sent á ' + to, 'ok');
+      if (window.Toast && Toast.show) Toast.show('✓ Svar sent á ' + to);
+      setTimeout(closeModal, 1100);
+    } catch (e) { setMsg('Villa: ' + String((e && e.message) || e), 'bad'); btn.disabled = false; }
   }
 
   // ── wiring (mirrors patch 239) ──────────────────────────────────────────
