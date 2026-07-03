@@ -361,47 +361,36 @@
         : '<div class="sv-list">' + b.vinnsla.map(listCard).join('') + '</div>')
       : '<div style="color:#8a93a5;font-size:13px;padding:30px;text-align:center;border:1px dashed rgba(20,24,34,.12);border-radius:14px;background:#fff">Ekkert í vinnslu núna.</div>';
 
-    // v3 dark-gradient handoff: dark metallic header bar + 3D stat tiles
-    // (mirrors Hreyfingarlisti). The á-dagskrá / búin tiles keep data-toggle so
-    // the existing expand-drawer wiring still fires.
-    const cardShadow = '0 1px 1px rgba(15,23,42,.05),0 8px 16px -8px rgba(15,23,42,.15),0 24px 44px -20px rgba(15,23,42,.3),inset 0 2px 0 rgba(255,255,255,.95),inset 0 -10px 20px -14px rgba(15,23,42,.14)';
-    const TILE = {
-      blue:  { icbg: 'linear-gradient(180deg,#5a86e0,#2f5fe0)', glow: 'rgba(47,95,224,.5)',  val: '#11141c', ic: '🔧' },
-      gold:  { icbg: 'linear-gradient(180deg,#d4a94f,#ab7f2a)', glow: 'rgba(171,127,42,.45)', val: '#b45309', ic: '⏳' },
-      green: { icbg: 'linear-gradient(180deg,#2f9d63,#0f6e3a)', glow: 'rgba(15,110,58,.45)', val: '#0f7a43', ic: '✓' }
+    // Header + stat pills — mirrors reference comp ThjonustuVerkstaedi-board.dc.html
+    // (plain title on the page band + a Listi/Breitt/Spjöld segmented toggle +
+    // sort; the three counts are small coloured PILLS, not big cards).
+    const pill = (label, count, c, opts) => {
+      opts = opts || {};
+      const arrow = opts.toggle ? (' <span style="opacity:.55;font-size:11px">' + (opts.open ? '▾' : '▸') + '</span>') : '';
+      return '<button ' + (opts.toggle ? 'data-toggle="' + opts.toggle + '" ' : '') +
+        'style="font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:11px;border:1px solid ' + c.bd + ';background:' + c.bg + ';color:' + c.fg + ';cursor:' + (opts.toggle ? 'pointer' : 'default') + ';display:inline-flex;align-items:center;gap:8px">' +
+        '<span style="width:9px;height:9px;border-radius:50%;background:' + c.dot + '"></span>' +
+        '<b style="font-family:\'Space Mono\',monospace">' + count + '</b> ' + esc(label) + arrow + '</button>';
     };
-    const statTile = (label, count, kind, opts) => {
-      opts = opts || {}; const k = TILE[kind] || TILE.blue; const clk = !!opts.toggle;
-      const arrow = clk ? (' <span style="color:#9098a6;font-size:11px">' + (opts.open ? '▾' : '▸') + '</span>') : '';
-      const sub = opts.sub ? ('<div style="font-size:11px;color:#9098a6;margin-top:1px;font-family:\'Space Mono\',monospace">' + esc(opts.sub) + '</div>') : '';
-      return '<div ' + (clk ? 'data-toggle="' + opts.toggle + '" ' : '') + 'style="flex:1 1 195px;min-width:195px;border-radius:15px;padding:11px 14px;display:flex;align-items:center;gap:11px;background:linear-gradient(180deg,#ffffff,#eef1f6);box-shadow:' + cardShadow + ';' + (clk ? 'cursor:pointer' : '') + '">' +
-        '<div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;color:#fff;background:' + k.icbg + ';box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.25),0 4px 10px -3px ' + k.glow + '">' + k.ic + '</div>' +
-        '<div style="min-width:0"><div style="font-size:9.5px;font-weight:700;letter-spacing:.12em;color:#8a93a5;text-transform:uppercase">' + esc(label) + arrow + '</div>' +
-          '<div style="font-family:\'Space Mono\',monospace;font-size:20px;font-weight:700;color:' + k.val + ';margin-top:2px">' + count + '</div>' + sub + '</div>' +
-      '</div>';
-    };
-    v.innerHTML = '<div style="max-width:none;margin:0;width:100%;box-sizing:border-box;padding:4px 6px;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
-      '<div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:14px;padding:9px 15px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;box-shadow:0 12px 28px -18px rgba(0,0,0,.65);margin-bottom:13px">' +
-        '<div style="display:flex;align-items:center;gap:11px;min-width:0">' +
-          '<div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">🔧</div>' +
-          '<div style="min-width:0">' +
-            '<h1 style="margin:0;font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">ÞjónustuVerkstæði</h1>' +
-            '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · áætl. <b style="font-family:\'Space Mono\',monospace;color:#fff">' + fmtSum(vinnslaSum) + '</b>' : '') + '</div>' +
-          '</div>' +
+    v.innerHTML = '<div style="max-width:none;margin:0;width:100%;box-sizing:border-box;padding:6px 10px 34px;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin:2px 2px 14px">' +
+        '<div style="min-width:0">' +
+          '<div style="font-size:26px;font-weight:700;color:#11141c;letter-spacing:-.01em;line-height:1.1">🔧 ÞjónustuVerkstæði</div>' +
+          '<div style="font-size:13px;color:#5b6472;margin-top:4px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · áætl. <b style="font-family:\'Space Mono\',monospace;color:#11141c">' + fmtSum(vinnslaSum) + '</b>' : '') + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">' +
-          '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>☰ Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>▭ Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>▦ Spjöld</button></div>' +
+          '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>Spjöld</button></div>' +
           '<select class="sv-sort" title="Raða Í-vinnslu listanum">' +
-            '<option value="name"' + (_sort === 'name' ? ' selected' : '') + '>↕ Nafn (A–Ö)</option>' +
-            '<option value="revenue"' + (_sort === 'revenue' ? ' selected' : '') + '>↕ Hæstu tekjur</option>' +
-            '<option value="marked"' + (_sort === 'marked' ? ' selected' : '') + '>↕ Nýlega merkt</option>' +
+            '<option value="name"' + (_sort === 'name' ? ' selected' : '') + '>Nafn (A–Ö)</option>' +
+            '<option value="revenue"' + (_sort === 'revenue' ? ' selected' : '') + '>Hæstu tekjur</option>' +
+            '<option value="marked"' + (_sort === 'marked' ? ' selected' : '') + '>Nýlega merkt</option>' +
           '</select>' +
         '</div>' +
       '</div>' +
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:13px">' +
-        statTile('Í vinnslu', b.vinnsla.length, 'blue') +
-        statTile('Á dagskrá', b.dagskra.length, 'gold', { toggle: 'dagskra', open: _openDagskra }) +
-        statTile('Búin í ár', b.buid.length, 'green', { toggle: 'buid', open: _openBuid }) +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 2px 16px">' +
+        pill('í vinnslu', b.vinnsla.length, { fg: '#2f5fe0', bg: '#eef3ff', bd: '#c6d6ff', dot: '#2f5fe0' }) +
+        pill('á dagskrá', b.dagskra.length, { fg: '#b45309', bg: '#fffbeb', bd: '#fde68a', dot: '#b45309' }, { toggle: 'dagskra', open: _openDagskra }) +
+        pill('búin í ár', b.buid.length, { fg: '#047857', bg: '#ecfdf5', bd: '#a7f3d0', dot: '#047857' }, { toggle: 'buid', open: _openBuid }) +
       '</div>' +
       dagskraDrawer + buidDrawer + body + '</div>';
 
