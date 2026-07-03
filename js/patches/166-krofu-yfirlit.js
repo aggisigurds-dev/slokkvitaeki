@@ -41,6 +41,12 @@
       V + '.ky-abtn:hover{transform:translateY(-1px);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 6px 12px -4px rgba(20,30,60,.42)}' +
       V + '.ky-abtn.on{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);border-color:#156e3a;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 3px 7px -3px rgba(15,110,58,.5)}' +
       V + '.ky-row:hover{background:#f7f9fd}' +
+      // Barely-visible per-krafa athugasemd/áminning reitur — svartur texti,
+      // ósýnilegur rammi þar til hann er valinn.
+      V + '._ky-note{color:#11141c !important;background:transparent !important;border:1px solid transparent !important;border-bottom:1px dashed #d7dce4 !important;border-radius:5px !important;box-shadow:none !important}' +
+      V + '._ky-note::placeholder{color:#c8cfd9}' +
+      V + '._ky-note:hover{border-bottom-color:#b6bec9 !important}' +
+      V + '._ky-note:focus{background:#fff !important;border:1px solid #93c5fd !important}' +
       B + '.darkfield::placeholder{color:rgba(255,255,255,.55)}' +
       B + '.ky-navbtn option{background:#1a1a1f;color:#fff}' +
       // 2026-07-01 (Agnar): stretch the page to fill the content area and hug the
@@ -178,13 +184,16 @@
   }
   function saveSort(v) { try { localStorage.setItem(SORT_KEY, v); } catch (_) {} }
   let _state = { month: null, all: [], vbByParent: {}, sort: loadSort(),
-                 selected: new Set(), sending: false, stop: false, search: '' };
+                 selected: new Set(), sending: false, stop: false, search: '',
+                 // Sýnarsía: 'krofur' (útistandandi, eins og áður) · 'osendar' ·
+                 // 'greiddar' · 'allt' (bæði ógreiddar OG greiddar).
+                 viewFilter: 'krofur' };
 
   // A sale is "sendanleg" (queueable) if it hasn't already been pushed to
   // Payday. krafa_sent_at / invoiced_at / dk_invoice_id all mark a sent claim —
   // re-sending would 409 in payday-push, so those rows get no checkbox.
   function isSendable(s) {
-    return !s.krafa_sent_at && !s.invoiced_at && !s.dk_invoice_id;
+    return !s.paid_at && !s.krafa_sent_at && !s.invoiced_at && !s.dk_invoice_id;
   }
 
   function monthBounds(d) {
@@ -206,11 +215,15 @@
     // ONLY reikningur — that's the "krafa í heimabanka 10 dagar" choice.
     // 'greitt_sidar' is excluded — it has its own page (Til að rukka).
     // 2026-05-21: pull updated_at too so the sort options can use it.
-    const r = await SB.from('solur')
+    let q = SB.from('solur')
       .select('id,num,customer_nafn,customer_id,customer_base_id,customer_kt,samtals,greitt_med,athugasemdir,created_at,updated_at,paid_at,invoiced_at,krafa_sent_at,dk_invoice_id,is_credit,credit_of')
-      .eq('greitt_med', 'reikningur')
-      .is('paid_at', null)
-      .order('updated_at', { ascending: false });
+      .eq('greitt_med', 'reikningur');
+    const vf = _state.viewFilter || 'krofur';
+    if (vf === 'krofur')        q = q.is('paid_at', null);                      // útistandandi (eins og áður)
+    else if (vf === 'osendar')  q = q.is('paid_at', null).is('krafa_sent_at', null).is('invoiced_at', null).is('dk_invoice_id', null); // ósendar
+    else if (vf === 'greiddar') q = q.not('paid_at', 'is', null);              // greiddar kröfur
+    // 'allt' → engin paid_at-sía (bæði ógreiddar OG greiddar)
+    const r = await q.order('updated_at', { ascending: false });
     if (r.error) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
     _state.all = r.data || [];
 
@@ -327,6 +340,54 @@
     return { label: '—', icon: '·', color: '#94a3b8' };
   }
 
+  // ── Payday greiðslu-samstilling (summary popup) ──────────────────────────
+  function showSyncSummary(data) {
+    const old = document.getElementById('_ky-sync-modal'); if (old) old.remove();
+    const wrap = document.createElement('div');
+    wrap.id = '_ky-sync-modal';
+    wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px;font-family:\'Space Grotesk\',system-ui,sans-serif';
+    let inner;
+    if (data.error) {
+      inner = '<div style="font-size:16px;font-weight:800;color:#dc2626;margin-bottom:8px">⚠️ Villa við samstillingu</div>' +
+              '<div style="font-size:13px;color:#334155;white-space:pre-wrap;word-break:break-word">' + esc(String(data.error)) + '</div>';
+    } else {
+      const list = (data.marked || []).map(m =>
+        '<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:13px">' +
+          '<span style="font-weight:600;color:#11141c">' + esc(m.customer || '—') + ' <span style="color:#94a3b8;font-family:monospace;font-weight:400">' + esc(m.num || '') + '</span></span>' +
+          '<span style="white-space:nowrap"><span style="font-family:monospace;color:#0f7a43;font-weight:700">' + fmtKr(m.amount) + '</span> <span style="color:#94a3b8;font-size:11px">' + esc(m.paidDate || '') + '</span></span>' +
+        '</div>').join('');
+      inner = '<div style="font-size:17px;font-weight:800;color:#0f7a43;margin-bottom:4px">✅ Samstillingu lokið</div>' +
+        '<div style="font-size:12.5px;color:#64748b;margin-bottom:14px">Athugaði <b>' + (data.checked || 0) + '</b> reikninga í Payday · <b>' + (data.candidates || 0) + '</b> ógreiddar kröfur skoðaðar.' + (data.dry ? ' <b style="color:#b45309">(prufa — engu breytt)</b>' : '') + '</div>' +
+        (data.marked_count
+          ? '<div style="font-weight:700;color:#11141c;margin-bottom:4px">' + data.marked_count + ' krafa merkt greidd:</div><div style="max-height:320px;overflow:auto">' + list + '</div>'
+          : '<div style="padding:16px;text-align:center;color:#64748b;background:#f8fafc;border-radius:10px">Engin ný greiðsla fannst — allt þegar uppfært. 👍</div>');
+    }
+    wrap.innerHTML = '<div style="background:#fff;border-radius:16px;padding:22px 24px;max-width:540px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.35)">' + inner +
+      '<div style="text-align:right;margin-top:18px"><button id="_ky-sync-close" type="button" style="padding:9px 20px;border:none;border-radius:9px;background:#1d4ed8;color:#fff;font-weight:700;cursor:pointer;font:inherit">Loka</button></div></div>';
+    document.body.appendChild(wrap);
+    const close = () => wrap.remove();
+    wrap.addEventListener('click', e => { if (e.target === wrap) close(); });
+    wrap.querySelector('#_ky-sync-close').addEventListener('click', close);
+  }
+
+  async function runPaydaySync(btn) {
+    if (!btn || btn.disabled) return;
+    const orig = btn.textContent;
+    btn.disabled = true; btn.style.opacity = '.6'; btn.textContent = '⏳ Sæki úr Payday…';
+    try {
+      const res = await fetch('/api/payday-sync-paid', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const data = await res.json().catch(() => ({ error: 'Ógilt svar frá þjóni (HTTP ' + res.status + ')' }));
+      if (!res.ok && !data.error) data.error = 'HTTP ' + res.status;
+      showSyncSummary(data);
+      if (!data.error && data.marked_count) await load(_state.month || new Date()); // ný render → nýr takki
+    } catch (e) {
+      showSyncSummary({ error: String(e.message || e) });
+    } finally {
+      const b = document.querySelector('#ky-main ._ky-sync');
+      if (b) { b.disabled = false; b.style.opacity = ''; b.textContent = orig; }
+    }
+  }
+
   // ── Render ───────────────────────────────────────────────────────────────
   function render() {
     const main = document.getElementById('ky-main');
@@ -437,6 +498,14 @@
           </div>
         </div>
 
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+          ${[['krofur','📋 Sýna kröfur'],['osendar','📤 Ósendar kröfur'],['greiddar','✅ Greiddar kröfur'],['allt','📚 Sýna allt']].map(([k, label]) => {
+            const on = (_state.viewFilter || 'krofur') === k;
+            return `<button class="_ky-vf" data-vf="${k}" type="button" style="padding:7px 14px;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;${on ? 'border:1px solid #1d4ed8;background:#1d4ed8;color:#fff' : 'border:1px solid #cbd5e1;background:#fff;color:#475569'}">${label}</button>`;
+          }).join('')}
+          <button class="_ky-sync" type="button" title="Sækja greiðslustöðu úr Payday og merkja greiddar kröfur sjálfkrafa" style="margin-left:auto;padding:7px 14px;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;border:1px solid #0f7a43;background:linear-gradient(180deg,#17945a,#0f6e3a);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 3px 8px -4px rgba(0,0,0,.4)">🔄 Athuga greiðslur í Payday</button>
+        </div>
+
         ${(() => {
           const CS = '0 1px 1px rgba(15,23,42,.05),0 8px 16px -8px rgba(15,23,42,.15),0 24px 44px -20px rgba(15,23,42,.3),inset 0 2px 0 rgba(255,255,255,.95),inset 0 -10px 20px -14px rgba(15,23,42,.14)';
           const light = (label, value, sub, ic, icbg, glow) =>
@@ -502,6 +571,29 @@
       const m = new Date(_state.month);
       m.setMonth(m.getMonth() + 1);
       load(m);
+    });
+    // Sýnarsía: kröfur / ósendar / greiddar / allt
+    main.querySelectorAll('._ky-vf').forEach(b => b.addEventListener('click', () => {
+      if (_state.viewFilter === b.dataset.vf) return;
+      _state.viewFilter = b.dataset.vf;
+      _state.selected.clear();
+      load(_state.month || new Date());
+    }));
+    // 🔄 Athuga greiðslur í Payday → merkja greiddar sjálfkrafa + summary popup
+    main.querySelector('._ky-sync')?.addEventListener('click', (e) => runPaydaySync(e.currentTarget));
+    // Per-krafa athugasemd/áminning → vistast í solur.athugasemdir þegar farið er
+    // úr reitnum (change = eftir edit, ekki hvern staf). Uppfærir líka _state svo
+    // texti helst við endur-render.
+    main.querySelectorAll('._ky-note').forEach(inp => {
+      inp.addEventListener('change', async () => {
+        const SB = getSB(); if (!SB) return;
+        const val = inp.value.trim();
+        const row = (_state.all || []).find(x => String(x.id) === String(inp.dataset.id));
+        if (row) row.athugasemdir = val;
+        inp.style.borderBottomColor = '#a7f3d0';
+        const w = await SB.from('solur').update({ athugasemdir: val }).eq('id', inp.dataset.id);
+        if (w && w.error) { inp.style.borderBottomColor = '#fca5a5'; inp.title = 'Villa við vistun: ' + w.error.message; }
+      });
     });
 
     // 2026-06-30: smella á nafn fyrirtækisins → opna fyrirtækjasíðu
@@ -917,7 +1009,7 @@
                 <span class="ky-num" style="color:#64748b;width:86px;flex-shrink:0">${fmtDate(s.created_at)}</span>
                 ${agingPill(da)}
                 ${skyrslaBtn}
-                <span style="flex:1"></span>
+                <input class="_ky-note" data-id="${s.id}" value="${esc(s.athugasemdir || '')}" placeholder="🗒 athugasemd / áminning…" title="Athugasemd / áminning (t.d. „breyta reikningi") — vistast sjálfkrafa" style="flex:1;min-width:60px;margin:0 10px;padding:4px 8px;border:1px solid transparent;border-bottom:1px dashed #d3d9e2;background:transparent;font:inherit;font-size:12px;color:#11141c;outline:none;border-radius:5px">
                 <span class="ky-num" style="text-align:right;font-weight:700;color:#11141c;white-space:nowrap">${fmtKr(s.samtals)}</span>
                 <div style="display:flex;gap:6px;flex-shrink:0">
                   ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', 'Krafa send', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}

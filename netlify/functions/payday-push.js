@@ -132,8 +132,9 @@ function buildPayload(sale, customer, sendEmail) {
   const linur = Array.isArray(sale.linur) ? sale.linur : tryParseJson(sale.linur) || [];
   const today = new Date();
   const isoToday = today.toISOString().slice(0, 10);
-  const due = new Date(today); due.setDate(due.getDate() + 14);
-  const final = new Date(today); final.setDate(final.getDate() + 30);
+  // Gjalddagi 7 dagar frá útgáfu; eindagi 3 dögum eftir gjalddaga (Agnar 2026-07-03).
+  const due = new Date(today); due.setDate(due.getDate() + 7);
+  const final = new Date(due); final.setDate(final.getDate() + 3);
 
   // sale.customer_kt / customer_nafn first (POS writes them); fall back to enriched customer row.
   const ktRaw = sale.customer_kt || (customer && customer.kennitala) || '';
@@ -141,6 +142,13 @@ function buildPayload(sale, customer, sendEmail) {
   const email = (customer && customer.netfang) || '';
   const address = (customer && customer.heimilisfang) || '';
   const phone = (customer && customer.simi) || '';
+  // Afhending (Agnar 2026-07-03): SENDA ALLTAF — rafrænt fyrst ef til er
+  // raunveruleg kennitala (rafrænir reikningar fara eftir kt), annars tölvupóstur
+  // sem næsti valkostur. Walk-in kt 999999-9999 fær hvorugt.
+  const ssnDigits = digits(ktRaw);
+  const realKt = ssnDigits.length === 10 && ssnDigits !== '9999999999';
+  const electronic = realKt;
+  const emailSend = !electronic && !!email;
   return {
     invoiceDate: isoToday,
     dueDate: due.toISOString().slice(0, 10),
@@ -176,11 +184,13 @@ function buildPayload(sale, customer, sendEmail) {
       }));
     })(),
     currencyCode: 'ISK',
-    status: 'DRAFT',
+    // Senda sjálfkrafa (Agnar 2026-07-03): stofna sem SENT svo Payday klárar +
+    // afhendir strax (rafrænt/tölvupóstur) — ekki þarf að senda hvern handvirkt.
+    status: 'SENT',
     reference: sale.num ? String(sale.num) : null,
-    sendEmail: !!sendEmail && !!((customer && customer.netfang)),
+    sendEmail: emailSend,
     createClaim: true,
-    createElectronicInvoice: false,
+    createElectronicInvoice: electronic,
   };
 }
 
