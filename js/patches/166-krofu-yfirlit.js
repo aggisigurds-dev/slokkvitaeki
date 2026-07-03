@@ -216,7 +216,7 @@
     // 'greitt_sidar' is excluded — it has its own page (Til að rukka).
     // 2026-05-21: pull updated_at too so the sort options can use it.
     let q = SB.from('solur')
-      .select('id,num,customer_nafn,customer_id,customer_base_id,customer_kt,samtals,greitt_med,athugasemdir,created_at,updated_at,paid_at,invoiced_at,krafa_sent_at,dk_invoice_id,is_credit,credit_of')
+      .select('id,num,customer_nafn,customer_id,customer_base_id,customer_kt,samtals,greitt_med,athugasemdir,krafa_note,created_at,updated_at,paid_at,invoiced_at,krafa_sent_at,dk_invoice_id,is_credit,credit_of')
       .eq('greitt_med', 'reikningur');
     const vf = _state.viewFilter || 'krofur';
     if (vf === 'krofur')        q = q.is('paid_at', null);                      // útistandandi (eins og áður)
@@ -581,17 +581,17 @@
     }));
     // 🔄 Athuga greiðslur í Payday → merkja greiddar sjálfkrafa + summary popup
     main.querySelector('._ky-sync')?.addEventListener('click', (e) => runPaydaySync(e.currentTarget));
-    // Per-krafa athugasemd/áminning → vistast í solur.athugasemdir þegar farið er
-    // úr reitnum (change = eftir edit, ekki hvern staf). Uppfærir líka _state svo
-    // texti helst við endur-render.
+    // Per-krafa minnispunktur → EIGIN reitur solur.krafa_note (EKKI athugasemd
+    // reikningsins) þegar farið er úr reitnum (change = eftir edit, ekki hvern
+    // staf). Uppfærir líka _state svo texti helst við endur-render.
     main.querySelectorAll('._ky-note').forEach(inp => {
       inp.addEventListener('change', async () => {
         const SB = getSB(); if (!SB) return;
         const val = inp.value.trim();
         const row = (_state.all || []).find(x => String(x.id) === String(inp.dataset.id));
-        if (row) row.athugasemdir = val;
+        if (row) row.krafa_note = val;
         inp.style.borderBottomColor = '#a7f3d0';
-        const w = await SB.from('solur').update({ athugasemdir: val }).eq('id', inp.dataset.id);
+        const w = await SB.from('solur').update({ krafa_note: val }).eq('id', inp.dataset.id);
         if (w && w.error) { inp.style.borderBottomColor = '#fca5a5'; inp.title = 'Villa við vistun: ' + w.error.message; }
       });
     });
@@ -1009,7 +1009,7 @@
                 <span class="ky-num" style="color:#64748b;width:86px;flex-shrink:0">${fmtDate(s.created_at)}</span>
                 ${agingPill(da)}
                 ${skyrslaBtn}
-                <input class="_ky-note" data-id="${s.id}" value="${esc(s.athugasemdir || '')}" placeholder="🗒 athugasemd / áminning…" title="Athugasemd / áminning (t.d. „breyta reikningi") — vistast sjálfkrafa" style="flex:1;min-width:60px;margin:0 10px;padding:4px 8px;border:1px solid transparent;border-bottom:1px dashed #d3d9e2;background:transparent;font:inherit;font-size:12px;color:#11141c;outline:none;border-radius:5px">
+                <input class="_ky-note" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="🗒 minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — eigin reitur (ekki athugasemd reikningsins). Vistast sjálfkrafa." style="flex:1;min-width:60px;margin:0 10px;padding:4px 8px;border:1px solid transparent;border-bottom:1px dashed #d3d9e2;background:transparent;font:inherit;font-size:12px;color:#11141c;outline:none;border-radius:5px">
                 <span class="ky-num" style="text-align:right;font-weight:700;color:#11141c;white-space:nowrap">${fmtKr(s.samtals)}</span>
                 <div style="display:flex;gap:6px;flex-shrink:0">
                   ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', 'Krafa send', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
