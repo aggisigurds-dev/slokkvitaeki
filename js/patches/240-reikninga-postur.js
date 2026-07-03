@@ -173,22 +173,39 @@
   // Strip quoted replies, forwarded headers, signatures + boilerplate so a card
   // shows just the meaningful latest message.
   function cleanBody(text) {
-    let s = String(text || '').replace(/\r/g, '');
+    let s = String(text || '').replace(/\r/g, '\n').replace(/ /g, ' ');
+    // 1) Payday/umboðsmanna-haus: raunverulega skeytið kemur á eftir „-##" merki.
+    //    Ef upphafið lítur út eins og boilerplate-hausinn → henda honum.
+    const sep = s.search(/[-–]\s*#{2,}/);
+    if (sep > -1 && sep < 600 && /verkn[úu]mer|reply at the top|svarið efst/i.test(s.slice(0, sep))) {
+      s = s.slice(sep).replace(/^[-–]\s*#{2,}\s*/, '');
+    }
+    // 2) skrúbba þekktar boilerplate-setningar hvar sem er
+    s = s
+      .replace(/#{0,2}\s*Verkn[úu]mer\s*:?\s*\S+/gi, ' ')
+      .replace(/vinsamlegast hafið svarið efst í tölvupóstinum\.?/gi, ' ')
+      .replace(/please reply at the top of (your |the )?e-?mail\.?/gi, ' ')
+      .replace(/#{2,}/g, ' ');
+    // 3) klippa við tilvitnun / áframsent haus
     const cuts = [
-      /-{2,}\s*Original Message\s*-{2,}/i, /_{6,}/, /On .{5,90}\bwrote:/i, /Þann .{5,90}\bskrifaði/i,
-      /\n\s*From:\s.+/i, /\n\s*Frá:\s.+/i, /\n\s*Sent:\s.+/i, /-{2,}\s*Áframsend/i, /## Verkn[úu]mer/i,
+      /-{2,}\s*Original Message\s*-{2,}/i, /_{6,}/, /\bOn .{5,90}\bwrote:/i, /\bÞann .{5,90}\bskrifaði/i,
+      /(^|\n)\s*From:\s*\S/i, /(^|\n)\s*Frá:\s*\S/i, /(^|\n)\s*Sent:\s*\S/i, /(^|\n)\s*Sendur?:\s*\S/i,
+      /-{2,}\s*Áframsend/i, /\bFrom:\s*\S+@\S+/i,
     ];
     let cutAt = s.length;
-    cuts.forEach(re => { const m = s.match(re); if (m && m.index != null && m.index >= 40 && m.index < cutAt) cutAt = m.index; });
+    cuts.forEach(re => { const m = s.match(re); if (m && m.index != null && m.index >= 25 && m.index < cutAt) cutAt = m.index; });
     s = s.slice(0, cutAt);
+    // 4) henda tilvitnunarlínum
     s = s.split('\n').filter(ln => {
       const t = ln.trim();
       if (/^>/.test(t)) return false;
-      if (/^(sent from my|sent via)/i.test(t)) return false;
+      if (/^(sent from my|sent via|fá í síma|fæ í síma)/i.test(t)) return false;
       return true;
     }).join(' ');
-    s = s.replace(/\s*(með kveðju|kær kveðju|bestu kveðjur|kveðja|best regards|kind regards|virðingarfyllst)[\s,][\s\S]{0,240}$/i, '');
-    return s.replace(/\s+/g, ' ').trim();
+    // 5) klippa undirskrift — allt frá fyrstu kveðju til enda (ef nóg efni á undan)
+    const sm = s.match(/(með kveðju|kær kveðju|bestu kveðjur|kveðja|kv\.|best regards|kind regards|virðingarfyllst|mvh\b)[\s,]/i);
+    if (sm && sm.index > 12) s = s.slice(0, sm.index);
+    return s.replace(/\s+/g, ' ').replace(/^[\s\-–#/·:]+/, '').trim();
   }
   function normSubject(s) {
     let x = String(s || '');
@@ -245,7 +262,7 @@
       V + '.rp-search input::placeholder{color:rgba(255,255,255,.6)}',
       V + '.rp-search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:rgba(255,255,255,.7)}',
       V + '.rp-list{display:flex;flex-direction:column;gap:9px}',
-      V + '.rp-card{background:#fff !important;border:1px solid rgba(20,24,34,.08) !important;border-left:3px solid #cbd5e1 !important;border-radius:13px;box-shadow:0 8px 22px -16px rgba(25,35,60,.22);padding:11px 15px;display:flex;align-items:center;gap:14px}',
+      V + '.rp-card{background:#fff !important;border:1px solid rgba(20,24,34,.08) !important;border-left:3px solid #cbd5e1 !important;border-radius:13px;box-shadow:0 8px 22px -16px rgba(25,35,60,.22);padding:11px 15px;display:flex;align-items:flex-start;gap:14px}',
       V + '.rp-card.q{border-left-color:#f59e0b !important}',
       V + '.rp-card.matched{border-left-color:#2f5fe0 !important}',
       V + '.rp-when{flex:none;width:70px;text-align:center;color:#64748b;font-size:11.5px;font-family:"Space Mono",monospace}',
@@ -284,11 +301,20 @@
       V + '.rp-thread-msg .ans{color:#059669}',
       V + '.rp-thread-msg .tx{color:#94a3b8;margin-top:1px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
       V + '.rp-badge.pay{color:#2f5fe0;background:#eef3ff;border:1px solid #c6d6ff}',
-      V + '.rp-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:150px}',
+      V + '.rp-right{flex:0 1 auto;display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:150px;max-width:300px}',
       V + '.rp-cust{max-width:230px;text-align:right;font-size:12.5px;font-weight:700;color:#1d4ed8;text-decoration:none;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}',
       V + '.rp-cust .by{display:block;font-weight:500;color:#94a3b8;font-size:10.5px}',
       V + '.rp-nomatch{font-size:11.5px;color:#cbd2dc;font-style:italic}',
-      V + '.rp-acts{display:flex;gap:6px}',
+      V + '.rp-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}',
+      // Þröngir skjáir: stafla — texti fær fulla breidd, aðgerðir fyrir neðan.
+      '@media (max-width:1024px){' +
+        V + '.rp-card{flex-wrap:wrap}' +
+        V + '.rp-mid{flex:1 1 100%;min-width:0}' +
+        V + '.rp-when{width:auto;text-align:left;display:flex;gap:8px;align-items:baseline}' +
+        V + '.rp-right{width:100%;max-width:none;flex-direction:row;flex-wrap:wrap;align-items:center;justify-content:flex-start;margin-top:8px}' +
+        V + '.rp-acts{justify-content:flex-start}' +
+        V + '.rp-cust{text-align:left}' +
+      '}',
       V + '.rp-btn{font:inherit;font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:8px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fff,#eef1f6);color:#3a4250;cursor:pointer;white-space:nowrap}',
       V + '.rp-btn:hover{background:#eef3ff;color:#1d4ed8;border-color:#c6d6ff}',
       V + '.rp-btn.del{padding:5px 9px}',
