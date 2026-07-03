@@ -155,15 +155,18 @@
       '#_app-nav button.on{color:#fff;background:rgba(255,255,255,.08)}',
       // ── App-mode readability: bigger text + thumb-friendly tap targets. Scoped to
       //    body.appmode so the office desktop view is untouched. ──
-      'body.appmode .view{font-size:15px}',
-      'body.appmode .view button,body.appmode .view .btn,body.appmode .view a.btn,body.appmode .view [role="button"]{font-size:15px !important;min-height:46px;padding-top:10px !important;padding-bottom:10px !important;line-height:1.2}',
-      'body.appmode .view input,body.appmode .view select,body.appmode .view textarea{font-size:16px !important;min-height:48px}',
+      'body.appmode .view{font-size:17px}',
+      'body.appmode .view button,body.appmode .view .btn,body.appmode .view a.btn,body.appmode .view [role="button"]{font-size:17px !important;min-height:50px;padding-top:12px !important;padding-bottom:12px !important;line-height:1.2}',
+      'body.appmode .view input,body.appmode .view select,body.appmode .view textarea{font-size:18px !important;min-height:52px}',
       // tiny stacked icon+label action buttons (e.g. Krafa send / Greitt / Reikning) — keep compact but legible
-      'body.appmode .view button:has(> svg),body.appmode .view .abtn5{font-size:13px !important}',
-      'body.appmode .view .pill,body.appmode .view .chip,body.appmode .view [class*="pill"],body.appmode .view [class*="chip"]{font-size:13.5px !important}',
-      // section/table text a touch larger
-      'body.appmode .view td,body.appmode .view th,body.appmode .view label,body.appmode .view p,body.appmode .view li{font-size:14.5px}',
-      '#_app-nav button{font-size:12px}',
+      'body.appmode .view button:has(> svg),body.appmode .view .abtn5{font-size:14.5px !important}',
+      'body.appmode .view .pill,body.appmode .view .chip,body.appmode .view [class*="pill"],body.appmode .view [class*="chip"]{font-size:15px !important}',
+      // section/table text larger
+      'body.appmode .view td,body.appmode .view th,body.appmode .view label,body.appmode .view p,body.appmode .view li{font-size:16.5px}',
+      // headings a step up too
+      'body.appmode .view h1{font-size:30px !important}',
+      'body.appmode .view h2,body.appmode .view h3{font-size:21px !important}',
+      '#_app-nav button{font-size:13px}',
     ];
     var st = document.createElement('style'); st.id = '_app-styles'; st.textContent = css.join('\n');
     document.head.appendChild(st);
