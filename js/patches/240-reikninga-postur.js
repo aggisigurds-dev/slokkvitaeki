@@ -290,6 +290,15 @@
       V + '.rp-tag.slate{color:#475569;background:#f1f5f9;border-color:#e2e8f0}',
       V + '.rp-tag.gray{color:#64748b;background:#f8fafc;border-color:#e2e8f0}',
       V + '.rp-tag.q{color:#b45309;background:#fffbeb;border-color:#fde68a}',
+      // Tag-filter row
+      V + '.rp-tagbar{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:-2px 0 14px}',
+      V + '.rp-tagbar-lbl{font-size:12px;font-weight:600;color:#8a93a3;margin-right:2px}',
+      V + '.rp-tagchip{font:inherit;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:20px;white-space:nowrap;cursor:pointer;border:1px solid;transition:box-shadow .12s,transform .08s}',
+      V + '.rp-tagchip:hover{transform:translateY(-1px)}',
+      V + '.rp-tagchip.on{box-shadow:0 0 0 2px #0a0b0d,0 2px 6px rgba(0,0,0,.25);font-weight:800}',
+      V + '.rp-tagchip .n{opacity:.6;font-weight:600;margin-left:2px}',
+      V + '.rp-tagchip.clearall{color:#64748b;background:#fff;border-color:#d7dce4}',
+      V + '.rp-tagchip.clearall:hover{background:#f1f5f9}',
       V + '.rp-badge.ans{color:#047857;background:#ecfdf5;border:1px solid #a7f3d0}',
       V + '.rp-badge.wait{color:#b45309;background:#fff7ed;border:1px solid #fed7aa}',
       V + '.rp-threadb{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap;border:1px solid #ddd6fe;background:#f5f0ff;color:#7c3aed;cursor:pointer;font-family:inherit}',
@@ -430,7 +439,9 @@
     };
   }
 
-  function currentRows() {
+  // Emails after the active view chip + search, but BEFORE the tag filter — the
+  // base set both currentRows() and the tag-chip counts share.
+  function baseRows() {
     // 1) filter individual emails by the active view
     let rows;
     if (state.filter === 'hidden') rows = state.emails.filter(isHidden);
@@ -441,7 +452,7 @@
       else rows = rows.filter(m => m.category === 'inbox' && !m.isSystem); // inbox / unanswered / all(inbox side)
       if (state.filter === 'all') rows = state.emails.filter(m => !isHidden(m) && !ruleMatches(m));
     }
-    // 2) search + tag filter (on individual emails)
+    // 2) search (on individual emails)
     const q = state.search.trim().toLowerCase();
     if (q) rows = rows.filter(m =>
       (m.sender_name || '').toLowerCase().includes(q) ||
@@ -449,6 +460,19 @@
       (m.subject || '').toLowerCase().includes(q) ||
       (m.clean || '').toLowerCase().includes(q) ||
       (m.cust && (m.cust.name || '').toLowerCase().includes(q)));
+    return rows;
+  }
+
+  // Count of threads per tag label in the current view+search context (before the
+  // tag filter), so the tag chips show how many conversations each category holds.
+  function tagCounts() {
+    const out = {};
+    groupThreads(baseRows()).forEach(t => { const tg = tagFor(t); if (tg) out[tg.label] = (out[tg.label] || 0) + 1; });
+    return out;
+  }
+
+  function currentRows() {
+    let rows = baseRows();
     if (state.tagFilter) rows = rows.filter(m => { const t = tagFor(m); return t && t.label === state.tagFilter; });
     // 3) combine into threads (one card per conversation)
     let threads = groupThreads(rows);
@@ -467,6 +491,21 @@
 
   // Rule-based „hvað snýst pósturinn um" merking (engin AI — keyrir á öllum póstum).
   // Fyrsta samsvörun ræður. Skilar {label, cls} eða null.
+  // Catalog for the tag-filter chip row — same labels/colours tagFor() emits, in
+  // display order. Only chips with a live count are shown.
+  var TAG_CATALOG = [
+    { label: '🧾 Reikningsbeiðni', cls: 'blue' },
+    { label: '🔧 Leiðrétting', cls: 'amber' },
+    { label: '⏰ Innheimta', cls: 'red' },
+    { label: '💳 Greiðsla', cls: 'green' },
+    { label: '📋 Tilboð', cls: 'purple' },
+    { label: '🛒 Pöntun', cls: 'teal' },
+    { label: '📄 Skýrsla', cls: 'slate' },
+    { label: '❓ Fyrirspurn', cls: 'q' },
+    { label: '🏦 Áreiðanleikakönnun', cls: 'gray' },
+    { label: '🧾 Payday-afrit', cls: 'gray' },
+  ];
+
   function tagFor(m) {
     const hay = ((m.subject || '') + ' ' + (m.body_preview || '') + ' ' + (m.snippet || '')).toLowerCase();
     const T = (label, cls) => ({ label: label, cls: cls });
@@ -540,6 +579,22 @@
     '</div>';
   }
 
+  // Tag-filter row: one coloured chip per category present in the current view,
+  // each with its thread count. Click to filter; „Allir flokkar" clears it.
+  function tagbarHTML() {
+    const tc = tagCounts();
+    const present = TAG_CATALOG.filter(t => tc[t.label]);
+    if (!present.length) return '';
+    const chips = present.map(t =>
+      '<button class="rp-tagchip rp-tag ' + t.cls + (state.tagFilter === t.label ? ' on' : '') +
+      '" data-tag="' + esc(t.label) + '" type="button">' + t.label +
+      ' <span class="n">' + tc[t.label] + '</span></button>').join('');
+    const clear = state.tagFilter
+      ? '<button class="rp-tagchip clearall" id="_rp-tagall" type="button">✕ Allir flokkar</button>'
+      : '';
+    return '<div class="rp-tagbar"><span class="rp-tagbar-lbl">Flokkar:</span>' + chips + clear + '</div>';
+  }
+
   function render() {
     styles();
     const v = viewEl();
@@ -574,6 +629,7 @@
           '<div class="rp-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>' +
             '<input id="_rp-search" type="search" placeholder="Leita (sendandi · efni · kúnni)…" value="' + esc(state.search) + '"></div>' +
         '</div>' +
+        tagbarHTML() +
         body +
       '</div>';
 
@@ -602,6 +658,11 @@
     v.querySelectorAll('._rp-answered').forEach(b => b.addEventListener('click', async () => { const m = rowFor(b); if (m && m.message_id) { await logActivity(m.message_id, 'reply'); render(); if (window.Toast && Toast.show) Toast.show('✓ Merkt svarað'); } }));
     v.querySelectorAll('._rp-tagf').forEach(b => b.addEventListener('click', () => { state.tagFilter = b.dataset.tag; state.filter = 'all'; render(); }));
     const tc = v.querySelector('#_rp-tagclear'); if (tc) tc.addEventListener('click', () => { state.tagFilter = null; render(); });
+    // Tag-filter row — toggle the tag (click active chip to clear), keep the view chip.
+    v.querySelectorAll('.rp-tagchip[data-tag]').forEach(b => b.addEventListener('click', () => {
+      state.tagFilter = (state.tagFilter === b.dataset.tag) ? null : b.dataset.tag; render();
+    }));
+    const ta = v.querySelector('#_rp-tagall'); if (ta) ta.addEventListener('click', () => { state.tagFilter = null; render(); });
     const rb = v.querySelector('#_rp-rules'); if (rb) rb.addEventListener('click', openRulesModal);
   }
 
