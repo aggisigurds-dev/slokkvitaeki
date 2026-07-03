@@ -340,6 +340,54 @@
     return { label: '—', icon: '·', color: '#94a3b8' };
   }
 
+  // ── Payday greiðslu-samstilling (summary popup) ──────────────────────────
+  function showSyncSummary(data) {
+    const old = document.getElementById('_ky-sync-modal'); if (old) old.remove();
+    const wrap = document.createElement('div');
+    wrap.id = '_ky-sync-modal';
+    wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px;font-family:\'Space Grotesk\',system-ui,sans-serif';
+    let inner;
+    if (data.error) {
+      inner = '<div style="font-size:16px;font-weight:800;color:#dc2626;margin-bottom:8px">⚠️ Villa við samstillingu</div>' +
+              '<div style="font-size:13px;color:#334155;white-space:pre-wrap;word-break:break-word">' + esc(String(data.error)) + '</div>';
+    } else {
+      const list = (data.marked || []).map(m =>
+        '<div style="display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:13px">' +
+          '<span style="font-weight:600;color:#11141c">' + esc(m.customer || '—') + ' <span style="color:#94a3b8;font-family:monospace;font-weight:400">' + esc(m.num || '') + '</span></span>' +
+          '<span style="white-space:nowrap"><span style="font-family:monospace;color:#0f7a43;font-weight:700">' + fmtKr(m.amount) + '</span> <span style="color:#94a3b8;font-size:11px">' + esc(m.paidDate || '') + '</span></span>' +
+        '</div>').join('');
+      inner = '<div style="font-size:17px;font-weight:800;color:#0f7a43;margin-bottom:4px">✅ Samstillingu lokið</div>' +
+        '<div style="font-size:12.5px;color:#64748b;margin-bottom:14px">Athugaði <b>' + (data.checked || 0) + '</b> reikninga í Payday · <b>' + (data.candidates || 0) + '</b> ógreiddar kröfur skoðaðar.' + (data.dry ? ' <b style="color:#b45309">(prufa — engu breytt)</b>' : '') + '</div>' +
+        (data.marked_count
+          ? '<div style="font-weight:700;color:#11141c;margin-bottom:4px">' + data.marked_count + ' krafa merkt greidd:</div><div style="max-height:320px;overflow:auto">' + list + '</div>'
+          : '<div style="padding:16px;text-align:center;color:#64748b;background:#f8fafc;border-radius:10px">Engin ný greiðsla fannst — allt þegar uppfært. 👍</div>');
+    }
+    wrap.innerHTML = '<div style="background:#fff;border-radius:16px;padding:22px 24px;max-width:540px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.35)">' + inner +
+      '<div style="text-align:right;margin-top:18px"><button id="_ky-sync-close" type="button" style="padding:9px 20px;border:none;border-radius:9px;background:#1d4ed8;color:#fff;font-weight:700;cursor:pointer;font:inherit">Loka</button></div></div>';
+    document.body.appendChild(wrap);
+    const close = () => wrap.remove();
+    wrap.addEventListener('click', e => { if (e.target === wrap) close(); });
+    wrap.querySelector('#_ky-sync-close').addEventListener('click', close);
+  }
+
+  async function runPaydaySync(btn) {
+    if (!btn || btn.disabled) return;
+    const orig = btn.textContent;
+    btn.disabled = true; btn.style.opacity = '.6'; btn.textContent = '⏳ Sæki úr Payday…';
+    try {
+      const res = await fetch('/api/payday-sync-paid', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const data = await res.json().catch(() => ({ error: 'Ógilt svar frá þjóni (HTTP ' + res.status + ')' }));
+      if (!res.ok && !data.error) data.error = 'HTTP ' + res.status;
+      showSyncSummary(data);
+      if (!data.error && data.marked_count) await load(_state.month || new Date()); // ný render → nýr takki
+    } catch (e) {
+      showSyncSummary({ error: String(e.message || e) });
+    } finally {
+      const b = document.querySelector('#ky-main ._ky-sync');
+      if (b) { b.disabled = false; b.style.opacity = ''; b.textContent = orig; }
+    }
+  }
+
   // ── Render ───────────────────────────────────────────────────────────────
   function render() {
     const main = document.getElementById('ky-main');
@@ -455,6 +503,7 @@
             const on = (_state.viewFilter || 'krofur') === k;
             return `<button class="_ky-vf" data-vf="${k}" type="button" style="padding:7px 14px;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;${on ? 'border:1px solid #1d4ed8;background:#1d4ed8;color:#fff' : 'border:1px solid #cbd5e1;background:#fff;color:#475569'}">${label}</button>`;
           }).join('')}
+          <button class="_ky-sync" type="button" title="Sækja greiðslustöðu úr Payday og merkja greiddar kröfur sjálfkrafa" style="margin-left:auto;padding:7px 14px;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;border:1px solid #0f7a43;background:linear-gradient(180deg,#17945a,#0f6e3a);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 3px 8px -4px rgba(0,0,0,.4)">🔄 Athuga greiðslur í Payday</button>
         </div>
 
         ${(() => {
@@ -530,6 +579,8 @@
       _state.selected.clear();
       load(_state.month || new Date());
     }));
+    // 🔄 Athuga greiðslur í Payday → merkja greiddar sjálfkrafa + summary popup
+    main.querySelector('._ky-sync')?.addEventListener('click', (e) => runPaydaySync(e.currentTarget));
     // Per-krafa athugasemd/áminning → vistast í solur.athugasemdir þegar farið er
     // úr reitnum (change = eftir edit, ekki hvern staf). Uppfærir líka _state svo
     // texti helst við endur-render.
