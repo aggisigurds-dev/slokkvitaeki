@@ -23,6 +23,19 @@
   window.__ghTitlebarInstalled = true;
 
   const BAR_ATTR = 'data-ghbar';
+
+  // The bar is dark metallic, so its title/subtitle MUST be white. Patch 245's
+  // `.view h1{color:#11141c}` (and friends) otherwise override the inline white
+  // → dark-on-dark ("Sala" invisible). A scoped !important rule wins it back.
+  (function whiteBarText() {
+    const SID = 'ghbar-white-text';
+    if (document.getElementById(SID)) return;
+    const st = document.createElement('style');
+    st.id = SID;
+    st.textContent =
+      '[data-ghbar] h1,[data-ghbar] h1 *,[data-ghbar] > div > div,[data-ghbar] > div > div *{color:#fff !important}';
+    (document.head || document.documentElement).appendChild(st);
+  })();
   // Views that already hand-build the identical bar — don't double it.
   const SKIP = new Set([
     'view-hreyfingarlisti', 'view-thjonustu-verkstaedi', 'view-krofu-yfirlit',
