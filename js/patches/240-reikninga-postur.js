@@ -229,6 +229,15 @@
       '#_rp-modal .rpm-inv .meta{font-size:11.5px;color:#64748b;margin-left:auto;text-align:right}',
       '#_rp-modal .rpm-inv .paid{color:#059669;font-weight:700}',
       '#_rp-modal .rpm-src{font-size:11.5px;color:#475569;background:#f8fafc;border:1px solid #eef1f6;border-radius:9px;padding:10px 12px;line-height:1.5;max-height:120px;overflow:auto}',
+      '#_rp-modal .rpm-summary{font-size:13px;color:#11141c;background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:9px 12px;line-height:1.45}',
+      '#_rp-modal .rpm-docs{display:flex;flex-direction:column;gap:6px}',
+      '#_rp-modal .rpm-doc{display:flex;align-items:center;gap:10px;padding:7px 10px;border:1px solid #eef1f6;border-radius:9px;background:#fff}',
+      '#_rp-modal .rpm-doc.match{background:#fffbeb;border-color:#fde68a}',
+      '#_rp-modal .rpm-doc .n{font-weight:700;color:#11141c;font-size:13px}',
+      '#_rp-modal .rpm-doc .meta{font-size:11.5px;color:#64748b;margin-left:auto}',
+      '#_rp-modal .rpm-doc-send{font:inherit;font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:8px;border:1px solid #c6d6ff;background:linear-gradient(180deg,#eff3ff,#dbe6ff);color:#1d4ed8;cursor:pointer;white-space:nowrap}',
+      '#_rp-modal .rpm-doc-send:hover{background:#dbe6ff}',
+      '#_rp-modal .rpm-doc-send.sent{background:#ecfdf5;border-color:#a7f3d0;color:#059669}',
       '#_rp-modal .rpm-src b{color:#11141c}',
       '#_rp-modal .rpm-note{font-size:12px;color:#94a3b8;margin:-6px 0 12px}',
       '#_rp-modal .rpm-ai-tip{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}',
@@ -565,13 +574,81 @@
     }
   }
 
+  // Send ONE specific invoice PDF straight to an address (used by the assistant's
+  // „umbeðin skjöl" list). Confirms first; reuses the same PDF + email path.
+  async function quickSendInvoice(m, sale, toEmail) {
+    const to = (toEmail || (m && m.from) || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) { alert('Ógilt netfang: ' + to); return false; }
+    if (!window.UttektInvoicePdf || !UttektInvoicePdf.buildInvoiceBlob) { alert('PDF-teiknari ekki tiltækur'); return false; }
+    if (!confirm('Senda ' + (sale.num || 'reikning') + ' (' + fmtKr(sale.samtals) + ') á ' + to + '?')) return false;
+    try {
+      const full = (await getFullSale(sale.id)) || sale;
+      const co = await coForSale(full, m);
+      const blob = await UttektInvoicePdf.buildInvoiceBlob(full, co);
+      const b64 = await blobToB64(blob);
+      const fname = [(co.nafn || 'reikningur').replace(/\s+/g, ' ').trim(), full.num || ''].filter(Boolean).join(' - ') + '.pdf';
+      const r = await fetch('/api/email-send', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          from: emailFrom(), to: [to],
+          subject: 'Reikningur ' + (full.num || '') + ' frá Slökkvitæki ehf',
+          html: buildEmailHtml(full, co, ''),
+          attachments: [{ filename: fname, content: b64 }],
+          apiKey: localStorage.getItem('resend_api_key') || undefined,
+        }),
+      });
+      if (!r.ok) {
+        const e = await r.json().catch(() => ({}));
+        let mm = e.message || e.error || ('HTTP ' + r.status);
+        if (e.error === 'API_KEY_MISSING') mm = 'Resend API lykill ekki stilltur (RESEND_API_KEY í Netlify).';
+        else if (/domain|not verified|verify/i.test(mm)) mm = 'Sendandalén ekki staðfest í Resend.';
+        throw new Error(mm);
+      }
+      if (window.Toast && Toast.show) Toast.show('✓ ' + (full.num || 'Reikningur') + ' sendur á ' + to);
+      return true;
+    } catch (e) { alert('Villa: ' + String((e && e.message) || e)); return false; }
+  }
+
+  // „Find requested documents": list the customer's invoices, star the one the
+  // email asks for (AI invoice_ref or an R-number in the text), one-tap send.
+  async function renderRequestedDocs(m, requested) {
+    const card = modalEl();
+    const row = card.querySelector('#_rpm-docs-row');
+    const box = card.querySelector('#_rpm-docs');
+    if (!row || !box) return;
+    const kt = m.cust && ktDigits(m.cust.kt);
+    const kind = (requested && requested.kind) || 'ekkert';
+    const hayRef = (((m.subject || '') + ' ' + (m.body_preview || m.snippet || '')).toUpperCase().match(/R-0\d{5}/) || [])[0] || null;
+    const ref = (requested && requested.invoice_ref) || hayRef;
+    if (!kt || (kind === 'ekkert' && !ref)) { row.style.display = 'none'; return; }
+    row.style.display = '';
+    box.innerHTML = '<div class="rpm-note" style="margin:0">Sæki reikninga…</div>';
+    const invs = (await getCustomerInvoices(kt)).filter(s => s && s.num);
+    if (!invs.length) { box.innerHTML = '<div class="rpm-note" style="margin:0">Engir reikningar fundust á þennan viðskiptavin.</div>'; return; }
+    const norm = s => String(s || '').toUpperCase().replace(/\s/g, '');
+    box.innerHTML = invs.slice(0, 8).map((s, i) => {
+      const match = ref && norm(s.num) === norm(ref);
+      return '<div class="rpm-doc' + (match ? ' match' : '') + '">' +
+        '<span class="n">' + esc(s.num || '—') + (match ? ' ★' : '') + '</span>' +
+        '<span class="meta">' + fmtKr(s.samtals) + ' · ' + esc(fmtDate(s.created_at)) + (s.paid_at ? ' · greitt' : '') + '</span>' +
+        '<button class="rpm-doc-send" data-i="' + i + '" type="button">✉️ Senda</button></div>';
+    }).join('');
+    box.querySelectorAll('.rpm-doc-send').forEach(b => b.addEventListener('click', async () => {
+      const s = invs[+b.dataset.i]; if (!s) return;
+      b.disabled = true; const ok = await quickSendInvoice(m, s, m.from); b.disabled = false;
+      if (ok) { b.textContent = '✓ Sent'; b.classList.add('sent'); }
+    }));
+  }
+
   // ── Tier 3: 🤖 Semja svar — AI-drafted reply (office reviews before sending) ─
   async function openReplyModal(m) {
     openModal(
-      '<div class="rpm-head"><div><h3>🤖 Semja svar</h3><div class="sub">' + esc(m.sender_name || m.from) + ' · ' + esc(m.from) + '</div></div><button class="rpm-x" type="button">✕</button></div>' +
+      '<div class="rpm-head"><div><h3>🤖 Aðstoð — yfirlit, svar & skjöl</h3><div class="sub">' + esc(m.sender_name || m.from) + ' · ' + esc(m.from) + '</div></div><button class="rpm-x" type="button">✕</button></div>' +
       '<div class="rpm-body">' +
         '<div class="rpm-row"><label class="rpm-lbl">Upprunalegur póstur</label>' +
           '<div class="rpm-src"><b>' + esc(m.subject || '(ekkert efni)') + '</b><br>' + esc((m.body_preview || m.snippet || '').replace(/\s+/g, ' ').slice(0, 400)) + '</div></div>' +
+        '<div class="rpm-row" id="_rpm-summary-row" style="display:none"><label class="rpm-lbl">📋 Yfirlit</label><div class="rpm-summary" id="_rpm-summary"></div></div>' +
+        '<div class="rpm-row" id="_rpm-docs-row" style="display:none"><label class="rpm-lbl">📎 Umbeðin skjöl — smelltu til að senda</label><div class="rpm-docs" id="_rpm-docs"></div></div>' +
         '<div class="rpm-ai-tip" id="_rpm-tips">' +
           '<button type="button" data-t="Staðfestu að við sendum reikninginn sem viðhengi.">Sendi reikning</button>' +
           '<button type="button" data-t="Biddu um netfang eða kt til að finna réttan reikning.">Bið um uppl.</button>' +
@@ -630,6 +707,11 @@
       if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
       if (d.body) ta.value = d.body;
       if (d.subject && subj) subj.value = d.subject;
+      // 📋 summary of what the sender wants
+      const sumRow = card.querySelector('#_rpm-summary-row'), sumEl = card.querySelector('#_rpm-summary');
+      if (sumEl && d.summary) { sumEl.textContent = d.summary; sumRow.style.display = ''; }
+      // 📎 requested documents (invoices) — surface + one-tap send
+      try { await renderRequestedDocs(m, d.requested); } catch (_) {}
       setMsg('✓ Uppkast tilbúið — yfirfarðu það', 'ok');
     } catch (e) {
       setMsg('Villa: ' + String((e && e.message) || e), 'bad');

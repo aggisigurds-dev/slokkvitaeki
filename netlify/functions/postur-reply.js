@@ -52,7 +52,12 @@ export default async (req) => {
     '- Ekki lofa neinu sem þú veist ekki (t.d. nákvæmri dagsetningu leiðréttingar).\n' +
     '- Undirskrift: „Kveðja,\\nSlökkvitæki ehf\\neldklar@eldklar.is".\n' +
     '- Haltu því undir ~120 orðum.\n' +
-    'Svaraðu EINGÖNGU sem hreint JSON: {"subject":"…","body":"…"} — ekkert annað, engir bakgrunnstextar. ' +
+    'Auk svarsins skaltu greina póstinn:\n' +
+    '- "summary": EIN stutt íslensk setning (hámark 16 orð) sem segir hvað sendandinn vill.\n' +
+    '- "requested": hlutur sem lýsir hvaða SKJAL (ef eitthvað) er beðið um: ' +
+    '{"kind":"reikningur"|"skyrsla"|"annad"|"ekkert","invoice_ref": "R-000123" eða null, "note":"stutt"}. ' +
+    'Ef beðið er um afrit/reikning → kind "reikningur". Ef beðið er um úttektarskýrslu → "skyrsla". Ef ekkert skjal → "ekkert".\n' +
+    'Svaraðu EINGÖNGU sem hreint JSON: {"subject":"…","body":"…","summary":"…","requested":{…}} — ekkert annað, engir bakgrunnstextar. ' +
     'Efnislínan má vera „Re: <upprunalegt efni>".\n\n' +
     ctx;
 
@@ -78,9 +83,16 @@ export default async (req) => {
     // fall back to raw text as the body so the office still gets something usable
     out = { subject: 'Re: ' + (em.subject || ''), body: text.trim() || 'Ekki tókst að semja svar — reyndu aftur.' };
   }
+  const reqDoc = (out && out.requested) || {};
   return j(200, {
     subject: String(out.subject || ('Re: ' + (em.subject || ''))).slice(0, 200),
     body: String(out.body || '').slice(0, 4000),
+    summary: out.summary ? String(out.summary).slice(0, 240) : '',
+    requested: {
+      kind: String(reqDoc.kind || 'ekkert').slice(0, 20),
+      invoice_ref: reqDoc.invoice_ref ? String(reqDoc.invoice_ref).slice(0, 20) : null,
+      note: reqDoc.note ? String(reqDoc.note).slice(0, 160) : '',
+    },
   });
 };
 
