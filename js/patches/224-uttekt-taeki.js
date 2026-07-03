@@ -306,7 +306,7 @@
             slær báða þema-keppinauta (patch 229 og 230, báðar 0,2,1).
          2) ID-fallback fyrir dynamic views sem aðrir patches setja á (þjónustu-
             verkstæði var dökk eftir merge þrátt fyrir id^=view-). ID gefur (1,1,0). */
-      'html body div.view[id^="view-"]{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
+      'html body div.view[id^="view-"]{background:linear-gradient(180deg,#060607 0px,#060607 240px,#40444d 680px,#31343b 100%)!important}',
       'html body #view-thjonustu-verkstaedi.view,'+
       'html body #view-bokhalds-yfirlit.view,'+
       'html body #view-thjonustuverk.view,'+
@@ -321,7 +321,7 @@
       'html body #view-kerfi.view,'+
       'html body #view-vidsk-detail.view,'+
       'html body #view-hreyfingarlisti.view'+
-        '{background:linear-gradient(180deg,#060607 0px,#060607 95px,#9ba1ad 200px,#9ba1ad 100%)!important}',
+        '{background:linear-gradient(180deg,#060607 0px,#060607 240px,#40444d 680px,#31343b 100%)!important}',
       'html body [id^="view-"]>.main-panel{background:transparent!important}',
       /* 2026-06-28: text-on-gradient contrast fix.
          The gradient is BLACK 0→95 px then medium-grey 200 px+. Page titles
