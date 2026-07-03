@@ -178,13 +178,16 @@
   }
   function saveSort(v) { try { localStorage.setItem(SORT_KEY, v); } catch (_) {} }
   let _state = { month: null, all: [], vbByParent: {}, sort: loadSort(),
-                 selected: new Set(), sending: false, stop: false, search: '' };
+                 selected: new Set(), sending: false, stop: false, search: '',
+                 // Sýnarsía: 'krofur' (útistandandi, eins og áður) · 'osendar' ·
+                 // 'greiddar' · 'allt' (bæði ógreiddar OG greiddar).
+                 viewFilter: 'krofur' };
 
   // A sale is "sendanleg" (queueable) if it hasn't already been pushed to
   // Payday. krafa_sent_at / invoiced_at / dk_invoice_id all mark a sent claim —
   // re-sending would 409 in payday-push, so those rows get no checkbox.
   function isSendable(s) {
-    return !s.krafa_sent_at && !s.invoiced_at && !s.dk_invoice_id;
+    return !s.paid_at && !s.krafa_sent_at && !s.invoiced_at && !s.dk_invoice_id;
   }
 
   function monthBounds(d) {
@@ -206,11 +209,15 @@
     // ONLY reikningur — that's the "krafa í heimabanka 10 dagar" choice.
     // 'greitt_sidar' is excluded — it has its own page (Til að rukka).
     // 2026-05-21: pull updated_at too so the sort options can use it.
-    const r = await SB.from('solur')
+    let q = SB.from('solur')
       .select('id,num,customer_nafn,customer_id,customer_base_id,customer_kt,samtals,greitt_med,athugasemdir,created_at,updated_at,paid_at,invoiced_at,krafa_sent_at,dk_invoice_id,is_credit,credit_of')
-      .eq('greitt_med', 'reikningur')
-      .is('paid_at', null)
-      .order('updated_at', { ascending: false });
+      .eq('greitt_med', 'reikningur');
+    const vf = _state.viewFilter || 'krofur';
+    if (vf === 'krofur')        q = q.is('paid_at', null);                      // útistandandi (eins og áður)
+    else if (vf === 'osendar')  q = q.is('paid_at', null).is('krafa_sent_at', null).is('invoiced_at', null).is('dk_invoice_id', null); // ósendar
+    else if (vf === 'greiddar') q = q.not('paid_at', 'is', null);              // greiddar kröfur
+    // 'allt' → engin paid_at-sía (bæði ógreiddar OG greiddar)
+    const r = await q.order('updated_at', { ascending: false });
     if (r.error) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
     _state.all = r.data || [];
 
@@ -437,6 +444,13 @@
           </div>
         </div>
 
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+          ${[['krofur','📋 Sýna kröfur'],['osendar','📤 Ósendar kröfur'],['greiddar','✅ Greiddar kröfur'],['allt','📚 Sýna allt']].map(([k, label]) => {
+            const on = (_state.viewFilter || 'krofur') === k;
+            return `<button class="_ky-vf" data-vf="${k}" type="button" style="padding:7px 14px;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;${on ? 'border:1px solid #1d4ed8;background:#1d4ed8;color:#fff' : 'border:1px solid #cbd5e1;background:#fff;color:#475569'}">${label}</button>`;
+          }).join('')}
+        </div>
+
         ${(() => {
           const CS = '0 1px 1px rgba(15,23,42,.05),0 8px 16px -8px rgba(15,23,42,.15),0 24px 44px -20px rgba(15,23,42,.3),inset 0 2px 0 rgba(255,255,255,.95),inset 0 -10px 20px -14px rgba(15,23,42,.14)';
           const light = (label, value, sub, ic, icbg, glow) =>
@@ -503,6 +517,13 @@
       m.setMonth(m.getMonth() + 1);
       load(m);
     });
+    // Sýnarsía: kröfur / ósendar / greiddar / allt
+    main.querySelectorAll('._ky-vf').forEach(b => b.addEventListener('click', () => {
+      if (_state.viewFilter === b.dataset.vf) return;
+      _state.viewFilter = b.dataset.vf;
+      _state.selected.clear();
+      load(_state.month || new Date());
+    }));
 
     // 2026-06-30: smella á nafn fyrirtækisins → opna fyrirtækjasíðu
     main.querySelectorAll('._ky-co-link').forEach(a => {
