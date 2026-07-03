@@ -25,10 +25,24 @@
   (function injectSkin() {
     const ID = 'ky-brunastal-skin';
     if (document.getElementById(ID)) return;
+    if (!document.getElementById('ky-fonts')) {
+      const l = document.createElement('link');
+      l.id = 'ky-fonts'; l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap';
+      (document.head || document.documentElement).appendChild(l);
+    }
     const s = document.createElement('style');
     s.id = ID;
+    const V = '#view-krofu-yfirlit ';
     const B = 'html[data-thm-preset="brunastal"] #view-krofu-yfirlit ';
     s.textContent =
+      // v3 handoff: light-metallic labelled action buttons (Krafa send / Greitt / …)
+      V + '.ky-abtn{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:46px;height:42px;padding:0 7px;border-radius:9px;border:1px solid rgba(20,24,34,.2);background:linear-gradient(180deg,#ffffff,#dbe0e9);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 3px 6px -3px rgba(20,30,60,.3);cursor:pointer;font:inherit;transition:transform .12s ease,box-shadow .12s ease}' +
+      V + '.ky-abtn:hover{transform:translateY(-1px);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 6px 12px -4px rgba(20,30,60,.42)}' +
+      V + '.ky-abtn.on{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);border-color:#156e3a;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 3px 7px -3px rgba(15,110,58,.5)}' +
+      V + '.ky-row:hover{background:#f7f9fd}' +
+      B + '.darkfield::placeholder{color:rgba(255,255,255,.55)}' +
+      B + '.ky-navbtn option{background:#1a1a1f;color:#fff}' +
       // 2026-07-01 (Agnar): stretch the page to fill the content area and hug the
       // sidebar + top banner — was capped at 1200px centred (22px pad) which left
       // a wide right gutter + a top gap. Applies in every theme (not Brunastál-
@@ -77,6 +91,24 @@
       .replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim();
   }
   function ktDigits(s) { return String(s || '').replace(/\D+/g, ''); }
+
+  // ── v3 handoff helpers ─────────────────────────────────────────────────────
+  // Aging pill: green ≤30d · amber 31–60d · red >60d.
+  function agingPill(days) {
+    if (days == null) return '';
+    const p = days > 60 ? { bg: '#fff1f2', tx: '#be123c', bd: '#fecdd3' }
+            : days > 30 ? { bg: '#fffbeb', tx: '#b45309', bd: '#fde68a' }
+            : { bg: '#ecfdf5', tx: '#047857', bd: '#a7f3d0' };
+    return '<span class="ky-num" style="background:' + p.bg + ';color:' + p.tx + ';border:1px solid ' + p.bd + ';padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:700;white-space:nowrap">' + days + ' d.</span>';
+  }
+  // Light-metallic labelled action button (icon + tiny colored label).
+  // filled=true → dark-metal green (used for a sent claim).
+  function kyAbtn(cls, extra, glyph, label, color, title, filled) {
+    return '<button class="' + cls + ' ky-abtn' + (filled ? ' on' : '') + '" ' + extra + ' type="button" title="' + esc(title) + '">' +
+      '<span style="font-size:14px;line-height:1;color:' + (filled ? '#fff' : color) + '">' + glyph + '</span>' +
+      '<span style="font-size:8.5px;font-weight:700;letter-spacing:.02em;color:' + (filled ? '#fff' : color) + '">' + esc(label) + '</span>' +
+    '</button>';
+  }
 
   // ── Sidebar entry ────────────────────────────────────────────────────────
   function injectNav() {
@@ -387,63 +419,55 @@
 
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:18px">
           <div>
-            <h1 class="ky-h1" style="margin:0;font-size:22px;color:#0f172a;display:flex;align-items:center;gap:10px">📋 Kröfu yfirlit</h1>
+            <h1 class="ky-h1" style="margin:0;font-size:24px;font-weight:800;color:#0f172a;display:flex;align-items:center;gap:10px">📄 Kröfu yfirlit</h1>
             <div class="ky-sub" style="font-size:12px;color:#64748b;margin-top:2px">Krafa í heimabanka — sölur með greitt_med = "Senda reikning" sem þarf að safna saman í lok mánaðar</div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button class="_ky-prev ky-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>
             <div class="ky-month" style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:140px;text-align:center">${esc(monthLabel)}</div>
             <button class="_ky-next ky-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>
-            <select class="_ky-sort" title="Raða" style="margin-left:6px;padding:6px 9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font:inherit;font-size:12.5px;font-weight:600;color:#475569;cursor:pointer">
+            <select class="_ky-sort ky-navbtn" title="Raða" style="margin-left:6px;padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font:inherit;font-size:12.5px;font-weight:600;color:#475569;cursor:pointer">
               <option value="updated_desc"${_state.sort === 'updated_desc' ? ' selected' : ''}>🕐 Nýlega breytt fyrst</option>
               <option value="created_desc"${_state.sort === 'created_desc' ? ' selected' : ''}>📅 Nýjast stofnað</option>
               <option value="created_asc"${_state.sort === 'created_asc' ? ' selected' : ''}>📅 Elst stofnað</option>
               <option value="amount_desc"${_state.sort === 'amount_desc' ? ' selected' : ''}>💰 Hæsta upphæð</option>
               <option value="amount_asc"${_state.sort === 'amount_asc' ? ' selected' : ''}>💰 Lægsta upphæð</option>
             </select>
-            <input class="_ky-search" type="search" placeholder="🔍 Leita (nafn · kt · R-nr)…" value="${esc(_state.search)}" style="margin-left:6px;padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font:inherit;font-size:13px;min-width:210px">
+            <input class="_ky-search ky-navbtn darkfield" type="search" placeholder="🔍 Leita (nafn · kt · R-nr)…" value="${esc(_state.search)}" style="margin-left:6px;padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font:inherit;font-size:13px;min-width:210px">
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:16px">
-          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid #1d4ed8">
-            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
-              <div style="width:26px;height:26px;border-radius:7px;background:#dbeafe;display:flex;align-items:center;justify-content:center;font-size:15px">📋</div>
-              <div style="font-size:10.5px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Þessi mánuður</div>
-            </div>
-            <div class="ky-num" style="font-size:22px;font-weight:800;color:#1d4ed8">${fmtKr(thisMonthTotal)}</div>
-            <div style="font-size:10.5px;color:#94a3b8;margin-top:1px">${thisMonth.length} kröfur</div>
-          </div>
-          ${olderTotal !== 0 ? `
-          <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04);border-left:4px solid #b45309">
-            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
-              <div style="width:26px;height:26px;border-radius:7px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:15px">🕓</div>
-              <div style="font-size:10.5px;color:#64748b;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Eldri ógreitt</div>
-            </div>
-            <div class="ky-num" style="font-size:22px;font-weight:800;color:#b45309">${fmtKr(olderTotal)}</div>
-            <div style="font-size:10.5px;color:#94a3b8;margin-top:1px">${older.length} kröfur</div>
-          </div>` : ''}
-          <div style="background:linear-gradient(135deg,#1e3a8a,#1d4ed8);color:#fff;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
-              <div style="width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:15px">💰</div>
-              <div style="font-size:10.5px;color:#bfdbfe;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Heildarkröfur</div>
-            </div>
-            <div class="ky-num" style="font-size:22px;font-weight:800">${fmtKr(grandTotal)}</div>
-            <div style="font-size:10.5px;color:#bfdbfe;margin-top:1px">${all.length} sölur · ${companies.length} fyrirtæki</div>
-          </div>
-          <div style="background:linear-gradient(135deg,#0c4a6e,#0284c7);color:#fff;border-radius:10px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-            <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
-              <div style="width:26px;height:26px;border-radius:7px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:15px">🏦</div>
-              <div style="font-size:10.5px;color:#bae6fd;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Sendar kröfur</div>
-            </div>
-            <div class="ky-num" style="font-size:22px;font-weight:800">${fmtKr(sentTotal)}</div>
-            <div style="font-size:10.5px;color:#bae6fd;margin-top:1px">${sent.length} sölur · ${sentCompanies} fyrirtæki</div>
-          </div>
-        </div>
+        ${(() => {
+          const CS = '0 1px 1px rgba(15,23,42,.05),0 8px 16px -8px rgba(15,23,42,.15),0 24px 44px -20px rgba(15,23,42,.3),inset 0 2px 0 rgba(255,255,255,.95),inset 0 -10px 20px -14px rgba(15,23,42,.14)';
+          const light = (label, value, sub, ic, icbg, glow) =>
+            `<div style="flex:1 1 240px;min-width:240px;border-radius:18px;padding:15px 17px;display:flex;align-items:center;gap:13px;background:linear-gradient(180deg,#ffffff,#eef1f6);box-shadow:${CS}">
+              <div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;background:${icbg};box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.25),0 4px 10px -3px ${glow}">${ic}</div>
+              <div style="min-width:0">
+                <div style="font-size:10.5px;font-weight:700;letter-spacing:.14em;color:#8a93a5;text-transform:uppercase">${esc(label)}</div>
+                <div class="ky-num" style="font-size:24px;font-weight:700;color:#11141c;margin-top:2px;white-space:nowrap">${fmtKr(value)}</div>
+                <div style="font-size:11px;color:#9098a6;margin-top:1px">${esc(sub)}</div>
+              </div>
+            </div>`;
+          const hero = (label, value, sub, ic, grad, glowShadow) =>
+            `<div style="flex:1 1 240px;min-width:240px;border-radius:18px;padding:15px 17px;display:flex;align-items:center;gap:13px;background:${grad};box-shadow:0 1px 1px rgba(15,23,42,.05),0 10px 20px -8px rgba(15,23,42,.25),${glowShadow},inset 0 1px 0 rgba(255,255,255,.45)">
+              <div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;background:rgba(255,255,255,.16);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.2)">${ic}</div>
+              <div style="min-width:0">
+                <div style="font-size:10.5px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.72);text-transform:uppercase">${esc(label)}</div>
+                <div class="ky-num" style="font-size:24px;font-weight:700;color:#fff;margin-top:2px;white-space:nowrap">${fmtKr(value)}</div>
+                <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:1px">${esc(sub)}</div>
+              </div>
+            </div>`;
+          return '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">' +
+            light('Þessi mánuður', thisMonthTotal, thisMonth.length + ' kröfur', '📄', 'linear-gradient(180deg,#5a86e0,#2f5fe0)', 'rgba(47,95,224,.5)') +
+            light('Eldri ógreitt', olderTotal, older.length + ' kröfur', '⏳', 'linear-gradient(180deg,#d4a94f,#ab7f2a)', 'rgba(171,127,42,.45)') +
+            hero('Heildarkröfur', grandTotal, all.length + ' sölur · ' + companies.length + ' fyrirtæki', '💰', 'linear-gradient(150deg,#6f97ff 0%,#2f5fe0 34%,#1c3d8c 60%,#0b1838 100%)', '0 26px 46px -20px rgba(20,40,120,.5)') +
+            hero('Sendar kröfur', sentTotal, sent.length + ' sölur · ' + sentCompanies + ' fyrirtæki', '🏦', 'linear-gradient(150deg,#37c6a6 0%,#0f9d78 34%,#0a5f52 60%,#062f2b 100%)', '0 26px 46px -20px rgba(10,90,80,.5)') +
+          '</div>';
+        })()}
 
-        <div style="font-size:13px;color:#475569;margin-bottom:10px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;line-height:1.5">
-          💡 Þessar tölur eru útistandandi kröfur per fyrirtæki sem þarf að setja í heimabankann.
-          Þegar krafan hefur verið mynduð fyrir fyrirtæki, smelltu <b>"✓ Allar greiddar"</b> til að hreinsa þær út.
+        <div style="font-size:12.5px;color:#5b6472;margin-bottom:14px;padding:11px 15px;background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18);line-height:1.5">
+          💡 Útistandandi kröfur per fyrirtæki sem þarf að setja í heimabankann.
+          Þegar krafan er mynduð, smelltu <b style="color:#0f7a43">„✓ Allar greiddar"</b> til að hreinsa þær út.
         </div>
 
         ${q && companies.length ? `<div style="font-size:12px;color:#64748b;margin-bottom:10px">🔍 ${shown.length} af ${companies.length} fyrirtækjum passa við „${esc(_state.search)}"</div>` : ''}
@@ -825,39 +849,44 @@
       ? `<a href="#" class="_ky-co-link" data-co-id="${grp.id}" style="color:#0f172a;text-decoration:none;border-bottom:1px dotted #94a3b8;cursor:pointer">${esc(grp.display)}</a>`
       : esc(grp.display);
 
+    // Aging distribution across the company's claims → mini bar + oldest days.
+    let agG = 0, agA = 0, agR = 0, oldestD = 0;
+    sales.forEach(s => { const d = daysAgo(s.created_at) || 0; const amt = parseFloat(s.samtals) || 0; if (d > oldestD) oldestD = d; if (d > 60) agR += amt; else if (d > 30) agA += amt; else agG += amt; });
+    const agTot = agG + agA + agR || 1;
+    const agBar = '<div style="height:6px;border-radius:99px;overflow:hidden;display:flex;background:#eef1f6;width:180px;max-width:44vw;margin-top:6px">' +
+      (agG ? '<div style="width:' + (agG / agTot * 100) + '%;background:#22c55e"></div>' : '') +
+      (agA ? '<div style="width:' + (agA / agTot * 100) + '%;background:#f59e0b"></div>' : '') +
+      (agR ? '<div style="width:' + (agR / agTot * 100) + '%;background:#ef4444"></div>' : '') +
+    '</div>';
+    const oldestLbl = oldestD > 60 ? 'elstu 60+ d.' : ('elstu ' + oldestD + ' d.');
+
     return `
-      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.04)">
-        <div style="padding:12px 16px;background:linear-gradient(135deg,#f8fafc,#eff6ff);border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <div style="display:flex;align-items:flex-start;gap:11px">
+      <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:16px;margin-bottom:12px;overflow:hidden;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)">
+        <div style="padding:14px 18px;border-bottom:1px solid #eef1f6;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="display:flex;align-items:flex-start;gap:12px">
             ${sendableIds.length
-              ? `<label style="display:flex;align-items:center;padding-top:3px;cursor:pointer" title="Velja allar ósendar kröfur hjá ${esc(grp.display)}"><input type="checkbox" class="_ky-pick-co" data-ids="${sendableIds.join(',')}" style="width:17px;height:17px;cursor:pointer;accent-color:#1d4ed8"></label>`
+              ? `<label style="display:flex;align-items:center;padding-top:4px;cursor:pointer" title="Velja allar ósendar kröfur hjá ${esc(grp.display)}"><input type="checkbox" class="_ky-pick-co" data-ids="${sendableIds.join(',')}" style="width:17px;height:17px;cursor:pointer;accent-color:#2f5fe0"></label>`
               : ''}
             <div>
-              <div style="font-weight:800;color:#0f172a;font-size:15px">${nameHtml}</div>
-              <div style="font-size:11px;color:#64748b;margin-top:2px">${meta}</div>
-              <div style="font-size:11px;color:#64748b;margin-top:2px">${sales.length} kröfur ·
-                ${grp.thisMonthSum > 0 ? '<span style="color:#1d4ed8">þessi mán: ' + fmtKr(grp.thisMonthSum) + '</span>' : ''}
-                ${grp.thisMonthSum > 0 && grp.olderSum > 0 ? ' · ' : ''}
-                ${grp.olderSum > 0 ? '<span style="color:#b45309">eldra: ' + fmtKr(grp.olderSum) + '</span>' : ''}
-              </div>
+              <div style="font-weight:800;color:#11141c;font-size:16px">${nameHtml}</div>
+              <div style="font-size:11px;color:#8a93a5;margin-top:2px">${meta}</div>
+              ${agBar}
+              <div style="font-size:11px;color:#8a93a5;margin-top:4px">${sales.length} kröfur${grp.olderSum > 0 ? ' · <span style="color:#b45309">eldra: ' + fmtKr(grp.olderSum) + '</span>' : ''} · ${oldestLbl}</div>
             </div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center">
+          <div style="display:flex;gap:10px;align-items:center">
             <div style="text-align:right">
-              <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.05em">Krafa</div>
-              <div class="ky-num" style="font-size:20px;font-weight:800;color:#1d4ed8;font-variant-numeric:tabular-nums">${fmtKr(grp.sum)}</div>
+              <div style="font-size:10px;color:#8a93a5;text-transform:uppercase;letter-spacing:.1em;font-weight:700">Krafa</div>
+              <div class="ky-num" style="font-size:22px;font-weight:700;color:#2f5fe0">${fmtKr(grp.sum)}</div>
             </div>
-            <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð án vsk-formúleringa" style="padding:6px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:6px;cursor:pointer;font:inherit;font-size:11px">📋</button>
-            <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt" style="padding:7px 12px;background:#f8fafc;color:#15803d;border:1.5px solid #86efac;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">✓ Allar greiddar</button>
+            <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð" style="width:38px;height:38px;background:#f1f5f9;color:#475569;border:1px solid rgba(20,24,34,.14);border-radius:10px;cursor:pointer;font:inherit;font-size:13px">📋</button>
+            <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt" style="height:40px;padding:0 16px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;border-radius:11px;cursor:pointer;font:inherit;font-size:13px;font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)">✓ Allar greiddar</button>
           </div>
         </div>
         <div>
           ${sales.map(s => {
-            const st = pickupStatus(s.num);
             const da = daysAgo(s.created_at);
             // 2026-06-30: 📎 fylgiskjal — leita úttektarskýrslu sömu ár.
-            // Reynir customer_id fyrst, svo öll fyrirtaeki með sama kt eða
-            // customer_base_id (vegna að nýjar POS-sölur hafa oft engan customer_id).
             let skyrslaBtn = '';
             try {
               if (window.CompanyAttachments && CompanyAttachments.list) {
@@ -875,30 +904,28 @@
                   if (hit) { skyrsla = hit; hitCoId = coId; break; }
                 }
                 if (skyrsla && hitCoId) {
-                  skyrslaBtn = `<button class="_ky-skyrsla" data-co-id="${hitCoId}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="padding:5px 9px;background:#fef3c7;color:#92400e;border:1px solid #fcd34d;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;white-space:nowrap">📎 Skýrsla ${yr}</button>`;
+                  skyrslaBtn = `<button class="_ky-skyrsla" data-co-id="${hitCoId}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:#fff;color:#3a4250;border:1px solid rgba(20,24,34,.16);border-radius:8px;cursor:pointer;font:inherit;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 1px 2px rgba(15,23,42,.05)">📄 Skýrsla ${yr}</button>`;
                 }
               }
             } catch (_) {}
             return `
-              <div style="display:grid;grid-template-columns:26px 100px 80px 1fr 90px 1fr auto;gap:10px;padding:9px 16px;border-bottom:1px solid #f1f5f9;font-size:12.5px;align-items:center">
-                <div style="display:flex;align-items:center;justify-content:center">${isSendable(s)
-                  ? `<input type="checkbox" class="_ky-pick" data-id="${s.id}" data-amount="${Math.round(parseFloat(s.samtals) || 0)}" title="Velja kröfu í Payday-sendingu" style="width:16px;height:16px;cursor:pointer;accent-color:#1d4ed8">`
-                  : ''}</div>
-                <div style="font-family:monospace;color:#475569">${esc(s.num || '')}</div>
-                <div style="color:#64748b">${fmtDate(s.created_at)}</div>
-                <div style="color:${st.color};font-weight:600">${st.icon} ${esc(st.label)}</div>
-                <div style="color:#94a3b8;font-size:11px">${da != null ? da + ' d.' : ''}</div>
-                <div class="ky-num" style="text-align:right;font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums">${fmtKr(s.samtals)}</div>
-                <div style="display:flex;gap:4px">
-                  ${skyrslaBtn}
-                  ${s.krafa_sent_at
-                    ? `<button class="_ky-krafa-toggle" data-id="${s.id}" data-on="1" type="button" title="Krafa send ${fmtDate(s.krafa_sent_at)} — smelltu til að afhaka" style="padding:5px 9px;background:#dcfce7;color:#14532d;border:1px solid #86efac;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;white-space:nowrap">🏦 ✓ Krafa send</button>`
-                    : `<button class="_ky-krafa-toggle" data-id="${s.id}" type="button" title="Haka við þegar krafan hefur verið stofnuð í heimabankanum" style="padding:5px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600;white-space:nowrap">🏦 Krafa send</button>`}
-                  <button class="_ky-mark-paid" data-id="${s.id}" type="button" title="Merkja sem greitt" style="padding:5px 9px;background:#f8fafc;color:#15803d;border:1.5px solid #86efac;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✓</button>
-                  <button class="_ky-view-invoice" data-id="${s.id}" type="button" title="Skoða / prenta reikning" style="padding:5px 9px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">🖨</button>
-                  <button class="_ky-open-editor" data-num="${esc(s.num)}" type="button" title="Opna í sölu-editor" style="padding:5px 9px;background:#fff;color:#475569;border:1px solid #cbd5e1;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">✏️</button>
-                  <button class="_ky-kredit" data-id="${s.id}" type="button" title="Bakfæra (kreditfæra) reikninginn" style="padding:5px 9px;background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">↩ Bakfæra</button>
-                  <button class="_ky-nyjan" data-kt="${esc(s.customer_kt || '')}" data-nafn="${esc(s.customer_nafn || '')}" type="button" title="Ný sala fyrir þennan viðskiptavin (opnar Sölu með kt tilbúið — afsláttur bætist sjálfkrafa)" style="padding:5px 9px;background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">＋ Nýjan</button>
+              <div class="ky-row" style="display:flex;align-items:center;gap:12px;padding:9px 18px;border-bottom:1px solid #f3f5f9;font-size:12.5px">
+                ${isSendable(s)
+                  ? `<input type="checkbox" class="_ky-pick" data-id="${s.id}" data-amount="${Math.round(parseFloat(s.samtals) || 0)}" title="Velja kröfu í Payday-sendingu" style="width:15px;height:15px;cursor:pointer;accent-color:#2f5fe0;flex-shrink:0">`
+                  : '<span style="width:15px;flex-shrink:0"></span>'}
+                <span class="ky-num" style="color:#1d4ed8;font-weight:700;width:92px;flex-shrink:0">${esc(s.num || '')}</span>
+                <span class="ky-num" style="color:#64748b;width:86px;flex-shrink:0">${fmtDate(s.created_at)}</span>
+                ${agingPill(da)}
+                ${skyrslaBtn}
+                <span style="flex:1"></span>
+                <span class="ky-num" style="text-align:right;font-weight:700;color:#11141c;white-space:nowrap">${fmtKr(s.samtals)}</span>
+                <div style="display:flex;gap:6px;flex-shrink:0">
+                  ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', 'Krafa send', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
+                  ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"', '✓', 'Greitt', '#0f7a43', 'Merkja sem greitt', false)}
+                  ${kyAbtn('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', 'Reikning', '#2f5fe0', 'Skoða / prenta reikning', false)}
+                  ${kyAbtn('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', 'Breyta', '#c2410c', 'Opna í sölu-editor', false)}
+                  ${kyAbtn('_ky-kredit', 'data-id="' + s.id + '"', '↩', 'Bakfæra', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
+                  ${kyAbtn('_ky-nyjan', 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', '＋', 'Nýr', '#0f7a43', 'Ný sala fyrir þennan viðskiptavin (opnar Sölu með kt tilbúið)', false)}
                 </div>
               </div>`;
           }).join('')}
