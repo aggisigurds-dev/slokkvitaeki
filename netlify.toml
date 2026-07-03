@@ -31,7 +31,8 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
-# Dagleg sjálfvirk greiðslu-samstilling úr Payday, kl. 10:00 (cron er í UTC;
-# Ísland = UTC allt árið → 10:00 að staðartíma). Sami vinnsluferill og 🔄 takkinn.
+# Sjálfvirk greiðslu-samstilling úr Payday tvisvar á dag: kl. 10:00 og 15:00
+# (cron er í UTC; Ísland = UTC allt árið → sömu tímar að staðartíma). Sami
+# vinnsluferill og 🔄 takkinn á Kröfu yfirlit.
 [functions."payday-sync-cron"]
-  schedule = "0 10 * * *"
+  schedule = "0 10,15 * * *"
