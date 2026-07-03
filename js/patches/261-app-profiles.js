@@ -22,14 +22,17 @@
 
   // ── catalog of pages that can go into an app (switchView key → label) ────────
   var PAGES = [
-    { k: 'krofu-yfirlit',    label: 'Kröfu yfirlit',        emoji: '💳' },
-    { k: 'companies',        label: 'Fyrirtæki í þjónustu',  emoji: '🏢' },
+    { k: 'krofu-yfirlit',    label: 'Kröfu yfirlit',        short: 'Kröfur',     emoji: '💳' },
+    { k: 'companies',        label: 'Fyrirtæki í þjónustu',  short: 'Fyrirtæki',  emoji: '🏢' },
     { k: 'income',           label: 'Tekjur',                emoji: '📈' },
     { k: 'bokhalds-yfirlit', label: 'Bókhald',               emoji: '📊' },
-    { k: 'reikninga-postur', label: 'Reikninga-póstur',      emoji: '📧' },
-    { k: 'hreyfingarlisti',  label: 'Hreyfingarlisti',       emoji: '📄' },
-    { k: 'vidskiptavinir',   label: 'Viðskiptavinir',        emoji: '👤' },
+    { k: 'reikninga-postur', label: 'Reikninga-póstur',      short: 'Póstur',     emoji: '📧' },
+    { k: 'hreyfingarlisti',  label: 'Hreyfingarlisti',       short: 'Hreyfingar', emoji: '📄' },
+    { k: 'vidskiptavinir',   label: 'Viðskiptavinir',        short: 'Kúnnar',     emoji: '👤' },
     { k: 'sala',             label: 'Sala',                  emoji: '💵' },
+    // Brunahólf-síður — birtar inni í appinu í iframe (deep-link á tab-ið).
+    { k: 'br-gerdreikninga', label: 'Gerð reikninga',        short: 'Reikn.gerð', emoji: '🧾', url: 'https://brunaholf.netlify.app/#gerdreikninga' },
+    { k: 'br-vinnubok',      label: 'Vinnubók',              emoji: '📓', url: 'https://brunaholf.netlify.app/#vinnubok' },
   ];
   var PAGE_BY_KEY = {}; PAGES.forEach(function (p) { PAGE_BY_KEY[p.k] = p; });
 
@@ -37,8 +40,8 @@
   var APPS = [
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0e7a4f', dark: '#06402b',
       manifest: '/manifest-fjarmal.json',
-      blurb: 'Kröfur, sala og fyrirtæki',
-      defaults: ['krofu-yfirlit', 'sala', 'companies'] },
+      blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
+      defaults: ['krofu-yfirlit', 'sala', 'companies', 'br-gerdreikninga', 'br-vinnubok'] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
 
@@ -150,9 +153,12 @@
       '#_app-hdr .nm{font-size:16px;font-weight:800;flex:1;display:flex;align-items:center;gap:8px}',
       '#_app-hdr button{font:inherit;font-size:13px;font-weight:700;height:34px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.14);color:#fff;cursor:pointer}',
       '#_app-nav{position:fixed;bottom:0;left:0;right:0;z-index:1200;display:flex;background:#0c0d10;border-top:1px solid #26262c;padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px));box-shadow:0 -3px 14px rgba(0,0,0,.35)}',
-      '#_app-nav button{flex:1;background:none;border:none;color:rgba(255,255,255,.62);font:inherit;font-size:11px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;border-radius:10px;min-height:52px}',
-      '#_app-nav button .e{font-size:21px;line-height:1}',
+      '#_app-nav button{flex:1;min-width:0;background:none;border:none;color:rgba(255,255,255,.62);font:inherit;font-size:11px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 1px;border-radius:10px;min-height:52px;text-align:center;line-height:1.1;overflow:hidden;text-overflow:ellipsis}',
+      '#_app-nav button .e{font-size:20px;line-height:1}',
       '#_app-nav button.on{color:#fff;background:rgba(255,255,255,.08)}',
+      // external-page iframe host (sits between the header and the bottom nav)
+      '#_app-frame{position:fixed;top:50px;left:0;right:0;bottom:70px;z-index:1150;background:#fff;display:none}',
+      '#_app-frame iframe{width:100%;height:100%;border:0;display:block}',
       // ── App-mode readability: bigger text + thumb-friendly tap targets. Scoped to
       //    body.appmode so the office desktop view is untouched. ──
       'body.appmode .view{font-size:17px}',
@@ -166,7 +172,7 @@
       // headings a step up too
       'body.appmode .view h1{font-size:30px !important}',
       'body.appmode .view h2,body.appmode .view h3{font-size:21px !important}',
-      '#_app-nav button{font-size:13px}',
+      '#_app-nav button{font-size:11px}',
     ];
     var st = document.createElement('style'); st.id = '_app-styles'; st.textContent = css.join('\n');
     document.head.appendChild(st);
@@ -242,7 +248,7 @@
     nav.id = '_app-nav';
     nav.innerHTML = pages.map(function (k) {
       var p = PAGE_BY_KEY[k] || { emoji: '•', label: k };
-      return '<button class="_app-tab" data-k="' + k + '"><span class="e">' + p.emoji + '</span>' + esc(p.label) + '</button>';
+      return '<button class="_app-tab" data-k="' + k + '"><span class="e">' + p.emoji + '</span>' + esc(p.short || p.label) + '</button>';
     }).join('');
     if (!nav.parentNode) document.body.appendChild(nav);
 
@@ -254,10 +260,28 @@
     goPage(pages[0]);
   }
   function goPage(k) {
-    _curPage = k; navTo(k);
+    _curPage = k;
+    var p = PAGE_BY_KEY[k];
+    if (p && p.url) showFrame(p);      // external (Brunahólf) page → iframe
+    else { hideFrame(); navTo(k); }    // native slökkvitæki view
     var nav = document.getElementById('_app-nav');
     if (nav) nav.querySelectorAll('._app-tab').forEach(function (b) { b.classList.toggle('on', b.dataset.k === k); });
   }
+  // Full-screen iframe host for external pages (between header + bottom nav).
+  function frameEl() {
+    var f = document.getElementById('_app-frame');
+    if (f) return f;
+    f = document.createElement('div'); f.id = '_app-frame';
+    f.innerHTML = '<iframe id="_app-iframe" title="app" allow="clipboard-write; clipboard-read"></iframe>';
+    document.body.appendChild(f);
+    return f;
+  }
+  function showFrame(p) {
+    var f = frameEl(), ifr = f.querySelector('iframe');
+    if (ifr.getAttribute('data-src') !== p.url) { ifr.src = p.url; ifr.setAttribute('data-src', p.url); }
+    f.style.display = 'block';
+  }
+  function hideFrame() { var f = document.getElementById('_app-frame'); if (f) f.style.display = 'none'; }
 
   // ── switchView hook: launcher opens here; app mode is a focus-lock ───────────
   function patchSwitchView() {
