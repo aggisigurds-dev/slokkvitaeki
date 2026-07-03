@@ -202,8 +202,9 @@
       if (/^(sent from my|sent via|fá í síma|fæ í síma)/i.test(t)) return false;
       return true;
     }).join(' ');
-    // 5) klippa undirskrift
-    s = s.replace(/\s*(með kveðju|kær kveðju|bestu kveðjur|kveðja|kv\.|best regards|kind regards|virðingarfyllst)[\s,][\s\S]{0,240}$/i, '');
+    // 5) klippa undirskrift — allt frá fyrstu kveðju til enda (ef nóg efni á undan)
+    const sm = s.match(/(með kveðju|kær kveðju|bestu kveðjur|kveðja|kv\.|best regards|kind regards|virðingarfyllst|mvh\b)[\s,]/i);
+    if (sm && sm.index > 12) s = s.slice(0, sm.index);
     return s.replace(/\s+/g, ' ').replace(/^[\s\-–#/·:]+/, '').trim();
   }
   function normSubject(s) {
