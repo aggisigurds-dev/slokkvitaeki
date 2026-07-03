@@ -56,6 +56,7 @@
     emails: [], loaded: false, loading: false, err: null,
     filter: 'inbox', search: '',
     custByEmail: {}, custByKt: {}, saleByNum: {},
+    hidden: new Set(),   // message_ids the user has deleted/hidden (Supabase-synced)
   };
 
   const PAYDAY_RE = /payday\.is/i;
@@ -73,7 +74,7 @@
     }
     state.loading = true; render();
     try {
-      const [em, fy, cb, vd, sl] = await Promise.all([
+      const [em, fy, cb, vd, sl, hd] = await Promise.all([
         SB.from('email_digest')
           .select('message_id,account,sender_name,sender_email,to_addresses,subject,snippet,body_preview,is_question,has_attachment,attachment_names,received_at')
           .in('account', ['eldklar@eldklar.is', 'bokhald@eldklar.is'])
@@ -83,8 +84,10 @@
         SB.from('customers_base').select('id,nafn,kennitala,netfang').not('netfang', 'is', null),
         SB.from('vidskiptavinir').select('id,nafn,kennitala,netfang').not('netfang', 'is', null),
         SB.from('solur').select('id,num,customer_nafn,customer_kt,samtals,created_at,greitt_med,paid_at').order('created_at', { ascending: false }).limit(2500),
+        SB.from('reikninga_postur_hidden').select('message_id'),
       ]);
       if (em.error) throw em.error;
+      state.hidden = new Set(((hd && hd.data) || []).map(r => r.message_id));
 
       const emailMap = {}, byKt = {};
       const addCust = (res, isCompany) => (res && res.data || []).forEach(r => {
@@ -193,6 +196,8 @@
       V + '.rp-acts{display:flex;gap:6px}',
       V + '.rp-btn{font:inherit;font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:8px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fff,#eef1f6);color:#3a4250;cursor:pointer;white-space:nowrap}',
       V + '.rp-btn:hover{background:#eef3ff;color:#1d4ed8;border-color:#c6d6ff}',
+      V + '.rp-btn.del{padding:5px 9px}',
+      V + '.rp-btn.del:hover{background:#fef2f2;color:#dc2626;border-color:#fecaca}',
       V + '.rp-empty{padding:44px;text-align:center;color:#64748b;background:rgba(255,255,255,.75);border-radius:14px}',
       V + '.rp-err{padding:20px;color:#fecaca;background:#450a0a;border:1px solid #7f1d1d;border-radius:12px}',
       V + '.rp-btn.prim{background:linear-gradient(180deg,#3b82f6,#1d4ed8);color:#fff;border-color:#1d4ed8}',
@@ -258,16 +263,23 @@
     return v;
   }
 
+  function isHidden(m) { return state.hidden.has(m.message_id); }
   function counts() {
-    const inbox = state.emails.filter(m => m.category === 'inbox' && !m.isSystem).length;
-    const sent = state.emails.filter(m => m.category === 'sent').length;
-    return { inbox, sent, all: state.emails.length };
+    const live = state.emails.filter(m => !isHidden(m));
+    const inbox = live.filter(m => m.category === 'inbox' && !m.isSystem).length;
+    const sent = live.filter(m => m.category === 'sent').length;
+    return { inbox, sent, all: live.length, hidden: state.emails.filter(isHidden).length };
   }
 
   function currentRows() {
     let rows = state.emails;
-    if (state.filter === 'inbox') rows = rows.filter(m => m.category === 'inbox' && !m.isSystem);
-    else if (state.filter === 'sent') rows = rows.filter(m => m.category === 'sent');
+    if (state.filter === 'hidden') {
+      rows = rows.filter(isHidden);
+    } else {
+      rows = rows.filter(m => !isHidden(m));
+      if (state.filter === 'inbox') rows = rows.filter(m => m.category === 'inbox' && !m.isSystem);
+      else if (state.filter === 'sent') rows = rows.filter(m => m.category === 'sent');
+    }
     const q = state.search.trim().toLowerCase();
     if (q) rows = rows.filter(m =>
       (m.sender_name || '').toLowerCase().includes(q) ||
@@ -292,8 +304,10 @@
       : '<span class="rp-nomatch">enginn kúnni fannst</span>';
     const acts = [];
     const di = ' data-i="' + i + '"';
+    // Delete / restore — hide a handled email (synced across devices via Supabase).
+    if (isHidden(m)) acts.push('<button class="rp-btn _rp-restore"' + di + ' type="button" title="Endurheimta póst">↩︎ Endurheimta</button>');
     // Tier 3 — draft a reply to anything that landed in the inbox (real people).
-    if (m.category === 'inbox' && !m.isSystem) acts.push('<button class="rp-btn ai _rp-reply"' + di + ' type="button" title="Semja svar með Claude">🤖 Svar</button>');
+    if (m.category === 'inbox' && !m.isSystem && !isHidden(m)) acts.push('<button class="rp-btn ai _rp-reply"' + di + ' type="button" title="Semja svar með Claude">🤖 Svar</button>');
     // Tier 2 — resend an invoice PDF (needs a customer to list invoices, or a matched sale).
     if (m.cust || m.sale) acts.push('<button class="rp-btn prim _rp-send"' + di + ' type="button" title="Senda reikning sem PDF">✉️ Senda</button>');
     // Tier 2 — jump straight into the matched invoice to change it.
@@ -302,6 +316,7 @@
       acts.push('<button class="rp-btn _rp-open" ' + (m.cust.coId ? 'data-co="' + esc(String(m.cust.coId)) + '" ' : '') + (m.cust.kt ? 'data-kt="' + esc(ktDigits(m.cust.kt)) + '" ' : '') + 'type="button">Opna</button>');
       if (m.cust.kt) acts.push('<button class="rp-btn _rp-saga" data-kt="' + esc(ktDigits(m.cust.kt)) + '" type="button">Saga</button>');
     }
+    if (!isHidden(m)) acts.push('<button class="rp-btn del _rp-del"' + di + ' type="button" title="Eyða / fela þessum pósti">🗑</button>');
     return '<div class="' + cls + '">' +
       '<div class="rp-when"><b>' + esc(relDay(m.received_at)) + '</b>' + esc(fmtDate(m.received_at)) + '</div>' +
       '<div class="rp-mid">' +
@@ -339,6 +354,7 @@
           chip('inbox', '📥 Til að svara', c.inbox) +
           chip('sent', '🧾 Sendir reikningar', c.sent) +
           chip('all', 'Allt', c.all) +
+          (c.hidden ? chip('hidden', '🗑 Falin', c.hidden) : '') +
           '<div class="rp-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>' +
             '<input id="_rp-search" type="search" placeholder="Leita (sendandi · efni · kúnni)…" value="' + esc(state.search) + '"></div>' +
         '</div>' +
@@ -359,6 +375,23 @@
     v.querySelectorAll('._rp-send').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) openSendModal(m); }));
     v.querySelectorAll('._rp-edit').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) editSale(m); }));
     v.querySelectorAll('._rp-reply').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) openReplyModal(m); }));
+    v.querySelectorAll('._rp-del').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) hideEmail(m); }));
+    v.querySelectorAll('._rp-restore').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) restoreEmail(m); }));
+  }
+
+  // ── delete / hide a handled email (Supabase-synced across devices) ─────────
+  async function hideEmail(m) {
+    if (!m || !m.message_id) return;
+    state.hidden.add(m.message_id); render();
+    const SB = getSB();
+    try { if (SB) await SB.from('reikninga_postur_hidden').upsert({ message_id: m.message_id }, { onConflict: 'message_id' }); } catch (_) {}
+    if (window.Toast && Toast.show) Toast.show('🗑 Póstur falinn');
+  }
+  async function restoreEmail(m) {
+    if (!m || !m.message_id) return;
+    state.hidden.delete(m.message_id); render();
+    const SB = getSB();
+    try { if (SB) await SB.from('reikninga_postur_hidden').delete().eq('message_id', m.message_id); } catch (_) {}
   }
 
   function openCustomer(coId, kt) {
