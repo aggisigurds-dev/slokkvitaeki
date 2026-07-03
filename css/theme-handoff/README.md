@@ -4,7 +4,8 @@ Goal: stop re-interpreting the design. **One CSS file of named classes** + **one
 
 ## Files
 - `theme.css` — the whole design system as classes (self-contained: it `@import`s the Google fonts; no JS). Drop it in `<head>` once: `<link rel="stylesheet" href="theme.css">`.
-- `pages/krofu-yfirlit.skeleton.html` — the first page as class-only markup with `{{PLACEHOLDERS}}`.
+- `pages/krofu-yfirlit.skeleton.html` — Kröfu yfirlit as class-only markup with `{{PLACEHOLDERS}}`.
+- `pages/hreyfingarlisti.skeleton.html` — Hreyfingarlisti (sortable + filterable ledger) as class-only markup.
 
 ## How to use (per page — mechanical)
 1. Link `theme.css`.

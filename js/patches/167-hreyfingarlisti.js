@@ -34,7 +34,9 @@
       V + '._hr-sort{transition:background .12s ease}' +
       V + '._hr-sort:hover{background:rgba(255,255,255,.07)}' +
       V + '.abtn5{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:50px;height:44px;padding:0 8px;border-radius:10px;border:1px solid rgba(20,24,34,.22);background:linear-gradient(180deg,#ffffff,#dbe0e9);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 3px 7px -3px rgba(20,30,60,.32);cursor:pointer;font:inherit;transition:transform .12s ease,box-shadow .12s ease}' +
-      V + '.abtn5:hover{transform:translateY(-1px);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 6px 13px -4px rgba(20,30,60,.42)}';
+      V + '.abtn5:hover{transform:translateY(-1px);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 6px 13px -4px rgba(20,30,60,.42)}' +
+      // Let the .thm .app-page dark band fill the view flush (theme.css owns the look now).
+      '#view-hreyfingarlisti{padding:0 !important;max-width:none !important;background:transparent !important}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
@@ -355,83 +357,73 @@
     const greittLabel = (_state.mode === 'kt' || _state.scope !== 'month') ? 'Greitt' : 'Greitt í mán.';
     const darkBtn = 'padding:8px 11px;border:1px solid rgba(255,255,255,.16);border-radius:9px;background:rgba(255,255,255,.08);color:#fff;cursor:pointer;font:inherit;font-size:13px';
     main.innerHTML = `
-      <div style="max-width:none;margin:0;padding:10px 18px 34px;width:100%;box-sizing:border-box;font-family:'Space Grotesk',system-ui,sans-serif">
+      <div class="thm"><div class="app-page"><main class="app-main">
 
-        <!-- Dark metallic header bar -->
-        <div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:14px;padding:9px 15px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;box-shadow:0 12px 28px -18px rgba(0,0,0,.65);margin-bottom:13px">
-          <div style="display:flex;align-items:center;gap:11px;min-width:0">
-            <div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">📜</div>
+        <!-- title (plain, on the dark band) + tools -->
+        <div class="page-title">
+          <div class="page-title__lead">
+            <span class="page-title__icon">📜</span>
             <div style="min-width:0">
-              <h1 class="hl-h1" style="margin:0;font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">Hreyfingarlisti</h1>
+              <h1>Hreyfingarlisti</h1>
               ${_state.mode === 'kt' && _state.ktInfo
-                ? `<div class="hl-sub" style="font-size:12.5px;color:rgba(255,255,255,.7);margin-top:2px">👤 <b>${esc(_state.ktInfo.nafn)}</b>${_state.ktInfo.ktFmt ? ' · <span class="hl-mono">kt. ' + esc(_state.ktInfo.ktFmt) + '</span>' : ''} · ${_state.all.length} færslur${_state.ktInfo.locs > 1 ? ' · 📍 ' + _state.ktInfo.locs + ' staðsetningar' : ''}</div>`
-                : `<div class="hl-sub" style="font-size:12.5px;color:rgba(255,255,255,.6);margin-top:2px">Tímaröð yfir allar færslur — smelltu á dálk til að raða</div>`}
+                ? `<p>👤 <b style="color:#fff">${esc(_state.ktInfo.nafn)}</b>${_state.ktInfo.ktFmt ? ' · kt. ' + esc(_state.ktInfo.ktFmt) : ''} · ${_state.all.length} færslur${_state.ktInfo.locs > 1 ? ' · 📍 ' + _state.ktInfo.locs + ' staðsetningar' : ''}</p>`
+                : `<p>Tímaröð yfir allar færslur — smelltu á dálk til að raða</p>`}
             </div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end">
+          <div class="page-title__tools">
             ${_state.mode === 'kt'
-              ? `<button class="_hr-back" type="button" style="${darkBtn};font-weight:600">← Mánaðaryfirlit</button>`
-              : `${_state.scope !== 'all' ? '<button class="_hr-prev" type="button" style="' + darkBtn + '">◀</button>' : ''}
-                 <div class="hl-month hl-mono" style="font-size:13px;font-weight:700;color:#fff;padding:0 6px;min-width:${_state.scope === 'all' ? '96' : '132'}px;text-align:center">${esc(scopeLabel)}</div>
-                 ${_state.scope !== 'all' ? '<button class="_hr-next" type="button" style="' + darkBtn + '">▶</button>' : ''}
-                 <div style="display:inline-flex;border:1px solid rgba(255,255,255,.16);border-radius:9px;overflow:hidden">
-                   ${['month','year','all'].map(s => { const on = _state.scope === s; const lbl = { month: 'Mán', year: 'Ár', all: 'Allt' }[s];
-                     return '<button class="_hr-scope" data-s="' + s + '" type="button" style="padding:8px 13px;border:none;' + (s !== 'month' ? 'border-left:1px solid rgba(255,255,255,.12);' : '') + 'background:' + (on ? '#c92a2a' : 'transparent') + ';color:' + (on ? '#fff' : 'rgba(255,255,255,.68)') + ';cursor:pointer;font:inherit;font-size:12px;font-weight:700">' + lbl + '</button>'; }).join('')}
-                 </div>`}
-            <input class="_hr-ktlookup darkfield" type="text" placeholder="🔎 Kennitala eða nafn…" value="${_state.mode === 'kt' && _state.ktInfo ? esc(_state.ktInfo.query) : ''}" title="Sláðu inn kennitölu eða nafn og ýttu á Enter til að sjá ALLAR sölur/reikninga kúnnans" style="padding:8px 12px;border:1px solid rgba(120,160,255,.5);border-radius:9px;background:rgba(255,255,255,.08);color:#fff;font:inherit;font-size:13px;min-width:220px">
-            <button class="_hr-csv" type="button" style="${darkBtn};font-weight:600;display:inline-flex;align-items:center;gap:6px">⬇ CSV</button>
+              ? `<button class="_hr-back btn btn--dark" type="button">← Mánaðaryfirlit</button>`
+              : `${_state.scope !== 'all' ? '<button class="_hr-prev tool-dark" type="button">◀</button>' : ''}
+                 <span class="tool-month">${esc(scopeLabel)}</span>
+                 ${_state.scope !== 'all' ? '<button class="_hr-next tool-dark" type="button">▶</button>' : ''}
+                 <div class="seg">${['month','year','all'].map(s => { const on = _state.scope === s; const lbl = { month: 'Mán', year: 'Ár', all: 'Allt' }[s];
+                     return '<button class="_hr-scope' + (on ? ' is-active' : '') + '" data-s="' + s + '" type="button">' + lbl + '</button>'; }).join('')}</div>`}
+            <input class="_hr-ktlookup field-dark tool-lookup" type="text" placeholder="🔎 Kennitala eða nafn…" value="${_state.mode === 'kt' && _state.ktInfo ? esc(_state.ktInfo.query) : ''}" title="Sláðu inn kennitölu eða nafn og ýttu á Enter til að sjá ALLAR sölur/reikninga kúnnans">
+            <button class="_hr-csv btn btn--dark" type="button">⭳ CSV</button>
           </div>
         </div>
 
-        <!-- 3D stat cards -->
-        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
-          ${statCard3d('Sölur', sales, 'blue')}
-          ${statCard3d('Kreditfært', -credits, 'red')}
-          ${statCard3d(greittLabel, paidIn, 'green')}
-          ${statCard3d('Ógreitt', unpaidOut, 'gold')}
-          ${statCard3d('Nettó', net, 'hero')}
+        <!-- stat cards -->
+        <div class="stat-row">
+          <div class="stat-card"><span class="stat-card__icon">💰</span><div><div class="stat-card__label">SÖLUR</div><div class="stat-card__value">${esc(fmtKr(sales))}</div></div></div>
+          <div class="stat-card stat-card--red"><span class="stat-card__icon">↩</span><div><div class="stat-card__label">KREDITFÆRT</div><div class="stat-card__value">${esc(fmtKr(-credits))}</div></div></div>
+          <div class="stat-card stat-card--green"><span class="stat-card__icon">✓</span><div><div class="stat-card__label">${esc((greittLabel || '').toUpperCase())}</div><div class="stat-card__value">${esc(fmtKr(paidIn))}</div></div></div>
+          <div class="stat-card stat-card--amber"><span class="stat-card__icon">⏳</span><div><div class="stat-card__label">ÓGREITT</div><div class="stat-card__value">${esc(fmtKr(unpaidOut))}</div></div></div>
+          <div class="stat-card stat-card--hero"><span class="stat-card__icon">∑</span><div><div class="stat-card__label">NETTÓ</div><div class="stat-card__value">${esc(fmtKr(net))}</div></div></div>
         </div>
 
-        <!-- Filter chips + list search -->
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px">
-          <div style="display:flex;gap:7px;flex-wrap:wrap">
-          ${chipDef.map(([k, label, n]) => {
-            const on = _state.filter === k;
-            return `<button class="_hr-chip" data-k="${k}" type="button"
-              style="padding:8px 15px;border-radius:10px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;${on
-                ? 'border:1px solid #0a0b0d;background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.5)'
-                : 'border:1px solid rgba(20,24,34,.14);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#3a4250'}">
-              ${esc(label)} <span style="opacity:.6;font-weight:500">${n}</span></button>`;
-          }).join('')}
-          </div>
-          <input class="_hr-search" type="text" placeholder="🔍 Sía lista…" value="${esc(_state.search)}" style="margin-left:auto;padding:9px 13px;border:1px solid rgba(20,24,34,.14);border-radius:10px;background:#fff;font:inherit;font-size:13px;min-width:200px;box-shadow:0 1px 2px rgba(15,23,42,.06)">
-        </div>
-
-        <!-- Table (dark metallic header, sticky) -->
-        <div style="border-radius:16px;border:1px solid rgba(20,24,34,.08);background:#fff;box-shadow:0 10px 28px -16px rgba(25,35,60,.16);overflow:hidden">
-          <div style="overflow-x:auto">
-            <table style="width:100%;min-width:1080px;border-collapse:collapse;font-size:13px">
-              <thead style="position:sticky;top:0;z-index:2"><tr style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22)">
-                ${th('created_at', 'Dags · Tími', 'left')}
-                ${th('num', 'Skjal', 'left')}
-                ${th('customer_nafn', 'Viðskiptavinur', 'left')}
-                ${thPlain('Kennitala', 'left')}
-                ${th('tegund', 'Tegund', 'left')}
-                ${th('greitt_med', 'Greiðslumáti', 'left')}
-                ${th('stada', 'Staða', 'left')}
-                ${th('samtals', 'Upphæð', 'right')}
-                <th style="padding:12px 16px;text-align:right;font-size:10px;font-weight:700;color:#e8ecf4;text-transform:uppercase;letter-spacing:.11em;white-space:nowrap;text-shadow:0 1px 1px rgba(0,0,0,.4);border-left:1px solid rgba(255,255,255,.12)">Aðgerðir</th>
-              </tr></thead>
-              <tbody>
-                ${rows.length
-                  ? rows.map(rowHtml).join('')
-                  : '<tr><td colspan="9" style="padding:44px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar</td></tr>'}
-              </tbody>
-            </table>
+        <!-- filter chips + search -->
+        <div class="filter-row">
+          ${chipDef.map(([k, label, n]) => `<button class="_hr-chip filter-chip${_state.filter === k ? ' is-active' : ''}" data-k="${k}" type="button">${esc(label)} <span>${n}</span></button>`).join('')}
+          <div class="filter-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+            <input class="_hr-search field-dark" type="text" placeholder="Sía lista…" value="${esc(_state.search)}">
           </div>
         </div>
 
-      </div>`;
+        <!-- table -->
+        <div class="data-table-wrap"><div class="data-table-scroll">
+          <table class="data-table" style="min-width:1080px">
+            <thead><tr>
+              <th class="_hr-sort" data-k="created_at">Dags · Tími <span class="sort-ar">${sortArrow('created_at')}</span></th>
+              <th class="_hr-sort" data-k="num">Skjal <span class="sort-ar">${sortArrow('num')}</span></th>
+              <th class="_hr-sort" data-k="customer_nafn">Viðskiptavinur <span class="sort-ar">${sortArrow('customer_nafn')}</span></th>
+              <th>Kennitala</th>
+              <th class="_hr-sort" data-k="tegund">Tegund <span class="sort-ar">${sortArrow('tegund')}</span></th>
+              <th class="_hr-sort" data-k="greitt_med">Greiðslumáti <span class="sort-ar">${sortArrow('greitt_med')}</span></th>
+              <th class="_hr-sort" data-k="stada">Staða <span class="sort-ar">${sortArrow('stada')}</span></th>
+              <th class="num _hr-sort" data-k="samtals">Upphæð <span class="sort-ar">${sortArrow('samtals')}</span></th>
+              <th class="center">Aðgerðir</th>
+            </tr></thead>
+            <tbody>
+              ${rows.length
+                ? rows.map(rowHtml).join('')
+                : '<tr><td colspan="9" style="padding:44px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar</td></tr>'}
+            </tbody>
+          </table>
+        </div></div>
+
+      </main></div></div>`;
 
     // Prev/next step by month (Mán scope) or year (Ár scope). Hidden in Allt.
     const _step = dir => {

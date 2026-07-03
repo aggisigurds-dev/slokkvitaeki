@@ -20,7 +20,7 @@
 
 /* ---- page shell ---- */
 .app-page{ min-height:100vh; font-family:var(--ui); color:var(--ink);
-  background:linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%); }
+  background:linear-gradient(180deg,#060607 0px,#060607 240px,#8e949e 660px,#9198a3 100%); }
 .app-main{ padding:20px 24px 40px; }
 
 /* ---- page title (sits on the dark band → white) ---- */

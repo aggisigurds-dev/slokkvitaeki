@@ -1,0 +1,133 @@
+<!-- ============================================================
+     PAGE SKELETON — Hreyfingarlisti (transactions list)
+     Uses ONLY classes from theme.css. No inline styles.
+     Swap {{PLACEHOLDERS}} for real data; repeat <tr> per row.
+     Load once in <head>:  <link rel="stylesheet" href="theme.css">
+     ============================================================ -->
+<div class="app-page">
+  <!-- sidebar goes here (see Sidebar reference) -->
+  <main class="app-main">
+
+    <!-- title + view toggle + CSV -->
+    <div class="page-title">
+      <div class="page-title__lead">
+        <span class="page-title__icon">📊</span>
+        <div>
+          <h1>Hreyfingarlisti</h1>
+          <p>Tímaröð yfir allar færslur — smelltu á dálk til að raða</p>
+        </div>
+      </div>
+      <div class="page-title__tools">
+        <div class="seg">
+          <button>Mán</button>
+          <button>Ár</button>
+          <button class="is-active">Allt</button>
+        </div>
+        <button class="btn btn--dark">⭳ CSV</button>
+      </div>
+    </div>
+
+    <!-- 5 stat cards -->
+    <div class="stat-row">
+      <div class="stat-card">
+        <span class="stat-card__icon">💰</span>
+        <div><div class="stat-card__label">SÖLUR</div><div class="stat-card__value">{{SALES}}</div></div>
+      </div>
+      <div class="stat-card stat-card--red">
+        <span class="stat-card__icon">↩</span>
+        <div><div class="stat-card__label">KREDITFÆRT</div><div class="stat-card__value">{{CREDITED}}</div></div>
+      </div>
+      <div class="stat-card stat-card--green">
+        <span class="stat-card__icon">✓</span>
+        <div><div class="stat-card__label">GREITT</div><div class="stat-card__value">{{PAID}}</div></div>
+      </div>
+      <div class="stat-card stat-card--amber">
+        <span class="stat-card__icon">⏳</span>
+        <div><div class="stat-card__label">ÓGREITT</div><div class="stat-card__value">{{UNPAID}}</div></div>
+      </div>
+      <div class="stat-card stat-card--hero">
+        <span class="stat-card__icon">∑</span>
+        <div><div class="stat-card__label">NETTÓ</div><div class="stat-card__value">{{NET}}</div></div>
+      </div>
+    </div>
+
+    <!-- filter tabs + centred search -->
+    <div class="filter-row">
+      <button class="filter-chip is-active" data-filter="all">Allt <span>{{N_ALL}}</span></button>
+      <button class="filter-chip" data-filter="greitt">Greitt <span>{{N_PAID}}</span></button>
+      <button class="filter-chip" data-filter="ogreitt">Ógreitt <span>{{N_UNPAID}}</span></button>
+      <button class="filter-chip" data-filter="kredit">Kredit <span>{{N_CREDIT}}</span></button>
+      <div class="filter-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input class="field-dark" placeholder="Sía lista…">
+      </div>
+    </div>
+
+    <!-- table -->
+    <div class="data-table-wrap">
+      <div class="data-table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th data-sort>Dags · tími<span class="sort-ar">⇅</span></th>
+              <th data-sort>Skjal<span class="sort-ar">⇅</span></th>
+              <th data-sort>Viðskiptavinur<span class="sort-ar">⇅</span></th>
+              <th data-sort>Kennitala<span class="sort-ar">⇅</span></th>
+              <th data-sort>Tegund<span class="sort-ar">⇅</span></th>
+              <th data-sort>Greiðslumáti<span class="sort-ar">⇅</span></th>
+              <th data-sort>Staða<span class="sort-ar">⇅</span></th>
+              <th class="center">Aðgerðir</th>
+              <th class="num" data-sort>Upphæð<span class="sort-ar">⇅</span></th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- repeat this <tr> per transaction.
+                 data-v on sortable cells = the sort key (ISO date / number / lowercase text). -->
+            <tr>
+              <td class="mono" data-v="{{DATE_ISO}}">{{DATE}}<br>{{TIME}}</td>
+              <td class="mono" data-v="{{DOC_NR}}">{{DOC_NR}}</td>
+              <td data-v="{{CUSTOMER_LC}}"><a href="#">{{CUSTOMER}}</a></td>
+              <td class="mono" data-v="{{KT}}">{{KT}}</td>
+              <td data-v="sala"><span class="pill pill--dark-blue">Sala</span></td>
+              <!-- Greiðslumáti: pill--dark-green "Kort" | pill--blue "Reikningur" | pill--gold "Greitt síðar" -->
+              <td data-v="kort"><span class="pill pill--dark-green">Kort</span></td>
+              <!-- Staða: pill--green "✓ Greitt" | pill--gold "⚠ Ógreitt" | pill--purple "↩ Kredit" -->
+              <td data-v="greitt"><span class="pill pill--green">✓ Greitt</span></td>
+              <td>
+                <div class="row-actions">
+                  <span class="abtn5 abtn5--blue">Kvittun</span>
+                  <span class="abtn5 abtn5--slate">PDF</span>
+                  <span class="abtn5 abtn5--orange">Breyta</span>
+                  <span class="abtn5 abtn5--red">Kredit</span>
+                  <span class="abtn5 abtn5--green">Nýr</span>
+                </div>
+              </td>
+              <td class="num" data-v="{{AMOUNT_NUM}}">{{AMOUNT}}</td>
+            </tr>
+          </tbody>
+          <!-- optional totals footer -->
+          <tfoot>
+            <tr class="data-table__foot">
+              <td colspan="8">Sýnd samtals <span>{{SHOWN_COUNT}}</span></td>
+              <td class="num">{{VISIBLE_TOTAL}}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- bits not yet in theme.css (add to it or a small page.css):
+     .page-title__tools{display:flex;align-items:center;gap:10px}
+     .filter-row{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+     .filter-search{position:relative;width:320px;margin-left:auto;margin-right:auto}
+     .filter-search svg{position:absolute;left:14px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:#e6eaf2}
+     .filter-search .field-dark{padding-left:42px}
+     .row-actions{display:flex;gap:7px;justify-content:flex-end;align-items:center}
+     .data-table__foot td{background:#f4f6fa;border-top:2px solid #dfe3ea;font-weight:700;color:#5b6472}
+
+     JS to wire (copy from reference-pages/Hreyfingarlisti-v2.dc.html):
+     1) click-to-sort on th[data-sort] (reads cell data-v / text; asc↔desc; ⇅→▲/▼).
+     2) filter tabs: on .filter-chip[data-filter] click, show only rows whose Staða cell data-v matches (all = show every row); also live-filter on .field-dark input; recompute {{VISIBLE_TOTAL}}. -->
