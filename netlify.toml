@@ -30,3 +30,8 @@
   for = "/*.html"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
+
+# Dagleg sjálfvirk greiðslu-samstilling úr Payday, kl. 10:00 (cron er í UTC;
+# Ísland = UTC allt árið → 10:00 að staðartíma). Sami vinnsluferill og 🔄 takkinn.
+[functions."payday-sync-cron"]
+  schedule = "0 10 * * *"
