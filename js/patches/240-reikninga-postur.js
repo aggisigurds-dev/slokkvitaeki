@@ -57,6 +57,7 @@
     filter: 'inbox', search: '',
     custByEmail: {}, custByKt: {}, saleByNum: {},
     hidden: new Set(),   // message_ids the user has deleted/hidden (Supabase-synced)
+    rules: [],           // auto-hide rules {id, rule_type:'sender'|'domain'|'subject', pattern}
   };
 
   const PAYDAY_RE = /payday\.is/i;
@@ -74,7 +75,7 @@
     }
     state.loading = true; render();
     try {
-      const [em, fy, cb, vd, sl, hd] = await Promise.all([
+      const [em, fy, cb, vd, sl, hd, rl] = await Promise.all([
         SB.from('email_digest')
           .select('message_id,account,sender_name,sender_email,to_addresses,subject,snippet,body_preview,is_question,has_attachment,attachment_names,received_at')
           .in('account', ['eldklar@eldklar.is', 'bokhald@eldklar.is'])
@@ -85,9 +86,11 @@
         SB.from('vidskiptavinir').select('id,nafn,kennitala,netfang').not('netfang', 'is', null),
         SB.from('solur').select('id,num,customer_nafn,customer_kt,samtals,created_at,greitt_med,paid_at').order('created_at', { ascending: false }).limit(2500),
         SB.from('reikninga_postur_hidden').select('message_id'),
+        SB.from('reikninga_postur_rules').select('*').order('created_at', { ascending: false }),
       ]);
       if (em.error) throw em.error;
       state.hidden = new Set(((hd && hd.data) || []).map(r => r.message_id));
+      state.rules = ((rl && rl.data) || []);
 
       const emailMap = {}, byKt = {};
       const addCust = (res, isCompany) => (res && res.data || []).forEach(r => {
@@ -198,6 +201,8 @@
       V + '.rp-btn:hover{background:#eef3ff;color:#1d4ed8;border-color:#c6d6ff}',
       V + '.rp-btn.del{padding:5px 9px}',
       V + '.rp-btn.del:hover{background:#fef2f2;color:#dc2626;border-color:#fecaca}',
+      V + '.rp-btn.mute{padding:5px 9px}',
+      V + '.rp-btn.mute:hover{background:#fff7ed;color:#c2410c;border-color:#fed7aa}',
       V + '.rp-empty{padding:44px;text-align:center;color:#64748b;background:rgba(255,255,255,.75);border-radius:14px}',
       V + '.rp-err{padding:20px;color:#fecaca;background:#450a0a;border:1px solid #7f1d1d;border-radius:12px}',
       V + '.rp-btn.prim{background:linear-gradient(180deg,#3b82f6,#1d4ed8);color:#fff;border-color:#1d4ed8}',
@@ -273,19 +278,41 @@
   }
 
   function isHidden(m) { return state.hidden.has(m.message_id); }
+  // Auto-hide rules: a mail matches if its sender / sender-domain / subject
+  // hits any rule the user added. Matched mail drops out of the normal views.
+  function ruleMatches(m) {
+    const from = (m.from || '').toLowerCase();
+    const dom = from.split('@')[1] || '';
+    const subj = (m.subject || '').toLowerCase();
+    return (state.rules || []).some(r => {
+      const p = String(r.pattern || '').toLowerCase().trim();
+      if (!p) return false;
+      if (r.rule_type === 'sender') return from === p;
+      if (r.rule_type === 'domain') return dom === p || dom.endsWith('.' + p) || from.endsWith('@' + p);
+      if (r.rule_type === 'subject') return subj.indexOf(p) !== -1;
+      return false;
+    });
+  }
+  function isFiltered(m) { return !isHidden(m) && ruleMatches(m); }   // rule-hidden (not manually deleted)
   function counts() {
-    const live = state.emails.filter(m => !isHidden(m));
+    const live = state.emails.filter(m => !isHidden(m) && !ruleMatches(m));
     const inbox = live.filter(m => m.category === 'inbox' && !m.isSystem).length;
     const sent = live.filter(m => m.category === 'sent').length;
-    return { inbox, sent, all: live.length, hidden: state.emails.filter(isHidden).length };
+    return {
+      inbox, sent, all: live.length,
+      hidden: state.emails.filter(isHidden).length,
+      filtered: state.emails.filter(isFiltered).length,
+    };
   }
 
   function currentRows() {
     let rows = state.emails;
     if (state.filter === 'hidden') {
       rows = rows.filter(isHidden);
+    } else if (state.filter === 'filtered') {
+      rows = rows.filter(isFiltered);
     } else {
-      rows = rows.filter(m => !isHidden(m));
+      rows = rows.filter(m => !isHidden(m) && !ruleMatches(m));
       if (state.filter === 'inbox') rows = rows.filter(m => m.category === 'inbox' && !m.isSystem);
       else if (state.filter === 'sent') rows = rows.filter(m => m.category === 'sent');
     }
@@ -325,6 +352,7 @@
       acts.push('<button class="rp-btn _rp-open" ' + (m.cust.coId ? 'data-co="' + esc(String(m.cust.coId)) + '" ' : '') + (m.cust.kt ? 'data-kt="' + esc(ktDigits(m.cust.kt)) + '" ' : '') + 'type="button">Opna</button>');
       if (m.cust.kt) acts.push('<button class="rp-btn _rp-saga" data-kt="' + esc(ktDigits(m.cust.kt)) + '" type="button">Saga</button>');
     }
+    if (!isHidden(m) && m.from) acts.push('<button class="rp-btn mute _rp-mute"' + di + ' type="button" title="Fela sjálfkrafa alla pósta frá ' + esc(m.from) + '">🔇</button>');
     if (!isHidden(m)) acts.push('<button class="rp-btn del _rp-del"' + di + ' type="button" title="Eyða / fela þessum pósti">🗑</button>');
     return '<div class="' + cls + '">' +
       '<div class="rp-when"><b>' + esc(relDay(m.received_at)) + '</b>' + esc(fmtDate(m.received_at)) + '</div>' +
@@ -364,6 +392,8 @@
           chip('sent', '🧾 Sendir reikningar', c.sent) +
           chip('all', 'Allt', c.all) +
           (c.hidden ? chip('hidden', '🗑 Falin', c.hidden) : '') +
+          (c.filtered ? chip('filtered', '🔇 Síað', c.filtered) : '') +
+          '<button class="rp-chip" id="_rp-rules" type="button" title="Sjálfvirkar síur — fela sendendur, lén eða efni">⚙️ Síur' + (state.rules && state.rules.length ? ' <span class="n">' + state.rules.length + '</span>' : '') + '</button>' +
           '<div class="rp-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>' +
             '<input id="_rp-search" type="search" placeholder="Leita (sendandi · efni · kúnni)…" value="' + esc(state.search) + '"></div>' +
         '</div>' +
@@ -371,7 +401,7 @@
       '</div>';
 
     v.querySelector('#_rp-reload').addEventListener('click', load);
-    v.querySelectorAll('.rp-chip').forEach(b => b.addEventListener('click', () => { state.filter = b.dataset.f; render(); }));
+    v.querySelectorAll('.rp-chip[data-f]').forEach(b => b.addEventListener('click', () => { state.filter = b.dataset.f; render(); }));
     const si = v.querySelector('#_rp-search');
     if (si) si.addEventListener('input', () => {
       state.search = si.value; render();
@@ -386,6 +416,8 @@
     v.querySelectorAll('._rp-reply').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) openReplyModal(m); }));
     v.querySelectorAll('._rp-del').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) hideEmail(m); }));
     v.querySelectorAll('._rp-restore').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) restoreEmail(m); }));
+    v.querySelectorAll('._rp-mute').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) muteSender(m); }));
+    const rb = v.querySelector('#_rp-rules'); if (rb) rb.addEventListener('click', openRulesModal);
   }
 
   // ── delete / hide a handled email (Supabase-synced across devices) ─────────
@@ -401,6 +433,87 @@
     state.hidden.delete(m.message_id); render();
     const SB = getSB();
     try { if (SB) await SB.from('reikninga_postur_hidden').delete().eq('message_id', m.message_id); } catch (_) {}
+  }
+
+  // ── auto-hide rules (síur) — sender / domain / subject, Supabase-synced ─────
+  async function addRule(rule_type, pattern) {
+    pattern = String(pattern || '').trim().toLowerCase();
+    if (!pattern) return;
+    if ((state.rules || []).some(r => r.rule_type === rule_type && String(r.pattern).toLowerCase() === pattern)) return; // dup
+    const optimistic = { id: 'tmp:' + rule_type + ':' + pattern, rule_type, pattern };
+    state.rules = [optimistic, ...(state.rules || [])];
+    render();
+    const SB = getSB();
+    try {
+      if (SB) {
+        const r = await SB.from('reikninga_postur_rules').insert({ rule_type, pattern }).select().maybeSingle();
+        if (r && r.data) { state.rules = state.rules.map(x => x.id === optimistic.id ? r.data : x); }
+      }
+    } catch (_) {}
+    if (window.Toast && Toast.show) Toast.show('🔇 Sía bætt við');
+  }
+  async function removeRule(id) {
+    state.rules = (state.rules || []).filter(r => String(r.id) !== String(id));
+    render();
+    const SB = getSB();
+    try { if (SB && String(id).indexOf('tmp:') !== 0) await SB.from('reikninga_postur_rules').delete().eq('id', id); } catch (_) {}
+  }
+  function muteSender(m) {
+    const from = (m.from || '').toLowerCase().trim();
+    if (!from) return;
+    if (confirm('Fela sjálfkrafa ALLA pósta frá ' + from + '?\n\n(Þú getur afturkallað í ⚙️ Síur.)')) addRule('sender', from);
+  }
+
+  function openRulesModal() {
+    const RULE_LABEL = { sender: '👤 Sendandi', domain: '🌐 Lén', subject: '📝 Efni inniheldur' };
+    function rulesListHTML() {
+      const rules = state.rules || [];
+      if (!rules.length) return '<div class="rpm-note" style="margin:0">Engar síur enn. Bættu við hér að neðan, eða smelltu á 🔇 við póst til að fela sendanda.</div>';
+      return rules.map(r => {
+        const n = state.emails.filter(m => {
+          const from = (m.from || '').toLowerCase(); const dom = from.split('@')[1] || ''; const subj = (m.subject || '').toLowerCase(); const p = String(r.pattern).toLowerCase();
+          return r.rule_type === 'sender' ? from === p : r.rule_type === 'domain' ? (dom === p || dom.endsWith('.' + p) || from.endsWith('@' + p)) : subj.indexOf(p) !== -1;
+        }).length;
+        return '<div class="rpm-doc"><span class="n">' + (RULE_LABEL[r.rule_type] || r.rule_type) + '</span>' +
+          '<span class="meta" style="color:#11141c;margin-left:8px">' + esc(r.pattern) + '</span>' +
+          '<span class="meta">felur ' + n + '</span>' +
+          '<button class="rpm-doc-send _rr-del" data-id="' + esc(String(r.id)) + '" type="button" style="background:#fef2f2;border-color:#fecaca;color:#dc2626">✕ Fjarlægja</button></div>';
+      }).join('');
+    }
+    openModal(
+      '<div class="rpm-head"><div><h3>⚙️ Síur — fela óæskilega pósta</h3><div class="sub">Sjálfvirkar reglur samstillast milli tækja</div></div><button class="rpm-x" type="button">✕</button></div>' +
+      '<div class="rpm-body">' +
+        '<div class="rpm-row"><label class="rpm-lbl">Virkar síur</label><div class="rpm-docs" id="_rr-list">' + rulesListHTML() + '</div></div>' +
+        '<div class="rpm-row"><label class="rpm-lbl">Bæta við síu</label>' +
+          '<div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">' +
+            '<select id="_rr-type" style="height:38px;border:1px solid #cbd5e1;border-radius:9px;padding:0 8px;font:inherit;font-size:13px;background:#fff;color:#11141c">' +
+              '<option value="sender">👤 Sendandi (netfang)</option>' +
+              '<option value="domain">🌐 Lén (t.d. rsk.is)</option>' +
+              '<option value="subject">📝 Efni inniheldur</option>' +
+            '</select>' +
+            '<input id="_rr-pattern" type="text" placeholder="t.d. noreply@rsk.is / rsk.is / áreiðanleikakönnun" style="flex:1;min-width:200px">' +
+            '<button class="rpm-btn prim" id="_rr-add" type="button">Bæta við</button>' +
+          '</div>' +
+          '<div class="rpm-note" style="margin:8px 0 0">Póstar sem passa hverfa úr listunum og lenda undir „🔇 Síað". Ekkert er eytt varanlega.</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="rpm-foot"><span class="spacer"></span><button class="rpm-btn" type="button" id="_rr-close">Loka</button></div>'
+    );
+    const card = modalEl();
+    const refresh = () => { const l = card.querySelector('#_rr-list'); if (l) l.innerHTML = rulesListHTML(); bindDel(); };
+    const bindDel = () => card.querySelectorAll('._rr-del').forEach(b => b.addEventListener('click', async () => { await removeRule(b.dataset.id); refresh(); }));
+    card.querySelector('.rpm-x').onclick = closeModal;
+    card.querySelector('#_rr-close').onclick = closeModal;
+    card.querySelector('#_rr-add').onclick = async () => {
+      const t = card.querySelector('#_rr-type').value;
+      const p = card.querySelector('#_rr-pattern').value;
+      if (!String(p || '').trim()) return;
+      await addRule(t, p);
+      card.querySelector('#_rr-pattern').value = '';
+      refresh();
+    };
+    card.querySelector('#_rr-pattern').addEventListener('keydown', e => { if (e.key === 'Enter') card.querySelector('#_rr-add').click(); });
+    bindDel();
   }
 
   function openCustomer(coId, kt) {
