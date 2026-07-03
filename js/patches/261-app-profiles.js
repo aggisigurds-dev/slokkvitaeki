@@ -133,6 +133,7 @@
       // ── app mode shell ──
       'body.appmode #bstal-banner{display:none !important}',
       'body.appmode .topbar,body.appmode .sidebar,body.appmode nav.view-nav{display:none !important}',
+      'body.appmode .mobile-nav-toggle,body.appmode .mobile-nav-backdrop,body.appmode .mobile-nav-drawer{display:none !important}',
       'body.appmode .main-panel{margin-left:0 !important;max-width:none !important}',
       'body.appmode .view.active{padding-top:50px !important;padding-bottom:74px !important}',
       // Beat patch 230's ON+':not(#id)…{padding-top:160px}` (id-level specificity) when the
