@@ -187,10 +187,21 @@
       V + '.rp-from{font-size:13.5px;font-weight:700;color:#11141c;display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
       V + '.rp-from .em{font-weight:400;color:#94a3b8;font-family:"Space Mono",monospace;font-size:11.5px}',
       V + '.rp-subj{font-size:12.5px;color:#3a4250;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      V + '.rp-snip{font-size:11.5px;color:#94a3b8;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      V + '.rp-snip{font-size:12px;color:#64748b;margin-top:3px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;white-space:normal}',
       V + '.rp-badge{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:6px;white-space:nowrap}',
       V + '.rp-badge.q{color:#b45309;background:#fffbeb;border:1px solid #fde68a}',
       V + '.rp-badge.att{color:#475569;background:#f1f5f9;border:1px solid #e2e8f0}',
+      // „hvað snýst um" merking (tag) — litakóðuð eftir flokki
+      V + '.rp-tag{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;border:1px solid}',
+      V + '.rp-tag.blue{color:#1d4ed8;background:#eff3ff;border-color:#c6d6ff}',
+      V + '.rp-tag.green{color:#047857;background:#ecfdf5;border-color:#a7f3d0}',
+      V + '.rp-tag.amber{color:#b45309;background:#fffbeb;border-color:#fde68a}',
+      V + '.rp-tag.red{color:#be123c;background:#fef2f2;border-color:#fecaca}',
+      V + '.rp-tag.purple{color:#7c3aed;background:#f5f0ff;border-color:#ddd6fe}',
+      V + '.rp-tag.teal{color:#0f766e;background:#f0fdfa;border-color:#99f6e4}',
+      V + '.rp-tag.slate{color:#475569;background:#f1f5f9;border-color:#e2e8f0}',
+      V + '.rp-tag.gray{color:#64748b;background:#f8fafc;border-color:#e2e8f0}',
+      V + '.rp-tag.q{color:#b45309;background:#fffbeb;border-color:#fde68a}',
       V + '.rp-badge.pay{color:#2f5fe0;background:#eef3ff;border:1px solid #c6d6ff}',
       V + '.rp-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:150px}',
       V + '.rp-cust{max-width:230px;text-align:right;font-size:12.5px;font-weight:700;color:#1d4ed8;text-decoration:none;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}',
@@ -327,12 +338,30 @@
     return rows;
   }
 
+  // Rule-based „hvað snýst pósturinn um" merking (engin AI — keyrir á öllum póstum).
+  // Fyrsta samsvörun ræður. Skilar {label, cls} eða null.
+  function tagFor(m) {
+    const hay = ((m.subject || '') + ' ' + (m.body_preview || '') + ' ' + (m.snippet || '')).toLowerCase();
+    const T = (label, cls) => ({ label: label, cls: cls });
+    if (m.isPayday) return T('🧾 Payday-afrit', 'gray');
+    if (/áreiðanleika|reiðanleikakönnun|\baml\b|know your customer|\bkyc\b/.test(hay)) return T('🏦 Áreiðanleikakönnun', 'gray');
+    if (/(senda|sent|sendið|sendu|fá|fæ|vantar|afrit).{0,22}(reikning|kröfu|kvittun)|reikning.{0,22}(afrit|vantar|sent|sendan)|afrit af reikning|copy of (the )?invoice|send.{0,15}invoice/.test(hay)) return T('🧾 Reikningsbeiðni', 'blue');
+    if (/leiðrétt|rangt|rangur|röng|villa í reikning|of há|of lág|breyta reikning|athugasemd við reikning|kreditreikning|credit note/.test(hay)) return T('🔧 Leiðrétting', 'amber');
+    if (/áminning|innheimt|gjaldfalli|vanskil|ítrekun|dráttarvext|í vanskilum/.test(hay)) return T('⏰ Innheimta', 'red');
+    if (/greitt|greiðsl|millifær|innborgun|búið að borga|greiðslu|payment (made|received)|\bpaid\b/.test(hay)) return T('💳 Greiðsla', 'green');
+    if (/tilboð|verðtilboð|verð fyrir|kostnaðaráætl|verðfyrirspurn|quote|quotation/.test(hay)) return T('📋 Tilboð', 'purple');
+    if (/pöntun|panta |langar að kaupa|vil kaupa|\border\b/.test(hay)) return T('🛒 Pöntun', 'teal');
+    if (/úttektarskýrsl|ástandsskoðun|skoðunarskýrsl|\bskýrsla\b|\búttekt\b/.test(hay)) return T('📄 Skýrsla', 'slate');
+    if (m.is_question) return T('❓ Fyrirspurn', 'q');
+    return null;
+  }
+
   function rowHTML(m, i) {
     const cls = 'rp-card' + (m.is_question ? ' q' : (m.cust ? ' matched' : ''));
     const badges = [];
-    if (m.is_question) badges.push('<span class="rp-badge q">❓ Spurning</span>');
+    const tag = tagFor(m);
+    if (tag) badges.push('<span class="rp-tag ' + tag.cls + '">' + tag.label + '</span>');
     if (m.has_attachment) badges.push('<span class="rp-badge att">📎</span>');
-    if (m.isPayday) badges.push('<span class="rp-badge pay">🧾 Payday-afrit</span>');
     const subj = m.subject || '(ekkert efni)';
     const snip = (m.snippet || m.body_preview || '').replace(/\s+/g, ' ').trim();
     const custHTML = m.cust
@@ -359,7 +388,7 @@
       '<div class="rp-mid">' +
         '<div class="rp-from">' + esc(m.sender_name || m.from) + ' <span class="em">' + esc(m.from) + '</span> ' + badges.join(' ') + '</div>' +
         '<div class="rp-subj">' + esc(subj) + '</div>' +
-        (snip ? '<div class="rp-snip">' + esc(snip.slice(0, 150)) + '</div>' : '') +
+        (snip ? '<div class="rp-snip">' + esc(snip.slice(0, 320)) + '</div>' : '') +
       '</div>' +
       '<div class="rp-right">' + custHTML + (acts.length ? '<div class="rp-acts">' + acts.join('') + '</div>' : '') + '</div>' +
     '</div>';
