@@ -6,12 +6,13 @@
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
-  "background_color": "#0a1f3d",
+  "background_color": "#0a0a0c",
   "theme_color": "#C93C1D",
   "lang": "is",
   "icons": [
-    { "src": "/img/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/img/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    { "src": "/img/icon-192.png?v=flame1", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icon-512.png?v=flame1", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/img/icon-192.png?v=flame1", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/img/icon-512.png?v=flame1", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
