@@ -132,8 +132,9 @@ function buildPayload(sale, customer, sendEmail) {
   const linur = Array.isArray(sale.linur) ? sale.linur : tryParseJson(sale.linur) || [];
   const today = new Date();
   const isoToday = today.toISOString().slice(0, 10);
-  const due = new Date(today); due.setDate(due.getDate() + 14);
-  const final = new Date(today); final.setDate(final.getDate() + 30);
+  // Gjalddagi 7 dagar frá útgáfu; eindagi 3 dögum eftir gjalddaga (Agnar 2026-07-03).
+  const due = new Date(today); due.setDate(due.getDate() + 7);
+  const final = new Date(due); final.setDate(final.getDate() + 3);
 
   // sale.customer_kt / customer_nafn first (POS writes them); fall back to enriched customer row.
   const ktRaw = sale.customer_kt || (customer && customer.kennitala) || '';
