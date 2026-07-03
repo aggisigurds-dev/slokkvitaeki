@@ -150,3 +150,13 @@
 .thm .app-page .stat-card--hero .stat-card__icon{background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.08))!important}
 /* keep the segmented active state red (beat any generic .view button skin) */
 .thm .app-page .seg button.is-active{background:var(--btn-grad)!important;color:#fff!important}
+
+/* ---- SINGLE SOURCE inside .thm: theme.css wins over patch-245 content-skin,
+   so no two backgrounds stack (245 paints .view .stat-card / inputs / cards white
+   with !important; these re-assert the theme values at higher specificity) ---- */
+.thm .app-page .stat-card{background:linear-gradient(180deg,#ffffff,#eef1f6)!important;border:1px solid #e6eaf1!important;border-radius:18px!important;padding:18px 20px!important}
+.thm .app-page .stat-card > div,
+.thm .app-page .stat-card__label,
+.thm .app-page .stat-card__value{background:transparent!important;box-shadow:none!important}
+.thm .app-page .stat-card__value{font-size:20px!important;margin-top:2px!important}
+.thm .app-page .field-dark{background:rgba(255,255,255,.12)!important;color:#fff!important;border:1px solid rgba(255,255,255,.28)!important;box-shadow:none!important}
