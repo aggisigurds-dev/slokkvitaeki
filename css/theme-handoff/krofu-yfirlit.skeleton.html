@@ -1,0 +1,106 @@
+<!-- ============================================================
+     PAGE SKELETON — Kröfu yfirlit
+     Uses ONLY classes from theme.css. No inline styles.
+     Swap {{PLACEHOLDERS}} for real data; repeat <tr> per row.
+     Load once in <head>:  <link rel="stylesheet" href="theme.css">
+     ============================================================ -->
+<div class="app-page">
+  <!-- sidebar goes here (see Sidebar reference) -->
+  <main class="app-main">
+
+    <!-- title + view toggle -->
+    <div class="page-title">
+      <div class="page-title__lead">
+        <span class="page-title__icon">📋</span>
+        <div>
+          <h1>{{TITLE}}</h1>
+          <p>{{SUBTITLE}}</p>
+        </div>
+      </div>
+      <div class="seg">
+        <button class="is-active">Listi</button>
+        <button>Breitt</button>
+        <button>Spjöld</button>
+      </div>
+    </div>
+
+    <!-- stat cards -->
+    <div class="stat-row">
+      <div class="stat-card">
+        <span class="stat-card__icon">📄</span>
+        <div><div class="stat-card__label">{{STAT1_LABEL}}</div><div class="stat-card__value">{{STAT1_VALUE}}</div></div>
+      </div>
+      <div class="stat-card stat-card--amber">
+        <span class="stat-card__icon">⏳</span>
+        <div><div class="stat-card__label">{{STAT2_LABEL}}</div><div class="stat-card__value">{{STAT2_VALUE}}</div></div>
+      </div>
+      <div class="stat-card stat-card--hero">
+        <span class="stat-card__icon">💰</span>
+        <div><div class="stat-card__label">{{STAT3_LABEL}}</div><div class="stat-card__value">{{STAT3_VALUE}}</div></div>
+      </div>
+      <div class="stat-card stat-card--green">
+        <span class="stat-card__icon">🏦</span>
+        <div><div class="stat-card__label">{{STAT4_LABEL}}</div><div class="stat-card__value">{{STAT4_VALUE}}</div></div>
+      </div>
+    </div>
+
+    <!-- filter row -->
+    <div class="filter-row">
+      <button class="filter-chip is-active">Allt <span>{{N_ALL}}</span></button>
+      <button class="filter-chip">Greitt <span>{{N_PAID}}</span></button>
+      <button class="filter-chip">Ógreitt <span>{{N_UNPAID}}</span></button>
+      <button class="filter-chip">Kredit <span>{{N_CREDIT}}</span></button>
+    </div>
+
+    <!-- table -->
+    <div class="data-table-wrap">
+      <div class="data-table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th data-sort>Dags · tími<span class="sort-ar">⇅</span></th>
+              <th data-sort>Skjal<span class="sort-ar">⇅</span></th>
+              <th data-sort>Viðskiptavinur<span class="sort-ar">⇅</span></th>
+              <th data-sort>Kennitala<span class="sort-ar">⇅</span></th>
+              <th data-sort>Tegund<span class="sort-ar">⇅</span></th>
+              <th data-sort>Greiðslumáti<span class="sort-ar">⇅</span></th>
+              <th data-sort>Staða<span class="sort-ar">⇅</span></th>
+              <th class="num" data-sort>Upphæð<span class="sort-ar">⇅</span></th>
+              <th class="center">Aðgerðir</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- repeat this <tr> per transaction -->
+            <tr>
+              <td class="mono">{{DATE}}<br>{{TIME}}</td>
+              <td class="mono">{{DOC_NR}}</td>
+              <td><a href="#">{{CUSTOMER}}</a></td>
+              <td class="mono">{{KT}}</td>
+              <td><span class="pill pill--dark-blue">Sala</span></td>
+              <td><span class="pill pill--dark-green">Kort</span></td>          <!-- or pill--blue "Reikningur" / pill--gold "Greitt síðar" -->
+              <td><span class="pill pill--green">✓ Greitt</span></td>            <!-- or pill--gold "⚠ Ógreitt" / pill--purple "↩ Kredit" -->
+              <td class="num">{{AMOUNT}}</td>
+              <td>
+                <div class="row-actions">
+                  <span class="abtn5 abtn5--wide" data-on="0">Krafa send</span>
+                  <span class="abtn5 abtn5--green" data-on="0">Greitt</span>
+                  <span class="abtn5 abtn5--slate">Reikning</span>
+                  <span class="abtn5 abtn5--orange">Breyta</span>
+                  <span class="abtn5 abtn5--red">Bakfæra</span>
+                  <span class="abtn5 abtn5--green">Nýr</span>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- tiny bits not yet in theme.css (add if you like):
+     .filter-row{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+     .row-actions{display:flex;gap:7px;justify-content:flex-end;align-items:center}
+     Toggle behaviour: on click of .abtn5[data-on], flip data-on 0↔1.
+     Sort behaviour: reuse the click-to-sort script from Hreyfingarlisti-v2 (keys off cell text / data-v). -->
