@@ -58,7 +58,11 @@
     custByEmail: {}, custByKt: {}, saleByNum: {},
     hidden: new Set(),   // message_ids the user has deleted/hidden (Supabase-synced)
     rules: [],           // auto-hide rules {id, rule_type:'sender'|'domain'|'subject', pattern}
+    activity: new Set(), // message_ids we have replied to / sent an invoice for
+    expanded: new Set(), // thread keys the user expanded
+    tagFilter: null,     // active category-tag filter (label) or null
   };
+  const WINDOW_DAYS = 62; // „síðustu 2 mánuðir"
 
   const PAYDAY_RE = /payday\.is/i;
   const NOREPLY_RE = /no[-_.]?reply|do[-_.]?not[-_.]?reply|noreply|donotreply|automated|mailer-daemon/i;
@@ -75,22 +79,26 @@
     }
     state.loading = true; render();
     try {
-      const [em, fy, cb, vd, sl, hd, rl] = await Promise.all([
+      const sinceIso = new Date(Date.now() - WINDOW_DAYS * 86400000).toISOString();
+      const [em, fy, cb, vd, sl, hd, rl, ac] = await Promise.all([
         SB.from('email_digest')
           .select('message_id,account,sender_name,sender_email,to_addresses,subject,snippet,body_preview,is_question,has_attachment,attachment_names,received_at')
           .in('account', ['eldklar@eldklar.is', 'bokhald@eldklar.is'])
+          .gte('received_at', sinceIso)   // deep-analyse the last ~2 months only
           .order('received_at', { ascending: false })
-          .limit(600),
+          .limit(1500),
         SB.from('fyrirtaeki').select('id,nafn,kennitala,netfang').not('netfang', 'is', null),
         SB.from('customers_base').select('id,nafn,kennitala,netfang').not('netfang', 'is', null),
         SB.from('vidskiptavinir').select('id,nafn,kennitala,netfang').not('netfang', 'is', null),
         SB.from('solur').select('id,num,customer_nafn,customer_kt,samtals,created_at,greitt_med,paid_at').order('created_at', { ascending: false }).limit(2500),
         SB.from('reikninga_postur_hidden').select('message_id'),
         SB.from('reikninga_postur_rules').select('*').order('created_at', { ascending: false }),
+        SB.from('reikninga_postur_activity').select('message_id'),
       ]);
       if (em.error) throw em.error;
       state.hidden = new Set(((hd && hd.data) || []).map(r => r.message_id));
       state.rules = ((rl && rl.data) || []);
+      state.activity = new Set(((ac && ac.data) || []).map(r => r.message_id));
 
       const emailMap = {}, byKt = {};
       const addCust = (res, isCompany) => (res && res.data || []).forEach(r => {
@@ -155,7 +163,66 @@
     }
 
     const category = isPayday ? 'sent' : 'inbox';
-    return { ...m, from, isPayday, isSystem, sale, cust, matchBy, category };
+    const rec = { ...m, from, isPayday, isSystem, sale, cust, matchBy, category };
+    rec.clean = cleanBody(m.body_preview || m.snippet || '');
+    rec.threadKey = threadKey(rec);
+    return rec;
+  }
+
+  // ── deep-analysis helpers: clean text + thread grouping + answered state ────
+  // Strip quoted replies, forwarded headers, signatures + boilerplate so a card
+  // shows just the meaningful latest message.
+  function cleanBody(text) {
+    let s = String(text || '').replace(/\r/g, '');
+    const cuts = [
+      /-{2,}\s*Original Message\s*-{2,}/i, /_{6,}/, /On .{5,90}\bwrote:/i, /Þann .{5,90}\bskrifaði/i,
+      /\n\s*From:\s.+/i, /\n\s*Frá:\s.+/i, /\n\s*Sent:\s.+/i, /-{2,}\s*Áframsend/i, /## Verkn[úu]mer/i,
+    ];
+    let cutAt = s.length;
+    cuts.forEach(re => { const m = s.match(re); if (m && m.index != null && m.index >= 40 && m.index < cutAt) cutAt = m.index; });
+    s = s.slice(0, cutAt);
+    s = s.split('\n').filter(ln => {
+      const t = ln.trim();
+      if (/^>/.test(t)) return false;
+      if (/^(sent from my|sent via)/i.test(t)) return false;
+      return true;
+    }).join(' ');
+    s = s.replace(/\s*(með kveðju|kær kveðju|bestu kveðjur|kveðja|best regards|kind regards|virðingarfyllst)[\s,][\s\S]{0,240}$/i, '');
+    return s.replace(/\s+/g, ' ').trim();
+  }
+  function normSubject(s) {
+    let x = String(s || '');
+    for (let i = 0; i < 4; i++) x = x.replace(/^\s*(re|sv|svar|fw|fwd|áframsent|aframsent|áfr)\s*:\s*/i, '');
+    return x.replace(/\(#[^)]*\)/g, '').replace(/\[[^\]]*\]/g, '').replace(/\s+/g, ' ').trim().toLowerCase();
+  }
+  function threadKey(m) {
+    const subj = normSubject(m.subject);
+    const kt = m.cust && ktDigits(m.cust.kt);
+    const who = kt || (m.from || '').split('@')[1] || (m.from || '');
+    return (subj || '(ekkert)') + '|' + who;
+  }
+  function groupThreads(emails) {
+    const map = new Map();
+    emails.forEach(m => {
+      const k = m.threadKey || m.message_id;
+      let g = map.get(k);
+      if (!g) { g = { rep: m, msgs: [m] }; map.set(k, g); }
+      else { g.msgs.push(m); if ((m.received_at || '') > (g.rep.received_at || '')) g.rep = m; }
+    });
+    return [...map.values()].map(g => {
+      const rep = Object.assign({}, g.rep);
+      rep._thread = g.msgs.slice().sort((a, b) => (b.received_at || '').localeCompare(a.received_at || ''));
+      rep._threadCount = g.msgs.length;
+      rep._threadIds = g.msgs.map(x => x.message_id);
+      return rep;
+    });
+  }
+  function isAnswered(rep) { return state.activity.has(rep.message_id); }
+  async function logActivity(message_id, kind) {
+    if (!message_id) return;
+    state.activity.add(message_id);
+    const SB = getSB();
+    try { if (SB) await SB.from('reikninga_postur_activity').insert({ message_id, kind: kind || 'reply' }); } catch (_) {}
   }
 
   // ── styles (self-contained, #view-scoped so patch-245 can't override) ──────
@@ -202,6 +269,20 @@
       V + '.rp-tag.slate{color:#475569;background:#f1f5f9;border-color:#e2e8f0}',
       V + '.rp-tag.gray{color:#64748b;background:#f8fafc;border-color:#e2e8f0}',
       V + '.rp-tag.q{color:#b45309;background:#fffbeb;border-color:#fde68a}',
+      V + '.rp-badge.ans{color:#047857;background:#ecfdf5;border:1px solid #a7f3d0}',
+      V + '.rp-badge.wait{color:#b45309;background:#fff7ed;border:1px solid #fed7aa}',
+      V + '.rp-threadb{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:20px;white-space:nowrap;border:1px solid #ddd6fe;background:#f5f0ff;color:#7c3aed;cursor:pointer;font-family:inherit}',
+      V + '.rp-threadb:hover{background:#ede4ff}',
+      V + '.rp-card.answered{opacity:.72}',
+      V + '.rp-card.answered:hover{opacity:1}',
+      V + '.rp-btn.ok{padding:5px 10px;color:#047857;border-color:#a7f3d0;background:linear-gradient(180deg,#fff,#ecfdf5)}',
+      V + '.rp-btn.ok:hover{background:#d1fae5}',
+      V + '.rp-thread-list{margin-top:8px;border-top:1px dashed #e2e8f0;padding-top:7px;display:flex;flex-direction:column;gap:6px}',
+      V + '.rp-thread-msg{font-size:11.5px;color:#64748b;padding-left:10px;border-left:2px solid #e2e8f0}',
+      V + '.rp-thread-msg .d{font-family:"Space Mono",monospace;color:#94a3b8}',
+      V + '.rp-thread-msg .s{font-weight:700;color:#3a4250}',
+      V + '.rp-thread-msg .ans{color:#059669}',
+      V + '.rp-thread-msg .tx{color:#94a3b8;margin-top:1px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}',
       V + '.rp-badge.pay{color:#2f5fe0;background:#eef3ff;border:1px solid #c6d6ff}',
       V + '.rp-right{flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:150px}',
       V + '.rp-cust{max-width:230px;text-align:right;font-size:12.5px;font-weight:700;color:#1d4ed8;text-decoration:none;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}',
@@ -307,35 +388,51 @@
   function isFiltered(m) { return !isHidden(m) && ruleMatches(m); }   // rule-hidden (not manually deleted)
   function counts() {
     const live = state.emails.filter(m => !isHidden(m) && !ruleMatches(m));
-    const inbox = live.filter(m => m.category === 'inbox' && !m.isSystem).length;
-    const sent = live.filter(m => m.category === 'sent').length;
+    const inboxEmails = live.filter(m => m.category === 'inbox' && !m.isSystem);
+    const inboxThreads = groupThreads(inboxEmails);
     return {
-      inbox, sent, all: live.length,
-      hidden: state.emails.filter(isHidden).length,
-      filtered: state.emails.filter(isFiltered).length,
+      inbox: inboxThreads.length,
+      sent: groupThreads(live.filter(m => m.category === 'sent')).length,
+      all: groupThreads(live).length,
+      unanswered: inboxThreads.filter(t => !isAnswered(t)).length,
+      hidden: groupThreads(state.emails.filter(isHidden)).length,
+      filtered: groupThreads(state.emails.filter(isFiltered)).length,
     };
   }
 
   function currentRows() {
-    let rows = state.emails;
-    if (state.filter === 'hidden') {
-      rows = rows.filter(isHidden);
-    } else if (state.filter === 'filtered') {
-      rows = rows.filter(isFiltered);
-    } else {
-      rows = rows.filter(m => !isHidden(m) && !ruleMatches(m));
-      if (state.filter === 'inbox') rows = rows.filter(m => m.category === 'inbox' && !m.isSystem);
-      else if (state.filter === 'sent') rows = rows.filter(m => m.category === 'sent');
+    // 1) filter individual emails by the active view
+    let rows;
+    if (state.filter === 'hidden') rows = state.emails.filter(isHidden);
+    else if (state.filter === 'filtered') rows = state.emails.filter(isFiltered);
+    else {
+      rows = state.emails.filter(m => !isHidden(m) && !ruleMatches(m));
+      if (state.filter === 'sent') rows = rows.filter(m => m.category === 'sent');
+      else rows = rows.filter(m => m.category === 'inbox' && !m.isSystem); // inbox / unanswered / all(inbox side)
+      if (state.filter === 'all') rows = state.emails.filter(m => !isHidden(m) && !ruleMatches(m));
     }
+    // 2) search + tag filter (on individual emails)
     const q = state.search.trim().toLowerCase();
     if (q) rows = rows.filter(m =>
       (m.sender_name || '').toLowerCase().includes(q) ||
       (m.from || '').includes(q) ||
       (m.subject || '').toLowerCase().includes(q) ||
+      (m.clean || '').toLowerCase().includes(q) ||
       (m.cust && (m.cust.name || '').toLowerCase().includes(q)));
-    // Í „Til að svara": spurningar efst, svo nýjast. Annars nýjast.
-    if (state.filter === 'inbox') rows = rows.slice().sort((a, b) => (b.is_question ? 1 : 0) - (a.is_question ? 1 : 0) || (b.received_at || '').localeCompare(a.received_at || ''));
-    return rows;
+    if (state.tagFilter) rows = rows.filter(m => { const t = tagFor(m); return t && t.label === state.tagFilter; });
+    // 3) combine into threads (one card per conversation)
+    let threads = groupThreads(rows);
+    if (state.filter === 'unanswered') threads = threads.filter(t => !isAnswered(t));
+    // 4) sort — í inbox: ósvöruð + spurningar efst, svo nýjast; annars nýjast
+    if (state.filter === 'inbox' || state.filter === 'unanswered') {
+      threads.sort((a, b) =>
+        (isAnswered(a) ? 1 : 0) - (isAnswered(b) ? 1 : 0) ||
+        (b.is_question ? 1 : 0) - (a.is_question ? 1 : 0) ||
+        (b.received_at || '').localeCompare(a.received_at || ''));
+    } else {
+      threads.sort((a, b) => (b.received_at || '').localeCompare(a.received_at || ''));
+    }
+    return threads;
   }
 
   // Rule-based „hvað snýst pósturinn um" merking (engin AI — keyrir á öllum póstum).
@@ -357,13 +454,19 @@
   }
 
   function rowHTML(m, i) {
-    const cls = 'rp-card' + (m.is_question ? ' q' : (m.cust ? ' matched' : ''));
+    const inbox = m.category === 'inbox' && !m.isSystem;
+    const answered = isAnswered(m);
+    const cls = 'rp-card' + (inbox && !answered && m.is_question ? ' q' : (m.cust ? ' matched' : '')) + (answered ? ' answered' : '');
     const badges = [];
     const tag = tagFor(m);
-    if (tag) badges.push('<span class="rp-tag ' + tag.cls + '">' + tag.label + '</span>');
+    if (tag) badges.push('<span class="rp-tag ' + tag.cls + ' _rp-tagf" data-tag="' + esc(tag.label) + '" title="Sía á þennan flokk">' + tag.label + '</span>');
+    if (inbox) badges.push(answered
+      ? '<span class="rp-badge ans">✓ Svarað</span>'
+      : '<span class="rp-badge wait">⏳ Ósvarað</span>');
     if (m.has_attachment) badges.push('<span class="rp-badge att">📎</span>');
+    if (m._threadCount > 1) badges.push('<button class="rp-threadb _rp-thread" data-k="' + esc(m.threadKey) + '" type="button" title="Sýna allt samtalið">💬 ' + m._threadCount + '</button>');
     const subj = m.subject || '(ekkert efni)';
-    const snip = (m.snippet || m.body_preview || '').replace(/\s+/g, ' ').trim();
+    const snip = (m.clean || m.snippet || m.body_preview || '').replace(/\s+/g, ' ').trim();
     const custHTML = m.cust
       ? '<a class="rp-cust" ' + (m.cust.coId ? 'data-co="' + esc(String(m.cust.coId)) + '" ' : '') + (m.cust.kt ? 'data-kt="' + esc(ktDigits(m.cust.kt)) + '" ' : '') + 'title="Opna kúnna">' + esc(m.cust.name || '—') + '<span class="by">tengt: ' + esc(m.matchBy || '') + (m.sale ? ' · ' + esc(m.sale.num) : '') + '</span></a>'
       : '<span class="rp-nomatch">enginn kúnni fannst</span>';
@@ -373,6 +476,7 @@
     if (isHidden(m)) acts.push('<button class="rp-btn _rp-restore"' + di + ' type="button" title="Endurheimta póst">↩︎ Endurheimta</button>');
     // Tier 3 — draft a reply to anything that landed in the inbox (real people).
     if (m.category === 'inbox' && !m.isSystem && !isHidden(m)) acts.push('<button class="rp-btn ai _rp-reply"' + di + ' type="button" title="Semja svar með Claude">🤖 Svar</button>');
+    if (inbox && !answered && !isHidden(m)) acts.push('<button class="rp-btn ok _rp-answered"' + di + ' type="button" title="Merkja sem svarað">✓</button>');
     // Tier 2 — resend an invoice PDF (needs a customer to list invoices, or a matched sale).
     if (m.cust || m.sale) acts.push('<button class="rp-btn prim _rp-send"' + di + ' type="button" title="Senda reikning sem PDF">✉️ Senda</button>');
     // Tier 2 — jump straight into the matched invoice to change it.
@@ -383,12 +487,20 @@
     }
     if (!isHidden(m) && m.from) acts.push('<button class="rp-btn mute _rp-mute"' + di + ' type="button" title="Fela sjálfkrafa alla pósta frá ' + esc(m.from) + '">🔇</button>');
     if (!isHidden(m)) acts.push('<button class="rp-btn del _rp-del"' + di + ' type="button" title="Eyða / fela þessum pósti">🗑</button>');
+    const older = (m._threadCount > 1 && state.expanded.has(m.threadKey)) ? (m._thread || []).slice(1) : [];
+    const olderHTML = older.length
+      ? '<div class="rp-thread-list">' + older.map(o =>
+          '<div class="rp-thread-msg"><span class="d">' + esc(fmtDate(o.received_at)) + '</span> · <span class="s">' + esc(o.sender_name || o.from) + '</span>' +
+          (isAnswered(o) ? ' <span class="ans">✓</span>' : '') +
+          '<div class="tx">' + esc((o.clean || o.snippet || '').slice(0, 200)) + '</div></div>').join('') + '</div>'
+      : '';
     return '<div class="' + cls + '">' +
       '<div class="rp-when"><b>' + esc(relDay(m.received_at)) + '</b>' + esc(fmtDate(m.received_at)) + '</div>' +
       '<div class="rp-mid">' +
         '<div class="rp-from">' + esc(m.sender_name || m.from) + ' <span class="em">' + esc(m.from) + '</span> ' + badges.join(' ') + '</div>' +
         '<div class="rp-subj">' + esc(subj) + '</div>' +
         (snip ? '<div class="rp-snip">' + esc(snip.slice(0, 320)) + '</div>' : '') +
+        olderHTML +
       '</div>' +
       '<div class="rp-right">' + custHTML + (acts.length ? '<div class="rp-acts">' + acts.join('') + '</div>' : '') + '</div>' +
     '</div>';
@@ -413,15 +525,17 @@
     v.innerHTML =
       '<div class="rp-main">' +
         '<div class="rp-head">' +
-          '<div class="rp-title"><h1>📧 Reikninga-póstur</h1><p>Póstar til eldklar@eldklar.is tengdir við kúnna — svaraðu, sendu reikning eða breyttu honum beint héðan.</p></div>' +
+          '<div class="rp-title"><h1>📧 Reikninga-póstur</h1><p>Síðustu 2 mánuðir · samtöl sameinuð · texti hreinsaður — svaraðu, sendu reikning eða merktu.</p></div>' +
           '<button class="rp-reload" id="_rp-reload" type="button">↻ Endurhlaða</button>' +
         '</div>' +
         '<div class="rp-tools">' +
           chip('inbox', '📥 Til að svara', c.inbox) +
+          chip('unanswered', '⏳ Ósvarað', c.unanswered) +
           chip('sent', '🧾 Sendir reikningar', c.sent) +
           chip('all', 'Allt', c.all) +
           (c.hidden ? chip('hidden', '🗑 Falin', c.hidden) : '') +
           (c.filtered ? chip('filtered', '🔇 Síað', c.filtered) : '') +
+          (state.tagFilter ? '<button class="rp-chip on" id="_rp-tagclear" type="button" title="Hreinsa flokkasíu">' + esc(state.tagFilter) + ' ✕</button>' : '') +
           '<button class="rp-chip" id="_rp-rules" type="button" title="Sjálfvirkar síur — fela sendendur, lén eða efni">⚙️ Síur' + (state.rules && state.rules.length ? ' <span class="n">' + state.rules.length + '</span>' : '') + '</button>' +
           '<div class="rp-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>' +
             '<input id="_rp-search" type="search" placeholder="Leita (sendandi · efni · kúnni)…" value="' + esc(state.search) + '"></div>' +
@@ -446,22 +560,31 @@
     v.querySelectorAll('._rp-del').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) hideEmail(m); }));
     v.querySelectorAll('._rp-restore').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) restoreEmail(m); }));
     v.querySelectorAll('._rp-mute').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) muteSender(m); }));
+    v.querySelectorAll('._rp-thread').forEach(b => b.addEventListener('click', () => {
+      const k = b.dataset.k; if (!k) return;
+      if (state.expanded.has(k)) state.expanded.delete(k); else state.expanded.add(k);
+      render();
+    }));
+    v.querySelectorAll('._rp-answered').forEach(b => b.addEventListener('click', async () => { const m = rowFor(b); if (m && m.message_id) { await logActivity(m.message_id, 'reply'); render(); if (window.Toast && Toast.show) Toast.show('✓ Merkt svarað'); } }));
+    v.querySelectorAll('._rp-tagf').forEach(b => b.addEventListener('click', () => { state.tagFilter = b.dataset.tag; state.filter = 'all'; render(); }));
+    const tc = v.querySelector('#_rp-tagclear'); if (tc) tc.addEventListener('click', () => { state.tagFilter = null; render(); });
     const rb = v.querySelector('#_rp-rules'); if (rb) rb.addEventListener('click', openRulesModal);
   }
 
   // ── delete / hide a handled email (Supabase-synced across devices) ─────────
+  function threadIds(m) { return (m && m._threadIds && m._threadIds.length) ? m._threadIds : (m && m.message_id ? [m.message_id] : []); }
   async function hideEmail(m) {
-    if (!m || !m.message_id) return;
-    state.hidden.add(m.message_id); render();
+    const ids = threadIds(m); if (!ids.length) return;
+    ids.forEach(id => state.hidden.add(id)); render();
     const SB = getSB();
-    try { if (SB) await SB.from('reikninga_postur_hidden').upsert({ message_id: m.message_id }, { onConflict: 'message_id' }); } catch (_) {}
-    if (window.Toast && Toast.show) Toast.show('🗑 Póstur falinn');
+    try { if (SB) await SB.from('reikninga_postur_hidden').upsert(ids.map(id => ({ message_id: id })), { onConflict: 'message_id' }); } catch (_) {}
+    if (window.Toast && Toast.show) Toast.show(ids.length > 1 ? '🗑 ' + ids.length + ' póstar faldir' : '🗑 Póstur falinn');
   }
   async function restoreEmail(m) {
-    if (!m || !m.message_id) return;
-    state.hidden.delete(m.message_id); render();
+    const ids = threadIds(m); if (!ids.length) return;
+    ids.forEach(id => state.hidden.delete(id)); render();
     const SB = getSB();
-    try { if (SB) await SB.from('reikninga_postur_hidden').delete().eq('message_id', m.message_id); } catch (_) {}
+    try { if (SB) await SB.from('reikninga_postur_hidden').delete().in('message_id', ids); } catch (_) {}
   }
 
   // ── auto-hide rules (síur) — sender / domain / subject, Supabase-synced ─────
@@ -709,6 +832,7 @@
       }
       setMsg('✓ Reikningur sendur á ' + to, 'ok');
       if (window.Toast && Toast.show) Toast.show('✓ Reikningur ' + (sale.num || '') + ' sendur á ' + to);
+      logActivity(m.message_id, 'invoice');
       setTimeout(closeModal, 1100);
     } catch (e) {
       setMsg('Villa: ' + String((e && e.message) || e), 'bad');
@@ -747,6 +871,7 @@
         throw new Error(mm);
       }
       if (window.Toast && Toast.show) Toast.show('✓ ' + (full.num || 'Reikningur') + ' sendur á ' + to);
+      logActivity(m.message_id, 'invoice');
       return true;
     } catch (e) { alert('Villa: ' + String((e && e.message) || e)); return false; }
   }
@@ -883,6 +1008,7 @@
       }
       setMsg('✓ Svar sent á ' + to, 'ok');
       if (window.Toast && Toast.show) Toast.show('✓ Svar sent á ' + to);
+      logActivity(m.message_id, 'reply');
       setTimeout(closeModal, 1100);
     } catch (e) { setMsg('Villa: ' + String((e && e.message) || e), 'bad'); btn.disabled = false; }
   }
