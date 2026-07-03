@@ -53,7 +53,8 @@
     brunakerfi: 'brunakerfi', verkdagbok: 'verkdagbok', arsskodun: 'arsskodun',
     vidskiptavinir: 'vidskiptavinir', yfirlit: 'yfirlit',
     bilstjori: 'bilstjori', drivers: 'bilstjori', bakendi: 'bakendi',
-    sameining: 'sameining', adstod: 'adstod'
+    sameining: 'sameining', adstod: 'adstod',
+    postur: 'reikninga-postur', reikningapostur: 'reikninga-postur'  // 📧 Reikninga-póstur (patch 240)
   };
 
   // internal view id -> preferred ascii slug (first alias wins).
