@@ -63,9 +63,14 @@
   const SYSTEM_RE = /(rsk\.is|microsoft\.com|accountprotection|google\.com|cloudflare|unimaze\.com|facebook|linkedin|apple\.com|paypal|stripe)/i;
 
   // ── data ──────────────────────────────────────────────────────────────────
-  async function load() {
+  async function load(retry) {
     const SB = getSB();
-    if (!SB) { state.err = 'Engin gagnabankatenging.'; render(); return; }
+    if (!SB) {
+      // DB client may not be ready yet on a cold deep-link — wait + retry
+      // (up to ~10s) instead of showing a bogus "no connection" empty state.
+      if ((retry || 0) < 20) { state.loading = true; render(); setTimeout(() => load((retry || 0) + 1), 500); return; }
+      state.err = 'Engin gagnabankatenging.'; render(); return;
+    }
     state.loading = true; render();
     try {
       const [em, fy, cb, vd, sl] = await Promise.all([
