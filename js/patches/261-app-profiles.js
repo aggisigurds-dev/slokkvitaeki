@@ -153,6 +153,17 @@
       '#_app-nav button{flex:1;background:none;border:none;color:rgba(255,255,255,.62);font:inherit;font-size:11px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 2px;border-radius:10px;min-height:52px}',
       '#_app-nav button .e{font-size:21px;line-height:1}',
       '#_app-nav button.on{color:#fff;background:rgba(255,255,255,.08)}',
+      // ── App-mode readability: bigger text + thumb-friendly tap targets. Scoped to
+      //    body.appmode so the office desktop view is untouched. ──
+      'body.appmode .view{font-size:15px}',
+      'body.appmode .view button,body.appmode .view .btn,body.appmode .view a.btn,body.appmode .view [role="button"]{font-size:15px !important;min-height:46px;padding-top:10px !important;padding-bottom:10px !important;line-height:1.2}',
+      'body.appmode .view input,body.appmode .view select,body.appmode .view textarea{font-size:16px !important;min-height:48px}',
+      // tiny stacked icon+label action buttons (e.g. Krafa send / Greitt / Reikning) — keep compact but legible
+      'body.appmode .view button:has(> svg),body.appmode .view .abtn5{font-size:13px !important}',
+      'body.appmode .view .pill,body.appmode .view .chip,body.appmode .view [class*="pill"],body.appmode .view [class*="chip"]{font-size:13.5px !important}',
+      // section/table text a touch larger
+      'body.appmode .view td,body.appmode .view th,body.appmode .view label,body.appmode .view p,body.appmode .view li{font-size:14.5px}',
+      '#_app-nav button{font-size:12px}',
     ];
     var st = document.createElement('style'); st.id = '_app-styles'; st.textContent = css.join('\n');
     document.head.appendChild(st);
