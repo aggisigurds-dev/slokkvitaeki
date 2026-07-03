@@ -455,6 +455,42 @@ Wiring eins og 236/232: nýr view-div, klónaður hliðarstiku-hnappur frá Bake
 
 **Þegar Fasi 2 kemur**: AI-tips bætast við sem fyrsta section efst (þvert á reglu-byggðu sectionirnar). Reglu-byggðu sectionirnar verða áfram til staðar sem öryggisnet ef AI-keyrslan fellur.
 
+## Reikninga-póstur (reikninga-póst-hjálpari) — `js/patches/240-reikninga-postur.js`
+
+Sjálfstæð síða (view `view-reikninga-postur`, slug `#reikninga-postur`/`#postur`,
+hliðarstiku-hnappur „📧 Reikninga-póstur") sem les póst-hólfið **eldklar@eldklar.is**
+(+ bokhald@eldklar.is) BEINT úr shared `email_digest` (engin ný tenging) og tengir
+hvern póst við kúnna/reikning svo „hver spurði um hvaða reikning" sé á einum stað.
+
+- **Tenging (áreiðanlegast fyrst):** (1) kt í efni/texta → `custByKt` · (2)
+  sendandi-netfang → `custByEmail` (AÐEINS einkvæm netföng; deildir umboðsmanna-
+  póstar eins og `gjaldkeri@eignaumsjon.is` sem senda fyrir mörg húsfélög eru
+  útilokaðir) · (3) R-númer (`R-0\d{5}`) → sala → kúnni (fallback).
+- **Flokkar:** 📥 Til að svara (innhólf, spurningar efst) · 🧾 Sendir reikningar
+  (delivery@payday.is afrit) · Allt. `isSystem` felur noreply/rsk/microsoft o.fl.
+
+**Tier 2/3 aðgerðir per póst** (2026-07-03, PR #265):
+- **✉️ Senda** — velur einn af reikningum kúnnans (`solur` eftir `customer_kt`),
+  teiknar hann sem PDF gegnum `UttektInvoicePdf.buildInvoiceBlob` (patch 233) og
+  sendir gegnum `/api/email-send` (Resend) á hvaða netfang sem er (forfyllt með
+  sendanda). Tómt ástand er heiðarlegt: húsfélög sem eru rukkuð í dkPlus/Payday
+  eiga engar `solur`-raðir → „Engir reikningar fundust".
+- **✏️ Breyta** — opnar reikninginn í sölu-ritli (`SaleEditor.openById/openByNum`,
+  patch 142). Birtist aðeins þegar R-númer tengdist (`m.sale`).
+- **🤖 Svar** — Claude semur STUTT íslenskt uppkast að svari gegnum NÝ Netlify-
+  function **`netlify/functions/postur-reply.js`** (`/api/postur-reply`, Haiku,
+  ANTHROPIC_API_KEY server-side) út frá póstinum + nýlegum reikningum kúnnans.
+  4 stýri-chip (Sendi reikning / Bið um uppl. / Leiðrétti reikning / Staðfesti
+  greiðslu). Uppkastið er ritstýranlegt → 📋 Afrita eða 📤 Senda svar (Resend).
+  **Skrifstofan yfirfer ALLTAF áður en sent er** — endpoint semur bara uppkast.
+
+- **Sendandi:** `localStorage.email_from` (fallback `Slökkvitæki ehf
+  <reikningar@eldklar.is>`) — VERÐUR að vera á staðfestu Resend-léni (eldklar.is).
+- **Modal** er bætt á `<body>` (utan `.view`) svo patch 245 skinnið snerti það ekki.
+- Wiring eins og 239: view-div, klónaður hliðarstiku-hnappur, App.switchView hook,
+  patch 218 ALIAS (`postur`/`reikningapostur`). Public API `window.ReikningaPostur
+  = { open, reload }`. Verður READ→WRITE með Tier 2/3 (var read-only í v1).
+
 ## Theme refactor — `theme.css` + per-page skeletons (IN PROGRESS, 2026-07-03)
 
 Re-skinning pages to Agnar's class-based design system, replacing an earlier
