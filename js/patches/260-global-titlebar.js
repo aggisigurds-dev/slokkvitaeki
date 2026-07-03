@@ -23,6 +23,19 @@
   window.__ghTitlebarInstalled = true;
 
   const BAR_ATTR = 'data-ghbar';
+
+  // The bar is dark metallic, so its title/subtitle MUST be white. Patch 245's
+  // `.view h1{color:#11141c}` (and friends) otherwise override the inline white
+  // → dark-on-dark ("Sala" invisible). A scoped !important rule wins it back.
+  (function whiteBarText() {
+    const SID = 'ghbar-white-text';
+    if (document.getElementById(SID)) return;
+    const st = document.createElement('style');
+    st.id = SID;
+    st.textContent =
+      '[data-ghbar] h1,[data-ghbar] h1 *,[data-ghbar] > div > div,[data-ghbar] > div > div *{color:#fff !important}';
+    (document.head || document.documentElement).appendChild(st);
+  })();
   // Views that already hand-build the identical bar — don't double it.
   const SKIP = new Set([
     'view-hreyfingarlisti', 'view-thjonustu-verkstaedi', 'view-krofu-yfirlit',
@@ -68,8 +81,9 @@
     bar.innerHTML =
       '<div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">' + esc(icon) + '</div>' +
       '<div style="min-width:0">' +
-        '<h1 style="margin:0;font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">' + esc(title) + '</h1>' +
-        (sub ? '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">' + esc(sub) + '</div>' : '') +
+        // inline !important — beats patch 250's #view-X h1[style]{color:#11141c!important}
+        '<h1 style="margin:0;font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:20px;font-weight:700;color:#fff !important;letter-spacing:-.01em;line-height:1.15">' + esc(title) + '</h1>' +
+        (sub ? '<div style="font-size:12px;color:rgba(255,255,255,.6) !important;margin-top:1px">' + esc(sub) + '</div>' : '') +
       '</div>';
     return bar;
   }

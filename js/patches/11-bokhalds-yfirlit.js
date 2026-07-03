@@ -68,7 +68,7 @@
     s.textContent = `
       #${VIEW_ID} { padding: 0; }
       #${VIEW_ID} .by-wrap {
-        max-width: 1400px; margin: 0 auto; padding: 22px 22px 60px;
+        max-width: 1720px; margin: 0 auto; padding: 10px 18px 60px;
         font-family: 'Space Grotesk', system-ui, sans-serif; color: #11141c;
       }
       #${VIEW_ID} .by-header {
