@@ -137,3 +137,16 @@
 .thm .filter-search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:rgba(255,255,255,.75)}
 .thm .filter-search .field-dark{height:40px;padding-left:40px}
 .thm .row-actions{display:flex;gap:6px;justify-content:flex-end;align-items:center}
+
+/* ---- override guards: beat patch-245 `.view .stat-card{…!important}` & 230
+   inside the .thm scope so theme.css owns the look (higher specificity + !important) ---- */
+.thm .app-page .stat-card.stat-card--hero{
+  background:linear-gradient(160deg,#7ba0ff 0%,#3a6ae8 34%,#1c3d8c 68%,#0a1630 100%)!important;
+  border:1px solid rgba(255,255,255,.18)!important;
+  box-shadow:0 1px 1px rgba(0,0,0,.1),0 10px 20px -8px rgba(12,25,70,.4),0 26px 48px -20px rgba(12,25,70,.55),inset 0 2px 0 rgba(255,255,255,.5),inset 0 -12px 24px -14px rgba(0,0,0,.35)!important;
+}
+.thm .app-page .stat-card--hero .stat-card__label{color:rgba(255,255,255,.72)!important}
+.thm .app-page .stat-card--hero .stat-card__value{color:#fff!important}
+.thm .app-page .stat-card--hero .stat-card__icon{background:linear-gradient(180deg,rgba(255,255,255,.28),rgba(255,255,255,.08))!important}
+/* keep the segmented active state red (beat any generic .view button skin) */
+.thm .app-page .seg button.is-active{background:var(--btn-grad)!important;color:#fff!important}
