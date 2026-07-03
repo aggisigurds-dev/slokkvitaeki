@@ -640,7 +640,7 @@
           await load(_state.month);
           return;
         }
-        if (!confirm('Senda kröfu í Payday núna? (drag verður stofnað, ekki sjálfvirkt sent á kúnna)')) return;
+        if (!confirm('Senda kröfu í Payday núna?\n\nSendist sjálfkrafa (rafrænt ef kúnni tekur við því, annars í tölvupósti). Viltu bara DRÖG? Hakaðu við kröfuna og notaðu „📤 Í Payday sem drög".')) return;
         b.disabled = true; b.textContent = '⏳ Sendir…';
         try {
           const sale = (_state.all || []).find(s => String(s.id) === String(id));
@@ -837,20 +837,26 @@
       + '</div>'
       + '<div style="display:flex;align-items:center;gap:8px">'
       + '<button id="_ky-bulk-clear" type="button" style="padding:8px 12px;border:1px solid #334155;background:transparent;color:#cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:13px">Hreinsa</button>'
-      + '<button id="_ky-bulk-send" type="button" style="padding:9px 16px;border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13.5px;font-weight:700">🏦 Senda valdar í Payday</button>'
+      + '<button id="_ky-bulk-draft" type="button" title="Stofna aðeins drög í Payday — þú sendir handvirkt þaðan (líka fyrir kúnna sem taka ekki við rafrænum)" style="padding:9px 16px;border:1px solid #64748b;background:#334155;color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13.5px;font-weight:700">📤 Í Payday sem drög</button>'
+      + '<button id="_ky-bulk-send" type="button" title="Senda sjálfkrafa (rafrænt ef hægt, annars tölvupóstur)" style="padding:9px 16px;border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13.5px;font-weight:700">🏦 Senda valdar í Payday</button>'
       + '</div>';
     bar.style.display = '';
     bar.querySelector('#_ky-bulk-clear').addEventListener('click', () => {
       _state.selected.clear(); syncRowChecks(); syncCoChecks(); updateBulkBar();
     });
-    bar.querySelector('#_ky-bulk-send').addEventListener('click', sendSelectedQueue);
+    bar.querySelector('#_ky-bulk-draft').addEventListener('click', () => sendSelectedQueue('draft'));
+    bar.querySelector('#_ky-bulk-send').addEventListener('click', () => sendSelectedQueue('send'));
   }
 
-  async function sendSelectedQueue() {
+  async function sendSelectedQueue(mode) {
     if (_state.sending) return;
+    mode = mode === 'draft' ? 'draft' : 'send';
     const sel = selectedSales();
     if (!sel.length) return;
-    if (!confirm('Senda ' + sel.length + ' ' + (sel.length === 1 ? 'kröfu' : 'kröfur') + ' í Payday?\n\nEin og ein, ~6 sek á milli. Drög verða stofnuð — ekki sjálfkrafa send á kúnna.')) return;
+    const note = mode === 'draft'
+      ? 'Aðeins DRÖG verða stofnuð í Payday — þú sendir þau handvirkt þaðan.'
+      : 'Reikningar SENDAST sjálfkrafa (rafrænt ef kúnni tekur við því, annars í tölvupósti).';
+    if (!confirm((mode === 'draft' ? 'Stofna drög fyrir ' : 'Senda ') + sel.length + ' ' + (sel.length === 1 ? 'kröfu' : 'kröfur') + ' í Payday?\n\nEin og ein, ~6 sek á milli. ' + note)) return;
     _state.sending = true; _state.stop = false;
     const bar = document.getElementById('ky-bulkbar');
     const DELAY = 6000;
@@ -882,7 +888,7 @@
         else {
           const r = await fetch('/api/payday-push', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sale_id: sale.id }),
+            body: JSON.stringify({ sale_id: sale.id, mode }),
           });
           const j = await r.json().catch(() => ({}));
           if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
