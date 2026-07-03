@@ -146,9 +146,18 @@
   }
 
   function summaryCard(label, value, color, cls){
-    return '<div class="'+(cls||'')+'" style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9;border-left:4px solid '+color+'">' +
+    // Hero card: fully self-contained inline (blue metallic) so it never depends
+    // on the .bstal-hero class, which patch-250 ID rules can override to white
+    // (white bg + white class-text = invisible). Others = white 3D metallic tile.
+    if(cls === 'bstal-hero'){
+      return '<div class="bstal-hero" style="background:linear-gradient(150deg,#6f97ff 0%,#2f5fe0 34%,#1c3d8c 60%,#0b1838 100%);border-radius:12px;padding:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 14px 34px -18px rgba(0,0,0,.7);border:none">' +
+        '<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.85);text-transform:uppercase;letter-spacing:0.05em">'+label+'</div>' +
+        '<div style="font-size:23px;font-weight:800;color:#fff;margin-top:4px;font-family:\'Space Mono\',monospace">'+value+'</div>' +
+      '</div>';
+    }
+    return '<div style="background:linear-gradient(180deg,#ffffff,#f4f7fb);border-radius:12px;padding:16px;box-shadow:inset 0 1px 0 #fff,0 8px 20px -14px rgba(25,35,60,.35);border:1px solid #e7edf5;border-left:4px solid '+color+'">' +
       '<div style="font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">'+label+'</div>' +
-      '<div style="font-size:22px;font-weight:800;color:#0f172a;margin-top:4px">'+value+'</div>' +
+      '<div style="font-size:22px;font-weight:800;color:#0f172a;margin-top:4px;font-family:\'Space Mono\',monospace">'+value+'</div>' +
     '</div>';
   }
 
