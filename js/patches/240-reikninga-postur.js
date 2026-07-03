@@ -61,6 +61,7 @@
     activity: new Set(), // message_ids we have replied to / sent an invoice for
     expanded: new Set(), // thread keys the user expanded
     tagFilter: null,     // active category-tag filter (label) or null
+    meta: {},            // message_id → {manual_tag, note} (manual override + minnispunktur)
   };
   const WINDOW_DAYS = 62; // „síðustu 2 mánuðir"
 
@@ -80,7 +81,7 @@
     state.loading = true; render();
     try {
       const sinceIso = new Date(Date.now() - WINDOW_DAYS * 86400000).toISOString();
-      const [em, fy, cb, vd, sl, hd, rl, ac] = await Promise.all([
+      const [em, fy, cb, vd, sl, hd, rl, ac, mt] = await Promise.all([
         SB.from('email_digest')
           .select('message_id,account,sender_name,sender_email,to_addresses,subject,snippet,body_preview,is_question,has_attachment,attachment_names,received_at')
           .in('account', ['eldklar@eldklar.is', 'bokhald@eldklar.is'])
@@ -94,11 +95,15 @@
         SB.from('reikninga_postur_hidden').select('message_id'),
         SB.from('reikninga_postur_rules').select('*').order('created_at', { ascending: false }),
         SB.from('reikninga_postur_activity').select('message_id'),
+        SB.from('reikninga_postur_meta').select('message_id,manual_tag,note'),
       ]);
       if (em.error) throw em.error;
       state.hidden = new Set(((hd && hd.data) || []).map(r => r.message_id));
       state.rules = ((rl && rl.data) || []);
       state.activity = new Set(((ac && ac.data) || []).map(r => r.message_id));
+      const metaMap = {};
+      ((mt && mt.data) || []).forEach(r => { metaMap[r.message_id] = { manual_tag: r.manual_tag || '', note: r.note || '' }; });
+      state.meta = metaMap;
 
       const emailMap = {}, byKt = {};
       const addCust = (res, isCompany) => (res && res.data || []).forEach(r => {
@@ -245,6 +250,22 @@
     const SB = getSB();
     try { if (SB) await SB.from('reikninga_postur_activity').insert({ message_id, kind: kind || 'reply' }); } catch (_) {}
   }
+  // Manual tag + note per message_id — upsert to Supabase (synced across devices).
+  async function saveMeta(message_id, manual_tag, note) {
+    if (!message_id) return;
+    manual_tag = String(manual_tag || '').trim();
+    note = String(note || '').trim();
+    if (!manual_tag && !note) delete state.meta[message_id];
+    else state.meta[message_id] = { manual_tag: manual_tag, note: note };
+    const SB = getSB();
+    try {
+      if (!SB) return;
+      if (!manual_tag && !note) await SB.from('reikninga_postur_meta').delete().eq('message_id', message_id);
+      else await SB.from('reikninga_postur_meta').upsert(
+        { message_id: message_id, manual_tag: manual_tag || null, note: note || null, updated_at: new Date().toISOString() },
+        { onConflict: 'message_id' });
+    } catch (_) {}
+  }
 
   // ── styles (self-contained, #view-scoped so patch-245 can't override) ──────
   function styles() {
@@ -290,6 +311,10 @@
       V + '.rp-tag.slate{color:#475569;background:#f1f5f9;border-color:#e2e8f0}',
       V + '.rp-tag.gray{color:#64748b;background:#f8fafc;border-color:#e2e8f0}',
       V + '.rp-tag.q{color:#b45309;background:#fffbeb;border-color:#fde68a}',
+      V + '.rp-tag.fire{color:#c2410c;background:#fff7ed;border-color:#fdba74}',
+      V + '.rp-note{font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:5px 9px;margin-top:6px;line-height:1.4;white-space:pre-wrap}',
+      V + '.rp-btn.tag{color:#c2410c;border-color:#fed7aa;background:#fff7ed}',
+      V + '.rp-btn.tag:hover{background:#ffedd5}',
       // Tag-filter row
       V + '.rp-tagbar{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin:-2px 0 14px}',
       V + '.rp-tagbar-lbl{font-size:12px;font-weight:600;color:#8a93a3;margin-right:2px}',
@@ -350,6 +375,21 @@
       '#_rp-modal .rpm-x{background:none;border:none;font-size:20px;color:#94a3b8;cursor:pointer;padding:2px 8px;border-radius:8px;line-height:1}',
       '#_rp-modal .rpm-x:hover{background:#f1f5f9;color:#334155}',
       '#_rp-modal .rpm-body{padding:18px 20px;overflow:auto}',
+      '#_rp-modal .rpm-tags{display:flex;flex-wrap:wrap;gap:7px}',
+      '#_rp-modal .rpm-tagchip{font:inherit;font-size:12px;font-weight:700;padding:6px 12px;border-radius:20px;white-space:nowrap;cursor:pointer;border:1px solid;transition:box-shadow .12s,transform .08s}',
+      '#_rp-modal .rpm-tagchip:hover{transform:translateY(-1px)}',
+      '#_rp-modal .rpm-tagchip.on{box-shadow:0 0 0 2px #0a0b0d,0 2px 6px rgba(0,0,0,.25);font-weight:800}',
+      // Tag colours repeated under the modal (the .rp-tag.* set is #view-scoped; the modal lives on <body>)
+      '#_rp-modal .rp-tag.blue{color:#1d4ed8;background:#eff3ff;border-color:#c6d6ff}',
+      '#_rp-modal .rp-tag.green{color:#047857;background:#ecfdf5;border-color:#a7f3d0}',
+      '#_rp-modal .rp-tag.amber{color:#b45309;background:#fffbeb;border-color:#fde68a}',
+      '#_rp-modal .rp-tag.red{color:#be123c;background:#fef2f2;border-color:#fecaca}',
+      '#_rp-modal .rp-tag.purple{color:#7c3aed;background:#f5f0ff;border-color:#ddd6fe}',
+      '#_rp-modal .rp-tag.teal{color:#0f766e;background:#f0fdfa;border-color:#99f6e4}',
+      '#_rp-modal .rp-tag.slate{color:#475569;background:#f1f5f9;border-color:#e2e8f0}',
+      '#_rp-modal .rp-tag.gray{color:#64748b;background:#f8fafc;border-color:#e2e8f0}',
+      '#_rp-modal .rp-tag.q{color:#b45309;background:#fffbeb;border-color:#fde68a}',
+      '#_rp-modal .rp-tag.fire{color:#c2410c;background:#fff7ed;border-color:#fdba74}',
       '#_rp-modal .rpm-lbl{display:block;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin:0 0 5px}',
       '#_rp-modal .rpm-row{margin-bottom:14px}',
       '#_rp-modal input[type=email],#_rp-modal input[type=text],#_rp-modal textarea{width:100%;padding:9px 12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;font-size:13.5px;color:#11141c;box-sizing:border-box;background:#fff}',
@@ -492,8 +532,11 @@
   // Rule-based „hvað snýst pósturinn um" merking (engin AI — keyrir á öllum póstum).
   // Fyrsta samsvörun ræður. Skilar {label, cls} eða null.
   // Catalog for the tag-filter chip row — same labels/colours tagFor() emits, in
-  // display order. Only chips with a live count are shown.
+  // display order. Only chips with a live count are shown. „Senda kröfu" is a
+  // MANUAL-only tag (never auto-detected) — it leads so it's easy to reach.
+  var SENDA_KROFU = '🧾 Senda kröfu';
   var TAG_CATALOG = [
+    { label: SENDA_KROFU, cls: 'fire' },
     { label: '🧾 Reikningsbeiðni', cls: 'blue' },
     { label: '🔧 Leiðrétting', cls: 'amber' },
     { label: '⏰ Innheimta', cls: 'red' },
@@ -506,7 +549,21 @@
     { label: '🧾 Payday-afrit', cls: 'gray' },
   ];
 
+  // Manual override + note, keyed by message_id but resolved across the whole
+  // thread so a tag/note set on any message in a conversation sticks to the card.
+  function metaFor(m) {
+    const ids = threadIds(m);
+    for (var i = 0; i < ids.length; i++) { if (state.meta[ids[i]]) return state.meta[ids[i]]; }
+    return null;
+  }
+
   function tagFor(m) {
+    // Manual tag wins over the rule-based guess.
+    const mm = metaFor(m);
+    if (mm && mm.manual_tag) {
+      const def = TAG_CATALOG.filter(function (t) { return t.label === mm.manual_tag; })[0];
+      return def ? { label: def.label, cls: def.cls } : { label: mm.manual_tag, cls: 'slate' };
+    }
     const hay = ((m.subject || '') + ' ' + (m.body_preview || '') + ' ' + (m.snippet || '')).toLowerCase();
     const T = (label, cls) => ({ label: label, cls: cls });
     if (m.isPayday) return T('🧾 Payday-afrit', 'gray');
@@ -558,8 +615,11 @@
       acts.push('<button class="rp-btn _rp-open" ' + (m.cust.coId ? 'data-co="' + esc(String(m.cust.coId)) + '" ' : '') + (m.cust.kt ? 'data-kt="' + esc(ktDigits(m.cust.kt)) + '" ' : '') + 'type="button">Opna</button>');
       if (m.cust.kt) acts.push('<button class="rp-btn _rp-saga" data-kt="' + esc(ktDigits(m.cust.kt)) + '" type="button">Saga</button>');
     }
+    // Manual tag + minnispunktur — set a flokk by hand (t.d. „Senda kröfu") og skrifa nótu.
+    if (!isHidden(m)) acts.push('<button class="rp-btn tag _rp-meta"' + di + ' type="button" title="Setja flokk handvirkt + skrifa minnispunkt">🏷️ Merkja</button>');
     if (!isHidden(m) && m.from) acts.push('<button class="rp-btn mute _rp-mute"' + di + ' type="button" title="Fela sjálfkrafa alla pósta frá ' + esc(m.from) + '">🔇</button>');
     if (!isHidden(m)) acts.push('<button class="rp-btn del _rp-del"' + di + ' type="button" title="Eyða / fela þessum pósti">🗑</button>');
+    const note = (metaFor(m) || {}).note || '';
     const older = (m._threadCount > 1 && state.expanded.has(m.threadKey)) ? (m._thread || []).slice(1) : [];
     const olderHTML = older.length
       ? '<div class="rp-thread-list">' + older.map(o =>
@@ -573,6 +633,7 @@
         '<div class="rp-from">' + esc(m.sender_name || m.from) + ' <span class="em">' + esc(m.from) + '</span> ' + badges.join(' ') + '</div>' +
         '<div class="rp-subj">' + esc(subj) + '</div>' +
         (snip ? '<div class="rp-snip">' + esc(snip.slice(0, 320)) + '</div>' : '') +
+        (note ? '<div class="rp-note">📝 ' + esc(note) + '</div>' : '') +
         olderHTML +
       '</div>' +
       '<div class="rp-right">' + custHTML + (acts.length ? '<div class="rp-acts">' + acts.join('') + '</div>' : '') + '</div>' +
@@ -650,6 +711,7 @@
     v.querySelectorAll('._rp-del').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) hideEmail(m); }));
     v.querySelectorAll('._rp-restore').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) restoreEmail(m); }));
     v.querySelectorAll('._rp-mute').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) muteSender(m); }));
+    v.querySelectorAll('._rp-meta').forEach(b => b.addEventListener('click', () => { const m = rowFor(b); if (m) openTagModal(m); }));
     v.querySelectorAll('._rp-thread').forEach(b => b.addEventListener('click', () => {
       const k = b.dataset.k; if (!k) return;
       if (state.expanded.has(k)) state.expanded.delete(k); else state.expanded.add(k);
@@ -761,6 +823,41 @@
     };
     card.querySelector('#_rr-pattern').addEventListener('keydown', e => { if (e.key === 'Enter') card.querySelector('#_rr-add').click(); });
     bindDel();
+  }
+
+  // 🏷️ Merkja — set a manual flokk (t.d. „Senda kröfu") + write a minnispunktur.
+  function openTagModal(m) {
+    const mm = metaFor(m) || {};
+    let picked = mm.manual_tag || '';
+    const chip = t => '<button class="rpm-tagchip rp-tag ' + t.cls + (picked === t.label ? ' on' : '') +
+      '" data-tag="' + esc(t.label) + '" type="button">' + t.label + '</button>';
+    openModal(
+      '<div class="rpm-head"><div><h3>🏷️ Merkja póst</h3><div class="sub">' + esc(m.sender_name || m.from) + (m.subject ? ' · ' + esc(m.subject) : '') + '</div></div><button class="rpm-x" type="button">✕</button></div>' +
+      '<div class="rpm-body">' +
+        '<div class="rpm-row"><label class="rpm-lbl">Flokkur (handvirkt — kemur í stað sjálfvirka)</label>' +
+          '<div class="rpm-tags" id="_rpm-tags">' + TAG_CATALOG.map(chip).join('') + '</div>' +
+          '<div class="rpm-note" style="margin:8px 0 0">Smelltu á virkan flokk til að hreinsa hann (fer þá aftur í sjálfvirkt).</div>' +
+        '</div>' +
+        '<div class="rpm-row"><label class="rpm-lbl">📝 Minnispunktur</label>' +
+          '<textarea id="_rpm-metanote" placeholder="Skrifaðu nótu — t.d. „bíð eftir kt", „senda kröfu í næstu viku"…">' + esc(mm.note || '') + '</textarea></div>' +
+      '</div>' +
+      '<div class="rpm-foot"><span class="rpm-msg" id="_rpm-metamsg"></span><button class="rpm-btn" type="button" id="_rpm-metacancel">Hætta við</button><button class="rpm-btn prim" type="button" id="_rpm-metasave">💾 Vista</button></div>'
+    );
+    const card = modalEl();
+    const paint = () => card.querySelectorAll('.rpm-tagchip').forEach(b =>
+      b.classList.toggle('on', b.dataset.tag === picked));
+    card.querySelectorAll('.rpm-tagchip').forEach(b => b.addEventListener('click', () => {
+      picked = (picked === b.dataset.tag) ? '' : b.dataset.tag; paint();
+    }));
+    card.querySelector('.rpm-x').onclick = closeModal;
+    card.querySelector('#_rpm-metacancel').onclick = closeModal;
+    card.querySelector('#_rpm-metasave').onclick = async () => {
+      const note = card.querySelector('#_rpm-metanote').value;
+      const btn = card.querySelector('#_rpm-metasave'); btn.disabled = true;
+      await saveMeta(m.message_id, picked, note);
+      closeModal(); render();
+      if (window.Toast && Toast.show) Toast.show('🏷️ Vistað');
+    };
   }
 
   function openCustomer(coId, kt) {

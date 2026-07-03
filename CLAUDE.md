@@ -486,6 +486,16 @@ hvern póst við kúnna/reikning svo „hver spurði um hvaða reikning" sé á 
 
 - **Sendandi:** `localStorage.email_from` (fallback `Slökkvitæki ehf
   <reikningar@eldklar.is>`) — VERÐUR að vera á staðfestu Resend-léni (eldklar.is).
+**Handvirk merking + minnispunktur** (2026-07-03): „🏷️ Merkja" takki á hverjum
+pósti opnar modal þar sem hægt er að (1) setja **flokk handvirkt** — þ.á m. nýja
+**„🧾 Senda kröfu"** flokkinn (`SENDA_KROFU`, cls `fire`, orange) sem er MANUAL-only
+(aldrei sjálf-greindur) — handvirkur flokkur kemur í stað sjálfvirka `tagFor()`
+gizksins og birtist í flokka-síuröðinni + sem litað merki á kortinu; og (2) skrifa
+**minnispunkt** sem birtist sem 📝 lína á kortinu. Geymt í nýrri Supabase-töflu
+**`reikninga_postur_meta`** (`message_id` PK, `manual_tag`, `note`, `updated_at`;
+RLS OFF, anon select/insert/update/delete) — samstillist milli tækja. `metaFor(m)`
+leysir per samtal (öll `_threadIds`). Public: `saveMeta(message_id, manual_tag, note)`.
+
 - **Modal** er bætt á `<body>` (utan `.view`) svo patch 245 skinnið snerti það ekki.
 - Wiring eins og 239: view-div, klónaður hliðarstiku-hnappur, App.switchView hook,
   patch 218 ALIAS (`postur`/`reikningapostur`). Public API `window.ReikningaPostur
