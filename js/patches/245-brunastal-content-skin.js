@@ -66,7 +66,7 @@ ${P}[class*="count"]:not(.fcol-count) {
    §1 — page background gradient (steel-grey content area)
    ============================================================ */
 ${P}.view{
-  background: linear-gradient(180deg,#060607 0px,#060607 240px,#40444d 680px,#31343b 100%) !important;
+  background: linear-gradient(180deg,#060607 0px,#060607 90px,#aeb4be 160px,#aeb4be 45%,#7b828d 100%) !important;
 }
 
 /* ============================================================

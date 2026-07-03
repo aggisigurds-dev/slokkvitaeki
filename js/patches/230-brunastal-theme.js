@@ -106,7 +106,7 @@
 
       /* ── page backdrop: UNIFORM brushed steel-grey (no dark zone around the
        *    content/products — the fixed banner supplies the black at the top). */
-      P+'.view{background:linear-gradient(180deg,#060607 0px,#060607 240px,#40444d 680px,#31343b 100%)!important}',
+      P+'.view{background:linear-gradient(180deg,#060607 0px,#060607 90px,#aeb4be 160px,#aeb4be 45%,#7b828d 100%)!important}',
       /* the POS draws its own colourful banner — hide it; the steel one replaces it. */
       P+'.pos-banner{display:none!important}',
 
