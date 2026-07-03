@@ -79,7 +79,7 @@ exports.handler = async (event) => {
 
   const saleId = body.sale_id;
   const dry = !!body.dry;
-  const sendEmail = !!body.sendEmail;
+  const mode = body.mode === 'draft' ? 'draft' : 'send'; // 'draft' = aðeins drög í Payday (engin sjálfvirk afhending)
   if (!saleId) return json(400, { error: 'sale_id vantar' });
 
   try {
@@ -94,8 +94,9 @@ exports.handler = async (event) => {
     if (sale.customer_base_id) customer = await fetchCustomerBase(sale.customer_base_id);
     if (!customer && sale.customer_id) customer = await fetchFyrirtaeki(sale.customer_id);
 
-    const payload = buildPayload(sale, customer, sendEmail);
-    if (dry) return json(200, { ok: true, dry: true, payload, sale, customer });
+    const payload = buildPayload(sale, customer, { mode });
+    const custEmail = (customer && customer.netfang) || '';
+    if (dry) return json(200, { ok: true, dry: true, mode, payload, sale, customer });
 
     const token = await getAccessToken();
     // Payday requires customer to exist first — find by ssn or create.
@@ -103,24 +104,38 @@ exports.handler = async (event) => {
     const customerId = custResult.customerId;
     // Payday wants customer object with guid id (docs verified 2026-06-30).
     payload.customer = { id: customerId };
-    let created;
+    let created, fellBackToNonElectronic = false;
     try {
       created = await createInvoice(token, payload);
     } catch (invErr) {
-      // Surface customer-create response so we can debug field names.
-      return json(502, {
-        error: String(invErr.message || invErr),
-        customer_lookup: custResult.lookup,
-        customer_created: custResult.created,
-        customerId,
-        payload,
-      });
+      const msg = String(invErr.message || invErr);
+      // Kúnni tekur EKKI við rafrænum reikningum (Payday 400) → reyna aftur án
+      // rafræns svo reikningurinn lendi samt í Payday (senda frekar í tölvupósti
+      // ef netfang er til). Þetta lagar „Customer does not accept electronic invoices".
+      if (payload.createElectronicInvoice && /electronic invoice/i.test(msg)) {
+        payload.createElectronicInvoice = false;
+        payload.sendEmail = !!custEmail;
+        fellBackToNonElectronic = true;
+        try {
+          created = await createInvoice(token, payload);
+        } catch (invErr2) {
+          return json(502, { error: String(invErr2.message || invErr2), retriedWithoutElectronic: true, customerId, payload });
+        }
+      } else {
+        return json(502, {
+          error: msg,
+          customer_lookup: custResult.lookup,
+          customer_created: custResult.created,
+          customerId,
+          payload,
+        });
+      }
     }
 
     // Writeback: merkja söluna sem invoiced
     await markSaleInvoiced(sale.id, created);
 
-    return json(200, { ok: true, payload, created, customerId });
+    return json(200, { ok: true, mode, fellBackToNonElectronic, payload, created, customerId });
   } catch (e) {
     return json(500, { error: String(e.message || e) });
   }
@@ -128,7 +143,8 @@ exports.handler = async (event) => {
 
 // ---- payload builder --------------------------------------------------------
 
-function buildPayload(sale, customer, sendEmail) {
+function buildPayload(sale, customer, opts) {
+  const mode = (opts && opts.mode) || 'send'; // 'send' = SENT+afhent · 'draft' = aðeins drög í Payday
   const linur = Array.isArray(sale.linur) ? sale.linur : tryParseJson(sale.linur) || [];
   const today = new Date();
   const isoToday = today.toISOString().slice(0, 10);
@@ -142,13 +158,14 @@ function buildPayload(sale, customer, sendEmail) {
   const email = (customer && customer.netfang) || '';
   const address = (customer && customer.heimilisfang) || '';
   const phone = (customer && customer.simi) || '';
-  // Afhending (Agnar 2026-07-03): SENDA ALLTAF — rafrænt fyrst ef til er
-  // raunveruleg kennitala (rafrænir reikningar fara eftir kt), annars tölvupóstur
-  // sem næsti valkostur. Walk-in kt 999999-9999 fær hvorugt.
+  // Afhending: í 'send' ham → rafrænt fyrst ef raunveruleg kt, annars tölvupóstur.
+  // Í 'draft' ham → ekkert afhent (aðeins drög í Payday sem sent er handvirkt).
+  // Rafrænt getur klikkað (kúnni tekur ekki við rafrænum) → handler reynir aftur
+  // án rafræns svo reikningurinn lendi samt í Payday.
   const ssnDigits = digits(ktRaw);
   const realKt = ssnDigits.length === 10 && ssnDigits !== '9999999999';
-  const electronic = realKt;
-  const emailSend = !electronic && !!email;
+  const electronic = mode === 'send' && realKt;
+  const emailSend = mode === 'send' && !electronic && !!email;
   return {
     invoiceDate: isoToday,
     dueDate: due.toISOString().slice(0, 10),
@@ -184,9 +201,9 @@ function buildPayload(sale, customer, sendEmail) {
       }));
     })(),
     currencyCode: 'ISK',
-    // Senda sjálfkrafa (Agnar 2026-07-03): stofna sem SENT svo Payday klárar +
-    // afhendir strax (rafrænt/tölvupóstur) — ekki þarf að senda hvern handvirkt.
-    status: 'SENT',
+    // 'send' → SENT (Payday klárar + afhendir strax); 'draft' → DRAFT (aðeins drög
+    // í Payday, þú sendir handvirkt þaðan).
+    status: mode === 'draft' ? 'DRAFT' : 'SENT',
     reference: sale.num ? String(sale.num) : null,
     sendEmail: emailSend,
     createClaim: true,
