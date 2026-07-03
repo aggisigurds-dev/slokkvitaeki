@@ -683,10 +683,13 @@
 
     main.innerHTML = `
       <div style="max-width:1400px;margin:0 auto;padding:18px 22px 60px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;margin-bottom:14px">
-          <div>
-            <h1 style="margin:0;font-size:22px;color:var(--ink1);display:flex;align-items:center;gap:10px">🏢 Fyrirtæki í Þjónustu</h1>
-            <div class="_ars-sub" style="font-size:12px;color:var(--ink3);margin-top:2px">${all.length} fyrirtæki · ${arsAll.length} í árlegri slökkvitækjaskoðun</div>
+        <div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:14px;padding:9px 15px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;margin-bottom:14px;box-shadow:0 12px 28px -18px rgba(0,0,0,.65)">
+          <div style="display:flex;align-items:center;gap:11px;min-width:0">
+            <div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">🏢</div>
+            <div style="min-width:0">
+              <h1 style="margin:0;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">Fyrirtæki í Þjónustu</h1>
+              <div class="_ars-sub" style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">${all.length} fyrirtæki · ${arsAll.length} í árlegri slökkvitækjaskoðun</div>
+            </div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button id="_ars-new" type="button" style="padding:7px 14px;background:#dc2626;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700">+ Nýtt fyrirtæki</button>
