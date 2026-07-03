@@ -155,7 +155,10 @@ function buildPayload(sale, customer, opts) {
   // sale.customer_kt / customer_nafn first (POS writes them); fall back to enriched customer row.
   const ktRaw = sale.customer_kt || (customer && customer.kennitala) || '';
   const name = sale.customer_nafn || (customer && customer.nafn) || '';
-  const email = (customer && customer.netfang) || '';
+  // Netfang getur verið margar tölvupóstföng aðskilin með kommu/semíkommu
+  // (t.d. "reikningar@x.is, bokhald@x.is") — Payday hafnar því á kúnna-stofnun.
+  // Notum FYRSTA gilda netfangið.
+  const email = firstEmail((customer && customer.netfang) || '');
   const address = (customer && customer.heimilisfang) || '';
   const phone = (customer && customer.simi) || '';
   // Afhending: í 'send' ham → rafrænt fyrst ef raunveruleg kt, annars tölvupóstur.
@@ -408,6 +411,12 @@ async function writeCachedToken(value) {
 // ---- helpers ---------------------------------------------------------------
 
 function digits(s) { return String(s || '').replace(/\D+/g, ''); }
+// Fyrsta gilda netfangið úr streng sem gæti innihaldið mörg (komma/semíkomma/bil).
+function firstEmail(s) {
+  const parts = String(s || '').split(/[,;\s]+/).map(x => x.trim()).filter(Boolean);
+  const valid = parts.find(x => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x));
+  return valid || '';
+}
 function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
 function tryParseJson(s) { try { return JSON.parse(s); } catch(_) { return null; } }
 function cors() {

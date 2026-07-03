@@ -3598,4 +3598,4 @@ html, body { overflow-y: auto !important; overflow-x: hidden; }
 
 /* 2026-06-10: wider Fyrirtæki-í-þjónustu detail so the tæki table (Áætlað +
    Í vinnslu + Umfylling columns) fits without cramping. */
-#view-companies.active .main-panel { max-width: 1600px !important; }
+#view-companies.active .main-panel { max-width: 1720px !important; }

@@ -13,8 +13,8 @@
   --ui:'Space Grotesk',system-ui,-apple-system,sans-serif;}
 .thm *{box-sizing:border-box}
 .thm .app-page{min-height:100vh; font-family:var(--ui); color:var(--ink);
-  background:linear-gradient(180deg,#060607 0px,#060607 240px,#8e949e 660px,#9198a3 100%);}
-.thm .app-main{padding:20px 24px 40px;}
+  background:linear-gradient(180deg,#060607 0px,#060607 240px,#40444d 680px,#31343b 100%);}
+.thm .app-main{padding:10px 16px 40px; max-width:none;}
 .thm .page-title{display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:18px;}
 .thm .page-title__lead{display:flex; align-items:center; gap:13px;}
 .thm .page-title h1{margin:0; font-size:26px; font-weight:700; letter-spacing:-.01em; color:#fff;}
