@@ -74,16 +74,24 @@
       ]);
       if (em.error) throw em.error;
 
-      const byEmail = {}, byKt = {};
+      const emailMap = {}, byKt = {};
       const addCust = (res, isCompany) => (res && res.data || []).forEach(r => {
-        const e = String(r.netfang || '').trim().toLowerCase();
         const rec = { name: r.nafn, kt: r.kennitala, coId: isCompany ? r.id : null };
-        if (e && !byEmail[e]) byEmail[e] = rec;
+        const e = String(r.netfang || '').trim().toLowerCase();
+        if (e) (emailMap[e] = emailMap[e] || []).push(rec);
         const k = ktDigits(r.kennitala);
-        if (k.length === 10 && !byKt[k]) byKt[k] = rec;
+        if (k.length === 10 && !byKt[k]) byKt[k] = rec;   // kt er einkvæmt
       });
       // fyrirtaeki first so coId (openable company page) wins.
       addCust(fy, true); addCust(cb, false); addCust(vd, false);
+      // Netfang telst aðeins gild tenging ef það vísar á EINN kúnna. Deildar
+      // umboðsmanna-tölvupóstar (t.d. gjaldkeri@eignaumsjon.is fyrir mörg
+      // húsfélög) eru margræðir → sleppt (kt í efni ræður þá).
+      const byEmail = {};
+      Object.keys(emailMap).forEach(e => {
+        const kts = new Set(emailMap[e].map(r => ktDigits(r.kt)).filter(Boolean));
+        if (kts.size <= 1) byEmail[e] = emailMap[e][0];
+      });
       state.custByEmail = byEmail; state.custByKt = byKt;
 
       const saleByNum = {};
@@ -106,13 +114,14 @@
     // texta/undirskrift getur bent á rangan kúnna; sendandi-netfang og kt í efni
     // eru miklu áreiðanlegri. kt/netfang tengja aðeins við RAUNverulega kúnna.
     let cust = null, matchBy = null, sale = null;
-    // 1) sendandi-netfang → kúnni
-    if (state.custByEmail[from]) { cust = state.custByEmail[from]; matchBy = 'netfang'; }
-    // 2) kennitala í efni/texta → kúnni
-    if (!cust) {
+    // 1) kennitala í efni/texta → kúnni (sértækasta merki; slær deildum umboðs-
+    //    netföngum við, t.d. Eignaumsjón sem sendir fyrir mörg húsfélög).
+    {
       const km = hay.match(/\b(\d{6})-?(\d{4})\b/);
       if (km) { const k = km[1] + km[2]; if (state.custByKt[k]) { cust = state.custByKt[k]; matchBy = 'kennitala'; } }
     }
+    // 2) sendandi-netfang → kúnni (aðeins einkvæm netföng, sjá byEmail-síuna)
+    if (!cust && state.custByEmail[from]) { cust = state.custByEmail[from]; matchBy = 'netfang'; }
     // 3) R-númer → sala → kúnni (fallback)
     if (!cust) {
       const rm = hay.match(/R-0\d{5}/);
