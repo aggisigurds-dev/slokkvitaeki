@@ -227,6 +227,19 @@
     if (r.error) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
     _state.all = r.data || [];
 
+    // Fela BAKFÆRÐAR kröfur: kreditreikninga sjálfa (is_credit) OG upprunalega
+    // reikninginn sem þeir bakfæra (credit_of → id). Þeir eru uppgerðir (nettó 0)
+    // — röng reikningur + bakfærsla eiga ekki heima í útistandandi kröfum. Nýi
+    // (réttur) reikningurinn stendur eftir. (Agnar 2026-07-03)
+    {
+      const creditedIds = new Set((_state.all || [])
+        .filter(s => s.is_credit && s.credit_of != null)
+        .map(s => String(s.credit_of)));
+      if (creditedIds.size || (_state.all || []).some(s => s.is_credit)) {
+        _state.all = (_state.all || []).filter(s => !s.is_credit && !creditedIds.has(String(s.id)));
+      }
+    }
+
     // Reconcile any pending selection against the freshly-loaded rows: drop ids
     // that are gone or no longer sendable (e.g. just pushed), so the bulk bar
     // count never counts a stale/sent claim.
