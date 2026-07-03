@@ -43,9 +43,10 @@
       V + '.ky-row:hover{background:#f7f9fd}' +
       // Barely-visible per-krafa athugasemd/áminning reitur — svartur texti,
       // ósýnilegur rammi þar til hann er valinn.
-      V + '._ky-note{color:#11141c}' +
-      V + '._ky-note::placeholder{color:#c2c9d4}' +
-      V + '._ky-note:focus{background:#fff !important;border:1px solid #93c5fd !important;border-radius:6px}' +
+      V + '._ky-note{color:#11141c !important;background:transparent !important;border:1px solid transparent !important;border-bottom:1px dashed #d7dce4 !important;border-radius:5px !important;box-shadow:none !important}' +
+      V + '._ky-note::placeholder{color:#c8cfd9}' +
+      V + '._ky-note:hover{border-bottom-color:#b6bec9 !important}' +
+      V + '._ky-note:focus{background:#fff !important;border:1px solid #93c5fd !important}' +
       B + '.darkfield::placeholder{color:rgba(255,255,255,.55)}' +
       B + '.ky-navbtn option{background:#1a1a1f;color:#fff}' +
       // 2026-07-01 (Agnar): stretch the page to fill the content area and hug the
