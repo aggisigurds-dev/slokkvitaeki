@@ -184,7 +184,9 @@ function buildPayload(sale, customer, sendEmail) {
       }));
     })(),
     currencyCode: 'ISK',
-    status: 'DRAFT',
+    // Senda sjálfkrafa (Agnar 2026-07-03): stofna sem SENT svo Payday klárar +
+    // afhendir strax (rafrænt/tölvupóstur) — ekki þarf að senda hvern handvirkt.
+    status: 'SENT',
     reference: sale.num ? String(sale.num) : null,
     sendEmail: emailSend,
     createClaim: true,
