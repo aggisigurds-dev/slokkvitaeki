@@ -158,5 +158,6 @@
 .thm .app-page .stat-card > div,
 .thm .app-page .stat-card .stat-card__label,
 .thm .app-page .stat-card .stat-card__value{background:transparent!important;box-shadow:none!important;border:0!important}
-.thm .app-page .stat-card__value{font-size:20px!important;margin-top:2px!important}
+.thm .app-page .stat-card__value{font-size:20px!important;margin-top:2px!important;white-space:nowrap!important}
+.thm .app-page .stat-card{min-width:180px!important}
 .thm .app-page .field-dark{background:rgba(255,255,255,.12)!important;color:#fff!important;border:1px solid rgba(255,255,255,.28)!important;box-shadow:none!important}
