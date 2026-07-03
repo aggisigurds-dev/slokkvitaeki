@@ -142,6 +142,13 @@ function buildPayload(sale, customer, sendEmail) {
   const email = (customer && customer.netfang) || '';
   const address = (customer && customer.heimilisfang) || '';
   const phone = (customer && customer.simi) || '';
+  // Afhending (Agnar 2026-07-03): SENDA ALLTAF — rafrænt fyrst ef til er
+  // raunveruleg kennitala (rafrænir reikningar fara eftir kt), annars tölvupóstur
+  // sem næsti valkostur. Walk-in kt 999999-9999 fær hvorugt.
+  const ssnDigits = digits(ktRaw);
+  const realKt = ssnDigits.length === 10 && ssnDigits !== '9999999999';
+  const electronic = realKt;
+  const emailSend = !electronic && !!email;
   return {
     invoiceDate: isoToday,
     dueDate: due.toISOString().slice(0, 10),
@@ -179,9 +186,9 @@ function buildPayload(sale, customer, sendEmail) {
     currencyCode: 'ISK',
     status: 'DRAFT',
     reference: sale.num ? String(sale.num) : null,
-    sendEmail: !!sendEmail && !!((customer && customer.netfang)),
+    sendEmail: emailSend,
     createClaim: true,
-    createElectronicInvoice: false,
+    createElectronicInvoice: electronic,
   };
 }
 
