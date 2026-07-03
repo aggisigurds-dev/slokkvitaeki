@@ -102,22 +102,29 @@
     const isPayday = PAYDAY_RE.test(from);
     const isSystem = NOREPLY_RE.test(from) || SYSTEM_RE.test(from);
 
-    // 1) R-númer → sala
-    let sale = null;
-    const rm = hay.match(/R-0\d{5}/);
-    if (rm) sale = state.saleByNum[rm[0]] || null;
-
-    // 2) sendandi-netfang → kúnni ; 3) kt í texta → kúnni
-    let cust = null, matchBy = null;
-    if (sale) {
-      const k = ktDigits(sale.customer_kt);
-      cust = (k && state.custByKt[k]) || { name: sale.customer_nafn, kt: sale.customer_kt, coId: null };
-      matchBy = 'reikningur';
-    }
-    if (!cust && state.custByEmail[from]) { cust = state.custByEmail[from]; matchBy = 'netfang'; }
+    // Tengja — áreiðanlegast fyrst. NB R-númer er SÍÐAST því flökku-R-númer í
+    // texta/undirskrift getur bent á rangan kúnna; sendandi-netfang og kt í efni
+    // eru miklu áreiðanlegri. kt/netfang tengja aðeins við RAUNverulega kúnna.
+    let cust = null, matchBy = null, sale = null;
+    // 1) sendandi-netfang → kúnni
+    if (state.custByEmail[from]) { cust = state.custByEmail[from]; matchBy = 'netfang'; }
+    // 2) kennitala í efni/texta → kúnni
     if (!cust) {
       const km = hay.match(/\b(\d{6})-?(\d{4})\b/);
       if (km) { const k = km[1] + km[2]; if (state.custByKt[k]) { cust = state.custByKt[k]; matchBy = 'kennitala'; } }
+    }
+    // 3) R-númer → sala → kúnni (fallback)
+    if (!cust) {
+      const rm = hay.match(/R-0\d{5}/);
+      if (rm) {
+        const s = state.saleByNum[rm[0]];
+        if (s) {
+          sale = s;
+          const k = ktDigits(s.customer_kt);
+          cust = (k && state.custByKt[k]) || { name: s.customer_nafn, kt: s.customer_kt, coId: null };
+          matchBy = 'reikningur';
+        }
+      }
     }
 
     const category = isPayday ? 'sent' : 'inbox';
