@@ -71,12 +71,16 @@
     var chartWidth = Math.max(300, 40 + monthly.slice(0,12).length * 52 + 20);
     var chartSvg = '<svg viewBox="0 0 '+chartWidth+' 260" style="width:100%;max-height:280px"><rect width="'+chartWidth+'" height="260" fill="none"/><line x1="40" y1="220" x2="'+(chartWidth-20)+'" y2="220" stroke="#e2e8f0" stroke-width="1"/>'+chartBars+'</svg>';
 
-    v.innerHTML = '<div style="padding:20px;max-width:1200px;margin:0 auto">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">' +
-        '<h1 style="margin:0;font-size:22px;color:#0f172a">Tekjur og sölur</h1>' +
+    v.innerHTML = '<div style="padding:10px 16px 34px;max-width:none;margin:0">' +
+      // Dark metallic title bar (matches Hreyfingarlisti / Bókhald / Vörur)
+      '<div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:14px;padding:9px 15px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 12px 28px -18px rgba(0,0,0,.65);margin:0 0 13px;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
+        '<div style="display:flex;align-items:center;gap:11px;min-width:0">' +
+          '<div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">💰</div>' +
+          '<h1 style="margin:0;font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">Tekjur og sölur</h1>' +
+        '</div>' +
         '<div style="display:flex;gap:8px">' +
-          '<button id="tekjur-csv" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px">📥 CSV</button>' +
-          '<button id="tekjur-xlsx" style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;padding:8px 14px;border-radius:8px;font-weight:600;cursor:pointer;font-size:13px">📊 Excel</button>' +
+          '<button id="tekjur-csv" style="background:linear-gradient(180deg,#f7f9fc,#e6ebf2);color:#334155;border:1px solid rgba(0,0,0,.16);padding:8px 14px;border-radius:9px;font-weight:600;cursor:pointer;font-size:13px;box-shadow:inset 0 1px 0 #fff,0 3px 8px -4px rgba(0,0,0,.5)">📥 CSV</button>' +
+          '<button id="tekjur-xlsx" style="background:linear-gradient(180deg,#f7f9fc,#e6ebf2);color:#334155;border:1px solid rgba(0,0,0,.16);padding:8px 14px;border-radius:9px;font-weight:600;cursor:pointer;font-size:13px;box-shadow:inset 0 1px 0 #fff,0 3px 8px -4px rgba(0,0,0,.5)">📊 Excel</button>' +
         '</div>' +
       '</div>' +
       // Summary cards
