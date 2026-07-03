@@ -41,6 +41,11 @@
       V + '.ky-abtn:hover{transform:translateY(-1px);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 6px 12px -4px rgba(20,30,60,.42)}' +
       V + '.ky-abtn.on{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);border-color:#156e3a;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 3px 7px -3px rgba(15,110,58,.5)}' +
       V + '.ky-row:hover{background:#f7f9fd}' +
+      // Barely-visible per-krafa athugasemd/áminning reitur — svartur texti,
+      // ósýnilegur rammi þar til hann er valinn.
+      V + '._ky-note{color:#11141c}' +
+      V + '._ky-note::placeholder{color:#c2c9d4}' +
+      V + '._ky-note:focus{background:#fff !important;border:1px solid #93c5fd !important;border-radius:6px}' +
       B + '.darkfield::placeholder{color:rgba(255,255,255,.55)}' +
       B + '.ky-navbtn option{background:#1a1a1f;color:#fff}' +
       // 2026-07-01 (Agnar): stretch the page to fill the content area and hug the
@@ -524,6 +529,20 @@
       _state.selected.clear();
       load(_state.month || new Date());
     }));
+    // Per-krafa athugasemd/áminning → vistast í solur.athugasemdir þegar farið er
+    // úr reitnum (change = eftir edit, ekki hvern staf). Uppfærir líka _state svo
+    // texti helst við endur-render.
+    main.querySelectorAll('._ky-note').forEach(inp => {
+      inp.addEventListener('change', async () => {
+        const SB = getSB(); if (!SB) return;
+        const val = inp.value.trim();
+        const row = (_state.all || []).find(x => String(x.id) === String(inp.dataset.id));
+        if (row) row.athugasemdir = val;
+        inp.style.borderBottomColor = '#a7f3d0';
+        const w = await SB.from('solur').update({ athugasemdir: val }).eq('id', inp.dataset.id);
+        if (w && w.error) { inp.style.borderBottomColor = '#fca5a5'; inp.title = 'Villa við vistun: ' + w.error.message; }
+      });
+    });
 
     // 2026-06-30: smella á nafn fyrirtækisins → opna fyrirtækjasíðu
     main.querySelectorAll('._ky-co-link').forEach(a => {
@@ -938,7 +957,7 @@
                 <span class="ky-num" style="color:#64748b;width:86px;flex-shrink:0">${fmtDate(s.created_at)}</span>
                 ${agingPill(da)}
                 ${skyrslaBtn}
-                <span style="flex:1"></span>
+                <input class="_ky-note" data-id="${s.id}" value="${esc(s.athugasemdir || '')}" placeholder="🗒 athugasemd / áminning…" title="Athugasemd / áminning (t.d. „breyta reikningi") — vistast sjálfkrafa" style="flex:1;min-width:60px;margin:0 10px;padding:4px 8px;border:1px solid transparent;border-bottom:1px dashed #d3d9e2;background:transparent;font:inherit;font-size:12px;color:#11141c;outline:none;border-radius:5px">
                 <span class="ky-num" style="text-align:right;font-weight:700;color:#11141c;white-space:nowrap">${fmtKr(s.samtals)}</span>
                 <div style="display:flex;gap:6px;flex-shrink:0">
                   ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', 'Krafa send', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
