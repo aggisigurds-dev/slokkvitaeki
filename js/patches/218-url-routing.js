@@ -54,7 +54,8 @@
     vidskiptavinir: 'vidskiptavinir', yfirlit: 'yfirlit',
     bilstjori: 'bilstjori', drivers: 'bilstjori', bakendi: 'bakendi',
     sameining: 'sameining', adstod: 'adstod',
-    postur: 'reikninga-postur', reikningapostur: 'reikninga-postur'  // 📧 Reikninga-póstur (patch 240)
+    postur: 'reikninga-postur', reikningapostur: 'reikninga-postur',  // 📧 Reikninga-póstur (patch 240)
+    opp: 'opp'   // 📱 Öpp launcher (patch 261)
   };
 
   // internal view id -> preferred ascii slug (first alias wins).
