@@ -37,8 +37,8 @@
   var APPS = [
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0e7a4f', dark: '#06402b',
       manifest: '/manifest-fjarmal.json',
-      blurb: 'Kröfur, fyrirtæki og tekjur',
-      defaults: ['krofu-yfirlit', 'companies', 'income'] },
+      blurb: 'Kröfur, sala og fyrirtæki',
+      defaults: ['krofu-yfirlit', 'sala', 'companies'] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
 
