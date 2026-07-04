@@ -25,7 +25,7 @@
   const STYLE_ID = '_pe-overrides';
   const HL_ID = '_pe-highlight';
 
-  let state = { rules: [], bg: { all: null, pages: {} } };
+  let state = { rules: [], bg: { all: null, pages: {} }, favs: [] };
   let target = null;        // currently selected DOM element
   let picking = false;      // element-pick mode
   let scope = 'page';       // 'page' | 'all'
@@ -38,9 +38,10 @@
   function loadState() {
     try {
       const raw = window.AppSettings && AppSettings.path ? AppSettings.path(KEY) : null;
-      if (raw) state = Object.assign({ rules: [], bg: { all: null, pages: {} } }, JSON.parse(raw));
+      if (raw) state = Object.assign({ rules: [], bg: { all: null, pages: {} }, favs: [] }, JSON.parse(raw));
       if (!state.bg) state.bg = { all: null, pages: {} };
       if (!Array.isArray(state.rules)) state.rules = [];
+      if (!Array.isArray(state.favs)) state.favs = [];
     } catch (_) {}
   }
   function persist() {
@@ -109,6 +110,20 @@
     persist();
   }
   function getDecl(prop) { const r = currentRule(false); return r && r.decls ? r.decls[prop] : undefined; }
+  // Apply a numeric size (from slider OR manual number box). Padding V/H set BOTH
+  // sides and drop any `padding` shorthand so squared buttons actually shrink.
+  function applySize(prop, unit, raw) {
+    const r = currentRule(true); if (!r) return;
+    let val = parseFloat(String(raw).replace(',', '.')); if (!isFinite(val)) return;
+    if (prop === 'padding-top') { r.decls['padding-top'] = val + 'px'; r.decls['padding-bottom'] = val + 'px'; delete r.decls['padding']; }
+    else if (prop === 'padding-left') { r.decls['padding-left'] = val + 'px'; r.decls['padding-right'] = val + 'px'; delete r.decls['padding']; }
+    else if (prop === 'height' && val <= 0) { delete r.decls['height']; }   // 0 = auto (unset)
+    else if (prop === 'line-height') { r.decls['line-height'] = String(val / 100); }
+    else if (unit === '%') { r.decls[prop] = val + '%'; }
+    else if (unit === '') { r.decls[prop] = String(val); }
+    else { if (prop === 'border-width') r.decls['border-style'] = 'solid'; r.decls[prop] = val + 'px'; }
+    persist();
+  }
   // Read the element's live value (override → computed) for slider init.
   function liveNum(prop, fallback) {
     const ov = getDecl(prop); if (ov != null) { const n = parseFloat(ov); if (isFinite(n)) return n; }
@@ -165,6 +180,15 @@
     'background': 'linear-gradient(' + inner1 + ',' + inner2 + ') padding-box, linear-gradient(180deg,#fff3b0,#9a6c15) border-box',
     'box-shadow': '0 6px 16px rgba(0,0,0,.45), inset 0 1px 2px rgba(255,255,255,.5)'
   });
+  // Dark metallic SQUARED button (compact, small radius). Uses padding-top/bottom
+  // longhand so the size sliders can shrink it (no `padding` shorthand to fight).
+  const metalSquare = (c1, c2) => ({
+    'border-radius': '6px', 'padding-top': '9px', 'padding-bottom': '9px', 'padding-left': '18px', 'padding-right': '18px',
+    'color': '#fff', 'font-weight': '800', 'text-shadow': '0 1px 2px rgba(0,0,0,.6)',
+    'border': '1px solid rgba(0,0,0,.6)',
+    'background': 'linear-gradient(180deg,rgba(255,255,255,.22),rgba(255,255,255,0) 46%), linear-gradient(180deg,' + c1 + ',' + c2 + ')',
+    'box-shadow': 'inset 0 1px 0 rgba(255,255,255,.28), inset 0 -3px 7px rgba(0,0,0,.55), 0 4px 10px rgba(0,0,0,.4)'
+  });
 
   const PRESET_GROUPS = [
     { label: 'Glans-pillur', items: [
@@ -184,6 +208,15 @@
       ['Málmbjálki rauður', metalBar('#e0463c', '#8a120c')],
       ['Málmbjálki blár', metalBar('#3a86e0', '#12468f')],
       ['Málmbjálki grænn', metalBar('#63c23a', '#227a12')],
+    ]},
+    { label: 'Dökkur málmur — ferningur', items: [
+      ['Dökkt', metalSquare('#3a3a40', '#111114')],
+      ['Rautt', metalSquare('#a3251f', '#3a0806')],
+      ['Blátt', metalSquare('#1f4f9c', '#0a1c3d')],
+      ['Grænt', metalSquare('#1f7a2c', '#083312')],
+      ['Gult', metalSquare('#b89a1a', '#4a3806')],
+      ['Appelsínu', metalSquare('#c26a15', '#4a2405')],
+      ['Grátt', metalSquare('#7c828c', '#2c2f34')],
     ]},
     { label: 'Neon (kringlótt)', items: [
       ['Neon rauður', neonRound('#e0463c', '#7a0f0a', 'rgba(224,70,60,.75)')],
@@ -210,6 +243,16 @@
   function applyPreset(decls) { if (!target) { toast('Veldu hlut fyrst (🎯 Velja)'); return; }
     const r = currentRule(true); Object.assign(r.decls, decls); persist(); renderPanel();
   }
+  // Save the selected element's current look as a named favourite (synced).
+  function saveFavorite() {
+    if (!target) { toast('Veldu hlut fyrst (🎯 Velja)'); return; }
+    const r = currentRule(false);
+    if (!r || !r.decls || !Object.keys(r.decls).length) { toast('Enginn stíll á þessum hlut enn — breyttu einhverju fyrst'); return; }
+    const nm = prompt('Nafn á uppáhalds-stíl:', 'Minn stíll'); if (!nm) return;
+    state.favs = state.favs || []; state.favs.push({ n: nm.slice(0, 24), d: Object.assign({}, r.decls) });
+    persist(); renderPanel();
+  }
+  function deleteFavorite(i) { if (state.favs && state.favs[i]) { state.favs.splice(i, 1); persist(); renderPanel(); } }
   // Chip preview: render the chip itself with the look (a real visual picker).
   function presetPreviewStyle(d) {
     const keep = ['background', 'color', 'border', 'box-shadow', 'text-shadow', 'font-weight', 'backdrop-filter'];
@@ -247,7 +290,9 @@
       '#' + PANEL_ID + ' .pe-row{display:flex;align-items:center;gap:10px;margin:7px 0}',
       '#' + PANEL_ID + ' .pe-row label{flex:0 0 118px;font-size:12.5px;font-weight:600;color:#334155}',
       '#' + PANEL_ID + ' .pe-row input[type=range]{flex:1;min-width:80px}',
-      '#' + PANEL_ID + ' .pe-val{flex:0 0 46px;text-align:center;font-family:"Space Mono",monospace;font-weight:700;font-size:12.5px;background:#eef2f7;border-radius:7px;padding:3px 0}',
+      '#' + PANEL_ID + ' .pe-val{flex:0 0 52px;width:52px;text-align:center;font-family:"Space Mono",monospace;font-weight:700;font-size:12.5px;background:#fff;border:1px solid #cbd5e1;border-radius:7px;padding:4px 2px;-moz-appearance:textfield}',
+      '#' + PANEL_ID + ' .pe-val:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.2)}',
+      '#' + PANEL_ID + ' .pe-val::-webkit-outer-spin-button,#' + PANEL_ID + ' .pe-val::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}',
       '#' + PANEL_ID + ' .pe-row input[type=color]{width:40px;height:28px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;padding:1px;cursor:pointer}',
       '#' + PANEL_ID + ' .pe-row select{flex:1;font:inherit;font-size:12.5px;padding:5px 7px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}',
       '#' + PANEL_ID + ' .pe-presets{display:flex;gap:9px;flex-wrap:wrap}',
@@ -255,6 +300,8 @@
       '#' + PANEL_ID + ' .pe-chip:hover{filter:brightness(1.06)}',
       '#' + PANEL_ID + ' .pe-pgroup{margin:2px 0 8px}',
       '#' + PANEL_ID + ' .pe-glabel{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;font-weight:700;margin:8px 0 6px}',
+      '#' + PANEL_ID + ' .pe-favwrap{position:relative;display:inline-flex}',
+      '#' + PANEL_ID + ' .pe-favdel{all:unset;position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#dc2626;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.35)}',
       '#' + PANEL_ID + ' .pe-target{font-family:"Space Mono",monospace;font-size:11.5px;background:#111827;color:#e5e7eb;padding:4px 9px;border-radius:7px;white-space:nowrap;overflow:hidden;max-width:320px;text-overflow:ellipsis}',
       '#' + PANEL_ID + ' .pe-empty{padding:22px;text-align:center;color:#64748b;font-size:13px;border:1px dashed #cbd5e1;border-radius:12px;background:#fff}',
       'body.pe-picking *{cursor:crosshair !important}',
@@ -268,7 +315,7 @@
     const v = liveNum(prop, min);
     return '<div class="pe-row"><label>' + esc(label) + '</label>' +
       '<input type="range" data-slider="' + prop + '" data-unit="' + (unit || 'px') + '" min="' + min + '" max="' + max + '" step="' + (step || 1) + '" value="' + v + '">' +
-      '<span class="pe-val" data-valfor="' + prop + '">' + v + '</span></div>';
+      '<input type="number" class="pe-val" data-num="' + prop + '" data-unit="' + (unit || 'px') + '" step="' + (step || 1) + '" value="' + v + '"></div>';
   }
   function colorRow(label, prop) {
     return '<div class="pe-row"><label>' + esc(label) + '</label>' +
@@ -306,6 +353,7 @@
         '</div>' +
         '<div class="pe-sec"><h4>Box &amp; gluggi</h4>' +
           sliderRow('Breidd', 'width', 40, 1280, 5) +
+          sliderRow('Hæð (0=sjálfv.)', 'height', 0, 600, 2) +
           sliderRow('Lágmarkshæð', 'min-height', 0, 600, 5) +
           sliderRow('Border þykkt', 'border-width', 0, 10, 1) +
           sliderRow('Border radíus', 'border-radius', 0, 44, 1) +
@@ -331,7 +379,13 @@
     wirePanel();
   }
   function presetsSection() {
-    return '<div class="pe-sec" style="margin-top:12px"><h4>Hnappa- &amp; merkja-safn — smelltu til að setja á valinn hlut (hnapp eða stöðu-merki)</h4>' +
+    const favs = (state.favs || []);
+    const favGroup = favs.length ? '<div class="pe-pgroup"><span class="pe-glabel">⭐ Uppáhald</span><div class="pe-presets">' +
+      favs.map((f, i) => '<span class="pe-favwrap"><button class="pe-chip" data-fav="' + i + '" title="' + esc(f.n) + '" style="' + presetPreviewStyle(f.d) + '">' + esc(f.n) + '</button><button class="pe-favdel" data-favdel="' + i + '" title="Fjarlægja">✕</button></span>').join('') +
+      '</div></div>' : '';
+    return '<div class="pe-sec" style="margin-top:12px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h4 style="margin:0">Hnappa- &amp; merkja-safn — smelltu til að setja á valinn hlut (hnapp eða stöðu-merki)</h4>' +
+      '<button class="pe-btn" id="pe-fav" style="margin-left:auto" title="Vista núverandi stíl valins hlutar sem uppáhald">★ Vista stíl í uppáhald</button></div>' +
+      favGroup +
       PRESET_GROUPS.map((g, gi) => '<div class="pe-pgroup"><span class="pe-glabel">' + esc(g.label) + '</span><div class="pe-presets">' +
         g.items.map((it, ii) => '<button class="pe-chip" data-preset="' + gi + '-' + ii + '" title="' + esc(it[0]) + '" style="' + presetPreviewStyle(it[1]) + '">' + esc(it[0]) + '</button>').join('') +
       '</div></div>').join('') + '</div>';
@@ -356,11 +410,12 @@
     const rs = q('#pe-reset'); if (rs) rs.onclick = resetMenu;
     qa('[data-scope]').forEach(b => b.onclick = () => { scope = b.dataset.scope; renderPanel(); });
     qa('[data-slider]').forEach(inp => inp.addEventListener('input', () => {
-      const prop = inp.dataset.slider, unit = inp.dataset.unit, val = inp.value;
-      const vspan = p.querySelector('[data-valfor="' + prop + '"]'); if (vspan) vspan.textContent = val;
-      let css = unit === '%' ? (prop === 'line-height' ? (val / 100) : val + '%') : (unit === '' ? val : val + 'px');
-      if (prop === 'border-width') setDecl('border-style', 'solid');
-      setDecl(prop, String(css));
+      const num = p.querySelector('[data-num="' + inp.dataset.slider + '"]'); if (num) num.value = inp.value;
+      applySize(inp.dataset.slider, inp.dataset.unit, inp.value);
+    }));
+    qa('[data-num]').forEach(inp => inp.addEventListener('input', () => {
+      const rng = p.querySelector('[data-slider="' + inp.dataset.num + '"]'); if (rng && inp.value !== '') rng.value = inp.value;
+      if (inp.value !== '') applySize(inp.dataset.num, inp.dataset.unit, inp.value);
     }));
     qa('[data-color]').forEach(inp => inp.addEventListener('input', () => {
       if (inp.dataset.color === 'border-color') setDecl('border-style', 'solid');
@@ -370,6 +425,9 @@
     qa('[data-grad]').forEach(inp => inp.addEventListener('input', setGradient));
     const fs = q('[data-font]'); if (fs) fs.onchange = () => setDecl('font-family', fs.value === '(sjálfgefið)' ? '' : fs.value);
     qa('[data-preset]').forEach(b => b.onclick = () => { const p = b.dataset.preset.split('-'); const g = PRESET_GROUPS[+p[0]]; if (g && g.items[+p[1]]) applyPreset(g.items[+p[1]][1]); });
+    const favBtn = q('#pe-fav'); if (favBtn) favBtn.onclick = saveFavorite;
+    qa('[data-fav]').forEach(b => b.onclick = () => { const f = (state.favs || [])[+b.dataset.fav]; if (f) applyPreset(f.d); });
+    qa('[data-favdel]').forEach(b => b.onclick = (e) => { e.stopPropagation(); deleteFavorite(+b.dataset.favdel); });
   }
 
   function resetMenu() {
