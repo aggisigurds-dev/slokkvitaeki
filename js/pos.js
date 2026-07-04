@@ -864,6 +864,30 @@
       var num = sr.data && sr.data.num ? sr.data.num : preNum;
       window._pendingReikningurNum = '';
       window._pendingPaymentMethod = '';
+      // Auto-tengja reikning við fyrirtækjaprófílinn (reikningsdálk árstöflunnar,
+      // patch 199) um leið og reikningssala er vistuð. Keyrt í bakgrunni (ekki
+      // beðið eftir) svo það tefji ekki afgreiðsluna; aðeins fyrir þjónustu-
+      // fyrirtæki (ekki walk-in). Patch 233 sér um tvíritunarvörn (sleppir ef
+      // R-númerið er þegar vistað).
+      if (pmLabel === 'reikningur' && window.UttektInvoicePdf && UttektInvoicePdf.saveForSale) {
+        (function (saleRow, coId, kt) {
+          (async function () {
+            try {
+              var fid = null;
+              if (coId) { var _c = await DB.sb.from('fyrirtaeki').select('id').eq('id', coId).maybeSingle(); if (_c && _c.data) fid = _c.data.id; }
+              if (!fid) {
+                var _k = String(kt || '').replace(/[^0-9]/g, '');
+                if (_k.length === 10 && _k !== '9999999999') {
+                  var _d = _k.slice(0, 6) + '-' + _k.slice(6);
+                  var _f = await DB.sb.from('fyrirtaeki').select('id').or('kennitala.eq.' + _d + ',kennitala.eq.' + _k).limit(1).maybeSingle();
+                  if (_f && _f.data) fid = _f.data.id;
+                }
+              }
+              if (fid) await UttektInvoicePdf.saveForSale(fid, saleRow);
+            } catch (_) {}
+          })();
+        })(sr.data, state.customer && state.customer.co_id, custKt);
+      }
       // Auto-create viðskiptavinur for new kennitala customers.
       // 2026-05-08: Was incorrectly inserting into 'fyrirtaeki' (companies)
       // which polluted the Fyrirtækjaþjónusta list with walk-in POS customers.
