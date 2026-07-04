@@ -129,7 +129,10 @@
        *    the banner. box-sizing:border-box (app default) makes the inner
        *    .main-panel fit exactly beneath the banner with no clipping. */
       ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){height:100vh!important;overflow-y:auto!important;padding-top:148px!important}',
-      ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel{height:100%!important;overflow-y:auto!important;max-width:none}',
+      ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel{height:100%!important;overflow-y:auto!important;max-width:none;padding:8px 14px 40px!important}',
+      /* themed pages carry their own .app-main inset — zero its sides/top so the
+       * content lines up with the banner (main-panel now supplies the 14px gutter). */
+      ON+'.view.active .thm .app-main{padding-left:0!important;padding-right:0!important;padding-top:2px!important}',
       /* bespoke FLEX pages (map / kanban / workshop) → keep native flex+scroll,
        * just inset below the banner (border-box shrinks the inner panes to fit). */
       ON+'#view-field.active,'+ON+'#view-counter.active,'+ON+'#view-workshop.active{padding-top:152px!important}',

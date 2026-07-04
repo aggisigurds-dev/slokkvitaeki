@@ -36,11 +36,7 @@
       V + '.abtn5{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:50px;height:44px;padding:0 8px;border-radius:10px;border:1px solid rgba(20,24,34,.22);background:linear-gradient(180deg,#ffffff,#dbe0e9);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 3px 7px -3px rgba(20,30,60,.32);cursor:pointer;font:inherit;transition:transform .12s ease,box-shadow .12s ease}' +
       V + '.abtn5:hover{transform:translateY(-1px);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 6px 13px -4px rgba(20,30,60,.42)}' +
       // Let the .thm .app-page dark band fill the view flush (theme.css owns the look now).
-      '#view-hreyfingarlisti{padding:0 !important;max-width:none !important;background:transparent !important}' +
-      // Pull the title/table up toward the banner — trim the inner panel inset
-      // (the view keeps its banner clearance; only the safe inner padding shrinks).
-      '#view-hreyfingarlisti > .main-panel{padding-top:4px !important}' +
-      '#view-hreyfingarlisti .app-main{padding-top:4px !important}';
+      '#view-hreyfingarlisti{padding:0 !important;max-width:none !important;background:transparent !important}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
