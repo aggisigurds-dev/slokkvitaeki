@@ -183,6 +183,33 @@
     return (row && row._ars) || {};
   }
 
+  // Does the company ALREADY have BOTH an úttektarskýrsla and a reikningur filed
+  // for the current year? (patch 111/199/233 company attachments — explicit
+  // kind:'skyrsla'/'reikningur' tag wins, else sniff the filename.) Used to alert
+  // that a card on the board is in fact fully documented for the year.
+  function docYearOf(f) {
+    if (f.year && f.year !== '0') return String(f.year);
+    const m = String(f.name || '').match(/\b(20[2-3][0-9])\b/);
+    return m ? m[1] : null;
+  }
+  function docKindOf(f) {
+    if (f.kind === 'skyrsla' || f.kind === 'reikningur') return f.kind;
+    const n = String(f.name || '').toLowerCase();
+    if (/reikning|\br-?\d/.test(n)) return 'reikningur';
+    if (/úttekt|uttekt|skýrsl|skyrsl/.test(n)) return 'skyrsla';
+    return null;
+  }
+  function hasFullDocs(coId) {
+    const files = (window.CompanyAttachments && CompanyAttachments.list) ? (CompanyAttachments.list(coId) || []) : [];
+    let sk = false, re = false;
+    for (const f of files) {
+      if (docYearOf(f) !== String(curYear)) continue;
+      const k = docKindOf(f);
+      if (k === 'skyrsla') sk = true; else if (k === 'reikningur') re = true;
+    }
+    return sk && re;
+  }
+
   // Build the three buckets from the company list + arsskodun flags.
   function buckets() {
     const map = arsMap();
@@ -207,7 +234,8 @@
         markedAt: +a.sv_mark_at || 0,   // hvenær síðast merkt (fyrir "Nýlega merkt" röðun)
         units: +info._unit_count || 0,
         tekjur: +info.estimated_yearly || 0,
-        hasDraft: hasDraft
+        hasDraft: hasDraft,
+        doneDocs: hasFullDocs(co.id)   // already has skýrsla + reikningur for the year
       };
       if (ly === curYear) out.buid.push(card);
       else if (fy === curYear || hasDraft) out.vinnsla.push(card);   // started OR has a saved draft
@@ -296,15 +324,25 @@
       (r.kennitala ? '<div style="font-family:\'Space Mono\',monospace;font-size:11px;color:#9098a6;margin-top:1px">kt. ' + esc(fmtKt(r.kennitala)) + '</div>' : '') + '</div>';
   }
   function aminningLine(r, n) { return r.aminning ? '<div style="font-size:10.5px;color:#b45309">📌 ' + esc(r.aminning.slice(0, n || 80)) + '</div>' : ''; }
+  // Alert banner + "remove from board" button for cards that ALREADY have both an
+  // úttektarskýrslu and a reikningur filed for the year (→ they're really done).
+  function docAlert(r) {
+    if (!r.doneDocs) return '';
+    return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:7px 10px;font-size:11.5px;color:#92400e;font-weight:600">' +
+      '⚠️ Þegar með úttektarskýrslu + reikning fyrir ' + curYear +
+      '<button class="_sv-act" data-act="removedone" data-id="' + r.id + '" title="Fært í „Búið í ár“ og fjarlægt af verkstæðinu" style="' + btn('#dcfce7', '#14532d', '#86efac') + ';margin-left:auto">✔️ Fjarlægja af borði</button>' +
+      '</div>';
+  }
 
   // Í-vinnslu kort — list mode (gamli stíllinn) + merkingar + nóta
   function listCard(r) {
     return '<div class="sv-card' + (r.mark === 'haett' ? ' haett' : '') + '">' +
-      nameBlock(r, false) + metaChips(r) + aminningLine(r) + stepPills(r) + marks(r) + note(r) + vinnslaActs(r) + '</div>';
+      docAlert(r) + nameBlock(r, false) + metaChips(r) + aminningLine(r) + stepPills(r) + marks(r) + note(r) + vinnslaActs(r) + '</div>';
   }
   // Í-vinnslu kort — cards mode (nýi stíllinn með stiku)
   function gridCard(r) {
     return '<div class="sv-card' + (r.mark === 'haett' ? ' haett' : '') + '">' +
+      docAlert(r) +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' + nameBlock(r, true) + metaChips(r) + '</div>' +
       stepper(r) + marks(r) + note(r) + aminningLine(r, 90) + vinnslaActs(r) + '</div>';
   }
@@ -312,6 +350,7 @@
   function wideCard(r) {
     return '<div class="sv-card wide' + (r.mark === 'haett' ? ' haett' : '') + '">' +
       '<div class="sv-wide-l">' +
+        docAlert(r) +
         '<div class="sv-wide-row" style="justify-content:space-between">' + nameBlock(r, false) + metaChips(r) + '</div>' +
         '<div class="sv-wide-row">' + stepPills(r) + marks(r) + '</div>' +
         aminningLine(r) +
@@ -339,9 +378,13 @@
     function drawerRows(list, withStart) {
       if (!list.length) return '<div class="sv-drawer-row"><span class="mn">Ekkert hér.</span></div>';
       return list.map(r =>
-        '<div class="sv-drawer-row"><span class="nm">' + esc(r.nafn) + '</span>' +
+        '<div class="sv-drawer-row"><span class="nm">' + esc(r.nafn) +
+          (withStart && r.doneDocs ? ' <span title="Þegar með úttektarskýrslu + reikning fyrir ' + curYear + '" style="font-size:10.5px;font-weight:700;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:1px 6px;white-space:nowrap">⚠️ skjöl komin</span>' : '') +
+          '</span>' +
           '<span class="mn">' + (r.units > 0 ? '🧯 ' + r.units : '') + '</span>' +
-          (withStart
+          (withStart && r.doneDocs
+            ? '<button class="_sv-act" data-act="removedone" data-id="' + r.id + '" title="Fært í „Búið í ár“ og fjarlægt af verkstæðinu" style="' + btn('#dcfce7','#14532d','#86efac') + '">✔️ Fjarlægja</button>'
+            : withStart
             ? '<button class="_sv-act" data-act="start" data-id="' + r.id + '" style="' + btn('#dbeafe','#1e3a8a','#93c5fd') + '">▶ Hefja vinnslu</button>'
             : '<button class="_sv-act" data-act="open" data-id="' + r.id + '" style="' + btn('var(--surface)','var(--ink2)','var(--brd2)') + '">🏢 Opna</button>') +
         '</div>'
@@ -414,6 +457,7 @@
       else if (act === 'buid') markBuid(id);
       else if (act === 'reopen') reopen(id);
       else if (act === 'unstart') unVinnsla(id);
+      else if (act === 'removedone') { toast('Fært í „Búið í ár“ — komið með skýrslu + reikning'); markBuid(id); }
     }));
     // follow-up steps (pills + stepper share class) — all four ✓ → auto Búið
     v.querySelectorAll('._sv-step').forEach(bn => bn.addEventListener('click', async e => {
