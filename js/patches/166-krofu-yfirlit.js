@@ -1015,7 +1015,7 @@
                   if (hit) { skyrsla = hit; hitCoId = coId; break; }
                 }
                 if (skyrsla && hitCoId) {
-                  skyrslaBtn = `<button class="_ky-skyrsla" data-co-id="${hitCoId}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:#fff;color:#3a4250;border:1px solid rgba(20,24,34,.16);border-radius:8px;cursor:pointer;font:inherit;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 1px 2px rgba(15,23,42,.05)">📄 Skýrsla ${yr}</button>`;
+                  skyrslaBtn = `<button class="_ky-skyrsla" data-co-id="${hitCoId}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:#fff;color:#3a4250;border:1px solid rgba(20,24,34,.16);border-radius:8px;cursor:pointer;font:inherit;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 1px 2px rgba(15,23,42,.05)">📄 Skýrsla</button>`;
                 }
               }
             } catch (_) {}
@@ -1024,12 +1024,16 @@
                 ${isSendable(s)
                   ? `<input type="checkbox" class="_ky-pick" data-id="${s.id}" data-amount="${Math.round(parseFloat(s.samtals) || 0)}" title="Velja kröfu í Payday-sendingu" style="width:15px;height:15px;cursor:pointer;accent-color:#2f5fe0;flex-shrink:0">`
                   : '<span style="width:15px;flex-shrink:0"></span>'}
-                <span class="ky-num" style="color:#1d4ed8;font-weight:700;width:92px;flex-shrink:0">${esc(s.num || '')}</span>
-                <span class="ky-num" style="color:#64748b;width:86px;flex-shrink:0">${fmtDate(s.created_at)}</span>
+                <div style="width:96px;flex-shrink:0;line-height:1.2">
+                  <div class="ky-num" style="color:#1d4ed8;font-weight:700">${esc(s.num || '')}</div>
+                  <div class="ky-num" style="color:#64748b;font-size:11px">${fmtDate(s.created_at)}</div>
+                </div>
                 ${agingPill(da)}
-                ${skyrslaBtn}
-                <input class="_ky-note" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="🗒 minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — eigin reitur (ekki athugasemd reikningsins). Vistast sjálfkrafa." style="flex:1;min-width:60px;margin:0 10px;padding:4px 8px;border:1px solid transparent;border-bottom:1px dashed #d3d9e2;background:transparent;font:inherit;font-size:12px;color:#11141c;outline:none;border-radius:5px">
-                <span class="ky-num" style="text-align:right;font-weight:700;color:#11141c;white-space:nowrap">${fmtKr(s.samtals)}</span>
+                <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;margin:0 10px">
+                  ${skyrslaBtn}
+                  <input class="_ky-note" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="🗒 minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — eigin reitur (ekki athugasemd reikningsins). Vistast sjálfkrafa." style="flex:1;min-width:0;padding:4px 8px;border:1px solid transparent;border-bottom:1px dashed #d3d9e2;background:transparent;font:inherit;font-size:12px;color:#11141c;outline:none;border-radius:5px">
+                </div>
+                <span class="ky-num" style="width:90px;text-align:right;font-weight:700;color:#11141c;white-space:nowrap;flex-shrink:0">${fmtKr(s.samtals)}</span>
                 <div style="display:flex;gap:6px;flex-shrink:0">
                   ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', 'Krafa send', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
                   ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"', '✓', 'Greitt', '#0f7a43', 'Merkja sem greitt', false)}
