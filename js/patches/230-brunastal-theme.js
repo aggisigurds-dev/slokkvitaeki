@@ -128,7 +128,7 @@
       /* ── scroll model: standard block pages → one deterministic scroller below
        *    the banner. box-sizing:border-box (app default) makes the inner
        *    .main-panel fit exactly beneath the banner with no clipping. */
-      ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){height:100vh!important;overflow-y:auto!important;padding-top:160px!important}',
+      ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){height:100vh!important;overflow-y:auto!important;padding-top:148px!important}',
       ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel{height:100%!important;overflow-y:auto!important;max-width:none}',
       /* bespoke FLEX pages (map / kanban / workshop) → keep native flex+scroll,
        * just inset below the banner (border-box shrinks the inner panes to fit). */
@@ -361,7 +361,7 @@
 
       /* mobile: full-width banner, slimmer + smaller insets */
       '@media(max-width:760px){#bstal-banner{left:10px;right:10px;top:8px;height:104px}#bstal-banner .bb-logo img{height:34px}#bstal-banner .bb-word{font-size:13px}#bstal-banner .bb-clock{font-size:24px}#bstal-banner .bb-flames{height:80px}#bstal-ember{left:10px;right:10px;top:114px}'
-        +ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:120px!important}'
+        +ON+'.view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:112px!important}'
         +ON+'#view-field.active,'+ON+'#view-counter.active,'+ON+'#view-workshop.active{padding-top:114px!important}}'
     ].join('\n');
     const st = document.createElement('style'); st.id='bstal-css'; st.textContent = css;
