@@ -1,0 +1,393 @@
+/* === STÍLSTJÓRI — 🎨 lifandi útlits-ritill (262) ============================
+ *
+ * A small 🎨 button in the Brunastál banner (right before the clock) opens a
+ * docked panel at the BOTTOM of the site. Pick any element on the page and
+ * restyle it live: sliders (letur/breidd/hæð/padding/border/bil…), litir
+ * (texti/bakgrunnur/border), halli (gradient), leturgerð, tilbúin stíla-safn
+ * (dökkur málmur / gler / pilla …), og bakgrunnsmynd. Everything applies
+ * INSTANTLY and is saved (synced across devices via AppSettings).
+ *
+ * Scope per change: „Þessi síða" (only the active view — overrides there) eða
+ * „Allar síður" (global). Stored as ONE json string under `page_editor_v1_json`
+ * (string keys overwrite cleanly — no array-merge / delete-propagation issues).
+ *
+ * Overrides are injected as a <style id="_pe-overrides"> with !important so they
+ * win over the app's own CSS. Phase 1 — custom saved presets, an emoji palette
+ * and a per-box component builder are the planned next steps.
+ * ========================================================================== */
+(() => {
+  if (window.__pageEditorInstalled) return;
+  window.__pageEditorInstalled = true;
+
+  const KEY = 'page_editor_v1_json';
+  const BTN_ID = '_pe-btn';
+  const PANEL_ID = '_pe-panel';
+  const STYLE_ID = '_pe-overrides';
+  const HL_ID = '_pe-highlight';
+
+  let state = { rules: [], bg: { all: null, pages: {} } };
+  let target = null;        // currently selected DOM element
+  let picking = false;      // element-pick mode
+  let scope = 'page';       // 'page' | 'all'
+  let _saveT = null;
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const cssEsc = s => (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/[^\w-]/g, '\\$&');
+
+  // ── persistence ───────────────────────────────────────────────────────────
+  function loadState() {
+    try {
+      const raw = window.AppSettings && AppSettings.path ? AppSettings.path(KEY) : null;
+      if (raw) state = Object.assign({ rules: [], bg: { all: null, pages: {} } }, JSON.parse(raw));
+      if (!state.bg) state.bg = { all: null, pages: {} };
+      if (!Array.isArray(state.rules)) state.rules = [];
+    } catch (_) {}
+  }
+  function persist() {
+    applyCss();
+    if (_saveT) clearTimeout(_saveT);
+    _saveT = setTimeout(() => {
+      try { if (window.AppSettings && AppSettings.save) AppSettings.save({ [KEY]: JSON.stringify(state) }); } catch (_) {}
+    }, 400);
+  }
+
+  // ── selector + scope helpers ────────────────────────────────────────────────
+  function viewIdOf(el) { const v = el.closest ? el.closest('.view') : null; return v && v.id ? v.id : null; }
+  function relSelector(el) {
+    const parts = [];
+    let node = el;
+    while (node && node.nodeType === 1 && !node.classList.contains('view') && node !== document.body) {
+      if (node.id) { parts.unshift('#' + cssEsc(node.id)); break; }
+      let part = node.tagName.toLowerCase();
+      const cls = Array.prototype.slice.call(node.classList).filter(c => c && !/(^active$|^on$|^open$|^show$|^selected$|^_pe-)/.test(c)).slice(0, 2);
+      if (cls.length) part += '.' + cls.map(cssEsc).join('.');
+      const parent = node.parentNode;
+      if (parent && parent.children) { const sibs = Array.prototype.slice.call(parent.children).filter(x => x.tagName === node.tagName); if (sibs.length > 1) part += ':nth-of-type(' + (sibs.indexOf(node) + 1) + ')'; }
+      parts.unshift(part);
+      node = parent;
+      if (parts.length >= 5) break;
+    }
+    return parts.join(' > ') || el.tagName.toLowerCase();
+  }
+  // Effective scope for the current target: 'all', or the enclosing view id.
+  function targetScope() {
+    if (scope === 'all') return 'all';
+    const vid = target ? viewIdOf(target) : null;
+    return vid || 'all';   // elements outside any view are global-only
+  }
+  function ruleFor(sel, scp, create) {
+    let r = state.rules.find(x => x.sel === sel && x.scope === scp);
+    if (!r && create) { r = { sel, scope: scp, decls: {} }; state.rules.push(r); }
+    return r;
+  }
+  function currentRule(create) {
+    if (!target) return null;
+    return ruleFor(relSelector(target), targetScope(), create);
+  }
+
+  // ── css injection ───────────────────────────────────────────────────────────
+  function applyCss() {
+    let st = document.getElementById(STYLE_ID);
+    if (!st) { st = document.createElement('style'); st.id = STYLE_ID; document.head.appendChild(st); }
+    let css = '';
+    for (const r of state.rules) {
+      const keys = r.decls ? Object.keys(r.decls) : [];
+      if (!keys.length) continue;
+      const body = keys.map(p => p + ':' + r.decls[p] + (/!important/.test(r.decls[p]) ? '' : ' !important')).join(';');
+      const sel = r.scope === 'all' ? r.sel : '#' + r.scope + ' ' + r.sel;
+      css += sel + '{' + body + '}\n';
+    }
+    if (state.bg && state.bg.all) css += 'body{background-image:url(' + state.bg.all + ') !important;background-size:cover !important;background-position:center !important;background-attachment:fixed !important}\n';
+    if (state.bg && state.bg.pages) for (const vid in state.bg.pages) { if (state.bg.pages[vid]) css += '#' + vid + '{background-image:url(' + state.bg.pages[vid] + ') !important;background-size:cover !important;background-position:center !important}\n'; }
+    st.textContent = css;
+  }
+
+  // Set/clear one declaration on the current target.
+  function setDecl(prop, val) {
+    const r = currentRule(true); if (!r) return;
+    if (val === '' || val == null) delete r.decls[prop]; else r.decls[prop] = val;
+    persist();
+  }
+  function getDecl(prop) { const r = currentRule(false); return r && r.decls ? r.decls[prop] : undefined; }
+  // Read the element's live value (override → computed) for slider init.
+  function liveNum(prop, fallback) {
+    const ov = getDecl(prop); if (ov != null) { const n = parseFloat(ov); if (isFinite(n)) return n; }
+    if (!target) return fallback;
+    const cs = getComputedStyle(target); const n = parseFloat(cs[prop] || cs.getPropertyValue(prop)); return isFinite(n) ? Math.round(n) : fallback;
+  }
+  function liveColor(prop, fallback) {
+    const ov = getDecl(prop); if (ov) return toHex(ov) || fallback;
+    if (!target) return fallback;
+    return toHex(getComputedStyle(target)[prop]) || fallback;
+  }
+  function toHex(c) {
+    if (!c) return null; c = String(c).trim();
+    if (/^#([0-9a-f]{6})$/i.test(c)) return c;
+    const m = c.match(/rgba?\(([^)]+)\)/i); if (!m) return /^#([0-9a-f]{3})$/i.test(c) ? c : null;
+    const p = m[1].split(',').map(x => parseFloat(x));
+    return '#' + p.slice(0, 3).map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join('');
+  }
+
+  // ── styling presets (component looks) ───────────────────────────────────────
+  const PRESETS = [
+    ['Dökkur málmur', { 'background': 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)', 'color': '#f4f4f6', 'border': '1px solid #0a0b0d', 'border-radius': '11px', 'box-shadow': 'inset 0 1px 0 rgba(255,255,255,.14), 0 6px 18px -8px rgba(0,0,0,.6)', 'padding': '12px 16px' }],
+    ['Gler', { 'background': 'rgba(255,255,255,0.12)', 'backdrop-filter': 'blur(10px)', '-webkit-backdrop-filter': 'blur(10px)', 'border': '1px solid rgba(255,255,255,.35)', 'border-radius': '14px', 'box-shadow': '0 8px 30px -12px rgba(0,0,0,.35)', 'color': '#0f172a' }],
+    ['Flöt spjald', { 'background': '#ffffff', 'border': '1px solid #e2e8f0', 'border-radius': '13px', 'box-shadow': '0 1px 2px rgba(16,24,40,.05)', 'color': '#11141c', 'padding': '14px 16px' }],
+    ['Pilla', { 'border-radius': '999px', 'padding': '9px 18px', 'font-weight': '700', 'border': '1px solid rgba(20,24,34,.14)', 'background': '#f1f5f9', 'color': '#11141c' }],
+    ['Neon', { 'background': '#0b1020', 'color': '#7df9ff', 'border': '2px solid #22d3ee', 'border-radius': '12px', 'box-shadow': '0 0 14px rgba(34,211,238,.55), inset 0 0 10px rgba(34,211,238,.25)', 'padding': '12px 16px' }],
+    ['Hlý (mjúkt)', { 'background': 'linear-gradient(135deg,#fff7ed,#ffedd5)', 'border': '1px solid #fed7aa', 'border-radius': '16px', 'color': '#7c2d12', 'box-shadow': '0 2px 8px rgba(124,45,18,.08)', 'padding': '14px 16px' }],
+  ];
+  function applyPreset(decls) { if (!target) { toast('Veldu hlut fyrst (🎯 Velja)'); return; }
+    const r = currentRule(true); Object.assign(r.decls, decls); persist(); renderPanel();
+  }
+
+  const FONTS = ['(sjálfgefið)', 'Space Grotesk', 'Space Mono', 'Source Serif 4', 'Georgia, serif', 'system-ui, sans-serif', 'Arial, sans-serif', 'Courier New, monospace', 'Impact, sans-serif'];
+
+  function toast(m) { if (window.Toast && Toast.show) Toast.show(m); }
+
+  // ── styles ──────────────────────────────────────────────────────────────────
+  function injectStyles() {
+    if (document.getElementById('_pe-css')) return;
+    const s = document.createElement('style'); s.id = '_pe-css';
+    s.textContent = [
+      '#' + BTN_ID + '{all:unset;cursor:pointer;font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;margin-right:6px;transition:background .12s}',
+      '#' + BTN_ID + ':hover{background:rgba(255,255,255,.14)}',
+      '#' + PANEL_ID + '{position:fixed;left:0;right:0;bottom:0;z-index:99990;max-height:56vh;overflow:auto;background:#f8fafc;border-top:1px solid #cbd5e1;box-shadow:0 -12px 34px -14px rgba(15,23,42,.35);font-family:"Space Grotesk",system-ui,sans-serif;color:#11141c;padding:14px 18px 22px}',
+      '#' + PANEL_ID + ' .pe-hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}',
+      '#' + PANEL_ID + ' .pe-h{font-size:16px;font-weight:800;margin:0}',
+      '#' + PANEL_ID + ' .pe-sub{font-size:12px;color:#64748b}',
+      '#' + PANEL_ID + ' .pe-btn{all:unset;cursor:pointer;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:9px;border:1px solid #cbd5e1;background:#fff;color:#334155}',
+      '#' + PANEL_ID + ' .pe-btn:hover{background:#eef2f7}',
+      '#' + PANEL_ID + ' .pe-btn.on{background:linear-gradient(145deg,#08080a,#3a3a41 50%,#070709);color:#fff;border-color:#0a0b0d}',
+      '#' + PANEL_ID + ' .pe-btn.pri{background:#2563eb;color:#fff;border-color:#1d4ed8}',
+      '#' + PANEL_ID + ' .pe-seg{display:inline-flex;background:#e9eef5;border-radius:10px;padding:3px;gap:3px}',
+      '#' + PANEL_ID + ' .pe-seg button{all:unset;cursor:pointer;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;color:#475569}',
+      '#' + PANEL_ID + ' .pe-seg button.on{background:#fff;color:#11141c;box-shadow:0 1px 2px rgba(0,0,0,.12)}',
+      '#' + PANEL_ID + ' .pe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px 22px;margin-top:6px}',
+      '#' + PANEL_ID + ' .pe-sec{background:#fff;border:1px solid #e6eaf0;border-radius:12px;padding:12px 14px}',
+      '#' + PANEL_ID + ' .pe-sec h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#64748b}',
+      '#' + PANEL_ID + ' .pe-row{display:flex;align-items:center;gap:10px;margin:7px 0}',
+      '#' + PANEL_ID + ' .pe-row label{flex:0 0 118px;font-size:12.5px;font-weight:600;color:#334155}',
+      '#' + PANEL_ID + ' .pe-row input[type=range]{flex:1;min-width:80px}',
+      '#' + PANEL_ID + ' .pe-val{flex:0 0 46px;text-align:center;font-family:"Space Mono",monospace;font-weight:700;font-size:12.5px;background:#eef2f7;border-radius:7px;padding:3px 0}',
+      '#' + PANEL_ID + ' .pe-row input[type=color]{width:40px;height:28px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;padding:1px;cursor:pointer}',
+      '#' + PANEL_ID + ' .pe-row select{flex:1;font:inherit;font-size:12.5px;padding:5px 7px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}',
+      '#' + PANEL_ID + ' .pe-presets{display:flex;gap:8px;flex-wrap:wrap}',
+      '#' + PANEL_ID + ' .pe-chip{all:unset;cursor:pointer;font-size:12px;font-weight:700;padding:7px 12px;border-radius:9px;border:1px solid #cbd5e1;background:#fff}',
+      '#' + PANEL_ID + ' .pe-chip:hover{background:#eef2f7}',
+      '#' + PANEL_ID + ' .pe-target{font-family:"Space Mono",monospace;font-size:11.5px;background:#111827;color:#e5e7eb;padding:4px 9px;border-radius:7px;white-space:nowrap;overflow:hidden;max-width:320px;text-overflow:ellipsis}',
+      '#' + PANEL_ID + ' .pe-empty{padding:22px;text-align:center;color:#64748b;font-size:13px;border:1px dashed #cbd5e1;border-radius:12px;background:#fff}',
+      'body.pe-picking *{cursor:crosshair !important}',
+      '#' + HL_ID + '{position:fixed;z-index:99989;pointer-events:none;border:2px solid #2563eb;background:rgba(37,99,235,.10);border-radius:4px;transition:all .04s;display:none}',
+    ].join('');
+    document.head.appendChild(s);
+  }
+
+  // ── the panel ───────────────────────────────────────────────────────────────
+  function sliderRow(label, prop, min, max, step, unit) {
+    const v = liveNum(prop, min);
+    return '<div class="pe-row"><label>' + esc(label) + '</label>' +
+      '<input type="range" data-slider="' + prop + '" data-unit="' + (unit || 'px') + '" min="' + min + '" max="' + max + '" step="' + (step || 1) + '" value="' + v + '">' +
+      '<span class="pe-val" data-valfor="' + prop + '">' + v + '</span></div>';
+  }
+  function colorRow(label, prop) {
+    return '<div class="pe-row"><label>' + esc(label) + '</label>' +
+      '<input type="color" data-color="' + prop + '" value="' + liveColor(prop, '#333333') + '">' +
+      '<button class="pe-btn" data-clear="' + prop + '" title="Hreinsa">✕</button></div>';
+  }
+  function renderPanel() {
+    const p = document.getElementById(PANEL_ID); if (!p) return;
+    const targetLbl = target ? relSelector(target) : '';
+    const scopeSeg = '<div class="pe-seg"><button data-scope="page"' + (scope === 'page' ? ' class="on"' : '') + '>Þessi síða</button>' +
+      '<button data-scope="all"' + (scope === 'all' ? ' class="on"' : '') + '>Allar síður</button></div>';
+    const head = '<div class="pe-hd">' +
+      '<div><h3 class="pe-h">🎨 Stilla útlit</h3><div class="pe-sub">Veldu hlut og breyttu lit, letri, stærð, halla eða settu bakgrunn. Vistast strax' + (scope === 'all' ? ' — <b>allar síður</b>' : ' — <b>þessi síða</b>') + '.</div></div>' +
+      '<button class="pe-btn ' + (picking ? 'on' : 'pri') + '" id="pe-pick">' + (picking ? '🎯 Hætta að velja' : '🎯 Velja hlut') + '</button>' +
+      (target ? '<span class="pe-target" title="' + esc(targetLbl) + '">' + esc(targetLbl) + '</span><button class="pe-btn" id="pe-unpick">hreinsa val</button>' : '') +
+      scopeSeg +
+      '<div style="margin-left:auto;display:flex;gap:8px">' +
+        '<button class="pe-btn" id="pe-reset">↺ Resetta ▾</button>' +
+        '<button class="pe-btn" id="pe-bg">🖼 Bakgrunnsmynd</button>' +
+        '<button class="pe-btn" id="pe-close">✕ Loka</button>' +
+      '</div></div>';
+
+    let body;
+    if (!target) {
+      body = '<div class="pe-empty">Ýttu á <b>🎯 Velja hlut</b> og smelltu svo á texta, box eða glugga á síðunni til að byrja að breyta.<br>Eða settu <b>🖼 Bakgrunnsmynd</b> á síðuna.</div>' + presetsSection();
+    } else {
+      body = '<div class="pe-grid">' +
+        '<div class="pe-sec"><h4>Stærð &amp; bil</h4>' +
+          sliderRow('Letur', 'font-size', 8, 54, 1) +
+          sliderRow('Línuhæð', 'line-height', 90, 240, 5, '%') +
+          sliderRow('Leturþyngd', 'font-weight', 100, 900, 100, '') +
+          sliderRow('Padding lóðrétt', 'padding-top', 0, 60, 1) +
+          sliderRow('Padding lárétt', 'padding-left', 0, 60, 1) +
+          sliderRow('Stafabil', 'letter-spacing', -2, 8, 0.5) +
+        '</div>' +
+        '<div class="pe-sec"><h4>Box &amp; gluggi</h4>' +
+          sliderRow('Breidd', 'width', 40, 1280, 5) +
+          sliderRow('Lágmarkshæð', 'min-height', 0, 600, 5) +
+          sliderRow('Border þykkt', 'border-width', 0, 10, 1) +
+          sliderRow('Border radíus', 'border-radius', 0, 44, 1) +
+          sliderRow('Bil (gap)', 'gap', 0, 40, 1) +
+        '</div>' +
+        '<div class="pe-sec"><h4>Litir</h4>' +
+          colorRow('Texti', 'color') +
+          colorRow('Bakgrunnur', 'background-color') +
+          colorRow('Border', 'border-color') +
+          '<div class="pe-row"><label>Halli (gradient)</label>' +
+            '<input type="color" data-grad="c1" value="' + (gradPart(0) || '#111827') + '">' +
+            '<input type="color" data-grad="c2" value="' + (gradPart(1) || '#3b82f6') + '">' +
+            '<input type="range" data-grad="ang" min="0" max="360" step="5" value="' + (gradAngle() || 145) + '">' +
+            '<button class="pe-btn" data-clear="background">✕</button></div>' +
+        '</div>' +
+        '<div class="pe-sec"><h4>Leturgerð</h4>' +
+          '<div class="pe-row"><label>Font</label><select data-font>' + FONTS.map(f => '<option value="' + esc(f) + '"' + ((getDecl('font-family') || '') === f ? ' selected' : '') + '>' + esc(f) + '</option>').join('') + '</select></div>' +
+          '<div class="pe-sub" style="margin-top:6px">Border sést aðeins þegar þykkt &gt; 0.</div>' +
+        '</div>' +
+      '</div>' + presetsSection();
+    }
+    p.innerHTML = head + body;
+    wirePanel();
+  }
+  function presetsSection() {
+    return '<div class="pe-sec" style="margin-top:12px"><h4>Stíla-safn — smelltu til að setja á valinn hlut</h4>' +
+      '<div class="pe-presets">' + PRESETS.map((pr, i) => '<button class="pe-chip" data-preset="' + i + '">' + esc(pr[0]) + '</button>').join('') + '</div></div>';
+  }
+  // gradient current-value helpers (parse existing 'background' override)
+  function gradParts() { const g = getDecl('background') || ''; const m = g.match(/linear-gradient\(([^)]*)\)/i); return m ? m[1] : null; }
+  function gradPart(i) { const s = gradParts(); if (!s) return null; const cols = s.match(/#[0-9a-f]{6}/ig); return cols && cols[i] ? cols[i] : null; }
+  function gradAngle() { const s = gradParts(); if (!s) return null; const m = s.match(/(\d+)deg/); return m ? +m[1] : null; }
+  function setGradient() {
+    const p = document.getElementById(PANEL_ID);
+    const c1 = p.querySelector('[data-grad="c1"]').value, c2 = p.querySelector('[data-grad="c2"]').value, ang = p.querySelector('[data-grad="ang"]').value;
+    setDecl('background', 'linear-gradient(' + ang + 'deg,' + c1 + ',' + c2 + ')');
+  }
+
+  function wirePanel() {
+    const p = document.getElementById(PANEL_ID); if (!p) return;
+    const q = s => p.querySelector(s), qa = s => Array.prototype.slice.call(p.querySelectorAll(s));
+    q('#pe-close').onclick = closePanel;
+    const pk = q('#pe-pick'); if (pk) pk.onclick = () => setPicking(!picking);
+    const up = q('#pe-unpick'); if (up) up.onclick = () => { target = null; hideHighlight(); renderPanel(); };
+    const bg = q('#pe-bg'); if (bg) bg.onclick = pickBackground;
+    const rs = q('#pe-reset'); if (rs) rs.onclick = resetMenu;
+    qa('[data-scope]').forEach(b => b.onclick = () => { scope = b.dataset.scope; renderPanel(); });
+    qa('[data-slider]').forEach(inp => inp.addEventListener('input', () => {
+      const prop = inp.dataset.slider, unit = inp.dataset.unit, val = inp.value;
+      const vspan = p.querySelector('[data-valfor="' + prop + '"]'); if (vspan) vspan.textContent = val;
+      let css = unit === '%' ? (prop === 'line-height' ? (val / 100) : val + '%') : (unit === '' ? val : val + 'px');
+      if (prop === 'border-width') setDecl('border-style', 'solid');
+      setDecl(prop, String(css));
+    }));
+    qa('[data-color]').forEach(inp => inp.addEventListener('input', () => {
+      if (inp.dataset.color === 'border-color') setDecl('border-style', 'solid');
+      setDecl(inp.dataset.color, inp.value);
+    }));
+    qa('[data-clear]').forEach(b => b.onclick = () => { setDecl(b.dataset.clear, ''); renderPanel(); });
+    qa('[data-grad]').forEach(inp => inp.addEventListener('input', setGradient));
+    const fs = q('[data-font]'); if (fs) fs.onchange = () => setDecl('font-family', fs.value === '(sjálfgefið)' ? '' : fs.value);
+    qa('[data-preset]').forEach(b => b.onclick = () => applyPreset(PRESETS[+b.dataset.preset][1]));
+  }
+
+  function resetMenu() {
+    const vid = target ? viewIdOf(target) : null;
+    const opts = [];
+    if (target) opts.push('1 = þennan hlut');
+    opts.push('2 = þessa síðu' + (vid ? ' (' + vid + ')' : ''));
+    opts.push('3 = ALLT (öll útlit)');
+    const ans = prompt('Resetta útlit:\n' + opts.join('\n') + '\n\nSláðu inn 1, 2 eða 3:', target ? '1' : '2');
+    if (ans === '1' && target) {
+      const sel = relSelector(target), scp = targetScope();
+      state.rules = state.rules.filter(r => !(r.sel === sel && r.scope === scp));
+    } else if (ans === '2') {
+      const cur = document.querySelector('.view.active') || target && target.closest('.view');
+      const id = (cur && cur.id) || vid;
+      if (id) { state.rules = state.rules.filter(r => r.scope !== id); if (state.bg.pages) delete state.bg.pages[id]; }
+    } else if (ans === '3') {
+      if (!confirm('Eyða ÖLLUM útlits-breytingum á öllum síðum?')) return;
+      state = { rules: [], bg: { all: null, pages: {} } };
+    } else return;
+    persist(); renderPanel();
+  }
+
+  function pickBackground() {
+    const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
+    inp.onchange = () => {
+      const f = inp.files && inp.files[0]; if (!f) return;
+      const fr = new FileReader();
+      fr.onload = () => {
+        const url = fr.result;
+        const where = prompt('Setja bakgrunn á:\n1 = þessa síðu\n2 = allar síður\n\n1 eða 2:', '1');
+        if (where === '2') { state.bg.all = url; }
+        else { const cur = document.querySelector('.view.active'); const id = cur && cur.id; if (!id) { toast('Opnaðu síðuna fyrst'); return; } state.bg.pages = state.bg.pages || {}; state.bg.pages[id] = url; }
+        persist();
+      };
+      fr.readAsDataURL(f);
+    };
+    inp.click();
+  }
+
+  // ── element picking ─────────────────────────────────────────────────────────
+  function setPicking(on) {
+    picking = on;
+    document.body.classList.toggle('pe-picking', on);
+    if (!on) hideHighlight();
+    renderPanel();
+  }
+  function insideEditor(el) { return !!(el.closest && (el.closest('#' + PANEL_ID) || el.closest('#' + BTN_ID) || el.id === HL_ID)); }
+  function highlight(el) {
+    let h = document.getElementById(HL_ID);
+    if (!h) { h = document.createElement('div'); h.id = HL_ID; document.body.appendChild(h); }
+    const r = el.getBoundingClientRect();
+    h.style.display = 'block'; h.style.left = r.left + 'px'; h.style.top = r.top + 'px'; h.style.width = r.width + 'px'; h.style.height = r.height + 'px';
+  }
+  function hideHighlight() { const h = document.getElementById(HL_ID); if (h) h.style.display = 'none'; }
+  function onMove(e) { if (!picking) return; const el = e.target; if (!el || insideEditor(el)) { hideHighlight(); return; } highlight(el); }
+  function onPick(e) {
+    if (!picking) return; const el = e.target; if (!el || insideEditor(el)) return;
+    e.preventDefault(); e.stopPropagation();
+    target = el; setPicking(false);
+    // keep the highlight on the chosen element briefly
+    highlight(el); setTimeout(hideHighlight, 700);
+    renderPanel();
+  }
+
+  // ── panel open/close ────────────────────────────────────────────────────────
+  function openPanel() {
+    injectStyles();
+    if (document.getElementById(PANEL_ID)) return;
+    const p = document.createElement('div'); p.id = PANEL_ID; document.body.appendChild(p);
+    renderPanel();
+  }
+  function closePanel() { const p = document.getElementById(PANEL_ID); if (p) p.remove(); setPicking(false); hideHighlight(); }
+  function togglePanel() { if (document.getElementById(PANEL_ID)) closePanel(); else openPanel(); }
+
+  // ── the 🎨 banner button ────────────────────────────────────────────────────
+  function ensureBtn() {
+    if (document.getElementById(BTN_ID)) return;
+    injectStyles();
+    const clockbox = document.querySelector('.bb-clockbox');
+    const mk = () => { const b = document.createElement('button'); b.id = BTN_ID; b.type = 'button'; b.title = 'Stilla útlit — litir, letur, stærðir, bakgrunnur'; b.textContent = '🎨'; b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); togglePanel(); }); return b; };
+    if (clockbox && clockbox.parentNode) { clockbox.parentNode.insertBefore(mk(), clockbox); return; }
+    const restore = document.getElementById('bstal-restore');
+    if (restore && restore.style.display !== 'none') { const b = mk(); b.style.cssText += ';position:fixed;right:108px;top:14px;z-index:9998;width:38px;height:38px;margin:0;background:rgba(0,0,0,.35)'; document.body.appendChild(b); }
+  }
+
+  function boot() {
+    loadState(); applyCss();
+    ensureBtn();
+    const obs = new MutationObserver(() => { if (!document.getElementById(BTN_ID)) ensureBtn(); });
+    obs.observe(document.body, { childList: true, subtree: true });
+    [400, 1200, 3000].forEach(ms => setTimeout(ensureBtn, ms));
+    document.addEventListener('mousemove', onMove, true);
+    document.addEventListener('click', onPick, true);
+    // re-hydrate overrides once settings sync from the DB
+    try { if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(() => { loadState(); applyCss(); }); } catch (_) {}
+    window.addEventListener('scroll', () => { if (picking) hideHighlight(); }, true);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+
+  window.PageEditor = { open: openPanel, close: closePanel, toggle: togglePanel, reset: () => { state = { rules: [], bg: { all: null, pages: {} } }; persist(); } };
+  console.log('[patch-262] Stílstjóri (page editor) installed');
+})();
