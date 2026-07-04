@@ -23,7 +23,7 @@
   // ── catalog of pages that can go into an app (switchView key → label) ────────
   var PAGES = [
     { k: 'krofu-yfirlit',    label: 'Kröfu yfirlit',        short: 'Kröfur',     emoji: '💳' },
-    { k: 'companies',        label: 'Fyrirtæki í þjónustu',  short: 'Fyrirtæki',  emoji: '🏢' },
+    { k: 'companies',        label: 'Fyrirtæki (skrá)',      short: 'Fyrirtæki',  emoji: '🏢' },
     { k: 'income',           label: 'Tekjur',                emoji: '📈' },
     { k: 'bokhalds-yfirlit', label: 'Bókhald',               emoji: '📊' },
     { k: 'reikninga-postur', label: 'Reikninga-póstur',      short: 'Póstur',     emoji: '📧' },
@@ -42,7 +42,7 @@
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0e7a4f', dark: '#06402b',
       manifest: '/manifest-fjarmal.json',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
-      defaults: ['krofu-yfirlit', 'sala', 'companies', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
+      defaults: ['krofu-yfirlit', 'sala', 'vidskiptavinir', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
 
@@ -65,6 +65,11 @@
     var c = loadCfg();
     var app = APP_BY_KEY[key]; if (!app) return [];
     var arr = (c && Array.isArray(c[key])) ? c[key] : app.defaults;
+    // The Fjármál "Fyrirtæki í þjónustu" slot used to point at the fyrirtæki
+    // REGISTRY ('companies'); the intended page is the customer list. Swap on
+    // read so already-saved configs pick up the fix without re-picking pages.
+    arr = arr.map(function (k) { return k === 'companies' && key === 'fjarmal' ? 'vidskiptavinir' : k; });
+    arr = arr.filter(function (k, i) { return arr.indexOf(k) === i; });   // de-dup
     return arr.filter(function (k) { return PAGE_BY_KEY[k]; });
   }
   function saveCfg(key, arr) {
