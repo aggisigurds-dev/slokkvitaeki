@@ -272,7 +272,7 @@
     if (document.getElementById('_rp-styles')) return;
     const V = '#' + VIEW_ID + ' ';
     const css = [
-      V + '{padding:0 !important;max-width:none !important;background:linear-gradient(180deg,#060607 0px,#060607 220px,#8e949e 640px,#9198a3 100%) !important;min-height:100vh;font-family:"Space Grotesk",system-ui,sans-serif}',
+      V + '{padding:0 !important;max-width:none !important;background:linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%) !important;min-height:100vh;font-family:"Space Grotesk",system-ui,sans-serif}',
       V + '.rp-main{max-width:none;margin:0;padding:16px 22px 48px;box-sizing:border-box}',
       V + '.rp-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:14px}',
       V + '.rp-title h1{margin:0;font-size:26px;font-weight:700;color:#fff;letter-spacing:-.01em}',

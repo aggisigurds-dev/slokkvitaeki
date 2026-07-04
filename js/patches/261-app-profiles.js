@@ -120,7 +120,7 @@
     if (document.getElementById('_app-styles')) return;
     var css = [
       // launcher page
-      '#' + VIEW_ID + '{padding:0 !important;background:linear-gradient(180deg,#060607 0,#060607 120px,#8e949e 420px,#9198a3 100%) !important;min-height:100vh}',
+      '#' + VIEW_ID + '{padding:0 !important;background:linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%) !important;min-height:100vh}',
       '#' + VIEW_ID + ' .op-main{max-width:760px;margin:0 auto;padding:22px 18px 60px;box-sizing:border-box}',
       '#' + VIEW_ID + ' .op-h1{margin:0 0 4px;font-size:26px;font-weight:800;color:#fff}',
       '#' + VIEW_ID + ' .op-sub{margin:0 0 20px;font-size:13px;color:rgba(255,255,255,.65)}',
