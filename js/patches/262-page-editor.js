@@ -128,17 +128,95 @@
     return '#' + p.slice(0, 3).map(x => Math.max(0, Math.min(255, Math.round(x))).toString(16).padStart(2, '0')).join('');
   }
 
-  // ── styling presets (component looks) ───────────────────────────────────────
-  const PRESETS = [
-    ['Dökkur málmur', { 'background': 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)', 'color': '#f4f4f6', 'border': '1px solid #0a0b0d', 'border-radius': '11px', 'box-shadow': 'inset 0 1px 0 rgba(255,255,255,.14), 0 6px 18px -8px rgba(0,0,0,.6)', 'padding': '12px 16px' }],
-    ['Gler', { 'background': 'rgba(255,255,255,0.12)', 'backdrop-filter': 'blur(10px)', '-webkit-backdrop-filter': 'blur(10px)', 'border': '1px solid rgba(255,255,255,.35)', 'border-radius': '14px', 'box-shadow': '0 8px 30px -12px rgba(0,0,0,.35)', 'color': '#0f172a' }],
-    ['Flöt spjald', { 'background': '#ffffff', 'border': '1px solid #e2e8f0', 'border-radius': '13px', 'box-shadow': '0 1px 2px rgba(16,24,40,.05)', 'color': '#11141c', 'padding': '14px 16px' }],
-    ['Pilla', { 'border-radius': '999px', 'padding': '9px 18px', 'font-weight': '700', 'border': '1px solid rgba(20,24,34,.14)', 'background': '#f1f5f9', 'color': '#11141c' }],
-    ['Neon', { 'background': '#0b1020', 'color': '#7df9ff', 'border': '2px solid #22d3ee', 'border-radius': '12px', 'box-shadow': '0 0 14px rgba(34,211,238,.55), inset 0 0 10px rgba(34,211,238,.25)', 'padding': '12px 16px' }],
-    ['Hlý (mjúkt)', { 'background': 'linear-gradient(135deg,#fff7ed,#ffedd5)', 'border': '1px solid #fed7aa', 'border-radius': '16px', 'color': '#7c2d12', 'box-shadow': '0 2px 8px rgba(124,45,18,.08)', 'padding': '14px 16px' }],
+  // ── hnappa- & merkja-safn (button / badge collection) ───────────────────────
+  // Pure-CSS re-creations of the reference button styles (glossy pills, chrome &
+  // gold metal frames, neon glow, modern gradient pills). Applied to whatever
+  // element is selected — a button OR a status pill/badge.
+  const glossPill = (c1, c2, txt, ts) => ({
+    'border-radius': '999px', 'border': '0', 'padding': '12px 26px', 'color': txt, 'font-weight': '700', 'text-shadow': ts,
+    'background': 'linear-gradient(180deg,rgba(255,255,255,.6),rgba(255,255,255,0) 46%), linear-gradient(180deg,' + c1 + ',' + c2 + ')',
+    'box-shadow': 'inset 0 1px 1px rgba(255,255,255,.85), inset 0 -8px 12px rgba(0,0,0,.22), 0 6px 14px rgba(0,0,0,.35)'
+  });
+  const metalBar = (c1, c2) => ({
+    'border-radius': '10px', 'padding': '12px 24px', 'color': '#fff', 'font-weight': '800', 'text-shadow': '0 1px 2px rgba(0,0,0,.5)',
+    'border': '5px solid transparent',
+    'background': 'linear-gradient(180deg,rgba(255,255,255,.5),rgba(255,255,255,0) 45%), linear-gradient(180deg,' + c1 + ',' + c2 + ') padding-box, linear-gradient(180deg,#fafafa,#7a7f86 50%,#c9ccd1) border-box',
+    'box-shadow': '0 6px 16px rgba(0,0,0,.4), inset 0 1px 2px rgba(255,255,255,.4)'
+  });
+  const neonRound = (c1, c2, glow) => ({
+    'border-radius': '50%', 'width': '92px', 'height': '92px', 'min-height': '92px', 'padding': '0', 'color': '#fff', 'font-weight': '800', 'text-shadow': '0 1px 3px rgba(0,0,0,.6)',
+    'border': '3px solid #cfd3d8',
+    'background': 'radial-gradient(circle at 50% 32%,rgba(255,255,255,.65),rgba(255,255,255,0) 44%), linear-gradient(180deg,' + c1 + ',' + c2 + ')',
+    'box-shadow': '0 0 20px 3px ' + glow + ', inset 0 -8px 14px rgba(0,0,0,.45), inset 0 3px 6px rgba(255,255,255,.45)'
+  });
+  const gradPill = (c1, c2) => ({
+    'border-radius': '999px', 'border': '0', 'padding': '12px 26px', 'color': '#fff', 'font-weight': '700', 'text-shadow': '0 1px 2px rgba(0,0,0,.25)',
+    'background': 'linear-gradient(135deg,' + c1 + ',' + c2 + ')', 'box-shadow': '0 8px 18px -6px rgba(0,0,0,.4)'
+  });
+  const chromeFrame = (inner1, inner2, extraGlow) => ({
+    'border-radius': '12px', 'padding': '12px 22px', 'color': '#fff', 'font-weight': '800', 'letter-spacing': '.05em', 'text-shadow': '0 1px 0 #000',
+    'border': '3px solid transparent',
+    'background': 'linear-gradient(' + inner1 + ',' + inner2 + ') padding-box, linear-gradient(180deg,#f2f2f2,#8f8f8f 45%,#3a3a3a) border-box',
+    'box-shadow': (extraGlow ? extraGlow + ', ' : '') + '0 6px 16px rgba(0,0,0,.5), inset 0 1px 2px rgba(255,255,255,.18)'
+  });
+  const goldFrame = (inner1, inner2, txt) => ({
+    'border-radius': '8px', 'padding': '11px 24px', 'color': txt, 'font-weight': '800', 'text-shadow': '0 1px 2px rgba(0,0,0,.55)',
+    'border': '4px solid transparent',
+    'background': 'linear-gradient(' + inner1 + ',' + inner2 + ') padding-box, linear-gradient(180deg,#fff3b0,#9a6c15) border-box',
+    'box-shadow': '0 6px 16px rgba(0,0,0,.45), inset 0 1px 2px rgba(255,255,255,.5)'
+  });
+
+  const PRESET_GROUPS = [
+    { label: 'Glans-pillur', items: [
+      ['Silfur', glossPill('#ffffff', '#b9bfc6', '#2a2f36', '0 1px 0 rgba(255,255,255,.7)')],
+      ['Gull', glossPill('#ffe08a', '#c8892b', '#fff', '0 1px 2px rgba(0,0,0,.4)')],
+      ['Grænn', glossPill('#9be15d', '#3f9e1b', '#fff', '0 1px 2px rgba(0,0,0,.4)')],
+      ['Rauður', glossPill('#ef5a52', '#a3160f', '#fff', '0 1px 2px rgba(0,0,0,.4)')],
+      ['Blár', glossPill('#5bb6f5', '#1462c8', '#fff', '0 1px 2px rgba(0,0,0,.4)')],
+      ['Fjólublár', glossPill('#d07de0', '#8e24aa', '#fff', '0 1px 2px rgba(0,0,0,.4)')],
+      ['Svartur', glossPill('#4a4a4a', '#0c0c0c', '#fff', '0 1px 2px rgba(0,0,0,.5)')],
+    ]},
+    { label: 'Málmur & rammar', items: [
+      ['Króm dökkt', chromeFrame('#2b2b2b', '#050505')],
+      ['Króm rautt', chromeFrame('#8a1a15', '#2a0503', '0 0 16px rgba(200,40,30,.5)')],
+      ['Gullrammi', goldFrame('#f6d873', '#a9781a', '#fff5cc')],
+      ['Gullrammi svart', goldFrame('#2a2a2a', '#050505', '#ffe9a8')],
+      ['Málmbjálki rauður', metalBar('#e0463c', '#8a120c')],
+      ['Málmbjálki blár', metalBar('#3a86e0', '#12468f')],
+      ['Málmbjálki grænn', metalBar('#63c23a', '#227a12')],
+    ]},
+    { label: 'Neon (kringlótt)', items: [
+      ['Neon rauður', neonRound('#e0463c', '#7a0f0a', 'rgba(224,70,60,.75)')],
+      ['Neon grænn', neonRound('#6ee23a', '#1f7a12', 'rgba(110,226,58,.7)')],
+      ['Neon blár', neonRound('#3aa0f5', '#0f3f9e', 'rgba(58,160,245,.75)')],
+      ['Neon gull', neonRound('#ffd24a', '#c88a12', 'rgba(255,210,74,.7)')],
+      ['Neon fjólublár', neonRound('#c04df0', '#6a12a0', 'rgba(192,77,240,.7)')],
+    ]},
+    { label: 'Nútíma halli', items: [
+      ['Sólsetur', gradPill('#ff8008', '#f5325b')],
+      ['Haf', gradPill('#2193b0', '#1c62d6')],
+      ['Skógur', gradPill('#56ab2f', '#1e7d2b')],
+      ['Ametýst', gradPill('#a044ff', '#e94fa1')],
+      ['Kóral', gradPill('#ff5f6d', '#c31432')],
+      ['Nótt', gradPill('#232526', '#414345')],
+    ]},
+    { label: 'Einfalt', items: [
+      ['Dökkur málmur', { 'background': 'linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)', 'color': '#f4f4f6', 'border': '1px solid #0a0b0d', 'border-radius': '11px', 'box-shadow': 'inset 0 1px 0 rgba(255,255,255,.14), 0 6px 18px -8px rgba(0,0,0,.6)', 'padding': '12px 18px' }],
+      ['Gler', { 'background': 'rgba(255,255,255,0.14)', 'backdrop-filter': 'blur(10px)', '-webkit-backdrop-filter': 'blur(10px)', 'border': '1px solid rgba(255,255,255,.4)', 'border-radius': '14px', 'box-shadow': '0 8px 30px -12px rgba(0,0,0,.35)', 'color': '#0f172a', 'padding': '12px 18px' }],
+      ['Flöt spjald', { 'background': '#ffffff', 'border': '1px solid #e2e8f0', 'border-radius': '13px', 'box-shadow': '0 1px 2px rgba(16,24,40,.05)', 'color': '#11141c', 'padding': '13px 18px' }],
+      ['Hlý', { 'background': 'linear-gradient(135deg,#fff7ed,#ffedd5)', 'border': '1px solid #fed7aa', 'border-radius': '16px', 'color': '#7c2d12', 'box-shadow': '0 2px 8px rgba(124,45,18,.08)', 'padding': '13px 18px' }],
+    ]},
   ];
   function applyPreset(decls) { if (!target) { toast('Veldu hlut fyrst (🎯 Velja)'); return; }
     const r = currentRule(true); Object.assign(r.decls, decls); persist(); renderPanel();
+  }
+  // Chip preview: render the chip itself with the look (a real visual picker).
+  function presetPreviewStyle(d) {
+    const keep = ['background', 'color', 'border', 'box-shadow', 'text-shadow', 'font-weight', 'backdrop-filter'];
+    const round = /50%/.test(d['border-radius'] || '');
+    let s = 'padding:8px 15px;margin:0;font-size:11.5px;line-height:1.1;border-radius:' + (round || /999/.test(d['border-radius'] || '') ? '999px' : '9px') + ';';
+    keep.forEach(p => { if (d[p]) s += p + ':' + d[p] + ';'; });
+    return s;
   }
 
   const FONTS = ['(sjálfgefið)', 'Space Grotesk', 'Space Mono', 'Source Serif 4', 'Georgia, serif', 'system-ui, sans-serif', 'Arial, sans-serif', 'Courier New, monospace', 'Impact, sans-serif'];
@@ -172,9 +250,11 @@
       '#' + PANEL_ID + ' .pe-val{flex:0 0 46px;text-align:center;font-family:"Space Mono",monospace;font-weight:700;font-size:12.5px;background:#eef2f7;border-radius:7px;padding:3px 0}',
       '#' + PANEL_ID + ' .pe-row input[type=color]{width:40px;height:28px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;padding:1px;cursor:pointer}',
       '#' + PANEL_ID + ' .pe-row select{flex:1;font:inherit;font-size:12.5px;padding:5px 7px;border:1px solid #cbd5e1;border-radius:8px;background:#fff}',
-      '#' + PANEL_ID + ' .pe-presets{display:flex;gap:8px;flex-wrap:wrap}',
-      '#' + PANEL_ID + ' .pe-chip{all:unset;cursor:pointer;font-size:12px;font-weight:700;padding:7px 12px;border-radius:9px;border:1px solid #cbd5e1;background:#fff}',
-      '#' + PANEL_ID + ' .pe-chip:hover{background:#eef2f7}',
+      '#' + PANEL_ID + ' .pe-presets{display:flex;gap:9px;flex-wrap:wrap}',
+      '#' + PANEL_ID + ' .pe-chip{all:unset;cursor:pointer;font-size:12px;font-weight:700;padding:7px 12px;border-radius:9px;border:1px solid #cbd5e1;background:#fff;display:inline-flex;align-items:center;justify-content:center;min-width:64px;text-align:center}',
+      '#' + PANEL_ID + ' .pe-chip:hover{filter:brightness(1.06)}',
+      '#' + PANEL_ID + ' .pe-pgroup{margin:2px 0 8px}',
+      '#' + PANEL_ID + ' .pe-glabel{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;font-weight:700;margin:8px 0 6px}',
       '#' + PANEL_ID + ' .pe-target{font-family:"Space Mono",monospace;font-size:11.5px;background:#111827;color:#e5e7eb;padding:4px 9px;border-radius:7px;white-space:nowrap;overflow:hidden;max-width:320px;text-overflow:ellipsis}',
       '#' + PANEL_ID + ' .pe-empty{padding:22px;text-align:center;color:#64748b;font-size:13px;border:1px dashed #cbd5e1;border-radius:12px;background:#fff}',
       'body.pe-picking *{cursor:crosshair !important}',
@@ -251,8 +331,10 @@
     wirePanel();
   }
   function presetsSection() {
-    return '<div class="pe-sec" style="margin-top:12px"><h4>Stíla-safn — smelltu til að setja á valinn hlut</h4>' +
-      '<div class="pe-presets">' + PRESETS.map((pr, i) => '<button class="pe-chip" data-preset="' + i + '">' + esc(pr[0]) + '</button>').join('') + '</div></div>';
+    return '<div class="pe-sec" style="margin-top:12px"><h4>Hnappa- &amp; merkja-safn — smelltu til að setja á valinn hlut (hnapp eða stöðu-merki)</h4>' +
+      PRESET_GROUPS.map((g, gi) => '<div class="pe-pgroup"><span class="pe-glabel">' + esc(g.label) + '</span><div class="pe-presets">' +
+        g.items.map((it, ii) => '<button class="pe-chip" data-preset="' + gi + '-' + ii + '" title="' + esc(it[0]) + '" style="' + presetPreviewStyle(it[1]) + '">' + esc(it[0]) + '</button>').join('') +
+      '</div></div>').join('') + '</div>';
   }
   // gradient current-value helpers (parse existing 'background' override)
   function gradParts() { const g = getDecl('background') || ''; const m = g.match(/linear-gradient\(([^)]*)\)/i); return m ? m[1] : null; }
@@ -287,7 +369,7 @@
     qa('[data-clear]').forEach(b => b.onclick = () => { setDecl(b.dataset.clear, ''); renderPanel(); });
     qa('[data-grad]').forEach(inp => inp.addEventListener('input', setGradient));
     const fs = q('[data-font]'); if (fs) fs.onchange = () => setDecl('font-family', fs.value === '(sjálfgefið)' ? '' : fs.value);
-    qa('[data-preset]').forEach(b => b.onclick = () => applyPreset(PRESETS[+b.dataset.preset][1]));
+    qa('[data-preset]').forEach(b => b.onclick = () => { const p = b.dataset.preset.split('-'); const g = PRESET_GROUPS[+p[0]]; if (g && g.items[+p[1]]) applyPreset(g.items[+p[1]][1]); });
   }
 
   function resetMenu() {
