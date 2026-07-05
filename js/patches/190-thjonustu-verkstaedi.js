@@ -57,6 +57,32 @@
   // Röðun á Í-vinnslu listanum — "name" | "revenue" | "marked".
   let _sort = (function () { try { return localStorage.getItem('sv_sort') || 'name'; } catch (_) { return 'name'; } })();
   function setSort(s) { _sort = s; try { localStorage.setItem('sv_sort', s); } catch (_) {} render(); }
+
+  // Companies that ALREADY have a reikningur filed for the current year in
+  // customer_documents (Drive-indexed + POS-connected — the same store the
+  // company profile "Skjöl & viðhengi" reads). A green "🧾 Reikningur <ár> sendur"
+  // banner + "Fjarlægja af borði" then lets the office clear them off the board.
+  // Keyed by digits-only kennitala. Loaded once, async, then re-render.
+  let _reik2026 = new Set();
+  let _reik2026Loaded = false;
+  async function loadReik2026() {
+    try {
+      const sb = (window.DB && DB.sb); if (!sb) return;
+      const r = await sb.from('customer_documents')
+        .select('customer_base_id').eq('doc_type', 'reikningur').eq('year', curYear)
+        .not('customer_base_id', 'is', null);
+      const baseIds = Array.from(new Set((r.data || []).map(x => x.customer_base_id).filter(v => v != null)));
+      const kts = new Set();
+      for (let i = 0; i < baseIds.length; i += 500) {
+        const chunk = baseIds.slice(i, i + 500);
+        const b = await sb.from('customers_base').select('kennitala').in('id', chunk);
+        (b.data || []).forEach(x => { const d = digits(x.kennitala); if (d.length >= 10) kts.add(d); });
+      }
+      _reik2026 = kts;
+    } catch (_) {}
+    render();
+  }
+
   const SORTERS = {
     name:    (x, y) => String(x.nafn).localeCompare(y.nafn, 'is'),
     revenue: (x, y) => ((+y.tekjur || 0) - (+x.tekjur || 0)) || String(x.nafn).localeCompare(y.nafn, 'is'),
@@ -235,7 +261,8 @@
         units: +info._unit_count || 0,
         tekjur: +info.estimated_yearly || 0,
         hasDraft: hasDraft,
-        doneDocs: hasFullDocs(co.id)   // already has skýrsla + reikningur for the year
+        doneDocs: hasFullDocs(co.id),  // already has skýrsla + reikningur for the year
+        reik2026: _reik2026.has(digits(co.kennitala))   // 2026 reikningur á skrá (customer_documents)
       };
       if (ly === curYear) out.buid.push(card);
       else if (fy === curYear || hasDraft) out.vinnsla.push(card);   // started OR has a saved draft
@@ -333,16 +360,26 @@
       '<button class="_sv-act" data-act="removedone" data-id="' + r.id + '" title="Fært í „Búið í ár“ og fjarlægt af verkstæðinu" style="' + btn('#dcfce7', '#14532d', '#86efac') + ';margin-left:auto">✔️ Fjarlægja af borði</button>' +
       '</div>';
   }
+  // 2026 reikningur er þegar sendur/tengdur (customer_documents) — grænt banner
+  // svo hægt sé að taka fyrirtækið af borðinu. Sleppt ef docAlert sýnir þegar
+  // (það nær yfir bæði skýrslu + reikning).
+  function reikAlert(r) {
+    if (!r.reik2026 || r.doneDocs) return '';
+    return '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:9px;padding:7px 10px;font-size:11.5px;color:#15803d;font-weight:700">' +
+      '🧾 Reikningur ' + curYear + ' sendur' +
+      '<button class="_sv-act" data-act="removedone" data-id="' + r.id + '" title="Fært í „Búið í ár“ og fjarlægt af verkstæðinu" style="' + btn('#dcfce7', '#14532d', '#86efac') + ';margin-left:auto">✔️ Fjarlægja af borði</button>' +
+      '</div>';
+  }
 
   // Í-vinnslu kort — list mode (gamli stíllinn) + merkingar + nóta
   function listCard(r) {
     return '<div class="sv-card' + (r.mark === 'haett' ? ' haett' : '') + '">' +
-      docAlert(r) + nameBlock(r, false) + metaChips(r) + aminningLine(r) + stepPills(r) + marks(r) + note(r) + vinnslaActs(r) + '</div>';
+      docAlert(r) + reikAlert(r) + nameBlock(r, false) + metaChips(r) + aminningLine(r) + stepPills(r) + marks(r) + note(r) + vinnslaActs(r) + '</div>';
   }
   // Í-vinnslu kort — cards mode (nýi stíllinn með stiku)
   function gridCard(r) {
     return '<div class="sv-card' + (r.mark === 'haett' ? ' haett' : '') + '">' +
-      docAlert(r) +
+      docAlert(r) + reikAlert(r) +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' + nameBlock(r, true) + metaChips(r) + '</div>' +
       stepper(r) + marks(r) + note(r) + aminningLine(r, 90) + vinnslaActs(r) + '</div>';
   }
@@ -350,7 +387,7 @@
   function wideCard(r) {
     return '<div class="sv-card wide' + (r.mark === 'haett' ? ' haett' : '') + '">' +
       '<div class="sv-wide-l">' +
-        docAlert(r) +
+        docAlert(r) + reikAlert(r) +
         '<div class="sv-wide-row" style="justify-content:space-between">' + nameBlock(r, false) + metaChips(r) + '</div>' +
         '<div class="sv-wide-row">' + stepPills(r) + marks(r) + '</div>' +
         aminningLine(r) +
@@ -369,6 +406,7 @@
   function render() {
     ensureView(); injectStyles();
     const v = viewEl(); if (!v) return;
+    if (!_reik2026Loaded) { _reik2026Loaded = true; loadReik2026(); }   // once → re-renders with reikningur-badges
     const b = buckets();
     b.vinnsla.sort(SORTERS[_sort] || SORTERS.name);   // röðun valin af notanda
     const fmtSum = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.', ',') + ' m.kr.' : (n > 0 ? Math.round(n / 1000) + ' þ.kr.' : '');
