@@ -498,7 +498,7 @@
     // höfð falin svo _updateTotalsCells og eldri kóði sem leitar að þeim brotni ekki.
     var rates = state.lines.length ? Array.from(new Set(state.lines.map(function(l){return l.vsk_pct||24;}))) : [24];
     var vskLabel = rates.length === 1 ? ('VSK ' + rates[0] + '%') : 'VSK';
-    var lbl  = 'font-size:12px;font-weight:700;letter-spacing:.07em;color:#94a3b8';
+    var lbl  = 'font-size:12px;font-weight:700;letter-spacing:.07em;color:#0f172a';
     var num  = "font-size:14px;font-weight:700;color:#334155;font-family:'Space Mono',monospace;font-variant-numeric:tabular-nums";
     var pill = 'display:inline-flex;align-items:center;gap:3px;background:#fff;border:1px solid #dbe2ea;border-radius:9px;padding:3px 9px';
     var pinp = "border:none;background:transparent;font:inherit;font-size:13px;text-align:right;font-variant-numeric:tabular-nums;color:#0f172a;outline:none";

@@ -31,6 +31,11 @@
       .vnav-btn[data-view="thjonustuver"]:hover{ background:var(--sidebar-hover,rgba(255,255,255,.07)) !important; color:rgba(255,255,255,.85) !important; }
       .vnav-btn[data-view="thjonustuver"].active{ background:var(--sidebar-active,rgba(201,60,29,.2)) !important; color:var(--sidebar-text-active,#fff) !important; }
 
+      /* 1b — allur texti í hliðarstikunni hvítur */
+      nav.view-nav .vnav-btn, .brand-name, .brand-sub, .nav-section-label,
+      .sidebar-user-name, .sidebar-user-role{ color:#fff !important; }
+      nav.view-nav .vnav-btn svg{ opacity:.95 !important; }
+
       /* 3 — notenda-skil sem SÝNILEG dauf lína ofan við hópinn */
       .vnav-btn.nav-grp-start{ margin-top:16px !important; padding-top:15px !important; border-top:1px solid rgba(255,255,255,.16) !important; }
       @media (max-width:900px){ .vnav-btn.nav-grp-start{ margin-top:11px !important; padding-top:11px !important; } }
