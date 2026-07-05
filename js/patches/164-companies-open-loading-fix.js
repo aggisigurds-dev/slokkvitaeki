@@ -66,6 +66,40 @@
     function esc(s) {
       return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
+    function digits(s) { return String(s == null ? '' : s).replace(/\D/g, ''); }
+
+    // A company row can be a DELETED duplicate (soft-deleted via deleted_at) whose
+    // live twin still exists under a different id — e.g. a 999999-9999 walk-in dup or
+    // a rekstrarfélag-staðsetning that got merged. Links to the deleted id land here
+    // ("Fyrirtæki #N fannst ekki"). Instead of a dead end, look up the deleted row's
+    // kennitala and redirect to the LIVE company that shares it.
+    function tryDeletedRedirect(numId) {
+      const sb = window.DB && (DB.sb || (DB.client && DB.client()) || DB.supabase);
+      if (!sb || typeof sb.from !== 'function') {
+        showError(numId, 'Fyrirtæki #' + numId + ' fannst ekki', 'Það er ekki í fyrirtækjalistanum. Hugsanlega var því eytt.');
+        return;
+      }
+      const main = document.getElementById('companies-main');
+      if (main) main.innerHTML = '<div class="loading-state" style="padding:40px;text-align:center;color:#64748b">Leita að fyrirtæki…</div>';
+      // 1) read the (possibly soft-deleted) source row to get its kt
+      Promise.resolve(sb.from('fyrirtaeki').select('id,nafn,kennitala,customer_base_id,deleted_at').eq('id', numId).maybeSingle())
+        .then(({ data: row }) => {
+          const kt = row && digits(row.kennitala);
+          if (!kt || kt.length < 7) throw new Error('no-kt');
+          // 2) find a LIVE (deleted_at null) company with the same kt, different id
+          return Promise.resolve(
+            sb.from('fyrirtaeki').select('id,nafn,deleted_at').eq('kennitala', row.kennitala).is('deleted_at', null)
+          ).then(({ data: live }) => {
+            const target = (live || []).find(x => x.id !== numId) || (live || [])[0];
+            if (!target) throw new Error('no-live');
+            // redirect — the live twin renders normally
+            safeCallOrig(target.id);
+          });
+        })
+        .catch(() => {
+          showError(numId, 'Fyrirtæki #' + numId + ' fannst ekki', 'Það er ekki í fyrirtækjalistanum. Hugsanlega var því eytt eða sameinað öðru.');
+        });
+    }
 
     const orig = Companies.openDetail;
     Companies.openDetail = function(id) {
@@ -109,9 +143,9 @@
             const stillList = (window.Companies && window.Companies.list) || [];
             const found = stillList.find(x => x.id === numId);
             if (found) safeCallOrig(numId);
-            else showError(numId, 'Fyrirtæki #' + numId + ' fannst ekki', 'Það er ekki í fyrirtækjalistanum. Hugsanlega var því eytt.');
+            else tryDeletedRedirect(numId);
           }).catch(() => {
-            showError(numId, 'Fyrirtæki #' + numId + ' fannst ekki', 'Það er ekki í fyrirtækjalistanum.');
+            tryDeletedRedirect(numId);
           });
         } else {
           showError(numId, 'Fyrirtæki #' + numId + ' fannst ekki');
