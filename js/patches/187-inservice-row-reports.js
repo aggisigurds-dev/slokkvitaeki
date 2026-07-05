@@ -23,6 +23,34 @@
   const BUCKET = 'samningar';
   function digits(s){ return String(s||'').replace(/\D/g,''); }
 
+  // kt (digits) → Set of years that already have a reikningur filed in
+  // customer_documents (Drive-indexed + POS-connected). Drives a small 🧾 marker
+  // on the year cell so the office sees "reikningur sendur" right in the list,
+  // alongside the úttektarskýrslu status. Loaded once, then cells are rebuilt.
+  let reikMap = null, reikLoading = false;
+  async function loadReik(){
+    if (reikLoading || reikMap) return; reikLoading = true;
+    try {
+      const sb = window.DB && DB.sb; if (!sb) { reikLoading = false; return; }
+      const r = await sb.from('customer_documents').select('customer_base_id,year')
+        .eq('doc_type','reikningur').not('customer_base_id','is',null);
+      const byBase = {};
+      (r.data || []).forEach(x => { if (x.customer_base_id != null && x.year) (byBase[x.customer_base_id] = byBase[x.customer_base_id] || new Set()).add(String(x.year)); });
+      const ids = Object.keys(byBase);
+      const map = {};
+      for (let i = 0; i < ids.length; i += 500) {
+        const b = await sb.from('customers_base').select('id,kennitala').in('id', ids.slice(i, i + 500));
+        (b.data || []).forEach(row => { const d = digits(row.kennitala); if (d.length >= 10) map[d] = byBase[row.id]; });
+      }
+      reikMap = map;
+      // rebuild the year cells so the new 🧾 markers appear
+      document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
+      document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
+      process();
+    } catch (_) {}
+    reikLoading = false;
+  }
+
   function process(){
     let uf = {}, att = {};
     try { if (window.AppSettings && AppSettings.path) uf = AppSettings.path('uttekt_files') || {}; } catch(e){}
@@ -83,6 +111,10 @@
             ? '<span style="width:4px;height:4px;border-radius:50%;background:#D99206;flex:0 0 auto"></span>'
             : '<span style="width:4px;height:4px;border-radius:50%;box-shadow:inset 0 0 0 1.5px #B9B6AC;flex:0 0 auto"></span>';
           td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Hengja skýrslu við ' + y + '" style="' + TAG + 'background:' + bg + ';border-color:' + bd + ';color:' + col + '">' + eye + yy + '</a>';
+        }
+        // 🧾 reikningur ársins tengdur (customer_documents) → lítið tákn við hlið skýrslu-stöðunnar
+        if (reikMap && reikMap[kt] && reikMap[kt].has(y)) {
+          td.innerHTML += '<span title="Reikningur ' + y + ' sendur / tengdur" style="margin-left:3px;font-size:10px;line-height:1;vertical-align:middle">🧾</span>';
         }
         tr.insertBefore(td, ref);
       });
@@ -149,4 +181,5 @@
   // marked nodes are skipped).
   setInterval(process, 1500);
   setTimeout(process, 120); setTimeout(process, 500);
+  setTimeout(loadReik, 900);   // load reikningur-status once, then re-render cells with 🧾
 })();
