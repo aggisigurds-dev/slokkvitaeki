@@ -30,6 +30,8 @@
     { k: 'hreyfingarlisti',  label: 'Hreyfingarlisti',       short: 'Hreyfingar', emoji: '📄' },
     { k: 'vidskiptavinir',   label: 'Viðskiptavinir',        short: 'Kúnnar',     emoji: '👤' },
     { k: 'sala',             label: 'Sala',                  emoji: '💵' },
+    { k: 'verkbord',         label: 'Verkefnalisti',         short: 'Verkefni',   emoji: '📋' },
+    { k: 'arsskodun',        label: 'Fyrirtæki í þjónustu',  short: 'Þjónusta',   emoji: '🏢' },
     // Brunahólf-síður — birtar inni í appinu í iframe (deep-link á tab-ið).
     { k: 'br-gerdreikninga', label: 'Gerð reikninga',        short: 'Reikn.gerð', emoji: '🧾', url: 'https://brunaholf.netlify.app/?embed=1#gerdreikninga' },
     { k: 'br-vinnubok',      label: 'Vinnubók',              emoji: '📓', url: 'https://brunaholf.netlify.app/?embed=1#vinnubok' },
@@ -43,6 +45,10 @@
       manifest: '/manifest-fjarmal.json',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
       defaults: ['krofu-yfirlit', 'sala', 'vidskiptavinir', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
+    { key: 'verkefni', emoji: '📋', name: 'Verkefnalisti', color: '#3b82f6', dark: '#1d4ed8',
+      manifest: '/manifest-verkefni.json',
+      blurb: 'Verkborð — beiðnir, verkefni og eftirfylgni',
+      defaults: ['verkbord', 'arsskodun', 'reikninga-postur'] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
 
