@@ -114,7 +114,7 @@
         '<div style="padding:14px 22px;background:linear-gradient(135deg,#0f172a,#1e293b);color:#fff;display:flex;justify-content:space-between;align-items:center">' +
           '<div>' +
             '<h2 style="margin:0;font-size:16px;font-weight:700">🎨 Aðlaga hliðarstiku</h2>' +
-            '<div style="font-size:11px;color:#cbd5e1;margin-top:2px">Færðu liði upp/niður · faldu þá sem þú þarft ekki</div>' +
+            '<div style="font-size:11px;color:#cbd5e1;margin-top:2px">Færðu liði upp/niður · faldu þá sem þú þarft ekki · „+ Lína" setur daufa flokkunar-línu</div>' +
           '</div>' +
           '<button id="_sc-x" type="button" style="background:transparent;border:1px solid rgba(255,255,255,0.4);color:#fff;width:32px;height:32px;border-radius:7px;cursor:pointer;font-size:16px;line-height:1">✕</button>' +
         '</div>' +
@@ -142,7 +142,7 @@
     root.innerHTML = _state.items.map((it, i) => {
       if (it.type === 'sep') {
         return '<div data-i="' + i + '" style="margin:4px 0;padding:6px 10px;background:#e2e8f0;border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:8px">' +
-          '<span style="font-size:11px;font-weight:700;color:#475569;letter-spacing:.04em;text-transform:uppercase">— Skil —</span>' +
+          '<span style="font-size:11px;font-weight:700;color:#475569;letter-spacing:.04em;text-transform:uppercase">— Dauf lína —</span>' +
           '<span style="display:flex;gap:4px">' +
             '<button class="_sc-up"   data-i="' + i + '" type="button" title="Færa upp" style="background:#fff;border:1px solid #cbd5e1;border-radius:5px;width:26px;height:24px;cursor:pointer;font-size:11px">▲</button>' +
             '<button class="_sc-down" data-i="' + i + '" type="button" title="Færa niður" style="background:#fff;border:1px solid #cbd5e1;border-radius:5px;width:26px;height:24px;cursor:pointer;font-size:11px">▼</button>' +
@@ -159,7 +159,7 @@
         '<span style="display:flex;gap:4px">' +
           '<button class="_sc-up"   data-i="' + i + '" type="button" title="Færa upp" style="background:#fff;border:1px solid #cbd5e1;border-radius:5px;width:26px;height:24px;cursor:pointer;font-size:11px">▲</button>' +
           '<button class="_sc-down" data-i="' + i + '" type="button" title="Færa niður" style="background:#fff;border:1px solid #cbd5e1;border-radius:5px;width:26px;height:24px;cursor:pointer;font-size:11px">▼</button>' +
-          '<button class="_sc-sep"  data-i="' + i + '" type="button" title="Bæta við skili fyrir neðan" style="background:#fff;border:1px solid #cbd5e1;color:#64748b;border-radius:5px;height:24px;padding:0 7px;cursor:pointer;font-size:11px;font-weight:600">+ Skil</button>' +
+          '<button class="_sc-sep"  data-i="' + i + '" type="button" title="Bæta við daufri línu fyrir neðan — flokkar valmyndina" style="background:#fff;border:1px solid #cbd5e1;color:#64748b;border-radius:5px;height:24px;padding:0 7px;cursor:pointer;font-size:11px;font-weight:600">+ Lína</button>' +
         '</span>' +
       '</div>';
     }).join('');
