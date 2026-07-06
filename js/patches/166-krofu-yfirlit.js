@@ -1128,14 +1128,14 @@
       const skyrslaBtn = skyrslaBtnFor(s);
       return `
         <div class="ky-row" style="padding:11px 12px;border-bottom:1px solid #f3f5f9">
-          <div style="display:flex;align-items:center;gap:9px">
+          <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
             ${isSendable(s)
               ? `<input type="checkbox" class="_ky-pick" data-id="${s.id}" data-amount="${Math.round(parseFloat(s.samtals) || 0)}" title="Velja kröfu í Payday-sendingu" style="width:20px;height:20px;cursor:pointer;accent-color:#2f5fe0;flex-shrink:0">`
               : '<span style="width:20px;flex-shrink:0"></span>'}
             <div class="ky-num" style="color:#1d4ed8;font-weight:700;font-size:14px;white-space:nowrap">${esc(s.num || '')}</div>
             <div class="ky-num" style="color:#64748b;font-size:12px;white-space:nowrap">${fmtDate(s.created_at)}</div>
             ${agingPill(da)}
-            <span class="ky-num" style="margin-left:auto;font-weight:800;color:#11141c;font-size:15px;white-space:nowrap">${fmtKr(s.samtals)}</span>
+            <span class="ky-num" style="margin-left:auto;font-weight:800;color:#11141c;font-size:15px;white-space:nowrap;flex-shrink:0">${fmtKr(s.samtals)}</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
             ${skyrslaBtn}
