@@ -60,9 +60,32 @@
       B + '.ky-month{color:#fff !important}' +
       B + '.ky-navbtn{background:linear-gradient(145deg,#0b0b0d,#2a2a30 30%,#3c3c44 52%,#1a1a1f 74%,#08080a) !important;color:#fff !important;border-color:#0a0b0d !important}' +
       '#view-krofu-yfirlit .ky-num{font-variant-numeric:tabular-nums}' +
+      // ▦ Tafla (table) mode — dense data table
+      V + '.ky-table{width:100%;border-collapse:collapse;font-size:12px}' +
+      V + '.ky-table th{position:sticky;top:0;z-index:1;background:#0f172a;color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;text-align:left;padding:8px 10px;white-space:nowrap}' +
+      V + '.ky-table td{padding:6px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}' +
+      V + '.ky-table tr.ky-tgrp td{background:#eef2f8;font-weight:700;border-top:2px solid #d7dee9}' +
+      V + '.ky-table tr.ky-trow:hover td{background:#f7f9fd}' +
+      B + '.ky-table td{color:#11141c}' +
       B + ".ky-num{font-family:'Space Mono',ui-monospace,SFMono-Regular,Menlo,monospace !important}";
     (document.head || document.documentElement).appendChild(s);
   })();
+
+  // ── View-mode toggle style (GLOBAL — the toggle lives in the banner, not the
+  //    view, so it must NOT be scoped to #view-krofu-yfirlit) ──────────────────
+  function injectVmStyle() {
+    if (document.getElementById('ky-vm-style')) return;
+    const s = document.createElement('style');
+    s.id = 'ky-vm-style';
+    s.textContent =
+      '.ky-vm{display:inline-flex;align-items:center;gap:0;background:rgba(10,14,24,.5);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:2px;margin:0 8px 0 4px;flex-shrink:0}' +
+      '.ky-vm-seg{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border:none;background:transparent;color:rgba(255,255,255,.62);border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;line-height:1;transition:background .12s,color .12s}' +
+      '.ky-vm-seg:hover{color:#fff}' +
+      '.ky-vm-seg.on{background:linear-gradient(180deg,#3b82f6,#2563eb);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}' +
+      '.ky-vm-ico{font-size:14px;line-height:1}' +
+      '@media (max-width:760px){.ky-vm-lbl{display:none}.ky-vm-seg{padding:7px 9px}}';
+    (document.head || document.documentElement).appendChild(s);
+  }
 
   const VIEW_ID = 'view-krofu-yfirlit';
   const NAV_KEY = 'krofu-yfirlit';
@@ -114,6 +137,83 @@
       '<span style="font-size:14px;line-height:1;color:' + (filled ? '#fff' : color) + '">' + glyph + '</span>' +
       '<span style="font-size:8.5px;font-weight:700;letter-spacing:.02em;color:' + (filled ? '#fff' : color) + '">' + esc(label) + '</span>' +
     '</button>';
+  }
+
+  // ── View-mode (Sími / Tafla / Skjár) ───────────────────────────────────────
+  // A 3-segment control in the banner switches the Kröfu-yfirlit layout between
+  // 📱 mobile (stacked, big taps, no overlap) · ▦ table (dense) · 🖥 desktop
+  // (the current card look). Persisted in localStorage.slokk_viewmode and mirrored
+  // onto html[data-viewmode] so the render() branch + any CSS can read it. For now
+  // ONLY this page reacts; the toggle itself is app-wide.
+  const VM_KEY = 'slokk_viewmode';
+  const VM_ID = '_ky-vm-toggle';
+  const VM_MODES = ['mobile', 'table', 'desktop'];
+  function getViewMode() {
+    const m = document.documentElement.dataset.viewmode;
+    return VM_MODES.indexOf(m) >= 0 ? m : 'desktop';
+  }
+  function loadViewMode() {
+    let m = null;
+    try { m = localStorage.getItem(VM_KEY); } catch (_) {}
+    if (VM_MODES.indexOf(m) < 0) {
+      m = (window.matchMedia && window.matchMedia('(max-width:640px)').matches) ? 'mobile' : 'desktop';
+    }
+    return m;
+  }
+  function applyViewMode(mode, rerender) {
+    if (VM_MODES.indexOf(mode) < 0) mode = 'desktop';
+    document.documentElement.dataset.viewmode = mode;
+    try { localStorage.setItem(VM_KEY, mode); } catch (_) {}
+    const wrap = document.getElementById(VM_ID);
+    if (wrap) wrap.querySelectorAll('[data-vm]').forEach(b => b.classList.toggle('on', b.dataset.vm === mode));
+    if (rerender) {
+      const v = document.getElementById(VIEW_ID);
+      if (v && v.classList.contains('active')) { try { render(); } catch (_) {} }
+    }
+  }
+  function buildToggle() {
+    injectVmStyle();
+    const wrap = document.createElement('div');
+    wrap.id = VM_ID;
+    wrap.className = 'ky-vm';
+    wrap.setAttribute('role', 'group');
+    wrap.title = 'Sýn: Sími / Tafla / Skjár';
+    const mode = getViewMode();
+    const seg = [['mobile', '📱', 'Sími'], ['table', '▦', 'Tafla'], ['desktop', '🖥', 'Skjár']];
+    wrap.innerHTML = seg.map(([k, ico, lbl]) =>
+      '<button type="button" class="ky-vm-seg' + (k === mode ? ' on' : '') + '" data-vm="' + k + '" title="' + lbl + '">' +
+        '<span class="ky-vm-ico">' + ico + '</span><span class="ky-vm-lbl">' + lbl + '</span></button>'
+    ).join('');
+    wrap.querySelectorAll('[data-vm]').forEach(b => b.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation(); applyViewMode(b.dataset.vm, true);
+    }));
+    return wrap;
+  }
+  // Insert the toggle right before the banner clock (.bb-clockbox — same anchor as
+  // patch 238). If the Brunastál banner is off, drop a small floating fallback.
+  function ensureToggle() {
+    injectVmStyle();
+    const existing = document.getElementById(VM_ID);
+    const clockbox = document.querySelector('.bb-clockbox');
+    if (clockbox && clockbox.parentNode) {
+      if (existing && existing.parentNode === clockbox.parentNode) return;
+      const t = existing || buildToggle();
+      t.className = 'ky-vm'; t.style.cssText = '';   // clear any floating style
+      clockbox.parentNode.insertBefore(t, clockbox);
+      return;
+    }
+    if (existing) return;   // floating already present, banner absent
+    const t = buildToggle();
+    t.style.cssText += ';position:fixed;top:12px;right:112px;z-index:9997';
+    document.body.appendChild(t);
+  }
+  function bootViewModeToggle() {
+    applyViewMode(loadViewMode(), false);
+    ensureToggle();
+    let t = null;
+    new MutationObserver(() => { clearTimeout(t); t = setTimeout(ensureToggle, 200); })
+      .observe(document.body, { childList: true, subtree: true });
+    [400, 1200, 3000, 6000].forEach(ms => setTimeout(ensureToggle, ms));
   }
 
   // ── Sidebar entry ────────────────────────────────────────────────────────
@@ -580,7 +680,9 @@
         ${q && companies.length ? `<div style="font-size:12px;color:#64748b;margin-bottom:10px">🔍 ${shown.length} af ${companies.length} fyrirtækjum passa við „${esc(_state.search)}"</div>` : ''}
 
         ${shown.length
-          ? shown.map(renderCompany).join('')
+          ? (getViewMode() === 'table' ? renderTable(shown)
+             : getViewMode() === 'mobile' ? shown.map(renderCompanyMobile).join('')
+             : shown.map(renderCompany).join(''))
           : (q
               ? '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">Ekkert fyrirtæki passar við „' + esc(_state.search) + '"</div>'
               : '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">Engar útistandandi kröfur 🎉</div>')}
@@ -949,25 +1051,14 @@
     refreshBadge();
   }
 
-  function renderCompany(grp) {
-    // Sort sales chronological asc within the company card for easier review.
-    const sales = grp.sales.slice().sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
-    const ids = sales.map(s => s.id).join(',');
-    const totalStr = String(Math.round(grp.sum));
-    // Ids of claims not yet pushed to Payday — these get a pick checkbox and are
-    // what the company "select all" toggles.
-    const sendableIds = sales.filter(isSendable).map(s => s.id);
-
-    // 2026-06-30: sýna kt + email fyrir Payday-undirbúning. Lestir í þessari röð:
-    // 1) solur.customer_kt — POS-authoritative
-    // 2) fyrirtaeki via customer_id
-    // 3) customers_base via customer_base_id (einstaklings-kúnnar lenda hér)
+  // ── Shared per-company / per-row builders (used by all three view modes) ────
+  // Identity block: kt (direct or 🔗 name-recovered) + email + clickable name.
+  function companyIdentity(grp) {
+    const sales = grp.sales;
     const fy = grp.id ? (_state.fyrirtMap || {})[grp.id] : null;
     const firstSale = sales[0] || {};
     const baseRow = firstSale.customer_base_id ? (_state.baseMap || {})[firstSale.customer_base_id] : null;
     const directKt = (firstSale.customer_kt) || (fy && fy.kennitala) || (baseRow && baseRow.kennitala) || null;
-    // Name-recovered kt (only when nothing direct) — shown with 🔗 so it's clear
-    // it was auto-matched by name; it gets written back on Payday send.
     const recovered = !directKt ? (_state.nameKt || {})[keyName(grp.display)] : null;
     const email = (fy && fy.netfang) || (baseRow && baseRow.netfang) || null;
     const ktHtml = directKt
@@ -975,18 +1066,18 @@
       : recovered
         ? '<span title="kt fannst sjálfkrafa út frá nafni — vistast við sendingu í Payday" style="color:#b45309;font-family:ui-monospace,Menlo,monospace;font-size:11px">🔗 ' + esc(recovered.kt) + '</span>'
         : '<span style="color:#dc2626;font-weight:700">⚠️ vantar kt</span>';
-    const meta = [
+    const metaHtml = [
       ktHtml,
       email ? '<span style="color:#0369a1">📧 ' + esc(email) + '</span>'
             : '<span style="color:#b45309">⚠️ vantar netfang</span>',
     ].join(' · ');
-
-    // Smella á nafn fyrirtækisins → opna fyrirtækjasíðu (data-co-id click handler binds below)
     const nameHtml = grp.id
       ? `<a href="#" class="_ky-co-link" data-co-id="${grp.id}" style="color:#0f172a;text-decoration:none;border-bottom:1px dotted #94a3b8;cursor:pointer">${esc(grp.display)}</a>`
       : esc(grp.display);
-
-    // Aging distribution across the company's claims → mini bar + oldest days.
+    return { fy, firstSale, baseRow, directKt, recovered, email, metaHtml, nameHtml };
+  }
+  // Aging distribution → mini stacked bar + "elstu N d." label.
+  function agingBarFor(sales) {
     let agG = 0, agA = 0, agR = 0, oldestD = 0;
     sales.forEach(s => { const d = daysAgo(s.created_at) || 0; const amt = parseFloat(s.samtals) || 0; if (d > oldestD) oldestD = d; if (d > 60) agR += amt; else if (d > 30) agA += amt; else agG += amt; });
     const agTot = agG + agA + agR || 1;
@@ -996,6 +1087,178 @@
       (agR ? '<div style="width:' + (agR / agTot * 100) + '%;background:#ef4444"></div>' : '') +
     '</div>';
     const oldestLbl = oldestD > 60 ? 'elstu 60+ d.' : ('elstu ' + oldestD + ' d.');
+    return { agBar, oldestLbl };
+  }
+  // 📄 Skýrsla button (úttektarskýrsla PDF for the sale's year), or '' if none.
+  function skyrslaBtnFor(s) {
+    try {
+      if (window.CompanyAttachments && CompanyAttachments.list) {
+        const yr = String(new Date(s.created_at).getFullYear());
+        const candidateIds = [];
+        if (s.customer_id) candidateIds.push(s.customer_id);
+        const kt = (s.customer_kt || '').trim();
+        if (kt && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[kt]) {
+          _state.fyrirtIdsByKt[kt].forEach(id => { if (!candidateIds.includes(id)) candidateIds.push(id); });
+        }
+        let skyrsla = null, hitCoId = null;
+        for (const coId of candidateIds) {
+          const atts = CompanyAttachments.list(coId) || [];
+          const hit = atts.find(a => a && a.kind === 'skyrsla' && String(a.year || '') === yr);
+          if (hit) { skyrsla = hit; hitCoId = coId; break; }
+        }
+        if (skyrsla && hitCoId) {
+          return `<button class="_ky-skyrsla" data-co-id="${hitCoId}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:#fff;color:#3a4250;border:1px solid rgba(20,24,34,.16);border-radius:8px;cursor:pointer;font:inherit;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 1px 2px rgba(15,23,42,.05)">📄 Skýrsla</button>`;
+        }
+      }
+    } catch (_) {}
+    return '';
+  }
+
+  // ── 📱 Sími (mobile) — one column, big taps, nothing overlaps ───────────────
+  function renderCompanyMobile(grp) {
+    const sales = grp.sales.slice().sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+    const ids = sales.map(s => s.id).join(',');
+    const totalStr = String(Math.round(grp.sum));
+    const sendableIds = sales.filter(isSendable).map(s => s.id);
+    const ident = companyIdentity(grp);
+    const ag = agingBarFor(sales);
+
+    const rows = sales.map(s => {
+      const da = daysAgo(s.created_at);
+      const skyrslaBtn = skyrslaBtnFor(s);
+      return `
+        <div class="ky-row" style="padding:11px 12px;border-bottom:1px solid #f3f5f9">
+          <div style="display:flex;align-items:center;gap:9px">
+            ${isSendable(s)
+              ? `<input type="checkbox" class="_ky-pick" data-id="${s.id}" data-amount="${Math.round(parseFloat(s.samtals) || 0)}" title="Velja kröfu í Payday-sendingu" style="width:20px;height:20px;cursor:pointer;accent-color:#2f5fe0;flex-shrink:0">`
+              : '<span style="width:20px;flex-shrink:0"></span>'}
+            <div class="ky-num" style="color:#1d4ed8;font-weight:700;font-size:14px;white-space:nowrap">${esc(s.num || '')}</div>
+            <div class="ky-num" style="color:#64748b;font-size:12px;white-space:nowrap">${fmtDate(s.created_at)}</div>
+            ${agingPill(da)}
+            <span class="ky-num" style="margin-left:auto;font-weight:800;color:#11141c;font-size:15px;white-space:nowrap">${fmtKr(s.samtals)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+            ${skyrslaBtn}
+            <input class="_ky-note" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="🗒 minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — vistast sjálfkrafa." style="flex:1;min-width:0;padding:9px 10px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;font:inherit;font-size:14px;color:#11141c;outline:none">
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px">
+            ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', 'Krafa send', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
+            ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', 'Greitt', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
+            ${kyAbtn('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', 'Reikning', '#2f5fe0', 'Skoða / prenta reikning', false)}
+            ${kyAbtn('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', 'Breyta', '#c2410c', 'Opna í sölu-editor', false)}
+            ${kyAbtn('_ky-kredit', 'data-id="' + s.id + '"', '↩', 'Bakfæra', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
+            ${kyAbtn('_ky-nyjan', 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', '＋', 'Nýr', '#0f7a43', 'Ný sala fyrir þennan viðskiptavin', false)}
+          </div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:16px;margin-bottom:12px;overflow:hidden;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)">
+        <div style="padding:13px 14px;border-bottom:1px solid #eef1f6">
+          <div style="display:flex;align-items:flex-start;gap:10px">
+            ${sendableIds.length
+              ? `<label style="display:flex;align-items:center;padding-top:2px;cursor:pointer" title="Velja allar ósendar kröfur"><input type="checkbox" class="_ky-pick-co" data-ids="${sendableIds.join(',')}" style="width:20px;height:20px;cursor:pointer;accent-color:#2f5fe0"></label>`
+              : ''}
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:800;color:#11141c;font-size:17px;overflow-wrap:anywhere;line-height:1.25">${ident.nameHtml}</div>
+              <div style="font-size:11.5px;color:#8a93a5;margin-top:3px;overflow-wrap:anywhere">${ident.metaHtml}</div>
+              ${ag.agBar}
+              <div style="font-size:11.5px;color:#8a93a5;margin-top:4px">${sales.length} kröfur${grp.olderSum > 0 ? ' · <span style="color:#b45309">eldra: ' + fmtKr(grp.olderSum) + '</span>' : ''} · ${ag.oldestLbl}</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+            <div style="flex:1;min-width:0">
+              <div style="font-size:10px;color:#8a93a5;text-transform:uppercase;letter-spacing:.1em;font-weight:700">Krafa</div>
+              <div class="ky-num" style="font-size:22px;font-weight:800;color:#2f5fe0;white-space:nowrap">${fmtKr(grp.sum)}</div>
+            </div>
+            <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð" style="width:44px;height:44px;background:#f1f5f9;color:#475569;border:1px solid rgba(20,24,34,.14);border-radius:10px;cursor:pointer;font:inherit;font-size:15px;flex-shrink:0">📋</button>
+            <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt" style="height:44px;padding:0 14px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;border-radius:11px;cursor:pointer;font:inherit;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0">✓ Allar greiddar</button>
+          </div>
+        </div>
+        <div>${rows}</div>
+      </div>`;
+  }
+
+  // ── ▦ Tafla (table) — dense, fast-scan; grouped by company ──────────────────
+  // Compact icon-only action button; keeps the same _ky-* hook classes.
+  function kyIcon(cls, extra, glyph, color, title, filled) {
+    const base = 'width:30px;height:30px;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;';
+    const style = filled
+      ? base + 'border:1px solid #156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff'
+      : base + 'border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fff,#e7ebf1);color:' + color;
+    return '<button class="' + cls + ' ky-ticon' + (filled ? ' on' : '') + '" ' + extra + ' type="button" title="' + esc(title) + '" style="' + style + '">' + glyph + '</button>';
+  }
+  function renderTable(shown) {
+    const head = '<thead><tr>' +
+      '<th style="width:30px"></th>' +
+      '<th>R-nr</th><th>Dags</th><th>Aldur</th><th>Fyrirtæki</th>' +
+      '<th style="text-align:right">Upphæð</th><th>Staða / aðgerðir</th>' +
+      '</tr></thead>';
+    const body = shown.map(renderTableGroup).join('');
+    return '<div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;overflow-x:auto;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)">' +
+      '<table class="ky-table">' + head + '<tbody>' + body + '</tbody></table></div>';
+  }
+  function renderTableGroup(grp) {
+    const sales = grp.sales.slice().sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+    const ids = sales.map(s => s.id).join(',');
+    const totalStr = String(Math.round(grp.sum));
+    const sendableIds = sales.filter(isSendable).map(s => s.id);
+    const ident = companyIdentity(grp);
+    const groupRow = `
+      <tr class="ky-tgrp">
+        <td>${sendableIds.length ? `<input type="checkbox" class="_ky-pick-co" data-ids="${sendableIds.join(',')}" title="Velja allar ósendar kröfur" style="width:16px;height:16px;cursor:pointer;accent-color:#2f5fe0">` : ''}</td>
+        <td colspan="3" style="font-size:13px;overflow-wrap:anywhere">${ident.nameHtml}</td>
+        <td style="color:#8a93a5;font-weight:600;white-space:nowrap">${sales.length} kröfur</td>
+        <td class="ky-num" style="text-align:right;color:#2f5fe0;font-weight:800;white-space:nowrap">${fmtKr(grp.sum)}</td>
+        <td>
+          <div style="display:flex;gap:5px;align-items:center">
+            <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð" style="width:28px;height:28px;background:#fff;color:#475569;border:1px solid rgba(20,24,34,.16);border-radius:7px;cursor:pointer;font-size:12px;flex-shrink:0">📋</button>
+            <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt" style="height:28px;padding:0 10px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;border-radius:7px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0">✓ Allar</button>
+          </div>
+        </td>
+      </tr>`;
+    const rows = sales.map(s => {
+      const da = daysAgo(s.created_at);
+      return `
+        <tr class="ky-trow">
+          <td>${isSendable(s) ? `<input type="checkbox" class="_ky-pick" data-id="${s.id}" data-amount="${Math.round(parseFloat(s.samtals) || 0)}" title="Velja kröfu í Payday-sendingu" style="width:15px;height:15px;cursor:pointer;accent-color:#2f5fe0">` : ''}</td>
+          <td class="ky-num" style="color:#1d4ed8;font-weight:700;white-space:nowrap">${esc(s.num || '')}</td>
+          <td class="ky-num" style="color:#64748b;white-space:nowrap">${fmtDate(s.created_at)}</td>
+          <td>${agingPill(da)}</td>
+          <td style="color:#64748b;overflow-wrap:anywhere;max-width:200px">${esc(grp.display)}</td>
+          <td class="ky-num" style="text-align:right;font-weight:700;color:#11141c;white-space:nowrap">${fmtKr(s.samtals)}</td>
+          <td>
+            <div style="display:flex;gap:4px;align-items:center;flex-wrap:nowrap">
+              ${kyIcon('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday', !!s.krafa_sent_at)}
+              ${kyIcon('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
+              ${kyIcon('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', '#2f5fe0', 'Skoða / prenta reikning', false)}
+              ${kyIcon('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', '#c2410c', 'Opna í sölu-editor', false)}
+              ${kyIcon('_ky-kredit', 'data-id="' + s.id + '"', '↩', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
+              ${kyIcon('_ky-nyjan', 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', '＋', '#0f7a43', 'Ný sala fyrir þennan viðskiptavin', false)}
+            </div>
+          </td>
+        </tr>`;
+    }).join('');
+    return groupRow + rows;
+  }
+
+  function renderCompany(grp) {
+    // Sort sales chronological asc within the company card for easier review.
+    const sales = grp.sales.slice().sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
+    const ids = sales.map(s => s.id).join(',');
+    const totalStr = String(Math.round(grp.sum));
+    // Ids of claims not yet pushed to Payday — these get a pick checkbox and are
+    // what the company "select all" toggles.
+    const sendableIds = sales.filter(isSendable).map(s => s.id);
+
+    // 2026-06-30: sýna kt + email fyrir Payday-undirbúning (companyIdentity).
+    const ident = companyIdentity(grp);
+    const meta = ident.metaHtml;
+    const nameHtml = ident.nameHtml;
+    // Aging distribution across the company's claims → mini bar + oldest days.
+    const ag = agingBarFor(sales);
+    const agBar = ag.agBar;
+    const oldestLbl = ag.oldestLbl;
 
     return `
       <div style="background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:16px;margin-bottom:12px;overflow:hidden;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)">
@@ -1024,27 +1287,7 @@
           ${sales.map(s => {
             const da = daysAgo(s.created_at);
             // 2026-06-30: 📎 fylgiskjal — leita úttektarskýrslu sömu ár.
-            let skyrslaBtn = '';
-            try {
-              if (window.CompanyAttachments && CompanyAttachments.list) {
-                const yr = String(new Date(s.created_at).getFullYear());
-                const candidateIds = [];
-                if (s.customer_id) candidateIds.push(s.customer_id);
-                const kt = (s.customer_kt || '').trim();
-                if (kt && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[kt]) {
-                  _state.fyrirtIdsByKt[kt].forEach(id => { if (!candidateIds.includes(id)) candidateIds.push(id); });
-                }
-                let skyrsla = null, hitCoId = null;
-                for (const coId of candidateIds) {
-                  const atts = CompanyAttachments.list(coId) || [];
-                  const hit = atts.find(a => a && a.kind === 'skyrsla' && String(a.year || '') === yr);
-                  if (hit) { skyrsla = hit; hitCoId = coId; break; }
-                }
-                if (skyrsla && hitCoId) {
-                  skyrslaBtn = `<button class="_ky-skyrsla" data-co-id="${hitCoId}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:#fff;color:#3a4250;border:1px solid rgba(20,24,34,.16);border-radius:8px;cursor:pointer;font:inherit;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 1px 2px rgba(15,23,42,.05)">📄 Skýrsla</button>`;
-                }
-              }
-            } catch (_) {}
+            const skyrslaBtn = skyrslaBtnFor(s);
             return `
               <div class="ky-row" style="display:flex;align-items:center;gap:12px;padding:9px 18px;border-bottom:1px solid #f3f5f9;font-size:12.5px">
                 ${isSendable(s)
@@ -1191,11 +1434,12 @@
   guardButton();
   ensureView();
   patchSwitchView();
+  bootViewModeToggle();
   setTimeout(refreshBadge, 2500);
   setTimeout(refreshBadge, 8000);
   document.addEventListener('sale-edited', () => setTimeout(refreshBadge, 600));
 
-  window.KrofuYfirlit = { show, load, refreshBadge };
+  window.KrofuYfirlit = { show, load, refreshBadge, getViewMode, setViewMode: (m) => applyViewMode(m, true) };
   console.log('[patch-166] Kröfu yfirlit installed — krafa í heimabanka per fyrirtæki');
 })();
 /* === END KRÖFU YFIRLIT === */
