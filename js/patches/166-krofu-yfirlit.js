@@ -163,6 +163,10 @@
   function applyViewMode(mode, rerender) {
     if (VM_MODES.indexOf(mode) < 0) mode = 'desktop';
     document.documentElement.dataset.viewmode = mode;
+    // Broadcast an app-wide signal so ANY page (not just Kröfu yfirlit) can
+    // listen and re-render its own layout for the chosen mode. Kröfu yfirlit's
+    // own re-render below stays intact — this is purely additive.
+    try { document.dispatchEvent(new CustomEvent('slokk-viewmode', { detail: mode })); } catch (_) {}
     try { localStorage.setItem(VM_KEY, mode); } catch (_) {}
     const wrap = document.getElementById(VM_ID);
     if (wrap) wrap.querySelectorAll('[data-vm]').forEach(b => b.classList.toggle('on', b.dataset.vm === mode));

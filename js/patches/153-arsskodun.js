@@ -646,9 +646,18 @@
     // 2026-06-21 (mobile): on a phone-width screen force the CARD layout — the
     // wide 8-column table scrolls sideways and is unusable with a thumb. Desktop
     // keeps the user's chosen view (state.view).
+    // 2026-07-06: the app-wide view-mode toggle (📱 Sími / ▦ Tafla / 🖥 Skjár,
+    // lives in the Brunastál banner — patch 166) now also drives this page.
+    //   mobile  → single-column stacked cards (renderCards + data-viewmode CSS)
+    //   table   → dense company table (renderTable + data-viewmode CSS)
+    //   desktop → the current behaviour (phone-auto + the user's Kort/Listi pick)
     _ensureArsMobileCss();
+    _ensureArsVmCss();
+    const vm = arsViewMode();
     const isPhone = (window.innerWidth || document.documentElement.clientWidth) <= 768;
-    const effView = isPhone ? 'card' : state.view;
+    const effView = vm === 'mobile' ? 'card'
+                  : vm === 'table'  ? 'list'
+                  : (isPhone ? 'card' : state.view);
     // Stats restricted to companies that ARE in árskoðun (have equipment).
     // The full list still includes everyone — the user wanted the whole
     // fyrirtækjaregistur in one tab, but tiles only count the ones that
@@ -1209,6 +1218,53 @@
         '#view-arsskodun ._ars-statusrow{overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch;scroll-snap-type:x mandatory;max-width:100%}' +
         '#view-arsskodun ._ars-statusrow>button{scroll-snap-align:start;flex:0 0 auto!important;white-space:nowrap}' +
       '}';
+    document.head.appendChild(s);
+  }
+
+  // ── App-wide view-mode (📱 Sími / ▦ Tafla / 🖥 Skjár) ────────────────────
+  // The toggle itself lives in the banner (patch 166); it writes
+  // html[data-viewmode] and fires a `slokk-viewmode` event. Here we only READ
+  // that attribute and restyle. Fallback 'desktop'.
+  function arsViewMode() {
+    const m = document.documentElement.dataset.viewmode;
+    return (m === 'mobile' || m === 'table' || m === 'desktop') ? m : 'desktop';
+  }
+  // CSS keyed off html[data-viewmode] so it applies at ANY width (the toggle is
+  // deliberate, not screen-size driven). Matches the Kröfu yfirlit look:
+  // stacked big-tap cards for mobile · dense sticky-dark-header table for table.
+  function _ensureArsVmCss() {
+    if (document.getElementById('_ars-vm-css')) return;
+    const s = document.createElement('style');
+    s.id = '_ars-vm-css';
+    const M = 'html[data-viewmode="mobile"] #view-arsskodun ';
+    const T = 'html[data-viewmode="table"] #view-arsskodun ';
+    s.textContent =
+      // ── 📱 Sími — single column, ≥40px taps, nothing overflows ──
+      M + '._ars-cardgrid{grid-template-columns:1fr!important;gap:10px!important}' +
+      M + '._ars-card{padding:15px 16px!important;gap:11px!important;border-radius:14px!important}' +
+      M + '._ars-cn{font-size:16px!important;line-height:1.3!important;overflow-wrap:anywhere;word-break:break-word}' +
+      M + '._ars-ca{font-size:13px!important;overflow-wrap:anywhere}' +
+      M + '._ars-cgrid{gap:8px!important;font-size:12.5px!important}' +
+      M + '._ars-cgrid>div{padding:8px 9px!important}' +
+      M + '._ars-cgrid>div>div:last-child{font-size:15px!important}' +
+      M + '._ars-card ._ars-open-fyrirt,' + M + '._ars-card ._ars-open-map{min-height:44px!important;font-size:14px!important;border-radius:10px!important}' +
+      M + '._ars-card ._ars-tu-toggle{min-height:40px!important;font-size:12.5px!important;padding:8px 12px!important}' +
+      // toolbar/filters made thumb-usable regardless of window width
+      M + '._ars-vm{display:none!important}' +
+      M + '#_ars-search{font-size:16px!important;padding:12px 13px!important;border-radius:10px!important;width:100%!important;box-sizing:border-box!important}' +
+      M + '#_ars-new,' + M + '#_ars-print{min-height:44px!important;font-size:13px!important}' +
+      M + '#_ars-sort{min-height:44px!important;font-size:16px!important}' +
+      M + '._ars-st,' + M + '._ars-mo{min-height:38px!important;font-size:12.5px!important;padding:7px 11px!important}' +
+      M + '._ars-statgrid{grid-template-columns:1fr 1fr!important;gap:8px!important}' +
+      M + '._ars-statusrow{overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch;max-width:100%}' +
+      M + '._ars-statusrow>button{flex:0 0 auto!important;white-space:nowrap}' +
+      // ── ▦ Tafla — dense rows, small text, sticky dark header, many rows ──
+      T + 'table{font-size:11px!important;min-width:0!important}' +
+      T + 'table thead{position:sticky;top:0;z-index:2}' +
+      T + 'table thead tr{background:#0f172a!important;border-bottom:0!important}' +
+      T + 'table thead th{background:#0f172a!important;color:#fff!important;padding:7px 9px!important;font-size:9.5px!important;white-space:nowrap}' +
+      T + 'table tbody td{padding:5px 9px!important;font-size:11px!important}' +
+      T + 'table tbody td div{line-height:1.25!important}';
     document.head.appendChild(s);
   }
 
@@ -1859,6 +1915,14 @@
   // Keep the cached priority in sync when the ❗ control is cycled (patch 175),
   // so sorting by ❗ stays correct. The ❗ button updates itself in place — no
   // re-render here (that reset scroll and made the list jump).
+  // App-wide view-mode toggle (patch 166) → re-render THIS page live when it is
+  // the active view, so flipping 📱/▦/🖥 in the banner switches the layout
+  // instantly. Only re-renders when already rendered + visible (cheap no-op else).
+  document.addEventListener('slokk-viewmode', () => {
+    const v = document.getElementById(VIEW_ID);
+    if (v && v.classList.contains('active') && _rendered) { try { render(); } catch (_) {} }
+  });
+
   document.addEventListener('priority-changed', e => {
     const co = (_cache.list || []).find(x => String(x.id) === String(e.detail.coId));
     if (co) {
