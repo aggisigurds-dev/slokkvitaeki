@@ -165,7 +165,53 @@
     ].join('\n');
     (document.head||document.documentElement).appendChild(s);
   }
-  function render(){var v=document.getElementById('view-sala');if(!v)return;injectKarfaSkin();if(v.getAttribute('data-pos-v3')==='1')return;v.innerHTML=buildHTML();v.setAttribute('data-pos-v3','1');bindEvents();rerenderCatalog();rerenderDynamic();}
+  // ── App-wide view-mode (📱 Sími / ▦ Tafla / 🖥 Skjár) ────────────────────
+  // The toggle itself lives in the Brunastál banner (patch 166); it writes
+  // html[data-viewmode] + fires a `slokk-viewmode` event. POS is an interactive
+  // cart/checkout — NOT a data list — so the three modes are adapted rather than
+  // forced, and applied PURELY via CSS keyed off html[data-viewmode] so flipping
+  // mode is instant and NEVER re-renders (the cart + selected customer survive
+  // untouched — no JS markup rebuild). Fallback = 'desktop' (current layout).
+  //   📱 Sími   — phone-optimised POS: single column, big tappable tiles (≥44px),
+  //               prominent search, cart in flow + the green checkout PINNED to
+  //               the bottom thumb-zone as a running-total bar.
+  //   🖥 Skjár   — the CURRENT desktop layout, unchanged (no rules → inline wins).
+  //   ▦ Tafla   — a table layout doesn't map to a POS, so this is a COMPACT/DENSE
+  //               desktop variant (more, smaller product tiles + a tighter cart)
+  //               for a power user on a big screen. It is NOT a distinct "table".
+  function _ensurePosVmCss(){
+    if(document.getElementById('pos-vm-css'))return;
+    var s=document.createElement('style');s.id='pos-vm-css';
+    var M='html[data-viewmode="mobile"] #view-sala ';
+    var T='html[data-viewmode="table"] #view-sala ';
+    s.textContent=[
+      // ── 📱 Sími — single column, big taps, nothing overflows ──
+      M+'.pos-banner{margin:10px 10px 8px!important;min-height:0!important}',
+      M+'.pos-grid{grid-template-columns:1fr!important;gap:12px!important;padding:0 10px 104px!important;min-height:0!important}',
+      M+'.pos-col-left>div{padding:13px!important;margin-bottom:10px!important}',
+      M+'#pos-kt{font-size:17px!important;padding:14px 14px!important}',
+      // large tappable product/service tiles (≥44px targets, roomy text)
+      M+'#pos-services,'+M+'#pos-products{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))!important;gap:10px!important}',
+      M+'.pos-svc,'+M+'.pos-prod{padding:14px 10px!important;min-height:100px!important;border-radius:14px!important;gap:8px!important}',
+      M+'.pos-tile-ic{width:48px!important;height:48px!important}',
+      // cart flows in the column (un-stuck, full height) …
+      M+'.pos-cart{position:static!important;max-height:none!important;border-radius:16px!important}',
+      M+'#pos-lines{max-height:none!important;overflow:visible!important}',
+      // … and the green checkout is PINNED as a bottom thumb-zone bar (running total)
+      M+'#pos-checkout{position:fixed!important;left:0;right:0;bottom:0;width:auto!important;margin:0!important;border-radius:0!important;padding:18px!important;font-size:18px!important;min-height:58px!important;z-index:60;box-shadow:0 -6px 22px -6px rgba(0,0,0,.45)!important}',
+      // ── ▦ Tafla — compact/dense desktop (NOT a table; a POS has no list form) ──
+      T+'.pos-banner{margin:12px!important;min-height:0!important}',
+      T+'.pos-grid{grid-template-columns:1fr 330px!important;gap:12px!important}',
+      T+'#pos-services,'+T+'#pos-products{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))!important;gap:6px!important}',
+      T+'.pos-svc,'+T+'.pos-prod{padding:7px 5px!important;gap:4px!important}',
+      T+'.pos-tile-ic{width:32px!important;height:32px!important}',
+      T+'.pos-tile-ic svg{width:20px!important;height:20px!important}',
+      T+'.pos-svc>div,'+T+'.pos-prod>div{font-size:11px!important}',
+      T+'.pos-cart{padding:12px!important}'
+    ].join('\n');
+    (document.head||document.documentElement).appendChild(s);
+  }
+  function render(){var v=document.getElementById('view-sala');if(!v)return;injectKarfaSkin();_ensurePosVmCss();if(v.getAttribute('data-pos-v3')==='1')return;v.innerHTML=buildHTML();v.setAttribute('data-pos-v3','1');bindEvents();rerenderCatalog();rerenderDynamic();}
   // 2026-05-08: rerenderCatalog (vörur+þjónustur) er aðskilið frá
   // rerenderDynamic (karfa+totals). Áður var allt í einu sem þýddi að í
   // hvert sinn sem notandi bætti vöru í körfu var ALLUR vörulistinn
@@ -316,8 +362,8 @@
   }
   function buildHTML(){
     return buildBannerHTML() +
-    '<div style="display:grid;grid-template-columns:1fr 380px;gap:16px;padding:0 16px 16px;min-height:calc(100vh - 160px)">' +
-      '<div>' +
+    '<div class="pos-grid" style="display:grid;grid-template-columns:1fr 380px;gap:16px;padding:0 16px 16px;min-height:calc(100vh - 160px)">' +
+      '<div class="pos-col-left">' +
         '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px">' +
             '<div class="pos-sec" style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Viðskiptavinur</div>' +
@@ -378,7 +424,7 @@
           '<div id="pos-products" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>' +
         '</div>' +
       '</div>' +
-      '<div>' +
+      '<div class="pos-col-right">' +
         '<div class="pos-cart" style="background:#fff;border-radius:18px;padding:16px;box-shadow:0 14px 34px -18px rgba(10,15,25,.5);border:3px solid #0c0d10;position:sticky;top:12px;display:flex;flex-direction:column;max-height:calc(100vh - 200px)">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:13px">' +
             '<div style="display:flex;align-items:center;gap:9px">' +
@@ -1315,6 +1361,14 @@
   }
   function watch(){setInterval(function(){var v=document.getElementById('view-sala');if(!v||!v.classList.contains('active'))return;if(!document.getElementById('pos-checkout')){v.removeAttribute('data-pos-v3');loadAll().then(render);}},300);}
   window.POS = { getState: function(){ return state; }, totals: totals, rerenderDynamic: rerenderDynamic };
+  // App-wide view-mode toggle (patch 166) → POS reacts PURELY via CSS keyed off
+  // html[data-viewmode] (see _ensurePosVmCss). We deliberately DO NOT re-render
+  // here: a rebuild would wipe the cart + selected customer. We only make sure
+  // the mode CSS is present so the new attribute takes effect instantly.
+  document.addEventListener('slokk-viewmode', function(){
+    var v=document.getElementById('view-sala');
+    if(v && v.classList.contains('active')) _ensurePosVmCss();
+  });
   function init(){watch();console.log('[POS v3] Ready');}
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 })();
