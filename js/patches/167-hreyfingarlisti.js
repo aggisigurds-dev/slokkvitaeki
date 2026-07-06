@@ -13,6 +13,15 @@
   const VIEW_ID = 'view-hreyfingarlisti';
   const NAV_KEY = 'hreyfingarlisti';
 
+  // ── App-wide view-mode (📱 Sími / ▦ Tafla / 🖥 Skjár) ──────────────────────
+  // The toggle itself lives in the Brunastál banner (patch 166); here we only
+  // READ the current mode off html[data-viewmode] and re-render our own layout.
+  const VM_MODES = ['mobile', 'table', 'desktop'];
+  function getViewMode() {
+    const m = document.documentElement.dataset.viewmode;
+    return VM_MODES.indexOf(m) >= 0 ? m : 'desktop';
+  }
+
   // v3 "dark gradients" skin (handoff 2026-07-02): fonts + hover/abtn5 recipes.
   // The header bar is always dark now, so the title reads white on every theme.
   (function injectSkin() {
@@ -35,6 +44,20 @@
       V + '._hr-sort:hover{background:rgba(255,255,255,.07)}' +
       V + '.abtn5{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:50px;height:44px;padding:0 8px;border-radius:10px;border:1px solid rgba(20,24,34,.22);background:linear-gradient(180deg,#ffffff,#dbe0e9);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 3px 7px -3px rgba(20,30,60,.32);cursor:pointer;font:inherit;transition:transform .12s ease,box-shadow .12s ease}' +
       V + '.abtn5:hover{transform:translateY(-1px);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 6px 13px -4px rgba(20,30,60,.42)}' +
+      // ── ▦ Tafla (table) mode — dense, fast-scan data table, sticky dark header ──
+      V + '.hl-table{width:100%;border-collapse:collapse;font-size:12px}' +
+      V + '.hl-table th{position:sticky;top:0;z-index:1;background:#0f172a;color:#fff;font-size:10px;text-transform:uppercase;letter-spacing:.05em;font-weight:700;text-align:left;padding:7px 9px;white-space:nowrap;user-select:none}' +
+      V + '.hl-table th._hr-sort{cursor:pointer}' +
+      V + '.hl-table th._hr-sort:hover{background:#1e293b}' +
+      V + '.hl-table td{padding:5px 9px;border-bottom:1px solid #f1f5f9;vertical-align:middle;color:#11141c}' +
+      V + '.hl-table tr.hl-trow:hover td{background:#f7f9fd}' +
+      V + '.hl-ticon{width:29px;height:29px;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fff,#e7ebf1);transition:transform .1s ease}' +
+      V + '.hl-ticon:hover{transform:translateY(-1px)}' +
+      // ── 📱 Sími (mobile) mode — single-column stacked cards, big taps, wrap ──
+      V + '.hl-mcard{background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;margin-bottom:11px;overflow:hidden;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)}' +
+      V + '.hl-mhead{padding:12px 13px 11px;border-bottom:1px solid #eef1f6}' +
+      V + '.hl-macts{display:flex;gap:7px;padding:10px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}' +
+      V + '.hl-macts .abtn5{flex-shrink:0}' +
       // Let the .thm .app-page dark band fill the view flush (theme.css owns the look now).
       '#view-hreyfingarlisti{padding:0 !important;max-width:none !important;background:transparent !important}';
     (document.head || document.documentElement).appendChild(s);
@@ -401,27 +424,8 @@
           </div>
         </div>
 
-        <!-- table -->
-        <div class="data-table-wrap"><div class="data-table-scroll">
-          <table class="data-table" style="min-width:1080px">
-            <thead><tr>
-              <th class="_hr-sort" data-k="created_at">Dags · Tími <span class="sort-ar">${sortArrow('created_at')}</span></th>
-              <th class="_hr-sort" data-k="num">Skjal <span class="sort-ar">${sortArrow('num')}</span></th>
-              <th class="_hr-sort" data-k="customer_nafn">Viðskiptavinur <span class="sort-ar">${sortArrow('customer_nafn')}</span></th>
-              <th>Kennitala</th>
-              <th class="_hr-sort" data-k="tegund">Tegund <span class="sort-ar">${sortArrow('tegund')}</span></th>
-              <th class="_hr-sort" data-k="greitt_med">Greiðslumáti <span class="sort-ar">${sortArrow('greitt_med')}</span></th>
-              <th class="_hr-sort" data-k="stada">Staða <span class="sort-ar">${sortArrow('stada')}</span></th>
-              <th class="num _hr-sort" data-k="samtals">Upphæð <span class="sort-ar">${sortArrow('samtals')}</span></th>
-              <th class="center">Aðgerðir</th>
-            </tr></thead>
-            <tbody>
-              ${rows.length
-                ? rows.map(rowHtml).join('')
-                : '<tr><td colspan="9" style="padding:44px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar</td></tr>'}
-            </tbody>
-          </table>
-        </div></div>
+        <!-- list — layout differs per view-mode (📱 / ▦ / 🖥); data + hooks identical -->
+        ${listHtml(rows)}
 
       </main></div></div>`;
 
@@ -556,52 +560,155 @@
     '</button>';
   }
 
-  function rowHtml(s) {
-    const isCredit = !!s.is_credit;
+  // ── Shared per-row bits (identical data + hooks across all three layouts) ───
+  function custNameHtml(s) {
+    return s.customer_id
+      ? `<a class="_hr-co" data-id="${s.customer_id}" href="#company/${s.customer_id}" title="Opna fyrirtækjaspjald" style="color:#1d4ed8;text-decoration:none;cursor:pointer">${esc(s.customer_nafn || '—')}</a>`
+      : esc(s.customer_nafn || '—');
+  }
+  function typeBtnFor(s) { return s.is_credit ? metalBtn('↩ Kredit', GRAD.purple) : metalBtn('Sala', GRAD.sala); }
+  function statusBtnFor(s) {
     const isInvoice = (s.greitt_med === 'greitt_sidar' || s.greitt_med === 'reikningur');
-    const isPaid = !!s.paid_at;
+    return s.is_credit ? metalBtn('↩ Kredit', GRAD.purple)
+      : s.paid_at ? metalBtn('✓ Greitt', GRAD.green)
+      : isInvoice ? metalBtn('⚠ Ógreitt', GRAD.gold)
+      : '<span style="color:#94a3b8;font-size:12px">—</span>';
+  }
+  function amountHtml(s) {
     const total = +s.samtals || 0;
-
-    const typeBtn = isCredit ? metalBtn('↩ Kredit', GRAD.purple) : metalBtn('Sala', GRAD.sala);
-    const statusBtn = isCredit
-      ? metalBtn('↩ Kredit', GRAD.purple)
-      : isPaid
-        ? metalBtn('✓ Greitt', GRAD.green)
-        : isInvoice
-          ? metalBtn('⚠ Ógreitt', GRAD.gold)
-          : '<span style="color:#94a3b8;font-size:12px">—</span>';
-
-    const amountCol = isCredit
+    return s.is_credit
       ? `<span class="hl-mono" style="color:#dc2626;font-weight:700">${esc(fmtKr(-Math.abs(total)))}</span>`
       : `<span class="hl-mono" style="color:#11141c;font-weight:700">${esc(fmtKr(total))}</span>`;
-
-    const acts = [];
-    acts.push(abtn('_hr-send', 'data-id="' + s.id + '"', '✉', 'Kvittun', '#2f5fe0', 'Senda kvittun í tölvupósti'));
-    acts.push(abtn('_hr-view', 'data-id="' + s.id + '"', '🖨', 'PDF', '#475569', 'Skoða / prenta / vista PDF'));
-    if (!isCredit) {
-      acts.push(abtn('_hr-edit', 'data-id="' + s.id + '"', '✎', 'Breyta', '#c2410c', 'Breyta sölu — óSENDA reikninga má breyta beint'));
-      acts.push(abtn('_hr-bakfaera', 'data-id="' + s.id + '"', '↩', 'Kredit', '#dc2626', 'Bakfæra (kreditfæra) þennan reikning'));
+  }
+  // Ordered action list — one source of truth, rendered labelled (abtn5) on
+  // desktop/mobile and icon-only (hl-ticon) in the dense table.
+  function actionDefs(s) {
+    const defs = [];
+    defs.push({ cls: '_hr-send', extra: 'data-id="' + s.id + '"', glyph: '✉', label: 'Kvittun', color: '#2f5fe0', title: 'Senda kvittun í tölvupósti' });
+    defs.push({ cls: '_hr-view', extra: 'data-id="' + s.id + '"', glyph: '🖨', label: 'PDF', color: '#475569', title: 'Skoða / prenta / vista PDF' });
+    if (!s.is_credit) {
+      defs.push({ cls: '_hr-edit', extra: 'data-id="' + s.id + '"', glyph: '✎', label: 'Breyta', color: '#c2410c', title: 'Breyta sölu — óSENDA reikninga má breyta beint' });
+      defs.push({ cls: '_hr-bakfaera', extra: 'data-id="' + s.id + '"', glyph: '↩', label: 'Kredit', color: '#dc2626', title: 'Bakfæra (kreditfæra) þennan reikning' });
     }
-    acts.push(abtn('_hr-nyjan', 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', '＋', 'Nýr + kredit', '#0f7a43', 'Ný sala fyrir þennan viðskiptavin (opnar Sölu, afsláttur bætist sjálfkrafa)'));
+    defs.push({ cls: '_hr-nyjan', extra: 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', glyph: '＋', label: 'Nýr + kredit', color: '#0f7a43', title: 'Ný sala fyrir þennan viðskiptavin (opnar Sölu, afsláttur bætist sjálfkrafa)' });
+    return defs;
+  }
+  function actsAbtn(s) { return actionDefs(s).map(d => abtn(d.cls, d.extra, d.glyph, d.label, d.color, d.title)).join(''); }
+  function iconBtn(d) {
+    return '<button class="' + d.cls + ' hl-ticon" ' + d.extra + ' type="button" title="' + esc(d.title) + '" style="color:' + d.color + '">' + d.glyph + '</button>';
+  }
 
+  // Sort-header for the dense table (reuses the ._hr-sort click hook + data-k).
+  function thT(key, label, align) {
+    return `<th class="_hr-sort" data-k="${key}" style="text-align:${align || 'left'}">${esc(label)} <span style="font-size:9px;font-weight:400;opacity:.75">${sortArrow(key)}</span></th>`;
+  }
+
+  // ── List section — layout differs by view-mode; data/hooks identical ───────
+  function listHtml(rows) {
+    const mode = getViewMode();
+    if (mode === 'mobile') return mobileCardsHtml(rows);
+    if (mode === 'table')  return tableDenseHtml(rows);
+    return desktopTableHtml(rows);
+  }
+
+  // 🖥 Skjár — the original full-width layout, unchanged.
+  function desktopTableHtml(rows) {
+    return `
+      <div class="data-table-wrap"><div class="data-table-scroll">
+        <table class="data-table" style="min-width:1080px">
+          <thead><tr>
+            <th class="_hr-sort" data-k="created_at">Dags · Tími <span class="sort-ar">${sortArrow('created_at')}</span></th>
+            <th class="_hr-sort" data-k="num">Skjal <span class="sort-ar">${sortArrow('num')}</span></th>
+            <th class="_hr-sort" data-k="customer_nafn">Viðskiptavinur <span class="sort-ar">${sortArrow('customer_nafn')}</span></th>
+            <th>Kennitala</th>
+            <th class="_hr-sort" data-k="tegund">Tegund <span class="sort-ar">${sortArrow('tegund')}</span></th>
+            <th class="_hr-sort" data-k="greitt_med">Greiðslumáti <span class="sort-ar">${sortArrow('greitt_med')}</span></th>
+            <th class="_hr-sort" data-k="stada">Staða <span class="sort-ar">${sortArrow('stada')}</span></th>
+            <th class="num _hr-sort" data-k="samtals">Upphæð <span class="sort-ar">${sortArrow('samtals')}</span></th>
+            <th class="center">Aðgerðir</th>
+          </tr></thead>
+          <tbody>
+            ${rows.length
+              ? rows.map(rowHtml).join('')
+              : '<tr><td colspan="9" style="padding:44px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar</td></tr>'}
+          </tbody>
+        </table>
+      </div></div>`;
+  }
+
+  // ▦ Tafla — dense scan table (compact rows, small text, sticky dark header,
+  // icon-only actions), many rows visible at once.
+  function tableDenseHtml(rows) {
+    const head = '<thead><tr>' +
+      thT('created_at', 'Dags · Tími') +
+      thT('num', 'Skjal') +
+      thT('customer_nafn', 'Viðskiptavinur') +
+      '<th>Kt.</th>' +
+      thT('tegund', 'Tegund') +
+      thT('greitt_med', 'Greiðslum.') +
+      thT('stada', 'Staða') +
+      thT('samtals', 'Upphæð', 'right') +
+      '<th style="text-align:right">Aðgerðir</th>' +
+      '</tr></thead>';
+    const body = rows.length
+      ? rows.map(rowDenseHtml).join('')
+      : '<tr><td colspan="9" style="padding:40px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar</td></tr>';
+    return '<div class="data-table-wrap" style="overflow-x:auto"><table class="hl-table">' + head + '<tbody>' + body + '</tbody></table></div>';
+  }
+  function rowDenseHtml(s) {
+    const acts = actionDefs(s).map(iconBtn).join('');
+    return `<tr class="hl-trow">
+      <td style="white-space:nowrap"><span class="hl-mono" style="font-size:11px;color:#334155">${esc(fmtDate(s.created_at))}</span> <span class="hl-mono" style="font-size:10px;color:#94a3b8">${esc(fmtTime(s.created_at))}</span></td>
+      <td><span class="hl-mono" style="font-size:11px;color:#1d4ed8;font-weight:700">${esc(s.num || '')}</span></td>
+      <td style="font-size:12px;font-weight:600;overflow-wrap:anywhere;max-width:220px">${custNameHtml(s)}</td>
+      <td style="white-space:nowrap">${ktCell(s.customer_kt)}</td>
+      <td>${typeBtnFor(s)}</td>
+      <td>${methodBtn(s.greitt_med)}</td>
+      <td>${statusBtnFor(s)}</td>
+      <td style="text-align:right;white-space:nowrap">${amountHtml(s)}</td>
+      <td><div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:nowrap">${acts}</div></td>
+    </tr>`;
+  }
+
+  // 📱 Sími — single-column stacked cards, ≥40px taps, names/amounts wrap.
+  function mobileCardsHtml(rows) {
+    if (!rows.length) return '<div style="padding:44px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar</div>';
+    return '<div class="hl-mlist">' + rows.map(cardMobileHtml).join('') + '</div>';
+  }
+  function cardMobileHtml(s) {
+    return `
+      <div class="hl-mcard">
+        <div class="hl-mhead">
+          <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
+            <span class="hl-mono" style="font-size:13px;color:#1d4ed8;font-weight:700">${esc(s.num || '')}</span>
+            <span class="hl-mono" style="font-size:12px;color:#64748b">${esc(fmtDate(s.created_at))}${fmtTime(s.created_at) ? ' · ' + esc(fmtTime(s.created_at)) : ''}</span>
+            <span style="margin-left:auto;font-size:16px;overflow-wrap:anywhere">${amountHtml(s)}</span>
+          </div>
+          <div style="margin-top:8px;font-size:15px;font-weight:700;color:#11141c;overflow-wrap:anywhere;line-height:1.3">${custNameHtml(s)}</div>
+          <div style="margin-top:4px">${ktCell(s.customer_kt)}</div>
+          <div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+            ${typeBtnFor(s)} ${methodBtn(s.greitt_med)} ${statusBtnFor(s)}
+          </div>
+        </div>
+        <div class="hl-macts">${actsAbtn(s)}</div>
+      </div>`;
+  }
+
+  function rowHtml(s) {
     return `<tr style="border-bottom:1px solid #eef1f6">
       <td style="padding:10px 14px;white-space:nowrap">
         <span class="hl-mono" style="font-size:12px;color:#334155">${esc(fmtDate(s.created_at))}</span>
         <span class="hl-mono" style="display:block;font-size:10.5px;color:#94a3b8;margin-top:1px">${esc(fmtTime(s.created_at))}</span>
       </td>
       <td style="padding:10px 14px"><span class="hl-mono" style="font-size:12px;color:#1d4ed8;font-weight:700">${esc(s.num || '')}</span></td>
-      <td style="padding:10px 14px;font-size:13.5px;font-weight:600;color:#11141c">${
-        s.customer_id
-          ? `<a class="_hr-co" data-id="${s.customer_id}" href="#company/${s.customer_id}" title="Opna fyrirtækjaspjald" style="color:#1d4ed8;text-decoration:none;cursor:pointer">${esc(s.customer_nafn || '—')}</a>`
-          : esc(s.customer_nafn || '—')
-      }</td>
+      <td style="padding:10px 14px;font-size:13.5px;font-weight:600;color:#11141c">${custNameHtml(s)}</td>
       <td style="padding:10px 14px;white-space:nowrap">${ktCell(s.customer_kt)}</td>
-      <td style="padding:10px 14px">${typeBtn}</td>
+      <td style="padding:10px 14px">${typeBtnFor(s)}</td>
       <td style="padding:10px 14px">${methodBtn(s.greitt_med)}</td>
-      <td style="padding:10px 14px">${statusBtn}</td>
-      <td style="padding:10px 14px;text-align:right">${amountCol}</td>
+      <td style="padding:10px 14px">${statusBtnFor(s)}</td>
+      <td style="padding:10px 14px;text-align:right">${amountHtml(s)}</td>
       <td style="padding:7px 14px;border-left:1px solid #eef1f6">
-        <div style="display:flex;gap:6px;justify-content:flex-end">${acts.join('')}</div>
+        <div style="display:flex;gap:6px;justify-content:flex-end">${actsAbtn(s)}</div>
       </td>
     </tr>`;
   }
@@ -725,6 +832,14 @@
   }
   window.addEventListener('hashchange', handleDeepLink);
   setTimeout(handleDeepLink, 1400);
+
+  // App-wide view-mode toggle (patch 166, in the banner) → re-render THIS page
+  // live when it is the active view, so flipping 📱/▦/🖥 switches the layout
+  // instantly. Cheap no-op when the view is not active.
+  document.addEventListener('slokk-viewmode', () => {
+    const v = document.getElementById(VIEW_ID);
+    if (v && v.classList.contains('active')) { try { render(); } catch (_) {} }
+  });
 
   window.Hreyfingarlisti = { show, load, lookup: lookupCustomer };
   console.log('[patch-167] Hreyfingarlisti installed');
