@@ -341,6 +341,31 @@
     });
 
     render();
+    maybeAutoSync();   // athuga greiðslur í Payday sjálfkrafa (throttlað) → Greitt kviknar sjálft
+  }
+
+  // Sjálfvirk greiðslu-athugun: keyrir /api/payday-sync-paid í bakgrunni þegar
+  // síðan er opnuð (mest einu sinni á 30 mín per vafra), án modal. Ef eitthvað er
+  // merkt greitt → endur-render svo „Greitt" kvikni sjálft. Handvirki 🔄-takkinn
+  // er áfram til staðar fyrir strax-athugun.
+  let _autoSyncing = false;
+  async function maybeAutoSync() {
+    if (_autoSyncing) return;
+    let last = 0; try { last = +localStorage.getItem('_ky_paysync_at') || 0; } catch (_) {}
+    if (Date.now() - last < 30 * 60 * 1000) return;   // throttle: 30 mín
+    _autoSyncing = true;
+    try { localStorage.setItem('_ky_paysync_at', String(Date.now())); } catch (_) {}
+    try {
+      const res = await fetch('/api/payday-sync-paid', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.marked_count) {
+        if (window.Toast && Toast.show) Toast.show('✓ ' + data.marked_count + ' greiddar (Payday)');
+        _autoSyncing = false;          // leyfa endur-render án þess að læsa
+        await load(_state.month); refreshBadge();
+        return;
+      }
+    } catch (_) {}
+    _autoSyncing = false;
   }
 
   function pickupStatus(saleNum) {
@@ -679,11 +704,12 @@
     main.querySelectorAll('._ky-mark-paid').forEach(b => {
       b.addEventListener('click', async () => {
         const id = b.dataset.id;
-        if (!confirm('Merkja sem greitt? (paid_at = núna)')) return;
+        const isOn = b.dataset.on === '1';   // þegar greitt → afhaka
+        if (isOn && !confirm('Afhaka „greitt"? (paid_at hreinsað)')) return;
         const SB = getSB();
-        const r = await SB.from('solur').update({ paid_at: new Date().toISOString() }).eq('id', id);
+        const r = await SB.from('solur').update({ paid_at: isOn ? null : new Date().toISOString() }).eq('id', id);
         if (r.error) { alert('Villa: ' + r.error.message); return; }
-        if (window.Toast && Toast.show) Toast.show('✓ Merkt sem greitt');
+        if (window.Toast && Toast.show) Toast.show(isOn ? '↩ Afhakað' : '✓ Merkt sem greitt');
         await load(_state.month);
         refreshBadge();
       });
@@ -1036,7 +1062,7 @@
                 <span class="ky-num" style="width:90px;text-align:right;font-weight:700;color:#11141c;white-space:nowrap;flex-shrink:0">${fmtKr(s.samtals)}</span>
                 <div style="display:flex;gap:6px;flex-shrink:0">
                   ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', 'Krafa send', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
-                  ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"', '✓', 'Greitt', '#0f7a43', 'Merkja sem greitt', false)}
+                  ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', 'Greitt', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
                   ${kyAbtn('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', 'Reikning', '#2f5fe0', 'Skoða / prenta reikning', false)}
                   ${kyAbtn('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', 'Breyta', '#c2410c', 'Opna í sölu-editor', false)}
                   ${kyAbtn('_ky-kredit', 'data-id="' + s.id + '"', '↩', 'Bakfæra', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
