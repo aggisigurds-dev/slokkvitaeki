@@ -195,9 +195,35 @@
       ...l,
       qty: -(+l.qty || 0)
     }));
-    const ex = creditLines.reduce((a, l) => a + (Math.abs(+l.qty||0) * (+l.unit_price_ex_vat||0)), 0);
-    const vsk = creditLines.reduce((a, l) => a + (Math.abs(+l.qty||0) * (+l.unit_price_ex_vat||0) * ((+l.vsk_pct||0)/100)), 0);
+    // BUG-FIX 2026-07-07: the credit note must honour the ORIGINAL sale's
+    // afsláttur. `linur` carry FULL unit prices (the discount lives only in the
+    // sale's totals — see solur schema note), so summing line value straight
+    // gives the pre-discount amount. Crediting a 25%-discounted 81.000 kr
+    // invoice used to produce a −108.000 kr credit note. Instead:
+    //   • crediting ALL lines → mirror the sale's stored discounted totals.
+    //   • crediting SOME lines → scale the selected lines by the same
+    //     discounted/full ratio the sale had.
+    const selEx  = creditLines.reduce((a, l) => a + (Math.abs(+l.qty||0) * (+l.unit_price_ex_vat||0)), 0);
+    const selVsk = creditLines.reduce((a, l) => a + (Math.abs(+l.qty||0) * (+l.unit_price_ex_vat||0) * ((+l.vsk_pct||0)/100)), 0);
+    const fullEx = (Array.isArray(origSale.lines) ? origSale.lines : []).reduce(
+      (a, l) => a + (Math.abs(+l.qty||0) * (+l.unit_price_ex_vat||0)), 0);
+    const saleEx  = +origSale.ex  || 0;   // upphaed_an_vsk (POST-discount)
+    const saleVsk = +origSale.vsk || 0;   // vsk_upphaed    (POST-discount)
+    const isFull  = fullEx > 0.5 && Math.abs(selEx - fullEx) < 0.5;
+    let ex, vsk;
+    if (isFull && saleEx > 0) {
+      // whole invoice → use the exact stored discounted totals
+      ex = saleEx; vsk = saleVsk;
+    } else {
+      // partial → scale selected lines by the sale's discount ratio
+      const ratio = fullEx > 0.5 ? Math.min(1, (saleEx || fullEx) / fullEx) : 1;
+      ex = Math.round(selEx * ratio);
+      vsk = Math.round(selVsk * ratio);
+    }
     const total = -(ex + vsk);
+    // m.vsk afsláttur that this credit reflects (stored positive elsewhere;
+    // negative here so a full-invoice reconciliation nets to zero).
+    const afsl = -Math.max(0, Math.round((selEx + selVsk) - (ex + vsk)));
 
     // Get next sale number
     const today = new Date();
@@ -223,6 +249,7 @@
       upphaed_an_vsk: -ex,
       vsk_upphaed: -vsk,
       samtals: total,
+      afslattur: afsl,
       greitt_med: origSale.payment || 'reikningur',
       athugasemdir: reason ? 'Kreditfærsla: ' + reason : 'Kreditfærsla á reikning ' + (origSale.num || ''),
       is_credit: true,
