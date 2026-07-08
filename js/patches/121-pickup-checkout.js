@@ -521,15 +521,20 @@
         return s + (ex.qty || 1) * (ex.unit_price_ex_vat || 0) * (1 + (ex.vsk_pct || 24) / 100);
       }, 0);
       const subTotal = unitsTotal + extrasTotal;
-      // 2026-05-24: Apply optional pickup-time discount (0–100 %).
+      // 2026-07-08: carry the draft's existing POS discount (gross kr) so the
+      // preview matches finalizePickup — before, a "greitt síðar" draft with a
+      // kassa-afslátt was silently previewed AND charged at full price.
+      const origDisc = Math.min(Math.max(0, Math.round(+(sale && sale.afslattur) || 0)), subTotal);
+      // 2026-05-24: Apply optional pickup-time discount (0–100 %) on the rest.
       const discPct = Math.max(0, Math.min(100, +pickupDiscountPct || 0));
-      const discountKr = subTotal * discPct / 100;
-      const grand = subTotal - discountKr;
+      const discountKr = (subTotal - origDisc) * discPct / 100;
+      const grand = subTotal - origDisc - discountKr;
       return {
         totalUnits, takenCount, perUnit,
         unitsTotal: Math.round(unitsTotal),
         extrasTotal: Math.round(extrasTotal),
         subTotal: Math.round(subTotal),
+        origDisc: Math.round(origDisc),
         discountPct: discPct,
         discountKr: Math.round(discountKr),
         grand: Math.round(grand)
@@ -547,6 +552,11 @@
           '<div style="color:#475569">' + t.takenCount + ' tæki á ' + esc(fmtKr(t.perUnit)) + ' = </div>' +
           '<div style="color:#475569;text-align:right">' + esc(fmtKr(t.unitsTotal)) + '</div>' +
           (t.extrasTotal ? '<div style="color:#475569">+ Aukalega:</div><div style="color:#475569;text-align:right">' + esc(fmtKr(t.extrasTotal)) + '</div>' : '') +
+          (t.origDisc
+            ? '<div style="color:#b45309">− Afsláttur úr sölu:</div>' +
+              '<div style="color:#b45309;text-align:right">−' + esc(fmtKr(t.origDisc)) + '</div>'
+            : ''
+          ) +
           (t.discountKr
             ? '<div style="color:#b45309;font-weight:600">− Afsláttur (' + t.discountPct + '%):</div>' +
               '<div style="color:#b45309;font-weight:600;text-align:right">−' + esc(fmtKr(t.discountKr)) + '</div>'
@@ -598,9 +608,9 @@
       finalBtn.textContent = 'Vista…';
       try {
         // 2026-05-24: Pass the pickup-time discount % and free-text note
-        // captured in the modal. finalizePickup applies the discount by
-        // scaling each line's unit_price_ex_vat and stores the kr amount
-        // in `afslattur`; note is appended to the audit trail.
+        // captured in the modal. finalizePickup keeps line prices FULL and
+        // stores draft-discount + pickup-discount combined in `afslattur`
+        // (samtals = gross − afslattur); note is appended to the audit trail.
         await finalizePickup(job, sale, unitState, pickupExtras, payMethod, t, customerInfo, pickupDiscountPct, pickupNote);
         // Reset extras + final-adjustments state for next pickup
         pickupExtras.length = 0;
@@ -753,27 +763,31 @@
       });
     });
 
-    // 2026-05-24: Apply optional pickup-time discount by scaling every
-    // line's unit_price_ex_vat. Doing it on the lines (rather than just
-    // adjusting the grand total) keeps mixed-VSK math correct: each line
-    // still pays its own VSK rate, just on a discounted base. Captures
-    // the kr amount in `afslatturKr` for the `afslattur` column.
+    // 2026-07-08 (afsláttar-úttekt): discounts are NOT baked into the line
+    // prices anymore. Lines keep FULL unit prices (the POS convention) and the
+    // whole discount lives in `afslattur` (kr m. vsk) with samtals = gross −
+    // afslattur — exactly how pos.js saves sales, and what SalaInvoice / the
+    // 233 PDF (case C) expect. The old code scaled the lines AND stored
+    // afslattur, so every re-print subtracted the discount a SECOND time.
+    // Two components:
+    //   • origAfsl — the draft's existing POS discount (previously silently
+    //     dropped, so "greitt síðar" drafts lost their discount at pickup)
+    //   • pickup % — entered in this modal, applied on the remainder
     const discPct = Math.max(0, Math.min(100, +discountPct || 0));
-    let afslatturKr = 0;
-    if (discPct > 0 && newLinur.length) {
-      const preEx = newLinur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0), 0);
-      const preVsk = newLinur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 0) / 100), 0);
-      const preSamtals = preEx + preVsk;
-      const factor = 1 - discPct / 100;
-      newLinur.forEach(l => { l.unit_price_ex_vat = +l.unit_price_ex_vat * factor; });
-      afslatturKr = Math.round(preSamtals * discPct / 100);
-    }
-
-    const newEx = newLinur.reduce(
+    const preEx = newLinur.reduce(
       (a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0), 0);
-    const newVsk = newLinur.reduce(
-      (a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 0) / 100), 0);
-    const newSamtals = newEx + newVsk;
+    const preVsk = newLinur.reduce(
+      (a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 24) / 100), 0);
+    const preSamtals = preEx + preVsk;
+    const origAfsl = Math.min(Math.max(0, Math.round(+(sale && sale.afslattur) || 0)), Math.round(preSamtals));
+    const pickupKr = Math.round((preSamtals - origAfsl) * discPct / 100);
+    const afslatturKr = origAfsl + pickupKr;
+    const newSamtals = Math.max(0, Math.round(preSamtals) - afslatturKr);
+    // ex/vsk scaled proportionally (same as pos.js totals()); vsk takes the
+    // rounding remainder so upphaed_an_vsk + vsk_upphaed === samtals exactly.
+    const factor = preSamtals > 0 ? newSamtals / preSamtals : 1;
+    const newEx = Math.round(preEx * factor);
+    const newVsk = newSamtals - newEx;
 
     const brokenList = unitState.filter(s => !s.checked).map(s => s.unit.serial).filter(Boolean);
     const extraList = extras.map(ex => ex.qty + '× ' + ex.name);
@@ -781,7 +795,8 @@
     const auditNote = '\n\n[Sótt ' + todayISO() + ']' +
       (brokenList.length ? '\nEkki afhent: ' + brokenList.join(', ') : '') +
       (extraList.length ? '\nViðbót: ' + extraList.join(', ') : '') +
-      (afslatturKr ? '\nAfsláttur: ' + discPct + '% (−' + afslatturKr + ' kr)' : '') +
+      (origAfsl ? '\nAfsláttur úr sölu: −' + origAfsl + ' kr' : '') +
+      (pickupKr ? '\nAfsláttur við afhendingu: ' + discPct + '% (−' + pickupKr + ' kr)' : '') +
       (trimmedNote ? '\nAthugasemd: ' + trimmedNote : '') +
       '\nGreiðsla: ' + payMethod;
 

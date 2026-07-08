@@ -34,6 +34,7 @@
 
   // ── State per open editor ─────────────────────────────────────────────────
   let _sale = null;       // canonical solur row (with mutations)
+  let _afslKr = 0;        // sale-level kr discount (gross, m. vsk) — editable
   let _origCustomer = null; // {nafn, kt} snapshot for cascade
   let _dlg = null;
 
@@ -80,6 +81,27 @@
   function openWith(sale) {
     _sale = JSON.parse(JSON.stringify(sale)); // deep clone
     _sale.linur = Array.isArray(_sale.linur) ? _sale.linur : [];
+    // 2026-07-08 (afsláttar-úttekt): carry the sale-level kr discount into the
+    // editor. Before, recomputeTotals ignored `afslattur` and the save omitted
+    // it — opening a discounted sale and pressing Vista rewrote samtals at
+    // FULL price while the stale afslattur stayed on the row (print ≠ bókhald).
+    // Initialize with the discount that ACTUALLY reduces this sale — the gap
+    // between the line total and the stored samtals. That covers both gross
+    // and legacy ex-VAT afslattur semantics, and lands on 0 for rows that are
+    // already inconsistent (so saving them heals them instead of perpetuating
+    // the mismatch).
+    _afslKr = 0;
+    if ((+_sale.afslattur || 0) > 0) {
+      let t0 = 0;
+      _sale.linur.forEach(l => {
+        const q = +l.qty || 0, u = +l.unit_price_ex_vat || 0;
+        const d = Math.max(0, Math.min(100, +l.discount_pct || 0));
+        const v = (l.vsk_pct == null ? 24 : +l.vsk_pct) || 0;
+        t0 += q * u * (1 - d / 100) * (1 + v / 100);
+      });
+      const gap = Math.round(t0 - (+_sale.samtals || 0));
+      _afslKr = Math.max(0, Math.min(Math.round(t0), gap));
+    }
     _origCustomer = {
       nafn: _sale.customer_nafn || '',
       kt: ''  // we'll fill from customer lookup if needed
@@ -341,17 +363,41 @@
       ex += lineEx;
       vsk += lineEx * (vat / 100);
     });
-    return { ex: Math.round(ex), vsk: Math.round(vsk), total: Math.round(ex + vsk) };
+    // 2026-07-08: apply the sale-level kr discount (gross — off the final
+    // price m. vsk, the POS convention) proportionally on ex and vsk, so the
+    // saved totals keep matching what SalaInvoice prints (case C). VSK takes
+    // the rounding remainder so ex + vsk === total exactly.
+    const t0 = ex + vsk;
+    const a = Math.max(0, Math.min(Math.round(t0), Math.round(+_afslKr || 0)));
+    const total = Math.round(t0) - a;
+    const exR = Math.round(ex * (t0 > 0 ? total / t0 : 1));
+    return { ex: exR, vsk: total - exR, total, afsl: a, gross: Math.round(t0) };
   }
   function renderTotals() {
     const t = recomputeTotals();
     const el = _dlg.querySelector('#_se-totals');
+    const locked = isLocked(_sale);
     el.innerHTML = `
-      <div style="display:flex;justify-content:flex-end;gap:24px;font-size:13px;color:#475569">
-        <span>Án VSK: <strong>${fmtKr(t.ex)}</strong></span>
-        <span>VSK: <strong>${fmtKr(t.vsk)}</strong></span>
+      <div style="display:flex;justify-content:flex-end;align-items:center;gap:8px;font-size:13px;color:#b45309">
+        <span>Afsláttur (kr m. vsk):</span>
+        <input id="_se-afsl" type="number" min="0" step="1" value="${t.afsl > 0 ? t.afsl : ''}" placeholder="0" ${locked ? 'disabled' : ''}
+          style="width:96px;padding:4px 7px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;text-align:right;background:#fff">
       </div>
-      <div style="display:flex;justify-content:flex-end;font-size:17px;font-weight:800;color:#0f172a;margin-top:6px">Samtals: ${fmtKr(t.total)}</div>`;
+      <div style="display:flex;justify-content:flex-end;gap:24px;font-size:13px;color:#475569;margin-top:6px">
+        <span>Án VSK: <strong id="_se-t-ex">${fmtKr(t.ex)}</strong></span>
+        <span>VSK: <strong id="_se-t-vsk">${fmtKr(t.vsk)}</strong></span>
+      </div>
+      <div style="display:flex;justify-content:flex-end;font-size:17px;font-weight:800;color:#0f172a;margin-top:6px">Samtals:&nbsp;<span id="_se-t-total">${fmtKr(t.total)}</span></div>`;
+    // Update the summary spans in place on input — a full re-render here
+    // would rebuild the input mid-typing and drop focus.
+    const inp = el.querySelector('#_se-afsl');
+    if (inp && !locked) inp.addEventListener('input', () => {
+      _afslKr = Math.max(0, Math.round(+inp.value || 0));
+      const t2 = recomputeTotals();
+      el.querySelector('#_se-t-ex').textContent = fmtKr(t2.ex);
+      el.querySelector('#_se-t-vsk').textContent = fmtKr(t2.vsk);
+      el.querySelector('#_se-t-total').textContent = fmtKr(t2.total);
+    });
   }
 
   // ── Wire events ───────────────────────────────────────────────────────────
@@ -568,6 +614,22 @@
     const nafn = _dlg.querySelector('#_se-nafn').value.trim();
     const kt = _dlg.querySelector('#_se-kt').value.trim();
     const ktClean = kt.replace(/[^0-9]/g, '');
+    // 2026-07-08: SalaInvoice's renderFromSale (case B) ignores BOTH discounts
+    // when lines carry discount_pct AND afslattur > 0. If that combo is about
+    // to be saved, bake the line discounts into the unit prices (same
+    // convention as patch 165's per-line afsláttur) so only the kr discount
+    // remains at sale level — prints then go through case C correctly.
+    if (Math.round(+_afslKr || 0) > 0 && _sale.linur.some(l => (+l.discount_pct || 0) > 0)) {
+      _sale.linur = _sale.linur.map(l => {
+        const d = Math.max(0, Math.min(100, +l.discount_pct || 0));
+        if (!d) return l;
+        const nl = { ...l };
+        nl.unit_price_ex_vat = Math.round((+l.unit_price_ex_vat || 0) * (1 - d / 100));
+        nl.desc = String(l.desc || '') + ' · −' + d + '% afsl.';
+        delete nl.discount_pct;
+        return nl;
+      });
+    }
     const t = recomputeTotals();
     const customerChanged = nafn !== (_origCustomer.nafn || '');
 
@@ -604,6 +666,9 @@
       upphaed_an_vsk: t.ex,
       vsk_upphaed: t.vsk,
       samtals: t.total,
+      // 2026-07-08: keep the sale-level discount on the row (was omitted —
+      // stale afslattur + full-price samtals made print ≠ bókhald).
+      afslattur: t.afsl,
       athugasemdir: _sale.athugasemdir || ''
     };
     if (finalize) {

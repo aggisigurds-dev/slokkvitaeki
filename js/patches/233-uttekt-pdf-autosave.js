@@ -223,16 +223,21 @@
         grossMode = Math.abs(grossTotal - savedSamtals) <= Math.abs(exTotal - savedSamtals);
       }
       total = grossMode ? grossTotal : exTotal;
-      // If legacy ex-VAT semantics, scale the per-rate buckets so VSK lines
-      // match the actual collected amounts (ex × factor, vsk × factor).
-      if (!grossMode) {
-        Object.keys(byRate).forEach(function (k) {
-          byRate[k].ex *= exFactor;
-          byRate[k].vsk *= exFactor;
-        });
-        subEx *= exFactor;
-        vsk *= exFactor;
-      }
+      // 2026-07-08 (afsláttar-úttekt): scale the per-rate buckets in BOTH
+      // modes so "Samtals fyrir Vsk." + VSK lines show the actual collected
+      // (post-discount) amounts — same as SalaInvoice's totalsByRate, which
+      // applies its factor unconditionally. The gross branch used to leave
+      // them unscaled, so the archived PDF overstated the VAT versus the
+      // booked vsk_upphaed.
+      var scaleF = grossMode
+        ? ((subEx + vsk) > 0 ? Math.max(0, total) / (subEx + vsk) : 1)
+        : exFactor;
+      Object.keys(byRate).forEach(function (k) {
+        byRate[k].ex *= scaleF;
+        byRate[k].vsk *= scaleF;
+      });
+      subEx *= scaleF;
+      vsk *= scaleF;
     } else {
       total = subEx + vsk;
     }
