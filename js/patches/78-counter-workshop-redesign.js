@@ -631,6 +631,18 @@
       '.ws-chk.done { background: #16a34a !important; border-color: #15803d !important; color: #fff !important; box-shadow: 0 1px 3px rgba(22,163,74,.3) !important; }' +
       '.ws-chk.done::after { content: "✓ Tilbúið" !important; }' +
       '.ws-chk.done svg { display: none !important; }' +
+      // 2026-07-07: the app-wide 📱 Sími viewmode (html[data-viewmode="mobile"])
+      // sets the mode WITHOUT narrowing the viewport, so the max-width:900px
+      // stack below never fired on the phone — the 3 columns stayed side-by-side
+      // and each card wrapped one character per line ("R / 0 / 0 / 0 / 4 …").
+      // Stack the board whenever Sími is chosen, same as the max-width rule.
+      'html[data-viewmode="mobile"] #view-counter > div[style*="grid-template-columns:1fr 1fr 1fr"],' +
+      'html[data-viewmode="mobile"] #view-workshop > div[style*="grid-template-columns:2fr 1fr"] {' +
+      '  grid-template-columns: 1fr !important;' +
+      '  height: auto !important;' +
+      '  overflow: auto !important;' +
+      '  padding-bottom: 80px !important;' +
+      '}' +
       '@media (max-width: 900px) {' +
       '  #view-counter > div[style*="grid-template-columns:1fr 1fr 1fr"],' +
       '  #view-workshop > div[style*="grid-template-columns:2fr 1fr"] {' +

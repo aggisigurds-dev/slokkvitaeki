@@ -36,6 +36,7 @@
     { k: 'br-gerdreikninga', label: 'Gerð reikninga',        short: 'Reikn.gerð', emoji: '🧾', url: 'https://brunaholf.netlify.app/?embed=1#gerdreikninga' },
     { k: 'br-vinnubok',      label: 'Vinnubók',              emoji: '📓', url: 'https://brunaholf.netlify.app/?embed=1#vinnubok' },
     { k: 'br-krofur',        label: 'Krófur & Tekjur',       short: 'Fjárhagur', emoji: '📊', url: 'https://brunaholf.netlify.app/?embed=1#krofur' },
+    { k: 'br-krofuyfirlit',  label: 'Kröfu yfirlit (Brunahólf)', short: 'BH Kröfur', emoji: '📑', url: 'https://brunaholf.netlify.app/?embed=1#krofuyfirlit' },
   ];
   var PAGE_BY_KEY = {}; PAGES.forEach(function (p) { PAGE_BY_KEY[p.k] = p; });
 
@@ -44,7 +45,7 @@
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0e7a4f', dark: '#06402b',
       manifest: '/manifest-fjarmal.json',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
-      defaults: ['krofu-yfirlit', 'sala', 'vidskiptavinir', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
+      defaults: ['krofu-yfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
     { key: 'verkefni', emoji: '📋', name: 'Verkefnalisti', color: '#3b82f6', dark: '#1d4ed8',
       manifest: '/manifest-verkefni.json',
       blurb: 'Verkborð — beiðnir, verkefni og eftirfylgni',
@@ -84,6 +85,25 @@
     try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
     try { if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: s }); } catch (_) {}
   }
+
+  // Einskiptis-migration (2026-07-08): Brunahólf Kröfu yfirlit (br-krofuyfirlit)
+  // bætt í ÞEGAR-VISTAÐAR Fjármál-stillingar, strax á eftir Slökkvitæki Kröfu
+  // yfirlitinu. Einskiptis (flagg í cfg) svo notandinn geti af-hakað síðuna
+  // eftirá án þess að hún troði sér inn aftur; ný uppsetning fær hana úr defaults.
+  (function () {
+    try {
+      var c = loadCfg();
+      if (c.__brky1) return;
+      if (Array.isArray(c.fjarmal) && c.fjarmal.indexOf('br-krofuyfirlit') === -1) {
+        var ki = c.fjarmal.indexOf('krofu-yfirlit');
+        c.fjarmal.splice(ki === -1 ? 0 : ki + 1, 0, 'br-krofuyfirlit');
+      }
+      c.__brky1 = 1;
+      var s = JSON.stringify(c);
+      try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
+      try { if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: s }); } catch (_) {}
+    } catch (_) {}
+  })();
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function appLink(key) { return location.origin + '/?app=' + key; }
