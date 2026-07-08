@@ -367,6 +367,43 @@ birtist strax í „Skjöl & viðhengi" árstöflunni (patch 199), í úttektars
   Brunahólf-appinu (sjá „Laga pörun í Brunahólf →" hlekkinn á skjalaspjaldinu). Ef
   á að lenda í Drive þarf að flytja Drive-OAuth + upload-function úr Brunahólf.
 
+## Afsláttar-samræming (úttekt 2026-07-08) — 121/142/165/233
+
+Full-system discount audit found & fixed three writer bugs. **The one supported
+convention for sale-level discounts is the POS one:** `linur` carry FULL unit
+prices, `afslattur` = kr saved off the FINAL price m. vsk (gross), `samtals` =
+brúttó − afslattur, `upphaed_an_vsk`/`vsk_upphaed` scaled proportionally (VSK
+takes the rounding remainder so ex+vsk === samtals). Per-line discounts are
+instead BAKED into `unit_price_ex_vat` with a „· −X% afsl." desc suffix (the
+165 convention). NEVER both bake into lines AND store `afslattur` — that's the
+double-discount bug; and never store per-line `discount_pct` together with
+`afslattur > 0` (renderFromSale case B drops both).
+
+- **121 (Sótt)**: used to scale lines AND store afslattur (reprints double-
+  discounted), and silently DROPPED the draft's POS discount. Now: lines stay
+  full, `afslattur` = draft-afsl + pickup-% on the remainder; preview shows
+  „Afsláttur úr sölu". 16 pre-fix rows were repaired in DB (afslattur→0, their
+  linur already carried the discount).
+- **165 (Klára heimsókn)**: the patch-129 GLOBAL Afsláttur (%) was never read —
+  invoice saved at full price while the table showed the discounted total. Now
+  `collectVisit` reads `trip.discount_pct` and `totalsFromLinur(linur, g)`
+  stores it as gross `afslattur` (same math as the table: netto = brúttó×(1−g)).
+- **142 (SaleEditor)**: recompute ignored `afslattur` and the save omitted it —
+  any save wiped the discount out of samtals but left the stale column (print ≠
+  bókhald). Now an „Afsláttur (kr m. vsk)" field, initialized from the gap
+  brúttó−samtals (handles both gross and legacy ex-VAT rows; 0 for already-
+  broken rows so saving heals them), applied+saved like POS. If line
+  `discount_pct` + kr-afsl are combined, line discounts are baked at save.
+- **233 (PDF)**: gross-mode now scales the per-rate VSK buckets by the discount
+  factor (like SalaInvoice totalsByRate) — archived PDFs no longer overstate VAT.
+
+Still open (lower priority): renderFromSale ignores NON-uniform line
+`discount_pct` (only all-same-pct works); kreditreikningur prints pre-discount
+lines (negative afslattur matches no case); dk-push (brunahólf solur.js) drops
+afslattur/discount_pct/vsk_pct; pos.js kr-input parses „1.000"→1; pos.js
+lookupKt max-wins makes lowering a customer discount ineffective when the kt
+exists in both tables; patch 227 cloud-sync resurrects cleared trips.
+
 ## Customer-base sameining — `js/patches/236-customer-sameining.js`
 
 Sjálfstæð síða (view `view-sameining`, slug `#sameining`, hliðarstiku-hnappur

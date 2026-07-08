@@ -111,7 +111,7 @@
   // summary block: in a since-replaced layout it captured the VSK figure as the
   // grand total, so heimsóknir were saved with vsk_upphaed=0 and
   // samtals = án-vsk × 0,24 (the VAT amount) instead of án-vsk + vsk.
-  function totalsFromLinur(linur) {
+  function totalsFromLinur(linur, discountPct) {
     let subEx = 0, vsk = 0;
     (linur || []).forEach(l => {
       const qty  = Number(l.qty) || 0;
@@ -121,7 +121,19 @@
       subEx += lineEx;
       vsk   += lineEx * pct / 100;
     });
-    return { subEx: Math.round(subEx), vsk: Math.round(vsk), total: Math.round(subEx + vsk) };
+    // 2026-07-08 (afsláttar-úttekt): heildar-afslátturinn (%) úr patch-129
+    // töflunni var áður HVERGI lesinn á reikningsleiðinni — taflan sýndi
+    // afslegna samtölu en salan vistaðist á fullu verði með afslattur:0.
+    // Sama stærðfræði og taflan (129: netto = brúttó × (1−g%)). Geymt í
+    // `afslattur` (kr m. vsk af lokaverði, gross) + samtals = brúttó − afsl —
+    // POS-venjan, sem SalaInvoice/PDF (case C) prenta rétt. VSK tekur
+    // afgangs-aurinn svo upphaed_an_vsk + vsk_upphaed === samtals alltaf.
+    const g = Math.max(0, Math.min(100, Number(discountPct) || 0));
+    const gross = subEx + vsk;
+    const afsl  = g > 0 ? Math.round(gross * g / 100) : 0;
+    const total = Math.round(gross) - afsl;
+    const ex    = Math.round(subEx * (1 - g / 100));
+    return { subEx: ex, vsk: total - ex, total, afslattur: afsl };
   }
 
   // Pull all visible unit-rows + their Áætlað choice. Returns line summaries
@@ -160,7 +172,10 @@
       skyrslugerd: (trip.skyrslugerd != null) ? +trip.skyrslugerd : 3500,
       skodunaradili: (trip.skodunaradili || '').trim(),
       // 2026-05-21: manual line items added via "+ Bæta við vöru eða þjónustu"
-      extras:      Array.isArray(trip.extras) ? trip.extras : []
+      extras:      Array.isArray(trip.extras) ? trip.extras : [],
+      // 2026-07-08: heildar-afsláttur (%) úr patch-129 töflunni — var áður
+      // aldrei lesinn hér, svo reikningurinn varð hærri en taflan lofaði.
+      discount_pct: Math.max(0, Math.min(100, Number(trip.discount_pct) || 0))
     };
   }
 
@@ -274,7 +289,7 @@
     const linur = buildLinur(visit, costRows);
     // Totals come from the invoice lines themselves (not a DOM scrape) so the
     // saved sale always matches the printed reikningur. See totalsFromLinur.
-    const tot = totalsFromLinur(linur);
+    const tot = totalsFromLinur(linur, visit.discount_pct);
 
     // Fetch customer info so the preview invoice has kt + address.
     let custData = null;
@@ -299,7 +314,7 @@
       upphaed_an_vsk: subEx,
       vsk_upphaed: vsk,
       samtals: total,
-      afslattur: 0,
+      afslattur: tot.afslattur,
       greitt_med: 'reikningur',
       athugasemdir: `Heimsókn ${today} — ${visit.servicedIds.length} tæki, næsta skoðun ${next}`,
       created_at: new Date().toISOString()
@@ -394,7 +409,7 @@
 
     // 2. Insert sale row. Totals are derived from the line items (see
     //    totalsFromLinur) so vsk_upphaed/samtals always match the printed bill.
-    const { subEx, vsk, total } = totalsFromLinur(linur);
+    const { subEx, vsk, total, afslattur } = totalsFromLinur(linur, visit.discount_pct);
     let saleId = null;
     try {
       const ins = await sb.from('solur').insert({
@@ -404,7 +419,7 @@
         upphaed_an_vsk: subEx,
         vsk_upphaed: vsk,
         samtals: total,
-        afslattur: 0,
+        afslattur: afslattur,
         greitt_med: 'reikningur',
         athugasemdir: `Heimsókn ${today} — ${visit.servicedIds.length} tæki, næsta skoðun ${next}`
       }).select('num,id').single();
