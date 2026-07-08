@@ -53,6 +53,76 @@
     return Array.isArray(l) ? l : [];
   }
 
+  // 2026-07-08 (afsláttar-úttekt): mirror renderFromSale's line preprocessing
+  // so the PDF handles the same sale shapes as the HTML print:
+  //   • per-line discount_pct (incl. NON-uniform) → baked into unit prices
+  //     when that reproduces sale.samtals (raw kept for legacy already-baked
+  //     rows); consumesAfsl tells the caller whether afslattur is still to be
+  //     subtracted in the totals section.
+  //   • legacy credit notes (negative afslattur + full-price negated lines)
+  //     → lines scaled so the printed credit equals the booked samtals.
+  function preprocessLines(sale) {
+    var linur = lineArray(sale);
+    var afsl = Number(sale.afslattur) || 0;
+    var saved = Number(sale.samtals);
+    var sumT = function (ls) {
+      return ls.reduce(function (a, l) {
+        var le = (Number(l.qty) || 0) * (Number(l.unit_price_ex_vat) || 0);
+        return a + le * (1 + ((l.vsk_pct == null ? 24 : Number(l.vsk_pct)) || 0) / 100);
+      }, 0);
+    };
+    var anyPct = linur.some(function (l) { return (Number(l.discount_pct) || 0) > 0; });
+    if (anyPct) {
+      var allPcts = linur.map(function (l) { return Number(l.discount_pct) || 0; });
+      var uniform = allPcts.length && allPcts[0] > 0 && allPcts.every(function (p) { return p === allPcts[0]; });
+      if (uniform && afsl === 0) {
+        // case A: uniform % — applied at the totals level (like totalsByRate)
+        // so the PDF total matches the booked samtals without per-line
+        // rounding drift.
+        return { lines: linur, applyAfsl: 0, applyPct: allPcts[0] };
+      }
+      var baked = bake(linur);
+      var rawT = sumT(linur), bakedT = sumT(baked);
+      var cands = [
+        { diff: Math.abs(bakedT - (afsl > 0 ? afsl : 0) - saved), useBaked: true,  useAfsl: afsl > 0 },
+        { diff: Math.abs(bakedT - saved),                          useBaked: true,  useAfsl: false },
+        { diff: Math.abs(rawT - saved),                            useBaked: false, useAfsl: false }
+      ];
+      var best = cands[0];
+      if (isFinite(saved) && saved !== 0) cands.forEach(function (c) { if (c.diff < best.diff) best = c; });
+      return { lines: best.useBaked ? baked : linur, applyAfsl: best.useAfsl ? afsl : 0, applyPct: 0 };
+    }
+    if (afsl < 0) {
+      var rT = sumT(linur);
+      if (isFinite(saved) && saved < 0 && rT < 0 && Math.abs(rT - saved) > 2) {
+        var r = saved / rT;
+        if (r > 0 && r < 1) {
+          return {
+            lines: linur.map(function (l) {
+              var nl = Object.assign({}, l);
+              nl.unit_price_ex_vat = (Number(l.unit_price_ex_vat) || 0) * r;
+              return nl;
+            }),
+            applyAfsl: 0, applyPct: 0
+          };
+        }
+      }
+      return { lines: linur, applyAfsl: 0, applyPct: 0 };
+    }
+    return { lines: linur, applyAfsl: afsl, applyPct: 0 };
+    function bake(ls) {
+      return ls.map(function (l) {
+        var d = Math.max(0, Math.min(100, Number(l.discount_pct) || 0));
+        if (!d) return l;
+        var nl = Object.assign({}, l);
+        nl.unit_price_ex_vat = Math.round((Number(l.unit_price_ex_vat) || 0) * (1 - d / 100));
+        nl.desc = String(l.desc || '') + ' · −' + d + '% afsl.';
+        nl.discount_pct = 0;
+        return nl;
+      });
+    }
+  }
+
   // Fetch /img/logo.png → dataURL fyrir jsPDF.addImage (sama og patch 168).
   function logoDataUri() {
     return new Promise(function (resolve) {
@@ -187,7 +257,8 @@
 
     doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(20);
     var byRate = {};
-    lineArray(sale).forEach(function (l) {
+    var _pp = preprocessLines(sale);
+    _pp.lines.forEach(function (l) {
       var qty = Number(l.qty) || 0, unit = Number(l.unit_price_ex_vat) || 0;
       var pct = (l.vsk_pct == null ? 24 : Number(l.vsk_pct)) || 0;
       var ex = qty * unit, code = vskCodeFor(pct), key = String(pct);
@@ -208,12 +279,24 @@
     // ── Heildartölur (hægri) ──
     var subEx = 0, vsk = 0;
     Object.keys(byRate).forEach(function (k) { subEx += byRate[k].ex; vsk += byRate[k].vsk; });
-    var afsl = Number(sale.afslattur) || 0;
+    // applyAfsl = the sale-level discount still to subtract here (0 when the
+    // preprocessing consumed it by baking it into the line prices).
+    var afsl = _pp.applyAfsl;
     // afslattur semantics flipped 2026-06-12: legacy = ex-VAT discount,
     // post-2026-06-12 = final m.vsk discount. Auto-detect by reproducing
     // sale.samtals (mirrors SalaInvoice.renderFromSale logic).
     var total;
-    if (afsl > 0) {
+    var pctDisc = 0;
+    if (_pp.applyPct > 0) {
+      // case A (uniform line %): applied at the totals level, same as
+      // SalaInvoice totalsByRate — buckets scaled, discount shown as a row.
+      var pf = 1 - Math.max(0, Math.min(100, _pp.applyPct)) / 100;
+      pctDisc = (subEx + vsk) * (1 - pf);
+      Object.keys(byRate).forEach(function (k) { byRate[k].ex *= pf; byRate[k].vsk *= pf; });
+      subEx *= pf;
+      vsk *= pf;
+      total = subEx + vsk;
+    } else if (afsl > 0) {
       var grossTotal = subEx + vsk - afsl;
       var exFactor = subEx > 0 ? Math.max(0, subEx - afsl) / subEx : 1;
       var exTotal = (subEx + vsk) * exFactor;
@@ -258,7 +341,8 @@
       var r = byRate[k], pctTxt = (Math.round(r.pct * 10) / 10).toString().replace('.', ',');
       totRow(r.code + ' = Sala með ' + pctTxt + '% Vsk: ' + fmtKr(r.ex), fmtKr(r.vsk));
     });
-    if (afsl > 0) totRow('Afsláttur:', '-' + fmtKr(afsl), { red: true });
+    if (_pp.applyPct > 0) totRow('Afsláttur (' + _pp.applyPct + '%):', '-' + fmtKr(pctDisc), { red: true });
+    else if (afsl > 0) totRow('Afsláttur:', '-' + fmtKr(afsl), { red: true });
     y += 1; doc.setDrawColor(15, 23, 42).setLineWidth(0.4).line(110, y, RX, y); y += 6;
     totRow('Til greiðslu :', fmtKr(total), { bold: true, big: true });
 

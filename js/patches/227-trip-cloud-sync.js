@@ -23,10 +23,14 @@
 
   var origSet = localStorage.setItem.bind(localStorage);
   var origGet = localStorage.getItem.bind(localStorage);
+  var origRemove = localStorage.removeItem.bind(localStorage);
 
   // Stamp an _ts into the stored trip object so newest-wins works across devices.
+  // _deleted:false explicitly overwrites a cloud tombstone (AppSettings deep-
+  // merge never REMOVES keys, so a stale _deleted:true would otherwise survive
+  // a later legitimate save and delete the new trip).
   function stamp(v) {
-    try { var o = JSON.parse(v); if (o && typeof o === 'object') { o._ts = Date.now(); return JSON.stringify(o); } } catch (_) {}
+    try { var o = JSON.parse(v); if (o && typeof o === 'object') { o._ts = Date.now(); o._deleted = false; return JSON.stringify(o); } } catch (_) {}
     return v;
   }
 
@@ -41,6 +45,20 @@
       return;
     }
     return origSet(k, v);
+  };
+
+  // 2026-07-08 (afsláttar-úttekt): clearTrip (165) uses removeItem, which this
+  // sync never saw — the FINISHED trip's cloud copy survived and was restored
+  // on the next boot/sync, resurrecting last visit's afslættir, extras and
+  // choices for next year. Mirror deletions as a cloud tombstone.
+  localStorage.removeItem = function (k) {
+    if (typeof k === 'string' && k.indexOf(PREFIX) === 0) {
+      origRemove(k);
+      pending[k.slice(PREFIX.length)] = JSON.stringify({ _deleted: true, _ts: Date.now() });
+      clearTimeout(timer); timer = setTimeout(flush, 1200);
+      return;
+    }
+    return origRemove(k);
   };
 
   function flush() {
@@ -62,6 +80,13 @@
       var lk = PREFIX + co, local = null;
       try { local = JSON.parse(origGet(lk) || 'null'); } catch (_) {}
       var ct = +(c._ts || 0), lt = +((local && local._ts) || 0);
+      // Tombstone (trip was cleared, e.g. „✓ Klára heimsókn"): remove the
+      // local copy too — unless the local one is strictly newer (a new trip
+      // was already started on this device).
+      if (c._deleted === true) {
+        if (!(local && lt > ct)) { try { origRemove(lk); } catch (_) {} }
+        return;
+      }
       // Only overwrite when the cloud copy is strictly newer (so active local
       // edits are never clobbered by a stale cloud snapshot).
       if (!local || ct > lt) { try { origSet(lk, JSON.stringify(c)); } catch (_) {} }
@@ -87,7 +112,7 @@
     var raw; try { raw = origGet(PREFIX + coId); } catch (_) {}
     if (!raw) return Promise.resolve(false);
     var obj; try { obj = JSON.parse(raw); } catch (_) { return Promise.resolve(false); }
-    if (obj && typeof obj === 'object') { obj._ts = Date.now(); try { origSet(PREFIX + coId, JSON.stringify(obj)); } catch (_) {} }
+    if (obj && typeof obj === 'object') { obj._ts = Date.now(); obj._deleted = false; try { origSet(PREFIX + coId, JSON.stringify(obj)); } catch (_) {} }
     var o = {}; o[KEY] = {}; o[KEY][coId] = obj;
     try { return Promise.resolve(as.save(o)); } catch (_) { return Promise.resolve(false); }
   }

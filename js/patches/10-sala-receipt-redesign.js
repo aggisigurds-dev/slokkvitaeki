@@ -756,14 +756,56 @@
     const allPcts = linur.map(l => Number(l.discount_pct) || 0);
     const uniformPct = allPcts.length && allPcts[0] > 0 && allPcts.every(p => p === allPcts[0])
       ? allPcts[0] : 0;
+    const anyPct = allPcts.some(p => p > 0);
     const afsl = +sale.afslattur || 0;
     let optsDiscount = 0, optsDiscountPct = 0;
+    let lines = linur;
+    const sumT = ls => ls.reduce((a, l) => {
+      const le = (Number(l.qty) || 0) * (Number(l.unit_price_ex_vat) || 0);
+      return a + le * (1 + ((l.vsk_pct == null ? 24 : Number(l.vsk_pct)) || 0) / 100);
+    }, 0);
     if (uniformPct > 0 && afsl === 0) {
       optsDiscountPct = uniformPct;                // case A
-    } else if (uniformPct > 0 && afsl > 0) {
-      /* case B — both 0 */
-    } else if (uniformPct === 0 && afsl > 0) {
+    } else if (anyPct) {
+      // 2026-07-08 (afsláttar-úttekt): non-uniform line discounts, or line
+      // discounts combined with a sale-level afslattur, used to fall into
+      // "case B — ignore both" and printed FULL price. Decide by reproducing
+      // the stored samtals: bake the per-line discounts into the prices
+      // (± afslattur on top), or leave raw for TRUE legacy case-B rows where
+      // the discount was already baked in AND discount_pct kept.
+      const baked = linur.map(l => {
+        const d = Math.max(0, Math.min(100, Number(l.discount_pct) || 0));
+        if (!d) return l;
+        const nl = Object.assign({}, l);
+        nl.unit_price_ex_vat = Math.round((Number(l.unit_price_ex_vat) || 0) * (1 - d / 100));
+        nl.desc = String(l.desc || '') + ' · −' + d + '% afsl.';
+        nl.discount_pct = 0;
+        return nl;
+      });
+      const rawT = sumT(linur), bakedT = sumT(baked);
+      const saved = Number(sale.samtals);
+      const cands = [
+        { diff: Math.abs(bakedT - (afsl > 0 ? afsl : 0) - saved), useBaked: true,  useAfsl: afsl > 0 },
+        { diff: Math.abs(bakedT - saved),                          useBaked: true,  useAfsl: false },
+        { diff: Math.abs(rawT - saved),                            useBaked: false, useAfsl: false }
+      ];
+      let best = cands[0];
+      if (isFinite(saved) && saved !== 0) cands.forEach(c => { if (c.diff < best.diff) best = c; });
+      if (best.useBaked) lines = baked;
+      if (best.useAfsl) optsDiscount = afsl;
+    } else if (afsl > 0) {
       optsDiscount = afsl;                          // case C
+    } else if (afsl < 0) {
+      // 2026-07-08: legacy credit notes (26 pre-fix) stored full-price negated
+      // lines + NEGATIVE afslattur — matched no case, so the printed KREDIT-
+      // REIKNINGUR showed the pre-discount amount. Scale the lines so the
+      // printed credit equals the booked samtals.
+      const rawT = sumT(linur);
+      const saved = Number(sale.samtals);
+      if (isFinite(saved) && saved < 0 && rawT < 0 && Math.abs(rawT - saved) > 2) {
+        const r = saved / rawT;
+        if (r > 0 && r < 1) lines = linur.map(l => Object.assign({}, l, { unit_price_ex_vat: (Number(l.unit_price_ex_vat) || 0) * r }));
+      }
     }
     // 2026-06-12: the POS kr discount changed semantics — new sales store
     // `afslattur` as the kr saved off the FINAL price m. vsk; older sales
@@ -773,7 +815,7 @@
     let discountGross = true;
     if (optsDiscount > 0) {
       let _rawEx = 0, _rawVsk = 0;
-      linur.forEach(l => {
+      lines.forEach(l => {
         const le = (Number(l.qty) || 0) * (Number(l.unit_price_ex_vat) || 0);
         _rawEx += le;
         _rawVsk += le * ((Number(l.vsk_pct) || 24) / 100);
@@ -787,7 +829,7 @@
       }
     }
     const fakeState = {
-      lines: linur,
+      lines: lines,
       discount: optsDiscount,
       discount_pct: optsDiscountPct,
       discount_gross: discountGross,

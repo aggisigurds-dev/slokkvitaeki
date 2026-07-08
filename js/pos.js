@@ -758,7 +758,13 @@
       var pctEl = e.target.closest('#pos-discount');
       var krEl  = e.target.closest('#pos-discount-kr');
       if (!pctEl && !krEl) return;
-      var raw = String(e.target.value || '').replace(/[^0-9.,]/g, '').replace(',', '.');
+      // 2026-07-08 (afsláttar-úttekt): same comma/dot-tolerant parse as the
+      // per-line price editor above — "1.000" is an Icelandic THOUSANDS dot,
+      // parseFloat("1.000") = 1 turned a 1.000 kr discount into 1 kr.
+      var raw = String(e.target.value || '').replace(/[^0-9.,]/g, '');
+      if (raw.indexOf('.') >= 0 && raw.indexOf(',') >= 0) raw = raw.replace(/\./g, '').replace(',', '.');
+      else if (raw.indexOf('.') >= 0 && /\.\d{3}(?:\D|$)/.test(raw) && !/\.\d{1,2}$/.test(raw)) raw = raw.replace(/\./g, '');
+      else raw = raw.replace(',', '.');
       if (pctEl) {
         state.discount_pct = Math.max(0, Math.min(100, parseFloat(raw) || 0));
       } else {

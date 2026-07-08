@@ -512,7 +512,8 @@
           for (const e of order) { if (toRemove <= 0) break; const take = Math.min(toRemove, oldLinur[e.i].qty); oldLinur[e.i].qty -= take; toRemove -= take; }
           if (toRemove > 0 && totalUnits > 0) { const ratio = takenCount / totalUnits; oldLinur.forEach(l => { l.qty = Math.max(0, Math.round(l.qty * ratio)); }); }
         }
-        unitsTotal = oldLinur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 + (+l.vsk_pct || 24) / 100), 0);
+        // (1 − discount_pct) mirrors finalizePickup's line-discount baking.
+        unitsTotal = oldLinur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 - Math.max(0, Math.min(100, +l.discount_pct || 0)) / 100) * (1 + (+l.vsk_pct || 24) / 100), 0);
       } else if (job.verd && (job.units || []).length > 0) {
         unitsTotal = (+job.verd / (job.units || []).length) * takenCount;
       }
@@ -761,6 +762,19 @@
         vsk_pct: ex.vsk_pct,
         type: 'product'
       });
+    });
+
+    // 2026-07-08 (afsláttar-úttekt): honour per-line discount_pct (the Sale-
+    // Editor convention — FULL prices + pct on the line) by baking it into
+    // the price, 165-style. Before, pickup recomputed at FULL price while the
+    // receipt printed the discount → charged ≠ receipt (R-000461: card was
+    // charged 13.610 kr, receipt said 11.569 kr).
+    newLinur.forEach(l => {
+      const d = Math.max(0, Math.min(100, +l.discount_pct || 0));
+      if (!d) return;
+      l.unit_price_ex_vat = Math.round((+l.unit_price_ex_vat || 0) * (1 - d / 100));
+      l.desc = String(l.desc || '') + ' · −' + d + '% afsl.';
+      delete l.discount_pct;
     });
 
     // 2026-07-08 (afsláttar-úttekt): discounts are NOT baked into the line
