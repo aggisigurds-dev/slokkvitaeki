@@ -832,6 +832,17 @@
       try {
         const r = await sb.from('fyrirtaeki').update({ afslattur_pct: v }).eq('id', coId);
         if (r.error) throw r.error;
+        // 2026-07-08 (afsláttar-úttekt): POS lookupKt takes the HIGHEST
+        // afslattur_pct across ALL rows sharing the kt — propagate so
+        // lowering/clearing actually takes effect (see patch 255).
+        try {
+          const ktd = String(c.kennitala || '').replace(/[^0-9]/g, '');
+          if (ktd.length === 10 && ktd !== '9999999999') {
+            const pats = [ktd, ktd.slice(0, 6) + '-' + ktd.slice(6)];
+            await sb.from('fyrirtaeki').update({ afslattur_pct: v }).in('kennitala', pats);
+            await sb.from('vidskiptavinir').update({ afslattur_pct: v }).in('kennitala', pats);
+          }
+        } catch (_) {}
         c.afslattur_pct = v;
         // keep the in-memory Companies.list row current so Sala picks it up
         const row = ((window.Companies && Companies.list) || []).find(x => +x.id === +coId);

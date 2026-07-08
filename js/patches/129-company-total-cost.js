@@ -909,7 +909,10 @@
         const v = Math.max(0, Math.min(100, parseFloat(String(inp.value).replace(",", ".")) || 0));
         const st = loadTripState(coId);
         if (!st.line_disc || typeof st.line_disc !== "object") st.line_disc = {};
-        if (v > 0) st.line_disc[key] = v; else delete st.line_disc[key];
+        // 2026-07-08 (afsláttar-úttekt): 0 er geymt í stað þess að eyða
+        // lyklinum — 227 deep-merge eyðir aldrei lyklum í skýinu, svo EYDDUR
+        // afsláttur birtist aftur á hinu tækinu (og rukkaðist). 0 skrifast yfir.
+        st.line_disc[key] = v > 0 ? v : 0;
         saveTripState(coId, st);
         return v;
       };

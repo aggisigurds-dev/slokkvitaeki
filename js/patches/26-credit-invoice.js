@@ -210,20 +210,17 @@
     const saleEx  = +origSale.ex  || 0;   // upphaed_an_vsk (POST-discount)
     const saleVsk = +origSale.vsk || 0;   // vsk_upphaed    (POST-discount)
     const isFull  = fullEx > 0.5 && Math.abs(selEx - fullEx) < 0.5;
-    let ex, vsk;
-    if (isFull && saleEx > 0) {
-      // whole invoice → use the exact stored discounted totals
-      ex = saleEx; vsk = saleVsk;
-    } else {
-      // partial → scale selected lines by the sale's discount ratio
-      const ratio = fullEx > 0.5 ? Math.min(1, (saleEx || fullEx) / fullEx) : 1;
-      ex = Math.round(selEx * ratio);
-      vsk = Math.round(selVsk * ratio);
-    }
+    // 2026-07-08 (afsláttar-úttekt): bake the sale's discount ratio into the
+    // credit LINE prices (unrounded, so Σ línur === stored totals) and store
+    // afslattur: 0. The previous convention (full-price lines + NEGATIVE
+    // afslattur) matched no branch in renderFromSale, so the printed
+    // KREDITREIKNINGUR showed the PRE-discount amount (−108.000 instead of
+    // −81.000) even though the booked row was right.
+    const ratio = (saleEx > 0 && fullEx > 0.5) ? Math.min(1, saleEx / fullEx) : 1;
+    if (ratio < 1) creditLines.forEach(l => { l.unit_price_ex_vat = (+l.unit_price_ex_vat || 0) * ratio; });
+    const ex  = (isFull && saleEx > 0) ? saleEx  : Math.round(selEx * ratio);
+    const vsk = (isFull && saleEx > 0) ? saleVsk : Math.round(selVsk * ratio);
     const total = -(ex + vsk);
-    // m.vsk afsláttur that this credit reflects (stored positive elsewhere;
-    // negative here so a full-invoice reconciliation nets to zero).
-    const afsl = -Math.max(0, Math.round((selEx + selVsk) - (ex + vsk)));
 
     // Get next sale number
     const today = new Date();
@@ -249,7 +246,7 @@
       upphaed_an_vsk: -ex,
       vsk_upphaed: -vsk,
       samtals: total,
-      afslattur: afsl,
+      afslattur: 0,
       greitt_med: origSale.payment || 'reikningur',
       athugasemdir: reason ? 'Kreditfærsla: ' + reason : 'Kreditfærsla á reikning ' + (origSale.num || ''),
       is_credit: true,
@@ -444,8 +441,10 @@
 
   async function createCorrectedSale(origSale, lines, payMethod) {
     const SB = getSB(); if (!SB) throw new Error('Engin gagnabankatenging');
-    const ex = lines.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0), 0);
-    const vsk = lines.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 0) / 100), 0);
+    // 2026-07-08: honour line discount_pct if present (defensive — the edit
+    // dialog now bakes them) + vsk_pct null means 24%, not 0%.
+    const ex = lines.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 - Math.max(0, Math.min(100, +l.discount_pct || 0)) / 100), 0);
+    const vsk = lines.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 - Math.max(0, Math.min(100, +l.discount_pct || 0)) / 100) * (((l.vsk_pct == null ? 24 : +l.vsk_pct) || 0) / 100), 0);
     const paid = (payMethod !== 'reikningur' && payMethod !== 'greitt_sidar');
     const row = {
       starfsmadur: 'Kassi',
@@ -472,10 +471,24 @@
 
   function openCreditEditDialog(sale) {
     const old = document.getElementById('cre-modal'); if (old) old.remove();
-    let eLines = (sale.lines || []).map(l => ({
-      desc: l.desc || '', qty: +l.qty || 0, unit_price_ex_vat: +l.unit_price_ex_vat || 0,
-      vsk_pct: (l.vsk_pct == null ? 24 : +l.vsk_pct), ref: l.ref || '', product_id: l.product_id, type: l.type
-    }));
+    // 2026-07-08 (afsláttar-úttekt): carry the original sale's discounts into
+    // the corrected invoice — per-line discount_pct is baked into the price
+    // and the sale-level afslattur via the ex-ratio. Before, the corrected
+    // invoice silently reissued at FULL price (credit −81.000 + new 108.000).
+    const _dFullEx = (sale.lines || []).reduce((a, l) => {
+      const d = Math.max(0, Math.min(100, +l.discount_pct || 0));
+      return a + Math.abs(+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 - d / 100);
+    }, 0);
+    const _dRatio = (+sale.ex > 0 && _dFullEx > 0.5) ? Math.min(1, (+sale.ex) / _dFullEx) : 1;
+    let eLines = (sale.lines || []).map(l => {
+      const d = Math.max(0, Math.min(100, +l.discount_pct || 0));
+      return {
+        desc: (l.desc || '') + (d > 0 ? ' · −' + d + '% afsl.' : ''),
+        qty: +l.qty || 0,
+        unit_price_ex_vat: Math.round((+l.unit_price_ex_vat || 0) * (1 - d / 100) * _dRatio),
+        vsk_pct: (l.vsk_pct == null ? 24 : +l.vsk_pct), ref: l.ref || '', product_id: l.product_id, type: l.type
+      };
+    });
     const dlg = document.createElement('div');
     dlg.id = 'cre-modal';
     dlg.style.cssText = 'position:fixed;inset:0;z-index:100012;display:flex;align-items:center;justify-content:center;font-family:inherit';

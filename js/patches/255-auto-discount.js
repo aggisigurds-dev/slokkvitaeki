@@ -134,6 +134,19 @@
       try {
         const r = await sb.from('fyrirtaeki').update({ afslattur_pct: v }).eq('id', coId);
         if (r.error) throw r.error;
+        // 2026-07-08 (afsláttar-úttekt): POS lookupKt takes the HIGHEST
+        // afslattur_pct across ALL rows sharing the kt (fyrirtaeki OG
+        // vidskiptavinir) — so lowering/clearing here only took effect if
+        // every same-kt row was updated too. Propagate to them all.
+        try {
+          const co = await sb.from('fyrirtaeki').select('kennitala').eq('id', coId).single();
+          const ktd = String((co.data && co.data.kennitala) || '').replace(/[^0-9]/g, '');
+          if (ktd.length === 10 && ktd !== '9999999999') {
+            const pats = [ktd, ktd.slice(0, 6) + '-' + ktd.slice(6)];
+            await sb.from('fyrirtaeki').update({ afslattur_pct: v }).in('kennitala', pats);
+            await sb.from('vidskiptavinir').update({ afslattur_pct: v }).in('kennitala', pats);
+          }
+        } catch (_) {}
         render(sec, coId, v, false);
         toast(v > 0 ? ('🎯 Sjálfvirkur afsláttur vistaður: ' + v + '%') : 'Afsláttur núllstilltur.');
         // If this customer is the one open in Sala, refresh the live discount.

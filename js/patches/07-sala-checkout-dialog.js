@@ -139,15 +139,26 @@
       const name = (nameM ? nameM[1] : rest).trim();
       items.push({ isProduct, name, qty, total, raw: txt });
     }
-    // Total from "Samtals: ... kr"
+    // 2026-07-08 (afsláttar-úttekt): take the grand total straight from the
+    // POS state (post-discount, m. vsk) instead of scraping — the 2026-06-22
+    // karfa redesign dropped the "Samtals:" colon, so the scrape matched
+    // nothing and the payment modal header showed "0 kr".
     let grandTotal = '';
-    const totalEls = Array.from(document.querySelectorAll('#view-sala span, #view-sala div'))
-      .filter(el => el.children.length === 0 && /^Samtals:/.test((el.textContent || '').trim()));
-    if (totalEls.length > 0) {
-      const parent = totalEls[0].parentElement;
-      const parentTxt = (parent?.textContent || '').replace(/\s+/g, ' ').trim();
-      const m = parentTxt.match(/Samtals:\s*([\d.]+\s*kr)/);
-      if (m) grandTotal = m[1];
+    try {
+      if (window.POS && typeof POS.totals === 'function') {
+        const tt = POS.totals();
+        if (tt && isFinite(tt.total)) grandTotal = Math.round(tt.total).toLocaleString('de-DE') + ' kr';
+      }
+    } catch (_) {}
+    if (!grandTotal) {
+      const totalEls = Array.from(document.querySelectorAll('#view-sala span, #view-sala div'))
+        .filter(el => el.children.length === 0 && /^Samtals:?$|^Samtals:/.test((el.textContent || '').trim()));
+      if (totalEls.length > 0) {
+        const parent = totalEls[0].parentElement;
+        const parentTxt = (parent?.textContent || '').replace(/\s+/g, ' ').trim();
+        const m = parentTxt.match(/Samtals:?\s*([\d.]+\s*kr)/);
+        if (m) grandTotal = m[1];
+      }
     }
     // Customer info — merge form values with POS state. In kt-lookup mode the
     // form inputs are empty but state.customer holds the looked-up nafn + simi.
