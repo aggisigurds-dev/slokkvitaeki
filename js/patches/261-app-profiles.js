@@ -188,16 +188,16 @@
       // Beat patch 230's ON+':not(#id)…{padding-top:160px}` (id-level specificity) when the
       // Brunastál banner attr is present — otherwise the content sits 160px below my header.
       'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:50px !important;padding-bottom:154px !important}',
-      '#_app-hdr{position:fixed;top:0;left:0;right:0;height:50px;z-index:1200;display:flex;align-items:center;gap:10px;padding:0 12px;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)}',
+      '#_app-hdr{position:fixed;top:0;left:0;right:0;height:50px;z-index:2147481001;display:flex;align-items:center;gap:10px;padding:0 12px;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)}',
       '#_app-hdr .nm{font-size:16px;font-weight:800;flex:1;display:flex;align-items:center;gap:8px}',
       '#_app-hdr button{font:inherit;font-size:13px;font-weight:700;height:34px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.14);color:#fff;cursor:pointer}',
       // Bottom nav = 3-column grid (2 rows for up to 6 pages), bigger thumb targets.
-      '#_app-nav{position:fixed;bottom:0;left:0;right:0;z-index:1200;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;background:#0c0d10;border-top:1px solid #26262c;padding:9px 9px calc(9px + env(safe-area-inset-bottom,0px));box-shadow:0 -3px 14px rgba(0,0,0,.35)}',
+      '#_app-nav{position:fixed;bottom:0;left:0;right:0;z-index:2147481001;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;background:#0c0d10;border-top:1px solid #26262c;padding:9px 9px calc(9px + env(safe-area-inset-bottom,0px));box-shadow:0 -3px 14px rgba(0,0,0,.35)}',
       '#_app-nav button{min-width:0;background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.66);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:9px 3px;border-radius:13px;min-height:64px;text-align:center;line-height:1.15;overflow:hidden}',
       '#_app-nav button .e{font-size:25px;line-height:1}',
       '#_app-nav button.on{color:#fff;background:rgba(255,255,255,.08)}',
       // external-page iframe host (sits between the header and the bottom nav)
-      '#_app-frame{position:fixed;top:50px;left:0;right:0;bottom:150px;z-index:1150;background:#fff;display:none}',
+      '#_app-frame{position:fixed;top:50px;left:0;right:0;bottom:150px;z-index:2147481000;background:#fff;display:none}',
       '#_app-frame iframe{width:100%;height:100%;border:0;display:block}',
       // ── App-mode readability: bigger text + thumb-friendly tap targets. Scoped to
       //    body.appmode so the office desktop view is untouched. ──
@@ -278,14 +278,14 @@
     var pages = pagesFor(a.key); if (!pages.length) pages = a.defaults.slice();
 
     var hdr = document.getElementById('_app-hdr') || document.createElement('div');
-    hdr.id = '_app-hdr'; hdr.style.background = 'linear-gradient(180deg,' + a.color + ',' + a.dark + ')';
+    hdr.id = '_app-hdr'; hdr.style.display = ''; hdr.style.background = 'linear-gradient(180deg,' + a.color + ',' + a.dark + ')';
     hdr.innerHTML = '<div class="nm">' + a.emoji + ' ' + esc(a.name) + '</div>' +
       '<button class="_app-install" data-always="1" id="_app-inst2" type="button">⤓ Setja upp</button>' +
       '<button id="_app-exit" type="button" title="Loka appi">✕</button>';
     if (!hdr.parentNode) document.body.appendChild(hdr);
 
     var nav = document.getElementById('_app-nav') || document.createElement('div');
-    nav.id = '_app-nav';
+    nav.id = '_app-nav'; nav.style.display = '';
     nav.innerHTML = pages.map(function (k) {
       var p = PAGE_BY_KEY[k] || { emoji: '•', label: k };
       return '<button class="_app-tab" data-k="' + k + '"><span class="e">' + p.emoji + '</span>' + esc(p.short || p.label) + '</button>';
@@ -297,7 +297,36 @@
     hdr.querySelector('#_app-exit').addEventListener('click', function () { location.href = location.origin + '/'; });
 
     setManifest(a.manifest);   // install captures THIS app
-    goPage(pages[0]);
+    syncFrameBottom();
+    // Endurbygging (vaktarinn) á EKKI að hoppa til baka á fyrstu síðu.
+    goPage(_curPage || pages[0]);
+  }
+  // Iframe-botninn = raunhæð navsins (var harðkóðað 150px — 3ja raða nav er ~225px
+  // svo neðsti hluti síðunnar lenti Á BAK VIÐ navið og virtist klipptur).
+  function syncFrameBottom() {
+    try {
+      var nav = document.getElementById('_app-nav'), f = document.getElementById('_app-frame');
+      if (nav && f) f.style.bottom = Math.max(60, Math.round(nav.getBoundingClientRect().height)) + 'px';
+    } catch (_) {}
+  }
+  // Sjálf-heilun: EITTHVAÐ á símanum fjarlægir/felur botn-navið ("fliparnir niðri
+  // hverfa alltaf") — annar patch, endur-teiknun eða yfirlögn. Vaktari sem
+  // endurbyggir shellið ef header/nav vantar, er tómt eða falið. buildShell er
+  // idempotent (endurnotar element eftir id) og goPage(_curPage) heldur síðunni.
+  function startShellGuard() {
+    if (window.__appShellGuard) return; window.__appShellGuard = true;
+    setInterval(function () {
+      try {
+        if (!ACTIVE) return;
+        var nav = document.getElementById('_app-nav'), hdr = document.getElementById('_app-hdr');
+        var navDead = !nav || !nav.isConnected || !nav.querySelector('._app-tab');
+        var hdrDead = !hdr || !hdr.isConnected;
+        if (navDead || hdrDead) { buildShell(); return; }
+        if (getComputedStyle(nav).display === 'none') nav.style.display = 'grid';
+        if (getComputedStyle(hdr).display === 'none') hdr.style.display = 'flex';
+        syncFrameBottom();
+      } catch (_) {}
+    }, 1500);
   }
   function goPage(k) {
     _curPage = k;
@@ -366,12 +395,14 @@
     patchSwitchView();
     addNavButton();
     if (ACTIVE) {
-      // wait for the shell + a nav target, then lock into the app
-      var deadline = Date.now() + 6000;
+      // wait for the shell + a nav target, then lock into the app.
+      // Enginn 6s dauðafrestur lengur — á hægum síma gat App.switchView komið
+      // seinna og shellið byggðist þá ALDREI; vaktarinn tekur líka við eftirá.
       (function tick() {
-        if (document.querySelector('.vnav-btn') && window.App && window.App.switchView) { buildShell(); return; }
-        if (Date.now() < deadline) setTimeout(tick, 150);
+        if (document.querySelector('.vnav-btn') && window.App && window.App.switchView) { buildShell(); startShellGuard(); return; }
+        setTimeout(tick, 250);
       })();
+      startShellGuard();
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
