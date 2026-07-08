@@ -194,8 +194,15 @@
       // on Chrome's "7,000" output (parseFloat treated . as decimal → 7).
       const unitPrice = parseInt((tds[3].textContent || '').replace(/[^0-9]/g, ''), 10) || 0;
       const vskPct = parseInt((tds[4].textContent || '').replace(/[^0-9]/g, ''), 10) || 24;
-      const desc = (kindLabel ? kindLabel + ' · ' : '') + (productName || headLine);
-      out.push({ desc, qty, unit_price_ex_vat: unitPrice, vsk_pct: vskPct });
+      // 2026-07-08: afsláttur (%) á hvern lið — lesinn úr Afsl.-reitnum (patch 129).
+      // Reikningslínan fær AFSLÁTTAÐ einingaverð (round(verð×(1−d%)) — sama
+      // stærðfræði og taflan) og „ · −X% afsl." í lýsinguna svo hann sjáist.
+      const discInp = tr.querySelector('._ctc-line-disc');
+      const discPct = discInp ? Math.max(0, Math.min(100, parseFloat(String(discInp.value).replace(',', '.')) || 0)) : 0;
+      const billedUnit = discPct > 0 ? Math.round(unitPrice * (1 - discPct / 100)) : unitPrice;
+      const desc = (kindLabel ? kindLabel + ' · ' : '') + (productName || headLine) +
+        (discPct > 0 ? ' · −' + discPct + '% afsl.' : '');
+      out.push({ desc, qty, unit_price_ex_vat: billedUnit, vsk_pct: vskPct });
     });
     return out;
   }
@@ -220,10 +227,14 @@
       visit.extras.forEach(e => {
         const q = Math.max(0, Number(e.qty) || 0);
         if (q === 0) return;
+        // 2026-07-08: afsláttur (%) á extra-línu (disc_pct úr patch 129) — sama
+        // meðferð og þjónustulínur: afsláttað einingaverð + merking í lýsingu.
+        const d = Math.max(0, Math.min(100, Number(e.disc_pct) || 0));
+        const unit = Math.max(0, Number(e.unit_price_ex_vat) || 0);
         linur.push({
-          desc: String(e.name || 'Vara'),
+          desc: String(e.name || 'Vara') + (d > 0 ? ' · −' + d + '% afsl.' : ''),
           qty: q,
-          unit_price_ex_vat: Math.max(0, Number(e.unit_price_ex_vat) || 0),
+          unit_price_ex_vat: d > 0 ? Math.round(unit * (1 - d / 100)) : unit,
           vsk_pct: Number(e.vsk_pct) || 24
         });
       });
