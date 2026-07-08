@@ -337,8 +337,23 @@
     // 2026-06: afsláttur (%) á heildina — dregst af án-vsk og vsk hlutfallslega.
     const discountPct    = (tripState.discount_pct != null) ? Math.max(0, Math.min(100, Number(tripState.discount_pct) || 0)) : 0;
     // 2026-05-21: manual line items added via "+ Bæta við vöru eða þjónustu".
-    // Each: {id, name, qty, unit_price_ex_vat, vsk_pct, vorur_id?}.
+    // Each: {id, name, qty, unit_price_ex_vat, vsk_pct, vorur_id?, disc_pct?}.
     const extras = Array.isArray(tripState.extras) ? tripState.extras : [];
+    // 2026-07-08: afsláttur (%) á HVERN lið (ósk Agnars). Geymt í trip-state:
+    // þjónustulínur í line_disc (lykill 'svc|<tegund>|<stærð>|<kind>'), extras
+    // á extra-hlutnum sjálfum (disc_pct). Per-stk verðið sýnist ÓBREYTT; línu-
+    // samtalan = fjöldi × round(verð × (1−afsl%)) — sama stærðfræði og reikningurinn
+    // (165 scrapeCostRows/buildLinur) notar svo tölurnar stemma alls staðar.
+    const lineDisc = (tripState.line_disc && typeof tripState.line_disc === 'object') ? tripState.line_disc : {};
+    const clampPct = v => Math.max(0, Math.min(100, parseFloat(String(v == null ? '' : v).replace(',', '.')) || 0));
+    const discFor = key => clampPct(lineDisc[key]);
+    const discUnitOf = (unitPrice, d) => Math.round(unitPrice * (1 - d / 100));
+    // Afsl.-reitur í línu (autt = enginn afsláttur).
+    const discCell = (key, d) =>
+      '<td style="padding:7px 6px;text-align:center;white-space:nowrap">' +
+        '<input class="_ctc-line-disc" data-lk="' + esc(key) + '" type="number" min="0" max="100" step="1" inputmode="numeric" value="' + (d > 0 ? d : '') + '" placeholder="0" ' +
+        'style="width:44px;padding:3px 5px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;-moz-appearance:textfield"><span style="font-size:11px;color:#94a3b8">%</span>' +
+      '</td>';
 
     // Aggregate by type+size, AND split count by chosen kind.
     // 2026-05-19: normalize type-family so "ABC Duft", "PFC Duft", and "Duft"
@@ -441,7 +456,9 @@
           const unitPrice = override ? +override.price_ex_vat : +replacement.verd_an_vsk;
           const vskPct = override ? (+override.vsk_pct || 24) : (+replacement.vsk_prosenta || 24);
           const total = g.hledsla + g.yfirferd;
-          const subEx = unitPrice * total;
+          const dKey = 'svc|' + g.type + '|' + g.size + '|vara';
+          const dPct = discFor(dKey);
+          const subEx = discUnitOf(unitPrice, dPct) * total;
           const vskKr = subEx * (vskPct / 100);
           totalSubEx += subEx;
           totalVsk += vskKr;
@@ -453,13 +470,14 @@
             '<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">' + fmtKr(unitPrice) +
               (override ? ' <span style="margin-left:4px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') + '</td>' +
             '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
-            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + '</td>' +
+            discCell(dKey, dPct) +
+            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
           '</tr>');
           return;
         }
         unmatched.push(g);
         rows.push('<tr><td style="padding:7px 10px;font-size:13px;color:#0f172a">' + esc(g.type) + ' / ' + esc(g.size) + '</td>' +
-          '<td colspan="5" style="padding:7px 10px;color:#dc2626;font-size:12px;font-style:italic">⚠ Engin matchandi þjónusta í verðlista</td></tr>');
+          '<td colspan="6" style="padding:7px 10px;color:#dc2626;font-size:12px;font-style:italic">⚠ Engin matchandi þjónusta í verðlista</td></tr>');
         return;
       }
       // Each kind that has count > 0 gets its own row.
@@ -471,7 +489,9 @@
         const override = findOverride(coId, product.nafn);
         const unitPrice = override ? +override.price_ex_vat : +product.verd_an_vsk;
         const vskPct = override ? (+override.vsk_pct || 24) : (+product.vsk_prosenta || 24);
-        const subEx = unitPrice * n;
+        const dKey = 'svc|' + g.type + '|' + g.size + '|' + kindKey;
+        const dPct = discFor(dKey);
+        const subEx = discUnitOf(unitPrice, dPct) * n;
         const vskKr = subEx * (vskPct / 100);
         totalSubEx += subEx;
         totalVsk += vskKr;
@@ -485,7 +505,8 @@
           '<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">' + fmtKr(unitPrice) +
             (override ? ' <span title="' + esc(override.notes || '') + '" style="margin-left:4px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') + '</td>' +
           '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
-          '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + '</td>' +
+          discCell(dKey, dPct) +
+          '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
         '</tr>');
       });
       // 2026-05-20: "Nýtt" row — bill the store price of a brand-new unit.
@@ -497,7 +518,9 @@
           const override = findOverride(coId, newProduct.nafn);
           const unitPrice = override ? +override.price_ex_vat : +newProduct.verd_an_vsk;
           const vskPct = override ? (+override.vsk_pct || 24) : (+newProduct.vsk_prosenta || 24);
-          const subEx = unitPrice * g.nyitt;
+          const dKey = 'svc|' + g.type + '|' + g.size + '|nyitt';
+          const dPct = discFor(dKey);
+          const subEx = discUnitOf(unitPrice, dPct) * g.nyitt;
           const vskKr = subEx * (vskPct / 100);
           totalSubEx += subEx;
           totalVsk += vskKr;
@@ -509,13 +532,14 @@
             '<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">' + fmtKr(unitPrice) +
               (override ? ' <span title="' + esc(override.notes || '') + '" style="margin-left:4px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') + '</td>' +
             '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
-            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + '</td>' +
+            discCell(dKey, dPct) +
+            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
           '</tr>');
         } else {
           rows.push('<tr><td style="padding:7px 10px;font-size:13px;color:#0f172a">' + esc(g.type) + ' / ' + esc(g.size) + '</td>' +
             '<td style="padding:7px 10px;text-align:center;font-weight:600">' + g.nyitt + '</td>' +
             '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f3e8ff;color:#6b21a8">Nýtt</span></td>' +
-            '<td colspan="3" style="padding:7px 10px;color:#dc2626;font-size:12px;font-style:italic">⚠ Engin matchandi vara í verðlista — bæta við í Vörur og þjónusta</td></tr>');
+            '<td colspan="4" style="padding:7px 10px;color:#dc2626;font-size:12px;font-style:italic">⚠ Engin matchandi vara í verðlista — bæta við í Vörur og þjónusta</td></tr>');
         }
       }
       if (g.skip > 0) {
@@ -523,7 +547,7 @@
           '<td style="padding:5px 10px;font-size:12px;color:#94a3b8">' + esc(g.type) + ' / ' + esc(g.size) + '</td>' +
           '<td style="padding:5px 10px;text-align:center;font-size:12px;color:#94a3b8">' + g.skip + '</td>' +
           '<td style="padding:5px 10px"><span style="padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:#f1f5f9;color:#64748b">Sleppt</span></td>' +
-          '<td colspan="3" style="padding:5px 10px;color:#94a3b8;font-size:11px;font-style:italic">(Ekki í þessari ferð)</td>' +
+          '<td colspan="4" style="padding:5px 10px;color:#94a3b8;font-size:11px;font-style:italic">(Ekki í þessari ferð)</td>' +
         '</tr>');
       }
     });
@@ -535,7 +559,8 @@
       const exQty   = Math.max(0, Number(ex.qty) || 0);
       const exPrice = Math.max(0, Number(ex.unit_price_ex_vat) || 0);
       const exVskPct = Number(ex.vsk_pct) || 24;
-      const exSubEx = exQty * exPrice;
+      const exDisc  = clampPct(ex.disc_pct);
+      const exSubEx = exQty * discUnitOf(exPrice, exDisc);
       const exVskKr = exSubEx * (exVskPct / 100);
       totalSubEx += exSubEx;
       totalVsk += exVskKr;
@@ -550,6 +575,10 @@
           'style="width:90px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums"> kr' +
         '</td>' +
         '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + exVskPct + '%</td>' +
+        '<td style="padding:7px 6px;text-align:center;white-space:nowrap">' +
+          '<input class="_ctc-extra-disc" data-i="' + exIdx + '" type="number" min="0" max="100" step="1" inputmode="numeric" value="' + (exDisc > 0 ? exDisc : '') + '" placeholder="0" ' +
+          'style="width:44px;padding:3px 5px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff"><span style="font-size:11px;color:#94a3b8">%</span>' +
+        '</td>' +
         '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">' + fmtKr(exSubEx) +
           ' <button class="_ctc-extra-rm" data-i="' + exIdx + '" type="button" title="Eyða línu" ' +
           'style="margin-left:6px;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:15px;line-height:1;padding:0 2px;vertical-align:middle">×</button>' +
@@ -650,6 +679,7 @@
             '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;width:90px">Þjónusta</th>' +
             '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em">Per stk</th>' +
             '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;width:50px">VSK</th>' +
+            '<th style="padding:8px 6px;text-align:center;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;width:56px">Afsl.</th>' +
             '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em">Samtals</th>' +
           '</tr></thead>' +
           '<tbody>' + rows.join('') + '</tbody>' +
@@ -870,6 +900,35 @@
         _lastKey = '';
         render();
       });
+    });
+
+    // 2026-07-08: afsláttur (%) á hvern lið — þjónustulínur (line_disc) + extras (disc_pct).
+    section.querySelectorAll("._ctc-line-disc").forEach(inp => {
+      const persist = () => {
+        const key = inp.dataset.lk;
+        const v = Math.max(0, Math.min(100, parseFloat(String(inp.value).replace(",", ".")) || 0));
+        const st = loadTripState(coId);
+        if (!st.line_disc || typeof st.line_disc !== "object") st.line_disc = {};
+        if (v > 0) st.line_disc[key] = v; else delete st.line_disc[key];
+        saveTripState(coId, st);
+        return v;
+      };
+      const onChange = () => { persist(); _lastKey = ""; render(); };
+      inp.addEventListener("change", onChange);
+      inp.addEventListener("blur", onChange);
+      inp.addEventListener("input", persist);
+    });
+    section.querySelectorAll("._ctc-extra-disc").forEach(inp => {
+      const persist = () => {
+        const i = +inp.dataset.i;
+        const v = Math.max(0, Math.min(100, parseFloat(String(inp.value).replace(",", ".")) || 0));
+        const st = loadTripState(coId);
+        if (Array.isArray(st.extras) && st.extras[i]) { st.extras[i].disc_pct = v; saveTripState(coId, st); }
+      };
+      const onChange = () => { persist(); _lastKey = ""; render(); };
+      inp.addEventListener("change", onChange);
+      inp.addEventListener("blur", onChange);
+      inp.addEventListener("input", persist);
     });
 
     // Wire driving input (per-trip price).

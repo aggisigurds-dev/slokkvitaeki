@@ -343,6 +343,14 @@ birtist strax í „Skjöl & viðhengi" árstöflunni (patch 199), í úttektars
   **html2canvas-myndataka var vísvitandi EKKI notuð** — hún teiknar autt í vafra
   Agnars (sjá patch 168), svo vektor-leiðin er notuð (prentast í öllum vöfrum,
   valanlegur texti, lítil skrá).
+- **Afsláttur á hvern lið (2026-07-08, patch 129+165):** Afsl.-dálkur (%) í
+  Heildarkostnaðar-töflunni — þjónustulínur geymast í trip-state `line_disc`
+  (lykill `svc|<tegund>|<stærð>|<kind>`), extras á `extras[i].disc_pct`. Línu-
+  samtala = fjöldi × round(verð×(1−afsl%)); per-stk sýnist óbreytt. Reikningurinn
+  (165 `scrapeCostRows`/`buildLinur`) les Afsl.-reitinn og setur AFSLÁTTAÐ
+  einingaverð + „· −X% afsl." í línulýsinguna — flæðir þannig rétt í solur/
+  SalaInvoice/PDF (233) án schema-breytinga. Heildar-afslátturinn (%) er áfram
+  til og leggst OFAN Á línuafslætti.
 - **Totals-leiðrétting (patch 165 `finalizeVisit`):** salan er nú vistuð með
   `upphaed_an_vsk`/`vsk_upphaed`/`samtals` **reiknuð beint úr `linur`**
   (`totalsFromLinur` = sama stærðfræði og SalaInvoice prentar), EKKI lengur skafin
