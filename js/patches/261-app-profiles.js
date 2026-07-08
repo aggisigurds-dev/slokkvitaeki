@@ -37,6 +37,7 @@
     { k: 'br-vinnubok',      label: 'Vinnubók',              emoji: '📓', url: 'https://brunaholf.netlify.app/?embed=1#vinnubok' },
     { k: 'br-krofur',        label: 'Krófur & Tekjur',       short: 'Fjárhagur', emoji: '📊', url: 'https://brunaholf.netlify.app/?embed=1#krofur' },
     { k: 'br-krofuyfirlit',  label: 'Kröfu yfirlit (Brunahólf)', short: 'BH Kröfur', emoji: '📑', url: 'https://brunaholf.netlify.app/?embed=1#krofuyfirlit' },
+    { k: 'br-maeting',       label: 'Mæting · verkstaðir (Tímavera)', short: 'Mæting', emoji: '🕒', url: 'https://brunaholf.netlify.app/?embed=1#tvmaeting' },
   ];
   var PAGE_BY_KEY = {}; PAGES.forEach(function (p) { PAGE_BY_KEY[p.k] = p; });
 
@@ -45,7 +46,7 @@
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0e7a4f', dark: '#06402b',
       manifest: '/manifest-fjarmal.json',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
-      defaults: ['krofu-yfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
+      defaults: ['krofu-yfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'br-maeting', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
     { key: 'verkefni', emoji: '📋', name: 'Verkefnalisti', color: '#3b82f6', dark: '#1d4ed8',
       manifest: '/manifest-verkefni.json',
       blurb: 'Verkborð — beiðnir, verkefni og eftirfylgni',
@@ -86,19 +87,25 @@
     try { if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: s }); } catch (_) {}
   }
 
-  // Einskiptis-migration (2026-07-08): Brunahólf Kröfu yfirlit (br-krofuyfirlit)
-  // bætt í ÞEGAR-VISTAÐAR Fjármál-stillingar, strax á eftir Slökkvitæki Kröfu
-  // yfirlitinu. Einskiptis (flagg í cfg) svo notandinn geti af-hakað síðuna
-  // eftirá án þess að hún troði sér inn aftur; ný uppsetning fær hana úr defaults.
+  // Einskiptis-migrations: nýjar síður bætt í ÞEGAR-VISTAÐAR Fjármál-stillingar
+  // (flagg per síðu í cfg svo notandinn geti af-hakað hana eftirá án þess að hún
+  // troði sér inn aftur; ný uppsetning fær þær úr defaults).
+  //   __brky1 (2026-07-08): br-krofuyfirlit — á eftir krofu-yfirlit
+  //   __brtv1 (2026-07-08): br-maeting — aftast fyrir framan br-gerdreikninga
   (function () {
     try {
-      var c = loadCfg();
-      if (c.__brky1) return;
-      if (Array.isArray(c.fjarmal) && c.fjarmal.indexOf('br-krofuyfirlit') === -1) {
-        var ki = c.fjarmal.indexOf('krofu-yfirlit');
-        c.fjarmal.splice(ki === -1 ? 0 : ki + 1, 0, 'br-krofuyfirlit');
+      var c = loadCfg(), changed = false;
+      function insertOnce(flag, key, afterKey) {
+        if (c[flag]) return;
+        if (Array.isArray(c.fjarmal) && c.fjarmal.indexOf(key) === -1) {
+          var ki = c.fjarmal.indexOf(afterKey);
+          c.fjarmal.splice(ki === -1 ? c.fjarmal.length : ki + 1, 0, key);
+        }
+        c[flag] = 1; changed = true;
       }
-      c.__brky1 = 1;
+      insertOnce('__brky1', 'br-krofuyfirlit', 'krofu-yfirlit');
+      insertOnce('__brtv1', 'br-maeting', 'vidskiptavinir');
+      if (!changed) return;
       var s = JSON.stringify(c);
       try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
       try { if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: s }); } catch (_) {}
