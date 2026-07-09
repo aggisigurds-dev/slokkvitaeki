@@ -693,9 +693,16 @@
     if (!row) return;
     const cos = (window.Companies && Companies.list) || [];
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
+    // 2026-07-09 (audit): SAMA í-þjónustu regla og patch 153 — er_i_thjonustu
+    // dálkurinn er source-of-truth; áður sáust áskrifendur án tækja-blobs ekki
+    // í mánaðar-teljurunum þó þeir birtust á Fyrirtæki í þjónustu.
+    const bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
     const inService = c => {
+      if (c.er_i_thjonustu === true) return true;
       const ars = arsMap[String(c.id)];
-      return (ars && ars.equipment) || (window.InServiceClients && window.InServiceClients.has(c.nafn));
+      if (ars && (ars.subscribed === true || ars.equipment)) return true;
+      if (bruMap[String(c.id)]) return true;
+      return !!(window.InServiceClients && window.InServiceClients.has(c.nafn));
     };
     const counts = {};
     cos.forEach(c => {

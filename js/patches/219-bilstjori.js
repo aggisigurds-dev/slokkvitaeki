@@ -70,7 +70,10 @@
     catch (_) { return false; }
   }
   function inService(c, ars, bru) {
-    return (ars && ars.equipment) || !!bru ||
+    // 2026-07-09 (audit): sama regla og patch 153 — er_i_thjonustu dálkurinn er
+    // source-of-truth; áður gat áskrifandi án tækja-blobs VANTAÐ á aksturslistann.
+    if (c && c.er_i_thjonustu === true) return true;
+    return (ars && (ars.subscribed === true || ars.equipment)) || !!bru ||
       (window.InServiceClients && window.InServiceClients.has && window.InServiceClients.has(c.nafn));
   }
   function statusFor(ars) {
