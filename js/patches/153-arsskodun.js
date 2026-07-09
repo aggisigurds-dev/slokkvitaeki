@@ -109,8 +109,29 @@
 
   // ── Data loader ──────────────────────────────────────────────────────────
   let _cache = { list: [], byId: {}, allCompanies: [] };
+  // Stale-while-revalidate (verkefnalisti c881bcfa, 2026-07-09): síðasta
+  // reiknaða listanum er haldið í localStorage svo kald opnun málar STRAX
+  // (gamla eintakið) og ferskt hleðst hljóðlega í bakgrunni — í stað þess að
+  // síminn horfi á „Hleður…" (eða, verra, tóma „0 fyrirtæki" síðu) í nokkrar
+  // sekúndur meðan fjórar töflur eru sóttar.
+  const SNAP_KEY = 'ars_snapshot_v1';
+  let _loadingAll = false;   // satt meðan loadAll er í gangi — stýrir „Hleður"-tómastöðunni
+  function readSnapshot() {
+    try {
+      const s = JSON.parse(localStorage.getItem(SNAP_KEY) || 'null');
+      return (s && Array.isArray(s.list) && s.list.length) ? s : null;
+    } catch (_) { return null; }
+  }
+  function writeSnapshot() {
+    try { localStorage.setItem(SNAP_KEY, JSON.stringify({ t: Date.now(), list: _cache.list })); }
+    catch (_) {}   // t.d. QuotaExceeded — snapshot er bara hraðabót
+  }
 
   async function loadAll() {
+    _loadingAll = true;
+    try { return await _loadAllInner(); } finally { _loadingAll = false; }
+  }
+  async function _loadAllInner() {
     const SB = getSB();
     if (!SB) return;
 
@@ -202,6 +223,7 @@
         };
       })
       .sort((a, b) => String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is'));
+    writeSnapshot();   // næsta kalda opnun málar strax úr þessu eintaki
   }
 
   // ── Live-equipment helpers (2026-06-01) ───────────────────────────────────
@@ -622,6 +644,18 @@
       backgroundRefresh();
       return;
     }
+    // Kald opnun: mála STRAX úr localStorage-snapshotinu (síðasta heimsókn) og
+    // sækja ferskt í bakgrunni — „Hleður…" sést bara í allra fyrstu heimsókn.
+    const snap = (!_cache.list.length) ? readSnapshot() : null;
+    if (snap) {
+      _cache.list = snap.list;
+      _cache.byId = Object.fromEntries(snap.list.map(c => [c.id, c]));   // detail-smellir virka strax
+      render();
+      _rendered = true;
+      _lastDataSig = dataSig();
+      backgroundRefresh();
+      return;
+    }
     main.innerHTML = '<div style="padding:24px;color:var(--ink4)">Hleður…</div>';
     await loadAll();
     _lastLoad = Date.now();
@@ -767,13 +801,19 @@
           }).join('')}
         </div>
 
-        ${filtered.length === 0 ? `
+        ${filtered.length === 0 ? (all.length === 0 && _loadingAll ? `
+          <div style="background:var(--surface);border:2px dashed var(--brd2);border-radius:12px;padding:38px;text-align:center;color:var(--ink3)">
+            <div style="font-size:30px;margin-bottom:8px">⏳</div>
+            <div style="font-size:14px;font-weight:600;color:var(--ink1);margin-bottom:3px">Hleður gögnum…</div>
+            <div style="font-size:12px">Fyrirtækin birtast eftir andartak.</div>
+          </div>
+        ` : `
           <div style="background:var(--surface);border:2px dashed var(--brd2);border-radius:12px;padding:38px;text-align:center;color:var(--ink3)">
             <div style="font-size:30px;margin-bottom:8px">🔍</div>
             <div style="font-size:14px;font-weight:600;color:var(--ink1);margin-bottom:3px">Engin fyrirtæki passa við þessa síu</div>
             <div style="font-size:12px">Reyndu að breyta sía eða leitarstreng.</div>
           </div>
-        ` : (effView === 'card' ? renderCards(filtered) : renderTable(filtered))}
+        `) : (effView === 'card' ? renderCards(filtered) : renderTable(filtered))}
 
         ${filteredAars.length > 0 ? `
         <div class="_ars-summary" style="margin-top:14px;padding:13px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
