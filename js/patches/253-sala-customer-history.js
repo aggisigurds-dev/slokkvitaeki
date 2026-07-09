@@ -134,9 +134,109 @@
           '</tr></thead><tbody>' +
           rows.map(rowHtml).join('') +
         '</tbody></table>' +
-      '</div>';
+      '</div>' +
+      '<div id="_sch-docs"><div style="padding:16px 4px;color:#94a3b8;font-size:12px">Sæki skjöl…</div></div>';
     body.querySelectorAll('._sch-view').forEach(b => b.addEventListener('click', () => openInvoice(b.dataset.id)));
     body.querySelectorAll('._sch-send').forEach(b => b.addEventListener('click', () => sendReceipt(b.dataset.id)));
+    loadDocs(idty, body).catch(() => { const h = body.querySelector('#_sch-docs'); if (h) h.innerHTML = ''; });
+  }
+
+  // ── Skjöl (úttektarskýrslur + reikninga-PDF) — 2026-07-09 (ósk Agnars):
+  // þegar kúnninn er valinn í Sölu á að sjást ÖLL sagan hans, líka skjölin.
+  // Tveir brunnar: customer_documents (Drive-skráin, per staðsetningu/kt) og
+  // CompanyAttachments (viðhengin í Supabase, patch 111/233 sjálfvirku PDF-in).
+  async function loadDocs(idty, body) {
+    const sb = SB();
+    const holder = body.querySelector('#_sch-docs');
+    if (!sb || !holder) return;
+    const curYear = new Date().getFullYear();
+    const ktd = ktDigits(idty.kt);
+
+    // Finna allar fyrirtækja-raðir kúnnans (kt getur átt margar staðsettningar).
+    const coIds = [];
+    const baseIds = [];
+    if (idty.id && idty.source === 'fyrirtaeki') coIds.push(+idty.id);
+    if (ktd.length === 10 && ktd !== '9999999999') {
+      const d = ktDashed(ktd);
+      const f = await sb.from('fyrirtaeki').select('id,customer_base_id')
+        .in('kennitala', d !== ktd ? [ktd, d] : [ktd]).is('deleted_at', null);
+      (f.data || []).forEach(r => {
+        if (!coIds.includes(+r.id)) coIds.push(+r.id);
+        if (r.customer_base_id != null && !baseIds.includes(r.customer_base_id)) baseIds.push(r.customer_base_id);
+      });
+    }
+    if (!coIds.length && !baseIds.length) { holder.innerHTML = ''; return; }
+
+    // 1) Drive-skráin (customer_documents)
+    let docs = [];
+    try {
+      const ors = [];
+      if (coIds.length) ors.push('fyrirtaeki_id.in.(' + coIds.join(',') + ')');
+      if (baseIds.length) ors.push('customer_base_id.in.(' + baseIds.join(',') + ')');
+      const r = await sb.from('customer_documents')
+        .select('id,doc_type,year,drive_file_id,invoice_number,doc_date,amount,fyrirtaeki_id')
+        .or(ors.join(','))
+        .in('doc_type', ['uttektarskyrsla', 'reikningur']);
+      docs = (r.data || []).filter(x => x.drive_file_id && String(x.drive_file_id).indexOf('sb:') !== 0);
+    } catch (_) {}
+
+    // 2) Viðhengin (CompanyAttachments — sjálfvirku PDF-in úr patch 233 o.fl.)
+    const atts = [];
+    try {
+      if (window.CompanyAttachments && CompanyAttachments.list) {
+        coIds.forEach(id => (CompanyAttachments.list(id) || []).forEach(f => atts.push({ coId: id, f })));
+      }
+    } catch (_) {}
+
+    const attYear = a => { const y = a.f && a.f.year; if (y && y !== '0') return String(y); const m = String((a.f && a.f.name) || '').match(/\b(20[2-3][0-9])\b/); return m ? m[1] : ''; };
+    const docKind = a => { const k = a.f && a.f.kind; if (k === 'skyrsla' || k === 'reikningur') return k; const n = String((a.f && a.f.name) || '').toLowerCase(); if (/reikning|\br-?\d/.test(n)) return 'reikningur'; if (/úttekt|uttekt|skýrsl|skyrsl/.test(n)) return 'skyrsla'; return 'annad'; };
+
+    let showAll = false;
+    function render() {
+      const yStr = String(curYear);
+      const d2 = showAll ? docs : docs.filter(x => String(x.year || '') === yStr);
+      const a2 = showAll ? atts : atts.filter(a => attYear(a) === yStr);
+      const otherCount = (docs.length - docs.filter(x => String(x.year || '') === yStr).length)
+                       + (atts.length - atts.filter(a => attYear(a) === yStr).length);
+      const items = [];
+      d2.forEach(x => items.push({
+        sort: (x.doc_type === 'uttektarskyrsla' ? '0' : '1') + (x.year || ''),
+        html: docRow('🗂', x.doc_type === 'uttektarskyrsla' ? 'Úttektarskýrsla' : (x.invoice_number ? 'Reikningur ' + esc(x.invoice_number) : 'Reikningur'),
+          (x.year || '') + (x.doc_date ? ' · ' + esc(fmtDate(x.doc_date)) : '') + (x.amount ? ' · ' + esc(fmtKr(x.amount)) : '') + ' · Drive',
+          '_sch-drive', x.drive_file_id)
+      }));
+      a2.forEach(a => items.push({
+        sort: (docKind(a) === 'skyrsla' ? '0' : docKind(a) === 'reikningur' ? '1' : '2') + attYear(a),
+        html: docRow(docKind(a) === 'skyrsla' ? '📄' : docKind(a) === 'reikningur' ? '🧾' : '📎',
+          esc((a.f && a.f.name) || 'Skjal'), (attYear(a) || '') + ' · Viðhengi', '_sch-att', a.coId + '|' + ((a.f && a.f.path) || ''))
+      }));
+      items.sort((x, y) => x.sort.localeCompare(y.sort));
+      holder.innerHTML =
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px">' +
+          '<div style="font-size:12px;font-weight:700;color:#0f172a">📄 Skjöl ' + (showAll ? '(öll ár)' : yStr) + ' — úttektarskýrslur & reikningar</div>' +
+          (otherCount > 0 || showAll ? '<button id="_sch-yrs" type="button" style="background:none;border:none;color:#1d4ed8;font-size:11.5px;cursor:pointer;text-decoration:underline;padding:0">' + (showAll ? 'Sýna bara ' + yStr : 'Sýna öll ár (+' + otherCount + ')') + '</button>' : '') +
+        '</div>' +
+        (items.length
+          ? '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">' + items.map(i => i.html).join('') + '</div>'
+          : '<div style="background:#fff;border:1px dashed #e2e8f0;border-radius:10px;padding:16px;text-align:center;color:#94a3b8;font-size:12px;font-style:italic">Engin skjöl skráð fyrir ' + yStr + '.</div>');
+      holder.querySelector('#_sch-yrs')?.addEventListener('click', () => { showAll = !showAll; render(); });
+      holder.querySelectorAll('._sch-drive').forEach(b => b.addEventListener('click', () =>
+        window.open('https://drive.google.com/file/d/' + encodeURIComponent(b.dataset.v) + '/view', '_blank')));
+      holder.querySelectorAll('._sch-att').forEach(b => b.addEventListener('click', () => {
+        const [coId, path] = String(b.dataset.v).split('|');
+        const f = ((window.CompanyAttachments && CompanyAttachments.list && CompanyAttachments.list(coId)) || []).find(x => x.path === path);
+        if (f && window.CompanyAttachments.openPreview) CompanyAttachments.openPreview(f);
+      }));
+    }
+    function docRow(icon, label, sub, cls, val) {
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #f1f5f9">' +
+        '<span style="font-size:16px">' + icon + '</span>' +
+        '<div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + label + '</div>' +
+        '<div style="font-size:10.5px;color:#94a3b8">' + sub + '</div></div>' +
+        '<button class="' + cls + '" data-v="' + esc(String(val)) + '" type="button" style="padding:4px 10px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;white-space:nowrap">Opna</button>' +
+      '</div>';
+    }
+    render();
   }
 
   function rowHtml(s) {
