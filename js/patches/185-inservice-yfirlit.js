@@ -57,8 +57,14 @@
 
   function inServiceList(){
     var cos=(window.Companies&&Companies.list)||[];
+    // 2026-07-09 (audit): sama regla og patch 153 — líka blob-áskrift/tæki og brunakerfi.
+    var arsMap={}, bruMap={};
+    try{ if(window.AppSettings&&AppSettings.path){ arsMap=AppSettings.path('arsskodun_customers')||{}; bruMap=AppSettings.path('brunakerfi_customers')||{}; } }catch(e){}
     return cos.filter(function(c){
       if(c.er_i_thjonustu===true) return true;
+      var a=arsMap[String(c.id)];
+      if(a&&(a.subscribed===true||(a.equipment&&Object.values(a.equipment).some(function(v){return +v>0})))) return true;
+      if(bruMap[String(c.id)]) return true;
       if(window.InServiceClients&&InServiceClients.has) return InServiceClients.has(c.nafn);
       return false;
     });
