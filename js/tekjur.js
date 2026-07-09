@@ -71,21 +71,30 @@
     var chartWidth = Math.max(300, 40 + monthly.slice(0,12).length * 52 + 20);
     var chartSvg = '<svg viewBox="0 0 '+chartWidth+' 260" style="width:100%;max-height:280px"><rect width="'+chartWidth+'" height="260" fill="none"/><line x1="40" y1="220" x2="'+(chartWidth-20)+'" y2="220" stroke="#e2e8f0" stroke-width="1"/>'+chartBars+'</svg>';
 
-    v.innerHTML = '<div style="padding:10px 16px 34px;max-width:none;margin:0">' +
-      // Plain title (dökki „title bar" kassinn úr #260 fjarlægður — var ekki í comps)
-      '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 14px;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
-        '<h1 style="margin:0;font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:22px;font-weight:700;color:var(--ink1,#11141c);letter-spacing:-.01em;line-height:1.15">💰 Tekjur og sölur</h1>' +
-        '<div style="display:flex;gap:8px">' +
+    // theme.css (2026-07-09): viewið flush svo .thm .app-page bandið eigi útlitið.
+    if(!document.getElementById('tekjur-thm-style')){
+      var _st = document.createElement('style');
+      _st.id = 'tekjur-thm-style';
+      _st.textContent = '#view-income{padding:0 !important;max-width:none !important;background:transparent !important}';
+      document.head.appendChild(_st);
+    }
+    v.innerHTML = '<div class="thm"><div class="app-page"><main class="app-main">' +
+      '<div class="page-title">' +
+        '<div class="page-title__lead">' +
+          '<span class="page-title__icon">💰</span>' +
+          '<div><h1>Tekjur og sölur</h1><p>Tekjuyfirlit úr Sölu — mánaðartekjur, mest seldu vörur og allar sölur</p></div>' +
+        '</div>' +
+        '<div class="page-title__tools" style="display:flex;gap:8px">' +
           '<button id="tekjur-csv" style="background:linear-gradient(180deg,#f7f9fc,#e6ebf2);color:#334155;border:1px solid rgba(0,0,0,.16);padding:8px 14px;border-radius:9px;font-weight:600;cursor:pointer;font-size:13px;box-shadow:inset 0 1px 0 #fff,0 3px 8px -4px rgba(0,0,0,.5)">📥 CSV</button>' +
           '<button id="tekjur-xlsx" style="background:linear-gradient(180deg,#f7f9fc,#e6ebf2);color:#334155;border:1px solid rgba(0,0,0,.16);padding:8px 14px;border-radius:9px;font-weight:600;cursor:pointer;font-size:13px;box-shadow:inset 0 1px 0 #fff,0 3px 8px -4px rgba(0,0,0,.5)">📊 Excel</button>' +
         '</div>' +
       '</div>' +
-      // Summary cards
-      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px">' +
-        summaryCard('Heildartekjur', fmtKr(totalRev), '#dc2626', 'bstal-hero') +
-        summaryCard('Án VSK', fmtKr(totalEx), '#0d6efd') +
-        summaryCard('VSK samtals', fmtKr(totalVsk), '#b45309') +
-        summaryCard('Fjöldi sölur', _sales.length+'', '#1a7f4b') +
+      // Summary cards — theme stat-spjöld
+      '<div class="stat-row">' +
+        '<div class="stat-card stat-card--hero"><span class="stat-card__icon">💰</span><div><div class="stat-card__label">Heildartekjur</div><div class="stat-card__value">'+fmtKr(totalRev)+'</div></div></div>' +
+        '<div class="stat-card"><span class="stat-card__icon">📄</span><div><div class="stat-card__label">Án VSK</div><div class="stat-card__value">'+fmtKr(totalEx)+'</div></div></div>' +
+        '<div class="stat-card stat-card--amber"><span class="stat-card__icon">🧾</span><div><div class="stat-card__label">VSK samtals</div><div class="stat-card__value">'+fmtKr(totalVsk)+'</div></div></div>' +
+        '<div class="stat-card stat-card--green"><span class="stat-card__icon">🛒</span><div><div class="stat-card__label">Fjöldi sölur</div><div class="stat-card__value">'+_sales.length+'</div></div></div>' +
       '</div>' +
       // Chart
       '<div style="background:#fff;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
@@ -138,7 +147,7 @@
           '</div>';
         }).join('') : '<div style="color:#94a3b8;text-align:center;padding:40px">Engar sölur skráðar</div>') +
       '</div>' +
-    '</div>';
+    '</main></div></div>';
     bindOverviewEvents();
   }
 

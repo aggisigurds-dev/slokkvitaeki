@@ -598,9 +598,17 @@ dark→grey page band, metallic 3D stat cards, filled pills, dark-header data ta
   4 `.stat-card` (hero/amber/green), view-filter buttons → `.filter-chip`; the
   grouped-by-company cards + kyAbtn action rows + bulk bar kept UNTOUCHED
   (money-critical, heavily iterated — v5 lesson) ✓.
-- **Next:** Vörur / Tekjur / Allir viðskiptavinir / Fyrirtæki í Þjónustu /
-  Rekstrarfélög / … one page per skeleton (their #260 bars were already replaced
-  with plain titles in #322, so each conversion is title→band + cards + chips).
+- **Also done (2026-07-09):** Vörur (core `js/vorur.js` — page-title band,
+  tabs → `.filter-chip`, category headers as dark translucent pills so they read
+  on both the dark and grey parts of the band), Tekjur (`js/tekjur.js` —
+  page-title + 4 `.stat-card`), Allir viðskiptavinir (157 — page-title band,
+  counts line in `<p>` with light accents). Each injects its own
+  `#view-X{padding:0;background:transparent}` reset style.
+- **Skipped on purpose:** Rekstrarfélög (175) — it has its OWN dark design
+  (`html[data-thm-dark]` view-background + `.rf-card` rules) integrated with the
+  theme presets; wrapping it in the `.thm` band would fight that. Convert only
+  together with a redesign of that page.
+- **Next:** Fyrirtæki í Þjónustu (153) + remaining pages, one per skeleton.
 - **Cleanup DONE (2026-07-09, #322):** the wrong dark title BARs #260 stamped
   onto Vörur/Tekjur/Allir/Rekstrarfélög/Bókhald were replaced with plain
   theme-token titles (var(--ink1)/var(--ink3)), and `260-global-titlebar.js`
