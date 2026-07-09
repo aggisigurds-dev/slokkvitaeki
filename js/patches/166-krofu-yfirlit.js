@@ -54,7 +54,9 @@
       // a wide right gutter + a top gap. Applies in every theme (not Brunastál-
       // scoped). The inner wrapper now contributes no padding; the view owns a
       // tight, uniform margin.
-      '#view-krofu-yfirlit{padding:12px 18px 26px !important;max-width:none !important;box-sizing:border-box}' +
+      // theme.css yfirfærsla (2026-07-09): .thm .app-page bandið á viewið flush —
+      // viewið sjálft leggur ekkert pad/bakgrunn til (sama og Hreyfingarlisti 167).
+      '#view-krofu-yfirlit{padding:0 !important;max-width:none !important;background:transparent !important;box-sizing:border-box}' +
       B + '.ky-h1{color:#fff !important;font-size:26px !important;font-weight:800 !important;text-shadow:0 2px 8px rgba(0,0,0,.55)}' +
       B + '.ky-sub{color:rgba(255,255,255,.62) !important}' +
       B + '.ky-month{color:#fff !important}' +
@@ -309,9 +311,10 @@
   async function load(filterMonth) {
     const main = document.getElementById('ky-main');
     if (!main) return;
-    main.innerHTML = '<div style="padding:32px;text-align:center;color:#94a3b8">Hleður kröfum…</div>';
+    const thmWrap = (inner) => '<div class="thm"><div class="app-page"><main class="app-main">' + inner + '</main></div></div>';
+    main.innerHTML = thmWrap('<div style="padding:32px;text-align:center;color:#cbd5e1">Hleður kröfum…</div>');
     const SB = getSB();
-    if (!SB) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Engin gagnabankatenging.</div>'; return; }
+    if (!SB) { main.innerHTML = thmWrap('<div style="padding:32px;color:#fca5a5">Engin gagnabankatenging.</div>'); return; }
 
     const m = filterMonth || new Date();
     _state.month = m;
@@ -328,7 +331,7 @@
     else if (vf === 'greiddar') q = q.not('paid_at', 'is', null);              // greiddar kröfur
     // 'allt' → engin paid_at-sía (bæði ógreiddar OG greiddar)
     const r = await q.order('updated_at', { ascending: false });
-    if (r.error) { main.innerHTML = '<div style="padding:32px;color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
+    if (r.error) { main.innerHTML = thmWrap('<div style="padding:32px;color:#fca5a5">Villa: ' + esc(r.error.message) + '</div>'); return; }
     _state.all = r.data || [];
 
     // Fela BAKFÆRÐAR kröfur: kreditreikninga sjálfa (is_credit) OG upprunalega
@@ -618,16 +621,19 @@
       ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'][_state.month.getMonth()];
 
     main.innerHTML = `
-      <div style="max-width:none;margin:0;padding:0;width:100%">
+      <div class="thm"><div class="app-page"><main class="app-main">
 
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin-bottom:18px">
-          <div>
-            <h1 class="ky-h1" style="margin:0;font-size:24px;font-weight:800;color:#0f172a;display:flex;align-items:center;gap:10px">📄 Kröfu yfirlit</h1>
-            <div class="ky-sub" style="font-size:12px;color:#64748b;margin-top:2px">Krafa í heimabanka — sölur með greitt_med = "Senda reikning" sem þarf að safna saman í lok mánaðar</div>
+        <div class="page-title">
+          <div class="page-title__lead">
+            <span class="page-title__icon">📄</span>
+            <div>
+              <h1>Kröfu yfirlit</h1>
+              <p>Krafa í heimabanka — sölur með greitt_med = "Senda reikning" sem þarf að safna saman í lok mánaðar</p>
+            </div>
           </div>
-          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="page-title__tools" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <button class="_ky-prev ky-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">◀</button>
-            <div class="ky-month" style="font-size:13px;font-weight:700;color:#0f172a;padding:0 8px;min-width:140px;text-align:center">${esc(monthLabel)}</div>
+            <div class="ky-month" style="font-size:13px;font-weight:700;color:#fff;padding:0 8px;min-width:140px;text-align:center">${esc(monthLabel)}</div>
             <button class="_ky-next ky-navbtn" type="button" style="padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;cursor:pointer;font:inherit;font-size:13px">▶</button>
             <select class="_ky-sort ky-navbtn" title="Raða" style="margin-left:6px;padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font:inherit;font-size:12.5px;font-weight:600;color:#475569;cursor:pointer">
               <option value="updated_desc"${_state.sort === 'updated_desc' ? ' selected' : ''}>🕐 Nýlega breytt fyrst</option>
@@ -640,48 +646,27 @@
           </div>
         </div>
 
-        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
+        <div class="stat-row">
+          <div class="stat-card"><span class="stat-card__icon">📄</span><div><div class="stat-card__label">Þessi mánuður · ${thisMonth.length} kröfur</div><div class="stat-card__value ky-num">${fmtKr(thisMonthTotal)}</div></div></div>
+          <div class="stat-card stat-card--amber"><span class="stat-card__icon">⏳</span><div><div class="stat-card__label">Eldri ógreitt · ${older.length} kröfur</div><div class="stat-card__value ky-num">${fmtKr(olderTotal)}</div></div></div>
+          <div class="stat-card stat-card--hero"><span class="stat-card__icon">💰</span><div><div class="stat-card__label">Heildarkröfur · ${all.length} sölur · ${companies.length} fyrirtæki</div><div class="stat-card__value ky-num">${fmtKr(grandTotal)}</div></div></div>
+          <div class="stat-card stat-card--green"><span class="stat-card__icon">🏦</span><div><div class="stat-card__label">Sendar kröfur · ${sent.length} sölur · ${sentCompanies} fyrirtæki</div><div class="stat-card__value ky-num">${fmtKr(sentTotal)}</div></div></div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">
           ${[['krofur','📋 Sýna kröfur'],['osendar','📤 Ósendar kröfur'],['greiddar','✅ Greiddar kröfur'],['allt','📚 Sýna allt']].map(([k, label]) => {
             const on = (_state.viewFilter || 'krofur') === k;
-            return `<button class="_ky-vf" data-vf="${k}" type="button" style="padding:7px 14px;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;${on ? 'border:1px solid #1d4ed8;background:#1d4ed8;color:#fff' : 'border:1px solid #cbd5e1;background:#fff;color:#475569'}">${label}</button>`;
+            return `<button class="_ky-vf filter-chip${on ? ' is-active' : ''}" data-vf="${k}" type="button">${label}</button>`;
           }).join('')}
           <button class="_ky-sync" type="button" title="Sækja greiðslustöðu úr Payday og merkja greiddar kröfur sjálfkrafa" style="margin-left:auto;padding:7px 14px;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700;border:1px solid #0f7a43;background:linear-gradient(180deg,#17945a,#0f6e3a);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 3px 8px -4px rgba(0,0,0,.4)">🔄 Athuga greiðslur í Payday</button>
         </div>
-
-        ${(() => {
-          const CS = '0 1px 1px rgba(15,23,42,.05),0 8px 16px -8px rgba(15,23,42,.15),0 24px 44px -20px rgba(15,23,42,.3),inset 0 2px 0 rgba(255,255,255,.95),inset 0 -10px 20px -14px rgba(15,23,42,.14)';
-          const light = (label, value, sub, ic, icbg, glow) =>
-            `<div style="flex:1 1 240px;min-width:240px;border-radius:18px;padding:15px 17px;display:flex;align-items:center;gap:13px;background:linear-gradient(180deg,#ffffff,#eef1f6);box-shadow:${CS}">
-              <div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;background:${icbg};box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.25),0 4px 10px -3px ${glow}">${ic}</div>
-              <div style="min-width:0">
-                <div style="font-size:10.5px;font-weight:700;letter-spacing:.14em;color:#8a93a5;text-transform:uppercase">${esc(label)}</div>
-                <div class="ky-num" style="font-size:24px;font-weight:700;color:#11141c;margin-top:2px;white-space:nowrap">${fmtKr(value)}</div>
-                <div style="font-size:11px;color:#9098a6;margin-top:1px">${esc(sub)}</div>
-              </div>
-            </div>`;
-          const hero = (label, value, sub, ic, grad, glowShadow) =>
-            `<div style="flex:1 1 240px;min-width:240px;border-radius:18px;padding:15px 17px;display:flex;align-items:center;gap:13px;background:${grad};box-shadow:0 1px 1px rgba(15,23,42,.05),0 10px 20px -8px rgba(15,23,42,.25),${glowShadow},inset 0 1px 0 rgba(255,255,255,.45)">
-              <div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:20px;color:#fff;background:rgba(255,255,255,.16);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.5),inset 0 -3px 6px rgba(0,0,0,.2)">${ic}</div>
-              <div style="min-width:0">
-                <div style="font-size:10.5px;font-weight:700;letter-spacing:.14em;color:rgba(255,255,255,.72);text-transform:uppercase">${esc(label)}</div>
-                <div class="ky-num" style="font-size:24px;font-weight:700;color:#fff;margin-top:2px;white-space:nowrap">${fmtKr(value)}</div>
-                <div style="font-size:11px;color:rgba(255,255,255,.7);margin-top:1px">${esc(sub)}</div>
-              </div>
-            </div>`;
-          return '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">' +
-            light('Þessi mánuður', thisMonthTotal, thisMonth.length + ' kröfur', '📄', 'linear-gradient(180deg,#5a86e0,#2f5fe0)', 'rgba(47,95,224,.5)') +
-            light('Eldri ógreitt', olderTotal, older.length + ' kröfur', '⏳', 'linear-gradient(180deg,#d4a94f,#ab7f2a)', 'rgba(171,127,42,.45)') +
-            hero('Heildarkröfur', grandTotal, all.length + ' sölur · ' + companies.length + ' fyrirtæki', '💰', 'linear-gradient(150deg,#6f97ff 0%,#2f5fe0 34%,#1c3d8c 60%,#0b1838 100%)', '0 26px 46px -20px rgba(20,40,120,.5)') +
-            hero('Sendar kröfur', sentTotal, sent.length + ' sölur · ' + sentCompanies + ' fyrirtæki', '🏦', 'linear-gradient(150deg,#37c6a6 0%,#0f9d78 34%,#0a5f52 60%,#062f2b 100%)', '0 26px 46px -20px rgba(10,90,80,.5)') +
-          '</div>';
-        })()}
 
         <div style="font-size:12.5px;color:#5b6472;margin-bottom:14px;padding:11px 15px;background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18);line-height:1.5">
           💡 Útistandandi kröfur per fyrirtæki sem þarf að setja í heimabankann.
           Þegar krafan er mynduð, smelltu <b style="color:#0f7a43">„✓ Allar greiddar"</b> til að hreinsa þær út.
         </div>
 
-        ${q && companies.length ? `<div style="font-size:12px;color:#64748b;margin-bottom:10px">🔍 ${shown.length} af ${companies.length} fyrirtækjum passa við „${esc(_state.search)}"</div>` : ''}
+        ${q && companies.length ? `<div style="font-size:12px;color:#e2e6ee;margin-bottom:10px;text-shadow:0 1px 2px rgba(0,0,0,.4)">🔍 ${shown.length} af ${companies.length} fyrirtækjum passa við „${esc(_state.search)}"</div>` : ''}
 
         ${shown.length
           ? (getViewMode() === 'table' ? renderTable(shown)
@@ -691,7 +676,7 @@
               ? '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">Ekkert fyrirtæki passar við „' + esc(_state.search) + '"</div>'
               : '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">Engar útistandandi kröfur 🎉</div>')}
 
-      </div>
+      </main></div></div>
       <div id="ky-bulkbar"></div>`;
 
     main.querySelector('._ky-sort')?.addEventListener('change', e => {
