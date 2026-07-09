@@ -231,13 +231,10 @@
     var q=_state.q.toLowerCase().trim();
     var html='';
     html+='<div style="max-width:980px;margin:0 auto">';
-    html+='<div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:14px;padding:9px 15px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;box-shadow:0 12px 28px -18px rgba(0,0,0,.65)">'+
-          '<div style="display:flex;align-items:center;gap:11px;min-width:0">'+
-            '<div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">🏢</div>'+
-            '<div style="min-width:0">'+
-              '<h1 style="font-size:20px;margin:0;font-weight:700;letter-spacing:-.01em;color:#fff;line-height:1.15">Rekstrarfélög</h1>'+
-              '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">Stór félög sem reka mörg húsfélög/byggingar</div>'+
-            '</div>'+
+    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px">'+
+          '<div style="min-width:0">'+
+            '<h1 style="font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em;color:var(--ink1,#11141c);line-height:1.15">🏢 Rekstrarfélög</h1>'+
+            '<div style="font-size:12.5px;color:var(--ink3,#5b6472);margin-top:3px">Stór félög sem reka mörg húsfélög/byggingar</div>'+
           '</div>'+
           '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
             '<a href="/rekstrarfelog-uttektir.xlsx" download style="padding:8px 14px;text-decoration:none;border:1px solid rgba(0,0,0,.25);border-radius:9px;color:#334155;font-weight:600;font-size:13px;background:linear-gradient(180deg,#f7f9fc,#e6ebf2);box-shadow:inset 0 1px 0 #fff">📊 Aðgerðalisti (Excel)</a>'+
