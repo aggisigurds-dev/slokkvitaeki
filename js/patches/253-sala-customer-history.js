@@ -48,7 +48,7 @@
       btn.id = '_ups-sel-history';
       btn.type = 'button';
       btn.title = 'Sjá fyrri kvittanir og reikninga þessa viðskiptavinar';
-      btn.textContent = '🧾 Fyrri';
+      btn.textContent = '🧾 Fyrri viðskipti';
       btn.style.cssText = 'background:#0f766e;border:1px solid #0d5b54;color:#fff;font-size:11px;font-weight:600;padding:4px 9px;border-radius:5px;cursor:pointer;line-height:1.2;white-space:nowrap';
       btn.addEventListener('click', onClick);
       openBtn.parentElement.insertBefore(btn, openBtn.nextSibling);
@@ -76,7 +76,7 @@
       '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,0.35);width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 48px);display:flex;flex-direction:column;overflow:hidden">' +
         '<div style="padding:14px 20px;background:linear-gradient(135deg,#0f766e,#0d5b54);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
           '<div style="min-width:0">' +
-            '<div style="font-size:15px;font-weight:700">🧾 Fyrri kaup — ' + esc(idty.nafn || 'Viðskiptavinur') + '</div>' +
+            '<div style="font-size:15px;font-weight:700">🧾 Fyrri viðskipti — ' + esc(idty.nafn || 'Viðskiptavinur') + '</div>' +
             '<div style="font-size:11px;color:#99f6e4;margin-top:2px">' + (ktDigits(idty.kt).length === 10 && ktDigits(idty.kt) !== '9999999999' ? 'kt. ' + esc(ktDashed(ktDigits(idty.kt))) : 'án kennitölu') + '</div>' +
           '</div>' +
           '<div style="display:flex;gap:6px;align-items:center">' +
