@@ -139,6 +139,22 @@
         '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="report"]{background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)!important;border-color:#0a0b0d!important;color:#fff!important}',
         // Wide-mode right pane — make action stack tidy
         '#' + VIEW_ID + ' .sv-wide-r{gap:9px!important}',
+        // Wide-mode stepper — full-label nodes in a grey strip (comp: ThjonustuVerkstaedi wide)
+        '#' + VIEW_ID + ' .sv-stepsw{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f6f8fb;border:1px solid rgba(20,24,34,.06);border-radius:12px;padding:13px 18px}',
+        '#' + VIEW_ID + ' .sv-stepw{display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:0;cursor:pointer;font:inherit}',
+        '#' + VIEW_ID + ' .sv-stepw .nd{width:26px;height:26px;border-radius:50%;border:2px solid #cbd5e1;background:#fff;color:#94a3b8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;box-sizing:border-box}',
+        '#' + VIEW_ID + ' .sv-stepw.on .nd{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);border-color:#0f6e3a;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}',
+        '#' + VIEW_ID + ' .sv-stepw .lb{font-family:"Space Grotesk",system-ui,sans-serif;font-size:12.5px;font-weight:600;color:#5b6472;white-space:nowrap}',
+        '#' + VIEW_ID + ' .sv-stepw.on .lb{color:#0f6e3a;font-weight:700}',
+        '#' + VIEW_ID + ' .sv-lnw{flex:1;min-width:12px;max-width:46px;height:3px;border-radius:2px;background:#dbe1ea}',
+        '#' + VIEW_ID + ' .sv-lnw.on{background:#2bbf6c}',
+        // Wide-mode right column — big note, 3-button row, full-width Afmerkja below
+        '#' + VIEW_ID + ' .sv-wide-r{flex:0 0 340px!important}',
+        '#' + VIEW_ID + ' .sv-wide-r .sv-note{min-height:86px!important}',
+        '#' + VIEW_ID + ' .sv-actsw{display:flex!important;gap:8px!important;flex-wrap:nowrap!important;border-top:0!important;padding-top:0!important}',
+        '#' + VIEW_ID + ' .sv-actsw ._sv-act{flex:1;height:42px!important;white-space:nowrap}',
+        '#' + VIEW_ID + ' .sv-actsw ._sv-act[data-act="report"]{background:#f1f5f9!important;border-color:rgba(20,24,34,.14)!important;color:#3a4250!important}',
+        '#' + VIEW_ID + ' .sv-unmarkw{width:100%;height:38px;border:1px solid #f3c6c4!important;background:#fdf1f1!important;color:#c0241f!important;border-radius:10px!important;font-family:"Space Grotesk",system-ui,sans-serif!important;font-size:12.5px!important;font-weight:700!important;cursor:pointer}',
         // Numbers in mono
         '#' + VIEW_ID + ' [data-mono],#' + VIEW_ID + ' .sv-kt{font-family:"Space Mono",monospace}'
       ].join('');
@@ -327,6 +343,17 @@
           '<span class="ln"></span><span class="nd">' + (on ? '✓' : (i + 1)) + '</span><span class="lb">' + esc(short) + '</span></button>';
       }).join('') + '</div>';
   }
+  // breiði stíllinn — full-label stika í gráum borða (wide mode, comp-útlitið)
+  function stepperWide(r) {
+    return '<div class="sv-stepsw">' +
+      STEP_DEFS.map(([k, full], i) => {
+        const on = !!r.steps[k];
+        const prevOn = i > 0 && !!r.steps[STEP_DEFS[i - 1][0]];
+        return (i > 0 ? '<span class="sv-lnw' + (prevOn ? ' on' : '') + '"></span>' : '') +
+          '<button class="_sv-step sv-stepw' + (on ? ' on' : '') + '" data-id="' + r.id + '" data-step="' + k + '" title="' + esc(full) + (on ? ' — smelltu til að afhaka' : '') + '">' +
+          '<span class="nd">' + (on ? '✓' : '') + '</span><span class="lb">' + esc(full) + '</span></button>';
+      }).join('') + '</div>';
+  }
   // bráðabirgða-merkingar (single-select)
   function marks(r) {
     return '<div class="sv-marks">' + MARK_DEFS.map(([k, label, bg, tx, bd]) => {
@@ -383,16 +410,26 @@
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' + nameBlock(r, true) + metaChips(r) + '</div>' +
       stepper(r) + marks(r) + note(r) + aminningLine(r, 90) + vinnslaActs(r) + '</div>';
   }
-  // Í-vinnslu kort — wide mode (breið, lág röð; nóta + aðgerðir hægra megin)
+  // Í-vinnslu kort — wide mode (comp-útlitið: nafn+chips, full-label stika í
+  // gráum borða, merkingar undir; hægra megin nóta → Opna/Skýrsla/Búið → Afmerkja)
+  function vinnslaActsWide(r) {
+    return '<div class="sv-acts sv-actsw">' +
+      '<button class="_sv-act" data-act="open" data-id="' + r.id + '">📁 Opna</button>' +
+      '<button class="_sv-act" data-act="report" data-id="' + r.id + '">📄 Skýrsla</button>' +
+      '<button class="_sv-act" data-act="buid" data-id="' + r.id + '">✓ Búið</button>' +
+      '</div>' +
+      '<button class="_sv-act sv-unmarkw" data-act="unstart" data-id="' + r.id + '" title="Afmerkja — taka úr vinnslu og af verkstæðinu">✕ Afmerkja</button>';
+  }
   function wideCard(r) {
     return '<div class="sv-card wide' + (r.mark === 'haett' ? ' haett' : '') + '">' +
       '<div class="sv-wide-l">' +
         docAlert(r) + reikAlert(r) +
-        '<div class="sv-wide-row" style="justify-content:space-between">' + nameBlock(r, false) + metaChips(r) + '</div>' +
-        '<div class="sv-wide-row">' + stepPills(r) + marks(r) + '</div>' +
+        '<div class="sv-wide-row">' + nameBlock(r, true) + metaChips(r) + '</div>' +
+        stepperWide(r) +
+        marks(r) +
         aminningLine(r) +
       '</div>' +
-      '<div class="sv-wide-r">' + note(r) + vinnslaActs(r) + '</div>' +
+      '<div class="sv-wide-r">' + note(r) + vinnslaActsWide(r) + '</div>' +
     '</div>';
   }
 
