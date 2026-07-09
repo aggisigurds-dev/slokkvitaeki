@@ -402,8 +402,9 @@ renderFromSale line-disc + kreditreikningur print, dk-push (brunahólf solur.js
 now carries afslattur/discount_pct/vsk_pct, payday-push discount via #250),
 pos.js kr-input comma/dot parse, and lookupKt max-wins (mitigated at the WRITE
 sites: 158 + 255 mirror afslattur_pct to every fyrirtaeki/vidskiptavinir row
-sharing the kt, so lowering propagates). Still open (lower priority): patch
-227 cloud-sync resurrects cleared trips.
+sharing the kt, so lowering propagates). Patch 227 trip-resurrect was ALSO
+fixed in #317 (removeItem → cloud tombstone `_deleted:true`, newest-wins).
+The discount-audit list is fully closed.
 
 ## Customer-base sameining — `js/patches/236-customer-sameining.js`
 
@@ -591,11 +592,15 @@ dark→grey page band, metallic 3D stat cards, filled pills, dark-header data ta
   `localStorage slokk_theme={preset:'brunastal'}`, `waitUntil:'load'`.
 - **Done:** Hreyfingarlisti (patch 167) fully on theme.css ✓. ÞjónustuVerkstæði
   (patch 190) header → plain title + coloured stat **pills** (matches its comp) ✓.
-  Both on PR **#261** (draft, branch `claude/greeting-agop6g`).
-- **Next:** Kröfu yfirlit (#166) — NB it is **grouped-by-company** (bulk heimabanki
-  send), NOT the flat skeleton; keep the grouping, apply the theme *look*. Then
-  Vörur / Tekjur / Allir viðskiptavinir / Fyrirtæki í Þjónustu / Rekstrarfélög / …
-  one page per skeleton.
+  Kröfu yfirlit (#166, 2026-07-09) — chrome on theme.css: `.thm .app-page`
+  wrapper (also around loading/error states), `.page-title` + `__tools` (month
+  nav/sort/search keep their `.ky-navbtn` Brunastál overrides), `.stat-row` with
+  4 `.stat-card` (hero/amber/green), view-filter buttons → `.filter-chip`; the
+  grouped-by-company cards + kyAbtn action rows + bulk bar kept UNTOUCHED
+  (money-critical, heavily iterated — v5 lesson) ✓.
+- **Next:** Vörur / Tekjur / Allir viðskiptavinir / Fyrirtæki í Þjónustu /
+  Rekstrarfélög / … one page per skeleton (their #260 bars were already replaced
+  with plain titles in #322, so each conversion is title→band + cards + chips).
 - **Cleanup DONE (2026-07-09, #322):** the wrong dark title BARs #260 stamped
   onto Vörur/Tekjur/Allir/Rekstrarfélög/Bókhald were replaced with plain
   theme-token titles (var(--ink1)/var(--ink3)), and `260-global-titlebar.js`
