@@ -397,12 +397,13 @@ double-discount bug; and never store per-line `discount_pct` together with
 - **233 (PDF)**: gross-mode now scales the per-rate VSK buckets by the discount
   factor (like SalaInvoice totalsByRate) — archived PDFs no longer overstate VAT.
 
-Still open (lower priority): renderFromSale ignores NON-uniform line
-`discount_pct` (only all-same-pct works); kreditreikningur prints pre-discount
-lines (negative afslattur matches no case); dk-push (brunahólf solur.js) drops
-afslattur/discount_pct/vsk_pct; pos.js kr-input parses „1.000"→1; pos.js
-lookupKt max-wins makes lowering a customer discount ineffective when the kt
-exists in both tables; patch 227 cloud-sync resurrects cleared trips.
+2026-07-09 status: the "fixes 4-7" batch closed the rest of the audit list —
+renderFromSale line-disc + kreditreikningur print, dk-push (brunahólf solur.js
+now carries afslattur/discount_pct/vsk_pct, payday-push discount via #250),
+pos.js kr-input comma/dot parse, and lookupKt max-wins (mitigated at the WRITE
+sites: 158 + 255 mirror afslattur_pct to every fyrirtaeki/vidskiptavinir row
+sharing the kt, so lowering propagates). Still open (lower priority): patch
+227 cloud-sync resurrects cleared trips.
 
 ## Customer-base sameining — `js/patches/236-customer-sameining.js`
 
@@ -595,11 +596,12 @@ dark→grey page band, metallic 3D stat cards, filled pills, dark-header data ta
   send), NOT the flat skeleton; keep the grouping, apply the theme *look*. Then
   Vörur / Tekjur / Allir viðskiptavinir / Fyrirtæki í Þjónustu / Rekstrarfélög / …
   one page per skeleton.
-- **Cleanup owed:** the earlier **#260 (merged to master)** stamped the WRONG
-  dark title BAR onto Vörur/Tekjur/Allir/Fyrirtæki í Þjónustu/Rekstrarfélög/Bókhald
-  + a global `js/patches/260-global-titlebar.js`. That bar isn't in the comps and
-  caused black-on-black; revert/replace it as each page is redone (or a standalone
-  revert if Agnar wants production clean sooner).
+- **Cleanup DONE (2026-07-09, #322):** the wrong dark title BARs #260 stamped
+  onto Vörur/Tekjur/Allir/Rekstrarfélög/Bókhald were replaced with plain
+  theme-token titles (var(--ink1)/var(--ink3)), and `260-global-titlebar.js`
+  (which prepended the bar to every other Brunastál view, incl. Fyrirtæki í
+  Þjónustu) is hibernated — script tag commented out like 152. The proper
+  theme.css conversion still proceeds page by page as above.
 
 ## Related projects (in case Agnar mentions them)
 
