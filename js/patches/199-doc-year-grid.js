@@ -158,8 +158,19 @@
   }
   function invDocChip(d){
     var u=driveUrl(d.drive_file_id); var lab=invLabel(d.invoice_number);
-    var chip = u ? '<a class="sk-doc inv" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna reikning í Drive">🧾 '+esc(lab)+'</a>'
-                 : '<span class="sk-doc inv">🧾 '+esc(lab)+'</span>';
+    var chip;
+    if(u){
+      chip = '<a class="sk-doc inv" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna reikning í Drive">🧾 '+esc(lab)+'</a>';
+    } else if(d.invoice_number){
+      // 2026-07-09: POS-tengdar skráningar („kt-tengt úr Sölu") hafa EKKERT
+      // skjal (drive_file_id null) og teiknuðust sem dautt span — „reikningarnir
+      // opnast ekki" (Agnar). Smellur opnar nú reikninginn beint úr sölunni
+      // (solur → SalaInvoice.renderFromSale, sama mót og „Prenta aftur" í
+      // Bókhalds yfirliti).
+      chip = '<button type="button" class="sk-doc inv" data-salenum="'+esc(d.invoice_number)+'" title="Opna reikning úr Sölu">🧾 '+esc(lab)+'</button>';
+    } else {
+      chip = '<span class="sk-doc inv" title="Ekkert skjal né sölunúmer fylgir þessari skráningu">🧾 '+esc(lab)+'</span>';
+    }
     return docWrap(chip, d.id);
   }
   function repAttChip(a){ var nm=String(a.name||'Skoðun'); var disp=nm.length>46?nm.slice(0,44)+'…':nm; return attWrap('<button type="button" class="sk-doc rep" data-att="'+esc(a.id)+'" title="'+esc(nm)+'">📄 '+esc(disp)+'</button>', a.id); }
@@ -303,6 +314,33 @@
         var aid=attEl.getAttribute('data-att');
         var a=attList(coId).find(function(x){return x.id===aid;});
         if(a&&window.CompanyAttachments&&CompanyAttachments.openPreview) CompanyAttachments.openPreview(a);
+        return;
+      }
+      // Skjalalaus reikningsskráning → opna reikninginn beint úr sölunni.
+      var saleEl=e.target.closest('[data-salenum]');
+      if(saleEl){
+        e.preventDefault();
+        var num=saleEl.getAttribute('data-salenum');
+        // Glugginn er opnaður SYNKRONT í smellinum svo popup-vörn (sérstaklega
+        // á síma) loki ekki á hann; innihaldið kemur þegar salan er sótt.
+        var win=window.open('','_blank','width=900,height=1100');
+        if(!win){ alert('Leyfðu sprettiglugga til að opna reikninginn.'); return; }
+        try{ win.document.write('<p style="font-family:sans-serif;padding:24px;color:#334155">Sæki reikning '+esc(num)+'…</p>'); }catch(_){}
+        try{
+          var sb=SB(); if(!sb) throw new Error('engin gagnatenging');
+          var rs=await sb.from('solur').select('*').eq('num', num).limit(1);
+          var sale=rs&&rs.data&&rs.data[0];
+          if(!sale) throw new Error('salan '+num+' fannst ekki í Sölu');
+          if(!(window.SalaInvoice&&SalaInvoice.renderFromSale)) throw new Error('reikningsmótið er ekki tiltækt');
+          var co=getCompany(coId);
+          SalaInvoice.renderFromSale(win, sale, {
+            kennitala: (co&&co.kennitala)||sale.customer_kt||'',
+            heimilisfang: (co&&co.heimilisfang)||''
+          });
+        }catch(err){
+          try{ win.close(); }catch(_){}
+          alert('Gat ekki opnað reikninginn: '+(err&&err.message||err));
+        }
         return;
       }
     });
