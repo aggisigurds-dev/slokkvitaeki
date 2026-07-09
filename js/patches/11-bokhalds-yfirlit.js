@@ -282,12 +282,9 @@
     return `
       <main class="main-panel">
         <div class="by-wrap">
-          <div class="by-header" style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:14px;padding:9px 15px;display:flex;align-items:center;gap:11px;box-shadow:0 12px 28px -18px rgba(0,0,0,.65);margin-bottom:13px">
-            <div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">📊</div>
-            <div style="min-width:0">
-              <h1 style="margin:0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">Bókhalds yfirlit</h1>
-              <div class="by-sub" style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">Yfirlit yfir allar sölur með VSK-sundurliðun og útflutningi til CSV fyrir bókhald og skattaskil</div>
-            </div>
+          <div class="by-header" style="display:flex;flex-direction:column;gap:2px;margin-bottom:14px">
+            <h1 style="margin:0;font-family:'Space Grotesk',system-ui,sans-serif;font-size:22px;font-weight:700;color:var(--ink1,#11141c);letter-spacing:-.01em;line-height:1.15">📊 Bókhalds yfirlit</h1>
+            <div class="by-sub" style="font-size:12.5px;color:var(--ink3,#5b6472);margin-top:2px">Yfirlit yfir allar sölur með VSK-sundurliðun og útflutningi til CSV fyrir bókhald og skattaskil</div>
           </div>
 
           <div class="by-summary" id="by-summary"></div>

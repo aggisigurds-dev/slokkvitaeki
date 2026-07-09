@@ -63,12 +63,9 @@
       thjonusta: _products.filter(function(p){return p.flokkur === 'Þjónusta';}).length
     };
     v.innerHTML = '<div style="padding:10px 16px 34px;max-width:none;margin:0">' +
-      // Dark metallic title bar (matches Hreyfingarlisti / Bókhald / Kröfu yfirlit)
-      '<div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:14px;padding:9px 15px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 12px 28px -18px rgba(0,0,0,.65);margin:0 0 13px;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
-        '<div style="display:flex;align-items:center;gap:11px;min-width:0">' +
-          '<div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">📦</div>' +
-          '<h1 style="margin:0;font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">Vörur og þjónusta</h1>' +
-        '</div>' +
+      // Plain title (dökki „title bar" kassinn úr #260 fjarlægður — var ekki í comps)
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 14px;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
+        '<h1 style="margin:0;font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:22px;font-weight:700;color:var(--ink1,#11141c);letter-spacing:-.01em;line-height:1.15">📦 Vörur og þjónusta</h1>' +
         '<button id="vorur-new" style="background:linear-gradient(180deg,#209d5c,#178048);color:#fff;border:1px solid rgba(0,0,0,.25);padding:9px 16px;border-radius:9px;font-family:\'Space Grotesk\',system-ui,sans-serif;font-weight:700;cursor:pointer;font-size:13px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 4px 10px -4px rgba(0,0,0,.5)">+ Ný vara/þjónusta</button>' +
       '</div>' +
       // Search

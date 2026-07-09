@@ -395,23 +395,20 @@
     main.innerHTML = `
       <div style="max-width:1720px;margin:0 auto;padding:10px 18px 60px;font-family:'Space Grotesk',system-ui,sans-serif;color:#11141c">
 
-        <!-- Header — dark metallic title bar (matches Hreyfingarlisti / Bókhald / Vörur) -->
-        <div style="background:linear-gradient(180deg,#3a3d45,#2a2d33 45%,#1b1d22);border-radius:14px;padding:9px 15px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:16px;flex-wrap:wrap;box-shadow:0 12px 28px -18px rgba(0,0,0,.65)">
-          <div style="display:flex;align-items:center;gap:11px;min-width:0">
-            <div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">👥</div>
-            <div style="min-width:0">
-              <h1 style="margin:0;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">Allir Viðskiptavinir</h1>
-              <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">
-                <span style="font-family:'Space Mono',monospace;color:#fff;font-weight:700">${cntAll}</span> fyrirtæki ·
-                <span style="color:#fca5a5"><span style="font-family:'Space Mono',monospace;font-weight:700">${cntArs}</span> í fyrirtækjaþjónustu</span> ·
-                <span style="color:#93c5fd"><span style="font-family:'Space Mono',monospace;font-weight:700">${cntBru}</span> í brunakerfi</span> ·
-                <span style="color:#7dd3fc"><span style="font-family:'Space Mono',monospace;font-weight:700">${cntFerda}</span> í ferðaþjónustu</span> ·
-                <span style="font-family:'Space Mono',monospace;color:#fff;font-weight:700">${cntOne}</span> án samnings
-              </div>
+        <!-- Header — plain title (dökki „title bar" kassinn úr #260 fjarlægður — var ekki í comps) -->
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:16px;flex-wrap:wrap">
+          <div style="min-width:0">
+            <h1 style="margin:0;font-size:22px;font-weight:700;color:var(--ink1,#11141c);letter-spacing:-.01em;line-height:1.15">👥 Allir Viðskiptavinir</h1>
+            <div style="font-size:12.5px;color:var(--ink3,#5b6472);margin-top:3px">
+              <span style="font-family:'Space Mono',monospace;color:var(--ink1,#11141c);font-weight:700">${cntAll}</span> fyrirtæki ·
+              <span style="color:#b91c1c"><span style="font-family:'Space Mono',monospace;font-weight:700">${cntArs}</span> í fyrirtækjaþjónustu</span> ·
+              <span style="color:#1d4ed8"><span style="font-family:'Space Mono',monospace;font-weight:700">${cntBru}</span> í brunakerfi</span> ·
+              <span style="color:#0369a1"><span style="font-family:'Space Mono',monospace;font-weight:700">${cntFerda}</span> í ferðaþjónustu</span> ·
+              <span style="font-family:'Space Mono',monospace;color:var(--ink1,#11141c);font-weight:700">${cntOne}</span> án samnings
             </div>
           </div>
           <input id="_av-search" type="text" placeholder="🔍 Leita..." value="${esc(state.search)}"
-                 style="height:38px;padding:0 14px;border:1px solid rgba(0,0,0,.25);border-radius:10px;font:inherit;font-size:13.5px;width:280px;background:#fff;color:#141822;outline:none;box-shadow:inset 0 1px 3px rgba(0,0,0,.15)">
+                 style="height:38px;padding:0 14px;border:1px solid var(--brd2,#cbd5e1);border-radius:10px;font:inherit;font-size:13.5px;width:280px;background:var(--surface,#fff);color:var(--ink1,#141822);outline:none">
         </div>
 
         <!-- Summary cards — spec §5 stat tiles -->
