@@ -320,7 +320,11 @@
       'html body #view-bokhald-yfirferd.view,'+
       'html body #view-kerfi.view,'+
       'html body #view-vidsk-detail.view,'+
-      'html body #view-hreyfingarlisti.view'+
+      'html body #view-hreyfingarlisti.view,'+
+      'html body #view-krofu-yfirlit.view,'+
+      'html body #view-allir-vidsk.view,'+
+      'html body #view-vorur.view,'+
+      'html body #view-income.view'+
         '{background:linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%)!important}',
       'html body [id^="view-"]>.main-panel{background:transparent!important}',
       /* 2026-06-28: text-on-gradient contrast fix.

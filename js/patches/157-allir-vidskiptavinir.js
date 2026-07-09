@@ -396,7 +396,7 @@
     if (!document.getElementById('av-thm-style')) {
       const _st = document.createElement('style');
       _st.id = 'av-thm-style';
-      _st.textContent = '#view-allir-vidsk{padding:0 !important;max-width:none !important;background:transparent !important}';
+      _st.textContent = '#view-allir-vidsk{padding:0 !important;max-width:none !important}';
       document.head.appendChild(_st);
     }
     main.innerHTML = `

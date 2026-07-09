@@ -75,7 +75,7 @@
     if(!document.getElementById('tekjur-thm-style')){
       var _st = document.createElement('style');
       _st.id = 'tekjur-thm-style';
-      _st.textContent = '#view-income{padding:0 !important;max-width:none !important;background:transparent !important}';
+      _st.textContent = '#view-income{padding:0 !important;max-width:none !important}';
       document.head.appendChild(_st);
     }
     v.innerHTML = '<div class="thm"><div class="app-page"><main class="app-main">' +
