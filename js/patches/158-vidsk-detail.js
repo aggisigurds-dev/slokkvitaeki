@@ -420,6 +420,9 @@
       try {
         const sb = window.DB && window.DB.sb;
         if (sb) await sb.from('fyrirtaeki').update({ er_i_thjonustu: action === 'add' }).eq('id', _currentId);
+        // Speglað á in-memory röðina líka svo re-render (og patch 157 listinn)
+        // sýni breytinguna strax án þess að Companies þurfi að endurhlaðast.
+        if (c) c.er_i_thjonustu = (action === 'add');
       } catch (e) { console.warn('[vidsk-detail] er_i_thjonustu update failed', e); }
     }
     render();
@@ -440,9 +443,16 @@
     }
     const ars = getArs(_currentId);
     const bru = getBru(_currentId);
-    const hasArs = !!(ars && ars.equipment);
-    const hasBru = !!bru;
     const units = getUnitsFor(c.nafn);
+    // 2026-07-09 (critical bug, Agnar): horfði BARA á gamla equipment-blobbið —
+    // kúnnar sem eru í þjónustu (er_i_thjonustu / subscribed / alvöru tæki)
+    // sýndust „Ekki skráð" með „+ Skrá í fyrirtækjaþjónustu" takka. Nú sama
+    // regla og inService() í patch 153.
+    const hasArs = c.er_i_thjonustu === true || !!(ars && (
+      ars.subscribed === true ||
+      (ars.equipment && Object.values(ars.equipment).some(v => +v > 0))
+    )) || units.length > 0;
+    const hasBru = !!bru;
     const initial = (c.nafn || '?').trim().charAt(0).toUpperCase();
     const avatarColor = hasArs && hasBru ? '#7c3aed' :
                         hasArs ? '#b91c1c' :

@@ -149,15 +149,24 @@
       const ars = arsMap[String(c.id)];
       const bru = brunMap[String(c.id)];
       const ferda = ferdaMap[String(c.id)];
+      const unitCount = unitsByClient[c.nafn] || 0;
       return {
         ...c,
-        _hasArs: !!(ars && ars.equipment),
+        // 2026-07-09 (critical bug, Agnar): notaði BARA gamla equipment-blobbið
+        // svo kúnnar sem ERU í þjónustu (er_i_thjonustu á fyrirtaeki-röðinni,
+        // subscribed-flaggið, eða með alvöru virk tæki) töldust „Án samnings".
+        // Nú SAMA regla og inService() í patch 153 (Fyrirtæki í Þjónustu) —
+        // síðurnar tvær mega aldrei flokka ólíkt.
+        _hasArs: c.er_i_thjonustu === true || !!(ars && (
+          ars.subscribed === true ||
+          (ars.equipment && Object.values(ars.equipment).some(v => +v > 0))
+        )) || unitCount > 0,
         _hasBru: !!bru,
         _hasFerda: !!ferda,
         _ars: ars || {},
         _bru: bru || {},
         _ferda: ferda || {},
-        _unitCount: unitsByClient[c.nafn] || 0,
+        _unitCount: unitCount,
         _hasGps: !!(c.heimilisfang && gc[c.heimilisfang]) || !!(c.nafn && gc[c.nafn]),
         _docs: docsFor(c),
         _bankOnly: _bankOnlyIds.has(+c.id)

@@ -28,6 +28,34 @@
   // on the year cell so the office sees "reikningur sendur" right in the list,
   // alongside the úttektarskýrslu status. Loaded once, then cells are rebuilt.
   let reikMap = null, reikLoading = false;
+  // 2026-07-09 (critical bug, Agnar): fyrir rekstrarfélög með marga staði (ein
+  // kt → margar fyrirtaeki-raðir, t.d. Heimaleiga með 8 staði) opnuðu '25/'26
+  // flögurnar SÖMU kt-víðu Drive-skýrsluna (uttekt_files er keyed á kt) á
+  // ÖLLUM röðunum — röng skýrsla (annar staður) á 7 af 8. Nú er STAÐRÉTTA
+  // skýrslan úr customer_documents (fyrirtaeki_id → ár, sama uppspretta og
+  // „Skjöl & viðhengi" á kúnnasíðunni) alltaf tekin fyrst, og kt-víði
+  // hlekkurinn er AÐEINS notaður þegar kt-in á einn stað (ótvírætt).
+  let locMap = null, locLoading = false;
+  async function loadLoc(){
+    if (locLoading || locMap) return; locLoading = true;
+    try {
+      const sb = window.DB && DB.sb; if (!sb) { locLoading = false; return; }
+      const r = await sb.from('customer_documents').select('fyrirtaeki_id,year,drive_file_id')
+        .eq('doc_type','uttektarskyrsla').not('fyrirtaeki_id','is',null).not('drive_file_id','is',null);
+      const map = {};
+      (r.data || []).forEach(x => {
+        if (x.fyrirtaeki_id == null || !x.year || !x.drive_file_id) return;
+        const k = String(x.fyrirtaeki_id);
+        (map[k] = map[k] || {})[String(x.year)] = 'https://drive.google.com/file/d/' + x.drive_file_id + '/view';
+      });
+      locMap = map;
+      // rebuild the year cells so location-precise links replace kt-wide ones
+      document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
+      document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
+      process();
+    } catch (_) {}
+    locLoading = false;
+  }
   async function loadReik(){
     if (reikLoading || reikMap) return; reikLoading = true;
     try {
@@ -58,6 +86,9 @@
     const cos = (window.Companies && Companies.list) || [];
     if (!cos.length) return;
     const byId = {}; cos.forEach(c => { byId[String(c.id)] = c; });
+    // Fjöldi fyrirtaeki-raða per kt — kt-víði uttekt_files hlekkurinn er bara
+    // ótvíræður þegar kt-in á EINN stað.
+    const ktCount = {}; cos.forEach(c => { const d = digits(c.kennitala); if (d) ktCount[d] = (ktCount[d] || 0) + 1; });
 
     // 1) header — add the four year columns after the 5th column ("Tæki")
     document.querySelectorAll('table thead tr').forEach(htr => {
@@ -83,8 +114,13 @@
       const rec = uf[kt] || {};
       const files = Array.isArray(att[coId]) ? att[coId] : [];
       const ref = tr.children[1] || null;   // right after the company name cell
+      const locRec = (locMap && locMap[coId]) || {};
       YEARS.forEach(y => {
-        const u = rec[y];
+        // Uppruna-röð: (1) STAÐRÉTT customer_documents skýrsla (fyrirtaeki_id
+        // → ár, Drive) — sama og kúnnasíðan sýnir; (2) kt-víði uttekt_files
+        // hlekkurinn AÐEINS þegar kt-in á einn stað. Fjölstaða-kt án staðréttrar
+        // skýrslu sýnir heiðarlegt „vantar" í stað rangrar skýrslu annars staðar.
+        const u = locRec[y] || ((ktCount[kt] || 0) <= 1 ? rec[y] : null);
         // Explicit year tag wins; untagged files (year == null) fall back to a
         // year found in the filename ("Rjúpufell 2025.pdf" → 2025) so old
         // uploads light up without manual tagging. year === '0' = explicitly
@@ -182,4 +218,5 @@
   setInterval(process, 1500);
   setTimeout(process, 120); setTimeout(process, 500);
   setTimeout(loadReik, 900);   // load reikningur-status once, then re-render cells with 🧾
+  setTimeout(loadLoc, 600);    // load location-precise reports once, then re-render cells
 })();
