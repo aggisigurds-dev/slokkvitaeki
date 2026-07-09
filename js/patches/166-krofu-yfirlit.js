@@ -56,7 +56,7 @@
       // tight, uniform margin.
       // theme.css yfirfærsla (2026-07-09): .thm .app-page bandið á viewið flush —
       // viewið sjálft leggur ekkert pad/bakgrunn til (sama og Hreyfingarlisti 167).
-      '#view-krofu-yfirlit{padding:0 !important;max-width:none !important;background:transparent !important;box-sizing:border-box}' +
+      '#view-krofu-yfirlit{padding:0 !important;max-width:none !important;box-sizing:border-box}' +
       B + '.ky-h1{color:#fff !important;font-size:26px !important;font-weight:800 !important;text-shadow:0 2px 8px rgba(0,0,0,.55)}' +
       B + '.ky-sub{color:rgba(255,255,255,.62) !important}' +
       B + '.ky-month{color:#fff !important}' +

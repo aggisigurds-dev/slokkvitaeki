@@ -66,7 +66,7 @@
     if(!document.getElementById('vorur-thm-style')){
       var st = document.createElement('style');
       st.id = 'vorur-thm-style';
-      st.textContent = '#view-vorur{padding:0 !important;max-width:none !important;background:transparent !important}';
+      st.textContent = '#view-vorur{padding:0 !important;max-width:none !important}';
       document.head.appendChild(st);
     }
     v.innerHTML = '<div class="thm"><div class="app-page"><main class="app-main">' +
