@@ -62,33 +62,44 @@
       vorur: _products.filter(function(p){return p.flokkur !== 'Þjónusta';}).length,
       thjonusta: _products.filter(function(p){return p.flokkur === 'Þjónusta';}).length
     };
-    v.innerHTML = '<div style="padding:10px 16px 34px;max-width:none;margin:0">' +
-      // Plain title (dökki „title bar" kassinn úr #260 fjarlægður — var ekki í comps)
-      '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 14px;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
-        '<h1 style="margin:0;font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:22px;font-weight:700;color:var(--ink1,#11141c);letter-spacing:-.01em;line-height:1.15">📦 Vörur og þjónusta</h1>' +
-        '<button id="vorur-new" style="background:linear-gradient(180deg,#209d5c,#178048);color:#fff;border:1px solid rgba(0,0,0,.25);padding:9px 16px;border-radius:9px;font-family:\'Space Grotesk\',system-ui,sans-serif;font-weight:700;cursor:pointer;font-size:13px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 4px 10px -4px rgba(0,0,0,.5)">+ Ný vara/þjónusta</button>' +
+    // theme.css (2026-07-09): viewið flush svo .thm .app-page bandið eigi útlitið.
+    if(!document.getElementById('vorur-thm-style')){
+      var st = document.createElement('style');
+      st.id = 'vorur-thm-style';
+      st.textContent = '#view-vorur{padding:0 !important;max-width:none !important;background:transparent !important}';
+      document.head.appendChild(st);
+    }
+    v.innerHTML = '<div class="thm"><div class="app-page"><main class="app-main">' +
+      '<div class="page-title">' +
+        '<div class="page-title__lead">' +
+          '<span class="page-title__icon">📦</span>' +
+          '<div><h1>Vörur og þjónusta</h1><p>Vörulistinn sem Sala notar — verð, birgðir og flokkar</p></div>' +
+        '</div>' +
+        '<div class="page-title__tools">' +
+          '<button id="vorur-new" style="background:linear-gradient(180deg,#209d5c,#178048);color:#fff;border:1px solid rgba(0,0,0,.25);padding:9px 16px;border-radius:9px;font-family:\'Space Grotesk\',system-ui,sans-serif;font-weight:700;cursor:pointer;font-size:13px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 4px 10px -4px rgba(0,0,0,.5)">+ Ný vara/þjónusta</button>' +
+        '</div>' +
       '</div>' +
       // Search
       '<div style="position:relative;margin-bottom:14px">' +
         '<input id="vorur-search" type="search" placeholder="🔎 Leita eftir nafni, lýsingu eða flokki…" value="'+esc(_searchTerm)+'" ' +
           'style="width:100%;padding:11px 14px 11px 14px;border:1px solid #cbd5e1;border-radius:10px;font:inherit;font-size:14px;box-sizing:border-box;background:#fff">' +
       '</div>' +
-      // Tabs
-      '<div style="display:flex;gap:4px;margin-bottom:16px;border-bottom:2px solid #e2e8f0">' +
+      // Tabs — theme filter-chips
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px">' +
         tabBtn('allt','Allt · '+counts.allt) +
         tabBtn('vorur','Vörur · '+counts.vorur) +
         tabBtn('thjonusta','Þjónusta · '+counts.thjonusta) +
       '</div>' +
       // Grouped grid
       '<div id="vorur-grid"></div>' +
-    '</div>';
+    '</main></div></div>';
     bindEvents();
     renderGrid();
   }
 
   function tabBtn(key,label){
     var a = _activeTab === key;
-    return '<button class="vorur-tab" data-tab="'+key+'" style="padding:10px 18px;background:'+(a?'#fff':'transparent')+';border:none;border-bottom:'+(a?'3px solid #dc2626':'3px solid transparent')+';color:'+(a?'#0f172a':'#64748b')+';font-weight:'+(a?'700':'500')+';cursor:pointer;font-size:14px;margin-bottom:-2px">'+label+'</button>';
+    return '<button class="vorur-tab filter-chip'+(a?' is-active':'')+'" data-tab="'+key+'" type="button">'+label+'</button>';
   }
 
   function renderGrid(){
@@ -117,9 +128,11 @@
     });
     grid.innerHTML = cats.map(function(cat){
       return '<div style="margin-bottom:24px">' +
-        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid #e2e8f0">' +
-          '<span style="font-size:14px;font-weight:800;color:#0f172a;text-transform:uppercase;letter-spacing:0.04em">'+esc(cat)+'</span>' +
-          '<span style="font-size:11px;color:#64748b;background:#f1f5f9;padding:2px 8px;border-radius:10px;font-weight:600">'+byCat[cat].length+'</span>' +
+        // Dökk hálfgegnsæ pilla — flokks-hausinn les vel bæði á dökka og gráa
+        // hluta bandsins (theme.css gradient) hvar sem hann skrunar.
+        '<div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:10px;padding:6px 14px;border-radius:99px;background:rgba(10,12,17,.62);border:1px solid rgba(255,255,255,.14)">' +
+          '<span style="font-size:13px;font-weight:800;color:#f2f4f8;text-transform:uppercase;letter-spacing:0.05em">'+esc(cat)+'</span>' +
+          '<span style="font-size:11px;color:#e6e9ef;background:rgba(255,255,255,.16);padding:1px 8px;border-radius:10px;font-weight:700">'+byCat[cat].length+'</span>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">' +
           byCat[cat].map(renderCard).join('') +
