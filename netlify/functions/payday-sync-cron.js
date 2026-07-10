@@ -18,7 +18,16 @@ exports.handler = async () => {
     });
     const data = await r.json().catch(() => ({ error: 'Ógilt svar (HTTP ' + r.status + ')' }));
     console.log('[payday-sync-cron]', r.status, JSON.stringify(data));
-    return { statusCode: 200, body: JSON.stringify({ ok: true, ranAt: new Date().toISOString(), result: data }) };
+    // 2026-07-10: uppfæra líka Payday-spegilinn (payday_invoices_slokk) svo
+    // Payday-númerin í „Fyrri viðskipti" séu alltaf fersk (síðustu ~180 dagar;
+    // eldri raðir standa — allt sagan sótt einu sinni með ?all=1).
+    let mirror = null;
+    try {
+      const m = await fetch(base + '/api/payday-pull-slokk');
+      mirror = await m.json().catch(() => ({ error: 'Ógilt svar (HTTP ' + m.status + ')' }));
+      console.log('[payday-sync-cron] mirror', m.status, JSON.stringify(mirror));
+    } catch (e2) { console.error('[payday-sync-cron] mirror error', e2); }
+    return { statusCode: 200, body: JSON.stringify({ ok: true, ranAt: new Date().toISOString(), result: data, mirror }) };
   } catch (e) {
     console.error('[payday-sync-cron] error', e);
     return { statusCode: 500, body: JSON.stringify({ error: String(e.message || e) }) };
