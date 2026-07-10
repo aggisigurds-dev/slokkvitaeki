@@ -201,6 +201,13 @@
   function totalsByRate(lines, opts) {
     const byRate = {};
     let rawEx = 0, rawVsk = 0;
+    // 2026-07-10 (verkefnalisti 962a74f0): línu-afslættir eru BAKAÐIR inn í
+    // einingaverðin (165-konvensjónin, "· −N% afsl." í lýsingunni) og sáust því
+    // hvergi í samtölu-blokkinni. Endurreiknum sparnaðinn úr lýsingunni —
+    // upphaflegt verð = bakað/(1−p) — svo hægt sé að SÝNA afsláttinn án þess
+    // að snerta tölurnar sjálfar (upplýsinga-lína, ekki ný stærðfræði).
+    let lineDiscEx = 0;
+    const linePcts = [];
     for (const l of lines) {
       const v = (l.lineEx * l.vskPct) / 100;
       rawEx += l.lineEx;
@@ -209,6 +216,13 @@
       byRate[key] = byRate[key] || { vskPct: l.vskPct, vskCode: l.vskCode, ex: 0, vsk: 0 };
       byRate[key].ex += l.lineEx;
       byRate[key].vsk += v;
+      if (l.lineEx > 0) {
+        const m = String(l.desc || '').match(/·\s*[−-]\s*(\d+(?:[.,]\d+)?)\s*%\s*afsl/i);
+        if (m) {
+          const p = parseFloat(m[1].replace(',', '.'));
+          if (p > 0 && p < 100) { lineDiscEx += l.lineEx * (p / (100 - p)); if (linePcts.indexOf(p) < 0) linePcts.push(p); }
+        }
+      }
     }
     // Apply discount: % first, then absolute kr. Both clamp at zero. The
     // discount is split across VSK rates proportionally so the breakdown
@@ -246,7 +260,10 @@
       grossMode,
       rawGross: rawEx + rawVsk,
       // kr m. vsk the customer saves — shown on the bill in gross mode
-      discountGross: (rawEx + rawVsk) - (subEx + vsk)
+      discountGross: (rawEx + rawVsk) - (subEx + vsk),
+      // bakaðir línu-afslættir (upplýsinga-lína í samtölum, sjá að ofan)
+      lineDiscEx: lineDiscEx,
+      lineDiscPct: linePcts.length === 1 ? linePcts[0] : 0
     };
   }
 
@@ -571,25 +588,40 @@
         <div class="spacer"></div>
 
         <div class="totals-block">
-          ${(t.discountEx > 0.005) ? (t.grossMode ? `
+          ${(() => {
+            // 2026-07-10 (verkefnalisti ee3f5faf + 962a74f0): afsláttar-línurnar
+            // eru nú alltaf settar fram ÁN VSK (áður m. VSK í gross-ham) og
+            // bakaðir línu-afslættir sjást líka. Keðjan gengur upp:
+            // fyrir-afslátt − afsláttur = Samtals fyrir Vsk. Til greiðslu og
+            // VSK-sundurliðun eru ÓBREYTT (framsetning, ekki ný stærðfræði).
+            const lineD = t.lineDiscEx || 0;
+            const saleD = t.discountEx || 0;
+            const discEx = saleD + lineD;
+            if (discEx <= 0.5) return '';
+            const preEx = t.rawEx + lineD;
+            let pct = 0;
+            if (saleD > 0.005 && lineD <= 0.5) {
+              if (t.discountPct > 0) pct = t.discountPct;
+              else {
+                const base = t.grossMode ? t.rawGross : t.rawEx;
+                const d = t.grossMode ? t.discountGross : t.discountEx;
+                const p = base > 0 ? (d / base) * 100 : 0;
+                const r = Math.round(p);
+                if (r > 0 && Math.abs(p - r) < 0.05) pct = r;
+              }
+            } else if (lineD > 0.5 && saleD <= 0.005) {
+              pct = t.lineDiscPct || 0;
+            }
+            return `
             <div class="totals-line">
-              <span class="lbl">Samtals fyrir afslátt (m. VSK):</span>
-              <span class="amt">${fmtAmt(t.rawGross)}</span>
+              <span class="lbl">Samtals fyrir afslátt (án VSK):</span>
+              <span class="amt">${fmtAmt(preEx)}</span>
             </div>
             <div class="totals-line" style="color:#b91c1c">
-              <span class="lbl">Afsláttur${t.discountPct > 0 ? ' ('+t.discountPct+'%)' : ''}:</span>
-              <span class="amt">−${fmtAmt(t.discountGross)}</span>
-            </div>
-          ` : `
-            <div class="totals-line">
-              <span class="lbl">Samtals fyrir afslátt:</span>
-              <span class="amt">${fmtAmt(t.rawEx)}</span>
-            </div>
-            <div class="totals-line" style="color:#b91c1c">
-              <span class="lbl">Afsláttur${t.discountPct > 0 ? ' ('+t.discountPct+'%)' : ''}:</span>
-              <span class="amt">−${fmtAmt(t.discountEx)}</span>
-            </div>
-          `) : ''}
+              <span class="lbl">Afsláttur${pct > 0 ? ' (' + pct + '%)' : ''} án VSK:</span>
+              <span class="amt">−${fmtAmt(discEx)}</span>
+            </div>`;
+          })()}
           <div class="totals-line">
             <span class="lbl">Samtals fyrir Vsk.:</span>
             <span class="amt">${fmtAmt(t.subEx)}</span>

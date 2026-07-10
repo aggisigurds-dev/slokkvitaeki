@@ -279,6 +279,20 @@
     // ── Heildartölur (hægri) ──
     var subEx = 0, vsk = 0;
     Object.keys(byRate).forEach(function (k) { subEx += byRate[k].ex; vsk += byRate[k].vsk; });
+    var rawExBefore = subEx;   // án-vsk samtala FYRIR sölu-afslátt (fyrir framsetninguna)
+    // 2026-07-10 (verkefnalisti 962a74f0): bakaðir línu-afslættir ("· −N% afsl.")
+    // endurreiknaðir úr lýsingunum svo afslátturinn sjáist í samtölunum —
+    // upplýsinga-lína eingöngu, engin ný stærðfræði.
+    var lineDiscEx = 0, linePcts = [];
+    _pp.lines.forEach(function (l) {
+      var ex = (Number(l.qty) || 0) * (Number(l.unit_price_ex_vat) || 0);
+      if (ex <= 0) return;
+      var m = String(l.desc || '').match(/·\s*[−-]\s*(\d+(?:[.,]\d+)?)\s*%\s*afsl/i);
+      if (m) {
+        var p = parseFloat(m[1].replace(',', '.'));
+        if (p > 0 && p < 100) { lineDiscEx += ex * (p / (100 - p)); if (linePcts.indexOf(p) < 0) linePcts.push(p); }
+      }
+    });
     // applyAfsl = the sale-level discount still to subtract here (0 when the
     // preprocessing consumed it by baking it into the line prices).
     var afsl = _pp.applyAfsl;
@@ -336,13 +350,32 @@
       y += opts.big ? 8 : 5.4;
       doc.setTextColor(20);
     }
+    // 2026-07-10 (verkefnalisti ee3f5faf): afsláttar-línurnar settar fram ÁN VSK
+    // og OFAN við "Samtals fyrir Vsk." svo keðjan gangi upp:
+    // fyrir-afslátt − afsláttur = Samtals fyrir Vsk. Sama framsetning og
+    // SalaInvoice (patch 10). Til greiðslu og VSK-sundurliðun ÓBREYTT.
+    var saleDiscEx = Math.max(0, rawExBefore - subEx);
+    var discExTotal = saleDiscEx + lineDiscEx;
+    if (discExTotal > 0.5) {
+      var showPct = 0;
+      if (saleDiscEx > 0.005 && lineDiscEx <= 0.5) {
+        if (_pp.applyPct > 0) showPct = _pp.applyPct;
+        else {
+          var _p = rawExBefore > 0 ? (saleDiscEx / rawExBefore) * 100 : 0;
+          var _r = Math.round(_p);
+          if (_r > 0 && Math.abs(_p - _r) < 0.05) showPct = _r;
+        }
+      } else if (lineDiscEx > 0.5 && saleDiscEx <= 0.005 && linePcts.length === 1) {
+        showPct = linePcts[0];
+      }
+      totRow('Samtals fyrir afslátt (án VSK):', fmtKr(rawExBefore + lineDiscEx));
+      totRow('Afsláttur' + (showPct > 0 ? ' (' + showPct + '%)' : '') + ' án VSK:', '-' + fmtKr(discExTotal), { red: true });
+    }
     totRow('Samtals fyrir Vsk.:', fmtKr(subEx));
     Object.keys(byRate).sort(function (a, b) { return (+a) - (+b); }).forEach(function (k) {
       var r = byRate[k], pctTxt = (Math.round(r.pct * 10) / 10).toString().replace('.', ',');
       totRow(r.code + ' = Sala með ' + pctTxt + '% Vsk: ' + fmtKr(r.ex), fmtKr(r.vsk));
     });
-    if (_pp.applyPct > 0) totRow('Afsláttur (' + _pp.applyPct + '%):', '-' + fmtKr(pctDisc), { red: true });
-    else if (afsl > 0) totRow('Afsláttur:', '-' + fmtKr(afsl), { red: true });
     y += 1; doc.setDrawColor(15, 23, 42).setLineWidth(0.4).line(110, y, RX, y); y += 6;
     totRow('Til greiðslu :', fmtKr(total), { bold: true, big: true });
 
