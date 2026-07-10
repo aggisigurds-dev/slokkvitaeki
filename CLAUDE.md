@@ -308,14 +308,28 @@ One tool that replaces the cluster of overlapping top-of-sidebar lists
   `replyTo` er sjálf-innihaldið (sprautar sína `#_rp-modal` stíla, festir á
   `<body>`, tengir sendanda-netfang → kúnna fyrir reikninga-samhengi). Röðunar-
   chippar (⭐ Snjallröðun / 🕒 Nýjast efst) og sýn-rofi (☰ Þétt / ▤ Ítarlegt).
-  **Sími-fyrst samanbrot (2026-07-10, eftir „algjörlega ónothæft"-kvörtun):**
-  stjórnborðið fyllti heilan símaskjá áður en fyrsta verkefnið sást. Nú er
-  skráningarlínan EIN lína (reitur+takki; fyrirtæki/MERKI/⚙ birtast við fókus á
-  reitinn, fellast saman eftir skráningu — `state.addOpen`), merki-sían er ein
-  skrunanleg lína (`.vb-scroll`, nowrap+overflow-x), og röðun/sýn/✉️ Sækja/
-  ⬇︎ Flytja inn/🧹 sitja bak við „⚙ Meira"-chippann (`state.moreOpen`).
-  show() speglar líka `#verkbord` í hash sjálft — 231-switchView-wrapperinn
-  skammhleypir framhjá 218-speglinum svo hash sat áður fast á fyrri síðu.
+  **Sími-fyrst (2026-07-10, eftir „algjörlega ónothæft"-kvörtun):** stjórn-
+  borðið fyllti heilan símaskjá áður en fyrsta verkefnið sást → allar chippa-
+  raðir eru nú EIN skrunanleg lína (`.vb-scroll`, nowrap+overflow-x) í stað
+  5-línu veggja. Fyrsta útgáfan faldi aukahlutina bak við fókus/„⚙ Meira" en
+  Agnar hafnaði því („settu aftur tögin… eða revert") — ALLT er sýnilegt, bara
+  þjappað. show() speglar líka `#verkbord` í hash sjálft — 231-switchView-
+  wrapperinn skammhleypir framhjá 218-speglinum svo hash sat áður fast á #sala.
+  **Verkefni/Pósthólf-skipting (2026-07-10, „handvirkt sér… ákveðnir póstar
+  sem voru færðir yfir… og síðan pósthólf"):** biðraðirnar eru 🔥 Í dag ·
+  📋 Verkefni · 📧 Pósthólf · Lokað. `isPost(r)` = source `email` EÐA
+  channel_ref `email:…` OG `promoted_at IS NULL` → 📧 Pósthólf (sjálfvirka
+  innsogið, 412 raðir). „📋 Færa"-takki á pósthólfsröð (og í ritlinum) setur
+  `thjonustubeidni.promoted_at` (nýr additive dálkur, migration
+  thjonustubeidni_promoted_at) → röðin flyst í 📋 Verkefni með handvirku
+  skráningunum; „↩ Í pósthólfið" núllar. Gamla „Allt opið"-biðröðin er farin
+  (vistað 'opid' varpast á 'verk'). Merki-sían sýnir nú ÖLL merki með teljara
+  innan valdrar biðraðar og telur líka gömlu type-flokkana gegnum
+  `effTags()`/`TYPE_TO_TAG` (tilboð→gera_tilbod o.s.frv.) svo síða passar við
+  chippana sem sjást á röðunum. Fyrirtækjareiturinn í skráningarlínunni tekur
+  líka KENNITÖLU: 10 tölustafir → `/api/kt-lookup` (RSK fyrirtækjaskrá) →
+  opinbera nafnið fyllist og kt+heimilisfang fara í nótur verksins
+  (`state.addRsk`).
 
 ## Bakendi (gagnalíkans-stjórnborð) — `js/patches/232-bakendi.js`
 
