@@ -111,17 +111,57 @@
     if (!parts.length) { body.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8">Ekki hægt að fletta upp þessum viðskiptavini.</div>'; return; }
 
     const r = await sb.from('solur')
-      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,greitt_med,created_at,paid_at,is_credit')
+      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,greitt_med,created_at,paid_at,is_credit,dk_invoice_id')
       .or(parts.join(','))
       .order('created_at', { ascending: false })
       .limit(500);
     if (r.error) { body.innerHTML = '<div style="padding:30px;text-align:center;color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
     const rows = r.data || [];
-    if (!rows.length) { body.innerHTML = '<div style="padding:34px;text-align:center;color:#94a3b8;font-style:italic">Engin fyrri kaup fundust hjá þessum viðskiptavini.</div>'; return; }
+
+    // ── Payday-kröfur (2026-07-10, ósk Agnars): reikningar stofnaðir BEINT í
+    // Payday (mánaðaruppgjör, bókari) eiga enga solur-röð — kúnnar hringja og
+    // nefna PAYDAY-númerið og ekkert fannst. Spegillinn payday_invoices_slokk
+    // (fylltur af /api/payday-pull-slokk, uppfærður daglega í payday-sync-cron)
+    // gerir þá leitanlega hér. Sölur sem fóru gegnum payday-push (dk_invoice_id
+    // = Payday id/númer) fá PD-númerið Á SÍNA röð í stað þess að tvíbirtast.
+    let pdRows = [];
+    if (ktd.length === 10 && ktd !== '9999999999') {
+      try {
+        const pr = await sb.from('payday_invoices_slokk')
+          .select('payday_id,number,customer_name,amount_total,created_date,due_date,paid_date,status,reference,description')
+          .eq('kt', ktd)
+          .order('created_date', { ascending: false })
+          .limit(300);
+        if (!pr.error) pdRows = pr.data || [];
+      } catch (_) {}
+    }
+    // Tengja PD-númer við sölur sem eiga þau (payday-push skrifar dk_invoice_id).
+    const pdByKey = new Map();
+    pdRows.forEach(p => {
+      if (p.payday_id) pdByKey.set(String(p.payday_id).trim(), p);
+      if (p.number) pdByKey.set(String(p.number).trim(), p);
+    });
+    const linkedPd = new Set();
+    rows.forEach(s => {
+      const k = s.dk_invoice_id != null ? String(s.dk_invoice_id).trim() : '';
+      const p = k && pdByKey.get(k);
+      if (p) { s._pd_number = p.number || p.payday_id; linkedPd.add(p); }
+    });
+    const pdOnly = pdRows.filter(p => !linkedPd.has(p));
+
+    if (!rows.length && !pdOnly.length) { body.innerHTML = '<div style="padding:34px;text-align:center;color:#94a3b8;font-style:italic">Engin fyrri kaup fundust hjá þessum viðskiptavini.</div>'; return; }
+
+    // Fléttað í eina tímaröð (nýjast efst).
+    const merged = rows.map(s => ({ t: s.created_at || '', h: rowHtml(s) }))
+      .concat(pdOnly.map(p => ({ t: (p.created_date || '') + 'T00:00:00', h: pdRowHtml(p) })));
+    merged.sort((a, b) => String(b.t).localeCompare(String(a.t)));
 
     const total = rows.filter(s => !s.is_credit).reduce((a, s) => a + (+s.samtals || 0), 0);
+    const pdTotal = pdOnly.filter(p => !/credit|cancel/i.test(p.status || '')).reduce((a, p) => a + (+p.amount_total || 0), 0);
     body.innerHTML =
-      '<div style="font-size:12px;color:#475569;margin-bottom:10px">' + rows.length + ' færslur · samtals ' + esc(fmtKr(total)) + '</div>' +
+      '<div style="font-size:12px;color:#475569;margin-bottom:10px">' + rows.length + ' færslur · samtals ' + esc(fmtKr(total)) +
+        (pdOnly.length ? ' &nbsp;·&nbsp; <span style="color:#6d28d9;font-weight:600">+ ' + pdOnly.length + ' Payday-kröfur · ' + esc(fmtKr(pdTotal)) + '</span>' : '') +
+      '</div>' +
       '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">' +
         '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
           '<thead><tr style="background:#f1f5f9;border-bottom:1px solid #e2e8f0">' +
@@ -132,7 +172,7 @@
             '<th style="padding:8px 10px;text-align:right;font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Upphæð</th>' +
             '<th style="padding:8px 10px"></th>' +
           '</tr></thead><tbody>' +
-          rows.map(rowHtml).join('') +
+          merged.map(x => x.h).join('') +
         '</tbody></table>' +
       '</div>' +
       '<div id="_sch-docs"><div style="padding:16px 4px;color:#94a3b8;font-size:12px">Sæki skjöl…</div></div>';
@@ -249,7 +289,9 @@
     const amt = isCredit ? '-' + fmtKr(Math.abs(+s.samtals || 0)) : fmtKr(+s.samtals || 0);
     return '<tr style="border-bottom:1px solid #f1f5f9">' +
       '<td style="padding:8px 10px;color:#475569;white-space:nowrap">' + esc(fmtDate(s.created_at)) + '</td>' +
-      '<td style="padding:8px 10px;font-family:monospace;font-size:11.5px;font-weight:600;color:#0f172a">' + esc(s.num || '') + '</td>' +
+      '<td style="padding:8px 10px;font-family:monospace;font-size:11.5px;font-weight:600;color:#0f172a">' + esc(s.num || '') +
+        (s._pd_number ? '<span title="Payday-númerið sem kúnninn sér á kröfunni" style="display:inline-block;margin-left:6px;padding:1px 6px;background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;border-radius:99px;font-size:10px;font-weight:700">PD ' + esc(s._pd_number) + '</span>' : '') +
+      '</td>' +
       '<td style="padding:8px 10px;font-size:11.5px;color:#475569">' + methodLabel(s.greitt_med) + '</td>' +
       '<td style="padding:8px 10px">' + status + '</td>' +
       '<td style="padding:8px 10px;text-align:right;font-weight:700;color:' + (isCredit ? '#dc2626' : '#0f172a') + ';font-variant-numeric:tabular-nums">' + esc(amt) + '</td>' +
@@ -257,6 +299,30 @@
         '<button class="_sch-send" data-id="' + s.id + '" type="button" title="Senda kvittun í tölvupósti" style="padding:4px 8px;background:#fff;color:#0f766e;border:1px solid #99f6e4;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;margin-right:4px">📧</button>' +
         '<button class="_sch-view" data-id="' + s.id + '" type="button" title="Skoða / prenta / vista PDF" style="padding:4px 8px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">🖨</button>' +
       '</td>' +
+    '</tr>';
+  }
+
+  // Payday-krafa án solur-raðar (stofnuð beint í Payday) — sýnd með PAYDAY-
+  // númerinu sem kúnninn nefnir í síma. Engin PDF-aðgerð hér (skjalið býr í
+  // Payday); tooltip ber tilvísun/lýsingu ef til.
+  function pdRowHtml(p) {
+    const st = String(p.status || '').toUpperCase();
+    const status = /PAID/.test(st) || p.paid_date
+        ? '<span style="font-size:10px;font-weight:700;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:99px">✓ Greitt</span>'
+      : /CREDIT/.test(st) ? '<span style="color:#991b1b;font-size:11px">↩ Kredit</span>'
+      : /CANCEL/.test(st) ? '<span style="font-size:10px;font-weight:700;background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:99px">Ógilt</span>'
+      : /DRAFT|DRÖG/.test(st) ? '<span style="font-size:10px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:2px 8px;border-radius:99px">Drög</span>'
+      : '<span style="font-size:10px;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:99px">⚠ Ógreitt</span>';
+    const amt = +p.amount_total || 0;
+    const tip = [p.reference, p.description].filter(Boolean).join(' · ');
+    return '<tr style="border-bottom:1px solid #f1f5f9;background:#fdfcff"' + (tip ? ' title="' + esc(tip) + '"' : '') + '>' +
+      '<td style="padding:8px 10px;color:#475569;white-space:nowrap">' + esc(fmtDate(p.created_date)) + '</td>' +
+      '<td style="padding:8px 10px;font-family:monospace;font-size:11.5px;font-weight:600;color:#6d28d9">PD ' + esc(p.number || p.payday_id || '') +
+        '<span style="display:inline-block;margin-left:6px;padding:1px 6px;background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;border-radius:99px;font-size:10px;font-weight:700">Payday</span></td>' +
+      '<td style="padding:8px 10px;font-size:11.5px;color:#475569">🏦 Payday-krafa' + (p.due_date ? ' · gjd. ' + esc(fmtDate(p.due_date)) : '') + '</td>' +
+      '<td style="padding:8px 10px">' + status + '</td>' +
+      '<td style="padding:8px 10px;text-align:right;font-weight:700;color:' + (amt < 0 ? '#dc2626' : '#0f172a') + ';font-variant-numeric:tabular-nums">' + esc(fmtKr(amt)) + '</td>' +
+      '<td style="padding:8px 10px"></td>' +
     '</tr>';
   }
 

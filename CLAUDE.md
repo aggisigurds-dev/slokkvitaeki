@@ -616,6 +616,27 @@ dark→grey page band, metallic 3D stat cards, filled pills, dark-header data ta
   Þjónustu) is hibernated — script tag commented out like 152. The proper
   theme.css conversion still proceeds page by page as above.
 
+## Payday-spegill — `payday_invoices_slokk` + `netlify/functions/payday-pull-slokk.js` (2026-07-10)
+
+Payday gefur reikningum SÍN eigin númer — kúnnar hringja og nefna Payday-númerið
+en hluti krafna er stofnaður beint í Payday (bókari/mánaðaruppgjör) og á enga
+`solur`-röð → fannst ekki í kerfinu. Lausnin:
+- **`payday_invoices_slokk`** (Supabase): spegill af ÖLLUM reikningum
+  Slökkvitæki-Payday-aðgangsins (payday_id [upsert-lykill], number, kt,
+  customer_name, amount_total, created/due/paid_date, status, reference,
+  description). AÐSKILIN frá `invoices` (sem er Brunahólfs-Payday — Skuldunautar/
+  Krófur-talnaverk mega ekki blandast).
+- **`/api/payday-pull-slokk`** — `?probe=1` (auth-test) · `?dry=1` · `?all=1`
+  (ALLT, fyrsta keyrslan) · sjálfgefið síðustu 180 dagar. Sömu creds og
+  payday-push/payday-sync-paid (deilir token-cache `payday_oauth_slokk`).
+  **payday-sync-cron** (10:00 + 15:00) keyrir spegilinn daglega á eftir
+  greiðslu-samstillingunni.
+- **Patch 253 (Fyrri viðskipti)**: Payday-kröfur kúnnans (eftir kt) fléttast
+  í listann — fjólublá „PD <númer> · Payday"-röð með gjalddaga/stöðu; sölur
+  sem fóru gegnum payday-push (solur.dk_invoice_id = payday id/númer) fá
+  PD-merkið á SÍNA röð í stað tvítekningar. Samantektarlínan sýnir
+  „+ N Payday-kröfur · X kr".
+
 ## Related projects (in case Agnar mentions them)
 
 - **Brunahólf** — sister business, separate ecosystem (Google Sheets + Apps Script
