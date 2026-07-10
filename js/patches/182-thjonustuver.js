@@ -745,6 +745,16 @@
   // into the CRM hub.
   const EML_ACCOUNT = 'eldklar@eldklar.is';
   // Skip obvious automated / system senders so they don't clog the triage pile.
+  // Viðhengja-nöfn (jsonb array eða strengur) → kommu-aðskilinn strengur, án
+  // logo/mynd-ruslsins sem fylgir mörgum sjálfvirkum póstum.
+  function attNames(v) {
+    let arr = [];
+    if (Array.isArray(v)) arr = v;
+    else if (typeof v === 'string' && v.trim()) { try { const p = JSON.parse(v); arr = Array.isArray(p) ? p : [v]; } catch (_) { arr = [v]; } }
+    return arr.map(x => String(x || '').trim())
+      .filter(x => x && !/^\d{14}_logo|logo_top|\.(png|gif)$/i.test(x))
+      .join(', ');
+  }
   const EML_NOISE_SENDER = /(no-?reply|noreply|do-?not-?reply|donotreply|postmaster|mailer-daemon|bounce[@.]|notification[s]?@|automated@|google\.com|accounts\.google|cloudflare|mailchimp|sendgrid|amazonses|facebookmail|linkedin\.com|news@|info@e?infodreifing|delivery@payday|@payday\.is)/i;
   // 2026-07-10: „Reikningur hefur verið greiddur" o.þ.h. eru Payday/Mailchimp
   // GREIÐSLU-TILKYNNINGAR (upplýsingar, ekki verk) — þær soguðust inn og blésu
@@ -768,31 +778,42 @@
     let emails = [];
     try {
       const { data, error } = await SB.from('email_digest')
-        .select('id,sender_name,sender_email,subject,snippet,body_preview,received_at,folder')
+        .select('id,sender_name,sender_email,subject,snippet,body_preview,received_at,folder,has_attachment,attachment_names')
         .eq('account', EML_ACCOUNT).ilike('folder', '%inbox%')
         .order('received_at', { ascending: false }).range(0, 499);
       if (error) throw error;
       emails = data || [];
     } catch (e) { toast('Email-lestur mistókst: ' + (e.message || e)); return; }
     const rows = [];
+    let skippedEmpty = 0;
     for (const e of emails) {
       if (seen.has('email:' + e.id)) continue;
       if (/eldklar/i.test(e.sender_email || '')) continue;
-      const subj = String(e.subject || '');
+      const subj = String(e.subject || '').trim();
       if (EML_NOISE_SENDER.test(e.sender_email || '') || EML_NOISE_SUBJ.test(subj)) continue;
-      const text = subj + ' ' + (e.snippet || '') + ' ' + (e.body_preview || '');
+      const body = String(e.body_preview || e.snippet || '').trim();
+      const atts = attNames(e.attachment_names);
+      // 2026-07-10 (ósk Agnars — „innihaldslélegt"): póstur án efnislínu OG án
+      // texta OG án viðhengis hefur ekkert til að vinna með á borðinu → sleppa.
+      if (!subj && !body && !atts) { skippedEmpty++; continue; }
+      // Betri titill: efnislína → fyrsta línan úr texta → „📎 <viðhengi>" → fallback.
+      const firstLine = body ? body.split(/\n/).map(s => s.trim()).find(s => s.length >= 4) : '';
+      const title = subj || (firstLine ? firstLine.slice(0, 90) : (atts ? '📎 ' + atts.split(',')[0].trim() : '📧 Póstur'));
+      // Nótur: texti → „📎 Viðhengi: …" svo viðhengja-póstar séu skiljanlegir.
+      const notes = body ? body.slice(0, 2000) : (atts ? '📎 Viðhengi: ' + atts : null);
+      const text = subj + ' ' + body;
       const co = matchCompany(idx, e.sender_name, e.sender_email);
       rows.push({
         source: 'email', channel_ref: 'email:' + e.id, type: classifyEmailType(text),
         status: 'nytt', priority: 'venjulegur',
         customer_base_id: co ? (co.customer_base_id || null) : null,
         customer_nafn: co ? co.nafn : (e.sender_name || e.sender_email || '—'),
-        title: subj || '(efnislaust)',
-        notes: String(e.body_preview || e.snippet || '').slice(0, 2000) || null,
+        title: title,
+        notes: notes,
         created_by: 'email', created_at: e.received_at || new Date().toISOString()
       });
     }
-    if (!rows.length) { toast('Engar nýjar email-beiðnir'); return; }
+    if (!rows.length) { toast(skippedEmpty ? ('Engar nýjar (sleppti ' + skippedEmpty + ' innihaldslausum)') : 'Engar nýjar email-beiðnir'); return; }
     // No blocking native confirm (it froze automated sessions). Import directly
     // with inline progress on the button; idempotent, so a re-run is harmless.
     const btn = document.getElementById('_tv-email');
