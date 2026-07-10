@@ -85,6 +85,10 @@
         SB.from('email_digest')
           .select('message_id,account,sender_name,sender_email,to_addresses,subject,snippet,body_preview,is_question,has_attachment,attachment_names,received_at')
           .in('account', ['eldklar@eldklar.is', 'bokhald@eldklar.is'])
+          // SENT-ingest (2026-07-10): okkar eigin svör mega ekki birtast sem
+          // „📥 Til að svara" — innhólfið eitt á þetta borð. (231-borðið les
+          // SENT sjálft fyrir svarað-greininguna.)
+          .neq('folder', 'SENT')
           .gte('received_at', sinceIso)   // deep-analyse the last ~2 months only
           .order('received_at', { ascending: false })
           .limit(1500),
@@ -1201,6 +1205,9 @@
       setMsg('✓ Svar sent á ' + to, 'ok');
       if (window.Toast && Toast.show) Toast.show('✓ Svar sent á ' + to);
       logActivity(m.message_id, 'reply');
+      // Þjónustuborð v2: borðið (231) hengir _onSent á m-hlutinn í replyTo —
+      // látum það vita svo beiðnin fái svarad_at og „✓ svarað"-merkið strax.
+      try { if (typeof m._onSent === 'function') m._onSent(); } catch (_) {}
       setTimeout(closeModal, 1100);
     } catch (e) { setMsg('Villa: ' + String((e && e.message) || e), 'bad'); btn.disabled = false; }
   }

@@ -113,6 +113,34 @@
     senda_tolvupost:    { label: 'Senda tölvupóst',    emoji: '✉️', color: '#0369a1' }
   };
   const TAG_ORDER = Object.keys(TAGS);
+
+  // ── Flokkarnir fimm (Þjónustuborð v2, 2026-07-10) ─────────────────────────
+  // Aðal-flokkun borðsins — geymd í thjonustubeidni.flokkur (additive dálkur,
+  // batch-flokkað í grunninum með leitarorðum/merkjum/tegund; ritillinn breytir).
+  // MERKIN (TAGS) lifa áfram sem auka-merkingar í ritlinum.
+  const FLOKKAR = {
+    tilbod:     { label: 'Tilboð',     emoji: '💰', color: '#1d4ed8' },
+    thjonusta:  { label: 'Þjónusta',   emoji: '🔧', color: '#0d9488' },
+    brunakerfi: { label: 'Brunakerfi', emoji: '🔥', color: '#ea580c' },
+    rukkun:     { label: 'Rukkun',     emoji: '💸', color: '#be123c' },
+    samskipti:  { label: 'Samskipti',  emoji: '📞', color: '#d97706' }
+  };
+  const FLOKK_ORDER = Object.keys(FLOKKAR);
+  function flokkDef(f) { return FLOKKAR[f] || { label: 'Annað', emoji: '•', color: '#64748b' }; }
+  function rowFlokk(r) { return (r && r.flokkur && FLOKKAR[r.flokkur]) ? r.flokkur : ''; }
+  function flokkChip(f) {
+    const d = flokkDef(f);
+    return '<span style="display:inline-block;padding:2px 9px;border-radius:99px;font-size:10.5px;font-weight:700;' +
+      'color:' + d.color + ';background:' + d.color + '14;border:1px solid ' + d.color + '44;white-space:nowrap">' +
+      d.emoji + ' ' + esc(d.label) + '</span>';
+  }
+  // Merki sem segja það sama og flokkur raðarinnar eru falin á röðinni.
+  const TAG_TO_FLOKK = {
+    thjonusta: 'thjonusta', thjonustusamningur: 'thjonusta', brunakerfi: 'brunakerfi',
+    gera_tilbod: 'tilbod', bokhald: 'rukkun', eftir_ad_rukka: 'rukkun',
+    hringja: 'samskipti', senda_tolvupost: 'samskipti'
+  };
+
   function rowTags(r) {
     let t = r && r.tags;
     if (typeof t === 'string') { try { t = JSON.parse(t); } catch (_) { t = []; } }
@@ -166,14 +194,17 @@
     vd: [],             // open verkdagbok rows (folded in)
     companies: null,    // fyrirtaeki names for the datalist (lazy)
     loading: false,
-    // Biðraðir 2026-07-10 v3: 'verk' (handvirkt + fært yfir) er sjálfgefið;
-    // gamla vistaða 'opid' gildið varpast á 'verk' (biðröðin er ekki lengur til).
+    // Biðraðir Þjónustuborðs v2: 📥 Innhólf (post) · 📋 Verkefni (verk) · Lokað.
+    // Gömul vistuð gildi ('opid'/'idag') varpast á næsta jafngildi.
     queue: (function () {
       try {
-        const q = localStorage.getItem(QKEY) || 'verk';
-        return (q === 'opid') ? 'verk' : q;
-      } catch (_) { return 'verk'; }
+        const q = localStorage.getItem(QKEY) || 'post';
+        return (q === 'opid' || q === 'idag') ? 'verk' : q;
+      } catch (_) { return 'post'; }
     })(),
+    // Flokka-sían (fimm flokkarnir; 'annad' = án flokks) + „📦 Sýna eldri".
+    fFlokk: (function () { try { return localStorage.getItem('_vb_flokk') || ''; } catch (_) { return ''; } })(),
+    showOld: false,
     filter: (function () { try { return localStorage.getItem(FKEY) || ''; } catch (_) { return ''; } })(),
     // 2026-07-10 (ósk Agnars): röðunar-valkostur — 'snjall' (sjálfgefið, áríðandi/
     // gjalddagi/forgangur eins og áður) eða 'nyjast' (hrein dagsetningarröð, nýjast efst).
@@ -189,6 +220,7 @@
     expandedId: null
   };
   function setQueue(q) { state.queue = q; try { localStorage.setItem(QKEY, q); } catch (_) {} }
+  function setFlokk(f) { state.fFlokk = f; try { localStorage.setItem('_vb_flokk', f); } catch (_) {} }
   function setSort(v) { state.sort = v; try { localStorage.setItem(SKEY, v); } catch (_) {} }
   function setTag(v) { state.fTag = v; try { localStorage.setItem(TGKEY, v); } catch (_) {} }
   function setViewMode(v) { state.viewMode = v; try { localStorage.setItem(VMKEY, v); } catch (_) {} }
@@ -412,11 +444,27 @@
     if (r._vd || r.promoted_at) return false;
     return r.source === 'email' || /^email:/.test(String(r.channel_ref || ''));
   }
+  // Geymslan (Þjónustuborð v2): gamli póst-staflinn ber archived_at — sést
+  // undir „📦 Eldra" í innhólfinu, telst hvergi annars staðar. Ekkert eytt.
+  function isArchived(r) { return !r._vd && !!r.archived_at; }
+  // „Svarað": annaðhvort svarað AF borðinu (svarad_at sett við Resend-send)
+  // eða nýjasta skeytið í þræðinum er frá okkur (threadLatest.mine).
+  function isReplied(r) {
+    if (r.svarad_at) return true;
+    const tl = state.threadLatest[r.id];
+    return !!(tl && tl.mine);
+  }
+  // „Bíður svars" = opinn innhólfspóstur sem við höfum ekki svarað.
+  function isWaiting(r) { return isPost(r) && !isArchived(r) && isOpen(r) && !isReplied(r); }
+  function waitDays(r) {
+    const d = Math.floor((Date.now() - new Date(r.created_at || Date.now())) / 86400000);
+    return d < 0 ? 0 : d;
+  }
   function inQueue(r) {
-    if (state.queue === 'idag') return isToday(r) && !isPost(r);
     if (state.queue === 'lokad') return !isOpen(r);
-    if (state.queue === 'post') return isOpen(r) && isPost(r);
-    return isOpen(r) && !isPost(r); // verk (sjálfgefið) — handvirkt + fært yfir
+    if (state.queue === 'post') return isOpen(r) && isPost(r) && (state.showOld ? true : !isArchived(r));
+    // verk (sjálfgefið) — handvirkt + fært yfir; geymslan aldrei hér
+    return isOpen(r) && !isPost(r) && !isArchived(r);
   }
   // 2026-07-10: gamla type-sían fjarlægð (flokkun fer nú gegnum MERKI). Hlutlaus
   // svo gömul vistuð type-sía í localStorage feli ekki raðir. (Fall haldið til
@@ -437,9 +485,24 @@
   }
   function visibleRows() {
     let r = allItems().filter(x => inQueue(x) && inFilter(x));
+    // Flokka-sían (v2): '' = allt, 'annad' = án flokks, annars einn af fimm.
+    if (state.fFlokk) r = r.filter(x => (state.fFlokk === 'annad' ? !rowFlokk(x) : rowFlokk(x) === state.fFlokk));
     if (state.fTag) r = r.filter(x => effTags(x).indexOf(state.fTag) !== -1);
     const s = state.search.trim().toLowerCase();
     if (s) r = r.filter(x => [x.customer_nafn, x.title, x.notes].some(f => (f || '').toLowerCase().includes(s)));
+    // Innhólfið raðast sér: ósvarað ELST efst (því lengur sem kúnni bíður, því
+    // ofar), svo svarað/upplýsingar nýjast efst, geymslan (ef sýnd) aftast.
+    if (state.queue === 'post' && state.sort !== 'nyjast') {
+      r.sort((a, b) => {
+        const aa = isArchived(a) ? 1 : 0, ba = isArchived(b) ? 1 : 0;
+        if (aa !== ba) return aa - ba;
+        const aw = isWaiting(a) ? 0 : 1, bw = isWaiting(b) ? 0 : 1;
+        if (aw !== bw) return aw - bw;
+        if (!aw) return new Date(a.created_at || 0) - new Date(b.created_at || 0); // bíða: elst efst
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      });
+      return r;
+    }
     if (state.sort === 'nyjast') {
       // Hrein dagsetningarröð — nýjast efst (ósk Agnars 2026-07-10).
       r.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
@@ -463,12 +526,19 @@
   }
   function counts() {
     const all = allItems();
-    const c = { idag: 0, verk: 0, post: 0, lokad: 0 };
+    const c = { idag: 0, verk: 0, post: 0, geymsla: 0, lokad: 0, wait: 0, od: 0 };
     for (const x of all) {
       if (!isOpen(x)) { c.lokad++; continue; }
-      if (isPost(x)) { c.post++; continue; }
+      if (isPost(x)) {
+        if (isArchived(x)) { c.geymsla++; continue; }
+        c.post++;
+        if (isWaiting(x)) c.wait++;
+        continue;
+      }
+      if (isArchived(x)) { c.geymsla++; continue; }
       c.verk++;
       if (isToday(x)) c.idag++;
+      if (isOverdue(x)) c.od++;
     }
     return c;
   }
@@ -496,7 +566,9 @@
   function refreshBadge() {
     const b = document.querySelector('.vb-badge');
     if (!b) return;
-    const n = counts().idag;
+    // Badge = það sem kallar á athygli: póstar sem bíða svars + verk dagsins.
+    const c = counts();
+    const n = c.wait + c.idag;
     b.textContent = String(n);
     b.style.display = n > 0 ? 'inline-block' : 'none';
   }
@@ -818,35 +890,38 @@
     const c = counts();
     const q = (v, label, n) => '<button class="vb-q' + (state.queue === v ? ' active' : '') + '" data-act="queue" data-q="' + v + '">' + label + '<span class="n">' + n + '</span></button>';
     const f = (v, label) => '<button class="vb-fchip' + (state.filter === v ? ' active' : '') + '" data-act="filter" data-f="' + v + '">' + label + '</button>';
-    // 2026-07-10 v3: allt sýnilegt (ekkert ⚙ Meira-samanbrot — ósk Agnars) en
-    // í ÞREMUR léttum línum: (A) biðraðir + leit, (B) merki-sía í einni
-    // skrunanlegri línu, (C) röðun/sýn/póst-takkar í einni skrunanlegri línu.
+    // Þjónustuborð v2: (0) morgunlína — staðan í einni setningu, (A) biðraðir
+    // 📥 Innhólf · 📋 Verkefni · Lokað + leit, (B) FLOKKARNIR FIMM sem sía í
+    // einni skrunanlegri línu, (C) röðun/sýn/póst-takkar í einni skrunlínu.
     const noiseN = allItems().filter(x => isOpen(x) && isPaymentNoise(x)).length;
     el.innerHTML =
-      // 2026-07-10 v3 (ósk Agnars): handvirkt SÉR og pósturinn SÉR —
-      // 📋 Verkefni = handvirk skráning + póstar sem voru færðir yfir;
-      // 📧 Pósthólf = sjálfvirka póst-innsogið (þaðan má „📋 færa yfir").
-      q('idag', '🔥 Í dag', c.idag) + q('verk', '📋 Verkefni', c.verk) + q('post', '📧 Pósthólf', c.post) + q('lokad', 'Lokað', c.lokad) +
+      '<div style="width:100%;font-size:12.5px;font-weight:600;color:#4b5563;margin:-2px 2px 4px">' +
+        (c.wait ? '<span style="color:#b91c1c;font-weight:800">' + c.wait + (c.wait === 1 ? ' póstur bíður svars' : ' póstar bíða svars') + '</span>' : 'Enginn póstur bíður svars 🎉') +
+        (c.idag ? ' · ' + c.idag + ' verk í dag' : '') +
+        (c.od ? ' · <span style="color:#b45309">' + c.od + ' fram yfir</span>' : '') +
+      '</div>' +
+      q('post', '📥 Innhólf', c.post) + q('verk', '📋 Verkefni', c.verk) + q('lokad', '✓ Lokað', c.lokad) +
       '<input class="vb-search" id="vb-search" placeholder="🔎 Leita…" value="' + esc(state.search) + '">' +
-      // Tag-sía með teljara (2026-07-10, ósk Agnars): „Allt" endurstillir; hver
-      // merki-chippi sýnir fjölda OPINNA verka með því merki. Ein skrunlína.
+      // Flokkarnir fimm sem sía (Þjónustuborð v2) — teljari innan valdrar
+      // biðraðar; „• Annað" fangar óflokkað. Ein skrunanleg lína.
       '<div class="vb-scroll">' +
         (function () {
-          // Teljarinn notar effTags (merki EÐA gamli type-flokkurinn sem sést á
-          // röðinni) og telur innan valdrar biðraðar — sían passar við það sem
-          // er á skjánum. ÖLL merki birtast (ósk Agnars: „geta valið tag sem
-          // filter"), líka þau sem standa á núlli.
-          const tc = {};
-          allItems().filter(x => isOpen(x) && (state.queue === 'post' ? isPost(x) : !isPost(x))).forEach(x => effTags(x).forEach(t => { tc[t] = (tc[t] || 0) + 1; }));
-          const allChip = '<button class="vb-fchip' + (!state.fTag ? ' active' : '') + '" data-act="tagfilter" data-tag="">Allt</button>';
-          const chips = TAG_ORDER.map(t => {
-            const d = TAGS[t], on = state.fTag === t, n = tc[t] || 0;
-            return '<button data-act="tagfilter" data-tag="' + t + '" title="Sía eftir merkinu ' + esc(d.label) + '" ' +
+          const fc = {}; let annad = 0;
+          allItems().filter(x => inQueue(x)).forEach(x => {
+            const f = rowFlokk(x);
+            if (f) fc[f] = (fc[f] || 0) + 1; else annad++;
+          });
+          const allChip = '<button class="vb-fchip' + (!state.fFlokk ? ' active' : '') + '" data-act="flokk" data-f="">☰ Allt</button>';
+          const chips = FLOKK_ORDER.map(f => {
+            const d = FLOKKAR[f], on = state.fFlokk === f, n = fc[f] || 0;
+            return '<button data-act="flokk" data-f="' + f + '" title="Sía eftir flokknum ' + esc(d.label) + '" ' +
               'style="font:inherit;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:99px;cursor:pointer;white-space:nowrap;' +
               'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + ';opacity:' + (n || on ? 1 : .55) + '">' +
               d.emoji + ' ' + esc(d.label) + (n ? ' <span style="opacity:.7">' + n + '</span>' : '') + '</button>';
           }).join('');
-          return allChip + chips;
+          const annadChip = (annad || state.fFlokk === 'annad')
+            ? '<button class="vb-fchip' + (state.fFlokk === 'annad' ? ' active' : '') + '" data-act="flokk" data-f="annad">• Annað <span style="opacity:.7">' + annad + '</span></button>' : '';
+          return allChip + chips + annadChip;
         })() +
       '</div>' +
       // Röðun/sýn/póst-takkar — alltaf sýnilegir (ósk Agnars: ekkert falið),
@@ -871,15 +946,35 @@
     const el = document.getElementById('vb-list'); if (!el) return;
     if (state.loading && !state.items.length) { el.innerHTML = '<div class="vb-empty">Sæki…</div>'; return; }
     const rows = visibleRows();
-    if (!rows.length) {
+    // Innhólfið fer alltaf í kafla-leiðina (geymslu-hlekkurinn á að sjást þó tómt sé).
+    if (!rows.length && state.queue !== 'post') {
       el.innerHTML = '<div class="vb-empty">' +
-        (state.queue === 'idag' ? '🎉 Ekkert sem þarf að gera í dag.' :
-         state.search ? 'Ekkert fannst fyrir „' + esc(state.search) + '“.' : 'Enginn verk hér.') + '</div>';
+        (state.search ? 'Ekkert fannst fyrir „' + esc(state.search) + '“.' : 'Ekkert verk hér.') + '</div>';
       return;
     }
     const cap = 300;
-    el.innerHTML = rows.slice(0, cap).map(renderRow).join('') +
-      (rows.length > cap ? '<div class="vb-hint" style="text-align:center">Sýni fyrstu ' + cap + ' af ' + rows.length + '.</div>' : '');
+    const sec = (t) => '<div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#8a93a5;margin:6px 2px 0">' + t + '</div>';
+    let html;
+    if (state.queue === 'post') {
+      // Innhólfið í köflum (Þjónustuborð v2): 🔴 bíða svars (elst efst) →
+      // svarað/upplýsingar → 📦 geymslu-hlekkur (406 gamlir póstar, ekkert eytt).
+      const c = counts();
+      const wait = rows.filter(x => isWaiting(x) && !isArchived(x));
+      const rest = rows.filter(x => !isWaiting(x) && !isArchived(x));
+      const old = rows.filter(isArchived);
+      html =
+        (wait.length ? sec('🔴 Bíða svars — elstu efst') + wait.slice(0, cap).map(renderRow).join('') : '') +
+        (rest.length ? sec(wait.length ? 'Svarað & upplýsingar' : 'Innhólf') + rest.map(renderRow).join('') : '') +
+        (!wait.length && !rest.length && !state.showOld ? '<div class="vb-empty">🎉 Innhólfið er tómt.</div>' : '') +
+        (c.geymsla || old.length
+          ? '<div data-act="showold" style="text-align:center;font-size:12.5px;color:#5b6472;padding:10px;cursor:pointer;text-decoration:underline">' +
+            (state.showOld ? '▲ Fela eldri póst' : '📦 Sýna eldri póst (' + c.geymsla + ' í geymslu — ekkert eytt)') + '</div>' : '') +
+        (state.showOld ? old.slice(0, cap).map(renderRow).join('') : '');
+    } else {
+      html = rows.slice(0, cap).map(renderRow).join('') +
+        (rows.length > cap ? '<div class="vb-hint" style="text-align:center">Sýni fyrstu ' + cap + ' af ' + rows.length + '.</div>' : '');
+    }
+    el.innerHTML = html;
     if (state.expandedId != null) {
       const open = el.querySelector('.vb-row.open');
       if (open) wireEditor(open);
@@ -904,12 +999,19 @@
       '<div class="vb-main">' +
         '<div class="vb-title">' + esc(r.title || '(án titils)') + '</div>' +
         '<div class="vb-meta">' +
-          // 2026-07-10 (ósk Agnars — „hafðu bara tag"): sýna MERKI þegar þau eru
-          // til. Falla á sjálfvirka type-chippann AÐEINS þegar engin merki eru
-          // (svo email-raðir án merkja séu ekki alveg flokkslausar).
-          (tags.length ? tags.map(t => tagChip(t, true)).join('') : typeChip(r.type)) +
+          // Þjónustuborð v2: FLOKKURINN er aðalmerkið (litaður chippi); merki
+          // notandans (tags) birtast á eftir honum — nema þau sem segja það
+          // sama og flokkurinn (annars „🔧 Þjónusta 🔧 Þjónusta"-tvítak).
+          flokkChip(rowFlokk(r)) +
+          (tags.length ? tags.filter(t => (TAG_TO_FLOKK[t] || '') !== rowFlokk(r)).map(t => tagChip(t, true)).join('') : '') +
           (r._vd ? '<span class="vb-tag">úr Verkdagbók</span>' : '') +
           (r.customer_nafn ? '<span class="vb-cust">🏢 ' + esc(r.customer_nafn) + '</span>' : '') +
+          // Bið-/svar-staða (aðeins innhólfspóstur): 🔴 hve lengi kúnninn hefur
+          // beðið, eða ✓ svarað (svarað af borðinu eða nýjasta skeytið frá okkur).
+          (isWaiting(r) ? '<span style="font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:7px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca">🔴 ' +
+            (function (d) { return d === 0 ? 'kom í dag' : d === 1 ? 'bíður 1 dag' : 'bíður ' + d + ' daga'; })(waitDays(r)) + '</span>' : '') +
+          (isPost(r) && !isWaiting(r) && isOpen(r) && isReplied(r) ? '<span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:7px;background:#f0fdf4;color:#166534;border:1px solid #86efac66">✓ svarað</span>' : '') +
+          (isArchived(r) ? '<span class="vb-tag" style="color:#64748b;background:#f1f5f9;border-color:#e2e8f0">📦 geymsla</span>' : '') +
           (di ? '<span class="vb-due' + (od ? ' od' : '') + '">📅 ' + esc(di.label) + '</span>' : '') +
           '<span class="vb-cust" style="color:' + st.color + '">' + esc(st.label) + '</span>' +
         '</div>' +
@@ -933,10 +1035,12 @@
         '<div class="vb-star" data-act="star" data-id="' + esc(r.id) + '" title="Áríðandi">' + (r.important ? '⭐' : '☆') + '</div>' +
         (r._vd ? '' : '<button class="vb-xdel" data-act="quickdel" data-id="' + esc(r.id) + '" title="Fela / eyða þessari færslu (endurheimtanleg)" ' +
           'style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;color:#c2c8d2;padding:2px 4px;border-radius:6px">✕</button>') +
-        // 📧→📋: póstur í Pósthólfinu fær „færa yfir"-takka (ósk Agnars —
-        // „ákveðnir póstar sem voru færðir yfir").
-        (isPost(r) && isOpen(r) ? '<button data-act="promote" data-id="' + esc(r.id) + '" title="Færa þennan póst yfir á verkefnalistann" ' +
+        // 📧→📋: póstur í innhólfinu fær „færa yfir"-takka (ósk Agnars —
+        // „ákveðnir póstar sem voru færðir yfir"). Geymslupóstur fær ↩ til baka.
+        (isPost(r) && isOpen(r) && !isArchived(r) ? '<button data-act="promote" data-id="' + esc(r.id) + '" title="Færa þennan póst yfir á verkefnalistann" ' +
           'style="border:1.5px solid #16a34a55;background:#f0fdf4;color:#166534;cursor:pointer;font-size:11px;font-weight:800;line-height:1;padding:5px 7px;border-radius:8px;white-space:nowrap">📋 Færa</button>' : '') +
+        (isArchived(r) && isOpen(r) ? '<button data-act="unarchive" data-id="' + esc(r.id) + '" title="Taka úr geymslu — aftur í innhólfið" ' +
+          'style="border:1.5px solid rgba(20,24,34,.16);background:#fff;color:#475569;cursor:pointer;font-size:11px;font-weight:800;line-height:1;padding:5px 7px;border-radius:8px;white-space:nowrap">↩ Út</button>' : '') +
       '</div>' +
     '</div>';
     return html;
@@ -961,15 +1065,17 @@
         '</div></div>';
     }
     const statusOpts = STATUS_ORDER.map(s => '<option value="' + s + '"' + (r.status === s ? ' selected' : '') + '>' + STATUSES[s].label + '</option>').join('');
-    const typeOpts = ['tilbod', 'email', 'skyrsla', 'heimsokn', 'hringja', 'samningur', 'skjalabeidni', 'annad']
-      .map(t => '<option value="' + t + '"' + (r.type === t ? ' selected' : '') + '>' + typeDef(t).emoji + ' ' + typeDef(t).label + '</option>').join('');
+    // Þjónustuborð v2: FLOKKURINN kemur í stað gömlu Tegundar í ritlinum
+    // (type-dálkurinn stendur óbreyttur í grunninum fyrir eldri síður).
+    const flokkOpts = ['<option value=""' + (!rowFlokk(r) ? ' selected' : '') + '>• Annað</option>'].concat(
+      FLOKK_ORDER.map(f => '<option value="' + f + '"' + (rowFlokk(r) === f ? ' selected' : '') + '>' + FLOKKAR[f].emoji + ' ' + FLOKKAR[f].label + '</option>')).join('');
     const prioOpts = Object.keys(PRIORITIES).map(p => '<option value="' + p + '"' + (r.priority === p ? ' selected' : '') + '>' + PRIORITIES[p] + '</option>').join('');
     const dueVal = r.due_at ? new Date(r.due_at).toISOString().slice(0, 10) : '';
     return '<div class="vb-ed" data-act="noexpand">' +
       '<div><label>Titill</label><input data-field="title" value="' + esc(r.title || '') + '"></div>' +
       '<div><label>Nótur</label><textarea data-field="notes" placeholder="Lýsing, símanúmer, krækjur…">' + esc(r.notes || '') + '</textarea></div>' +
       '<div class="vb-ed-grid">' +
-        '<div><label>Tegund</label><select data-field="type">' + typeOpts + '</select></div>' +
+        '<div><label>Flokkur</label><select data-field="flokkur">' + flokkOpts + '</select></div>' +
         '<div><label>Staða</label><select data-field="status">' + statusOpts + '</select></div>' +
         '<div><label>Forgangur</label><select data-field="priority">' + prioOpts + '</select></div>' +
         '<div><label>Gjalddagi / dagsetning</label><input type="date" data-field="due_at" value="' + dueVal + '"></div>' +
@@ -996,9 +1102,16 @@
           ? '<button class="vb-btn" data-act="promote" data-id="' + esc(r.id) + '" style="border-color:#16a34a55;background:#f0fdf4;color:#166534">📋 Færa á verkefnalistann</button>'
           : '<button class="vb-btn" data-act="demote" data-id="' + esc(r.id) + '" title="Setja aftur í pósthólfið">↩ Í pósthólfið</button>') : '') +
         (r.customer_nafn ? '<button class="vb-btn" data-act="history" data-id="' + esc(r.id) + '" title="Öll gögn kúnnans — sölur, Payday-kröfur, skýrslur og samningar (sami gluggi og á Sölu)">🧾 Sjá fyrri viðskipti</button>' : '') +
+        // 📞 Hringja: fyrsta símanúmerið úr titli/nótum verður tel:-hlekkur.
+        (function () {
+          const m = String((r.title || '') + ' ' + (r.notes || '')).match(/\b[4-8]\d{2}[- ]?\d{4}\b/);
+          return m ? '<a class="vb-btn" data-act="noexpand" href="tel:' + m[0].replace(/\D/g, '') + '" style="text-decoration:none;display:inline-flex;align-items:center">📞 Hringja ' + m[0] + '</a>' : '';
+        })() +
+        (isPost(r) && !isArchived(r) && isOpen(r) ? '<button class="vb-btn" data-act="archive" data-id="' + esc(r.id) + '" title="Setja í geymslu (📦 Eldra) — ekkert eytt">📦 Í geymslu</button>' : '') +
         '<span style="flex:1"></span>' +
         '<button class="vb-btn red" data-act="del" data-id="' + esc(r.id) + '">🗑 Eyða</button>' +
-        '<button class="vb-btn green" data-act="collapse">✓ Loka</button>' +
+        (isOpen(r) ? '<button class="vb-btn green" data-act="done" data-id="' + esc(r.id) + '">✓ Klára verk</button>' : '') +
+        '<button class="vb-btn" data-act="collapse">Loka glugga</button>' +
       '</div></div>';
   }
 
@@ -1066,6 +1179,27 @@
         return;
       }
       if (act === 'import') { importOld(); return; }
+      // Þjónustuborð v2: flokka-sía, geymsla, klára.
+      if (act === 'flokk') { const f = t.getAttribute('data-f'); setFlokk(state.fFlokk === f ? '' : f); renderControls(); renderList(); return; }
+      if (act === 'showold') { state.showOld = !state.showOld; renderList(); return; }
+      if (act === 'archive') {
+        e.stopPropagation();
+        saveRow(nid, { archived_at: nowIso() });
+        toast('📦 Sett í geymslu'); state.expandedId = null;
+        renderControls(); renderList(); refreshBadge(); return;
+      }
+      if (act === 'unarchive') {
+        e.stopPropagation();
+        saveRow(nid, { archived_at: null });
+        toast('↩ Komið aftur í innhólfið');
+        renderControls(); renderList(); refreshBadge(); return;
+      }
+      if (act === 'done') {
+        e.stopPropagation();
+        saveRow(nid, { status: 'lokad' });
+        toast('✓ Verk klárað'); state.expandedId = null;
+        renderControls(); renderList(); refreshBadge(); return;
+      }
       // 📋 Færa póst úr Pósthólfi yfir á verkefnalistann (og ↩ til baka).
       if (act === 'promote') {
         e.stopPropagation();
@@ -1222,6 +1356,12 @@
     // Fallback ef digest-röðin fannst ekki — nota það sem er á beiðninni.
     if (!m) m = { message_id: null, sender_name: row.customer_nafn || '', from: '', subject: row.title || '', body_preview: '', snippet: row.notes || '' };
     if (!m.from) { toast('Ekkert sendandanetfang fannst á þessari beiðni — opnaðu upprunapóstinn í Reikninga-pósti.'); return; }
+    // Þegar svarið er SENT (Resend-ok í 240-glugganum) fær beiðnin svarad_at —
+    // hún dettur þá sjálfkrafa úr „🔴 Bíða svars" og ber „✓ svarað"-merkið.
+    m._onSent = () => {
+      saveRow(row.id, { svarad_at: nowIso(), status: row.status === 'nytt' ? 'i_vinnslu' : row.status });
+      renderControls(); renderList(); refreshBadge();
+    };
     ReikningaPostur.replyTo(m);
   }
   function advance(id) {

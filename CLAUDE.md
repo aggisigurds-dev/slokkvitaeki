@@ -315,20 +315,35 @@ One tool that replaces the cluster of overlapping top-of-sidebar lists
   Agnar hafnaði því („settu aftur tögin… eða revert") — ALLT er sýnilegt, bara
   þjappað. show() speglar líka `#verkbord` í hash sjálft — 231-switchView-
   wrapperinn skammhleypir framhjá 218-speglinum svo hash sat áður fast á #sala.
-  **Verkefni/Pósthólf-skipting (2026-07-10, „handvirkt sér… ákveðnir póstar
-  sem voru færðir yfir… og síðan pósthólf"):** biðraðirnar eru 🔥 Í dag ·
-  📋 Verkefni · 📧 Pósthólf · Lokað. `isPost(r)` = source `email` EÐA
-  channel_ref `email:…` OG `promoted_at IS NULL` → 📧 Pósthólf (sjálfvirka
-  innsogið, 412 raðir). „📋 Færa"-takki á pósthólfsröð (og í ritlinum) setur
-  `thjonustubeidni.promoted_at` (nýr additive dálkur, migration
-  thjonustubeidni_promoted_at) → röðin flyst í 📋 Verkefni með handvirku
-  skráningunum; „↩ Í pósthólfið" núllar. Gamla „Allt opið"-biðröðin er farin
-  (vistað 'opid' varpast á 'verk'). Merki-sían sýnir nú ÖLL merki með teljara
-  innan valdrar biðraðar og telur líka gömlu type-flokkana gegnum
-  `effTags()`/`TYPE_TO_TAG` (tilboð→gera_tilbod o.s.frv.) svo síða passar við
-  chippana sem sjást á röðunum. Fyrirtækjareiturinn í skráningarlínunni tekur
-  líka KENNITÖLU: 10 tölustafir → `/api/kt-lookup` (RSK fyrirtækjaskrá) →
-  opinbera nafnið fyllist og kt+heimilisfang fara í nótur verksins
+  **Þjónustuborð v2 (2026-07-10, eftir greiningu + „now you are head office
+  CRM manager"):** Full endursmíði ofan á Verkefni/Pósthólf-skiptinguna.
+  Biðraðir: **📥 Innhólf** (email, `promoted_at IS NULL`, `archived_at IS
+  NULL`) · **📋 Verkefni** (handvirkt + fært yfir) · **✓ Lokað**. Innhólfið er
+  í köflum: „🔴 Bíða svars" (ósvarað, ELSTU efst, biðdagar á chippa) → „Svarað
+  & upplýsingar" → „📦 Sýna eldri póst (N í geymslu)". Morgunlína efst í
+  stjórnborðinu („X póstar bíða svars · Y verk í dag · Z fram yfir") og
+  badge-inn telur wait+idag. **Flokkarnir fimm** (`thjonustubeidni.flokkur`,
+  additive: tilbod/thjonusta/brunakerfi/rukkun/samskipti + null=Annað) eru
+  aðal-sían og aðalmerkið á röðum (FLOKKAR/flokkChip; ritillinn breytir;
+  MERKI sem tvítaka flokkinn falin gegnum TAG_TO_FLOKK). „Svarað"-greining:
+  `svarad_at` (sett þegar svar er SENT af borðinu — 240 `replyTo` kallar
+  `m._onSent`) EÐA `threadLatest.mine` (SENT-ingest gerir það satt). Aðgerðir:
+  📋 Færa/↩, 📦 Í geymslu/↩ Út, ✓ Klára verk, 📞 Hringja (tel:-hlekkur úr
+  fyrsta símanúmeri), ✉️ Svara, 🧾 Fyrri viðskipti. **CRM-forvinnsla í grunni
+  (2026-07-10):** 348 tómar browser-extension raðir eyddar úr email_digest;
+  70 beiðnir tengdar við customers_base (kt→netfang→lén ladder); allar opnar
+  flokkaðar í flokkana fimm (leitarorð/merki/tegund); 406 gamlar póst-raðir í
+  geymslu (`archived_at`, ekkert eytt); 75 opin atriði FLUTT INN úr gömlu
+  listunum (145 todo-spjöld + 172 þjónustuverk-mál, `channel_ref
+  imp:verkefni:/imp:tverk:`, merki/forgangur/fyrirtæki fylgdu); AI-samantekt
+  (tv-summary) á öll virk verk; 1 „✅ líklega búið" (greitt í Payday).
+  **Sent-póstur:** luna-bridge les nú SENT-möppur (PR #4) og brunaholf
+  gmail-ingest tekur `folder=sent` (PR #225, + tómra-pósta vörn í
+  email-ingest-browser og folder-varðir á lesendum); 240 síar `.neq('folder',
+  'SENT')` svo eigin svör birtist ekki sem „Til að svara", en 231
+  loadThreadLatest les SENT viljandi (svarað-greining). Fyrirtækjareiturinn í
+  skráningarlínunni tekur líka KENNITÖLU: 10 tölustafir → `/api/kt-lookup`
+  (RSK) → opinbera nafnið fyllist og kt+heimilisfang fara í nótur
   (`state.addRsk`).
 
 ## Bakendi (gagnalíkans-stjórnborð) — `js/patches/232-bakendi.js`
