@@ -1120,7 +1120,9 @@ Slökkvitæki ehf</textarea></div>
   function boot() { injectSidebar(); ensureView(); patchSwitchView(); [600, 1500, 3000].forEach(t => setTimeout(injectSidebar, t)); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
-  window.Thjonustuver = { open: show, reload: load };
+  // 2026-07-10: ingestEmail exportað svo Verkborð (231) geti sótt tölvupóst-
+  // beiðnirnar án þess að opna þessa síðu — sama tafla, sama idempotency.
+  window.Thjonustuver = { open: show, reload: load, ingestEmail };
   console.log('[patch-182] Þjónustuver (CRM intake hub) installed');
 })();
 /* === END ÞJÓNUSTUVER === */

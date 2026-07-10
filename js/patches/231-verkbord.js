@@ -200,18 +200,29 @@
     return state.companies;
   }
 
-  async function quickAdd(title, type) {
+  async function quickAdd(title, type, custName, expand) {
     title = (title || '').trim();
     if (!title) return;
     const SB = getSB(); if (!SB) { toast('Engin gagnabankatenging'); return; }
+    // Fyrirtækja-tenging (2026-07-10): nafn úr quick-línunni matchast við
+    // fyrirtaeki (case-fold) → customer_base_id; annars geymist nafnið samt.
+    custName = (custName || '').trim();
+    let baseId = null;
+    if (custName) {
+      const cos = await loadCompanies();
+      const hit = (cos || []).find(c => String(c.nafn || '').trim().toLowerCase() === custName.toLowerCase());
+      if (hit) { custName = hit.nafn; baseId = hit.customer_base_id || null; }
+    }
     const obj = {
       title, notes: '', type: type || 'annad', status: 'nytt', priority: 'venjulegur',
+      customer_nafn: custName || null, customer_base_id: baseId,
       source: 'beint', important: false, created_at: nowIso(), created_by: currentUser(), updated_at: nowIso()
     };
     try {
       const r = await SB.from('thjonustubeidni').insert(obj).select().single();
       if (r.error) throw r.error;
       state.items.unshift(r.data);
+      if (expand && r.data) state.expandedId = r.data.id;   // ⚙ Fleiri valkostir → opna ritilinn strax
       renderControls(); renderList(); refreshBadge();
     } catch (e) { toast('Náði ekki að bæta við: ' + (e.message || e)); }
   }
@@ -569,11 +580,23 @@
     main.innerHTML =
       '<div class="vb-wrap">' +
         '<div class="vb-add">' +
+          // 2026-07-10 (ósk Agnars — quick note lína): fyrirtækjareitur sem
+          // tengist kerfinu (datalist úr fyrirtaeki, customer_base_id sett við
+          // nafna-match) + lýsing + lita-tegundarchippar + „⚙ Fleiri valkostir"
+          // sem skráir OG opnar strax alla skráninguna (inline-ritilinn).
+          '<input class="vb-add-cust" id="vb-add-cust" list="vb-add-colist" placeholder="🏢 Fyrirtæki…" autocomplete="off" ' +
+            'style="flex:0 1 220px;min-width:150px;font:inherit;font-size:14px;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(20,24,34,.14);background:#fbfcfe;outline:none">' +
+          '<datalist id="vb-add-colist"></datalist>' +
           '<input class="vb-add-input" id="vb-add-input" placeholder="Skráðu verk… Enter til að bæta við" autocomplete="off">' +
           '<button class="vb-add-btn" data-act="add">+ Bæta við</button>' +
-          '<div class="vb-add-types">' + ADD_TYPES.map(t =>
-            '<button class="vb-tchip' + (state.addType === t ? ' active' : '') + '" data-act="addtype" data-type="' + t + '">' +
-            typeDef(t).emoji + ' ' + esc(typeDef(t).label) + '</button>').join('') + '</div>' +
+          '<button data-act="addmore" title="Skrá og opna alla valkosti (forgangur, frestur, nánar…)" ' +
+            'style="font:inherit;font-size:13px;font-weight:700;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(20,24,34,.14);background:#fff;color:#475569;cursor:pointer">⚙ Fleiri valkostir</button>' +
+          '<div class="vb-add-types">' + ADD_TYPES.map(t => {
+            const d = typeDef(t), on = state.addType === t;
+            return '<button class="vb-tchip' + (on ? ' active' : '') + '" data-act="addtype" data-type="' + t + '" ' +
+              'style="color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.bg) + ';border-color:' + d.color + (on ? '' : '55') + '">' +
+              d.emoji + ' ' + esc(d.label) + '</button>';
+          }).join('') + '</div>' +
         '</div>' +
         '<div class="vb-hint" id="vb-hint"></div>' +
         '<div class="vb-controls" id="vb-controls"></div>' +
@@ -598,6 +621,7 @@
         // hrein dagsetningarröð með nýjast efst. Valið geymist milli heimsókna.
         '<button class="vb-fchip' + (state.sort !== 'nyjast' ? ' active' : '') + '" data-act="sort" data-s="snjall" title="Áríðandi og gjalddagar efst (sjálfgefið)">⭐ Snjallröðun</button>' +
         '<button class="vb-fchip' + (state.sort === 'nyjast' ? ' active' : '') + '" data-act="sort" data-s="nyjast" title="Raða eftir dagsetningu — nýjast efst">🕒 Nýjast efst</button>' +
+        '<button class="vb-fchip" data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (sama innsog og Þjónustuver — engin tvítök)">✉️ Sækja tölvupóst</button>' +
         '<button class="vb-fchip" data-act="import" title="Flytja inn opin atriði úr gömlu Verkefni + Þjónustuverk listunum">⬇︎ Flytja inn úr gömlu</button>' +
       '</div>';
   }
@@ -690,9 +714,18 @@
       const id = t.getAttribute('data-id');
       const nid = id && id.indexOf('vd:') !== 0 ? Number(id) : id;
       if (act === 'add') { doAdd(); return; }
+      if (act === 'addmore') { doAdd(true); return; }
+      if (act === 'email') { ingestEmailHere(t); return; }
       if (act === 'addtype') {
         state.addType = t.getAttribute('data-type');
-        root.querySelectorAll('.vb-add-types .vb-tchip').forEach(c => c.classList.toggle('active', c.getAttribute('data-type') === state.addType));
+        root.querySelectorAll('.vb-add-types .vb-tchip').forEach(c => {
+          const ct = c.getAttribute('data-type'), on = ct === state.addType, d = typeDef(ct);
+          c.classList.toggle('active', on);
+          // Lita-chipparnir (2026-07-10): inline-litirnir verða að fylgja valinu.
+          c.style.color = on ? '#fff' : d.color;
+          c.style.background = on ? d.color : d.bg;
+          c.style.borderColor = d.color + (on ? '' : '55');
+        });
         const inp = document.getElementById('vb-add-input'); if (inp) inp.focus();
         return;
       }
@@ -734,6 +767,11 @@
     });
     root.addEventListener('keydown', e => {
       if (e.target.id === 'vb-add-input' && e.key === 'Enter') { e.preventDefault(); doAdd(); }
+      if (e.target.id === 'vb-add-cust' && e.key === 'Enter') { e.preventDefault(); document.getElementById('vb-add-input')?.focus(); }
+    });
+    // Fyrirtækja-datalist quick-línunnar fyllist við fyrstu snertingu (lazy).
+    root.addEventListener('focusin', e => {
+      if (e.target.id === 'vb-add-cust') loadCompanies().then(fillCompanyList);
     });
     root.addEventListener('change', e => {
       const f = e.target.getAttribute && e.target.getAttribute('data-field');
@@ -752,11 +790,24 @@
     });
   }
   function currentEditorId() { return state.expandedId; }
-  function doAdd() {
+  function doAdd(expand) {
     const inp = document.getElementById('vb-add-input'); if (!inp) return;
+    const cust = document.getElementById('vb-add-cust');
     const v = inp.value; inp.value = '';
-    quickAdd(v, state.addType);
+    const cv = cust ? cust.value : '';
+    if (cust) cust.value = '';
+    quickAdd(v, state.addType, cv, !!expand);
     inp.focus();
+  }
+  // ✉️ Sækja tölvupóst — endurnýtir póst-innsogið úr Þjónustuveri (182, sama
+  // tafla thjonustubeidni, idempotent á channel_ref) og endurhleður borðið.
+  async function ingestEmailHere(btn) {
+    if (!window.Thjonustuver || !Thjonustuver.ingestEmail) { toast('Póst-innsogið (182) er ekki hlaðið'); return; }
+    const old = btn.textContent;
+    btn.disabled = true; btn.textContent = '✉️ Sæki…';
+    try { await Thjonustuver.ingestEmail(); } catch (e) { toast('Villa: ' + (e.message || e)); }
+    btn.disabled = false; btn.textContent = old;
+    load();
   }
   function advance(id) {
     if (typeof id === 'string' && id.indexOf('vd:') === 0) { return; }
@@ -778,8 +829,10 @@
     if (ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, 320) + 'px'; }
   }
   function fillCompanyList() {
-    const dl = document.getElementById('vb-companies'); if (!dl || !state.companies) return;
-    dl.innerHTML = state.companies.slice(0, 1500).map(c => '<option value="' + esc(c.nafn) + '"></option>').join('');
+    if (!state.companies) return;
+    const opts = state.companies.slice(0, 1500).map(c => '<option value="' + esc(c.nafn) + '"></option>').join('');
+    const dl = document.getElementById('vb-companies'); if (dl) dl.innerHTML = opts;
+    const dl2 = document.getElementById('vb-add-colist'); if (dl2) dl2.innerHTML = opts;   // quick-línan (2026-07-10)
   }
 
   // ── boot ──────────────────────────────────────────────────────────────────
