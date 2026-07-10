@@ -278,6 +278,43 @@
       renderControls(); renderList(); refreshBadge();
     } catch (e) { toast('Eyðing mistókst: ' + (e.message || e)); }
   }
+  // Fljót-eyðing af listanum — engin staðfesting (mjúk eyðing, endurheimtanleg).
+  async function quickDelete(id) {
+    const SB = getSB(); if (!SB) return;
+    const row = state.items.find(x => x.id === id);
+    // Bjartsýn: fjarlægja strax úr sýn svo það sé snöggt.
+    state.items = state.items.filter(x => x.id !== id);
+    if (state.expandedId === id) state.expandedId = null;
+    renderControls(); renderList(); refreshBadge();
+    try {
+      const r = await SB.from('thjonustubeidni').update({ deleted_at: nowIso() }).eq('id', id);
+      if (r.error) throw r.error;
+    } catch (e) { toast('Eyðing mistókst: ' + (e.message || e)); if (row) { state.items.push(row); renderControls(); renderList(); } }
+  }
+  // „Reikningur hefur verið greiddur" o.þ.h. eru Payday/Mailchimp GREIÐSLU-
+  // TILKYNNINGAR — upplýsingar, ekki verk. Þær soguðust inn og blésu listann upp
+  // í 400+. Þekkja þær svo hægt sé að hreinsa í einu lagi (og telja í hausnum).
+  function isPaymentNoise(r) {
+    if (!r || r._vd) return false;
+    const t = String(r.title || '').toLowerCase();
+    return /reikningur hefur verið greiddur|greiðslustaðfesting|payment (received|confirmation)|hefur verið greidd/.test(t);
+  }
+  async function clearPaymentNoise() {
+    const SB = getSB(); if (!SB) return;
+    const noisy = state.items.filter(isPaymentNoise);
+    if (!noisy.length) { toast('Engar greiðslu-tilkynningar til að hreinsa'); return; }
+    if (!window.confirm('Fela ' + noisy.length + ' greiðslu-tilkynningar? (Payday „reikningur greiddur" — upplýsingar, ekki verk. Endurheimtanlegt.)')) return;
+    const ids = noisy.map(x => x.id);
+    state.items = state.items.filter(x => !isPaymentNoise(x));
+    renderControls(); renderList(); refreshBadge();
+    try {
+      for (let i = 0; i < ids.length; i += 100) {
+        const r = await SB.from('thjonustubeidni').update({ deleted_at: nowIso() }).in('id', ids.slice(i, i + 100));
+        if (r.error) throw r.error;
+      }
+      toast('🧹 ' + ids.length + ' greiðslu-tilkynningar faldar');
+    } catch (e) { toast('Hreinsun stöðvaðist: ' + (e.message || e)); load(); }
+  }
   async function vdSetDone(rawId) {
     const SB = getSB(); if (!SB) return;
     try {
@@ -678,6 +715,12 @@
           '<button data-act="viewmode" data-vm="itarlegt" title="Ítarlegri listi — nótur og samantekt sjást" style="font:inherit;font-size:12px;font-weight:700;padding:8px 11px;border:none;border-left:1px solid rgba(20,24,34,.14);cursor:pointer;background:' + (state.viewMode !== 'thett' ? '#0f172a' : '#fff') + ';color:' + (state.viewMode !== 'thett' ? '#fff' : '#475569') + '">▤ Ítarlegt</button>' +
         '</span>' +
         '<button class="vb-fchip" data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (sama innsog og Þjónustuver — engin tvítök)">✉️ Sækja tölvupóst</button>' +
+        (function () {
+          // 🧹 Hreinsa greiðslu-tilkynningar — birtist aðeins ef einhverjar eru
+          // opnar (þær blésu listann upp í 400+; upplýsingar, ekki verk).
+          const n = allItems().filter(x => isOpen(x) && isPaymentNoise(x)).length;
+          return n ? '<button class="vb-fchip" data-act="clearnoise" title="Fela allar Payday „reikningur greiddur" tilkynningar í einu (endurheimtanlegt)" style="border-color:#fca5a5;color:#b91c1c;background:#fef2f2">🧹 Hreinsa greiðslu-tilkynningar (' + n + ')</button>' : '';
+        })() +
         '<button class="vb-fchip" data-act="import" title="Flytja inn opin atriði úr gömlu Verkefni + Þjónustuverk listunum">⬇︎ Flytja inn úr gömlu</button>' +
       '</div>' +
       // Merkja-sían (2026-07-10): litaðir tag-chippar með talningu yfir opin verk.
@@ -742,12 +785,24 @@
         '</div>' +
         // ▤ Ítarlegt: samantekt + nótu-forsýn sjást; ☰ Þétt: hvorugt (ein lína).
         (!compact && r.summary ? '<div class="vb-sum">✨ ' + esc(r.summary) + '</div>' : '') +
-        (!compact && state.viewMode !== 'thett' && r.notes ? '<div style="font-size:12px;color:#5b6472;margin-top:3px;white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + esc(String(r.notes).slice(0, 260)) + '</div>' : '') +
+        (!compact && state.viewMode !== 'thett' && r.notes ? '<div style="font-size:12px;color:#5b6472;margin-top:3px;white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + esc(cleanPreview(r.notes)) + '</div>' : '') +
         (open ? renderEditor(r) : '') +
       '</div>' +
-      '<div class="vb-star" data-act="star" data-id="' + esc(r.id) + '" title="Áríðandi">' + (r.important ? '⭐' : '☆') + '</div>' +
+      // Hægri-dálkur: ⭐ áríðandi + ✕ fljót-eyðing (2026-07-10, ósk Agnars —
+      // hreinsa hávaða beint af listanum án þess að opna). Mjúk eyðing (endur-
+      // heimtanleg), engin staðfesting svo það sé fljótlegt á 400+ tilkynningum.
+      '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0">' +
+        '<div class="vb-star" data-act="star" data-id="' + esc(r.id) + '" title="Áríðandi">' + (r.important ? '⭐' : '☆') + '</div>' +
+        (r._vd ? '' : '<button class="vb-xdel" data-act="quickdel" data-id="' + esc(r.id) + '" title="Fela / eyða þessari færslu (endurheimtanleg)" ' +
+          'style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;color:#c2c8d2;padding:2px 4px;border-radius:6px">✕</button>') +
+      '</div>' +
     '</div>';
     return html;
+  }
+  // Nótu-forsýn: fjarlægja langar slóðir (mailchimp/gallery o.fl.) sem gera
+  // sjálfvirku póst-tilkynningarnar ólæsilegar á listanum.
+  function cleanPreview(s) {
+    return String(s || '').replace(/https?:\/\/\S+/g, '🔗').replace(/\[\s*🔗\s*\]/g, '🔗').replace(/\s+/g, ' ').trim().slice(0, 260);
   }
 
   function renderEditor(r) {
@@ -866,6 +921,8 @@
       if (act === 'star') { e.stopPropagation(); toggleStar(id); return; }
       if (act === 'ai') { e.stopPropagation(); aiSuggest(nid); return; }
       if (act === 'reply') { e.stopPropagation(); replyToBeidni(nid); return; }
+      if (act === 'quickdel') { e.stopPropagation(); quickDelete(nid); return; }
+      if (act === 'clearnoise') { clearPaymentNoise(); return; }
       if (act === 'del') { e.stopPropagation(); softDelete(nid); return; }
       if (act === 'collapse') { e.stopPropagation(); state.expandedId = null; renderList(); return; }
       if (act === 'vd-open') { e.stopPropagation(); if (window.App && App.switchView) App.switchView('verkdagbok'); return; }

@@ -745,8 +745,11 @@
   // into the CRM hub.
   const EML_ACCOUNT = 'eldklar@eldklar.is';
   // Skip obvious automated / system senders so they don't clog the triage pile.
-  const EML_NOISE_SENDER = /(no-?reply|noreply|do-?not-?reply|donotreply|postmaster|mailer-daemon|bounce[@.]|notification[s]?@|automated@|google\.com|accounts\.google|cloudflare|mailchimp|sendgrid|amazonses|facebookmail|linkedin\.com|news@|info@e?infodreifing)/i;
-  const EML_NOISE_SUBJ = /(security alert|new sign-in|google data|takeout|\bpassword\b|critical security|free plan|cloudflare|your invoice from|verify your email|undeliverable|delivery status|out of office|sjálfvirkt svar|automatic reply)/i;
+  const EML_NOISE_SENDER = /(no-?reply|noreply|do-?not-?reply|donotreply|postmaster|mailer-daemon|bounce[@.]|notification[s]?@|automated@|google\.com|accounts\.google|cloudflare|mailchimp|sendgrid|amazonses|facebookmail|linkedin\.com|news@|info@e?infodreifing|delivery@payday|@payday\.is)/i;
+  // 2026-07-10: „Reikningur hefur verið greiddur" o.þ.h. eru Payday/Mailchimp
+  // GREIÐSLU-TILKYNNINGAR (upplýsingar, ekki verk) — þær soguðust inn og blésu
+  // Verkborðið upp í 400+. Sía þær frá við innsog svo þær komi ekki aftur.
+  const EML_NOISE_SUBJ = /(security alert|new sign-in|google data|takeout|\bpassword\b|critical security|free plan|cloudflare|your invoice from|verify your email|undeliverable|delivery status|out of office|sjálfvirkt svar|automatic reply|reikningur hefur verið greiddur|greiðslustaðfesting|payment (received|confirmation))/i;
   function classifyEmailType(text) {
     if (/hringja|símtal|simtal|heyra í|hringið|hringdu/i.test(text)) return 'hringja';
     if (/tilboð|tilbod|verðtilboð|\bverð\b|\bverd\b|kostar|kostnað|bjóð|boðið|\btæki\b|\btaeki\b/i.test(text)) return 'skodun_tilbod';
