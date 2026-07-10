@@ -225,7 +225,7 @@
     if (state.companies) return state.companies;
     const SB = getSB(); if (!SB) { state.companies = []; return []; }
     try {
-      const r = await SB.from('fyrirtaeki').select('id,nafn,customer_base_id').is('deleted_at', null).range(0, 1999);
+      const r = await SB.from('fyrirtaeki').select('id,nafn,kennitala,customer_base_id').is('deleted_at', null).range(0, 1999);
       state.companies = (r && !r.error && r.data) ? r.data.filter(c => c.nafn) : [];
     } catch (_) { state.companies = []; }
     return state.companies;
@@ -786,6 +786,7 @@
       '</div></div>' +
       '<div class="vb-ed-actions">' +
         '<button class="vb-ai vb-btn" data-act="ai" data-id="' + esc(r.id) + '">✨ Tillaga</button>' +
+        (r.customer_nafn ? '<button class="vb-btn" data-act="history" data-id="' + esc(r.id) + '" title="Öll gögn kúnnans — sölur, Payday-kröfur, skýrslur og samningar (sami gluggi og á Sölu)">🧾 Sjá fyrri viðskipti</button>' : '') +
         '<span style="flex:1"></span>' +
         '<button class="vb-btn red" data-act="del" data-id="' + esc(r.id) + '">🗑 Eyða</button>' +
         '<button class="vb-btn green" data-act="collapse">✓ Loka</button>' +
@@ -830,6 +831,20 @@
       if (act === 'filter') { setFilter(t.getAttribute('data-f')); renderControls(); renderList(); return; }
       if (act === 'sort') { setSort(t.getAttribute('data-s')); renderControls(); renderList(); return; }
       if (act === 'viewmode') { setViewMode(t.getAttribute('data-vm')); renderControls(); renderList(); return; }
+      if (act === 'history') {
+        e.stopPropagation();
+        const row = state.items.find(x => x.id === Number(t.getAttribute('data-id')));
+        if (!row || !window.SalaCustomerHistory || !SalaCustomerHistory.open) return;
+        loadCompanies().then(cos => {
+          const co = (cos || []).find(c => String(c.nafn || '').trim().toLowerCase() === String(row.customer_nafn || '').trim().toLowerCase());
+          // Fannst á skrá → full kt-uppfletting (sölur+Payday+skjöl+samningar);
+          // annars nafna-leit (sýnir a.m.k. sölurnar á sama nafni).
+          SalaCustomerHistory.open(co
+            ? { id: co.id, source: 'fyrirtaeki', kt: co.kennitala || '', nafn: co.nafn }
+            : { id: '', source: '', kt: '', nafn: row.customer_nafn || '' });
+        });
+        return;
+      }
       if (act === 'tagfilter') { const tg = t.getAttribute('data-tag'); setTag(state.fTag === tg ? '' : tg); renderControls(); renderList(); return; }
       if (act === 'tagtoggle') {
         e.stopPropagation();
