@@ -63,8 +63,10 @@ exports.handler = async (event) => {
     // 2) Sækja Payday-reikninga (blaðsíðað) og safna greiddum sem matcha.
     let page = 1, checked = 0, pagesFetched = 0;
     const hits = new Map(); // sale.id → { sale, paidDate }
-    while (page <= 60) {
-      const items = await fetchInvoicesPage(token, page, 200, since);
+    while (page <= 120) {
+      // Payday þakkar perpage við 100 — biðja um 100 og stoppa á ófullri síðu
+      // (áður 200: braut alltaf eftir fyrstu 100 röðunum).
+      const items = await fetchInvoicesPage(token, page, 100, since);
       if (!Array.isArray(items) || !items.length) break;
       checked += items.length; pagesFetched++;
       for (const raw of items) {
@@ -79,7 +81,7 @@ exports.handler = async (event) => {
         if (!sale) for (const k of keys) { if (byNum.has(k)) { sale = byNum.get(k); break; } }
         if (sale && !hits.has(sale.id)) hits.set(sale.id, { sale, paidDate: paidDate || todayIso() });
       }
-      if (items.length < 200) break;
+      if (items.length < 100) break;
       page++;
     }
 

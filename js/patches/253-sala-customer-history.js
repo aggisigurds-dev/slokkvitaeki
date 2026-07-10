@@ -135,16 +135,22 @@
         if (!pr.error) pdRows = pr.data || [];
       } catch (_) {}
     }
-    // Tengja PD-númer við sölur sem eiga þau (payday-push skrifar dk_invoice_id).
-    const pdByKey = new Map();
+    // Tengja PD-númer við sölur sem eiga þau: payday-push skrifar dk_invoice_id,
+    // og Payday-`reference` ber R-númerið (sannreynt live 2026-07-10 — t.d.
+    // PD 118 með reference "R-000454") svo num↔reference tengir líka kröfur
+    // sem bókarinn stofnaði með R-númeri í tilvísun.
+    const pdByKey = new Map(), pdByRef = new Map();
     pdRows.forEach(p => {
       if (p.payday_id) pdByKey.set(String(p.payday_id).trim(), p);
       if (p.number) pdByKey.set(String(p.number).trim(), p);
+      const ref = String(p.reference || '').trim().toUpperCase();
+      if (ref) pdByRef.set(ref, p);
     });
     const linkedPd = new Set();
     rows.forEach(s => {
       const k = s.dk_invoice_id != null ? String(s.dk_invoice_id).trim() : '';
-      const p = k && pdByKey.get(k);
+      let p = (k && pdByKey.get(k)) || null;
+      if (!p && s.num) p = pdByRef.get(String(s.num).trim().toUpperCase()) || null;
       if (p) { s._pd_number = p.number || p.payday_id; linkedPd.add(p); }
     });
     const pdOnly = pdRows.filter(p => !linkedPd.has(p));

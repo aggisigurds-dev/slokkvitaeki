@@ -61,10 +61,14 @@ exports.handler = async (event) => {
     }
 
     // Sækja allt (blaðsíðað) og varpa.
+    // NB Payday þakkar perpage við 100 (sannreynt live 2026-07-10: beðið um
+    // 200, fengum 100) — biðjum því um 100 og höldum áfram á meðan síðan er
+    // FULL, annars stoppar blaðsíðunin eftir fyrstu síðu.
+    const PER = 100;
     let page = 1, fetched = 0, skipped = 0;
     const byKey = new Map();
-    while (page <= 120) {
-      const items = await fetchInvoicesPage(token, page, 200, since);
+    while (page <= 240) {
+      const items = await fetchInvoicesPage(token, page, PER, since);
       if (!Array.isArray(items) || !items.length) break;
       fetched += items.length;
       for (const raw of items) {
@@ -72,7 +76,7 @@ exports.handler = async (event) => {
         if (!row) { skipped++; continue; }
         byKey.set(row.payday_id, row);   // dedupe innan lotu, síðasta vinnur
       }
-      if (items.length < 200) break;
+      if (items.length < PER) break;
       page++;
     }
     const rows = Array.from(byKey.values());
