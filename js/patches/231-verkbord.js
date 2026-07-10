@@ -98,6 +98,31 @@
   // Hröðu tegundir í skráningarstikunni.
   const ADD_TYPES = ['annad', 'tilbod', 'email', 'skyrsla', 'heimsokn'];
 
+  // ── Merki/tags (2026-07-10, ósk Agnars — sama sett og gamla Þjónustuverk-borðið)
+  // Geymd í thjonustubeidni.tags (jsonb fylki, additive dálkur). Mörg merki per
+  // beiðni; sían efst telur og síar; ritillinn togglar.
+  const TAGS = {
+    gera_tilbod:        { label: 'Gera tilboð',        emoji: '📄', color: '#7c3aed' },
+    thjonustusamningur: { label: 'Þjónustusamningur',  emoji: '📝', color: '#16a34a' },
+    bokhald:            { label: 'Bókhald',            emoji: '📊', color: '#1d4ed8' },
+    kvortun:            { label: 'Kvörtun',            emoji: '😠', color: '#dc2626' },
+    hringja:            { label: 'Hringja',            emoji: '📞', color: '#d97706' },
+    brunakerfi:         { label: 'Brunakerfi',         emoji: '🔥', color: '#ea580c' },
+    eftir_ad_rukka:     { label: 'Eftir að rukka',     emoji: '💰', color: '#be123c' },
+    thjonusta:          { label: 'Þjónusta',           emoji: '🔧', color: '#0d9488' },
+    senda_tolvupost:    { label: 'Senda tölvupóst',    emoji: '✉️', color: '#0369a1' }
+  };
+  const TAG_ORDER = Object.keys(TAGS);
+  function rowTags(r) {
+    let t = r && r.tags;
+    if (typeof t === 'string') { try { t = JSON.parse(t); } catch (_) { t = []; } }
+    return Array.isArray(t) ? t.filter(x => TAGS[x]) : [];
+  }
+  function tagChip(t, small) {
+    const d = TAGS[t]; if (!d) return '';
+    return '<span style="display:inline-block;padding:' + (small ? '1px 7px' : '2px 9px') + ';border-radius:99px;font-size:' + (small ? '10px' : '10.5px') + ';font-weight:700;color:' + d.color + ';background:' + d.color + '14;border:1px solid ' + d.color + '44;white-space:nowrap">' + d.emoji + ' ' + esc(d.label) + '</span>';
+  }
+
   const STATUSES = {
     nytt:      { label: 'Nýtt',      color: '#475569', dot: '#94a3b8' },
     i_vinnslu: { label: 'Í vinnslu', color: '#1d4ed8', dot: '#2563eb' },
@@ -135,7 +160,7 @@
   }
 
   // ── state ────────────────────────────────────────────────────────────────
-  const QKEY = '_vb_queue', FKEY = '_vb_filter', SKEY = '_vb_sort';
+  const QKEY = '_vb_queue', FKEY = '_vb_filter', SKEY = '_vb_sort', TGKEY = '_vb_tag', VMKEY = '_vb_viewmode';
   const state = {
     items: [],          // thjonustubeidni rows
     vd: [],             // open verkdagbok rows (folded in)
@@ -146,12 +171,18 @@
     // 2026-07-10 (ósk Agnars): röðunar-valkostur — 'snjall' (sjálfgefið, áríðandi/
     // gjalddagi/forgangur eins og áður) eða 'nyjast' (hrein dagsetningarröð, nýjast efst).
     sort: (function () { try { return localStorage.getItem(SKEY) || 'snjall'; } catch (_) { return 'snjall'; } })(),
+    // Merki-sía + sýn (þétt/ítarlegt) — bæði geymd milli heimsókna (2026-07-10).
+    fTag: (function () { try { return localStorage.getItem(TGKEY) || ''; } catch (_) { return ''; } })(),
+    viewMode: (function () { try { return localStorage.getItem(VMKEY) || 'venjulegt'; } catch (_) { return 'venjulegt'; } })(),
     search: '',
     addType: 'annad',
+    addTags: [],        // merki valin í ný-beiðni línunni (hreinsast eftir skráningu)
     expandedId: null
   };
   function setQueue(q) { state.queue = q; try { localStorage.setItem(QKEY, q); } catch (_) {} }
   function setSort(v) { state.sort = v; try { localStorage.setItem(SKEY, v); } catch (_) {} }
+  function setTag(v) { state.fTag = v; try { localStorage.setItem(TGKEY, v); } catch (_) {} }
+  function setViewMode(v) { state.viewMode = v; try { localStorage.setItem(VMKEY, v); } catch (_) {} }
   function setFilter(f) { state.filter = f; try { localStorage.setItem(FKEY, f); } catch (_) {} }
 
   // verkdagbok rows → pseudo work-items (read-through; structure stays in #04).
@@ -200,7 +231,7 @@
     return state.companies;
   }
 
-  async function quickAdd(title, type, custName, expand) {
+  async function quickAdd(title, type, custName, expand, tags) {
     title = (title || '').trim();
     if (!title) return;
     const SB = getSB(); if (!SB) { toast('Engin gagnabankatenging'); return; }
@@ -216,6 +247,7 @@
     const obj = {
       title, notes: '', type: type || 'annad', status: 'nytt', priority: 'venjulegur',
       customer_nafn: custName || null, customer_base_id: baseId,
+      tags: Array.isArray(tags) ? tags : [],
       source: 'beint', important: false, created_at: nowIso(), created_by: currentUser(), updated_at: nowIso()
     };
     try {
@@ -287,6 +319,7 @@
   }
   function visibleRows() {
     let r = allItems().filter(x => inQueue(x) && inFilter(x));
+    if (state.fTag) r = r.filter(x => rowTags(x).indexOf(state.fTag) !== -1);
     const s = state.search.trim().toLowerCase();
     if (s) r = r.filter(x => [x.customer_nafn, x.title, x.notes].some(f => (f || '').toLowerCase().includes(s)));
     if (state.sort === 'nyjast') {
@@ -469,7 +502,13 @@
     s.id = 'verkbord-style';
     s.textContent = `
       #view-verkbord { font-family: 'Space Grotesk', system-ui, sans-serif; color: #11141c; }
-      #view-verkbord .vb-wrap { max-width: 1180px; margin: 0 auto; padding: 22px 22px 80px; }
+      /* 2026-07-10 (ósk Agnars): efnissvæðið nær næstum út í enda skjásins. */
+      #view-verkbord .vb-wrap { max-width: none; margin: 0 auto; padding: 22px 28px 80px; }
+      /* ☰ Þéttur listi — ein lína per verk (titill + merki á sömu línu). */
+      #view-verkbord .vb-row.thett { padding: 7px 14px; }
+      #view-verkbord .vb-row.thett .vb-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
+      #view-verkbord .vb-row.thett .vb-title { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
+      #view-verkbord .vb-row.thett .vb-meta { margin-top: 0; flex: 1; flex-wrap: nowrap; overflow: hidden; min-width: 0; }
       /* Quick-add card — surface card */
       #view-verkbord .vb-add { display:flex; gap:10px; flex-wrap:wrap; align-items:center;
         background:#fff; border:1px solid rgba(20,24,34,.08); border-radius:16px; padding:14px 16px;
@@ -597,6 +636,18 @@
               'style="color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.bg) + ';border-color:' + d.color + (on ? '' : '55') + '">' +
               d.emoji + ' ' + esc(d.label) + '</button>';
           }).join('') + '</div>' +
+          // Merki í ný-beiðni línunni (ósk Agnars 2026-07-10): velja má mörg um
+          // leið og skráð er — fara á beiðnina (tags) og birtast á röðinni.
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:2px;align-items:center">' +
+            '<span style="font-size:10.5px;font-weight:800;color:#8891a0;text-transform:uppercase;letter-spacing:.04em">🏷 Merki</span>' +
+            TAG_ORDER.map(t => {
+              const d = TAGS[t], on = state.addTags.indexOf(t) !== -1;
+              return '<button data-act="addtag" data-tag="' + t + '" type="button" ' +
+                'style="font:inherit;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;cursor:pointer;' +
+                'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + '">' +
+                d.emoji + ' ' + esc(d.label) + '</button>';
+            }).join('') +
+          '</div>' +
         '</div>' +
         '<div class="vb-hint" id="vb-hint"></div>' +
         '<div class="vb-controls" id="vb-controls"></div>' +
@@ -621,9 +672,30 @@
         // hrein dagsetningarröð með nýjast efst. Valið geymist milli heimsókna.
         '<button class="vb-fchip' + (state.sort !== 'nyjast' ? ' active' : '') + '" data-act="sort" data-s="snjall" title="Áríðandi og gjalddagar efst (sjálfgefið)">⭐ Snjallröðun</button>' +
         '<button class="vb-fchip' + (state.sort === 'nyjast' ? ' active' : '') + '" data-act="sort" data-s="nyjast" title="Raða eftir dagsetningu — nýjast efst">🕒 Nýjast efst</button>' +
+        // Sýn: ☰ þéttur listi (ein lína per verk) · ▤ ítarlegri (nótur sjást líka)
+        '<span style="display:inline-flex;border:1.5px solid rgba(20,24,34,.14);border-radius:10px;overflow:hidden">' +
+          '<button data-act="viewmode" data-vm="thett" title="Þéttur listi — ein lína per verk" style="font:inherit;font-size:12px;font-weight:700;padding:8px 11px;border:none;cursor:pointer;background:' + (state.viewMode === 'thett' ? '#0f172a' : '#fff') + ';color:' + (state.viewMode === 'thett' ? '#fff' : '#475569') + '">☰ Þétt</button>' +
+          '<button data-act="viewmode" data-vm="itarlegt" title="Ítarlegri listi — nótur og samantekt sjást" style="font:inherit;font-size:12px;font-weight:700;padding:8px 11px;border:none;border-left:1px solid rgba(20,24,34,.14);cursor:pointer;background:' + (state.viewMode !== 'thett' ? '#0f172a' : '#fff') + ';color:' + (state.viewMode !== 'thett' ? '#fff' : '#475569') + '">▤ Ítarlegt</button>' +
+        '</span>' +
         '<button class="vb-fchip" data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (sama innsog og Þjónustuver — engin tvítök)">✉️ Sækja tölvupóst</button>' +
         '<button class="vb-fchip" data-act="import" title="Flytja inn opin atriði úr gömlu Verkefni + Þjónustuverk listunum">⬇︎ Flytja inn úr gömlu</button>' +
-      '</div>';
+      '</div>' +
+      // Merkja-sían (2026-07-10): litaðir tag-chippar með talningu yfir opin verk.
+      (function () {
+        const counts = {};
+        allItems().filter(isOpen).forEach(x => rowTags(x).forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+        const used = TAG_ORDER.filter(t => (counts[t] || 0) > 0 || state.fTag === t);
+        if (!used.length) return '';
+        return '<div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:6px">' +
+          used.map(t => {
+            const d = TAGS[t], on = state.fTag === t, n = counts[t] || 0;
+            return '<button data-act="tagfilter" data-tag="' + t + '" title="Sía eftir merkinu ' + esc(d.label) + '" ' +
+              'style="font:inherit;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:99px;cursor:pointer;' +
+              'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + '">' +
+              d.emoji + ' ' + esc(d.label) + ' <span style="opacity:.75">' + n + '</span></button>';
+          }).join('') +
+        '</div>';
+      })();
   }
 
   function renderList() {
@@ -652,7 +724,9 @@
     const open = state.expandedId === r.id;
     const done = !isOpen(r);
     const dotColor = (r.important || od) ? '#dc2626' : st.dot;
-    const cls = 'vb-row' + (r.important ? ' imp' : '') + (open ? ' open' : '') + (done ? ' done' : '');
+    const compact = state.viewMode === 'thett' && !open;
+    const tags = rowTags(r);
+    const cls = 'vb-row' + (r.important ? ' imp' : '') + (open ? ' open' : '') + (done ? ' done' : '') + (compact ? ' thett' : '');
     let html = '<div class="' + cls + '" data-id="' + esc(r.id) + '" data-act="expand">' +
       '<div class="vb-dot" data-act="status" data-id="' + esc(r.id) + '" title="' + esc(st.label) + ' — smella til að færa áfram" ' +
         'style="border-color:' + dotColor + ';color:' + dotColor + '">' + (done ? '✓' : '') + '</div>' +
@@ -660,12 +734,15 @@
         '<div class="vb-title">' + esc(r.title || '(án titils)') + '</div>' +
         '<div class="vb-meta">' +
           typeChip(r.type) +
+          tags.map(t => tagChip(t, true)).join('') +
           (r._vd ? '<span class="vb-tag">úr Verkdagbók</span>' : '') +
           (r.customer_nafn ? '<span class="vb-cust">🏢 ' + esc(r.customer_nafn) + '</span>' : '') +
           (di ? '<span class="vb-due' + (od ? ' od' : '') + '">📅 ' + esc(di.label) + '</span>' : '') +
           '<span class="vb-cust" style="color:' + st.color + '">' + esc(st.label) + '</span>' +
         '</div>' +
-        (r.summary ? '<div class="vb-sum">✨ ' + esc(r.summary) + '</div>' : '') +
+        // ▤ Ítarlegt: samantekt + nótu-forsýn sjást; ☰ Þétt: hvorugt (ein lína).
+        (!compact && r.summary ? '<div class="vb-sum">✨ ' + esc(r.summary) + '</div>' : '') +
+        (!compact && state.viewMode !== 'thett' && r.notes ? '<div style="font-size:12px;color:#5b6472;margin-top:3px;white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + esc(String(r.notes).slice(0, 260)) + '</div>' : '') +
         (open ? renderEditor(r) : '') +
       '</div>' +
       '<div class="vb-star" data-act="star" data-id="' + esc(r.id) + '" title="Áríðandi">' + (r.important ? '⭐' : '☆') + '</div>' +
@@ -697,6 +774,16 @@
         '<div><label>Gjalddagi / dagsetning</label><input type="date" data-field="due_at" value="' + dueVal + '"></div>' +
       '</div>' +
       '<div><label>Viðskiptavinur</label><input data-field="customer_nafn" list="vb-companies" value="' + esc(r.customer_nafn || '') + '" placeholder="Fyrirtæki…"><datalist id="vb-companies"></datalist></div>' +
+      // Merki (2026-07-10): smella til að setja/taka af — vistast strax í tags (jsonb).
+      '<div><label>Merki</label><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:2px">' +
+        TAG_ORDER.map(t => {
+          const d = TAGS[t], on = rowTags(r).indexOf(t) !== -1;
+          return '<button data-act="tagtoggle" data-id="' + esc(r.id) + '" data-tag="' + t + '" type="button" ' +
+            'style="font:inherit;font-size:11px;font-weight:700;padding:5px 10px;border-radius:99px;cursor:pointer;' +
+            'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + '">' +
+            d.emoji + ' ' + esc(d.label) + '</button>';
+        }).join('') +
+      '</div></div>' +
       '<div class="vb-ed-actions">' +
         '<button class="vb-ai vb-btn" data-act="ai" data-id="' + esc(r.id) + '">✨ Tillaga</button>' +
         '<span style="flex:1"></span>' +
@@ -716,6 +803,16 @@
       if (act === 'add') { doAdd(); return; }
       if (act === 'addmore') { doAdd(true); return; }
       if (act === 'email') { ingestEmailHere(t); return; }
+      if (act === 'addtag') {
+        const tg = t.getAttribute('data-tag'), d = TAGS[tg];
+        const i = state.addTags.indexOf(tg);
+        if (i === -1) state.addTags.push(tg); else state.addTags.splice(i, 1);
+        const on = i === -1;
+        t.style.color = on ? '#fff' : d.color;
+        t.style.background = on ? d.color : d.color + '12';
+        t.style.borderColor = d.color + (on ? '' : '44');
+        return;
+      }
       if (act === 'addtype') {
         state.addType = t.getAttribute('data-type');
         root.querySelectorAll('.vb-add-types .vb-tchip').forEach(c => {
@@ -732,6 +829,18 @@
       if (act === 'queue') { setQueue(t.getAttribute('data-q')); renderControls(); renderList(); return; }
       if (act === 'filter') { setFilter(t.getAttribute('data-f')); renderControls(); renderList(); return; }
       if (act === 'sort') { setSort(t.getAttribute('data-s')); renderControls(); renderList(); return; }
+      if (act === 'viewmode') { setViewMode(t.getAttribute('data-vm')); renderControls(); renderList(); return; }
+      if (act === 'tagfilter') { const tg = t.getAttribute('data-tag'); setTag(state.fTag === tg ? '' : tg); renderControls(); renderList(); return; }
+      if (act === 'tagtoggle') {
+        e.stopPropagation();
+        const rid = Number(t.getAttribute('data-id'));
+        const row = state.items.find(x => x.id === rid); if (!row) return;
+        const cur = rowTags(row), tg = t.getAttribute('data-tag');
+        const next = cur.indexOf(tg) !== -1 ? cur.filter(x => x !== tg) : cur.concat([tg]);
+        saveRow(rid, { tags: next });
+        renderControls(); renderList();
+        return;
+      }
       if (act === 'import') { importOld(); return; }
       if (act === 'noexpand') { e.stopPropagation(); return; }
       if (act === 'status') { e.stopPropagation(); advance(id); return; }
@@ -796,7 +905,13 @@
     const v = inp.value; inp.value = '';
     const cv = cust ? cust.value : '';
     if (cust) cust.value = '';
-    quickAdd(v, state.addType, cv, !!expand);
+    // Merkin tekin SAMSTUNDIS (quickAdd er async — má ekki lesa state eftir hreinsun).
+    quickAdd(v, state.addType, cv, !!expand, state.addTags.slice());
+    state.addTags = [];
+    document.querySelectorAll('#view-verkbord [data-act="addtag"]').forEach(c => {
+      const d = TAGS[c.getAttribute('data-tag')]; if (!d) return;
+      c.style.color = d.color; c.style.background = d.color + '12'; c.style.borderColor = d.color + '44';
+    });
     inp.focus();
   }
   // ✉️ Sækja tölvupóst — endurnýtir póst-innsogið úr Þjónustuveri (182, sama
