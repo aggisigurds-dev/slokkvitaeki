@@ -316,7 +316,8 @@
       samtals: total,
       afslattur: tot.afslattur,
       greitt_med: 'reikningur',
-      athugasemdir: `Heimsókn ${today} — ${visit.servicedIds.length} tæki, næsta skoðun ${next}`,
+      athugasemdir: `Heimsókn ${today} — ${visit.servicedIds.length} tæki, næsta skoðun ${next}`
+        + ((window.BeidniGate && BeidniGate.peek(coId)) ? ` · Beiðni nr: ${BeidniGate.peek(coId)}` : ''),
       created_at: new Date().toISOString()
     };
 
@@ -421,7 +422,7 @@
         samtals: total,
         afslattur: afslattur,
         greitt_med: 'reikningur',
-        athugasemdir: `Heimsókn ${today} — ${visit.servicedIds.length} tæki, næsta skoðun ${next}`
+        athugasemdir: (() => { const _po = (window.BeidniGate && BeidniGate.take(coId)) || ''; return `Heimsókn ${today} — ${visit.servicedIds.length} tæki, næsta skoðun ${next}` + (_po ? ` · Beiðni nr: ${_po}` : ''); })()
       }).select('num,id').single();
       if (ins.error) throw ins.error;
       saleId = ins.data && ins.data.id;
