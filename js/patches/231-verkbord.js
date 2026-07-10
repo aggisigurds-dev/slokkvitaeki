@@ -177,6 +177,7 @@
     search: '',
     addType: 'annad',
     addTags: [],        // merki valin í ný-beiðni línunni (hreinsast eftir skráningu)
+    threadLatest: {},   // beidniId → nýjasti póstur í þræðinum (sjá loadThreadLatest)
     expandedId: null
   };
   function setQueue(q) { state.queue = q; try { localStorage.setItem(QKEY, q); } catch (_) {} }
@@ -219,6 +220,54 @@
     } catch (e) { state.vd = []; }
     state.loading = false;
     renderControls(); renderList(); refreshBadge();
+    // Nýjasta svarið í þræðinum (2026-07-10, ósk Agnars): ✨-samantektin/forsýnin
+    // gat sýnt GAMALT efni úr miðjum póstþræði (löngu afgreitt). Flettum upp
+    // nýjasta póstinum með sömu efnislínu og sýnum HANN — keyrt eftir fyrstu
+    // málningu svo borðið birtist strax.
+    loadThreadLatest().then(ok => { if (ok) renderList(); }).catch(() => {});
+  }
+
+  // Efnislína án Re:/Fwd:/Sv:-forskeyta — lykill fyrir þráða-mátun.
+  function normSubj(s) {
+    let t = String(s || '').trim().toLowerCase();
+    for (let i = 0; i < 6; i++) t = t.replace(/^(re|fw|fwd|sv|vs)\s*:\s*/i, '');
+    return t.replace(/\s+/g, ' ').trim();
+  }
+  async function loadThreadLatest() {
+    const SB = getSB(); if (!SB) return false;
+    const emailRows = state.items.filter(x => isOpen(x) && /^email:/.test(String(x.channel_ref || '')));
+    if (!emailRows.length) { state.threadLatest = {}; return false; }
+    let emails = [];
+    try {
+      const r = await SB.from('email_digest')
+        .select('id,sender_name,sender_email,subject,snippet,body_preview,received_at')
+        .eq('account', 'eldklar@eldklar.is')
+        .order('received_at', { ascending: false }).range(0, 799);
+      if (r.error) throw r.error;
+      emails = r.data || [];
+    } catch (_) { return false; }
+    // Nýjasti póstur per efnislínu (listinn er raðaður nýjast fyrst).
+    const newest = new Map();
+    for (const e of emails) {
+      const k = normSubj(e.subject);
+      if (k && !newest.has(k)) newest.set(k, e);
+    }
+    const out = {};
+    for (const b of emailRows) {
+      const m = newest.get(normSubj(b.title));
+      if (!m) continue;
+      if (('email:' + m.id) === String(b.channel_ref)) continue;              // sami póstur og beiðnin
+      if (new Date(m.received_at) - new Date(b.created_at) < 60e3) continue;  // ekkert nýrra komið
+      const text = String(m.body_preview || m.snippet || '').trim();
+      if (!text) continue;
+      out[b.id] = {
+        text, at: m.received_at,
+        from: m.sender_name || m.sender_email || '',
+        mine: /eldklar/i.test(m.sender_email || ''),
+      };
+    }
+    state.threadLatest = out;
+    return Object.keys(out).length > 0;
   }
 
   async function loadCompanies() {
@@ -628,6 +677,10 @@
       /* Rá forsýn (þegar engin samantekt) — dauf, ein lína. */
       #view-verkbord .vb-body { font-size:12px; color:#8a93a5; margin-top:7px; line-height:1.45;
         display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+      /* ↩ Nýjasta svarið í þræðinum — sterkara en forsýn, hámark 2 línur. */
+      #view-verkbord .vb-latest { font-size:12.5px; color:#334155; margin-top:8px; line-height:1.5;
+        display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+      #view-verkbord .vb-latest b { color:#0f766e; font-weight:700; }
       #view-verkbord .vb-star { font-size:17px; cursor:pointer; line-height:1; margin-top:1px; opacity:.5; }
       #view-verkbord .vb-star:hover { opacity:1; }
       #view-verkbord .vb-tag { font-size:10px; font-weight:700; color:#b45309; background:#fffbeb; padding:2px 7px; border-radius:6px; border:1px solid #fde68a; }
@@ -797,14 +850,17 @@
           (di ? '<span class="vb-due' + (od ? ' od' : '') + '">📅 ' + esc(di.label) + '</span>' : '') +
           '<span class="vb-cust" style="color:' + st.color + '">' + esc(st.label) + '</span>' +
         '</div>' +
-        // Ein hrein innihaldslína (2026-07-10 — laga „chaos"): ✨ samantekt EF
-        // hún er til (hún er hreina útgáfan), ANNARS stutt forsýn úr textanum.
-        // ALDREI bæði — það var tvítekningin sem gerði kortin að vegg af texta.
-        (!compact ? (
-          r.summary
-            ? '<div class="vb-sum">' + esc(r.summary) + '</div>'
-            : (state.viewMode !== 'thett' && r.notes ? '<div class="vb-body">' + esc(cleanPreview(r.notes)) + '</div>' : '')
-        ) : '') +
+        // Ein hrein innihaldslína (2026-07-10): NÝJASTA svarið í þræðinum vinnur
+        // (gömul ✨-samantekt gat vísað í löngu afgreitt atriði úr miðjum þræði),
+        // annars ✨ samantekt, annars stutt forsýn úr textanum. Aldrei fleiri en ein.
+        (!compact ? (function () {
+          const tl = state.threadLatest[r.id];
+          if (tl) {
+            return '<div class="vb-latest">↩ <b>' + (tl.mine ? 'Við svöruðum' : esc(tl.from)) + '</b> · ' + esc(fmtShortDate(tl.at)) + ' — ' + esc(cleanPreview(tl.text)) + '</div>';
+          }
+          if (r.summary) return '<div class="vb-sum">' + esc(r.summary) + '</div>';
+          return (state.viewMode !== 'thett' && r.notes) ? '<div class="vb-body">' + esc(cleanPreview(r.notes)) + '</div>' : '';
+        })() : '') +
         (open ? renderEditor(r) : '') +
       '</div>' +
       // Hægri-dálkur: ⭐ áríðandi + ✕ fljót-eyðing (2026-07-10, ósk Agnars —
@@ -822,6 +878,10 @@
   // sjálfvirku póst-tilkynningarnar ólæsilegar á listanum.
   function cleanPreview(s) {
     return String(s || '').replace(/https?:\/\/\S+/g, '🔗').replace(/\[\s*🔗\s*\]/g, '🔗').replace(/\s+/g, ' ').trim().slice(0, 260);
+  }
+  function fmtShortDate(iso) {
+    const d = new Date(iso);
+    return isNaN(d) ? '' : String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.';
   }
 
   function renderEditor(r) {
