@@ -308,6 +308,14 @@ One tool that replaces the cluster of overlapping top-of-sidebar lists
   `replyTo` er sjálf-innihaldið (sprautar sína `#_rp-modal` stíla, festir á
   `<body>`, tengir sendanda-netfang → kúnna fyrir reikninga-samhengi). Röðunar-
   chippar (⭐ Snjallröðun / 🕒 Nýjast efst) og sýn-rofi (☰ Þétt / ▤ Ítarlegt).
+  **Sími-fyrst samanbrot (2026-07-10, eftir „algjörlega ónothæft"-kvörtun):**
+  stjórnborðið fyllti heilan símaskjá áður en fyrsta verkefnið sást. Nú er
+  skráningarlínan EIN lína (reitur+takki; fyrirtæki/MERKI/⚙ birtast við fókus á
+  reitinn, fellast saman eftir skráningu — `state.addOpen`), merki-sían er ein
+  skrunanleg lína (`.vb-scroll`, nowrap+overflow-x), og röðun/sýn/✉️ Sækja/
+  ⬇︎ Flytja inn/🧹 sitja bak við „⚙ Meira"-chippann (`state.moreOpen`).
+  show() speglar líka `#verkbord` í hash sjálft — 231-switchView-wrapperinn
+  skammhleypir framhjá 218-speglinum svo hash sat áður fast á fyrri síðu.
 
 ## Bakendi (gagnalíkans-stjórnborð) — `js/patches/232-bakendi.js`
 

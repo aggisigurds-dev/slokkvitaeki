@@ -178,6 +178,12 @@
     addType: 'annad',
     addTags: [],        // merki valin í ný-beiðni línunni (hreinsast eftir skráningu)
     threadLatest: {},   // beidniId → nýjasti póstur í þræðinum (sjá loadThreadLatest)
+    // 2026-07-10 (kvörtun Agnars — „algjörlega ónothæft"): á síma fyllti
+    // stjórnborðið HEILAN skjá áður en fyrsta verkefnið sást. Aukahlutir
+    // skráningarlínunnar (fyrirtæki/merki/fleiri valkostir) og auka-stjórntækin
+    // (röðun/sýn/póst-takkar) eru því samanbrotin þar til beðið er um þau.
+    addOpen: false,     // aukahlutir skráningarlínunnar sýnilegir?
+    moreOpen: false,    // „⚙ Meira"-röðin (röðun/sýn/póstur/innflutningur) opin?
     expandedId: null
   };
   function setQueue(q) { state.queue = q; try { localStorage.setItem(QKEY, q); } catch (_) {} }
@@ -482,6 +488,9 @@
     const v = document.getElementById(VIEW_ID);
     if (v) { v.style.display = 'block'; v.classList.add('active'); }
     document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === NAV_KEY));
+    // Spegla slóðina (deep-link) — 231-wrapperinn skammhleypir framhjá patch 218
+    // switchView-speglinum, svo hash sat fast á fyrri síðu (#sala).
+    try { if (location.hash !== '#verkbord') history.replaceState(null, '', '#verkbord'); } catch (_) {}
     renderAll();
     retireOldOnce();
     load();
@@ -710,7 +719,23 @@
       #view-verkbord .vb-empty { text-align:center; color:#5b6472; padding:50px 18px;
         font-size:15px; font-weight:600; border:1px dashed rgba(20,24,34,.12); border-radius:14px; background:#fff; }
       #view-verkbord .vb-hint { font-size:12px; color:#5b6472; margin:2px 2px 0; font-weight:600; }
-      @media (max-width:640px){ #view-verkbord .vb-wrap{ padding:14px 14px 90px; } #view-verkbord .vb-q{ flex:1; text-align:center; justify-content:center; } }
+      /* Ein skrunanleg chippa-lína (síma-mynstur) — engin 5-línu chippa-veggur. */
+      #view-verkbord .vb-scroll { display:flex; gap:6px; align-items:center; width:100%;
+        flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
+        scrollbar-width:none; padding-bottom:2px; }
+      #view-verkbord .vb-scroll::-webkit-scrollbar { display:none; }
+      #view-verkbord .vb-scroll > * { flex:0 0 auto; }
+      @media (max-width:640px){
+        #view-verkbord .vb-wrap{ padding:10px 10px 90px; }
+        #view-verkbord .vb-add{ padding:10px 12px; gap:8px; }
+        /* Reitur + takki deila EINNI línu (reiturinn má minnka) — extra-röðin
+           er width:100% og brotnar því sjálf á næstu línu þegar hún er opin. */
+        #view-verkbord .vb-add-input{ min-width:0; flex:1 1 0; }
+        #view-verkbord .vb-add-btn{ padding:11px 13px; white-space:nowrap; }
+        #view-verkbord .vb-controls{ margin:12px 2px 10px; gap:7px; }
+        #view-verkbord .vb-q{ flex:1; text-align:center; justify-content:center; padding:8px 10px; }
+        #view-verkbord .vb-search{ min-width:0; flex:1 1 100%; }
+      }
     `;
     document.head.appendChild(s);
   }
@@ -721,31 +746,30 @@
     main.innerHTML =
       '<div class="vb-wrap">' +
         '<div class="vb-add">' +
-          // 2026-07-10 (ósk Agnars — quick note lína): fyrirtækjareitur sem
-          // tengist kerfinu (datalist úr fyrirtaeki, customer_base_id sett við
-          // nafna-match) + lýsing + lita-tegundarchippar + „⚙ Fleiri valkostir"
-          // sem skráir OG opnar strax alla skráninguna (inline-ritilinn).
-          '<input class="vb-add-cust" id="vb-add-cust" list="vb-add-colist" placeholder="🏢 Fyrirtæki…" autocomplete="off" ' +
-            'style="flex:0 1 220px;min-width:150px;font:inherit;font-size:14px;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(20,24,34,.14);background:#fbfcfe;outline:none">' +
-          '<datalist id="vb-add-colist"></datalist>' +
-          '<input class="vb-add-input" id="vb-add-input" placeholder="Skráðu verk… Enter til að bæta við" autocomplete="off">' +
+          // 2026-07-10 v2 (kvörtun Agnars — verkefnin verða að sjást STRAX á síma):
+          // sjálfgefið er skráningarlínan EIN lína (texti + takki). Aukahlutirnir
+          // (fyrirtækjareitur, ⚙ Fleiri valkostir, MERKI) birtast fyrst þegar
+          // smellt er í reitinn — sjá focusin í wireDelegation.
+          '<input class="vb-add-input" id="vb-add-input" placeholder="＋ Skrá verk… (Enter vistar)" autocomplete="off">' +
           '<button class="vb-add-btn" data-act="add">+ Bæta við</button>' +
-          '<button data-act="addmore" title="Skrá og opna alla valkosti (forgangur, frestur, nánar…)" ' +
-            'style="font:inherit;font-size:13px;font-weight:700;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(20,24,34,.14);background:#fff;color:#475569;cursor:pointer">⚙ Fleiri valkostir</button>' +
-          // 2026-07-10 (ósk Agnars — „burt með gömlu flokkana, hafðu bara tag"):
-          // gömlu type-chipparnir (Annað/Tilboð/Póstur/…) fjarlægðir úr skráningar-
-          // línunni. Flokkun fer nú EINGÖNGU gegnum MERKI hér að neðan.
-          // Merki í ný-beiðni línunni: velja má mörg um
-          // leið og skráð er — fara á beiðnina (tags) og birtast á röðinni.
-          '<div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:2px;align-items:center">' +
-            '<span style="font-size:10.5px;font-weight:800;color:#8891a0;text-transform:uppercase;letter-spacing:.04em">🏷 Merki</span>' +
-            TAG_ORDER.map(t => {
-              const d = TAGS[t], on = state.addTags.indexOf(t) !== -1;
-              return '<button data-act="addtag" data-tag="' + t + '" type="button" ' +
-                'style="font:inherit;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;cursor:pointer;' +
-                'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + '">' +
-                d.emoji + ' ' + esc(d.label) + '</button>';
-            }).join('') +
+          '<div id="vb-add-extra" style="display:' + (state.addOpen ? 'flex' : 'none') + ';flex-wrap:wrap;gap:8px;width:100%;align-items:center">' +
+            '<input class="vb-add-cust" id="vb-add-cust" list="vb-add-colist" placeholder="🏢 Fyrirtæki…" autocomplete="off" ' +
+              'style="flex:1 1 180px;min-width:140px;font:inherit;font-size:14px;padding:10px 13px;border-radius:11px;border:1.5px solid rgba(20,24,34,.14);background:#fbfcfe;outline:none">' +
+            '<datalist id="vb-add-colist"></datalist>' +
+            '<button data-act="addmore" title="Skrá og opna alla valkosti (forgangur, frestur, nánar…)" ' +
+              'style="font:inherit;font-size:12.5px;font-weight:700;padding:10px 13px;border-radius:11px;border:1.5px solid rgba(20,24,34,.14);background:#fff;color:#475569;cursor:pointer">⚙ Fleiri valkostir</button>' +
+            // Merki (2026-07-10, „hafðu bara tag"): velja má mörg um leið og skráð
+            // er. EIN skrunanleg lína á síma (.vb-scroll) í stað 5 lína af chippum.
+            '<div class="vb-scroll" style="margin-top:2px">' +
+              '<span style="font-size:10.5px;font-weight:800;color:#8891a0;text-transform:uppercase;letter-spacing:.04em;align-self:center">🏷 Merki</span>' +
+              TAG_ORDER.map(t => {
+                const d = TAGS[t], on = state.addTags.indexOf(t) !== -1;
+                return '<button data-act="addtag" data-tag="' + t + '" type="button" ' +
+                  'style="font:inherit;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;cursor:pointer;white-space:nowrap;' +
+                  'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + '">' +
+                  d.emoji + ' ' + esc(d.label) + '</button>';
+              }).join('') +
+            '</div>' +
           '</div>' +
         '</div>' +
         '<div class="vb-hint" id="vb-hint"></div>' +
@@ -760,14 +784,16 @@
     const c = counts();
     const q = (v, label, n) => '<button class="vb-q' + (state.queue === v ? ' active' : '') + '" data-act="queue" data-q="' + v + '">' + label + '<span class="n">' + n + '</span></button>';
     const f = (v, label) => '<button class="vb-fchip' + (state.filter === v ? ' active' : '') + '" data-act="filter" data-f="' + v + '">' + label + '</button>';
+    // 2026-07-10 v2 (kvörtun Agnars): þrjár léttar línur í stað veggjar —
+    // (A) biðröð + leit, (B) merki-sía í EINNI skrunanlegri línu + „⚙ Meira",
+    // (C) röðun/sýn/póst-takkar — aðeins þegar ⚙ Meira er opið.
+    const noiseN = allItems().filter(x => isOpen(x) && isPaymentNoise(x)).length;
     el.innerHTML =
-      q('idag', '🔥 Í dag', c.idag) + q('opid', 'Allt opið', c.opid) + q('lokad', 'Lokað', c.lokad) +
-      '<span style="flex:1 0 8px"></span>' +
+      q('idag', '🔥 Í dag', c.idag) + q('opid', 'Opið', c.opid) + q('lokad', 'Lokað', c.lokad) +
       '<input class="vb-search" id="vb-search" placeholder="🔎 Leita…" value="' + esc(state.search) + '">' +
-      // Tag-sía með teljara (2026-07-10, ósk Agnars — kemur í stað gömlu
-      // type-síunnar): „Allt" endurstillir; hver merki-chippi sýnir fjölda
-      // OPINNA verka með því merki. Aðeins merki sem eru í notkun birtast.
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:4px;align-items:center">' +
+      // Tag-sía með teljara (2026-07-10, ósk Agnars): „Allt" endurstillir; hver
+      // merki-chippi sýnir fjölda OPINNA verka með því merki. Ein skrunlína.
+      '<div class="vb-scroll">' +
         (function () {
           const counts = {};
           allItems().filter(isOpen).forEach(x => rowTags(x).forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
@@ -776,13 +802,18 @@
           const chips = used.map(t => {
             const d = TAGS[t], on = state.fTag === t, n = counts[t] || 0;
             return '<button data-act="tagfilter" data-tag="' + t + '" title="Sía eftir merkinu ' + esc(d.label) + '" ' +
-              'style="font:inherit;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:99px;cursor:pointer;' +
+              'style="font:inherit;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:99px;cursor:pointer;white-space:nowrap;' +
               'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + '">' +
               d.emoji + ' ' + esc(d.label) + ' <span style="opacity:.7">' + n + '</span></button>';
           }).join('');
           return allChip + chips;
         })() +
-        '<span style="flex:1"></span>' +
+        '<span style="flex:1 0 8px"></span>' +
+        '<button class="vb-fchip' + (state.moreOpen ? ' active' : '') + '" data-act="more" title="Röðun, sýn, sækja tölvupóst og fleira">⚙ Meira' +
+          (state.sort === 'nyjast' || noiseN ? ' <span style="color:#e11d48">•</span>' : '') + '</button>' +
+      '</div>' +
+      (!state.moreOpen ? '' :
+      '<div style="display:flex;gap:7px;flex-wrap:wrap;width:100%;margin-top:2px;align-items:center">' +
         // Röðun (2026-07-10): snjallröðun (áríðandi/gjalddagi eins og áður) eða
         // hrein dagsetningarröð með nýjast efst. Valið geymist milli heimsókna.
         '<button class="vb-fchip' + (state.sort !== 'nyjast' ? ' active' : '') + '" data-act="sort" data-s="snjall" title="Áríðandi og gjalddagar efst (sjálfgefið)">⭐ Snjallröðun</button>' +
@@ -793,15 +824,9 @@
           '<button data-act="viewmode" data-vm="itarlegt" title="Ítarlegri listi — nótur og samantekt sjást" style="font:inherit;font-size:12px;font-weight:700;padding:8px 11px;border:none;border-left:1px solid rgba(20,24,34,.14);cursor:pointer;background:' + (state.viewMode !== 'thett' ? '#0f172a' : '#fff') + ';color:' + (state.viewMode !== 'thett' ? '#fff' : '#475569') + '">▤ Ítarlegt</button>' +
         '</span>' +
         '<button class="vb-fchip" data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (sama innsog og Þjónustuver — engin tvítök)">✉️ Sækja tölvupóst</button>' +
-        (function () {
-          // 🧹 Hreinsa greiðslu-tilkynningar — birtist aðeins ef einhverjar eru
-          // opnar (þær blésu listann upp í 400+; upplýsingar, ekki verk).
-          const n = allItems().filter(x => isOpen(x) && isPaymentNoise(x)).length;
-          return n ? '<button class="vb-fchip" data-act="clearnoise" title="Fela allar Payday „reikningur greiddur" tilkynningar í einu (endurheimtanlegt)" style="border-color:#fca5a5;color:#b91c1c;background:#fef2f2">🧹 Hreinsa greiðslu-tilkynningar (' + n + ')</button>' : '';
-        })() +
+        (noiseN ? '<button class="vb-fchip" data-act="clearnoise" title="Fela allar Payday „reikningur greiddur" tilkynningar í einu (endurheimtanlegt)" style="border-color:#fca5a5;color:#b91c1c;background:#fef2f2">🧹 Hreinsa greiðslu-tilkynningar (' + noiseN + ')</button>' : '') +
         '<button class="vb-fchip" data-act="import" title="Flytja inn opin atriði úr gömlu Verkefni + Þjónustuverk listunum">⬇︎ Flytja inn úr gömlu</button>' +
-      '</div>';
-    // (Tag-sían með teljara er nú efst — kemur í stað gömlu type-síuraðar.)
+      '</div>');
   }
 
   function renderList() {
@@ -994,6 +1019,7 @@
         renderControls(); renderList();
         return;
       }
+      if (act === 'more') { state.moreOpen = !state.moreOpen; renderControls(); return; }
       if (act === 'import') { importOld(); return; }
       if (act === 'noexpand') { e.stopPropagation(); return; }
       if (act === 'status') { e.stopPropagation(); advance(id); return; }
@@ -1035,8 +1061,16 @@
       if (e.target.id === 'vb-add-cust' && e.key === 'Enter') { e.preventDefault(); document.getElementById('vb-add-input')?.focus(); }
     });
     // Fyrirtækja-datalist quick-línunnar fyllist við fyrstu snertingu (lazy).
+    // Aukahlutir skráningarlínunnar (fyrirtæki/merki/⚙) opnast við fókus á
+    // textareitinn — EKKI endur-teiknað (þá týndist fókusinn), bara sýnt.
     root.addEventListener('focusin', e => {
       if (e.target.id === 'vb-add-cust') loadCompanies().then(fillCompanyList);
+      if (e.target.id === 'vb-add-input' && !state.addOpen) {
+        state.addOpen = true;
+        const ex = document.getElementById('vb-add-extra');
+        if (ex) ex.style.display = 'flex';
+        loadCompanies().then(fillCompanyList);
+      }
     });
     root.addEventListener('change', e => {
       const f = e.target.getAttribute && e.target.getAttribute('data-field');
@@ -1068,7 +1102,11 @@
       const d = TAGS[c.getAttribute('data-tag')]; if (!d) return;
       c.style.color = d.color; c.style.background = d.color + '12'; c.style.borderColor = d.color + '44';
     });
-    inp.focus();
+    // Fella aukahlutina saman eftir skráningu — línan verður aftur ein lína.
+    state.addOpen = false;
+    const ex = document.getElementById('vb-add-extra');
+    if (ex) ex.style.display = 'none';
+    inp.blur();
   }
   // ✉️ Sækja tölvupóst — endurnýtir póst-innsogið úr Þjónustuveri (182, sama
   // tafla thjonustubeidni, idempotent á channel_ref) og endurhleður borðið.
