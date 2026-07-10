@@ -786,6 +786,10 @@
       '</div></div>' +
       '<div class="vb-ed-actions">' +
         '<button class="vb-ai vb-btn" data-act="ai" data-id="' + esc(r.id) + '">✨ Tillaga</button>' +
+        // ✉️ Svara — beint úr borðinu (2026-07-10): opnar sama svar-gluggann og
+        // Reikninga-póstur (Claude semur uppkast → yfirfara → senda gegnum Resend).
+        // Aðeins á póst-beiðnum sem eiga upprunapóst (channel_ref='email:<id>').
+        (isEmailBeidni(r) ? '<button class="vb-btn" data-act="reply" data-id="' + esc(r.id) + '" title="Svara póstinum — Claude semur uppkast sem þú yfirferð og sendir">✉️ Svara</button>' : '') +
         (r.customer_nafn ? '<button class="vb-btn" data-act="history" data-id="' + esc(r.id) + '" title="Öll gögn kúnnans — sölur, Payday-kröfur, skýrslur og samningar (sami gluggi og á Sölu)">🧾 Sjá fyrri viðskipti</button>' : '') +
         '<span style="flex:1"></span>' +
         '<button class="vb-btn red" data-act="del" data-id="' + esc(r.id) + '">🗑 Eyða</button>' +
@@ -861,6 +865,7 @@
       if (act === 'status') { e.stopPropagation(); advance(id); return; }
       if (act === 'star') { e.stopPropagation(); toggleStar(id); return; }
       if (act === 'ai') { e.stopPropagation(); aiSuggest(nid); return; }
+      if (act === 'reply') { e.stopPropagation(); replyToBeidni(nid); return; }
       if (act === 'del') { e.stopPropagation(); softDelete(nid); return; }
       if (act === 'collapse') { e.stopPropagation(); state.expandedId = null; renderList(); return; }
       if (act === 'vd-open') { e.stopPropagation(); if (window.App && App.switchView) App.switchView('verkdagbok'); return; }
@@ -938,6 +943,39 @@
     try { await Thjonustuver.ingestEmail(); } catch (e) { toast('Villa: ' + (e.message || e)); }
     btn.disabled = false; btn.textContent = old;
     load();
+  }
+  // Er þetta beiðni sem varð til úr pósti? channel_ref='email:<email_digest.id>'
+  // (sett af Þjónustuver ingestEmail) → hægt að svara sendandanum.
+  function isEmailBeidni(r) {
+    return !!(r && (r.source === 'email' || /^email:/.test(String(r.channel_ref || ''))));
+  }
+  // ✉️ Svara — flettir upp upprunapóstinum (email_digest) og opnar svar-gluggann
+  // úr Reikninga-pósti (240, ReikningaPostur.replyTo). Sami Claude-uppkast +
+  // Resend-sending og þar. Allt samtalið gerist því á borðinu (ósk Agnars).
+  async function replyToBeidni(id) {
+    const row = state.items.find(x => String(x.id) === String(id)); if (!row) return;
+    if (!window.ReikningaPostur || !ReikningaPostur.replyTo) { toast('Svar-vélin (Reikninga-póstur, 240) er ekki hlaðin'); return; }
+    const ref = String(row.channel_ref || '');
+    const digestId = ref.indexOf('email:') === 0 ? ref.slice(6) : null;
+    let m = null;
+    const SB = getSB();
+    if (digestId && SB) {
+      try {
+        const r = await SB.from('email_digest')
+          .select('message_id,sender_name,sender_email,subject,snippet,body_preview')
+          .eq('id', digestId).maybeSingle();
+        if (r && r.data) {
+          const e = r.data;
+          m = { message_id: e.message_id, sender_name: e.sender_name || row.customer_nafn || '',
+            from: e.sender_email || '', subject: e.subject || row.title || '',
+            body_preview: e.body_preview || '', snippet: e.snippet || row.notes || '' };
+        }
+      } catch (_) {}
+    }
+    // Fallback ef digest-röðin fannst ekki — nota það sem er á beiðninni.
+    if (!m) m = { message_id: null, sender_name: row.customer_nafn || '', from: '', subject: row.title || '', body_preview: '', snippet: row.notes || '' };
+    if (!m.from) { toast('Ekkert sendandanetfang fannst á þessari beiðni — opnaðu upprunapóstinn í Reikninga-pósti.'); return; }
+    ReikningaPostur.replyTo(m);
   }
   function advance(id) {
     if (typeof id === 'string' && id.indexOf('vd:') === 0) { return; }

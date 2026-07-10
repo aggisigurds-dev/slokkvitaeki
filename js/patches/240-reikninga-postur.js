@@ -1272,6 +1272,26 @@
   window.ReikningaPostur = {
     open: () => { if (window.App && App.switchView) App.switchView(NAV_KEY); },
     reload: load,
+    // 2026-07-10 (ósk Agnars — svara af Verkborðinu): opna svar-modalinn fyrir
+    // hvaða póst sem er, hvaðan sem er í appinu. `m` = { sender_name, from
+    // (sendandanetfang), subject, body_preview|snippet, message_id, cust? }.
+    // Sjálf-innihaldið: sprautar sína eigin stíla + festir modalinn á <body>.
+    replyTo: async (m) => {
+      try { styles(); } catch (_) {}
+      if (!m || !m.from) { if (window.Toast && Toast.show) Toast.show('Ekkert sendandanetfang á þessum pósti'); return; }
+      // Reyna að tengja sendanda-netfangið við kúnna (einkvæmt netfang → reikninga-
+      // samhengi í uppkastinu). Valfrjálst — genReply höndlar m.cust=null.
+      if (!m.cust) {
+        try {
+          const SB = getSB();
+          if (SB && m.from) {
+            const { data } = await SB.from('fyrirtaeki').select('id,nafn,kennitala').eq('netfang', m.from).limit(1);
+            if (data && data.length) m.cust = { coId: data[0].id, name: data[0].nafn, kt: ktDigits(data[0].kennitala) };
+          }
+        } catch (_) {}
+      }
+      openReplyModal(m);
+    },
   };
   console.log('[patch-240] Reikninga-póstur installed');
 })();

@@ -294,6 +294,20 @@ One tool that replaces the cluster of overlapping top-of-sidebar lists
   ORDER (`['Verkborð']` first).
 - Wired the 3 standard spots: `<script>` in index.html (after 230), `App.switchView`
   hook (`patchSwitchView`), and patch 218 ALIAS. `window.Verkbord = {open,reload,importOld}`.
+- **Þjónustuver-samruni (2026-07-10, ósk Agnars — „nota bara borðið fyrir öll
+  samskipti"):** Verkborð er nú EINI þjónustuverið. Quick-skráningarlínan fékk
+  fyrirtækjareit (datalist úr `fyrirtaeki`, tengir `customer_base_id` við nafna-
+  match) + lita-tegundarchippa + „⚙ Fleiri valkostir" (skráir OG opnar ritilinn
+  strax). „✉️ Sækja tölvupóst" chip endurnýtir póst-innsogið úr Þjónustuveri
+  (`Thjonustuver.ingestEmail`, exportað úr 182 — sama `thjonustubeidni`-tafla,
+  idempotent á `channel_ref='email:<id>'`). **Svara beint af borðinu:** email-
+  beiðnir (`source='email'` / `channel_ref` byrjar á `email:`) fá „✉️ Svara"-takka
+  í ritlinum → `replyToBeidni` flettir upp `email_digest`-röðinni og kallar
+  `ReikningaPostur.replyTo(m)` (exportað úr 240) — sami Claude-uppkast (`/api/
+  postur-reply`) + Resend-sending (`/api/email-send`) og í Reikninga-pósti.
+  `replyTo` er sjálf-innihaldið (sprautar sína `#_rp-modal` stíla, festir á
+  `<body>`, tengir sendanda-netfang → kúnna fyrir reikninga-samhengi). Röðunar-
+  chippar (⭐ Snjallröðun / 🕒 Nýjast efst) og sýn-rofi (☰ Þétt / ▤ Ítarlegt).
 
 ## Bakendi (gagnalíkans-stjórnborð) — `js/patches/232-bakendi.js`
 
