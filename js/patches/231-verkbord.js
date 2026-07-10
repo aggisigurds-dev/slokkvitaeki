@@ -349,11 +349,10 @@
     if (state.queue === 'lokad') return !isOpen(r);
     return isOpen(r); // opid
   }
-  function inFilter(r) {
-    if (!state.filter) return true;
-    const grp = TYPE_GROUP[state.filter] || [state.filter];
-    return grp.indexOf(r.type) !== -1;
-  }
+  // 2026-07-10: gamla type-sían fjarlægð (flokkun fer nú gegnum MERKI). Hlutlaus
+  // svo gömul vistuð type-sía í localStorage feli ekki raðir. (Fall haldið til
+  // öryggis ef eitthvað kallar enn á það.)
+  function inFilter() { return true; }
   function visibleRows() {
     let r = allItems().filter(x => inQueue(x) && inFilter(x));
     if (state.fTag) r = r.filter(x => rowTags(x).indexOf(state.fTag) !== -1);
@@ -680,13 +679,10 @@
           '<button class="vb-add-btn" data-act="add">+ Bæta við</button>' +
           '<button data-act="addmore" title="Skrá og opna alla valkosti (forgangur, frestur, nánar…)" ' +
             'style="font:inherit;font-size:13px;font-weight:700;padding:12px 14px;border-radius:12px;border:1.5px solid rgba(20,24,34,.14);background:#fff;color:#475569;cursor:pointer">⚙ Fleiri valkostir</button>' +
-          '<div class="vb-add-types">' + ADD_TYPES.map(t => {
-            const d = typeDef(t), on = state.addType === t;
-            return '<button class="vb-tchip' + (on ? ' active' : '') + '" data-act="addtype" data-type="' + t + '" ' +
-              'style="color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.bg) + ';border-color:' + d.color + (on ? '' : '55') + '">' +
-              d.emoji + ' ' + esc(d.label) + '</button>';
-          }).join('') + '</div>' +
-          // Merki í ný-beiðni línunni (ósk Agnars 2026-07-10): velja má mörg um
+          // 2026-07-10 (ósk Agnars — „burt með gömlu flokkana, hafðu bara tag"):
+          // gömlu type-chipparnir (Annað/Tilboð/Póstur/…) fjarlægðir úr skráningar-
+          // línunni. Flokkun fer nú EINGÖNGU gegnum MERKI hér að neðan.
+          // Merki í ný-beiðni línunni: velja má mörg um
           // leið og skráð er — fara á beiðnina (tags) og birtast á röðinni.
           '<div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:2px;align-items:center">' +
             '<span style="font-size:10.5px;font-weight:800;color:#8891a0;text-transform:uppercase;letter-spacing:.04em">🏷 Merki</span>' +
@@ -715,8 +711,24 @@
       q('idag', '🔥 Í dag', c.idag) + q('opid', 'Allt opið', c.opid) + q('lokad', 'Lokað', c.lokad) +
       '<span style="flex:1 0 8px"></span>' +
       '<input class="vb-search" id="vb-search" placeholder="🔎 Leita…" value="' + esc(state.search) + '">' +
-      '<div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:4px">' +
-        f('', 'Allt') + FILTERS.map(x => f(x.v, x.label)).join('') +
+      // Tag-sía með teljara (2026-07-10, ósk Agnars — kemur í stað gömlu
+      // type-síunnar): „Allt" endurstillir; hver merki-chippi sýnir fjölda
+      // OPINNA verka með því merki. Aðeins merki sem eru í notkun birtast.
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:4px;align-items:center">' +
+        (function () {
+          const counts = {};
+          allItems().filter(isOpen).forEach(x => rowTags(x).forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
+          const allChip = '<button class="vb-fchip' + (!state.fTag ? ' active' : '') + '" data-act="tagfilter" data-tag="">Allt</button>';
+          const used = TAG_ORDER.filter(t => (counts[t] || 0) > 0 || state.fTag === t);
+          const chips = used.map(t => {
+            const d = TAGS[t], on = state.fTag === t, n = counts[t] || 0;
+            return '<button data-act="tagfilter" data-tag="' + t + '" title="Sía eftir merkinu ' + esc(d.label) + '" ' +
+              'style="font:inherit;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:99px;cursor:pointer;' +
+              'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + '">' +
+              d.emoji + ' ' + esc(d.label) + ' <span style="opacity:.7">' + n + '</span></button>';
+          }).join('');
+          return allChip + chips;
+        })() +
         '<span style="flex:1"></span>' +
         // Röðun (2026-07-10): snjallröðun (áríðandi/gjalddagi eins og áður) eða
         // hrein dagsetningarröð með nýjast efst. Valið geymist milli heimsókna.
@@ -735,23 +747,8 @@
           return n ? '<button class="vb-fchip" data-act="clearnoise" title="Fela allar Payday „reikningur greiddur" tilkynningar í einu (endurheimtanlegt)" style="border-color:#fca5a5;color:#b91c1c;background:#fef2f2">🧹 Hreinsa greiðslu-tilkynningar (' + n + ')</button>' : '';
         })() +
         '<button class="vb-fchip" data-act="import" title="Flytja inn opin atriði úr gömlu Verkefni + Þjónustuverk listunum">⬇︎ Flytja inn úr gömlu</button>' +
-      '</div>' +
-      // Merkja-sían (2026-07-10): litaðir tag-chippar með talningu yfir opin verk.
-      (function () {
-        const counts = {};
-        allItems().filter(isOpen).forEach(x => rowTags(x).forEach(t => { counts[t] = (counts[t] || 0) + 1; }));
-        const used = TAG_ORDER.filter(t => (counts[t] || 0) > 0 || state.fTag === t);
-        if (!used.length) return '';
-        return '<div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:6px">' +
-          used.map(t => {
-            const d = TAGS[t], on = state.fTag === t, n = counts[t] || 0;
-            return '<button data-act="tagfilter" data-tag="' + t + '" title="Sía eftir merkinu ' + esc(d.label) + '" ' +
-              'style="font:inherit;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:99px;cursor:pointer;' +
-              'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + '">' +
-              d.emoji + ' ' + esc(d.label) + ' <span style="opacity:.75">' + n + '</span></button>';
-          }).join('') +
-        '</div>';
-      })();
+      '</div>';
+    // (Tag-sían með teljara er nú efst — kemur í stað gömlu type-síuraðar.)
   }
 
   function renderList() {
@@ -791,8 +788,10 @@
       '<div class="vb-main">' +
         '<div class="vb-title">' + esc(r.title || '(án titils)') + '</div>' +
         '<div class="vb-meta">' +
-          typeChip(r.type) +
-          tags.map(t => tagChip(t, true)).join('') +
+          // 2026-07-10 (ósk Agnars — „hafðu bara tag"): sýna MERKI þegar þau eru
+          // til. Falla á sjálfvirka type-chippann AÐEINS þegar engin merki eru
+          // (svo email-raðir án merkja séu ekki alveg flokkslausar).
+          (tags.length ? tags.map(t => tagChip(t, true)).join('') : typeChip(r.type)) +
           (r._vd ? '<span class="vb-tag">úr Verkdagbók</span>' : '') +
           (r.customer_nafn ? '<span class="vb-cust">🏢 ' + esc(r.customer_nafn) + '</span>' : '') +
           (di ? '<span class="vb-due' + (od ? ' od' : '') + '">📅 ' + esc(di.label) + '</span>' : '') +
