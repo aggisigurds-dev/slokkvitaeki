@@ -135,7 +135,7 @@
   }
 
   // ── state ────────────────────────────────────────────────────────────────
-  const QKEY = '_vb_queue', FKEY = '_vb_filter';
+  const QKEY = '_vb_queue', FKEY = '_vb_filter', SKEY = '_vb_sort';
   const state = {
     items: [],          // thjonustubeidni rows
     vd: [],             // open verkdagbok rows (folded in)
@@ -143,11 +143,15 @@
     loading: false,
     queue: (function () { try { return localStorage.getItem(QKEY) || 'idag'; } catch (_) { return 'idag'; } })(),
     filter: (function () { try { return localStorage.getItem(FKEY) || ''; } catch (_) { return ''; } })(),
+    // 2026-07-10 (ósk Agnars): röðunar-valkostur — 'snjall' (sjálfgefið, áríðandi/
+    // gjalddagi/forgangur eins og áður) eða 'nyjast' (hrein dagsetningarröð, nýjast efst).
+    sort: (function () { try { return localStorage.getItem(SKEY) || 'snjall'; } catch (_) { return 'snjall'; } })(),
     search: '',
     addType: 'annad',
     expandedId: null
   };
   function setQueue(q) { state.queue = q; try { localStorage.setItem(QKEY, q); } catch (_) {} }
+  function setSort(v) { state.sort = v; try { localStorage.setItem(SKEY, v); } catch (_) {} }
   function setFilter(f) { state.filter = f; try { localStorage.setItem(FKEY, f); } catch (_) {} }
 
   // verkdagbok rows → pseudo work-items (read-through; structure stays in #04).
@@ -274,6 +278,11 @@
     let r = allItems().filter(x => inQueue(x) && inFilter(x));
     const s = state.search.trim().toLowerCase();
     if (s) r = r.filter(x => [x.customer_nafn, x.title, x.notes].some(f => (f || '').toLowerCase().includes(s)));
+    if (state.sort === 'nyjast') {
+      // Hrein dagsetningarröð — nýjast efst (ósk Agnars 2026-07-10).
+      r.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      return r;
+    }
     const prio = { har: 0, venjulegur: 1, lagur: 2 };
     r.sort((a, b) => {
       // áríðandi efst, svo útrunnið/gjalddagi, svo forgangur, svo nýjast.
@@ -585,6 +594,10 @@
       '<div style="display:flex;gap:6px;flex-wrap:wrap;width:100%;margin-top:4px">' +
         f('', 'Allt') + FILTERS.map(x => f(x.v, x.label)).join('') +
         '<span style="flex:1"></span>' +
+        // Röðun (2026-07-10): snjallröðun (áríðandi/gjalddagi eins og áður) eða
+        // hrein dagsetningarröð með nýjast efst. Valið geymist milli heimsókna.
+        '<button class="vb-fchip' + (state.sort !== 'nyjast' ? ' active' : '') + '" data-act="sort" data-s="snjall" title="Áríðandi og gjalddagar efst (sjálfgefið)">⭐ Snjallröðun</button>' +
+        '<button class="vb-fchip' + (state.sort === 'nyjast' ? ' active' : '') + '" data-act="sort" data-s="nyjast" title="Raða eftir dagsetningu — nýjast efst">🕒 Nýjast efst</button>' +
         '<button class="vb-fchip" data-act="import" title="Flytja inn opin atriði úr gömlu Verkefni + Þjónustuverk listunum">⬇︎ Flytja inn úr gömlu</button>' +
       '</div>';
   }
@@ -685,6 +698,7 @@
       }
       if (act === 'queue') { setQueue(t.getAttribute('data-q')); renderControls(); renderList(); return; }
       if (act === 'filter') { setFilter(t.getAttribute('data-f')); renderControls(); renderList(); return; }
+      if (act === 'sort') { setSort(t.getAttribute('data-s')); renderControls(); renderList(); return; }
       if (act === 'import') { importOld(); return; }
       if (act === 'noexpand') { e.stopPropagation(); return; }
       if (act === 'status') { e.stopPropagation(); advance(id); return; }
