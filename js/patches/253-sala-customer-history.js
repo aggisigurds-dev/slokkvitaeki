@@ -247,6 +247,20 @@
       }
     } catch (_) {}
 
+    // 3) Útfyllt skjöl úr Samningum (patch 94 „Vista í kerfi" → skjalasnidmat_filled)
+    //    — samningar, prófunarskýrslur o.fl. matched á kt eða nafn (2026-07-10).
+    let filled = [];
+    try {
+      const all = (window.DocTemplates && DocTemplates.listFilled && DocTemplates.listFilled()) || [];
+      const nn = String(idty.nafn || '').trim().toLowerCase();
+      filled = all.filter(r => {
+        const rk = ktDigits(r.kennitala);
+        if (ktd.length === 10 && ktd !== '9999999999' && rk === ktd) return true;
+        return nn && String(r.customer || '').trim().toLowerCase() === nn;
+      });
+    } catch (_) {}
+    const fillYear = r => { const d = new Date(r.created_at || r.updated_at || 0); return isNaN(d) ? '' : String(d.getFullYear()); };
+
     const attYear = a => { const y = a.f && a.f.year; if (y && y !== '0') return String(y); const m = String((a.f && a.f.name) || '').match(/\b(20[2-3][0-9])\b/); return m ? m[1] : ''; };
     const docKind = a => { const k = a.f && a.f.kind; if (k === 'skyrsla' || k === 'reikningur') return k; const n = String((a.f && a.f.name) || '').toLowerCase(); if (/reikning|\br-?\d/.test(n)) return 'reikningur'; if (/úttekt|uttekt|skýrsl|skyrsl/.test(n)) return 'skyrsla'; return 'annad'; };
 
@@ -255,8 +269,10 @@
       const yStr = String(curYear);
       const d2 = showAll ? docs : docs.filter(x => String(x.year || '') === yStr);
       const a2 = showAll ? atts : atts.filter(a => attYear(a) === yStr);
+      const f2 = showAll ? filled : filled.filter(r => fillYear(r) === yStr);
       const otherCount = (docs.length - docs.filter(x => String(x.year || '') === yStr).length)
-                       + (atts.length - atts.filter(a => attYear(a) === yStr).length);
+                       + (atts.length - atts.filter(a => attYear(a) === yStr).length)
+                       + (filled.length - filled.filter(r => fillYear(r) === yStr).length);
       const items = [];
       d2.forEach(x => items.push({
         sort: (x.doc_type === 'uttektarskyrsla' ? '0' : '1') + (x.year || ''),
@@ -268,6 +284,11 @@
         sort: (docKind(a) === 'skyrsla' ? '0' : docKind(a) === 'reikningur' ? '1' : '2') + attYear(a),
         html: docRow(docKind(a) === 'skyrsla' ? '📄' : docKind(a) === 'reikningur' ? '🧾' : '📎',
           esc((a.f && a.f.name) || 'Skjal'), (attYear(a) || '') + ' · Viðhengi', '_sch-att', a.coId + '|' + ((a.f && a.f.path) || ''))
+      }));
+      f2.forEach(r => items.push({
+        sort: '3' + fillYear(r),
+        html: docRow('📑', esc(r.name || r.template_name || 'Skjal'),
+          fillYear(r) + ' · Útfyllt skjal (Samningar)', '_sch-fill', r.id)
       }));
       items.sort((x, y) => x.sort.localeCompare(y.sort));
       holder.innerHTML =
@@ -285,6 +306,9 @@
         const [coId, path] = String(b.dataset.v).split('|');
         const f = ((window.CompanyAttachments && CompanyAttachments.list && CompanyAttachments.list(coId)) || []).find(x => x.path === path);
         if (f && window.CompanyAttachments.openPreview) CompanyAttachments.openPreview(f);
+      }));
+      holder.querySelectorAll('._sch-fill').forEach(b => b.addEventListener('click', () => {
+        if (window.DocTemplates && DocTemplates.openFilled) DocTemplates.openFilled(b.dataset.v);
       }));
     }
     function docRow(icon, label, sub, cls, val) {
