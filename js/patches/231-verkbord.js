@@ -592,32 +592,45 @@
         border:1px solid rgba(20,24,34,.12); border-radius:10px; padding:9px 13px;
         background:#fff; color:#141822; outline:none; }
       #view-verkbord .vb-search:focus { border-color:#2f5fe0; box-shadow:0 0 0 3px rgba(47,95,224,.14); }
-      #view-verkbord .vb-list { display:flex; flex-direction:column; gap:9px; }
-      /* Row — left accent bar, soft surface shadow */
-      #view-verkbord .vb-row { background:#fff; border:1px solid rgba(20,24,34,.08);
-        border-left:3px solid #cbd5e1; border-radius:12px; padding:13px 15px;
-        display:flex; align-items:flex-start; gap:12px; cursor:pointer;
-        box-shadow:0 2px 6px -4px rgba(25,35,60,.12);
-        transition:background .12s ease, box-shadow .12s ease; }
-      #view-verkbord .vb-row:hover { background:#f3f6fc; }
-      #view-verkbord .vb-row.imp { border-left-color:#be123c; background:linear-gradient(135deg,#fff1f2,#fff 60%); }
+      #view-verkbord .vb-list { display:flex; flex-direction:column; gap:10px; }
+      /* Row — hlutlaus, rólegur. Vinstri-kantur gefur stöðu-lit án þess að lita allt spjaldið. */
+      #view-verkbord .vb-row { background:#fff; border:1px solid rgba(20,24,34,.07);
+        border-left:3px solid #d7dce4; border-radius:13px; padding:14px 16px;
+        display:flex; align-items:flex-start; gap:13px; cursor:pointer;
+        box-shadow:0 1px 3px rgba(25,35,60,.06);
+        transition:background .12s ease, box-shadow .12s ease, border-color .12s ease; }
+      #view-verkbord .vb-row:hover { background:#f7f9fd; box-shadow:0 3px 10px -5px rgba(25,35,60,.16); }
+      /* Áríðandi (⭐) = mjór rauður kantur, EKKI rauð fylling á öllu spjaldinu. */
+      #view-verkbord .vb-row.imp { border-left-color:#e11d48; }
+      /* Útrunnið = amber kantur (mildara en rautt á öllu). */
+      #view-verkbord .vb-row.od { border-left-color:#f59e0b; }
+      #view-verkbord .vb-row.imp.od { border-left-color:#e11d48; }
       #view-verkbord .vb-row.open { box-shadow:0 10px 28px -16px rgba(25,35,60,.28); border-left-color:#2f5fe0; }
-      #view-verkbord .vb-dot { width:26px; height:26px; min-width:26px; border-radius:50%; border:3px solid;
-        margin-top:1px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:13px; background:#fff; }
+      #view-verkbord .vb-dot { width:22px; height:22px; min-width:22px; border-radius:50%; border:2.5px solid;
+        margin-top:2px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:12px; background:#fff; }
       #view-verkbord .vb-main { flex:1; min-width:0; }
-      #view-verkbord .vb-title { font-size:14.5px; font-weight:600; color:#11141c; line-height:1.4; word-break:break-word; }
+      #view-verkbord .vb-title { font-size:14.5px; font-weight:650; color:#111827; line-height:1.35; word-break:break-word;
+        display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
       #view-verkbord .vb-row.done .vb-title { text-decoration:line-through; color:#9098a6; }
-      #view-verkbord .vb-meta { display:flex; gap:7px; flex-wrap:wrap; align-items:center; margin-top:6px; }
+      #view-verkbord .vb-meta { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:7px; }
       /* Type chip — spec §3 shape */
-      #view-verkbord .vb-type { font-size:11.5px; font-weight:600; padding:3px 9px; border-radius:7px; border:1px solid; white-space:nowrap; }
-      #view-verkbord .vb-cust { font-size:12px; color:#5b6472; }
-      /* Due chip — neutral; .od = overdue red */
-      #view-verkbord .vb-due { font-family:'Space Mono', monospace; font-size:11.5px; font-weight:600;
-        padding:3px 9px; border-radius:7px; background:#f1f5f9; color:#64748b; border:1px solid #e2e8f0; }
-      #view-verkbord .vb-due.od { background:#fff1f2; color:#be123c; border-color:#fecdd3; }
-      #view-verkbord .vb-sum { font-size:12px; color:#6d28d9; margin-top:6px; line-height:1.4;
-        background:#f5f3ff; padding:6px 10px; border-radius:8px; border:1px solid #ddd6fe; }
-      #view-verkbord .vb-star { font-size:18px; cursor:pointer; line-height:1; margin-top:1px; opacity:.85; }
+      #view-verkbord .vb-type { font-size:11px; font-weight:600; padding:2.5px 9px; border-radius:7px; border:1px solid; white-space:nowrap; }
+      #view-verkbord .vb-cust { font-size:12px; color:#4b5563; font-weight:500; }
+      #view-verkbord .vb-cust::before { content:''; }
+      /* Due chip — neutral; .od = overdue amber */
+      #view-verkbord .vb-due { font-family:'Space Mono', monospace; font-size:11px; font-weight:600;
+        padding:2.5px 8px; border-radius:7px; background:#f1f5f9; color:#64748b; border:1px solid #e6eaf0; }
+      #view-verkbord .vb-due.od { background:#fffbeb; color:#b45309; border-color:#fde68a; }
+      /* Innihaldslína — ✨ samantekt: hrein, létt, hámark 2 línur (enginn þungur kassi). */
+      #view-verkbord .vb-sum { font-size:12.5px; color:#4338ca; margin-top:8px; line-height:1.5;
+        padding-left:20px; position:relative;
+        display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+      #view-verkbord .vb-sum::before { content:'✨'; position:absolute; left:0; top:0; font-size:12px; opacity:.9; }
+      /* Rá forsýn (þegar engin samantekt) — dauf, ein lína. */
+      #view-verkbord .vb-body { font-size:12px; color:#8a93a5; margin-top:7px; line-height:1.45;
+        display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
+      #view-verkbord .vb-star { font-size:17px; cursor:pointer; line-height:1; margin-top:1px; opacity:.5; }
+      #view-verkbord .vb-star:hover { opacity:1; }
       #view-verkbord .vb-tag { font-size:10px; font-weight:700; color:#b45309; background:#fffbeb; padding:2px 7px; border-radius:6px; border:1px solid #fde68a; }
       /* Editor — inside the row, dashed top border */
       #view-verkbord .vb-ed { margin-top:12px; border-top:1px dashed rgba(20,24,34,.12); padding-top:12px; display:grid; gap:10px; }
@@ -766,10 +779,12 @@
     const od = isOverdue(r);
     const open = state.expandedId === r.id;
     const done = !isOpen(r);
-    const dotColor = (r.important || od) ? '#dc2626' : st.dot;
+    // Dot = hrein STAÐA (nýtt/í vinnslu/…). Áríðandi + útrunnið sjást á vinstri-
+    // kantinum (rautt/amber), ekki líka á dotinu — annars tvöföld/ruglandi merking.
+    const dotColor = st.dot;
     const compact = state.viewMode === 'thett' && !open;
     const tags = rowTags(r);
-    const cls = 'vb-row' + (r.important ? ' imp' : '') + (open ? ' open' : '') + (done ? ' done' : '') + (compact ? ' thett' : '');
+    const cls = 'vb-row' + (r.important ? ' imp' : '') + (od && !done ? ' od' : '') + (open ? ' open' : '') + (done ? ' done' : '') + (compact ? ' thett' : '');
     let html = '<div class="' + cls + '" data-id="' + esc(r.id) + '" data-act="expand">' +
       '<div class="vb-dot" data-act="status" data-id="' + esc(r.id) + '" title="' + esc(st.label) + ' — smella til að færa áfram" ' +
         'style="border-color:' + dotColor + ';color:' + dotColor + '">' + (done ? '✓' : '') + '</div>' +
@@ -783,9 +798,14 @@
           (di ? '<span class="vb-due' + (od ? ' od' : '') + '">📅 ' + esc(di.label) + '</span>' : '') +
           '<span class="vb-cust" style="color:' + st.color + '">' + esc(st.label) + '</span>' +
         '</div>' +
-        // ▤ Ítarlegt: samantekt + nótu-forsýn sjást; ☰ Þétt: hvorugt (ein lína).
-        (!compact && r.summary ? '<div class="vb-sum">✨ ' + esc(r.summary) + '</div>' : '') +
-        (!compact && state.viewMode !== 'thett' && r.notes ? '<div style="font-size:12px;color:#5b6472;margin-top:3px;white-space:pre-wrap;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + esc(cleanPreview(r.notes)) + '</div>' : '') +
+        // Ein hrein innihaldslína (2026-07-10 — laga „chaos"): ✨ samantekt EF
+        // hún er til (hún er hreina útgáfan), ANNARS stutt forsýn úr textanum.
+        // ALDREI bæði — það var tvítekningin sem gerði kortin að vegg af texta.
+        (!compact ? (
+          r.summary
+            ? '<div class="vb-sum">' + esc(r.summary) + '</div>'
+            : (state.viewMode !== 'thett' && r.notes ? '<div class="vb-body">' + esc(cleanPreview(r.notes)) + '</div>' : '')
+        ) : '') +
         (open ? renderEditor(r) : '') +
       '</div>' +
       // Hægri-dálkur: ⭐ áríðandi + ✕ fljót-eyðing (2026-07-10, ósk Agnars —
