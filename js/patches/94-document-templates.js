@@ -1625,6 +1625,9 @@
     open: openTemplateForm,
     openForCompany,
     openFilled,
+    // 2026-07-10: leyfa öðrum pötchum (265 kúnnaspjald, 253 Fyrri viðskipti)
+    // að fletta upp útfylltum skjölum eftir kúnna — þau geyma customer+kennitala.
+    listFilled: getFilledList,
     edit: openTemplateEditor,
     cloneSeed: cloneSeedTemplate,   // For UIs that want "edit a seed" semantics
     list: getTemplates,
