@@ -677,6 +677,28 @@
       '  .cw-wgroup-head { flex-wrap: wrap !important; }' +
       '  .cw-wgroup-name { width: auto !important; flex: 1 1 auto !important; }' +
       '  .cw-wtiles { flex-basis: 100% !important; margin-top: 4px !important; }' +
+      '}' +
+      // 2026-07-10 (verkefnalisti 39b29080): tablet — in ▦ Tafla viewmode (and
+      // mid-width desktop windows) the 3-column board leaves each Tilbúin card
+      // ~330-530px, and the tablet browser's font scaling makes the 3 actions
+      // (← Verkstæði · Hilla · Sótt ✓) eat the whole row: the info column
+      // collapsed to a sliver so "R-000494" wrapped one character per line and
+      // the buttons spilled past the card edge. Same treatment as the ≤640px
+      // phone rule above: info takes the full first row, buttons flow onto
+      // their own row (44px targets). Keyed off html[data-viewmode="table"]
+      // (the toggle doesn't narrow the viewport, so a media query alone never
+      // fires on the tablet) + a plain width fallback for un-toggled windows.
+      'html[data-viewmode="table"] .cw-rcard { flex-wrap: wrap !important; gap: 8px 6px !important; align-items: center !important; }' +
+      'html[data-viewmode="table"] .cw-rcard-info { flex: 1 1 100% !important; }' +
+      'html[data-viewmode="table"] .cw-rcard-name { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }' +
+      'html[data-viewmode="table"] .cw-rcard > button { flex: 1 1 auto !important; min-height: 44px !important; font-size: 13px !important; margin-right: 0 !important; }' +
+      'html[data-viewmode="table"] .cw-rcard > select[data-shelf-dd] { flex: 1 1 auto !important; min-height: 44px !important; }' +
+      '@media (min-width: 641px) and (max-width: 1400px) {' +
+      '  .cw-rcard { flex-wrap: wrap !important; gap: 8px 6px !important; align-items: center !important; }' +
+      '  .cw-rcard-info { flex: 1 1 100% !important; }' +
+      '  .cw-rcard-name { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }' +
+      '  .cw-rcard > button { flex: 1 1 auto !important; min-height: 40px !important; font-size: 13px !important; margin-right: 0 !important; }' +
+      '  .cw-rcard > select[data-shelf-dd] { flex: 1 1 auto !important; min-height: 40px !important; }' +
       '}';
     document.head.appendChild(css);
   }
