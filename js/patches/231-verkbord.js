@@ -963,7 +963,7 @@
       const rest = rows.filter(x => !isWaiting(x) && !isArchived(x));
       const old = rows.filter(isArchived);
       html =
-        (wait.length ? sec('🔴 Bíða svars — elstu efst') + wait.slice(0, cap).map(renderRow).join('') : '') +
+        (wait.length ? sec('🔴 Bíða svars' + (state.sort === 'nyjast' ? ' — nýjast efst (þín röðun)' : ' — elstu efst')) + wait.slice(0, cap).map(renderRow).join('') : '') +
         (rest.length ? sec(wait.length ? 'Svarað & upplýsingar' : 'Innhólf') + rest.map(renderRow).join('') : '') +
         (!wait.length && !rest.length && !state.showOld ? '<div class="vb-empty">🎉 Innhólfið er tómt.</div>' : '') +
         (c.geymsla || old.length
