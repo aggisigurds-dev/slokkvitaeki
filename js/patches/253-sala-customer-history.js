@@ -125,16 +125,29 @@
     // gerir þá leitanlega hér. Sölur sem fóru gegnum payday-push (dk_invoice_id
     // = Payday id/númer) fá PD-númerið Á SÍNA röð í stað þess að tvíbirtast.
     let pdRows = [];
+    const PD_SEL = 'payday_id,number,customer_name,amount_total,created_date,due_date,paid_date,status,reference,description';
     if (ktd.length === 10 && ktd !== '9999999999') {
       try {
         const pr = await sb.from('payday_invoices_slokk')
-          .select('payday_id,number,customer_name,amount_total,created_date,due_date,paid_date,status,reference,description')
+          .select(PD_SEL)
           .eq('kt', ktd)
           .order('created_date', { ascending: false })
           .limit(300);
         if (!pr.error) pdRows = pr.data || [];
       } catch (_) {}
     }
+    // Fallback fyrir kt-lausa Payday-kúnna (t.d. walk-in-ísh): sækja líka PD-raðir
+    // þar sem reference = R-númer sölanna sem fundust (5/121 raðir án kt í speglinum).
+    try {
+      const nums = rows.map(s => String(s.num || '').trim()).filter(Boolean).slice(0, 200);
+      if (nums.length) {
+        const pr2 = await sb.from('payday_invoices_slokk').select(PD_SEL).in('reference', nums).limit(300);
+        if (!pr2.error && pr2.data) {
+          const seen = new Set(pdRows.map(p => p.payday_id));
+          pr2.data.forEach(p => { if (!seen.has(p.payday_id)) pdRows.push(p); });
+        }
+      }
+    } catch (_) {}
     // Tengja PD-númer við sölur sem eiga þau: payday-push skrifar dk_invoice_id,
     // og Payday-`reference` ber R-númerið (sannreynt live 2026-07-10 — t.d.
     // PD 118 með reference "R-000454") svo num↔reference tengir líka kröfur
