@@ -799,7 +799,7 @@
       #view-verkbord .vb-ed input, #view-verkbord .vb-ed select, #view-verkbord .vb-ed textarea {
         font: inherit; font-size: 14px; border: 1px solid rgba(20,24,34,.14); border-radius: 9px;
         padding: 9px 12px; width: 100%; box-sizing: border-box; background: #eef1f6; color: #141822; outline: none; }
-      #view-verkbord .vb-ed textarea { min-height: 74px; resize: vertical; line-height: 1.5; }
+      #view-verkbord .vb-ed textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
       #view-verkbord .vb-ed-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
       #view-verkbord .vb-ed-actions { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
       #view-verkbord .vb-btn { font: inherit; font-size: 12.5px; font-weight: 600;
@@ -1034,14 +1034,18 @@
     const open = state.expandedId === r.id;
     const done = !isOpen(r);
     const compact = state.viewMode === 'thett' && !open;
+    // Breiðara viewið (▮ Ítarlegt, líka sjálfgefna „venjulegt"): skýringin fær
+    // allt að 4 línur í stað einnar (ósk Agnars 11.7.) — Þétt heldur einni.
+    const wide = state.viewMode !== 'thett';
     const di = dueInfo(r.due_at);
     const od = isOverdue(r);
     const tags = dispTags(r);
     // Innihaldslínan: nýjasta þráðasvar → ✨ samantekt → nótu-forsýn.
     const tl = state.threadLatest[r.id];
+    const pvMax = state.viewMode !== 'thett' ? 620 : 260;
     const desc = tl
-      ? '↩ ' + (tl.mine ? 'Við svöruðum' : tl.from) + ' · ' + fmtShortDate(tl.at) + ' — ' + cleanPreview(tl.text)
-      : (r.summary ? '✨ ' + r.summary : cleanPreview(r.notes || ''));
+      ? '↩ ' + (tl.mine ? 'Við svöruðum' : tl.from) + ' · ' + fmtShortDate(tl.at) + ' — ' + cleanPreview(tl.text, pvMax)
+      : (r.summary ? '✨ ' + r.summary : cleanPreview(r.notes || '', pvMax));
     const descColor = tl ? '#0f766e' : (r.summary && /^✅|^⚠️/.test(r.summary) ? (/^⚠️/.test(r.summary) ? '#be123c' : '#047857') : '#5b6472');
     // Litlar stöðu-flögur við lýsinguna (bíð-dagar / svarað / geymsla / gjalddagi)
     const flags =
@@ -1063,7 +1067,9 @@
         '<div style="flex:1;min-width:0">' +
           '<div style="font-size:14px;font-weight:600;color:#11141c;' + (compact ? 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis' : 'line-height:1.35') + '">' +
             (done ? '<s style="color:#9098a6">' + esc(r.title || '(án titils)') + '</s>' : esc(r.title || '(án titils)')) + '</div>' +
-          (!compact && desc ? '<div style="font-size:12.5px;color:' + descColor + ';margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(desc) + '</div>' : '') +
+          (!compact && desc ? '<div style="font-size:12.5px;color:' + descColor + ';margin-top:2px;' +
+            (wide ? 'display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;overflow-wrap:break-word;line-height:1.5'
+                  : 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis') + '">' + esc(desc) + '</div>' : '') +
           (!compact ? '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + linkLine + flags +
             (r._vd ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#fef3c7;color:#92400e;border:1px solid #fde68a">📓 úr Verkdagbók</span>' : '') +
           '</div>' : '') +
@@ -1085,8 +1091,8 @@
   }
   // Nótu-forsýn: fjarlægja langar slóðir (mailchimp/gallery o.fl.) sem gera
   // sjálfvirku póst-tilkynningarnar ólæsilegar á listanum.
-  function cleanPreview(s) {
-    return String(s || '').replace(/https?:\/\/\S+/g, '🔗').replace(/\[\s*🔗\s*\]/g, '🔗').replace(/\s+/g, ' ').trim().slice(0, 260);
+  function cleanPreview(s, max) {
+    return String(s || '').replace(/https?:\/\/\S+/g, '🔗').replace(/\[\s*🔗\s*\]/g, '🔗').replace(/\s+/g, ' ').trim().slice(0, max || 260);
   }
   function fmtShortDate(iso) {
     const d = new Date(iso);
@@ -1440,8 +1446,15 @@
     renderControls(); renderList(); refreshBadge();
   }
   function wireEditor(rowEl) {
+    // Nótu-svæðið stækkar sjálft að innihaldinu (upp að ~60% skjáhæðar) og
+    // heldur áfram að vaxa á meðan skrifað er; resize:vertical leyfir handvirkt.
     const ta = rowEl.querySelector('textarea[data-field="notes"]');
-    if (ta) { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, 320) + 'px'; }
+    if (ta) {
+      const cap = Math.max(320, Math.round(window.innerHeight * 0.6));
+      const grow = () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, cap) + 'px'; };
+      grow();
+      ta.addEventListener('input', grow);
+    }
   }
   function fillCompanyList() {
     if (!state.companies) return;
