@@ -283,14 +283,15 @@
     // 2026-07-10 (verkefnalisti 962a74f0): bakaðir línu-afslættir ("· −N% afsl.")
     // endurreiknaðir úr lýsingunum svo afslátturinn sjáist í samtölunum —
     // upplýsinga-lína eingöngu, engin ný stærðfræði.
-    var lineDiscEx = 0, linePcts = [];
+    var lineDiscEx = 0, linePcts = [], billableLines = 0, discLines = 0;
     _pp.lines.forEach(function (l) {
       var ex = (Number(l.qty) || 0) * (Number(l.unit_price_ex_vat) || 0);
       if (ex <= 0) return;
+      billableLines++;
       var m = String(l.desc || '').match(/·\s*[−-]\s*(\d+(?:[.,]\d+)?)\s*%\s*afsl/i);
       if (m) {
         var p = parseFloat(m[1].replace(',', '.'));
-        if (p > 0 && p < 100) { lineDiscEx += ex * (p / (100 - p)); if (linePcts.indexOf(p) < 0) linePcts.push(p); }
+        if (p > 0 && p < 100) { lineDiscEx += ex * (p / (100 - p)); if (linePcts.indexOf(p) < 0) linePcts.push(p); discLines++; }
       }
     });
     // applyAfsl = the sale-level discount still to subtract here (0 when the
@@ -365,7 +366,9 @@
           var _r = Math.round(_p);
           if (_r > 0 && Math.abs(_p - _r) < 0.05) showPct = _r;
         }
-      } else if (lineDiscEx > 0.5 && saleDiscEx <= 0.005 && linePcts.length === 1) {
+      } else if (lineDiscEx > 0.5 && saleDiscEx <= 0.005 && linePcts.length === 1 && discLines === billableLines) {
+        // 2026-07-10 (📣 962a74f0): prósentan aðeins þegar sami afsláttur nær
+        // yfir ALLA liðina — annars bara „Afsláttur" + upphæð (villandi 20%).
         showPct = linePcts[0];
       }
       totRow('Samtals fyrir afslátt (án VSK):', fmtKr(rawExBefore + lineDiscEx));
