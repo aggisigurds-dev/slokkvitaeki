@@ -512,14 +512,95 @@
     const walkinPhone = document.getElementById('_ups-walkin-phone');
     if (!search) return;
 
+    // ── Reikningsnúmera-leit (2026-07-11, ósk Agnars): sláðu Payday-númer
+    // (t.d. 108271) eða R-númer í SAMA leitarreit → reikningurinn finnst úr
+    // payday_invoices_slokk speglinum + solur og smellur opnar Fyrri viðskipti
+    // kúnnans (þar sést reikningurinn og öll sagan). Async, keyrir samhliða
+    // kúnnaleitinni og bætir „🧾 Reikningar"-kafla EFST í fellilistann.
+    let invHTML = '', invForQ = '', invTimer = null;
+    function renderInvSection() {
+      if (!invHTML || search.value.trim() !== invForQ) return;
+      if (results.querySelector('#_ups-invsec')) return;
+      results.insertAdjacentHTML('afterbegin', invHTML);
+      results.style.display = 'block';
+      results.querySelectorAll('._ups-inv').forEach(row => {
+        row.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const kt = row.dataset.kt || '', nafn = row.dataset.nafn || '';
+          results.style.display = 'none';
+          if (window.SalaCustomerHistory && SalaCustomerHistory.open) {
+            const fy = getCompanies().find(c => String(c.kennitala || '').replace(/[^0-9]/g, '') === kt);
+            SalaCustomerHistory.open(fy
+              ? { id: fy.id, source: 'fyrirtaeki', kt: fy.kennitala || kt, nafn: fy.nafn }
+              : { id: '', source: '', kt: kt, nafn: nafn });
+          }
+        });
+        row.addEventListener('mouseenter', () => { row.style.background = '#f3f6fc'; });
+        row.addEventListener('mouseleave', () => { row.style.background = ''; });
+      });
+    }
+    async function invoiceSearch(q) {
+      const d = q.replace(/[^0-9]/g, '');
+      const rish = /^r[-\s]?\d+/i.test(q);
+      // Payday-númerin eru STUTT (1–118 í dag): hrein 1–3 stafa tala slegin inn
+      // = nákvæm samsvörun á númerinu. 4–8 stafir = innihaldsleit (R-númer með
+      // núllum o.þ.h.). Kennitölur (9–10 stafir) trufla ekki.
+      const shortNum = !rish && d.length >= 1 && d.length <= 3 && q === d;
+      const longNum = rish || (d.length >= 4 && d.length <= 8);
+      if (!shortNum && !longNum) { invHTML = ''; return; }
+      const SB = window.DB && DB.sb; if (!SB) return;
+      try {
+        let pdQ = SB.from('payday_invoices_slokk')
+          .select('number,reference,customer_name,kt,amount_total,status,created_date,paid_date');
+        pdQ = shortNum ? pdQ.eq('number', d) : pdQ.or('number.ilike.%' + d + '%,reference.ilike.%' + d + '%');
+        const [pd, sl] = await Promise.all([
+          pdQ.order('created_date', { ascending: false }).limit(5),
+          longNum
+            ? SB.from('solur').select('num,customer_nafn,customer_kt,samtals,created_at')
+                .eq('status', 'final').ilike('num', '%' + d + '%')
+                .order('created_at', { ascending: false }).limit(4)
+            : Promise.resolve({ data: [] })
+        ]);
+        if (search.value.trim() !== q) return; // úrelt svar
+        const rows = [];
+        ((pd && pd.data) || []).forEach(p => {
+          const paid = p.paid_date || /paid|greid/i.test(p.status || '');
+          rows.push('<div class="_ups-inv" data-kt="' + String(p.kt || '').replace(/[^0-9]/g, '') + '" data-nafn="' + esc(p.customer_name || '') + '" ' +
+            'style="padding:9px 14px;cursor:pointer;border-bottom:1px solid #ede9fe;font-size:13px;background:#faf9ff">' +
+            '<div style="font-weight:700;color:#5b21b6">PD ' + esc(p.number || '') + (p.reference ? ' <span style="font-weight:600;color:#7c6aa8">· ' + esc(p.reference) + '</span>' : '') +
+              ' <span style="font-size:9px;background:' + (paid ? '#dcfce7;color:#166534' : '#fffbeb;color:#b45309') + ';padding:1px 6px;border-radius:99px;font-weight:700;margin-left:4px">' + (paid ? 'Greitt' : 'Ógreitt') + '</span></div>' +
+            '<div style="font-size:11px;color:#64748b">' + esc(p.customer_name || '') + ' · ' + Math.round(Number(p.amount_total) || 0).toLocaleString('is-IS') + ' kr · ' + esc(p.created_date || '') + '</div>' +
+          '</div>');
+        });
+        ((sl && sl.data) || []).forEach(s2 => {
+          const already = ((pd && pd.data) || []).some(p => String(p.reference || '').replace(/\D/g, '').endsWith(String(s2.num || '').replace(/\D/g, '')));
+          if (already) return;
+          rows.push('<div class="_ups-inv" data-kt="' + String(s2.customer_kt || '').replace(/[^0-9]/g, '') + '" data-nafn="' + esc(s2.customer_nafn || '') + '" ' +
+            'style="padding:9px 14px;cursor:pointer;border-bottom:1px solid #e2e8f0;font-size:13px">' +
+            '<div style="font-weight:700;color:#0f172a">' + esc(s2.num || '') + '</div>' +
+            '<div style="font-size:11px;color:#64748b">' + esc(s2.customer_nafn || '') + ' · ' + Math.round(Number(s2.samtals) || 0).toLocaleString('is-IS') + ' kr · ' + String(s2.created_at || '').slice(0, 10) + '</div>' +
+          '</div>');
+        });
+        invForQ = q;
+        invHTML = rows.length
+          ? '<div id="_ups-invsec"><div style="padding:6px 14px;font-size:10px;font-weight:800;letter-spacing:.1em;color:#7c6aa8;background:#f5f3ff;border-bottom:1px solid #ede9fe">🧾 REIKNINGAR</div>' + rows.join('') + '</div>'
+          : '';
+        renderInvSection();
+      } catch (_) { /* þögul — kúnnaleitin heldur sínu striki */ }
+    }
+    function runSearchPlus() { runSearch(); renderInvSection(); }
+
     search.addEventListener('input', () => {
       const q = search.value.trim();
+      invHTML = ''; invForQ = '';
       if (!q) { results.style.display = 'none'; results.innerHTML = ''; return; }
+      clearTimeout(invTimer);
+      invTimer = setTimeout(() => invoiceSearch(q), 220);
       // Ensure data is loaded
       prefetchCustomers().then(() => {
-        runSearch();
+        runSearchPlus();
       });
-      runSearch();
+      runSearchPlus();
     });
     // On focus, kick off a background refresh so renames / new customers
     // appear without the user having to reload the page. TTL inside
@@ -527,7 +608,7 @@
     search.addEventListener('focus', () => {
       prefetchCustomers().then(() => {
         // If the user is mid-search, re-run with fresh data.
-        if (search.value.trim()) runSearch();
+        if (search.value.trim()) runSearchPlus();
       });
     });
     // Enter → pick first visible result (or fall back to RSK lookup if 10 digits)
