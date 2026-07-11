@@ -799,7 +799,7 @@
       #view-verkbord .vb-ed input, #view-verkbord .vb-ed select, #view-verkbord .vb-ed textarea {
         font: inherit; font-size: 14px; border: 1px solid rgba(20,24,34,.14); border-radius: 9px;
         padding: 9px 12px; width: 100%; box-sizing: border-box; background: #eef1f6; color: #141822; outline: none; }
-      #view-verkbord .vb-ed textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
+      #view-verkbord .vb-ed textarea { min-height: 140px !important; resize: vertical !important; line-height: 1.5; }
       #view-verkbord .vb-ed-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
       #view-verkbord .vb-ed-actions { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
       #view-verkbord .vb-btn { font: inherit; font-size: 12.5px; font-weight: 600;
@@ -1450,8 +1450,13 @@
     // heldur áfram að vaxa á meðan skrifað er; resize:vertical leyfir handvirkt.
     const ta = rowEl.querySelector('textarea[data-field="notes"]');
     if (ta) {
-      const cap = Math.max(320, Math.round(window.innerHeight * 0.6));
-      const grow = () => { ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight + 2, cap) + 'px'; };
+      // setProperty(...,'important') — patch 245 (Brunastál) setur height:auto
+      // !important á allar textareur og vinnur annars á venjulegu inline-height.
+      const cap = Math.max(360, Math.round(window.innerHeight * 0.65));
+      const grow = () => {
+        ta.style.setProperty('height', 'auto', 'important');
+        ta.style.setProperty('height', Math.min(ta.scrollHeight + 4, cap) + 'px', 'important');
+      };
       grow();
       ta.addEventListener('input', grow);
     }
