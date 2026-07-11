@@ -952,7 +952,7 @@
 
   // Listakortið (v3): dökk-metal dálkahaus með röðunar-örvum, kaflar í
   // innhólfinu (bíða svars / svarað / geymsla), zebra-raðir, síðuskipting.
-  const PAGE_SIZE = 25;
+  const PAGE_SIZE = 50; // 2026-07-11: 25 → 50 (ósk Agnars)
   function colHead() {
     const arrow = (k) => {
       if (!state.colSort || state.colSort.key !== k) return '<span style="color:rgba(255,255,255,.45)">↕</span>';
