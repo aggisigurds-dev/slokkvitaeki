@@ -811,6 +811,13 @@
     }
   }
 
+  // 2026-07-11 (verkefnalisti): listinn fellanlegur — valið munað per tæki.
+  function filledOpen(){ try { return localStorage.getItem('dt_filled_open') !== '0'; } catch(_){ return true; } }
+  function toggleFilled(){
+    try { localStorage.setItem('dt_filled_open', filledOpen() ? '0' : '1'); } catch(_){}
+    refreshFilledSection();
+  }
+
   function renderFilledSection() {
     const list = getFilledList()
       .slice()
@@ -839,12 +846,16 @@
           '</td>' +
         '</tr>';
     }).join('');
+    const open = filledOpen();
     return '' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap">' +
         '<div><h2 style="margin:0;font-size:18px;color:#0f172a">📁 Vistuð skjöl <span style="font-size:12px;color:#64748b;font-weight:500">· ' + list.length + '</span></h2>' +
         '<div style="font-size:12px;color:#64748b;margin-top:2px">Þjónustusamningar, tilboð og skýrslur sem þú hefur vistað. Smelltu á „Opna" til að halda áfram eða endurprenta.</div></div>' +
+        '<button class="_dt-filled-toggle" type="button" style="padding:8px 14px;background:#fff;border:1px solid #e2e8f0;border-radius:10px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;color:#334155;box-shadow:0 1px 3px rgba(0,0,0,.04)">' +
+          '<span style="opacity:.6">' + (open ? '▾' : '▸') + '</span> ' + (open ? 'Fela listann' : 'Sýna listann (' + list.length + ')') +
+        '</button>' +
       '</div>' +
-      '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04)">' +
+      '<div style="' + (open ? '' : 'display:none;') + 'background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04)">' +
         '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
           '<thead><tr style="background:#f8fafc;text-align:left">' +
             '<th style="padding:9px 12px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Skjal</th>' +
@@ -861,6 +872,8 @@
 
   function wireFilledSection(section) {
     section.addEventListener('click', async e => {
+      const tglBtn = e.target.closest('._dt-filled-toggle');
+      if (tglBtn) { e.stopPropagation(); toggleFilled(); return; }
       const openBtn = e.target.closest('._dt-filled-open');
       const delBtn  = e.target.closest('._dt-filled-del');
       if (openBtn) {

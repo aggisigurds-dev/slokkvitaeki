@@ -3,6 +3,7 @@
   'use strict';
   var _products = [];
   var _activeTab = 'allt'; // 'allt' | 'vorur' | 'thjonusta'
+  var _activeCat = '';     // '' = allir flokkar; annars nafn flokks (undirflokka-sía)
   var _searchTerm = '';
 
   function fmtKr(n){return Math.round(Number(n)||0).toLocaleString('is-IS')+' kr';}
@@ -43,6 +44,7 @@
     var rows = _products;
     if(_activeTab==='vorur') rows = rows.filter(function(p){return p.flokkur !== 'Þjónusta';});
     else if(_activeTab==='thjonusta') rows = rows.filter(function(p){return p.flokkur === 'Þjónusta';});
+    if(_activeCat) rows = rows.filter(function(p){return (p.flokkur||'Annað') === _activeCat;});
     var q = (_searchTerm||'').trim().toLowerCase();
     if(q){
       rows = rows.filter(function(p){
@@ -54,6 +56,23 @@
     return rows;
   }
 
+  // Sorted list of distinct flokkar (Þjónusta fyrst, Annað síðast) — sama röð og grid-ið.
+  function sortCats(cats){
+    return cats.sort(function(a,b){
+      if (a === 'Þjónusta' && b !== 'Þjónusta') return -1;
+      if (b === 'Þjónusta' && a !== 'Þjónusta') return 1;
+      if (a === 'Annað' && b !== 'Annað') return 1;
+      if (b === 'Annað' && a !== 'Annað') return -1;
+      return a.localeCompare(b, 'is');
+    });
+  }
+
+  function distinctCats(rows){
+    var seen = {};
+    (rows||_products).forEach(function(p){ seen[p.flokkur||'Annað'] = (seen[p.flokkur||'Annað']||0)+1; });
+    return { names: sortCats(Object.keys(seen)), counts: seen };
+  }
+
   function renderView(){
     var v = document.getElementById('view-vorur');
     if(!v) return;
@@ -62,6 +81,12 @@
       vorur: _products.filter(function(p){return p.flokkur !== 'Þjónusta';}).length,
       thjonusta: _products.filter(function(p){return p.flokkur === 'Þjónusta';}).length
     };
+    // Undirflokka-chippar miðast við virka flipann (án undirflokka-síunnar sjálfrar).
+    var tabRows = _products;
+    if(_activeTab==='vorur') tabRows = tabRows.filter(function(p){return p.flokkur !== 'Þjónusta';});
+    else if(_activeTab==='thjonusta') tabRows = tabRows.filter(function(p){return p.flokkur === 'Þjónusta';});
+    var cats = distinctCats(tabRows);
+    if(_activeCat && cats.names.indexOf(_activeCat) < 0) _activeCat = '';
     // theme.css (2026-07-09): viewið flush svo .thm .app-page bandið eigi útlitið.
     if(!document.getElementById('vorur-thm-style')){
       var st = document.createElement('style');
@@ -85,10 +110,15 @@
           'style="width:100%;padding:11px 14px 11px 14px;border:1px solid #cbd5e1;border-radius:10px;font:inherit;font-size:14px;box-sizing:border-box;background:#fff">' +
       '</div>' +
       // Tabs — theme filter-chips
-      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px">' +
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">' +
         tabBtn('allt','Allt · '+counts.allt) +
         tabBtn('vorur','Vörur · '+counts.vorur) +
         tabBtn('thjonusta','Þjónusta · '+counts.thjonusta) +
+      '</div>' +
+      // Undirflokkar — ein skrunanleg lína af chippum (sími-fyrst: aldrei margra lína veggur)
+      '<div style="display:flex;gap:6px;align-items:center;overflow-x:auto;white-space:nowrap;padding-bottom:6px;margin-bottom:12px;-webkit-overflow-scrolling:touch;scrollbar-width:thin">' +
+        catChip('','Allir flokkar', tabRows.length) +
+        cats.names.map(function(c){ return catChip(c, c, cats.counts[c]); }).join('') +
       '</div>' +
       // Grouped grid
       '<div id="vorur-grid"></div>' +
@@ -100,6 +130,18 @@
   function tabBtn(key,label){
     var a = _activeTab === key;
     return '<button class="vorur-tab filter-chip'+(a?' is-active':'')+'" data-tab="'+key+'" type="button">'+label+'</button>';
+  }
+
+  // Undirflokka-chip — solid litir (ekki rgba yfir bandinu) svo lesskil séu alltaf góð.
+  function catChip(key,label,count){
+    var a = _activeCat === key;
+    return '<button class="vorur-cat" data-cat="'+esc(key)+'" type="button" style="flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:99px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;' +
+      (a ? 'background:#14171d;color:#fff;border:1px solid #14171d'
+         : 'background:#fff;color:#334155;border:1px solid #cbd5e1') + '">' +
+      esc(label) +
+      '<span style="font-size:10.5px;padding:1px 7px;border-radius:10px;font-weight:700;' +
+        (a ? 'background:rgba(255,255,255,.22);color:#fff' : 'background:#eef1f6;color:#5b6573') + '">'+count+'</span>' +
+    '</button>';
   }
 
   function renderGrid(){
@@ -119,20 +161,14 @@
       (byCat[c] = byCat[c] || []).push(p);
     });
     // Sort categories: Þjónusta first, then alphabetically. "Annað" last.
-    var cats = Object.keys(byCat).sort(function(a,b){
-      if (a === 'Þjónusta' && b !== 'Þjónusta') return -1;
-      if (b === 'Þjónusta' && a !== 'Þjónusta') return 1;
-      if (a === 'Annað' && b !== 'Annað') return 1;
-      if (b === 'Annað' && a !== 'Annað') return -1;
-      return a.localeCompare(b, 'is');
-    });
+    var cats = sortCats(Object.keys(byCat));
     grid.innerHTML = cats.map(function(cat){
       return '<div style="margin-bottom:24px">' +
-        // Dökk hálfgegnsæ pilla — flokks-hausinn les vel bæði á dökka og gráa
-        // hluta bandsins (theme.css gradient) hvar sem hann skrunar.
-        '<div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:10px;padding:6px 14px;border-radius:99px;background:rgba(10,12,17,.62);border:1px solid rgba(255,255,255,.14)">' +
-          '<span style="font-size:13px;font-weight:800;color:#f2f4f8;text-transform:uppercase;letter-spacing:0.05em">'+esc(cat)+'</span>' +
-          '<span style="font-size:11px;color:#e6e9ef;background:rgba(255,255,255,.16);padding:1px 8px;border-radius:10px;font-weight:700">'+byCat[cat].length+'</span>' +
+        // SOLID dökk pilla með hvítum texta — rgba-gegnsæið gamla rann saman við
+        // gráa hluta bandsins („grey on grey", verkefnalisti 2026-07-11).
+        '<div style="display:inline-flex;align-items:center;gap:10px;margin-bottom:10px;padding:6px 14px;border-radius:99px;background:#14171d;border:1px solid rgba(255,255,255,.22);box-shadow:0 2px 8px -2px rgba(0,0,0,.4)">' +
+          '<span style="font-size:13px;font-weight:800;color:#ffffff;text-transform:uppercase;letter-spacing:0.05em">'+esc(cat)+'</span>' +
+          '<span style="font-size:11px;color:#ffffff;background:rgba(255,255,255,.24);padding:1px 8px;border-radius:10px;font-weight:700">'+byCat[cat].length+'</span>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">' +
           byCat[cat].map(renderCard).join('') +
@@ -175,6 +211,13 @@
         renderView();
       });
     });
+    Array.from(document.querySelectorAll('.vorur-cat')).forEach(function(b){
+      b.addEventListener('click',function(){
+        var c = b.getAttribute('data-cat') || '';
+        _activeCat = (_activeCat === c) ? '' : c; // smellur á virkan chip = af-sía
+        renderView();
+      });
+    });
     var nb = document.getElementById('vorur-new');
     if(nb) nb.addEventListener('click',function(){openEditor(null);});
     var search = document.getElementById('vorur-search');
@@ -192,7 +235,15 @@
     var isNew = !product;
     var isSvc = _activeTab === 'thjonusta';
     if(product) isSvc = product.flokkur === 'Þjónusta';
-    var flokkar = ['Slökkvitæki','Viðvörunarkerfi','Eldvarnir','Fylgihlutir','Þjónusta'];
+    // Allir flokkar sem ERU til í gögnunum (líka „Skilti, ljós og miðar" o.fl.
+    // sem gamli fasti listinn sýndi ekki), + grunn-listinn, + flokkur vörunnar.
+    var base = ['Slökkvitæki','Viðvörunarkerfi','Eldvarnir','Fylgihlutir','Þjónusta'];
+    var seenF = {};
+    var flokkar = [];
+    _products.forEach(function(x){ var f=(x.flokkur||'').trim(); if(f && !seenF[f]){seenF[f]=1; flokkar.push(f);} });
+    base.forEach(function(f){ if(!seenF[f]){seenF[f]=1; flokkar.push(f);} });
+    if(product && product.flokkur && !seenF[product.flokkur]){ seenF[product.flokkur]=1; flokkar.push(product.flokkur); }
+    sortCats(flokkar);
     var modalId = 'vorur-modal';
     // Remove old modal
     var old = document.getElementById(modalId);
@@ -228,7 +279,9 @@
           '<label style="display:block;font-size:12px;color:#64748b;margin-bottom:6px;font-weight:600">Flokkur</label>' +
           '<select id="f-flokkur" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;box-sizing:border-box">' +
             flokkar.map(function(f){return '<option value="'+esc(f)+'"'+(p.flokkur===f?' selected':'')+'>'+esc(f)+'</option>';}).join('') +
+            '<option value="__nyr">➕ Nýr flokkur…</option>' +
           '</select>' +
+          '<input id="f-flokkur-nyr" type="text" placeholder="Nafn á nýjum flokki" style="display:none;width:100%;margin-top:8px;padding:10px;border:1px solid #1a7f4b;border-radius:6px;font-size:14px;box-sizing:border-box">' +
         '</div>' +
         '<div>' +
           '<label style="display:block;font-size:12px;color:#64748b;margin-bottom:6px;font-weight:600">VSK %</label>' +
@@ -276,8 +329,16 @@
     }
     document.getElementById('f-verd-inc').addEventListener('input', recomputeExVat);
     document.getElementById('f-vsk').addEventListener('input', recomputeExVat);
-    // Auto-toggle birgdir when flokkur switches to/from Þjónusta
+    // Auto-toggle birgdir when flokkur switches to/from Þjónusta,
+    // + sýna nýr-flokkur reitinn þegar „➕ Nýr flokkur…" er valið.
     document.getElementById('f-flokkur').addEventListener('change',function(e){
+      var nyrInp = document.getElementById('f-flokkur-nyr');
+      if(e.target.value === '__nyr'){
+        nyrInp.style.display = 'block';
+        nyrInp.focus();
+      } else {
+        nyrInp.style.display = 'none';
+      }
       var isSvcNow = e.target.value === 'Þjónusta';
       var br = document.getElementById('f-birgdir');
       br.disabled = isSvcNow;
@@ -305,13 +366,18 @@
       var inc = parseFloat(document.getElementById('f-verd-inc').value) || 0;
       var vskPct = parseInt(document.getElementById('f-vsk').value,10) || 24;
       var verdAnVsk = inc / (1 + vskPct/100);
+      var flokkurVal = document.getElementById('f-flokkur').value;
+      if(flokkurVal === '__nyr'){
+        flokkurVal = (document.getElementById('f-flokkur-nyr').value || '').trim();
+        if(!flokkurVal){alert('Skrifaðu nafn á nýja flokkinn');return;}
+      }
       var data = {
         nafn: document.getElementById('f-nafn').value.trim(),
         lysing: document.getElementById('f-lysing').value.trim(),
         verd_an_vsk: Math.round(verdAnVsk * 100) / 100,
         vsk_prosenta: vskPct,
         birgdir: parseInt(document.getElementById('f-birgdir').value,10) || 0,
-        flokkur: document.getElementById('f-flokkur').value,
+        flokkur: flokkurVal,
         mynd: imgDataUrl || '',
         virkt: document.getElementById('f-virkt').checked
       };
