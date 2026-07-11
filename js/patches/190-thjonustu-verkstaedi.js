@@ -493,8 +493,8 @@
     v.innerHTML = '<div style="max-width:none;margin:0;width:100%;box-sizing:border-box;padding:6px 10px 34px;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin:2px 2px 14px">' +
         '<div style="min-width:0">' +
-          '<div style="font-size:26px;font-weight:700;color:#11141c;letter-spacing:-.01em;line-height:1.1">🔧 ÞjónustuVerkstæði</div>' +
-          '<div style="font-size:13px;color:#5b6472;margin-top:4px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · áætl. <b style="font-family:\'Space Mono\',monospace;color:#11141c">' + fmtSum(vinnslaSum) + '</b>' : '') + '</div>' +
+          '<div style="font-size:26px;font-weight:700;color:#ffffff;letter-spacing:-.01em;line-height:1.1;text-shadow:0 1px 3px rgba(0,0,0,.35)">🔧 ÞjónustuVerkstæði</div>' +
+          '<div style="font-size:13px;color:#c7cdd8;margin-top:4px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · áætl. <b style="font-family:\'Space Mono\',monospace;color:#ffffff">' + fmtSum(vinnslaSum) + '</b>' : '') + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">' +
           '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>Spjöld</button></div>' +

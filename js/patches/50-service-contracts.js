@@ -37,12 +37,24 @@
   let contracts = [];
   let searchQuery = '';
   let _pendingPhoto = null; // staged file for legacy import (before record exists)
+  // 2026-07-11: samningalistinn fellanlegur — sjálfgefið FELLDUR (verkefnalisti-ósk).
+  // Leit opnar hann sjálfkrafa; valið er munað per tæki.
+  let _listOpen = localStorage.getItem('ct_list_open') === '1';
 
   if (!document.getElementById('contract-style')) {
     const s = document.createElement('style');
     s.id = 'contract-style';
     s.textContent = `
-      #view-samningar .ct-wrap { max-width:1180px; margin:0 auto; }
+      #view-samningar .ct-wrap { max-width:1180px; margin:0 auto; width:100%; box-sizing:border-box; }
+      /* 2026-07-11 (verkefnalisti): röð kafla á síðunni stýrð með flex-order —
+         samningalistinn NEÐST og fellanlegur; DOM-röðin (patchar 97/94/96 sprauta
+         sér inn á víxl) skiptir þá ekki máli. */
+      #view-samningar #ct-main { display:flex; flex-direction:column; }
+      #view-samningar #ct-main > * { order:3; }
+      #view-samningar #ct-main > ._np-section { order:1; }
+      #view-samningar #ct-main > ._dt-section { order:2; }
+      #view-samningar #ct-main > ._dt-filled-section { order:4; }
+      #view-samningar #ct-main > .ct-wrap { order:5; }
       #view-samningar .ct-search { padding:9px 12px; border:1px solid #e2e8f0; border-radius:8px; min-width:240px; flex:1; }
       #view-samningar table { width:100%; border-collapse:collapse; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.04); }
       #view-samningar th, #view-samningar td { padding:10px; text-align:left; font-size:13px; border-bottom:1px solid #f1f5f9; vertical-align:middle; }
@@ -158,6 +170,7 @@
     if (!main) return;
     const totalRev = contracts.filter(c=>c.status==='virkur').reduce((s,c)=>s+(parseFloat(c.upphaed_an_vsk)||0)*(12/(c.tidni_man||12)),0);
     const filtered = filterContracts();
+    const showList = _listOpen || !!searchQuery;
 
     main.innerHTML = `
       <div class="ct-wrap">
@@ -174,7 +187,13 @@
             <button class="btn btn-primary" onclick="ServiceContracts._open()">+ Nýr samningur</button>
           </div>
         </div>
-        ${filtered.length ? `
+        <button type="button" onclick="ServiceContracts._toggleList()"
+          style="width:100%;display:flex;align-items:center;gap:8px;padding:10px 14px;margin-bottom:${showList?'10px':'0'};background:#fff;border:1px solid #e2e8f0;border-radius:10px;cursor:pointer;font:inherit;font-size:13px;font-weight:600;color:#334155;box-shadow:0 1px 3px rgba(0,0,0,.04)">
+          <span style="opacity:.6">${showList?'▾':'▸'}</span>
+          ${showList?'Fela samningalistann':'Sýna samningalistann'}
+          <span style="background:#eef1f6;color:#5b6573;font-size:11px;font-weight:700;padding:1px 8px;border-radius:10px">${filtered.length}</span>
+        </button>
+        ${!showList ? '' : filtered.length ? `
           <table>
             <thead><tr>
               <th>Viðskiptavinur</th><th>Heimilisfang</th><th>Umsjón með</th>
@@ -209,6 +228,12 @@
   }
 
   function _search(v) { searchQuery = v.trim(); render(); }
+
+  function _toggleList() {
+    _listOpen = !_listOpen;
+    try { localStorage.setItem('ct_list_open', _listOpen ? '1' : '0'); } catch(_){}
+    render();
+  }
 
   // Open the shared logo uploader (patch 169). The picked PNG/JPG/SVG is
   // stored under branding.logo_url and flows to every samningur (and all
@@ -573,6 +598,6 @@
   setTimeout(init, 1000);
   setTimeout(init, 2500);
 
-  window.ServiceContracts = { load, _open, _save, _bill, _delete, _print, _search, _photoChosen, _logo };
+  window.ServiceContracts = { load, _open, _save, _bill, _delete, _print, _search, _photoChosen, _logo, _toggleList };
   console.log('[service-contracts v2] installed');
 })();
