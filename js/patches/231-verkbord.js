@@ -141,6 +141,55 @@
     hringja: 'samskipti', senda_tolvupost: 'samskipti'
   };
 
+  // ── Þjónustuverk v3 útlit (2026-07-10, dc.html referens frá Agnari) ────────
+  // Dökk-metal chippar (spec: „Dark-metal control surface"), 5px vinstri-rönd
+  // eftir flokki, metallísk STAÐA-pilla. Allir litir beint úr Thjonustuverkv3.
+  const V3_METAL = 'background:linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318);border:1px solid #0a0b0d;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)';
+  const V3_METAL_ON = 'background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);border:1px solid #0a0b0d;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)';
+  const V3_CARD = 'border-radius:16px;border:1px solid rgba(20,24,34,.1);background:linear-gradient(180deg,#ffffff,#f5f7fb);box-shadow:0 16px 38px -20px rgba(15,23,42,.36),inset 0 2px 0 rgba(255,255,255,.95)';
+  // Merkja-litir á dökku (spec §Category chip text colors)
+  const TAG_DK = {
+    gera_tilbod: '#b79cff', thjonustusamningur: '#c3ccd8', bokhald: '#8fb0ff',
+    kvortun: '#ff8a82', hringja: '#f2c24e', brunakerfi: '#ff8a82',
+    eftir_ad_rukka: '#ff8a82', thjonusta: '#4fd08a', senda_tolvupost: '#8fb0ff'
+  };
+  // 5px vinstri-röndin litast af FLOKKI raðarinnar (mynstrið í referensinum).
+  const RAIL = { tilbod: '#2f5fe0', thjonusta: '#22b063', brunakerfi: '#df2c2c', rukkun: '#be123c', samskipti: '#e0a93e' };
+  function railColor(r) { return RAIL[rowFlokk(r)] || '#8a929e'; }
+  // Sýnileg merki raðar = merki notandans ∪ merki leidd af flokknum, í TAG_ORDER röð.
+  const FLOKK_TO_TAG = { tilbod: 'gera_tilbod', thjonusta: 'thjonusta', brunakerfi: 'brunakerfi', rukkun: 'eftir_ad_rukka', samskipti: 'senda_tolvupost' };
+  function dispTags(r) {
+    const set = {};
+    rowTags(r).forEach(t => { set[t] = 1; });
+    const f = FLOKK_TO_TAG[rowFlokk(r)];
+    if (f) set[f] = 1;
+    return TAG_ORDER.filter(t => set[t]);
+  }
+  function dkChip(t, act, rid) {
+    const d = TAGS[t]; if (!d) return '';
+    return '<span' + (act ? ' data-act="' + act + '" data-tag="' + t + '"' + (rid != null ? ' data-id="' + esc(rid) + '"' : '') : '') +
+      ' style="display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:104px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;' + V3_METAL + ';color:' + (TAG_DK[t] || '#c3ccd8') + ';white-space:nowrap;cursor:pointer">' + d.emoji + ' ' + esc(d.label) + '</span>';
+  }
+  // Metallíska STAÐA-pillan (Ný = blá; beint úr referensinum).
+  const PILL_GRAD = {
+    nytt:      'linear-gradient(145deg,#5a86e0,#2f5fe0 42%,#1a3a8c 72%,#2d55c4)',
+    i_vinnslu: 'linear-gradient(145deg,#8f77e8,#6d28d9 42%,#3d1a8c 72%,#5b2dc4)',
+    bedid:     'linear-gradient(145deg,#e0b25a,#d97706 42%,#8c5a1a 72%,#c4952d)',
+    tilbuid:   'linear-gradient(150deg,#2bbf6c,#0f6e3a)',
+    lokad:     'linear-gradient(150deg,#2bbf6c,#0f6e3a)'
+  };
+  function stadaPill(r) {
+    const st = statusDef(r.status);
+    const lbl = r.status === 'nytt' ? 'Ný' : st.label;
+    return '<span data-act="status" data-id="' + esc(r.id) + '" title="Smella til að færa stöðuna áfram" ' +
+      'style="font-size:11px;font-weight:600;padding:4px 12px;border-radius:8px;background:' + (PILL_GRAD[r.status] || PILL_GRAD.nytt) + ';color:#fff;border:1px solid #12296b;white-space:nowrap;cursor:pointer;' +
+      'box-shadow:inset 0 1.5px 0 rgba(255,255,255,.4),inset 0 -2px 4px rgba(0,0,0,.24),0 2px 5px -2px rgba(20,30,60,.4);text-shadow:0 1px 1px rgba(0,0,0,.3);filter:saturate(.74)">' + esc(lbl) + '</span>';
+  }
+  function fmtDots(iso) {
+    const d = new Date(iso);
+    return isNaN(d) ? '' : String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear();
+  }
+
   function rowTags(r) {
     let t = r && r.tags;
     if (typeof t === 'string') { try { t = JSON.parse(t); } catch (_) { t = []; } }
@@ -217,6 +266,12 @@
     addTags: [],        // merki valin í ný-beiðni línunni (hreinsast eftir skráningu)
     threadLatest: {},   // beidniId → nýjasti póstur í þræðinum (sjá loadThreadLatest)
     addRsk: null,       // síðasta RSK-uppfletting úr fyrirtækjareitnum {kt,nafn,heimilisfang}
+    // Þjónustuverk v3: ⭐ Áríðandi-sía, dálkaröðun, síðuskipting, composer-sýnileiki
+    fStar: false,
+    colSort: null,      // {key:'dags'|'mal'|'stada', dir:'asc'|'desc'} | null
+    page: 0,
+    // Composer opið á tölvu, lokað á síma (+ Nýtt mál opnar) — verkefnin fyrst.
+    composerOpen: (function () { try { return window.innerWidth > 760; } catch (_) { return true; } })(),
     expandedId: null
   };
   function setQueue(q) { state.queue = q; try { localStorage.setItem(QKEY, q); } catch (_) {} }
@@ -463,6 +518,7 @@
   function inQueue(r) {
     if (state.queue === 'lokad') return !isOpen(r);
     if (state.queue === 'post') return isOpen(r) && isPost(r) && (state.showOld ? true : !isArchived(r));
+    if (state.queue === 'allt') return isOpen(r) && !isArchived(r); // v3: allt opið (innhólf + verkefni)
     // verk (sjálfgefið) — handvirkt + fært yfir; geymslan aldrei hér
     return isOpen(r) && !isPost(r) && !isArchived(r);
   }
@@ -487,9 +543,23 @@
     let r = allItems().filter(x => inQueue(x) && inFilter(x));
     // Flokka-sían (v2): '' = allt, 'annad' = án flokks, annars einn af fimm.
     if (state.fFlokk) r = r.filter(x => (state.fFlokk === 'annad' ? !rowFlokk(x) : rowFlokk(x) === state.fFlokk));
-    if (state.fTag) r = r.filter(x => effTags(x).indexOf(state.fTag) !== -1);
+    // v3 TÖG-sían: merki notandans ∪ flokks-leidd merki, + ⭐ Áríðandi.
+    if (state.fTag) r = r.filter(x => dispTags(x).indexOf(state.fTag) !== -1);
+    if (state.fStar) r = r.filter(x => !!x.important);
     const s = state.search.trim().toLowerCase();
     if (s) r = r.filter(x => [x.customer_nafn, x.title, x.notes].some(f => (f || '').toLowerCase().includes(s)));
+    // v3 dálkaröðun (DAGS./MÁL/STAÐA hausar) — trompar aðrar raðanir þegar valin.
+    if (state.colSort) {
+      const cs = state.colSort, dir = cs.dir === 'asc' ? 1 : -1;
+      r.sort((a, b) => {
+        let av, bv;
+        if (cs.key === 'dags') { av = new Date(a.created_at || 0).getTime(); bv = new Date(b.created_at || 0).getTime(); }
+        else if (cs.key === 'stada') { av = STATUS_ORDER.indexOf(a.status); bv = STATUS_ORDER.indexOf(b.status); }
+        else { av = ((a.customer_nafn || '') + ' ' + (a.title || '')).toLowerCase(); bv = ((b.customer_nafn || '') + ' ' + (b.title || '')).toLowerCase(); }
+        return av < bv ? -dir : av > bv ? dir : 0;
+      });
+      return r;
+    }
     // Innhólfið raðast sér: ósvarað ELST efst (því lengur sem kúnni bíður, því
     // ofar), svo svarað/upplýsingar nýjast efst, geymslan (ef sýnd) aftast.
     if (state.queue === 'post' && state.sort !== 'nyjast') {
@@ -526,7 +596,7 @@
   }
   function counts() {
     const all = allItems();
-    const c = { idag: 0, verk: 0, post: 0, geymsla: 0, lokad: 0, wait: 0, od: 0 };
+    const c = { idag: 0, verk: 0, post: 0, allt: 0, geymsla: 0, lokad: 0, wait: 0, od: 0 };
     for (const x of all) {
       if (!isOpen(x)) { c.lokad++; continue; }
       if (isPost(x)) {
@@ -540,6 +610,7 @@
       if (isToday(x)) c.idag++;
       if (isOverdue(x)) c.od++;
     }
+    c.allt = c.post + c.verk;
     return c;
   }
 
@@ -699,351 +770,303 @@
     const s = document.createElement('style');
     s.id = 'verkbord-style';
     s.textContent = `
-      #view-verkbord { font-family: 'Space Grotesk', system-ui, sans-serif; color: #11141c; }
-      /* 2026-07-10 (ósk Agnars): efnissvæðið nær næstum út í enda skjásins. */
-      #view-verkbord .vb-wrap { max-width: none; margin: 0 auto; padding: 22px 28px 80px; }
-      /* ☰ Þéttur listi — ein lína per verk (titill + merki á sömu línu). */
-      #view-verkbord .vb-row.thett { padding: 7px 14px; }
-      #view-verkbord .vb-row.thett .vb-main { display: flex; align-items: center; gap: 10px; min-width: 0; }
-      #view-verkbord .vb-row.thett .vb-title { font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 0 1 auto; }
-      #view-verkbord .vb-row.thett .vb-meta { margin-top: 0; flex: 1; flex-wrap: nowrap; overflow: hidden; min-width: 0; }
-      /* Quick-add card — surface card */
-      #view-verkbord .vb-add { display:flex; gap:10px; flex-wrap:wrap; align-items:center;
-        background:#fff; border:1px solid rgba(20,24,34,.08); border-radius:16px; padding:14px 16px;
-        box-shadow:0 10px 28px -16px rgba(25,35,60,.16); position:sticky; top:0; z-index:6; }
-      #view-verkbord .vb-add-input { flex:1; min-width:220px; font:inherit; font-size:15px;
-        background:#f6f8fb; border:1px solid rgba(20,24,34,.12); border-radius:11px; padding:11px 14px;
-        color:#141822; outline:none; }
-      #view-verkbord .vb-add-input:focus { border-color:#2f5fe0; background:#fff; box-shadow:0 0 0 3px rgba(47,95,224,.14); }
-      /* Primary button — accent metallic blue per spec --btn-grad */
-      #view-verkbord .vb-add-btn { font:inherit; font-size:14px; font-weight:700; color:#fff;
-        background:linear-gradient(145deg,#03040a 0%,#0c1730 24%,#1d3c80 48%,#264c9e 56%,#0f2042 78%,#03060d 100%);
-        border:1px solid rgba(110,155,255,.55); border-radius:12px; padding:11px 18px; cursor:pointer; min-height:44px;
-        box-shadow:0 0 16px -4px rgba(64,113,240,.5), inset 0 1px 0 rgba(255,255,255,.16); }
-      #view-verkbord .vb-add-btn:active { transform:translateY(1px); }
-      #view-verkbord .vb-add-types { display:flex; gap:7px; flex-wrap:wrap; width:100%; margin-top:4px; }
-      /* Add-type chips — light tint, active = accent blue */
-      #view-verkbord .vb-tchip { font:inherit; font-size:12.5px; font-weight:600;
-        padding:7px 13px; border-radius:10px;
-        border:1px solid rgba(20,24,34,.14);
-        background:linear-gradient(180deg,#fdfdfe,#e3e7ee);
-        color:#3a4250; cursor:pointer; min-height:34px; }
-      #view-verkbord .vb-tchip.active {
-        background:linear-gradient(145deg,#03040a 0%,#0c1730 24%,#1d3c80 48%,#264c9e 56%,#0f2042 78%,#03060d 100%);
-        color:#fff; border-color:#0a0b0d;
-      }
-      #view-verkbord .vb-controls { display:flex; gap:9px; flex-wrap:wrap; align-items:center; margin:18px 2px 14px; }
-      /* Queue pills — large, inactive = metal, active = metallic black per spec */
-      #view-verkbord .vb-q { font:inherit; font-size:13px; font-weight:600; padding:8px 16px; border-radius:11px;
-        border:1px solid rgba(20,24,34,.14);
-        background:linear-gradient(180deg,#fdfdfe,#e3e7ee); color:#3a4250; cursor:pointer; min-height:40px;
-        display:inline-flex; align-items:center; gap:7px; }
-      #view-verkbord .vb-q.active {
-        background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);
-        color:#fff; border-color:#0a0b0d;
-      }
-      #view-verkbord .vb-q .n { font-family:'Space Mono', monospace; opacity:.85; font-weight:700; margin-left:5px; }
-      /* Filter chips — same family, smaller */
-      #view-verkbord .vb-fchip { font:inherit; font-size:12.5px; font-weight:600;
-        padding:6px 13px; border-radius:10px;
-        border:1px solid rgba(20,24,34,.14);
-        background:#fff; color:#3a4250; cursor:pointer; min-height:36px; }
-      #view-verkbord .vb-fchip.active { background:#eef3ff; color:#2f5fe0; border-color:#c6d6ff; font-weight:700; }
-      #view-verkbord .vb-search { flex:1; min-width:160px; font:inherit; font-size:14px;
-        border:1px solid rgba(20,24,34,.12); border-radius:10px; padding:9px 13px;
-        background:#fff; color:#141822; outline:none; }
-      #view-verkbord .vb-search:focus { border-color:#2f5fe0; box-shadow:0 0 0 3px rgba(47,95,224,.14); }
-      #view-verkbord .vb-list { display:flex; flex-direction:column; gap:10px; }
-      /* Row — hlutlaus, rólegur. Vinstri-kantur gefur stöðu-lit án þess að lita allt spjaldið. */
-      #view-verkbord .vb-row { background:#fff; border:1px solid rgba(20,24,34,.07);
-        border-left:3px solid #d7dce4; border-radius:13px; padding:14px 16px;
-        display:flex; align-items:flex-start; gap:13px; cursor:pointer;
-        box-shadow:0 1px 3px rgba(25,35,60,.06);
-        transition:background .12s ease, box-shadow .12s ease, border-color .12s ease; }
-      #view-verkbord .vb-row:hover { background:#f7f9fd; box-shadow:0 3px 10px -5px rgba(25,35,60,.16); }
-      /* Áríðandi (⭐) = mjór rauður kantur, EKKI rauð fylling á öllu spjaldinu. */
-      #view-verkbord .vb-row.imp { border-left-color:#e11d48; }
-      /* Útrunnið = amber kantur (mildara en rautt á öllu). */
-      #view-verkbord .vb-row.od { border-left-color:#f59e0b; }
-      #view-verkbord .vb-row.imp.od { border-left-color:#e11d48; }
-      #view-verkbord .vb-row.open { box-shadow:0 10px 28px -16px rgba(25,35,60,.28); border-left-color:#2f5fe0; }
-      #view-verkbord .vb-dot { width:22px; height:22px; min-width:22px; border-radius:50%; border:2.5px solid;
-        margin-top:2px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-size:12px; background:#fff; }
-      #view-verkbord .vb-main { flex:1; min-width:0; }
-      #view-verkbord .vb-title { font-size:14.5px; font-weight:650; color:#111827; line-height:1.35; word-break:break-word;
-        display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-      #view-verkbord .vb-row.done .vb-title { text-decoration:line-through; color:#9098a6; }
-      #view-verkbord .vb-meta { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:7px; }
-      /* Type chip — spec §3 shape */
-      #view-verkbord .vb-type { font-size:11px; font-weight:600; padding:2.5px 9px; border-radius:7px; border:1px solid; white-space:nowrap; }
-      #view-verkbord .vb-cust { font-size:12px; color:#4b5563; font-weight:500; }
-      #view-verkbord .vb-cust::before { content:''; }
-      /* Due chip — neutral; .od = overdue amber */
-      #view-verkbord .vb-due { font-family:'Space Mono', monospace; font-size:11px; font-weight:600;
-        padding:2.5px 8px; border-radius:7px; background:#f1f5f9; color:#64748b; border:1px solid #e6eaf0; }
-      #view-verkbord .vb-due.od { background:#fffbeb; color:#b45309; border-color:#fde68a; }
-      /* Innihaldslína — ✨ samantekt: hrein, létt, hámark 2 línur (enginn þungur kassi). */
-      #view-verkbord .vb-sum { font-size:12.5px; color:#4338ca; margin-top:8px; line-height:1.5;
-        padding-left:20px; position:relative;
-        display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-      #view-verkbord .vb-sum::before { content:'✨'; position:absolute; left:0; top:0; font-size:12px; opacity:.9; }
-      /* Rá forsýn (þegar engin samantekt) — dauf, ein lína. */
-      #view-verkbord .vb-body { font-size:12px; color:#8a93a5; margin-top:7px; line-height:1.45;
-        display:-webkit-box; -webkit-line-clamp:1; -webkit-box-orient:vertical; overflow:hidden; }
-      /* ↩ Nýjasta svarið í þræðinum — sterkara en forsýn, hámark 2 línur. */
-      #view-verkbord .vb-latest { font-size:12.5px; color:#334155; margin-top:8px; line-height:1.5;
-        display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-      #view-verkbord .vb-latest b { color:#0f766e; font-weight:700; }
-      #view-verkbord .vb-star { font-size:17px; cursor:pointer; line-height:1; margin-top:1px; opacity:.5; }
-      #view-verkbord .vb-star:hover { opacity:1; }
-      #view-verkbord .vb-tag { font-size:10px; font-weight:700; color:#b45309; background:#fffbeb; padding:2px 7px; border-radius:6px; border:1px solid #fde68a; }
-      /* Editor — inside the row, dashed top border */
-      #view-verkbord .vb-ed { margin-top:12px; border-top:1px dashed rgba(20,24,34,.12); padding-top:12px; display:grid; gap:10px; }
-      #view-verkbord .vb-ed label { font-size:10.5px; font-weight:700; color:#8a93a5;
-        letter-spacing:.12em; text-transform:uppercase; display:block; margin-bottom:4px; }
+      /* ═══ Þjónustuverk v3 (dc.html referens) ═══ */
+      #view-verkbord { font-family: 'Space Grotesk', 'IBM Plex Sans', system-ui, sans-serif; color: #11141c;
+        padding: 0 !important;
+        background: linear-gradient(180deg, #060607 0px, #060607 120px, #aeb4be 420px, #9ba1ad 100%) !important; }
+      #view-verkbord .vb-wrap { max-width: 1560px; margin: 0 auto; padding: 22px 24px 60px; }
+      /* Ein skrunanleg chippa-lína (síma-mynstur). */
+      #view-verkbord .vb-scroll { display: flex; gap: 7px; align-items: center; width: 100%;
+        flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; padding-bottom: 2px; }
+      #view-verkbord .vb-scroll::-webkit-scrollbar { display: none; }
+      #view-verkbord .vb-scroll > * { flex: 0 0 auto; }
+      /* v3 raðir: zebra + hover-lyfting (úr referensinum). */
+      #view-verkbord .task { position: relative; transition: background .12s ease; background: #fff; }
+      #view-verkbord .task:nth-child(even) { background: #fbfcfe; }
+      #view-verkbord .task:hover { background: #fff; box-shadow: 0 8px 24px -8px rgba(15,23,42,.26); z-index: 2; }
+      #view-verkbord .task:hover > span:first-child { filter: brightness(1.15) saturate(1.2); }
+      #view-verkbord .task.open { background: #fff; box-shadow: 0 8px 24px -8px rgba(15,23,42,.3); z-index: 3; }
+      #view-verkbord button:active, #view-verkbord [data-act]:active { transform: translateY(1px); }
+      #view-verkbord input:focus { border-color: #2f5fe0 !important; box-shadow: 0 0 0 3px rgba(47,95,224,.14) !important; }
+      #view-verkbord .vb-empty { text-align: center; color: #5b6472; padding: 44px 18px;
+        font-size: 14.5px; font-weight: 600; }
+      /* Ritillinn (inni í opinni röð) — óbreytt virkni, ljóst kort. */
+      #view-verkbord .vb-ed { margin-top: 12px; border-top: 1px dashed rgba(20,24,34,.14); padding-top: 12px; display: grid; gap: 10px; cursor: default; }
+      #view-verkbord .vb-ed label { font-size: 10.5px; font-weight: 700; color: #8a93a5;
+        letter-spacing: .12em; text-transform: uppercase; display: block; margin-bottom: 4px; }
       #view-verkbord .vb-ed input, #view-verkbord .vb-ed select, #view-verkbord .vb-ed textarea {
-        font:inherit; font-size:14px; border:1px solid rgba(20,24,34,.12); border-radius:10px;
-        padding:10px 12px; width:100%; box-sizing:border-box; background:#f6f8fb; color:#141822; outline:none; }
-      #view-verkbord .vb-ed input:focus, #view-verkbord .vb-ed select:focus, #view-verkbord .vb-ed textarea:focus {
-        border-color:#2f5fe0; background:#fff; box-shadow:0 0 0 3px rgba(47,95,224,.14); }
-      #view-verkbord .vb-ed textarea { min-height:74px; resize:vertical; line-height:1.5; }
-      #view-verkbord .vb-ed-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:10px; }
-      #view-verkbord .vb-ed-actions { display:flex; gap:9px; flex-wrap:wrap; align-items:center; }
-      /* Tertiary button (D — light neutral) */
-      #view-verkbord .vb-btn { font:inherit; font-size:12.5px; font-weight:600;
-        padding:10px 14px; border-radius:10px; cursor:pointer; min-height:40px;
-        border:1px solid rgba(20,24,34,.14); background:#f1f5f9; color:#3a4250; }
-      #view-verkbord .vb-btn:hover { background:#e2e8f0; }
-      /* Danger / red button */
-      #view-verkbord .vb-btn.red { border:1px solid #f3c6c4; background:#fdecec; color:#c0241f; }
-      /* Confirm/done — dark-metal green per spec §2 C */
-      #view-verkbord .vb-btn.green { background:linear-gradient(150deg,#2bbf6c,#0f6e3a);
-        color:#fff; border:1px solid #156e3a; font-weight:700;
-        box-shadow:inset 0 1px 0 rgba(255,255,255,.25); }
-      #view-verkbord .vb-empty { text-align:center; color:#5b6472; padding:50px 18px;
-        font-size:15px; font-weight:600; border:1px dashed rgba(20,24,34,.12); border-radius:14px; background:#fff; }
-      #view-verkbord .vb-hint { font-size:12px; color:#5b6472; margin:2px 2px 0; font-weight:600; }
-      /* Ein skrunanleg chippa-lína (síma-mynstur) — engin 5-línu chippa-veggur. */
-      #view-verkbord .vb-scroll { display:flex; gap:6px; align-items:center; width:100%;
-        flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
-        scrollbar-width:none; padding-bottom:2px; }
-      #view-verkbord .vb-scroll::-webkit-scrollbar { display:none; }
-      #view-verkbord .vb-scroll > * { flex:0 0 auto; }
-      @media (max-width:640px){
-        #view-verkbord .vb-wrap{ padding:10px 10px 90px; }
-        #view-verkbord .vb-add{ padding:10px 12px; gap:8px; }
-        /* Reitur + takki deila EINNI línu (reiturinn má minnka) — extra-röðin
-           er width:100% og brotnar því sjálf á næstu línu þegar hún er opin. */
-        #view-verkbord .vb-add-input{ min-width:0; flex:1 1 0; }
-        #view-verkbord .vb-add-btn{ padding:11px 13px; white-space:nowrap; }
-        #view-verkbord .vb-controls{ margin:12px 2px 10px; gap:7px; }
-        #view-verkbord .vb-q{ flex:1; text-align:center; justify-content:center; padding:8px 10px; }
-        #view-verkbord .vb-search{ min-width:0; flex:1 1 100%; }
+        font: inherit; font-size: 14px; border: 1px solid rgba(20,24,34,.14); border-radius: 9px;
+        padding: 9px 12px; width: 100%; box-sizing: border-box; background: #eef1f6; color: #141822; outline: none; }
+      #view-verkbord .vb-ed textarea { min-height: 74px; resize: vertical; line-height: 1.5; }
+      #view-verkbord .vb-ed-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+      #view-verkbord .vb-ed-actions { display: flex; gap: 9px; flex-wrap: wrap; align-items: center; }
+      #view-verkbord .vb-btn { font: inherit; font-size: 12.5px; font-weight: 600;
+        padding: 9px 14px; border-radius: 9px; cursor: pointer; min-height: 38px;
+        border: 1px solid rgba(20,24,34,.14); background: #f1f5f9; color: #3a4250; }
+      #view-verkbord .vb-btn:hover { background: #e2e8f0; }
+      #view-verkbord .vb-btn.red { border: 1px solid #f3c6c4; background: #fdecec; color: #c0241f; }
+      #view-verkbord .vb-btn.green { background: linear-gradient(150deg,#2bbf6c,#0f6e3a);
+        color: #fff; border: 1px solid #156e3a; font-weight: 700;
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.25); }
+      /* Sími: fela dags- og MERKI-dálkana, allt annað flæðir undir titilinn. */
+      @media (max-width: 900px) {
+        #view-verkbord .vb-colmerki { display: none !important; }
+      }
+      @media (max-width: 640px) {
+        #view-verkbord .vb-wrap { padding: 14px 10px 90px; }
+        #view-verkbord .vb-dags { display: none !important; }
+        #view-verkbord .vb-rowflex { gap: 9px !important; padding-left: 12px !important; padding-right: 12px !important; }
       }
     `;
     document.head.appendChild(s);
   }
 
-  // ── render ─────────────────────────────────────────────────────────────────
+  // ── render (Þjónustuverk v3 — speglar Thjonustuverkv3.dc.html) ────────────
   function renderAll() {
     const main = document.getElementById('vb-main'); if (!main) return;
+    const c = counts();
     main.innerHTML =
       '<div class="vb-wrap">' +
-        '<div class="vb-add">' +
-          // 2026-07-10 v3 (ósk Agnars — „settu aftur tögin þegar ég skrái verk"):
-          // ALLT sýnilegt, en í þremur léttum línum í stað chippa-veggs:
-          // (1) verk-reitur + „+ Bæta við", (2) fyrirtæki (skrá/RSK) + ⚙ Fleiri
-          // valkostir, (3) MERKIN í einni skrunanlegri línu.
-          '<input class="vb-add-input" id="vb-add-input" placeholder="＋ Skrá verk… (Enter vistar)" autocomplete="off">' +
-          '<button class="vb-add-btn" data-act="add">+ Bæta við</button>' +
-          '<div style="display:flex;flex-wrap:wrap;gap:8px;width:100%;align-items:center">' +
-            // Fyrirtæki: datalist flettir upp á skrá (fyrirtaeki); sláir þú inn
-            // KENNITÖLU (10 tölustafi) flettist nafnið upp í RSK fyrirtækjaskrá
-            // gegnum /api/kt-lookup og reiturinn fyllist með opinbera nafninu.
-            '<input class="vb-add-cust" id="vb-add-cust" list="vb-add-colist" placeholder="🏢 Fyrirtæki eða kennitala (RSK)…" autocomplete="off" ' +
-              'style="flex:1 1 180px;min-width:140px;font:inherit;font-size:14px;padding:10px 13px;border-radius:11px;border:1.5px solid rgba(20,24,34,.14);background:#fbfcfe;outline:none">' +
-            '<datalist id="vb-add-colist"></datalist>' +
-            '<button data-act="addmore" title="Skrá og opna alla valkosti (forgangur, frestur, nánar…)" ' +
-              'style="font:inherit;font-size:12.5px;font-weight:700;padding:10px 13px;border-radius:11px;border:1.5px solid rgba(20,24,34,.14);background:#fff;color:#475569;cursor:pointer">⚙ Fleiri valkostir</button>' +
+        // Síðutitill á dökka bandinu + „+ Nýtt mál" (togglar composer-kortið)
+        '<div style="display:flex;align-items:flex-end;justify-content:space-between;gap:20px;margin-bottom:18px;flex-wrap:wrap">' +
+          '<div>' +
+            '<div style="font-size:28px;font-weight:700;color:#fff;letter-spacing:-.01em">🔧 Þjónustuverk</div>' +
+            '<div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:4px">Tilboð, fyrirspurnir og póstar sem þarf að fylgja eftir</div>' +
+            '<div id="vb-morgun" style="font-size:12px;color:rgba(255,255,255,.55);margin-top:3px;font-family:\'Space Mono\',monospace"></div>' +
           '</div>' +
-          // Merki: velja má mörg um leið og skráð er — EIN skrunanleg lína.
-          '<div class="vb-scroll" style="margin-top:2px">' +
-            '<span style="font-size:10.5px;font-weight:800;color:#8891a0;text-transform:uppercase;letter-spacing:.04em;align-self:center">🏷 Merki</span>' +
+          '<button data-act="composer" class="abtn" style="height:42px;padding:0 18px;border-radius:12px;border:1px solid rgba(190,32,28,.55);' +
+            'background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;' +
+            'box-shadow:0 0 16px -4px rgba(160,16,16,.55),inset 0 1px 0 rgba(255,255,255,.16);display:inline-flex;align-items:center;gap:7px">＋ Nýtt mál</button>' +
+        '</div>' +
+        // Composer-kort (skráningarlínan + MERKI tagpicks)
+        '<div id="vb-composer" style="' + V3_CARD + ';padding:14px 16px;margin-bottom:16px;display:' + (state.composerOpen ? 'block' : 'none') + '">' +
+          '<div style="display:flex;gap:8px;align-items:center;margin-bottom:9px;flex-wrap:wrap">' +
+            '<input class="vb-add-cust" id="vb-add-cust" list="vb-add-colist" placeholder="🗂 Fyrirtæki eða kennitala (RSK)…" autocomplete="off" ' +
+              'style="flex:1 1 200px;min-width:150px;height:38px;padding:0 13px;border-radius:9px;border:1px solid rgba(20,24,34,.14);background:#eef1f6;color:#141822;font-family:inherit;font-size:13px;outline:none">' +
+            '<datalist id="vb-add-colist"></datalist>' +
+            '<input class="vb-add-input" id="vb-add-input" placeholder="+ Skrá verk… (Enter vistar)" autocomplete="off" ' +
+              'style="flex:2 1 240px;min-width:170px;height:38px;padding:0 13px;border-radius:9px;border:1px solid rgba(20,24,34,.14);background:#eef1f6;color:#141822;font-family:inherit;font-size:13.5px;font-weight:500;outline:none">' +
+            '<button data-act="add" class="abtn" style="flex:none;height:38px;padding:0 16px;border-radius:9px;border:1px solid rgba(190,32,28,.55);' +
+              'background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)">+ Bæta við</button>' +
+            '<button data-act="addmore" title="Skrá og opna alla valkosti (forgangur, frestur, nánar…)" ' +
+              'style="flex:none;height:38px;padding:0 13px;border-radius:9px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#475569;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer">⚙ Fleiri</button>' +
+          '</div>' +
+          '<div class="vb-scroll" style="align-items:center">' +
+            '<span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:#94a3b8;margin-right:1px">🏷 MERKI</span>' +
             TAG_ORDER.map(t => {
               const d = TAGS[t], on = state.addTags.indexOf(t) !== -1;
               return '<button data-act="addtag" data-tag="' + t + '" type="button" ' +
-                'style="font:inherit;font-size:11px;font-weight:700;padding:4px 10px;border-radius:99px;cursor:pointer;white-space:nowrap;' +
-                'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + '">' +
+                'style="font-family:inherit;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:7px;' + V3_METAL + ';color:' + (TAG_DK[t] || '#c3ccd8') + ';cursor:pointer;white-space:nowrap;' +
+                'opacity:' + (on ? '1' : '.55') + (on ? ';outline:1px solid currentColor;outline-offset:-1px' : '') + '">' +
                 d.emoji + ' ' + esc(d.label) + '</button>';
             }).join('') +
           '</div>' +
         '</div>' +
-        '<div class="vb-hint" id="vb-hint"></div>' +
-        '<div class="vb-controls" id="vb-controls"></div>' +
-        '<div class="vb-list" id="vb-list"></div>' +
+        '<div id="vb-controls" style="' + V3_CARD + ';padding:15px 17px;margin-bottom:16px"></div>' +
+        '<div style="border-radius:18px;border:1px solid rgba(20,24,34,.1);background:#fff;box-shadow:0 16px 40px -20px rgba(15,23,42,.34);overflow:hidden">' +
+          '<div id="vb-list"></div>' +
+        '</div>' +
       '</div>';
     renderControls(); renderList();
   }
 
+  // Stjórnkortið (v3): Innhólf/Allt/Verkefni/Lokað flipar + leit + röðun/sýn,
+  // skil, svo TÖG-síuröðin (⭐ Áríðandi + dökk-metal merkjachippar með teljara).
   function renderControls() {
     const el = document.getElementById('vb-controls'); if (!el) return;
     const c = counts();
-    const q = (v, label, n) => '<button class="vb-q' + (state.queue === v ? ' active' : '') + '" data-act="queue" data-q="' + v + '">' + label + '<span class="n">' + n + '</span></button>';
-    const f = (v, label) => '<button class="vb-fchip' + (state.filter === v ? ' active' : '') + '" data-act="filter" data-f="' + v + '">' + label + '</button>';
-    // Þjónustuborð v2: (0) morgunlína — staðan í einni setningu, (A) biðraðir
-    // 📥 Innhólf · 📋 Verkefni · Lokað + leit, (B) FLOKKARNIR FIMM sem sía í
-    // einni skrunanlegri línu, (C) röðun/sýn/póst-takkar í einni skrunlínu.
     const noiseN = allItems().filter(x => isOpen(x) && isPaymentNoise(x)).length;
+    // Morgunlínan undir síðutitlinum (mono, á dökka bandinu).
+    const mg = document.getElementById('vb-morgun');
+    if (mg) mg.textContent =
+      (c.wait ? c.wait + (c.wait === 1 ? ' póstur bíður svars' : ' póstar bíða svars') : 'enginn póstur bíður svars') +
+      (c.idag ? ' · ' + c.idag + ' verk í dag' : '') + (c.od ? ' · ' + c.od + ' fram yfir' : '');
+
+    const tab = (v, icon, label, n) => {
+      const on = state.queue === v;
+      return '<button data-act="queue" data-q="' + v + '" style="display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px;border-radius:11px;' +
+        (on ? V3_METAL_ON : V3_METAL) + ';color:' + (on ? '#fff' : 'rgba(255,255,255,.85)') + ';font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap">' +
+        icon + label +
+        '<span style="font-family:\'Space Mono\',monospace;font-size:11px;font-weight:700;color:#fff;background:rgba(255,255,255,.16);border-radius:20px;padding:1px 8px">' + n + '</span></button>';
+    };
+
     el.innerHTML =
-      '<div style="width:100%;font-size:12.5px;font-weight:600;color:#4b5563;margin:-2px 2px 4px">' +
-        (c.wait ? '<span style="color:#b91c1c;font-weight:800">' + c.wait + (c.wait === 1 ? ' póstur bíður svars' : ' póstar bíða svars') + '</span>' : 'Enginn póstur bíður svars 🎉') +
-        (c.idag ? ' · ' + c.idag + ' verk í dag' : '') +
-        (c.od ? ' · <span style="color:#b45309">' + c.od + ' fram yfir</span>' : '') +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding-bottom:14px;border-bottom:1px solid rgba(20,24,34,.08);flex-wrap:wrap">' +
+        '<div class="vb-scroll" style="width:auto;flex:1 1 auto;min-width:0">' +
+          tab('post', '📥 ', 'Innhólf', c.post) +
+          tab('allt', '☰ ', 'Allt', c.allt) +
+          tab('verk', '📋 ', 'Verkefni', c.verk) +
+          tab('lokad', '✓ ', 'Lokað', c.lokad) +
+        '</div>' +
+        '<div style="position:relative;flex:1 1 200px;min-width:160px;max-width:260px">' +
+          '<span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:#9aa3b5;font-size:13px">🔎</span>' +
+          '<input class="malSearch" id="vb-search" placeholder="Leita í málum…" value="' + esc(state.search) + '" ' +
+            'style="width:100%;height:38px;padding:0 12px 0 34px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#141822;font-family:inherit;font-size:13px;outline:none;box-shadow:inset 0 1px 2px rgba(20,30,60,.05)">' +
+        '</div>' +
+        '<div class="vb-scroll" style="width:auto;flex:0 1 auto">' +
+          '<button data-act="sort" data-s="snjall" title="Áríðandi og gjalddagar efst — hreinsar dálkaröðun" ' +
+            'style="display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 14px;border-radius:11px;' + (state.sort !== 'nyjast' && !state.colSort ? V3_METAL_ON + ';color:#fff' : V3_METAL + ';color:rgba(255,255,255,.9)') + ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">⭐ Snjallröðun</button>' +
+          '<span style="display:inline-flex;border:1px solid #0a0b0d;border-radius:11px;overflow:hidden">' +
+            '<button data-act="viewmode" data-vm="thett" style="height:38px;padding:0 13px;border:0;' + (state.viewMode === 'thett' ? V3_METAL_ON.replace('border:1px solid #0a0b0d;', '') + ';color:#fff' : V3_METAL.replace('border:1px solid #0a0b0d;', '') + ';color:rgba(255,255,255,.6)') + ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">☰ Þétt</button>' +
+            '<button data-act="viewmode" data-vm="itarlegt" style="height:38px;padding:0 13px;border:0;border-left:1px solid rgba(20,24,34,.3);' + (state.viewMode !== 'thett' ? V3_METAL_ON.replace('border:1px solid #0a0b0d;', '') + ';color:#fff' : V3_METAL.replace('border:1px solid #0a0b0d;', '') + ';color:rgba(255,255,255,.6)') + ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">▮ Ítarlegt</button>' +
+          '</span>' +
+          '<button data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (engin tvítök)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:rgba(255,255,255,.85);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">✉️ Sækja póst</button>' +
+          (noiseN ? '<button data-act="clearnoise" title="Fela allar Payday-greiðslutilkynningar í einu (endurheimtanlegt)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:#ff8a82;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🧹 ' + noiseN + '</button>' : '') +
+        '</div>' +
       '</div>' +
-      q('post', '📥 Innhólf', c.post) + q('verk', '📋 Verkefni', c.verk) + q('lokad', '✓ Lokað', c.lokad) +
-      '<input class="vb-search" id="vb-search" placeholder="🔎 Leita…" value="' + esc(state.search) + '">' +
-      // Flokkarnir fimm sem sía (Þjónustuborð v2) — teljari innan valdrar
-      // biðraðar; „• Annað" fangar óflokkað. Ein skrunanleg lína.
-      '<div class="vb-scroll">' +
+      // TÖG-síuröðin
+      '<div class="vb-scroll" style="align-items:center">' +
+        '<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#8a93a5;margin-right:2px">TÖG</span>' +
+        '<button data-act="starfilter" style="font-family:inherit;font-size:12px;font-weight:700;padding:5px 11px;border-radius:8px;' + V3_METAL + ';color:#f2c24e;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;' +
+          (state.fStar ? 'outline:1px solid #f2c24e;outline-offset:-1px' : 'opacity:.8') + '">⭐ Áríðandi' + (c ? '' : '') + '</button>' +
         (function () {
-          const fc = {}; let annad = 0;
-          allItems().filter(x => inQueue(x)).forEach(x => {
-            const f = rowFlokk(x);
-            if (f) fc[f] = (fc[f] || 0) + 1; else annad++;
-          });
-          const allChip = '<button class="vb-fchip' + (!state.fFlokk ? ' active' : '') + '" data-act="flokk" data-f="">☰ Allt</button>';
-          const chips = FLOKK_ORDER.map(f => {
-            const d = FLOKKAR[f], on = state.fFlokk === f, n = fc[f] || 0;
-            return '<button data-act="flokk" data-f="' + f + '" title="Sía eftir flokknum ' + esc(d.label) + '" ' +
-              'style="font:inherit;font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:99px;cursor:pointer;white-space:nowrap;' +
-              'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + ';opacity:' + (n || on ? 1 : .55) + '">' +
-              d.emoji + ' ' + esc(d.label) + (n ? ' <span style="opacity:.7">' + n + '</span>' : '') + '</button>';
+          const tc = {};
+          allItems().filter(x => inQueue(x)).forEach(x => dispTags(x).forEach(t => { tc[t] = (tc[t] || 0) + 1; }));
+          return TAG_ORDER.map(t => {
+            const d = TAGS[t], on = state.fTag === t, n = tc[t] || 0;
+            if (!n && !on) return '';
+            return '<button data-act="tagfilter" data-tag="' + t + '" title="Sía eftir merkinu ' + esc(d.label) + '" ' +
+              'style="font-family:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;' + V3_METAL + ';color:' + (TAG_DK[t] || '#c3ccd8') + ';cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;' +
+              (on ? 'outline:1px solid currentColor;outline-offset:-1px' : 'opacity:.8') + '">' +
+              d.emoji + ' ' + esc(d.label) + ' <span style="opacity:.6">' + n + '</span></button>';
           }).join('');
-          const annadChip = (annad || state.fFlokk === 'annad')
-            ? '<button class="vb-fchip' + (state.fFlokk === 'annad' ? ' active' : '') + '" data-act="flokk" data-f="annad">• Annað <span style="opacity:.7">' + annad + '</span></button>' : '';
-          return allChip + chips + annadChip;
         })() +
-      '</div>' +
-      // Röðun/sýn/póst-takkar — alltaf sýnilegir (ósk Agnars: ekkert falið),
-      // ein skrunanleg lína svo þeir taki aldrei meira en ~40px.
-      ('<div class="vb-scroll" style="margin-top:2px">' +
-        // Röðun (2026-07-10): snjallröðun (áríðandi/gjalddagi eins og áður) eða
-        // hrein dagsetningarröð með nýjast efst. Valið geymist milli heimsókna.
-        '<button class="vb-fchip' + (state.sort !== 'nyjast' ? ' active' : '') + '" data-act="sort" data-s="snjall" title="Áríðandi og gjalddagar efst (sjálfgefið)">⭐ Snjallröðun</button>' +
-        '<button class="vb-fchip' + (state.sort === 'nyjast' ? ' active' : '') + '" data-act="sort" data-s="nyjast" title="Raða eftir dagsetningu — nýjast efst">🕒 Nýjast efst</button>' +
-        // Sýn: ☰ þéttur listi (ein lína per verk) · ▤ ítarlegri (nótur sjást líka)
-        '<span style="display:inline-flex;border:1.5px solid rgba(20,24,34,.14);border-radius:10px;overflow:hidden">' +
-          '<button data-act="viewmode" data-vm="thett" title="Þéttur listi — ein lína per verk" style="font:inherit;font-size:12px;font-weight:700;padding:8px 11px;border:none;cursor:pointer;background:' + (state.viewMode === 'thett' ? '#0f172a' : '#fff') + ';color:' + (state.viewMode === 'thett' ? '#fff' : '#475569') + '">☰ Þétt</button>' +
-          '<button data-act="viewmode" data-vm="itarlegt" title="Ítarlegri listi — nótur og samantekt sjást" style="font:inherit;font-size:12px;font-weight:700;padding:8px 11px;border:none;border-left:1px solid rgba(20,24,34,.14);cursor:pointer;background:' + (state.viewMode !== 'thett' ? '#0f172a' : '#fff') + ';color:' + (state.viewMode !== 'thett' ? '#fff' : '#475569') + '">▤ Ítarlegt</button>' +
-        '</span>' +
-        '<button class="vb-fchip" data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (sama innsog og Þjónustuver — engin tvítök)">✉️ Sækja tölvupóst</button>' +
-        (noiseN ? '<button class="vb-fchip" data-act="clearnoise" title="Fela allar Payday „reikningur greiddur" tilkynningar í einu (endurheimtanlegt)" style="border-color:#fca5a5;color:#b91c1c;background:#fef2f2">🧹 Hreinsa greiðslu-tilkynningar (' + noiseN + ')</button>' : '') +
-        '<button class="vb-fchip" data-act="import" title="Flytja inn opin atriði úr gömlu Verkefni + Þjónustuverk listunum">⬇︎ Flytja inn úr gömlu</button>' +
-      '</div>');
+      '</div>';
   }
 
+  // Listakortið (v3): dökk-metal dálkahaus með röðunar-örvum, kaflar í
+  // innhólfinu (bíða svars / svarað / geymsla), zebra-raðir, síðuskipting.
+  const PAGE_SIZE = 25;
+  function colHead() {
+    const arrow = (k) => {
+      if (!state.colSort || state.colSort.key !== k) return '<span style="color:rgba(255,255,255,.45)">↕</span>';
+      return '<span style="color:#fff">' + (state.colSort.dir === 'asc' ? '▲' : '▼') + '</span>';
+    };
+    return '<div style="display:flex;align-items:center;gap:16px;padding:11px 18px 11px 21px;' + V3_METAL.replace('border:1px solid #0a0b0d', 'border-bottom:1px solid #0a0b0d') + ';font-size:11.5px;font-weight:700;letter-spacing:.08em;color:#f0f2f5">' +
+      '<span style="width:22px;flex:none"></span>' +
+      '<span data-act="colsort" data-k="dags" style="width:74px;flex:none;display:inline-flex;align-items:center;gap:4px;cursor:pointer" class="vb-colh">DAGS. ' + arrow('dags') + '</span>' +
+      '<span data-act="colsort" data-k="mal" style="flex:1;min-width:0;display:inline-flex;align-items:center;gap:4px;cursor:pointer">FYRIRTÆKI / MÁL ' + arrow('mal') + '</span>' +
+      '<span style="width:220px;flex:none" class="vb-colmerki">MERKI</span>' +
+      '<span data-act="colsort" data-k="stada" style="flex:none;display:inline-flex;align-items:center;gap:4px;cursor:pointer">STAÐA ' + arrow('stada') + '</span>' +
+    '</div>';
+  }
+  function pager(total, shownFrom, shownTo) {
+    const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (pages <= 1) return '<div style="display:flex;align-items:center;padding:12px 18px;background:linear-gradient(180deg,#f1f4f9,#e7ebf2);border-top:1px solid rgba(20,24,34,.09)">' +
+      '<span style="font-size:12px;color:#6b7686">Sýnir <b style="color:#3a4250">' + total + '</b> mál</span></div>';
+    const cur = Math.min(state.page, pages - 1);
+    let nums = [];
+    for (let i = 0; i < pages; i++) {
+      if (i === 0 || i === pages - 1 || Math.abs(i - cur) <= 1) nums.push(i);
+      else if (nums[nums.length - 1] !== '…') nums.push('…');
+    }
+    const btn = (label, pg, on, dis) =>
+      dis ? '' : '<button data-act="page" data-p="' + pg + '" style="height:32px;min-width:32px;padding:0 8px;border-radius:8px;font-family:\'Space Mono\',monospace;font-size:12.5px;cursor:pointer;' +
+        (on ? 'border:1px solid #0a0b0d;background:linear-gradient(145deg,#08080a,#2a2a30 50%,#070709);color:#fff;font-weight:700'
+            : 'border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fff,#e3e7ee);color:#3a4250;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)') + '">' + label + '</button>';
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:linear-gradient(180deg,#f1f4f9,#e7ebf2);border-top:1px solid rgba(20,24,34,.09);flex-wrap:wrap">' +
+      '<span style="font-size:12px;color:#6b7686">Sýnir <b style="color:#3a4250">' + (shownFrom + 1) + '–' + shownTo + '</b> af <b style="color:#3a4250">' + total + '</b> málum</span>' +
+      '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+        (cur > 0 ? btn('‹', cur - 1, false) : '') +
+        nums.map(n => n === '…' ? '<span style="font-size:12px;color:#94a3b8;padding:0 2px">…</span>' : btn(String(n + 1), n, n === cur)).join('') +
+        (cur < pages - 1 ? btn('›', cur + 1, false) : '') +
+      '</div></div>';
+  }
   function renderList() {
     const el = document.getElementById('vb-list'); if (!el) return;
-    if (state.loading && !state.items.length) { el.innerHTML = '<div class="vb-empty">Sæki…</div>'; return; }
+    if (state.loading && !state.items.length) { el.innerHTML = colHead() + '<div class="vb-empty">Sæki…</div>'; return; }
     const rows = visibleRows();
-    // Innhólfið fer alltaf í kafla-leiðina (geymslu-hlekkurinn á að sjást þó tómt sé).
-    if (!rows.length && state.queue !== 'post') {
-      el.innerHTML = '<div class="vb-empty">' +
-        (state.search ? 'Ekkert fannst fyrir „' + esc(state.search) + '“.' : 'Ekkert verk hér.') + '</div>';
-      return;
-    }
-    const cap = 300;
-    const sec = (t) => '<div style="font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#8a93a5;margin:6px 2px 0">' + t + '</div>';
-    let html;
+    const sec = (t) => '<div style="display:flex;align-items:center;gap:8px;padding:9px 18px;background:linear-gradient(180deg,#f1f4f9,#e9edf4);border-top:1px solid rgba(20,24,34,.08);font-size:10.5px;font-weight:700;letter-spacing:.1em;color:#8a93a5">' + t + '</div>';
+    let html = colHead();
+    let listRows, total;
     if (state.queue === 'post') {
-      // Innhólfið í köflum (Þjónustuborð v2): 🔴 bíða svars (elst efst) →
-      // svarað/upplýsingar → 📦 geymslu-hlekkur (406 gamlir póstar, ekkert eytt).
       const c = counts();
       const wait = rows.filter(x => isWaiting(x) && !isArchived(x));
       const rest = rows.filter(x => !isWaiting(x) && !isArchived(x));
       const old = rows.filter(isArchived);
-      html =
-        (wait.length ? sec('🔴 Bíða svars' + (state.sort === 'nyjast' ? ' — nýjast efst (þín röðun)' : ' — elstu efst')) + wait.slice(0, cap).map(renderRow).join('') : '') +
-        (rest.length ? sec(wait.length ? 'Svarað & upplýsingar' : 'Innhólf') + rest.map(renderRow).join('') : '') +
+      html +=
+        (wait.length ? sec('🔴 BÍÐA SVARS — ELSTU EFST') + wait.map(renderRow).join('') : '') +
+        (rest.length ? sec(wait.length ? 'SVARAÐ & UPPLÝSINGAR' : 'INNHÓLF') + rest.map(renderRow).join('') : '') +
         (!wait.length && !rest.length && !state.showOld ? '<div class="vb-empty">🎉 Innhólfið er tómt.</div>' : '') +
         (c.geymsla || old.length
-          ? '<div data-act="showold" style="text-align:center;font-size:12.5px;color:#5b6472;padding:10px;cursor:pointer;text-decoration:underline">' +
+          ? '<div data-act="showold" style="text-align:center;font-size:12.5px;color:#5b6472;padding:11px;cursor:pointer;text-decoration:underline;border-top:1px solid rgba(20,24,34,.07)">' +
             (state.showOld ? '▲ Fela eldri póst' : '📦 Sýna eldri póst (' + c.geymsla + ' í geymslu — ekkert eytt)') + '</div>' : '') +
-        (state.showOld ? old.slice(0, cap).map(renderRow).join('') : '');
+        (state.showOld ? old.slice(0, 300).map(renderRow).join('') : '') +
+        pager(wait.length + rest.length, 0, wait.length + rest.length);
     } else {
-      html = rows.slice(0, cap).map(renderRow).join('') +
-        (rows.length > cap ? '<div class="vb-hint" style="text-align:center">Sýni fyrstu ' + cap + ' af ' + rows.length + '.</div>' : '');
+      total = rows.length;
+      if (!total) {
+        html += '<div class="vb-empty">' + (state.search ? 'Ekkert fannst fyrir „' + esc(state.search) + '\u201c.' : 'Engin mál hér.') + '</div>';
+      } else {
+        const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+        if (state.page > pages - 1) state.page = pages - 1;
+        const from = state.page * PAGE_SIZE;
+        listRows = rows.slice(from, from + PAGE_SIZE);
+        html += listRows.map(renderRow).join('') + pager(total, from, from + listRows.length);
+      }
     }
     el.innerHTML = html;
     if (state.expandedId != null) {
-      const open = el.querySelector('.vb-row.open');
+      const open = el.querySelector('.vb-row.open, .task.open');
       if (open) wireEditor(open);
     }
   }
 
+  // v3 task-röðin: 5px flokkslituð rönd · stjarna · mono-dags · titill+lýsing+
+  // tenging · MERKI-dálkur (jafnbreiðir dökk-metal chippar) · STAÐA-pilla · ✕.
   function renderRow(r) {
-    const st = statusDef(r.status);
-    const di = dueInfo(r.due_at);
-    const od = isOverdue(r);
     const open = state.expandedId === r.id;
     const done = !isOpen(r);
-    // Dot = hrein STAÐA (nýtt/í vinnslu/…). Áríðandi + útrunnið sjást á vinstri-
-    // kantinum (rautt/amber), ekki líka á dotinu — annars tvöföld/ruglandi merking.
-    const dotColor = st.dot;
     const compact = state.viewMode === 'thett' && !open;
-    const tags = rowTags(r);
-    const cls = 'vb-row' + (r.important ? ' imp' : '') + (od && !done ? ' od' : '') + (open ? ' open' : '') + (done ? ' done' : '') + (compact ? ' thett' : '');
-    let html = '<div class="' + cls + '" data-id="' + esc(r.id) + '" data-act="expand">' +
-      '<div class="vb-dot" data-act="status" data-id="' + esc(r.id) + '" title="' + esc(st.label) + ' — smella til að færa áfram" ' +
-        'style="border-color:' + dotColor + ';color:' + dotColor + '">' + (done ? '✓' : '') + '</div>' +
-      '<div class="vb-main">' +
-        '<div class="vb-title">' + esc(r.title || '(án titils)') + '</div>' +
-        '<div class="vb-meta">' +
-          // Þjónustuborð v2: FLOKKURINN er aðalmerkið (litaður chippi); merki
-          // notandans (tags) birtast á eftir honum — nema þau sem segja það
-          // sama og flokkurinn (annars „🔧 Þjónusta 🔧 Þjónusta"-tvítak).
-          flokkChip(rowFlokk(r)) +
-          (tags.length ? tags.filter(t => (TAG_TO_FLOKK[t] || '') !== rowFlokk(r)).map(t => tagChip(t, true)).join('') : '') +
-          (r._vd ? '<span class="vb-tag">úr Verkdagbók</span>' : '') +
-          (r.customer_nafn ? '<span class="vb-cust">🏢 ' + esc(r.customer_nafn) + '</span>' : '') +
-          // Bið-/svar-staða (aðeins innhólfspóstur): 🔴 hve lengi kúnninn hefur
-          // beðið, eða ✓ svarað (svarað af borðinu eða nýjasta skeytið frá okkur).
-          (isWaiting(r) ? '<span style="font-size:10.5px;font-weight:800;padding:2px 8px;border-radius:7px;background:#fef2f2;color:#b91c1c;border:1px solid #fecaca">🔴 ' +
-            (function (d) { return d === 0 ? 'kom í dag' : d === 1 ? 'bíður 1 dag' : 'bíður ' + d + ' daga'; })(waitDays(r)) + '</span>' : '') +
-          (isPost(r) && !isWaiting(r) && isOpen(r) && isReplied(r) ? '<span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:7px;background:#f0fdf4;color:#166534;border:1px solid #86efac66">✓ svarað</span>' : '') +
-          (isArchived(r) ? '<span class="vb-tag" style="color:#64748b;background:#f1f5f9;border-color:#e2e8f0">📦 geymsla</span>' : '') +
-          (di ? '<span class="vb-due' + (od ? ' od' : '') + '">📅 ' + esc(di.label) + '</span>' : '') +
-          '<span class="vb-cust" style="color:' + st.color + '">' + esc(st.label) + '</span>' +
+    const di = dueInfo(r.due_at);
+    const od = isOverdue(r);
+    const tags = dispTags(r);
+    // Innihaldslínan: nýjasta þráðasvar → ✨ samantekt → nótu-forsýn.
+    const tl = state.threadLatest[r.id];
+    const desc = tl
+      ? '↩ ' + (tl.mine ? 'Við svöruðum' : tl.from) + ' · ' + fmtShortDate(tl.at) + ' — ' + cleanPreview(tl.text)
+      : (r.summary ? '✨ ' + r.summary : cleanPreview(r.notes || ''));
+    const descColor = tl ? '#0f766e' : (r.summary && /^✅|^⚠️/.test(r.summary) ? (/^⚠️/.test(r.summary) ? '#be123c' : '#047857') : '#5b6472');
+    // Litlar stöðu-flögur við lýsinguna (bíð-dagar / svarað / geymsla / gjalddagi)
+    const flags =
+      (isWaiting(r) ? '<span style="font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:7px;background:#fff1f2;color:#be123c;border:1px solid #fecdd3;white-space:nowrap">🔴 ' +
+        (function (d) { return d === 0 ? 'kom í dag' : d === 1 ? 'bíður 1 dag' : 'bíður ' + d + ' daga'; })(waitDays(r)) + '</span>' : '') +
+      (isPost(r) && !isWaiting(r) && isOpen(r) && isReplied(r) ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;white-space:nowrap">✓ svarað</span>' : '') +
+      (isArchived(r) ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;white-space:nowrap">📦 geymsla</span>' : '') +
+      (di ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;white-space:nowrap;font-family:\'Space Mono\',monospace;' +
+        (od ? 'background:#fff1f2;color:#be123c;border:1px solid #fecdd3' : 'background:#fffbeb;color:#b45309;border:1px solid #fde68a') + '">📅 ' + esc(di.label) + '</span>' : '');
+    const linkLine = r.customer_nafn
+      ? '<span data-act="history" data-id="' + esc(r.id) + '" style="font-size:12.5px;font-weight:600;color:#2f5fe0;display:inline-flex;align-items:center;gap:5px;cursor:pointer">🏢 ' + esc(r.customer_nafn) + '</span>'
+      : '<span style="font-size:12px;color:#94a3b8;font-style:italic;display:inline-flex;align-items:center;gap:5px">🔗 engin tenging</span>';
+    return '<div class="task' + (open ? ' open' : '') + (done ? ' vb-done' : '') + '" data-id="' + esc(r.id) + '" data-act="expand" ' +
+      'style="display:flex;align-items:stretch;gap:0;border-top:1px solid rgba(20,24,34,.07);cursor:pointer' + (done ? ';opacity:.62' : '') + '">' +
+      '<span style="width:5px;flex:none;background:' + railColor(r) + '"></span>' +
+      '<div style="flex:1;min-width:0;display:flex;gap:16px;padding:' + (compact ? '9px 18px' : '14px 18px') + ';align-items:flex-start" class="vb-rowflex">' +
+        '<span data-act="star" data-id="' + esc(r.id) + '" title="Áríðandi" style="flex:none;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:1px;font-size:15px;color:' + (r.important ? '#e0a93e' : '#cbd2dc') + '">' + (r.important ? '★' : '☆') + '</span>' +
+        '<div class="vb-dags" style="width:74px;flex:none;font-family:\'Space Mono\',monospace;font-size:11.5px;color:#9098a6;padding-top:2px">' + fmtDots(r.created_at) + '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:14px;font-weight:600;color:#11141c;' + (compact ? 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis' : 'line-height:1.35') + '">' +
+            (done ? '<s style="color:#9098a6">' + esc(r.title || '(án titils)') + '</s>' : esc(r.title || '(án titils)')) + '</div>' +
+          (!compact && desc ? '<div style="font-size:12.5px;color:' + descColor + ';margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(desc) + '</div>' : '') +
+          (!compact ? '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + linkLine + flags +
+            (r._vd ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#fef3c7;color:#92400e;border:1px solid #fde68a">📓 úr Verkdagbók</span>' : '') +
+          '</div>' : '') +
+          (open ? renderEditor(r) : '') +
         '</div>' +
-        // Ein hrein innihaldslína (2026-07-10): NÝJASTA svarið í þræðinum vinnur
-        // (gömul ✨-samantekt gat vísað í löngu afgreitt atriði úr miðjum þræði),
-        // annars ✨ samantekt, annars stutt forsýn úr textanum. Aldrei fleiri en ein.
-        (!compact ? (function () {
-          const tl = state.threadLatest[r.id];
-          if (tl) {
-            return '<div class="vb-latest">↩ <b>' + (tl.mine ? 'Við svöruðum' : esc(tl.from)) + '</b> · ' + esc(fmtShortDate(tl.at)) + ' — ' + esc(cleanPreview(tl.text)) + '</div>';
-          }
-          if (r.summary) return '<div class="vb-sum">' + esc(r.summary) + '</div>';
-          return (state.viewMode !== 'thett' && r.notes) ? '<div class="vb-body">' + esc(cleanPreview(r.notes)) + '</div>' : '';
-        })() : '') +
-        (open ? renderEditor(r) : '') +
-      '</div>' +
-      // Hægri-dálkur: ⭐ áríðandi + ✕ fljót-eyðing (2026-07-10, ósk Agnars —
-      // hreinsa hávaða beint af listanum án þess að opna). Mjúk eyðing (endur-
-      // heimtanleg), engin staðfesting svo það sé fljótlegt á 400+ tilkynningum.
-      '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;flex-shrink:0">' +
-        '<div class="vb-star" data-act="star" data-id="' + esc(r.id) + '" title="Áríðandi">' + (r.important ? '⭐' : '☆') + '</div>' +
-        (r._vd ? '' : '<button class="vb-xdel" data-act="quickdel" data-id="' + esc(r.id) + '" title="Fela / eyða þessari færslu (endurheimtanleg)" ' +
-          'style="border:none;background:none;cursor:pointer;font-size:15px;line-height:1;color:#c2c8d2;padding:2px 4px;border-radius:6px">✕</button>') +
-        // 📧→📋: póstur í innhólfinu fær „færa yfir"-takka (ósk Agnars —
-        // „ákveðnir póstar sem voru færðir yfir"). Geymslupóstur fær ↩ til baka.
-        (isPost(r) && isOpen(r) && !isArchived(r) ? '<button data-act="promote" data-id="' + esc(r.id) + '" title="Færa þennan póst yfir á verkefnalistann" ' +
-          'style="border:1.5px solid #16a34a55;background:#f0fdf4;color:#166534;cursor:pointer;font-size:11px;font-weight:800;line-height:1;padding:5px 7px;border-radius:8px;white-space:nowrap">📋 Færa</button>' : '') +
-        (isArchived(r) && isOpen(r) ? '<button data-act="unarchive" data-id="' + esc(r.id) + '" title="Taka úr geymslu — aftur í innhólfið" ' +
-          'style="border:1.5px solid rgba(20,24,34,.16);background:#fff;color:#475569;cursor:pointer;font-size:11px;font-weight:800;line-height:1;padding:5px 7px;border-radius:8px;white-space:nowrap">↩ Út</button>' : '') +
+        '<div class="vb-colmerki" style="width:220px;flex:none;display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end;align-content:flex-start">' +
+          tags.map(t => dkChip(t)).join('') +
+        '</div>' +
+        '<div style="flex:none;display:flex;align-items:center;gap:12px;padding-top:1px">' +
+          (isPost(r) && isOpen(r) && !isArchived(r) ? '<span data-act="promote" data-id="' + esc(r.id) + '" title="Færa á verkefnalistann" ' +
+            'style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;white-space:nowrap;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)">📋 Færa</span>' : '') +
+          (isArchived(r) && isOpen(r) ? '<span data-act="unarchive" data-id="' + esc(r.id) + '" title="Taka úr geymslu" ' +
+            'style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fff,#e3e7ee);color:#3a4250;white-space:nowrap;cursor:pointer">↩ Út</span>' : '') +
+          stadaPill(r) +
+          (r._vd ? '' : '<span data-act="quickdel" data-id="' + esc(r.id) + '" title="Fela / eyða (endurheimtanlegt)" style="color:#cbd2dc;cursor:pointer;font-size:15px">✕</span>') +
+        '</div>' +
       '</div>' +
     '</div>';
-    return html;
   }
   // Nótu-forsýn: fjarlægja langar slóðir (mailchimp/gallery o.fl.) sem gera
   // sjálfvirku póst-tilkynningarnar ólæsilegar á listanum.
@@ -1149,10 +1172,32 @@
         const inp = document.getElementById('vb-add-input'); if (inp) inp.focus();
         return;
       }
-      if (act === 'queue') { setQueue(t.getAttribute('data-q')); renderControls(); renderList(); return; }
+      if (act === 'queue') { setQueue(t.getAttribute('data-q')); state.page = 0; renderControls(); renderList(); return; }
       if (act === 'filter') { setFilter(t.getAttribute('data-f')); renderControls(); renderList(); return; }
-      if (act === 'sort') { setSort(t.getAttribute('data-s')); renderControls(); renderList(); return; }
+      if (act === 'sort') { setSort(t.getAttribute('data-s')); state.colSort = null; state.page = 0; renderControls(); renderList(); return; }
       if (act === 'viewmode') { setViewMode(t.getAttribute('data-vm')); renderControls(); renderList(); return; }
+      // v3: composer-toggl (+ Nýtt mál), ⭐ Áríðandi-sía, dálkaröðun, síðuskipting.
+      if (act === 'composer') {
+        state.composerOpen = !state.composerOpen;
+        const p = document.getElementById('vb-composer');
+        if (p) { p.style.display = state.composerOpen ? 'block' : 'none'; if (state.composerOpen) { const i = document.getElementById('vb-add-input'); if (i) i.focus(); } }
+        return;
+      }
+      if (act === 'starfilter') { state.fStar = !state.fStar; state.page = 0; renderControls(); renderList(); return; }
+      if (act === 'colsort') {
+        e.stopPropagation();
+        const k = t.getAttribute('data-k');
+        state.colSort = (state.colSort && state.colSort.key === k)
+          ? (state.colSort.dir === 'asc' ? { key: k, dir: 'desc' } : null)
+          : { key: k, dir: k === 'dags' ? 'desc' : 'asc' };
+        state.page = 0; renderList(); return;
+      }
+      if (act === 'page') {
+        e.stopPropagation();
+        state.page = Number(t.getAttribute('data-p')) || 0; renderList();
+        const lc = document.getElementById('vb-list'); if (lc) lc.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        return;
+      }
       if (act === 'history') {
         e.stopPropagation();
         const row = state.items.find(x => x.id === Number(t.getAttribute('data-id')));
