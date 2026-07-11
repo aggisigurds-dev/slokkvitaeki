@@ -270,8 +270,9 @@
     fStar: false,
     colSort: null,      // {key:'dags'|'mal'|'stada', dir:'asc'|'desc'} | null
     page: 0,
-    // Composer opið á tölvu, lokað á síma (+ Nýtt mál opnar) — verkefnin fyrst.
-    composerOpen: (function () { try { return window.innerWidth > 760; } catch (_) { return true; } })(),
+    // Composer opið á tölvu, lokað á síma/spjaldtölvu (+ Nýtt mál opnar) —
+    // verkefnin fyrst á minni skjám (þröskuldur fylgir 1020px media-reglunni).
+    composerOpen: (function () { try { return window.innerWidth > 1020; } catch (_) { return true; } })(),
     expandedId: null
   };
   function setQueue(q) { state.queue = q; try { localStorage.setItem(QKEY, q); } catch (_) {} }
@@ -809,14 +810,28 @@
       #view-verkbord .vb-btn.green { background: linear-gradient(150deg,#2bbf6c,#0f6e3a);
         color: #fff; border: 1px solid #156e3a; font-weight: 700;
         box-shadow: inset 0 1px 0 rgba(255,255,255,.25); }
-      /* Sími: fela dags- og MERKI-dálkana, allt annað flæðir undir titilinn. */
-      @media (max-width: 900px) {
+      /* ── Sími/spjaldtölva (2026-07-11, skjámynd Agnars): taflan kremst í mjóa
+         súlu þegar MERKI-dálkur + aðgerðir sitja hægra megin. Á ≤1020px víkur
+         MERKI-dálkurinn; á ≤820px víkur dags-dálkurinn og röðin leggst í TVÆR
+         línur — efnið fullbreitt efst, aðgerðirnar (Færa · Ný · ✕) hægra megin
+         á eigin línu undir. Titillinn fær að brjóta línur eðlilega. ── */
+      @media (max-width: 1020px) {
         #view-verkbord .vb-colmerki { display: none !important; }
       }
-      @media (max-width: 640px) {
+      @media (max-width: 820px) {
         #view-verkbord .vb-wrap { padding: 14px 10px 90px; }
         #view-verkbord .vb-dags { display: none !important; }
-        #view-verkbord .vb-rowflex { gap: 9px !important; padding-left: 12px !important; padding-right: 12px !important; }
+        #view-verkbord .vb-rowflex { flex-wrap: wrap; gap: 8px 10px !important;
+          padding-left: 12px !important; padding-right: 12px !important; }
+        #view-verkbord .vb-rowflex > div:not(.vb-acts):not(.vb-dags) { flex: 1 1 calc(100% - 40px) !important; }
+        #view-verkbord .vb-acts { flex: 1 1 100% !important; justify-content: flex-end;
+          padding-top: 0 !important; gap: 9px !important;
+          border-top: 1px dashed rgba(20,24,34,.08); padding-top: 7px !important; margin-top: 2px; }
+        /* Dálkahausinn einfaldast: bara MÁL + STAÐA */
+        #view-verkbord .vb-colh { display: none !important; }
+        /* Stjórnkortið þéttara */
+        #view-verkbord #vb-controls { padding: 12px 12px !important; }
+        #view-verkbord #vb-composer { padding: 12px 12px !important; }
       }
     `;
     document.head.appendChild(s);
@@ -1057,7 +1072,7 @@
         '<div class="vb-colmerki" style="width:220px;flex:none;display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end;align-content:flex-start">' +
           tags.map(t => dkChip(t)).join('') +
         '</div>' +
-        '<div style="flex:none;display:flex;align-items:center;gap:12px;padding-top:1px">' +
+        '<div class="vb-acts" style="flex:none;display:flex;align-items:center;gap:12px;padding-top:1px">' +
           (isPost(r) && isOpen(r) && !isArchived(r) ? '<span data-act="promote" data-id="' + esc(r.id) + '" title="Færa á verkefnalistann" ' +
             'style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;white-space:nowrap;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)">📋 Færa</span>' : '') +
           (isArchived(r) && isOpen(r) ? '<span data-act="unarchive" data-id="' + esc(r.id) + '" title="Taka úr geymslu" ' +
