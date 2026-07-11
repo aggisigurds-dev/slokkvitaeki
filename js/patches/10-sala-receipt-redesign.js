@@ -208,6 +208,7 @@
     // að snerta tölurnar sjálfar (upplýsinga-lína, ekki ný stærðfræði).
     let lineDiscEx = 0;
     const linePcts = [];
+    let billableLines = 0, discLines = 0;
     for (const l of lines) {
       const v = (l.lineEx * l.vskPct) / 100;
       rawEx += l.lineEx;
@@ -217,10 +218,11 @@
       byRate[key].ex += l.lineEx;
       byRate[key].vsk += v;
       if (l.lineEx > 0) {
+        billableLines++;
         const m = String(l.desc || '').match(/·\s*[−-]\s*(\d+(?:[.,]\d+)?)\s*%\s*afsl/i);
         if (m) {
           const p = parseFloat(m[1].replace(',', '.'));
-          if (p > 0 && p < 100) { lineDiscEx += l.lineEx * (p / (100 - p)); if (linePcts.indexOf(p) < 0) linePcts.push(p); }
+          if (p > 0 && p < 100) { lineDiscEx += l.lineEx * (p / (100 - p)); if (linePcts.indexOf(p) < 0) linePcts.push(p); discLines++; }
         }
       }
     }
@@ -263,7 +265,10 @@
       discountGross: (rawEx + rawVsk) - (subEx + vsk),
       // bakaðir línu-afslættir (upplýsinga-lína í samtölum, sjá að ofan)
       lineDiscEx: lineDiscEx,
-      lineDiscPct: linePcts.length === 1 ? linePcts[0] : 0
+      // 2026-07-10 (📣 verkefnalisti 962a74f0): prósentan birtist AÐEINS þegar
+      // sami afsláttur nær yfir ALLA vöruliðina — nái hann bara yfir hluta
+      // þeirra stendur bara „Afsláttur" + upphæðin (annars villandi 20%).
+      lineDiscPct: (linePcts.length === 1 && discLines === billableLines) ? linePcts[0] : 0
     };
   }
 
