@@ -688,6 +688,24 @@ en hluti krafna er stofnaður beint í Payday (bókari/mánaðaruppgjör) og á 
   PD-merkið á SÍNA röð í stað tvítekningar. Samantektarlínan sýnir
   „+ N Payday-kröfur · X kr".
 
+## Gagnalíkan viðskiptavina (the spine) + 🗺️ Kerfis-kort — SAMEIGINLEGT með Brunahólf
+
+Slökkvitæki + Brunahólf deila EINUM Supabase — viðskiptavina-líkanið er hryggur:
+**`customers_base`** (canonical, einn per kt · `rekstrarfelag`) → **`fyrirtaeki`**
+(staðir; einn kt getur átt marga = rekstrarfélag; `er_i_thjonustu`; **aldrei
+sameina staði rekstrarfélags**) → **`uttaeki`** (tæki — **auto-generuð placeholder,
+skipta ekki máli, „án staðar" er ekki vandi**). **`customer_documents`** (skýrslur/
+reikningar/samningar úr Drive, keyed base+`fyrirtaeki_id`+`year`; ein ársskýrsla
+per (staður,ár); reikningar á R-nr; `is_duplicate`). **`solur`** + **`payday_
+invoices_slokk`** (kt digits-only) tengjast eftir **kt**. Walk-in = kt `999999-9999`.
+
+**🗺️ Kerfis-kort** — lifandi einnar-síðu yfirlit yfir ALLA viðskiptavini + tengingar
++ heilsu (2023–2026 skjöl per ár, ótengd/tvítök/án-kt flögg). Á **brunaholf.netlify.
+app/kerfiskort.html** (Brunahólf-megin, því skjöl/Drive-tólin lifa þar). Sýnin
+`v_kerfi_kort` + endapunktur `/api/kerfi-kort`. Tengingar lagaðar í Brunahólf-Bakendi
+(Skýrslu-stöð, Kt-samræming, Hreinsi-borð, Drive-flokkun). **Á slökkvitæki-hlið**
+birtast skjöl+Payday á fyrirtækja-prófílnum í „📁 Skjöl & viðhengi" (patch 199).
+
 ## Related projects (in case Agnar mentions them)
 
 - **Brunahólf** — sister business, separate ecosystem (Google Sheets + Apps Script
