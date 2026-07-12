@@ -165,14 +165,26 @@
     const note = '[Heimabanki] kr ' + Math.round(amt).toLocaleString('is-IS') + (invNum ? ' · #' + invNum : '');
     btn.disabled = true; btn.textContent = '⏳ Vista…';
     try {
-      const { error } = await SB.from('solur')
-        .update({
-          paid_at: new Date().toISOString(),
-          paid_method: 'heimabanki',
-          athugasemdir: note  // overwrites existing notes — log the invoice ref
-        })
+      // 2026-07-12: BÆTA nótunni við í stað þess að YFIRSKRIFA hana — gamla
+      // útgáfan þurrkaði út deild-/pöntunarnótur (t.d. „Devision 10") þegar
+      // mánaðarbunki var merktur sendur. Lesum núverandi athugasemdir per röð
+      // og skeytum [Heimabanki]-línunni aftan á (idempotent — sleppum ef hún er
+      // þegar til). Uppfærslan verður per-röð svo hver nóta haldist.
+      const paidAt = new Date().toISOString();
+      const { data: rows, error: readErr } = await SB.from('solur')
+        .select('id, athugasemdir')
         .in('id', ids);
-      if (error) throw error;
+      if (readErr) throw readErr;
+      for (const row of (rows || [])) {
+        const existing = String(row.athugasemdir || '').trim();
+        const athugasemdir = existing.indexOf(note) >= 0
+          ? existing
+          : (existing ? existing + '\n' + note : note);
+        const { error } = await SB.from('solur')
+          .update({ paid_at: paidAt, paid_method: 'heimabanki', athugasemdir })
+          .eq('id', row.id);
+        if (error) throw error;
+      }
       const modal = document.getElementById('reik-master-modal');
       if (modal) await openMonthly(modal); // re-render
       if (window.Toast && Toast.show) Toast.show('✓ ' + ids.length + ' færslur merktar sem sendar — ' + Math.round(amt).toLocaleString('is-IS') + ' kr');
