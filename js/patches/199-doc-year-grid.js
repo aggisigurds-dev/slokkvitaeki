@@ -62,6 +62,29 @@
     try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,invoice_number,amount,doc_date,notes,fyrirtaeki_id').eq('customer_base_id', baseId);
       return r.data||[]; }catch(e){ return []; }
   }
+  // Payday-kröfur kúnnans (eftir kt) úr speglinum payday_invoices_slokk. Margar
+  // krófur eru stofnaðar BEINT í Payday (bókari/mánaðaruppgjör) og eiga hvorki
+  // solur-röð né reiknings-PDF í Drive → sáust í Kröfu yfirliti en EKKI á
+  // fyrirtækja-prófílnum. Þær eru fyrirtækja-víðar (einn kt, ekki per starfsstöð)
+  // svo þær birtast á öllum stöðum kt-sins, eins og reikningar/samningar.
+  function fmtKrLoc(n){ try{ return (window.fmtKr?window.fmtKr(n):String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,'.')); }catch(e){ return String(n); } }
+  async function fetchPayday(kt){
+    var sb=SB(); var d=dash(kt), dd=digits(kt); if(!sb||dd.length<10||dd==='9999999999') return [];
+    try{
+      var r=await sb.from('payday_invoices_slokk')
+        .select('payday_id,number,amount_total,created_date,due_date,paid_date,status,reference')
+        .or('kt.eq.'+d+',kt.eq.'+dd).limit(400);
+      return r.data||[];
+    }catch(e){ return []; }
+  }
+  function pdYear(p){ var s=String(p.created_date||p.due_date||''); var m=s.match(/(20[0-9]{2})/); return m?parseInt(m[1],10):null; }
+  function pdChip(p){
+    var lab='PD '+(p.number||p.payday_id||'');
+    var amt=(p.amount_total!=null&&p.amount_total!=='')?(' · '+fmtKrLoc(p.amount_total)+' kr'):'';
+    var st=p.paid_date?'greitt':(p.status||'ógreitt');
+    var due=p.due_date?(' · gjalddagi '+esc(String(p.due_date).slice(0,10))):'';
+    return '<span class="sk-doc pd" title="Payday-krafa'+esc(amt)+' · '+esc(st)+due+'">🟣 '+esc(lab)+'</span>';
+  }
   // Multi-location support: one kennitala can have several staðir. Split the kt's
   // docs per location by fyrirtaeki_id (precise, Cowork's map) or by matching the
   // doc's filename (notes) to the location heimilisfang (fallback).
@@ -193,9 +216,11 @@
     var baseId = kt ? await baseIdForKt(kt) : null;
     var docs = baseId ? await fetchDocs(baseId) : [];
     if(baseId && kt) docs = await filterDocsToLocation(docs, kt, coId);
+    var payday = kt ? await fetchPayday(kt) : [];
 
     // ── group customer_documents per year/type ──
-    var repByY={}, invByY={}, samn=[];
+    var repByY={}, invByY={}, pdByY={}, samn=[];
+    payday.forEach(function(p){ var y=pdYear(p); if(y>=2000&&y<=NOW+1) (pdByY[y]=pdByY[y]||[]).push(p); });
     docs.forEach(function(d){
       var t=d.doc_type, y=parseInt(d.year,10);
       if(t==='samningur'){ samn.push({src:'doc',d:d,year:y||null}); return; }
@@ -218,6 +243,7 @@
     var ySet={}; ySet[NOW]=1;
     Object.keys(repByY).forEach(function(y){ySet[y]=1;});
     Object.keys(invByY).forEach(function(y){ySet[y]=1;});
+    Object.keys(pdByY).forEach(function(y){ySet[y]=1;});
     var YEARS=Object.keys(ySet).map(Number).sort(function(a,b){return b-a;});
 
     // ── status pills ──
@@ -242,8 +268,9 @@
       return addChip('skyrsla',y,'vantar');
     }
     function invCell(y){
-      var arr=invByY[y]||[];
-      if(arr.length){ return arr.map(function(x){ return x._att?invAttChip(x._att):invDocChip(x); }).join('')+addChip('reikningur',y,'＋'); }
+      var arr=invByY[y]||[], pd=pdByY[y]||[];
+      var chips=arr.map(function(x){ return x._att?invAttChip(x._att):invDocChip(x); }).join('')+pd.map(pdChip).join('');
+      if(chips) return chips+addChip('reikningur',y,'＋');
       if(y===NOW) return addChip('reikningur',y,'+ reikningur');
       return addChip('reikningur',y,'vantar');
     }
@@ -381,6 +408,7 @@
       '.sk-doc{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid;cursor:pointer;margin:2px 4px 2px 0;text-decoration:none;font-family:inherit;line-height:1.2}',
       '.sk-doc.rep{background:var(--bg);color:#0f172a;border-color:var(--brd)}',
       '.sk-doc.inv{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}',
+      '.sk-doc.pd{background:#f5f3ff;color:#6d28d9;border-color:#ddd6fe;cursor:default}',
       '.sk-doc.prog{background:#fef3c7;color:#92400e;border-color:#fcd34d;font-weight:700}',
       '.sk-doc.add{background:var(--surface);color:var(--ink4);border:1px dashed var(--brd2);font-weight:600}',
       '.sk-doc.add:hover{color:var(--brand);border-color:var(--brand)}',
