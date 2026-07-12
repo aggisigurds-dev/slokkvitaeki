@@ -39,7 +39,7 @@
 
   const state = {
     tab: 'yfirlit', loading: false, loaded: false, err: null,
-    overview: null, clients: [], rekstrar: [], missing: [],
+    overview: null, clients: [], rekstrar: [], missing: [], rfdocs: [],
     clientFilter: 'all', clientQ: '', missingQ: ''
   };
 
@@ -84,17 +84,21 @@
     if (!SB) { state.err = 'Enginn gagnagrunnur tengdur (DB.sb vantar).'; state.loaded = true; render(); return; }
     state.loading = true; state.err = null; render();
     try {
-      const [ov, cl, rk, mk] = await Promise.all([
+      const [ov, cl, rk, mk, rd] = await Promise.all([
         SB.from('v_bakendi_overview').select('*').single(),
         SB.from('v_bakendi_uttaeki_clients').select('*'),
         SB.from('v_bakendi_rekstrarfelog').select('*'),
-        SB.from('v_bakendi_missing_kt').select('*')
+        SB.from('v_bakendi_missing_kt').select('*'),
+        // 2026-07-12: skjala-staða per rekstrarfélag (skýrslur/pinning/reikningar).
+        // Ekki-krítískt view — bregst mjúklega ef það vantar (eldri deploy).
+        SB.from('v_bakendi_rf_docs').select('*').then(r => r, () => ({ data: [] }))
       ]);
       if (ov.error) throw ov.error;
       state.overview = ov.data || {};
       state.clients = cl.data || [];
       state.rekstrar = rk.data || [];
       state.missing = mk.data || [];
+      state.rfdocs = (rd && rd.data) || [];
     } catch (e) {
       state.err = (e && e.message) || String(e);
     }
@@ -287,7 +291,43 @@
       trs +
       (rk.length ? '<tr style="font-weight:700"><td>Samtals</td><td class="c">' + fmtNum(tot.f) + '</td><td class="c"></td><td class="c">' + fmtNum(tot.u) + '</td></tr>' : '') +
       '</tbody></table></div>' +
-      '<p class="bk-note">Byggingalisti og úttektir per bygging eru á sérstöku <a href="#" class="bk-link" data-goto-view="rekstrarfelog">Rekstrarfélög-síðunni →</a></p>';
+      '<p class="bk-note">Byggingalisti og úttektir per bygging eru á sérstöku <a href="#" class="bk-link" data-goto-view="rekstrarfelog">Rekstrarfélög-síðunni →</a></p>' +
+      rfDocsSection();
+  }
+
+  // 2026-07-12: Skjala-staða per rekstrarfélag (skýrslur/pinning/reikningar) úr
+  // v_bakendi_rf_docs. Flaggar skýrslur sem eru tengdar réttu FÉLAGI en ekki
+  // pinnaðar á tiltekinn STAÐ (bygging) → handvirkt í Skýrslu-stöð (reglan:
+  // aldrei sjálfvirk staðsetning, sum „afrit" eru ólíkir staðir mis-vistaðir).
+  function rfDocsSection() {
+    const rd = state.rfdocs || [];
+    if (!rd.length) return '';
+    const tot = rd.reduce((a, r) => {
+      a.sk += +r.n_skyrslur || 0; a.pin += +r.n_skyrslur_pinnadar || 0;
+      a.op += +r.n_skyrslur_opinnadar || 0; a.re += +r.n_reikningar || 0; return a;
+    }, { sk: 0, pin: 0, op: 0, re: 0 });
+    const rows = rd.slice().sort((a, b) => (+b.n_skyrslur_opinnadar || 0) - (+a.n_skyrslur_opinnadar || 0) || (+b.n_skyrslur || 0) - (+a.n_skyrslur || 0));
+    const trs = rows.map(r => {
+      const op = +r.n_skyrslur_opinnadar || 0;
+      const opCell = op > 0
+        ? '<span style="display:inline-block;background:#fffbeb;border:1px solid #fde68a;color:#a16207;border-radius:7px;padding:1px 8px;font-weight:700;font-size:11.5px">⚠ ' + op + '</span>'
+        : '<span style="color:#15803d">✓</span>';
+      return '<tr><td><span class="nm">' + esc(r.rekstrarfelag) + '</span></td>' +
+        '<td class="c">' + fmtNum(r.n_skyrslur) + '</td>' +
+        '<td class="c">' + fmtNum(r.n_skyrslur_pinnadar) + '</td>' +
+        '<td class="c">' + opCell + '</td>' +
+        '<td class="c">' + fmtNum(r.n_reikningar) + '</td>' +
+        '<td class="c">' + fmtNum(r.n_stadir_m_skjol) + '</td></tr>';
+    }).join('');
+    return '<h3 style="margin:22px 0 6px;font-size:15px;color:var(--ink1,#11141c)">📄 Skjala-staða per rekstrarfélag</h3>' +
+      '<p class="bk-sub" style="margin-top:0">Úttektarskýrslur og reikningar tengd hverju rekstrarfélagi (úr <span class="bk-mono">customer_documents</span>). „⚠ Ópinnaðar" = skýrslur tengdar réttu félagi en ekki tilteknum stað.</p>' +
+      (tot.op > 0
+        ? '<div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 13px;margin-bottom:10px;font-size:13px;color:#92400e"><b>' + tot.op + ' skýrslur</b> eru tengdar réttu félagi en ekki pinnaðar á tiltekinn stað. Pinnaðu þær handvirkt í <b>Skýrslu-stöð</b> (Bakendi í Brunahólf) — aldrei sjálfvirkt, sum „afrit" eru ólíkir staðir mis-vistaðir.</div>'
+        : '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:10px 13px;margin-bottom:10px;font-size:13px;color:#15803d">✓ Allar skýrslur pinnaðar á rétta staði.</div>') +
+      '<div class="bk-panel"><table><thead><tr><th>Rekstrarfélag</th><th class="c">Skýrslur</th><th class="c">Pinnaðar</th><th class="c">Ópinnaðar</th><th class="c">Reikn.</th><th class="c">Staðir m/skjöl</th></tr></thead><tbody>' +
+      trs +
+      '<tr style="font-weight:700"><td>Samtals</td><td class="c">' + fmtNum(tot.sk) + '</td><td class="c">' + fmtNum(tot.pin) + '</td><td class="c">' + (tot.op > 0 ? fmtNum(tot.op) : '0') + '</td><td class="c">' + fmtNum(tot.re) + '</td><td class="c"></td></tr>' +
+      '</tbody></table></div>';
   }
 
   function tabSkema() {
