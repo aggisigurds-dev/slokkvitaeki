@@ -876,4 +876,32 @@
   setInterval(injectTab, 1200);
   setTimeout(injectTab, 600);
   window.openRekstrarfelog=function(){ injectTab(); var b=document.querySelector('[data-view="rekstrarfelog"]'); if(b) b.click(); };
+
+  // 2026-07-12 (verkefnalisti systemic): EITT sameiginlegt hjálparfall svo
+  // rekstrarfélaga-gögnin (handvirku netföng/drive OFAN Á lifandi customers_base
+  // +fyrirtaeki) séu aldrei fryst í tveimur eintökum. Bæði þessi síða OG patch
+  // 184 (rekstrarfélags-merkið á kúnna) lesa nú héðan — nýtt rekstrarfélag í
+  // gagnagrunni birtist samstundis á báðum stöðum.
+  //   ensureLive()  → async, hleður lifandi listann (skilar {name:[sites]})
+  //   getMerged()   → sync, merged {name:{emails,buildings,drive,…}} (lifandi+curated)
+  //   byKt(kt)      → { firm, emails, drive } | null   (fyrir 184-merkið)
+  window.RekstrarfelagData = {
+    ensureLive: ensureLiveRF,
+    getMerged: getData,
+    getRaw: getRawData,
+    byKt: function(kt){
+      var d = digits(kt); if (d.length < 10) return null;
+      var data = getData();
+      for (var firm in data){
+        var rec = data[firm] || {};
+        var blds = rec.buildings || [];
+        for (var i=0;i<blds.length;i++){
+          if (digits(blds[i] && blds[i].kt) === d){
+            return { firm: firm, emails: Array.isArray(rec.emails)?rec.emails:[], drive: rec.drive||'' };
+          }
+        }
+      }
+      return null;
+    }
+  };
 })();

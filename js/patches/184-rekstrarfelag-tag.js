@@ -22,11 +22,17 @@
   }
   function digits(s) { return String(s || '').replace(/\D/g, ''); }
 
-  // Build a kennitala → { firm, emails } index from the shared rekstrarfélag data.
+  // Build a kennitala → { firm, emails } index. 2026-07-12: nota SAMEIGINLEGA
+  // hjálparfallið úr patch 175 (window.RekstrarfelagData) sem fléttar lifandi
+  // customers_base+fyrirtaeki OFAN Á handvirku netföngin — svo nýtt rekstrarfélag
+  // í gagnagrunni fái merkið samstundis (var áður fryst í AppSettings-listanum,
+  // sama villa og 175). Fallback á gamla AppSettings-leiðina ef 175 er ekki komið.
   function buildIndex() {
     let data = null;
     try {
-      if (window.AppSettings && typeof AppSettings.path === 'function') {
+      if (window.RekstrarfelagData && typeof window.RekstrarfelagData.getMerged === 'function') {
+        data = window.RekstrarfelagData.getMerged();
+      } else if (window.AppSettings && typeof AppSettings.path === 'function') {
         data = AppSettings.path('rekstrarfelog');
       }
     } catch (_) {}
@@ -84,6 +90,13 @@
     maybeInject(main);
     const obs = new MutationObserver(() => maybeInject(main));
     obs.observe(main, { childList: true, subtree: true });
+    // Sækja lifandi rekstrarfélaga-listann (gegnum 175) og endur-sprauta þegar
+    // hann er kominn — annars gæti fyrsta málun misst af nýjum rekstrarfélögum.
+    try {
+      if (window.RekstrarfelagData && typeof window.RekstrarfelagData.ensureLive === 'function') {
+        window.RekstrarfelagData.ensureLive().then(() => { try { maybeInject(main); } catch (_) {} });
+      }
+    } catch (_) {}
   }
 
   if (document.readyState === 'loading') {
