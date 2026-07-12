@@ -229,10 +229,16 @@ function isoDate(v) {
 }
 function defaultSince() { const d = new Date(); d.setDate(d.getDate() - 180); return d.toISOString().slice(0, 10); }
 
-// case-fold + NFD-strip diacritics + collapse ws → key for exact-name matching
+// case-fold + NFD-strip diacritics + collapse ws → key for exact-name matching.
+// Also strips a trailing Icelandic legal-form suffix (ehf/hf/slf/sf/ses/ohf/…) so
+// „Þemasnyrting" og „Þemasnyrting ehf" varpast á sama lykil — the „exactly one
+// match" guard still protects against two genuinely different bases colliding.
 function foldName(s) {
   return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
-    .toLowerCase().replace(/\s+/g, ' ').trim();
+    .toLowerCase().replace(/\s+/g, ' ').trim()
+    .replace(/[.,]/g, '')
+    .replace(/\s+(ehf|ohf|hf|slf|sf|ses|hses)$/,'')
+    .trim();
 }
 // folded-name → [kt-digits, …] index over customers_base (only kts of valid shape)
 async function baseNameIndex() {
