@@ -82,7 +82,7 @@
   }
 
   // ---- data load/save via AppSettings (fallback to localStorage) ----
-  function getData(){
+  function getRawData(){
     try {
       if (window.AppSettings && typeof AppSettings.path==='function'){
         var b = AppSettings.path('rekstrarfelog');
@@ -92,9 +92,101 @@
     try { var l=JSON.parse(localStorage.getItem('_slokk_rekstrarfelog')||'null'); if(l) return l; } catch(e){}
     return SEED;
   }
+
+  // 2026-07-12 (verkefnalisti ca49007e): nýju rekstrarfélögin (Pizzan, Colas,
+  // Aðalskoðun, Steypustöðin, Center Hótel, Endurvinnslan, Vélrás, Vélsmiðja
+  // Orms og Víglundar …) voru sett á customers_base.rekstrarfelag EN birtust
+  // ekki því síðan las AÐEINS handvirka AppSettings-listann (getRawData). Nú
+  // lesum við líka LIFANDI rekstrarfélög úr gagnagrunninum og fléttum þeim inn:
+  //  · alveg ný rekstrarfélög → bætast við með öllum staðum sínum.
+  //  · rekstrarfélög sem eru þegar til (curated) → staðir sem vantar bætast
+  //    við (dedup á kt::nafn) svo nýmerktar byggingar birtist, en handvirku
+  //    tölvupóstarnir/drive-hlekkirnir haldast ósnertir.
+  // Staðirnir eru rekstrarfélög-með-margar-staðsetningar → ALDREI sameinaðir.
+  var _liveRF = null; // { name: [{kt,nafn,heimilisfang}] }
+  var _liveRFPromise = null;
+  async function ensureLiveRF(){
+    if (_liveRF) return _liveRF;
+    if (_liveRFPromise) return _liveRFPromise;
+    _liveRFPromise = (async function(){
+      var out = {};
+      var SB = window.__vdaSB || (window.DB && DB.sb);
+      if (!SB) { _liveRF = out; return out; }
+      try {
+        // base rows carrying a rekstrarfelag
+        var bases = {}; // base_id -> rekstrarfelag
+        var from=0;
+        while(true){
+          var rb = await SB.from('customers_base').select('id,nafn,kennitala,rekstrarfelag').not('rekstrarfelag','is',null).range(from,from+999);
+          if (rb.error) break;
+          (rb.data||[]).forEach(function(b){
+            if(!b.rekstrarfelag) return;
+            bases[b.id] = b.rekstrarfelag;
+            (out[b.rekstrarfelag]||(out[b.rekstrarfelag]=[]));
+          });
+          if(!rb.data || rb.data.length<1000) break; from+=1000; if(from>20000) break;
+        }
+        // fyrirtaeki locations that belong to those bases → the buildings/sites
+        var baseIds = Object.keys(bases).map(function(x){return parseInt(x,10);});
+        if (baseIds.length){
+          from=0;
+          while(true){
+            var rf = await SB.from('fyrirtaeki').select('nafn,kennitala,heimilisfang,customer_base_id').in('customer_base_id', baseIds).range(from,from+999);
+            if (rf.error) break;
+            (rf.data||[]).forEach(function(f){
+              var rek = bases[f.customer_base_id]; if(!rek) return;
+              (out[rek]||(out[rek]=[])).push({ kt: f.kennitala||'', nafn: f.nafn||'', heimilisfang: f.heimilisfang||'' });
+            });
+            if(!rf.data || rf.data.length<1000) break; from+=1000; if(from>20000) break;
+          }
+        }
+      } catch(e){ console.warn('[rekstrarfelog] live load', e); }
+      _liveRF = out; return out;
+    })().catch(function(e){ console.warn('[rekstrarfelog] live load', e); _liveRFPromise=null; _liveRF={}; return _liveRF; });
+    return _liveRFPromise;
+  }
+
+  function getData(){
+    var data = getRawData();
+    if (!_liveRF) return data;                 // ekki enn hlaðið → hráa gögnin
+    // Fléttum lifandi rekstrarfélögum inn án þess að breyta upprunalega blobinu.
+    var merged = {};
+    Object.keys(data).forEach(function(k){ merged[k]=data[k]; });
+    Object.keys(_liveRF).forEach(function(name){
+      var sites = _liveRF[name] || [];
+      if (!merged[name]){
+        merged[name] = { domain:'', emails:[], buildings: sites.slice(), drive:'', _live:true };
+        return;
+      }
+      // til fyrir → bæta AÐEINS við byggingum sem vantar (dedup kt::nafn)
+      var info = merged[name];
+      var blds = Array.isArray(info.buildings) ? info.buildings.slice() : [];
+      var seen = {};
+      blds.forEach(function(b){ seen[digits(b.kt)+'::'+String(b.nafn||'')]=1; });
+      sites.forEach(function(s){
+        var key = digits(s.kt)+'::'+String(s.nafn||'');
+        if(!seen[key]){ seen[key]=1; blds.push(s); }
+      });
+      merged[name] = Object.assign({}, info, { buildings: blds });
+    });
+    return merged;
+  }
   async function saveData(d){
-    try { localStorage.setItem('_slokk_rekstrarfelog', JSON.stringify(d)); } catch(e){}
-    try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ rekstrarfelog: d }); } catch(e){}
+    // Persistum EKKI ósnertar lifandi færslur (þær sem fléttuðust inn úr
+    // gagnagrunninum og hafa engin handvirk gögn) — annars frystist lifandi
+    // listinn í AppSettings-blobið og hættir að uppfærast. Um leið og notandi
+    // ritstýrir rekstrarfélagi (bætir við tölvupósti/drive/nótu) fær það alvöru
+    // gögn og er þá geymt (ættleitt sem curated).
+    var clean = {};
+    Object.keys(d||{}).forEach(function(k){
+      var info = d[k] || {};
+      var touched = (info.emails && info.emails.length) || info.domain || info.drive || info.note || info.notes;
+      if (info._live && !touched) return; // sleppa hreinni lifandi færslu
+      var copy = Object.assign({}, info); delete copy._live;
+      clean[k] = copy;
+    });
+    try { localStorage.setItem('_slokk_rekstrarfelog', JSON.stringify(clean)); } catch(e){}
+    try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ rekstrarfelog: clean }); } catch(e){}
   }
 
   function companyByKt(kt){
@@ -227,6 +319,10 @@
   async function renderView(){
     var v=viewEl(); if(!v) return;
     injectStyles();
+    // Sækjum lifandi rekstrarfélög fyrir fyrstu málun; ef þau eru ekki komin
+    // (fyrsta opnun) málum við samt strax með hráu gögnunum og endurmálum þegar
+    // lifandi listinn er tilbúinn (getData fléttar hann þá inn).
+    if (!_liveRF) { ensureLiveRF().then(function(){ try{ var el=viewEl(); if(el && el.classList.contains('active')) renderView(); }catch(e){} }); }
     var data=getData();
     var q=_state.q.toLowerCase().trim();
     var html='';
