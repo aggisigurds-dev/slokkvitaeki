@@ -168,8 +168,13 @@ function buildPayload(sale, customer, opts) {
   // kröfunni svo kúnninn (og kerfið) sjái HVAÐA staður rekstrarfélags. Tenging á
   // réttan stað fer gegnum R-númer → sölu → fyrirtaeki_id (ekkert #id á kröfunni).
   const _site = (opts && opts.site) || null;
-  const _vegnaLabel = _site ? [_site.nafn, _site.heimilisfang].filter(Boolean).join(' – ')
-                            : (sale.customer_nafn || '');
+  // ÖRYGGI: sale.customer_id getur bent á vidskiptavinir-röð (ekki fyrirtaeki) og
+  // PK-arnir skarast → fetchFyrirtaeki gæti skilað ÓTENGDU fyrirtæki. Notum staðinn
+  // AÐEINS ef kennitala hans passar við kt sölunnar; annars nafn af sölunni.
+  const _ktDigits = x => String(x || '').replace(/\D/g, '');
+  const _siteOk = !!(_site && _ktDigits(_site.kennitala) && _ktDigits(_site.kennitala) === _ktDigits(ktRaw));
+  const _vegnaLabel = _siteOk ? [_site.nafn, _site.heimilisfang].filter(Boolean).join(' – ')
+                              : (sale.customer_nafn || '');
   const _vegna = _vegnaLabel ? ('Vegna: ' + _vegnaLabel) : '';
   const _notes = (sale.athugasemdir || '').trim();
   // Afhending: í 'send' ham → rafrænt fyrst ef raunveruleg kt, annars tölvupóstur.
