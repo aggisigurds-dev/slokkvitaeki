@@ -1,0 +1,88 @@
+<!-- Bílstjóri — COMPANY DETAIL skeleton (class-only, uses theme.css).
+     Opens when a stop/company is tapped. Repeat .dev per device. -->
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div class="screen screen--wide">
+
+  <header class="topbar">
+    <button class="icon-btn">‹</button>
+    <div style="flex:1;min-width:0">
+      <div class="topbar__title">{{COMPANY}}</div>
+      <div style="display:flex;align-items:center;gap:9px;margin-top:2px">
+        <span class="topbar__sub">kt. {{KT}}</span>
+        <span class="pill pill--overdue">⚠ {{STATUS}}</span>
+      </div>
+      <div style="font-size:12px;color:rgba(255,255,255,.55);margin-top:3px">📍 {{ADDR}}</div>
+    </div>
+    <button class="icon-btn">🗺</button>
+    <button class="icon-btn" style="border-color:var(--ring);background:var(--btn-grad)">🚚</button>
+  </header>
+
+  <div class="stack">
+
+    <div style="display:flex;gap:10px">
+      <button class="btn btn--accent" style="flex:1.4">🧭 Keyra þangað</button>
+      <button class="btn btn--light" style="flex:1;background:#fff;color:var(--ink-2);border-color:rgba(20,24,34,.1)">📖 Opna fyrirtæki</button>
+      <button class="btn btn--light" style="flex:1;background:#fff;color:var(--ink-2);border-color:rgba(20,24,34,.1)">🧾 Verkstæði</button>
+    </div>
+
+    <div class="card pad">
+      <div class="sec-label" style="margin-bottom:11px">🚚 AKSTURSLISTI</div>
+      <div class="seg">
+        <button class="seg__btn is-active">Enginn</button>
+        <button class="seg__btn">Akstur 1</button>
+        <button class="seg__btn">Akstur 2</button>
+        <button class="seg__btn">Akstur 3</button>
+      </div>
+    </div>
+
+    <div class="card card--alert pad">
+      <div class="sec-label" style="color:#c0241f;margin-bottom:10px">⚠ ÁRÍÐANDI SKILABOÐ</div>
+      <textarea class="field" style="height:58px" placeholder="Brýn skilaboð fyrir bílstjóra / skrifstofu…"></textarea>
+      <button class="btn btn--dark btn--sm" style="margin-top:11px">💾 Vista skilaboð</button>
+    </div>
+
+    <div class="card pad">
+      <div style="display:flex;align-items:center;margin-bottom:10px">
+        <span class="sec-label">📝 MINNISPUNKTAR</span>
+        <span style="margin-left:auto;font-size:11px;color:#aeb4be">deilt með Leiðsögn</span>
+      </div>
+      <textarea class="field" style="height:58px" placeholder="Áminningar: hringja á undan, lykill hjá húsverði…"></textarea>
+      <button class="btn btn--dark btn--sm" style="margin-top:11px">💾 Vista</button>
+    </div>
+
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="display:flex;align-items:center;padding:13px 16px;border-bottom:1px solid rgba(20,24,34,.07)">
+        <span class="sec-label">🧯 TÆKJALISTI</span>
+        <span style="margin-left:auto;font-family:var(--mono);font-size:12px;color:#8a93a5">Yfirfarin: <b style="color:var(--ink-2)">{{DONE}}/{{TOTAL}}</b></span>
+      </div>
+
+      <!-- ===== repeat .dev per device ===== -->
+      <div class="dev">
+        <span class="dev__ic dev__ic--blue">🧯</span>       <!-- dev__ic--red for CO2/red types -->
+        <div style="flex:1;min-width:0">
+          <div class="dev__name">{{DEVICE_NAME}}</div>
+          <div class="dev__meta">{{DEVICE_META}}</div>
+        </div>
+        <button class="chk">◍ Óskoðað</button>              <!-- add .is-done + text "✓ Skoðað" -->
+      </div>
+      <!-- ===== end .dev ===== -->
+
+    </div>
+
+  </div>
+
+  <div class="dock dock--wide">
+    <button class="btn btn--light" style="flex:1">✚ Á leið</button>
+    <button class="btn btn--accent" style="flex:2">✓ Klára úttekt</button>
+  </div>
+
+</div>
+</body>
+</html>

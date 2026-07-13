@@ -1,0 +1,77 @@
+<!-- Bílstjóri — ROUTE LIST skeleton (class-only, uses theme.css).
+     {{placeholders}} mark data. Repeat .stop per route stop. -->
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div class="screen">
+
+  <header class="topbar">
+    <div class="icon-btn" style="display:flex;align-items:center;justify-content:center;background:#0a0b0d">🚚</div>
+    <div style="flex:1;min-width:0">
+      <div class="topbar__title">Bílstjóri · Leið dagsins</div>
+      <div class="topbar__sub">{{DATE}} · {{DRIVER}}</div>
+    </div>
+    <button class="icon-btn">⛶</button>
+  </header>
+
+  <div style="padding:0 15px 13px;background:var(--metb)">
+    <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+      <span style="font-size:12px;color:rgba(255,255,255,.7)"><b style="color:#fff">{{DONE}}</b> af {{TOTAL}} kláruð</span>
+      <span class="topbar__sub">{{KM_LEFT}} km eftir · ~{{MIN_LEFT}} mín</span>
+    </div>
+    <div class="progress"><div class="progress__bar" style="width:{{PCT}}%"></div></div>
+  </div>
+
+  <div style="padding:12px 12px 0">
+    <div class="map">
+      <img src="{{MAP_IMG}}" alt="">
+      <!-- repeat per stop: class pin--done|overdue|pending, left/top = map coords -->
+      <div class="pin pin--overdue" style="left:{{X}};top:{{Y}}"><span>{{N}}</span></div>
+    </div>
+  </div>
+
+  <div style="padding:12px 12px 4px">
+    <div class="search">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#9aa3b5" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      <input placeholder="Leita að stoppi eða fyrirtæki…">
+    </div>
+  </div>
+
+  <div style="padding:8px 12px 0;display:flex;flex-direction:column;gap:12px">
+
+    <!-- ===== repeat this .stop block per route stop ===== -->
+    <div class="stop">
+      <span class="stop__rail stop__rail--overdue"></span>   <!-- --done | --overdue | --pending -->
+      <div class="stop__body">
+        <div class="badge badge--todo">{{N}}</div>           <!-- badge--done when finished -->
+        <div style="flex:1;min-width:0">
+          <div class="stop__name">{{NAME}}</div>
+          <div class="stop__addr">📍 {{ADDR}}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap">
+            <span class="pill pill--overdue">{{STATUS}}</span> <!-- pill--pending | pill--done -->
+            <span class="stop__meta">🧯 {{TAEKI}} · {{DRIVE}}</span>
+          </div>
+        </div>
+      </div>
+      <div class="stop__actions">
+        <button class="act act--maps">↗ Maps</button>
+        <button class="act act--call">📞 Hringja</button>
+        <button class="act act--done">✓ Merkja búið</button> <!-- add .is-done + text "✓ Búið" -->
+      </div>
+    </div>
+    <!-- ===== end .stop ===== -->
+
+  </div>
+
+  <div class="dock">
+    <button class="btn btn--accent" style="flex:1">🧭 Hefja leið · {{TOTAL}} stopp</button>
+  </div>
+
+</div>
+</body>
+</html>
