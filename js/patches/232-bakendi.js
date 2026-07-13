@@ -280,14 +280,20 @@
   function tabRek() {
     const rk = state.rekstrar || [];
     const tot = rk.reduce((a, r) => { a.f += +r.n_felog || 0; a.u += +r.n_units || 0; return a; }, { f: 0, u: 0 });
-    const trs = rk.map(r =>
-      '<tr><td><span class="nm">' + esc(r.rekstrarfelag) + '</span></td>' +
-      '<td class="c">' + fmtNum(r.n_felog) + '</td>' +
-      '<td class="c">' + fmtNum(r.n_with_kt) + '</td>' +
-      '<td class="c">' + fmtNum(r.n_units) + '</td></tr>'
-    ).join('') || '<tr><td colspan="4" style="padding:18px;text-align:center;color:var(--ink3,#94a3b8)">Engin rekstrarfélög.</td></tr>';
-    return '<p class="bk-sub" style="margin-top:-4px">Móðurfélög sem reka mörg húsfélög/byggingar. Gögn úr <span class="bk-mono">customers_base.rekstrarfelag</span>.</p>' +
-      '<div class="bk-panel"><table><thead><tr><th>Rekstrarfélag</th><th class="c">Fyrirtæki</th><th class="c">m. kt</th><th class="c">Úttæki</th></tr></thead><tbody>' +
+    const trs = rk.map(r => {
+      const addr = String(r.heimilisfong || '').trim();
+      const eydd = +r.n_stadir_eydd || 0;
+      const addrLine = addr
+        ? '<tr class="rf-addr"><td colspan="4" style="padding:2px 10px 10px;color:var(--ink3,#94a3b8);font-size:12px;line-height:1.5">📍 ' + esc(addr) +
+          (eydd ? ' <span style="color:#b45309">· ' + eydd + ' eydd/sameinuð</span>' : '') + '</td></tr>'
+        : '';
+      return '<tr><td><span class="nm">' + esc(r.rekstrarfelag) + '</span></td>' +
+        '<td class="c">' + fmtNum(r.n_felog) + '</td>' +
+        '<td class="c">' + fmtNum(r.n_with_kt) + '</td>' +
+        '<td class="c">' + fmtNum(r.n_units) + '</td></tr>' + addrLine;
+    }).join('') || '<tr><td colspan="4" style="padding:18px;text-align:center;color:var(--ink3,#94a3b8)">Engin rekstrarfélög.</td></tr>';
+    return '<p class="bk-sub" style="margin-top:-4px">Móðurfélög sem reka mörg húsfélög/byggingar. „Staðir" = virkar starfsstöðvar (fyrirtaeki). Gögn úr <span class="bk-mono">customers_base.rekstrarfelag</span>.</p>' +
+      '<div class="bk-panel"><table><thead><tr><th>Rekstrarfélag</th><th class="c">Staðir</th><th class="c">m. kt</th><th class="c">Úttæki</th></tr></thead><tbody>' +
       trs +
       (rk.length ? '<tr style="font-weight:700"><td>Samtals</td><td class="c">' + fmtNum(tot.f) + '</td><td class="c"></td><td class="c">' + fmtNum(tot.u) + '</td></tr>' : '') +
       '</tbody></table></div>' +
