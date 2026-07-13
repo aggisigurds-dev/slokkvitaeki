@@ -270,80 +270,80 @@
     return best;
   }
 
+  // 2026-07-13: rewritten to drive off POS.getState() instead of scraping the
+  // cart DOM. The cart redesign (#44) changed the line markup (desc is now
+  // font-weight:700, the card no longer has border-bottom), which silently broke
+  // the old querySelector traversal → tilboðsverð never applied (Ferðafélag
+  // Íslands 6kg duft). State-based is redesign-proof + also resolves co_id/kt
+  // reliably (incl. rekstrarfélög: pricing saved on any same-kt fyrirtæki row).
+  function overridesForCustomer(cust) {
+    if (!cust) return [];
+    const coId = cust.co_id;
+    let ov = coId ? getCompanyPricing(coId) : [];
+    if (ov.length) return ov;
+    // Fallback: any company sharing this kt that has pricing (multi-site kt).
+    const kt = String(cust.kt || '').replace(/[^0-9]/g, '');
+    if (kt.length === 10 && kt !== '9999999999') {
+      const all = getAllPricing();
+      const list = (window.Companies && Companies.list) || [];
+      for (const c of list) {
+        if (String(c.kennitala || '').replace(/[^0-9]/g, '') === kt) {
+          const l = all[String(c.id)];
+          if (Array.isArray(l) && l.length) return l;
+        }
+      }
+    }
+    return [];
+  }
+
   function applyPosPricing() {
-    // Only act when on Sala view
     const view = document.getElementById('view-sala');
     if (!view || !view.classList.contains('active')) return;
-    // Find current customer co_id — pos.js stores it on state.customer but
-    // it's in closure. We read from #pos-cust-* fields or via kt result.
-    // Easiest: parse the kt result element which has esc(m.nafn) and we
-    // can extract co_id from a custom data attr if pos.js supplies one.
-    // Fallback: look at pos-cust-result inner HTML for "fyrirtæki" link.
-    // Best — look up co_id by querying customer name against Companies.list.
-    let coId = null;
-    // pos.js exposes some state via _pendingReikningurNum etc but not co_id.
-    // We'll read from the customer name displayed and match against list.
-    const nameDiv = document.querySelector('#pos-kt-result, #pos-customer-display, [class*="pos-cust"]');
-    if (nameDiv) {
-      const txt = (nameDiv.textContent || '').trim();
-      const list = (window.Companies && Companies.list) || [];
-      const found = list.find(c => txt.indexOf(c.nafn) >= 0);
-      if (found) coId = found.id;
-    }
-    // Also try by kennitala
-    if (!coId) {
-      const ktInp = document.getElementById('pos-kt');
-      if (ktInp && ktInp.value) {
-        const cleanKt = ktInp.value.replace(/[^0-9]/g, '');
-        if (cleanKt.length === 10) {
-          const list = (window.Companies && Companies.list) || [];
-          const found = list.find(c => String(c.kennitala || '').replace(/[^0-9]/g, '') === cleanKt);
-          if (found) coId = found.id;
-        }
-      }
-    }
-    if (!coId) return;
-    const overrides = getCompanyPricing(coId);
-    if (!overrides.length) return;
+    const POS = window.POS;
+    if (!POS || typeof POS.getState !== 'function') return;
+    const st = POS.getState();
+    if (!st || !st.customer || !Array.isArray(st.lines)) return;
+    const overrides = overridesForCustomer(st.customer);
+    if (!overrides.length) { decorateBadges(); return; }
 
-    // For each cart line: find description + price input, apply override
-    const cartContainer = document.getElementById('pos-lines') || document.querySelector('.pos-lines');
-    if (!cartContainer) return;
+    let changed = false;
+    st.lines.forEach(l => {
+      const o = findOverrideForLine(l.desc, overrides);
+      if (!o) { if (l._tilbod) { l._tilbod = null; } return; }
+      const target = +o.price_ex_vat;
+      if (Math.abs((+l.unit_price_ex_vat || 0) - target) > 0.01) { l.unit_price_ex_vat = target; changed = true; }
+      l._tilbod = o.name + (o.notes ? ' — ' + o.notes : '');
+    });
+    if (changed && typeof POS.rerenderDynamic === 'function') { POS.rerenderDynamic(); return; }
+    decorateBadges();
+  }
 
-    cartContainer.querySelectorAll('input.pos-price-edit').forEach(priceInput => {
-      const lineEl = priceInput.closest('div[style*="border-bottom"]') || priceInput.closest('div');
-      if (!lineEl) return;
-      const descEl = lineEl.querySelector('div[style*="font-weight:600"]');
-      const desc = descEl ? descEl.textContent.trim() : '';
-      if (!desc) return;
-      const override = findOverrideForLine(desc, overrides);
-      if (!override) return;
-
-      const currentPrice = parseFloat(priceInput.value) || 0;
-      const targetPrice = +override.price_ex_vat;
-      // Only apply if current price differs. The diff check alone is enough
-      // to prevent loops — pos.js's input handler persists the new price to
-      // state.lines, so on re-render priceInput.value === targetPrice and we
-      // skip re-application. (Used to also use a dataset flag, but that flag
-      // was lost on every cart re-render — caused unreliable re-applies.)
-      if (Math.abs(currentPrice - targetPrice) > 0.01) {
-        priceInput.value = String(targetPrice);
-        priceInput.dispatchEvent(new Event('change', { bubbles: true }));
-        priceInput.dispatchEvent(new Event('input', { bubbles: true }));
-      }
-
-      // Add badge if not already present
-      if (!lineEl.querySelector('._cpr-badge')) {
-        const badge = document.createElement('span');
-        badge.className = '_cpr-badge';
-        badge.title = 'Tilboðsverð: ' + override.name + (override.notes ? ' — ' + override.notes : '');
-        badge.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 6px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:0.02em';
-        badge.textContent = '💰 Tilboðsverð';
-        // Insert after the description div
-        if (descEl && descEl.parentElement) {
-          descEl.parentElement.style.position = 'relative';
+  // Yellow „💰 Tilboðsverð" badge on affected cart lines. Keyed by data-idx →
+  // state.lines[idx]._tilbod (set above), so it survives the cart redesign.
+  function decorateBadges() {
+    const POS = window.POS;
+    const st = (POS && POS.getState && POS.getState()) || null;
+    const lines = (st && st.lines) || [];
+    const cart = document.getElementById('pos-lines');
+    if (!cart) return;
+    cart.querySelectorAll('input.pos-price-edit').forEach(pi => {
+      const idx = +pi.getAttribute('data-idx');
+      const card = pi.closest('div[style*="border-left"]') || pi.parentElement && pi.parentElement.parentElement;
+      if (!card) return;
+      const tag = lines[idx] && lines[idx]._tilbod;
+      const existing = card.querySelector('._cpr-badge');
+      if (tag && !existing) {
+        const descEl = card.querySelector('div[style*="font-weight:700"], div[style*="font-weight:600"]');
+        if (descEl) {
+          const badge = document.createElement('span');
+          badge.className = '_cpr-badge';
+          badge.title = 'Tilboðsverð: ' + tag;
+          badge.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 6px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:0.02em';
+          badge.textContent = '💰 Tilboðsverð';
           descEl.appendChild(badge);
         }
+      } else if (!tag && existing) {
+        existing.remove();
       }
     });
   }

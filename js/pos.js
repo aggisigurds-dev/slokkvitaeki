@@ -91,6 +91,9 @@
         var notes = (vk && vk.athugasemdir) || (fy && fy.athugasemdir) || '';
         return {
           nafn:  (fy && fy.nafn) || (vk && vk.nafn) || '',
+          // Carry the kt back so state.customer.kt is always set on a name/company
+          // pick — the beiðni-gate (264) + auto-discount key on it (2026-07-13).
+          kennitala: (fy && fy.kennitala) || (vk && vk.kennitala) || kt,
           simi:  (fy && fy.simi) || (vk && vk.simi) || '',
           heimilisfang: (fy && fy.heimilisfang) || (vk && vk.heimilisfang) || '',
           co_id: fy ? fy.id : null,
@@ -104,7 +107,7 @@
         return window.KtLookup.lookup(kt).then(function (ext) {
           if (!ext) return null;
           return {
-            nafn: ext.nafn || '', simi: ext.simi || '',
+            nafn: ext.nafn || '', kennitala: kt, simi: ext.simi || '',
             co_id: null, heimilisfang: ext.heimilisfang || '',
             afslattur_pct: 0, athugasemdir: '', source: 'rsk'
           };

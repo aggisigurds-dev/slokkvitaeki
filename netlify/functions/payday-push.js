@@ -208,6 +208,10 @@ function buildPayload(sale, customer, opts) {
     // í Payday, þú sendir handvirkt þaðan).
     status: mode === 'draft' ? 'DRAFT' : 'SENT',
     reference: sale.num ? String(sale.num) : null,
+    // Sölunótan (m.a. „Beiðni nr: …" sem beiðni-gate 264 skrifar fyrir Colas o.fl.)
+    // fylgir á Payday-kröfuna svo kúnninn sjái sitt pöntunar-/beiðninúmer á
+    // reikningnum eins og á kvittuninni (2026-07-13). Tómt → sleppt.
+    description: (sale.athugasemdir || '').trim() || null,
     sendEmail: emailSend,
     createClaim: true,
     createElectronicInvoice: electronic,

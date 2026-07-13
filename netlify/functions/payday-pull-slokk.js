@@ -81,8 +81,25 @@ exports.handler = async (event) => {
     }
     const rows = Array.from(byKey.values());
 
+    // Backfill kt for rows Payday returned WITHOUT a kennitala, by EXACT
+    // case-folded name match against customers_base. Conservative: only fill
+    // when EXACTLY ONE base carries that (folded) name — never guess on an
+    // ambiguous name (e.g. two „Þemasnyrting" bases). This makes the kt-less
+    // Payday krófur (housing associations etc.) link to their profile durably —
+    // survives every re-sync, unlike a manual kt edit the upsert would overwrite.
+    let backfilled = 0;
+    const needName = rows.some(r => !r.kt && r.customer_name);
+    if (needName) {
+      const byName = await baseNameIndex();
+      for (const r of rows) {
+        if (r.kt || !r.customer_name) continue;
+        const hit = byName.get(foldName(r.customer_name));
+        if (hit && hit.length === 1) { r.kt = hit[0]; backfilled++; }
+      }
+    }
+
     if (isDry) {
-      return json(200, { ok: true, dry: true, since: since || 'ALLT', fetched, mapped: rows.length, skipped, sample: rows.slice(0, 8) });
+      return json(200, { ok: true, dry: true, since: since || 'ALLT', fetched, mapped: rows.length, skipped, kt_backfilled: backfilled, sample: rows.slice(0, 8) });
     }
 
     let upserted = 0;
@@ -100,7 +117,7 @@ exports.handler = async (event) => {
       upserted += slice.length;
     }
 
-    return json(200, { ok: true, since: since || 'ALLT', fetched, upserted, skipped });
+    return json(200, { ok: true, since: since || 'ALLT', fetched, upserted, skipped, kt_backfilled: backfilled });
   } catch (e) {
     return json(500, { error: String(e.message || e) });
   }
@@ -211,3 +228,35 @@ function isoDate(v) {
   return isNaN(t) ? null : new Date(t).toISOString().slice(0, 10);
 }
 function defaultSince() { const d = new Date(); d.setDate(d.getDate() - 180); return d.toISOString().slice(0, 10); }
+
+// case-fold + NFD-strip diacritics + collapse ws → key for exact-name matching.
+// Also strips a trailing Icelandic legal-form suffix (ehf/hf/slf/sf/ses/ohf/…) so
+// „Þemasnyrting" og „Þemasnyrting ehf" varpast á sama lykil — the „exactly one
+// match" guard still protects against two genuinely different bases colliding.
+function foldName(s) {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().replace(/\s+/g, ' ').trim()
+    .replace(/[.,]/g, '')
+    .replace(/\s+(ehf|ohf|hf|slf|sf|ses|hses)$/,'')
+    .trim();
+}
+// folded-name → [kt-digits, …] index over customers_base (only kts of valid shape)
+async function baseNameIndex() {
+  const idx = new Map();
+  try {
+    for (let from = 0; ; from += 1000) {
+      const r = await fetch(`${SUPABASE_URL}/rest/v1/customers_base?select=nafn,kennitala&kennitala=not.is.null`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Range: `${from}-${from + 999}` },
+      });
+      if (!r.ok) break;
+      const rows = await r.json().catch(() => []);
+      for (const b of rows) {
+        const k = foldName(b.nafn); const d = digits(b.kennitala);
+        if (!k || d.length !== 10) continue;
+        const arr = idx.get(k) || []; if (!arr.includes(d)) arr.push(d); idx.set(k, arr);
+      }
+      if (rows.length < 1000) break;
+    }
+  } catch (_) {}
+  return idx;
+}
