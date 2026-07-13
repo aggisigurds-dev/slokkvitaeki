@@ -129,6 +129,23 @@
     3: { label: 'Akstur 3', dot: '#0e7490', bg: '#ecfeff', bd: '#a5f3fc' }  // grænblár
   };
   function aksturOf(a) { const v = +((a || {}).akstur) || 0; return (v >= 1 && v <= 3) ? v : 0; }
+  // haversine (km) milli tveggja hnita — fyrir km-áætlun á framvindu-stikunni.
+  function havKm(a, b) {
+    const R = 6371, dLat = (b.lat - a.lat) * Math.PI / 180, dLng = (b.lng - a.lng) * Math.PI / 180;
+    const s = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * Math.PI / 180) * Math.cos(b.lat * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+  // Litað tæki-tákn eftir tegund (tækjalisti í fyrirtækjaspjaldi).
+  function unitIcon(type) {
+    const t = String(type || '').toLowerCase();
+    if (/co2|co₂|kolsýr|kolsyr/.test(t)) return { cls: 'co2', emoji: '🧯' };
+    if (/léttv|lettv|vatn|abf|froð|frod/.test(t)) return { cls: 'vatn', emoji: '🧯' };
+    if (/duft|abc/.test(t)) return { cls: 'duft', emoji: '🧯' };
+    if (/slang|slöng|slong|skáp|skap/.test(t)) return { cls: 'slang', emoji: '🚿' };
+    if (/reyk|skynj/.test(t)) return { cls: 'reyk', emoji: '🔔' };
+    if (/teppi/.test(t)) return { cls: 'annad', emoji: '🟥' };
+    return { cls: 'annad', emoji: '🧯' };
+  }
 
   let _seg = 'today';   // 'today' | 'all' | 'a1' | 'a2' | 'a3'
   let _search = '';
@@ -331,7 +348,57 @@
       '._bs-unit-s{font-size:12.5px;color:var(--ink3,#8891a0);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '._bs-chip{min-width:132px;min-height:48px;border:1px solid transparent;border-radius:11px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;flex:none}',
       '._bs-chip:active{filter:brightness(.96)}',
-      '._bs-prog{font-size:12.5px;color:var(--ink3,#8891a0);font-weight:700;text-transform:none;letter-spacing:0}'
+      '._bs-prog{font-size:12.5px;color:var(--ink3,#8891a0);font-weight:700;text-transform:none;letter-spacing:0}',
+      // ═══════════ DÖKK ENDURHÖNNUN (mockup: dökkt þema, rúnnuð spjöld) ═══════════
+      '#' + VIEW_ID + '{background:#12151c!important}',
+      '._bs-root{background:#12151c;color:#e8eaed}',
+      '._bs-top{background:#000;border-bottom:none;padding:15px 16px 13px}',
+      '._bs-top h1{font-size:15px}',
+      '._bs-top h1 .bs-sub{display:block;font-size:11.5px;font-weight:600;color:#9aa3af;margin-top:1px}',
+      '._bs-controls{background:#12151c;border-bottom:none;padding:12px 14px 4px}',
+      '._bs-search{background:#1c2029;border-color:#2a2f3a;color:#e8eaed;border-radius:14px;padding:14px 16px}',
+      '._bs-search::placeholder{color:#6b7280}',
+      '._bs-seg{background:#1c2029;border-radius:14px}',
+      '._bs-seg button{color:#9aa3af;font-size:14px}',
+      '._bs-seg button.on{background:#2f3540;color:#fff;box-shadow:none}',
+      // Framvindu-stika (N af M kláruð + km/mín)
+      '._bs-progbar{background:#000;border-radius:16px;padding:13px 16px;margin-bottom:2px}',
+      '._bs-progbar .r1{display:flex;justify-content:space-between;align-items:baseline;font-size:12.5px;color:#aeb4bd;margin-bottom:9px;gap:8px}',
+      '._bs-progbar .r1 b{color:#fff;font-weight:800;font-size:13.5px}',
+      '._bs-progbar .track{height:7px;border-radius:99px;background:#2a2f3a;overflow:hidden}',
+      '._bs-progbar .fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#16a34a,#22c55e);transition:width .35s}',
+      // Spjöld: hvít á dökku, meira rúnnuð, mjúkur skuggi, aðgerða-röð neðst
+      '._bs-card{border:none;border-radius:18px;box-shadow:0 3px 12px rgba(0,0,0,.4);padding:13px 14px 0;gap:12px;align-items:flex-start;flex-wrap:wrap}',
+      '._bs-card:active{background:#fff;box-shadow:0 3px 12px rgba(0,0,0,.4)}',
+      '._bs-cardtop{display:flex;gap:12px;align-items:flex-start;width:100%;padding-bottom:13px}',
+      // Númer-merki litað eftir STÖÐU (grænt búið / rautt útrunnið / gult á dagskrá)
+      '._bs-seq{width:40px;height:40px;font-size:16px;box-shadow:none;align-self:center}',
+      '._bs-seq.stdone{background:#16a34a}._bs-seq.stoverdue{background:#dc2626}._bs-seq.stduenow{background:#d97706}._bs-seq.stscheduled{background:#eab308}._bs-seq.stin_progress{background:#2563eb}._bs-seq.stunknown{background:#94a3b8}',
+      // Aðgerða-röð á korti: Maps · Hringja · Búið
+      '._bs-cardacts{display:flex;width:100%;border-top:1px solid #eef0f3;margin-top:0}',
+      '._bs-cbtn{flex:1;min-height:48px;display:flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-size:14px;font-weight:700;border:none;background:transparent;color:#4a5563;cursor:pointer;text-decoration:none;border-right:1px solid #eef0f3}',
+      '._bs-cbtn:last-child{border-right:none}',
+      '._bs-cbtn.done{background:linear-gradient(180deg,#1aa156,#127a3f);color:#fff;border-radius:0 0 18px 0}',
+      '._bs-cbtn[disabled]{color:#c0c6cf;cursor:default}',
+      '._bs-cbtn:active:not([disabled]){background:#f2f4f6}',
+      // Aksturs-chip smækkaður í horn kortsins
+      '._bs-ak-chip{min-width:38px;height:38px;border-radius:11px;font-size:13px;align-self:center}',
+      // Neðsta stika + halla-takki
+      '._bs-bottom{background:linear-gradient(to top,#12151c 62%,rgba(18,21,28,0))}',
+      '._bs-primary{background:linear-gradient(180deg,#e2482a,#a5230f);box-shadow:0 6px 20px rgba(180,40,20,.42);border-radius:16px}',
+      '._bs-primary:active{filter:brightness(.95);background:linear-gradient(180deg,#e2482a,#a5230f)}',
+      '._bs-primary[disabled]{background:#2a2f3a;color:#6b7280;box-shadow:none}',
+      // Fyrirtækjaspjald (sheet) dökkt
+      '._bs-sheet{background:#12151c}',
+      '._bs-sheet-top{background:#000;border-bottom:none;padding:15px 14px 13px}',
+      '._bs-sheet-body{background:#12151c}',
+      '._bs-addr{color:#c7ccd3}',
+      '._bs-act{min-height:54px;border-radius:15px;border:none;box-shadow:0 2px 9px rgba(0,0,0,.35)}',
+      '._bs-act.go{background:linear-gradient(180deg,#e2482a,#a5230f);color:#fff}',
+      '._bs-sec{border:none;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.32)}',
+      // Litað tæki-tákn í tækjalistanum
+      '._bs-unit-ic{width:38px;height:38px;flex:none;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;background:#fef2f2}',
+      '._bs-unit-ic.co2{background:#eff6ff}._bs-unit-ic.duft{background:#fef2f2}._bs-unit-ic.vatn{background:#eff6ff}._bs-unit-ic.slang{background:#f0fdf4}._bs-unit-ic.reyk{background:#fefce8}._bs-unit-ic.annad{background:#f4f4f5}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -393,13 +460,14 @@
 
     if (!root.querySelector('#_bs-mapcanvas')) {
       root.innerHTML =
-        '<div class="_bs-top"><h1><span>🚚</span><span>Bílstjóri</span></h1>' +
+        '<div class="_bs-top"><h1><span>🚚</span><span>Bílstjóri<span class="bs-sub">Leið dagsins · ' + esc(new Date().toLocaleDateString('is-IS', { weekday: 'short', day: 'numeric', month: 'short' })) + '</span></span></h1>' +
           '<button id="_bs-full" class="_bs-iconbtn" type="button" title="Allur skjár (fela vafra)">⛶</button>' +
           '<button id="_bs-share" class="_bs-iconbtn" type="button" title="Afrita hlekk til að senda á bílstjóra">🔗</button>' +
           (LOCKED ? '' : '<button id="_bs-exit" class="_bs-iconbtn" type="button" title="Til baka í forritið / vefsíðu">✕</button>') +
           '</div>' +
         '<div id="_bs-mapcanvas" class="_bs-map"></div>' +
         '<div class="_bs-controls">' +
+          '<div class="_bs-progbar" id="_bs-prog2" style="display:none"></div>' +
           '<input id="_bs-q" class="_bs-search" type="search" inputmode="search" placeholder="Leita að fyrirtæki, heimilisfangi, kt…">' +
           '<div class="_bs-seg">' +
             '<button data-seg="today" type="button">📋 Dagsins verk</button>' +
@@ -468,9 +536,28 @@
       ? list.map((x, i) => cardHtml(x, i + 1)).join('')
       : '<div class="_bs-empty">' + (_seg === 'today' ? '✅ Ekkert áríðandi eftir í dag.' : 'Engin fyrirtæki fundust.') + '</div>';
     box.querySelectorAll('._bs-card').forEach(card => card.addEventListener('click', e => {
-      if (e.target.closest('._bs-check') || e.target.closest('._bs-ak-chip')) return;   // handled below
+      if (e.target.closest('._bs-cbtn') || e.target.closest('._bs-ak-chip')) return;   // handled below
       openCompany(+card.dataset.id);
     }));
+    // Maps-takki á korti → opna leiðsögn í Google Maps.
+    box.querySelectorAll('[data-maps]').forEach(btn => btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const x = list.find(y => String(y.co.id) === String(btn.dataset.id));
+      if (x) navTo(x.co, x.coord && x.coord.lat, x.coord && x.coord.lng);
+    }));
+    // Framvindu-stika: N af M kláruð + km/mín áætlun (haversine milli hnita í röð).
+    const pb = document.getElementById('_bs-prog2');
+    if (pb) {
+      const done = list.filter(x => +((x.ars || {}).field_inspected_year) === curYear()).length;
+      const tot = list.length;
+      let km = 0, prev = null;
+      list.filter(x => x.coord).forEach(x => { if (prev) km += havKm(prev, x.coord); prev = x.coord; });
+      km *= 1.3;
+      pb.style.display = tot ? 'block' : 'none';
+      pb.innerHTML = '<div class="r1"><span><b>' + done + ' af ' + tot + '</b> kláruð</span>' +
+        (km > 0.3 ? '<span>' + km.toFixed(1).replace('.', ',') + ' km · ~' + Math.max(1, Math.round(km / 40 * 60)) + ' mín</span>' : '') + '</div>' +
+        '<div class="track"><div class="fill" style="width:' + (tot ? Math.round(done / tot * 100) : 0) + '%"></div></div>';
+    }
     // Aksturslisti-chip: tappa til að rúlla 0 → 1 → 2 → 3 → 0 (setur akstur á kúnna).
     box.querySelectorAll('._bs-ak-chip').forEach(btn => btn.addEventListener('click', async e => {
       e.stopPropagation();
@@ -533,25 +620,31 @@
     // Left marker: in "Dagsins verk" it's the drive-order number; in "Allir" it's
     // a forgangur badge (! when set, · otherwise). Colour = forgangur level.
     const mark = (_seg === 'today') ? (seq || '·') : (lvl > 0 ? '!' : '·');
+    const ph = phoneOf(c);
     return (
       '<div class="_bs-card" role="button" tabindex="0" data-id="' + c.id + '" data-co-id="' + c.id + '">' +
-        '<span class="_bs-seq p' + lvl + '" title="' + (lvl ? 'Forgangur ' + lvl : 'Enginn forgangur') + '">' + mark + '</span>' +
-        '<span class="_bs-card-main">' +
-          '<span class="_bs-card-name">' + esc(c.nafn || '—') + '</span>' +
-          '<span class="_bs-card-sub">' + (c.heimilisfang ? '📍 ' + esc(c.heimilisfang) : '<span style="color:var(--brand,#C93C1D)">⚠ Ekkert heimilisfang</span>') + '</span>' +
-          '<span class="_bs-card-meta">' +
-            statusPill(x.status) +
-            (x.urgent ? '<span class="_bs-badge">🚨 Skilaboð</span>' : '') +
+        '<div class="_bs-cardtop">' +
+          '<span class="_bs-seq st' + x.status.key + ' p' + lvl + '" title="' + esc(x.status.label) + '">' + mark + '</span>' +
+          '<span class="_bs-card-main">' +
+            '<span class="_bs-card-name">' + esc(c.nafn || '—') + '</span>' +
+            '<span class="_bs-card-sub">' + (c.heimilisfang ? '📍 ' + esc(c.heimilisfang) : '<span style="color:var(--brand,#C93C1D)">⚠ Ekkert heimilisfang</span>') + '</span>' +
+            '<span class="_bs-card-meta">' +
+              statusPill(x.status) +
+              (x.urgent ? '<span class="_bs-badge">🚨 Skilaboð</span>' : '') +
+            '</span>' +
+            '<span class="_bs-card-extra">' + esc(extra) + '</span>' +
           '</span>' +
-          '<span class="_bs-card-extra">' + esc(extra) + '</span>' +
-        '</span>' +
-        '<button class="_bs-ak-chip' + (ak ? ' on' : '') + '" type="button" data-id="' + c.id + '" data-ak="' + ak + '"' +
-          (ak ? ' style="--ak:' + AKSTUR[ak].dot + '"' : '') +
-          ' title="Aksturslisti — tappa til að setja 1 → 2 → 3">' + (ak ? '🚗' + ak : '🚗') + '</button>' +
-        '<button class="_bs-check' + (inVinnsla ? ' on' : '') + '" type="button" data-id="' + c.id + '" ' +
-          'title="' + (inVinnsla ? 'Í vinnslu (þjónustuverkstæði) — smelltu til að taka úr' : 'Senda í vinnslu — þjónustuverkstæði (dettur úr leiðsögn)') + '" ' +
-          'aria-label="Senda í vinnslu">' + (inVinnsla ? '✓' : '') + '</button>' +
-        '<span class="_bs-chev">›</span>' +
+          '<button class="_bs-ak-chip' + (ak ? ' on' : '') + '" type="button" data-id="' + c.id + '" data-ak="' + ak + '"' +
+            (ak ? ' style="--ak:' + AKSTUR[ak].dot + '"' : '') +
+            ' title="Aksturslisti — tappa til að setja 1 → 2 → 3">' + (ak ? '🚗' + ak : '🚗') + '</button>' +
+        '</div>' +
+        '<div class="_bs-cardacts">' +
+          '<button class="_bs-cbtn" type="button" data-maps data-id="' + c.id + '"' + (x.coord ? '' : ' disabled') + '>↗ Maps</button>' +
+          (ph ? '<a class="_bs-cbtn" href="tel:' + esc(String(ph).replace(/\s/g,'')) + '">📞 Hringja</a>'
+              : '<button class="_bs-cbtn" type="button" disabled>📞 Hringja</button>') +
+          '<button class="_bs-cbtn _bs-check' + (inVinnsla ? ' on done' : '') + '" type="button" data-check data-id="' + c.id + '">' +
+            (inVinnsla ? '✓ Búið' : '✓ Merkja búið') + '</button>' +
+        '</div>' +
       '</div>'
     );
   }
@@ -837,8 +930,10 @@
       if (prog) prog.textContent = 'Yfirfarin: ' + done + '/' + units.length;
       box.innerHTML = units.map(u => {
         const m = STATE_META[unitState(u)];
-        const sub = [u.size, u.location, u.serial].filter(Boolean).map(esc).join(' · ');
-        return '<div class="_bs-unit"><div class="_bs-unit-main">' +
+        // Sleppa staðsetningu/heimilisfangi á tækinu (Agnar) — bara stærð + serial.
+        const sub = [u.size, u.serial].filter(Boolean).map(esc).join(' · ');
+        const ic = unitIcon(u.type);
+        return '<div class="_bs-unit"><div class="_bs-unit-ic ' + ic.cls + '">' + ic.emoji + '</div><div class="_bs-unit-main">' +
           '<div class="_bs-unit-t">' + esc(u.type || 'Tæki') + '</div>' + (sub ? '<div class="_bs-unit-s">' + sub + '</div>' : '') +
           '</div><button class="_bs-chip" data-id="' + u.id + '" type="button" style="background:' + m.bg + ';color:' + m.fg + ';border-color:' + m.bd + '">' + m.icon + ' ' + m.label + '</button></div>';
       }).join('');
