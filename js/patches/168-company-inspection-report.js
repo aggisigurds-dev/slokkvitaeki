@@ -422,7 +422,12 @@
         const ktD = String(co.kennitala || '').replace(/[^0-9]/g, '');
         const ktDash = ktD.length === 10 ? ktD.slice(0, 6) + '-' + ktD.slice(6) : (co.kennitala || '');
         const _mIS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'][new Date().getMonth()];
-        const fname = [n, ktDash, ar, _mIS, 'úttektarskýrsla'].filter(Boolean).join(' - ') + '.pdf';
+        // Innra skráarheiti (Drive/lesari — EKKI á sendum reikningi):
+        // Fyrirtæki - Heimilisfang - Kennitala - Ár - Mánuður - #<fyrirtaeki_id>.
+        // #id = STAÐA-id svo lesarinn/nafnabreytirinn tengi BEINT á réttan stað.
+        const _addr = String(co.heimilisfang || '').replace(/\s+/g, ' ').trim();
+        const _sub = co.id != null ? '#' + co.id : '';
+        const fname = [n, _addr, ktDash, ar, _mIS, 'úttektarskýrsla', _sub].filter(Boolean).join(' - ') + '.pdf';
         const file = new File([blob], fname, { type: 'application/pdf' });
         const meta = await CompanyAttachments.upload(co.id, file, { year: ar, kind: 'skyrsla' });
         if (meta) { if (_cirSaveBtn) _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar; if (window.Toast && Toast.show) Toast.show('✓ Skýrsla vistuð sem ' + ar); }
@@ -443,7 +448,12 @@
         const ktD = String(co.kennitala || '').replace(/[^0-9]/g, '');
         const ktDash = ktD.length === 10 ? ktD.slice(0, 6) + '-' + ktD.slice(6) : (co.kennitala || '');
         const _mIS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'][new Date().getMonth()];
-        const fname = [n, ktDash, ar, _mIS, 'úttektarskýrsla'].filter(Boolean).join(' - ') + '.pdf';
+        // Innra skráarheiti (Drive/lesari — EKKI á sendum reikningi):
+        // Fyrirtæki - Heimilisfang - Kennitala - Ár - Mánuður - #<fyrirtaeki_id>.
+        // #id = STAÐA-id svo lesarinn/nafnabreytirinn tengi BEINT á réttan stað.
+        const _addr = String(co.heimilisfang || '').replace(/\s+/g, ' ').trim();
+        const _sub = co.id != null ? '#' + co.id : '';
+        const fname = [n, _addr, ktDash, ar, _mIS, 'úttektarskýrsla', _sub].filter(Boolean).join(' - ') + '.pdf';
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a'); a.href = url; a.download = fname;
         document.body.appendChild(a); a.click(); a.remove();

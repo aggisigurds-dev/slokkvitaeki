@@ -38,9 +38,14 @@
     return (v < 0 ? '-' : '') + p.join('.') + ' kr';
   }
   function fmtKtDash(k) { var s = String(k || '').replace(/[^0-9]/g, ''); return s.length === 10 ? s.slice(0, 6) + '-' + s.slice(6) : (k || ''); }
-  function docName(nafn, kt, ar, tail) {
+  // Skráarheiti: „Fyrirtæki - kt - ár - R-xxxxxx - #<fyrirtaeki_id>.pdf".
+  // subId (fyrirtaeki.id = STAÐA-id) er stimplað aftast svo lesarinn/nafnabreytirinn
+  // í Bakenda geti tengt skjalið BEINT á réttan stað (ekki adressu-ágiskun).
+  function docName(nafn, kt, ar, tail, subId) {
     var n = String(nafn || 'fyrirtæki').replace(/\s+/g, ' ').trim();
-    return [n, fmtKtDash(kt), ar, tail].filter(Boolean).join(' - ') + '.pdf';
+    var parts = [n, fmtKtDash(kt), ar, tail].filter(Boolean);
+    if (subId != null && String(subId).trim() !== '') parts.push('#' + String(subId).trim());
+    return parts.join(' - ') + '.pdf';
   }
   function isoYear(s) { var m = /(\d{4})/.exec(String(s || '')); return m ? m[1] : String(new Date().getFullYear()); }
   function ddmmyyyy(s) {
@@ -408,7 +413,7 @@
         if (rnum && have.some(function (a) { return a && a.name && a.name.indexOf(rnum) >= 0; })) return null;
       } catch (_) {}
       var blob = await buildInvoiceBlob(sale, co);
-      var fname = docName(co.nafn, co.kennitala, ar, sale.num || 'reikningur');
+      var fname = docName(co.nafn, co.kennitala, ar, sale.num || 'reikningur', coId);
       var file = new File([blob], fname, { type: 'application/pdf' });
       var meta = await CompanyAttachments.upload(coId, file, { year: ar, kind: 'reikningur' });
       if (meta && window.Toast && Toast.show) Toast.show('🧾 Reikningur vistaður í skjöl (' + ar + ')');
