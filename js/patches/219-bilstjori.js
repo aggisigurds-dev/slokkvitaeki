@@ -39,9 +39,12 @@
   // hidden, and any attempt to navigate to another view snaps back here. The
   // office keeps full access via the bare URL (no ?driver). This is a focus
   // lock for the shared driver link / installed app, not security.
+  // Locked also via the app-profile link (?app=bilstjori) so the „🚚 Bílstjóri"
+  // card on the Öpp-page installs/boots straight into this locked view — the
+  // legacy ?driver share-link stays a valid alias.
   const LOCKED = (() => {
-    try { return new URLSearchParams(location.search).has('driver'); }
-    catch (_) { return /[?&]driver(?:$|[=&])/.test(location.search || ''); }
+    try { const sp = new URLSearchParams(location.search); return sp.has('driver') || sp.get('app') === 'bilstjori'; }
+    catch (_) { return /[?&]driver(?:$|[=&])/.test(location.search || '') || /[?&]app=bilstjori(?:$|[&])/.test(location.search || ''); }
   })();
   const DRIVER_LINK = () => location.origin + '/?driver';
 

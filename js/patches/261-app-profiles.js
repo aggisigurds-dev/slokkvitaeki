@@ -51,8 +51,19 @@
       manifest: '/manifest-verkefni.json',
       blurb: 'Verkborð — beiðnir, verkefni og eftirfylgni',
       defaults: ['verkbord', 'arsskodun', 'reikninga-postur'] },
+    // Bílstjóri er STANDALONE: engin botn-nav-skel (patch 219 á heilan
+    // læstan fullskjá). Kortið gefur bara Opna / Setja upp / Afrita hlekk —
+    // engin „Síður í appinu"-listi. ?app=bilstjori ræsir læsta Bílstjórann.
+    { key: 'bilstjori', emoji: '🚚', name: 'Bílstjóri', color: '#111318', dark: '#000000',
+      manifest: '/manifest-bilstjori.json', standalone: true,
+      blurb: 'Ökumanns-app: leið dagsins, tækjaúttekt og skýrslur í símanum',
+      defaults: [] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
+  // Standalone apps (Bílstjóri) render their OWN full-screen locked view
+  // (patch 219) — patch 261 must NOT build its bottom-nav shell or snap-back
+  // for them, only surface the launcher card + install button.
+  function isStandalone(key) { return !!(APP_BY_KEY[key] && APP_BY_KEY[key].standalone); }
 
   // active app mode (from ?app=)
   var ACTIVE = (function () {
@@ -239,6 +250,8 @@
         return '<label class="op-pg"><input type="checkbox" class="_op-pg" data-app="' + a.key + '" data-k="' + p.k + '"' + (selSet[p.k] ? ' checked' : '') + '>' +
           '<span class="e">' + p.emoji + '</span><span>' + esc(p.label) + '</span></label>';
       }).join('');
+      var pagesSection = a.standalone ? '' :
+        ('<div class="op-sech">Síður í appinu</div>' + '<div class="op-pages">' + pageRows + '</div>');
       return '<div class="op-card">' +
         '<div class="op-top"><div class="op-ic" style="background:linear-gradient(180deg,' + a.color + ',' + a.dark + ')">' + a.emoji + '</div>' +
           '<div><div class="op-nm">' + esc(a.name) + '</div><div class="op-bl">' + esc(a.blurb) + '</div></div></div>' +
@@ -247,8 +260,7 @@
           '<button class="op-btn _app-install _op-install" data-app="' + a.key + '" data-always="1" type="button">⤓ Setja upp í síma</button>' +
           '<button class="op-btn _op-link" data-app="' + a.key + '" type="button">🔗 Afrita hlekk</button>' +
         '</div>' +
-        '<div class="op-sech">Síður í appinu</div>' +
-        '<div class="op-pages">' + pageRows + '</div>' +
+        pagesSection +
       '</div>';
     }).join('');
     v.innerHTML = '<div class="op-main"><h1 class="op-h1">📱 Öpp</h1>' +
@@ -363,7 +375,8 @@
       // hide the launcher when navigating elsewhere
       try { if (view !== NAV_KEY) { var v = document.getElementById(VIEW_ID); if (v) { v.style.display = 'none'; v.classList.remove('active'); } } } catch (_) {}
       // app mode: if someone navigates to a page NOT in the app, snap back
-      if (ACTIVE) {
+      // (standalone apps like Bílstjóri handle their own lock in patch 219)
+      if (ACTIVE && !isStandalone(ACTIVE)) {
         var allowed = pagesFor(ACTIVE); if (!allowed.length) allowed = (APP_BY_KEY[ACTIVE] || {}).defaults || [];
         if (allowed.indexOf(view) === -1 && view !== NAV_KEY) { setTimeout(function () { if (_curPage) goPage(_curPage); }, 0); }
       }
@@ -394,6 +407,9 @@
   function boot() {
     patchSwitchView();
     addNavButton();
+    // Standalone app (Bílstjóri) → patch 219 owns the full-screen lock; do not
+    // build the 261 bottom-nav shell over it.
+    if (ACTIVE && isStandalone(ACTIVE)) return;
     if (ACTIVE) {
       // wait for the shell + a nav target, then lock into the app.
       // Enginn 6s dauðafrestur lengur — á hægum síma gat App.switchView komið

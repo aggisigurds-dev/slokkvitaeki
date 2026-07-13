@@ -1,9 +1,9 @@
 {
-  "id": "/?driver",
+  "id": "/?app=bilstjori",
   "name": "Bílstjóri — Slökkvitæki",
   "short_name": "Bílstjóri",
   "description": "Ökumanns-app: leið dagsins, tækjaúttekt og skýrslur í símanum.",
-  "start_url": "/?driver",
+  "start_url": "/?app=bilstjori",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
