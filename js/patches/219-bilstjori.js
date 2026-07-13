@@ -801,14 +801,21 @@
         + '#_bs-addunit-form:empty{display:none}'
         + '._bs-af-row{display:flex;gap:8px}'
         + '._bs-af-in{flex:1;min-width:0;padding:12px;border-radius:10px;border:1px solid #cbd2da;font-size:16px;font-family:inherit;background:#fff;color:#1b1f26}'
-        + '._bs-akstur{display:flex;gap:6px;margin-top:6px}'
-        + '._bs-akstur button{flex:1;padding:8px 4px;border-radius:9px;border:1.5px solid #d7dbe0;background:#fff;color:#5b6470;font-weight:700;font-size:12.5px;font-family:inherit;cursor:pointer;white-space:nowrap}'
-        + '._bs-akstur button.on{border-color:var(--ak);color:#fff;background:var(--ak);box-shadow:0 1px 4px rgba(0,0,0,.18)}'
-        + '._bs-ak-chip{flex:none;align-self:center;min-width:40px;height:40px;margin-right:6px;border-radius:11px;border:1.5px solid #d7dbe0;background:#f6f7f9;color:#7a828e;font-weight:800;font-size:14px;font-family:inherit;cursor:pointer}'
-        + '._bs-ak-chip.on{border-color:var(--ak);background:var(--ak);color:#fff}'
-        + '._bs-ak-row{display:flex;gap:6px;flex-wrap:wrap}'
-        + '._bs-ak-set{flex:1;min-width:70px;padding:12px 6px;border-radius:11px;border:1.5px solid #d7dbe0;background:#fff;color:#3a414b;font-weight:700;font-size:14px;font-family:inherit;cursor:pointer}'
-        + '._bs-ak-set.on{border-color:var(--ak,#1a7f4b);background:var(--ak,#1a7f4b);color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}';
+        // Aksturslista-síuchippar: hver í sínum þemalit (litað í stað grátt-á-gráu),
+        // stærri + meira bil. Fylltir þegar valdir.
+        + '._bs-akstur{display:flex;gap:12px;margin-top:12px}'
+        + '._bs-akstur button{flex:1;padding:15px 6px;border-radius:13px;border:2.5px solid var(--ak);background:#fff;color:var(--ak);font-weight:800;font-size:15px;font-family:inherit;cursor:pointer;white-space:nowrap}'
+        + '._bs-akstur button:active{transform:translateY(1px)}'
+        + '._bs-akstur button.on{color:#fff;background:var(--ak);box-shadow:0 2px 8px rgba(0,0,0,.22)}'
+        // Chip á korti: grár þegar óvalið, þemalitur þegar á lista.
+        + '._bs-ak-chip{flex:none;align-self:center;min-width:48px;height:48px;margin-right:8px;border-radius:13px;border:2px solid #d7dbe0;background:#f6f7f9;color:#7a828e;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}'
+        + '._bs-ak-chip.on{border-color:var(--ak);background:var(--ak);color:#fff;box-shadow:0 1px 5px rgba(0,0,0,.2)}'
+        + '._bs-ak-chip:active{transform:translateY(1px)}'
+        // Val í fyrirtækjaspjaldi: hver í þemalit, stærri + meira bil.
+        + '._bs-ak-row{display:flex;gap:12px;flex-wrap:wrap}'
+        + '._bs-ak-set{flex:1;min-width:76px;padding:16px 6px;border-radius:13px;border:2.5px solid var(--ak,#c7ccd3);background:#fff;color:var(--ak,#5b6470);font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}'
+        + '._bs-ak-set:active{transform:translateY(1px)}'
+        + '._bs-ak-set.on{background:var(--ak,#5b6470);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.22)}';
       document.head.appendChild(s);
     }
     loadUnitsInto(sheet, c);
