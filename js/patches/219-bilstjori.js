@@ -191,6 +191,44 @@
     return true;
   }
 
+  // Bæta við tæki á staðnum. Nýtt tæki er sjálfgefið „Yfirfarið" (þú varst að
+  // skoða/setja það upp núna) — má rúlla í ⚪/🔵 með chippanum. Serial er
+  // placeholder (skiptir ekki máli, sbr. CLAUDE.md). Skilar nýju röðunum.
+  async function addUnitsOnSite(coNafn, type, size, count) {
+    const n = Math.max(1, Math.min(50, parseInt(count, 10) || 1));
+    const stamp = Date.now().toString(36).toUpperCase();
+    const rows = [];
+    for (let i = 0; i < n; i++) rows.push({
+      serial: 'TMP-' + stamp + (n > 1 ? '-' + (i + 1) : ''),
+      type: type || 'Tæki', size: size || '', client: coNafn, location: '',
+      status: 'ok', last_insp: today(), next_insp: nextYearIso(), pressure: 14
+    });
+    if (window.DB && DB.sb) {
+      const r = await DB.sb.from('uttaeki').insert(rows).select('id,serial,type,size,location,status,last_insp,next_insp');
+      if (r && r.error) throw new Error(r.error.message || 'innsetning mistókst');
+      const data = (r && r.data) || rows;
+      try { const cache = (window.DB && DB.cache) || {}; if (Array.isArray(cache.units)) data.forEach(u => cache.units.push(Object.assign({ client: coNafn }, u))); } catch (_) {}
+      return data;
+    }
+    return rows;
+  }
+
+  // Skýrslu-athugasemd geymist í trip-state (slokk_trip_<coId>.athugasemdir_skyrsla)
+  // svo hún lendi í „Athugasemdir" á úttektarskýrslunni (patch 168) og samstillist
+  // gegnum patch 227 (sem vefur localStorage.setItem á slokk_trip_*).
+  function getTripSkyrsla(coId) {
+    try { return (JSON.parse(localStorage.getItem('slokk_trip_' + coId) || '{}')).athugasemdir_skyrsla || ''; } catch (_) { return ''; }
+  }
+  function setTripSkyrsla(coId, val) {
+    try {
+      const k = 'slokk_trip_' + coId;
+      const t = JSON.parse(localStorage.getItem(k) || '{}');
+      t.athugasemdir_skyrsla = val;
+      localStorage.setItem(k, JSON.stringify(t));
+      return true;
+    } catch (_) { return false; }
+  }
+
   // ── view container + styles ──────────────────────────────────────────────
   function ensureView() {
     if (document.getElementById(VIEW_ID)) return;
@@ -562,12 +600,19 @@
         '<div class="_bs-sec">' +
           '<h3><span>🧯 Tækjalisti</span><span class="_bs-prog" id="_bs-prog">…</span></h3>' +
           '<div id="_bs-units"><div class="_bs-empty" style="padding:18px">⏳ Sæki tæki…</div></div>' +
+          '<button class="_bs-addunit" id="_bs-add-unit" type="button">➕ Bæta við tæki</button>' +
+          '<div id="_bs-addunit-form"></div>' +
           '<button class="_bs-listlock" id="_bs-lock" type="button">✅ Staðfesta lista</button>' +
+        '</div>' +
+        '<div class="_bs-sec">' +
+          '<h3><span>✍️ Athugasemdir í skýrslu</span></h3>' +
+          '<textarea class="_bs-ta" id="_bs-skyrsla-ta" placeholder="Það sem á að koma fram í úttektarskýrslunni (ástand, ábendingar)…"></textarea>' +
+          '<button class="_bs-save" id="_bs-skyrsla-save" type="button">💾 Vista í skýrslu</button>' +
         '</div>' +
       '</div>' +
       '<div class="_bs-bottom"><div class="inner" style="display:flex;gap:10px">' +
         '<button class="_bs-primary" id="_bs-add-route" style="background:var(--ink2,#404550);box-shadow:none;flex:1">➕ Á leið</button>' +
-        '<button class="_bs-primary" id="_bs-done" style="flex:2">✅ Tekið út</button>' +
+        '<button class="_bs-primary" id="_bs-done" style="flex:2">✓ Klára úttekt</button>' +
       '</div></div>';
 
     document.body.appendChild(sheet);
@@ -606,12 +651,72 @@
       const ok = await arsSave(coId, { notes: val });
       e.target.textContent = ok ? '✓ Vistað' : '⚠ Villa'; setTimeout(() => { e.target.textContent = '💾 Vista'; e.target.disabled = false; }, 1400);
     });
+    // ── Athugasemdir í skýrslu (→ trip-state, birtist á úttektarskýrslunni) ──
+    const skTa = sheet.querySelector('#_bs-skyrsla-ta');
+    if (skTa) skTa.value = getTripSkyrsla(coId);
+    const skSaveBtn = sheet.querySelector('#_bs-skyrsla-save');
+    if (skSaveBtn) skSaveBtn.addEventListener('click', e => {
+      setTripSkyrsla(coId, skTa ? skTa.value : '');
+      e.target.textContent = '✓ Vistað'; setTimeout(() => { e.target.textContent = '💾 Vista í skýrslu'; }, 1400);
+    });
+
+    // ── Bæta við tæki á staðnum ──────────────────────────────────────────────
+    const addBtn = sheet.querySelector('#_bs-add-unit');
+    const addForm = sheet.querySelector('#_bs-addunit-form');
+    if (addBtn && addForm) addBtn.addEventListener('click', () => {
+      if (addForm.dataset.open === '1') { addForm.dataset.open = '0'; addForm.innerHTML = ''; return; }
+      addForm.dataset.open = '1';
+      // Föst tegunda-listi — raunverulegu slökkvitækin (tegund+stærð sameinuð svo
+      // úttektarskýrslan (168) flokki þau rétt: duft/léttvatn/CO₂ small/big).
+      // Tegund+stærð = NÁKVÆMLEGA kanónísku gildin í uttaeki (staðfest úr gögnum:
+      // Léttvatn/6 L, ABC Duft/6 kg, CO2/5 kg — venjulegt 'CO2', ekki 'CO₂') svo
+      // skýrslu-flokkun (168) OG verð-útreikningur skrifstofunnar (129) þekki þau.
+      const PRESETS = [
+        ['ABC Duft 6 kg', 'ABC Duft', '6 kg'],
+        ['ABC Duft 2 kg', 'ABC Duft', '2 kg'],
+        ['Léttvatn 6 L', 'Léttvatn', '6 L'],
+        ['CO₂ 5 kg', 'CO2', '5 kg'],
+        ['CO₂ 2 kg', 'CO2', '2 kg'],
+        ['Brunaslanga', 'Brunaslanga', ''],
+        ['Reykskynjari', 'Reykskynjari', ''],
+        ['Eldvarnarteppi', 'Eldvarnarteppi', '']
+      ];
+      addForm.innerHTML =
+        '<select class="_bs-af-in" id="_bs-af-preset">' + PRESETS.map((p, i) => '<option value="' + i + '">' + esc(p[0]) + '</option>').join('') + '</select>' +
+        '<div class="_bs-af-row"><span style="align-self:center;color:var(--ink3,#8891a0);font-size:14px">Fjöldi</span><input class="_bs-af-in" id="_bs-af-count" type="number" inputmode="numeric" min="1" value="1" style="max-width:90px">' +
+          '<button class="_bs-save" id="_bs-af-add" type="button" style="background:var(--grn,#1a7f4b);margin-top:0;flex:1">➕ Bæta við 🟢</button></div>';
+      const doAdd = addForm.querySelector('#_bs-af-add');
+      doAdd.addEventListener('click', async () => {
+        const p = PRESETS[+addForm.querySelector('#_bs-af-preset').value] || PRESETS[0];
+        const type = p[1], size = p[2];
+        const count = addForm.querySelector('#_bs-af-count').value;
+        if (!type) { toast('⚠ Veldu tegund'); return; }
+        doAdd.textContent = '… bæti við'; doAdd.disabled = true;
+        try {
+          await addUnitsOnSite(c.nafn || '', type, size, count);
+          addForm.dataset.open = '0'; addForm.innerHTML = '';
+          toast('✓ Tæki bætt við');
+          loadUnitsInto(sheet, c);   // endurteikna listann með nýja tækinu
+        } catch (err) { doAdd.textContent = '➕ Bæta við (🟢 Yfirfarið)'; doAdd.disabled = false; toast('⚠ Villa: ' + (err.message || err)); }
+      });
+    });
+
+    // ── Klára úttekt: setur „í vinnslu" + úttekt-þrep, býr til + vistar
+    //    úttektarskýrsluna (168 auto-vistar PDF + setur „skýrsla"-þrepið).
+    //    Reikningurinn bíður skrifstofunnar. ──────────────────────────────────
     sheet.querySelector('#_bs-done').addEventListener('click', async e => {
-      e.target.textContent = '… vista'; e.target.disabled = true;
-      const ok = await arsSave(coId, { field_inspected_year: curYear() });
-      toast(ok ? '✅ Skráð sem tekið út' : '⚠ Villa við vistun');
+      e.target.textContent = '… vinn'; e.target.disabled = true;
+      if (window.ArsWorkflow && ArsWorkflow.markInVinnsla) { await ArsWorkflow.markInVinnsla(coId); }
+      else { await arsSave(coId, { field_inspected_year: curYear() }); }
       try { if (window.Leidsogn && Leidsogn.refresh) Leidsogn.refresh(); } catch (_) {}
-      close(); renderList(); renderPins();
+      renderList(); renderPins();
+      close();
+      if (window.CompanyInspectionReport && CompanyInspectionReport.open) {
+        toast('📄 Bý til úttektarskýrslu…');
+        setTimeout(() => { try { CompanyInspectionReport.open(coId); } catch (_) { toast('⚠ Gat ekki búið til skýrslu'); } }, 140);
+      } else {
+        toast('✅ Skráð í vinnslu (skýrslu-eining ekki hlaðin)');
+      }
     });
     // Side link: jump to the Þjónustuverkstæði (ársskoðun) office list.
     const verkBtn = sheet.querySelector('#_bs-verkst');
@@ -637,7 +742,13 @@
       s.textContent = '._bs-listlock{display:block;width:100%;margin-top:10px;padding:13px;border-radius:12px;border:1px solid #c7ccd3;background:#eef1f4;color:#2b313a;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}'
         + '._bs-listlock:active{transform:translateY(1px)}'
         + '._bs-sheet._bs-locked ._bs-chip{pointer-events:none;opacity:.5}'
-        + '._bs-listlock.on{background:linear-gradient(180deg,#2f5d3f,#173524);color:#daffe8;border-color:#0e2417;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(0,0,0,.25)}';
+        + '._bs-listlock.on{background:linear-gradient(180deg,#2f5d3f,#173524);color:#daffe8;border-color:#0e2417;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(0,0,0,.25)}'
+        + '._bs-addunit{display:block;width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px dashed #9aa3af;background:#fff;color:#2b313a;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}'
+        + '._bs-addunit:active{transform:translateY(1px)}'
+        + '#_bs-addunit-form{display:flex;flex-direction:column;gap:8px;margin-top:8px}'
+        + '#_bs-addunit-form:empty{display:none}'
+        + '._bs-af-row{display:flex;gap:8px}'
+        + '._bs-af-in{flex:1;min-width:0;padding:12px;border-radius:10px;border:1px solid #cbd2da;font-size:16px;font-family:inherit;background:#fff;color:#1b1f26}';
       document.head.appendChild(s);
     }
     loadUnitsInto(sheet, c);
