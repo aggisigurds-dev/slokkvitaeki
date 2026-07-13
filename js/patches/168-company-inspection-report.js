@@ -430,7 +430,15 @@
         const fname = [n, _addr, ktDash, ar, _mIS, 'úttektarskýrsla', _sub].filter(Boolean).join(' - ') + '.pdf';
         const file = new File([blob], fname, { type: 'application/pdf' });
         const meta = await CompanyAttachments.upload(co.id, file, { year: ar, kind: 'skyrsla' });
-        if (meta) { if (_cirSaveBtn) _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar; if (window.Toast && Toast.show) Toast.show('✓ Skýrsla vistuð sem ' + ar); }
+        if (meta) {
+          if (_cirSaveBtn) _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar;
+          if (window.Toast && Toast.show) Toast.show('✓ Skýrsla vistuð sem ' + ar);
+          // Skýrsla þessa árs raunverulega vistuð → „Skýrsla tilbúin/send" grænt
+          // á ÞjónustuVerkstæði. Aðeins fyrir árið í ár (curYear) — ekki afturvirkt.
+          if (window.ArsWorkflow && String(ar) === String(ArsWorkflow.curYear)) {
+            try { ArsWorkflow.markReport(co.id); } catch (_) {}
+          }
+        }
         else if (_cirSaveBtn) { _cirSaveBtn.disabled = false; _cirSaveBtn.textContent = orig; }
       } catch (e) { if (!auto) alert('Villa við vistun: ' + (e.message || e)); if (_cirSaveBtn) { _cirSaveBtn.disabled = false; _cirSaveBtn.textContent = orig; } }
     }

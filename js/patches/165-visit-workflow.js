@@ -430,6 +430,10 @@
       alert('Sala vistuð ekki: ' + (e.message || e) + '\n\n(Tækin þó uppfærð með nýrri dagsetningu.)');
     }
 
+    // 2b. Reikningur búinn til → „Reikningur sendur" grænt á ÞjónustuVerkstæði.
+    //     Þegar öll 4 þrepin eru græn (skýrsla vistuð fyrst) færist það í „Lokið".
+    if (saleId && window.ArsWorkflow) { try { await ArsWorkflow.markInvoice(coId); } catch (_) {} }
+
     // 3. Clear trip state.
     clearTrip(coId);
 
@@ -466,10 +470,24 @@
     bar.className = '_vw-bar';
     bar.style.cssText = 'display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;justify-content:flex-end';
     bar.innerHTML =
+      // Blár „Vista / í Vinnslu": setur fyrirtækið í vinnslu → birtist á
+      // ÞjónustuVerkstæði (áminning: skýrsla ekki búin) + blátt á Fyrirtæki í
+      // þjónustu. Speglar sömu stöðu og ✓-takkinn á listanum (arsskodun_customers).
+      '<button id="_vw-invinnsla" type="button" style="padding:10px 18px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:14px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.15)">' +
+      '💾 Vista / í Vinnslu</button>' +
       '<button id="_vw-finish" type="button" style="padding:10px 18px;background:#166534;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:14px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.15)">' +
       '✓ Klára heimsókn — búa til reikning</button>';
     section.appendChild(bar);
     section.querySelector('#_vw-finish').addEventListener('click', runVisitWorkflow);
+    section.querySelector('#_vw-invinnsla').addEventListener('click', async (ev) => {
+      const coId = getCompanyId();
+      if (!coId) { alert('Fyrirtæki ekki fundið — opnaðu fyrirtæki að nýju.'); return; }
+      const b = ev.currentTarget; const orig = b.textContent;
+      b.disabled = true; b.textContent = '⏳ Vista…';
+      const ok = window.ArsWorkflow ? await ArsWorkflow.markInVinnsla(coId) : false;
+      b.textContent = ok ? '✓ Í vinnslu' : orig; b.disabled = !ok;
+      if (ok && window.Toast && Toast.show) Toast.show('🔵 Sett í vinnslu — komið á ÞjónustuVerkstæði');
+    });
   }
 
   function attach() {
