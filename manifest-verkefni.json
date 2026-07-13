@@ -1,10 +1,10 @@
 {
-  "id": "/?app=verkefni",
+  "id": "/app/verkefni/",
   "name": "Verkefnalisti — Slökkvitæki",
   "short_name": "Verkefni",
   "description": "Verkborð — beiðnir, verkefni og eftirfylgni á einum stað.",
-  "start_url": "/?app=verkefni",
-  "scope": "/",
+  "start_url": "/app/verkefni/",
+  "scope": "/app/verkefni/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0b1f47",

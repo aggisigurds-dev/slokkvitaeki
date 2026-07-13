@@ -13,6 +13,15 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
+# Installable mini-apps get their OWN path + PWA scope (/app/<key>/) so no app
+# claims the whole origin ("/") and they can be installed side-by-side without
+# Chrome collapsing them into one ("open in Fjármál" everywhere). Each path
+# serves the same SPA; the app boots into the right profile from the pathname.
+[[redirects]]
+  from = "/app/*"
+  to = "/index.html"
+  status = 200
+
 # Always revalidate the HTML entry points so a new deploy is picked up across
 # machines. JS/CSS are cache-busted via hand-written ?v= query strings.
 #
@@ -28,6 +37,12 @@
 
 [[headers]]
   for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+# The mini-app paths serve index.html via rewrite — revalidate them too.
+[[headers]]
+  for = "/app/*"
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 

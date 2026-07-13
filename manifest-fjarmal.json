@@ -1,10 +1,10 @@
 {
-  "id": "/?app=fjarmal",
+  "id": "/app/fjarmal/",
   "name": "Fjármál — Slökkvitæki",
   "short_name": "Fjármál",
   "description": "Kröfu yfirlit, fyrirtæki í þjónustu og tekjur — fjármála-app Slökkvitækis.",
-  "start_url": "/?app=fjarmal",
-  "scope": "/",
+  "start_url": "/app/fjarmal/",
+  "scope": "/app/fjarmal/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#06402b",
