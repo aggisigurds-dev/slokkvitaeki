@@ -479,16 +479,38 @@
       '✓ Klára heimsókn — búa til reikning</button>';
     section.appendChild(bar);
     section.querySelector('#_vw-finish').addEventListener('click', runVisitWorkflow);
-    section.querySelector('#_vw-invinnsla').addEventListener('click', async (ev) => {
-      const coId = getCompanyId();
-      if (!coId) { alert('Fyrirtæki ekki fundið — opnaðu fyrirtæki að nýju.'); return; }
-      const b = ev.currentTarget; const orig = b.textContent;
-      b.disabled = true; b.textContent = '⏳ Vista…';
-      const ok = window.ArsWorkflow ? await ArsWorkflow.markInVinnsla(coId) : false;
-      b.textContent = ok ? '✓ Í vinnslu' : orig; b.disabled = !ok;
-      if (ok && window.Toast && Toast.show) Toast.show('🔵 Sett í vinnslu — komið á ÞjónustuVerkstæði');
-    });
+    section.querySelector('#_vw-invinnsla').addEventListener('click', (ev) => onInVinnsla(ev.currentTarget));
   }
+
+  // Sameiginlegur smell-handler fyrir báða „í Vinnslu" takkana (kostnaðartafla + efst).
+  async function onInVinnsla(b) {
+    const coId = getCompanyId();
+    if (!coId) { alert('Fyrirtæki ekki fundið — opnaðu fyrirtæki að nýju.'); return; }
+    const orig = b.textContent;
+    b.disabled = true; b.textContent = '⏳ Vista…';
+    const ok = window.ArsWorkflow ? await ArsWorkflow.markInVinnsla(coId) : false;
+    b.textContent = ok ? '✓ Í vinnslu' : orig; b.disabled = !ok;
+    if (ok && window.Toast && Toast.show) Toast.show('🔵 Sett í vinnslu — komið á ÞjónustuVerkstæði');
+  }
+
+  // Efri takki: „Úttekt búin / í Vinnslu" strax undir fyrirtækja-hausnum
+  // (.info-grid) svo hann sé aðgengilegur án þess að skruna í kostnaðartöfluna.
+  // Sama aðgerð → setur „Úttekt búin" grænt á ÞjónustuVerkstæði + blátt á listanum.
+  function injectTopButton() {
+    const main = document.getElementById('companies-main');
+    if (!main) return;
+    const info = main.querySelector('.info-grid');
+    if (!info) return;                              // aðeins detail-síðan (listinn hefur enga .info-grid)
+    if (main.querySelector('._vw-topbtn')) return;  // þegar innsett
+    const bar = document.createElement('div');
+    bar.style.cssText = 'display:flex;justify-content:flex-end;margin:8px 0 0';
+    bar.innerHTML =
+      '<button type="button" class="_vw-topbtn" style="padding:9px 16px;background:#1d4ed8;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13.5px;font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.15)">🔵 Úttekt búin / í Vinnslu</button>';
+    info.parentNode.insertBefore(bar, info.nextSibling);
+    bar.querySelector('._vw-topbtn').addEventListener('click', (ev) => onInVinnsla(ev.currentTarget));
+  }
+
+  function injectAll() { injectButtons(); injectTopButton(); }
 
   function attach() {
     const main = document.getElementById('companies-main');
@@ -496,9 +518,9 @@
     let _t = 0;
     new MutationObserver(() => {
       clearTimeout(_t);
-      _t = setTimeout(injectButtons, 350);
+      _t = setTimeout(injectAll, 350);
     }).observe(main, { childList: true, subtree: true });
-    injectButtons();
+    injectAll();
   }
   attach();
 
