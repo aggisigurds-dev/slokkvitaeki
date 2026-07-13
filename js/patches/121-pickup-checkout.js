@@ -859,6 +859,14 @@
         r = await SB.from('solur').update(rest).eq('id', sale.id);
       }
       if (r.error) throw r.error;
+    } else if (newLinur.length === 0) {
+      // 2026-07-13: Path B með ENGAR línur → stofna ALDREI tóma 0-sölu.
+      // Rót R-000528-villunnar: pickup fann ekki þegar-existandi (final) sölu
+      // → fór í Path B, og með engar upprunalínur + engar extras bjó það til
+      // NÝJA sölu með sama R-númeri, engum línum og 0 kr → „reikningur fór í 0".
+      // Ekkert afhent + engin uppspretta = engin sala. (Verkbeiðni-staða +
+      // tækja-uppfærslur halda áfram fyrir neðan.)
+      console.warn('[Sótt] Slepp tómri sölu-stofnun (engar línur, engin uppspretta) — job', job && job.num);
     } else {
       // 2026-05-10 (B1 fix) Path B: no sale exists yet. INSERT a new solur
       // row right now so the transaction has accounting visibility. Common

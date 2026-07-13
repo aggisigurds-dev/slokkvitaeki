@@ -93,8 +93,11 @@ exports.handler = async (event) => {
     let customer = null;
     if (sale.customer_base_id) customer = await fetchCustomerBase(sale.customer_base_id);
     if (!customer && sale.customer_id) customer = await fetchFyrirtaeki(sale.customer_id);
+    // Staður (starfsstöð) fyrir „Vegna:" á kröfunni — customer_id bendir á fyrirtaeki-staðinn.
+    let site = null;
+    if (sale.customer_id) { try { site = await fetchFyrirtaeki(sale.customer_id); } catch (_) {} }
 
-    const payload = buildPayload(sale, customer, { mode });
+    const payload = buildPayload(sale, customer, { mode, site });
     const custEmail = (customer && customer.netfang) || '';
     if (dry) return json(200, { ok: true, dry: true, mode, payload, sale, customer });
 
@@ -161,6 +164,19 @@ function buildPayload(sale, customer, opts) {
   const email = firstEmail((customer && customer.netfang) || '');
   const address = (customer && customer.heimilisfang) || '';
   const phone = (customer && customer.simi) || '';
+  // „Vegna: <fyrirtæki – heimilisfang>" — staðurinn (starfsstöð) les-læsilega á
+  // kröfunni svo kúnninn (og kerfið) sjái HVAÐA staður rekstrarfélags. Tenging á
+  // réttan stað fer gegnum R-númer → sölu → fyrirtaeki_id (ekkert #id á kröfunni).
+  const _site = (opts && opts.site) || null;
+  // ÖRYGGI: sale.customer_id getur bent á vidskiptavinir-röð (ekki fyrirtaeki) og
+  // PK-arnir skarast → fetchFyrirtaeki gæti skilað ÓTENGDU fyrirtæki. Notum staðinn
+  // AÐEINS ef kennitala hans passar við kt sölunnar; annars nafn af sölunni.
+  const _ktDigits = x => String(x || '').replace(/\D/g, '');
+  const _siteOk = !!(_site && _ktDigits(_site.kennitala) && _ktDigits(_site.kennitala) === _ktDigits(ktRaw));
+  const _vegnaLabel = _siteOk ? [_site.nafn, _site.heimilisfang].filter(Boolean).join(' – ')
+                              : (sale.customer_nafn || '');
+  const _vegna = _vegnaLabel ? ('Vegna: ' + _vegnaLabel) : '';
+  const _notes = (sale.athugasemdir || '').trim();
   // Afhending: í 'send' ham → rafrænt fyrst ef raunveruleg kt, annars tölvupóstur.
   // Í 'draft' ham → ekkert afhent (aðeins drög í Payday sem sent er handvirkt).
   // Rafrænt getur klikkað (kúnni tekur ekki við rafrænum) → handler reynir aftur
@@ -211,7 +227,7 @@ function buildPayload(sale, customer, opts) {
     // Sölunótan (m.a. „Beiðni nr: …" sem beiðni-gate 264 skrifar fyrir Colas o.fl.)
     // fylgir á Payday-kröfuna svo kúnninn sjái sitt pöntunar-/beiðninúmer á
     // reikningnum eins og á kvittuninni (2026-07-13). Tómt → sleppt.
-    description: (sale.athugasemdir || '').trim() || null,
+    description: [_vegna, _notes].filter(Boolean).join(' · ') || null,
     sendEmail: emailSend,
     createClaim: true,
     createElectronicInvoice: electronic,

@@ -1463,7 +1463,8 @@
               </div>
             </div>
           </div>
-          <div style="display:flex;gap:4px;flex-shrink:0">
+          <div style="display:flex;gap:4px;flex-shrink:0;align-items:center">
+            ${c.kennitala ? `<button class="_ars-add-site" type="button" title="Bæta við annarri staðsetningu á sömu kennitölu (sama rekstrarfélag)" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:6px;height:28px;padding:0 9px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:700;white-space:nowrap">🏢 + Staðsetning</button>` : ''}
             <button class="_ars-info-toggle" type="button" title="Breyta upplýsingum" style="background:var(--brd);border:1px solid var(--brd);color:var(--ink2);border-radius:5px;width:28px;height:28px;cursor:pointer;font-size:13px;padding:0">✏️</button>
             <button class="_ars-close" type="button" style="background:transparent;border:none;font-size:24px;color:var(--ink4);cursor:pointer;line-height:1;padding:0 4px">×</button>
           </div>
@@ -1627,6 +1628,19 @@
       if (e.target === bg) bg.remove();
     });
     bg.querySelector('._ars-close').addEventListener('click', () => bg.remove());
+    // „🏢 + Staðsetning" — nýr staður á SÖMU kt (rekstrarfélag). Forfyllir kt+nafn
+    // svo hann tengist sömu base sjálfkrafa (gegnum trigger) og geti ekki misritast.
+    bg.querySelector('._ars-add-site')?.addEventListener('click', () => {
+      const baseNafn = String(c.nafn || '').replace(/\s*[-–—].*$/, '').trim() || c.nafn || '';
+      bg.remove();
+      openNewCompanyDialog({
+        title: '🏢 Bæta við staðsetningu',
+        hint: 'Nýr staður undir <b>' + esc(c.nafn || '') + '</b> (sama kennitala → sama rekstrarfélag). Sláðu bara inn heimilisfangið; kt+nafn eru forfyllt og staðurinn tengist sjálfkrafa.',
+        nafn: baseNafn + ' - ',
+        kennitala: c.kennitala || '',
+        heimilisfang: '',
+      });
+    });
 
     // Delegated click for storage-backed attachments (those rendered as
     // <button data-ars-att-co data-ars-att-idx> because they have a `path`
@@ -1844,7 +1858,11 @@
   // Lightweight inline form: nafn + kennitala + heimilisfang + sími + netfang.
   // Saves directly into fyrirtaeki (no Ársskoðun data — they can edit it
   // afterwards from the detail modal). Reloads the list on success.
-  function openNewCompanyDialog() {
+  // prefill (valfrjálst): { nafn, kennitala, heimilisfang, title, hint }
+  // Notað af „+ Bæta við staðsetningu" til að forfylla kt+nafn svo nýr staður
+  // tengist sömu base sjálfkrafa (gegnum trigger) og geti ekki mis-tengst.
+  function openNewCompanyDialog(prefill) {
+    prefill = prefill || {};
     document.querySelectorAll('._ars-modal-bg').forEach(n => n.remove());
     const bg = document.createElement('div');
     bg.className = '_ars-modal-bg';
@@ -1852,10 +1870,11 @@
     bg.innerHTML = `
       <div style="background:var(--surface);border-radius:14px;max-width:520px;width:100%;box-shadow:0 25px 60px rgba(0,0,0,0.4);overflow:hidden">
         <div style="padding:14px 18px;border-bottom:1px solid var(--brd);display:flex;justify-content:space-between;align-items:center">
-          <div style="font-size:16px;font-weight:700;color:var(--ink1)">+ Nýtt fyrirtæki</div>
+          <div style="font-size:16px;font-weight:700;color:var(--ink1)">${prefill.title || '+ Nýtt fyrirtæki'}</div>
           <button class="_ars-new-close" type="button" style="background:transparent;border:none;font-size:24px;color:var(--ink4);cursor:pointer;line-height:1;padding:0 4px">×</button>
         </div>
         <div style="padding:18px;display:flex;flex-direction:column;gap:10px">
+          ${prefill.hint ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 11px;font-size:12.5px;color:#1e40af">${prefill.hint}</div>` : ''}
           <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Nafn *<input data-f="nafn" required style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none"/></label>
           <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Kennitala<input data-f="kennitala" placeholder="123456-7890" style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none;font-family:monospace"/></label>
           <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Heimilisfang<input data-f="heimilisfang" style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none"/></label>
@@ -1875,7 +1894,13 @@
     bg.addEventListener('click', e => { if (e.target === bg) bg.remove(); });
     bg.querySelector('._ars-new-close').addEventListener('click', () => bg.remove());
     bg.querySelector('._ars-new-cancel').addEventListener('click', () => bg.remove());
-    setTimeout(() => bg.querySelector('input[data-f="nafn"]').focus(), 50);
+    // Forfylla úr prefill (t.d. „+ Bæta við staðsetningu" → kt+nafn frá sama félagi)
+    ['nafn', 'kennitala', 'heimilisfang'].forEach(f => {
+      if (prefill[f] != null) { const el = bg.querySelector('input[data-f="' + f + '"]'); if (el) el.value = prefill[f]; }
+    });
+    // Ef kt er forfyllt → fókusa á heimilisfang (það eina sem eftir er að slá inn)
+    const focusF = prefill.kennitala ? 'heimilisfang' : 'nafn';
+    setTimeout(() => { const el = bg.querySelector('input[data-f="' + focusF + '"]'); if (el) el.focus(); }, 50);
     bg.querySelector('._ars-new-save').addEventListener('click', async () => {
       const errEl = bg.querySelector('._ars-new-err');
       errEl.style.display = 'none';
@@ -1891,6 +1916,10 @@
       }
       const SB = getSB();
       if (!SB) { errEl.textContent = 'Engin tenging við gagnagrunn.'; errEl.style.display = 'block'; return; }
+      // Fyrirtæki stofnað HÉR (á þjónustu-síðunni) er þjónustukúnni → birtist strax
+      // í listanum. (customer_base_id tengist sjálfkrafa í gagnagrunni gegnum
+      // trigger `fyrirtaeki_autolink_base` — eftir kt, býr til base ef vantar.)
+      data.er_i_thjonustu = true;
       const { data: rows, error } = await SB.from('fyrirtaeki').insert(data).select();
       if (error) {
         errEl.textContent = 'Vista mistókst: ' + error.message;
