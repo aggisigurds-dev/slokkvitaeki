@@ -305,7 +305,7 @@
   // of overlay-mechanics + gap-filler rules (not in the theme) follows.
   const BS_CSS = `
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
-.bt{--accent:#e23232;--ring:rgba(220,40,34,.55);--glow:rgba(190,20,20,.5);--btn-grad:linear-gradient(145deg,#0d0102,#7a0e12 43%,#a81717 53%,#0f0102);--metred:linear-gradient(180deg,#4a151a,#320d11 56%,#1b0709);--redring:#5c1d21;--metb:linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318);--green:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#083f22);--page:linear-gradient(180deg,#23262d 0px,#2e323a 90px,#4d525c 320px,#41454d 100%);--font:'Space Grotesk',system-ui,-apple-system,sans-serif;--mono:'Space Mono',monospace;--ink:#11141c;--ink-2:#3a4250;--muted:#5b6472;--faint:#94a3b8;font-family:var(--font)}
+.bt{--accent:#e23232;--ring:rgba(220,40,34,.55);--glow:rgba(190,20,20,.5);--btn-grad:linear-gradient(145deg,#0d0102,#7a0e12 43%,#a81717 53%,#0f0102);--metb:linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318);--green:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#083f22);--page:linear-gradient(180deg,#23262d 0px,#2e323a 90px,#4d525c 320px,#41454d 100%);--font:'Space Grotesk',system-ui,-apple-system,sans-serif;--mono:'Space Mono',monospace;--ink:#11141c;--ink-2:#3a4250;--muted:#5b6472;--faint:#94a3b8;font-family:var(--font)}
 .bt *{box-sizing:border-box}
 .bt .screen{max-width:440px;margin:0 auto;min-height:100vh;background:var(--page);padding-bottom:96px}
 .bt .screen--wide{max-width:900px}
@@ -321,7 +321,7 @@
 .bt .btn--accent{border:1px solid var(--ring);background:var(--btn-grad);color:#fff;box-shadow:0 10px 24px -10px var(--glow),inset 0 1px 0 rgba(255,255,255,.18)}
 .bt .btn--green{border:1px solid #0c5e30;background:var(--green);color:#fff;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.4),0 4px 10px -4px rgba(12,80,40,.5)}
 .bt .btn--dark{border:1px solid #0a0b0d;background:var(--metb);color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
-.bt .btn--light{border:1px solid var(--redring);background:var(--metred);color:#efdede;box-shadow:inset 0 1px 0 rgba(255,255,255,.09),0 4px 10px -5px rgba(0,0,0,.5)}
+.bt .btn--light{border:1px solid rgba(20,24,34,.14);background:linear-gradient(180deg,#fff,#e3e7ee);color:var(--muted);box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}
 .bt .btn--sm{height:38px;padding:0 15px;border-radius:10px;font-size:13px}
 .bt .icon-btn{width:38px;height:38px;flex:none;border-radius:11px;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.06);color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .bt .pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;color:#fff;padding:3px 10px;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 2px 5px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}
@@ -350,9 +350,9 @@
 .bt .stop__addr{font-size:12.5px;color:var(--muted);margin-top:2px}
 .bt .stop__meta{font-family:var(--mono);font-size:11.5px;color:var(--faint)}
 .bt .stop__actions{display:flex;border-top:1px solid rgba(20,24,34,.07)}
-.bt .stop__actions .act{flex:1;height:46px;border:0;border-right:1px solid rgba(0,0,0,.28);background:var(--metred);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;text-decoration:none}
-.bt .act--maps{color:#a9c2ff}.bt .act--call{color:#dfe4ec}
-.bt .act--done{flex:1.3;border-right:0;color:#7fe3aa}
+.bt .stop__actions .act{flex:1;height:46px;border:0;border-right:1px solid rgba(20,24,34,.07);background:#f6f8fb;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;text-decoration:none}
+.bt .act--maps{color:#2f5fe0}.bt .act--call{color:var(--ink-2)}
+.bt .act--done{flex:1.3;border-right:0;background:#eef7f0;color:#1f7a45}
 .bt .act--done.is-done{background:var(--green);color:#fff}
 .bt .stop.is-done{opacity:.62}
 .bt .dev{display:flex;align-items:center;gap:13px;padding:13px 16px;border-top:1px solid rgba(20,24,34,.06);transition:background .12s}
@@ -362,11 +362,11 @@
 .bt .dev__ic--blue{background:linear-gradient(180deg,#8fb0ff,#2f5fe0)}
 .bt .dev__name{font-size:14px;font-weight:600;color:var(--ink)}
 .bt .dev__meta{font-family:var(--mono);font-size:11.5px;color:#9098a6;margin-top:2px}
-.bt .chk{flex:none;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:1px solid var(--redring);background:var(--metred);color:#e8d6d6;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.bt .chk{flex:none;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fff,#e3e7ee);color:#8a93a5;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}
 .bt .chk.is-done{background:var(--green);color:#fff;border-color:#0c5e30}
 .bt .chk.chk--vs{background:linear-gradient(180deg,#8fb0ff,#2f5fe0);color:#fff;border-color:#2f5fe0}
 .bt .seg{display:flex;gap:8px}
-.bt .seg__btn{flex:1;height:42px;border-radius:11px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--redring);background:var(--metred);color:#e8d6d6;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+.bt .seg__btn{flex:1;height:42px;border-radius:11px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(20,24,34,.14);background:#fff;color:var(--ink-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}
 .bt .seg__btn.is-active{border:1px solid #0c5e30;background:var(--green);color:#fff;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.4),0 4px 10px -4px rgba(12,80,40,.5)}
 .bt .field{width:100%;resize:none;padding:11px 13px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#f6f8fb;color:#141822;font-family:inherit;font-size:13.5px;outline:none}
 .bt .card--alert{border:1px solid #f3c6c4;background:linear-gradient(180deg,#fff,#fdf1f1)}
