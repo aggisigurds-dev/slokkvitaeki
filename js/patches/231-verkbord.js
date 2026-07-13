@@ -237,7 +237,9 @@
   }
 
   // ── state ────────────────────────────────────────────────────────────────
-  const QKEY = '_vb_queue', FKEY = '_vb_filter', SKEY = '_vb_sort', TGKEY = '_vb_tag', VMKEY = '_vb_viewmode';
+  const QKEY = '_vb_queue', FKEY = '_vb_filter', SKEY = '_vb_sort', TGKEY = '_vb_tag', VMKEY = '_vb_viewmode', WKEY = '_vb_worker';
+  // Starfsmenn (skráning + sía) — „Allir" = óúthlutað/engin sía (2026-07-13, ósk Agnars).
+  const WORKERS = ['Anni', 'Agnar', 'Andri', 'Elías', 'Hákon'];
   const state = {
     items: [],          // thjonustubeidni rows
     vd: [],             // open verkdagbok rows (folded in)
@@ -260,6 +262,7 @@
     sort: (function () { try { return localStorage.getItem(SKEY) || 'snjall'; } catch (_) { return 'snjall'; } })(),
     // Merki-sía + sýn (þétt/ítarlegt) — bæði geymd milli heimsókna (2026-07-10).
     fTag: (function () { try { return localStorage.getItem(TGKEY) || ''; } catch (_) { return ''; } })(),
+    fWorker: (function () { try { return localStorage.getItem(WKEY) || ''; } catch (_) { return ''; } })(),  // '' = Allir
     viewMode: (function () { try { return localStorage.getItem(VMKEY) || 'venjulegt'; } catch (_) { return 'venjulegt'; } })(),
     search: '',
     addType: 'annad',
@@ -281,6 +284,7 @@
   function setTag(v) { state.fTag = v; try { localStorage.setItem(TGKEY, v); } catch (_) {} }
   function setViewMode(v) { state.viewMode = v; try { localStorage.setItem(VMKEY, v); } catch (_) {} }
   function setFilter(f) { state.filter = f; try { localStorage.setItem(FKEY, f); } catch (_) {} }
+  function setWorker(v) { state.fWorker = v; try { localStorage.setItem(WKEY, v); } catch (_) {} }
 
   // verkdagbok rows → pseudo work-items (read-through; structure stays in #04).
   function vdItems() {
@@ -376,7 +380,7 @@
     return state.companies;
   }
 
-  async function quickAdd(title, type, custName, expand, tags, rsk) {
+  async function quickAdd(title, type, custName, expand, tags, rsk, worker) {
     title = (title || '').trim();
     if (!title) return;
     const SB = getSB(); if (!SB) { toast('Engin gagnabankatenging'); return; }
@@ -394,6 +398,7 @@
     const obj = {
       title, notes: rskNote, type: type || 'annad', status: 'nytt', priority: 'venjulegur',
       customer_nafn: custName || null, customer_base_id: baseId,
+      assigned_to: (worker && worker !== 'Allir') ? worker : null,
       tags: Array.isArray(tags) ? tags : [],
       source: 'beint', important: false, created_at: nowIso(), created_by: currentUser(), updated_at: nowIso()
     };
@@ -546,6 +551,7 @@
     if (state.fFlokk) r = r.filter(x => (state.fFlokk === 'annad' ? !rowFlokk(x) : rowFlokk(x) === state.fFlokk));
     // v3 TÖG-sían: merki notandans ∪ flokks-leidd merki, + ⭐ Áríðandi.
     if (state.fTag) r = r.filter(x => dispTags(x).indexOf(state.fTag) !== -1);
+    if (state.fWorker) r = r.filter(x => String(x.assigned_to || '') === state.fWorker);
     if (state.fStar) r = r.filter(x => !!x.important);
     const s = state.search.trim().toLowerCase();
     if (s) r = r.filter(x => [x.customer_nafn, x.title, x.notes].some(f => (f || '').toLowerCase().includes(s)));
@@ -862,6 +868,10 @@
             '<datalist id="vb-add-colist"></datalist>' +
             '<input class="vb-add-input" id="vb-add-input" placeholder="+ Skrá verk… (Enter vistar)" autocomplete="off" ' +
               'style="flex:2 1 240px;min-width:170px;height:38px;padding:0 13px;border-radius:9px;border:1px solid rgba(20,24,34,.14);background:#eef1f6;color:#141822;font-family:inherit;font-size:13.5px;font-weight:500;outline:none">' +
+            '<select id="vb-add-worker" title="Starfsmaður" ' +
+              'style="flex:none;height:38px;padding:0 10px;border-radius:9px;border:1px solid rgba(20,24,34,.14);background:#eef1f6;color:#141822;font-family:inherit;font-size:13px;outline:none;cursor:pointer">' +
+              '<option value="">👤 Allir</option>' + WORKERS.map(w => '<option value="' + w + '">' + w + '</option>').join('') +
+            '</select>' +
             '<button data-act="add" class="abtn" style="flex:none;height:38px;padding:0 16px;border-radius:9px;border:1px solid rgba(190,32,28,.55);' +
               'background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);color:#fff;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.16)">+ Bæta við</button>' +
             '<button data-act="addmore" title="Skrá og opna alla valkosti (forgangur, frestur, nánar…)" ' +
@@ -926,6 +936,11 @@
             '<button data-act="viewmode" data-vm="thett" style="height:38px;padding:0 13px;border:0;' + (state.viewMode === 'thett' ? V3_METAL_ON.replace('border:1px solid #0a0b0d;', '') + ';color:#fff' : V3_METAL.replace('border:1px solid #0a0b0d;', '') + ';color:rgba(255,255,255,.6)') + ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">☰ Þétt</button>' +
             '<button data-act="viewmode" data-vm="itarlegt" style="height:38px;padding:0 13px;border:0;border-left:1px solid rgba(20,24,34,.3);' + (state.viewMode !== 'thett' ? V3_METAL_ON.replace('border:1px solid #0a0b0d;', '') + ';color:#fff' : V3_METAL.replace('border:1px solid #0a0b0d;', '') + ';color:rgba(255,255,255,.6)') + ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">▮ Ítarlegt</button>' +
           '</span>' +
+          '<select id="vb-worker-filter" title="Sía eftir starfsmanni" style="height:38px;padding:0 10px;border-radius:11px;border:1px solid #0a0b0d;' +
+            'background:linear-gradient(180deg,#26272c,#0d0e10);color:#fff;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap;outline:none">' +
+            '<option value=""' + (!state.fWorker ? ' selected' : '') + '>👤 Allir</option>' +
+            WORKERS.map(w => '<option value="' + w + '"' + (state.fWorker === w ? ' selected' : '') + '>' + w + '</option>').join('') +
+          '</select>' +
           '<button data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (engin tvítök)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:rgba(255,255,255,.85);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">✉️ Sækja póst</button>' +
           (noiseN ? '<button data-act="clearnoise" title="Fela allar Payday-greiðslutilkynningar í einu (endurheimtanlegt)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:#ff8a82;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🧹 ' + noiseN + '</button>' : '') +
         '</div>' +
@@ -1071,6 +1086,7 @@
             (wide ? 'display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;overflow-wrap:break-word;line-height:1.5'
                   : 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis') + '">' + esc(desc) + '</div>' : '') +
           (!compact ? '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + linkLine + flags +
+            (r.assigned_to ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;white-space:nowrap">👤 ' + esc(r.assigned_to) + '</span>' : '') +
             (r._vd ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#fef3c7;color:#92400e;border:1px solid #fde68a">📓 úr Verkdagbók</span>' : '') +
           '</div>' : '') +
           (open ? renderEditor(r) : '') +
@@ -1122,6 +1138,10 @@
         '<div><label>Flokkur</label><select data-field="flokkur">' + flokkOpts + '</select></div>' +
         '<div><label>Staða</label><select data-field="status">' + statusOpts + '</select></div>' +
         '<div><label>Forgangur</label><select data-field="priority">' + prioOpts + '</select></div>' +
+        '<div><label>Starfsmaður</label><select data-field="assigned_to">' +
+          '<option value=""' + (!r.assigned_to ? ' selected' : '') + '>👤 Allir</option>' +
+          WORKERS.map(w => '<option value="' + w + '"' + (r.assigned_to === w ? ' selected' : '') + '>' + w + '</option>').join('') +
+        '</select></div>' +
         '<div><label>Gjalddagi / dagsetning</label><input type="date" data-field="due_at" value="' + dueVal + '"></div>' +
       '</div>' +
       '<div><label>Viðskiptavinur</label><input data-field="customer_nafn" list="vb-companies" value="' + esc(r.customer_nafn || '') + '" placeholder="Fyrirtæki…"><datalist id="vb-companies"></datalist></div>' +
@@ -1346,6 +1366,7 @@
         .catch(() => { state.addRsk = null; inp.style.borderColor = '#dc2626'; toast('Kennitalan fannst ekki í RSK'); });
     });
     root.addEventListener('change', e => {
+      if (e.target.id === 'vb-worker-filter') { setWorker(e.target.value); state.page = 0; renderList(); return; }
       const f = e.target.getAttribute && e.target.getAttribute('data-field');
       if (!f) return;
       const id = currentEditorId(e.target);
@@ -1373,7 +1394,9 @@
     const rsk = (state.addRsk && cv && state.addRsk.nafn === cv) ? state.addRsk : null;
     state.addRsk = null;
     if (cust) cust.style.borderColor = '';
-    quickAdd(v, state.addType, cv, !!expand, state.addTags.slice(), rsk);
+    const wsel = document.getElementById('vb-add-worker');
+    const worker = wsel ? wsel.value : '';
+    quickAdd(v, state.addType, cv, !!expand, state.addTags.slice(), rsk, worker);
     state.addTags = [];
     document.querySelectorAll('#view-verkbord [data-act="addtag"]').forEach(c => {
       const d = TAGS[c.getAttribute('data-tag')]; if (!d) return;
