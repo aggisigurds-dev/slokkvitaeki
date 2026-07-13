@@ -121,13 +121,23 @@
   }
   function yearOf(a) { a = a || {}; return Math.max(+a.last_year_inspected || 0, +a.field_inspected_year || 0); }
 
-  let _seg = 'today';   // 'today' | 'all'
+  // ── Aksturslistar: 3 nefndir listar (per starfsmann) — geymt í
+  //    arsskodun_customers[id].akstur (1/2/3, 0=enginn), samstillist office↔driver.
+  const AKSTUR = {
+    1: { label: 'Akstur 1', dot: '#1d4ed8', bg: '#eff6ff', bd: '#bfdbfe' }, // blár
+    2: { label: 'Akstur 2', dot: '#1a7f4b', bg: '#edfaf3', bd: '#a7e8c5' }, // grænn
+    3: { label: 'Akstur 3', dot: '#0e7490', bg: '#ecfeff', bd: '#a5f3fc' }  // grænblár
+  };
+  function aksturOf(a) { const v = +((a || {}).akstur) || 0; return (v >= 1 && v <= 3) ? v : 0; }
+
+  let _seg = 'today';   // 'today' | 'all' | 'a1' | 'a2' | 'a3'
   let _search = '';
   const DUE = { overdue:0, duenow:1, scheduled:2, in_progress:3, done:4, unknown:5 };
   function currentList() {
     if (!(window.Companies && Companies.list)) return { ready:false, list:[] };
     let list = buildList();
-    if (_seg === 'today') list = list.filter(x => x.status.key === 'overdue' || x.status.key === 'duenow' || x.priority);
+    if (_seg === 'a1' || _seg === 'a2' || _seg === 'a3') { const n = +_seg.slice(1); list = list.filter(x => aksturOf(x.ars) === n); }
+    else if (_seg === 'today') list = list.filter(x => x.status.key === 'overdue' || x.status.key === 'duenow' || x.priority);
     const q = _search.trim().toLowerCase();
     if (q) list = list.filter(x =>
       (x.co.nafn || '').toLowerCase().includes(q) ||
@@ -395,6 +405,11 @@
             '<button data-seg="today" type="button">📋 Dagsins verk</button>' +
             '<button data-seg="all" type="button">🏢 Allir í þjónustu</button>' +
           '</div>' +
+          '<div class="_bs-akstur">' +
+            '<button data-seg="a1" type="button" class="_ak" style="--ak:' + AKSTUR[1].dot + '">🚗 Akstur 1</button>' +
+            '<button data-seg="a2" type="button" class="_ak" style="--ak:' + AKSTUR[2].dot + '">🚗 Akstur 2</button>' +
+            '<button data-seg="a3" type="button" class="_ak" style="--ak:' + AKSTUR[3].dot + '">🚗 Akstur 3</button>' +
+          '</div>' +
           '<div class="_bs-hint">🔗 Afritaðu hlekkinn og sendu á bílstjóra · ⛶ opnar í fullum skjá · eða „Bæta á heimaskjá" fyrir app-ham.</div>' +
         '</div>' +
         '<div id="_bs-list" class="_bs-list"></div>' +
@@ -413,6 +428,10 @@
       qEl.addEventListener('input', e => { _search = e.target.value || ''; renderList(); renderPins(); });
       root.querySelectorAll('._bs-seg button').forEach(b => b.addEventListener('click', () => {
         _seg = b.dataset.seg; renderList(); renderPins();
+      }));
+      root.querySelectorAll('._bs-akstur button').forEach(b => b.addEventListener('click', () => {
+        _seg = (_seg === b.dataset.seg) ? 'all' : b.dataset.seg;   // tappa aftur → slökkva síu
+        renderList(); renderPins();
       }));
       root.querySelector('#_bs-drive').addEventListener('click', () => driveDay(currentList().list));
     }
@@ -439,6 +458,7 @@
     if (!box) return;
     // reflect segment buttons
     document.querySelectorAll('._bs-seg button').forEach(b => b.classList.toggle('on', b.dataset.seg === _seg));
+    document.querySelectorAll('._bs-akstur button').forEach(b => b.classList.toggle('on', b.dataset.seg === _seg));
     const qEl = document.getElementById('_bs-q');
     if (qEl && qEl.value !== _search) qEl.value = _search;
 
@@ -448,8 +468,17 @@
       ? list.map((x, i) => cardHtml(x, i + 1)).join('')
       : '<div class="_bs-empty">' + (_seg === 'today' ? '✅ Ekkert áríðandi eftir í dag.' : 'Engin fyrirtæki fundust.') + '</div>';
     box.querySelectorAll('._bs-card').forEach(card => card.addEventListener('click', e => {
-      if (e.target.closest('._bs-check')) return;           // blue check handled below
+      if (e.target.closest('._bs-check') || e.target.closest('._bs-ak-chip')) return;   // handled below
       openCompany(+card.dataset.id);
+    }));
+    // Aksturslisti-chip: tappa til að rúlla 0 → 1 → 2 → 3 → 0 (setur akstur á kúnna).
+    box.querySelectorAll('._bs-ak-chip').forEach(btn => btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const id = +btn.dataset.id;
+      const next = ((+btn.dataset.ak || 0) + 1) % 4;
+      const ok = await arsSave(id, { akstur: next });
+      toast(ok ? (next ? '🚗 Settur í Akstur ' + next : '↩︎ Tekinn af aksturslista') : '⚠ Villa');
+      renderList(); renderPins();
     }));
     // Blue check → toggle field_inspected_year (🔵 Í vinnslu). Sends the company
     // to ÞjónustuVerkstæði "Í vinnslu" (finish report) and drops it from the
@@ -496,6 +525,7 @@
     const insYear = yearOf(x.ars);
     const nUnits = unitCount(x);
     const inVinnsla = (+((x.ars || {}).field_inspected_year) === curYear());  // 🔵 blue flag (þjónustuverkstæði)
+    const ak = aksturOf(x.ars);   // aksturslisti 0/1/2/3
     const lvl = +x.priority || 0;
     const extra = '🧯 ' + nUnits + ' tæki'
       + (monthName ? ' · 📅 ' + monthName : '')
@@ -515,6 +545,9 @@
           '</span>' +
           '<span class="_bs-card-extra">' + esc(extra) + '</span>' +
         '</span>' +
+        '<button class="_bs-ak-chip' + (ak ? ' on' : '') + '" type="button" data-id="' + c.id + '" data-ak="' + ak + '"' +
+          (ak ? ' style="--ak:' + AKSTUR[ak].dot + '"' : '') +
+          ' title="Aksturslisti — tappa til að setja 1 → 2 → 3">' + (ak ? '🚗' + ak : '🚗') + '</button>' +
         '<button class="_bs-check' + (inVinnsla ? ' on' : '') + '" type="button" data-id="' + c.id + '" ' +
           'title="' + (inVinnsla ? 'Í vinnslu (þjónustuverkstæði) — smelltu til að taka úr' : 'Senda í vinnslu — þjónustuverkstæði (dettur úr leiðsögn)') + '" ' +
           'aria-label="Senda í vinnslu">' + (inVinnsla ? '✓' : '') + '</button>' +
@@ -587,6 +620,15 @@
           (LOCKED ? '' : '<button class="_bs-act" id="_bs-open-co" type="button">🏢 Opna fyrirtæki</button>') +
           (LOCKED ? '' : '<button class="_bs-act" id="_bs-verkst" type="button">📋 Verkstæði</button>') +
         '</div>' +
+        '<div class="_bs-sec">' +
+          '<h3><span>🚗 Aksturslisti</span></h3>' +
+          '<div class="_bs-ak-row">' +
+            '<button class="_bs-ak-set" data-ak="0" type="button">Enginn</button>' +
+            '<button class="_bs-ak-set" data-ak="1" type="button" style="--ak:' + AKSTUR[1].dot + '">Akstur 1</button>' +
+            '<button class="_bs-ak-set" data-ak="2" type="button" style="--ak:' + AKSTUR[2].dot + '">Akstur 2</button>' +
+            '<button class="_bs-ak-set" data-ak="3" type="button" style="--ak:' + AKSTUR[3].dot + '">Akstur 3</button>' +
+          '</div>' +
+        '</div>' +
         '<div class="_bs-sec _bs-urgent">' +
           '<h3><span>🚨 Áríðandi skilaboð</span></h3>' +
           '<textarea class="_bs-ta" id="_bs-urgent-ta" placeholder="Brýn skilaboð fyrir bílstjóra / skrifstofu (sést á forsíðu listans)…">' + esc(a.urgent || '') + '</textarea>' +
@@ -651,6 +693,16 @@
       const ok = await arsSave(coId, { notes: val });
       e.target.textContent = ok ? '✓ Vistað' : '⚠ Villa'; setTimeout(() => { e.target.textContent = '💾 Vista'; e.target.disabled = false; }, 1400);
     });
+    // Aksturslisti-val: velur 0/1/2/3, samstillist (arsskodun_customers[id].akstur).
+    const akSetBtns = sheet.querySelectorAll('._bs-ak-set');
+    const reflectAk = () => { const cur = aksturOf(arsAll()[String(coId)]); akSetBtns.forEach(b => b.classList.toggle('on', +b.dataset.ak === cur)); };
+    reflectAk();
+    akSetBtns.forEach(b => b.addEventListener('click', async () => {
+      const v = +b.dataset.ak || 0;
+      const ok = await arsSave(coId, { akstur: v });
+      reflectAk(); renderList(); renderPins();
+      toast(ok ? (v ? '🚗 Settur í Akstur ' + v : '↩︎ Tekinn af aksturslista') : '⚠ Villa');
+    }));
     // ── Athugasemdir í skýrslu (→ trip-state, birtist á úttektarskýrslunni) ──
     const skTa = sheet.querySelector('#_bs-skyrsla-ta');
     if (skTa) skTa.value = getTripSkyrsla(coId);
@@ -748,7 +800,15 @@
         + '#_bs-addunit-form{display:flex;flex-direction:column;gap:8px;margin-top:8px}'
         + '#_bs-addunit-form:empty{display:none}'
         + '._bs-af-row{display:flex;gap:8px}'
-        + '._bs-af-in{flex:1;min-width:0;padding:12px;border-radius:10px;border:1px solid #cbd2da;font-size:16px;font-family:inherit;background:#fff;color:#1b1f26}';
+        + '._bs-af-in{flex:1;min-width:0;padding:12px;border-radius:10px;border:1px solid #cbd2da;font-size:16px;font-family:inherit;background:#fff;color:#1b1f26}'
+        + '._bs-akstur{display:flex;gap:6px;margin-top:6px}'
+        + '._bs-akstur button{flex:1;padding:8px 4px;border-radius:9px;border:1.5px solid #d7dbe0;background:#fff;color:#5b6470;font-weight:700;font-size:12.5px;font-family:inherit;cursor:pointer;white-space:nowrap}'
+        + '._bs-akstur button.on{border-color:var(--ak);color:#fff;background:var(--ak);box-shadow:0 1px 4px rgba(0,0,0,.18)}'
+        + '._bs-ak-chip{flex:none;align-self:center;min-width:40px;height:40px;margin-right:6px;border-radius:11px;border:1.5px solid #d7dbe0;background:#f6f7f9;color:#7a828e;font-weight:800;font-size:14px;font-family:inherit;cursor:pointer}'
+        + '._bs-ak-chip.on{border-color:var(--ak);background:var(--ak);color:#fff}'
+        + '._bs-ak-row{display:flex;gap:6px;flex-wrap:wrap}'
+        + '._bs-ak-set{flex:1;min-width:70px;padding:12px 6px;border-radius:11px;border:1.5px solid #d7dbe0;background:#fff;color:#3a414b;font-weight:700;font-size:14px;font-family:inherit;cursor:pointer}'
+        + '._bs-ak-set.on{border-color:var(--ak,#1a7f4b);background:var(--ak,#1a7f4b);color:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}';
       document.head.appendChild(s);
     }
     loadUnitsInto(sheet, c);
