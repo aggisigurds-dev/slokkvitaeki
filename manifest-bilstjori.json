@@ -1,10 +1,10 @@
 {
-  "id": "/?app=bilstjori",
+  "id": "/app/bilstjori/",
   "name": "Bílstjóri — Slökkvitæki",
   "short_name": "Bílstjóri",
   "description": "Ökumanns-app: leið dagsins, tækjaúttekt og skýrslur í símanum.",
-  "start_url": "/?app=bilstjori",
-  "scope": "/",
+  "start_url": "/app/bilstjori/",
+  "scope": "/app/bilstjori/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#000000",

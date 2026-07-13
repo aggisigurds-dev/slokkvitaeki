@@ -43,10 +43,14 @@
   // card on the Öpp-page installs/boots straight into this locked view — the
   // legacy ?driver share-link stays a valid alias.
   const LOCKED = (() => {
-    try { const sp = new URLSearchParams(location.search); return sp.has('driver') || sp.get('app') === 'bilstjori'; }
-    catch (_) { return /[?&]driver(?:$|[=&])/.test(location.search || '') || /[?&]app=bilstjori(?:$|[&])/.test(location.search || ''); }
+    try {
+      if (/^\/app\/bilstjori\/?/.test(location.pathname || '')) return true;   // own PWA scope
+      const sp = new URLSearchParams(location.search); return sp.has('driver') || sp.get('app') === 'bilstjori';
+    } catch (_) {
+      return /^\/app\/bilstjori/.test(location.pathname || '') || /[?&]driver(?:$|[=&])/.test(location.search || '') || /[?&]app=bilstjori(?:$|[&])/.test(location.search || '');
+    }
   })();
-  const DRIVER_LINK = () => location.origin + '/?driver';
+  const DRIVER_LINK = () => location.origin + '/app/bilstjori/';
 
   // In locked driver mode, swap the PWA manifest to the dedicated Bílstjóri
   // one so Android/iOS "Install app" captures a clean "Bílstjóri" home-screen

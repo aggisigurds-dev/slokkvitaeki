@@ -65,10 +65,14 @@
   // for them, only surface the launcher card + install button.
   function isStandalone(key) { return !!(APP_BY_KEY[key] && APP_BY_KEY[key].standalone); }
 
-  // active app mode (from ?app=)
+  // active app mode — from the path /app/<key>/ (each app's own PWA scope) or
+  // the legacy ?app=<key> query (older installed shortcuts still boot).
   var ACTIVE = (function () {
-    try { var v = new URLSearchParams(location.search).get('app'); return APP_BY_KEY[v] ? v : null; }
-    catch (_) { return null; }
+    try {
+      var pm = (location.pathname || '').match(/^\/app\/([a-z]+)\/?/);
+      var v = pm ? pm[1] : new URLSearchParams(location.search).get('app');
+      return APP_BY_KEY[v] ? v : null;
+    } catch (_) { return null; }
   })();
 
   // ── config storage (which pages each app shows) — localStorage + AppSettings ─
@@ -124,7 +128,7 @@
   })();
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-  function appLink(key) { return location.origin + '/?app=' + key; }
+  function appLink(key) { return location.origin + '/app/' + key + '/'; }
 
   // Navigate to a page — click its real sidebar button when present (lazy pages
   // render most reliably that way), else fall back to App.switchView.
@@ -143,7 +147,12 @@
 
   // ── install (per-app manifest) ───────────────────────────────────────────────
   var deferredPrompt = null;
-  window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredPrompt = e; refreshInstallBtns(); });
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault(); deferredPrompt = e; refreshInstallBtns();
+    // Arrived via „Setja upp" (…/app/<key>/?install=1) → show the native install
+    // dialog for THIS app the moment the browser offers it.
+    try { if (new URLSearchParams(location.search).has('install')) setTimeout(doInstall, 300); } catch (_) {}
+  });
   function setManifest(href) {
     var l = document.querySelector('link[rel="manifest"]');
     if (l && href) l.setAttribute('href', href);
@@ -267,7 +276,15 @@
       '<p class="op-sub">Léttar, símavænar útgáfur með völdum síðum — hver með eigin hlekk og hægt að setja upp í símann.</p>' +
       cards + '</div>';
     v.querySelectorAll('._op-open').forEach(function (b) { b.addEventListener('click', function () { location.href = appLink(b.dataset.app); }); });
-    v.querySelectorAll('._op-install').forEach(function (b) { b.addEventListener('click', function () { var a = APP_BY_KEY[b.dataset.app]; if (a) setManifest(a.manifest); doInstall(); }); });
+    v.querySelectorAll('._op-install').forEach(function (b) { b.addEventListener('click', function () {
+      // If we can prompt right now (rare on the launcher, whose manifest is the
+      // office default), do it; otherwise OPEN the app at its own /app/<key>/
+      // scope — there the browser install / "Add to Home screen" captures THAT
+      // app correctly (its scope is not shared, so no "open in Fjármál").
+      var a = APP_BY_KEY[b.dataset.app]; if (a) setManifest(a.manifest);
+      if (deferredPrompt) { doInstall(); }
+      else { location.href = appLink(b.dataset.app) + '?install=1'; }
+    }); });
     v.querySelectorAll('._op-link').forEach(function (b) { b.addEventListener('click', function () {
       var url = appLink(b.dataset.app);
       try { navigator.clipboard.writeText(url); toast('🔗 Hlekkur afritaður'); } catch (_) { toast(url); }
