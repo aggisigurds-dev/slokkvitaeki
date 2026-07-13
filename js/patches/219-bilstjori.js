@@ -398,7 +398,14 @@
       '._bs-sec{border:none;border-radius:16px;box-shadow:0 2px 10px rgba(0,0,0,.32)}',
       // Litað tæki-tákn í tækjalistanum
       '._bs-unit-ic{width:38px;height:38px;flex:none;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;background:#fef2f2}',
-      '._bs-unit-ic.co2{background:#eff6ff}._bs-unit-ic.duft{background:#fef2f2}._bs-unit-ic.vatn{background:#eff6ff}._bs-unit-ic.slang{background:#f0fdf4}._bs-unit-ic.reyk{background:#fefce8}._bs-unit-ic.annad{background:#f4f4f5}'
+      '._bs-unit-ic.co2{background:#eff6ff}._bs-unit-ic.duft{background:#fef2f2}._bs-unit-ic.vatn{background:#eff6ff}._bs-unit-ic.slang{background:#f0fdf4}._bs-unit-ic.reyk{background:#fefce8}._bs-unit-ic.annad{background:#f4f4f5}',
+      // Hreinsa ytri skinn-kassa (rammi/bakgrunnur) af texta-spönum inni á kortum
+      '#' + VIEW_ID + ' ._bs-cardtop,#' + VIEW_ID + ' ._bs-card-main,#' + VIEW_ID + ' ._bs-card-name,#' + VIEW_ID + ' ._bs-card-sub,#' + VIEW_ID + ' ._bs-card-extra{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important}',
+      '#' + VIEW_ID + ' ._bs-card-meta{background:transparent!important;border:0!important;box-shadow:none!important;border-radius:0!important;padding:0!important}',
+      // Vinstri lita-brún eftir stöðu + búið-litun (eins og mockup)
+      '._bs-card{border-left:5px solid #cbd5e1}',
+      '._bs-card.stoverdue{border-left-color:#dc2626}._bs-card.stduenow{border-left-color:#d97706}._bs-card.stscheduled{border-left-color:#eab308}._bs-card.stdone{border-left-color:#16a34a}._bs-card.stin_progress{border-left-color:#2563eb}',
+      '._bs-card.done{background:#eef0f2}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -478,7 +485,6 @@
             '<button data-seg="a2" type="button" class="_ak" style="--ak:' + AKSTUR[2].dot + '">🚗 Akstur 2</button>' +
             '<button data-seg="a3" type="button" class="_ak" style="--ak:' + AKSTUR[3].dot + '">🚗 Akstur 3</button>' +
           '</div>' +
-          '<div class="_bs-hint">🔗 Afritaðu hlekkinn og sendu á bílstjóra · ⛶ opnar í fullum skjá · eða „Bæta á heimaskjá" fyrir app-ham.</div>' +
         '</div>' +
         '<div id="_bs-list" class="_bs-list"></div>' +
         '<div class="_bs-bottom"><div class="inner"><button id="_bs-drive" class="_bs-primary" type="button">🚗 Keyra leið dagsins</button></div></div>';
@@ -570,11 +576,11 @@
     // Blue check → toggle field_inspected_year (🔵 Í vinnslu). Sends the company
     // to ÞjónustuVerkstæði "Í vinnslu" (finish report) and drops it from the
     // driving list (status becomes in_progress) — same flag as patch 190.
-    box.querySelectorAll('._bs-check').forEach(btn => btn.addEventListener('click', async e => {
+    box.querySelectorAll('[data-check]').forEach(btn => btn.addEventListener('click', async e => {
       e.stopPropagation();
       const id = btn.dataset.id;
       const wasOn = (+((arsAll()[String(id)] || {}).field_inspected_year) === curYear());
-      btn.classList.toggle('on', !wasOn); btn.textContent = !wasOn ? '✓' : '';   // optimistic
+      btn.classList.toggle('done', !wasOn); btn.textContent = !wasOn ? '✓ Búið' : '✓ Merkja búið';   // optimistic
       const ok = await arsSave(id, { field_inspected_year: wasOn ? 0 : curYear() });
       try { if (window.Leidsogn && Leidsogn.refresh) Leidsogn.refresh(); } catch (_) {}
       toast(ok ? (wasOn ? '↩︎ Tekið úr vinnslu' : '🔵 Sent í vinnslu — skýrsla eftir') : '⚠ Villa við vistun');
@@ -622,7 +628,7 @@
     const mark = (_seg === 'today') ? (seq || '·') : (lvl > 0 ? '!' : '·');
     const ph = phoneOf(c);
     return (
-      '<div class="_bs-card" role="button" tabindex="0" data-id="' + c.id + '" data-co-id="' + c.id + '">' +
+      '<div class="_bs-card st' + x.status.key + (inVinnsla ? ' done' : '') + '" role="button" tabindex="0" data-id="' + c.id + '" data-co-id="' + c.id + '">' +
         '<div class="_bs-cardtop">' +
           '<span class="_bs-seq st' + x.status.key + ' p' + lvl + '" title="' + esc(x.status.label) + '">' + mark + '</span>' +
           '<span class="_bs-card-main">' +
@@ -634,15 +640,12 @@
             '</span>' +
             '<span class="_bs-card-extra">' + esc(extra) + '</span>' +
           '</span>' +
-          '<button class="_bs-ak-chip' + (ak ? ' on' : '') + '" type="button" data-id="' + c.id + '" data-ak="' + ak + '"' +
-            (ak ? ' style="--ak:' + AKSTUR[ak].dot + '"' : '') +
-            ' title="Aksturslisti — tappa til að setja 1 → 2 → 3">' + (ak ? '🚗' + ak : '🚗') + '</button>' +
         '</div>' +
         '<div class="_bs-cardacts">' +
           '<button class="_bs-cbtn" type="button" data-maps data-id="' + c.id + '"' + (x.coord ? '' : ' disabled') + '>↗ Maps</button>' +
           (ph ? '<a class="_bs-cbtn" href="tel:' + esc(String(ph).replace(/\s/g,'')) + '">📞 Hringja</a>'
               : '<button class="_bs-cbtn" type="button" disabled>📞 Hringja</button>') +
-          '<button class="_bs-cbtn _bs-check' + (inVinnsla ? ' on done' : '') + '" type="button" data-check data-id="' + c.id + '">' +
+          '<button class="_bs-cbtn' + (inVinnsla ? ' done' : '') + '" type="button" data-check data-id="' + c.id + '">' +
             (inVinnsla ? '✓ Búið' : '✓ Merkja búið') + '</button>' +
         '</div>' +
       '</div>'
