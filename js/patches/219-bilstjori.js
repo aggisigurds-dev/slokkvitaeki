@@ -382,6 +382,13 @@
 #${VIEW_ID}{position:fixed!important;inset:0!important;z-index:1000;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#41454d}
 body.bs-active{overflow:hidden}
 body.bs-active > .topbar,body.bs-active nav.view-nav,body.bs-active .sidebar{display:none!important}
+/* Hide the app's global floating chrome so it never leaks OVER the locked
+   Bílstjóri overlay: the 📷 QR-scan FAB (#qr-fab), the EN language toggle
+   (#_slokk_langbtn) and every mobile-nav hamburger/drawer variant. */
+body.bs-active #qr-fab,body.bs-active #_slokk_langbtn,
+body.bs-active #_mnav_btn,body.bs-active #_mobnav_btn,body.bs-active #_slokk_hamb,
+body.bs-active .mobile-nav-toggle,body.bs-active .mobile-nav-backdrop,body.bs-active .mobile-nav-drawer,
+body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav_drawer{display:none!important}
 /* the app's .topbar IS the sidebar (position:fixed/width/min-height/flex-direction:column !important) — neutralise that hijack of OUR nested topbars */
 #${VIEW_ID} .topbar,._bs-sheet .topbar{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;width:auto!important;min-height:0!important;height:auto!important;flex-direction:row!important;display:flex!important}
 ._bs-sheet{position:fixed;inset:0;z-index:1100;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateX(100%);transition:transform .24s cubic-bezier(.32,.72,0,1);background:#41454d}
