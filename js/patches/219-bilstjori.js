@@ -666,15 +666,29 @@
     if (addBtn && addForm) addBtn.addEventListener('click', () => {
       if (addForm.dataset.open === '1') { addForm.dataset.open = '0'; addForm.innerHTML = ''; return; }
       addForm.dataset.open = '1';
+      // Föst tegunda-listi — raunverulegu slökkvitækin (tegund+stærð sameinuð svo
+      // úttektarskýrslan (168) flokki þau rétt: duft/léttvatn/CO₂ small/big).
+      // Tegund+stærð = NÁKVÆMLEGA kanónísku gildin í uttaeki (staðfest úr gögnum:
+      // Léttvatn/6 L, ABC Duft/6 kg, CO2/5 kg — venjulegt 'CO2', ekki 'CO₂') svo
+      // skýrslu-flokkun (168) OG verð-útreikningur skrifstofunnar (129) þekki þau.
+      const PRESETS = [
+        ['ABC Duft 6 kg', 'ABC Duft', '6 kg'],
+        ['ABC Duft 2 kg', 'ABC Duft', '2 kg'],
+        ['Léttvatn 6 L', 'Léttvatn', '6 L'],
+        ['CO₂ 5 kg', 'CO2', '5 kg'],
+        ['CO₂ 2 kg', 'CO2', '2 kg'],
+        ['Brunaslanga', 'Brunaslanga', ''],
+        ['Reykskynjari', 'Reykskynjari', ''],
+        ['Eldvarnarteppi', 'Eldvarnarteppi', '']
+      ];
       addForm.innerHTML =
-        '<datalist id="_bs-types"><option>Duft</option><option>Léttvatn</option><option>CO₂</option><option>Brunaslanga</option><option>Reykskynjari</option><option>Eldvarnarteppi</option></datalist>' +
-        '<div class="_bs-af-row"><input class="_bs-af-in" id="_bs-af-type" list="_bs-types" placeholder="Tegund (t.d. Duft)"></div>' +
-        '<div class="_bs-af-row"><input class="_bs-af-in" id="_bs-af-size" placeholder="Stærð (t.d. 6 kg)"><input class="_bs-af-in" id="_bs-af-count" type="number" inputmode="numeric" min="1" value="1" style="max-width:80px"></div>' +
-        '<button class="_bs-save" id="_bs-af-add" type="button" style="background:var(--grn,#1a7f4b)">➕ Bæta við (🟢 Yfirfarið)</button>';
+        '<select class="_bs-af-in" id="_bs-af-preset">' + PRESETS.map((p, i) => '<option value="' + i + '">' + esc(p[0]) + '</option>').join('') + '</select>' +
+        '<div class="_bs-af-row"><span style="align-self:center;color:var(--ink3,#8891a0);font-size:14px">Fjöldi</span><input class="_bs-af-in" id="_bs-af-count" type="number" inputmode="numeric" min="1" value="1" style="max-width:90px">' +
+          '<button class="_bs-save" id="_bs-af-add" type="button" style="background:var(--grn,#1a7f4b);margin-top:0;flex:1">➕ Bæta við 🟢</button></div>';
       const doAdd = addForm.querySelector('#_bs-af-add');
       doAdd.addEventListener('click', async () => {
-        const type = (addForm.querySelector('#_bs-af-type').value || '').trim();
-        const size = (addForm.querySelector('#_bs-af-size').value || '').trim();
+        const p = PRESETS[+addForm.querySelector('#_bs-af-preset').value] || PRESETS[0];
+        const type = p[1], size = p[2];
         const count = addForm.querySelector('#_bs-af-count').value;
         if (!type) { toast('⚠ Veldu tegund'); return; }
         doAdd.textContent = '… bæti við'; doAdd.disabled = true;
