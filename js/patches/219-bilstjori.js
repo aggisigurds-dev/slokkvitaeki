@@ -45,6 +45,21 @@
   })();
   const DRIVER_LINK = () => location.origin + '/?driver';
 
+  // In locked driver mode, swap the PWA manifest to the dedicated Bílstjóri
+  // one so Android/iOS "Install app" captures a clean "Bílstjóri" home-screen
+  // app that opens straight at /?driver — instead of offering "open in Fjármál"
+  // (patch 261's app manifests all scope "/", which otherwise grabs this URL
+  // and drops the driver into the wide office shell).
+  if (LOCKED) {
+    try {
+      let link = document.querySelector('link[rel="manifest"]');
+      if (!link) { link = document.createElement('link'); link.rel = 'manifest'; document.head.appendChild(link); }
+      link.setAttribute('href', '/manifest-bilstjori.json?v=1');
+      const tc = document.querySelector('meta[name="theme-color"]');
+      if (tc) tc.setAttribute('content', '#0a0b0d');
+    } catch (_) {}
+  }
+
   // ── helpers ──────────────────────────────────────────────────────────────
   function esc(s) {
     return String(s ?? '').replace(/[&<>"']/g, c => ({
