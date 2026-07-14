@@ -663,6 +663,7 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
     const v = document.getElementById(VIEW_ID);
     if (v) { v.style.display='block'; v.classList.add('active'); }
     document.body.classList.add('bs-active');   // hides the sidebar (see CSS)
+    if (LOCKED) armBack();   // læst app: tryggja history-state svo back loki ekki appinu
     document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === NAV_KEY));
     try { localStorage.setItem('lastView', NAV_KEY); } catch (_) {}
     try { if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
@@ -970,8 +971,10 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
 
     document.body.appendChild(sheet);
     requestAnimationFrame(() => sheet.classList.add('in'));
+    armBack();   // ýtir history-state svo síma-back loki spjaldinu (ekki appinu)
     const close = () => { sheet.classList.remove('in'); setTimeout(() => sheet.remove(), 240); };
-    sheet.querySelector('._bs-back').addEventListener('click', close);
+    // ‹ takki OG síma-back → history.back() → popstate loki efsta spjaldi.
+    sheet.querySelector('._bs-back').addEventListener('click', () => { try { history.back(); } catch (_) { close(); } });
     sheet.querySelector('#_bs-nav').addEventListener('click', () => navTo(c, coord && coord.lat, coord && coord.lng));
     const mapBtn = sheet.querySelector('._bs-mapbtn');   // 🗺 topbar → keyra þangað
     if (mapBtn) mapBtn.addEventListener('click', () => navTo(c, coord && coord.lat, coord && coord.lng));
@@ -1250,10 +1253,26 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
     })();
   }
 
+  // Síma-back / til-baka: haldið innan appsins. Ýtum history-state svo „back"
+  // (síma-hnappur, bendill eða ‹) loki EFSTA spjaldi — en loki ekki appinu.
+  // Í læstum ham fer back aldrei út (endur-armar); í skrifstofuham má fara út.
+  function armBack() { try { history.pushState({ bs: 1 }, ''); } catch (_) {} }
+  let _backGuard = false;
+  function installBackGuard() {
+    if (_backGuard) return; _backGuard = true;
+    window.addEventListener('popstate', () => {
+      if (!document.body.classList.contains('bs-active')) return;   // ekki í Bílstjóra
+      const sheet = document.querySelector('._bs-sheet.in');
+      if (sheet) { sheet.classList.remove('in'); setTimeout(() => sheet.remove(), 240); armBack(); return; }
+      if (LOCKED) armBack();   // læst: back lokar aldrei appinu
+    });
+  }
+
   function boot() {
     ensureView();
     injectSidebar();
     patchSwitchView();
+    installBackGuard();
     setTimeout(injectSidebar, 1400);
     setTimeout(injectSidebar, 3000);
     openFromHash();                               // deep-link on first load
