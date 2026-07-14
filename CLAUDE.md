@@ -267,7 +267,14 @@ Akstursleiðir** (3 leiðir + fyrirtækin á þeim, N/M kláruð, gráir→græn
 **🔧 Á verkstæði — á eftir að skila** (`uttaeki.status='loaned'` grúppað per
 `client`), **👷 Starfsmenn í dag** (samantektar-spjöld: 🏢 fyrirtæki · 🟢 yfirfarið
 · 🔵 verkstæði · ✅ kláruð · Σ), **kort** (síðasta staðsetning + slóð dagsins per
-starfsmaður) og **🧭 Rakning dagsins** (tímaröð aðgerða). Dags-val (◀ Í dag ▶) +
+starfsmaður) og **🧭 Rakning dagsins** (tímaröð aðgerða). Verkstæðis-lífsferill: „Á verkstæði"-hlutinn er nú **gagnvirkur** — hvert tæki
+(`uttaeki.status='loaned'`) fær verkstjóra-þrep gegnum `custody_status`: null
+(Nýkomið) → `komid` (Komið á verkstæði) → `tilbuid` (+ `service_choice`
+hladid/onytt/nytt) → `farid` (Farið af verkstæði → „Bíður skila hjá bílstjóra").
+Bílstjóri (219) skilar: 🔵 Á verkstæði-chip → tapp → 🟢 Yfirfarið (status='ok',
+hreinsar custody_status/service_choice), svo tækið dettur af verkstæðis-borðinu.
+Bílstjóri fékk líka 🗑 **eyða-tæki** takka (leiðrétting þegar skýrsla var mistalin).
+Dags-val (◀ Í dag ▶) +
 starfsmanna-sía + 60s auto-refresh. Wiring: script í index.html (eftir 267),
 `App.switchView`-hook, patch 218 ALIAS (`aksturslisti`/`vakt`), klónaður
 hliðarstiku-hnappur. `window.Aksturslisti = {open, reload}`.

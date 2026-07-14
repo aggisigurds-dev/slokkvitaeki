@@ -178,8 +178,7 @@
     wrap.style.cssText = 'position:fixed;inset:0;z-index:1300;background:rgba(10,11,13,.88);display:flex;align-items:center;justify-content:center;padding:24px';
     wrap.innerHTML =
       '<div style="background:#1b1e24;border:1px solid #2b2f37;border-radius:18px;padding:22px 20px;max-width:360px;width:100%;box-shadow:0 20px 60px -20px #000">' +
-        '<div style="font-size:19px;font-weight:800;color:#eef1f4;margin-bottom:4px">Hver ert þú?</div>' +
-        '<div style="font-size:13px;color:#aeb4be;margin-bottom:16px">Veldu nafnið þitt svo skrifstofan sjái hvað þú ert að gera yfir daginn.</div>' +
+        '<div style="font-size:20px;font-weight:800;color:#eef1f4;margin-bottom:16px">Hver ert þú?</div>' +
         '<div style="display:flex;flex-direction:column;gap:10px">' +
           EMPLOYEES.map(n => '<button class="_bs-emp" data-n="' + esc(n) + '" type="button" style="padding:15px;border-radius:12px;border:0;background:' + empColor(n) + ';color:#fff;font:inherit;font-size:17px;font-weight:800;cursor:pointer">' + esc(n) + '</button>').join('') +
           (force ? '' : '<button class="_bs-emp" data-n="" type="button" style="padding:12px;border-radius:12px;border:1px solid #3a3f48;background:transparent;color:#aeb4be;font:inherit;font-size:14px;cursor:pointer">Skrifstofa / sleppa</button>') +
@@ -381,10 +380,13 @@
     yfirfarid: { cls:'chk is-done',    label:'✓ Skoðað' },
     verkstaedi:{ cls:'chk chk--vs',    label:'🔵 Á verkstæði' }
   };
-  const ROLL = { oskodad:'yfirfarid', yfirfarid:'verkstaedi', verkstaedi:'oskodad' };
+  // ⚪ Óskoðað → 🟢 Yfirfarið → 🔵 Á verkstæði → (bílstjóri skilar) ✅ Yfirfarið/hlaðið.
+  // Skilin úr verkstæði → yfirfarið: hreinsar líka custody_status/service_choice
+  // (verkstæðis-þrepin á Aksturslista-síðunni) svo tækið dettur af verkstæðis-borðinu.
+  const ROLL = { oskodad:'yfirfarid', yfirfarid:'verkstaedi', verkstaedi:'yfirfarid' };
   function updateForState(next) {
-    if (next === 'yfirfarid') return { status:'ok', last_insp: today(), next_insp: nextYearIso() };
-    if (next === 'verkstaedi') return { status:'loaned' };
+    if (next === 'yfirfarid') return { status:'ok', last_insp: today(), next_insp: nextYearIso(), custody_status: null, service_choice: null };
+    if (next === 'verkstaedi') return { status:'loaned', custody_status: null };   // nýkomið á verkstæði
     return { status:'active' };
   }
   async function loadUnits(c) {
@@ -538,6 +540,8 @@
 .bt .dev__name{font-size:14px;font-weight:600;color:var(--ink)}
 .bt .dev__meta{font-family:var(--mono);font-size:11.5px;color:#9098a6;margin-top:2px}
 .bt .chk{flex:none;display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:10px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fff,#e3e7ee);color:#8a93a5;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}
+.bt ._bs-delunit{flex:none;width:34px;height:36px;margin-left:8px;border-radius:10px;border:1px solid rgba(20,24,34,.1);background:transparent;color:#b9414a;font-size:15px;cursor:pointer;opacity:.55;transition:opacity .12s,background .12s}
+.bt ._bs-delunit:hover{opacity:1;background:rgba(201,60,29,.1)}
 .bt .chk.is-done{background:var(--green);color:#fff;border-color:#0c5e30}
 .bt .chk.chk--vs{background:linear-gradient(180deg,#8fb0ff,#2f5fe0);color:#fff;border-color:#2f5fe0}
 .bt .seg{display:flex;gap:8px}
@@ -1142,7 +1146,8 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
         const col = (ic.cls === 'co2' || ic.cls === 'vatn' || ic.cls === 'slang') ? 'blue' : 'red';
         return '<div class="dev"><span class="dev__ic dev__ic--' + col + '">' + ic.emoji + '</span><div style="flex:1;min-width:0">' +
           '<div class="dev__name">' + esc(u.type || 'Tæki') + '</div>' + (sub ? '<div class="dev__meta">' + sub + '</div>' : '') +
-          '</div><button class="' + ch.cls + '" data-id="' + u.id + '" type="button">' + ch.label + '</button></div>';
+          '</div><button class="' + ch.cls + '" data-id="' + u.id + '" type="button">' + ch.label + '</button>' +
+          '<button class="_bs-delunit" data-id="' + u.id + '" type="button" title="Eyða tæki (t.d. mistalið úr skýrslu)" aria-label="Eyða tæki">🗑</button></div>';
       }).join('');
       box.querySelectorAll('.chk').forEach(btn => btn.addEventListener('click', async () => {
         const u = units.find(x => String(x.id) === String(btn.dataset.id));
@@ -1154,6 +1159,20 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
           await saveUnitState(btn.dataset.id, next); draw();
           if (next === 'yfirfarid' || next === 'verkstaedi') logAct(next, { co_id: c.id, co_nafn: c.nafn, uttaeki_id: u.id });
         } catch (_) { toast('⚠ Vistun mistókst'); }
+      }));
+      // Eyða tæki — leiðrétting þegar skýrslan var mistalin / tæki ekki lengur til.
+      box.querySelectorAll('._bs-delunit').forEach(btn => btn.addEventListener('click', async () => {
+        const u = units.find(x => String(x.id) === String(btn.dataset.id));
+        if (!u) return;
+        if (!confirm('Eyða þessu tæki?\n\n' + (u.type || 'Tæki') + (u.serial ? ' · ' + u.serial : '') + '\n\nÞetta fjarlægir tækið varanlega af ' + (c.nafn || 'fyrirtækinu') + '.')) return;
+        btn.disabled = true; btn.textContent = '…';
+        try {
+          if (window.DB && DB.sb) await DB.sb.from('uttaeki').delete().eq('id', u.id);
+          const i = units.findIndex(x => String(x.id) === String(u.id));
+          if (i >= 0) units.splice(i, 1);
+          logAct('delete_unit', { co_id: c.id, co_nafn: c.nafn, uttaeki_id: u.id });
+          toast('🗑 Tæki eytt'); draw();
+        } catch (_) { btn.disabled = false; btn.textContent = '🗑'; toast('⚠ Gat ekki eytt'); }
       }));
     };
     draw();
