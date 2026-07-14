@@ -212,20 +212,26 @@
   // (poll covers the module/AppSettings arriving late during boot).
   let _loading = false, _dataPoll = null;
   function dataReady() { return !!(window.Companies && Companies.list && Companies.list.length); }
-  // Companies.load() BAILAR ef DB.online er ósatt (tengingin er enn að ræsast við
-  // læst-boot) → má EKKI festa á einni tilraun. Reynum aftur á hverjum púls þar til
-  // DB er komið á netið OG listinn er kominn. _loading kemur í veg fyrir skörun.
+  // Læst /app/bilstjori/ ræsist beint í þessa sýn án þess að nokkuð hlaði fyrirtækin.
+  // Companies.load() BAILAR meðan DB.online er ósatt (tengingin ræsist enn) — svo við
+  // sækjum fyrirtæki BEINT gegnum DB.sb (Supabase-biðlarinn er til um leið og db.js
+  // hleðst, óháð DB.online). Reynt á hverjum púls þar til listinn kemur; _loading
+  // kemur í veg fyrir skörun.
   function tryLoad() {
     if (_loading || dataReady()) return;
-    if (!(window.Companies && typeof Companies.load === 'function')) return;
-    if (window.DB && DB.online === false) return;          // bíða eftir tengingu
+    if (!(window.DB && DB.sb && typeof DB.fetchAll === 'function')) return;   // biðlarinn ekki tilbúinn enn
     _loading = true;
-    try {
-      Promise.resolve(Companies.load())
-        .then(() => { renderList(); renderPins(); })
-        .catch(() => {})
-        .finally(() => { _loading = false; });
-    } catch (_) { _loading = false; }
+    Promise.resolve(
+      DB.fetchAll(function (from, to) {
+        return DB.sb.from('fyrirtaeki').select('*').is('deleted_at', null).order('nafn').range(from, to);
+      })
+    ).then((rows) => {
+      if (rows && rows.length) {
+        if (!window.Companies) window.Companies = { list: [] };
+        Companies.list = rows;
+        renderList(); renderPins();
+      }
+    }).catch(() => {}).finally(() => { _loading = false; });
   }
   function ensureData() {
     if (dataReady()) return;
