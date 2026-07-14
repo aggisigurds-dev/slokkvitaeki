@@ -135,6 +135,127 @@
   function phoneOf(c) { return c.simi || c['sími'] || c.phone || c.telefon || ''; }
   function coordOf(c, gc) { gc = gc || readGc(); return gc['__co__:' + c.id] || gc[c.heimilisfang] || gc[c.nafn] || null; }
 
+  // ── VAKT: starfsmanna-nafn + dagleg virkni + staðsetning ───────────────────
+  // Bílstjóri velur nafn sitt (geymt á tæki). Hver aðgerð (heimsókn, yfirfarið,
+  // á verkstæði, klárað) er skráð í `bilstjori_vakt` með staðsetningu → skrifstofan
+  // sér daglega samantekt + hvar hver er, á aðal-síðu Bílstjóra.
+  const EMPLOYEES = ['Hákon', 'Binni', 'Elías'];
+  const EMP_COL = { 'Hákon': '#2563eb', 'Binni': '#059669', 'Elías': '#d97706' };
+  const EMP_KEY = 'bs_employee';
+  const empColor = (n) => EMP_COL[n] || '#64748b';
+  function getEmp() { try { return localStorage.getItem(EMP_KEY) || ''; } catch (_) { return ''; } }
+  function setEmp(v) { try { v ? localStorage.setItem(EMP_KEY, v) : localStorage.removeItem(EMP_KEY); } catch (_) {} }
+
+  // best-effort staðsetning (uppfærist í bakgrunni meðan appið er opið)
+  let _geo = null, _geoWatch = null, _vaktGeo = {}, _vaktTimer = null, _lastAct = {}, _pingTimer = null, _vaktPoll = null;
+  function startGeo() {
+    if (_geoWatch != null || !navigator.geolocation) return;
+    try {
+      _geoWatch = navigator.geolocation.watchPosition(
+        p => { _geo = { lat: p.coords.latitude, lng: p.coords.longitude }; },
+        () => {}, { enableHighAccuracy: false, maximumAge: 120000, timeout: 15000 });
+    } catch (_) {}
+  }
+  async function logAct(action, opts) {
+    opts = opts || {};
+    const emp = getEmp();
+    if (!emp || !(window.DB && DB.sb)) return;
+    const k = action + '|' + (opts.co_id || '') + '|' + (opts.uttaeki_id || '');
+    const now = Date.now();
+    if (action !== 'ping' && _lastAct[k] && now - _lastAct[k] < 3000) return;   // afþreyting
+    _lastAct[k] = now;
+    const row = { employee: emp, action: action, co_id: opts.co_id || null, co_nafn: opts.co_nafn || null,
+      uttaeki_id: opts.uttaeki_id || null, lat: _geo ? _geo.lat : null, lng: _geo ? _geo.lng : null };
+    try { await DB.sb.from('bilstjori_vakt').insert(row); } catch (_) {}
+    scheduleVaktRefresh();
+  }
+  function scheduleVaktRefresh() { clearTimeout(_vaktTimer); _vaktTimer = setTimeout(renderVakt, 500); }
+
+  function pickEmp(force) {
+    if (document.getElementById('_bs-emppick')) return;
+    const wrap = document.createElement('div');
+    wrap.id = '_bs-emppick';
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:1300;background:rgba(10,11,13,.88);display:flex;align-items:center;justify-content:center;padding:24px';
+    wrap.innerHTML =
+      '<div style="background:#1b1e24;border:1px solid #2b2f37;border-radius:18px;padding:22px 20px;max-width:360px;width:100%;box-shadow:0 20px 60px -20px #000">' +
+        '<div style="font-size:19px;font-weight:800;color:#eef1f4;margin-bottom:4px">Hver ert þú?</div>' +
+        '<div style="font-size:13px;color:#aeb4be;margin-bottom:16px">Veldu nafnið þitt svo skrifstofan sjái hvað þú ert að gera yfir daginn.</div>' +
+        '<div style="display:flex;flex-direction:column;gap:10px">' +
+          EMPLOYEES.map(n => '<button class="_bs-emp" data-n="' + esc(n) + '" type="button" style="padding:15px;border-radius:12px;border:0;background:' + empColor(n) + ';color:#fff;font:inherit;font-size:17px;font-weight:800;cursor:pointer">' + esc(n) + '</button>').join('') +
+          (force ? '' : '<button class="_bs-emp" data-n="" type="button" style="padding:12px;border-radius:12px;border:1px solid #3a3f48;background:transparent;color:#aeb4be;font:inherit;font-size:14px;cursor:pointer">Skrifstofa / sleppa</button>') +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(wrap);
+    wrap.querySelectorAll('._bs-emp').forEach(b => b.addEventListener('click', () => {
+      setEmp(b.dataset.n || ''); wrap.remove();
+      if (b.dataset.n) { startGeo(); logAct('ping', {}); }
+      renderVakt();
+    }));
+  }
+
+  function relTime(iso) {
+    if (!iso) return '';
+    const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+    if (s < 60) return 'rétt í þessu';
+    if (s < 3600) return Math.round(s / 60) + ' mín';
+    return Math.round(s / 3600) + ' klst';
+  }
+  async function renderVakt() {
+    const box = document.getElementById('_bs-vakt');
+    if (!box || !(window.DB && DB.sb)) return;
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    let rows = [];
+    try {
+      const r = await DB.sb.from('bilstjori_vakt').select('employee,action,co_id,lat,lng,created_at')
+        .gte('created_at', start.toISOString()).order('created_at', { ascending: false }).limit(5000);
+      rows = r.data || [];
+    } catch (_) { return; }
+    const agg = {};
+    EMPLOYEES.forEach(n => agg[n] = { emp: n, cos: new Set(), yf: 0, vs: 0, last: null, geo: null });
+    rows.forEach(x => {
+      const a = agg[x.employee]; if (!a) return;
+      if (x.co_id && x.action !== 'ping') a.cos.add(x.co_id);
+      if (x.action === 'yfirfarid') a.yf++;
+      if (x.action === 'verkstaedi') a.vs++;
+      if (!a.last) a.last = x.created_at;
+      if (!a.geo && x.lat != null) a.geo = { lat: x.lat, lng: x.lng };
+    });
+    _vaktGeo = {}; EMPLOYEES.forEach(n => { if (agg[n].geo) _vaktGeo[n] = agg[n].geo; });
+    const me = getEmp();
+    const card = (a) => {
+      const tot = a.yf + a.vs, active = !!a.last;
+      return '<div style="flex:0 0 auto;min-width:150px;background:' + (active ? 'rgba(255,255,255,.07)' : 'rgba(255,255,255,.03)') + ';border:1px solid ' + (a.emp === me ? empColor(a.emp) : 'rgba(255,255,255,.1)') + ';border-radius:12px;padding:9px 11px">' +
+        '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' +
+          '<span style="width:9px;height:9px;border-radius:50%;background:' + empColor(a.emp) + ';flex:none;box-shadow:0 0 0 2px rgba(255,255,255,.12)"></span>' +
+          '<span style="font-size:13px;font-weight:800;color:#eef1f4">' + esc(a.emp) + '</span>' +
+          (a.geo ? '<button class="_bs-vloc" data-n="' + esc(a.emp) + '" type="button" title="Sýna á korti" style="margin-left:auto;border:0;background:transparent;cursor:pointer;font-size:13px;padding:0">📍</button>' : '<span style="margin-left:auto;font-size:10px;color:#6b7280">—</span>') +
+        '</div>' +
+        '<div style="display:flex;gap:9px;font-size:12px;color:#c7ccd3;font-variant-numeric:tabular-nums">' +
+          '<span title="Fyrirtæki">🏢 <b style="color:#fff">' + a.cos.size + '</b></span>' +
+          '<span title="Yfirfarið">🟢 <b style="color:#fff">' + a.yf + '</b></span>' +
+          '<span title="Á verkstæði">🔵 <b style="color:#fff">' + a.vs + '</b></span>' +
+          '<span title="Heild tækja" style="margin-left:auto">Σ <b style="color:#fff">' + tot + '</b></span>' +
+        '</div>' +
+        '<div style="font-size:10px;color:#8a93a5;margin-top:5px">' + (active ? 'síðast ' + relTime(a.last) : 'engin virkni í dag') + '</div>' +
+      '</div>';
+    };
+    box.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:7px">' +
+        '<span style="font-size:11.5px;font-weight:800;color:rgba(255,255,255,.85);letter-spacing:.05em">📊 DAGURINN Í DAG</span>' +
+        '<button id="_bs-empchip" type="button" style="margin-left:auto;border:1px solid ' + (me ? empColor(me) : '#3a3f48') + ';background:' + (me ? empColor(me) : 'transparent') + ';color:#fff;border-radius:99px;padding:4px 11px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">👤 ' + esc(me || 'Velja nafn') + '</button>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:2px">' +
+        EMPLOYEES.map(n => card(agg[n])).join('') +
+      '</div>';
+    const chip = document.getElementById('_bs-empchip');
+    if (chip) chip.addEventListener('click', () => pickEmp(false));
+    box.querySelectorAll('._bs-vloc').forEach(b => b.addEventListener('click', () => {
+      const g = _vaktGeo[b.dataset.n];
+      if (g && _map) { try { _map.setView([g.lat, g.lng], 15); } catch (_) {} renderPins(); }
+    }));
+    renderPins();   // draga starfsmanna-merki á kortið
+  }
+
   function buildList() {
     const ars = arsAll(), bru = bruAll(), gc = readGc();
     const out = [];
@@ -486,7 +607,7 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
     });
     return _leafletLP;
   }
-  let _map = null, _markers = [];
+  let _map = null, _markers = [], _driverMarkers = [];
   // Theme's numbered teardrop pin (.pin.pin--done|overdue|pending). The marker
   // lands inside .bt (map > _bs-mapcanvas > .bt), so the scoped .bt .pin styles
   // apply; the number shows in the <span> (rotated upright), colour by status.
@@ -510,6 +631,19 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
       const m = L.marker([x.coord.lat, x.coord.lng], { icon: makeIcon(variantFor(x.status.key), i + 1) }).addTo(_map);
       m.on('click', () => openCompany(x.co.id));
       _markers.push(m); pts.push([x.coord.lat, x.coord.lng]);
+    });
+    // Starfsmanna-merki (hvar hver bílstjóri er núna) — sér-lag, ofan á tækjunum.
+    _driverMarkers.forEach(m => { try { _map.removeLayer(m); } catch (_) {} });
+    _driverMarkers = [];
+    Object.keys(_vaktGeo || {}).forEach(n => {
+      const g = _vaktGeo[n]; if (!g) return;
+      const col = empColor(n);
+      const ic = L.divIcon({ className: '_bs-drv', iconSize: [0, 0], iconAnchor: [0, 0], html:
+        '<div style="position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:5px;white-space:nowrap">' +
+          '<span style="width:18px;height:18px;border-radius:50%;background:' + col + ';border:3px solid #fff;box-shadow:0 0 0 2px ' + col + ',0 2px 6px rgba(0,0,0,.5)"></span>' +
+          '<span style="font:800 11px/1 system-ui;color:#fff;background:' + col + ';padding:3px 7px;border-radius:99px;box-shadow:0 2px 6px rgba(0,0,0,.4)">' + esc(n) + '</span>' +
+        '</div>' });
+      try { const m = L.marker([g.lat, g.lng], { icon: ic, zIndexOffset: 1000 }).addTo(_map); _driverMarkers.push(m); } catch (_) {}
     });
     if (pts.length) {
       const RVK = [64.13, -21.90];
@@ -562,6 +696,7 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
             '<button class="seg__btn" data-seg="a3" type="button">🚗 Akstur 3</button>' +
           '</div>' +
         '</div>' +
+        '<div id="_bs-vakt" style="padding:10px 12px 0"></div>' +
         '<div id="_bs-list" style="padding:10px 12px 0;display:flex;flex-direction:column;gap:12px"></div>' +
         '<div class="dock"><button id="_bs-drive" class="btn btn--accent" style="flex:1" type="button">🧭 Keyra leið dagsins</button></div>';
 
@@ -602,6 +737,15 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
 
     renderList();
     ensureData();   // locked boot: kick Companies.load() if the data isn't in yet
+
+    // Vakt: staðsetning + dagleg samantekt. Bílstjóri velur nafn (læst-hamur spyr
+    // strax ef ekkert nafn valið); skrifstofan getur sleppt. Ping á 4 mín svo
+    // „hvar eru þeir" haldist ferskt yfir daginn.
+    if (getEmp()) startGeo();
+    renderVakt();
+    if (LOCKED && !getEmp()) setTimeout(() => pickEmp(false), 400);
+    if (!_pingTimer) _pingTimer = setInterval(() => { if (getEmp()) logAct('ping', {}); }, 240000);
+    if (!_vaktPoll) _vaktPoll = setInterval(renderVakt, 60000);   // sjá aðra bílstjóra uppfærast
   }
 
   function renderList() {
@@ -751,6 +895,7 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
   function openCompany(coId) {
     const c = companies().find(x => String(x.id) === String(coId));
     if (!c) return;
+    logAct('visit', { co_id: c.id, co_nafn: c.nafn });   // vakt: heimsókn skráð
     const a = arsAll()[String(coId)] || {};
     const st = statusFor(a);
     const coord = coordOf(c);
@@ -922,6 +1067,7 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
     //    Reikningurinn bíður skrifstofunnar. ──────────────────────────────────
     sheet.querySelector('#_bs-done').addEventListener('click', async e => {
       e.target.textContent = '… vinn'; e.target.disabled = true;
+      logAct('company_done', { co_id: coId, co_nafn: c.nafn });   // vakt: fyrirtæki klárað
       if (window.ArsWorkflow && ArsWorkflow.markInVinnsla) { await ArsWorkflow.markInVinnsla(coId); }
       else { await arsSave(coId, { field_inspected_year: curYear() }); }
       try { if (window.Leidsogn && Leidsogn.refresh) Leidsogn.refresh(); } catch (_) {}
@@ -1004,7 +1150,10 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
         const next = ROLL[unitState(u)]; const ch = CHK[next];
         btn.className = ch.cls; btn.textContent = ch.label;   // optimistic
         Object.assign(u, updateForState(next));
-        try { await saveUnitState(btn.dataset.id, next); draw(); } catch (_) { toast('⚠ Vistun mistókst'); }
+        try {
+          await saveUnitState(btn.dataset.id, next); draw();
+          if (next === 'yfirfarid' || next === 'verkstaedi') logAct(next, { co_id: c.id, co_nafn: c.nafn, uttaeki_id: u.id });
+        } catch (_) { toast('⚠ Vistun mistókst'); }
       }));
     };
     draw();
@@ -1094,7 +1243,7 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  window.Bilstjori = { show, render: show, renderList, version: 'v2' };
+  window.Bilstjori = { show, render: show, renderList, renderVakt, pickEmp, getEmp, version: 'v2' };
   console.log('[bilstjori v2] installed');
 })();
 /* === END BÍLSTJÓRI === */

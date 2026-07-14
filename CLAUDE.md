@@ -258,6 +258,20 @@ so a driver can only see Bílstjóri. The office keeps full access via the bare 
 It's a focus lock, not security (client-side, anon Supabase key). The 🔗 button and
 the boot deep-link re-assert (outlasts the sala.js boot-lander) live here too.
 
+**Vakt — starfsmanna-nafn + dagleg virkni + staðsetning (2026-07-14):** driver
+picks their name (`EMPLOYEES = ['Hákon','Binni','Elías']`, stored `localStorage
+.bs_employee`; locked-boot prompts if unset, office can skip). Every action is
+logged to Supabase table **`bilstjori_vakt`** (`employee, action, co_id, co_nafn,
+uttaeki_id, lat, lng, created_at`; RLS off, anon full) via `logAct(action,opts)`
+with best-effort `navigator.geolocation` (watchPosition). Actions: `visit`
+(openCompany), `yfirfarid`/`verkstaedi` (tæki chip-roll), `company_done` (Klára
+úttekt), `ping` (every 4 min). A **„📊 DAGURINN Í DAG"** band on the main list
+(`#_bs-vakt`, `renderVakt`) shows per-driver today: 🏢 distinct fyrirtæki · 🟢
+yfirfarið · 🔵 á verkstæði · Σ heild · last-seen; polls every 60s so the office
+sees all drivers live. Each driver's last-known position draws a coloured
+name-marker on the map (`_driverMarkers`, `_vaktGeo`). API: `window.Bilstjori
+= {…, renderVakt, pickEmp, getEmp}`.
+
 ## Verkborð (unified work board) — `js/patches/231-verkbord.js`
 
 One tool that replaces the cluster of overlapping top-of-sidebar lists
