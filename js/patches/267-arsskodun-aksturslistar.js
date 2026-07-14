@@ -1,48 +1,31 @@
-/* === ARSSKODUN AKSTURSLISTAR v1 ===
+/* === ARSSKODUN AKSTURSLISTAR v2 ===
  *
- * Surfaces the Aksturslistar (driving-lists) feature on the office
- * "Fyrirtæki í Þjónustu" (Ársskoðun) page. The assignment already exists
- * in Bílstjóri (patch 219, company sheet) writing
- * `arsskodun_customers[id].akstur` (0=enginn / 1 / 2 / 3) via AppSettings —
- * this patch adds the SAME assignment on the office side so a per-employee
- * driving plan can be built from the desktop list too. Same store → office
- * and driver stay in sync.
+ * Aksturslistar (driving-lists) on the office "Fyrirtæki í Þjónustu"
+ * (Ársskoðun) board. The assignment lives in `arsskodun_customers[id].akstur`
+ * (0=enginn / 1 / 2 / 3) via AppSettings and syncs with Bílstjóri (patch 219).
  *
- * UI:
- *   • A "🚚 Aksturslistar" toggle button sits right next to the
- *     "🗺️ Sýna kort" button (patch 155's toolbar row).
- *   • Clicking opens a light panel below the toolbar: searchable list of the
- *     in-service companies, each with 4 chips (Enginn / Akstur 1 blár /
- *     Akstur 2 grænn / Akstur 3 grænblár). A filter row (Allir / 1 / 2 / 3 /
- *     Óflokkað) + a live count summary make list-building fast.
- *   • Companies already on a list get a small coloured 🚗N badge on their
- *     row/card in the main table (visible at a glance, no panel needed).
+ * v2 (2026-07-14, ósk Agnars — „squeeze the aksturslisti into the main board"):
+ *   The separate floating panel + 4-button rows are GONE. Instead each company
+ *   row/card gets ONE small clickable cycling chip inline (in the status cell,
+ *   next to ✓ / status pill):
+ *       grey 🚗 (0 = enginn) → 🚗1 → 🚗2 → 🚗3 → back to grey
+ *   Grey when unassigned; BRIGHT LIGHT BLUE with the list number when 1/2/3.
+ *   Tap rotates + saves (AppSettings deep-merge). No panel, no toggle button.
  *
  * Data: writes `arsskodun_customers[id].akstur` via AppSettings.save
  *   (deep-merge — never deletes other keys; 0 = removed from all lists).
- *   Reads the company list from window.Arsskodun._cache.list.
  *
- * Exposed: window.ArsAkstur = { toggle, isOpen, render, version }
+ * Exposed: window.ArsAkstur = { set, cycle, version }
  */
 (() => {
   if (window.__arsAksturInstalled) return;
   window.__arsAksturInstalled = true;
 
-  // Same colours + labels as Bílstjóri (patch 219 AKSTUR).
-  const AKSTUR = {
-    1: { label: 'Akstur 1', dot: '#1d4ed8', bg: '#eff6ff', bd: '#bfdbfe' }, // blár
-    2: { label: 'Akstur 2', dot: '#1a7f4b', bg: '#edfaf3', bd: '#a7e8c5' }, // grænn
-    3: { label: 'Akstur 3', dot: '#0e7490', bg: '#ecfeff', bd: '#a5f3fc' }  // grænblár
-  };
-  const LS_VISIBLE = 'ars_akstur_visible';
-
-  let _search = '';
-  let _filter = 'all';   // 'all' | '1' | '2' | '3' | 'none'
+  // Grey (0) → bright light blue (1/2/3). One colour for all assigned lists;
+  // the NUMBER identifies which akstursleið the company is on.
+  const BLUE = { bg: '#38bdf8', bd: '#0ea5e9', fg: '#ffffff' };  // sky
+  const GREY = { bg: '#eef2f7', bd: '#cbd5e1', fg: '#94a3b8' };
   let _decorating = false;
-
-  const isVisible  = () => localStorage.getItem(LS_VISIBLE) === '1';
-  const setVisible = v => localStorage.setItem(LS_VISIBLE, v ? '1' : '0');
-  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 
   const arsAll = () => (window.AppSettings && AppSettings.path && AppSettings.path('arsskodun_customers')) || {};
   function aksturOf(id) {
@@ -54,171 +37,53 @@
     if (!window.AppSettings || !AppSettings.save) return false;
     try {
       const ok = await AppSettings.save({ arsskodun_customers: { [String(coId)]: { akstur: v } } });
-      // keep local cache coherent so the main-table badge updates immediately
       const c = window.Arsskodun && window.Arsskodun._cache && window.Arsskodun._cache.byId && window.Arsskodun._cache.byId[coId];
       if (c) { c._ars = c._ars || {}; c._ars.akstur = v; }
       return ok !== false;
     } catch (_) { return false; }
   }
 
-  function inServiceList() {
-    const list = (window.Arsskodun && window.Arsskodun._cache && window.Arsskodun._cache.list) || [];
-    return list.filter(c => c && (c.er_i_thjonustu === true || (c._ars && c._ars.equipment)));
-  }
-
   function toast(msg) {
     if (window.Toast && Toast.show) return Toast.show(msg);
     const t = document.createElement('div');
-    t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:10px 18px;border-radius:8px;font:13px/1.4 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:99999;max-width:360px;text-align:center';
+    t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:#0f172a;color:#fff;padding:9px 16px;border-radius:8px;font:13px/1.4 system-ui,sans-serif;box-shadow:0 4px 14px rgba(0,0,0,.3);z-index:99999;max-width:340px;text-align:center';
     t.textContent = msg; document.body.appendChild(t);
-    setTimeout(() => t.remove(), 3200);
+    setTimeout(() => t.remove(), 2600);
   }
 
-  // ── Panel render ────────────────────────────────────────────────────
-  function renderPanel() {
-    const body = document.getElementById('_arsak-body');
-    if (!body) return;
-    const all = inServiceList();
-    const counts = { 1: 0, 2: 0, 3: 0, none: 0 };
-    all.forEach(c => { const v = aksturOf(c.id); if (v) counts[v]++; else counts.none++; });
-
-    const q = _search.trim().toLowerCase();
-    let rows = all.filter(c => {
-      const v = aksturOf(c.id);
-      if (_filter === 'none' && v !== 0) return false;
-      if (_filter === '1' && v !== 1) return false;
-      if (_filter === '2' && v !== 2) return false;
-      if (_filter === '3' && v !== 3) return false;
-      if (!q) return true;
-      return (c.nafn || '').toLowerCase().includes(q) ||
-             (c.heimilisfang || '').toLowerCase().includes(q) ||
-             String(c.kennitala || '').replace(/\D/g,'').includes(q.replace(/\D/g,''));
+  // ── The inline cycling chip ─────────────────────────────────────────────
+  function styleChip(chip, v) {
+    const c = v ? BLUE : GREY;
+    chip.dataset.ak = String(v);
+    chip.textContent = v ? ('🚗' + v) : '🚗';
+    chip.title = v ? ('Akstur ' + v + ' — smelltu til að breyta') : 'Enginn aksturslisti — smelltu til að setja á lista';
+    chip.style.cssText =
+      'display:inline-flex;align-items:center;justify-content:center;gap:1px;flex:none;' +
+      'min-width:' + (v ? '34px' : '30px') + ';height:26px;padding:0 7px;border-radius:99px;cursor:pointer;' +
+      'font:inherit;font-size:11.5px;font-weight:800;line-height:1;user-select:none;' +
+      'border:1px solid ' + c.bd + ';background:' + c.bg + ';color:' + c.fg + ';' +
+      (v ? 'box-shadow:0 1px 4px -1px rgba(14,165,233,.6);' : 'opacity:.85;') +
+      'transition:transform .12s,background .12s';
+  }
+  function makeChip(coId) {
+    const chip = document.createElement('span');
+    chip.className = '_arsak-chip';
+    styleChip(chip, aksturOf(coId));
+    chip.addEventListener('click', async (e) => {
+      e.stopPropagation(); e.preventDefault();
+      const cur = +chip.dataset.ak || 0;
+      const next = (cur + 1) % 4;            // 0→1→2→3→0
+      styleChip(chip, next);                 // optimistic
+      chip.style.transform = 'scale(1.18)';
+      setTimeout(() => { chip.style.transform = 'scale(1)'; }, 130);
+      const ok = await saveAkstur(coId, next);
+      if (!ok) { styleChip(chip, cur); toast('⚠ Villa við vistun'); return; }
+      toast(next ? ('🚗 Akstur ' + next) : '↩︎ Tekinn af aksturslista');
     });
-    // assigned first (by list), then unassigned; alpha within
-    rows.sort((a, b) => {
-      const av = aksturOf(a.id), bv = aksturOf(b.id);
-      const ao = av || 9, bo = bv || 9;
-      return (ao - bo) || String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is');
-    });
-
-    const sumHtml =
-      '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;font-size:11.5px">' +
-      [['all','Allir ' + all.length, '#334155'],
-       ['1', '🚗 ' + AKSTUR[1].label + ' · ' + counts[1], AKSTUR[1].dot],
-       ['2', '🚗 ' + AKSTUR[2].label + ' · ' + counts[2], AKSTUR[2].dot],
-       ['3', '🚗 ' + AKSTUR[3].label + ' · ' + counts[3], AKSTUR[3].dot],
-       ['none', 'Óflokkað · ' + counts.none, '#94a3b8']]
-      .map(([k, lab, col]) => {
-        const on = _filter === k;
-        return '<button type="button" class="_arsak-filter" data-f="' + k + '" style="padding:5px 11px;border-radius:8px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:700;border:1px solid ' + (on ? col : '#cbd5e1') + ';background:' + (on ? col : '#fff') + ';color:' + (on ? '#fff' : col) + '">' + esc(lab) + '</button>';
-      }).join('') + '</div>';
-
-    const rowsHtml = rows.length ? rows.map(c => {
-      const v = aksturOf(c.id);
-      const chips = [0, 1, 2, 3].map(n => {
-        const a = AKSTUR[n];
-        const on = v === n;
-        const lab = n === 0 ? 'Enginn' : String(n);
-        const col = n === 0 ? '#64748b' : a.dot;
-        return '<button type="button" class="_arsak-set" data-co="' + c.id + '" data-ak="' + n + '" ' +
-          'style="min-width:' + (n === 0 ? '58px' : '38px') + ';height:32px;border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;' +
-          'border:1px solid ' + (on ? col : '#d7dde6') + ';background:' + (on ? col : '#fff') + ';color:' + (on ? '#fff' : col) + '">' +
-          (n === 0 ? lab : '🚗' + lab) + '</button>';
-      }).join('');
-      return '<div class="_arsak-row" style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid #eef2f7">' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="font-weight:600;font-size:13px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.nafn || '') + '</div>' +
-          '<div style="font-size:11px;color:#94a3b8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(c.heimilisfang || '—') + '</div>' +
-        '</div>' +
-        '<div style="display:flex;gap:5px;flex:none">' + chips + '</div>' +
-      '</div>';
-    }).join('') : '<div style="padding:24px 8px;text-align:center;color:#94a3b8;font-size:13px">Engin fyrirtæki fundust.</div>';
-
-    body.innerHTML = sumHtml +
-      '<div style="max-height:52vh;overflow:auto;-webkit-overflow-scrolling:touch">' + rowsHtml + '</div>';
-
-    body.querySelectorAll('._arsak-filter').forEach(b => b.addEventListener('click', () => { _filter = b.dataset.f; renderPanel(); }));
-    body.querySelectorAll('._arsak-set').forEach(b => b.addEventListener('click', async () => {
-      const coId = +b.dataset.co, v = +b.dataset.ak || 0;
-      b.disabled = true;
-      const ok = await saveAkstur(coId, v);
-      toast(ok ? (v ? '🚗 Settur í Akstur ' + v : '↩︎ Tekinn af aksturslista') : '⚠ Villa við vistun');
-      renderPanel();
-      decorate(true);
-    }));
+    return chip;
   }
 
-  function ensurePanel() {
-    if (document.getElementById('_arsak-panel')) return;
-    const wrap = document.getElementById('_arsmap-wrapper');
-    const anchor = wrap || (document.getElementById('ars-main') || {}).firstElementChild;
-    const panel = document.createElement('div');
-    panel.id = '_arsak-panel';
-    panel.style.cssText = 'display:' + (isVisible() ? 'block' : 'none') + ';margin:0 0 14px 0;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;box-shadow:0 4px 16px -8px rgba(15,23,42,.25)';
-    panel.innerHTML =
-      '<div style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:linear-gradient(180deg,#f8fafc,#eef2f7);border-bottom:1px solid #e2e8f0">' +
-        '<div style="font-weight:800;font-size:13.5px;color:#0f172a">🚚 Aksturslistar</div>' +
-        '<div style="font-size:11px;color:#94a3b8">Raða fyrirtækjum á akstursleiðir (samstillist við Bílstjóra)</div>' +
-        '<button id="_arsak-close" type="button" style="margin-left:auto;border:0;background:transparent;font-size:18px;cursor:pointer;color:#64748b;line-height:1">✕</button>' +
-      '</div>' +
-      '<div style="padding:12px 14px">' +
-        '<input id="_arsak-search" type="search" placeholder="🔍 Leita í nafni, kt eða heimilisfangi…" ' +
-          'style="width:100%;box-sizing:border-box;padding:9px 12px;border:1px solid #cbd5e1;border-radius:9px;font:inherit;font-size:13px;color:#0f172a;outline:none;margin-bottom:11px"/>' +
-        '<div id="_arsak-body"></div>' +
-      '</div>';
-    if (anchor && anchor.parentNode) {
-      anchor.parentNode.insertBefore(panel, anchor.nextSibling);
-    } else {
-      const main = document.getElementById('ars-main');
-      if (main) main.insertBefore(panel, main.firstChild);
-    }
-    const si = document.getElementById('_arsak-search');
-    if (si) { si.value = _search; si.addEventListener('input', () => { _search = si.value; renderPanel(); }); }
-    const cb = document.getElementById('_arsak-close');
-    if (cb) cb.addEventListener('click', () => toggle(false));
-    renderPanel();
-  }
-
-  function toggle(open) {
-    if (open === undefined) open = !isVisible();
-    setVisible(open);
-    ensurePanel();
-    const panel = document.getElementById('_arsak-panel');
-    const btn = document.getElementById('_arsak-toggle');
-    if (panel) panel.style.display = open ? 'block' : 'none';
-    if (btn) btn.style.background = open ? '#eef2ff' : '#fff';
-    if (open) { renderPanel(); const p = document.getElementById('_arsak-panel'); if (p) p.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
-  }
-
-  // ── Toggle button, placed next to "🗺️ Sýna kort" ─────────────────────
-  function injectButton() {
-    const mapBtn = document.getElementById('_arsmap-toggle');
-    // Prefer sitting in the same flex row as the map toggle.
-    if (mapBtn && mapBtn.parentNode) {
-      if (document.getElementById('_arsak-toggle')) return true;
-      const b = makeBtn();
-      mapBtn.parentNode.insertBefore(b, mapBtn);   // to the LEFT of Sýna kort
-      return true;
-    }
-    // Fallback: no map wrapper yet — drop our own right-aligned row at the
-    // top of ars-main so the feature is still reachable.
-    const main = document.getElementById('ars-main');
-    if (!main) return false;
-    if (document.getElementById('_arsak-toggle')) return true;
-    // Only build a standalone row if the map wrapper truly isn't coming.
-    return false;
-  }
-  function makeBtn() {
-    const b = document.createElement('button');
-    b.id = '_arsak-toggle';
-    b.type = 'button';
-    b.textContent = '🚚 Aksturslistar';
-    b.style.cssText = 'padding:5px 12px;border:1px solid #cbd5e1;background:' + (isVisible() ? '#eef2ff' : '#fff') + ';color:#0f172a;border-radius:8px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:600;margin-right:8px';
-    b.addEventListener('click', () => toggle());
-    return b;
-  }
-
-  // ── Row/card badges on the main table (visible at a glance) ──────────
+  // ── Decorate rows/cards with the chip ────────────────────────────────────
   function decorate(force) {
     if (_decorating) return;
     const main = document.getElementById('ars-main');
@@ -228,47 +93,43 @@
       main.querySelectorAll('[data-co-id]').forEach(el => {
         const id = parseInt(el.dataset.coId, 10);
         if (!id) return;
-        const v = aksturOf(id);
-        const prev = el.getAttribute('data-ak-badge') || '0';
-        if (!force && String(v) === prev) return;
-        el.setAttribute('data-ak-badge', String(v));
-        // remove any existing badge
-        const old = el.querySelector('._arsak-badge');
-        if (old) old.remove();
-        if (!v) return;
-        const a = AKSTUR[v];
-        const badge = document.createElement('span');
-        badge.className = '_arsak-badge';
-        badge.title = a.label;
-        badge.textContent = '🚗' + v;
-        badge.style.cssText = 'display:inline-flex;align-items:center;gap:2px;font-size:10px;font-weight:800;color:#fff;background:' + a.dot + ';border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:middle';
-        // place inside the first cell (row) or at the card header
-        const host = el.matches('._ars-card')
-          ? el.querySelector('div') || el
-          : (el.querySelector('td strong') && el.querySelector('td strong').parentNode) || el.querySelector('td') || el;
-        if (host) host.appendChild(badge);
+        const isCard = el.matches('._ars-card');
+        // desktop table row → drop the chip into the right-aligned status flex
+        // (the last <td>'s flex div, next to ✓ + status pill). Card → header row.
+        let host = null;
+        if (el.tagName === 'TR') {
+          const lastTd = el.querySelector('td:last-child');
+          host = (lastTd && lastTd.querySelector('div')) || lastTd;
+        } else if (isCard) {
+          host = el.querySelector('div') || el;
+        }
+        if (!host) return;
+        let chip = host.querySelector(':scope > ._arsak-chip') || el.querySelector('._arsak-chip');
+        if (!chip) {
+          chip = makeChip(id);
+          // sit FIRST in the status flex (left of ✓) on rows; append on cards
+          if (el.tagName === 'TR' && host.firstChild) host.insertBefore(chip, host.firstChild);
+          else host.appendChild(chip);
+        } else if (force) {
+          styleChip(chip, aksturOf(id));
+        }
       });
     } finally { _decorating = false; }
   }
 
-  // ── Watch ars-main: keep button + badges alive across re-renders ─────
+  // ── Watch ars-main: keep chips alive across re-renders ───────────────────
   function watch() {
     const main = document.getElementById('ars-main');
     if (!main) { setTimeout(watch, 500); return; }
-    injectButton();
-    ensurePanel();
     decorate(true);
     let t = null;
     new MutationObserver(() => {
       if (_decorating) return;
-      if (!document.getElementById('_arsak-toggle')) injectButton();
-      if (!document.getElementById('_arsak-panel')) { ensurePanel(); }
       clearTimeout(t);
       t = setTimeout(() => decorate(false), 120);
     }).observe(main, { childList: true, subtree: true });
-    // AppSettings cross-device changes → refresh badges + panel
     if (window.AppSettings && AppSettings.onChange) {
-      AppSettings.onChange(() => { decorate(true); if (isVisible()) renderPanel(); });
+      AppSettings.onChange(() => decorate(true));
     }
   }
 
@@ -282,7 +143,11 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 
-  window.ArsAkstur = { toggle, isOpen: isVisible, render: renderPanel, version: 'v1' };
-  console.log('[ars-aksturslistar] v1 installed');
+  window.ArsAkstur = {
+    set: saveAkstur,
+    cycle: async (id) => { const n = (aksturOf(id) + 1) % 4; await saveAkstur(id, n); decorate(true); return n; },
+    version: 'v2'
+  };
+  console.log('[ars-aksturslistar] v2 (inline chip) installed');
 })();
 /* === END ARSSKODUN AKSTURSLISTAR === */
