@@ -428,6 +428,11 @@
 .bt .dock{position:fixed;left:0;right:0;bottom:0;z-index:30;max-width:440px;margin:0 auto;display:flex;gap:12px;padding:12px 14px;background:linear-gradient(180deg,rgba(65,69,77,0),rgba(65,69,77,.94) 42%)}
 .bt .dock--wide{max-width:900px}
 .bt .dock .btn{flex:1;height:52px}
+/* Fyrirtækja-spjaldið (._bs-sheet) hefur transform → position:fixed dokk leysist
+   miðað við transformaða boxið og lenti stundum MITT á efninu (yfir „Vista í
+   skýrslu"). sticky heldur því í flæði (aldrei yfir efni fyrir ofan) en samt
+   fest neðst á skjá meðan skrunað er. Full breidd á síma. */
+._bs-sheet .dock{position:sticky!important;bottom:0!important;left:auto!important;right:auto!important;max-width:100%!important;margin:10px 0 0!important}
 
 /* ── overlay mechanics + gap-fillers (not part of the theme) ── */
 /* .screen / .screen--wide sit ON the .bt root itself, so the descendant form
