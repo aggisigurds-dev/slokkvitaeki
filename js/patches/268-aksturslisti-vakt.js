@@ -36,7 +36,7 @@
 
   let _day = todayStr();
   let _emp = 'all';
-  let _map = null, _layers = [], _leafletLP = null, _poll = null, _rows = [], _cos = null, _shop = [];
+  let _map = null, _layers = [], _leafletLP = null, _poll = null, _rows = [], _cos = null, _shop = [], _mapView = null;
 
   // Akstursleiðir (1/2/3) búa í arsskodun_customers[id].akstur (patch 267/219).
   const AK_COL = { 1: '#1d4ed8', 2: '#1a7f4b', 3: '#0e7490' };
@@ -157,10 +157,21 @@
   function drawMap(agg) {
     const canvas = document.getElementById('_al-map');
     if (!canvas || !window.L) return;
+    // render() endurbyggir root.innerHTML (60s poll + aðgerðir) → gamla kort-boxið
+    // dettur út og _map situr eftir á fjarlægðu box-i. Ef box hefur skipt um /
+    // dottið úr DOM → eyða og endurbyggja á nýja boxinu (annars er kortið tómt).
+    if (_map) {
+      let bad = false;
+      try { const c = _map.getContainer(); bad = (c !== canvas) || !document.body.contains(c); } catch (_) { bad = true; }
+      if (bad) { try { _mapView = { c: _map.getCenter(), z: _map.getZoom() }; } catch (_) {} try { _map.remove(); } catch (_) {} _map = null; }
+    }
     if (!_map) {
-      _map = L.map(canvas, { zoomControl: false }).setView([64.13, -21.90], 11);
+      _map = L.map(canvas, { zoomControl: false }).setView(_mapView ? _mapView.c : [64.13, -21.90], _mapView ? _mapView.z : 11);
       L.control.zoom({ position: 'bottomright' }).addTo(_map);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(_map);
+      setTimeout(() => { try { _map.invalidateSize(); } catch (_) {} }, 80);
+      setTimeout(() => { try { _map.invalidateSize(); } catch (_) {} }, 400);
+    } else {
       setTimeout(() => { try { _map.invalidateSize(); } catch (_) {} }, 60);
     }
     _layers.forEach(l => { try { _map.removeLayer(l); } catch (_) {} });
@@ -192,130 +203,136 @@
     if (!root) return;
     const agg = aggregate();
 
+    // Litakerfi: HVÍT textasvæði m/ svörtum texta · DÖKK-METALÍK headers/takkar m/ hvítum texta.
+    const INK = '#111827', INK2 = '#475569', INK3 = '#6b7280';
+    const CARD = 'background:#fff;border:1px solid #d7dee7;border-radius:14px;box-shadow:0 1px 3px rgba(15,23,42,.14)';
+    const METAL = 'background:linear-gradient(180deg,#3a3f48,#23272e 55%,#171a1f);color:#fff;border:1px solid #0c0e12;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 6px rgba(0,0,0,.35)';
+    const METALBTN = 'background:linear-gradient(180deg,#3a3f48,#23272e);color:#fff;border:1px solid #0c0e12;box-shadow:inset 0 1px 0 rgba(255,255,255,.1);border-radius:99px;padding:6px 13px;font:inherit;font-size:12px;font-weight:700;cursor:pointer';
+    const secHdr = (t, right) => '<div style="' + METAL + ';border-radius:11px;padding:9px 14px;margin-bottom:11px;display:flex;align-items:center">' +
+      '<span style="font-size:12.5px;font-weight:800;letter-spacing:.05em">' + t + '</span>' + (right ? '<span style="margin-left:auto;font-size:12px;font-weight:700;color:#d3dae4">' + right + '</span>' : '') + '</div>';
+
     const card = (a) => {
       const tot = a.yf + a.vs, active = !!a.last, on = (_emp === a.emp);
-      return '<button type="button" class="_al-empcard" data-emp="' + esc(a.emp) + '" style="text-align:left;flex:1 1 150px;min-width:150px;cursor:pointer;background:' + (active ? 'rgba(255,255,255,.06)' : 'rgba(255,255,255,.03)') + ';border:1.5px solid ' + (on ? empColor(a.emp) : 'rgba(255,255,255,.12)') + ';border-radius:14px;padding:12px 13px;font:inherit;color:inherit">' +
+      return '<button type="button" class="_al-empcard" data-emp="' + esc(a.emp) + '" style="text-align:left;flex:1 1 160px;min-width:160px;cursor:pointer;' + CARD + ';padding:12px 13px;font:inherit;' + (on ? 'outline:2.5px solid ' + empColor(a.emp) + ';outline-offset:-2px;' : '') + '">' +
         '<div style="display:flex;align-items:center;gap:7px;margin-bottom:8px">' +
-          '<span style="width:11px;height:11px;border-radius:50%;background:' + empColor(a.emp) + ';flex:none;box-shadow:0 0 0 2px rgba(255,255,255,.14)"></span>' +
-          '<span style="font-size:15px;font-weight:800;color:#f2f4f7">' + esc(a.emp) + '</span>' +
-          '<span style="margin-left:auto;font-size:10.5px;color:#a9b2bf">' + (active ? relTime(a.last) : '—') + '</span>' +
+          '<span style="width:11px;height:11px;border-radius:50%;background:' + empColor(a.emp) + ';flex:none"></span>' +
+          '<span style="font-size:15px;font-weight:800;color:' + INK + '">' + esc(a.emp) + '</span>' +
+          '<span style="margin-left:auto;font-size:10.5px;color:' + INK3 + '">' + (active ? relTime(a.last) : '—') + '</span>' +
         '</div>' +
-        '<div style="display:flex;gap:11px;flex-wrap:wrap;font-size:12.5px;color:#d8dde4;font-variant-numeric:tabular-nums">' +
-          '<span title="Fyrirtæki">🏢 <b style="color:#fff">' + a.cos.size + '</b></span>' +
-          '<span title="Yfirfarið">🟢 <b style="color:#fff">' + a.yf + '</b></span>' +
-          '<span title="Á verkstæði">🔵 <b style="color:#fff">' + a.vs + '</b></span>' +
-          '<span title="Kláraðar úttektir">✅ <b style="color:#fff">' + a.done + '</b></span>' +
-          '<span title="Heild tækja" style="margin-left:auto;color:#eef1f4">Σ <b style="color:#fff">' + tot + '</b></span>' +
+        '<div style="display:flex;gap:11px;flex-wrap:wrap;font-size:12.5px;color:' + INK2 + ';font-variant-numeric:tabular-nums">' +
+          '<span title="Fyrirtæki">🏢 <b style="color:' + INK + '">' + a.cos.size + '</b></span>' +
+          '<span title="Yfirfarið">🟢 <b style="color:' + INK + '">' + a.yf + '</b></span>' +
+          '<span title="Á verkstæði">🔵 <b style="color:' + INK + '">' + a.vs + '</b></span>' +
+          '<span title="Kláraðar úttektir">✅ <b style="color:' + INK + '">' + a.done + '</b></span>' +
+          '<span title="Heild tækja" style="margin-left:auto">Σ <b style="color:' + INK + '">' + tot + '</b></span>' +
         '</div>' +
       '</button>';
     };
 
-    // rakningar-listi (feed) — sleppum ping (of mikið); flettum flokkun
+    // rakningar-listi (feed) — sleppum ping (of mikið)
     const feed = _rows.filter(x => x.action !== 'ping' && (_emp === 'all' || x.employee === _emp));
     const feedHtml = feed.length ? feed.map(x => {
       const A = ACT[x.action] || { icon: '•', label: x.action, col: '#94a3b8' };
-      return '<div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid rgba(255,255,255,.06)">' +
-        '<span style="font-family:var(--mono,monospace);font-size:12px;color:#a9b2bf;flex:none;width:42px">' + hhmm(x.created_at) + '</span>' +
+      return '<div style="display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid #eef2f7">' +
+        '<span style="font-family:var(--mono,monospace);font-size:12px;color:' + INK3 + ';flex:none;width:42px">' + hhmm(x.created_at) + '</span>' +
         '<span style="width:8px;height:8px;border-radius:50%;background:' + empColor(x.employee) + ';flex:none"></span>' +
-        '<span style="font-size:13px;font-weight:700;color:#e7eaef;flex:none;min-width:52px">' + esc(x.employee) + '</span>' +
-        '<span style="font-size:13px;color:#d8dde4">' + A.icon + ' ' + esc(A.label) + '</span>' +
-        '<span style="font-size:12.5px;color:#aeb7c3;margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%;text-align:right">' + esc(x.co_nafn || '') + '</span>' +
+        '<span style="font-size:13px;font-weight:800;color:' + INK + ';flex:none;min-width:52px">' + esc(x.employee) + '</span>' +
+        '<span style="font-size:13px;color:' + INK2 + '">' + A.icon + ' ' + esc(A.label) + '</span>' +
+        '<span style="font-size:12.5px;color:' + INK3 + ';margin-left:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:45%;text-align:right">' + esc(x.co_nafn || '') + '</span>' +
       '</div>';
-    }).join('') : '<div style="padding:26px 8px;text-align:center;color:#a9b2bf;font-size:13px">Engin skráð virkni þennan dag.</div>';
+    }).join('') : '<div style="padding:26px 8px;text-align:center;color:' + INK3 + ';font-size:13px">Engin skráð virkni þennan dag.</div>';
 
     root.innerHTML =
-      '<div style="max-width:1000px;margin:0 auto;padding:18px 16px 40px">' +
-        '<div style="font-size:22px;font-weight:800;color:#f2f4f7;margin-bottom:2px">🚚 Aksturslisti</div>' +
-        '<div style="font-size:13px;color:#aeb7c3;margin-bottom:16px">Rakning á því sem bílstjórarnir gera yfir daginn.</div>' +
+      '<div style="max-width:1000px;margin:0 auto;padding:18px 16px 44px">' +
+        '<div style="font-size:23px;font-weight:800;color:#fff;margin-bottom:2px;text-shadow:0 1px 2px rgba(0,0,0,.4)">🚚 Aksturslisti</div>' +
+        '<div style="font-size:13px;color:#c9cfd8;margin-bottom:16px">Rakning á því sem bílstjórarnir gera yfir daginn.</div>' +
 
-        // toolbar: dagur + starfsmenn + refresh
-        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px">' +
-          '<div style="display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:99px;padding:3px">' +
-            '<button id="_al-prev" type="button" style="border:0;background:transparent;color:#e7eaef;cursor:pointer;font-size:16px;padding:4px 10px;border-radius:99px">‹</button>' +
-            '<span style="font-size:13px;font-weight:700;color:#f2f4f7;min-width:96px;text-align:center">' + esc(dayLabel(_day)) + '</span>' +
-            '<button id="_al-next" type="button" ' + (_day === todayStr() ? 'disabled style="opacity:.3;' : 'style="') + 'border:0;background:transparent;color:#e7eaef;cursor:pointer;font-size:16px;padding:4px 10px;border-radius:99px">›</button>' +
+        // toolbar (dökk-metalík)
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px">' +
+          '<div style="display:flex;align-items:center;gap:2px;' + METAL + ';border-radius:99px;padding:2px">' +
+            '<button id="_al-prev" type="button" style="border:0;background:transparent;color:#fff;cursor:pointer;font-size:17px;padding:4px 11px;border-radius:99px">‹</button>' +
+            '<span style="font-size:13px;font-weight:800;color:#fff;min-width:96px;text-align:center">' + esc(dayLabel(_day)) + '</span>' +
+            '<button id="_al-next" type="button" ' + (_day === todayStr() ? 'disabled style="opacity:.3;' : 'style="') + 'border:0;background:transparent;color:#fff;cursor:pointer;font-size:17px;padding:4px 11px;border-radius:99px">›</button>' +
           '</div>' +
-          (_day !== todayStr() ? '<button id="_al-today" type="button" style="border:1px solid rgba(255,255,255,.14);background:transparent;color:#d8dde4;border-radius:99px;padding:6px 12px;font:inherit;font-size:12px;cursor:pointer">Í dag</button>' : '') +
+          (_day !== todayStr() ? '<button id="_al-today" type="button" style="' + METALBTN + '">Í dag</button>' : '') +
           '<div style="display:flex;gap:6px;margin-left:auto;flex-wrap:wrap">' +
-            [['all', 'Allir', '#475569']].concat(EMPLOYEES.map(n => [n, n, empColor(n)])).map(([k, lab, col]) => {
+            [['all', 'Allir', '#334155']].concat(EMPLOYEES.map(n => [n, n, empColor(n)])).map(([k, lab, col]) => {
               const on = _emp === k;
-              return '<button type="button" class="_al-emp" data-emp="' + esc(k) + '" style="border:1px solid ' + (on ? col : 'rgba(255,255,255,.16)') + ';background:' + (on ? col : 'transparent') + ';color:' + (on ? '#fff' : '#d8dde4') + ';border-radius:99px;padding:6px 13px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">' + esc(lab) + '</button>';
+              return '<button type="button" class="_al-emp" data-emp="' + esc(k) + '" style="' + (on
+                ? 'background:' + col + ';color:#fff;border:1px solid ' + col + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.25)'
+                : METAL) + ';border-radius:99px;padding:6px 13px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">' + esc(lab) + '</button>';
             }).join('') +
           '</div>' +
-          '<button id="_al-refresh" type="button" style="border:1px solid rgba(255,255,255,.14);background:transparent;color:#d8dde4;border-radius:99px;padding:6px 12px;font:inherit;font-size:12px;cursor:pointer">↻</button>' +
+          '<button id="_al-refresh" type="button" style="' + METALBTN + ';padding:6px 12px">↻</button>' +
         '</div>' +
 
-        // Akstursleiðir 1/2/3 (leiðirnar sjálfar + fyrirtækin á þeim)
+        // Akstursleiðir 1/2/3
         (() => {
           const L3 = aksturLists();
           const anyList = L3[1].length + L3[2].length + L3[3].length > 0;
-          if (!anyList) return '<div style="background:rgba(255,255,255,.065);border:1px solid rgba(255,255,255,.17);border-radius:14px;padding:14px;margin-bottom:16px;color:#a9b2bf;font-size:13px">Engin fyrirtæki komin á akstursleið enn — raðaðu þeim á Akstur 1/2/3 á „Fyrirtæki í þjónustu" (🚗-táknið á hverri röð).</div>';
+          if (!anyList) return secHdr('🗺️ AKSTURSLEIÐIR') + '<div style="' + CARD + ';padding:14px;margin-bottom:18px;color:' + INK2 + ';font-size:13px">Engin fyrirtæki komin á akstursleið enn — raðaðu þeim á Akstur 1/2/3 á „Fyrirtæki í þjónustu" (🚗-táknið á hverri röð).</div>';
           const col = (k) => {
             const rows = L3[k], done = rows.filter(r => r.done).length;
-            return '<div style="flex:1 1 220px;min-width:200px;background:rgba(255,255,255,.065);border:1px solid rgba(255,255,255,.17);border-top:3px solid ' + AK_COL[k] + ';border-radius:14px;padding:12px 13px">' +
+            return '<div style="flex:1 1 220px;min-width:200px;' + CARD + ';border-top:4px solid ' + AK_COL[k] + ';padding:12px 13px">' +
               '<div style="display:flex;align-items:center;gap:7px;margin-bottom:9px">' +
-                '<span style="font-size:14px;font-weight:800;color:#f2f4f7">🚗 Akstur ' + k + '</span>' +
-                '<span style="margin-left:auto;font-size:11.5px;color:#aeb7c3"><b style="color:#fff">' + done + '</b>/' + rows.length + ' kláruð</span>' +
+                '<span style="font-size:14px;font-weight:800;color:' + INK + '">🚗 Akstur ' + k + '</span>' +
+                '<span style="margin-left:auto;font-size:11.5px;color:' + INK2 + '"><b style="color:' + INK + '">' + done + '</b>/' + rows.length + ' kláruð</span>' +
               '</div>' +
               (rows.length ? '<div style="display:flex;flex-direction:column;gap:5px;max-height:230px;overflow:auto">' + rows.map(r =>
                 '<div style="display:flex;align-items:center;gap:8px;font-size:12.5px">' +
-                  '<span style="width:8px;height:8px;border-radius:50%;flex:none;background:' + (r.done ? '#22c55e' : 'rgba(255,255,255,.22)') + '"></span>' +
-                  '<span style="color:' + (r.done ? '#a9b2bf' : '#eef1f5') + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap' + (r.done ? ';text-decoration:line-through' : '') + '">' + esc(r.nafn) + '</span>' +
+                  '<span style="width:8px;height:8px;border-radius:50%;flex:none;background:' + (r.done ? '#16a34a' : '#cbd5e1') + '"></span>' +
+                  '<span style="color:' + (r.done ? '#94a3b8' : INK) + ';overflow:hidden;text-overflow:ellipsis;white-space:nowrap' + (r.done ? ';text-decoration:line-through' : '') + '">' + esc(r.nafn) + '</span>' +
                 '</div>').join('') + '</div>'
-              : '<div style="color:#a9b2bf;font-size:12px;padding:6px 0">Engin fyrirtæki á þessari leið.</div>') +
+              : '<div style="color:' + INK3 + ';font-size:12px;padding:6px 0">Engin fyrirtæki á þessari leið.</div>') +
             '</div>';
           };
-          return '<div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:rgba(255,255,255,.96);margin-bottom:9px">🗺️ AKSTURSLEIÐIR</div>' +
-            '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">' + [1, 2, 3].map(col).join('') + '</div>';
+          return secHdr('🗺️ AKSTURSLEIÐIR') + '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">' + [1, 2, 3].map(col).join('') + '</div>';
         })() +
 
-        // Á verkstæði — verkstæðis-lífsferill (verkstjórinn hakar; helst þar til
-        // bílstjórinn skilar). Per tæki: staða-pilla + aðgerðahnappar.
+        // Á verkstæði — verkstæðis-lífsferill
         (() => {
           const grp = workshopByClient();
           const total = _shop.length;
           const stBtn = (id, act, label, col) =>
-            '<button type="button" class="_al-cust" data-id="' + id + '" data-act="' + act + '" style="border:1px solid ' + col + ';background:transparent;color:' + col + ';border-radius:8px;padding:4px 9px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer">' + label + '</button>';
+            '<button type="button" class="_al-cust" data-id="' + id + '" data-act="' + act + '" style="border:0;background:' + col + ';color:#fff;border-radius:8px;padding:5px 11px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.22)">' + label + '</button>';
           const row = (u) => {
             const cs = u.custody_status || 'null';
             const meta = [u.type || 'Tæki', u.size, u.serial].filter(Boolean).map(esc).join(' · ');
             const pill = CUSTODY[cs] || CUSTODY['null'];
             let actions = '';
-            if (cs === 'null') actions = stBtn(u.id, 'komid', '✅ Komið á verkstæði', '#3b82f6');
-            else if (cs === 'komid') actions = stBtn(u.id, 'hladid', '🔋 Hlaðið', '#22c55e') + stBtn(u.id, 'onytt', '❌ Ónýtt', '#ef4444') + stBtn(u.id, 'nytt', '🆕 Nýtt', '#f59e0b');
-            else if (cs === 'tilbuid') actions = '<span style="font-size:11.5px;color:#e7eaef;background:rgba(255,255,255,.08);border-radius:99px;padding:3px 9px;font-weight:700">' + (DISP[u.service_choice] || 'Tilbúið') + '</span>' + stBtn(u.id, 'farid', '➡️ Farið af verkstæði', '#a78bfa');
-            else if (cs === 'farid') actions = '<span style="font-size:11.5px;color:#c4b5fd;background:rgba(124,58,237,.2);border:1px solid rgba(124,58,237,.45);border-radius:99px;padding:3px 9px;font-weight:700">🚚 Bíður skila hjá bílstjóra</span>';
-            return '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:8px 0;border-top:1px solid rgba(255,255,255,.07)">' +
+            if (cs === 'null') actions = stBtn(u.id, 'komid', '✅ Komið á verkstæði', '#2563eb');
+            else if (cs === 'komid') actions = stBtn(u.id, 'hladid', '🔋 Hlaðið', '#16a34a') + stBtn(u.id, 'onytt', '❌ Ónýtt', '#dc2626') + stBtn(u.id, 'nytt', '🆕 Nýtt', '#d97706');
+            else if (cs === 'tilbuid') actions = '<span style="font-size:11.5px;color:#fff;background:#059669;border-radius:99px;padding:3px 10px;font-weight:700">' + (DISP[u.service_choice] || 'Tilbúið') + '</span>' + stBtn(u.id, 'farid', '➡️ Farið af verkstæði', '#7c3aed');
+            else if (cs === 'farid') actions = '<span style="font-size:11.5px;color:#6d28d9;background:#ede9fe;border:1px solid #c4b5fd;border-radius:99px;padding:3px 10px;font-weight:800">🚚 Bíður skila hjá bílstjóra</span>';
+            return '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:8px 0;border-top:1px solid #eef2f7">' +
               '<span style="width:9px;height:9px;border-radius:50%;flex:none;background:' + pill.col + '"></span>' +
-              '<span style="font-size:13px;color:#eef1f5">' + meta + '</span>' +
-              '<span style="font-size:10.5px;color:' + pill.col + ';font-weight:700;background:rgba(255,255,255,.06);border-radius:99px;padding:2px 8px">' + esc(pill.label) + '</span>' +
+              '<span style="font-size:13px;color:' + INK + ';font-weight:600">' + meta + '</span>' +
+              '<span style="font-size:10.5px;color:#fff;font-weight:700;background:' + pill.col + ';border-radius:99px;padding:2px 9px">' + esc(pill.label) + '</span>' +
               '<span style="display:flex;gap:6px;margin-left:auto;flex-wrap:wrap">' + actions + '</span>' +
             '</div>';
           };
           const body = grp.length ? grp.map(g =>
             '<div style="padding:6px 0 2px">' +
-              '<div style="font-size:13.5px;font-weight:800;color:#f2f4f7;margin-bottom:2px">' + esc(g.client) + ' <span style="font-weight:600;color:#aab3c0;font-size:12px">· ' + g.items.length + ' tæki</span></div>' +
+              '<div style="font-size:13.5px;font-weight:800;color:' + INK + ';margin-bottom:2px">' + esc(g.client) + ' <span style="font-weight:600;color:' + INK3 + ';font-size:12px">· ' + g.items.length + ' tæki</span></div>' +
               g.items.map(row).join('') +
             '</div>').join('')
-            : '<div style="padding:16px 6px;color:#aab3c0;font-size:13px">Engin tæki á verkstæði núna. 👍</div>';
-          return '<div style="display:flex;align-items:center;margin-bottom:9px"><span style="font-size:12px;font-weight:800;letter-spacing:.05em;color:rgba(255,255,255,.95)">🔧 Á VERKSTÆÐI — Á EFTIR AÐ SKILA</span>' + (total ? '<span style="margin-left:auto;font-size:11.5px;color:#93c5fd;font-weight:700">' + total + ' tæki · ' + grp.length + ' staðir</span>' : '') + '</div>' +
-            '<div style="background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.16);border-radius:14px;padding:10px 14px;margin-bottom:18px;max-height:420px;overflow:auto">' + body + '</div>';
+            : '<div style="padding:16px 6px;color:' + INK3 + ';font-size:13px">Engin tæki á verkstæði núna. 👍</div>';
+          return secHdr('🔧 Á VERKSTÆÐI — Á EFTIR AÐ SKILA', total ? total + ' tæki · ' + grp.length + ' staðir' : '') +
+            '<div style="' + CARD + ';padding:10px 14px;margin-bottom:18px;max-height:440px;overflow:auto">' + body + '</div>';
         })() +
 
-        // starfsmenn — samantektar-spjöld
-        '<div style="font-size:12px;font-weight:800;letter-spacing:.05em;color:rgba(255,255,255,.96);margin-bottom:9px">👷 STARFSMENN Í DAG</div>' +
-        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">' + EMPLOYEES.map(n => card(agg[n])).join('') + '</div>' +
+        // starfsmenn
+        secHdr('👷 STARFSMENN Í DAG') +
+        '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">' + EMPLOYEES.map(n => card(agg[n])).join('') + '</div>' +
 
         // kort
-        '<div style="border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.17);margin-bottom:16px;background:#2b2e35">' +
+        '<div style="border-radius:14px;overflow:hidden;border:1px solid #0c0e12;margin-bottom:18px;background:#dfe3e8;box-shadow:0 2px 6px rgba(0,0,0,.25)">' +
           '<div id="_al-map" style="height:300px;width:100%"></div>' +
         '</div>' +
 
         // rakningar-listi
-        '<div style="background:rgba(255,255,255,.065);border:1px solid rgba(255,255,255,.17);border-radius:16px;padding:12px 14px">' +
-          '<div style="display:flex;align-items:center;margin-bottom:8px"><span style="font-size:12px;font-weight:800;letter-spacing:.05em;color:rgba(255,255,255,.96)">🧭 RAKNING DAGSINS</span><span style="margin-left:auto;font-size:11px;color:#a9b2bf">' + feed.length + ' atriði</span></div>' +
-          feedHtml +
-        '</div>' +
+        secHdr('🧭 RAKNING DAGSINS', feed.length + ' atriði') +
+        '<div style="' + CARD + ';padding:8px 14px 12px">' + feedHtml + '</div>' +
       '</div>';
 
     // wire
