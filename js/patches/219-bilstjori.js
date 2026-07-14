@@ -380,14 +380,18 @@
     yfirfarid: { cls:'chk is-done',    label:'✓ Skoðað' },
     verkstaedi:{ cls:'chk chk--vs',    label:'🔵 Á verkstæði' }
   };
-  // ⚪ Óskoðað → 🟢 Yfirfarið → 🔵 Á verkstæði → (bílstjóri skilar) ✅ Yfirfarið/hlaðið.
-  // Skilin úr verkstæði → yfirfarið: hreinsar líka custody_status/service_choice
-  // (verkstæðis-þrepin á Aksturslista-síðunni) svo tækið dettur af verkstæðis-borðinu.
-  const ROLL = { oskodad:'yfirfarid', yfirfarid:'verkstaedi', verkstaedi:'yfirfarid' };
+  // Fullur hringur (2026-07-14, ósk Agnars — „go back to óskoðað"): tapp rúllar
+  // ⚪ Óskoðað → 🟢 Yfirfarið → 🔵 Á verkstæði → ⚪ Óskoðað (aftur á byrjun).
+  // Áður sat það fast í yfirfarið↔verkstæði og komst aldrei aftur í óskoðað.
+  const ROLL = { oskodad:'yfirfarid', yfirfarid:'verkstaedi', verkstaedi:'oskodad' };
   function updateForState(next) {
     if (next === 'yfirfarid') return { status:'ok', last_insp: today(), next_insp: nextYearIso(), custody_status: null, service_choice: null };
     if (next === 'verkstaedi') return { status:'loaned', custody_status: null };   // nýkomið á verkstæði
-    return { status:'active' };
+    // Aftur í óskoðað: hreinsar skoðunar-stimpil þessarar lotu (svo chipinn lesist
+    // óskoðað út um allt) OG custody/verkstæðis-þrep (dettur af verkstæðis-borðinu).
+    // last_insp var þegar yfirskrifað þegar tappað var áfram, svo engin eldri
+    // dagsetning tapast við þessa aftur-færslu.
+    return { status:'active', last_insp: null, next_insp: null, custody_status: null, service_choice: null };
   }
   async function loadUnits(c) {
     const name = c.nafn || '';
