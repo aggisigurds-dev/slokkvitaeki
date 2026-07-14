@@ -157,6 +157,16 @@
     // parallel with the company + settings loads.
     const unitsP = loadActiveUnitsByClient(SB).catch(() => ({}));
     const priceP = loadYfirferdPrices(SB).catch(() => ({}));
+    // 2026-07-14: authoritative "last inspection" facts parsed from each
+    // company's most-recent úttektarskýrsla PDF (inspection month + per-category
+    // device counts). Table arsskodun_report_facts is populated by the report
+    // extractor. When a company has a facts row it becomes the source of truth
+    // for BOTH the Skoðun month and the Tæki count — overriding the name-matched
+    // uttaeki guess (auto-generated placeholders) and any stale blob month.
+    const factsP = SB.from('arsskodun_report_facts')
+      .select('fyrirtaeki_id,inspect_month,equipment,report_year,total_devices')
+      .then(r => (r && r.data) || [])
+      .catch(() => []);
 
     await appSettingsP;
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
@@ -169,6 +179,8 @@
 
     const unitsByClient = await unitsP;
     const PRICE = await priceP;
+    const factsList = await factsP;
+    const factsById = Object.fromEntries((factsList || []).map(f => [String(f.fyrirtaeki_id), f]));
 
     // 2026-05-19: Only include companies that are ACTUALLY in service
     // (subscribed to ársskoðun, subscribed to brunakerfi, OR — new — they have
@@ -215,6 +227,30 @@
           _ars.estimated_yearly = Math.round(est);
           _ars._unit_count = units.length;
           _ars._derived = true;
+        }
+        // 2026-07-14: report facts win over the name-matched uttaeki guess.
+        // The úttektarskýrsla is the ground truth for what was actually inspected.
+        const fact = factsById[String(c.id)];
+        if (fact) {
+          const eqp = fact.equipment && typeof fact.equipment === 'object' ? fact.equipment : null;
+          const eqTotal = eqp ? Object.values(eqp).reduce((s, v) => s + (+v || 0), 0) : 0;
+          if (eqp && eqTotal > 0) {
+            _ars.equipment = eqp;
+            let est2 = 0;
+            Object.entries(eqp).forEach(([cat, n]) => {
+              est2 += (PRICE[cat] != null ? PRICE[cat] : PRICE.annad) * (+n || 0);
+            });
+            if (est2 > 0) est2 += SKYRSLUGERD + AKSTUR_UNIT * (+manual.akstur_multiplier || 1);
+            _ars.estimated_yearly = Math.round(est2);
+            _ars._unit_count = eqTotal;
+            _ars._fromReport = true;
+          }
+          // Inspection month from the report overrides the stored blob value.
+          if (fact.inspect_month != null && +fact.inspect_month >= 1 && +fact.inspect_month <= 12) {
+            _ars.inspect_month = +fact.inspect_month;
+            _ars._month_from_report = true;
+          }
+          if (fact.report_year) _ars._report_year = fact.report_year;
         }
         return {
           ...c,
