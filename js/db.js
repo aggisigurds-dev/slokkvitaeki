@@ -3,6 +3,7 @@ var DB = {
   sb: null,
   online: false,
   cache: { jobs: [], units: [], schedule: [], history: [] },
+  _lastLoadOk: null,   // timestamp of the last SUCCESSFUL load (null = never)
 
   // Fetch ALL rows for a query, working around Supabase's server-side
   // "Max rows" cap (1000). Pages through .range() in 1000-row chunks until a
@@ -37,12 +38,55 @@ var DB = {
       this.subscribeRealtime();
     } catch(e) {
       console.error('Supabase villa:', e);
-      this.loadDemoData();
+      // Genuine failure (client-init threw) — NOT setup mode. Never show fake
+      // demo data; surface the error + let the user retry.
+      this.showLoadError(e);
     }
   },
 
   setSyncState: function(state) {
     document.getElementById('sync-dot').className = 'sync-dot ' + state;
+  },
+
+  // Real load/connection failure (as opposed to placeholder setup mode, which
+  // still shows demo data). NEVER loads demo data here — that silently replaced
+  // the real customers with fake ones. Instead: keep any previously loaded data
+  // on screen (with a small "offline, data from HH:MM" note) or, if nothing has
+  // loaded yet this session, show a full-width error state with a retry button.
+  showLoadError: function(err) {
+    try { this.setSyncState('error'); } catch(_) {}
+    var self = this;
+    var hadData = !!this._lastLoadOk;
+    var bar = document.getElementById('db-load-error');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'db-load-error';
+      bar.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:100096;background:linear-gradient(180deg,#c0241f,#8a1010);color:#fff;font-family:system-ui,-apple-system,sans-serif;box-shadow:0 6px 18px -6px rgba(0,0,0,.5)';
+      (document.body || document.documentElement).appendChild(bar);
+    }
+    if (hadData) {
+      var t = new Date(this._lastLoadOk);
+      var hhmm = ('0' + t.getHours()).slice(-2) + ':' + ('0' + t.getMinutes()).slice(-2);
+      bar.style.padding = '9px 16px';
+      bar.innerHTML = '<div style="display:flex;align-items:center;gap:12px;justify-content:center;flex-wrap:wrap;font-size:13px;font-weight:700">'
+        + '<span>⚠ Engin nettenging — sýni gögn frá ' + hhmm + '</span>'
+        + '<button type="button" id="_db-le-retry" style="border:0;border-radius:8px;padding:6px 12px;background:rgba(255,255,255,.92);color:#8a1010;font:inherit;font-weight:800;cursor:pointer">↻ Reyna aftur</button>'
+        + '</div>';
+    } else {
+      bar.style.padding = '40px 22px';
+      bar.innerHTML = '<div style="max-width:420px;margin:0 auto;text-align:center">'
+        + '<div style="font-size:20px;font-weight:800;margin-bottom:8px">⚠ Náði ekki í gögn</div>'
+        + '<div style="font-size:14px;opacity:.9;margin-bottom:16px">Villa við að hlaða gögnum úr gagnagrunni. Athugaðu nettenginguna og reyndu aftur.</div>'
+        + '<button type="button" id="_db-le-retry" style="border:0;border-radius:10px;padding:12px 22px;background:#fff;color:#8a1010;font:inherit;font-size:15px;font-weight:800;cursor:pointer">↻ Reyna aftur</button>'
+        + '</div>';
+    }
+    bar.style.display = 'block';
+    var btn = document.getElementById('_db-le-retry');
+    if (btn) btn.onclick = function() {
+      bar.style.display = 'none';
+      try { self.setSyncState('syncing'); } catch(_) {}
+      if (self.sb) self.loadAll(); else self.init();
+    };
   },
 
   loadAll: async function() {
@@ -93,11 +137,15 @@ var DB = {
       }
       this.setSyncState('online');
       this.online = true;
+      this._lastLoadOk = Date.now();
+      var _le = document.getElementById('db-load-error'); if (_le) _le.style.display = 'none';
       App.refreshAll();
     } catch(e) {
       console.error('Load villa:', e);
-      this.setSyncState('error');
-      this.loadDemoData();
+      // Real load failure — do NOT fall back to demo data (it silently showed
+      // fake customers). Keep last-good data if we have it; else show a retry
+      // error state. setSyncState('error') happens inside showLoadError.
+      this.showLoadError(e);
     }
   },
 
