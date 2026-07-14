@@ -1528,10 +1528,39 @@
     const dl2 = document.getElementById('vb-add-colist'); if (dl2) dl2.innerHTML = opts;   // quick-línan (2026-07-10)
   }
 
+  // ── deep-link re-assert (speglar patch 219 fyrir #bilstjori) ─────────────
+  // Fersk hleðsla á /#verkbord lenti áður á Sölu: view-verkbord verður ekki til
+  // fyrr en show() keyrir, svo patch 218 applyHash hunsaði slug-inn („unknown
+  // slug") og sala.js boot-landerinn vann. Hér á Verkborð sinn eigin slug —
+  // endurtekur show() þar til við erum komin ÞANGAÐ, notandinn grípur inn í,
+  // eða hash-ið hættir að vera okkar.
+  let _userTook = false;
+  ['pointerdown', 'mousedown', 'keydown', 'touchstart'].forEach(ev =>
+    window.addEventListener(ev, () => { _userTook = true; }, { capture: true, passive: true }));
+  function hashIsMine() {
+    const h = (location.hash || '').replace(/^#/, '').toLowerCase();
+    return h === NAV_KEY || h === 'verkefni';
+  }
+  function openFromHash() {
+    if (!hashIsMine()) return;
+    const deadline = Date.now() + 5000;
+    (function tick() {
+      if (_userTook || Date.now() > deadline || !hashIsMine()) return;
+      try {
+        const active = document.querySelector('.view.active');
+        if (!active || active.id !== VIEW_ID) show();   // lander stal fókus → aftur á Verkborð
+      } catch (_) {}
+      setTimeout(tick, 70);
+    })();
+  }
+
   // ── boot ──────────────────────────────────────────────────────────────────
   function boot() {
     injectNav();
     patchSwitchView();
+    ensureView();   // view-verkbord til strax → patch 218 getur leyst #verkbord
+    openFromHash(); // deep-link á fyrstu hleðslu (þolir sala.js boot-landerinn)
+    window.addEventListener('hashchange', openFromHash);
     setTimeout(() => { injectNav(); patchSwitchView(); }, 1500);
     // keep the "Í dag" badge fresh once settings/DB are warm
     if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(() => refreshBadge());
