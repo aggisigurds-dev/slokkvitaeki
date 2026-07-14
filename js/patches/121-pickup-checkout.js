@@ -61,9 +61,16 @@
   }
 
   // ── Modal ──────────────────────────────────────────────────────────────
+  let _pkcOpening = false; // re-entrancy guard (covers the async fetch gap)
   function openPickupModal(jobId) {
+    // 2026-07-14: guard against „afgreiðslan poppar upp aftur" — a double-tap on
+    // „Sótt ✓" (or a stray click on a re-rendered card) used to open the pickup
+    // window twice because openPickupModal is async. Block re-entry while one is
+    // opening OR already on screen.
+    if (_pkcOpening || document.getElementById('_pkc-dialog')) return;
+    _pkcOpening = true;
     const job = (window.DB && DB.getJob) ? DB.getJob(jobId) : null;
-    if (!job) { alert('Verk fannst ekki'); return; }
+    if (!job) { _pkcOpening = false; alert('Verk fannst ekki'); return; }
     const saleNum = parentSaleNum(job.num);
     const allJobs = jobsForSaleNum(saleNum);
     // Collect all units across all jobs of this sale
@@ -97,8 +104,12 @@
       // don't clobber the operator's edits.
       pickupSaleNote = extractSaleNote(sale && sale.athugasemdir);
       pickupPrintNote = true;
+      // renderPickupModal synchronously creates #_pkc-dialog; clearing the flag
+      // right before it means the DOM-presence check takes over as the guard,
+      // and no second open can slip in during the gap.
+      _pkcOpening = false;
       renderPickupModal(job, sale, allUnits);
-    });
+    }).catch(() => { _pkcOpening = false; });
   }
 
   // Items added during pickup (replacements customer wants to buy)
