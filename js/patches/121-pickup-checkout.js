@@ -886,6 +886,7 @@
       const newSale = {
         num: parentSaleNum(job.num),
         starfsmadur: 'Verkstæði',
+        source: 'sott',   // reikningur úr Sótt/afhendingu (verkstæðis-þjónusta)
         customer_nafn: job.customer || '',
         customer_id: null,
         linur: newLinur,

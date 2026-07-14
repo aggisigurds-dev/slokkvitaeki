@@ -550,7 +550,8 @@
         samtals: draftTotal,
         greitt_med: 'greitt_sidar',
         athugasemdir: 'Drög — bíður Sótt ✓',
-        status: 'drog'
+        status: 'drog',
+        source: 'sott'
       };
       let saleRes = await SB.from('solur').insert(draftSale).select().single();
       if (saleRes.error && /status/i.test(saleRes.error.message || '')) {

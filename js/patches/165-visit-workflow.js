@@ -422,6 +422,7 @@
         samtals: total,
         afslattur: afslattur,
         greitt_med: 'reikningur',
+        source: 'uttekt',   // reikningur úr ársskoðun/úttektarskýrslu-flæði
         athugasemdir: (() => { const _po = (window.BeidniGate && BeidniGate.take(coId)) || ''; return `Heimsókn ${today} — ${visit.servicedIds.length} tæki, næsta skoðun ${next}` + (_po ? ` · Beiðni nr: ${_po}` : ''); })()
       }).select('num,id').single();
       if (ins.error) throw ins.error;

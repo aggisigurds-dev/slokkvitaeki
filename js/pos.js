@@ -925,7 +925,7 @@
       // #1: prepend the Reykjavíkurborg beiðninúmer so it prints on the reikningur.
       var _beidni=(needsBeidni() && String(state.beidninumer||'').trim()) ? String(state.beidninumer).trim() : '';
       var saleNotes = _beidni ? ('Beiðni ' + _beidni + (state.notes ? '\n' + state.notes : '')) : state.notes;
-      var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,customer_kt:custKt,linur:state.lines,upphaed_an_vsk:Math.round(t.ex),vsk_upphaed:Math.round(t.vsk),afslattur:discKr,samtals:Math.round(t.total),greitt_med:pmLabel,athugasemdir:saleNotes,status:saleStatus,paid_at:isPaidNow?nowIso:null,paid_method:isPaidNow?pmLabel:null}).select().single();
+      var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,customer_kt:custKt,linur:state.lines,upphaed_an_vsk:Math.round(t.ex),vsk_upphaed:Math.round(t.vsk),afslattur:discKr,samtals:Math.round(t.total),greitt_med:pmLabel,athugasemdir:saleNotes,status:saleStatus,source:'pos',paid_at:isPaidNow?nowIso:null,paid_method:isPaidNow?pmLabel:null}).select().single();
       if(sr.error)throw sr.error;
       var num = sr.data && sr.data.num ? sr.data.num : preNum;
       window._pendingReikningurNum = '';
