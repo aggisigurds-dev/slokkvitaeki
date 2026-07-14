@@ -90,6 +90,23 @@
 
   var _suppress = false; // guards the switchView<->hash feedback loop
 
+  // Sync the sidebar highlight to a view. The core App.switchView does this
+  // itself, but several board patches (240 Reikninga-póstur o.fl.) wrap
+  // switchView and short-circuit for their own view WITHOUT touching the
+  // .vnav-btn active class — after hash navigation the highlight then stayed
+  // stuck on the previous page (Sala). Called from the apply-hash path so
+  // hash-driven navigation always lands the highlight on the right button.
+  function syncNav(view) {
+    try {
+      var slugs = { }; slugs[view] = 1; slugs[slugForView(view)] = 1;
+      // field/leidsogn are the same page under two ids
+      if (view === 'field' || view === 'leidsogn') { slugs.field = 1; slugs.leidsogn = 1; }
+      document.querySelectorAll('.vnav-btn').forEach(function (b) {
+        b.classList.toggle('active', !!slugs[b.getAttribute('data-view')]);
+      });
+    } catch (_) {}
+  }
+
   function applyHash() {
     try {
       var s = cleanHash(); if (!s) return;
@@ -97,10 +114,11 @@
       if (!document.getElementById('view-' + view)) return; // unknown slug -> ignore
       if (!window.App || typeof App.switchView !== 'function') return;
       var active = document.querySelector('.view.active');
-      if (active && active.id === 'view-' + view) return;   // already there
+      if (active && active.id === 'view-' + view) { syncNav(view); return; }   // already there — just fix the highlight
       _suppress = true;
       App.switchView(view);
       _suppress = false;
+      syncNav(view);
     } catch (_) { _suppress = false; }
   }
 
@@ -141,7 +159,7 @@
   else boot();
 
   // small public surface for debugging / programmatic deep-linking
-  window.UrlRouting = { applyHash: applyHash, slugForView: slugForView, resolveView: resolveView, ALIAS: ALIAS };
+  window.UrlRouting = { applyHash: applyHash, slugForView: slugForView, resolveView: resolveView, syncNav: syncNav, ALIAS: ALIAS };
 
   try { console.log('[url-routing v1] installed'); } catch (_) {}
 })();
