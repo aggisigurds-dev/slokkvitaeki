@@ -774,13 +774,13 @@
       /* VERK card + Samningshafar panel side by side (panel docked right) */
       '.bw-flow{flex:1;overflow-y:auto;padding:2px 22px 76px;min-height:0;display:flex;align-items:flex-start;gap:14px}' +
       '.bw-card{flex:2 1 0;min-width:0;background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:16px;box-shadow:0 10px 28px -16px rgba(25,35,60,.18);padding:16px 18px 18px}' +
-      /* Samningshafar = 1/3 (VERK = 2/3) — flex:1 vs .bw-card flex:2 */
-      '.bw-sh-col{flex:1 1 0;min-width:0;flex-shrink:1;align-self:flex-start;position:sticky;top:0;display:flex;flex-direction:column;max-height:calc(100vh - 168px);background:#fff;border:1px solid rgba(20,24,34,.10);border-radius:14px;overflow:hidden;box-shadow:0 10px 28px -16px rgba(25,35,60,.28)}' +
-      /* clean white header to match the mockup card-h (VERK), not a dark bar */
-      '.bw-shd{position:relative;padding:14px 16px 16px;border-bottom:1px solid #eef0f4;flex-shrink:0}' +
-      '.bw-shd-t{font-size:13px;font-weight:700;letter-spacing:.12em;color:#3a4250}' +
-      '.bw-shd-n{position:absolute;top:15px;right:16px;font-family:"Space Mono",var(--mono,monospace);font-size:12px;color:#9098a6}' +
-      '.bw-sh-body{padding:10px;overflow-y:auto;flex:1;min-height:0}' +
+      /* Samningshafar = 1/3 (VERK = 2/3) — flex:1 vs .bw-card flex:2; same card chrome as VERK */
+      '.bw-sh-col{flex:1 1 0;min-width:0;flex-shrink:1;align-self:flex-start;position:sticky;top:0;display:flex;flex-direction:column;max-height:calc(100vh - 168px);background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:16px;overflow:hidden;box-shadow:0 10px 28px -16px rgba(25,35,60,.18)}' +
+      /* header matches .bw-chd — flex row, no separator, same font/padding */
+      '.bw-shd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:16px 18px 12px;flex-shrink:0}' +
+      '.bw-shd-t{font-size:14px;font-weight:700;letter-spacing:.12em;color:#3a4250}' +
+      '.bw-shd-n{margin-left:auto;font-family:"Space Mono",var(--mono,monospace);font-size:12px;color:#9098a6}' +
+      '.bw-sh-body{padding:0 18px 18px;overflow-y:auto;flex:1;min-height:0}' +
       '.bw-sh-body .bw-row:last-child{margin-bottom:0}' +
       '.bw-sh-body .empty,.bw-sh-body>div[style*="text-align:center"]{padding:18px 8px}' +
       '.bw-chd{display:flex;align-items:center;gap:10px;margin-bottom:12px}' +
