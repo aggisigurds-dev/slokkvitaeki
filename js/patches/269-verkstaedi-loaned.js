@@ -60,29 +60,42 @@
     const delBtn = (id) =>
       '<button type="button" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.del(\'' + id + '\')" title="Eyða tæki" ' +
         'style="border:0;background:transparent;color:#b91c1c;border-radius:5px;padding:2px 4px;font-size:13px;line-height:1;cursor:pointer;opacity:.55">🗑</button>';
-    const row = (u) => {
+    // Tæki birtast sem SÖMU .bw-tile flísar og VERK-súlan vinstra megin (patch 78)
+    // — sama flísaform (tegund + raðnúmer), en umsjónar-aðgerðirnar (Komið →
+    // Hlaðið/Ónýtt/Nýtt → Farið) sitja sem fullbreiðir hnappar neðst í flísinni.
+    const footBtn = (id, act, label, col) =>
+      '<button type="button" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.act(\'' + id + '\',\'' + act + '\')" ' +
+        'style="display:block;width:100%;border:0;border-top:1px solid rgba(255,255,255,.5);background:' + col + ';color:#fff;padding:4px 2px;font:inherit;font-size:10px;font-weight:700;cursor:pointer;line-height:1.3">' + label + '</button>';
+    const chip = (txt, bg, fg, bd) =>
+      '<div style="padding:4px 3px;background:' + bg + ';color:' + fg + ';font-size:9.5px;font-weight:700;text-align:center;line-height:1.25' + (bd ? ';border-top:1px solid ' + bd : '') + '">' + txt + '</div>';
+    const tile = (u) => {
       const cs = u.custody_status || 'null';
-      const meta = [u.type || 'Tæki', u.size, u.serial].filter(Boolean).map(esc).join(' · ');
-      const pill = CUSTODY[cs] || CUSTODY['null'];
-      let actions = '';
-      if (cs === 'null') actions = stBtn(u.id, 'komid', '✅ Komið', '#2563eb');
-      else if (cs === 'komid') actions = stBtn(u.id, 'hladid', '🔋 Hlaðið', '#16a34a') + stBtn(u.id, 'onytt', '❌ Ónýtt', '#dc2626') + stBtn(u.id, 'nytt', '🆕 Nýtt', '#d97706');
-      else if (cs === 'tilbuid') actions = '<span style="font-size:11px;color:#fff;background:#059669;border-radius:99px;padding:2px 8px;font-weight:700">' + (DISP[u.service_choice] || 'Tilbúið') + '</span>' + stBtn(u.id, 'farid', '➡️ Farið', '#7c3aed');
-      else if (cs === 'farid') actions = '<span style="font-size:11px;color:#6d28d9;background:#ede9fe;border:1px solid #c4b5fd;border-radius:99px;padding:2px 8px;font-weight:700">🚚 Bíður skila</span>';
-      return '<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-top:1px solid rgba(20,24,34,.07)">' +
-        '<span style="width:8px;height:8px;border-radius:50%;flex:none;background:' + pill.col + '"></span>' +
-        '<span style="font-size:12px;color:#11141c;font-weight:600;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + meta + '</span>' +
-        '<span style="display:flex;align-items:center;gap:5px;flex:none;flex-wrap:wrap;justify-content:flex-end">' + actions + delBtn(u.id) + '</span>' +
-      '</div>';
+      const typeRaw = String(u.type || 'Tæki').split(/\s+/).slice(0, 2).join(' ');
+      const label = typeRaw + (u.size ? ' ' + u.size : '');
+      const serialShort = String(u.serial || '').replace(/^.*-/, '').slice(0, 8);
+      let foot = '';
+      if (cs === 'null') foot = footBtn(u.id, 'komid', '✅ Komið', '#2563eb');
+      else if (cs === 'komid') foot = footBtn(u.id, 'hladid', '🔋 Hlaðið', '#16a34a') + footBtn(u.id, 'onytt', '❌ Ónýtt', '#dc2626') + footBtn(u.id, 'nytt', '🆕 Nýtt', '#d97706');
+      else if (cs === 'tilbuid') foot = chip(DISP[u.service_choice] || 'Tilbúið', '#059669', '#fff') + footBtn(u.id, 'farid', '➡️ Farið', '#7c3aed');
+      else if (cs === 'farid') foot = chip('🚚 Bíður skila', '#ede9fe', '#6d28d9', '#c4b5fd');
+      return '<div class="bw-tile" title="' + esc((u.serial || '') + ' — ' + label) + '">' +
+          '<button class="bw-tile-x" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.del(\'' + u.id + '\')" title="Eyða tæki (ef mistalið úr skýrslu)">✕</button>' +
+          '<div class="bw-tile-body">' +
+            '<div class="bw-tile-ty">' + esc(label) + '</div>' +
+            (serialShort ? '<div class="bw-tile-ser">' + esc(serialShort) + '</div>' : '') +
+          '</div>' +
+          foot +
+        '</div>';
     };
-    // eitt .bw-row spjald per fyrirtæki (sama chrome og VERK vinstra megin)
+    // eitt .bw-row spjald per fyrirtæki (sama chrome og VERK vinstra megin) með
+    // .bw-tiles flísaröð innan í — nákvæmlega eins og VERK-súlan.
     const cards = grp.length ? grp.map(g =>
       '<div class="bw-row" style="border-left-color:#2563eb">' +
         '<div class="bw-cinfo" style="width:auto;flex:1 1 100%">' +
           '<div class="bw-cname">' + esc(g.client) + '</div>' +
           '<div class="bw-cmeta">' + g.items.length + ' tæki · komið úr þjónustu</div>' +
         '</div>' +
-        '<div style="margin-top:6px">' + g.items.map(row).join('') + '</div>' +
+        '<div class="bw-tiles" style="margin-top:8px">' + g.items.map(tile).join('') + '</div>' +
       '</div>').join('')
       : '<div style="padding:16px 8px;color:#94a3b8;font-size:12px;text-align:center">Engin tæki komin úr þjónustu núna.</div>';
     return '<div id="_vk-loaned" style="margin-bottom:12px">' +
