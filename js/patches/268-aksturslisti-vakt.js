@@ -36,7 +36,7 @@
 
   let _day = todayStr();
   let _emp = 'all';
-  let _map = null, _layers = [], _leafletLP = null, _poll = null, _rows = [], _cos = null, _shop = [];
+  let _map = null, _layers = [], _leafletLP = null, _poll = null, _rows = [], _cos = null, _shop = [], _mapView = null;
 
   // Akstursleiðir (1/2/3) búa í arsskodun_customers[id].akstur (patch 267/219).
   const AK_COL = { 1: '#1d4ed8', 2: '#1a7f4b', 3: '#0e7490' };
@@ -157,10 +157,21 @@
   function drawMap(agg) {
     const canvas = document.getElementById('_al-map');
     if (!canvas || !window.L) return;
+    // render() endurbyggir root.innerHTML (60s poll + aðgerðir) → gamla kort-boxið
+    // dettur út og _map situr eftir á fjarlægðu box-i. Ef box hefur skipt um /
+    // dottið úr DOM → eyða og endurbyggja á nýja boxinu (annars er kortið tómt).
+    if (_map) {
+      let bad = false;
+      try { const c = _map.getContainer(); bad = (c !== canvas) || !document.body.contains(c); } catch (_) { bad = true; }
+      if (bad) { try { _mapView = { c: _map.getCenter(), z: _map.getZoom() }; } catch (_) {} try { _map.remove(); } catch (_) {} _map = null; }
+    }
     if (!_map) {
-      _map = L.map(canvas, { zoomControl: false }).setView([64.13, -21.90], 11);
+      _map = L.map(canvas, { zoomControl: false }).setView(_mapView ? _mapView.c : [64.13, -21.90], _mapView ? _mapView.z : 11);
       L.control.zoom({ position: 'bottomright' }).addTo(_map);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap', maxZoom: 19 }).addTo(_map);
+      setTimeout(() => { try { _map.invalidateSize(); } catch (_) {} }, 80);
+      setTimeout(() => { try { _map.invalidateSize(); } catch (_) {} }, 400);
+    } else {
       setTimeout(() => { try { _map.invalidateSize(); } catch (_) {} }, 60);
     }
     _layers.forEach(l => { try { _map.removeLayer(l); } catch (_) {} });
