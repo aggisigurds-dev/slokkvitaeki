@@ -43,6 +43,19 @@
     return t || '—';
   }
 
+  // 2026-07-14 (verkefni 69b1ad35): sami tegundar-litur og á Vörur-spjöldunum
+  // (js/vorur.js typeColor) — vinstri rammi á kostnaðarröðum svo tegundir
+  // þekkist á augabragði. Tafla-frumur nota border-left (ekki absolute-bar).
+  function typeBorder(t) {
+    const n = String(t || '').toLowerCase();
+    let c = '';
+    if (/fro[ðd]|\babf\b/.test(n)) c = '#14b8a6';
+    else if (/l[ée]ttv|\bab\b/.test(n)) c = '#38bdf8';
+    else if (/co2|co₂|kols[ýy]r/.test(n)) c = '#dc2626';
+    else if (/duft|\babc\b/.test(n)) c = '#2563eb';
+    return c ? 'border-left:4px solid ' + c + ';' : '';
+  }
+
   async function loadServices() {
     if (_services) return _services;
     if (_servicesPromise) return _servicesPromise;
@@ -510,7 +523,7 @@
           totalSubEx += subEx;
           totalVsk += vskKr;
           rows.push('<tr>' +
-            '<td style="padding:7px 10px;font-size:13px;color:#0f172a">' + esc(g.type) + ' / ' + esc(g.size) +
+            '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
               '<div style="font-size:11px;color:#64748b">' + esc(replacement.nafn) + '</div></td>' +
             '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + total + '</td>' +
             '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f3e8ff;color:#6b21a8">Vara</span></td>' +
@@ -543,7 +556,7 @@
         totalSubEx += subEx;
         totalVsk += vskKr;
         rows.push('<tr>' +
-          '<td style="padding:7px 10px;font-size:13px;color:#0f172a">' + esc(g.type) + ' / ' + esc(g.size) +
+          '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
             '<div style="font-size:11px;color:#64748b">' + esc(product.nafn) + '</div></td>' +
           '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + n + '</td>' +
           '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;' +
@@ -572,7 +585,7 @@
           totalSubEx += subEx;
           totalVsk += vskKr;
           rows.push('<tr>' +
-            '<td style="padding:7px 10px;font-size:13px;color:#0f172a">' + esc(g.type) + ' / ' + esc(g.size) +
+            '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
               '<div style="font-size:11px;color:#64748b">' + esc(newProduct.nafn) + '</div></td>' +
             '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + g.nyitt + '</td>' +
             '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f3e8ff;color:#6b21a8">Nýtt</span></td>' +
@@ -591,7 +604,7 @@
       }
       if (g.skip > 0) {
         rows.push('<tr style="opacity:.55">' +
-          '<td style="padding:5px 10px;font-size:12px;color:#94a3b8">' + esc(g.type) + ' / ' + esc(g.size) + '</td>' +
+          '<td style="padding:5px 10px;font-size:12px;color:#94a3b8;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) + '</td>' +
           '<td style="padding:5px 10px;text-align:center;font-size:12px;color:#94a3b8">' + g.skip + '</td>' +
           '<td style="padding:5px 10px"><span style="padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:#f1f5f9;color:#64748b">Sleppt</span></td>' +
           '<td colspan="4" style="padding:5px 10px;color:#94a3b8;font-size:11px;font-style:italic">(Ekki í þessari ferð)</td>' +

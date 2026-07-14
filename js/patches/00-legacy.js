@@ -2300,14 +2300,13 @@ console.log('[patch-master] loaded with all fixes');
         btn.textContent = '\u2705 Merkja sko\u00f0un';
       }
     };
-    // 2026-06-22: features.js endurnefði aðgerðaslána — Breyta-takkinn er nú
-    // EINI takkinn í sínum wrapper, svo editBtn.nextSibling er null og chaining
-    // varpaði „Cannot read properties of null (reading 'nextSibling')" í hverri
-    // einustu DOM-breytingu (MutationObserver). appendChild dugar í þessari nýju
-    // útsetningu og er ósmellinn ef siblings vantar.
-    var ref = editBtn.nextSibling && editBtn.nextSibling.nextSibling;
-    if (ref) editBtn.parentNode.insertBefore(btn, ref);
-    else editBtn.parentNode.appendChild(btn);
+    // 2026-07-14 (verkefni e0b72ec5): takkinn situr nú NIÐRI hjá
+    // „Úttekt búin / í Vinnslu" (165 ._vw-topbtn barnum) í stað efstu
+    // aðgerðaslárinnar. Ef 165-barinn er ekki kominn enn skilum við og
+    // MutationObserver-inn reynir aftur á næstu DOM-breytingu.
+    var vwBtn = main.querySelector('._vw-topbtn');
+    if (!vwBtn) return;
+    vwBtn.parentNode.insertBefore(btn, vwBtn);
   }
   var mo = new MutationObserver(function(){ addQuickInspect(); });
   var vc = document.getElementById('view-companies');

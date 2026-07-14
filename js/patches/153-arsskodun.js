@@ -1931,6 +1931,12 @@
         </div>
         <div style="padding:18px;display:flex;flex-direction:column;gap:10px">
           ${prefill.hint ? `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:8px 11px;font-size:12.5px;color:#1e40af">${prefill.hint}</div>` : ''}
+          <div style="position:relative">
+            <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">🔍 Leita í fyrirtækjaskrá (RSK)
+              <input class="_ars-rsk-q" placeholder="Nafn eða kennitala…" autocomplete="off" style="padding:8px 11px;border:1.5px solid #93c5fd;border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none"/>
+            </label>
+            <div class="_ars-rsk-res" style="display:none;position:absolute;left:0;right:0;top:100%;z-index:10;background:var(--surface);border:1px solid var(--brd2);border-radius:8px;box-shadow:0 12px 30px rgba(0,0,0,.25);max-height:240px;overflow-y:auto"></div>
+          </div>
           <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Nafn *<input data-f="nafn" required style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none"/></label>
           <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Kennitala<input data-f="kennitala" placeholder="123456-7890" style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none;font-family:monospace"/></label>
           <label style="display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--ink2);font-weight:700;text-transform:uppercase">Heimilisfang<input data-f="heimilisfang" style="padding:8px 11px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:14px;color:var(--ink1);background:var(--surface);outline:none"/></label>
@@ -1957,6 +1963,61 @@
     // Ef kt er forfyllt → fókusa á heimilisfang (það eina sem eftir er að slá inn)
     const focusF = prefill.kennitala ? 'heimilisfang' : 'nafn';
     setTimeout(() => { const el = bg.querySelector('input[data-f="' + focusF + '"]'); if (el) el.focus(); }, 50);
+
+    // ── RSK-leit (verkefni 5bc7106c, 2026-07-14) ──────────────────────────
+    // Nafn eða kt → /api/kt-lookup (?nafn= listar úr fyrirtækjaskrá, ?kt= flettir
+    // upp einni). Smellur á niðurstöðu fyllir Nafn + Kennitala + Heimilisfang.
+    (() => {
+      const q = bg.querySelector('._ars-rsk-q');
+      const res = bg.querySelector('._ars-rsk-res');
+      if (!q || !res) return;
+      let t = null, seq = 0;
+      const fill = (r) => {
+        const set = (f, v) => { const el = bg.querySelector('input[data-f="' + f + '"]'); if (el && v) el.value = v; };
+        set('nafn', r.nafn);
+        set('kennitala', r.kennitala ? r.kennitala.replace(/^(\d{6})(\d{4})$/, '$1-$2') : '');
+        set('heimilisfang', r.heimilisfang_full || r.heimilisfang || '');
+        res.style.display = 'none';
+        q.value = r.nafn || q.value;
+      };
+      const show = (items, note) => {
+        if (!items.length && !note) { res.style.display = 'none'; return; }
+        res.innerHTML = (note ? '<div style="padding:8px 11px;font-size:12px;color:var(--ink4)">' + note + '</div>' : '') +
+          items.map((r, i) =>
+            '<button type="button" class="_ars-rsk-hit" data-i="' + i + '" style="display:block;width:100%;text-align:left;padding:8px 11px;background:transparent;border:none;border-bottom:1px solid var(--brd);cursor:pointer;font:inherit">' +
+              '<div style="font-size:13px;font-weight:600;color:var(--ink1)">' + esc(r.nafn || '') + '</div>' +
+              '<div style="font-size:11.5px;color:var(--ink4);font-family:monospace">' + esc(r.kennitala || '') + '</div>' +
+              (r.heimilisfang_full ? '<div style="font-size:11.5px;color:var(--ink3)">' + esc(r.heimilisfang_full) + '</div>' : '') +
+            '</button>').join('');
+        res.style.display = 'block';
+        res.querySelectorAll('._ars-rsk-hit').forEach(b => b.addEventListener('click', () => fill(items[+b.dataset.i])));
+      };
+      q.addEventListener('input', () => {
+        clearTimeout(t);
+        const val = q.value.trim();
+        const digits = val.replace(/[^0-9]/g, '');
+        if (val.length < 2) { res.style.display = 'none'; return; }
+        t = setTimeout(async () => {
+          const mySeq = ++seq;
+          show([], '⏳ Leita í RSK…');
+          try {
+            let items = [];
+            if (digits.length === 10) {
+              const r = await fetch('/api/kt-lookup?kt=' + digits);
+              if (r.ok) { const d = await r.json(); if (d && d.nafn) items = [d]; }
+            } else {
+              const r = await fetch('/api/kt-lookup?nafn=' + encodeURIComponent(val));
+              if (r.ok) { const d = await r.json(); items = (d && d.results) || []; }
+            }
+            if (mySeq !== seq) return;
+            show(items, items.length ? '' : 'Ekkert fannst í fyrirtækjaskrá');
+          } catch (_) {
+            if (mySeq === seq) show([], '⚠ Leit mistókst');
+          }
+        }, 450);
+      });
+      bg.addEventListener('click', e => { if (!e.target.closest('._ars-rsk-q') && !e.target.closest('._ars-rsk-res')) res.style.display = 'none'; });
+    })();
     bg.querySelector('._ars-new-save').addEventListener('click', async () => {
       const errEl = bg.querySelector('._ars-new-err');
       errEl.style.display = 'none';
