@@ -78,9 +78,17 @@
     '</div>';
   }
 
-  function wire(host) {
-    host.querySelectorAll('._vk-cust').forEach(b => b.addEventListener('click', async (e) => {
-      e.stopPropagation();
+  // Ein umsjónar-hlustun með HÖFT (capture) á document. Þetta grípur smellinn
+  // ÁÐUR en nokkur foreldris-hlustun (t.d. patch 78 sem endur-teiknar
+  // Samningshafar-súluna) fær hann — svo hnappurinn hverfur ekki undan okkur.
+  // Per-element listeners duttu út þegar sektíónin var endur-sprautuð.
+  let _delegated = false;
+  function installDelegate() {
+    if (_delegated) return; _delegated = true;
+    document.addEventListener('click', async (e) => {
+      const b = e.target && e.target.closest && e.target.closest('._vk-cust');
+      if (!b) return;
+      e.preventDefault(); e.stopPropagation();
       const id = b.dataset.id, act = b.dataset.act;
       const P = { komid: { custody_status: 'komid' }, hladid: { custody_status: 'tilbuid', service_choice: 'hladid' },
         onytt: { custody_status: 'tilbuid', service_choice: 'onytt' }, nytt: { custody_status: 'tilbuid', service_choice: 'nytt' },
@@ -90,7 +98,7 @@
       const local = _shop.find(u => String(u.id) === String(id)); if (local) Object.assign(local, P);
       await saveCustody(id, P);
       await loadShop(true); inject(true);
-    }));
+    }, true);
   }
 
   async function inject(force) {
@@ -104,8 +112,6 @@
         const old = body.querySelector('#_vk-loaned');
         if (old) old.remove();
         body.insertAdjacentHTML('afterbegin', sectionHtml());
-        const sec = body.querySelector('#_vk-loaned');
-        if (sec) wire(sec);
       });
       setTimeout(() => { _injecting = false; }, 30);
     } finally { _busy = false; }
@@ -113,6 +119,7 @@
 
   // fylgjast með view-workshop: þegar Workshop.render() endurbyggir → sprauta aftur
   function watch() {
+    installDelegate();
     let t = null;
     const obs = new MutationObserver(() => {
       if (_injecting) return;
@@ -137,6 +144,6 @@
   else watch();
 
   window.VkLoaned = { inject: () => inject(true) };
-  console.log('[verkstaedi-loaned] v1 installed');
+  console.log('[verkstaedi-loaned] v2 installed (delegated click)');
 })();
 /* === END VERKSTÆÐI: KOMIÐ ÚR ÞJÓNUSTU === */
