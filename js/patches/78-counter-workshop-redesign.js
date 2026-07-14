@@ -200,7 +200,7 @@
           `<span style="font-family:'Space Mono',monospace;font-size:10px;color:#047857;font-weight:700;flex:none">${dnum(j.num)}</span>` +
           `<span class="cw-rcard-name" style="font-size:13px;font-weight:600;color:#11141c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</span>` +
         '</div>' +
-        `<div style="font-family:'Space Mono',monospace;font-size:10.5px;color:#047857">${live(j.units).length} slökkvitæki${jobDate(j) ? ' · ' + jobDate(j) : ''}</div>` +
+        `<div style="font-family:'Space Mono',monospace;font-size:10.5px;color:#047857;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${live(j.units).length} slökkvitæki${jobDate(j) ? ' · ' + jobDate(j) : ''}</div>` +
       '</div>' +
       `<button type="button" class="_cw-del" onclick="event.stopPropagation();window.Workshop&&Workshop.deleteVerkGroup&&Workshop.deleteVerkGroup([${j.id}])" title="Eyða verki (fer í Eydd verk)" style="flex:none;align-self:center;border:0;background:transparent;color:#b91c1c;font-size:13px;line-height:1;padding:2px 4px;cursor:pointer;opacity:.55">🗑</button>` +
       `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;padding:4px 8px;background:#fffbeb;border:1px solid #fde68a;color:#b45309;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
@@ -221,7 +221,7 @@
           return '<div class="cw-rcard" style="display:flex;gap:8px;padding:7px 8px;border-radius:8px;margin-bottom:3px;background:#f0fdf4;border:1px solid #bbf7d0">' +
             '<div class="cw-rcard-info" onclick="event.stopPropagation();Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
               `<div style="font-family:var(--mono,monospace);font-size:10px;color:#059669;font-weight:600">${dnum(j.num)}</div>` +
-              `<div style="font-size:12px;color:#0f172a;margin:1px 0">${live(j.units).length} slökkvitæki</div>` +
+              `<div style="font-size:12px;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${live(j.units).length} slökkvitæki</div>` +
             '</div>' +
             `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;margin-right:5px;padding:3px 8px;background:#fff;border:1px solid #fbbf24;color:#92400e;border-radius:99px;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
             `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt ✓</button>` +

@@ -578,6 +578,8 @@ body.bs-active #qr-fab,body.bs-active #_slokk_langbtn,
 body.bs-active #_mnav_btn,body.bs-active #_mobnav_btn,body.bs-active #_slokk_hamb,
 body.bs-active .mobile-nav-toggle,body.bs-active .mobile-nav-backdrop,body.bs-active .mobile-nav-drawer,
 body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav_drawer{display:none!important}
+/* fljótandi 🤖/🎨-takkar (238/230) sitja á z-index >9000 og gægðust yfir yfirlagið */
+body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore{display:none!important}
 /* the app's .topbar IS the sidebar (position:fixed/width/min-height/flex-direction:column !important) — neutralise that hijack of OUR nested topbars */
 #${VIEW_ID} .topbar,._bs-sheet .topbar{position:sticky!important;top:0!important;left:auto!important;right:auto!important;bottom:auto!important;width:auto!important;min-height:0!important;height:auto!important;flex-direction:row!important;display:flex!important}
 ._bs-sheet{position:fixed;inset:0;z-index:1100;overflow-y:auto;-webkit-overflow-scrolling:touch;transform:translateX(100%);transition:transform .24s cubic-bezier(.32,.72,0,1);background:#41454d}
@@ -1244,11 +1246,44 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
     const h = (location.hash || '').replace(/^#/, '').toLowerCase();
     return h === NAV_KEY || h === 'drivers';
   }
+  // Hide the fullscreen driver overlay + restore the sidebar (same cleanup the
+  // switchView wrapper does). Needed on hashchange too: a board patch installed
+  // ABOVE this wrapper (e.g. 231 Verkborð) short-circuits its own view without
+  // calling through, so the wrapper's cleanup never ran → the overlay stayed
+  // covering the app on mobile.
+  function hideOverlay() {
+    try {
+      const v = document.getElementById(VIEW_ID);
+      if (v) { v.style.display = 'none'; v.classList.remove('active'); }
+      document.body.classList.remove('bs-active');
+    } catch (_) {}
+  }
+  // NB: a boot-lander steal gets MIRRORED into the hash via replaceState
+  // (patch 218 wrapper) without firing hashchange — so the loop must NOT
+  // poll location.hash to decide to stop. Real navigation (a hashchange
+  // event) re-enters openFromHash, bumps _navGen and kills the old loop.
+  let _navGen = 0;
   function openFromHash() {
-    if (!hashIsMine()) return;
+    _navGen++;
+    if (!hashIsMine()) {
+      // navigated away by hash while the driver overlay is up → close it
+      // (locked ?driver mode keeps snapping back as designed — hashIsMine()
+      // is always true there, so this branch never runs when LOCKED).
+      if (document.body.classList.contains('bs-active')) hideOverlay();
+      return;
+    }
+    const gen = _navGen;
     const deadline = Date.now() + 5000;
+    let skippedOnce = false;
     (function tick() {
-      if (_userTook || Date.now() > deadline) return;          // user took over / gave up
+      if (_userTook || gen !== _navGen || Date.now() > deadline) return;  // user took over / navigated / gave up
+      // Foreign hash? Two possibilities: (a) REAL navigation whose hashchange
+      // hasn't dispatched yet — showing now would replaceState the hash back
+      // and swallow the navigation; (b) a boot-lander steal mirrored silently
+      // via replaceState (no event) — then we SHOULD re-assert. Skip ONE tick:
+      // (a) bumps _navGen before the next tick and kills the loop, (b) doesn't.
+      if (!hashIsMine() && !skippedOnce) { skippedOnce = true; setTimeout(tick, 70); return; }
+      skippedOnce = false;
       try {
         const active = document.querySelector('.view.active');
         if (!active || active.id !== VIEW_ID) show();           // re-assert if a lander stole focus

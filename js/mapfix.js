@@ -40,6 +40,26 @@
     try { localStorage.setItem(CACHE_KEY, JSON.stringify(c)); } catch(e){}
   }
 
+  // 2026-07-14: only geocode plausible STREET addresses. Company names and
+  // "Pósthólf …" PO boxes 404 on every single load. Failed lookups get a
+  // 7-day tombstone in the same _slokk_gc cache under a '__neg__:' key so
+  // they aren't retried every open (plain cache[key] reads never see them).
+  var NEG_PREFIX = '__neg__:';
+  var NEG_TTL_MS = 7*86400000;
+  function plausibleAddress(a){
+    if(!a) return false;
+    a = String(a).trim();
+    if(a.length < 4) return false;
+    if(/^p[oó]sth[oó]lf/i.test(a) || /^p\.?\s*o\.?\s*box\b/i.test(a)) return false;
+    // typical Icelandic address: street word(s) + house number
+    return /[A-Za-zÁÉÍÓÚÝÆÖÞÐáéíóúýæöþð]/.test(a) && /\d/.test(a);
+  }
+  function negFresh(cache, addr){
+    var t = cache[NEG_PREFIX + addr];
+    return !!(t && t.ts && (Date.now() - t.ts) < NEG_TTL_MS);
+  }
+  window._slokkGeoGuard = { plausibleAddress: plausibleAddress, negFresh: negFresh, NEG_PREFIX: NEG_PREFIX };
+
   function statusFor(units, companyName){
     var _today = new Date().toISOString().substring(0,10);
     var _d30 = new Date(Date.now()+30*86400000).toISOString().substring(0,10);
@@ -206,16 +226,23 @@
     if(btn){ btn.textContent = '\u23F3 Uppfæri...'; btn.disabled = true; }
     var cache = readCache();
     var toGeocode = Companies.list.filter(function(c){
-      return !(cache[c.nafn] || cache[c.heimilisfang||'']);
+      if(cache[c.nafn] || cache[c.heimilisfang||'']) return false;
+      // never send the company NAME or a PO box to the geocoder (certain 404)
+      if(!plausibleAddress(c.heimilisfang)) return false;
+      if(negFresh(cache, c.heimilisfang)) return false;   // failed recently - skip
+      return true;
     });
     if(btn) btn.textContent = '\u23F3 '+toGeocode.length+' eftir...';
     for(var i=0;i<toGeocode.length;i++){
       var c = toGeocode[i];
       if(btn) btn.textContent = '\u23F3 '+(i+1)+'/'+toGeocode.length;
-      var coord = await geocodeAddress(c.heimilisfang || c.nafn);
+      var coord = await geocodeAddress(c.heimilisfang);
       if(coord){
         cache[c.nafn] = coord;
         if(c.heimilisfang) cache[c.heimilisfang] = coord;
+        writeCache(cache);
+      } else {
+        cache[NEG_PREFIX + c.heimilisfang] = { ts: Date.now() };   // 7-daga tombstone
         writeCache(cache);
       }
       await new Promise(function(res){ setTimeout(res, 1000); });

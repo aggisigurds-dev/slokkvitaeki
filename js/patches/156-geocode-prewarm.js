@@ -51,6 +51,21 @@
     try { window.Leidsogn && window.Leidsogn.refresh && window.Leidsogn.refresh(); } catch (_) {}
   }
 
+  // 2026-07-14: shared guard from mapfix.js — only geocode plausible street
+  // addresses (never the company NAME or a "Pósthólf …" PO box → certain 404)
+  // and honour/write the 7-day '__neg__:' failure tombstones in _slokk_gc so
+  // dead lookups aren't retried on every page load.
+  const geoGuard = () => window._slokkGeoGuard || null;
+  function addrOk(gc, addr) {
+    const g = geoGuard();
+    if (!g) return !!addr;                       // mapfix.js not loaded — old behaviour
+    return g.plausibleAddress(addr) && !g.negFresh(gc, addr);
+  }
+  function writeNeg(addr) {
+    const g = geoGuard(); if (!g || !addr) return;
+    const gc = readGc(); gc[g.NEG_PREFIX + addr] = { ts: Date.now() }; writeGc(gc);
+  }
+
   async function geocodeOne(address) {
     if (!address || address.length < 3) return null;
     try {
@@ -96,10 +111,11 @@
     const currentMonth = (new Date()).getMonth() + 1; // 1..12
     return customers
       .filter(c => {
-        const addr = c.heimilisfang || c.nafn;
-        if (!addr) return false;
+        // only a plausible street address is worth geocoding — the company
+        // NAME / "Pósthólf …" always 404s (and burns the Nominatim budget).
         if (gc[c.nafn]) return false;
         if (c.heimilisfang && gc[c.heimilisfang]) return false;
+        if (!addrOk(gc, c.heimilisfang)) return false;
         return true;
       })
       // Prioritize current-month customers — they're the ones the user is
@@ -148,7 +164,7 @@
         _done++;
         continue;
       }
-      const addr = co.heimilisfang || co.nafn;
+      const addr = co.heimilisfang;
       const coord = await geocodeOne(addr);
       if (coord) {
         const gc2 = readGc();
@@ -156,6 +172,8 @@
         if (co.heimilisfang) gc2[co.heimilisfang] = coord;
         writeGc(gc2);
         notifyMaps();   // drop the new pin live (throttled)
+      } else {
+        writeNeg(addr);   // 7-daga tombstone — ekki reyna aftur í hverri opnun
       }
       _done++;
       if (i < work.length - 1) {

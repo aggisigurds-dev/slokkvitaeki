@@ -7,6 +7,30 @@
   function fmtKr(n){if(!n&&n!==0)return'—';const s=Math.round(n).toString();const r=[];let t=s;while(t.length>3){r.unshift(t.slice(-3));t=t.slice(0,-3);}r.unshift(t);return r.join('.')+' kr';}
   function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 
+  // 2026-07-14: birtingar-hreinsun á ógreiddum sölum (breytir ALDREI solur-röðum):
+  //  a) sleppa röðum með samtals=0 OG engum merkingarbærum viðskiptavini
+  //     (tómt / "0" / "—" / "Viðskiptavinur" placeholder);
+  //  b) para kreditreikninga: neikvæð upphæð + ógreidd jákvæð upphæð sömu
+  //     stærðar hjá SAMA viðskiptavini = uppgert par → bæði út af listanum.
+  //     Íhaldssamt: aðeins nákvæm upphæða-speglun (X og −X) parast.
+  function netUnpaidRows(rows, getName, getAmt){
+    const meaningless = n => { const s=String(n==null?'':n).trim(); return !s || s==='0' || s==='—' || /^viðskiptavinur$/i.test(s); };
+    const list = (rows||[]).filter(r => {
+      const amt = Math.round(parseFloat(getAmt(r))||0);
+      return !(amt===0 && meaningless(getName(r)));
+    });
+    const key = r => String(getName(r)||'').trim().toLowerCase();
+    const drop = new Set();
+    list.forEach((neg,i) => {
+      const na = Math.round(parseFloat(getAmt(neg))||0);
+      if (na >= 0 || drop.has(i)) return;
+      const j = list.findIndex((pos,k) => !drop.has(k) && k!==i &&
+        Math.round(parseFloat(getAmt(pos))||0) === -na && key(pos)===key(neg) && key(neg)!=='');
+      if (j !== -1) { drop.add(i); drop.add(j); }
+    });
+    return list.filter((_,i)=>!drop.has(i));
+  }
+
   function ensureNav(){
     if (document.querySelector('.vnav-btn[data-view="stjornstod"]')) return;
     const sample = document.querySelector('.vnav-btn[data-view="counter"]') || document.querySelector('.vnav-btn[data-view="yfirlit"]');
@@ -78,7 +102,13 @@
     ]);
 
     const monthRev = (revM.data||[]).reduce((s,r)=>s+(parseFloat(r.samtals)||0),0);
-    const unpaidTotal = (unpaid.data||[]).reduce((s,r)=>s+(parseFloat(r.samtals)||0),0);
+    // 2026-07-14: hreinsa ógreiddu-listann (birting eingöngu — solur óbreyttar):
+    //  a) 0-kr raðir án merkingarbærs viðskiptavinar ("0", tómt, "Viðskiptavinur")
+    //     eru ekki útistandandi krafa;
+    //  b) reikningur + kreditreikningur sama viðskiptavinar sem núlla hvor annan
+    //     út (t.d. SAFÍR ±323.331) teljast uppgerð par og detta bæði út.
+    const unpaidRows = netUnpaidRows(unpaid.data||[], r=>r.customer_nafn, r=>r.samtals);
+    const unpaidTotal = unpaidRows.reduce((s,r)=>s+(parseFloat(r.samtals)||0),0);
     const techs = new Set((todayJobs.data||[]).map(r=>r.assigned_to).filter(Boolean));
 
     // Build the last-7-days revenue buckets. Key = YYYY-MM-DD in LOCAL
@@ -138,7 +168,7 @@
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:20px">
           ${cardHtml('💰', 'Tekjur þessa mánaðar', fmtKr(monthRev), '#16a34a', '#dcfce7')}
-          ${cardHtml('⚠️', 'Útistandandi kröfur', fmtKr(unpaidTotal), '#dc2626', '#fee2e2', `${(unpaid.data||[]).length} reikningar`)}
+          ${cardHtml('⚠️', 'Útistandandi kröfur', fmtKr(unpaidTotal), '#dc2626', '#fee2e2', `${unpaidRows.length} reikningar`)}
           ${cardHtml('🔧', 'Verk í gangi', (openJobs.data||[]).length, '#3b82f6', '#dbeafe')}
           ${cardHtml('📍', 'Verk í dag', (todayJobs.data||[]).length, '#8b5cf6', '#ede9fe', `${techs.size} tæknimenn úti`)}
           ${cardHtml('🔥', 'Tæki sem þurfa skoðun', (dueInsp.data||[]).length, '#f59e0b', '#fef3c7', 'Næstu 30 daga')}
@@ -161,7 +191,7 @@
 
           <div class="cc-section">
             <h3>⚠️ Stærstu ógreiddu</h3>
-            ${(unpaid.data||[]).slice(0,5).map(u=>`
+            ${unpaidRows.slice().sort((a,b)=>(parseFloat(b.samtals)||0)-(parseFloat(a.samtals)||0)).slice(0,5).map(u=>`
               <div class="cc-row">
                 <div><strong>${esc(u.customer_nafn||'')}</strong></div>
                 <div style="font-size:13px;color:#dc2626;font-weight:600">${fmtKr(u.samtals)}</div>
