@@ -98,8 +98,41 @@ exports.handler = async (event) => {
     if (sale.customer_id) { try { site = await fetchFyrirtaeki(sale.customer_id); } catch (_) {} }
 
     const payload = buildPayload(sale, customer, { mode, site });
-    const custEmail = (customer && customer.netfang) || '';
-    if (dry) return json(200, { ok: true, dry: true, mode, payload, sale, customer });
+
+    // ── Delivery override (used by the test send + explicit email requests) ──
+    // delivery:'email' forces the invoice to be e-mailed to the customer (no
+    // electronic-invoice attempt); email_override sets the recipient address.
+    if (body.email_override) payload.customer.email = String(body.email_override).trim();
+    if (body.delivery === 'email') { payload.createElectronicInvoice = false; payload.sendEmail = true; }
+    else if (body.delivery === 'electronic') { payload.createElectronicInvoice = true; payload.sendEmail = false; }
+
+    // ── Úttektarskýrsla fylgiskjal — ONLY for inspection invoices ──────────
+    // HARD SAFETY GATE: attach the report ONLY when the sale really is an
+    // úttekt (source==='uttekt'). A regular POS sale (source 'pos'/'sott'/null)
+    // can NEVER carry the report, even if the client asks for it.
+    const attachReport = body.attach_report !== false; // default on
+    let attachment = null, attachSkipReason = null;
+    if (attachReport) {
+      if (sale.source !== 'uttekt') {
+        attachSkipReason = 'sale.source er ekki uttekt (' + (sale.source || 'null') + ') — engin skýrsla fest';
+      } else {
+        try {
+          attachment = await findReportPdf(sale, body.report_storage_path);
+          if (!attachment) attachSkipReason = 'engin úttektarskýrsla fannst fyrir þennan reikning/ár';
+        } catch (e) { attachSkipReason = 'skýrslu-sókn brást: ' + String(e.message || e); }
+      }
+    } else {
+      attachSkipReason = 'attach_report=false';
+    }
+
+    const custEmail = payload.customer.email || (customer && customer.netfang) || '';
+    if (dry) return json(200, {
+      ok: true, dry: true, mode, payload, sale, customer,
+      attachment: attachment ? { name: attachment.name, bytes: attachment.bytes.length, path: attachment.path } : null,
+      would_attach: !!attachment,
+      attach_skip_reason: attachSkipReason,
+      delivery: payload.createElectronicInvoice ? 'electronic' : (payload.sendEmail ? 'email' : 'none'),
+    });
 
     const token = await getAccessToken();
     // Payday requires customer to exist first — find by ssn or create.
@@ -109,7 +142,7 @@ exports.handler = async (event) => {
     payload.customer = { id: customerId };
     let created, fellBackToNonElectronic = false;
     try {
-      created = await createInvoice(token, payload);
+      created = await createInvoice(token, payload, attachment);
     } catch (invErr) {
       const msg = String(invErr.message || invErr);
       // Kúnni tekur EKKI við rafrænum reikningum (Payday 400) → reyna aftur án
@@ -120,7 +153,7 @@ exports.handler = async (event) => {
         payload.sendEmail = !!custEmail;
         fellBackToNonElectronic = true;
         try {
-          created = await createInvoice(token, payload);
+          created = await createInvoice(token, payload, attachment);
         } catch (invErr2) {
           return json(502, { error: String(invErr2.message || invErr2), retriedWithoutElectronic: true, customerId, payload });
         }
@@ -138,7 +171,11 @@ exports.handler = async (event) => {
     // Writeback: merkja söluna sem invoiced
     await markSaleInvoiced(sale.id, created);
 
-    return json(200, { ok: true, mode, fellBackToNonElectronic, payload, created, customerId });
+    return json(200, {
+      ok: true, mode, fellBackToNonElectronic, payload, created, customerId,
+      attached_report: attachment ? { name: attachment.name, bytes: attachment.bytes.length } : null,
+      attach_skip_reason: attachment ? null : attachSkipReason,
+    });
   } catch (e) {
     return json(500, { error: String(e.message || e) });
   }
@@ -391,19 +428,88 @@ async function cancelInvoice(token, invoiceId) {
   throw new Error('Payday cancel mistókst — reyndi DELETE + PATCH variants. Sjá log: ' + JSON.stringify(attempts));
 }
 
-async function createInvoice(token, payload) {
-  const r = await fetch(API_BASE + INVOICES_PATH, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json', Accept: 'application/json',
-      Authorization: `Bearer ${token}`, 'Api-Version': API_VERSION,
-    },
-    body: JSON.stringify(payload),
-  });
+async function createInvoice(token, payload, attachment) {
+  let r;
+  if (attachment && attachment.bytes) {
+    // Multipart: Payday "Create invoice with attachment" — field `data` holds
+    // the invoice JSON, `attachment1` the PDF. fetch sets the multipart
+    // Content-Type + boundary itself (do NOT set it manually).
+    const fd = new FormData();
+    fd.append('data', JSON.stringify(payload));
+    fd.append('attachment1', new Blob([attachment.bytes], { type: 'application/pdf' }), attachment.name || 'skyrsla.pdf');
+    r = await fetch(API_BASE + INVOICES_PATH, {
+      method: 'POST',
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}`, 'Api-Version': API_VERSION },
+      body: fd,
+    });
+  } else {
+    r = await fetch(API_BASE + INVOICES_PATH, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json', Accept: 'application/json',
+        Authorization: `Bearer ${token}`, 'Api-Version': API_VERSION,
+      },
+      body: JSON.stringify(payload),
+    });
+  }
   const txt = await r.text();
   let data; try { data = JSON.parse(txt); } catch(_) { data = { raw: txt }; }
   if (!r.ok) throw new Error(`Payday invoice ${r.status}: ${txt.slice(0,500)}`);
   return data;
+}
+
+// ── Report (úttektarskýrsla) PDF lookup + download ───────────────────────────
+// Resolves the inspection report PDF for a sale and returns its bytes. Caller
+// MUST have already verified sale.source==='uttekt' (safety gate). Source order:
+//   1. explicit storage_path (test / client-provided)
+//   2. AppSettings.company_attachments[customer_id] — kind='skyrsla', matching year
+//   3. customer_documents.storage_path (Drive-indexed rows that were mirrored)
+// All live in the Supabase `samningar` storage bucket. Returns null if none.
+async function findReportPdf(sale, explicitPath) {
+  let path = explicitPath || null;
+  const year = String(new Date(sale.created_at).getFullYear());
+  const coId = sale.customer_id;
+  if (!path && coId) {
+    const settings = await fetchAppSettings();
+    const list = settings && settings.company_attachments && settings.company_attachments[String(coId)];
+    if (Array.isArray(list)) {
+      const hit = list.find(a => a && a.kind === 'skyrsla' && String(a.year || '') === year)
+               || list.find(a => a && a.kind === 'skyrsla'); // any skýrsla if the year doesn't line up
+      if (hit && hit.path) path = hit.path;
+    }
+  }
+  if (!path && coId) {
+    const cd = await fetchReportDoc(coId, year);
+    if (cd && cd.storage_path) path = cd.storage_path;
+  }
+  if (!path) return null;
+  const objUrl = `${SUPABASE_URL}/storage/v1/object/samningar/` + path.split('/').map(encodeURIComponent).join('/');
+  const r = await fetch(objUrl, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+  if (!r.ok) throw new Error('storage download ' + r.status + ' fyrir ' + path);
+  const buf = Buffer.from(await r.arrayBuffer());
+  const name = (path.split('/').pop() || 'skyrsla.pdf').replace(/^\d+_/, '');
+  return { bytes: buf, name, path };
+}
+
+async function fetchAppSettings() {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/app_settings?id=eq.1&select=settings`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return (rows[0] && rows[0].settings) || null;
+  } catch (_) { return null; }
+}
+async function fetchReportDoc(coId, year) {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/customer_documents?fyrirtaeki_id=eq.${encodeURIComponent(coId)}&doc_type=in.(uttektarskyrsla,uttektarsk%C3%BDrsla)&year=eq.${encodeURIComponent(year)}&storage_path=not.is.null&select=storage_path&limit=1`, {
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+    });
+    if (!r.ok) return null;
+    const rows = await r.json();
+    return rows[0] || null;
+  } catch (_) { return null; }
 }
 
 async function readCachedToken() {
