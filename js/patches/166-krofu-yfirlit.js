@@ -302,6 +302,20 @@
     return !s.paid_at && !s.krafa_sent_at && !s.invoiced_at && !s.dk_invoice_id;
   }
 
+  // 2026-07-14: when an INSPECTION krafa (source='uttekt') is sent to Payday,
+  // advance the ÞjónustuVerkstæði workflow (patch 266 ArsWorkflow): the invoice
+  // went → „Reikningur sendur"; if the úttektarskýrsla rode along as a fylgiskjal
+  // (payday-push returns attached_report) → „Skýrsla send" too.
+  function markWorkflowSent(sale, resp) {
+    try {
+      if (!sale || sale.source !== 'uttekt' || !sale.customer_id) return;
+      if (!window.ArsWorkflow || !ArsWorkflow._write) return;
+      const patch = { uttekt: true, reikningur: true };
+      if (resp && resp.attached_report) patch.send = true;
+      ArsWorkflow._write(sale.customer_id, patch, { field_inspected_year: ArsWorkflow.curYear });
+    } catch (_) {}
+  }
+
   function monthBounds(d) {
     const start = new Date(d.getFullYear(), d.getMonth(), 1);
     const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
@@ -323,7 +337,7 @@
     // 'greitt_sidar' is excluded — it has its own page (Til að rukka).
     // 2026-05-21: pull updated_at too so the sort options can use it.
     let q = SB.from('solur')
-      .select('id,num,customer_nafn,customer_id,customer_base_id,customer_kt,samtals,greitt_med,athugasemdir,krafa_note,created_at,updated_at,paid_at,invoiced_at,krafa_sent_at,dk_invoice_id,is_credit,credit_of')
+      .select('id,num,customer_nafn,customer_id,customer_base_id,customer_kt,samtals,greitt_med,athugasemdir,krafa_note,created_at,updated_at,paid_at,invoiced_at,krafa_sent_at,dk_invoice_id,is_credit,credit_of,source')
       .eq('greitt_med', 'reikningur');
     const vf = _state.viewFilter || 'krofur';
     if (vf === 'krofur')        q = q.is('paid_at', null);                      // útistandandi (eins og áður)
@@ -784,6 +798,7 @@
           });
           const j = await r.json().catch(() => ({}));
           if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+          markWorkflowSent(sale, j);
           if (window.Toast && Toast.show) Toast.show('🏦 ✓ Krafa send í Payday');
           await load(_state.month);
         } catch (e) {
@@ -1045,6 +1060,7 @@
           });
           const j = await r.json().catch(() => ({}));
           if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+          markWorkflowSent(sale, j);
           sent++; results.push({ num: sale.num, ok: true });
           _state.selected.delete(String(sale.id));
         }
