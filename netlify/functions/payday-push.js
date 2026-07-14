@@ -68,12 +68,22 @@ exports.handler = async (event) => {
   let body = {};
   try { body = JSON.parse(event.body || '{}'); } catch (_) { return json(400, { error: 'Ógilt JSON' }); }
 
-  // Cancel/delete-mode: tekur payday_invoice_id og eyðir drögum úr Payday.
-  if (body.action === 'cancel' && body.payday_invoice_id) {
+  // Cancel-mode: cancels the claim + invoice in Payday (PUT). Accepts either an
+  // explicit payday_invoice_id or a sale_id (whose dk_invoice_id is looked up).
+  // On success the sale's idempotency markers are cleared so it can be re-sent.
+  if (body.action === 'cancel') {
     try {
+      let paydayId = body.payday_invoice_id || null;
+      if (!paydayId && body.sale_id) {
+        const saleRow = await fetchSale(body.sale_id);
+        paydayId = saleRow && saleRow.dk_invoice_id;
+        if (!paydayId) return json(409, { error: 'Salan er ekki með Payday-reikning (dk_invoice_id) — ekkert að afturkalla.' });
+      }
+      if (!paydayId) return json(400, { error: 'payday_invoice_id eða sale_id vantar' });
       const token = await getAccessToken();
-      const result = await cancelInvoice(token, body.payday_invoice_id);
-      return json(200, { ok: true, cancelled: body.payday_invoice_id, result });
+      const result = await cancelInvoice(token, paydayId);
+      if (body.sale_id) await clearSaleInvoiced(body.sale_id).catch(() => {});
+      return json(200, { ok: true, cancelled: paydayId, result });
     } catch (e) { return json(500, { error: String(e.message || e) }); }
   }
 
@@ -312,6 +322,18 @@ async function markSaleInvoiced(saleId, created) {
   });
 }
 
+async function clearSaleInvoiced(saleId) {
+  // Reverse markSaleInvoiced so a cancelled krafa can be re-created.
+  return fetch(`${SUPABASE_URL}/rest/v1/solur?id=eq.${encodeURIComponent(saleId)}`, {
+    method: 'PATCH',
+    headers: {
+      apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json', Prefer: 'return=minimal',
+    },
+    body: JSON.stringify({ invoiced_at: null, krafa_sent_at: null, dk_invoice_id: null }),
+  });
+}
+
 // ---- Payday auth + create --------------------------------------------------
 
 async function getAccessToken() {
@@ -399,33 +421,37 @@ async function findOrCreateCustomer(token, custObj) {
 }
 
 async function cancelInvoice(token, invoiceId) {
-  // Reyna fyrst DELETE /invoices/{id}; ef Payday styður ekki, falla á PATCH status='DELETED' eða 'CANCELLED'
-  const tryReq = async (method, body) => {
-    const opts = {
-      method,
+  // Payday cancels a SENT invoice via PUT /invoices/:id (verified against the
+  // official API collection), NOT DELETE/PATCH. Two steps:
+  //   1. Cancel the bank claim:  { status:'SENT', claimCancelledDate }
+  //   2. Cancel the invoice:     { status:'CANCELLED', cancelledDate }
+  // Step 1 is best-effort (an invoice with no claim still cancels in step 2).
+  const today = new Date().toISOString().slice(0, 10);
+  const put = async (bodyObj) => {
+    const r = await fetch(API_BASE + '/invoices/' + encodeURIComponent(invoiceId), {
+      method: 'PUT',
       headers: {
-        Accept: 'application/json',
+        'Content-Type': 'application/json', Accept: 'application/json',
         Authorization: `Bearer ${token}`, 'Api-Version': API_VERSION,
-        ...(body ? {'Content-Type':'application/json'} : {}),
       },
-    };
-    if (body) opts.body = JSON.stringify(body);
-    const r = await fetch(API_BASE + '/invoices/' + encodeURIComponent(invoiceId), opts);
+      body: JSON.stringify(bodyObj),
+    });
     const txt = await r.text();
-    let data; try { data = JSON.parse(txt); } catch(_) { data = { raw: txt }; }
+    let data; try { data = JSON.parse(txt); } catch (_) { data = { raw: txt }; }
     return { ok: r.ok, status: r.status, data, txt };
   };
-  const attempts = [];
-  // DELETE
-  let r = await tryReq('DELETE'); attempts.push({method:'DELETE', status:r.status});
-  if (r.ok) return { method: 'DELETE', ...r.data };
-  // PATCH status=DELETED
-  r = await tryReq('PATCH', { status: 'DELETED' }); attempts.push({method:'PATCH-DELETED', status:r.status});
-  if (r.ok) return { method: 'PATCH-DELETED', ...r.data };
-  // PATCH status=CANCELLED
-  r = await tryReq('PATCH', { status: 'CANCELLED' }); attempts.push({method:'PATCH-CANCELLED', status:r.status});
-  if (r.ok) return { method: 'PATCH-CANCELLED', ...r.data };
-  throw new Error('Payday cancel mistókst — reyndi DELETE + PATCH variants. Sjá log: ' + JSON.stringify(attempts));
+  const steps = [];
+  // 1. Cancel the claim in the customer's bank (keeps the invoice SENT).
+  const claim = await put({ status: 'SENT', claimCancelledDate: today });
+  steps.push({ step: 'cancel-claim', status: claim.status, ok: claim.ok });
+  // 2. Cancel the invoice itself.
+  const inv = await put({ status: 'CANCELLED', cancelledDate: today });
+  steps.push({ step: 'cancel-invoice', status: inv.status, ok: inv.ok });
+  if (!inv.ok) {
+    throw new Error('Payday cancel-invoice mistókst (' + inv.status + '): ' +
+      inv.txt.slice(0, 300) + ' — skref: ' + JSON.stringify(steps));
+  }
+  return { method: 'PUT', steps, data: inv.data };
 }
 
 async function createInvoice(token, payload, attachment) {
