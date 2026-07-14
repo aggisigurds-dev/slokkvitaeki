@@ -108,13 +108,7 @@ exports.handler = async (event) => {
     if (sale.customer_id) { try { site = await fetchFyrirtaeki(sale.customer_id); } catch (_) {} }
 
     const payload = buildPayload(sale, customer, { mode, site });
-
-    // ── Delivery override (used by the test send + explicit email requests) ──
-    // delivery:'email' forces the invoice to be e-mailed to the customer (no
-    // electronic-invoice attempt); email_override sets the recipient address.
     if (body.email_override) payload.customer.email = String(body.email_override).trim();
-    if (body.delivery === 'email') { payload.createElectronicInvoice = false; payload.sendEmail = true; }
-    else if (body.delivery === 'electronic') { payload.createElectronicInvoice = true; payload.sendEmail = false; }
 
     // ── Úttektarskýrsla fylgiskjal — ONLY for inspection invoices ──────────
     // HARD SAFETY GATE: attach the report ONLY when the sale really is an
@@ -135,13 +129,32 @@ exports.handler = async (event) => {
       attachSkipReason = 'attach_report=false';
     }
 
+    // ── Delivery method ────────────────────────────────────────────────────
+    // Priority: explicit body.delivery (tests) > the customer's saved preference
+    // (fyrirtaeki.payday_delivery: 'electronic' | 'email' | 'both') > if a report
+    // is attached, default to EMAIL (the delivery path proven to carry the
+    // fylgiskjal) > else keep buildPayload's auto default (rafrænt-first for a
+    // real kt, e-mail fallback). Whichever electronic path runs still falls back
+    // to e-mail if the customer rejects e-invoices (see the retry below).
+    const custPref = (customer && customer.payday_delivery) || (site && site.payday_delivery) || null;
+    const delivery = body.delivery || custPref || (attachment ? 'email' : null);
+    const hasEmail = !!(payload.customer.email && /@/.test(payload.customer.email));
+    if (delivery === 'email') { payload.createElectronicInvoice = false; payload.sendEmail = hasEmail; }
+    else if (delivery === 'electronic') { payload.createElectronicInvoice = true; payload.sendEmail = false; }
+    else if (delivery === 'both') { payload.createElectronicInvoice = true; payload.sendEmail = hasEmail; }
+    // else: leave buildPayload's auto default untouched.
+
     const custEmail = payload.customer.email || (customer && customer.netfang) || '';
+    const deliveryLabel = () => payload.createElectronicInvoice
+      ? (payload.sendEmail ? 'both' : 'electronic')
+      : (payload.sendEmail ? 'email' : 'none');
     if (dry) return json(200, {
       ok: true, dry: true, mode, payload, sale, customer,
       attachment: attachment ? { name: attachment.name, bytes: attachment.bytes.length, path: attachment.path } : null,
       would_attach: !!attachment,
       attach_skip_reason: attachSkipReason,
-      delivery: payload.createElectronicInvoice ? 'electronic' : (payload.sendEmail ? 'email' : 'none'),
+      delivery: deliveryLabel(),
+      delivery_source: body.delivery ? 'explicit' : (custPref ? 'customer-pref:' + custPref : (attachment ? 'report→email' : 'auto')),
     });
 
     const token = await getAccessToken();
@@ -292,7 +305,7 @@ async function fetchSale(id) {
   return rows[0] || null;
 }
 async function fetchFyrirtaeki(id) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/fyrirtaeki?id=eq.${encodeURIComponent(id)}&select=id,nafn,kennitala,netfang,heimilisfang`, {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/fyrirtaeki?id=eq.${encodeURIComponent(id)}&select=id,nafn,kennitala,netfang,heimilisfang,payday_delivery`, {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
   });
   if (!r.ok) return null;
