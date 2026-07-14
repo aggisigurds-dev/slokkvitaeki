@@ -2,7 +2,7 @@
 <html lang="is">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#C93C1D"/>
@@ -57,6 +57,10 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
    disappear. Gated on a class the inline script below removes on DOMContentLoaded
    (or a 1.8s failsafe), so a failed/slow patch can never leave the nav hidden. */
 html.sb-settling nav.view-nav { visibility: hidden !important; }
+/* Pinch-zoom restored (2026-07-14, WCAG 1.4.4 — field staff read serials in sunlight):
+   dropped maximum-scale/user-scalable from the viewport. touch-action:manipulation keeps
+   buttons responsive (no double-tap-zoom delay) without disabling pinch-zoom on content. */
+button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 </style>
 <script>
 /* Add the settling class immediately (before first paint) + a JS-independent failsafe
