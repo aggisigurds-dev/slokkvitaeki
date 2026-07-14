@@ -119,7 +119,25 @@
       data = res2.data; error = res2.error;
     }
     if (error) { console.warn('[aging-report] load:', error.message); return; }
-    invoices = (data || []).map(s => ({
+    // 2026-07-14: birtingar-hreinsun (breytir ALDREI solur-röðum):
+    //  a) sleppa 0-kr röðum án merkingarbærs viðskiptavinar ("0"/tómt/
+    //     "Viðskiptavinur" placeholder) — ekki raunveruleg krafa;
+    //  b) para kreditreikninga: −X hjá viðskiptavini á móti ógreiddum +X
+    //     (t.d. SAFÍR ±323.331) = uppgert par → bæði út af listanum og
+    //     úr samtölunum. Íhaldssamt: aðeins nákvæm upphæða-speglun parast.
+    const meaningless = n => { const t=String(n==null?'':n).trim(); return !t || t==='0' || t==='—' || /^viðskiptavinur$/i.test(t); };
+    let rows = (data || []).filter(s => !(Math.round(+(s.samtals||0))===0 && meaningless(s.customer_nafn)));
+    const nkey = s => String(s.customer_nafn||'').trim().toLowerCase();
+    const drop = new Set();
+    rows.forEach((neg,i) => {
+      const na = Math.round(+(neg.samtals||0));
+      if (na >= 0 || drop.has(i)) return;
+      const j = rows.findIndex((pos,k) => !drop.has(k) && k!==i &&
+        Math.round(+(pos.samtals||0)) === -na && nkey(pos)===nkey(neg) && nkey(neg)!=='');
+      if (j !== -1) { drop.add(i); drop.add(j); }
+    });
+    rows = rows.filter((_,i)=>!drop.has(i));
+    invoices = rows.map(s => ({
       id: s.id, num: s.num || '',
       customer: s.customer_nafn || '—',
       customer_id: s.customer_id,
