@@ -201,12 +201,36 @@
     const nafn = co.nafn || ('#' + _currentId);
     const units = (window.DB && DB.cache && Array.isArray(DB.cache.units))
       ? DB.cache.units.filter(u => u.client === co.nafn).length : 0;
-    let msg = 'Eyða viðskiptavininum "' + nafn + '"?\n\nHann hverfur úr öllum listum.';
-    if (co.er_i_thjonustu === true) msg += '\n\n⚠ Þessi viðskiptavinur er í þjónustu.';
-    if (units > 0) msg += '\n\n⚠ ' + units + ' skráð tæki halda sér í tækjalistanum.';
-    if (!window.confirm(msg)) return;
     const sb = window.DB && DB.sb;
     if (!sb) { if (window.Toast && Toast.show) Toast.show('Engin nettenging'); return; }
+
+    // 2026-07-14 (Agnar): "Taka úr Fyrirtækjaþjónustu". A company that is IN
+    // SERVICE must NOT be deleted from here — the button just takes it out of
+    // service so it drops down to "Allir viðskiptavinir", keeping the customer
+    // and ALL data (er_i_thjonustu=false, nothing removed). Only a non-service
+    // customer is actually deleted (so dupes/typos can still be removed).
+    if (co.er_i_thjonustu === true) {
+      if (!window.confirm(
+        'Taka „' + nafn + '" úr Fyrirtækjaþjónustu?\n\n' +
+        'Hann færist niður í „Allir viðskiptavinir". Öll gögn (tæki, saga, skjöl) haldast.'
+      )) return;
+      try {
+        const r = await sb.from('fyrirtaeki').update({ er_i_thjonustu: false }).eq('id', _currentId);
+        if (r.error) throw r.error;
+        const row = (window.Companies && Array.isArray(Companies.list))
+          ? Companies.list.find(x => +x.id === _currentId) : null;
+        if (row) row.er_i_thjonustu = false;
+        if (window.Toast && Toast.show) Toast.show('↩ „' + nafn + '" fært í Allir viðskiptavinir');
+        goBack();
+      } catch (e) {
+        alert('Villa: ' + ((e && e.message) || e));
+      }
+      return;
+    }
+    let msg = 'Eyða viðskiptavininum „' + nafn + '"?\n\nHann hverfur úr öllum listum.';
+    if (units > 0) msg += '\n\n⚠ ' + units + ' skráð tæki halda sér í tækjalistanum.';
+    if (!window.confirm(msg)) return;
+
     try {
       const r = await sb.from('fyrirtaeki').update({ deleted_at: new Date().toISOString() }).eq('id', _currentId);
       if (r.error) throw r.error;
@@ -470,7 +494,9 @@
           </button>
           ` : ''}
           <div style="display:flex;align-items:center;gap:10px">
-            <button id="_vd-delete" type="button" title="Eyða þessum viðskiptavin (felur hann úr öllum listum)" style="padding:6px 12px;background:var(--surface);color:var(--red);border:1px solid var(--red-bd);border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px">🗑 Eyða</button>
+            ${c.er_i_thjonustu === true
+              ? `<button id="_vd-delete" type="button" title="Taka úr Fyrirtækjaþjónustu — færist niður í Allir viðskiptavinir, öll gögn haldast" style="padding:6px 12px;background:var(--surface);color:var(--ink2);border:1px solid var(--brd2);border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px">↩ Taka úr Fyrirtækjaþjónustu</button>`
+              : `<button id="_vd-delete" type="button" title="Eyða þessum viðskiptavin (felur hann úr öllum listum)" style="padding:6px 12px;background:var(--surface);color:var(--red);border:1px solid var(--red-bd);border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;display:flex;align-items:center;gap:6px">🗑 Eyða</button>`}
             <div style="font-size:11px;color:var(--ink4)">#${esc(c.id)}</div>
           </div>
         </div>
