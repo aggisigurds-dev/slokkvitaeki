@@ -210,25 +210,34 @@
   // the companies view first, so window.Companies may be empty → the list sits
   // on „⏳ Sæki gögn…" forever. Kick Companies.load() and re-render when ready
   // (poll covers the module/AppSettings arriving late during boot).
-  let _dataKick = false, _dataPoll = null;
+  let _loading = false, _dataPoll = null;
   function dataReady() { return !!(window.Companies && Companies.list && Companies.list.length); }
-  function kickLoad() {
-    if (_dataKick || !(window.Companies && typeof Companies.load === 'function')) return;
-    _dataKick = true;
-    try { Promise.resolve(Companies.load()).then(() => { renderList(); renderPins(); }).catch(() => { _dataKick = false; }); }
-    catch (_) { _dataKick = false; }
+  // Companies.load() BAILAR ef DB.online er ósatt (tengingin er enn að ræsast við
+  // læst-boot) → má EKKI festa á einni tilraun. Reynum aftur á hverjum púls þar til
+  // DB er komið á netið OG listinn er kominn. _loading kemur í veg fyrir skörun.
+  function tryLoad() {
+    if (_loading || dataReady()) return;
+    if (!(window.Companies && typeof Companies.load === 'function')) return;
+    if (window.DB && DB.online === false) return;          // bíða eftir tengingu
+    _loading = true;
+    try {
+      Promise.resolve(Companies.load())
+        .then(() => { renderList(); renderPins(); })
+        .catch(() => {})
+        .finally(() => { _loading = false; });
+    } catch (_) { _loading = false; }
   }
   function ensureData() {
     if (dataReady()) return;
-    kickLoad();
+    tryLoad();
     if (_dataPoll) return;
     let tries = 0;
     _dataPoll = setInterval(() => {
       tries++;
       if (dataReady()) { clearInterval(_dataPoll); _dataPoll = null; renderList(); renderPins(); return; }
-      kickLoad();
-      if (tries > 60) { clearInterval(_dataPoll); _dataPoll = null; }   // ~30s cap
-    }, 500);
+      tryLoad();
+      if (tries > 80) { clearInterval(_dataPoll); _dataPoll = null; }   // ~56s cap
+    }, 700);
   }
 
   // ── equipment (uttaeki) ──────────────────────────────────────────────────
