@@ -39,6 +39,32 @@
     set('nf-heimilisfang', co.heimilisfang);
     set('nf-athugasemdir', co.athugasemdir);
 
+    // 2026-07-14: Payday afhendingarmáti fyrir þennan kúnna (rafrænt / tölvupóstur
+    // / bæði). Stýrir því hvernig payday-push afhendir kröfuna. Sjálfgefið (tómt)
+    // = rafrænt fyrst, tölvupóstur til vara; úttektarskýrsla fylgir alltaf í pósti.
+    (function ensureDeliverySelect() {
+      if (!document.getElementById('nf-payday-delivery')) {
+        const netf = document.getElementById('nf-netfang');
+        const anchor = netf ? (netf.closest('.form-row, .field, .modal-row, .nf-row') || netf.parentElement) : null;
+        if (anchor && anchor.parentElement) {
+          const wrap = document.createElement('div');
+          wrap.id = '_nf-delivery-wrap';
+          wrap.style.cssText = 'margin:10px 0';
+          wrap.innerHTML =
+            '<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">📤 Payday afhending</label>' +
+            '<select id="nf-payday-delivery" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;background:#fff">' +
+              '<option value="">Sjálfgefið (rafrænt, annars tölvupóstur)</option>' +
+              '<option value="electronic">🔗 Rafrænn reikningur</option>' +
+              '<option value="email">📧 Tölvupóstur</option>' +
+              '<option value="both">🔗 + 📧 Bæði (rafrænt og tölvupóstur)</option>' +
+            '</select>' +
+            '<div style="font-size:10.5px;color:#94a3b8;margin-top:3px">Úttektarskýrsla fylgir sjálfkrafa með í tölvupósti þegar hún er til.</div>';
+          anchor.parentElement.insertBefore(wrap, anchor.nextSibling);
+        }
+      }
+      set('nf-payday-delivery', co.payday_delivery);
+    })();
+
     const titleEl = modal.querySelector('h2');
     const origTitle = titleEl ? titleEl.textContent : null;
     if (titleEl) titleEl.textContent = 'Breyta fyrirtæki';
@@ -77,7 +103,8 @@
           netfang: get('nf-netfang'),
           tengiliður: get('nf-tengiliður'),
           heimilisfang: get('nf-heimilisfang'),
-          athugasemdir: get('nf-athugasemdir')
+          athugasemdir: get('nf-athugasemdir'),
+          payday_delivery: get('nf-payday-delivery') || null
         };
         const sb = (window.DB && DB.sb) || null;
         if (!sb) {
