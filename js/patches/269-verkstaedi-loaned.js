@@ -47,14 +47,19 @@
     return Object.keys(m).sort((a, b) => m[b].length - m[a].length || a.localeCompare(b, 'is')).map(k => ({ client: k, items: m[k] }));
   }
 
+  // ── HTML ── notar SÖMU .bw-row spjaldform og VERK-súlan vinstra megin
+  // (patch 78) svo útlitið passi. Smellir fara gegnum inline onclick →
+  // window.VkLoaned.act/del (sama áreiðanlega mynstur og Counter.* í appinu;
+  // umsjónar-hlustun var étin af annarri capture-hlustun á lifandi síðunni).
   function sectionHtml() {
     const grp = byClient();
-    const INK = '#11141c', INK3 = '#6b7280';
     const stBtn = (id, act, label, col) =>
-      '<button type="button" class="_vk-cust" data-id="' + id + '" data-act="' + act + '" style="border:0;background:' + col + ';color:#fff;border-radius:6px;padding:3px 7px;font:inherit;font-size:10.5px;font-weight:700;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.22)">' + label + '</button>';
+      '<button type="button" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.act(\'' + id + '\',\'' + act + '\')" ' +
+        'style="border:0;background:' + col + ';color:#fff;border-radius:7px;padding:5px 10px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.22)">' + label + '</button>';
     // lítið Eyða-merki (🗑) — fjarlægir tækið ef mistalið úr skýrslu
     const delBtn = (id) =>
-      '<button type="button" class="_vk-del" data-id="' + id + '" title="Eyða tæki" style="border:0;background:transparent;color:#b91c1c;border-radius:5px;padding:1px 3px;font-size:12px;line-height:1;cursor:pointer;opacity:.6">🗑</button>';
+      '<button type="button" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.del(\'' + id + '\')" title="Eyða tæki" ' +
+        'style="border:0;background:transparent;color:#b91c1c;border-radius:5px;padding:2px 4px;font-size:13px;line-height:1;cursor:pointer;opacity:.55">🗑</button>';
     const row = (u) => {
       const cs = u.custody_status || 'null';
       const meta = [u.type || 'Tæki', u.size, u.serial].filter(Boolean).map(esc).join(' · ');
@@ -62,62 +67,49 @@
       let actions = '';
       if (cs === 'null') actions = stBtn(u.id, 'komid', '✅ Komið', '#2563eb');
       else if (cs === 'komid') actions = stBtn(u.id, 'hladid', '🔋 Hlaðið', '#16a34a') + stBtn(u.id, 'onytt', '❌ Ónýtt', '#dc2626') + stBtn(u.id, 'nytt', '🆕 Nýtt', '#d97706');
-      else if (cs === 'tilbuid') actions = '<span style="font-size:10.5px;color:#fff;background:#059669;border-radius:99px;padding:1px 7px;font-weight:700">' + (DISP[u.service_choice] || 'Tilbúið') + '</span>' + stBtn(u.id, 'farid', '➡️ Farið', '#7c3aed');
-      else if (cs === 'farid') actions = '<span style="font-size:10.5px;color:#6d28d9;background:#ede9fe;border:1px solid #c4b5fd;border-radius:99px;padding:1px 7px;font-weight:700">🚚 Bíður skila</span>';
-      return '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px solid #eef2f7">' +
-        '<span style="width:7px;height:7px;border-radius:50%;flex:none;background:' + pill.col + '"></span>' +
-        '<span style="font-size:11.5px;color:' + INK + ';font-weight:600;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + meta + '</span>' +
-        '<span style="display:flex;align-items:center;gap:4px;flex:none">' + actions + delBtn(u.id) + '</span>' +
+      else if (cs === 'tilbuid') actions = '<span style="font-size:11px;color:#fff;background:#059669;border-radius:99px;padding:2px 8px;font-weight:700">' + (DISP[u.service_choice] || 'Tilbúið') + '</span>' + stBtn(u.id, 'farid', '➡️ Farið', '#7c3aed');
+      else if (cs === 'farid') actions = '<span style="font-size:11px;color:#6d28d9;background:#ede9fe;border:1px solid #c4b5fd;border-radius:99px;padding:2px 8px;font-weight:700">🚚 Bíður skila</span>';
+      return '<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-top:1px solid rgba(20,24,34,.07)">' +
+        '<span style="width:8px;height:8px;border-radius:50%;flex:none;background:' + pill.col + '"></span>' +
+        '<span style="font-size:12px;color:#11141c;font-weight:600;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + meta + '</span>' +
+        '<span style="display:flex;align-items:center;gap:5px;flex:none;flex-wrap:wrap;justify-content:flex-end">' + actions + delBtn(u.id) + '</span>' +
       '</div>';
     };
-    const body = grp.length ? grp.map(g =>
-      '<div style="padding:3px 0 1px">' +
-        '<div style="font-size:11.5px;font-weight:800;color:' + INK + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(g.client) + ' <span style="font-weight:600;color:' + INK3 + ';font-size:10.5px">· ' + g.items.length + ' tæki</span></div>' +
-        g.items.map(row).join('') +
+    // eitt .bw-row spjald per fyrirtæki (sama chrome og VERK vinstra megin)
+    const cards = grp.length ? grp.map(g =>
+      '<div class="bw-row" style="border-left-color:#2563eb">' +
+        '<div class="bw-cinfo" style="width:auto;flex:1 1 100%">' +
+          '<div class="bw-cname">' + esc(g.client) + '</div>' +
+          '<div class="bw-cmeta">' + g.items.length + ' tæki · komið úr þjónustu</div>' +
+        '</div>' +
+        '<div style="margin-top:6px">' + g.items.map(row).join('') + '</div>' +
       '</div>').join('')
-      : '<div style="padding:8px 4px;color:' + INK3 + ';font-size:11.5px">Engin tæki komin úr þjónustu núna.</div>';
-    return '<div id="_vk-loaned" style="background:#f4f7fb;border:1px solid #dbe3ee;border-radius:12px;padding:7px 9px;margin-bottom:10px">' +
-      '<div style="display:flex;align-items:center;margin-bottom:3px">' +
-        '<span style="font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#1f2937">🚚 KOMIÐ ÚR ÞJÓNUSTU</span>' +
-        (_shop.length ? '<span style="margin-left:auto;font-size:10.5px;color:#2563eb;font-weight:700">' + _shop.length + ' tæki</span>' : '') +
-      '</div>' + body +
+      : '<div style="padding:16px 8px;color:#94a3b8;font-size:12px;text-align:center">Engin tæki komin úr þjónustu núna.</div>';
+    return '<div id="_vk-loaned" style="margin-bottom:12px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin:0 2px 8px">' +
+        '<span style="font-size:12px;font-weight:800;letter-spacing:.06em;color:#3a4250">🚚 KOMIÐ ÚR ÞJÓNUSTU</span>' +
+        (_shop.length ? '<span style="margin-left:auto;font-family:\'Space Mono\',monospace;font-size:12px;color:#2563eb;font-weight:700">' + _shop.length + ' tæki</span>' : '') +
+      '</div>' + cards +
     '</div>';
   }
 
-  // Ein umsjónar-hlustun með HÖFT (capture) á document. Þetta grípur smellinn
-  // ÁÐUR en nokkur foreldris-hlustun (t.d. patch 78 sem endur-teiknar
-  // Samningshafar-súluna) fær hann — svo hnappurinn hverfur ekki undan okkur.
-  // Per-element listeners duttu út þegar sektíónin var endur-sprautuð.
-  let _delegated = false;
-  function installDelegate() {
-    if (_delegated) return; _delegated = true;
-    document.addEventListener('click', async (e) => {
-      // 🗑 Eyða tæki
-      const d = e.target && e.target.closest && e.target.closest('._vk-del');
-      if (d) {
-        e.preventDefault(); e.stopPropagation();
-        const id = d.dataset.id;
-        if (!window.confirm('Eyða þessu tæki? (t.d. ef mistalið úr skýrslu)')) return;
-        d.disabled = true; d.style.opacity = '.3';
-        _shop = _shop.filter(u => String(u.id) !== String(id));
-        await inject(false); // teikna strax án tækisins
-        await deleteUnit(id);
-        await loadShop(true); inject(true);
-        return;
-      }
-      const b = e.target && e.target.closest && e.target.closest('._vk-cust');
-      if (!b) return;
-      e.preventDefault(); e.stopPropagation();
-      const id = b.dataset.id, act = b.dataset.act;
-      const P = { komid: { custody_status: 'komid' }, hladid: { custody_status: 'tilbuid', service_choice: 'hladid' },
-        onytt: { custody_status: 'tilbuid', service_choice: 'onytt' }, nytt: { custody_status: 'tilbuid', service_choice: 'nytt' },
-        farid: { custody_status: 'farid' } }[act];
-      if (!P) return;
-      b.disabled = true; b.style.opacity = '.5';
-      const local = _shop.find(u => String(u.id) === String(id)); if (local) Object.assign(local, P);
-      await saveCustody(id, P);
-      await loadShop(true); inject(true);
-    }, true);
+  // Aðgerðir — inline onclick kallar þessar (áreiðanlegt í þessu appi).
+  async function act(id, a) {
+    const P = { komid: { custody_status: 'komid' }, hladid: { custody_status: 'tilbuid', service_choice: 'hladid' },
+      onytt: { custody_status: 'tilbuid', service_choice: 'onytt' }, nytt: { custody_status: 'tilbuid', service_choice: 'nytt' },
+      farid: { custody_status: 'farid' } }[a];
+    if (!P) return;
+    const local = _shop.find(u => String(u.id) === String(id)); if (local) Object.assign(local, P);
+    _loadedAt = Date.now(); await inject(false);   // sýna nýja stöðu strax
+    await saveCustody(id, P);
+    await loadShop(true); inject(true);
+  }
+  async function del(id) {
+    if (!window.confirm('Eyða þessu tæki? (t.d. ef mistalið úr skýrslu)')) return;
+    _shop = _shop.filter(u => String(u.id) !== String(id));
+    _loadedAt = Date.now(); await inject(false);   // hverfa strax
+    await deleteUnit(id);
+    await loadShop(true); inject(true);
   }
 
   async function inject(force) {
@@ -138,7 +130,6 @@
 
   // fylgjast með view-workshop: þegar Workshop.render() endurbyggir → sprauta aftur
   function watch() {
-    installDelegate();
     let t = null;
     const obs = new MutationObserver(() => {
       if (_injecting) return;
@@ -162,7 +153,7 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', watch);
   else watch();
 
-  window.VkLoaned = { inject: () => inject(true) };
-  console.log('[verkstaedi-loaned] v3 installed (delegated click + compact + delete)');
+  window.VkLoaned = { inject: () => inject(true), act: act, del: del };
+  console.log('[verkstaedi-loaned] v4 installed (inline onclick + bw-row card form)');
 })();
 /* === END VERKSTÆÐI: KOMIÐ ÚR ÞJÓNUSTU === */
