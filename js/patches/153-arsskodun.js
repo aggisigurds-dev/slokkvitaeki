@@ -287,7 +287,7 @@
       if (g.other) parts.push('Annað ' + g.other);
       return parts.join(' · ');
     }
-    return '<span style="display:inline-flex;gap:9px;align-items:center;justify-content:center">' +
+    return '<span class="_ars-eqtrio" style="display:inline-flex;gap:9px;align-items:center;justify-content:center">' +
       cell(g.slt, 'SLT', 'Slökkvitæki (Duft + Léttvatn + CO₂)') +
       cell(g.bsl, 'BSL', 'Brunaslöngur') +
       cell(g.rs,  'RS',  'Reykskynjarar') +
@@ -1279,16 +1279,23 @@
     const M = 'html[data-viewmode="mobile"] #view-arsskodun ';
     const T = 'html[data-viewmode="table"] #view-arsskodun ';
     s.textContent =
-      // ── 📱 Sími — single column, ≥40px taps, nothing overflows ──
-      M + '._ars-cardgrid{grid-template-columns:1fr!important;gap:10px!important}' +
-      M + '._ars-card{padding:15px 16px!important;gap:11px!important;border-radius:14px!important}' +
-      M + '._ars-cn{font-size:16px!important;line-height:1.3!important;overflow-wrap:anywhere;word-break:break-word}' +
-      M + '._ars-ca{font-size:13px!important;overflow-wrap:anywhere}' +
-      M + '._ars-cgrid{gap:8px!important;font-size:12.5px!important}' +
-      M + '._ars-cgrid>div{padding:8px 9px!important}' +
-      M + '._ars-cgrid>div>div:last-child{font-size:15px!important}' +
-      M + '._ars-card ._ars-open-fyrirt,' + M + '._ars-card ._ars-open-map{min-height:44px!important;font-size:14px!important;border-radius:10px!important}' +
-      M + '._ars-card ._ars-tu-toggle{min-height:40px!important;font-size:12.5px!important;padding:8px 12px!important}' +
+      // ── 📱 Sími — ÞÉTT single-column spjöld (~3× lægri hæð per fyrirtæki) ──
+      M + '._ars-cardgrid{grid-template-columns:1fr!important;gap:6px!important}' +
+      M + '._ars-card{padding:8px 11px!important;gap:2px!important;border-radius:10px!important}' +
+      M + '._ars-cn{font-size:13.5px!important;line-height:1.15!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      M + '._ars-ca{font-size:11px!important;margin-top:0!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      // fela kt-línu + netfangs-línu á spjaldinu (sést í ítarsýn/fyrirtæki) svo hæðin hrynur
+      M + '._ars-card ._ars-cn+div{font-size:9px!important}' +
+      // þrír stat-kassar → ein þjöppuð lína, engir rammar
+      M + '._ars-cgrid{display:flex!important;gap:12px!important;margin-top:1px!important;font-size:11px!important}' +
+      M + '._ars-cgrid>div{background:transparent!important;border:0!important;padding:0!important;display:flex!important;align-items:baseline;gap:4px}' +
+      M + '._ars-cgrid>div>div:first-child{font-size:8.5px!important;color:var(--ink3)!important}' +
+      M + '._ars-cgrid>div>div:last-child{font-size:12px!important;margin-top:0!important}' +
+      M + '._ars-eqtrio>span{flex-direction:row!important;gap:2px!important;align-items:baseline!important}' +
+      M + '._ars-eqtrio>span>span:last-child{font-size:8px!important}' +
+      // fela aðgerða-hnappana (🏢/🗺️) — snerta spjaldið opnar ítarsýn með sömu aðgerðum
+      M + '._ars-card ._ars-open-fyrirt,' + M + '._ars-card ._ars-open-map{display:none!important}' +
+      M + '._ars-card ._ars-tu-toggle{min-height:0!important;font-size:11px!important;padding:2px 8px!important}' +
       // toolbar/filters made thumb-usable regardless of window width
       M + '._ars-vm{display:none!important}' +
       M + '#_ars-search{font-size:16px!important;padding:12px 13px!important;border-radius:10px!important;width:100%!important;box-sizing:border-box!important}' +
@@ -1298,13 +1305,23 @@
       M + '._ars-statgrid{grid-template-columns:1fr 1fr!important;gap:8px!important}' +
       M + '._ars-statusrow{overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch;max-width:100%}' +
       M + '._ars-statusrow>button{flex:0 0 auto!important;white-space:nowrap}' +
-      // ── ▦ Tafla — dense rows, small text, sticky dark header, many rows ──
+      // ── ▦ Tafla — ULTRA-dense rows: ~3× lægri hæð per fyrirtæki ──
       T + 'table{font-size:11px!important;min-width:0!important}' +
       T + 'table thead{position:sticky;top:0;z-index:2}' +
       T + 'table thead tr{background:#0f172a!important;border-bottom:0!important}' +
-      T + 'table thead th{background:#0f172a!important;color:#fff!important;padding:7px 9px!important;font-size:9.5px!important;white-space:nowrap}' +
-      T + 'table tbody td{padding:5px 9px!important;font-size:11px!important}' +
-      T + 'table tbody td div{line-height:1.25!important}';
+      T + 'table thead th{background:#0f172a!important;color:#fff!important;padding:4px 8px!important;font-size:9px!important;white-space:nowrap}' +
+      // tight vertical padding + single-line cells (taflan skrunar lárétt hvort eð er)
+      T + 'table tbody td{padding:2px 8px!important;font-size:11px!important;line-height:1.1!important;white-space:nowrap!important;vertical-align:middle!important}' +
+      T + 'table tbody td div{line-height:1.1!important;margin-top:0!important}' +
+      // kt-lína örsmá (bara í nafna-dálknum)
+      T + 'table tbody td:first-child>div:nth-child(2){font-size:8.5px!important}' +
+      // fletja SLT/BSL/RS-þrenninguna í EINA línu (var 2 línur = hæsta atriðið)
+      T + '._ars-eqtrio{gap:7px!important}' +
+      T + '._ars-eqtrio>span{flex-direction:row!important;gap:2px!important;align-items:baseline!important;line-height:1!important}' +
+      T + '._ars-eqtrio>span>span:first-child{font-size:11px!important}' +
+      T + '._ars-eqtrio>span>span:last-child{font-size:8px!important}' +
+      // fela áminningar-línu í töflu (sést á spjaldinu/ítarlegri sýn)
+      T + 'table tbody td:first-child>div:nth-child(3){display:none!important}';
     document.head.appendChild(s);
   }
 
