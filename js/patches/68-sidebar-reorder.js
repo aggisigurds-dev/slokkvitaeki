@@ -373,6 +373,12 @@
     };
     new MutationObserver(schedule).observe(nav, { childList: true, subtree: false });
     schedule(); // position whatever buttons already exist before the first paint
+    // 2026-07-14: re-apply whenever AppSettings loads/changes. sidebar_hidden
+    // usually arrives from the server AFTER the first paint, and late
+    // JS-inserted buttons (e.g. Stjórnstöð, patch 61) would otherwise never get
+    // hidden — the nav MutationObserver only fires on DOM changes, not on the
+    // settings load. onChange fires on every load/save so hide state catches up.
+    if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(schedule);
   })(0);
 
   // Safety-net delegated click handler on the nav itself. If the inline
