@@ -15,6 +15,42 @@
 export default async (req) => {
   const url = new URL(req.url);
   const kt = (url.searchParams.get('kt') || '').replace(/[^0-9]/g, '');
+  const nafn = (url.searchParams.get('nafn') || '').trim();
+
+  // Name-search mode (2026-07-14): ?nafn=<query> → RSK fyrirtækjaskrá name
+  // search, returns { results: [{ kennitala, nafn, heimilisfang_full }] }.
+  // Result rows on the RSK page: <tr class="active"> with
+  //   <td><a href=".../kennitala/NNNNNNNNNN">NNNNNNNNNN</a></td>
+  //   <td>Nafn <em> </em></td> <td>Heimilisfang, 109 Reykjavík</td>
+  if (!kt && nafn.length >= 2) {
+    try {
+      const target = `https://www.skatturinn.is/fyrirtaekjaskra/leit?nafn=${encodeURIComponent(nafn)}`;
+      const r = await fetch(target, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Slokkvitaeki/1.0; +https://slokkvitaeki.netlify.app)',
+          'Accept': 'text/html',
+        },
+      });
+      if (!r.ok) {
+        return new Response(JSON.stringify({ error: `RSK ${r.status}` }), { status: 502, headers: cors() });
+      }
+      const html = await r.text();
+      const results = [];
+      const rowRe = /<tr[^>]*>\s*(?:<td[^>]*>\s*)?<td><a href="[^"]*kennitala\/(\d{10})">\d{10}<\/a><\/td>\s*<td>([\s\S]*?)<\/td>\s*<td>([\s\S]*?)<\/td>/g;
+      let m;
+      while ((m = rowRe.exec(html)) && results.length < 15) {
+        const clean = (s) => s.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        results.push({ kennitala: m[1], nafn: clean(m[2]), heimilisfang_full: clean(m[3]) });
+      }
+      return new Response(JSON.stringify({ query: nafn, results, source: 'skatturinn' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', ...cors(), 'Cache-Control': 'public, max-age=3600' },
+      });
+    } catch (e) {
+      return new Response(JSON.stringify({ error: String(e && e.message || e) }), { status: 500, headers: cors() });
+    }
+  }
+
   if (kt.length !== 10) {
     return new Response(JSON.stringify({ error: 'Invalid kennitala' }), {
       status: 400,
