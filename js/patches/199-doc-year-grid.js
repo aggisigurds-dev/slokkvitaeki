@@ -206,6 +206,37 @@
     return '<span class="sk-pill '+cls+'" title="'+esc(tip)+'">'+String(y).slice(2)+'</span>';
   }
 
+  // 2026-07-14 (ósk Agnars): aðgreina reikninga eftir uppruna á fyrirtækjaprófílnum.
+  // Byggt á `solur.source` (uttekt/pos/sott) sem er stimplað á vistunar-stað +
+  // bakfært. Náum í num→source fyrir kt kúnnans og flokkum reiknings-chippana.
+  function numKey(v){ var mm=String(v==null?'':v).match(/(\d{2,})/); return mm?String(parseInt(mm[1],10)):''; }
+  async function fetchSolurSrc(kt){
+    var sb=SB(); if(!sb||!kt) return {};
+    var d=String(kt).replace(/\D/g,''); if(d.length<7) return {};
+    var dash=d.length===10?(d.slice(0,6)+'-'+d.slice(6)):d;
+    try{
+      var r=await sb.from('solur').select('num,source').or('customer_kt.eq.'+d+',customer_kt.eq.'+dash);
+      if(r.error||!r.data) return {};
+      var m={}; r.data.forEach(function(s){ var k=numKey(s.num); if(k) m[k]=s.source||'pos'; }); return m;
+    }catch(_){ return {}; }
+  }
+  // Reiknings-chip R-númer → 'afgr' ef solur.source er pos/sott, annars 'uttekt'
+  // (sjálfgefið úttekt — prófíllinn er skoðunar-miðaður svo óþekkt skjöl teljast
+  // úttekt frekar en að fela þau ranglega undir afgreiðslu).
+  function chipInvNum(x){
+    if(!x._att && x.invoice_number) return String(x.invoice_number);
+    var nm=x._att?String(x._att.name||''):String(x.name||'');
+    var mm=nm.match(/R-?\s?0*(\d{3,})/i); return mm?('R-'+mm[1]):'';
+  }
+  function chipInvSrc(x, srcMap){
+    var k=numKey(chipInvNum(x)); var src=k?srcMap[k]:null;
+    return (src==='pos'||src==='sott')?'afgr':'uttekt';
+  }
+  function invGroup(tag, col, bg, brd, chips){
+    return '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:2px 0">'+
+      '<span style="font-size:9px;font-weight:700;color:'+col+';background:'+bg+';border:1px solid '+brd+';border-radius:99px;padding:1px 6px;white-space:nowrap">'+tag+'</span>'+chips+'</div>';
+  }
+
   async function render(section, coId){
     var hdr='<div class="sk-h"><h3>📁 Skjöl &amp; viðhengi</h3>'+
             '<button type="button" class="sk-add-btn" data-pick="1">+ Viðhengi</button></div>';
@@ -217,6 +248,7 @@
     var docs = baseId ? await fetchDocs(baseId) : [];
     if(baseId && kt) docs = await filterDocsToLocation(docs, kt, coId);
     var payday = kt ? await fetchPayday(kt) : [];
+    var srcByNum = kt ? await fetchSolurSrc(kt) : {};
 
     // ── group customer_documents per year/type ──
     var repByY={}, invByY={}, pdByY={}, samn=[];
@@ -269,8 +301,17 @@
     }
     function invCell(y){
       var arr=invByY[y]||[], pd=pdByY[y]||[];
-      var chips=arr.map(function(x){ return x._att?invAttChip(x._att):invDocChip(x); }).join('')+pd.map(pdChip).join('');
-      if(chips) return chips+addChip('reikningur',y,'＋');
+      // Flokka reikningana: 🧯 Úttekt (úr ársskoðun) vs 🧾 Afgreiðsla (POS/Sótt);
+      // Payday-kröfur í sínum eigin hóp (uppruni óviss). Aðeins hópar með innihald.
+      var utt=[], afg=[];
+      arr.forEach(function(x){ (chipInvSrc(x,srcByNum)==='afgr'?afg:utt).push(x); });
+      var chip=function(x){ return x._att?invAttChip(x._att):invDocChip(x); };
+      var uttChips=utt.map(chip).join(''), afgChips=afg.map(chip).join(''), pdChips=pd.map(pdChip).join('');
+      var groups='';
+      if(uttChips) groups+=invGroup('🧯 Úttekt','#b45309','#fff7ed','#fed7aa',uttChips);
+      if(afgChips) groups+=invGroup('🧾 Afgreiðsla','#1e40af','#eff6ff','#bfdbfe',afgChips);
+      if(pdChips)  groups+=invGroup('💳 Payday','#6d28d9','#f5f3ff','#ddd6fe',pdChips);
+      if(groups) return groups+addChip('reikningur',y,'＋');
       if(y===NOW) return addChip('reikningur',y,'+ reikningur');
       return addChip('reikningur',y,'vantar');
     }
