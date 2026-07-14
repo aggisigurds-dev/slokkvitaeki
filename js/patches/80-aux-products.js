@@ -149,7 +149,41 @@
   let _expanded = false;
   let _injecting = false;
   let _auxLookupByName = {};
+  let _auxImgByName = {};      // nafn(lc) -> mynd (product image), loaded from `vorur`
+  let _renderGridRef = null;   // set inside inject() so a late image-load can re-render
   AUX_PRODUCTS.forEach(p => { _auxLookupByName[p.nafn.trim().toLowerCase()] = p; });
+
+  // AUX_PRODUCTS only carries { nafn, flokkur, verd_an_vsk } — no image. Pull the
+  // product images from the `vorur` table (matched by name, case-insensitive) and
+  // cache them by lowercased name, then re-render the aux grid if it's already
+  // open. Runs independently of the seed gate so thumbnails always refresh.
+  function loadAuxImages() {
+    if (!window.DB || !DB.sb) { setTimeout(loadAuxImages, 700); return; }
+    DB.sb.from('vorur').select('nafn,mynd').then(r => {
+      if (r.error || !Array.isArray(r.data)) return;
+      const map = {};
+      r.data.forEach(p => { const m = p && p.mynd; if (m) map[String(p.nafn || '').trim().toLowerCase()] = m; });
+      _auxImgByName = map;
+      try {
+        const grid = document.querySelector('._aux-grid');
+        if (grid && _expanded && _renderGridRef) {
+          const s = document.querySelector('._aux-search');
+          _renderGridRef((s && s.value) || '');
+        }
+      } catch (_) {}
+    }, () => {});
+  }
+  loadAuxImages();
+
+  // Thumbnail (or 📦 placeholder) for an aux tile — mirrors the js/vorur.js pattern.
+  function auxImgHtml(nafn) {
+    const mynd = _auxImgByName[String(nafn || '').trim().toLowerCase()];
+    const box = '<div style="width:100%;height:72px;background:#f8fafc;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:24px">📦</div>';
+    if (!mynd) return box;
+    return '<img src="' + esc(mynd) + '" loading="lazy" style="width:100%;height:72px;object-fit:contain;border-radius:8px;background:#f8fafc" ' +
+      'onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' +
+      box.replace('display:flex', 'display:none');
+  }
 
   function findOriginalTile(name) {
     // Find the hidden tile in #pos-products whose product name matches.
@@ -225,6 +259,7 @@
         html +=
           '<button class="_aux-tile" data-aux-name="' + esc(p.nafn) + '" type="button" ' +
             'style="padding:10px 8px;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px">' +
+            auxImgHtml(p.nafn) +
             '<div style="font-weight:600;font-size:12px;color:#0f172a;line-height:1.2;min-height:29px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + esc(p.nafn) + '</div>' +
             '<div style="font-size:13px;color:#0f172a;font-weight:800">' + fmtKr(incVat) + '</div>' +
             '<div style="font-size:10px;color:#94a3b8">' + fmtKr(p.verd_an_vsk) + ' án vsk</div>' +
@@ -301,6 +336,7 @@
           const incVat = Math.round(p.verd_an_vsk * 1.24);
           return '<button class="_aux-tile" data-aux-name="' + esc(p.nafn) + '" type="button" ' +
             'style="padding:10px 8px;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;cursor:pointer;text-align:center;display:flex;flex-direction:column;align-items:center;gap:5px">' +
+            auxImgHtml(p.nafn) +
             '<div style="font-weight:600;font-size:12px;color:#0f172a;line-height:1.2;min-height:29px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">' + esc(p.nafn) + '</div>' +
             '<div style="font-size:13px;color:#0f172a;font-weight:800">' + fmtKr(incVat) + '</div>' +
             '<div style="font-size:10px;color:#94a3b8">' + fmtKr(p.verd_an_vsk) + ' án vsk</div>' +
@@ -312,6 +348,7 @@
       auxGrid.innerHTML = html;
     }
 
+    _renderGridRef = renderGrid;
     toggle.addEventListener('click', () => {
       _expanded = !_expanded;
       auxWrap.style.display = _expanded ? '' : 'none';
