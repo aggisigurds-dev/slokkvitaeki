@@ -64,6 +64,16 @@
       link.setAttribute('href', '/manifest-bilstjori.json?v=1');
       const tc = document.querySelector('meta[name="theme-color"]');
       if (tc) tc.setAttribute('content', '#0a0b0d');
+      // Driver app = full-width phone app. The base .bt.screen caps at 440px
+      // and centers — on a wide/PWA layout viewport that leaves ugly grey
+      // margins („wide view"). Locked mode fills the screen edge-to-edge.
+      const st = document.createElement('style');
+      st.id = '_bs-locked-css';
+      st.textContent =
+        '#view-bilstjori #_bs-root.bt.screen{max-width:100%!important}' +
+        '#view-bilstjori .bt .dock,#view-bilstjori .bt.screen .dock,#view-bilstjori .bt .dock--wide{max-width:100%!important}' +
+        '._bs-sheet.bt.screen{max-width:100%!important}';
+      (document.head || document.documentElement).appendChild(st);
     } catch (_) {}
   }
 
@@ -194,6 +204,31 @@
       ((DUE[a.status.key] ?? 9) - (DUE[b.status.key] ?? 9)) ||
       String(a.co.nafn).localeCompare(b.co.nafn, 'is'));
     return { ready:true, list };
+  }
+
+  // Locked /app/bilstjori/ boots STRAIGHT into this view — nothing navigated to
+  // the companies view first, so window.Companies may be empty → the list sits
+  // on „⏳ Sæki gögn…" forever. Kick Companies.load() and re-render when ready
+  // (poll covers the module/AppSettings arriving late during boot).
+  let _dataKick = false, _dataPoll = null;
+  function dataReady() { return !!(window.Companies && Companies.list && Companies.list.length); }
+  function kickLoad() {
+    if (_dataKick || !(window.Companies && typeof Companies.load === 'function')) return;
+    _dataKick = true;
+    try { Promise.resolve(Companies.load()).then(() => { renderList(); renderPins(); }).catch(() => { _dataKick = false; }); }
+    catch (_) { _dataKick = false; }
+  }
+  function ensureData() {
+    if (dataReady()) return;
+    kickLoad();
+    if (_dataPoll) return;
+    let tries = 0;
+    _dataPoll = setInterval(() => {
+      tries++;
+      if (dataReady()) { clearInterval(_dataPoll); _dataPoll = null; renderList(); renderPins(); return; }
+      kickLoad();
+      if (tries > 60) { clearInterval(_dataPoll); _dataPoll = null; }   // ~30s cap
+    }, 500);
   }
 
   // ── equipment (uttaeki) ──────────────────────────────────────────────────
@@ -546,6 +581,7 @@ body.bs-active #_mnav_drawer,body.bs-active #_mnav_scrim,body.bs-active #_mobnav
     }
 
     renderList();
+    ensureData();   // locked boot: kick Companies.load() if the data isn't in yet
   }
 
   function renderList() {
