@@ -50,6 +50,27 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 </style>
+<style>
+/* Sidebar anti-FOUC (2026-07-14): the nav's final order + visibility is computed by
+   patch 68 AFTER all deferred patches inject their buttons. Hide the nav until then
+   so the user never sees buttons popcorn in one-by-one or hidden ones flash in then
+   disappear. Gated on a class the inline script below removes on DOMContentLoaded
+   (or a 1.8s failsafe), so a failed/slow patch can never leave the nav hidden. */
+html.sb-settling nav.view-nav { visibility: hidden !important; }
+</style>
+<script>
+/* Add the settling class immediately (before first paint) + a JS-independent failsafe
+   reveal so the sidebar can never stay permanently hidden. Patch 68 reveals earlier,
+   at DOMContentLoaded, once every deferred nav button exists and has been ordered. */
+(function () {
+  try {
+    var el = document.documentElement;
+    el.classList.add('sb-settling');
+    window.__revealSidebar = function () { try { el.classList.remove('sb-settling'); } catch (e) {} };
+    setTimeout(window.__revealSidebar, 1800);
+  } catch (e) {}
+})();
+</script>
 </head>
 <body>
 
@@ -390,7 +411,7 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 65-refill-log.js -->
 <script defer src="/js/patches/66-pricelist-seed.js?v=20260510f"></script>
 <script defer src="/js/patches/67-data-reset.js?v=20260510f"></script>
-<script defer src="/js/patches/68-sidebar-reorder.js?v=20260714h"></script>
+<script defer src="/js/patches/68-sidebar-reorder.js?v=20260714fouc"></script>
 <script defer src="/js/patches/71-tilbod-photos.js?v=20260510f"></script>
 <script defer src="/js/patches/72-customer-import.js?v=20260510f"></script>
 <script defer src="/js/patches/73-bulk-add-units.js?v=20260714types"></script>
