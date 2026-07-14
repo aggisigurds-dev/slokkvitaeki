@@ -37,6 +37,10 @@
     if (!(window.DB && DB.sb)) return false;
     try { const r = await DB.sb.from('uttaeki').update(patch).eq('id', id); return !(r && r.error); } catch (_) { return false; }
   }
+  async function deleteUnit(id) {
+    if (!(window.DB && DB.sb)) return false;
+    try { const r = await DB.sb.from('uttaeki').delete().eq('id', id); return !(r && r.error); } catch (_) { return false; }
+  }
   function byClient() {
     const m = {};
     _shop.forEach(u => { const k = u.client || '— óþekkt —'; (m[k] = m[k] || []).push(u); });
@@ -47,7 +51,10 @@
     const grp = byClient();
     const INK = '#11141c', INK3 = '#6b7280';
     const stBtn = (id, act, label, col) =>
-      '<button type="button" class="_vk-cust" data-id="' + id + '" data-act="' + act + '" style="border:0;background:' + col + ';color:#fff;border-radius:7px;padding:4px 9px;font:inherit;font-size:11px;font-weight:700;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.22)">' + label + '</button>';
+      '<button type="button" class="_vk-cust" data-id="' + id + '" data-act="' + act + '" style="border:0;background:' + col + ';color:#fff;border-radius:6px;padding:3px 7px;font:inherit;font-size:10.5px;font-weight:700;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.22)">' + label + '</button>';
+    // lítið Eyða-merki (🗑) — fjarlægir tækið ef mistalið úr skýrslu
+    const delBtn = (id) =>
+      '<button type="button" class="_vk-del" data-id="' + id + '" title="Eyða tæki" style="border:0;background:transparent;color:#b91c1c;border-radius:5px;padding:1px 3px;font-size:12px;line-height:1;cursor:pointer;opacity:.6">🗑</button>';
     const row = (u) => {
       const cs = u.custody_status || 'null';
       const meta = [u.type || 'Tæki', u.size, u.serial].filter(Boolean).map(esc).join(' · ');
@@ -55,25 +62,24 @@
       let actions = '';
       if (cs === 'null') actions = stBtn(u.id, 'komid', '✅ Komið', '#2563eb');
       else if (cs === 'komid') actions = stBtn(u.id, 'hladid', '🔋 Hlaðið', '#16a34a') + stBtn(u.id, 'onytt', '❌ Ónýtt', '#dc2626') + stBtn(u.id, 'nytt', '🆕 Nýtt', '#d97706');
-      else if (cs === 'tilbuid') actions = '<span style="font-size:11px;color:#fff;background:#059669;border-radius:99px;padding:2px 8px;font-weight:700">' + (DISP[u.service_choice] || 'Tilbúið') + '</span>' + stBtn(u.id, 'farid', '➡️ Farið', '#7c3aed');
-      else if (cs === 'farid') actions = '<span style="font-size:11px;color:#6d28d9;background:#ede9fe;border:1px solid #c4b5fd;border-radius:99px;padding:2px 8px;font-weight:700">🚚 Bíður skila</span>';
-      return '<div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:6px 0;border-top:1px solid #eef2f7">' +
-        '<span style="width:8px;height:8px;border-radius:50%;flex:none;background:' + pill.col + '"></span>' +
-        '<span style="font-size:12px;color:' + INK + ';font-weight:600">' + meta + '</span>' +
-        '<span style="font-size:9.5px;color:#fff;font-weight:700;background:' + pill.col + ';border-radius:99px;padding:1px 7px">' + esc(pill.label) + '</span>' +
-        '<span style="display:flex;gap:5px;margin-left:auto;flex-wrap:wrap">' + actions + '</span>' +
+      else if (cs === 'tilbuid') actions = '<span style="font-size:10.5px;color:#fff;background:#059669;border-radius:99px;padding:1px 7px;font-weight:700">' + (DISP[u.service_choice] || 'Tilbúið') + '</span>' + stBtn(u.id, 'farid', '➡️ Farið', '#7c3aed');
+      else if (cs === 'farid') actions = '<span style="font-size:10.5px;color:#6d28d9;background:#ede9fe;border:1px solid #c4b5fd;border-radius:99px;padding:1px 7px;font-weight:700">🚚 Bíður skila</span>';
+      return '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;border-top:1px solid #eef2f7">' +
+        '<span style="width:7px;height:7px;border-radius:50%;flex:none;background:' + pill.col + '"></span>' +
+        '<span style="font-size:11.5px;color:' + INK + ';font-weight:600;min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + meta + '</span>' +
+        '<span style="display:flex;align-items:center;gap:4px;flex:none">' + actions + delBtn(u.id) + '</span>' +
       '</div>';
     };
     const body = grp.length ? grp.map(g =>
-      '<div style="padding:5px 0 2px">' +
-        '<div style="font-size:12.5px;font-weight:800;color:' + INK + '">' + esc(g.client) + ' <span style="font-weight:600;color:' + INK3 + ';font-size:11px">· ' + g.items.length + ' tæki</span></div>' +
+      '<div style="padding:3px 0 1px">' +
+        '<div style="font-size:11.5px;font-weight:800;color:' + INK + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(g.client) + ' <span style="font-weight:600;color:' + INK3 + ';font-size:10.5px">· ' + g.items.length + ' tæki</span></div>' +
         g.items.map(row).join('') +
       '</div>').join('')
-      : '<div style="padding:10px 4px;color:' + INK3 + ';font-size:12px">Engin tæki komin úr þjónustu núna.</div>';
-    return '<div id="_vk-loaned" style="background:#f4f7fb;border:1px solid #dbe3ee;border-radius:12px;padding:9px 11px;margin-bottom:12px">' +
-      '<div style="display:flex;align-items:center;margin-bottom:5px">' +
-        '<span style="font-size:11px;font-weight:800;letter-spacing:.04em;color:#1f2937">🚚 KOMIÐ ÚR ÞJÓNUSTU</span>' +
-        (_shop.length ? '<span style="margin-left:auto;font-size:11px;color:#2563eb;font-weight:700">' + _shop.length + ' tæki</span>' : '') +
+      : '<div style="padding:8px 4px;color:' + INK3 + ';font-size:11.5px">Engin tæki komin úr þjónustu núna.</div>';
+    return '<div id="_vk-loaned" style="background:#f4f7fb;border:1px solid #dbe3ee;border-radius:12px;padding:7px 9px;margin-bottom:10px">' +
+      '<div style="display:flex;align-items:center;margin-bottom:3px">' +
+        '<span style="font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#1f2937">🚚 KOMIÐ ÚR ÞJÓNUSTU</span>' +
+        (_shop.length ? '<span style="margin-left:auto;font-size:10.5px;color:#2563eb;font-weight:700">' + _shop.length + ' tæki</span>' : '') +
       '</div>' + body +
     '</div>';
   }
@@ -86,6 +92,19 @@
   function installDelegate() {
     if (_delegated) return; _delegated = true;
     document.addEventListener('click', async (e) => {
+      // 🗑 Eyða tæki
+      const d = e.target && e.target.closest && e.target.closest('._vk-del');
+      if (d) {
+        e.preventDefault(); e.stopPropagation();
+        const id = d.dataset.id;
+        if (!window.confirm('Eyða þessu tæki? (t.d. ef mistalið úr skýrslu)')) return;
+        d.disabled = true; d.style.opacity = '.3';
+        _shop = _shop.filter(u => String(u.id) !== String(id));
+        await inject(false); // teikna strax án tækisins
+        await deleteUnit(id);
+        await loadShop(true); inject(true);
+        return;
+      }
       const b = e.target && e.target.closest && e.target.closest('._vk-cust');
       if (!b) return;
       e.preventDefault(); e.stopPropagation();
@@ -144,6 +163,6 @@
   else watch();
 
   window.VkLoaned = { inject: () => inject(true) };
-  console.log('[verkstaedi-loaned] v2 installed (delegated click)');
+  console.log('[verkstaedi-loaned] v3 installed (delegated click + compact + delete)');
 })();
 /* === END VERKSTÆÐI: KOMIÐ ÚR ÞJÓNUSTU === */
