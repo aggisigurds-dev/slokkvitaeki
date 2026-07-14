@@ -55,6 +55,7 @@
     bilstjori: 'bilstjori', drivers: 'bilstjori', bakendi: 'bakendi',
     sameining: 'sameining', adstod: 'adstod',
     postur: 'reikninga-postur', reikningapostur: 'reikninga-postur',  // 📧 Reikninga-póstur (patch 240)
+    aksturslisti: 'aksturslisti', vakt: 'aksturslisti',   // 🚚 Aksturslisti / vakt-yfirlit (patch 268)
     opp: 'opp'   // 📱 Öpp launcher (patch 261)
   };
 

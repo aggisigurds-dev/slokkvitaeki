@@ -258,6 +258,20 @@ so a driver can only see Bílstjóri. The office keeps full access via the bare 
 It's a focus lock, not security (client-side, anon Supabase key). The 🔗 button and
 the boot deep-link re-assert (outlasts the sala.js boot-lander) live here too.
 
+## Aksturslisti (vakt-yfirlit skrifstofu) — `js/patches/268-aksturslisti-vakt.js`
+
+Sjálfstæð skrifstofu-síða (view `view-aksturslisti`, slug `#aksturslisti`/`#vakt`,
+hliðarstiku-hnappur „🚚 Aksturslisti") — les-only yfir `bilstjori_vakt` (patch 219)
++ `arsskodun_customers` (akstur 1/2/3) + `uttaeki`. Fjórir hlutar: **🗺️
+Akstursleiðir** (3 leiðir + fyrirtækin á þeim, N/M kláruð, gráir→grænir strikaðir),
+**🔧 Á verkstæði — á eftir að skila** (`uttaeki.status='loaned'` grúppað per
+`client`), **👷 Starfsmenn í dag** (samantektar-spjöld: 🏢 fyrirtæki · 🟢 yfirfarið
+· 🔵 verkstæði · ✅ kláruð · Σ), **kort** (síðasta staðsetning + slóð dagsins per
+starfsmaður) og **🧭 Rakning dagsins** (tímaröð aðgerða). Dags-val (◀ Í dag ▶) +
+starfsmanna-sía + 60s auto-refresh. Wiring: script í index.html (eftir 267),
+`App.switchView`-hook, patch 218 ALIAS (`aksturslisti`/`vakt`), klónaður
+hliðarstiku-hnappur. `window.Aksturslisti = {open, reload}`.
+
 **Vakt — starfsmanna-nafn + dagleg virkni + staðsetning (2026-07-14):** driver
 picks their name (`EMPLOYEES = ['Hákon','Binni','Elías']`, stored `localStorage
 .bs_employee`; locked-boot prompts if unset, office can skip). Every action is
