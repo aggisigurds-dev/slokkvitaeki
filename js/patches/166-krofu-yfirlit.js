@@ -860,6 +860,29 @@
         }, 250);
       });
     });
+    // ── ⊘ Afturkalla kröfu í Payday — cancels claim + invoice, frees the sale ──
+    main.querySelectorAll('._ky-afturkalla').forEach(b => {
+      b.addEventListener('click', async () => {
+        const id = b.dataset.id;
+        const sale = (_state.all || []).find(s => String(s.id) === String(id));
+        const label = sale ? ((sale.num || '') + ' · ' + (sale.customer_nafn || '')) : ('#' + id);
+        if (!confirm('Afturkalla kröfuna í Payday?\n\n' + label + '\n\nÞetta fellir niður bæði bankakröfuna og reikninginn í Payday, og losar söluna svo hægt sé að senda hana aftur. Ekki hægt að afturkalla ef kúnninn er þegar búinn að greiða.')) return;
+        b.disabled = true; b.style.opacity = '.5';
+        try {
+          const r = await fetch('/api/payday-push', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'cancel', sale_id: id }),
+          });
+          const j = await r.json().catch(() => ({}));
+          if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
+          if (window.Toast && Toast.show) Toast.show('⊘ ✓ Krafa afturkölluð í Payday');
+          await load(_state.month);
+        } catch (e) {
+          alert('Afturköllun mistókst: ' + (e.message || e));
+          b.disabled = false; b.style.opacity = '';
+        }
+      });
+    });
     main.querySelectorAll('._ky-copy-total').forEach(b => {
       b.addEventListener('click', async () => {
         const v = b.dataset.value;
@@ -1136,6 +1159,7 @@
             ${kyAbtn('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', 'Reikning', '#2f5fe0', 'Skoða / prenta reikning', false)}
             ${kyAbtn('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', 'Breyta', '#c2410c', 'Opna í sölu-editor', false)}
             ${kyAbtn('_ky-kredit', 'data-id="' + s.id + '"', '↩', 'Bakfæra', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
+            ${s.dk_invoice_id ? kyAbtn('_ky-afturkalla', 'data-id="' + s.id + '"', '⊘', 'Afturkalla', '#b45309', 'Afturkalla kröfuna í Payday (fella niður kröfu + reikning)', false) : ''}
             ${kyAbtn('_ky-nyjan', 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', '＋', 'Nýr', '#0f7a43', 'Ný sala fyrir þennan viðskiptavin', false)}
           </div>
         </div>`;
@@ -1223,6 +1247,7 @@
               ${kyIcon('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', '#2f5fe0', 'Skoða / prenta reikning', false)}
               ${kyIcon('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', '#c2410c', 'Opna í sölu-editor', false)}
               ${kyIcon('_ky-kredit', 'data-id="' + s.id + '"', '↩', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
+              ${s.dk_invoice_id ? kyIcon('_ky-afturkalla', 'data-id="' + s.id + '"', '⊘', '#b45309', 'Afturkalla kröfuna í Payday', false) : ''}
               ${kyIcon('_ky-nyjan', 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', '＋', '#0f7a43', 'Ný sala fyrir þennan viðskiptavin', false)}
             </div>
           </td>
@@ -1298,6 +1323,7 @@
                   ${kyAbtn('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', 'Reikning', '#2f5fe0', 'Skoða / prenta reikning', false)}
                   ${kyAbtn('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', 'Breyta', '#c2410c', 'Opna í sölu-editor', false)}
                   ${kyAbtn('_ky-kredit', 'data-id="' + s.id + '"', '↩', 'Bakfæra', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
+            ${s.dk_invoice_id ? kyAbtn('_ky-afturkalla', 'data-id="' + s.id + '"', '⊘', 'Afturkalla', '#b45309', 'Afturkalla kröfuna í Payday (fella niður kröfu + reikning)', false) : ''}
                   ${kyAbtn('_ky-nyjan', 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', '＋', 'Nýr', '#0f7a43', 'Ný sala fyrir þennan viðskiptavin (opnar Sölu með kt tilbúið)', false)}
                 </div>
               </div>`;
