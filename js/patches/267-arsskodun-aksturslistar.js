@@ -59,7 +59,7 @@
     chip.title = v ? ('Akstur ' + v + ' — smelltu til að breyta') : 'Enginn aksturslisti — smelltu til að setja á lista';
     chip.style.cssText =
       'display:inline-flex;align-items:center;justify-content:center;gap:1px;flex:none;' +
-      'min-width:' + (v ? '34px' : '30px') + ';height:26px;padding:0 7px;border-radius:99px;cursor:pointer;' +
+      'width:36px;box-sizing:border-box;height:26px;padding:0;border-radius:99px;cursor:pointer;' +   // föst breidd → dálkar raðast
       'font:inherit;font-size:11.5px;font-weight:800;line-height:1;user-select:none;' +
       'border:1px solid ' + c.bd + ';background:' + c.bg + ';color:' + c.fg + ';' +
       (v ? 'box-shadow:0 1px 4px -1px rgba(14,165,233,.6);' : 'opacity:.85;') +

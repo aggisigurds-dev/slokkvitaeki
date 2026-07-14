@@ -1200,8 +1200,11 @@
   };
   function statusPill(state, label, title) {
     const c = _PILL_C[state] || _PILL_C.queue;
-    return '<span title="' + esc(title || label) + '" style="display:inline-flex;align-items:center;gap:5px;'
+    // Fast breidd (min-width + miðjað) svo allar pillur eru jafn stórar → aksturs-
+    // chippinn + ✓ raðast í beina dálka niður töfluna (ósk Agnars 2026-07-14).
+    return '<span title="' + esc(title || label) + '" style="display:inline-flex;align-items:center;justify-content:center;gap:5px;'
       + 'font-size:10.5px;font-weight:700;line-height:1;padding:4px 9px;border-radius:99px;white-space:nowrap;'
+      + 'min-width:104px;box-sizing:border-box;'
       + 'background:' + c[0] + ';color:' + c[2] + ';border:1px solid ' + c[1] + ';box-shadow:inset 0 1px 0 rgba(255,255,255,.4)">'
       + (_PILL_ICON[state] || '') + esc(label) + '</span>';
   }
