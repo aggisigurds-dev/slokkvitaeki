@@ -1541,11 +1541,26 @@
     const h = (location.hash || '').replace(/^#/, '').toLowerCase();
     return h === NAV_KEY || h === 'verkefni';
   }
+  // NB: boot-landerinn sem stelur fókus speglast í hash-ið með replaceState
+  // (patch 218 wrapperinn) — það kveikir EKKI hashchange, svo lykkjan má ekki
+  // lesa location.hash til að hætta. Alvöru leiðsögn (hashchange-atburður)
+  // hækkar _navGen og drepur gömlu lykkjuna.
+  let _navGen = 0;
   function openFromHash() {
+    _navGen++;
     if (!hashIsMine()) return;
+    const gen = _navGen;
     const deadline = Date.now() + 5000;
+    let skippedOnce = false;
     (function tick() {
-      if (_userTook || Date.now() > deadline || !hashIsMine()) return;
+      if (_userTook || gen !== _navGen || Date.now() > deadline) return;
+      // Framandi hash: (a) alvöru leiðsögn þar sem hashchange hefur ekki enn
+      // keyrt — show() núna myndi replaceState-a hash-ið til baka og gleypa
+      // leiðsögnina; (b) hljóðlát spegluð stuldar-uppfærsla (replaceState, engin
+      // atburður) — þá EIGUM við að re-asserta. Sleppum EINUM tick: (a) hækkar
+      // _navGen fyrir næsta tick og drepur lykkjuna, (b) gerir það ekki.
+      if (!hashIsMine() && !skippedOnce) { skippedOnce = true; setTimeout(tick, 70); return; }
+      skippedOnce = false;
       try {
         const active = document.querySelector('.view.active');
         if (!active || active.id !== VIEW_ID) show();   // lander stal fókus → aftur á Verkborð

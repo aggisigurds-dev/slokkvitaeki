@@ -1258,7 +1258,13 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
       document.body.classList.remove('bs-active');
     } catch (_) {}
   }
+  // NB: a boot-lander steal gets MIRRORED into the hash via replaceState
+  // (patch 218 wrapper) without firing hashchange — so the loop must NOT
+  // poll location.hash to decide to stop. Real navigation (a hashchange
+  // event) re-enters openFromHash, bumps _navGen and kills the old loop.
+  let _navGen = 0;
   function openFromHash() {
+    _navGen++;
     if (!hashIsMine()) {
       // navigated away by hash while the driver overlay is up → close it
       // (locked ?driver mode keeps snapping back as designed — hashIsMine()
@@ -1266,10 +1272,18 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
       if (document.body.classList.contains('bs-active')) hideOverlay();
       return;
     }
+    const gen = _navGen;
     const deadline = Date.now() + 5000;
+    let skippedOnce = false;
     (function tick() {
-      if (_userTook || Date.now() > deadline) return;          // user took over / gave up
-      if (!hashIsMine()) return;                               // hash moved on mid-loop → stop re-asserting
+      if (_userTook || gen !== _navGen || Date.now() > deadline) return;  // user took over / navigated / gave up
+      // Foreign hash? Two possibilities: (a) REAL navigation whose hashchange
+      // hasn't dispatched yet — showing now would replaceState the hash back
+      // and swallow the navigation; (b) a boot-lander steal mirrored silently
+      // via replaceState (no event) — then we SHOULD re-assert. Skip ONE tick:
+      // (a) bumps _navGen before the next tick and kills the loop, (b) doesn't.
+      if (!hashIsMine() && !skippedOnce) { skippedOnce = true; setTimeout(tick, 70); return; }
+      skippedOnce = false;
       try {
         const active = document.querySelector('.view.active');
         if (!active || active.id !== VIEW_ID) show();           // re-assert if a lander stole focus
