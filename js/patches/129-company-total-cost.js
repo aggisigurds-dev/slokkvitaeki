@@ -307,6 +307,53 @@
     return all.filter(u => !NONBILL[normSt(u.status)]);
   }
 
+  // 2026-07-14 (ósk Agnars): þegar úttektarskýrsla er búin til á að færa næstu
+  // skoðun 12 mánuði fram — MIÐAÐ VIÐ dagsetninguna á tækinu (afmælis-dagur
+  // varðveittur), ekki „í dag + 1 ár". Dæmi: tæki sem átti að skoða 2026-07-15
+  // fær næstu skoðun 2027-07-15. Sama áhrif og „Merkja skoðun" nema dagsetningin
+  // heldur afmælinu. Uppfærir last_insp = í dag.
+  //  • Sleppir tækjum á verkstæði / biluðum / úreltum (þau eru ekki „kláruð").
+  //  • Hugmyndavörn: sleppir tæki sem er þegar stimplað í dag (last_insp===today)
+  //    svo endur-smellur sama dag ýti því ekki annað ár fram.
+  function _plusOneYearKeepDay(dstr) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(dstr == null ? '' : dstr));
+    if (!m) return null;
+    let mm = m[2], dd = m[3];
+    if (mm === '02' && dd === '29') dd = '28'; // 2028-02-29 → 2029-02-28 (gilt dags.)
+    return String(+m[1] + 1) + '-' + mm + '-' + dd;
+  }
+  async function advanceInspectionDates(coNafn) {
+    const sb = window.DB && window.DB.sb;
+    if (!sb || !coNafn) return 0;
+    const today = new Date().toISOString().slice(0, 10);
+    const todayPlus1 = String(+today.slice(0, 4) + 1) + today.slice(4);
+    let rows = [];
+    try {
+      const r = await sb.from('uttaeki')
+        .select('id,next_insp,last_insp,status').eq('client', coNafn);
+      if (r.error || !r.data) return 0;
+      rows = r.data;
+    } catch (_) { return 0; }
+    const SKIP = { loaned: 1, broken: 1, onytt: 1, geymsla: 1, urelt: 1 };
+    let n = 0;
+    for (const u of rows) {
+      const st = String(u.status == null ? '' : u.status).toLowerCase();
+      if (SKIP[st]) continue;
+      if (u.last_insp === today) continue; // þegar stimplað í dag
+      const next = _plusOneYearKeepDay(u.next_insp) || todayPlus1;
+      try {
+        await sb.from('uttaeki').update({ last_insp: today, next_insp: next, status: 'active' }).eq('id', u.id);
+        n++;
+        // uppfæra staðbundið cache svo dagarnir birtist strax
+        try {
+          const c = (window.DB && DB.cache && Array.isArray(DB.cache.units)) ? DB.cache.units.find(x => x.id === u.id) : null;
+          if (c) { c.last_insp = today; c.next_insp = next; c.status = 'active'; }
+        } catch (_) {}
+      } catch (_) {}
+    }
+    return n;
+  }
+
   let _lastKey = '';
   let _rendering = false;
   let _lastRender = 0;
@@ -809,6 +856,12 @@
           if (dagsInp)    st.skodun_dagsetning = dagsInp.value;
           saveTripState(coId, st);
         }
+        // 2026-07-14: að búa til úttektarskýrsluna færir líka næstu skoðun
+        // 12 mánuði fram (afmælis-dagur tækisins varðveittur) — sama og að
+        // ýta á „Merkja skoðun". Keyrt í bakgrunni svo skýrslan opnist strax.
+        advanceInspectionDates(coNafn).then(n => {
+          if (n && window.Toast && Toast.show) Toast.show('✓ Næsta skoðun færð 12 mán fram á ' + n + ' tæki');
+        }).catch(e => console.warn('[ctc] next_insp advance', e));
         if (window.CompanyInspectionReport && CompanyInspectionReport.open) {
           CompanyInspectionReport.open(coId);
         } else {
