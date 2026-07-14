@@ -880,11 +880,18 @@
       }
     };
     // If the caller provides extra customer info (e.g. fetched from the
-    // `vidskiptavinir` / `fyrirtaeki` tables) splice it in.
+    // `vidskiptavinir` / `fyrirtaeki` tables) splice it in — but ONLY when the
+    // lookup actually carries a value. Previously `customerLookup.kennitala || ''`
+    // (etc.) overwrote the kt that came from `sale.customer_kt` with an empty
+    // string whenever the lookup was a name-only / partial match — so the
+    // kennitala silently vanished from the receipt. Guard each field so a
+    // missing lookup value never clobbers the sale's own data.
     if (customerLookup) {
-      fakeState.customer.kt = customerLookup.kennitala || '';
-      fakeState.customer.kennitala = customerLookup.kennitala || '';
-      fakeState.customer.heimilisfang = customerLookup.heimilisfang || '';
+      if (customerLookup.kennitala) {
+        fakeState.customer.kt = customerLookup.kennitala;
+        fakeState.customer.kennitala = customerLookup.kennitala;
+      }
+      if (customerLookup.heimilisfang) fakeState.customer.heimilisfang = customerLookup.heimilisfang;
     }
     // Temporarily override POS.getState() so render() pulls our fake state.
     const origGetState = window.POS && window.POS.getState;

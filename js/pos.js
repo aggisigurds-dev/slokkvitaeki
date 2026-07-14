@@ -1188,6 +1188,9 @@
           num: num,
           total: t.total,
           customer: cust,
+          // 2026-07-14: carry the kennitala so „Prenta aftur" shows it on the
+          // receipt (fakeSale below previously had no customer_kt → kt blank).
+          customer_kt: custKt || '',
           verkMsg: verkMsgShort,
           lines: state.lines.slice(),
           totals: t,
@@ -1267,6 +1270,7 @@
         var fakeSale = {
           num: info.num,
           customer_nafn: info.customer,
+          customer_kt: info.customer_kt || '',
           greitt_med: info.method,
           starfsmadur: 'Kassi',
           linur: info.lines || [],
