@@ -191,14 +191,20 @@
   }
 
   function readyCard(j) {
-    return '<div class="cw-rcard" style="display:flex;gap:8px;padding:11px 12px;border-radius:11px;margin-bottom:6px;background:#ecfdf5;border:1px solid #a7f3d0">' +
-      '<div class="cw-rcard-info" onclick="Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
-        `<div style="font-family:'Space Mono',monospace;font-size:11px;color:#047857;font-weight:700">${dnum(j.num)}</div>` +
-        `<div class="cw-rcard-name" style="font-size:13.5px;font-weight:600;color:#11141c;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
-        `<div style="font-family:'Space Mono',monospace;font-size:11px;color:#047857">${live(j.units).length} slökkvitæki${jobDate(j) ? ' · ' + jobDate(j) : ''}</div>` +
+    // 2026-07-14: compacted to a 2-line info block + centred controls so every
+    // ready card is roughly the same (short) height as a collapsed group card,
+    // and a small 🗑 Eyða (soft-delete via patch 234) sits before the actions.
+    return '<div class="cw-rcard" style="display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:10px;margin-bottom:5px;background:#ecfdf5;border:1px solid #a7f3d0">' +
+      '<div class="cw-rcard-info" onclick="Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer;line-height:1.25">' +
+        '<div style="display:flex;align-items:baseline;gap:6px;min-width:0">' +
+          `<span style="font-family:'Space Mono',monospace;font-size:10px;color:#047857;font-weight:700;flex:none">${dnum(j.num)}</span>` +
+          `<span class="cw-rcard-name" style="font-size:13px;font-weight:600;color:#11141c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</span>` +
+        '</div>' +
+        `<div style="font-family:'Space Mono',monospace;font-size:10.5px;color:#047857">${live(j.units).length} slökkvitæki${jobDate(j) ? ' · ' + jobDate(j) : ''}</div>` +
       '</div>' +
-      `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;margin-right:6px;padding:5px 10px;background:#fffbeb;border:1px solid #fde68a;color:#b45309;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
-      `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center;height:34px;padding:0 13px;border-radius:10px;border:1px solid #156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;font-weight:700;font-size:12.5px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);cursor:pointer">Sótt ✓</button>` +
+      `<button type="button" class="_cw-del" onclick="event.stopPropagation();window.Workshop&&Workshop.deleteVerkGroup&&Workshop.deleteVerkGroup([${j.id}])" title="Eyða verki (fer í Eydd verk)" style="flex:none;align-self:center;border:0;background:transparent;color:#b91c1c;font-size:13px;line-height:1;padding:2px 4px;cursor:pointer;opacity:.55">🗑</button>` +
+      `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;padding:4px 8px;background:#fffbeb;border:1px solid #fde68a;color:#b45309;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
+      `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center;height:32px;padding:0 12px;border-radius:9px;border:1px solid #156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;font-weight:700;font-size:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);cursor:pointer">Sótt ✓</button>` +
     '</div>';
   }
 
