@@ -985,7 +985,11 @@
       const host = (function (el) { let n = el; while (n && n !== document.body) { const s = getComputedStyle(n); if (/(auto|scroll)/.test(s.overflowY) && n.scrollHeight > n.clientHeight) return n; n = n.parentElement; } return document.scrollingElement || document.documentElement; })(main);
       const sy = host ? host.scrollTop : 0, wy = window.scrollY;
       render();
-      requestAnimationFrame(() => { try { if (host) host.scrollTop = sy; window.scrollTo(0, wy); } catch (_) {} });
+      const _restore = () => { try { if (host) host.scrollTop = sy; window.scrollTo(0, wy); } catch (_) {} };
+      requestAnimationFrame(_restore);
+      // Patch 187/267 endur-sprauta ár-dálkum/akstur-chip ASYNC eftir render (breytir
+      // hæð) → endurstilla aftur þegar það hefur sest svo skrun reki ekki til.
+      setTimeout(_restore, 340);
     }));
 
     if (keepSearchFocus) {
