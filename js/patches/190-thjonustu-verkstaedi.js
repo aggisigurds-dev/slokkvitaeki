@@ -43,6 +43,18 @@
     ['send',       'Skýrsla send',     'Send'],
     ['reikningur', 'Reikningur sendur','Reikningur']
   ];
+  // Afleidd (effective) skref — speglun FRÁ Fyrirtæki í þjónustu (153):
+  // fyrirtæki sem 153 (eða Bílstjóri 219 / ArsWorkflow 266) merkti „Í vinnslu"
+  // (field_inspected_year === curYear) telst með úttektina búna, og fullklárað
+  // ár (last_year_inspected === curYear) sýnir öll fjögur skref græn — nema
+  // skrefið hafi verið afhakað sérstaklega (explicit false vinnur alltaf).
+  function effSteps(a) {
+    a = a || {};
+    const s = Object.assign({}, a[STEPS_KEY] || {});
+    if (s.uttekt === undefined && +a.field_inspected_year === curYear) s.uttekt = true;
+    if (+a.last_year_inspected === curYear) STEP_DEFS.forEach(([k]) => { if (s[k] === undefined) s[k] = true; });
+    return s;
+  }
   // Bráðabirgða-merkingar (single-select) á hverju Í-vinnslu korti.
   // [key, label, bg, tx, bd]
   const MARK_DEFS = [
@@ -270,7 +282,7 @@
       const card = {
         id: co.id, nafn: co.nafn || ('#' + co.id), kennitala: co.kennitala || '',
         month: m, aminning: (a.aminning || '').trim(),
-        steps: a[STEPS_KEY] || {},
+        steps: effSteps(a),   // afleidd úr 153-stöðu þegar skref eru óskráð
         mark: a.sv_mark || '',          // bráðabirgða-merking (single-select)
         note: a.sv_note || '',          // bráðabirgða-minnispunktur (frítexti)
         markedAt: +a.sv_mark_at || 0,   // hvenær síðast merkt (fyrir "Nýlega merkt" röðun)
@@ -534,14 +546,24 @@
       else if (act === 'unstart') unVinnsla(id);
       else if (act === 'removedone') { toast('Fært í „Búið í ár“ — komið með skýrslu + reikning'); markBuid(id); }
     }));
-    // follow-up steps (pills + stepper share class) — all four ✓ → auto Búið
+    // follow-up steps (pills + stepper share class).
+    // Sync í Fyrirtæki í þjónustu (153): skref sett Á ⇒ árið telst hafið
+    // (field_inspected_year → blátt „Í skýrslugerð" á 153); „Reikningur sendur"
+    // eða öll fjögur ✓ ⇒ árið fullklárað (last_year_inspected → grænt á 153).
     v.querySelectorAll('._sv-step').forEach(bn => bn.addEventListener('click', async e => {
       e.stopPropagation();
       const id = +bn.dataset.id, k = bn.dataset.step;
-      const cur = (arsMap()[String(id)] || {})[STEPS_KEY] || {};
-      const next = Object.assign({}, cur, { [k]: !cur[k] });
-      await setFlag(id, { [STEPS_KEY]: next });
-      if (STEP_DEFS.every(([sk]) => next[sk])) { toast('✓ Öll skref klár — fært í Búið'); markBuid(id); }
+      const a = arsMap()[String(id)] || {};
+      const cur = effSteps(a);                                   // sama sýn og teiknuð er
+      const next = Object.assign({}, a[STEPS_KEY] || {}, cur, { [k]: !cur[k] });
+      const extra = {};
+      if (next[k] && +a.last_year_inspected !== curYear) extra.field_inspected_year = curYear;
+      await setFlag(id, Object.assign({ [STEPS_KEY]: next }, extra));
+      // Aðeins þegar smellurinn kveikti á skrefi (aldrei við afhak):
+      if (next[k] && (k === 'reikningur' || STEP_DEFS.every(([sk]) => next[sk]))) {
+        toast(k === 'reikningur' ? '✓ Reikningur sendur — fært í Búið' : '✓ Öll skref klár — fært í Búið');
+        markBuid(id);
+      }
     }));
     // temp marks (single-select)
     v.querySelectorAll('.sv-mark').forEach(bn => bn.addEventListener('click', e => {
