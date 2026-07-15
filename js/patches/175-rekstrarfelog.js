@@ -37,47 +37,116 @@
     user:'<svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
     chev:'<svg viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></svg>'
   };
+  // 2026-07-15: full re-skin to the Claude Design v3 accordion comp
+  // (css/theme-handoff/rekstrarfelog-v3/). All rules scoped under
+  // #view-rekstrarfelog — theme.css is intentionally NOT loaded globally
+  // (its .btn/.pill/.chip names collide with the app), so the needed
+  // classes are inlined here with an rf-/rfa- prefix.
   function injectStyles(){
-    if(document.getElementById('_rf-styles')) return;
-    var s=document.createElement('style'); s.id='_rf-styles';
+    if(document.getElementById('_rf-styles-v3')) return;
+    var old=document.getElementById('_rf-styles'); if(old) old.remove();
+    var s=document.createElement('style'); s.id='_rf-styles-v3';
     var P='#view-rekstrarfelog ';
+    var METB='linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318)';
+    var HERO='linear-gradient(110deg,#0c1018 0%,#13203f 45%,#274a9e 100%)';
     s.textContent=[
-      // master card
-      P+'.rf-card{background:var(--surface);border:1px solid var(--brd);border-radius:14px;margin-bottom:14px;box-shadow:0 1px 2px rgba(16,24,40,.04);overflow:hidden;transition:box-shadow .15s,border-color .15s}',
-      P+'.rf-card:hover{box-shadow:0 4px 16px rgba(16,24,40,.08);border-color:var(--brd2)}',
-      P+'.rf-head{display:flex;align-items:center;gap:14px;padding:15px 17px;cursor:pointer}',
-      P+'.rf-ava{width:42px;height:42px;border-radius:11px;flex:none;display:grid;place-items:center;color:var(--brand);background:color-mix(in srgb,var(--brand) 12%,var(--surface));border:1px solid color-mix(in srgb,var(--brand) 24%,var(--surface))}',
-      P+'.rf-ava svg{width:22px;height:22px}',
-      P+'.rf-name{flex:1 1 0;min-width:0;font-size:16px;font-weight:700;color:var(--ink1);line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
-      P+'.rf-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}',
-      P+'.rf-chip{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;border-radius:7px;padding:3px 8px;border:1px solid var(--brd);background:var(--surface2);color:var(--ink2);text-decoration:none;max-width:260px}',
-      P+'.rf-chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
-      P+'.rf-chip svg{width:12px;height:12px;opacity:.7;flex:none}',
-      P+'a.rf-chip.mail{color:var(--ink1);background:var(--surface2);border-color:var(--brd)}',
-      P+'a.rf-chip.mail:hover{background:var(--bg);border-color:var(--brd2)}',
-      P+'a.rf-chip.mail svg{opacity:.7;color:var(--ink3)}',
-      P+'.rf-count{flex:none;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--ink2);background:var(--surface2);border:1px solid var(--brd);border-radius:99px;padding:6px 13px;white-space:nowrap}',
-      P+'.rf-count b{color:var(--ink1);font-variant-numeric:tabular-nums}',
-      P+'.rf-count svg{width:15px;height:15px;color:var(--ink3);flex:none}',
-      P+'.rf-chev{flex:none;color:var(--ink3);display:grid;place-items:center;transition:transform .2s}',
-      P+'.rf-chev svg{width:20px;height:20px}',
-      P+'.rf-notewrap{padding:0 17px 14px}',
-      P+'.rf-body{border-top:1px solid var(--brd);padding:15px 17px}',
-      P+'.rf-ava svg,'+P+'.rf-chip svg,'+P+'.rf-count svg,'+P+'.rf-chev svg{stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}',
-      // tidy detail table
-      P+'.rf-tblwrap{overflow-x:auto;border:1px solid var(--brd);border-radius:11px;background:var(--surface)}',
-      P+'.rf-tbl{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}',
-      P+'.rf-tbl thead th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink3);padding:9px 10px;border-bottom:1px solid var(--brd);background:var(--surface2);white-space:nowrap}',
-      P+'.rf-tbl thead th.c{text-align:center}',
-      P+'.rf-tbl tbody tr{transition:background .12s}',
-      P+'.rf-tbl tbody tr:hover{background:var(--surface2)}',
-      // 2026-06-19: under any DARK theme give the page a rich black → brand
-      // gradient (Grafít/Miðnætti brand = dökkblátt → svart+dökkblár stigull).
-      'html[data-thm-dark="1"] #view-rekstrarfelog{background:radial-gradient(900px 520px at 85% -8%,color-mix(in srgb,var(--thm-brand) 45%,transparent),transparent 62%),linear-gradient(168deg,#05070d 0%,color-mix(in srgb,var(--thm-brand) 26%,#05070d) 125%)!important}',
-      // metallic "plate" look for the cards under dark themes (beveled, brand-tinted)
-      'html[data-thm-dark="1"] #view-rekstrarfelog .rf-card{background:linear-gradient(176deg,color-mix(in srgb,var(--thm-brand) 13%,#1b1f26) 0%,#15181d 60%,#101319 100%)!important;border:1px solid color-mix(in srgb,var(--thm-brand) 20%,#2b303a)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.07),0 18px 42px -22px rgba(0,0,0,.95)!important}',
-      'html[data-thm-dark="1"] #view-rekstrarfelog .rf-card:hover{box-shadow:inset 0 1px 0 rgba(255,255,255,.1),0 24px 54px -22px rgba(0,0,0,1),0 0 0 1px color-mix(in srgb,var(--thm-brand) 30%,transparent)!important}'
-    ].join('');
+      "@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');",
+      // page band: dark → grey gradient, the view itself
+      '#view-rekstrarfelog{padding:0!important;background:linear-gradient(180deg,#060607 0,#060607 95px,#aeb4be 360px,#9ba1ad 100%)!important}',
+      P+'.rf-page{max-width:1180px;margin:0 auto;padding:20px 24px 60px;font-family:"Space Grotesk",system-ui,-apple-system,sans-serif}',
+      // header
+      P+'.rf-phead{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}',
+      P+'.rf-ptitle{margin:0;font-size:24px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15}',
+      P+'.rf-psub{margin:2px 0 0;font-family:"Space Mono",monospace;font-size:12.5px;color:rgba(255,255,255,.55)}',
+      P+'.rf-search{margin-left:auto;position:relative;width:260px;display:flex;align-items:center;height:42px;padding:0 14px;border-radius:12px;background:#fff;box-shadow:0 8px 20px -14px rgba(0,0,0,.5)}',
+      P+'.rf-search svg{margin-right:9px;flex:none}',
+      P+'.rf-search input{flex:1;min-width:0;border:0;background:transparent;font-family:inherit;font-size:13.5px;color:#141822;outline:none;padding:0}',
+      // dark-metal buttons
+      P+'.rf-btn{height:38px;padding:0 16px;border-radius:10px;border:1px solid #0a0b0d;background:'+METB+';color:#fff;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px;text-decoration:none;white-space:nowrap}',
+      P+'.rf-btn:hover{filter:brightness(1.18)}',
+      P+'.rf-btn.is-on{border-color:#4a6ae8;box-shadow:0 0 0 1px #4a6ae8,inset 0 1px 0 rgba(255,255,255,.12)}',
+      // pills (dark metal)
+      P+'.rf-pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#fff;padding:4px 11px;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3);white-space:nowrap}',
+      P+'.rf-pill--ghost{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 13px;font-size:12.5px;box-shadow:none;text-shadow:none}',
+      P+'.rf-pill--done{background:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#062815);border:1px solid #062815;font-size:11.5px}',
+      P+'.rf-pill--pending{background:linear-gradient(145deg,#d4a94f,#8a5310 60%,#3f2905);border:1px solid #3f2905;font-size:11.5px}',
+      P+'.rf-pill--overdue{background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #4a0a0e;font-weight:700}',
+      // accordion card
+      P+'.rf-acclist{display:flex;flex-direction:column;gap:14px}',
+      P+'.rfa{border-radius:18px;overflow:hidden;box-shadow:0 16px 40px -22px rgba(10,20,50,.65);transition:box-shadow .18s ease}',
+      P+'.rfa__head{width:100%;border:0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:16px;padding:18px 22px;background:'+HERO+';font-family:inherit}',
+      P+'.rfa__logo{width:48px;height:48px;flex:none;border-radius:13px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;color:#fff}',
+      P+'.rfa__logo svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}',
+      P+'.rfa__id{flex:1;min-width:0;display:flex;flex-direction:column}',
+      P+'.rfa__name{font-size:19px;font-weight:700;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      P+'.rfa__sub{font-family:"Space Mono",monospace;font-size:12px;color:rgba(255,255,255,.6);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      P+'.rfa__pills{display:flex;align-items:center;gap:9px;flex:none}',
+      P+'.rfa__chev{width:32px;height:32px;flex:none;border-radius:9px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;transition:transform .28s ease}',
+      P+'.rfa.is-open .rfa__chev{transform:rotate(180deg)}',
+      P+'.rfa__body{max-height:0;opacity:0;overflow:hidden;background:#fff;transition:max-height .32s ease,opacity .24s ease}',
+      P+'.rfa.is-open .rfa__body{max-height:6000px;opacity:1}',
+      P+'.rfa__pad{padding:16px 18px}',
+      P+'.rf-chiprow{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}',
+      // buildings table (dark-metal head, zebra, rails)
+      P+'.rf-tblwrap{border-radius:13px;border:1px solid rgba(20,24,34,.1);overflow:hidden;background:#fff}',
+      P+'.rf-tblscroll{overflow-x:auto}',
+      P+'.rf-tbl{width:100%;min-width:860px;border-collapse:collapse;font-size:13px}',
+      P+'.rf-tbl thead tr{background:'+METB+'}',
+      P+'.rf-tbl th{text-align:left;padding:10px 12px;font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#f0f2f5;white-space:nowrap;text-transform:uppercase;border:0}',
+      P+'.rf-tbl th.c{text-align:center}',
+      P+'.rf-tbl tbody tr{transition:background .12s ease;background:#fff}',
+      P+'.rf-tbl tbody tr:nth-child(even){background:#fbfcfe}',
+      P+'.rf-tbl tbody tr:hover{background:#f3f6fc}',
+      P+'.rf-tbl tbody tr:hover .rf-rail{background:#2f5fe0}',
+      P+'.rf-tbl td{padding:11px 12px;border:0}',
+      P+'.rf-tbl td.c{text-align:center}',
+      P+'.rf-cellname{position:relative;padding-left:16px!important}',
+      P+'.rf-rail{position:absolute;left:0;top:6px;bottom:6px;width:4px;border-radius:3px;background:#dbe0e9}',
+      P+'.rf-rail--done{background:#1f9d57}',
+      P+'.rf-rail--overdue{background:#e23232}',
+      P+'.rf-rail--none{background:#dbe0e9}',
+      P+'.rf-bname{display:block;font-size:13.5px;font-weight:600;color:#11141c}',
+      P+'.rf-bname a{color:#11141c;text-decoration:none;font-weight:600}',
+      P+'.rf-bname a:hover{color:#2f5fe0}',
+      P+'.rf-baddr{display:block;font-size:11px;color:#9098a6;margin-top:1px}',
+      P+'.rf-mono{font-family:"Space Mono",monospace;font-size:12px;color:#5b6472;white-space:nowrap}',
+      P+'.rf-taeki{font-family:"Space Mono",monospace;font-size:13px;font-weight:700;color:#11141c}',
+      P+'.rf-taeki.is-zero{color:#cbd2dc}',
+      // year status pills
+      P+'.rf-ycell{display:inline-flex;align-items:center;gap:4px;font-family:"Space Mono",monospace;font-size:11.5px;font-weight:700;color:#fff;border-radius:7px;padding:3px 8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}',
+      P+'.rf-ycell{white-space:nowrap}',
+      P+'.rf-ycell i{width:6px;height:6px;border-radius:50%;display:inline-block;flex:none}',
+      P+'.rf-ycell a{color:inherit;text-decoration:none;white-space:nowrap}',
+      P+'.rf-ycell--done{background:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#062815);border:1px solid #062815}',
+      P+'.rf-ycell--done i{background:#4fd08a}',
+      P+'.rf-ycell--hist{background:linear-gradient(145deg,#3a6ae8,#1c3d8c 60%,#0a1a3a);border:1px solid #0a1a3a}',
+      P+'.rf-ycell--hist i{background:#8fb0ff}',
+      P+'.rf-ycell--todo{background:linear-gradient(145deg,#3a3e46,#23262d 60%,#111318);border:1px solid #0a0b0d}',
+      P+'.rf-ycell--todo i{background:#cdd4de}',
+      P+'.rf-ycell--none{color:#cbd2dc;background:none;box-shadow:none;text-shadow:none;font-weight:400;border:0}',
+      // næsta skoðun
+      P+'.rf-next{font-family:"Space Mono",monospace;font-size:12.5px;white-space:nowrap}',
+      P+'.rf-next--ok{color:#3a4250}',
+      P+'.rf-next--overdue{display:inline-flex;align-items:center;gap:5px;font-weight:700;color:#fff;background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #4a0a0e;border-radius:8px;padding:4px 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}',
+      P+'.rf-next--none{color:#cbd2dc}',
+      // note input inside the white body
+      P+'._rf_note{display:block;width:100%;padding:7px 10px;border:1px solid rgba(20,24,34,.14);border-radius:8px;font:inherit;font-size:12.5px;background:#fff;box-sizing:border-box;margin-bottom:12px;color:#141822}',
+      // mobile
+      '@media(max-width:640px){'+P+'.rf-search{width:100%;margin-left:0}'+P+'.rf-page{padding:16px 12px 50px}}',
+      // --- vörn gegn patch 245 (Brunastál content-skin) sem málar .view
+      //     input/thead/table með !important — okkar útlit VERÐUR að vinna ---
+      P+'.rf-search input, '+P+'.rf-search input[type="text"]{background:transparent!important;border:0!important;box-shadow:none!important;height:auto!important;padding:0!important;border-radius:0!important;color:#141822!important}',
+      P+'.rf-tbl thead tr, '+P+'.rf-tbl thead{background:'+METB+'!important}',
+      P+'.rf-tbl thead th{background:transparent!important;color:#f0f2f5!important;box-shadow:none!important;padding:10px 12px!important;font-size:10.5px!important;letter-spacing:.08em!important}',
+      P+'.rf-tbl tbody td{border:0!important;padding:11px 12px!important;background:transparent!important}',
+      P+'.rf-tbl tbody tr:nth-child(even){background:#fbfcfe!important}',
+      P+'.rf-tbl tbody tr:hover{background:#f3f6fc!important}',
+      P+'.rfa__head{background:'+HERO+'!important;border:0!important;box-shadow:none!important;text-shadow:none!important;border-radius:0!important;height:auto!important}',
+      P+'.rfa__chev, '+P+'.rfa__logo{background:rgba(255,255,255,.1)!important;border:1px solid rgba(255,255,255,.18)!important;box-shadow:none!important}',
+      P+'.rf-btn{background:'+METB+'!important;color:#fff!important;border:1px solid #0a0b0d!important;text-shadow:none!important;box-shadow:none!important;border-radius:10px!important;height:38px!important}',
+      P+'.rf-btn.is-on{border-color:#4a6ae8!important;box-shadow:0 0 0 1px #4a6ae8,inset 0 1px 0 rgba(255,255,255,.12)!important}',
+      P+'.rf-cellname{padding-left:16px!important}'
+    ].join('\n');
     document.head.appendChild(s);
   }
 
@@ -355,29 +424,35 @@
     // lifandi listinn er tilbúinn (getData fléttar hann þá inn).
     if (!_liveRF) { ensureLiveRF().then(function(){ try{ var el=viewEl(); if(el && el.classList.contains('active')) renderView(); }catch(e){} }); }
     var data=getData();
-    var q=_state.q.toLowerCase().trim();
+    var nFirms=Object.keys(data).length;
     var html='';
-    html+='<div style="max-width:980px;margin:0 auto">';
-    html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px">'+
-          '<div style="min-width:0">'+
-            '<h1 style="font-size:22px;margin:0;font-weight:700;letter-spacing:-.01em;color:var(--ink1,#11141c);line-height:1.15">🏢 Rekstrarfélög</h1>'+
-            '<div style="font-size:12.5px;color:var(--ink3,#5b6472);margin-top:3px">Stór félög sem reka mörg húsfélög/byggingar</div>'+
-          '</div>'+
-          '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">'+
-            '<a href="/rekstrarfelog-uttektir.xlsx" download style="padding:8px 14px;text-decoration:none;border:1px solid rgba(0,0,0,.25);border-radius:9px;color:#334155;font-weight:600;font-size:13px;background:linear-gradient(180deg,#f7f9fc,#e6ebf2);box-shadow:inset 0 1px 0 #fff">📊 Aðgerðalisti (Excel)</a>'+
-            '<button id="_rf_add" class="btn btn-primary btn-sm" style="padding:8px 14px;border-radius:9px">+ Nýtt rekstrarfélag</button>'+
+    html+='<div class="rf-page">';
+    html+='<div class="rf-phead">'+
+          '<button id="_rf_back" class="rf-btn" type="button"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>Til baka</button>'+
+          '<div style="min-width:0"><h1 class="rf-ptitle">Rekstrarfélög</h1>'+
+          '<p class="rf-psub">'+nFirms+' félög · smelltu til að opna</p></div>'+
+          '<div class="rf-search">'+
+            '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#9aa3b5" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>'+
+            '<input id="_rf_q" placeholder="Leita að félagi…" value="'+esc(_state.q)+'">'+
           '</div></div>';
-    html+='<div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">'+
-          '<button id="_rf_m_firms" class="_rf_modebtn">🏢 Eftir félögum</button>'+
-          '<button id="_rf_m_all" class="_rf_modebtn">📋 Allar byggingar (yfirlit)</button>'+
+    html+='<div class="rf-phead" style="margin-bottom:18px">'+
+          '<button id="_rf_m_firms" class="rf-btn _rf_modebtn" type="button">🏢 Eftir félögum</button>'+
+          '<button id="_rf_m_all" class="rf-btn _rf_modebtn" type="button">📋 Allar byggingar</button>'+
+          '<span style="margin-left:auto;display:inline-flex;gap:8px">'+
+          '<a href="/rekstrarfelog-uttektir.xlsx" download class="rf-btn">📊 Aðgerðalisti</a>'+
+          '<button id="_rf_add" class="rf-btn" type="button">+ Nýtt rekstrarfélag</button></span>'+
           '</div>';
-    html+='<input id="_rf_q" placeholder="🔎 Leita að félagi, byggingu eða kennitölu…" value="'+esc(_state.q)+'" style="width:100%;border:1px solid var(--brd);border-radius:11px;padding:12px 14px;font-size:14px;margin-bottom:18px;background:var(--surface);box-sizing:border-box;outline:none">';
-    html+='<div id="_rf_list"></div><div id="_rf_overview" style="display:none"></div></div>';
+    html+='<div id="_rf_list" class="rf-acclist"></div><div id="_rf_overview" style="display:none"></div></div>';
     v.innerHTML=html;
+    var backBtn=v.querySelector('#_rf_back');
+    if(backBtn) backBtn.addEventListener('click', function(){
+      try{ if(window.App&&App.switchView){ App.switchView('companies'); return; } }catch(e){}
+      history.back();
+    });
     function styleModeBtns(){
       [['_rf_m_firms','firms'],['_rf_m_all','all']].forEach(function(p){
-        var b=v.querySelector('#'+p[0]); if(!b) return; var on=_state.mode===p[1];
-        b.style.cssText='padding:8px 14px;border:1px solid '+(on?'var(--brand)':'var(--brd2)')+';background:'+(on?'var(--brand)':'var(--surface)')+';color:'+(on?'#fff':'var(--ink2)')+';border-radius:9px;font-size:13px;font-weight:600;cursor:pointer';
+        var b=v.querySelector('#'+p[0]); if(!b) return;
+        b.classList.toggle('is-on', _state.mode===p[1]);
       });
     }
     function applyMode(){
@@ -538,45 +613,66 @@
     var _pb=box.querySelector('#_rf_print'); if(_pb) _pb.onclick=function(){ if(window.SlokkPrint) window.SlokkPrint('Rekstrarfélög — byggingar og úttektir', box); };
   }
 
-  function renderList(){
+  async function renderList(){
     var v=viewEl(); if(!v) return; var box=v.querySelector('#_rf_list'); if(!box) return;
     var data=getData(); var q=_state.q.toLowerCase().trim();
     var names=Object.keys(data);
     box.innerHTML='';
     var shown=0;
+    // Hero-yfirferðartölur (⚠ liðin skoðun per félag) — sama status-lógík og
+    // yfirlitið, reiknað einu sinni fyrir öll félög.
+    var overdueByFirm={};
+    try {
+      var equip=await getEquipIndex();
+      var attMap={},linkMap={};
+      try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; linkMap=AppSettings.path('rf_uttekt_links')||{}; } }catch(e){}
+      var caMap=getCaMap(), sharedKt=sharedKtSet(), today=_todayStr();
+      names.forEach(function(name){
+        var n=0;
+        ((data[name]||{}).buildings||[]).forEach(function(b){
+          try{ if(computeBldStatus(b,equip,attMap,linkMap,today,caMap,sharedKt).overdue) n++; }catch(e){}
+        });
+        overdueByFirm[name]=n;
+      });
+    } catch(e){ console.warn('[rekstrarfelog] hero counts', e); }
+    if(box!==((viewEl()||{}).querySelector? viewEl().querySelector('#_rf_list'):box)) return; // view re-rendered meanwhile
     names.forEach(function(name){
       var info=data[name]; var blds=info.buildings||[];
       var match=!q || name.toLowerCase().indexOf(q)>=0 || (info.emails||[]).some(function(e){return e.toLowerCase().indexOf(q)>=0;}) ||
         blds.some(function(b){return (b.nafn||'').toLowerCase().indexOf(q)>=0 || digits(b.kt).indexOf(q.replace(/\D/g,''))>=0;});
       if(!match) return; shown++;
       var card=document.createElement('div');
-      card.className='_rf_card rf-card';
-      var chips='';
-      (info.emails||[]).forEach(function(e){ chips+='<a class="rf-chip mail _rf_email" href="mailto:'+esc(e)+'" title="'+esc(e)+'">'+SVG.mail+'<span>'+esc(e)+'</span></a>'; });
-      if(info.domain) chips+='<span class="rf-chip">'+SVG.globe+'<span>'+esc(info.domain)+'</span></span>';
-      if(info.kt) chips+='<span class="rf-chip">'+SVG.hash+'<span>'+esc(fmtKt(info.kt))+'</span></span>';
-      if(info.simi) chips+='<span class="rf-chip">'+SVG.phone+'<span>'+esc(info.simi)+'</span></span>';
-      if(info.tengilidur) chips+='<span class="rf-chip">'+SVG.user+'<span>'+esc(info.tengilidur)+'</span></span>';
-      if(!chips) chips='<span class="rf-chip" style="opacity:.7">Engin netföng skráð</span>';
+      card.className='_rf_card rfa';
+      var subBits=[];
+      if(info.kt) subBits.push('kt. '+fmtKt(info.kt));
+      if((info.emails||[]).length) subBits.push(info.emails[0]);
+      else if(info.domain) subBits.push(info.domain);
+      var ov=overdueByFirm[name]||0;
       card.innerHTML=
-        '<div class="_rf_head rf-head">'+
-          '<div class="rf-ava">'+SVG.building+'</div>'+
-          '<div style="flex:1;min-width:0">'+
-            '<div class="rf-name">'+esc(name)+'</div>'+
-            '<div class="_rf_emailline rf-chips">'+chips+'</div>'+
-          '</div>'+
-          '<div class="rf-count">'+SVG.layers+'<b>'+blds.length+'</b> byggingar</div>'+
-          '<div class="_rf_chev rf-chev">'+SVG.chev+'</div>'+
-        '</div>'+
-        // 2026-06-12 (Todoist): athugasemd beint á borðanum — vistast sjálfkrafa
-        '<div class="rf-notewrap"><input class="_rf_note" value="'+esc(info.notes||'')+'" placeholder="Athugasemd um rekstraraðilann — vistast sjálfkrafa" '+
-          'style="display:block;width:100%;padding:7px 10px;border:1px solid var(--brd);border-radius:8px;font:inherit;font-size:12.5px;background:var(--surface);box-sizing:border-box"></div>'+
-        '<div class="_rf_body rf-body" style="display:none"></div>';
+        '<button class="_rf_head rfa__head" type="button">'+
+          '<span class="rfa__logo"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/></svg></span>'+
+          '<span class="rfa__id">'+
+            '<span class="rfa__name">'+esc(name)+'</span>'+
+            '<span class="rfa__sub">'+esc(subBits.join(' · ')||'—')+'</span>'+
+          '</span>'+
+          '<span class="rfa__pills">'+
+            '<span class="rf-pill rf-pill--ghost">🏢 '+blds.length+' byggingar</span>'+
+            (ov>0?'<span class="rf-pill rf-pill--overdue">⚠ '+ov+'</span>':'')+
+            '<span class="rfa__chev">⌄</span>'+
+          '</span>'+
+        '</button>'+
+        '<div class="rfa__body"><div class="rfa__pad">'+
+          // 2026-06-12 (Todoist): athugasemd beint á borðanum — vistast sjálfkrafa
+          '<input class="_rf_note" value="'+esc(info.notes||'')+'" placeholder="Athugasemd um rekstraraðilann — vistast sjálfkrafa">'+
+          '<div class="_rf_body"></div>'+
+        '</div></div>';
       var body=card.querySelector('._rf_body');
-      var chev=card.querySelector('._rf_chev');
-      function flip(){ var open=body.style.display==='none'; body.style.display=open?'':'none'; if(chev) chev.style.transform=open?'rotate(180deg)':''; if(open) fillBody(body,name,info); }
+      function flip(){
+        var open=!card.classList.contains('is-open');
+        card.classList.toggle('is-open',open);
+        if(open && !body.dataset.filled){ body.dataset.filled='1'; fillBody(body,name,info); }
+      }
       card.querySelector('._rf_head').addEventListener('click',flip);
-      card.querySelectorAll('._rf_email').forEach(function(a){ a.addEventListener('click',function(e){ e.stopPropagation(); }); });
       var noteInp=card.querySelector('._rf_note');
       noteInp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); noteInp.blur(); } });
       noteInp.addEventListener('blur',async function(){
@@ -589,7 +685,7 @@
       });
       box.appendChild(card);
     });
-    if(!shown) box.innerHTML='<div style="color:var(--ink3);padding:16px">Ekkert fannst.</div>';
+    if(!shown) box.innerHTML='<div style="color:#3a4250;background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 16px 40px -22px rgba(10,20,50,.65)">Ekkert fannst.</div>';
   }
 
   // 2026-06-12 (Todoist „wont open"): fillBody gat strandað á „Hleð…" að
@@ -618,18 +714,17 @@
     // per-firm tally
     var n2026=0, nNeed=0, nNone=0, nOverdue=0;
     var bd='1px solid var(--brd)';
-    // year cell: done? -> tæki count (or ✓). green+📄 = úttektarskýrsla; ↗ = tengill í Drive; blár = aðeins búnaðarsaga
+    // year cell (dark-metal ycell pills): grænn = úttektarskýrsla á skrá (link/
+    // viðhengi/rep), blár (hist) = aðeins skráð í búnaðarsögu, · = ekkert.
     function yCell(done, rep, units, url, file, y){
-      if(!done) return '<td style="padding:6px 4px;border-bottom:'+bd+';text-align:center;color:var(--ink4)">·</td>';
-      var v = units>0 ? units : '✓';
+      if(!done) return '<td class="c"><span class="rf-ycell rf-ycell--none">·</span></td>';
+      var v = units>0 ? String(units) : '✓';
       var greenish = rep || url || file;
-      var col = greenish ? '#15803d' : 'var(--brand)', dot = greenish ? '#1C8F60' : '#3b82f6';
-      var inner = url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Google Drive" style="color:inherit;text-decoration:none">'+v+' 📄↗</a>'
+      var kind = greenish ? 'done' : 'hist';
+      var inner = url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Google Drive">'+v+' 📄↗</a>'
         : (file ? fileLinkA(file,y,v)
         : (v+(rep?' 📄':'')));
-      return '<td style="padding:6px 4px;border-bottom:'+bd+';text-align:center">'+
-        '<span style="display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:12.5px;color:'+col+'">'+
-        '<span style="width:6px;height:6px;border-radius:50%;background:'+dot+';flex:0 0 auto"></span>'+inner+'</span></td>';
+      return '<td class="c"><span class="rf-ycell rf-ycell--'+kind+'"><i></i>'+inner+'</span></td>';
     }
     // 2026-07-15 (Agnar: „skjölin uppfærast aldrei … eldgömul nöfn og tengingar"):
     // lesum úttektarskýrslur LIFANDI úr customer_documents (sama uppspretta og
@@ -652,8 +747,8 @@
     // building table
     var rows=blds.map(function(b,_bi){
       var co=companyForBld(b);
-      var link= co ? '<a href="#" data-coid="'+co.id+'" class="_rf_open" style="color:var(--ink1);text-decoration:none;font-weight:600">'+esc(b.nafn)+'</a>'
-                   : '<span style="color:var(--ink1);font-weight:600">'+esc(b.nafn)+'</span> <span style="color:var(--ink3);font-size:11px">(ekki í skrá)</span>';
+      var link= co ? '<a href="#" data-coid="'+co.id+'" class="_rf_open">'+esc(b.nafn)+'</a>'
+                   : esc(b.nafn)+' <span style="color:#9098a6;font-size:11px;font-weight:400">(ekki í skrá)</span>';
       var doc = co ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:#1d4ed8;text-decoration:underline">skjöl</a>' : '';
       var st = equip.match(b.nafn);
       var ktShared = !!(sharedKt && sharedKt[digits(b.kt)]);
@@ -675,28 +770,33 @@
       // links for years outside the 2024-2026 columns (e.g. older skýrslur) shown after the name
       var oldLinks = lkYears.filter(function(y){return y<'2023';}).sort().map(function(y){
         return ' <a href="'+esc(lks[y])+'" target="_blank" rel="noopener" title="Úttektarskýrsla '+y+' í Drive" style="font-size:11px;color:#15803d;text-decoration:none;white-space:nowrap">📄'+y+'↗</a>'; }).join('');
-      link = link + oldLinks;
-      if(b.heimilisfang) link += '<div style="font-size:11px;color:var(--ink3);margin-top:2px">📍 '+esc(b.heimilisfang)+'</div>';
-      var unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(units>0?'font-weight:600':'color:'+(hasRep?'var(--brd2)':'#b45309'))+'">'+(units>0?units:(hasRep||lkYears.length?'–':'0'))+'</td>';
+      var unitCell='<td class="c rf-taeki'+(units>0?'':' is-zero')+'">'+(units>0?units:(hasRep||lkYears.length?'–':'0'))+'</td>';
       var y23=yCell(d23,false,units,lks['2023'],f23,'2023'), y24=yCell(d24,!!att[0],units,lks['2024'],f24,'2024'), y25=yCell(d25,!!att[1],units,lks['2025'],f25,'2025'), y26=yCell(d26,!!att[2],units,lks['2026'],f26,'2026');
-      var nextCell;
-      if(st && st.next){ var overdue = st.next < today; if(overdue && hasData) nOverdue++;
-        var col = overdue ? '#b91c1c' : 'var(--ink2)'; var bg = overdue ? 'background:#fef2f2;' : '';
-        nextCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+bg+'color:'+col+';font-variant-numeric:tabular-nums;white-space:nowrap">'+esc(st.next)+(overdue?' ⚠':'')+'</td>';
-      } else { nextCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:var(--brd2)">—</td>'; }
-      return '<tr><td style="padding:5px 6px;border-bottom:'+bd+'">'+link+'</td>'+
-             '<td style="padding:5px 6px;border-bottom:'+bd+';color:var(--ink3);font-variant-numeric:tabular-nums">'+fmtKt(b.kt)+'</td>'+
+      var isOver=false, nextCell;
+      if(st && st.next){ isOver = st.next < today; if(isOver && hasData) nOverdue++;
+        nextCell = isOver
+          ? '<td><span class="rf-next rf-next--overdue">⚠ '+esc(st.next)+'</span></td>'
+          : '<td><span class="rf-next rf-next--ok">'+esc(st.next)+'</span></td>';
+      } else { nextCell='<td><span class="rf-next rf-next--none">—</span></td>'; }
+      // 4px litarönd vinstra megin: rauð = skoðun liðin, græn = eitthvert ár
+      // með úttekt, annars grá (blánar á hover gegnum CSS).
+      var railCls = (isOver&&hasData) ? 'rf-rail--overdue' : ((d23||d24||d25||d26) ? 'rf-rail--done' : 'rf-rail--none');
+      return '<tr>'+
+             '<td class="rf-cellname"><span class="rf-rail '+railCls+'"></span>'+
+               '<span class="rf-bname">'+link+oldLinks+'</span>'+
+               (b.heimilisfang?'<span class="rf-baddr">📍 '+esc(b.heimilisfang)+'</span>':'')+
+             '</td>'+
+             '<td class="rf-mono">'+fmtKt(b.kt)+'</td>'+
              unitCell+y23+y24+y25+y26+nextCell+
-             '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:right;white-space:nowrap">'+doc+
-             ' <a href="#" class="_rf_editb" data-bi="'+_bi+'" title="Breyta byggingu / tengja rétt fyrirtæki" style="color:var(--brand);text-decoration:none;font-size:12px;margin-left:6px">✏️</a>'+
+             '<td style="text-align:right;white-space:nowrap">'+doc+
+             ' <a href="#" class="_rf_editb" data-bi="'+_bi+'" title="Breyta byggingu / tengja rétt fyrirtæki" style="text-decoration:none;font-size:12px;margin-left:6px">✏️</a>'+
              ' <a href="#" class="_rf_delb" data-bi="'+_bi+'" title="Fjarlægja byggingu" style="color:#dc2626;text-decoration:none;font-size:12px;margin-left:6px">✕</a></td></tr>';
     }).join('');
-    var summary='<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin-bottom:8px">'+
-      '<span>🏠 '+blds.length+' byggingar</span>'+
-      '<span style="color:#15803d;font-weight:600">✓ '+n2026+' með úttekt 2026</span>'+
-      (nNeed?'<span style="color:#b7791f;font-weight:600">⏳ '+nNeed+' vantar 2026</span>':'')+
-      (nNone?'<span style="color:#b45309;font-weight:600">⚠ '+nNone+' engin gögn</span>':'')+
-      (nOverdue?'<span style="color:#b91c1c;font-weight:600">⏰ '+nOverdue+' skoðun liðin</span>':'')+'</div>';
+    var summary='<div class="rf-chiprow">'+
+      '<span class="rf-pill rf-pill--done">✓ '+n2026+' með úttekt</span>'+
+      '<span class="rf-pill rf-pill--pending">⚠ '+nNeed+' vantar</span>'+
+      '<span class="rf-pill rf-pill--overdue">🔴 '+nOverdue+' liðin</span>'+
+      '</div>';
     var docs=[];
     try{ docs=(await listFirmDocs(name))||[]; }catch(e){ console.warn('[rekstrarfelog] docs',e); }
     var docHtml=docs.length? docs.map(function(d){
@@ -744,7 +844,7 @@
         '<div style="flex:1 1 100%;min-width:280px">'+
           '<div style="font-weight:600;font-size:13px;color:var(--ink2);margin-bottom:6px">Byggingar / húsfélög — úttektir</div>'+
           summary+
-          '<div class="rf-tblwrap"><table class="rf-tbl"><thead><tr>'+
+          '<div class="rf-tblwrap"><div class="rf-tblscroll"><table class="rf-tbl"><thead><tr>'+
           '<th>Bygging</th>'+
           '<th>Kennitala</th>'+
           '<th class="c">Tæki</th>'+
@@ -752,8 +852,8 @@
           '<th class="c">2024</th>'+
           '<th class="c">2025</th>'+
           '<th class="c">2026</th>'+
-          '<th class="c">Næsta skoðun</th>'+
-          '<th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+          '<th>Næsta skoðun</th>'+
+          '<th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>'+
           '<button class="_rf_addb" style="margin-top:8px;padding:6px 12px;background:var(--surface);border:1px dashed var(--brd2);border-radius:8px;color:var(--brand);font-weight:600;font-size:12.5px;cursor:pointer">+ Bæta við byggingu / fyrirtæki</button>'+
           '<div style="font-size:11px;color:var(--ink4);margin-top:6px">Árdálkar sýna fjölda tækja sem úttekt nær til. <span style="color:#15803d">Grænn + 📄</span> = úttektarskýrsla á skrá (viðhengi); <span style="color:var(--brand)">blár</span> = aðeins skráð í búnaðarsögu. «Næsta skoðun» = fyrsti gjalddagi, ⚠ = liðinn.</div>'+
         '</div>'+
@@ -924,7 +1024,7 @@
   function showOurView(btn){
     document.querySelectorAll('[id^=view-]').forEach(function(v){ v.style.display='none'; v.classList.remove('active'); });
     var v=viewEl();
-    if(!v){ v=document.createElement('div'); v.id='view-rekstrarfelog'; v.className='view'; v.style.cssText='padding:20px';
+    if(!v){ v=document.createElement('div'); v.id='view-rekstrarfelog'; v.className='view'; v.style.cssText='padding:0';
       var ref=document.getElementById('view-companies')||document.getElementById('view-allir-vidsk');
       if(ref&&ref.parentNode) ref.parentNode.insertBefore(v,ref.nextSibling); else document.body.appendChild(v); }
     v.style.display=''; v.classList.add('active');
