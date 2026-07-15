@@ -175,8 +175,9 @@
   function repDocChip(d){
     var u=driveUrl(d.drive_file_id), full=docName(d);
     var disp=full.length>46?full.slice(0,44)+'…':full;
-    var chip = u ? '<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="'+esc(full)+' — opna í Drive">📄 '+esc(disp)+'</a>'
-                 : '<span class="sk-doc rep" title="'+esc(full)+' (engin Drive-slóð)">📄 '+esc(disp)+'</span>';
+    var ico = d.doc_type==='brunakerfi' ? '🔥' : '📄';
+    var chip = u ? '<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="'+esc(full)+' — opna í Drive">'+ico+' '+esc(disp)+'</a>'
+                 : '<span class="sk-doc rep" title="'+esc(full)+' (engin Drive-slóð)">'+ico+' '+esc(disp)+'</span>';
     return docWrap(chip, d.id);
   }
   function invDocChip(d){
@@ -257,7 +258,7 @@
       var t=d.doc_type, y=parseInt(d.year,10);
       if(t==='samningur'){ samn.push({src:'doc',d:d,year:y||null}); return; }
       if(!(y>=2000&&y<=NOW+1)) return;
-      if(t==='uttektarskyrsla') (repByY[y]=repByY[y]||[]).push(d);
+      if(t==='uttektarskyrsla'||t==='brunakerfi') (repByY[y]=repByY[y]||[]).push(d); // brunakerfi = árs-skýrsla brunakerfis-þjónustu (additive doc_type 2026-07-15)
       else if(t==='reikningur') (invByY[y]=invByY[y]||[]).push(d);
     });
 
