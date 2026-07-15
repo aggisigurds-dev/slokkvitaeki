@@ -197,6 +197,8 @@
     if(/\bab\b/.test(n)) return '#38bdf8';
     return null;
   }
+  // Deila tegundarlitnum með öðrum sýnum (Sala/POS) svo skilgreiningin drift-i ekki.
+  try { window.SlokkTypeColor = typeColor; } catch(e){}
 
   function renderCard(p){
       var priceInc = p.verd_an_vsk * (1 + (p.vsk_prosenta||24)/100);
