@@ -133,6 +133,7 @@
     dlg.querySelector('#_sc-cancel').addEventListener('click', () => dlg.remove());
     dlg.querySelector('#_sc-save').addEventListener('click', save);
     dlg.querySelector('#_sc-reset').addEventListener('click', resetDefaults);
+    wireListDelegation(dlg.querySelector('#_sc-list'));
     renderList();
   }
 
@@ -141,8 +142,8 @@
     if (!root) return;
     root.innerHTML = _state.items.map((it, i) => {
       if (it.type === 'sep') {
-        return '<div data-i="' + i + '" style="margin:4px 0;padding:6px 10px;background:#e2e8f0;border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:8px">' +
-          '<span style="font-size:11px;font-weight:700;color:#475569;letter-spacing:.04em;text-transform:uppercase">— Dauf lína —</span>' +
+        return '<div data-i="' + i + '" style="margin:4px 0;padding:6px 10px;background:#dbe2ea;border-radius:6px;display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+          '<span style="font-size:11px;font-weight:800;color:#1e293b;letter-spacing:.04em;text-transform:uppercase">— Dauf lína —</span>' +
           '<span style="display:flex;gap:4px">' +
             '<button class="_sc-up"   data-i="' + i + '" type="button" title="Færa upp" style="background:#fff;border:1px solid #cbd5e1;border-radius:5px;width:26px;height:24px;cursor:pointer;font-size:11px">▲</button>' +
             '<button class="_sc-down" data-i="' + i + '" type="button" title="Færa niður" style="background:#fff;border:1px solid #cbd5e1;border-radius:5px;width:26px;height:24px;cursor:pointer;font-size:11px">▼</button>' +
@@ -150,11 +151,18 @@
           '</span>' +
         '</div>';
       }
-      const opacity = it.hidden ? ';opacity:.45' : '';
-      return '<div data-i="' + i + '" style="padding:8px 10px;background:#fff;border:1px solid #e2e8f0;border-radius:7px;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between;gap:8px' + opacity + '">' +
-        '<label style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;cursor:pointer;font-size:13px;color:#0f172a">' +
+      // Hidden rows: keep the label FULLY readable (no opacity — that was the
+      // "near-invisible" bug). Signal hidden via a muted background + a strike
+      // through the label + a readable muted ink, so it still passes contrast.
+      const dim = it.hidden;
+      const rowBg = dim ? '#eef2f6' : '#fff';
+      const rowBd = dim ? '#cbd5e1' : '#e2e8f0';
+      const labelInk = dim ? '#475569' : '#0f172a';
+      const strike = dim ? ';text-decoration:line-through;text-decoration-color:#94a3b8' : '';
+      return '<div data-i="' + i + '" style="padding:8px 10px;background:' + rowBg + ';border:1px solid ' + rowBd + ';border-radius:7px;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+        '<label style="display:flex;align-items:center;gap:8px;flex:1;min-width:0;cursor:pointer;font-size:13px;color:' + labelInk + '">' +
           '<input class="_sc-vis" data-i="' + i + '" type="checkbox" ' + (it.hidden ? '' : 'checked') + ' style="width:16px;height:16px;cursor:pointer">' +
-          '<span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(it.label) + '</span>' +
+          '<span style="font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis' + strike + '">' + esc(it.label) + '</span>' +
         '</label>' +
         '<span style="display:flex;gap:4px">' +
           '<button class="_sc-up"   data-i="' + i + '" type="button" title="Færa upp" style="background:#fff;border:1px solid #cbd5e1;border-radius:5px;width:26px;height:24px;cursor:pointer;font-size:11px">▲</button>' +
@@ -163,16 +171,30 @@
         '</span>' +
       '</div>';
     }).join('');
-    // Wire row controls
-    root.querySelectorAll('._sc-up').forEach(b => b.addEventListener('click', () => moveItem(+b.dataset.i, -1)));
-    root.querySelectorAll('._sc-down').forEach(b => b.addEventListener('click', () => moveItem(+b.dataset.i,  1)));
-    root.querySelectorAll('._sc-sep').forEach(b => b.addEventListener('click', () => insertSepAfter(+b.dataset.i)));
-    root.querySelectorAll('._sc-rm').forEach(b => b.addEventListener('click', () => removeItem(+b.dataset.i)));
-    root.querySelectorAll('._sc-vis').forEach(cb => cb.addEventListener('change', e => {
-      const i = +cb.dataset.i;
-      _state.items[i].hidden = !cb.checked;
+    // Row controls are handled by ONE delegated listener wired in open() — see
+    // wireListDelegation(). Re-attaching per-row listeners here on every ▲▼ was
+    // the reorder lag (N rows × 5 listeners rebuilt each click); now renderList
+    // is a pure innerHTML swap so moves are instant.
+  }
+  // Delegated handlers for the row ▲ ▼ + Lína/× buttons and the visibility
+  // checkbox. Attached once per modal open on the persistent #_sc-list element,
+  // so every subsequent renderList() innerHTML rebuild is covered automatically.
+  function wireListDelegation(listEl) {
+    listEl.addEventListener('click', e => {
+      const b = e.target.closest && e.target.closest('button[data-i]');
+      if (!b || !listEl.contains(b)) return;
+      const i = +b.dataset.i;
+      if (b.classList.contains('_sc-up')) moveItem(i, -1);
+      else if (b.classList.contains('_sc-down')) moveItem(i, 1);
+      else if (b.classList.contains('_sc-sep')) insertSepAfter(i);
+      else if (b.classList.contains('_sc-rm')) removeItem(i);
+    });
+    listEl.addEventListener('change', e => {
+      const cb = e.target.closest && e.target.closest('input._sc-vis[data-i]');
+      if (!cb || !listEl.contains(cb)) return;
+      _state.items[+cb.dataset.i].hidden = !cb.checked;
       renderList();
-    }));
+    });
   }
   function moveItem(i, delta) {
     const j = i + delta;

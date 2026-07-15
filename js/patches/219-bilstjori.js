@@ -807,10 +807,14 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
       const id = btn.dataset.id;
       const wasOn = (+((arsAll()[String(id)] || {}).field_inspected_year) === curYear());
       btn.classList.toggle('is-done', !wasOn); btn.textContent = !wasOn ? '✓ Búið' : '✓ Merkja búið';   // optimistic
+      clearErrBar();
       const ok = await arsSave(id, { field_inspected_year: wasOn ? 0 : curYear() });
       try { if (window.Leidsogn && Leidsogn.refresh) Leidsogn.refresh(); } catch (_) {}
-      toast(ok ? (wasOn ? '↩︎ Tekið úr vinnslu' : '🔵 Sent í vinnslu — skýrsla eftir') : '⚠ Villa við vistun');
-      renderList(); renderPins();
+      if (ok) toast(wasOn ? '↩︎ Tekið úr vinnslu' : '🔵 Sent í vinnslu — skýrsla eftir');
+      else errBar('⚠ Vistun mistókst — merking ekki uppfærð. Reyndu aftur.', () => {
+        const b2 = document.querySelector('[data-check][data-id="' + id + '"]'); if (b2) b2.click();
+      });
+      renderList(); renderPins();   // re-reads source of truth → optimistic toggle reverts if save failed
     }));
 
     const drive = document.getElementById('_bs-drive');
@@ -1082,7 +1086,10 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
       e.target.textContent = '… vinn'; e.target.disabled = true;
       logAct('company_done', { co_id: coId, co_nafn: c.nafn });   // vakt: fyrirtæki klárað
       if (window.ArsWorkflow && ArsWorkflow.markInVinnsla) { await ArsWorkflow.markInVinnsla(coId); }
-      else { await arsSave(coId, { field_inspected_year: curYear() }); }
+      else {
+        const okv = await arsSave(coId, { field_inspected_year: curYear() });
+        if (!okv) errBar('⚠ Vistun mistókst — „í vinnslu" ekki skráð. Reyndu aftur.', null);
+      }
       try { if (window.Leidsogn && Leidsogn.refresh) Leidsogn.refresh(); } catch (_) {}
       renderList(); renderPins();
       close();
@@ -1161,13 +1168,24 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
       box.querySelectorAll('.chk').forEach(btn => btn.addEventListener('click', async () => {
         const u = units.find(x => String(x.id) === String(btn.dataset.id));
         if (!u) return;
+        // Snapshot the fields updateForState() will overwrite, so a FAILED save
+        // can be rolled back — otherwise the optimistic chip lied about a change
+        // that never persisted (the "silently losing field inspections" bug).
+        const prev = { status: u.status, last_insp: u.last_insp, next_insp: u.next_insp,
+                       custody_status: u.custody_status, service_choice: u.service_choice };
         const next = ROLL[unitState(u)]; const ch = CHK[next];
         btn.className = ch.cls; btn.textContent = ch.label;   // optimistic
         Object.assign(u, updateForState(next));
+        clearErrBar();
         try {
           await saveUnitState(btn.dataset.id, next); draw();
           if (next === 'yfirfarid' || next === 'verkstaedi') logAct(next, { co_id: c.id, co_nafn: c.nafn, uttaeki_id: u.id });
-        } catch (_) { toast('⚠ Vistun mistókst'); }
+        } catch (_) {
+          Object.assign(u, prev); draw();   // roll UI back to the true (unsaved) state
+          errBar('⚠ Vistun mistókst — ' + (u.type || 'tæki') + ' ekki uppfært. Reyndu aftur.', () => {
+            const b2 = box.querySelector('.chk[data-id="' + u.id + '"]'); if (b2) b2.click();
+          });
+        }
       }));
       // Eyða tæki — leiðrétting þegar skýrslan var mistalin / tæki ekki lengur til.
       box.querySelectorAll('._bs-delunit').forEach(btn => btn.addEventListener('click', async () => {
@@ -1176,12 +1194,23 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
         if (!confirm('Eyða þessu tæki?\n\n' + (u.type || 'Tæki') + (u.serial ? ' · ' + u.serial : '') + '\n\nÞetta fjarlægir tækið varanlega af ' + (c.nafn || 'fyrirtækinu') + '.')) return;
         btn.disabled = true; btn.textContent = '…';
         try {
-          if (window.DB && DB.sb) await DB.sb.from('uttaeki').delete().eq('id', u.id);
+          // Supabase resolves with { error } instead of throwing — must inspect
+          // it, else a failed delete silently splices the row out of the list
+          // (row gone on screen, still in the DB).
+          if (window.DB && DB.sb) {
+            const r = await DB.sb.from('uttaeki').delete().eq('id', u.id);
+            if (r && r.error) throw new Error(r.error.message || 'delete villa');
+          }
           const i = units.findIndex(x => String(x.id) === String(u.id));
-          if (i >= 0) units.splice(i, 1);
+          if (i >= 0) units.splice(i, 1);   // only remove AFTER a confirmed delete
           logAct('delete_unit', { co_id: c.id, co_nafn: c.nafn, uttaeki_id: u.id });
-          toast('🗑 Tæki eytt'); draw();
-        } catch (_) { btn.disabled = false; btn.textContent = '🗑'; toast('⚠ Gat ekki eytt'); }
+          clearErrBar(); toast('🗑 Tæki eytt'); draw();
+        } catch (_) {
+          btn.disabled = false; btn.textContent = '🗑';   // row kept — nothing lost
+          errBar('⚠ Gat ekki eytt tæki — reyndu aftur.', () => {
+            const b2 = box.querySelector('._bs-delunit[data-id="' + u.id + '"]'); if (b2) b2.click();
+          });
+        }
       }));
     };
     draw();
@@ -1195,6 +1224,29 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
     document.body.appendChild(t);
     setTimeout(() => t.remove(), 1800);
   }
+
+  // Persistent error bar — for FAILED writes (a transient 1.8s toast is too easy
+  // to miss when a save silently failed and the optimistic UI was rolled back).
+  // Stays until the driver dismisses it (✕) or hits „↻ Reyna aftur". Fixed at the
+  // top so it shows above the overlay/sheet (z above toast). Single reused node.
+  function errBar(msg, retryFn) {
+    let bar = document.getElementById('_bs-errbar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = '_bs-errbar';
+      bar.style.cssText = 'position:fixed;left:0;right:0;top:0;z-index:100095;display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(180deg,#c0241f,#8a1010);color:#fff;font-family:var(--font,system-ui,-apple-system,sans-serif);font-size:14px;font-weight:700;box-shadow:0 6px 18px -6px rgba(0,0,0,.5)';
+      document.body.appendChild(bar);
+    }
+    bar.innerHTML =
+      '<span style="flex:1;min-width:0">' + esc(msg) + '</span>' +
+      (retryFn ? '<button type="button" class="_bs-eb-retry" style="border:0;border-radius:8px;padding:7px 12px;background:rgba(255,255,255,.92);color:#8a1010;font:inherit;font-weight:800;cursor:pointer">↻ Reyna aftur</button>' : '') +
+      '<button type="button" class="_bs-eb-x" aria-label="Loka" style="border:0;background:transparent;color:#fff;font-size:18px;font-weight:800;cursor:pointer;padding:0 4px;line-height:1">✕</button>';
+    bar.style.display = 'flex';
+    const x = bar.querySelector('._bs-eb-x'); if (x) x.onclick = () => { bar.style.display = 'none'; };
+    const r = bar.querySelector('._bs-eb-retry');
+    if (r) r.onclick = () => { bar.style.display = 'none'; try { retryFn(); } catch (_) {} };
+  }
+  function clearErrBar() { const b = document.getElementById('_bs-errbar'); if (b) b.style.display = 'none'; }
 
   // ── nav button + switchView hook + boot ──────────────────────────────────
   function injectSidebar() {

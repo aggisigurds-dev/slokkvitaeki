@@ -339,9 +339,23 @@
   // Trade-off: any nav button added after 3 s won't be auto-reordered, but
   // that's rare and a hard refresh fixes it. Reorder is also exposed on
   // window.SidebarReorder.reorder() if the user wants to trigger it manually.
-  document.addEventListener('DOMContentLoaded', scheduleReorder);
+  // 2026-07-14: anti-FOUC reveal. All view patches load with `defer`, so by
+  // DOMContentLoaded every synchronously-injected nav button exists. Do one
+  // authoritative reorder (places + applies cached hidden) and THEN reveal the
+  // nav — the head inline-style keeps it hidden until now, killing the popcorn +
+  // flash-then-hide startup. The 1.8s inline failsafe reveals even if this errors.
+  document.addEventListener('DOMContentLoaded', function () {
+    try { reorder(); } catch (_) {}
+    if (window.__revealSidebar) window.__revealSidebar();
+    scheduleReorder();
+  });
   setTimeout(scheduleReorder, 1500);
   setTimeout(scheduleReorder, 3000);
+  // Belt-and-braces: if DOMContentLoaded already fired before this patch ran,
+  // reveal on the next tick so the nav never waits for the 1.8s failsafe.
+  if (document.readyState !== 'loading' && window.__revealSidebar) {
+    setTimeout(function () { try { reorder(); } catch (_) {} window.__revealSidebar(); }, 0);
+  }
   // 2026-06-20: the old 6s/12s "late safety" passes were removed. The permanent
   // observer below already places any button into its slot the instant it is
   // injected, so those passes were redundant — and being the only reorders that

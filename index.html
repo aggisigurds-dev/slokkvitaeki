@@ -2,7 +2,7 @@
 <html lang="is">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#C93C1D"/>
@@ -50,6 +50,31 @@ input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 </style>
+<style>
+/* Sidebar anti-FOUC (2026-07-14): the nav's final order + visibility is computed by
+   patch 68 AFTER all deferred patches inject their buttons. Hide the nav until then
+   so the user never sees buttons popcorn in one-by-one or hidden ones flash in then
+   disappear. Gated on a class the inline script below removes on DOMContentLoaded
+   (or a 1.8s failsafe), so a failed/slow patch can never leave the nav hidden. */
+html.sb-settling nav.view-nav { visibility: hidden !important; }
+/* Pinch-zoom restored (2026-07-14, WCAG 1.4.4 — field staff read serials in sunlight):
+   dropped maximum-scale/user-scalable from the viewport. touch-action:manipulation keeps
+   buttons responsive (no double-tap-zoom delay) without disabling pinch-zoom on content. */
+button, .vnav-btn, [role="button"] { touch-action: manipulation; }
+</style>
+<script>
+/* Add the settling class immediately (before first paint) + a JS-independent failsafe
+   reveal so the sidebar can never stay permanently hidden. Patch 68 reveals earlier,
+   at DOMContentLoaded, once every deferred nav button exists and has been ordered. */
+(function () {
+  try {
+    var el = document.documentElement;
+    el.classList.add('sb-settling');
+    window.__revealSidebar = function () { try { el.classList.remove('sb-settling'); } catch (e) {} };
+    setTimeout(window.__revealSidebar, 1800);
+  } catch (e) {}
+})();
+</script>
 </head>
 <body>
 
@@ -319,7 +344,7 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 <script defer src="/js/patches/00-legacy.js?v=20260714merkja"></script>
 <script defer src="/js/patches/169-logo-customization.js?v=20260601b"></script>
 <script defer src="/js/patches/170-unit-delete.js?v=20260624a"></script>
-<script defer src="/js/patches/171-sidebar-customizer.js?v=20260705a"></script>
+<script defer src="/js/patches/171-sidebar-customizer.js?v=20260715a"></script>
 <script defer src="/js/patches/172-thjonustuverk.js?v=20260612a"></script>
 <script defer src="/js/patches/173-geocode-cache-from-appsettings.js?v=20260525a"></script>
 <script defer src="/js/patches/174-fyrirtaeki-stada.js?v=20260525a"></script>
@@ -390,7 +415,7 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 65-refill-log.js -->
 <script defer src="/js/patches/66-pricelist-seed.js?v=20260510f"></script>
 <script defer src="/js/patches/67-data-reset.js?v=20260510f"></script>
-<script defer src="/js/patches/68-sidebar-reorder.js?v=20260714h"></script>
+<script defer src="/js/patches/68-sidebar-reorder.js?v=20260714fouc"></script>
 <script defer src="/js/patches/71-tilbod-photos.js?v=20260510f"></script>
 <script defer src="/js/patches/72-customer-import.js?v=20260510f"></script>
 <script defer src="/js/patches/73-bulk-add-units.js?v=20260714types"></script>
