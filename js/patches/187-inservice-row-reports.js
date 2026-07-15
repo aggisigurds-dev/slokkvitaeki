@@ -157,6 +157,35 @@
     });
   }
 
+  // ── Shared: per-company '23–'26 report status ────────────────────────────
+  // Same lookup the on-screen year columns use (site-precise via locMap), so
+  // other views — e.g. the printed driver list (patch 153 printList) — show the
+  // identical '23/'24/'25/'26 status without duplicating the data plumbing.
+  // Returns { '2023': {has, due, reik}, … }. `has` = úttektarskýrsla á skrá.
+  function yearInfo(c) {
+    try { loadLoc(); loadReik(); } catch (_) {}   // best-effort warm (idempotent)
+    const out = {};
+    if (!c) { YEARS.forEach(y => out[y] = { has: false, due: (y === '2026'), reik: false }); return out; }
+    let uf = {}, att = {};
+    try { if (window.AppSettings && AppSettings.path) uf = AppSettings.path('uttekt_files') || {}; } catch (e) {}
+    try { if (window.AppSettings && AppSettings.path) att = AppSettings.path('company_attachments') || {}; } catch (e) {}
+    const cos = (window.Companies && Companies.list) || [];
+    const ktCount = {}; cos.forEach(x => { const d = digits(x.kennitala); if (d) ktCount[d] = (ktCount[d] || 0) + 1; });
+    const kt = digits(c.kennitala);
+    const coId = String(c.id);
+    const rec = uf[kt] || {};
+    const files = Array.isArray(att[coId]) ? att[coId] : [];
+    const locRec = (locMap && locMap[coId]) || {};
+    YEARS.forEach(y => {
+      const u = locRec[y] || ((ktCount[kt] || 0) <= 1 ? rec[y] : null);
+      const f = files.find(x => String(x.year) === y) ||
+                files.find(x => x.year == null && new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
+      out[y] = { has: !!(u || f), due: (y === '2026'), reik: !!(reikMap && reikMap[kt] && reikMap[kt].has(y)) };
+    });
+    return out;
+  }
+  window.InserviceRowReports = { YEARS: YEARS.slice(), yearInfo };
+
   // Clicking an uploaded-document icon: open a signed Storage URL. The tab is
   // opened synchronously (before the await) so popup blockers stay quiet.
   document.addEventListener('click', async e => {

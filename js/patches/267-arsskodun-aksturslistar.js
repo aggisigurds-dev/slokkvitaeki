@@ -27,6 +27,32 @@
   const GREY = { bg: '#eef2f7', bd: '#cbd5e1', fg: '#94a3b8' };
   let _decorating = false;
 
+  // ── Debounced save (2026-07-15, ósk Agnars) ──────────────────────────────
+  // Áður vistaðist á HVERJUM smelli (0→1→2→3) og hvert vistun endur-teiknaði →
+  // chip-inn „stökk" og erfitt að ná lista 2/3. Nú uppfærir smellurinn bara
+  // chip-inn strax; sjálf AppSettings.save keyrir EINU SINNI, 2 sek eftir
+  // síðasta smell. `_pending` heldur valda gildinu sýnilegu þótt endur-teiknað
+  // sé á meðan.
+  const SAVE_DELAY = 2000;
+  const _pending = Object.create(null);   // coId → valið akstur-gildi (óvistað)
+  const _timers  = Object.create(null);   // coId → vistunar-teljari
+  function effectiveAkstur(id) {
+    const p = _pending[String(id)];
+    return (p != null) ? p : aksturOf(id);
+  }
+  function scheduleSave(coId) {
+    coId = String(coId);
+    clearTimeout(_timers[coId]);
+    _timers[coId] = setTimeout(async () => {
+      delete _timers[coId];
+      const v = _pending[coId];
+      if (v == null) return;
+      const ok = await saveAkstur(coId, v);
+      if (ok) delete _pending[coId];        // vistað → aksturOf er nú rétt heimild
+      else toast('⚠ Villa við vistun aksturslista');
+    }, SAVE_DELAY);
+  }
+
   const arsAll = () => (window.AppSettings && AppSettings.path && AppSettings.path('arsskodun_customers')) || {};
   function aksturOf(id) {
     const a = arsAll()[String(id)];
@@ -68,17 +94,16 @@
   function makeChip(coId) {
     const chip = document.createElement('span');
     chip.className = '_arsak-chip';
-    styleChip(chip, aksturOf(coId));
-    chip.addEventListener('click', async (e) => {
+    styleChip(chip, effectiveAkstur(coId));
+    chip.addEventListener('click', (e) => {
       e.stopPropagation(); e.preventDefault();
       const cur = +chip.dataset.ak || 0;
       const next = (cur + 1) % 4;            // 0→1→2→3→0
-      styleChip(chip, next);                 // optimistic
+      styleChip(chip, next);                 // strax — engin bið, engin vistun hér
       chip.style.transform = 'scale(1.18)';
       setTimeout(() => { chip.style.transform = 'scale(1)'; }, 130);
-      const ok = await saveAkstur(coId, next);
-      if (!ok) { styleChip(chip, cur); toast('⚠ Villa við vistun'); return; }
-      toast(next ? ('🚗 Akstur ' + next) : '↩︎ Tekinn af aksturslista');
+      _pending[String(coId)] = next;         // muna valið
+      scheduleSave(coId);                    // vista EINU SINNI, 2s eftir síðasta smell
     });
     return chip;
   }
@@ -98,8 +123,10 @@
         // (the last <td>'s flex div, next to ✓ + status pill). Card → header row.
         let host = null;
         if (el.tagName === 'TR') {
-          const lastTd = el.querySelector('td:last-child');
-          host = (lastTd && lastTd.querySelector('div')) || lastTd;
+          // dedicated akstur column (patch 153, sortable) if present; else fall
+          // back to the old status-flex layout so nothing breaks pre-migration.
+          host = el.querySelector('td._arsak-cell');
+          if (!host) { const lastTd = el.querySelector('td:last-child'); host = (lastTd && lastTd.querySelector('div')) || lastTd; }
         } else if (isCard) {
           host = el.querySelector('div') || el;
         }
@@ -107,11 +134,11 @@
         let chip = host.querySelector(':scope > ._arsak-chip') || el.querySelector('._arsak-chip');
         if (!chip) {
           chip = makeChip(id);
-          // sit FIRST in the status flex (left of ✓) on rows; append on cards
+          // sit FIRST in the status flex (left of ✓) on rows; append on cards / cell
           if (el.tagName === 'TR' && host.firstChild) host.insertBefore(chip, host.firstChild);
           else host.appendChild(chip);
         } else if (force) {
-          styleChip(chip, aksturOf(id));
+          styleChip(chip, effectiveAkstur(id));
         }
       });
     } finally { _decorating = false; }
@@ -145,8 +172,9 @@
 
   window.ArsAkstur = {
     set: saveAkstur,
+    of: (id) => effectiveAkstur(id),        // núverandi akstur-gildi (m/óvistuðu vali) — fyrir röðun/prentun í patch 153
     cycle: async (id) => { const n = (aksturOf(id) + 1) % 4; await saveAkstur(id, n); decorate(true); return n; },
-    version: 'v2'
+    version: 'v3'
   };
   console.log('[ars-aksturslistar] v2 (inline chip) installed');
 })();
