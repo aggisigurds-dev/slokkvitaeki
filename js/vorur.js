@@ -190,7 +190,7 @@
     var n = (((p && p.nafn) || '') + ' ' + ((p && p.flokkur) || '')).toLowerCase();
     if(/fro[ðd]/.test(n)) return '#14b8a6';        // Froða — blágrænt
     if(/l[ée]ttv/.test(n)) return '#38bdf8';       // Léttvatn — himinblátt
-    if(/co2|kols[ýy]r/.test(n)) return '#dc2626';  // CO2 — rautt
+    if(/co[2₂]|kols[ýy]r|koltv[íi]/.test(n)) return '#dc2626';  // CO₂ — rautt (líka undirskrifað ₂ í "CO₂")
     if(/duft/.test(n)) return '#2563eb';           // Duft — blátt
     if(/\babf\b/.test(n)) return '#14b8a6';
     if(/\babc\b/.test(n)) return '#2563eb';
