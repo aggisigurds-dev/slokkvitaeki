@@ -967,21 +967,29 @@
       if (!window.AppSettings || !window.AppSettings.save) { alert('Engar stillingar tiltækar'); return; }
       const curYear = new Date().getFullYear();
       const allMap = (window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
-      const entry = Object.assign({}, allMap[String(coId)] || {});
+      const entry = allMap[String(coId)] || {};
       const isCurrentlyMarked = +entry.field_inspected_year === curYear;
-      if (isCurrentlyMarked) {
-        delete entry.field_inspected_year;
-      } else {
-        entry.field_inspected_year = curYear;
-      }
-      const map = Object.assign({}, allMap, { [String(coId)]: entry });
+      const newVal = isCurrentlyMarked ? 0 : curYear;   // 0 = ekki í vinnslu (deep-merge heldur 0, ólíkt delete)
       btn.disabled = true;
-      const ok = await window.AppSettings.save({ [STORAGE_KEY]: map });
+      // RACE-LAGFÆRING (2026-07-15): áður var ÖLL arsskodun_customers taflan skrifuð
+      // úr gömlum lestri (`allMap`) → hak á einni röð gat yfirskrifað nýlega breytingu
+      // á annarri röð. Nú er AÐEINS þessi færsla skrifuð (AppSettings.save djúp-merge-ar),
+      // svo raðir stangast ekki á.
+      const ok = await window.AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { field_inspected_year: newVal } } });
       if (!ok) { alert('Vista mistókst'); btn.disabled = false; return; }
       // Update local cache so re-render picks up the change without a full reload
       const c = _cache.list.find(x => x.id === coId);
-      if (c) c._ars = entry;
+      if (c) c._ars = Object.assign({}, c._ars || {}, { field_inspected_year: newVal });
+      // JUMP-LAGFÆRING: render() endur-teiknar allan listann → skrun stökk á topp.
+      // Varðveita skrunstöðu skrun-hýsilsins (og glugga) yfir endur-teiknun.
+      const host = (function (el) { let n = el; while (n && n !== document.body) { const s = getComputedStyle(n); if (/(auto|scroll)/.test(s.overflowY) && n.scrollHeight > n.clientHeight) return n; n = n.parentElement; } return document.scrollingElement || document.documentElement; })(main);
+      const sy = host ? host.scrollTop : 0, wy = window.scrollY;
       render();
+      const _restore = () => { try { if (host) host.scrollTop = sy; window.scrollTo(0, wy); } catch (_) {} };
+      requestAnimationFrame(_restore);
+      // Patch 187/267 endur-sprauta ár-dálkum/akstur-chip ASYNC eftir render (breytir
+      // hæð) → endurstilla aftur þegar það hefur sest svo skrun reki ekki til.
+      setTimeout(_restore, 340);
     }));
 
     if (keepSearchFocus) {
