@@ -1,0 +1,87 @@
+<!-- Rekstrarfélög (v3) — ACCORDION skeleton (class-only, uses theme.css).
+     {{placeholders}} = data. Repeat .acc per company; repeat <tr> per building. -->
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body>
+<div class="page">
+
+  <!-- header -->
+  <div class="page-head">
+    <button class="btn btn--dark">‹ Til baka</button>
+    <div>
+      <h1 class="page-title">Rekstrarfélög</h1>
+      <p class="page-sub">{{COUNT}} félög · smelltu til að opna</p>
+    </div>
+    <div class="search">
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#9aa3b5" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+      <input placeholder="Leita að félagi…">
+    </div>
+  </div>
+
+  <!-- accordion list -->
+  <div class="acc-list">
+
+    <!-- ===== repeat .acc per company (add .is-open to expand) ===== -->
+    <div class="acc is-open">
+      <!-- clickable hero header -->
+      <button class="acc__head">
+        <span class="acc__logo">🏢</span>
+        <span class="acc__id">
+          <span class="acc__name">{{COMPANY}}</span>
+          <span class="acc__sub">kt. {{KT}} · {{EMAIL}}</span>
+        </span>
+        <span class="pill pill--ghost">🏢 {{BLD_COUNT}} byggingar</span>
+        <span class="pill pill--overdue">⚠ {{OVERDUE}}</span>   <!-- omit if 0 -->
+        <span class="acc__chev">⌄</span>
+      </button>
+
+      <!-- collapsible body -->
+      <div class="acc__body">
+        <div class="acc__pad">
+          <div class="chip-row">
+            <span class="pill pill--done">✓ {{DONE}} með úttekt</span>
+            <span class="pill pill--pending">⚠ {{PENDING}} vantar</span>
+            <span class="pill pill--overdue">🔴 {{OVERDUE}} liðin</span>
+          </div>
+
+          <div class="tbl-wrap">
+            <table class="data-table">
+              <thead><tr>
+                <th>BYGGING</th><th>KENNITALA</th><th class="c">TÆKI</th>
+                <th class="c">2023</th><th class="c">2024</th><th class="c">2025</th><th class="c">2026</th>
+                <th>NÆSTA SKOÐUN</th>
+              </tr></thead>
+              <tbody>
+                <!-- ===== repeat <tr> per building ===== -->
+                <tr>
+                  <td class="cell-name">
+                    <span class="rail rail--overdue"></span>  <!-- rail--done | rail--overdue | rail--none -->
+                    <span class="b-name">{{B_NAME}}</span>
+                    <span class="b-addr">📍 {{B_ADDR}}</span>
+                  </td>
+                  <td class="mono">{{B_KT}}</td>
+                  <td class="c mono b-taeki">{{B_TAEKI}}</td>   <!-- add .is-zero when 0 -->
+                  <td class="c"><span class="ycell ycell--none">·</span></td>
+                  <td class="c"><span class="ycell ycell--done"><i></i>{{N}}</span></td>
+                  <td class="c"><span class="ycell ycell--done"><i></i>{{N}}</span></td>
+                  <td class="c"><span class="ycell ycell--hist"><i></i>{{N}}</span></td>
+                  <td><span class="next next--overdue">⚠ {{DATE}}</span></td> <!-- next--ok = mono date, or "—" -->
+                </tr>
+                <!-- ===== end <tr> ===== -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- ===== end .acc ===== -->
+
+  </div>
+</div>
+</body>
+</html>

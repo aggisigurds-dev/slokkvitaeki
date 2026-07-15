@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  #app{--accent:#e23232;--ring:rgba(220,40,34,.55);--glow:rgba(190,20,20,.5);
+    --btn-grad:linear-gradient(145deg,#120203,#8a1014 43%,#bc1c1c 53%,#150203);
+    --metb:linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318);}
+  a{color:#2f5fe0;text-decoration:none}
+  tbody tr{transition:background .12s ease;}
+  tbody tr:nth-child(even){background:#fbfcfe;}
+  tbody tr:hover{background:#f3f6fc;}
+  tbody tr:hover .rail{background:#2f5fe0!important;}
+  .acc{transition:box-shadow .18s ease;}
+  .acc-body{overflow:hidden;transition:max-height .32s ease, opacity .24s ease;}
+  .chev{transition:transform .28s ease;}
+</style>
+</helmet>
+<div id="app" style="display:flex;min-height:100vh;width:100%;background:linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%);font-family:'Space Grotesk',system-ui,sans-serif;">
+
+  <main style="flex:1;min-width:0;padding:20px 24px 60px;max-width:1180px;margin:0 auto;">
+
+    <!-- header row -->
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">
+      <button style="display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 16px;border-radius:10px;border:1px solid #0a0b0d;background:var(--metb);color:#fff;font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"></path></svg>Til baka</button>
+      <div><div style="font-size:24px;font-weight:700;color:#fff;letter-spacing:-.01em;">Rekstrarfélög</div>
+      <div style="font-family:'Space Mono',monospace;font-size:12.5px;color:rgba(255,255,255,.55);margin-top:2px;">{{ count }} félög · smelltu til að opna</div></div>
+      <div style="margin-left:auto;position:relative;width:260px;">
+        <svg style="position:absolute;left:13px;top:50%;transform:translateY(-50%);color:#9aa3b5;" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>
+        <input placeholder="Leita að félagi…" style="width:100%;height:42px;padding:0 14px 0 38px;border-radius:12px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#141822;font-family:inherit;font-size:13.5px;outline:none;box-shadow:0 8px 20px -14px rgba(0,0,0,.5);" />
+      </div>
+    </div>
+
+    <!-- accordion list -->
+    <div style="display:flex;flex-direction:column;gap:14px;">
+      <sc-for list="{{ companies }}" as="c" hint-placeholder-count="3">
+        <div class="acc" style="border-radius:18px;overflow:hidden;box-shadow:0 16px 40px -22px rgba(10,20,50,.65);">
+
+          <!-- company hero (clickable header) -->
+          <div onClick="{{ c.toggle }}" style="position:relative;cursor:pointer;padding:18px 22px;background:linear-gradient(110deg,#0c1018 0%,#13203f 45%,#274a9e 100%);display:flex;align-items:center;gap:16px;">
+            <div style="width:48px;height:48px;flex:none;border-radius:13px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;color:#fff;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"></path></svg></div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:19px;font-weight:700;color:#fff;">{{ c.name }}</div>
+              <div style="font-family:'Space Mono',monospace;font-size:12px;color:rgba(255,255,255,.6);margin-top:2px;">{{ c.sub }}</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px;flex:none;">
+              <span style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 13px;">🏢 {{ c.bldCount }}</span>
+              <sc-if value="{{ c.hasOverdue }}" hint-placeholder-val="">
+                <span style="display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(145deg,#e2555f,#a01820 60%,#6c0e14);border:1px solid #4a0a0e;border-radius:8px;padding:4px 10px;text-shadow:0 1px 1px rgba(0,0,0,.3);">⚠ {{ c.overdue }}</span>
+              </sc-if>
+              <span class="chev" style="transform:rotate({{ c.rot }});color:#fff;font-size:15px;width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;">⌄</span>
+            </div>
+          </div>
+
+          <!-- collapsible body -->
+          <div class="acc-body" style="max-height:{{ c.maxH }};opacity:{{ c.op }};background:#fff;">
+            <div style="padding:16px 18px;">
+              <!-- summary chips -->
+              <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+                <span style="font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:8px;color:#fff;background:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#062815);border:1px solid #062815;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3);">✓ {{ c.done }} með úttekt</span>
+                <span style="font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:8px;color:#fff;background:linear-gradient(145deg,#d4a94f,#8a5310 60%,#3f2905);border:1px solid #3f2905;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3);">⚠ {{ c.pending }} vantar</span>
+                <span style="font-size:11.5px;font-weight:600;padding:4px 11px;border-radius:8px;color:#fff;background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #4a0a0e;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3);">🔴 {{ c.overdue }} liðin</span>
+              </div>
+              <!-- buildings table (prebuilt) -->
+              {{ c.table }}
+            </div>
+          </div>
+
+        </div>
+      </sc-for>
+    </div>
+
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1180,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  state = { open: { 0:true } };
+
+  yearCell(kind, n){
+    const R=React.createElement;
+    if(kind==='none') return R('span',{style:{color:'#cbd2dc'}},'·');
+    const map={
+      done:['#4fd08a','linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#062815)','#062815'],
+      hist:['#8fb0ff','linear-gradient(145deg,#3a6ae8,#1c3d8c 60%,#0a1a3a)','#0a1a3a'],
+      todo:['#cdd4de','linear-gradient(145deg,#3a3e46,#23262d 60%,#111318)','#0a0b0d']
+    };
+    const c=map[kind]||map.todo;
+    return R('span',{style:{display:'inline-flex',alignItems:'center',gap:'4px',fontFamily:"'Space Mono',monospace",fontSize:'11.5px',fontWeight:700,color:'#fff',background:c[1],border:'1px solid '+c[2],borderRadius:'7px',padding:'3px 8px',boxShadow:'inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4)',textShadow:'0 1px 1px rgba(0,0,0,.3)'}},
+      R('span',{style:{width:'6px',height:'6px',borderRadius:'50%',background:c[0]}}), String(n));
+  }
+  nextCell(date, over){
+    const R=React.createElement;
+    if(!date) return R('span',{style:{color:'#cbd2dc',fontFamily:"'Space Mono',monospace",fontSize:'12.5px'}},'—');
+    if(over) return R('span',{style:{display:'inline-flex',alignItems:'center',gap:'5px',fontFamily:"'Space Mono',monospace",fontSize:'12.5px',fontWeight:700,color:'#fff',background:'linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10)',border:'1px solid #4a0a0e',borderRadius:'8px',padding:'4px 10px',boxShadow:'inset 0 1px 0 rgba(255,255,255,.3),0 2px 4px -2px rgba(0,0,0,.4)',textShadow:'0 1px 1px rgba(0,0,0,.3)'}},'⚠ '+date);
+    return R('span',{style:{fontFamily:"'Space Mono',monospace",fontSize:'12.5px',color:'#3a4250'}},date);
+  }
+
+  buildTable(rows){
+    const R=React.createElement;
+    const th=(t,al)=>R('th',{style:{textAlign:al||'left',padding:'10px 12px',fontSize:'10.5px',fontWeight:700,letterSpacing:'.08em',color:'#f0f2f5',whiteSpace:'nowrap'}},t);
+    const head=R('thead',null,R('tr',{style:{background:'linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318)'}},
+      th('BYGGING'),th('KENNITALA'),th('TÆKI','center'),th('2023','center'),th('2024','center'),th("2025",'center'),th("2026",'center'),th('NÆSTA SKOÐUN')));
+    const body=R('tbody',null, rows.map((b,i)=>{
+      const rail=b[7]?'#e23232':(b[4][0]==='done'||b[5][0]==='done')?'#1f9d57':'#dbe0e9';
+      return R('tr',{key:i,style:{background:i%2?'#fbfcfe':'#fff'}},
+        R('td',{style:{padding:'11px 14px 11px 16px',position:'relative'}},
+          R('span',{style:{position:'absolute',left:0,top:'6px',bottom:'6px',width:'4px',borderRadius:'3px',background:rail}}),
+          R('div',{style:{fontSize:'13.5px',fontWeight:600,color:'#11141c'}},b[0]),
+          R('div',{style:{fontSize:'11px',color:'#9098a6',marginTop:'1px'}},'📍 '+b[1])),
+        R('td',{style:{padding:'11px 12px',fontFamily:"'Space Mono',monospace",fontSize:'12px',color:'#5b6472',whiteSpace:'nowrap'}},b[2]),
+        R('td',{style:{padding:'11px 12px',textAlign:'center',fontFamily:"'Space Mono',monospace",fontSize:'13px',fontWeight:700,color:b[3]===0?'#cbd2dc':'#11141c'}},String(b[3])),
+        R('td',{style:{padding:'11px 8px',textAlign:'center'}},this.yearCell(b[8]?b[8][0]:'none',b[8]?b[8][1]:0)),
+        R('td',{style:{padding:'11px 8px',textAlign:'center'}},this.yearCell(b[9]?b[9][0]:'none',b[9]?b[9][1]:0)),
+        R('td',{style:{padding:'11px 8px',textAlign:'center'}},this.yearCell(b[4][0],b[4][1])),
+        R('td',{style:{padding:'11px 8px',textAlign:'center'}},this.yearCell(b[5][0],b[5][1])),
+        R('td',{style:{padding:'11px 14px'}},this.nextCell(b[6],b[7])));
+    }));
+    return R('div',{style:{borderRadius:'13px',border:'1px solid rgba(20,24,34,.1)',overflow:'hidden'}},
+      R('div',{style:{overflowX:'auto'}},
+        R('table',{style:{width:'100%',minWidth:'760px',borderCollapse:'collapse'}}, head, body)));
+  }
+
+  renderVals(){
+    const raw=[
+      {name:'Eignarekstur', sub:'kt. 471215-1470 · eignarekstur@eignarekstur.is', bldCount:'12 byggingar', done:5, pending:4, overdue:3,
+       buildings:[
+         ['Furugrund 73, húsfélag','Furugrund 73, 200 Kópavogi','480486-7309',10,['done',10],['todo',10],'2026-02-01',true,['none'],['done',10]],
+         ['Húsfélagið Bæjarlind 12','Bæjarlind 4','630103-2310',27,['done',27],['none'],'2026-06-15',true,['none'],['none']],
+         ['Árskógar 6-8, húsfélag','Árskógar 6-8, 109 Reykjavík','510293-2079',25,['done',25],['done',25],'2027-06-29',false,['done',25],['done',25]],
+         ['Gnoðavogur','Gnoðavogur 24, 104 Reykjavík','521181-0449',7,['hist',7],['done',7],'2026-01-01',true,['none'],['hist',7]],
+       ]},
+      {name:'Heimaleiga', sub:'kt. 510117-0690 · dimka@heimaleiga.is', bldCount:'24 byggingar', done:9, pending:11, overdue:4,
+       buildings:[
+         ['S30/Heimaleiga','Ármúla 13A 108 Reykjavík','711096-2059',113,['none'],['done',113],'2026-01-01',true,['none'],['none']],
+         ['Heimaleiga · Laugavegur 1','Laugavegur 1, 101 Reykjavík','510117-0690',8,['none'],['done',8],'2026-10-15',false,['none'],['none']],
+         ['Heimaleiga · Urðarhvarf 2','Urðarhvarf 2, 203 Kópavogi','510117-0690',84,['none'],['done',84],'2026-06-01',false,['done',84],['done',84]],
+       ]},
+      {name:'SAB ehf.', sub:'kt. 510496-2489 · Naustavör 18, 200 Kópavogi', bldCount:'3 byggingar', done:0, pending:1, overdue:0,
+       buildings:[
+         ['Naustavör 18','Naustavör 18, 200 Kópavogi','510496-2489',0,['none'],['none'],'',false,['none'],['none']],
+       ]},
+    ];
+    const companies=raw.map((c,i)=>{
+      const isOpen=!!this.state.open[i];
+      return {
+        name:c.name, sub:c.sub, bldCount:c.bldCount,
+        done:c.done, pending:c.pending, overdue:c.overdue,
+        hasOverdue:c.overdue>0, 
+        maxH:isOpen?'1200px':'0px', op:isOpen?1:0, rot:isOpen?'180deg':'0deg',
+        toggle:()=>this.setState(s=>({open:Object.assign({},s.open,{[i]:!s.open[i]})})),
+        table:this.buildTable(c.buildings),
+      };
+    });
+    return { count:companies.length, companies };
+  }
+}
+</script>
+</body>
+</html>
