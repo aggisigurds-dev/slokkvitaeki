@@ -190,25 +190,28 @@
     var n = (((p && p.nafn) || '') + ' ' + ((p && p.flokkur) || '')).toLowerCase();
     if(/fro[ðd]/.test(n)) return '#14b8a6';        // Froða — blágrænt
     if(/l[ée]ttv/.test(n)) return '#38bdf8';       // Léttvatn — himinblátt
-    if(/co2|kols[ýy]r/.test(n)) return '#dc2626';  // CO2 — rautt
+    if(/co[2₂]|kols[ýy]r|koltv[íi]/.test(n)) return '#dc2626';  // CO₂ — rautt (líka undirskrifað ₂ í "CO₂")
     if(/duft/.test(n)) return '#2563eb';           // Duft — blátt
     if(/\babf\b/.test(n)) return '#14b8a6';
     if(/\babc\b/.test(n)) return '#2563eb';
     if(/\bab\b/.test(n)) return '#38bdf8';
     return null;
   }
+  // Deila tegundarlitnum með öðrum sýnum (Sala/POS) svo skilgreiningin drift-i ekki.
+  try { window.SlokkTypeColor = typeColor; } catch(e){}
 
   function renderCard(p){
       var priceInc = p.verd_an_vsk * (1 + (p.vsk_prosenta||24)/100);
       var tc = typeColor(p);
-      var typeBar = tc ? '<div style="position:absolute;left:0;top:0;bottom:0;width:6px;border-radius:12px 0 0 12px;background:'+tc+'"></div>' : '';
-      var img = p.mynd ? '<img src="'+esc(p.mynd)+'" style="width:100%;height:140px;object-fit:cover;border-radius:8px;background:#f8fafc">' : '<div style="width:100%;height:140px;background:#f8fafc;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:32px">📦</div>';
+      // 2026-07-15: tegundarliturinn sem litaður VINSTRI-kantur Á myndinni sjálfri
+      // (ekki hringinn í kring, ekki sér-borði á spjaldinu) — svo tegundin sjáist strax.
+      var frame = tc ? ';border-left:3.6px solid '+tc+';box-sizing:border-box' : '';
+      var img = p.mynd ? '<img src="'+esc(p.mynd)+'" style="width:100%;height:140px;object-fit:cover;border-radius:8px;background:#f8fafc'+frame+'">' : '<div style="width:100%;height:140px;background:#f8fafc;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:32px'+frame+'">📦</div>';
       var isSvc = p.flokkur === 'Þjónusta';
       var badge = '<span style="display:inline-block;background:'+(isSvc?'#fef3c7':'#dbeafe')+';color:'+(isSvc?'#92400e':'#1e40af')+';font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;letter-spacing:0.03em">'+esc(p.flokkur||'')+'</span>';
       var stockInfo = !isSvc && p.birgdir!=null ? '<div style="font-size:11px;color:#64748b;margin-top:4px">🏷️ '+p.birgdir+' á lager</div>' : '';
       var virktPill = p.virkt ? '' : '<span style="display:inline-block;background:#fee2e2;color:#b91c1c;font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;margin-left:4px">ÓVIRKT</span>';
-      return '<div class="vorur-card" data-id="'+p.id+'" style="position:relative;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px'+(tc?' 12px 12px 16px':'')+';cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\'#cbd5e1\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.05)\'" onmouseout="this.style.borderColor=\'#e2e8f0\';this.style.boxShadow=\'\'">' +
-        typeBar +
+      return '<div class="vorur-card" data-id="'+p.id+'" style="position:relative;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:12px;cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor=\'#cbd5e1\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.05)\'" onmouseout="this.style.borderColor=\'#e2e8f0\';this.style.boxShadow=\'\'">' +
         img +
         '<div style="margin-top:10px">' +
           '<div>'+badge+virktPill+'</div>' +

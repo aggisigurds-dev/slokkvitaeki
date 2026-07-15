@@ -459,6 +459,10 @@
     var verd = priceInc; // always show m/VSK price prominent  
     var col = colorFromNafn(item.nafn);
     var ic = iconFromNafn(item.nafn);
+    // 2026-07-15: tegundar-litarammi líka í Sölu (POS) svo starfsfólk finni tækið
+    // hraðar — sami litur og á Vörur-spjaldinu (SlokkTypeColor deilt úr vorur.js).
+    var tc = (typeof window !== 'undefined' && window.SlokkTypeColor) ? window.SlokkTypeColor(item) : null;
+    var frame = tc ? ';border-left:3px solid '+tc+';box-sizing:border-box' : '';
     // Brunastál: pick a metallic ic-*.png for matching ÞJÓNUSTA items (theme CSS
     // swaps it in; other themes ignore data-bstic and keep the SVG icon).
     var bstic = '';
@@ -470,8 +474,9 @@
         : (/reyk|skynjari/.test(_n)) ? 'y'
         : (/duft/.test(_n)) ? 'b' : '';
     }
-    var img = item.mynd ? '<img src="'+esc(item.mynd)+'" style="width:42px;height:42px;object-fit:cover;border-radius:10px" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' : '';
-    var iconDiv = '<div class="pos-tile-ic"'+(bstic?' data-bstic="'+bstic+'"':'')+' style="width:42px;height:42px;background:'+col+'15;color:'+col+';border-radius:10px;display:'+(item.mynd?'none':'flex')+';align-items:center;justify-content:center">' + ICONS[ic] + '</div>';
+    var img = item.mynd ? '<img src="'+esc(item.mynd)+'" style="width:42px;height:42px;object-fit:cover;border-radius:10px'+frame+'" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'flex\'">' : '';
+    var icCol = tc || col;
+    var iconDiv = '<div class="pos-tile-ic"'+(bstic?' data-bstic="'+bstic+'"':'')+' style="width:42px;height:42px;background:'+icCol+'15;color:'+icCol+';border-radius:10px'+frame+';display:'+(item.mynd?'none':'flex')+';align-items:center;justify-content:center">' + ICONS[ic] + '</div>';
     var stockChip = (!isService && item.birgdir != null) ? '<div style="position:absolute;top:4px;right:6px;color:#065f46;font-size:11px;font-weight:700;text-shadow:0 1px 2px rgba(255,255,255,0.9),0 0 4px rgba(255,255,255,0.7)">'+item.birgdir+'</div>' : '';
     var cls = isService ? 'pos-svc' : 'pos-prod';
     return '<button class="'+cls+'" data-id="'+item.id+'" style="padding:10px 8px;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;cursor:pointer;text-align:center;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative">' +
