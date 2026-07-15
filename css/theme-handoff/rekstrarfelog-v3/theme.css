@@ -1,0 +1,101 @@
+/* ============================================================
+   Brunahólf — Rekstrarfélög (v3 accordion) theme
+   Self-contained: fonts inlined, no JS. Link this, use the classes
+   in rekstrarfelog.html. Toggle .is-open on .acc to expand a card.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+:root{
+  --accent:#e23232; --ring:rgba(220,40,34,.55);
+  --btn-grad:linear-gradient(145deg,#120203,#8a1014 43%,#bc1c1c 53%,#150203);
+  --metb:linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318);
+  --hero:linear-gradient(110deg,#0c1018 0%,#13203f 45%,#274a9e 100%);
+  --font:'Space Grotesk',system-ui,-apple-system,sans-serif;
+  --mono:'Space Mono',monospace;
+}
+*{box-sizing:border-box}
+body{margin:0;font-family:var(--font);
+  background:linear-gradient(180deg,#060607 0,#060607 95px,#aeb4be 360px,#9ba1ad 100%)}
+.page{max-width:1180px;margin:0 auto;padding:20px 24px 60px}
+
+/* header */
+.page-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.page-title{margin:0;font-size:24px;font-weight:700;color:#fff;letter-spacing:-.01em}
+.page-sub{margin:2px 0 0;font-family:var(--mono);font-size:12.5px;color:rgba(255,255,255,.55)}
+.search{margin-left:auto;position:relative;width:260px;display:flex;align-items:center;
+  height:42px;padding:0 14px;border-radius:12px;background:#fff;box-shadow:0 8px 20px -14px rgba(0,0,0,.5)}
+.search svg{margin-right:9px}
+.search input{flex:1;border:0;background:transparent;font-family:inherit;font-size:13.5px;color:#141822;outline:none}
+
+/* buttons + pills */
+.btn{height:38px;padding:0 16px;border-radius:10px;font-family:inherit;font-size:13px;font-weight:500;
+  cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.btn--dark{border:1px solid #0a0b0d;background:var(--metb);color:#fff}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:#fff;
+  padding:4px 11px;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4);
+  text-shadow:0 1px 1px rgba(0,0,0,.3);white-space:nowrap}
+.pill--ghost{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:20px;padding:5px 13px}
+.pill--done{background:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#062815);border:1px solid #062815}
+.pill--pending{background:linear-gradient(145deg,#d4a94f,#8a5310 60%,#3f2905);border:1px solid #3f2905}
+.pill--overdue{background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #4a0a0e}
+
+/* accordion */
+.acc-list{display:flex;flex-direction:column;gap:14px}
+.acc{border-radius:18px;overflow:hidden;box-shadow:0 16px 40px -22px rgba(10,20,50,.65)}
+.acc__head{width:100%;border:0;cursor:pointer;text-align:left;display:flex;align-items:center;gap:16px;
+  padding:18px 22px;background:var(--hero)}
+.acc__logo{width:48px;height:48px;flex:none;border-radius:13px;background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;font-size:20px}
+.acc__id{flex:1;min-width:0;display:flex;flex-direction:column}
+.acc__name{font-size:19px;font-weight:700;color:#fff}
+.acc__sub{font-family:var(--mono);font-size:12px;color:rgba(255,255,255,.6);margin-top:2px}
+.acc__chev{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);
+  display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;transition:transform .28s ease}
+.acc.is-open .acc__chev{transform:rotate(180deg)}
+.acc__body{max-height:0;opacity:0;overflow:hidden;background:#fff;transition:max-height .32s ease,opacity .24s ease}
+.acc.is-open .acc__body{max-height:1400px;opacity:1}
+.acc__pad{padding:16px 18px}
+.chip-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+
+/* table */
+.tbl-wrap{border-radius:13px;border:1px solid rgba(20,24,34,.1);overflow:hidden}
+.tbl-wrap>div,.tbl-scroll{overflow-x:auto}
+.data-table{width:100%;min-width:860px;border-collapse:collapse}
+.data-table thead tr{background:var(--metb)}
+.data-table th{text-align:left;padding:10px 12px;font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#f0f2f5;white-space:nowrap}
+.data-table th.c{text-align:center}
+.data-table tbody tr{transition:background .12s ease}
+.data-table tbody tr:nth-child(even){background:#fbfcfe}
+.data-table tbody tr:hover{background:#f3f6fc}
+.data-table tbody tr:hover .rail{background:#2f5fe0}
+.data-table td{padding:11px 12px}
+.data-table td.c{text-align:center}
+.mono{font-family:var(--mono);font-size:12px;color:#5b6472;white-space:nowrap}
+.cell-name{position:relative;padding-left:16px!important}
+.rail{position:absolute;left:0;top:6px;bottom:6px;width:4px;border-radius:3px;background:#dbe0e9}
+.rail--done{background:#1f9d57}.rail--overdue{background:#e23232}.rail--none{background:#dbe0e9}
+.b-name{display:block;font-size:13.5px;font-weight:600;color:#11141c}
+.b-addr{display:block;font-size:11px;color:#9098a6;margin-top:1px}
+.b-taeki{font-family:var(--mono);font-size:13px;font-weight:700;color:#11141c}
+.b-taeki.is-zero{color:#cbd2dc}
+
+/* year status pills (dark metal) */
+.ycell{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:11.5px;font-weight:700;
+  color:#fff;border-radius:7px;padding:3px 8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4);
+  text-shadow:0 1px 1px rgba(0,0,0,.3)}
+.ycell i{width:6px;height:6px;border-radius:50%;display:inline-block}
+.ycell--done{background:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#062815);border:1px solid #062815}
+.ycell--done i{background:#4fd08a}
+.ycell--hist{background:linear-gradient(145deg,#3a6ae8,#1c3d8c 60%,#0a1a3a);border:1px solid #0a1a3a}
+.ycell--hist i{background:#8fb0ff}
+.ycell--todo{background:linear-gradient(145deg,#3a3e46,#23262d 60%,#111318);border:1px solid #0a0b0d}
+.ycell--todo i{background:#cdd4de}
+.ycell--none{color:#cbd2dc;background:none;box-shadow:none;text-shadow:none;font-weight:400}
+
+/* næsta skoðun */
+.next{font-family:var(--mono);font-size:12.5px}
+.next--ok{color:#3a4250}
+.next--overdue{display:inline-flex;align-items:center;gap:5px;font-weight:700;color:#fff;
+  background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #4a0a0e;border-radius:8px;padding:4px 10px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}
+.next--none{color:#cbd2dc}
