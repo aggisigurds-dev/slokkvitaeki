@@ -1065,6 +1065,23 @@
   setTimeout(injectTab, 600);
   window.openRekstrarfelog=function(){ injectTab(); var b=document.querySelector('[data-view="rekstrarfelog"]'); if(b) b.click(); };
 
+  // Boot deep-link re-assert (sama mynstur og 219/231): sala.js boot-landerinn
+  // yfirskrifar #rekstrarfelog áður en flipinn er til — ef upphafs-hashið var
+  // þessi síða, opnum hana aftur eftir að allt er ræst.
+  (function(){
+    var want = /^#(rekstrarfelog|rekstrarfélog)$/i.test(location.hash||'');
+    if (!want) return;
+    var tries = 0;
+    var t = setInterval(function(){
+      tries++;
+      var v = viewEl();
+      var visible = v && v.style.display !== 'none' && v.innerHTML.length > 0;
+      if (visible || tries > 12){ clearInterval(t); return; }
+      try { window.openRekstrarfelog(); } catch(e){}
+      try { history.replaceState(null,'','#rekstrarfelog'); } catch(e){}
+    }, 700);
+  })();
+
   // 2026-07-12 (verkefnalisti systemic): EITT sameiginlegt hjálparfall svo
   // rekstrarfélaga-gögnin (handvirku netföng/drive OFAN Á lifandi customers_base
   // +fyrirtaeki) séu aldrei fryst í tveimur eintökum. Bæði þessi síða OG patch
