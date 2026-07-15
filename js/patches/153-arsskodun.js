@@ -611,6 +611,11 @@
       },
       priority: (a, b) => (+(b._ars.priority || 0)) - (+(a._ars.priority || 0))  // higher first
                        || String(a.nafn).localeCompare(b.nafn, 'is'),
+      akstur: (a, b) => {
+        const V = c => (window.ArsAkstur && ArsAkstur.of) ? (+ArsAkstur.of(c.id) || 0) : (+((c._ars || {}).akstur) || 0);
+        const R = v => v === 0 ? 99 : v;   // óáranslistaðir (0) neðst → listar 1/2/3 raðast saman fyrir prentun
+        return R(V(a)) - R(V(b)) || String(a.nafn).localeCompare(b.nafn, 'is');
+      },
       lastYr: (a, b) => (+a._ars.last_year_inspected || 0) - (+b._ars.last_year_inspected || 0)
                        || String(a.nafn).localeCompare(b.nafn, 'is'),
     };
@@ -1029,14 +1034,37 @@
         : (isSkipped ? ('Sleppt · síðast ' + lastYr)
         : (isOverdue ? 'Útrunnið' : 'Á dagskrá')));
       const phone = [c.simi, c.farsimi].filter(Boolean).join(' / ');
+      // '23–'26 úttektarskýrslu-staða — SAMA uppspretta og aðallistinn (patch 187),
+      // svo prentaði listinn passar við það sem er á skjánum.
+      const yi = (window.InserviceRowReports && window.InserviceRowReports.yearInfo) ? window.InserviceRowReports.yearInfo(c) : {};
+      const yearCells = ['2023', '2024', '2025', '2026'].map(y => {
+        const info = yi[y] || {};
+        const done = !!info.has, due = !done && !!info.due;
+        const bg = done ? '#DBEEE3' : (due ? '#FBEAC6' : '#F0EFEA');
+        const bd = done ? 'rgba(28,143,96,.35)' : (due ? 'rgba(217,146,6,.5)' : '#E2DFD6');
+        const col = done ? '#0F5E3F' : (due ? '#8A5C04' : '#B9B6AC');
+        const dc  = done ? '#1C8F60' : (due ? '#D99206' : 'transparent');
+        const reik = info.reik ? '<span class="reik" title="Reikningur tengdur">🧾</span>' : '';
+        return `<td class="yr"><span class="yrtag" style="background:${bg};border-color:${bd};color:${col}"><span class="yrdot" style="background:${dc}"></span>${y.slice(-2)}</span>${reik}</td>`;
+      }).join('');
+      // Aksturslisti (bílstjóra-númer) — sama gildi og chip-inn á skjánum
+      const akv = (window.ArsAkstur && ArsAkstur.of) ? (+ArsAkstur.of(c.id) || 0) : (+ars.akstur || 0);
+      const aksturCell = `<td class="c">${akv ? `<span class="akstur">🚗${akv}</span>` : ''}</td>`;
+      // Forgangur — AÐEINS litur (ósk Agnars), engin textamerking
+      const pri = +ars.priority || 0;
+      const PCOL = (window.Priority && window.Priority.COLORS) || ['#cbd5e1', '#16a34a', '#eab308', '#dc2626'];
+      const priCell = `<td class="c">${pri > 0 ? `<span class="pdot" style="background:${PCOL[pri] || PCOL[0]}"></span>` : ''}</td>`;
       return `<tr>
         <td class="num">${i + 1}</td>
         <td><strong>${esc(c.nafn || '')}</strong>${c.kennitala ? `<div class="kt">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}</td>
+        ${yearCells}
         <td>${esc(c.heimilisfang || '')}</td>
         <td class="nowrap">${esc(phone)}</td>
         <td class="c">${esc(MONTHS_IS_SHORT[m - 1] || '—')}</td>
         <td class="c nowrap">${eqTrioHtml(ars.equipment, 'print') || ''}</td>
         <td class="r">${est ? fmtKr(est) : ''}</td>
+        ${aksturCell}
+        ${priCell}
         <td class="st"><span class="dot" style="background:${dot}"></span>${esc(statusLabel)}</td>
       </tr>`;
     }).join('');
@@ -1064,6 +1092,13 @@
   .kt { font-size:9.5px; color:#94a3b8; font-family:monospace; }
   td.st { white-space:nowrap; }
   .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:5px; vertical-align:middle; box-shadow:0 0 0 1px rgba(0,0,0,.12); }
+  td.yr, th.c { text-align:center; }
+  td.yr { padding:4px 3px; white-space:nowrap; }
+  .yrtag { display:inline-flex; align-items:center; gap:4px; height:15px; padding:0 6px 0 5px; border-radius:2px 8px 8px 2px; font-family:monospace; font-size:9px; font-weight:700; border:1px solid transparent; box-sizing:border-box; }
+  .yrdot { width:4px; height:4px; border-radius:50%; flex:0 0 auto; }
+  .reik { margin-left:2px; font-size:9px; }
+  .akstur { display:inline-block; background:#38bdf8; color:#fff; border:1px solid #0ea5e9; border-radius:99px; padding:1px 7px; font-size:9.5px; font-weight:800; }
+  .pdot { display:inline-block; width:11px; height:11px; border-radius:50%; box-shadow:0 0 0 1px rgba(0,0,0,.12); }
   tbody tr:nth-child(even) td { background:#fafbfc; }
   tfoot td { font-weight:700; border-top:2px solid #0f172a; background:#fff; }
   .toolbar { margin-bottom:12px; }
@@ -1075,7 +1110,7 @@
   .toolbar .lbl { font-size:12px; color:#64748b; margin:0 4px 0 8px; align-self:center; }
   @media print { .toolbar { display:none; } body { padding:0; } }
 </style>
-<style id="pgstyle">@page { size: A4 portrait; margin: 12mm; }</style></head><body class="portrait">
+<style id="pgstyle">@page { size: A4 landscape; margin: 12mm; }</style></head><body class="landscape">
   <div class="toolbar">
     <button class="p" onclick="window.print()">🖨 Prenta</button>
     <span class="lbl">Snið:</span>
@@ -1092,12 +1127,15 @@
   </div>
   <table>
     <thead><tr>
-      <th class="num">#</th><th>Fyrirtæki</th><th>Heimilisfang</th><th>Sími</th>
-      <th style="text-align:center">Skoðun</th><th style="text-align:center">Tæki (SLT·BSL·RS)</th><th style="text-align:right">Áætl.</th>
+      <th class="num">#</th><th>Fyrirtæki</th>
+      <th class="c yr">'23</th><th class="c yr">'24</th><th class="c yr">'25</th><th class="c yr">'26</th>
+      <th>Heimilisfang</th><th>Sími</th>
+      <th class="c">Skoðun</th><th class="c">Tæki (SLT·BSL·RS)</th><th class="r">Áætl.</th>
+      <th class="c" title="Aksturslisti">🚗</th><th class="c" title="Forgangur">❗</th>
       <th>Staða ${curYear}</th>
     </tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr><td></td><td>Samtals ${arr.length} fyrirtæki</td><td colspan="4"></td><td class="r">${fmtKr(totalEst)}</td><td></td></tr></tfoot>
+    <tfoot><tr><td></td><td>Samtals ${arr.length} fyrirtæki</td><td colspan="8"></td><td class="r">${fmtKr(totalEst)}</td><td colspan="3"></td></tr></tfoot>
   </table>
   <script>
     function setOrient(o){
@@ -1106,7 +1144,7 @@
       document.getElementById('btn-ls').classList.toggle('act', o==='landscape');
       document.getElementById('btn-pt').classList.toggle('act', o==='portrait');
     }
-    setOrient('portrait');
+    setOrient('landscape');
   <\/script>
 </body></html>`);
     win.document.close();
@@ -1392,6 +1430,7 @@
                   <th data-sort="month"    class="_ars-sort" style="${css};text-align:center" ${hover}>Skoðun${arrow('month')}</th>
                   <th data-sort="tools"    class="_ars-sort" style="${css};text-align:center" ${hover}>Tæki${arrow('tools')}</th>
                   <th data-sort="estimate" class="_ars-sort" style="${css};text-align:right" ${hover}>Áætl.${arrow('estimate')}</th>
+                  <th data-sort="akstur"   class="_ars-sort" style="${css};text-align:center" ${hover} title="Aksturslisti (1/2/3) — raða til að prenta per bílstjóra">🚗${arrow('akstur')}</th>
                   <th data-sort="priority" class="_ars-sort" style="${css};text-align:center" ${hover}>❗${arrow('priority')}</th>
                   <th data-sort="status"   class="_ars-sort" style="${css};text-align:right" ${hover}>${curYear}${arrow('status')}</th>
                 `;
@@ -1441,6 +1480,7 @@
                   <td style="padding:8px 7px;text-align:center;font-weight:600;color:${m===curMonth?'#dc2626':'var(--ink2)'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</td>
                   <td style="padding:8px 7px;text-align:center">${eqTrioHtml(c._ars && c._ars.equipment, 'screen')}</td>
                   <td style="padding:8px 7px;text-align:right;color:#15803d;font-weight:700;font-variant-numeric:tabular-nums">${fmtKrShort(est)}</td>
+                  <td class="_arsak-cell" style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()"></td>
                   <td style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
                   <td style="padding:8px 11px">
                     <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
