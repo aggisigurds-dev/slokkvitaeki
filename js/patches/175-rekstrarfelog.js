@@ -1071,15 +1071,22 @@
   (function(){
     var want = /^#(rekstrarfelog|rekstrarfélog)$/i.test(location.hash||'');
     if (!want) return;
-    var tries = 0;
+    // 219-mynstrið: endur-fullyrða þar til NOTANDINN tekur við — annars stelur
+    // sala.js boot-landerinn (fer af stað ~1,5s inn) deep-linknum.
+    var userTook = false;
+    ['pointerdown','mousedown','keydown','touchstart'].forEach(function(ev){
+      window.addEventListener(ev, function(){ userTook = true; }, { capture:true, passive:true });
+    });
     var t = setInterval(function(){
-      tries++;
+      if (userTook){ clearInterval(t); return; }
       var v = viewEl();
-      var visible = v && v.style.display !== 'none' && v.innerHTML.length > 0;
-      if (visible || tries > 12){ clearInterval(t); return; }
-      try { window.openRekstrarfelog(); } catch(e){}
-      try { history.replaceState(null,'','#rekstrarfelog'); } catch(e){}
-    }, 700);
+      var visible = v && getComputedStyle(v).display !== 'none';
+      if (!visible){
+        try { window.openRekstrarfelog(); } catch(e){}
+        try { history.replaceState(null,'','#rekstrarfelog'); } catch(e){}
+      }
+    }, 400);
+    setTimeout(function(){ clearInterval(t); }, 20000); // öryggis-stopp
   })();
 
   // 2026-07-12 (verkefnalisti systemic): EITT sameiginlegt hjálparfall svo
