@@ -194,6 +194,37 @@
     var d = digits(kt);
     return list.find(function(c){ return digits(c.kennitala)===d; }) || null;
   }
+  // 2026-07-15 (Agnar: „þetta fer bara alltaf inn í hotel grandi"): rekstrarfélög
+  // deila EINNI kt á mörgum húsum — kt-uppfletting skilar alltaf fyrsta félaginu.
+  // Byggingar-röð flettist því upp á NAFNI fyrst (fold á broddstafi/hástafi/bil/
+  // bandstrik), svo á kt AÐEINS ef hún er einkvæm í skránni. Ekkert match → null
+  // (röðin þá ósmelanleg frekar en að opna rangt hús).
+  function foldNm(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,''); }
+  function companyForBld(b){
+    var list = (window.Companies && Companies.list) || [];
+    // Handfest tenging (✏️ á röðinni) trompar ALLA sjálfvirkni — b.co_id.
+    if (b && b.co_id != null) {
+      var pinned = list.find(function(c){ return String(c.id)===String(b.co_id); });
+      if (pinned) return pinned;
+    }
+    var fn = foldNm(b && b.nafn);
+    if (fn) {
+      var hits = list.filter(function(c){ return foldNm(c.nafn)===fn && !c.deleted_at; });
+      if (hits.length === 1) return hits[0];
+      if (hits.length > 1) {
+        var d0 = digits(b.kt);
+        var kh = hits.filter(function(c){ return digits(c.kennitala)===d0; });
+        if (kh.length >= 1) return kh[0];
+        return hits[0];
+      }
+    }
+    var d = digits(b && b.kt);
+    if (d) {
+      var ktHits = list.filter(function(c){ return digits(c.kennitala)===d && !c.deleted_at; });
+      if (ktHits.length === 1) return ktHits[0];   // einkvæm kt → öruggt
+    }
+    return null;
+  }
 
   // ---- attachments helpers (reuse app's CompanyAttachments) ----
   function firmAttachId(firm){ return 'rf:'+firm; } // synthetic id namespace
@@ -364,7 +395,7 @@
 
   // ---- combined overview: all buildings across all firms (totals + flat table) ----
   function computeBldStatus(b, equip, attMap, linkMap, today, caMap, sharedKt){
-    var co=companyByKt(b.kt);
+    var co=companyForBld(b);
     var st=equip.match(b.nafn);
     var ktShared=!!(sharedKt&&sharedKt[digits(b.kt)]);
     var att=((!ktShared)&&co&&(attMap[co.id]||attMap[String(co.id)]))||[0,0,0];
@@ -600,9 +631,27 @@
         '<span style="display:inline-flex;align-items:center;gap:5px;font-weight:700;font-size:12.5px;color:'+col+'">'+
         '<span style="width:6px;height:6px;border-radius:50%;background:'+dot+';flex:0 0 auto"></span>'+inner+'</span></td>';
     }
+    // 2026-07-15 (Agnar: „skjölin uppfærast aldrei … eldgömul nöfn og tengingar"):
+    // lesum úttektarskýrslur LIFANDI úr customer_documents (sama uppspretta og
+    // Kerfis-kort + öll tengitól dagsins skrifa í) — per staðar-id (fyrirtaeki_id).
+    // Gömlu handfærslurnar (linkMap/viðhengi) halda sér sem fallback.
+    var liveDocs = {};   // co.id → { '2026': driveUrl, … }
+    try {
+      var coIds = blds.map(function(b){ var c=companyForBld(b); return c?c.id:null; }).filter(function(x){return x!=null;});
+      if (coIds.length && window.DB && DB.sb) {
+        var ld = await DB.sb.from('customer_documents')
+          .select('fyrirtaeki_id,year,drive_file_id,doc_type,is_duplicate')
+          .in('fyrirtaeki_id', coIds).eq('doc_type','uttektarskyrsla');
+        (ld.data||[]).forEach(function(d){
+          if (d.is_duplicate || !d.drive_file_id || !d.year) return;
+          var k = String(d.fyrirtaeki_id);
+          (liveDocs[k] = liveDocs[k] || {})[String(d.year)] = 'https://drive.google.com/file/d/' + d.drive_file_id + '/view';
+        });
+      }
+    } catch(e) { console.warn('[rekstrarfelog] liveDocs', e); }
     // building table
     var rows=blds.map(function(b,_bi){
-      var co=companyByKt(b.kt);
+      var co=companyForBld(b);
       var link= co ? '<a href="#" data-coid="'+co.id+'" class="_rf_open" style="color:var(--ink1);text-decoration:none;font-weight:600">'+esc(b.nafn)+'</a>'
                    : '<span style="color:var(--ink1);font-weight:600">'+esc(b.nafn)+'</span> <span style="color:var(--ink3);font-size:11px">(ekki í skrá)</span>';
       var doc = co ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:#1d4ed8;text-decoration:underline">skjöl</a>' : '';
@@ -610,6 +659,8 @@
       var ktShared = !!(sharedKt && sharedKt[digits(b.kt)]);
       var att = ((!ktShared) && co && (attMap[co.id]||attMap[String(co.id)])) || [0,0,0];
       var lks = linkMap[bldLinkKey(b)] || (ktShared?null:linkMap[digits(b.kt)]) || {};
+      // Lifandi skjöl úr customer_documents trompa gamlar handfærslur.
+      if (co && liveDocs[String(co.id)]) { lks = Object.assign({}, lks, liveDocs[String(co.id)]); }
       var akey = bldAttachKey(b, co);
       var f23=fileForYearBld(caMap,akey,'2023',b,ktShared), f24=fileForYearBld(caMap,akey,'2024',b,ktShared),
           f25=fileForYearBld(caMap,akey,'2025',b,ktShared), f26=fileForYearBld(caMap,akey,'2026',b,ktShared);
@@ -637,6 +688,7 @@
              '<td style="padding:5px 6px;border-bottom:'+bd+';color:var(--ink3);font-variant-numeric:tabular-nums">'+fmtKt(b.kt)+'</td>'+
              unitCell+y23+y24+y25+y26+nextCell+
              '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:right;white-space:nowrap">'+doc+
+             ' <a href="#" class="_rf_editb" data-bi="'+_bi+'" title="Breyta byggingu / tengja rétt fyrirtæki" style="color:var(--brand);text-decoration:none;font-size:12px;margin-left:6px">✏️</a>'+
              ' <a href="#" class="_rf_delb" data-bi="'+_bi+'" title="Fjarlægja byggingu" style="color:#dc2626;text-decoration:none;font-size:12px;margin-left:6px">✕</a></td></tr>';
     }).join('');
     var summary='<div style="display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2);margin-bottom:8px">'+
@@ -760,6 +812,42 @@
       await saveData(d);
       info.buildings = d[name].buildings;
       fillBody(body, name, info);
+    });
+    // ✏️ Breyta byggingu: nafn / kt / heimilisfang / HANDFEST fyrirtækja-tenging
+    // (b.co_id — trompar alla sjálfvirka uppflettingu, sjá companyForBld).
+    body.querySelectorAll('._rf_editb').forEach(function(x){
+      x.addEventListener('click', async function(e){
+        e.preventDefault();
+        var bi = parseInt(x.getAttribute('data-bi'),10);
+        var b = (info.buildings||[])[bi]; if(!b) return;
+        var nafn = prompt('Nafn byggingar:', b.nafn||''); if(nafn===null) return;
+        var kt   = prompt('Kennitala:', b.kt||''); if(kt===null) return;
+        var heim = prompt('Heimilisfang:', b.heimilisfang||''); if(heim===null) return;
+        var cur = companyForBld(b);
+        var pick = prompt('Tengt fyrirtæki í skránni (nafn eða id — tómt = sjálfvirk uppfletting):', cur ? (cur.nafn||('#'+cur.id)) : '');
+        if(pick===null) return;
+        var co_id = null;
+        var pv = (pick||'').trim();
+        if (pv) {
+          var list = (window.Companies && Companies.list) || [];
+          var hit = /^#?\d+$/.test(pv) ? list.find(function(c){ return String(c.id)===pv.replace('#',''); }) : null;
+          if (!hit) { var fp = foldNm(pv); hit = list.find(function(c){ return foldNm(c.nafn)===fp; }) || list.find(function(c){ return foldNm(c.nafn).indexOf(fp)>=0; }); }
+          if (!hit) { alert('Fann ekkert fyrirtæki sem passar við „'+pv+'" — tengingin óbreytt.'); }
+          else {
+            co_id = hit.id;
+            if(!confirm('Festa tengingu á: '+(hit.nafn||'')+' (#'+hit.id+' · '+(hit.heimilisfang||'án heimilisfangs')+')?')) return;
+          }
+        }
+        var d = getData(); if(!d[name]) d[name]=info;
+        var arr = d[name].buildings||[]; if(!arr[bi]) return;
+        arr[bi].nafn = nafn.trim(); arr[bi].kt = kt.trim(); arr[bi].heimilisfang = heim.trim();
+        if (pv && co_id != null) arr[bi].co_id = co_id;
+        else if (!pv) delete arr[bi].co_id;   // tómt = aftur í sjálfvirka uppflettingu
+        await saveData(d);
+        info.buildings = arr;
+        if(window.Toast&&Toast.show) Toast.show('✓ Bygging uppfærð');
+        fillBody(body, name, info);
+      });
     });
     body.querySelectorAll('._rf_delb').forEach(function(x){
       x.addEventListener('click', async function(e){
