@@ -87,9 +87,14 @@ function bundleIndexHtml() {
     const srcM = /\bsrc\s*=\s*["']([^"']+)["']/i.exec(attrs);
     const src = srcM ? srcM[1] : null;
     const local = src && !/^https?:\/\//i.test(src) && !/^\/\//.test(src);
-    const special = /\b(?:defer|async)\b/i.test(attrs) || /type\s*=\s*["']module["']/i.test(attrs);
+    // `defer` scripts ARE bundleable (2026-07-15) — the ~234 /js/patches/*.js are
+    // all `defer`, so excluding them left them as individual requests (250 res,
+    // ~3s load). We bundle defer scripts into their OWN defer bundle (separate
+    // from non-defer runs) so execution order + timing stay identical.
+    const isDefer = /\bdefer\b/i.test(attrs);
+    const special = /\basync\b/i.test(attrs) || /type\s*=\s*["']module["']/i.test(attrs);
     const bundleable = !!(src && local && !special && body.trim() === '');
-    parts.push({ t: 'script', raw: m[0], src, bundleable });
+    parts.push({ t: 'script', raw: m[0], src, bundleable, defer: isDefer });
     last = tagRe.lastIndex;
   }
   if (last < html.length) parts.push({ t: 'html', s: html.slice(last) });
@@ -123,7 +128,7 @@ function bundleIndexHtml() {
         console.warn('[bundle] esbuild unavailable — shipping ' + fname + ' unminified');
       }
       bundledScripts += run.length;
-      out.push('<script src="/' + fname + '"></script>');
+      out.push('<script' + (run[0] && run[0].defer ? ' defer' : '') + ' src="/' + fname + '"></script>');
     } else if (run.length === 1) {
       out.push(run[0].raw);
     }
@@ -132,14 +137,20 @@ function bundleIndexHtml() {
 
   for (let i = 0; i < parts.length; i++) {
     const p = parts[i];
-    if (p.t === 'script' && p.bundleable) { run.push(p); continue; }
+    if (p.t === 'script' && p.bundleable) {
+      // A run must be homogeneous in defer-ness (defer executes after parse,
+      // non-defer inline) so a defer↔non-defer boundary flushes first.
+      if (run.length && run[0].defer !== p.defer) flush();
+      run.push(p);
+      continue;
+    }
     // Whitespace — or HTML comments, e.g. "hibernated" markers left where a
     // disabled patch's <script> used to be — between two bundleable scripts can
     // be absorbed into the bundle without breaking the run (so hibernating a
     // patch doesn't fragment the bundle into many small files).
     if (p.t === 'html' && p.s.replace(/<!--[\s\S]*?-->/g, '').trim() === '' && run.length) {
       const next = parts[i + 1];
-      if (next && next.t === 'script' && next.bundleable) continue;
+      if (next && next.t === 'script' && next.bundleable && next.defer === run[0].defer) continue;
     }
     flush();
     out.push(p.t === 'html' ? p.s : p.raw);
