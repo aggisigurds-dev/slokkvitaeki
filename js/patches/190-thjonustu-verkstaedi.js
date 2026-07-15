@@ -48,11 +48,16 @@
   // (field_inspected_year === curYear) telst með úttektina búna, og fullklárað
   // ár (last_year_inspected === curYear) sýnir öll fjögur skref græn — nema
   // skrefið hafi verið afhakað sérstaklega (explicit false vinnur alltaf).
-  function effSteps(a) {
+  function effSteps(a, hasReik) {
     a = a || {};
     const s = Object.assign({}, a[STEPS_KEY] || {});
     if (s.uttekt === undefined && +a.field_inspected_year === curYear) s.uttekt = true;
     if (+a.last_year_inspected === curYear) STEP_DEFS.forEach(([k]) => { if (s[k] === undefined) s[k] = true; });
+    // 2026-07-15: reikningur ársins þegar á skrá í customer_documents (sama
+    // gögn og græna „Reikningur <ár> sendur" borðinn) ⇒ Reikningur-skrefið
+    // telst búið þó enginn hafi smellt á það — send-leiðirnar (Kröfuyfirlit,
+    // PDF-sjálfvistun, Drive) skrifa ekki skref. Skýrt afhak (false) vinnur.
+    if (s.reikningur === undefined && hasReik) s.reikningur = true;
     return s;
   }
   // Bráðabirgða-merkingar (single-select) á hverju Í-vinnslu korti.
@@ -77,6 +82,9 @@
   // Keyed by digits-only kennitala. Loaded once, async, then re-render.
   let _reik2026 = new Set();
   let _reik2026Loaded = false;
+  // co.id → á reikning ársins (fyllt í buckets(), notað í skref-smellinum svo
+  // smellurinn sjái SÖMU afleiddu skrefin og teiknuð eru)
+  let _reikCoIds = new Set();
   async function loadReik2026() {
     try {
       const sb = (window.DB && DB.sb); if (!sb) return;
@@ -269,6 +277,7 @@
     const map = arsMap();
     const cos = (window.Companies && Companies.list) || [];
     const out = { dagskra: [], vinnsla: [], buid: [] };
+    _reikCoIds = new Set();
     cos.forEach(co => {
       if (!co || co.deleted_at) return;
       if (co.er_i_thjonustu === false) return;          // only service companies
@@ -279,10 +288,12 @@
       const info = arsInfo(co.id);
       // A saved (óklárað) report in the cloud (patch 227/228) = work in progress.
       const hasDraft = !!(window.SavedReports && SavedReports.has && SavedReports.has(co.id));
+      const hasReik = _reik2026.has(digits(co.kennitala));
+      if (hasReik) _reikCoIds.add(co.id);
       const card = {
         id: co.id, nafn: co.nafn || ('#' + co.id), kennitala: co.kennitala || '',
         month: m, aminning: (a.aminning || '').trim(),
-        steps: effSteps(a),   // afleidd úr 153-stöðu þegar skref eru óskráð
+        steps: effSteps(a, hasReik),   // afleidd úr 153-stöðu + reikningi ársins þegar skref eru óskráð
         mark: a.sv_mark || '',          // bráðabirgða-merking (single-select)
         note: a.sv_note || '',          // bráðabirgða-minnispunktur (frítexti)
         markedAt: +a.sv_mark_at || 0,   // hvenær síðast merkt (fyrir "Nýlega merkt" röðun)
@@ -290,7 +301,7 @@
         tekjur: +info.estimated_yearly || 0,
         hasDraft: hasDraft,
         doneDocs: hasFullDocs(co.id),  // already has skýrsla + reikningur for the year
-        reik2026: _reik2026.has(digits(co.kennitala))   // 2026 reikningur á skrá (customer_documents)
+        reik2026: hasReik   // 2026 reikningur á skrá (customer_documents)
       };
       if (ly === curYear) out.buid.push(card);
       else if (fy === curYear || hasDraft) out.vinnsla.push(card);   // started OR has a saved draft
@@ -554,7 +565,7 @@
       e.stopPropagation();
       const id = +bn.dataset.id, k = bn.dataset.step;
       const a = arsMap()[String(id)] || {};
-      const cur = effSteps(a);                                   // sama sýn og teiknuð er
+      const cur = effSteps(a, _reikCoIds.has(id));               // sama sýn og teiknuð er
       const next = Object.assign({}, a[STEPS_KEY] || {}, cur, { [k]: !cur[k] });
       const extra = {};
       if (next[k] && +a.last_year_inspected !== curYear) extra.field_inspected_year = curYear;
