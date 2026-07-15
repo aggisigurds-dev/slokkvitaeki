@@ -202,7 +202,10 @@
       var priceInc = p.verd_an_vsk * (1 + (p.vsk_prosenta||24)/100);
       var tc = typeColor(p);
       var typeBar = tc ? '<div style="position:absolute;left:0;top:0;bottom:0;width:6px;border-radius:12px 0 0 12px;background:'+tc+'"></div>' : '';
-      var img = p.mynd ? '<img src="'+esc(p.mynd)+'" style="width:100%;height:140px;object-fit:cover;border-radius:8px;background:#f8fafc">' : '<div style="width:100%;height:140px;background:#f8fafc;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:32px">📦</div>';
+      // 2026-07-15: tegundarliturinn líka UTAN UM myndina sjálfa, ekki bara vinstri
+      // kanturinn — svo tegundin (Duft/CO2/Léttvatn/Froða) sjáist strax á myndinni.
+      var frame = tc ? ';border:3px solid '+tc+';box-sizing:border-box' : '';
+      var img = p.mynd ? '<img src="'+esc(p.mynd)+'" style="width:100%;height:140px;object-fit:cover;border-radius:8px;background:#f8fafc'+frame+'">' : '<div style="width:100%;height:140px;background:#f8fafc;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:32px'+frame+'">📦</div>';
       var isSvc = p.flokkur === 'Þjónusta';
       var badge = '<span style="display:inline-block;background:'+(isSvc?'#fef3c7':'#dbeafe')+';color:'+(isSvc?'#92400e':'#1e40af')+';font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;letter-spacing:0.03em">'+esc(p.flokkur||'')+'</span>';
       var stockInfo = !isSvc && p.birgdir!=null ? '<div style="font-size:11px;color:#64748b;margin-top:4px">🏷️ '+p.birgdir+' á lager</div>' : '';
