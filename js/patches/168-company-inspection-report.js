@@ -448,6 +448,22 @@
         const meta = await CompanyAttachments.upload(co.id, file, { year: ar, kind: 'skyrsla' });
         if (meta) {
           _rfSync(); // patch 270: tölur skýrslunnar inn í facts/uttaeki/blob
+          // 2026-07-16 (ósk Agnars): eintak af skýrslunni fer LÍKA í Google Drive
+          // gegnum brunahólfs-endapunktinn /api/uttekt-upload (kanónískt nafn +
+          // #staðar-stimpill + customer_documents-röð; idempotent — sama skýrsla
+          // uppfærist, afritast aldrei). Best-effort: má ALDREI stöðva vistun.
+          try {
+            const pub = meta.public_url || meta.publicUrl || meta.url
+              || (meta.storage_path && window.DB && DB.sb && DB.sb.storage
+                  ? (DB.sb.storage.from('samningar').getPublicUrl(meta.storage_path).data || {}).publicUrl : '');
+            const body = { kt: ktDash, fyrirtaeki_id: co.id, company: n, address: _addr, year: +ar, month: _mIS };
+            if (pub) body.public_url = pub;
+            else body.pdf_base64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+            fetch('https://brunaholf.netlify.app/api/uttekt-upload', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            }).then(r => { if (!r.ok && r.status !== 404) console.warn('[168] uttekt-upload', r.status); })
+              .catch(e => console.warn('[168] uttekt-upload', e && e.message));
+          } catch (e) { console.warn('[168] uttekt-upload prep', e && e.message); }
           if (_cirSaveBtn) _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar;
           if (window.Toast && Toast.show) Toast.show('✓ Skýrsla vistuð sem ' + ar);
           // Skýrsla þessa árs raunverulega vistuð → „Skýrsla tilbúin/send" grænt
