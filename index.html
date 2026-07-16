@@ -28,11 +28,17 @@
     if(!key){ var sp=new URLSearchParams(location.search); key=sp.get('app')||''; if(!key&&sp.has('driver')) key='bilstjori'; }
     if(MAN[key]){
       var l=document.querySelector('link[rel="manifest"]');
-      if(l) l.setAttribute('href',MAN[key]+'?v=sep1');
+      if(l) l.setAttribute('href',MAN[key]+'?v=sep2');
       var tc=document.querySelector('meta[name="theme-color"]');
       if(tc&&key==='bilstjori') tc.setAttribute('content','#0a0b0d');
+      var TITLES={fjarmal:'Fjármál',verkefni:'Verkefni',bilstjori:'Bílstjóri'};
       var at=document.querySelector('meta[name="apple-mobile-web-app-title"]');
-      if(at) at.setAttribute('content', key.charAt(0).toUpperCase()+key.slice(1));
+      if(at) at.setAttribute('content', TITLES[key]||key);
+      try{ document.title=(TITLES[key]||key)+' — Slökkvitæki'; }catch(_){}
+      if(key==='bilstjori'){
+        // Sér-merki bílstjóra-appsins líka á iOS heimaskjá
+        document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="apple-touch-icon-precomposed"]').forEach(function(a){a.setAttribute('href','/img/app-bilstjori-apple.png?v=1');});
+      }
     }
   }catch(e){}
 })();

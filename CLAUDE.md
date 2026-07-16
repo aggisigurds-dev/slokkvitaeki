@@ -251,8 +251,11 @@ appended to `<body>` (so the `position:fixed` overlay isn't trapped by the conte
 panel's transformed ancestor) at `z-index:1000`, and `body.bs-active` hides the
 sidebar; the company sheet sits at `z-index:1100`.
 
-**Locked driver mode (`?driver`)**: the share link + the PWA `start_url` are
-`/?driver`. When that param is present (`LOCKED`), the app opens straight into
+**Locked driver mode (`?driver` / `/app/bilstjori/`)**: the share link + the PWA
+`start_url` are `/app/bilstjori/` (own manifest `manifest-bilstjori.json` with
+`id`/`scope`/`start_url` `/app/bilstjori/` + own icons `img/app-bilstjori-*.png`,
+so it installs as a SEPARATE app from the main one — whose `manifest.json` has
+`"id": "/"` + `start_url "/"`); `/?driver` stays a valid legacy alias. When that param is present (`LOCKED`), the app opens straight into
 Bílstjóri, drops the ✕ exit button, and any `App.switchView` away snaps back —
 so a driver can only see Bílstjóri. The office keeps full access via the bare URL.
 It's a focus lock, not security (client-side, anon Supabase key). The 🔗 button and
