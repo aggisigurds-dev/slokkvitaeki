@@ -213,6 +213,14 @@
     t.style.cssText += ';position:fixed;top:12px;right:112px;z-index:9997';
     document.body.appendChild(t);
   }
+  // Endur-beita geymdri sýn (2026-07-16): eftir flakk/síma-back datt síðan í
+  // breiða sýn af því data-viewmode týndist (bfcache/endurteiknun) — lesum
+  // localStorage aftur og setjum attribute-ið + endurteiknum ef það vantar.
+  function reapplyViewMode() {
+    const m = loadViewMode();
+    if (document.documentElement.dataset.viewmode !== m) applyViewMode(m, true);
+    ensureToggle();
+  }
   function bootViewModeToggle() {
     applyViewMode(loadViewMode(), false);
     ensureToggle();
@@ -220,6 +228,17 @@
     new MutationObserver(() => { clearTimeout(t); t = setTimeout(ensureToggle, 200); })
       .observe(document.body, { childList: true, subtree: true });
     [400, 1200, 3000, 6000].forEach(ms => setTimeout(ensureToggle, ms));
+    // Sýnin á að HALDAST: endur-beita við hvert flakk, síma-back, bfcache-
+    // endurkomu (pageshow) og þegar flipi vaknar aftur.
+    ['hashchange', 'popstate', 'pageshow'].forEach(ev =>
+      window.addEventListener(ev, () => setTimeout(reapplyViewMode, 0)));
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) reapplyViewMode();
+    });
+    // Öryggisnet: ef eitthvað þurrkar attribute-ið af <html> kemur það aftur.
+    new MutationObserver(reapplyViewMode)
+      .observe(document.documentElement, { attributes: true, attributeFilter: ['data-viewmode'] });
+    window.SlokkViewMode = { get: getViewMode, apply: applyViewMode, reapply: reapplyViewMode };
   }
 
   // ── Sidebar entry ────────────────────────────────────────────────────────
