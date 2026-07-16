@@ -233,11 +233,19 @@
         }
         // 2026-07-14: report facts win over the name-matched uttaeki guess.
         // The úttektarskýrsla is the ground truth for what was actually inspected.
+        // 2026-07-16 REGLA (stale-facts fix): facts-tækjatalan yfirskrifar lifandi
+        // uttaeki-afleiðsluna AÐEINS þegar skýrslan er FERSK (report_year >= 2025).
+        // Gömul skýrsla (2023/2024) má ekki fela tæki sem eru til í dag — t.d.
+        // fyrirtaeki 1458 (4 RS úr 2023-skýrslu vs 12 í uttaeki) og 703 (2024-
+        // skýrsla faldi 6 CO2). Gamalt facts-row má samt gefa inspect_month
+        // þegar ekkert ferskara er til. Handvirku yfirskriftirnar
+        // (equipment_manual / inspect_month_manual) vinna ÁFRAM yfir allt.
         const fact = factsById[String(c.id)];
         if (fact) {
+          const factFresh = +fact.report_year >= 2025;
           const eqp = fact.equipment && typeof fact.equipment === 'object' ? fact.equipment : null;
           const eqTotal = eqp ? Object.values(eqp).reduce((s, v) => s + (+v || 0), 0) : 0;
-          if (eqp && eqTotal > 0 && !manual.equipment_manual) {
+          if (factFresh && eqp && eqTotal > 0 && !manual.equipment_manual) {
             _ars.equipment = eqp;
             let est2 = 0;
             Object.entries(eqp).forEach(([cat, n]) => {
@@ -248,8 +256,13 @@
             _ars._unit_count = eqTotal;
             _ars._fromReport = true;
           }
-          // Inspection month from the report overrides the stored blob value.
-          if (!manual.inspect_month_manual && fact.inspect_month != null && +fact.inspect_month >= 1 && +fact.inspect_month <= 12) {
+          // 2026-07-16 MÁNAÐAR-FORGANGSREGLA: inspect_month_manual > blob
+          // inspect_month (hvaða gildi sem er, geymt af notanda) > fact.inspect_month
+          // > afleiðsla. Skýrslu-mánuðurinn FYLLIR aðeins í eyðu — geymdur blob-
+          // mánuður (t.d. fyrirtaeki 604, inspect_month=3) má aldrei tapa fyrir
+          // giski úr skýrslu.
+          const blobMonth = +manual.inspect_month >= 1 && +manual.inspect_month <= 12;
+          if (!manual.inspect_month_manual && !blobMonth && fact.inspect_month != null && +fact.inspect_month >= 1 && +fact.inspect_month <= 12) {
             _ars.inspect_month = +fact.inspect_month;
             _ars._month_from_report = true;
           }
