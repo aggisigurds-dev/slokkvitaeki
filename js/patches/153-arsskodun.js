@@ -720,6 +720,23 @@
   // beint — án þess að opna fyrirtækið.
   const OVR_LS = 'ars_override_mode';
   function overrideOn() { try { return localStorage.getItem(OVR_LS) === '1'; } catch (_) { return false; } }
+  // Breytingaskrá (2026-07-16, ósk Agnars): HVER handvirk yfirskrift skráist í
+  // Supabase-töfluna override_log (co, reitur, gamalt→nýtt, hvenær) svo Claude
+  // geti síðar lagað RÓTINA (ranga skýrslu/tengingu) og merkt resolved.
+  // Best-effort — má aldrei stöðva vistunina sjálfa.
+  function ovrLog(coId, field, oldV, newV) {
+    try {
+      const c = (_cache.byId && _cache.byId[coId]) || {};
+      const sb = getSB();
+      if (!sb) return;
+      sb.from('override_log').insert({
+        co_id: coId, co_nafn: c.nafn || null, field: field,
+        old_value: oldV == null ? null : String(oldV),
+        new_value: newV == null ? null : String(newV),
+        page: 'arsskodun'
+      }).then(() => {}, () => {});
+    } catch (_) {}
+  }
   // Gildi sem ber handvirka yfirskrift fær gult strikamerki + punkt.
   function manualMark(html, isManual) {
     if (!isManual) return html;
@@ -764,6 +781,7 @@
         ? await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: patch } })
         : false;
       if (!ok) { alert('Vista mistókst'); cell.innerHTML = prev; return; }
+      ovrLog(coId, 'inspect_month', cur || '—', v === 'clear' ? '↺ hreinsað' : (MONTHS_IS[patch.inspect_month - 1] || '—'));
       Object.assign(ars, patch);
       if (v === 'clear') { try { await loadAll(); } catch (_) {} }  // skýrslu-mánuðurinn flæðir aftur
       render();
@@ -805,6 +823,7 @@
         ? await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { last_year_inspected: y } } })
         : false;
       if (!ok) { alert('Vista mistókst'); cell.innerHTML = prev; return; }
+      ovrLog(coId, 'last_year_inspected', cur || '—', y || '↺ hreinsað');
       ars.last_year_inspected = y;
       render();
     };
@@ -1940,6 +1959,7 @@
             if (mv >= 1 && mv <= 12) { rec.inspect_month = mv; rec.inspect_month_manual = true; }
             else { delete rec.inspect_month; delete rec.inspect_month_manual; }
             if (window.AppSettings && AppSettings.save) await AppSettings.save({ arsskodun_customers: blob });
+            ovrLog(coId, 'inspect_month', MONTHS_IS[(+ars.inspect_month || 0) - 1] || '—', MONTHS_IS[mv - 1] || '↺ hreinsað');
             ars.inspect_month = mv || undefined;
           } catch (e) { alert('Mánuður vistaðist ekki: ' + (e.message || e)); }
         }
@@ -2013,6 +2033,7 @@
       // færslu — AppSettings.save djúp-merge-ar, svo aðrar raðir haldast.
       const ok = await window.AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: entry } });
       if (!ok) { alert('Vista mistókst'); return; }
+      ovrLog(coId, 'equipment', JSON.stringify((c._ars && c._ars.equipment) || {}), JSON.stringify(newEq));
       // Update local cache + redraw page so the card reflects new counts
       if (c._ars) { c._ars.equipment = newEq; c._ars.estimated_yearly = entry.estimated_yearly; c._ars.equipment_manual = true; }
       bg.remove();
