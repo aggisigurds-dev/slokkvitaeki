@@ -212,7 +212,10 @@
         const _ars = Object.assign({}, manual);
         const units = unitsByClient[foldName(c.nafn)] || [];
         _ars._units = units;   // keep the raw uttaeki rows so the modal can list + delete individual tæki
-        if (units.length) {
+        // 2026-07-16 (Lagfæringar-hamur): equipment_manual = the owner overrode the
+        // counts by hand — the manual blob equipment wins over BOTH the live
+        // uttaeki derivation and the report facts (same pattern as inspect_month_manual).
+        if (units.length && !manual.equipment_manual) {
           // 2026-06: estimate = Σ(tæki × Yfirferð × VSK) + Skýrslugerð + Akstur,
           // NO recharge. Same formula the detail uses (single source of truth).
           const equip = {};
@@ -234,7 +237,7 @@
         if (fact) {
           const eqp = fact.equipment && typeof fact.equipment === 'object' ? fact.equipment : null;
           const eqTotal = eqp ? Object.values(eqp).reduce((s, v) => s + (+v || 0), 0) : 0;
-          if (eqp && eqTotal > 0) {
+          if (eqp && eqTotal > 0 && !manual.equipment_manual) {
             _ars.equipment = eqp;
             let est2 = 0;
             Object.entries(eqp).forEach(([cat, n]) => {
@@ -246,11 +249,16 @@
             _ars._fromReport = true;
           }
           // Inspection month from the report overrides the stored blob value.
-          if (fact.inspect_month != null && +fact.inspect_month >= 1 && +fact.inspect_month <= 12) {
+          if (!manual.inspect_month_manual && fact.inspect_month != null && +fact.inspect_month >= 1 && +fact.inspect_month <= 12) {
             _ars.inspect_month = +fact.inspect_month;
             _ars._month_from_report = true;
           }
           if (fact.report_year) _ars._report_year = fact.report_year;
+        }
+        // Handvirk tækja-yfirskrift: nota blob-tölurnar (þegar afritaðar inn í
+        // _ars gegnum Object.assign) og telja heildina fyrir röðun/print.
+        if (manual.equipment_manual && manual.equipment) {
+          _ars._unit_count = Object.values(manual.equipment).reduce((s, v) => s + (+v || 0), 0);
         }
         return {
           ...c,
@@ -705,6 +713,127 @@
     _lastDataSig = dataSig();
   }
 
+  // ── ⚡ Lagfæringar-hamur (override mode, 2026-07-16) ──────────────────────
+  // Kveikt/slökkt með ⚡-hnappnum í tólastikunni; geymt í localStorage svo
+  // stillingin lifi milli heimsókna. Í hamnum verða Mánuður/Tæki/Ár-reitirnir
+  // í listanum smellanlegir svo eigandinn geti lagað augljóslega ranga tölu
+  // beint — án þess að opna fyrirtækið.
+  const OVR_LS = 'ars_override_mode';
+  function overrideOn() { try { return localStorage.getItem(OVR_LS) === '1'; } catch (_) { return false; } }
+  // Breytingaskrá (2026-07-16, ósk Agnars): HVER handvirk yfirskrift skráist í
+  // Supabase-töfluna override_log (co, reitur, gamalt→nýtt, hvenær) svo Claude
+  // geti síðar lagað RÓTINA (ranga skýrslu/tengingu) og merkt resolved.
+  // Best-effort — má aldrei stöðva vistunina sjálfa.
+  function ovrLog(coId, field, oldV, newV) {
+    try {
+      const c = (_cache.byId && _cache.byId[coId]) || {};
+      const sb = getSB();
+      if (!sb) return;
+      sb.from('override_log').insert({
+        co_id: coId, co_nafn: c.nafn || null, field: field,
+        old_value: oldV == null ? null : String(oldV),
+        new_value: newV == null ? null : String(newV),
+        page: 'arsskodun'
+      }).then(() => {}, () => {});
+    } catch (_) {}
+  }
+  // Gildi sem ber handvirka yfirskrift fær gult strikamerki + punkt.
+  function manualMark(html, isManual) {
+    if (!isManual) return html;
+    return '<span title="Handvirkt yfirskrifað" style="border-bottom:2px dotted #f59e0b;padding-bottom:1px">' + html + '</span>'
+      + '<span title="Handvirkt yfirskrifað" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-left:4px;vertical-align:middle"></span>';
+  }
+
+  // Inline mánaðar-val í listareit. Vistar í arsskodun_customers-blobið
+  // (inspect_month + inspect_month_manual:true — vinnur yfir skýrslu-mánuðinn).
+  // Esc/blur hættir við; „↺ Hreinsa yfirskrift" fellir handvirka gildið svo
+  // skýrslu-gögnin flæði aftur.
+  function ovrEditMonth(cell, coId) {
+    if (cell.querySelector('select')) return;
+    const c = _cache.list.find(x => x.id === coId);
+    if (!c) return;
+    const ars = c._ars || {};
+    const cur = +ars.inspect_month || 0;
+    const isManual = !!ars.inspect_month_manual;
+    const prev = cell.innerHTML;
+    const sel = document.createElement('select');
+    sel.className = '_ars-ovr-pop';
+    sel.style.cssText = 'min-height:40px;min-width:118px;max-width:100%;padding:6px 8px;border:2px solid #f59e0b;border-radius:8px;font:inherit;font-size:13px;background:var(--surface);color:var(--ink1);outline:none;cursor:pointer';
+    sel.innerHTML = '<option value="0"' + (cur === 0 ? ' selected' : '') + '>— enginn</option>'
+      + MONTHS_IS.map((n, i) => `<option value="${i + 1}" ${cur === i + 1 ? 'selected' : ''}>${n}</option>`).join('')
+      + (isManual ? '<option value="clear">↺ Hreinsa yfirskrift</option>' : '');
+    cell.innerHTML = '';
+    cell.appendChild(sel);
+    sel.focus();
+    let done = false;
+    const cancel = () => { if (done) return; done = true; cell.innerHTML = prev; };
+    sel.addEventListener('keydown', e => { if (e.key === 'Escape') { e.stopPropagation(); cancel(); } });
+    sel.addEventListener('blur', () => setTimeout(cancel, 150));
+    sel.addEventListener('change', async () => {
+      if (done) return;
+      done = true;
+      const v = sel.value;
+      // ALLTAF LEYFA VISTUN — engin validering, valið vistast alltaf.
+      const patch = v === 'clear'
+        ? { inspect_month: 0, inspect_month_manual: false }
+        : { inspect_month: parseInt(v, 10) || 0, inspect_month_manual: true };
+      const ok = (window.AppSettings && AppSettings.save)
+        ? await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: patch } })
+        : false;
+      if (!ok) { alert('Vista mistókst'); cell.innerHTML = prev; return; }
+      ovrLog(coId, 'inspect_month', cur || '—', v === 'clear' ? '↺ hreinsað' : (MONTHS_IS[patch.inspect_month - 1] || '—'));
+      Object.assign(ars, patch);
+      if (v === 'clear') { try { await loadAll(); } catch (_) {} }  // skýrslu-mánuðurinn flæðir aftur
+      render();
+    });
+  }
+
+  // Inline ártals-innsláttur (Síðast skoðað). 4 tölustafir eða tómt (= hreinsa).
+  // last_year_inspected er blob-only — engin skýrslu-yfirskrift, enginn vörður.
+  function ovrEditYear(cell, coId) {
+    if (cell.querySelector('input')) return;
+    const c = _cache.list.find(x => x.id === coId);
+    if (!c) return;
+    const ars = c._ars || {};
+    const cur = +ars.last_year_inspected || 0;
+    const prev = cell.innerHTML;
+    const inp = document.createElement('input');
+    inp.type = 'text';
+    inp.inputMode = 'numeric';
+    inp.maxLength = 4;
+    inp.value = cur || '';
+    inp.placeholder = 'áár';
+    inp.className = '_ars-ovr-pop';
+    inp.style.cssText = 'min-height:40px;width:74px;padding:6px 8px;border:2px solid #f59e0b;border-radius:8px;font:inherit;font-size:13px;font-weight:700;text-align:center;background:var(--surface);color:var(--ink1);outline:none';
+    cell.innerHTML = '';
+    cell.appendChild(inp);
+    inp.focus();
+    inp.select();
+    let done = false;
+    const cancel = () => { if (done) return; done = true; cell.innerHTML = prev; };
+    const commit = async () => {
+      if (done) return;
+      const raw = String(inp.value || '').trim();
+      // Tómt = hreinsa; annars 4 tölustafir. Rangt snið = hætta við (aldrei blokka).
+      if (raw !== '' && !/^\d{4}$/.test(raw)) { cancel(); return; }
+      const y = raw === '' ? 0 : parseInt(raw, 10);
+      if (y === cur) { cancel(); return; }
+      done = true;
+      const ok = (window.AppSettings && AppSettings.save)
+        ? await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { last_year_inspected: y } } })
+        : false;
+      if (!ok) { alert('Vista mistókst'); cell.innerHTML = prev; return; }
+      ovrLog(coId, 'last_year_inspected', cur || '—', y || '↺ hreinsað');
+      ars.last_year_inspected = y;
+      render();
+    };
+    inp.addEventListener('keydown', e => {
+      if (e.key === 'Escape') { e.stopPropagation(); cancel(); }
+      else if (e.key === 'Enter') { e.preventDefault(); commit(); }
+    });
+    inp.addEventListener('blur', () => setTimeout(commit, 150));
+  }
+
   function render() {
     const main = document.getElementById('ars-main');
     // Preserve search-box focus across re-renders: typing in #_ars-search
@@ -787,6 +916,7 @@
               <option value="oldest" ${state.sort==='oldest'?'selected':''}>⏳ Þeir elstu fyrst (lengst síðan skoðað)</option>
             </select>
             <button id="_ars-print" type="button" title="Prenta listann eins og hann er síaður núna" style="padding:7px 12px;border:1px solid var(--brd2);border-radius:8px;background:var(--surface);font:inherit;font-size:12px;font-weight:600;color:var(--ink1);cursor:pointer">🖨 Prenta lista</button>
+            <button id="_ars-ovr" type="button" aria-pressed="${overrideOn()}" title="" style="padding:6px 8px;border:none;border-radius:8px;background:${overrideOn() ? 'rgba(245,158,11,.18)' : 'transparent'};font:inherit;font-size:13px;cursor:pointer;opacity:${overrideOn() ? '1' : '.35'};min-width:36px;min-height:36px">⚡</button>
           </div>
         </div>
 
@@ -904,6 +1034,22 @@
       state.sort = v; saveState(); render();
     });
     main.querySelector('#_ars-print')?.addEventListener('click', printList);
+    main.querySelector('#_ars-ovr')?.addEventListener('click', () => {
+      try { localStorage.setItem(OVR_LS, overrideOn() ? '0' : '1'); } catch (_) {}
+      render();
+    });
+    // ⚡ Lagfæringar-hamur: smellanlegir reitir í listanum
+    if (overrideOn()) {
+      main.querySelectorAll('._ars-ovr-month').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation(); ovrEditMonth(el, +el.dataset.coId);
+      }));
+      main.querySelectorAll('._ars-ovr-eq').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation(); openDetail(+el.dataset.coId, { eqEdit: true });
+      }));
+      main.querySelectorAll('._ars-ovr-year').forEach(el => el.addEventListener('click', e => {
+        e.stopPropagation(); ovrEditYear(el, +el.dataset.coId);
+      }));
+    }
     main.querySelectorAll('._ars-st').forEach(b => b.addEventListener('click', () => {
       state.status = b.dataset.status; saveState(); render();
     }));
@@ -932,7 +1078,7 @@
     });
     main.querySelectorAll('._ars-row, ._ars-card').forEach(el => {
       el.addEventListener('click', e => {
-        if (e.target.closest('button, a')) return;
+        if (e.target.closest('button, a, ._ars-ovr-month, ._ars-ovr-eq, ._ars-ovr-year, ._ars-ovr-pop')) return;
         const id = +el.dataset.coId;
         if (!id) return;
         // 2026-06-18: skip the intermediate quick-view modal — go straight to
@@ -1167,6 +1313,7 @@
     const today = new Date();
     const curYear = today.getFullYear();
     const curMonth = today.getMonth() + 1;
+    const ovr = overrideOn();
     return `
       <div class="_ars-cardgrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:11px">
         ${arr.map(c => {
@@ -1223,17 +1370,18 @@
                 <div style="display:flex;flex-direction:column;gap:3px;align-items:flex-end">
                   <div style="display:flex;gap:4px;align-items:center">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}${statusBadge}</div>
                   ${toggleBtn}
+                  ${ovr ? `<span class="_ars-ovr-year" data-co-id="${c.id}" title="⚡ Síðast skoðað (ár) — smelltu til að breyta" style="display:inline-flex;align-items:center;min-height:26px;padding:3px 9px;border:1px dashed #d97706;background:#fffbeb;color:#92400e;border-radius:8px;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap">📅 ${lastYr || '—'}</span>` : ''}
                 </div>
               </div>
 
               <div class="_ars-cgrid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;font-size:11px;margin-top:2px">
-                <div style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:4px 7px">
+                <div ${ovr ? `class="_ars-ovr-month" data-co-id="${c.id}" title="⚡ Smelltu til að breyta skoðunarmánuði"` : ''} style="background:${ovr ? '#fffbeb' : 'var(--bg)'};border:1px ${ovr ? 'dashed #d97706' : 'solid var(--brd)'};border-radius:6px;padding:4px 7px${ovr ? ';cursor:pointer;min-height:40px;box-sizing:border-box' : ''}">
                   <div style="font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase">Skoðun</div>
-                  <div style="font-size:12px;font-weight:700;color:${m===curMonth?'#dc2626':'var(--ink1)'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</div>
+                  <div style="font-size:12px;font-weight:700;color:${m===curMonth?'#dc2626':'var(--ink1)'}">${manualMark(esc(MONTHS_IS_SHORT[m-1] || '—'), !!ars.inspect_month_manual)}</div>
                 </div>
-                <div style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:4px 7px">
+                <div ${ovr ? `class="_ars-ovr-eq" data-co-id="${c.id}" title="⚡ Smelltu til að breyta tækjatölum"` : ''} style="background:${ovr ? '#fffbeb' : 'var(--bg)'};border:1px ${ovr ? 'dashed #d97706' : 'solid var(--brd)'};border-radius:6px;padding:4px 7px${ovr ? ';cursor:pointer;min-height:40px;box-sizing:border-box' : ''}">
                   <div style="font-size:9px;font-weight:700;color:var(--ink3);text-transform:uppercase">Tæki</div>
-                  <div style="margin-top:1px">${eqTrioHtml(eq, 'screen')}</div>
+                  <div style="margin-top:1px">${manualMark(eqTrioHtml(eq, 'screen'), !!ars.equipment_manual)}</div>
                 </div>
                 <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:4px 7px">
                   <div style="font-size:9px;font-weight:700;color:#166534;text-transform:uppercase">Áætl.</div>
@@ -1331,7 +1479,8 @@
         '#view-arsskodun ._ars-card ._ars-open-fyrirt,#view-arsskodun ._ars-card ._ars-open-map{min-height:44px!important;font-size:13px!important;border-radius:9px!important}' +
         '#view-arsskodun ._ars-card ._ars-tu-toggle{min-height:38px!important;font-size:12.5px!important;padding:7px 12px!important}' +
         '#view-arsskodun #_ars-search{font-size:16px!important;padding:12px 13px!important;border-radius:10px!important;width:100%!important;box-sizing:border-box!important}' +
-        '#view-arsskodun #_ars-new,#view-arsskodun #_ars-print{min-height:44px!important;font-size:13px!important}' +
+        '#view-arsskodun #_ars-new,#view-arsskodun #_ars-print,#view-arsskodun #_ars-ovr{min-height:44px!important;font-size:13px!important}' +
+        '#view-arsskodun ._ars-ovr-year{min-height:40px!important;font-size:12px!important}' +
         '#view-arsskodun #_ars-sort{min-height:44px!important;font-size:16px!important}' +
         '#view-arsskodun ._ars-st,#view-arsskodun ._ars-mo,#view-arsskodun .by-preset{min-height:38px!important;font-size:12.5px!important;padding:7px 11px!important}' +
         /* 2026-06-28: stat-card grid was repeat(4,1fr) — overflowed S26.
@@ -1415,6 +1564,7 @@
     const today = new Date();
     const curYear = today.getFullYear();
     const curMonth = today.getMonth() + 1;
+    const ovr = overrideOn();
     return `
       <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;overflow:hidden">
         <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
@@ -1485,13 +1635,14 @@
                     if (e) return `<a href="mailto:${esc(e)}" style="color:#0369a1;text-decoration:none" onclick="event.stopPropagation()">${esc(e)}</a>`;
                     return `<span style="color:#dc2626;font-weight:600">✉ vantar</span>`;
                   })()}</td>
-                  <td style="padding:8px 7px;text-align:center;font-weight:600;color:${m===curMonth?'#dc2626':'var(--ink2)'}">${esc(MONTHS_IS_SHORT[m-1] || '—')}</td>
-                  <td style="padding:8px 7px;text-align:center">${eqTrioHtml(c._ars && c._ars.equipment, 'screen')}</td>
+                  <td ${ovr ? `class="_ars-ovr-month" data-co-id="${c.id}" title="⚡ Smelltu til að breyta skoðunarmánuði"` : ''} style="padding:8px 7px;text-align:center;font-weight:600;color:${m===curMonth?'#dc2626':'var(--ink2)'}${ovr ? ';cursor:pointer;background:rgba(245,158,11,.07)' : ''}">${manualMark(esc(MONTHS_IS_SHORT[m-1] || '—'), !!ars.inspect_month_manual)}</td>
+                  <td ${ovr ? `class="_ars-ovr-eq" data-co-id="${c.id}" title="⚡ Smelltu til að breyta tækjatölum"` : ''} style="padding:8px 7px;text-align:center${ovr ? ';cursor:pointer;background:rgba(245,158,11,.07)' : ''}">${manualMark(eqTrioHtml(c._ars && c._ars.equipment, 'screen'), !!ars.equipment_manual)}</td>
                   <td style="padding:8px 7px;text-align:right;color:#15803d;font-weight:700;font-variant-numeric:tabular-nums">${fmtKrShort(est)}</td>
                   <td class="_arsak-cell" style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()"></td>
                   <td style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
                   <td style="padding:8px 11px">
                     <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
+                      ${ovr ? `<span class="_ars-ovr-year" data-co-id="${c.id}" title="⚡ Síðast skoðað (ár) — smelltu til að breyta" style="display:inline-flex;align-items:center;min-height:26px;padding:3px 9px;border:1px dashed #d97706;background:#fffbeb;color:#92400e;border-radius:8px;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap">📅 ${lastYr || '—'}</span>` : ''}
                       ${markBtn}
                       ${statusPill(stState, stLabel, stTitle)}
                     </div>
@@ -1507,7 +1658,8 @@
   }
 
   // ── Detail modal ─────────────────────────────────────────────────────────
-  function openDetail(coId) {
+  function openDetail(coId, opts) {
+    opts = opts || {};
     const c = _cache.list.find(x => x.id === coId);
     if (!c) return;
     const ars = c._ars || {};
@@ -1560,6 +1712,10 @@
                 <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Farsími<input data-field="farsimi" value="${esc(c.farsimi || '')}" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none"/></label>
                 <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Netfang<input data-field="netfang" type="email" value="${esc(c.netfang || '')}" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none"/></label>
                 <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Tengiliður<input data-field="tengiliður" value="${esc(c['tengiliður'] || '')}" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Skoðunarmánuður<select class="_ars-month-edit" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none">
+                  <option value="0">— enginn</option>
+                  ${['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'].map((n,i)=>`<option value="${i+1}" ${(+ars.inspect_month===i+1)?'selected':''}>${n}</option>`).join('')}
+                </select></label>
               </div>
               <div style="display:flex;gap:6px;margin-top:8px">
                 <button class="_ars-info-save" type="button" style="padding:6px 14px;background:#15803d;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">💾 Vista</button>
@@ -1623,6 +1779,7 @@
             <div class="_ars-eq-actions" style="display:none;gap:6px;margin-top:8px">
               <button class="_ars-eq-save" type="button" style="padding:6px 14px;background:#15803d;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">💾 Vista breytingar</button>
               <button class="_ars-eq-cancel" type="button" style="padding:6px 14px;background:var(--surface);color:var(--ink2);border:1px solid var(--brd2);border-radius:6px;cursor:pointer;font:inherit;font-size:12px">Hætta við</button>
+              ${ars.equipment_manual ? `<button class="_ars-eq-clearovr" type="button" title="Fella handvirku tölurnar niður svo skýrslu-/tækjagögn flæði aftur" style="padding:6px 14px;background:#fffbeb;color:#92400e;border:1px dashed #d97706;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">↺ Hreinsa yfirskrift</button>` : ''}
             </div>
           </div>
 
@@ -1788,7 +1945,29 @@
         // Only include fields that actually changed (null-vs-empty equivalence)
         if (v !== String(c[f] || '').trim()) patch[f] = v || null;
       });
-      if (!Object.keys(patch).length) { setInfoMode(false); return; }
+      // Skoðunarmánuður — handvirkt val vistast í arsskodun_customers blobið
+      // (AppSettings) og VINNUR yfir skýrslu-mánuðinn (inspect_month_manual).
+      let monthChanged = false;
+      const mSel = infoEdit.querySelector('._ars-month-edit');
+      if (mSel) {
+        const mv = parseInt(mSel.value, 10) || 0;
+        if (mv !== (+ars.inspect_month || 0)) {
+          monthChanged = true;
+          try {
+            const blob = (window.AppSettings && AppSettings.path('arsskodun_customers')) || {};
+            const rec = blob[String(coId)] = blob[String(coId)] || { co_id: coId };
+            if (mv >= 1 && mv <= 12) { rec.inspect_month = mv; rec.inspect_month_manual = true; }
+            else { delete rec.inspect_month; delete rec.inspect_month_manual; }
+            if (window.AppSettings && AppSettings.save) await AppSettings.save({ arsskodun_customers: blob });
+            ovrLog(coId, 'inspect_month', MONTHS_IS[(+ars.inspect_month || 0) - 1] || '—', MONTHS_IS[mv - 1] || '↺ hreinsað');
+            ars.inspect_month = mv || undefined;
+          } catch (e) { alert('Mánuður vistaðist ekki: ' + (e.message || e)); }
+        }
+      }
+      if (!Object.keys(patch).length) {
+        if (monthChanged) { bg.remove(); loadAll().then(render); return; }
+        setInfoMode(false); return;
+      }
       const SB = getSB();
       if (!SB) { alert('Engin tenging við gagnagrunn'); return; }
       const { error } = await SB.from('fyrirtaeki').update(patch).eq('id', coId);
@@ -1814,6 +1993,13 @@
     }
     eqToggle.addEventListener('click', () => setEqMode(true));
     bg.querySelector('._ars-eq-cancel').addEventListener('click', () => setEqMode(false));
+    // ⚡ Lagfæringar-hamur: opnað beint úr Tæki-reit listans → tækjahlutinn
+    // strax í breytingaham og skrunað að honum (endurnýtir setEqMode — enginn
+    // annar tækjaritill).
+    if (opts.eqEdit) {
+      setEqMode(true);
+      setTimeout(() => { try { eqGrid.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (_) {} }, 60);
+    }
     bg.querySelector('._ars-eq-save').addEventListener('click', async () => {
       const newEq = {};
       eqGrid.querySelectorAll('._ars-eq-input').forEach(i => {
@@ -1827,6 +2013,9 @@
       const entry = Object.assign({}, allMap[String(coId)] || {});
       entry.co_id = coId;
       entry.equipment = newEq;
+      // 2026-07-16 (Lagfæringar-hamur): handvirk tala vinnur yfir uttaeki-
+      // afleiðsluna OG skýrslu-facts í loadAll (sama mynstur og inspect_month_manual).
+      entry.equipment_manual = true;
       // 2026-06: use the SAME canonical pricing as the list card
       // (loadYfirferdPrices — yfirferð + hleðsla × VSK per category) so the
       // detail estimate can never diverge from the card again. Single source
@@ -1840,12 +2029,24 @@
       }
       if (total > 0) total += SKYRSLUGERD + AKSTUR_UNIT * (+entry.akstur_multiplier || 1);
       entry.estimated_yearly = Math.round(total);
-      const map = Object.assign({}, allMap, { [String(coId)]: entry });
-      const ok = await window.AppSettings.save({ [STORAGE_KEY]: map });
+      // RACE-vörn (sama og _ars-tu-toggle 2026-07-15): skrifa AÐEINS þessa
+      // færslu — AppSettings.save djúp-merge-ar, svo aðrar raðir haldast.
+      const ok = await window.AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: entry } });
       if (!ok) { alert('Vista mistókst'); return; }
+      ovrLog(coId, 'equipment', JSON.stringify((c._ars && c._ars.equipment) || {}), JSON.stringify(newEq));
       // Update local cache + redraw page so the card reflects new counts
-      if (c._ars) { c._ars.equipment = newEq; c._ars.estimated_yearly = entry.estimated_yearly; }
+      if (c._ars) { c._ars.equipment = newEq; c._ars.estimated_yearly = entry.estimated_yearly; c._ars.equipment_manual = true; }
       bg.remove();
+      render();
+    });
+    // ↺ Hreinsa tækja-yfirskrift — skýrslu-/tækjagögnin flæða aftur.
+    bg.querySelector('._ars-eq-clearovr')?.addEventListener('click', async () => {
+      const ok = (window.AppSettings && AppSettings.save)
+        ? await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { equipment_manual: false } } })
+        : false;
+      if (!ok) { alert('Vista mistókst'); return; }
+      bg.remove();
+      try { await loadAll(); } catch (_) {}
       render();
     });
 
