@@ -262,6 +262,9 @@
       try {
         if (window.CustomerBrief && CustomerBrief.invalidate) CustomerBrief.invalidate(coId);
       } catch (_) {}
+      // Skýrsla ársins nývistuð → athuga hvort reikningurinn sé líka kominn og
+      // loka þá heimsóknar-hringnum (afhaka bláa ✓, öll skref græn).
+      try { await maybeComplete(coId, year, { report: true }); } catch (_) {}
       console.log('[report-facts-sync]', coId, summary);
       return summary;
     } catch (e) {
@@ -271,7 +274,115 @@
     }
   }
 
-  window.ReportFactsSync = { sync, computePlan, normalizeCounts, bucketOf,
+  // ── maybeComplete (2026-07-16): lokar heimsóknar-hringnum ────────────────
+  // Þegar BÆÐI úttektarskýrsla ársins er til OG reikningur ársins er kominn
+  // (krafan á Kröfu yfirliti) á staðan á „Fyrirtæki í þjónustu" að fara
+  // SJÁLFKRAFA úr bláa „Í vinnslu" hakinu í grænt „Skoðað <ár>":
+  //   - last_year_inspected = year (max-vinnur, aldrei lækkað)
+  //   - field_inspected_year = 0 (afhakar handvirka ✓-togglinn úr 153)
+  //   - steps_<ár> öll fjögur græn (svo ÞjónustuVerkstæði 190 sýnir „Búið")
+  // Kallað úr 165 finalizeVisit (hint {invoice:true}) og úr sync() hér að ofan
+  // (skýrslu-leiðin, hint {report:true}). Best-effort — stöðvar ALDREI vistun.
+  //
+  // hasComplete(coId, year, hints) er hreint mat (les aðeins úr köllurum gefnum
+  // gögnum) svo það sé einingaprófanlegt í node.
+  function hasComplete(rec, atts, year, hints) {
+    const h = hints || {};
+    const steps = (rec && rec['steps_' + year]) || {};
+    function attHas(kind) {
+      return (atts || []).some(f => {
+        let y = (f.year && String(f.year) !== '0') ? String(f.year) : null;
+        if (!y) { const m = String(f.name || '').match(/\b(20[2-3][0-9])\b/); y = m ? m[1] : null; }
+        if (y !== String(year)) return false;
+        let k = (f.kind === 'skyrsla' || f.kind === 'reikningur') ? f.kind : null;
+        if (!k) {
+          const n = String(f.name || '').toLowerCase();
+          k = /reikning|\br-?\d/.test(n) ? 'reikningur'
+            : (/úttekt|uttekt|skýrsl|skyrsl/.test(n) ? 'skyrsla' : null);
+        }
+        return k === kind;
+      });
+    }
+    const report = !!h.report || !!steps.skyrsla || attHas('skyrsla');
+    const invoice = !!h.invoice || !!steps.reikningur || attHas('reikningur');
+    return { report, invoice, both: report && invoice };
+  }
+
+  async function maybeComplete(coId, year, hints) {
+    const out = { report: false, invoice: false, completed: false };
+    try {
+      if (!coId || !(window.AppSettings && AppSettings.path && AppSettings.save)) return out;
+      const curYear = new Date().getFullYear();
+      year = +year || curYear;
+      const rec = (AppSettings.path(STORAGE_KEY) || {})[String(coId)] || {};
+      let atts = [];
+      try {
+        atts = (window.CompanyAttachments && CompanyAttachments.list &&
+                CompanyAttachments.list(coId)) || [];
+      } catch (_) {}
+      const st = hasComplete(rec, atts, year, hints);
+      out.report = st.report; out.invoice = st.invoice;
+      const sb = window.DB && window.DB.sb;
+      // Skýrslu-hlið: arsskodun_report_facts (sync() skrifar hana) sem vara-sönnun.
+      if (!out.report && sb) {
+        try {
+          const r = await sb.from('arsskodun_report_facts')
+            .select('report_year').eq('fyrirtaeki_id', coId).maybeSingle();
+          if (r && r.data && +r.data.report_year >= year) out.report = true;
+        } catch (_) {}
+      }
+      // Reiknings-hlið: customer_documents ársins eftir kt (Kröfuyfirlit/Drive-leiðin).
+      if (out.report && !out.invoice && sb) {
+        try {
+          const c = await sb.from('fyrirtaeki').select('kennitala').eq('id', coId).maybeSingle();
+          const kt = String((c && c.data && c.data.kennitala) || '').replace(/\D/g, '');
+          if (kt.length >= 10) {
+            const b = await sb.from('customers_base').select('id').eq('kennitala', kt).limit(5);
+            const bIds = ((b && b.data) || []).map(x => x.id);
+            if (bIds.length) {
+              const d = await sb.from('customer_documents').select('id')
+                .eq('doc_type', 'reikningur').eq('year', year)
+                .in('customer_base_id', bIds).limit(1);
+              if (d && d.data && d.data.length) out.invoice = true;
+            }
+          }
+        } catch (_) {}
+      }
+      if (!(out.report && out.invoice)) return out;
+
+      // Bæði til → grænt. AÐEINS þessi færsla skrifuð (deep-merge, race-örugg —
+      // sama mynstur og 153 _ars-tu-toggle 2026-07-15). Aldrei lækkað; handvirkar
+      // yfirskriftir (inspect_month_manual o.fl.) ósnertar.
+      const patch = {};
+      const curLast = +rec.last_year_inspected || 0;
+      if (year > curLast) patch.last_year_inspected = year;
+      if (year >= curYear && +rec.field_inspected_year) patch.field_inspected_year = 0;
+      if (year === curYear) {
+        patch['steps_' + year] = Object.assign({}, rec['steps_' + year] || {},
+          { uttekt: true, skyrsla: true, send: true, reikningur: true });
+      }
+      if (Object.keys(patch).length) {
+        await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: patch } });
+        try {
+          if (sb) await sb.from('override_log').insert({
+            co_id: coId, field: 'visit_complete',
+            old_value: 'field:' + (+rec.field_inspected_year || 0) + ' last:' + curLast,
+            new_value: 'lokid ' + year + ' (skyrsla+reikningur)',
+            page: 'uttekt'
+          });
+        } catch (_) {}
+        try { if (window.CustomerBrief && CustomerBrief.invalidate) CustomerBrief.invalidate(coId); } catch (_) {}
+        console.log('[report-facts-sync] visit complete', coId, year);
+      }
+      out.completed = true;
+      return out;
+    } catch (e) {
+      console.warn('[report-facts-sync] maybeComplete villa (hunsað):', e && e.message || e);
+      return out;
+    }
+  }
+
+  window.ReportFactsSync = { sync, maybeComplete, hasComplete, computePlan, normalizeCounts, bucketOf,
     _BUCKET_ROW: BUCKET_ROW, _BUCKETS: BUCKETS };
   console.log('[patch-270] Report facts sync installed');
 })();
