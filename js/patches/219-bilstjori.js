@@ -557,11 +557,16 @@
 .bt .dock{position:fixed;left:0;right:0;bottom:0;z-index:30;max-width:440px;margin:0 auto;display:flex;gap:12px;padding:12px 14px;background:linear-gradient(180deg,rgba(65,69,77,0),rgba(65,69,77,.94) 42%)}
 .bt .dock--wide{max-width:900px}
 .bt .dock .btn{flex:1;height:52px}
-/* Fyrirtækja-spjaldið (._bs-sheet) hefur transform → position:fixed dokk leysist
-   miðað við transformaða boxið og lenti stundum MITT á efninu (yfir „Vista í
-   skýrslu"). sticky heldur því í flæði (aldrei yfir efni fyrir ofan) en samt
-   fest neðst á skjá meðan skrunað er. Full breidd á síma. */
-._bs-sheet .dock{position:sticky!important;bottom:0!important;left:auto!important;right:auto!important;max-width:100%!important;margin:10px 0 0!important}
+/* Fyrirtækja-spjaldið (._bs-sheet) hefur transform meðan það rennur inn →
+   position:fixed leysist miðað við transformaða boxið og dokkurinn „flaut"
+   mitt á efninu. 2026-07-16: eftir inn-rennsli er transforminn HREINSAÐUR af
+   spjaldinu (sjá openCompany) svo fixed festist við ALVÖRU botn skjásins,
+   með safe-area fyrir bendilrönd símans. padding-bottom á spjaldinu tryggir
+   að síðustu línur listans hverfi aldrei undir dokkinn. */
+._bs-sheet .dock{position:fixed!important;left:0!important;right:0!important;bottom:0!important;max-width:100%!important;margin:0!important;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;z-index:40}
+._bs-sheet{padding-bottom:calc(110px + env(safe-area-inset-bottom,0px))!important}
+/* ‹ Til baka: skýr, ≥44px snertiflötur efst til vinstri á spjaldinu */
+._bs-sheet ._bs-back{width:auto;min-width:44px;min-height:44px;padding:0 12px;font-size:15px;font-weight:700;gap:2px;white-space:nowrap}
 
 /* ── overlay mechanics + gap-fillers (not part of the theme) ── */
 /* .screen / .screen--wide sit ON the .bt root itself, so the descendant form
@@ -921,7 +926,7 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
     const telHref = 'tel:' + esc(String(phone || '').replace(/\s/g, ''));
     sheet.innerHTML =
       '<header class="topbar">' +
-        '<button class="_bs-back icon-btn" type="button" aria-label="Til baka">‹</button>' +
+        '<button class="_bs-back icon-btn" type="button" aria-label="Til baka"><span style="font-size:19px;line-height:1">‹</span> Til baka</button>' +
         '<div style="flex:1;min-width:0">' +
           '<div class="topbar__title" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c.nafn || '—') + '</div>' +
           '<div style="display:flex;align-items:center;gap:9px;margin-top:2px;flex-wrap:wrap">' +
@@ -981,8 +986,19 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
 
     document.body.appendChild(sheet);
     requestAnimationFrame(() => sheet.classList.add('in'));
+    // Eftir inn-rennsli: hreinsa transforminn svo position:fixed dokkurinn
+    // („✚ Á leið / ✓ Klára úttekt") festist við ALVÖRU botn skjásins í stað
+    // þess að fljóta miðað við transformaða boxið (Samsung/Chrome).
+    const clearTf = () => { if (sheet.classList.contains('in')) sheet.style.transform = 'none'; };
+    sheet.addEventListener('transitionend', e => { if (e.target === sheet && e.propertyName === 'transform') clearTf(); });
+    setTimeout(clearTf, 320);   // öryggisnet ef transitionend skilar sér ekki
     armBack();   // ýtir history-state svo síma-back loki spjaldinu (ekki appinu)
-    const close = () => { sheet.classList.remove('in'); setTimeout(() => sheet.remove(), 240); };
+    const close = () => {
+      sheet.style.transform = '';   // endurvekja transition fyrir út-rennsli
+      sheet.classList.remove('in');
+      setTimeout(() => sheet.remove(), 240);
+      try { window.SlokkViewMode && window.SlokkViewMode.reapply(); } catch (_) {}
+    };
     // ‹ takki OG síma-back → history.back() → popstate loki efsta spjaldi.
     sheet.querySelector('._bs-back').addEventListener('click', () => { try { history.back(); } catch (_) { close(); } });
     sheet.querySelector('#_bs-nav').addEventListener('click', () => navTo(c, coord && coord.lat, coord && coord.lng));
@@ -1354,7 +1370,15 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
     window.addEventListener('popstate', () => {
       if (!document.body.classList.contains('bs-active')) return;   // ekki í Bílstjóra
       const sheet = document.querySelector('._bs-sheet.in');
-      if (sheet) { sheet.classList.remove('in'); setTimeout(() => sheet.remove(), 240); armBack(); return; }
+      if (sheet) {
+        sheet.style.transform = '';   // endurvekja transition fyrir út-rennsli
+        sheet.classList.remove('in');
+        setTimeout(() => sheet.remove(), 240);
+        armBack();
+        // Eftir lokun: sýnin (Sími/Tafla/Skjár) helst — endur-beita geymdri stillingu.
+        try { window.SlokkViewMode && window.SlokkViewMode.reapply(); } catch (_) {}
+        return;
+      }
       if (LOCKED) armBack();   // læst: back lokar aldrei appinu
     });
   }
