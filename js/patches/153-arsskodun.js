@@ -246,7 +246,7 @@
             _ars._fromReport = true;
           }
           // Inspection month from the report overrides the stored blob value.
-          if (fact.inspect_month != null && +fact.inspect_month >= 1 && +fact.inspect_month <= 12) {
+          if (!manual.inspect_month_manual && fact.inspect_month != null && +fact.inspect_month >= 1 && +fact.inspect_month <= 12) {
             _ars.inspect_month = +fact.inspect_month;
             _ars._month_from_report = true;
           }
@@ -1560,6 +1560,10 @@
                 <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Farsími<input data-field="farsimi" value="${esc(c.farsimi || '')}" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none"/></label>
                 <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Netfang<input data-field="netfang" type="email" value="${esc(c.netfang || '')}" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none"/></label>
                 <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Tengiliður<input data-field="tengiliður" value="${esc(c['tengiliður'] || '')}" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none"/></label>
+                <label style="display:flex;flex-direction:column;gap:2px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase">Skoðunarmánuður<select class="_ars-month-edit" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none">
+                  <option value="0">— enginn</option>
+                  ${['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'].map((n,i)=>`<option value="${i+1}" ${(+ars.inspect_month===i+1)?'selected':''}>${n}</option>`).join('')}
+                </select></label>
               </div>
               <div style="display:flex;gap:6px;margin-top:8px">
                 <button class="_ars-info-save" type="button" style="padding:6px 14px;background:#15803d;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600">💾 Vista</button>
@@ -1788,7 +1792,28 @@
         // Only include fields that actually changed (null-vs-empty equivalence)
         if (v !== String(c[f] || '').trim()) patch[f] = v || null;
       });
-      if (!Object.keys(patch).length) { setInfoMode(false); return; }
+      // Skoðunarmánuður — handvirkt val vistast í arsskodun_customers blobið
+      // (AppSettings) og VINNUR yfir skýrslu-mánuðinn (inspect_month_manual).
+      let monthChanged = false;
+      const mSel = infoEdit.querySelector('._ars-month-edit');
+      if (mSel) {
+        const mv = parseInt(mSel.value, 10) || 0;
+        if (mv !== (+ars.inspect_month || 0)) {
+          monthChanged = true;
+          try {
+            const blob = (window.AppSettings && AppSettings.path('arsskodun_customers')) || {};
+            const rec = blob[String(coId)] = blob[String(coId)] || { co_id: coId };
+            if (mv >= 1 && mv <= 12) { rec.inspect_month = mv; rec.inspect_month_manual = true; }
+            else { delete rec.inspect_month; delete rec.inspect_month_manual; }
+            if (window.AppSettings && AppSettings.save) await AppSettings.save({ arsskodun_customers: blob });
+            ars.inspect_month = mv || undefined;
+          } catch (e) { alert('Mánuður vistaðist ekki: ' + (e.message || e)); }
+        }
+      }
+      if (!Object.keys(patch).length) {
+        if (monthChanged) { bg.remove(); loadAll().then(render); return; }
+        setInfoMode(false); return;
+      }
       const SB = getSB();
       if (!SB) { alert('Engin tenging við gagnagrunn'); return; }
       const { error } = await SB.from('fyrirtaeki').update(patch).eq('id', coId);
