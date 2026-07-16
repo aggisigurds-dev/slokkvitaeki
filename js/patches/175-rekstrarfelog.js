@@ -357,9 +357,11 @@
         (base[b]||(base[b]=_blank())); _add(base[b],u);
         (comp[c]||(comp[c]=_blank())); _add(comp[c],u);
         if(s){ (street[s]||(street[s]=_blank())); _add(street[s],u); } });
+      // 2026-07-16 (Agnar): TÆKI = nákvæmlega tækin sem standa á fyrirtækinu
+      // (sama og prófíllinn sýnir) — götu+númer-giskið safnaði gömlum
+      // client-strengja-útgáfum saman (Hamraborg 7 sýndi 30 í stað 14).
       _equip={ match:function(name){ var b=_norm(name); if(base[b])return base[b];
-        var c=_compact(name); if(comp[c])return comp[c];
-        var s=_streetnum(name); if(s&&street[s])return street[s]; return null; } };
+        var c=_compact(name); if(comp[c])return comp[c]; return null; } };
       return _equip;
     })().catch(function(e){
       // 2026-06-12: höfnuð promise sat áður föst í cache-inu — hver einasta
