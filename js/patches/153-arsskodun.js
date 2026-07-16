@@ -1195,7 +1195,9 @@
       const isFieldOnly = !isDone && fieldYr === curYear;
       const isSkipped = !isDone && !isFieldOnly && lastYr > 0 && lastYr < curYear - 1;
       const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
-      const dot = isDone ? '#22c55e' : (isFieldOnly ? '#3b82f6' : (isSkipped ? '#f59e0b' : (isOverdue ? '#ef4444' : '#94a3b8')));
+      // „Á dagskrá" = himinblátt (sky) eins og pillan á skjánum (var grátt) svo
+      // prentaði listinn passi við aðallistann.
+      const dot = isDone ? '#22c55e' : (isFieldOnly ? '#3b82f6' : (isSkipped ? '#f59e0b' : (isOverdue ? '#ef4444' : '#38bdf8')));
       const statusLabel = isDone ? ('Skoðað ' + curYear)
         : (isFieldOnly ? 'Í skýrslugerð'
         : (isSkipped ? ('Sleppt · síðast ' + lastYr)
@@ -1439,7 +1441,10 @@
     work:  ['linear-gradient(150deg,#4f74dc,#16306f)', '#16306f', '#fff'],
     skip:  ['linear-gradient(150deg,#e0a93e,#9a6a14)', '#8a5e12', '#fff'],
     over:  ['linear-gradient(150deg,#e25555,#a01818)', '#7a1212', '#fff'],
-    queue: ['linear-gradient(150deg,#e0a93e,#9a6a14)', '#8a5e12', '#fff']
+    // 2026-07-15 (ósk Agnars): „Á dagskrá" var NÁKVÆMLEGA sami gulur og „Sleppt '24"
+    // → ruglingslegt. Nú himinblátt (sky) — aðgreint bæði frá gula `skip` og frá
+    // dökkbláa `work` („Í vinnslu"); sami sky-tónn og akstur-chippinn notar.
+    queue: ['linear-gradient(150deg,#38bdf8,#0369a1)', '#0369a1', '#fff']
   };
   function statusPill(state, label, title) {
     const c = _PILL_C[state] || _PILL_C.queue;
