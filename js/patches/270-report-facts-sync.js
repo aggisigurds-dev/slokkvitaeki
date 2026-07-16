@@ -361,13 +361,29 @@
         patch['steps_' + year] = Object.assign({}, rec['steps_' + year] || {},
           { uttekt: true, skyrsla: true, send: true, reikningur: true });
       }
+      // Auto-staðfesta tækjalistann (sama skrif og handvirki „✅ Staðfesta lista"
+      // takkinn í patch 224: localStorage sk_ut_lock_<coId>). Idempotent —
+      // sleppt ef listinn er þegar staðfestur. Afturkræft eins og áður:
+      // smellur á græna borðann opnar listann aftur.
+      let listAuto = false;
+      try {
+        const lk = 'sk_ut_lock_' + coId;
+        if (localStorage.getItem(lk) !== '1') {
+          localStorage.setItem(lk, '1');
+          listAuto = true;
+          const w = document.querySelector('.ut-list[data-uw-co="' + coId + '"]');
+          if (w) w.classList.add('locked');
+          if (window.UttektTaeki && UttektTaeki.rerender) UttektTaeki.rerender(coId);
+        }
+      } catch (_) {}
       if (Object.keys(patch).length) {
         await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: patch } });
         try {
           if (sb) await sb.from('override_log').insert({
             co_id: coId, field: 'visit_complete',
             old_value: 'field:' + (+rec.field_inspected_year || 0) + ' last:' + curLast,
-            new_value: 'lokid ' + year + ' (skyrsla+reikningur)',
+            new_value: 'lokid ' + year + ' (skyrsla+reikningur)' +
+              (listAuto ? ' + listi_stadfestur_auto' : ''),
             page: 'uttekt'
           });
         } catch (_) {}
