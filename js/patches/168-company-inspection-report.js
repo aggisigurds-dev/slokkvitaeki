@@ -256,8 +256,11 @@
     const manudur = (vd && vd.manudur) ? vd.manudur : MONTHS_IS[now.getMonth()];
     const arYear  = (vd && vd.year)    ? vd.year    : now.getFullYear();
     const monthPhrase = 'í ' + manudur + ' ' + arYear;
+    // 2026-07-16: mánaðar-index (1-12) fyrir ReportFactsSync (patch 270).
+    const _mi = MONTHS_IS.findIndex(m => m.toLowerCase() === String(manudur).toLowerCase());
+    const monthIdx = _mi >= 0 ? _mi + 1 : now.getMonth() + 1;
 
-    const ctx = { co, counts, annad, athugasemdir, skodunaradili, monthPhrase, ar: arYear };
+    const ctx = { co, counts, annad, athugasemdir, skodunaradili, monthPhrase, ar: arYear, monthIdx };
     const html = buildReportHtml(ctx);
     showModal(html, co, opts, ctx);
   }
@@ -399,6 +402,18 @@
     // „💾 Vista" takkann. Skráarheiti: "<Fyrirtæki> - <kt> - <ár> - úttektarskýrsla.pdf".
     // Vistast í Supabase 'samningar' bucket (þessi vefur hefur ekki Drive-aðgang).
     const _cirSaveBtn = dlg.querySelector('#_cir-save');
+    // 2026-07-16 (patch 270): tækjatölur skýrslunnar flæða BEINT inn í kerfið
+    // (arsskodun_report_facts + uttaeki-samræming + arsskodun-blob) — áður las
+    // facts-pípan bara Drive-PDF svo prófílar/listar héldu gömlum tölum.
+    // Best-effort: má aldrei stöðva vistun (ALLTAF LEYFA VISTUN).
+    function _rfSync() {
+      try {
+        if (window.ReportFactsSync && ReportFactsSync.sync) {
+          ReportFactsSync.sync(co.id, ctx.counts, { year: +ctx.ar, month: ctx.monthIdx })
+            .catch(function () {});
+        }
+      } catch (_) {}
+    }
     async function _cirSaveReport(auto) {
       const ar = String((ctx && ctx.ar) || new Date().getFullYear());
       if (!window.CompanyAttachments || !CompanyAttachments.upload) { if (!auto) alert('Skjalaeining ekki tiltæk.'); return; }
@@ -409,6 +424,7 @@
           const have = (CompanyAttachments.list ? CompanyAttachments.list(co.id) : []) || [];
           if (have.some(a => a && a.kind === 'skyrsla' && String(a.year) === ar)) {
             if (_cirSaveBtn) { _cirSaveBtn.disabled = true; _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar; }
+            _rfSync(); // skýrslan er þegar til — tölurnar samstillast samt (idempotent)
             return;
           }
         } catch (_) {}
@@ -431,6 +447,23 @@
         const file = new File([blob], fname, { type: 'application/pdf' });
         const meta = await CompanyAttachments.upload(co.id, file, { year: ar, kind: 'skyrsla' });
         if (meta) {
+          _rfSync(); // patch 270: tölur skýrslunnar inn í facts/uttaeki/blob
+          // 2026-07-16 (ósk Agnars): eintak af skýrslunni fer LÍKA í Google Drive
+          // gegnum brunahólfs-endapunktinn /api/uttekt-upload (kanónískt nafn +
+          // #staðar-stimpill + customer_documents-röð; idempotent — sama skýrsla
+          // uppfærist, afritast aldrei). Best-effort: má ALDREI stöðva vistun.
+          try {
+            const pub = meta.public_url || meta.publicUrl || meta.url
+              || (meta.storage_path && window.DB && DB.sb && DB.sb.storage
+                  ? (DB.sb.storage.from('samningar').getPublicUrl(meta.storage_path).data || {}).publicUrl : '');
+            const body = { kt: ktDash, fyrirtaeki_id: co.id, company: n, address: _addr, year: +ar, month: _mIS };
+            if (pub) body.public_url = pub;
+            else body.pdf_base64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1]); r.onerror = rej; r.readAsDataURL(blob); });
+            fetch('https://brunaholf.netlify.app/api/uttekt-upload', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body)
+            }).then(r => { if (!r.ok && r.status !== 404) console.warn('[168] uttekt-upload', r.status); })
+              .catch(e => console.warn('[168] uttekt-upload', e && e.message));
+          } catch (e) { console.warn('[168] uttekt-upload prep', e && e.message); }
           if (_cirSaveBtn) _cirSaveBtn.textContent = '✓ Vistuð sem ' + ar;
           if (window.Toast && Toast.show) Toast.show('✓ Skýrsla vistuð sem ' + ar);
           // Skýrsla þessa árs raunverulega vistuð → „Skýrsla tilbúin/send" grænt

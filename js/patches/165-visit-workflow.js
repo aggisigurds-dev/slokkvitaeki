@@ -434,6 +434,11 @@
     // 2b. Reikningur búinn til → „Reikningur sendur" grænt á ÞjónustuVerkstæði.
     //     Þegar öll 4 þrepin eru græn (skýrsla vistuð fyrst) færist það í „Lokið".
     if (saleId && window.ArsWorkflow) { try { await ArsWorkflow.markInvoice(coId); } catch (_) {} }
+    // 2c. (2026-07-16) Reikningur + skýrsla bæði til → staðan á Fyrirtæki í
+    //     þjónustu fer sjálfkrafa úr bláa ✓ í grænt „Skoðað <ár>" (patch 270).
+    if (saleId && window.ReportFactsSync && ReportFactsSync.maybeComplete) {
+      try { await ReportFactsSync.maybeComplete(coId, new Date().getFullYear(), { invoice: true }); } catch (_) {}
+    }
 
     // 3. Clear trip state.
     clearTrip(coId);

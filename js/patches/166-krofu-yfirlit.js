@@ -374,7 +374,7 @@
     const cidSet = Array.from(new Set((_state.all || []).map(s => s.customer_id).filter(Boolean)));
     _state.fyrirtMap = {};
     if (cidSet.length) {
-      const fy = await SB.from('fyrirtaeki').select('id,kennitala,netfang').in('id', cidSet);
+      const fy = await SB.from('fyrirtaeki').select('id,kennitala,netfang,customer_base_id').in('id', cidSet);
       (fy.data || []).forEach(f => { _state.fyrirtMap[f.id] = f; });
     }
     // 2026-06-30: líka pull úr customers_base ef customer_base_id er sett —
@@ -391,12 +391,14 @@
     // og spyrja CompanyAttachments fyrir hvert.
     const ktSet = Array.from(new Set((_state.all || []).map(s => (s.customer_kt || '').trim()).filter(Boolean)));
     _state.fyrirtIdsByKt = {};
+    _state.baseIdByKt = {};   // kt → customer_base_id (fyrir customer_documents-uppflettingu)
     if (ktSet.length) {
       const fy2 = await SB.from('fyrirtaeki').select('id,kennitala,customer_base_id').in('kennitala', ktSet);
       (fy2.data || []).forEach(f => {
         const k = (f.kennitala || '').trim();
         if (!k) return;
         (_state.fyrirtIdsByKt[k] = _state.fyrirtIdsByKt[k] || []).push(f.id);
+        if (f.customer_base_id != null && _state.baseIdByKt[k] == null) _state.baseIdByKt[k] = f.customer_base_id;
       });
       // Líka með customer_base_id — finna öll fyrirtaeki undir sama base
       const baseIds = (_state.all || []).map(s => s.customer_base_id).filter(Boolean);
@@ -407,9 +409,38 @@
           if (!k) return;
           (_state.fyrirtIdsByKt[k] = _state.fyrirtIdsByKt[k] || []);
           if (!_state.fyrirtIdsByKt[k].includes(f.id)) _state.fyrirtIdsByKt[k].push(f.id);
+          if (f.customer_base_id != null && _state.baseIdByKt[k] == null) _state.baseIdByKt[k] = f.customer_base_id;
         });
       }
     }
+
+    // 2026-07-16: sækja úttektarskýrslur líka úr customer_documents (Drive-
+    // hryggnum, sameiginlegur með Brunahólf) — svo 📄 Skýrsla-takkinn og
+    // Senda-glugginn sjái skýrslur sem eru EKKI vistaðar sem fyrirtækjaviðhengi.
+    // Additive og fail-safe: villa hér (t.d. RLS) skilur bara eftir tóm map
+    // og viðhengja-leiðin (CompanyAttachments) virkar áfram óbreytt.
+    _state.docsByCo = {}; _state.docsByBase = {};
+    try {
+      const coIds = new Set(cidSet.map(String));
+      Object.values(_state.fyrirtIdsByKt || {}).forEach(arr => arr.forEach(id => coIds.add(String(id))));
+      const bIds = new Set(baseSet.map(String));
+      Object.values(_state.fyrirtMap || {}).forEach(f => { if (f && f.customer_base_id != null) bIds.add(String(f.customer_base_id)); });
+      Object.values(_state.baseIdByKt || {}).forEach(id => bIds.add(String(id)));
+      const ors = [];
+      if (coIds.size) ors.push('fyrirtaeki_id.in.(' + Array.from(coIds).join(',') + ')');
+      if (bIds.size) ors.push('customer_base_id.in.(' + Array.from(bIds).join(',') + ')');
+      if (ors.length) {
+        const dr = await SB.from('customer_documents')
+          .select('id,customer_base_id,fyrirtaeki_id,year,doc_type,drive_file_id,storage_path')
+          .eq('doc_type', 'uttektarskyrsla')
+          .or('is_duplicate.is.null,is_duplicate.eq.false')
+          .or(ors.join(','));
+        (dr.data || []).forEach(d => {
+          if (d.fyrirtaeki_id != null) (_state.docsByCo[String(d.fyrirtaeki_id)] = _state.docsByCo[String(d.fyrirtaeki_id)] || []).push(d);
+          if (d.customer_base_id != null) (_state.docsByBase[String(d.customer_base_id)] = _state.docsByBase[String(d.customer_base_id)] || []).push(d);
+        });
+      }
+    } catch (_) {}
 
     // ── Recover kt for sales saved name-only ────────────────────────────────
     // Some reikningur sales arrive with no customer_kt AND no usable id/base
@@ -750,19 +781,19 @@
       });
     });
 
-    // 2026-06-30: 📎 Skýrsla hnappur — opnar úttektarskýrslu PDF í preview
+    // 📄 Skýrsla hnappur (2026-07-16) — grænn opnar úttektarskýrslu ársins í
+    // nýjum flipa (viðhengi eða customer_documents/Drive); grár = vantar (toast).
     main.querySelectorAll('._ky-skyrsla').forEach(b => {
       b.addEventListener('click', async () => {
-        try {
-          const coId = b.dataset.coId;
-          const attId = b.dataset.attId;
-          if (!coId || !window.CompanyAttachments) return;
-          const atts = CompanyAttachments.list(coId) || [];
-          const file = atts.find(a => String(a.id) === String(attId));
-          if (!file) { alert('Skjal fannst ekki — hefur þú endurnýjað kröfu yfirlitið?'); return; }
-          if (CompanyAttachments.openPreview) CompanyAttachments.openPreview(coId, file);
-          else if (CompanyAttachments.download) CompanyAttachments.download(coId, file);
-        } catch (e) { alert('Villa: ' + (e.message || e)); }
+        const s = (_state.all || []).find(x => String(x.id) === String(b.dataset.id));
+        if (!s) return;
+        const res = resolveSkyrsla(s);
+        if (!res.found) {
+          const msg = 'Engin úttektarskýrsla fundin fyrir ' + res.year;
+          if (window.Toast && Toast.show) Toast.show('📄 ' + msg); else alert(msg);
+          return;
+        }
+        try { await openSkyrsla(res); } catch (e) { alert('Villa: ' + (e.message || e)); }
       });
     });
 
@@ -783,10 +814,13 @@
           await load(_state.month);
           return;
         }
-        if (!confirm('Senda kröfu í Payday núna?\n\nSendist sjálfkrafa (rafrænt ef kúnni tekur við því, annars í tölvupósti). Viltu bara DRÖG? Hakaðu við kröfuna og notaðu „📤 Í Payday sem drög".')) return;
+        // 2026-07-16: confirm() → eiginn Senda-gluggi með skýrslu-stöðunni —
+        // skrifstofan opnar og yfirfer úttektarskýrsluna ÁÐUR en krafan fer.
+        const sale = (_state.all || []).find(s => String(s.id) === String(id));
+        const choice = await openKrafaSendDialog(sale);
+        if (!choice) return;
         b.disabled = true; b.textContent = '⏳ Sendir…';
         try {
-          const sale = (_state.all || []).find(s => String(s.id) === String(id));
           if (sale) {
             const ke = await ensureKtForSale(sale);
             if (!ke.ok) throw new Error('Vantar kennitölu — fannst ekki út frá nafni. Skráðu kt á kúnnann fyrst.');
@@ -794,7 +828,11 @@
           const r = await fetch('/api/payday-push', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sale_id: id }),
+            body: JSON.stringify({
+              sale_id: id,
+              attach_report: choice.attach,
+              report_storage_path: (choice.attach && choice.path) || undefined,
+            }),
           });
           const j = await r.json().catch(() => ({}));
           if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
@@ -1117,29 +1155,128 @@
     const oldestLbl = oldestD > 60 ? 'elstu 60+ d.' : ('elstu ' + oldestD + ' d.');
     return { agBar, oldestLbl };
   }
-  // 📄 Skýrsla button (úttektarskýrsla PDF for the sale's year), or '' if none.
-  function skyrslaBtnFor(s) {
+  // ── 📄 Úttektarskýrsla per krafa (2026-07-16) ──────────────────────────────
+  // Resolve the inspection report for the sale's YEAR: (1) fyrirtækjaviðhengi
+  // (CompanyAttachments, kind='skyrsla', sama ár — sama og payday-push notar),
+  // (2) customer_documents (doc_type='uttektarskyrsla', sama ár) per fyrirtæki
+  // eða customers_base. Skilar {found, kind:'att'|'doc', ...} — aldrei giskað.
+  function resolveSkyrsla(s) {
+    const yr = String(new Date(s.created_at || Date.now()).getFullYear());
+    const candidateIds = [];
+    if (s.customer_id) candidateIds.push(s.customer_id);
+    const kt = (s.customer_kt || '').trim();
+    if (kt && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[kt]) {
+      _state.fyrirtIdsByKt[kt].forEach(id => { if (!candidateIds.includes(id)) candidateIds.push(id); });
+    }
+    // 1) fyrirtækjaviðhengi (Supabase samningar-bucket)
     try {
       if (window.CompanyAttachments && CompanyAttachments.list) {
-        const yr = String(new Date(s.created_at).getFullYear());
-        const candidateIds = [];
-        if (s.customer_id) candidateIds.push(s.customer_id);
-        const kt = (s.customer_kt || '').trim();
-        if (kt && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[kt]) {
-          _state.fyrirtIdsByKt[kt].forEach(id => { if (!candidateIds.includes(id)) candidateIds.push(id); });
-        }
-        let skyrsla = null, hitCoId = null;
         for (const coId of candidateIds) {
           const atts = CompanyAttachments.list(coId) || [];
           const hit = atts.find(a => a && a.kind === 'skyrsla' && String(a.year || '') === yr);
-          if (hit) { skyrsla = hit; hitCoId = coId; break; }
-        }
-        if (skyrsla && hitCoId) {
-          return `<button class="_ky-skyrsla" data-co-id="${hitCoId}" data-att-id="${esc(skyrsla.id || '')}" type="button" title="Úttektarskýrsla ${yr} — smelltu til að opna PDF (dragðu svo í Payday Drög sem fylgiskjal)" style="display:inline-flex;align-items:center;gap:5px;padding:5px 10px;background:#fff;color:#3a4250;border:1px solid rgba(20,24,34,.16);border-radius:8px;cursor:pointer;font:inherit;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 1px 2px rgba(15,23,42,.05)">📄 Skýrsla</button>`;
+          if (hit) return { found: true, kind: 'att', coId, att: hit, year: yr };
         }
       }
     } catch (_) {}
-    return '';
+    // 2) customer_documents (Drive-hryggurinn)
+    const docs = [];
+    candidateIds.forEach(id => ((_state.docsByCo || {})[String(id)] || []).forEach(d => { if (!docs.includes(d)) docs.push(d); }));
+    const baseIds = [];
+    if (s.customer_base_id) baseIds.push(s.customer_base_id);
+    const fy = s.customer_id ? (_state.fyrirtMap || {})[s.customer_id] : null;
+    if (fy && fy.customer_base_id != null) baseIds.push(fy.customer_base_id);
+    if (kt && _state.baseIdByKt && _state.baseIdByKt[kt] != null) baseIds.push(_state.baseIdByKt[kt]);
+    baseIds.forEach(id => ((_state.docsByBase || {})[String(id)] || []).forEach(d => { if (!docs.includes(d)) docs.push(d); }));
+    const doc = docs.find(d => String(d.year || '') === yr && (d.drive_file_id || d.storage_path));
+    if (doc) return { found: true, kind: 'doc', doc, year: yr };
+    return { found: false, year: yr };
+  }
+  // Open the resolved report in a new tab (attachment → public storage URL /
+  // preview; customer_documents → storage URL else Drive viewer).
+  async function openSkyrsla(res) {
+    if (res.kind === 'att' && res.att) {
+      if (res.att.path && window.CompanyAttachments && CompanyAttachments.getPublicUrl) {
+        const url = await CompanyAttachments.getPublicUrl(res.att.path);
+        if (url) { window.open(url, '_blank', 'noopener'); return; }
+      }
+      if (window.CompanyAttachments && CompanyAttachments.openPreview) { CompanyAttachments.openPreview(res.att); return; }
+      throw new Error('Gat ekki opnað skýrsluna.');
+    }
+    if (res.kind === 'doc' && res.doc) {
+      if (res.doc.storage_path && window.CompanyAttachments && CompanyAttachments.getPublicUrl) {
+        const url = await CompanyAttachments.getPublicUrl(res.doc.storage_path);
+        if (url) { window.open(url, '_blank', 'noopener'); return; }
+      }
+      if (res.doc.drive_file_id) {
+        window.open('https://drive.google.com/file/d/' + encodeURIComponent(res.doc.drive_file_id) + '/view', '_blank', 'noopener');
+        return;
+      }
+    }
+    throw new Error('Skjalið fannst ekki.');
+  }
+  // 📄 Skýrsla takki í kyAbtn-röðinni: GRÆNN (filled) þegar skýrsla ársins er
+  // til → opnar hana; grár „vantar" annars (smellur = toast, ekkert meira).
+  function skyrslaBtnFor(s) {
+    const res = resolveSkyrsla(s);
+    return res.found
+      ? kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '"', '📄', 'Skýrsla', '#0f7a43', 'Úttektarskýrsla ' + res.year + ' — opna og yfirfara áður en krafan er send (fylgir kröfunni sem viðhengi)', true)
+      : kyAbtn('_ky-skyrsla', 'data-id="' + s.id + '" data-missing="1"', '📄', 'Skýrsla', '#a6adbb', 'Engin úttektarskýrsla fundin fyrir ' + res.year, false);
+  }
+  function skyrslaIconFor(s) {
+    const res = resolveSkyrsla(s);
+    return res.found
+      ? kyIcon('_ky-skyrsla', 'data-id="' + s.id + '"', '📄', '#0f7a43', 'Úttektarskýrsla ' + res.year + ' — opna og yfirfara', true)
+      : kyIcon('_ky-skyrsla', 'data-id="' + s.id + '" data-missing="1"', '📄', '#a6adbb', 'Engin úttektarskýrsla fundin fyrir ' + res.year, false);
+  }
+  // 🏦 Senda-gluggi (kemur í stað confirm): sýnir kröfuna + skýrslu-stöðuna.
+  // Skýrsla til → hak „fylgir sem viðhengi" (sjálfgefið á, má afhaka) + 👁 opna.
+  // Engin skýrsla → heiðarleg lína; sending samt leyfð (ALLTAF LEYFA VISTUN).
+  function openKrafaSendDialog(sale) {
+    return new Promise(resolve => {
+      const res = resolveSkyrsla(sale || {});
+      const old = document.getElementById('_ky-send-modal'); if (old) old.remove();
+      const wrap = document.createElement('div');
+      wrap.id = '_ky-send-modal';
+      wrap.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:100070;display:flex;align-items:center;justify-content:center;padding:20px;font-family:\'Space Grotesk\',system-ui,sans-serif';
+      const isUttekt = !!(sale && sale.source === 'uttekt');
+      let reportHtml;
+      if (res.found) {
+        reportHtml =
+          '<div style="margin:14px 0;padding:12px 14px;background:#ecfdf5;border:1px solid #a7f3d0;border-radius:10px">' +
+            '<label style="display:flex;align-items:center;gap:9px;cursor:pointer;font-size:13.5px;color:#065f46;font-weight:700">' +
+              '<input type="checkbox" id="_ky-send-attach" checked style="width:17px;height:17px;accent-color:#0f7a43;cursor:pointer;flex-shrink:0">' +
+              '<span>📄 Úttektarskýrsla ' + esc(res.year) + ' fylgir kröfunni sem viðhengi</span>' +
+            '</label>' +
+            '<div style="margin-top:9px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+              '<button type="button" id="_ky-send-open" style="padding:7px 12px;border:1px solid #0f7a43;background:#fff;color:#0f7a43;border-radius:8px;cursor:pointer;font:inherit;font-size:12.5px;font-weight:700">👁 Opna og yfirfara skýrsluna</button>' +
+              (!isUttekt ? '<span style="font-size:11.5px;color:#b45309">NB: Payday festir skýrsluna aðeins á úttektar-kröfur (source=uttekt).</span>' : '') +
+            '</div>' +
+          '</div>';
+      } else {
+        reportHtml = '<div style="margin:14px 0;padding:12px 14px;background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;font-size:13px;color:#64748b">📄 Engin úttektarskýrsla fundin fyrir ' + esc(res.year) + ' — sending er samt leyfð.</div>';
+      }
+      wrap.innerHTML =
+        '<div style="background:#fff;border-radius:16px;padding:22px 24px;max-width:520px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.35)">' +
+          '<div style="font-size:17px;font-weight:800;color:#11141c;margin-bottom:4px">🏦 Senda kröfu í Payday</div>' +
+          '<div style="font-size:13px;color:#334155">' + esc((sale && sale.num) || '') + ' · ' + esc((sale && sale.customer_nafn) || '') + ' · <b class="ky-num">' + fmtKr(sale && sale.samtals) + '</b></div>' +
+          reportHtml +
+          '<div style="font-size:12px;color:#64748b;margin-bottom:16px">Sendist sjálfkrafa (rafrænt ef kúnni tekur við því, annars í tölvupósti). Viltu bara DRÖG? Hakaðu við kröfuna og notaðu „📤 Í Payday sem drög".</div>' +
+          '<div style="display:flex;justify-content:flex-end;gap:8px">' +
+            '<button type="button" id="_ky-send-cancel" style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:9px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">Hætta við</button>' +
+            '<button type="button" id="_ky-send-go" style="padding:9px 18px;border:none;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border-radius:9px;cursor:pointer;font:inherit;font-size:13.5px;font-weight:700">🏦 Senda kröfu</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(wrap);
+      const done = (v) => { wrap.remove(); resolve(v); };
+      wrap.addEventListener('click', e => { if (e.target === wrap) done(null); });
+      wrap.querySelector('#_ky-send-cancel').addEventListener('click', () => done(null));
+      wrap.querySelector('#_ky-send-go').addEventListener('click', () => {
+        const cb = wrap.querySelector('#_ky-send-attach');
+        done({ attach: cb ? !!cb.checked : true, path: (res.att && res.att.path) || (res.doc && res.doc.storage_path) || null });
+      });
+      const ob = wrap.querySelector('#_ky-send-open');
+      if (ob) ob.addEventListener('click', () => { openSkyrsla(res).catch(e => alert('Villa: ' + (e.message || e))); });
+    });
   }
 
   // ── 📱 Sími (mobile) — one column, big taps, nothing overlaps ───────────────
@@ -1166,10 +1303,10 @@
             <span class="ky-num" style="margin-left:auto;font-weight:800;color:#11141c;font-size:15px;white-space:nowrap;flex-shrink:0">${fmtKr(s.samtals)}</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-            ${skyrslaBtn}
             <input class="_ky-note" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="🗒 minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — vistast sjálfkrafa." style="flex:1;min-width:0;padding:9px 10px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;font:inherit;font-size:14px;color:#11141c;outline:none">
           </div>
           <div style="display:flex;gap:6px;margin-top:8px;overflow-x:auto;flex-wrap:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:2px">
+            ${skyrslaBtn}
             ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', 'Krafa send', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
             ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', 'Greitt', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
             ${kyAbtn('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', 'Reikning', '#2f5fe0', 'Skoða / prenta reikning', false)}
@@ -1258,6 +1395,7 @@
           <td class="ky-num" style="text-align:right;font-weight:700;color:#11141c;white-space:nowrap">${fmtKr(s.samtals)}</td>
           <td>
             <div style="display:flex;gap:4px;align-items:center;flex-wrap:nowrap">
+              ${skyrslaIconFor(s)}
               ${kyIcon('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday', !!s.krafa_sent_at)}
               ${kyIcon('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
               ${kyIcon('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', '#2f5fe0', 'Skoða / prenta reikning', false)}
@@ -1329,11 +1467,11 @@
                 </div>
                 ${agingPill(da)}
                 <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;margin:0 10px">
-                  ${skyrslaBtn}
                   <input class="_ky-note" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="🗒 minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — eigin reitur (ekki athugasemd reikningsins). Vistast sjálfkrafa." style="flex:1;min-width:0;padding:4px 8px;border:1px solid transparent;border-bottom:1px dashed #d3d9e2;background:transparent;font:inherit;font-size:12px;color:#11141c;outline:none;border-radius:5px">
                 </div>
                 <span class="ky-num" style="width:90px;text-align:right;font-weight:700;color:#11141c;white-space:nowrap;flex-shrink:0">${fmtKr(s.samtals)}</span>
                 <div style="display:flex;gap:6px;flex-shrink:0">
+                  ${skyrslaBtn}
                   ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', 'Krafa send', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
                   ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', 'Greitt', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
                   ${kyAbtn('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', 'Reikning', '#2f5fe0', 'Skoða / prenta reikning', false)}
