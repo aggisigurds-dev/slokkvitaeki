@@ -950,9 +950,9 @@
             <div style="font-size:10.5px;color:#b45309">í pípunni</div>
           </div>
           <div class="bstal-hero" style="background:var(--thm-sumh);color:#fff;border:1px solid var(--brand);border-radius:10px;padding:11px 13px">
-            <div style="font-size:10px;font-weight:700;color:var(--brd2);text-transform:uppercase;letter-spacing:.05em">Áætlaðar tekjur ${curYear}</div>
+            <div style="font-size:10px;font-weight:700;color:var(--brd2);text-transform:uppercase;letter-spacing:.05em">≈ Áætlað virði ársþjónustu ${curYear}</div>
             <div style="font-size:22px;font-weight:800;color:#fff;line-height:1.1;margin-top:2px;font-variant-numeric:tabular-nums">${fmtKr(totalEstimate)}</div>
-            <div style="font-size:10.5px;color:#86efac">${fmtKr(estDoneThisYear)} þegar innheimt</div>
+            <div style="font-size:10.5px;color:#86efac">þar af ≈ ${fmtKr(estDoneThisYear)} búið</div>
           </div>
         </div>
 
@@ -1007,12 +1007,12 @@
           </div>
           <div style="display:flex;gap:22px;flex-wrap:wrap">
             <div style="text-align:right">
-              <div style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Áætlaðar tekjur</div>
+              <div style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">≈ Áætlað virði</div>
               <div style="font-size:18px;font-weight:800;color:var(--ink1);font-variant-numeric:tabular-nums">${fmtKr(filteredTotal)}</div>
             </div>
             ${filteredDone > 0 ? `
             <div style="text-align:right">
-              <div style="font-size:10.5px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Þegar innheimt</div>
+              <div style="font-size:10.5px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Þar af búið</div>
               <div style="font-size:18px;font-weight:800;color:#15803d;font-variant-numeric:tabular-nums">${fmtKr(filteredDone)}</div>
               <div style="font-size:10.5px;color:#16a34a">${filteredDonePct}%</div>
             </div>` : ''}
