@@ -916,7 +916,7 @@
               <option value="oldest" ${state.sort==='oldest'?'selected':''}>⏳ Þeir elstu fyrst (lengst síðan skoðað)</option>
             </select>
             <button id="_ars-print" type="button" title="Prenta listann eins og hann er síaður núna" style="padding:7px 12px;border:1px solid var(--brd2);border-radius:8px;background:var(--surface);font:inherit;font-size:12px;font-weight:600;color:var(--ink1);cursor:pointer">🖨 Prenta lista</button>
-            <button id="_ars-ovr" type="button" aria-pressed="${overrideOn()}" title="Lagfæringar-hamur — smelltu á Mánuð, Tæki eða Ár í listanum til að laga gildi beint" style="padding:7px 12px;border:1px solid ${overrideOn() ? '#d97706' : 'var(--brd2)'};border-radius:8px;background:${overrideOn() ? 'linear-gradient(150deg,#fbbf24,#b45309)' : 'var(--surface)'};font:inherit;font-size:12px;font-weight:700;color:${overrideOn() ? '#fff' : 'var(--ink1)'};cursor:pointer;${overrideOn() ? 'box-shadow:inset 0 1px 0 rgba(255,255,255,.35);' : ''}">⚡ Lagfæringar${overrideOn() ? ' · Á' : ''}</button>
+            <button id="_ars-ovr" type="button" aria-pressed="${overrideOn()}" title="" style="padding:6px 8px;border:none;border-radius:8px;background:${overrideOn() ? 'rgba(245,158,11,.18)' : 'transparent'};font:inherit;font-size:13px;cursor:pointer;opacity:${overrideOn() ? '1' : '.35'};min-width:36px;min-height:36px">⚡</button>
           </div>
         </div>
 
