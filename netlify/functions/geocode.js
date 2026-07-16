@@ -178,15 +178,35 @@ export default async (req) => {
     const variants = cleanVariants(q);
     let hit = null;
     let usedVariant = q;
+    let upstreamErr = null;   // 2026-07-16: track upstream failures separately
+    let sawRealMiss = false;  // at least one variant got a REAL empty result
     for (const v of variants) {
       const res = await tryNominatim(v);
-      if (res && !res.error && Number.isFinite(res.lat) && Number.isFinite(res.lon)) {
+      if (res && res.error) { upstreamErr = res.error; continue; }
+      if (res && Number.isFinite(res.lat) && Number.isFinite(res.lon)) {
         hit = res;
         usedVariant = v;
         break;
       }
+      sawRealMiss = true;
     }
     if (!hit) {
+      // 2026-07-16 FIX (root cause of "every lookup 404s"): a Nominatim
+      // upstream failure (403/429 rate-limit, 5xx) used to fall through to
+      // the SAME 404 "not-found" as a genuine no-match — AND that 404 carried
+      // Cache-Control public,max-age=3600, so the Netlify edge cached the
+      // failure per-address for an hour. One rate-limited burst (e.g. the
+      // map geocoding hundreds of customers) made every address lookup
+      // return 404 site-wide until the caches expired. Now: upstream errors
+      // → 502 + no-store (never cached, callers can retry); only a REAL
+      // empty Nominatim result → 404 (cacheable — the address truly
+      // doesn't resolve).
+      if (upstreamErr && !sawRealMiss) {
+        return new Response(JSON.stringify({ error: 'upstream', detail: upstreamErr, q }), {
+          status: 502,
+          headers: { 'Content-Type': 'application/json', ...cors(), 'Cache-Control': 'no-store' },
+        });
+      }
       return new Response(JSON.stringify({ error: 'not-found', q, tried: variants }), {
         status: 404,
         headers: { 'Content-Type': 'application/json', ...cors(), 'Cache-Control': 'public, max-age=3600' },
