@@ -229,6 +229,16 @@
       return hasArs || hasBru || hasUnits;
     }
 
+    // 2026-07-17: fjöldi staða per base — notað í sönnunar-stöðunni að neðan
+    // (rekstrarfélags-vörn: base-tengt skjal gildir aðeins fyrir eins-staðar base).
+    const _baseSiteCount = {};
+    allCompanies.forEach(c => {
+      if (c.customer_base_id != null) {
+        const k = String(c.customer_base_id);
+        _baseSiteCount[k] = (_baseSiteCount[k] || 0) + 1;
+      }
+    });
+
     _cache.list = allCompanies
       .filter(inService)
       .map(c => {
@@ -302,6 +312,28 @@
         // _ars gegnum Object.assign) og telja heildina fyrir röðun/print.
         if (manual.equipment_manual && manual.equipment) {
           _ars._unit_count = Object.values(manual.equipment).reduce((s, v) => s + (+v || 0), 0);
+        }
+        // 2026-07-17 SÖNNUNAR-STAÐA: staðan reiknast úr sönnuninni sjálfri —
+        // sé staðfest skýrsla til fyrir STAÐINN (customer_documents tengt á
+        // fyrirtaeki_id, eða facts-röðin) með nýrra ár en blobbið segir, telst
+        // staðurinn skoðaður það ár. Þá getur „skýrsla til en samt Á eftir"
+        // aldrei gerst aftur. Rekstrarfélags-vörn: base-tengd skjöl (án
+        // fyrirtaeki_id) gilda AÐEINS þegar base á nákvæmlega EINN stað —
+        // annars gæti skýrsla eins útibús merkt öll hin skoðuð. Röng tenging
+        // lagast í Skýrslu-stöð (Brunahólf) og staðan fylgir þá sjálfkrafa.
+        {
+          const nowYr = new Date().getFullYear();
+          const siteYrs = Array.from(docYears.byCo[String(c.id)] || []);
+          if (c.customer_base_id != null && (_baseSiteCount[String(c.customer_base_id)] || 0) === 1) {
+            siteYrs.push(...(docYears.byBase[String(c.customer_base_id)] || []));
+          }
+          const evYr = Math.max(0,
+            ...siteYrs.map(Number).filter(n => n > 2000 && n <= nowYr),
+            (fact && +fact.report_year > 2000 && +fact.report_year <= nowYr) ? +fact.report_year : 0);
+          if (evYr > (+_ars.last_year_inspected || 0)) {
+            _ars.last_year_inspected = evYr;
+            _ars._year_from_report = true;
+          }
         }
         return {
           ...c,
