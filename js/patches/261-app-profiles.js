@@ -277,13 +277,13 @@
       cards + '</div>';
     v.querySelectorAll('._op-open').forEach(function (b) { b.addEventListener('click', function () { location.href = appLink(b.dataset.app); }); });
     v.querySelectorAll('._op-install').forEach(function (b) { b.addEventListener('click', function () {
-      // If we can prompt right now (rare on the launcher, whose manifest is the
-      // office default), do it; otherwise OPEN the app at its own /app/<key>/
-      // scope — there the browser install / "Add to Home screen" captures THAT
-      // app correctly (its scope is not shared, so no "open in Fjármál").
-      var a = APP_BY_KEY[b.dataset.app]; if (a) setManifest(a.manifest);
-      if (deferredPrompt) { doInstall(); }
-      else { location.href = appLink(b.dataset.app) + '?install=1'; }
+      // ALDREI nota deferredPrompt sem var fangaður HÉR á launcher-síðunni —
+      // beforeinstallprompt er bundinn við manifestið sem gilti þegar hann
+      // kviknaði (aðal-appið á "/"), svo prompt() setti upp AÐALAPPIÐ þó
+      // setManifest() skipti hlekknum eftirá (rót „Fjármál varð aðalappið").
+      // Farðu alltaf á eigin /app/<key>/ scope — þar fangar vafrinn RÉTTA
+      // manifestið og ?install=1 opnar uppsetningargluggann sjálfkrafa.
+      location.href = appLink(b.dataset.app) + '?install=1';
     }); });
     v.querySelectorAll('._op-link').forEach(function (b) { b.addEventListener('click', function () {
       var url = appLink(b.dataset.app);
@@ -322,7 +322,15 @@
     if (!nav.parentNode) document.body.appendChild(nav);
 
     nav.querySelectorAll('._app-tab').forEach(function (b) { b.addEventListener('click', function () { goPage(b.dataset.k); }); });
-    hdr.querySelector('#_app-inst2').addEventListener('click', function () { setManifest(a.manifest); doInstall(); });
+    hdr.querySelector('#_app-inst2').addEventListener('click', function () {
+      // Uppsetning gildir aðeins innan eigin /app/<key>/ scope-s. Ef komið var
+      // inn um gamla ?app=<key> hlekkinn er síðan UTAN scope-sins og prompt-inn
+      // (ef einhver) tilheyrir aðalappinu — hoppa þá fyrst á réttu slóðina.
+      if ((location.pathname || '').indexOf('/app/' + a.key + '/') !== 0) {
+        location.href = appLink(a.key) + '?install=1'; return;
+      }
+      setManifest(a.manifest); doInstall();
+    });
     hdr.querySelector('#_app-exit').addEventListener('click', function () { location.href = location.origin + '/'; });
 
     setManifest(a.manifest);   // install captures THIS app
