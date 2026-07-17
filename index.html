@@ -35,10 +35,9 @@
       var at=document.querySelector('meta[name="apple-mobile-web-app-title"]');
       if(at) at.setAttribute('content', TITLES[key]||key);
       try{ document.title=(TITLES[key]||key)+' — Slökkvitæki'; }catch(_){}
-      if(key==='bilstjori'){
-        // Sér-merki bílstjóra-appsins líka á iOS heimaskjá
-        document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="apple-touch-icon-precomposed"]').forEach(function(a){a.setAttribute('href','/img/app-bilstjori-apple.png?v=1');});
-      }
+      // Sér-merki hvers mini-apps líka á iOS heimaskjá
+      var APPLE={fjarmal:'/img/app-fjarmal-apple.png',verkefni:'/img/app-verkefni-apple.png',bilstjori:'/img/app-bilstjori-apple.png'};
+      if(APPLE[key]) document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="apple-touch-icon-precomposed"]').forEach(function(a){a.setAttribute('href',APPLE[key]+'?v=1');});
     }
   }catch(e){}
 })();
@@ -1041,7 +1040,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/254-receipt-sender.js?v=20260701a"></script>
 <script defer src="/js/patches/255-auto-discount.js?v=20260708c"></script>
 <!-- hibernated 2026-07-09 (rangur dökkur titil-bar úr #260, ekki í comps): 260-global-titlebar.js -->
-<script defer src="/js/patches/261-app-profiles.js?v=20260713sep"></script>
+<script defer src="/js/patches/261-app-profiles.js?v=20260717inst"></script>
 <script defer src="/js/patches/262-sidebar-polish.js?v=20260705c"></script>
 <script defer src="/js/patches/262-page-editor.js?v=20260704c"></script>
 <script defer src="/js/patches/145-companies-diagnose.js?v=20260516a"></script>
