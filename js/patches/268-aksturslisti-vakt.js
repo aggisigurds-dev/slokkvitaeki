@@ -21,8 +21,8 @@
 
   const VIEW_ID = 'view-aksturslisti';
   const NAV_KEY = 'aksturslisti';
-  const EMPLOYEES = ['Hákon', 'Binni', 'Elías'];
-  const EMP_COL = { 'Hákon': '#2563eb', 'Binni': '#059669', 'Elías': '#d97706' };
+  const EMPLOYEES = ['Hákon', 'Binni', 'Elías', 'Agnar'];
+  const EMP_COL = { 'Hákon': '#2563eb', 'Binni': '#059669', 'Elías': '#d97706', 'Agnar': '#dc2626' };
   const empColor = (n) => EMP_COL[n] || '#64748b';
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
