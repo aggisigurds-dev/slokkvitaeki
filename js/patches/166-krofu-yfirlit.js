@@ -459,12 +459,25 @@
           if (coId != null && e.coId == null) e.coId = coId;
           if (baseId != null && e.baseId == null) e.baseId = baseId;
         };
+        // NB síðuskipting (2026-07-17): báðar töflur eru komnar yfir 1000 raðir
+        // og Supabase klippir ósíðuskipt select við 1000 — þá „týndust" félög
+        // (Sjúkraþjálfun Afl) úr endurheimtinni og skýrslu/hlekkja-tengingin brást.
+        const pageAll = async (table, cols) => {
+          const out = [];
+          for (let from = 0; ; from += 1000) {
+            const r = await SB.from(table).select(cols).range(from, from + 999);
+            const rows = r.data || [];
+            out.push(...rows);
+            if (rows.length < 1000) break;
+          }
+          return out;
+        };
         const [fyAll, baseAll] = await Promise.all([
-          SB.from('fyrirtaeki').select('id,nafn,kennitala,customer_base_id'),
-          SB.from('customers_base').select('id,nafn,kennitala'),
+          pageAll('fyrirtaeki', 'id,nafn,kennitala,customer_base_id'),
+          pageAll('customers_base', 'id,nafn,kennitala'),
         ]);
-        (fyAll.data || []).forEach(r => add(r.nafn, r.kennitala, r.id, r.customer_base_id));
-        (baseAll.data || []).forEach(r => add(r.nafn, r.kennitala, null, r.id));
+        fyAll.forEach(r => add(r.nafn, r.kennitala, r.id, r.customer_base_id));
+        baseAll.forEach(r => add(r.nafn, r.kennitala, null, r.id));
         Object.keys(acc).forEach(k => {
           const e = acc[k];
           if (e.kts.size === 1) {   // unambiguous only — never guess a kt onto a bill
