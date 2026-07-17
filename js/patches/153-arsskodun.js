@@ -229,6 +229,16 @@
       return hasArs || hasBru || hasUnits;
     }
 
+    // 2026-07-17: fjöldi staða per base — notað í sönnunar-stöðunni að neðan
+    // (rekstrarfélags-vörn: base-tengt skjal gildir aðeins fyrir eins-staðar base).
+    const _baseSiteCount = {};
+    allCompanies.forEach(c => {
+      if (c.customer_base_id != null) {
+        const k = String(c.customer_base_id);
+        _baseSiteCount[k] = (_baseSiteCount[k] || 0) + 1;
+      }
+    });
+
     _cache.list = allCompanies
       .filter(inService)
       .map(c => {
@@ -302,6 +312,28 @@
         // _ars gegnum Object.assign) og telja heildina fyrir röðun/print.
         if (manual.equipment_manual && manual.equipment) {
           _ars._unit_count = Object.values(manual.equipment).reduce((s, v) => s + (+v || 0), 0);
+        }
+        // 2026-07-17 SÖNNUNAR-STAÐA: staðan reiknast úr sönnuninni sjálfri —
+        // sé staðfest skýrsla til fyrir STAÐINN (customer_documents tengt á
+        // fyrirtaeki_id, eða facts-röðin) með nýrra ár en blobbið segir, telst
+        // staðurinn skoðaður það ár. Þá getur „skýrsla til en samt Á eftir"
+        // aldrei gerst aftur. Rekstrarfélags-vörn: base-tengd skjöl (án
+        // fyrirtaeki_id) gilda AÐEINS þegar base á nákvæmlega EINN stað —
+        // annars gæti skýrsla eins útibús merkt öll hin skoðuð. Röng tenging
+        // lagast í Skýrslu-stöð (Brunahólf) og staðan fylgir þá sjálfkrafa.
+        {
+          const nowYr = new Date().getFullYear();
+          const siteYrs = Array.from(docYears.byCo[String(c.id)] || []);
+          if (c.customer_base_id != null && (_baseSiteCount[String(c.customer_base_id)] || 0) === 1) {
+            siteYrs.push(...(docYears.byBase[String(c.customer_base_id)] || []));
+          }
+          const evYr = Math.max(0,
+            ...siteYrs.map(Number).filter(n => n > 2000 && n <= nowYr),
+            (fact && +fact.report_year > 2000 && +fact.report_year <= nowYr) ? +fact.report_year : 0);
+          if (evYr > (+_ars.last_year_inspected || 0)) {
+            _ars.last_year_inspected = evYr;
+            _ars._year_from_report = true;
+          }
         }
         return {
           ...c,
@@ -1915,7 +1947,10 @@
 
           ${aminning ? `
           <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:10px 13px">
-            <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;margin-bottom:4px">📌 Áminning (úr skuldunautaskrá)</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+              <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase">📌 Áminning (úr skuldunautaskrá)</div>
+              <button class="_ars-amin-del" type="button" title="Eyða áminningunni" style="background:none;border:1px solid #fde68a;color:#92400e;border-radius:5px;padding:2px 8px;cursor:pointer;font:inherit;font-size:11px">🗑 Eyða</button>
+            </div>
             <div style="font-size:12px;color:#78350f;line-height:1.5;white-space:pre-wrap">${esc(aminning)}</div>
             ${ars.aminning_parsed && (ars.aminning_parsed.yfirferd_price || ars.aminning_parsed.hledsla_price) ? `
               <div style="margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;font-size:10.5px;color:#92400e">
@@ -2154,6 +2189,17 @@
       eqActions.style.display = editing ? 'flex' : 'none';
       eqToggle.style.display = editing ? 'none' : '';
     }
+    // 2026-07-17: eyða gamalli áminningu (innfluttur texti úr skuldunautaskrá
+    // sem enginn ritill náði til — „get ekki eytt af prófílnum").
+    const aminDel = bg.querySelector('._ars-amin-del');
+    if (aminDel) aminDel.addEventListener('click', async () => {
+      if (!confirm('Eyða áminningunni af þessu fyrirtæki?')) return;
+      const ok = (window.AppSettings && AppSettings.save)
+        ? await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { aminning: '' } } })
+        : false;
+      if (ok) { aminDel.closest('div[style*="fffbeb"]').remove(); render(); }
+      else alert('Vistun mistókst — reyndu aftur');
+    });
     eqToggle.addEventListener('click', () => setEqMode(true));
     bg.querySelector('._ars-eq-cancel').addEventListener('click', () => setEqMode(false));
     // ⚡ Lagfæringar-hamur: opnað beint úr Tæki-reit listans → tækjahlutinn
