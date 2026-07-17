@@ -146,8 +146,8 @@
   // Bílstjóri velur nafn sitt (geymt á tæki). Hver aðgerð (heimsókn, yfirfarið,
   // á verkstæði, klárað) er skráð í `bilstjori_vakt` með staðsetningu → skrifstofan
   // sér daglega samantekt + hvar hver er, á aðal-síðu Bílstjóra.
-  const EMPLOYEES = ['Hákon', 'Binni', 'Elías'];
-  const EMP_COL = { 'Hákon': '#2563eb', 'Binni': '#059669', 'Elías': '#d97706' };
+  const EMPLOYEES = ['Hákon', 'Binni', 'Elías', 'Agnar'];
+  const EMP_COL = { 'Hákon': '#2563eb', 'Binni': '#059669', 'Elías': '#d97706', 'Agnar': '#dc2626' };
   const EMP_KEY = 'bs_employee';
   const empColor = (n) => EMP_COL[n] || '#64748b';
   function getEmp() { try { return localStorage.getItem(EMP_KEY) || ''; } catch (_) { return ''; } }
