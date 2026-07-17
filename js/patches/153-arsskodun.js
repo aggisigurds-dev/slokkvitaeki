@@ -545,8 +545,22 @@
     if (!hasSearch && state.month >= 1 && state.month <= 12) {
       arr = arr.filter(c => +c._ars.inspect_month === state.month);
     }
+    // 2026-07-17 (ósk Agnars): „líklega óvart í þjónustu" — fyrirtæki sem
+    // lentu á listanum (t.d. gegnum afgreiðslu-sölu) en hafa ENGA þjónustusögu:
+    // aldrei skoðað, enginn skoðunarmánuður og engin tæki. Þau eru sýnd í
+    // „❓ Óvíst" flipanum og ÚTILOKUÐ úr báðum Eftir-listunum svo þeir sýni
+    // bara alvöru þjónustukúnna. Tekin úr þjónustu inni á fyrirtækjasíðunni.
+    const isSuspect = (c) => {
+      const a = c._ars || {};
+      if (+a.last_year_inspected || +a.inspect_month) return false;
+      if (+(a.field_inspected_year || 0) === curYear) return false;
+      const eqTot = Object.values(a.equipment || {}).reduce((s, v) => s + (+v || 0), 0);
+      return eqTot === 0;
+    };
     if (state.status === 'done') {
       arr = arr.filter(c => +c._ars.last_year_inspected === curYear);
+    } else if (state.status === 'suspect') {
+      arr = arr.filter(isSuspect);
     } else if (state.status === 'pending') {
       // 2026-07-17 (ósk Agnars): „Eftir" = AÐEINS raunverulega á eftir — rauða
       // „Á eftir" pillan (mánuður kominn/liðinn) + „Sleppt '24" (sleppt í fyrra).
@@ -561,8 +575,9 @@
         return skipped || (m > 0 && m <= curMonth);
       });
     } else if (state.status === 'pending2026') {
-      // Allt sem er óbúið á árinu: Eftir + Sleppt + Á dagskrá + Í vinnslu.
-      arr = arr.filter(c => (+c._ars.last_year_inspected || 0) < curYear);
+      // Allt sem er óbúið á árinu: Eftir + Sleppt + Á dagskrá + Í vinnslu —
+      // en ÁN „❓ Óvíst" (líklega óvart í þjónustu, sjá isSuspect).
+      arr = arr.filter(c => (+c._ars.last_year_inspected || 0) < curYear && !isSuspect(c));
     } else if (state.status === 'never') {
       arr = arr.filter(c => !c._ars.last_year_inspected);
     } else if (state.status === 'skipped2025') {
@@ -915,6 +930,7 @@
       : (state.status === 'done'    ? `Búið ${curYear} (allir mánuðir)`
        : state.status === 'pending' ? `Á eftir + sleppt (allir mánuðir)`
        : state.status === 'pending2026' ? `Eftir ${curYear} — allt óbúið (allir mánuðir)`
+       : state.status === 'suspect' ? `Óvíst — líklega óvart í þjónustu (engin saga, enginn mánuður, engin tæki)`
        : state.status === 'never'   ? `Aldrei skoðað`
        : `Allir mánuðir ${curYear}`);
 
@@ -978,6 +994,7 @@
               { v: 'pending2026', label: '🗓️ Eftir ' + curYear },
               { v: 'skipped2025', label: '🟡 Slepptir í fyrra' },
               { v: 'priority', label: '❗ Forgangur' },
+              { v: 'suspect', label: '❓ Óvíst' },
               { v: 'never', label: '⛔ Aldrei' }
             ].map(s => `
               <button data-status="${s.v}" class="_ars-st" style="padding:7px 11px;border:none;background:${state.status===s.v?'var(--brand)':'var(--surface)'};color:${state.status===s.v?'#fff':'var(--ink2)'};cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${esc(s.label)}</button>
@@ -1187,6 +1204,7 @@
       : (state.status === 'done'        ? `Búið ${curYear}`
        : state.status === 'pending'     ? 'Á eftir + sleppt'
        : state.status === 'pending2026' ? `Eftir ${curYear}`
+       : state.status === 'suspect'     ? 'Óvíst — líklega óvart í þjónustu'
        : state.status === 'never'       ? 'Aldrei skoðað'
        : state.status === 'skipped2025' ? 'Slepptir í fyrra'
        : state.status === 'priority'    ? 'Forgangur'
