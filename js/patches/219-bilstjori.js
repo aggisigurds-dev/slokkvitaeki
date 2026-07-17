@@ -987,6 +987,9 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
         '</div>' +
       '</div>' +
       '<div class="dock dock--wide">' +
+        // 2026-07-17 (ósk Agnars): back-takki í vinstra horni neðstu stikunnar
+        // — þumal-svæðið, sama aðgerð og ‹ Til baka efst.
+        '<button class="_bs-back btn btn--light" type="button" aria-label="Til baka" style="flex:0 0 auto;min-width:64px;padding:0 16px;font-size:22px;font-weight:800">‹</button>' +
         '<button class="btn btn--light" id="_bs-add-route" type="button" style="flex:1">✚ Á leið</button>' +
         '<button class="btn btn--accent" id="_bs-done" type="button" style="flex:2">✓ Klára úttekt</button>' +
       '</div>';
@@ -1007,7 +1010,7 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
       try { window.SlokkViewMode && window.SlokkViewMode.reapply(); } catch (_) {}
     };
     // ‹ takki OG síma-back → history.back() → popstate loki efsta spjaldi.
-    sheet.querySelector('._bs-back').addEventListener('click', () => { try { history.back(); } catch (_) { close(); } });
+    sheet.querySelectorAll('._bs-back').forEach(b => b.addEventListener('click', () => { try { history.back(); } catch (_) { close(); } }));
     sheet.querySelector('#_bs-nav').addEventListener('click', () => navTo(c, coord && coord.lat, coord && coord.lng));
     const mapBtn = sheet.querySelector('._bs-mapbtn');   // 🗺 topbar → keyra þangað
     if (mapBtn) mapBtn.addEventListener('click', () => navTo(c, coord && coord.lat, coord && coord.lng));
