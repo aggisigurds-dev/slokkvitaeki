@@ -300,7 +300,9 @@
 
   // ── app-mode shell (bottom nav + header) ─────────────────────────────────────
   var _curPage = null;
+  var _bootAt = Date.now();
   function buildShell() {
+    _bootAt = Date.now();
     var a = APP_BY_KEY[ACTIVE]; if (!a) return;
     styles();
     document.body.classList.add('appmode');
@@ -404,6 +406,17 @@
       if (ACTIVE && !isStandalone(ACTIVE)) {
         var allowed = pagesFor(ACTIVE); if (!allowed.length) allowed = (APP_BY_KEY[ACTIVE] || {}).defaults || [];
         if (allowed.indexOf(view) === -1 && view !== NAV_KEY) { setTimeout(function () { if (_curPage) goPage(_curPage); }, 0); }
+        else if (view !== _curPage && _curPage) {
+          // Leyfð síða en EKKI valin í botn-navinu: fyrstu sekúndurnar er þetta
+          // boot-landerinn (sala.js opnar #sala eftir á) → festa fyrstu síðuna
+          // aftur; seinna er þetta lögmæt in-page leið → uppfæra flipa-ljósið.
+          if (Date.now() - _bootAt < 12000) { setTimeout(function () { if (_curPage) goPage(_curPage); }, 0); }
+          else {
+            _curPage = view;
+            var nv = document.getElementById('_app-nav');
+            if (nv) nv.querySelectorAll('._app-tab').forEach(function (b) { b.classList.toggle('on', b.dataset.k === view); });
+          }
+        }
       }
       return r;
     };
