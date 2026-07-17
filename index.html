@@ -14,7 +14,7 @@
 <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/img/apple-touch-icon.png?v=flame1"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-title" content="Slökkvitæki"/>
-<link rel="manifest" href="manifest.json?v=flame1"/>
+<link rel="manifest" href="/manifest.json?v=flame1"/>
 <script>
 /* Mini-app manifest picker — runs synchronously in <head> so the browser's
    install prompt captures the RIGHT app (each has its own /app/<key>/ scope,
@@ -42,9 +42,9 @@
   }catch(e){}
 })();
 </script>
-<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}</script>
+<script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}</script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="css/app.css?v=20260703a"/>
+<link rel="stylesheet" href="/css/app.css?v=20260703a"/>
 <link rel="stylesheet" href="/css/mobile.css?v=20260622b">
 <link rel="stylesheet" href="/css/theme-scoped.css?v=20260703g">
 <style>
@@ -91,7 +91,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
       <strong>Stilla gagnagrunn</strong>
       <span>Opnaðu <code>js/config.js</code> og settu inn Supabase lykla þína</span>
     </div>
-    <a href="UPPSETNING.html" target="_blank" class="btn btn-sm btn-outline" style="color:white;border-color:rgba(255,255,255,.4)">Sjá leiðbeiningar</a>
+    <a href="/UPPSETNING.html" target="_blank" class="btn btn-sm btn-outline" style="color:white;border-color:rgba(255,255,255,.4)">Sjá leiðbeiningar</a>
   </div>
 </div>
 
@@ -341,10 +341,10 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/config.js"></script>
-<script src="js/db.js?v=20260614a"></script>
-<script src="js/utils.js?v=20260512d"></script>
-<script src="js/modal.js?v=20260514a"></script>
+<script src="/js/config.js"></script>
+<script src="/js/db.js?v=20260614a"></script>
+<script src="/js/utils.js?v=20260512d"></script>
+<script src="/js/modal.js?v=20260514a"></script>
 <script defer src="/js/patches/148-date-format-unify.js?v=20260515a"></script>
 <script defer src="/js/patches/00-legacy.js?v=20260714merkja"></script>
 <script defer src="/js/patches/169-logo-customization.js?v=20260601b"></script>
@@ -485,9 +485,9 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/136-companies-back-fix.js?v=20260607a"></script>
 <script defer src="/js/patches/137-verk-actions.js?v=20260511b"></script>
 <script defer src="/js/patches/66-dark-mode.js?v=20260510f"></script>
-<script src="js/features.js?v=20260611a"></script>
+<script src="/js/features.js?v=20260611a"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <script src="js/scanner.js?v=20260611a"></script>
+    <script src="/js/scanner.js?v=20260611a"></script>
 
   <!-- Geymsla modal -->
   <div class="modal" id="modal-geymsla">
@@ -972,7 +972,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/163-hook-chain-fix.js?v=20260519a"></script>
 <script defer src="/js/patches/164-companies-open-loading-fix.js?v=20260705a"></script>
 <script defer src="/js/patches/165-visit-workflow.js?v=20260716vc"></script>
-<script defer src="/js/patches/166-krofu-yfirlit.js?v=20260716b"></script>
+<script defer src="/js/patches/166-krofu-yfirlit.js?v=20260717b"></script>
 <script defer src="/js/patches/167-hreyfingarlisti.js?v=20260706vm"></script>
 <script defer src="/js/patches/168-company-inspection-report.js?v=20260716drv"></script>
 <script defer src="/js/patches/176-company-report-email.js?v=20260610c"></script>
@@ -1040,7 +1040,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/254-receipt-sender.js?v=20260701a"></script>
 <script defer src="/js/patches/255-auto-discount.js?v=20260708c"></script>
 <!-- hibernated 2026-07-09 (rangur dökkur titil-bar úr #260, ekki í comps): 260-global-titlebar.js -->
-<script defer src="/js/patches/261-app-profiles.js?v=20260717inst"></script>
+<script defer src="/js/patches/261-app-profiles.js?v=20260717boot"></script>
 <script defer src="/js/patches/262-sidebar-polish.js?v=20260705c"></script>
 <script defer src="/js/patches/262-page-editor.js?v=20260704c"></script>
 <script defer src="/js/patches/145-companies-diagnose.js?v=20260516a"></script>
