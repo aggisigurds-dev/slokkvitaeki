@@ -433,34 +433,6 @@
       }
     }
 
-    // 2026-07-16: sækja úttektarskýrslur líka úr customer_documents (Drive-
-    // hryggnum, sameiginlegur með Brunahólf) — svo 📄 Skýrsla-takkinn og
-    // Senda-glugginn sjái skýrslur sem eru EKKI vistaðar sem fyrirtækjaviðhengi.
-    // Additive og fail-safe: villa hér (t.d. RLS) skilur bara eftir tóm map
-    // og viðhengja-leiðin (CompanyAttachments) virkar áfram óbreytt.
-    _state.docsByCo = {}; _state.docsByBase = {};
-    try {
-      const coIds = new Set(cidSet.map(String));
-      Object.values(_state.fyrirtIdsByKt || {}).forEach(arr => arr.forEach(id => coIds.add(String(id))));
-      const bIds = new Set(baseSet.map(String));
-      Object.values(_state.fyrirtMap || {}).forEach(f => { if (f && f.customer_base_id != null) bIds.add(String(f.customer_base_id)); });
-      Object.values(_state.baseIdByKt || {}).forEach(id => bIds.add(String(id)));
-      const ors = [];
-      if (coIds.size) ors.push('fyrirtaeki_id.in.(' + Array.from(coIds).join(',') + ')');
-      if (bIds.size) ors.push('customer_base_id.in.(' + Array.from(bIds).join(',') + ')');
-      if (ors.length) {
-        const dr = await SB.from('customer_documents')
-          .select('id,customer_base_id,fyrirtaeki_id,year,doc_type,drive_file_id,storage_path')
-          .eq('doc_type', 'uttektarskyrsla')
-          .or('is_duplicate.is.null,is_duplicate.eq.false')
-          .or(ors.join(','));
-        (dr.data || []).forEach(d => {
-          if (d.fyrirtaeki_id != null) (_state.docsByCo[String(d.fyrirtaeki_id)] = _state.docsByCo[String(d.fyrirtaeki_id)] || []).push(d);
-          if (d.customer_base_id != null) (_state.docsByBase[String(d.customer_base_id)] = _state.docsByBase[String(d.customer_base_id)] || []).push(d);
-        });
-      }
-    } catch (_) {}
-
     // ── Recover kt for sales saved name-only ────────────────────────────────
     // Some reikningur sales arrive with no customer_kt AND no usable id/base
     // link (the company name was typed free-hand in the POS "Án kennitölu" box).
@@ -502,6 +474,40 @@
         });
       }
     }
+
+    // 2026-07-16 (fært aftur fyrir nameKt 2026-07-17): sækja úttektarskýrslur
+    // líka úr customer_documents (Drive-hryggnum, sameiginlegur með Brunahólf) —
+    // svo 📄 Skýrsla-takkinn og Senda-glugginn sjái skýrslur sem eru EKKI
+    // vistaðar sem fyrirtækjaviðhengi. Keyrir EFTIR nafna-endurheimtina svo
+    // úttektar-sölur án customer_id/kt (bara nafn) fái sínar skýrslur líka.
+    // Additive og fail-safe: villa hér (t.d. RLS) skilur bara eftir tóm map
+    // og viðhengja-leiðin (CompanyAttachments) virkar áfram óbreytt.
+    _state.docsByCo = {}; _state.docsByBase = {};
+    try {
+      const coIds = new Set(cidSet.map(String));
+      Object.values(_state.fyrirtIdsByKt || {}).forEach(arr => arr.forEach(id => coIds.add(String(id))));
+      const bIds = new Set(baseSet.map(String));
+      Object.values(_state.fyrirtMap || {}).forEach(f => { if (f && f.customer_base_id != null) bIds.add(String(f.customer_base_id)); });
+      Object.values(_state.baseIdByKt || {}).forEach(id => bIds.add(String(id)));
+      Object.values(_state.nameKt || {}).forEach(r => {
+        if (r.coId != null) coIds.add(String(r.coId));
+        if (r.baseId != null) bIds.add(String(r.baseId));
+      });
+      const ors = [];
+      if (coIds.size) ors.push('fyrirtaeki_id.in.(' + Array.from(coIds).join(',') + ')');
+      if (bIds.size) ors.push('customer_base_id.in.(' + Array.from(bIds).join(',') + ')');
+      if (ors.length) {
+        const dr = await SB.from('customer_documents')
+          .select('id,customer_base_id,fyrirtaeki_id,year,doc_type,drive_file_id,storage_path')
+          .eq('doc_type', 'uttektarskyrsla')
+          .or('is_duplicate.is.null,is_duplicate.eq.false')
+          .or(ors.join(','));
+        (dr.data || []).forEach(d => {
+          if (d.fyrirtaeki_id != null) (_state.docsByCo[String(d.fyrirtaeki_id)] = _state.docsByCo[String(d.fyrirtaeki_id)] || []).push(d);
+          if (d.customer_base_id != null) (_state.docsByBase[String(d.customer_base_id)] = _state.docsByBase[String(d.customer_base_id)] || []).push(d);
+        });
+      }
+    } catch (_) {}
 
     // Verkbeidnir for pickup status (same approach as patch 152).
     const vb = await SB.from('verkbeidnir').select('num,status').like('num', 'R-%-V%');
@@ -1156,8 +1162,14 @@
       email ? '<span style="color:#0369a1">📧 ' + esc(email) + '</span>'
             : '<span style="color:#b45309">⚠️ vantar netfang</span>',
     ].join(' · ');
-    const nameHtml = grp.id
-      ? `<a href="#" class="_ky-co-link" data-co-id="${grp.id}" style="color:#0f172a;text-decoration:none;border-bottom:1px dotted #94a3b8;cursor:pointer">${esc(grp.display)}</a>`
+    // Hlekkjanlegt nafn: beint customer_id, annars fyrirtaeki fundið eftir kt,
+    // annars nafna-endurheimtin (rec.coId) — úttektar-sölur bera oft ekkert id.
+    const linkId = grp.id
+      || (directKt && _state.fyrirtIdsByKt && (_state.fyrirtIdsByKt[directKt] || [])[0])
+      || (recovered && recovered.coId)
+      || null;
+    const nameHtml = linkId
+      ? `<a href="#" class="_ky-co-link" data-co-id="${linkId}" style="color:#0f172a;text-decoration:none;border-bottom:1px dotted #94a3b8;cursor:pointer">${esc(grp.display)}</a>`
       : esc(grp.display);
     return { fy, firstSale, baseRow, directKt, recovered, email, metaHtml, nameHtml };
   }
@@ -1183,7 +1195,11 @@
     const yr = String(new Date(s.created_at || Date.now()).getFullYear());
     const candidateIds = [];
     if (s.customer_id) candidateIds.push(s.customer_id);
-    const kt = (s.customer_kt || '').trim();
+    // Úttektar-sölur eru oft vistaðar nafn-eingöngu (ekkert customer_id/kt) —
+    // notum þá nafna-endurheimtina (nameKt) sem síðan sýnir þegar 🔗 kt-ið.
+    const rec = (_state.nameKt || {})[keyName(s.customer_nafn)] || null;
+    if (rec && rec.coId != null && !candidateIds.includes(rec.coId)) candidateIds.push(rec.coId);
+    const kt = (s.customer_kt || (rec && rec.kt) || '').trim();
     if (kt && _state.fyrirtIdsByKt && _state.fyrirtIdsByKt[kt]) {
       _state.fyrirtIdsByKt[kt].forEach(id => { if (!candidateIds.includes(id)) candidateIds.push(id); });
     }
@@ -1205,6 +1221,7 @@
     const fy = s.customer_id ? (_state.fyrirtMap || {})[s.customer_id] : null;
     if (fy && fy.customer_base_id != null) baseIds.push(fy.customer_base_id);
     if (kt && _state.baseIdByKt && _state.baseIdByKt[kt] != null) baseIds.push(_state.baseIdByKt[kt]);
+    if (rec && rec.baseId != null && !baseIds.includes(rec.baseId)) baseIds.push(rec.baseId);
     baseIds.forEach(id => ((_state.docsByBase || {})[String(id)] || []).forEach(d => { if (!docs.includes(d)) docs.push(d); }));
     const doc = docs.find(d => String(d.year || '') === yr && (d.drive_file_id || d.storage_path));
     if (doc) return { found: true, kind: 'doc', doc, year: yr };
