@@ -147,7 +147,7 @@
     // Load ALL fyrirtaeki rows. Supabase caps each response at 1000 rows
     // (server-side "Max rows"), so .range() alone is not enough — page through.
     const companiesP = DB.fetchAll((from, to) => SB.from('fyrirtaeki')
-      .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu')
+      .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu,customer_base_id,created_at')
       .is('deleted_at', null)
       .order('nafn')
       .range(from, to)).catch(error => { console.error('[arsskodun] loadAll', error); return null; });
@@ -167,6 +167,28 @@
       .select('fyrirtaeki_id,inspect_month,equipment,report_year,total_devices')
       .then(r => (r && r.data) || [])
       .catch(() => []);
+    // 2026-07-17 (❓ Óvíst triage): skýrslu-ÁR hvers félags úr customer_documents
+    // (Drive-hryggnum) — knýr sönnunar-merkin á Óvíst-flipanum. Síðuskipt (töflurnar
+    // eru komnar yfir 1000-raða klippingu Supabase) og fail-safe (tómt map á villu).
+    const docYearsP = (async () => {
+      const byCo = {}, byBase = {};
+      try {
+        for (let from = 0; ; from += 1000) {
+          const r = await SB.from('customer_documents')
+            .select('fyrirtaeki_id,customer_base_id,year,doc_type')
+            .in('doc_type', ['uttektarskyrsla', 'brunakerfi'])
+            .range(from, from + 999);
+          const rows = (r && r.data) || [];
+          rows.forEach(d => {
+            const y = +d.year || 0; if (!y) return;
+            if (d.fyrirtaeki_id != null) (byCo[String(d.fyrirtaeki_id)] = byCo[String(d.fyrirtaeki_id)] || new Set()).add(y);
+            if (d.customer_base_id != null) (byBase[String(d.customer_base_id)] = byBase[String(d.customer_base_id)] || new Set()).add(y);
+          });
+          if (rows.length < 1000) break;
+        }
+      } catch (_) {}
+      return { byCo, byBase };
+    })();
 
     await appSettingsP;
     const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(STORAGE_KEY)) || {};
@@ -181,6 +203,8 @@
     const PRICE = await priceP;
     const factsList = await factsP;
     const factsById = Object.fromEntries((factsList || []).map(f => [String(f.fyrirtaeki_id), f]));
+    const docYears = await docYearsP;
+    _cache.docYears = docYears;
 
     // 2026-05-19: Only include companies that are ACTUALLY in service
     // (subscribed to ársskoðun, subscribed to brunakerfi, OR — new — they have
@@ -212,6 +236,12 @@
         const _ars = Object.assign({}, manual);
         const units = unitsByClient[foldName(c.nafn)] || [];
         _ars._units = units;   // keep the raw uttaeki rows so the modal can list + delete individual tæki
+        // Skýrslu-ár úr customer_documents (fyrir Óvíst-sönnunarmerkin)
+        const dySet = new Set([
+          ...(docYears.byCo[String(c.id)] || []),
+          ...(c.customer_base_id != null ? (docYears.byBase[String(c.customer_base_id)] || []) : []),
+        ]);
+        _ars._docYears = Array.from(dySet).sort();
         // 2026-07-16 (Lagfæringar-hamur): equipment_manual = the owner overrode the
         // counts by hand — the manual blob equipment wins over BOTH the live
         // uttaeki derivation and the report facts (same pattern as inspect_month_manual).
@@ -1026,7 +1056,7 @@
             <div style="font-size:14px;font-weight:600;color:var(--ink1);margin-bottom:3px">Engin fyrirtæki passa við þessa síu</div>
             <div style="font-size:12px">Reyndu að breyta sía eða leitarstreng.</div>
           </div>
-        `) : (effView === 'card' ? renderCards(filtered) : renderTable(filtered))}
+        `) : (state.status === 'suspect' ? renderSuspectList(filtered) : (effView === 'card' ? renderCards(filtered) : renderTable(filtered)))}
 
         ${filteredAars.length > 0 ? `
         <div class="_ars-summary" style="margin-top:14px;padding:13px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
@@ -1134,6 +1164,17 @@
     });
 
 
+    // ❓ Óvíst triage-listi: opna fyrirtæki + taka úr þjónustu
+    main.querySelectorAll('._ars-open').forEach(a => a.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      const id = +a.dataset.coId; if (!id) return;
+      if (window._openCompanySafe) window._openCompanySafe(id);
+      else if (window.App && App.switchView) App.switchView('companies');
+    }));
+    main.querySelectorAll('._ars-unsvc').forEach(b => b.addEventListener('click', e => {
+      e.stopPropagation();
+      takeOutOfService(+b.dataset.coId, b);
+    }));
     main.querySelectorAll('._ars-open-map').forEach(b => b.addEventListener('click', e => {
       e.stopPropagation();
       const id = +b.dataset.coId;
@@ -1353,6 +1394,79 @@
   function attCount(coId) {
     const attsAll = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('company_attachments')) || {};
     return (attsAll[String(coId)] || []).length;
+  }
+
+  // ── ❓ Óvíst — triage-listi (2026-07-17, ósk Agnars) ────────────────────────
+  // Hvert fyrirtæki fær SÖNNUNAR-MERKI (skýrslu-ár úr Drive-hryggnum · 🆕 nýtt
+  // á árinu · 🧯 bara tæki · ⬜ engin gögn) + „⬇ Úr þjónustu" takka sem færir
+  // það niður í Allir viðskiptavinir (er_i_thjonustu=false + subscribed=false —
+  // afturkræft á fyrirtækjasíðunni). Hjálpar við að fact-checka listann hægt
+  // og örugglega, eitt í einu.
+  function suspectVerdict(c) {
+    const yrs = (c._ars && c._ars._docYears) || [];
+    const maxYr = yrs.length ? Math.max(...yrs) : 0;
+    const units = ((c._ars && c._ars._units) || []).length;
+    const isNew = c.created_at && String(c.created_at) >= '2026-01-01';
+    if (maxYr >= 2025) return { key: 'skyrsla', badge: `📄 Skýrsla ${maxYr} til`, color: '#166534', bg: '#dcfce7', hint: 'Alvöru þjónustukúnni — skýrsla ' + yrs.join(', ') + ' í skjalakerfinu. Vantar bara mánuð/merkingu.' };
+    if (maxYr > 0) return { key: 'gomul', badge: `📁 Gömul saga (síðast ${maxYr})`, color: '#92400e', bg: '#fef3c7', hint: 'Skýrslur ' + yrs.join(', ') + ' — ekkert síðan. Dottinn úr þjónustu eða gleymdur?' };
+    if (isNew) return { key: 'nytt', badge: '🆕 Nýtt — bíður fyrstu skoðunar', color: '#1d4ed8', bg: '#dbeafe', hint: 'Stofnað ' + String(c.created_at).slice(0, 10) + ' — engin skýrsla enn, eðlilegt fyrir nýjan kúnna.' };
+    if (units > 0) return { key: 'taeki', badge: `🧯 Bara tæki (${units})`, color: '#7c3aed', bg: '#ede9fe', hint: 'Engin skýrsla nokkru sinni — bara sjálfvirk tæki á nafninu. Óvíst hvort þau eru raunveruleg.' };
+    return { key: 'ekkert', badge: '⬜ Engin gögn', color: '#64748b', bg: '#f1f5f9', hint: 'Engin skýrsla, engin tæki, engin saga — líklega óvart í þjónustu.' };
+  }
+  function renderSuspectList(arr) {
+    const groups = {};
+    arr.forEach(c => { const v = suspectVerdict(c); (groups[v.key] = groups[v.key] || { v, list: [] }).list.push(c); });
+    const ORDER = ['ekkert', 'taeki', 'gomul', 'nytt', 'skyrsla'];
+    return `
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:11px 14px;margin-bottom:12px;font-size:12.5px;color:#92400e">
+        Þessi fyrirtæki hafa <b>enga skráða skoðunarsögu</b>. Merkin sýna hvaða sönnunargögn fundust.
+        „⬇ Úr þjónustu" færir fyrirtæki niður í Allir viðskiptavinir (afturkræft — kveikt aftur á fyrirtækjasíðunni).
+      </div>
+      ${ORDER.filter(k => groups[k]).map(k => {
+        const g = groups[k];
+        return `
+        <div style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;gap:9px;margin-bottom:7px">
+            <span style="background:${g.v.bg};color:${g.v.color};font-size:12px;font-weight:800;padding:4px 11px;border-radius:99px">${g.v.badge.replace(/ \d{4}.*$/, '')} · ${g.list.length}</span>
+            <span style="font-size:11.5px;color:var(--ink3)">${esc(g.v.hint)}</span>
+          </div>
+          <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;overflow:hidden">
+            ${g.list.map(c => {
+              const v = suspectVerdict(c);
+              return `
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid var(--brd);flex-wrap:wrap">
+                <a href="#" class="_ars-open" data-co-id="${c.id}" style="font-size:13.5px;font-weight:700;color:var(--ink1);text-decoration:none;border-bottom:1px dotted var(--brd2)">${esc(c.nafn)}</a>
+                <span style="font-size:11px;color:var(--ink3);font-family:ui-monospace,monospace">${esc(c.kennitala || 'kt vantar')}</span>
+                <span style="background:${v.bg};color:${v.color};font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:99px">${v.badge}</span>
+                <span style="flex:1"></span>
+                <button class="_ars-unsvc" data-co-id="${c.id}" type="button" style="font-size:11.5px;font-weight:700;padding:6px 11px;border-radius:8px;border:1px solid #fca5a5;background:#fff;color:#b91c1c;cursor:pointer">⬇ Úr þjónustu</button>
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}`;
+  }
+  async function takeOutOfService(coId, btn) {
+    const c = (_cache.byId || {})[coId] || (_cache.list || []).find(x => String(x.id) === String(coId));
+    const name = c ? c.nafn : ('#' + coId);
+    if (!confirm('Taka „' + name + '" úr þjónustu?\n\nFyrirtækið helst í Allir viðskiptavinir og má kveikja aftur á fyrirtækjasíðunni.')) return;
+    if (btn) { btn.disabled = true; btn.textContent = '…'; }
+    try {
+      const SB = window.DB && DB.sb;
+      await SB.from('fyrirtaeki').update({ er_i_thjonustu: false }).eq('id', coId);
+      if (window.AppSettings && AppSettings.save) {
+        await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { subscribed: false, removed_from_service_at: new Date().toISOString().slice(0, 10) } } });
+      }
+      try {   // audit-slóð: sama override_log og ⚡-hamurinn notar
+        await SB.from('override_log').insert({ co_id: +coId, co_nafn: name, field: 'er_i_thjonustu', old_value: 'true', new_value: 'false', page: 'arsskodun-ovist' });
+      } catch (_) {}
+      _cache.list = (_cache.list || []).filter(x => String(x.id) !== String(coId));
+      render();
+      if (window.Toast && Toast.show) Toast.show('⬇ ' + name + ' tekið úr þjónustu');
+    } catch (e) {
+      alert('Villa: ' + (e && e.message || e));
+      if (btn) { btn.disabled = false; btn.textContent = '⬇ Úr þjónustu'; }
+    }
   }
 
   function renderCards(arr) {
