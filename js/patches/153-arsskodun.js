@@ -548,11 +548,21 @@
     if (state.status === 'done') {
       arr = arr.filter(c => +c._ars.last_year_inspected === curYear);
     } else if (state.status === 'pending') {
+      // 2026-07-17 (ósk Agnars): „Eftir" = AÐEINS raunverulega á eftir — rauða
+      // „Á eftir" pillan (mánuður kominn/liðinn) + „Sleppt '24" (sleppt í fyrra).
+      // Sýnir EKKI „Á dagskrá" (mánuður seinna á árinu / enginn mánuður) og ekki
+      // „Í vinnslu" — það á heima í nýja „Eftir 2026" flipanum.
       arr = arr.filter(c => {
-        const m = +c._ars.inspect_month || 0;
         const last = +c._ars.last_year_inspected || 0;
-        return last < curYear && (m === 0 || m <= curMonth);
+        if (last === curYear) return false;
+        if (+(c._ars.field_inspected_year || 0) === curYear) return false;   // Í vinnslu
+        const skipped = last > 0 && last < curYear - 1;
+        const m = +c._ars.inspect_month || 0;
+        return skipped || (m > 0 && m <= curMonth);
       });
+    } else if (state.status === 'pending2026') {
+      // Allt sem er óbúið á árinu: Eftir + Sleppt + Á dagskrá + Í vinnslu.
+      arr = arr.filter(c => (+c._ars.last_year_inspected || 0) < curYear);
     } else if (state.status === 'never') {
       arr = arr.filter(c => !c._ars.last_year_inspected);
     } else if (state.status === 'skipped2025') {
@@ -903,7 +913,8 @@
     const filterLabel = state.month >= 1 && state.month <= 12
       ? `${MONTHS_IS[state.month - 1]} ${curYear}`
       : (state.status === 'done'    ? `Búið ${curYear} (allir mánuðir)`
-       : state.status === 'pending' ? `Eftir ${curYear} (allir mánuðir)`
+       : state.status === 'pending' ? `Á eftir + sleppt (allir mánuðir)`
+       : state.status === 'pending2026' ? `Eftir ${curYear} — allt óbúið (allir mánuðir)`
        : state.status === 'never'   ? `Aldrei skoðað`
        : `Allir mánuðir ${curYear}`);
 
@@ -958,12 +969,13 @@
 
         <!-- Filter strip -->
         <div class="_ars-filterstrip" style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
-          <input id="_ars-search" type="search" placeholder="🔎 Leita í nafni, kt eða heimilisfangi…" value="${esc(state.search)}" style="flex:1;min-width:220px;padding:8px 11px;border:1px solid var(--brd2);border-radius:8px;font:inherit;font-size:13px;background:var(--surface);color:var(--ink1);outline:none"/>
+          <input id="_ars-search" type="search" placeholder="🔎 Leita…" value="${esc(state.search)}" style="flex:1;min-width:120px;max-width:190px;padding:8px 11px;border:1px solid var(--brd2);border-radius:8px;font:inherit;font-size:13px;background:var(--surface);color:var(--ink1);outline:none"/>
           <div class="_ars-statusrow" style="display:flex;gap:5px;border:1px solid var(--brd2);border-radius:8px;overflow:hidden;background:var(--surface)">
             ${[
               { v: 'all', label: 'Allt' },
               { v: 'done', label: '✅ Búið ' + curYear },
               { v: 'pending', label: '⏳ Eftir' },
+              { v: 'pending2026', label: '🗓️ Eftir ' + curYear },
               { v: 'skipped2025', label: '🟡 Slepptir í fyrra' },
               { v: 'priority', label: '❗ Forgangur' },
               { v: 'never', label: '⛔ Aldrei' }
@@ -1173,7 +1185,8 @@
     const filterLabel = state.month >= 1 && state.month <= 12
       ? `${MONTHS_IS[state.month - 1]} ${curYear}`
       : (state.status === 'done'        ? `Búið ${curYear}`
-       : state.status === 'pending'     ? `Eftir ${curYear}`
+       : state.status === 'pending'     ? 'Á eftir + sleppt'
+       : state.status === 'pending2026' ? `Eftir ${curYear}`
        : state.status === 'never'       ? 'Aldrei skoðað'
        : state.status === 'skipped2025' ? 'Slepptir í fyrra'
        : state.status === 'priority'    ? 'Forgangur'
