@@ -417,6 +417,32 @@
       var file = new File([blob], fname, { type: 'application/pdf' });
       var meta = await CompanyAttachments.upload(coId, file, { year: ar, kind: 'reikningur' });
       if (meta && window.Toast && Toast.show) Toast.show('🧾 Reikningur vistaður í skjöl (' + ar + ')');
+      // 2026-07-18: reikningurinn fer LÍKA í Drive + customer_documents gegnum
+      // brunahólfs-brúna (sama mynstur og skýrslan í 168) — annars sést hann
+      // hvorki á Kröfu yfirliti, Kerfis-korti né í skjala-árstöflunni annars
+      // staðar. Best-effort: má ALDREI stöðva vistunina sjálfa.
+      try {
+        if (meta && co.kennitala) {
+          var ktD = String(co.kennitala).replace(/\D/g, '');
+          if (ktD.length === 10) {
+            var pub = meta.public_url || meta.publicUrl || meta.url
+              || (meta.path && window.DB && DB.sb && DB.sb.storage
+                  ? (DB.sb.storage.from('samningar').getPublicUrl(meta.path).data || {}).publicUrl : '');
+            var bd = { doc_type: 'reikningur', kt: ktD.slice(0, 6) + '-' + ktD.slice(6),
+                       fyrirtaeki_id: co.id, company: co.nafn, year: +ar,
+                       invoice_number: String(sale.num || ''),
+                       amount: Math.round(Number(sale.samtals) || 0) || undefined,
+                       doc_date: String(sale.created_at || '').slice(0, 10) || undefined };
+            if (pub) bd.public_url = pub;
+            if (bd.public_url && bd.invoice_number) {
+              fetch('https://brunaholf.netlify.app/api/uttekt-upload', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bd)
+              }).then(function (r) { if (!r.ok) console.warn('[233] reikn-brú', r.status); })
+                .catch(function (e) { console.warn('[233] reikn-brú', e && e.message); });
+            }
+          }
+        }
+      } catch (e) { console.warn('[233] reikn-brú prep', e && e.message); }
       return meta;
     } catch (e) { console.warn('[patch-233] saveForSale', e); return null; }
   }
