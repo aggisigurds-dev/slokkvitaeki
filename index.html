@@ -82,6 +82,34 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 </script>
 </head>
 <body>
+<!-- Ræsi-hula (2026-07-17, ósk Agnars — startið „svo chaotic"): mælt boot sýndi
+     ~3,5 sek þar sem stakir fljótandi takkar poppa inn á tómum grunni áður en
+     fyrsta síðan birtist. Hulan liggur yfir öllu frá fyrsta ramma og lyftist
+     þegar fyrsta view-ið er orðið virkt (eða eftir 6,5 sek öryggis-fallback). -->
+<div id="boot-veil" style="position:fixed;inset:0;z-index:2147483000;background:#0a0b0d;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;transition:opacity .35s ease">
+  <img src="/img/icon-192.png?v=flame1" alt="" style="width:78px;height:78px;border-radius:20px;box-shadow:0 10px 40px rgba(201,60,29,.35)">
+  <div style="color:#e2e8f0;font:800 17px system-ui,sans-serif;letter-spacing:.02em">Slökkvitæki ehf</div>
+  <div class="bv-spin" aria-hidden="true"></div>
+</div>
+<style>.bv-spin{width:26px;height:26px;border:3px solid rgba(255,255,255,.14);border-top-color:#C93C1D;border-radius:50%;animation:bvr .9s linear infinite}@keyframes bvr{to{transform:rotate(360deg)}}</style>
+<script>
+(function(){
+  var v=document.getElementById('boot-veil'),done=false;
+  function go(){ if(done||!v)return; done=true; v.style.opacity='0'; v.style.pointerEvents='none'; setTimeout(function(){ try{v.remove()}catch(_){} },420); }
+  var iv=setInterval(function(){
+    // Lyfta AÐEINS þegar bæði: (1) síðan er full-hlaðin (load-atburður búinn —
+    // annars lyftist hulan á hálf-teiknaða millistiginu sem var einmitt óreiðan)
+    // og (2) eitthvert view er orðið virkt.
+    // Þrjú skilyrði: load búið, view virkt OG það hefur RAUNVERULEGT innihald
+    // (patcharnir mála eftir load — tómt view = enn á óreiðu-millistiginu).
+    var a=document.querySelector('[id^="view-"].active,[id^="view-"][style*="display: block"]');
+    var hasContent=a && ((a.innerText||'').trim().length>40 || a.querySelector('button,table,input'));
+    if(a && hasContent && document.readyState==='complete'){ clearInterval(iv); setTimeout(go,350); }
+  },150);
+  setTimeout(go,6500);   // öryggis-fallback: hulan hverfur ALLTAF
+  window.addEventListener('error',function(){ setTimeout(go,1500) },{once:true});
+})();
+</script>
 
 <!-- SETUP BANNER (shown when config not set) -->
 <div id="setup-banner" class="setup-banner hidden">
