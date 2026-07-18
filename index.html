@@ -100,8 +100,11 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     // Lyfta AÐEINS þegar bæði: (1) síðan er full-hlaðin (load-atburður búinn —
     // annars lyftist hulan á hálf-teiknaða millistiginu sem var einmitt óreiðan)
     // og (2) eitthvert view er orðið virkt.
+    // Þrjú skilyrði: load búið, view virkt OG það hefur RAUNVERULEGT innihald
+    // (patcharnir mála eftir load — tómt view = enn á óreiðu-millistiginu).
     var a=document.querySelector('[id^="view-"].active,[id^="view-"][style*="display: block"]');
-    if(a && document.readyState==='complete'){ clearInterval(iv); setTimeout(go,350); }
+    var hasContent=a && ((a.innerText||'').trim().length>40 || a.querySelector('button,table,input'));
+    if(a && hasContent && document.readyState==='complete'){ clearInterval(iv); setTimeout(go,350); }
   },150);
   setTimeout(go,6500);   // öryggis-fallback: hulan hverfur ALLTAF
   window.addEventListener('error',function(){ setTimeout(go,1500) },{once:true});
