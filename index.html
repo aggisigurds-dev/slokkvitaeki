@@ -97,8 +97,11 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
   var v=document.getElementById('boot-veil'),done=false;
   function go(){ if(done||!v)return; done=true; v.style.opacity='0'; v.style.pointerEvents='none'; setTimeout(function(){ try{v.remove()}catch(_){} },420); }
   var iv=setInterval(function(){
+    // Lyfta AÐEINS þegar bæði: (1) síðan er full-hlaðin (load-atburður búinn —
+    // annars lyftist hulan á hálf-teiknaða millistiginu sem var einmitt óreiðan)
+    // og (2) eitthvert view er orðið virkt.
     var a=document.querySelector('[id^="view-"].active,[id^="view-"][style*="display: block"]');
-    if(a){ clearInterval(iv); setTimeout(go,300); }   // smá andrými svo síðan sé full-teiknuð
+    if(a && document.readyState==='complete'){ clearInterval(iv); setTimeout(go,350); }
   },150);
   setTimeout(go,6500);   // öryggis-fallback: hulan hverfur ALLTAF
   window.addEventListener('error',function(){ setTimeout(go,1500) },{once:true});
