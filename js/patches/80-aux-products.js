@@ -157,8 +157,11 @@
   // product images from the `vorur` table (matched by name, case-insensitive) and
   // cache them by lowercased name, then re-render the aux grid if it's already
   // open. Runs independently of the seed gate so thumbnails always refresh.
+  let _auxImgLoaded = false;
   function loadAuxImages() {
+    if (_auxImgLoaded) return;                                   // once per session
     if (!window.DB || !DB.sb) { setTimeout(loadAuxImages, 700); return; }
+    _auxImgLoaded = true;
     DB.sb.from('vorur').select('nafn,mynd').then(r => {
       if (r.error || !Array.isArray(r.data)) return;
       const map = {};
@@ -173,7 +176,12 @@
       } catch (_) {}
     }, () => {});
   }
-  loadAuxImages();
+  // PERF (2026-07-19): this used to fire on BOOT, but `_auxImgByName` is only ever
+  // read while the „Aðrar vörur" grid is expanded — so every page load paid for a
+  // full `vorur` read (~0.7s measured) that most sessions never used. Now it is
+  // kicked off on the first expand instead (see the toggle handler). Behaviour is
+  // unchanged: the grid paints immediately and the existing late-arrival re-render
+  // above swaps the thumbnails in once the fetch lands.
 
   // Thumbnail (or 📦 placeholder) for an aux tile — mirrors the js/vorur.js pattern.
   function auxImgHtml(nafn) {
@@ -353,7 +361,7 @@
       _expanded = !_expanded;
       auxWrap.style.display = _expanded ? '' : 'none';
       toggle.textContent = _expanded ? '📂 Fela aðrar vörur' : '📂 Aðrar Vörur';
-      if (_expanded) renderGrid('');
+      if (_expanded) { loadAuxImages(); renderGrid(''); }
     });
     search.addEventListener('input', e => renderGrid(e.target.value));
 
