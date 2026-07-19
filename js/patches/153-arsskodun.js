@@ -1945,6 +1945,21 @@
             </div>
           </div>
 
+          <!-- 📧 Póstsamskipti (2026-07-18, ósk Agnars): síðustu tölvupóstsamskipti
+               við kúnnann úr eldklar-pósthólfunum (email_digest) — brot af nýjasta
+               skeyti + ✨ AI-samantekt, stækkanlegt í alla söguna. -->
+          <div id="_ars-postur" style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:9px;padding:10px 13px">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+              <div style="font-size:10px;font-weight:700;color:#0369a1;text-transform:uppercase">📧 Póstsamskipti (eldklar)</div>
+              <div style="display:flex;gap:6px">
+                <button class="_ars-post-ai" type="button" style="display:none;background:none;border:1px solid #bae6fd;color:#0369a1;border-radius:5px;padding:2px 8px;cursor:pointer;font:inherit;font-size:11px">✨ AI-samantekt</button>
+                <button class="_ars-post-more" type="button" style="display:none;background:none;border:1px solid #bae6fd;color:#0369a1;border-radius:5px;padding:2px 8px;cursor:pointer;font:inherit;font-size:11px">▼ Öll sagan</button>
+              </div>
+            </div>
+            <div class="_ars-post-body" style="font-size:12px;color:#0c4a6e;margin-top:6px">⏳ Sæki póstsögu…</div>
+            <div class="_ars-post-list" style="display:none;margin-top:8px;max-height:340px;overflow-y:auto;display:none;flex-direction:column;gap:5px"></div>
+          </div>
+
           ${aminning ? `
           <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:9px;padding:10px 13px">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
@@ -2189,6 +2204,83 @@
       eqActions.style.display = editing ? 'flex' : 'none';
       eqToggle.style.display = editing ? 'none' : '';
     }
+    // 📧 Póstsamskipti — sækja úr email_digest og teikna í _ars-postur boxið.
+    (async () => {
+      const box = bg.querySelector('#_ars-postur');
+      if (!box) return;
+      const bodyEl = box.querySelector('._ars-post-body');
+      const listEl = box.querySelector('._ars-post-list');
+      const aiBtn = box.querySelector('._ars-post-ai');
+      const moreBtn = box.querySelector('._ars-post-more');
+      const SB = (window.DB && DB.sb) || null;
+      if (!SB) { bodyEl.textContent = 'Póstgrunnur ekki tiltækur'; return; }
+      const nf = String(c.netfang || '').trim().toLowerCase();
+      const ktDash = (() => { const d = String(c.kennitala || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : ''; })();
+      let msgs = [];
+      try {
+        const seen = new Set();
+        const add = r => { (r && r.data || []).forEach(m => { if (!seen.has(m.id)) { seen.add(m.id); msgs.push(m); } }); };
+        const COLS = 'id,account,folder,sender_name,sender_email,to_addresses,subject,snippet,body_preview,received_at';
+        if (nf) {
+          add(await SB.from('email_digest').select(COLS).or('sender_email.eq.' + nf + ',to_addresses.ilike.%' + nf + '%').order('received_at', { ascending: false }).limit(30));
+        }
+        if (ktDash) {
+          add(await SB.from('email_digest').select(COLS).or('subject.ilike.%' + ktDash + '%,body_preview.ilike.%' + ktDash + '%').order('received_at', { ascending: false }).limit(15));
+        }
+        msgs.sort((a, b) => String(b.received_at).localeCompare(String(a.received_at)));
+      } catch (e) { bodyEl.textContent = 'Villa við póstleit: ' + (e.message || e); return; }
+      if (!msgs.length) {
+        bodyEl.innerHTML = '<span style="color:#64748b;font-style:italic">Engin póstsamskipti fundust' + (nf ? '' : ' — ekkert netfang skráð á fyrirtækið') + '</span>';
+        return;
+      }
+      const dirTag = m => (m.folder === 'SENT')
+        ? '<span style="background:#dcfce7;color:#15803d;border-radius:99px;padding:0 7px;font-size:10px;font-weight:700">↗ Sent</span>'
+        : '<span style="background:#e0f2fe;color:#0369a1;border-radius:99px;padding:0 7px;font-size:10px;font-weight:700">↘ Móttekið</span>';
+      const dt = m => esc(String(m.received_at || '').slice(0, 10));
+      const latest = msgs[0];
+      bodyEl.innerHTML =
+        '<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">' + dirTag(latest) +
+          '<span style="font-weight:700">' + esc(latest.subject || '(ekkert efni)') + '</span>' +
+          '<span style="color:#64748b;font-size:11px">' + dt(latest) + ' · ' + esc(latest.sender_email || '') + '</span></div>' +
+        '<div style="margin-top:4px;color:#334155;font-size:11.5px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">' + esc(latest.snippet || latest.body_preview || '') + '</div>';
+      moreBtn.style.display = ''; moreBtn.textContent = '▼ Öll sagan (' + msgs.length + ')';
+      aiBtn.style.display = '';
+      let open = false;
+      moreBtn.addEventListener('click', () => {
+        open = !open;
+        listEl.style.display = open ? 'flex' : 'none';
+        moreBtn.textContent = (open ? '▲ Fela' : '▼ Öll sagan (' + msgs.length + ')');
+        if (open && !listEl.childElementCount) {
+          listEl.innerHTML = msgs.map((m, i) =>
+            '<div class="_ars-post-row" data-i="' + i + '" style="background:var(--surface,#fff);border:1px solid #bae6fd;border-radius:7px;padding:6px 9px;cursor:pointer">' +
+              '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;font-size:11.5px">' + dirTag(m) +
+                '<span style="font-weight:700;color:#0c4a6e">' + esc(m.subject || '(ekkert efni)') + '</span>' +
+                '<span style="color:#64748b;font-size:10.5px">' + dt(m) + ' · ' + esc(m.sender_email || '') + '</span></div>' +
+              '<div class="_ars-post-full" style="display:none;margin-top:4px;font-size:11.5px;color:#334155;white-space:pre-wrap;line-height:1.5"></div>' +
+            '</div>').join('');
+          listEl.querySelectorAll('._ars-post-row').forEach(row => row.addEventListener('click', () => {
+            const full = row.querySelector('._ars-post-full');
+            const m = msgs[+row.dataset.i];
+            if (full.style.display === 'none') { full.textContent = m.body_preview || m.snippet || '(ekkert innihald í grunni)'; full.style.display = ''; }
+            else full.style.display = 'none';
+          }));
+        }
+      });
+      aiBtn.addEventListener('click', async () => {
+        aiBtn.disabled = true; aiBtn.textContent = '⏳…';
+        try {
+          const ctxt = msgs.slice(0, 6).map(m => dt(m) + ' ' + (m.folder === 'SENT' ? '[VIÐ SENDUM]' : '[ÞEIR SENDU]') + ' ' + (m.subject || '') + ': ' + String(m.snippet || m.body_preview || '').slice(0, 220)).join(' | ');
+          const r = await fetch('/api/tv-summary', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: [{ id: 'p', customer_nafn: c.nafn, type: 'samskipti', title: 'Samantekt á póstsamskiptum — hver er staðan?', notes: ctxt }] }) });
+          const d = await r.json();
+          const s = d && d.summaries && d.summaries.p;
+          if (s) bodyEl.insertAdjacentHTML('afterbegin', '<div style="background:#fef9c3;border:1px solid #fde047;border-radius:6px;padding:5px 9px;margin-bottom:6px;font-size:11.5px;color:#713f12"><b>✨ AI:</b> ' + esc(s) + '</div>');
+          else throw new Error((d && d.error) || 'ekkert svar');
+        } catch (e) { alert('AI-samantekt mistókst: ' + (e.message || e)); }
+        finally { aiBtn.disabled = false; aiBtn.textContent = '✨ AI-samantekt'; }
+      });
+    })();
+
     // 2026-07-17: eyða gamalli áminningu (innfluttur texti úr skuldunautaskrá
     // sem enginn ritill náði til — „get ekki eytt af prófílnum").
     const aminDel = bg.querySelector('._ars-amin-del');
