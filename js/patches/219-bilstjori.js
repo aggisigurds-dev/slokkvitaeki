@@ -495,8 +495,14 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 .bt{--accent:#e23232;--ring:rgba(220,40,34,.55);--glow:rgba(190,20,20,.5);--btn-grad:linear-gradient(145deg,#0d0102,#7a0e12 43%,#a81717 53%,#0f0102);--metb:linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318);--green:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#083f22);--page:linear-gradient(180deg,#23262d 0px,#2e323a 90px,#4d525c 320px,#41454d 100%);--font:'Space Grotesk',system-ui,-apple-system,sans-serif;--mono:'Space Mono',monospace;--ink:#11141c;--ink-2:#3a4250;--muted:#5b6472;--faint:#94a3b8;font-family:var(--font)}
 .bt *{box-sizing:border-box}
-.bt .screen{max-width:440px;margin:0 auto;min-height:100vh;background:var(--page);padding-bottom:96px}
+/* 2026-07-19 (ósk Agnars): App-view (fullur breidd) er SJÁLFGEFIÐ — appið
+   hoppaði áður milli 440px-miðjaðrar „wide view" og fullbreiðrar app-view því
+   440px-cap-ið var grunnstaða og læsti hamurinn víkkaði með JS-innspýtingu eftir
+   á. Nú er fullur breidd grunnur (enginn hopp), og aðeins á ALVÖRU skjáborði
+   (≥820px, skrifstofan) er sími-ramminn miðjaður. */
+.bt .screen{max-width:100%;margin:0 auto;min-height:100vh;background:var(--page);padding-bottom:96px}
 .bt .screen--wide{max-width:900px}
+@media (min-width:820px){ .bt .screen{max-width:440px} }
 .bt .topbar{position:sticky;top:0;z-index:20;background:var(--metb);border-bottom:1px solid #000;box-shadow:0 6px 18px -8px #000;display:flex;align-items:center;gap:13px;padding:13px 16px;color:#eef1f4}
 .bt .topbar__title{font-size:16px;font-weight:700}
 .bt .topbar__sub{font-family:var(--mono);font-size:11.5px;color:rgba(255,255,255,.5)}
@@ -561,7 +567,8 @@
 .bt .field{width:100%;resize:none;padding:11px 13px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#f6f8fb;color:#141822;font-family:inherit;font-size:13.5px;outline:none}
 .bt .card--alert{border:1px solid #f3c6c4;background:linear-gradient(180deg,#fff,#fdf1f1)}
 .bt .card--alert .field{background:#fff}
-.bt .dock{position:fixed;left:0;right:0;bottom:0;z-index:30;max-width:440px;margin:0 auto;display:flex;gap:12px;padding:12px 14px;background:linear-gradient(180deg,rgba(65,69,77,0),rgba(65,69,77,.94) 42%)}
+.bt .dock{position:fixed;left:0;right:0;bottom:0;z-index:30;max-width:100%;margin:0 auto;display:flex;gap:12px;padding:12px 14px;background:linear-gradient(180deg,rgba(65,69,77,0),rgba(65,69,77,.94) 42%)}
+@media (min-width:820px){ .bt .dock{max-width:440px} }
 .bt .dock--wide{max-width:900px}
 .bt .dock .btn{flex:1;height:52px}
 /* Fyrirtækja-spjaldið (._bs-sheet) hefur transform meðan það rennur inn →
@@ -578,8 +585,9 @@
 /* ── overlay mechanics + gap-fillers (not part of the theme) ── */
 /* .screen / .screen--wide sit ON the .bt root itself, so the descendant form
    (.bt .screen) can't reach them — add the same-element compound form. */
-.bt.screen{max-width:440px;margin:0 auto;min-height:100vh;background:var(--page);padding-bottom:96px}
+.bt.screen{max-width:100%;margin:0 auto;min-height:100vh;background:var(--page);padding-bottom:96px}
 .bt.screen--wide{max-width:900px}
+@media (min-width:820px){ .bt.screen{max-width:440px} }
 #${VIEW_ID}{position:fixed!important;inset:0!important;z-index:1000;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#41454d}
 body.bs-active{overflow:hidden}
 body.bs-active > .topbar,body.bs-active nav.view-nav,body.bs-active .sidebar{display:none!important}
