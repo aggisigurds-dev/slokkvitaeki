@@ -586,6 +586,15 @@
   var _loanCache=null;
   function getLoan(cb){
     if(_loanCache){cb(_loanCache);return;}
+    // inject() runs from a MutationObserver that can fire BEFORE the Supabase
+    // client exists, so DB.sb was still null on early passes → this threw
+    // "Cannot read properties of null (reading 'from')" twice on every page load
+    // AND aborted the rest of the caller (the lánstæki edit buttons + the
+    // buildDashBtn() call that follows inject()). Bail out quietly instead; the
+    // observer re-runs inject() on the next DOM mutation, by which point the
+    // client is ready. The callback is idempotent (it skips rows that already
+    // have a button), so a later pass fills them in.
+    if(!window.DB || !DB.sb) return;
     DB.sb.from('lanstaeki').select('id,serial').then(function(r){_loanCache=r.data||[];cb(_loanCache);});
   }
   function makeBtn(uid,table){

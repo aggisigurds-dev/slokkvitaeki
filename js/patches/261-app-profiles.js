@@ -51,15 +51,15 @@
   // ── the apps (phase 1: Fjármál only) ────────────────────────────────────────
   var APPS = [
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0e7a4f', dark: '#06402b',
-      manifest: '/manifest-fjarmal.json',
+      manifest: '/manifest-fjarmal.json', home: 'krofu-yfirlit',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
       defaults: ['krofu-yfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'br-maeting', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
     { key: 'verkefni', emoji: '📋', name: 'Verkefnalisti', color: '#3b82f6', dark: '#1d4ed8',
-      manifest: '/manifest-verkefni.json',
+      manifest: '/manifest-verkefni.json', home: 'verkbord',
       blurb: 'Verkborð — beiðnir, verkefni og eftirfylgni',
       defaults: ['verkbord', 'arsskodun', 'reikninga-postur'] },
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#6d28d9', dark: '#4c1d95',
-      manifest: '/manifest-brunaholf.json',
+      manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
       defaults: ['br-dagurinn', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting'] },
     // Bílstjóri er STANDALONE: engin botn-nav-skel (patch 219 á heilan
@@ -318,6 +318,13 @@
     styles();
     document.body.classList.add('appmode');
     var pages = pagesFor(a.key); if (!pages.length) pages = a.defaults.slice();
+    // App-mode á að opnast á SÍNU auðkennis-síðu (home), ekki hvað sem raðast
+    // fremst í valdar síður. „Síður í appinu"-hökin vistast í PAGES-röð, svo t.d.
+    // Verkefnalista-appið (verkbord) fékk krofu-yfirlit fremst þegar það var valið
+    // með — og opnaðist ranglega á Fjármála-skjánum. Hífum home fremst í nav + boot.
+    if (a.home && pages.indexOf(a.home) > 0) {
+      pages = [a.home].concat(pages.filter(function (k) { return k !== a.home; }));
+    }
 
     var hdr = document.getElementById('_app-hdr') || document.createElement('div');
     hdr.id = '_app-hdr'; hdr.style.display = ''; hdr.style.background = 'linear-gradient(180deg,' + a.color + ',' + a.dark + ')';
@@ -416,7 +423,11 @@
       // (standalone apps like Bílstjóri handle their own lock in patch 219)
       if (ACTIVE && !isStandalone(ACTIVE)) {
         var allowed = pagesFor(ACTIVE); if (!allowed.length) allowed = (APP_BY_KEY[ACTIVE] || {}).defaults || [];
-        if (allowed.indexOf(view) === -1 && view !== NAV_KEY) { setTimeout(function () { if (_curPage) goPage(_curPage); }, 0); }
+        var _app = APP_BY_KEY[ACTIVE] || {};
+        var _home = (_app.home && allowed.indexOf(_app.home) !== -1) ? _app.home : allowed[0];
+        // Óheimil síða (t.d. sjálfgefinn krofu-yfirlit-landari á boot) → snappa á
+        // home/fyrstu síðu jafnvel þótt _curPage sé enn óstillt (annars sat appið fast).
+        if (allowed.indexOf(view) === -1 && view !== NAV_KEY) { setTimeout(function () { goPage(_curPage || _home); }, 0); }
         else if (view !== _curPage && _curPage) {
           // Leyfð síða en EKKI valin í botn-navinu: fyrstu sekúndurnar er þetta
           // boot-landerinn (sala.js opnar #sala eftir á) → festa fyrstu síðuna
