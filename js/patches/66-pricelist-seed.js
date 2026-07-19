@@ -291,6 +291,15 @@
   async function seed() {
     if (!window.DB || !DB.sb) { setTimeout(seed, 600); return; }
 
+    // PERF (2026-07-19): both work-steps below are ONE-SHOT and each is gated by
+    // its own localStorage flag (_pricelist66Seeded / _pricelist66IconsV8). Once
+    // both have run — i.e. on every boot for every already-seeded browser — seed()
+    // had nothing left to do, yet it still pulled the ENTIRE `vorur` table first
+    // (~0.5s of the cold-start budget, measured). Bail out BEFORE that read when
+    // both gates are set. Un-seeded machines are unaffected: a missing flag falls
+    // through to the original path and seeds/migrates exactly as before.
+    if (localStorage.getItem('_pricelist66Seeded') && localStorage.getItem('_pricelist66IconsV8')) return;
+
     // Fetch every existing row (name + current icon) so we can:
     //  - decide which products to insert (missing names)
     //  - decide which existing rows need their icon re-coloured

@@ -13,6 +13,14 @@
   to = "/.netlify/functions/:splat"
   status = 200
 
+# /opp -> the „📱 Öpp" launcher. The apps live under /app/<key>/ (below), but the
+# launcher page itself is a hash view (#opp), so a bare /opp used to 404. Old
+# bookmarks / home-screen shortcuts and anyone typing the obvious URL land here.
+[[redirects]]
+  from = "/opp"
+  to = "/#opp"
+  status = 302
+
 # Installable mini-apps get their OWN path + PWA scope (/app/<key>/) so no app
 # claims the whole origin ("/") and they can be installed side-by-side without
 # Chrome collapsing them into one ("open in Fjármál" everywhere). Each path
