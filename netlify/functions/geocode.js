@@ -16,8 +16,8 @@
  * Endpoint:
  *   GET /api/geocode?q=<address>
  *   →  { lat, lon, display_name, source: 'cache'|'nominatim' }   (200) when found
- *   →  { error: 'not-found' }                                    (404) when no match
- *   →  { error: ... }                                            (500) on upstream error
+ *   →  { found: false, error: 'not-found' }                      (200) when no match
+ *   →  { error: 'upstream', ... }                                (502) on upstream error
  *
  * Cache lookup: keyed by exact query string (after .trim()). Misses fall
  * through to Nominatim. Successful Nominatim lookups are written back to
@@ -207,8 +207,14 @@ export default async (req) => {
           headers: { 'Content-Type': 'application/json', ...cors(), 'Cache-Control': 'no-store' },
         });
       }
-      return new Response(JSON.stringify({ error: 'not-found', q, tried: variants }), {
-        status: 404,
+      // Genuine no-match: return 200 (not 404) with found:false. A 404 to a
+      // client-side fetch() prints a red "Failed to load resource: 404" in every
+      // browser console (the two unresolvable addresses did this on EVERY driver/
+      // finance load). Callers already treat "no numeric lat" as no-result, so a
+      // 200 is behaviourally identical but silent. Still cacheable for an hour
+      // (the address truly doesn't resolve).
+      return new Response(JSON.stringify({ found: false, error: 'not-found', q, tried: variants }), {
+        status: 200,
         headers: { 'Content-Type': 'application/json', ...cors(), 'Cache-Control': 'public, max-age=3600' },
       });
     }
