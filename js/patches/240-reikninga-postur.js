@@ -1018,13 +1018,12 @@
         attachments: [{ filename: fname, content: b64 }],
         apiKey: localStorage.getItem('resend_api_key') || undefined,
       };
-      const r = await fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      // 2026-07-20: Gmail (AppMail → /api/gmail-send) í stað Resend.
+      const r = await (window.AppMail ? AppMail.send(payload)
+        : fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
       if (!r.ok) {
         const e = await r.json().catch(() => ({}));
-        let mm = e.message || e.error || ('HTTP ' + r.status);
-        if (e.error === 'API_KEY_MISSING') mm = 'Resend API lykill ekki stilltur (RESEND_API_KEY í Netlify).';
-        else if (/domain|not verified|verify/i.test(mm)) mm = 'Sendandalén ekki staðfest í Resend (' + emailFrom() + ').';
-        throw new Error(mm);
+        throw new Error(e.message || e.error || ('HTTP ' + r.status));
       }
       setMsg('✓ Reikningur sendur á ' + to, 'ok');
       if (window.Toast && Toast.show) Toast.show('✓ Reikningur ' + (sale.num || '') + ' sendur á ' + to);
@@ -1049,22 +1048,18 @@
       const blob = await UttektInvoicePdf.buildInvoiceBlob(full, co);
       const b64 = await blobToB64(blob);
       const fname = [(co.nafn || 'reikningur').replace(/\s+/g, ' ').trim(), full.num || ''].filter(Boolean).join(' - ') + '.pdf';
-      const r = await fetch('/api/email-send', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          from: emailFrom(), to: [to],
-          subject: 'Reikningur ' + (full.num || '') + ' frá Slökkvitæki ehf',
-          html: buildEmailHtml(full, co, ''),
-          attachments: [{ filename: fname, content: b64 }],
-          apiKey: localStorage.getItem('resend_api_key') || undefined,
-        }),
-      });
+      // 2026-07-20: Gmail (AppMail → /api/gmail-send) í stað Resend.
+      const payload = {
+        from: emailFrom(), to: [to],
+        subject: 'Reikningur ' + (full.num || '') + ' frá Slökkvitæki ehf',
+        html: buildEmailHtml(full, co, ''),
+        attachments: [{ filename: fname, content: b64 }],
+      };
+      const r = await (window.AppMail ? AppMail.send(payload)
+        : fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
       if (!r.ok) {
         const e = await r.json().catch(() => ({}));
-        let mm = e.message || e.error || ('HTTP ' + r.status);
-        if (e.error === 'API_KEY_MISSING') mm = 'Resend API lykill ekki stilltur (RESEND_API_KEY í Netlify).';
-        else if (/domain|not verified|verify/i.test(mm)) mm = 'Sendandalén ekki staðfest í Resend.';
-        throw new Error(mm);
+        throw new Error(e.message || e.error || ('HTTP ' + r.status));
       }
       if (window.Toast && Toast.show) Toast.show('✓ ' + (full.num || 'Reikningur') + ' sendur á ' + to);
       logActivity(m.message_id, 'invoice');
@@ -1193,14 +1188,13 @@
     btn.disabled = true; setMsg('Sendi…', '');
     const html = '<div style="font-family:Arial,Helvetica,sans-serif;font-size:14px;color:#0f172a;white-space:pre-wrap;line-height:1.6">' + esc(bodyTxt) + '</div>';
     try {
-      const payload = { from: emailFrom(), to: [to], subject, html, apiKey: localStorage.getItem('resend_api_key') || undefined };
-      const r = await fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      // 2026-07-20: Gmail (AppMail → /api/gmail-send) í stað Resend.
+      const payload = { from: emailFrom(), to: [to], subject, html };
+      const r = await (window.AppMail ? AppMail.send(payload)
+        : fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
       if (!r.ok) {
         const e = await r.json().catch(() => ({}));
-        let mm = e.message || e.error || ('HTTP ' + r.status);
-        if (e.error === 'API_KEY_MISSING') mm = 'Resend API lykill ekki stilltur (RESEND_API_KEY í Netlify).';
-        else if (/domain|not verified|verify/i.test(mm)) mm = 'Sendandalén ekki staðfest í Resend.';
-        throw new Error(mm);
+        throw new Error(e.message || e.error || ('HTTP ' + r.status));
       }
       setMsg('✓ Svar sent á ' + to, 'ok');
       if (window.Toast && Toast.show) Toast.show('✓ Svar sent á ' + to);

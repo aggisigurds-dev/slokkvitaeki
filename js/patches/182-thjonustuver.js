@@ -920,7 +920,9 @@
       // Google OAuth) into base64 — so even restricted Drive PDFs attach.
       const atts = (payload.attachments || []).filter(a => a.fileId);
       if (atts.length) body.attachments = atts.map(a => ({ filename: (a.name || 'skjal').replace(/[\\/:*?"<>|]/g, '_') + '.pdf', driveId: a.fileId }));
-      const r = await fetch('/api/email-send', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+      // 2026-07-20: Gmail (AppMail → /api/gmail-send) í stað Resend.
+      const r = await (window.AppMail ? AppMail.send(body)
+        : fetch('/api/email-send', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }));
       const data = await r.json().catch(() => ({}));
       if (!r.ok || (data && data.error)) return { ok: false, error: (data && (data.message || data.error)) || ('HTTP ' + r.status) };
       return { ok: true, id: data && data.id };

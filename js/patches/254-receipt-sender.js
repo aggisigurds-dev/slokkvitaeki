@@ -262,6 +262,40 @@
     } catch (_) { return { configured: false, accounts: [] }; }
   }
 
+  // ── Sameiginlegur póst-sendir fyrir ÖLL send-hnappa appsins ───────────────
+  // Eldri patch-ar (29 reikningspóstur, 176 skýrslupóstur, 182 þjónustuver,
+  // 240 reikninga-póstur) sendu beint á /api/email-send (Resend) sem er dautt
+  // fyrir eldklar.is. Þeir kalla nú AppMail.send() í staðinn → sama Gmail-leið.
+  // Skilar Response-LÍKUM hlut ({ok,status,json()}) svo gömlu kallendurnir sem
+  // athuga `r.ok` / `await r.json()` virki ÓBREYTTIR.
+  async function appSend(payload) {
+    payload = payload || {};
+    // Sendandi verður að vera TENGT pósthólf. Gömlu gildin (noreply@,
+    // reikningar@, onboarding@resend.dev) eru ekki tengd → sjálfgefið pósthólf.
+    const want = addrOf(payload.from || '');
+    const account = /^(eldklar|bokhald)@eldklar\.is$/i.test(want) ? want : addrOf(fromAddr());
+    const body = {
+      account: account,
+      from: 'Slökkvitæki ehf <' + account + '>',
+      to: [].concat(payload.to || []).filter(Boolean),
+      cc: payload.cc, replyTo: payload.replyTo,
+      subject: payload.subject || '',
+      html: payload.html || '',
+      attachments: payload.attachments || [],
+    };
+    let r, j;
+    try {
+      r = await fetch(GMAIL_SEND_API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      j = await r.json().catch(() => ({}));
+    } catch (e) {
+      j = { error: 'NETWORK', message: String((e && e.message) || e) };
+      return { ok: false, status: 0, json: async () => j };
+    }
+    const ok = r.ok && !j.error && j.ok !== false;
+    return { ok: ok, status: r.status, json: async () => j };
+  }
+  window.AppMail = { send: appSend };
+
   window.ReceiptSender = { send, sendDoc, compose, status, standardText };
   console.log('[patch-254] ReceiptSender v2 installed (Gmail /api/gmail-send + ritill)');
 })();
