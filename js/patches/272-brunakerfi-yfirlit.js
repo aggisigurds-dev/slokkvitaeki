@@ -1,0 +1,292 @@
+/* === BRUNAKERFI YFIRLIT — ný sjálfstæð yfirlitssíða (2026-07-20) ===
+ *
+ * Rík yfirlitssíða fyrir brunakerfis-þjónustu, að fyrirmynd „Fyrirtæki í þjónustu"
+ * (patch 153/187) EN les AÐEINS hreinu, nýju brunakerfi-gögnin: `customer_documents`
+ * með doc_type='brunakerfi' (úttektarskýrslurnar sem brunakerfi-gather safnaði) tengt
+ * við `fyrirtaeki`. Snertir hvorki gömlu Brunakerfisþjónustu-síðuna (147) né 153.
+ *
+ * View `view-brunakerfi-yfirlit`, slug `#brunayfirlit`, hliðarstiku-hnappur „🔥 Brunakerfi yfirlit".
+ * Sortanleg dálkahaus, ár-dálkar ('22–'26 = skýrsla þess árs), skoðunarmánuður,
+ * leit, síur, tölfluspjöld. Public: window.BrunakerfiYfirlit = { open, reload }.
+ */
+(() => {
+  if (window.__bkYfirlitInstalled) return;
+  window.__bkYfirlitInstalled = true;
+
+  const VIEW_ID = 'view-brunakerfi-yfirlit';
+  const NAV_KEY = 'brunayfirlit';
+  const NOW = new Date().getFullYear();
+  const YEARS = [];
+  for (let y = NOW - 3; y <= NOW; y++) YEARS.push(String(y));   // t.d. 2023..2026
+  const MON = ['jan', 'feb', 'mar', 'apr', 'maí', 'jún', 'júl', 'ágú', 'sep', 'okt', 'nóv', 'des'];
+  const MON_FULL = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
+
+  const state = { sortCol: 'name', sortDir: 'asc', search: '', month: 0, filter: 'all' };
+  let _rows = null, _loading = false;
+
+  function SB() { return (window.DB && DB.sb) || null; }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+  function driveUrl(id) { return id && String(id).indexOf('sb:') !== 0 ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view' : ''; }
+  function storageUrl(p) {
+    if (!p) return '';
+    const base = String(window.SUPABASE_URL || '').replace(/\/+$/, ''); if (!base) return '';
+    const s = String(p).replace(/^\/+/, ''); const i = s.indexOf('/'); if (i < 1) return '';
+    return base + '/storage/v1/object/public/' + s.slice(0, i) + '/' + s.slice(i + 1).split('/').map(encodeURIComponent).join('/');
+  }
+  async function fetchAll(mk) {
+    if (window.DB && DB.fetchAll) return DB.fetchAll(mk, 1000);
+    const out = []; let from = 0; for (;;) { const r = await mk(from, from + 999); const d = (r && r.data) || []; out.push(...d); if (d.length < 1000) break; from += 1000; } return out;
+  }
+
+  // ── gögn ────────────────────────────────────────────────────────────────────
+  async function load() {
+    const sb = SB(); if (!sb) return [];
+    const docs = await fetchAll((from, to) => sb.from('customer_documents')
+      .select('fyrirtaeki_id,year,drive_file_id,storage_path,doc_date')
+      .eq('doc_type', 'brunakerfi').not('fyrirtaeki_id', 'is', null).range(from, to));
+    const ids = [...new Set(docs.map(d => d.fyrirtaeki_id).filter(Boolean))];
+    let cos = [];
+    if (ids.length) {
+      const chunks = [];
+      for (let i = 0; i < ids.length; i += 300) chunks.push(ids.slice(i, i + 300));
+      for (const ch of chunks) {
+        const r = await sb.from('fyrirtaeki').select('id,nafn,heimilisfang,simi,farsimi,netfang,"tengiliður"').in('id', ch);
+        cos.push(...((r && r.data) || []));
+      }
+    }
+    const coMap = {}; cos.forEach(c => coMap[c.id] = c);
+    const byCo = {};
+    docs.forEach(d => {
+      const c = coMap[d.fyrirtaeki_id]; if (!c) return;
+      const r = byCo[c.id] || (byCo[c.id] = { id: c.id, nafn: c.nafn || '', address: c.heimilisfang || '',
+        simi: c.simi || c.farsimi || '', netfang: c.netfang || '', tengilidur: c['tengiliður'] || '',
+        years: {}, months: {}, count: 0, latest: 0, latestMonth: 0 });
+      const y = String(d.year || '');
+      if (!y) return;
+      const url = driveUrl(d.drive_file_id) || storageUrl(d.storage_path);
+      if (!r.years[y] || url) r.years[y] = url || r.years[y] || '#';
+      r.count++;
+      const m = d.doc_date ? (new Date(d.doc_date).getUTCMonth() + 1) : 0;
+      if (m) r.months[y] = m;
+      if (+y > r.latest) { r.latest = +y; r.latestMonth = m || r.months[y] || 0; }
+    });
+    return Object.values(byCo);
+  }
+
+  // ── röðun ───────────────────────────────────────────────────────────────────
+  const CMP = {
+    name: (a, b) => (a.nafn || '').localeCompare(b.nafn || '', 'is'),
+    address: (a, b) => (a.address || '').localeCompare(b.address || '', 'is'),
+    tengilidur: (a, b) => (a.tengilidur || '').localeCompare(b.tengilidur || '', 'is'),
+    latest: (a, b) => (a.latest - b.latest) || (a.latestMonth - b.latestMonth),
+    count: (a, b) => a.count - b.count,
+    month: (a, b) => (a.latestMonth || 99) - (b.latestMonth || 99),
+  };
+  function filteredSorted() {
+    let arr = (_rows || []).slice();
+    const q = state.search.trim().toLowerCase();
+    if (q) arr = arr.filter(r => (r.nafn + ' ' + r.address + ' ' + r.tengilidur + ' ' + r.simi + ' ' + r.netfang).toLowerCase().indexOf(q) !== -1);
+    else if (state.month >= 1 && state.month <= 12) arr = arr.filter(r => r.latestMonth === state.month);
+    if (state.filter === 'done') arr = arr.filter(r => !!r.years[String(NOW)]);
+    else if (state.filter === 'pending') arr = arr.filter(r => !r.years[String(NOW)]);
+    const cmp = CMP[state.sortCol] || CMP.name;
+    arr.sort(cmp);
+    if (state.sortDir === 'desc') arr.reverse();
+    return arr;
+  }
+
+  // ── teikning ────────────────────────────────────────────────────────────────
+  function yearCell(r, y) {
+    const url = r.years[y];
+    const yy = y.slice(-2);
+    if (url) {
+      return '<td style="text-align:center;padding:6px 4px"><a href="' + esc(url) + '" target="_blank" rel="noopener" title="Opna skýrslu ' + y + '" ' +
+        'style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;background:#DBEEE3;border:1px solid rgba(28,143,96,.35);color:#0F5E3F;font-size:12px;font-weight:700;text-decoration:none">' +
+        '<span style="width:7px;height:7px;border-radius:50%;background:#1C8F60;display:inline-block"></span>' + yy + '</a></td>';
+    }
+    const due = (y === String(NOW));
+    const bg = due ? '#FBEAC6' : '#F0EFEA', bd = due ? 'rgba(217,146,6,.5)' : '#E2DFD6', col = due ? '#8A5C04' : '#B7BAC0';
+    const dot = due ? 'background:#D99206' : 'box-shadow:inset 0 0 0 1.5px #C7CAD0';
+    return '<td style="text-align:center;padding:6px 4px"><span title="' + (due ? 'Vantar skoðun ' + y : 'Engin skýrsla ' + y) + '" ' +
+      'style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;background:' + bg + ';border:1px solid ' + bd + ';color:' + col + ';font-size:12px;font-weight:700">' +
+      '<span style="width:7px;height:7px;border-radius:50%;display:inline-block;' + dot + '"></span>' + yy + '</span></td>';
+  }
+  function sortTh(label, col, align) {
+    const active = state.sortCol === col;
+    const arrow = active ? (state.sortDir === 'asc' ? ' ▲' : ' ▼') : ' ⇅';
+    return '<th class="_bky-sort" data-sort="' + col + '" style="text-align:' + (align || 'left') + ';padding:9px 10px;cursor:pointer;white-space:nowrap;color:#cbd5e1;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;user-select:none">' +
+      esc(label) + '<span style="opacity:' + (active ? '1' : '.4') + ';font-weight:600">' + arrow + '</span></th>';
+  }
+
+  function render() {
+    const root = document.getElementById('_bky-root'); if (!root) return;
+    if (_loading && !_rows) { root.innerHTML = '<div style="padding:40px;text-align:center;color:#94a3b8">Hleð brunakerfi-gögnum…</div>'; return; }
+    const rows = filteredSorted();
+    const all = _rows || [];
+    const doneNow = all.filter(r => !!r.years[String(NOW)]).length;
+    const totalReports = all.reduce((s, r) => s + r.count, 0);
+
+    // mánaðar-teljarar
+    const mc = {}; all.forEach(r => { if (r.latestMonth) mc[r.latestMonth] = (mc[r.latestMonth] || 0) + 1; });
+
+    const card = (label, val, sub, tone) => {
+      const tones = { blue: ['#1e3a8a', '#3b82f6'], green: ['#14532d', '#22c55e'], amber: ['#713f12', '#eab308'], grey: ['#1f2937', '#6b7280'] };
+      const [bg, ac] = tones[tone] || tones.grey;
+      return '<div style="flex:1 1 160px;min-width:150px;background:linear-gradient(160deg,' + bg + ',#0b0e13);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;box-shadow:0 6px 18px -8px rgba(0,0,0,.5)">' +
+        '<div style="font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:' + ac + '">' + esc(label) + '</div>' +
+        '<div style="font-size:26px;font-weight:800;color:#fff;margin-top:2px;line-height:1">' + esc(val) + '</div>' +
+        (sub ? '<div style="font-size:11px;color:#94a3b8;margin-top:4px">' + esc(sub) + '</div>' : '') + '</div>';
+    };
+
+    const chip = (key, label) => '<button class="_bky-filter" data-f="' + key + '" type="button" style="padding:6px 12px;border-radius:99px;border:1px solid ' +
+      (state.filter === key ? '#0f766e;background:#0f766e;color:#fff' : 'rgba(255,255,255,.15);background:rgba(255,255,255,.04);color:#cbd5e1') + ';font:inherit;font-size:12.5px;font-weight:700;cursor:pointer">' + esc(label) + '</button>';
+    const monthChip = (m, label) => {
+      const on = state.month === m;
+      const n = m === 0 ? all.length : (mc[m] || 0);
+      return '<button class="_bky-month" data-m="' + m + '" type="button" style="padding:5px 10px;border-radius:8px;border:1px solid ' +
+        (on ? '#0f766e;background:#0f766e;color:#fff' : 'rgba(255,255,255,.12);background:rgba(255,255,255,.03);color:#94a3b8') + ';font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">' +
+        esc(label) + (n ? ' <span style="opacity:.7;font-weight:600">' + n + '</span>' : '') + '</button>';
+    };
+
+    root.innerHTML =
+      '<div style="max-width:1280px;margin:0 auto;padding:18px 20px 40px">' +
+        '<div style="display:flex;align-items:center;gap:12px;margin:6px 0 14px">' +
+          '<div style="font-size:22px">🔥</div>' +
+          '<div><div style="font-size:20px;font-weight:800;color:#fff">Brunakerfi — yfirlit</div>' +
+          '<div style="font-size:12.5px;color:#94a3b8">' + all.length + ' fyrirtæki í brunakerfis-þjónustu · ' + totalReports + ' úttektarskýrslur</div></div></div>' +
+
+        // tölfluspjöld
+        '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">' +
+          card('Fyrirtæki', all.length, 'í brunakerfis-þjónustu', 'blue') +
+          card('Skýrslur alls', totalReports, 'úttektarskýrslur á skrá', 'grey') +
+          card('Búið ' + NOW, doneNow, Math.round(doneNow / (all.length || 1) * 100) + '% af árinu', 'green') +
+          card('Eftir ' + NOW, all.length - doneNow, 'á eftir að skoða', 'amber') +
+        '</div>' +
+
+        // stjórntæki
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">' +
+          chip('all', 'Allt') + chip('done', '✅ Búið ' + NOW) + chip('pending', '⏳ Eftir ' + NOW) +
+          '<input class="_bky-search" type="search" placeholder="🔍 Leita (nafn · heimilisfang · tengiliður)…" value="' + esc(state.search) + '" ' +
+            'style="flex:1 1 200px;min-width:160px;margin-left:auto;padding:8px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font:inherit;font-size:13px">' +
+        '</div>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">' +
+          monthChip(0, 'Allir mán.') + MON_FULL.map((m, i) => monthChip(i + 1, m.slice(0, 3))).join('') +
+        '</div>' +
+
+        // tafla
+        '<div style="background:#0b0e13;border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow-x:auto">' +
+          '<table style="width:100%;border-collapse:collapse;min-width:900px">' +
+            '<thead><tr style="border-bottom:1px solid rgba(255,255,255,.1)">' +
+              sortTh('Fyrirtæki', 'name') +
+              YEARS.map(y => '<th style="text-align:center;padding:9px 4px;color:#cbd5e1;font-size:11px;font-weight:800">' + "'" + y.slice(-2) + '</th>').join('') +
+              sortTh('Heimilisfang', 'address') +
+              sortTh('Tengiliður', 'tengilidur') +
+              '<th style="text-align:left;padding:9px 10px;color:#cbd5e1;font-size:11px;font-weight:800;text-transform:uppercase">Sími</th>' +
+              sortTh('Síðast', 'latest', 'center') +
+              sortTh('Skjöl', 'count', 'center') +
+            '</tr></thead><tbody>' +
+            (rows.length ? rows.map(rowHtml).join('') :
+              '<tr><td colspan="' + (6 + YEARS.length) + '" style="padding:30px;text-align:center;color:#94a3b8;font-style:italic">Engin fyrirtæki passa við síuna.</td></tr>') +
+            '</tbody></table>' +
+        '</div>' +
+        '<div style="margin-top:10px;font-size:11.5px;color:#64748b">Grænn = skýrsla þess árs (smelltu til að opna) · gulur = vantar ' + NOW + ' · grár = engin skýrsla það ár.</div>' +
+      '</div>';
+
+    wire(root);
+  }
+
+  function rowHtml(r) {
+    const last = r.latest ? (r.latest + (r.latestMonth ? ' · ' + MON[r.latestMonth - 1] : '')) : '—';
+    return '<tr class="_bky-row" data-id="' + r.id + '" style="border-bottom:1px solid rgba(255,255,255,.05)">' +
+      '<td style="padding:9px 10px"><div style="font-weight:700;color:#f1f5f9;font-size:13px">' + esc(r.nafn) + '</div>' +
+        (r.netfang ? '<div style="font-size:10.5px;color:#64748b;overflow:hidden;text-overflow:ellipsis;max-width:220px;white-space:nowrap">' + esc(r.netfang) + '</div>' : '') + '</td>' +
+      YEARS.map(y => yearCell(r, y)).join('') +
+      '<td style="padding:9px 10px;color:#94a3b8;font-size:12px">' + esc(r.address) + '</td>' +
+      '<td style="padding:9px 10px;color:#cbd5e1;font-size:12px">' + esc(r.tengilidur || '—') + '</td>' +
+      '<td style="padding:9px 10px;color:#94a3b8;font-size:12px;white-space:nowrap">' + esc(r.simi || '—') + '</td>' +
+      '<td style="padding:9px 10px;text-align:center;color:#e2e8f0;font-size:12px;white-space:nowrap">' + esc(last) + '</td>' +
+      '<td style="padding:9px 10px;text-align:center;color:#e2e8f0;font-size:13px;font-weight:700">' + r.count + '</td>' +
+    '</tr>';
+  }
+
+  function wire(root) {
+    root.querySelectorAll('._bky-sort').forEach(th => th.addEventListener('click', () => {
+      const col = th.dataset.sort;
+      if (state.sortCol === col) state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+      else { state.sortCol = col; state.sortDir = (col === 'name' || col === 'address' || col === 'tengilidur') ? 'asc' : 'desc'; }
+      render();
+    }));
+    root.querySelectorAll('._bky-filter').forEach(b => b.addEventListener('click', () => { state.filter = b.dataset.f; render(); }));
+    root.querySelectorAll('._bky-month').forEach(b => b.addEventListener('click', () => { state.month = +b.dataset.m; render(); }));
+    const s = root.querySelector('._bky-search');
+    if (s) s.addEventListener('input', () => { state.search = s.value; const p = s.selectionStart; render(); const n = document.querySelector('._bky-search'); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (_) {} } });
+    root.querySelectorAll('._bky-row').forEach(tr => tr.addEventListener('click', e => {
+      if (e.target.closest('a')) return;   // ár-hlekkur opnar sjálfur
+      const id = tr.dataset.id;
+      if (window._openCompanySafe) window._openCompanySafe(+id);
+      else if (window.App && App.switchView) { App.switchView('companies'); }
+    }));
+  }
+
+  async function reload() {
+    if (_loading) return;
+    _loading = true; render();
+    try { _rows = await load(); } catch (e) { _rows = _rows || []; console.warn('[bky] load', e); }
+    _loading = false; render();
+  }
+
+  // ── view + wiring (eins og 268) ─────────────────────────────────────────────
+  function ensureView() {
+    let v = document.getElementById(VIEW_ID); if (v) return v;
+    v = document.createElement('div'); v.id = VIEW_ID; v.className = 'view';
+    v.style.cssText = 'display:none;min-height:100vh;background:linear-gradient(180deg,#0a0c10 0,#12151b 220px,#171a21 100%)';
+    v.innerHTML = '<div id="_bky-root"></div>';
+    document.body.appendChild(v);
+    return v;
+  }
+  function open() {
+    ensureView();
+    document.querySelectorAll('.view,[id^="view-"]').forEach(x => { x.style.display = 'none'; x.classList.remove('active'); });
+    const v = document.getElementById(VIEW_ID); v.style.display = 'block'; v.classList.add('active');
+    document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === NAV_KEY));
+    try { localStorage.setItem('lastView', NAV_KEY); } catch (_) {}
+    try { if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
+    reload();
+  }
+  function injectSidebar() {
+    const nav = document.querySelector('nav.view-nav, .view-nav');
+    if (!nav) { setTimeout(injectSidebar, 600); return; }
+    if (nav.querySelector('[data-view="' + NAV_KEY + '"]')) return;
+    const ref = nav.querySelector('[data-view="brunakerfi"]') || nav.querySelector('.vnav-btn');
+    const btn = document.createElement('button');
+    btn.className = (ref && ref.className) || 'vnav-btn';
+    btn.setAttribute('data-view', NAV_KEY);
+    btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px"><span style="font-size:16px">🔥</span><span>Brunakerfi yfirlit</span></span>';
+    btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (window.App && App.switchView) App.switchView(NAV_KEY); else open(); });
+    if (ref && ref.parentNode) ref.parentNode.insertBefore(btn, ref.nextSibling);
+    else nav.insertBefore(btn, nav.firstChild);
+  }
+  function patchSwitchView() {
+    if (!window.App) { setTimeout(patchSwitchView, 150); return; }
+    if (window.App._bkyPatched) return;
+    const orig = window.App.switchView;
+    window.App.switchView = function (view) {
+      if (view === NAV_KEY) { open(); return; }
+      const r = orig ? orig.apply(this, arguments) : undefined;
+      try { const v = document.getElementById(VIEW_ID); if (v) { v.style.display = 'none'; v.classList.remove('active'); } } catch (_) {}
+      return r;
+    };
+    for (const k in orig) { try { window.App.switchView[k] = orig[k]; } catch (_) {} }
+    window.App._bkyPatched = true;
+  }
+  function boot() {
+    injectSidebar(); setTimeout(injectSidebar, 1500); patchSwitchView();
+    if ((location.hash || '').replace(/^#/, '') === NAV_KEY) setTimeout(() => { if (window.App && App.switchView) App.switchView(NAV_KEY); else open(); }, 300);
+    window.addEventListener('hashchange', () => { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) open(); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
+
+  window.BrunakerfiYfirlit = { open, reload };
+  console.log('[patch-272] Brunakerfi yfirlit installed');
+})();
+/* === END BRUNAKERFI YFIRLIT === */
