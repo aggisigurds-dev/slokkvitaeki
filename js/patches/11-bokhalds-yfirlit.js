@@ -418,7 +418,9 @@
       SB.from('verkbeidnir').select('num,status').like('num', 'R-%-V%'),
       // 2026-07-01: also fetch fyrirtaeki — COMPANY sales link customer_id to
       // fyrirtaeki (not vidskiptavinir), so their kt lived nowhere in this view.
-      SB.from('fyrirtaeki').select('id,kennitala,nafn')
+      // 2026-07-20: 1.340 fyrirtæki → stök .select() skilaði 1000, svo kt vantaði
+      // á sölur ~340 fyrirtækja. Blaðsíðuflett gegnum 1000-raða þakið.
+      DB.fetchAll((from, to) => SB.from('fyrirtaeki').select('id,kennitala,nafn').range(from, to)).then(rows => ({ data: rows }))
     ]);
     if (salesRes.error) throw salesRes.error;
     // Build a (parent → statuses[]) map for pickup-status lookup later.

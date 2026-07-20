@@ -404,6 +404,7 @@
     const name = c.nafn || '';
     if (window.DB && DB.sb) {
       try {
+        // audit-pagination:ok — afmarkað við EITT fyrirtæki í næsta skrefi (q.or/q.ilike á client)
         let q = DB.sb.from('uttaeki')
           .select('id,serial,type,size,location,status,last_insp,next_insp')
           .order('type', { ascending: true });

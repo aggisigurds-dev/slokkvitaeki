@@ -465,7 +465,7 @@
       return r.data;
     } catch (e) {
       // Fallback: search by digits-only (works regardless of how the row was stored)
-      const all = await SB.from('customers_base').select('id,nafn,kennitala');
+      const all = { data: await DB.fetchAll((from, to) => SB.from('customers_base').select('id,nafn,kennitala').range(from, to)) }; // 1.043 raðir — blaðsíðuflett gegnum 1000-raða þakið
       const hit = (all.data || []).find(b => ktDigits(b.kennitala) === WALKIN_KT_DIGITS);
       if (hit) { _idxByKt.set(WALKIN_KT_DIGITS, hit); state.bases.push(hit); return hit; }
       toast('⚠️ Gat ekki stofnað walk-in grunnskrá: ' + ((e && e.message) || e), true);

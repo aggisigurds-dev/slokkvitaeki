@@ -112,9 +112,11 @@
     if (!SB) throw new Error('Engin gagnabankatenging.');
     const out = [];
 
-    const fr = await SB.from('fyrirtaeki')
+    // 1.340 fyrirtæki — stök .select() skilaði 1000, svo ~340 komust aldrei
+    // í heimilisfanga-yfirferðina. Blaðsíðuflett gegnum 1000-raða þakið.
+    const fr = { data: await DB.fetchAll((from, to) => SB.from('fyrirtaeki')
       .select('id,nafn,kennitala,heimilisfang,deleted_at')
-      .order('nafn');
+      .order('nafn').range(from, to)) };
     if (fr.error) throw fr.error;
     (fr.data || []).forEach(r => {
       if (r.deleted_at) return;

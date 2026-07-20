@@ -95,7 +95,9 @@
       safe(SB.from('solur').select('id,samtals,customer_nafn').neq('status','drog').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null)),
       safe(SB.from('verkbeidnir').select('id,num,customer,status').neq('status','done').neq('status','cancelled')),
       safe(SB.from('verkdagbok').select('id,fyrirtaeki,job_date,athugasemdir').gte('job_date', today.toISOString().slice(0,10)).lt('job_date', tomorrow.toISOString().slice(0,10)).order('job_date')),
-      safe(SB.from('uttaeki').select('id,serial,client,next_insp').not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10))),
+      // 3.749 tæki eru á gjalddaga innan 30 daga — stök .select() skilaði 1000,
+      // svo Stjórnstöðin sýndi aðeins ~27% af því sem er að falla á tíma.
+      safe(DB.fetchAll((from, to) => SB.from('uttaeki').select('id,serial,client,next_insp').not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10)).range(from, to)).then(rows => ({ data: rows }))),
       safe(SB.from('birgdir').select('id,nafn,magn,lagmark').filter('magn','lt','lagmark')),
       safe(SB.from('thjonustusamningar').select('id,company_nafn,upphaed_an_vsk,next_due').lte('next_due', in30.toISOString().slice(0,10)).eq('status','virkur')),
       safe(SB.from('solur').select('samtals,created_at').neq('status','drog').gte('created_at', sevenBack.toISOString()).lt('created_at', tomorrow.toISOString()))

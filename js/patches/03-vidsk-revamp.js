@@ -82,7 +82,7 @@
       const sb = getSB();
       const [statusRes, baseRes] = await Promise.all([
         sb.from('customer_doc_status').select('customer_base_id,kennitala,has_samningur,uttektir,reikningar,total_docs'),
-        sb.from('customers_base').select('id,source_v_id')
+        DB.fetchAll((from, to) => sb.from('customers_base').select('id,source_v_id').range(from, to)).then(rows => ({ data: rows })) // 1.043 raðir — blaðsíðuflett gegnum 1000-raða þakið
       ]);
       const byBase = new Map();
       for (const s of (statusRes.data || [])) {

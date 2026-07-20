@@ -267,8 +267,9 @@
   }
   async function loadBases() {
     const SB = getSB(); if (!SB) return;
-    const { data } = await SB.from('customers_base')
-      .select('id,nafn,kennitala,simi,netfang,heimilisfang,source_f_id').order('nafn');
+    // 1.043 raðir — blaðsíðuflett gegnum 1000-raða þakið
+    const data = await DB.fetchAll((from, to) => SB.from('customers_base')
+      .select('id,nafn,kennitala,simi,netfang,heimilisfang,source_f_id').order('nafn').range(from, to));
     state.bases = data || [];
     state.baseById = {};
     state.bases.forEach(b => { state.baseById[b.id] = b; });
