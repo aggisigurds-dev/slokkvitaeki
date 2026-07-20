@@ -108,7 +108,7 @@
   // troði sér inn aftur; ný uppsetning fær þær úr defaults).
   //   __brky1 (2026-07-08): br-krofuyfirlit — á eftir krofu-yfirlit
   //   __brtv1 (2026-07-08): br-maeting — aftast fyrir framan br-gerdreikninga
-  //   __tvk1  (2026-07-20): thjonustuverk — á eftir vidskiptavinir (ósk Agnars)
+  //   __tvk1  (2026-07-20): thjonustuverk — á eftir arsskodun (ósk Agnars)
   (function () {
     try {
       var c = loadCfg(), changed = false;
@@ -122,7 +122,7 @@
       }
       insertOnce('__brky1', 'br-krofuyfirlit', 'krofu-yfirlit');
       insertOnce('__brtv1', 'br-maeting', 'vidskiptavinir');
-      insertOnce('__tvk1',  'thjonustuverk', 'vidskiptavinir');
+      insertOnce('__tvk1',  'thjonustuverk', 'arsskodun');
       if (!changed) return;
       var s = JSON.stringify(c);
       try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
