@@ -171,12 +171,14 @@
   async function load() {
     const SB = getSB(); const app = document.getElementById('fyr-app');
     if (!SB) { if (app) app.innerHTML = '<div class="skel" style="color:#dc2626">Engin gagnabankatenging.</div>'; return; }
-    const cb = await SB.from('customers_base').select('id,rekstrarfelag');
+    // customers_base = 1.043 raðir og fyrirtaeki = 1.340 → stakar .select() skiluðu
+    // aðeins 1000 hvor, svo ~340 fyrirtæki vantaði alveg af yfirferðar-listanum.
+    const cb = { data: await DB.fetchAll((from, to) => SB.from('customers_base').select('id,rekstrarfelag').range(from, to)) };
     BASE_REK = {};
     (cb.data || []).forEach(b => { if (b.rekstrarfelag) BASE_REK[b.id] = b.rekstrarfelag; });
-    const r = await SB.from('fyrirtaeki')
+    const r = { data: await DB.fetchAll((from, to) => SB.from('fyrirtaeki')
       .select('id,nafn,kennitala,simi,netfang,heimilisfang,greidsluskilmali,status,er_i_thjonustu,deleted_at,customer_base_id,review_flag,review_note,is_bank_only')
-      .order('nafn');
+      .order('nafn').range(from, to)) };
     if (r.error) { if (app) app.innerHTML = '<div class="skel" style="color:#dc2626">Villa: ' + esc(r.error.message) + '</div>'; return; }
     FROWS = (r.data || []).map(f => ({ ...f, _rek: f.customer_base_id != null ? (BASE_REK[f.customer_base_id] || '') : '' }));
     bindFilters();
