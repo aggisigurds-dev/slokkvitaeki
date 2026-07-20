@@ -48,6 +48,22 @@
   function docUrl(d){ return d ? (driveUrl(d.drive_file_id) || storageUrl(d.storage_path)) : ''; }
   var NOW = new Date().getFullYear();
 
+  // Ein færsla úr ársnetinu (handvirkt viðhengi {_att:a} EÐA customer_documents
+  // skjal d) → póst-viðhengi ({driveId} eða {url}) fyrir 📧 Senda-gluggann.
+  // Drive-skrár fara sem {driveId} (gmail-send sækir þær server-megin).
+  async function entryAttachment(x, fallbackName){
+    if(!x) return null;
+    var getUrl = window.CompanyAttachments && CompanyAttachments.getPublicUrl;
+    if(x._att){
+      var a=x._att, nm=a.name || fallbackName;
+      if(a.path && getUrl){ var u=await CompanyAttachments.getPublicUrl(a.path); if(u) return { filename:nm, url:u }; }
+      return null;
+    }
+    if(x.drive_file_id) return { filename: fallbackName, driveId: x.drive_file_id };
+    if(x.storage_path && getUrl){ var u2=await CompanyAttachments.getPublicUrl(x.storage_path); if(u2) return { filename: fallbackName, url:u2 }; }
+    return null;
+  }
+
   function getCompanyId(){
     var main=document.getElementById('companies-main'); if(!main) return null;
     var el=main.querySelector('[data-co-id]:not(._cat-section):not(._dyg-section):not(._cpr-section)');
@@ -332,11 +348,20 @@
       if(y===NOW) return addChip('reikningur',y,'+ reikningur');
       return addChip('reikningur',y,'vantar');
     }
+    // 📧 Senda-dálkur: hnappur á ári sem á skýrslu og/eða reikning. Geymum
+    // ársgögnin á section svo wire()-smellurinn byggi viðhengin (async) þá.
+    section._repByY = repByY; section._invByY = invByY; section._sendCo = { coId: coId, kt: kt, nafn: (co && co.nafn) || '' };
+    function sendCell(y){
+      var hasRep=(repByY[y]||[]).length, hasInv=(invByY[y]||[]).length;
+      if(!hasRep && !hasInv) return '';
+      return '<button type="button" class="sk-doc _sk-send" data-send-year="'+y+'" title="Senda úttektarskýrslu og/eða reikning '+y+' í tölvupósti" style="border-color:#99f6e4;color:#0f766e">📧 Senda</button>';
+    }
     var rows=YEARS.map(function(y){
       var cur=(y===NOW);
       return '<tr><td'+(cur?' style="color:var(--brand)"':'')+'>'+y+'</td>'+
         '<td>'+repCell(y)+'</td>'+
-        '<td>'+invCell(y)+'</td></tr>';
+        '<td>'+invCell(y)+'</td>'+
+        '<td>'+sendCell(y)+'</td></tr>';
     }).join('');
 
     // ── önnur viðhengi strip ──
@@ -355,7 +380,7 @@
     section.innerHTML = hdr +
       '<div class="sk-strip"><div class="sk-strip-l">📊 Staða eftir ári</div><div class="sk-strip-r">'+ (pills||'<span style="color:var(--ink4);font-size:12px">engin gögn</span>') +'</div></div>'+
       '<div class="sk-strip"><div class="sk-strip-l">📑 Þjónustusamningur</div><div class="sk-strip-r">'+samnHtml+'</div></div>'+
-      '<table class="sk-grid"><thead><tr><th>Ár</th><th>Úttektarskýrsla</th><th>Reikningur</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<table class="sk-grid"><thead><tr><th>Ár</th><th>Úttektarskýrsla</th><th>Reikningur</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'+
       '<div class="sk-strip"><div class="sk-strip-l">📎 Önnur viðhengi</div><div class="sk-strip-r">'+otherHtml+'</div></div>'+
       notLinked + fixLink;
   }
@@ -363,6 +388,32 @@
   function wire(section){
     section.addEventListener('click', async function(e){
       var coId=+section.dataset.coId; if(!coId) return;
+
+      // 📧 Senda — opnar póst-ritilinn (patch 254) með hökum fyrir úttektarskýrslu
+      // og reikning ársins + breytanlegan staðlaðan texta. Sent gegnum Gmail.
+      var sendEl=e.target.closest('[data-send-year]');
+      if(sendEl){
+        e.preventDefault();
+        if(!(window.ReceiptSender && ReceiptSender.compose)){ alert('Póst-ritillinn hlóðst ekki — endurhladdu síðunni.'); return; }
+        var y=sendEl.getAttribute('data-send-year');
+        var rep=(section._repByY && section._repByY[y]||[])[0];
+        var inv=(section._invByY && section._invByY[y]||[])[0];
+        var meta=section._sendCo||{}; var nafn=meta.nafn||'';
+        // Netfang forfyllt af fyrirtækinu (má breyta í glugganum).
+        var email=''; try{ var sb=SB(); if(sb && meta.coId){ var er=await sb.from('fyrirtaeki').select('netfang').eq('id', meta.coId).maybeSingle(); if(er&&er.data&&er.data.netfang) email=String(er.data.netfang).trim(); } }catch(_){}
+        var choices=[];
+        if(rep) choices.push({ label:'Úttektarskýrsla '+y, checked:true, build:function(){ return entryAttachment(rep,'Úttektarskýrsla '+y+'.pdf'); } });
+        if(inv) choices.push({ label:'Reikningur '+y, checked:true, build:function(){ return entryAttachment(inv,'Reikningur '+y+'.pdf'); } });
+        ReceiptSender.compose({
+          title:'Senda — '+nafn,
+          to:email,
+          subject:'Úttektarskýrsla og reikningur '+y+' — Slökkvitæki ehf',
+          bodyText:ReceiptSender.standardText('skyrsla', { nafn:nafn, ar:y }),
+          attachmentChoices:choices,
+        });
+        return;
+      }
+
       var pickEl=e.target.closest('[data-pick]');
       if(pickEl){
         e.preventDefault();

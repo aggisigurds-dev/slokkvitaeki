@@ -170,23 +170,13 @@
       html: buildHtmlEmail(sale),
       apiKey: apiKey || undefined  // server prefers env var; this is legacy fallback
     };
-    const r = await fetch('/api/email-send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    // 2026-07-20: sent gegnum Gmail (AppMail → /api/gmail-send) í stað Resend,
+    // sem er dautt fyrir eldklar.is. AppMail skilar Response-líkum hlut.
+    const r = await (window.AppMail ? AppMail.send(payload)
+      : fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
     if (!r.ok) {
-      const err = await r.json().catch(() => ({ message: r.statusText }));
-      if (err.error === 'API_KEY_MISSING') {
-        throw new Error('Resend API lykill ekki stilltur — settu RESEND_API_KEY í Netlify env eða Stillingar');
-      }
-      const msg = err.message || err.error || 'HTTP ' + r.status;
-      // Resend returns 403 + a domain message when the sender domain isn't
-      // verified — the #1 reason mail silently never arrives. Make it explicit.
-      if (/domain|not verified|verify/i.test(msg)) {
-        throw new Error(msg + '\n\n→ Sláðu inn lén sendanda (t.d. eldklar.is) í Resend og staðfestu DNS (SPF/DKIM). „Frá" netfangið verður að vera á staðfestu léni.');
-      }
-      throw new Error(msg);
+      const err = await r.json().catch(() => ({ message: 'Sending mistókst' }));
+      throw new Error(err.message || err.error || ('HTTP ' + r.status));
     }
     return await r.json();
   }

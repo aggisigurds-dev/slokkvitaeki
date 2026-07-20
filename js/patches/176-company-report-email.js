@@ -129,21 +129,12 @@
       attachments: [{ filename, content: base64 }],
       apiKey: apiKey || undefined
     };
-    const r = await fetch('/api/email-send', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    // 2026-07-20: Gmail (AppMail → /api/gmail-send) í stað Resend.
+    const r = await (window.AppMail ? AppMail.send(payload)
+      : fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }));
     if (!r.ok) {
-      const err = await r.json().catch(() => ({ message: r.statusText }));
-      if (err.error === 'API_KEY_MISSING') {
-        throw new Error('Resend API lykill ekki stilltur — settu RESEND_API_KEY í Netlify env eða Stillingar.');
-      }
-      const msg = err.message || err.error || ('HTTP ' + r.status);
-      if (/domain|not verified|verify/i.test(msg)) {
-        throw new Error(msg + '\n\n→ „Frá" netfangið verður að vera á léni sem er staðfest í Resend (SPF/DKIM).');
-      }
-      throw new Error(msg);
+      const err = await r.json().catch(() => ({ message: 'Sending mistókst' }));
+      throw new Error(err.message || err.error || ('HTTP ' + r.status));
     }
     return r.json().catch(() => ({}));
   }
