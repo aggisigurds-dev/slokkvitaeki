@@ -120,21 +120,21 @@
     const url = r.years[y];
     const yy = y.slice(-2);
     if (url) {
-      return '<td style="text-align:center;padding:6px 4px"><a href="' + esc(url) + '" target="_blank" rel="noopener" title="Opna skýrslu ' + y + '" ' +
+      return '<td class="_bky-yr" style="text-align:center;padding:6px 4px"><a href="' + esc(url) + '" target="_blank" rel="noopener" title="Opna skýrslu ' + y + '" ' +
         'style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;background:#DBEEE3;border:1px solid rgba(28,143,96,.35);color:#0F5E3F;font-size:12px;font-weight:700;text-decoration:none">' +
         '<span style="width:7px;height:7px;border-radius:50%;background:#1C8F60;display:inline-block"></span>' + yy + '</a></td>';
     }
     const due = (y === String(NOW));
     const bg = due ? '#FBEAC6' : '#F0EFEA', bd = due ? 'rgba(217,146,6,.5)' : '#D5D8DE', col = due ? '#8A5C04' : '#6B7280';
     const dot = due ? 'background:#D99206' : 'box-shadow:inset 0 0 0 1.5px #C7CAD0';
-    return '<td style="text-align:center;padding:6px 4px"><span title="' + (due ? 'Vantar skoðun ' + y : 'Engin skýrsla ' + y) + '" ' +
+    return '<td class="_bky-yr" style="text-align:center;padding:6px 4px"><span title="' + (due ? 'Vantar skoðun ' + y : 'Engin skýrsla ' + y) + '" ' +
       'style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;background:' + bg + ';border:1px solid ' + bd + ';color:' + col + ';font-size:12px;font-weight:700">' +
       '<span style="width:7px;height:7px;border-radius:50%;display:inline-block;' + dot + '"></span>' + yy + '</span></td>';
   }
-  function sortTh(label, col, align) {
+  function sortTh(label, col, align, cls) {
     const active = state.sortCol === col;
     const arrow = active ? (state.sortDir === 'asc' ? ' ▲' : ' ▼') : ' ⇅';
-    return '<th class="_bky-sort" data-sort="' + col + '" style="text-align:' + (align || 'left') + ';padding:9px 10px;cursor:pointer;white-space:nowrap;color:#475569;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;user-select:none">' +
+    return '<th class="_bky-sort' + (cls === 'wcol' ? ' _bky-wcol' : '') + '" data-sort="' + col + '" style="text-align:' + (align || 'left') + ';padding:9px 10px;cursor:pointer;white-space:nowrap;color:#475569;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;user-select:none">' +
       esc(label) + '<span style="opacity:' + (active ? '1' : '.4') + ';font-weight:600">' + arrow + '</span></th>';
   }
 
@@ -197,14 +197,14 @@
         // tafla — lárétt skrun bundið í þennan kassa (max-width:100% svo síðan sjálf
         // renni ekki lárétt á síma; -webkit-overflow-scrolling fyrir mjúkt skrun).
         '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%">' +
-          '<table style="width:100%;border-collapse:collapse;min-width:820px">' +
+          '<table class="_bky-tbl" style="width:100%;border-collapse:collapse;min-width:820px">' +
             '<thead><tr style="border-bottom:1px solid #e8ecf1">' +
               sortTh('Fyrirtæki', 'name') +
-              YEARS.map(y => '<th style="text-align:center;padding:9px 4px;color:#475569;font-size:11px;font-weight:800">' + "'" + y.slice(-2) + '</th>').join('') +
-              sortTh('Heimilisfang', 'address') +
-              sortTh('Tengiliður', 'tengilidur') +
-              '<th style="text-align:left;padding:9px 10px;color:#475569;font-size:11px;font-weight:800;text-transform:uppercase">Sími</th>' +
-              sortTh('Síðast', 'latest', 'center') +
+              YEARS.map(y => '<th class="_bky-yr" style="text-align:center;padding:9px 4px;color:#475569;font-size:11px;font-weight:800">' + "'" + y.slice(-2) + '</th>').join('') +
+              sortTh('Heimilisfang', 'address', 'left', 'wcol') +
+              sortTh('Tengiliður', 'tengilidur', 'left', 'wcol') +
+              '<th class="_bky-wcol" style="text-align:left;padding:9px 10px;color:#475569;font-size:11px;font-weight:800;text-transform:uppercase">Sími</th>' +
+              sortTh('Síðast', 'latest', 'center', 'wcol') +
               sortTh('Skjöl', 'count', 'center') +
             '</tr></thead><tbody>' +
             (rows.length ? rows.map(rowHtml).join('') :
@@ -220,14 +220,18 @@
   function rowHtml(r) {
     const last = r.latest ? (r.latest + (r.latestMonth ? ' · ' + MON[r.latestMonth - 1] : '')) : '—';
     const newBadge = r.isNew ? '<span title="Bíður fyrstu skoðunar" style="margin-left:7px;padding:1px 7px;border-radius:99px;background:#7c3aed;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.03em;vertical-align:middle">NÝTT</span>' : '';
+    // Mobile-fold: heimilisfang · tengiliður · sími birtast undir nafninu á síma
+    // (breiðu dálkarnir eru faldir þar). Sýnist ekki á tölvu (._bky-mob).
+    const mobInfo = [r.address, r.tengilidur, r.simi].filter(Boolean).join(' · ');
     return '<tr class="_bky-row" data-id="' + r.id + '" style="border-bottom:1px solid #f1f5f9;cursor:pointer">' +
       '<td style="padding:9px 10px"><div style="font-weight:700;color:#0f172a;font-size:13px">' + esc(r.nafn) + newBadge + '</div>' +
-        (r.netfang ? '<div style="font-size:10.5px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;max-width:220px;white-space:nowrap">' + esc(r.netfang) + '</div>' : '') + '</td>' +
+        (r.netfang ? '<div style="font-size:10.5px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;max-width:220px;white-space:nowrap">' + esc(r.netfang) + '</div>' : '') +
+        (mobInfo ? '<div class="_bky-mob" style="font-size:10.5px;color:#64748b;margin-top:2px;line-height:1.35">' + esc(mobInfo) + '</div>' : '') + '</td>' +
       YEARS.map(y => yearCell(r, y)).join('') +
-      '<td style="padding:9px 10px;color:#475569;font-size:12px">' + esc(r.address) + '</td>' +
-      '<td style="padding:9px 10px;color:#334155;font-size:12px">' + esc(r.tengilidur || '—') + '</td>' +
-      '<td style="padding:9px 10px;color:#475569;font-size:12px;white-space:nowrap">' + esc(r.simi || '—') + '</td>' +
-      '<td style="padding:9px 10px;text-align:center;color:#0f172a;font-size:12px;white-space:nowrap">' + esc(last) + '</td>' +
+      '<td class="_bky-wcol" style="padding:9px 10px;color:#475569;font-size:12px">' + esc(r.address) + '</td>' +
+      '<td class="_bky-wcol" style="padding:9px 10px;color:#334155;font-size:12px">' + esc(r.tengilidur || '—') + '</td>' +
+      '<td class="_bky-wcol" style="padding:9px 10px;color:#475569;font-size:12px;white-space:nowrap">' + esc(r.simi || '—') + '</td>' +
+      '<td class="_bky-wcol" style="padding:9px 10px;text-align:center;color:#0f172a;font-size:12px;white-space:nowrap">' + esc(last) + '</td>' +
       '<td style="padding:9px 10px;text-align:center;color:#0f172a;font-size:13px;font-weight:700">' + r.count + '</td>' +
     '</tr>';
   }
@@ -263,7 +267,19 @@
     let v = document.getElementById(VIEW_ID); if (v) return v;
     v = document.createElement('div'); v.id = VIEW_ID; v.className = 'view';
     v.style.cssText = 'display:none;min-height:100vh;background:#eef1f5';
-    v.innerHTML = '<div id="_bky-root"></div>';
+    // Sími-fyrst: á mjóum skjá fela breiðu dálkana (heimilisfang/tengiliður/sími/
+    // síðast) og sýna þá í staðinn undir fyrirtækjanafninu → engin lárétt skrun.
+    v.innerHTML =
+      '<style>' +
+        '#' + VIEW_ID + ' ._bky-mob{display:none}' +
+        '@media (max-width:680px){' +
+          '#' + VIEW_ID + ' ._bky-wcol{display:none!important}' +
+          '#' + VIEW_ID + ' table._bky-tbl{min-width:0!important}' +
+          '#' + VIEW_ID + ' ._bky-mob{display:block}' +
+          '#' + VIEW_ID + ' ._bky-yr{padding:6px 2px!important}' +
+        '}' +
+      '</style>' +
+      '<div id="_bky-root"></div>';
     document.body.appendChild(v);
     return v;
   }
