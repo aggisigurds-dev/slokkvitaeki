@@ -223,8 +223,13 @@
       '#_app-hdr .nm{font-size:16px;font-weight:800;flex:1;display:flex;align-items:center;gap:8px}',
       '#_app-hdr button{font:inherit;font-size:13px;font-weight:700;height:34px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.14);color:#fff;cursor:pointer}',
       // Bottom nav = 3-column grid (2 rows for up to 6 pages), bigger thumb targets.
-      '#_app-nav{position:fixed;bottom:0;left:0;right:0;z-index:2147481001;display:grid;grid-template-columns:repeat(3,1fr);gap:7px;background:#0c0d10;border-top:1px solid #26262c;padding:9px 9px calc(9px + env(safe-area-inset-bottom,0px));box-shadow:0 -3px 14px rgba(0,0,0,.35)}',
-      '#_app-nav button{min-width:0;background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.66);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:9px 3px;border-radius:13px;min-height:64px;text-align:center;line-height:1.15;overflow:hidden}',
+      // 2026-07-19: EIN skrunanleg lína (ekki 3-dálka grind sem vafðist í 2
+      // raðir — neðri röðin faldist á bak við home-strikuna á síma svo aðeins
+      // 3 flipar sáust). flex:1 0 78px → fáir flipar fylla breiddina, margir
+      // haldast í einni röð og skrunast lárétt (sama og Verkborð-lausnin).
+      '#_app-nav{position:fixed;bottom:0;left:0;right:0;z-index:2147481001;display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:7px;background:#0c0d10;border-top:1px solid #26262c;padding:9px 9px calc(9px + env(safe-area-inset-bottom,0px));box-shadow:0 -3px 14px rgba(0,0,0,.35)}',
+      '#_app-nav::-webkit-scrollbar{display:none}',
+      '#_app-nav button{flex:1 0 78px;min-width:78px;background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.66);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:9px 3px;border-radius:13px;min-height:64px;text-align:center;line-height:1.15;overflow:hidden}',
       '#_app-nav button .e{font-size:25px;line-height:1}',
       '#_app-nav button.on{color:#fff;background:rgba(255,255,255,.08)}',
       // external-page iframe host (sits between the header and the bottom nav)
