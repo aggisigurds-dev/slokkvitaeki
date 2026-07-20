@@ -901,7 +901,8 @@
       const digits = q.replace(/\D/g, '');
       const cos = await Counter.loadCompanies();
       // Guard against a newer query having replaced this one mid-await.
-      if (String(Counter.search || '').trim() !== q) return;
+      // NB counterRender passes a lower-cased q, so compare case-insensitively.
+      if (String(Counter.search || '').trim().toLowerCase() !== q.toLowerCase()) return;
       const ql = q.toLowerCase();
       let hits = cos.filter(c =>
         String(c.nafn || '').toLowerCase().includes(ql) ||
