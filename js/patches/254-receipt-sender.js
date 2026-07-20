@@ -146,9 +146,21 @@
               '<input id="_rs-subj" type="text" value="' + esc(o.subject || '') + '" style="' + I + '"></div>' +
             '<div><label style="' + L + '">Skilaboð — má breyta og bæta við</label>' +
               '<textarea id="_rs-body" rows="11" style="' + I + ';resize:vertical;line-height:1.5;font-size:13px">' + esc(o.bodyText || '') + '</textarea></div>' +
-            '<div style="font-size:11.5px;color:#64748b;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px">' +
-              '📎 Viðhengi: <b>' + esc(o.attachmentName || 'ekkert') + '</b>' +
-            '</div>' +
+            // Tvær leiðir fyrir viðhengi: (a) FAST viðhengi (attachmentName) eða
+            // (b) VAL með hökum (attachmentChoices) — t.d. Kröfu yfirlit þar sem
+            // notandinn velur reikning og/eða úttektarskýrslu.
+            (Array.isArray(o.attachmentChoices) && o.attachmentChoices.length
+              ? '<div style="font-size:12px;color:#334155;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:9px 11px">' +
+                  '<div style="font-weight:700;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">📎 Viðhengi</div>' +
+                  o.attachmentChoices.map((c, i) =>
+                    '<label style="display:flex;align-items:center;gap:8px;padding:3px 0;cursor:' + (c.disabled ? 'not-allowed' : 'pointer') + ';opacity:' + (c.disabled ? '.5' : '1') + '">' +
+                      '<input type="checkbox" class="_rs-att-choice" data-i="' + i + '"' + (c.checked && !c.disabled ? ' checked' : '') + (c.disabled ? ' disabled' : '') + ' style="width:15px;height:15px;cursor:inherit">' +
+                      '<span>' + esc(c.label) + (c.disabled ? ' <i style="color:#94a3b8">(ekki til)</i>' : '') + '</span>' +
+                    '</label>').join('') +
+                '</div>'
+              : '<div style="font-size:11.5px;color:#64748b;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px">' +
+                  '📎 Viðhengi: <b>' + esc(o.attachmentName || 'ekkert') + '</b>' +
+                '</div>') +
             '<div id="_rs-err" style="display:none;font-size:12px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 10px"></div>' +
           '</div>' +
           '<div style="padding:12px 18px;border-top:1px solid #e2e8f0;display:flex;gap:8px;justify-content:flex-end;background:#f8fafc">' +
@@ -178,7 +190,17 @@
           // Viðhengið er byggt hér (getur þurft að teikna PDF) svo ritillinn
           // opnist STRAX og notandinn bíði ekki eftir teikningu að óþörfu.
           let atts = o.attachments || [];
-          if (typeof o.buildAttachments === 'function') atts = await o.buildAttachments();
+          if (Array.isArray(o.attachmentChoices) && o.attachmentChoices.length) {
+            // Byggja AÐEINS hökuðu viðhengin (hvert getur þurft að teikna/sækja PDF).
+            const picked = [...dlg.querySelectorAll('._rs-att-choice:checked')].map(cb => o.attachmentChoices[+cb.dataset.i]);
+            atts = [];
+            for (const c of picked) {
+              try { const a = await c.build(); if (a) atts.push(a); }
+              catch (e) { fail('Gat ekki búið til viðhengi (' + esc(c.label) + '): ' + ((e && e.message) || e)); return; }
+            }
+          } else if (typeof o.buildAttachments === 'function') {
+            atts = await o.buildAttachments();
+          }
           const resp = await fetch(GMAIL_SEND_API, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -296,7 +318,20 @@
   }
   window.AppMail = { send: appSend };
 
-  window.ReceiptSender = { send, sendDoc, compose, status, standardText };
+  // Teiknar reikning sölu sem base64-PDF viðhengi — fyrir attachmentChoices
+  // (t.d. Kröfu yfirlit „📧 Senda"). Skilar null ef ekki hægt.
+  async function invoiceAttachment(saleId) {
+    const sb = SB();
+    if (!sb || !window.UttektInvoicePdf || typeof UttektInvoicePdf.buildInvoiceBlob !== 'function') return null;
+    const r = await sb.from('solur').select('*').eq('id', saleId).single();
+    if (r.error || !r.data) return null;
+    const sale = r.data;
+    const co = await resolveCustomer(sale);
+    const blob = await UttektInvoicePdf.buildInvoiceBlob(sale, co);
+    return { filename: 'Reikningur ' + (sale.num || '') + '.pdf', content: await blobToBase64(blob) };
+  }
+
+  window.ReceiptSender = { send, sendDoc, compose, status, standardText, invoiceAttachment };
   console.log('[patch-254] ReceiptSender v2 installed (Gmail /api/gmail-send + ritill)');
 })();
 /* === END RECEIPT SENDER === */

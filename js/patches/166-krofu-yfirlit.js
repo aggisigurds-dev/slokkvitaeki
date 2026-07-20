@@ -918,6 +918,34 @@
     main.querySelectorAll('._ky-view-invoice').forEach(b => {
       b.addEventListener('click', () => openInvoice(b.dataset.id));
     });
+    // 📧 Senda — opnar póst-ritilinn (patch 254) með hökum fyrir reikning og/eða
+    // úttektarskýrslu + breytanlegan staðlaðan texta. Sent gegnum Gmail.
+    main.querySelectorAll('._ky-email').forEach(b => {
+      b.addEventListener('click', async () => {
+        const s = (_state.all || []).find(x => String(x.id) === String(b.dataset.id));
+        if (!s) return;
+        if (!window.ReceiptSender || !ReceiptSender.compose) {
+          if (window.Toast && Toast.show) Toast.show('Póst-ritillinn hlóðst ekki — endurhladdu síðunni.');
+          return;
+        }
+        const res = resolveSkyrsla(s);
+        const nr = s.num || '';
+        const email = await emailForSale(s);
+        ReceiptSender.compose({
+          title: 'Senda — ' + (s.customer_nafn || ''),
+          to: email,
+          subject: 'Reikningur ' + nr + ' — Slökkvitæki ehf',
+          bodyText: ReceiptSender.standardText('reikningur', { nafn: s.customer_nafn || '', nr: nr }),
+          attachmentChoices: [
+            { label: 'Reikningur ' + nr + ' (PDF)', checked: true,
+              build: () => ReceiptSender.invoiceAttachment(s.id) },
+            { label: 'Úttektarskýrsla' + (res.year ? ' ' + res.year : ''),
+              checked: res.found, disabled: !res.found,
+              build: () => skyrslaAttachment(res) },
+          ],
+        });
+      });
+    });
     main.querySelectorAll('._ky-nyjan').forEach(b => {
       b.addEventListener('click', () => openNewSaleFor(b.dataset.kt, b.dataset.nafn));
     });
@@ -1263,6 +1291,48 @@
     }
     throw new Error('Skjalið fannst ekki.');
   }
+  // Úttektarskýrsla sölu → viðhengi ({url} eða {driveId}) fyrir 📧 Senda-gluggann.
+  async function skyrslaAttachment(res) {
+    if (!res || !res.found) return null;
+    const fn = 'Úttektarskýrsla' + (res.year ? ' ' + res.year : '') + '.pdf';
+    const getUrl = window.CompanyAttachments && CompanyAttachments.getPublicUrl;
+    if (res.kind === 'att' && res.att && res.att.path && getUrl) {
+      const url = await CompanyAttachments.getPublicUrl(res.att.path);
+      return url ? { filename: fn, url: url } : null;
+    }
+    if (res.kind === 'doc' && res.doc) {
+      if (res.doc.storage_path && getUrl) {
+        const url = await CompanyAttachments.getPublicUrl(res.doc.storage_path);
+        if (url) return { filename: fn, url: url };
+      }
+      if (res.doc.drive_file_id) return { filename: fn, driveId: res.doc.drive_file_id };
+    }
+    return null;
+  }
+
+  // Netfang kúnnans til að forfylla Senda-gluggann (má alltaf breyta þar).
+  async function emailForSale(s) {
+    const SB = getSB(); if (!SB) return '';
+    const kt = String((s && s.customer_kt) || '').replace(/\D/g, '');
+    if (kt.length === 10 && kt !== '9999999999') {
+      const d = kt.slice(0, 6) + '-' + kt.slice(6);
+      for (const t of ['fyrirtaeki', 'vidskiptavinir']) {
+        try {
+          const r = await SB.from(t).select('netfang').or('kennitala.eq.' + kt + ',kennitala.eq.' + d)
+            .not('netfang', 'is', null).limit(1).maybeSingle();
+          if (r && r.data && r.data.netfang) return String(r.data.netfang).trim();
+        } catch (_) {}
+      }
+    }
+    if (s && s.customer_id) {
+      try {
+        const r = await SB.from('fyrirtaeki').select('netfang').eq('id', s.customer_id).maybeSingle();
+        if (r && r.data && r.data.netfang) return String(r.data.netfang).trim();
+      } catch (_) {}
+    }
+    return '';
+  }
+
   // 📄 Skýrsla takki í kyAbtn-röðinni: GRÆNN (filled) þegar skýrsla ársins er
   // til → opnar hana; grár „vantar" annars (smellur = toast, ekkert meira).
   function skyrslaBtnFor(s) {
@@ -1359,6 +1429,7 @@
             ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', 'Krafa send', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
             ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', 'Greitt', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
             ${kyAbtn('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', 'Reikning', '#2f5fe0', 'Skoða / prenta reikning', false)}
+            ${kyAbtn('_ky-email', 'data-id="' + s.id + '"', '📧', 'Senda', '#0f766e', 'Senda reikning og/eða úttektarskýrslu í tölvupósti', false)}
             ${kyAbtn('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', 'Breyta', '#c2410c', 'Opna í sölu-editor', false)}
             ${kyAbtn('_ky-kredit', 'data-id="' + s.id + '"', '↩', 'Bakfæra', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
             ${s.dk_invoice_id ? kyAbtn('_ky-afturkalla', 'data-id="' + s.id + '"', '⊘', 'Afturkalla', '#b45309', 'Afturkalla kröfuna í Payday (fella niður kröfu + reikning)', false) : ''}
@@ -1524,6 +1595,7 @@
                   ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', 'Krafa send', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
                   ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', 'Greitt', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
                   ${kyAbtn('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', 'Reikning', '#2f5fe0', 'Skoða / prenta reikning', false)}
+                  ${kyAbtn('_ky-email', 'data-id="' + s.id + '"', '📧', 'Senda', '#0f766e', 'Senda reikning og/eða úttektarskýrslu í tölvupósti', false)}
                   ${kyAbtn('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', 'Breyta', '#c2410c', 'Opna í sölu-editor', false)}
                   ${kyAbtn('_ky-kredit', 'data-id="' + s.id + '"', '↩', 'Bakfæra', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
             ${s.dk_invoice_id ? kyAbtn('_ky-afturkalla', 'data-id="' + s.id + '"', '⊘', 'Afturkalla', '#b45309', 'Afturkalla kröfuna í Payday (fella niður kröfu + reikning)', false) : ''}
