@@ -38,13 +38,23 @@
     const out = []; let from = 0; for (;;) { const r = await mk(from, from + 999); const d = (r && r.data) || []; out.push(...d); if (d.length < 1000) break; from += 1000; } return out;
   }
 
+  // Fyrirtæki í brunakerfis-þjónustu skv. AppSettings-kortinu (líka þau sem eiga
+  // enga skýrslu enn → „Nýtt" bíður fyrstu skoðunar).
+  function serviceMapIds() {
+    try {
+      const m = (window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_customers')) || {};
+      return Object.keys(m).filter(k => !!m[k]).map(k => +k).filter(Boolean);
+    } catch (_) { return []; }
+  }
+
   // ── gögn ────────────────────────────────────────────────────────────────────
   async function load() {
     const sb = SB(); if (!sb) return [];
     const docs = await fetchAll((from, to) => sb.from('customer_documents')
       .select('fyrirtaeki_id,year,drive_file_id,storage_path,doc_date')
       .eq('doc_type', 'brunakerfi').not('fyrirtaeki_id', 'is', null).range(from, to));
-    const ids = [...new Set(docs.map(d => d.fyrirtaeki_id).filter(Boolean))];
+    const mapIds = serviceMapIds();
+    const ids = [...new Set([...docs.map(d => d.fyrirtaeki_id), ...mapIds].filter(Boolean))];
     let cos = [];
     if (ids.length) {
       const chunks = [];
@@ -70,7 +80,16 @@
       if (m) r.months[y] = m;
       if (+y > r.latest) { r.latest = +y; r.latestMonth = m || r.months[y] || 0; }
     });
-    return Object.values(byCo);
+    // Þjónustu-fyrirtæki sem eiga ENGA skýrslu enn → bæta við sem „Nýtt".
+    mapIds.forEach(id => {
+      if (byCo[id] || !coMap[id]) return;
+      const c = coMap[id];
+      byCo[id] = { id: c.id, nafn: c.nafn || '', address: c.heimilisfang || '', simi: c.simi || c.farsimi || '',
+        netfang: c.netfang || '', tengilidur: c['tengiliður'] || '', years: {}, months: {}, count: 0, latest: 0, latestMonth: 0 };
+    });
+    const out = Object.values(byCo);
+    out.forEach(r => { r.isNew = r.count === 0; });   // engin skýrsla = bíður fyrstu skoðunar
+    return out;
   }
 
   // ── röðun ───────────────────────────────────────────────────────────────────
@@ -88,7 +107,8 @@
     if (q) arr = arr.filter(r => (r.nafn + ' ' + r.address + ' ' + r.tengilidur + ' ' + r.simi + ' ' + r.netfang).toLowerCase().indexOf(q) !== -1);
     else if (state.month >= 1 && state.month <= 12) arr = arr.filter(r => r.latestMonth === state.month);
     if (state.filter === 'done') arr = arr.filter(r => !!r.years[String(NOW)]);
-    else if (state.filter === 'pending') arr = arr.filter(r => !r.years[String(NOW)]);
+    else if (state.filter === 'pending') arr = arr.filter(r => !r.years[String(NOW)] && !r.isNew);
+    else if (state.filter === 'new') arr = arr.filter(r => r.isNew);
     const cmp = CMP[state.sortCol] || CMP.name;
     arr.sort(cmp);
     if (state.sortDir === 'desc') arr.reverse();
@@ -125,12 +145,13 @@
     const all = _rows || [];
     const doneNow = all.filter(r => !!r.years[String(NOW)]).length;
     const totalReports = all.reduce((s, r) => s + r.count, 0);
+    const newCount = all.filter(r => r.isNew).length;
 
     // mánaðar-teljarar
     const mc = {}; all.forEach(r => { if (r.latestMonth) mc[r.latestMonth] = (mc[r.latestMonth] || 0) + 1; });
 
     const card = (label, val, sub, tone) => {
-      const tones = { blue: ['#1e3a8a', '#3b82f6'], green: ['#14532d', '#22c55e'], amber: ['#713f12', '#eab308'], grey: ['#1f2937', '#6b7280'] };
+      const tones = { blue: ['#1e3a8a', '#3b82f6'], green: ['#14532d', '#22c55e'], amber: ['#713f12', '#eab308'], grey: ['#1f2937', '#6b7280'], purple: ['#4c1d95', '#a855f7'] };
       const [bg, ac] = tones[tone] || tones.grey;
       return '<div style="flex:1 1 160px;min-width:150px;background:linear-gradient(160deg,' + bg + ',#0b0e13);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:14px 16px;box-shadow:0 6px 18px -8px rgba(0,0,0,.5)">' +
         '<div style="font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:' + ac + '">' + esc(label) + '</div>' +
@@ -160,12 +181,12 @@
           card('Fyrirtæki', all.length, 'í brunakerfis-þjónustu', 'blue') +
           card('Skýrslur alls', totalReports, 'úttektarskýrslur á skrá', 'grey') +
           card('Búið ' + NOW, doneNow, Math.round(doneNow / (all.length || 1) * 100) + '% af árinu', 'green') +
-          card('Eftir ' + NOW, all.length - doneNow, 'á eftir að skoða', 'amber') +
+          card('Nýtt', newCount, 'bíða fyrstu skoðunar', 'purple') +
         '</div>' +
 
         // stjórntæki
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">' +
-          chip('all', 'Allt') + chip('done', '✅ Búið ' + NOW) + chip('pending', '⏳ Eftir ' + NOW) +
+          chip('all', 'Allt') + chip('done', '✅ Búið ' + NOW) + chip('pending', '⏳ Eftir ' + NOW) + chip('new', '🆕 Nýtt') +
           '<input class="_bky-search" type="search" placeholder="🔍 Leita (nafn · heimilisfang · tengiliður)…" value="' + esc(state.search) + '" ' +
             'style="flex:1 1 200px;min-width:160px;margin-left:auto;padding:8px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#fff;font:inherit;font-size:13px">' +
         '</div>' +
@@ -197,8 +218,9 @@
 
   function rowHtml(r) {
     const last = r.latest ? (r.latest + (r.latestMonth ? ' · ' + MON[r.latestMonth - 1] : '')) : '—';
+    const newBadge = r.isNew ? '<span title="Bíður fyrstu skoðunar" style="margin-left:7px;padding:1px 7px;border-radius:99px;background:#7c3aed;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.03em;vertical-align:middle">NÝTT</span>' : '';
     return '<tr class="_bky-row" data-id="' + r.id + '" style="border-bottom:1px solid rgba(255,255,255,.05)">' +
-      '<td style="padding:9px 10px"><div style="font-weight:700;color:#f1f5f9;font-size:13px">' + esc(r.nafn) + '</div>' +
+      '<td style="padding:9px 10px"><div style="font-weight:700;color:#f1f5f9;font-size:13px">' + esc(r.nafn) + newBadge + '</div>' +
         (r.netfang ? '<div style="font-size:10.5px;color:#64748b;overflow:hidden;text-overflow:ellipsis;max-width:220px;white-space:nowrap">' + esc(r.netfang) + '</div>' : '') + '</td>' +
       YEARS.map(y => yearCell(r, y)).join('') +
       '<td style="padding:9px 10px;color:#94a3b8;font-size:12px">' + esc(r.address) + '</td>' +
