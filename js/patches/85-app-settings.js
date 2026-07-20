@@ -215,13 +215,23 @@
 
   async function save(patch) {
     if (!patch || typeof patch !== 'object') return false;
-    const next = deepMerge(JSON.parse(JSON.stringify(_settings)), patch);
     if (!window.DB || !window.DB.sb) {
-      _settings = next;
+      _settings = deepMerge(JSON.parse(JSON.stringify(_settings)), patch);
       notify();
       return false;
     }
     try {
+      // 2026-07-20: RE-SÆKJA nýjustu server-stillingar áður en við merge-um. Áður
+      // merge-uðum við ofan á staðbundnu (hugsanlega gömlu) `_settings` og upsert-uðum
+      // ALLAN blobbinn → breytingar frá öðru tæki (eða server-megin, t.d. SQL-lagfæringar
+      // á company_attachments / brunakerfi_customers) töpuðust þögult. Nú merge-um við
+      // ofan á FERSKA server-útgáfu svo lítill patch yfirskrifar ekki óskylt.
+      let base = _settings;
+      try {
+        const cur = await window.DB.sb.from('app_settings').select('settings').eq('id', 1).maybeSingle();
+        if (cur && cur.data && cur.data.settings) base = cur.data.settings;
+      } catch (_) {}
+      const next = deepMerge(JSON.parse(JSON.stringify(base)), patch);
       const r = await window.DB.sb
         .from('app_settings')
         .upsert({ id: 1, settings: next, updated_at: new Date().toISOString() }, { onConflict: 'id' });
