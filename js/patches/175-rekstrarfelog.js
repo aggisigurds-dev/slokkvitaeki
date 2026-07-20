@@ -736,13 +736,26 @@
     try {
       var coIds = blds.map(function(b){ var c=companyForBld(b); return c?c.id:null; }).filter(function(x){return x!=null;});
       if (coIds.length && window.DB && DB.sb) {
+        // Skýrslur sem appið/Cowork býr til liggja í Supabase Storage og bera AÐEINS
+        // `storage_path` (ekkert drive_file_id) — þær duttu því út úr árs-dálkunum
+        // og litu út fyrir að vanta. Taka báðar gerðir með (sbr. patch 187/199).
+        var _stUrl = function(p){
+          if (!p) return '';
+          var base = String(window.SUPABASE_URL||'').replace(/\/+$/,'');
+          if (!base) return '';
+          var s = String(p).replace(/^\/+/,'');
+          var i = s.indexOf('/'); if (i < 1) return '';
+          return base+'/storage/v1/object/public/'+s.slice(0,i)+'/'+s.slice(i+1).split('/').map(encodeURIComponent).join('/');
+        };
         var ld = await DB.sb.from('customer_documents')
-          .select('fyrirtaeki_id,year,drive_file_id,doc_type,is_duplicate')
+          .select('fyrirtaeki_id,year,drive_file_id,storage_path,doc_type,is_duplicate')
           .in('fyrirtaeki_id', coIds).eq('doc_type','uttektarskyrsla');
         (ld.data||[]).forEach(function(d){
-          if (d.is_duplicate || !d.drive_file_id || !d.year) return;
+          if (d.is_duplicate || !d.year) return;
+          var u = d.drive_file_id ? 'https://drive.google.com/file/d/' + d.drive_file_id + '/view' : _stUrl(d.storage_path);
+          if (!u) return;
           var k = String(d.fyrirtaeki_id);
-          (liveDocs[k] = liveDocs[k] || {})[String(d.year)] = 'https://drive.google.com/file/d/' + d.drive_file_id + '/view';
+          (liveDocs[k] = liveDocs[k] || {})[String(d.year)] = u;
         });
       }
     } catch(e) { console.warn('[rekstrarfelog] liveDocs', e); }

@@ -30,6 +30,22 @@
   function digits(s){ return String(s||'').replace(/\D/g,''); }
   function dash(kt){ var d=digits(kt); return d.length>=10 ? d.slice(0,6)+'-'+d.slice(6,10) : d; }
   function driveUrl(id){ return id ? 'https://drive.google.com/file/d/'+id+'/view' : ''; }
+  // Skjöl lifa á TVEIMUR stöðum: eldri/Drive-lesin skjöl bera `drive_file_id`, en
+  // skjöl sem appið sjálft býr til (patch 111/233 viðhengi, endurgerðar skýrslur úr
+  // Cowork o.fl.) liggja í Supabase Storage og bera AÐEINS `storage_path` — með
+  // bucket-nafninu fremst, t.d. "samningar/company_attachments/1611/skra.pdf".
+  // Þau höfðu engan hlekk og teiknuðust sem dautt, ósmellanlegt atriði (t.d. JDÓ
+  // úttektarskýrslan 2026). Bucket-arnir eru public svo bein slóð dugar — engin
+  // async signed-url þörf, sem heldur þessu samstillt við render-inn.
+  function storageUrl(p){
+    if(!p) return '';
+    var base = (window.SUPABASE_URL||'').replace(/\/+$/,'');
+    if(!base) return '';
+    var s = String(p).replace(/^\/+/,'');
+    var i = s.indexOf('/'); if(i < 1) return '';
+    return base+'/storage/v1/object/public/'+s.slice(0,i)+'/'+s.slice(i+1).split('/').map(encodeURIComponent).join('/');
+  }
+  function docUrl(d){ return d ? (driveUrl(d.drive_file_id) || storageUrl(d.storage_path)) : ''; }
   var NOW = new Date().getFullYear();
 
   function getCompanyId(){
@@ -59,7 +75,7 @@
   }
   async function fetchDocs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,invoice_number,amount,doc_date,notes,fyrirtaeki_id').eq('customer_base_id', baseId);
+    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,fyrirtaeki_id').eq('customer_base_id', baseId);
       return r.data||[]; }catch(e){ return []; }
   }
   // Payday-kröfur kúnnans (eftir kt) úr speglinum payday_invoices_slokk. Margar
@@ -173,7 +189,7 @@
     return nm || ('Skoðun'+(d.year?(' '+d.year):''));
   }
   function repDocChip(d){
-    var u=driveUrl(d.drive_file_id), full=docName(d);
+    var u=docUrl(d), full=docName(d);
     var disp=full.length>46?full.slice(0,44)+'…':full;
     var ico = d.doc_type==='brunakerfi' ? '🔥' : '📄';
     var chip = u ? '<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="'+esc(full)+' — opna í Drive">'+ico+' '+esc(disp)+'</a>'
@@ -181,7 +197,7 @@
     return docWrap(chip, d.id);
   }
   function invDocChip(d){
-    var u=driveUrl(d.drive_file_id); var lab=invLabel(d.invoice_number);
+    var u=docUrl(d); var lab=invLabel(d.invoice_number);
     var chip;
     if(u){
       chip = '<a class="sk-doc inv" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna reikning í Drive">🧾 '+esc(lab)+'</a>';
@@ -285,7 +301,7 @@
     // ── samningur strip ──
     samn.sort(function(a,b){return (b.year||0)-(a.year||0);});
     var samnHtml = samn.map(function(s){
-      if(s.src==='doc'){ var u=driveUrl(s.d.drive_file_id); var lab='Samningur'+(s.year?(' '+s.year):'');
+      if(s.src==='doc'){ var u=docUrl(s.d); var lab='Samningur'+(s.year?(' '+s.year):'');
         return docWrap(u?'<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener">📑 '+esc(lab)+'</a>':'<span class="sk-doc rep">📑 '+esc(lab)+'</span>', s.d.id); }
       return '<button type="button" class="sk-doc rep" data-att="'+esc(s.a.id)+'" title="'+esc(s.a.name)+'">📑 Samningur'+(s.year?(' '+s.year):'')+'</button>';
     }).join('') + addChip('samningur','','+ samningur');
