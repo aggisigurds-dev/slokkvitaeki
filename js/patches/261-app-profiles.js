@@ -46,6 +46,9 @@
     { k: 'br-hreyfingar',    label: 'Hreyfingaryfirlit (Brunahólf)', short: 'Hreyf.', emoji: '📄', url: 'https://brunaholf.netlify.app/?embed=1#hreyfingaryfirlit' },
     { k: 'br-verkstadir',    label: 'Verkstaðir (Brunahólf)', short: 'Verkst.',  emoji: '🏗️', url: 'https://brunaholf.netlify.app/?embed=1#verkstadir' },
     { k: 'br-nlsh',          label: 'Landsspítalinn (Brunahólf)', short: 'NLSH', emoji: '🏥', url: 'https://brunaholf.netlify.app/?embed=1#nlsh' },
+    // Verkkaupar er SJÁLFSTÆÐ síða (ekki hash-flipi í index.html) — því bein slóð
+    // án ?embed=1#… . Hún er þegar app-útlit (eigin haus, engin hliðarstika).
+    { k: 'br-verkkaupar',    label: 'Verkkaupar (Brunahólf)', short: 'Verkkaupar', emoji: '🤝', url: 'https://brunaholf.netlify.app/verkkaupar.html' },
   ];
   var PAGE_BY_KEY = {}; PAGES.forEach(function (p) { PAGE_BY_KEY[p.k] = p; });
 
@@ -62,7 +65,7 @@
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#6d28d9', dark: '#4c1d95',
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
-      defaults: ['br-dagurinn', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting'] },
+      defaults: ['br-dagurinn', 'br-verkkaupar', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting'] },
     // Bílstjóri er STANDALONE: engin botn-nav-skel (patch 219 á heilan
     // læstan fullskjá). Kortið gefur bara Opna / Setja upp / Afrita hlekk —
     // engin „Síður í appinu"-listi. ?app=bilstjori ræsir læsta Bílstjórann.
@@ -120,20 +123,25 @@
   //   __brky1 (2026-07-08): br-krofuyfirlit — á eftir krofu-yfirlit
   //   __brtv1 (2026-07-08): br-maeting — aftast fyrir framan br-gerdreikninga
   //   __tvk1  (2026-07-20): thjonustuverk — á eftir arsskodun (ósk Agnars)
+  //   __vkp1  (2026-07-20): br-verkkaupar — á eftir br-dagurinn í BRUNAHÓLF-appinu
   (function () {
     try {
       var c = loadCfg(), changed = false;
-      function insertOnce(flag, key, afterKey) {
+      // appKey er valfrjálst og fellur aftur á 'fjarmal' svo eldri köllin séu óbreytt.
+      function insertOnce(flag, key, afterKey, appKey) {
+        appKey = appKey || 'fjarmal';
         if (c[flag]) return;
-        if (Array.isArray(c.fjarmal) && c.fjarmal.indexOf(key) === -1) {
-          var ki = c.fjarmal.indexOf(afterKey);
-          c.fjarmal.splice(ki === -1 ? c.fjarmal.length : ki + 1, 0, key);
+        var arr = c[appKey];
+        if (Array.isArray(arr) && arr.indexOf(key) === -1) {
+          var ki = arr.indexOf(afterKey);
+          arr.splice(ki === -1 ? arr.length : ki + 1, 0, key);
         }
         c[flag] = 1; changed = true;
       }
       insertOnce('__brky1', 'br-krofuyfirlit', 'krofu-yfirlit');
       insertOnce('__brtv1', 'br-maeting', 'vidskiptavinir');
       insertOnce('__tvk1',  'thjonustuverk', 'arsskodun');
+      insertOnce('__vkp1',  'br-verkkaupar', 'br-dagurinn', 'brunaholf');
       if (!changed) return;
       var s = JSON.stringify(c);
       try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
