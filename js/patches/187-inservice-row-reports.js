@@ -35,18 +35,61 @@
   // skýrslan úr customer_documents (fyrirtaeki_id → ár, sama uppspretta og
   // „Skjöl & viðhengi" á kúnnasíðunni) alltaf tekin fyrst, og kt-víði
   // hlekkurinn er AÐEINS notaður þegar kt-in á einn stað (ótvírætt).
+  // Bein slóð á skjal í Supabase Storage. `storage_path` ber bucket-nafnið fremst
+  // ("samningar/company_attachments/1611/skra.pdf"); bucket-arnir eru public svo
+  // bein slóð dugar (engin async signed-url, sem heldur þessu samstillt við render).
+  function storageUrl(p){
+    if (!p) return '';
+    const base = String(window.SUPABASE_URL || '').replace(/\/+$/, '');
+    if (!base) return '';
+    const s = String(p).replace(/^\/+/, '');
+    const i = s.indexOf('/'); if (i < 1) return '';
+    return base + '/storage/v1/object/public/' + s.slice(0, i) + '/' +
+           s.slice(i + 1).split('/').map(encodeURIComponent).join('/');
+  }
+
+  // PostgREST skilar að HÁMARKI 1000 röðum sjálfgefið. Fyrirspurnirnar hér að neðan
+  // höfðu enga blaðsíðuflettingu, svo þær þögðu og skáru sig við 1000 — af 1690
+  // úttektarskýrslum með fyrirtaeki_id duttu ~690 út og árs-dálkurinn sýndi
+  // ranglega „vantar" (t.d. JDÓ ehf. 2026, sem situr í röð ~1687). Sækjum allar
+  // síður. `mk` býr til NÝJAN query-builder í hvert sinn (þeir eru einnota).
+  async function fetchAll(mk){
+    const PAGE = 1000; let from = 0, out = [];
+    for (;;) {
+      const r = await mk().range(from, from + PAGE - 1);
+      if (r.error) break;
+      const rows = r.data || [];
+      out = out.concat(rows);
+      if (rows.length < PAGE) break;
+      from += PAGE;
+      if (from > 60000) break;            // öryggisventill
+    }
+    return out;
+  }
+
   let locMap = null, locLoading = false;
   async function loadLoc(){
     if (locLoading || locMap) return; locLoading = true;
     try {
       const sb = window.DB && DB.sb; if (!sb) { locLoading = false; return; }
-      const r = await sb.from('customer_documents').select('fyrirtaeki_id,year,drive_file_id')
-        .eq('doc_type','uttektarskyrsla').not('fyrirtaeki_id','is',null).not('drive_file_id','is',null);
+      // Skýrslur liggja á TVEIMUR stöðum: Drive-lesnar bera `drive_file_id`, en þær
+      // sem appið/Cowork býr til (t.d. úttektarskýrsla búin til í úttektinni sjálfri)
+      // liggja í Supabase Storage og bera AÐEINS `storage_path`. Fyrirspurnin síaði
+      // þær BEINT ÚT (.not drive_file_id is null) svo árs-dálkurinn sýndi grátt „·"
+      // þótt skýrslan væri til — t.d. JDÓ ehf. 2026. Nú fylgja báðar gerðir með.
+      const rows = await fetchAll(() => sb.from('customer_documents')
+        .select('fyrirtaeki_id,year,drive_file_id,storage_path')
+        .eq('doc_type','uttektarskyrsla').not('fyrirtaeki_id','is',null)
+        .or('drive_file_id.not.is.null,storage_path.not.is.null'));
       const map = {};
-      (r.data || []).forEach(x => {
-        if (x.fyrirtaeki_id == null || !x.year || !x.drive_file_id) return;
+      rows.forEach(x => {
+        if (x.fyrirtaeki_id == null || !x.year) return;
+        const u = x.drive_file_id
+          ? 'https://drive.google.com/file/d/' + x.drive_file_id + '/view'
+          : storageUrl(x.storage_path);
+        if (!u) return;
         const k = String(x.fyrirtaeki_id);
-        (map[k] = map[k] || {})[String(x.year)] = 'https://drive.google.com/file/d/' + x.drive_file_id + '/view';
+        (map[k] = map[k] || {})[String(x.year)] = u;
       });
       locMap = map;
       // rebuild the year cells so location-precise links replace kt-wide ones
@@ -60,10 +103,10 @@
     if (reikLoading || reikMap) return; reikLoading = true;
     try {
       const sb = window.DB && DB.sb; if (!sb) { reikLoading = false; return; }
-      const r = await sb.from('customer_documents').select('customer_base_id,year')
-        .eq('doc_type','reikningur').not('customer_base_id','is',null);
+      const reikRows = await fetchAll(() => sb.from('customer_documents').select('customer_base_id,year')
+        .eq('doc_type','reikningur').not('customer_base_id','is',null));
       const byBase = {};
-      (r.data || []).forEach(x => { if (x.customer_base_id != null && x.year) (byBase[x.customer_base_id] = byBase[x.customer_base_id] || new Set()).add(String(x.year)); });
+      reikRows.forEach(x => { if (x.customer_base_id != null && x.year) (byBase[x.customer_base_id] = byBase[x.customer_base_id] || new Set()).add(String(x.year)); });
       const ids = Object.keys(byBase);
       const map = {};
       for (let i = 0; i < ids.length; i += 500) {
