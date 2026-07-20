@@ -281,10 +281,44 @@
       </style>
       </head><body>
       ${labelHTML}
-      <script>setTimeout(()=>{ try { window.focus(); window.print(); } catch(e){} }, 250);</script>
+      <script>
+        (function(){
+          var done=false;
+          function go(){ if(done) return; done=true; try{ window.focus(); window.print(); }catch(e){} }
+          window.__qrPrint=go;
+          // Fire once the image has decoded (most reliable), else a timed fallback.
+          var img=document.querySelector('img');
+          if(img && !img.complete){ img.addEventListener('load',go); img.addEventListener('error',go); }
+          setTimeout(go, 400);
+        })();
+      </script>
       </body></html>
     `);
     win.document.close();
+    // Belt-and-suspenders: also drive print() from the OPENER once the popup's
+    // image has decoded. document.write'd about:blank popups sometimes never run
+    // (or lose) their inline print trigger in real Chrome — this is the reliable path.
+    triggerPrintWhenReady(win);
+  }
+
+  // Poll the popup until its image is decoded (or a timeout), then call print().
+  // Guards against the inline script having already fired via window.__qrPrint.
+  function triggerPrintWhenReady(win, tries) {
+    tries = tries || 0;
+    if (!win || win.closed) return;
+    let ready = false;
+    try {
+      const img = win.document && win.document.querySelector('img');
+      ready = !img || img.complete;
+    } catch (e) { /* cross-origin transient during write — retry */ }
+    if (ready) {
+      try {
+        if (typeof win.__qrPrint === 'function') { win.__qrPrint(); return; }
+        win.focus(); win.print();
+      } catch (e) { /* popup will fall back to its own inline trigger */ }
+      return;
+    }
+    if (tries < 40) setTimeout(() => triggerPrintWhenReady(win, tries + 1), 100);
   }
 
   // Print a calibration test pattern: corner markers + a centred crosshair so
@@ -345,10 +379,13 @@
           <div class="edge edge-l">L</div>
           <div class="edge edge-r">R</div>
         </div>
-        <script>setTimeout(()=>{ try { window.focus(); window.print(); } catch(e){} }, 250);</script>
+        <script>
+          (function(){ var d=false; function go(){ if(d)return; d=true; try{ window.focus(); window.print(); }catch(e){} } window.__qrPrint=go; setTimeout(go,400); })();
+        </script>
       </body></html>
     `);
     win.document.close();
+    triggerPrintWhenReady(win);
   }
   function buildPrintLabel({ qrDataUrl, name, phone, serial, extra }) {
     return `
