@@ -157,13 +157,16 @@
   const RAIL = { tilbod: '#2f5fe0', thjonusta: '#22b063', brunakerfi: '#df2c2c', rukkun: '#be123c', samskipti: '#e0a93e' };
   function railColor(r) { return RAIL[rowFlokk(r)] || '#8a929e'; }
   // Sýnileg merki raðar = merki notandans ∪ merki leidd af flokknum, í TAG_ORDER röð.
-  const FLOKK_TO_TAG = { tilbod: 'gera_tilbod', thjonusta: 'thjonusta', brunakerfi: 'brunakerfi', rukkun: 'eftir_ad_rukka', samskipti: 'senda_tolvupost' };
+  // 2026-07-20: ÁÐUR bætti þetta við merki sem var LEITT AF FLOKKNUM (tilbod →
+  // „Gera tilboð" o.s.frv.). Það þýddi að merki sem notandinn tók af í ritlinum
+  // POPPAÐI STRAX AFTUR upp á röðinni — hakið sagði AF en chippinn sagði Á, og
+  // ekki var hægt að fjarlægja t.d. „Gera tilboð" (kvörtun Agnars). Merkin eru nú
+  // AÐEINS raunveruleg merki raðarinnar, svo chipparnir og hökin segja það sama.
+  // Flokkurinn glatast ekki: hann fær sinn EIGIN chip á röðinni (flokkChip) — 68
+  // af 141 opnum röðum hafa aðeins flokk og engin merki, svo það mátti ekki hverfa.
   function dispTags(r) {
-    const set = {};
-    rowTags(r).forEach(t => { set[t] = 1; });
-    const f = FLOKK_TO_TAG[rowFlokk(r)];
-    if (f) set[f] = 1;
-    return TAG_ORDER.filter(t => set[t]);
+    const own = rowTags(r);
+    return TAG_ORDER.filter(t => own.indexOf(t) !== -1);
   }
   function dkChip(t, act, rid) {
     const d = TAGS[t]; if (!d) return '';
@@ -1118,11 +1121,13 @@
           (open ? renderEditor(r) : '') +
         '</div>' +
         '<div class="vb-colmerki" style="width:220px;flex:none;display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-end;align-content:flex-start">' +
+          // Flokkurinn fær sinn eigin (ljósa) chip svo hann sjáist án þess að þykjast
+          // vera merki — merkin hér fyrir aftan eru þau sem hökin í ritlinum stýra.
+          (rowFlokk(r) ? flokkChip(rowFlokk(r)) : '') +
           tags.map(t => dkChip(t)).join('') +
         '</div>' +
         '<div class="vb-acts" style="flex:none;display:flex;align-items:center;gap:12px;padding-top:1px">' +
-          (isPost(r) && isOpen(r) && !isArchived(r) ? '<span data-act="promote" data-id="' + esc(r.id) + '" title="Færa á verkefnalistann" ' +
-            'style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;white-space:nowrap;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)">📋 Færa</span>' : '') +
+          /* 2026-07-20 (ósk Agnars): græni „📋 Færa"-flýtitakkinn fjarlægður af röðinni. */
           (isArchived(r) && isOpen(r) ? '<span data-act="unarchive" data-id="' + esc(r.id) + '" title="Taka úr geymslu" ' +
             'style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fff,#e3e7ee);color:#3a4250;white-space:nowrap;cursor:pointer">↩ Út</span>' : '') +
           stadaPill(r) +
@@ -1187,17 +1192,20 @@
         // Reikninga-póstur (Claude semur uppkast → yfirfara → senda gegnum Resend).
         // Aðeins á póst-beiðnum sem eiga upprunapóst (channel_ref='email:<id>').
         (isEmailBeidni(r) ? '<button class="vb-btn" data-act="reply" data-id="' + esc(r.id) + '" title="Svara póstinum — Claude semur uppkast sem þú yfirferð og sendir">✉️ Svara</button>' : '') +
-        // Pósthólf ↔ Verkefni: færa yfir / til baka (ósk Agnars 2026-07-10).
-        (isEmailBeidni(r) && isOpen(r) ? (isPost(r)
-          ? '<button class="vb-btn" data-act="promote" data-id="' + esc(r.id) + '" style="border-color:#16a34a55;background:#f0fdf4;color:#166534">📋 Færa á verkefnalistann</button>'
-          : '<button class="vb-btn" data-act="demote" data-id="' + esc(r.id) + '" title="Setja aftur í pósthólfið">↩ Í pósthólfið</button>') : '') +
+        // Pósthólf ↔ Verkefni. 2026-07-20 (ósk Agnars): „📋 Færa á verkefnalistann"
+        // fjarlægt úr ritlinum — of margir hnappar. „↩ Í pósthólfið" heldur sér svo
+        // hægt sé að bakka færslu sem er þegar komin á listann.
+        (isEmailBeidni(r) && isOpen(r) && !isPost(r)
+          ? '<button class="vb-btn" data-act="demote" data-id="' + esc(r.id) + '" title="Setja aftur í pósthólfið">↩ Í pósthólfið</button>' : '') +
         (r.customer_nafn ? '<button class="vb-btn" data-act="history" data-id="' + esc(r.id) + '" title="Öll gögn kúnnans — sölur, Payday-kröfur, skýrslur og samningar (sami gluggi og á Sölu)">🧾 Sjá fyrri viðskipti</button>' : '') +
         // 📞 Hringja: fyrsta símanúmerið úr titli/nótum verður tel:-hlekkur.
         (function () {
           const m = String((r.title || '') + ' ' + (r.notes || '')).match(/\b[4-8]\d{2}[- ]?\d{4}\b/);
           return m ? '<a class="vb-btn" data-act="noexpand" href="tel:' + m[0].replace(/\D/g, '') + '" style="text-decoration:none;display:inline-flex;align-items:center">📞 Hringja ' + m[0] + '</a>' : '';
         })() +
-        (isPost(r) && !isArchived(r) && isOpen(r) ? '<button class="vb-btn" data-act="archive" data-id="' + esc(r.id) + '" title="Setja í geymslu (📦 Eldra) — ekkert eytt">📦 Í geymslu</button>' : '') +
+        /* 2026-07-20 (ósk Agnars): „📦 Í geymslu" fjarlægt úr ritlinum.
+           Aðgerðin sjálf (data-act="archive") lifir áfram — „↩ Út" á geymdum
+           röðum notar hana — svo ekkert er eytt og hægt er að bakka. */
         '<span style="flex:1"></span>' +
         '<button class="vb-btn red" data-act="del" data-id="' + esc(r.id) + '">🗑 Eyða</button>' +
         (isOpen(r) ? '<button class="vb-btn green" data-act="done" data-id="' + esc(r.id) + '">✓ Klára verk</button>' : '') +
