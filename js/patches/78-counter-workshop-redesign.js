@@ -106,6 +106,10 @@
           `<input id="counter-search" type="text" autocomplete="off" placeholder="Leita að viðskiptavin sem sækir…" value="${esc(Counter.search || '')}" oninput="Counter.setSearch(this.value)" style="width:100%;padding:8px 30px 8px 32px;border:1px solid var(--brd,#cbd5e1);border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box;background:#fff">` +
           (q ? '<button onclick="Counter.setSearch(\'\')" title="Hreinsa" style="position:absolute;right:7px;top:50%;transform:translateY(-50%);border:none;background:#e2e8f0;color:#475569;width:20px;height:20px;border-radius:50%;cursor:pointer;font-size:12px;line-height:1">✕</button>' : '') +
         '</div>' +
+        // 2026-07-20: powerful lookup — when the query matches no active verk,
+        // search our company DB (nafn/kt) and fall back to RSK kt-lookup, so the
+        // customer can be found even if they have no verk on the board yet.
+        (q && all.length === 0 ? '<div id="counter-lookup" style="flex-basis:100%;font-size:12.5px;color:#64748b;padding:2px 2px 0">🔎 Leita…</div>' : '') +
       '</div>' +
       // Legacy IDs kept alive (hidden) so editjobbutton.js, searchbox.js work
       '<div style="display:none"><div id="job-list"></div><div id="sidebar-ready"></div></div>' +
@@ -130,6 +134,8 @@
         '</div>' +
       '</div>';
     container.innerHTML = html;
+
+    if (q && all.length === 0 && Counter.runLookup) Counter.runLookup(q);
 
     const ab = document.getElementById('alert-badge');
     if (ab && DB.getOverdue && DB.getDue) ab.textContent = DB.getOverdue().length + DB.getDue().length;
@@ -858,6 +864,95 @@
       Counter.render();
       const inp = document.getElementById('counter-search');
       if (inp) { inp.focus(); const n = inp.value.length; try { inp.setSelectionRange(n, n); } catch (_) {} }
+    };
+    // 2026-07-20: „öflug leit" — finna viðskiptavin þótt hann eigi ekkert verk á
+    // borðinu. Leitar fyrst INNAN KERFIS (fyrirtæki+viðskiptavinir+base, nafn/kt)
+    // eins og sölusíðan, annars RSK-uppfletting (/api/kt-lookup). Niðurstaðan
+    // býður „➕ Ný verk" með nafni/kt forfylltu.
+    Counter._companies = null;
+    Counter.loadCompanies = async function() {
+      if (Counter._companies) return Counter._companies;
+      const SB = (window.DB && DB.sb) || (window.supabase && window.SUPABASE_URL && window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY));
+      if (!SB) { Counter._companies = []; return []; }
+      try {
+        const [fy, vk, cb] = await Promise.all([
+          SB.from('fyrirtaeki').select('nafn,kennitala,simi,heimilisfang').is('deleted_at', null).range(0, 2999),
+          SB.from('vidskiptavinir').select('nafn,kennitala,simi,heimilisfang').range(0, 2999),
+          SB.from('customers_base').select('nafn,kennitala').range(0, 2999)
+        ]);
+        const seen = new Map();
+        const push = c => {
+          if (!c || !c.nafn) return;
+          const k = String(c.nafn).trim().toLowerCase();
+          const ex = seen.get(k);
+          if (!ex || (!ex.kennitala && c.kennitala) || (!ex.simi && c.simi)) {
+            seen.set(k, { nafn: c.nafn, kennitala: c.kennitala || (ex && ex.kennitala) || '', simi: c.simi || (ex && ex.simi) || '', heimilisfang: c.heimilisfang || (ex && ex.heimilisfang) || '' });
+          }
+        };
+        (fy.data || []).forEach(push); (vk.data || []).forEach(push); (cb.data || []).forEach(push);
+        Counter._companies = Array.from(seen.values());
+      } catch (_) { Counter._companies = []; }
+      return Counter._companies;
+    };
+    Counter.runLookup = async function(rawQ) {
+      const q = String(rawQ || '').trim();
+      const box = document.getElementById('counter-lookup');
+      if (!box || !q) return;
+      const digits = q.replace(/\D/g, '');
+      const cos = await Counter.loadCompanies();
+      // Guard against a newer query having replaced this one mid-await.
+      // NB counterRender passes a lower-cased q, so compare case-insensitively.
+      if (String(Counter.search || '').trim().toLowerCase() !== q.toLowerCase()) return;
+      const ql = q.toLowerCase();
+      let hits = cos.filter(c =>
+        String(c.nafn || '').toLowerCase().includes(ql) ||
+        (digits.length >= 6 && String(c.kennitala || '').replace(/\D/g, '').includes(digits)));
+      hits = hits.slice(0, 6);
+      const esc2 = s => esc(String(s == null ? '' : s));
+      const btn = (nafn, simi, kt, tag) =>
+        '<button type="button" onclick="' +
+          esc('Counter.newVerkFor(' + JSON.stringify(nafn) + ',' + JSON.stringify(simi || '') + ',' + JSON.stringify(kt || '') + ')') + '" ' +
+          'style="display:flex;align-items:center;gap:8px;width:100%;text-align:left;margin-top:4px;padding:7px 10px;border:1px solid #d7dbe3;border-radius:9px;background:#fff;cursor:pointer;font:inherit;font-size:12.5px">' +
+          '<span style="flex:none">' + tag + '</span>' +
+          '<span style="min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><b style="color:#0f172a">' + esc2(nafn) + '</b>' +
+            (kt ? ' <span style="color:#94a3b8">· ' + esc2(kt) + '</span>' : '') +
+            (simi ? ' <span style="color:#94a3b8">· ☎ ' + esc2(simi) + '</span>' : '') + '</span>' +
+          '<span style="flex:none;color:#2563eb;font-weight:700">➕ Ný verk</span>' +
+        '</button>';
+      if (hits.length) {
+        box.innerHTML = '<div style="margin-top:2px;color:#475569">🏢 Í kerfinu — ekkert verk á borðinu:</div>' +
+          hits.map(c => btn(c.nafn, c.simi, c.kennitala, '🏢')).join('');
+        return;
+      }
+      // Ekki í kerfinu → RSK-uppfletting ef kennitala (10 tölustafir)
+      if (digits.length === 10) {
+        box.innerHTML = '<span style="color:#d97706">🔎 Fletti upp í RSK…</span>';
+        fetch('/.netlify/functions/kt-lookup?kt=' + digits)
+          .then(r => r.ok ? r.json() : Promise.reject(new Error('x')))
+          .then(d => {
+            if (String(Counter.search || '').replace(/\D/g, '') !== digits) return;
+            if (!d || !d.nafn) throw new Error('x');
+            const addr = [d.heimilisfang, d.postnumer, d.stadur].filter(Boolean).join(' ');
+            box.innerHTML = '<div style="margin-top:2px;color:#475569">🔎 RSK fyrirtækjaskrá:</div>' +
+              btn(d.nafn, '', digits, '🆕') +
+              (addr ? '<div style="color:#94a3b8;font-size:11.5px;padding:2px 2px 0">' + esc2(addr) + '</div>' : '');
+          })
+          .catch(() => { if (document.getElementById('counter-lookup')) box.innerHTML = '<span style="color:#94a3b8">Fannst hvorki í verkum, kerfi né RSK.</span>'; });
+        return;
+      }
+      box.innerHTML = '<span style="color:#94a3b8">Fannst ekki í verkum né í kerfinu.' +
+        (digits.length >= 1 && digits.length < 10 ? ' Sláðu inn 10 stafa kennitölu fyrir RSK-uppflettingu.' : '') + '</span>';
+    };
+    // Opna „Ný verk" með nafni/síma/kt forfylltu (kt fer í nótur verksins).
+    Counter.newVerkFor = function(nafn, simi, kt) {
+      if (!Counter.openNew) return;
+      Counter.openNew();
+      setTimeout(() => {
+        const nm = document.getElementById('nj-name'); if (nm) nm.value = nafn || '';
+        const ph = document.getElementById('nj-phone'); if (ph && simi) ph.value = simi;
+        const nt = document.getElementById('nj-notes'); if (nt && kt) nt.value = (nt.value ? nt.value + ' · ' : '') + 'kt ' + kt;
+        if (nm) nm.focus();
+      }, 60);
     };
     Counter.openJobModal  = function() { const m = document.getElementById('counter-detail-modal'); if (m) m.style.display = 'flex'; };
     Counter.closeJobModal = function() { const m = document.getElementById('counter-detail-modal'); if (m) m.style.display = 'none'; Counter.sel = null; };
