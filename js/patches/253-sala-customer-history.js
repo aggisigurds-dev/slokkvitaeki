@@ -377,8 +377,14 @@
           : '<div style="background:#fff;border:1px dashed #e2e8f0;border-radius:10px;padding:16px;text-align:center;color:#94a3b8;font-size:12px;font-style:italic">Engin skjöl skráð fyrir ' + yStr + '.</div>');
       holder.querySelector('#_sch-yrs')?.addEventListener('click', () => { showAll = !showAll; render(); });
       // data-v ber nú FULLA slóð (Drive eða Supabase Storage) — sjá _url hér að ofan.
-      holder.querySelectorAll('._sch-open').forEach(b => b.addEventListener('click', () =>
-        window.open(b.dataset.v, '_blank', 'noopener')));
+      // Anchor-smellur í stað window.open: window.open('noopener') er stundum
+      // þöglað niður af popup-vörnum (þá „gerðist ekkert" við Opna-smell).
+      holder.querySelectorAll('._sch-open').forEach(b => b.addEventListener('click', () => {
+        const u = b.dataset.v; if (!u) return;
+        const a = document.createElement('a');
+        a.href = u; a.target = '_blank'; a.rel = 'noopener';
+        document.body.appendChild(a); a.click(); a.remove();
+      }));
       holder.querySelectorAll('._sch-att').forEach(b => b.addEventListener('click', () => {
         const [coId, path] = String(b.dataset.v).split('|');
         const f = ((window.CompanyAttachments && CompanyAttachments.list && CompanyAttachments.list(coId)) || []).find(x => x.path === path);
