@@ -32,6 +32,7 @@
     { k: 'sala',             label: 'Sala',                  emoji: '💵' },
     { k: 'verkbord',         label: 'Verkefnalisti',         short: 'Verkefni',   emoji: '📋' },
     { k: 'arsskodun',        label: 'Fyrirtæki í þjónustu',  short: 'Þjónusta',   emoji: '🏢' },
+    { k: 'thjonustuverk',    label: 'Þjónustuverk',          short: 'Þj.verk',    emoji: '🛠' },
     // Brunahólf-síður — birtar inni í appinu í iframe (deep-link á tab-ið).
     { k: 'br-gerdreikninga', label: 'Gerð reikninga',        short: 'Reikn.gerð', emoji: '🧾', url: 'https://brunaholf.netlify.app/?embed=1#gerdreikninga' },
     { k: 'br-vinnubok',      label: 'Vinnubók',              emoji: '📓', url: 'https://brunaholf.netlify.app/?embed=1#vinnubok' },
@@ -46,7 +47,7 @@
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0e7a4f', dark: '#06402b',
       manifest: '/manifest-fjarmal.json', home: 'krofu-yfirlit',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
-      defaults: ['krofu-yfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'br-maeting', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
+      defaults: ['krofu-yfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'br-maeting', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
     { key: 'verkefni', emoji: '📋', name: 'Verkefnalisti', color: '#3b82f6', dark: '#1d4ed8',
       manifest: '/manifest-verkefni.json', home: 'verkbord',
       blurb: 'Verkborð — beiðnir, verkefni og eftirfylgni',
@@ -107,6 +108,7 @@
   // troði sér inn aftur; ný uppsetning fær þær úr defaults).
   //   __brky1 (2026-07-08): br-krofuyfirlit — á eftir krofu-yfirlit
   //   __brtv1 (2026-07-08): br-maeting — aftast fyrir framan br-gerdreikninga
+  //   __tvk1  (2026-07-20): thjonustuverk — á eftir vidskiptavinir (ósk Agnars)
   (function () {
     try {
       var c = loadCfg(), changed = false;
@@ -120,6 +122,7 @@
       }
       insertOnce('__brky1', 'br-krofuyfirlit', 'krofu-yfirlit');
       insertOnce('__brtv1', 'br-maeting', 'vidskiptavinir');
+      insertOnce('__tvk1',  'thjonustuverk', 'vidskiptavinir');
       if (!changed) return;
       var s = JSON.stringify(c);
       try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
