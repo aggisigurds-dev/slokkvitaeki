@@ -8,18 +8,25 @@
  *
  * 2026-07-20 — TVENNT LAGAÐ (kvörtun Agnars: „það virkar ekki að senda"):
  *
- * 1) RANGUR PÓSTÞJÓNN. v1 sendi á /api/graph-send (Microsoft Graph). Sá
- *    endapunktur svarar `{"configured": false}` — Azure-appið var aldrei sett
- *    upp. Kallandinn (253) faldi villuna í `catch(_) {}` og sagði bara „ekki
- *    tengt enn", svo þetta leit út eins og hálfkarað fídus. Nú er sent á
- *    /api/email-send (Resend) sem er ÞEGAR í notkun annars staðar í appinu
- *    (Reikninga-póstur 240, skýrslupóstur 176, allt Brunahólf).
+ * 1) RANGUR PÓSTÞJÓNN — TVISVAR. v1 sendi á /api/graph-send (Microsoft Graph),
+ *    sem svarar `{"configured": false}`: Azure-appið var aldrei sett upp.
+ *    Kallandinn (253) faldi villuna í `catch(_) {}` og sagði bara „ekki tengt
+ *    enn", svo þetta leit út eins og hálfkarað fídus.
+ *      Fyrsta lagfæring beindi þessu á /api/email-send (Resend) — en Resend
+ *    svarar 403 „The eldklar.is domain is not verified" á ALLAR sendingar frá
+ *    eldklar.is. DNS-in liggja hjá Cloudflare og eru ekki aðgengileg, svo sú
+ *    leið er lokuð (staðfest með lifandi prófun 2026-07-20).
+ *      NÚVERANDI LEIÐ: /api/gmail-send hjá brunahólfi — sent gegnum GMAIL úr
+ *    tengda pósthólfinu sjálfu. Engin DNS-vinna, réttur sendandi, og pósturinn
+ *    lendir í „Sent"-möppunni (það gerði Resend-póstur aldrei).
+ *    NB: hvert pósthólf þarf að tengja UPP Á NÝTT einu sinni eftir að
+ *    gmail.send-skópinu var bætt við — gömul token bera það ekki.
  *
  * 2) ENGINN TEXTI SÝNILEGUR. v1 spurði bara um netfang og sendi fastan texta.
  *    Nú opnast ritill með efni + SKILABOÐUM sem sjást og má breyta/bæta við
  *    áður en sent er (ósk Agnars).
  *
- * Viðhengi nýta það sem /api/email-send styður nú þegar:
+ * Viðhengi (sömu snið og email-send tók, svo kallendur þurftu ekki að breytast):
  *   { filename, content }  base64 (reikningur teiknaður í vafranum, patch 233)
  *   { filename, driveId }  skjal í Drive — fallið sækir það server-megin
  *   { filename, path }     bein slóð (Supabase Storage)
@@ -33,11 +40,27 @@
   function ktDashed(d) { d = String(d || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : d; }
   function toast(m) { if (window.Toast && Toast.show) Toast.show(m); }
 
-  // Sendandi verður að vera á staðfestu Resend-léni (eldklar.is) — sama og 240 notar.
+  // Sent gegnum GMAIL (brunahólf `gmail-send.js`), ekki Resend — sjá hausinn.
+  // Sendandi verður að vera pósthólf sem er OAuth-tengt með gmail.send heimild.
+  const GMAIL_SEND_API = 'https://brunaholf.netlify.app/api/gmail-send';
+  // „Nafn <netfang>" → „netfang" (Gmail þarf að vita hvaða pósthólf sendir).
+  function addrOf(s) { const m = String(s || '').match(/<([^>]+)>/); return (m ? m[1] : String(s || '')).trim(); }
+  // AÐEINS VIRK PÓSTHÓLF. `reikningar@eldklar.is` var gamla sjálfgefna gildið en
+  // það pósthólf er EKKI til (Agnar 2026-07-20) — svör og skoppaður póstur fóru
+  // því út í tómið. Ekki setja það aftur inn.
+  const FROM_CHOICES = [
+    'Slökkvitæki ehf <eldklar@eldklar.is>',
+    'Slökkvitæki ehf <bokhald@eldklar.is>',
+  ];
   function fromAddr() {
-    try { return localStorage.getItem('email_from') || 'Slökkvitæki ehf <reikningar@eldklar.is>'; }
-    catch (_) { return 'Slökkvitæki ehf <reikningar@eldklar.is>'; }
+    try {
+      const saved = localStorage.getItem('slokk_send_from');
+      // Dautt pósthólf er aldrei gilt, líka þótt það sitji í localStorage.
+      if (saved && /@eldklar\.is>?\s*$/.test(saved) && !/reikningar@/.test(saved)) return saved;
+    } catch (_) {}
+    return FROM_CHOICES[0];
   }
+  function rememberFrom(v) { try { localStorage.setItem('slokk_send_from', v); } catch (_) {} }
 
   function blobToBase64(blob) {
     return new Promise((res, rej) => {
@@ -113,6 +136,10 @@
         '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,0.35);width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 48px);display:flex;flex-direction:column;overflow:hidden">' +
           '<div style="padding:14px 18px;background:linear-gradient(135deg,#0f766e,#0d5b54);color:#fff;font-size:15px;font-weight:700">📧 ' + esc(o.title || 'Senda í tölvupósti') + '</div>' +
           '<div style="padding:16px 18px;overflow:auto;display:flex;flex-direction:column;gap:12px">' +
+            '<div><label style="' + L + '">Sent frá — svör berast hingað</label>' +
+              '<select id="_rs-from" style="' + I + '">' +
+                FROM_CHOICES.map(f => '<option value="' + esc(f) + '"' + (f === fromAddr() ? ' selected' : '') + '>' + esc(f) + '</option>').join('') +
+              '</select></div>' +
             '<div><label style="' + L + '">Netfang viðtakanda</label>' +
               '<input id="_rs-to" type="email" value="' + esc(o.to || '') + '" placeholder="netfang@daemi.is" style="' + I + '"></div>' +
             '<div><label style="' + L + '">Efni</label>' +
@@ -120,8 +147,7 @@
             '<div><label style="' + L + '">Skilaboð — má breyta og bæta við</label>' +
               '<textarea id="_rs-body" rows="11" style="' + I + ';resize:vertical;line-height:1.5;font-size:13px">' + esc(o.bodyText || '') + '</textarea></div>' +
             '<div style="font-size:11.5px;color:#64748b;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px">' +
-              '📎 Viðhengi: <b>' + esc(o.attachmentName || 'ekkert') + '</b><br>' +
-              '<span style="color:#94a3b8">Sent frá ' + esc(fromAddr()) + '</span>' +
+              '📎 Viðhengi: <b>' + esc(o.attachmentName || 'ekkert') + '</b>' +
             '</div>' +
             '<div id="_rs-err" style="display:none;font-size:12px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 10px"></div>' +
           '</div>' +
@@ -131,7 +157,8 @@
           '</div>' +
         '</div>';
       document.body.appendChild(dlg);
-      const to = dlg.querySelector('#_rs-to'), subj = dlg.querySelector('#_rs-subj'),
+      const fromEl = dlg.querySelector('#_rs-from'),
+            to = dlg.querySelector('#_rs-to'), subj = dlg.querySelector('#_rs-subj'),
             bodyEl = dlg.querySelector('#_rs-body'), errEl = dlg.querySelector('#_rs-err'),
             go = dlg.querySelector('#_rs-go');
       const done = v => { dlg.remove(); resolve(v); };
@@ -143,6 +170,8 @@
       go.addEventListener('click', async () => {
         const addr = (to.value || '').trim();
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(addr)) { to.style.borderColor = '#dc2626'; to.focus(); return; }
+        const from = (fromEl && fromEl.value) || fromAddr();
+        rememberFrom(from);          // valið helst til næstu sendingar
         errEl.style.display = 'none';
         go.disabled = true; go.textContent = 'Sendi…';
         try {
@@ -150,10 +179,11 @@
           // opnist STRAX og notandinn bíði ekki eftir teikningu að óþörfu.
           let atts = o.attachments || [];
           if (typeof o.buildAttachments === 'function') atts = await o.buildAttachments();
-          const resp = await fetch('/api/email-send', {
+          const resp = await fetch(GMAIL_SEND_API, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              from: fromAddr(),
+              account: addrOf(from),      // hvaða tengt pósthólf sendir
+              from: from,                 // „Nafn <netfang>" eins og það birtist
               to: [addr],
               subject: (subj.value || '').trim() || 'Skjal frá Slökkvitæki ehf',
               html: textToHtml(bodyEl.value || ''),
@@ -162,11 +192,11 @@
           });
           const j = await resp.json().catch(() => ({}));
           if (!resp.ok || j.error) {
-            const msg = j.message || j.detail || j.error || ('HTTP ' + resp.status);
-            fail(String(msg).indexOf('API_KEY_MISSING') >= 0
-              ? 'Resend-lykill er ekki stilltur á vefþjóninum (RESEND_API_KEY).'
-              : 'Sending mistókst: ' + msg);
+            fail(j.message || j.error || ('Sending mistókst (HTTP ' + resp.status + ')'));
             return;
+          }
+          if (j.warnings && j.warnings.length) {
+            toast('⚠️ Sent, en viðhengi vantaði: ' + j.warnings.join(', '));
           }
           toast('✅ Sent á ' + addr);
           done(true);
@@ -209,7 +239,7 @@
     if (!opts.driveId && !opts.url) { toast('Engin skrá fylgir þessari færslu — ekkert að senda.'); return false; }
     const att = opts.driveId
       ? { filename: opts.filename || 'skjal.pdf', driveId: opts.driveId }
-      : { filename: opts.filename || 'skjal.pdf', path: opts.url };
+      : { filename: opts.filename || 'skjal.pdf', url: opts.url };
     const isRep = opts.kind === 'skyrsla';
     return compose({
       title: isRep ? 'Senda úttektarskýrslu' : 'Senda reikning',
@@ -222,15 +252,17 @@
     });
   }
 
+  // Hvaða pósthólf geta raunverulega sent (þ.e. bera gmail.send heimildina).
   async function status() {
-    try { const r = await fetch('/api/email-send', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    try {
+      const r = await fetch(GMAIL_SEND_API + '?status=1');
       const j = await r.json().catch(() => ({}));
-      // 'Missing from/to/subject' þýðir að fallið er uppi OG lykillinn er til.
-      return { configured: j.error !== 'API_KEY_MISSING' };
-    } catch (_) { return { configured: false }; }
+      const ok = (j.accounts || []).filter(a => a.can_send);
+      return { configured: ok.length > 0, accounts: j.accounts || [] };
+    } catch (_) { return { configured: false, accounts: [] }; }
   }
 
   window.ReceiptSender = { send, sendDoc, compose, status, standardText };
-  console.log('[patch-254] ReceiptSender v2 installed (Resend /api/email-send + ritill)');
+  console.log('[patch-254] ReceiptSender v2 installed (Gmail /api/gmail-send + ritill)');
 })();
 /* === END RECEIPT SENDER === */
