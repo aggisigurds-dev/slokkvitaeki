@@ -712,16 +712,19 @@
     });
     // 2026-06-12: fjölval — smellur togglar mánuðinn án þess að afvelja hina;
     // „Allir" hreinsar valið. ✓ sýnir valda mánuði.
+    // 2026-07-20 (#0592087b): hækka birtuskil — tómir (0 fyrirtæki) mánaðar-
+    // chippar voru #cbd5e1 texti á hvítu (grár-á-gráu, ólæsilegt). Nú #64748b
+    // texti + #cbd5e1 rammi svo þeir séu læsilegir en samt greinilega deyfðir.
     function moBtn(mn, label, cnt) {
       const sel = mn === 0 ? _state.months.length === 0 : _state.months.includes(mn);
       const has = cnt == null || cnt > 0;
       return '<button data-month="' + mn + '" class="_lds-mo" type="button" style="padding:5px 10px;border:1px solid ' +
-        (sel ? '#0f172a' : (has ? '#cbd5e1' : '#e2e8f0')) + ';background:' + (sel ? '#0f172a' : '#fff') +
-        ';color:' + (sel ? '#fff' : (has ? '#0f172a' : '#cbd5e1')) + ';border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">' +
-        (sel && mn !== 0 ? '✓ ' : '') + esc(label) + (cnt ? ' <span style="opacity:.6;font-weight:500">' + cnt + '</span>' : '') + '</button>';
+        (sel ? '#0f172a' : (has ? '#94a3b8' : '#cbd5e1')) + ';background:' + (sel ? '#0f172a' : '#fff') +
+        ';color:' + (sel ? '#fff' : (has ? '#0f172a' : '#64748b')) + ';border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">' +
+        (sel && mn !== 0 ? '✓ ' : '') + esc(label) + (cnt ? ' <span style="opacity:.75;font-weight:600">' + cnt + '</span>' : '') + '</button>';
     }
     row.innerHTML =
-      '<span style="font-size:10.5px;font-weight:700;color:#64748b;text-transform:uppercase;padding-right:3px">Mánuður:</span>' +
+      '<span style="font-size:10.5px;font-weight:800;color:#475569;text-transform:uppercase;padding-right:3px">Mánuður:</span>' +
       moBtn(0, 'Allir', null) +
       MONTHS_IS_SHORT.map((m, i) => moBtn(i + 1, m, counts[i + 1] || 0)).join('');
     row.querySelectorAll('._lds-mo').forEach(b => b.addEventListener('click', () => {
