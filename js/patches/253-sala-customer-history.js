@@ -168,7 +168,21 @@
     });
     const pdOnly = pdRows.filter(p => !linkedPd.has(p));
 
-    if (!rows.length && !pdOnly.length) { body.innerHTML = '<div style="padding:34px;text-align:center;color:#94a3b8;font-style:italic">Engin fyrri kaup fundust hjá þessum viðskiptavini.</div>'; return; }
+    // 2026-07-20: ÁÐUR skrifaði þetta „Engin fyrri kaup" yfir ALLT bodyið og hætti.
+    // Þar með hvarf líka #_sch-docs-hólfið, svo loadDocs() fann ekkert að fylla og
+    // SKJÖLIN hlóðust aldrei. Kúnnar sem eru rukkaðir í dkPlus/Stólpa (t.d. Center
+    // Hótel: 0 POS-sölur en 33 úttektarskýrslur + 22 reikningar) litu því út fyrir
+    // að eiga enga sögu. Nú höldum við hólfinu og segjum satt: engar POS-sölur,
+    // en skjölin fá að hlaðast fyrir neðan.
+    if (!rows.length && !pdOnly.length) {
+      body.innerHTML =
+        '<div style="padding:18px 4px 6px;text-align:center;color:#94a3b8;font-style:italic">' +
+          'Engar sölur skráðar í kassakerfinu hjá þessum viðskiptavini.' +
+        '</div>' +
+        '<div id="_sch-docs"><div style="padding:16px 4px;color:#94a3b8;font-size:12px">Sæki skjöl…</div></div>';
+      loadDocs(idty, body).catch(() => { const h = body.querySelector('#_sch-docs'); if (h) h.innerHTML = ''; });
+      return;
+    }
 
     // Fléttað í eina tímaröð (nýjast efst).
     const merged = rows.map(s => ({ t: s.created_at || '', h: rowHtml(s) }))
@@ -204,6 +218,20 @@
   // þegar kúnninn er valinn í Sölu á að sjást ÖLL sagan hans, líka skjölin.
   // Tveir brunnar: customer_documents (Drive-skráin, per staðsetningu/kt) og
   // CompanyAttachments (viðhengin í Supabase, patch 111/233 sjálfvirku PDF-in).
+  // Skjöl lifa á tveimur stöðum: Drive (drive_file_id) og Supabase Storage
+  // (storage_path, með bucket-nafninu fremst). Bucket-arnir eru public svo bein
+  // slóð dugar. Skilar '' þegar hvorugt er til → engin „Opna"-hnappur.
+  function driveUrl(id) { return id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view' : ''; }
+  function storageUrl(p) {
+    if (!p) return '';
+    const base = String(window.SUPABASE_URL || '').replace(/\/+$/, '');
+    if (!base) return '';
+    const s = String(p).replace(/^\/+/, '');
+    const i = s.indexOf('/'); if (i < 1) return '';
+    return base + '/storage/v1/object/public/' + s.slice(0, i) + '/' +
+           s.slice(i + 1).split('/').map(encodeURIComponent).join('/');
+  }
+
   async function loadDocs(idty, body) {
     const sb = SB();
     const holder = body.querySelector('#_sch-docs');
@@ -233,10 +261,18 @@
       if (coIds.length) ors.push('fyrirtaeki_id.in.(' + coIds.join(',') + ')');
       if (baseIds.length) ors.push('customer_base_id.in.(' + baseIds.join(',') + ')');
       const r = await sb.from('customer_documents')
-        .select('id,doc_type,year,drive_file_id,invoice_number,doc_date,amount,fyrirtaeki_id')
+        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,doc_date,amount,fyrirtaeki_id')
         .or(ors.join(','))
         .in('doc_type', ['uttektarskyrsla', 'reikningur']);
-      docs = (r.data || []).filter(x => x.drive_file_id && String(x.drive_file_id).indexOf('sb:') !== 0);
+      // 2026-07-20: ÁÐUR var krafist `drive_file_id`, svo skjöl í Supabase Storage
+      // OG reikningar sem eru aðeins skráning (nr./dags./upphæð úr kröfuyfirliti,
+      // engin PDF-skrá) duttu alveg út. Hjá Center Hótel þýddi það að 21 af 22
+      // reikningum sást ekki. Nú fylgja allir með; `_url` er tómt þegar engin skrá
+      // er til og röðin birtist þá án „opna"-hnapps í stað þess að hverfa.
+      docs = (r.data || []).map(x => {
+        const drv = x.drive_file_id && String(x.drive_file_id).indexOf('sb:') !== 0 ? x.drive_file_id : null;
+        return Object.assign({}, x, { _url: drv ? driveUrl(drv) : storageUrl(x.storage_path) });
+      });
     } catch (_) {}
 
     // 2) Viðhengin (CompanyAttachments — sjálfvirku PDF-in úr patch 233 o.fl.)
@@ -264,7 +300,10 @@
     const attYear = a => { const y = a.f && a.f.year; if (y && y !== '0') return String(y); const m = String((a.f && a.f.name) || '').match(/\b(20[2-3][0-9])\b/); return m ? m[1] : ''; };
     const docKind = a => { const k = a.f && a.f.kind; if (k === 'skyrsla' || k === 'reikningur') return k; const n = String((a.f && a.f.name) || '').toLowerCase(); if (/reikning|\br-?\d/.test(n)) return 'reikningur'; if (/úttekt|uttekt|skýrsl|skyrsl/.test(n)) return 'skyrsla'; return 'annad'; };
 
-    let showAll = false;
+    // 2026-07-20: sýnum ÖLL ár strax. Sagan er megintilgangur gluggans og kúnnar
+    // eins og Center Hótel eiga 55 skjöl frá 2022-2026 — árs-sían faldi þau öll
+    // nema þess árs. „Sýna bara <ár>" er áfram til að þrengja.
+    let showAll = true;
     function render() {
       const yStr = String(curYear);
       const d2 = showAll ? docs : docs.filter(x => String(x.year || '') === yStr);
@@ -277,8 +316,8 @@
       d2.forEach(x => items.push({
         sort: (x.doc_type === 'uttektarskyrsla' ? '0' : '1') + (x.year || ''),
         html: docRow('🗂', x.doc_type === 'uttektarskyrsla' ? 'Úttektarskýrsla' : (x.invoice_number ? 'Reikningur ' + esc(x.invoice_number) : 'Reikningur'),
-          (x.year || '') + (x.doc_date ? ' · ' + esc(fmtDate(x.doc_date)) : '') + (x.amount ? ' · ' + esc(fmtKr(x.amount)) : '') + ' · Drive',
-          '_sch-drive', x.drive_file_id)
+          (x.year || '') + (x.doc_date ? ' · ' + esc(fmtDate(x.doc_date)) : '') + (x.amount ? ' · ' + esc(fmtKr(x.amount)) : '') + (x._url ? '' : ' · aðeins skráning'),
+          x._url ? '_sch-open' : '', x._url || '')
       }));
       a2.forEach(a => items.push({
         sort: (docKind(a) === 'skyrsla' ? '0' : docKind(a) === 'reikningur' ? '1' : '2') + attYear(a),
@@ -300,8 +339,9 @@
           ? '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">' + items.map(i => i.html).join('') + '</div>'
           : '<div style="background:#fff;border:1px dashed #e2e8f0;border-radius:10px;padding:16px;text-align:center;color:#94a3b8;font-size:12px;font-style:italic">Engin skjöl skráð fyrir ' + yStr + '.</div>');
       holder.querySelector('#_sch-yrs')?.addEventListener('click', () => { showAll = !showAll; render(); });
-      holder.querySelectorAll('._sch-drive').forEach(b => b.addEventListener('click', () =>
-        window.open('https://drive.google.com/file/d/' + encodeURIComponent(b.dataset.v) + '/view', '_blank')));
+      // data-v ber nú FULLA slóð (Drive eða Supabase Storage) — sjá _url hér að ofan.
+      holder.querySelectorAll('._sch-open').forEach(b => b.addEventListener('click', () =>
+        window.open(b.dataset.v, '_blank', 'noopener')));
       holder.querySelectorAll('._sch-att').forEach(b => b.addEventListener('click', () => {
         const [coId, path] = String(b.dataset.v).split('|');
         const f = ((window.CompanyAttachments && CompanyAttachments.list && CompanyAttachments.list(coId)) || []).find(x => x.path === path);
@@ -316,7 +356,11 @@
         '<span style="font-size:16px">' + icon + '</span>' +
         '<div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + label + '</div>' +
         '<div style="font-size:10.5px;color:#94a3b8">' + sub + '</div></div>' +
-        '<button class="' + cls + '" data-v="' + esc(String(val)) + '" type="button" style="padding:4px 10px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;white-space:nowrap">Opna</button>' +
+        // Enginn „Opna"-hnappur þegar engin skrá er að baki (t.d. reikningur sem er
+        // aðeins skráning úr kröfuyfirliti) — betra en hnappur sem gerir ekkert.
+        (cls
+          ? '<button class="' + cls + '" data-v="' + esc(String(val)) + '" type="button" style="padding:4px 10px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;white-space:nowrap">Opna</button>'
+          : '<span style="font-size:10.5px;color:#cbd5e1;white-space:nowrap">engin skrá</span>') +
       '</div>';
     }
     render();
