@@ -222,6 +222,26 @@
   // (storage_path, með bucket-nafninu fremst). Bucket-arnir eru public svo bein
   // slóð dugar. Skilar '' þegar hvorugt er til → engin „Opna"-hnappur.
   function driveUrl(id) { return id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view' : ''; }
+
+  // Netfang kúnnans til að forfylla ritilinn — má alltaf breyta í glugganum.
+  const _emailCache = {};
+  async function custEmail(idty) {
+    const kt = String((idty && idty.kt) || '').replace(/\D/g, '');
+    if (!kt || kt.length !== 10 || kt === '9999999999' || !DB.sb) return '';
+    if (_emailCache[kt] !== undefined) return _emailCache[kt];
+    let out = '';
+    try {
+      const ktd = kt.slice(0, 6) + '-' + kt.slice(6);
+      for (const t of ['fyrirtaeki', 'vidskiptavinir']) {
+        const r = await DB.sb.from(t).select('netfang')
+          .or('kennitala.eq.' + kt + ',kennitala.eq.' + ktd)
+          .not('netfang', 'is', null).limit(1).maybeSingle();
+        if (r && r.data && r.data.netfang) { out = String(r.data.netfang).trim(); break; }
+      }
+    } catch (_) {}
+    _emailCache[kt] = out;
+    return out;
+  }
   function storageUrl(p) {
     if (!p) return '';
     const base = String(window.SUPABASE_URL || '').replace(/\/+$/, '');
@@ -317,12 +337,29 @@
         sort: (x.doc_type === 'uttektarskyrsla' ? '0' : '1') + (x.year || ''),
         html: docRow('🗂', x.doc_type === 'uttektarskyrsla' ? 'Úttektarskýrsla' : (x.invoice_number ? 'Reikningur ' + esc(x.invoice_number) : 'Reikningur'),
           (x.year || '') + (x.doc_date ? ' · ' + esc(fmtDate(x.doc_date)) : '') + (x.amount ? ' · ' + esc(fmtKr(x.amount)) : '') + (x._url ? '' : ' · aðeins skráning'),
-          x._url ? '_sch-open' : '', x._url || '')
+          x._url ? '_sch-open' : '', x._url || '',
+          x._url ? {
+            kind: x.doc_type === 'uttektarskyrsla' ? 'skyrsla' : 'reikningur',
+            // Drive-skjöl fara sem driveId — /api/email-send sækir þau server-megin
+            // (Drive-skrár eru aðgangsstýrðar; Resend kemst ekki í þær af slóð einni).
+            driveId: (x.drive_file_id && String(x.drive_file_id).indexOf('sb:') !== 0) ? x.drive_file_id : '',
+            url: (x.drive_file_id && String(x.drive_file_id).indexOf('sb:') !== 0) ? '' : x._url,
+            filename: (x.doc_type === 'uttektarskyrsla' ? 'Úttektarskýrsla' : 'Reikningur' + (x.invoice_number ? ' ' + x.invoice_number : '')) +
+                      (x.year ? ' ' + x.year : '') + '.pdf',
+            ar: x.year || '', nr: x.invoice_number || '',
+          } : null)
       }));
       a2.forEach(a => items.push({
         sort: (docKind(a) === 'skyrsla' ? '0' : docKind(a) === 'reikningur' ? '1' : '2') + attYear(a),
         html: docRow(docKind(a) === 'skyrsla' ? '📄' : docKind(a) === 'reikningur' ? '🧾' : '📎',
-          esc((a.f && a.f.name) || 'Skjal'), (attYear(a) || '') + ' · Viðhengi', '_sch-att', a.coId + '|' + ((a.f && a.f.path) || ''))
+          esc((a.f && a.f.name) || 'Skjal'), (attYear(a) || '') + ' · Viðhengi', '_sch-att', a.coId + '|' + ((a.f && a.f.path) || ''),
+          {
+            kind: docKind(a) === 'skyrsla' ? 'skyrsla' : 'reikningur',
+            // Viðhengi liggja í `samningar`-bucketinu — slóðin er leyst við smell
+            // gegnum CompanyAttachments.getPublicUrl (getur verið undirrituð slóð).
+            att: (a.f && a.f.path) || '',
+            filename: (a.f && a.f.name) || 'skjal.pdf', ar: attYear(a) || '',
+          })
       }));
       f2.forEach(r => items.push({
         sort: '3' + fillYear(r),
@@ -340,8 +377,14 @@
           : '<div style="background:#fff;border:1px dashed #e2e8f0;border-radius:10px;padding:16px;text-align:center;color:#94a3b8;font-size:12px;font-style:italic">Engin skjöl skráð fyrir ' + yStr + '.</div>');
       holder.querySelector('#_sch-yrs')?.addEventListener('click', () => { showAll = !showAll; render(); });
       // data-v ber nú FULLA slóð (Drive eða Supabase Storage) — sjá _url hér að ofan.
-      holder.querySelectorAll('._sch-open').forEach(b => b.addEventListener('click', () =>
-        window.open(b.dataset.v, '_blank', 'noopener')));
+      // Anchor-smellur í stað window.open: window.open('noopener') er stundum
+      // þöglað niður af popup-vörnum (þá „gerðist ekkert" við Opna-smell).
+      holder.querySelectorAll('._sch-open').forEach(b => b.addEventListener('click', () => {
+        const u = b.dataset.v; if (!u) return;
+        const a = document.createElement('a');
+        a.href = u; a.target = '_blank'; a.rel = 'noopener';
+        document.body.appendChild(a); a.click(); a.remove();
+      }));
       holder.querySelectorAll('._sch-att').forEach(b => b.addEventListener('click', () => {
         const [coId, path] = String(b.dataset.v).split('|');
         const f = ((window.CompanyAttachments && CompanyAttachments.list && CompanyAttachments.list(coId)) || []).find(x => x.path === path);
@@ -350,8 +393,30 @@
       holder.querySelectorAll('._sch-fill').forEach(b => b.addEventListener('click', () => {
         if (window.DocTemplates && DocTemplates.openFilled) DocTemplates.openFilled(b.dataset.v);
       }));
+      // 📧 Senda skjal — opnar ritilinn (patch 254) með stöðluðum texta sem má breyta.
+      holder.querySelectorAll('._sch-mail').forEach(b => b.addEventListener('click', async () => {
+        if (!window.ReceiptSender || !ReceiptSender.sendDoc) {
+          if (window.Toast && Toast.show) Toast.show('Póstsending ekki tilbúin — endurhladdu síðunni.');
+          return;
+        }
+        let m; try { m = JSON.parse(b.dataset.m || '{}'); } catch (_) { return; }
+        b.disabled = true;
+        try {
+          // Viðhengi úr `samningar`-bucketinu: slóðin er leyst hér (getur verið
+          // undirrituð og því tímabundin — sótt rétt fyrir sendingu).
+          if (m.att && !m.url) {
+            m.url = (window.CompanyAttachments && CompanyAttachments.getPublicUrl)
+              ? await CompanyAttachments.getPublicUrl(m.att) : '';
+          }
+          await ReceiptSender.sendDoc(Object.assign({}, m, {
+            nafn: idty.nafn || '', to: await custEmail(idty),
+          }));
+        } finally { b.disabled = false; }
+      }));
     }
-    function docRow(icon, label, sub, cls, val) {
+    // `mail` = JSON-lýsing á viðhenginu fyrir 📧-takkann (sjá _sch-mail hér að ofan).
+    // Sleppt þegar engin skrá er að baki — þá er ekkert að senda.
+    function docRow(icon, label, sub, cls, val, mail) {
       return '<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid #f1f5f9">' +
         '<span style="font-size:16px">' + icon + '</span>' +
         '<div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:600;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + label + '</div>' +
@@ -359,7 +424,8 @@
         // Enginn „Opna"-hnappur þegar engin skrá er að baki (t.d. reikningur sem er
         // aðeins skráning úr kröfuyfirliti) — betra en hnappur sem gerir ekkert.
         (cls
-          ? '<button class="' + cls + '" data-v="' + esc(String(val)) + '" type="button" style="padding:4px 10px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;white-space:nowrap">Opna</button>'
+          ? '<button class="' + cls + '" data-v="' + esc(String(val)) + '" type="button" style="padding:4px 10px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;white-space:nowrap">Opna</button>' +
+            (mail ? '<button class="_sch-mail" data-m="' + esc(JSON.stringify(mail)) + '" type="button" title="Senda í tölvupósti" style="padding:4px 9px;background:#fff;color:#0f766e;border:1px solid #99f6e4;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;white-space:nowrap">📧 Senda</button>' : '')
           : '<span style="font-size:10.5px;color:#cbd5e1;white-space:nowrap">engin skrá</span>') +
       '</div>';
     }
@@ -436,11 +502,16 @@
     try { SalaInvoice.renderFromSale(w, sale, cust); } catch (e) { alert('Villa: ' + (e.message || e)); }
   }
 
+  // 2026-07-20: `catch (_) {}` hér faldi ÖLL vandamál — sendingin datt þegjandi í
+  // gegn og notandinn fékk „ekki tengt enn"-skilaboð þótt hún hefði bara klikkað.
+  // Villan er nú sýnd; reikningurinn opnast aðeins þegar ritillinn er alls ekki til.
   async function sendReceipt(saleId) {
     if (window.ReceiptSender && typeof window.ReceiptSender.send === 'function') {
-      try { await window.ReceiptSender.send(saleId); return; } catch (_) {}
+      try { await window.ReceiptSender.send(saleId); }
+      catch (e) { if (window.Toast && Toast.show) Toast.show('Póstsending mistókst: ' + ((e && e.message) || e)); }
+      return;
     }
-    if (window.Toast && Toast.show) Toast.show('📧 Bein tölvupóstsending er ekki tengd enn — opna reikninginn til að prenta eða vista sem PDF.');
+    if (window.Toast && Toast.show) Toast.show('📧 Póst-ritillinn hlóðst ekki — opna reikninginn til að prenta eða vista sem PDF.');
     openInvoice(saleId);
   }
 
