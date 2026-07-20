@@ -1623,7 +1623,11 @@
     if (!(window.CompanyReportEmail && CompanyReportEmail.htmlToPdfBase64)) return null;
     const html = fillTemplate(t.html, Object.assign({}, rec.values || {}), { forPrint: true });
     const namer = String(rec.name || rec.template_name || t.name || 'Skýrsla').replace(/[\\/:*?"<>|]/g, '_') + '.pdf';
-    const b64 = await CompanyReportEmail.htmlToPdfBase64(html, namer);
+    // Heildar-tímamörk (30s) svo hnappurinn frjósi aldrei þótt html2canvas hiksti.
+    const b64 = await Promise.race([
+      CompanyReportEmail.htmlToPdfBase64(html, namer),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('PDF-teikning tók of langan tíma')), 30000)),
+    ]);
     return b64 ? { filename: namer, content: b64 } : null;
   }
 

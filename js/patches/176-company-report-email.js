@@ -50,7 +50,15 @@
     const imgs = Array.from(root.querySelectorAll('img'));
     return Promise.all(imgs.map(img =>
       (img.complete && img.naturalWidth) ? Promise.resolve()
-        : new Promise(res => { img.onload = img.onerror = () => res(); })
+        // 2026-07-20: kapp við tímamörk — án þess hékk PDF-teikningin ENDALAUST
+        // ef mynd (logo/undirskrift) hleðst aldrei (blokkuð/hæg slóð). Betra að
+        // halda áfram eftir 6s án myndarinnar en að frjósa „Sendi…" að eilífu.
+        : new Promise(res => {
+            let done = false;
+            const fin = () => { if (!done) { done = true; res(); } };
+            img.onload = img.onerror = fin;
+            setTimeout(fin, 6000);
+          })
     ));
   }
 
