@@ -51,12 +51,51 @@
         '<div style="font-size:10.5px;color:#94a3b8">' + esc(r.template_name || '') + (r.customer ? ' · ' + esc(r.customer) : '') + ' · ' + esc(fmtD(r.updated_at || r.created_at)) + '</div>' +
       '</div>' +
       '<button class="_ufs-open" data-fid="' + esc(r.id) + '" type="button" style="padding:4px 10px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;white-space:nowrap">📝 Opna</button>' +
+      '<button class="_ufs-send" data-fid="' + esc(r.id) + '" type="button" title="Senda skýrsluna í tölvupósti (PDF-viðhengi)" style="margin-left:6px;padding:4px 10px;background:#fff;color:#0f766e;border:1px solid #99f6e4;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;white-space:nowrap">📧 Senda</button>' +
     '</div>';
+  }
+  async function emailForKt(kt) {
+    const sb = (window.DB && DB.sb) || null;
+    const d = ktDigits(kt);
+    if (!sb || d.length !== 10 || d === '9999999999') return '';
+    const dd = d.slice(0, 6) + '-' + d.slice(6);
+    for (const t of ['fyrirtaeki', 'vidskiptavinir']) {
+      try {
+        const r = await sb.from(t).select('netfang').or('kennitala.eq.' + d + ',kennitala.eq.' + dd)
+          .not('netfang', 'is', null).limit(1).maybeSingle();
+        if (r && r.data && r.data.netfang) return String(r.data.netfang).trim();
+      } catch (_) {}
+    }
+    return '';
   }
   function wireOpen(root) {
     root.querySelectorAll('._ufs-open').forEach(b => b.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
       if (window.DocTemplates && DocTemplates.openFilled) DocTemplates.openFilled(b.dataset.fid);
+    }));
+    // 📧 Senda — teiknar vistuðu skýrsluna sem PDF og opnar póst-ritilinn (254).
+    root.querySelectorAll('._ufs-send').forEach(b => b.addEventListener('click', async e => {
+      e.preventDefault(); e.stopPropagation();
+      if (!window.ReceiptSender || !ReceiptSender.compose || !window.DocTemplates || !DocTemplates.buildFilledPdfBase64) {
+        alert('Póst-ritillinn hlóðst ekki — endurhladdu síðunni.'); return;
+      }
+      const rec = (listFilled() || []).find(x => String(x.id) === String(b.dataset.fid));
+      if (!rec) { alert('Skýrslan fannst ekki.'); return; }
+      const nafn = rec.customer || '';
+      const email = await emailForKt(rec.kennitala);
+      const heiti = rec.name || rec.template_name || 'Skýrsla';
+      ReceiptSender.compose({
+        title: 'Senda — ' + nafn,
+        to: email,
+        subject: heiti + (nafn ? ' — ' + nafn : '') + ' — Slökkvitæki ehf',
+        bodyText: ReceiptSender.standardText('skyrsla', { nafn: nafn }),
+        attachmentName: heiti + '.pdf',
+        buildAttachments: async () => {
+          const a = await DocTemplates.buildFilledPdfBase64(rec.id);
+          if (!a) throw new Error('Gat ekki teiknað PDF af skýrslunni.');
+          return [a];
+        },
+      });
     }));
   }
 

@@ -1611,6 +1611,22 @@
     openTemplateForm(rec.template_id, { filledId: rec.id });
   }
 
+  // 2026-07-20: teiknar VISTAÐA útfyllta skýrslu sem PDF (base64) — fyrir 📧 Senda
+  // hnappinn í „Vistaðar skýrslur" (patch 265). Sama fyllingar-leið og prentun
+  // (fillTemplate forPrint) + html2pdf brúin úr patch 176. Skilar {filename,content}
+  // eða null. Ath: reynir að hlaða html2pdf lazily gegnum CompanyReportEmail.
+  async function buildFilledPdfBase64(filledId) {
+    const rec = getFilledList().find(x => x.id === filledId);
+    if (!rec) return null;
+    const t = getTemplates().find(x => x.id === rec.template_id);
+    if (!t) return null;
+    if (!(window.CompanyReportEmail && CompanyReportEmail.htmlToPdfBase64)) return null;
+    const html = fillTemplate(t.html, Object.assign({}, rec.values || {}), { forPrint: true });
+    const namer = String(rec.name || rec.template_name || t.name || 'Skýrsla').replace(/[\\/:*?"<>|]/g, '_') + '.pdf';
+    const b64 = await CompanyReportEmail.htmlToPdfBase64(html, namer);
+    return b64 ? { filename: namer, content: b64 } : null;
+  }
+
   // 2026-05-31: open the main "Þjónustusamningur" template (seed_thjonustusamningur)
   // pre-filled with a company's nafn / kt / heimilisfang. Launched from the
   // company detail page; the form stays editable and saves/prints as normal.
@@ -1638,6 +1654,7 @@
     open: openTemplateForm,
     openForCompany,
     openFilled,
+    buildFilledPdfBase64,
     // 2026-07-10: leyfa öðrum pötchum (265 kúnnaspjald, 253 Fyrri viðskipti)
     // að fletta upp útfylltum skjölum eftir kúnna — þau geyma customer+kennitala.
     listFilled: getFilledList,
