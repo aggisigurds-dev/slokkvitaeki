@@ -115,7 +115,7 @@
     var amt=(p.amount_total!=null&&p.amount_total!=='')?(' · '+fmtKrLoc(p.amount_total)+' kr'):'';
     var st=p.paid_date?'greitt':(p.status||'ógreitt');
     var due=p.due_date?(' · gjalddagi '+esc(String(p.due_date).slice(0,10))):'';
-    return '<span class="sk-doc pd" title="Payday-krafa'+esc(amt)+' · '+esc(st)+due+'">🟣 '+esc(lab)+'</span>';
+    return '<span class="sk-doc pd" title="Payday-krafa'+esc(amt)+' · '+esc(st)+due+' (opnast í Payday)">🟣 '+esc(lab)+'</span>';
   }
   // Multi-location support: one kennitala can have several staðir. Split the kt's
   // docs per location by fyrirtaeki_id (precise, Cowork's map) or by matching the
@@ -212,20 +212,23 @@
                  : '<span class="sk-doc rep" title="'+esc(full)+' (engin Drive-slóð)">'+ico+' '+esc(disp)+'</span>';
     return docWrap(chip, d.id);
   }
-  function invDocChip(d){
+  function invDocChip(d, srcByNum){
     var u=docUrl(d); var lab=invLabel(d.invoice_number);
     var chip;
+    var nk = d.invoice_number ? numKey(d.invoice_number) : '';
+    var inSolur = nk && srcByNum && srcByNum[nk];
     if(u){
       chip = '<a class="sk-doc inv" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna reikning í Drive">🧾 '+esc(lab)+'</a>';
-    } else if(d.invoice_number){
+    } else if(inSolur){
       // 2026-07-09: POS-tengdar skráningar („kt-tengt úr Sölu") hafa EKKERT
-      // skjal (drive_file_id null) og teiknuðust sem dautt span — „reikningarnir
-      // opnast ekki" (Agnar). Smellur opnar nú reikninginn beint úr sölunni
-      // (solur → SalaInvoice.renderFromSale, sama mót og „Prenta aftur" í
-      // Bókhalds yfirliti).
-      chip = '<button type="button" class="sk-doc inv" data-salenum="'+esc(d.invoice_number)+'" title="Opna reikning úr Sölu">🧾 '+esc(lab)+'</button>';
+      // skjal (drive_file_id null) en EIGA sölu-röð → smellur opnar reikninginn
+      // beint úr sölunni (solur → SalaInvoice.renderFromSale, sama mót og „Prenta
+      // aftur" í Bókhalds yfirliti). AÐEINS gert þegar númerið er raunveruleg
+      // sala (2026-07-21, Agnar: „i only want 000419") — Stólpi/eldra-bókhalds
+      // færslur án sölu-raðar hafa ekkert að opna og teiknast sem óvirk merki.
+      chip = '<button type="button" class="sk-doc inv" data-invopen="'+esc(d.invoice_number)+'" title="Opna reikning úr Sölu">🧾 '+esc(lab)+'</button>';
     } else {
-      chip = '<span class="sk-doc inv" title="Ekkert skjal né sölunúmer fylgir þessari skráningu">🧾 '+esc(lab)+'</span>';
+      chip = '<span class="sk-doc inv" title="Skráning úr eldra bókhaldi — ekkert PDF-skjal né sölureikningur í kerfinu">🧾 '+esc(lab)+'</span>';
     }
     return docWrap(chip, d.id);
   }
@@ -350,7 +353,7 @@
       // Payday-kröfur í sínum eigin hóp (uppruni óviss). Aðeins hópar með innihald.
       var utt=[], afg=[];
       arr.forEach(function(x){ (chipInvSrc(x,srcByNum)==='afgr'?afg:utt).push(x); });
-      var chip=function(x){ return x._att?invAttChip(x._att):invDocChip(x); };
+      var chip=function(x){ return x._att?invAttChip(x._att):invDocChip(x, srcByNum); };
       var uttChips=utt.map(chip).join(''), afgChips=afg.map(chip).join(''), pdChips=pd.map(pdChip).join('');
       var groups='';
       if(uttChips) groups+=invGroup('🧯 Úttekt','#b45309','#fff7ed','#fed7aa',uttChips);
@@ -466,16 +469,17 @@
         if(a&&window.CompanyAttachments&&CompanyAttachments.openPreview) CompanyAttachments.openPreview(a);
         return;
       }
-      // Skjalalaus reikningsskráning → opna reikninginn beint úr sölunni.
-      var saleEl=e.target.closest('[data-salenum]');
-      if(saleEl){
+      // Skjalalaus reikningsskráning sem á sölu-röð (t.d. R-000419) → opna
+      // reikninginn beint úr sölunni (sama mót og „Prenta aftur" í Kröfu yfirliti).
+      var invEl=e.target.closest('[data-invopen]');
+      if(invEl){
         e.preventDefault();
-        var num=saleEl.getAttribute('data-salenum');
+        var num=invEl.getAttribute('data-invopen');
         // Glugginn er opnaður SYNKRONT í smellinum svo popup-vörn (sérstaklega
         // á síma) loki ekki á hann; innihaldið kemur þegar salan er sótt.
         var win=window.open('','_blank','width=900,height=1100');
         if(!win){ alert('Leyfðu sprettiglugga til að opna reikninginn.'); return; }
-        try{ win.document.write('<p style="font-family:sans-serif;padding:24px;color:#334155">Sæki reikning '+esc(num)+'…</p>'); }catch(_){}
+        try{ win.document.write('<p style="font-family:sans-serif;padding:24px;color:#334155">Opna reikning '+esc(num)+'…</p>'); }catch(_){}
         try{
           var sb=SB(); if(!sb) throw new Error('engin gagnatenging');
           var rs=await sb.from('solur').select('*').eq('num', num).limit(1);
