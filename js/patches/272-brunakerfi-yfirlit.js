@@ -212,7 +212,10 @@
               sortTh('Fyrirtæki', 'name') +
               YEARS.map(y => '<th class="_bky-yr" style="text-align:center;padding:9px 4px;color:#475569;font-size:11px;font-weight:800">' + "'" + y.slice(-2) + '</th>').join('') +
               sortTh('Heimilisfang', 'address', 'left', 'wcol') +
-              '<th class="_bky-wcol" style="text-align:left;padding:9px 10px;color:#475569;font-size:11px;font-weight:800;text-transform:uppercase">Sími</th>' +
+              // Sími vék fyrir Mánuði (ósk Agnars 2026-07-21): mánuður síðustu
+              // skoðunar segir hvenær 12 mánuðirnir eru liðnir. Síminn lifir á
+              // fyrirtækjasíðunni (hringja-chippan).
+              sortTh('Mánuður', 'month', 'center', 'wcol') +
               sortTh('Síðast', 'latest', 'center', 'wcol') +
               sortTh('Skjöl', 'count', 'center') +
             '</tr></thead><tbody>' +
@@ -229,6 +232,14 @@
   function rowHtml(r) {
     const cmp = state.view === 'thett';
     const last = r.latest ? (r.latest + (r.latestMonth ? ' · ' + MON[r.latestMonth - 1] : '')) : '—';
+    // Mánaðardálkurinn: mánuður síðustu skoðunar. RAUTT+feitletrað þegar 12
+    // mánuðirnir eru liðnir (mánuðurinn kominn/framhjá og engin skýrsla í ár).
+    const nowMon = new Date().getMonth() + 1;
+    const due = !r.years[String(NOW)] && r.latestMonth && r.latestMonth <= nowMon && !r.isNew;
+    const monCell = r.latestMonth
+      ? '<span style="' + (due ? 'color:#b91c1c;font-weight:800' : 'color:#0f172a;font-weight:600') + '"' +
+        (due ? ' title="12 mánuðir liðnir — skoðun komin á tíma"' : '') + '>' + esc(MON[r.latestMonth - 1]) + (due ? ' ⚠' : '') + '</span>'
+      : '<span style="color:#94a3b8">—</span>';
     const newBadge = r.isNew ? '<span title="Bíður fyrstu skoðunar" style="margin-left:7px;padding:1px 7px;border-radius:99px;background:#7c3aed;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.03em;vertical-align:middle">NÝTT</span>' : '';
     if (cmp) {
       // ☰ Þétt: ein lína per fyrirtæki — nafn + árpunktar + skjöl; ekkert netfang,
@@ -237,21 +248,21 @@
         '<td style="padding:4px 8px;max-width:0;min-width:120px"><div style="font-weight:700;color:#0f172a;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.nafn) + newBadge + '</div></td>' +
         YEARS.map(y => yearCell(r, y)).join('') +
         '<td class="_bky-wcol" style="padding:4px 8px;color:#475569;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px">' + esc(r.address) + '</td>' +
-        '<td class="_bky-wcol" style="padding:4px 8px;color:#475569;font-size:11px;white-space:nowrap">' + esc(r.simi || '—') + '</td>' +
+        '<td class="_bky-wcol" style="padding:4px 8px;text-align:center;font-size:11px;white-space:nowrap">' + monCell + '</td>' +
         '<td class="_bky-wcol" style="padding:4px 8px;text-align:center;color:#0f172a;font-size:11px;white-space:nowrap">' + esc(last) + '</td>' +
         '<td style="padding:4px 8px;text-align:center;color:#0f172a;font-size:12px;font-weight:700">' + r.count + '</td>' +
       '</tr>';
     }
-    // Mobile-fold: heimilisfang · sími birtast undir nafninu á mjóum skjá (breiðu
-    // dálkarnir faldir). Tengiliður er EKKI hér — hann lifir á fyrirtækjaspjaldinu.
-    const mobInfo = [r.address, r.simi].filter(Boolean).join(' · ');
+    // Mobile-fold: heimilisfang · síðasti skoðunarmánuður undir nafninu á mjóum
+    // skjá (breiðu dálkarnir faldir). Sími/tengiliður lifa á fyrirtækjasíðunni.
+    const mobInfo = [r.address, r.latestMonth ? 'síðast ' + MON[r.latestMonth - 1] + ' ' + (r.latest || '') : ''].filter(Boolean).join(' · ');
     return '<tr class="_bky-row" data-id="' + r.id + '" style="border-bottom:1px solid #f1f5f9;cursor:pointer">' +
       '<td style="padding:9px 10px"><div style="font-weight:700;color:#0f172a;font-size:13px">' + esc(r.nafn) + newBadge + '</div>' +
         (r.netfang ? '<div style="font-size:10.5px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;max-width:220px;white-space:nowrap">' + esc(r.netfang) + '</div>' : '') +
         (mobInfo ? '<div class="_bky-mob" style="font-size:10.5px;color:#64748b;margin-top:2px;line-height:1.35">' + esc(mobInfo) + '</div>' : '') + '</td>' +
       YEARS.map(y => yearCell(r, y)).join('') +
       '<td class="_bky-wcol" style="padding:9px 10px;color:#475569;font-size:12px">' + esc(r.address) + '</td>' +
-      '<td class="_bky-wcol" style="padding:9px 10px;color:#475569;font-size:12px;white-space:nowrap">' + esc(r.simi || '—') + '</td>' +
+      '<td class="_bky-wcol" style="padding:9px 10px;text-align:center;font-size:12.5px;white-space:nowrap">' + monCell + '</td>' +
       '<td class="_bky-wcol" style="padding:9px 10px;text-align:center;color:#0f172a;font-size:12px;white-space:nowrap">' + esc(last) + '</td>' +
       '<td style="padding:9px 10px;text-align:center;color:#0f172a;font-size:13px;font-weight:700">' + r.count + '</td>' +
     '</tr>';
