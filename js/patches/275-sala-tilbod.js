@@ -159,7 +159,9 @@
     };
     if ((tt.saved || 0) > 0.5) {
       totRow('Samtals án vsk', fmtKr(tt.raw_ex || 0));
-      totRow('Afsláttur', '−' + fmtKr(tt.saved || 0));
+      // ASCII '-' — týpógrafíski mínusinn (U+2212) er EKKI til í CP1252-letri
+      // jsPDF og teiknaðist sem rusl („&&&…") í kringum töluna (Agnar 2026-07-21)
+      totRow('Afsláttur' + (snap.discount_pct > 0 ? ' (' + Math.round(snap.discount_pct) + '%)' : ''), '-' + fmtKr(tt.saved || 0));
     }
     totRow('Án vsk', fmtKr(tt.ex || 0));
     totRow('VSK', fmtKr(tt.vsk || 0));
