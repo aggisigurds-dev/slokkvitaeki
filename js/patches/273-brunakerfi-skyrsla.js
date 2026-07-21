@@ -445,6 +445,10 @@
         '<div><span>Samtals án vsk</span><b>' + fmtKr(m.verdSum) + '</b></div>' +
         '<div><span>VSK ' + VAT_PCT + '%</span><b>' + fmtKr(m.verdVsk) + '</b></div>' +
         '<div class="_big"><span>Samtals m. vsk</span><span>' + fmtKr(m.verdTotal) + '</span></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;justify-content:flex-end">' +
+        (S.data.verd.sale_num ? '<span style="font-size:12px;font-weight:800;color:#166b3a;background:#dcf1e4;border:1px solid #a9dcbd;border-radius:99px;padding:4px 11px">🧾 Reikningur ' + esc(S.data.verd.sale_num) + ' stofnaður ✓</span>' : '') +
+        '<button type="button" class="_bks-add" id="_bks-v-invoice" style="background:#141619">🧾 ' + (S.data.verd.sale_num ? 'Búa til annan reikning' : 'Búa til reikning → Kröfu yfirlit') + '</button>' +
       '</div>'
       : '<div style="font-size:12.5px;color:#8b93a1;font-style:italic;padding:6px 0">Engar línur — veldu liði úr verðlistanum að ofan. Verðin fara ekki á prentuðu skýrsluna.</div>');
   }
@@ -614,9 +618,42 @@
       .filter(l => +l.qty > 0);
   }
 
+  // 🧾 reikningur úr verðlínunum → solur (greitt_med=reikningur) → Kröfu yfirlit;
+  // PDF-ið fer sjálfkrafa í reikningsdálk ársins gegnum patch 233. Sama talna-
+  // regla og annars staðar: samtals = án-vsk + vsk, vsk tekur afrúnun.
+  async function createInvoice(rerender) {
+    const sb = SB(); if (!sb) return toast('Engin gagnabankatenging', true);
+    const m = model();
+    if (!m.linur.length) { toast('Engar verðlínur — reiknaðu (⚡) eða bættu við línum fyrst.', true); return; }
+    const prev = S.data.verd.sale_num;
+    if (!confirm((prev ? 'Reikningur ' + prev + ' er þegar til fyrir þessa skýrslu.\nBúa til ANNAN reikning?\n\n' : '') +
+      'Búa til reikning upp á ' + fmtKr(m.verdTotal) + ' m. vsk fyrir ' + (S.co.nafn || '') + ' og setja í Kröfu yfirlit?')) return;
+    const linur = m.linur.map(l => ({ type: 'service', desc: l.name, qty: num(l.qty) || 0, unit_price_ex_vat: num(l.price) || 0, vsk_pct: VAT_PCT, ref: '' }));
+    const se = Math.round(m.verdSum), to = Math.round(m.verdTotal), vs = to - se;
+    const ktd = String(S.co.kennitala || '').replace(/\D/g, '');
+    const ins = await sb.from('solur').insert({
+      customer_nafn: S.co.nafn || '', customer_id: S.co.id, customer_kt: ktd || null,
+      starfsmadur: S.data.meta.madur || 'Kassi', linur,
+      upphaed_an_vsk: se, vsk_upphaed: vs, samtals: to, afslattur: 0,
+      greitt_med: 'reikningur', status: 'final', source: 'brunakerfi',
+      athugasemdir: 'Brunakerfisskoðun — úttekt ' + (S.data.meta.nr || '') + ' · ' + fmtDags(S.data.meta.dags)
+    }).select('num,id').single();
+    if (ins.error) { toast('Reikningur vistaðist ekki: ' + ins.error.message, true); return; }
+    S.data.verd.sale_num = ins.data.num; S.data.verd.sale_id = ins.data.id;
+    markDirty(); try { await saveDraft(); } catch (_) {}
+    try {
+      const r = await sb.from('solur').select('*').eq('id', ins.data.id).single();
+      if (r.data && window.UttektInvoicePdf && UttektInvoicePdf.saveForSale) await UttektInvoicePdf.saveForSale(S.co.id, r.data);
+    } catch (e) { console.warn('[bks] invoice pdf', e); }
+    toast('🧾 Reikningur ' + ins.data.num + ' stofnaður — kominn í Kröfu yfirlit ✓');
+    rerender();
+  }
+
   function wireVerd(w) {
     const box = w.querySelector('#_bks-verd'); if (!box) return;
     const rerender = () => { box.innerHTML = verdBodyHtml(); wireVerd(w); };
+    const inv = box.querySelector('#_bks-v-invoice');
+    if (inv) inv.addEventListener('click', () => { inv.disabled = true; createInvoice(rerender).finally(() => { inv.disabled = false; }); });
     const auto = box.querySelector('#_bks-v-auto');
     if (auto) auto.addEventListener('click', () => {
       const lines = autoVerdLines();
@@ -1143,6 +1180,7 @@
         storage_path: BUCKET + '/' + path, doc_date: S.data.meta.dags || null,
         customer_name: S.co.nafn || null, source: 'app', found_by: 'skyrsla-form',
         notes: 'Skoðunarskýrsla ' + (S.data.meta.nr || '') + ' — ' + fname };
+      const firstFinal = !S.docId;
       if (S.docId) {
         const r = await sb.from('customer_documents').update(docRec).eq('id', S.docId);
         if (r.error) throw r.error;
@@ -1151,6 +1189,15 @@
         if (r.error) throw r.error;
         S.docId = r.data.id;
         await sb.from('brunakerfi_skyrslur').update({ doc_id: S.docId }).eq('id', S.id);
+      }
+      // Skýrslan LÍKA í skýrsludálk ársins (Skjöl & viðhengi / Kröfu yfirlit,
+      // patch 111/199) — noMark: EKKI merkja slökkvitækja-ársskoðunina.
+      // Aðeins við fyrstu lokun (annars tvítekningar í dálknum).
+      if (firstFinal && window.CompanyAttachments && CompanyAttachments.upload) {
+        try {
+          await CompanyAttachments.upload(S.co.id, new File([pdf], fname, { type: 'application/pdf' }),
+            { year: yearOf(), kind: 'skyrsla', noMark: true });
+        } catch (e) { console.warn('[bks] grid attach', e); }
       }
       toast('PDF vistað á fyrirtækið — græni punkturinn kviknar í yfirlitinu ✓');
       setMode('report');
