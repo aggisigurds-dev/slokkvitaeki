@@ -272,6 +272,39 @@
     return '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:2px 0">'+
       '<span style="font-size:9px;font-weight:700;color:'+col+';background:'+bg+';border:1px solid '+brd+';border-radius:99px;padding:1px 6px;white-space:nowrap">'+tag+'</span>'+chips+'</div>';
   }
+  // Opna reikninginn í INNBYGGÐU yfirlagi (iframe) í stað window.open. Á síma
+  // opnaði window.open reikninginn í sömu flipa-sögu → „til baka" fór ÚT úr
+  // appinu (Agnar 2026-07-21). Yfirlagið hefur eigin ✕ Loka + 🖨 Prenta og
+  // snertir enga vafra-sögu. Fest á <body> (utan .view) svo patch 245 skinnið
+  // hreyfi það ekki. renderInto fær iframe.contentWindow (SalaInvoice skrifar
+  // í .document — sama og window).
+  function openInvoiceOverlay(title, renderInto){
+    var prev=document.getElementById('_sk-inv-ov'); if(prev){ try{prev.remove();}catch(_){} }
+    var ov=document.createElement('div');
+    ov.id='_sk-inv-ov';
+    ov.style.cssText='position:fixed;inset:0;z-index:100050;background:rgba(15,23,42,.6);display:flex;flex-direction:column';
+    var bar=document.createElement('div');
+    bar.style.cssText='flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;background:#0f172a;color:#fff';
+    bar.innerHTML='<b style="font-size:15px">Reikningur '+esc(title||'')+'</b>';
+    var btns=document.createElement('div'); btns.style.cssText='display:flex;gap:8px';
+    var pr=document.createElement('button'); pr.type='button'; pr.textContent='🖨 Prenta';
+    pr.style.cssText='padding:9px 16px;background:#166534;color:#fff;border:none;border-radius:9px;font-size:15px;cursor:pointer';
+    var cl=document.createElement('button'); cl.type='button'; cl.textContent='✕ Loka';
+    cl.style.cssText='padding:9px 16px;background:#334155;color:#fff;border:none;border-radius:9px;font-size:15px;cursor:pointer';
+    btns.appendChild(pr); btns.appendChild(cl); bar.appendChild(btns);
+    var frame=document.createElement('iframe');
+    frame.style.cssText='flex:1 1 auto;width:100%;border:0;background:#fff';
+    ov.appendChild(bar); ov.appendChild(frame);
+    document.body.appendChild(ov);
+    function close(){ try{ov.remove();}catch(_){} document.removeEventListener('keydown',onKey); }
+    function onKey(ev){ if(ev.key==='Escape') close(); }
+    cl.onclick=close;
+    ov.addEventListener('click',function(ev){ if(ev.target===ov) close(); });
+    document.addEventListener('keydown',onKey);
+    var iwin=frame.contentWindow;
+    try{ renderInto(iwin); }catch(err){ close(); alert('Villa við að teikna reikning: '+(err&&err.message||err)); return; }
+    pr.onclick=function(){ try{ iwin.focus(); iwin.print(); }catch(_){ try{ window.print(); }catch(__){} } };
+  }
 
   async function render(section, coId){
     var hdr='<div class="sk-h"><h3>📁 Skjöl &amp; viðhengi</h3>'+
@@ -470,16 +503,12 @@
         return;
       }
       // Skjalalaus reikningsskráning sem á sölu-röð (t.d. R-000419) → opna
-      // reikninginn beint úr sölunni (sama mót og „Prenta aftur" í Kröfu yfirliti).
+      // reikninginn í innbyggðu yfirlagi (iframe) beint úr sölunni (sama mót og
+      // „Prenta aftur" í Kröfu yfirliti) — ekki window.open (fór út úr appinu á síma).
       var invEl=e.target.closest('[data-invopen]');
       if(invEl){
         e.preventDefault();
         var num=invEl.getAttribute('data-invopen');
-        // Glugginn er opnaður SYNKRONT í smellinum svo popup-vörn (sérstaklega
-        // á síma) loki ekki á hann; innihaldið kemur þegar salan er sótt.
-        var win=window.open('','_blank','width=900,height=1100');
-        if(!win){ alert('Leyfðu sprettiglugga til að opna reikninginn.'); return; }
-        try{ win.document.write('<p style="font-family:sans-serif;padding:24px;color:#334155">Opna reikning '+esc(num)+'…</p>'); }catch(_){}
         try{
           var sb=SB(); if(!sb) throw new Error('engin gagnatenging');
           var rs=await sb.from('solur').select('*').eq('num', num).limit(1);
@@ -487,12 +516,13 @@
           if(!sale) throw new Error('salan '+num+' fannst ekki í Sölu');
           if(!(window.SalaInvoice&&SalaInvoice.renderFromSale)) throw new Error('reikningsmótið er ekki tiltækt');
           var co=getCompany(coId);
-          SalaInvoice.renderFromSale(win, sale, {
-            kennitala: (co&&co.kennitala)||sale.customer_kt||'',
-            heimilisfang: (co&&co.heimilisfang)||''
+          openInvoiceOverlay(num, function(iwin){
+            SalaInvoice.renderFromSale(iwin, sale, {
+              kennitala: (co&&co.kennitala)||sale.customer_kt||'',
+              heimilisfang: (co&&co.heimilisfang)||''
+            });
           });
         }catch(err){
-          try{ win.close(); }catch(_){}
           alert('Gat ekki opnað reikninginn: '+(err&&err.message||err));
         }
         return;
