@@ -1380,6 +1380,13 @@
         if (!part || !/\.html?(\?|$)/i.test(part)) return;
         try { a.href = '/api/skyrsla-proxy?p=' + encodeURIComponent(decodeURIComponent(part)); } catch (_) {}
       });
+      // Drive-hlekkir spyrja „Select an account" í hvert sinn í símum með marga
+      // Google-reikninga (kvörtun Agnars) → beina á brunahólf /api/skjal sem
+      // streymir PDF-inu með server-OAuth, engin innskráning.
+      root.querySelectorAll('a[href^="https://drive.google.com/file/d/"]').forEach(a => {
+        const m = (a.getAttribute('href') || '').match(/\/file\/d\/([^/?#]+)/);
+        if (m) a.href = 'https://brunaholf.netlify.app/api/skjal?id=' + m[1];
+      });
     });
   }
 

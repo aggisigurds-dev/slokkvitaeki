@@ -38,7 +38,8 @@
   function fmtKr(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr'; }
   function fmtKt(kt) { const d = String(kt || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : (kt || ''); }
   function fmtDags(iso) { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '.' + m[2] + '.' + m[1] : String(iso || ''); }
-  function driveUrl(id) { return id && String(id).indexOf('sb:') !== 0 ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view' : ''; }
+  // Gegnum brunahólf /api/skjal (server-OAuth) — enginn „Select an account"
+  function driveUrl(id) { return id && String(id).indexOf('sb:') !== 0 ? 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(id) : ''; }
   function storageUrl(p) {
     if (!p) return '';
     const base = String(window.SUPABASE_URL || '').replace(/\/+$/, ''); if (!base) return '';
