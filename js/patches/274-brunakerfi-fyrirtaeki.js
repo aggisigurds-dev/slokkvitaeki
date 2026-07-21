@@ -123,14 +123,19 @@
   // ── gögn ────────────────────────────────────────────────────────────────────
   async function load(coId) {
     const sb = SB(); if (!sb) return null;
-    const [coR, repR, docR] = await Promise.all([
-      sb.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang,simi,farsimi,netfang,"tengiliður"').eq('id', coId).single(),
+    const coR = await sb.from('fyrirtaeki').select('id,nafn,kennitala,heimilisfang,simi,farsimi,netfang,customer_base_id,"tengiliður"').eq('id', coId).single();
+    const co = (coR && coR.data) || { id: coId, nafn: '?' };
+    // samningar: bæði á STAÐINN og á keðjuna (customer_base — t.d. Center Hótel
+    // á einn samning fyrir öll hótelin)
+    const samOr = 'fyrirtaeki_id.eq.' + coId + (co.customer_base_id ? ',customer_base_id.eq.' + co.customer_base_id : '');
+    const [repR, docR, samR] = await Promise.all([
       sb.from('brunakerfi_skyrslur').select('id,year,uttekt_nr,status,doc_id,data,updated_at').eq('fyrirtaeki_id', coId).order('updated_at', { ascending: false }),
-      sb.from('customer_documents').select('id,year,drive_file_id,storage_path,doc_date,source,notes').eq('doc_type', 'brunakerfi').eq('fyrirtaeki_id', coId).order('year', { ascending: false })
+      sb.from('customer_documents').select('id,year,drive_file_id,storage_path,doc_date,source,notes').eq('doc_type', 'brunakerfi').eq('fyrirtaeki_id', coId).order('year', { ascending: false }),
+      sb.from('customer_documents').select('id,fyrirtaeki_id,drive_file_id,storage_path,doc_date,customer_name,notes').eq('doc_type', 'samningur').or(samOr).order('id', { ascending: false })
     ]);
     let note = '';
     try { const m = (window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_notes')) || {}; note = (m[String(coId)] && m[String(coId)].text) || ''; } catch (_) {}
-    return { co: (coR && coR.data) || { id: coId, nafn: '?' }, reports: (repR && repR.data) || [], docs: (docR && docR.data) || [], note };
+    return { co, reports: (repR && repR.data) || [], docs: (docR && docR.data) || [], samningar: (samR && samR.data) || [], note };
   }
 
   function saveNote(text) {
@@ -267,6 +272,25 @@
           (oldDocs.length ? '<div class="_bkc-card"><div class="_bkc-ch">Eldri skýrslur &amp; skjöl<small>söfnuð úr Drive/tölvum</small></div><div class="_bkc-body">' + oldRows + addFileStrip + '</div></div>' : '') +
         '</div>' +
         '<div>' +
+          '<div class="_bkc-card"><div class="_bkc-ch">Þjónustusamningur<small>' + (C.samningar.length || 'enginn skráður') + '</small></div><div class="_bkc-body">' +
+            (C.samningar.length ? C.samningar.map(s => {
+              const url = driveUrl(s.drive_file_id) || storageUrl(s.storage_path);
+              const chain = !s.fyrirtaeki_id;
+              const title = (s.customer_name && s.customer_name.length < 70 ? s.customer_name : 'Þjónustusamningur');
+              return '<div class="_bkc-row">' +
+                '<span class="_bkc-st" style="background:#e7e2f7;color:#4c1d95">📜</span>' +
+                '<div style="flex:1;min-width:130px"><div style="font-weight:600;font-size:13px">' + esc(title) + '</div>' +
+                '<div style="font-size:11px;color:#8b93a1">' + (chain ? 'sameiginlegur (öll keðjan)' : 'þessi staður') + (s.doc_date ? ' · ' + esc(fmtDags(s.doc_date)) : '') + '</div></div>' +
+                (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener">Opna</a>' : '') +
+                '<button type="button" class="_bkc-act _del" data-docdel="' + s.id + '" title="Aftengja samninginn — skráin helst í Drive">🗑</button>' +
+              '</div>';
+            }).join('') : '<div class="_bkc-empty">Enginn þjónustusamningur skráður á fyrirtækið.</div>') +
+            '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:10px;padding-top:8px;border-top:1px dashed #d7dade;font-size:12.5px;color:#59606c">' +
+              '＋ Bæta við samningi:' +
+              '<label class="_bkc-act _ghost" style="cursor:pointer">📎 Velja PDF<input type="file" id="_bkc-addsamn" accept="application/pdf" style="display:none"></label>' +
+              '<span id="_bkc-samnstatus" style="color:#8b93a1"></span>' +
+            '</div>' +
+          '</div></div>' +
           '<div class="_bkc-card"><div class="_bkc-ch">Búnaðarskrá kerfisins' +
             (newest ? '<small>úr skýrslu ' + esc(newest.uttekt_nr || '') + '</small>' : '') + '</div><div class="_bkc-body">' + bunHtml + '</div></div>' +
           '<div class="_bkc-card"><div class="_bkc-ch">Verð / reikningsyfirlit<small>VSK ' + VAT_PCT + '%</small></div><div class="_bkc-body">' +
@@ -322,6 +346,31 @@
         try { if (window.BrunakerfiYfirlit && BrunakerfiYfirlit.reload) BrunakerfiYfirlit.reload(); } catch (_) {}
       } catch (e) { alert('Tókst ekki: ' + (e.message || e)); }
     }));
+    // ＋ bæta við samningi: PDF → storage + customer_documents (doc_type samningur)
+    const addSamn = w.querySelector('#_bkc-addsamn');
+    if (addSamn) addSamn.addEventListener('change', async () => {
+      const f = addSamn.files && addSamn.files[0]; if (!f) return;
+      const st = w.querySelector('#_bkc-samnstatus');
+      if (st) st.textContent = 'Hleð upp…';
+      try {
+        const sb = SB();
+        const safe = f.name.replace(/[^\w.\-]+/g, '_');
+        const path = 'brunakerfi-skyrslur/' + co.id + '/samningar/' + Date.now() + '_' + safe;
+        const up = await sb.storage.from('samningar').upload(path, f, { contentType: f.type || 'application/pdf', upsert: false });
+        if (up.error) throw up.error;
+        const ins = await sb.from('customer_documents').insert({
+          doc_type: 'samningur', fyrirtaeki_id: co.id, year: null,
+          storage_path: 'samningar/' + path, customer_name: (co.nafn || '') + ' — þjónustusamningur',
+          source: 'app', found_by: 'manual-upload', notes: 'Handvirkt viðhengt: ' + f.name
+        });
+        if (ins.error) throw ins.error;
+        if (st) st.textContent = '';
+        reload();
+      } catch (e) {
+        if (st) st.textContent = '';
+        alert('Upphleðsla mistókst: ' + (e.message || e));
+      }
+    });
     // ＋ bæta við skjali: PDF af tækinu → storage + customer_documents röð
     const addFile = w.querySelector('#_bkc-addfile');
     if (addFile) addFile.addEventListener('change', async () => {
