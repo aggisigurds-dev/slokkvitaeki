@@ -66,6 +66,26 @@
     ['Skoðun á viðvörunarsökkli með sírenu', 680], ['Skoðun á yfirlitsmynd og þjónustubók', 1750]
   ];
 
+  // „Tengist skýrslu" — lyklarnir sem verðlista-lína getur fylgt (ósk Agnars
+  // 2026-07-21, örvarnar á skjámyndinni): magnið kemur þá sjálfkrafa úr
+  // búnaðaryfirliti skýrslunnar (samtals = í lagi + ekki í lagi).
+  const LINK_OPTS = [
+    ['', '— ekki tengt —'], ['fast', 'Föst lína (alltaf 1×)'],
+    ['stjornstod', 'Stjórnstöð'], ['bodbunadur', 'Boðbúnaður'],
+    ['reykskynjarar', 'Reykskynjarar'], ['hitaskynjarar', 'Hitaskynjarar'],
+    ['reykhita', 'Reyk+hitaskynjarar (samtals)'], ['handbodar', 'Handboðar'],
+    ['bjollur', 'Bjöllur / Sírenur'], ['rafhlodur', 'Rafhlöður']];
+  const LINK_IX = { stjornstod: 0, bodbunadur: 1, reykskynjarar: 2, hitaskynjarar: 3, handbodar: 4, bjollur: 5, rafhlodur: 6 };
+  const DEFAULT_LINKS = {
+    'Samantekt og gerð skoðunarskýrslu': 'fast',
+    'Skoðun á aðalafli og varaafli': 'fast',
+    'Skoðun á aðalstöð brunaviðvörunarkerfis': 'stjornstod',
+    'Skoðun á bjöllum / sírenum': 'bjollur',
+    'Skoðun á boðbúnaði / úthringibúnaði': 'bodbunadur',
+    'Skoðun á handboðum': 'handbodar',
+    'Skoðun á reyk- hitaskynjurum að 6m hæð': 'reykhita'
+  };
+
   let S = null, _dirty = false, _autoT = null, _pricelist = null;
   let _reports = null, _repAt = 0, _logoData = null;
 
@@ -171,6 +191,35 @@
   }
   function tegBad(teg) { return /vantar|ekki|virkar/i.test(teg); }
 
+  // ── sérsniðinn búnaður (ósk Agnars: „add fields to the report and give it a
+  // key so we can connect new price to it") — lyklarnir geymast miðlægt í
+  // brunakerfi_verdlisti.custom_bunadur svo verðlistinn geti tengst þeim ──────
+  function slugKey(label) {
+    return 'c_' + String(label || '').toLowerCase().trim()
+      .replace(/[áà]/g, 'a').replace(/[éè]/g, 'e').replace(/[íì]/g, 'i').replace(/[óò]/g, 'o')
+      .replace(/[úù]/g, 'u').replace(/ý/g, 'y').replace(/ð/g, 'd').replace(/þ/g, 'th').replace(/æ/g, 'ae').replace(/ö/g, 'o')
+      .replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  }
+  function customBunadurList() {
+    let saved = null;
+    try { saved = window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_verdlisti'); } catch (_) {}
+    if (!saved) { try { saved = JSON.parse(localStorage.getItem('brunakerfi_verdlisti') || 'null'); } catch (_) {} }
+    return (saved && Array.isArray(saved.custom_bunadur)) ? saved.custom_bunadur : [];
+  }
+  async function addCustomBunadur(label) {
+    const key = slugKey(label);
+    const list = customBunadurList();
+    if (!list.some(c => c.key === key)) {
+      const next = list.concat([{ key, label }]);
+      try { const raw = JSON.parse(localStorage.getItem('brunakerfi_verdlisti') || '{}'); raw.custom_bunadur = next; localStorage.setItem('brunakerfi_verdlisti', JSON.stringify(raw)); } catch (_) {}
+      try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ brunakerfi_verdlisti: { custom_bunadur: next } }); } catch (_) {}
+    }
+    return key;
+  }
+  function linkOpts() {
+    return LINK_OPTS.concat(customBunadurList().map(c => [c.key, c.label]));
+  }
+
   // ── verðlisti (app_settings.brunakerfi_verdlisti, grunnur = BASE_PRICES) ────
   function priceItems() {
     if (_pricelist) return _pricelist;
@@ -178,13 +227,16 @@
     try { saved = window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_verdlisti'); } catch (_) {}
     if (!saved) { try { saved = JSON.parse(localStorage.getItem('brunakerfi_verdlisti') || 'null'); } catch (_) {} }
     _pricelist = (saved && Array.isArray(saved.items) && saved.items.length)
-      ? saved.items.map(x => ({ name: x.name || '', price: +x.price || 0 }))
-      : BASE_PRICES.map(p => ({ name: p[0], price: p[1] }));
+      ? saved.items.map(x => ({ name: x.name || '', price: +x.price || 0,
+          // eldri vistaðir listar án tenginga fá sjálfgefnu tengingarnar; tóm
+          // tenging sem notandinn valdi sjálfur ('') er virt
+          link: x.link != null ? x.link : (DEFAULT_LINKS[x.name] || '') }))
+      : BASE_PRICES.map(p => ({ name: p[0], price: p[1], link: DEFAULT_LINKS[p[0]] || '' }));
     return _pricelist;
   }
   async function savePriceItems(items) {
     _pricelist = items;
-    const payload = { items, updated_at: new Date().toISOString() };
+    const payload = { items, custom_bunadur: customBunadurList(), updated_at: new Date().toISOString() };
     try { localStorage.setItem('brunakerfi_verdlisti', JSON.stringify(payload)); } catch (_) {}
     try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ brunakerfi_verdlisti: payload }); } catch (e) { console.warn('[bks] verðlisti save', e); }
   }
@@ -373,7 +425,8 @@
     const m = model();
     const items = priceItems();
     return '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;align-items:center">' +
-      '<select class="_bks-in" id="_bks-v-pick" style="flex:1;min-width:220px"><option value="">— Bæta við línu úr verðlista —</option>' +
+      '<button type="button" class="_bks-add" id="_bks-v-auto" title="Reiknar verðlínur úr búnaðaryfirlitinu: tengdir liðir í verðlistanum × talinn búnaður" style="background:#1f8a4c">⚡ Reikna út frá skýrslunni</button>' +
+      '<select class="_bks-in" id="_bks-v-pick" style="flex:1;min-width:200px"><option value="">— Bæta við línu úr verðlista —</option>' +
         items.map((it, i) => '<option value="' + i + '">' + esc(it.name) + ' · ' + fmtKr(it.price) + '</option>').join('') + '</select>' +
       '<button type="button" class="_bks-add" id="_bks-v-blank" style="background:#17191d">＋ Auð lína</button>' +
       '<button type="button" class="_bks-hb" id="_bks-v-edit" style="background:#fff;border:1px solid #d0d4da;color:#334155;min-height:37px;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:700;cursor:pointer">🏷 Breyta verðlista</button>' +
@@ -420,12 +473,15 @@
                 '<button type="button" data-si="' + i + '" data-sk="' + k + '" data-sd="-1">−</button>' +
                 '<b style="color:' + col + '" data-sv="' + i + ':' + k + '">' + r[k] + '</b>' +
                 '<button type="button" data-si="' + i + '" data-sk="' + k + '" data-sd="1">+</button></span>';
-              return '<div class="_bks-eqrow"><span>' + esc(r.label) + '</span>' +
+              return '<div class="_bks-eqrow"><span>' + esc(r.label) +
+                (r.custom ? ' <button type="button" data-eqdel="' + i + '" title="Fjarlægja þennan búnað úr skýrslunni" style="border:0;background:none;color:#c93c1d;font-weight:800;cursor:pointer;font-size:11px;padding:2px 4px;vertical-align:middle">✕</button>' : '') + '</span>' +
                 '<span style="text-align:center">' + step('iLagi', '#1f8a4c') + '</span>' +
                 '<span style="text-align:center">' + step('ekki', '#c93c1d') + '</span>' +
                 '<span style="text-align:center">' + step('vantar', '#b07a10') + '</span>' +
                 '<span style="text-align:center"><span class="_bks-sam" data-sam="' + i + '">' + m.bunRows[i].samtals + '</span></span></div>';
-            }).join('') + '</div></div>' +
+            }).join('') +
+            '<button type="button" id="_bks-eq-add" style="margin-top:10px;padding:7px 14px;border-radius:8px;border:1px dashed #a8b0bb;background:#f8f9fb;color:#334155;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer">＋ Bæta við búnaði (fær eigin lykil í verðlistann)</button>' +
+            '</div></div>' +
           '<div class="_bks-card"><div class="_bks-ch">Athugasemdir<small id="_bks-athsum">' + s.aths.length + ' skráðar</small></div><div class="_bks-body">' +
             '<div class="_bks-athform" id="_bks-athform">' + athFormHtml() + '</div>' +
             '<div id="_bks-athlist"></div>' +
@@ -541,9 +597,34 @@
     if (lys) lys.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); add.click(); } });
   }
 
+  // ⚡ verðlínur úr búnaðaryfirlitinu: tengdir verðlista-liðir × talinn búnaður
+  function autoVerdLines() {
+    const m = model();
+    const qtyFor = link => {
+      if (link === 'fast') return 1;
+      if (link === 'reykhita') return m.bunRows[LINK_IX.reykskynjarar].samtals + m.bunRows[LINK_IX.hitaskynjarar].samtals;
+      if (LINK_IX[link] != null) return m.bunRows[LINK_IX[link]].samtals;
+      // sérsniðinn búnaður: passa á key EÐA slug af heiti raðarinnar
+      const c = m.bunRows.find(r => r.key === link || slugKey(r.label) === link);
+      return c ? c.samtals : 0;
+    };
+    return priceItems()
+      .filter(it => it.link)
+      .map(it => ({ name: it.name, qty: String(qtyFor(it.link)), price: String(it.price) }))
+      .filter(l => +l.qty > 0);
+  }
+
   function wireVerd(w) {
     const box = w.querySelector('#_bks-verd'); if (!box) return;
     const rerender = () => { box.innerHTML = verdBodyHtml(); wireVerd(w); };
+    const auto = box.querySelector('#_bks-v-auto');
+    if (auto) auto.addEventListener('click', () => {
+      const lines = autoVerdLines();
+      if (!lines.length) { toast('Enginn búnaður talinn enn — eða engir liðir tengdir í verðlistanum (🏷).', true); return; }
+      if (S.data.verd.linur.length && !confirm('Skipta út núverandi verðlínum fyrir reiknaðar línur úr skýrslunni?')) return;
+      S.data.verd.linur = lines; markDirty(); rerender();
+      toast('⚡ ' + lines.length + ' línur reiknaðar úr búnaðaryfirlitinu');
+    });
     const pick = box.querySelector('#_bks-v-pick');
     if (pick) pick.addEventListener('change', () => {
       const it = priceItems()[+pick.value];
@@ -576,9 +657,12 @@
     p.style.cssText = 'position:fixed;inset:0;z-index:9700;background:rgba(8,12,20,.55);display:flex;align-items:center;justify-content:center;padding:16px';
     const items = priceItems().map(x => ({ ...x }));
     const row = (it, i) =>
-      '<div style="display:flex;gap:8px;padding:4px 0;align-items:center">' +
-        '<input class="_bks-in" data-pk="name" data-pi="' + i + '" value="' + esc(it.name) + '" style="flex:1;border:1px solid #d0d4da;border-radius:8px;padding:7px 10px;font-size:13px">' +
-        '<input class="_bks-in" data-pk="price" data-pi="' + i + '" inputmode="numeric" value="' + esc(it.price) + '" style="width:100px;text-align:right;border:1px solid #d0d4da;border-radius:8px;padding:7px 10px;font-size:13px">' +
+      '<div style="display:flex;gap:8px;padding:4px 0;align-items:center;flex-wrap:wrap">' +
+        '<input class="_bks-in" data-pk="name" data-pi="' + i + '" value="' + esc(it.name) + '" style="flex:1;min-width:170px;border:1px solid #d0d4da;border-radius:8px;padding:7px 10px;font-size:13px">' +
+        '<input class="_bks-in" data-pk="price" data-pi="' + i + '" inputmode="numeric" value="' + esc(it.price) + '" style="width:88px;text-align:right;border:1px solid #d0d4da;border-radius:8px;padding:7px 10px;font-size:13px">' +
+        '<select class="_bks-in" data-pk="link" data-pi="' + i + '" title="Tengist skýrslu — magnið kemur sjálfkrafa úr búnaðaryfirlitinu" style="width:168px;border:1px solid ' + (it.link ? '#1f8a4c' : '#d0d4da') + ';border-radius:8px;padding:7px 8px;font-size:12px;background:' + (it.link ? '#f2faf5' : '#fff') + '">' +
+          linkOpts().map(o => '<option value="' + o[0] + '"' + (o[0] === (it.link || '') ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join('') +
+        '</select>' +
         '<button type="button" data-pdel="' + i + '" style="width:28px;height:28px;border-radius:7px;border:1px solid #efb9ab;background:#fff;color:#c93c1d;font-weight:800;cursor:pointer;flex:none">✕</button>' +
       '</div>';
     const render = () => {
@@ -589,7 +673,7 @@
             '<div style="font-size:11px;color:#8b93a1">Verð án VSK. Breytingar gilda alls staðar í appinu.</div></div>' +
             '<button type="button" id="_bks-p-x" style="background:none;border:0;color:#8b93a1;font-size:20px;cursor:pointer;padding:4px 8px">✕</button></div>' +
           '<div style="padding:12px 16px;overflow-y:auto;flex:1" id="_bks-p-rows">' +
-            '<div style="display:flex;gap:8px;font-size:10px;font-weight:800;color:#7a8290;text-transform:uppercase;letter-spacing:.04em;padding-bottom:4px"><span style="flex:1">Liður</span><span style="width:100px;text-align:right">Verð án vsk</span><span style="width:28px"></span></div>' +
+            '<div style="display:flex;gap:8px;font-size:10px;font-weight:800;color:#7a8290;text-transform:uppercase;letter-spacing:.04em;padding-bottom:4px"><span style="flex:1;min-width:170px">Liður</span><span style="width:88px;text-align:right">Verð án vsk</span><span style="width:168px">Tengist skýrslu</span><span style="width:28px"></span></div>' +
             items.map(row).join('') +
             '<button type="button" id="_bks-p-add" style="margin-top:10px;padding:8px 14px;border-radius:8px;border:1px dashed #a8b0bb;background:#f8f9fb;color:#334155;font-size:12.5px;font-weight:700;cursor:pointer">＋ Ný lína</button>' +
           '</div>' +
@@ -599,12 +683,18 @@
           '</div></div>';
       p.querySelector('#_bks-p-x').addEventListener('click', () => p.remove());
       p.querySelector('#_bks-p-cancel').addEventListener('click', () => p.remove());
-      p.querySelector('#_bks-p-add').addEventListener('click', () => { items.push({ name: '', price: 0 }); render(); });
+      p.querySelector('#_bks-p-add').addEventListener('click', () => { items.push({ name: '', price: 0, link: '' }); render(); });
       p.querySelectorAll('[data-pdel]').forEach(b => b.addEventListener('click', () => { items.splice(+b.dataset.pdel, 1); render(); }));
-      p.querySelectorAll('[data-pk]').forEach(inp => inp.addEventListener('input', () => {
-        const it = items[+inp.dataset.pi]; if (!it) return;
-        if (inp.dataset.pk === 'name') it.name = inp.value; else it.price = num(inp.value) || 0;
-      }));
+      p.querySelectorAll('[data-pk]').forEach(inp => {
+        const apply = () => {
+          const it = items[+inp.dataset.pi]; if (!it) return;
+          if (inp.dataset.pk === 'name') it.name = inp.value;
+          else if (inp.dataset.pk === 'link') it.link = inp.value;
+          else it.price = num(inp.value) || 0;
+        };
+        inp.addEventListener('input', apply);
+        inp.addEventListener('change', apply);
+      });
       p.querySelector('#_bks-p-save').addEventListener('click', async () => {
         await savePriceItems(items.filter(x => x.name.trim()));
         toast('Verðlisti vistaður ✓'); p.remove();
@@ -650,6 +740,21 @@
     w.querySelectorAll('[data-gerd]').forEach(b => b.addEventListener('click', () => {
       S.data.stod.gerd = b.dataset.gerd; markDirty();
       w.querySelectorAll('[data-gerd]').forEach(x => x.classList.toggle('_on', x === b));
+    }));
+    // sérsniðinn búnaður: bæta við / fjarlægja
+    const eqAdd = w.querySelector('#_bks-eq-add');
+    if (eqAdd) eqAdd.addEventListener('click', async () => {
+      const label = (prompt('Heiti búnaðar (t.d. Geislaskynjarar):') || '').trim();
+      if (!label) return;
+      const key = await addCustomBunadur(label);
+      S.data.bunadur.push({ label, iLagi: 0, ekki: 0, vantar: 0, custom: true, key });
+      markDirty(); renderWork(); updStats();
+      toast('„' + label + '" bætt við — tengdu verð við hann í 🏷 verðlistanum');
+    });
+    w.querySelectorAll('[data-eqdel]').forEach(b => b.addEventListener('click', () => {
+      const i = +b.dataset.eqdel;
+      if (!confirm('Fjarlægja „' + (S.data.bunadur[i] || {}).label + '" úr skýrslunni?')) return;
+      S.data.bunadur.splice(i, 1); markDirty(); renderWork(); updStats();
     }));
     wireAthForm(w);
     wireVerd(w);
