@@ -22,7 +22,7 @@
 
   const LOGO_PATH = '/img/brunaholf-logo.png';
   const VALID_LINE = 'Tilboð þetta gildir í 30 daga. Verð eru með fyrirvara um breytingar á umfangi verks.';
-  const FOOT_CO = 'Slökkvitæki ehf. · Helluhrauni 10, 220 Hafnarfjörður · kt. 600508-0400 · Sími 565-4080 · eldklar@eldklar.is';
+  const FOOT_CO = 'Brunahólf slökkvitæki ehf. · Helluhrauni 10, 220 Hafnarfjörður · kt. 600508-0400 · Sími 565-4080 · eldklar@eldklar.is';
 
   let _logoData = null;
 
@@ -196,9 +196,9 @@
 
   function bodyText(nafn) {
     return 'Sæl(l)' + (nafn ? ' ' + nafn : '') + ',\n\n' +
-      'Meðfylgjandi er tilboð frá Slökkvitæki ehf.\n\n' +
+      'Meðfylgjandi er tilboð frá Brunahólf slökkvitæki ehf.\n\n' +
       'Tilboðið gildir í 30 daga. Ef spurningar vakna, eða þið viljið staðfesta tilboðið, er velkomið að svara þessum pósti eða hringja í síma 565-4080.\n\n' +
-      'Kær kveðja,\nSlökkvitæki ehf.\nkt. 600508-0400\nsími 565-4080';
+      'Kær kveðja,\nBrunahólf slökkvitæki ehf.\nkt. 600508-0400\nsími 565-4080';
   }
 
   // ── opna ritilinn út frá körfunni ───────────────────────────────────────────
@@ -210,13 +210,14 @@
     if (!snap.lines.length) { toast('Karfan er tóm — ekkert tilboð að senda.'); return false; }
     const cu = snap.customer || {};
     const to = await resolveEmail(cu);
-    const fname = 'Tilboð - ' + (cu.nafn || 'Slökkvitæki ehf') + ' - ' + today() + '.pdf';
+    const fname = 'Tilboð - ' + (cu.nafn || 'Brunahólf slökkvitæki ehf') + ' - ' + today() + '.pdf';
     return ReceiptSender.compose({
       title: 'Senda tilboð' + (cu.nafn ? ' — ' + cu.nafn : ''),
       to: to,
-      subject: 'Tilboð — Slökkvitæki ehf',
+      subject: 'Tilboð — Brunahólf slökkvitæki ehf',
       bodyText: bodyText(cu.nafn || ''),
       attachmentName: fname,
+      preview: async () => buildPdf(snap),
       buildAttachments: async () => {
         const blob = await buildPdf(snap);
         return [{ filename: fname, content: await blobToBase64(blob) }];
