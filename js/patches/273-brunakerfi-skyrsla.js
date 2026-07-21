@@ -34,7 +34,9 @@
     ['stjornstod', 'Stjórnstöð'], ['bodbunadur', 'Boðbúnaður'], ['reykskynjarar', 'Reykskynjarar'],
     ['hitaskynjarar', 'Hitaskynjarar'], ['handbodar', 'Handboðar'], ['bjollur', 'Bjöllur / Sírenur'],
     ['rafhlodur', 'Rafhlöður']];
-  const ATH_BUNADUR = EQUIP.map(e => e[1]).concat(['Hljóðstyrksmælingar', 'Yfirlitsmynd', 'Annað']);
+  // röð eins og í hönnuninni: algengasti búnaðurinn fyrst
+  const ATH_BUNADUR = ['Reykskynjarar', 'Hitaskynjarar', 'Handboðar', 'Bjöllur / Sírenur', 'Stjórnstöð',
+    'Boðbúnaður', 'Rafhlöður', 'Hljóðstyrksmælingar', 'Yfirlitsmynd', 'Annað'];
   const ATH_TYPES = ['Vantar', 'Er ekki til staðar', 'Laus frá lofti', 'Of nálægt loftræstingu', 'Virkar ekki',
     'Díóða virkar ekki', 'Skemmdur / óhreinn', 'Rangt staðsettur', 'Hulinn', 'Vantar á yfirlitsmynd',
     'Hljóðstyrksmæling', 'Annað'];
@@ -729,20 +731,35 @@
     if (!rows.length) return;
     loadReportIndex().then(idx => {
       rows.forEach(tr => {
-        if (tr.querySelector('._bks-btn')) return;
         const id = tr.dataset.id;
         const info = idx[id] || {};
-        const b = document.createElement('button');
-        b.type = 'button'; b.className = '_bks-btn';
-        b.textContent = info.draft ? '📝 Drög' : '📋 Skýrsla';
-        b.title = 'Skoðunarskýrsla brunakerfis' + (info.draft ? ' — drög í vinnslu' : '');
-        b.style.cssText = 'margin-left:8px;padding:2px 10px;border-radius:99px;border:1px solid ' +
-          (info.draft ? 'rgba(217,146,6,.55);background:#FBEAC6;color:#8A5C04' : 'rgba(37,99,235,.4);background:#EAF1FE;color:#1d4ed8') +
-          ';font-size:10.5px;font-weight:800;cursor:pointer;vertical-align:middle;font-family:inherit';
-        b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); openFlow(+id); });
-        const cell = tr.querySelector('td');
-        const nameDiv = cell && cell.firstElementChild;
-        (nameDiv || cell || tr).appendChild(b);
+        let b = tr.querySelector('._bks-btn');
+        if (!b) {
+          b = document.createElement('button');
+          b.type = 'button'; b.className = '_bks-btn';
+          b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); openFlow(+id); });
+          const cell = tr.querySelector('td');
+          const nameDiv = cell && cell.firstElementChild;
+          (nameDiv || cell || tr).appendChild(b);
+        }
+        // uppfæra merkið líka á hnöppum sem eru þegar til (fyrsta umferð getur
+        // hlaupið á undan index-fetch-inu) — bara skrifa ef breytt, annars
+        // endar MutationObserver-inn í hringekju.
+        const want = info.draft ? '📝 Drög' : '📋 Skýrsla';
+        if (b.textContent !== want) {
+          b.textContent = want;
+          b.title = 'Skoðunarskýrsla brunakerfis' + (info.draft ? ' — drög í vinnslu' : '');
+          b.style.cssText = 'margin-left:8px;padding:2px 10px;border-radius:99px;border:1px solid ' +
+            (info.draft ? 'rgba(217,146,6,.55);background:#FBEAC6;color:#8A5C04' : 'rgba(37,99,235,.4);background:#EAF1FE;color:#1d4ed8') +
+            ';font-size:10.5px;font-weight:800;cursor:pointer;vertical-align:middle;font-family:inherit';
+        }
+      });
+      // Grænu ár-hlekkirnir á okkar skýrslur: Supabase þjónar HTML af public-URL
+      // sem text/plain (vörn) → beina í /api/skyrsla-proxy sem skilar text/html.
+      root.querySelectorAll('a[href*="/samningar/brunakerfi-skyrslur/"]').forEach(a => {
+        const part = (a.getAttribute('href') || '').split('/samningar/')[1];
+        if (!part) return;
+        try { a.href = '/api/skyrsla-proxy?p=' + encodeURIComponent(decodeURIComponent(part)); } catch (_) {}
       });
     });
   }
