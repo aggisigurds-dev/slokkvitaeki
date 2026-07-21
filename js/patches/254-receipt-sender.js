@@ -49,14 +49,15 @@
   // það pósthólf er EKKI til (Agnar 2026-07-20) — svör og skoppaður póstur fóru
   // því út í tómið. Ekki setja það aftur inn.
   const FROM_CHOICES = [
-    'Slökkvitæki ehf <eldklar@eldklar.is>',
-    'Slökkvitæki ehf <bokhald@eldklar.is>',
+    'Brunahólf slökkvitæki ehf <eldklar@eldklar.is>',
+    'Brunahólf slökkvitæki ehf <bokhald@eldklar.is>',
   ];
   function fromAddr() {
     try {
       const saved = localStorage.getItem('slokk_send_from');
       // Dautt pósthólf er aldrei gilt, líka þótt það sitji í localStorage.
-      if (saved && /@eldklar\.is>?\s*$/.test(saved) && !/reikningar@/.test(saved)) return saved;
+      // Gamalt vistað „Slökkvitæki ehf <…>" víkur fyrir nýja félagsnafninu.
+      if (saved && /@eldklar\.is>?\s*$/.test(saved) && !/reikningar@/.test(saved) && /Brunahólf/i.test(saved)) return saved;
     } catch (_) {}
     return FROM_CHOICES[0];
   }
@@ -158,8 +159,9 @@
                       '<span>' + esc(c.label) + (c.disabled ? ' <i style="color:#94a3b8">(ekki til)</i>' : '') + '</span>' +
                     '</label>').join('') +
                 '</div>'
-              : '<div style="font-size:11.5px;color:#64748b;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px">' +
-                  '📎 Viðhengi: <b>' + esc(o.attachmentName || 'ekkert') + '</b>' +
+              : '<div style="font-size:11.5px;color:#64748b;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+                  '<span>📎 Viðhengi: <b>' + esc(o.attachmentName || 'ekkert') + '</b></span>' +
+                  (typeof o.preview === 'function' ? '<button id="_rs-prev" type="button" style="padding:4px 11px;border:1px solid #cbd5e1;background:#fff;border-radius:7px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;color:#0f766e">👁 Skoða PDF</button>' : '') +
                 '</div>') +
             '<div id="_rs-err" style="display:none;font-size:12px;color:#b91c1c;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 10px"></div>' +
           '</div>' +
@@ -178,6 +180,16 @@
       dlg.addEventListener('click', e => { if (e.target === dlg) done(false); });
       dlg.querySelector('#_rs-cancel').addEventListener('click', () => done(false));
       dlg.addEventListener('keydown', e => { if (e.key === 'Escape') done(false); });
+      // 👁 Forskoðun: teiknar viðhengið og opnar í nýjum flipa (ósk Agnars 2026-07-21)
+      const prevB = dlg.querySelector('#_rs-prev');
+      if (prevB) prevB.addEventListener('click', async () => {
+        prevB.disabled = true; const t0 = prevB.textContent; prevB.textContent = 'Teikna…';
+        try {
+          const blob = await o.preview();
+          if (blob) { const u = URL.createObjectURL(blob); window.open(u, '_blank'); setTimeout(() => { try { URL.revokeObjectURL(u); } catch (_) {} }, 120000); }
+        } catch (e) { fail('Gat ekki opnað forskoðun: ' + ((e && e.message) || e)); }
+        prevB.disabled = false; prevB.textContent = t0;
+      });
 
       go.addEventListener('click', async () => {
         const addr = (to.value || '').trim();
@@ -207,7 +219,7 @@
               account: addrOf(from),      // hvaða tengt pósthólf sendir
               from: from,                 // „Nafn <netfang>" eins og það birtist
               to: [addr],
-              subject: (subj.value || '').trim() || 'Skjal frá Slökkvitæki ehf',
+              subject: (subj.value || '').trim() || 'Skjal frá Brunahólf slökkvitæki ehf',
               html: textToHtml(bodyEl.value || ''),
               attachments: atts,
             }),
@@ -244,7 +256,7 @@
     return compose({
       title: 'Senda reikning ' + nr,
       to: opts.to || (co && co.netfang) || '',
-      subject: 'Reikningur ' + nr + ' — Slökkvitæki ehf',
+      subject: 'Reikningur ' + nr + ' — Brunahólf slökkvitæki ehf',
       bodyText: standardText('reikningur', { nafn: (co && co.nafn) || sale.customer_nafn || '', nr: nr }),
       attachmentName: 'Reikningur ' + nr + '.pdf',
       buildAttachments: async () => {
@@ -267,7 +279,7 @@
       title: isRep ? 'Senda úttektarskýrslu' : 'Senda reikning',
       to: opts.to || '',
       subject: (isRep ? 'Úttektarskýrsla' : 'Reikningur') + (opts.ar ? ' ' + opts.ar : '') +
-               (opts.nr ? ' ' + opts.nr : '') + ' — Slökkvitæki ehf',
+               (opts.nr ? ' ' + opts.nr : '') + ' — Brunahólf slökkvitæki ehf',
       bodyText: standardText(isRep ? 'skyrsla' : 'reikningur', opts),
       attachmentName: att.filename,
       attachments: [att],
@@ -298,7 +310,7 @@
     const account = /^(eldklar|bokhald)@eldklar\.is$/i.test(want) ? want : addrOf(fromAddr());
     const body = {
       account: account,
-      from: 'Slökkvitæki ehf <' + account + '>',
+      from: 'Brunahólf slökkvitæki ehf <' + account + '>',
       to: [].concat(payload.to || []).filter(Boolean),
       cc: payload.cc, replyTo: payload.replyTo,
       subject: payload.subject || '',

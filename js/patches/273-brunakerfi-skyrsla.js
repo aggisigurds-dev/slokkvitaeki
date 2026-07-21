@@ -32,7 +32,7 @@
   const LOGO_PATH = '/img/brunaholf-logo.png';
   const FOOT_1 = 'Afrit af skoðunarskýrslunni verður sent eldvarnareftirliti slökkviliðs ef kallað er eftir því.';
   const FOOT_2 = 'Skoðað er samkvæmt nýjustu leiðbeiningum um sjálfvirka brunaviðvörun útg. af HMS 6.038.';
-  const FOOT_CO = 'Slökkvitæki ehf. · Helluhrauni 10, 220 Hafnarfjörður · kt. 600508-0400 · Sími 565 4080';
+  const FOOT_CO = 'Brunahólf slökkvitæki ehf. · Helluhrauni 10, 220 Hafnarfjörður · kt. 600508-0400 · Sími 565 4080';
   const HMS_HINT = 'Viðmið HMS: lágmark 65 dB í almennum rýmum, 75 dB í svefnherbergjum.';
 
   const BUN_LABELS = ['Stjórnstöð', 'Boðbúnaður', 'Reykskynjarar', 'Hitaskynjarar', 'Handboðar', 'Bjöllur / Sírenur', 'Rafhlöður'];
@@ -700,7 +700,7 @@
       '<div class="_sig">' +
         '<div><div class="_v">' + esc(s.meta.stadur || '') + '</div><div class="_ln">Staður</div></div>' +
         '<div><div class="_v">' + esc(m.dagsFmt) + '</div><div class="_ln">Dags.</div></div>' +
-        '<div><div class="_v">' + esc(s.meta.madur || '') + '</div><div class="_ln">F.h. Slökkvitæki ehf.</div></div>' +
+        '<div><div class="_v">' + esc(s.meta.madur || '') + '</div><div class="_ln">F.h. Brunahólf slökkvitæki ehf.</div></div>' +
       '</div>' +
       '<div class="_legal">' + esc(FOOT_1) + '<br>' + esc(FOOT_2) + '</div>' +
       '<div class="_costrip">' + esc(FOOT_CO) + '</div>';
@@ -826,7 +826,7 @@
     function footer() {
       doc.setTextColor.apply(doc, INK);
       const cols = [[ML, 140, s.meta.stadur || ''], [ML + 166, 140, m.dagsFmt], [ML + 332, CW - 332, s.meta.madur || '']];
-      const labs = ['Staður', 'Dags.', 'F.h. Slökkvitæki ehf.'];
+      const labs = ['Staður', 'Dags.', 'F.h. Brunahólf slökkvitæki ehf.'];
       cols.forEach((c, i) => {
         doc.setFont('helvetica', 'bold'); doc.setFontSize(9);
         doc.text(String(c[2]), c[0] + c[1] / 2, FOOT_TOP + 10, { align: 'center' });
