@@ -276,7 +276,9 @@
       '@media print{body>*{display:none!important}body>#_bks-overlay{display:block!important;position:static;background:#fff;overflow:visible}' +
       '#_bks-overlay ._bks-top,#_bks-overlay ._bks-wrap,#_bks-overlay ._bks-note{display:none!important}' +
       '#_bks-overlay ._bks-sheetwrap{display:block!important;padding:0}' +
-      '#_bks-overlay ._bks-sheet{box-shadow:none;max-width:none;padding:0;margin:0}}' +
+      // @page margin:0 (ekkert Chrome-URL/dags-haus) → blaðið sjálft ber 13mm
+      // hliðar-spássíur; efri/neðri koma frá thead/tfoot í R_CSS (endurtaka sig)
+      '#_bks-overlay ._bks-sheet{box-shadow:none;max-width:none;padding:0 13mm;margin:0}}' +
       '</style>' +
       '<style>' + R_CSS + '</style>' +
       '<div class="_bks-top"></div>' +
@@ -680,7 +682,8 @@
     '._bksr ._legal{font-size:7.5px;color:#666;margin-top:7px}' +
     '._bksr ._costrip{border-top:1px solid #c9ccd2;margin-top:6px;padding-top:4px;font-size:8px;font-weight:600;text-align:center;color:#16181c}' +
     '@page{size:A4;margin:0}' +
-    '@media print{._bksr ._pgpad{padding:0 13mm}}';
+    // efri/neðri spássíur á HVERRI síðu: ytri thead/tfoot endurtaka sig í prentun
+    '@media print{._bksr>table>thead td{padding-top:9mm!important}._bksr>table>tfoot td{padding-bottom:8mm!important}}';
 
   function xm(v, want) { return v === want ? '<span style="font-weight:800">x</span>' : ''; }
 
