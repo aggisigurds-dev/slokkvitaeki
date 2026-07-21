@@ -256,6 +256,23 @@
       var m={}; r.data.forEach(function(s){ var k=numKey(s.num); if(k) m[k]=s.source||'pos'; }); return m;
     }catch(_){ return {}; }
   }
+  // Reikningur-sölur kúnnans (greitt_med='reikningur' — sömu og Kröfu yfirlit
+  // sýnir) eftir kt. Aðeins þær sem eru tengdar ÞESSUM stað (customer_id===coId)
+  // eða kt-víðar án staðar (customer_id tómt) — svo reikningar rekstrarfélags
+  // dreifist ekki á alla staði. Tómt við villu.
+  async function fetchSolurInvoices(kt, coId){
+    var sb=SB(); if(!sb||!kt) return [];
+    var d=String(kt).replace(/\D/g,''); if(d.length<7) return [];
+    var dash=d.length===10?(d.slice(0,6)+'-'+d.slice(6)):d;
+    try{
+      var r=await sb.from('solur')
+        .select('num,samtals,created_at,customer_id,greitt_med,source')
+        .eq('greitt_med','reikningur')
+        .or('customer_kt.eq.'+d+',customer_kt.eq.'+dash);
+      if(r.error||!r.data) return [];
+      return r.data.filter(function(s){ return !s.customer_id || String(s.customer_id)===String(coId); });
+    }catch(_){ return []; }
+  }
   // Reiknings-chip R-númer → 'afgr' ef solur.source er pos/sott, annars 'uttekt'
   // (sjálfgefið úttekt — prófíllinn er skoðunar-miðaður svo óþekkt skjöl teljast
   // úttekt frekar en að fela þau ranglega undir afgreiðslu).
@@ -344,6 +361,25 @@
       if(k==='skyrsla') (repByY[y]=repByY[y]||[]).push({_att:a});
       else if(k==='reikningur') (invByY[y]=invByY[y]||[]).push({_att:a});
     });
+
+    // ── merge reikningur-sölur beint úr solur (sömu og í Kröfu yfirliti) ──
+    // 2026-07-21 (Agnar): reikningar sem sjást í Kröfu yfirliti (solur með
+    // greitt_med='reikningur') vantaði á prófílinn ef þeir voru ekki skráðir í
+    // customer_documents. Sækjum þá beint eftir kt og skeytum inn — afrit
+    // (sama R-númer) sleppt. Opnast gegnum sömu sölu-leið (data-invopen).
+    var solInv = kt ? await fetchSolurInvoices(kt, coId) : [];
+    if(solInv.length){
+      var haveInv={};
+      Object.keys(invByY).forEach(function(y){ (invByY[y]||[]).forEach(function(x){
+        var k=x.invoice_number?numKey(x.invoice_number):(x._att?numKey(chipInvNum(x)):''); if(k) haveInv[k]=1;
+      }); });
+      solInv.forEach(function(s){
+        var k=numKey(s.num); if(!k||haveInv[k]) return; haveInv[k]=1;
+        var y=parseInt(String(s.created_at||'').slice(0,4),10);
+        if(!(y>=2000&&y<=NOW+1)) return;
+        (invByY[y]=invByY[y]||[]).push({ invoice_number:s.num, amount:s.samtals, doc_date:s.created_at, _fromSolur:true });
+      });
+    }
 
     // ── year set: every year with anything + the current year, newest first ──
     var ySet={}; ySet[NOW]=1;
