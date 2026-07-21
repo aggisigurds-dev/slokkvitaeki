@@ -1,0 +1,19 @@
+{
+  "id": "/app/brunakerfi/",
+  "name": "Brunakerfi — Slökkvitæki",
+  "short_name": "Brunakerfi",
+  "description": "Skoðunarmanna-app: fyrirtækin í brunakerfis-þjónustu, skoðunarskýrslur og verð — skráð á staðnum.",
+  "start_url": "/app/brunakerfi/",
+  "scope": "/app/brunakerfi/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#101216",
+  "theme_color": "#7f1d1d",
+  "lang": "is",
+  "icons": [
+    { "src": "/img/app-brunakerfi-192.png?v=1", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/img/app-brunakerfi-512.png?v=1", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/img/app-brunakerfi-192.png?v=1", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "/img/app-brunakerfi-512.png?v=1", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
