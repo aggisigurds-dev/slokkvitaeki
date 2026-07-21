@@ -31,6 +31,16 @@
   function fmtKr(n) { return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr'; }
   function fmtKt(kt) { const d = String(kt || '').replace(/\D/g, ''); return d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : (kt || ''); }
   function today() { const d = new Date(); return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0') + '.' + d.getFullYear(); }
+  // jsPDF innbyggða letrið er CP1252 — stafir utan þess (₂ í „CO₂", U+2212 o.fl.)
+  // brjóta línuna („C O , 5 k g …" ruslið, Agnar 2026-07-21). Undirskriftar-
+  // tölustafir verða venjulegir, týpó-mínus verður '-', annað óstutt fellt burt.
+  const PDF_OK = new Set('–—‘’“”•…€™‚„‰‹›ŠžœŽšŒƒˆ˜Ÿ');
+  function pdfSafe(s) {
+    return String(s == null ? '' : s)
+      .replace(/[₀-₉]/g, d => String.fromCharCode(48 + d.charCodeAt(0) - 0x2080))
+      .replace(/−/g, '-')
+      .split('').map(c => (c.charCodeAt(0) <= 0xFF || PDF_OK.has(c)) ? c : '').join('');
+  }
   function blobToBase64(blob) {
     return new Promise((res, rej) => {
       const r = new FileReader();
@@ -82,7 +92,8 @@
     const INK = [26, 32, 44], GRAY = [100, 108, 122], BORDER = [226, 229, 234], RED = [217, 72, 15];
     let y = 46;
 
-    if (logo) { const lh = 40, lw = lh * logo.w / logo.h; doc.addImage(logo.url, 'PNG', ML, y, lw, lh); }
+    // stærra logo (ósk Agnars 2026-07-21): 40pt → 58pt
+    if (logo) { const lh = 58, lw = lh * logo.w / logo.h; doc.addImage(logo.url, 'PNG', ML, y, lw, lh); }
     // rautt TILBOÐ-merki + dags hægra megin
     doc.setFillColor.apply(doc, RED);
     doc.roundedRect(MR - 86, y, 86, 22, 11, 11, 'F');
@@ -90,7 +101,7 @@
     doc.text('TILBOÐ', MR - 43, y + 15, { align: 'center' });
     doc.setTextColor.apply(doc, GRAY); doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
     doc.text(today(), MR, y + 38, { align: 'right' });
-    y += 58;
+    y += 74;
     doc.setTextColor.apply(doc, GRAY); doc.setFontSize(8.5);
     ['Helluhrauni 10, 220 Hafnarfirði', 'Sími 565-4080 · eldklar@eldklar.is', 'kt. 600508-0400'].forEach(t => { doc.text(t, ML, y); y += 11; });
     y += 6;
@@ -104,7 +115,7 @@
     doc.text('VIÐSKIPTAVINUR', ML + 14, y + 15);
     doc.setTextColor.apply(doc, INK); doc.setFontSize(11.5);
     const cu = snap.customer || {};
-    doc.text((cu.nafn || '—') + (cu.kt ? '   ·   kt. ' + fmtKt(cu.kt) : ''), ML + 14, y + 32);
+    doc.text(pdfSafe((cu.nafn || '—') + (cu.kt ? '   ·   kt. ' + fmtKt(cu.kt) : '')), ML + 14, y + 32);
     y += 64;
 
     // línutafla
@@ -130,7 +141,7 @@
     snap.lines.forEach(l => {
       if (y > H - 190) { doc.addPage(); y = 60; }
       doc.setFont('helvetica', 'normal'); doc.setFontSize(9.5); doc.setTextColor.apply(doc, INK);
-      const nameLines = doc.splitTextToSize(l.desc || '—', cols[0].w - 8);
+      const nameLines = doc.splitTextToSize(pdfSafe(l.desc) || '—', cols[0].w - 8);
       const rowH = Math.max(18, nameLines.length * 12 + 6);
       nameLines.forEach((ln, i) => doc.text(ln, ML, y + 12 + i * 12));
       let x2 = ML + cols[0].w;
