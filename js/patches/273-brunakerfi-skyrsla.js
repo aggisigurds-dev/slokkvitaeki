@@ -178,6 +178,18 @@
       '<div class="_bks-sheetwrap"><div class="_bks-sheet"></div></div>';
     document.body.appendChild(ov);
     ov.querySelector('._bks-backbtn').addEventListener('click', () => setMode('work'));
+    // EINN delegated smellur á hausinn (renderTop skiptir bara um innerHTML —
+    // listener hér má ekki tvöfaldast við endur-opnun).
+    ov.querySelector('._bks-top').addEventListener('click', async e => {
+      const b = e.target.closest('[data-act]'); if (!b) return;
+      const act = b.dataset.act;
+      if (act === 'close') return closeOverlay();
+      if (act === 'work') return setMode('work');
+      if (act === 'report') return setMode('report');
+      if (act === 'print') { setMode('report'); setTimeout(() => window.print(), 120); return; }
+      if (act === 'save') { try { await saveDraft(); toast('Drög vistuð ✓'); } catch (err) { toast('Villa við vistun: ' + (err.message || err), true); } return; }
+      if (act === 'final') { await finalize(b); return; }
+    });
     return ov;
   }
 
@@ -210,16 +222,6 @@
         '<button type="button" class="_bks-hb _grn" data-act="final">✅ Ljúka &amp; vista</button>' +
         '<button type="button" class="_bks-hb _grn" data-act="print">🖨 Prenta / Vista PDF</button>' +
       '</div>';
-    ov.querySelector('._bks-top').addEventListener('click', async e => {
-      const b = e.target.closest('[data-act]'); if (!b) return;
-      const act = b.dataset.act;
-      if (act === 'close') return closeOverlay();
-      if (act === 'work') return setMode('work');
-      if (act === 'report') return setMode('report');
-      if (act === 'print') { setMode('report'); setTimeout(() => window.print(), 120); return; }
-      if (act === 'save') { try { await saveDraft(); toast('Drög vistuð ✓'); } catch (err) { toast('Villa við vistun: ' + (err.message || err), true); } return; }
-      if (act === 'final') { await finalize(b); return; }
-    });
   }
   function updStats() {
     const el = document.getElementById('_bks-stats'); if (!el) return;
@@ -629,12 +631,14 @@
   }
 
   function openForm(co, existing) {
+    // gölluð/tóm drög (data án info) → meðhöndla sem nýja skýrslu
+    const okData = existing && existing.data && existing.data.info;
     S = {
       id: existing ? existing.id : null,
       docId: existing ? (existing.doc_id || null) : null,
       co,
       status: existing ? existing.status : 'draft',
-      data: existing ? existing.data : null
+      data: okData ? existing.data : null
     };
     _dirty = false;
     const ov = ensureOverlay();
