@@ -284,13 +284,18 @@
     var srcByNum = kt ? await fetchSolurSrc(kt) : {};
 
     // ── group customer_documents per year/type ──
-    var repByY={}, invByY={}, pdByY={}, samn=[];
+    // 2026-07-21 (Agnar): brunakerfi (eldvarnakerfi) er ÖNNUR þjónusta en
+    // slökkvitæki — sami staður getur haft báðar. Áður lentu þær í SÖMU
+    // úttektarskýrslu-dálknum og litu út eins og tvítök/rugl. Nú AÐSKILDAR:
+    // repByY = slökkvitæki-úttektir, bruByY = brunakerfi-skoðanir.
+    var repByY={}, bruByY={}, invByY={}, pdByY={}, samn=[];
     payday.forEach(function(p){ var y=pdYear(p); if(y>=2000&&y<=NOW+1) (pdByY[y]=pdByY[y]||[]).push(p); });
     docs.forEach(function(d){
       var t=d.doc_type, y=parseInt(d.year,10);
       if(t==='samningur'){ samn.push({src:'doc',d:d,year:y||null}); return; }
       if(!(y>=2000&&y<=NOW+1)) return;
-      if(t==='uttektarskyrsla'||t==='brunakerfi') (repByY[y]=repByY[y]||[]).push(d); // brunakerfi = árs-skýrsla brunakerfis-þjónustu (additive doc_type 2026-07-15)
+      if(t==='brunakerfi') (bruByY[y]=bruByY[y]||[]).push(d);
+      else if(t==='uttektarskyrsla') (repByY[y]=repByY[y]||[]).push(d);
       else if(t==='reikningur') (invByY[y]=invByY[y]||[]).push(d);
     });
 
@@ -307,6 +312,7 @@
     // ── year set: every year with anything + the current year, newest first ──
     var ySet={}; ySet[NOW]=1;
     Object.keys(repByY).forEach(function(y){ySet[y]=1;});
+    Object.keys(bruByY).forEach(function(y){ySet[y]=1;});
     Object.keys(invByY).forEach(function(y){ySet[y]=1;});
     Object.keys(pdByY).forEach(function(y){ySet[y]=1;});
     var YEARS=Object.keys(ySet).map(Number).sort(function(a,b){return b-a;});
@@ -332,6 +338,12 @@
       if(y===NOW) return '<span class="sk-doc prog" title="Skoðun ársins ekki enn skjalfest">⏳ Í vinnslu</span>'+addChip('skyrsla',y,'+ skýrsla');
       return addChip('skyrsla',y,'vantar');
     }
+    // Brunakerfi-dálkur (eldvarnakerfi) — aðskilinn frá slökkvitæki-úttektum.
+    function bruCell(y){
+      var arr=bruByY[y]||[];
+      if(arr.length){ return arr.map(function(x){ return x._att?repAttChip(x._att):repDocChip(x); }).join(''); }
+      return '<span style="color:var(--ink4);font-size:11px">—</span>';
+    }
     function invCell(y){
       var arr=invByY[y]||[], pd=pdByY[y]||[];
       // Flokka reikningana: 🧯 Úttekt (úr ársskoðun) vs 🧾 Afgreiðsla (POS/Sótt);
@@ -356,10 +368,12 @@
       if(!hasRep && !hasInv) return '';
       return '<button type="button" class="sk-doc _sk-send" data-send-year="'+y+'" title="Senda úttektarskýrslu og/eða reikning '+y+' í tölvupósti" style="border-color:#99f6e4;color:#0f766e">📧 Senda</button>';
     }
+    section._bruByY = bruByY;
     var rows=YEARS.map(function(y){
       var cur=(y===NOW);
       return '<tr><td'+(cur?' style="color:var(--brand)"':'')+'>'+y+'</td>'+
         '<td>'+repCell(y)+'</td>'+
+        '<td>'+bruCell(y)+'</td>'+
         '<td>'+invCell(y)+'</td>'+
         '<td>'+sendCell(y)+'</td></tr>';
     }).join('');
@@ -380,7 +394,7 @@
     section.innerHTML = hdr +
       '<div class="sk-strip"><div class="sk-strip-l">📊 Staða eftir ári</div><div class="sk-strip-r">'+ (pills||'<span style="color:var(--ink4);font-size:12px">engin gögn</span>') +'</div></div>'+
       '<div class="sk-strip"><div class="sk-strip-l">📑 Þjónustusamningur</div><div class="sk-strip-r">'+samnHtml+'</div></div>'+
-      '<table class="sk-grid"><thead><tr><th>Ár</th><th>Úttektarskýrsla</th><th>Reikningur</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<table class="sk-grid"><thead><tr><th>Ár</th><th>🧯 Slökkvitæki</th><th>🔥 Brunakerfi</th><th>Reikningur</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'+
       '<div class="sk-strip"><div class="sk-strip-l">📎 Önnur viðhengi</div><div class="sk-strip-r">'+otherHtml+'</div></div>'+
       notLinked + fixLink;
   }
