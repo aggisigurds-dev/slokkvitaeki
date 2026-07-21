@@ -172,6 +172,8 @@
       '#_bks-overlay ._bks-sheetwrap{display:block!important;padding:0}' +
       '#_bks-overlay ._bks-sheet{box-shadow:none;max-width:none;padding:0;margin:0}}' +
       '</style>' +
+      // skýrslu-CSS (R_CSS) þarf LÍKA á skjá — ekki bara í vistaða HTML-skjalinu
+      '<style>' + R_CSS + '</style>' +
       '<div class="_bks-top"></div>' +
       '<div class="_bks-note" style="display:none"><button type="button" class="_bks-backbtn">← Til baka í vinnusvæði</button><span>Skýrslan skiptist sjálfkrafa á A4 síður við prentun — haus og fótur endurtaka sig á hverri síðu.</span></div>' +
       '<div class="_bks-wrap"></div>' +
