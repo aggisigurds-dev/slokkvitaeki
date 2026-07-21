@@ -1178,8 +1178,25 @@
     return _reports;
   }
 
+  // „🏷 Verðlisti"-hnappur í síu-röð yfirlitsins — sami ritill og í forminu;
+  // skýrslurnar sækja sjálfgefin verð í ÞENNAN lista (app_settings).
+  function injectListButton(root) {
+    if (root.querySelector('#_bks-vl-btn')) return;
+    const chips = root.querySelectorAll('._bky-filter');
+    const last = chips[chips.length - 1];
+    if (!last || !last.parentNode) return;
+    const b = document.createElement('button');
+    b.id = '_bks-vl-btn'; b.type = 'button';
+    b.textContent = '🏷 Verðlisti';
+    b.title = 'Verðlisti brunakerfis-skoðana — skýrslurnar sækja sjálfgefin verð hingað';
+    b.style.cssText = 'padding:6px 12px;border-radius:99px;border:1px solid #cbd5e1;background:#fff;color:#334155;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer';
+    b.addEventListener('click', () => openPriceEditor(null));
+    last.parentNode.insertBefore(b, last.nextSibling);
+  }
+
   function decorate() {
     const root = document.getElementById('_bky-root'); if (!root) return;
+    injectListButton(root);
     const rows = root.querySelectorAll('tr._bky-row');
     if (!rows.length) return;
     loadReportIndex().then(idx => {
@@ -1225,7 +1242,7 @@
   function boot() { watch(); setTimeout(watch, 2500); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
-  window.BrunakerfiSkyrsla = { openFlow, openForm };
+  window.BrunakerfiSkyrsla = { openFlow, openForm, openPriceEditor };
   console.log('[patch-273] Brunakerfi skoðunarskýrsla v2 (PDF + verð) installed');
 })();
 /* === END BRUNAKERFI SKOÐUNARSKÝRSLA === */
