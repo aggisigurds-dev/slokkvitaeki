@@ -157,7 +157,9 @@
       await saveCompanyAttachments(coId, list);
       if (meta.year) { try { document.dispatchEvent(new CustomEvent('attachment-year-changed')); } catch (_) {} }
       // úttektarskýrsla attached → light up the skoðað-marking for that year.
-      if (meta.year && (opts && opts.kind) === 'skyrsla') {
+      // opts.noMark: brunakerfis-skýrslur (patch 273) fara í skýrsludálkinn án
+      // þess að merkja slökkvitækja-ársskoðunina — aðskildar þjónustur (Agnar).
+      if (meta.year && (opts && opts.kind) === 'skyrsla' && !(opts && opts.noMark)) {
         try { await markInspectedFromReport(coId, meta.year); } catch (_) {}
       }
       return meta;
