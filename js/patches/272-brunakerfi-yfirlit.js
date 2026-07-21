@@ -21,7 +21,9 @@
   const MON = ['jan', 'feb', 'mar', 'apr', 'maí', 'jún', 'júl', 'ágú', 'sep', 'okt', 'nóv', 'des'];
   const MON_FULL = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
 
-  const state = { sortCol: 'name', sortDir: 'asc', search: '', month: 0, filter: 'all' };
+  const state = { sortCol: 'name', sortDir: 'asc', search: '', month: 0, filter: 'all',
+    // ☰ þétt / ▤ ítarlegt (ósk Agnars 2026-07-21 — símarnir sýndu ~8 raðir)
+    view: (function () { try { return localStorage.getItem('bky_view') || 'full'; } catch (_) { return 'full'; } })() };
   let _rows = null, _loading = false;
 
   function SB() { return (window.DB && DB.sb) || null; }
@@ -117,19 +119,23 @@
 
   // ── teikning ────────────────────────────────────────────────────────────────
   function yearCell(r, y) {
+    const cmp = state.view === 'thett';
+    const tdPad = cmp ? '3px 2px' : '6px 4px';
+    const pill = cmp ? 'padding:2px 6px;font-size:10.5px' : 'padding:3px 9px;font-size:12px';
+    const dotSz = cmp ? '6px' : '7px';
     const url = r.years[y];
     const yy = y.slice(-2);
     if (url) {
-      return '<td class="_bky-yr" style="text-align:center;padding:6px 4px"><a href="' + esc(url) + '" target="_blank" rel="noopener" title="Opna skýrslu ' + y + '" ' +
-        'style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;background:#DBEEE3;border:1px solid rgba(28,143,96,.35);color:#0F5E3F;font-size:12px;font-weight:700;text-decoration:none">' +
-        '<span style="width:7px;height:7px;border-radius:50%;background:#1C8F60;display:inline-block"></span>' + yy + '</a></td>';
+      return '<td class="_bky-yr" style="text-align:center;padding:' + tdPad + '"><a href="' + esc(url) + '" target="_blank" rel="noopener" title="Opna skýrslu ' + y + '" ' +
+        'style="display:inline-flex;align-items:center;gap:4px;' + pill + ';border-radius:99px;background:#DBEEE3;border:1px solid rgba(28,143,96,.35);color:#0F5E3F;font-weight:700;text-decoration:none">' +
+        '<span style="width:' + dotSz + ';height:' + dotSz + ';border-radius:50%;background:#1C8F60;display:inline-block"></span>' + yy + '</a></td>';
     }
     const due = (y === String(NOW));
     const bg = due ? '#FBEAC6' : '#F0EFEA', bd = due ? 'rgba(217,146,6,.5)' : '#D5D8DE', col = due ? '#8A5C04' : '#6B7280';
     const dot = due ? 'background:#D99206' : 'box-shadow:inset 0 0 0 1.5px #C7CAD0';
-    return '<td class="_bky-yr" style="text-align:center;padding:6px 4px"><span title="' + (due ? 'Vantar skoðun ' + y : 'Engin skýrsla ' + y) + '" ' +
-      'style="display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:99px;background:' + bg + ';border:1px solid ' + bd + ';color:' + col + ';font-size:12px;font-weight:700">' +
-      '<span style="width:7px;height:7px;border-radius:50%;display:inline-block;' + dot + '"></span>' + yy + '</span></td>';
+    return '<td class="_bky-yr" style="text-align:center;padding:' + tdPad + '"><span title="' + (due ? 'Vantar skoðun ' + y : 'Engin skýrsla ' + y) + '" ' +
+      'style="display:inline-flex;align-items:center;gap:4px;' + pill + ';border-radius:99px;background:' + bg + ';border:1px solid ' + bd + ';color:' + col + ';font-weight:700">' +
+      '<span style="width:' + dotSz + ';height:' + dotSz + ';border-radius:50%;display:inline-block;' + dot + '"></span>' + yy + '</span></td>';
   }
   function sortTh(label, col, align, cls) {
     const active = state.sortCol === col;
@@ -187,6 +193,10 @@
         // stjórntæki
         '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px">' +
           chip('all', 'Allt') + chip('done', '✅ Búið ' + NOW) + chip('pending', '⏳ Eftir ' + NOW) + chip('new', '🆕 Nýtt') +
+          '<span style="display:inline-flex;border:1px solid #cbd5e1;border-radius:99px;overflow:hidden">' +
+            '<button class="_bky-viewbtn" data-v="thett" type="button" style="padding:6px 11px;border:0;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;' + (state.view === 'thett' ? 'background:#0f766e;color:#fff' : 'background:#fff;color:#334155') + '">☰ Þétt</button>' +
+            '<button class="_bky-viewbtn" data-v="full" type="button" style="padding:6px 11px;border:0;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;' + (state.view !== 'thett' ? 'background:#0f766e;color:#fff' : 'background:#fff;color:#334155') + '">▤ Ítarlegt</button>' +
+          '</span>' +
           '<input class="_bky-search" type="search" placeholder="🔍 Leita (nafn · heimilisfang · tengiliður)…" value="' + esc(state.search) + '" ' +
             'style="flex:1 1 200px;min-width:160px;margin-left:auto;padding:8px 12px;border-radius:9px;border:1px solid #cbd5e1;background:#fff;color:#0f172a;font:inherit;font-size:13px">' +
         '</div>' +
@@ -197,7 +207,7 @@
         // tafla — lárétt skrun bundið í þennan kassa (max-width:100% svo síðan sjálf
         // renni ekki lárétt á síma; -webkit-overflow-scrolling fyrir mjúkt skrun).
         '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%">' +
-          '<table class="_bky-tbl" style="width:100%;border-collapse:collapse;min-width:820px">' +
+          '<table class="_bky-tbl' + (state.view === 'thett' ? ' _bky-cmp' : '') + '" style="width:100%;border-collapse:collapse;min-width:820px">' +
             '<thead><tr style="border-bottom:1px solid #e8ecf1">' +
               sortTh('Fyrirtæki', 'name') +
               YEARS.map(y => '<th class="_bky-yr" style="text-align:center;padding:9px 4px;color:#475569;font-size:11px;font-weight:800">' + "'" + y.slice(-2) + '</th>').join('') +
@@ -217,8 +227,21 @@
   }
 
   function rowHtml(r) {
+    const cmp = state.view === 'thett';
     const last = r.latest ? (r.latest + (r.latestMonth ? ' · ' + MON[r.latestMonth - 1] : '')) : '—';
     const newBadge = r.isNew ? '<span title="Bíður fyrstu skoðunar" style="margin-left:7px;padding:1px 7px;border-radius:99px;background:#7c3aed;color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.03em;vertical-align:middle">NÝTT</span>' : '';
+    if (cmp) {
+      // ☰ Þétt: ein lína per fyrirtæki — nafn + árpunktar + skjöl; ekkert netfang,
+      // engin mobile-fold, 📋-hnappurinn falinn með CSS (röðin opnar síðuna).
+      return '<tr class="_bky-row" data-id="' + r.id + '" style="border-bottom:1px solid #f1f5f9;cursor:pointer">' +
+        '<td style="padding:4px 8px;max-width:0;min-width:120px"><div style="font-weight:700;color:#0f172a;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(r.nafn) + newBadge + '</div></td>' +
+        YEARS.map(y => yearCell(r, y)).join('') +
+        '<td class="_bky-wcol" style="padding:4px 8px;color:#475569;font-size:11px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px">' + esc(r.address) + '</td>' +
+        '<td class="_bky-wcol" style="padding:4px 8px;color:#475569;font-size:11px;white-space:nowrap">' + esc(r.simi || '—') + '</td>' +
+        '<td class="_bky-wcol" style="padding:4px 8px;text-align:center;color:#0f172a;font-size:11px;white-space:nowrap">' + esc(last) + '</td>' +
+        '<td style="padding:4px 8px;text-align:center;color:#0f172a;font-size:12px;font-weight:700">' + r.count + '</td>' +
+      '</tr>';
+    }
     // Mobile-fold: heimilisfang · sími birtast undir nafninu á mjóum skjá (breiðu
     // dálkarnir faldir). Tengiliður er EKKI hér — hann lifir á fyrirtækjaspjaldinu.
     const mobInfo = [r.address, r.simi].filter(Boolean).join(' · ');
@@ -243,6 +266,11 @@
     }));
     root.querySelectorAll('._bky-filter').forEach(b => b.addEventListener('click', () => { state.filter = b.dataset.f; render(); }));
     root.querySelectorAll('._bky-month').forEach(b => b.addEventListener('click', () => { state.month = +b.dataset.m; render(); }));
+    root.querySelectorAll('._bky-viewbtn').forEach(b => b.addEventListener('click', () => {
+      state.view = b.dataset.v;
+      try { localStorage.setItem('bky_view', state.view); } catch (_) {}
+      render();
+    }));
     const s = root.querySelector('._bky-search');
     if (s) s.addEventListener('input', () => { state.search = s.value; const p = s.selectionStart; render(); const n = document.querySelector('._bky-search'); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (_) {} } });
     root.querySelectorAll('._bky-row').forEach(tr => tr.addEventListener('click', e => {
@@ -270,6 +298,8 @@
     v.innerHTML =
       '<style>' +
         '#' + VIEW_ID + ' ._bky-mob{display:none}' +
+        // ☰ Þétt: 📋/📝-hnappurinn (patch 273) víkur — röðin sjálf opnar síðuna
+        '#' + VIEW_ID + ' ._bky-cmp ._bks-btn{display:none!important}' +
         '@media (max-width:900px){' +
           '#' + VIEW_ID + ' ._bky-wcol{display:none!important}' +
           '#' + VIEW_ID + ' table._bky-tbl{min-width:0!important}' +
