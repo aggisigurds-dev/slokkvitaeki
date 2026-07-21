@@ -294,13 +294,20 @@
     const nav = document.querySelector('nav.view-nav, .view-nav');
     if (!nav) { setTimeout(injectSidebar, 600); return; }
     if (nav.querySelector('[data-view="' + NAV_KEY + '"]')) return;
-    const ref = nav.querySelector('[data-view="brunakerfi"]') || nav.querySelector('.vnav-btn');
-    const btn = document.createElement('button');
-    btn.className = (ref && ref.className) || 'vnav-btn';
+    // KLÓNA innfædda hnappinn (Brunakerfisþjónusta) svo bygging/stílun (SVG-tákn,
+    // data-ico-norm, bil) sé NÁKVÆMLEGA eins — eigin markup skekkti hnappinn.
+    const ref = nav.querySelector('[data-view="brunakerfi"]') || nav.querySelector('.vnav-btn[data-view]') || nav.querySelector('.vnav-btn');
+    if (!ref) { setTimeout(injectSidebar, 600); return; }
+    const btn = ref.cloneNode(true);
     btn.setAttribute('data-view', NAV_KEY);
-    btn.innerHTML = '<span style="display:inline-flex;align-items:center;gap:8px"><span style="font-size:16px">🔥</span><span>Brunakerfi yfirlit</span></span>';
+    btn.classList.remove('active');
+    btn.removeAttribute('style');   // ekki erfa `order` frá ref — látum patch 68 raða
+    // Skipta út sýnilega textanum (halda tákninu úr appinu).
+    const tn = [...btn.childNodes].reverse().find(n => n.nodeType === 3 && n.textContent.trim());
+    if (tn) tn.textContent = ' Brunakerfi yfirlit';
+    else { const s = [...btn.querySelectorAll('span')].reverse().find(x => x.textContent.trim()); if (s) s.textContent = 'Brunakerfi yfirlit'; else btn.appendChild(document.createTextNode(' Brunakerfi yfirlit')); }
     btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (window.App && App.switchView) App.switchView(NAV_KEY); else open(); });
-    if (ref && ref.parentNode) ref.parentNode.insertBefore(btn, ref.nextSibling);
+    if (ref.parentNode) ref.parentNode.insertBefore(btn, ref.nextSibling);
     else nav.insertBefore(btn, nav.firstChild);
   }
   function patchSwitchView() {
