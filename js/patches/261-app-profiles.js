@@ -33,6 +33,7 @@
     { k: 'verkbord',         label: 'Verkefnalisti',         short: 'Verkefni',   emoji: '📋' },
     { k: 'arsskodun',        label: 'Fyrirtæki í þjónustu',  short: 'Þjónusta',   emoji: '🏢' },
     { k: 'thjonustuverk',    label: 'Þjónustuverk',          short: 'Þj.verk',    emoji: '🛠' },
+    { k: 'brunayfirlit',     label: 'Brunakerfi yfirlit',    short: 'Brunakerfi', emoji: '🚨' },
     // Brunahólf-síður — birtar inni í appinu í iframe (deep-link á tab-ið).
     { k: 'br-gerdreikninga', label: 'Gerð reikninga',        short: 'Reikn.gerð', emoji: '🧾', url: 'https://brunaholf.netlify.app/?embed=1#gerdreikninga' },
     { k: 'br-vinnubok',      label: 'Vinnubók',              emoji: '📓', url: 'https://brunaholf.netlify.app/?embed=1#vinnubok' },
@@ -66,6 +67,13 @@
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
       defaults: ['br-dagurinn', 'br-verkkaupar', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting'] },
+    // Brunakerfi-appið fyrir skoðunarmenn á staðnum (ósk Agnars 2026-07-21):
+    // yfirlitið er heimasíðan; fyrirtækjasíðan (274) og skýrslu-formið (273)
+    // opnast þaðan sem yfirlög — allt innan sömu læstu skeljar.
+    { key: 'brunakerfi', emoji: '🚨', name: 'Brunakerfi', color: '#b91c1c', dark: '#7f1d1d',
+      manifest: '/manifest-brunakerfi.json', home: 'brunayfirlit',
+      blurb: 'Skoðunarmanna-app: fyrirtækin, skoðunarskýrslur og verð — skráð á staðnum',
+      defaults: ['brunayfirlit'] },
     // Bílstjóri er STANDALONE: engin botn-nav-skel (patch 219 á heilan
     // læstan fullskjá). Kortið gefur bara Opna / Setja upp / Afrita hlekk —
     // engin „Síður í appinu"-listi. ?app=bilstjori ræsir læsta Bílstjórann.
