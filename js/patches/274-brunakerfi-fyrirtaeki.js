@@ -171,16 +171,37 @@
       '</div>';
     }).join('');
 
-    // eldri söfnuð skjöl
+    // eldri söfnuð skjöl — mánaðar-val (ósk Agnars: „hvaða mánuði var síðasta
+    // skoðun"), 🗑 aftengja ranga skrá og ＋ bæta við réttri (sjá strip neðar)
+    const MONS = ['jan', 'feb', 'mar', 'apr', 'maí', 'jún', 'júl', 'ágú', 'sep', 'okt', 'nóv', 'des'];
     const oldRows = oldDocs.map(d => {
       const url = driveUrl(d.drive_file_id) || storageUrl(d.storage_path);
+      const curMon = d.doc_date ? +String(d.doc_date).slice(5, 7) : 0;
+      const monSel = d.year
+        ? '<select class="_bkc-monsel" data-doc="' + d.id + '" data-year="' + esc(d.year) + '" title="Mánuður skoðunar — vistast strax" ' +
+          'style="border:1px solid ' + (curMon ? '#a9dcbd' : '#d0d4da') + ';border-radius:8px;padding:6px 6px;font:inherit;font-size:12px;background:' + (curMon ? '#f2faf5' : '#fff') + '">' +
+          '<option value="">mán?</option>' +
+          MONS.map((m, i) => '<option value="' + (i + 1) + '"' + (curMon === i + 1 ? ' selected' : '') + '>' + m + '</option>').join('') +
+          '</select>'
+        : '';
       return '<div class="_bkc-row">' +
         '<span class="_bkc-st" style="background:#e8ecf3;color:#3b4653">' + esc(d.year || '—') + '</span>' +
-        '<div style="flex:1;min-width:150px"><div style="font-weight:600;font-size:13px">Úttektarskýrsla ' + esc(d.year || '') + '</div>' +
-        '<div style="font-size:11px;color:#8b93a1">' + esc(d.doc_date ? fmtDags(d.doc_date) : '') + (d.source ? ' · ' + esc(d.source) : '') + '</div></div>' +
+        '<div style="flex:1;min-width:130px"><div style="font-weight:600;font-size:13px">Úttektarskýrsla ' + esc(d.year || '') + '</div>' +
+        '<div style="font-size:11px;color:#8b93a1">' + esc(d.doc_date ? fmtDags(d.doc_date) : 'mánuð vantar') + (d.source ? ' · ' + esc(d.source) : '') + '</div></div>' +
+        monSel +
         (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener">Opna</a>' : '') +
+        '<button type="button" class="_bkc-act _del" data-docdel="' + d.id + '" title="Aftengja þetta skjal (röng skrá) — skráin sjálf helst í Drive">🗑</button>' +
       '</div>';
     }).join('');
+    const addFileStrip =
+      '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px dashed #d7dade;font-size:12.5px;color:#59606c">' +
+        '＋ Bæta við skjali:' +
+        '<select id="_bkc-addyear" style="border:1px solid #d0d4da;border-radius:8px;padding:6px 8px;font:inherit;font-size:12.5px">' +
+          (function () { const y = new Date().getFullYear(); let o = ''; for (let i = y; i >= y - 6; i--) o += '<option' + (i === y ? ' selected' : '') + '>' + i + '</option>'; return o; })() +
+        '</select>' +
+        '<label class="_bkc-act _ghost" style="cursor:pointer">📎 Velja PDF<input type="file" id="_bkc-addfile" accept="application/pdf" style="display:none"></label>' +
+        '<span id="_bkc-addstatus" style="color:#8b93a1"></span>' +
+      '</div>';
 
     // verð / reikningsyfirlit
     const verds = C.reports.map(r => ({ r, v: verdOf(r) })).filter(x => x.v.lines > 0);
@@ -241,8 +262,9 @@
           '<div class="_bkc-card"><div class="_bkc-ch">Skoðunarskýrslur<small>' + C.reports.length + ' í appinu · ' + oldDocs.length + ' eldri skjöl</small></div><div class="_bkc-body">' +
             (repRows || '<div class="_bkc-empty">Engin skýrsla í appinu enn.</div>') +
             '<button type="button" class="_bkc-new" id="_bkc-new">＋ Ný skoðunarskýrsla</button>' +
+            (oldDocs.length ? '' : addFileStrip) +
           '</div></div>' +
-          (oldDocs.length ? '<div class="_bkc-card"><div class="_bkc-ch">Eldri skýrslur &amp; skjöl<small>söfnuð úr Drive/tölvum</small></div><div class="_bkc-body">' + oldRows + '</div></div>' : '') +
+          (oldDocs.length ? '<div class="_bkc-card"><div class="_bkc-ch">Eldri skýrslur &amp; skjöl<small>söfnuð úr Drive/tölvum</small></div><div class="_bkc-body">' + oldRows + addFileStrip + '</div></div>' : '') +
         '</div>' +
         '<div>' +
           '<div class="_bkc-card"><div class="_bkc-ch">Búnaðarskrá kerfisins' +
@@ -279,6 +301,54 @@
       try { await SB().from('brunakerfi_skyrslur').delete().eq('id', b.dataset.del); } catch (_) {}
       reload();
     }));
+    // mánuður skoðunar á eldra skjali → doc_date (vistast strax)
+    w.querySelectorAll('._bkc-monsel').forEach(sel => sel.addEventListener('change', async () => {
+      const mo = +sel.value, yr = +sel.dataset.year;
+      if (!mo || !yr) return;
+      try {
+        const r = await SB().from('customer_documents').update({ doc_date: yr + '-' + String(mo).padStart(2, '0') + '-01' }).eq('id', +sel.dataset.doc);
+        if (r.error) throw r.error;
+        reload();
+        try { if (window.BrunakerfiYfirlit && BrunakerfiYfirlit.reload) BrunakerfiYfirlit.reload(); } catch (_) {}
+      } catch (e) { alert('Vistun mistókst: ' + (e.message || e)); }
+    }));
+    // 🗑 aftengja rangt skjal (röðin fer, skráin sjálf helst í Drive)
+    w.querySelectorAll('[data-docdel]').forEach(b => b.addEventListener('click', async () => {
+      if (!confirm('Aftengja þetta skjal af fyrirtækinu?\n(Skráin sjálf helst óbreytt í Drive — bara tengingin fer.)')) return;
+      try {
+        const r = await SB().from('customer_documents').delete().eq('id', +b.dataset.docdel);
+        if (r.error) throw r.error;
+        reload();
+        try { if (window.BrunakerfiYfirlit && BrunakerfiYfirlit.reload) BrunakerfiYfirlit.reload(); } catch (_) {}
+      } catch (e) { alert('Tókst ekki: ' + (e.message || e)); }
+    }));
+    // ＋ bæta við skjali: PDF af tækinu → storage + customer_documents röð
+    const addFile = w.querySelector('#_bkc-addfile');
+    if (addFile) addFile.addEventListener('change', async () => {
+      const f = addFile.files && addFile.files[0]; if (!f) return;
+      const yr = +(w.querySelector('#_bkc-addyear') || {}).value || new Date().getFullYear();
+      const st = w.querySelector('#_bkc-addstatus');
+      if (st) st.textContent = 'Hleð upp…';
+      try {
+        const sb = SB();
+        const safe = f.name.replace(/[^\w.\-]+/g, '_');
+        const path = 'brunakerfi-skyrslur/' + co.id + '/uploads/' + Date.now() + '_' + safe;
+        const up = await sb.storage.from('samningar').upload(path, f, { contentType: f.type || 'application/pdf', upsert: false });
+        if (up.error) throw up.error;
+        const ins = await sb.from('customer_documents').insert({
+          doc_type: 'brunakerfi', fyrirtaeki_id: co.id, year: yr,
+          storage_path: 'samningar/' + path, customer_name: co.nafn || null,
+          source: 'app', found_by: 'manual-upload', notes: 'Handvirkt viðhengt: ' + f.name
+        });
+        if (ins.error) throw ins.error;
+        if (st) st.textContent = '';
+        reload();
+        try { if (window.BrunakerfiYfirlit && BrunakerfiYfirlit.reload) BrunakerfiYfirlit.reload(); } catch (_) {}
+      } catch (e) {
+        if (st) st.textContent = '';
+        alert('Upphleðsla mistókst: ' + (e.message || e));
+      }
+    });
   }
 
   async function open(coId) {
