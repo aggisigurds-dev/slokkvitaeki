@@ -86,6 +86,24 @@
     if (fmtDate(s.paid_at) === fmtDate(s.created_at)) return '';
     return '<div class="hl-mono" style="font-size:10px;color:#16a34a;font-weight:700;margin-top:1px">✓ greitt ' + esc(fmtDate(s.paid_at)) + '</div>';
   }
+  // „Síðasta hreyfing" = nýjasti tímastimpill sölunnar: greitt / breytt / skráð.
+  // ISO-strengir raðast rétt í stafrófsröð svo hæsta gildið = nýjast.
+  function lastAct(s) {
+    return [s.paid_at, s.updated_at, s.created_at].filter(Boolean).map(String).sort().pop() || '';
+  }
+  // Sérstakur „Greitt · síðast" dálkur: sýnir GREIÐSLU-/síðustu-hreyfingar-dag
+  // (grænt ef greitt) svo tæki sem er sótt+greitt löngu eftir móttöku sjáist á
+  // réttum degi. „—" ef ekkert gerðist eftir skráningu.
+  function greittCell(s) {
+    if (s.paid_at) {
+      return '<span class="hl-mono" style="font-size:11px;color:#16a34a;font-weight:700">✓ ' + esc(fmtDate(s.paid_at)) + '</span> <span class="hl-mono" style="font-size:10px;color:#16a34a">' + esc(fmtTime(s.paid_at)) + '</span>';
+    }
+    const la = lastAct(s);
+    if (la && new Date(la) > new Date(s.created_at) && fmtDate(la) !== fmtDate(s.created_at)) {
+      return '<span class="hl-mono" style="font-size:11px;color:#64748b">' + esc(fmtDate(la)) + '</span> <span class="hl-mono" style="font-size:10px;color:#94a3b8">' + esc(fmtTime(la)) + '</span>';
+    }
+    return '<span style="color:#cbd5e1">—</span>';
+  }
   function fmtTime(iso) {
     if (!iso) return '';
     const d = new Date(iso);
@@ -181,7 +199,7 @@
   }
 
   // ── Data load ────────────────────────────────────────────────────────────
-  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'created_at', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'month' };
+  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'greitt', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'month' };
 
   // 2026-07-01: customer lookup by NAME or KENNITALA — pull a customer's WHOLE
   // sölu-/reikningasaga (all time, not month-bounded) so "sendu mér kvittun frá
@@ -247,7 +265,7 @@
     if (!parts.length) { main.innerHTML = '<div style="padding:40px;text-align:center;color:#94a3b8">Enginn kúnni fannst fyrir „' + esc(q) + '".</div>'; return; }
 
     const r = await SB.from('solur')
-      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,paid_at,is_credit,credit_of,starfsmadur')
+      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,updated_at,paid_at,is_credit,credit_of,starfsmadur')
       .or(parts.join(','))
       .order('created_at', { ascending: false })
       .limit(1000);
@@ -285,7 +303,7 @@
 
     // 2026-07-01: scope — Mánuður (default) · Ár (whole year) · Allt (all time).
     let q = SB.from('solur')
-      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,paid_at,is_credit,credit_of,starfsmadur')
+      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,updated_at,paid_at,is_credit,credit_of,starfsmadur')
       .order('created_at', { ascending: false });
     if (_state.scope === 'all') {
       q = q.limit(5000);
@@ -327,6 +345,7 @@
         case 'tegund':         return s.is_credit ? 1 : 0;
         case 'stada':          return s.is_credit ? 2 : (s.paid_at ? 0 : 1);
         case 'samtals':        return s.is_credit ? -Math.abs(+s.samtals || 0) : (+s.samtals || 0);
+        case 'greitt':         return lastAct(s);   // greitt/breytt/skráð — nýjast fyrst
         default:               return String(s.created_at || '');
       }
     };
@@ -458,7 +477,7 @@
       h.addEventListener('click', () => {
         const k = h.dataset.k;
         if (_state.sortKey === k) _state.sortDir = _state.sortDir === 'asc' ? 'desc' : 'asc';
-        else { _state.sortKey = k; _state.sortDir = (k === 'created_at' || k === 'samtals') ? 'desc' : 'asc'; }
+        else { _state.sortKey = k; _state.sortDir = (k === 'created_at' || k === 'greitt' || k === 'samtals') ? 'desc' : 'asc'; }
         render();
       });
     });
@@ -624,7 +643,8 @@
       <div class="data-table-wrap"><div class="data-table-scroll">
         <table class="data-table" style="min-width:1080px">
           <thead><tr>
-            <th class="_hr-sort" data-k="created_at">Dags · Tími <span class="sort-ar">${sortArrow('created_at')}</span></th>
+            <th class="_hr-sort" data-k="created_at">Skráð · Tími <span class="sort-ar">${sortArrow('created_at')}</span></th>
+            <th class="_hr-sort" data-k="greitt">Greitt · síðast <span class="sort-ar">${sortArrow('greitt')}</span></th>
             <th class="_hr-sort" data-k="num">Skjal <span class="sort-ar">${sortArrow('num')}</span></th>
             <th class="_hr-sort" data-k="customer_nafn">Viðskiptavinur <span class="sort-ar">${sortArrow('customer_nafn')}</span></th>
             <th>Kennitala</th>
@@ -637,7 +657,7 @@
           <tbody>
             ${rows.length
               ? rows.map(rowHtml).join('')
-              : '<tr><td colspan="9" style="padding:44px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar</td></tr>'}
+              : '<tr><td colspan="10" style="padding:44px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar</td></tr>'}
           </tbody>
         </table>
       </div></div>`;
@@ -647,7 +667,8 @@
   // icon-only actions), many rows visible at once.
   function tableDenseHtml(rows) {
     const head = '<thead><tr>' +
-      thT('created_at', 'Dags · Tími') +
+      thT('created_at', 'Skráð') +
+      thT('greitt', 'Greitt · síðast') +
       thT('num', 'Skjal') +
       thT('customer_nafn', 'Viðskiptavinur') +
       '<th>Kt.</th>' +
@@ -659,13 +680,14 @@
       '</tr></thead>';
     const body = rows.length
       ? rows.map(rowDenseHtml).join('')
-      : '<tr><td colspan="9" style="padding:40px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar</td></tr>';
+      : '<tr><td colspan="10" style="padding:40px;text-align:center;color:#94a3b8;font-style:italic">Engar hreyfingar</td></tr>';
     return '<div class="data-table-wrap" style="overflow-x:auto"><table class="hl-table">' + head + '<tbody>' + body + '</tbody></table></div>';
   }
   function rowDenseHtml(s) {
     const acts = actionDefs(s).map(iconBtn).join('');
     return `<tr class="hl-trow">
-      <td style="white-space:nowrap"><span class="hl-mono" style="font-size:11px;color:#334155">${esc(fmtDate(s.created_at))}</span> <span class="hl-mono" style="font-size:10px;color:#94a3b8">${esc(fmtTime(s.created_at))}</span>${paidNote(s)}</td>
+      <td style="white-space:nowrap"><span class="hl-mono" style="font-size:11px;color:#334155">${esc(fmtDate(s.created_at))}</span> <span class="hl-mono" style="font-size:10px;color:#94a3b8">${esc(fmtTime(s.created_at))}</span></td>
+      <td style="white-space:nowrap">${greittCell(s)}</td>
       <td><span class="hl-mono" style="font-size:11px;color:#1d4ed8;font-weight:700">${esc(s.num || '')}</span></td>
       <td style="font-size:12px;font-weight:600;overflow-wrap:anywhere;max-width:220px">${custNameHtml(s)}</td>
       <td style="white-space:nowrap">${ktCell(s.customer_kt)}</td>
@@ -707,8 +729,8 @@
       <td style="padding:10px 14px;white-space:nowrap">
         <span class="hl-mono" style="font-size:12px;color:#334155">${esc(fmtDate(s.created_at))}</span>
         <span class="hl-mono" style="display:block;font-size:10.5px;color:#94a3b8;margin-top:1px">${esc(fmtTime(s.created_at))}</span>
-        ${paidNote(s)}
       </td>
+      <td style="padding:10px 14px;white-space:nowrap">${greittCell(s)}</td>
       <td style="padding:10px 14px"><span class="hl-mono" style="font-size:12px;color:#1d4ed8;font-weight:700">${esc(s.num || '')}</span></td>
       <td style="padding:10px 14px;font-size:13.5px;font-weight:600;color:#11141c">${custNameHtml(s)}</td>
       <td style="padding:10px 14px;white-space:nowrap">${ktCell(s.customer_kt)}</td>
