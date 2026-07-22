@@ -19,6 +19,9 @@
   const KEY = 'arsskodun_customers';
   const curYear = new Date().getFullYear();
   const STEPS_KEY = 'steps_' + curYear;
+  // NB: borðið (190) sýnir FIMM skref síðan 2026-07-22 — „farid" (Farið á
+  // verkstað) er fremst. Það er viljandi EKKI hér: það er undanfari úttektar
+  // sem 190 leiðir sjálft af `uttekt`, og má ekki blokka árs-lokun héðan.
   const STEP_KEYS = ['uttekt', 'skyrsla', 'send', 'reikningur'];
 
   function ready() { return !!(window.AppSettings && AppSettings.path && AppSettings.save); }

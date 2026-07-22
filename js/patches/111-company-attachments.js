@@ -284,7 +284,7 @@
     // (year, kind). Attaching an úttektarskýrsla lights up the skoðað-marking.
     const addBtn = (y, kind, has) => '<button class="_cat-cell-add" data-year="' + y + '" data-kind="' + kind + '" ' +
       'title="' + (has ? 'Bæta við / skipta um ' : 'Tengja ') + (kind === 'skyrsla' ? 'úttektarskýrslu' : 'reikning') + ' fyrir ' + y + '" ' +
-      'style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;margin:2px 2px 0 0;background:var(--surface);border:1px dashed ' + (has ? 'var(--brd2)' : 'var(--ink4)') + ';color:var(--ink3)">＋' + (has ? '' : ' Tengja') + '</button>';
+      'style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;margin:2px 2px 0 0;background:var(--surface);border:1px dashed ' + (has ? 'var(--brd2)' : 'var(--hairline)') + ';color:var(--ink3)">＋' + (has ? '' : ' Tengja') + '</button>';
     const rows = YEARS.map(y => {
       const sk = (cell[y] && cell[y].skyrsla) || [];
       const re = (cell[y] && cell[y].reikningur) || [];

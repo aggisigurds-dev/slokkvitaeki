@@ -26,8 +26,19 @@
   /* Text */
   --ink1: #0f1117;
   --ink2: #404550;
-  --ink3: #8891a0;
-  --ink4: #bcc3cc;
+  /* 2026-07-22 (ósk Agnars — „fix grey on grey text"): ink3/ink4 voru of ljós.
+     Mælt á hvítu / --bg / --bg3 var ink3 3,18 / 2,92 / 2,77 og ink4 1,78 / 1,63
+     / 1,55 — undir 4,5 lágmarkinu (WCAG AA) og ink4 nánast ósýnilegt. Verst kom
+     það fram þar sem ink3-texti situr á --bg (t.d. „Engin skoðun skráð"), sem er
+     nákvæmlega grátt-á-gráu. Nýju gildin mælast 6,85 / 6,29 / 5,95 og
+     5,38 / 4,94 / 4,68 — öll yfir mörkunum og stiginn ink1→ink4 helst skýr. */
+  --ink3: #525b6b;
+  --ink4: #626b7a;
+  /* Gamla (ljósa) ink4-gráan lifir hér fyrir SKRAUTIÐ — punkta, strikaðar
+     rammalínur og hover-kanta. Þau eiga áfram að vera dauf; það var bara
+     TEXTINN sem þurfti að dökkna. Án þessa hefðu „offline"/„collected"
+     punktarnir orðið dökkir og litið út fyrir að vera virkir. */
+  --hairline: #bcc3cc;
 
   /* Borders */
   --brd: #e4e6ea;
@@ -530,7 +541,7 @@ textarea.fi { resize: vertical; min-height: 72px; }
 .jli-dot.dot-received { background: var(--blu); }
 .jli-dot.dot-workshop { background: var(--amb); }
 .jli-dot.dot-ready { background: var(--grn); }
-.jli-dot.dot-collected { background: var(--ink4); }
+.jli-dot.dot-collected { background: var(--hairline); }
 .jli-num { font-family: var(--mono); font-size: 11px; color: var(--ink3); }
 .jli-name { font-size: 13px; font-weight: 600; color: var(--ink1); margin-top: 1px; }
 .jli-meta { font-size: 11px; color: var(--ink3); margin-top: 1px; }
@@ -1187,7 +1198,7 @@ textarea.fi { resize: vertical; min-height: 72px; }
 .jli-dot.received, .jli-dot.dot-received { background: var(--blu); }
 .jli-dot.workshop { background: var(--amb); }
 .jli-dot.ready, .jli-dot.dot-ready { background: var(--grn); }
-.jli-dot.collected, .jli-dot.dot-collected { background: var(--ink4); }
+.jli-dot.collected, .jli-dot.dot-collected { background: var(--hairline); }
 
 /* Result row in scan */
 .result-row { padding: 12px 0; }
@@ -1389,7 +1400,7 @@ textarea.fi { resize: vertical; min-height: 72px; }
   width:7px; height:7px; border-radius:50%;
   background:var(--grn); flex-shrink:0;
 }
-.sync-dot.offline { background:var(--ink4); }
+.sync-dot.offline { background:var(--hairline); }
 .user-chip {
   display:flex !important;
   align-items:center !important;
@@ -1600,7 +1611,7 @@ textarea.fi { resize: vertical; min-height: 72px; }
 
 /* Sync dot green = online */
 .sync-dot { background: var(--grn) !important; }
-.sync-dot.offline { background: var(--ink4) !important; }
+.sync-dot.offline { background: var(--hairline) !important; }
 
 /* User chip */
 .user-chip {
@@ -1780,8 +1791,19 @@ textarea.fi { resize: vertical; min-height: 72px; }
   /* Text */
   --ink1: #0f1117;
   --ink2: #404550;
-  --ink3: #8891a0;
-  --ink4: #bcc3cc;
+  /* 2026-07-22 (ósk Agnars — „fix grey on grey text"): ink3/ink4 voru of ljós.
+     Mælt á hvítu / --bg / --bg3 var ink3 3,18 / 2,92 / 2,77 og ink4 1,78 / 1,63
+     / 1,55 — undir 4,5 lágmarkinu (WCAG AA) og ink4 nánast ósýnilegt. Verst kom
+     það fram þar sem ink3-texti situr á --bg (t.d. „Engin skoðun skráð"), sem er
+     nákvæmlega grátt-á-gráu. Nýju gildin mælast 6,85 / 6,29 / 5,95 og
+     5,38 / 4,94 / 4,68 — öll yfir mörkunum og stiginn ink1→ink4 helst skýr. */
+  --ink3: #525b6b;
+  --ink4: #626b7a;
+  /* Gamla (ljósa) ink4-gráan lifir hér fyrir SKRAUTIÐ — punkta, strikaðar
+     rammalínur og hover-kanta. Þau eiga áfram að vera dauf; það var bara
+     TEXTINN sem þurfti að dökkna. Án þessa hefðu „offline"/„collected"
+     punktarnir orðið dökkir og litið út fyrir að vera virkir. */
+  --hairline: #bcc3cc;
 
   /* Borders */
   --brd: #e4e6ea;
@@ -2284,7 +2306,7 @@ textarea.fi { resize: vertical; min-height: 72px; }
 .jli-dot.dot-received { background: var(--blu); }
 .jli-dot.dot-workshop { background: var(--amb); }
 .jli-dot.dot-ready { background: var(--grn); }
-.jli-dot.dot-collected { background: var(--ink4); }
+.jli-dot.dot-collected { background: var(--hairline); }
 .jli-num { font-family: var(--mono); font-size: 11px; color: var(--ink3); }
 .jli-name { font-size: 13px; font-weight: 600; color: var(--ink1); margin-top: 1px; }
 .jli-meta { font-size: 11px; color: var(--ink3); margin-top: 1px; }
@@ -2941,7 +2963,7 @@ textarea.fi { resize: vertical; min-height: 72px; }
 .jli-dot.received, .jli-dot.dot-received { background: var(--blu); }
 .jli-dot.workshop { background: var(--amb); }
 .jli-dot.ready, .jli-dot.dot-ready { background: var(--grn); }
-.jli-dot.collected, .jli-dot.dot-collected { background: var(--ink4); }
+.jli-dot.collected, .jli-dot.dot-collected { background: var(--hairline); }
 
 /* Result row in scan */
 .result-row { padding: 12px 0; }
@@ -3143,7 +3165,7 @@ textarea.fi { resize: vertical; min-height: 72px; }
   width:7px; height:7px; border-radius:50%;
   background:var(--grn); flex-shrink:0;
 }
-.sync-dot.offline { background:var(--ink4); }
+.sync-dot.offline { background:var(--hairline); }
 .user-chip {
   display:flex !important;
   align-items:center !important;
@@ -3354,7 +3376,7 @@ textarea.fi { resize: vertical; min-height: 72px; }
 
 /* Sync dot green = online */
 .sync-dot { background: var(--grn) !important; }
-.sync-dot.offline { background: var(--ink4) !important; }
+.sync-dot.offline { background: var(--hairline) !important; }
 
 /* User chip */
 .user-chip {

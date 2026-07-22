@@ -564,7 +564,7 @@
     }
     var sep='<span style="width:1px;height:26px;background:var(--brd)"></span>';
     var totHtml='<div class="_ovr-totals" style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--brd);border-radius:12px;padding:12px 18px;margin-bottom:14px;box-shadow:0 1px 2px rgba(16,24,40,.04)">'+
-      stat('',firms,'félög')+sep+stat('var(--ink4)',tot.byg,'byggingar')+sep+
+      stat('',firms,'félög')+sep+stat('var(--hairline)',tot.byg,'byggingar')+sep+
       stat('#1C8F60',tot.done,'með úttekt 2026','#15803d')+
       stat('#D99206',tot.need,'vantar 2026','#b7791f')+
       stat('#f97316',tot.none,'engin gögn','#b45309')+

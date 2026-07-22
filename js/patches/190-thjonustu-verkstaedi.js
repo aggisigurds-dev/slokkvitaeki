@@ -33,11 +33,14 @@
   function toast(m) { if (window.Toast && Toast.show) Toast.show(m); else console.log('[þjónustuverkstæði]', m); }
   function arsMap() { try { if (window.AppSettings && AppSettings.path) return AppSettings.path(KEY) || {}; } catch (_) {} return {}; }
 
-  // 2026-06-12 (Todoist): fjögur eftirfylgni-skref á hverju Í-vinnslu korti.
+  // 2026-06-12 (Todoist): eftirfylgni-skref á hverju Í-vinnslu korti.
   // Geymd árs-skorðuð í arsskodun_customers[<id>].steps_<ár> svo þau núllast
-  // sjálfkrafa um áramót. Þegar öll fjögur eru ✓ færist kortið sjálfkrafa í Búið.
+  // sjálfkrafa um áramót. Þegar öll eru ✓ færist kortið sjálfkrafa í Búið.
+  // 2026-07-22 (ósk Agnars): „Farið á verkstað" bætt við FREMST — skrefið sem
+  // segir að búið sé að mæta á staðinn, á undan því að úttektin sjálf klárist.
   const STEPS_KEY = 'steps_' + curYear;
   const STEP_DEFS = [
+    ['farid',      'Farið á verkstað', 'Farið'],
     ['uttekt',     'Úttekt búin',      'Úttekt'],
     ['skyrsla',    'Skýrsla tilbúin',  'Skýrsla'],
     ['send',       'Skýrsla send',     'Send'],
@@ -46,7 +49,7 @@
   // Afleidd (effective) skref — speglun FRÁ Fyrirtæki í þjónustu (153):
   // fyrirtæki sem 153 (eða Bílstjóri 219 / ArsWorkflow 266) merkti „Í vinnslu"
   // (field_inspected_year === curYear) telst með úttektina búna, og fullklárað
-  // ár (last_year_inspected === curYear) sýnir öll fjögur skref græn — nema
+  // ár (last_year_inspected === curYear) sýnir öll skrefin græn — nema
   // skrefið hafi verið afhakað sérstaklega (explicit false vinnur alltaf).
   function effSteps(a, hasReik) {
     a = a || {};
@@ -58,6 +61,10 @@
     // telst búið þó enginn hafi smellt á það — send-leiðirnar (Kröfuyfirlit,
     // PDF-sjálfvistun, Drive) skrifa ekki skref. Skýrt afhak (false) vinnur.
     if (s.reikningur === undefined && hasReik) s.reikningur = true;
+    // „Farið á verkstað" er UNDANFARI úttektarinnar: sé úttektin búin hlýtur að
+    // hafa verið farið. Án þessa sætu öll eldri kort (og allt sem 153/219/266
+    // merkja) uppi með tómt fyrsta skref á eftir grænni úttekt.
+    if (s.farid === undefined && s.uttekt) s.farid = true;
     return s;
   }
   // Bráðabirgða-merkingar (single-select) á hverju Í-vinnslu korti.
@@ -567,6 +574,11 @@
       const a = arsMap()[String(id)] || {};
       const cur = effSteps(a, _reikCoIds.has(id));               // sama sýn og teiknuð er
       const next = Object.assign({}, a[STEPS_KEY] || {}, cur, { [k]: !cur[k] });
+      // Kveikt á úttektinni ⇒ „Farið á verkstað" kviknar með (undanfari), og
+      // afhak á ferðinni slekkur á úttektinni. Þannig getur stikan aldrei sýnt
+      // kláraða úttekt án þess að hafa verið farið.
+      if (k === 'uttekt' && next.uttekt) next.farid = true;
+      if (k === 'farid' && !next.farid) next.uttekt = false;
       const extra = {};
       if (next[k] && +a.last_year_inspected !== curYear) extra.field_inspected_year = curYear;
       await setFlag(id, Object.assign({ [STEPS_KEY]: next }, extra));
