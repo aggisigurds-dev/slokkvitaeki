@@ -236,9 +236,10 @@
   function invAttChip(a){ var m=String(a.name||'').match(/R-?\s?\d{3,}/i); return attWrap('<button type="button" class="sk-doc inv" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>', a.id); }
   function addChip(kind, year, label){ return '<button type="button" class="sk-doc add" data-pick="1" data-kind="'+esc(kind)+'"'+(year?' data-year="'+esc(year)+'"':'')+'>'+esc(label)+'</button>'; }
 
-  function pill(y, hasReport){
-    var cls=hasReport?'ok':(y===NOW?'now':'none');
-    var tip=hasReport?(y+' — skýrsla á skrá'):(y===NOW?(y+' — í vinnslu'):(y+' — engin skýrsla'));
+  function pill(y, hasReport, confirmed){
+    var cls=hasReport?'ok':(y===NOW?'now':'none'); if(confirmed) cls+=' done';
+    var tip=confirmed?(y+' — ✓ fact-checkað (staðfest handvirkt)')
+      :(hasReport?(y+' — skýrsla á skrá'):(y===NOW?(y+' — í vinnslu'):(y+' — engin skýrsla')));
     return '<span class="sk-pill '+cls+'" title="'+esc(tip)+'">'+String(y).slice(2)+'</span>';
   }
 
@@ -323,6 +324,23 @@
     pr.onclick=function(){ try{ iwin.focus(); iwin.print(); }catch(_){ try{ window.print(); }catch(__){} } };
   }
 
+  // ── Handvirkt fact-check per (fyrirtæki, ár) ────────────────────────────────
+  // Tvísmella á árið í töflunni → staðfest (grænt ✓). Geymt í AppSettings
+  // (samstillt milli tækja) svo glóandi græni depillinn birtist líka í
+  // Fyrirtæki-í-þjónustu listanum (patch 187 les sama lykil). ATH: þetta er
+  // MANNSINS staðfesting („ég er búinn að fact-checka þetta ár"), aðskilin frá
+  // sjálfvirku skýrslu/reiknings-stöðunni.
+  function fcAll(){ try{ return (window.AppSettings&&AppSettings.path&&AppSettings.path('year_factcheck'))||{}; }catch(_){ return {}; } }
+  function fcIs(coId,y){ var m=fcAll()[String(coId)]; return !!(m&&m[String(y)]); }
+  function fcToggle(coId,y){
+    var all; try{ all=JSON.parse(JSON.stringify(fcAll())); }catch(_){ all={}; }
+    var k=String(coId), ky=String(y); all[k]=all[k]||{};
+    var now=!all[k][ky]; if(now) all[k][ky]=1; else delete all[k][ky];
+    try{ if(window.AppSettings&&AppSettings.save) AppSettings.save({year_factcheck:all}); }catch(_){}
+    try{ document.dispatchEvent(new Event('attachment-year-changed')); }catch(_){}
+    return now;
+  }
+
   async function render(section, coId){
     var hdr='<div class="sk-h"><h3>📁 Skjöl &amp; viðhengi</h3>'+
             '<button type="button" class="sk-add-btn" data-pick="1">+ Viðhengi</button></div>';
@@ -390,7 +408,7 @@
     var YEARS=Object.keys(ySet).map(Number).sort(function(a,b){return b-a;});
 
     // ── status pills ──
-    var pills=YEARS.map(function(y){ return pill(y, (repByY[y]||[]).length>0); }).join('');
+    var pills=YEARS.map(function(y){ return pill(y, (repByY[y]||[]).length>0, fcIs(coId,y)); }).join('');
 
     // ── samningur strip ──
     samn.sort(function(a,b){return (b.year||0)-(a.year||0);});
@@ -442,8 +460,9 @@
     }
     section._bruByY = bruByY;
     var rows=YEARS.map(function(y){
-      var cur=(y===NOW);
-      return '<tr><td'+(cur?' style="color:var(--brand)"':'')+'>'+y+'</td>'+
+      var cur=(y===NOW); var ok=fcIs(coId,y);
+      var ycls='sk-yr'+(ok?' sk-yr-ok':'')+(cur&&!ok?' sk-yr-now':'');
+      return '<tr><td class="'+ycls+'" data-yr="'+y+'" title="Tvísmelltu til að staðfesta fact-check '+y+'">'+(ok?'✓ ':'')+y+'</td>'+
         '<td>'+repCell(y)+'</td>'+
         '<td>'+bruCell(y)+'</td>'+
         '<td>'+invCell(y)+'</td>'+
@@ -472,6 +491,12 @@
   }
 
   function wire(section){
+    // Tvísmella á árið → staðfesta/afturkalla fact-check ársins.
+    section.addEventListener('dblclick', function(e){
+      var td=e.target.closest && e.target.closest('.sk-yr'); if(!td) return;
+      var coId=+section.dataset.coId; var y=+td.getAttribute('data-yr'); if(!coId||!y) return;
+      e.preventDefault(); fcToggle(coId,y); render(section, coId);
+    });
     section.addEventListener('click', async function(e){
       var coId=+section.dataset.coId; if(!coId) return;
 
@@ -617,7 +642,15 @@
       '.sk-pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--hairline)}',
       '.sk-pill.ok{border-color:#bbf7d0;background:#f0fdf4;color:#15803d}.sk-pill.ok::before{background:#15803d}',
       '.sk-pill.now{border-color:var(--brd);background:var(--surface2);color:var(--brand)}.sk-pill.now::before{background:var(--brand)}',
-      '.sk-pill.none{opacity:.55}'
+      '.sk-pill.none{opacity:.55}',
+      // Glóandi grænn = handvirkt fact-checkað ár.
+      '.sk-pill.done{border-color:#16a34a;background:#dcfce7;color:#14532d;box-shadow:0 0 0 1px rgba(22,163,74,.25)}',
+      '.sk-pill.done::before{background:#16a34a;box-shadow:0 0 6px 1.5px rgba(22,163,74,.9);animation:sk-glow 1.6s ease-in-out infinite}',
+      '@keyframes sk-glow{0%,100%{box-shadow:0 0 5px 1px rgba(22,163,74,.75)}50%{box-shadow:0 0 8px 2.5px rgba(22,163,74,1)}}',
+      // Ár-reitur er tvísmellanlegur.
+      '.sk-grid td.sk-yr{cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation}',
+      '.sk-grid td.sk-yr-now{color:var(--brand)}',
+      '.sk-grid td.sk-yr-ok{color:#15803d!important;font-weight:800}'
     ].join('\n');
     var st=document.createElement('style'); st.id='sk-card-css'; st.textContent=css; document.head.appendChild(st);
   }

@@ -22,6 +22,9 @@
   const YEARS = ['2023','2024','2025','2026'];
   const BUCKET = 'samningar';
   function digits(s){ return String(s||'').replace(/\D/g,''); }
+  // Handvirkt fact-check per (fyrirtæki, ár) — sett með tvísmelli á kúnnasíðunni
+  // (patch 199), geymt í AppSettings. Glóandi grænn depill hér þegar staðfest.
+  function fcIs(coId,y){ try{ var m=(window.AppSettings&&AppSettings.path&&AppSettings.path('year_factcheck'))||{}; var c=m[String(coId)]; return !!(c&&c[String(y)]); }catch(_){ return false; } }
 
   // kt (digits) → Set of years that already have a reikningur filed in
   // customer_documents (Drive-indexed + POS-connected). Drives a small 🧾 marker
@@ -175,13 +178,21 @@
         const yy = y.slice(-2);
         const TAG = "display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 9px 0 7px;border-radius:3px 9px 9px 3px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;text-decoration:none;border:1px solid transparent;box-sizing:border-box;";
         const dotGreen = '<span style="width:4px;height:4px;border-radius:50%;background:#1C8F60;flex:0 0 auto"></span>';
+        // Glóandi grænn depill = handvirkt fact-checkað ár (mannsins staðfesting).
+        const confirmed = fcIs(coId, y);
+        const glowDot = '<span title="Fact-checkað" style="width:6px;height:6px;border-radius:50%;background:#16A34A;box-shadow:0 0 5px 1.5px rgba(22,163,74,.9);flex:0 0 auto"></span>';
+        const gdot = confirmed ? glowDot : dotGreen;
+        const okBorder = confirmed ? 'rgba(22,163,74,.7)' : 'rgba(28,143,96,.35)';
         const td = document.createElement('td');
         td.setAttribute('data-yrcell','1');
         td.style.cssText = 'padding:6px 4px;text-align:center;';
         if (u) {
-          td.innerHTML = '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Úttektarskýrsla ' + y + ' í Drive" style="' + TAG + 'background:#DBEEE3;border-color:rgba(28,143,96,.35);color:#0F5E3F">' + dotGreen + yy + '</a>';
+          td.innerHTML = '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Úttektarskýrsla ' + y + ' í Drive" style="' + TAG + 'background:#DBEEE3;border-color:' + okBorder + ';color:#0F5E3F">' + gdot + yy + '</a>';
         } else if (f) {
-          td.innerHTML = '<a href="#" class="_yr-att" data-path="' + String(f.path||'').replace(/"/g,'&quot;') + '" title="' + String(f.name||'').replace(/"/g,'&quot;') + ' (' + y + ' — upphlaðið skjal)" style="' + TAG + 'background:#DBEEE3;border-color:rgba(28,143,96,.35);color:#0F5E3F">' + dotGreen + yy + '</a>';
+          td.innerHTML = '<a href="#" class="_yr-att" data-path="' + String(f.path||'').replace(/"/g,'&quot;') + '" title="' + String(f.name||'').replace(/"/g,'&quot;') + ' (' + y + ' — upphlaðið skjal)" style="' + TAG + 'background:#DBEEE3;border-color:' + okBorder + ';color:#0F5E3F">' + gdot + yy + '</a>';
+        } else if (confirmed) {
+          // Fact-checkað handvirkt þótt ekkert skjal sé á þessari hlið.
+          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Fact-checkað ' + y + ' (staðfest handvirkt)" style="' + TAG + 'background:#DBEEE3;border-color:rgba(22,163,74,.7);color:#0F5E3F">' + glowDot + yy + '</a>';
         } else {
           // Empty = attach point: click to upload a skýrsla into (company, year).
           const due = (y === '2026');
