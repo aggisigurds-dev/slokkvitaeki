@@ -1224,7 +1224,10 @@
       // Merki (2026-07-10): smella til að setja/taka af — vistast strax í tags (jsonb).
       '<div><label>Merki</label><div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:2px">' +
         TAG_ORDER.map(t => {
-          const d = TAGS[t], on = rowTags(r).indexOf(t) !== -1;
+          // Hakið verður að spegla ÞAÐ SEM SÉST á röðinni (rowChips), ekki bara
+          // tags-fylkið: merki sem flokkurinn leiðir af sér er sýnilegur chip og
+          // hakið á að segja Á — annars stæði hakið á AF meðan chippinn logar.
+          const d = TAGS[t], on = rowChips(r).indexOf(t) !== -1;
           return '<button data-act="tagtoggle" data-id="' + esc(r.id) + '" data-tag="' + t + '" type="button" ' +
             'style="font:inherit;font-size:11px;font-weight:700;padding:5px 10px;border-radius:99px;cursor:pointer;' +
             'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + '">' +
@@ -1339,13 +1342,16 @@
         const rid = Number(t.getAttribute('data-id'));
         const row = state.items.find(x => x.id === rid); if (!row) return;
         const cur = rowTags(row), tg = t.getAttribute('data-tag');
-        const off = cur.indexOf(tg) !== -1;
-        const next = off ? cur.filter(x => x !== tg) : cur.concat([tg]);
-        // Sé hakið tekið af merki sem flokkur raðarinnar leiðir líka af sér þarf
-        // flokkurinn að fara með — annars stæði chippinn eftir á röðinni þótt
-        // hakið segði AF (nákvæmlega kvörtunin sem lagfærð var 2026-07-20).
-        const patch = { tags: next };
-        if (off && flokkTag(row) === tg) patch.flokkur = null;
+        // Slökkt er á því sem SÉST (merkið getur logað vegna flokksins þótt það
+        // sé ekki í tags). Þá þarf flokkurinn að fara með, annars stæði chippinn
+        // eftir þótt hakið segði AF — kvörtunin sem lagfærð var 2026-07-20.
+        const patch = {};
+        if (rowChips(row).indexOf(tg) !== -1) {
+          patch.tags = cur.filter(x => x !== tg);
+          if (flokkTag(row) === tg) patch.flokkur = null;
+        } else {
+          patch.tags = cur.concat([tg]);
+        }
         saveRow(rid, patch);
         renderControls(); renderList();
         return;
