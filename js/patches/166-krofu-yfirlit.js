@@ -585,9 +585,15 @@
           '<span style="white-space:nowrap"><span style="font-family:monospace;color:#0f7a43;font-weight:700">' + fmtKr(m.amount) + '</span> <span style="color:#94a3b8;font-size:11px">' + esc(m.paidDate || '') + '</span></span>' +
         '</div>').join('');
       inner = '<div style="font-size:17px;font-weight:800;color:#0f7a43;margin-bottom:4px">✅ Samstillingu lokið</div>' +
-        '<div style="font-size:12.5px;color:#64748b;margin-bottom:14px">Athugaði <b>' + (data.checked || 0) + '</b> reikninga í Payday · <b>' + (data.candidates || 0) + '</b> ógreiddar kröfur skoðaðar.' + (data.dry ? ' <b style="color:#b45309">(prufa — engu breytt)</b>' : '') + '</div>' +
+        '<div style="font-size:12.5px;color:#64748b;margin-bottom:12px">Athugaði <b>' + (data.checked || 0) + '</b> reikninga í Payday · <b>' + (data.candidates || 0) + '</b> ógreiddar kröfur skoðaðar.' + (data.dry ? ' <b style="color:#b45309">(prufa — engu breytt)</b>' : '') + '</div>' +
+        (data.candidates
+          ? '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:11px 14px;margin-bottom:14px">' +
+              '<span style="font-size:12.5px;color:#9a3412;font-weight:600">⏳ Útistandandi kröfur í Payday (' + (data.candidates || 0) + ')</span>' +
+              '<span style="font-size:17px;font-weight:800;color:#b45309;font-family:monospace">' + fmtKr(data.candidates_total || 0) + '</span>' +
+            '</div>'
+          : '') +
         (data.marked_count
-          ? '<div style="font-weight:700;color:#11141c;margin-bottom:4px">' + data.marked_count + ' krafa merkt greidd:</div><div style="max-height:320px;overflow:auto">' + list + '</div>'
+          ? '<div style="font-weight:700;color:#11141c;margin-bottom:4px">' + data.marked_count + ' krafa merkt greidd' + (data.marked_total ? ' · ' + fmtKr(data.marked_total) : '') + ':</div><div style="max-height:320px;overflow:auto">' + list + '</div>'
           : '<div style="padding:16px;text-align:center;color:#64748b;background:#f8fafc;border-radius:10px">Engin ný greiðsla fannst — allt þegar uppfært. 👍</div>');
     }
     wrap.innerHTML = '<div style="background:#fff;border-radius:16px;padding:22px 24px;max-width:540px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.35)">' + inner +

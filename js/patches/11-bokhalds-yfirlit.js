@@ -396,8 +396,11 @@
     // server-side (bounded) and „Allt" loads the full history on demand — so the
     // accounting periods stay complete.
     let salesQ = SB.from('solur')
-      .select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,paid_at,paid_method,status')
-      .neq('status','void').neq('hidden', true).order('created_at', { ascending: false });
+      .select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,updated_at,paid_at,paid_method,status')
+      // Röðum eftir SÍÐUSTU AÐGERÐ (updated_at) svo sjálfgefna „nýjustu 400"
+      // sóknin nái líka gömlum sölum sem voru sóttar/greiddar/kredittaðar nýlega
+      // (t.d. tæki úr hleðslu frá því fyrir 2 mánuðum) — annars duttu þær út.
+      .neq('status','void').neq('hidden', true).order('updated_at', { ascending: false });
     if (range === 'all') {
       _loadedMode = 'all';                       // full history, no limit
     } else if (range && (range.from || range.to)) {
@@ -440,6 +443,7 @@
         status: s.status || 'final',
         isDraft: s.status === 'drog',
         date: s.created_at,
+        updated_at: s.updated_at || null,
         customer: s.customer_nafn || '',
         customer_id: s.customer_id,
         staff: s.starfsmadur || '',
@@ -567,12 +571,21 @@
   function sortSales() {
     const key = sortKey;
     const dir = sortDir === 'asc' ? 1 : -1;
-    // 2026-05-12 (#8): Date sort uses paid_at for paid greitt_sidar /
-    // reikningur sales (same as the displayed date), so the table sorts
-    // by the date the user actually cares about — when money landed.
+    // 2026-05-12 (#8): Date sort uses paid_at when the money actually landed,
+    // so the table sorts by the date the user cares about. 2026-07-22: widened
+    // to ANY paid sale (not just greitt_sidar/reikningur) — a „greitt síðar"
+    // draft picked up + paid by KORT today keeps its drop-off created_at but
+    // gets paid_at=today, so it must sort/show on the payment day.
     const get = {
       num: s => s.num,
-      date: s => (((s.payment === 'greitt_sidar' || s.payment === 'reikningur') && s.paid_at) ? s.paid_at : s.date),
+      // Sjálfgefna röðunin (Dags. ↓) = SÍÐASTA AÐGERÐ: greitt / breytt / skráð,
+      // hvað sem er nýjast. Þannig flýtur sala sem var sótt+greidd (eða kreditt/
+      // breytt) í dag EFST — líka gömul hleðslu-tæki sem eru sótt löngu síðar.
+      date: s => Math.max(
+        s.paid_at ? new Date(s.paid_at).getTime() : 0,
+        s.updated_at ? new Date(s.updated_at).getTime() : 0,
+        s.date ? new Date(s.date).getTime() : 0
+      ),
       customer: s => (s.customer || '').toLowerCase(),
       staff: s => (s.staff || '').toLowerCase(),
       lines: s => s.lines.length,
@@ -683,8 +696,10 @@
         // — not the date the verkbeiðni was created. That way the row
         // appears where the user expects in the date sort. The original
         // created date is still visible in the expanded detail ("Móttekið").
-        + '<td>' + esc(fmtDate(((s.payment === 'greitt_sidar' || s.payment === 'reikningur') && s.paid_at) ? s.paid_at : s.date))
-        + ((s.paid_at && (s.payment === 'greitt_sidar' || s.payment === 'reikningur')) ? '<div style="font-size:10px;color:#94a3b8">móttekið ' + esc(fmtDate(s.date)) + '</div>' : '')
+        + '<td>' + esc(fmtDate(s.paid_at || s.date))
+        + (s.paid_at && fmtDateOnly(s.paid_at) !== fmtDateOnly(s.date)
+            ? '<div style="font-size:10px;color:#16a34a;font-weight:600">✓ greitt ' + esc(fmtDateOnly(s.paid_at)) + '</div><div style="font-size:10px;color:#94a3b8">skráð ' + esc(fmtDateOnly(s.date)) + '</div>'
+            : '')
         + '</td>'
         + '<td><div style="font-size:13.5px;font-weight:600;color:#11141c">' + esc(s.customer || '—') + '</div>' + (getKt(s) ? '<div style="font-family:\'Space Mono\',monospace;font-size:10.5px;color:#9098a6;margin-top:1px">kt. ' + esc(getKt(s)) + '</div>' : '') + '</td>'
         + '<td>' + esc(s.staff || '') + '</td>'

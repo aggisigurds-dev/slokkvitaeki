@@ -92,7 +92,11 @@ exports.handler = async (event) => {
       if (!dry) await markPaid(sale.id, paidDate);
     }
     marked.sort((a, b) => (b.paidDate || '').localeCompare(a.paidDate || ''));
-    return json(200, { ok: true, dry, checked, pages: pagesFetched, since, candidates: sales.length, marked, marked_count: marked.length });
+    // Heildar-upphæð ógreiddu krafnanna sem voru athugaðar (útistandandi hjá Payday)
+    // og upphæð þeirra sem voru merktar greiddar núna — svo UI geti sýnt krónurnar.
+    const candidates_total = sales.reduce((s, r) => s + Math.round(parseFloat(r.samtals) || 0), 0);
+    const marked_total = marked.reduce((s, r) => s + (r.amount || 0), 0);
+    return json(200, { ok: true, dry, checked, pages: pagesFetched, since, candidates: sales.length, candidates_total, marked, marked_count: marked.length, marked_total });
   } catch (e) {
     return json(500, { error: String(e.message || e) });
   }
