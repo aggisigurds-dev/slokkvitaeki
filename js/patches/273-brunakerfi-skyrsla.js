@@ -111,7 +111,7 @@
         madur: (function () { try { return localStorage.getItem('bs_employee') || 'Elías'; } catch (_) { return 'Elías'; } })() },
       customer: { nafn: co.nafn || '', kt: fmtKt(co.kennitala), heimili: co.heimilisfang || '',
         umbedid: '', tengi: co['tengiliður'] || co.tengilidur || '' },
-      bunadur: BUN_LABELS.map(label => ({ label, iLagi: 0, ekki: 0, vantar: 0 })),
+      bunadur: BUN_LABELS.map(label => ({ label, iLagi: 0, ekki: 0, vantar: 0 })).concat(defaultBunadurRows()),
       hljod: HLJOD_LABELS.map(label => ({ label, db: '', st: '' })),
       stod: { gerd: 'Rása', fjoldi: '', fjargaesla: '', tegund: '', teiknud: '',
         checks: CHECK_LABELS.map(label => ({ label, st: '' })) },
@@ -150,9 +150,11 @@
   // sama líkanið svo tölurnar geti aldrei orðið ósamhljóða.
   function model() {
     const s = S.data;
+    // bunRows helst INDEX-samhliða s.bunadur (LINK_IX + data-sam/data-sv reiða sig
+    // á það); faldir liðir (r.hidden) eru áfram með en teljast ekki í heildir.
     const bunRows = s.bunadur.map(r => ({ ...r, samtals: (+r.iLagi || 0) + (+r.ekki || 0) }));
-    const taeki = bunRows.reduce((a, r) => a + r.samtals, 0);
-    const issues = bunRows.reduce((a, r) => a + (+r.ekki || 0) + (+r.vantar || 0), 0);
+    const taeki = bunRows.reduce((a, r) => a + (r.hidden ? 0 : r.samtals), 0);
+    const issues = bunRows.reduce((a, r) => a + (r.hidden ? 0 : (+r.ekki || 0) + (+r.vantar || 0)), 0);
     const rymd = num(s.raf.rymd), pct = num(s.raf.pct), i1 = num(s.raf.i1), i2 = num(s.raf.i2), ending = num(s.raf.ending);
     const maeld = rymd !== null && pct !== null ? rymd * pct / 100 : null;
     const aaetlud = maeld !== null && i1 ? maeld / (i1 / 1000) : null;
@@ -165,6 +167,12 @@
     const abendList = (s.abend || '').split('\n').map(t => t.trim()).filter(Boolean);
     const linur = (s.verd.linur || []).map(l => ({ ...l, samtals: (num(l.qty) || 0) * (num(l.price) || 0) }));
     const verdSum = linur.reduce((a, l) => a + l.samtals, 0);
+    // Afsláttur = kr DREGIÐ AF heildinni m. vsk (sama venja og POS: afsláttur er
+    // brúttó-króna, verdTotal er upphæðin sem er raunverulega rukkuð).
+    const verdGross = verdSum * (1 + VAT_PCT / 100);
+    let verdAfsl = num(s.verd.afslattur) || 0;
+    if (verdAfsl < 0) verdAfsl = 0;
+    if (verdAfsl > verdGross) verdAfsl = verdGross;
     return {
       bunRows, taeki, issues,
       statusLine: taeki + ' tæki · ' + issues + ' frávik · ' + s.aths.length + ' athugasemdir',
@@ -186,7 +194,8 @@
       custLine: s.customer.nafn + (s.customer.kt ? ' — kt. ' + s.customer.kt : ''),
       gerdUpper: (s.stod.gerd || 'Rása').toUpperCase(),
       dagsFmt: fmtDags(s.meta.dags),
-      linur, verdSum, verdVsk: verdSum * VAT_PCT / 100, verdTotal: verdSum * (1 + VAT_PCT / 100)
+      linur, verdSum, verdVsk: verdSum * VAT_PCT / 100,
+      verdGross, verdAfsl, verdTotal: verdGross - verdAfsl
     };
   }
   function tegBad(teg) { return /vantar|ekki|virkar/i.test(teg); }
@@ -204,17 +213,31 @@
     let saved = null;
     try { saved = window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_verdlisti'); } catch (_) {}
     if (!saved) { try { saved = JSON.parse(localStorage.getItem('brunakerfi_verdlisti') || 'null'); } catch (_) {} }
-    return (saved && Array.isArray(saved.custom_bunadur)) ? saved.custom_bunadur : [];
+    // AFRIT (ekki lifandi tilvísun í _settings) svo hægt sé að breyta+vista óhætt
+    return (saved && Array.isArray(saved.custom_bunadur)) ? saved.custom_bunadur.map(c => ({ ...c })) : [];
   }
-  async function addCustomBunadur(label) {
+  async function saveCustomBunadur(next) {
+    try { const raw = JSON.parse(localStorage.getItem('brunakerfi_verdlisti') || '{}'); raw.custom_bunadur = next; localStorage.setItem('brunakerfi_verdlisti', JSON.stringify(raw)); } catch (_) {}
+    // deepMerge í patch 85 skiptir ÖLLUM fylkjum út (ekki index-merge) → eyðing virkar
+    try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ brunakerfi_verdlisti: { custom_bunadur: next } }); } catch (_) {}
+  }
+  // Skráir sérsniðinn búnaðarlið (fær eigin lykil svo verðlista-lína geti tengst
+  // honum). dflt=true → hann birtist SJÁLFGEFIÐ í búnaðaryfirliti nýrra skýrslna.
+  async function addCustomBunadur(label, dflt) {
     const key = slugKey(label);
     const list = customBunadurList();
-    if (!list.some(c => c.key === key)) {
-      const next = list.concat([{ key, label }]);
-      try { const raw = JSON.parse(localStorage.getItem('brunakerfi_verdlisti') || '{}'); raw.custom_bunadur = next; localStorage.setItem('brunakerfi_verdlisti', JSON.stringify(raw)); } catch (_) {}
-      try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ brunakerfi_verdlisti: { custom_bunadur: next } }); } catch (_) {}
+    const ex = list.find(c => c.key === key);
+    if (ex) {
+      if (dflt && !ex.dflt) { ex.dflt = true; await saveCustomBunadur(list); }
+    } else {
+      await saveCustomBunadur(list.concat([{ key, label, dflt: !!dflt }]));
     }
     return key;
+  }
+  // búnaðarraðir sem eiga að birtast sjálfgefið í hverri nýrri skýrslu (dflt)
+  function defaultBunadurRows() {
+    return customBunadurList().filter(c => c && c.dflt)
+      .map(c => ({ label: c.label, iLagi: 0, ekki: 0, vantar: 0, custom: true, key: c.key }));
   }
   function linkOpts() {
     return LINK_OPTS.concat(customBunadurList().map(c => [c.key, c.label]));
@@ -444,6 +467,7 @@
       '<div class="_bks-vtot">' +
         '<div><span>Samtals án vsk</span><b>' + fmtKr(m.verdSum) + '</b></div>' +
         '<div><span>VSK ' + VAT_PCT + '%</span><b>' + fmtKr(m.verdVsk) + '</b></div>' +
+        '<div><span>Afsláttur (kr m. vsk)</span><b><input id="_bks-v-afsl" class="_bks-in" inputmode="numeric" value="' + esc(S.data.verd.afslattur || '') + '" placeholder="0" style="width:100px;text-align:right;padding:4px 8px;font-size:13px;color:#b3341a;font-weight:800"></b></div>' +
         '<div class="_big"><span>Samtals m. vsk</span><span>' + fmtKr(m.verdTotal) + '</span></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;align-items:center;justify-content:flex-end">' +
@@ -477,14 +501,22 @@
                 '<button type="button" data-si="' + i + '" data-sk="' + k + '" data-sd="-1">−</button>' +
                 '<b style="color:' + col + '" data-sv="' + i + ':' + k + '">' + r[k] + '</b>' +
                 '<button type="button" data-si="' + i + '" data-sk="' + k + '" data-sd="1">+</button></span>';
-              return '<div class="_bks-eqrow"><span>' + esc(r.label) +
-                (r.custom ? ' <button type="button" data-eqdel="' + i + '" title="Fjarlægja þennan búnað úr skýrslunni" style="border:0;background:none;color:#c93c1d;font-weight:800;cursor:pointer;font-size:11px;padding:2px 4px;vertical-align:middle">✕</button>' : '') + '</span>' +
+              // fela/sýna þennan lið í ÞESSARI skýrslu (birtist ekki í prentun/PDF)
+              const hideBtn = '<button type="button" data-eqhide="' + i + '" title="' + (r.hidden ? 'Sýna þennan lið aftur í skýrslunni' : 'Fela þennan lið úr þessari skýrslu') + '" style="border:0;background:none;color:' + (r.hidden ? '#1f8a4c' : '#9aa1ac') + ';font-weight:800;cursor:pointer;font-size:12px;padding:2px 4px;vertical-align:middle">' + (r.hidden ? '↩' : '🚫') + '</button>';
+              const delBtn = r.custom ? '<button type="button" data-eqdel="' + i + '" title="Fjarlægja þennan búnað alveg úr skýrslunni" style="border:0;background:none;color:#c93c1d;font-weight:800;cursor:pointer;font-size:11px;padding:2px 4px;vertical-align:middle">✕</button>' : '';
+              if (r.hidden) {
+                return '<div class="_bks-eqrow" style="opacity:.55">' +
+                  '<span style="color:#8b93a1"><span style="text-decoration:line-through">' + esc(r.label) + '</span> ' + hideBtn + delBtn + '</span>' +
+                  '<span style="grid-column:2 / span 3;text-align:center;font-size:11px;color:#8b93a1;font-style:italic">falið — birtist ekki í skýrslu</span>' +
+                  '<span></span></div>';
+              }
+              return '<div class="_bks-eqrow"><span>' + esc(r.label) + ' ' + hideBtn + delBtn + '</span>' +
                 '<span style="text-align:center">' + step('iLagi', '#1f8a4c') + '</span>' +
                 '<span style="text-align:center">' + step('ekki', '#c93c1d') + '</span>' +
                 '<span style="text-align:center">' + step('vantar', '#b07a10') + '</span>' +
                 '<span style="text-align:center"><span class="_bks-sam" data-sam="' + i + '">' + m.bunRows[i].samtals + '</span></span></div>';
             }).join('') +
-            '<button type="button" id="_bks-eq-add" style="margin-top:10px;padding:7px 14px;border-radius:8px;border:1px dashed #a8b0bb;background:#f8f9fb;color:#334155;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer">＋ Bæta við búnaði (fær eigin lykil í verðlistann)</button>' +
+            '<button type="button" id="_bks-eq-add" style="margin-top:10px;padding:7px 14px;border-radius:8px;border:1px dashed #a8b0bb;background:#f8f9fb;color:#334155;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer">＋ Bæta við búnaði úr verðlista</button>' +
             '</div></div>' +
           '<div class="_bks-card"><div class="_bks-ch">Athugasemdir<small id="_bks-athsum">' + s.aths.length + ' skráðar</small></div><div class="_bks-body">' +
             '<div class="_bks-athform" id="_bks-athform">' + athFormHtml() + '</div>' +
@@ -605,12 +637,12 @@
   function autoVerdLines() {
     const m = model();
     const qtyFor = link => {
+      const q = r => (r && !r.hidden) ? r.samtals : 0; // faldir liðir gefa 0
       if (link === 'fast') return 1;
-      if (link === 'reykhita') return m.bunRows[LINK_IX.reykskynjarar].samtals + m.bunRows[LINK_IX.hitaskynjarar].samtals;
-      if (LINK_IX[link] != null) return m.bunRows[LINK_IX[link]].samtals;
+      if (link === 'reykhita') return q(m.bunRows[LINK_IX.reykskynjarar]) + q(m.bunRows[LINK_IX.hitaskynjarar]);
+      if (LINK_IX[link] != null) return q(m.bunRows[LINK_IX[link]]);
       // sérsniðinn búnaður: passa á key EÐA slug af heiti raðarinnar
-      const c = m.bunRows.find(r => r.key === link || slugKey(r.label) === link);
-      return c ? c.samtals : 0;
+      return q(m.bunRows.find(r => r.key === link || slugKey(r.label) === link));
     };
     return priceItems()
       .filter(it => it.link)
@@ -629,12 +661,16 @@
     if (!confirm((prev ? 'Reikningur ' + prev + ' er þegar til fyrir þessa skýrslu.\nBúa til ANNAN reikning?\n\n' : '') +
       'Búa til reikning upp á ' + fmtKr(m.verdTotal) + ' m. vsk fyrir ' + (S.co.nafn || '') + ' og setja í Kröfu yfirlit?')) return;
     const linur = m.linur.map(l => ({ type: 'service', desc: l.name, qty: num(l.qty) || 0, unit_price_ex_vat: num(l.price) || 0, vsk_pct: VAT_PCT, ref: '' }));
-    const se = Math.round(m.verdSum), to = Math.round(m.verdTotal), vs = to - se;
+    // POS-venjan: línur bera FULLT verð, afslattur = kr m.vsk af heild, samtals er
+    // nettó m.vsk og án-vsk/vsk skalast (VSK tekur afrúnun) — svo PDF (233) og
+    // Kröfu yfirlit reikna rétt.
+    const to = Math.round(m.verdTotal), se = Math.round(to / (1 + VAT_PCT / 100)), vs = to - se;
+    const afsl = Math.max(0, Math.round(m.verdGross) - to);
     const ktd = String(S.co.kennitala || '').replace(/\D/g, '');
     const ins = await sb.from('solur').insert({
       customer_nafn: S.co.nafn || '', customer_id: S.co.id, customer_kt: ktd || null,
       starfsmadur: S.data.meta.madur || 'Kassi', linur,
-      upphaed_an_vsk: se, vsk_upphaed: vs, samtals: to, afslattur: 0,
+      upphaed_an_vsk: se, vsk_upphaed: vs, samtals: to, afslattur: afsl,
       greitt_med: 'reikningur', status: 'final', source: 'brunakerfi',
       athugasemdir: 'Brunakerfisskoðun — úttekt ' + (S.data.meta.nr || '') + ' · ' + fmtDags(S.data.meta.dags)
     }).select('num,id').single();
@@ -669,6 +705,13 @@
     });
     const blankB = box.querySelector('#_bks-v-blank');
     if (blankB) blankB.addEventListener('click', () => { S.data.verd.linur.push({ name: '', qty: '1', price: '' }); markDirty(); rerender(); });
+    const afsl = box.querySelector('#_bks-v-afsl');
+    if (afsl) afsl.addEventListener('input', () => {
+      S.data.verd.afslattur = afsl.value; markDirty();
+      const m = model();
+      const tot = box.querySelector('._bks-vtot ._big span:last-child');
+      if (tot) tot.textContent = fmtKr(m.verdTotal);
+    });
     const edit = box.querySelector('#_bks-v-edit');
     if (edit) edit.addEventListener('click', () => openPriceEditor(rerender));
     box.querySelectorAll('[data-vdel]').forEach(b => b.addEventListener('click', () => {
@@ -681,11 +724,109 @@
       const m = model();
       const row = inp.closest('._bks-vrow');
       if (row) { const sp = row.querySelector('span'); if (sp) sp.textContent = fmtKr(m.linur[+inp.dataset.vi].samtals); }
+      // uppfæra tölugildin á staðnum (ekki innerHTML) svo Afsláttur-reiturinn +
+      // hlustari hans haldist óbreytt meðan verið er að slá inn línu
       const tot = box.querySelector('._bks-vtot');
-      if (tot) tot.innerHTML = '<div><span>Samtals án vsk</span><b>' + fmtKr(m.verdSum) + '</b></div>' +
-        '<div><span>VSK ' + VAT_PCT + '%</span><b>' + fmtKr(m.verdVsk) + '</b></div>' +
-        '<div class="_big"><span>Samtals m. vsk</span><span>' + fmtKr(m.verdTotal) + '</span></div>';
+      if (tot) {
+        const kids = tot.children;
+        if (kids[0]) { const b = kids[0].querySelector('b'); if (b) b.textContent = fmtKr(m.verdSum); }
+        if (kids[1]) { const b = kids[1].querySelector('b'); if (b) b.textContent = fmtKr(m.verdVsk); }
+        const big = tot.querySelector('._big span:last-child'); if (big) big.textContent = fmtKr(m.verdTotal);
+      }
     }));
+  }
+
+  // Bætir verðlista-lið í ÞESSA skýrslu: búnaðarröð í yfirlitið (ef ekki fastur/
+  // innbyggður liður) + verðlína í reikningsboxið. Verðlista-liðurinn er tengdur
+  // sínum búnaðarlykli svo ⚡ útreikningur virki líka.
+  async function addBunadurFromItem(idx) {
+    const items = priceItems();
+    const it = items[idx]; if (!it) return;
+    const label = (it.name || '').trim(); if (!label) return;
+    const builtinLink = it.link === 'fast' || it.link === 'reykhita' || LINK_IX[it.link] != null;
+    if (!builtinLink) {
+      const key = await addCustomBunadur(label, false);
+      if (it.link !== key) { it.link = key; await savePriceItems(items); }
+      const ex = S.data.bunadur.find(r => r.key === key);
+      if (ex) ex.hidden = false;
+      else S.data.bunadur.push({ label, iLagi: 0, ekki: 0, vantar: 0, custom: true, key });
+    }
+    if (!(S.data.verd.linur || []).some(l => (l.name || '') === it.name)) {
+      (S.data.verd.linur = S.data.verd.linur || []).push({ name: it.name, qty: '1', price: String(it.price) });
+    }
+    markDirty(); renderWork(); updStats();
+  }
+
+  // Veljari sem opnast af „＋ Bæta við búnaði" — allur verðlistinn með leit; velja
+  // lið → í búnaðaryfirlit + reikningsbox. ★ merkir lið sem sjálfgefinn í nýjum
+  // skýrslum. „＋ Nýr liður" býr til nýja verðlínu (t.d. +6m hæð · 800 kr).
+  function openBunadurPicker() {
+    let p = document.getElementById('_bks-bpick'); if (p) p.remove();
+    p = document.createElement('div'); p.id = '_bks-bpick';
+    p.style.cssText = 'position:fixed;inset:0;z-index:9800;background:rgba(8,12,20,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    let q = '';
+    const render = () => {
+      const items = priceItems();
+      const inReport = new Set(S.data.bunadur.map(r => r.key).filter(Boolean));
+      const inLinur = new Set((S.data.verd.linur || []).map(l => (l.name || '')));
+      const dfltKeys = new Set(customBunadurList().filter(c => c.dflt).map(c => c.key));
+      const ql = q.trim().toLowerCase();
+      const rows = items.map((it, i) => ({ it, i })).filter(x => !ql || (x.it.name || '').toLowerCase().includes(ql));
+      p.innerHTML =
+        '<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:86vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.4);font-family:-apple-system,\'Segoe UI\',Helvetica,Arial,sans-serif">' +
+          '<div style="background:#141619;color:#fff;padding:13px 16px;border-radius:14px 14px 0 0;display:flex;justify-content:space-between;align-items:center">' +
+            '<div><div style="font-weight:800;font-size:14.5px">＋ Bæta við búnaði úr verðlista</div>' +
+            '<div style="font-size:11px;color:#8b93a1">Veldu lið → bætist í búnaðaryfirlitið og verðið fer í reikningsboxið. ★ = birtist sjálfgefið í nýjum skýrslum.</div></div>' +
+            '<button type="button" id="_bks-bp-x" style="background:none;border:0;color:#8b93a1;font-size:20px;cursor:pointer;padding:4px 8px">✕</button></div>' +
+          '<div style="padding:10px 16px 4px"><input id="_bks-bp-q" placeholder="🔍 Leita í verðlista…" value="' + esc(q) + '" style="width:100%;border:1px solid #d0d4da;border-radius:8px;padding:8px 11px;font-size:13.5px"></div>' +
+          '<div style="padding:4px 16px 8px;overflow-y:auto;flex:1">' +
+            (rows.length ? rows.map(({ it, i }) => {
+              const key = slugKey(it.name);
+              const has = inReport.has(key) || (it.link && inReport.has(it.link)) || inLinur.has(it.name);
+              const isDflt = dfltKeys.has(key);
+              return '<div style="display:flex;align-items:center;gap:8px;padding:7px 2px;border-bottom:1px solid #eef0f3">' +
+                '<button type="button" data-star="' + i + '" title="Sýna sjálfgefið í nýjum skýrslum" style="border:0;background:none;cursor:pointer;font-size:16px;line-height:1;color:' + (isDflt ? '#e0a400' : '#c9ced6') + '">' + (isDflt ? '★' : '☆') + '</button>' +
+                '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(it.name) + '</div>' +
+                '<div style="font-size:11px;color:#8b93a1">' + fmtKr(it.price) + ' án vsk</div></div>' +
+                (has ? '<span style="font-size:11px;font-weight:800;color:#166b3a;background:#dcf1e4;border:1px solid #a9dcbd;border-radius:99px;padding:3px 9px">í skýrslu ✓</span>'
+                     : '<button type="button" data-add="' + i + '" style="padding:6px 13px;border-radius:8px;border:0;background:#1f8a4c;color:#fff;font-size:12.5px;font-weight:800;cursor:pointer">Bæta við</button>') +
+              '</div>';
+            }).join('') : '<div style="font-size:12.5px;color:#8b93a1;font-style:italic;padding:12px 2px">Ekkert fannst — prófaðu „＋ Nýr liður".</div>') +
+          '</div>' +
+          '<div style="padding:11px 16px;border-top:1px solid #eef0f3;display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+            '<button type="button" id="_bks-bp-new" style="padding:8px 13px;border-radius:8px;border:1px dashed #a8b0bb;background:#f8f9fb;color:#334155;font-size:12.5px;font-weight:700;cursor:pointer">＋ Nýr liður í verðlista</button>' +
+            '<button type="button" id="_bks-bp-edit" style="padding:8px 13px;border-radius:8px;border:1px solid #d0d4da;background:#fff;color:#334155;font-size:12.5px;font-weight:700;cursor:pointer">🏷 Breyta verðlista</button>' +
+            '<button type="button" id="_bks-bp-done" style="margin-left:auto;padding:8px 16px;border-radius:8px;border:0;background:#141619;color:#fff;font-size:13px;font-weight:800;cursor:pointer">Loka</button>' +
+          '</div>' +
+        '</div>';
+      const qi = p.querySelector('#_bks-bp-q');
+      qi.addEventListener('input', () => { q = qi.value; const pos = qi.selectionStart; render(); const nq = p.querySelector('#_bks-bp-q'); if (nq) { nq.focus(); try { nq.setSelectionRange(pos, pos); } catch (_) {} } });
+      p.querySelector('#_bks-bp-x').addEventListener('click', () => p.remove());
+      p.querySelector('#_bks-bp-done').addEventListener('click', () => p.remove());
+      p.querySelector('#_bks-bp-edit').addEventListener('click', () => { p.remove(); openPriceEditor(() => renderWork()); });
+      p.querySelector('#_bks-bp-new').addEventListener('click', async () => {
+        const name = (prompt('Heiti nýs liðar (t.d. „Skoðun á reyk- hitaskynjurum +6m hæð"):') || '').trim();
+        if (!name) return;
+        const price = num(prompt('Verð án VSK (kr), t.d. 800:', '')) || 0;
+        const items2 = priceItems();
+        if (!items2.some(x => (x.name || '').toLowerCase() === name.toLowerCase())) {
+          items2.push({ name, price, link: slugKey(name) });
+          await addCustomBunadur(name, true); // nýr liður úr þessum glugga = sjálfgefinn
+          await savePriceItems(items2);
+        }
+        render();
+      });
+      p.querySelectorAll('[data-add]').forEach(b => b.addEventListener('click', async () => { await addBunadurFromItem(+b.dataset.add); render(); }));
+      p.querySelectorAll('[data-star]').forEach(b => b.addEventListener('click', async () => {
+        const it = priceItems()[+b.dataset.star]; if (!it) return;
+        const key = slugKey(it.name); const list = customBunadurList(); const ex = list.find(c => c.key === key);
+        if (ex) { ex.dflt = !ex.dflt; await saveCustomBunadur(list); } else { await addCustomBunadur(it.name, true); }
+        render();
+      }));
+    };
+    render();
+    p.addEventListener('click', e => { if (e.target === p) p.remove(); });
+    document.body.appendChild(p);
   }
 
   function openPriceEditor(onDone) {
@@ -778,16 +919,15 @@
       S.data.stod.gerd = b.dataset.gerd; markDirty();
       w.querySelectorAll('[data-gerd]').forEach(x => x.classList.toggle('_on', x === b));
     }));
-    // sérsniðinn búnaður: bæta við / fjarlægja
+    // sérsniðinn búnaður: bæta við (velja úr verðlistanum) / fela / fjarlægja
     const eqAdd = w.querySelector('#_bks-eq-add');
-    if (eqAdd) eqAdd.addEventListener('click', async () => {
-      const label = (prompt('Heiti búnaðar (t.d. Geislaskynjarar):') || '').trim();
-      if (!label) return;
-      const key = await addCustomBunadur(label);
-      S.data.bunadur.push({ label, iLagi: 0, ekki: 0, vantar: 0, custom: true, key });
-      markDirty(); renderWork(); updStats();
-      toast('„' + label + '" bætt við — tengdu verð við hann í 🏷 verðlistanum');
-    });
+    if (eqAdd) eqAdd.addEventListener('click', () => openBunadurPicker());
+    // fela/sýna lið í þessari skýrslu
+    w.querySelectorAll('[data-eqhide]').forEach(b => b.addEventListener('click', () => {
+      const i = +b.dataset.eqhide, r = S.data.bunadur[i]; if (!r) return;
+      r.hidden = !r.hidden; markDirty(); renderWork(); updStats();
+    }));
+    // fjarlægja sérsniðinn lið alveg
     w.querySelectorAll('[data-eqdel]').forEach(b => b.addEventListener('click', () => {
       const i = +b.dataset.eqdel;
       if (!confirm('Fjarlægja „' + (S.data.bunadur[i] || {}).label + '" úr skýrslunni?')) return;
@@ -868,7 +1008,7 @@
       '</tbody></table>' +
 
       '<div class="_sec"><table class="_rt"><thead><tr><th>BÚNAÐUR</th><th style="width:70px;text-align:center">SAMTALS</th><th style="width:70px;text-align:center">Í LAGI</th><th style="width:80px;text-align:center">EKKI Í LAGI</th><th style="width:70px;text-align:center">VANTAR</th></tr></thead><tbody>' +
-        m.bunRows.map(r =>
+        m.bunRows.filter(r => !r.hidden).map(r =>
           '<tr><td style="font-weight:700">' + esc(r.label) + '</td><td class="_num" style="font-weight:700">' + r.samtals + '</td>' +
           '<td class="_num" style="color:#1f7a44">' + r.iLagi + '</td>' +
           '<td class="_num" style="color:' + (r.ekki > 0 ? '#b3341a' : '#16181c') + ';font-weight:' + (r.ekki > 0 ? 700 : 400) + '">' + r.ekki + '</td>' +
@@ -1044,7 +1184,7 @@
     row(ML, bunCols, [{ t: 'BÚNAÐUR', bold: true, bg: INK, color: [255, 255, 255], size: 8 },
       { t: 'SAMTALS', bold: true, bg: INK, color: [255, 255, 255], size: 8 }, { t: 'Í LAGI', bold: true, bg: INK, color: [255, 255, 255], size: 8 },
       { t: 'EKKI Í LAGI', bold: true, bg: INK, color: [255, 255, 255], size: 8 }, { t: 'VANTAR', bold: true, bg: INK, color: [255, 255, 255], size: 8 }]);
-    m.bunRows.forEach(r => row(ML, bunCols, [
+    m.bunRows.filter(r => !r.hidden).forEach(r => row(ML, bunCols, [
       { t: r.label, bold: true }, { t: r.samtals, bold: true },
       { t: r.iLagi, color: GREEN }, { t: r.ekki, bold: r.ekki > 0, color: r.ekki > 0 ? RED : INK },
       { t: r.vantar, bold: r.vantar > 0, color: r.vantar > 0 ? AMBER : INK }]));
