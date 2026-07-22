@@ -22,9 +22,11 @@
   const YEARS = ['2023','2024','2025','2026'];
   const BUCKET = 'samningar';
   function digits(s){ return String(s||'').replace(/\D/g,''); }
-  // Handvirkt fact-check per (fyrirtæki, ár) — sett með tvísmelli á kúnnasíðunni
-  // (patch 199), geymt í AppSettings. Glóandi grænn depill hér þegar staðfest.
-  function fcIs(coId,y){ try{ var m=(window.AppSettings&&AppSettings.path&&AppSettings.path('year_factcheck'))||{}; var c=m[String(coId)]; return !!(c&&c[String(y)]); }catch(_){ return false; } }
+  // Fact-check per (fyrirtæki, ár) — úr Supabase-töflunni `year_factcheck`
+  // (deilt með patch 199 og Claude). 'human' → glóandi grænn depill · 'claude'
+  // → blár depill (Claude yfirfór, bíður staðfestingar).
+  let fcMap = null, fcLoading = false;   // co_id(str) → { year(str) → status }
+  function fcStat(coId,y){ var m=fcMap&&fcMap[String(coId)]; return (m&&m[String(y)])||null; }
 
   // kt (digits) → Set of years that already have a reikningur filed in
   // customer_documents (Drive-indexed + POS-connected). Drives a small 🧾 marker
@@ -124,6 +126,20 @@
     } catch (_) {}
     reikLoading = false;
   }
+  async function loadFc(force){
+    if (fcLoading || (fcMap && !force)) return; fcLoading = true;
+    try {
+      const sb = window.DB && DB.sb; if (!sb) { fcLoading = false; return; }
+      const rows = await fetchAll(() => sb.from('year_factcheck').select('co_id,year,status'));
+      const map = {};
+      rows.forEach(x => { if (x.co_id != null && x.year) (map[String(x.co_id)] = map[String(x.co_id)] || {})[String(x.year)] = x.status; });
+      fcMap = map;
+      document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
+      document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
+      process();
+    } catch (_) {}
+    fcLoading = false;
+  }
 
   function process(){
     let uf = {}, att = {};
@@ -178,10 +194,13 @@
         const yy = y.slice(-2);
         const TAG = "display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 9px 0 7px;border-radius:3px 9px 9px 3px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;text-decoration:none;border:1px solid transparent;box-sizing:border-box;";
         const dotGreen = '<span style="width:4px;height:4px;border-radius:50%;background:#1C8F60;flex:0 0 auto"></span>';
-        // Glóandi grænn depill = handvirkt fact-checkað ár (mannsins staðfesting).
-        const confirmed = fcIs(coId, y);
-        const glowDot = '<span title="Fact-checkað" style="width:6px;height:6px;border-radius:50%;background:#16A34A;box-shadow:0 0 5px 1.5px rgba(22,163,74,.9);flex:0 0 auto"></span>';
-        const gdot = confirmed ? glowDot : dotGreen;
+        // Fact-check depill: 'human' → glóandi grænn · 'claude' → blár.
+        const fst = fcStat(coId, y);
+        const confirmed = fst === 'human';
+        const isClaude  = fst === 'claude';
+        const glowDot = '<span title="Staðfest" style="width:6px;height:6px;border-radius:50%;background:#16A34A;box-shadow:0 0 5px 1.5px rgba(22,163,74,.9);flex:0 0 auto"></span>';
+        const blueDot = '<span title="Claude yfirfór — bíður staðfestingar" style="width:6px;height:6px;border-radius:50%;background:#2563EB;box-shadow:0 0 5px 1px rgba(37,99,235,.8);flex:0 0 auto"></span>';
+        const gdot = confirmed ? glowDot : (isClaude ? blueDot : dotGreen);
         const okBorder = confirmed ? 'rgba(22,163,74,.7)' : 'rgba(28,143,96,.35)';
         const td = document.createElement('td');
         td.setAttribute('data-yrcell','1');
@@ -193,6 +212,9 @@
         } else if (confirmed) {
           // Fact-checkað handvirkt þótt ekkert skjal sé á þessari hlið.
           td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Fact-checkað ' + y + ' (staðfest handvirkt)" style="' + TAG + 'background:#DBEEE3;border-color:rgba(22,163,74,.7);color:#0F5E3F">' + glowDot + yy + '</a>';
+        } else if (isClaude) {
+          // Claude yfirfór — blár, bíður mannlegrar staðfestingar.
+          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Claude yfirfór ' + y + ' — bíður staðfestingar" style="' + TAG + 'background:#DBE7FE;border-color:rgba(37,99,235,.6);color:#1E3A8A">' + blueDot + yy + '</a>';
         } else {
           // Empty = attach point: click to upload a skýrsla into (company, year).
           const due = (y === '2026');
@@ -288,8 +310,10 @@
     inp.click();
   });
 
-  // Year tag changed in Skjöl & skýrslur (patch 111) → rebuild all year cells.
+  // Year tag changed OR fact-check toggled (patch 199 dispatches this) → refresh
+  // the fact-check map from the table and rebuild all year cells.
   document.addEventListener('attachment-year-changed', () => {
+    loadFc(true);   // re-pulls year_factcheck, then process() inside
     document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
     document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
     process();
@@ -302,4 +326,5 @@
   setTimeout(process, 120); setTimeout(process, 500);
   setTimeout(loadReik, 900);   // load reikningur-status once, then re-render cells with 🧾
   setTimeout(loadLoc, 600);    // load location-precise reports once, then re-render cells
+  setTimeout(loadFc, 750);     // load fact-check (blár/grænn) once, then re-render cells
 })();
