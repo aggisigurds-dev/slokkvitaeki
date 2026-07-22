@@ -198,8 +198,10 @@
         const fst = fcStat(coId, y);
         const confirmed = fst === 'human';
         const isClaude  = fst === 'claude';
+        const isGap     = fst === 'gap';
         const glowDot = '<span title="Staðfest" style="width:6px;height:6px;border-radius:50%;background:#16A34A;box-shadow:0 0 5px 1.5px rgba(22,163,74,.9);flex:0 0 auto"></span>';
         const blueDot = '<span title="Claude yfirfór — bíður staðfestingar" style="width:6px;height:6px;border-radius:50%;background:#2563EB;box-shadow:0 0 5px 1px rgba(37,99,235,.8);flex:0 0 auto"></span>';
+        const gapDot  = '<span title="Skýrsla vantar fyrir þetta ár" style="width:6px;height:6px;border-radius:50%;background:#F59E0B;flex:0 0 auto"></span>';
         const gdot = confirmed ? glowDot : (isClaude ? blueDot : dotGreen);
         const okBorder = confirmed ? 'rgba(22,163,74,.7)' : 'rgba(28,143,96,.35)';
         const td = document.createElement('td');
@@ -215,6 +217,9 @@
         } else if (isClaude) {
           // Claude yfirfór — blár, bíður mannlegrar staðfestingar.
           td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Claude yfirfór ' + y + ' — bíður staðfestingar" style="' + TAG + 'background:#DBE7FE;border-color:rgba(37,99,235,.6);color:#1E3A8A">' + blueDot + yy + '</a>';
+        } else if (isGap) {
+          // Claude fann að skýrslu vantar fyrir þetta ár — appelsínugulur.
+          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Skýrsla vantar fyrir ' + y + ' — hengdu við eða veldu úr safni" style="' + TAG + 'background:#FEF3C7;border-color:rgba(245,158,11,.6);color:#92400E">' + gapDot + yy + '</a>';
         } else {
           // Empty = attach point: click to upload a skýrsla into (company, year).
           const due = (y === '2026');
