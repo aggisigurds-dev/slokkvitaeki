@@ -112,7 +112,7 @@
     const list = getCompanyPricing(coId);
     const cnt = list.length;
     const badge = cnt
-      ? '<span style="font-size:11px;font-weight:700;color:var(--brand);background:var(--bg);border:1px solid var(--brd);border-radius:99px;padding:1px 8px">' + cnt + '</span>'
+      ? '<span style="font-size:11px;font-weight:700;color:var(--brand);background:var(--surface2);border:1px solid var(--brd);border-radius:99px;padding:1px 8px">' + cnt + '</span>'
       : '<span style="font-size:11px;color:var(--ink4)">engin</span>';
     const header =
       '<button class="_cpr-toggle" type="button" aria-expanded="' + (open ? 'true' : 'false') + '" style="all:unset;box-sizing:border-box;display:flex;align-items:center;gap:8px;width:100%;cursor:pointer">' +
@@ -145,7 +145,7 @@
         '<div style="display:grid;grid-template-columns:2fr 1fr 80px 2fr 100px;gap:6px;align-items:center">' +
           '<div style="display:flex;gap:4px">' +
             '<input id="_cpr-name" type="text" placeholder="t.d. Hleðsla tilboðsverð" style="flex:1;padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box;min-width:0">' +
-            '<button class="_cpr-pick" type="button" title="Leita að vöru / þjónustu" style="padding:6px 9px;background:var(--bg);border:1px solid var(--brd);color:var(--brand);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0">🔍</button>' +
+            '<button class="_cpr-pick" type="button" title="Leita að vöru / þjónustu" style="padding:6px 9px;background:var(--surface2);border:1px solid var(--brd);color:var(--brand);border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap;flex-shrink:0">🔍</button>' +
           '</div>' +
           '<input id="_cpr-price" type="number" placeholder="Verð án VSK" min="0" step="1" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box;text-align:right">' +
           '<input id="_cpr-vsk" type="number" value="24" min="0" max="100" placeholder="VSK%" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box;text-align:center">' +
@@ -159,7 +159,7 @@
         '<div style="font-size:11px;font-weight:700;color:#1e3a8a;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Skráð tilboðsverð</div>' +
         '<div style="background:var(--surface);border:1px solid var(--brd);border-radius:8px;overflow:hidden">' +
           '<table style="width:100%;border-collapse:collapse">' +
-            '<thead style="background:var(--bg)"><tr>' +
+            '<thead style="background:var(--surface2)"><tr>' +
               '<th style="padding:6px 9px;text-align:left;font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em">Vara / þjónusta</th>' +
               '<th style="padding:6px 9px;text-align:right;font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em">Verð án vsk</th>' +
               '<th style="padding:6px 9px;text-align:center;font-size:10px;font-weight:700;color:var(--brand);text-transform:uppercase;letter-spacing:0.05em;width:60px">VSK</th>' +

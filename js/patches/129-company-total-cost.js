@@ -446,7 +446,7 @@
       // tvö aðskilin spjöld — nú efri helmingur af EINU samfelldu spjaldi
       // (engin neðri brún/radius hér; section tekur við fyrir neðan).
       notesBox.style.cssText =
-        'margin:22px 0 0;padding:12px 16px 10px;background:var(--bg);border:1px solid var(--brd);border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 1px 3px rgba(0,0,0,.04)';
+        'margin:22px 0 0;padding:12px 16px 10px;background:var(--surface2);border:1px solid var(--brd);border-bottom:none;border-radius:12px 12px 0 0;box-shadow:0 1px 3px rgba(0,0,0,.04)';
       // Insert before the existing cost section if it already exists, so the
       // notes box always appears ABOVE Heildarkostnaður. Guard: patch 224 may
       // have relocated #_ctc-section into the right-column slot (#_ctc-slot), so
@@ -480,7 +480,7 @@
       section.id = '_ctc-section';
       // Neðri helmingur sama spjalds og _ctc-notes — dashed lína skilur að.
       section.style.cssText =
-        'margin:0 0 26px;padding:14px 18px 18px;background:var(--bg);border:1px solid var(--brd);border-top:1px dashed #bbf7d0;border-radius:0 0 12px 12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
+        'margin:0 0 26px;padding:14px 18px 18px;background:var(--surface2);border:1px solid var(--brd);border-top:1px dashed #bbf7d0;border-radius:0 0 12px 12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
       main.appendChild(section);
     }
 
@@ -733,7 +733,7 @@
       // klippist aldrei — sjá #_ctc-sum-*).
       '<div style="background:#fff;border:1px solid var(--brd);border-bottom:none;border-radius:8px 8px 0 0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch">' +
         '<table style="width:100%;border-collapse:collapse">' +
-          '<thead style="background:var(--bg)"><tr>' +
+          '<thead style="background:var(--surface2)"><tr>' +
             '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em">Tegund / Stærð</th>' +
             '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;width:60px">Fjöldi</th>' +
             '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;width:90px">Þjónusta</th>' +

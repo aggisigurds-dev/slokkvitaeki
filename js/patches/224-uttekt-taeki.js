@@ -419,7 +419,7 @@
       '.ut-head .h-now{width:252px;margin-left:18px;padding-left:18px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
       '.ut-head .h-far{width:40px;margin-left:14px}',
       '@media(max-width:860px){.ut-head{display:none}}',
-      '.ut-grp-h{width:100%;display:flex;align-items:center;gap:10px;padding:9px 15px;background:var(--bg);border:0;border-top:1px solid var(--brd);cursor:pointer;font:inherit;text-align:left}',
+      '.ut-grp-h{width:100%;display:flex;align-items:center;gap:10px;padding:9px 15px;background:var(--surface2);border:0;border-top:1px solid var(--brd);cursor:pointer;font:inherit;text-align:left}',
       '.ut-grp:first-child .ut-grp-h{border-top:0}',
       '.ut-grp-nm{font-weight:800;font-size:13.5px;color:var(--ink1)}',
       '.ut-grp-cnt{font-size:11.5px;color:var(--ink3);font-weight:600}',
@@ -438,7 +438,7 @@
       '.ut-last.old{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d)}',
       '.ut-last.none{background:transparent;color:var(--ink4);font-weight:600}',
       '.ut-now{display:flex;align-items:center;gap:7px;flex:none;width:252px;justify-content:flex-end;margin-left:18px;padding-left:18px;border-left:1px solid var(--brd)}',
-      '.ut-svcseg{display:inline-flex;background:var(--bg);border:1px solid var(--brd);border-radius:9px;padding:3px;gap:2px}',
+      '.ut-svcseg{display:inline-flex;background:var(--surface2);border:1px solid var(--brd);border-radius:9px;padding:3px;gap:2px}',
       '.ut-svc{border:0;background:transparent;font:inherit;font-size:11.5px;font-weight:700;color:var(--ink3);padding:5px 10px;border-radius:7px;cursor:pointer;white-space:nowrap}',
       /* 2026-06-25: active service pill — málm-blár, sama litur fyrir Yfirferð /
          Hleðsla / Nýtt (var áður brand-rauður og leit út eins og viðvörun). */

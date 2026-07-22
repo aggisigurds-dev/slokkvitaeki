@@ -284,7 +284,7 @@
     // (year, kind). Attaching an úttektarskýrsla lights up the skoðað-marking.
     const addBtn = (y, kind, has) => '<button class="_cat-cell-add" data-year="' + y + '" data-kind="' + kind + '" ' +
       'title="' + (has ? 'Bæta við / skipta um ' : 'Tengja ') + (kind === 'skyrsla' ? 'úttektarskýrslu' : 'reikning') + ' fyrir ' + y + '" ' +
-      'style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;margin:2px 2px 0 0;background:var(--surface);border:1px dashed ' + (has ? 'var(--brd2)' : 'var(--ink4)') + ';color:var(--ink3)">＋' + (has ? '' : ' Tengja') + '</button>';
+      'style="display:inline-flex;align-items:center;gap:3px;font-size:11px;font-weight:700;padding:3px 8px;border-radius:8px;cursor:pointer;margin:2px 2px 0 0;background:var(--surface);border:1px dashed ' + (has ? 'var(--brd2)' : 'var(--hairline)') + ';color:var(--ink3)">＋' + (has ? '' : ' Tengja') + '</button>';
     const rows = YEARS.map(y => {
       const sk = (cell[y] && cell[y].skyrsla) || [];
       const re = (cell[y] && cell[y].reikningur) || [];
@@ -301,7 +301,7 @@
         '<span style="font-size:11px;color:var(--ink4)">2023–2026</span>' +
       '</div>' +
       '<table style="width:100%;border-collapse:collapse;font-size:12.5px">' +
-        '<thead><tr style="background:var(--bg);color:var(--ink2);font-size:10px;text-transform:uppercase;letter-spacing:.04em">' +
+        '<thead><tr style="background:var(--surface2);color:var(--ink2);font-size:10px;text-transform:uppercase;letter-spacing:.04em">' +
           '<th style="padding:8px 12px;text-align:left">Ár</th>' +
           '<th style="padding:8px 12px;text-align:left">Úttektarskýrsla</th>' +
           '<th style="padding:8px 12px;text-align:left">Reikningur</th>' +
@@ -349,7 +349,7 @@
           '<button class="_cat-del btn btn-outline btn-sm" data-id="' + esc(f.id) + '" style="color:#dc2626;border-color:#fecaca;font-size:11px" title="Eyða">✕</button>' +
         '</div>' +
       '</div>';
-    }).join('') : '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--ink4);font-size:13px;background:var(--bg);border:1px dashed var(--brd2);border-radius:10px">Engin skjöl tengd þessu fyrirtæki ennþá — smelltu á <strong>+ Hlaða inn skjali</strong> til að byrja</div>';
+    }).join('') : '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--ink4);font-size:13px;background:var(--surface2);border:1px dashed var(--brd2);border-radius:10px">Engin skjöl tengd þessu fyrirtæki ennþá — smelltu á <strong>+ Hlaða inn skjali</strong> til að byrja</div>';
 
     return '' +
       // docYearGridHtml removed — patch 199 now renders the canonical v6

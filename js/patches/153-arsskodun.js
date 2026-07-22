@@ -1091,7 +1091,7 @@
         `) : (state.status === 'suspect' ? renderSuspectList(filtered) : (effView === 'card' ? renderCards(filtered) : renderTable(filtered)))}
 
         ${filteredAars.length > 0 ? `
-        <div class="_ars-summary" style="margin-top:14px;padding:13px 16px;background:var(--bg);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
+        <div class="_ars-summary" style="margin-top:14px;padding:13px 16px;background:var(--surface2);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
           <div>
             <div style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Samantekt — ${esc(filterLabel)}</div>
             <div style="font-size:13px;color:var(--ink2);margin-top:3px">${filteredAars.length} fyrirtæki í ársskoðun</div>
@@ -1543,7 +1543,7 @@
             : '';
 
           return `
-            <div class="_ars-card" data-co-id="${c.id}" style="background:var(--surface);border:1px solid var(--brd);border-radius:11px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(0,0,0,0.03);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--ink4)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'" onmouseout="this.style.borderColor='var(--brd)';this.style.boxShadow='0 1px 2px rgba(0,0,0,0.03)'">
+            <div class="_ars-card" data-co-id="${c.id}" style="background:var(--surface);border:1px solid var(--brd);border-radius:11px;padding:12px 14px;display:flex;flex-direction:column;gap:7px;box-shadow:0 1px 2px rgba(0,0,0,0.03);cursor:pointer;transition:all .15s" onmouseover="this.style.borderColor='var(--hairline)';this.style.boxShadow='0 2px 8px rgba(0,0,0,0.06)'" onmouseout="this.style.borderColor='var(--brd)';this.style.boxShadow='0 1px 2px rgba(0,0,0,0.03)'">
               <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
                 <div style="min-width:0;flex:1">
                   <div class="_ars-cn" style="font-weight:700;color:var(--ink1);font-size:13.5px;line-height:1.25">${esc(c.nafn || '—')}</div>
@@ -1764,7 +1764,7 @@
       <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;overflow:hidden">
         <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
         <table style="width:100%;min-width:1180px;border-collapse:collapse;font-size:12px">
-          <thead style="background:var(--bg);border-bottom:1px solid var(--brd)">
+          <thead style="background:var(--surface2);border-bottom:1px solid var(--brd)">
             <tr style="text-align:left;color:var(--ink2);font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.04em">
               ${(() => {
                 // 2026-05-26: clickable sort headers. Smelltu → bring upp;
@@ -1938,7 +1938,7 @@
               ${ars.last_skodun ? `<div style="font-size:10.5px;color:#16a34a">${esc(ars.last_skodun)}</div>` : ''}
               ${skyrsla ? `<a href="${skyrslaUrl}" target="_blank" rel="noopener" title="${esc(skyrsla)}" style="display:inline-block;margin-top:3px;font-size:10.5px;color:var(--brand);text-decoration:none;font-weight:700">📄 Skýrsla</a>` : ''}
             </div>
-            <div style="background:var(--bg);border:1px solid var(--brd);border-radius:8px;padding:8px 11px">
+            <div style="background:var(--surface2);border:1px solid var(--brd);border-radius:8px;padding:8px 11px">
               <div style="font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase">Áætluð árstekja</div>
               <div style="font-size:16px;font-weight:800;color:var(--ink1);margin-top:2px;font-variant-numeric:tabular-nums">${fmtKr(est)}</div>
               ${ars.aminning_parsed && ars.aminning_parsed.discount_pct ? `<div style="font-size:10.5px;color:#dc2626">−${ars.aminning_parsed.discount_pct}% afsl.</div>` : ''}
@@ -2014,7 +2014,7 @@
                 <div class="_ars-units-list" style="display:none;flex-direction:column;gap:4px;max-height:260px;overflow-y:auto">
                   ${units.map(u => {
                     const cat = categoryOf(u.type, u.size);
-                    return `<div class="_ars-unit-row" data-unit-id="${esc(u.id)}" style="display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;font-size:11.5px">
+                    return `<div class="_ars-unit-row" data-unit-id="${esc(u.id)}" style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;font-size:11.5px">
                       <span style="font-family:monospace;color:var(--ink2);min-width:84px">${esc(u.serial || '—')}</span>
                       <span style="flex:1;min-width:0;color:var(--ink1)">${esc(u.type || '—')}${u.size ? ' · ' + esc(u.size) : ''}</span>
                       <button class="_ars-unit-del" data-unit-id="${esc(u.id)}" data-unit-serial="${esc(u.serial || '')}" data-unit-cat="${esc(cat)}" type="button" title="Eyða þessu tæki varanlega" style="padding:4px 9px;background:var(--surface);border:1px solid #fecaca;color:#dc2626;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">🗑</button>
@@ -2052,7 +2052,7 @@
                       ${yearTag}
                       ${autoTag}
                       <span style="color:var(--ink4);font-size:10px">↗</span>`;
-                    const baseStyle = "display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;text-decoration:none;color:var(--ink1);font-size:11.5px;transition:background .1s;text-align:left;width:100%;font:inherit;cursor:pointer";
+                    const baseStyle = "display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;text-decoration:none;color:var(--ink1);font-size:11.5px;transition:background .1s;text-align:left;width:100%;font:inherit;cursor:pointer";
                     if (isStorage) {
                       return `<button type="button" data-ars-att-co="${coId}" data-ars-att-idx="${idx}" style="${baseStyle}" onmouseover="this.style.background='var(--surface)';this.style.borderColor='var(--brd2)'" onmouseout="this.style.background='var(--bg)';this.style.borderColor='var(--brd)'">${inner}</button>`;
                     }
@@ -2080,7 +2080,7 @@
               <div style="font-size:11px;font-weight:700;color:var(--ink2);text-transform:uppercase;margin-bottom:6px">📜 Saga <span style="color:var(--ink4);font-weight:500">(${rows.length})</span></div>
               <div style="display:flex;flex-direction:column;gap:4px">
                 ${rows.map(h => `
-                  <div style="background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:11.5px">
+                  <div style="background:var(--surface2);border:1px solid var(--brd);border-radius:6px;padding:6px 10px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:11.5px">
                     <div><strong style="color:var(--ink1)">${esc(String(h.year))}</strong> <span style="color:var(--ink3)">${esc(h.skodun || '')}</span></div>
                     <div style="color:var(--ink2);font-size:11px">${esc((h.stada||'').replace(/_/g, ' ')) || ''}</div>
                   </div>

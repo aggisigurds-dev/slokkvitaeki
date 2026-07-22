@@ -110,11 +110,11 @@
       <div style="background:var(--surface);border:1px solid var(--brd);border-left:3px solid var(--brand);border-radius:12px;padding:14px 16px;margin-bottom:14px;box-shadow:var(--shadow-sm)">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
           <h3 style="margin:0;font-size:14px;font-weight:700;color:var(--ink1);display:flex;align-items:center;gap:7px"><span style="font-size:17px">💼</span> Verð &amp; afsláttur</h3>
-          ${kt.length === 10 ? `<button id="_vd-hreyf" type="button" title="Öll viðskipti / reikningar þessa viðskiptavinar" style="padding:7px 13px;background:var(--bg);color:var(--ink1);border:1px solid var(--brd2);border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px">📊 Hreyfingar →</button>` : ''}
+          ${kt.length === 10 ? `<button id="_vd-hreyf" type="button" title="Öll viðskipti / reikningar þessa viðskiptavinar" style="padding:7px 13px;background:var(--surface2);color:var(--ink1);border:1px solid var(--brd2);border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;display:flex;align-items:center;gap:6px">📊 Hreyfingar →</button>` : ''}
         </div>
 
         <!-- Sjálfvirkur afsláttur -->
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;background:var(--bg);border:1px solid var(--brd);border-radius:10px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 12px;background:var(--surface2);border:1px solid var(--brd);border-radius:10px;margin-bottom:12px">
           <span style="font-size:13px;font-weight:700;color:var(--grn)">🎯 Sjálfvirkur afsláttur</span>
           <span style="font-size:10.5px;color:var(--ink3)">gildir sjálfkrafa á allt í Sölu</span>
           <span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px">
@@ -133,7 +133,7 @@
         <div style="display:grid;grid-template-columns:1fr 110px 66px auto;gap:6px;align-items:center;margin-bottom:8px">
           <div style="display:flex;gap:4px;min-width:0">
             <input id="_vd-cpr-name" type="text" placeholder="t.d. Hleðsla tilboðsverð" style="flex:1;min-width:0;padding:6px 9px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:12.5px;background:var(--surface);color:var(--ink1)">
-            <button class="_vd-cpr-pick" type="button" title="Leita að vöru / þjónustu" style="padding:6px 9px;background:var(--bg);border:1px solid var(--brd2);color:var(--brand);border-radius:7px;cursor:pointer;font-size:13px;flex-shrink:0">🔍</button>
+            <button class="_vd-cpr-pick" type="button" title="Leita að vöru / þjónustu" style="padding:6px 9px;background:var(--surface2);border:1px solid var(--brd2);color:var(--brand);border-radius:7px;cursor:pointer;font-size:13px;flex-shrink:0">🔍</button>
           </div>
           <input id="_vd-cpr-price" type="number" placeholder="Verð án VSK" min="0" step="1" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:12.5px;text-align:right;background:var(--surface);color:var(--ink1)">
           <input id="_vd-cpr-vsk" type="number" value="24" min="0" max="100" title="VSK %" style="padding:6px 9px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:12.5px;text-align:center;background:var(--surface);color:var(--ink1)">
@@ -141,7 +141,7 @@
         </div>
         <div style="background:var(--surface);border:1px solid var(--brd);border-radius:8px;overflow:hidden">
           <table style="width:100%;border-collapse:collapse">
-            <thead style="background:var(--bg)"><tr>
+            <thead style="background:var(--surface2)"><tr>
               <th style="padding:6px 10px;text-align:left;font-size:9.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Vara / þjónusta</th>
               <th style="padding:6px 10px;text-align:right;font-size:9.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Án vsk</th>
               <th style="padding:6px 10px;text-align:right;font-size:9.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">M/vsk</th>
@@ -538,7 +538,7 @@
               </div>
               ${hasArs
                 ? '<span style="background:var(--grn-bg);color:var(--grn);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--grn-bd)">✓ Skráð</span>'
-                : '<span style="background:var(--bg);color:var(--ink3);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--brd)">Ekki skráð</span>'
+                : '<span style="background:var(--surface2);color:var(--ink3);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--brd)">Ekki skráð</span>'
               }
             </div>
             ${hasArs ? (() => {
@@ -555,7 +555,7 @@
               if (lastYr === curYear) pill = `<span style="${base}background:var(--grn-bg);color:var(--grn);border:1px solid var(--grn-bd)">✓ Skoðað ${curYear}</span>`;
               else if (fieldYr === curYear) pill = `<span style="${base}background:var(--blu-bg);color:var(--blu);border:1px solid var(--blu-bd)">🔵 Tekið út ${curYear} — skjöl eftir</span>`;
               else if (lastYr > 0) pill = `<span style="${base}background:var(--amb-bg);color:var(--amb);border:1px solid var(--amb-bd)">Síðast skoðað ${lastYr}</span>`;
-              else pill = `<span style="${base}background:var(--bg);color:var(--ink3);border:1px solid var(--brd)">Engin skoðun skráð</span>`;
+              else pill = `<span style="${base}background:var(--surface2);color:var(--ink3);border:1px solid var(--brd)">Engin skoðun skráð</span>`;
               return `<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${pill}${moLabel ? `<span style="font-size:10.5px;color:var(--ink3)">📅 ${esc(moLabel)}</span>` : ''}</div>`;
             })() : ''}
             ${hasArs ? (() => {
@@ -588,7 +588,7 @@
                   </div>
                   <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px">
                     ${nonZero.map(([k, label]) => `
-                      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg);border:1px solid var(--brd);border-radius:6px;padding:4px 8px;font-size:11px">
+                      <div style="display:flex;justify-content:space-between;align-items:center;background:var(--surface2);border:1px solid var(--brd);border-radius:6px;padding:4px 8px;font-size:11px">
                         <span style="color:var(--ink2);font-weight:600">${esc(label)}</span>
                         <span style="color:var(--ink1);font-weight:800;font-variant-numeric:tabular-nums">${+eq[k]}</span>
                       </div>
@@ -616,7 +616,7 @@
               </div>
               ${hasBru
                 ? '<span style="background:var(--grn-bg);color:var(--grn);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--grn-bd)">✓ Skráð</span>'
-                : '<span style="background:var(--bg);color:var(--ink3);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--brd)">Ekki skráð</span>'
+                : '<span style="background:var(--surface2);color:var(--ink3);font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;border:1px solid var(--brd)">Ekki skráð</span>'
               }
             </div>
             ${hasBru ? `
@@ -656,7 +656,7 @@
           <div style="overflow-x:auto">
             <table style="width:100%;border-collapse:collapse;font-size:11.5px">
               <thead>
-                <tr style="background:var(--bg);color:var(--ink3);text-transform:uppercase;font-size:10px;font-weight:700">
+                <tr style="background:var(--surface2);color:var(--ink3);text-transform:uppercase;font-size:10px;font-weight:700">
                   <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--brd)">Raðnr</th>
                   <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--brd)">Tegund</th>
                   <th style="text-align:left;padding:6px 8px;border-bottom:1px solid var(--brd)">Stærð</th>
@@ -715,7 +715,7 @@
                 ${eqRows.map(([k, label]) => {
                   const v = +eq[k] || 0;
                   if (!v) return '';
-                  return `<div style="background:var(--bg);border:1px solid var(--brd);border-radius:7px;padding:8px 10px">
+                  return `<div style="background:var(--surface2);border:1px solid var(--brd);border-radius:7px;padding:8px 10px">
                     <div style="font-size:9.5px;color:var(--ink3);font-weight:600">${esc(label)}</div>
                     <div style="font-size:18px;font-weight:800;color:var(--ink1)">${v}</div>
                   </div>`;

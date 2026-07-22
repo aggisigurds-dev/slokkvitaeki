@@ -322,7 +322,7 @@
       '.rdr-btn:disabled{opacity:.5;cursor:not-allowed}',
       '.rdr-btn-sm{width:auto;padding:9px 14px;white-space:nowrap}',
       '.rdr-pdfrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
-      '.rdr-pdfbtn{border:1px solid var(--brand);background:var(--bg);color:var(--brand);border-radius:9px;padding:9px 14px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}',
+      '.rdr-pdfbtn{border:1px solid var(--brand);background:var(--surface2);color:var(--brand);border-radius:9px;padding:9px 14px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}',
       '.rdr-pdf-status{font-size:11.5px;flex:1;min-width:120px}',
       '.rdr-div{height:1px;background:var(--brd);margin:14px 0 12px}',
       '.rdr-man{}',

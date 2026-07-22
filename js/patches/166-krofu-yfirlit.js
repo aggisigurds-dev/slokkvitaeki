@@ -1576,6 +1576,12 @@
             const da = daysAgo(s.created_at);
             // 2026-06-30: 📎 fylgiskjal — leita úttektarskýrslu sömu ár.
             const skyrslaBtn = skyrslaBtnFor(s);
+            // 2026-07-22 (ósk Agnars): þrír vinnuflæðis-hnapparnir — Skýrsla ·
+            // Krafa send · Greitt — sitja FREMST, strax á eftir aldurs-pillunni.
+            // Þeir eru þeir einu sem bera stöðu (data-on) og þeir sem smellt er á
+            // í sífellu; áður sátu þeir hægra megin í hnapparöð sem skrunast út
+            // af skjánum á mjórri gluggum. Hinir (Reikning · Senda · Breyta ·
+            // Bakfæra · Afturkalla · Nýr) standa eftir hægra megin.
             return `
               <div class="ky-row" style="display:flex;align-items:center;gap:12px;padding:9px 18px;border-bottom:1px solid #f3f5f9;font-size:12.5px">
                 ${isSendable(s)
@@ -1586,14 +1592,16 @@
                   <div class="ky-num" style="color:#64748b;font-size:11px">${fmtDate(s.created_at)}</div>
                 </div>
                 ${agingPill(da)}
+                <div style="display:flex;gap:6px;flex-shrink:0">
+                  ${skyrslaBtn}
+                  ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', 'Krafa send', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
+                  ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', 'Greitt', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
+                </div>
                 <div style="flex:1;min-width:0;display:flex;align-items:center;gap:8px;margin:0 10px">
                   <input class="_ky-note" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="🗒 minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — eigin reitur (ekki athugasemd reikningsins). Vistast sjálfkrafa." style="flex:1;min-width:0;padding:4px 8px;border:1px solid transparent;border-bottom:1px dashed #d3d9e2;background:transparent;font:inherit;font-size:12px;color:#11141c;outline:none;border-radius:5px">
                 </div>
                 <span class="ky-num" style="width:90px;text-align:right;font-weight:700;color:#11141c;white-space:nowrap;flex-shrink:0">${fmtKr(s.samtals)}</span>
                 <div style="display:flex;gap:6px;flex-shrink:0">
-                  ${skyrslaBtn}
-                  ${kyAbtn('_ky-krafa-toggle', 'data-id="' + s.id + '"' + (s.krafa_sent_at ? ' data-on="1"' : ''), '🏦', 'Krafa send', '#0f7a43', s.krafa_sent_at ? ('Krafa send ' + fmtDate(s.krafa_sent_at) + ' — smelltu til að afhaka') : 'Senda kröfu í Payday (drag)', !!s.krafa_sent_at)}
-                  ${kyAbtn('_ky-mark-paid', 'data-id="' + s.id + '"' + (s.paid_at ? ' data-on="1"' : ''), '✓', 'Greitt', '#0f7a43', s.paid_at ? ('Greitt ' + fmtDate(s.paid_at) + ' — smelltu til að afhaka') : 'Merkja sem greitt', !!s.paid_at)}
                   ${kyAbtn('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', 'Reikning', '#2f5fe0', 'Skoða / prenta reikning', false)}
                   ${kyAbtn('_ky-email', 'data-id="' + s.id + '"', '📧', 'Senda', '#0f766e', 'Senda reikning og/eða úttektarskýrslu í tölvupósti', false)}
                   ${kyAbtn('_ky-open-editor', 'data-num="' + esc(s.num) + '"', '✎', 'Breyta', '#c2410c', 'Opna í sölu-editor', false)}
