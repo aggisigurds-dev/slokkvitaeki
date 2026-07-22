@@ -21,6 +21,15 @@
   // 'uttekt') + brunakerfi skoðunarskýrsla (patch 273 source 'brunakerfi').
   function isInsp(src){ const s = String(src||'').toLowerCase(); return s === 'uttekt' || s === 'brunakerfi'; }
   function dayKey(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+  // „Raun-dagsetning" sölu: fyrir STAÐGREITT (kort/pening) er það DAGURINN SEM
+  // greitt var (paid_at) — „greitt síðar" drög sem eru sótt+greidd með korti í dag
+  // halda gamla created_at (móttöku-degi) en fá paid_at=í dag, svo fjárstreymið
+  // á að lenda á greiðsludeginum. Reikningar/úttektir eru áfram á skráningardegi.
+  function effDate(r){
+    const m = payKey(r.greitt_med);
+    if ((m === 'kort' || m === 'pening') && r.paid_at) return r.paid_at;
+    return r.created_at;
+  }
 
   let _ccSales = [];       // solur-raðir í glugganum (samtals,created_at,greitt_med,source,status)
   let _ccPeriod = '14d';   // valið tímabil fyrir sundurliðunina
@@ -115,8 +124,10 @@
     const fetchSince = fourteenBack < monthStart ? fourteenBack : monthStart;
     const [sales, unpaid, openJobs, todayJobs, dueInsp, lowStock, contractsDue] = await Promise.all([
       // ALLAR raðir (líka drög) — við flokkum sjálf; drög fyrir 'greitt_sidar' eru
-      // væntanleg innheimta, önnur drög eru sleppt í tekjum.
-      safe(SB.from('solur').select('samtals,created_at,greitt_med,source,status').gte('created_at', fetchSince.toISOString()).lt('created_at', tomorrow.toISOString())),
+      // væntanleg innheimta, önnur drög eru sleppt í tekjum. Tökum bæði raðir sem
+      // voru SKRÁÐAR og raðir sem voru GREIDDAR í glugganum (gömul drög sótt í dag).
+      safe(SB.from('solur').select('samtals,created_at,paid_at,greitt_med,source,status')
+        .or('created_at.gte.' + fetchSince.toISOString() + ',paid_at.gte.' + fetchSince.toISOString())),
       safe(SB.from('solur').select('id,samtals,customer_nafn').neq('status','drog').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null)),
       safe(SB.from('verkbeidnir').select('id,num,customer,status').neq('status','done').neq('status','cancelled')),
       safe(SB.from('verkdagbok').select('id,fyrirtaeki,job_date,athugasemdir').gte('job_date', today.toISOString().slice(0,10)).lt('job_date', tomorrow.toISOString().slice(0,10)).order('job_date')),
@@ -131,7 +142,7 @@
 
     // Tekjur þessa mánaðar = allar (ekki-drög) sölur frá 1. þessa mánaðar.
     const monthRev = _ccSales
-      .filter(r => String(r.status||'') !== 'drog' && new Date(r.created_at) >= monthStart)
+      .filter(r => String(r.status||'') !== 'drog' && new Date(effDate(r)) >= monthStart)
       .reduce((s,r)=>s+(parseFloat(r.samtals)||0),0);
 
     // 2026-07-14: hreinsa ógreiddu-listann (birting eingöngu — solur óbreyttar):
@@ -257,7 +268,7 @@
     }
     const idx = {}; buckets.forEach(b => idx[b.key] = b);
     rows.forEach(r => {
-      const b = idx[dayKey(new Date(r.created_at))]; if (!b) return;
+      const b = idx[dayKey(new Date(effDate(r)))]; if (!b) return;
       const amt = parseFloat(r.samtals) || 0;
       if (amt <= 0) return; // kreditreikningar/0 sleppt úr myndinni (rétt í tölum að neðan)
       const st = String(r.status||'');
@@ -391,8 +402,8 @@
     if (period === '7d') since.setDate(since.getDate() - 6);
     else if (period === '14d') since.setDate(since.getDate() - 13);
     else if (period === 'manudur') since.setDate(1);
-    // 'idag' = frá miðnætti í dag
-    return rows.filter(r => new Date(r.created_at) >= since);
+    // 'idag' = frá miðnætti í dag. Notar raun-dag (greiðsludag fyrir staðgreitt).
+    return rows.filter(r => new Date(effDate(r)) >= since);
   }
   function breakdown(rows){
     const b = { kort:0, pening:0, reikningur:0, annad:0, sidar:0, insp:0, count:0 };

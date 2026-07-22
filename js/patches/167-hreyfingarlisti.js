@@ -79,6 +79,13 @@
     if (isNaN(d)) return '—';
     return String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
   }
+  // Grænn „✓ greitt <dags>" undirmerki þegar salan var GREIDD annan dag en hún
+  // var skráð — t.d. tæki úr hleðslu sótt+greitt löngu eftir móttöku.
+  function paidNote(s) {
+    if (!s.paid_at) return '';
+    if (fmtDate(s.paid_at) === fmtDate(s.created_at)) return '';
+    return '<div class="hl-mono" style="font-size:10px;color:#16a34a;font-weight:700;margin-top:1px">✓ greitt ' + esc(fmtDate(s.paid_at)) + '</div>';
+  }
   function fmtTime(iso) {
     if (!iso) return '';
     const d = new Date(iso);
@@ -658,7 +665,7 @@
   function rowDenseHtml(s) {
     const acts = actionDefs(s).map(iconBtn).join('');
     return `<tr class="hl-trow">
-      <td style="white-space:nowrap"><span class="hl-mono" style="font-size:11px;color:#334155">${esc(fmtDate(s.created_at))}</span> <span class="hl-mono" style="font-size:10px;color:#94a3b8">${esc(fmtTime(s.created_at))}</span></td>
+      <td style="white-space:nowrap"><span class="hl-mono" style="font-size:11px;color:#334155">${esc(fmtDate(s.created_at))}</span> <span class="hl-mono" style="font-size:10px;color:#94a3b8">${esc(fmtTime(s.created_at))}</span>${paidNote(s)}</td>
       <td><span class="hl-mono" style="font-size:11px;color:#1d4ed8;font-weight:700">${esc(s.num || '')}</span></td>
       <td style="font-size:12px;font-weight:600;overflow-wrap:anywhere;max-width:220px">${custNameHtml(s)}</td>
       <td style="white-space:nowrap">${ktCell(s.customer_kt)}</td>
@@ -682,6 +689,7 @@
           <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
             <span class="hl-mono" style="font-size:13px;color:#1d4ed8;font-weight:700">${esc(s.num || '')}</span>
             <span class="hl-mono" style="font-size:12px;color:#64748b">${esc(fmtDate(s.created_at))}${fmtTime(s.created_at) ? ' · ' + esc(fmtTime(s.created_at)) : ''}</span>
+            ${s.paid_at && fmtDate(s.paid_at) !== fmtDate(s.created_at) ? '<span class="hl-mono" style="font-size:11px;color:#16a34a;font-weight:700">✓ greitt ' + esc(fmtDate(s.paid_at)) + '</span>' : ''}
             <span style="margin-left:auto;font-size:16px;overflow-wrap:anywhere">${amountHtml(s)}</span>
           </div>
           <div style="margin-top:8px;font-size:15px;font-weight:700;color:#11141c;overflow-wrap:anywhere;line-height:1.3">${custNameHtml(s)}</div>
@@ -699,6 +707,7 @@
       <td style="padding:10px 14px;white-space:nowrap">
         <span class="hl-mono" style="font-size:12px;color:#334155">${esc(fmtDate(s.created_at))}</span>
         <span class="hl-mono" style="display:block;font-size:10.5px;color:#94a3b8;margin-top:1px">${esc(fmtTime(s.created_at))}</span>
+        ${paidNote(s)}
       </td>
       <td style="padding:10px 14px"><span class="hl-mono" style="font-size:12px;color:#1d4ed8;font-weight:700">${esc(s.num || '')}</span></td>
       <td style="padding:10px 14px;font-size:13.5px;font-weight:600;color:#11141c">${custNameHtml(s)}</td>
