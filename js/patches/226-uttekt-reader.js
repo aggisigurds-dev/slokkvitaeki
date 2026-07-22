@@ -70,10 +70,22 @@
     try{ var r=await sb.from('customers_base').select('id').eq('kennitala',d).limit(1);
       var id=(r.data&&r.data[0])?r.data[0].id:null; _baseCache[d]=id; return id; }catch(e){ return null; }
   }
-  async function fetchLines(baseId){
-    var sb=SB(); if(!sb||!baseId) return [];
+  // Parsed report lines for a base. ÖRYGGI: customer_base_id er SAMEIGINLEGT
+  // fyrir allar starfsstöðvar rekstrarfélags, svo á multiloc-kt síaði gamla
+  // útgáfan EKKI á stað → lagði saman skýrslu-línur ALLRA staðanna (t.d. base
+  // 786 = 7 staðir í einn haug). Þegar kt er rekstrarfélag höldum við AÐEINS
+  // línum þessa staðar (fyrirtaeki_id === co.id); óstaðsettar/annarra-staða
+  // línur eru EKKI taldar með (skilað sér í `others`-fjölda til upplýsingar).
+  async function fetchLines(baseId, co, multiloc){
+    var sb=SB(); if(!sb||!baseId) return { rows:[], others:0 };
     try{ var r=await sb.from('uttekt_skyrsla_lines').select('year,report_month,category,category_label,cnt,service,drive_file_id,fyrirtaeki_id').eq('customer_base_id',baseId);
-      return r.data||[]; }catch(e){ return []; }
+      var all=r.data||[];
+      if(multiloc && co){
+        var mine=all.filter(function(l){ return +l.fyrirtaeki_id===+co.id; });
+        return { rows:mine, others: all.length-mine.length };
+      }
+      return { rows:all, others:0 };
+    }catch(e){ return { rows:[], others:0 }; }
   }
 
   function tmpSerial(){ return 'TMP-'+Math.random().toString(36).slice(2,8).toUpperCase(); }
@@ -156,12 +168,12 @@
   //                sjálfkrafa; notandi verður að staðfesta rétta starfsstöð.
   //   • Reikningar án customer_id lenda í `own` AÐEINS ef kt er ekki
   //     rekstrarfélag; annars fara þeir í `sibling` (óviss).
-  async function fetchInvoices(co){
+  async function fetchInvoices(co, sibsPre){
     var sb=SB(); if(!sb||!co) return { own:[], siblings:[], multiloc:false };
     var d=String(co.kennitala||'').replace(/\D/g,'');
     if(d.length!==10) return { own:[], siblings:[], multiloc:false };
     var dashed=d.slice(0,6)+'-'+d.slice(6);
-    var sibs=await siblingLocations(co);
+    var sibs=sibsPre || await siblingLocations(co);
     var multiloc=sibs.length>0;
     try{
       var r=await sb.from('solur').select('num,created_at,linur,customer_kt,customer_id,customer_nafn')
@@ -382,16 +394,23 @@
     host.innerHTML='<div class="rdr-muted">Hleð…</div>';
     var body=host;
     var co=getCo(coId); if(!co){ body.innerHTML='<span class="rdr-muted">—</span>'; return; }
+    var sibs = await siblingLocations(co);
+    var multiloc = sibs.length>0;
     var baseId=await baseIdForKt(co.kennitala);
-    var lines = baseId ? await fetchLines(baseId) : [];
+    var fl = baseId ? await fetchLines(baseId, co, multiloc) : { rows:[], others:0 };
+    var lines = fl.rows;
     var repDocs = baseId ? await fetchReportDocs(baseId) : [];
-    var invoices = await fetchInvoices(co);
+    var invoices = await fetchInvoices(co, sibs);
     var hasInv = (invoices.own&&invoices.own.length) || (invoices.siblings&&invoices.siblings.length);
     var footer = sourceFooter(computeSrc(coId, repDocs));
+    // Viðvörun þegar kt er rekstrarfélag — svo notandi viti að fleiri staðir deila kt.
+    var mlWarn = multiloc
+      ? '<div class="rdr-muted" style="border-left:3px solid #dc2626;padding-left:8px;margin:0 0 6px;color:#dc2626">⚠️ Þessi kennitala á '+(sibs.length+1)+' starfsstöðvar í þjónustu — skýrslur/reikningar eru bundnir við ÞENNAN stað. '+(fl.others>0?('('+fl.others+' skýrslu-línur annarra staða faldar.) '):'')+'Athugaðu vel áður en tæki eru samræmd.</div>'
+      : '';
 
     // No auto-parsed report yet → invoice (if any) + manual entry are the paths.
     if(!lines.length){
-      body.innerHTML='<div class="rdr-muted">Engin <b>sjálf-lesin</b> skýrsla fundin ennþá'+((invoices.own&&invoices.own.length)?' — en úttektarreikningur fannst, samræmdu tækin úr honum:':(hasInv?' — sjá reikninga hér að neðan:':' — skráðu fjöldann af síðustu skýrslu hér að neðan, eða tengdu skýrsluna í <b>Skjöl &amp; viðhengi</b>.'))+'</div>'+
+      body.innerHTML=mlWarn+'<div class="rdr-muted">Engin <b>sjálf-lesin</b> skýrsla'+(multiloc?' fyrir þennan stað':'')+' fundin ennþá'+((invoices.own&&invoices.own.length)?' — en úttektarreikningur fannst, samræmdu tækin úr honum:':(hasInv?' — sjá reikninga hér að neðan:':' — skráðu fjöldann af síðustu skýrslu hér að neðan, eða tengdu skýrsluna í <b>Skjöl &amp; viðhengi</b>.'))+'</div>'+
         invoiceBlockHtml(invoices)+manualFormHtml()+footer;
       wireInvoice(body, coId, co, invoices);
       wireManual(body, coId, co.nafn);
@@ -406,8 +425,9 @@
       var ls=byYear[sel]||[];
       var n=ls.reduce(function(a,l){return a+(parseInt(l.cnt,10)||0);},0);
       body.innerHTML=
+        mlWarn+
         '<div class="rdr-row">'+
-          '<div><div class="rdr-lab">Nýjasta skýrsla</div>'+
+          '<div><div class="rdr-lab">Nýjasta skýrsla'+(multiloc?' (þessi staður)':'')+'</div>'+
             '<div class="rdr-sum">'+esc(summary(ls)||'engin tæki skráð')+'</div></div>'+
           (years.length>1 ? '<select id="_rdr-year" class="rdr-sel">'+years.map(function(y){return '<option value="'+y+'"'+(y===sel?' selected':'')+'>Skýrsla '+y+'</option>';}).join('')+'</select>' : '<span class="rdr-yr">Skýrsla '+sel+'</span>')+
         '</div>'+
