@@ -50,7 +50,12 @@
     // hvít spjöld, málm-takkar. Skiptanlegur áherslulitur (rautt/blátt/gyllt) í
     // banner-borðanum. Allt útlitið keyrt af patch 230 (data-thm-preset=brunastal).
     brunastal: { nm:'🔥 Brunastál', desc:'Brushed stál-banner + eldur, kolsvört hlið, málm-takkar — eins og stjórnborð.', sw:['#c92a2a','#0c0d10','#9ba1ad','#ffffff'],
-      t:{ bg:'#9ba1ad',card:'#ffffff',ink:'#11141c',muted:'#9098a6',line:'#e3e7ee',brand:'#c92a2a',primary:'#c92a2a',h1:'#11141c',h2:'#3a4250',h3:'#9098a6' } }
+      // 2026-07-22 (ósk Agnars — „fix grey on grey text"): muted var #9098a6,
+      // sem verður --ink2 (aukatexti á HVÍTUM spjöldum) og mældist þar 2,91:1 —
+      // vel undir 4,5 lágmarkinu. Nú #5b6573 (5,91:1), sama gildi og
+      // --ink-muted-readable í 240-brunastal-polish notar nú þegar í sama
+      // tilgangi. h3 heldur ljósa tóninum — það er fyrirsagnastigi, ekki brauðtexti.
+      t:{ bg:'#9ba1ad',card:'#ffffff',ink:'#11141c',muted:'#5b6573',line:'#e3e7ee',brand:'#c92a2a',primary:'#c92a2a',h1:'#11141c',h2:'#3a4250',h3:'#9098a6' } }
   };
   const ACCENTS = ['#c96a2f','#a8322a','#2563eb','#0f766e','#16a34a','#b91c1c','#334155'];
   const FONTS = {
