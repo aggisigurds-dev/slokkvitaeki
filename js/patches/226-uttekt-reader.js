@@ -416,8 +416,9 @@
     // No auto-parsed report yet → invoice (if any) + manual entry are the paths.
     if(!lines.length){
       body.innerHTML=mlWarn+'<div class="rdr-muted">Engin <b>sjálf-lesin</b> skýrsla'+(multiloc?' fyrir þennan stað':'')+' fundin ennþá'+((invoices.own&&invoices.own.length)?' — en úttektarreikningur fannst, samræmdu tækin úr honum:':(hasInv?' — sjá reikninga hér að neðan:':' — skráðu fjöldann af síðustu skýrslu hér að neðan, eða tengdu skýrsluna í <b>Skjöl &amp; viðhengi</b>.'))+'</div>'+
-        invoiceBlockHtml(invoices)+manualFormHtml()+footer;
+        invoiceBlockHtml(invoices)+pickerBtnHtml()+manualFormHtml()+footer;
       wireInvoice(body, coId, co, invoices);
+      wirePicker(body, coId, co, baseId);
       wireManual(body, coId, co.nafn);
       return;
     }
@@ -439,15 +440,102 @@
         '<button id="_rdr-fill" class="rdr-btn"'+(n?'':' disabled')+'>📥 Lesa úr skýrslu → bæta '+n+' tækjum við (TMP-númer)</button>'+
         '<div class="rdr-muted" style="margin-top:6px">Rangt fyrirtæki/skýrsla? Tengdu rétta úttektarskýrslu í <b>Skjöl &amp; viðhengi</b> að neðan.</div>'+
         invoiceBlockHtml(invoices)+
+        pickerBtnHtml()+
         '<div class="rdr-div"></div>'+
         manualFormHtml()+footer;
       var ys=body.querySelector('#_rdr-year'); if(ys) ys.onchange=function(){ sel=+ys.value; paint(); };
       var fb=body.querySelector('#_rdr-fill'); if(fb) fb.onclick=function(){ var ls=byYear[sel]||[]; createFromLines(coId, co.nafn, ls, {name:'Skýrsla '+sel, year:sel, drive_file_id:(ls[0]&&ls[0].drive_file_id)||null, ts:Date.now()}); };
       wireInvoice(body, coId, co, invoices);
+      wirePicker(body, coId, co, baseId);
       wireManual(body, coId, co.nafn);
     }
     paint();
   }
+
+  // ── 📚 Skýrslu-safn (velja rétta skýrslu úr öllum árum/stöðum) ──────────────
+  // Rekstrarfélög eiga oft margar staðsettar skýrslur undir sömu kt, og réttu
+  // skýrslunni fyrir ÞENNAN stað getur verið mис-vistuð undir öðrum stað. Þessi
+  // gluggi listar ALLAR úttektarskýrslur kt-sins (öll ár, allir staðir) svo hægt
+  // sé að (1) FÆRA rétta skýrslu í ár-hólf þessa staðar (yfirskrifar mис-vistun —
+  // sama aðgerð og Skýrslu-stöð Brunahólfs: uppfærir fyrirtaeki_id+year) og (2)
+  // flytja véllesin tæki hennar ef þau eru til. Þetta app les EKKI Drive-PDF, svo
+  // tæki koma AÐEINS ef skýrslan hefur þegar véllesnar línur (uttekt_skyrsla_lines).
+  async function locMap(baseId){
+    var sb=SB(); if(!sb||!baseId) return {};
+    try{ var r=await sb.from('fyrirtaeki').select('id,nafn,heimilisfang').eq('customer_base_id',baseId).is('deleted_at',null);
+      var m={}; (r.data||[]).forEach(function(f){ m[f.id]={nafn:f.nafn,addr:f.heimilisfang}; }); return m;
+    }catch(_){ return {}; }
+  }
+  async function fetchAllReports(baseId){
+    var sb=SB(); if(!sb||!baseId) return [];
+    try{
+      var r=await sb.from('customer_documents').select('id,year,drive_file_id,notes,fyrirtaeki_id')
+        .eq('customer_base_id',baseId).eq('doc_type','uttektarskyrsla');
+      var docs=r.data||[];
+      var l=await sb.from('uttekt_skyrsla_lines').select('fyrirtaeki_id,year,category,cnt').eq('customer_base_id',baseId);
+      var lineMap={}; (l.data||[]).forEach(function(x){ var k=x.fyrirtaeki_id+'|'+x.year; (lineMap[k]=lineMap[k]||[]).push({category:x.category,cnt:x.cnt,year:x.year}); });
+      docs.forEach(function(d){ d._lines=lineMap[d.fyrirtaeki_id+'|'+d.year]||[]; });
+      return docs;
+    }catch(_){ return []; }
+  }
+  function repName(d){ var n=(d.notes||'').trim(); return n?n:('Skýrsla '+(d.year||'?')); }
+  async function assignReportToSlot(coId, co, doc, year){
+    var sb=SB(); if(!sb) { alert('Engin tenging'); return false; }
+    if(!confirm('📌 Setja þessa skýrslu sem skýrslu '+year+' á „'+co.nafn+'"?\n\n'+repName(doc)+'\n\nHún færist HINGAÐ (og hverfur af þeim stað sem hún var skráð á áður). Afturkræft.')) return false;
+    try{
+      var r=await sb.from('customer_documents').update({fyrirtaeki_id:coId, year:year}).eq('id',doc.id);
+      if(r.error) throw r.error;
+      await saveSource(coId, {name:repName(doc), year:year, drive_file_id:doc.drive_file_id||null, ts:Date.now()});
+      return true;
+    }catch(e){ alert('Villa: '+(e.message||e)); return false; }
+  }
+  function openReportPicker(coId, co, baseId){
+    var ov=document.createElement('div'); ov.className='rdr-ov';
+    ov.innerHTML='<div class="rdr-modal"><div class="rdr-modal-hd"><b>📚 Skýrslu-safn — '+esc(co.nafn)+'</b><button class="rdr-x" type="button">✕</button></div>'+
+      '<div class="rdr-modal-note">Veldu rétta úttektarskýrslu og settu hana í ár-hólf ÞESSA staðar. Sýnir allar skýrslur kennitölunnar (alla staði, öll ár). 👁 opnar PDF-inn til að staðfesta.</div>'+
+      '<div class="rdr-modal-bd">Hleð…</div></div>';
+    document.body.appendChild(ov);
+    function close(){ try{ ov.remove(); }catch(_){} }
+    ov.addEventListener('click', function(e){ if(e.target===ov) close(); });
+    ov.querySelector('.rdr-x').onclick=close;
+    var bd=ov.querySelector('.rdr-modal-bd');
+    var nowY=(new Date()).getFullYear();
+    Promise.all([fetchAllReports(baseId), locMap(baseId)]).then(function(res){
+      var docs=res[0], lm=res[1];
+      if(!docs.length){ bd.innerHTML='<div class="rdr-muted">Engar úttektarskýrslur skráðar á þessa kennitölu.</div>'; return; }
+      docs.sort(function(a,b){ return (+b.year||0)-(+a.year||0) || (+b.fyrirtaeki_id||0)-(+a.fyrirtaeki_id||0); });
+      var years=[]; for(var y=nowY+1;y>=2020;y--) years.push(y);
+      bd.innerHTML=docs.map(function(d,i){
+        var loc=lm[d.fyrirtaeki_id]; var here=(+d.fyrirtaeki_id===+coId);
+        var locLbl=here?'<span class="rdr-here">✓ þessi staður</span>':(loc?esc(loc.nafn):(d.fyrirtaeki_id?('staður #'+d.fyrirtaeki_id):'<span class="rdr-nostad">óstaðsett</span>'));
+        var n=(d._lines||[]).reduce(function(a,x){return a+(+x.cnt||0);},0);
+        var taeki=n>0?('<span class="rdr-taebadge">'+n+' tæki véllesin</span>'):'<span class="rdr-notae">engin véllesin tæki</span>';
+        var link=d.drive_file_id?'<a href="'+esc(driveUrl(d.drive_file_id))+'" target="_blank" rel="noopener" class="rdr-eye">👁 PDF</a>':'';
+        var ysel='<select class="rdr-rep-yr" data-i="'+i+'">'+years.map(function(y){return '<option value="'+y+'"'+(+y===+d.year?' selected':'')+'>'+y+'</option>';}).join('')+'</select>';
+        return '<div class="rdr-rep" data-i="'+i+'">'+
+          '<div class="rdr-rep-main"><div class="rdr-rep-nm">'+esc(repName(d))+'</div>'+
+            '<div class="rdr-rep-sub">📍 '+locLbl+' · skráð ár '+(d.year||'?')+' '+taeki+' '+link+'</div></div>'+
+          '<div class="rdr-rep-act">Ár: '+ysel+
+            '<button class="rdr-btn rdr-btn-sm rdr-rep-set" data-i="'+i+'">📌 Setja hér</button>'+
+            (n>0?('<button class="rdr-btn rdr-btn-sm rdr-rep-imp" data-i="'+i+'" style="background:var(--ok,#16a34a)">📥 +'+n+' tæki</button>'):'')+
+          '</div></div>';
+      }).join('');
+      function yrOf(i){ var s=bd.querySelector('.rdr-rep-yr[data-i="'+i+'"]'); return s?(+s.value):(+docs[i].year||nowY); }
+      bd.querySelectorAll('.rdr-rep-set').forEach(function(btn){ btn.onclick=async function(){
+        var i=+btn.getAttribute('data-i'); var ok=await assignReportToSlot(coId, co, docs[i], yrOf(i));
+        if(ok){ close(); try{ if(window.Companies&&Companies.openDetail) Companies.openDetail(coId); }catch(_){}
+          alert('✓ Skýrsla sett sem skýrsla '+yrOf(i)+' á „'+co.nafn+'". Sést nú í „Skjöl & viðhengi".'); }
+      }; });
+      bd.querySelectorAll('.rdr-rep-imp').forEach(function(btn){ btn.onclick=function(){
+        var i=+btn.getAttribute('data-i'); var d=docs[i]; var yr=yrOf(i);
+        var lines=(d._lines||[]).map(function(x){return {category:x.category,cnt:x.cnt,year:yr};});
+        if(!lines.length){ alert('Engin véllesin tæki fyrir þessa skýrslu.'); return; }
+        close(); createFromLines(coId, co.nafn, lines, {name:repName(d), year:yr, drive_file_id:d.drive_file_id||null, ts:Date.now()});
+      }; });
+    });
+  }
+  function pickerBtnHtml(){ return '<button id="_rdr-pick" class="rdr-btn rdr-btn-ghost" style="margin-top:8px">📚 Velja skýrslu úr safni (öll ár / allir staðir)</button>'; }
+  function wirePicker(body, coId, co, baseId){ var b=body.querySelector('#_rdr-pick'); if(b) b.onclick=function(){ openReportPicker(coId, co, baseId); }; }
 
   function inject(){
     var main=document.getElementById('companies-main'); if(!main) return;
@@ -506,6 +594,23 @@
       '.rdr-btn{width:100%;border:0;border-radius:10px;padding:11px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;background:var(--brand);color:#fff}',
       '.rdr-btn:disabled{opacity:.5;cursor:not-allowed}',
       '.rdr-btn-sm{width:auto;padding:9px 14px;white-space:nowrap}',
+      '.rdr-btn-ghost{background:var(--surface2,#f1f3f5);color:var(--brand);border:1px solid var(--brand)}',
+      '.rdr-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:12000;display:flex;align-items:flex-start;justify-content:center;padding:24px 12px;overflow:auto}',
+      '.rdr-modal{background:var(--surface,#fff);border-radius:14px;max-width:640px;width:100%;box-shadow:0 12px 40px rgba(0,0,0,.35);overflow:hidden}',
+      '.rdr-modal-hd{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px;border-bottom:1px solid var(--brd);font-size:15px;color:var(--ink1)}',
+      '.rdr-x{border:0;background:none;font-size:18px;cursor:pointer;color:var(--ink3);line-height:1}',
+      '.rdr-modal-note{padding:10px 16px;font-size:12px;color:var(--ink3);background:var(--surface2,#f7f8fa)}',
+      '.rdr-modal-bd{padding:8px 12px 14px;max-height:70vh;overflow:auto}',
+      '.rdr-rep{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:11px 6px;border-bottom:1px solid var(--brd)}',
+      '.rdr-rep-nm{font-size:13px;font-weight:600;color:var(--ink1)}',
+      '.rdr-rep-sub{font-size:11.5px;color:var(--ink3);margin-top:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}',
+      '.rdr-rep-act{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:11.5px;color:var(--ink3);flex:none}',
+      '.rdr-rep-yr{font:inherit;font-size:12px;padding:4px 6px;border:1px solid var(--brd);border-radius:7px;background:var(--surface);color:var(--ink1)}',
+      '.rdr-here{color:var(--ok,#16a34a);font-weight:700}',
+      '.rdr-nostad{color:#d97706;font-weight:700}',
+      '.rdr-taebadge{background:rgba(22,163,74,.14);color:#16a34a;border-radius:6px;padding:1px 6px;font-weight:700}',
+      '.rdr-notae{color:var(--ink4)}',
+      '.rdr-eye{color:var(--brand);text-decoration:none;font-weight:700}',
       '.rdr-pdfrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
       '.rdr-pdfbtn{border:1px solid var(--brand);background:var(--surface2);color:var(--brand);border-radius:9px;padding:9px 14px;font:inherit;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap}',
       '.rdr-pdf-status{font-size:11.5px;flex:1;min-width:120px}',
