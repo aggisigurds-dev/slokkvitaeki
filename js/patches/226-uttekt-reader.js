@@ -91,6 +91,97 @@
     return null;
   }
 
+  // Classify a reikningur LÍNU-lýsing í CATMAP-flokk. TÆKI-lína = byrjar á
+  // „Yfirferð" EÐA „Hleðsla" — HVOR TVEGGJA telst eitt tæki. Staðfest á R-000510
+  // (Brynja): léttvatn yfirferð 4 + hleðsla 4 = 8 = skýrslan (aldrei sama tækið
+  // bæði yfirfarið OG hlaðið á sama reikningi). Skýrslugerð/Akstur/Vinna/Skilti/
+  // Þrýstimælir/Píla eru EKKI tæki.
+  // Normalize sub-/superscript digits svo „Co₂"/„Co²" → „co2".
+  function normDigits(s){
+    return String(s||'')
+      .replace(/[₀-₉]/g,function(c){return String.fromCharCode(c.charCodeAt(0)-0x2080+48);})
+      .replace(/²/g,'2').replace(/³/g,'3').replace(/¹/g,'1');
+  }
+  function descToCat(desc){
+    var d=normDigits(desc).toLowerCase();
+    // TÆKI = Yfirferð (skoðað) · Hleðsla (endurhlaðið) · Nýtt (nýselt) — öll þrjú
+    // eru tæki sem kúnninn á eftir heimsókn. Aðrar línur (varahlutir/þjónusta) NEI.
+    if(!/^\s*(yfirfer|hle[ðd]sl|n[ýy]tt)/.test(d)) return null;
+    if(/skýrslugerð|skyrslugerd|akstur|vinna|þrýstimæl|thrystimael|p[íi]la|skilti|o-hringur|úðastútur|udastutur|slanga fyrir/.test(d)) return null;
+    if(/reyk|smoke|hitaskynj/.test(d)) return 'reyk';
+    if(/teppi|blanket/.test(d)) return 'teppi';
+    if(/slang|slöng|hose/.test(d)) return 'slanga';
+    if(/co2|kolsýr|kolsyr/.test(d)) return /\b5\b|5\s*kg/.test(d)?'co2_5':'co2_2';
+    if(/léttv|lettv|abf|vatn|water|froð|frod/.test(d)) return 'lettvatn';
+    if(/duft|abc|pfc/.test(d)) return /\b(6|9|12)\b/.test(d)?'duft6':'duft2';
+    return null;
+  }
+  // ALLIR slökkvitæki-úttektarreikningar (solur, source='uttekt') fyrir kt →
+  // tegunda-taldar línur PER reikning (nýjast fyrst). Notandinn getur valið 2025
+  // EÐA 2026 o.s.frv. Reikningurinn lifir í Kröfu yfirliti þótt skýrslan/
+  // prófíltengingin sé týnd, svo þetta er áreiðanlega uppsprettan.
+  // Er þessi kt rekstrarfélag — þ.e. á hún 2+ LIFANDI þjónustu-starfsstöðvar?
+  // (Álftamýri/Vélsmiðja Orms o.fl. — sami reikningur MÁ ALDREI sjálfkrafa lenda
+  //  á öllum stöðunum. Sjá fact-check 2026-07-22.)
+  async function siblingLocations(co){
+    var sb=SB(); if(!sb||!co) return [];
+    var d=String(co.kennitala||'').replace(/\D/g,'');
+    if(d.length!==10 || d==='9999999999') return [];
+    var dashed=d.slice(0,6)+'-'+d.slice(6);
+    try{
+      var r=await sb.from('fyrirtaeki').select('id,nafn,heimilisfang')
+        .eq('er_i_thjonustu',true).is('deleted_at',null)
+        .or('kennitala.eq.'+d+',kennitala.eq.'+dashed);
+      return (r.data||[]).filter(function(f){ return f.id!==co.id; });
+    }catch(_){ return []; }
+  }
+  function parseInvLinur(s){
+    var arr = Array.isArray(s.linur) ? s.linur
+            : (typeof s.linur==='string' ? (function(){ try{return JSON.parse(s.linur||'[]');}catch(_){return [];} })() : []);
+    var counts={};
+    arr.forEach(function(l){ var c=descToCat(l&&l.desc); if(!c) return; var n=parseInt(l.qty,10)||0; if(n>0) counts[c]=(counts[c]||0)+n; });
+    var year=new Date(s.created_at).getFullYear();
+    var lines=Object.keys(counts).map(function(k){ return { category:k, cnt:counts[k], year:year }; });
+    return { lines:lines, num:s.num, date:s.created_at, year:year };
+  }
+  // Slökkvitæki-úttektarreikningar (solur, source='uttekt').
+  //
+  // ÖRYGGI (fact-check 2026-07-22): reikningur ber `customer_id` sem bendir á
+  // NÁKVÆMLEGA þá starfsstöð sem var heimsótt (staðfest: 78/81 með gilt
+  // customer_id, 0 með ranga kt). Þess vegna tengjum við á `customer_id=co.id`
+  // — EKKI á kt (sem myndi dreifa sama reikningi á allar starfsstöðvar
+  // rekstrarfélags og láta stað sem á eftir að skoða líta „búinn" út).
+  //   • own      = customer_id === co.id  → óhætt að samræma.
+  //   • sibling  = sama kt en annar customer_id → BIRT MEÐ VIÐVÖRUN, aldrei
+  //                sjálfkrafa; notandi verður að staðfesta rétta starfsstöð.
+  //   • Reikningar án customer_id lenda í `own` AÐEINS ef kt er ekki
+  //     rekstrarfélag; annars fara þeir í `sibling` (óviss).
+  async function fetchInvoices(co){
+    var sb=SB(); if(!sb||!co) return { own:[], siblings:[], multiloc:false };
+    var d=String(co.kennitala||'').replace(/\D/g,'');
+    if(d.length!==10) return { own:[], siblings:[], multiloc:false };
+    var dashed=d.slice(0,6)+'-'+d.slice(6);
+    var sibs=await siblingLocations(co);
+    var multiloc=sibs.length>0;
+    try{
+      var r=await sb.from('solur').select('num,created_at,linur,customer_kt,customer_id,customer_nafn')
+        .eq('source','uttekt').not('linur','is',null)
+        .or('customer_kt.eq.'+d+',customer_kt.eq.'+dashed)
+        .order('created_at',{ascending:false}).limit(24);
+      var own=[], siblings=[];
+      (r.data||[]).forEach(function(s){
+        var iv=parseInvLinur(s); if(!iv.lines.length) return;
+        var cid=(s.customer_id==null?null:+s.customer_id);
+        if(cid===co.id){ own.push(iv); return; }
+        if(cid==null && !multiloc){ own.push(iv); return; }   // stakur staður: óhætt
+        iv.owner=s.customer_nafn||('starfsstöð #'+(cid==null?'?':cid));
+        iv.owner_id=cid;
+        siblings.push(iv);
+      });
+      return { own:own.slice(0,12), siblings:siblings.slice(0,12), multiloc:multiloc };
+    }catch(e){ return { own:[], siblings:[], multiloc:multiloc }; }
+  }
+
   async function createFromLines(coId, nafn, lines, source){
     var sb=SB(); if(!sb) { alert('Engin tenging'); return; }
     var today=new Date(); var y=lines[0]&&lines[0].year ? lines[0].year : today.getFullYear();
@@ -223,6 +314,70 @@
     };
   }
 
+  // „Úr reikningi"-blokk: velja ÚTTEKTARREIKNING (2025 / 2026 / …) → samræma
+  // tækjalista úr honum. Sýnir fellilista ef fleiri en einn reikningur er til.
+  function invSummary(iv){ return iv.lines.map(function(l){ var m=CATMAP[l.category]; return l.cnt+'× '+(m?m[0]+(m[1]?' '+m[1]:''):l.category); }).join(' · '); }
+  function invOptLabel(iv){
+    var d=''; try{d=new Date(iv.date).toLocaleDateString('is-IS');}catch(_){}
+    var n=iv.lines.reduce(function(a,l){return a+(+l.cnt||0);},0);
+    return (iv.num||'')+' · '+iv.year+' · '+n+' tæki'+(d?(' · '+d):'');
+  }
+  function invoiceBlockHtml(inv){
+    inv=inv||{}; var own=inv.own||[], sibs=inv.siblings||[];
+    if(!own.length && !sibs.length) return '';
+    var html='';
+    if(own.length){
+      var picker = own.length>1
+        ? '<select id="_rdr-inv-sel" class="rdr-sel" style="width:100%;margin:6px 0">'+own.map(function(iv,i){
+            return '<option value="'+i+'">'+esc(invOptLabel(iv))+'</option>';
+          }).join('')+'</select>'
+        : '';
+      html+='<div class="rdr-invbox">'+
+        '<div class="rdr-lab">🧾 Úr reikningi þessarar starfsstöðvar <span style="text-transform:none;letter-spacing:0;font-weight:600;color:var(--ink3)">(lifir í Kröfu yfirliti — má nota 2025 eða 2026)</span></div>'+
+        picker+
+        '<div id="_rdr-inv-sum" class="rdr-sum" style="margin:4px 0"></div>'+
+        '<button id="_rdr-inv-fill" class="rdr-btn" style="margin-top:6px;background:var(--ok,#16a34a)">📥 Samræma tækjalista úr völdum reikningi</button>'+
+      '</div>';
+    }
+    if(sibs.length){
+      // Reikningar sömu kennitölu EN annarrar starfsstöðvar (rekstrarfélag).
+      // ALDREI sjálfvirkt — birt með rauðri viðvörun; notandi verður að staðfesta.
+      html+='<div class="rdr-invbox" style="border-color:#dc2626;background:rgba(220,38,38,.06)">'+
+        '<div class="rdr-lab" style="color:#dc2626">⚠️ Reikningar annarra starfsstöðva (sama kennitala)</div>'+
+        '<div class="rdr-muted" style="margin:2px 0 6px">Þessi kennitala á fleiri en eina starfsstöð í þjónustu. Reikningarnir hér að neðan tilheyra <b>annarri</b> starfsstöð — notaðu þá AÐEINS ef þú ert viss um að tækin séu á þessum stað. Staður fylgir hverjum reikningi.</div>'+
+        '<select id="_rdr-sib-sel" class="rdr-sel" style="width:100%;margin:2px 0">'+sibs.map(function(iv,i){
+          return '<option value="'+i+'">'+esc(invOptLabel(iv)+' — '+(iv.owner||'?'))+'</option>';
+        }).join('')+'</select>'+
+        '<div id="_rdr-sib-sum" class="rdr-sum" style="margin:4px 0"></div>'+
+        '<button id="_rdr-sib-fill" class="rdr-btn" style="margin-top:6px;background:#dc2626">⚠️ Nota reikning annarrar starfsstöðvar</button>'+
+      '</div>';
+    }
+    return html;
+  }
+  function wireInvoice(body, coId, co, inv){
+    inv=inv||{}; var own=inv.own||[], sibs=inv.siblings||[];
+    var sel=body.querySelector('#_rdr-inv-sel'), sum=body.querySelector('#_rdr-inv-sum'), btn=body.querySelector('#_rdr-inv-fill');
+    if(own.length){
+      var cur=function(){ var i=sel?(parseInt(sel.value,10)||0):0; return own[i]||own[0]; };
+      var refresh=function(){ if(sum) sum.textContent=invSummary(cur()); };
+      if(sel) sel.onchange=refresh;
+      refresh();
+      if(btn) btn.onclick=function(){ var iv=cur(); createFromLines(coId, co.nafn, iv.lines, { name:'Reikningur '+(iv.num||''), year:iv.year, ts:Date.now() }); };
+    }
+    var ssel=body.querySelector('#_rdr-sib-sel'), ssum=body.querySelector('#_rdr-sib-sum'), sbtn=body.querySelector('#_rdr-sib-fill');
+    if(sibs.length){
+      var scur=function(){ var i=ssel?(parseInt(ssel.value,10)||0):0; return sibs[i]||sibs[0]; };
+      var srefresh=function(){ if(ssum) ssum.textContent=invSummary(scur()); };
+      if(ssel) ssel.onchange=srefresh;
+      srefresh();
+      if(sbtn) sbtn.onclick=function(){
+        var iv=scur();
+        if(!confirm('⚠️ VARÚÐ — önnur starfsstöð\n\nReikningur '+(iv.num||'')+' ('+iv.year+') er skráður á starfsstöðina:\n  „'+(iv.owner||'?')+'"\n\nþú ert að skoða: „'+co.nafn+'".\n\nEr þetta örugglega rétt — eiga þessi tæki heima á „'+co.nafn+'"? Rangt tengt getur látið stað líta „búinn" út og skoðun falla niður.')) return;
+        createFromLines(coId, co.nafn, iv.lines, { name:'Reikningur '+(iv.num||'')+' (önnur starfsstöð)', year:iv.year, ts:Date.now() });
+      };
+    }
+  }
+
   async function render(host, coId){
     host.innerHTML='<div class="rdr-muted">Hleð…</div>';
     var body=host;
@@ -230,12 +385,15 @@
     var baseId=await baseIdForKt(co.kennitala);
     var lines = baseId ? await fetchLines(baseId) : [];
     var repDocs = baseId ? await fetchReportDocs(baseId) : [];
+    var invoices = await fetchInvoices(co);
+    var hasInv = (invoices.own&&invoices.own.length) || (invoices.siblings&&invoices.siblings.length);
     var footer = sourceFooter(computeSrc(coId, repDocs));
 
-    // No auto-parsed report yet → manual entry is the primary path.
+    // No auto-parsed report yet → invoice (if any) + manual entry are the paths.
     if(!lines.length){
-      body.innerHTML='<div class="rdr-muted">Engin <b>sjálf-lesin</b> skýrsla fundin ennþá — skráðu fjöldann af síðustu skýrslu hér að neðan, eða tengdu skýrsluna í <b>Skjöl &amp; viðhengi</b>.</div>'+
-        manualFormHtml()+footer;
+      body.innerHTML='<div class="rdr-muted">Engin <b>sjálf-lesin</b> skýrsla fundin ennþá'+((invoices.own&&invoices.own.length)?' — en úttektarreikningur fannst, samræmdu tækin úr honum:':(hasInv?' — sjá reikninga hér að neðan:':' — skráðu fjöldann af síðustu skýrslu hér að neðan, eða tengdu skýrsluna í <b>Skjöl &amp; viðhengi</b>.'))+'</div>'+
+        invoiceBlockHtml(invoices)+manualFormHtml()+footer;
+      wireInvoice(body, coId, co, invoices);
       wireManual(body, coId, co.nafn);
       return;
     }
@@ -255,10 +413,12 @@
         '</div>'+
         '<button id="_rdr-fill" class="rdr-btn"'+(n?'':' disabled')+'>📥 Lesa úr skýrslu → bæta '+n+' tækjum við (TMP-númer)</button>'+
         '<div class="rdr-muted" style="margin-top:6px">Rangt fyrirtæki/skýrsla? Tengdu rétta úttektarskýrslu í <b>Skjöl &amp; viðhengi</b> að neðan.</div>'+
+        invoiceBlockHtml(invoices)+
         '<div class="rdr-div"></div>'+
         manualFormHtml()+footer;
       var ys=body.querySelector('#_rdr-year'); if(ys) ys.onchange=function(){ sel=+ys.value; paint(); };
       var fb=body.querySelector('#_rdr-fill'); if(fb) fb.onclick=function(){ var ls=byYear[sel]||[]; createFromLines(coId, co.nafn, ls, {name:'Skýrsla '+sel, year:sel, drive_file_id:(ls[0]&&ls[0].drive_file_id)||null, ts:Date.now()}); };
+      wireInvoice(body, coId, co, invoices);
       wireManual(body, coId, co.nafn);
     }
     paint();
@@ -273,13 +433,13 @@
       if(main.lastElementChild!==box) main.appendChild(box); // keep at very bottom
       return;
     }
-    box=document.createElement('div'); box.className='rdr-box'; box.dataset.co=coId; box.dataset.open='0';
+    box=document.createElement('div'); box.className='rdr-box'; box.dataset.co=coId; box.dataset.open='1';
     box.innerHTML=
-      '<button class="rdr-toggle" type="button" aria-expanded="false">'+
-        '<span class="rdr-chev">▸</span>'+
-        '<span class="rdr-ttl">📋 Útfylling tækjalista úr úttektarskýrslu</span>'+
+      '<button class="rdr-toggle" type="button" aria-expanded="true">'+
+        '<span class="rdr-chev">▾</span>'+
+        '<span class="rdr-ttl">📋 Samræma tækjalista úr skýrslu / reikningi</span>'+
       '</button>'+
-      '<div class="rdr-bodywrap" style="display:none"></div>';
+      '<div class="rdr-bodywrap" style="display:block"></div>';
     var tg=box.querySelector('.rdr-toggle');
     tg.onclick=function(){
       var open=box.dataset.open!=='1'; box.dataset.open=open?'1':'0';
@@ -334,6 +494,7 @@
       '.rdr-yrlab{font-size:12px;color:var(--ink2);display:flex;align-items:center;gap:6px}',
       '.rdr-yrin{width:78px;padding:7px 8px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;text-align:center;background:var(--surface);color:var(--ink1)}',
       '@media(max-width:520px){.rdr-grid{grid-template-columns:1fr}.rdr-manrow{flex-direction:column;align-items:stretch}.rdr-btn-sm{width:100%}}',
+      '.rdr-invbox{margin-top:12px;padding:11px 12px;border:1px solid var(--brd);border-left:3px solid var(--ok,#16a34a);border-radius:10px;background:var(--surface2)}',
       '.rdr-srcbar{margin-top:12px;padding-top:10px;border-top:1px dashed var(--brd);font-size:11.5px;color:var(--ink3);display:flex;align-items:center;gap:6px;flex-wrap:wrap}',
       '.rdr-srcname{font-size:11.5px;font-weight:700;color:var(--brand);text-decoration:none;background:none;border:0;padding:0;cursor:pointer;font-family:inherit}'
     ].join('\n');
