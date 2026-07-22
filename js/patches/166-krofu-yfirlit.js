@@ -530,6 +530,22 @@
       (_state.vbByParent[parent] = _state.vbByParent[parent] || []).push(v.status);
     });
 
+    // ── Samantektar-gögn fyrir stækkanlegu spjöldin ────────────────────────────
+    // ÓHÁÐ view-síunni + mánuði svo „Ógreiddar í Payday" og „Ósendar kröfur" séu
+    // ALLTAF réttar heildartölur (sama regla og payday-sync-paid: ógreitt reikn.
+    // með dk_invoice_id = sent í Payday en óuppgert; ósendar = engin send-merki).
+    try {
+      const sr = await SB.from('solur')
+        .select('id,num,customer_nafn,customer_kt,samtals,created_at,paid_at,krafa_sent_at,invoiced_at,dk_invoice_id,is_credit,credit_of')
+        .eq('greitt_med', 'reikningur').is('paid_at', null)
+        .order('created_at', { ascending: true });
+      let rows = (sr.data || []);
+      const cids = new Set(rows.filter(s => s.is_credit && s.credit_of != null).map(s => String(s.credit_of)));
+      rows = rows.filter(s => !s.is_credit && !cids.has(String(s.id)));
+      _state.paydayUnpaid = rows.filter(s => s.dk_invoice_id);                                   // sent í Payday, ógreitt (59)
+      _state.osendar      = rows.filter(s => !s.krafa_sent_at && !s.invoiced_at && !s.dk_invoice_id); // aldrei send
+    } catch (_) { _state.paydayUnpaid = _state.paydayUnpaid || []; _state.osendar = _state.osendar || []; }
+
     render();
     maybeAutoSync();   // athuga greiðslur í Payday sjálfkrafa (throttlað) → Greitt kviknar sjálft
   }
@@ -622,6 +638,38 @@
     }
   }
 
+  // Stækkanleg samantektarspjöld (Payday-ógreitt / Ósendar) — smellur víxlar
+  // _state.expandCard og endurteiknar → listinn birtist undir.
+  function expCardHtml(key, icon, label, count, total, color, bg, border) {
+    const open = _state.expandCard === key;
+    return '<button type="button" class="_ky-exp" data-exp="' + key + '" title="Smelltu til að sjá listann" style="text-align:left;cursor:pointer;background:' + bg + ';border:1px solid ' + border + ';border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:12px;font:inherit;box-shadow:' + (open ? 'inset 0 0 0 2px ' + color : '0 1px 3px rgba(0,0,0,.04)') + '">' +
+      '<span style="font-size:22px">' + icon + '</span>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:11px;color:' + color + ';font-weight:700;text-transform:uppercase;letter-spacing:.04em">' + esc(label) + ' · ' + count + '</div>' +
+        '<div style="font-size:20px;font-weight:800;color:' + color + ';font-family:monospace">' + fmtKr(total) + '</div>' +
+      '</div>' +
+      '<span style="font-size:14px;color:' + color + ';font-weight:800">' + (open ? '▾' : '▸') + '</span>' +
+    '</button>';
+  }
+  function expDetailHtml(key, title, rows, total, color) {
+    const fmtD = iso => { const m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '.' + m[2] + '.' + m[1] : ''; };
+    const body = rows.length
+      ? rows.slice().sort((a, b) => (parseFloat(b.samtals) || 0) - (parseFloat(a.samtals) || 0)).map(s =>
+          '<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid #eef1f6;font-size:13px">' +
+            '<span style="min-width:0"><b style="color:#11141c">' + esc(s.customer_nafn || '—') + '</b> <span style="font-family:monospace;color:#94a3b8;font-size:11px">' + esc(s.num || '') + '</span>' +
+              (fmtD(s.created_at) ? ' <span style="color:#94a3b8;font-size:11px">· ' + fmtD(s.created_at) + '</span>' : '') + '</span>' +
+            '<span style="font-family:monospace;font-weight:700;color:' + color + ';white-space:nowrap">' + fmtKr(parseFloat(s.samtals) || 0) + '</span>' +
+          '</div>').join('')
+      : '<div style="padding:14px;text-align:center;color:#94a3b8;font-style:italic">Ekkert í þessum flokki 🎉</div>';
+    return '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px;margin-bottom:14px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:8px">' +
+        '<span style="font-weight:800;font-size:13.5px;color:#11141c">' + esc(title) + ' · ' + rows.length + '</span>' +
+        '<span style="font-family:monospace;font-weight:800;font-size:15px;color:' + color + '">' + fmtKr(total) + '</span>' +
+      '</div>' +
+      '<div style="max-height:340px;overflow:auto">' + body + '</div>' +
+    '</div>';
+  }
+
   // ── Render ───────────────────────────────────────────────────────────────
   function render() {
     const main = document.getElementById('ky-main');
@@ -645,6 +693,12 @@
     const sent = (all || []).filter(s => s.krafa_sent_at);
     const sentTotal = sum(sent);
     const sentCompanies = new Set(sent.map(s => normName(s.customer_nafn) || '(ekkert)')).size;
+
+    // Stækkanleg samantektarspjöld (óháð view-síunni) — smelltu til að sjá listann.
+    const paydayUnpaid = _state.paydayUnpaid || [];
+    const osendarRows  = _state.osendar || [];
+    const paydayUnpaidTotal = sum(paydayUnpaid);
+    const osendarTotal = sum(osendarRows);
 
     // Group by company across the whole dataset for the per-company section.
     const grouped = {};
@@ -741,6 +795,14 @@
           <div class="stat-card stat-card--green"><span class="stat-card__icon">🏦</span><div><div class="stat-card__label">Sendar kröfur · ${sent.length} sölur · ${sentCompanies} fyrirtæki</div><div class="stat-card__value ky-num">${fmtKr(sentTotal)}</div></div></div>
         </div>
 
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:14px">
+          ${expCardHtml('payday', '⏳', 'Ógreiddar í Payday', paydayUnpaid.length, paydayUnpaidTotal, '#b45309', '#fff7ed', '#fed7aa')}
+          ${expCardHtml('osendar', '📤', 'Ósendar kröfur', osendarRows.length, osendarTotal, '#1d4ed8', '#eff6ff', '#bfdbfe')}
+        </div>
+        ${_state.expandCard === 'payday' ? expDetailHtml('payday', '⏳ Ógreiddar kröfur í Payday', paydayUnpaid, paydayUnpaidTotal, '#b45309')
+          : _state.expandCard === 'osendar' ? expDetailHtml('osendar', '📤 Ósendar kröfur (aldrei sendar í banka/Payday)', osendarRows, osendarTotal, '#1d4ed8')
+          : ''}
+
         <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px">
           ${[['krofur','📋 Kröfur'],['osendar','📤 Ósendar'],['greiddar','✅ Greiddar'],['allt','📚 Allt']].map(([k, label]) => {
             const on = (_state.viewFilter || 'krofur') === k;
@@ -796,6 +858,12 @@
       _state.viewFilter = b.dataset.vf;
       _state.selected.clear();
       load(_state.month || new Date());
+    }));
+    // Stækkanleg samantektarspjöld — víxla opnun/lokun á listanum
+    main.querySelectorAll('._ky-exp').forEach(b => b.addEventListener('click', () => {
+      const k = b.dataset.exp;
+      _state.expandCard = _state.expandCard === k ? null : k;
+      render();
     }));
     // 🔄 Athuga greiðslur í Payday → merkja greiddar sjálfkrafa + summary popup
     main.querySelector('._ky-sync')?.addEventListener('click', (e) => runPaydaySync(e.currentTarget));
