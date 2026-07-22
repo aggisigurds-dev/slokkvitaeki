@@ -222,6 +222,35 @@ It ignores `key=value` hashes (`#device=`, `#portal=`, `#tab=`) and the legacy
 slug hash so a deep link is not overridden by the remembered last view — keep
 that cooperation if you touch either file. Add new pretty names to `ALIAS`.
 
+## Bakk-takkinn — ÞRÍR patchar, ekki blanda þeim saman
+
+Bakk er leyst á þremur aðskildum lögum. Áður en þú breytir einhverju hér:
+lestu öll þrjú, því þau grípa sama atburðinn.
+
+- **`18-nav-history.js` — AFVIRKJAÐUR (`return` í línu 23, síðan 2026-05-12).**
+  Hann rændi innbyggðu „Til baka"-tökkunum og keyrði þá gegnum eigin stafla sem
+  fór úr takti við það sem var raunverulega á skjánum („Til baka gerir ekkert"
+  gallinn; patchar 100 + 136 voru bara til að afvopna hann). **Ekki endurvekja.**
+- **`276-brunakerfi-back.js` — bakk lokar efsta LAGI** (gluggar, form, ritlar,
+  verðlista-ritill, greiðsluglugginn …). Ýtir færslum **án** slóðarbreytingar.
+  Í uppsettu öppunum (`/app/<key>/`) er læst buffer svo bakk loki aldrei appinu;
+  Bílstjórinn á sitt eigið `armBack` í 219.
+- **`277-nav-back.js` — bakk fer á fyrri SÍÐU í appinu** (2026-07-22, ósk
+  Agnars: bakk „turned off the program" hversu langt sem maður var kominn inn).
+  Ástæðan: 218 og 235 skrifa slóðina viljandi með `replaceState`, svo appið bjó
+  ALDREI til bakk-færslu — `history.length` stóð í stað hvað sem flakkað var.
+  277 vefur EKKI utan um `switchView`/`setHash`; hann tekur eftir því þegar
+  slóðin breytist eftir notenda-aðgerð án þess að sagan lengist og endurgerir þá
+  skrifin sem alvöru færslu. Þess vegna nær hann líka yfir borð-patchana sem
+  skrifa sinn eigin hash (219/231/232/239). Beðið er eftir að slóðin sitji kyrr
+  (~240ms) svo tveggja-skrefa skrif 235 (`#fyrirtaeki` → `#company/293`) gefi
+  EINA færslu en ekki tvær.
+
+Lögin stafla rétt: 276 situr ofan á 277, svo bakk lokar fyrst opnum glugga og
+fer svo á fyrri síðu. **Ef þú bætir `pushState` við einhvers staðar annars
+staðar skaltu athuga hvort 277 sé þegar búinn að því** — annars fær ein aðgerð
+tvær færslur og notandinn þarf að ýta tvisvar á bakk.
+
 ## Bílstjóri (Drivers app) — `js/patches/219-bilstjori.js`
 
 Mobile-first driver page (`view-bilstjori`, slug `#bilstjori`/`#drivers`). Fuses
