@@ -116,6 +116,11 @@
   }
   function descToCat(desc){
     var d=normDigits(desc).toLowerCase();
+    // Fjarlægja afsláttar-viðskeytið („· −20% afsl.") ÁÐUR en stærð er lesin —
+    // annars myndi t.d. „· −5% afsl." á CO₂ 2 kg línu passa við /\b5\b/ og
+    // lenda ranglega í co2_5 (og −6/−9/−12% flytja duft2→duft6). Öll % í dag
+    // eru −20% svo þetta er dulið í dag, en tólið á að þola aðra afslætti.
+    d=d.replace(/[−–-]\s*\d+\s*%[\s\S]*$/,'');
     // TÆKI = Yfirferð (skoðað) · Hleðsla (endurhlaðið) · Nýtt (nýselt) — öll þrjú
     // eru tæki sem kúnninn á eftir heimsókn. Aðrar línur (varahlutir/þjónusta) NEI.
     if(!/^\s*(yfirfer|hle[ðd]sl|n[ýy]tt)/.test(d)) return null;
