@@ -340,9 +340,22 @@
             const b = await sb.from('customers_base').select('id').eq('kennitala', kt).limit(5);
             const bIds = ((b && b.data) || []).map(x => x.id);
             if (bIds.length) {
-              const d = await sb.from('customer_documents').select('id')
-                .eq('doc_type', 'reikningur').eq('year', year)
-                .in('customer_base_id', bIds).limit(1);
+              // Rekstrarfélög (sama base, margir þjónustu-staðir): reikningur
+              // VERÐUR að vera bundinn ÞESSUM stað (fyrirtaeki_id=coId) — annars
+              // kveikir reikningur eins staðar 'greitt/búið' á ÖLLUM stöðunum og
+              // stað sem á eftir að rukka/skoða lítur búinn út. Á stökum stað er
+              // base-leitin í lagi (enginn systkinastaður til að ruglast á).
+              let multiloc = false;
+              try {
+                const sc = await sb.from('fyrirtaeki').select('id')
+                  .in('customer_base_id', bIds).eq('er_i_thjonustu', true)
+                  .is('deleted_at', null).limit(3);
+                multiloc = ((sc && sc.data) || []).length > 1;
+              } catch (_) {}
+              let q = sb.from('customer_documents').select('id')
+                .eq('doc_type', 'reikningur').eq('year', year).in('customer_base_id', bIds);
+              if (multiloc) q = q.eq('fyrirtaeki_id', coId);
+              const d = await q.limit(1);
               if (d && d.data && d.data.length) out.invoice = true;
             }
           }
