@@ -485,7 +485,7 @@
     section.innerHTML = hdr +
       '<div class="sk-strip"><div class="sk-strip-l">📊 Staða eftir ári</div><div class="sk-strip-r">'+ (pills||'<span style="color:var(--ink4);font-size:12px">engin gögn</span>') +'</div></div>'+
       '<div class="sk-strip"><div class="sk-strip-l">📑 Þjónustusamningur</div><div class="sk-strip-r">'+samnHtml+'</div></div>'+
-      '<table class="sk-grid"><thead><tr><th>Ár</th><th>🧯 Slökkvitæki</th><th>🔥 Brunakerfi</th><th>Reikningur</th><th></th></tr></thead><tbody>'+rows+'</tbody></table>'+
+      '<div class="sk-gridwrap"><table class="sk-grid"><thead><tr><th>Ár</th><th>🧯 Slökkvitæki</th><th>🔥 Brunakerfi</th><th>Reikningur</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
       '<div class="sk-strip"><div class="sk-strip-l">📎 Önnur viðhengi</div><div class="sk-strip-r">'+otherHtml+'</div></div>'+
       notLinked + fixLink;
   }
@@ -634,10 +634,17 @@
       '.sk-att-wrap .sk-doc{margin:0}',
       '.sk-att-x{border:1px solid var(--brd);border-left:0;background:var(--surface);color:var(--ink4);cursor:pointer;font-size:10px;padding:4px 6px;border-radius:0 8px 8px 0;line-height:1.2}',
       '.sk-att-x:hover{color:#dc2626;border-color:#fecaca}',
+      // Taflan má aldrei klippast af (.sk-card er overflow:hidden) — láta hana
+      // skruna lárétt í eigin kassa svo Reikningur-dálkurinn tapist ekki á síma.
+      '.sk-gridwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px}',
       '.sk-grid{width:100%;border-collapse:collapse;font-size:12.5px}',
-      '.sk-grid th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);font-weight:700;padding:8px 14px;text-align:left;background:var(--bg)}',
-      '.sk-grid td{padding:7px 14px;border-top:1px solid var(--brd2,#f1f5f9);vertical-align:middle}',
-      '.sk-grid td:first-child{font-weight:700;color:var(--ink1);width:64px}',
+      '.sk-grid th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);font-weight:700;padding:7px 10px;text-align:left;background:var(--bg);white-space:nowrap}',
+      '.sk-grid td{padding:5px 10px;border-top:1px solid var(--brd2,#f1f5f9);vertical-align:middle}',
+      '.sk-grid td:first-child{font-weight:700;color:var(--ink1);width:56px;white-space:nowrap}',
+      // Skjala-chippar: fast há, þjöppuð leturstærð (yfirskrifar Brunastál-skinnið)
+      // + stytting með … svo löng skráarnöfn víkki ekki töfluna endalaust.
+      '.sk-card .sk-doc{font-size:11.5px!important;line-height:1.2!important;padding:4px 9px!important;max-width:min(52vw,230px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      '.sk-card .sk-doc.add{max-width:none}',
       '.sk-pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:99px;border:1px solid var(--brd);background:var(--surface);color:var(--ink4);font-variant-numeric:tabular-nums}',
       '.sk-pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--hairline)}',
       '.sk-pill.ok{border-color:#bbf7d0;background:#f0fdf4;color:#15803d}.sk-pill.ok::before{background:#15803d}',
