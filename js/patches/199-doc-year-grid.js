@@ -238,9 +238,10 @@
 
   function pill(y, hasReport, fcStat, note){
     var cls=hasReport?'ok':(y===NOW?'now':'none');
-    if(fcStat==='human') cls+=' done'; else if(fcStat==='claude') cls+=' claude';
+    if(fcStat==='human') cls+=' done'; else if(fcStat==='claude') cls+=' claude'; else if(fcStat==='gap') cls+=' gap';
     var tip=fcStat==='human'?(y+' — ✓ staðfest handvirkt')
       :fcStat==='claude'?(y+' — 🔵 Claude yfirfór'+(note?(': '+note):'')+' — tvísmelltu til að staðfesta')
+      :fcStat==='gap'?(y+' — 🟠 '+(note||'skýrsla vantar')+' — tvísmelltu til að fjarlægja flagg')
       :(hasReport?(y+' — skýrsla á skrá'):(y===NOW?(y+' — í vinnslu'):(y+' — engin skýrsla')));
     return '<span class="sk-pill '+cls+'" title="'+esc(tip)+'">'+String(y).slice(2)+'</span>';
   }
@@ -356,9 +357,11 @@
       try{ document.dispatchEvent(new Event('attachment-year-changed')); }catch(_){}
     }catch(e){ alert('Villa: '+(e.message||e)); }
   }
-  // Tvísmella: 'human' → hreinsa (af); annars (blátt/ekkert) → 'human' (staðfesta).
+  // Tvísmella: 'human' → hreinsa · 'gap' → hreinsa (fjarlægja flagg) · annars
+  // (blátt/ekkert) → 'human' (staðfesta).
   async function fcToggle(coId,y){
-    if(fcStatus(coId,y)==='human') await fcClear(coId,y); else await fcSet(coId,y,'human',null);
+    var st=fcStatus(coId,y);
+    if(st==='human'||st==='gap') await fcClear(coId,y); else await fcSet(coId,y,'human',null);
   }
   // Einu sinni: flytja gömlu AppSettings-grænin (patch #465) yfir í töfluna.
   (function migrateGreens(){
@@ -493,9 +496,11 @@
     section._bruByY = bruByY;
     var rows=YEARS.map(function(y){
       var cur=(y===NOW); var st=fcStatus(coId,y);
-      var ycls='sk-yr'+(st==='human'?' sk-yr-ok':st==='claude'?' sk-yr-claude':'')+(cur&&!st?' sk-yr-now':'');
-      var mark=st==='human'?'✓ ':st==='claude'?'🔵 ':'';
-      var ttl=st==='claude'?('Claude yfirfór'+(fcNote(coId,y)?(': '+fcNote(coId,y)):'')+' — tvísmelltu til að staðfesta'):('Tvísmelltu til að staðfesta fact-check '+y);
+      var ycls='sk-yr'+(st==='human'?' sk-yr-ok':st==='claude'?' sk-yr-claude':st==='gap'?' sk-yr-gap':'')+(cur&&!st?' sk-yr-now':'');
+      var mark=st==='human'?'✓ ':st==='claude'?'🔵 ':st==='gap'?'🟠 ':'';
+      var ttl=st==='claude'?('Claude yfirfór'+(fcNote(coId,y)?(': '+fcNote(coId,y)):'')+' — tvísmelltu til að staðfesta')
+             :st==='gap'?((fcNote(coId,y)||'Skýrsla vantar')+' — tvísmelltu til að fjarlægja flagg')
+             :('Tvísmelltu til að staðfesta fact-check '+y);
       return '<tr><td class="'+ycls+'" data-yr="'+y+'" title="'+esc(ttl)+'">'+mark+y+'</td>'+
         '<td>'+repCell(y)+'</td>'+
         '<td>'+bruCell(y)+'</td>'+
@@ -691,11 +696,15 @@
       // Blár = Claude yfirfór (bíður staðfestingar).
       '.sk-pill.claude{border-color:#2563eb;background:#dbeafe;color:#1e3a8a}',
       '.sk-pill.claude::before{background:#2563eb;box-shadow:0 0 5px 1px rgba(37,99,235,.8)}',
+      // Appelsínugulur = skýrsla vantar (gap sem Claude fann).
+      '.sk-pill.gap{border-color:#f59e0b;background:#fef3c7;color:#92400e}',
+      '.sk-pill.gap::before{background:#f59e0b}',
       // Ár-reitur er tvísmellanlegur.
       '.sk-grid td.sk-yr{cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation}',
       '.sk-grid td.sk-yr-now{color:var(--brand)}',
       '.sk-grid td.sk-yr-ok{color:#15803d!important;font-weight:800}',
-      '.sk-grid td.sk-yr-claude{color:#1d4ed8!important;font-weight:800}'
+      '.sk-grid td.sk-yr-claude{color:#1d4ed8!important;font-weight:800}',
+      '.sk-grid td.sk-yr-gap{color:#b45309!important;font-weight:800}'
     ].join('\n');
     var st=document.createElement('style'); st.id='sk-card-css'; st.textContent=css; document.head.appendChild(st);
   }
