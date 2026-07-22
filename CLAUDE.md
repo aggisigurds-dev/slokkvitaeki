@@ -361,9 +361,20 @@ One tool that replaces the cluster of overlapping top-of-sidebar lists
   & upplýsingar" → „📦 Sýna eldri póst (N í geymslu)". Morgunlína efst í
   stjórnborðinu („X póstar bíða svars · Y verk í dag · Z fram yfir") og
   badge-inn telur wait+idag. **Flokkarnir fimm** (`thjonustubeidni.flokkur`,
-  additive: tilbod/thjonusta/brunakerfi/rukkun/samskipti + null=Annað) eru
-  aðal-sían og aðalmerkið á röðum (FLOKKAR/flokkChip; ritillinn breytir;
-  MERKI sem tvítaka flokkinn falin gegnum TAG_TO_FLOKK). „Svarað"-greining:
+  additive: tilbod/thjonusta/brunakerfi/rukkun/samskipti + null=Annað) voru
+  áður aðal-sían og eigin (ljós) chippa-tegund á röðum. **2026-07-22 (PR #456,
+  ósk Agnars „það sýnir tvær tegundir af tögum") var þetta sameinað í EITT
+  merkjakerfi:** flokkurinn hefur enga eigin chippa-tegund og engan fellilista
+  í ritlinum lengur, heldur er þýddur yfir í sitt eigið MERKI gegnum
+  `FLOKK_TO_TAG` (rukkun → „Eftir að rukka") og birtist fremst sem venjulegur
+  dökk-metal chip. `rowChips(r)` = flokks-merkið ∪ `dispTags(r)` og er notað
+  fyrir chippa, síur, talningar OG hökin í ritlinum, svo hak og chip segja
+  alltaf það sama; `tagtoggle` hreinsar flokkinn þegar slökkt er á merki sem
+  hann leiðir af sér. TÖG-sían tekur nú FLEIRI en eitt merki (`state.fTags`
+  fylki, sameining, „✕ Hreinsa"). `flokkChip`/`TAG_TO_FLOKK` eru horfin og
+  flokka-sían (`fFlokk`) er óvirk — hún átti enga hnappa en las samt vistað
+  gildi úr localStorage, sem hefði síað borðið án leiðar til að slökkva.
+  `flokkur`-dálkurinn sjálfur stendur óbreyttur í grunninum. „Svarað"-greining:
   `svarad_at` (sett þegar svar er SENT af borðinu — 240 `replyTo` kallar
   `m._onSent`) EÐA `threadLatest.mine` (SENT-ingest gerir það satt). Aðgerðir:
   📋 Færa/↩, 📦 Í geymslu/↩ Út, ✓ Klára verk, 📞 Hringja (tel:-hlekkur úr
