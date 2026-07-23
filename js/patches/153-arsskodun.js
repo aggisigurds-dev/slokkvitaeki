@@ -1441,6 +1441,9 @@
     const isNew = c.created_at && String(c.created_at) >= '2026-01-01';
     if (maxYr >= 2025) return { key: 'skyrsla', badge: `📄 Skýrsla ${maxYr} til`, color: '#166534', bg: '#dcfce7', hint: 'Alvöru þjónustukúnni — skýrsla ' + yrs.join(', ') + ' í skjalakerfinu. Vantar bara mánuð/merkingu.' };
     if (maxYr > 0) return { key: 'gomul', badge: `📁 Gömul saga (síðast ${maxYr})`, color: '#92400e', bg: '#fef3c7', hint: 'Skýrslur ' + yrs.join(', ') + ' — ekkert síðan. Dottinn úr þjónustu eða gleymdur?' };
+    // 2026-07-23 (ósk Agnars): handvirk „Nýtt"-merking þegar engin skýrsla er til —
+    // fjólublátt, opnar mánaðarval á fyrirtækjasíðunni (arsskodun_customers.nytt_manual).
+    if (c._ars && c._ars.nytt_manual) return { key: 'nytt', badge: '🆕 Nýtt — bíður skoðunar', color: '#7c3aed', bg: '#ede9fe', hint: 'Merkt handvirkt sem nýr þjónustukúnni — bíður fyrstu skoðunar.' };
     if (isNew) return { key: 'nytt', badge: '🆕 Nýtt — bíður fyrstu skoðunar', color: '#1d4ed8', bg: '#dbeafe', hint: 'Stofnað ' + String(c.created_at).slice(0, 10) + ' — engin skýrsla enn, eðlilegt fyrir nýjan kúnna.' };
     if (units > 0) return { key: 'taeki', badge: `🧯 Bara tæki (${units})`, color: '#7c3aed', bg: '#ede9fe', hint: 'Engin skýrsla nokkru sinni — bara sjálfvirk tæki á nafninu. Óvíst hvort þau eru raunveruleg.' };
     return { key: 'ekkert', badge: '⬜ Engin gögn', color: '#64748b', bg: '#f1f5f9', hint: 'Engin skýrsla, engin tæki, engin saga — líklega óvart í þjónustu.' };
@@ -1945,6 +1948,30 @@
             </div>
           </div>
 
+          ${(() => {
+            // 2026-07-23 (ósk Agnars): þegar ENGIN skýrsla er til → grátt hak til að
+            // merkja fyrirtækið „Nýtt" (fjólublátt) og velja skoðunarmánuð. Hvort
+            // tveggja birtist á Fyrirtæki-í-þjónustu (verdict-merki + mánuður).
+            const noReports = !(+ars.last_year_inspected) && !skyrsla && !((ars._docYears || []).length);
+            if (!noReports && !ars.nytt_manual) return '';
+            const on = !!ars.nytt_manual, mm = +ars.inspect_month || 0;
+            return `
+          <div style="background:${on ? '#ede9fe' : 'var(--surface2)'};border:1px solid ${on ? '#c4b5fd' : 'var(--brd)'};border-radius:9px;padding:11px 13px;display:flex;flex-wrap:wrap;align-items:center;gap:12px">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:700;color:${on ? '#6d28d9' : 'var(--ink1)'}">
+              <input type="checkbox" class="_ars-nytt-chk" ${on ? 'checked' : ''} style="width:17px;height:17px;accent-color:#7c3aed;cursor:pointer">
+              🆕 Nýr í þjónustu — bíður fyrstu skoðunar
+            </label>
+            ${on ? '<span style="background:#ede9fe;color:#7c3aed;font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px">🆕 Nýtt</span>' : ''}
+            <span style="flex:1"></span>
+            <label style="display:flex;align-items:center;gap:6px;font-size:10px;color:var(--ink3);font-weight:700;text-transform:uppercase${on ? '' : ';opacity:.45;pointer-events:none'}">Skoðunarmánuður
+              <select class="_ars-nytt-month" style="padding:5px 9px;border:1px solid var(--brd2);border-radius:6px;font:inherit;font-size:13px;color:var(--ink1);background:var(--surface);outline:none">
+                <option value="0">— velja —</option>
+                ${MONTHS_IS.map((n, i) => `<option value="${i + 1}" ${mm === i + 1 ? 'selected' : ''}>${n}</option>`).join('')}
+              </select>
+            </label>
+          </div>`;
+          })()}
+
           <!-- 📧 Póstsamskipti (2026-07-18, ósk Agnars): síðustu tölvupóstsamskipti
                við kúnnann úr eldklar-pósthólfunum (email_digest) — brot af nýjasta
                skeyti + ✨ AI-samantekt, stækkanlegt í alla söguna. -->
@@ -2102,6 +2129,25 @@
       if (e.target === bg) bg.remove();
     });
     bg.querySelector('._ars-close').addEventListener('click', () => bg.remove());
+
+    // 2026-07-23 (ósk Agnars): „Nýtt"-hak (fjólublátt) + skoðunarmánuður fyrir
+    // fyrirtæki án skýrslu. Vistast í arsskodun_customers (nytt_manual + inspect_month).
+    bg.querySelector('._ars-nytt-chk')?.addEventListener('change', async (e) => {
+      const on = !!e.target.checked;
+      try { await window.AppSettings.save({ arsskodun_customers: { [String(coId)]: { nytt_manual: on } } }); } catch (_) {}
+      if (ars) ars.nytt_manual = on;
+      try { ovrLog(coId, 'nytt_manual', on ? '—' : '🆕', on ? '🆕 Nýtt' : '↺ hreinsað'); } catch (_) {}
+      bg.remove(); openDetail(coId);
+    });
+    bg.querySelector('._ars-nytt-month')?.addEventListener('change', async (e) => {
+      const mv = parseInt(e.target.value, 10) || 0;
+      const old = MONTHS_IS[(+ (ars && ars.inspect_month) || 0) - 1] || '—';
+      try {
+        await window.AppSettings.save({ arsskodun_customers: { [String(coId)]: mv ? { inspect_month: mv, inspect_month_manual: true } : { inspect_month: 0, inspect_month_manual: false } } });
+      } catch (_) {}
+      if (ars) { ars.inspect_month = mv; ars.inspect_month_manual = !!mv; }
+      try { ovrLog(coId, 'inspect_month', old, MONTHS_IS[mv - 1] || '↺ hreinsað'); } catch (_) {}
+    });
     // „🏢 + Staðsetning" — nýr staður á SÖMU kt (rekstrarfélag). Forfyllir kt+nafn
     // svo hann tengist sömu base sjálfkrafa (gegnum trigger) og geti ekki misritast.
     bg.querySelector('._ars-add-site')?.addEventListener('click', () => {
