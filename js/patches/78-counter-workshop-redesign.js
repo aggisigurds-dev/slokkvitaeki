@@ -505,10 +505,30 @@
   // dropdown any more — every tæki shows as a tile (click upper part → Tæki
   // modal), and a "📤 Senda í afgreiðslu" button on the right marks the whole
   // customer's verk ready.
+  // 2026-07-23 (Agnar): pull the STAFF note out of the group's verk. The POS
+  // staff-note box (#pos-notes-staff) is stored on verkbeidnir.notes as the
+  // line(s) AFTER the first (the first line is the service desc). Collect them
+  // across the customer's verk, deduped, and show as a banner on the card so
+  // the workshop sees what the counter wrote. Empty → no banner.
+  function groupStaffNote(co) {
+    const out = [];
+    (co.jobs || []).forEach(j => {
+      String(j.notes || '').split('\n').map(l => l.trim()).filter(Boolean).slice(1).forEach(l => {
+        const t = l.replace(/^—\s*/, '').trim();
+        if (t && out.indexOf(t) === -1) out.push(t);
+      });
+    });
+    return out.join(' · ');
+  }
+
   function wCustomerGroup(statusKey, co) {
     const pct = co.totalUnits ? Math.round(co.doneUnits / co.totalUnits * 100) : 0;
     const ready = pct === 100;
     const jobIds = co.jobs.map(j => j.id).join(',');
+    const staffNote = groupStaffNote(co);
+    const noteBanner = staffNote
+      ? '<div class="bw-cnote" style="margin:6px 0 0;padding:8px 11px;background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #f59e0b;border-radius:8px;font-size:12.5px;color:#78350f;line-height:1.45;white-space:pre-wrap;word-break:break-word">📝 <span style="font-weight:600">Athugasemd:</span> ' + esc(staffNote) + '</div>'
+      : '';
     return '<div class="bw-row">' +
         '<div class="bw-row-top">' +
           '<div class="bw-cinfo">' +
@@ -517,6 +537,7 @@
           '</div>' +
           renderUnitTiles(co.jobs) +
         '</div>' +
+        noteBanner +
         '<div class="bw-prow">' +
           `<div class="bw-prog${ready ? ' full' : ''}"><div style="width:${pct}%"></div></div>` +
           `<button class="bw-send${ready ? ' ready' : ''}" onclick="event.stopPropagation();Workshop.sendGroupToAfgreidsla([${jobIds}])">📤 Senda í afgreiðslu</button>` +
