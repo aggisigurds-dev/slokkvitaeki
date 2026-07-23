@@ -1,20 +1,27 @@
-/* === VÖRUR / ÞJÓNUSTA PICKER v1 ===
+/* === VÖRUR / ÞJÓNUSTA PICKER v2 (flokka-tíglar + mest notað + grúppuð) ===
  *
- * Sameiginleg leitar-popup fyrir vörur og þjónustur — notuð af
- *   • 113-company-pricing  (+ Bæta við tilboði)
- *   • 116-vidsk-pricing    (+ Ný sérkjör)
+ * Sameiginleg leitar-popup fyrir vörur og þjónustur — notuð víða:
+ *   • 78-counter-workshop   (verkstæði → breyta tæki → bæta við þjónustu)
+ *   • 121-pickup-checkout   (Sótt → bæta við vöru)
+ *   • 129-company-total-cost(+ Bæta við vöru eða þjónustu)
+ *   • 142-sale-editor       (bæta línu á sölu)
+ *   • 113/116/158/172       (verðlistar / tilboð / sérkjör)
  *
  * Stillir nafn, sjálfgefið verð (verd_an_vsk) og VSK% sjálfvirkt þegar
  * notandi velur vöru úr listanum, svo ekki þarf að slá inn handvirkt.
  *
- * Notkun:
+ * Notkun (ÓBREYTT frá v1 — allir kallarar virka áfram):
  *   window.VorurPicker.open(function(p){
  *     // p = { id, nafn, flokkur, verd_an_vsk, vsk_prosenta, lysing }
  *   });
  *
- * Cache: products eru sóttar einu sinni úr Supabase og cachaðar fyrir
- * sömu session. Ef notandi vill nýja gögn → close + open aftur, eða
- * VorurPicker.refresh().
+ * v2 (2026-07-23): endurhannað eftir Claude Design comp „Voruval Picker.dc.html"
+ *   — flokka-tíglar (gler-stíll, litur + íkon per flokk) í stað <select>, „Mest
+ *   notað" pillur (nýjustu val + sjálfgefnir skýrslu-liðir) og flokka-borðar
+ *   yfir grúppuðum lista. Gagna-/kallara-samningur óbreyttur.
+ *
+ * Cache: products sótt einu sinni úr Supabase, cachað fyrir session.
+ * VorurPicker.refresh() til að hreinsa.
  */
 (() => {
   if (window.__vorurPickerInstalled) return;
@@ -24,8 +31,59 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
-  function fmtKr(n) { return Math.round(Number(n) || 0).toLocaleString('is-IS') + ' kr'; }
+  // Íslensk þúsundamörk, engin aukastafur (12900 → „12.900").
+  function fmtNum(n) { return Math.round(Number(n) || 0).toLocaleString('is-IS'); }
   function getSB() { return (window.DB && window.DB.sb) || null; }
+
+  // Flokkur → íkon + grunnlitur (hue). Sami og í hönnunar-comp-inu; óþekktir
+  // flokkar fá hlutlausan bláan fallback.
+  const CAT_META = {
+    'Allt':                   { icon: '▦',  hue: '#1e3a8a' },
+    'Slökkvitæki':            { icon: '🧯', hue: '#dc2626' },
+    'Brunaslöngur':           { icon: '🚒', hue: '#c2410c' },
+    'Skilti':                 { icon: '🆘', hue: '#15803d' },
+    'Reykskynjarar':          { icon: '💨', hue: '#7c3aed' },
+    'Brunakerfi':             { icon: '🚨', hue: '#be123c' },
+    'Varahlutir':             { icon: '🔧', hue: '#475569' },
+    'Fylgihlutir':            { icon: '🔩', hue: '#0f766e' },
+    'Ýmsar vörur':            { icon: '📦', hue: '#b45309' },
+    'Þjónusta':               { icon: '📋', hue: '#0369a1' },
+    'Aukavörur':              { icon: '🏷️', hue: '#7c3aed' },
+    'Brunaslöngurhjól':       { icon: '🚒', hue: '#c2410c' },
+    'Eldvarnir':              { icon: '🔥', hue: '#dc2626' },
+    'Hleðsla slökkvitækja':   { icon: '🔄', hue: '#b45309' },
+    'Skilti, ljós og miðar':  { icon: '🆘', hue: '#15803d' },
+    'Skynjarar og rafhlöður': { icon: '🔋', hue: '#7c3aed' },
+    'Tæki':                   { icon: '🧰', hue: '#475569' },
+    'Viðvörunarkerfi':        { icon: '🚨', hue: '#be123c' },
+    'Vinna':                  { icon: '👷', hue: '#0369a1' },
+    'Vinna og akstur':        { icon: '🚙', hue: '#0e7490' },
+    'Yfirferð slökkvitækja':  { icon: '✅', hue: '#1f9d55' }
+  };
+  function metaFor(cat) { return CAT_META[cat] || { icon: '▪', hue: '#1e3a8a' }; }
+
+  // „Mest notað" — nýjustu val notandans (localStorage) fyrst, svo sjálfgefnir
+  // skýrslu-þjónustuliðir svo reiturinn er aldrei tómur í fyrsta skipti.
+  const RECENT_KEY = 'vp_recent_v1';
+  const DEFAULT_RECENT = [
+    'Samantekt og gerð skoðunarskýrslu',
+    'Skoðun á aðalstöð brunaviðvörunarkerfis',
+    'Skoðun skynjara / boða, pr. stk',
+    'Skoðun á aðalafli og varaafli'
+  ];
+  function getRecents() {
+    try { const a = JSON.parse(localStorage.getItem(RECENT_KEY)); return Array.isArray(a) ? a : []; }
+    catch (_) { return []; }
+  }
+  function pushRecent(nafn) {
+    if (!nafn) return;
+    try {
+      let a = getRecents().filter(n => n !== nafn);
+      a.unshift(nafn);
+      if (a.length > 12) a = a.slice(0, 12);
+      localStorage.setItem(RECENT_KEY, JSON.stringify(a));
+    } catch (_) {}
+  }
 
   let _cache = null;
   let _loadingPromise = null;
@@ -53,140 +111,237 @@
     return _loadingPromise;
   }
 
+  // ── Gler-tígull (flokkur) — sami stíll og comp-ið ────────────────────────
+  function tileStyle(hue, on) {
+    return [
+      'display:flex', 'flex-direction:column', 'gap:3px', 'padding:13px 12px',
+      'min-height:62px', 'justify-content:center', 'border-radius:12px', 'cursor:pointer',
+      'position:relative', 'overflow:hidden', 'transition:all .15s ease',
+      // solid fallback fyrst (ef color-mix er ekki stutt), svo gler-image ofan á
+      'background-color:' + (on ? hue : '#eef1f6'),
+      'background-image:' + (on
+        ? 'linear-gradient(155deg, color-mix(in oklch, ' + hue + ' 55%, transparent) 0%, color-mix(in oklch, ' + hue + ' 78%, transparent) 100%), linear-gradient(155deg, rgba(255,255,255,.5), rgba(255,255,255,.08))'
+        : 'linear-gradient(155deg, color-mix(in oklch, ' + hue + ' 28%, rgba(255,255,255,.6)) 0%, color-mix(in oklch, ' + hue + ' 55%, transparent) 100%), rgba(255,255,255,.15)'),
+      'backdrop-filter:blur(10px)', '-webkit-backdrop-filter:blur(10px)',
+      'color:' + (on ? '#fff' : '#1a1a1a'),
+      'text-shadow:' + (on ? '0 1px 3px rgba(0,0,0,.25)' : 'none'),
+      'border:1px solid ' + (on ? 'color-mix(in oklch, ' + hue + ' 45%, rgba(255,255,255,.7))' : 'rgba(255,255,255,.9)'),
+      'outline:' + (on ? 'none' : '1px solid color-mix(in oklch, ' + hue + ' 55%, transparent)'),
+      'box-shadow:' + (on
+        ? 'inset 0 1px 1px rgba(255,255,255,.6), inset 0 -6px 14px color-mix(in oklch, ' + hue + ' 35%, transparent), 0 8px 20px color-mix(in oklch, ' + hue + ' 35%, transparent), 0 2px 4px rgba(0,0,0,.12)'
+        : 'inset 0 1px 1px rgba(255,255,255,.9), inset 0 -4px 10px color-mix(in oklch, ' + hue + ' 10%, transparent), 0 4px 12px rgba(30,50,90,.1), 0 1px 2px rgba(0,0,0,.05)'),
+      'transform:' + (on ? 'translateY(-2px)' : 'none')
+    ].join(';');
+  }
+
   function open(onPick) {
     let dlg = document.getElementById('_vp-dialog');
     if (dlg) dlg.remove();
 
     dlg = document.createElement('div');
     dlg.id = '_vp-dialog';
-    // 2026-05-21: 100080 (was 100060) so the picker always sits ABOVE
-    // any host modal that opened it — Þjónustuverk editor (100070), the
-    // sale editor, and company-pricing dialogs all reside in the 100050-
-    // 100070 band. Without this the picker rendered behind the host and
-    // looked like the "+ Bæta vöru" button didn't respond.
+    // 2026-05-21: 100080 svo tíninn sitji ALLTAF ofan á host-modal sem opnaði
+    // hann (Þjónustuverk 100070, sölu-ritill, verðlista-gluggar 100050-100070).
     dlg.style.cssText = 'position:fixed;inset:0;z-index:100080;background:rgba(15,23,42,0.6);display:flex;align-items:center;justify-content:center;padding:16px';
 
     dlg.innerHTML =
-      '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,0.3);width:min(640px,calc(100vw - 24px));max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden">' +
-        '<div style="padding:14px 22px;background:linear-gradient(135deg,#1e3a8a,#1e40af);color:#fff;display:flex;justify-content:space-between;align-items:center">' +
+      '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,0.35);width:min(600px,calc(100vw - 24px));max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden">' +
+        // ── Haus ──
+        '<div style="background:#1e3a8a;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">' +
           '<div>' +
-            '<h3 style="margin:0;font-size:16px;font-weight:700">🔍 Velja vöru / þjónustu</h3>' +
-            '<div style="font-size:11px;color:#bfdbfe;margin-top:2px">Smelltu á vöru til að nota nafn + verð sjálfvirkt</div>' +
+            '<div style="font-size:15px;font-weight:800">🔍 Velja vöru / þjónustu</div>' +
+            '<div style="font-size:11.5px;opacity:.75">Smelltu á vöru til að nota nafn + verð sjálfvirkt</div>' +
           '</div>' +
-          '<button id="_vp-x" type="button" style="background:transparent;border:1px solid #93c5fd;color:#fff;font-size:20px;width:36px;height:36px;border-radius:7px;cursor:pointer;line-height:1">✕</button>' +
+          '<div id="_vp-x" title="Loka" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);border-radius:8px;font-size:14px;cursor:pointer">✕</div>' +
         '</div>' +
-        '<div style="padding:12px 18px;border-bottom:1px solid #e2e8f0;display:flex;gap:8px;align-items:center">' +
-          '<input id="_vp-search" type="text" autocomplete="off" placeholder="Leita að vöru, flokki eða lýsingu…" style="flex:1;padding:9px 12px;border:1px solid #cbd5e1;border-radius:7px;font-size:14px;box-sizing:border-box">' +
-          '<select id="_vp-filter" style="padding:9px 10px;border:1px solid #cbd5e1;border-radius:7px;font-size:13px;background:#fff">' +
-            '<option value="all">Allt</option>' +
-            '<option value="vorur">Vörur</option>' +
-            '<option value="thjonusta">Þjónusta</option>' +
-          '</select>' +
+        // ── Leit + flokka-tíglar ──
+        '<div style="padding:12px 16px;display:flex;flex-direction:column;gap:9px;border-bottom:1px solid rgba(0,0,0,.07);background:radial-gradient(ellipse 70% 90% at 15% 0%, rgba(220,38,38,.12), transparent 60%),radial-gradient(ellipse 60% 80% at 85% 20%, rgba(30,58,138,.14), transparent 60%),radial-gradient(ellipse 50% 70% at 50% 100%, rgba(3,105,161,.1), transparent 65%),linear-gradient(180deg,#f4f6fa,#e9edf4)">' +
+          '<input id="_vp-search" type="text" autocomplete="off" placeholder="Leita að vöru, flokki eða lýsingu…" style="border:1.5px solid rgba(0,0,0,.15);border-radius:9px;padding:11px 13px;font-size:14px;width:100%;box-sizing:border-box">' +
+          '<div id="_vp-tiles" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px"></div>' +
         '</div>' +
-        '<div id="_vp-list" style="flex:1;overflow:auto;padding:6px 0">' +
+        // ── Mest notað ──
+        '<div id="_vp-recent-wrap" style="padding:10px 16px 4px;display:none;flex:none">' +
+          '<div style="font-size:10px;font-weight:800;color:rgba(0,0,0,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">★ Mest notað í þínum skýrslum</div>' +
+          '<div id="_vp-recent" style="display:flex;flex-wrap:wrap;gap:6px"></div>' +
+        '</div>' +
+        // ── Grúppaður listi ──
+        '<div id="_vp-list" style="flex:1;min-height:130px;overflow:auto;padding:6px 0 10px">' +
           '<div style="padding:30px;text-align:center;color:#94a3b8;font-size:13px">Hleð inn vörum…</div>' +
         '</div>' +
-        '<div style="padding:10px 22px;border-top:1px solid #e2e8f0;background:#f8fafc;display:flex;justify-content:space-between;align-items:center">' +
-          '<div id="_vp-count" style="font-size:11px;color:#64748b"></div>' +
-          '<button id="_vp-cancel" type="button" style="padding:8px 16px;background:#fff;border:1px solid #cbd5e1;color:#475569;border-radius:7px;cursor:pointer;font-size:13px;font-weight:600">Hætta við</button>' +
+        // ── Fótur ──
+        '<div style="padding:10px 16px;border-top:1px solid rgba(0,0,0,.08);display:flex;justify-content:space-between;align-items:center;gap:12px">' +
+          '<div id="_vp-count" style="font-size:12px;color:rgba(0,0,0,.5)"></div>' +
+          '<div id="_vp-cancel" style="font-size:13px;font-weight:700;border:1px solid rgba(0,0,0,.15);border-radius:9px;padding:9px 16px;color:rgba(0,0,0,.6);cursor:pointer">Hætta við</div>' +
         '</div>' +
       '</div>';
     document.body.appendChild(dlg);
 
-    const search = dlg.querySelector('#_vp-search');
-    const filter = dlg.querySelector('#_vp-filter');
-    const list = dlg.querySelector('#_vp-list');
-    const countEl = dlg.querySelector('#_vp-count');
+    const search    = dlg.querySelector('#_vp-search');
+    const tilesEl   = dlg.querySelector('#_vp-tiles');
+    const recentWrap= dlg.querySelector('#_vp-recent-wrap');
+    const recentEl  = dlg.querySelector('#_vp-recent');
+    const listEl    = dlg.querySelector('#_vp-list');
+    const countEl   = dlg.querySelector('#_vp-count');
+
+    let products = [];
+    const state = { query: '', cat: 'Allt' };
 
     function close() { dlg.remove(); }
     dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
     dlg.querySelector('#_vp-x').addEventListener('click', close);
     dlg.querySelector('#_vp-cancel').addEventListener('click', close);
 
-    let products = [];
+    function doPick(p) {
+      if (p && typeof onPick === 'function') {
+        onPick({
+          id: p.id,
+          nafn: p.nafn || '',
+          flokkur: p.flokkur || '',
+          verd_an_vsk: +p.verd_an_vsk || 0,
+          vsk_prosenta: +p.vsk_prosenta || 24,
+          lysing: p.lysing || ''
+        });
+      }
+      pushRecent(p && p.nafn);
+      close();
+    }
 
-    function renderList() {
-      const q = (search.value || '').trim().toLowerCase();
-      const f = filter.value;
+    // Flokkar í CAT_META-röð fyrst, svo hvaðeina sem eftir er.
+    function categories() {
+      const present = [];
+      products.forEach(p => { const c = p.flokkur || 'Ýmsar vörur'; if (present.indexOf(c) < 0) present.push(c); });
+      const ordered = Object.keys(CAT_META).filter(c => c !== 'Allt' && present.indexOf(c) >= 0);
+      present.forEach(c => { if (ordered.indexOf(c) < 0) ordered.push(c); });
+      return ['Allt', ...ordered];
+    }
+    function catCount(c) {
+      return c === 'Allt' ? products.length : products.filter(p => (p.flokkur || 'Ýmsar vörur') === c).length;
+    }
+
+    function renderTiles() {
+      tilesEl.innerHTML = categories().map(c => {
+        const m = metaFor(c), on = state.cat === c;
+        const countClr = on ? 'rgba(255,255,255,.75)' : 'color-mix(in oklch, ' + m.hue + ' 65%, black)';
+        return '<div data-cat="' + esc(c) + '" style="' + tileStyle(m.hue, on) + '">' +
+            '<div style="position:absolute;right:-6px;bottom:-10px;font-size:60px;opacity:.6;pointer-events:none;filter:saturate(1.5)">' + m.icon + '</div>' +
+            '<div style="font-size:18.5px;font-weight:800;line-height:1.15;position:relative">' + esc(c) + '</div>' +
+            '<div style="font-size:12px;font-weight:700;position:relative;color:' + countClr + '">' + catCount(c) + ' vörur</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    function renderRecent() {
+      if (state.query || state.cat !== 'Allt') { recentWrap.style.display = 'none'; return; }
+      const byName = {};
+      products.forEach(p => { if (!(p.nafn in byName)) byName[p.nafn] = p; });
+      const names = [];
+      getRecents().concat(DEFAULT_RECENT).forEach(n => { if (byName[n] && names.indexOf(n) < 0) names.push(n); });
+      const top = names.slice(0, 6);
+      if (!top.length) { recentWrap.style.display = 'none'; return; }
+      recentWrap.style.display = '';
+      recentEl.innerHTML = top.map(n => {
+        const p = byName[n];
+        const priceInc = (+p.verd_an_vsk || 0) * (1 + (+p.vsk_prosenta || 24) / 100);
+        const label = n.length > 34 ? n.slice(0, 33) + '…' : n;
+        return '<div data-name="' + esc(n) + '" style="font-size:12px;font-weight:700;background:rgba(30,58,138,.07);border:1px solid rgba(30,58,138,.25);color:#1e3a8a;padding:8px 12px;border-radius:99px;cursor:pointer">' +
+          esc(label) + ' · <b>' + fmtNum(priceInc) + ' kr</b></div>';
+      }).join('');
+    }
+
+    function filteredRows() {
+      const q = (state.query || '').trim().toLowerCase();
       let rows = products;
-      if (f === 'vorur') rows = rows.filter(p => p.flokkur !== 'Þjónusta');
-      else if (f === 'thjonusta') rows = rows.filter(p => p.flokkur === 'Þjónusta');
+      if (state.cat !== 'Allt') rows = rows.filter(p => (p.flokkur || 'Ýmsar vörur') === state.cat);
       if (q) {
-        // 2026-05-10 (F2 fix): Tokenized search — split query by whitespace
-        // and require ALL tokens to appear (in any order) across nafn/flokkur/
-        // lysing. So "duft hleðsla 6" finds "6 kg. Duft ABC hleðsla", which
-        // the previous strict-substring search missed.
+        // Tókenuð leit (2026-05-10): öll orð verða að finnast (í hvaða röð sem er)
+        // yfir nafn/flokk/lýsingu — svo „duft hleðsla 6" finnur „6 kg. Duft ABC hleðsla".
         const tokens = q.split(/\s+/).filter(Boolean);
         rows = rows.filter(p => {
           const hay = ((p.nafn || '') + ' ' + (p.flokkur || '') + ' ' + (p.lysing || '')).toLowerCase();
           return tokens.every(tok => hay.indexOf(tok) >= 0);
         });
       }
-      countEl.textContent = rows.length + ' / ' + products.length;
-
-      if (!rows.length) {
-        list.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8;font-size:13px">Engin niðurstaða — prófaðu annað leitarorð.</div>';
-        return;
-      }
-
-      list.innerHTML = rows.map(p => {
-        const isService = p.flokkur === 'Þjónusta';
-        const flokkBadge = isService
-          ? '<span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 7px;border-radius:99px;font-weight:700;margin-left:6px">🛠️ ' + esc(p.flokkur) + '</span>'
-          : '<span style="font-size:9px;background:#fef3c7;color:#92400e;padding:1px 7px;border-radius:99px;font-weight:700;margin-left:6px">📦 ' + esc(p.flokkur || 'Vara') + '</span>';
-        const priceEx = +p.verd_an_vsk || 0;
-        const vsk = +p.vsk_prosenta || 24;
-        const priceInc = priceEx * (1 + vsk / 100);
-        return '<div class="_vp-row" data-id="' + esc(p.id) + '" style="padding:10px 18px;border-bottom:1px solid #f1f5f9;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
-          '<div style="flex:1;min-width:0">' +
-            '<div style="font-weight:600;color:#0f172a;font-size:14px">' + esc(p.nafn || '—') + flokkBadge + '</div>' +
-            (p.lysing ? '<div style="font-size:11px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:380px">' + esc(p.lysing) + '</div>' : '') +
-          '</div>' +
-          '<div style="text-align:right;flex-shrink:0">' +
-            '<div style="font-weight:700;color:#0f172a;font-size:14px;font-variant-numeric:tabular-nums">' + fmtKr(priceInc) + '</div>' +
-            '<div style="font-size:10px;color:#64748b;font-variant-numeric:tabular-nums">' + fmtKr(priceEx) + ' án vsk · ' + vsk + '%</div>' +
-          '</div>' +
-        '</div>';
-      }).join('');
-
-      list.querySelectorAll('._vp-row').forEach(row => {
-        row.addEventListener('click', () => {
-          const id = row.dataset.id;
-          const p = products.find(x => String(x.id) === String(id));
-          if (p && typeof onPick === 'function') {
-            onPick({
-              id: p.id,
-              nafn: p.nafn || '',
-              flokkur: p.flokkur || '',
-              verd_an_vsk: +p.verd_an_vsk || 0,
-              vsk_prosenta: +p.vsk_prosenta || 24,
-              lysing: p.lysing || ''
-            });
-          }
-          close();
-        });
-        row.addEventListener('mouseenter', () => { row.style.background = '#f1f5f9'; });
-        row.addEventListener('mouseleave', () => { row.style.background = ''; });
-      });
+      return rows;
     }
 
-    search.addEventListener('input', renderList);
-    filter.addEventListener('change', renderList);
+    function bannerHtml(cat, count) {
+      const m = metaFor(cat);
+      // Límdur (sticky) lita-borði per flokk — eins og comp-ið: hue → dekkri hue,
+      // hvítur texti, situr efst meðan skrunað er í gegnum flokkinn. Solid hue
+      // fallback ef color-mix er ekki stutt.
+      return '<div style="position:sticky;top:0;z-index:2;overflow:hidden;margin:8px 10px 4px;border-radius:11px;padding:12px 16px;display:flex;justify-content:space-between;align-items:baseline;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25);background-color:' + m.hue + ';background-image:linear-gradient(135deg, ' + m.hue + ', color-mix(in oklch, ' + m.hue + ' 70%, black));box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 4px 12px color-mix(in oklch, ' + m.hue + ' 30%, transparent)">' +
+          '<div style="position:absolute;right:2px;bottom:-14px;font-size:56px;opacity:.18;pointer-events:none">' + m.icon + '</div>' +
+          '<div style="font-size:18px;font-weight:800;position:relative">' + esc(cat) + '</div>' +
+          '<div style="font-size:12px;font-weight:700;opacity:.75;position:relative">' + count + ' vörur</div>' +
+        '</div>';
+    }
+
+    function rowHtml(p) {
+      const priceEx = +p.verd_an_vsk || 0;
+      const vsk = +p.vsk_prosenta || 24;
+      const priceInc = priceEx * (1 + vsk / 100);
+      return '<div class="_vp-row" data-id="' + esc(p.id) + '" style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.04)">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13.5px;font-weight:700;color:#1a1a1a">' + esc(p.nafn || '—') + '</div>' +
+            (p.lysing ? '<div style="font-size:11.5px;color:rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(p.lysing) + '</div>' : '') +
+          '</div>' +
+          '<div style="text-align:right;flex:none">' +
+            '<div style="font-size:14px;font-weight:800;color:#1a1a1a;font-variant-numeric:tabular-nums">' + fmtNum(priceInc) + ' kr</div>' +
+            '<div style="font-size:10.5px;color:rgba(0,0,0,.45);font-variant-numeric:tabular-nums">' + fmtNum(priceEx) + ' kr án vsk · ' + vsk + '%</div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    function renderList() {
+      const rows = filteredRows();
+      countEl.textContent = rows.length + ' / ' + products.length;
+      if (!rows.length) {
+        listEl.innerHTML = '<div style="padding:40px;text-align:center;font-size:13px;color:rgba(0,0,0,.45)">Engin vara fannst — prófaðu annan flokk eða leitarorð</div>';
+        return;
+      }
+      const groupMap = {};
+      rows.forEach(p => { const c = p.flokkur || 'Ýmsar vörur'; (groupMap[c] = groupMap[c] || []).push(p); });
+      const order = categories().filter(c => c !== 'Allt' && groupMap[c]);
+      Object.keys(groupMap).forEach(c => { if (order.indexOf(c) < 0) order.push(c); });
+      listEl.innerHTML = order.map(c =>
+        bannerHtml(c, groupMap[c].length) + groupMap[c].map(rowHtml).join('')
+      ).join('');
+    }
+
+    function render() { renderTiles(); renderRecent(); renderList(); }
+
+    // ── Atburðir (delegation) ──
+    tilesEl.addEventListener('click', e => {
+      const t = e.target.closest('[data-cat]'); if (!t) return;
+      state.cat = t.getAttribute('data-cat');
+      render();
+    });
+    recentEl.addEventListener('click', e => {
+      const t = e.target.closest('[data-name]'); if (!t) return;
+      const p = products.find(x => x.nafn === t.getAttribute('data-name'));
+      if (p) doPick(p);
+    });
+    listEl.addEventListener('click', e => {
+      const t = e.target.closest('._vp-row'); if (!t) return;
+      const p = products.find(x => String(x.id) === String(t.getAttribute('data-id')));
+      if (p) doPick(p);
+    });
+    listEl.addEventListener('mouseover', e => { const r = e.target.closest('._vp-row'); if (r) r.style.background = 'rgba(30,58,138,.05)'; });
+    listEl.addEventListener('mouseout',  e => { const r = e.target.closest('._vp-row'); if (r) r.style.background = ''; });
+
+    search.addEventListener('input', () => { state.query = search.value; render(); });
     search.addEventListener('keydown', e => {
       if (e.key === 'Escape') { e.preventDefault(); close(); }
       if (e.key === 'Enter') {
         e.preventDefault();
-        const first = list.querySelector('._vp-row');
+        const first = listEl.querySelector('._vp-row');
         if (first) first.click();
       }
     });
 
     setTimeout(() => search.focus(), 80);
 
-    loadProducts().then(p => {
-      products = p;
-      renderList();
-    });
+    loadProducts().then(p => { products = p; render(); });
   }
 
   window.VorurPicker = {
@@ -195,6 +350,6 @@
     list: () => _cache || []
   };
 
-  console.log('[vorur-picker] installed — VorurPicker.open(callback) til að velja vöru/þjónustu');
+  console.log('[vorur-picker] installed v2 — VorurPicker.open(callback) til að velja vöru/þjónustu');
 })();
-/* === END VÖRUR PICKER v1 === */
+/* === END VÖRUR PICKER v2 === */

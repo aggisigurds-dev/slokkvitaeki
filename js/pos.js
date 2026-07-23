@@ -10,7 +10,7 @@
     // discount_pct   = % off subtotal (set per sale or pulled from customer)
     // discount_gross = marker for SalaInvoice: this state's kr discount is
     //                  m. vsk, not the legacy ex-VAT semantics
-    lines: [], discount: 0, discount_pct: 0, discount_gross: true, notes: '', beidninumer: '',
+    lines: [], discount: 0, discount_pct: 0, discount_gross: true, notes: '', staffNotes: '', beidninumer: '',
     products: [], services: []
   };
   var ICONS = {
@@ -190,6 +190,8 @@
       '#view-sala .pos-cart #pos-hreyf,#view-sala .pos-cart #pos-drog{background:linear-gradient(180deg,#2f333b,#14161b)!important;color:#fff!important;border:1px solid #000!important;text-shadow:none!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)!important}',
       '#view-sala .pos-cart #pos-notes{background:#fff!important;color:#0f172a!important;border:1px solid #e2e8f0!important}',
       '#view-sala .pos-cart #pos-notes::placeholder{color:#94a3b8!important}',
+      '#view-sala .pos-cart #pos-notes-staff{background:#fff!important;color:#0f172a!important;border:1px solid #e2e8f0!important}',
+      '#view-sala .pos-cart #pos-notes-staff::placeholder{color:#94a3b8!important}',
       '#view-sala .pos-cart #pos-checkout{background:linear-gradient(180deg,#c2271c 0%,#8f150d 55%,#5f0c06 100%)!important;color:#fff!important;border:1px solid #3f0502!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 18px -8px rgba(95,12,6,.65)!important;text-shadow:none!important}',
       '#view-sala .pos-cart #pos-checkout:disabled{opacity:.55!important;cursor:not-allowed!important}',
       // The Brunastál skin (patch 245) styles EVERY .view input as a 42px-tall,
@@ -478,7 +480,11 @@
             '</div>' +
           '</div>' +
           '<div id="pos-lines" style="overflow-y:auto;flex:1;min-height:100px"></div>' +
-          '<textarea id="pos-notes" placeholder="Athugasemdir..." style="width:100%;min-height:40px;margin-top:8px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
+          '<textarea id="pos-notes" placeholder="Vegna…" style="width:100%;min-height:40px;margin-top:8px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
+          // 2026-07-23 (Agnar): a SECOND note box just for staff — goes to the
+          // workshop (verkbeidnir.notes → Verkröð/Verkstæði board), NOT onto the
+          // reikningur. Same white style as the Vegna box; the placeholder tells them apart.
+          '<textarea id="pos-notes-staff" placeholder="🔧 Fyrir starfsfólk — sést á verkstæði (ekki á reikning)" style="width:100%;min-height:40px;margin-top:6px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
           '<div id="pos-totals" style="margin-top:8px"></div>' +
           '<button id="pos-checkout" style="width:100%;margin-top:14px;background:linear-gradient(180deg,#1f7a48 0%,#16613a 52%,#0d4226 100%);color:#fff;border:1px solid #0a3a20;padding:16px;border-radius:14px;font-weight:800;font-size:16px;letter-spacing:.03em;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 18px -8px rgba(13,66,38,.6)">✓ ÁFRAM</button>' +
         '</div>' +
@@ -852,6 +858,8 @@
       rerenderDynamic();
     });
     document.getElementById('pos-notes').addEventListener('input',function(e){state.notes=e.target.value;});
+    var _staffNotesEl=document.getElementById('pos-notes-staff');
+    if(_staffNotesEl)_staffNotesEl.addEventListener('input',function(e){state.staffNotes=e.target.value;});
     document.getElementById('pos-checkout').addEventListener('click',checkout);
   }
   function promptService(){
@@ -1117,18 +1125,16 @@
         for(var i=0;i<svc.length;i++){
           var sl=svc[i];
           var vatRate=(sl.vsk_pct!=null?sl.vsk_pct:defVsk);
-          // 2026-05-11: Include the cart's general "Athugasemd" textarea
-          // in verkbeidnir.notes so workshop / counter staff actually see
-          // the note the salesperson wrote at sale time. Previously the
-          // note only landed on solur.athugasemdir and was invisible to
-          // workshop, which made it easy to forget.
-          // 2026-05-11 (later): only attach the general note to the FIRST
-          // verkbeiðni — not every one. Otherwise patch 134 surfaces the
-          // same note on every order in Counter/Workshop, making it look
-          // like the note belongs to all orders ("Þeir hringdu..." sticky
-          // on every job).
+          // 2026-05-11: Include a cart note in verkbeidnir.notes so workshop /
+          // counter staff actually see it (patch 134 surfaces it in
+          // Counter/Workshop). Only on the FIRST verkbeiðni — not every one —
+          // else the same note sticks on every job in the group.
+          // 2026-07-23 (Agnar): use the dedicated STAFF note (#pos-notes-staff)
+          // here, not the "Vegna…" invoice note (#pos-notes → state.notes →
+          // solur.athugasemdir). The Vegna note is for the reikningur; the staff
+          // note is the internal one that belongs on the Verkröð/Verkstæði board.
           var notesParts = [sl.desc + (sl.ref ? ' · ' + sl.ref : '')];
-          if (i === 0 && state.notes && state.notes.trim()) notesParts.push(state.notes.trim());
+          if (i === 0 && state.staffNotes && state.staffNotes.trim()) notesParts.push(state.staffNotes.trim());
           // 2026-05-12: For gram-based services (CO₂ 100gr × 20 = 1 cylinder)
           // the verklidur count is 1 but the price should reflect the FULL line
           // total (qty × unit). modal.js / counter view computes
@@ -1239,7 +1245,7 @@
           discount: state.discount || 0
         });
       }
-      state.customer={mode:'kt',kt:'',nafn:'',simi:'',co_id:null,afslattur_pct:0,athugasemdir:''};state.lines=[];state.notes='';state.discount=0;state.discount_pct=0;state.beidninumer='';
+      state.customer={mode:'kt',kt:'',nafn:'',simi:'',co_id:null,afslattur_pct:0,athugasemdir:''};state.lines=[];state.notes='';state.staffNotes='';state.discount=0;state.discount_pct=0;state.beidninumer='';
       // Hide the customer memo box on reset so it doesn't leak into the next sale
       var memoBoxReset=document.getElementById('pos-customer-memo');if(memoBoxReset)memoBoxReset.style.display='none';
       var v=document.getElementById('view-sala');v.removeAttribute('data-pos-v3');render();
