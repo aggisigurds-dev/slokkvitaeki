@@ -190,8 +190,8 @@
       '#view-sala .pos-cart #pos-hreyf,#view-sala .pos-cart #pos-drog{background:linear-gradient(180deg,#2f333b,#14161b)!important;color:#fff!important;border:1px solid #000!important;text-shadow:none!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12)!important}',
       '#view-sala .pos-cart #pos-notes{background:#fff!important;color:#0f172a!important;border:1px solid #e2e8f0!important}',
       '#view-sala .pos-cart #pos-notes::placeholder{color:#94a3b8!important}',
-      '#view-sala .pos-cart #pos-notes-staff{background:#fffbeb!important;color:#78350f!important;border:1px solid #fde68a!important}',
-      '#view-sala .pos-cart #pos-notes-staff::placeholder{color:#b45309!important}',
+      '#view-sala .pos-cart #pos-notes-staff{background:#fff!important;color:#0f172a!important;border:1px solid #e2e8f0!important}',
+      '#view-sala .pos-cart #pos-notes-staff::placeholder{color:#94a3b8!important}',
       '#view-sala .pos-cart #pos-checkout{background:linear-gradient(180deg,#c2271c 0%,#8f150d 55%,#5f0c06 100%)!important;color:#fff!important;border:1px solid #3f0502!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 18px -8px rgba(95,12,6,.65)!important;text-shadow:none!important}',
       '#view-sala .pos-cart #pos-checkout:disabled{opacity:.55!important;cursor:not-allowed!important}',
       // The Brunastál skin (patch 245) styles EVERY .view input as a 42px-tall,
@@ -480,11 +480,11 @@
             '</div>' +
           '</div>' +
           '<div id="pos-lines" style="overflow-y:auto;flex:1;min-height:100px"></div>' +
-          '<textarea id="pos-notes" placeholder="Vegna… (kemur á reikning)" style="width:100%;min-height:40px;margin-top:8px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
+          '<textarea id="pos-notes" placeholder="Vegna…" style="width:100%;min-height:40px;margin-top:8px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
           // 2026-07-23 (Agnar): a SECOND note box just for staff — goes to the
           // workshop (verkbeidnir.notes → Verkröð/Verkstæði board), NOT onto the
-          // reikningur. Amber so it reads clearly as the internal note.
-          '<textarea id="pos-notes-staff" placeholder="🔧 Fyrir starfsfólk — sést á verkstæði (ekki á reikning)" style="width:100%;min-height:40px;margin-top:6px;padding:8px 10px;border:1px solid #fde68a;border-radius:10px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical;background:#fffbeb"></textarea>' +
+          // reikningur. Same white style as the Vegna box; the placeholder tells them apart.
+          '<textarea id="pos-notes-staff" placeholder="🔧 Fyrir starfsfólk — sést á verkstæði (ekki á reikning)" style="width:100%;min-height:40px;margin-top:6px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
           '<div id="pos-totals" style="margin-top:8px"></div>' +
           '<button id="pos-checkout" style="width:100%;margin-top:14px;background:linear-gradient(180deg,#1f7a48 0%,#16613a 52%,#0d4226 100%);color:#fff;border:1px solid #0a3a20;padding:16px;border-radius:14px;font-weight:800;font-size:16px;letter-spacing:.03em;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 18px -8px rgba(13,66,38,.6)">✓ ÁFRAM</button>' +
         '</div>' +
