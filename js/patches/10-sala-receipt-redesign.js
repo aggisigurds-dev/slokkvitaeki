@@ -477,12 +477,20 @@
         // We pull each known token out into its own row, drop the redundant
         // "Greiðsla: ..." (already shown in Greiðsl.skilm. on the right) and
         // drop "Afsláttur: ..." (already shown in totals at the bottom).
+        // 2026-07-23: the pickup checkout (patch 121) also appends an internal
+        // audit block to athugasemdir — "[Sótt …] Ekki afhent: … Viðbót: …
+        // Afsláttur við afhendingu: N% (−kr) Athugasemd: … Greiðsla: …" — which
+        // was leaking onto the customer reikningur. It is bookkeeping or already
+        // shown (line items + the discount in the totals), so cut the whole
+        // trailing block. Any genuine note typed in KARFA precedes it and is kept.
         const ktMatch    = cleaned.match(/\bKt[:.]?\s*(\d{6}-?\d{4})/i);
         const sottMatch  = cleaned.match(/\bSótt[\s:]*\[?\s*(\d{4}-\d{2}-\d{2})\s*\]?/i);
         // Strip recognised tokens to reveal any leftover free-form note
         let remainder = cleaned
           .replace(/\bKt[:.]?\s*\d{6}-?\d{4}/i, '')
           .replace(/\[?\s*Sótt[\s:]*\d{4}-\d{2}-\d{2}\s*\]?/i, '')
+          // Cut the pickup-audit trail (patch 121) from its first token to the end.
+          .replace(/\s*(?:Ekki afhent|Viðbót|Afsláttur\s+(?:við afhendingu|úr sölu)|Athugasemd|Greiðsla)\s*:[\s\S]*$/i, '')
           .replace(/\bAfsl(?:áttur)?[:.]?\s*[\d,.]+%?\s*\(?[-−–\s]*[\d.,]*\s*kr?\)?/i, '')
           .replace(/\bGreiðsla[:.]?\s*\w+/i, '')
           // Tidy leftover punctuation

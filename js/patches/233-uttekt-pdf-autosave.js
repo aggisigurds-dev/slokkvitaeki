@@ -171,12 +171,27 @@
     return String(method || '').toLowerCase().trim() === 'reikningur' ? 'Krafa í banka 10 dagar' : 'Staðgreitt';
   }
   // „Heimsókn 2026-06-23 — …" → „Vegna heimsókn 23.06.2026" (eins og prentaði
-  // reikningurinn), annars athugasemdin óbreytt.
+  // reikningurinn), annars hreinsuð athugasemd.
   function vegnaLine(athugasemdir) {
     var s = String(athugasemdir || '');
     var m = /(\d{4})-(\d{2})-(\d{2})/.exec(s);
     if (/heims[oó]kn/i.test(s) && m) return 'Vegna heimsókn ' + m[3] + '.' + m[2] + '.' + m[1];
-    return s;
+    // 2026-07-23: match the printed reikningur (SalaInvoice) — drop the pickup
+    // audit trail (patch 121: "[Sótt …] Ekki afhent: … Viðbót: … Afsláttur við
+    // afhendingu: … Athugasemd: … Greiðsla: …") plus Kt/Greiðsla bookkeeping, so
+    // only a genuine KARFA note (which precedes the block) survives on the PDF.
+    var note = s
+      .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]\s*verður\s+greitt\s+við\s+afhendingu\s*[—\-:]?\s*/i, '')
+      .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]?\s*/i, '')
+      .replace(/\bKt[:.]?\s*\d{6}-?\d{4}/i, '')
+      .replace(/\[?\s*Sótt[\s:]*\d{4}-\d{2}-\d{2}\s*\]?/i, '')
+      .replace(/\s*(?:Ekki afhent|Viðbót|Afsláttur\s+(?:við afhendingu|úr sölu)|Athugasemd|Greiðsla)\s*:[\s\S]*$/i, '')
+      .replace(/\bAfsl(?:áttur)?[:.]?\s*[\d,.]+%?\s*\(?[-−–\s]*[\d.,]*\s*kr?\)?/i, '')
+      .replace(/\bGreiðsla[:.]?\s*\w+/i, '')
+      .replace(/^\s*[,.\s]+|[,.\s]+$/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+    return note ? ('vegna ' + note) : '';
   }
 
   // ── Teikna reikninginn sem PDF-blob (vektor — eins og prent-forskoðunin) ──
