@@ -104,14 +104,14 @@
   function applyButtonState(btn, coId, inService) {
     btn.disabled = false;
     btn.dataset.inservice = inService ? '1' : '0';
+    // Útlitið er klónað af Breyta-hnappnum (sjá injectButton) — hér breytum við
+    // AÐEINS textanum eftir stöðu, svo takkinn haldist eins og systkini sín.
     if (inService) {
       btn.textContent = '⬇ Taka úr þjónustu';
       btn.title = 'Færa í Allir viðskiptavinir — öll gögn haldast';
-      btn.style.cssText = 'color:#92400e;border-color:#fde68a;background:#fffbeb;font-weight:600';
     } else {
       btn.textContent = '⬆ Setja í þjónustu';
       btn.title = 'Bæta í Fyrirtæki í þjónustu';
-      btn.style.cssText = 'color:#065f46;border-color:#a7f3d0;background:#ecfdf5;font-weight:600';
     }
   }
 
@@ -127,10 +127,14 @@
     const coId = +m[1];
 
     const btn = document.createElement('button');
-    btn.className = 'btn btn-outline btn-sm _co-svc-toggle';
     btn.type = 'button';
-    // Sjálfgefið útlit meðan við sækjum stöðuna (langoftast í þjónustu þegar
-    // fyrirtækjaspjaldið er opnað af þjónustulistanum).
+    // Sami stíll og hnappurinn við hliðina (Breyta) — klónum class + inline-stíl
+    // af honum svo takkinn falli inn í hausinn (ósk Agnars: „same as the button
+    // it is on side with").
+    btn.className = (editBtn.className || 'btn btn-outline btn-sm') + ' _co-svc-toggle';
+    const _es = editBtn.getAttribute('style');
+    if (_es) btn.setAttribute('style', _es);
+    // Sjálfgefið: í þjónustu (langoftast opnað af þjónustulistanum); leiðréttist async.
     applyButtonState(btn, coId, true);
     btn.addEventListener('click', e => {
       e.preventDefault();

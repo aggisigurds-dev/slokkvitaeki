@@ -38,16 +38,27 @@
   // Flokkur → íkon + grunnlitur (hue). Sami og í hönnunar-comp-inu; óþekktir
   // flokkar fá hlutlausan bláan fallback.
   const CAT_META = {
-    'Allt':          { icon: '▦',  hue: '#1e3a8a' },
-    'Slökkvitæki':   { icon: '🧯', hue: '#dc2626' },
-    'Brunaslöngur':  { icon: '🚒', hue: '#c2410c' },
-    'Skilti':        { icon: '🆘', hue: '#15803d' },
-    'Reykskynjarar': { icon: '💨', hue: '#7c3aed' },
-    'Brunakerfi':    { icon: '🚨', hue: '#be123c' },
-    'Varahlutir':    { icon: '🔧', hue: '#475569' },
-    'Fylgihlutir':   { icon: '🔩', hue: '#0f766e' },
-    'Ýmsar vörur':   { icon: '📦', hue: '#b45309' },
-    'Þjónusta':      { icon: '📋', hue: '#0369a1' }
+    'Allt':                   { icon: '▦',  hue: '#1e3a8a' },
+    'Slökkvitæki':            { icon: '🧯', hue: '#dc2626' },
+    'Brunaslöngur':           { icon: '🚒', hue: '#c2410c' },
+    'Skilti':                 { icon: '🆘', hue: '#15803d' },
+    'Reykskynjarar':          { icon: '💨', hue: '#7c3aed' },
+    'Brunakerfi':             { icon: '🚨', hue: '#be123c' },
+    'Varahlutir':             { icon: '🔧', hue: '#475569' },
+    'Fylgihlutir':            { icon: '🔩', hue: '#0f766e' },
+    'Ýmsar vörur':            { icon: '📦', hue: '#b45309' },
+    'Þjónusta':               { icon: '📋', hue: '#0369a1' },
+    'Aukavörur':              { icon: '🏷️', hue: '#7c3aed' },
+    'Brunaslöngurhjól':       { icon: '🚒', hue: '#c2410c' },
+    'Eldvarnir':              { icon: '🔥', hue: '#dc2626' },
+    'Hleðsla slökkvitækja':   { icon: '🔄', hue: '#b45309' },
+    'Skilti, ljós og miðar':  { icon: '🆘', hue: '#15803d' },
+    'Skynjarar og rafhlöður': { icon: '🔋', hue: '#7c3aed' },
+    'Tæki':                   { icon: '🧰', hue: '#475569' },
+    'Viðvörunarkerfi':        { icon: '🚨', hue: '#be123c' },
+    'Vinna':                  { icon: '👷', hue: '#0369a1' },
+    'Vinna og akstur':        { icon: '🚙', hue: '#0e7490' },
+    'Yfirferð slökkvitækja':  { icon: '✅', hue: '#1f9d55' }
   };
   function metaFor(cat) { return CAT_META[cat] || { icon: '▪', hue: '#1e3a8a' }; }
 
@@ -110,14 +121,15 @@
       'background-color:' + (on ? hue : '#eef1f6'),
       'background-image:' + (on
         ? 'linear-gradient(155deg, color-mix(in oklch, ' + hue + ' 55%, transparent) 0%, color-mix(in oklch, ' + hue + ' 78%, transparent) 100%), linear-gradient(155deg, rgba(255,255,255,.5), rgba(255,255,255,.08))'
-        : 'linear-gradient(155deg, rgba(255,255,255,.75) 0%, color-mix(in oklch, ' + hue + ' 10%, transparent) 100%)'),
+        : 'linear-gradient(155deg, color-mix(in oklch, ' + hue + ' 28%, rgba(255,255,255,.6)) 0%, color-mix(in oklch, ' + hue + ' 55%, transparent) 100%), rgba(255,255,255,.15)'),
       'backdrop-filter:blur(10px)', '-webkit-backdrop-filter:blur(10px)',
       'color:' + (on ? '#fff' : '#1a1a1a'),
       'text-shadow:' + (on ? '0 1px 3px rgba(0,0,0,.25)' : 'none'),
       'border:1px solid ' + (on ? 'color-mix(in oklch, ' + hue + ' 45%, rgba(255,255,255,.7))' : 'rgba(255,255,255,.9)'),
+      'outline:' + (on ? 'none' : '1px solid color-mix(in oklch, ' + hue + ' 55%, transparent)'),
       'box-shadow:' + (on
         ? 'inset 0 1px 1px rgba(255,255,255,.6), inset 0 -6px 14px color-mix(in oklch, ' + hue + ' 35%, transparent), 0 8px 20px color-mix(in oklch, ' + hue + ' 35%, transparent), 0 2px 4px rgba(0,0,0,.12)'
-        : 'inset 0 1px 1px rgba(255,255,255,.9), 0 4px 12px rgba(30,50,90,.1), 0 1px 2px rgba(0,0,0,.05)'),
+        : 'inset 0 1px 1px rgba(255,255,255,.9), inset 0 -4px 10px color-mix(in oklch, ' + hue + ' 10%, transparent), 0 4px 12px rgba(30,50,90,.1), 0 1px 2px rgba(0,0,0,.05)'),
       'transform:' + (on ? 'translateY(-2px)' : 'none')
     ].join(';');
   }
@@ -211,8 +223,8 @@
         const m = metaFor(c), on = state.cat === c;
         const countClr = on ? 'rgba(255,255,255,.75)' : 'color-mix(in oklch, ' + m.hue + ' 65%, black)';
         return '<div data-cat="' + esc(c) + '" style="' + tileStyle(m.hue, on) + '">' +
-            '<div style="position:absolute;right:-6px;bottom:-10px;font-size:52px;opacity:.16;pointer-events:none;filter:saturate(1.2)">' + m.icon + '</div>' +
-            '<div style="font-size:18px;font-weight:800;line-height:1.15;position:relative">' + esc(c) + '</div>' +
+            '<div style="position:absolute;right:-6px;bottom:-10px;font-size:60px;opacity:.6;pointer-events:none;filter:saturate(1.5)">' + m.icon + '</div>' +
+            '<div style="font-size:18.5px;font-weight:800;line-height:1.15;position:relative">' + esc(c) + '</div>' +
             '<div style="font-size:12px;font-weight:700;position:relative;color:' + countClr + '">' + catCount(c) + ' vörur</div>' +
           '</div>';
       }).join('');
@@ -254,12 +266,13 @@
 
     function bannerHtml(cat, count) {
       const m = metaFor(cat);
-      // Fastur lita-borði (hue) með glans-yfirlagi — engin color-mix svo hann
-      // birtist eins í öllum vöfrum. Hvítur texti, fjöldi hægra megin.
-      return '<div style="position:relative;overflow:hidden;margin:8px 10px 0;border-radius:10px;padding:11px 15px;display:flex;justify-content:space-between;align-items:center;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.28);background-color:' + m.hue + ';background-image:linear-gradient(160deg, rgba(255,255,255,.30) 0%, rgba(255,255,255,.05) 42%, rgba(0,0,0,.22) 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.35), 0 4px 12px rgba(15,23,42,.16)">' +
-          '<div style="position:absolute;right:8px;bottom:-12px;font-size:46px;opacity:.22;pointer-events:none">' + m.icon + '</div>' +
-          '<div style="font-size:16px;font-weight:800;position:relative">' + esc(cat) + '</div>' +
-          '<div style="font-size:11.5px;font-weight:700;color:rgba(255,255,255,.8);position:relative">' + count + ' vörur</div>' +
+      // Límdur (sticky) lita-borði per flokk — eins og comp-ið: hue → dekkri hue,
+      // hvítur texti, situr efst meðan skrunað er í gegnum flokkinn. Solid hue
+      // fallback ef color-mix er ekki stutt.
+      return '<div style="position:sticky;top:0;z-index:2;overflow:hidden;margin:8px 10px 4px;border-radius:11px;padding:12px 16px;display:flex;justify-content:space-between;align-items:baseline;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25);background-color:' + m.hue + ';background-image:linear-gradient(135deg, ' + m.hue + ', color-mix(in oklch, ' + m.hue + ' 70%, black));box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 4px 12px color-mix(in oklch, ' + m.hue + ' 30%, transparent)">' +
+          '<div style="position:absolute;right:2px;bottom:-14px;font-size:56px;opacity:.18;pointer-events:none">' + m.icon + '</div>' +
+          '<div style="font-size:18px;font-weight:800;position:relative">' + esc(cat) + '</div>' +
+          '<div style="font-size:12px;font-weight:700;opacity:.75;position:relative">' + count + ' vörur</div>' +
         '</div>';
     }
 
