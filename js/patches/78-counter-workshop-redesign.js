@@ -510,12 +510,17 @@
   // line(s) AFTER the first (the first line is the service desc). Collect them
   // across the customer's verk, deduped, and show as a banner on the card so
   // the workshop sees what the counter wrote. Empty → no banner.
+  // 2026-07-23 (Agnar): sjálfvirkar verð-nótur eru EKKI starfsmanna-athugasemdir
+  // og eiga ekki heima á borðinu — t.d. „🚚 Byrjunargjald: 1.240 kr (innifalið)"
+  // sem pos.js skeytir sjálfkrafa á CO₂-verkbeiðnina. Síum þær frá; ósviknar
+  // starfsmanna-nótur standa eftir.
+  const AUTO_NOTE_RX = /byrjunargjald/i;
   function groupStaffNote(co) {
     const out = [];
     (co.jobs || []).forEach(j => {
       String(j.notes || '').split('\n').map(l => l.trim()).filter(Boolean).slice(1).forEach(l => {
         const t = l.replace(/^—\s*/, '').trim();
-        if (t && out.indexOf(t) === -1) out.push(t);
+        if (t && !AUTO_NOTE_RX.test(t) && out.indexOf(t) === -1) out.push(t);
       });
     });
     return out.join(' · ');
