@@ -345,7 +345,7 @@
       '<div class="bw-page-hdr">' +
         '<div class="bw-page-titles">' +
           '<h1 class="bw-page-h1">Verkröð</h1>' +
-          `<div class="bw-page-sub"><b>${jobs.length}</b> verk í vinnslu</div>` +
+          `<div class="bw-page-sub"><b>${jobs.length}</b> verk í vinnslu · <b>${jobs.reduce((s, jj) => s + (jj.units ? jj.units.length : 0), 0)}</b> tæki</div>` +
         '</div>' +
         '<div class="bw-hdr-actions">' +
           '<button class="bw-scan" onclick="Field.openScan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg> Skanna tæki</button>' +
