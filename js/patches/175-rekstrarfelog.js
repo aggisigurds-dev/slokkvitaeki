@@ -295,6 +295,67 @@
     return null;
   }
 
+  // ── Aksturslistar á rekstrarfélagi (deila með „Fyrirtæki í þjónustu") ──────
+  // Sama gagnastaður og patch 267/153: arsskodun_customers[staður_id].akstur
+  // (0 = enginn / 1 / 2 / 3). Þegar rekstrarfélagi er úthlutað akstursleið fá
+  // ALLIR staðir þess (fyrirtaeki-id) sama gildi → þeir birtast með 🚗N á aðal-
+  // borðinu. Rotandi smellur eins og á aðal-borðinu (0→1→2→3→0).
+  function _arsAll(){ try{ return (window.AppSettings && AppSettings.path && AppSettings.path('arsskodun_customers')) || {}; }catch(e){ return {}; } }
+  function _aksturOf(id){ var a=_arsAll()[String(id)]; var v=+((a||{}).akstur)||0; return (v>=1&&v<=3)?v:0; }
+  function coIdsForBlds(blds){
+    var out=[]; (blds||[]).forEach(function(b){ var c=companyForBld(b); if(c&&c.id!=null) out.push(c.id); });
+    return out;
+  }
+  // Fulltrúa-gildi félagsins = algengasta úthlutaða gildið á stöðunum (0 ef ekkert).
+  function rfAksturVal(coIds){
+    var cnt={}, best=0, bn=0;
+    (coIds||[]).forEach(function(id){ var v=_aksturOf(id); if(v){ cnt[v]=(cnt[v]||0)+1; if(cnt[v]>bn){bn=cnt[v];best=v;} } });
+    return best;
+  }
+  async function setRfAkstur(coIds, v){
+    if(!coIds||!coIds.length||!window.AppSettings||!AppSettings.save) return false;
+    var patch={}; coIds.forEach(function(id){ patch[String(id)]={akstur:v}; });
+    try{ var ok=await AppSettings.save({arsskodun_customers:patch}); return ok!==false; }catch(e){ return false; }
+  }
+  function makeRfAksturChip(blds){
+    var BLUE={bg:'#38bdf8',bd:'#0ea5e9',fg:'#ffffff'}, GREY={bg:'#eef2f7',bd:'#cbd5e1',fg:'#94a3b8'};
+    var chip=document.createElement('span'); chip.className='_rf_akstur';
+    var saveT=null;
+    function ids(){ return coIdsForBlds(blds); }
+    function paint(v){
+      var c=v?BLUE:GREY; chip.dataset.ak=String(v);
+      chip.textContent = v ? ('🚗'+v) : '🚗';
+      chip.title = v ? ('Akstursleið '+v+' — allir staðir félagsins · smelltu til að breyta')
+                     : 'Setja rekstrarfélag á akstursleið (allir staðir) · smelltu';
+      chip.style.cssText='display:inline-flex;align-items:center;justify-content:center;gap:1px;min-width:38px;'+
+        'height:26px;padding:0 8px;box-sizing:border-box;border-radius:99px;cursor:pointer;'+
+        'font-size:12px;font-weight:800;line-height:1;user-select:none;'+
+        'border:1px solid '+c.bd+';background:'+c.bg+';color:'+c.fg+';'+
+        (v?'box-shadow:0 1px 4px -1px rgba(14,165,233,.6);':'opacity:.9;')+'transition:transform .12s';
+    }
+    paint(rfAksturVal(ids()));
+    // Companies.list kann að hlaðast rétt eftir fyrsta render → endur-máln stutt síðar.
+    setTimeout(function(){ if(!saveT && chip.isConnected) paint(rfAksturVal(ids())); }, 500);
+    chip.addEventListener('click', function(e){
+      e.stopPropagation(); e.preventDefault();
+      var cur=+chip.dataset.ak||0, next=(cur+1)%4;
+      paint(next);
+      chip.style.transform='scale(1.15)'; setTimeout(function(){ chip.style.transform='scale(1)'; }, 130);
+      clearTimeout(saveT);
+      saveT=setTimeout(function(){
+        saveT=null;
+        var list=ids();
+        if(!list.length){ if(window.Toast&&Toast.show) Toast.show('⚠ Engir staðir tengdir í skrá'); return; }
+        setRfAkstur(list, next).then(function(ok){
+          if(!window.Toast||!Toast.show) return;
+          if(ok) Toast.show(next ? ('✓ Akstursleið '+next+' · '+list.length+(list.length===1?' staður':' staðir')) : '✓ Tekið af akstursleið');
+          else Toast.show('⚠ Villa við vistun aksturslista');
+        });
+      }, 900);
+    });
+    return chip;
+  }
+
   // ---- attachments helpers (reuse app's CompanyAttachments) ----
   function firmAttachId(firm){ return 'rf:'+firm; } // synthetic id namespace
   async function listFirmDocs(firm){
@@ -685,6 +746,13 @@
         await saveData(d);
         if(window.Toast&&Toast.show) Toast.show('✓ Vistað');
       });
+      // Rotandi akstursleið-chip á félaginu (úthlutar öllum stöðum þess) — situr
+      // fremst í pillu-röðinni, vinstra megin við ⌄. Smellur flettur (stopPropagation).
+      try{
+        var pills=card.querySelector('.rfa__pills');
+        if(pills){ var chev=pills.querySelector('.rfa__chev'); var akc=makeRfAksturChip(blds);
+          if(chev) pills.insertBefore(akc, chev); else pills.appendChild(akc); }
+      }catch(e){}
       box.appendChild(card);
     });
     if(!shown) box.innerHTML='<div style="color:#3a4250;background:#fff;border-radius:14px;padding:16px 18px;box-shadow:0 16px 40px -22px rgba(10,20,50,.65)">Ekkert fannst.</div>';
