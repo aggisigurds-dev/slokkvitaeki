@@ -317,7 +317,9 @@
           '</div>';
       }).join('');
     }
-    return '<div class="cw-archive" style="position:fixed;left:0;right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid #e5e7eb;box-shadow:0 -6px 20px rgba(0,0,0,.08)">' +
+    // left:var(--sidebar-w) so the fixed bar starts at the content edge, not
+    // under the 220/60px sidebar (which was hiding each row's device-info text).
+    return '<div class="cw-archive" style="position:fixed;left:var(--sidebar-w,220px);right:0;bottom:0;z-index:60;background:#fff;border-top:1px solid #e5e7eb;box-shadow:0 -6px 20px rgba(0,0,0,.08)">' +
         '<div onclick="Workshop.toggleArchive()" style="padding:11px 16px;cursor:pointer;display:flex;align-items:center;gap:9px;user-select:none">' +
           '<span>🗑️</span>' +
           '<span style="font-weight:700;flex:1;font-size:13px;color:#0f172a">Eydd tæki (' + items.length + ')</span>' +
@@ -512,7 +514,10 @@
     return '<div class="bw-row">' +
         '<div class="bw-row-top">' +
           '<div class="bw-cinfo">' +
-            `<div class="bw-cname">${esc(co.name)}</div>` +
+            '<div class="bw-cname-row">' +
+              `<div class="bw-cname">${esc(co.name)}</div>` +
+              `<button class="bw-edit-verk" title="Breyta verki (nafn / sími)" onclick="event.stopPropagation();Workshop.editVerk('${jobIds}')">✏️</button>` +
+            '</div>' +
             `<div class="bw-cmeta">${co.jobs.length} verk · ${co.doneUnits}/${co.totalUnits} lokið${co.jobs[0] && digitsOnly(co.jobs[0].phone) ? ' · ☎ ' + esc(digitsOnly(co.jobs[0].phone)) : ''}</div>` +
           '</div>' +
           renderUnitTiles(co.jobs) +
@@ -724,7 +729,7 @@
       '.bw-row{border:1px solid rgba(20,24,34,.10);border-left:3px solid #2f5fe0;border-radius:12px;padding:11px 13px;margin-bottom:9px;background:linear-gradient(180deg,#fff,#eef1f6);box-shadow:0 2px 6px -4px rgba(25,35,60,.12)}' +
       '.bw-row-top{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap}' +
       '.bw-cinfo{width:150px;flex:1 1 150px;min-width:0}' +
-      '.bw-cname{font-size:14px;font-weight:600;color:#11141c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.bw-cname{font-size:14px;font-weight:600;color:#11141c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto;min-width:0}' +
       '.bw-cmeta{font-size:11.5px;color:#9098a6;margin-top:2px}' +
       '.bw-tiles{flex:2 1 60%;min-width:0;display:flex;flex-wrap:wrap;gap:7px}' +
       // device tile
@@ -763,8 +768,20 @@
       '.bw-act.broken{background:#fff;color:#a01818;border:1px solid #fecaca}' +
       '.bw-act.broken.on{background:linear-gradient(150deg,#e25555,#a01818);color:#fff;border-color:transparent}' +
       '.bw-act.laga{background:linear-gradient(145deg,#0d0102,#6c0d10 50%,#971515 60%,#100102);color:#fff;grid-column:1/-1;height:48px;font-size:13.5px}' +
+      '.bw-act.edit{background:#fff;color:#1e40af;border:1px solid #bfdbfe;grid-column:1/-1;height:42px;font-size:13px}' +
       '.bw-act.del{background:#fff;color:#64748b;border:1px solid #e2e8f0;grid-column:1/-1;height:40px;font-size:12.5px}' +
       '.bw-ta{width:100%;min-height:56px;margin-top:6px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#f6f8fb;font:inherit;font-size:13px;resize:vertical;box-sizing:border-box}' +
+      // edit-form inputs + Vista/Hætta row (Breyta tæki / Breyta verki)
+      '.bw-inp{width:100%;padding:11px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#f6f8fb;font:inherit;font-size:14px;box-sizing:border-box}' +
+      '.bw-inp:focus{outline:none;border-color:#2f5fe0;background:#fff}' +
+      '.bw-erow{display:flex;gap:10px;margin-top:18px}' +
+      '.bw-ebtn{flex:1;height:46px;border-radius:11px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;border:1px solid transparent}' +
+      '.bw-ebtn.cancel{background:#fff;color:#64748b;border:1px solid #e2e8f0}' +
+      '.bw-ebtn.save{background:linear-gradient(160deg,#2f6fe0,#173a86);color:#fff}' +
+      // ✏️ pencil beside a Verk (customer) name
+      '.bw-cname-row{display:flex;align-items:center;gap:6px;min-width:0}' +
+      '.bw-edit-verk{flex:none;background:none;border:none;cursor:pointer;font-size:13px;line-height:1;padding:2px 3px;opacity:.5;border-radius:6px}' +
+      '.bw-edit-verk:hover{opacity:1;background:rgba(47,95,224,.1)}' +
       '.bw-arow{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f1f5f9;font-size:13px}' +
       '.bw-arow .rm{background:none;border:none;color:#cbd5e1;cursor:pointer;font-size:16px}' +
       '.bw-atot{display:flex;justify-content:space-between;font-weight:800;font-size:14px;margin-top:8px;padding-top:8px;border-top:2px solid #0f172a}' +
@@ -833,6 +850,7 @@
             '<div class="bw-act ok' + (isDone ? ' on' : '') + '" onclick="Workshop.setUnitStatusToggle(' + job.id + ',' + u.id + ',\'done\')">✓ Tilbúið</div>' +
             '<div class="bw-act broken' + (isBroken ? ' on' : '') + '" onclick="Workshop.setUnitStatusToggle(' + job.id + ',' + u.id + ',\'broken\')">🚫 Ónýtt</div>' +
             '<div class="bw-act laga" onclick="Workshop.addPartToUnit(' + job.id + ',' + u.id + ')">🔧 Laga — bæta við varahlut / þjónustu</div>' +
+            '<div class="bw-act edit" onclick="Workshop.editUnit(' + job.id + ',' + u.id + ')">✏️ Breyta tæki (tegund / stærð / raðnr.)</div>' +
             '<div class="bw-act del" onclick="Workshop.deleteUnitFromModal(' + job.id + ',' + u.id + ')">🗑 Eyða tæki</div>' +
           '</div>' +
           '<div style="margin-top:14px">' +
@@ -841,6 +859,28 @@
           '</div>' +
           '<p class="bw-lab" style="margin-top:16px">Athugasemd</p>' +
           '<textarea class="bw-ta" id="bw-note" placeholder="t.d. skipti um ventil, þrýstiprófað…">' + esc(u.notes || '') + '</textarea>' +
+        '</div>' +
+      '</div>';
+  }
+
+  // Edit form for a tæki (verklidur type/size/serial). Swapped into the same
+  // modal overlay by Workshop.editUnit; Vista writes the three columns.
+  function unitEditHtml(job, u) {
+    return '<div class="bw-modal">' +
+        '<div class="bw-mh"><div><div class="ser">✏️ Breyta tæki</div>' +
+          '<div class="ty">' + esc(u.serial || 'Tæki') + '</div></div>' +
+          '<button class="x" onclick="Workshop.closeUnitModal()">✕</button></div>' +
+        '<div class="bw-mb">' +
+          '<p class="bw-lab">Tegund</p>' +
+          '<input class="bw-inp" id="bw-e-type" value="' + esc(u.type || '') + '" placeholder="t.d. ABC Duft">' +
+          '<p class="bw-lab" style="margin-top:12px">Stærð</p>' +
+          '<input class="bw-inp" id="bw-e-size" value="' + esc(u.size || '') + '" placeholder="t.d. 6 kg">' +
+          '<p class="bw-lab" style="margin-top:12px">Raðnúmer</p>' +
+          '<input class="bw-inp" id="bw-e-serial" value="' + esc(u.serial || '') + '" placeholder="raðnúmer">' +
+          '<div class="bw-erow">' +
+            '<button class="bw-ebtn cancel" onclick="Workshop.editUnitCancel()">Hætta við</button>' +
+            '<button class="bw-ebtn save" onclick="Workshop.saveUnitEdit(' + job.id + ',' + u.id + ')">💾 Vista</button>' +
+          '</div>' +
         '</div>' +
       '</div>';
   }
@@ -1074,13 +1114,37 @@
         ov.addEventListener('click', e => { if (e.target === ov) Workshop.closeUnitModal(); });
         document.body.appendChild(ov);
       }
-      ov.innerHTML = unitModalHtml(job, u);
+      ov.innerHTML = ctx.edit ? unitEditHtml(job, u) : unitModalHtml(job, u);
+      if (ctx.edit) {
+        const ti = ov.querySelector('#bw-e-type'); if (ti) ti.focus();
+        return;
+      }
       const ta = ov.querySelector('#bw-note');
       if (ta) {
         const save = () => Workshop.saveUnitNote(ctx.jobId, ctx.unitId, ta.value);
         ta.addEventListener('change', save);
         ta.addEventListener('blur', save);
       }
+    };
+    // ── ✏️ Breyta tæki — edit verklidur type/size/serial in the modal ──────
+    Workshop.editUnit = function() {
+      if (Workshop._unitCtx) { Workshop._unitCtx.edit = true; Workshop._renderUnitModal(); }
+    };
+    Workshop.editUnitCancel = function() {
+      if (Workshop._unitCtx) { Workshop._unitCtx.edit = false; Workshop._renderUnitModal(); }
+    };
+    Workshop.saveUnitEdit = async function(jobId, unitId) {
+      const ov = document.getElementById('bw-unit-ov'); if (!ov) return;
+      const val = id => { const el = ov.querySelector(id); return el ? String(el.value || '').trim() : ''; };
+      const patch = { type: val('#bw-e-type'), size: val('#bw-e-size'), serial: val('#bw-e-serial') };
+      try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update(patch).eq('id', unitId); }
+      catch (e) { console.warn('[saveUnitEdit]', e); alert('Náði ekki að vista breytinguna.'); return; }
+      const job = DB.getJob(jobId);
+      const u = job && (job.units || []).find(x => x.id === unitId);
+      if (u) { u.type = patch.type; u.size = patch.size; u.serial = patch.serial; }
+      if (window.Toast && Toast.show) Toast.show('✏️ Tæki uppfært');
+      if (Workshop._unitCtx) Workshop._unitCtx.edit = false;
+      Workshop._renderUnitModal();
     };
     Workshop.saveUnitNote = async function(jobId, unitId, note) {
       note = String(note || '');
@@ -1094,6 +1158,54 @@
     Workshop.deleteUnitFromModal = async function(jobId, unitId) {
       const ok = await Workshop.deleteUnit(jobId, unitId);
       if (ok) Workshop.closeUnitModal();
+    };
+
+    // ── ✏️ Breyta verki — edit customer name + phone for a Verk group ───────
+    // A group can hold several verkbeidnir under one customer; the edit applies
+    // to every job in the group (verkbeidnir.customer + .phone).
+    Workshop.editVerk = function(csv) {
+      const ids = String(csv).split(',').map(s => parseInt(s, 10)).filter(Boolean);
+      if (!ids.length) return;
+      const job = DB.getJob(ids[0]); if (!job) return;
+      let ov = document.getElementById('bw-verk-ov');
+      if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'bw-verk-ov'; ov.className = 'bw-ov';
+        ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+        document.body.appendChild(ov);
+      }
+      ov.innerHTML = '<div class="bw-modal" style="width:420px">' +
+          '<div class="bw-mh"><div><div class="ser">✏️ Breyta verki</div>' +
+            '<div class="ty">' + esc(job.customer || job.num || '') + '</div></div>' +
+            '<button class="x" onclick="document.getElementById(\'bw-verk-ov\').remove()">✕</button></div>' +
+          '<div class="bw-mb">' +
+            '<p class="bw-lab">Viðskiptavinur</p>' +
+            '<input class="bw-inp" id="bw-v-cust" value="' + esc(job.customer || '') + '" placeholder="Nafn viðskiptavinar">' +
+            '<p class="bw-lab" style="margin-top:12px">Sími</p>' +
+            '<input class="bw-inp" id="bw-v-phone" value="' + esc(job.phone || '') + '" placeholder="Símanúmer">' +
+            (ids.length > 1 ? '<div style="font-size:11.5px;color:#9098a6;margin-top:8px">Breytist á öllum ' + ids.length + ' verkum þessa viðskiptavinar.</div>' : '') +
+            '<div class="bw-erow">' +
+              '<button class="bw-ebtn cancel" onclick="document.getElementById(\'bw-verk-ov\').remove()">Hætta við</button>' +
+              '<button class="bw-ebtn save" onclick="Workshop.saveVerk(\'' + ids.join(',') + '\')">💾 Vista</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      const ci = ov.querySelector('#bw-v-cust'); if (ci) ci.focus();
+    };
+    Workshop.saveVerk = async function(csv) {
+      const ids = String(csv).split(',').map(s => parseInt(s, 10)).filter(Boolean);
+      const ov = document.getElementById('bw-verk-ov'); if (!ov || !ids.length) return;
+      const val = id => { const el = ov.querySelector(id); return el ? String(el.value || '').trim() : ''; };
+      const patch = { customer: val('#bw-v-cust'), phone: val('#bw-v-phone') };
+      try {
+        if (DB.online && DB.sb) {
+          for (const id of ids) await DB.sb.from('verkbeidnir').update(patch).eq('id', id);
+        }
+      } catch (e) { console.warn('[saveVerk]', e); alert('Náði ekki að vista breytinguna.'); return; }
+      ids.forEach(id => { const j = DB.getJob(id); if (j) { j.customer = patch.customer; j.phone = patch.phone; } });
+      if (window.Toast && Toast.show) Toast.show('✏️ Verk uppfært');
+      ov.remove();
+      Workshop.render();
     };
 
     // ── 🔧 Laga → spare part / þjónusta picker → verklidur.parts ───────────
