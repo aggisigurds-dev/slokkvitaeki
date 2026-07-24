@@ -339,13 +339,29 @@
     // Left: all workshop jobs (received + inprogress). Right: same set, filtered to contract holders.
     const contractJobs = jobs.filter(j => isContractCustomer(j.customer));
 
+    // 2026-07-24 (ósk Agnars: „84 tæki" var ekki rétt): teldu EINS og borðið
+    // birtir — grúppa per kúnna, telja AÐEINS lifandi tæki (live, ekki „eytt")
+    // og sleppa kúnnum þar sem öll tæki eru eydd (tot===0, dettur af borðinu).
+    let _hdrVerk = 0, _hdrTaeki = 0;
+    (() => {
+      const byC = {};
+      jobs.forEach(j => { const k = custKey(j); (byC[k] = byC[k] || []).push(j); });
+      Object.keys(byC).forEach(k => {
+        const list = byC[k];
+        const t = list.reduce((s, jj) => s + live(jj.units).length, 0);
+        if (t === 0) return;          // kúnni með öll tæki eydd → ekki á borðinu
+        _hdrVerk += list.length;
+        _hdrTaeki += t;
+      });
+    })();
+
     // 2026-06-20: single-column VERK card + permanent Samningshafar panel
     // docked on the right (mockup verkstaedi-reorg.html + user screenshot).
     const html =
       '<div class="bw-page-hdr">' +
         '<div class="bw-page-titles">' +
           '<h1 class="bw-page-h1">Verkröð</h1>' +
-          `<div class="bw-page-sub"><b>${jobs.length}</b> verk í vinnslu · <b>${jobs.reduce((s, jj) => s + (jj.units ? jj.units.length : 0), 0)}</b> tæki</div>` +
+          `<div class="bw-page-sub"><b>${_hdrVerk}</b> verk í vinnslu · <b>${_hdrTaeki}</b> tæki</div>` +
         '</div>' +
         '<div class="bw-hdr-actions">' +
           '<button class="bw-scan" onclick="Field.openScan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg> Skanna tæki</button>' +
@@ -354,7 +370,7 @@
       '<div style="display:none"><div id="workshop-queue"></div></div>' +
       '<div class="bw-flow">' +
         '<div class="bw-card">' +
-          `<div class="bw-chd"><b>VERK</b><span class="bw-cnum">${jobs.length} verk</span></div>` +
+          `<div class="bw-chd"><b>VERK</b><span class="bw-cnum">${_hdrVerk} verk</span></div>` +
           wRenderJobs('all', jobs) +
         '</div>' +
         '<div class="bw-sh-col">' +
