@@ -596,6 +596,7 @@
               `<div class="bw-cname">${esc(co.name)}</div>` +
               `<button class="bw-edit-verk" title="Breyta verki (nafn / sími)" onclick="event.stopPropagation();Workshop.editVerk('${jobIds}')">✏️</button>` +
               `<button class="bw-edit-verk" title="Bæta við tæki" onclick="event.stopPropagation();Workshop.addUnit(${co.jobs[0] ? co.jobs[0].id : 0})">➕</button>` +
+              `<button class="bw-edit-verk" title="Opna Drög (breyta / eyða reikningi)" onclick="event.stopPropagation();Workshop.openDrog()">📝</button>` +
             '</div>' +
             `<div class="bw-cmeta">${co.jobs.length} verk · ${co.doneUnits}/${co.totalUnits} lokið${co.jobs[0] && digitsOnly(co.jobs[0].phone) ? ' · ☎ ' + esc(digitsOnly(co.jobs[0].phone)) : ''}</div>` +
           '</div>' +
@@ -1346,6 +1347,12 @@
       if (window.Toast && Toast.show) Toast.show('➕ Tæki bætt við');
       ov.remove();
       Workshop.render();
+    };
+
+    // ── 📝 Opna Drög — drafts list (✏️ Breyta / 🗑 eyða) frá Verkröð ────────
+    Workshop.openDrog = function() {
+      if (window.DrogList && typeof DrogList.open === 'function') { DrogList.open(); return; }
+      if (window.App && typeof App.switchView === 'function') App.switchView('sala');
     };
 
     // ── 🔧 Laga → spare part / þjónusta picker → verklidur.parts ───────────
