@@ -73,6 +73,43 @@
   // "Eydd tæki" archive at the bottom of Verkstæði until restored.
   function live(units) { return (units || []).filter(u => u && u.status !== 'eytt'); }
 
+  // ── Þjónustu-vörulisti (vorur, flokkur „Þjónusta") fyrir tæki-val ─────────
+  // Notað í „✏️ Breyta tæki" + „➕ Bæta við tæki": veldu eina þjónustu-sölueiningu
+  // (t.d. „Duft 6 kg. ABC yfirferð") í stað þess að slá inn tegund/stærð/þjónustu.
+  let SVC_PRODUCTS = null;
+  async function ensureSvcProducts() {
+    if (SVC_PRODUCTS) return SVC_PRODUCTS;
+    try {
+      const r = await DB.sb.from('vorur').select('nafn,flokkur,virkt').order('nafn');
+      SVC_PRODUCTS = (r.data || [])
+        .filter(p => p.virkt !== false && /þjón/i.test(p.flokkur || ''))
+        .map(p => String(p.nafn || '').trim())
+        .filter(Boolean);
+    } catch (e) { console.warn('[ensureSvcProducts]', e); SVC_PRODUCTS = []; }
+    return SVC_PRODUCTS;
+  }
+  // Parse a service-product name into {type,size,service} so the tile/modal + billing
+  // keep working. Handles „Duft 6 kg. ABC yfirferð", „CO₂ 2 kg. hleðsla",
+  // „Léttvatnstæki 6L. yfirferð", „Froða 6 l. ABF hleðsla", „CO₂ 100 gr.", and the
+  // legacy „Yfirferð Duft" order.
+  function parseSvcName(name) {
+    let s = String(name || '').replace(/\s+/g, ' ').trim();
+    let service = '';
+    const sm = s.match(/(hleðsla|yfirferð|skoðun|viðgerð|áfylling)/i);
+    if (sm) { service = sm[0]; s = (s.slice(0, sm.index) + ' ' + s.slice(sm.index + sm[0].length)).trim(); }
+    let size = '';
+    const zm = s.match(/(\d+(?:[.,]\d+)?)\s*(kgr|kg|gr|g|ltr|l|ml)\b\.?/i);
+    if (zm) { size = (zm[1] + ' ' + zm[2]).replace(/\.$/, '').trim(); s = (s.slice(0, zm.index) + ' ' + s.slice(zm.index + zm[0].length)).trim(); }
+    const type = s.replace(/\./g, ' ').replace(/\s{2,}/g, ' ').trim();
+    return { type, size, service };
+  }
+  function svcOptionsHtml(selected) {
+    const cur = String(selected == null ? '' : selected);
+    const opts = (SVC_PRODUCTS || []).map(n =>
+      '<option value="' + esc(n) + '"' + (n === cur ? ' selected' : '') + '>' + esc(n) + '</option>').join('');
+    return opts;
+  }
+
   // ----- Counter (Afgreiðsla) -----
 
   function counterRender() {
@@ -914,13 +951,11 @@
           '<div class="ty">' + esc(u.serial || 'Tæki') + '</div></div>' +
           '<button class="x" onclick="Workshop.closeUnitModal()">✕</button></div>' +
         '<div class="bw-mb">' +
-          '<p class="bw-lab">Tegund</p>' +
-          '<input class="bw-inp" id="bw-e-type" value="' + esc(u.type || '') + '" placeholder="t.d. ABC Duft">' +
-          '<p class="bw-lab" style="margin-top:12px">Stærð</p>' +
-          '<input class="bw-inp" id="bw-e-size" value="' + esc(u.size || '') + '" placeholder="t.d. 6 kg">' +
-          '<p class="bw-lab" style="margin-top:12px">Þjónusta</p>' +
-          '<input class="bw-inp" id="bw-e-service" value="' + esc(u.service || '') + '" placeholder="t.d. Yfirferð / Hleðsla" list="bw-svc-list">' +
-          '<datalist id="bw-svc-list"><option value="Yfirferð"></option><option value="Hleðsla"></option><option value="Skoðun"></option><option value="Viðgerð"></option><option value="Þrýstiprófun"></option></datalist>' +
+          '<p class="bw-lab">Þjónusta / tæki</p>' +
+          '<select class="bw-inp" id="bw-e-svc">' +
+            '<option value="">— óbreytt (' + esc([u.type, u.size, u.service].filter(Boolean).join(' ') || '—') + ') —</option>' +
+            svcOptionsHtml('') +
+          '</select>' +
           '<p class="bw-lab" style="margin-top:12px">Raðnúmer</p>' +
           '<input class="bw-inp" id="bw-e-serial" value="' + esc(u.serial || '') + '" placeholder="raðnúmer">' +
           '<div class="bw-erow">' +
@@ -1162,7 +1197,7 @@
       }
       ov.innerHTML = ctx.edit ? unitEditHtml(job, u) : unitModalHtml(job, u);
       if (ctx.edit) {
-        const ti = ov.querySelector('#bw-e-type'); if (ti) ti.focus();
+        const ti = ov.querySelector('#bw-e-svc'); if (ti) ti.focus();
         return;
       }
       const ta = ov.querySelector('#bw-note');
@@ -1172,9 +1207,11 @@
         ta.addEventListener('blur', save);
       }
     };
-    // ── ✏️ Breyta tæki — edit verklidur type/size/serial in the modal ──────
-    Workshop.editUnit = function() {
-      if (Workshop._unitCtx) { Workshop._unitCtx.edit = true; Workshop._renderUnitModal(); }
+    // ── ✏️ Breyta tæki — pick a service product (or keep) + serial ─────────
+    Workshop.editUnit = async function() {
+      if (!Workshop._unitCtx) return;
+      await ensureSvcProducts();
+      Workshop._unitCtx.edit = true; Workshop._renderUnitModal();
     };
     Workshop.editUnitCancel = function() {
       if (Workshop._unitCtx) { Workshop._unitCtx.edit = false; Workshop._renderUnitModal(); }
@@ -1182,12 +1219,16 @@
     Workshop.saveUnitEdit = async function(jobId, unitId) {
       const ov = document.getElementById('bw-unit-ov'); if (!ov) return;
       const val = id => { const el = ov.querySelector(id); return el ? String(el.value || '').trim() : ''; };
-      const patch = { type: val('#bw-e-type'), size: val('#bw-e-size'), service: val('#bw-e-service'), serial: val('#bw-e-serial') };
+      const svc = val('#bw-e-svc');
+      // Empty select = „óbreytt" → keep type/size/service, only serial may change.
+      const patch = svc
+        ? Object.assign(parseSvcName(svc), { serial: val('#bw-e-serial') })
+        : { serial: val('#bw-e-serial') };
       try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update(patch).eq('id', unitId); }
       catch (e) { console.warn('[saveUnitEdit]', e); alert('Náði ekki að vista breytinguna.'); return; }
       const job = DB.getJob(jobId);
       const u = job && (job.units || []).find(x => x.id === unitId);
-      if (u) { u.type = patch.type; u.size = patch.size; u.service = patch.service; u.serial = patch.serial; }
+      if (u) Object.assign(u, patch);
       if (window.Toast && Toast.show) Toast.show('✏️ Tæki uppfært');
       if (Workshop._unitCtx) Workshop._unitCtx.edit = false;
       Workshop._renderUnitModal();
@@ -1254,9 +1295,10 @@
       Workshop.render();
     };
 
-    // ── ➕ Bæta við tæki — insert a new verklidur row into a job ────────────
-    Workshop.addUnit = function(jobId) {
+    // ── ➕ Bæta við tæki — pick a service product → insert verklidur ────────
+    Workshop.addUnit = async function(jobId) {
       const job = DB.getJob(jobId); if (!job) return;
+      await ensureSvcProducts();
       let ov = document.getElementById('bw-add-ov');
       if (!ov) {
         ov = document.createElement('div');
@@ -1269,11 +1311,8 @@
             '<div class="ty">' + esc(job.customer || job.num || '') + '</div></div>' +
             '<button class="x" onclick="document.getElementById(\'bw-add-ov\').remove()">✕</button></div>' +
           '<div class="bw-mb">' +
-            '<p class="bw-lab">Tegund</p><input class="bw-inp" id="bw-a-type" placeholder="t.d. Duft">' +
-            '<p class="bw-lab" style="margin-top:12px">Stærð</p><input class="bw-inp" id="bw-a-size" placeholder="t.d. 6 kg">' +
-            '<p class="bw-lab" style="margin-top:12px">Þjónusta</p>' +
-            '<input class="bw-inp" id="bw-a-service" placeholder="t.d. Yfirferð / Hleðsla" list="bw-svc-list">' +
-            '<datalist id="bw-svc-list"><option value="Yfirferð"></option><option value="Hleðsla"></option><option value="Skoðun"></option><option value="Viðgerð"></option><option value="Þrýstiprófun"></option></datalist>' +
+            '<p class="bw-lab">Þjónusta / tæki</p>' +
+            '<select class="bw-inp" id="bw-a-svc"><option value="">— veldu þjónustu —</option>' + svcOptionsHtml('') + '</select>' +
             '<p class="bw-lab" style="margin-top:12px">Raðnúmer (valfrjálst)</p><input class="bw-inp" id="bw-a-serial" placeholder="sjálfvirkt ef tómt">' +
             '<div class="bw-erow">' +
               '<button class="bw-ebtn cancel" onclick="document.getElementById(\'bw-add-ov\').remove()">Hætta við</button>' +
@@ -1281,15 +1320,18 @@
             '</div>' +
           '</div>' +
         '</div>';
-      const t = ov.querySelector('#bw-a-type'); if (t) t.focus();
+      const t = ov.querySelector('#bw-a-svc'); if (t) t.focus();
     };
     Workshop.saveNewUnit = async function(jobId) {
       const ov = document.getElementById('bw-add-ov'); if (!ov) return;
       const job = DB.getJob(jobId); if (!job) return;
       const val = id => { const el = ov.querySelector(id); return el ? String(el.value || '').trim() : ''; };
+      const svc = val('#bw-a-svc');
+      if (!svc) { alert('Veldu þjónustu.'); return; }
+      const parsed = parseSvcName(svc);
       const serial = val('#bw-a-serial') ||
         ((job.num ? String(job.num).replace('#', 'SÆ-') : 'SÆ') + '-' + Date.now().toString(36).slice(-4).toUpperCase());
-      const row = { job_id: jobId, serial, type: val('#bw-a-type'), size: val('#bw-a-size'), service: val('#bw-a-service'), status: 'received' };
+      const row = { job_id: jobId, serial, type: parsed.type, size: parsed.size, service: parsed.service, status: 'received' };
       let inserted = null;
       try {
         if (DB.online && DB.sb) {
