@@ -558,6 +558,7 @@
             '<div class="bw-cname-row">' +
               `<div class="bw-cname">${esc(co.name)}</div>` +
               `<button class="bw-edit-verk" title="Breyta verki (nafn / sími)" onclick="event.stopPropagation();Workshop.editVerk('${jobIds}')">✏️</button>` +
+              `<button class="bw-edit-verk" title="Bæta við tæki" onclick="event.stopPropagation();Workshop.addUnit(${co.jobs[0] ? co.jobs[0].id : 0})">➕</button>` +
             '</div>' +
             `<div class="bw-cmeta">${co.jobs.length} verk · ${co.doneUnits}/${co.totalUnits} lokið${co.jobs[0] && digitsOnly(co.jobs[0].phone) ? ' · ☎ ' + esc(digitsOnly(co.jobs[0].phone)) : ''}</div>` +
           '</div>' +
@@ -917,6 +918,9 @@
           '<input class="bw-inp" id="bw-e-type" value="' + esc(u.type || '') + '" placeholder="t.d. ABC Duft">' +
           '<p class="bw-lab" style="margin-top:12px">Stærð</p>' +
           '<input class="bw-inp" id="bw-e-size" value="' + esc(u.size || '') + '" placeholder="t.d. 6 kg">' +
+          '<p class="bw-lab" style="margin-top:12px">Þjónusta</p>' +
+          '<input class="bw-inp" id="bw-e-service" value="' + esc(u.service || '') + '" placeholder="t.d. Yfirferð / Hleðsla" list="bw-svc-list">' +
+          '<datalist id="bw-svc-list"><option value="Yfirferð"></option><option value="Hleðsla"></option><option value="Skoðun"></option><option value="Viðgerð"></option><option value="Þrýstiprófun"></option></datalist>' +
           '<p class="bw-lab" style="margin-top:12px">Raðnúmer</p>' +
           '<input class="bw-inp" id="bw-e-serial" value="' + esc(u.serial || '') + '" placeholder="raðnúmer">' +
           '<div class="bw-erow">' +
@@ -1178,12 +1182,12 @@
     Workshop.saveUnitEdit = async function(jobId, unitId) {
       const ov = document.getElementById('bw-unit-ov'); if (!ov) return;
       const val = id => { const el = ov.querySelector(id); return el ? String(el.value || '').trim() : ''; };
-      const patch = { type: val('#bw-e-type'), size: val('#bw-e-size'), serial: val('#bw-e-serial') };
+      const patch = { type: val('#bw-e-type'), size: val('#bw-e-size'), service: val('#bw-e-service'), serial: val('#bw-e-serial') };
       try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update(patch).eq('id', unitId); }
       catch (e) { console.warn('[saveUnitEdit]', e); alert('Náði ekki að vista breytinguna.'); return; }
       const job = DB.getJob(jobId);
       const u = job && (job.units || []).find(x => x.id === unitId);
-      if (u) { u.type = patch.type; u.size = patch.size; u.serial = patch.serial; }
+      if (u) { u.type = patch.type; u.size = patch.size; u.service = patch.service; u.serial = patch.serial; }
       if (window.Toast && Toast.show) Toast.show('✏️ Tæki uppfært');
       if (Workshop._unitCtx) Workshop._unitCtx.edit = false;
       Workshop._renderUnitModal();
@@ -1246,6 +1250,58 @@
       } catch (e) { console.warn('[saveVerk]', e); alert('Náði ekki að vista breytinguna.'); return; }
       ids.forEach(id => { const j = DB.getJob(id); if (j) { j.customer = patch.customer; j.phone = patch.phone; } });
       if (window.Toast && Toast.show) Toast.show('✏️ Verk uppfært');
+      ov.remove();
+      Workshop.render();
+    };
+
+    // ── ➕ Bæta við tæki — insert a new verklidur row into a job ────────────
+    Workshop.addUnit = function(jobId) {
+      const job = DB.getJob(jobId); if (!job) return;
+      let ov = document.getElementById('bw-add-ov');
+      if (!ov) {
+        ov = document.createElement('div');
+        ov.id = 'bw-add-ov'; ov.className = 'bw-ov';
+        ov.addEventListener('click', e => { if (e.target === ov) ov.remove(); });
+        document.body.appendChild(ov);
+      }
+      ov.innerHTML = '<div class="bw-modal" style="width:420px">' +
+          '<div class="bw-mh"><div><div class="ser">➕ Bæta við tæki</div>' +
+            '<div class="ty">' + esc(job.customer || job.num || '') + '</div></div>' +
+            '<button class="x" onclick="document.getElementById(\'bw-add-ov\').remove()">✕</button></div>' +
+          '<div class="bw-mb">' +
+            '<p class="bw-lab">Tegund</p><input class="bw-inp" id="bw-a-type" placeholder="t.d. Duft">' +
+            '<p class="bw-lab" style="margin-top:12px">Stærð</p><input class="bw-inp" id="bw-a-size" placeholder="t.d. 6 kg">' +
+            '<p class="bw-lab" style="margin-top:12px">Þjónusta</p>' +
+            '<input class="bw-inp" id="bw-a-service" placeholder="t.d. Yfirferð / Hleðsla" list="bw-svc-list">' +
+            '<datalist id="bw-svc-list"><option value="Yfirferð"></option><option value="Hleðsla"></option><option value="Skoðun"></option><option value="Viðgerð"></option><option value="Þrýstiprófun"></option></datalist>' +
+            '<p class="bw-lab" style="margin-top:12px">Raðnúmer (valfrjálst)</p><input class="bw-inp" id="bw-a-serial" placeholder="sjálfvirkt ef tómt">' +
+            '<div class="bw-erow">' +
+              '<button class="bw-ebtn cancel" onclick="document.getElementById(\'bw-add-ov\').remove()">Hætta við</button>' +
+              '<button class="bw-ebtn save" onclick="Workshop.saveNewUnit(' + jobId + ')">➕ Bæta við</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      const t = ov.querySelector('#bw-a-type'); if (t) t.focus();
+    };
+    Workshop.saveNewUnit = async function(jobId) {
+      const ov = document.getElementById('bw-add-ov'); if (!ov) return;
+      const job = DB.getJob(jobId); if (!job) return;
+      const val = id => { const el = ov.querySelector(id); return el ? String(el.value || '').trim() : ''; };
+      const serial = val('#bw-a-serial') ||
+        ((job.num ? String(job.num).replace('#', 'SÆ-') : 'SÆ') + '-' + Date.now().toString(36).slice(-4).toUpperCase());
+      const row = { job_id: jobId, serial, type: val('#bw-a-type'), size: val('#bw-a-size'), service: val('#bw-a-service'), status: 'received' };
+      let inserted = null;
+      try {
+        if (DB.online && DB.sb) {
+          const { data, error } = await DB.sb.from('verklidur').insert(row).select().single();
+          if (error) throw error;
+          inserted = data;
+        }
+      } catch (e) { console.warn('[saveNewUnit]', e); alert('Náði ekki að bæta við tæki.'); return; }
+      const u = inserted || Object.assign({ id: Date.now() }, row);
+      job.units = job.units || []; job.units.push(u);
+      if (DB.cache && Array.isArray(DB.cache.units)) DB.cache.units.push(u);
+      if (window.Toast && Toast.show) Toast.show('➕ Tæki bætt við');
       ov.remove();
       Workshop.render();
     };
