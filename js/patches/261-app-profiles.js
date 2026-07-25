@@ -274,7 +274,13 @@
       // — „pulled circle". Undanskiljum þá svo þeir haldist hringlaga.
       'body.appmode #ars-main table button,body.appmode #ars-main table .akstur,body.appmode #ars-main table ._arsak-chip{min-height:0 !important;height:auto !important;padding-top:2px !important;padding-bottom:2px !important;line-height:1.1 !important}',
       // Full lárétt skrun á töflunni svo hægt sé að ná alla leið að „2026"-dálknum.
+      // Staða-pillan í síðasta dálki (grænn/blár/gulur) datt út af hægri brún —
+      // hún flæddi út fyrir skrun-breidd töflunnar. Víkkum töfluna + bætum
+      // hægri-fyllingu í síðasta reit svo pillan sitji ÖLL innan skrunsins.
       'body.appmode #ars-main ._ars-tblscroll{overflow-x:auto !important;-webkit-overflow-scrolling:touch;max-width:100vw !important;padding-bottom:8px}',
+      'body.appmode #ars-main ._ars-tblscroll table{min-width:1320px !important}',
+      'body.appmode #ars-main ._ars-tblscroll td:last-child,body.appmode #ars-main ._ars-tblscroll th:last-child{padding-right:26px !important}',
+      'body.appmode #ars-main ._ars-tblscroll td:last-child > div{justify-content:flex-start !important}',
     ];
     var st = document.createElement('style'); st.id = '_app-styles'; st.textContent = css.join('\n');
     document.head.appendChild(st);
