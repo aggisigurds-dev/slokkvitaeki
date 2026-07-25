@@ -21,7 +21,7 @@
     tilbuid: { label: 'Tilbúið', col: '#059669' },
     farid:   { label: 'Farið af verkstæði', col: '#7c3aed' },
   };
-  const DISP = { hladid: '🔋 Hlaðið', onytt: '❌ Ónýtt', nytt: '🆕 Keypt nýtt' };
+  const DISP = { yfirferd: '✅ Yfirfarið', hladid: '🔋 Hlaðið', onytt: '❌ Ónýtt', nytt: '🆕 Keypt nýtt' };
 
   let _shop = [], _loadedAt = 0, _busy = false, _injecting = false;
 
@@ -75,9 +75,9 @@
       const serialShort = String(u.serial || '').replace(/^.*-/, '').slice(0, 8);
       let foot = '';
       if (cs === 'null') foot = footBtn(u.id, 'komid', '✅ Komið', '#2563eb');
-      else if (cs === 'komid') foot = footBtn(u.id, 'hladid', '🔋 Hlaðið', '#16a34a') + footBtn(u.id, 'onytt', '❌ Ónýtt', '#dc2626') + footBtn(u.id, 'nytt', '🆕 Nýtt', '#d97706');
-      else if (cs === 'tilbuid') foot = chip(DISP[u.service_choice] || 'Tilbúið', '#059669', '#fff') + footBtn(u.id, 'farid', '➡️ Farið', '#7c3aed');
-      else if (cs === 'farid') foot = chip('🚚 Bíður skila', '#ede9fe', '#6d28d9', '#c4b5fd');
+      else if (cs === 'komid') foot = footBtn(u.id, 'yfirferd', '✅ Yfirfarið', '#2563eb') + footBtn(u.id, 'hladid', '🔋 Hlaðið', '#16a34a') + footBtn(u.id, 'onytt', '❌ Ónýtt', '#dc2626') + footBtn(u.id, 'nytt', '🆕 Nýtt', '#d97706');
+      else if (cs === 'tilbuid') foot = chip('Tilbúið til útkeyrslu', '#dcfce7', '#166534') + chip(DISP[u.service_choice] || 'Tilbúið', '#059669', '#fff', 'rgba(255,255,255,.4)') + footBtn(u.id, 'farid', '🚚 Sótt', '#7c3aed');
+      else if (cs === 'farid') foot = chip('✅ Tilbúið sótt', '#ede9fe', '#6d28d9', '#c4b5fd');
       return '<div class="bw-tile" title="' + esc((u.serial || '') + ' — ' + label) + '">' +
           '<button class="bw-tile-x" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.del(\'' + u.id + '\')" title="Eyða tæki (ef mistalið úr skýrslu)">✕</button>' +
           '<div class="bw-tile-body">' +
@@ -108,7 +108,8 @@
 
   // Aðgerðir — inline onclick kallar þessar (áreiðanlegt í þessu appi).
   async function act(id, a) {
-    const P = { komid: { custody_status: 'komid' }, hladid: { custody_status: 'tilbuid', service_choice: 'hladid' },
+    const P = { komid: { custody_status: 'komid' }, yfirferd: { custody_status: 'tilbuid', service_choice: 'yfirferd' },
+      hladid: { custody_status: 'tilbuid', service_choice: 'hladid' },
       onytt: { custody_status: 'tilbuid', service_choice: 'onytt' }, nytt: { custody_status: 'tilbuid', service_choice: 'nytt' },
       farid: { custody_status: 'farid' } }[a];
     if (!P) return;
@@ -167,6 +168,6 @@
   else watch();
 
   window.VkLoaned = { inject: () => inject(true), act: act, del: del };
-  console.log('[verkstaedi-loaned] v4 installed (inline onclick + bw-row card form)');
+  console.log('[verkstaedi-loaned] v5 installed (+ Yfirfarið service + tilbúið-til-útkeyrslu/sótt labels)');
 })();
 /* === END VERKSTÆÐI: KOMIÐ ÚR ÞJÓNUSTU === */
