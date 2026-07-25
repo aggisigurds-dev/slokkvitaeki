@@ -282,6 +282,17 @@
       'body.appmode #ars-main ._ars-tblscroll table{min-width:1320px !important}',
       'body.appmode #ars-main ._ars-tblscroll td:last-child,body.appmode #ars-main ._ars-tblscroll th:last-child{padding-right:26px !important}',
       'body.appmode #ars-main ._ars-tblscroll td:last-child > div{justify-content:flex-start !important}',
+      // In-app síðu-ritill (⚙ Síður) — yfirlagt spjald
+      '#_app-pgedit{position:fixed;inset:0;z-index:2147482000;background:rgba(6,7,10,.55);display:none;align-items:flex-end;justify-content:center}',
+      '#_app-pgedit ._pe-card{background:#fff;width:100%;max-width:560px;max-height:82vh;display:flex;flex-direction:column;border-radius:20px 20px 0 0;box-shadow:0 -10px 40px rgba(0,0,0,.4)}',
+      '#_app-pgedit ._pe-h{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 18px 8px;font-size:18px;font-weight:800;color:#11141c}',
+      '#_app-pgedit ._pe-h button{font:inherit;font-size:15px;font-weight:700;padding:9px 15px;border-radius:10px;border:1px solid #d7dce4;background:#f1f5f9;color:#334155;cursor:pointer;min-height:44px}',
+      '#_app-pgedit ._pe-sub{padding:0 18px 8px;font-size:13px;color:#64748b}',
+      '#_app-pgedit ._pe-list{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:6px 12px calc(20px + env(safe-area-inset-bottom,0px))}',
+      '#_app-pgedit ._pe-row{display:flex;align-items:center;gap:13px;padding:13px 10px;border-radius:12px;cursor:pointer;font-size:16.5px;color:#1f2937}',
+      '#_app-pgedit ._pe-row:active{background:#f1f5f9}',
+      '#_app-pgedit ._pe-row input{width:24px;height:24px;accent-color:#0e7a4f;flex:none}',
+      '#_app-pgedit ._pe-row .e{font-size:22px}',
     ];
     var st = document.createElement('style'); st.id = '_app-styles'; st.textContent = css.join('\n');
     document.head.appendChild(st);
@@ -367,6 +378,7 @@
     var hdr = document.getElementById('_app-hdr') || document.createElement('div');
     hdr.id = '_app-hdr'; hdr.style.display = ''; hdr.style.background = 'linear-gradient(180deg,' + a.color + ',' + a.dark + ')';
     hdr.innerHTML = '<div class="nm">' + a.emoji + ' ' + esc(a.name) + '</div>' +
+      (a.standalone ? '' : '<button id="_app-pages" type="button" title="Velja síður í appinu">⚙ Síður</button>') +
       '<button class="_app-install" data-always="1" id="_app-inst2" type="button">⤓ Setja upp</button>' +
       '<button id="_app-exit" type="button" title="Loka appi">✕</button>';
     if (!hdr.parentNode) document.body.appendChild(hdr);
@@ -390,11 +402,14 @@
       setManifest(a.manifest); doInstall();
     });
     hdr.querySelector('#_app-exit').addEventListener('click', function () { location.href = location.origin + '/'; });
+    var _pgBtn = hdr.querySelector('#_app-pages');
+    if (_pgBtn) _pgBtn.addEventListener('click', openPagesEditor);
 
     setManifest(a.manifest);   // install captures THIS app
     syncFrameBottom();
-    // Endurbygging (vaktarinn) á EKKI að hoppa til baka á fyrstu síðu.
-    goPage(_curPage || pages[0]);
+    // Endurbygging (vaktarinn) á EKKI að hoppa til baka á fyrstu síðu — nema
+    // núverandi síða hafi verið tekin úr appinu (þá förum við á home/fyrstu).
+    goPage((_curPage && pages.indexOf(_curPage) !== -1) ? _curPage : pages[0]);
   }
   // Iframe-botninn = raunhæð navsins (var harðkóðað 150px — 3ja raða nav er ~225px
   // svo neðsti hluti síðunnar lenti Á BAK VIÐ navið og virtist klipptur).
@@ -423,6 +438,41 @@
       } catch (_) {}
     }, 1500);
   }
+  // ── In-app síðu-ritill ───────────────────────────────────────────────────────
+  // Áður var EINA leiðin til að bæta síðu við app að fara á Öpp-launcher-síðuna í
+  // vafranum → haka → og svo var uppsetta appið í símanum ekki uppfært fyrr en
+  // það var tekið út og sett upp aftur (buildShell keyrir bara við ferskt boot).
+  // Núna má breyta síðunum BEINT í appinu: haka → saveCfg → buildShell() endur-
+  // teiknar navið strax. Engin endur-uppsetning.
+  function openPagesEditor() {
+    var a = APP_BY_KEY[ACTIVE]; if (!a || a.standalone) return;
+    var selSet = {}; pagesFor(a.key).forEach(function (k) { selSet[k] = 1; });
+    var ov = document.getElementById('_app-pgedit') || document.createElement('div');
+    ov.id = '_app-pgedit';
+    ov.innerHTML =
+      '<div class="_pe-card">' +
+        '<div class="_pe-h"><span>⚙ Síður í ' + esc(a.name) + '</span><button id="_pe-close" type="button">Loka</button></div>' +
+        '<div class="_pe-sub">Hakaðu við síðurnar sem eiga að vera í appinu — breytist strax, engin endur-uppsetning.</div>' +
+        '<div class="_pe-list">' + PAGES.map(function (p) {
+          return '<label class="_pe-row"><input type="checkbox" data-k="' + p.k + '"' + (selSet[p.k] ? ' checked' : '') + '>' +
+            '<span class="e">' + p.emoji + '</span><span>' + esc(p.label) + '</span></label>';
+        }).join('') + '</div>' +
+      '</div>';
+    if (!ov.parentNode) document.body.appendChild(ov);
+    ov.style.display = 'flex';
+    ov.querySelector('#_pe-close').addEventListener('click', function () { ov.style.display = 'none'; });
+    ov.addEventListener('click', function (e) { if (e.target === ov) ov.style.display = 'none'; });
+    ov.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+      cb.addEventListener('change', function () {
+        var checked = Array.prototype.slice.call(ov.querySelectorAll('input[type="checkbox"]:checked')).map(function (x) { return x.dataset.k; });
+        if (!checked.length) { cb.checked = true; return; }         // alltaf a.m.k. ein síða
+        var picked = PAGES.map(function (p) { return p.k; }).filter(function (k) { return checked.indexOf(k) !== -1; });
+        saveCfg(a.key, picked);
+        buildShell();                                               // endurteiknar navið LIFANDI
+      });
+    });
+  }
+
   function goPage(k) {
     _curPage = k;
     var p = PAGE_BY_KEY[k];
