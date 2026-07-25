@@ -234,10 +234,10 @@
       'body.appmode .view,body.appmode .view.active{margin-left:0 !important;width:100vw !important;max-width:100vw !important;left:0 !important}',
       'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){margin-left:0 !important;width:100vw !important;max-width:100vw !important}',
       'body.appmode .main-panel{margin-left:0 !important;margin-right:0 !important;max-width:none !important}',
-      'body.appmode .view.active{padding-top:50px !important;padding-bottom:154px !important}',
+      'body.appmode .view.active{padding-top:50px !important;padding-bottom:250px !important}',
       // Beat patch 230's ON+':not(#id)…{padding-top:160px}` (id-level specificity) when the
       // Brunastál banner attr is present — otherwise the content sits 160px below my header.
-      'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:50px !important;padding-bottom:154px !important}',
+      'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:50px !important;padding-bottom:250px !important}',
       '#_app-hdr{position:fixed;top:0;left:0;right:0;height:50px;z-index:2147481001;display:flex;align-items:center;gap:10px;padding:0 12px;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)}',
       '#_app-hdr .nm{font-size:16px;font-weight:800;flex:1;display:flex;align-items:center;gap:8px}',
       '#_app-hdr button{font:inherit;font-size:13px;font-weight:700;height:34px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.14);color:#fff;cursor:pointer}',
@@ -248,11 +248,11 @@
       // haldast í einni röð og skrunast lárétt (sama og Verkborð-lausnin).
       '#_app-nav{position:fixed;bottom:0;left:0;right:0;z-index:2147481001;display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:7px;background:#0c0d10;border-top:1px solid #26262c;padding:9px 9px calc(9px + env(safe-area-inset-bottom,0px));box-shadow:0 -3px 14px rgba(0,0,0,.35)}',
       '#_app-nav::-webkit-scrollbar{display:none}',
-      '#_app-nav button{flex:1 0 78px;min-width:78px;background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.66);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:9px 3px;border-radius:13px;min-height:64px;text-align:center;line-height:1.15;overflow:hidden}',
-      '#_app-nav button .e{font-size:25px;line-height:1}',
+      '#_app-nav button{flex:1 0 84px;min-width:84px;background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.66);font:inherit;font-size:14.5px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:16px 4px;border-radius:15px;min-height:128px;text-align:center;line-height:1.15;overflow:hidden}',
+      '#_app-nav button .e{font-size:36px;line-height:1}',
       '#_app-nav button.on{color:#fff;background:rgba(255,255,255,.08)}',
       // external-page iframe host (sits between the header and the bottom nav)
-      '#_app-frame{position:fixed;top:50px;left:0;right:0;bottom:150px;z-index:2147481000;background:#fff;display:none}',
+      '#_app-frame{position:fixed;top:50px;left:0;right:0;bottom:250px;z-index:2147481000;background:#fff;display:none}',
       '#_app-frame iframe{width:100%;height:100%;border:0;display:block}',
       // ── App-mode readability: bigger text + thumb-friendly tap targets. Scoped to
       //    body.appmode so the office desktop view is untouched. ──
@@ -267,7 +267,14 @@
       // headings a step up too
       'body.appmode .view h1{font-size:30px !important}',
       'body.appmode .view h2,body.appmode .view h3{font-size:21px !important}',
-      '#_app-nav button{font-size:13.5px}',
+      '#_app-nav button{font-size:14.5px}',
+      // Fyrirtæki í þjónustu-taflan (#ars-main) í appmode: litlu hringlaga
+      // hnapparnir (forgangur ❗ / akstur 🚗 / merkja ✓ / staða) teygðust í
+      // 50px sporöskjur af thumb-target reglunni (.view button{min-height:50px})
+      // — „pulled circle". Undanskiljum þá svo þeir haldist hringlaga.
+      'body.appmode #ars-main table button,body.appmode #ars-main table .akstur,body.appmode #ars-main table ._arsak-chip{min-height:0 !important;height:auto !important;padding-top:2px !important;padding-bottom:2px !important;line-height:1.1 !important}',
+      // Full lárétt skrun á töflunni svo hægt sé að ná alla leið að „2026"-dálknum.
+      'body.appmode #ars-main ._ars-tblscroll{overflow-x:auto !important;-webkit-overflow-scrolling:touch;max-width:100vw !important;padding-bottom:8px}',
     ];
     var st = document.createElement('style'); st.id = '_app-styles'; st.textContent = css.join('\n');
     document.head.appendChild(st);

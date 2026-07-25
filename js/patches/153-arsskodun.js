@@ -1765,7 +1765,7 @@
     const ovr = overrideOn();
     return `
       <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;overflow:hidden">
-        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <div class="_ars-tblscroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
         <table style="width:100%;min-width:1180px;border-collapse:collapse;font-size:12px">
           <thead style="background:var(--surface2);border-bottom:1px solid var(--brd)">
             <tr style="text-align:left;color:var(--ink2);font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.04em">
