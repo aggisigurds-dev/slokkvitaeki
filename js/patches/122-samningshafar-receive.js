@@ -549,7 +549,11 @@
         afslattur: 0,
         samtals: draftTotal,
         greitt_med: 'greitt_sidar',
-        athugasemdir: 'Drög — bíður Sótt ✓',
+        // NB: staða er GEYMD Í status-dálkinum ('drog'), EKKI í athugasemdum —
+        // athugasemdir PRENTAST á reikninginn (vegna-lína). Áður stóð hér
+        // 'Drög — bíður Sótt ✓' sem lak á prentaða reikninginn (Verkefnalisti
+        // ed7fd0d1). Höfum reitinn tóman; drög-listinn (143) les status-dálkinn.
+        athugasemdir: '',
         status: 'drog',
         source: 'sott'
       };
