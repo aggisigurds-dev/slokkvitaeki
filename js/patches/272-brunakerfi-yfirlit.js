@@ -23,7 +23,9 @@
 
   const state = { sortCol: 'name', sortDir: 'asc', search: '', month: 0, filter: 'all',
     // ☰ þétt / ▤ ítarlegt (ósk Agnars 2026-07-21 — símarnir sýndu ~8 raðir)
-    view: (function () { try { return localStorage.getItem('bky_view') || 'full'; } catch (_) { return 'full'; } })() };
+    // Sjálfgefið ÞÉTT á síma-breidd (uppsetta Brunakerfi-appið opnast í símaham),
+    // ÍTARLEGT á tölvu — vistað val (bky_view) yfirskrifar alltaf.
+    view: (function () { var d = (typeof window !== 'undefined' && window.innerWidth && window.innerWidth <= 768) ? 'thett' : 'full'; try { return localStorage.getItem('bky_view') || d; } catch (_) { return d; } })() };
   let _rows = null, _loading = false;
 
   function SB() { return (window.DB && DB.sb) || null; }
