@@ -183,6 +183,8 @@
     var note = s
       .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]\s*verður\s+greitt\s+við\s+afhendingu\s*[—\-:]?\s*/i, '')
       .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]?\s*/i, '')
+      // 2026-07-26: strippa leikna drög-fræið „Drög — bíður Sótt ✓" (patch 122).
+      .replace(/^\s*Drög\s*[—–\-]\s*bíður\b[^\n]*/i, '')
       .replace(/\bKt[:.]?\s*\d{6}-?\d{4}/i, '')
       .replace(/\[?\s*Sótt[\s:]*\d{4}-\d{2}-\d{2}\s*\]?/i, '')
       .replace(/\s*(?:Ekki afhent|Viðbót|Afsláttur\s+(?:við afhendingu|úr sölu)|Athugasemd|Greiðsla)\s*:[\s\S]*$/i, '')

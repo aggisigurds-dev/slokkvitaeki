@@ -469,6 +469,9 @@
       let cleaned = String(ctx.vegna)
         .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]\s*verður\s+greitt\s+við\s+afhendingu\s*[—\-:]?\s*/i, '')
         .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]?\s*/i, '')
+        // 2026-07-26: eldri drög báru fræið „Drög — bíður Sótt ✓" (patch 122) sem
+        // laup á reikninginn — staðan á heima í status-dálkinum, ekki hér. Strippa það.
+        .replace(/^\s*Drög\s*[—–\-]\s*bíður\b[^\n]*/i, '')
         .trim();
       if (cleaned) {
         // 2026-05-27: Aggi asked to clean up the chaotic vegna line.
