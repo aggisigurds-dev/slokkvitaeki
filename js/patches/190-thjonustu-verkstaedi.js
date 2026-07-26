@@ -74,10 +74,12 @@
   }
   // Bráðabirgða-merkingar (single-select) á hverju Í-vinnslu korti.
   // [key, label, bg, tx, bd]
+  // Rólegri (muted) litir en áður — halda merkingu (warning/varúð) en falla að
+  // vinstri-dálks stílnum í stað hávaðasamra rauð/blárra fylla (Agnar 2026-07-26).
   const MARK_DEFS = [
-    ['haett',         'Hætt',                    '#fef2f2', '#b91c1c', '#fecaca'],
-    ['uppfaera_dags', 'Eftir að uppfæra dags.',  '#fffbeb', '#a16207', '#fde68a'],
-    ['reikn_adur',    'Reikningur sendur áður',  '#eff6ff', '#1d4ed8', '#bfdbfe']
+    ['haett',         'Hætt',                    '#f4ecec', '#8a4a46', '#e2cdcb'],
+    ['uppfaera_dags', 'Eftir að uppfæra dags.',  '#f4efe4', '#836a38', '#e3d8c1'],
+    ['reikn_adur',    'Reikningur sendur áður',  '#eceff4', '#4f5d76', '#d3dae5']
   ];
 
   // View mode — "list" (gamla miðjan, sjálfgefið / uppáhald) eða "cards".
@@ -113,6 +115,86 @@
       _reik2026 = kts;
     } catch (_) {}
     render();
+  }
+
+  // ── Árs-skjöl (úttektarskýrsla + reikningur) per fyrirtæki — batchað. ──────
+  // Viðbót ofan á loadReik2026 (sem rekur AÐEINS reikningsveru per kt fyrir
+  // afleiddu skrefin): hér eru sóttar SJÁLFAR skjala-raðirnar svo hver röð geti
+  // sýnt 📄 Skýrslu-hlekk, 🧾 R-nr-hlekk og (úr payday_invoices_slokk eftir kt)
+  // upphæð + greiðslustöðu. Ein fyrirspurn per gagnategund yfir ALLA sýnilega
+  // þjónustu-kúnna — aldrei per-röð. Best-effort: mistök skilja borðið eftir
+  // ósnert (kortin sleppa bara auka-línunni).
+  let _yearDocs = null;      // Map<co.id, {skyrsla|null, reik|null}>
+  let _yearDocsLoaded = false;
+  let _pdByKt = null;        // Map<kt(digits), payday-röð>
+  function docUrl(d) {
+    if (!d) return '';
+    if (d.public_url) return d.public_url;
+    if (d.drive_file_id) return 'https://drive.google.com/file/d/' + encodeURIComponent(d.drive_file_id) + '/view';
+    return '';
+  }
+  async function loadYearDocs() {
+    try {
+      const sb = (window.DB && DB.sb); if (!sb) return;
+      const cos = (window.Companies && Companies.list) || [];
+      const svc = cos.filter(c => c && !c.deleted_at && c.er_i_thjonustu !== false);
+      // customer_documents — skýrsla + reikningur ársins, tengt gegnum
+      // customer_base_id (spine-FK-inn sem fyrirtaeki ber beint).
+      const baseIds = Array.from(new Set(svc.map(c => c.customer_base_id).filter(v => v != null)));
+      const byBase = new Map();   // baseId -> {skyrsla:[], reik:[]}
+      for (let i = 0; i < baseIds.length; i += 300) {
+        const chunk = baseIds.slice(i, i + 300);
+        const r = await sb.from('customer_documents')
+          .select('customer_base_id,fyrirtaeki_id,doc_type,invoice_number,public_url,drive_file_id')
+          .in('customer_base_id', chunk).eq('year', curYear)
+          .in('doc_type', ['uttektarskyrsla', 'reikningur']);
+        (r.data || []).forEach(d => {
+          let e = byBase.get(d.customer_base_id); if (!e) { e = { skyrsla: [], reik: [] }; byBase.set(d.customer_base_id, e); }
+          (d.doc_type === 'reikningur' ? e.reik : e.skyrsla).push(d);
+        });
+      }
+      // Ein skýrsla + einn reikningur per fyrirtæki: rekstrarfélög (margir staðir
+      // á sömu kt/base) → veldu skjalið þar sem fyrirtaeki_id === þessi staður,
+      // annars fyrsta skjal base-sins.
+      const pick = (arr, coId) => {
+        if (!arr || !arr.length) return null;
+        return arr.find(d => d.fyrirtaeki_id != null && String(d.fyrirtaeki_id) === String(coId)) || arr[0];
+      };
+      const dm = new Map();
+      svc.forEach(c => {
+        const e = c.customer_base_id != null ? byBase.get(c.customer_base_id) : null;
+        if (!e) return;
+        dm.set(c.id, { skyrsla: pick(e.skyrsla, c.id), reik: pick(e.reik, c.id) });
+      });
+      _yearDocs = dm;
+      // payday_invoices_slokk eftir kt (upphæð + greiðslustaða). Besta röð per kt
+      // á árinu: greidd fyrst, annars nýjust eftir created_date.
+      const kts = Array.from(new Set(svc.map(c => digits(c.kennitala)).filter(k => k.length >= 10 && k !== '9999999999')));
+      const pm = new Map();
+      for (let i = 0; i < kts.length; i += 300) {
+        const chunk = kts.slice(i, i + 300);
+        const r = await sb.from('payday_invoices_slokk')
+          .select('kt,number,amount_total,status,paid_date,due_date,created_date')
+          .in('kt', chunk);
+        (r.data || []).forEach(p => {
+          const yr = String(p.created_date || p.due_date || '').slice(0, 4);
+          if (yr && +yr !== curYear) return;   // aðeins yfirstandandi ár
+          const prev = pm.get(p.kt);
+          if (!prev) { pm.set(p.kt, p); return; }
+          const better = (!!p.paid_date && !prev.paid_date) ||
+            (String(p.created_date || '') > String(prev.created_date || ''));
+          if (better) pm.set(p.kt, p);
+        });
+      }
+      _pdByKt = pm;
+    } catch (_) {}
+    render();
+  }
+  // Greiðslustaða payday-raðar → { txt, paid } (rólegur litur á pillunni).
+  function pdStatus(p) {
+    const s = String((p && p.status) || '').toLowerCase();
+    const paid = !!(p && p.paid_date) || /paid|greid|greitt/.test(s);
+    return paid ? { txt: 'greitt', paid: true } : { txt: 'sendur', paid: false };
   }
 
   const SORTERS = {
@@ -236,7 +318,16 @@
       // note
       '#' + VIEW_ID + ' .sv-note{width:100%;box-sizing:border-box;font:inherit;font-size:12.5px;line-height:1.45;padding:7px 9px;border:1px solid var(--brd);border-radius:9px;resize:vertical;min-height:38px;color:var(--ink1);background:var(--bg)}',
       '#' + VIEW_ID + ' .sv-note:focus{outline:none;border-color:#3b82f6;background:var(--surface)}',
-      '#' + VIEW_ID + ' .sv-acts{display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--brd);padding-top:9px}'
+      '#' + VIEW_ID + ' .sv-acts{display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--brd);padding-top:9px}',
+      // Skjala-lína ársins (📄 Skýrsla · ✉️ Senda · 🧾 R-nr · payday-pilla) — rólegir litir
+      '#' + VIEW_ID + ' .sv-docsline{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:1px 0}',
+      '#' + VIEW_ID + ' .sv-doclink{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:8px;border:1px solid var(--brd);background:var(--bg);color:var(--ink2);text-decoration:none;cursor:pointer;font-family:inherit}',
+      '#' + VIEW_ID + ' .sv-doclink:hover{border-color:#94a3b8;color:var(--ink1)}',
+      '#' + VIEW_ID + ' .sv-doclink.reik{color:#4f5d76}',
+      '#' + VIEW_ID + ' .sv-doclink.send{background:#eef3ec;border-color:#cfe0cb;color:#3f6b3a}',
+      '#' + VIEW_ID + ' .sv-docmuted{font-size:11px;color:var(--ink4);font-style:italic}',
+      '#' + VIEW_ID + ' .sv-pdpill{font-family:"Space Mono",monospace;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;border:1px solid #d9c7b0;background:#f5efe1;color:#7a5f2a}',
+      '#' + VIEW_ID + ' .sv-pdpill.paid{border-color:#c3ddc7;background:#eef6ef;color:#3f6b3a}'
     ].join('');
     document.head.appendChild(s);
   }
@@ -288,11 +379,12 @@
   function buckets() {
     const map = arsMap();
     const cos = (window.Companies && Companies.list) || [];
-    const out = { dagskra: [], vinnsla: [], buid: [] };
+    const out = { dagskra: [], vinnsla: [], buid: [], serviceTotal: 0 };
     _reikCoIds = new Set();
     cos.forEach(co => {
       if (!co || co.deleted_at) return;
       if (co.er_i_thjonustu === false) return;          // only service companies
+      out.serviceTotal++;                                // heildar-þjónustufjöldi (yfirlitsband)
       const a = map[String(co.id)] || {};
       const ly = +a.last_year_inspected || 0;
       const fy = +a.field_inspected_year || 0;
@@ -313,7 +405,10 @@
         tekjur: +info.estimated_yearly || 0,
         hasDraft: hasDraft,
         doneDocs: hasFullDocs(co.id),  // already has skýrsla + reikningur for the year
-        reik2026: hasReik   // 2026 reikningur á skrá (customer_documents)
+        reik2026: hasReik,   // 2026 reikningur á skrá (customer_documents)
+        netfang: co.netfang || '',   // fyrir ✉️ senda-glugga
+        docs: _yearDocs ? (_yearDocs.get(co.id) || null) : null,   // {skyrsla,reik} ársins
+        pd: _pdByKt ? (_pdByKt.get(digits(co.kennitala)) || null) : null   // payday-krafa ársins
       };
       if (ly === curYear) out.buid.push(card);
       else if (fy === curYear || hasDraft) out.vinnsla.push(card);   // started OR has a saved draft
@@ -346,6 +441,33 @@
   function openCompany(id) { if (window.VidskDetail && VidskDetail.show) return VidskDetail.show(id); if (window.Companies && Companies.openDetail) return Companies.openDetail(id); }
   function openReport(id) { if (window.CompanyInspectionReport && CompanyInspectionReport.open) return CompanyInspectionReport.open(id); if (window.VisitReport && VisitReport.open) return VisitReport.open(id); openCompany(id); }
 
+  // ✉️ Senda úttektarskýrslu ársins í tölvupósti. Endurnýtir ReceiptSender
+  // (patch 254): compose-gluggi (forfyllt netfang, ALLTAF breytanlegt/leyfð
+  // vistun) + gmail-send sem sækir skjalið server-megin (public_url eða driveId).
+  // ReceiptSender.buildInvoiceBlob teiknar AÐEINS reikninga, svo skýrslan er send
+  // sem núverandi customer_documents-skrá (URL/Drive-id) — ekki endurteiknuð.
+  function sendSkyrsla(id) {
+    const docs = _yearDocs && _yearDocs.get(id);
+    const d = docs && docs.skyrsla;
+    if (!d) { toast('Engin úttektarskýrsla ' + curYear + ' fannst'); return; }
+    const co = ((window.Companies && Companies.list) || []).find(c => String(c.id) === String(id)) || {};
+    const nafn = co.nafn || ('#' + id);
+    const filename = (nafn.replace(/\s+/g, ' ').trim() + ' - úttektarskýrsla ' + curYear + '.pdf');
+    if (window.ReceiptSender && ReceiptSender.sendDoc) {
+      ReceiptSender.sendDoc({
+        kind: 'skyrsla', filename: filename,
+        url: d.public_url || undefined,
+        driveId: (!d.public_url && d.drive_file_id) ? d.drive_file_id : undefined,
+        to: co.netfang || '', nafn: nafn, ar: curYear
+      });
+      return;
+    }
+    // Fallback — opna skjalið + tilkynning (ekkert sendikerfi til staðar).
+    const u = docUrl(d);
+    if (u) window.open(u, '_blank');
+    toast('Sendikerfi ekki tiltækt — opnaði skýrsluna');
+  }
+
   function btn(bg, tx, bd) { return 'padding:6px 10px;border:1px solid ' + bd + ';border-radius:8px;background:' + bg + ';color:' + tx + ';font-size:11.5px;font-weight:700;cursor:pointer'; }
 
   // ── Shared card pieces (used by both list + cards mode) ──────────────────
@@ -357,6 +479,34 @@
       (r.units > 0 ? '<span style="font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;background:#eef1f6;color:#475569;border:1px solid #cbd5e1;white-space:nowrap">🧯 ' + r.units + ' einingar</span>' : '') +
       (r.tekjur > 0 ? '<span style="font-family:\'Space Mono\',monospace;font-size:12px;font-weight:700;color:#11141c;align-self:center" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">áætl. ' + fmtKr(r.tekjur) + '</span>' : '') +
       '</div>';
+  }
+  // Skjala-lína ársins: 📄 Skýrsla-hlekkur + ✉️ Senda · 🧾 R-nr-hlekkur +
+  // upphæð/greiðslustaða (payday). Rólegir litir, birtist á hverri röð.
+  function docsLine(r) {
+    const parts = [];
+    const sk = r.docs && r.docs.skyrsla;
+    if (sk) {
+      const u = docUrl(sk);
+      if (u) parts.push('<a href="' + esc(u) + '" target="_blank" rel="noopener" class="sv-doclink" title="Opna úttektarskýrslu ' + curYear + '">📄 Skýrsla ' + curYear + '</a>');
+      parts.push('<button class="_sv-send sv-doclink send" data-id="' + r.id + '" title="Senda úttektarskýrslu í tölvupósti">✉️ Senda</button>');
+    } else {
+      parts.push('<span class="sv-docmuted">engin skýrsla ' + curYear + '</span>');
+    }
+    const re = r.docs && r.docs.reik;
+    if (re) {
+      const u = docUrl(re);
+      const rnr = re.invoice_number ? esc(re.invoice_number) : ('Reikningur ' + curYear);
+      parts.push(u
+        ? '<a href="' + esc(u) + '" target="_blank" rel="noopener" class="sv-doclink reik" title="Opna reikning">🧾 ' + rnr + '</a>'
+        : '<span class="sv-doclink reik">🧾 ' + rnr + '</span>');
+    }
+    if (r.pd) {
+      const st = pdStatus(r.pd);
+      const amt = fmtKr(r.pd.amount_total);
+      parts.push('<span class="sv-pdpill' + (st.paid ? ' paid' : '') + '" title="Payday-krafa ' + curYear + '">' + (amt ? amt + ' · ' : '') + esc(st.txt) + '</span>');
+    }
+    if (!parts.length) return '';
+    return '<div class="sv-docsline">' + parts.join('') + '</div>';
   }
   // gamli stíllinn — skref sem pillur (list mode)
   function stepPills(r) {
@@ -436,14 +586,14 @@
   // Í-vinnslu kort — list mode (gamli stíllinn) + merkingar + nóta
   function listCard(r) {
     return '<div class="sv-card' + (r.mark === 'haett' ? ' haett' : '') + '">' +
-      docAlert(r) + reikAlert(r) + nameBlock(r, false) + metaChips(r) + aminningLine(r) + stepPills(r) + marks(r) + note(r) + vinnslaActs(r) + '</div>';
+      docAlert(r) + reikAlert(r) + nameBlock(r, false) + metaChips(r) + docsLine(r) + aminningLine(r) + stepPills(r) + marks(r) + note(r) + vinnslaActs(r) + '</div>';
   }
   // Í-vinnslu kort — cards mode (nýi stíllinn með stiku)
   function gridCard(r) {
     return '<div class="sv-card' + (r.mark === 'haett' ? ' haett' : '') + '">' +
       docAlert(r) + reikAlert(r) +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' + nameBlock(r, true) + metaChips(r) + '</div>' +
-      stepper(r) + marks(r) + note(r) + aminningLine(r, 90) + vinnslaActs(r) + '</div>';
+      docsLine(r) + stepper(r) + marks(r) + note(r) + aminningLine(r, 90) + vinnslaActs(r) + '</div>';
   }
   // Í-vinnslu kort — wide mode (comp-útlitið: nafn+chips, full-label stika í
   // gráum borða, merkingar undir; hægra megin nóta → Opna/Skýrsla/Búið → Afmerkja)
@@ -460,6 +610,7 @@
       '<div class="sv-wide-l">' +
         docAlert(r) + reikAlert(r) +
         '<div class="sv-wide-row">' + nameBlock(r, true) + metaChips(r) + '</div>' +
+        docsLine(r) +
         stepperWide(r) +
         marks(r) +
         aminningLine(r) +
@@ -479,10 +630,20 @@
     ensureView(); injectStyles();
     const v = viewEl(); if (!v) return;
     if (!_reik2026Loaded) { _reik2026Loaded = true; loadReik2026(); }   // once → re-renders with reikningur-badges
+    // once (þegar Companies.list er komið) → sækir árs-skjöl + payday, endurteiknar
+    if (!_yearDocsLoaded && (window.Companies && Companies.list && Companies.list.length)) { _yearDocsLoaded = true; loadYearDocs(); }
     const b = buckets();
     b.vinnsla.sort(SORTERS[_sort] || SORTERS.name);   // röðun valin af notanda
     const fmtSum = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.', ',') + ' m.kr.' : (n > 0 ? Math.round(n / 1000) + ' þ.kr.' : '');
     const vinnslaSum = b.vinnsla.reduce((s, r) => s + (+r.tekjur || 0), 0);
+    // Yfirlitsband ársins — reiknað úr sömu gögnum og þegar eru hlaðin (skref +
+    // customer_documents): N í þjónustu · úttekt búin · skýrsla send · reikn. sendur.
+    const _all = b.dagskra.concat(b.vinnsla, b.buid);
+    const ovN     = b.serviceTotal || _all.length;
+    const ovUttekt = _all.filter(r => r.steps.uttekt).length;
+    const ovSend   = _all.filter(r => r.steps.send || (r.docs && r.docs.skyrsla)).length;
+    const ovReik   = _all.filter(r => r.steps.reikningur || r.reik2026 || (r.docs && r.docs.reik)).length;
+    const statChip = (emoji, n, label) => '<span class="sv-chip" style="cursor:default"><span class="n">' + n + '</span> ' + emoji + ' ' + esc(label) + '</span>';
 
     // Collapsible side drawers (collapsed by default).
     function drawerRows(list, withStart) {
@@ -545,6 +706,13 @@
         pill('á dagskrá', b.dagskra.length, { fg: '#b45309', bg: '#fffbeb', bd: '#fde68a', dot: '#b45309' }, { toggle: 'dagskra', open: _openDagskra }) +
         pill('búin í ár', b.buid.length, { fg: '#047857', bg: '#ecfdf5', bd: '#a7f3d0', dot: '#047857' }, { toggle: 'buid', open: _openBuid }) +
       '</div>' +
+      // Yfirlit ársins (þjónustuhringurinn) — rólegar sv-chip tölur.
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin:0 2px 16px">' +
+        statChip('🏢', ovN, 'fyrirtæki í þjónustu') +
+        statChip('🔍', ovUttekt, 'úttekt búin') +
+        statChip('📄', ovSend, 'skýrsla send') +
+        statChip('🧾', ovReik, 'reikningur sendur') +
+      '</div>' +
       dagskraDrawer + buidDrawer + body + '</div>';
 
     // view-mode toggle
@@ -568,6 +736,11 @@
       else if (act === 'reopen') reopen(id);
       else if (act === 'unstart') unVinnsla(id);
       else if (act === 'removedone') { toast('Fært í „Búið í ár“ — komið með skýrslu + reikning'); markBuid(id); }
+    }));
+    // ✉️ Senda úttektarskýrslu ársins í tölvupósti (ReceiptSender-gluggi)
+    v.querySelectorAll('._sv-send').forEach(bn => bn.addEventListener('click', e => {
+      e.stopPropagation();
+      sendSkyrsla(+bn.dataset.id);
     }));
     // follow-up steps (pills + stepper share class).
     // Sync í Fyrirtæki í þjónustu (153): skref sett Á ⇒ árið telst hafið
