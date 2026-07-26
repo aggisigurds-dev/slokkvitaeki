@@ -40,8 +40,9 @@
   // segir að búið sé að mæta á staðinn, á undan því að úttektin sjálf klárist.
   const STEPS_KEY = 'steps_' + curYear;
   const STEP_DEFS = [
-    ['farid',      'Farið á verkstað', 'Farið'],
-    ['uttekt',     'Úttekt búin',      'Úttekt'],
+    ['farid',       'Farið á verkstað', 'Farið'],
+    ['averkstaedi', 'Á verkstæði',      'Verkst.'],
+    ['uttekt',      'Úttekt búin',      'Úttekt'],
     ['skyrsla',    'Skýrsla tilbúin',  'Skýrsla'],
     ['send',       'Skýrsla send',     'Send'],
     ['reikningur', 'Reikningur sendur','Reikningur']
@@ -64,7 +65,11 @@
     // „Farið á verkstað" er UNDANFARI úttektarinnar: sé úttektin búin hlýtur að
     // hafa verið farið. Án þessa sætu öll eldri kort (og allt sem 153/219/266
     // merkja) uppi með tómt fyrsta skref á eftir grænni úttekt.
-    if (s.farid === undefined && s.uttekt) s.farid = true;
+    // „Á verkstæði" er líka undanfari úttektar — og „Farið á verkstað" undanfari
+    // beggja. Leiða þau af úttektinni svo eldri/afleidd kort standi ekki með tóm
+    // fyrstu skref á eftir grænni úttekt.
+    if (s.averkstaedi === undefined && s.uttekt) s.averkstaedi = true;
+    if (s.farid === undefined && (s.uttekt || s.averkstaedi)) s.farid = true;
     return s;
   }
   // Bráðabirgða-merkingar (single-select) á hverju Í-vinnslu korti.

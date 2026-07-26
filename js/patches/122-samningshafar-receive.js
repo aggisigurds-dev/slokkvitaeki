@@ -621,12 +621,45 @@
       }
       if (liRes.error) throw liRes.error;
 
+      // 3b. Wire the picked units into the á-verkstæði lífsferill + flag the
+      //     company workflow (2026-07-25). Each picked tæki → uttaeki.status
+      //     'loaned' (custody null = „Nýkomið") so it appears in the right-half
+      //     verkstæði lifecycle (patch 269), Bílstjóri (219) + Aksturslisti
+      //     (268) — this is the „nuverandi tenging" where status='á verkstæði'
+      //     auto-opens in the workshop. And the COMPANY is flagged „Í vinnslu"
+      //     + steps „Farið á verkstað"/„Á verkstæði" so it shows the ✓ on the
+      //     main board (153) and pops into Þjónustuverkstæði (190). Best-effort:
+      //     a failure here never rolls back the verkbeiðni that already saved.
+      try {
+        const ids = picked.map(s => s.u && s.u.id).filter(Boolean);
+        if (ids.length) {
+          let up = await SB.from('uttaeki').update({ status: 'loaned', custody_status: null }).in('id', ids);
+          if (up.error && /custody_status/i.test(up.error.message || '')) {
+            await SB.from('uttaeki').update({ status: 'loaned' }).in('id', ids);
+          }
+        }
+      } catch (_) {}
+      try {
+        if (window.AppSettings && AppSettings.save && _selectedCompany.id) {
+          const curYear = new Date().getFullYear();
+          await AppSettings.save({ arsskodun_customers: { [String(_selectedCompany.id)]: {
+            field_inspected_year: curYear,
+            ['steps_' + curYear]: { farid: true, averkstaedi: true }
+          } } });
+        }
+      } catch (_) {}
+
       // 4. Refresh local cache + workshop view
       if (window.DB && typeof DB.loadAll === 'function') {
         await DB.loadAll();
       }
       if (window.Workshop && typeof Workshop.render === 'function') {
         try { Workshop.render(); } catch (_) {}
+      }
+      // Nudge the á-verkstæði lífsferill (patch 269) to re-read the new loaned
+      // tæki right away instead of waiting for its 3s poll.
+      if (window.VkLoaned && typeof VkLoaned.inject === 'function') {
+        try { VkLoaned.inject(); } catch (_) {}
       }
 
       // 5. Close + toast
