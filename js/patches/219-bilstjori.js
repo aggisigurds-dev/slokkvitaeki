@@ -406,7 +406,7 @@
       try {
         // audit-pagination:ok — afmarkað við EITT fyrirtæki í næsta skrefi (q.or/q.ilike á client)
         let q = DB.sb.from('uttaeki')
-          .select('id,serial,type,size,location,status,last_insp,next_insp')
+          .select('id,serial,type,size,location,status,last_insp,next_insp,custody_status,service_choice')
           .order('type', { ascending: true });
         const kt = String(c.kennitala || '').replace(/\D/g,'');
         q = (kt.length === 10) ? q.or('client.ilike.' + JSON.stringify(name) + ',client.eq.' + kt)
@@ -1203,6 +1203,12 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
       box.querySelectorAll('.chk').forEach(btn => btn.addEventListener('click', async () => {
         const u = units.find(x => String(x.id) === String(btn.dataset.id));
         if (!u) return;
+        // Vörn (2026-07-26): skrifstofan merkti tækið ÓNÝTT í verkstæðinu
+        // (service_choice='onytt'). Ekki leyfa tappi að endurlífga það óvart sem
+        // gilt tæki — staðfesta fyrst. Leiðréttingar eru áfram mögulegar (já → heldur áfram).
+        if (String(u.service_choice || '').toLowerCase() === 'onytt') {
+          if (!confirm('Skrifstofan merkti þetta tæki ÓNÝTT í verkstæðinu.\n\nViltu samt breyta stöðunni?')) return;
+        }
         // Snapshot the fields updateForState() will overwrite, so a FAILED save
         // can be rolled back — otherwise the optimistic chip lied about a change
         // that never persisted (the "silently losing field inspections" bug).
