@@ -203,10 +203,11 @@
   function renderCard(p){
       var priceInc = p.verd_an_vsk * (1 + (p.vsk_prosenta||24)/100);
       var tc = typeColor(p);
-      // 2026-07-15: tegundarliturinn sem litaður rammi. 2026-07-26 (ósk Agnars —
-      // „it should have gone around the pics as well"): rammi UTAN UM myndina alla
-      // (allar fjórar hliðar) í stað vinstri-kants — svo tegundin sjáist strax.
-      var frame = tc ? ';border:3.4px solid '+tc+';box-sizing:border-box' : '';
+      // 2026-07-15: tegundarliturinn sem litaður VINSTRI-kantur Á myndinni sjálfri
+      // (hálfur rammi — ósk Agnars „a left color half frame on the side of the
+      // picture"). NB full-rammi (allar hliðar) var reyndur 2026-07-26 en Agnar
+      // vildi HÁLFAN ramma → bakkað í vinstri-kant.
+      var frame = tc ? ';border-left:3.6px solid '+tc+';box-sizing:border-box' : '';
       var img = p.mynd ? '<img src="'+esc(p.mynd)+'" style="width:100%;height:140px;object-fit:cover;border-radius:8px;background:#f8fafc'+frame+'">' : '<div style="width:100%;height:140px;background:#f8fafc;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#cbd5e1;font-size:32px'+frame+'">📦</div>';
       var isSvc = p.flokkur === 'Þjónusta';
       var badge = '<span style="display:inline-block;background:'+(isSvc?'#fef3c7':'#dbeafe')+';color:'+(isSvc?'#92400e':'#1e40af')+';font-size:10px;padding:2px 7px;border-radius:12px;font-weight:700;letter-spacing:0.03em">'+esc(p.flokkur||'')+'</span>';
