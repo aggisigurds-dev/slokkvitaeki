@@ -165,6 +165,27 @@
     if (dv) return dv;
     return '#' + btnText(btn);
   }
+  // Known renamed buttons (df864e6a): a button whose label drifted over time has
+  // several equivalent identifiers (old label, new label, stable data-view id).
+  // A `sidebar_hidden` entry saved under ANY of these forms must still hide the
+  // button — otherwise a value stored under the OLD label ("Stjórnborð") misses
+  // the RENAMED button ("Stjórnstöð", id "stjornstod") because neither label is a
+  // substring of the other, and it keeps showing even though it was turned off.
+  // Each group is lowercase; forms are matched by exact id OR label-substring.
+  const LABEL_ALIASES = [
+    ['stjórnstöð', 'stjórnborð', 'stjornstod'],
+  ];
+  // Does hidden-entry `h` name button `b` via a known label-drift group?
+  function aliasHidden(id, txt, h) {
+    const hl = String(h).toLowerCase(), idl = String(id).toLowerCase();
+    for (let i = 0; i < LABEL_ALIASES.length; i++) {
+      const grp = LABEL_ALIASES[i];
+      if (grp.indexOf(hl) === -1) continue;              // h isn't in this group
+      if (grp.indexOf(idl) !== -1) return true;          // b IS this button (by id)
+      if (grp.some(a => txt.indexOf(a) !== -1)) return true; // …or by any alias label
+    }
+    return false;
+  }
   // Match one custom-order entry (a stable id, or an old label string) to a
   // not-yet-used, non-hidden button. Exact id first; old label substring as a
   // back-compat fallback so previously-saved label orders keep working.
@@ -227,6 +248,7 @@
         return hiddenRaw.some(h => {
           h = String(h);
           if (h === id) return true;                 // exact stable-id (data-view) match
+          if (aliasHidden(id, txt, h)) return true;  // known label-drift (df864e6a — Stjórnborð→Stjórnstöð)
           if (h[0] === '#') return false;            // '#label' ids only match via navId (handled above)
           if (allViewIds.has(h)) return false;       // h is another view's id → never substring-match it as a label
           return txt.indexOf(h.toLowerCase()) !== -1; // legacy plain-label entry → substring match
