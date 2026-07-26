@@ -499,8 +499,8 @@
     // 2026-07-15: tegundar-litarammi líka í Sölu (POS) svo starfsfólk finni tækið
     // hraðar — sami litur og á Vörur-spjaldinu (SlokkTypeColor deilt úr vorur.js).
     var tc = (typeof window !== 'undefined' && window.SlokkTypeColor) ? window.SlokkTypeColor(item) : null;
-    // 2026-07-26: rammi UTAN UM litlu mynd/táknið alla hringinn (var vinstri-kantur).
-    var frame = tc ? ';border:2.5px solid '+tc+';box-sizing:border-box' : '';
+    // Vinstri-kantur (hálfur rammi) — ósk Agnars. (Full-rammi var reyndur 2026-07-26 en bakkaður.)
+    var frame = tc ? ';border-left:3px solid '+tc+';box-sizing:border-box' : '';
     // Brunastál: pick a metallic ic-*.png for matching ÞJÓNUSTA items (theme CSS
     // swaps it in; other themes ignore data-bstic and keep the SVG icon).
     var bstic = '';
