@@ -858,14 +858,15 @@
       try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; linkMap=AppSettings.path('rf_uttekt_links')||{}; } }catch(e){}
       var caMap=getCaMap(), sharedKt=sharedKtSet(), today=_todayStr();
       names.forEach(function(name){
-        var n=0, nb=0;
+        var n=0, seenBru={};
         ((data[name]||{}).buildings||[]).forEach(function(b){
           try{ if(computeBldStatus(b,equip,attMap,linkMap,today,caMap,sharedKt).overdue) n++; }catch(e){}
           // 2026-07-27: hversu margir staðir félagsins eru í brunakerfisþjónustu
+          // (hver fyrirtækja-röð talin einu sinni — sjá firstTime í _fillBodyInner)
           try{ var c=companyForBld(b), x=c?bruIx.get(c.id):null;
-            if(x && (x.inService || Object.keys(x.years||{}).length)) nb++; }catch(e){}
+            if(x && (x.inService || Object.keys(x.years||{}).length)) seenBru[c.id]=1; }catch(e){}
         });
-        overdueByFirm[name]=n; bruByFirm[name]=nb;
+        overdueByFirm[name]=n; bruByFirm[name]=Object.keys(seenBru).length;
       });
     } catch(e){ console.warn('[rekstrarfelog] hero counts', e); }
     if(box!==((viewEl()||{}).querySelector? viewEl().querySelector('#_rf_list'):box)) return; // view re-rendered meanwhile
