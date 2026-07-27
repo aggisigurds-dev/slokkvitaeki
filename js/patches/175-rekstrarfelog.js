@@ -295,6 +295,37 @@
     return null;
   }
 
+  // ── Stofna RAUNVERULEGT fyrirtæki í þjónustu (fyrirtaeki-röð) fyrir nýja
+  //    byggingu/stað rekstrarfélags. Sama insert-mynstur og patch 188
+  //    (promote-customer): find/create customers_base eftir kt, insert fyrirtaeki
+  //    með er_i_thjonustu=true + customer_base_id. Skilar nýju röðinni (m/ id).
+  async function createServiceCompany(nafn, ktRaw, heim){
+    var SB = window.__vdaSB || (window.DB && DB.sb);
+    if(!SB) throw new Error('Enginn gagnagrunns-tengill');
+    var dd = digits(ktRaw);
+    var ktDash = (dd && dd.length===10) ? (dd.slice(0,6)+'-'+dd.slice(6)) : String(ktRaw||'').trim();
+    if(!ktDash) throw new Error('Kennitölu vantar');
+    // find/create base eftir kt (aldrei tvítaka — Center Hótel base er þegar til)
+    var baseId = null;
+    try {
+      var q = await SB.from('customers_base').select('id').eq('kennitala', ktDash).limit(1);
+      if(q && q.data && q.data[0]) baseId = q.data[0].id;
+      if(baseId == null){
+        var ins = await SB.from('customers_base').insert({ kennitala: ktDash, nafn: nafn, heimilisfang: heim||'' }).select('id').single();
+        if(ins.error) throw ins.error;
+        baseId = ins.data ? ins.data.id : null;
+      }
+    } catch(e){ throw new Error('base: '+(e.message||e)); }
+    var row = { nafn: nafn, kennitala: ktDash, status:'virkur', er_i_thjonustu:true, customer_base_id: baseId };
+    if(heim) row.heimilisfang = heim;
+    var r = await SB.from('fyrirtaeki').insert(row).select().single();
+    if(r.error) throw r.error;
+    var co = r.data;
+    // láta Companies.list vita strax svo companyForBld tengi bygginguna rétt
+    try { if(window.Companies && Array.isArray(Companies.list)) Companies.list.push(co); } catch(_){}
+    return co;
+  }
+
   // ── Aksturslistar á rekstrarfélagi (deila með „Fyrirtæki í þjónustu") ──────
   // Sama gagnastaður og patch 267/153: arsskodun_customers[staður_id].akstur
   // (0 = enginn / 1 / 2 / 3). Þegar rekstrarfélagi er úthlutað akstursleið fá
@@ -1000,10 +1031,22 @@
     var addB = body.querySelector('._rf_addb');
     if (addB) addB.addEventListener('click', async function(){
       var nafn = prompt('Nafn byggingar / fyrirtækis:'); if(!nafn || !nafn.trim()) return;
-      var kt   = (prompt('Kennitala (má sleppa):','')||'').trim();
+      nafn = nafn.trim();
+      // Sjálfgefin kt = rekstrarfélagsins (t.d. Center Hótel 450905-1430) svo allir
+      // staðir lendi undir sama base; má breyta/sleppa.
+      var kt   = (prompt('Kennitala (sjálfgefið kt rekstrarfélagsins — má breyta/sleppa):', info.kt||'')||'').trim();
       var heim = (prompt('Heimilisfang (má sleppa):','')||'').trim();
+      var bld  = { nafn:nafn, kt:kt, heimilisfang:heim };
+      // Bjóða að stofna sem RAUNVERULEGT fyrirtæki Í ÞJÓNUSTU (fyrirtaeki-röð).
+      var ktForCo = (kt || info.kt || '').trim();
+      if (ktForCo && confirm('Stofna „'+nafn+'" sem fyrirtæki Í ÞJÓNUSTU?\n\nBýr til raunverulega fyrirtækja-röð (kt '+fmtKt(ktForCo)+') sem birtist í aksturslista, heldur tækjum og fær úttektarskýrslur.\n\nÝttu „Hætta við" til að vista bara sem nótu.')){
+        try {
+          var co = await createServiceCompany(nafn, ktForCo, heim);
+          if (co && co.id != null){ bld.co_id = co.id; if(window.Toast&&Toast.show) Toast.show('✓ '+nafn+' stofnað í þjónustu'); }
+        } catch(e){ alert('Villa við stofnun fyrirtækis: '+(e.message||e)+'\n\nByggingin er samt vistuð sem nóta.'); }
+      }
       var d = getData(); if(!d[name]) d[name]=info;
-      d[name].buildings = (d[name].buildings||[]).concat([{ nafn:nafn.trim(), kt:kt, heimilisfang:heim }]);
+      d[name].buildings = (d[name].buildings||[]).concat([bld]);
       await saveData(d);
       info.buildings = d[name].buildings;
       fillBody(body, name, info);
