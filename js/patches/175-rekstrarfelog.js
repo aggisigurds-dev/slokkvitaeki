@@ -960,6 +960,16 @@
     var CURY = String(new Date().getFullYear());
     var showSl = _state.svc!=='br', showBr = _state.svc!=='sl';
     var totSl=0, totBr=0, slDoneCur=0, brDoneCur=0, nBruSvc=0;
+    // Tvær byggingar geta lent á SAMA fyrirtæki (t.d. „Center Hótel - Grandi"
+    // og „Center Hótel – Grandi" — bandstrik vs. þankastrik falla saman í
+    // companyForBld/equip-nafnaleitinni). Raðirnar standa áfram hvor í sínu
+    // lagi, en tölfluspjöldin telja hvern stað BARA EINU SINNI.
+    var _counted={};
+    function firstTime(co,b){
+      var k = co ? ('co:'+co.id) : ('nm:'+_compact(b&&b.nafn));
+      if(_counted[k]) return false;
+      _counted[k]=1; return true;
+    }
     // ── árs-frumur (dark-metal ycell pills) ───────────────────────────────────
     // grænn = skýrsla á skrá (hlekkur/viðhengi), blár = aðeins í búnaðarsögu /
     // í vinnslu, · = ekkert. Í „Bæði"-sýn er EFRI línan slökkvitæki og NEÐRI
@@ -1055,10 +1065,12 @@
       var bY = bx ? (bx.years||{}) : {};
       var bHasData = !!(bx && (bx.inService || Object.keys(bY).length));
       var bOver = !!(bx && bx.next && bx.next < today);
-      if (bHasData) nBruSvc++;
-      totSl += units; totBr += bUnits;
-      if (d26) slDoneCur++;
-      if (bY[CURY] && bY[CURY].kind==='rep') brDoneCur++;
+      if (firstTime(co,b)) {
+        if (bHasData) nBruSvc++;
+        totSl += units; totBr += bUnits;
+        if (d26) slDoneCur++;
+        if (bY[CURY] && bY[CURY].kind==='rep') brDoneCur++;
+      }
       // Samtölur borðans fylgja völdum þjónusturofa.
       var hasData = (showSl&&slHasData) || (showBr&&bHasData);
       var curDone = (showSl&&d26) || (showBr&&!!bY[CURY]);
