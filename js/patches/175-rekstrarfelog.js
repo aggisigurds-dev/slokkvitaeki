@@ -43,9 +43,9 @@
   // (its .btn/.pill/.chip names collide with the app), so the needed
   // classes are inlined here with an rf-/rfa- prefix.
   function injectStyles(){
-    if(document.getElementById('_rf-styles-v3')) return;
-    var old=document.getElementById('_rf-styles'); if(old) old.remove();
-    var s=document.createElement('style'); s.id='_rf-styles-v3';
+    if(document.getElementById('_rf-styles-v4')) return;
+    ['_rf-styles','_rf-styles-v3'].forEach(function(id){ var o=document.getElementById(id); if(o) o.remove(); });
+    var s=document.createElement('style'); s.id='_rf-styles-v4';
     var P='#view-rekstrarfelog ';
     var METB='linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318)';
     var HERO='linear-gradient(110deg,#0c1018 0%,#13203f 45%,#274a9e 100%)';
@@ -71,6 +71,7 @@
       P+'.rf-pill--done{background:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#062815);border:1px solid #062815;font-size:11.5px}',
       P+'.rf-pill--pending{background:linear-gradient(145deg,#d4a94f,#8a5310 60%,#3f2905);border:1px solid #3f2905;font-size:11.5px}',
       P+'.rf-pill--overdue{background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #4a0a0e;font-weight:700}',
+      P+'.rf-pill--bru{background:linear-gradient(145deg,#8a1c22,#560c10 55%,#1a0304);border:1px solid #1a0304;font-weight:700}',
       // accordion card
       P+'.rf-acclist{display:flex;flex-direction:column;gap:14px}',
       P+'.rfa{border-radius:18px;overflow:hidden;box-shadow:0 16px 40px -22px rgba(10,20,50,.65);transition:box-shadow .18s ease}',
@@ -90,7 +91,7 @@
       // buildings table (dark-metal head, zebra, rails)
       P+'.rf-tblwrap{border-radius:13px;border:1px solid rgba(20,24,34,.1);overflow:hidden;background:#fff}',
       P+'.rf-tblscroll{overflow-x:auto}',
-      P+'.rf-tbl{width:100%;min-width:860px;border-collapse:collapse;font-size:13px}',
+      P+'.rf-tbl{width:100%;min-width:980px;border-collapse:collapse;font-size:13px}',
       P+'.rf-tbl thead tr{background:'+METB+'}',
       P+'.rf-tbl th{text-align:left;padding:10px 12px;font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#f0f2f5;white-space:nowrap;text-transform:uppercase;border:0}',
       P+'.rf-tbl th.c{text-align:center}',
@@ -131,8 +132,46 @@
       P+'.rf-next--none{color:#cbd2dc}',
       // note input inside the white body
       P+'._rf_note{display:block;width:100%;padding:7px 10px;border:1px solid rgba(20,24,34,.14);border-radius:8px;font:inherit;font-size:12.5px;background:#fff;box-sizing:border-box;margin-bottom:12px;color:#141822}',
+      // ── BRUNAKERFI Í SAMA YFIRLITI (2026-07-27, Claude Design „Brunayfirlit-v2") ──
+      // Þjónusturofi (Bæði / 🧯 Slökkvitæki / 🚨 Brunakerfi), tölfluspjöld og
+      // tvískiptar frumur — efri lína = slökkvitæki, neðri = brunakerfi.
+      P+'.rf-svcbar{border-radius:13px;border:1px solid rgba(20,24,34,.25);background:linear-gradient(180deg,#d6dbe4,#c2c9d5);box-shadow:inset 0 2px 6px rgba(20,30,60,.22),inset 0 -1px 0 rgba(255,255,255,.75);padding:12px 14px;margin-bottom:12px}',
+      P+'.rf-svcrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}',
+      P+'.rf-svclab{font-size:11px;font-weight:700;letter-spacing:.1em;color:#5b6472}',
+      P+'.rf-svcbtn{height:34px;padding:0 14px;border-radius:20px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fdfdfe,#e3e7ee);color:#3a4250;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap}',
+      P+'.rf-svcbtn:hover{filter:brightness(1.05)}',
+      P+'.rf-svcbtn.is-on{border-color:#0a0b0d;background:'+METB+';color:#fff}',
+      P+'.rf-svcsep{width:1px;height:24px;background:rgba(20,24,34,.14);margin:0 2px}',
+      P+'.rf-leg{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:#3a4250}',
+      P+'.rf-leg i{width:11px;height:11px;border-radius:3px;display:inline-block;flex:none}',
+      P+'.rf-bsearch{margin-left:auto;display:flex;align-items:center;gap:7px;min-width:200px;height:34px;padding:0 12px;border-radius:9px;background:#fff;border:1px solid rgba(20,24,34,.14)}',
+      P+'.rf-bsearch input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:12.5px;color:#141822;outline:none;padding:0}',
+      P+'.rf-stats{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}',
+      P+'.rf-stat{flex:1 1 165px;min-width:165px;border-radius:14px;padding:12px 14px;box-shadow:inset 0 2px 0 rgba(255,255,255,.22),inset 0 -5px 10px -5px rgba(0,0,0,.55),0 12px 24px -14px rgba(0,0,0,.6)}',
+      P+'.rf-stat__l{font-size:10px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,.65)}',
+      P+'.rf-stat__v{font-family:"Space Mono",monospace;font-size:20px;font-weight:700;color:#fff;margin-top:4px}',
+      P+'.rf-stat__s{font-family:"Space Grotesk",system-ui,sans-serif;font-size:11px;font-weight:400;color:rgba(255,255,255,.5);margin-left:8px}',
+      P+'.rf-stat--byg{background:linear-gradient(180deg,#33373f,#1b1e24 55%,#0a0b0e);border:1px solid #0a0b0d}',
+      P+'.rf-stat--sl{background:linear-gradient(180deg,#1c3d8c,#12296b 55%,#060f2e);border:1px solid #060f2e}',
+      P+'.rf-stat--br{background:linear-gradient(180deg,#6c1014,#450a0d 55%,#1a0304);border:1px solid #1a0304}',
+      P+'.rf-stat--od{background:linear-gradient(180deg,#8a6414,#5e430c 55%,#241804);border:1px solid #241804}',
+      P+'.rf-stack{display:flex;flex-direction:column;align-items:center;gap:5px}',
+      P+'.rf-stack>span{min-height:24px;display:flex;align-items:center;justify-content:center}',
+      P+'.rf-tbl td.rf-nextcell .rf-stack{align-items:flex-start}',
+      P+'.rf-cnt{height:24px;display:inline-flex;align-items:center;justify-content:center;gap:4px;font-family:"Space Mono",monospace;font-size:12px;font-weight:700;color:#fff;border-radius:7px;padding:0 9px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3);white-space:nowrap}',
+      P+'.rf-cnt em{font-style:normal;font-size:9px}',
+      P+'.rf-cnt--sl{background:linear-gradient(145deg,#2a4c8f,#12296b 55%,#060f2e);border:1px solid #060f2e}',
+      P+'.rf-cnt--br{background:linear-gradient(145deg,#8a1c22,#560c10 55%,#1a0304);border:1px solid #1a0304}',
+      P+'.rf-cnt.is-zero{color:rgba(255,255,255,.42)}',
+      P+'.rf-yh__k{display:flex;flex-direction:column;gap:2px;margin-top:5px}',
+      P+'.rf-yh__k i{font-style:normal;font-size:9px;font-weight:700;letter-spacing:.06em}',
+      P+'.rf-yh__k i.sl{color:#8fb0ff}',
+      P+'.rf-yh__k i.br{color:#ff9a92}',
+      P+'.rf-tblfoot{display:flex;align-items:center;gap:12px;padding:10px 15px;background:linear-gradient(180deg,#f1f4f9,#e7ebf2);border-top:1px solid rgba(20,24,34,.09);font-size:12px;color:#6b7686;flex-wrap:wrap}',
+      P+'.rf-tblfoot b{color:#3a4250}',
+      P+'.rf-nores{padding:16px;text-align:center;color:#9098a6;font-size:13px}',
       // mobile
-      '@media(max-width:640px){'+P+'.rf-search{width:100%;margin-left:0}'+P+'.rf-page{padding:16px 12px 50px}}',
+      '@media(max-width:640px){'+P+'.rf-search{width:100%;margin-left:0}'+P+'.rf-page{padding:16px 12px 50px}'+P+'.rf-bsearch{margin-left:0;width:100%}}',
       // --- vörn gegn patch 245 (Brunastál content-skin) sem málar .view
       //     input/thead/table með !important — okkar útlit VERÐUR að vinna ---
       P+'.rf-search input, '+P+'.rf-search input[type="text"]{background:transparent!important;border:0!important;box-shadow:none!important;height:auto!important;padding:0!important;border-radius:0!important;color:#141822!important}',
@@ -145,7 +184,12 @@
       P+'.rfa__chev, '+P+'.rfa__logo{background:rgba(255,255,255,.1)!important;border:1px solid rgba(255,255,255,.18)!important;box-shadow:none!important}',
       P+'.rf-btn{background:'+METB+'!important;color:#fff!important;border:1px solid #0a0b0d!important;text-shadow:none!important;box-shadow:none!important;border-radius:10px!important;height:38px!important}',
       P+'.rf-btn.is-on{border-color:#4a6ae8!important;box-shadow:0 0 0 1px #4a6ae8,inset 0 1px 0 rgba(255,255,255,.12)!important}',
-      P+'.rf-cellname{padding-left:16px!important}'
+      P+'.rf-cellname{padding-left:16px!important}',
+      // sömu varnir fyrir nýju brunakerfis-hlutana (245 málar .view input/th/button)
+      P+'.rf-bsearch input, '+P+'.rf-bsearch input[type="text"]{background:transparent!important;border:0!important;box-shadow:none!important;height:auto!important;padding:0!important;border-radius:0!important;color:#141822!important}',
+      P+'.rf-tbl thead th.rf-yh{font-family:"Space Mono",monospace!important;font-size:12.5px!important;letter-spacing:0!important;text-transform:none!important;color:#fff!important;vertical-align:middle!important;padding:8px 6px!important}',
+      P+'.rf-svcbtn{text-shadow:none!important;box-shadow:none!important;height:34px!important;border-radius:20px!important}',
+      P+'.rf-svcbtn.is-on{background:'+METB+'!important;color:#fff!important;border:1px solid #0a0b0d!important}'
     ].join('\n');
     document.head.appendChild(s);
   }
@@ -468,6 +512,92 @@
   }
   function _todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
 
+  // ---- Supabase Storage → opinbert URL (notað bæði af úttektar- og brunakerfis-skjölum) ----
+  function storageUrl(p){
+    if(!p) return '';
+    var base=String(window.SUPABASE_URL||'').replace(/\/+$/,''); if(!base) return '';
+    var s=String(p).replace(/^\/+/,''); var i=s.indexOf('/'); if(i<1) return '';
+    return base+'/storage/v1/object/public/'+s.slice(0,i)+'/'+s.slice(i+1).split('/').map(encodeURIComponent).join('/');
+  }
+
+  // ── BRUNAKERFIS-VÍSITALA (2026-07-27, ósk Agnars: „geta líka séð þau sem eru
+  //    í brunakerfisþjónustu") ────────────────────────────────────────────────
+  // Rekstrarfélaga-síðan sýndi AÐEINS slökkvitækja-hliðina, svo staðir sem eru
+  // í brunakerfisþjónustu (t.d. 9 af 10 Center Hótel-húsum) litu út fyrir að
+  // vera tómir. Lesum NÁKVÆMLEGA sömu heimildir og Brunakerfi-yfirlit (272) /
+  // brunakerfis-prófíllinn (274) — engin ný tafla, engin tvíritun:
+  //   · AppSettings.brunakerfi_customers → þjónustukortið (unit_count,
+  //     inspect_month, last_inspected) — lykill = fyrirtaeki.id
+  //   · customer_documents doc_type='brunakerfi' → ársskýrslur (Drive/Storage)
+  //   · brunakerfi_skyrslur → skýrslur sem appið sjálft býr til (draft/final)
+  // Næsta skoðun = ár síðustu skoðunar + 1, í skoðunarmánuði félagsins.
+  var _bru=null, _bruPromise=null;
+  async function getBruIndex(){
+    if(_bru) return _bru;
+    if(_bruPromise) return _bruPromise;
+    _bruPromise=(async function(){
+      var byCo={};
+      function rec(id){ var k=String(id); return byCo[k]||(byCo[k]={inService:false,units:0,years:{},months:{},latest:0,last:'',month:0,next:null}); }
+      try{
+        var map=(window.AppSettings&&AppSettings.path&&AppSettings.path('brunakerfi_customers'))||{};
+        Object.keys(map).forEach(function(k){
+          var m=map[k]; if(!m) return;
+          var e=rec(k); e.inService=true;
+          e.units=+((m.unit_count)||0)||0;
+          e.month=+((m.inspect_month)||0)||0;
+          if(m.last_inspected) e.last=String(m.last_inspected);
+        });
+      }catch(e){}
+      var SB=window.__vdaSB||(window.DB&&DB.sb);
+      if(SB){
+        try{
+          var from=0;
+          while(true){
+            var rd=await SB.from('customer_documents')
+              .select('fyrirtaeki_id,year,drive_file_id,storage_path,doc_date,is_duplicate')
+              .eq('doc_type','brunakerfi').not('fyrirtaeki_id','is',null).range(from,from+999);
+            if(rd.error) break;
+            (rd.data||[]).forEach(function(d){
+              if(d.is_duplicate||!d.year) return;
+              var e=rec(d.fyrirtaeki_id), y=String(d.year);
+              var u=d.drive_file_id ? ('https://drive.google.com/file/d/'+encodeURIComponent(d.drive_file_id)+'/view') : storageUrl(d.storage_path);
+              if(!e.years[y]||u) e.years[y]={url:u||'',kind:'rep'};
+              var m=d.doc_date?(new Date(d.doc_date).getUTCMonth()+1):0;
+              if(m) e.months[y]=m;
+              if(+y>e.latest) e.latest=+y;
+            });
+            if(!rd.data||rd.data.length<1000) break; from+=1000; if(from>20000) break;
+          }
+        }catch(e){ console.warn('[rekstrarfelog] brunakerfi skjöl', e); }
+        try{
+          var rs=await SB.from('brunakerfi_skyrslur').select('fyrirtaeki_id,year,status');
+          (rs.data||[]).forEach(function(s){
+            if(s.fyrirtaeki_id==null||!s.year) return;
+            var e=rec(s.fyrirtaeki_id), y=String(s.year);
+            // Skýrsla úr appinu: 'final' = á skrá (grænn), 'draft' = í vinnslu (blár).
+            if(!e.years[y]) e.years[y]={url:'',kind:(s.status==='final'?'rep':'hist')};
+            else if(s.status==='final') e.years[y].kind='rep';   // uppfærir drög í „á skrá"
+            if(+y>e.latest) e.latest=+y;
+          });
+        }catch(e){ console.warn('[rekstrarfelog] brunakerfi skýrslur', e); }
+      }
+      Object.keys(byCo).forEach(function(k){
+        var e=byCo[k];
+        var baseY = e.last ? +String(e.last).slice(0,4) : e.latest;
+        if(!baseY) return;
+        var m = e.month || e.months[String(baseY)] || (e.last?+String(e.last).slice(5,7):0) || 1;
+        e.next = (baseY+1)+'-'+('0'+m).slice(-2)+'-01';
+      });
+      _bru={ get:function(id){ return id==null?null:(byCo[String(id)]||null); } };
+      return _bru;
+    })().catch(function(e){
+      console.warn('[rekstrarfelog] brunakerfis-vísitala', e);
+      _bruPromise=null;
+      return { get:function(){ return null; } };
+    });
+    return _bruPromise;
+  }
+
   // 2026-06-14 (Todoist): shared-kennitala report bleed. Heimaleiga ehf (kt
   // 510117-0690) runs many buildings (Freyjugata 16, Laugavegur 1/18, Urðarhvarf
   // 2/4, Hamraborg 7 …). Úttektarskýrslur are attached to the *company* record
@@ -509,7 +639,10 @@
 
   // ---- view rendering ----
   // sortKey/'sortDir': röðun yfirlitstöflunnar — '' = sjálfgefin (félag+bygging)
-  var _state={ q:'', mode:'firms', fltr:'all', sortKey:'', sortDir:1 };
+  // svc = hvaða þjónusta sést í byggingatöflunni: 'both' | 'sl' | 'br' (vistað)
+  var _state={ q:'', mode:'firms', fltr:'all', sortKey:'', sortDir:1,
+    svc:(function(){ try{ var v=localStorage.getItem('_rf_svc_view'); return (v==='sl'||v==='br'||v==='both')?v:'both'; }catch(e){ return 'both'; } })() };
+  function setSvc(v){ _state.svc=v; try{ localStorage.setItem('_rf_svc_view',v); }catch(e){} }
   function viewEl(){ return document.getElementById('view-rekstrarfelog'); }
 
   async function renderView(){
@@ -717,18 +850,22 @@
     var shown=0;
     // Hero-yfirferðartölur (⚠ liðin skoðun per félag) — sama status-lógík og
     // yfirlitið, reiknað einu sinni fyrir öll félög.
-    var overdueByFirm={};
+    var overdueByFirm={}, bruByFirm={};
     try {
       var equip=await getEquipIndex();
+      var bruIx=await getBruIndex();
       var attMap={},linkMap={};
       try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; linkMap=AppSettings.path('rf_uttekt_links')||{}; } }catch(e){}
       var caMap=getCaMap(), sharedKt=sharedKtSet(), today=_todayStr();
       names.forEach(function(name){
-        var n=0;
+        var n=0, nb=0;
         ((data[name]||{}).buildings||[]).forEach(function(b){
           try{ if(computeBldStatus(b,equip,attMap,linkMap,today,caMap,sharedKt).overdue) n++; }catch(e){}
+          // 2026-07-27: hversu margir staðir félagsins eru í brunakerfisþjónustu
+          try{ var c=companyForBld(b), x=c?bruIx.get(c.id):null;
+            if(x && (x.inService || Object.keys(x.years||{}).length)) nb++; }catch(e){}
         });
-        overdueByFirm[name]=n;
+        overdueByFirm[name]=n; bruByFirm[name]=nb;
       });
     } catch(e){ console.warn('[rekstrarfelog] hero counts', e); }
     if(box!==((viewEl()||{}).querySelector? viewEl().querySelector('#_rf_list'):box)) return; // view re-rendered meanwhile
@@ -743,7 +880,7 @@
       if(info.kt) subBits.push('kt. '+fmtKt(info.kt));
       if((info.emails||[]).length) subBits.push(info.emails[0]);
       else if(info.domain) subBits.push(info.domain);
-      var ov=overdueByFirm[name]||0;
+      var ov=overdueByFirm[name]||0, nb=bruByFirm[name]||0;
       card.innerHTML=
         '<button class="_rf_head rfa__head" type="button">'+
           '<span class="rfa__logo"><svg width="22" height="22" viewBox="0 0 24 24"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-3"/></svg></span>'+
@@ -753,6 +890,7 @@
           '</span>'+
           '<span class="rfa__pills">'+
             '<span class="rf-pill rf-pill--ghost">🏢 '+blds.length+' byggingar</span>'+
+            (nb>0?'<span class="rf-pill rf-pill--bru" title="Staðir félagsins í brunakerfisþjónustu">🚨 '+nb+'</span>':'')+
             (ov>0?'<span class="rf-pill rf-pill--overdue">⚠ '+ov+'</span>':'')+
             '<span class="rfa__chev">⌄</span>'+
           '</span>'+
@@ -817,17 +955,53 @@
     // per-firm tally
     var n2026=0, nNeed=0, nNone=0, nOverdue=0;
     var bd='1px solid var(--brd)';
-    // year cell (dark-metal ycell pills): grænn = úttektarskýrsla á skrá (link/
-    // viðhengi/rep), blár (hist) = aðeins skráð í búnaðarsögu, · = ekkert.
-    function yCell(done, rep, units, url, file, y){
-      if(!done) return '<td class="c"><span class="rf-ycell rf-ycell--none">·</span></td>';
+    // 2026-07-27: brunakerfið kemur inn við hliðina á slökkvitækjunum.
+    var bru = await getBruIndex();
+    var CURY = String(new Date().getFullYear());
+    var showSl = _state.svc!=='br', showBr = _state.svc!=='sl';
+    var totSl=0, totBr=0, slDoneCur=0, brDoneCur=0, nBruSvc=0;
+    // ── árs-frumur (dark-metal ycell pills) ───────────────────────────────────
+    // grænn = skýrsla á skrá (hlekkur/viðhengi), blár = aðeins í búnaðarsögu /
+    // í vinnslu, · = ekkert. Í „Bæði"-sýn er EFRI línan slökkvitæki og NEÐRI
+    // brunakerfi — sama röð og dálkhausinn segir (🧯 SLÖKKVI / 🚨 BRUNA).
+    function yPillSl(done, rep, units, url, file, y){
+      if(!done) return '<span class="rf-ycell rf-ycell--none">·</span>';
       var v = units>0 ? String(units) : '✓';
       var greenish = rep || url || file;
       var kind = greenish ? 'done' : 'hist';
+      var tip = (greenish?'Úttektarskýrsla á skrá':'Aðeins skráð í búnaðarsögu')+' · slökkvitæki · '+y;
       var inner = url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Google Drive">'+v+' 📄↗</a>'
         : (file ? fileLinkA(file,y,v)
         : (v+(rep?' 📄':'')));
-      return '<td class="c"><span class="rf-ycell rf-ycell--'+kind+'"><i></i>'+inner+'</span></td>';
+      return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+inner+'</span>';
+    }
+    function yPillBr(cell, units, y){
+      if(!cell) return '<span class="rf-ycell rf-ycell--none">·</span>';
+      var kind = cell.kind==='rep' ? 'done' : 'hist';
+      var v = units>0 ? String(units) : '✓';
+      var tip = (kind==='done'?'Brunakerfisskýrsla á skrá':'Brunakerfisskýrsla í vinnslu')+' · '+y;
+      var inner = cell.url ? '<a href="'+esc(cell.url)+'" target="_blank" rel="noopener" title="Opna brunakerfisskýrslu">'+v+' 📄↗</a>' : (v+' 📄');
+      return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+inner+'</span>';
+    }
+    // Staflar slökkvitækja-/brunakerfis-frumu eftir völdum þjónusturofa.
+    function stackTd(slHtml, brHtml, cls){
+      var p=[];
+      if(showSl) p.push('<span>'+slHtml+'</span>');
+      if(showBr) p.push('<span>'+brHtml+'</span>');
+      return '<td class="c'+(cls?' '+cls:'')+'"><div class="rf-stack">'+p.join('')+'</div></td>';
+    }
+    // Tvílínu-lykill undir dálkhaus (🧯 SLÖKKVI / 🚨 BRUNA) — fylgir rofanum,
+    // svo röðin í hausnum sé alltaf sama röð og frumurnar fyrir neðan.
+    function svcKey(){
+      if(_state.svc!=='both') return '';
+      return '<span class="rf-yh__k"><i class="sl">🧯 SLÖKKVI</i><i class="br">🚨 BRUNA</i></span>';
+    }
+    function nextPill(date, svc, overdue){
+      var icon = svc==='sl' ? '🧯' : '🚨';
+      if(!date) return '<span class="rf-next rf-next--none">'+icon+' —</span>';
+      return overdue
+        ? '<span class="rf-next rf-next--overdue">'+icon+' ⚠ '+esc(date)+'</span>'
+        : '<span class="rf-next rf-next--ok">'+icon+' '+esc(date)+'</span>';
     }
     // 2026-07-15 (Agnar: „skjölin uppfærast aldrei … eldgömul nöfn og tengingar"):
     // lesum úttektarskýrslur LIFANDI úr customer_documents (sama uppspretta og
@@ -840,14 +1014,7 @@
         // Skýrslur sem appið/Cowork býr til liggja í Supabase Storage og bera AÐEINS
         // `storage_path` (ekkert drive_file_id) — þær duttu því út úr árs-dálkunum
         // og litu út fyrir að vanta. Taka báðar gerðir með (sbr. patch 187/199).
-        var _stUrl = function(p){
-          if (!p) return '';
-          var base = String(window.SUPABASE_URL||'').replace(/\/+$/,'');
-          if (!base) return '';
-          var s = String(p).replace(/^\/+/,'');
-          var i = s.indexOf('/'); if (i < 1) return '';
-          return base+'/storage/v1/object/public/'+s.slice(0,i)+'/'+s.slice(i+1).split('/').map(encodeURIComponent).join('/');
-        };
+        var _stUrl = storageUrl;   // sameiginlegt hjálparfall (sjá ofar)
         var ld = await DB.sb.from('customer_documents')
           .select('fyrirtaeki_id,year,drive_file_id,storage_path,doc_type,is_duplicate')
           .in('fyrirtaeki_id', coIds).eq('doc_type','uttektarskyrsla');
@@ -881,29 +1048,54 @@
       var d24=(e24>0)||!!att[0]||!!lks['2024']||!!f24, d25=(e25>0)||!!att[1]||!!lks['2025']||!!f25, d26=(e26>0)||!!att[2]||!!lks['2026']||!!f26;
       var hasRep = !!(att[0]||att[1]||att[2]||f24||f25||f26);
       var lkYears = Object.keys(lks);
-      var hasData = units>0 || hasRep || d24 || d25 || d26 || lkYears.length>0 || !!f23;
-      if(!hasData) nNone++; else if(d26) n2026++; else if(d24||d25) nNeed++;
-      // links for years outside the 2024-2026 columns (e.g. older skýrslur) shown after the name
+      var slHasData = units>0 || hasRep || d24 || d25 || d26 || lkYears.length>0 || !!f23;
+      // ── brunakerfis-hlið sömu byggingar (sami staður = sama fyrirtaeki-röð) ──
+      var bx = co ? bru.get(co.id) : null;
+      var bUnits = bx ? (bx.units||0) : 0;
+      var bY = bx ? (bx.years||{}) : {};
+      var bHasData = !!(bx && (bx.inService || Object.keys(bY).length));
+      var bOver = !!(bx && bx.next && bx.next < today);
+      if (bHasData) nBruSvc++;
+      totSl += units; totBr += bUnits;
+      if (d26) slDoneCur++;
+      if (bY[CURY] && bY[CURY].kind==='rep') brDoneCur++;
+      // Samtölur borðans fylgja völdum þjónusturofa.
+      var hasData = (showSl&&slHasData) || (showBr&&bHasData);
+      var curDone = (showSl&&d26) || (showBr&&!!bY[CURY]);
+      var anyOlder = (showSl&&(d24||d25)) || (showBr&&(!!bY[String(+CURY-1)]||!!bY[String(+CURY-2)]));
+      if(!hasData) nNone++; else if(curDone) n2026++; else if(anyOlder) nNeed++;
+      // links for years outside the 2023-2026 columns (e.g. older skýrslur) shown after the name
       var oldLinks = lkYears.filter(function(y){return y<'2023';}).sort().map(function(y){
         return ' <a href="'+esc(lks[y])+'" target="_blank" rel="noopener" title="Úttektarskýrsla '+y+' í Drive" style="font-size:11px;color:#15803d;text-decoration:none;white-space:nowrap">📄'+y+'↗</a>'; }).join('');
-      var unitCell='<td class="c rf-taeki'+(units>0?'':' is-zero')+'">'+(units>0?units:(hasRep||lkYears.length?'–':'0'))+'</td>';
-      var y23=yCell(d23,false,units,lks['2023'],f23,'2023'), y24=yCell(d24,!!att[0],units,lks['2024'],f24,'2024'), y25=yCell(d25,!!att[1],units,lks['2025'],f25,'2025'), y26=yCell(d26,!!att[2],units,lks['2026'],f26,'2026');
-      var isOver=false, nextCell;
-      if(st && st.next){ isOver = st.next < today; if(isOver && hasData) nOverdue++;
-        nextCell = isOver
-          ? '<td><span class="rf-next rf-next--overdue">⚠ '+esc(st.next)+'</span></td>'
-          : '<td><span class="rf-next rf-next--ok">'+esc(st.next)+'</span></td>';
-      } else { nextCell='<td><span class="rf-next rf-next--none">—</span></td>'; }
+      // TÆKI: 🧯 slökkvitæki + 🚨 brunakerfis-búnaður, hvor á sinni línu
+      var slCntTxt = units>0 ? String(units) : (hasRep||lkYears.length?'–':'0');
+      var brCntTxt = bUnits>0 ? String(bUnits) : (bHasData?'–':'0');
+      var unitCell = stackTd(
+        '<span class="rf-cnt rf-cnt--sl'+(units>0?'':' is-zero')+'" title="Slökkvitæki á staðnum"><em>🧯</em>'+slCntTxt+'</span>',
+        '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>');
+      var yTds='';
+      ['2023','2024','2025','2026'].forEach(function(y,i){
+        var done=[d23,d24,d25,d26][i], rep=[false,!!att[0],!!att[1],!!att[2]][i], file=[f23,f24,f25,f26][i];
+        yTds += stackTd(yPillSl(done,rep,units,lks[y],file,y), yPillBr(bY[y],bUnits,y));
+      });
+      var isOver=false;
+      if(st && st.next){ isOver = st.next < today; }
+      if((showSl&&isOver&&slHasData)||(showBr&&bOver)) nOverdue++;
+      var nextCell = stackTd(
+        nextPill(st&&st.next?st.next:null,'sl',isOver&&slHasData),
+        nextPill(bx?bx.next:null,'br',bOver), 'rf-nextcell');
       // 4px litarönd vinstra megin: rauð = skoðun liðin, græn = eitthvert ár
-      // með úttekt, annars grá (blánar á hover gegnum CSS).
-      var railCls = (isOver&&hasData) ? 'rf-rail--overdue' : ((d23||d24||d25||d26) ? 'rf-rail--done' : 'rf-rail--none');
-      return '<tr>'+
+      // með úttekt/skýrslu, annars grá (blánar á hover gegnum CSS).
+      var anyDone = (showSl&&(d23||d24||d25||d26)) || (showBr&&Object.keys(bY).length>0);
+      var anyOver = (showSl&&isOver&&slHasData) || (showBr&&bOver);
+      var railCls = anyOver ? 'rf-rail--overdue' : (anyDone ? 'rf-rail--done' : 'rf-rail--none');
+      return '<tr data-rfq="'+esc(((b.nafn||'')+' '+(b.heimilisfang||'')+' '+digits(b.kt)).toLowerCase())+'">'+
              '<td class="rf-cellname"><span class="rf-rail '+railCls+'"></span>'+
                '<span class="rf-bname">'+link+oldLinks+'</span>'+
                (b.heimilisfang?'<span class="rf-baddr">📍 '+esc(b.heimilisfang)+'</span>':'')+
              '</td>'+
              '<td class="rf-mono">'+fmtKt(b.kt)+'</td>'+
-             unitCell+y23+y24+y25+y26+
+             unitCell+yTds+
              '<td class="c _rf_akcell"'+(co?(' data-rf-akstur="'+co.id+'"'):'')+'></td>'+
              nextCell+
              '<td style="text-align:right;white-space:nowrap">'+doc+
@@ -914,6 +1106,30 @@
       '<span class="rf-pill rf-pill--done">✓ '+n2026+' með úttekt</span>'+
       '<span class="rf-pill rf-pill--pending">⚠ '+nNeed+' vantar</span>'+
       '<span class="rf-pill rf-pill--overdue">🔴 '+nOverdue+' liðin</span>'+
+      '</div>';
+    // ── þjónusturofi + skýring + leit innan félagsins ─────────────────────────
+    function svcBtn(k,label){ return '<button type="button" class="rf-svcbtn _rf_svc'+(_state.svc===k?' is-on':'')+'" data-svc="'+k+'">'+label+'</button>'; }
+    var svcBar='<div class="rf-svcbar"><div class="rf-svcrow">'+
+      '<span class="rf-svclab">SÝNA</span>'+
+      svcBtn('both','Bæði')+svcBtn('sl','🧯 Slökkvitæki')+svcBtn('br','🚨 Brunakerfi')+
+      '<span class="rf-svcsep"></span>'+
+      '<span class="rf-leg"><i style="background:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#062815)"></i>skýrsla á skrá</span>'+
+      '<span class="rf-leg"><i style="background:linear-gradient(145deg,#3a6ae8,#1c3d8c 60%,#0a1a3a)"></i>aðeins í búnaðarsögu</span>'+
+      '<span class="rf-leg"><i style="background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10)"></i>skoðun liðin</span>'+
+      '<span class="rf-bsearch">'+
+        '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#9aa3b5" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>'+
+        '<input class="_rf_bq" placeholder="Leita að byggingu…">'+
+      '</span>'+
+      '</div></div>';
+    function statCard(cls,label,val,sub){
+      return '<div class="rf-stat rf-stat--'+cls+'"><div class="rf-stat__l">'+label+'</div>'+
+        '<div class="rf-stat__v">'+val+'<span class="rf-stat__s">'+esc(sub)+'</span></div></div>';
+    }
+    var statsHtml='<div class="rf-stats">'+
+      statCard('byg','BYGGINGAR',blds.length,'í yfirliti')+
+      statCard('sl','🧯 SLÖKKVITÆKI',totSl,slDoneCur+' skýrslur '+CURY)+
+      statCard('br','🚨 BRUNAKERFI',totBr,brDoneCur+' skýrslur '+CURY)+
+      statCard('od','SKOÐUN LIÐIN',nOverdue,'byggingar með liðna skoðun')+
       '</div>';
     var docs=[];
     try{ docs=(await listFirmDocs(name))||[]; }catch(e){ console.warn('[rekstrarfelog] docs',e); }
@@ -961,20 +1177,27 @@
       '<div style="display:flex;gap:18px;flex-wrap:wrap">'+
         '<div style="flex:1 1 100%;min-width:280px">'+
           '<div style="font-weight:600;font-size:13px;color:var(--ink2);margin-bottom:6px">Byggingar / húsfélög — úttektir</div>'+
-          summary+
+          summary+ svcBar + statsHtml +
           '<div class="rf-tblwrap"><div class="rf-tblscroll"><table class="rf-tbl"><thead><tr>'+
           '<th>Bygging</th>'+
           '<th>Kennitala</th>'+
-          '<th class="c">Tæki</th>'+
-          '<th class="c">2023</th>'+
-          '<th class="c">2024</th>'+
-          '<th class="c">2025</th>'+
-          '<th class="c">2026</th>'+
+          '<th class="c">Tæki'+svcKey()+'</th>'+
+          '<th class="c rf-yh">2023'+svcKey()+'</th>'+
+          '<th class="c rf-yh">2024'+svcKey()+'</th>'+
+          '<th class="c rf-yh">2025'+svcKey()+'</th>'+
+          '<th class="c rf-yh">2026'+svcKey()+'</th>'+
           '<th class="c" title="Akstursleið — smelltu til að setja stað á leið 1/2/3">🚗</th>'+
-          '<th>Næsta skoðun</th>'+
-          '<th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>'+
+          '<th>Næsta skoðun'+svcKey()+'</th>'+
+          '<th></th></tr></thead><tbody>'+rows+
+          '<tr class="_rf_norow" style="display:none"><td colspan="10" class="rf-nores">Engin bygging passar við leitina.</td></tr>'+
+          '</tbody></table></div>'+
+          '<div class="rf-tblfoot"><span><b>'+blds.length+'</b> byggingar'+
+            (showSl?' · <b style="color:#1f9d57">'+slDoneCur+'</b> slökkvitækjaskýrslur '+CURY:'')+
+            (showBr?' · <b style="color:#c0241f">'+brDoneCur+'</b> brunakerfisskýrslur '+CURY:'')+
+            (showBr?' · <b>'+nBruSvc+'</b> í brunakerfisþjónustu':'')+
+          '</span></div></div>'+
           '<button class="_rf_addb" style="margin-top:8px;padding:6px 12px;background:var(--surface);border:1px dashed var(--brd2);border-radius:8px;color:var(--brand);font-weight:600;font-size:12.5px;cursor:pointer">+ Bæta við byggingu / fyrirtæki</button>'+
-          '<div style="font-size:11px;color:var(--ink4);margin-top:6px">Árdálkar sýna fjölda tækja sem úttekt nær til. <span style="color:#15803d">Grænn + 📄</span> = úttektarskýrsla á skrá (viðhengi); <span style="color:var(--brand)">blár</span> = aðeins skráð í búnaðarsögu. «Næsta skoðun» = fyrsti gjalddagi, ⚠ = liðinn.</div>'+
+          '<div style="font-size:11px;color:var(--ink4);margin-top:6px">Efri lína hverrar frumu = <b>🧯 slökkvitæki</b>, neðri = <b>🚨 brunakerfi</b> (skiptu með rofanum að ofan). Árdálkar sýna fjölda tækja sem skoðunin nær til. <span style="color:#15803d">Grænn + 📄</span> = skýrsla á skrá; <span style="color:var(--brand)">blár</span> = aðeins skráð í búnaðarsögu / skýrsla í vinnslu. «Næsta skoðun» = fyrsti gjalddagi, ⚠ = liðinn. Brunakerfis-gögnin koma úr sömu heimild og «🔥 Brunakerfi yfirlit».</div>'+
         '</div>'+
         '<div style="flex:1;min-width:260px">'+
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
@@ -1014,6 +1237,31 @@
       info.simi=simi; info.tengilidur=tengil;
       if(window.Toast&&Toast.show) Toast.show('✓ Upplýsingar vistaðar');
       fillBody(body,name,info); // re-render with the new values
+    });
+
+    // þjónusturofi: Bæði / 🧯 Slökkvitæki / 🚨 Brunakerfi — valið er vistað og
+    // gildir fyrir ÖLL félög (sama og notandinn býst við þegar hann flettir).
+    body.querySelectorAll('._rf_svc').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.preventDefault(); e.stopPropagation();
+        var k=btn.getAttribute('data-svc');
+        if(!k || k===_state.svc) return;
+        setSvc(k);
+        fillBody(body, name, info);
+      });
+    });
+    // leit að byggingu innan félagsins — síar raðirnar beint í DOM-inu
+    // (engin ný gagnasókn, svarar strax).
+    var bq=body.querySelector('._rf_bq');
+    if(bq) bq.addEventListener('input', function(){
+      var q=(bq.value||'').toLowerCase().trim();
+      var none=body.querySelector('._rf_norow'), hits=0;
+      body.querySelectorAll('.rf-tbl tbody tr[data-rfq]').forEach(function(tr){
+        var ok = !q || (tr.getAttribute('data-rfq')||'').indexOf(q)>=0;
+        tr.style.display = ok ? '' : 'none';
+        if(ok) hits++;
+      });
+      if(none) none.style.display = hits ? 'none' : '';
     });
 
     // wire building -> company record
