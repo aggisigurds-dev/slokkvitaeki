@@ -331,11 +331,22 @@
     // að wire() hefur keyrt og hendir þar með hlusturum á stökum þáttum. Rótin
     // (#_bky-root) lifir af þá aðgerð. Fáninn kemur í veg fyrir tvítengingu,
     // því wire() keyrir við hverja endurteiknun á sömu rót.
-    if (!root.dataset._bkyStadaBound) {
-      root.dataset._bkyStadaBound = '1';
-      root.addEventListener('click', async e => {
-      const chip = e.target.closest && e.target.closest('._bky-stada');
-      if (!chip || !root.contains(chip)) return;
+    bindStada();
+    wireRows(root);
+  }
+
+  // Hlustarinn er á DOCUMENT í CAPTURE-fasa, ekki á chippunni né rótinni.
+  // Prófun á forskoðun sýndi: smellurinn nær document í capture EN kemst aldrei
+  // niður í töfluna — eitthvað á milli stöðvar útbreiðsluna (og bein tenging á
+  // stökum þáttum lifir hvort eð er ekki af endurbyggingu raða frá öðrum patch).
+  // Ysti punkturinn sem við vitum að atburðurinn nær er því notaður.
+  let _stadaBound = false;
+  function bindStada() {
+    if (_stadaBound) return;
+    _stadaBound = true;
+    document.addEventListener('click', async e => {
+      const chip = e.target && e.target.closest && e.target.closest('._bky-stada');
+      if (!chip) return;
       e.stopPropagation(); e.preventDefault();
       const id = +chip.dataset.id; if (!id) return;
       if (!window.AppSettings || !AppSettings.save) { alert('Engar stillingar tiltækar'); return; }
@@ -356,8 +367,10 @@
         Toast.show(st === 'wip' ? '✓ Tekið úr vinnslu' : '✓ Sett í vinnslu — birtist á ÞjónustuVerkstæði');
       }
       render();
-      });
-    }
+    }, true);
+  }
+
+  function wireRows(root) {
     root.querySelectorAll('._bky-row').forEach(tr => tr.addEventListener('click', e => {
       if (e.target.closest('a')) return;            // ár-hlekkur opnar sjálfur
       if (e.target.closest('._bky-stada')) return;  // staða-chippan á sinn eigin smell
