@@ -1060,10 +1060,13 @@
       return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+inner+'</span>';
     }
     // Staflar slökkvitækja-/brunakerfis-frumu eftir völdum þjónusturofa.
-    function stackTd(slHtml, brHtml, cls){
+    // brOn=false → sleppa brunakerfis-línunni fyrir byggingu sem er EKKI í
+    // brunakerfisþjónustu (ósk Agnars 2026-07-28: „taka út brunakerfisþjónustu
+    // hjá þeim sem eru ekki skráð í þá þjónustu"). Sjálfgefið true.
+    function stackTd(slHtml, brHtml, cls, brOn){
       var p=[];
       if(showSl) p.push('<span>'+slHtml+'</span>');
-      if(showBr) p.push('<span>'+brHtml+'</span>');
+      if(showBr && brOn!==false) p.push('<span>'+brHtml+'</span>');
       return '<td class="c'+(cls?' '+cls:'')+'"><div class="rf-stack">'+p.join('')+'</div></td>';
     }
     // Tvílínu-lykill undir dálkhaus (🧯 SLÖKKVI / 🚨 BRUNA) — fylgir rofanum,
@@ -1150,18 +1153,18 @@
       var brCntTxt = bUnits>0 ? String(bUnits) : (bHasData?'–':'0');
       var unitCell = stackTd(
         '<span class="rf-cnt rf-cnt--sl'+(units>0?'':' is-zero')+'" title="Slökkvitæki á staðnum"><em>🧯</em>'+slCntTxt+'</span>',
-        '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>');
+        '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>', '', bHasData);
       var yTds='';
       ['2023','2024','2025','2026'].forEach(function(y,i){
         var done=[d23,d24,d25,d26][i], rep=[false,!!att[0],!!att[1],!!att[2]][i], file=[f23,f24,f25,f26][i];
-        yTds += stackTd(yPillSl(done,rep,units,lks[y],file,y), yPillBr(bY[y],bUnits,y));
+        yTds += stackTd(yPillSl(done,rep,units,lks[y],file,y), yPillBr(bY[y],bUnits,y), '', bHasData);
       });
       var isOver=false;
       if(st && st.next){ isOver = st.next < today; }
       if((showSl&&isOver&&slHasData)||(showBr&&bOver)) nOverdue++;
       var nextCell = stackTd(
         nextPill(st&&st.next?st.next:null,'sl',isOver&&slHasData),
-        nextPill(bx?bx.next:null,'br',bOver), 'rf-nextcell');
+        nextPill(bx?bx.next:null,'br',bOver), 'rf-nextcell', bHasData);
       // 4px litarönd vinstra megin: rauð = skoðun liðin, græn = eitthvert ár
       // með úttekt/skýrslu, annars grá (blánar á hover gegnum CSS).
       var anyDone = (showSl&&(d23||d24||d25||d26)) || (showBr&&Object.keys(bY).length>0);
