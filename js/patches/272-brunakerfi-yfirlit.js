@@ -139,6 +139,38 @@
       'style="display:inline-flex;align-items:center;gap:4px;' + pill + ';border-radius:99px;background:' + bg + ';border:1px solid ' + bd + ';color:' + col + ';font-weight:700">' +
       '<span style="width:' + dotSz + ';height:' + dotSz + ';border-radius:50%;display:inline-block;' + dot + '"></span>' + yy + '</span></td>';
   }
+  // ── Staða: „Í vinnslu" (2026-07-28, ósk Agnars) ────────────────────────────
+  // Brunakerfis-skoðun sem er BYRJUÐ en ekki búin átti hvergi heima — hún sást
+  // ekki í „Fyrirtæki í Þjónustu" né á ÞjónustuVerkstæði. Við skrifum í NÁKVÆMLEGA
+  // sama gagnastað og patch 153 („Tekið út"-hakið) og 190 (verkstæðisborðið) lesa:
+  //   AppSettings.arsskodun_customers[fyrirtaeki_id].field_inspected_year
+  //     === þetta ár  →  🔵 „Í vinnslu"   (skoðun hafin, skjöl eftir)
+  //   last_year_inspected === þetta ár    →  ✅ „Skoðað"  (fullklárað)
+  // Þannig birtist brunakerfis-verk sjálfkrafa á hinum tveimur borðunum án
+  // nokkurrar nýrrar töflu eða samstillingar.
+  const ARS_KEY = 'arsskodun_customers';
+  function arsFor(id) {
+    try {
+      const m = (window.AppSettings && AppSettings.path && AppSettings.path(ARS_KEY)) || {};
+      return m[String(id)] || {};
+    } catch (_) { return {}; }
+  }
+  function stodaHtml(r) {
+    const a = arsFor(r.id);
+    const done = +a.last_year_inspected === NOW;
+    const wip = !done && +a.field_inspected_year === NOW;
+    const base = 'display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;' +
+      'font-size:10.5px;font-weight:800;letter-spacing:.02em;white-space:nowrap;cursor:pointer;border:1px solid;';
+    if (done) return '<span class="_bky-stada" data-id="' + r.id + '" data-st="done" ' +
+      'title="Skoðun ' + NOW + ' fullkláruð — smelltu til að setja aftur í vinnslu" ' +
+      'style="' + base + 'background:#dcfce7;border-color:#86efac;color:#166534">✅ Skoðað ' + NOW + '</span>';
+    if (wip) return '<span class="_bky-stada" data-id="' + r.id + '" data-st="wip" ' +
+      'title="Í vinnslu — birtist á ÞjónustuVerkstæði og í Fyrirtæki í Þjónustu. Smelltu til að taka úr vinnslu" ' +
+      'style="' + base + 'background:#2563eb;border-color:#1d4ed8;color:#fff">⏳ Í vinnslu</span>';
+    return '<span class="_bky-stada" data-id="' + r.id + '" data-st="none" ' +
+      'title="Setja í vinnslu — þá birtist fyrirtækið á ÞjónustuVerkstæði og sem „Í vinnslu" í Fyrirtæki í Þjónustu" ' +
+      'style="' + base + 'background:#fff;border-color:#cbd5e1;color:#64748b">＋ Í vinnslu</span>';
+  }
   function sortTh(label, col, align, cls) {
     const active = state.sortCol === col;
     const arrow = active ? (state.sortDir === 'asc' ? ' ▲' : ' ▼') : ' ⇅';
@@ -220,9 +252,10 @@
               sortTh('Mánuður', 'month', 'center', 'wcol') +
               sortTh('Síðast', 'latest', 'center', 'wcol') +
               sortTh('Skjöl', 'count', 'center') +
+              '<th style="text-align:center;padding:9px 8px;color:#475569;font-size:11px;font-weight:800;white-space:nowrap">Staða</th>' +
             '</tr></thead><tbody>' +
             (rows.length ? rows.map(rowHtml).join('') :
-              '<tr><td colspan="' + (5 + YEARS.length) + '" style="padding:30px;text-align:center;color:#94a3b8;font-style:italic">Engin fyrirtæki passa við síuna.</td></tr>') +
+              '<tr><td colspan="' + (6 + YEARS.length) + '" style="padding:30px;text-align:center;color:#94a3b8;font-style:italic">Engin fyrirtæki passa við síuna.</td></tr>') +
             '</tbody></table>' +
         '</div>' +
         '<div style="margin-top:10px;font-size:11.5px;color:#64748b">Grænn = skýrsla þess árs (smelltu til að opna) · gulur = vantar ' + NOW + ' · grár = engin skýrsla það ár.</div>' +
@@ -253,6 +286,7 @@
         '<td class="_bky-wcol" style="padding:4px 8px;text-align:center;font-size:11px;white-space:nowrap">' + monCell + '</td>' +
         '<td class="_bky-wcol" style="padding:4px 8px;text-align:center;color:#0f172a;font-size:11px;white-space:nowrap">' + esc(last) + '</td>' +
         '<td style="padding:4px 8px;text-align:center;color:#0f172a;font-size:12px;font-weight:700">' + r.count + '</td>' +
+        '<td style="padding:4px 8px;text-align:center">' + stodaHtml(r) + '</td>' +
       '</tr>';
     }
     // Mobile-fold: heimilisfang · síðasti skoðunarmánuður undir nafninu á mjóum
@@ -267,6 +301,7 @@
       '<td class="_bky-wcol" style="padding:9px 10px;text-align:center;font-size:12.5px;white-space:nowrap">' + monCell + '</td>' +
       '<td class="_bky-wcol" style="padding:9px 10px;text-align:center;color:#0f172a;font-size:12px;white-space:nowrap">' + esc(last) + '</td>' +
       '<td style="padding:9px 10px;text-align:center;color:#0f172a;font-size:13px;font-weight:700">' + r.count + '</td>' +
+      '<td style="padding:9px 10px;text-align:center">' + stodaHtml(r) + '</td>' +
     '</tr>';
   }
 
@@ -286,8 +321,59 @@
     }));
     const s = root.querySelector('._bky-search');
     if (s) s.addEventListener('input', () => { state.search = s.value; const p = s.selectionStart; render(); const n = document.querySelector('._bky-search'); if (n) { n.focus(); try { n.setSelectionRange(p, p); } catch (_) {} } });
+    // Staða-chippan: setur/tekur fyrirtækið úr vinnslu. Skrifar AÐEINS þessa
+    // einu færslu (AppSettings djúp-merge-ar) — sama race-vörn og patch 153:1257,
+    // svo hak á einni röð yfirskrifi ekki nýlega breytingu á annarri.
+    //
+    // 2026-07-28: hlustarinn er á RÓTINNI (delegation), ekki á hverri chippu.
+    // Ástæðan fannst við prófun á forskoðun: chippurnar teiknuðust rétt en
+    // smellurinn gerði ALDREI neitt, því annar patch endurbyggir raðirnar eftir
+    // að wire() hefur keyrt og hendir þar með hlusturum á stökum þáttum. Rótin
+    // (#_bky-root) lifir af þá aðgerð. Fáninn kemur í veg fyrir tvítengingu,
+    // því wire() keyrir við hverja endurteiknun á sömu rót.
+    bindStada();
+    wireRows(root);
+  }
+
+  // Hlustarinn er á DOCUMENT í CAPTURE-fasa, ekki á chippunni né rótinni.
+  // Prófun á forskoðun sýndi: smellurinn nær document í capture EN kemst aldrei
+  // niður í töfluna — eitthvað á milli stöðvar útbreiðsluna (og bein tenging á
+  // stökum þáttum lifir hvort eð er ekki af endurbyggingu raða frá öðrum patch).
+  // Ysti punkturinn sem við vitum að atburðurinn nær er því notaður.
+  let _stadaBound = false;
+  function bindStada() {
+    if (_stadaBound) return;
+    _stadaBound = true;
+    document.addEventListener('click', async e => {
+      const chip = e.target && e.target.closest && e.target.closest('._bky-stada');
+      if (!chip) return;
+      e.stopPropagation(); e.preventDefault();
+      const id = +chip.dataset.id; if (!id) return;
+      if (!window.AppSettings || !AppSettings.save) { alert('Engar stillingar tiltækar'); return; }
+      const st = chip.dataset.st;
+      // none → í vinnslu · wip → af · done → aftur í vinnslu (opnar fullklárað verk)
+      const patch = (st === 'wip')
+        ? { field_inspected_year: 0 }
+        : { field_inspected_year: NOW, last_year_inspected: 0 };
+      const prev = chip.style.opacity; chip.style.opacity = '.5'; chip.style.pointerEvents = 'none';
+      let ok = false;
+      try { ok = await AppSettings.save({ [ARS_KEY]: { [String(id)]: patch } }); } catch (_) { ok = false; }
+      if (ok === false) {
+        chip.style.opacity = prev; chip.style.pointerEvents = '';
+        alert('Vistun mistókst — staðan var ekki uppfærð.');
+        return;
+      }
+      if (window.Toast && Toast.show) {
+        Toast.show(st === 'wip' ? '✓ Tekið úr vinnslu' : '✓ Sett í vinnslu — birtist á ÞjónustuVerkstæði');
+      }
+      render();
+    }, true);
+  }
+
+  function wireRows(root) {
     root.querySelectorAll('._bky-row').forEach(tr => tr.addEventListener('click', e => {
-      if (e.target.closest('a')) return;   // ár-hlekkur opnar sjálfur
+      if (e.target.closest('a')) return;            // ár-hlekkur opnar sjálfur
+      if (e.target.closest('._bky-stada')) return;  // staða-chippan á sinn eigin smell
       const id = tr.dataset.id;
       if (window._openCompanySafe) window._openCompanySafe(+id);
       else if (window.App && App.switchView) { App.switchView('companies'); }
