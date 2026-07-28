@@ -645,6 +645,40 @@
     const ovReik   = _all.filter(r => r.steps.reikningur || r.reik2026 || (r.docs && r.docs.reik)).length;
     const statChip = (emoji, n, label) => '<span class="sv-chip" style="cursor:default"><span class="n">' + n + '</span> ' + emoji + ' ' + esc(label) + '</span>';
 
+    // ── Peningaboxið (2026-07-28, ósk Agnars: „heildar áætlað virði … fjöldi
+    //    ósendra skýrslna og virði tótal") ────────────────────────────────────
+    // Áætluðu tekjurnar (r.tekjur) stóðu áður aðeins á hverju spjaldi fyrir sig
+    // og sem ein tala í undirfyrirsögninni. Hér er þeim safnað saman efst til
+    // hægri svo sjá megi í einu augnkasti hvað liggur úti.
+    //   · Í VINNSLU        = verkin á borðinu núna
+    //   · ÓSENDAR SKÝRSLUR = úttekt búin EN skýrsla ekki send (peningur sem
+    //                        bíður AÐEINS eftir pappírsvinnu — það er talan sem
+    //                        segir hvað er hægt að rukka strax)
+    //   · HEILDARVIRÐI     = í vinnslu + á dagskrá (allt óklárað á árinu)
+    const isOsend = r => !!(r.steps && r.steps.uttekt) && !(r.steps && r.steps.send) && !(r.docs && r.docs.skyrsla);
+    const osendList = _all.filter(isOsend);
+    const osendSum = osendList.reduce((s, r) => s + (+r.tekjur || 0), 0);
+    const dagskraSum = b.dagskra.reduce((s, r) => s + (+r.tekjur || 0), 0);
+    const heildSum = vinnslaSum + dagskraSum;
+    const moneyRow = (label, val, sub, col) =>
+      '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:5px 0">' +
+        '<span style="font-size:10.5px;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.6);white-space:nowrap">' + esc(label) + '</span>' +
+        '<span style="text-align:right;white-space:nowrap">' +
+          '<b style="font-family:\'Space Mono\',monospace;font-size:15px;font-weight:700;color:' + col + '">' + val + '</b>' +
+          (sub ? '<span style="font-size:10.5px;color:rgba(255,255,255,.45);margin-left:7px">' + esc(sub) + '</span>' : '') +
+        '</span></div>';
+    const moneyBox =
+      '<div title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk" ' +
+        'style="min-width:290px;border-radius:14px;padding:11px 15px;background:linear-gradient(180deg,#23262d,#15171b 55%,#0a0b0e);' +
+        'border:1px solid #0a0b0d;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 26px -14px rgba(0,0,0,.7)">' +
+        '<div style="font-size:10px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.45);margin-bottom:3px">ÁÆTLAÐ VIRÐI</div>' +
+        moneyRow('Í VINNSLU', fmtSum(vinnslaSum) || '—', b.vinnsla.length + ' verk', '#8fb0ff') +
+        '<div style="height:1px;background:rgba(255,255,255,.09)"></div>' +
+        moneyRow('ÓSENDAR SKÝRSLUR', fmtSum(osendSum) || '—', osendList.length + (osendList.length === 1 ? ' skýrsla' : ' skýrslur'), '#ffc46b') +
+        '<div style="height:1px;background:rgba(255,255,255,.09)"></div>' +
+        moneyRow('HEILDARVIRÐI', fmtSum(heildSum) || '—', 'm. á dagskrá', '#ffffff') +
+      '</div>';
+
     // Collapsible side drawers (collapsed by default).
     function drawerRows(list, withStart) {
       if (!list.length) return '<div class="sv-drawer-row"><span class="mn">Ekkert hér.</span></div>';
@@ -692,13 +726,16 @@
           '<div style="font-size:26px;font-weight:700;color:#ffffff;letter-spacing:-.01em;line-height:1.1;text-shadow:0 1px 3px rgba(0,0,0,.35)">🔧 ÞjónustuVerkstæði</div>' +
           '<div style="font-size:13px;color:#c7cdd8;margin-top:4px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · áætl. <b style="font-family:\'Space Mono\',monospace;color:#ffffff">' + fmtSum(vinnslaSum) + '</b>' : '') + '</div>' +
         '</div>' +
-        '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">' +
-          '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>Spjöld</button></div>' +
-          '<select class="sv-sort" title="Raða Í-vinnslu listanum">' +
-            '<option value="name"' + (_sort === 'name' ? ' selected' : '') + '>Nafn (A–Ö)</option>' +
-            '<option value="revenue"' + (_sort === 'revenue' ? ' selected' : '') + '>Hæstu tekjur</option>' +
-            '<option value="marked"' + (_sort === 'marked' ? ' selected' : '') + '>Nýlega merkt</option>' +
-          '</select>' +
+        '<div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end">' +
+          '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">' +
+            '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>Spjöld</button></div>' +
+            '<select class="sv-sort" title="Raða Í-vinnslu listanum">' +
+              '<option value="name"' + (_sort === 'name' ? ' selected' : '') + '>Nafn (A–Ö)</option>' +
+              '<option value="revenue"' + (_sort === 'revenue' ? ' selected' : '') + '>Hæstu tekjur</option>' +
+              '<option value="marked"' + (_sort === 'marked' ? ' selected' : '') + '>Nýlega merkt</option>' +
+            '</select>' +
+          '</div>' +
+          moneyBox +
         '</div>' +
       '</div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap;margin:0 2px 16px">' +
