@@ -647,6 +647,9 @@
       // Allt sem er óbúið á árinu: Eftir + Sleppt + Á dagskrá + Í vinnslu —
       // en ÁN „❓ Óvíst" (líklega óvart í þjónustu, sjá isSuspect).
       arr = arr.filter(c => (+c._ars.last_year_inspected || 0) < curYear && !isSuspect(c));
+    } else if (state.status === 'nytt') {
+      // Handvirkt merkt NÝTT á fyrirtækjaprófílnum (patch 281).
+      arr = arr.filter(c => !!(window.NyttBadge && NyttBadge.is(c.id)));
     } else if (state.status === 'never') {
       arr = arr.filter(c => !c._ars.last_year_inspected);
     } else if (state.status === 'skipped2025') {
@@ -1070,7 +1073,10 @@
               { v: 'skipped2025', label: '🟡 Slepptir í fyrra' },
               { v: 'priority', label: '❗ Forgangur' },
               { v: 'suspect', label: '❓ Óvíst' },
-              { v: 'never', label: '⛔ Aldrei' }
+              { v: 'never', label: '⛔ Aldrei' },
+              // 2026-07-28: handvirka NÝTT-merkið (patch 281 — takki á
+              // fyrirtækjaprófílnum). Sama merki og sía og í Brunakerfi yfirliti.
+              { v: 'nytt', label: '🆕 Nýtt' }
             ].map(s => `
               <button data-status="${s.v}" class="_ars-st" style="padding:7px 11px;border:none;background:${state.status===s.v?'var(--brand)':'var(--surface)'};color:${state.status===s.v?'#fff':'var(--ink2)'};cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${esc(s.label)}</button>
             `).join('')}
@@ -1841,7 +1847,7 @@
               return `
                 <tr class="_ars-row" data-co-id="${c.id}" style="border-bottom:1px solid var(--brd);cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
                   <td style="padding:8px 11px">
-                    <div style="font-weight:600;color:var(--ink1)">${esc(c.nafn || '—')}</div>
+                    <div style="font-weight:600;color:var(--ink1)">${esc(c.nafn || '—')}${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}</div>
                     ${c.kennitala ? `<div style="font-size:10.5px;color:var(--ink4);font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
                     ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''}</div>` : ''}
                   </td>
