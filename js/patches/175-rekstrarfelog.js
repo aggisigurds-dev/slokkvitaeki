@@ -469,7 +469,10 @@
   // Each fire unit records its most recent inspection (last_insp) and next-due
   // date (next_insp). We match a building name to its units (handling the messy
   // free-text client field) and roll up per-year counts + the earliest next-due.
-  var _equip=null, _equipPromise=null;
+  var _equip=null, _equipPromise=null, _equipAt=0;
+  // Tækja-vísitalan skannar ALLA uttaeki-töfluna (7000+ raðir, 8 síður) — hún er
+  // því endurnýjuð með tímamörkum (sjá showOurView) en ekki í hvert sinn.
+  function invalidateEquip(){ _equip=null; _equipPromise=null; _equipAt=0; }
   function _norm(s){ return String(s||'').toLowerCase()
       .replace(/húsfélagið|húsfélag|húsf\.?|rekstrarfélag|bílskýli|bílageymsla|sameign/g,'')
       .replace(/ehf\.?|slf\.?|sf\.?|svf\.?/g,'')
@@ -500,6 +503,7 @@
       // client-strengja-útgáfum saman (Hamraborg 7 sýndi 30 í stað 14).
       _equip={ match:function(name){ var b=_norm(name); if(base[b])return base[b];
         var c=_compact(name); if(comp[c])return comp[c]; return null; } };
+      _equipAt=Date.now();
       return _equip;
     })().catch(function(e){
       // 2026-06-12: höfnuð promise sat áður föst í cache-inu — hver einasta
@@ -532,6 +536,12 @@
   //   · brunakerfi_skyrslur → skýrslur sem appið sjálft býr til (draft/final)
   // Næsta skoðun = ár síðustu skoðunar + 1, í skoðunarmánuði félagsins.
   var _bru=null, _bruPromise=null;
+  // 2026-07-28 (Agnar: „byrtist þarna líka strax og verður grænn"): vísitalan
+  // var áður geymd út alla vafra-lotuna, svo ný skýrsla sem sett var inn á
+  // fyrirtækjaprófílinn birtist EKKI hér fyrr en síðan var endurhlaðin. Nú er
+  // hún hreinsuð í hvert sinn sem síðan er opnuð (og með ↻ Uppfæra-takkanum) —
+  // þetta eru tvær litlar fyrirspurnir, ekki full skönnun.
+  function invalidateBru(){ _bru=null; _bruPromise=null; }
   async function getBruIndex(){
     if(_bru) return _bru;
     if(_bruPromise) return _bruPromise;
@@ -668,6 +678,7 @@
           '<button id="_rf_m_firms" class="rf-btn _rf_modebtn" type="button">🏢 Eftir félögum</button>'+
           '<button id="_rf_m_all" class="rf-btn _rf_modebtn" type="button">📋 Allar byggingar</button>'+
           '<span style="margin-left:auto;display:inline-flex;gap:8px">'+
+          '<button id="_rf_refresh" class="rf-btn" type="button" title="Sækja skýrslur og tæki upp á nýtt úr gagnagrunni">↻ Uppfæra</button>'+
           '<a href="/rekstrarfelog-uttektir.xlsx" download class="rf-btn">📊 Aðgerðalisti</a>'+
           '<button id="_rf_add" class="rf-btn" type="button">+ Nýtt rekstrarfélag</button></span>'+
           '</div>';
@@ -692,6 +703,19 @@
     }
     v.querySelector('#_rf_q').addEventListener('input', function(e){ _state.q=e.target.value; if(_state.mode==='all') renderOverview(); else renderList(); });
     v.querySelector('#_rf_add').addEventListener('click', addFirm);
+    // ↻ Uppfæra — hendir ÖLLUM vísitölum og sækir allt upp á nýtt (skýrslur,
+    // tæki og lifandi rekstrarfélög úr gagnagrunni).
+    var refBtn=v.querySelector('#_rf_refresh');
+    if(refBtn) refBtn.addEventListener('click', async function(){
+      refBtn.disabled=true; var old=refBtn.textContent; refBtn.textContent='↻ Sæki…';
+      invalidateBru(); invalidateEquip();
+      _liveRF=null; _liveRFPromise=null;
+      try{ await ensureLiveRF(); }catch(e){}
+      await renderView();
+      if(window.Toast&&Toast.show) Toast.show('✓ Uppfært úr gagnagrunni');
+      var nb=viewEl()&&viewEl().querySelector('#_rf_refresh');
+      if(nb){ nb.disabled=false; nb.textContent=old; }
+    });
     v.querySelector('#_rf_m_firms').addEventListener('click', function(){ _state.mode='firms'; applyMode(); });
     v.querySelector('#_rf_m_all').addEventListener('click', function(){ _state.mode='all'; applyMode(); });
     applyMode();
@@ -1429,6 +1453,13 @@
     v.style.display=''; v.classList.add('active');
     document.querySelectorAll('.vnav-btn').forEach(function(b){ b.classList.remove('active'); });
     btn.classList.add('active');
+    // 2026-07-28 (Agnar): skýrsla sem sett er inn á fyrirtækjaprófílinn á að
+    // vera komin hingað — og orðin græn — um leið og maður kemur til baka.
+    // Brunakerfis-vísitalan er því alltaf sótt upp á nýtt þegar síðan er opnuð
+    // (2 litlar fyrirspurnir); tækja-vísitalan (7000+ raðir) aðeins ef hún er
+    // orðin eldri en 2 mínútur. ↻ Uppfæra hreinsar allt strax.
+    invalidateBru();
+    if(Date.now()-_equipAt > 120000) invalidateEquip();
     renderView();
   }
   function injectTab(){
@@ -1500,6 +1531,9 @@
     ensureLive: ensureLiveRF,
     getMerged: getData,
     getRaw: getRawData,
+    // 2026-07-28: hendir vísitölunum svo næsta opnun/teikning sæki ferskt úr
+    // gagnagrunni. Kalla á þetta eftir að skýrsla/skjal er vistað annars staðar.
+    invalidate: function(){ invalidateBru(); invalidateEquip(); },
     byKt: function(kt){
       var d = digits(kt); if (d.length < 10) return null;
       var data = getData();
