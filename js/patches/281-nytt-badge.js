@@ -25,7 +25,10 @@
 
   const STORAGE_KEY = 'arsskodun_customers';
   const FLAG = 'nytt_manual';
-  const PURPLE = '#7c3aed';
+  const PURPLE = '#7c3aed';        // merkið sjálft (pilla á ljósum bakgrunni)
+  // Takkinn situr í DÖKKU aðgerðaröðinni með hvítum texta, svo #7c3aed væri
+  // ólæsilegur þar — ljósari fjólublár er notaður á textann sjálfan.
+  const PURPLE_TXT = '#a78bfa';
 
   function toast(m) { if (window.Toast && Toast.show) Toast.show(m); else console.log('[nytt]', m); }
   function coName(coId) {
@@ -64,8 +67,17 @@
   function paint(btn, on) {
     btn.dataset.nytt = on ? '1' : '0';
     btn.textContent = on ? '✓ Nýtt' : '🆕 Nýtt';
-    btn.style.color = on ? PURPLE : '';
-    btn.style.fontWeight = on ? '800' : '';
+    // !important: skinnið (patch 245) og .btn-reglurnar setja lit á takkana með
+    // hærri sérhæfni — án þess sat textinn áfram hvítur (mælt á forskoðun 497).
+    if (on) {
+      btn.style.setProperty('color', PURPLE_TXT, 'important');
+      btn.style.setProperty('font-weight', '800', 'important');
+      btn.style.setProperty('border-color', PURPLE, 'important');
+    } else {
+      btn.style.removeProperty('color');
+      btn.style.removeProperty('font-weight');
+      btn.style.removeProperty('border-color');
+    }
     btn.title = on
       ? 'Merkt NÝTT — birtist með fjólubláu merki og undir „Nýtt"-síunni í Brunakerfi yfirliti og Fyrirtæki í Þjónustu. Smelltu til að taka af.'
       : 'Merkja sem NÝTT — birtist þá undir „Nýtt"-síunni í báðum yfirlitunum';
