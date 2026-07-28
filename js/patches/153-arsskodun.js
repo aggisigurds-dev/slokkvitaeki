@@ -619,7 +619,14 @@
       const eqTot = Object.values(a.equipment || {}).reduce((s, v) => s + (+v || 0), 0);
       return eqTot === 0;
     };
-    if (state.status === 'done') {
+    // 2026-07-28 (ósk Agnars — „leitin virðist biluð"): mánaðarsían vék þegar
+    // fyrir leit (sjá að ofan) EN stöðusían gerði það ekki. Stöðuflipinn geymist
+    // milli heimsókna, svo t.d. „Eftir"-flipinn tæmdi leitarniðurstöðurnar og
+    // það leit út eins og leitin fyndi ekkert. Nú hunsar frjáls leit ALLAR síur
+    // — hún fer alltaf yfir allan viðskiptavinahópinn.
+    if (hasSearch) {
+      // engin stöðusía meðan leitað er
+    } else if (state.status === 'done') {
       arr = arr.filter(c => +c._ars.last_year_inspected === curYear);
     } else if (state.status === 'suspect') {
       arr = arr.filter(isSuspect);
@@ -995,6 +1002,11 @@
        : state.status === 'suspect' ? `Óvíst — líklega óvart í þjónustu (engin saga, enginn mánuður, engin tæki)`
        : state.status === 'never'   ? `Aldrei skoðað`
        : `Allir mánuðir ${curYear}`);
+    // 2026-07-28: meðan leitað er gilda ENGAR síur (sjá filteredSorted), svo
+    // merkimiðinn má ekki halda áfram að segja „Jún 2026" — það var einmitt það
+    // sem lét leitina líta út fyrir að vera biluð.
+    const searching = !!state.search.trim();
+    const effFilterLabel = searching ? `Leit: „${esc(state.search.trim())}" — allir mánuðir og allar stöður` : filterLabel;
 
     main.innerHTML = `
       <div style="max-width:1720px;margin:0 auto;padding:10px 18px 60px">
@@ -1048,6 +1060,7 @@
         <!-- Filter strip -->
         <div class="_ars-filterstrip" style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
           <input id="_ars-search" type="search" placeholder="🔎 Leita…" value="${esc(state.search)}" style="flex:1;min-width:120px;max-width:190px;padding:8px 11px;border:1px solid var(--brd2);border-radius:8px;font:inherit;font-size:13px;background:var(--surface);color:var(--ink1);outline:none"/>
+          ${searching ? `<span id="_ars-searchall" title="Meðan leitað er gilda hvorki mánaðar- né stöðusía — leitin fer yfir alla viðskiptavini" style="display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;background:#1d4ed8;color:#fff;font-size:11.5px;font-weight:700;white-space:nowrap">🔎 Leit yfir allt<span id="_ars-clearsearch" title="Hreinsa leit og setja síur aftur á" style="cursor:pointer;opacity:.85;font-weight:800">✕</span></span>` : ''}
           <div class="_ars-statusrow" style="display:flex;gap:5px;border:1px solid var(--brd2);border-radius:8px;overflow:hidden;background:var(--surface)">
             ${[
               { v: 'all', label: 'Allt' },
@@ -1093,7 +1106,7 @@
         ${filteredAars.length > 0 ? `
         <div class="_ars-summary" style="margin-top:14px;padding:13px 16px;background:var(--surface2);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
           <div>
-            <div style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Samantekt — ${esc(filterLabel)}</div>
+            <div style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Samantekt — ${esc(effFilterLabel)}</div>
             <div style="font-size:13px;color:var(--ink2);margin-top:3px">${filteredAars.length} fyrirtæki í ársskoðun</div>
           </div>
           <div style="display:flex;gap:22px;flex-wrap:wrap">
@@ -1179,6 +1192,11 @@
     main.querySelector('#_ars-search')?.addEventListener('input', e => {
       clearTimeout(_searchTimer);
       _searchTimer = setTimeout(() => { state.search = e.target.value; saveState(); render(); }, 200);
+    });
+    // ✕ á „Leit yfir allt"-merkinu: hreinsar leitina svo síurnar taki aftur gildi
+    main.querySelector('#_ars-clearsearch')?.addEventListener('click', () => {
+      clearTimeout(_searchTimer);
+      state.search = ''; saveState(); render();
     });
     main.querySelectorAll('._ars-row, ._ars-card').forEach(el => {
       el.addEventListener('click', e => {

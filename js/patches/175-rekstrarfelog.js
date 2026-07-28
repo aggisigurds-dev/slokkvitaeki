@@ -271,14 +271,43 @@
         merged[name] = { domain:'', emails:[], buildings: sites.slice(), drive:'', _live:true };
         return;
       }
-      // til fyrir → bæta AÐEINS við byggingum sem vantar (dedup kt::nafn)
+      // 2026-07-28 (Agnar villa 4 — „sama bygging birtist margoft"): dedupið var
+      // á NÁKVÆMU `kt::nafn`, svo hvert einasta stafsetningar-brigði slapp í
+      // gegn og varð að auka-röð: „Midtown hotel" við hlið „Midtown Hotel",
+      // „Bríetartún 9 og 11" við hlið „Bríetartún 9-11", „Laugavegur 1 (Ice
+      // Apartments)" við hlið „Laugavegur 1".
+      //
+      // Nú er byrjað á LIFANDI stöðunum (hver þeirra = ein fyrirtaeki-röð, þeir
+      // eru aldrei felldir saman — sbr. regluna um að staðir rekstrarfélags megi
+      // aldrei sameinast) og handskráð færsla er sleppt ef hún vísar augljóslega
+      // á sama stað. Tvö sjálfstæð próf, hvort um sig krefst SÖMU kennitölu:
+      //   · fold-að nafn eins  (hástafir/bandstrik/broddar hunsuð)
+      //   · fold-að heimilisfang eins
+      // Ólík kennitala ⇒ alltaf tvær raðir (t.d. „Húsfélagið Laugavegi 42" og
+      // „Heimaleiga - Laugavegur 42" eru sitt hvor lögaðilinn á sama húsi).
       var info = merged[name];
-      var blds = Array.isArray(info.buildings) ? info.buildings.slice() : [];
-      var seen = {};
-      blds.forEach(function(b){ seen[digits(b.kt)+'::'+String(b.nafn||'')]=1; });
+      var curated = Array.isArray(info.buildings) ? info.buildings.slice() : [];
+      var liveNm = {}, liveAddr = {};
       sites.forEach(function(s){
-        var key = digits(s.kt)+'::'+String(s.nafn||'');
-        if(!seen[key]){ seen[key]=1; blds.push(s); }
+        var d = digits(s.kt);
+        liveNm[d+'::'+foldNm(s.nafn)] = 1;
+        var a = foldNm(s.heimilisfang);
+        if (a) liveAddr[d+'::'+a] = 1;
+      });
+      // Lifandi staðirnir fyrst, merktir svo þeir frjósi ekki inn í handskráða
+      // blobið við næstu vistun (sjá saveData) — það var uppspretta afritanna.
+      var blds = sites.map(function(s){ return Object.assign({}, s, { _live:true }); });
+      var seen = {};
+      curated.forEach(function(b){
+        var d = digits(b.kt);
+        var kNm = d+'::'+foldNm(b.nafn);
+        var a = foldNm(b.heimilisfang);
+        var kAddr = a ? (d+'::'+a) : null;
+        if (liveNm[kNm]) return;                      // sami staður og lifandi röð
+        if (kAddr && liveAddr[kAddr]) return;         // sama kt + sama heimilisfang
+        if (seen[kNm]) return;                        // tvítekning innan handskráða listans
+        seen[kNm] = 1;
+        blds.push(b);
       });
       merged[name] = Object.assign({}, info, { buildings: blds });
     });
@@ -296,6 +325,18 @@
       var touched = (info.emails && info.emails.length) || info.domain || info.drive || info.note || info.notes;
       if (info._live && !touched) return; // sleppa hreinni lifandi færslu
       var copy = Object.assign({}, info); delete copy._live;
+      // 2026-07-28 (rót villu 4): áður var ALLUR fléttaði byggingalistinn
+      // vistaður aftur — líka staðirnir sem komu úr gagnagrunninum. Þeir frusu
+      // þar með inn í handskráða blobið, og næst þegar nafni var breytt í
+      // fyrirtaeki-töflunni bættist NÝ röð við hliðina á þeirri frosnu. Þannig
+      // urðu „Midtown hotel" + „Midtown Hotel" til. Lifandi staðir eru nú
+      // strípaðir burt við vistun; aðeins raunverulega handskráðar byggingar
+      // (og þær sem notandinn hefur ritstýrt) sitja eftir í blobinu.
+      if (Array.isArray(copy.buildings)) {
+        copy.buildings = copy.buildings
+          .filter(function(b){ return !(b && b._live); })
+          .map(function(b){ var c = Object.assign({}, b); delete c._live; return c; });
+      }
       clean[k] = copy;
     });
     try { localStorage.setItem('_slokk_rekstrarfelog', JSON.stringify(clean)); } catch(e){}
@@ -1364,6 +1405,10 @@
         var d = getData(); if(!d[name]) d[name]=info;
         var arr = d[name].buildings||[]; if(!arr[bi]) return;
         arr[bi].nafn = nafn.trim(); arr[bi].kt = kt.trim(); arr[bi].heimilisfang = heim.trim();
+        // 2026-07-28: röð sem kom úr fyrirtækjaskránni er merkt _live og er
+        // strípuð við vistun (sjá saveData). Um leið og notandinn ritstýrir
+        // henni er hún ÆTTLEIDD sem handskráð — annars hyrfi breytingin þegjandi.
+        delete arr[bi]._live;
         if (pv && co_id != null) arr[bi].co_id = co_id;
         else if (!pv) delete arr[bi].co_id;   // tómt = aftur í sjálfvirka uppflettingu
         await saveData(d);
@@ -1377,6 +1422,16 @@
         e.preventDefault();
         var bi = parseInt(x.getAttribute('data-bi'),10);
         var b = (info.buildings||[])[bi]; if(!b) return;
+        // 2026-07-28: staðir sem koma úr fyrirtækjaskránni (customers_base
+        // .rekstrarfelag) er ekki hægt að fjarlægja héðan — þeir kæmu strax
+        // aftur við næstu hleðslu. Segjum það hreint út í stað þess að láta
+        // ✕ líta út fyrir að virka og gera svo ekkert.
+        if (b._live) {
+          alert('„'+(b.nafn||'')+'" kemur úr fyrirtækjaskránni, ekki úr handskráða listanum.\n\n'+
+                'Til að taka staðinn af félaginu þarf að fjarlægja rekstrarfélags-merkinguna á fyrirtækinu sjálfu '+
+                '(customers_base.rekstrarfelag) — t.d. gegnum Bakendi eða Sameining.');
+          return;
+        }
         if(!confirm('Fjarlægja "'+(b.nafn||'')+'" úr félaginu?')) return;
         var d = getData();
         if(d[name] && Array.isArray(d[name].buildings)){ d[name].buildings.splice(bi,1); await saveData(d); info.buildings=d[name].buildings; }
