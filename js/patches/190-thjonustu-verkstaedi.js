@@ -667,9 +667,11 @@
         'style="min-width:290px;border-radius:14px;padding:11px 15px;background:linear-gradient(180deg,#23262d,#15171b 55%,#0a0b0e);' +
         'border:1px solid #0a0b0d;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 26px -14px rgba(0,0,0,.7)">' +
         '<div style="font-size:10px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.45);margin-bottom:3px">ÁÆTLAÐ VIRÐI</div>' +
-        moneyRow('Í VINNSLU', fmtSum(vinnslaSum) || '—', b.vinnsla.length + ' verk', '#8fb0ff') +
-        '<div style="height:1px;background:rgba(255,255,255,.09)"></div>' +
+        // Heildarvirðið er aðaltalan og situr EFST (ósk Agnars 2026-07-28);
+        // Í vinnslu er sundurliðunin undir henni.
         moneyRow('HEILDARVIRÐI', fmtSum(heildSum) || '—', 'm. á dagskrá', '#ffffff') +
+        '<div style="height:1px;background:rgba(255,255,255,.09)"></div>' +
+        moneyRow('Í VINNSLU', fmtSum(vinnslaSum) || '—', b.vinnsla.length + ' verk', '#8fb0ff') +
       '</div>';
 
     // Collapsible side drawers (collapsed by default).
