@@ -645,19 +645,14 @@
     const ovReik   = _all.filter(r => r.steps.reikningur || r.reik2026 || (r.docs && r.docs.reik)).length;
     const statChip = (emoji, n, label) => '<span class="sv-chip" style="cursor:default"><span class="n">' + n + '</span> ' + emoji + ' ' + esc(label) + '</span>';
 
-    // ── Peningaboxið (2026-07-28, ósk Agnars: „heildar áætlað virði … fjöldi
-    //    ósendra skýrslna og virði tótal") ────────────────────────────────────
+    // ── Peningaboxið (2026-07-28, ósk Agnars) ─────────────────────────────────
     // Áætluðu tekjurnar (r.tekjur) stóðu áður aðeins á hverju spjaldi fyrir sig
     // og sem ein tala í undirfyrirsögninni. Hér er þeim safnað saman efst til
     // hægri svo sjá megi í einu augnkasti hvað liggur úti.
-    //   · Í VINNSLU        = verkin á borðinu núna
-    //   · ÓSENDAR SKÝRSLUR = úttekt búin EN skýrsla ekki send (peningur sem
-    //                        bíður AÐEINS eftir pappírsvinnu — það er talan sem
-    //                        segir hvað er hægt að rukka strax)
-    //   · HEILDARVIRÐI     = í vinnslu + á dagskrá (allt óklárað á árinu)
-    const isOsend = r => !!(r.steps && r.steps.uttekt) && !(r.steps && r.steps.send) && !(r.docs && r.docs.skyrsla);
-    const osendList = _all.filter(isOsend);
-    const osendSum = osendList.reduce((s, r) => s + (+r.tekjur || 0), 0);
+    //   · Í VINNSLU    = verkin á borðinu núna
+    //   · HEILDARVIRÐI = í vinnslu + á dagskrá (allt óklárað á árinu)
+    // „ÓSENDAR SKÝRSLUR" var með í fyrstu útgáfu en Agnar bað um að taka hana
+    // út samdægurs — talan sagði ekki það sem hún leit út fyrir að segja.
     const dagskraSum = b.dagskra.reduce((s, r) => s + (+r.tekjur || 0), 0);
     const heildSum = vinnslaSum + dagskraSum;
     const moneyRow = (label, val, sub, col) =>
@@ -672,11 +667,11 @@
         'style="min-width:290px;border-radius:14px;padding:11px 15px;background:linear-gradient(180deg,#23262d,#15171b 55%,#0a0b0e);' +
         'border:1px solid #0a0b0d;box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 12px 26px -14px rgba(0,0,0,.7)">' +
         '<div style="font-size:10px;font-weight:800;letter-spacing:.1em;color:rgba(255,255,255,.45);margin-bottom:3px">ÁÆTLAÐ VIRÐI</div>' +
-        moneyRow('Í VINNSLU', fmtSum(vinnslaSum) || '—', b.vinnsla.length + ' verk', '#8fb0ff') +
-        '<div style="height:1px;background:rgba(255,255,255,.09)"></div>' +
-        moneyRow('ÓSENDAR SKÝRSLUR', fmtSum(osendSum) || '—', osendList.length + (osendList.length === 1 ? ' skýrsla' : ' skýrslur'), '#ffc46b') +
-        '<div style="height:1px;background:rgba(255,255,255,.09)"></div>' +
+        // Heildarvirðið er aðaltalan og situr EFST (ósk Agnars 2026-07-28);
+        // Í vinnslu er sundurliðunin undir henni.
         moneyRow('HEILDARVIRÐI', fmtSum(heildSum) || '—', 'm. á dagskrá', '#ffffff') +
+        '<div style="height:1px;background:rgba(255,255,255,.09)"></div>' +
+        moneyRow('Í VINNSLU', fmtSum(vinnslaSum) || '—', b.vinnsla.length + ' verk', '#8fb0ff') +
       '</div>';
 
     // Collapsible side drawers (collapsed by default).
