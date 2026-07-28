@@ -87,7 +87,16 @@
       P+'.rfa__body{max-height:0;opacity:0;overflow:hidden;background:#fff;transition:max-height .32s ease,opacity .24s ease}',
       P+'.rfa.is-open .rfa__body{max-height:6000px;opacity:1}',
       P+'.rfa__pad{padding:16px 18px}',
-      P+'.rf-chiprow{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}',
+      P+'.rf-chiprow{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}',
+      // Gullkassi — áætlaðar árs-tekjur (yfirferð + hleðsla), stillanlegur.
+      P+'.rf-gold{margin-left:auto;position:relative;cursor:pointer;min-width:186px;border-radius:12px;padding:7px 14px;background:linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);border:1px solid rgba(255,220,130,.45);box-shadow:0 6px 16px -8px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,240,190,.28);color:#fff8e6}',
+      P+'.rf-gold__l{font-size:9.5px;font-weight:800;letter-spacing:.05em;color:#ffe9a8}',
+      P+'.rf-gold__v{font-size:20px;font-weight:800;line-height:1.05;margin-top:1px;color:#fff}',
+      P+'.rf-gold__s{font-size:10px;color:#f4e2ac;margin-top:3px}',
+      P+'.rf-gold__ed{position:absolute;top:100%;right:0;z-index:30;margin-top:6px;width:220px;background:#141821;border:1px solid #3a4150;border-radius:10px;padding:11px 12px;box-shadow:0 14px 34px -8px rgba(0,0,0,.7);cursor:default;text-align:left}',
+      P+'.rf-gold__ed label{display:block;font-size:11px;color:#aeb6c6;margin-bottom:8px;font-weight:600}',
+      P+'.rf-gold__ed input{width:100%;box-sizing:border-box;margin-top:3px;padding:6px 8px;border:1px solid #3a4150;border-radius:7px;background:#0e1219;color:#fff;font:inherit;font-size:13px}',
+      P+'.rf-gold__ed button{width:100%;margin-top:2px;padding:7px;border:0;border-radius:7px;background:linear-gradient(150deg,#c99a1e,#8a6410);color:#fff;font:inherit;font-weight:700;font-size:13px;cursor:pointer}',
       // buildings table (dark-metal head, zebra, rails)
       P+'.rf-tblwrap{border-radius:13px;border:1px solid rgba(20,24,34,.1);overflow:hidden;background:#fff}',
       P+'.rf-tblscroll{overflow-x:auto}',
@@ -1183,10 +1192,32 @@
              ' <a href="#" class="_rf_editb" data-bi="'+_bi+'" title="Breyta byggingu / tengja rétt fyrirtæki" style="text-decoration:none;font-size:12px;margin-left:6px">✏️</a>'+
              ' <a href="#" class="_rf_delb" data-bi="'+_bi+'" title="Fjarlægja byggingu" style="color:#dc2626;text-decoration:none;font-size:12px;margin-left:6px">✕</a></td></tr>';
     }).join('');
+    // ── Áætlaðar árs-tekjur (gullkassi) — totSl tæki × yfirferð + hlutfall × hleðsla.
+    // Verð koma úr vistuðum forsendum félagsins, annars úr athugasemdinni
+    // („yfirferð 2.700 · Hleðsla 4.400"), annars sjálfgefið. Allt stillanlegt.
+    function _rfKr(n){ return String(Math.round(+n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,'.')+' kr'; }
+    function _noteNum(re){ var m=String(info.notes||'').match(re); return m?+String(m[1]).replace(/\./g,''):0; }
+    var revY = (info.rev_yfirferd!=null&&info.rev_yfirferd!=='') ? +info.rev_yfirferd : (_noteNum(/yfirfer[ðd][^0-9]{0,10}(\d[\d.]*)/i)||2700);
+    var revH = (info.rev_hledsla!=null&&info.rev_hledsla!=='') ? +info.rev_hledsla : (_noteNum(/hle[ðd]sla[^0-9]{0,10}(\d[\d.]*)/i)||4400);
+    var revHpct = (info.rev_hledsla_pct!=null&&info.rev_hledsla_pct!=='') ? +info.rev_hledsla_pct : 20;
+    var estYf = totSl*revY, estHl = Math.round(totSl*(revHpct/100))*revH, estRev = estYf+estHl;
+    var goldBox =
+      '<div class="rf-gold" id="_rf_gold" title="Áætlaðar árs-tekjur af skoðun — smelltu til að stilla forsendur">'+
+        '<div class="rf-gold__l">ÁÆTLAÐAR ÁRS-TEKJUR</div>'+
+        '<div class="rf-gold__v">'+_rfKr(estRev)+'</div>'+
+        '<div class="rf-gold__s">'+totSl+' tæki · yfirferð '+_rfKr(revY)+' + hleðsla '+revHpct+'%</div>'+
+        '<div class="rf-gold__ed" style="display:none">'+
+          '<label>Yfirferð á tæki<input class="_rf_rev_y" type="number" min="0" value="'+revY+'"></label>'+
+          '<label>Hleðsla á tæki<input class="_rf_rev_h" type="number" min="0" value="'+revH+'"></label>'+
+          '<label>Hleðsla — hlutfall tækja (%)<input class="_rf_rev_p" type="number" min="0" max="100" value="'+revHpct+'"></label>'+
+          '<button type="button" class="_rf_rev_save">💾 Vista forsendur</button>'+
+        '</div>'+
+      '</div>';
     var summary='<div class="rf-chiprow">'+
       '<span class="rf-pill rf-pill--done">✓ '+n2026+' með úttekt</span>'+
       '<span class="rf-pill rf-pill--pending">⚠ '+nNeed+' vantar</span>'+
       '<span class="rf-pill rf-pill--overdue">🔴 '+nOverdue+' liðin</span>'+
+      goldBox+
       '</div>';
     // ── þjónusturofi + skýring + leit innan félagsins ─────────────────────────
     function svcBtn(k,label){ return '<button type="button" class="rf-svcbtn _rf_svc'+(_state.svc===k?' is-on':'')+'" data-svc="'+k+'">'+label+'</button>'; }
@@ -1319,6 +1350,31 @@
       if(window.Toast&&Toast.show) Toast.show('✓ Upplýsingar vistaðar');
       fillBody(body,name,info); // re-render with the new values
     });
+
+    // Gullkassi — smella opnar/lokar forsendu-ritli; Vista skrifar í félagsgögnin
+    // (saveData → AppSettings, samstillist milli tækja) og endurteiknar.
+    var goldEl=body.querySelector('#_rf_gold');
+    if(goldEl){
+      var edEl=goldEl.querySelector('.rf-gold__ed');
+      goldEl.addEventListener('click', function(e){
+        if(e.target.closest('.rf-gold__ed')) return;   // smellur inni í ritli lokar ekki
+        if(edEl) edEl.style.display = (edEl.style.display==='none') ? '' : 'none';
+      });
+      var revSave=goldEl.querySelector('._rf_rev_save');
+      if(revSave) revSave.addEventListener('click', async function(ev){
+        ev.stopPropagation();
+        var y=+((goldEl.querySelector('._rf_rev_y')||{}).value)||0;
+        var h=+((goldEl.querySelector('._rf_rev_h')||{}).value)||0;
+        var p=+((goldEl.querySelector('._rf_rev_p')||{}).value)||0;
+        revSave.disabled=true; revSave.textContent='Vista…';
+        var d=getData(); if(!d[name]) d[name]=info;
+        d[name].rev_yfirferd=y; d[name].rev_hledsla=h; d[name].rev_hledsla_pct=p;
+        try{ await saveData(d); }catch(e){}
+        info.rev_yfirferd=y; info.rev_hledsla=h; info.rev_hledsla_pct=p;
+        if(window.Toast&&Toast.show) Toast.show('✓ Tekjuforsendur vistaðar');
+        fillBody(body,name,info);   // endurteikna með nýju tölunum
+      });
+    }
 
     // þjónusturofi: Bæði / 🧯 Slökkvitæki / 🚨 Brunakerfi — valið er vistað og
     // gildir fyrir ÖLL félög (sama og notandinn býst við þegar hann flettir).
