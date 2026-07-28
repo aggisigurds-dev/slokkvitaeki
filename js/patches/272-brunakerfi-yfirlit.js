@@ -92,7 +92,13 @@
         netfang: c.netfang || '', tengilidur: c['tengiliður'] || '', years: {}, months: {}, count: 0, latest: 0, latestMonth: 0 };
     });
     const out = Object.values(byCo);
-    out.forEach(r => { r.isNew = r.count === 0; });   // engin skýrsla = bíður fyrstu skoðunar
+    // engin skýrsla = bíður fyrstu skoðunar. 2026-07-28: HANDVIRKA merkið
+    // (patch 281, takki á fyrirtækjaprófílnum) gildir líka — Agnar veit stundum
+    // að kúnni er nýr þótt ein skýrsla sé þegar komin.
+    out.forEach(r => {
+      const manual = !!(window.NyttBadge && NyttBadge.is(r.id));
+      r.isNew = r.count === 0 || manual;
+    });
     return out;
   }
 
