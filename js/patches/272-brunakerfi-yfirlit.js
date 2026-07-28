@@ -324,7 +324,18 @@
     // Staða-chippan: setur/tekur fyrirtækið úr vinnslu. Skrifar AÐEINS þessa
     // einu færslu (AppSettings djúp-merge-ar) — sama race-vörn og patch 153:1257,
     // svo hak á einni röð yfirskrifi ekki nýlega breytingu á annarri.
-    root.querySelectorAll('._bky-stada').forEach(chip => chip.addEventListener('click', async e => {
+    //
+    // 2026-07-28: hlustarinn er á RÓTINNI (delegation), ekki á hverri chippu.
+    // Ástæðan fannst við prófun á forskoðun: chippurnar teiknuðust rétt en
+    // smellurinn gerði ALDREI neitt, því annar patch endurbyggir raðirnar eftir
+    // að wire() hefur keyrt og hendir þar með hlusturum á stökum þáttum. Rótin
+    // (#_bky-root) lifir af þá aðgerð. Fáninn kemur í veg fyrir tvítengingu,
+    // því wire() keyrir við hverja endurteiknun á sömu rót.
+    if (!root.dataset._bkyStadaBound) {
+      root.dataset._bkyStadaBound = '1';
+      root.addEventListener('click', async e => {
+      const chip = e.target.closest && e.target.closest('._bky-stada');
+      if (!chip || !root.contains(chip)) return;
       e.stopPropagation(); e.preventDefault();
       const id = +chip.dataset.id; if (!id) return;
       if (!window.AppSettings || !AppSettings.save) { alert('Engar stillingar tiltækar'); return; }
@@ -345,7 +356,8 @@
         Toast.show(st === 'wip' ? '✓ Tekið úr vinnslu' : '✓ Sett í vinnslu — birtist á ÞjónustuVerkstæði');
       }
       render();
-    }));
+      });
+    }
     root.querySelectorAll('._bky-row').forEach(tr => tr.addEventListener('click', e => {
       if (e.target.closest('a')) return;            // ár-hlekkur opnar sjálfur
       if (e.target.closest('._bky-stada')) return;  // staða-chippan á sinn eigin smell
