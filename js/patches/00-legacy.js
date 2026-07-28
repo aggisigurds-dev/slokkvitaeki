@@ -2662,7 +2662,12 @@ console.log('[patch-master] loaded with all fixes');
       // 2026-05-14: Skip when the table is inside modals that have their own
       // "Staða" column meaning (kúnnareikningur statement, bókhald yfirlit
       // detail, etc.) — they show transaction status, not equipment status.
-      if (table.closest('#_kr-statement, #_kr-picker, #ci-modal, #_se-dlg, #_drog-list-modal, #counter-detail-modal, #workshop-detail-modal, #view-bakendi')) return;
+      // 2026-07-28: Brunakerfi-yfirlitið fékk eigin STAÐA-dálk (patch 272,
+      // „Í vinnslu"-chippa sem skrifar í arsskodun_customers). Þessi inndæling
+      // fann orðið „STAÐA" í hausnum, henti chippunni og setti tækja-fellilista
+      // (Active / Í geymslu / Ónýtt) í staðinn — sem hefði skrifað í uttaeki.status
+      // á RÖNGU auðkenni. Sama undanþága og #view-bakendi fékk.
+      if (table.closest('#_kr-statement, #_kr-picker, #ci-modal, #_se-dlg, #_drog-list-modal, #counter-detail-modal, #workshop-detail-modal, #view-bakendi, #view-brunakerfi-yfirlit')) return;
       // Check if this table has STAÐA column
       var ths = table.querySelectorAll('th');
       var statusIdx = -1;
