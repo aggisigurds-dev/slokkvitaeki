@@ -36,6 +36,12 @@
     var anyActive = document.querySelector('.view.active');
     if (anyActive) return;
     if (location.hash && /^#?view-/.test(location.hash)) return;
+    // 2026-07-28: vörnin náði AÐEINS yfir gamla „#view-…"-formið, svo hreinu
+    // slug-hössin sem patch 218 býr til (#rekstrarfelog, #bakendi, #verkbord …)
+    // fóru beint í gegn og lentu á Sölu. Sama regla og 154/218 nota: hash án
+    // '=' og án '/' er beiðni notandans um ákveðna síðu.
+    var h = (location.hash || '').replace(/^#/, '');
+    if (h && h.indexOf('=') === -1 && h.indexOf('/') === -1) return;
     if (window.App && typeof App.switchView === 'function') {
       App.switchView('sala');
     }

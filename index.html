@@ -1106,7 +1106,7 @@ var Lanstaeki = {
 <script src="/js/qrtag.js?v=1776797624642"></script>
 <script src="/js/posprint.js?v=20260510f"></script>
 <script src="/js/vorur.js?v=20260726halfrevert"></script>
-<script src="/js/sala.js?v=20260510f"></script>
+<script src="/js/sala.js?v=20260728deeplink"></script>
 <script src="/js/searchbox.js?v=1776797624642"></script>
 <!-- demoseed.js Í DVALA 2026-07-11: sáði sýnishornsvörum aftur (t.d. „Slökkvitæki 6kg
      ABC Duft"/„Slökkvitæki 2kg CO₂"/„Reykskynjari" 2026-07-10) þegar count-tékkið
@@ -1116,6 +1116,12 @@ var Lanstaeki = {
 <script src="/js/fixcompanysave.js?v=1776797624642"></script>
 <script src="/js/geymslascan.js?v=1776797624642"></script>
 
-<script>document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){if(window.App&&App.switchView)App.switchView("sala");},500);});</script>
+<!-- Sala-lending við ræsingu. 2026-07-28: VERÐUR að víkja fyrir djúptengli.
+     Áður keyrði þetta skilyrðislaust — og af því patch 218 vefur switchView
+     speglaði kallið slóðina yfir í "#sala" (replaceState), svo #rekstrarfelog
+     (og hvaða annað hash sem er) tapaðist ~500ms eftir load og notandinn lenti
+     alltaf á Sölu. Sama vörn og patch 154 notar: hreint slug-hash (engin '=',
+     ekkert '/') þýðir að notandinn bað um ákveðna síðu — snertum ekki. -->
+<script>document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){var h=(location.hash||"").replace(/^#/,"");if(h&&h.indexOf("=")===-1&&h.indexOf("/")===-1)return;if(document.querySelector(".view.active"))return;if(window.App&&App.switchView)App.switchView("sala");},500);});</script>
 </body>
 </html>
