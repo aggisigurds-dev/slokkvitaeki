@@ -1335,6 +1335,7 @@
       '</div>';
     body.innerHTML=
       infoPanel+
+      '<div class="_rf_samskipti_slot"></div>'+
       '<div style="display:flex;gap:18px;flex-wrap:wrap">'+
         '<div style="flex:1 1 100%;min-width:280px">'+
           '<div style="font-weight:600;font-size:13px;color:var(--ink2);margin-bottom:6px">Byggingar / húsfélög — úttektir</div>'+

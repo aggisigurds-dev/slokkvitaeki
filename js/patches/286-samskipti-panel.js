@@ -74,31 +74,40 @@
     card.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
       '<div style="font-weight:800;font-size:12px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA &amp; BEIÐNIR</div>' +
-      '<button type="button" class="_ssk-toggle" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">Opna ▾</button></div>' +
+      '<button type="button" class="_ssk-toggle" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">Póstar ▾</button></div>' +
       '<div class="_ssk-pts" style="margin-top:6px">' + ptsHtml + "</div>" +
+      // Punktarnir ALLTAF sýnilegir (ósk Agnars 29.07: „ég mun aldrei fatta að
+      // checka inn í edit" — textinn úr athugasemdareitnum birtist hér beint).
+      (aths ? '<div style="font-weight:700;font-size:11.5px;color:#64748b;letter-spacing:.05em;margin:9px 0 3px">📋 PUNKTAR &amp; UPPLÝSINGAR</div>' +
+        '<div style="white-space:pre-wrap;background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:9px 11px;color:#334155;max-height:180px;overflow:auto;font-size:12.5px;line-height:1.5">' + esc(aths) + "</div>" : "") +
       '<div class="_ssk-full" style="display:none;margin-top:10px;border-top:1px dashed #e2e8f0;padding-top:9px">' +
       '<div style="font-weight:700;font-size:11.5px;color:#64748b;letter-spacing:.05em;margin-bottom:3px">✉️ SÍÐUSTU PÓSTAR</div>' + mailsHtml +
-      (aths ? '<div style="font-weight:700;font-size:11.5px;color:#64748b;letter-spacing:.05em;margin:10px 0 3px">📋 VERKLÝSING &amp; UPPLÝSINGAR</div><div style="white-space:pre-wrap;background:#f8fafc;border-radius:8px;padding:9px 11px;color:#334155">' + esc(aths) + "</div>" : "") +
       "</div>";
     card.querySelector("._ssk-toggle").addEventListener("click", e => {
       const full = card.querySelector("._ssk-full"), open = full.style.display === "none";
       full.style.display = open ? "" : "none";
-      e.target.textContent = open ? "Loka ▴" : "Opna ▾";
+      e.target.textContent = open ? "Loka ▴" : "Póstar ▾";
     });
     host.appendChild(card);
   }
 
   async function decorate() {
-    // sama aðferð og „Merkja mikilvægt"-bótin: finnum openEdit-hnappinn á opnum prófíl
+    // fid af openEdit-hnappnum á opnum prófíl
     const btn = document.querySelector('button[onclick^="Companies.openEdit"]');
     if (!btn) return;
     const m = btn.getAttribute("onclick").match(/openEdit\((\d+)\)/);
     if (!m) return;
     const fid = +m[1];
-    const row = btn.closest('[style*="display:flex"]') || btn.parentElement;
+    // Besta akkerið (ósk Agnars 29.07): auða svæðið við hlið aðgerðahnappanna
+    // („Merkja mikilvægt" o.fl.) — spjaldið fer beint fyrir aftan þá röð svo
+    // punktarnir BLASI VIÐ án þess að opna Breyta-gluggann.
+    let row = null;
+    const mk = [...document.querySelectorAll("button")].find(b => /Merkja mikilvægt/.test(b.textContent || ""));
+    if (mk) row = mk.parentElement;
+    if (!row) row = btn.closest('[style*="display:flex"]') || btn.parentElement;
     const anchor = row ? (row.parentElement || row) : btn.parentElement;
-    let host = anchor.querySelector(":scope > ._samskipti-host") || anchor.parentElement.querySelector("._samskipti-host");
-    if (host) { if (host.dataset.fid === String(fid)) return; host.remove(); }
+    let host = document.querySelector("._samskipti-host");
+    if (host) { if (host.dataset.fid === String(fid) && host.childElementCount) return; host.remove(); }
     host = document.createElement("div");
     host.className = "_samskipti-host"; host.dataset.fid = fid;
     (row && row.parentElement ? row.parentElement : anchor).insertBefore(host, row ? row.nextSibling : null);
@@ -113,7 +122,9 @@
   const RK = "sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f";
   const rfCache = {};
   async function rfMails(dom) {
-    if (rfCache[dom] && Date.now() - rfCache[dom]._ts < 60000) return rfCache[dom].m;
+    // 5 mín skyndiminni — síðan endurteiknast ört (realtime-refresh) og spjaldið
+    // þarf að birtast SAMSTUNDIS aftur, ekki bíða eftir nýrri póstsókn í hvert sinn.
+    if (rfCache[dom] && Date.now() - rfCache[dom]._ts < 300000) return rfCache[dom].m;
     let m = [];
     try {
       const r = await fetch(RU + "/rest/v1/email_digest?select=received_at,sender_name,sender_email,subject,snippet,is_question" +
@@ -149,13 +160,16 @@
     const doms = {};
     emails.forEach(e => { const d = (e.split("@")[1] || "").toLowerCase().trim(); if (d) doms[d] = (doms[d] || 0) + 1; });
     const dom = Object.keys(doms).sort((a, b) => doms[b] - doms[a])[0];
-    let card = info.nextElementSibling && info.nextElementSibling.classList && info.nextElementSibling.classList.contains("_samskipti-rf")
-      ? info.nextElementSibling : null;
-    if (card) { if (card.dataset.dom === (dom || "")) return; card.remove(); }
+    // Fast plásshólf úr 175 (lifir af endurteiknanir) ef til, annars systkini.
+    const slot = info.parentNode.querySelector("._rf_samskipti_slot");
+    let card = slot ? slot.querySelector("._samskipti-rf")
+      : (info.nextElementSibling && info.nextElementSibling.classList && info.nextElementSibling.classList.contains("_samskipti-rf")
+         ? info.nextElementSibling : null);
+    if (card) { if (card.dataset.dom === (dom || "")) return; card.remove(); card = null; }
     card = document.createElement("div");
     card.className = "_samskipti-rf"; card.dataset.dom = dom || "";
     card.style.cssText = "margin:0 0 14px;border-left:4px solid #6366f1;background:var(--surface,#fff);border:1px solid var(--brd,#e2e8f0);border-left:4px solid #6366f1;border-radius:10px;padding:12px 14px;font-size:13px";
-    info.parentNode.insertBefore(card, info.nextSibling);
+    if (slot) slot.appendChild(card); else info.parentNode.insertBefore(card, info.nextSibling);
     if (!dom) { card.innerHTML = '<div style="color:#94a3b8">💬 Engin netföng skráð á félagið — skráðu netfang til að sjá póstsögu.</div>'; return; }
     card.innerHTML = '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA (@' + esc(dom) + ')</div><div style="color:#94a3b8;margin-top:4px">Sæki póstsögu…</div>';
     const mails = await rfMails(dom);
