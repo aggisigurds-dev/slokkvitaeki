@@ -68,3 +68,9 @@ _extract_logo.cjs
 
 # Netlify CLI cache (if you ever install it)
 .netlify/
+
+# Stadbundid session-minni (memsearch) - inniheldur vinnugogn, ALDREI i git
+.memsearch/
+
+# Stadbundid session-minni (memsearch) - inniheldur vinnugogn, ALDREI i git
+.memsearch/
