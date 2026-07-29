@@ -1160,20 +1160,23 @@
         if (d26) slDoneCur++;
         if (bY[CURY] && bY[CURY].kind==='rep') brDoneCur++;
         // raunveruleg heimsóknartala þessa árs (frá 129), ef til
-        var _hasReal = false;
+        // Raunveruleg heimsóknartala þessa árs (frá 129) dekkar tækin sem hún
+        // náði yfir; tæki umfram það (líka í sömu byggingu — fuzzy-talning
+        // getur eignað einni byggingu tæki alls félagsins) fara í áætlun.
+        var _estUnits = units;
         if (co) { try {
           var _tc = JSON.parse(localStorage.getItem('slokk_trip_'+co.id)||'{}');
-          // Vörn: heimsóknartala gildir aðeins ef hún náði yfir a.m.k. ~60% af
-          // tækjum byggingarinnar — annars er þetta hlutaheimsókn/prufa og
-          // myndi gleypa alla bygginguna á smáupphæð (t.d. 34.844 kr á 349 tæki).
-          if (_tc.computed && +_tc.computed.total > 0 && String(_tc.computed.at||'').slice(0,4) === CURY
-              && (+_tc.computed.units || 0) >= units * 0.6) {
-            realSum += +_tc.computed.total; realN++; realUnits += units; _hasReal = true;
+          if (_tc.computed && +_tc.computed.total > 0 && String(_tc.computed.at||'').slice(0,4) === CURY) {
+            var _cov = Math.min(units, Math.max(1, +_tc.computed.units || 0));
+            realSum += +_tc.computed.total; realN++;
+            realUnits += _cov;
+            _estUnits = units - _cov;
           }
         } catch(_) {} }
-        // annars áætlun þessarar byggingar — með HENNAR tilboðsverðum (Yfirferð/
-        // Hleðsla úr company_pricing, kt-samnýtt í Sölu/129) og föstum afslætti.
-        if (!_hasReal && units > 0) {
+        // áætlun (óraunreiknuðu tækin) — með tilboðsverðum byggingarinnar
+        // (Yfirferð/Hleðsla úr company_pricing, kt-samnýtt í Sölu/129) og
+        // föstum afslætti þar sem ekkert sérverð er.
+        if (_estUnits > 0) {
           // Regla Agnars 29.07: sérverð er ENDANLEGT — fasti afslátturinn (_d)
           // leggst aðeins á liði sem hafa EKKI tilboðsverð.
           var _y=revY, _h=revH, _d=0, _ovY=false, _ovH=false;
@@ -1189,7 +1192,7 @@
             } catch(_) {}
           }
           if (_ovY || _ovH || _d > 0) estOvN++;
-          estMix += units*_y*(_ovY?1:(1-_d/100)) + Math.round(units*(revHpct/100))*_h*(_ovH?1:(1-_d/100));
+          estMix += _estUnits*_y*(_ovY?1:(1-_d/100)) + Math.round(_estUnits*(revHpct/100))*_h*(_ovH?1:(1-_d/100));
         }
       }
       // Samtölur borðans fylgja völdum þjónusturofa.
