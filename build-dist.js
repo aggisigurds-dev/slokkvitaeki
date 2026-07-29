@@ -22,6 +22,7 @@ const SKIP_DIRS = new Set([
 const SKIP_FILES = new Set([
   '.DS_Store', 'Thumbs.db', 'desktop.ini', '.gitignore', '.env', '.env.local',
   'package.json', 'package-lock.json', 'deploy.js', 'build-dist.js', 'verify.js',
+  '.mcp.json',                             // MCP-uppsetning fyrir Claude Code — innri stilling
   'backup-supabase.mjs', 'netlify.toml',
 ]);
 
