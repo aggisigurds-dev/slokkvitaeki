@@ -26,7 +26,23 @@
   function toast(m) { try { if (window.Toast && Toast.show) Toast.show(m); } catch (_) {} }
 
   // ── 1) Auto-apply the selected customer's default discount in the cart ─────
-  let _lastKt = null;
+  // 2026-07-29 (regla Agnars): sérverð (💰 tilboðsverð, patch 113 merkir línur
+  // með _tilbod) er ENDANLEGT verð — prósentu-afslátturinn á bara að ná á hinar
+  // línurnar. Körfu-afslátturinn er einn á reikninginn, svo við VIGTUM hann:
+  // eff = pct × (grunnur án sérverðslína / heildargrunnur). Endurvigtast þegar
+  // karfan breytist — en AÐEINS ef gildið er enn það sem við settum sjálf, svo
+  // handvirk breyting afgreiðslumanns heldur alltaf.
+  let _lastKt = null, _lastAuto = null;
+  function effectivePct(st, pct) {
+    if (!pct) return 0;
+    let tot = 0, ov = 0;
+    (st.lines || []).forEach(l => {
+      const s = (Math.max(0, +l.qty || 0)) * (Math.max(0, +l.unit_price_ex_vat || 0));
+      tot += s; if (l._tilbod) ov += s;
+    });
+    if (tot <= 0 || ov <= 0) return pct;
+    return Math.round(pct * (tot - ov) / tot * 10) / 10;
+  }
   function syncCartDiscount() {
     const view = document.getElementById('view-sala');
     if (!view || !view.classList.contains('active')) return;
@@ -34,16 +50,24 @@
     const st = POS.getState();
     if (!st || !st.customer) return;
     const kt = digits(st.customer.kt);
-    // Only act when the CUSTOMER changed — never fight a manual discount the
-    // operator typed for the customer already on screen.
-    if (kt === _lastKt) return;
-    _lastKt = kt;
     const pct = Math.max(0, Math.min(100, +st.customer.afslattur_pct || 0));
-    // Switching customer resets the cart discount to the new customer's default
-    // (0 for walk-ins / no-discount customers — clears a leftover from before).
-    if ((+st.discount_pct || 0) === pct) return;
-    st.discount_pct = pct;
-    try { if (typeof POS.rerenderDynamic === 'function') POS.rerenderDynamic(); } catch (_) {}
+    const eff = effectivePct(st, pct);
+    if (kt !== _lastKt) {
+      // Customer switched: reset to the new customer's (weighted) default —
+      // 0 for walk-ins / no-discount customers (clears a leftover from before).
+      _lastKt = kt; _lastAuto = eff;
+      if ((+st.discount_pct || 0) !== eff) {
+        st.discount_pct = eff;
+        try { if (typeof POS.rerenderDynamic === 'function') POS.rerenderDynamic(); } catch (_) {}
+      }
+      return;
+    }
+    // Same customer: re-weight only while the value is still our own auto value
+    // (i.e. the operator hasn't typed something else).
+    if (_lastAuto != null && Math.abs((+st.discount_pct || 0) - _lastAuto) < 0.05 && Math.abs(eff - _lastAuto) >= 0.05) {
+      st.discount_pct = eff; _lastAuto = eff;
+      try { if (typeof POS.rerenderDynamic === 'function') POS.rerenderDynamic(); } catch (_) {}
+    }
   }
 
   function attachCart() {

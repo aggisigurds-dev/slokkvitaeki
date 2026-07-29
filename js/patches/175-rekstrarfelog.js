@@ -1170,20 +1170,22 @@
         // annars áætlun þessarar byggingar — með HENNAR tilboðsverðum (Yfirferð/
         // Hleðsla úr company_pricing, kt-samnýtt í Sölu/129) og föstum afslætti.
         if (!_hasReal && units > 0) {
-          var _y=revY, _h=revH, _d=0;
+          // Regla Agnars 29.07: sérverð er ENDANLEGT — fasti afslátturinn (_d)
+          // leggst aðeins á liði sem hafa EKKI tilboðsverð.
+          var _y=revY, _h=revH, _d=0, _ovY=false, _ovH=false;
           if (co) {
             _d = Math.max(0, Math.min(100, +co.afslattur_pct || 0));
             try {
               var _cp = (window.AppSettings && AppSettings.path && AppSettings.path('company_pricing')) || {};
               (_cp[co.id] || _cp[String(co.id)] || []).forEach(function(o){
                 var n = String(o.name||'').toLowerCase();
-                if (n.indexOf('yfirfer') >= 0) _y = +o.price_ex_vat || _y;
-                if (n.indexOf('hleðsl') >= 0 || n.indexOf('hledsl') >= 0) _h = +o.price_ex_vat || _h;
+                if (n.indexOf('yfirfer') >= 0) { _y = +o.price_ex_vat || _y; _ovY = true; }
+                if (n.indexOf('hleðsl') >= 0 || n.indexOf('hledsl') >= 0) { _h = +o.price_ex_vat || _h; _ovH = true; }
               });
             } catch(_) {}
           }
-          if (_y !== revY || _h !== revH || _d > 0) estOvN++;
-          estMix += (units*_y + Math.round(units*(revHpct/100))*_h) * (1 - _d/100);
+          if (_ovY || _ovH || _d > 0) estOvN++;
+          estMix += units*_y*(_ovY?1:(1-_d/100)) + Math.round(units*(revHpct/100))*_h*(_ovH?1:(1-_d/100));
         }
       }
       // Samtölur borðans fylgja völdum þjónusturofa.

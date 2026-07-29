@@ -127,13 +127,19 @@
   async function decorateRF() {
     const v = document.getElementById("view-rekstrarfelog");
     if (!v || v.offsetParent === null) return;
-    const info = v.querySelector("._rf_info");
-    if (!info) { const old = v.querySelector("._samskipti-rf"); if (old) old.remove(); return; }
+    // Accordion-síðan getur haft MARGA ._rf_info kassa í DOM (eitt per opnað
+    // félag) — hver fær sitt spjald, hengt beint fyrir aftan SINN kassa.
+    const infos = [...v.querySelectorAll("._rf_info")];
+    if (!infos.length) { v.querySelectorAll("._samskipti-rf").forEach(c => c.remove()); return; }
+    for (const info of infos) await decorateRFone(info);
+  }
+  async function decorateRFone(info) {
     const emails = [...info.querySelectorAll('._rf_info_view a[href^="mailto:"]')].map(a => a.getAttribute("href").slice(7));
     const doms = {};
     emails.forEach(e => { const d = (e.split("@")[1] || "").toLowerCase().trim(); if (d) doms[d] = (doms[d] || 0) + 1; });
     const dom = Object.keys(doms).sort((a, b) => doms[b] - doms[a])[0];
-    let card = v.querySelector("._samskipti-rf");
+    let card = info.nextElementSibling && info.nextElementSibling.classList && info.nextElementSibling.classList.contains("_samskipti-rf")
+      ? info.nextElementSibling : null;
     if (card) { if (card.dataset.dom === (dom || "")) return; card.remove(); }
     card = document.createElement("div");
     card.className = "_samskipti-rf"; card.dataset.dom = dom || "";
