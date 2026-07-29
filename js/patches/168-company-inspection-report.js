@@ -448,6 +448,39 @@
         const meta = await CompanyAttachments.upload(co.id, file, { year: ar, kind: 'skyrsla' });
         if (meta) {
           _rfSync(); // patch 270: tölur skýrslunnar inn í facts/uttaeki/blob
+          // ── 2026-07-29 (Agnar: „reyna láta skýrsluna haldast betur … og hún á
+          //    að vera sýnileg í kröfuyfirliti líka") ─────────────────────────
+          // Slökkvitækjaskýrslan fór AÐEINS í company_attachments. Brunakerfið
+          // (patch 273) skrifar hins vegar líka customer_documents-röð — og það
+          // er sú tafla sem árdálkarnir (187), Kröfu yfirlit (166) og
+          // Rekstrarfélög (175) lesa. Þess vegna „vantaði" skýrsluna alls staðar
+          // þótt hún væri til (staðfest á E Fasteignafélag v/Norðurhella 17:
+          // brunakerfi-röð fyrir 2026 en ENGIN uttektarskyrsla-röð).
+          //
+          // Drive-leiðin hér að neðan (/api/uttekt-upload) átti að búa röðina
+          // til, en hún er best-effort og bregst þegjandi ef endapunkturinn
+          // svarar ekki. Nú skrifum við röðina BEINT, idempotent: uppfærum
+          // fyrirliggjandi röð sama árs í stað þess að afrita.
+          try {
+            const sb = window.DB && DB.sb;
+            if (sb && co.id != null && ar) {
+              const rec = {
+                doc_type: 'uttektarskyrsla', fyrirtaeki_id: co.id, year: +ar,
+                storage_path: meta.storage_path || null,
+                doc_date: new Date().toISOString().slice(0, 10),
+                customer_name: n || null, source: 'app', found_by: 'uttektarskyrsla-app',
+                notes: fname
+              };
+              const ex = await sb.from('customer_documents')
+                .select('id').eq('fyrirtaeki_id', co.id).eq('year', +ar)
+                .eq('doc_type', 'uttektarskyrsla').limit(1);
+              if (ex && ex.data && ex.data[0]) {
+                await sb.from('customer_documents').update(rec).eq('id', ex.data[0].id);
+              } else {
+                await sb.from('customer_documents').insert(rec);
+              }
+            }
+          } catch (e) { console.warn('[uttektarskyrsla] customer_documents', e); }
           // 2026-07-16 (ósk Agnars): eintak af skýrslunni fer LÍKA í Google Drive
           // gegnum brunahólfs-endapunktinn /api/uttekt-upload (kanónískt nafn +
           // #staðar-stimpill + customer_documents-röð; idempotent — sama skýrsla
