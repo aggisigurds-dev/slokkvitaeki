@@ -171,7 +171,7 @@
     // (Drive-hryggnum) — knýr sönnunar-merkin á Óvíst-flipanum. Síðuskipt (töflurnar
     // eru komnar yfir 1000-raða klippingu Supabase) og fail-safe (tómt map á villu).
     const docYearsP = (async () => {
-      const byCo = {}, byBase = {};
+      const byCo = {}, byBase = {}, bruByCo = {};
       try {
         for (let from = 0; ; from += 1000) {
           const r = await SB.from('customer_documents')
@@ -181,13 +181,23 @@
           const rows = (r && r.data) || [];
           rows.forEach(d => {
             const y = +d.year || 0; if (!y) return;
-            if (d.fyrirtaeki_id != null) (byCo[String(d.fyrirtaeki_id)] = byCo[String(d.fyrirtaeki_id)] || new Set()).add(y);
-            if (d.customer_base_id != null) (byBase[String(d.customer_base_id)] = byBase[String(d.customer_base_id)] || new Set()).add(y);
+            // 2026-07-29 (Agnar): brunakerfis-skýrsla mátti EKKI lengur telja sem
+            // slökkvitækja-skýrsla ársins — hún lét „📄 Skýrsla 2026 til" kvikna á
+            // þessari síðu þótt engin úttektarskýrsla væri til. Ártölin eru því
+            // aðskilin: `byCo/byBase` = AÐEINS úttektarskýrslur, `bruByCo` heldur
+            // brunakerfinu til hliðar (það sannar áfram að kúnninn sé raunverulegur
+            // í ❓ Óvíst-þríflokkuninni, en segir ekkert um slökkvitækin).
+            const bruna = d.doc_type === 'brunakerfi';
+            if (d.fyrirtaeki_id != null) {
+              const m = bruna ? bruByCo : byCo;
+              (m[String(d.fyrirtaeki_id)] = m[String(d.fyrirtaeki_id)] || new Set()).add(y);
+            }
+            if (!bruna && d.customer_base_id != null) (byBase[String(d.customer_base_id)] = byBase[String(d.customer_base_id)] || new Set()).add(y);
           });
           if (rows.length < 1000) break;
         }
       } catch (_) {}
-      return { byCo, byBase };
+      return { byCo, byBase, bruByCo };
     })();
 
     await appSettingsP;
@@ -251,7 +261,10 @@
           ...(docYears.byCo[String(c.id)] || []),
           ...(c.customer_base_id != null ? (docYears.byBase[String(c.customer_base_id)] || []) : []),
         ]);
-        _ars._docYears = Array.from(dySet).sort();
+        _ars._docYears = Array.from(dySet).sort();          // AÐEINS úttektarskýrslur
+        // Brunakerfis-ár til hliðar: sanna að kúnninn sé raunverulegur (❓ Óvíst)
+        // en mega ALDREI látast vera slökkvitækjaskoðun ársins.
+        _ars._bruYears = Array.from(new Set(docYears.bruByCo[String(c.id)] || [])).sort();
         // 2026-07-16 (Lagfæringar-hamur): equipment_manual = the owner overrode the
         // counts by hand — the manual blob equipment wins over BOTH the live
         // uttaeki derivation and the report facts (same pattern as inspect_month_manual).
@@ -1465,6 +1478,15 @@
     const isNew = c.created_at && String(c.created_at) >= '2026-01-01';
     if (maxYr >= 2025) return { key: 'skyrsla', badge: `📄 Skýrsla ${maxYr} til`, color: '#166534', bg: '#dcfce7', hint: 'Alvöru þjónustukúnni — skýrsla ' + yrs.join(', ') + ' í skjalakerfinu. Vantar bara mánuð/merkingu.' };
     if (maxYr > 0) return { key: 'gomul', badge: `📁 Gömul saga (síðast ${maxYr})`, color: '#92400e', bg: '#fef3c7', hint: 'Skýrslur ' + yrs.join(', ') + ' — ekkert síðan. Dottinn úr þjónustu eða gleymdur?' };
+    // 2026-07-29: brunakerfis-skýrsla sannar að kúnninn sé raunverulegur, en
+    // hún er ÖNNUR þjónusta — merkið segir það hreint út í stað þess að láta
+    // líta út fyrir að slökkvitækin hafi verið skoðuð.
+    const bYrs = (c._ars && c._ars._bruYears) || [];
+    if (bYrs.length) {
+      const bMax = Math.max(...bYrs);
+      return { key: 'brunakerfi', badge: `🚨 Brunakerfi ${bMax} — engin slökkvitækjaskýrsla`, color: '#9a3412', bg: '#ffedd5',
+        hint: 'Í brunakerfisþjónustu (skýrslur ' + bYrs.join(', ') + ') en ENGIN úttektarskýrsla fyrir slökkvitæki. Önnur þjónusta — ekki sönnun um slökkvitækjaskoðun.' };
+    }
     // 2026-07-23 (ósk Agnars): handvirk „Nýtt"-merking þegar engin skýrsla er til —
     // fjólublátt, opnar mánaðarval á fyrirtækjasíðunni (arsskodun_customers.nytt_manual).
     if (c._ars && c._ars.nytt_manual) return { key: 'nytt', badge: '🆕 Nýtt — bíður skoðunar', color: '#7c3aed', bg: '#ede9fe', hint: 'Merkt handvirkt sem nýr þjónustukúnni — bíður fyrstu skoðunar.' };

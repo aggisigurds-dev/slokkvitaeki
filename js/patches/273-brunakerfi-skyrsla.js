@@ -1335,8 +1335,14 @@
       // Aðeins við fyrstu lokun (annars tvítekningar í dálknum).
       if (firstFinal && window.CompanyAttachments && CompanyAttachments.upload) {
         try {
+          // 2026-07-29: kind var 'skyrsla' — SAMA tegund og slökkvitækja-
+          // úttektarskýrslan notar — svo brunaskýrslan lenti í úttektarskýrslu-
+          // reit ársins á skjalaspjaldinu (patch 199) og leit út eins og
+          // slökkvitækjaskoðun ársins væri frágengin. Eigin tegund heldur
+          // þjónustunum tveimur aðskildum. `noMark` stendur áfram: brunaskoðun
+          // má aldrei merkja slökkvitækja-ársskoðunina búna.
           await CompanyAttachments.upload(S.co.id, new File([pdf], fname, { type: 'application/pdf' }),
-            { year: yearOf(), kind: 'skyrsla', noMark: true });
+            { year: yearOf(), kind: 'brunakerfi', noMark: true });
         } catch (e) { console.warn('[bks] grid attach', e); }
       }
       toast('PDF vistað á fyrirtækið — græni punkturinn kviknar í yfirlitinu ✓');
