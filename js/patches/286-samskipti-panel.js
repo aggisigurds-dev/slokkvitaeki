@@ -126,15 +126,26 @@
   }
   async function decorateRF() {
     const v = document.getElementById("view-rekstrarfelog");
-    if (!v || v.offsetParent === null) return;
+    if (!v) return;
+    // ATH: ekki offsetParent-tékk — það er null á position:fixed (síma-/app-ham)
+    // og spjaldið birtist þá aldrei þar. Rect-stærð segir satt í öllum hömum.
+    const r = v.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return;
     // Accordion-síðan getur haft MARGA ._rf_info kassa í DOM (eitt per opnað
     // félag) — hver fær sitt spjald, hengt beint fyrir aftan SINN kassa.
     const infos = [...v.querySelectorAll("._rf_info")];
     if (!infos.length) { v.querySelectorAll("._samskipti-rf").forEach(c => c.remove()); return; }
-    for (const info of infos) await decorateRFone(info);
+    for (const info of infos) {
+      try { await decorateRFone(info); }
+      catch (e) { console.warn("[samskipti-rf] villa:", e); }
+    }
   }
   async function decorateRFone(info) {
-    const emails = [...info.querySelectorAll('._rf_info_view a[href^="mailto:"]')].map(a => a.getAttribute("href").slice(7));
+    // Netföng: bæði mailto-hlekkir OG hreinn texti (mismunandi útgáfur spjaldsins)
+    let emails = [...info.querySelectorAll('a[href^="mailto:"]')].map(a => a.getAttribute("href").slice(7));
+    if (!emails.length) {
+      emails = (String(info.textContent || "").match(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g) || []);
+    }
     const doms = {};
     emails.forEach(e => { const d = (e.split("@")[1] || "").toLowerCase().trim(); if (d) doms[d] = (doms[d] || 0) + 1; });
     const dom = Object.keys(doms).sort((a, b) => doms[b] - doms[a])[0];
