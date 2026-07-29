@@ -418,9 +418,13 @@
       // Hausinn VERÐUR að fylgja dálkunum: sömu breiddir og bil og .ut-lastcol /
       // .ut-now hér að neðan, annars stendur „Frá síðustu skýrslur" ekki lengur
       // yfir boxinu sínu eftir að það var fært til vinstri.
-      '.ut-head .h-last{width:190px;margin-right:24px;text-align:left;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
-      '.ut-head .h-now{width:252px;margin-left:26px;padding-left:26px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
-      '.ut-head .h-far{width:40px;margin-left:14px}',
+      // flex:none — ÁN þess skruppu hausdálkarnir saman (þeir höfðu bara `width`)
+      // meðan raðadálkarnir héldu sinni breidd, svo hausinn stóð aldrei yfir
+      // sínum dálki. Sama padding-left og röðin (26px) svo upphafspunktur stemmi.
+      '.ut-head{padding-left:26px!important}',
+      '.ut-head .h-last{width:190px;flex:none;margin-right:24px;text-align:left;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
+      '.ut-head .h-now{width:252px;flex:none;margin-left:26px;padding-left:26px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
+      '.ut-head .h-far{width:40px;flex:none;margin-left:14px}',
       '@media(max-width:860px){.ut-head{display:none}}',
       '.ut-grp-h{width:100%;display:flex;align-items:center;gap:10px;padding:9px 15px;background:var(--surface2);border:0;border-top:1px solid var(--brd);cursor:pointer;font:inherit;text-align:left}',
       '.ut-grp:first-child .ut-grp-h{border-top:0}',
