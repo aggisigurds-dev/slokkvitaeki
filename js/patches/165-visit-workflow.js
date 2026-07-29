@@ -64,8 +64,36 @@
     try { return JSON.parse(localStorage.getItem(CHOICE_KEY + coId) || '{}'); }
     catch (_) { return {}; }
   }
+  // 2026-07-29 (Agnar: „finnst ársskoðunar svæðið mjög óöruggt"): frágangur
+  // heimsóknar hreinsaði ALLT trip-state-ið — líka reitina sem starfsmaðurinn
+  // hafði slegið inn (Skoðunaraðili, Framkvæmd, Dags., athugasemdir, texti á
+  // reikning). Patch 227 breytti removeItem í ský-legstein, svo textinn hvarf
+  // á ÖLLUM tækjum og varð ekki endurheimtur. Það er tapaður innsláttur, ekki
+  // bara óþægindi.
+  //
+  // Nú er hreinsunin markviss: TÆKJAVALIÐ (units/afsláttarlínur/aukalínur) á að
+  // núllast — heimsóknin er búin — en RITAÐIR REITIR lifa áfram. Þeir eru
+  // hvort eð er réttir fyrir næstu heimsókn (sami skoðunaraðili, sami mánuður)
+  // og starfsmaðurinn breytir þeim frekar en að slá þá inn upp á nýtt.
+  const KEEP_FIELDS = ['skodunaradili', 'skodun_manudur', 'skodun_dagsetning',
+                       'athugasemdir_skyrsla', 'athugasemdir', 'invoice_text'];
   function clearTrip(coId) {
-    try { localStorage.removeItem(CHOICE_KEY + coId); } catch (_) {}
+    try {
+      let keep = {};
+      try {
+        const st = JSON.parse(localStorage.getItem(CHOICE_KEY + coId) || '{}') || {};
+        KEEP_FIELDS.forEach(k => { if (st[k] !== undefined && st[k] !== null && st[k] !== '') keep[k] = st[k]; });
+      } catch (_) { keep = {}; }
+      if (Object.keys(keep).length) {
+        // Skrifum aftur (í stað removeItem) svo 227 spegli þetta í skýið sem
+        // ALVÖRU færslu en ekki legstein — annars kæmi textinn ekki til baka.
+        localStorage.setItem(CHOICE_KEY + coId, JSON.stringify(keep));
+      } else {
+        localStorage.removeItem(CHOICE_KEY + coId);
+      }
+    } catch (_) {
+      try { localStorage.removeItem(CHOICE_KEY + coId); } catch (__) {}
+    }
   }
   function todayIso() { return new Date().toISOString().slice(0, 10); }
   // YYYY-MM-DD → DD.MM.YYYY for the printed "Vegna heimsókn" reference line.
