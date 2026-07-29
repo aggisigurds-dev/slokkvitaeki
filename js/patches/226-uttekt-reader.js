@@ -546,13 +546,15 @@
       if(main.lastElementChild!==box) main.appendChild(box); // keep at very bottom
       return;
     }
-    box=document.createElement('div'); box.className='rdr-box'; box.dataset.co=coId; box.dataset.open='1';
+    // 2026-07-29 (ósk Agnars): SAMANBROTINN sjálfgefið — kaflinn er sjaldan
+    // notaður en tók heilan skjá neðst á ársskoðunarsíðunni.
+    box=document.createElement('div'); box.className='rdr-box'; box.dataset.co=coId; box.dataset.open='0';
     box.innerHTML=
-      '<button class="rdr-toggle" type="button" aria-expanded="true">'+
-        '<span class="rdr-chev">▾</span>'+
+      '<button class="rdr-toggle" type="button" aria-expanded="false">'+
+        '<span class="rdr-chev">▸</span>'+
         '<span class="rdr-ttl">📋 Samræma tækjalista úr skýrslu / reikningi</span>'+
       '</button>'+
-      '<div class="rdr-bodywrap" style="display:block"></div>';
+      '<div class="rdr-bodywrap" style="display:none"></div>';
     var tg=box.querySelector('.rdr-toggle');
     tg.onclick=function(){
       var open=box.dataset.open!=='1'; box.dataset.open=open?'1':'0';
