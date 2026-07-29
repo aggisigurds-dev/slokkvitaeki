@@ -169,9 +169,19 @@
   }
   // Classify a manual attachment into a slot: 'skyrsla' | 'reikningur' |
   // 'samningur' | 'other'. Explicit kind wins, else sniff the filename.
+  // 2026-07-29 (Agnar: „hún kom inn í slökkvitækja 2026 reitinn"): BRUNAKERFIS-
+  // skýrslan var líka vistuð sem viðhengi með kind:'skyrsla' (patch 273) — sama
+  // tegund og slökkvitækjaskýrslan. customer_documents er aðskilið eftir doc_type
+  // hér að neðan, EN viðhengin bera bara `kind`, svo aðskilnaðurinn tapaðist við
+  // samruna þeirra og brunaskýrslan fyllti úttektarskýrslu-reit ársins.
+  // Nú fær brunakerfið sína eigin tegund. Skrárheitið er notað sem varaleið
+  // fyrir viðhengin sem þegar eru vistuð með gamla kind-inu — patch 273 smíðar
+  // heitið alltaf sem „… - brunakerfi-skoðunarskýrsla.pdf".
   function attKind(a){
-    if(a.kind==='skyrsla'||a.kind==='reikningur'||a.kind==='samningur') return a.kind;
     var nm=String(a.name||'');
+    if(a.kind==='brunakerfi') return 'brunakerfi';
+    if(/brunakerfi[\s-]*sko(ð|d)unarsk(ý|y)rsl/i.test(nm)) return 'brunakerfi';
+    if(a.kind==='skyrsla'||a.kind==='reikningur'||a.kind==='samningur') return a.kind;
     if(/samning/i.test(nm)) return 'samningur';
     if(/reikn|r-?\s?\d{3,}/i.test(nm)) return 'reikningur';
     if(/sko(ð|d)un|(ú|u)ttekt|sk(ý|y)rsl/i.test(nm)) return 'skyrsla';
@@ -411,8 +421,20 @@
       var k=attKind(a), y=parseInt(attYear(a),10);
       if(k==='samningur'){ samn.push({src:'att',a:a,year:y||null}); return; }
       if(k==='other' || !(y>=2000&&y<=NOW+1)){ other.push(a); return; }
-      if(k==='skyrsla') (repByY[y]=repByY[y]||[]).push({_att:a});
+      if(k==='brunakerfi') (bruByY[y]=bruByY[y]||[]).push({_att:a});
+      else if(k==='skyrsla') (repByY[y]=repByY[y]||[]).push({_att:a});
       else if(k==='reikningur') (invByY[y]=invByY[y]||[]).push({_att:a});
+    });
+
+    // Brunakerfis-skýrslan er vistuð TVISVAR viljandi (customer_documents fyrir
+    // yfirlitin + viðhengi fyrir skjalaspjaldið, sjá patch 273). Nú þegar báðar
+    // lenda í sama dálki þarf að fella afritið burt: raunverulega skjalaröðin
+    // er kanónísk, viðhengið víkur fyrir henni innan ársins.
+    Object.keys(bruByY).forEach(function(y){
+      var arr = bruByY[y] || [];
+      if (arr.some(function(x){ return !x._att; })) {
+        bruByY[y] = arr.filter(function(x){ return !x._att; });
+      }
     });
 
     // ── merge reikningur-sölur beint úr solur (sömu og í Kröfu yfirliti) ──
