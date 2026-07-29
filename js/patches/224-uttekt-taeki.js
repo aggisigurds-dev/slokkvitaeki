@@ -432,12 +432,16 @@
       '.ut-main{flex:1;min-width:0}.ut-t{font-weight:700;font-size:13.5px;color:var(--ink1)}',
       '.ut-sub{font-size:11.5px;color:var(--ink3);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.ut-right{display:flex;align-items:center;flex:none}',
-      '.ut-lastcol{width:118px;display:flex;justify-content:flex-end;flex:none}',
-      '.ut-last{font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap;background:#eef0f2;color:var(--ink2)}',
-      '.ut-last.h{background:#fdeecb;color:#9a5b1a}',
-      '.ut-last.old{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d)}',
-      '.ut-last.none{background:transparent;color:var(--ink4);font-weight:600}',
-      '.ut-now{display:flex;align-items:center;gap:7px;flex:none;width:252px;justify-content:flex-end;margin-left:18px;padding-left:18px;border-left:1px solid var(--brd)}',
+      // 2026-07-29 (Agnar): staðan úr SÍÐUSTU skýrslu („↺ Yfirfarið ’24") sat
+      // þétt upp við ✓-hnappinn og var lesin sem hluti af stjórntökkum þessarar
+      // skoðunar. Nú (a) meira bil frá ✓ og (b) KASSALAGA rammi eins og reitirnir
+      // hægra megin — svo hún lesist sem lokastaða síðasta árs, ekki sem val.
+      '.ut-lastcol{width:126px;display:flex;justify-content:flex-end;flex:none;margin-right:14px}',
+      '.ut-last{font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;white-space:nowrap;background:var(--surface2);color:var(--ink2);border:1px solid var(--brd)}',
+      '.ut-last.h{background:#fdeecb;color:#9a5b1a;border-color:#e7c98f}',
+      '.ut-last.old{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d);border-color:var(--red-bd,#fca5a5)}',
+      '.ut-last.none{background:transparent;color:var(--ink4);font-weight:600;border-style:dashed}',
+      '.ut-now{display:flex;align-items:center;gap:7px;flex:none;width:252px;justify-content:flex-end;margin-left:26px;padding-left:26px;border-left:1px solid var(--brd)}',
       '.ut-svcseg{display:inline-flex;background:var(--surface2);border:1px solid var(--brd);border-radius:9px;padding:3px;gap:2px}',
       '.ut-svc{border:0;background:transparent;font:inherit;font-size:11.5px;font-weight:700;color:var(--ink3);padding:5px 10px;border-radius:7px;cursor:pointer;white-space:nowrap}',
       /* 2026-06-25: active service pill — málm-blár, sama litur fyrir Yfirferð /
