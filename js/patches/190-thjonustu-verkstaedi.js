@@ -39,6 +39,27 @@
   // 2026-07-22 (ósk Agnars): „Farið á verkstað" bætt við FREMST — skrefið sem
   // segir að búið sé að mæta á staðinn, á undan því að úttektin sjálf klárist.
   const STEPS_KEY = 'steps_' + curYear;
+  // Hver setti hvaða skref og hvenær — { farid:{by,at}, uttekt:{…}, … }.
+  // Sama arsskodun_customers-blob og skrefin sjálf, svo þetta samstillist strax
+  // milli tækja og allir sjá hver er kominn í hvaða skýrslu.
+  const STEPS_META_KEY = 'steps_meta_' + curYear;
+  // Nafnið er SAMEIGINLEGT með bílstjóra-appinu (patch 219, localStorage
+  // bs_employee) svo starfsmaður velji sig einu sinni — hvort sem hann byrjar
+  // í bílnum eða á skrifstofunni.
+  const EMP_KEY = 'bs_employee';
+  const EMPLOYEES = ['Hákon', 'Binni', 'Elías', 'Agnar'];
+  function whoAmI() { try { return localStorage.getItem(EMP_KEY) || ''; } catch (_) { return ''; } }
+  function setWhoAmI(n) { try { localStorage.setItem(EMP_KEY, n || ''); } catch (_) {} }
+  // „Hákon · 14:03" — eða „14:03" ef enginn hefur valið nafn (þá er tíminn þó
+  // til, sem er betra en ekkert).
+  function stampText(m) {
+    if (!m || !m.at) return '';
+    const d = new Date(m.at), now = new Date();
+    const hhmm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+    const sameDay = d.toDateString() === now.toDateString();
+    const when = sameDay ? hhmm : (d.getDate() + '.' + (d.getMonth() + 1) + '. ' + hhmm);
+    return (m.by ? m.by + ' · ' : '') + when;
+  }
   const STEP_DEFS = [
     ['farid',       'Farið á verkstað', 'Farið'],
     ['averkstaedi', 'Á verkstæði',      'Verkst.'],
@@ -256,6 +277,10 @@
         // Wide-mode stepper — full-label nodes in a grey strip (comp: ThjonustuVerkstaedi wide)
         '#' + VIEW_ID + ' .sv-stepsw{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#f6f8fb;border:1px solid rgba(20,24,34,.06);border-radius:12px;padding:13px 18px}',
         '#' + VIEW_ID + ' .sv-stepw{display:inline-flex;align-items:center;gap:8px;background:none;border:0;padding:0;cursor:pointer;font:inherit}',
+        // Stimpill: hver setti skrefið og hvenær — undir merkimiðanum.
+        '#' + VIEW_ID + ' .sv-stepw .lb{display:inline-flex;flex-direction:column;align-items:flex-start;line-height:1.2}',
+        '#' + VIEW_ID + ' .sv-stamp{font-size:9.5px;font-weight:700;color:#2563eb;letter-spacing:.01em;white-space:nowrap}',
+        '#' + VIEW_ID + ' .sv-empbtn{height:30px;padding:0 12px;border-radius:99px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}',
         '#' + VIEW_ID + ' .sv-stepw .nd{width:26px;height:26px;border-radius:50%;border:2px solid #cbd5e1;background:#fff;color:#94a3b8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;box-sizing:border-box}',
         '#' + VIEW_ID + ' .sv-stepw.on .nd{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);border-color:#0f6e3a;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}',
         '#' + VIEW_ID + ' .sv-stepw .lb{font-family:"Space Grotesk",system-ui,sans-serif;font-size:12.5px;font-weight:600;color:#5b6472;white-space:nowrap}',
@@ -398,6 +423,7 @@
         id: co.id, nafn: co.nafn || ('#' + co.id), kennitala: co.kennitala || '',
         month: m, aminning: (a.aminning || '').trim(),
         steps: effSteps(a, hasReik),   // afleidd úr 153-stöðu + reikningi ársins þegar skref eru óskráð
+        stepsMeta: a[STEPS_META_KEY] || {},   // hver setti hvaða skref og hvenær
         mark: a.sv_mark || '',          // bráðabirgða-merking (single-select)
         note: a.sv_note || '',          // bráðabirgða-minnispunktur (frítexti)
         markedAt: +a.sv_mark_at || 0,   // hvenær síðast merkt (fyrir "Nýlega merkt" röðun)
@@ -534,9 +560,15 @@
       STEP_DEFS.map(([k, full], i) => {
         const on = !!r.steps[k];
         const prevOn = i > 0 && !!r.steps[STEP_DEFS[i - 1][0]];
+        // Stimpillinn (hver · hvenær) undir merkimiðanum — svo starfsmaður sjái
+        // strax að einhver annar er kominn í þessa skýrslu.
+        const st = stampText((r.stepsMeta || {})[k]);
         return (i > 0 ? '<span class="sv-lnw' + (prevOn ? ' on' : '') + '"></span>' : '') +
-          '<button class="_sv-step sv-stepw' + (on ? ' on' : '') + '" data-id="' + r.id + '" data-step="' + k + '" title="' + esc(full) + (on ? ' — smelltu til að afhaka' : '') + '">' +
-          '<span class="nd">' + (on ? '✓' : '') + '</span><span class="lb">' + esc(full) + '</span></button>';
+          '<button class="_sv-step sv-stepw' + (on ? ' on' : '') + '" data-id="' + r.id + '" data-step="' + k + '" title="' + esc(full) + (st ? ' — ' + esc(st) : '') + (on ? ' — smelltu til að afhaka' : '') + '">' +
+          '<span class="nd">' + (on ? '✓' : '') + '</span>' +
+          '<span class="lb">' + esc(full) +
+            (st ? '<span class="sv-stamp">' + esc(st) + '</span>' : '') +
+          '</span></button>';
       }).join('') + '</div>';
   }
   // bráðabirgða-merkingar (single-select)
@@ -723,7 +755,11 @@
         '</div>' +
         '<div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end">' +
           '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">' +
-            '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>Spjöld</button></div>' +
+            // Hver er að vinna? Nafnið er stimplað á hvert skref sem þú hakar.
+          // Sama nafn og bílstjóra-appið notar (localStorage bs_employee).
+          '<button class="_sv-emp sv-empbtn" type="button" title="Nafnið þitt er stimplað á hvert skref sem þú hakar — svo aðrir sjái hver er kominn í skýrsluna">' +
+            (whoAmI() ? '👤 ' + esc(whoAmI()) : '👤 Hver ert þú?') + '</button>' +
+          '<div class="sv-seg"><button data-mode="list"' + (_mode === 'list' ? ' class="on"' : '') + '>Listi</button><button data-mode="wide"' + (_mode === 'wide' ? ' class="on"' : '') + '>Breitt</button><button data-mode="cards"' + (_mode === 'cards' ? ' class="on"' : '') + '>Spjöld</button></div>' +
             '<select class="sv-sort" title="Raða Í-vinnslu listanum">' +
               '<option value="name"' + (_sort === 'name' ? ' selected' : '') + '>Nafn (A–Ö)</option>' +
               '<option value="revenue"' + (_sort === 'revenue' ? ' selected' : '') + '>Hæstu tekjur</option>' +
@@ -778,6 +814,15 @@
     // Sync í Fyrirtæki í þjónustu (153): skref sett Á ⇒ árið telst hafið
     // (field_inspected_year → blátt „Í skýrslugerð" á 153); „Reikningur sendur"
     // eða öll fjögur ✓ ⇒ árið fullklárað (last_year_inspected → grænt á 153).
+    // Nafnaval — einfalt hringval gegnum starfsmannalistann (sami og 219).
+    v.querySelectorAll('._sv-emp').forEach(bn => bn.addEventListener('click', () => {
+      const cur = whoAmI();
+      const i = EMPLOYEES.indexOf(cur);
+      const next = EMPLOYEES[(i + 1) % (EMPLOYEES.length + 1)] || '';
+      setWhoAmI(next);
+      toast(next ? '👤 ' + next : 'Nafn hreinsað');
+      render();
+    }));
     v.querySelectorAll('._sv-step').forEach(bn => bn.addEventListener('click', async e => {
       e.stopPropagation();
       const id = +bn.dataset.id, k = bn.dataset.step;
@@ -791,6 +836,15 @@
       if (k === 'farid' && !next.farid) next.uttekt = false;
       const extra = {};
       if (next[k] && +a.last_year_inspected !== curYear) extra.field_inspected_year = curYear;
+      // 2026-07-29 (Agnar: „starfsmennirnir mjög óöruggir hvernig staðan er …
+      // sést svo illa ef einhver er búinn að vinna í henni"): þrepin geymdu
+      // AÐEINS já/nei — hvergi var skráð hver setti hakið né hvenær, svo appið
+      // gat ekki sagt frá því. Nú fylgir stimpill hverju skrefi.
+      const meta = Object.assign({}, a[STEPS_META_KEY] || {});
+      if (next[k]) meta[k] = { by: whoAmI(), at: Date.now() };
+      else delete meta[k];
+      if (k === 'uttekt' && next.uttekt && !meta.farid) meta.farid = { by: whoAmI(), at: Date.now() };
+      extra[STEPS_META_KEY] = meta;
       await setFlag(id, Object.assign({ [STEPS_KEY]: next }, extra));
       // Aðeins þegar smellurinn kveikti á skrefi (aldrei við afhak):
       if (next[k] && (k === 'reikningur' || STEP_DEFS.every(([sk]) => next[sk]))) {
