@@ -1039,6 +1039,13 @@
     // kostnaðartöflunni, geymdar af 129 í slokk_trip_<coId>.computed) safnast hér
     // og trompa áætlunina í gullkassanum fyrir þær byggingar sem eiga þær.
     var realSum=0, realN=0, realUnits=0;
+    // Tekjuforsendur félagsins (hoistað upp fyrir byggingalykkju svo áætlun
+    // hverrar byggingar geti notað hennar EIGIN tilboðsverð + fastan afslátt).
+    function _noteNum(re){ var m=String(info.notes||'').match(re); return m?+String(m[1]).replace(/\./g,''):0; }
+    var revY = (info.rev_yfirferd!=null&&info.rev_yfirferd!=='') ? +info.rev_yfirferd : (_noteNum(/yfirfer[ðd][^0-9]{0,10}(\d[\d.]*)/i)||2700);
+    var revH = (info.rev_hledsla!=null&&info.rev_hledsla!=='') ? +info.rev_hledsla : (_noteNum(/hle[ðd]sla[^0-9]{0,10}(\d[\d.]*)/i)||4400);
+    var revHpct = (info.rev_hledsla_pct!=null&&info.rev_hledsla_pct!=='') ? +info.rev_hledsla_pct : 20;
+    var estMix=0, estOvN=0;
     // Tvær byggingar geta lent á SAMA fyrirtæki (t.d. „Center Hótel - Grandi"
     // og „Center Hótel – Grandi" — bandstrik vs. þankastrik falla saman í
     // companyForBld/equip-nafnaleitinni). Raðirnar standa áfram hvor í sínu
@@ -1153,12 +1160,31 @@
         if (d26) slDoneCur++;
         if (bY[CURY] && bY[CURY].kind==='rep') brDoneCur++;
         // raunveruleg heimsóknartala þessa árs (frá 129), ef til
+        var _hasReal = false;
         if (co) { try {
           var _tc = JSON.parse(localStorage.getItem('slokk_trip_'+co.id)||'{}');
           if (_tc.computed && +_tc.computed.total > 0 && String(_tc.computed.at||'').slice(0,4) === CURY) {
-            realSum += +_tc.computed.total; realN++; realUnits += units;
+            realSum += +_tc.computed.total; realN++; realUnits += units; _hasReal = true;
           }
         } catch(_) {} }
+        // annars áætlun þessarar byggingar — með HENNAR tilboðsverðum (Yfirferð/
+        // Hleðsla úr company_pricing, kt-samnýtt í Sölu/129) og föstum afslætti.
+        if (!_hasReal && units > 0) {
+          var _y=revY, _h=revH, _d=0;
+          if (co) {
+            _d = Math.max(0, Math.min(100, +co.afslattur_pct || 0));
+            try {
+              var _cp = (window.AppSettings && AppSettings.path && AppSettings.path('company_pricing')) || {};
+              (_cp[co.id] || _cp[String(co.id)] || []).forEach(function(o){
+                var n = String(o.name||'').toLowerCase();
+                if (n.indexOf('yfirfer') >= 0) _y = +o.price_ex_vat || _y;
+                if (n.indexOf('hleðsl') >= 0 || n.indexOf('hledsl') >= 0) _h = +o.price_ex_vat || _h;
+              });
+            } catch(_) {}
+          }
+          if (_y !== revY || _h !== revH || _d > 0) estOvN++;
+          estMix += (units*_y + Math.round(units*(revHpct/100))*_h) * (1 - _d/100);
+        }
       }
       // Samtölur borðans fylgja völdum þjónusturofa.
       var hasData = (showSl&&slHasData) || (showBr&&bHasData);
@@ -1207,18 +1233,14 @@
     // Verð koma úr vistuðum forsendum félagsins, annars úr athugasemdinni
     // („yfirferð 2.700 · Hleðsla 4.400"), annars sjálfgefið. Allt stillanlegt.
     function _rfKr(n){ return String(Math.round(+n||0)).replace(/\B(?=(\d{3})+(?!\d))/g,'.')+' kr'; }
-    function _noteNum(re){ var m=String(info.notes||'').match(re); return m?+String(m[1]).replace(/\./g,''):0; }
-    var revY = (info.rev_yfirferd!=null&&info.rev_yfirferd!=='') ? +info.rev_yfirferd : (_noteNum(/yfirfer[ðd][^0-9]{0,10}(\d[\d.]*)/i)||2700);
-    var revH = (info.rev_hledsla!=null&&info.rev_hledsla!=='') ? +info.rev_hledsla : (_noteNum(/hle[ðd]sla[^0-9]{0,10}(\d[\d.]*)/i)||4400);
-    var revHpct = (info.rev_hledsla_pct!=null&&info.rev_hledsla_pct!=='') ? +info.rev_hledsla_pct : 20;
     // Raunverulegar heimsóknartölur (m. vsk, frá kostnaðartöflu 129) trompa
-    // áætlunina fyrir sínar byggingar; restin áætluð á forsendum ×1,24 (vsk).
+    // áætlunina; áætlaði hlutinn (estMix, reiknaður per byggingu í lykkjunni
+    // með tilboðsverðum + föstum afslætti hverrar byggingar) ×1,24 (vsk).
     var remSl = Math.max(0, totSl - realUnits);
-    var estYf = remSl*revY, estHl = Math.round(remSl*(revHpct/100))*revH;
-    var estRev = realSum + Math.round((estYf+estHl)*1.24);
+    var estRev = realSum + Math.round(estMix*1.24);
     var goldSub = realN
-      ? realN+' byggingar raunreiknaðar ('+_rfKr(realSum)+') + '+remSl+' tæki áætluð'
-      : totSl+' tæki · yfirferð '+_rfKr(revY)+' + hleðsla '+revHpct+'%';
+      ? realN+' byggingar raunreiknaðar ('+_rfKr(realSum)+') + '+remSl+' tæki áætluð'+(estOvN?' ('+estOvN+' m. sérverði/afsl.)':'')
+      : totSl+' tæki · yfirferð '+_rfKr(revY)+' + hleðsla '+revHpct+'%'+(estOvN?' · '+estOvN+' byggingar m. sérverði/afslætti':'');
     var goldBox =
       '<div class="rf-gold" id="_rf_gold" title="Árs-tekjur m. vsk — raunverulegar heimsóknartölur þar sem þær eru til, annars áætlun. Smelltu til að stilla forsendur.">'+
         '<div class="rf-gold__l">ÁRS-TEKJUR M. VSK'+(realN?'':' (ÁÆTLUN)')+'</div>'+

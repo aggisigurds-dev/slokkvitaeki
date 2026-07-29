@@ -209,7 +209,24 @@
   function findOverride(coId, productName) {
     if (!coId || !productName) return null;
     if (!window.CompanyPricing || !window.CompanyPricing.list) return null;
-    const list = window.CompanyPricing.list(coId);
+    let list = window.CompanyPricing.list(coId);
+    // 2026-07-29: kt-fallback (sama og Salan/113) — systurstöð á sömu kennitölu
+    // með skráð tilboðsverð deilir þeim; annars misstu fjölstöðva-kt sérverðin hér.
+    if (!list || !list.length) {
+      try {
+        const cos = (window.Companies && Companies.list) || [];
+        const me = cos.find(c => +c.id === +coId);
+        const kt = me ? String(me.kennitala || '').replace(/\D/g, '') : '';
+        if (kt.length === 10 && kt !== '9999999999') {
+          for (const c of cos) {
+            if (+c.id !== +coId && String(c.kennitala || '').replace(/\D/g, '') === kt) {
+              const l = window.CompanyPricing.list(c.id);
+              if (l && l.length) { list = l; break; }
+            }
+          }
+        }
+      } catch (_) {}
+    }
     if (!list || !list.length) return null;
     const n = String(productName).toLowerCase().trim();
     let best = null;
