@@ -675,6 +675,18 @@
     const netVsk     = totalVsk * (1 - discountPct / 100);
     const totalInc   = netSubEx + netVsk;
     const activeUnits = units.length - groups.reduce((s, g) => s + g.skip, 0);
+    // 2026-07-29 (ósk Agnars): geyma útreiknuðu samtöluna í trip-state svo
+    // rekstrarfélags-yfirlitið (175) geti sýnt RAUNVERULEGA „Samtals m. vsk"
+    // per byggingu í gullkassanum í stað almennrar áætlunar. Skrifum aðeins
+    // þegar talan breytist (annars myndi hver render ýta á cloud-sync 227).
+    try {
+      const _c = tripState.computed || {};
+      if (_c.total !== totalInc || _c.ex !== netSubEx) {
+        const _st = loadTripState(coId);
+        _st.computed = { ex: netSubEx, vsk: netVsk, total: totalInc, units: activeUnits, at: new Date().toISOString().slice(0, 10) };
+        saveTripState(coId, _st);
+      }
+    } catch (_) {}
 
     const skodunaradili = (tripState.skodunaradili != null) ? String(tripState.skodunaradili) : '';
     // 2026-06-09: custom inspection date — Agnar wants to bill/report for the
