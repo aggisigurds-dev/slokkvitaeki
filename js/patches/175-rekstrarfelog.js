@@ -1163,7 +1163,11 @@
         var _hasReal = false;
         if (co) { try {
           var _tc = JSON.parse(localStorage.getItem('slokk_trip_'+co.id)||'{}');
-          if (_tc.computed && +_tc.computed.total > 0 && String(_tc.computed.at||'').slice(0,4) === CURY) {
+          // Vörn: heimsóknartala gildir aðeins ef hún náði yfir a.m.k. ~60% af
+          // tækjum byggingarinnar — annars er þetta hlutaheimsókn/prufa og
+          // myndi gleypa alla bygginguna á smáupphæð (t.d. 34.844 kr á 349 tæki).
+          if (_tc.computed && +_tc.computed.total > 0 && String(_tc.computed.at||'').slice(0,4) === CURY
+              && (+_tc.computed.units || 0) >= units * 0.6) {
             realSum += +_tc.computed.total; realN++; realUnits += units; _hasReal = true;
           }
         } catch(_) {} }
