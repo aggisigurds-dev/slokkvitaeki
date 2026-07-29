@@ -440,7 +440,10 @@
       // enn nálægt ✓ þótt bilið hefði verið breikkað. Nú MIÐJUÐ í breiðari dálki
       // — hún situr þá í miðju bilinu milli tækjaheitisins og stjórntakkanna og
       // tilheyrir hvorugu sjónrænt.
-      '.ut-lastcol{width:170px;display:flex;justify-content:center;flex:none;margin-right:20px}',
+      // Enn lengra til vinstri (þriðja umferð): VINSTRI-jöfnuð í breiðum dálki,
+      // svo boxið hefjist strax eftir tækjaheitið og sé í engum vafa um að
+      // tilheyra „frá síðustu skýrslu" — ekki stjórntökkunum hægra megin.
+      '.ut-lastcol{width:190px;display:flex;justify-content:flex-start;flex:none;margin-right:24px}',
       '.ut-last{font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;white-space:nowrap;background:var(--surface2);color:var(--ink2);border:1px solid var(--brd)}',
       '.ut-last.h{background:#fdeecb;color:#9a5b1a;border-color:#e7c98f}',
       '.ut-last.old{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d);border-color:var(--red-bd,#fca5a5)}',
