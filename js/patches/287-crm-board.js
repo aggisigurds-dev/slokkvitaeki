@@ -179,7 +179,7 @@
     return fmtD(d);
   };
 
-  const T = { rows: null, loading: false, err: null, q: "", group: "all", sortKey: "nafn", sortDir: 1 };
+  const T = { rows: null, loading: false, err: null, q: "", group: "all", sortKey: "nafn", sortDir: 1, filter: "all" };
   const SORT_DEF = { nafn: 1, sidasti_postur: -1, inspect_month: 1, isk_ogreitt: -1, osv: -1 };
 
   // ✓ Afgreitt (2026-07-30, ósk Agnars: „leyfa mér að mark done").
@@ -289,6 +289,9 @@
   function tFiltered() {
     buildDup(T.rows || []);
     let rows = T.rows || [];
+    if (T.filter === "osv") rows = rows.filter(r => effOsv2(r) > 0);
+    else if (T.filter === "ogreitt") rows = rows.filter(r => +r.isk_ogreitt > 0);
+    else if (T.filter === "postur") rows = rows.filter(r => r.sidasti_postur && FDUP[r.fyrirtaeki_id] !== "dup");
     if (T.q) {
       const q = T.q;
       rows = rows.filter(r => String(r.nafn || "").toLowerCase().includes(q) ||
@@ -297,6 +300,17 @@
     }
     return tSorted(rows);
   }
+  // Morgunlínan: talin á ÖLLUM röðum (ekki síuðum) svo hún segi satt hvað bíður.
+  function tSummary() {
+    const all = T.rows || [];
+    let osvF = 0, osvN = 0, ogrF = 0, ogrSum = 0;
+    all.forEach(r => {
+      const eo = effOsv2(r);
+      if (eo > 0) { osvF++; osvN += eo; }
+      if (+r.isk_ogreitt > 0) { ogrF++; ogrSum += +r.isk_ogreitt; }
+    });
+    return { osvF, osvN, ogrF, ogrSum };
+  }
 
   function tdPostur(r) {
     if (!r.sidasti_postur) return '<span class="tbord-mut">—</span>';
@@ -304,14 +318,19 @@
       return '<div class="tbord-rel tbord-mut">' + esc(relD(r.sidasti_postur)) +
         ' · ✉️ félags-póstur</div><div class="tbord-sub tbord-mut">sjá félags-röðina / hópinn</div>';
     }
-    const efni = String(r.sidasta_efni || "").slice(0, 60) + (String(r.sidasta_efni || "").length > 60 ? "…" : "");
+    // Ósk Agnars 30.07 („show more text in this list"): sendandi + lengra efni
+    // + póstafjöldi í stað 60-stafa klippu.
+    const efni = String(r.sidasta_efni || "").slice(0, 110) + (String(r.sidasta_efni || "").length > 110 ? "…" : "");
+    const hver = r.sidasti_fra_okkur ? "Slökkvitæki ehf" : String(r.sidasti_sendandi || "").slice(0, 40);
     const eo = effOsv(r);
     const svara = r.sidasti_fra_okkur === false && eo > 0
       ? ' <span class="tbord-osv" title="Ósvarað — síðasti póstur frá viðskiptavini">↩︎ <b>' + eo + "</b></span>"
       : (HANDLED[r.fyrirtaeki_id] && (+r.osvarad || 0) > 0
          ? ' <span class="tbord-ok" title="Merkt afgreitt ' + esc(relD(HANDLED[r.fyrirtaeki_id])) + '">✓</span>' : "");
-    return '<div class="tbord-rel">' + esc(relD(r.sidasti_postur)) + svara + "</div>" +
-      '<div class="tbord-sub" title="' + esc(r.sidasta_efni || "") + '">' + esc(efni) + "</div>";
+    return '<div class="tbord-rel">' + esc(relD(r.sidasti_postur)) + svara +
+      (hver ? ' <span class="tbord-mut">· ' + esc(hver) + "</span>" : "") +
+      (+r.postar_alls > 1 ? ' <span class="tbord-mut">· ' + (+r.postar_alls) + " póstar</span>" : "") + "</div>" +
+      '<div class="tbord-sub tbord-efni" title="' + esc(r.sidasta_efni || "") + '">' + esc(efni) + "</div>";
   }
   function tdSkodun(r) {
     const m = r.inspect_month >= 1 && r.inspect_month <= 12 ? MAN[r.inspect_month - 1] : null;
@@ -377,6 +396,17 @@
     const th = (k, l, extra) => k
       ? '<th class="tbord-th" data-sort="' + k + '"' + (extra || "") + ">" + l + arrow(k) + "</th>"
       : "<th" + (extra || "") + ">" + l + "</th>";
+    // Morgunlínan (ósk Agnars 30.07 „make better summary"): hvað BÍÐUR — aðeins
+    // það sem er til; núll-hlutar detta út í stað þess að sýna „0".
+    const sm = tSummary();
+    const smBits = [];
+    if (sm.osvF) smBits.push('<span class="tbord-osv">↩︎ ' + sm.osvN + " ósvarað hjá " + sm.osvF + " félögum</span>");
+    if (sm.ogrF) smBits.push('<span class="tbord-red">' + esc(fmtISK(sm.ogrSum)) + " ógreitt hjá " + sm.ogrF + "</span>");
+    const smHtml = smBits.length
+      ? '<div class="tbord-summary">' + smBits.join('<span class="tbord-mut"> · </span>') + "</div>" : "";
+    const fchip = (k, l, n) =>
+      '<button data-f="' + k + '" class="tbord-fchip' + (T.filter === k ? " on" : "") + '"' + (n === 0 ? " disabled" : "") + ">" +
+      l + (n != null && n > 0 ? " (" + n + ")" : "") + "</button>";
     host.innerHTML =
       '<div class="tbord-top">' +
       '<h2 class="tbord-title">📇 Þjónustuborð</h2>' +
@@ -386,6 +416,12 @@
       '<div class="tbord-seg">' +
       '<button data-g="all" class="' + (T.group === "all" ? "on" : "") + '">Allt</button>' +
       '<button data-g="rf" class="' + (T.group === "rf" ? "on" : "") + '">Eftir rekstrarfélagi</button></div></div>' +
+      smHtml +
+      '<div class="tbord-filters">' +
+      fchip("all", "Öll félög", null) +
+      fchip("osv", "↩︎ Ósvarað", sm.osvF) +
+      fchip("ogreitt", "💰 Ógreitt", sm.ogrF) +
+      fchip("postur", "✉️ Með póstsögu", null) + "</div>" +
       '<div class="tbord-tblwrap"><table class="tbord-tbl"><thead><tr>' +
       th("nafn", "Fyrirtæki") + th(null, "Rekstrarfélag") + th("sidasti_postur", "Síðasti póstur") +
       th("osv", '↩︎', ' title="Ósvöruð erindi — smelltu til að raða"') +
@@ -399,6 +435,7 @@
     });
     host.querySelector("#tbord-refresh").addEventListener("click", () => tLoad(true));
     host.querySelectorAll(".tbord-seg button").forEach(b => b.addEventListener("click", () => { T.group = b.dataset.g; tRender(); }));
+    host.querySelectorAll(".tbord-fchip").forEach(b => b.addEventListener("click", () => { T.filter = b.dataset.f; tRender(); }));
     host.querySelectorAll(".tbord-th").forEach(h => h.addEventListener("click", () => {
       const k = h.dataset.sort;
       if (T.sortKey === k) T.sortDir *= -1; else { T.sortKey = k; T.sortDir = SORT_DEF[k] || 1; }
@@ -411,6 +448,19 @@
     host.querySelector("tbody").addEventListener("click", e => {
       const mark = e.target.closest("[data-mark]");
       if (mark) { e.stopPropagation(); tDoMark(mark); return; }
+      const rep = e.target.closest("[data-reply]");
+      if (rep) {
+        e.stopPropagation();
+        const drawer = rep.closest("tr.tbord-drawer");
+        const row = drawer && drawer.previousElementSibling;
+        const rid = row ? +row.getAttribute("data-id") : null;
+        const r = (T.rows || []).find(x => x.fyrirtaeki_id === rid);
+        if (!r) return;
+        const key = r.customer_base_id ? "base:" + r.customer_base_id : "f:" + r.fyrirtaeki_id;
+        const mail = (SAGA_CACHE[key] || []).find(m => String(m.email_id) === rep.getAttribute("data-reply"));
+        if (mail) tReply(r, mail);
+        return;
+      }
       const opn = e.target.closest("[data-opna]");
       if (opn) {
         e.stopPropagation();
@@ -451,26 +501,69 @@
     // BÆÐI síðasta frá-okkur sending og handled-merkingin.
     const lastUs = mails.filter(m => m.fra_okkur).map(m => m.received_at).sort().pop() || "";
     const cut = lastUs > h ? lastUs : h;
+    // Nýjasti póstur FRÁ kúnna = sá sem ✉️ Svara í hausnum svarar.
+    const newestCust = mails.find(m => !m.fra_okkur && m.sender_email);
+    const contact = [];
+    if (r.tengilidur) contact.push("👤 " + esc(r.tengilidur));
+    if (r.simi) contact.push('<a href="tel:' + esc(String(r.simi).replace(/[^\d+]/g, "")) + '">📞 ' + esc(r.simi) + "</a>");
+    if (r.netfang) contact.push('<a href="mailto:' + esc(r.netfang) + '">✉️ ' + esc(r.netfang) + "</a>");
     const head =
       '<div class="tbord-dhead">' +
       '<button class="tbord-btn" data-opna="' + esc(r.fyrirtaeki_id) + '">Opna fyrirtæki →</button>' +
+      (newestCust
+        ? '<button class="tbord-btn tbord-replybtn" data-reply="' + esc(newestCust.email_id) + '" title="Svara nýjasta pósti kúnnans — Claude semur uppkast, þú yfirferð og sendir">✉️ Svara</button>' : "") +
       (eo > 0
         ? '<button class="tbord-btn tbord-markbtn" data-mark="' + esc(r.fyrirtaeki_id) + '">✓ Merkja afgreitt</button>'
         : (h ? '<span class="tbord-ok">✓ Afgreitt ' + esc(relD(h)) + "</span>" : "")) +
-      '<span class="tbord-note">' + mails.length + " póstar" + (r.customer_base_id ? " á félaginu (allar byggingar)" : "") + "</span></div>";
+      '<span class="tbord-note">' + mails.length + " póstar" + (r.customer_base_id ? " á félaginu (allar byggingar)" : "") + "</span>" +
+      (contact.length ? '<span class="tbord-contact">' + contact.join(" · ") + "</span>" : "") + "</div>";
     if (!mails.length) return head + '<div class="tbord-note" style="padding:8px 2px">Engin póstsaga — ekkert netfang tengt, eða enginn póstur enn.</div>';
     const list = mails.map(m => {
       const open = m.is_question && !m.fra_okkur && (!cut || m.received_at > cut);
       const via = m.fyrirtaeki_nafn ? '<span class="tbord-via" title="Tengt á byggingu (' + esc(m.via || "") + ')">📍 ' + esc(m.fyrirtaeki_nafn) + "</span>" : "";
+      const svarB = open && m.sender_email
+        ? ' <button class="tbord-minireply" data-reply="' + esc(m.email_id) + '" title="Svara þessum pósti">✉️ Svara</button>' : "";
       return '<div class="tbord-mail' + (open ? " open" : "") + '">' +
         '<div class="tbord-mailmeta">' + esc(relD(m.received_at)) + " · " +
         esc(m.fra_okkur ? "Slökkvitæki ehf" : (m.sender_name || m.sender_email || "")) +
-        (open ? ' · <b class="tbord-osv">spurning — ósvarað</b>' : "") + " " + via + "</div>" +
+        (open ? ' · <b class="tbord-osv">spurning — ósvarað</b>' : "") + " " + via + svarB + "</div>" +
         '<div class="tbord-mailsubj">' + esc(m.subject || "(ekkert efni)") + "</div>" +
         (m.snippet ? '<div class="tbord-mailsnip">' + esc(String(m.snippet).slice(0, 220)) + "</div>" : "") +
         "</div>";
     }).join("");
     return head + '<div class="tbord-maillist">' + list + "</div>";
+  }
+  // ✉️ Svara af borðinu — sama svar-vél og Verkborð/Reikninga-póstur (240):
+  // Claude semur uppkast, skrifstofan yfirfer og sendir. Þegar svarið er SENT
+  // er félagið um leið merkt ✓ afgreitt (allar byggingar) — sama merking og
+  // handvirka ✓, svo borðið, prófíllinn og RF-kortið segja strax það sama.
+  async function tReply(r, mail) {
+    if (!window.ReikningaPostur || !ReikningaPostur.replyTo) { alert("Svar-vélin (Reikninga-póstur, 240) er ekki hlaðin."); return; }
+    let m = null;
+    // Reyna að ná fullri digest-röð (body_preview + message_id) — RLS getur
+    // falið hluta email_digest fyrir anon-lyklinum, þá duga saga-reitirnir.
+    try {
+      const res = await fetch(U + "/rest/v1/email_digest?select=message_id,sender_name,sender_email,subject,snippet,body_preview&id=eq." + (+mail.email_id) + "&limit=1", { headers: H });
+      if (res.ok) { const a = await res.json(); if (Array.isArray(a) && a[0]) {
+        const e = a[0];
+        m = { message_id: e.message_id, sender_name: e.sender_name || "", from: e.sender_email || "",
+          subject: e.subject || "", body_preview: e.body_preview || "", snippet: e.snippet || "" };
+      } }
+    } catch (_) {}
+    if (!m) m = { message_id: null, sender_name: mail.sender_name || "", from: mail.sender_email || "",
+      subject: mail.subject || "", body_preview: "", snippet: mail.snippet || "" };
+    if (!m.from) { alert("Ekkert sendandanetfang á þessum pósti."); return; }
+    m._onSent = async () => {
+      try {
+        await tMark(baseSiblings(r));
+        delete SAGA_CACHE[r.customer_base_id ? "base:" + r.customer_base_id : "f:" + r.fyrirtaeki_id];
+        const tr = document.querySelector('tr.tbord-row[data-id="' + r.fyrirtaeki_id + '"]');
+        const drawer = tr && tr.nextElementSibling && tr.nextElementSibling.classList.contains("tbord-drawer") ? tr.nextElementSibling : null;
+        if (drawer) { const mails = await tSaga(r); drawer.querySelector(".tbord-dbox").innerHTML = tSagaHtml(r, mails); }
+        if (tr) tr.outerHTML = tRow(r);
+      } catch (e) { console.warn("[tbord] onSent", e); }
+    };
+    ReikningaPostur.replyTo(m);
   }
   async function tToggleDrawer(tr) {
     const nxt = tr.nextElementSibling;
@@ -557,7 +650,17 @@
       ".tbord-mailmeta{font-size:11.5px;color:#64748b}" +
       ".tbord-mailsubj{font-weight:600;font-size:13px}" +
       ".tbord-mailsnip{font-size:12px;color:#64748b}" +
-      ".tbord-via{background:#eef2ff;border:1px solid #c7d2fe;color:#4338ca;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:700;white-space:nowrap}";
+      ".tbord-via{background:#eef2ff;border:1px solid #c7d2fe;color:#4338ca;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:700;white-space:nowrap}" +
+      ".tbord-summary{padding:0 18px 4px;font-size:13.5px;font-weight:600}" +
+      ".tbord-filters{display:flex;gap:7px;flex-wrap:wrap;padding:4px 18px 10px}" +
+      ".tbord-fchip{border:1px solid var(--brd,#cbd5e1);background:#fff;color:#475569;border-radius:99px;padding:5px 13px;font-size:12.5px;font-weight:700;cursor:pointer}" +
+      ".tbord-fchip.on{background:#0f172a;border-color:#0f172a;color:#fff}" +
+      ".tbord-fchip:disabled{opacity:.45;cursor:default}" +
+      ".tbord-replybtn{border-color:#3730a3;background:linear-gradient(150deg,#6366f1,#4338ca);color:#fff;font-weight:700}" +
+      ".tbord-minireply{border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:1px 9px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px}" +
+      ".tbord-contact{margin-left:auto;font-size:12px;color:#475569;white-space:nowrap}" +
+      ".tbord-contact a{color:#1d4ed8;text-decoration:none;font-weight:600}" +
+      ".tbord-efni{color:#475569;font-size:12.5px;max-width:520px}";
     document.head.appendChild(s);
   }
 
