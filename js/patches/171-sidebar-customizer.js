@@ -235,7 +235,12 @@
   async function resetDefaults() {
     if (!window.AppSettings || !AppSettings.save) return;
     if (!confirm('Endurstilla á sjálfgefna röð?')) return;
-    const ok = await AppSettings.save({ sidebar_order: null, sidebar_hidden: [] });
+    // 2026-07-30: `sidebar_order: null` fellur á `Array.isArray`-prófi lesarans
+    // (patch 68) sem dettur þá í localStorage-skyndiminnið `sb_order_cache` —
+    // sem var aldrei hreinsað. Endurstillingin sagði ✓ en gamla röðin kom aftur
+    // við endurhleðslu. Skrifum tómt fylki OG hreinsum skyndiminnið.
+    try { localStorage.removeItem('sb_order_cache'); } catch (_) {}
+    const ok = await AppSettings.save({ sidebar_order: [], sidebar_hidden: [] });
     if (!ok) { alert('Vista mistókst'); return; }
     if (window.Toast && Toast.show) Toast.show('✓ Endurstillt');
     document.getElementById('_sc-modal')?.remove();
