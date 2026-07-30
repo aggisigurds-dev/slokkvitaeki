@@ -39,19 +39,49 @@
       var SB=(window.DB&&DB.sb)||window.__vdaSB;
       if(!SB){ _equip={match:function(){return null;}}; return _equip; }
       var rows=[],from=0;
-      try{ while(true){ var r=await SB.from('uttaeki').select('client,last_insp,next_insp').range(from,from+999);
+      // 2026-07-30 (Verkefnalisti 93677d13): worksite_id tekið með svo röð geti
+      // talið tækin sem eru BEINT tengd sínum stað (sjá coEquipSt að neðan).
+      try{ while(true){ var r=await SB.from('uttaeki').select('client,last_insp,next_insp,worksite_id').range(from,from+999);
         if(r.error)break; rows=rows.concat(r.data||[]); if(!r.data||r.data.length<1000)break; from+=1000; if(from>20000)break; } }catch(e){}
-      var base={},comp={},street={};
+      // Per-staðar sannleikur síðustu skýrslu (PK fyrirtaeki_id) — trompa talninguna.
+      var factRows=[];
+      try{ var fr=await SB.from('arsskodun_report_facts').select('fyrirtaeki_id,total_devices,report_year').range(0,1999);
+        if(!fr.error) factRows=fr.data||[]; }catch(e){}
+      var base={},comp={},street={},ws={},facts={};
       rows.forEach(function(u){ var b=_norm(u.client); if(!b)return; var c=_compact(u.client),s=_streetnum(u.client);
         (base[b]||(base[b]=_blank())); _add(base[b],u);
         (comp[c]||(comp[c]=_blank())); _add(comp[c],u);
         if(s){ (street[s]||(street[s]=_blank())); _add(street[s],u); } });
+      rows.forEach(function(u){ if(u.worksite_id==null)return; var k=String(u.worksite_id);
+        (ws[k]||(ws[k]=_blank())); _add(ws[k],u); });
+      factRows.forEach(function(f){ if(f&&f.fyrirtaeki_id!=null) facts[String(f.fyrirtaeki_id)]=f; });
       _equip={ match:function(name){ var b=_norm(name); if(base[b])return base[b];
         var c=_compact(name); if(comp[c])return comp[c];
-        var s=_streetnum(name); if(s&&street[s])return street[s]; return null; } };
+        var s=_streetnum(name); if(s&&street[s])return street[s]; return null; },
+        wsOf:function(id){ return id==null?null:(ws[String(id)]||null); },
+        factOf:function(id){ return id==null?null:(facts[String(id)]||null); } };
       return _equip;
     })();
     return _equipP;
+  }
+  // 2026-07-30 (Verkefnalisti 93677d13, VILLA „summa á kennitölu"): Tæki-dálkurinn
+  // taldi AÐEINS eftir nafna-/götu-giski á client-strengnum — sam-nefndar (eða
+  // fold-jafnar) staðir sömu kennitölu runnu saman í eitt hólf og hver röð sýndi
+  // kt-summuna (Máni 61 + Midtown 61 → „122" á báðum; götu-giskið safnaði líka
+  // gömlum client-strengja-útgáfum, sbr. Hamraborg 7 = 30 í stað 14 í patch 175).
+  // Forgangsröð per röð (sama regla og bldEquipSt í 175):
+  //   (a) arsskodun_report_facts.total_devices (per-staðar sannleikur skýrslu),
+  //   (b) uttaeki með worksite_id = staðurinn,
+  //   (c) nafna-match (fallback) — ALDREI summa yfir kennitöluna.
+  function coEquipSt(equip, c){
+    var st = (equip && equip.match) ? equip.match(c && c.nafn) : null;   // (c)
+    if(c && c.id!=null && equip){
+      var w = equip.wsOf ? equip.wsOf(c.id) : null;                      // (b)
+      if(w && w.units>0) st = w;
+      var f = equip.factOf ? equip.factOf(c.id) : null;                  // (a)
+      if(f && +f.total_devices>0) st = Object.assign({}, st||_blank(), { units:+f.total_devices });
+    }
+    return st || null;
   }
   function uttektFiles(){ try{ if(window.AppSettings&&AppSettings.path) return AppSettings.path('uttekt_files')||{}; }catch(e){} return {}; }
 
@@ -81,7 +111,8 @@
     box.innerHTML='<div style="color:#94a3b8;padding:24px">Hleð…</div>';
     var equip=await getEquip(); var uf=uttektFiles(); var today=todayStr();
     var all=inServiceList().map(function(c){
-      var kt=digits(c.kennitala); var st=equip.match(c.nafn)||null; var lks=uf[kt]||{};
+      // Per-staðar talning (facts → worksite → nafn) — sjá coEquipSt að ofan.
+      var kt=digits(c.kennitala); var st=coEquipSt(equip,c); var lks=uf[kt]||{};
       var units=st?st.units:0;
       var d23=!!lks['2023'];
       var d24=(st&&st.y2024>0)||!!lks['2024'], d25=(st&&st.y2025>0)||!!lks['2025'], d26=(st&&st.y2026>0)||!!lks['2026'];
