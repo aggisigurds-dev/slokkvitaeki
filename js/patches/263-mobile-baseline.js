@@ -25,9 +25,15 @@
   if (document.getElementById(STYLE_ID)) return;
 
   // Content scope, minus the 4 bespoke per-mode pages.
+  // NB `[id="…"]` en EKKI `#…` inni í :not(): sértækni :not() = sértækni
+  // innihaldsins, svo fjögur `:not(#id)` gæfu þessum „gentle" reglum
+  // ID-sértækni ×4 — þá töpuðu ALLAR síðu-reglur (t.d. 190
+  // `#view-thjonustu-verkstaedi ._sv-step{min-height:44px}`) fyrir 40px
+  // grunninum hér að neðan. Eigindaval passar sömu stök en telur sem klasi,
+  // svo „no !important, so page rules win" heldur í alvöru.
   const V = 'html[data-viewmode="mobile"] .view' +
-    ':not(#view-krofu-yfirlit):not(#view-arsskodun)' +
-    ':not(#view-sala):not(#view-hreyfingarlisti)';
+    ':not([id="view-krofu-yfirlit"]):not([id="view-arsskodun"])' +
+    ':not([id="view-sala"]):not([id="view-hreyfingarlisti"])';
 
   const css = [
     // ── 1. Kill horizontal page overflow ────────────────────────────────────
