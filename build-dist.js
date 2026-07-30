@@ -56,6 +56,31 @@ for (const rel of walk(ROOT)) {
 console.log(`build-dist: copied ${n} files into dist/  (functions ship separately from netlify/functions)`);
 
 bundleIndexHtml();
+stampBuild();
+
+// ── Byggingar-stimpill (2026-07-30) ────────────────────────────────────────
+// „Virkar hjá þér en ekki hjá mér" kostaði heilan dag: framleiðslan flakkaði
+// milli tveggja deploy-leiða (lagað í #524) og enginn gat séð HVAÐA útgáfu
+// vafrinn var með. Nú ber hver bygging sýnilegt auðkenni:
+//   window.BUILD = { commit, time }  →  líka í <meta name="build">
+// Patch 292 birtir það í Stillingum + `BUILD` í console. Þannig er hægt að
+// bera saman á 5 sekúndum hvort tvö tæki keyri sama kóða.
+function stampBuild() {
+  const indexPath = join(OUT, 'index.html');
+  let commit = '';
+  try { commit = execSync('git rev-parse --short HEAD', { cwd: ROOT, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim(); } catch (_) {}
+  // Netlify-byggingar hafa ekki alltaf .git → falla á umhverfisbreytu CI-anna.
+  if (!commit) commit = (process.env.COMMIT_REF || process.env.GITHUB_SHA || '').slice(0, 7);
+  const time = new Date().toISOString().slice(0, 16).replace('T', ' ');
+  const stamp = '<meta name="build" content="' + commit + ' · ' + time + '">' +
+    '<script>window.BUILD={commit:"' + commit + '",time:"' + time + '"};' +
+    'try{console.log("[BUILD] "+window.BUILD.commit+" · "+window.BUILD.time);}catch(e){}</script>';
+  let html = readFileSync(indexPath, 'utf8');
+  if (html.includes('name="build"')) return;
+  html = html.replace('</head>', stamp + '</head>');
+  writeFileSync(indexPath, html);
+  console.log('build-dist: stimplað ' + (commit || '(engin commit-vísun)') + ' · ' + time);
+}
 
 // ── Bundle same-origin scripts in dist/index.html ──────────────────────────
 // PERF (2026-06-20): the app declares ~256 separate <script src> tags — each a

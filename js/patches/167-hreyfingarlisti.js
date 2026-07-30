@@ -59,7 +59,22 @@
       V + '.hl-macts{display:flex;gap:7px;padding:10px 12px;overflow-x:auto;-webkit-overflow-scrolling:touch;flex-wrap:nowrap}' +
       V + '.hl-macts .abtn5{flex-shrink:0}' +
       // Let the .thm .app-page dark band fill the view flush (theme.css owns the look now).
-      '#view-hreyfingarlisti{padding:0 !important;max-width:none !important;background:transparent !important}';
+      '#view-hreyfingarlisti{padding:0 !important;max-width:none !important;background:transparent !important}' +
+      // 2026-07-30 (Verkefnalisti 7e68b092): app.css `.main-panel{max-width:1200px}`
+      // þrengdi #hr-main svo borðið stoppaði í 1200px og stórt autt svæði sat eftir
+      // hægra megin (ON-reglan í 230 nær aðeins yfir Brunastál + banner á). ID-sértæknin
+      // (2,1,1) slær bæði app.css og 245-skinnið; taflan skrunar áfram lárétt inni í
+      // .data-table-scroll á þröngum skjám. Hliðar-padding kemur frá .thm .app-main.
+      '#view-hreyfingarlisti #hr-main.main-panel{max-width:none !important;width:100% !important;padding:0 !important;box-sizing:border-box}' +
+      // „Sía lista"-reiturinn: .field-dark (hvítur texti á hálfgagnsæju hvítu) var
+      // ólæsilegur/ósýnilegur þar sem stál-stigullinn (patch 224) er orðinn ljósgrár
+      // við síuröðina → ljós útgáfa með dökkum texta, í stíl við hvítu kortin og
+      // chippana á sama svæði. Sértækni (1,2,0) slær .thm .app-page .field-dark
+      // vörðinn í theme-scoped.css (0,3,0). Kennitölu-leitin efst (tool-lookup)
+      // situr á dökka bandinu og heldur sínum dökka stíl óbreyttum.
+      '#view-hreyfingarlisti .filter-search .field-dark{background:#fff !important;color:#11141c !important;border:1px solid rgba(20,24,34,.18) !important;box-shadow:0 1px 2px rgba(15,23,42,.1) !important}' +
+      '#view-hreyfingarlisti .filter-search .field-dark::placeholder{color:#8a93a5 !important}' +
+      '#view-hreyfingarlisti .filter-search svg{color:#5b6472 !important}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
