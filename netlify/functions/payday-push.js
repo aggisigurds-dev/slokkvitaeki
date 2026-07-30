@@ -37,6 +37,13 @@ const API_VERSION = process.env.PAYDAY_API_VERSION || 'alpha';
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors(), body: '' };
 
+  // Default-open shared-secret gate: enforced AÐEINS þegar EDGE_SHARED_KEY er sett.
+  const KEY = (process.env.EDGE_SHARED_KEY || '').trim();
+  if (KEY) {
+    const got = String((event.headers && event.headers['x-eldklar-key']) || '').trim();
+    if (got !== KEY) return json(401, { error: 'unauthorized' });
+  }
+
   if (!CLIENT_ID || !CLIENT_SECRET) {
     return json(500, { error: 'PAYDAY_CLIENT_ID / PAYDAY_CLIENT_SECRET vantar í Netlify env vars.' });
   }
@@ -588,7 +595,7 @@ function cors() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-eldklar-key',
   };
 }
 function json(code, obj) {

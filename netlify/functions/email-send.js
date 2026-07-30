@@ -21,6 +21,17 @@ export default async (req) => {
       headers: cors(),
     });
   }
+  // Default-open shared-secret gate: enforced AÐEINS þegar EDGE_SHARED_KEY er sett.
+  const KEY = (process.env.EDGE_SHARED_KEY || '').trim();
+  if (KEY) {
+    const got = String(req.headers.get('x-eldklar-key') || '').trim();
+    if (got !== KEY) {
+      return new Response(JSON.stringify({ error: 'unauthorized' }), {
+        status: 401,
+        headers: cors(),
+      });
+    }
+  }
   let body;
   try {
     body = await req.json();
@@ -106,7 +117,7 @@ function cors() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, x-eldklar-key',
   };
 }
 
