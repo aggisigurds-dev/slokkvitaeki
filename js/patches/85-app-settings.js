@@ -160,7 +160,14 @@
     if (!src || typeof src !== 'object') return target;
     for (const key of Object.keys(src)) {
       if (src[key] && typeof src[key] === 'object' && !Array.isArray(src[key])) {
-        target[key] = deepMerge(target[key] || {}, src[key]);
+        // If target[key] is not a plain object (e.g. a leftover scalar/string a
+        // different writer stored under the same key), setting properties on the
+        // primitive is a silent no-op → the save is lost. Replace it so the merge
+        // actually takes effect (last-writer-wins) instead of vanishing silently.
+        // This is the root failure mode behind "text/value does not save".
+        const t = target[key];
+        const base = (t && typeof t === 'object' && !Array.isArray(t)) ? t : {};
+        target[key] = deepMerge(base, src[key]);
       } else {
         target[key] = src[key];
       }

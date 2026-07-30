@@ -23,6 +23,38 @@
   function fmtKt(k){ if(!k) return ''; var c=String(k).replace(/\D/g,''); return c.length>=10? c.slice(0,6)+'-'+c.slice(6,10):c; }
   function digits(s){ return String(s||'').replace(/\D/g,''); }
 
+  // ── SAMHLIÐA blaðsíðu-sókn (2026-07-30, Agnar: „load time … takes forever") ──
+  // Supabase skilar í mesta lagi 1000 röðum per kall, svo stórar töflur þurfa
+  // margar sóknir. Áður voru þær RAÐBUNDNAR (while-lykkja sem beið eftir hverri
+  // síðu): uttaeki er 5.843 raðir = 6 sóknir, og ein sókn mælist ~0,6 s → ~3,8 s
+  // í BIÐ fyrir eina töflu. Öll síðan gerði ~14 raðbundnar sóknir ≈ 8-12 s.
+  //
+  // Hér er fyrsta síðan sótt með `count:'exact'` (þá vitum við heildina strax) og
+  // ALLAR eftirstandandi síður sóttar SAMHLIÐA. Þar með kostar taflan EINA
+  // umferðartíð í stað N. Skilar nákvæmlega sömu röðum og lykkjan gerði.
+  async function fetchAllRows(SB, table, cols, tweak){
+    var PAGE = 1000;
+    try {
+      var q = SB.from(table).select(cols, { count: 'exact' });
+      if (tweak) q = tweak(q);
+      var first = await q.range(0, PAGE - 1);
+      if (first.error) return [];
+      var rows = (first.data || []).slice();
+      var total = (typeof first.count === 'number') ? first.count : rows.length;
+      if (rows.length < PAGE || total <= PAGE) return rows;
+      var offs = [];
+      for (var off = PAGE; off < total && off <= 40000; off += PAGE) offs.push(off);
+      var rest = await Promise.all(offs.map(function(o){
+        var q2 = SB.from(table).select(cols);
+        if (tweak) q2 = tweak(q2);
+        return q2.range(o, o + PAGE - 1).then(function(r){ return r.data || []; })
+                 .catch(function(){ return []; });
+      }));
+      rest.forEach(function(a){ rows = rows.concat(a); });
+      return rows;
+    } catch (e) { console.warn('[rekstrarfelog] fetchAllRows', table, e); return []; }
+  }
+
   // ---- inline SVG icons (Lucide-style) + scoped styles for the redesigned cards ----
   // 2026-06-19: cleaner master cards (icon avatar + email chips + building count)
   // + a tidier detail table. Colours come from var(--brand) so the active theme
@@ -237,35 +269,55 @@
       try {
         // base rows carrying a rekstrarfelag
         var bases = {}; // base_id -> rekstrarfelag
-        var from=0;
-        while(true){
-          var rb = await SB.from('customers_base').select('id,nafn,kennitala,rekstrarfelag').not('rekstrarfelag','is',null).range(from,from+999);
-          if (rb.error) break;
-          (rb.data||[]).forEach(function(b){
-            if(!b.rekstrarfelag) return;
-            bases[b.id] = b.rekstrarfelag;
-            (out[b.rekstrarfelag]||(out[b.rekstrarfelag]=[]));
-          });
-          if(!rb.data || rb.data.length<1000) break; from+=1000; if(from>20000) break;
-        }
+        // báðar töflur sóttar með samhliða blaðsíðum (var 2+2 raðbundnar sóknir)
+        var baseRows = await fetchAllRows(SB, 'customers_base', 'id,nafn,kennitala,rekstrarfelag',
+          function(q){ return q.not('rekstrarfelag','is',null); });
+        baseRows.forEach(function(b){
+          if(!b.rekstrarfelag) return;
+          bases[b.id] = b.rekstrarfelag;
+          (out[b.rekstrarfelag]||(out[b.rekstrarfelag]=[]));
+        });
         // fyrirtaeki locations that belong to those bases → the buildings/sites
         var baseIds = Object.keys(bases).map(function(x){return parseInt(x,10);});
         if (baseIds.length){
-          from=0;
-          while(true){
-            var rf = await SB.from('fyrirtaeki').select('nafn,kennitala,heimilisfang,customer_base_id').in('customer_base_id', baseIds).range(from,from+999);
-            if (rf.error) break;
-            (rf.data||[]).forEach(function(f){
-              var rek = bases[f.customer_base_id]; if(!rek) return;
-              (out[rek]||(out[rek]=[])).push({ kt: f.kennitala||'', nafn: f.nafn||'', heimilisfang: f.heimilisfang||'' });
-            });
-            if(!rf.data || rf.data.length<1000) break; from+=1000; if(from>20000) break;
-          }
+          var siteRows = await fetchAllRows(SB, 'fyrirtaeki',
+            'nafn,kennitala,heimilisfang,netfang,simi,customer_base_id',
+            function(q){ return q.in('customer_base_id', baseIds); });
+          siteRows.forEach(function(f){
+            var rek = bases[f.customer_base_id]; if(!rek) return;
+            // netfang/simi fylgja með svo Upplýsinga-spjaldið geti LEITT út
+            // tengiliðaupplýsingar félagsins þegar ekkert er handskráð (sjá derivedInfo)
+            (out[rek]||(out[rek]=[])).push({ kt: f.kennitala||'', nafn: f.nafn||'', heimilisfang: f.heimilisfang||'', netfang: f.netfang||'', simi: f.simi||'' });
+          });
         }
       } catch(e){ console.warn('[rekstrarfelog] live load', e); }
       _liveRF = out; return out;
     })().catch(function(e){ console.warn('[rekstrarfelog] live load', e); _liveRFPromise=null; _liveRF={}; return _liveRF; });
     return _liveRFPromise;
+  }
+
+  // 2026-07-30 (Agnar: „zero info"): Upplýsinga-spjaldið stóð tómt („—" í öllum
+  // reitum) á félögum sem eru AÐEINS til lifandi — live-færslan er búin til án
+  // kt/netfanga/síma (sjá getData), svo Center Hótel sýndi ekkert þótt allar 10
+  // byggingar þess beri kt 450905-1430. Hér eru gildin LEIDD út úr byggingunum
+  // þegar ekkert hefur verið handskráð:
+  //   · kt      — AÐEINS þegar allar byggingar bera SÖMU kennitölu (ótvírætt).
+  //               Fjöl-kt félög (Eignaumsjón: 65 húsfélög) fá ekkert giskað kt.
+  //   · netföng — öll ólík netföng af fyrirtaeki-röðum félagsins
+  //   · sími    — fyrsta skráða símanúmerið
+  // Leidd gildi eru MERKT í sýninni og forfyllt í ritlinum svo „Vista" festi þau.
+  function derivedInfo(info){
+    var blds = (info && info.buildings) || [];
+    var kts = {}, ems = {}, sims = [];
+    blds.forEach(function(b){
+      var k = digits(b.kt || ''); if (k && k.length === 10) kts[k] = (b.kt || '');
+      String(b.netfang || '').split(/[,;\s]+/).forEach(function(x){
+        x = x.trim().toLowerCase(); if (x.indexOf('@') > 0) ems[x] = 1;
+      });
+      var s = String(b.simi || '').trim(); if (s && sims.indexOf(s) < 0) sims.push(s);
+    });
+    var kk = Object.keys(kts);
+    return { kt: kk.length === 1 ? kts[kk[0]] : '', emails: Object.keys(ems), simi: sims[0] || '' };
   }
 
   function getData(){
@@ -531,18 +583,27 @@
   function _compact(s){ return _norm(s).replace(/\s+/g,''); }
   function _streetnum(s){ var n=_norm(s); var m=n.match(/([a-záðéíóúýþæö]{3,})\s*(\d+)/); return m?(m[1]+m[2]):''; }
   function _blank(){ return {units:0,y2024:0,y2025:0,y2026:0,next:null}; }
-  function _add(e,u){ e.units++; var y=u.last_insp?String(u.last_insp).slice(0,4):null;
-    if(y==='2024')e.y2024++; else if(y==='2025')e.y2025++; else if(y==='2026')e.y2026++;
-    if(u.next_insp&&(!e.next||u.next_insp<e.next)) e.next=u.next_insp; }
+  // Bætir FORREIKNAÐRI samantekt (ein röð per client-streng úr
+  // v_uttaeki_client_rollup) í hólf. Áður var þetta kallað einu sinni per TÆKI
+  // með hráum uttaeki-röðum; stærðfræðin er sú sama, bara summuð í grunninum.
+  function _add(e,u){
+    e.units += (u.units|0) || 0;
+    e.y2024 += (u.y2024|0) || 0;
+    e.y2025 += (u.y2025|0) || 0;
+    e.y2026 += (u.y2026|0) || 0;
+    if(u.next_insp&&(!e.next||u.next_insp<e.next)) e.next=u.next_insp;
+  }
   async function getEquipIndex(){
     if(_equip) return _equip;
     if(_equipPromise) return _equipPromise;
     _equipPromise=(async function(){
       var SB=window.__vdaSB||(window.DB&&DB.sb);
       if(!SB){ _equip={match:function(){return null;}}; return _equip; }
-      var rows=[],from=0;
-      try{ while(true){ var r=await SB.from('uttaeki').select('client,last_insp,next_insp').range(from,from+999);
-        if(r.error)break; rows=rows.concat(r.data||[]); if(!r.data||r.data.length<1000)break; from+=1000; if(from>20000)break; } }catch(e){}
+      // 2026-07-30: var 5.843 hráar uttaeki-raðir í 6 RAÐBUNDNUM sóknum (~3,8 s)
+      // bara til að TELJA þær í vafranum. Grunnurinn telur núna: 629 raðir í
+      // EINNI sókn (9,3× færri), nákvæmlega sömu tölur (sannreynt).
+      var rows = await fetchAllRows(SB, 'v_uttaeki_client_rollup',
+                                    'client,units,y2024,y2025,y2026,next_insp');
       var base={},comp={},street={};
       rows.forEach(function(u){ var b=_norm(u.client); if(!b)return; var c=_compact(u.client), s=_streetnum(u.client);
         (base[b]||(base[b]=_blank())); _add(base[b],u);
@@ -611,13 +672,11 @@
       var SB=window.__vdaSB||(window.DB&&DB.sb);
       if(SB){
         try{
-          var from=0;
-          while(true){
-            var rd=await SB.from('customer_documents')
-              .select('fyrirtaeki_id,year,drive_file_id,storage_path,doc_date,is_duplicate')
-              .eq('doc_type','brunakerfi').not('fyrirtaeki_id','is',null).range(from,from+999);
-            if(rd.error) break;
-            (rd.data||[]).forEach(function(d){
+          var bkRows = await fetchAllRows(SB, 'customer_documents',
+            'fyrirtaeki_id,year,drive_file_id,storage_path,doc_date,is_duplicate',
+            function(q){ return q.eq('doc_type','brunakerfi').not('fyrirtaeki_id','is',null); });
+          {
+            bkRows.forEach(function(d){
               if(d.is_duplicate||!d.year) return;
               var e=rec(d.fyrirtaeki_id), y=String(d.year);
               var u=d.drive_file_id ? ('https://drive.google.com/file/d/'+encodeURIComponent(d.drive_file_id)+'/view') : storageUrl(d.storage_path);
@@ -626,7 +685,6 @@
               if(m) e.months[y]=m;
               if(+y>e.latest) e.latest=+y;
             });
-            if(!rd.data||rd.data.length<1000) break; from+=1000; if(from>20000) break;
           }
         }catch(e){ console.warn('[rekstrarfelog] brunakerfi skjöl', e); }
         try{
@@ -1301,8 +1359,15 @@
     }).join('') : '<div style="color:var(--ink4);font-size:13px;padding:4px 0">Engin skjöl skráð á félagið ennþá.</div>';
 
     // Editable rekstrarfélag info card (kennitala / netföng / lén / nótur).
-    var fEmails=(info.emails||[]).join(', ');
-    var emails=(info.emails||[]).map(function(e){return '<a href="mailto:'+esc(e)+'" style="color:var(--ink1);text-decoration:none;font-weight:600">'+esc(e)+'</a>';}).join(' · ');
+    // Handskráð gildi ganga alltaf fyrir; annars leiðum við út úr byggingunum.
+    var der=derivedInfo(info);
+    var effKt=info.kt||der.kt;
+    var effEmails=(info.emails&&info.emails.length)?info.emails:der.emails;
+    var effSimi=info.simi||der.simi;
+    var derTag=' <span style="font-size:10.5px;font-weight:700;color:var(--ink3);background:var(--brd);border-radius:99px;padding:1px 7px;white-space:nowrap">úr byggingum</span>';
+    var ktDer=!info.kt&&!!der.kt, emDer=!(info.emails&&info.emails.length)&&der.emails.length>0, siDer=!info.simi&&!!der.simi;
+    var fEmails=effEmails.join(', ');
+    var emails=effEmails.map(function(e){return '<a href="mailto:'+esc(e)+'" style="color:var(--ink1);text-decoration:none;font-weight:600">'+esc(e)+'</a>';}).join(' · ');
     var inS='width:100%;padding:6px 9px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box;margin-top:2px';
     var infoPanel=
       '<div class="_rf_info" style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
@@ -1311,18 +1376,18 @@
           '<button class="_rf_info_edit" type="button" style="font-size:12px;padding:4px 10px;background:var(--surface);border:1px solid var(--brd2);border-radius:7px;color:var(--ink1);font-weight:600;cursor:pointer">✏️ Breyta</button>'+
         '</div>'+
         '<div class="_rf_info_view" style="font-size:13px;color:var(--ink1);line-height:1.6">'+
-          '<div><b style="color:var(--ink1)">Kennitala:</b> '+(info.kt?esc(fmtKt(info.kt)):'—')+'</div>'+
-          '<div><b style="color:var(--ink1)">Netföng:</b> '+(emails||'—')+(info.domain?' &nbsp;·&nbsp; <span style="color:var(--ink2)">'+esc(info.domain)+'</span>':'')+'</div>'+
-          '<div><b style="color:var(--ink1)">Sími:</b> '+(info.simi?esc(info.simi):'—')+' &nbsp;·&nbsp; <b style="color:var(--ink1)">Tengiliður:</b> '+(info.tengilidur?esc(info.tengilidur):'—')+'</div>'+
+          '<div><b style="color:var(--ink1)">Kennitala:</b> '+(effKt?esc(fmtKt(effKt))+(ktDer?derTag:''):'—')+'</div>'+
+          '<div><b style="color:var(--ink1)">Netföng:</b> '+(emails||'—')+(emDer?derTag:'')+(info.domain?' &nbsp;·&nbsp; <span style="color:var(--ink2)">'+esc(info.domain)+'</span>':'')+'</div>'+
+          '<div><b style="color:var(--ink1)">Sími:</b> '+(effSimi?esc(effSimi)+(siDer?derTag:''):'—')+' &nbsp;·&nbsp; <b style="color:var(--ink1)">Tengiliður:</b> '+(info.tengilidur?esc(info.tengilidur):'—')+'</div>'+
           '<div style="margin-top:4px"><b style="color:var(--ink1)">Athugasemdir:</b><div style="white-space:pre-wrap;color:var(--ink1);margin-top:2px">'+(info.notes?esc(info.notes):'—')+'</div></div>'+
         '</div>'+
         '<div class="_rf_info_form" style="display:none">'+
           '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
-            '<label style="flex:1;min-width:150px;font-size:12px;color:var(--ink2)">Kennitala<input class="_rf_f_kt" value="'+esc(info.kt||'')+'" placeholder="000000-0000" style="'+inS+'"></label>'+
+            '<label style="flex:1;min-width:150px;font-size:12px;color:var(--ink2)">Kennitala<input class="_rf_f_kt" value="'+esc(effKt||'')+'" placeholder="000000-0000" style="'+inS+'"></label>'+
             '<label style="flex:1;min-width:150px;font-size:12px;color:var(--ink2)">Lén<input class="_rf_f_domain" value="'+esc(info.domain||'')+'" placeholder="domain.is" style="'+inS+'"></label>'+
           '</div>'+
           '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">'+
-            '<label style="flex:1;min-width:150px;font-size:12px;color:var(--ink2)">Sími<input class="_rf_f_simi" value="'+esc(info.simi||'')+'" placeholder="555-0000" style="'+inS+'"></label>'+
+            '<label style="flex:1;min-width:150px;font-size:12px;color:var(--ink2)">Sími<input class="_rf_f_simi" value="'+esc(effSimi||'')+'" placeholder="555-0000" style="'+inS+'"></label>'+
             '<label style="flex:1;min-width:150px;font-size:12px;color:var(--ink2)">Tengiliður<input class="_rf_f_tengil" value="'+esc(info.tengilidur||'')+'" placeholder="Nafn tengiliðar" style="'+inS+'"></label>'+
           '</div>'+
           '<label style="display:block;font-size:12px;color:var(--ink2);margin-bottom:8px">Netföng (aðgreind með kommu)<input class="_rf_f_emails" value="'+esc(fEmails)+'" placeholder="reikningar@... , umsjon@..." style="'+inS+'"></label>'+
