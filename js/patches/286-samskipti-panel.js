@@ -13,27 +13,66 @@
 
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmtD = d => { try { const t = new Date(d); return t.toLocaleDateString("is-IS", { day: "numeric", month: "short", year: "numeric" }); } catch { return "" } };
-  const sb = () => window.sb || null;
+  // 2026-07-30 — RÓTIN að „boxið kom aldrei": klíentinn í þessu appi heitir
+  // DB.sb (js/db.js), EKKI window.sb. fetchData fékk því null og decorate
+  // hætti þögult — hýsillinn festist á prófílinn en kortið teiknaðist aldrei.
+  const sb = () => (window.DB && window.DB.sb) || window.sb || null;
   const cache = {};
 
   async function fetchData(fid) {
     if (cache[fid] && Date.now() - cache[fid]._ts < 60000) return cache[fid];
     const client = sb(); if (!client) return null;
-    const out = { _ts: Date.now(), f: null, mails: [] };
+    const out = { _ts: Date.now(), f: null, mails: [], handled: "", siblings: [fid] };
     try {
       const { data: f } = await client.from("fyrirtaeki")
-        .select('id,nafn,banner_note,athugasemdir,netfang,simi,farsimi,"tengiliður",tengilidur')
+        .select('id,nafn,customer_base_id,banner_note,athugasemdir,netfang,simi,farsimi,"tengiliður",tengilidur')
         .eq("id", fid).maybeSingle();
       out.f = f || null;
-      const { data: mails } = await client.from("fyrirtaeki_samskipti")
-        .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at")
-        .eq("fyrirtaeki_id", fid).order("received_at", { ascending: false }).limit(6);
-      out.mails = mails || [];
+      // 2026-07-30 (ósk Agnars — „skilaboða boxið í fyrirtækin", sama og
+      // Heimaleigu-skúffan á Þjónustuborðinu): sagan er lesin á FÉLAGINU
+      // (felag_samskipti) þegar byggingin á base. Eftir sönnunar-tenginguna á
+      // stök bygging oft ENGA sannaða pósta þótt félagið eigi tugi — gamla
+      // fyrirspurnin skildi boxið eftir tómt. Póstur á aðra byggingu ber
+      // 📍-merki hennar.
+      if (f && f.customer_base_id) {
+        const { data: mails } = await client.from("felag_samskipti")
+          .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,fyrirtaeki_id,fyrirtaeki_nafn,via")
+          .eq("customer_base_id", f.customer_base_id).order("received_at", { ascending: false }).limit(30);
+        out.mails = mails || [];
+        const { data: sib } = await client.from("fyrirtaeki")
+          .select("id").eq("customer_base_id", f.customer_base_id).is("deleted_at", null);
+        out.siblings = (sib || []).map(x => x.id);
+        if (!out.siblings.length) out.siblings = [fid];
+      } else {
+        const { data: mails } = await client.from("fyrirtaeki_samskipti")
+          .select("email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at")
+          .eq("fyrirtaeki_id", fid).order("received_at", { ascending: false }).limit(30);
+        out.mails = mails || [];
+      }
+      // ✓-staðan (samskipti_stada) — spurning eldri en hún telst afgreidd
+      const { data: h } = await client.from("samskipti_stada")
+        .select("handled_at").eq("fyrirtaeki_id", fid).maybeSingle();
+      out.handled = (h && h.handled_at) || "";
     } catch (e) { console.warn("[samskipti-panel]", e); }
     cache[fid] = out; return out;
   }
+  // Opið erindi = spurning frá kúnna sem er nýrri en BÆÐI síðasta frá-okkur
+  // sending og ✓-merkingin (sama regla og Þjónustuborðið).
+  function cutOf(data) {
+    const lastUs = data.mails.filter(m => m.fra_okkur).map(m => m.received_at).sort().pop() || "";
+    return lastUs > (data.handled || "") ? lastUs : (data.handled || "");
+  }
+  async function markHandled(data) {
+    const client = sb(); if (!client) return false;
+    const nu = new Date().toISOString();
+    let who = ""; try { who = localStorage.getItem("ky_me") || localStorage.getItem("bs_employee") || ""; } catch (_) {}
+    const rows = data.siblings.map(id => ({ fyrirtaeki_id: id, handled_at: nu, handled_by: who, updated_at: nu }));
+    const { error } = await client.from("samskipti_stada").upsert(rows, { onConflict: "fyrirtaeki_id" });
+    if (error) { console.warn("[samskipti-panel] mark", error); return false; }
+    data.handled = nu; return true;
+  }
 
-  function keyPoints(f, mails) {
+  function keyPoints(f, mails, cut) {
     const pts = [];
     if (f.banner_note) pts.push(["📌", f.banner_note]);
     const teng = f["tengiliður"] || f.tengilidur;
@@ -49,7 +88,7 @@
       pts.push(["✉️", fmtD(m.received_at) + " — " + (m.subject || "(ekkert efni)") + (m.fra_okkur ? " (frá okkur)" : " (frá " + (m.sender_name || m.sender_email) + ")")]);
     }
     const warn = (f.athugasemdir || "").split("\n").find(l => /⚠|OPIÐ|OPID|vantar|bilað|bilun/i.test(l));
-    const openQ = mails.filter(m => m.is_question && !m.fra_okkur).length;
+    const openQ = mails.filter(m => m.is_question && !m.fra_okkur && (!cut || m.received_at > cut)).length;
     if (warn) pts.push(["⚠️", warn.trim()]);
     else if (openQ) pts.push(["⚠️", openQ + " ósvöruð spurning" + (openQ > 1 ? "ar" : "") + " í pósti"]);
     return pts.slice(0, 4);
@@ -57,24 +96,33 @@
 
   function render(host, fid, data) {
     const f = data.f; if (!f) return;
-    const pts = keyPoints(f, data.mails);
+    const cut = cutOf(data);
+    const openQ = data.mails.filter(m => m.is_question && !m.fra_okkur && (!cut || m.received_at > cut)).length;
+    const pts = keyPoints(f, data.mails, cut);
     const card = document.createElement("div");
     card.className = "card pad _samskipti-card";
     card.style.cssText = "margin:10px 0;border-left:4px solid #6366f1;background:#fff;border-radius:12px;padding:13px 15px;font-size:13.5px";
     const ptsHtml = pts.map(p => '<div style="display:flex;gap:8px;margin:4px 0;line-height:1.45"><span style="flex:none">' + p[0] + "</span><span>" + (p[2] ? p[1] : esc(p[1])) + "</span></div>").join("") ||
       '<div style="color:#94a3b8">Engin samskipti skráð enn — skráðu netfang tengiliðar til að sækja póstsögu.</div>';
-    const mailsHtml = data.mails.map(m =>
-      '<div style="padding:7px 9px;margin:5px 0;border-radius:8px;background:' + (m.is_question && !m.fra_okkur ? "#fef2f2;border:1px solid #fecaca" : "#f8fafc") + '">' +
+    const mailsHtml = data.mails.map(m => {
+      const open = m.is_question && !m.fra_okkur && (!cut || m.received_at > cut);
+      const via = (m.fyrirtaeki_nafn && m.fyrirtaeki_id !== fid)
+        ? ' <span style="background:#eef2ff;border:1px solid #c7d2fe;color:#4338ca;border-radius:99px;padding:0 7px;font-size:10.5px;font-weight:700;white-space:nowrap">📍 ' + esc(m.fyrirtaeki_nafn) + "</span>" : "";
+      return '<div style="padding:7px 9px;margin:5px 0;border-radius:8px;background:' + (open ? "#fef2f2;border:1px solid #fecaca" : "#f8fafc") + '">' +
       '<div style="font-size:11.5px;color:#64748b">' + fmtD(m.received_at) + " · " + esc(m.fra_okkur ? "Slökkvitæki ehf → viðskiptavinur" : (m.sender_name || m.sender_email)) +
-      (m.is_question && !m.fra_okkur ? ' · <b style="color:#dc2626">spurning</b>' : "") + "</div>" +
+      (open ? ' · <b style="color:#dc2626">spurning — ósvarað</b>' : "") + via + "</div>" +
       '<div style="font-weight:600">' + esc(m.subject || "(ekkert efni)") + "</div>" +
-      '<div style="color:#475569;font-size:12.5px">' + esc((m.snippet || "").slice(0, 220)) + "</div></div>").join("") ||
+      '<div style="color:#475569;font-size:12.5px">' + esc((m.snippet || "").slice(0, 220)) + "</div></div>"; }).join("") ||
       '<div style="color:#94a3b8;padding:6px 0">Engir póstar fundust á netfangi tengiliðar.</div>';
     const aths = (f.athugasemdir || "").trim();
     card.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
       '<div style="font-weight:800;font-size:12px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA &amp; BEIÐNIR</div>' +
-      '<button type="button" class="_ssk-toggle" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">Póstar ▾</button></div>' +
+      '<div style="display:flex;gap:7px;align-items:center">' +
+      (openQ > 0
+        ? '<button type="button" class="_ssk-mark" style="border:1px solid #156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">✓ Merkja afgreitt</button>'
+        : (data.handled ? '<span style="color:#0f6e3a;font-weight:700;font-size:11.5px">✓ Afgreitt</span>' : "")) +
+      '<button type="button" class="_ssk-toggle" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">Póstar ▾</button></div></div>' +
       '<div class="_ssk-pts" style="margin-top:6px">' + ptsHtml + "</div>" +
       // Punktarnir ALLTAF sýnilegir (ósk Agnars 29.07: „ég mun aldrei fatta að
       // checka inn í edit" — textinn úr athugasemdareitnum birtist hér beint).
@@ -87,6 +135,15 @@
       const full = card.querySelector("._ssk-full"), open = full.style.display === "none";
       full.style.display = open ? "" : "none";
       e.target.textContent = open ? "Loka ▴" : "Póstar ▾";
+    });
+    const mk = card.querySelector("._ssk-mark");
+    if (mk) mk.addEventListener("click", async e => {
+      e.target.disabled = true; e.target.textContent = "⏳ …";
+      const ok = await markHandled(data);
+      if (!ok) { e.target.disabled = false; e.target.textContent = "✓ Merkja afgreitt"; alert("Tókst ekki að merkja — reyndu aftur."); return; }
+      delete cache[fid];               // ferskt við næstu opnun
+      host.innerHTML = "";             // teikna kortið strax upp á nýtt
+      render(host, fid, data);
     });
     host.appendChild(card);
   }
