@@ -583,17 +583,27 @@
   function _compact(s){ return _norm(s).replace(/\s+/g,''); }
   function _streetnum(s){ var n=_norm(s); var m=n.match(/([a-záðéíóúýþæö]{3,})\s*(\d+)/); return m?(m[1]+m[2]):''; }
   function _blank(){ return {units:0,y2024:0,y2025:0,y2026:0,next:null}; }
-  function _add(e,u){ e.units++; var y=u.last_insp?String(u.last_insp).slice(0,4):null;
-    if(y==='2024')e.y2024++; else if(y==='2025')e.y2025++; else if(y==='2026')e.y2026++;
-    if(u.next_insp&&(!e.next||u.next_insp<e.next)) e.next=u.next_insp; }
+  // Bætir FORREIKNAÐRI samantekt (ein röð per client-streng úr
+  // v_uttaeki_client_rollup) í hólf. Áður var þetta kallað einu sinni per TÆKI
+  // með hráum uttaeki-röðum; stærðfræðin er sú sama, bara summuð í grunninum.
+  function _add(e,u){
+    e.units += (u.units|0) || 0;
+    e.y2024 += (u.y2024|0) || 0;
+    e.y2025 += (u.y2025|0) || 0;
+    e.y2026 += (u.y2026|0) || 0;
+    if(u.next_insp&&(!e.next||u.next_insp<e.next)) e.next=u.next_insp;
+  }
   async function getEquipIndex(){
     if(_equip) return _equip;
     if(_equipPromise) return _equipPromise;
     _equipPromise=(async function(){
       var SB=window.__vdaSB||(window.DB&&DB.sb);
       if(!SB){ _equip={match:function(){return null;}}; return _equip; }
-      // var 6 RAÐBUNDNAR sóknir (~3,8 s); nú allar samhliða (~0,7 s)
-      var rows = await fetchAllRows(SB, 'uttaeki', 'client,last_insp,next_insp');
+      // 2026-07-30: var 5.843 hráar uttaeki-raðir í 6 RAÐBUNDNUM sóknum (~3,8 s)
+      // bara til að TELJA þær í vafranum. Grunnurinn telur núna: 629 raðir í
+      // EINNI sókn (9,3× færri), nákvæmlega sömu tölur (sannreynt).
+      var rows = await fetchAllRows(SB, 'v_uttaeki_client_rollup',
+                                    'client,units,y2024,y2025,y2026,next_insp');
       var base={},comp={},street={};
       rows.forEach(function(u){ var b=_norm(u.client); if(!b)return; var c=_compact(u.client), s=_streetnum(u.client);
         (base[b]||(base[b]=_blank())); _add(base[b],u);
