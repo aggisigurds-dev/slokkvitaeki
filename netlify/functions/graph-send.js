@@ -30,7 +30,7 @@ function cors() {
   return {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, x-eldklar-key',
   };
 }
 function json(status, obj) {
@@ -58,6 +58,13 @@ function toRecipientList(v) {
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors(), body: '' };
+
+  // Default-open shared-secret gate: enforced AÐEINS þegar EDGE_SHARED_KEY er sett.
+  const KEY = (process.env.EDGE_SHARED_KEY || '').trim();
+  if (KEY) {
+    const got = String((event.headers && event.headers['x-eldklar-key']) || '').trim();
+    if (got !== KEY) return json(401, { error: 'unauthorized' });
+  }
 
   const configured = !!(TENANT && CLIENT_ID && CLIENT_SECRET);
 

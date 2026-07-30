@@ -39,14 +39,12 @@
   async function setShelf(jobId, shelf) {
     if (!window.AppSettings || typeof window.AppSettings.save !== 'function') return;
     const cur = Object.assign({}, getMap());
-    if (shelf) cur[String(jobId)] = shelf;
-    else delete cur[String(jobId)];
-    // Pass the whole map so deletions stick (deepMerge would otherwise only add).
-    // AppSettings.save merges the patch object — but for a top-level key with
-    // an object value, it deep-merges. We work around by writing all values
-    // explicitly, including the ones we want gone (null gets stripped by JSON
-    // round-trip in deepMerge). Safer: do a two-step write — save the whole
-    // map under a fresh wrapper.
+    // 2026-07-30: `delete` + heil-vörpun VIRKAR EKKI — deepMerge bætir aðeins við
+    // og yfirskrifar, hún FJARLÆGIR aldrei lykil. Því sat gamla hillan eftir á
+    // netþjóni og „— engin hilla —" stökk alltaf til baka. Gamla athugasemdin hér
+    // („null gets stripped by JSON round-trip") var einfaldlega röng — deepMerge
+    // skrifar null eðlilega. Núll-gildi = tóm hilla (lesarar gera `|| ''`).
+    cur[String(jobId)] = shelf || null;
     try {
       await window.AppSettings.save({ job_shelves: cur });
     } catch (e) {

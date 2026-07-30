@@ -160,7 +160,14 @@
     if (!src || typeof src !== 'object') return target;
     for (const key of Object.keys(src)) {
       if (src[key] && typeof src[key] === 'object' && !Array.isArray(src[key])) {
-        target[key] = deepMerge(target[key] || {}, src[key]);
+        // If target[key] is not a plain object (e.g. a leftover scalar/string a
+        // different writer stored under the same key), setting properties on the
+        // primitive is a silent no-op → the save is lost. Replace it so the merge
+        // actually takes effect (last-writer-wins) instead of vanishing silently.
+        // This is the root failure mode behind "text/value does not save".
+        const t = target[key];
+        const base = (t && typeof t === 'object' && !Array.isArray(t)) ? t : {};
+        target[key] = deepMerge(base, src[key]);
       } else {
         target[key] = src[key];
       }
@@ -226,11 +233,33 @@
       // ALLAN blobbinn → breytingar frá öðru tæki (eða server-megin, t.d. SQL-lagfæringar
       // á company_attachments / brunakerfi_customers) töpuðust þögult. Nú merge-um við
       // ofan á FERSKA server-útgáfu svo lítill patch yfirskrifar ekki óskylt.
+      // 2026-07-30: HÆTTA VIÐ frekar en að falla aftur á staðbundna afritið.
+      // supabase-js KASTAR EKKI við misheppnaðan lestur — það skilar
+      // `{data:null, error}`. Gamla útgáfan skoðaði aldrei `cur.error`, svo við
+      // HVERJA tímabundna lestrarbilun (500, tímaút, RLS-hnökri, token-endurnýjun)
+      // sat `base` eftir sem `_settings` og næsta lína upsert-aði ÞAÐ yfir
+      // serverinn — allan 560 KB blobbinn. Hefði `load()` líka fallið við ræsingu
+      // væri `_settings` bara DEFAULTS, svo eitt sakleysislegt skrif (bílstjóri
+      // ýtir á chip) gæti skrifað sjálfgefin gildi yfir 808 fyrirtæki, öll
+      // viðhengi og allar verðskrár — og skilað `true`, svo viðmótið segði ✓.
       let base = _settings;
       try {
         const cur = await window.DB.sb.from('app_settings').select('settings').eq('id', 1).maybeSingle();
+        if (cur && cur.error) {
+          console.warn('[app-settings] save hætt við — náði ekki í núverandi stillingar:', cur.error.message);
+          return false;
+        }
         if (cur && cur.data && cur.data.settings) base = cur.data.settings;
-      } catch (_) {}
+        else if (!_loaded) {
+          // Engin röð OG aldrei hlaðið = við vitum ekkert. Fyrsta skrif á
+          // glænýrri uppsetningu (hlaðið, engin röð) sleppur hér í gegn.
+          console.warn('[app-settings] save hætt við — stillingar aldrei hlaðnar');
+          return false;
+        }
+      } catch (e) {
+        console.warn('[app-settings] save hætt við — lestrarvilla:', e);
+        return false;
+      }
       const next = deepMerge(JSON.parse(JSON.stringify(base)), patch);
       const r = await window.DB.sb
         .from('app_settings')

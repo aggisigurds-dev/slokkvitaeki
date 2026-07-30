@@ -3,7 +3,14 @@
 This file is read by Claude Code at the start of every session in this folder.
 It contains everything Claude Code needs to know to be useful immediately.
 
-> **📖 ALSO READ**: [`docs/CLAUDE-LEIDBEININGAR.md`](docs/CLAUDE-LEIDBEININGAR.md) — operational playbook
+> **📖 ALSO READ**: [`docs/STADREYNDIR.md`](docs/STADREYNDIR.md) — sannreyndar
+> grunnstaðreyndir (kúnna-líkanið, töflur, vinnureglur) — **lesa á undan öllu öðru
+> þegar spurning snýst um viðskiptavini/gögn**; and
+> [`docs/CLAUDE-LEIDBEININGAR.md`](docs/CLAUDE-LEIDBEININGAR.md) — operational playbook
+>
+> **📋 Í upphafi vinnu-session:** líta á opin verk á Verkefnalistanum —
+> `GET https://brunaholf.netlify.app/api/verkefnalisti` (beidni/i_vinnu) — áður en
+> nýtt verk er hafið (Agnar 2026-07-30).
 > covering the customer-DB architecture, Verkfærakassi, walk-in convention (kt
 > `999999-9999`), rekstrarfélög-staðsettningar rule, email priorities, and known
 > gotchas. Updated continuously as Agnar gives new context.
@@ -101,8 +108,32 @@ js/patch-master.js      THE BIG ONE — to be split
 ## Database schema
 
 ```
-vidskiptavinir   (id, kennitala, nafn, simi, netfang, heimilisfang, athugasemdir, created_at)
-fyrirtaeki       95+ companies, customer-like columns
+customers_base   1082 rows — the CANONICAL customer spine, one per kt (root of
+                 the data model; fyrirtaeki/vidskiptavinir/solur link to it)
+                 (id bigint PK, kennitala NOT NULL, nafn, simi, netfang,
+                  heimilisfang, greidsluskilmali, source_v_id, source_f_id,
+                  created_at, payment_method, payment_terms, retention_pct,
+                  retention_notes, contact_email, contact_phone, general_notes,
+                  last_payment_at, rekstrarfelag)
+                 `rekstrarfelag` groups multiple sites under one operator —
+                 NEVER merge rekstrarfélög sites, only share customer_base_id.
+                 `source_v_id`/`source_f_id` = the vidskiptavinir/fyrirtaeki row
+                 the base was seeded from.
+vidskiptavinir   individual customers
+                 (id, kennitala, nafn, simi, netfang, heimilisfang, athugasemdir,
+                  created_at, afslattur_pct, farsimi, vefsida, tengilidur,
+                  greidsluskilmali, customer_base_id, deleted_at)
+fyrirtaeki       1358 rows — companies / service SITES (one kt may own many =
+                 rekstrarfélag). This is the service branch of the spine.
+                 (id bigint PK, nafn NOT NULL, kennitala, simi, netfang,
+                  heimilisfang, tengiliður, athugasemdir, created_at,
+                  afslattur_pct, farsimi, vefsida, tengilidur, greidsluskilmali,
+                  status ('virkur'), er_i_thjonustu bool, deleted_at,
+                  customer_base_id, review_flag bool, review_note, is_bank_only
+                  bool, banner_note, payday_delivery)
+                 ⚠️ DUPLICATE contact column: both `tengiliður` (accented) AND
+                 `tengilidur` (ascii) exist — Bakendi (patch 232) flags this.
+                 `er_i_thjonustu` marks a site as in active service.
 uttaeki          306+ equipment rows
                  (id, serial, type, size, client, location, last_insp, next_insp,
                   status, pressure, created_at, phone, notes)
@@ -777,6 +808,12 @@ reikningar/samningar úr Drive, keyed base+`fyrirtaeki_id`+`year`; ein ársskýr
 per (staður,ár); reikningar á R-nr; `is_duplicate`). **`solur`** + **`payday_
 invoices_slokk`** (kt digits-only) tengjast eftir **kt**. Walk-in = kt `999999-9999`.
 
+**Forgangsröð kúnna-taflna (Agnar 2026-07-30):** AÐAL-viðskiptavinirnir eru
+**`customers_base`** („Allir viðskiptavinir", kanóníski hryggurinn) og **`fyrirtaeki`
+með `er_i_thjonustu=true`** („Fyrirtæki í þjónustu" — þjónustukúnnarnir sem reksturinn
+snýst um). **`vidskiptavinir` er LÆGSTA þrepið** (einstaklingar/legacy) — ekki nota
+sem aðal-uppflettingu eða fyrsta svar við „hvar eru viðskiptavinirnir".
+
 **🗺️ Kerfis-kort** — lifandi einnar-síðu yfirlit yfir ALLA viðskiptavini + tengingar
 + heilsu (2023–2026 skjöl per ár, ótengd/tvítök/án-kt flögg). Á **brunaholf.netlify.
 app/kerfiskort.html** (Brunahólf-megin, því skjöl/Drive-tólin lifa þar). Sýnin
@@ -786,6 +823,18 @@ birtast skjöl+Payday á fyrirtækja-prófílnum í „📁 Skjöl & viðhengi" 
 
 ## Related projects (in case Agnar mentions them)
 
-- **Brunahólf** — sister business, separate ecosystem (Google Sheets + Apps Script
-  + Tímavera + Ajour). See COWORK-brunaholf.md if relevant.
+- **Brunahólf** — MÓÐURFÉLAGIÐ (Brunahólf ehf á Slökkvitæki ehf — Agnar
+  2026-07-30), separate ecosystem (Google Sheets + Apps Script + Tímavera +
+  Ajour). Hub-inn brunaholf.netlify.app er stjórnstöðin/bakendinn með dýpri
+  tólum um Slökkvitæki líka. See COWORK-brunaholf.md if relevant.
 - **Slökkvitæki app** — this project. Pure code, lives on Netlify + Supabase.
+
+## graphify
+
+This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
+
+Rules:
+- For codebase questions, first run `graphify query "<question>"` when graphify-out/graph.json exists. Use `graphify path "<A>" "<B>"` for relationships and `graphify explain "<concept>"` for focused concepts. These return a scoped subgraph, usually much smaller than GRAPH_REPORT.md or raw grep output.
+- If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
+- Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
+- After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).

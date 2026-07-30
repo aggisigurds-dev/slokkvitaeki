@@ -25,7 +25,7 @@ const API_VERSION = process.env.PAYDAY_API_VERSION || 'alpha';
 function cors() {
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, x-eldklar-key',
     'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   };
 }
@@ -35,6 +35,14 @@ function json(code, obj) {
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors(), body: '' };
+
+  // Default-open shared-secret gate: enforced AÐEINS þegar EDGE_SHARED_KEY er sett.
+  const KEY = (process.env.EDGE_SHARED_KEY || '').trim();
+  if (KEY) {
+    const got = String((event.headers && event.headers['x-eldklar-key']) || '').trim();
+    if (got !== KEY) return json(401, { error: 'unauthorized' });
+  }
+
   const p = event.queryStringParameters || {};
   let body = {}; try { body = event.body ? JSON.parse(event.body) : {}; } catch (_) {}
 

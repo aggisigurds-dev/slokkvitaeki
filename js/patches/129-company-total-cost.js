@@ -209,7 +209,24 @@
   function findOverride(coId, productName) {
     if (!coId || !productName) return null;
     if (!window.CompanyPricing || !window.CompanyPricing.list) return null;
-    const list = window.CompanyPricing.list(coId);
+    let list = window.CompanyPricing.list(coId);
+    // 2026-07-29: kt-fallback (sama og Salan/113) — systurstöð á sömu kennitölu
+    // með skráð tilboðsverð deilir þeim; annars misstu fjölstöðva-kt sérverðin hér.
+    if (!list || !list.length) {
+      try {
+        const cos = (window.Companies && Companies.list) || [];
+        const me = cos.find(c => +c.id === +coId);
+        const kt = me ? String(me.kennitala || '').replace(/\D/g, '') : '';
+        if (kt.length === 10 && kt !== '9999999999') {
+          for (const c of cos) {
+            if (+c.id !== +coId && String(c.kennitala || '').replace(/\D/g, '') === kt) {
+              const l = window.CompanyPricing.list(c.id);
+              if (l && l.length) { list = l; break; }
+            }
+          }
+        }
+      } catch (_) {}
+    }
     if (!list || !list.length) return null;
     const n = String(productName).toLowerCase().trim();
     let best = null;
@@ -504,6 +521,9 @@
 
     let totalSubEx = 0;
     let totalVsk = 0;
+    // 2026-07-29 (regla Agnars): sérverðslínur (💰 tilboðsverð) eru endanlegt
+    // verð — heildar-afslátturinn leggst EKKI á þær. Söfnum grunni þeirra hér.
+    let overrideSubEx = 0, overrideVsk = 0;
     let unmatched = [];
     const rows = [];
 
@@ -534,6 +554,7 @@
           const vskKr = subEx * (vskPct / 100);
           totalSubEx += subEx;
           totalVsk += vskKr;
+          if (override) { overrideSubEx += subEx; overrideVsk += vskKr; }
           rows.push('<tr>' +
             '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
               '<div style="font-size:11px;color:#64748b">' + esc(replacement.nafn) + '</div></td>' +
@@ -567,6 +588,7 @@
         const vskKr = subEx * (vskPct / 100);
         totalSubEx += subEx;
         totalVsk += vskKr;
+        if (override) { overrideSubEx += subEx; overrideVsk += vskKr; }
         rows.push('<tr>' +
           '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
             '<div style="font-size:11px;color:#64748b">' + esc(product.nafn) + '</div></td>' +
@@ -596,6 +618,7 @@
           const vskKr = subEx * (vskPct / 100);
           totalSubEx += subEx;
           totalVsk += vskKr;
+          if (override) { overrideSubEx += subEx; overrideVsk += vskKr; }
           rows.push('<tr>' +
             '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
               '<div style="font-size:11px;color:#64748b">' + esc(newProduct.nafn) + '</div></td>' +
@@ -670,11 +693,26 @@
 
     // Afsláttur dreginn hlutfallslega af án-vsk og vsk (totalSubEx/totalVsk eru
     // brúttó; netto fer í VSK-línu + SAMTALS).
-    const discountEx = totalSubEx * (discountPct / 100);
+    // Afsláttargrunnur = allt NEMA sérverðslínur (tilboðsverð er endanlegt).
+    const discBaseEx  = Math.max(0, totalSubEx - overrideSubEx);
+    const discBaseVsk = Math.max(0, totalVsk - overrideVsk);
+    const discountEx = discBaseEx * (discountPct / 100);
     const netSubEx   = totalSubEx - discountEx;
-    const netVsk     = totalVsk * (1 - discountPct / 100);
+    const netVsk     = totalVsk - discBaseVsk * (discountPct / 100);
     const totalInc   = netSubEx + netVsk;
     const activeUnits = units.length - groups.reduce((s, g) => s + g.skip, 0);
+    // 2026-07-29 (ósk Agnars): geyma útreiknuðu samtöluna í trip-state svo
+    // rekstrarfélags-yfirlitið (175) geti sýnt RAUNVERULEGA „Samtals m. vsk"
+    // per byggingu í gullkassanum í stað almennrar áætlunar. Skrifum aðeins
+    // þegar talan breytist (annars myndi hver render ýta á cloud-sync 227).
+    try {
+      const _c = tripState.computed || {};
+      if (_c.total !== totalInc || _c.ex !== netSubEx) {
+        const _st = loadTripState(coId);
+        _st.computed = { ex: netSubEx, vsk: netVsk, total: totalInc, units: activeUnits, at: new Date().toISOString().slice(0, 10) };
+        saveTripState(coId, _st);
+      }
+    } catch (_) {}
 
     const skodunaradili = (tripState.skodunaradili != null) ? String(tripState.skodunaradili) : '';
     // 2026-06-09: custom inspection date — Agnar wants to bill/report for the
@@ -788,7 +826,8 @@
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 12px">' +
           '<span style="font-size:12px;color:#475569">Afsláttur ' +
             '<input id="_ctc-discount" type="number" min="0" max="100" step="1" value="' + discountPct + '" ' +
-            'style="width:48px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;-moz-appearance:textfield"> %</span>' +
+            'style="width:48px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;-moz-appearance:textfield"> %' +
+            (discountPct > 0 && overrideSubEx > 0 ? ' <span style="font-size:10.5px;color:#854d0e">(nær ekki á 💰 sérverðslínur)</span>' : '') + '</span>' +
           '<span style="font-weight:600;color:#b91c1c;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace">' + (discountEx > 0 ? '−' + fmtKr(discountEx) : '—') + '</span>' +
         '</div>' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 12px">' +

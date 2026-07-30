@@ -113,9 +113,11 @@
     if (!keys.length) return;
     if (!(window.AppSettings && window.AppSettings.save)) { _scheduleSave(); return; }
 
-    const map = _getMap();
-    const merged = Object.assign({}, map);
-    keys.forEach(k => { merged[k] = Object.assign({}, map[k] || {}, { priority: snapshot[k] }); });
+    // ÞRÖNGUR patch — deepMerge fellir `priority` inn í fyrirliggjandi færslu.
+    // Áður fór ÖLL varpan (808 fyrirtæki) með í hverjum smelli á forgangs-chip,
+    // svo 800 ms síðar rúlluðu allar breytingar hinna vélanna til baka.
+    const merged = {};
+    keys.forEach(k => { merged[k] = { priority: snapshot[k] }; });
 
     let ok = false;
     try { ok = await window.AppSettings.save({ [STORAGE_KEY]: merged }); }

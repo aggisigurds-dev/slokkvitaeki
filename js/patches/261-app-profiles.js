@@ -235,10 +235,10 @@
       'body.appmode .view,body.appmode .view.active{margin-left:0 !important;width:100vw !important;max-width:100vw !important;left:0 !important}',
       'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){margin-left:0 !important;width:100vw !important;max-width:100vw !important}',
       'body.appmode .main-panel{margin-left:0 !important;margin-right:0 !important;max-width:none !important}',
-      'body.appmode .view.active{padding-top:50px !important;padding-bottom:400px !important}',
+      'body.appmode .view.active{padding-top:50px !important;padding-bottom:116px !important}',
       // Beat patch 230's ON+':not(#id)…{padding-top:160px}` (id-level specificity) when the
       // Brunastál banner attr is present — otherwise the content sits 160px below my header.
-      'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:50px !important;padding-bottom:400px !important}',
+      'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:50px !important;padding-bottom:116px !important}',
       '#_app-hdr{position:fixed;top:0;left:0;right:0;height:50px;z-index:2147481001;display:flex;align-items:center;gap:10px;padding:0 12px;color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.25)}',
       '#_app-hdr .nm{font-size:16px;font-weight:800;flex:1;display:flex;align-items:center;gap:8px}',
       '#_app-hdr button{font:inherit;font-size:13px;font-weight:700;height:34px;padding:0 11px;border-radius:9px;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.14);color:#fff;cursor:pointer}',
@@ -249,11 +249,17 @@
       // haldast í einni röð og skrunast lárétt (sama og Verkborð-lausnin).
       '#_app-nav{position:fixed;bottom:0;left:0;right:0;z-index:2147481001;display:flex;flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;gap:7px;background:#0c0d10;border-top:1px solid #26262c;padding:9px 9px calc(9px + env(safe-area-inset-bottom,0px));box-shadow:0 -3px 14px rgba(0,0,0,.35)}',
       '#_app-nav::-webkit-scrollbar{display:none}',
-      '#_app-nav button{flex:1 0 96px;min-width:96px;background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.66);font:inherit;font-size:16px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px 5px;border-radius:18px;min-height:256px;text-align:center;line-height:1.15;overflow:hidden}',
-      '#_app-nav button .e{font-size:52px;line-height:1}',
+      // 2026-07-29: dokkan var 256px há með 52px emoji — á appi með fáar/eina síðu
+      // varð þetta risaflís sem gleypti hálfan skjáinn. Nú þéttur þumal-dokki
+      // (~84px) og felst alveg þegar appið hefur bara eina síðu (ekkert að velja).
+      '#_app-nav button{flex:1 0 84px;min-width:84px;background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.66);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 5px;border-radius:14px;min-height:80px;text-align:center;line-height:1.15;overflow:hidden}',
+      '#_app-nav button .e{font-size:28px;line-height:1}',
+      'body.appmode-nonav #_app-nav{display:none !important}',
+      'body.appmode.appmode-nonav .view.active{padding-bottom:24px !important}',
+      'body.appmode-nonav #_app-frame{bottom:0 !important}',
       '#_app-nav button.on{color:#fff;background:rgba(255,255,255,.08)}',
       // external-page iframe host (sits between the header and the bottom nav)
-      '#_app-frame{position:fixed;top:50px;left:0;right:0;bottom:400px;z-index:2147481000;background:#fff;display:none}',
+      '#_app-frame{position:fixed;top:50px;left:0;right:0;bottom:104px;z-index:2147481000;background:#fff;display:none}',
       '#_app-frame iframe{width:100%;height:100%;border:0;display:block}',
       // ── App-mode readability: bigger text + thumb-friendly tap targets. Scoped to
       //    body.appmode so the office desktop view is untouched. ──
@@ -390,6 +396,8 @@
       return '<button class="_app-tab" data-k="' + k + '"><span class="e">' + p.emoji + '</span>' + esc(p.short || p.label) + '</button>';
     }).join('');
     if (!nav.parentNode) document.body.appendChild(nav);
+    // Ein síða → ekkert að velja: fela dokkinn alveg (risaflísin fór hálfan skjáinn).
+    document.body.classList.toggle('appmode-nonav', pages.length < 2);
 
     nav.querySelectorAll('._app-tab').forEach(function (b) { b.addEventListener('click', function () { goPage(b.dataset.k); }); });
     hdr.querySelector('#_app-inst2').addEventListener('click', function () {

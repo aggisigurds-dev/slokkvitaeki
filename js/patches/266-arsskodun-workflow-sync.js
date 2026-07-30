@@ -44,7 +44,9 @@
           e.field_inspected_year = 0;
         }
       }
-      await AppSettings.save({ [KEY]: Object.assign({}, map, { [String(coId)]: e }) });
+      // AÐEINS þetta fyrirtæki. Að senda alla vörpuna (808 fyrirtæki) skrifaði
+      // stöðu allra hinna aftur í það sem ÞESSI flipi las síðast.
+      await AppSettings.save({ [KEY]: { [String(coId)]: e } });
       return true;
     } catch (err) { console.warn('[ars-workflow] write failed', err); return false; }
   }
@@ -60,7 +62,12 @@
   function markReport(coId) {
     if (!ready() || coId == null) return Promise.resolve(false);
     const cur = (AppSettings.path(KEY) || {})[String(coId)] || {};
-    const extra = cur.last_year_inspected === curYear ? {} : { field_inspected_year: curYear };
+    // Þvinga í tölu — eldri raðir geyma árið sem STRENG ("2026") og
+    // "2026" === 2026 er ósatt. Allir aðrir lesarar í appinu nota `+`. Án þess
+    // endur-stimplaði markReport `field_inspected_year` í sífellu og fyrirtækið
+    // sat fast í bláu „Í vinnslu / Tekið út — skjöl eftir" þótt skýrslan væri
+    // komin og græn alls staðar annars staðar.
+    const extra = +cur.last_year_inspected === curYear ? {} : { field_inspected_year: curYear };
     return write(coId, { skyrsla: true, send: true }, extra);
   }
 

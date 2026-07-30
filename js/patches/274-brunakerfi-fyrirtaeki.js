@@ -6,7 +6,9 @@
  *
  * Á síðunni (allt valið í spurningu 2026-07-21):
  *   • Haus: nafn/kt/aðsetur + tengiliðir & samskipti (hringja/senda) +
- *     minnispunktur sem vistast miðlægt (app_settings.brunakerfi_notes[id])
+ *     minnispunktur sem vistast miðlægt (app_settings.brunakerfi_co_notes[id])
+ *     — NB: EKKI `brunakerfi_notes` (patch 147 á þann lykil sem STRING-glósu;
+ *     tveir ólíkt-týpaðir skrifarar á sama lykli => deepMerge no-op => „vistast ekki")
  *   • Skýrslur: skoðunarskýrslur úr appinu (drög/lokið → opna/PDF/eyða) OG
  *     eldri söfnuð skjöl úr customer_documents (Drive/storage) eftir árum
  *     + „＋ Ný skoðunarskýrsla"
@@ -134,7 +136,7 @@
       sb.from('customer_documents').select('id,fyrirtaeki_id,drive_file_id,storage_path,doc_date,customer_name,notes').eq('doc_type', 'samningur').or(samOr).order('id', { ascending: false })
     ]);
     let note = '';
-    try { const m = (window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_notes')) || {}; note = (m[String(coId)] && m[String(coId)].text) || ''; } catch (_) {}
+    try { let m = (window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_co_notes')) || {}; if (!m || typeof m !== 'object' || Array.isArray(m)) m = {}; note = (m[String(coId)] && m[String(coId)].text) || ''; } catch (_) {}
     return { co, reports: (repR && repR.data) || [], docs: (docR && docR.data) || [], samningar: (samR && samR.data) || [], note };
   }
 
@@ -143,7 +145,7 @@
     _noteT = setTimeout(async () => {
       try {
         if (window.AppSettings && AppSettings.save) {
-          await AppSettings.save({ brunakerfi_notes: { [String(C.co.id)]: { text, t: new Date().toISOString() } } });
+          await AppSettings.save({ brunakerfi_co_notes: { [String(C.co.id)]: { text, t: new Date().toISOString() } } });
         }
       } catch (e) { console.warn('[bkc] note save', e); }
     }, 1200);

@@ -691,9 +691,13 @@
           notes: tegund ? 'Tegund: ' + tegund : ''
         };
         if (window.AppSettings && window.AppSettings.path && window.AppSettings.save) {
-          const cur = window.AppSettings.path('brunakerfi_customers') || {};
-          cur[String(coId)] = Object.assign({}, cur[String(coId)] || {}, bkEntry, { co_id: coId });
-          await window.AppSettings.save({ brunakerfi_customers: cur });
+          // Þröngur patch — OG aldrei breyta hlutnum sem `path()` skilar: hann er
+          // LIFANDI tilvísun í `_settings`, svo að breyta honum staðfestir breytinguna
+          // í viðmótinu ÁÐUR en vistun tekst (misheppnuð vistun skildi eftir kúnna
+          // sem var ekki til á server).
+          await window.AppSettings.save({
+            brunakerfi_customers: { [String(coId)]: Object.assign({}, bkEntry, { co_id: coId }) }
+          });
         }
 
         if (window.Toast && Toast.show) Toast.show('✓ ' + nafn + ' bætt við brunakerfi');
