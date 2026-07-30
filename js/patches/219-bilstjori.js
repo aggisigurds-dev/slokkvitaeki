@@ -406,7 +406,6 @@
   //      notar, skýjað með patch 227 og lesið af verðvélinni (129) og
   //      reikningnum (165). Gildin eru orðaforði skrifstofunnar:
   //      'yfirferd' | 'hledsla' | 'nyitt' | 'onytt'.
-  const STATE_LBL = { oskodad:'Óskoðað', yfirfarid:'Yfirfarið', verkstaedi:'Á verkstæði' };
   // Verkstæðis-þrepin sem skrifstofan/verkstæðið setja (268/269) — birt sem
   // lesin merking á tækinu svo bílstjórinn sjái hvar það er statt.
   const CUSTODY_LBL = { komid:'Komið á verkstæði', tilbuid:'Tilbúið', farid:'Farið af verkstæði' };
@@ -1240,7 +1239,7 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
     if (verkBtn) verkBtn.addEventListener('click', () => { close(); try { if (window.App && App.switchView) App.switchView('arsskodun'); } catch (_) {} });
     // List-lock: "Staðfesta lista" turns dark metal green + locks every tæki
     // choice (persisted per company via localStorage); tap again to open. CSS
-    // disables the .chk buttons while the sheet carries ._bs-locked.
+    // disables .uact/.usvc/.uonytt while the sheet carries ._bs-locked.
     const lockKey = 'sk_bs_lock_' + coId;
     const applyLock = () => {
       let on = false; try { on = localStorage.getItem(lockKey) === '1'; } catch (_) {}
