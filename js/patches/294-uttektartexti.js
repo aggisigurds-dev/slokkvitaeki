@@ -144,12 +144,12 @@
     return s.join(' ');
   }
 
-  function fylla(coId) {
+  function fylla(coId, yfirskrifa) {
     var ta = document.getElementById('_ctc-notes-ta');
-    if (!ta) { console.log(TAG, 'reiturinn ekki á skjánum'); return; }
-    if ((ta.value || '').trim()) { console.log(TAG, 'reitur ekki tómur — snerti ekki'); return; }
+    if (!ta) { console.log(TAG, 'reiturinn ekki á skjánum'); return false; }
+    if (!yfirskrifa && (ta.value || '').trim()) { console.log(TAG, 'reitur ekki tómur — snerti ekki'); return false; }
     var txt = smida(coId);
-    if (!txt) { console.log(TAG, 'ekkert að skrifa (engin tæki/val)'); return; }
+    if (!txt) { console.log(TAG, 'ekkert að skrifa (engin tæki/val)'); return false; }
     ta.value = txt;
     // Vista gegnum SAMA veg og reiturinn sjálfur — annars glatast textinn við
     // endurhleðslu því 129 les úr tripState, ekki úr DOM-inu.
@@ -157,7 +157,77 @@
     ta.dispatchEvent(new Event('input', { bubbles: true }));
     ta.dispatchEvent(new Event('change', { bubbles: true }));
     console.log(TAG, 'texti settur:', txt);
+    return true;
   }
+
+  /* ✨-takki í hausnum á reitnum — handvirkt endurgera, og LEIÐIN að eldri
+     úttektum: sjálfvirka fyllingin gerist bara í því augnabliki sem listinn er
+     staðfestur, svo skýrsla sem var gerð áður en þetta kom (eða þar sem reitnum
+     var lokað tómum) fær textann hér. Yfirskrift krefst staðfestingar — sjálf-
+     virka leiðin snertir aldrei texta sem er fyrir, og það á ekki að breytast
+     þótt takkinn geti það þegar MAÐUR biður um það. */
+  function currentCoId() {
+    var main = document.getElementById('companies-main');
+    if (!main) return 0;
+    var el = main.querySelector('[data-co-id]:not(._cat-section)');
+    var v = el && el.getAttribute('data-co-id');
+    return (v && /^\d+$/.test(v)) ? +v : 0;
+  }
+
+  function haus() {
+    var ta = document.getElementById('_ctc-notes-ta');
+    if (!ta || !ta.parentNode) return null;
+    // Hausinn er fyrsta flex-línan á undan textareanum (129 teiknar hann þar).
+    var h = ta.previousElementSibling;
+    return (h && h.tagName === 'DIV') ? h : null;
+  }
+
+  function settaTakka() {
+    var h = haus();
+    if (!h || h.querySelector('.ut-txtgen')) return;
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'ut-txtgen';
+    b.textContent = '✨ Búa til texta';
+    b.title = 'Semja úttektartextann út frá tækjalistanum · virkar líka á eldri úttektir';
+    b.style.cssText = 'margin-left:auto;padding:3px 9px;border:1px solid var(--brd,#cbd5e1);' +
+      'border-radius:99px;background:#fff;color:#334155;font:inherit;font-size:11.5px;' +
+      'font-weight:700;cursor:pointer;line-height:1.5;white-space:nowrap';
+    h.appendChild(b);
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target && e.target.closest ? e.target.closest('.ut-txtgen') : null;
+    if (!b) return;
+    e.preventDefault();
+    var coId = currentCoId();
+    if (!coId) { alert('Fann ekki fyrirtækið á síðunni.'); return; }
+    var txt = smida(coId);
+    if (!txt) { alert('Ekkert að skrifa — engin tæki á listanum.'); return; }
+    var ta = document.getElementById('_ctc-notes-ta');
+    var fyrir = ta && (ta.value || '').trim();
+    if (fyrir && fyrir !== txt &&
+        !confirm('Skrifa yfir textann sem er í reitnum?\n\nNýr texti:\n' + txt)) return;
+    if (fylla(coId, true)) {
+      var gamalt = b.textContent;
+      b.textContent = '✓ Texti settur';
+      setTimeout(function () { b.textContent = gamalt; }, 1600);
+    }
+  }, false);
+
+  // 129 endurteiknar `notesBox.innerHTML` í hvert sinn sem kostnaður er
+  // endurreiknaður — takkinn hverfur þá með. Því er hann settur aftur inn við
+  // hverja breytingu á fyrirtækjasvæðinu (sama mynstur og 131 notar).
+  (function fylgjast() {
+    var main = document.getElementById('companies-main');
+    if (!main) { setTimeout(fylgjast, 800); return; }
+    var t = 0;
+    new MutationObserver(function () {
+      clearTimeout(t);
+      t = setTimeout(settaTakka, 80);
+    }).observe(main, { childList: true, subtree: true });
+    settaTakka();
+  })();
 
   // „✅ Staðfesta lista" (patch 224 `.ut-listlock`). Aðeins þegar hann LÆSIR
   // (staðfestir) — afhök á ekki að hreyfa við textanum. Capture-fasi + smá bið
@@ -176,6 +246,6 @@
 
   // Handvirkt fyrir prófanir: Uttektartexti.forskoda(coId) skilar textanum án
   // þess að skrifa neitt; .fylla(coId) skrifar (virðir tóma-reit regluna).
-  window.Uttektartexti = { forskoda: smida, fylla: fylla, skanna: skanna, hausar: hausar };
+  window.Uttektartexti = { forskoda: smida, fylla: fylla, skanna: skanna, hausar: hausar, takki: settaTakka };
   console.log(TAG, 'hlaðinn');
 })();
