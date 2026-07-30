@@ -415,9 +415,16 @@
       '.ut-bulk-clear{margin-left:auto;background:transparent;border:0;color:rgba(255,255,255,.7);font-size:16px;cursor:pointer}',
       '.ut-head{display:flex;align-items:center;padding:11px 15px 7px;border-bottom:1px solid var(--brd)}',
       '.ut-head .sp{flex:1}',
-      '.ut-head .h-last{width:118px;text-align:right;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
-      '.ut-head .h-now{width:252px;margin-left:18px;padding-left:18px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
-      '.ut-head .h-far{width:40px;margin-left:14px}',
+      // Hausinn VERÐUR að fylgja dálkunum: sömu breiddir og bil og .ut-lastcol /
+      // .ut-now hér að neðan, annars stendur „Frá síðustu skýrslur" ekki lengur
+      // yfir boxinu sínu eftir að það var fært til vinstri.
+      // flex:none — ÁN þess skruppu hausdálkarnir saman (þeir höfðu bara `width`)
+      // meðan raðadálkarnir héldu sinni breidd, svo hausinn stóð aldrei yfir
+      // sínum dálki. Sama padding-left og röðin (26px) svo upphafspunktur stemmi.
+      '.ut-head{padding-left:26px!important}',
+      '.ut-head .h-last{width:190px;flex:none;margin-right:24px;text-align:left;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
+      '.ut-head .h-now{width:252px;flex:none;margin-left:26px;padding-left:26px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--ink3)}',
+      '.ut-head .h-far{width:40px;flex:none;margin-left:14px}',
       '@media(max-width:860px){.ut-head{display:none}}',
       '.ut-grp-h{width:100%;display:flex;align-items:center;gap:10px;padding:9px 15px;background:var(--surface2);border:0;border-top:1px solid var(--brd);cursor:pointer;font:inherit;text-align:left}',
       '.ut-grp:first-child .ut-grp-h{border-top:0}',
@@ -440,7 +447,10 @@
       // enn nálægt ✓ þótt bilið hefði verið breikkað. Nú MIÐJUÐ í breiðari dálki
       // — hún situr þá í miðju bilinu milli tækjaheitisins og stjórntakkanna og
       // tilheyrir hvorugu sjónrænt.
-      '.ut-lastcol{width:170px;display:flex;justify-content:center;flex:none;margin-right:20px}',
+      // Enn lengra til vinstri (þriðja umferð): VINSTRI-jöfnuð í breiðum dálki,
+      // svo boxið hefjist strax eftir tækjaheitið og sé í engum vafa um að
+      // tilheyra „frá síðustu skýrslu" — ekki stjórntökkunum hægra megin.
+      '.ut-lastcol{width:190px;display:flex;justify-content:flex-start;flex:none;margin-right:24px}',
       '.ut-last{font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;white-space:nowrap;background:var(--surface2);color:var(--ink2);border:1px solid var(--brd)}',
       '.ut-last.h{background:#fdeecb;color:#9a5b1a;border-color:#e7c98f}',
       '.ut-last.old{background:var(--red-bg,#fff0ed);color:var(--red,#c0341d);border-color:var(--red-bd,#fca5a5)}',
