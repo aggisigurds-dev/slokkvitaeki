@@ -777,6 +777,12 @@ reikningar/samningar úr Drive, keyed base+`fyrirtaeki_id`+`year`; ein ársskýr
 per (staður,ár); reikningar á R-nr; `is_duplicate`). **`solur`** + **`payday_
 invoices_slokk`** (kt digits-only) tengjast eftir **kt**. Walk-in = kt `999999-9999`.
 
+**Forgangsröð kúnna-taflna (Agnar 2026-07-30):** AÐAL-viðskiptavinirnir eru
+**`customers_base`** („Allir viðskiptavinir", kanóníski hryggurinn) og **`fyrirtaeki`
+með `er_i_thjonustu=true`** („Fyrirtæki í þjónustu" — þjónustukúnnarnir sem reksturinn
+snýst um). **`vidskiptavinir` er LÆGSTA þrepið** (einstaklingar/legacy) — ekki nota
+sem aðal-uppflettingu eða fyrsta svar við „hvar eru viðskiptavinirnir".
+
 **🗺️ Kerfis-kort** — lifandi einnar-síðu yfirlit yfir ALLA viðskiptavini + tengingar
 + heilsu (2023–2026 skjöl per ár, ótengd/tvítök/án-kt flögg). Á **brunaholf.netlify.
 app/kerfiskort.html** (Brunahólf-megin, því skjöl/Drive-tólin lifa þar). Sýnin
