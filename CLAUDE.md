@@ -795,8 +795,10 @@ birtast skjöl+Payday á fyrirtækja-prófílnum í „📁 Skjöl & viðhengi" 
 
 ## Related projects (in case Agnar mentions them)
 
-- **Brunahólf** — sister business, separate ecosystem (Google Sheets + Apps Script
-  + Tímavera + Ajour). See COWORK-brunaholf.md if relevant.
+- **Brunahólf** — MÓÐURFÉLAGIÐ (Brunahólf ehf á Slökkvitæki ehf — Agnar
+  2026-07-30), separate ecosystem (Google Sheets + Apps Script + Tímavera +
+  Ajour). Hub-inn brunaholf.netlify.app er stjórnstöðin/bakendinn með dýpri
+  tólum um Slökkvitæki líka. See COWORK-brunaholf.md if relevant.
 - **Slökkvitæki app** — this project. Pure code, lives on Netlify + Supabase.
 
 ## graphify
