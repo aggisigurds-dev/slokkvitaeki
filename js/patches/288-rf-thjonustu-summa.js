@@ -20,14 +20,36 @@
 
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 
-  function notes() {
-    try { return (window.AppSettings && AppSettings.path && AppSettings.path("rekstrarfelag_notes")) || {}; }
-    catch (_) { return {}; }
+  // Stale-while-revalidate: birtum STRAX úr localStorage (síðasta hleðsla), svo
+  // ferskum gögnum beint úr Supabase í bakgrunni (DB.sb = sami klient og appið).
+  const LS = "rf_summa_cache_v1";
+  let _cache = null, _cacheTs = 0, _fetching = null;
+  function loadLS() {
+    try { const j = JSON.parse(localStorage.getItem(LS) || "null"); if (j && j.rf) { _cache = j; } } catch (_) {}
+    if (!_cache) _cache = { rf: {}, co: {} };
+    return _cache;
   }
-  function coNotes() {
-    try { return (window.AppSettings && AppSettings.path && AppSettings.path("fyrirtaeki_notes")) || {}; }
-    catch (_) { return {}; }
+  function saveLS() { try { localStorage.setItem(LS, JSON.stringify(_cache)); } catch (_) {} }
+  async function fetchNotes(force) {
+    if (!force && _cache && Date.now() - _cacheTs < 60000) return _cache;
+    if (_fetching) return _fetching;
+    const sb = (window.DB && window.DB.sb) || window.sb || null;
+    if (!sb) return _cache || loadLS();
+    _fetching = (async () => {
+      try {
+        const r = await sb.from("app_settings").select("settings").eq("id", 1).maybeSingle();
+        const s = (r && r.data && r.data.settings) || {};
+        _cache = { rf: s.rekstrarfelag_notes || {}, co: s.fyrirtaeki_notes || {} };
+        _cacheTs = Date.now();
+        saveLS();                                  // næsta hleðsla poppar strax
+      } catch (e) { console.warn("[rf-summa] fetch villa:", e); if (!_cache) loadLS(); }
+      _fetching = null;
+      return _cache;
+    })();
+    return _fetching;
   }
+  function notes() { return (_cache && _cache.rf) || {}; }
+  function coNotes() { return (_cache && _cache.co) || {}; }
   // Nafn í hausnum getur borið minniháttar hvítbil/ehf-viðskeyti; reynum
   // nákvæmt match fyrst, svo fold-að (án ehf/hf, lowercase) svo „Heimaleiga"
   // í note-inu passi við „Heimaleiga ehf" o.s.frv.
@@ -53,7 +75,8 @@
     const opin = Array.isArray(note.opin_mal) ? note.opin_mal : [];
     const head =
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">' +
-      '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#6d28d9">📋 ÞJÓNUSTU-SUMMA</div>' +
+      '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#6d28d9">📋 ÞJÓNUSTU-SUMMA ' +
+        '<button type="button" class="_summa_refresh" title="Sækja ferskt" style="border:none;background:none;cursor:pointer;font-size:12px;padding:0 4px;color:#a78bfa">↻</button></div>' +
       (note.stada ? pill(note.stada) : "") + "</div>";
 
     // Alltaf sýnilegt: tölur + næsta skref
@@ -81,6 +104,11 @@
       more.style.display = open ? "" : "none";
       e.target.textContent = open ? "Minna ▴" : "Meira ▾";
     });
+    const rf = card.querySelector("._summa_refresh");
+    if (rf) rf.addEventListener("click", e => {
+      e.stopPropagation(); e.target.textContent = "…";
+      fetchNotes(true).then(() => { document.querySelectorAll("._rf_summa,._co_summa").forEach(c => c.remove()); tick(); tickCo(); });
+    });
     return card;
   }
 
@@ -98,15 +126,19 @@
       const merki = nameEl ? nameEl.textContent.trim() : "";
       if (!merki) return;
 
-      const slot = body.querySelector("._rf_samskipti_slot") || body;
       const hit = lookup(merki);
-      const existing = slot.querySelector("._rf_summa");
-
+      const existing = body.querySelector("._rf_summa");
       if (!hit) { if (existing) existing.remove(); return; }
       if (existing) { if (existing.dataset.merki === hit[0]) return; existing.remove(); }
 
       const el = buildCard(hit[0], hit[1]);
-      slot.insertBefore(el, slot.firstChild);   // EFST — ofan á póstsögunni (286)
+      // Mount: helst efst í samskipta-slotinu (ofan á 286 póstsögu); annars
+      // beint á eftir SÝNILEGA info-kassanum; annars aftast í body.
+      const slot = body.querySelector("._rf_samskipti_slot");
+      const info = body.querySelector("._rf_info");
+      if (slot) slot.insertBefore(el, slot.firstChild);
+      else if (info) info.insertAdjacentElement("afterend", el);
+      else body.appendChild(el);
     });
   }
 
@@ -136,9 +168,18 @@
   }
 
   let t = null;
-  const run = () => { clearTimeout(t); t = setTimeout(() => { try { tick(); tickCo(); } catch (e) { console.warn("[rf-summa]", e); } }, 300); };
+  const run = () => {
+    clearTimeout(t);
+    t = setTimeout(() => {
+      fetchNotes().then(() => { try { tick(); tickCo(); } catch (e) { console.warn("[rf-summa]", e); } });
+    }, 300);
+  };
   new MutationObserver(run).observe(document.body, { childList: true, subtree: true });
-  if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(run);
-  setTimeout(run, 1200);
-  console.log("[rf-thjonustu-summa] v1 installed");
+  // 1) STRAX: birtu úr localStorage (síðasta hleðsla) — poppar upp án biðar.
+  loadLS();
+  try { tick(); tickCo(); } catch (_) {}
+  // 2) Í bakgrunni: sæktu ferskt, uppfærðu + vistaðu fyrir næstu hleðslu.
+  fetchNotes(true).then(() => run());
+  setTimeout(run, 1500);
+  console.log("[rf-thjonustu-summa] v4 — localStorage-strax + bakgrunns-refresh + ↻");
 })();
