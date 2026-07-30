@@ -71,13 +71,14 @@
   }
   async function saveOne(coId, entry) {
     if (!window.AppSettings || !window.AppSettings.save) return false;
-    const map = Object.assign({}, getList());
+    const map = {};   // ÞRÖNGUR patch — aðeins þetta félag fer í vistun
     // 2026-07-30: `delete` skilaði sér ALDREI (deepMerge fjarlægir aldrei lykil)
     // svo „Fjarlægja úr brunakerfisþjónustu" virkaði ekki — félagið kom aftur við
     // næstu teikningu. Rétta venjan er null-gildi, eins og lesarinn neðar í
     // þessari sömu skrá lýsir („Filter to truthy entries only") og 157/158 gera.
+    const fyrir = getList()[String(coId)] || {};
     if (entry === null) map[String(coId)] = null;
-    else map[String(coId)] = Object.assign({}, map[String(coId)] || {}, entry, { co_id: coId });
+    else map[String(coId)] = Object.assign({}, fyrir, entry, { co_id: coId });
     return await window.AppSettings.save({ [STORAGE_KEY]: map });
   }
 

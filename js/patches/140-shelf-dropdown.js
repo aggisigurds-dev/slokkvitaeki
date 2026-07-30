@@ -38,7 +38,7 @@
 
   async function setShelf(jobId, shelf) {
     if (!window.AppSettings || typeof window.AppSettings.save !== 'function') return;
-    const cur = Object.assign({}, getMap());
+    const cur = {};   // ÞRÖNGUR patch — aðeins þetta verk, ekki öll hillu-varpan
     // 2026-07-30: `delete` + heil-vörpun VIRKAR EKKI — deepMerge bætir aðeins við
     // og yfirskrifar, hún FJARLÆGIR aldrei lykil. Því sat gamla hillan eftir á
     // netþjóni og „— engin hilla —" stökk alltaf til baka. Gamla athugasemdin hér
