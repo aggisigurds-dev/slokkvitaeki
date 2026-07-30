@@ -63,9 +63,10 @@
 
   async function saveCompanyPricing(coId, list) {
     if (!window.AppSettings || !window.AppSettings.save) return false;
-    const all = { ...getAllPricing() };
-    all[String(coId)] = list;
-    return await window.AppSettings.save({ [STORAGE_KEY]: all });
+    // ÞRÖNGUR patch — aðeins þessi lykill. Að senda alla vörpuna skrifaði
+    // yfir allt sem hinar vélarnar breyttu á meðan þessi flipi var opinn
+    // (deepMerge yfirskrifar, hún sameinar ekki raðir).
+    return await window.AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: list } });
   }
 
   function getCompanyId() {

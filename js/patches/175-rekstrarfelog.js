@@ -374,7 +374,12 @@
     });
     return merged;
   }
-  async function saveData(d){
+  // `onlyKey` (2026-07-30): sendir AÐEINS það félag sem var ritstýrt í
+  // AppSettings. Áður fór öll curated-varpan með í hverri vistun, svo nóta sem
+  // þú skrifaðir hér skrifaði yfir breytingar hinna vélanna á ÖÐRUM félögum
+  // (deepMerge yfirskrifar, hún sameinar ekki). localStorage-afritið heldur
+  // áfram að geyma alla vörpuna — það er staðbundið og skaðlaust.
+  async function saveData(d, onlyKey){
     // Persistum EKKI ósnertar lifandi færslur (þær sem fléttuðust inn úr
     // gagnagrunninum og hafa engin handvirk gögn) — annars frystist lifandi
     // listinn í AppSettings-blobið og hættir að uppfærast. Um leið og notandi
@@ -401,7 +406,12 @@
       clean[k] = copy;
     });
     try { localStorage.setItem('_slokk_rekstrarfelog', JSON.stringify(clean)); } catch(e){}
-    try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ rekstrarfelog: clean }); } catch(e){}
+    var patch = clean;
+    if (onlyKey != null) {
+      patch = {};
+      if (Object.prototype.hasOwnProperty.call(clean, onlyKey)) patch[onlyKey] = clean[onlyKey];
+    }
+    try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ rekstrarfelog: patch }); } catch(e){}
   }
 
   function companyByKt(kt){
@@ -1047,7 +1057,7 @@
         var d=getData(); if(!d[name]) d[name]=info;
         if((d[name].notes||'')===val) return;
         d[name].notes=val; info.notes=val;
-        await saveData(d);
+        await saveData(d, name);
         if(window.Toast&&Toast.show) Toast.show('✓ Vistað');
       });
       // Rotandi akstursleið-chip á félaginu (úthlutar öllum stöðum þess) — situr
@@ -1459,7 +1469,7 @@
       var d=getData(); if(!d[name]) d[name]=info;
       d[name].kt=kt; d[name].domain=domain; d[name].emails=emailsArr; d[name].notes=notes;
       d[name].simi=simi; d[name].tengilidur=tengil;
-      try{ await saveData(d); }catch(e){}
+      try{ await saveData(d, name); }catch(e){}
       info.kt=kt; info.domain=domain; info.emails=emailsArr; info.notes=notes;
       info.simi=simi; info.tengilidur=tengil;
       if(window.Toast&&Toast.show) Toast.show('✓ Upplýsingar vistaðar');
@@ -1484,7 +1494,7 @@
         revSave.disabled=true; revSave.textContent='Vista…';
         var d=getData(); if(!d[name]) d[name]=info;
         d[name].rev_yfirferd=y; d[name].rev_hledsla=h; d[name].rev_hledsla_pct=p;
-        try{ await saveData(d); }catch(e){}
+        try{ await saveData(d, name); }catch(e){}
         info.rev_yfirferd=y; info.rev_hledsla=h; info.rev_hledsla_pct=p;
         if(window.Toast&&Toast.show) Toast.show('✓ Tekjuforsendur vistaðar');
         fillBody(body,name,info);   // endurteikna með nýju tölunum
@@ -1547,7 +1557,7 @@
       }
       var d = getData(); if(!d[name]) d[name]=info;
       d[name].buildings = (d[name].buildings||[]).concat([bld]);
-      await saveData(d);
+      await saveData(d, name);
       info.buildings = d[name].buildings;
       fillBody(body, name, info);
     });
@@ -1585,7 +1595,7 @@
         delete arr[bi]._live;
         if (pv && co_id != null) arr[bi].co_id = co_id;
         else if (!pv) delete arr[bi].co_id;   // tómt = aftur í sjálfvirka uppflettingu
-        await saveData(d);
+        await saveData(d, name);
         info.buildings = arr;
         if(window.Toast&&Toast.show) Toast.show('✓ Bygging uppfærð');
         fillBody(body, name, info);
@@ -1608,7 +1618,7 @@
         }
         if(!confirm('Fjarlægja "'+(b.nafn||'')+'" úr félaginu?')) return;
         var d = getData();
-        if(d[name] && Array.isArray(d[name].buildings)){ d[name].buildings.splice(bi,1); await saveData(d); info.buildings=d[name].buildings; }
+        if(d[name] && Array.isArray(d[name].buildings)){ d[name].buildings.splice(bi,1); await saveData(d, name); info.buildings=d[name].buildings; }
         fillBody(body, name, info);
       });
     });
@@ -1666,7 +1676,7 @@
     var data=getData();
     if(data[name]){ alert('Félag með þessu nafni er þegar til.'); return; }
     data[name]={ domain:(email.split('@')[1]||''), emails: email?[email]:[], buildings:[] };
-    await saveData(data); renderList();
+    await saveData(data, name); renderList();
   }
 
   // ---- nav tab injection (mirrors vidskiptavinir.js pattern) ----
