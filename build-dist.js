@@ -79,6 +79,11 @@ function stampBuild() {
   if (html.includes('name="build"')) return;
   html = html.replace('</head>', stamp + '</head>');
   writeFileSync(indexPath, html);
+  // Sama auðkenni í örsmárri skrá sem útgáfu-vaktin (patch 293) sækir reglulega
+  // án þess að hlaða alla index.html. Þetta er eina leiðin fyrir OPINN flipa að
+  // vita að nýrri kóði sé kominn — annars situr notandinn með gamla útgáfu og
+  // heldur að lagfæring hafi ekki skilað sér („ennþá tómt", 30.07).
+  writeFileSync(join(OUT, 'build.json'), JSON.stringify({ commit, time }) + '\n');
   console.log('build-dist: stimplað ' + (commit || '(engin commit-vísun)') + ' · ' + time);
 }
 
