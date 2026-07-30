@@ -618,6 +618,13 @@
     e.y2026 += (u.y2026|0) || 0;
     if(u.next_insp&&(!e.next||u.next_insp<e.next)) e.next=u.next_insp;
   }
+  // Sama, en fyrir HRÁA uttaeki-röð (worksite-tengdu tækin eru fá og sótt hrá).
+  function _addRaw(e,u){
+    e.units++;
+    var y=u.last_insp?String(u.last_insp).slice(0,4):null;
+    if(y==='2024')e.y2024++; else if(y==='2025')e.y2025++; else if(y==='2026')e.y2026++;
+    if(u.next_insp&&(!e.next||u.next_insp<e.next)) e.next=u.next_insp;
+  }
   async function getEquipIndex(){
     if(_equip) return _equip;
     if(_equipPromise) return _equipPromise;
@@ -627,18 +634,35 @@
       // 2026-07-30: var 5.843 hráar uttaeki-raðir í 6 RAÐBUNDNUM sóknum (~3,8 s)
       // bara til að TELJA þær í vafranum. Grunnurinn telur núna: 629 raðir í
       // EINNI sókn (9,3× færri), nákvæmlega sömu tölur (sannreynt).
-      var rows = await fetchAllRows(SB, 'v_uttaeki_client_rollup',
-                                    'client,units,y2024,y2025,y2026,next_insp');
+      // 2026-07-30 (Verkefnalisti 93677d13): auk nafna-hólfanna sækjum við nú
+      // per-STAÐAR sannleikann — arsskodun_report_facts (total_devices síðustu
+      // skýrslu, PK fyrirtaeki_id) og worksite-tengdu tækin (uttaeki.worksite_id,
+      // ~200 raðir) — svo byggingaröð þurfi ekki að treysta nafna-giskinu einu.
+      var _res = await Promise.all([
+        fetchAllRows(SB, 'v_uttaeki_client_rollup',
+                     'client,units,y2024,y2025,y2026,next_insp'),
+        fetchAllRows(SB, 'arsskodun_report_facts',
+                     'fyrirtaeki_id,total_devices,report_year'),
+        fetchAllRows(SB, 'uttaeki', 'worksite_id,last_insp,next_insp',
+                     function(q){ return q.not('worksite_id','is',null); })
+      ]);
+      var rows=_res[0], factRows=_res[1], wsRows=_res[2];
       var base={},comp={},street={};
       rows.forEach(function(u){ var b=_norm(u.client); if(!b)return; var c=_compact(u.client), s=_streetnum(u.client);
         (base[b]||(base[b]=_blank())); _add(base[b],u);
         (comp[c]||(comp[c]=_blank())); _add(comp[c],u);
         if(s){ (street[s]||(street[s]=_blank())); _add(street[s],u); } });
+      var ws={}, facts={};
+      wsRows.forEach(function(u){ if(u.worksite_id==null)return; var k=String(u.worksite_id);
+        (ws[k]||(ws[k]=_blank())); _addRaw(ws[k],u); });
+      factRows.forEach(function(f){ if(f&&f.fyrirtaeki_id!=null) facts[String(f.fyrirtaeki_id)]=f; });
       // 2026-07-16 (Agnar): TÆKI = nákvæmlega tækin sem standa á fyrirtækinu
       // (sama og prófíllinn sýnir) — götu+númer-giskið safnaði gömlum
       // client-strengja-útgáfum saman (Hamraborg 7 sýndi 30 í stað 14).
       _equip={ match:function(name){ var b=_norm(name); if(base[b])return base[b];
-        var c=_compact(name); if(comp[c])return comp[c]; return null; } };
+        var c=_compact(name); if(comp[c])return comp[c]; return null; },
+        wsOf:function(id){ return id==null?null:(ws[String(id)]||null); },
+        factOf:function(id){ return id==null?null:(facts[String(id)]||null); } };
       _equipAt=Date.now();
       return _equip;
     })().catch(function(e){
@@ -649,6 +673,28 @@
       return { match:function(){return null;} };
     });
     return _equipPromise;
+  }
+  // 2026-07-30 (Verkefnalisti 93677d13, VILLA „summa á kennitölu"): tækjafjöldi
+  // byggingaraðar var AÐEINS nafna-gisk á client-strengnum — þegar tvær byggingar
+  // sömu kennitölu bera sama (eða fold-jafnt) nafn rann talningin saman í eitt
+  // hólf og BÁÐAR raðir sýndu kt-summuna (Máni 61 + Midtown 61 → „122" á báðum;
+  // tvær „Jaðarleiti"-raðir eins). Nú telur hver röð SÍNA byggingu í forgangsröð:
+  //   (a) arsskodun_report_facts.total_devices — per-staðar sannleikur síðustu
+  //       skýrslu (PK fyrirtaeki_id) trompar TALNINGUNA þegar hann er til,
+  //   (b) uttaeki með worksite_id = staðurinn (bein tenging),
+  //   (c) nafna-match á client-streng (óbreytt fallback — nákvæmt fold-að nafn,
+  //       ALDREI summa yfir kennitöluna).
+  // Ártala-sagan (y2024–26) + næsta skoðun fylgja (b)/(c) — facts bera þær ekki.
+  // Félags-HAUSINN (rollup-línan) summar áfram yfir byggingarnar — rétt þar.
+  function bldEquipSt(equip, b, co){
+    var st = (equip && equip.match) ? equip.match(b && b.nafn) : null;   // (c)
+    if(co && equip){
+      var w = equip.wsOf ? equip.wsOf(co.id) : null;                     // (b)
+      if(w && w.units>0) st = w;
+      var f = equip.factOf ? equip.factOf(co.id) : null;                 // (a)
+      if(f && +f.total_devices>0) st = Object.assign({}, st||_blank(), { units:+f.total_devices });
+    }
+    return st || null;
   }
   function _todayStr(){ var d=new Date(); return d.getFullYear()+'-'+('0'+(d.getMonth()+1)).slice(-2)+'-'+('0'+d.getDate()).slice(-2); }
 
@@ -857,7 +903,8 @@
   // ---- combined overview: all buildings across all firms (totals + flat table) ----
   function computeBldStatus(b, equip, attMap, linkMap, today, caMap, sharedKt){
     var co=companyForBld(b);
-    var st=equip.match(b.nafn);
+    // Per-byggingar talning (facts → worksite → nafn) — sjá bldEquipSt að ofan.
+    var st=bldEquipSt(equip, b, co);
     var ktShared=!!(sharedKt&&sharedKt[digits(b.kt)]);
     var att=((!ktShared)&&co&&(attMap[co.id]||attMap[String(co.id)]))||[0,0,0];
     var lks=linkMap[bldLinkKey(b)]||(ktShared?null:linkMap[digits(b.kt)])||{};
@@ -1215,7 +1262,10 @@
       var link= co ? '<a href="#" data-coid="'+co.id+'" class="_rf_open">'+esc(b.nafn)+'</a>'
                    : esc(b.nafn)+' <span style="color:#9098a6;font-size:11px;font-weight:400">(ekki í skrá)</span>';
       var doc = co ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:#1d4ed8;text-decoration:underline">skjöl</a>' : '';
-      var st = equip.match(b.nafn);
+      // Per-byggingar talning (facts → worksite → nafn) — sjá bldEquipSt að ofan.
+      // Áður equip.match(b.nafn) eitt og sér: sam-nefndar byggingar sömu kt
+      // sýndu þá báðar kt-summuna í Tæki-dálknum.
+      var st = bldEquipSt(equip, b, co);
       var ktShared = !!(sharedKt && sharedKt[digits(b.kt)]);
       var att = ((!ktShared) && co && (attMap[co.id]||attMap[String(co.id)])) || [0,0,0];
       var lks = linkMap[bldLinkKey(b)] || (ktShared?null:linkMap[digits(b.kt)]) || {};
