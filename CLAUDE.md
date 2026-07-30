@@ -3,7 +3,10 @@
 This file is read by Claude Code at the start of every session in this folder.
 It contains everything Claude Code needs to know to be useful immediately.
 
-> **📖 ALSO READ**: [`docs/CLAUDE-LEIDBEININGAR.md`](docs/CLAUDE-LEIDBEININGAR.md) — operational playbook
+> **📖 ALSO READ**: [`docs/STADREYNDIR.md`](docs/STADREYNDIR.md) — sannreyndar
+> grunnstaðreyndir (kúnna-líkanið, töflur, vinnureglur) — **lesa á undan öllu öðru
+> þegar spurning snýst um viðskiptavini/gögn**; and
+> [`docs/CLAUDE-LEIDBEININGAR.md`](docs/CLAUDE-LEIDBEININGAR.md) — operational playbook
 > covering the customer-DB architecture, Verkfærakassi, walk-in convention (kt
 > `999999-9999`), rekstrarfélög-staðsettningar rule, email priorities, and known
 > gotchas. Updated continuously as Agnar gives new context.
