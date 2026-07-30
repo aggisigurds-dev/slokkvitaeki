@@ -23,6 +23,38 @@
   function fmtKt(k){ if(!k) return ''; var c=String(k).replace(/\D/g,''); return c.length>=10? c.slice(0,6)+'-'+c.slice(6,10):c; }
   function digits(s){ return String(s||'').replace(/\D/g,''); }
 
+  // ── SAMHLIÐA blaðsíðu-sókn (2026-07-30, Agnar: „load time … takes forever") ──
+  // Supabase skilar í mesta lagi 1000 röðum per kall, svo stórar töflur þurfa
+  // margar sóknir. Áður voru þær RAÐBUNDNAR (while-lykkja sem beið eftir hverri
+  // síðu): uttaeki er 5.843 raðir = 6 sóknir, og ein sókn mælist ~0,6 s → ~3,8 s
+  // í BIÐ fyrir eina töflu. Öll síðan gerði ~14 raðbundnar sóknir ≈ 8-12 s.
+  //
+  // Hér er fyrsta síðan sótt með `count:'exact'` (þá vitum við heildina strax) og
+  // ALLAR eftirstandandi síður sóttar SAMHLIÐA. Þar með kostar taflan EINA
+  // umferðartíð í stað N. Skilar nákvæmlega sömu röðum og lykkjan gerði.
+  async function fetchAllRows(SB, table, cols, tweak){
+    var PAGE = 1000;
+    try {
+      var q = SB.from(table).select(cols, { count: 'exact' });
+      if (tweak) q = tweak(q);
+      var first = await q.range(0, PAGE - 1);
+      if (first.error) return [];
+      var rows = (first.data || []).slice();
+      var total = (typeof first.count === 'number') ? first.count : rows.length;
+      if (rows.length < PAGE || total <= PAGE) return rows;
+      var offs = [];
+      for (var off = PAGE; off < total && off <= 40000; off += PAGE) offs.push(off);
+      var rest = await Promise.all(offs.map(function(o){
+        var q2 = SB.from(table).select(cols);
+        if (tweak) q2 = tweak(q2);
+        return q2.range(o, o + PAGE - 1).then(function(r){ return r.data || []; })
+                 .catch(function(){ return []; });
+      }));
+      rest.forEach(function(a){ rows = rows.concat(a); });
+      return rows;
+    } catch (e) { console.warn('[rekstrarfelog] fetchAllRows', table, e); return []; }
+  }
+
   // ---- inline SVG icons (Lucide-style) + scoped styles for the redesigned cards ----
   // 2026-06-19: cleaner master cards (icon avatar + email chips + building count)
   // + a tidier detail table. Colours come from var(--brand) so the active theme
@@ -237,32 +269,26 @@
       try {
         // base rows carrying a rekstrarfelag
         var bases = {}; // base_id -> rekstrarfelag
-        var from=0;
-        while(true){
-          var rb = await SB.from('customers_base').select('id,nafn,kennitala,rekstrarfelag').not('rekstrarfelag','is',null).range(from,from+999);
-          if (rb.error) break;
-          (rb.data||[]).forEach(function(b){
-            if(!b.rekstrarfelag) return;
-            bases[b.id] = b.rekstrarfelag;
-            (out[b.rekstrarfelag]||(out[b.rekstrarfelag]=[]));
-          });
-          if(!rb.data || rb.data.length<1000) break; from+=1000; if(from>20000) break;
-        }
+        // báðar töflur sóttar með samhliða blaðsíðum (var 2+2 raðbundnar sóknir)
+        var baseRows = await fetchAllRows(SB, 'customers_base', 'id,nafn,kennitala,rekstrarfelag',
+          function(q){ return q.not('rekstrarfelag','is',null); });
+        baseRows.forEach(function(b){
+          if(!b.rekstrarfelag) return;
+          bases[b.id] = b.rekstrarfelag;
+          (out[b.rekstrarfelag]||(out[b.rekstrarfelag]=[]));
+        });
         // fyrirtaeki locations that belong to those bases → the buildings/sites
         var baseIds = Object.keys(bases).map(function(x){return parseInt(x,10);});
         if (baseIds.length){
-          from=0;
-          while(true){
-            var rf = await SB.from('fyrirtaeki').select('nafn,kennitala,heimilisfang,netfang,simi,customer_base_id').in('customer_base_id', baseIds).range(from,from+999);
-            if (rf.error) break;
-            (rf.data||[]).forEach(function(f){
-              var rek = bases[f.customer_base_id]; if(!rek) return;
-              // netfang/simi fylgja með svo Upplýsinga-spjaldið geti LEITT út
-              // tengiliðaupplýsingar félagsins þegar ekkert er handskráð (sjá derivedInfo)
-              (out[rek]||(out[rek]=[])).push({ kt: f.kennitala||'', nafn: f.nafn||'', heimilisfang: f.heimilisfang||'', netfang: f.netfang||'', simi: f.simi||'' });
-            });
-            if(!rf.data || rf.data.length<1000) break; from+=1000; if(from>20000) break;
-          }
+          var siteRows = await fetchAllRows(SB, 'fyrirtaeki',
+            'nafn,kennitala,heimilisfang,netfang,simi,customer_base_id',
+            function(q){ return q.in('customer_base_id', baseIds); });
+          siteRows.forEach(function(f){
+            var rek = bases[f.customer_base_id]; if(!rek) return;
+            // netfang/simi fylgja með svo Upplýsinga-spjaldið geti LEITT út
+            // tengiliðaupplýsingar félagsins þegar ekkert er handskráð (sjá derivedInfo)
+            (out[rek]||(out[rek]=[])).push({ kt: f.kennitala||'', nafn: f.nafn||'', heimilisfang: f.heimilisfang||'', netfang: f.netfang||'', simi: f.simi||'' });
+          });
         }
       } catch(e){ console.warn('[rekstrarfelog] live load', e); }
       _liveRF = out; return out;
@@ -566,9 +592,8 @@
     _equipPromise=(async function(){
       var SB=window.__vdaSB||(window.DB&&DB.sb);
       if(!SB){ _equip={match:function(){return null;}}; return _equip; }
-      var rows=[],from=0;
-      try{ while(true){ var r=await SB.from('uttaeki').select('client,last_insp,next_insp').range(from,from+999);
-        if(r.error)break; rows=rows.concat(r.data||[]); if(!r.data||r.data.length<1000)break; from+=1000; if(from>20000)break; } }catch(e){}
+      // var 6 RAÐBUNDNAR sóknir (~3,8 s); nú allar samhliða (~0,7 s)
+      var rows = await fetchAllRows(SB, 'uttaeki', 'client,last_insp,next_insp');
       var base={},comp={},street={};
       rows.forEach(function(u){ var b=_norm(u.client); if(!b)return; var c=_compact(u.client), s=_streetnum(u.client);
         (base[b]||(base[b]=_blank())); _add(base[b],u);
@@ -637,13 +662,11 @@
       var SB=window.__vdaSB||(window.DB&&DB.sb);
       if(SB){
         try{
-          var from=0;
-          while(true){
-            var rd=await SB.from('customer_documents')
-              .select('fyrirtaeki_id,year,drive_file_id,storage_path,doc_date,is_duplicate')
-              .eq('doc_type','brunakerfi').not('fyrirtaeki_id','is',null).range(from,from+999);
-            if(rd.error) break;
-            (rd.data||[]).forEach(function(d){
+          var bkRows = await fetchAllRows(SB, 'customer_documents',
+            'fyrirtaeki_id,year,drive_file_id,storage_path,doc_date,is_duplicate',
+            function(q){ return q.eq('doc_type','brunakerfi').not('fyrirtaeki_id','is',null); });
+          {
+            bkRows.forEach(function(d){
               if(d.is_duplicate||!d.year) return;
               var e=rec(d.fyrirtaeki_id), y=String(d.year);
               var u=d.drive_file_id ? ('https://drive.google.com/file/d/'+encodeURIComponent(d.drive_file_id)+'/view') : storageUrl(d.storage_path);
@@ -652,7 +675,6 @@
               if(m) e.months[y]=m;
               if(+y>e.latest) e.latest=+y;
             });
-            if(!rd.data||rd.data.length<1000) break; from+=1000; if(from>20000) break;
           }
         }catch(e){ console.warn('[rekstrarfelog] brunakerfi skjöl', e); }
         try{
