@@ -13,7 +13,10 @@
 
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const fmtD = d => { try { const t = new Date(d); return t.toLocaleDateString("is-IS", { day: "numeric", month: "short", year: "numeric" }); } catch { return "" } };
-  const sb = () => window.sb || null;
+  // 2026-07-30 — RÓTIN að „boxið kom aldrei": klíentinn í þessu appi heitir
+  // DB.sb (js/db.js), EKKI window.sb. fetchData fékk því null og decorate
+  // hætti þögult — hýsillinn festist á prófílinn en kortið teiknaðist aldrei.
+  const sb = () => (window.DB && window.DB.sb) || window.sb || null;
   const cache = {};
 
   async function fetchData(fid) {
