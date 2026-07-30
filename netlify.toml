@@ -1,14 +1,28 @@
-# Netlify configuration for Slökkvitæki (static site, no build step).
+# Netlify configuration for Slökkvitæki.
+
+# --- DEPLOY: báðar leiðir birta SAMA dist ------------------------------------
+# Tvær deploy-leiðir keyra við hverja ýtingu á master:
+#   1. GitHub Actions  → build-dist.js → netlify-cli deploy dist/ + functions
+#   2. Netlify Git-tenging → [build] hér að neðan → sama build-dist.js → dist/
+# Áður hafði leið 2 ekkert [build] og birti RÓT verkefnisins (allt með, óbundlað)
+# — sú sem kláraðist SÍÐAST vann, svo framleiðslan flakkaði milli bundlaðrar og
+# hrárrar útgáfu (og /CLAUDE.md flakkaði milli 404 og 200 þar til redirect-
+# reglurnar að neðan lokuðu því). Með [build] búa báðar leiðir til nákvæmlega
+# sama úttak svo röðin skiptir ekki lengur máli. Deploy-preview á PR-um keyra
+# líka build-dist núna — forskoðunin er eins og framleiðslan.
+# Fail-safe: klikki Netlify-buildið birtist ekkert úr þeirri leið (site stendur
+# á síðasta góða deployi) og Actions-leiðin heldur áfram að virka óbreytt.
+[build]
+  command = "node build-dist.js"
+  publish = "dist"
+
+[functions]
+  directory = "netlify/functions"
 
 # --- ÖRYGGI: innri skrár ALDREI birtar --------------------------------------
-# Tvær deploy-leiðir keppa við hverja ýtingu á master:
-#   1. GitHub Actions  → build-dist.js → birtir dist/  (sleppir *.md — í lagi)
-#   2. Netlify Git-tenging → ekkert [build] → birtir RÓT verkefnisins (allt með!)
-# Sú sem klárast SÍÐAST vinnur, svo /CLAUDE.md hefur flakkað milli 404 og 200.
-# Þegar leið 2 vinnur var CLAUDE.md borið fram sem text/markdown — með
-# NETLIFY_TOKEN og öðrum aðgangsupplýsingum í. Þessar reglur loka slóðunum í
-# BÁÐUM leiðum (netlify.toml er lesin í hvoru tilviki sem er) og verða að standa
-# FREMST — Netlify tekur fyrstu reglu sem passar.
+# dist/ inniheldur hvorki *.md, *.sql né _*-skrár (build-dist síar), en þessar
+# reglur standa áfram sem vörn í dýpt — og verða að standa FREMST í
+# redirect-röðinni; Netlify tekur fyrstu reglu sem passar.
 [[redirects]]
   from = "/CLAUDE.md"
   to = "/404.html"
