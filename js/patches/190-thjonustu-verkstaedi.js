@@ -516,7 +516,18 @@
   // dettur úr 🔵 (fer í ⏳ Á dagskrá ef skoðunarmánuður er kominn, annars af borðinu).
   const unVinnsla    = id => setFlag(id, { field_inspected_year: 0 });
 
-  function openCompany(id) { if (window.VidskDetail && VidskDetail.show) return VidskDetail.show(id); if (window.Companies && Companies.openDetail) return Companies.openDetail(id); }
+  // 2026-07-30 (ósk Agnars): „📁 Opna" á að fara BEINT á ársskoðunar-síðuna —
+  // fyrirtækjasíðuna með tækjalistanum (224), UPPLÝSINGAR UM ÚTTEKT og
+  // REIKNINGUR-spjaldinu — því það er þar sem úttektin er unnin. Áður fór hún á
+  // VidskDetail-milliskrefið (158) og maður þurfti að smella á „Opna
+  // fyrirtækisíðu →" til viðbótar. `_openCompanySafe` (mapfix.js) er notað því
+  // það skiptir um view OG bíður eftir Companies.load() — beint
+  // `Companies.openDetail` á óhlöðnum lista skilar auðri síðu.
+  function openCompany(id) {
+    if (window._openCompanySafe) return window._openCompanySafe(id);
+    if (window.Companies && Companies.openDetail) return Companies.openDetail(id);
+    if (window.VidskDetail && VidskDetail.show) return VidskDetail.show(id);
+  }
   function openReport(id) { if (window.CompanyInspectionReport && CompanyInspectionReport.open) return CompanyInspectionReport.open(id); if (window.VisitReport && VisitReport.open) return VisitReport.open(id); openCompany(id); }
 
   // ✉️ Senda úttektarskýrslu ársins í tölvupósti. Endurnýtir ReceiptSender
