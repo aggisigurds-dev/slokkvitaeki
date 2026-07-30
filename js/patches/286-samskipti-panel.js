@@ -258,6 +258,11 @@
     const doms = {};
     emails.forEach(e => { const d = (e.split("@")[1] || "").toLowerCase().trim(); if (d) doms[d] = (doms[d] || 0) + 1; });
     const dom = Object.keys(doms).sort((a, b) => doms[b] - doms[a])[0];
+    // Byggingarnar (data-coid) — reiknaðar ÁÐUR en vörnin metur hvort megi
+    // sleppa endurteikningu, því þær eru bæði póst-leiðin og ✓-lyklarnir.
+    const coids = [...new Set([...info.parentNode.querySelectorAll("[data-coid]")]
+      .map(a => +a.getAttribute("data-coid")).filter(n => n > 0))];
+    const coidKey = coids.slice().sort((a, b) => a - b).join(",");
     // Fast plásshólf úr 175 (lifir af endurteiknanir) ef til, annars systkini.
     const slot = info.parentNode.querySelector("._rf_samskipti_slot");
     let card = slot ? slot.querySelector("._samskipti-rf")
@@ -268,23 +273,23 @@
       // teikna sig. Gamla útgáfan skoðaði bara `dataset.dom`, svo spjald sem
       // sat fast í „Sæki póstsögu…" (eða hafði losnað í endurteiknun) lifði
       // að eilífu og engin ný tilraun var gerð.
-      const same = card.dataset.dom === (dom || "") && document.contains(card);
+      //
+      // 2026-07-30 — SEINNI HELMINGUR „Heimaleiga er tóm": 175 teiknar líkamann
+      // í þrepum, svo FYRSTA tifið hittir stundum á `._rf_info` ÁÐUR en
+      // byggingataflan er komin. Þá voru engar `data-coid` → engin base →
+      // spjaldið fékk tómt, merkti sig `done` og vörnin sleppti ÖLLUM
+      // endurtilraunum að eilífu. Byggingalykillinn er því hluti af „same":
+      // fjölgi byggingunum (eða komi þær loksins) er teiknað upp á nýtt.
+      const same = card.dataset.dom === (dom || "") && card.dataset.coids === coidKey && document.contains(card);
       const busy = card.dataset.state === "loading" && Date.now() - (+card.dataset.ts || 0) < 15000;
       if (same && (card.dataset.state === "done" || busy)) return;
       card.remove(); card = null;
     }
     card = document.createElement("div");
-    card.className = "_samskipti-rf"; card.dataset.dom = dom || "";
+    card.className = "_samskipti-rf"; card.dataset.dom = dom || ""; card.dataset.coids = coidKey;
     card.dataset.state = "loading"; card.dataset.ts = String(Date.now());
     card.style.cssText = "margin:0 0 14px;border-left:4px solid #6366f1;background:var(--surface,#fff);border:1px solid var(--brd,#e2e8f0);border-left:4px solid #6366f1;border-radius:10px;padding:12px 14px;font-size:13px";
     if (slot) slot.appendChild(card); else info.parentNode.insertBefore(card, info.nextSibling);
-    // Byggingarnar í töflunni fyrir neðan bera data-coid (fyrirtaeki.id). Þær eru
-    // AÐAL-leiðin að póstinum núna (base → felag_samskipti) og líka lyklarnir að
-    // ✓-merkingunni (samskipti_stada) sem er sett á ALLAR byggingar í einu.
-    // Reiknað ÁÐUR en lén-vörnin tekur við: félag án skráðs netfangs á samt
-    // póstsögu ef byggingar þess tengjast base.
-    const coids = [...new Set([...info.parentNode.querySelectorAll("[data-coid]")]
-      .map(a => +a.getAttribute("data-coid")).filter(n => n > 0))];
     if (!dom && !coids.length) {
       card.innerHTML = '<div style="color:#94a3b8">💬 Engin netföng eða byggingar á félaginu — skráðu netfang til að sjá póstsögu.</div>';
       card.dataset.state = "done"; return;
