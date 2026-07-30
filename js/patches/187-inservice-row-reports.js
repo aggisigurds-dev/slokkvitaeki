@@ -58,18 +58,28 @@
   // úttektarskýrslum með fyrirtaeki_id duttu ~690 út og árs-dálkurinn sýndi
   // ranglega „vantar" (t.d. JDÓ ehf. 2026, sem situr í röð ~1687). Sækjum allar
   // síður. `mk` býr til NÝJAN query-builder í hvert sinn (þeir eru einnota).
+  // 2026-07-30: var RAÐBUNDIN blaðsíðu-sókn (beið eftir hverri síðu). Á
+  // customer_documents (3.512 raðir) eru það 4 sóknir í röð × ~0,6 s ≈ 2,4 s af
+  // hreinni bið. Nú er fyrsta síðan sótt með count:'exact' og allar hinar
+  // SAMHLIÐA → ein umferðartíð. Skilar sömu röðum; öryggisventillinn helst.
   async function fetchAll(mk){
-    const PAGE = 1000; let from = 0, out = [];
-    for (;;) {
-      const r = await mk().range(from, from + PAGE - 1);
-      if (r.error) break;
-      const rows = r.data || [];
-      out = out.concat(rows);
-      if (rows.length < PAGE) break;
-      from += PAGE;
-      if (from > 60000) break;            // öryggisventill
-    }
-    return out;
+    const PAGE = 1000;
+    try {
+      const r0 = await mk().range(0, PAGE - 1);
+      if (r0.error) return [];
+      let out = (r0.data || []).slice();
+      if (out.length < PAGE) return out;
+      // heildarfjöldi óþekktur hér (mk býr til fyrirspurn án count) → sækjum
+      // næstu síður samhliða í hóflegum skömmtum og hættum þegar síða er stutt.
+      for (let base = PAGE; base <= 60000; base += PAGE * 4) {
+        const offs = [base, base + PAGE, base + PAGE * 2, base + PAGE * 3];
+        const pages = await Promise.all(offs.map(o =>
+          mk().range(o, o + PAGE - 1).then(r => (r.error ? [] : (r.data || []))).catch(() => [])));
+        pages.forEach(p => { out = out.concat(p); });
+        if (pages.some(p => p.length < PAGE)) break;   // náðum enda
+      }
+      return out;
+    } catch (e) { console.warn('[inservice-rows] fetchAll', e); return []; }
   }
 
   let locMap = null, locLoading = false;
