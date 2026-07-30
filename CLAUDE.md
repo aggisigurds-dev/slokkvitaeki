@@ -486,6 +486,29 @@ button, `App.switchView` patched for the `#bakendi` deep-link + boot re-assert.
 `window.Bakendi = {open, reload}`. NB built in a parallel session as patch 231,
 then renumbered to **232** because Verkborð (#196) landed on slot 231 first.
 
+## Sjálfvirkur úttektartexti — `js/patches/294-uttektartexti.js` (2026-07-30)
+
+Þegar „✅ Staðfesta lista" er ýtt (patch 224 `.ut-listlock`) myndast textinn í
+„📝 Upplýsingar um úttekt" sjálfkrafa — Elías skrifaði hann áður í hverja skýrslu.
+**Orðalag og röð (Agnar/Elías, skjalfest):** (1) „Öll tæki yfirfarin og vottuð í
+lagi." → (2) hleðsla / ónýtt / ný tæki inn á milli → (3) hausskipti **alltaf beint
+á undan** → (4) „Brunaslöngur prófaðar á fullum þrýsting og vottaðar í lagi."
+Beygingar: brunaslanga kvenkyns (eina/tvær/þrjár), tæki hvorugkyns (eitt/tvö/þrjú).
+
+**Gögnin koma úr sömu heimild og reikningurinn** — `UnitServicePicker.getChoice`
+(131) + `DB.cache.units` + trip-state `extras` (hausar = vörur 356
+`Brunaslöngustútur 1"` / 352 / 128) — svo textinn getur aldrei sagt annað en
+reikningurinn. **Engin DOM-skröpun** (`.ut-svc` ber klasann `on`, ekki `active`;
+„Nýtt"/„Ónýtt" byrja eins). NB `getChoice` skilar SJÁLFGEFNU gildi fyrir ósnert
+tæki (duft→hleðsla, annað→yfirferð) — viljandi, því 129 rukkar eftir því sama.
+`none` (Sleppa) telst hvorki í heild né slöngutalningu.
+
+**Skrifar ALDREI yfir texta sem er þegar í reitnum** (`#_ctc-notes-ta`), vistar í
+`tripState.notes` (`slokk_trip_<coId>` — 227 speglar í skýið) svo textinn lifir
+endurhleðslu, og gerir ekkert við **afhök**. API: `window.Uttektartexti =
+{forskoda, fylla, skanna, hausar}` — `forskoda(coId)` skilar textanum án þess að
+skrifa neitt.
+
 ## Sjálfvirk PDF-vistun úttektar-skjala — `js/patches/233-uttekt-pdf-autosave.js` (+168/165)
 
 Þegar **úttektarskýrsla** er búin til (patch 168, „📄 Búa til úttektarskýrslu") eða
