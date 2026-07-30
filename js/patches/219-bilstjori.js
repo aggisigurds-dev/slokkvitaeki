@@ -547,7 +547,7 @@
    (≥820px, skrifstofan) er sími-ramminn miðjaður. */
 .bt .screen{max-width:100%;margin:0 auto;min-height:100vh;background:var(--page);padding-bottom:96px}
 .bt .screen--wide{max-width:900px}
-@media (min-width:820px){ .bt .screen{max-width:440px} }
+@media (min-width:1100px){ .bt .screen{max-width:440px} }
 .bt .topbar{position:sticky;top:0;z-index:20;background:var(--metb);border-bottom:1px solid #000;box-shadow:0 6px 18px -8px #000;display:flex;align-items:center;gap:13px;padding:13px 16px;color:#eef1f4}
 .bt .topbar__title{font-size:16px;font-weight:700}
 .bt .topbar__sub{font-family:var(--mono);font-size:11.5px;color:rgba(255,255,255,.5)}
@@ -636,7 +636,7 @@
 .bt .card--alert{border:1px solid #f3c6c4;background:linear-gradient(180deg,#fff,#fdf1f1)}
 .bt .card--alert .field{background:#fff}
 .bt .dock{position:fixed;left:0;right:0;bottom:0;z-index:30;max-width:100%;margin:0 auto;display:flex;gap:12px;padding:12px 14px;background:linear-gradient(180deg,rgba(65,69,77,0),rgba(65,69,77,.94) 42%)}
-@media (min-width:820px){ .bt .dock{max-width:440px} }
+@media (min-width:1100px){ .bt .dock{max-width:440px} }
 .bt .dock--wide{max-width:900px}
 .bt .dock .btn{flex:1;height:52px}
 /* Fyrirtækja-spjaldið (._bs-sheet) hefur transform meðan það rennur inn →
@@ -655,7 +655,7 @@
    (.bt .screen) can't reach them — add the same-element compound form. */
 .bt.screen{max-width:100%;margin:0 auto;min-height:100vh;background:var(--page);padding-bottom:96px}
 .bt.screen--wide{max-width:900px}
-@media (min-width:820px){ .bt.screen{max-width:440px} }
+@media (min-width:1100px){ .bt.screen{max-width:440px} }
 #${VIEW_ID}{position:fixed!important;inset:0!important;z-index:1000;overflow-y:auto;-webkit-overflow-scrolling:touch;background:#41454d}
 body.bs-active{overflow:hidden}
 body.bs-active > .topbar,body.bs-active nav.view-nav,body.bs-active .sidebar{display:none!important}

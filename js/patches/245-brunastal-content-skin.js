@@ -84,7 +84,11 @@ ${P}.view .tcard{
   border: 1px solid rgba(20,24,34,.08) !important;
   background: #fff !important;
   box-shadow: 0 10px 28px -16px rgba(25,35,60,.16) !important;
-  overflow: hidden !important;
+  /* overflow-x MÁ EKKI vera hidden — sjá athugasemdina við table-regluna neðar.
+     hidden hér klippti tækjalistann í Afgreiðslu-glugganum (678 px tafla sýnd
+     í 292 px) og efnið var ÓNÁANLEGT, ekki bara falið. */
+  overflow-y: hidden !important;
+  overflow-x: auto !important;
 }
 ${P}.view .tcard > .dtbl,
 ${P}.view .tcard table.dtbl{
@@ -137,7 +141,17 @@ ${P}.view table:not(.dtbl):not(.no-skin){
   border-collapse: collapse !important;
   background: #fff !important;
   border-radius: 14px !important;
-  overflow: hidden !important;
+  /* 2026-07-30 — ÞETTA DRAP ALLA LÁRÉTTA TÖFLU-SKRUNUN Á SÍMA OG SPJALDTÖLVU.
+     overflow:hidden hér sló út .view table{overflow-x:auto!important} í
+     mobile.css:66 — ekki vegna röðunar heldur SÉRTÆKNI: (0,3,1) á móti (0,1,1),
+     svo !important hinum megin bjargaði engu. Og af því html,body eru læst með
+     overflow-x:hidden (app.css:3559) birtist yfirflæði í þessu appi ALDREI sem
+     skrunstika — það birtist sem efni sem kemst aldrei á skjáinn.
+     Mælt: Bókhalds yfirlit 832 px ónáanleg á síma, Fyrirtæki í þjónustu 789 px
+     á spjaldtölvu (heimilisfang og skoðunardálkur alveg horfnir).
+     Y-ásinn er áfram hidden svo ávölu hornin haldist. */
+  overflow-y: hidden !important;
+  overflow-x: auto !important;
 }
 ${P}.view table:not(.dtbl):not(.no-skin) thead th{
   background: #eef1f6 !important;
