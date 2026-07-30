@@ -121,6 +121,18 @@
   // View mode — "list" (gamla miðjan, sjálfgefið / uppáhald) eða "cards".
   let _mode = (function () { try { return localStorage.getItem('sv_mode') || 'list'; } catch (_) { return 'list'; } })();
   function setMode(m) { _mode = m; try { localStorage.setItem('sv_mode', m); } catch (_) {} render(); }
+  // Skref-sía (2026-07-30, ósk Agnars: „sjá alla sem eru með það hakað — og hina
+  // líka"). Þrjár stöður per skref: '' (engin sía) → 'on' (✓ búið) → 'off'
+  // (⧗ vantar). Geymt svo sían haldist milli heimsókna á síðuna.
+  let _stepF = (function () { try { return JSON.parse(localStorage.getItem('sv_stepf') || '{}') || {}; } catch (_) { return {}; } })();
+  function cycleStepF(k) {
+    const cur = _stepF[k] || '';
+    const next = cur === '' ? 'on' : (cur === 'on' ? 'off' : '');
+    if (next) _stepF[k] = next; else delete _stepF[k];
+    try { localStorage.setItem('sv_stepf', JSON.stringify(_stepF)); } catch (_) {}
+    render();
+  }
+  function clearStepF() { _stepF = {}; try { localStorage.removeItem('sv_stepf'); } catch (_) {} render(); }
   // Röðun á Í-vinnslu listanum — "name" | "revenue" | "marked".
   let _sort = (function () { try { return localStorage.getItem('sv_sort') || 'name'; } catch (_) { return 'name'; } })();
   function setSort(s) { _sort = s; try { localStorage.setItem('sv_sort', s); } catch (_) {} render(); }
@@ -262,6 +274,18 @@
         // Tinted stat chips (Í vinnslu blue, Á dagskrá amber, Búið green) matching spec
         '#' + VIEW_ID + ' .sv-chip{font-family:"Space Grotesk",system-ui,sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#3a4250;cursor:pointer;display:inline-flex;align-items:center;gap:8px}',
         '#' + VIEW_ID + ' .sv-chip .n{font-family:"Space Mono",monospace;font-weight:700;color:inherit}',
+      // Skref-sía (2026-07-30) — sömu rólegu litir og chip-röðin fyrir ofan;
+      // virk sía fær dökka fyllingu (búið) eða gulbrúna (vantar) svo sjáist
+      // í einu augnkasti að listinn sé síaður.
+      '#' + VIEW_ID + ' .sv-stepf{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:0 2px 16px}',
+      '#' + VIEW_ID + ' .sv-stepf-lbl{font-size:12px;color:#8a93a5;font-weight:600}',
+      '#' + VIEW_ID + ' .sv-stepf-chip{font-family:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:99px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#3a4250;cursor:pointer;display:inline-flex;align-items:center;gap:6px}',
+      '#' + VIEW_ID + ' .sv-stepf-chip .n{font-family:"Space Mono",monospace;font-weight:700;opacity:.65}',
+      '#' + VIEW_ID + ' .sv-stepf-chip:hover{border-color:#94a3b8}',
+      '#' + VIEW_ID + ' .sv-stepf-chip.on{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);border-color:#0f6e3a;color:#fff}',
+      '#' + VIEW_ID + ' .sv-stepf-chip.on .n{opacity:.85}',
+      '#' + VIEW_ID + ' .sv-stepf-chip.off{background:#fdf6e7;border-color:#e3d8c1;color:#836a38}',
+      '#' + VIEW_ID + ' .sv-stepf-clear{font-family:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:99px;border:1px solid rgba(20,24,34,.14);background:#f6f8fb;color:#5b6472;cursor:pointer}',
         // Sort select — pill style
         '#' + VIEW_ID + ' .sv-sort{height:36px;border:1px solid rgba(20,24,34,.14)!important;border-radius:11px!important;background:#fff!important;color:#3a4250!important;font-weight:600!important;font-size:12.5px!important;cursor:pointer}',
         // Drawer (Á dagskrá / Búið expanded list)
@@ -694,6 +718,20 @@
     if (!_yearDocsLoaded && (window.Companies && Companies.list && Companies.list.length)) { _yearDocsLoaded = true; loadYearDocs(); }
     const b = buckets();
     b.vinnsla.sort(SORTERS[_sort] || SORTERS.name);   // röðun valin af notanda
+    // Skref-sían gildir á ÖLL þrjú hólfin svo talan á pillunni og listinn segi
+    // það sama. Margar síur = OG (öll skilyrðin þurfa að standast).
+    const stepKeys = Object.keys(_stepF);
+    const vinnslaAlls = b.vinnsla.length;
+    // Talan á hverjum síu-hnappi á ALLTAF að miðast við óhreyft þýði — annars
+    // rýrnuðu tölurnar við hverja síu og hnappurinn gæti aldrei sagt satt um
+    // hvað liggur að baki honum.
+    const _allRaw = b.dagskra.concat(b.vinnsla, b.buid);
+    if (stepKeys.length) {
+      const pass = r => stepKeys.every(k => (_stepF[k] === 'on' ? !!r.steps[k] : !r.steps[k]));
+      b.vinnsla = b.vinnsla.filter(pass);
+      b.dagskra = b.dagskra.filter(pass);
+      b.buid    = b.buid.filter(pass);
+    }
     const fmtSum = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.', ',') + ' m.kr.' : (n > 0 ? Math.round(n / 1000) + ' þ.kr.' : '');
     const vinnslaSum = b.vinnsla.reduce((s, r) => s + (+r.tekjur || 0), 0);
     // Yfirlitsband ársins — reiknað úr sömu gögnum og þegar eru hlaðin (skref +
@@ -809,10 +847,30 @@
         statChip('📄', ovSend, 'skýrsla send') +
         statChip('🧾', ovReik, 'reikningur sendur') +
       '</div>' +
+      // Skref-sía: einn hnappur per skref. Smellur: ✓ búið → ⧗ vantar → af.
+      '<div class="sv-stepf">' +
+        '<span class="sv-stepf-lbl">Sía eftir skrefi:</span>' +
+        STEP_DEFS.map(([k, lbl]) => {
+          const st = _stepF[k] || '';
+          const n = _allRaw.filter(r => (st === 'off' ? !r.steps[k] : !!r.steps[k])).length;
+          return '<button type="button" class="sv-stepf-chip' + (st ? ' ' + st : '') + '" data-stepf="' + k + '" ' +
+            'title="' + esc(lbl) + ' — smelltu: ✓ búið → ⧗ vantar → af">' +
+            (st === 'off' ? '⧗ ' : (st === 'on' ? '✓ ' : '')) + esc(lbl) +
+            ' <span class="n">' + n + '</span></button>';
+        }).join('') +
+        (stepKeys.length
+          ? '<button type="button" class="sv-stepf-clear">✕ Hreinsa síu</button>' +
+            '<span class="sv-stepf-lbl">' + b.vinnsla.length + ' af ' + vinnslaAlls + ' í vinnslu</span>'
+          : '') +
+      '</div>' +
       dagskraDrawer + buidDrawer + body + '</div>';
 
     // view-mode toggle
     v.querySelectorAll('.sv-seg button').forEach(bn => bn.addEventListener('click', () => setMode(bn.dataset.mode)));
+    // skref-sía
+    v.querySelectorAll('[data-stepf]').forEach(bn => bn.addEventListener('click', () => cycleStepF(bn.dataset.stepf)));
+    const clrF = v.querySelector('.sv-stepf-clear');
+    if (clrF) clrF.addEventListener('click', clearStepF);
     // sort
     const sortSel = v.querySelector('.sv-sort');
     if (sortSel) sortSel.addEventListener('change', e => setSort(e.target.value));
