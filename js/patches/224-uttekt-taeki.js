@@ -159,10 +159,35 @@
       var wrap = document.querySelector('.ut-list[data-uw-co="'+coId+'"]'); if(!wrap) return;
       var c = window.Companies && Companies.list && Companies.list.find(function(x){return x.id==coId;}); if(!c) return;
       wrap.innerHTML = inner(coId, DB.cache.units.filter(function(u){return u.client===c.nafn;}));
-    }
+    },
+    // Aðrir patchar (t.d. 270 sem læsir listanum sjálfkrafa við lok heimsóknar)
+    // geta kveikt á sama skrefi án þess að afrita rökin.
+    markListiStadfest: markListiStadfest,
+    isLocked: isUtLocked
   };
 
   function isUtLocked(coId){ try{ return localStorage.getItem('sk_ut_lock_'+coId)==='1'; }catch(_){ return false; } }
+  // Spegla staðfestingu listans í samstillta ársskoðunar-blobbinn
+  // (arsskodun_customers[<id>]) svo ÞjónustuVerkstæðið (190) geti sýnt skrefið
+  // „Tækjalisti staðfestur" — og hver/hvenær, eins og önnur skref bera.
+  // ÞRÖNGT patch á EITT fyrirtæki (deepMerge) — snertir aldrei aðra kúnna.
+  function markListiStadfest(coId, on){
+    try{
+      if(!window.AppSettings || !AppSettings.save) return;
+      var ar = new Date().getFullYear();
+      var cur = {};
+      try{ cur = (AppSettings.path('arsskodun_customers')||{})[String(coId)] || {}; }catch(_){}
+      var stepsKey='steps_'+ar, metaKey='steps_meta_'+ar;
+      var steps = Object.assign({}, cur[stepsKey]||{});
+      var meta  = Object.assign({}, cur[metaKey]||{});
+      var who=''; try{ who = localStorage.getItem('bs_employee')||''; }catch(_){}
+      if(on){ steps.taekjalisti = true; meta.taekjalisti = { by: who, at: Date.now() }; }
+      else  { steps.taekjalisti = false; delete meta.taekjalisti; }
+      var patch = {}; patch[stepsKey]=steps; patch[metaKey]=meta;
+      patch.listi_stadfest_ar = on ? ar : 0;
+      AppSettings.save({ arsskodun_customers: { [String(coId)]: patch } });
+    }catch(e){ try{ console.warn('[uttekt-taeki] listi-staðfesting', e); }catch(_){} }
+  }
   (function(){ if(document.getElementById('sk-utlock-css'))return; var s=document.createElement('style'); s.id='sk-utlock-css';
     s.textContent='.ut-listlock{display:block;width:100%;margin-top:12px;padding:13px;border-radius:12px;border:1px solid #c7ccd3;background:#eef1f4;color:#2b313a;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}'
       +'.ut-listlock.on{background:linear-gradient(180deg,#2f5d3f,#173524);color:#daffe8;border-color:#0e2417;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(0,0,0,.25)}'
@@ -178,6 +203,12 @@
       try{ on=localStorage.getItem(k)==='1'; }catch(_){}
       try{ on?localStorage.removeItem(k):localStorage.setItem(k,'1'); }catch(_){}
       var w=document.querySelector('.ut-list[data-uw-co="'+lco+'"]'); if(w) w.classList.toggle('locked', !on);
+      // 2026-07-30 (ósk Agnars): staðfesting listans kveikir á „Tækjalisti
+      // staðfestur"-skrefinu á ÞjónustuVerkstæðinu (patch 190). Lásinn sjálfur
+      // er localStorage — TÆKJABUNDINN — svo skrifstofan sá hann aldrei; hér er
+      // hann speglaður í arsskodun_customers sem samstillist milli allra véla.
+      // Ártal (ekki bool) svo það núllist um áramót eins og önnur skref.
+      markListiStadfest(lco, !on);
       UttektTaeki.rerender(lco); return;
     }
     if((b=e.target.closest('.ut-svc'))){

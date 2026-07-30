@@ -43,6 +43,10 @@
   // Sama arsskodun_customers-blob og skrefin sjálf, svo þetta samstillist strax
   // milli tækja og allir sjá hver er kominn í hvaða skýrslu.
   const STEPS_META_KEY = 'steps_meta_' + curYear;
+  // Ártalið sem tækjalistinn var staðfestur í ársskoðun (patch 224 skrifar það
+  // við „✅ Staðfesta lista"). Ártal en ekki bool svo það núllist um áramót eins
+  // og hin skrefin — sami samstillti blob, svo allar vélar sjá staðfestinguna.
+  const LISTI_KEY = 'listi_stadfest_ar';
   // Nafnið er SAMEIGINLEGT með bílstjóra-appinu (patch 219, localStorage
   // bs_employee) svo starfsmaður velji sig einu sinni — hvort sem hann byrjar
   // í bílnum eða á skrifstofunni.
@@ -60,9 +64,14 @@
     const when = sameDay ? hhmm : (d.getDate() + '.' + (d.getMonth() + 1) + '. ' + hhmm);
     return (m.by ? m.by + ' · ' : '') + when;
   }
+  // 2026-07-30 (ósk Agnars): „Tækjalisti staðfestur" milli þess að vera á
+  // staðnum og að úttektin teljist búin — skrefið kviknar SJÁLFT þegar listinn
+  // er staðfestur í ársskoðun (patch 224 „✅ Staðfesta lista"), svo skrifstofan
+  // sér að tækin séu talin án þess að nokkur haki sérstaklega hér.
   const STEP_DEFS = [
     ['farid',       'Farið á verkstað', 'Farið'],
     ['averkstaedi', 'Á verkstæði',      'Verkst.'],
+    ['taekjalisti', 'Tækjalisti staðfestur', 'Tækjalisti'],
     ['uttekt',      'Úttekt búin',      'Úttekt'],
     ['skyrsla',    'Skýrsla tilbúin',  'Skýrsla'],
     ['send',       'Skýrsla send',     'Send'],
@@ -89,8 +98,14 @@
     // „Á verkstæði" er líka undanfari úttektar — og „Farið á verkstað" undanfari
     // beggja. Leiða þau af úttektinni svo eldri/afleidd kort standi ekki með tóm
     // fyrstu skref á eftir grænni úttekt.
-    if (s.averkstaedi === undefined && s.uttekt) s.averkstaedi = true;
-    if (s.farid === undefined && (s.uttekt || s.averkstaedi)) s.farid = true;
+    // Tækjalistinn er UNDANFARI úttektarinnar (talið áður en úttekt telst búin)
+    // og er líka lesinn beint úr ársskoðunar-lásnum (`listi_stadfest_<ár>`) sem
+    // patch 224 skrifar við „✅ Staðfesta lista" — svo hakið kviknar þótt enginn
+    // smelli hér. Skýrt afhak (false) vinnur alltaf, eins og á öðrum skrefum.
+    if (s.taekjalisti === undefined && +a[LISTI_KEY] === curYear) s.taekjalisti = true;
+    if (s.taekjalisti === undefined && s.uttekt) s.taekjalisti = true;
+    if (s.averkstaedi === undefined && (s.uttekt || s.taekjalisti)) s.averkstaedi = true;
+    if (s.farid === undefined && (s.uttekt || s.averkstaedi || s.taekjalisti)) s.farid = true;
     return s;
   }
   // Bráðabirgða-merkingar (single-select) á hverju Í-vinnslu korti.
