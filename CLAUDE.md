@@ -3,7 +3,14 @@
 This file is read by Claude Code at the start of every session in this folder.
 It contains everything Claude Code needs to know to be useful immediately.
 
-> **📖 ALSO READ**: [`docs/CLAUDE-LEIDBEININGAR.md`](docs/CLAUDE-LEIDBEININGAR.md) — operational playbook
+> **📖 ALSO READ**: [`docs/STADREYNDIR.md`](docs/STADREYNDIR.md) — sannreyndar
+> grunnstaðreyndir (kúnna-líkanið, töflur, vinnureglur) — **lesa á undan öllu öðru
+> þegar spurning snýst um viðskiptavini/gögn**; and
+> [`docs/CLAUDE-LEIDBEININGAR.md`](docs/CLAUDE-LEIDBEININGAR.md) — operational playbook
+>
+> **📋 Í upphafi vinnu-session:** líta á opin verk á Verkefnalistanum —
+> `GET https://brunaholf.netlify.app/api/verkefnalisti` (beidni/i_vinnu) — áður en
+> nýtt verk er hafið (Agnar 2026-07-30).
 > covering the customer-DB architecture, Verkfærakassi, walk-in convention (kt
 > `999999-9999`), rekstrarfélög-staðsettningar rule, email priorities, and known
 > gotchas. Updated continuously as Agnar gives new context.
@@ -777,6 +784,12 @@ reikningar/samningar úr Drive, keyed base+`fyrirtaeki_id`+`year`; ein ársskýr
 per (staður,ár); reikningar á R-nr; `is_duplicate`). **`solur`** + **`payday_
 invoices_slokk`** (kt digits-only) tengjast eftir **kt**. Walk-in = kt `999999-9999`.
 
+**Forgangsröð kúnna-taflna (Agnar 2026-07-30):** AÐAL-viðskiptavinirnir eru
+**`customers_base`** („Allir viðskiptavinir", kanóníski hryggurinn) og **`fyrirtaeki`
+með `er_i_thjonustu=true`** („Fyrirtæki í þjónustu" — þjónustukúnnarnir sem reksturinn
+snýst um). **`vidskiptavinir` er LÆGSTA þrepið** (einstaklingar/legacy) — ekki nota
+sem aðal-uppflettingu eða fyrsta svar við „hvar eru viðskiptavinirnir".
+
 **🗺️ Kerfis-kort** — lifandi einnar-síðu yfirlit yfir ALLA viðskiptavini + tengingar
 + heilsu (2023–2026 skjöl per ár, ótengd/tvítök/án-kt flögg). Á **brunaholf.netlify.
 app/kerfiskort.html** (Brunahólf-megin, því skjöl/Drive-tólin lifa þar). Sýnin
@@ -786,8 +799,10 @@ birtast skjöl+Payday á fyrirtækja-prófílnum í „📁 Skjöl & viðhengi" 
 
 ## Related projects (in case Agnar mentions them)
 
-- **Brunahólf** — sister business, separate ecosystem (Google Sheets + Apps Script
-  + Tímavera + Ajour). See COWORK-brunaholf.md if relevant.
+- **Brunahólf** — MÓÐURFÉLAGIÐ (Brunahólf ehf á Slökkvitæki ehf — Agnar
+  2026-07-30), separate ecosystem (Google Sheets + Apps Script + Tímavera +
+  Ajour). Hub-inn brunaholf.netlify.app er stjórnstöðin/bakendinn með dýpri
+  tólum um Slökkvitæki líka. See COWORK-brunaholf.md if relevant.
 - **Slökkvitæki app** — this project. Pure code, lives on Netlify + Supabase.
 
 ## graphify
