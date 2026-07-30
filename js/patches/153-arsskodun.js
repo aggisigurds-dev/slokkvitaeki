@@ -675,6 +675,22 @@
     } else if (state.status === 'priority') {
       // 2026-05-26: damage-control filter — show only flagged priority cases.
       arr = arr.filter(c => +(c._ars.priority || 0) > 0);
+    } else if (state.status === 'ivinnslu') {
+      // „Í vinnslu" = úttekt hafin á árinu en árið ekki klárað. Sama regla og
+      // dökkbláa „Í vinnslu"-pillan í töflunni notar (field_inspected_year), svo
+      // sían og merkið á röðinni segja ALLTAF það sama.
+      arr = arr.filter(c => +(c._ars.field_inspected_year || 0) === curYear &&
+                            (+c._ars.last_year_inspected || 0) < curYear);
+    } else if (state.status === 'akstur') {
+      // Allir sem eru á akstursleið (1/2/3). Lesið gegnum ArsAkstur eins og
+      // 🚗-chippinn í töflunni — ekki beint úr blobbinu, svo leiðin sem patch
+      // 267 heldur utan um sé eina heimildin.
+      arr = arr.filter(c => ((window.ArsAkstur && ArsAkstur.of) ? (+ArsAkstur.of(c.id) || 0) : (+(c._ars || {}).akstur || 0)) > 0);
+    }
+    // Akstursleiðin röðuð 1 → 2 → 3 svo listinn lesist eins og keyrsludagurinn.
+    if (state.status === 'akstur') {
+      const AK = c => (window.ArsAkstur && ArsAkstur.of) ? (+ArsAkstur.of(c.id) || 0) : (+(c._ars || {}).akstur || 0);
+      arr.sort((a, b) => AK(a) - AK(b) || String(a.nafn || '').localeCompare(String(b.nafn || ''), 'is'));
     }
     // Sort by priority (red > yellow > green > none) first, then by other criteria
     // — but only when filtering by priority (otherwise the existing sort flow wins)
@@ -1016,6 +1032,8 @@
        : state.status === 'pending' ? `Á eftir + sleppt (allir mánuðir)`
        : state.status === 'pending2026' ? `Eftir ${curYear} — allt óbúið (allir mánuðir)`
        : state.status === 'suspect' ? `Óvíst — líklega óvart í þjónustu (engin saga, enginn mánuður, engin tæki)`
+       : state.status === 'ivinnslu'? `Í vinnslu`
+       : state.status === 'akstur'  ? `Aksturslisti`
        : state.status === 'never'   ? `Aldrei skoðað`
        : `Allir mánuðir ${curYear}`);
     // 2026-07-28: meðan leitað er gilda ENGAR síur (sjá filteredSorted), svo
@@ -1089,7 +1107,11 @@
               { v: 'never', label: '⛔ Aldrei' },
               // 2026-07-28: handvirka NÝTT-merkið (patch 281 — takki á
               // fyrirtækjaprófílnum). Sama merki og sía og í Brunakerfi yfirliti.
-              { v: 'nytt', label: '🆕 Nýtt' }
+              { v: 'nytt', label: '🆕 Nýtt' },
+              // 2026-07-30 (ósk Agnars): tvær síur í viðbót — vinnan sem er
+              // hafin en óklárðuð, og allir sem eru á akstursleið.
+              { v: 'ivinnslu', label: '🔧 Í vinnslu' },
+              { v: 'akstur', label: '🚗 Aksturslisti' }
             ].map(s => `
               <button data-status="${s.v}" class="_ars-st" style="padding:7px 11px;border:none;background:${state.status===s.v?'var(--brand)':'var(--surface)'};color:${state.status===s.v?'#fff':'var(--ink2)'};cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${esc(s.label)}</button>
             `).join('')}
@@ -1315,6 +1337,8 @@
        : state.status === 'pending'     ? 'Á eftir + sleppt'
        : state.status === 'pending2026' ? `Eftir ${curYear}`
        : state.status === 'suspect'     ? 'Óvíst — líklega óvart í þjónustu'
+       : state.status === 'ivinnslu'    ? 'Í vinnslu'
+       : state.status === 'akstur'      ? 'Aksturslisti'
        : state.status === 'never'       ? 'Aldrei skoðað'
        : state.status === 'skipped2025' ? 'Slepptir í fyrra'
        : state.status === 'priority'    ? 'Forgangur'

@@ -386,6 +386,9 @@
           listAuto = true;
           const w = document.querySelector('.ut-list[data-uw-co="' + coId + '"]');
           if (w) w.classList.add('locked');
+          // Speglar líka „Tækjalisti staðfestur"-skrefið á ÞjónustuVerkstæðið
+          // (190) svo sjálfvirka læsingin sjáist þar eins og handvirk (224).
+          try { if (window.UttektTaeki && UttektTaeki.markListiStadfest) UttektTaeki.markListiStadfest(coId, true); } catch (_) {}
           if (window.UttektTaeki && UttektTaeki.rerender) UttektTaeki.rerender(coId);
         }
       } catch (_) {}
