@@ -180,7 +180,47 @@
   };
 
   const T = { rows: null, loading: false, err: null, q: "", group: "all", sortKey: "nafn", sortDir: 1 };
-  const SORT_DEF = { nafn: 1, sidasti_postur: -1, inspect_month: 1, isk_ogreitt: -1 };
+  const SORT_DEF = { nafn: 1, sidasti_postur: -1, inspect_month: 1, isk_ogreitt: -1, osv: -1 };
+
+  // ✓ Afgreitt (2026-07-30, ósk Agnars: „leyfa mér að mark done").
+  // samskipti_stada (PK fyrirtaeki_id) geymir hvenær erindi félags var síðast
+  // afgreitt. Virkt ósvarað = 0 ef handled_at nær yfir síðasta póst — annars
+  // osvarad-talan úr crm_cache. Merkingin samstillist því milli tækja og
+  // klukkutíma-cache-inn getur ekki endurvakið hana.
+  let HANDLED = {};                       // fyrirtaeki_id → handled_at
+  async function tFetchHandled() {
+    try {
+      const res = await fetch(U + "/rest/v1/samskipti_stada?select=fyrirtaeki_id,handled_at", { headers: H });
+      const rows = await res.json();
+      HANDLED = {};
+      (Array.isArray(rows) ? rows : []).forEach(r => { HANDLED[r.fyrirtaeki_id] = r.handled_at; });
+    } catch (e) { console.warn("[tbord] samskipti_stada", e); }
+  }
+  function effOsv(r) {
+    const h = HANDLED[r.fyrirtaeki_id];
+    if (h && r.sidasti_postur && h >= r.sidasti_postur) return 0;
+    return +r.osvarad || 0;
+  }
+  function whoAmI() {
+    try { return localStorage.getItem("ky_me") || localStorage.getItem("bs_employee") || ""; } catch (_) { return ""; }
+  }
+  // Merkir afgreitt fyrir ALLAR byggingar sem deila sama base — pósturinn
+  // liggur á félaginu, svo ein bygging afgreidd = félagið afgreitt.
+  async function tMark(ids) {
+    const nu = new Date().toISOString();
+    const body = ids.map(id => ({ fyrirtaeki_id: id, handled_at: nu, handled_by: whoAmI(), updated_at: nu }));
+    const res = await fetch(U + "/rest/v1/samskipti_stada?on_conflict=fyrirtaeki_id", {
+      method: "POST",
+      headers: Object.assign({ "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" }, H),
+      body: JSON.stringify(body)
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    ids.forEach(id => { HANDLED[id] = nu; });
+  }
+  function baseSiblings(r) {
+    if (!r.customer_base_id) return [r.fyrirtaeki_id];
+    return (T.rows || []).filter(x => x.customer_base_id === r.customer_base_id).map(x => x.fyrirtaeki_id);
+  }
 
   async function tFetch() {
     const SB = getSB();
@@ -207,7 +247,7 @@
     if (T.loading) return;
     if (T.rows && !force) { tRender(); return; }
     T.loading = true; T.err = null; tRender();
-    try { T.rows = await tFetch(); } catch (e) { T.err = e.message || String(e); }
+    try { const both = await Promise.all([tFetch(), tFetchHandled()]); T.rows = both[0]; } catch (e) { T.err = e.message || String(e); }
     T.loading = false; tRender();
   }
 
@@ -219,6 +259,7 @@
       else if (k === "sidasti_postur") v = (new Date(a.sidasti_postur || 0)) - (new Date(b.sidasti_postur || 0));
       else if (k === "inspect_month") v = (a.inspect_month == null ? 99 : a.inspect_month) - (b.inspect_month == null ? 99 : b.inspect_month);
       else if (k === "isk_ogreitt") v = (+a.isk_ogreitt || 0) - (+b.isk_ogreitt || 0);
+      else if (k === "osv") v = effOsv(a) - effOsv(b);
       return v * dir || String(a.nafn || "").localeCompare(String(b.nafn || ""), "is");
     });
   }
@@ -236,8 +277,11 @@
   function tdPostur(r) {
     if (!r.sidasti_postur) return '<span class="tbord-mut">—</span>';
     const efni = String(r.sidasta_efni || "").slice(0, 60) + (String(r.sidasta_efni || "").length > 60 ? "…" : "");
-    const svara = r.sidasti_fra_okkur === false && r.osvarad > 0
-      ? ' <span class="tbord-osv" title="Ósvarað — síðasti póstur frá viðskiptavini">↩︎ <b>' + r.osvarad + "</b></span>" : "";
+    const eo = effOsv(r);
+    const svara = r.sidasti_fra_okkur === false && eo > 0
+      ? ' <span class="tbord-osv" title="Ósvarað — síðasti póstur frá viðskiptavini">↩︎ <b>' + eo + "</b></span>"
+      : (HANDLED[r.fyrirtaeki_id] && (+r.osvarad || 0) > 0
+         ? ' <span class="tbord-ok" title="Merkt afgreitt ' + esc(relD(HANDLED[r.fyrirtaeki_id])) + '">✓</span>' : "");
     return '<div class="tbord-rel">' + esc(relD(r.sidasti_postur)) + svara + "</div>" +
       '<div class="tbord-sub" title="' + esc(r.sidasta_efni || "") + '">' + esc(efni) + "</div>";
   }
@@ -258,17 +302,19 @@
     return '<span class="tbord-red">' + esc(fmtISK(isk)) + "</span>" + (n ? '<span class="tbord-sub"> (' + n + ")</span>" : "");
   }
   function tRow(r) {
-    return '<tr class="tbord-row" data-id="' + esc(r.fyrirtaeki_id) + '">' +
+    const eo = effOsv(r);
+    return '<tr class="tbord-row" data-id="' + esc(r.fyrirtaeki_id) + '" data-base="' + esc(r.customer_base_id || "") + '">' +
       '<td><div class="tbord-nafn">' + esc(r.nafn || "—") + "</div>" +
       (r.heimilisfang ? '<div class="tbord-sub">' + esc(r.heimilisfang) + "</div>" : "") + "</td>" +
       "<td>" + (r.rekstrarfelag ? esc(r.rekstrarfelag) : '<span class="tbord-mut">—</span>') + "</td>" +
       "<td>" + tdPostur(r) + "</td>" +
+      '<td class="tbord-nowrap tbord-osvtd">' + (eo > 0 ? '<span class="tbord-osv">↩︎ <b>' + eo + "</b></span>" : '<span class="tbord-mut">—</span>') + "</td>" +
       "<td>" + tdSkodun(r) + "</td>" +
       '<td class="tbord-nowrap">' + tdSkjol(r) + "</td>" +
       '<td class="tbord-nowrap">' + tdOgreitt(r) + "</td></tr>";
   }
   function tBody(rows) {
-    if (!rows.length) return '<tr><td colspan="6" class="tbord-empty">Ekkert félag fannst.</td></tr>';
+    if (!rows.length) return '<tr><td colspan="7" class="tbord-empty">Ekkert félag fannst.</td></tr>';
     if (T.group !== "rf") return rows.map(tRow).join("");
     const groups = new Map();
     rows.forEach(r => {
@@ -281,8 +327,8 @@
     return keys.map(k => {
       const g = groups.get(k);
       const sum = g.reduce((s, r) => s + (+r.isk_ogreitt || 0), 0);
-      const osv = g.reduce((s, r) => s + (+r.osvarad || 0), 0);
-      return '<tr class="tbord-ghead"><td colspan="6">' +
+      const osv = g.reduce((s, r) => s + effOsv(r), 0);
+      return '<tr class="tbord-ghead"><td colspan="7">' +
         esc(k === "\u0000" ? "— Sjálfstæð —" : k) +
         ' <span class="tbord-gsub">· ' + g.length + " félög" +
         (sum > 0 ? ' · <span class="tbord-red">' + esc(fmtISK(sum)) + " ógreitt</span>" : "") +
@@ -314,6 +360,7 @@
       '<button data-g="rf" class="' + (T.group === "rf" ? "on" : "") + '">Eftir rekstrarfélagi</button></div></div>' +
       '<div class="tbord-tblwrap"><table class="tbord-tbl"><thead><tr>' +
       th("nafn", "Fyrirtæki") + th(null, "Rekstrarfélag") + th("sidasti_postur", "Síðasti póstur") +
+      th("osv", '↩︎', ' title="Ósvöruð erindi — smelltu til að raða"') +
       th("inspect_month", "Skoðun") + th(null, "Skjöl") + th("isk_ogreitt", "Ógreitt") +
       "</tr></thead><tbody>" + tBody(rows) + "</tbody></table></div>";
     const qEl = host.querySelector("#tbord-q");
@@ -329,15 +376,106 @@
       if (T.sortKey === k) T.sortDir *= -1; else { T.sortKey = k; T.sortDir = SORT_DEF[k] || 1; }
       tRender();
     }));
+    // 2026-07-30 (ósk Agnars: „klárað almennilega samskiptasöguna … leyfa mér að
+    // mark done"): smellur á röð opnar SAMSKIPTASÖGU-skúffu undir henni í stað
+    // þess að stökkva beint á fyrirtækið — „Opna fyrirtæki →" er hnappur í
+    // skúffunni svo gamla leiðin týnist ekki.
     host.querySelector("tbody").addEventListener("click", e => {
+      const mark = e.target.closest("[data-mark]");
+      if (mark) { e.stopPropagation(); tDoMark(mark); return; }
+      const opn = e.target.closest("[data-opna]");
+      if (opn) {
+        e.stopPropagation();
+        const id = +opn.getAttribute("data-opna");
+        try {
+          if (window.Companies && Companies.openDetail) Companies.openDetail(id);
+          else if (window.VidskDetail && VidskDetail.show) VidskDetail.show(id);
+        } catch (err) { console.warn("[tbord] openDetail", err); }
+        return;
+      }
       const tr = e.target.closest("tr.tbord-row");
       if (!tr) return;
-      const id = tr.getAttribute("data-id");
-      try {
-        if (window.Companies && Companies.openDetail) Companies.openDetail(isNaN(id) ? id : parseInt(id, 10));
-        else if (window.VidskDetail && VidskDetail.show) VidskDetail.show(parseInt(id, 10));
-      } catch (err) { console.warn("[tbord] openDetail", err); }
+      tToggleDrawer(tr);
     });
+  }
+
+  // ── Samskiptasaga-skúffan ──────────────────────────────────────────────────
+  const SAGA_CACHE = {};   // lykill base:ID eða f:ID → raðir
+  async function tSaga(r) {
+    const key = r.customer_base_id ? "base:" + r.customer_base_id : "f:" + r.fyrirtaeki_id;
+    if (SAGA_CACHE[key]) return SAGA_CACHE[key];
+    const sel = "select=email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,fyrirtaeki_id,fyrirtaeki_nafn,via";
+    const url = r.customer_base_id
+      ? U + "/rest/v1/felag_samskipti?" + sel + "&customer_base_id=eq." + r.customer_base_id + "&order=received_at.desc&limit=40"
+      : U + "/rest/v1/fyrirtaeki_samskipti?select=email_id,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at&fyrirtaeki_id=eq." + r.fyrirtaeki_id + "&order=received_at.desc&limit=40";
+    const res = await fetch(url, { headers: H });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const rows = await res.json();
+    SAGA_CACHE[key] = Array.isArray(rows) ? rows : [];
+    return SAGA_CACHE[key];
+  }
+  function tSagaHtml(r, mails) {
+    const h = HANDLED[r.fyrirtaeki_id] || "";
+    const eo = effOsv(r);
+    const head =
+      '<div class="tbord-dhead">' +
+      '<button class="tbord-btn" data-opna="' + esc(r.fyrirtaeki_id) + '">Opna fyrirtæki →</button>' +
+      (eo > 0
+        ? '<button class="tbord-btn tbord-markbtn" data-mark="' + esc(r.fyrirtaeki_id) + '">✓ Merkja afgreitt</button>'
+        : (h ? '<span class="tbord-ok">✓ Afgreitt ' + esc(relD(h)) + "</span>" : "")) +
+      '<span class="tbord-note">' + mails.length + " póstar" + (r.customer_base_id ? " á félaginu (allar byggingar)" : "") + "</span></div>";
+    if (!mails.length) return head + '<div class="tbord-note" style="padding:8px 2px">Engin póstsaga — ekkert netfang tengt, eða enginn póstur enn.</div>';
+    const list = mails.map(m => {
+      const open = m.is_question && !m.fra_okkur && (!h || m.received_at > h);
+      const via = m.fyrirtaeki_nafn ? '<span class="tbord-via" title="Tengt á byggingu (' + esc(m.via || "") + ')">📍 ' + esc(m.fyrirtaeki_nafn) + "</span>" : "";
+      return '<div class="tbord-mail' + (open ? " open" : "") + '">' +
+        '<div class="tbord-mailmeta">' + esc(relD(m.received_at)) + " · " +
+        esc(m.fra_okkur ? "Slökkvitæki ehf" : (m.sender_name || m.sender_email || "")) +
+        (open ? ' · <b class="tbord-osv">spurning — ósvarað</b>' : "") + " " + via + "</div>" +
+        '<div class="tbord-mailsubj">' + esc(m.subject || "(ekkert efni)") + "</div>" +
+        (m.snippet ? '<div class="tbord-mailsnip">' + esc(String(m.snippet).slice(0, 220)) + "</div>" : "") +
+        "</div>";
+    }).join("");
+    return head + '<div class="tbord-maillist">' + list + "</div>";
+  }
+  async function tToggleDrawer(tr) {
+    const nxt = tr.nextElementSibling;
+    if (nxt && nxt.classList.contains("tbord-drawer")) { nxt.remove(); tr.classList.remove("is-open"); return; }
+    // loka öðrum opnum
+    tr.closest("tbody").querySelectorAll("tr.tbord-drawer").forEach(d => { const p = d.previousElementSibling; if (p) p.classList.remove("is-open"); d.remove(); });
+    const id = +tr.getAttribute("data-id");
+    const r = (T.rows || []).find(x => x.fyrirtaeki_id === id);
+    if (!r) return;
+    tr.classList.add("is-open");
+    const d = document.createElement("tr");
+    d.className = "tbord-drawer";
+    d.innerHTML = '<td colspan="7"><div class="tbord-dbox">Sæki póstsögu…</div></td>';
+    tr.after(d);
+    try {
+      const mails = await tSaga(r);
+      if (!d.isConnected) return;
+      d.querySelector(".tbord-dbox").innerHTML = tSagaHtml(r, mails);
+    } catch (e) {
+      if (d.isConnected) d.querySelector(".tbord-dbox").innerHTML = '<span style="color:#b91c1c">Villa: ' + esc(e.message || e) + "</span>";
+    }
+  }
+  async function tDoMark(btn) {
+    const id = +btn.getAttribute("data-mark");
+    const r = (T.rows || []).find(x => x.fyrirtaeki_id === id);
+    if (!r) return;
+    btn.disabled = true; btn.textContent = "⏳ …";
+    try {
+      await tMark(baseSiblings(r));
+      // uppfæra skúffuna + röðina á staðnum
+      const drawer = btn.closest("tr.tbord-drawer");
+      const row = drawer && drawer.previousElementSibling;
+      const mails = await tSaga(r);
+      if (drawer) drawer.querySelector(".tbord-dbox").innerHTML = tSagaHtml(r, mails);
+      if (row) row.outerHTML = tRow(r) ;
+    } catch (e) {
+      btn.disabled = false; btn.textContent = "✓ Merkja afgreitt";
+      alert("Tókst ekki að merkja: " + (e.message || e));
+    }
   }
 
   function tStyle() {
@@ -371,7 +509,21 @@
       ".tbord-ghead td{background:#0f172a;color:#fff;font-weight:800;font-size:12.5px;padding:7px 10px}" +
       ".tbord-gsub{font-weight:400;color:#cbd5e1}" +
       ".tbord-ghead .tbord-red{color:#fca5a5}.tbord-ghead .tbord-osv{background:transparent;padding:0;color:#fca5a5}" +
-      ".tbord-empty{text-align:center;color:#94a3b8;padding:26px}";
+      ".tbord-empty{text-align:center;color:#94a3b8;padding:26px}" +
+      ".tbord-osvtd{text-align:center}" +
+      ".tbord-ok{color:#0f6e3a;font-weight:700;font-size:12px;white-space:nowrap}" +
+      ".tbord-row.is-open td{background:#eef2ff}" +
+      ".tbord-drawer td{background:#f8fafc;border-bottom:2px solid #c7d2fe;padding:0}" +
+      ".tbord-dbox{padding:12px 16px 14px}" +
+      ".tbord-dhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}" +
+      ".tbord-markbtn{border-color:#156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;font-weight:700}" +
+      ".tbord-maillist{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow:auto}" +
+      ".tbord-mail{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 11px}" +
+      ".tbord-mail.open{background:#fef2f2;border-color:#fecaca}" +
+      ".tbord-mailmeta{font-size:11.5px;color:#64748b}" +
+      ".tbord-mailsubj{font-weight:600;font-size:13px}" +
+      ".tbord-mailsnip{font-size:12px;color:#64748b}" +
+      ".tbord-via{background:#eef2ff;border:1px solid #c7d2fe;color:#4338ca;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:700;white-space:nowrap}";
     document.head.appendChild(s);
   }
 
