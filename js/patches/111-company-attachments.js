@@ -96,7 +96,10 @@
     const existing = parseInt(cur.last_year_inspected, 10) || 0;
     if (y <= existing) return;            // already marked this year or newer
     cur.co_id = coId;
-    cur.last_year_inspected = String(y);
+    // 2026-07-30: geymt sem TALA (var String(y)). Patch 266 ber saman með === við
+    // curYear (tölu), svo "2026" === 2026 var alltaf false og félag sem varð grænt
+    // við að hengja við úttektarskýrslu datt aftur í 🔵 „Í vinnslu" á Verkstæðinu.
+    cur.last_year_inspected = y;
     // AppSettings.save deep-merges, so this only touches last_year_inspected.
     await window.AppSettings.save({ [ARS]: { [String(coId)]: cur } });
     try { document.dispatchEvent(new CustomEvent('arsskodun-marking-changed', { detail: { coId, year: y } })); } catch (_) {}

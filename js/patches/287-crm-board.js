@@ -19,11 +19,34 @@
 
   let DATA = null, filter = "all", q = "";
 
-  const btn = document.createElement("button");
-  btn.textContent = "📇 Samskipti";
-  btn.style.cssText = "position:fixed;bottom:18px;right:18px;z-index:9998;background:#4f46e5;color:#fff;border:0;border-radius:99px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(79,70,229,.4)";
-  btn.addEventListener("click", open);
-  document.body.appendChild(btn);
+  // 2026-07-30 (ósk Agnars): ENGINN fljótandi hnappur á öllum síðum lengur —
+  // hann sat fastur neðst til hægri yfir hverri einustu síðu og skyggði á efni.
+  // Samskiptaborðið opnast núna AÐEINS úr Þjónustuverki (Verkborð, patch 231):
+  // við skjótum chip inn í fyrstu stjórn-röðina (.vb-scroll) þegar sú síða er
+  // sýnileg. Borðið sjálft (open()) er óbreytt og líka aðgengilegt gegnum
+  // window.CrmBoard.open() fyrir aðra kalla.
+  const CHIP_ID = "_crm-open-chip";
+  function mountChip() {
+    const v = document.getElementById("view-verkbord");
+    if (!v) return;
+    const r = v.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return;        // ekki sýnilegt
+    if (v.querySelector("#" + CHIP_ID)) return;         // þegar til
+    const row = v.querySelector(".vb-scroll");
+    if (!row) return;
+    const b = document.createElement("button");
+    b.id = CHIP_ID;
+    b.type = "button";
+    b.textContent = "📇 Samskipti";
+    b.style.cssText = "border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:6px 13px;font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap";
+    b.addEventListener("click", open);
+    row.appendChild(b);
+  }
+  let _mt = null;
+  const scheduleMount = () => { clearTimeout(_mt); _mt = setTimeout(() => { try { mountChip(); } catch (_) {} }, 200); };
+  new MutationObserver(scheduleMount).observe(document.body, { childList: true, subtree: true });
+  scheduleMount();
+  window.CrmBoard = { open };
 
   function badge(r) {
     if (r.osvarad > 0) return ["🔴", "Ósvöruð spurning í pósti"];
