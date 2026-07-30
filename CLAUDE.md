@@ -34,7 +34,11 @@ maps.
 
 ## Stack
 
-- **Hosting**: Netlify (static site, no build step)
+- **Hosting**: Netlify. TVÆR deploy-leiðir keyra á hverja ýtingu og birta nú SAMA dist
+  (2026-07-30, #524): GitHub Actions (build-dist → netlify-cli) OG Netlify Git-tengingin
+  ([build] í netlify.toml keyrir sama build-dist). Deploy-preview á PR-um eru því eins
+  og framleiðslan. NB build-dist bundlar ~280 patch-skrár í 6 minified bundle —
+  esbuild skrifar broddstafi sem \uXXXX svo grep á bundle þarf python/unicode-escape.
 - **Backend**: Supabase (PostgreSQL + Storage + Realtime)
 - **Frontend**: Plain HTML/CSS/vanilla JS — no framework, no bundler
 - **Map**: Leaflet
