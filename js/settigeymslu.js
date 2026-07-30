@@ -55,7 +55,7 @@ async function moveJobToStorage(jobId,shelf){
   var newNotes=(job.notes||'')+(job.notes?'\n':'')+'[Geymsla: '+shelf+' · '+(new Date()).toLocaleDateString('is-IS')+']';
   await DB.sb.from('verkbeidnir').update({notes:newNotes,status:'i_geymslu'}).eq('id',jobId);
   // Refresh UI
-  if(window.App && App.refresh) App.refresh();
+  if(window.App && App.refreshAll) App.refreshAll();
   else if(window.Counter && Counter.refresh) Counter.refresh();
   else setTimeout(function(){window.location.reload();},800);
 }

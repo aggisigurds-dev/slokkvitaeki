@@ -143,7 +143,7 @@
     refresh();
     refreshCart();
     setInterval(refreshCart, 1500);
-    setInterval(refresh, 30000);
+    setInterval(refresh, 120000);
     hookRealtime();
   }
 

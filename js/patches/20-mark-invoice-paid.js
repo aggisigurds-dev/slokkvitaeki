@@ -257,7 +257,8 @@
         .select('id,num,customer_nafn,customer_id,samtals,greitt_med,paid_at,paid_method,created_at,linur,upphaed_an_vsk,vsk_upphaed')
         .in('greitt_med', ['reikningur', 'greitt_sidar'])
         .is('paid_at', null)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false })
+        .limit(500);
       if (error) throw error;
       _unpaid = (data || []).map(s => ({
         id: s.id,
@@ -402,7 +403,7 @@
   setInterval(async () => {
     await loadUnpaid();
     updateNavBadge();
-  }, 60000);
+  }, 300000);
 
   window.InvoicePaid = {
     loadUnpaid,

@@ -370,11 +370,12 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
-<script src="/js/db.js?v=20260614a"></script>
+<script src="/js/db.js?v=20260729"></script>
 <script src="/js/utils.js?v=20260512d"></script>
 <script src="/js/modal.js?v=20260514a"></script>
 <script defer src="/js/patches/148-date-format-unify.js?v=20260515a"></script>
 <script defer src="/js/patches/00-legacy.js?v=20260728bky"></script>
+<script defer src="/js/patches/290-api-key-header.js?v=20260729"></script>
 <script defer src="/js/patches/169-logo-customization.js?v=20260601b"></script>
 <script defer src="/js/patches/170-unit-delete.js?v=20260624a"></script>
 <script defer src="/js/patches/171-sidebar-customizer.js?v=20260715a"></script>
@@ -383,8 +384,8 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/174-fyrirtaeki-stada.js?v=20260525a"></script>
   <script defer src="/js/patches/175-rekstrarfelog.js?v=20260729slot"></script>
 <script defer src="/js/patches/01-sala-suite.js?v=20260510f"></script>
-<script defer src="/js/patches/02-vidsk-tab.js?v=20260602d"></script>
-<script defer src="/js/patches/03-vidsk-revamp.js?v=20260720pg"></script>
+<script defer src="/js/patches/02-vidsk-tab.js?v=20260729"></script>
+<script defer src="/js/patches/03-vidsk-revamp.js?v=20260729"></script>
 <script defer src="/js/patches/04-verkdagbok.js?v=20260612a"></script>
 <script defer src="/js/patches/06-pos-fixes.js?v=20260511a"></script>
 <script defer src="/js/patches/07-sala-checkout-dialog.js?v=20260708c"></script>
@@ -395,12 +396,12 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/12-mapfix-kill-dots.js?v=20260503"></script>
 <script defer src="/js/patches/13-field-company-deeplink.js?v=20260510f"></script>
 <script defer src="/js/patches/14-companies-openedit.js?v=20260714f"></script>
-<script defer src="/js/patches/15-sidebar-counts.js?v=20260519a"></script>
+<script defer src="/js/patches/15-sidebar-counts.js?v=20260729"></script>
 <script defer src="/js/patches/16-switchview-dispatch.js?v=20260503"></script>
 <script defer src="/js/patches/17-form-validation.js?v=20260503"></script>
 <script defer src="/js/patches/18-nav-history.js?v=20260512a"></script>
 <script defer src="/js/patches/19-kennitala-lookup.js?v=20260511d"></script>
-<script defer src="/js/patches/20-mark-invoice-paid.js?v=20260510f"></script>
+<script defer src="/js/patches/20-mark-invoice-paid.js?v=20260729"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 21-inspection-forecast.js -->
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 22-vsk-report.js -->
 <script defer src="/js/patches/23-aging-report.js?v=20260714net"></script>
@@ -513,7 +514,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/136-companies-back-fix.js?v=20260607a"></script>
 <script defer src="/js/patches/137-verk-actions.js?v=20260511b"></script>
 <script defer src="/js/patches/66-dark-mode.js?v=20260510f"></script>
-<script src="/js/features.js?v=20260611a"></script>
+<script src="/js/features.js?v=20260729"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <script src="/js/scanner.js?v=20260611a"></script>
 
@@ -555,11 +556,20 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     var el = document.getElementById('geymsla-main');
     if (!el) return;
     el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3)">Hleður...</div>';
-    if (DB.online) {
-      var r = await DB.sb.from('uttaeki').select('*').eq('status','geymsla').order('created_at', {ascending:false});
-      this.items = r.data || [];
-    } else { this.items = []; }
-    this.render();
+    try {
+      if (DB.online) {
+        var r = await DB.sb.from('uttaeki').select('*').eq('status','geymsla').order('created_at', {ascending:false});
+        if (r.error) throw r.error;
+        this.items = r.data || [];
+      } else { this.items = []; }
+      this.render();
+    } catch(e) {
+      console.warn('[Geymsla] load villa:', e);
+      el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3)">'
+        +'<div style="font-weight:600;margin-bottom:8px">⚠ Náði ekki í gögn</div>'
+        +'<div style="font-size:13px;margin-bottom:14px">Villa við að hlaða geymslulistanum. Athugaðu nettenginguna.</div>'
+        +'<button class="btn btn-primary btn-sm" onclick="Geymsla.load()">Reyna aftur</button></div>';
+    }
   },
   render: function() {
     var el = document.getElementById('geymsla-main');
@@ -752,11 +762,20 @@ var Lanstaeki = {
     var el = document.getElementById('lanstaeki-main');
     if (!el) return;
     el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3)">Hleður...</div>';
-    if (DB.online) {
-      var r = await DB.sb.from('lanstaeki').select('*').order('serial');
-      this.items = r.data || [];
-    } else { this.items = []; }
-    this.render();
+    try {
+      if (DB.online) {
+        var r = await DB.sb.from('lanstaeki').select('*').order('serial');
+        if (r.error) throw r.error;
+        this.items = r.data || [];
+      } else { this.items = []; }
+      this.render();
+    } catch(e) {
+      console.warn('[Lanstaeki] load villa:', e);
+      el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3)">'
+        +'<div style="font-weight:600;margin-bottom:8px">⚠ Náði ekki í gögn</div>'
+        +'<div style="font-size:13px;margin-bottom:14px">Villa við að hlaða lánstækjalistanum. Athugaðu nettenginguna.</div>'
+        +'<button class="btn btn-primary btn-sm" onclick="Lanstaeki.load()">Reyna aftur</button></div>';
+    }
   },
   render: function() {
     var el = document.getElementById('lanstaeki-main');
@@ -962,8 +981,8 @@ var Lanstaeki = {
 <!-- PERF: throttle MutationObservers BEFORE any observer is constructed.
      Must run synchronously before newfeatures.js + every patch boots. -->
 <script src="/js/patches/252-mo-throttle.js?v=20260630a"></script>
-<script src="/js/newfeatures.js?v=20260510f"></script>
-    <script src="/js/mapfix.js?v=20260714geo"></script>
+<script src="/js/newfeatures.js?v=20260729"></script>
+    <script src="/js/mapfix.js?v=20260729"></script>
     <script src="/js/floorplanfix.js?v=1776869886801"></script>
     <script src="/js/navfix.js?v=1776869886801"></script>
     <script src="/js/vbu.js?v=1776877291301"></script>
@@ -973,7 +992,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/140-shelf-dropdown.js?v=20260512c"></script>
 <script defer src="/js/patches/141-companies-enter-fix.js?v=20260514b"></script>
 <script defer src="/js/patches/142-sale-editor.js?v=20260708b"></script>
-<script defer src="/js/patches/143-drog-list.js?v=20260624b"></script>
+<script defer src="/js/patches/143-drog-list.js?v=20260729"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 144-kunnareikningur.js -->
 <script defer src="/js/patches/145-todo-board.js?v=20260612a"></script>
 <script defer src="/js/patches/146-companies-click-fix.js?v=20260515a"></script>
@@ -1020,7 +1039,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/189-sidebar-guardian.js?v=20260610a"></script>
 <script defer src="/js/patches/190-thjonustu-verkstaedi.js?v=20260729stimpill"></script>
 <script defer src="/js/patches/191-unit-i-vinnslu.js?v=20260610c"></script>
-<script defer src="/js/patches/193-payment-review.js?v=20260610a"></script>
+<script defer src="/js/patches/193-payment-review.js?v=20260729"></script>
 <script defer src="/js/patches/194-eftirfylgni.js?v=20260612c"></script>
 <script defer src="/js/patches/195-company-detail-settle.js?v=20260612a"></script>
 <script defer src="/js/patches/196-sidebar-settle.js?v=20260613a"></script>
@@ -1048,7 +1067,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/228-saved-report-box.js?v=20260619a"></script>
 <script defer src="/js/patches/229-sala-theme-bridge.js?v=20260619d"></script>
 <script defer src="/js/patches/230-brunastal-theme.js?v=20260704c"></script>
-<script defer src="/js/patches/231-verkbord.js?v=20260722tog2"></script>
+<script defer src="/js/patches/231-verkbord.js?v=20260729"></script>
 <script defer src="/js/patches/232-bakendi.js?v=20260712rfsites"></script>
 <script defer src="/js/patches/233-uttekt-pdf-autosave.js?v=20260726drog"></script>
 <script defer src="/js/patches/234-verk-soft-delete.js?v=20260623b"></script>
@@ -1073,7 +1092,6 @@ var Lanstaeki = {
 <script defer src="/js/patches/261-app-profiles.js?v=20260729dock"></script>
 <script defer src="/js/patches/262-sidebar-polish.js?v=20260705c"></script>
 <script defer src="/js/patches/262-page-editor.js?v=20260704c"></script>
-<script defer src="/js/patches/145-companies-diagnose.js?v=20260516a"></script>
 <script defer src="/js/patches/263-mobile-baseline.js?v=20260706a"></script>
 <script defer src="/js/patches/264-beidni-gate.js?v=20260710a"></script>
 <script defer src="/js/patches/265-utfyllt-skjol.js?v=20260720send"></script>
@@ -1091,8 +1109,8 @@ var Lanstaeki = {
 <script defer src="/js/patches/277-nav-back.js?v=20260722a"></script>
 <script defer src="/js/patches/285-rekstrarfelag-tools.js?v=20260728a"></script>
 <script defer src="/js/patches/286-samskipti-panel.js?v=20260729pts"></script>
-<script defer src="/js/patches/287-crm-board.js?v=20260729a"></script>
-    <script src="/js/tekjur.js?v=20260710grad"></script>
+<script defer src="/js/patches/287-crm-board.js?v=20260729b"></script>
+    <script src="/js/tekjur.js?v=20260729"></script>
 <script src="/js/v9.js?v=20260602d"></script>
 <script src="/js/scanmode.js?v=20260510f"></script>
 <script src="/js/detailview.js?v=20260515a"></script>
@@ -1101,10 +1119,10 @@ var Lanstaeki = {
 <script src="/js/geymslacols.js?v=20260510f"></script>
 <script src="/js/companieslist.js?v=20260720pg"></script>
 <script src="/js/kennitalafield.js?v=20260602e"></script>
-<script src="/js/editjobbutton.js?v=1776797624642"></script>
+<script src="/js/editjobbutton.js?v=20260729"></script>
 <script src="/js/qrbulkprint.js?v=20260610a"></script>
 <script src="/js/vidskiptavinir.js?v=20260609a"></script>
-<script src="/js/settigeymslu.js?v=1776797624642"></script>
+<script src="/js/settigeymslu.js?v=20260729"></script>
 <script src="/js/mobilenav.js?v=20260515a"></script>
 <script src="/js/printphonefix.js?v=1776797624642"></script>
 <script src="/js/qrtag.js?v=1776797624642"></script>

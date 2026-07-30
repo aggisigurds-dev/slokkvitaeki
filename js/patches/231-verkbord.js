@@ -1651,11 +1651,23 @@
   async function quietCount() {
     const SB = getSB(); if (!SB) return;
     try {
-      const a = await SB.from('thjonustubeidni').select('*').is('deleted_at', null).range(0, 1499);
-      if (!a.error) { state.items = a.data || []; }
-      const b = await SB.from('verkdagbok').select('*').eq('done', false).eq('archived', false).range(0, 499);
-      if (b && !b.error) state.vd = b.data || [];
-      refreshBadge();
+      // Badge-only preload: fetch just the columns the badge predicates need
+      // instead of '*' × 1500 rows (full rows come via load() when the board
+      // opens). verkdagbok pseudo-rows never contribute to the badge
+      // (important:false, due_at:null, never posts), so that fetch is skipped.
+      const a = await SB.from('thjonustubeidni')
+        .select('id,status,due_at,important,promoted_at,archived_at,svarad_at,source,channel_ref')
+        .is('deleted_at', null).range(0, 1499);
+      if (a.error) return;
+      // Same math as counts(): badge = wait + idag.
+      let n = 0;
+      for (const x of (a.data || [])) {
+        if (!isOpen(x)) continue;
+        if (isPost(x)) { if (!isArchived(x) && isWaiting(x)) n++; continue; }
+        if (!isArchived(x) && isToday(x)) n++;
+      }
+      const b = document.querySelector('.vb-badge');
+      if (b) { b.textContent = String(n); b.style.display = n > 0 ? 'inline-block' : 'none'; }
     } catch (_) {}
   }
 

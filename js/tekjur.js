@@ -12,8 +12,10 @@
 
   async function loadSales(force){
     if(_loaded && !force) return;   // cache — don't refetch the whole table on every poll
-    var r = await DB.sb.from('solur').select('id,num,customer_nafn,starfsmadur,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,status').neq('status','drog').order('created_at',{ascending:false});
-    _sales = r.data || [];
+    try{
+      var rows = await DB.fetchAll(function(from,to){ return DB.sb.from('solur').select('id,num,customer_nafn,starfsmadur,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,status').neq('status','drog').order('created_at',{ascending:false}).range(from,to); });
+      _sales = rows || [];
+    }catch(e){ console.warn('[Tekjur] loadSales villa:', e); _sales = _sales || []; }
     _loaded = true;
   }
 

@@ -255,7 +255,7 @@
   // ── Refresh hooks ─────────────────────────────────────────────────────────
   document.addEventListener('sale-edited', loadDrog);
   // Periodic refresh in case other tabs/devices change drög
-  setInterval(loadDrog, 30000);
+  setInterval(loadDrog, 120000);
 
   // ── Boot ──────────────────────────────────────────────────────────────────
   injectSidebar();

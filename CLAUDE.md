@@ -101,8 +101,32 @@ js/patch-master.js      THE BIG ONE — to be split
 ## Database schema
 
 ```
-vidskiptavinir   (id, kennitala, nafn, simi, netfang, heimilisfang, athugasemdir, created_at)
-fyrirtaeki       95+ companies, customer-like columns
+customers_base   1082 rows — the CANONICAL customer spine, one per kt (root of
+                 the data model; fyrirtaeki/vidskiptavinir/solur link to it)
+                 (id bigint PK, kennitala NOT NULL, nafn, simi, netfang,
+                  heimilisfang, greidsluskilmali, source_v_id, source_f_id,
+                  created_at, payment_method, payment_terms, retention_pct,
+                  retention_notes, contact_email, contact_phone, general_notes,
+                  last_payment_at, rekstrarfelag)
+                 `rekstrarfelag` groups multiple sites under one operator —
+                 NEVER merge rekstrarfélög sites, only share customer_base_id.
+                 `source_v_id`/`source_f_id` = the vidskiptavinir/fyrirtaeki row
+                 the base was seeded from.
+vidskiptavinir   individual customers
+                 (id, kennitala, nafn, simi, netfang, heimilisfang, athugasemdir,
+                  created_at, afslattur_pct, farsimi, vefsida, tengilidur,
+                  greidsluskilmali, customer_base_id, deleted_at)
+fyrirtaeki       1358 rows — companies / service SITES (one kt may own many =
+                 rekstrarfélag). This is the service branch of the spine.
+                 (id bigint PK, nafn NOT NULL, kennitala, simi, netfang,
+                  heimilisfang, tengiliður, athugasemdir, created_at,
+                  afslattur_pct, farsimi, vefsida, tengilidur, greidsluskilmali,
+                  status ('virkur'), er_i_thjonustu bool, deleted_at,
+                  customer_base_id, review_flag bool, review_note, is_bank_only
+                  bool, banner_note, payday_delivery)
+                 ⚠️ DUPLICATE contact column: both `tengiliður` (accented) AND
+                 `tengilidur` (ascii) exist — Bakendi (patch 232) flags this.
+                 `er_i_thjonustu` marks a site as in active service.
 uttaeki          306+ equipment rows
                  (id, serial, type, size, client, location, last_insp, next_insp,
                   status, pressure, created_at, phone, notes)

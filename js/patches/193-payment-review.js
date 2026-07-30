@@ -354,7 +354,7 @@
 
   // Refresh when other surfaces edit sales
   document.addEventListener('sale-edited', loadReview);
-  setInterval(loadReview, 45000);
+  setInterval(loadReview, 300000);
 
   // 2026-06-28: dismiss the modal on view switch + Esc, otherwise it stayed
   // open across navigation and dimmed every subsequent page (the .55-alpha

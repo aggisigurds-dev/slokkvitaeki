@@ -13,7 +13,8 @@ exports.handler = async () => {
   try {
     const r = await fetch(base + '/api/payday-sync-paid', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      // x-eldklar-key: innri keðja virkar áfram þegar EDGE_SHARED_KEY-gátt er virkjuð.
+      headers: { 'Content-Type': 'application/json', 'x-eldklar-key': process.env.EDGE_SHARED_KEY || '' },
       body: '{}',
     });
     const data = await r.json().catch(() => ({ error: 'Ógilt svar (HTTP ' + r.status + ')' }));
@@ -23,7 +24,7 @@ exports.handler = async () => {
     // eldri raðir standa — allt sagan sótt einu sinni með ?all=1).
     let mirror = null;
     try {
-      const m = await fetch(base + '/api/payday-pull-slokk');
+      const m = await fetch(base + '/api/payday-pull-slokk', { headers: { 'x-eldklar-key': process.env.EDGE_SHARED_KEY || '' } });
       mirror = await m.json().catch(() => ({ error: 'Ógilt svar (HTTP ' + m.status + ')' }));
       console.log('[payday-sync-cron] mirror', m.status, JSON.stringify(mirror));
     } catch (e2) { console.error('[payday-sync-cron] mirror error', e2); }

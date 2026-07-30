@@ -264,11 +264,22 @@
     return true;
   }
 
+  var _coLoadInFlight = false;    // guard: the 500ms tick must never stack concurrent full fetches
+  var _coLoadLastFail = 0;        // on failure, wait a few seconds before retrying
   function loadCompaniesIfNeeded(){
     if(window.Companies && Companies.list && Companies.list.length) return Promise.resolve();
     if(!window.DB || !DB.sb) return Promise.resolve();
+    if(_coLoadInFlight) return Promise.resolve();
+    if(_coLoadLastFail && (Date.now() - _coLoadLastFail) < 5000) return Promise.resolve();
+    _coLoadInFlight = true;
     return DB.fetchAll(function(from,to){ return DB.sb.from('fyrirtaeki').select('*').is('deleted_at', null).order('nafn').range(from,to); }).then(function(rows){  // page through 1000-row cap
       if(window.Companies){ Companies.list = rows; }
+      _coLoadInFlight = false;
+      _coLoadLastFail = 0;
+    }).catch(function(e){
+      _coLoadInFlight = false;
+      _coLoadLastFail = Date.now();
+      console.warn('[MapFix v4] loadCompaniesIfNeeded villa:', e);
     });
   }
 

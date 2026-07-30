@@ -97,7 +97,9 @@
     const orig = App.switchView;
     App.switchView = function (name) {
       const r = orig.apply(this, arguments);
-      if (name === 'vidskiptavinir') Vidskiptavinir.render();
+      // 03-vidsk-revamp.js owns the view when installed — skip the legacy
+      // render + refetch so it doesn't repaint over the revamp UI.
+      if (name === 'vidskiptavinir' && !window.__vidskRevamp) Vidskiptavinir.render();
       return r;
     };
     App.switchView.__vkHooked = true;

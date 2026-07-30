@@ -109,11 +109,12 @@ var DB = {
         }
         return { data: allRows };
       }
+      var self = this;
       var [j, v, u, s, h] = await Promise.all([
-        this.sb.from('verkbeidnir').select('*').order('created_at', {ascending:false}),
-        this.sb.from('verklidur').select('*'),
+        this.fetchAll(function(from, to){ return self.sb.from('verkbeidnir').select('*').order('created_at', {ascending:false}).range(from, to); }).then(function(rows){ return { data: rows }; }),
+        this.fetchAll(function(from, to){ return self.sb.from('verklidur').select('*').order('id').range(from, to); }).then(function(rows){ return { data: rows }; }),
         loadAllUttaeki(this.sb),
-        this.sb.from('dagskra').select('*').order('date'),
+        this.fetchAll(function(from, to){ return self.sb.from('dagskra').select('*').order('date').range(from, to); }).then(function(rows){ return { data: rows }; }),
         this.sb.from('skodunar_saga').select('*').order('created_at', {ascending:false}).limit(20)
       ]);
       // Merge units into jobs

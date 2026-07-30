@@ -5,6 +5,9 @@
     console.warn('[VidskRevamp] supabase not ready, skipping');
     return;
   }
+  // Flag for 02-vidsk-tab.js: the revamp UI owns view-vidskiptavinir — the
+  // legacy switchView hook must not repaint over it.
+  window.__vidskRevamp = true;
 
   // Lazy getter — evaluated at call-time so we always get the canonical DB.sb
   // (DB.sb is null at script-load time; it's set inside DB.init() on DOMContentLoaded)

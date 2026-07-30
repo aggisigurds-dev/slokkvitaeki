@@ -1,0 +1,1742 @@
+{
+  ".claude/skills/mobile-design/scripts/mobile_audit.py": {
+    "mtime": 1785354444.802419,
+    "ast_hash": "8a7a2483f90d406ca022d2c6a5447973",
+    "semantic_hash": "8a7a2483f90d406ca022d2c6a5447973"
+  },
+  ".mcp.json": {
+    "mtime": 1785354444.805723,
+    "ast_hash": "2c22a39559da7b2c1867813c7f3bceee",
+    "semantic_hash": "2c22a39559da7b2c1867813c7f3bceee"
+  },
+  "MIGRATION.sql": {
+    "mtime": 1785354444.810262,
+    "ast_hash": "df0123651447587ff4fbad09132127aa",
+    "semantic_hash": "df0123651447587ff4fbad09132127aa"
+  },
+  "backup-supabase.mjs": {
+    "mtime": 1785354444.9021857,
+    "ast_hash": "b6c050ff698da8c00fb27e63f015883f",
+    "semantic_hash": "b6c050ff698da8c00fb27e63f015883f"
+  },
+  "build-dist.js": {
+    "mtime": 1785354444.9031854,
+    "ast_hash": "d12bc884502a423860b341ef0bb88aa9",
+    "semantic_hash": "d12bc884502a423860b341ef0bb88aa9"
+  },
+  "deploy.js": {
+    "mtime": 1785354444.9101477,
+    "ast_hash": "dacc50248efac52bc3859bb98c7f6219",
+    "semantic_hash": "dacc50248efac52bc3859bb98c7f6219"
+  },
+  "docs/video-player.js": {
+    "mtime": 1785354444.951302,
+    "ast_hash": "80cbe8d255490e4304d2f5b3445b4f75",
+    "semantic_hash": "80cbe8d255490e4304d2f5b3445b4f75"
+  },
+  "js/companieslist.js": {
+    "mtime": 1785354445.0240233,
+    "ast_hash": "fa383a5571e396c98d5029a402f762d5",
+    "semantic_hash": "fa383a5571e396c98d5029a402f762d5"
+  },
+  "js/config.js": {
+    "mtime": 1785354445.0245574,
+    "ast_hash": "2ba6a86e56aabecc42bb15289ac7f634",
+    "semantic_hash": "2ba6a86e56aabecc42bb15289ac7f634"
+  },
+  "js/db.js": {
+    "mtime": 1785354445.0256166,
+    "ast_hash": "a383e77841d8a7f74b763634a6f31902",
+    "semantic_hash": "a383e77841d8a7f74b763634a6f31902"
+  },
+  "js/demoseed.js": {
+    "mtime": 1785354445.0261488,
+    "ast_hash": "435e0274c15315e3a4061974d0eaa57f",
+    "semantic_hash": "435e0274c15315e3a4061974d0eaa57f"
+  },
+  "js/detailview.js": {
+    "mtime": 1785354445.0266793,
+    "ast_hash": "deb09d02da37d70213305478bd683b9f",
+    "semantic_hash": "deb09d02da37d70213305478bd683b9f"
+  },
+  "js/editjobbutton.js": {
+    "mtime": 1785354445.02721,
+    "ast_hash": "da71f91d2b6d703c27f81561cb1d3298",
+    "semantic_hash": "da71f91d2b6d703c27f81561cb1d3298"
+  },
+  "js/features.js": {
+    "mtime": 1785354445.0277421,
+    "ast_hash": "55eedbf2f679f3a493d31e75ab24d194",
+    "semantic_hash": "55eedbf2f679f3a493d31e75ab24d194"
+  },
+  "js/fixcompanysave.js": {
+    "mtime": 1785354445.0282764,
+    "ast_hash": "193dd18bdc5555ef64523f2607a9e821",
+    "semantic_hash": "193dd18bdc5555ef64523f2607a9e821"
+  },
+  "js/floorplanfix.js": {
+    "mtime": 1785354445.0289395,
+    "ast_hash": "dbd48626d93df2c5e67debad07f28da6",
+    "semantic_hash": "dbd48626d93df2c5e67debad07f28da6"
+  },
+  "js/geymslacols.js": {
+    "mtime": 1785354445.029469,
+    "ast_hash": "4221540062b712a9ce817bdb0a8bf5b9",
+    "semantic_hash": "4221540062b712a9ce817bdb0a8bf5b9"
+  },
+  "js/geymslascan.js": {
+    "mtime": 1785354445.0300033,
+    "ast_hash": "2b39ad0eb1cded588637d43e0b923518",
+    "semantic_hash": "2b39ad0eb1cded588637d43e0b923518"
+  },
+  "js/kennitalafield.js": {
+    "mtime": 1785354445.0305567,
+    "ast_hash": "5c71307278b11634f17b9c7439a863c5",
+    "semantic_hash": "5c71307278b11634f17b9c7439a863c5"
+  },
+  "js/mapfix.js": {
+    "mtime": 1785354445.031089,
+    "ast_hash": "ea9ef77ba7eea7ef76b7f8575e49345c",
+    "semantic_hash": "ea9ef77ba7eea7ef76b7f8575e49345c"
+  },
+  "js/mobilenav.js": {
+    "mtime": 1785354445.0316184,
+    "ast_hash": "85860ecf4ec898367730a8bdd8c64ed2",
+    "semantic_hash": "85860ecf4ec898367730a8bdd8c64ed2"
+  },
+  "js/modal.js": {
+    "mtime": 1785354445.0321527,
+    "ast_hash": "5f7551a55d144b232bd47b9142eefe75",
+    "semantic_hash": "5f7551a55d144b232bd47b9142eefe75"
+  },
+  "js/navfix.js": {
+    "mtime": 1785354445.0326993,
+    "ast_hash": "312103760558db8acb7227368ac0cee4",
+    "semantic_hash": "312103760558db8acb7227368ac0cee4"
+  },
+  "js/newfeatures.js": {
+    "mtime": 1785354445.0337105,
+    "ast_hash": "92664d8c4ac4a1886691ccafe551d741",
+    "semantic_hash": "92664d8c4ac4a1886691ccafe551d741"
+  },
+  "js/patches/00-legacy.js": {
+    "mtime": 1785354445.0352254,
+    "ast_hash": "4fce068e9c6763ed28d6a6098e2275f0",
+    "semantic_hash": "4fce068e9c6763ed28d6a6098e2275f0"
+  },
+  "js/patches/01-sala-suite.js": {
+    "mtime": 1785354445.0352254,
+    "ast_hash": "c5ae61019e0d81b5893aae31bfb6baf1",
+    "semantic_hash": "c5ae61019e0d81b5893aae31bfb6baf1"
+  },
+  "js/patches/02-vidsk-tab.js": {
+    "mtime": 1785354445.0365772,
+    "ast_hash": "6934a91cf2323b6be63e649cfed4bcf1",
+    "semantic_hash": "6934a91cf2323b6be63e649cfed4bcf1"
+  },
+  "js/patches/03-vidsk-revamp.js": {
+    "mtime": 1785354445.0375788,
+    "ast_hash": "ee338831a790f21795efa00cfbf61adf",
+    "semantic_hash": "ee338831a790f21795efa00cfbf61adf"
+  },
+  "js/patches/04-verkdagbok.js": {
+    "mtime": 1785354445.0392787,
+    "ast_hash": "7a76938ca8a4761ff633c2452a1864f2",
+    "semantic_hash": "7a76938ca8a4761ff633c2452a1864f2"
+  },
+  "js/patches/06-pos-fixes.js": {
+    "mtime": 1785354445.0392787,
+    "ast_hash": "4a7df214b7a08da42f92b0afeb93dd5a",
+    "semantic_hash": "4a7df214b7a08da42f92b0afeb93dd5a"
+  },
+  "js/patches/07-sala-checkout-dialog.js": {
+    "mtime": 1785354445.0402899,
+    "ast_hash": "cd06cd51ae38bd1416b7cac46d1da68d",
+    "semantic_hash": "cd06cd51ae38bd1416b7cac46d1da68d"
+  },
+  "js/patches/08-qr-label-customer.js": {
+    "mtime": 1785354445.0412877,
+    "ast_hash": "ed9b85171be734f97e07e4cd7c0884d0",
+    "semantic_hash": "ed9b85171be734f97e07e4cd7c0884d0"
+  },
+  "js/patches/09-verkdagbok-attachments.js": {
+    "mtime": 1785354445.0412877,
+    "ast_hash": "c241ee4390a07006e99369ab8b9cdef2",
+    "semantic_hash": "c241ee4390a07006e99369ab8b9cdef2"
+  },
+  "js/patches/10-sala-receipt-redesign.js": {
+    "mtime": 1785354445.0422988,
+    "ast_hash": "82d1ff74355bf4e035a340bb0649f712",
+    "semantic_hash": "82d1ff74355bf4e035a340bb0649f712"
+  },
+  "js/patches/100-back-button-fix.js": {
+    "mtime": 1785354445.0422988,
+    "ast_hash": "7e6ab42e70a27252743d739b346560ff",
+    "semantic_hash": "7e6ab42e70a27252743d739b346560ff"
+  },
+  "js/patches/101-unit-detail-modal.js": {
+    "mtime": 1785354445.0432985,
+    "ast_hash": "f562bbd031a55bc7ab1985011b6c9877",
+    "semantic_hash": "f562bbd031a55bc7ab1985011b6c9877"
+  },
+  "js/patches/102-visit-report.js": {
+    "mtime": 1785354445.0442991,
+    "ast_hash": "50d4cfaef457457faaeb4aeaff6e8251",
+    "semantic_hash": "50d4cfaef457457faaeb4aeaff6e8251"
+  },
+  "js/patches/103-workshop-row-actions.js": {
+    "mtime": 1785354445.0442991,
+    "ast_hash": "884337e546273c790b82371afa9f7bf5",
+    "semantic_hash": "884337e546273c790b82371afa9f7bf5"
+  },
+  "js/patches/104-workshop-add-unit.js": {
+    "mtime": 1785354445.0453007,
+    "ast_hash": "145acda193c9c1c5de794f25077876b9",
+    "semantic_hash": "145acda193c9c1c5de794f25077876b9"
+  },
+  "js/patches/105-sala-line-units.js": {
+    "mtime": 1785354445.0463,
+    "ast_hash": "5abea8b46a952f88ca04c1a8e4a95f9f",
+    "semantic_hash": "5abea8b46a952f88ca04c1a8e4a95f9f"
+  },
+  "js/patches/106-checkout-unit-prompt.js": {
+    "mtime": 1785354445.047494,
+    "ast_hash": "32af0d31f61b08af8bedbbe0e98e98c2",
+    "semantic_hash": "32af0d31f61b08af8bedbbe0e98e98c2"
+  },
+  "js/patches/109-floorplan-banner.js": {
+    "mtime": 1785354445.048999,
+    "ast_hash": "1ea6e3ea095b0a7b5cb12ac8c2bc3d96",
+    "semantic_hash": "1ea6e3ea095b0a7b5cb12ac8c2bc3d96"
+  },
+  "js/patches/11-bokhalds-yfirlit.js": {
+    "mtime": 1785354445.048999,
+    "ast_hash": "e29a8534ba0855eae005d28a69e05912",
+    "semantic_hash": "e29a8534ba0855eae005d28a69e05912"
+  },
+  "js/patches/110-cleanup-pos-walkins.js": {
+    "mtime": 1785354445.0505464,
+    "ast_hash": "445d2814311cac6c848f7ea18afae3d2",
+    "semantic_hash": "445d2814311cac6c848f7ea18afae3d2"
+  },
+  "js/patches/111-company-attachments.js": {
+    "mtime": 1785354445.051925,
+    "ast_hash": "2c63c44a1f3724263f35e6faa0adc45d",
+    "semantic_hash": "2c63c44a1f3724263f35e6faa0adc45d"
+  },
+  "js/patches/112-form-builder.js": {
+    "mtime": 1785354445.0529244,
+    "ast_hash": "a5ce812600f552cb7d97b1731ce32926",
+    "semantic_hash": "a5ce812600f552cb7d97b1731ce32926"
+  },
+  "js/patches/113-company-pricing.js": {
+    "mtime": 1785354445.0529244,
+    "ast_hash": "985f9bab00d19f65efa482ce27b807ba",
+    "semantic_hash": "985f9bab00d19f65efa482ce27b807ba"
+  },
+  "js/patches/114-unified-pos-search.js": {
+    "mtime": 1785354445.0539637,
+    "ast_hash": "dadf533ef8b0ea136e9fadfb9ccc8bb8",
+    "semantic_hash": "dadf533ef8b0ea136e9fadfb9ccc8bb8"
+  },
+  "js/patches/115-cart-qty-input.js": {
+    "mtime": 1785354445.054966,
+    "ast_hash": "b60ccebd8c894735709e008616cd3be9",
+    "semantic_hash": "b60ccebd8c894735709e008616cd3be9"
+  },
+  "js/patches/116-vidsk-pricing.js": {
+    "mtime": 1785354445.054966,
+    "ast_hash": "2318ae623cc545648c010ac814fc5621",
+    "semantic_hash": "2318ae623cc545648c010ac814fc5621"
+  },
+  "js/patches/117-vorur-picker.js": {
+    "mtime": 1785354445.0559666,
+    "ast_hash": "38a7de9fe37c1283ad4d538c76b362c6",
+    "semantic_hash": "38a7de9fe37c1283ad4d538c76b362c6"
+  },
+  "js/patches/118-cart-savings.js": {
+    "mtime": 1785354445.0569637,
+    "ast_hash": "3b8bd5fef5185212c71f66e86afeeade",
+    "semantic_hash": "3b8bd5fef5185212c71f66e86afeeade"
+  },
+  "js/patches/119-send-back-to-workshop.js": {
+    "mtime": 1785354445.0569637,
+    "ast_hash": "3cfb7015a620e0e8ed0e55a8794c8847",
+    "semantic_hash": "3cfb7015a620e0e8ed0e55a8794c8847"
+  },
+  "js/patches/12-mapfix-kill-dots.js": {
+    "mtime": 1785354445.0579634,
+    "ast_hash": "d679ec4cf616d9707d74b2beb5f3f618",
+    "semantic_hash": "d679ec4cf616d9707d74b2beb5f3f618"
+  },
+  "js/patches/120-broken-units-workflow.js": {
+    "mtime": 1785354445.0589664,
+    "ast_hash": "885bc7850b8f5fa5e1542b054c33bde9",
+    "semantic_hash": "885bc7850b8f5fa5e1542b054c33bde9"
+  },
+  "js/patches/121-pickup-checkout.js": {
+    "mtime": 1785354445.0594797,
+    "ast_hash": "3cba018031bec2939a79b334fadf5ead",
+    "semantic_hash": "3cba018031bec2939a79b334fadf5ead"
+  },
+  "js/patches/122-samningshafar-receive.js": {
+    "mtime": 1785354445.0594797,
+    "ast_hash": "e2e10010369534bac979a5f8c0ffcd53",
+    "semantic_hash": "e2e10010369534bac979a5f8c0ffcd53"
+  },
+  "js/patches/123-uttektarskyrsla.js": {
+    "mtime": 1785354445.060786,
+    "ast_hash": "f90130e18b7e4be3cf947a0338bcebf2",
+    "semantic_hash": "f90130e18b7e4be3cf947a0338bcebf2"
+  },
+  "js/patches/124-leidbeiningar.js": {
+    "mtime": 1785354445.061873,
+    "ast_hash": "d12e18131b0c50baf51257af2fe4349c",
+    "semantic_hash": "d12e18131b0c50baf51257af2fe4349c"
+  },
+  "js/patches/126-show-settings-tab.js": {
+    "mtime": 1785354445.061873,
+    "ast_hash": "089df4b0eb46124ba610d60a4d41e182",
+    "semantic_hash": "089df4b0eb46124ba610d60a4d41e182"
+  },
+  "js/patches/127-companies-edit-guard.js": {
+    "mtime": 1785354445.0631146,
+    "ast_hash": "b4caf105fb366b9315b45b5816f63d02",
+    "semantic_hash": "b4caf105fb366b9315b45b5816f63d02"
+  },
+  "js/patches/128-bulk-add-pricing.js": {
+    "mtime": 1785354445.0631146,
+    "ast_hash": "286f298768bec60240bb64153b79f147",
+    "semantic_hash": "286f298768bec60240bb64153b79f147"
+  },
+  "js/patches/129-company-total-cost.js": {
+    "mtime": 1785354445.0641153,
+    "ast_hash": "554bae9c803a05853afbeab98faa99ac",
+    "semantic_hash": "554bae9c803a05853afbeab98faa99ac"
+  },
+  "js/patches/13-field-company-deeplink.js": {
+    "mtime": 1785354445.0651171,
+    "ast_hash": "5a88893b9ca178e4f4f3dd6da6b896f9",
+    "semantic_hash": "5a88893b9ca178e4f4f3dd6da6b896f9"
+  },
+  "js/patches/130-companies-refresh-btn.js": {
+    "mtime": 1785354445.0651171,
+    "ast_hash": "363bb8fedb07bc17636875fdcf3a389e",
+    "semantic_hash": "363bb8fedb07bc17636875fdcf3a389e"
+  },
+  "js/patches/131-unit-service-picker.js": {
+    "mtime": 1785354445.0661137,
+    "ast_hash": "db9f6eff28bd3ae81cb559e82206c073",
+    "semantic_hash": "db9f6eff28bd3ae81cb559e82206c073"
+  },
+  "js/patches/132-unit-size-column.js": {
+    "mtime": 1785354445.0661137,
+    "ast_hash": "e315e5b1913c168f49b3296b4bf95aec",
+    "semantic_hash": "e315e5b1913c168f49b3296b4bf95aec"
+  },
+  "js/patches/133-product-info-popup.js": {
+    "mtime": 1785354445.0671186,
+    "ast_hash": "d21d0a270791619a0e2d7d5b0a76d864",
+    "semantic_hash": "d21d0a270791619a0e2d7d5b0a76d864"
+  },
+  "js/patches/134-job-notes-display.js": {
+    "mtime": 1785354445.0671186,
+    "ast_hash": "e641876fd688edd4822977238945e7a2",
+    "semantic_hash": "e641876fd688edd4822977238945e7a2"
+  },
+  "js/patches/135-unit-notes-inline.js": {
+    "mtime": 1785354445.0681984,
+    "ast_hash": "b58790eb641658bcc74ffd0893098f23",
+    "semantic_hash": "b58790eb641658bcc74ffd0893098f23"
+  },
+  "js/patches/136-companies-back-fix.js": {
+    "mtime": 1785354445.0681984,
+    "ast_hash": "60508db8cc723ce2272ad85597741b60",
+    "semantic_hash": "60508db8cc723ce2272ad85597741b60"
+  },
+  "js/patches/137-verk-actions.js": {
+    "mtime": 1785354445.0692008,
+    "ast_hash": "1784634d8ba99f77afdccc27f076dbb7",
+    "semantic_hash": "1784634d8ba99f77afdccc27f076dbb7"
+  },
+  "js/patches/138-byrjunargjald-toggle.js": {
+    "mtime": 1785354445.0692008,
+    "ast_hash": "a8f2afb25d046a11e7d617700570af91",
+    "semantic_hash": "a8f2afb25d046a11e7d617700570af91"
+  },
+  "js/patches/139-print-brother-labels.js": {
+    "mtime": 1785354445.0702462,
+    "ast_hash": "832eb793416ff6843ce5e91520b5a402",
+    "semantic_hash": "832eb793416ff6843ce5e91520b5a402"
+  },
+  "js/patches/14-companies-openedit.js": {
+    "mtime": 1785354445.0702462,
+    "ast_hash": "fec13c5f781e72d28679c13aba496d89",
+    "semantic_hash": "fec13c5f781e72d28679c13aba496d89"
+  },
+  "js/patches/140-shelf-dropdown.js": {
+    "mtime": 1785354445.0712538,
+    "ast_hash": "ba2454062c33cdab4f82bd849df13a61",
+    "semantic_hash": "ba2454062c33cdab4f82bd849df13a61"
+  },
+  "js/patches/141-companies-enter-fix.js": {
+    "mtime": 1785354445.0712538,
+    "ast_hash": "eb14b99fc64e7a990ed6f36ad2012153",
+    "semantic_hash": "eb14b99fc64e7a990ed6f36ad2012153"
+  },
+  "js/patches/142-sale-editor.js": {
+    "mtime": 1785354445.0726373,
+    "ast_hash": "2a40dfbf7278ef7fa296a01a72e0ad88",
+    "semantic_hash": "2a40dfbf7278ef7fa296a01a72e0ad88"
+  },
+  "js/patches/143-drog-list.js": {
+    "mtime": 1785354445.0726373,
+    "ast_hash": "d46688ecb9c3da35e4e346c9ecc553ee",
+    "semantic_hash": "d46688ecb9c3da35e4e346c9ecc553ee"
+  },
+  "js/patches/144-kunnareikningur.js": {
+    "mtime": 1785354445.0736375,
+    "ast_hash": "1930c742d50707b5aba7b19adc29d90a",
+    "semantic_hash": "1930c742d50707b5aba7b19adc29d90a"
+  },
+  "js/patches/145-companies-diagnose.js": {
+    "mtime": 1785354445.0746367,
+    "ast_hash": "f80ab2b2e676ebb26b97fe0c56511b3e",
+    "semantic_hash": "f80ab2b2e676ebb26b97fe0c56511b3e"
+  },
+  "js/patches/145-todo-board.js": {
+    "mtime": 1785354445.0746367,
+    "ast_hash": "6070d89a64a89671e896c5c88c92c81b",
+    "semantic_hash": "6070d89a64a89671e896c5c88c92c81b"
+  },
+  "js/patches/146-companies-click-fix.js": {
+    "mtime": 1785354445.0756385,
+    "ast_hash": "8eb670c13dcb663955cad8e5278c0405",
+    "semantic_hash": "8eb670c13dcb663955cad8e5278c0405"
+  },
+  "js/patches/147-brunakerfi.js": {
+    "mtime": 1785354445.0768895,
+    "ast_hash": "4a0ea501e2f5c0988d5f093af53e40b8",
+    "semantic_hash": "4a0ea501e2f5c0988d5f093af53e40b8"
+  },
+  "js/patches/148-date-format-unify.js": {
+    "mtime": 1785354445.0768895,
+    "ast_hash": "10e9ad473e48b5847596a56ae7fa19a7",
+    "semantic_hash": "10e9ad473e48b5847596a56ae7fa19a7"
+  },
+  "js/patches/149-dd-mm-yyyy-date-inputs.js": {
+    "mtime": 1785354445.0778944,
+    "ast_hash": "3d68098e11f5f2c43dd024d1b68d1459",
+    "semantic_hash": "3d68098e11f5f2c43dd024d1b68d1459"
+  },
+  "js/patches/15-sidebar-counts.js": {
+    "mtime": 1785354445.0778944,
+    "ast_hash": "38a58770abe9730efdc67c73d4a97c3c",
+    "semantic_hash": "38a58770abe9730efdc67c73d4a97c3c"
+  },
+  "js/patches/150-brunakerfi-pricelist.js": {
+    "mtime": 1785354445.0788937,
+    "ast_hash": "17806dea804992b6163de2f5a26c7409",
+    "semantic_hash": "17806dea804992b6163de2f5a26c7409"
+  },
+  "js/patches/151-brunakerfi-doc-import.js": {
+    "mtime": 1785354445.0788937,
+    "ast_hash": "41e8c2f4d5d1ec9dbd6acd65d7967b8e",
+    "semantic_hash": "41e8c2f4d5d1ec9dbd6acd65d7967b8e"
+  },
+  "js/patches/152-til-rukkun.js": {
+    "mtime": 1785354445.0815253,
+    "ast_hash": "4cfbbaf8f717841a5bb9c856410d2212",
+    "semantic_hash": "4cfbbaf8f717841a5bb9c856410d2212"
+  },
+  "js/patches/153-arsskodun.js": {
+    "mtime": 1785354445.0825264,
+    "ast_hash": "d62346159dcf3541f99bf7956feec228",
+    "semantic_hash": "d62346159dcf3541f99bf7956feec228"
+  },
+  "js/patches/154-last-view-memory.js": {
+    "mtime": 1785354445.0835273,
+    "ast_hash": "ef7b5844258802148a13d162352fa059",
+    "semantic_hash": "ef7b5844258802148a13d162352fa059"
+  },
+  "js/patches/155-arsskodun-map-embed.js": {
+    "mtime": 1785354445.0835273,
+    "ast_hash": "9cb59ebed1b41013444f25b2c455cbdc",
+    "semantic_hash": "9cb59ebed1b41013444f25b2c455cbdc"
+  },
+  "js/patches/156-geocode-prewarm.js": {
+    "mtime": 1785354445.084525,
+    "ast_hash": "de73d73fc5ad22311fb64618f7c109d3",
+    "semantic_hash": "de73d73fc5ad22311fb64618f7c109d3"
+  },
+  "js/patches/157-allir-vidskiptavinir.js": {
+    "mtime": 1785354445.0855246,
+    "ast_hash": "ec459257734cdc592c3dda1f7174576a",
+    "semantic_hash": "ec459257734cdc592c3dda1f7174576a"
+  },
+  "js/patches/158-vidsk-detail.js": {
+    "mtime": 1785354445.0855246,
+    "ast_hash": "a64702969e7799a4a72432bef52dfc1e",
+    "semantic_hash": "a64702969e7799a4a72432bef52dfc1e"
+  },
+  "js/patches/159-data-quality-banner.js": {
+    "mtime": 1785354445.0865247,
+    "ast_hash": "732afa23a4e2fd4b0a6166be28ecc3b7",
+    "semantic_hash": "732afa23a4e2fd4b0a6166be28ecc3b7"
+  },
+  "js/patches/16-switchview-dispatch.js": {
+    "mtime": 1785354445.0875254,
+    "ast_hash": "ade4b1c2706d6f6b59af76435345e16f",
+    "semantic_hash": "ade4b1c2706d6f6b59af76435345e16f"
+  },
+  "js/patches/160-company-delete.js": {
+    "mtime": 1785354445.0875254,
+    "ast_hash": "af41770fec49c1220793c1890379b43c",
+    "semantic_hash": "af41770fec49c1220793c1890379b43c"
+  },
+  "js/patches/161-leidsogn.js": {
+    "mtime": 1785354445.0890324,
+    "ast_hash": "b2e5f9a22992335f46650ff46e097a6e",
+    "semantic_hash": "b2e5f9a22992335f46650ff46e097a6e"
+  },
+  "js/patches/162-retire-thjonustutaeki-nav.js": {
+    "mtime": 1785354445.0890324,
+    "ast_hash": "9aece93f52849bbee12f6758bf7c20fd",
+    "semantic_hash": "9aece93f52849bbee12f6758bf7c20fd"
+  },
+  "js/patches/163-hook-chain-fix.js": {
+    "mtime": 1785354445.0900412,
+    "ast_hash": "66ba085aa5b32503b957ec810c332f6a",
+    "semantic_hash": "66ba085aa5b32503b957ec810c332f6a"
+  },
+  "js/patches/164-companies-open-loading-fix.js": {
+    "mtime": 1785354445.0900412,
+    "ast_hash": "2dbc2db8b01ea9f9c80c1c69b23ab449",
+    "semantic_hash": "2dbc2db8b01ea9f9c80c1c69b23ab449"
+  },
+  "js/patches/165-visit-workflow.js": {
+    "mtime": 1785354445.0914147,
+    "ast_hash": "288457c3d7a209b3f237219fe78471bc",
+    "semantic_hash": "288457c3d7a209b3f237219fe78471bc"
+  },
+  "js/patches/166-krofu-yfirlit.js": {
+    "mtime": 1785354445.0914147,
+    "ast_hash": "5246b23b484aa16d6c222c6ad5ad1710",
+    "semantic_hash": "5246b23b484aa16d6c222c6ad5ad1710"
+  },
+  "js/patches/167-hreyfingarlisti.js": {
+    "mtime": 1785354445.0927145,
+    "ast_hash": "85bcccc5f7ba90fe9074d414d9a8c686",
+    "semantic_hash": "85bcccc5f7ba90fe9074d414d9a8c686"
+  },
+  "js/patches/168-company-inspection-report.js": {
+    "mtime": 1785354445.0927145,
+    "ast_hash": "158ae3014c017150d530386da5b01932",
+    "semantic_hash": "158ae3014c017150d530386da5b01932"
+  },
+  "js/patches/169-logo-customization.js": {
+    "mtime": 1785354445.0941348,
+    "ast_hash": "371aafb130c71efc84728d816c9c0296",
+    "semantic_hash": "371aafb130c71efc84728d816c9c0296"
+  },
+  "js/patches/17-form-validation.js": {
+    "mtime": 1785354445.0946417,
+    "ast_hash": "46961dab34ace9e5f170fe2707f1a64f",
+    "semantic_hash": "46961dab34ace9e5f170fe2707f1a64f"
+  },
+  "js/patches/170-unit-delete.js": {
+    "mtime": 1785354445.0946417,
+    "ast_hash": "23be005ff1fba7f3be6b97dbc4caa084",
+    "semantic_hash": "23be005ff1fba7f3be6b97dbc4caa084"
+  },
+  "js/patches/171-sidebar-customizer.js": {
+    "mtime": 1785354445.095651,
+    "ast_hash": "ae1b0d5819792a744f66fd712f73e0e9",
+    "semantic_hash": "ae1b0d5819792a744f66fd712f73e0e9"
+  },
+  "js/patches/172-thjonustuverk.js": {
+    "mtime": 1785354445.0966506,
+    "ast_hash": "e7b2d19cad80247e3c0422214e8fbf16",
+    "semantic_hash": "e7b2d19cad80247e3c0422214e8fbf16"
+  },
+  "js/patches/173-geocode-cache-from-appsettings.js": {
+    "mtime": 1785354445.097649,
+    "ast_hash": "1a419c0dd69a27b9d1a4d4db8e93a5ae",
+    "semantic_hash": "1a419c0dd69a27b9d1a4d4db8e93a5ae"
+  },
+  "js/patches/174-fyrirtaeki-stada.js": {
+    "mtime": 1785354445.097649,
+    "ast_hash": "3fe7a2a74a798a2cd7d129816074f912",
+    "semantic_hash": "3fe7a2a74a798a2cd7d129816074f912"
+  },
+  "js/patches/175-priority-cycle.js": {
+    "mtime": 1785354445.097649,
+    "ast_hash": "370074c3a410695f0e0ac7a395002e00",
+    "semantic_hash": "370074c3a410695f0e0ac7a395002e00"
+  },
+  "js/patches/175-rekstrarfelog.js": {
+    "mtime": 1785354445.1001644,
+    "ast_hash": "9d9fc45b55648e3bbcb85d77e1d00714",
+    "semantic_hash": "9d9fc45b55648e3bbcb85d77e1d00714"
+  },
+  "js/patches/176-company-report-email.js": {
+    "mtime": 1785354445.1001644,
+    "ast_hash": "76e20bf0d73c1fa87eb238454fd12e7f",
+    "semantic_hash": "76e20bf0d73c1fa87eb238454fd12e7f"
+  },
+  "js/patches/176-unit-type-column.js": {
+    "mtime": 1785354445.1001644,
+    "ast_hash": "5839f0ea0e4a6bc3df997dbef9e4cf6c",
+    "semantic_hash": "5839f0ea0e4a6bc3df997dbef9e4cf6c"
+  },
+  "js/patches/177-inservice-clients.js": {
+    "mtime": 1785354445.1014385,
+    "ast_hash": "a9253a684b8e8c3886b7bccf045a5124",
+    "semantic_hash": "a9253a684b8e8c3886b7bccf045a5124"
+  },
+  "js/patches/177-modal-dirty-guard.js": {
+    "mtime": 1785354445.1014385,
+    "ast_hash": "44c9541f08e2b034912adba01267ca21",
+    "semantic_hash": "44c9541f08e2b034912adba01267ca21"
+  },
+  "js/patches/178-beidnir.js": {
+    "mtime": 1785354445.1027849,
+    "ast_hash": "0dc55863cb386b7fc7783f35256bc1c4",
+    "semantic_hash": "0dc55863cb386b7fc7783f35256bc1c4"
+  },
+  "js/patches/178-manual-geocode.js": {
+    "mtime": 1785354445.103846,
+    "ast_hash": "60eb3d846502aac75cee6328a9dfe43e",
+    "semantic_hash": "60eb3d846502aac75cee6328a9dfe43e"
+  },
+  "js/patches/179-mottaka-arrival.js": {
+    "mtime": 1785354445.104849,
+    "ast_hash": "ad6cd05863b4876c2d49eb67a6d38241",
+    "semantic_hash": "ad6cd05863b4876c2d49eb67a6d38241"
+  },
+  "js/patches/18-nav-history.js": {
+    "mtime": 1785354445.104849,
+    "ast_hash": "4b5c43f6678a802f0eb7f7ea78fc3e9d",
+    "semantic_hash": "4b5c43f6678a802f0eb7f7ea78fc3e9d"
+  },
+  "js/patches/180-sidebar-stabilize.js": {
+    "mtime": 1785354445.105863,
+    "ast_hash": "4258eb9373f6174e68f33ecf96ed3d7f",
+    "semantic_hash": "4258eb9373f6174e68f33ecf96ed3d7f"
+  },
+  "js/patches/181-retire-old-invoice-navs.js": {
+    "mtime": 1785354445.105863,
+    "ast_hash": "f1fea8c451e7d8e588cc7e9cc0fd5e8c",
+    "semantic_hash": "f1fea8c451e7d8e588cc7e9cc0fd5e8c"
+  },
+  "js/patches/182-thjonustuver.js": {
+    "mtime": 1785354445.1068647,
+    "ast_hash": "1c8f02b5c1ba089f94c1e2e3aa6f54fb",
+    "semantic_hash": "1c8f02b5c1ba089f94c1e2e3aa6f54fb"
+  },
+  "js/patches/183-thjonustuver-attachments.js": {
+    "mtime": 1785354445.1079242,
+    "ast_hash": "5332dff928cf18770be5866919cf3bbf",
+    "semantic_hash": "5332dff928cf18770be5866919cf3bbf"
+  },
+  "js/patches/184-rekstrarfelag-tag.js": {
+    "mtime": 1785354445.1089208,
+    "ast_hash": "b896206384ac6bff36951f36394f4825",
+    "semantic_hash": "b896206384ac6bff36951f36394f4825"
+  },
+  "js/patches/185-inservice-yfirlit.js": {
+    "mtime": 1785354445.1094263,
+    "ast_hash": "732c812a7ccd811a24abaabafc645224",
+    "semantic_hash": "732c812a7ccd811a24abaabafc645224"
+  },
+  "js/patches/186-print-overview.js": {
+    "mtime": 1785354445.1094263,
+    "ast_hash": "266ed685f9199338b6650585f95b37eb",
+    "semantic_hash": "266ed685f9199338b6650585f95b37eb"
+  },
+  "js/patches/187-inservice-row-reports.js": {
+    "mtime": 1785354445.1104321,
+    "ast_hash": "8b1d8739be6a0768ea65f31fe5c98610",
+    "semantic_hash": "8b1d8739be6a0768ea65f31fe5c98610"
+  },
+  "js/patches/188-promote-customer.js": {
+    "mtime": 1785354445.1104321,
+    "ast_hash": "678ce36acb61b9a9aa12bb811bceec5a",
+    "semantic_hash": "678ce36acb61b9a9aa12bb811bceec5a"
+  },
+  "js/patches/189-sidebar-guardian.js": {
+    "mtime": 1785354445.1114383,
+    "ast_hash": "b5bf9ad07754c0eb55e49b602b42a417",
+    "semantic_hash": "b5bf9ad07754c0eb55e49b602b42a417"
+  },
+  "js/patches/19-kennitala-lookup.js": {
+    "mtime": 1785354445.1124387,
+    "ast_hash": "19e59868da23659b035f6b6b3f707854",
+    "semantic_hash": "19e59868da23659b035f6b6b3f707854"
+  },
+  "js/patches/190-thjonustu-verkstaedi.js": {
+    "mtime": 1785354445.1134377,
+    "ast_hash": "5b210243183eac8ae60011efd7f58f57",
+    "semantic_hash": "5b210243183eac8ae60011efd7f58f57"
+  },
+  "js/patches/191-unit-i-vinnslu.js": {
+    "mtime": 1785354445.1134377,
+    "ast_hash": "10b0bc0d252a71026d45114bd6a24248",
+    "semantic_hash": "10b0bc0d252a71026d45114bd6a24248"
+  },
+  "js/patches/193-payment-review.js": {
+    "mtime": 1785354445.1134377,
+    "ast_hash": "9c54f774f9ebd86405975671c4b77d53",
+    "semantic_hash": "9c54f774f9ebd86405975671c4b77d53"
+  },
+  "js/patches/194-eftirfylgni.js": {
+    "mtime": 1785354445.1147997,
+    "ast_hash": "9b270674f98aad0cafe099dca389d9fd",
+    "semantic_hash": "9b270674f98aad0cafe099dca389d9fd"
+  },
+  "js/patches/195-company-detail-settle.js": {
+    "mtime": 1785354445.1158972,
+    "ast_hash": "1eca101d6631d3a71296923d8bcb78ed",
+    "semantic_hash": "1eca101d6631d3a71296923d8bcb78ed"
+  },
+  "js/patches/196-sidebar-settle.js": {
+    "mtime": 1785354445.1158972,
+    "ast_hash": "bba7ef8257ddd3d5022a5ef7910afab3",
+    "semantic_hash": "bba7ef8257ddd3d5022a5ef7910afab3"
+  },
+  "js/patches/197-bokhald-yfirferd.js": {
+    "mtime": 1785354445.116896,
+    "ast_hash": "ef228148cbebc8676a0ac19abe3a2e71",
+    "semantic_hash": "ef228148cbebc8676a0ac19abe3a2e71"
+  },
+  "js/patches/198-fyrirtaeki-yfirferd.js": {
+    "mtime": 1785354445.116896,
+    "ast_hash": "d491deb4702e5fec2dad8df5867b526e",
+    "semantic_hash": "d491deb4702e5fec2dad8df5867b526e"
+  },
+  "js/patches/199-doc-year-grid.js": {
+    "mtime": 1785354445.1181712,
+    "ast_hash": "55478b35b906971e9b1d020b6b7506bc",
+    "semantic_hash": "55478b35b906971e9b1d020b6b7506bc"
+  },
+  "js/patches/20-mark-invoice-paid.js": {
+    "mtime": 1785354445.1181712,
+    "ast_hash": "2cfddd274b6b6fab6ab680203d90df1c",
+    "semantic_hash": "2cfddd274b6b6fab6ab680203d90df1c"
+  },
+  "js/patches/200-brunakerfi-tilbod.js": {
+    "mtime": 1785354445.1191707,
+    "ast_hash": "7d65077b1bf46c1d11724f212df0b32a",
+    "semantic_hash": "7d65077b1bf46c1d11724f212df0b32a"
+  },
+  "js/patches/201-tilbod-hub.js": {
+    "mtime": 1785354445.1191707,
+    "ast_hash": "53659e2d437bf90812070a77a1d33b2c",
+    "semantic_hash": "53659e2d437bf90812070a77a1d33b2c"
+  },
+  "js/patches/21-inspection-forecast.js": {
+    "mtime": 1785354445.120646,
+    "ast_hash": "c7738d94f4a02586354d0aab04bf0380",
+    "semantic_hash": "c7738d94f4a02586354d0aab04bf0380"
+  },
+  "js/patches/210-vertid-mottaka.js": {
+    "mtime": 1785354445.1218343,
+    "ast_hash": "11a58c13b2015b257962c3365c5e51d3",
+    "semantic_hash": "11a58c13b2015b257962c3365c5e51d3"
+  },
+  "js/patches/211-realtime-refresh.js": {
+    "mtime": 1785354445.1218343,
+    "ast_hash": "96c185da705537dd035338e9ba6df606",
+    "semantic_hash": "96c185da705537dd035338e9ba6df606"
+  },
+  "js/patches/212-langbtn-dock.js": {
+    "mtime": 1785354445.122834,
+    "ast_hash": "be4db252b514ff411109cd4262c29d62",
+    "semantic_hash": "be4db252b514ff411109cd4262c29d62"
+  },
+  "js/patches/213-theme-inspection.js": {
+    "mtime": 1785354445.122834,
+    "ast_hash": "17f97148cd16bb2aad7743ba502f05de",
+    "semantic_hash": "17f97148cd16bb2aad7743ba502f05de"
+  },
+  "js/patches/215-address-backfill.js": {
+    "mtime": 1785354445.123838,
+    "ast_hash": "93f51d6f440f135040c47ef22b6075d6",
+    "semantic_hash": "93f51d6f440f135040c47ef22b6075d6"
+  },
+  "js/patches/216-theme-sidebar-dashboard.js": {
+    "mtime": 1785354445.123838,
+    "ast_hash": "b025661719484a6b843f245f0751f841",
+    "semantic_hash": "b025661719484a6b843f245f0751f841"
+  },
+  "js/patches/217-theme-arsskodun-tidy.js": {
+    "mtime": 1785354445.1248386,
+    "ast_hash": "6133a8663699354fc295e05f4dfa283a",
+    "semantic_hash": "6133a8663699354fc295e05f4dfa283a"
+  },
+  "js/patches/218-url-routing.js": {
+    "mtime": 1785354445.1248386,
+    "ast_hash": "128688390561034a4b654a4cced80b3e",
+    "semantic_hash": "128688390561034a4b654a4cced80b3e"
+  },
+  "js/patches/219-bilstjori.js": {
+    "mtime": 1785354445.125858,
+    "ast_hash": "68179f85ff286aaed858d29f4cfabdcf",
+    "semantic_hash": "68179f85ff286aaed858d29f4cfabdcf"
+  },
+  "js/patches/22-vsk-report.js": {
+    "mtime": 1785354445.1268523,
+    "ast_hash": "88f281d89832b5cafd54662c662adf2e",
+    "semantic_hash": "88f281d89832b5cafd54662c662adf2e"
+  },
+  "js/patches/220-theme-system.js": {
+    "mtime": 1785354445.1268523,
+    "ast_hash": "97b9a2cbfa76ca8450c35fad758552e0",
+    "semantic_hash": "97b9a2cbfa76ca8450c35fad758552e0"
+  },
+  "js/patches/221-kerfi-registry.js": {
+    "mtime": 1785354445.1278534,
+    "ast_hash": "7466076b01d235a47ad5aed5abfd392f",
+    "semantic_hash": "7466076b01d235a47ad5aed5abfd392f"
+  },
+  "js/patches/222-grunsamlegt-flag.js": {
+    "mtime": 1785354445.1288543,
+    "ast_hash": "98c39ecae05cd3a7979f898d64fbaef1",
+    "semantic_hash": "98c39ecae05cd3a7979f898d64fbaef1"
+  },
+  "js/patches/223-uttekt-design.js": {
+    "mtime": 1785354445.1288543,
+    "ast_hash": "e744e74c345ecaf11318e633b7736f05",
+    "semantic_hash": "e744e74c345ecaf11318e633b7736f05"
+  },
+  "js/patches/224-uttekt-taeki.js": {
+    "mtime": 1785354445.1305516,
+    "ast_hash": "c7d4b818796bd8de9c2d6f71594f8adb",
+    "semantic_hash": "c7d4b818796bd8de9c2d6f71594f8adb"
+  },
+  "js/patches/226-uttekt-reader.js": {
+    "mtime": 1785354445.131838,
+    "ast_hash": "503bc33d28361be3fb8b59ad027ae079",
+    "semantic_hash": "503bc33d28361be3fb8b59ad027ae079"
+  },
+  "js/patches/227-trip-cloud-sync.js": {
+    "mtime": 1785354445.131838,
+    "ast_hash": "e65a12d0818eaf630fa248419c71896e",
+    "semantic_hash": "e65a12d0818eaf630fa248419c71896e"
+  },
+  "js/patches/228-saved-report-box.js": {
+    "mtime": 1785354445.131838,
+    "ast_hash": "fd88ad5d176be6df98ef9d1182f247c7",
+    "semantic_hash": "fd88ad5d176be6df98ef9d1182f247c7"
+  },
+  "js/patches/229-sala-theme-bridge.js": {
+    "mtime": 1785354445.1333272,
+    "ast_hash": "fd6ffab7eb075684ecffbf9b6582115a",
+    "semantic_hash": "fd6ffab7eb075684ecffbf9b6582115a"
+  },
+  "js/patches/23-aging-report.js": {
+    "mtime": 1785354445.1333272,
+    "ast_hash": "345281911307e5eb45eb1137ac9c332f",
+    "semantic_hash": "345281911307e5eb45eb1137ac9c332f"
+  },
+  "js/patches/230-brunastal-theme.js": {
+    "mtime": 1785354445.1344514,
+    "ast_hash": "f716880b9fe7c2cd31259fc1d3e4be25",
+    "semantic_hash": "f716880b9fe7c2cd31259fc1d3e4be25"
+  },
+  "js/patches/231-verkbord.js": {
+    "mtime": 1785354445.1354506,
+    "ast_hash": "da4bbe51a495b657e3d69d29fd55793e",
+    "semantic_hash": "da4bbe51a495b657e3d69d29fd55793e"
+  },
+  "js/patches/232-bakendi.js": {
+    "mtime": 1785354445.1354506,
+    "ast_hash": "ea7903f0847bcb5e57a902a216fa640e",
+    "semantic_hash": "ea7903f0847bcb5e57a902a216fa640e"
+  },
+  "js/patches/233-uttekt-pdf-autosave.js": {
+    "mtime": 1785354445.1364515,
+    "ast_hash": "49e9797162b054e911083ad4f158c507",
+    "semantic_hash": "49e9797162b054e911083ad4f158c507"
+  },
+  "js/patches/234-verk-soft-delete.js": {
+    "mtime": 1785354445.1364515,
+    "ast_hash": "ff301fb00d7662176f909231b0935021",
+    "semantic_hash": "ff301fb00d7662176f909231b0935021"
+  },
+  "js/patches/235-deeplink-subroutes.js": {
+    "mtime": 1785354445.1364515,
+    "ast_hash": "2cd6266ef504f1087f919888ecdebecc",
+    "semantic_hash": "2cd6266ef504f1087f919888ecdebecc"
+  },
+  "js/patches/236-customer-sameining.js": {
+    "mtime": 1785354445.1379158,
+    "ast_hash": "8626c87129eaba52b6b1fcafdfbcf25d",
+    "semantic_hash": "8626c87129eaba52b6b1fcafdfbcf25d"
+  },
+  "js/patches/237-customer-brief.js": {
+    "mtime": 1785354445.138926,
+    "ast_hash": "dbca858261d185becdea87b596227faa",
+    "semantic_hash": "dbca858261d185becdea87b596227faa"
+  },
+  "js/patches/238-adstod-banner.js": {
+    "mtime": 1785354445.138926,
+    "ast_hash": "5a90ca1c7d0c846e442f7c75386f3b5f",
+    "semantic_hash": "5a90ca1c7d0c846e442f7c75386f3b5f"
+  },
+  "js/patches/239-adstodarmidstod.js": {
+    "mtime": 1785354445.1399324,
+    "ast_hash": "28986a96d5376f445ccaf4c7a6afdf44",
+    "semantic_hash": "28986a96d5376f445ccaf4c7a6afdf44"
+  },
+  "js/patches/24-contact-log.js": {
+    "mtime": 1785354445.1399324,
+    "ast_hash": "09c788204d1906692f2e6f739d8e8928",
+    "semantic_hash": "09c788204d1906692f2e6f739d8e8928"
+  },
+  "js/patches/240-brunastal-polish.js": {
+    "mtime": 1785354445.1409342,
+    "ast_hash": "d3035939e9a3bb198192dd481c615a7d",
+    "semantic_hash": "d3035939e9a3bb198192dd481c615a7d"
+  },
+  "js/patches/240-reikninga-postur.js": {
+    "mtime": 1785354445.1419353,
+    "ast_hash": "e36ca73092263413a38fc26f67c7ae67",
+    "semantic_hash": "e36ca73092263413a38fc26f67c7ae67"
+  },
+  "js/patches/241-sidebar-badge-unify.js": {
+    "mtime": 1785354445.1419353,
+    "ast_hash": "d8f148b466fa14c81e4af9608e7ad85f",
+    "semantic_hash": "d8f148b466fa14c81e4af9608e7ad85f"
+  },
+  "js/patches/242-modal-widen.js": {
+    "mtime": 1785354445.1429353,
+    "ast_hash": "cf28d2f66c618d119351b76008881858",
+    "semantic_hash": "cf28d2f66c618d119351b76008881858"
+  },
+  "js/patches/243-sidebar-icon-align.js": {
+    "mtime": 1785354445.1433904,
+    "ast_hash": "465c277409d82e810c18f4af2234caeb",
+    "semantic_hash": "465c277409d82e810c18f4af2234caeb"
+  },
+  "js/patches/244-sidebar-svg-icons.js": {
+    "mtime": 1785354445.1439447,
+    "ast_hash": "13af99ab5f49ed9ab8587433ae66f2b6",
+    "semantic_hash": "13af99ab5f49ed9ab8587433ae66f2b6"
+  },
+  "js/patches/245-brunastal-content-skin.js": {
+    "mtime": 1785354445.1439447,
+    "ast_hash": "f7cb29a2655b18c1d893a767780226e7",
+    "semantic_hash": "f7cb29a2655b18c1d893a767780226e7"
+  },
+  "js/patches/246-brunastal-brand-logo.js": {
+    "mtime": 1785354445.1449437,
+    "ast_hash": "00fcf3de2aedc0e2ad7dfc55ea75c4e7",
+    "semantic_hash": "00fcf3de2aedc0e2ad7dfc55ea75c4e7"
+  },
+  "js/patches/25-customer-ledger.js": {
+    "mtime": 1785354445.1449437,
+    "ast_hash": "1488521a888ca7d4a9e74db1f0effcfd",
+    "semantic_hash": "1488521a888ca7d4a9e74db1f0effcfd"
+  },
+  "js/patches/250-views-polish-brunastal.js": {
+    "mtime": 1785354445.1459472,
+    "ast_hash": "4843c247e134c499abcb636fa6f04db5",
+    "semantic_hash": "4843c247e134c499abcb636fa6f04db5"
+  },
+  "js/patches/252-mo-throttle.js": {
+    "mtime": 1785354445.1459472,
+    "ast_hash": "a2cebe05268394da01b3466eae3a5679",
+    "semantic_hash": "a2cebe05268394da01b3466eae3a5679"
+  },
+  "js/patches/253-sala-customer-history.js": {
+    "mtime": 1785354445.1469467,
+    "ast_hash": "8a87d8014f26d2842ac344121ca92636",
+    "semantic_hash": "8a87d8014f26d2842ac344121ca92636"
+  },
+  "js/patches/254-receipt-sender.js": {
+    "mtime": 1785354445.1469467,
+    "ast_hash": "4bea0725be3c851f7cd9f6c821e3a435",
+    "semantic_hash": "4bea0725be3c851f7cd9f6c821e3a435"
+  },
+  "js/patches/255-auto-discount.js": {
+    "mtime": 1785354445.1479435,
+    "ast_hash": "a02e292c20a6f3833c01fbfb861d0728",
+    "semantic_hash": "a02e292c20a6f3833c01fbfb861d0728"
+  },
+  "js/patches/26-credit-invoice.js": {
+    "mtime": 1785354445.1479435,
+    "ast_hash": "f17e80212ed6c631b6ae3b46d0d9ec78",
+    "semantic_hash": "f17e80212ed6c631b6ae3b46d0d9ec78"
+  },
+  "js/patches/260-global-titlebar.js": {
+    "mtime": 1785354445.148944,
+    "ast_hash": "8f8bf5368f8ad38da137e1d4502ef18b",
+    "semantic_hash": "8f8bf5368f8ad38da137e1d4502ef18b"
+  },
+  "js/patches/261-app-profiles.js": {
+    "mtime": 1785354445.1499362,
+    "ast_hash": "70611e561f61ff89192fe6df23543ad9",
+    "semantic_hash": "70611e561f61ff89192fe6df23543ad9"
+  },
+  "js/patches/262-page-editor.js": {
+    "mtime": 1785354445.1499362,
+    "ast_hash": "99c59a935939ef46748c8469199a211d",
+    "semantic_hash": "99c59a935939ef46748c8469199a211d"
+  },
+  "js/patches/262-sidebar-polish.js": {
+    "mtime": 1785354445.1499362,
+    "ast_hash": "476b7c5040b781ea3e64e3959f588721",
+    "semantic_hash": "476b7c5040b781ea3e64e3959f588721"
+  },
+  "js/patches/263-mobile-baseline.js": {
+    "mtime": 1785354445.1512234,
+    "ast_hash": "d49506d3372c30e60a4289cae55b2850",
+    "semantic_hash": "d49506d3372c30e60a4289cae55b2850"
+  },
+  "js/patches/264-beidni-gate.js": {
+    "mtime": 1785354445.1512234,
+    "ast_hash": "4aa92b9a5f0df8b12f33cc37718cdcc5",
+    "semantic_hash": "4aa92b9a5f0df8b12f33cc37718cdcc5"
+  },
+  "js/patches/265-utfyllt-skjol.js": {
+    "mtime": 1785354445.1526515,
+    "ast_hash": "311a123d0ffc3bff629a7e4e4a8b4de6",
+    "semantic_hash": "311a123d0ffc3bff629a7e4e4a8b4de6"
+  },
+  "js/patches/266-arsskodun-workflow-sync.js": {
+    "mtime": 1785354445.1526515,
+    "ast_hash": "6df8ba13cc7f70e0e27147f6bea04493",
+    "semantic_hash": "6df8ba13cc7f70e0e27147f6bea04493"
+  },
+  "js/patches/267-arsskodun-aksturslistar.js": {
+    "mtime": 1785354445.1526515,
+    "ast_hash": "c6afe96d8a993816d2364cc3d3fa1e05",
+    "semantic_hash": "c6afe96d8a993816d2364cc3d3fa1e05"
+  },
+  "js/patches/268-aksturslisti-vakt.js": {
+    "mtime": 1785354445.1536515,
+    "ast_hash": "d92a8d978490165e52d0b4f366eca731",
+    "semantic_hash": "d92a8d978490165e52d0b4f366eca731"
+  },
+  "js/patches/269-verkstaedi-loaned.js": {
+    "mtime": 1785354445.1546514,
+    "ast_hash": "1fd355a48b17b3024ff4cc23d81f405b",
+    "semantic_hash": "1fd355a48b17b3024ff4cc23d81f405b"
+  },
+  "js/patches/27-tilbod-quote.js": {
+    "mtime": 1785354445.1546514,
+    "ast_hash": "d9163f107df74cb9adfddd3dc16b135b",
+    "semantic_hash": "d9163f107df74cb9adfddd3dc16b135b"
+  },
+  "js/patches/270-report-facts-sync.js": {
+    "mtime": 1785354445.155652,
+    "ast_hash": "5fcf390ec36bfe0892f168e7ea5e9ba6",
+    "semantic_hash": "5fcf390ec36bfe0892f168e7ea5e9ba6"
+  },
+  "js/patches/271-visit-year-lock.js": {
+    "mtime": 1785354445.155652,
+    "ast_hash": "2b489c0c49c7c36d267a63fb9421ceec",
+    "semantic_hash": "2b489c0c49c7c36d267a63fb9421ceec"
+  },
+  "js/patches/272-brunakerfi-yfirlit.js": {
+    "mtime": 1785354445.1566541,
+    "ast_hash": "9ffc6042df074bfa8537f8e544c47b06",
+    "semantic_hash": "9ffc6042df074bfa8537f8e544c47b06"
+  },
+  "js/patches/273-brunakerfi-skyrsla.js": {
+    "mtime": 1785354445.157689,
+    "ast_hash": "3d88b3d35df2f6f44be22e0697df3b55",
+    "semantic_hash": "3d88b3d35df2f6f44be22e0697df3b55"
+  },
+  "js/patches/274-brunakerfi-fyrirtaeki.js": {
+    "mtime": 1785354445.157689,
+    "ast_hash": "34ca7a817eface96e14ecfa473354b59",
+    "semantic_hash": "34ca7a817eface96e14ecfa473354b59"
+  },
+  "js/patches/275-sala-tilbod.js": {
+    "mtime": 1785354445.157689,
+    "ast_hash": "ab1599bdfc839b859736d03c05c8a4a0",
+    "semantic_hash": "ab1599bdfc839b859736d03c05c8a4a0"
+  },
+  "js/patches/276-brunakerfi-back.js": {
+    "mtime": 1785354445.1592078,
+    "ast_hash": "24336ae80d5f56701c1f72a031748fa4",
+    "semantic_hash": "24336ae80d5f56701c1f72a031748fa4"
+  },
+  "js/patches/277-nav-back.js": {
+    "mtime": 1785354445.1592078,
+    "ast_hash": "09db4c263348b2c715585822c186bcf1",
+    "semantic_hash": "09db4c263348b2c715585822c186bcf1"
+  },
+  "js/patches/28-calendar.js": {
+    "mtime": 1785354445.1602185,
+    "ast_hash": "de51df28cdd7ffb48f17e743b233aa3e",
+    "semantic_hash": "de51df28cdd7ffb48f17e743b233aa3e"
+  },
+  "js/patches/280-company-service-toggle.js": {
+    "mtime": 1785354445.1602185,
+    "ast_hash": "3eed5942c1c1d30be0e816b561acaf80",
+    "semantic_hash": "3eed5942c1c1d30be0e816b561acaf80"
+  },
+  "js/patches/281-nytt-badge.js": {
+    "mtime": 1785354445.1612153,
+    "ast_hash": "ad29f82a1349ddfbc99a601209e3dacc",
+    "semantic_hash": "ad29f82a1349ddfbc99a601209e3dacc"
+  },
+  "js/patches/285-rekstrarfelag-tools.js": {
+    "mtime": 1785354445.1612153,
+    "ast_hash": "15968b1a3b67ef9f12ba32d191bae3bc",
+    "semantic_hash": "15968b1a3b67ef9f12ba32d191bae3bc"
+  },
+  "js/patches/286-samskipti-panel.js": {
+    "mtime": 1785354445.1622162,
+    "ast_hash": "9e4a6061bfbe855fe69551bff36bda97",
+    "semantic_hash": "9e4a6061bfbe855fe69551bff36bda97"
+  },
+  "js/patches/287-crm-board.js": {
+    "mtime": 1785354445.1622162,
+    "ast_hash": "9f7faf43156c81e37804a9dd064228df",
+    "semantic_hash": "9f7faf43156c81e37804a9dd064228df"
+  },
+  "js/patches/29-email-invoice.js": {
+    "mtime": 1785354445.1622162,
+    "ast_hash": "400c631c03dc9eabcfeafaa13425fada",
+    "semantic_hash": "400c631c03dc9eabcfeafaa13425fada"
+  },
+  "js/patches/30-recurring-service.js": {
+    "mtime": 1785354445.1637187,
+    "ast_hash": "d38c17a8e08fe22ef9c5267bf791f4c0",
+    "semantic_hash": "d38c17a8e08fe22ef9c5267bf791f4c0"
+  },
+  "js/patches/31-route-optimizer.js": {
+    "mtime": 1785354445.1637187,
+    "ast_hash": "4a1c5e12296348f44ab6db3387785160",
+    "semantic_hash": "4a1c5e12296348f44ab6db3387785160"
+  },
+  "js/patches/32-user-auth.js": {
+    "mtime": 1785354445.165081,
+    "ast_hash": "5732765abcb9a76aecf277431ea69c2c",
+    "semantic_hash": "5732765abcb9a76aecf277431ea69c2c"
+  },
+  "js/patches/33-sms-reminder.js": {
+    "mtime": 1785354445.165081,
+    "ast_hash": "86859140bea529c133c67dc6e044341c",
+    "semantic_hash": "86859140bea529c133c67dc6e044341c"
+  },
+  "js/patches/34-dashboard.js": {
+    "mtime": 1785354445.16608,
+    "ast_hash": "8635a2700d1b61510b1885fc61b3ee52",
+    "semantic_hash": "8635a2700d1b61510b1885fc61b3ee52"
+  },
+  "js/patches/35-service-certificate.js": {
+    "mtime": 1785354445.16608,
+    "ast_hash": "6d9c860a76d9cc9cd9be839885209555",
+    "semantic_hash": "6d9c860a76d9cc9cd9be839885209555"
+  },
+  "js/patches/36-stock-management.js": {
+    "mtime": 1785354445.1670804,
+    "ast_hash": "26dbc699df24750dce3bb8d884ebdcb5",
+    "semantic_hash": "26dbc699df24750dce3bb8d884ebdcb5"
+  },
+  "js/patches/37-bulk-reminders.js": {
+    "mtime": 1785354445.1670804,
+    "ast_hash": "2dbe48c496bf3c9f87abb0efe00af384",
+    "semantic_hash": "2dbe48c496bf3c9f87abb0efe00af384"
+  },
+  "js/patches/38-insp-form.js": {
+    "mtime": 1785354445.1680806,
+    "ast_hash": "986491a076cb270e72b394756148b8da",
+    "semantic_hash": "986491a076cb270e72b394756148b8da"
+  },
+  "js/patches/39-purchase-orders.js": {
+    "mtime": 1785354445.1680806,
+    "ast_hash": "9543b35aa4280bc9e3058b1cb32aae85",
+    "semantic_hash": "9543b35aa4280bc9e3058b1cb32aae85"
+  },
+  "js/patches/40-time-tracking.js": {
+    "mtime": 1785354445.1690822,
+    "ast_hash": "494dd87153f3aa39a63d0c978bd076f5",
+    "semantic_hash": "494dd87153f3aa39a63d0c978bd076f5"
+  },
+  "js/patches/41-expense-tracking.js": {
+    "mtime": 1785354445.1690822,
+    "ast_hash": "dcd6978d008cd91787d0329917163672",
+    "semantic_hash": "dcd6978d008cd91787d0329917163672"
+  },
+  "js/patches/42-weekly-report.js": {
+    "mtime": 1785354445.1701255,
+    "ast_hash": "e081d5497bf96f687d9552ff9bbd3d7a",
+    "semantic_hash": "e081d5497bf96f687d9552ff9bbd3d7a"
+  },
+  "js/patches/43-job-profitability.js": {
+    "mtime": 1785354445.1701255,
+    "ast_hash": "15140680a41fb25203cad5592a127577",
+    "semantic_hash": "15140680a41fb25203cad5592a127577"
+  },
+  "js/patches/44-settings-manager.js": {
+    "mtime": 1785354445.1711235,
+    "ast_hash": "e03a23e1f5887f580fd8882163aa0f84",
+    "semantic_hash": "e03a23e1f5887f580fd8882163aa0f84"
+  },
+  "js/patches/45-verkdagbok-photos.js": {
+    "mtime": 1785354445.1711235,
+    "ast_hash": "f67d4c34981f12914020203d62845444",
+    "semantic_hash": "f67d4c34981f12914020203d62845444"
+  },
+  "js/patches/46-quick-links.js": {
+    "mtime": 1785354445.1721244,
+    "ast_hash": "66fdd51fc90aa2324328cc4721acfc71",
+    "semantic_hash": "66fdd51fc90aa2324328cc4721acfc71"
+  },
+  "js/patches/47-mileage-log.js": {
+    "mtime": 1785354445.1721244,
+    "ast_hash": "8757075691349d24365032587ec39ac9",
+    "semantic_hash": "8757075691349d24365032587ec39ac9"
+  },
+  "js/patches/48-notifications.js": {
+    "mtime": 1785354445.1734314,
+    "ast_hash": "c8ae338914dc31e6f2586c0628c92be2",
+    "semantic_hash": "c8ae338914dc31e6f2586c0628c92be2"
+  },
+  "js/patches/49-backup.js": {
+    "mtime": 1785354445.1734314,
+    "ast_hash": "e51dfa67bf96fb2b0cdb98fa93e5c9b9",
+    "semantic_hash": "e51dfa67bf96fb2b0cdb98fa93e5c9b9"
+  },
+  "js/patches/50-service-contracts.js": {
+    "mtime": 1785354445.1746137,
+    "ast_hash": "e007b73989b05bb7910f49835cc71d47",
+    "semantic_hash": "e007b73989b05bb7910f49835cc71d47"
+  },
+  "js/patches/51-customer-portal.js": {
+    "mtime": 1785354445.1751175,
+    "ast_hash": "b8b102dbe80de1c9feb66035e62fdd37",
+    "semantic_hash": "b8b102dbe80de1c9feb66035e62fdd37"
+  },
+  "js/patches/52-tech-route.js": {
+    "mtime": 1785354445.1751175,
+    "ast_hash": "78226cb2a516c7d218bf46c78bb45426",
+    "semantic_hash": "78226cb2a516c7d218bf46c78bb45426"
+  },
+  "js/patches/53-auto-email-invoice.js": {
+    "mtime": 1785354445.1751175,
+    "ast_hash": "7f94deede699f26ef86695578f7efc29",
+    "semantic_hash": "7f94deede699f26ef86695578f7efc29"
+  },
+  "js/patches/54-sales-analytics.js": {
+    "mtime": 1785354445.1761422,
+    "ast_hash": "f477b070da28ac5c75bb441d62260ef8",
+    "semantic_hash": "f477b070da28ac5c75bb441d62260ef8"
+  },
+  "js/patches/55-product-images.js": {
+    "mtime": 1785354445.1761422,
+    "ast_hash": "2548cba29138e4702538f3423bec4eb9",
+    "semantic_hash": "2548cba29138e4702538f3423bec4eb9"
+  },
+  "js/patches/56-global-search.js": {
+    "mtime": 1785354445.177538,
+    "ast_hash": "9db2d6b326fbe0472fbd4bbcbfea2857",
+    "semantic_hash": "9db2d6b326fbe0472fbd4bbcbfea2857"
+  },
+  "js/patches/57-qr-codes.js": {
+    "mtime": 1785354445.177538,
+    "ast_hash": "35389ed413bdd800de6185e7059b7391",
+    "semantic_hash": "35389ed413bdd800de6185e7059b7391"
+  },
+  "js/patches/58-device-history.js": {
+    "mtime": 1785354445.177538,
+    "ast_hash": "305bd7dbd0790c55cc2524f4c197d7f0",
+    "semantic_hash": "305bd7dbd0790c55cc2524f4c197d7f0"
+  },
+  "js/patches/59-technicians.js": {
+    "mtime": 1785354445.179044,
+    "ast_hash": "6fbc85cff7b1c3aac772dd8d0e1f3671",
+    "semantic_hash": "6fbc85cff7b1c3aac772dd8d0e1f3671"
+  },
+  "js/patches/60-signature-pad.js": {
+    "mtime": 1785354445.179044,
+    "ast_hash": "12696624688dea4d0c662392a996988a",
+    "semantic_hash": "12696624688dea4d0c662392a996988a"
+  },
+  "js/patches/61-command-center.js": {
+    "mtime": 1785354445.1801333,
+    "ast_hash": "c8273d499f5cf2a598650c69ca87bd0e",
+    "semantic_hash": "c8273d499f5cf2a598650c69ca87bd0e"
+  },
+  "js/patches/62-templates.js": {
+    "mtime": 1785354445.1801333,
+    "ast_hash": "9751e8977de9ce7579dc304342e922c1",
+    "semantic_hash": "9751e8977de9ce7579dc304342e922c1"
+  },
+  "js/patches/63-customer-map.js": {
+    "mtime": 1785354445.181131,
+    "ast_hash": "e0384811f5d591e57d3c5723305d2fef",
+    "semantic_hash": "e0384811f5d591e57d3c5723305d2fef"
+  },
+  "js/patches/64-audit-log.js": {
+    "mtime": 1785354445.181131,
+    "ast_hash": "bcaacea48589fe0c6651f2c16b4b6647",
+    "semantic_hash": "bcaacea48589fe0c6651f2c16b4b6647"
+  },
+  "js/patches/65-refill-log.js": {
+    "mtime": 1785354445.1821465,
+    "ast_hash": "47ea45556cf3b975fe188da798e57182",
+    "semantic_hash": "47ea45556cf3b975fe188da798e57182"
+  },
+  "js/patches/66-dark-mode.js": {
+    "mtime": 1785354445.1821465,
+    "ast_hash": "bb7e719efbe3d8ad3d1b382b349fb1d0",
+    "semantic_hash": "bb7e719efbe3d8ad3d1b382b349fb1d0"
+  },
+  "js/patches/66-pricelist-seed.js": {
+    "mtime": 1785354445.1821465,
+    "ast_hash": "ec8bc01b1c5661fb493fc6264129d0ed",
+    "semantic_hash": "ec8bc01b1c5661fb493fc6264129d0ed"
+  },
+  "js/patches/67-data-reset.js": {
+    "mtime": 1785354445.183359,
+    "ast_hash": "0d2a556c25e234257259c96dbc75b246",
+    "semantic_hash": "0d2a556c25e234257259c96dbc75b246"
+  },
+  "js/patches/68-sidebar-reorder.js": {
+    "mtime": 1785354445.183359,
+    "ast_hash": "42a7c54246d764be9d40d45bee0f1bbd",
+    "semantic_hash": "42a7c54246d764be9d40d45bee0f1bbd"
+  },
+  "js/patches/71-tilbod-photos.js": {
+    "mtime": 1785354445.1848166,
+    "ast_hash": "65ec136bb7d209010abc9140ea9cd8d4",
+    "semantic_hash": "65ec136bb7d209010abc9140ea9cd8d4"
+  },
+  "js/patches/72-customer-import.js": {
+    "mtime": 1785354445.1848166,
+    "ast_hash": "405020dc6bf2415ce98fa207341d7d33",
+    "semantic_hash": "405020dc6bf2415ce98fa207341d7d33"
+  },
+  "js/patches/73-bulk-add-units.js": {
+    "mtime": 1785354445.1859064,
+    "ast_hash": "dfd36d9aac7e227e2bcd377076d229ff",
+    "semantic_hash": "dfd36d9aac7e227e2bcd377076d229ff"
+  },
+  "js/patches/74-sala-tweaks.js": {
+    "mtime": 1785354445.1859064,
+    "ast_hash": "4c1ca28f763f943f2c995621636b811f",
+    "semantic_hash": "4c1ca28f763f943f2c995621636b811f"
+  },
+  "js/patches/75-fyrirtaeki-detail-enrich.js": {
+    "mtime": 1785354445.1859064,
+    "ast_hash": "b8b0d02c8ddfb03dba95cb06992c08c5",
+    "semantic_hash": "b8b0d02c8ddfb03dba95cb06992c08c5"
+  },
+  "js/patches/76-sidebar-polish.js": {
+    "mtime": 1785354445.1869855,
+    "ast_hash": "54a98707dd745cecfc13127ac4fe94bf",
+    "semantic_hash": "54a98707dd745cecfc13127ac4fe94bf"
+  },
+  "js/patches/77-gjaldfallid-group.js": {
+    "mtime": 1785354445.1869855,
+    "ast_hash": "6cc635e5868302bb0f90cfb496da30c5",
+    "semantic_hash": "6cc635e5868302bb0f90cfb496da30c5"
+  },
+  "js/patches/78-counter-workshop-redesign.js": {
+    "mtime": 1785354445.1881735,
+    "ast_hash": "a16349a02d2f9302d734e973da5b6530",
+    "semantic_hash": "a16349a02d2f9302d734e973da5b6530"
+  },
+  "js/patches/79-sidebar-trim.js": {
+    "mtime": 1785354445.1881735,
+    "ast_hash": "9708f5e2e7ef863b7f066eb6ae99dccc",
+    "semantic_hash": "9708f5e2e7ef863b7f066eb6ae99dccc"
+  },
+  "js/patches/80-aux-products.js": {
+    "mtime": 1785354445.1891718,
+    "ast_hash": "7fb5be2feb3845232d717ac94ef68186",
+    "semantic_hash": "7fb5be2feb3845232d717ac94ef68186"
+  },
+  "js/patches/81-sala-shortcuts.js": {
+    "mtime": 1785354445.1891718,
+    "ast_hash": "265475bc5210eefcdc5d3a98234cc986",
+    "semantic_hash": "265475bc5210eefcdc5d3a98234cc986"
+  },
+  "js/patches/82-reikningar-monthly.js": {
+    "mtime": 1785354445.1891718,
+    "ast_hash": "29e41c456852f1401c61148c4d2239ff",
+    "semantic_hash": "29e41c456852f1401c61148c4d2239ff"
+  },
+  "js/patches/83-verkbeidni-payment.js": {
+    "mtime": 1785354445.1906562,
+    "ast_hash": "b45187bfb4a7869e7c8aebec76b4b64b",
+    "semantic_hash": "b45187bfb4a7869e7c8aebec76b4b64b"
+  },
+  "js/patches/84-print-test.js": {
+    "mtime": 1785354445.1911628,
+    "ast_hash": "276411eaebe34c170d2fe66e090d9c9a",
+    "semantic_hash": "276411eaebe34c170d2fe66e090d9c9a"
+  },
+  "js/patches/85-app-settings.js": {
+    "mtime": 1785354445.1911628,
+    "ast_hash": "966212eddab7427617f927bc16720df6",
+    "semantic_hash": "966212eddab7427617f927bc16720df6"
+  },
+  "js/patches/86-settings-ui.js": {
+    "mtime": 1785354445.1921787,
+    "ast_hash": "5ea73ece57fb4c6f78e005567d7113f8",
+    "semantic_hash": "5ea73ece57fb4c6f78e005567d7113f8"
+  },
+  "js/patches/87-sala-from-settings.js": {
+    "mtime": 1785354445.1921787,
+    "ast_hash": "8f0540358e5c3c125afae6aec50b9070",
+    "semantic_hash": "8f0540358e5c3c125afae6aec50b9070"
+  },
+  "js/patches/88-apply-utlit-almennt.js": {
+    "mtime": 1785354445.1933265,
+    "ast_hash": "2e36d39dba376c69853e07526aac3cbb",
+    "semantic_hash": "2e36d39dba376c69853e07526aac3cbb"
+  },
+  "js/patches/89-monthly-inspection-strip.js": {
+    "mtime": 1785354445.1933265,
+    "ast_hash": "451d91f960c3c1f540aa31ad61b62f9a",
+    "semantic_hash": "451d91f960c3c1f540aa31ad61b62f9a"
+  },
+  "js/patches/90-unit-row-actions.js": {
+    "mtime": 1785354445.1933265,
+    "ast_hash": "835844803d9955ed4c0f19d40381f9ae",
+    "semantic_hash": "835844803d9955ed4c0f19d40381f9ae"
+  },
+  "js/patches/91-important-companies.js": {
+    "mtime": 1785354445.1948316,
+    "ast_hash": "1089595c618014a8f8fc03035de7ff49",
+    "semantic_hash": "1089595c618014a8f8fc03035de7ff49"
+  },
+  "js/patches/92-credit-by-num.js": {
+    "mtime": 1785354445.1948316,
+    "ast_hash": "5eaf908807e1026735832162cb165b39",
+    "semantic_hash": "5eaf908807e1026735832162cb165b39"
+  },
+  "js/patches/93-detail-stay-open.js": {
+    "mtime": 1785354445.1948316,
+    "ast_hash": "1de7246507844dbec74ececbcad09f4b",
+    "semantic_hash": "1de7246507844dbec74ececbcad09f4b"
+  },
+  "js/patches/94-document-templates.js": {
+    "mtime": 1785354445.1962502,
+    "ast_hash": "8074f8c4f29f36a2bb08671fc7627ba5",
+    "semantic_hash": "8074f8c4f29f36a2bb08671fc7627ba5"
+  },
+  "js/patches/95-barcode-manager.js": {
+    "mtime": 1785354445.1972485,
+    "ast_hash": "48f28625275ce5332398f6f19eefb0b1",
+    "semantic_hash": "48f28625275ce5332398f6f19eefb0b1"
+  },
+  "js/patches/96-document-attachments.js": {
+    "mtime": 1785354445.1972485,
+    "ast_hash": "cb648b44dbe35d457ca32cd0fed3337f",
+    "semantic_hash": "cb648b44dbe35d457ca32cd0fed3337f"
+  },
+  "js/patches/97-notes-scratchpad.js": {
+    "mtime": 1785354445.1983721,
+    "ast_hash": "e55fcd44740938af545d815bb00cd080",
+    "semantic_hash": "e55fcd44740938af545d815bb00cd080"
+  },
+  "js/patches/98-document-fill-in.js": {
+    "mtime": 1785354445.1988761,
+    "ast_hash": "99da1c3a565f53c8d8420323e13f22fd",
+    "semantic_hash": "99da1c3a565f53c8d8420323e13f22fd"
+  },
+  "js/patches/99-companies-list-fix.js": {
+    "mtime": 1785354445.1988761,
+    "ast_hash": "599e504acce6a34744531830d3ed9e58",
+    "semantic_hash": "599e504acce6a34744531830d3ed9e58"
+  },
+  "js/pos.js": {
+    "mtime": 1785354445.199909,
+    "ast_hash": "b755f12fcf8cf224f4bd899d8107fd51",
+    "semantic_hash": "b755f12fcf8cf224f4bd899d8107fd51"
+  },
+  "js/posprint.js": {
+    "mtime": 1785354445.199909,
+    "ast_hash": "978ca6dbb2dbcedd2639e2bc63617208",
+    "semantic_hash": "978ca6dbb2dbcedd2639e2bc63617208"
+  },
+  "js/printphonefix.js": {
+    "mtime": 1785354445.200908,
+    "ast_hash": "e2b40aed4b60621832753217313631d2",
+    "semantic_hash": "e2b40aed4b60621832753217313631d2"
+  },
+  "js/qrbulkprint.js": {
+    "mtime": 1785354445.201454,
+    "ast_hash": "1077c9400e82bc0dd615e7232c35e014",
+    "semantic_hash": "1077c9400e82bc0dd615e7232c35e014"
+  },
+  "js/qrprint.js": {
+    "mtime": 1785354445.201454,
+    "ast_hash": "cb185cb284f185d261e5cf37362591aa",
+    "semantic_hash": "cb185cb284f185d261e5cf37362591aa"
+  },
+  "js/qrscan.js": {
+    "mtime": 1785354445.2024653,
+    "ast_hash": "0dfece73dd400fedccc04f1bb35c5a99",
+    "semantic_hash": "0dfece73dd400fedccc04f1bb35c5a99"
+  },
+  "js/qrtag.js": {
+    "mtime": 1785354445.2024653,
+    "ast_hash": "3a502e9409cec3602ca3f3c56e6e9681",
+    "semantic_hash": "3a502e9409cec3602ca3f3c56e6e9681"
+  },
+  "js/sala.js": {
+    "mtime": 1785354445.2034705,
+    "ast_hash": "c67d65314a87e8cb50a7ef3e84b220fa",
+    "semantic_hash": "c67d65314a87e8cb50a7ef3e84b220fa"
+  },
+  "js/scanmode.js": {
+    "mtime": 1785354445.2034705,
+    "ast_hash": "9aa954ba6dd77ce189ae4d15f5954e9c",
+    "semantic_hash": "9aa954ba6dd77ce189ae4d15f5954e9c"
+  },
+  "js/scanner.js": {
+    "mtime": 1785354445.2034705,
+    "ast_hash": "de1236a98b0d9d4d9c54ada983c74cb7",
+    "semantic_hash": "de1236a98b0d9d4d9c54ada983c74cb7"
+  },
+  "js/searchbox.js": {
+    "mtime": 1785354445.2045596,
+    "ast_hash": "f3d1084c3c396d7b35867fc30f9c2dc6",
+    "semantic_hash": "f3d1084c3c396d7b35867fc30f9c2dc6"
+  },
+  "js/settigeymslu.js": {
+    "mtime": 1785354445.2045596,
+    "ast_hash": "6b99a28d996d734a782251f81e00dd5b",
+    "semantic_hash": "6b99a28d996d734a782251f81e00dd5b"
+  },
+  "js/tekjur.js": {
+    "mtime": 1785354445.20556,
+    "ast_hash": "189aa1ff68f85cef55edde49bf4c06be",
+    "semantic_hash": "189aa1ff68f85cef55edde49bf4c06be"
+  },
+  "js/utils.js": {
+    "mtime": 1785354445.20556,
+    "ast_hash": "2e3c443de3c6e9826b59e784cb2c39a0",
+    "semantic_hash": "2e3c443de3c6e9826b59e784cb2c39a0"
+  },
+  "js/v9.js": {
+    "mtime": 1785354445.2065597,
+    "ast_hash": "a680b3151d8e93c04a8120b996bc0e8e",
+    "semantic_hash": "a680b3151d8e93c04a8120b996bc0e8e"
+  },
+  "js/vbu.js": {
+    "mtime": 1785354445.2065597,
+    "ast_hash": "707a187b4670f4353f0a327b36e4e39d",
+    "semantic_hash": "707a187b4670f4353f0a327b36e4e39d"
+  },
+  "js/vidskiptavinir.js": {
+    "mtime": 1785354445.2065597,
+    "ast_hash": "401105ba473975a2afed4e2a8bb2cddb",
+    "semantic_hash": "401105ba473975a2afed4e2a8bb2cddb"
+  },
+  "js/vorur.js": {
+    "mtime": 1785354445.2079687,
+    "ast_hash": "09c00d370de1e5e6cea9d0b83a295927",
+    "semantic_hash": "09c00d370de1e5e6cea9d0b83a295927"
+  },
+  "manifest-bilstjori.json": {
+    "mtime": 1785354445.2079687,
+    "ast_hash": "34d9e55fb26e059fb0bb43f3d1928e52",
+    "semantic_hash": "34d9e55fb26e059fb0bb43f3d1928e52"
+  },
+  "manifest-brunaholf.json": {
+    "mtime": 1785354445.2089677,
+    "ast_hash": "d859591a183d79f9d95f2175173d2386",
+    "semantic_hash": "d859591a183d79f9d95f2175173d2386"
+  },
+  "manifest-brunakerfi.json": {
+    "mtime": 1785354445.2094724,
+    "ast_hash": "042de1efd3a5345007e58812bea513f7",
+    "semantic_hash": "042de1efd3a5345007e58812bea513f7"
+  },
+  "manifest-fjarmal.json": {
+    "mtime": 1785354445.2094724,
+    "ast_hash": "11b8e943976136b22dc158148ee1c356",
+    "semantic_hash": "11b8e943976136b22dc158148ee1c356"
+  },
+  "manifest-verkefni.json": {
+    "mtime": 1785354445.2094724,
+    "ast_hash": "ef2d88d06a8d30776e9ad99735dbe958",
+    "semantic_hash": "ef2d88d06a8d30776e9ad99735dbe958"
+  },
+  "manifest.json": {
+    "mtime": 1785354445.21054,
+    "ast_hash": "230b01facd04cc865ea7dba72d29cac4",
+    "semantic_hash": "230b01facd04cc865ea7dba72d29cac4"
+  },
+  "netlify/functions/email-send.js": {
+    "mtime": 1785354445.216004,
+    "ast_hash": "0ab374fc4f69cf8ec8d6a3ba27cff76a",
+    "semantic_hash": "0ab374fc4f69cf8ec8d6a3ba27cff76a"
+  },
+  "netlify/functions/geocode-all-background.js": {
+    "mtime": 1785354445.2172194,
+    "ast_hash": "e828942e71e39116ec5091069659ddb8",
+    "semantic_hash": "e828942e71e39116ec5091069659ddb8"
+  },
+  "netlify/functions/geocode.js": {
+    "mtime": 1785354445.2172194,
+    "ast_hash": "4b728f2a9c123629e374c22cc4ffd25c",
+    "semantic_hash": "4b728f2a9c123629e374c22cc4ffd25c"
+  },
+  "netlify/functions/graph-send.js": {
+    "mtime": 1785354445.2172194,
+    "ast_hash": "1e05b5043af980fc0d334311d65c1dd8",
+    "semantic_hash": "1e05b5043af980fc0d334311d65c1dd8"
+  },
+  "netlify/functions/kt-lookup.js": {
+    "mtime": 1785354445.2186859,
+    "ast_hash": "e73fe2a91d72a7205f1acfcc8852f384",
+    "semantic_hash": "e73fe2a91d72a7205f1acfcc8852f384"
+  },
+  "netlify/functions/ocr-scan.js": {
+    "mtime": 1785354445.2191908,
+    "ast_hash": "632da72ffdccd0eba0039c425f364047",
+    "semantic_hash": "632da72ffdccd0eba0039c425f364047"
+  },
+  "netlify/functions/payday-pull-slokk.js": {
+    "mtime": 1785354445.2191908,
+    "ast_hash": "1ac11b6a645325c6fcec0fdb300849c7",
+    "semantic_hash": "1ac11b6a645325c6fcec0fdb300849c7"
+  },
+  "netlify/functions/payday-push.js": {
+    "mtime": 1785354445.220211,
+    "ast_hash": "4265eb79747a427c2365fd085ef05e95",
+    "semantic_hash": "4265eb79747a427c2365fd085ef05e95"
+  },
+  "netlify/functions/payday-sync-cron.js": {
+    "mtime": 1785354445.220211,
+    "ast_hash": "77d48d77b06a59d641810d4b3cf53dd0",
+    "semantic_hash": "77d48d77b06a59d641810d4b3cf53dd0"
+  },
+  "netlify/functions/payday-sync-paid.js": {
+    "mtime": 1785354445.2212157,
+    "ast_hash": "cdcdf314ff87efca1c97d066ed5af2bf",
+    "semantic_hash": "cdcdf314ff87efca1c97d066ed5af2bf"
+  },
+  "netlify/functions/postur-reply.js": {
+    "mtime": 1785354445.2212157,
+    "ast_hash": "130f92040f08598dd730c6dafdeb5a55",
+    "semantic_hash": "130f92040f08598dd730c6dafdeb5a55"
+  },
+  "netlify/functions/skyrsla-proxy.js": {
+    "mtime": 1785354445.2212157,
+    "ast_hash": "81d32fbc58123402fb6d1c3bd8b210dc",
+    "semantic_hash": "81d32fbc58123402fb6d1c3bd8b210dc"
+  },
+  "netlify/functions/tv-summary.js": {
+    "mtime": 1785354445.2225783,
+    "ast_hash": "f84da307574a670818d1aa0d2d9f7169",
+    "semantic_hash": "f84da307574a670818d1aa0d2d9f7169"
+  },
+  "package.json": {
+    "mtime": 1785354445.2225783,
+    "ast_hash": "f23bbea202aeff03f6c469e7049a2d62",
+    "semantic_hash": "f23bbea202aeff03f6c469e7049a2d62"
+  },
+  "skills-lock.json": {
+    "mtime": 1785354445.2238114,
+    "ast_hash": "24cc9ae49760cade4507c682d67c91bc",
+    "semantic_hash": "24cc9ae49760cade4507c682d67c91bc"
+  },
+  "sql/2026-06-05_steypustodin_backfill.sql": {
+    "mtime": 1785354445.2252765,
+    "ast_hash": "6e0f8d3046b09ec4d773da0db31673f4",
+    "semantic_hash": "6e0f8d3046b09ec4d773da0db31673f4"
+  },
+  "sql/2026-06-05_taeki_custody.sql": {
+    "mtime": 1785354445.2252765,
+    "ast_hash": "824cec1605e2b4354b534b64307ee295",
+    "semantic_hash": "824cec1605e2b4354b534b64307ee295"
+  },
+  "sql/2026-06-05_thorlakshofn_relabel.sql": {
+    "mtime": 1785354445.2252765,
+    "ast_hash": "f39aa344d14f60c6a84a3a2cb1a80264",
+    "semantic_hash": "f39aa344d14f60c6a84a3a2cb1a80264"
+  },
+  "sql/2026-06-05_tilbod_freeform_contact.sql": {
+    "mtime": 1785354445.2263126,
+    "ast_hash": "ce85864167ba123fd7a633c61590ebb4",
+    "semantic_hash": "ce85864167ba123fd7a633c61590ebb4"
+  },
+  "sql/2026-06-05_tilbod_lysing_link.sql": {
+    "mtime": 1785354445.2263126,
+    "ast_hash": "482b8d13a3cb180b2ce93bcada2b852e",
+    "semantic_hash": "482b8d13a3cb180b2ce93bcada2b852e"
+  },
+  "sql/2026-06-05_unify_taeki_base_seasonal.sql": {
+    "mtime": 1785354445.2273786,
+    "ast_hash": "f51b5d974b17612a04a742be7ddf0992",
+    "semantic_hash": "f51b5d974b17612a04a742be7ddf0992"
+  },
+  "sql/2026-06-10_create_service_visits.sql": {
+    "mtime": 1785354445.2273786,
+    "ast_hash": "26fbcf722ec3c14d4bed41fd0ba82490",
+    "semantic_hash": "26fbcf722ec3c14d4bed41fd0ba82490"
+  },
+  "sql/2026-06-12_solur_krafa_sent.sql": {
+    "mtime": 1785354445.2273786,
+    "ast_hash": "a659a9e71016d6b99fb6db6cfb829e17",
+    "semantic_hash": "a659a9e71016d6b99fb6db6cfb829e17"
+  },
+  "sql/app_settings.sql": {
+    "mtime": 1785354445.2273786,
+    "ast_hash": "7526667c090daaf9324545ec86bab373",
+    "semantic_hash": "7526667c090daaf9324545ec86bab373"
+  },
+  "sql/geocode_cache.sql": {
+    "mtime": 1785354445.2288935,
+    "ast_hash": "5c61150b29dec906980cda7a9b9e5d9f",
+    "semantic_hash": "5c61150b29dec906980cda7a9b9e5d9f"
+  },
+  "sql/solur_credit_columns.sql": {
+    "mtime": 1785354445.2288935,
+    "ast_hash": "0fcb4011df320279d0ad84ed2386cef7",
+    "semantic_hash": "0fcb4011df320279d0ad84ed2386cef7"
+  },
+  "sql/solur_status.sql": {
+    "mtime": 1785354445.2298977,
+    "ast_hash": "95eaf55c07c68ac1b328eb552efe5862",
+    "semantic_hash": "95eaf55c07c68ac1b328eb552efe5862"
+  },
+  "sql/verklidur_notes_and_credit.sql": {
+    "mtime": 1785354445.2298977,
+    "ast_hash": "65cb806553ff71ea9ecd4451fe4ce3f2",
+    "semantic_hash": "65cb806553ff71ea9ecd4451fe4ce3f2"
+  },
+  "sql/verklidur_uttaeki_link.sql": {
+    "mtime": 1785354445.2309022,
+    "ast_hash": "b24bdc0fb4415e841259ca85119e4e81",
+    "semantic_hash": "b24bdc0fb4415e841259ca85119e4e81"
+  },
+  "sw.js": {
+    "mtime": 1785354445.2309022,
+    "ast_hash": "c58597db2dd81a93783129c056ed38a1",
+    "semantic_hash": "c58597db2dd81a93783129c056ed38a1"
+  },
+  "tools/audit-pagination.cjs": {
+    "mtime": 1785354445.232341,
+    "ast_hash": "f2c4758999a1374142af3d3df7389ffc",
+    "semantic_hash": "f2c4758999a1374142af3d3df7389ffc"
+  },
+  "verify.js": {
+    "mtime": 1785354445.232341,
+    "ast_hash": "4855dbb035fdf7afda46af4597eecb9a",
+    "semantic_hash": "4855dbb035fdf7afda46af4597eecb9a"
+  },
+  "docs/video/saekja-inn.mp4": {
+    "mtime": 1785354444.9669542,
+    "ast_hash": "e888fe05d29a94f246d0419b8235d4c4",
+    "semantic_hash": "e888fe05d29a94f246d0419b8235d4c4"
+  },
+  "docs/video/walk-in.mp4": {
+    "mtime": 1785354444.9801474,
+    "ast_hash": "6e3521d2254c66a6d5f6a72a3cc6de98",
+    "semantic_hash": "6e3521d2254c66a6d5f6a72a3cc6de98"
+  }
+}

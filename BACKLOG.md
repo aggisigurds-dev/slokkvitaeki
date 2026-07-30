@@ -317,3 +317,13 @@ Key facts the migration must handle:
 
 All of steps 1–5 are writes and must run via the Supabase SQL path with the
 backup in hand — NOT from the web sandbox.
+
+## Endpoint-auth (EDGE_SHARED_KEY) — 2026-07-29
+
+Shared-secret gátt („x-eldklar-key" haus) er komin á payday-push, payday-sync-paid,
+email-send, graph-send, ocr-scan, tv-summary og postur-reply — **default-open**:
+gerir EKKERT fyrr en env-varinn er settur. Til að virkja: (a) búa til langan
+random lykil (t.d. `openssl rand -hex 32`), (b) setja `EDGE_SHARED_KEY` á
+slokkvitaeki Netlify-síðuna, (c) setja SAMA gildi í `app_kv` (key='edge_shared_key',
+value) svo framendinn (patch 290) finni hann, (d) staðfesta FYRST að brunaholf og
+aðrir ytri kallarar á þessa endapunkta sendi hausinn — annars fá þeir 401.

@@ -345,16 +345,27 @@ var Settings = {
     el.innerHTML = html;
   },
   load: async function() {
-    if (!DB.online) { this.render(); return; }
-    var results = await Promise.all([
-      DB.sb.from('taekjategundier').select('*').order('heiti'),
-      DB.sb.from('thjonustategundier').select('*').order('heiti'),
-      DB.sb.from('taeknimenn').select('*').order('nafn')
-    ]);
-    this.taekjategundier = results[0].data || [];
-    this.thjonustategundier = results[1].data || [];
-    this.taeknimenn = results[2].data || [];
-    this.render();
+    try {
+      if (!DB.online) { this.render(); return; }
+      var results = await Promise.all([
+        DB.sb.from('taekjategundier').select('*').order('heiti'),
+        DB.sb.from('thjonustategundier').select('*').order('heiti'),
+        DB.sb.from('taeknimenn').select('*').order('nafn')
+      ]);
+      this.taekjategundier = results[0].data || [];
+      this.thjonustategundier = results[1].data || [];
+      this.taeknimenn = results[2].data || [];
+      this.render();
+    } catch(e) {
+      console.warn('[Settings] load villa:', e);
+      var el = document.getElementById('settings-main');
+      if (el) {
+        el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3)">'
+          + '<div style="font-weight:600;margin-bottom:8px">⚠ Náði ekki í gögn</div>'
+          + '<div style="font-size:13px;margin-bottom:14px">Villa við að hlaða stillingum. Athugaðu nettenginguna.</div>'
+          + '<button class="btn btn-primary btn-sm" onclick="Settings.load()">Reyna aftur</button></div>';
+      }
+    }
   },
   addRow: function(type) {
     var h = prompt(type === 'tg' ? 'Heiti t\u00e6kjategundar:' : 'Heiti \u00feJ\u00f3nustu:');
@@ -439,9 +450,8 @@ function _patchAppSwitchView() {
   var orig = App.switchView.bind(App);
   App.switchView = function(v) {
     orig(v);
-    if (v === 'companies' && typeof Companies !== 'undefined') Companies.load();
-    if (v === 'settings' && typeof Settings !== 'undefined') Settings.load();
-    if (v === 'income' && typeof Income !== 'undefined') Income.render();
+    // companies/settings/income are already loaded by App.switchView in modal.js
+    // — re-loading them here caused double full fetches on every switch.
     if (v === 'geymsla' && typeof Geymsla !== 'undefined') Geymsla.load();
   };
   App.switchView._patched = true;

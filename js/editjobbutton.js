@@ -66,7 +66,7 @@ function showEditForm(job){
     DB.sb.from('verkbeidnir').update(update).eq('id',job.id).then(function(r){
       if(r.error){alert('Villa: '+r.error.message);return;}
       close();
-      if(window.App && App.refresh) App.refresh();
+      if(window.App && App.refreshAll) App.refreshAll();
       else if(window.location){window.location.reload();}
     });
   };
