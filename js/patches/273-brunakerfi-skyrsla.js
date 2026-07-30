@@ -1345,6 +1345,30 @@
             { year: yearOf(), kind: 'brunakerfi', noMark: true });
         } catch (e) { console.warn('[bks] grid attach', e); }
       }
+      // 🧾 Sjálfvirk reikningsdrög við LOKIÐ (patch 291) — fire-and-forget:
+      // stöðvar ALDREI lokunina þótt reikningsstofnun mistakist. Idempotent
+      // (291 finnur fyrirliggjandi brunakerfi-reikning félagsins fyrir árið).
+      try {
+        if (window.BrunakerfiReikningur && BrunakerfiReikningur.onFinal) {
+          const mInv = model();
+          BrunakerfiReikningur.onFinal({
+            co: S.co, year: yearOf(),
+            nr: (S.data.meta && S.data.meta.nr) || '',
+            dags: (S.data.meta && S.data.meta.dags) || '',
+            madur: (S.data.meta && S.data.meta.madur) || '',
+            linur: mInv.linur, autoLinur: autoVerdLines(),
+            verdTotal: mInv.verdTotal, verdGross: mInv.verdGross,
+            saleId: (S.data.verd && S.data.verd.sale_id) || null,
+            saleNum: (S.data.verd && S.data.verd.sale_num) || null,
+            linkSale: async row => {
+              if (!S || !S.data) return;
+              S.data.verd = S.data.verd || { linur: [] };
+              S.data.verd.sale_id = row.id; S.data.verd.sale_num = row.num;
+              markDirty(); try { await saveDraft(); } catch (_) {}
+            }
+          });
+        }
+      } catch (e) { console.warn('[bks] auto-reikningsdrög', e); }
       toast('PDF vistað á fyrirtækið — græni punkturinn kviknar í yfirlitinu ✓');
       setMode('report');
       try { if (window.BrunakerfiYfirlit && BrunakerfiYfirlit.reload) BrunakerfiYfirlit.reload(); } catch (_) {}

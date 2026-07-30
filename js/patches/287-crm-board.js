@@ -201,6 +201,29 @@
     if (h && r.sidasti_postur && h >= r.sidasti_postur) return 0;
     return +r.osvarad || 0;
   }
+  // Deilt pósthólf (Agnar: „useless, when one email goes multiple to all
+  // locations"): crm_cache endurtekur SAMA póstinn á hverja byggingu félagsins.
+  // Þar til sýnin sjálf er löguð er hann birtur EINU SINNI per félag — á
+  // fulltrúa-röðinni (lægsta fyrirtaeki_id) — hinar sýna dauft „félags-póstur"
+  // og telja hvorki ↩ í dálki, hópsummu né röðun.
+  let FDUP = {};                 // fyrirtaeki_id → 'rep' | 'dup'
+  function buildDup(rows) {
+    FDUP = {};
+    const seen = {};
+    rows.forEach(r => {
+      if (!r.customer_base_id || !r.sidasti_postur) return;
+      const k = r.customer_base_id + "|" + r.sidasti_postur + "|" + (r.sidasta_efni || "");
+      if (!seen[k]) seen[k] = [];
+      seen[k].push(r.fyrirtaeki_id);
+    });
+    Object.keys(seen).forEach(k => {
+      const ids = seen[k];
+      if (ids.length < 2) return;
+      const rep = ids.slice().sort((a, b) => a - b)[0];
+      ids.forEach(id => { FDUP[id] = id === rep ? "rep" : "dup"; });
+    });
+  }
+  function effOsv2(r) { return FDUP[r.fyrirtaeki_id] === "dup" ? 0 : effOsv(r); }
   function whoAmI() {
     try { return localStorage.getItem("ky_me") || localStorage.getItem("bs_employee") || ""; } catch (_) { return ""; }
   }
@@ -259,11 +282,12 @@
       else if (k === "sidasti_postur") v = (new Date(a.sidasti_postur || 0)) - (new Date(b.sidasti_postur || 0));
       else if (k === "inspect_month") v = (a.inspect_month == null ? 99 : a.inspect_month) - (b.inspect_month == null ? 99 : b.inspect_month);
       else if (k === "isk_ogreitt") v = (+a.isk_ogreitt || 0) - (+b.isk_ogreitt || 0);
-      else if (k === "osv") v = effOsv(a) - effOsv(b);
+      else if (k === "osv") v = effOsv2(a) - effOsv2(b);
       return v * dir || String(a.nafn || "").localeCompare(String(b.nafn || ""), "is");
     });
   }
   function tFiltered() {
+    buildDup(T.rows || []);
     let rows = T.rows || [];
     if (T.q) {
       const q = T.q;
@@ -276,6 +300,10 @@
 
   function tdPostur(r) {
     if (!r.sidasti_postur) return '<span class="tbord-mut">—</span>';
+    if (FDUP[r.fyrirtaeki_id] === "dup") {
+      return '<div class="tbord-rel tbord-mut">' + esc(relD(r.sidasti_postur)) +
+        ' · ✉️ félags-póstur</div><div class="tbord-sub tbord-mut">sjá félags-röðina / hópinn</div>';
+    }
     const efni = String(r.sidasta_efni || "").slice(0, 60) + (String(r.sidasta_efni || "").length > 60 ? "…" : "");
     const eo = effOsv(r);
     const svara = r.sidasti_fra_okkur === false && eo > 0
@@ -302,7 +330,7 @@
     return '<span class="tbord-red">' + esc(fmtISK(isk)) + "</span>" + (n ? '<span class="tbord-sub"> (' + n + ")</span>" : "");
   }
   function tRow(r) {
-    const eo = effOsv(r);
+    const eo = effOsv2(r);
     return '<tr class="tbord-row" data-id="' + esc(r.fyrirtaeki_id) + '" data-base="' + esc(r.customer_base_id || "") + '">' +
       '<td><div class="tbord-nafn">' + esc(r.nafn || "—") + "</div>" +
       (r.heimilisfang ? '<div class="tbord-sub">' + esc(r.heimilisfang) + "</div>" : "") + "</td>" +
@@ -327,7 +355,7 @@
     return keys.map(k => {
       const g = groups.get(k);
       const sum = g.reduce((s, r) => s + (+r.isk_ogreitt || 0), 0);
-      const osv = g.reduce((s, r) => s + effOsv(r), 0);
+      const osv = g.reduce((s, r) => s + effOsv2(r), 0);
       return '<tr class="tbord-ghead"><td colspan="7">' +
         esc(k === "\u0000" ? "— Sjálfstæð —" : k) +
         ' <span class="tbord-gsub">· ' + g.length + " félög" +
