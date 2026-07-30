@@ -24,6 +24,10 @@
     try { return (window.AppSettings && AppSettings.path && AppSettings.path("rekstrarfelag_notes")) || {}; }
     catch (_) { return {}; }
   }
+  function coNotes() {
+    try { return (window.AppSettings && AppSettings.path && AppSettings.path("fyrirtaeki_notes")) || {}; }
+    catch (_) { return {}; }
+  }
   // Nafn í hausnum getur borið minniháttar hvítbil/ehf-viðskeyti; reynum
   // nákvæmt match fyrst, svo fold-að (án ehf/hf, lowercase) svo „Heimaleiga"
   // í note-inu passi við „Heimaleiga ehf" o.s.frv.
@@ -106,8 +110,33 @@
     });
   }
 
+  // ── Staka fyrirtæki-prófílinn (patch 158/199) ────────────────────────────
+  // Sama summa-spjald, lykill = fyrirtaeki_id úr openEdit-hnappnum (eins og 286).
+  // Sett EFST í aðgerðaröðinni svo það blasi við — beint fyrir aftan hnappana.
+  function tickCo() {
+    const btn = document.querySelector('button[onclick^="Companies.openEdit"]');
+    if (!btn) { document.querySelectorAll("._co_summa").forEach(c => c.remove()); return; }
+    const m = btn.getAttribute("onclick").match(/openEdit\((\d+)\)/);
+    if (!m) return;
+    const fid = m[1];
+    const note = coNotes()[fid];
+    const existing = document.querySelector("._co_summa");
+    if (!note) { if (existing) existing.remove(); return; }
+    if (existing) { if (existing.dataset.fid === fid) return; existing.remove(); }
+
+    const el = buildCard("co:" + fid, note);
+    el.className = "_co_summa"; el.dataset.fid = fid;
+    // Akkeri: sama röð og 286 (Merkja mikilvægt-hnappurinn), spjaldið fyrir aftan.
+    let row = null;
+    const mk = [...document.querySelectorAll("button")].find(b => /Merkja mikilvæg|Bæta við tæki|Þjónustusamningur/.test(b.textContent || ""));
+    if (mk) row = mk.parentElement;
+    const anchor = row || btn.parentElement;
+    if (anchor && anchor.parentElement) anchor.parentElement.insertBefore(el, anchor.nextSibling);
+    else if (anchor) anchor.appendChild(el);
+  }
+
   let t = null;
-  const run = () => { clearTimeout(t); t = setTimeout(() => { try { tick(); } catch (e) { console.warn("[rf-summa]", e); } }, 300); };
+  const run = () => { clearTimeout(t); t = setTimeout(() => { try { tick(); tickCo(); } catch (e) { console.warn("[rf-summa]", e); } }, 300); };
   new MutationObserver(run).observe(document.body, { childList: true, subtree: true });
   if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(run);
   setTimeout(run, 1200);
