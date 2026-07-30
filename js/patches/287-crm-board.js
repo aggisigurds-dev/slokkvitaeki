@@ -417,6 +417,12 @@
   function tSagaHtml(r, mails) {
     const h = HANDLED[r.fyrirtaeki_id] || "";
     const eo = effOsv(r);
+    // Spurning telst SVARAГ ef við sendum póst á eftir henni (sama regla og
+    // 286-kortið notar) — annars töldust 32/40 „ósvarað" hjá Heimaleigu þótt
+    // búið væri að svara flestum. Opið = spurning frá kúnna sem er nýrri en
+    // BÆÐI síðasta frá-okkur sending og handled-merkingin.
+    const lastUs = mails.filter(m => m.fra_okkur).map(m => m.received_at).sort().pop() || "";
+    const cut = lastUs > h ? lastUs : h;
     const head =
       '<div class="tbord-dhead">' +
       '<button class="tbord-btn" data-opna="' + esc(r.fyrirtaeki_id) + '">Opna fyrirtæki →</button>' +
@@ -426,7 +432,7 @@
       '<span class="tbord-note">' + mails.length + " póstar" + (r.customer_base_id ? " á félaginu (allar byggingar)" : "") + "</span></div>";
     if (!mails.length) return head + '<div class="tbord-note" style="padding:8px 2px">Engin póstsaga — ekkert netfang tengt, eða enginn póstur enn.</div>';
     const list = mails.map(m => {
-      const open = m.is_question && !m.fra_okkur && (!h || m.received_at > h);
+      const open = m.is_question && !m.fra_okkur && (!cut || m.received_at > cut);
       const via = m.fyrirtaeki_nafn ? '<span class="tbord-via" title="Tengt á byggingu (' + esc(m.via || "") + ')">📍 ' + esc(m.fyrirtaeki_nafn) + "</span>" : "";
       return '<div class="tbord-mail' + (open ? " open" : "") + '">' +
         '<div class="tbord-mailmeta">' + esc(relD(m.received_at)) + " · " +
