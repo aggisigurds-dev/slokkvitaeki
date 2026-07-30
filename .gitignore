@@ -72,5 +72,7 @@ _extract_logo.cjs
 # Stadbundid session-minni (memsearch) - inniheldur vinnugogn, ALDREI i git
 .memsearch/
 
-# Stadbundid session-minni (memsearch) - inniheldur vinnugogn, ALDREI i git
-.memsearch/
+# graphify skyndiminni + útgefinn grafur — endurbyggt með `graphify update .`
+# á hverri vél. Slæddist inn í eitt commit af skrifborðsvélinni (176 þúsund
+# línur af AST-skyndiminni) — á aldrei heima í git.
+graphify-out/
