@@ -195,6 +195,33 @@
   // byggingarinnar. Þar með gildir líka deildra-pósthólfa reglan (umboðsmanna-
   // netföng dreifast ekki á öll félög) — lén-leitin hunsaði hana alveg.
   // Lénið er aðeins haft sem SÍÐASTA úrræði (félag án nokkurrar base-tengingar).
+  // Bygging → base kort, fyllt EINU SINNI fyrir ALLAR byggingar á síðunni.
+  // Áður var þetta sér-fyrirspurn í hvert sinn sem félag var opnað, og hún sat
+  // fremst í þriggja-þrepa keðju (bygging→base, svo póstur, svo ✓-staða) svo
+  // hvert opnun kostaði þrjár ferðir fram og til baka. Nú er hún ein sameiginleg
+  // og heit eftir fyrsta félag — hin félögin sleppa henni alveg.
+  const BASEMAP = {};
+  async function fyllaBasemap(coids) {
+    const vantar = coids.filter(id => !(id in BASEMAP));
+    if (!vantar.length) return;
+    const client = sb(); if (!client) return;
+    // Sækja fyrir ALLA sýnilega byggingar-hnappa á síðunni í sömu ferð, ekki
+    // bara þá sem beðið var um — næstu félög verða þá án fyrirspurnar.
+    let allir = vantar;
+    try {
+      const v = document.getElementById("view-rekstrarfelog");
+      if (v) {
+        const s = new Set(vantar);
+        [...v.querySelectorAll("[data-coid]")].forEach(a => { const n = +a.getAttribute("data-coid"); if (n > 0 && !(n in BASEMAP)) s.add(n); });
+        allir = [...s];
+      }
+    } catch (_) {}
+    try {
+      const { data } = await client.from("fyrirtaeki").select("id,customer_base_id").in("id", allir);
+      (Array.isArray(data) ? data : []).forEach(f => { BASEMAP[f.id] = f.customer_base_id || null; });
+      allir.forEach(id => { if (!(id in BASEMAP)) BASEMAP[id] = null; });
+    } catch (e) { console.warn("[samskipti-rf] basemap:", e && e.message || e); }
+  }
   async function rfMails(dom, coids) {
     // 5 mín skyndiminni — síðan endurteiknast ört (realtime-refresh) og spjaldið
     // þarf að birtast SAMSTUNDIS aftur, ekki bíða eftir nýrri póstsókn í hvert sinn.
@@ -206,8 +233,8 @@
       const client = sb();
       let bases = [];
       if (coids && coids.length && client) {
-        const { data: fs } = await client.from("fyrirtaeki").select("customer_base_id").in("id", coids);
-        bases = [...new Set(asArray(fs).map(f => f && f.customer_base_id).filter(Boolean))];
+        await fyllaBasemap(coids);
+        bases = [...new Set(coids.map(id => BASEMAP[id]).filter(Boolean))];
       }
       if (bases.length && client) {
         const { data, error } = await client.from("felag_samskipti")
@@ -296,16 +323,20 @@
     }
     card.innerHTML = '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA' +
       (dom ? " (@" + esc(dom) + ")" : "") + '</div><div style="color:#94a3b8;margin-top:4px">Sæki póstsögu…</div>';
-    const mails = await rfMails(dom, coids);
-    let handled = "";
-    if (coids.length) {
-      try {
-        const hr = await fetch(RU + "/rest/v1/samskipti_stada?select=handled_at&fyrirtaeki_id=in.(" + coids.join(",") + ")&order=handled_at.desc&limit=1",
-          { headers: { apikey: RK, Authorization: "Bearer " + RK } });
-        const hj = await hr.json();
-        handled = (Array.isArray(hj) && hj[0] && hj[0].handled_at) || "";
-      } catch (e) { console.warn("[samskipti-rf] handled", e); }
-    }
+    // Póstsagan og ✓-staðan eru ÓHÁÐAR — sóttar SAMHLIÐA. Áður beið
+    // ✓-fyrirspurnin eftir póstinum að óþörfu (ein ferð í viðbót í röð).
+    const [mails, handled] = await Promise.all([
+      rfMails(dom, coids),
+      (async () => {
+        if (!coids.length) return "";
+        try {
+          const hr = await fetch(RU + "/rest/v1/samskipti_stada?select=handled_at&fyrirtaeki_id=in.(" + coids.join(",") + ")&order=handled_at.desc&limit=1",
+            { headers: { apikey: RK, Authorization: "Bearer " + RK } });
+          const hj = await hr.json();
+          return (Array.isArray(hj) && hj[0] && hj[0].handled_at) || "";
+        } catch (e) { console.warn("[samskipti-rf] handled", e); return ""; }
+      })()
+    ]);
     // 175 gæti hafa endurteiknað á meðan sótt var — þá er þetta spjald laust
     // og næsta tif býr til nýtt (annars skrifuðum við í ósýnilegt tré).
     if (!document.contains(card)) return;
