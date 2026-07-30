@@ -22,7 +22,7 @@
   async function fetchData(fid) {
     if (cache[fid] && Date.now() - cache[fid]._ts < 60000) return cache[fid];
     const client = sb(); if (!client) return null;
-    const out = { _ts: Date.now(), f: null, mails: [], handled: "", siblings: [fid] };
+    const out = { _ts: Date.now(), f: null, mails: [], beidnir: [], handled: "", siblings: [fid] };
     try {
       const { data: f } = await client.from("fyrirtaeki")
         .select('id,nafn,customer_base_id,banner_note,athugasemdir,netfang,simi,farsimi,"tengiliður",tengilidur')
@@ -53,6 +53,16 @@
       const { data: h } = await client.from("samskipti_stada")
         .select("handled_at").eq("fyrirtaeki_id", fid).maybeSingle();
       out.handled = (h && h.handled_at) || "";
+      // 2026-07-30 (ósk Agnars — „þyrfti að geta séð meira um þessi mál"):
+      // hausinn lofaði BEIÐNUM en þær sáust hvergi — aðeins fjöldinn rataði í
+      // punktana. Hér koma sjálf málin af Þjónustuborðinu (sama tafla, 231).
+      if (f && f.customer_base_id) {
+        const { data: bs } = await client.from("thjonustubeidni")
+          .select("id,title,notes,summary,status,type,flokkur,important,due_at,created_at,source,channel_ref")
+          .eq("customer_base_id", f.customer_base_id).is("deleted_at", null)
+          .order("created_at", { ascending: false }).limit(12);
+        out.beidnir = bs || [];
+      }
     } catch (e) { console.warn("[samskipti-panel]", e); }
     cache[fid] = out; return out;
   }
@@ -108,12 +118,33 @@
       const open = m.is_question && !m.fra_okkur && (!cut || m.received_at > cut);
       const via = (m.fyrirtaeki_nafn && m.fyrirtaeki_id !== fid)
         ? ' <span style="background:#eef2ff;border:1px solid #c7d2fe;color:#4338ca;border-radius:99px;padding:0 7px;font-size:10.5px;font-weight:700;white-space:nowrap">📍 ' + esc(m.fyrirtaeki_nafn) + "</span>" : "";
-      return '<div style="padding:7px 9px;margin:5px 0;border-radius:8px;background:' + (open ? "#fef2f2;border:1px solid #fecaca" : "#f8fafc") + '">' +
+      // Röðin er smellanleg — opnast í ALLAN póstinn (body_preview + viðtakendur
+      // + viðhengi) sóttan úr email_digest, og svar-takka. Áður sást aðeins
+      // 220 stafa snippet og engin leið að lesa málið til enda.
+      return '<div class="_ssk-mail" data-eid="' + (m.email_id || "") + '" style="padding:7px 9px;margin:5px 0;border-radius:8px;cursor:pointer;background:' + (open ? "#fef2f2;border:1px solid #fecaca" : "#f8fafc") + '">' +
       '<div style="font-size:11.5px;color:#64748b">' + fmtD(m.received_at) + " · " + esc(m.fra_okkur ? "Slökkvitæki ehf → viðskiptavinur" : (m.sender_name || m.sender_email)) +
       (open ? ' · <b style="color:#dc2626">spurning — ósvarað</b>' : "") + via + "</div>" +
-      '<div style="font-weight:600">' + esc(m.subject || "(ekkert efni)") + "</div>" +
-      '<div style="color:#475569;font-size:12.5px">' + esc((m.snippet || "").slice(0, 220)) + "</div></div>"; }).join("") ||
+      '<div style="font-weight:600">' + esc(m.subject || "(ekkert efni)") +
+        ' <span class="_ssk-caret" style="color:#94a3b8;font-weight:400;font-size:11px">▾</span></div>' +
+      '<div class="_ssk-snip" style="color:#475569;font-size:12.5px">' + esc((m.snippet || "").slice(0, 220)) + "</div>" +
+      '<div class="_ssk-body" style="display:none"></div></div>'; }).join("") ||
       '<div style="color:#94a3b8;padding:6px 0">Engir póstar fundust á netfangi tengiliðar.</div>';
+    const beidnirHtml = (data.beidnir || []).length
+      ? data.beidnir.map(b => {
+          const lokid = b.status === "lokid";
+          const merki = [b.flokkur, b.type].filter(Boolean).map(t =>
+            '<span style="background:#f1f5f9;border:1px solid #e2e8f0;color:#475569;border-radius:99px;padding:0 7px;font-size:10.5px;font-weight:700">' + esc(t) + "</span>").join(" ");
+          const txt = (b.summary || b.notes || "").trim();
+          return '<div style="padding:7px 9px;margin:5px 0;border-radius:8px;background:' + (lokid ? "#f8fafc" : "#f0fdf4;border:1px solid #bbf7d0") + '">' +
+            '<div style="font-size:11.5px;color:#64748b">' + fmtD(b.created_at) +
+              (b.due_at ? " · gjalddagi " + fmtD(b.due_at) : "") +
+              " · " + esc(lokid ? "✓ lokið" : b.status === "i_vinnslu" ? "í vinnslu" : "nýtt") +
+              (b.important ? ' · <b style="color:#dc2626">áríðandi</b>' : "") + "</div>" +
+            '<div style="font-weight:600' + (lokid ? ";text-decoration:line-through;color:#94a3b8" : "") + '">' + esc(b.title || "(ónefnt)") + "</div>" +
+            (merki ? '<div style="margin-top:3px;display:flex;gap:4px;flex-wrap:wrap">' + merki + "</div>" : "") +
+            (txt ? '<div style="color:#475569;font-size:12.5px;margin-top:3px;white-space:pre-wrap">' + esc(txt.slice(0, 300)) + "</div>" : "") +
+            "</div>"; }).join("")
+      : '<div style="color:#94a3b8;padding:6px 0">Engar beiðnir skráðar á þetta félag.</div>';
     const aths = (f.athugasemdir || "").trim();
     card.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
@@ -129,8 +160,70 @@
       (aths ? '<div style="font-weight:700;font-size:11.5px;color:#64748b;letter-spacing:.05em;margin:9px 0 3px">📋 PUNKTAR &amp; UPPLÝSINGAR</div>' +
         '<div style="white-space:pre-wrap;background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:9px 11px;color:#334155;max-height:180px;overflow:auto;font-size:12.5px;line-height:1.5">' + esc(aths) + "</div>" : "") +
       '<div class="_ssk-full" style="display:none;margin-top:10px;border-top:1px dashed #e2e8f0;padding-top:9px">' +
-      '<div style="font-weight:700;font-size:11.5px;color:#64748b;letter-spacing:.05em;margin-bottom:3px">✉️ SÍÐUSTU PÓSTAR</div>' + mailsHtml +
+      '<div style="font-weight:700;font-size:11.5px;color:#64748b;letter-spacing:.05em;margin-bottom:3px">✉️ SÍÐUSTU PÓSTAR <span style="font-weight:400;text-transform:none;letter-spacing:0">— smelltu á póst til að lesa hann allan</span></div>' + mailsHtml +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:11px 0 3px">' +
+        '<div style="font-weight:700;font-size:11.5px;color:#64748b;letter-spacing:.05em">📋 BEIÐNIR &amp; MÁL</div>' +
+        (window.Verkbord ? '<button type="button" class="_ssk-bord" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:2px 10px;font-size:11.5px;cursor:pointer;font-weight:700">Opna Þjónustuborðið ↗</button>' : "") +
+      "</div>" + beidnirHtml +
       "</div>";
+    const bordBtn = card.querySelector("._ssk-bord");
+    if (bordBtn) bordBtn.addEventListener("click", () => { try { Verkbord.open(); } catch (_) {} });
+    // Smella á póstrað → sækja hann allan úr email_digest og fella út.
+    card.querySelectorAll("._ssk-mail").forEach(row => {
+      row.addEventListener("click", async () => {
+        const body = row.querySelector("._ssk-body"), caret = row.querySelector("._ssk-caret");
+        const snip = row.querySelector("._ssk-snip");
+        if (body.style.display !== "none") {                 // loka
+          body.style.display = "none"; if (snip) snip.style.display = "";
+          if (caret) caret.textContent = "▾"; return;
+        }
+        body.style.display = ""; if (snip) snip.style.display = "none";
+        if (caret) caret.textContent = "▴";
+        if (body.dataset.loaded) return;
+        body.innerHTML = '<div style="color:#94a3b8;font-size:12.5px;padding:4px 0">Sæki póstinn…</div>';
+        const eid = +row.dataset.eid;
+        const client = sb();
+        let m = null;
+        if (eid && client) {
+          try {
+            // NB: EKKI `email_digest` beint — hún er RLS-varin og anon-reglan nær
+            // aðeins yfir eldklar@eldklar.is, svo öll önnur pósthólf hefðu skilað
+            // tómu. `v_samskipti_postur` (sýn, migration 2026-07-30) opnar efnið
+            // aðeins fyrir pósta til/frá netfangi SKRÁÐS fyrirtækis — sama mengi
+            // og spjaldið birtir; persónulegur póstur helst lokaður.
+            const { data } = await client.from("v_samskipti_postur")
+              .select("id,message_id,account,folder,sender_name,sender_email,to_addresses,subject,snippet,body_preview,has_attachment,attachment_names,received_at")
+              .eq("id", eid).maybeSingle();
+            m = data || null;
+          } catch (e) { console.warn("[samskipti-panel] póstur", e); }
+        }
+        body.dataset.loaded = "1";
+        if (!m) { body.innerHTML = '<div style="color:#b45309;font-size:12.5px;padding:4px 0">Náði ekki í efni póstsins.</div>'; return; }
+        const texti = (m.body_preview || m.snippet || "").trim();
+        let vidh = [];
+        try { vidh = Array.isArray(m.attachment_names) ? m.attachment_names : JSON.parse(m.attachment_names || "[]"); } catch (_) {}
+        body.innerHTML =
+          '<div style="font-size:11.5px;color:#64748b;margin:5px 0 4px;border-top:1px solid #e2e8f0;padding-top:6px">' +
+            (m.sender_email ? "Frá: " + esc(m.sender_email) + "<br>" : "") +
+            (m.to_addresses ? "Til: " + esc(String(m.to_addresses).slice(0, 200)) + "<br>" : "") +
+            (m.account ? "Pósthólf: " + esc(m.account) : "") +
+            (vidh.length ? '<br>📎 ' + esc(vidh.join(", ")) : "") + "</div>" +
+          '<div style="white-space:pre-wrap;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:9px 11px;' +
+            'color:#334155;font-size:12.5px;line-height:1.55;max-height:320px;overflow:auto">' +
+            (texti ? esc(texti) : '<i style="color:#94a3b8">Ekkert meira efni var sótt með þessum pósti.</i>') + "</div>" +
+          (window.ReikningaPostur && ReikningaPostur.replyTo && m.sender_email
+            ? '<button type="button" class="_ssk-reply" style="margin-top:7px;border:1px solid #156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border-radius:99px;padding:4px 13px;font-size:12px;cursor:pointer;font-weight:700">✉️ Svara</button>'
+            : "");
+        const rb = body.querySelector("._ssk-reply");
+        if (rb) rb.addEventListener("click", ev => {
+          ev.stopPropagation();
+          try {
+            ReikningaPostur.replyTo({ sender_name: m.sender_name, from: m.sender_email, subject: m.subject,
+              body_preview: m.body_preview || m.snippet, message_id: m.message_id });
+          } catch (e) { console.warn("[samskipti-panel] svara", e); }
+        });
+      });
+    });
     card.querySelector("._ssk-toggle").addEventListener("click", e => {
       const full = card.querySelector("._ssk-full"), open = full.style.display === "none";
       full.style.display = open ? "" : "none";
