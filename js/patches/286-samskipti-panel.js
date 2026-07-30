@@ -250,12 +250,29 @@
       card.dataset.state = "done"; return;
     }
     card.innerHTML = '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA (@' + esc(dom) + ')</div><div style="color:#94a3b8;margin-top:4px">Sæki póstsögu…</div>';
+    // Byggingarnar í töflunni fyrir neðan bera data-coid (fyrirtaeki.id) —
+    // sama ✓-merking (samskipti_stada) og prófílkortið/Þjónustuborðið, sett á
+    // ALLAR byggingar félagsins í einu svo staðan sé samhljóða alls staðar.
+    const coids = [...new Set([...info.parentNode.querySelectorAll("[data-coid]")]
+      .map(a => +a.getAttribute("data-coid")).filter(n => n > 0))];
     const mails = await rfMails(dom);
+    let handled = "";
+    if (coids.length) {
+      try {
+        const hr = await fetch(RU + "/rest/v1/samskipti_stada?select=handled_at&fyrirtaeki_id=in.(" + coids.join(",") + ")&order=handled_at.desc&limit=1",
+          { headers: { apikey: RK, Authorization: "Bearer " + RK } });
+        const hj = await hr.json();
+        handled = (Array.isArray(hj) && hj[0] && hj[0].handled_at) || "";
+      } catch (e) { console.warn("[samskipti-rf] handled", e); }
+    }
     // 175 gæti hafa endurteiknað á meðan sótt var — þá er þetta spjald laust
     // og næsta tif býr til nýtt (annars skrifuðum við í ósýnilegt tré).
     if (!document.contains(card)) return;
     const lastUs = mails.filter(m => m.fra_okkur).map(m => m.received_at).sort().pop() || "";
-    const openQ = mails.filter(m => m.is_question && !m.fra_okkur && m.received_at > lastUs).length;
+    // Sama skurðregla og cutOf(): spurning er opin aðeins ef hún er nýrri en
+    // BÆÐI síðasta frá-okkur sending OG ✓-merkingin.
+    const cut = lastUs > handled ? lastUs : handled;
+    const openQ = mails.filter(m => m.is_question && !m.fra_okkur && m.received_at > cut).length;
     const top = mails[0];
     const mailsHtml = mails.map(m =>
       '<div style="padding:6px 9px;margin:4px 0;border-radius:8px;background:' + (m.is_question && !m.fra_okkur ? "#fef2f2;border:1px solid #fecaca" : "var(--surface2,#f8fafc)") + '">' +
@@ -265,20 +282,49 @@
       '<div style="color:#64748b;font-size:12px">' + esc((m.snippet || "").slice(0, 180)) + "</div></div>").join("") ||
       '<div style="color:#94a3b8;padding:4px 0">Engir póstar fundust á @' + esc(dom) + ".</div>";
     card.innerHTML =
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">' +
       '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA <span style="font-weight:400;color:#94a3b8">@' + esc(dom) + "</span></div>" +
-      '<button type="button" class="_ssk-rf-toggle" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">Opna ▾</button></div>' +
+      '<div style="display:flex;gap:7px;align-items:center">' +
+      (openQ > 0 && coids.length
+        ? '<button type="button" class="_ssk-rf-mark" style="border:1px solid #156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">✓ Merkja afgreitt</button>'
+        : (handled && !openQ ? '<span style="color:#0f6e3a;font-weight:700;font-size:11.5px">✓ Afgreitt</span>' : "")) +
+      '<button type="button" class="_ssk-rf-toggle" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">Opna ▾</button></div></div>' +
       '<div style="margin-top:5px">' +
       (top ? '<div style="display:flex;gap:8px;line-height:1.45"><span>✉️</span><span>' + fmtD(top.received_at) + " — " + esc(top.subject || "(ekkert efni)") +
         ' <span style="color:#94a3b8">(' + (top.fra_okkur ? "frá okkur" : "frá " + esc(top.sender_name || top.sender_email)) + ")</span></span></div>"
         : '<div style="color:#94a3b8">Engir póstar fundust á @' + esc(dom) + ".</div>") +
+      '<div class="_ssk-rf-warn">' +
       (openQ ? '<div style="display:flex;gap:8px;margin-top:3px"><span>⚠️</span><span style="color:#dc2626;font-weight:700">' + openQ + " ósvöruð spurning" + (openQ > 1 ? "ar" : "") + " í pósti</span></div>" : "") +
-      "</div>" +
+      "</div></div>" +
       '<div class="_ssk-rf-full" style="display:none;margin-top:9px;border-top:1px dashed #e2e8f0;padding-top:8px">' + mailsHtml + "</div>";
     card.querySelector("._ssk-rf-toggle").addEventListener("click", e => {
       const full = card.querySelector("._ssk-rf-full"), open = full.style.display === "none";
       full.style.display = open ? "" : "none";
       e.target.textContent = open ? "Loka ▴" : "Opna ▾";
+    });
+    const rfMk = card.querySelector("._ssk-rf-mark");
+    if (rfMk) rfMk.addEventListener("click", async e => {
+      e.target.disabled = true; e.target.textContent = "⏳ …";
+      const nu = new Date().toISOString();
+      let who = ""; try { who = localStorage.getItem("ky_me") || localStorage.getItem("bs_employee") || ""; } catch (_) {}
+      const rows = coids.map(id => ({ fyrirtaeki_id: id, handled_at: nu, handled_by: who, updated_at: nu }));
+      try {
+        const wr = await fetch(RU + "/rest/v1/samskipti_stada?on_conflict=fyrirtaeki_id", {
+          method: "POST",
+          headers: { apikey: RK, Authorization: "Bearer " + RK, "Content-Type": "application/json", Prefer: "resolution=merge-duplicates" },
+          body: JSON.stringify(rows)
+        });
+        if (!wr.ok) throw new Error("HTTP " + wr.status);
+      } catch (err) {
+        console.warn("[samskipti-rf] mark", err);
+        e.target.disabled = false; e.target.textContent = "✓ Merkja afgreitt";
+        alert("Tókst ekki að merkja — reyndu aftur."); return;
+      }
+      // Uppfæra spjaldið á staðnum (engin endurteiknun þarf): viðvörun burt,
+      // hnappur → grænt ✓. Prófílkortin (cache) sjá nýju stöðuna næst.
+      const warn = card.querySelector("._ssk-rf-warn"); if (warn) warn.innerHTML = "";
+      e.target.outerHTML = '<span style="color:#0f6e3a;font-weight:700;font-size:11.5px">✓ Afgreitt</span>';
+      Object.keys(cache).forEach(k => { delete cache[k]; });
     });
     card.dataset.state = "done";
   }

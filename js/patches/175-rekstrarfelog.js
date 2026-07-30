@@ -223,6 +223,10 @@
         P+'.rfa__name{min-width:120px}'+
         P+'.rf-phead>*{min-width:0}'+
         P+'.rf-phead .rf-btn{flex:1 1 auto;justify-content:center}'+
+        // Hnappa-spanið í hausnum ber INLINE margin-left:auto;display:inline-flex
+        // (sjá render í mode()) — inline vinnur nema með !important. Á síma fer
+        // spanið í fulla breidd og vefur, svo #_rf_add endi ekki utan skjás.
+        P+'.rf-phead>span{margin-left:0!important;display:flex!important;flex-wrap:wrap!important;flex:1 1 100%;gap:8px!important;min-width:0}'+
       '}',
       // --- vörn gegn patch 245 (Brunastál content-skin) sem málar .view
       //     input/thead/table með !important — okkar útlit VERÐUR að vinna ---
