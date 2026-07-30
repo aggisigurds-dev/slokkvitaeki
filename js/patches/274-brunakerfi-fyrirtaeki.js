@@ -400,6 +400,10 @@
         alert('Upphleðsla mistókst: ' + (e.message || e));
       }
     });
+
+    // 🧾 stöðulína: „Brunakerfi <ár>: LOKIÐ ✓ · Reikningur: …" (patch 291) —
+    // fire-and-forget, síðan teiknast óbreytt þótt 291 vanti/mistakist.
+    try { if (window.BrunakerfiReikningur && BrunakerfiReikningur.decorateProfile) BrunakerfiReikningur.decorateProfile(C, w); } catch (_) {}
   }
 
   async function open(coId) {
