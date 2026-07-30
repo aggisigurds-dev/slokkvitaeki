@@ -213,6 +213,17 @@
       P+'.rf-nores{padding:16px;text-align:center;color:#9098a6;font-size:13px}',
       // mobile
       '@media(max-width:640px){'+P+'.rf-search{width:100%;margin-left:0}'+P+'.rf-page{padding:16px 12px 50px}'+P+'.rf-bsearch{margin-left:0;width:100%}}',
+      // Síma-úttekt 2026-07-30 (mælt): .rfa__pills var flex:none svo pillu-röðin
+      // hélt fullri breidd og NAFNIÐ (flex:1 + ellipsis) fór í 0 px — félags-
+      // nöfnin ólæsileg á síma. Pillurnar vefjast nú og víkja fyrir nafninu.
+      // #_rf_add (haus-hnappurinn) stóð 67 px út fyrir skjáinn — hausinn fær
+      // wrap og hnapparnir fulla breidd í röðinni.
+      '@media(max-width:560px){'+
+        P+'.rfa__pills{flex:0 1 auto;flex-wrap:wrap;justify-content:flex-end;max-width:55%}'+
+        P+'.rfa__name{min-width:120px}'+
+        P+'.rf-phead>*{min-width:0}'+
+        P+'.rf-phead .rf-btn{flex:1 1 auto;justify-content:center}'+
+      '}',
       // --- vörn gegn patch 245 (Brunastál content-skin) sem málar .view
       //     input/thead/table með !important — okkar útlit VERÐUR að vinna ---
       P+'.rf-search input, '+P+'.rf-search input[type="text"]{background:transparent!important;border:0!important;box-shadow:none!important;height:auto!important;padding:0!important;border-radius:0!important;color:#141822!important}',

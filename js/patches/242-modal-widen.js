@@ -45,13 +45,28 @@
       max-height: calc(92vh - 130px) !important;
     }
 
-    /* Mobile guard — keep 96vw to match mobile.css behavior */
+    /* Sími-vörðurinn — 2026-07-30: hann VANN ALDREI. Veljarinn hér var
+       .modal.open > .modal-* (0,2,1) en breið-reglan að ofan er
+       .modal.open:not(.modal-sm) > .modal-* (0,3,1), svo á síma hélt
+       breið-reglan áfram að gilda: föst 32 px spássía í stað 96vw — glugginn
+       48 px MJÓRRI en til stóð. Sami :not() sértækni-stigi hér lagar það. */
     @media (max-width: 480px) {
-      .modal.open > .modal-hd,
-      .modal.open > .modal-bd,
-      .modal.open > .modal-ft {
+      .modal.open:not(.modal-sm) > .modal-hd,
+      .modal.open:not(.modal-sm) > .modal-bd,
+      .modal.open:not(.modal-sm) > .modal-ft {
         width: 96vw !important;
         max-width: 96vw !important;
+      }
+    }
+
+    /* Spjaldtölva — mælt „út í endana": 770 px gluggi á 834 px skjá (föst
+       32 px spássía á hvora hlið). 48 px lágmarks-spássía gefur andrými án
+       þess að minnka skjáborðs-hámarkið (1100 px stendur óbreytt þar). */
+    @media (min-width: 481px) and (max-width: 1163px) {
+      .modal.open:not(.modal-sm) > .modal-hd,
+      .modal.open:not(.modal-sm) > .modal-bd,
+      .modal.open:not(.modal-sm) > .modal-ft {
+        width: min(1100px, calc(100vw - 96px)) !important;
       }
     }
   `;

@@ -64,8 +64,13 @@
 
   /** Returns HTML for an inline cycle button.
    *  Default sz = 18 (small badge-style). Sz = 22 = bigger for popups. */
+  // Síma-úttekt 2026-07-30: 684 × 18 px snertifletir á kúnnalistanum — langt
+  // undir 44 px lágmarkinu. Á snertiskjá er lágmarkið 28 px (stærra brýtur
+  // borð-þéttleikann á skjáborði, þar sem mús hittir 18 px vel).
+  const TOUCH = (typeof matchMedia === 'function') && matchMedia('(pointer:coarse)').matches;
   function btnHtml(coId, sz) {
     sz = +sz || 18;
+    if (TOUCH && sz < 28) sz = 28;
     const p = get(coId);
     const ico = p === 0 ? 'i' : '!';
     const color = colorOf(p);
