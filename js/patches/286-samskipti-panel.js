@@ -182,18 +182,51 @@
   const RU = "https://osfdzskyvisifcwyjkuk.supabase.co";
   const RK = "sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f";
   const rfCache = {};
-  async function rfMails(dom) {
+  // 2026-07-30 — RÓTIN að „Heimaleiga er tóm": þetta spjald sótti póstinn BEINT
+  // úr `email_digest` eftir LÉNI með opinbera lyklinum. `email_digest` er
+  // RLS-varið, svo svarið er villu-HLUTUR (`{code:"42501",…}`) en ekki fylki →
+  // `.map is not a function` (mælt á live: „[samskipti-rf] TypeError …"), catch
+  // gleypti það og listinn varð tómur → „Engir póstar fundust á @heimaleiga.is"
+  // þótt félagið ætti 66 pósta. Prófílkortið notaði alltaf `felag_samskipti`
+  // og virkaði — þess vegna mældist boxið í lagi þar en ekki hér.
+  //
+  // Núna les RF-spjaldið SÖMU sönnunar-sýn og hinir tveir staðirnir
+  // (Þjónustuborðið + prófílkortið): `felag_samskipti` eftir customer_base_id
+  // byggingarinnar. Þar með gildir líka deildra-pósthólfa reglan (umboðsmanna-
+  // netföng dreifast ekki á öll félög) — lén-leitin hunsaði hana alveg.
+  // Lénið er aðeins haft sem SÍÐASTA úrræði (félag án nokkurrar base-tengingar).
+  async function rfMails(dom, coids) {
     // 5 mín skyndiminni — síðan endurteiknast ört (realtime-refresh) og spjaldið
     // þarf að birtast SAMSTUNDIS aftur, ekki bíða eftir nýrri póstsókn í hvert sinn.
-    if (rfCache[dom] && Date.now() - rfCache[dom]._ts < 300000) return rfCache[dom].m;
+    const key = (coids && coids.length) ? "co:" + coids.slice().sort((a, b) => a - b).join(",") : "dom:" + dom;
+    if (rfCache[key] && Date.now() - rfCache[key]._ts < 300000) return rfCache[key].m;
+    const asArray = x => Array.isArray(x) ? x : [];
     let m = [];
     try {
-      const r = await fetch(RU + "/rest/v1/email_digest?select=received_at,sender_name,sender_email,subject,snippet,is_question" +
-        "&or=(sender_email.ilike.*%40" + encodeURIComponent(dom) + ",to_addresses.ilike.*" + encodeURIComponent(dom) + "*)" +
-        "&order=received_at.desc&limit=8", { headers: { apikey: RK, Authorization: "Bearer " + RK } });
-      m = (await r.json()).map(x => ({ ...x, fra_okkur: /eldklar/i.test(x.sender_email || "") }));
-    } catch (e) { console.warn("[samskipti-rf]", e); }
-    rfCache[dom] = { _ts: Date.now(), m };
+      const client = sb();
+      let bases = [];
+      if (coids && coids.length && client) {
+        const { data: fs } = await client.from("fyrirtaeki").select("customer_base_id").in("id", coids);
+        bases = [...new Set(asArray(fs).map(f => f && f.customer_base_id).filter(Boolean))];
+      }
+      if (bases.length && client) {
+        const { data, error } = await client.from("felag_samskipti")
+          .select("received_at,sender_name,sender_email,subject,snippet,is_question,fra_okkur,fyrirtaeki_nafn")
+          .in("customer_base_id", bases).order("received_at", { ascending: false }).limit(12);
+        if (error) throw new Error(error.message);
+        m = asArray(data);
+      } else if (dom) {
+        // Fallback: félag án base — lénleit, en NÚ með fylkis-vörn svo villu-
+        // hlutur kasti ekki heldur skili tómum lista með skýrri console-línu.
+        const r = await fetch(RU + "/rest/v1/email_digest?select=received_at,sender_name,sender_email,subject,snippet,is_question" +
+          "&or=(sender_email.ilike.*%40" + encodeURIComponent(dom) + ",to_addresses.ilike.*" + encodeURIComponent(dom) + "*)" +
+          "&order=received_at.desc&limit=8", { headers: { apikey: RK, Authorization: "Bearer " + RK } });
+        const j = await r.json();
+        if (!Array.isArray(j)) console.warn("[samskipti-rf] lén-leit skilaði ekki fylki:", j && (j.message || j.code || j));
+        m = asArray(j).map(x => ({ ...x, fra_okkur: /eldklar/i.test(x.sender_email || "") }));
+      }
+    } catch (e) { console.warn("[samskipti-rf] póstsókn:", e && e.message || e); }
+    rfCache[key] = { _ts: Date.now(), m };
     return m;
   }
   async function decorateRF() {
@@ -245,17 +278,20 @@
     card.dataset.state = "loading"; card.dataset.ts = String(Date.now());
     card.style.cssText = "margin:0 0 14px;border-left:4px solid #6366f1;background:var(--surface,#fff);border:1px solid var(--brd,#e2e8f0);border-left:4px solid #6366f1;border-radius:10px;padding:12px 14px;font-size:13px";
     if (slot) slot.appendChild(card); else info.parentNode.insertBefore(card, info.nextSibling);
-    if (!dom) {
-      card.innerHTML = '<div style="color:#94a3b8">💬 Engin netföng skráð á félagið — skráðu netfang til að sjá póstsögu.</div>';
-      card.dataset.state = "done"; return;
-    }
-    card.innerHTML = '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA (@' + esc(dom) + ')</div><div style="color:#94a3b8;margin-top:4px">Sæki póstsögu…</div>';
-    // Byggingarnar í töflunni fyrir neðan bera data-coid (fyrirtaeki.id) —
-    // sama ✓-merking (samskipti_stada) og prófílkortið/Þjónustuborðið, sett á
-    // ALLAR byggingar félagsins í einu svo staðan sé samhljóða alls staðar.
+    // Byggingarnar í töflunni fyrir neðan bera data-coid (fyrirtaeki.id). Þær eru
+    // AÐAL-leiðin að póstinum núna (base → felag_samskipti) og líka lyklarnir að
+    // ✓-merkingunni (samskipti_stada) sem er sett á ALLAR byggingar í einu.
+    // Reiknað ÁÐUR en lén-vörnin tekur við: félag án skráðs netfangs á samt
+    // póstsögu ef byggingar þess tengjast base.
     const coids = [...new Set([...info.parentNode.querySelectorAll("[data-coid]")]
       .map(a => +a.getAttribute("data-coid")).filter(n => n > 0))];
-    const mails = await rfMails(dom);
+    if (!dom && !coids.length) {
+      card.innerHTML = '<div style="color:#94a3b8">💬 Engin netföng eða byggingar á félaginu — skráðu netfang til að sjá póstsögu.</div>';
+      card.dataset.state = "done"; return;
+    }
+    card.innerHTML = '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA' +
+      (dom ? " (@" + esc(dom) + ")" : "") + '</div><div style="color:#94a3b8;margin-top:4px">Sæki póstsögu…</div>';
+    const mails = await rfMails(dom, coids);
     let handled = "";
     if (coids.length) {
       try {
@@ -280,10 +316,11 @@
       (m.is_question && !m.fra_okkur ? ' · <b style="color:#dc2626">spurning</b>' : "") + "</div>" +
       '<div style="font-weight:600">' + esc(m.subject || "(ekkert efni)") + "</div>" +
       '<div style="color:#64748b;font-size:12px">' + esc((m.snippet || "").slice(0, 180)) + "</div></div>").join("") ||
-      '<div style="color:#94a3b8;padding:4px 0">Engir póstar fundust á @' + esc(dom) + ".</div>";
+      '<div style="color:#94a3b8;padding:4px 0">Engir póstar fundust' + (dom ? " á @" + esc(dom) : "") + ".</div>";
     card.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">' +
-      '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA <span style="font-weight:400;color:#94a3b8">@' + esc(dom) + "</span></div>" +
+      '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA ' +
+      (dom ? '<span style="font-weight:400;color:#94a3b8">@' + esc(dom) + "</span>" : "") + "</div>" +
       '<div style="display:flex;gap:7px;align-items:center">' +
       (openQ > 0 && coids.length
         ? '<button type="button" class="_ssk-rf-mark" style="border:1px solid #156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border-radius:99px;padding:3px 12px;font-size:12px;cursor:pointer;font-weight:700">✓ Merkja afgreitt</button>'
@@ -292,7 +329,7 @@
       '<div style="margin-top:5px">' +
       (top ? '<div style="display:flex;gap:8px;line-height:1.45"><span>✉️</span><span>' + fmtD(top.received_at) + " — " + esc(top.subject || "(ekkert efni)") +
         ' <span style="color:#94a3b8">(' + (top.fra_okkur ? "frá okkur" : "frá " + esc(top.sender_name || top.sender_email)) + ")</span></span></div>"
-        : '<div style="color:#94a3b8">Engir póstar fundust á @' + esc(dom) + ".</div>") +
+        : '<div style="color:#94a3b8">Engir póstar fundust' + (dom ? " á @" + esc(dom) : "") + ".</div>") +
       '<div class="_ssk-rf-warn">' +
       (openQ ? '<div style="display:flex;gap:8px;margin-top:3px"><span>⚠️</span><span style="color:#dc2626;font-weight:700">' + openQ + " ósvöruð spurning" + (openQ > 1 ? "ar" : "") + " í pósti</span></div>" : "") +
       "</div></div>" +
