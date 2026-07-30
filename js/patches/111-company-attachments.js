@@ -119,6 +119,67 @@
     return null;
   }
 
+  // 2026-07-30 — BRÚ Í TRACKERINN (amber-leiðin).
+  // Sjálf-gerðar skýrslur (patch 168/233) POSTa á brunahólfs `/api/uttekt-upload`
+  // sem setur AFRIT í kanónísku Úttektarskýrslur-möppuna OG skrifar röð í
+  // `customer_documents` — það er ÞAÐ sem gerir árs-reitinn grænan í Kerfis-korti,
+  // Skýrslu-vakt og Veiðinni. HANDVIRKT viðhengi fór hingað til AÐEINS í
+  // `samningar`-bucketið, svo skýrsla sem Agnar hlóð sjálfur inn leit út fyrir að
+  // vera komin á prófílnum en taldist samt „engin skýrsla" alls staðar annars
+  // staðar. Þessi brú lokar því gati.
+  //
+  // Reglur: aðeins úttektarskýrslur (kind='skyrsla'; brunakerfis-skýrslur bera
+  // noBridge/noMark og eiga annað doc_type), aðeins með ÁR, aðeins PDF.
+  // Fire-and-forget — ALLTAF LEYFA VISTUN: viðhengið er þegar vistað þegar
+  // þetta keyrir og bilun hér má ALDREI fella upphlaðninguna.
+  const BRIDGE_URL = 'https://brunaholf.netlify.app/api/uttekt-upload';
+  const BRIDGE_MAX_MB = 10;               // þak endapunktsins
+
+  async function bridgeReportToTracker(coId, meta) {
+    const SB = getSB();
+    if (!SB) return;
+    if (!/pdf/i.test(meta.content_type || '') && !/\.pdf$/i.test(meta.name || '')) return;
+    if (meta.size && meta.size > BRIDGE_MAX_MB * 1024 * 1024) {
+      console.warn('[111] skýrsla > ' + BRIDGE_MAX_MB + ' MB — ekki brúað í trackerinn');
+      return;
+    }
+    // Staðurinn: coId ER fyrirtaeki.id, svo brúin þarf ekki að giska (hún sendir
+    // fyrirtaeki_id og brunahólfs-megin er það treyst óbreytt).
+    let co = null;
+    try {
+      const r = await SB.from('fyrirtaeki')
+        .select('id,nafn,kennitala,heimilisfang').eq('id', coId).maybeSingle();
+      co = r && r.data;
+    } catch (_) {}
+    if (!co || !co.kennitala) {
+      console.warn('[111] engin kennitala á fyrirtæki ' + coId + ' — skýrsla ekki brúuð');
+      return;
+    }
+    const url = await getPublicUrl(meta.path);
+    if (!url) { console.warn('[111] fékk enga slóð á skjalið — ekki brúað'); return; }
+    try {
+      const r = await fetch(BRIDGE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kt: co.kennitala,
+          fyrirtaeki_id: co.id,
+          company: co.nafn || '',
+          address: co.heimilisfang || '',
+          year: parseInt(meta.year, 10),
+          filename: meta.name,
+          public_url: url
+        })
+      });
+      if (!r.ok) { console.warn('[111] uttekt-upload', r.status); return; }
+      const j = await r.json().catch(() => null);
+      if (j && j.ok) {
+        console.log('[111] skýrsla skráð í trackerinn:', j.name || meta.name);
+        try { document.dispatchEvent(new CustomEvent('tracker-doc-added', { detail: { coId, year: meta.year, doc_id: j.doc_id } })); } catch (_) {}
+      }
+    } catch (e) { console.warn('[111] uttekt-upload', e && e.message); }
+  }
+
   async function uploadAttachment(coId, file, opts) {
     const SB = getSB();
     if (!SB) { alert('Engin gagnabankatenging'); return null; }
@@ -164,6 +225,11 @@
       // þess að merkja slökkvitækja-ársskoðunina — aðskildar þjónustur (Agnar).
       if (meta.year && (opts && opts.kind) === 'skyrsla' && !(opts && opts.noMark)) {
         try { await markInspectedFromReport(coId, meta.year); } catch (_) {}
+        // …og skrá hana í customer_documents + kanónísku Drive-möppuna, svo hún
+        // teljist líka utan þessa prófíls. Ekki beðið eftir (fire-and-forget).
+        if (!(opts && opts.noBridge)) {
+          bridgeReportToTracker(coId, meta).catch(e => console.warn('[111] brú', e && e.message));
+        }
       }
       return meta;
     } catch (e) {
