@@ -87,7 +87,9 @@
     } catch (_) {}
     // 3. Persist to AppSettings (Supabase + localStorage cache).
     if (window.AppSettings && typeof AppSettings.save === 'function') {
-      await AppSettings.save({ branding: { logo_url: dataUrl } });
+      // save() skilar `false` við bilun — það KASTAR EKKI. Ekki fullyrða árangur.
+      const ok = await AppSettings.save({ branding: { logo_url: dataUrl } });
+      if (!ok) { alert('Tókst ekki að vista logo — reyndu aftur.'); return; }
     }
     if (window.Toast && Toast.show) Toast.show('✓ Logo vistað — birtist á öllum samningum');
   }
@@ -224,7 +226,9 @@
       // 2. Commit to AppSettings (Supabase + localStorage cache).
       if (window.AppSettings && typeof AppSettings.save === 'function') {
         try {
-          await AppSettings.save({ branding: { logo_url: dataUrl } });
+          // save() skilar `false` við bilun — try/catch grípur ekkert.
+          const ok = await AppSettings.save({ branding: { logo_url: dataUrl } });
+          if (!ok) { alert('Tókst ekki að vista logo — reyndu aftur.'); return; }
           if (window.Toast && Toast.show) Toast.show('✓ Logo vistað — birtist á öllum reikningum');
         } catch (e) {
           alert('Tókst ekki að vista logo: ' + (e.message || e));

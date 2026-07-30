@@ -74,11 +74,68 @@
     const list = all[String(coId)];
     return Array.isArray(list) ? list : [];
   }
-  async function saveCompanyAttachments(coId, list) {
+  // 2026-07-30 — TÖPUÐ SKRIF (root cause þess að „skýrsla hvarf þegar reikningur
+  // var búinn til").
+  //
+  // Viðhengin eru ekki raðir heldur EITT jsonb-fylki inni í settings-blobbnum
+  // (`company_attachments[<coId>]`). Gamla útgáfan las staðbundna afritið, bætti
+  // einum hlut fremst og skrifaði ALLT fylkið til baka. `deepMerge` (85:159)
+  // undanskilur fylki frá endurkvæmni og skiptir þeim út í heilu lagi — svo
+  // ferska server-fylkið tapaðist fyrir gamla staðbundna afritinu + nýja hlutnum.
+  // Allt sem afritið vissi ekki af EYÐILAGÐIST.
+  //
+  // Í úttekt→reikningur-flæðinu gerist það alltaf: 168 vistar skýrsluna sjálfvirkt
+  // (539) og 165 ræsir reikningsskjalið án `await` (483), svo tvö skrif skarast og
+  // það SÍÐARA (reikningurinn) vinnur. Skýrslan er þess vegna kerfisbundið sú sem
+  // tapast — audit-logg staðfestir 3 töpuð viðhengi síðan 2026-07-21, ÖLL
+  // `kind='skyrsla'`, ekkert reikningur. Sama gamla afrit felldi líka
+  // tvítökuvarnirnar (168:423, 233:428) → „… (1).pdf" eintökin.
+  //
+  // Lagfæringin er þríþætt:
+  //  1) RÖÐ (_saveChain): tvö skrif geta aldrei skarast, hvorki fyrir sama
+  //     fyrirtæki né sitt hvort.
+  //  2) SAMEINING EFTIR id gegn FERSKU server-fylki, ekki blind útskipting.
+  //     Eyðing verður því að vera SKÝR (`opts.removeIds`) — „vantar í fylkið"
+  //     getur ekki lengur þýtt eytt, því fylkið sem berst er kannski gamalt.
+  //  3) ÞRÖNGUR patch: aðeins ÞETTA fyrirtæki fer í `save()`. Áður fór öll
+  //     `company_attachments`-varpan með, svo staðbundin gömul fylki ANNARRA
+  //     fyrirtækja skrifuðust yfir ferska server-útgáfu þeirra — sami galli
+  //     einu lagi ofar.
+  const attKey = (f) => (f && (f.id || f.path)) || null;
+  let _saveChain = Promise.resolve();
+
+  async function serverAttachments(coId) {
+    const SB = getSB();
+    if (!SB) return null;                       // engin tenging → engin sameining
+    try {
+      const r = await SB.from('app_settings').select('settings').eq('id', 1).maybeSingle();
+      const s = r && r.data && r.data.settings;
+      const arr = s && s.company_attachments && s.company_attachments[String(coId)];
+      return Array.isArray(arr) ? arr : [];
+    } catch (_) { return null; }
+  }
+
+  async function saveCompanyAttachments(coId, list, opts) {
     if (!window.AppSettings || !window.AppSettings.save) return false;
-    const all = { ...getAllAttachments() };
-    all[String(coId)] = list;
-    return await window.AppSettings.save({ [STORAGE_KEY]: all });
+    const run = async () => {
+      const remove = new Set((opts && opts.removeIds) || []);
+      const server = await serverAttachments(coId);
+      const byId = new Map();
+      // Server fyrst, staðbundið ofan á: sami id → staðbundna útgáfan vinnur
+      // (hún ber nýjustu ritstýringar eins og árs-merkingu), en allt sem AÐEINS
+      // er til á server lifir af.
+      if (Array.isArray(server)) {
+        server.forEach(f => { const k = attKey(f); if (k && !remove.has(k)) byId.set(k, f); });
+      }
+      (Array.isArray(list) ? list : []).forEach(f => {
+        const k = attKey(f); if (k && !remove.has(k)) byId.set(k, f);
+      });
+      const merged = [...byId.values()].sort((a, b) =>
+        String((b && b.uploaded_at) || '').localeCompare(String((a && a.uploaded_at) || '')));
+      return await window.AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: merged } });
+    };
+    _saveChain = _saveChain.then(run, run);   // röðin brotnar ekki þótt eitt skrif falli
+    return _saveChain;
   }
 
   // 2026-06-18: when an úttektarskýrsla is attached for a year, light up the
@@ -245,8 +302,14 @@
       const r = await SB.storage.from(BUCKET).remove([file.path]);
       if (r && r.error) console.warn('[company-attach] storage remove:', r.error.message);
     } catch (e) { console.warn('[company-attach] remove exception:', e); }
+    // Eyðing verður að vera SKÝR: `saveCompanyAttachments` sameinar nú við ferskt
+    // server-fylki, svo það dugar ekki lengur að sleppa hlutnum úr listanum —
+    // hann kæmi einfaldlega aftur af server. `removeIds` tekur bæði id og path
+    // svo eldri færslur án id eyðist líka.
     const list = getCompanyAttachments(coId).filter(f => f.id !== file.id);
-    return await saveCompanyAttachments(coId, list);
+    return await saveCompanyAttachments(coId, list, {
+      removeIds: [file.id, file.path].filter(Boolean)
+    });
   }
 
   // ── UI: section on company detail ────────────────────────────────────────

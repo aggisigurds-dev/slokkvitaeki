@@ -15,9 +15,16 @@
  * Company sheet (slide-in, back top-left): "Keyra þangað", call, shared
  * minnispunktar + an 🚨 urgent message (both saved to arsskodun_customers[id]
  * via AppSettings.save → sync office↔driver, also shown in Leiðsögn), and the
- * tækjalisti with a tap-to-roll chip ⚪ Óskoðað → 🟢 Yfirfarið → 🔵 Á verkstæði
- * writing uttaeki.status (+ last_insp/next_insp on Yfirfarið). "✅ Tekið út"
- * sets field_inspected_year.
+ * tækjalisti — SAMA form og fyrirtækjasíða skrifstofunnar (patch 224):
+ *   ✓ Yfirfarið · 🔧 Á verkstæði   (staða → uttaeki.status: ok / loaned /
+ *                                   active, + last_insp/next_insp á Yfirfarið;
+ *                                   'loaned' lætur tækið birtast sjálfkrafa á
+ *                                   verkstæðis-borðunum í 268/269)
+ *   Yfirferð | Hleðsla | Nýtt · 🚫 Ónýtt   (þjónustuval → trip-state
+ *                                   slokk_trip_<coId>.units[uid] gegnum patch
+ *                                   131, sem verðvélin 129 + reikningurinn 165
+ *                                   lesa — engin ný gildi, engin ný tafla)
+ * "✅ Tekið út" sets field_inspected_year.
  *
  * Styling uses the app's css/app.css design tokens (--brand, --font, --grn …)
  * so it looks native. Reuses Leiðsögn's getCustomers / addToRoute / launchNav
@@ -380,17 +387,55 @@
     if (st === 'ok' && String(u.last_insp || '').slice(0,4) === String(curYear())) return 'yfirfarid';
     return 'oskodad';
   }
-  // tap-to-roll chk states: ⚪ Óskoðað → 🟢 Yfirfarið (Skoðað) → 🔵 Á verkstæði.
-  // (class-based theme now, so we carry the theme chk class + label per state.)
-  const CHK = {
-    oskodad:   { cls:'chk',            label:'◍ Óskoðað' },
-    yfirfarid: { cls:'chk is-done',    label:'✓ Skoðað' },
-    verkstaedi:{ cls:'chk chk--vs',    label:'🔵 Á verkstæði' }
-  };
-  // Fullur hringur (2026-07-14, ósk Agnars — „go back to óskoðað"): tapp rúllar
-  // ⚪ Óskoðað → 🟢 Yfirfarið → 🔵 Á verkstæði → ⚪ Óskoðað (aftur á byrjun).
-  // Áður sat það fast í yfirfarið↔verkstæði og komst aldrei aftur í óskoðað.
-  const ROLL = { oskodad:'yfirfarid', yfirfarid:'verkstaedi', verkstaedi:'oskodad' };
+  // Tækja-formið (2026-07-30, ósk Agnars: „change the tæki checklist into this
+  // form … but add another button. á verkstæði"): SAMA form og á fyrirtækjasíðu
+  // skrifstofunnar (patch 224 UttektTaeki) — ✓ Yfirfarið · Yfirferð|Hleðsla|Nýtt
+  // · 🚫 Ónýtt — PLÚS „🔧 Á verkstæði" sem er bílstjóra-aðgerðin (tækið fer með
+  // í bílinn á verkstæðið). Tveir aðskildir hlutir, EKKI blandað:
+  //
+  //   1) STAÐA tækisins  → uttaeki (status/last_insp/next_insp/custody_status)
+  //      ✓ Yfirfarið   = status 'ok'      (+ last_insp í dag, next_insp +1 ár)
+  //      🔧 Á verkstæði = status 'loaned'  (custody_status null = „Nýkomið")
+  //                       → tækið birtist SJÁLFKRAFA á verkstæðis-borðunum
+  //                         (268 Aksturslisti + 269 Verkstæði lesa status='loaned')
+  //      tapp aftur á virkan takka → ⚪ Óskoðað (status 'active', stimplar hreinsaðir)
+  //      — nákvæmlega sömu þrjú gildi og gamli rúllu-chippinn skrifaði.
+  //   2) ÞJÓNUSTUVAL (hvað á að gera / rukka) → trip-state, EKKI uttaeki:
+  //      localStorage `slokk_trip_<coId>`.units[unitId] gegnum patch 131
+  //      UnitServicePicker — nákvæmlega sama geymsla og skrifstofuformið (224)
+  //      notar, skýjað með patch 227 og lesið af verðvélinni (129) og
+  //      reikningnum (165). Gildin eru orðaforði skrifstofunnar:
+  //      'yfirferd' | 'hledsla' | 'nyitt' | 'onytt'.
+  const STATE_LBL = { oskodad:'Óskoðað', yfirfarid:'Yfirfarið', verkstaedi:'Á verkstæði' };
+  // Verkstæðis-þrepin sem skrifstofan/verkstæðið setja (268/269) — birt sem
+  // lesin merking á tækinu svo bílstjórinn sjái hvar það er statt.
+  const CUSTODY_LBL = { komid:'Komið á verkstæði', tilbuid:'Tilbúið', farid:'Farið af verkstæði' };
+  // Þjónustuval — SÖMU gildi og patch 131/224 (aldrei ný gildi fundin upp).
+  const SVC = [['yfirferd','Yfirferð'], ['hledsla','Hleðsla'], ['nyitt','Nýtt']];
+  function svcDefault(type) {   // sama regla og 131 defaultForType
+    const t = String(type || '').toLowerCase();
+    return /\bduft\b|\babc\b|\bpfc\b/.test(t) ? 'hledsla' : 'yfirferd';
+  }
+  function svcGet(coId, u) {
+    try { if (window.UnitServicePicker && UnitServicePicker.getChoice) return UnitServicePicker.getChoice(coId, u.id, u.type); } catch (_) {}
+    try { const t = JSON.parse(localStorage.getItem('slokk_trip_' + coId) || '{}'); if (t.units && t.units[u.id]) return t.units[u.id]; } catch (_) {}
+    return svcDefault(u.type);
+  }
+  function svcSet(coId, unitId, v) {
+    let ok = false;
+    try { if (window.UnitServicePicker && UnitServicePicker.setChoice) { UnitServicePicker.setChoice(coId, unitId, v); ok = true; } } catch (_) {}
+    if (!ok) {   // 131 ekki hlaðinn → skrifa í SÖMU lyklana handvirkt (227 speglar í skýið)
+      try {
+        const k = 'slokk_trip_' + coId;
+        const t = JSON.parse(localStorage.getItem(k) || '{}');
+        t.units = t.units || {}; t.units[unitId] = v;
+        localStorage.setItem(k, JSON.stringify(t)); ok = true;
+      } catch (_) {}
+    }
+    // Ef skrifstofusíðan er opin í sama vafra → láta verðvélina (129) reikna upp á nýtt.
+    try { if (typeof window.recomputeCompanyTotalCost === 'function') window.recomputeCompanyTotalCost(); } catch (_) {}
+    return ok;
+  }
   function updateForState(next) {
     if (next === 'yfirfarid') return { status:'ok', last_insp: today(), next_insp: nextYearIso(), custody_status: null, service_choice: null };
     if (next === 'verkstaedi') return { status:'loaned', custody_status: null };   // nýkomið á verkstæði
@@ -562,6 +607,29 @@
 .bt ._bs-delunit:hover{opacity:1;background:rgba(201,60,29,.1)}
 .bt .chk.is-done{background:var(--green);color:#fff;border-color:#0c5e30}
 .bt .chk.chk--vs{background:linear-gradient(180deg,#8fb0ff,#2f5fe0);color:#fff;border-color:#2f5fe0}
+/* ── Tækja-form (2026-07-30) — sama form og fyrirtækjasíðan (patch 224):
+   ✓ Yfirfarið · 🔧 Á verkstæði  /  Yfirferð | Hleðsla | Nýtt · 🚫 Ónýtt.
+   Stórir hnappar (≥46px) sem STAFLAST í stað þess að minnka — símaskjár
+   fyrst (Agnar: takkarnir verða að vera nógu stórir til að sjást). */
+.bt .dev--form{display:block;padding:12px 14px 14px}
+.bt .dev--form:hover{background:transparent}
+.bt .dev__top{display:flex;align-items:center;gap:12px}
+.bt .dev__id{flex:1;min-width:0}
+.bt .dev--form .dev__meta{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Verkstæðis-þrepið á EIGIN línu (ekki inni í nafnalínunni — þar kramdi það
+   stærð/raðnúmer í þrjár línur á 360px síma). */
+.bt .dev__cust{display:inline-block;margin-top:9px;font-size:12px;font-weight:700;color:#fff;background:linear-gradient(180deg,#8fb0ff,#2f5fe0);border:1px solid #2f5fe0;border-radius:9px;padding:5px 11px}
+.bt .uact-row,.bt .usvc-row{display:flex;gap:7px;margin-top:8px}
+.bt .uact{flex:1;min-height:50px;padding:0 6px;border-radius:12px;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fff,#e3e7ee);color:#5b6472;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.9);display:inline-flex;align-items:center;justify-content:center;gap:6px;line-height:1.15}
+.bt .uact:active,.bt .usvc:active,.bt .uonytt:active{transform:translateY(1px)}
+.bt .uact.is-on[data-act="yfirfarid"]{background:var(--green);color:#fff;border-color:#0c5e30;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.4),0 4px 10px -4px rgba(12,80,40,.5)}
+.bt .uact.is-on[data-act="verkstaedi"]{background:linear-gradient(180deg,#8fb0ff,#2f5fe0);color:#fff;border-color:#2f5fe0;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.35),0 4px 10px -4px rgba(30,64,175,.5)}
+.bt .usvc{flex:1;min-width:0;min-height:46px;padding:0 4px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#fff;color:var(--ink-2);font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}
+.bt .usvc.is-on{border-color:#1e3a8a;background:linear-gradient(180deg,#60a5fa,#2563eb 48%,#1e40af);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1px 0 rgba(255,255,255,.32),0 2px 6px -2px rgba(0,0,0,.35)}
+.bt .uonytt{flex:0 0 60px;min-height:46px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#8a93a5;font-size:20px;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}
+.bt .uonytt.is-on{background:#fff0ed;color:#c0341d;border-color:#fca5a5}
+.bt .dev--onytt .dev__name{text-decoration:line-through}
+.bt .dev--onytt .usvc{opacity:.42}
 .bt .seg{display:flex;gap:8px}
 .bt .seg__btn{flex:1;height:42px;border-radius:11px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;border:1px solid rgba(20,24,34,.14);background:#fff;color:var(--ink-2);box-shadow:inset 0 1px 0 rgba(255,255,255,.9)}
 .bt .seg__btn.is-active{border:1px solid #0c5e30;background:var(--green);color:#fff;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.4),0 4px 10px -4px rgba(12,80,40,.5)}
@@ -1189,11 +1257,11 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
     if (!document.getElementById('sk-bslock-css')) {
       const s = document.createElement('style'); s.id = 'sk-bslock-css';
       // Only the tækjalisti add/lock chrome lives here now (the aksturslisti +
-      // device chk are on the class-based theme: .seg/.seg__btn / .chk). Lock
-      // disables the tap-to-roll .chk buttons while the list is confirmed.
+      // tækja-formið eru á class-based þemanu: .seg/.seg__btn og .uact/.usvc/
+      // .uonytt). Lock disables every tæki-takka meðan listinn er staðfestur.
       s.textContent = '._bs-listlock{display:block;width:100%;margin-top:10px;padding:13px;border-radius:12px;border:1px solid #c7ccd3;background:#eef1f4;color:#2b313a;font-weight:800;font-size:15px;font-family:inherit;cursor:pointer}'
         + '._bs-listlock:active{transform:translateY(1px)}'
-        + '._bs-sheet._bs-locked .chk{pointer-events:none;opacity:.5}'
+        + '._bs-sheet._bs-locked .chk,._bs-sheet._bs-locked .uact,._bs-sheet._bs-locked .usvc,._bs-sheet._bs-locked .uonytt{pointer-events:none;opacity:.5}'
         + '._bs-listlock.on{background:linear-gradient(180deg,#2f5d3f,#173524);color:#daffe8;border-color:#0e2417;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 2px 6px rgba(0,0,0,.25)}'
         + '._bs-addunit{display:block;width:100%;margin-top:10px;padding:12px;border-radius:12px;border:1px dashed #9aa3af;background:#fff;color:#2b313a;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer}'
         + '._bs-addunit:active{transform:translateY(1px)}'
@@ -1217,48 +1285,97 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
       return;
     }
     if (!units.length) { box.innerHTML = '<div class="_bs-empty" style="color:#8a93a5;padding:20px">Engin skráð tæki á þessu fyrirtæki.</div>'; if (prog) prog.textContent = '0 tæki'; return; }
+    const coId = c.id;
     const draw = () => {
       const done = units.filter(u => unitState(u) === 'yfirfarid').length;
-      if (prog) prog.textContent = 'Yfirfarin: ' + done + '/' + units.length;
+      const inShop = units.filter(u => unitState(u) === 'verkstaedi').length;
+      if (prog) prog.textContent = 'Yfirfarin: ' + done + '/' + units.length + (inShop ? ' · 🔧 ' + inShop : '');
       box.innerHTML = units.map(u => {
-        const ch = CHK[unitState(u)];
+        const st = unitState(u);
+        const svc = svcGet(coId, u);
+        const onytt = svc === 'onytt';
         // Sleppa staðsetningu/heimilisfangi á tækinu (Agnar) — bara stærð + serial.
         const sub = [u.size, u.serial].filter(Boolean).map(esc).join(' · ');
         const ic = unitIcon(u.type);
         // theme dev__ic--red for warm (duft/reyk/annad), --blue for cool (co2/vatn/slang)
         const col = (ic.cls === 'co2' || ic.cls === 'vatn' || ic.cls === 'slang') ? 'blue' : 'red';
-        return '<div class="dev"><span class="dev__ic dev__ic--' + col + '">' + ic.emoji + '</span><div style="flex:1;min-width:0">' +
-          '<div class="dev__name">' + esc(u.type || 'Tæki') + '</div>' + (sub ? '<div class="dev__meta">' + sub + '</div>' : '') +
-          '</div><button class="' + ch.cls + '" data-id="' + u.id + '" type="button">' + ch.label + '</button>' +
-          '<button class="_bs-delunit" data-id="' + u.id + '" type="button" title="Eyða tæki (t.d. mistalið úr skýrslu)" aria-label="Eyða tæki">🗑</button></div>';
+        // Verkstæðis-þrepið (sett af verkstæðinu í 268/269) — les-merking.
+        const cust = (st === 'verkstaedi' && CUSTODY_LBL[u.custody_status]) ? CUSTODY_LBL[u.custody_status] : '';
+        return '<div class="dev dev--form' + (onytt ? ' dev--onytt' : '') + '">' +
+          '<div class="dev__top">' +
+            '<span class="dev__ic dev__ic--' + col + '">' + ic.emoji + '</span>' +
+            '<div class="dev__id">' +
+              '<div class="dev__name">' + esc(u.type || 'Tæki') + '</div>' +
+              (sub ? '<div class="dev__meta">' + sub + '</div>' : '') +
+            '</div>' +
+            '<button class="_bs-delunit" data-id="' + u.id + '" type="button" title="Eyða tæki (t.d. mistalið úr skýrslu)" aria-label="Eyða tæki">🗑</button>' +
+          '</div>' +
+          (cust ? '<div><span class="dev__cust">🔧 ' + esc(cust) + '</span></div>' : '') +
+          // 1) STAÐA — skrifar í uttaeki (sömu þrjú gildi og gamli rúllu-chippinn)
+          '<div class="uact-row">' +
+            '<button class="uact _bs-uact' + (st === 'yfirfarid' ? ' is-on' : '') + '" data-act="yfirfarid" data-id="' + u.id + '" type="button" title="Merkja yfirfarið">✓ Yfirfarið</button>' +
+            '<button class="uact _bs-uact' + (st === 'verkstaedi' ? ' is-on' : '') + '" data-act="verkstaedi" data-id="' + u.id + '" type="button" title="Tekið með á verkstæðið">🔧 Á verkstæði</button>' +
+          '</div>' +
+          // 2) ÞJÓNUSTUVAL — skrifar í trip-state (sama og skrifstofuformið 224)
+          '<div class="usvc-row">' +
+            SVC.map(s => '<button class="usvc _bs-usvc' + ((!onytt && svc === s[0]) ? ' is-on' : '') +
+              '" data-v="' + s[0] + '" data-id="' + u.id + '" type="button">' + s[1] + '</button>').join('') +
+            '<button class="uonytt _bs-uonytt' + (onytt ? ' is-on' : '') + '" data-id="' + u.id + '" type="button" title="Ónýtt — ekki rukkað" aria-label="Ónýtt">🚫</button>' +
+          '</div>' +
+        '</div>';
       }).join('');
-      box.querySelectorAll('.chk').forEach(btn => btn.addEventListener('click', async () => {
+      // ── STAÐA: ✓ Yfirfarið / 🔧 Á verkstæði (tapp á virkan takka → ⚪ Óskoðað) ──
+      box.querySelectorAll('._bs-uact').forEach(btn => btn.addEventListener('click', async () => {
         const u = units.find(x => String(x.id) === String(btn.dataset.id));
         if (!u) return;
+        const cur = unitState(u);
+        const act = btn.dataset.act;
+        // Fullur hringur (2026-07-14, ósk Agnars — „go back to óskoðað"): tapp á
+        // takkann sem er þegar virkur skilar tækinu í ⚪ Óskoðað.
+        const next = (cur === act) ? 'oskodad' : act;
         // Vörn (2026-07-26): skrifstofan merkti tækið ÓNÝTT í verkstæðinu
         // (service_choice='onytt'). Ekki leyfa tappi að endurlífga það óvart sem
         // gilt tæki — staðfesta fyrst. Leiðréttingar eru áfram mögulegar (já → heldur áfram).
         if (String(u.service_choice || '').toLowerCase() === 'onytt') {
           if (!confirm('Skrifstofan merkti þetta tæki ÓNÝTT í verkstæðinu.\n\nViltu samt breyta stöðunni?')) return;
         }
+        // Vörn: verkstæðið er byrjað að vinna með tækið (custody_status sett í
+        // 268/269) — að taka það af verkstæðis-borðinu hendir þeirri vinnu.
+        if (cur === 'verkstaedi' && next !== 'verkstaedi' && u.custody_status) {
+          if (!confirm('Verkstæðið er byrjað með þetta tæki (' + (CUSTODY_LBL[u.custody_status] || u.custody_status) + ').\n\nTaka það samt af verkstæðis-borðinu?')) return;
+        }
         // Snapshot the fields updateForState() will overwrite, so a FAILED save
-        // can be rolled back — otherwise the optimistic chip lied about a change
+        // can be rolled back — otherwise the optimistic UI lied about a change
         // that never persisted (the "silently losing field inspections" bug).
         const prev = { status: u.status, last_insp: u.last_insp, next_insp: u.next_insp,
                        custody_status: u.custody_status, service_choice: u.service_choice };
-        const next = ROLL[unitState(u)]; const ch = CHK[next];
-        btn.className = ch.cls; btn.textContent = ch.label;   // optimistic
         Object.assign(u, updateForState(next));
+        draw();                                   // optimistic
         clearErrBar();
         try {
-          await saveUnitState(btn.dataset.id, next); draw();
+          await saveUnitState(u.id, next);
+          // vakt: sömu aðgerðaheiti og áður (268 Aksturslisti telur þau)
           if (next === 'yfirfarid' || next === 'verkstaedi') logAct(next, { co_id: c.id, co_nafn: c.nafn, uttaeki_id: u.id });
         } catch (_) {
           Object.assign(u, prev); draw();   // roll UI back to the true (unsaved) state
           errBar('⚠ Vistun mistókst — ' + (u.type || 'tæki') + ' ekki uppfært. Reyndu aftur.', () => {
-            const b2 = box.querySelector('.chk[data-id="' + u.id + '"]'); if (b2) b2.click();
+            const b2 = box.querySelector('._bs-uact[data-act="' + act + '"][data-id="' + u.id + '"]'); if (b2) b2.click();
           });
         }
+      }));
+      // ── ÞJÓNUSTUVAL: Yfirferð | Hleðsla | Nýtt (trip-state, engin DB-skrif) ──
+      box.querySelectorAll('._bs-usvc').forEach(btn => btn.addEventListener('click', () => {
+        const u = units.find(x => String(x.id) === String(btn.dataset.id));
+        if (!u) return;
+        svcSet(coId, u.id, btn.dataset.v);
+        draw();
+      }));
+      // 🚫 Ónýtt — sami víxl-hnappur og á skrifstofusíðunni (224): onytt ⇄ yfirferd.
+      box.querySelectorAll('._bs-uonytt').forEach(btn => btn.addEventListener('click', () => {
+        const u = units.find(x => String(x.id) === String(btn.dataset.id));
+        if (!u) return;
+        svcSet(coId, u.id, svcGet(coId, u) === 'onytt' ? 'yfirferd' : 'onytt');
+        draw();
       }));
       // Eyða tæki — leiðrétting þegar skýrslan var mistalin / tæki ekki lengur til.
       box.querySelectorAll('._bs-delunit').forEach(btn => btn.addEventListener('click', async () => {

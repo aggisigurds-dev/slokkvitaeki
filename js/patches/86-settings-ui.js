@@ -61,6 +61,18 @@
   }
 
   let _draft = null;          // working copy of settings while modal is open
+  // 2026-07-30 — AÐEINS þessir kaflar eru ritstýrðir hér. Áður var tekið afrit af
+  // ÖLLUM 47 lyklum blobbsins þegar glugginn opnaðist og allir sendir til baka við
+  // vistun — þar með `arsskodun_customers` (669 KB, 808 fyrirtæki),
+  // `company_attachments` (475 KB), `job_shelves`, `inspection_trips` …
+  // Fersk-lestur í `save()` bjargar ekki: gamla afritið INNIHELDUR alla lyklana,
+  // svo deepMerge skrifar hvern og einn yfir með gamla gildinu. Fjórar vélar keyra
+  // þetta samtímis, svo tvær mínútur með gluggann opinn þurrkuðu út allt sem hinir
+  // gerðu á meðan — og VÖKTU UPP eyðingar (röð sem var sett á `null` server-megin
+  // kom aftur sem gamli hluturinn úr afritinu).
+  const SU_SECTIONS = ['branding','sala','shortcuts','prentun','almennt','starfsmenn',
+                       'utlit','kvittun','tilkynningar','email','tenglar','backup'];
+  let _orig = null;           // JSON af hverjum kafla eins og hann var við opnun
   let _activeTab = 'branding';
   let _allProducts = [];
 
@@ -80,7 +92,12 @@
   function open() {
     if (document.getElementById('su-modal')) return;
     if (!window.AppSettings) { alert('Stillingakerfi ekki tilbúið.'); return; }
-    _draft = JSON.parse(JSON.stringify(window.AppSettings.get()));
+    const _all = window.AppSettings.get() || {};
+    _draft = {}; _orig = {};
+    SU_SECTIONS.forEach(k => {
+      _draft[k] = JSON.parse(JSON.stringify(_all[k] === undefined ? null : _all[k]));
+      _orig[k]  = JSON.stringify(_draft[k]);
+    });
     const wrap = document.createElement('div');
     wrap.id = 'su-modal';
     wrap.innerHTML =
@@ -127,6 +144,7 @@
   function close() {
     const m = document.getElementById('su-modal');
     if (m) m.remove();
+    _orig = null;
     _draft = null;
   }
 
@@ -346,7 +364,11 @@
         const id = +e.target.dataset.prodPos;
         if (!_draft.sala.position_orders) _draft.sala.position_orders = {};
         if (cleaned === '' || +cleaned <= 0) {
-          delete _draft.sala.position_orders[id];
+          // deepMerge FJARLÆGIR ALDREI lykil — `delete` hér var þögult
+          // núll-verk og gamla staðsetningin kom aftur við endurhleðslu.
+          // null = ósett (lesarinn í 87 gerir `positions[id] != null && > 0`).
+          // Sama venja og 140/147.
+          _draft.sala.position_orders[id] = null;
         } else {
           _draft.sala.position_orders[id] = +cleaned;
         }
@@ -910,7 +932,13 @@
     if (!m) return;
     const btn = m.querySelector('.su-save');
     btn.disabled = true; btn.textContent = 'Vista…';
-    const ok = await window.AppSettings.save(_draft);
+    // Senda AÐEINS þá kafla sem notandinn breytti í raun — sjá SU_SECTIONS.
+    const patch = {};
+    SU_SECTIONS.forEach(k => {
+      const now = JSON.stringify(_draft[k] === undefined ? null : _draft[k]);
+      if (now !== _orig[k]) patch[k] = _draft[k];
+    });
+    const ok = Object.keys(patch).length ? await window.AppSettings.save(patch) : true;
     btn.disabled = false; btn.textContent = '💾 Vista';
     const t = document.getElementById('su-toast');
     if (t) {

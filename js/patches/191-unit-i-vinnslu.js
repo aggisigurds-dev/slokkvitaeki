@@ -226,7 +226,8 @@
       const e = Object.assign({}, map[String(coId)] || {});
       if (+e.last_year_inspected === cy || +e.field_inspected_year === cy) return; // already done / blue
       e.field_inspected_year = cy;
-      await AppSettings.save({ [KEY]: Object.assign({}, map, { [String(coId)]: e }) });
+      // AÐEINS þetta fyrirtæki — heil-varpan þurrkaði út stöðu hinna 807.
+      await AppSettings.save({ [KEY]: { [String(coId)]: { field_inspected_year: cy } } });
     } catch (_) {}
   }
 

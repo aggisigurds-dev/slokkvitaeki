@@ -115,8 +115,33 @@
         const prev = saveBtn.textContent;
         saveBtn.textContent = 'Vistar...';
         try {
+          // Nafnið ÁÐUR en við skrifum — tækin hanga á því (sjá cascade neðar).
+          const prevRow = Companies.list.find(c => c.id === id) || {};
+          const oldNafn = prevRow.nafn;
+
           const r = await sb.from('fyrirtaeki').update(data).eq('id', id).select().single();
           if (r.error) throw r.error;
+
+          // 2026-07-30 — LÁTA NAFNBREYTINGU FYLGJA TÆKJUNUM.
+          // `uttaeki` á ENGAN staðar-lykil; tækjalistinn á fyrirtækjaspjaldinu er
+          // fundinn með nákvæmum strengjasamanburði (`features.js:104`
+          // `u.client === c.nafn`, sömuleiðis 224:161/171). Að endurnefna
+          // fyrirtæki hér skildi því tækin eftir á GAMLA nafninu og spjaldið sagði
+          // „engin tæki skráð" — og þegar sjálfvirka tækjagerðin sá gatið bjó hún
+          // til NÝ placeholder-tæki undir nýja nafninu, svo úr varð bæði munaðar-
+          // laus tæki OG tvítök (staðfest á fyrirtæki 1129: „Stafræn Prentsmiðja"
+          // → „Prentun ehf", 5 tæki strönduð + 5 ný búin til).
+          // Sama cascade og sameiningin í 157-allir-vidskiptavinir.js:922 gerir.
+          if (oldNafn && nafn && oldNafn !== nafn) {
+            for (const tafla of ['uttaeki', 'lanstaeki']) {
+              try {
+                const c = await sb.from(tafla).update({ client: nafn }).eq('client', oldNafn);
+                if (c && c.error) console.warn('[14] cascade ' + tafla + ':', c.error.message);
+              } catch (e) { console.warn('[14] cascade ' + tafla + ':', e && e.message); }
+            }
+            try { if (window.DB && DB.refresh) DB.refresh(); } catch (_) {}
+          }
+
           const idx = Companies.list.findIndex(c => c.id === id);
           if (idx >= 0) Companies.list[idx] = Object.assign({}, Companies.list[idx], r.data);
           restore();

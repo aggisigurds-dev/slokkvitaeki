@@ -447,11 +447,13 @@
 
   async function setFlag(coId, patch, opts) {
     if (!window.AppSettings || !AppSettings.save) { toast('Engar stillingar'); return; }
-    const map = arsMap();
-    const e = Object.assign({}, map[String(coId)] || {}, patch);
-    if (patch._delete) patch._delete.forEach(k => { delete e[k]; });
-    delete e._delete;
-    await AppSettings.save({ [KEY]: Object.assign({}, map, { [String(coId)]: e }) });
+    // ÞRÖNGUR patch: EITT fyrirtæki. Gamla heil-vörpu-skrifið setti stöðu allra
+    // hinna aftur í það sem ÞESSI flipi las síðast. `_delete` er fellt burt —
+    // deepMerge getur aldrei fjarlægt lykil, svo það var alltaf núll-verk (og
+    // enginn kallandi sendir það; sjá athugasemdina hér fyrir neðan).
+    const p = Object.assign({}, patch);
+    delete p._delete;
+    await AppSettings.save({ [KEY]: { [String(coId)]: p } });
     if (!(opts && opts.silent)) render();   // note edits save silently (keep focus)
   }
   // NB: AppSettings.save() DEEP-MERGES — deleting a key does NOT propagate to

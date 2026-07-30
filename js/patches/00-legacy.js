@@ -2557,6 +2557,19 @@ console.log('[patch-master] loaded with all fixes');
         };
         window.DB.sb.from('fyrirtaeki').update(update).eq('id',companyId).then(function(res){
           if(res.error){alert('Villa: '+res.error.message);return;}
+          // 2026-07-30 — nafnbreyting VERÐUR að fylgja tækjunum. `uttaeki` á engan
+          // staðar-lykil; tækjalisti fyrirtækisins er fundinn með nákvæmum
+          // strengjasamanburði (`features.js:104` u.client === c.nafn). Án þessa
+          // urðu tækin munaðarlaus á gamla nafninu, spjaldið sagði „engin tæki"
+          // og sjálfvirka tækjagerðin bjó svo til tvítök undir nýja nafninu.
+          // Sama cascade og 14-companies-openedit.js og 157:922 gera.
+          if(c.nafn && update.nafn && c.nafn !== update.nafn){
+            ['uttaeki','lanstaeki'].forEach(function(tafla){
+              window.DB.sb.from(tafla).update({client:update.nafn}).eq('client',c.nafn)
+                .then(function(cr){ if(cr&&cr.error) console.warn('[legacy] cascade '+tafla+':',cr.error.message); },
+                      function(e){ console.warn('[legacy] cascade '+tafla+':',e&&e.message); });
+            });
+          }
           m.remove();
           // Reload detail page
           if(window.Companies&&window.Companies.openDetail) window.Companies.openDetail(companyId);

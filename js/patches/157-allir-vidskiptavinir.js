@@ -941,11 +941,13 @@
       if (window.AppSettings && window.AppSettings.save) {
         const patch = {};
         ['arsskodun_customers', 'brunakerfi_customers', 'ferdathjonusta_customers'].forEach(key => {
-          const map = Object.assign({}, window.AppSettings.path(key) || {});
-          if (map[String(loser.id)]) {
-            if (!map[String(keeper.id)]) map[String(keeper.id)] = map[String(loser.id)];
-            map[String(loser.id)] = null;
-            patch[key] = map;
+          const map = window.AppSettings.path(key) || {};
+          const lo = map[String(loser.id)];
+          if (lo) {
+            const sub = {};                       // þröngt: TVÖ id, ekki 808
+            if (!map[String(keeper.id)]) sub[String(keeper.id)] = lo;
+            sub[String(loser.id)] = null;
+            patch[key] = sub;
           }
         });
         if (Object.keys(patch).length) { try { await window.AppSettings.save(patch); } catch (_) {} }
@@ -968,9 +970,12 @@
     const ids = Array.from(state.selected);
     if (!ids.length) return;
     if (!confirm(`Merkja ${ids.length} viðskiptavin${ids.length === 1 ? '' : 'i'} sem Ferðaþjónustu?`)) return;
-    const map = Object.assign({}, window.AppSettings.path('ferdathjonusta_customers') || {});
+    // Þröngur patch — AÐEINS þau id sem verið er að merkja. Að senda alla vörpuna
+    // af-merkti þögult alla sem höfðu verið merktir annars staðar frá hleðslu.
+    const cur = window.AppSettings.path('ferdathjonusta_customers') || {};
+    const map = {};
     ids.forEach(id => {
-      map[String(id)] = Object.assign({}, map[String(id)] || {}, { co_id: +id, flexible: true, marked_at: (map[String(id)] && map[String(id)].marked_at) || new Date().toISOString().slice(0, 10) });
+      map[String(id)] = Object.assign({}, cur[String(id)] || {}, { co_id: +id, flexible: true, marked_at: (cur[String(id)] && cur[String(id)].marked_at) || new Date().toISOString().slice(0, 10) });
     });
     await window.AppSettings.save({ ferdathjonusta_customers: map });
     if (window.Toast && Toast.show) Toast.show(`🚌 ${ids.length} merkt sem Ferðaþjónusta`);
