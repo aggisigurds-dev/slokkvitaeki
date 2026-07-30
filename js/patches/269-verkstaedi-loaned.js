@@ -53,9 +53,13 @@
   // umsjónar-hlustun var étin af annarri capture-hlustun á lifandi síðunni).
   function sectionHtml() {
     const grp = byClient();
+    // Rólegur stíll (2026-07-30, Verkefnalisti 710f64e0): hnappar/chippar hér
+    // fylgja SAMA dempaða útlitinu og VERK-súlan vinstra megin (.bw-chk.no í
+    // patch 78) — hvítur/ljós grunnur, þunnt #e2e8f0 skil, liturinn aðeins sem
+    // dauf vísbending í TEXTANUM (ekki sterk fylling). Virkni óbreytt.
     const stBtn = (id, act, label, col) =>
       '<button type="button" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.act(\'' + id + '\',\'' + act + '\')" ' +
-        'style="border:0;background:' + col + ';color:#fff;border-radius:7px;padding:5px 10px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.22)">' + label + '</button>';
+        'style="border:1px solid #e2e8f0;background:#fff;color:' + col + ';border-radius:7px;padding:5px 10px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer">' + label + '</button>';
     // lítið Eyða-merki (🗑) — fjarlægir tækið ef mistalið úr skýrslu
     const delBtn = (id) =>
       '<button type="button" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.del(\'' + id + '\')" title="Eyða tæki" ' +
@@ -63,9 +67,11 @@
     // Tæki birtast sem SÖMU .bw-tile flísar og VERK-súlan vinstra megin (patch 78)
     // — sama flísaform (tegund + raðnúmer), en umsjónar-aðgerðirnar (Komið →
     // Hlaðið/Ónýtt/Nýtt → Farið) sitja sem fullbreiðir hnappar neðst í flísinni.
+    // — sama form og .bw-chk.no vinstra megin: hvítur grunnur, #e2e8f0 skil,
+    // litur aðeins í texta (dauf stöðuvísbending í stað sterkrar fyllingar).
     const footBtn = (id, act, label, col) =>
       '<button type="button" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.act(\'' + id + '\',\'' + act + '\')" ' +
-        'style="display:block;width:100%;border:0;border-top:1px solid rgba(255,255,255,.5);background:' + col + ';color:#fff;padding:4px 2px;font:inherit;font-size:10px;font-weight:700;cursor:pointer;line-height:1.3">' + label + '</button>';
+        'style="display:block;width:100%;border:0;border-top:1px solid #e2e8f0;background:#fff;color:' + col + ';padding:4px 2px;font:inherit;font-size:10px;font-weight:700;cursor:pointer;line-height:1.3">' + label + '</button>';
     const chip = (txt, bg, fg, bd) =>
       '<div style="padding:4px 3px;background:' + bg + ';color:' + fg + ';font-size:9.5px;font-weight:700;text-align:center;line-height:1.25' + (bd ? ';border-top:1px solid ' + bd : '') + '">' + txt + '</div>';
     const tile = (u) => {
@@ -76,10 +82,10 @@
       let foot = '';
       if (cs === 'null') foot = footBtn(u.id, 'komid', '✅ Komið', '#2563eb');
       else if (cs === 'komid') foot = footBtn(u.id, 'yfirferd', '✅ Yfirfarið', '#2563eb') + footBtn(u.id, 'hladid', '🔋 Hlaðið', '#16a34a') + footBtn(u.id, 'onytt', '❌ Ónýtt', '#dc2626') + footBtn(u.id, 'nytt', '🆕 Nýtt', '#d97706');
-      else if (cs === 'tilbuid') foot = chip('Tilbúið til útkeyrslu', '#dcfce7', '#166534') + chip(DISP[u.service_choice] || 'Tilbúið', '#059669', '#fff', 'rgba(255,255,255,.4)') + footBtn(u.id, 'sott', '🚚 Sótt', '#7c3aed');
+      else if (cs === 'tilbuid') foot = chip('Tilbúið til útkeyrslu', '#dcfce7', '#166534') + chip(DISP[u.service_choice] || 'Tilbúið', '#f0fdf4', '#166534', '#e2e8f0') + footBtn(u.id, 'sott', '🚚 Sótt', '#7c3aed');
       // Eldri raðir sem sátu í 'farid' (áður „Bíður skila") — leyfa að ljúka þeim
       // svo þjónustan skráist á tækið og það fari af borðinu.
-      else if (cs === 'farid') foot = chip(DISP[u.service_choice] || 'Sótt', '#059669', '#fff') + footBtn(u.id, 'sott', '✅ Ljúka (sótt)', '#7c3aed');
+      else if (cs === 'farid') foot = chip(DISP[u.service_choice] || 'Sótt', '#f0fdf4', '#166534', '#e2e8f0') + footBtn(u.id, 'sott', '✅ Ljúka (sótt)', '#7c3aed');
       return '<div class="bw-tile" title="' + esc((u.serial || '') + ' — ' + label) + '">' +
           '<button class="bw-tile-x" onclick="event.stopPropagation();window.VkLoaned&&VkLoaned.del(\'' + u.id + '\')" title="Eyða tæki (ef mistalið úr skýrslu)">✕</button>' +
           '<div class="bw-tile-body">' +
@@ -91,8 +97,9 @@
     };
     // eitt .bw-row spjald per fyrirtæki (sama chrome og VERK vinstra megin) með
     // .bw-tiles flísaröð innan í — nákvæmlega eins og VERK-súlan.
+    // sama .bw-row chrome og vinstra megin — engin sér-litun á vinstri rönd
     const cards = grp.length ? grp.map(g =>
-      '<div class="bw-row" style="border-left-color:#2563eb">' +
+      '<div class="bw-row">' +
         '<div class="bw-cinfo" style="width:auto;flex:1 1 100%">' +
           '<div class="bw-cname">' + esc(g.client) + '</div>' +
           '<div class="bw-cmeta">' + g.items.length + ' tæki · komið úr þjónustu</div>' +
@@ -102,8 +109,9 @@
       : '<div style="padding:16px 8px;color:#94a3b8;font-size:12px;text-align:center">Engin tæki komin úr þjónustu núna.</div>';
     return '<div id="_vk-loaned" style="margin-bottom:12px">' +
       '<div style="display:flex;align-items:center;gap:8px;margin:0 2px 8px">' +
-        '<span style="font-size:12px;font-weight:800;letter-spacing:.06em;color:#3a4250">🚚 KOMIÐ ÚR ÞJÓNUSTU</span>' +
-        (_shop.length ? '<span style="margin-left:auto;font-family:\'Space Mono\',monospace;font-size:12px;color:#2563eb;font-weight:700">' + _shop.length + ' tæki</span>' : '') +
+        '<span style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#3a4250">🚚 KOMIÐ ÚR ÞJÓNUSTU</span>' +
+        // teljarinn dempaður eins og .bw-shd-n/.bw-cnum (mono, grár) — ekki blár
+        (_shop.length ? '<span style="margin-left:auto;font-family:\'Space Mono\',monospace;font-size:12px;color:#9098a6">' + _shop.length + ' tæki</span>' : '') +
       '</div>' + cards +
     '</div>';
   }
@@ -192,6 +200,6 @@
   else watch();
 
   window.VkLoaned = { inject: () => inject(true), act: act, del: del, close: close };
-  console.log('[verkstaedi-loaned] v6 installed (+ Yfirfarið service + Sótt skráir þjónustu á uttaeki)');
+  console.log('[verkstaedi-loaned] v7 installed (+ rólegur stíll eins og VERK-súlan)');
 })();
 /* === END VERKSTÆÐI: KOMIÐ ÚR ÞJÓNUSTU === */
