@@ -7,6 +7,10 @@ It contains everything Claude Code needs to know to be useful immediately.
 > grunnstaðreyndir (kúnna-líkanið, töflur, vinnureglur) — **lesa á undan öllu öðru
 > þegar spurning snýst um viðskiptavini/gögn**; and
 > [`docs/CLAUDE-LEIDBEININGAR.md`](docs/CLAUDE-LEIDBEININGAR.md) — operational playbook
+>
+> **📋 Í upphafi vinnu-session:** líta á opin verk á Verkefnalistanum —
+> `GET https://brunaholf.netlify.app/api/verkefnalisti` (beidni/i_vinnu) — áður en
+> nýtt verk er hafið (Agnar 2026-07-30).
 > covering the customer-DB architecture, Verkfærakassi, walk-in convention (kt
 > `999999-9999`), rekstrarfélög-staðsettningar rule, email priorities, and known
 > gotchas. Updated continuously as Agnar gives new context.
