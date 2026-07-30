@@ -25,7 +25,13 @@
   const s = document.createElement('style');
   s.id = ID;
 
-  // Scope prefix — every selector starts here so non-brunastal themes pass through.
+  // Scope prefix — VÍSVITANDI TÓMUR. Ekki setja hann í forskeyti patch 230
+  // (`html[data-thm-preset="brunastal"] `): það lyftir HVERJUM veljara úr
+  // (0,0,N,0) í (0,0,N+1,1), sem slær út varnirnar í css/theme-scoped.css:144-165
+  // (`.thm .app-page .stat-card…`) og vekur „hvíta kassann" á stat-kortunum
+  // aftur upp á .thm-síðunum. Skopunin er þess í stað gerð með því að KVEIKJA/
+  // SLÖKKVA á blaðinu öllu eftir þema (neðst í skránni), svo röðunin undir
+  // Brunastáli er nákvæmlega óbreytt en lekinn í hin 9 þemun hættir.
   const P = '';
 
   // Sidebar logo CSS already lives in patch 230. Patch 246 owns the
@@ -78,7 +84,11 @@ ${P}.view .tcard{
   border: 1px solid rgba(20,24,34,.08) !important;
   background: #fff !important;
   box-shadow: 0 10px 28px -16px rgba(25,35,60,.16) !important;
-  overflow: hidden !important;
+  /* overflow-x MÁ EKKI vera hidden — sjá athugasemdina við table-regluna neðar.
+     hidden hér klippti tækjalistann í Afgreiðslu-glugganum (678 px tafla sýnd
+     í 292 px) og efnið var ÓNÁANLEGT, ekki bara falið. */
+  overflow-y: hidden !important;
+  overflow-x: auto !important;
 }
 ${P}.view .tcard > .dtbl,
 ${P}.view .tcard table.dtbl{
@@ -131,7 +141,17 @@ ${P}.view table:not(.dtbl):not(.no-skin){
   border-collapse: collapse !important;
   background: #fff !important;
   border-radius: 14px !important;
-  overflow: hidden !important;
+  /* 2026-07-30 — ÞETTA DRAP ALLA LÁRÉTTA TÖFLU-SKRUNUN Á SÍMA OG SPJALDTÖLVU.
+     overflow:hidden hér sló út .view table{overflow-x:auto!important} í
+     mobile.css:66 — ekki vegna röðunar heldur SÉRTÆKNI: (0,3,1) á móti (0,1,1),
+     svo !important hinum megin bjargaði engu. Og af því html,body eru læst með
+     overflow-x:hidden (app.css:3559) birtist yfirflæði í þessu appi ALDREI sem
+     skrunstika — það birtist sem efni sem kemst aldrei á skjáinn.
+     Mælt: Bókhalds yfirlit 832 px ónáanleg á síma, Fyrirtæki í þjónustu 789 px
+     á spjaldtölvu (heimilisfang og skoðunardálkur alveg horfnir).
+     Y-ásinn er áfram hidden svo ávölu hornin haldist. */
+  overflow-y: hidden !important;
+  overflow-x: auto !important;
 }
 ${P}.view table:not(.dtbl):not(.no-skin) thead th{
   background: #eef1f6 !important;
@@ -529,5 +549,26 @@ ${P}.view .chip-filter.active{
 }
 `;
   document.head.appendChild(s);
+
+  // ── Skopun: þetta blað á AÐEINS að gilda undir Brunastáls-þemanu ───────────
+  // Hausinn hér að ofan segist vera „brunastal only" en var það aldrei — P var
+  // tómur og engin þema-vörn til, svo 212 !important-reglur giltu í öllum 10
+  // þemunum. Þyngsta afleiðingin: `.view{background:…}` hér (sama sértækni,
+  // sama !important, en SÍÐAR í röðinni) sló út þemabrúna
+  // `229-sala-theme-bridge.js:34` `.view{background:var(--thm-bg)!important}`,
+  // svo --thm-bg komst aldrei að og ÖLL þemu birtust sem Brunastál.
+  //
+  // 220-theme-system.js:133 keyrir apply(S) við hleðslu — á undan þessari
+  // frestuðu skrá — svo attributið er þegar rétt hér; 220:278 (AppSettings
+  // .onChange) og 230:47 (setPreset) geta breytt því síðar, þess vegna vaktarinn.
+  const syncScope = () => {
+    s.disabled = document.documentElement.getAttribute('data-thm-preset') !== 'brunastal';
+  };
+  syncScope();
+  try {
+    new MutationObserver(syncScope).observe(document.documentElement, {
+      attributes: true, attributeFilter: ['data-thm-preset']
+    });
+  } catch (_) {}
 })();
 /* === END BRUNASTAL CONTENT SKIN === */

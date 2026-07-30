@@ -46,9 +46,16 @@
     if (/co2|co₂|co_?2|kolsyr|kolsýr/.test(t)) {
       return sizeNum <= 3 ? 'co2_small' : 'co2_big';
     }
-    if (/brunaslang|brunaslöng|brunaslong|slang|hose/.test(t)) return 'slang';
-    if (/teppi|blanket|eldvarn/.test(t)) return 'teppi';
+    // „slöng" vantaði hér (aðeins „slang"), svo „Slönguskápur" — 30 tæki hjá 7
+    // fyrirtækjum, m.a. 21 hjá Hótel Atlantic apartments — féll í gegn og var
+    // EKKI talinn á prentuðu úttektarskýrslunni. Systur-flokkarinn í
+    // 270-report-facts-sync.js:78 hafði „slöng" og taldi þau, svo skýrslan og
+    // `arsskodun_report_facts` stemmdu ekki. Röðin er líka samræmd við 270
+    // (reyk á undan teppi): „eldvarn" í teppi-reglunni myndi annars gleypa
+    // eldvarnar-búnað sem á heima annars staðar ef nýr flokkur bætist við.
+    if (/brunaslang|brunaslöng|brunaslong|slang|slöng|hose/.test(t)) return 'slang';
     if (/reykskynj|smoke/.test(t)) return 'reyk';
+    if (/teppi|blanket|eldvarn/.test(t)) return 'teppi';
     return null;
   }
 

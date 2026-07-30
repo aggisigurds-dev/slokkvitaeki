@@ -98,6 +98,11 @@
     const m = btn.getAttribute("onclick").match(/openEdit\((\d+)\)/);
     if (!m) return;
     const fid = +m[1];
+    // Snemm-útgangur ÁÐUR en dýra hnappa-skönnunin keyrir — tifið er tíðara
+    // núna (sjá „ÞROT-varið tif" neðst) svo þetta má ekki kosta neitt þegar
+    // spjaldið er þegar á sínum stað.
+    let host = document.querySelector("._samskipti-host");
+    if (host && document.contains(host) && host.dataset.fid === String(fid) && host.childElementCount) return;
     // Besta akkerið (ósk Agnars 29.07): auða svæðið við hlið aðgerðahnappanna
     // („Merkja mikilvægt" o.fl.) — spjaldið fer beint fyrir aftan þá röð svo
     // punktarnir BLASI VIÐ án þess að opna Breyta-gluggann.
@@ -106,8 +111,7 @@
     if (mk) row = mk.parentElement;
     if (!row) row = btn.closest('[style*="display:flex"]') || btn.parentElement;
     const anchor = row ? (row.parentElement || row) : btn.parentElement;
-    let host = document.querySelector("._samskipti-host");
-    if (host) { if (host.dataset.fid === String(fid) && host.childElementCount) return; host.remove(); }
+    if (host) host.remove();
     host = document.createElement("div");
     host.className = "_samskipti-host"; host.dataset.fid = fid;
     (row && row.parentElement ? row.parentElement : anchor).insertBefore(host, row ? row.nextSibling : null);
@@ -152,6 +156,10 @@
     }
   }
   async function decorateRFone(info) {
+    // 175 endurteiknar `_rf_body` með innerHTML= — þá losnar gamla `._rf_info`
+    // úr trénu (parentNode verður null). Aldrei skrifa í laust tré: næsta tif
+    // finnur nýja kassann og býr spjaldið til aftur.
+    if (!info || !info.parentNode || !document.contains(info)) return;
     // Netföng: bæði mailto-hlekkir OG hreinn texti (mismunandi útgáfur spjaldsins)
     let emails = [...info.querySelectorAll('a[href^="mailto:"]')].map(a => a.getAttribute("href").slice(7));
     if (!emails.length) {
@@ -165,14 +173,30 @@
     let card = slot ? slot.querySelector("._samskipti-rf")
       : (info.nextElementSibling && info.nextElementSibling.classList && info.nextElementSibling.classList.contains("_samskipti-rf")
          ? info.nextElementSibling : null);
-    if (card) { if (card.dataset.dom === (dom || "")) return; card.remove(); card = null; }
+    if (card) {
+      // Skila EINGÖNGU þegar spjaldið er raunverulega á sínum stað OG búið að
+      // teikna sig. Gamla útgáfan skoðaði bara `dataset.dom`, svo spjald sem
+      // sat fast í „Sæki póstsögu…" (eða hafði losnað í endurteiknun) lifði
+      // að eilífu og engin ný tilraun var gerð.
+      const same = card.dataset.dom === (dom || "") && document.contains(card);
+      const busy = card.dataset.state === "loading" && Date.now() - (+card.dataset.ts || 0) < 15000;
+      if (same && (card.dataset.state === "done" || busy)) return;
+      card.remove(); card = null;
+    }
     card = document.createElement("div");
     card.className = "_samskipti-rf"; card.dataset.dom = dom || "";
+    card.dataset.state = "loading"; card.dataset.ts = String(Date.now());
     card.style.cssText = "margin:0 0 14px;border-left:4px solid #6366f1;background:var(--surface,#fff);border:1px solid var(--brd,#e2e8f0);border-left:4px solid #6366f1;border-radius:10px;padding:12px 14px;font-size:13px";
     if (slot) slot.appendChild(card); else info.parentNode.insertBefore(card, info.nextSibling);
-    if (!dom) { card.innerHTML = '<div style="color:#94a3b8">💬 Engin netföng skráð á félagið — skráðu netfang til að sjá póstsögu.</div>'; return; }
+    if (!dom) {
+      card.innerHTML = '<div style="color:#94a3b8">💬 Engin netföng skráð á félagið — skráðu netfang til að sjá póstsögu.</div>';
+      card.dataset.state = "done"; return;
+    }
     card.innerHTML = '<div style="font-weight:800;font-size:11px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA (@' + esc(dom) + ')</div><div style="color:#94a3b8;margin-top:4px">Sæki póstsögu…</div>';
     const mails = await rfMails(dom);
+    // 175 gæti hafa endurteiknað á meðan sótt var — þá er þetta spjald laust
+    // og næsta tif býr til nýtt (annars skrifuðum við í ósýnilegt tré).
+    if (!document.contains(card)) return;
     const lastUs = mails.filter(m => m.fra_okkur).map(m => m.received_at).sort().pop() || "";
     const openQ = mails.filter(m => m.is_question && !m.fra_okkur && m.received_at > lastUs).length;
     const top = mails[0];
@@ -199,11 +223,39 @@
       full.style.display = open ? "" : "none";
       e.target.textContent = open ? "Loka ▴" : "Opna ▾";
     });
+    card.dataset.state = "done";
   }
 
-  let t = null;
-  new MutationObserver(() => { clearTimeout(t); t = setTimeout(() => { decorate(); decorateRF(); }, 350); })
-    .observe(document.body, { childList: true, subtree: true });
-  setTimeout(() => { decorate(); decorateRF(); }, 1200);
-  console.log("[samskipti-panel] v2 installed (prófílar + rekstrarfélög)");
+  // ── ÞROT-VARIÐ TIF (2026-07-30 — rótin að „engin samskipti" gallanum) ──────
+  // Gamla kveikjan var endurstillanleg biðlykkja:
+  //     new MutationObserver(() => { clearTimeout(t); t = setTimeout(run, 350); })
+  // Hliðarstikan endurskrifar hnappa-texta sína (`.vnav-btn`, teljarar/merki)
+  // á ~50 ms fresti ALLAN tímann, svo `clearTimeout` núllstillti tímarann áður
+  // en hann náði 350 ms. Mælt í vafra á deploy-preview: 555 breytingalotur á
+  // einni lotu → **0 keyrslur**, bil milli breytinga 44–55 ms (399 af 400
+  // undir 350 ms). Eina keyrslan sem nokkurn tímann varð var `setTimeout(…,1200)`
+  // við ræsingu — löngu áður en rekstrarfélaga-síðan er opnuð, svo hún fann
+  // engan `._rf_info` og gerði ekkert. Þess vegna sat `._rf_samskipti_slot`
+  // tómt þótt fyrirspurnin sjálf skilaði röðum.
+  //
+  // Núna: kveikja sem má EKKI núllstilla (fyrsta breyting ræsir keyrslu eftir
+  // í mesta lagi 250 ms) + hægt öryggis-tif fyrir kyrrar síður. `_running`
+  // hindrar að tvær samhliða keyrslur búi til tvö spjöld.
+  let _timer = null, _running = false;
+  function runNow() {
+    _timer = null;
+    if (_running) return;                 // næsta DOM-breyting (eða tifið) endurræsir
+    _running = true;
+    Promise.resolve()
+      .then(() => decorate())
+      .catch(e => console.warn("[samskipti-panel]", e))
+      .then(() => decorateRF())
+      .catch(e => console.warn("[samskipti-rf]", e))
+      .then(() => { _running = false; });
+  }
+  function schedule() { if (_timer) return; _timer = setTimeout(runNow, 250); }
+  new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
+  setInterval(schedule, 3000);            // öryggisnet ef ekkert hreyfist
+  schedule();
+  console.log("[samskipti-panel] v3 installed (prófílar + rekstrarfélög · þrot-varið tif)");
 })();

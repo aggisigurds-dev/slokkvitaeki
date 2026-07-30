@@ -37,6 +37,13 @@ export default async (req) => {
   if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: cors() });
   if (req.method !== 'POST') return j(405, { error: 'POST only' });
 
+  // Default-open shared-secret gate: enforced AÐEINS þegar EDGE_SHARED_KEY er sett.
+  const KEY = (process.env.EDGE_SHARED_KEY || '').trim();
+  if (KEY) {
+    const got = String(req.headers.get('x-eldklar-key') || '').trim();
+    if (got !== KEY) return j(401, { error: 'unauthorized' });
+  }
+
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return j(400, { error: 'API_KEY_MISSING' });
 
@@ -93,7 +100,7 @@ export default async (req) => {
 };
 
 function cors() {
-  return { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type' };
+  return { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Access-Control-Allow-Headers': 'Content-Type, x-eldklar-key' };
 }
 function j(status, obj) {
   return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json', ...cors() } });
