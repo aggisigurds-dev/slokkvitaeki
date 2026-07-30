@@ -25,7 +25,13 @@
   const s = document.createElement('style');
   s.id = ID;
 
-  // Scope prefix — every selector starts here so non-brunastal themes pass through.
+  // Scope prefix — VÍSVITANDI TÓMUR. Ekki setja hann í forskeyti patch 230
+  // (`html[data-thm-preset="brunastal"] `): það lyftir HVERJUM veljara úr
+  // (0,0,N,0) í (0,0,N+1,1), sem slær út varnirnar í css/theme-scoped.css:144-165
+  // (`.thm .app-page .stat-card…`) og vekur „hvíta kassann" á stat-kortunum
+  // aftur upp á .thm-síðunum. Skopunin er þess í stað gerð með því að KVEIKJA/
+  // SLÖKKVA á blaðinu öllu eftir þema (neðst í skránni), svo röðunin undir
+  // Brunastáli er nákvæmlega óbreytt en lekinn í hin 9 þemun hættir.
   const P = '';
 
   // Sidebar logo CSS already lives in patch 230. Patch 246 owns the
@@ -529,5 +535,26 @@ ${P}.view .chip-filter.active{
 }
 `;
   document.head.appendChild(s);
+
+  // ── Skopun: þetta blað á AÐEINS að gilda undir Brunastáls-þemanu ───────────
+  // Hausinn hér að ofan segist vera „brunastal only" en var það aldrei — P var
+  // tómur og engin þema-vörn til, svo 212 !important-reglur giltu í öllum 10
+  // þemunum. Þyngsta afleiðingin: `.view{background:…}` hér (sama sértækni,
+  // sama !important, en SÍÐAR í röðinni) sló út þemabrúna
+  // `229-sala-theme-bridge.js:34` `.view{background:var(--thm-bg)!important}`,
+  // svo --thm-bg komst aldrei að og ÖLL þemu birtust sem Brunastál.
+  //
+  // 220-theme-system.js:133 keyrir apply(S) við hleðslu — á undan þessari
+  // frestuðu skrá — svo attributið er þegar rétt hér; 220:278 (AppSettings
+  // .onChange) og 230:47 (setPreset) geta breytt því síðar, þess vegna vaktarinn.
+  const syncScope = () => {
+    s.disabled = document.documentElement.getAttribute('data-thm-preset') !== 'brunastal';
+  };
+  syncScope();
+  try {
+    new MutationObserver(syncScope).observe(document.documentElement, {
+      attributes: true, attributeFilter: ['data-thm-preset']
+    });
+  } catch (_) {}
 })();
 /* === END BRUNASTAL CONTENT SKIN === */
