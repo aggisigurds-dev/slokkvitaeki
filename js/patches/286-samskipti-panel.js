@@ -223,11 +223,39 @@
       full.style.display = open ? "" : "none";
       e.target.textContent = open ? "Loka ▴" : "Opna ▾";
     });
+    card.dataset.state = "done";
   }
 
-  let t = null;
-  new MutationObserver(() => { clearTimeout(t); t = setTimeout(() => { decorate(); decorateRF(); }, 350); })
-    .observe(document.body, { childList: true, subtree: true });
-  setTimeout(() => { decorate(); decorateRF(); }, 1200);
-  console.log("[samskipti-panel] v2 installed (prófílar + rekstrarfélög)");
+  // ── ÞROT-VARIÐ TIF (2026-07-30 — rótin að „engin samskipti" gallanum) ──────
+  // Gamla kveikjan var endurstillanleg biðlykkja:
+  //     new MutationObserver(() => { clearTimeout(t); t = setTimeout(run, 350); })
+  // Hliðarstikan endurskrifar hnappa-texta sína (`.vnav-btn`, teljarar/merki)
+  // á ~50 ms fresti ALLAN tímann, svo `clearTimeout` núllstillti tímarann áður
+  // en hann náði 350 ms. Mælt í vafra á deploy-preview: 555 breytingalotur á
+  // einni lotu → **0 keyrslur**, bil milli breytinga 44–55 ms (399 af 400
+  // undir 350 ms). Eina keyrslan sem nokkurn tímann varð var `setTimeout(…,1200)`
+  // við ræsingu — löngu áður en rekstrarfélaga-síðan er opnuð, svo hún fann
+  // engan `._rf_info` og gerði ekkert. Þess vegna sat `._rf_samskipti_slot`
+  // tómt þótt fyrirspurnin sjálf skilaði röðum.
+  //
+  // Núna: kveikja sem má EKKI núllstilla (fyrsta breyting ræsir keyrslu eftir
+  // í mesta lagi 250 ms) + hægt öryggis-tif fyrir kyrrar síður. `_running`
+  // hindrar að tvær samhliða keyrslur búi til tvö spjöld.
+  let _timer = null, _running = false;
+  function runNow() {
+    _timer = null;
+    if (_running) return;                 // næsta DOM-breyting (eða tifið) endurræsir
+    _running = true;
+    Promise.resolve()
+      .then(() => decorate())
+      .catch(e => console.warn("[samskipti-panel]", e))
+      .then(() => decorateRF())
+      .catch(e => console.warn("[samskipti-rf]", e))
+      .then(() => { _running = false; });
+  }
+  function schedule() { if (_timer) return; _timer = setTimeout(runNow, 250); }
+  new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
+  setInterval(schedule, 3000);            // öryggisnet ef ekkert hreyfist
+  schedule();
+  console.log("[samskipti-panel] v3 installed (prófílar + rekstrarfélög · þrot-varið tif)");
 })();
