@@ -56,6 +56,10 @@
     sameining: 'sameining', adstod: 'adstod',
     postur: 'reikninga-postur', reikningapostur: 'reikninga-postur',  // 📧 Reikninga-póstur (patch 240)
     aksturslisti: 'aksturslisti', vakt: 'aksturslisti',   // 🚚 Aksturslisti / vakt-yfirlit (patch 268)
+    // 🔧 ÞjónustuVerkstæði (patch 190): identity-færslan FYRST svo reverse-mappið
+    // (fyrsti slug vinnur) speglar kanóníska id-ið, bandstrikslausi slugurinn
+    // er auka-innleið.
+    'thjonustu-verkstaedi': 'thjonustu-verkstaedi', thjonustuverkstaedi: 'thjonustu-verkstaedi',
     opp: 'opp'   // 📱 Öpp launcher (patch 261)
   };
 
