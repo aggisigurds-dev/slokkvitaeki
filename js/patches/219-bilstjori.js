@@ -737,6 +737,7 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
         if (window.App && App.switchView) App.switchView('leidsogn');
       });
       root.querySelector('#_bs-full').addEventListener('click', toggleFullscreen);
+      armAutoFullscreen();   // þéttur hamur sjálfgefinn — virkjast við fyrstu snertingu
       root.querySelector('#_bs-share').addEventListener('click', () => {
         const url = DRIVER_LINK();   // the locked driver link to send out
         copyText(url).then(ok => toast(ok ? '✓ Hlekkur afritaður — sendu á bílstjóra' : url));
@@ -919,13 +920,44 @@ body.bs-active #_ad-aibtn,body.bs-active .ad-panel,body.bs-active #bstal-restore
     try { window.prompt('Afritaðu hlekkinn:', t); } catch (_) {}
     return Promise.resolve(false);
   }
+  // ── Þéttur hamur (fullur skjár) — SJÁLFGEFINN (Agnar 2026-07-30) ────────────
+  // Ósk: „ökumaður app should open upp í tight view as default … það er
+  // valmöguleiki efst í horninu, en vill hafa takkana nokkuð stóra svo sjáist."
+  // ⛶-valið er því MUNAÐ og sjálfgefið KVEIKT; takkastærðir eru ÓBREYTTAR
+  // (ekkert minnkað — bara vafrastikan felin svo fleiri verk komist á skjáinn).
+  //
+  // GILDRA: vafrar hafna requestFullscreen() án notenda-bendingar, svo við getum
+  // ekki kallað hann beint við opnun. Þess í stað vopnum við EINSKIPTIS hlustara
+  // á fyrstu snertingu og förum þá í fullan skjá. Í uppsettu appi
+  // (/app/bilstjori/, display:standalone) er stikan þegar falin — þá gerir þetta
+  // ekkert sýnilegt og er meinlaust.
+  const FS_KEY = 'bs_fullscreen_default';
+  function fsWanted() { try { return localStorage.getItem(FS_KEY) !== '0'; } catch (_) { return true; } }
+  function fsSet(on) { try { localStorage.setItem(FS_KEY, on ? '1' : '0'); } catch (_) {} }
+  function isFs() { return !!(document.fullscreenElement || document.webkitFullscreenElement); }
+  function enterFs() {
+    const el = document.documentElement;
+    try { (el.requestFullscreen || el.webkitRequestFullscreen).call(el); } catch (_) {}
+  }
   function toggleFullscreen() {
-    const d = document, el = d.documentElement;
-    const fsEl = d.fullscreenElement || d.webkitFullscreenElement;
+    const d = document;
     try {
-      if (fsEl) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); }
-      else { (el.requestFullscreen || el.webkitRequestFullscreen).call(el); }
+      if (isFs()) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); fsSet(false); }
+      else { enterFs(); fsSet(true); }
     } catch (_) { toast('Fullur skjár ekki studdur hér — notaðu „Bæta á heimaskjá".'); }
+  }
+  let _fsArmed = false;
+  function armAutoFullscreen() {
+    if (_fsArmed || !fsWanted() || isFs()) return;
+    _fsArmed = true;
+    const go = () => {
+      document.removeEventListener('pointerdown', go, true);
+      document.removeEventListener('touchstart', go, true);
+      // aðeins ef enn óskað og appið enn opið
+      if (fsWanted() && !isFs() && document.body.classList.contains('bs-active')) enterFs();
+    };
+    document.addEventListener('pointerdown', go, true);
+    document.addEventListener('touchstart', go, true);
   }
 
   function openCompany(coId) {
