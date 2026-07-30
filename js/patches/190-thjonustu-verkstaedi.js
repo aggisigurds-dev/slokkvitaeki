@@ -889,6 +889,12 @@
     const b = document.querySelector('[data-view="' + NAV_KEY + '"]'); if (b) b.classList.add('active');
     render();
     ensureArsData(); // einingar + áætlaðar tekjur — re-renders when loaded
+    // Spegla slugginn sjálf (eins og Verkborð 231): röð vefjara á App.switchView
+    // er tilviljanakennd, svo 218-speglinum er ekki treystandi þegar hookurinn
+    // okkar skammhleypir framhjá honum.
+    try {
+      if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY);
+    } catch (_) {}
   }
   function injectTab() {
     const btns = Array.prototype.slice.call(document.querySelectorAll('.vnav-btn'));
@@ -901,13 +907,41 @@
     if (span) span.textContent = '🔧 ÞjónustuVerkstæði'; else btn.textContent = '🔧 ÞjónustuVerkstæði';
     btn.querySelectorAll('.badge,.count,[class*="badge"],[class*="count"]').forEach(n => n.remove());
     btn.removeAttribute('onclick');
-    btn.onclick = openView;
+    // Fara gegnum App.switchView (ekki beint í openView) svo allir vefjarar
+    // sjái flakkið — 218 speglar þá #thjonustu-verkstaedi í slóðina og
+    // bakk-lagið (277) fær alvöru færslu. Hookurinn hér að neðan grípur
+    // NAV_KEY og kallar openView.
+    btn.onclick = function () {
+      if (window.App && typeof App.switchView === 'function') App.switchView(NAV_KEY);
+      else openView();
+    };
     anchor.parentNode.insertBefore(btn, anchor.nextSibling);
     document.querySelectorAll('.vnav-btn').forEach(b => { if (b === btn) return; b.addEventListener('click', () => { const vv = viewEl(); if (vv) { vv.style.display = 'none'; vv.classList.remove('active'); } btn.classList.remove('active'); }); });
     console.log('[þjónustuverkstæði] tab injected');
   }
   setInterval(injectTab, 1200);
   setTimeout(injectTab, 600);
+
+  // ── Deep-link lagfæring (2026-07-30, Verkefnalisti 56b9c9c6) ──────────────
+  // #thjonustu-verkstaedi virkaði ekki á köldum boot: (1) view-divið varð
+  // aðeins til í openView svo 218-vörðurinn (`getElementById('view-'+v)`)
+  // hafnaði slugnum og sala-boot-landerinn yfirskrifaði hashið; (2) enginn
+  // switchView-hookur var til svo App.switchView(NAV_KEY) sýndi tóman div.
+  // Lagað með sama mynstri og hin borðin (231/232/268): divið til strax +
+  // switchView-hookur sem beinir NAV_KEY í openView.
+  ensureView();
+  (function patchSwitchView() {
+    if (!window.App || typeof App.switchView !== 'function') { setTimeout(patchSwitchView, 200); return; }
+    if (App.switchView.__svThjVerk) return;
+    const orig = App.switchView;
+    const wrapped = function (v) {
+      if (v === NAV_KEY) { openView(); return; }
+      return orig.apply(this, arguments);
+    };
+    for (const k in orig) { try { wrapped[k] = orig[k]; } catch (_) {} }
+    wrapped.__svThjVerk = true;
+    App.switchView = wrapped;
+  })();
   try { if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(() => { if (viewEl() && viewEl().classList.contains('active')) render(); }); } catch (_) {}
 
   window.ThjonustuVerkstaedi = { render, open: openView, buckets };
