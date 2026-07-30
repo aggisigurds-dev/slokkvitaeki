@@ -85,7 +85,13 @@
       '.ky-vm-seg:hover{color:#fff}' +
       '.ky-vm-seg.on{background:linear-gradient(180deg,#3b82f6,#2563eb);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}' +
       '.ky-vm-ico{font-size:14px;line-height:1}' +
-      '@media (max-width:760px){.ky-vm-lbl{display:none}.ky-vm-seg{padding:7px 9px}}';
+      '@media (max-width:760px){.ky-vm-lbl{display:none}.ky-vm-seg{padding:7px 9px}}' +
+      // Síma-úttekt 2026-07-30 (mælt á 834 px): síðasti aðgerða-hnappurinn í
+      // hverri röð (t.d. ._ky-nyjan) klipptist 42 px út fyrir kortið, sem er
+      // með inline overflow:hidden. AÐEINS media-regla á umgjörðina — við
+      // snertum ALDREI .ky-row flexið sjálft (sjá v5-gildruna í CLAUDE.md:
+      // wrap/margin-left:auto/flex-basis þar brýtur línuröðunina).
+      '@media (max-width:900px){#view-krofu-yfirlit .ky-row > div{overflow-x:auto;-webkit-overflow-scrolling:touch}}';
     (document.head || document.documentElement).appendChild(s);
   }
 

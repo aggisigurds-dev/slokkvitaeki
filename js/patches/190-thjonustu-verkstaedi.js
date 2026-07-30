@@ -344,6 +344,17 @@
       '#' + VIEW_ID + ' .sv-note{width:100%;box-sizing:border-box;font:inherit;font-size:12.5px;line-height:1.45;padding:7px 9px;border:1px solid var(--brd);border-radius:9px;resize:vertical;min-height:38px;color:var(--ink1);background:var(--bg)}',
       '#' + VIEW_ID + ' .sv-note:focus{outline:none;border-color:#3b82f6;background:var(--surface)}',
       '#' + VIEW_ID + ' .sv-acts{display:flex;gap:6px;flex-wrap:wrap;border-top:1px solid var(--brd);padding-top:9px}',
+      // Síma-úttekt 2026-07-30 (mælt á 390 px): 810 snertifletir undir 44 px og
+      // 866 textar undir 16 px á þessari síðu — verst .sv-step (115×40) og
+      // .sv-mark (61×40). Á ≤900 px fá stjórntökurnar 44 px lágmark og 15 px
+      // texta; skjáborðið heldur þéttleikanum óbreyttum.
+      '@media(max-width:900px){'+
+        '#' + VIEW_ID + ' ._sv-step,'+
+        '#' + VIEW_ID + ' .sv-step{min-height:44px}'+
+        '#' + VIEW_ID + ' .sv-mark{min-height:44px;display:inline-flex;align-items:center;font-size:15px;padding:8px 14px}'+
+        '#' + VIEW_ID + ' .sv-acts ._sv-act{min-height:44px;height:auto!important;font-size:15px!important;padding:8px 16px!important}'+
+        '#' + VIEW_ID + ' .sv-step .lb{font-size:15px}'+
+      '}',
       // Skjala-lína ársins (📄 Skýrsla · ✉️ Senda · 🧾 R-nr · payday-pilla) — rólegir litir
       '#' + VIEW_ID + ' .sv-docsline{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:1px 0}',
       '#' + VIEW_ID + ' .sv-doclink{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:8px;border:1px solid var(--brd);background:var(--bg);color:var(--ink2);text-decoration:none;cursor:pointer;font-family:inherit}',
