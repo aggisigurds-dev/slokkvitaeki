@@ -147,9 +147,45 @@
       return null;
     });
   }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Per-line helpers (2026-07-31, ósk Agnars). A karfa-lína má bera `disc_pct`
+  // — afsláttur sem á AÐEINS við þá línu. Hann er BAKAÐUR inn í ex-VAT
+  // einingarverðið (165-konvensjónin: rúnnað verð + „· −N% afsl." aftan á
+  // lýsinguna) svo ALLIR lesarar niðurstreymis (SalaInvoice buildLines/
+  // totalsByRate + renderFromSale + tekjur/bókhald) skilji hann strax án
+  // schema-breytingar. Sölu-afslátturinn (kr/% → `afslattur`) er ÁFRAM aðskilinn
+  // og leggst OFAN Á — aldrei bæði bakað OG í afslattur fyrir sömu krónurnar.
+  function lineDiscPct(l){ return Math.max(0, Math.min(100, parseFloat(l && l.disc_pct)||0)); }
+  function lineVskPct(l){ return (l && l.vsk_pct!=null) ? (+l.vsk_pct||0) : 24; }
+  // ex-VAT einingarverð EFTIR línu-afslátt (rúnnað — sama tala og fer í `linur`
+  // svo prentaði reikningurinn endurgeri þessar tölur nákvæmlega).
+  function lineUnitEx(l){ var d=lineDiscPct(l), b=+(l&&l.unit_price_ex_vat)||0; return d>0 ? Math.round(b*(1-d/100)) : b; }
+  // Fullt (grunn, fyrir-afslátt) einingarverð m. VSK — talan sem flísarnar sýna.
+  function lineUnitInc(l){ return (+(l&&l.unit_price_ex_vat)||0) * (1 + lineVskPct(l)/100); }
+  // Línu-samtala m. VSK EFTIR línu-afslátt (talan hægra megin á hverri körfu-
+  // línu; línurnar leggjast í þessa summu FYRIR sölu-afsláttinn).
+  function lineTotalInc(l){ return (+(l&&l.qty)||0) * lineUnitEx(l) * (1 + lineVskPct(l)/100); }
+  function fmtPct(p){ return (Math.round(p*100)/100).toString().replace('.', ','); }
+  // `linur`-fylkið eins og það er vistað á söluna: línu-afslættir bakaðir inn í
+  // einingarverðið + „· −N% afsl." aftan á lýsinguna; disc_pct fellt niður.
+  function bakedLines(){
+    return state.lines.map(function(l){
+      var d = lineDiscPct(l);
+      var nl = { type:l.type, desc:l.desc||'', qty:+l.qty||0, unit_price_ex_vat:(+l.unit_price_ex_vat||0), vsk_pct:lineVskPct(l), ref:l.ref||'', product_id:l.product_id };
+      if (d>0) { nl.unit_price_ex_vat = lineUnitEx(l); nl.desc = String(l.desc||'') + ' · −' + fmtPct(d) + '% afsl.'; }
+      return nl;
+    });
+  }
   function totals(){
-    var ex=0,vsk=0;
-    state.lines.forEach(function(l){var le=l.qty*l.unit_price_ex_vat;ex+=le;vsk+=le*(l.vsk_pct||24)/100;});
+    var ex=0,vsk=0, fullEx=0, fullVsk=0;
+    // ex/vsk eru EFTIR línu-afslætti (bakaða) — sölu-% og -kr afslátturinn að
+    // neðan kemur svo af þessari summu / af loka-verðinu m. vsk. fullEx/fullVsk
+    // eru FYRIR línu-afslátt (fullt verð) svo hægt sé að sýna heildar-afsláttinn.
+    state.lines.forEach(function(l){
+      var v=lineVskPct(l), q=(+l.qty||0);
+      var le=q*lineUnitEx(l);            ex+=le;      vsk+=le*v/100;
+      var lf=q*(+l.unit_price_ex_vat||0); fullEx+=lf; fullVsk+=lf*v/100;
+    });
     // % discount first, off the without-VAT subtotal (unchanged). The kr
     // discount then comes off the FINAL price m. vsk, so the operator can
     // punch 200 on a 5.200 kr cart and charge exactly 5.000 kr. ex/vsk are
@@ -161,10 +197,15 @@
     var absDisc = Math.max(0, Math.min(gross1, parseFloat(state.discount)||0));
     var f = gross1>0 ? (gross1 - absDisc) / gross1 : 0;
     var ad = ad1*f, av = av1*f;
-    // saved = total kr the customer saves off the m.vsk price — the number
-    // shown in the cart and stored on solur.afslattur.
+    // saved      = sölu-afslátturinn (% + kr) — það sem geymist í solur.afslattur.
+    // line_saved = summa línu-afslátta (m. vsk, bakað inn í verðin).
+    // disc_total = HEILDAR afsláttur (línur + sala) — talan sem sýnd er „niðri".
     var saved = (ex + vsk) - (ad + av);
-    return { ex:ad, vsk:av, total:ad+av, raw_ex:ex, raw_vsk:vsk, pct_disc:pctDisc, abs_disc:absDisc, saved:saved };
+    var line_saved = (fullEx + fullVsk) - (ex + vsk);
+    return { ex:ad, vsk:av, total:ad+av, raw_ex:ex, raw_vsk:vsk,
+             raw_full_ex:fullEx, raw_full_vsk:fullVsk,
+             pct_disc:pctDisc, abs_disc:absDisc,
+             saved:saved, line_saved:line_saved, disc_total:line_saved+saved };
   }
   function injectKarfaSkin(){
     if(document.getElementById('pos-karfa-skin'))return;
@@ -196,10 +237,13 @@
       '#view-sala .pos-cart #pos-checkout:disabled{opacity:.55!important;cursor:not-allowed!important}',
       // The Brunastál skin (patch 245) styles EVERY .view input as a 42px-tall,
       // 14px-padded box. That balloons the cart's tiny inline inputs (unit-price
-      // edit, and the 28/46px discount % / kr fields — the padding hides their
-      // value entirely → "percentage doesn't show"). Re-assert the compact style
-      // for just those inputs (higher specificity + !important beats patch 245).
-      '#view-sala .pos-cart .pos-price-edit{height:auto!important;min-height:0!important;padding:0 2px!important;border:none!important;border-bottom:1px dotted #cbd5e1!important;border-radius:0!important;background:transparent!important;font-size:11px!important;width:64px!important;text-align:right!important;color:#64748b!important}',
+      // edit, the per-line „% afsl" field, and the 28/46px discount % / kr fields
+      // — the padding hides their value entirely → "percentage doesn't show").
+      // Re-assert the compact style for those inputs (higher specificity +
+      // !important beats patch 245). 2026-07-31: .pos-disc-edit added.
+      '#view-sala .pos-cart .pos-price-edit,#view-sala .pos-cart .pos-disc-edit{height:auto!important;min-height:0!important;padding:0 2px!important;border:none!important;border-bottom:1px dotted #cbd5e1!important;border-radius:0!important;background:transparent!important;font-size:11px!important;text-align:right!important;color:#64748b!important}',
+      '#view-sala .pos-cart .pos-price-edit{width:64px!important}',
+      '#view-sala .pos-cart .pos-disc-edit{width:30px!important}',
       '#view-sala .pos-cart #pos-discount,#view-sala .pos-cart #pos-discount-kr{height:auto!important;min-height:0!important;padding:0!important;border:none!important;border-radius:0!important;background:transparent!important;font-size:13px!important;text-align:right!important;color:#0f172a!important}',
       '#view-sala .pos-cart #pos-discount{width:30px!important}',
       '#view-sala .pos-cart #pos-discount-kr{width:46px!important}'
@@ -480,11 +524,11 @@
             '</div>' +
           '</div>' +
           '<div id="pos-lines" style="overflow-y:auto;flex:1;min-height:100px"></div>' +
-          '<textarea id="pos-notes" placeholder="Vegna…" style="width:100%;min-height:40px;margin-top:8px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
+          '<textarea id="pos-notes" rows="2" placeholder="Vegna…" style="width:100%;min-height:0;margin-top:8px;padding:7px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;line-height:1.3;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
           // 2026-07-23 (Agnar): a SECOND note box just for staff — goes to the
           // workshop (verkbeidnir.notes → Verkröð/Verkstæði board), NOT onto the
           // reikningur. Same white style as the Vegna box; the placeholder tells them apart.
-          '<textarea id="pos-notes-staff" placeholder="🔧 Fyrir starfsfólk — sést á verkstæði (ekki á reikning)" style="width:100%;min-height:40px;margin-top:6px;padding:8px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
+          '<textarea id="pos-notes-staff" rows="2" placeholder="🔧 Fyrir starfsfólk — sést á verkstæði (ekki á reikning)" style="width:100%;min-height:0;margin-top:6px;padding:7px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;line-height:1.3;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
           '<div id="pos-totals" style="margin-top:8px"></div>' +
           '<button id="pos-checkout" style="width:100%;margin-top:14px;background:linear-gradient(180deg,#1f7a48 0%,#16613a 52%,#0d4226 100%);color:#fff;border:1px solid #0a3a20;padding:16px;border-radius:14px;font-weight:800;font-size:16px;letter-spacing:.03em;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 18px -8px rgba(13,66,38,.6)">✓ ÁFRAM</button>' +
         '</div>' +
@@ -528,14 +572,24 @@
   function buildLinesHTML(){
     if(!state.lines.length)return'<div style="color:#94a3b8;text-align:center;padding:30px 16px;font-size:13px;border:2px dashed #e2e8f0;border-radius:12px">Karfan er tóm<br><span style="font-size:11px">Smelltu á flísar til að bæta við</span></div>';
     // 2026-06-22: KARFA endurhönnun — hver lína er „pill" með lit-rönd vinstra
-    // megin (CO₂ rauð · Duft blá · léttvatn ljósblá o.s.frv.), nafn + „magn ×
-    // einingarverð" undirtexti (mono, einingarverðið er ennþá ritanlegt inline),
-    // hreinn magn-stepper og línutala. Línutalan er ÁN VSK (magn × einingarverð)
-    // svo línurnar leggjast saman í „ÁN VSK" að neðan — eins og á hönnunar-mock;
-    // VSK bætist við einu sinni neðst. (.pos-line-del/.pos-qty-up/-dn/.pos-price-
-    // edit + data-idx haldast óbreytt svo atburða-bindingar virka áfram.)
-    return state.lines.map(function(l,idx){
-      var lineEx = l.qty * l.unit_price_ex_vat;
+    // megin (CO₂ rauð · Duft blá · léttvatn ljósblá o.s.frv.), nafn + verð/afsláttar-
+    // undirtexti (mono) og stór línutala hægra megin.
+    // 2026-07-31 (ósk Agnars): einingarverðið OG línutalan sýna nú FULLT verð m. VSK
+    // (eins og flísarnar) svo starfsfólk sjái sömu tölu og stendur á vörunni; VSK er
+    // brotið niður í heildartölunum að neðan. Nýr „% afsl."-reitur gefur afslátt á
+    // STÖKU línu (bakast inn í verðið við vistun — 165-konvensjónin). Klassar/ data-idx
+    // haldast (.pos-price-edit/.pos-disc-edit/.pos-line-tot/.pos-qty-*) svo bindingar
+    // virki áfram.
+    // Dálka-haus (labels EINU SINNI — „afsl" stendur hér, ekki á hverri línu).
+    var lineHeader = '<div style="display:flex;align-items:center;gap:7px;padding:1px 9px 5px;font-size:9px;font-weight:700;letter-spacing:.04em;color:#94a3b8;text-transform:uppercase">' +
+        '<div style="flex:1;min-width:0">Einingarv. m/vsk · afsl%</div>' +
+        '<div style="width:74px;text-align:center;flex-shrink:0">Fjöldi</div>' +
+        '<div style="min-width:56px;text-align:right;flex-shrink:0">Samtals</div>' +
+      '</div>';
+    return lineHeader + state.lines.map(function(l,idx){
+      var lineInc = lineTotalInc(l);            // m. VSK, eftir línu-afslátt
+      var unitInc = Math.round(lineUnitInc(l)); // fullt einingarverð m. VSK (grunnur)
+      var dPct = lineDiscPct(l);
       var dn = (l.desc||'').toLowerCase();
       var col = /co₂|co2|kolsýr|kolsyr/.test(dn) ? '#dc2626'
               : /duft|abc|pfc/.test(dn) ? '#1d4ed8'
@@ -543,17 +597,22 @@
               : /reyk|skynjari/.test(dn) ? '#ea580c'
               : (colorFromNafn(l.desc) || '#475569');
       // 2026-07-01: cleaner „karfa" line per Agnar's mock — roomier light card,
-      // title + „<einingarverð> kr/stk" undirtexti (verðið er ennþá ritanlegt
-      // inline), pillulaga magn-stepper og stór línutala hægra megin. Sömu
-      // klassar/ data-idx haldast svo bindingar (patch 113 tilboðsverð o.fl.) virki.
+      // title + verð/afsláttar-undirtexti, pillulaga magn-stepper og stór línutala.
       return '<div style="position:relative;display:flex;align-items:center;gap:7px;background:#f8fafc;border:1px solid #e9eef3;border-left:4px solid '+col+';border-radius:10px;padding:7px 9px;margin-bottom:6px;box-shadow:0 1px 2px rgba(16,24,40,.05)">' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-weight:700;color:#0f172a;font-size:12.5px;line-height:1.2;overflow-wrap:break-word;word-break:break-word;padding-right:12px">'+esc(l.desc)+(l.ref?'<span style="font-weight:400;font-size:10px;color:#94a3b8"> · '+esc(l.ref)+'</span>':'')+'</div>' +
-          '<div style="display:flex;align-items:center;gap:2px;margin-top:1px;font-size:11px;color:#64748b;font-family:\'Space Mono\',monospace">' +
-            '<input class="pos-price-edit" data-idx="'+idx+'" type="text" inputmode="decimal" value="'+Math.round(l.unit_price_ex_vat)+'" ' +
-              'title="Smelltu til að breyta einingarverði (án VSK)" ' +
-              'style="width:62px;padding:0 1px;border:none;border-bottom:1px dotted #cbd5e1;background:transparent;font:inherit;font-size:11px;color:#64748b;text-align:right;font-variant-numeric:tabular-nums">' +
+          // Verð (m. VSK) · afsláttur % — EIN lína (nowrap). Merkin standa í
+          // hausnum að ofan svo hér eru aðeins tölurnar (2026-07-31, ósk Agnars).
+          '<div style="display:flex;align-items:center;gap:3px;margin-top:2px;font-size:11px;color:#64748b;font-family:\'Space Mono\',monospace;white-space:nowrap;overflow:hidden">' +
+            '<input class="pos-price-edit" data-idx="'+idx+'" type="text" inputmode="decimal" value="'+unitInc+'" ' +
+              'title="Einingarverð m. VSK — smelltu til að breyta" ' +
+              'style="width:64px;padding:0 1px;border:none;border-bottom:1px dotted #cbd5e1;background:transparent;font:inherit;font-size:11px;color:#64748b;text-align:right;font-variant-numeric:tabular-nums">' +
             '<span>kr/stk</span>' +
+            '<span style="opacity:.4;padding:0 1px">·</span>' +
+            '<input class="pos-disc-edit" data-idx="'+idx+'" type="text" inputmode="decimal" value="'+(dPct>0?fmtPct(dPct):'')+'" placeholder="0" ' +
+              'title="Afsláttur % á þessa línu" ' +
+              'style="width:24px;padding:0 1px;border:none;border-bottom:1px dotted '+(dPct>0?'#dc2626':'#cbd5e1')+';background:transparent;font:inherit;font-size:11px;color:'+(dPct>0?'#dc2626':'#64748b')+';text-align:right;font-variant-numeric:tabular-nums">' +
+            '<span'+(dPct>0?' style="color:#dc2626"':'')+'>%</span>' +
           '</div>' +
         '</div>' +
         '<div style="display:flex;align-items:center;background:#fff;border:1px solid #dbe2ea;border-radius:8px;overflow:hidden;flex-shrink:0">' +
@@ -561,7 +620,7 @@
           '<span style="min-width:18px;text-align:center;font-weight:800;font-size:13px;color:#0f172a;font-variant-numeric:tabular-nums">'+l.qty+'</span>' +
           '<button class="pos-qty-up" data-idx="'+idx+'" style="background:#fff;border:none;width:24px;height:24px;cursor:pointer;font-weight:800;color:#475569;font-size:14px;line-height:1">+</button>' +
         '</div>' +
-        '<div style="flex-shrink:0;font-weight:800;color:#0f172a;font-size:13px;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace;white-space:nowrap;text-align:right">'+fmtKr(lineEx)+'</div>' +
+        '<div class="pos-line-tot" data-idx="'+idx+'" style="flex-shrink:0;font-weight:800;color:#0f172a;font-size:13px;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace;white-space:nowrap;text-align:right">'+fmtKr(lineInc)+'</div>' +
         '<button class="pos-line-del" data-idx="'+idx+'" title="Fjarlægja" style="position:absolute;top:3px;right:5px;background:none;color:#cbd5e1;border:none;cursor:pointer;font-size:14px;padding:0;line-height:1;flex-shrink:0">×</button>' +
       '</div>';
     }).join('');
@@ -578,7 +637,6 @@
     var t = totals();
     var pct = state.discount_pct || 0;
     var disc = state.discount || 0;
-    var hasDisc = (pct > 0) || (state.discount > 0);
     // Customer-discount badge: show "↺ 10% (≈ 1.200 kr)" so user sees in
     // kr what would be saved before applying.
     var custDiscPct = state.customer && +state.customer.afslattur_pct || 0;
@@ -609,20 +667,26 @@
         '<div style="font-size:10px;color:#b45309;margin-top:3px">Frumrit beiðni verður að fylgja reikningi — prentast á reikninginn.</div>' +
       '</div>'
     ) : '';
+    // 2026-07-31 (ósk Agnars): sýna HEILDAR-afsláttinn niðri (línu-afslættir +
+    // sölu-afsláttur). Keðjan gengur upp: Verð m/vsk − Afsláttur = Samtals, og
+    // Án VSK + VSK = Samtals. „Verð (m. VSK)"-línan birtist aðeins þegar
+    // afsláttur er einhver (annars væri hún sama og Samtals).
+    var fullGross = t.raw_full_ex + t.raw_full_vsk;
+    var showDisc = Math.round(t.disc_total) > 0;
     return beidniField + '<div style="border-top:1px solid #e2e8f0;padding-top:12px">' +
-        '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">' +
-          '<span style="'+lbl+'">ÁN VSK</span><span id="pos-tot-raw" style="'+num+'">'+fmtKr(t.raw_ex)+'</span>' +
+        '<div id="pos-tot-full-row" style="display:'+(showDisc?'flex':'none')+';justify-content:space-between;align-items:center;padding:4px 0">' +
+          '<span style="'+lbl+'">VERÐ (M. VSK)</span><span id="pos-tot-full" style="'+num+'">'+fmtKr(fullGross)+'</span>' +
         '</div>' +
         '<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;gap:8px">' +
           '<span style="'+lbl+';display:flex;align-items:center">AFSLÁTTUR' + custDisc + '</span>' +
           '<span style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">' +
-            '<span id="pos-disc-kr" style="color:#dc2626;font-weight:700;font-size:12px;font-family:\'Space Mono\',monospace;'+(hasDisc?'':'display:none;')+'">−'+fmtKr(t.saved)+'</span>' +
-            '<span style="'+pill+'"><input id="pos-discount" type="text" inputmode="decimal" pattern="[0-9.,]*" value="'+pct+'" autocomplete="off" title="Afsláttur %" style="'+pinp+';width:28px"><span style="color:#94a3b8;font-size:12px">%</span></span>' +
-            '<span style="'+pill+'"><input id="pos-discount-kr" type="text" inputmode="decimal" pattern="[0-9.,]*" value="'+(disc||'')+'" autocomplete="off" placeholder="0" title="Afsláttur í kr — dregst af lokaverðinu (m. vsk) svo upphæðin endi á sléttri tölu" style="'+pinp+';width:46px"><span style="color:#94a3b8;font-size:12px">kr</span></span>' +
+            '<span id="pos-disc-kr" style="color:#dc2626;font-weight:700;font-size:12px;font-family:\'Space Mono\',monospace;'+(showDisc?'':'display:none;')+'">−'+fmtKr(t.disc_total)+'</span>' +
+            '<span style="'+pill+'"><input id="pos-discount" type="text" inputmode="decimal" pattern="[0-9.,]*" value="'+pct+'" autocomplete="off" title="Sölu-afsláttur %" style="'+pinp+';width:28px"><span style="color:#94a3b8;font-size:12px">%</span></span>' +
+            '<span style="'+pill+'"><input id="pos-discount-kr" type="text" inputmode="decimal" pattern="[0-9.,]*" value="'+(disc||'')+'" autocomplete="off" placeholder="0" title="Sölu-afsláttur í kr — dregst af lokaverðinu (m. vsk) svo upphæðin endi á sléttri tölu" style="'+pinp+';width:46px"><span style="color:#94a3b8;font-size:12px">kr</span></span>' +
           '</span>' +
         '</div>' +
         '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">' +
-          '<span style="'+lbl+'">ÁN VSK (EFTIR AFSLÁTT)</span><span id="pos-tot-ex" style="'+num+'">'+fmtKr(t.ex)+'</span>' +
+          '<span style="'+lbl+'">ÁN VSK</span><span id="pos-tot-ex" style="'+num+'">'+fmtKr(t.ex)+'</span>' +
         '</div>' +
         '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">' +
           '<span style="'+lbl+'">'+vskLabel+'</span><span id="pos-tot-vsk" style="'+num+'">'+fmtKr(t.vsk)+'</span>' +
@@ -638,17 +702,18 @@
   // so the keyboard focus + cursor position stay intact while typing.
   function _updateTotalsCells() {
     var t = totals();
-    var pct = state.discount_pct || 0;
-    var hasDisc = (pct > 0) || (state.discount > 0);
+    var showDisc = Math.round(t.disc_total) > 0;
     var setText = function(id, val){ var e = document.getElementById(id); if (e) e.textContent = val; };
-    setText('pos-tot-raw', fmtKr(t.raw_ex));
+    setText('pos-tot-full', fmtKr(t.raw_full_ex + t.raw_full_vsk));
     setText('pos-tot-ex', fmtKr(t.ex));
     setText('pos-tot-vsk', fmtKr(t.vsk));
     setText('pos-tot-total', fmtKr(t.total));
+    var fullRow = document.getElementById('pos-tot-full-row');
+    if (fullRow) fullRow.style.display = showDisc ? 'flex' : 'none';
     var krEl = document.getElementById('pos-disc-kr');
     if (krEl) {
-      krEl.textContent = '−' + fmtKr(t.saved);
-      krEl.style.display = hasDisc ? '' : 'none';
+      krEl.textContent = '−' + fmtKr(t.disc_total);
+      krEl.style.display = showDisc ? '' : 'none';
     }
   }
   function bindEvents(){
@@ -780,23 +845,36 @@
     document.getElementById('pos-services').addEventListener('click',function(e){var b=e.target.closest('.pos-svc');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);var s=state.services.find(function(x){return x.id===id;});if(!s)return;state.lines.push({type:'service',desc:s.nafn,qty:1,unit_price_ex_vat:s.verd_an_vsk,vsk_pct:s.vsk_prosenta||24,ref:'',product_id:s.id});rerenderDynamic();});
     document.getElementById('pos-products').addEventListener('click',function(e){var b=e.target.closest('.pos-prod');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);addProductLine(id);});
     document.getElementById('pos-lines').addEventListener('click',function(e){var d=e.target.closest('.pos-line-del'),u=e.target.closest('.pos-qty-up'),n=e.target.closest('.pos-qty-dn');if(d){state.lines.splice(parseInt(d.getAttribute('data-idx'),10),1);rerenderDynamic();return;}if(u){var i=parseInt(u.getAttribute('data-idx'),10);state.lines[i].qty++;rerenderDynamic();return;}if(n){var j=parseInt(n.getAttribute('data-idx'),10);state.lines[j].qty--;if(state.lines[j].qty<=0)state.lines.splice(j,1);rerenderDynamic();return;}});
-    // Per-line price editing — click input, edit, blur to save.
+    // Per-line price + discount editing — live, WITHOUT redrawing the inputs
+    // (so the cursor never jumps). 2026-07-31: the price field is now in FULL
+    // m. VSK; convert it back to the ex-VAT unit price we store internally. The
+    // „% afsl" field sets a per-line discount that is baked into the price at
+    // checkout (bakedLines). Both update the line's own total cell + the summary.
     document.getElementById('pos-lines').addEventListener('input',function(e){
-      var p = e.target.closest('.pos-price-edit'); if (!p) return;
-      var i = parseInt(p.getAttribute('data-idx'), 10);
-      if (state.lines[i]) {
-        // comma/dot-tolerant: "1.234,5" → 1234.5, "4032,26" → 4032.26, "4032.26" → 4032.26
-        var raw = String(p.value).replace(/[^0-9.,]/g,'');
-        if (raw.indexOf('.')>=0 && raw.indexOf(',')>=0) raw = raw.replace(/\./g,'').replace(',', '.');
-        else raw = raw.replace(',', '.');
-        state.lines[i].unit_price_ex_vat = parseFloat(raw) || 0;
-        // Re-render only the totals; don't redraw the inputs (cursor jumps).
-        var tEl = document.getElementById('pos-totals'); if (tEl) tEl.innerHTML = buildTotalsHTML();
-        var cb = document.getElementById('pos-checkout');
-        if (cb) { var tt = totals(); cb.innerHTML = tt.total > 0 ? ('✓ ÁFRAM · '+fmtKr(tt.total)) : '✓ ÁFRAM'; cb.disabled = tt.total === 0; }
-        // Update only the line total cell on the same row.
-        var row = p.closest('div[style*="display:flex"]'); // line container
+      var p  = e.target.closest('.pos-price-edit');
+      var dp = e.target.closest('.pos-disc-edit');
+      if (!p && !dp) return;
+      var el = p || dp;
+      var i = parseInt(el.getAttribute('data-idx'), 10);
+      var l = state.lines[i]; if (!l) return;
+      // comma/dot-tolerant: "1.234,5" → 1234.5, "4032,26" → 4032.26, "4032.26" → 4032.26
+      var raw = String(el.value).replace(/[^0-9.,]/g,'');
+      if (raw.indexOf('.')>=0 && raw.indexOf(',')>=0) raw = raw.replace(/\./g,'').replace(',', '.');
+      else raw = raw.replace(',', '.');
+      var val = parseFloat(raw) || 0;
+      if (p) {
+        // entered value is m. VSK → store the ex-VAT unit price
+        l.unit_price_ex_vat = val / (1 + lineVskPct(l)/100);
+      } else {
+        l.disc_pct = Math.max(0, Math.min(100, val));
       }
+      // Update the line's own total cell (m. VSK, after its discount)…
+      var cell = document.querySelector('.pos-line-tot[data-idx="'+i+'"]');
+      if (cell) cell.textContent = fmtKr(lineTotalInc(l));
+      // …then the summary cells + checkout button, in place (inputs stay mounted).
+      _updateTotalsCells();
+      var cb = document.getElementById('pos-checkout');
+      if (cb) { var tt = totals(); cb.innerHTML = tt.total > 0 ? ('✓ ÁFRAM · '+fmtKr(tt.total)) : '✓ ÁFRAM'; cb.disabled = tt.total === 0 || !beidniOk(); }
     });
     // Discount % input — live update without re-rendering the input.
     // Previous version replaced #pos-totals.innerHTML on every keystroke,
@@ -913,7 +991,13 @@
     // confirm freezes browser, esp. blocking automation/MCP tools. Async-safe
     // because submitNew is already async.
     if(!cust){if(!(await Confirm.show('Enginn viðskiptavinur — halda áfram?')))return;cust='Staðgreitt';}
-    var t=totals();var btn=document.getElementById('pos-checkout');btn.disabled=true;btn.innerHTML='Vista...';
+    var t=totals();
+    // 2026-07-31: bake any per-line discounts into `linur` (rounded ex-VAT unit
+    // price + „· −N% afsl." desc suffix, 165-konvensjónin) so the saved sale and
+    // every reader reproduce exactly what the karfa showed. `totals()` already
+    // reflects the same baked prices, so t.ex/t.vsk/t.total match `linur`.
+    var linur=bakedLines();
+    var btn=document.getElementById('pos-checkout');btn.disabled=true;btn.innerHTML='Vista...';
     try{
       // Use the pre-allocated R-NNNNNN if one was reserved by the checkout
       // dialog (so the printed receipt matches the saved row). Otherwise the
@@ -970,7 +1054,12 @@
       // #1: prepend the Reykjavíkurborg beiðninúmer so it prints on the reikningur.
       var _beidni=(needsBeidni() && String(state.beidninumer||'').trim()) ? String(state.beidninumer).trim() : '';
       var saleNotes = _beidni ? ('Beiðni ' + _beidni + (state.notes ? '\n' + state.notes : '')) : state.notes;
-      var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,customer_kt:custKt,linur:state.lines,upphaed_an_vsk:Math.round(t.ex),vsk_upphaed:Math.round(t.vsk),afslattur:discKr,samtals:Math.round(t.total),greitt_med:pmLabel,athugasemdir:saleNotes,status:saleStatus,source:'pos',paid_at:isPaidNow?nowIso:null,paid_method:isPaidNow?pmLabel:null}).select().single();
+      // 2026-07-31: round so upphaed_an_vsk + vsk_upphaed === samtals ALLTAF —
+      // samtals + ex rúnnaðar, VSK tekur afgangs-aurinn (sama regla og
+      // totalsFromLinur/165). Áður var hver rúnnuð sér svo ex+vsk gat verið
+      // samtals ± 1 kr (sást á Bókhalds-yfirliti).
+      var samtalsR=Math.round(t.total), exR=Math.round(t.ex), vskR=samtalsR-exR;
+      var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,customer_kt:custKt,linur:linur,upphaed_an_vsk:exR,vsk_upphaed:vskR,afslattur:discKr,samtals:samtalsR,greitt_med:pmLabel,athugasemdir:saleNotes,status:saleStatus,source:'pos',paid_at:isPaidNow?nowIso:null,paid_method:isPaidNow?pmLabel:null}).select().single();
       if(sr.error)throw sr.error;
       var num = sr.data && sr.data.num ? sr.data.num : preNum;
       window._pendingReikningurNum = '';
@@ -1235,7 +1324,9 @@
           // receipt (fakeSale below previously had no customer_kt → kt blank).
           customer_kt: custKt || '',
           verkMsg: verkMsgShort,
-          lines: state.lines.slice(),
+          // baked linur (per-line discounts folded in) so „Prenta aftur" matches
+          // the saved reikningur exactly.
+          lines: linur,
           totals: t,
           method: pmLabel,
           phone: state.customer.simi || '',
