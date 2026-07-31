@@ -554,6 +554,34 @@ birtist strax í „Skjöl & viðhengi" árstöflunni (patch 199), í úttektars
   Brunahólf-appinu (sjá „Laga pörun í Brunahólf →" hlekkinn á skjalaspjaldinu). Ef
   á að lenda í Drive þarf að flytja Drive-OAuth + upload-function úr Brunahólf.
 
+## Póst-merki + Póstnúmer á „Fyrirtæki í þjónustu" (patch 153) — 2026-07-31
+
+Tvær viðbætur á árssoðun-listann (patch 153) til að hjálpa við þjónustuna, því
+við förum bara einu sinni á ári til hvers kúnna:
+
+- **📩 Póst-merki (`js/patches/295-company-mail-badge.js`)** — rautt umslag birtist
+  á fyrirtæki þegar SÍÐASTA póstsamskiptið frá kúnnanum er ÓSVARAÐ, svo póstur frá
+  því fyrir marga mánuði gleymist ekki. Gögn koma úr Brunahólfs-endapunktinum
+  **`/api/company-mail`** (`netlify/functions/company-mail.js` í Brunahólf, service
+  role, þjónar báðum öppunum) sem matchar INN-póst við hvert `fyrirtaeki_id` á
+  **nákvæmu netfangi** (aldrei giskað; netfang sem tvö félög deila er sleppt) og
+  merkir `unreplied` = enginn SENT-póstur til þess eftir nýjasta inn-póstinn.
+  Merkið er DEKORERAÐ á raðir/spjöld með MutationObserver (patch 153 ósnert;
+  async-gögnin birtast um leið og þau berast, cache í localStorage 20 mín). Smellur
+  á umslagið → lítið spjald með efnislínu/dagsetningu + „↩️ Svara" (mailto) +
+  „🔕 Slökkva á merki". **Slökkva per fyrirtæki:** `arsskodun_customers[<id>]
+  .mail_off` (sama AppSettings-blob og akstur/nytt_manual, deep-merge, samstillist)
+  — takki „📩 Póstmerki" á fyrirtækjaprófílnum (birtist aðeins þegar matchað
+  póstsamskipti er til). Public: `window.CompanyMail = {show, data, setMuted, refresh}`.
+- **📍 Póstnúmer (patch 153 + `14-companies-openedit.js`)** — nýr ADDITIVE dálkur
+  **`fyrirtaeki.postnumer` (text)** svo raða/sía megi eftir póstnúmeri fyrir
+  akstursleiðir ÁN þess að snerta free-text `heimilisfang`. Bakfylltur úr
+  heimilisfangi (síðasti 3-stafa tóki í bilinu 100–902; 582 þjónustu-fyrirtæki).
+  Breyta-glugginn (`Companies.openEdit`) fékk „📍 Póstnúmer"-reit (auto-fylltur úr
+  heimilisfangi ef tómur, `pcFromAddr`), vistast í `postnumer`. Listinn sýnir
+  póstnúmers-pillu í heimilisfang-dálknum, „📍 Póstnúmer" í röðunar-fellilistanum
+  (`SORT_COMPARATORS.postnumer`, numeric asc) og leitin matchar póstnúmer.
+
 ## Ritanlegt PER STK-verð + Reykskynjari-kortlagning — 129/165/128/73 (2026-07-31)
 
 Tvær breytingar á Heildarkostnaðar-töflunni (patch 129 `#_ctc-section`) sem báðar
