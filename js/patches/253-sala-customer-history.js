@@ -346,6 +346,61 @@
     const bkDocYears = new Set(docs.filter(x => x.doc_type === 'brunakerfi' && x._url).map(x => String(x.year || '')).filter(Boolean));
     const attsDedup = atts.filter(a => !(docKind(a) === 'brunakerfi' && bkDocYears.has(String(attYear(a) || ''))));
 
+    // ── 📦 Bundle-pörun (skýrsla + reikningur per ár) ──────────────────────────
+    // Sjálf-matcha lykillinn er `solur.source` (staðfest live): 'uttekt' → slökkvitæki-
+    // úttektarskýrsla, 'brunakerfi' → brunakerfisskýrsla. Best-effort — stöðvar aldrei
+    // skjala-listann þótt solur-lesturinn falli.
+    const solBySrc = {}; // 'uttekt|2026' -> {id,num,samtals}
+    try {
+      const ktb = ktDigits(idty.kt);
+      if (ktb.length === 10 && ktb !== '9999999999') {
+        const sr = await sb.from('solur').select('id,num,source,samtals,created_at')
+          .or('customer_kt.eq.' + ktb + ',customer_kt.eq.' + ktDashed(ktb))
+          .in('source', ['uttekt', 'brunakerfi']).limit(400);
+        (sr.data || []).forEach(s => {
+          const y = String(s.created_at || '').slice(0, 4);
+          const k = (s.source || '') + '|' + y;
+          if (!solBySrc[k]) solBySrc[k] = s; // nýjasti/fyrsti per source|ár
+        });
+      }
+    } catch (_) {}
+    // Per ár: 🧯 (úttektarskýrsla + uttekt-reikningur) · 🔥 (brunakerfisskýrsla + brunakerfi-reikningur).
+    const bundlesByYear = {};
+    docs.forEach(d => {
+      const y = String(d.year || ''); if (!y) return;
+      if (d.doc_type === 'uttektarskyrsla') { (bundlesByYear[y] = bundlesByYear[y] || {}).skyrsla = { rep: d }; }
+      else if (d.doc_type === 'brunakerfi') { (bundlesByYear[y] = bundlesByYear[y] || {}).brunakerfi = { rep: d }; }
+    });
+    Object.keys(bundlesByYear).forEach(y => {
+      if (bundlesByYear[y].skyrsla) bundlesByYear[y].skyrsla.inv = solBySrc['uttekt|' + y] || null;
+      if (bundlesByYear[y].brunakerfi) bundlesByYear[y].brunakerfi.inv = solBySrc['brunakerfi|' + y] || null;
+    });
+    // Combined-send: hakað val (skýrsla + reikningur) → venjulegi póst-glugginn (254).
+    async function sendBundle(kind, year, b) {
+      if (!(window.ReceiptSender && ReceiptSender.compose)) { if (window.Toast && Toast.show) Toast.show('Póstsending ekki tilbúin — endurhladdu síðunni.'); return; }
+      const isBk = kind === 'brunakerfi';
+      const choices = [];
+      const rep = b && b.rep;
+      if (rep && rep._url) {
+        const drv = (rep.drive_file_id && String(rep.drive_file_id).indexOf('sb:') !== 0) ? rep.drive_file_id : '';
+        const repName = (isBk ? 'Brunakerfisskýrsla ' : 'Úttektarskýrsla ') + year + '.pdf';
+        choices.push({ label: (isBk ? '🔥 Brunakerfisskýrsla ' : '🧯 Úttektarskýrsla ') + year, checked: true,
+          build: () => drv ? { filename: repName, driveId: drv } : { filename: repName, url: rep._url } });
+      }
+      if (b && b.inv && b.inv.id && ReceiptSender.invoiceAttachment) {
+        choices.push({ label: '🧾 Reikningur ' + (b.inv.num || ''), checked: true,
+          build: () => ReceiptSender.invoiceAttachment(b.inv.id) });
+      }
+      if (!choices.length) { if (window.Toast && Toast.show) Toast.show('Engin skrá til að senda fyrir þetta par.'); return; }
+      ReceiptSender.compose({
+        title: 'Senda ' + (isBk ? 'brunakerfi' : 'úttekt') + ' ' + year + (idty.nafn ? ' — ' + idty.nafn : ''),
+        to: await custEmail(idty),
+        subject: (isBk ? 'Brunakerfisskýrsla' : 'Úttektarskýrsla') + ' + reikningur ' + year + ' — Slökkvitæki ehf',
+        bodyText: ReceiptSender.standardText(isBk ? 'brunakerfi' : 'skyrsla', { nafn: idty.nafn || '', ar: year }),
+        attachmentChoices: choices,
+      });
+    }
+
     // 2026-07-20: sýnum ÖLL ár strax. Sagan er megintilgangur gluggans og kúnnar
     // eins og Center Hótel eiga 55 skjöl frá 2022-2026 — árs-sían faldi þau öll
     // nema þess árs. „Sýna bara <ár>" er áfram til að þrengja.
@@ -406,7 +461,44 @@
           fillYear(r) + ' · Útfyllt skjal (Samningar)', '_sch-fill', r.id)
       }));
       items.sort((x, y) => x.sort.localeCompare(y.sort));
+
+      // 📦 Bundle-band — skýrsla + reikningur per ári með einum „📧 Senda"-hnappi
+      // (sendir BÆÐI í einu). Sjálf-matchar á solur.source ('uttekt'/'brunakerfi');
+      // nýjasta ár efst svo það sem kúnnar spyrja um sé fremst.
+      let bundleBandHtml = '';
+      {
+        const byYs = Object.keys(bundlesByYear).filter(y => showAll || y === yStr).sort((a, b) => b.localeCompare(a));
+        const brows = [];
+        byYs.forEach(y => {
+          [['skyrsla', '🧯', 'Úttekt'], ['brunakerfi', '🔥', 'Brunakerfi']].forEach(pair => {
+            const k = pair[0], b = bundlesByYear[y][k]; if (!b) return;
+            const hasRep = !!(b.rep && b.rep._url), inv = b.inv;
+            const st = [
+              hasRep ? '<span style="color:#166534">skýrsla ✓</span>'
+                     : '<span style="color:#b45309">skýrsla skráð</span>',
+              inv ? '<span style="color:#166534">reikn. ' + esc(inv.num || '') + ' ✓</span>'
+                  : '<span style="color:#b91c1c">vantar reikning</span>',
+            ].join(' · ');
+            const btn = (cls, extra, bg, bd, col, txt) =>
+              '<button class="' + cls + '" ' + extra + ' type="button" style="padding:4px 9px;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;white-space:nowrap;background:' + bg + ';border:1px solid ' + bd + ';color:' + col + '">' + txt + '</button>';
+            let bt = '';
+            if (hasRep) bt += btn('_scb-rep', 'data-v="' + esc(b.rep._url) + '"', '#fff', '#bfdbfe', '#1d4ed8', '📄 Skýrsla');
+            if (inv) bt += btn('_scb-inv', 'data-v="' + esc(String(inv.id)) + '"', '#fff', '#ddd6fe', '#7c3aed', '🧾 Reikningur');
+            if (hasRep || inv) bt += btn('_scb-send', 'data-kind="' + k + '" data-year="' + y + '"', 'linear-gradient(180deg,#16a34a,#15803d)', '#15803d', '#fff', '📧 Senda');
+            brows.push('<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid #f1f5f9">' +
+              '<span style="font-size:17px">' + pair[1] + '</span>' +
+              '<div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;color:#0f172a">' + pair[2] + ' ' + y + '</div>' +
+              '<div style="font-size:10.5px;color:#94a3b8">' + st + '</div></div>' + bt + '</div>');
+          });
+        });
+        if (brows.length) bundleBandHtml =
+          '<div style="font-size:12px;font-weight:700;color:#0f172a;margin:16px 0 8px">📦 Pör — skýrsla + reikningur ' +
+            '<span style="font-weight:500;color:#94a3b8">(sendu bæði í einu)</span></div>' +
+          '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">' + brows.join('') + '</div>';
+      }
+
       holder.innerHTML =
+        bundleBandHtml +
         '<div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 8px">' +
           '<div style="font-size:12px;font-weight:700;color:#0f172a">📄 Skjöl ' + (showAll ? '(öll ár)' : yStr) + ' — úttektarskýrslur & reikningar</div>' +
           (otherCount > 0 || showAll ? '<button id="_sch-yrs" type="button" style="background:none;border:none;color:#1d4ed8;font-size:11.5px;cursor:pointer;text-decoration:underline;padding:0">' + (showAll ? 'Sýna bara ' + yStr : 'Sýna öll ár (+' + otherCount + ')') + '</button>' : '') +
@@ -415,6 +507,19 @@
           ? '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">' + items.map(i => i.html).join('') + '</div>'
           : '<div style="background:#fff;border:1px dashed #e2e8f0;border-radius:10px;padding:16px;text-align:center;color:#94a3b8;font-size:12px;font-style:italic">Engin skjöl skráð fyrir ' + yStr + '.</div>');
       holder.querySelector('#_sch-yrs')?.addEventListener('click', () => { showAll = !showAll; render(); });
+      // 📦 Bundle-band aðgerðir: 📄 Skýrsla (opna) · 🧾 Reikningur (opna) · 📧 Senda (bæði).
+      holder.querySelectorAll('._scb-rep').forEach(b => b.addEventListener('click', () => {
+        const u = b.dataset.v; if (!u) return;
+        const a = document.createElement('a'); a.href = u; a.target = '_blank'; a.rel = 'noopener';
+        document.body.appendChild(a); a.click(); a.remove();
+      }));
+      holder.querySelectorAll('._scb-inv').forEach(b => b.addEventListener('click', () => {
+        if (b.dataset.v) openInvoice(b.dataset.v);
+      }));
+      holder.querySelectorAll('._scb-send').forEach(b => b.addEventListener('click', () => {
+        const yb = bundlesByYear[b.dataset.year];
+        if (yb && yb[b.dataset.kind]) sendBundle(b.dataset.kind, b.dataset.year, yb[b.dataset.kind]);
+      }));
       // data-v ber nú FULLA slóð (Drive eða Supabase Storage) — sjá _url hér að ofan.
       // Anchor-smellur í stað window.open: window.open('noopener') er stundum
       // þöglað niður af popup-vörnum (þá „gerðist ekkert" við Opna-smell).

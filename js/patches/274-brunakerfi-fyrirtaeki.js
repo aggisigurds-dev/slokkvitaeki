@@ -106,6 +106,21 @@
     });
   }
 
+  // 🧾 Opnar reikning (solur) skýrslunnar sem prent/PDF-forskoðun (SalaInvoice,
+  // patch 10). Glugginn opnaður STRAX (án await) svo popup-vörn stöðvi hann ekki.
+  async function openInvoicePdf(inv) {
+    if (!inv || !inv.id) return;
+    const w = window.open('', '_blank', 'width=900,height=1100');
+    try {
+      const sb = SB(); if (!sb) { if (w) w.close(); return; }
+      const r = await sb.from('solur').select('*').eq('id', inv.id).single();
+      if (r.error || !r.data) { if (w) w.close(); alert('Reikningurinn fannst ekki.'); return; }
+      if (window.SalaInvoice && SalaInvoice.renderFromSale) {
+        SalaInvoice.renderFromSale(w, r.data, { kennitala: (C.co && C.co.kennitala) || r.data.customer_kt || '', heimilisfang: (C.co && C.co.heimilisfang) || '' });
+      } else if (w) { w.close(); alert('Reikningsmótið er ekki tiltækt.'); }
+    } catch (e) { if (w) w.close(); alert('Villa: ' + (e.message || e)); }
+  }
+
   // ── yfirbygging ─────────────────────────────────────────────────────────────
   function ensureOverlay() {
     let ov = document.getElementById('_bkc-overlay'); if (ov) return ov;
@@ -188,7 +203,18 @@
     ]);
     let note = '';
     try { let m = (window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_co_notes')) || {}; if (!m || typeof m !== 'object' || Array.isArray(m)) m = {}; note = (m[String(coId)] && m[String(coId)].text) || ''; } catch (_) {}
-    return { co, reports: (repR && repR.data) || [], docs: (docR && docR.data) || [], samningar: (samR && samR.data) || [], note };
+    const reports = (repR && repR.data) || [];
+    // Reikningur (solur) hverrar skýrslu (patch 291) — svo hann sjáist Í SÖMU LÍNU
+    // og skýrslan (📄 Skýrsla · 🧾 Reikningur · 📧 Senda). Best-effort, stöðvar aldrei teikningu.
+    if (window.BrunakerfiReikningur && BrunakerfiReikningur.findInvoice) {
+      await Promise.all(reports.map(async r => {
+        try {
+          const saleId = (r.data && r.data.verd && r.data.verd.sale_id) || null;
+          r._inv = await BrunakerfiReikningur.findInvoice(coId, r.year, saleId);
+        } catch (_) { r._inv = null; }
+      }));
+    }
+    return { co, reports, docs: (docR && docR.data) || [], samningar: (samR && samR.data) || [], note };
   }
 
   function saveNote(text) {
@@ -223,9 +249,10 @@
         '<span class="_bkc-st" style="' + (fin ? 'background:#dcf1e4;color:#166b3a' : 'background:#fdf3d7;color:#8a6100') + '">' + (fin ? 'LOKIÐ' : 'DRÖG') + '</span>' +
         '<div style="flex:1;min-width:150px"><div style="font-weight:700;font-size:13.5px">🔥 Brunakerfisskýrsla · ' + esc(r.year || '') + '</div>' +
         '<div style="font-size:11px;color:#8b93a1">Úttekt ' + esc(r.uttekt_nr || '—') + ' · breytt ' + esc(String(r.updated_at || '').slice(0, 10)) + (v.lines ? ' · ' + v.lines + ' verðlínur' : '') + '</div></div>' +
-        '<button type="button" class="_bkc-act" data-open="' + r.id + '">' + (fin ? 'Skoða / breyta' : 'Halda áfram') + '</button>' +
-        (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener">📄 PDF</a>' : '') +
-        (fin ? '<button type="button" class="_bkc-act" data-send="' + r.id + '" style="background:#0f766e" title="Senda brunakerfisskýrslu og/eða reikning í tölvupósti">📧 Senda</button>' : '') +
+        (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener" title="Opna brunakerfisskýrsluna (PDF)">📄 Skýrsla</a>' : '') +
+        (r._inv && r._inv.id ? '<button type="button" class="_bkc-act _ghost" data-invpdf="' + r.id + '" title="Opna reikning ' + esc(r._inv.num || '') + ' (PDF)">🧾 Reikningur</button>' : '') +
+        (fin ? '<button type="button" class="_bkc-act" data-send="' + r.id + '" style="background:#0f766e" title="Senda skýrslu og/eða reikning í tölvupósti">📧 Senda</button>' : '') +
+        '<button type="button" class="_bkc-act _ghost" data-open="' + r.id + '">' + (fin ? '✏️ Breyta' : 'Halda áfram') + '</button>' +
         (!fin ? '<button type="button" class="_bkc-act _del" data-del="' + r.id + '">🗑</button>' : '') +
       '</div>';
     }).join('');
@@ -385,6 +412,11 @@
     w.querySelectorAll('[data-send]').forEach(b => b.addEventListener('click', () => {
       const r = C.reports.find(x => x.id === b.dataset.send);
       if (r) sendReport(r);
+    }));
+    // 🧾 Reikningur — opnar reikning skýrslunnar sem PDF/prent (sama lína og skýrslan).
+    w.querySelectorAll('[data-invpdf]').forEach(b => b.addEventListener('click', () => {
+      const r = C.reports.find(x => x.id === b.dataset.invpdf);
+      if (r && r._inv) openInvoicePdf(r._inv);
     }));
     // 📧 Senda — stakt eldra skjal / samningur.
     w.querySelectorAll('[data-docsend]').forEach(b => b.addEventListener('click', async () => {
