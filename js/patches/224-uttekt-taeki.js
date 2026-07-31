@@ -37,7 +37,8 @@
   var _collapsed = {};   // coId+'|'+fam -> true
   var _sel = {};         // unitId -> true  (multi-select)
   var _done = {};        // unitId -> true  (yfirfarið toggle, this round)
-  var _bulkDate = '';    // remembered date in the bulk "Uppfæra dags" picker
+  var _bulkDate = '';    // remembered date in the "Næsta skoðun" picker
+  var _bulkLastDate = ''; // remembered date in the "Síðasta skoðun" picker (frá síðustu skýrslu)
 
   // ── bulk QR print (selected units' real serials) ──────────────────────────
   function ensureQR(cb){
@@ -111,8 +112,19 @@
   }
 
   function inner(coId, units){
-    var n = units.filter(function(u){return _sel[u.id];}).length;
+    var selUnits = units.filter(function(u){return _sel[u.id];});
+    var n = selUnits.length;
     var allSel = units.length>0 && n===units.length;
+    // Forfylla dagsetningarreitina með SAMEIGINLEGU gildi völdu tækjanna (ef þau
+    // deila einu) svo maður sjái strax hvað er verið að breyta — annars autt.
+    // Þetta er einmitt „clearer what you are changing" (Agnar): reiturinn sýnir
+    // núverandi (kannski ranga) dagsetningu, sem má svo laga.
+    function sharedDate(field){
+      var s={}; selUnits.forEach(function(u){ if(u[field]) s[String(u[field]).slice(0,10)]=1; });
+      var k=Object.keys(s); return k.length===1?k[0]:'';
+    }
+    var preLast = _bulkLastDate || sharedDate('last_insp');
+    var preNext = _bulkDate     || sharedDate('next_insp');
     // Bulk bar is ALWAYS visible (so "Velja allt" works on mobile too); the
     // actions appear once something is selected.
     var bulk = '<div class="ut-bulk show">'+
@@ -123,8 +135,20 @@
         '<button class="ut-bulk-act" data-bulk="hledsla" data-co="'+coId+'">→ Hleðsla</button>'+
         '<button class="ut-bulk-act" data-bulk="onytt" data-co="'+coId+'">🚫 Ónýtt</button>'+
         '<button class="ut-bulk-size" data-co="'+coId+'" title="Breyta stærð á völdum tækjum (t.d. 6-9 ltr → 6 ltr)">📏 Breyta stærð</button>'+
-        '<input type="date" class="ut-bulk-date" value="'+(_bulkDate||'')+'" title="Næsta skoðun">'+
-        '<button class="ut-bulk-dateset" data-co="'+coId+'">🗓 Uppfæra dags</button>'+
+        // TVÆR dagsetningar, hvor með sínu SKÝRA merki (Agnar 2026-07-31):
+        // ↺ Síðasta skoðun (last_insp — „frá síðustu skýrslu", má leiðrétta ranga
+        // skráningu eins og Dra ehf) OG 🗓 Næsta skoðun (next_insp). Inline-stílar
+        // svo þetta rendist óháð ytri CSS; röðin lárétt-skrunanleg eins og áður.
+        '<span class="ut-bulk-datewrap" style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding-left:8px;border-left:1px solid rgba(255,255,255,.15)">'+
+          '<span class="ut-bulk-lbl" style="font-size:11px;color:#93c5fd;font-weight:700;white-space:nowrap">↺ Síðasta skoðun</span>'+
+          '<input type="date" class="ut-bulk-lastdate" value="'+(preLast||'')+'" title="Dagsetning SÍÐUSTU skoðunar (frá síðustu skýrslu)">'+
+          '<button class="ut-bulk-lastset" data-co="'+coId+'" title="Setja dagsetningu síðustu skoðunar á valin tæki">↺ Uppfæra</button>'+
+        '</span>'+
+        '<span class="ut-bulk-datewrap" style="display:inline-flex;align-items:center;gap:4px;margin-left:8px;padding-left:8px;border-left:1px solid rgba(255,255,255,.15)">'+
+          '<span class="ut-bulk-lbl" style="font-size:11px;color:#86efac;font-weight:700;white-space:nowrap">🗓 Næsta skoðun</span>'+
+          '<input type="date" class="ut-bulk-date" value="'+(preNext||'')+'" title="Dagsetning NÆSTU skoðunar">'+
+          '<button class="ut-bulk-dateset" data-co="'+coId+'" title="Setja dagsetningu næstu skoðunar á valin tæki">🗓 Uppfæra</button>'+
+        '</span>'+
         '<button class="ut-bulk-qr" data-co="'+coId+'">▦ Prenta QR</button>'+
         '<button class="ut-bulk-del" data-co="'+coId+'" title="Eyða völdum tækjum">🗑 Eyða</button>'+
         '<button class="ut-bulk-clear" data-co="'+coId+'" title="Hætta við val">✕</button>'
@@ -244,6 +268,28 @@
       UttektTaeki.rerender(sco); return;
     }
     if(e.target.classList && e.target.classList.contains('ut-bulk-date')){ _bulkDate=e.target.value; return; }
+    if(e.target.classList && e.target.classList.contains('ut-bulk-lastdate')){ _bulkLastDate=e.target.value; return; }
+    // ↺ Síðasta skoðun (last_insp) — nákvæmlega sama mynstur og næsta-skoðun
+    // setjarinn fyrir neðan, en skrifar last_insp. Notað t.d. þegar skýrsla var
+    // skráð á vitlaust ár (Dra ehf: 2024 → 2025).
+    if((b=e.target.closest('.ut-bulk-lastset'))){
+      var lco=+b.dataset.co;
+      var ldi=document.querySelector('.ut-bulk-lastdate'); var ld=(ldi&&ldi.value)||_bulkLastDate;
+      if(!ld){ alert('Veldu dagsetningu fyrst.'); return; }
+      var lids=unitsFor(lco).filter(function(u){return _sel[u.id];}).map(function(u){return u.id;});
+      if(!lids.length) return;
+      (async function(){
+        try{
+          var sb=(window.DB&&DB.sb); if(!sb) throw new Error('Engin tenging');
+          var r=await sb.from('uttaeki').update({last_insp:ld}).in('id', lids);
+          if(r.error) throw r.error;
+          if(window.DB&&DB.cache&&DB.cache.units){ DB.cache.units.forEach(function(u){ if(lids.indexOf(u.id)>=0) u.last_insp=ld; }); }
+          UttektTaeki.rerender(lco);
+          if(window.Toast&&Toast.show) Toast.show('↺ Síðasta skoðun uppfærð á '+lids.length+' tækjum');
+        }catch(err){ alert('Villa: '+(err.message||err)); }
+      })();
+      return;
+    }
     if((b=e.target.closest('.ut-bulk-dateset'))){
       var nco=+b.dataset.co;
       var di=document.querySelector('.ut-bulk-date'); var nd=(di&&di.value)||_bulkDate;
