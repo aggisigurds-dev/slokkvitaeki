@@ -34,6 +34,7 @@
     { k: 'arsskodun',        label: 'Fyrirtæki í þjónustu',  short: 'Þjónusta',   emoji: '🏢' },
     { k: 'thjonustuverk',    label: 'Þjónustuverk',          short: 'Þj.verk',    emoji: '🛠' },
     { k: 'brunayfirlit',     label: 'Brunakerfi yfirlit',    short: 'Brunakerfi', emoji: '🚨' },
+    { k: 'rekstrarfelog',    label: 'Rekstrarfélög',         short: 'Rekstrarf.', emoji: '🏢' },
     // Brunahólf-síður — birtar inni í appinu í iframe (deep-link á tab-ið).
     { k: 'br-gerdreikninga', label: 'Gerð reikninga',        short: 'Reikn.gerð', emoji: '🧾', url: 'https://brunaholf.netlify.app/?embed=1#gerdreikninga' },
     { k: 'br-vinnubok',      label: 'Vinnubók',              emoji: '📓', url: 'https://brunaholf.netlify.app/?embed=1#vinnubok' },
@@ -51,6 +52,7 @@
     // Verkkaupar er SJÁLFSTÆÐ síða (ekki hash-flipi í index.html) — því bein slóð
     // án ?embed=1#… . Hún er þegar app-útlit (eigin haus, engin hliðarstika).
     { k: 'br-verkkaupar',    label: 'Verkkaupar (Brunahólf)', short: 'Verkkaupar', emoji: '🤝', url: 'https://brunaholf.netlify.app/verkkaupar.html' },
+    { k: 'br-jarvis',        label: 'J.A.R.V.I.S. (Brunahólf)', short: 'Jarvis', emoji: '🧠', url: 'https://brunaholf.netlify.app/jarvis.html?embed=1' },
   ];
   var PAGE_BY_KEY = {}; PAGES.forEach(function (p) { PAGE_BY_KEY[p.k] = p; });
 
@@ -59,7 +61,7 @@
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0e7a4f', dark: '#06402b',
       manifest: '/manifest-fjarmal.json', home: 'krofu-yfirlit',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
-      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'br-maeting', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
+      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'rekstrarfelog', 'br-jarvis', 'br-maeting', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
     { key: 'verkefni', emoji: '📋', name: 'Verkefnalisti', color: '#3b82f6', dark: '#1d4ed8',
       manifest: '/manifest-verkefni.json', home: 'verkbord',
       blurb: 'Verkborð — beiðnir, verkefni og eftirfylgni',
@@ -67,7 +69,7 @@
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#6d28d9', dark: '#4c1d95',
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
-      defaults: ['br-dagurinn', 'br-verkkaupar', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting'] },
+      defaults: ['br-dagurinn', 'br-jarvis', 'br-verkkaupar', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting'] },
     // Brunakerfi-appið fyrir skoðunarmenn á staðnum (ósk Agnars 2026-07-21):
     // yfirlitið er heimasíðan; fyrirtækjasíðan (274) og skýrslu-formið (273)
     // opnast þaðan sem yfirlög — allt innan sömu læstu skeljar.
@@ -133,6 +135,9 @@
   //   __brtv1 (2026-07-08): br-maeting — aftast fyrir framan br-gerdreikninga
   //   __tvk1  (2026-07-20): thjonustuverk — á eftir arsskodun (ósk Agnars)
   //   __vkp1  (2026-07-20): br-verkkaupar — á eftir br-dagurinn í BRUNAHÓLF-appinu
+  //   __rf1   (2026-07-31): rekstrarfelog — á eftir vidskiptavinir í Fjármálum
+  //   __jv1   (2026-07-31): br-jarvis — á eftir rekstrarfelog (Fjármál) og
+  //                          á eftir br-dagurinn (Brunahólf)
   (function () {
     try {
       var c = loadCfg(), changed = false;
@@ -151,6 +156,9 @@
       insertOnce('__brtv1', 'br-maeting', 'vidskiptavinir');
       insertOnce('__tvk1',  'thjonustuverk', 'arsskodun');
       insertOnce('__vkp1',  'br-verkkaupar', 'br-dagurinn', 'brunaholf');
+      insertOnce('__rf1',   'rekstrarfelog', 'vidskiptavinir');
+      insertOnce('__jv1',   'br-jarvis',     'rekstrarfelog');
+      insertOnce('__jv1b',  'br-jarvis',     'br-dagurinn', 'brunaholf');
       if (!changed) return;
       var s = JSON.stringify(c);
       try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
