@@ -848,6 +848,25 @@ app/kerfiskort.html** (Brunahólf-megin, því skjöl/Drive-tólin lifa þar). S
 (Skýrslu-stöð, Kt-samræming, Hreinsi-borð, Drive-flokkun). **Á slökkvitæki-hlið**
 birtast skjöl+Payday á fyrirtækja-prófílnum í „📁 Skjöl & viðhengi" (patch 199).
 
+## App-síður (patch 261) — Jarvis + Rekstrarfélög (2026-07-31)
+
+Fjármála-appið (og Brunahólf-appið) fá tvær síður í viðbót, gegnum SAMA
+`PAGES`-lista og allt annað — engin ný umgjörð:
+
+- **`rekstrarfelog`** — INNBYGGÐ slökkvitæki-síða. Patch 175 skýtur inn
+  `.vnav-btn[data-view="rekstrarfelog"]`, og `navTo()` í 261 leitar einmitt að
+  þeim hnappi og smellir á hann (fellur á `App.switchView` ef hann finnst ekki).
+  Þess vegna dugði að bæta einni línu í `PAGES` — 175 skráir sig ekki á
+  `App.switchView`, svo hnappa-leiðin er sú sem virkar.
+- **`br-jarvis`** — sjálfstæð Brunahólf-síða (eins og Verkkaupar: eigin haus,
+  engin hliðarstika) → BEIN slóð `…/jarvis.html?embed=1`. `?embed=1` þrengir
+  spássíur og setur KJARNANN efst í eins-dálks útlitinu.
+
+**Vistaðar stillingar:** `defaults` gildir aðeins um NÝJA uppsetningu, svo báðar
+fóru líka í einskiptis-`insertOnce`-migrations (`__rf1`, `__jv1`, `__jv1b`) — sama
+mynstur og `__brky1`/`__vkp1`. Þær bætast við ÞEGAR-vistaðar stillingar EINU SINNI;
+af-haki notandinn þær eftirá troða þær sér ekki inn aftur.
+
 ## Related projects (in case Agnar mentions them)
 
 - **Brunahólf** — MÓÐURFÉLAGIÐ (Brunahólf ehf á Slökkvitæki ehf — Agnar

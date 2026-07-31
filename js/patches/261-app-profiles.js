@@ -34,6 +34,7 @@
     { k: 'arsskodun',        label: 'Fyrirtæki í þjónustu',  short: 'Þjónusta',   emoji: '🏢' },
     { k: 'thjonustuverk',    label: 'Þjónustuverk',          short: 'Þj.verk',    emoji: '🛠' },
     { k: 'brunayfirlit',     label: 'Brunakerfi yfirlit',    short: 'Brunakerfi', emoji: '🚨' },
+    { k: 'rekstrarfelog',    label: 'Rekstrarfélög',         short: 'Rekstrarf.', emoji: '🏢' },
     // Brunahólf-síður — birtar inni í appinu í iframe (deep-link á tab-ið).
     { k: 'br-gerdreikninga', label: 'Gerð reikninga',        short: 'Reikn.gerð', emoji: '🧾', url: 'https://brunaholf.netlify.app/?embed=1#gerdreikninga' },
     { k: 'br-vinnubok',      label: 'Vinnubók',              emoji: '📓', url: 'https://brunaholf.netlify.app/?embed=1#vinnubok' },
@@ -51,6 +52,7 @@
     // Verkkaupar er SJÁLFSTÆÐ síða (ekki hash-flipi í index.html) — því bein slóð
     // án ?embed=1#… . Hún er þegar app-útlit (eigin haus, engin hliðarstika).
     { k: 'br-verkkaupar',    label: 'Verkkaupar (Brunahólf)', short: 'Verkkaupar', emoji: '🤝', url: 'https://brunaholf.netlify.app/verkkaupar.html' },
+    { k: 'br-jarvis',        label: 'J.A.R.V.I.S. (Brunahólf)', short: 'Jarvis', emoji: '🧠', url: 'https://brunaholf.netlify.app/jarvis.html?embed=1' },
   ];
   var PAGE_BY_KEY = {}; PAGES.forEach(function (p) { PAGE_BY_KEY[p.k] = p; });
 
@@ -59,7 +61,7 @@
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0e7a4f', dark: '#06402b',
       manifest: '/manifest-fjarmal.json', home: 'krofu-yfirlit',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
-      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'br-maeting', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
+      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'rekstrarfelog', 'br-jarvis', 'br-maeting', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
     { key: 'verkefni', emoji: '📋', name: 'Verkefnalisti', color: '#3b82f6', dark: '#1d4ed8',
       manifest: '/manifest-verkefni.json', home: 'verkbord',
       blurb: 'Verkborð — beiðnir, verkefni og eftirfylgni',
@@ -67,7 +69,7 @@
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#6d28d9', dark: '#4c1d95',
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
-      defaults: ['br-dagurinn', 'br-verkkaupar', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting'] },
+      defaults: ['br-dagurinn', 'br-jarvis', 'br-verkkaupar', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting'] },
     // Brunakerfi-appið fyrir skoðunarmenn á staðnum (ósk Agnars 2026-07-21):
     // yfirlitið er heimasíðan; fyrirtækjasíðan (274) og skýrslu-formið (273)
     // opnast þaðan sem yfirlög — allt innan sömu læstu skeljar.
@@ -133,29 +135,53 @@
   //   __brtv1 (2026-07-08): br-maeting — aftast fyrir framan br-gerdreikninga
   //   __tvk1  (2026-07-20): thjonustuverk — á eftir arsskodun (ósk Agnars)
   //   __vkp1  (2026-07-20): br-verkkaupar — á eftir br-dagurinn í BRUNAHÓLF-appinu
+  //   __rf2   (2026-07-31): rekstrarfelog — á eftir vidskiptavinir í Fjármálum
+  //   __jv2   (2026-07-31): br-jarvis — á eftir rekstrarfelog (Fjármál) og
+  //   __jv2b                 á eftir br-dagurinn (Brunahólf)
+  // KAPPHLAUPS-GALLI SEM VAR LAGAÐUR 2026-07-31: migrationin keyrði EINU SINNI
+  // við hleðslu skrárinnar — löngu áður en AppSettings hafði sótt vistuðu
+  // stillinguna úr skýinu. Þá var `c[appKey]` ekki fylki, ekkert var sett inn,
+  // EN flaggið var samt sett og vistað. Síðan bættist því ALDREI við hjá þeim
+  // sem var þegar með vistaðar síður — nákvæmlega þeim sem migrationin er fyrir.
+  // Tvennt lagar það: (1) flagg er AÐEINS sett þegar fylkið er raunverulega til,
+  // (2) reynt aftur í ~12 s meðan skýja-stillingin er að koma.
   (function () {
-    try {
-      var c = loadCfg(), changed = false;
-      // appKey er valfrjálst og fellur aftur á 'fjarmal' svo eldri köllin séu óbreytt.
-      function insertOnce(flag, key, afterKey, appKey) {
-        appKey = appKey || 'fjarmal';
-        if (c[flag]) return;
-        var arr = c[appKey];
-        if (Array.isArray(arr) && arr.indexOf(key) === -1) {
-          var ki = arr.indexOf(afterKey);
-          arr.splice(ki === -1 ? arr.length : ki + 1, 0, key);
+    var reynt = 0;
+    function keyra() {
+      try {
+        var c = loadCfg(), changed = false;
+        // appKey er valfrjálst og fellur aftur á 'fjarmal' svo eldri köllin séu óbreytt.
+        function insertOnce(flag, key, afterKey, appKey) {
+          appKey = appKey || 'fjarmal';
+          if (c[flag]) return;
+          var arr = c[appKey];
+          // Engin vistuð stilling ENN → ekki brenna flaggið, reyna síðar.
+          // (Sé engin stilling til á endanum sér `defaults` um nýju síðurnar.)
+          if (!Array.isArray(arr)) return;
+          if (arr.indexOf(key) === -1) {
+            var ki = arr.indexOf(afterKey);
+            arr.splice(ki === -1 ? arr.length : ki + 1, 0, key);
+          }
+          c[flag] = 1; changed = true;
         }
-        c[flag] = 1; changed = true;
-      }
-      insertOnce('__brky1', 'br-krofuyfirlit', 'krofu-yfirlit');
-      insertOnce('__brtv1', 'br-maeting', 'vidskiptavinir');
-      insertOnce('__tvk1',  'thjonustuverk', 'arsskodun');
-      insertOnce('__vkp1',  'br-verkkaupar', 'br-dagurinn', 'brunaholf');
-      if (!changed) return;
-      var s = JSON.stringify(c);
-      try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
-      try { if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: s }); } catch (_) {}
-    } catch (_) {}
+        insertOnce('__brky1', 'br-krofuyfirlit', 'krofu-yfirlit');
+        insertOnce('__brtv1', 'br-maeting', 'vidskiptavinir');
+        insertOnce('__tvk1',  'thjonustuverk', 'arsskodun');
+        insertOnce('__vkp1',  'br-verkkaupar', 'br-dagurinn', 'brunaholf');
+        // NB flögg í ANNARRI kynslóð (__rf2/__jv2) — fyrstu flöggin brunnu í
+        // gallanum hér að ofan, svo þau eru ónothæf til að greina „ógert".
+        insertOnce('__rf2',   'rekstrarfelog', 'vidskiptavinir');
+        insertOnce('__jv2',   'br-jarvis',     'rekstrarfelog');
+        insertOnce('__jv2b',  'br-jarvis',     'br-dagurinn', 'brunaholf');
+        if (changed) {
+          var s = JSON.stringify(c);
+          try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
+          try { if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: s }); } catch (_) {}
+        }
+      } catch (_) {}
+      if (++reynt < 12) setTimeout(keyra, 1000);
+    }
+    keyra();
   })();
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
