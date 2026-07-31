@@ -243,7 +243,8 @@
       // !important beats patch 245). 2026-07-31: .pos-disc-edit added.
       '#view-sala .pos-cart .pos-price-edit,#view-sala .pos-cart .pos-disc-edit{height:auto!important;min-height:0!important;padding:0 2px!important;border:none!important;border-bottom:1px dotted #cbd5e1!important;border-radius:0!important;background:transparent!important;font-size:11px!important;text-align:right!important;color:#64748b!important}',
       '#view-sala .pos-cart .pos-price-edit{width:64px!important}',
-      '#view-sala .pos-cart .pos-disc-edit{width:30px!important}',
+      '#view-sala .pos-cart .pos-disc-edit{width:36px!important;color:#dc2626!important;font-weight:700!important}',
+      '#view-sala .pos-cart .pos-disc-edit::placeholder{color:#cbd5e1!important;font-weight:400!important}',
       '#view-sala .pos-cart #pos-discount,#view-sala .pos-cart #pos-discount-kr{height:auto!important;min-height:0!important;padding:0!important;border:none!important;border-radius:0!important;background:transparent!important;font-size:13px!important;text-align:right!important;color:#0f172a!important}',
       '#view-sala .pos-cart #pos-discount{width:30px!important}',
       '#view-sala .pos-cart #pos-discount-kr{width:46px!important}'
@@ -315,7 +316,19 @@
     try { document.dispatchEvent(new CustomEvent('sala-catalog-rendered')); } catch (_) {}
   }
   function rerenderDynamic(){
-    var l=document.getElementById('pos-lines');if(l)l.innerHTML=buildLinesHTML();
+    var l=document.getElementById('pos-lines');
+    if(l){
+      l.innerHTML=buildLinesHTML();
+      // 2026-07-31: the entered per-line „% afsl" wasn't SHOWING after a
+      // re-render (adding another item) even though the discount applied. Set
+      // the disc input's .value PROPERTY explicitly from state after each
+      // rebuild so the number always displays (the value attribute alone was
+      // rendering blank in the cart inputs on the live build).
+      l.querySelectorAll('.pos-disc-edit').forEach(function(inp){
+        var ln=state.lines[parseInt(inp.getAttribute('data-idx'),10)];
+        if(ln){ var d=lineDiscPct(ln); inp.value = d>0 ? fmtPct(d) : ''; }
+      });
+    }
     var t=document.getElementById('pos-totals');if(t)t.innerHTML=buildTotalsHTML();
     var cc=document.getElementById('pos-cart-count');if(cc)cc.textContent=String(state.lines.length);
     var cb=document.getElementById('pos-checkout');
