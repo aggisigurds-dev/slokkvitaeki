@@ -252,6 +252,16 @@
            s.slice(i + 1).split('/').map(encodeURIComponent).join('/');
   }
 
+  // Skjalategundir — samræmd tákn þvert á appið: 🧯 slökkvitæki · 🔥 brunakerfi ·
+  // 🧾 reikningur · 📜 samningur (sama og fyrirtækja-prófíllinn, patch 199).
+  function typeMeta(t) {
+    if (t === 'uttektarskyrsla') return { kind: 'skyrsla',    icon: '🧯', label: 'Úttektarskýrsla',   sort: '0' };
+    if (t === 'brunakerfi')      return { kind: 'brunakerfi', icon: '🔥', label: 'Brunakerfisskýrsla', sort: '1' };
+    if (t === 'reikningur')      return { kind: 'reikningur', icon: '🧾', label: 'Reikningur',         sort: '2' };
+    if (t === 'samningur')       return { kind: 'samningur',  icon: '📜', label: 'Þjónustusamningur',  sort: '3' };
+    return { kind: 'reikningur', icon: '📎', label: 'Skjal', sort: '4' };
+  }
+
   async function loadDocs(idty, body) {
     const sb = SB();
     const holder = body.querySelector('#_sch-docs');
@@ -283,7 +293,7 @@
       const r = await sb.from('customer_documents')
         .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,doc_date,amount,fyrirtaeki_id')
         .or(ors.join(','))
-        .in('doc_type', ['uttektarskyrsla', 'reikningur']);
+        .in('doc_type', ['uttektarskyrsla', 'brunakerfi', 'reikningur', 'samningur']);
       // 2026-07-20: ÁÐUR var krafist `drive_file_id`, svo skjöl í Supabase Storage
       // OG reikningar sem eru aðeins skráning (nr./dags./upphæð úr kröfuyfirliti,
       // engin PDF-skrá) duttu alveg út. Hjá Center Hótel þýddi það að 21 af 22
@@ -318,7 +328,23 @@
     const fillYear = r => { const d = new Date(r.created_at || r.updated_at || 0); return isNaN(d) ? '' : String(d.getFullYear()); };
 
     const attYear = a => { const y = a.f && a.f.year; if (y && y !== '0') return String(y); const m = String((a.f && a.f.name) || '').match(/\b(20[2-3][0-9])\b/); return m ? m[1] : ''; };
-    const docKind = a => { const k = a.f && a.f.kind; if (k === 'skyrsla' || k === 'reikningur') return k; const n = String((a.f && a.f.name) || '').toLowerCase(); if (/reikning|\br-?\d/.test(n)) return 'reikningur'; if (/úttekt|uttekt|skýrsl|skyrsl/.test(n)) return 'skyrsla'; return 'annad'; };
+    const docKind = a => {
+      const k = a.f && a.f.kind;
+      if (k === 'brunakerfi') return 'brunakerfi';
+      if (k === 'skyrsla' || k === 'reikningur' || k === 'samningur') return k;
+      const n = String((a.f && a.f.name) || '').toLowerCase();
+      if (/brunakerfi|brunaviðvörun|brunavidvorun/.test(n)) return 'brunakerfi';
+      if (/samning/.test(n)) return 'samningur';
+      if (/reikning|\br-?\d/.test(n)) return 'reikningur';
+      if (/úttekt|uttekt|skýrsl|skyrsl/.test(n)) return 'skyrsla';
+      return 'annad';
+    };
+
+    // Brunakerfis-skýrslan er vistuð TVISVAR (customer_documents + viðhengi, sjá
+    // patch 273/199). Fellum viðhengis-afritið burt fyrir ár sem á kanóníska
+    // customer_documents-röð svo skýrslan tvíbirtist ekki í listanum.
+    const bkDocYears = new Set(docs.filter(x => x.doc_type === 'brunakerfi' && x._url).map(x => String(x.year || '')).filter(Boolean));
+    const attsDedup = atts.filter(a => !(docKind(a) === 'brunakerfi' && bkDocYears.has(String(attYear(a) || ''))));
 
     // 2026-07-20: sýnum ÖLL ár strax. Sagan er megintilgangur gluggans og kúnnar
     // eins og Center Hótel eiga 55 skjöl frá 2022-2026 — árs-sían faldi þau öll
@@ -327,40 +353,53 @@
     function render() {
       const yStr = String(curYear);
       const d2 = showAll ? docs : docs.filter(x => String(x.year || '') === yStr);
-      const a2 = showAll ? atts : atts.filter(a => attYear(a) === yStr);
+      const a2 = showAll ? attsDedup : attsDedup.filter(a => attYear(a) === yStr);
       const f2 = showAll ? filled : filled.filter(r => fillYear(r) === yStr);
       const otherCount = (docs.length - docs.filter(x => String(x.year || '') === yStr).length)
-                       + (atts.length - atts.filter(a => attYear(a) === yStr).length)
+                       + (attsDedup.length - attsDedup.filter(a => attYear(a) === yStr).length)
                        + (filled.length - filled.filter(r => fillYear(r) === yStr).length);
       const items = [];
-      d2.forEach(x => items.push({
-        sort: (x.doc_type === 'uttektarskyrsla' ? '0' : '1') + (x.year || ''),
-        html: docRow('🗂', x.doc_type === 'uttektarskyrsla' ? 'Úttektarskýrsla' : (x.invoice_number ? 'Reikningur ' + esc(x.invoice_number) : 'Reikningur'),
-          (x.year || '') + (x.doc_date ? ' · ' + esc(fmtDate(x.doc_date)) : '') + (x.amount ? ' · ' + esc(fmtKr(x.amount)) : '') + (x._url ? '' : ' · aðeins skráning'),
-          x._url ? '_sch-open' : '', x._url || '',
-          x._url ? {
-            kind: x.doc_type === 'uttektarskyrsla' ? 'skyrsla' : 'reikningur',
-            // Drive-skjöl fara sem driveId — /api/email-send sækir þau server-megin
-            // (Drive-skrár eru aðgangsstýrðar; Resend kemst ekki í þær af slóð einni).
-            driveId: (x.drive_file_id && String(x.drive_file_id).indexOf('sb:') !== 0) ? x.drive_file_id : '',
-            url: (x.drive_file_id && String(x.drive_file_id).indexOf('sb:') !== 0) ? '' : x._url,
-            filename: (x.doc_type === 'uttektarskyrsla' ? 'Úttektarskýrsla' : 'Reikningur' + (x.invoice_number ? ' ' + x.invoice_number : '')) +
-                      (x.year ? ' ' + x.year : '') + '.pdf',
-            ar: x.year || '', nr: x.invoice_number || '',
-          } : null)
-      }));
-      a2.forEach(a => items.push({
-        sort: (docKind(a) === 'skyrsla' ? '0' : docKind(a) === 'reikningur' ? '1' : '2') + attYear(a),
-        html: docRow(docKind(a) === 'skyrsla' ? '📄' : docKind(a) === 'reikningur' ? '🧾' : '📎',
-          esc((a.f && a.f.name) || 'Skjal'), (attYear(a) || '') + ' · Viðhengi', '_sch-att', a.coId + '|' + ((a.f && a.f.path) || ''),
-          {
-            kind: docKind(a) === 'skyrsla' ? 'skyrsla' : 'reikningur',
-            // Viðhengi liggja í `samningar`-bucketinu — slóðin er leyst við smell
-            // gegnum CompanyAttachments.getPublicUrl (getur verið undirrituð slóð).
-            att: (a.f && a.f.path) || '',
-            filename: (a.f && a.f.name) || 'skjal.pdf', ar: attYear(a) || '',
-          })
-      }));
+      d2.forEach(x => {
+        const tm = typeMeta(x.doc_type);
+        const label = x.doc_type === 'reikningur'
+          ? (x.invoice_number ? 'Reikningur ' + esc(x.invoice_number) : 'Reikningur')
+          : tm.label;
+        const fname = (x.doc_type === 'reikningur'
+          ? 'Reikningur' + (x.invoice_number ? ' ' + x.invoice_number : '')
+          : tm.label) + (x.year ? ' ' + x.year : '') + '.pdf';
+        items.push({
+          sort: tm.sort + (x.year || ''),
+          html: docRow(tm.icon, label,
+            (x.year || '') + (x.doc_date ? ' · ' + esc(fmtDate(x.doc_date)) : '') + (x.amount ? ' · ' + esc(fmtKr(x.amount)) : '') + (x._url ? '' : ' · aðeins skráning'),
+            x._url ? '_sch-open' : '', x._url || '',
+            x._url ? {
+              kind: tm.kind,
+              // Drive-skjöl fara sem driveId — /api/email-send sækir þau server-megin
+              // (Drive-skrár eru aðgangsstýrðar; Resend kemst ekki í þær af slóð einni).
+              driveId: (x.drive_file_id && String(x.drive_file_id).indexOf('sb:') !== 0) ? x.drive_file_id : '',
+              url: (x.drive_file_id && String(x.drive_file_id).indexOf('sb:') !== 0) ? '' : x._url,
+              filename: fname,
+              ar: x.year || '', nr: x.invoice_number || '',
+            } : null)
+        });
+      });
+      a2.forEach(a => {
+        const dk = docKind(a);
+        const ICON = { skyrsla: '🧯', brunakerfi: '🔥', reikningur: '🧾', samningur: '📜' };
+        const SORT = { skyrsla: '0', brunakerfi: '1', reikningur: '2', samningur: '3' };
+        items.push({
+          sort: (SORT[dk] || '4') + attYear(a),
+          html: docRow(ICON[dk] || '📎',
+            esc((a.f && a.f.name) || 'Skjal'), (attYear(a) || '') + ' · Viðhengi', '_sch-att', a.coId + '|' + ((a.f && a.f.path) || ''),
+            {
+              kind: (dk === 'annad') ? 'skyrsla' : dk,
+              // Viðhengi liggja í `samningar`-bucketinu — slóðin er leyst við smell
+              // gegnum CompanyAttachments.getPublicUrl (getur verið undirrituð slóð).
+              att: (a.f && a.f.path) || '',
+              filename: (a.f && a.f.name) || 'skjal.pdf', ar: attYear(a) || '',
+            })
+        });
+      });
       f2.forEach(r => items.push({
         sort: '3' + fillYear(r),
         html: docRow('📑', esc(r.name || r.template_name || 'Skjal'),

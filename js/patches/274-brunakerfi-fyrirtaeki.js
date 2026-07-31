@@ -55,6 +55,57 @@
     return { lines: linur.length, sum, total: sum * (1 + VAT_PCT / 100) };
   }
 
+  // ── skjal → póst-viðhengi ({driveId} eða undirrituð {url}) fyrir 📧 Senda ─────
+  async function docAttachment(d, filename) {
+    if (!d) return null;
+    const drv = d.drive_file_id && String(d.drive_file_id).indexOf('sb:') !== 0 ? d.drive_file_id : '';
+    if (drv) return { filename: filename, driveId: drv };   // gmail-send sækir Drive-skrána server-megin
+    if (d.storage_path) {
+      // storage_path er bucket-prefixed ('samningar/…'); getPublicUrl (patch 111)
+      // væntir bucket-relative slóðar og skilar undirritaðri slóð sem gmail-send nær í.
+      const sp = String(d.storage_path).replace(/^samningar\//, '');
+      try {
+        if (window.CompanyAttachments && CompanyAttachments.getPublicUrl) {
+          const u = await CompanyAttachments.getPublicUrl(sp);
+          if (u) return { filename: filename, url: u };
+        }
+      } catch (_) {}
+      const su = storageUrl(d.storage_path);
+      if (su) return { filename: filename, url: su };
+    }
+    return null;
+  }
+
+  // 📧 Senda brunakerfisúttekt: hakað val um 🔥 skýrslu + 🧾 reikning → venjulegi
+  // póst-glugginn (patch 254). Reikningurinn (solur) kemur úr patch 291.
+  async function sendReport(r) {
+    if (!(window.ReceiptSender && ReceiptSender.compose)) { alert('Póst-ritillinn hlóðst ekki — endurhladdu síðunni.'); return; }
+    const co = C.co, yr = r.year || '';
+    const doc = r.doc_id ? C.docs.find(d => d.id === r.doc_id) : null;
+    const choices = [];
+    const bruAtt = await docAttachment(doc, [co.nafn, yr, 'brunakerfisskýrsla'].filter(Boolean).join(' - ') + '.pdf');
+    if (bruAtt) choices.push({ label: '🔥 Brunakerfisskýrsla ' + yr, checked: true, build: () => bruAtt });
+    else choices.push({ label: '🔥 Brunakerfisskýrsla ' + yr + ' — ljúktu skýrslunni fyrst', checked: false, disabled: true });
+    let inv = null;
+    try {
+      if (window.BrunakerfiReikningur && BrunakerfiReikningur.findInvoice) {
+        const saleId = (r.data && r.data.verd && r.data.verd.sale_id) || null;
+        inv = await BrunakerfiReikningur.findInvoice(co.id, yr, saleId);
+      }
+    } catch (_) {}
+    if (inv && inv.id && window.ReceiptSender.invoiceAttachment) {
+      choices.push({ label: '🧾 Reikningur ' + (inv.num || '') + (inv.status !== 'final' ? ' (drög)' : ''), checked: true,
+        build: () => ReceiptSender.invoiceAttachment(inv.id) });
+    }
+    ReceiptSender.compose({
+      title: 'Senda brunakerfisúttekt' + (yr ? ' ' + yr : ''),
+      to: co.netfang || '',
+      subject: 'Brunakerfisskýrsla' + (yr ? ' ' + yr : '') + ' — Slökkvitæki ehf',
+      bodyText: ReceiptSender.standardText('brunakerfi', { nafn: co.nafn || '', ar: yr, stadur: co.nafn || '' }),
+      attachmentChoices: choices,
+    });
+  }
+
   // ── yfirbygging ─────────────────────────────────────────────────────────────
   function ensureOverlay() {
     let ov = document.getElementById('_bkc-overlay'); if (ov) return ov;
@@ -170,10 +221,11 @@
       const v = verdOf(r);
       return '<div class="_bkc-row">' +
         '<span class="_bkc-st" style="' + (fin ? 'background:#dcf1e4;color:#166b3a' : 'background:#fdf3d7;color:#8a6100') + '">' + (fin ? 'LOKIÐ' : 'DRÖG') + '</span>' +
-        '<div style="flex:1;min-width:150px"><div style="font-weight:700;font-size:13.5px">Úttekt ' + esc(r.uttekt_nr || '—') + ' · ' + esc(r.year || '') + '</div>' +
-        '<div style="font-size:11px;color:#8b93a1">breytt ' + esc(String(r.updated_at || '').slice(0, 10)) + (v.lines ? ' · ' + v.lines + ' verðlínur' : '') + '</div></div>' +
+        '<div style="flex:1;min-width:150px"><div style="font-weight:700;font-size:13.5px">🔥 Brunakerfisskýrsla · ' + esc(r.year || '') + '</div>' +
+        '<div style="font-size:11px;color:#8b93a1">Úttekt ' + esc(r.uttekt_nr || '—') + ' · breytt ' + esc(String(r.updated_at || '').slice(0, 10)) + (v.lines ? ' · ' + v.lines + ' verðlínur' : '') + '</div></div>' +
         '<button type="button" class="_bkc-act" data-open="' + r.id + '">' + (fin ? 'Skoða / breyta' : 'Halda áfram') + '</button>' +
         (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener">📄 PDF</a>' : '') +
+        (fin ? '<button type="button" class="_bkc-act" data-send="' + r.id + '" style="background:#0f766e" title="Senda brunakerfisskýrslu og/eða reikning í tölvupósti">📧 Senda</button>' : '') +
         (!fin ? '<button type="button" class="_bkc-act _del" data-del="' + r.id + '">🗑</button>' : '') +
       '</div>';
     }).join('');
@@ -193,10 +245,11 @@
         : '';
       return '<div class="_bkc-row">' +
         '<span class="_bkc-st" style="background:#e8ecf3;color:#3b4653">' + esc(d.year || '—') + '</span>' +
-        '<div style="flex:1;min-width:130px"><div style="font-weight:600;font-size:13px">Úttektarskýrsla ' + esc(d.year || '') + '</div>' +
+        '<div style="flex:1;min-width:130px"><div style="font-weight:600;font-size:13px">🔥 Brunakerfisskýrsla ' + esc(d.year || '') + '</div>' +
         '<div style="font-size:11px;color:#8b93a1">' + esc(d.doc_date ? fmtDags(d.doc_date) : 'mánuð vantar') + (d.source ? ' · ' + esc(d.source) : '') + '</div></div>' +
         monSel +
         (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener">Opna</a>' : '') +
+        (url ? '<button type="button" class="_bkc-act" data-docsend="' + d.id + '" data-sendkind="brunakerfi" style="background:#0f766e" title="Senda í tölvupósti">📧 Senda</button>' : '') +
         '<button type="button" class="_bkc-act _del" data-docdel="' + d.id + '" title="Aftengja þetta skjal (röng skrá) — skráin sjálf helst í Drive">🗑</button>' +
       '</div>';
     }).join('');
@@ -266,7 +319,7 @@
       '</div>' +
       '<div class="_bkc-grid">' +
         '<div>' +
-          '<div class="_bkc-card"><div class="_bkc-ch">Skoðunarskýrslur<small>' + C.reports.length + ' í appinu · ' + oldDocs.length + ' eldri skjöl</small></div><div class="_bkc-body">' +
+          '<div class="_bkc-card"><div class="_bkc-ch">🔥 Brunakerfisskýrslur<small>' + C.reports.length + ' í appinu · ' + oldDocs.length + ' eldri skjöl</small></div><div class="_bkc-body">' +
             (repRows || '<div class="_bkc-empty">Engin skýrsla í appinu enn.</div>') +
             '<button type="button" class="_bkc-new" id="_bkc-new">＋ Ný skoðunarskýrsla</button>' +
             (oldDocs.length ? '' : addFileStrip) +
@@ -284,6 +337,7 @@
                 '<div style="flex:1;min-width:130px"><div style="font-weight:600;font-size:13px">' + esc(title) + '</div>' +
                 '<div style="font-size:11px;color:#8b93a1">' + (chain ? 'sameiginlegur (öll keðjan)' : 'þessi staður') + (s.doc_date ? ' · ' + esc(fmtDags(s.doc_date)) : '') + '</div></div>' +
                 (url ? '<a class="_bkc-act _ghost" href="' + esc(url) + '" target="_blank" rel="noopener">Opna</a>' : '') +
+                (url ? '<button type="button" class="_bkc-act" data-docsend="' + s.id + '" data-sendkind="samningur" style="background:#0f766e" title="Senda samning í tölvupósti">📧 Senda</button>' : '') +
                 '<button type="button" class="_bkc-act _del" data-docdel="' + s.id + '" title="Aftengja samninginn — skráin helst í Drive">🗑</button>' +
               '</div>';
             }).join('') : '<div class="_bkc-empty">Enginn þjónustusamningur skráður á fyrirtækið.</div>') +
@@ -326,6 +380,23 @@
       if (!confirm('Eyða þessum drögum?')) return;
       try { await SB().from('brunakerfi_skyrslur').delete().eq('id', b.dataset.del); } catch (_) {}
       reload();
+    }));
+    // 📧 Senda — brunakerfisskýrsla (+ reikningur) ársins gegnum póst-ritilinn (254).
+    w.querySelectorAll('[data-send]').forEach(b => b.addEventListener('click', () => {
+      const r = C.reports.find(x => x.id === b.dataset.send);
+      if (r) sendReport(r);
+    }));
+    // 📧 Senda — stakt eldra skjal / samningur.
+    w.querySelectorAll('[data-docsend]').forEach(b => b.addEventListener('click', async () => {
+      const id = +b.dataset.docsend, kind = b.dataset.sendkind || 'brunakerfi';
+      const d = C.docs.find(x => x.id === id) || C.samningar.find(x => x.id === id);
+      if (!d) return;
+      const fbase = kind === 'samningur' ? 'Þjónustusamningur' : ('Brunakerfisskýrsla' + (d.year ? ' ' + d.year : ''));
+      const att = await docAttachment(d, fbase + '.pdf');
+      if (!att) { alert('Engin skrá fylgir þessu skjali — ekkert að senda.'); return; }
+      if (window.ReceiptSender && ReceiptSender.sendDoc) {
+        ReceiptSender.sendDoc(Object.assign({ kind: kind, to: co.netfang || '', nafn: co.nafn || '', ar: d.year || '', stadur: co.nafn || '' }, att));
+      }
     }));
     // mánuður skoðunar á eldra skjali → doc_date (vistast strax)
     w.querySelectorAll('._bkc-monsel').forEach(sel => sel.addEventListener('change', async () => {

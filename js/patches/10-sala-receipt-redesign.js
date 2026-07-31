@@ -492,6 +492,13 @@
         let remainder = cleaned
           .replace(/\bKt[:.]?\s*\d{6}-?\d{4}/i, '')
           .replace(/\[?\s*Sótt[\s:]*\d{4}-\d{2}-\d{2}\s*\]?/i, '')
+          // 2026-07-31: innri bókhalds-merki sem láku á kúnnareikninginn (t.d.
+          // R-000391 „Sótt ✓ (leiðrétt … var ranglega merkt „Drög — bíður"). Payday
+          // #6 PAID."): Payday-greiðslustaða, „(leiðrétt …)" leiðréttinga-nóta og
+          // „Sótt ✓" upptökuhak eiga heima í innri yfirlitum, ekki á reikningi kúnna.
+          .replace(/\bPayday\s*#?\s*\d+\s*(?:PAID|SENT|CREDIT|CANCELL?ED|DRAFT|greitt|ógreitt|kredit)?\.?/gi, '')
+          .replace(/\((?:leiðrétt|leidrett)[^)]*\)\.?/gi, '')
+          .replace(/\bSótt\s*✓/gi, '')
           // Cut the pickup-audit trail (patch 121) from its first token to the end.
           .replace(/\s*(?:Ekki afhent|Viðbót|Afsláttur\s+(?:við afhendingu|úr sölu)|Athugasemd|Greiðsla)\s*:[\s\S]*$/i, '')
           .replace(/\bAfsl(?:áttur)?[:.]?\s*[\d,.]+%?\s*\(?[-−–\s]*[\d.,]*\s*kr?\)?/i, '')
