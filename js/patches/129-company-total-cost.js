@@ -206,6 +206,26 @@
     return best ? best.product : null;
   }
 
+  // 2026-07-31 (Agnar): reykskynjari-afbrigðin eru geymd í STÆRÐ-reitnum
+  // (uttaeki.size — t.d. „samtengdir") og eiga að rukkast á tiltekinni Sölu-vöru:
+  //   Batterís  → „Reykskynjari"   (grunn-varan, „1")
+  //   Langlífis → „Reykskynjari 2"
+  //   Samtengjanlegir → „Reykskynjari 3"
+  // Kortlagt BEINT á vöruna (búðarverð) — token-matcher-inn réð ekki við tölu-
+  // afbrigðin (1/2/3 lítur út eins og stærðar-tóki). Skilar null nema tegundin sé
+  // reykskynjari OG stærðin beri þekkt afbrigði — þá heldur venjulega reykskynjari
+  // (án afbrigðis) sinni fyrri hegðun (Yfirferð Reykskynjari).
+  function reykVariantProduct(type, size, services) {
+    if (!/reykskynj|smoke/.test(norm(type))) return null;
+    const s = norm(size);
+    let want = null;
+    if (/batter/.test(s)) want = 'reykskynjari';
+    else if (/langl[íi]f|langlif|langl/.test(s)) want = 'reykskynjari 2';
+    else if (/samteng|samtengd/.test(s)) want = 'reykskynjari 3';
+    if (!want) return null;
+    return (services || []).find(p => norm(p.nafn) === want) || null;
+  }
+
   function findOverride(coId, productName) {
     if (!coId || !productName) return null;
     if (!window.CompanyPricing || !window.CompanyPricing.list) return null;
@@ -444,6 +464,27 @@
         'style="width:44px;padding:3px 5px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;-moz-appearance:textfield"><span style="font-size:11px;color:#94a3b8">%</span>' +
       '</td>';
 
+    // 2026-07-31: PER STK verðið er RITANLEGT — bara fyrir ÞESSA úttekt/heimsókn
+    // (Agnar: „breyta verðinu í skýrslunni … bara akkúrat þessi skýrsla"). Geymt
+    // í trip-state `line_price` með SAMA lykli og line_disc (svc|<tegund>|<stærð>
+    // |<kind>) svo það lifir endurhleðslu og samstillist gegnum 227 skýja-spegilinn.
+    // BREYTIR ALDREI `vörur.verd_an_vsk` (búðar-verðinu) né fyrirtækja-yfirverði —
+    // sjálfgefna gildið kemur þaðan en yfirskrift situr aðeins á ferðinni.
+    // Afsláttur (%) leggst OFAN Á þetta verð, nákvæmlega eins og áður.
+    const linePrice = (tripState.line_price && typeof tripState.line_price === 'object') ? tripState.line_price : {};
+    const priceFor = (key, def) => {
+      const v = linePrice[key];
+      return (v != null && v !== '' && isFinite(+v)) ? Math.max(0, +v) : def;
+    };
+    // Ritanlegur PER STK-reitur (forfylltur búðar-/yfir-verði). 💰 = fyrirtækja-yfirverð
+    // var sjálfgefna gildið (uppruna-merki; hverfur ekki þótt notandinn breyti tölunni).
+    const priceCell = (key, defUnit, override) =>
+      '<td style="padding:7px 10px;text-align:right;white-space:nowrap">' +
+        '<input class="_ctc-line-price" data-lk="' + esc(key) + '" data-def="' + Math.round(Math.max(0, +defUnit || 0)) + '" type="number" min="0" step="1" inputmode="numeric" value="' + Math.round(priceFor(key, defUnit)) + '" ' +
+        'style="width:82px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums;-moz-appearance:textfield"><span style="font-size:11px;color:#94a3b8"> kr</span>' +
+        (override ? ' <span title="' + esc(override.notes || '') + '" style="margin-left:2px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') +
+      '</td>';
+
     // Aggregate by type+size, AND split count by chosen kind.
     // 2026-05-19: normalize type-family so "ABC Duft", "PFC Duft", and "Duft"
     // all bucket together — they are billed identically (the brand prefix is
@@ -538,6 +579,46 @@
     // landing on "⚠ Engin matchandi þjónusta"). Treat them as sizeless like Brunaslanga.
     const SIZELESS_SVC = /léttv|lettv|abf|froð|frod|brunaslang|brunaslöng|brunaslong|hose|reykskynj|hitaskynj|smoke|teppi|blanket/i;
     groups.forEach(g => {
+      // 2026-07-31: reykskynjari-afbrigði (stærð = batterís/langlífis/samtengjanlegir)
+      // → BEINT á Sölu-vöruna (Reykskynjari / Reykskynjari 2 / Reykskynjari 3), rukkað
+      // á búðarverði × heildar-fjölda (hleðsla+yfirferð+nýtt). PER STK ritanlegt + afsl.
+      // eins og aðrar línur. Venjulegt reykskynjari (án afbrigðis) fer óbreytt neðar.
+      const reykP = reykVariantProduct(g.type, g.size, services);
+      if (reykP) {
+        const total = g.hledsla + g.yfirferd + g.nyitt;
+        if (total > 0) {
+          const override = findOverride(coId, reykP.nafn);
+          const unitPrice = override ? +override.price_ex_vat : +reykP.verd_an_vsk;
+          const vskPct = override ? (+override.vsk_pct || 24) : (+reykP.vsk_prosenta || 24);
+          const dKey = 'svc|' + g.type + '|' + g.size + '|reyk';
+          const dPct = discFor(dKey);
+          const effUnit = priceFor(dKey, unitPrice);
+          const subEx = discUnitOf(effUnit, dPct) * total;
+          const vskKr = subEx * (vskPct / 100);
+          totalSubEx += subEx;
+          totalVsk += vskKr;
+          if (override) { overrideSubEx += subEx; overrideVsk += vskKr; }
+          rows.push('<tr>' +
+            '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + (g.size ? ' / ' + esc(g.size) : '') +
+              '<div style="font-size:11px;color:#64748b">' + esc(reykP.nafn) + '</div></td>' +
+            '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + total + '</td>' +
+            '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3">Reykskynjari</span></td>' +
+            priceCell(dKey, unitPrice, override) +
+            '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
+            discCell(dKey, dPct) +
+            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
+          '</tr>');
+        }
+        if (g.skip > 0) {
+          rows.push('<tr style="opacity:.55">' +
+            '<td style="padding:5px 10px;font-size:12px;color:#94a3b8;' + typeBorder(g.type) + '">' + esc(g.type) + (g.size ? ' / ' + esc(g.size) : '') + '</td>' +
+            '<td style="padding:5px 10px;text-align:center;font-size:12px;color:#94a3b8">' + g.skip + '</td>' +
+            '<td style="padding:5px 10px"><span style="padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:#f1f5f9;color:#64748b">Sleppt</span></td>' +
+            '<td colspan="4" style="padding:5px 10px;color:#94a3b8;font-size:11px;font-style:italic">(Ekki í þessari ferð)</td>' +
+          '</tr>');
+        }
+        return;
+      }
       const matchSize = SIZELESS_SVC.test(g.type) ? '' : g.size;
       const matching = findMatchingServices(g.type, matchSize, services);
       if (!matching.length && (g.hledsla > 0 || g.yfirferd > 0)) {
@@ -550,7 +631,8 @@
           const total = g.hledsla + g.yfirferd;
           const dKey = 'svc|' + g.type + '|' + g.size + '|vara';
           const dPct = discFor(dKey);
-          const subEx = discUnitOf(unitPrice, dPct) * total;
+          const effUnit = priceFor(dKey, unitPrice);
+          const subEx = discUnitOf(effUnit, dPct) * total;
           const vskKr = subEx * (vskPct / 100);
           totalSubEx += subEx;
           totalVsk += vskKr;
@@ -560,8 +642,7 @@
               '<div style="font-size:11px;color:#64748b">' + esc(replacement.nafn) + '</div></td>' +
             '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + total + '</td>' +
             '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f3e8ff;color:#6b21a8">Vara</span></td>' +
-            '<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">' + fmtKr(unitPrice) +
-              (override ? ' <span style="margin-left:4px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') + '</td>' +
+            priceCell(dKey, unitPrice, override) +
             '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
             discCell(dKey, dPct) +
             '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
@@ -584,7 +665,8 @@
         const vskPct = override ? (+override.vsk_pct || 24) : (+product.vsk_prosenta || 24);
         const dKey = 'svc|' + g.type + '|' + g.size + '|' + kindKey;
         const dPct = discFor(dKey);
-        const subEx = discUnitOf(unitPrice, dPct) * n;
+        const effUnit = priceFor(dKey, unitPrice);
+        const subEx = discUnitOf(effUnit, dPct) * n;
         const vskKr = subEx * (vskPct / 100);
         totalSubEx += subEx;
         totalVsk += vskKr;
@@ -596,8 +678,7 @@
           '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;' +
             (kindKey === 'hledsla' ? 'background:#dcfce7;color:#166534' : 'background:#dbeafe;color:#1e40af') + '">' +
             kindLabel + '</span></td>' +
-          '<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">' + fmtKr(unitPrice) +
-            (override ? ' <span title="' + esc(override.notes || '') + '" style="margin-left:4px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') + '</td>' +
+          priceCell(dKey, unitPrice, override) +
           '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
           discCell(dKey, dPct) +
           '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
@@ -614,7 +695,8 @@
           const vskPct = override ? (+override.vsk_pct || 24) : (+newProduct.vsk_prosenta || 24);
           const dKey = 'svc|' + g.type + '|' + g.size + '|nyitt';
           const dPct = discFor(dKey);
-          const subEx = discUnitOf(unitPrice, dPct) * g.nyitt;
+          const effUnit = priceFor(dKey, unitPrice);
+          const subEx = discUnitOf(effUnit, dPct) * g.nyitt;
           const vskKr = subEx * (vskPct / 100);
           totalSubEx += subEx;
           totalVsk += vskKr;
@@ -624,8 +706,7 @@
               '<div style="font-size:11px;color:#64748b">' + esc(newProduct.nafn) + '</div></td>' +
             '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + g.nyitt + '</td>' +
             '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f3e8ff;color:#6b21a8">Nýtt</span></td>' +
-            '<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">' + fmtKr(unitPrice) +
-              (override ? ' <span title="' + esc(override.notes || '') + '" style="margin-left:4px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') + '</td>' +
+            priceCell(dKey, unitPrice, override) +
             '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
             discCell(dKey, dPct) +
             '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
@@ -1044,6 +1125,27 @@
         const v = Math.max(0, Math.min(100, parseFloat(String(inp.value).replace(",", ".")) || 0));
         const st = loadTripState(coId);
         if (Array.isArray(st.extras) && st.extras[i]) { st.extras[i].disc_pct = v; saveTripState(coId, st); }
+      };
+      const onChange = () => { persist(); _lastKey = ""; render(); };
+      inp.addEventListener("change", onChange);
+      inp.addEventListener("blur", onChange);
+      inp.addEventListener("input", persist);
+    });
+    // 2026-07-31: ritanlegt PER STK-verð (line_price) — bara fyrir þessa ferð.
+    // input=vista (engin render → bendillinn hoppar ekki); change/blur=vista+render
+    // svo línu-samtalan + heildin uppfærist. Tómur reitur → SKRIFAR sjálfgefna
+    // verðið (data-def) í stað þess að EYÐA lyklinum — 227 deep-merge eyðir aldrei
+    // lyklum í skýinu, svo eyddur lykill léti gamalt yfirverð rísa upp aftur á hinu
+    // tækinu (sama gildra og line_disc leysir með því að skrifa 0). 0 er geymt sem 0.
+    section.querySelectorAll("._ctc-line-price").forEach(inp => {
+      const persist = () => {
+        const key = inp.dataset.lk;
+        const raw = String(inp.value).replace(/[^0-9.,]/g, "").replace(",", ".").trim();
+        const def = Math.max(0, parseFloat(inp.dataset.def) || 0);
+        const st = loadTripState(coId);
+        if (!st.line_price || typeof st.line_price !== "object") st.line_price = {};
+        st.line_price[key] = raw === "" ? def : Math.max(0, parseFloat(raw) || 0);
+        saveTripState(coId, st);
       };
       const onChange = () => { persist(); _lastKey = ""; render(); };
       inp.addEventListener("change", onChange);

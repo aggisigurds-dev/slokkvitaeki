@@ -87,6 +87,10 @@
       if (/co2|co₂|kolsýr|kolsyr/.test(t)) return ['2 kg', '5 kg'];
       if (/léttv|lettv|vatn|froð|frod|halon|blautt/.test(t)) return ['6 L', '9 L'];
       if (/brunaslang|brunaslöng|slanga/.test(t)) return ['30 m', '25 m', '20 m'];
+      // 2026-07-31 (Agnar): reykskynjari-afbrigðin stýra Sölu-vörunni sem rukkast
+      // (Batterís→Reykskynjari · Langlífis→Reykskynjari 2 · Samtengjanlegir→Reykskynjari 3).
+      // Geymt í stærð-reitnum; patch 129/128 kortleggja það á vöruna.
+      if (/reykskynj|smoke/.test(t)) return ['Batterís', 'Langlífis', 'Samtengjanlegir'];
       if (/skynjar|skáp|skap/.test(t)) return ['—'];
       return ['2 kg', '5 kg', '6 kg', '9 kg', '12 kg', '6 L', '30 m'];
     }
