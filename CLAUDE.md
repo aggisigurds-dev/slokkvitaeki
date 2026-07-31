@@ -554,6 +554,30 @@ birtist strax í „Skjöl & viðhengi" árstöflunni (patch 199), í úttektars
   Brunahólf-appinu (sjá „Laga pörun í Brunahólf →" hlekkinn á skjalaspjaldinu). Ef
   á að lenda í Drive þarf að flytja Drive-OAuth + upload-function úr Brunahólf.
 
+## Ritanlegt PER STK-verð + Reykskynjari-kortlagning — 129/165/128/73 (2026-07-31)
+
+Tvær breytingar á Heildarkostnaðar-töflunni (patch 129 `#_ctc-section`) sem báðar
+FLÆÐA í reikninginn gegnum 165 `scrapeCostRows`/`buildLinur` → `solur` → PDF (233):
+
+- **PER STK er RITANLEGT — bara fyrir ÞESSA úttekt/heimsókn** (Agnar: „breyta
+  verðinu í skýrslunni … bara akkúrat þessi skýrsla"). Yfirskriftin geymist í
+  trip-state `line_price` með SAMA lykli og `line_disc` (`svc|<tegund>|<stærð>|
+  <kind>`), forfyllt úr búðar-/fyrirtækja-yfirverði. `priceFor(key,def)` les hana,
+  `priceCell(key,def,override)` teiknar `._ctc-line-price` reitinn (ber `data-def`).
+  **BREYTIR ALDREI `vörur.verd_an_vsk`** né `CompanyPricing`-yfirverði — situr aðeins
+  á ferðinni. Afsláttur (%) leggst OFAN Á (röð: `discUnitOf(priceFor(...),dPct)`).
+  Tómur reitur SKRIFAR `data-def` (ekki eyðir lykli) svo 227 skýja-merge resúrekti
+  ekki gamalt yfirverð á hinu tækinu — sama gildra og `line_disc` leysir með 0.
+  165 `scrapeCostRows` les nú `._ctc-line-price` reitinn (fallback á textaN).
+- **Reykskynjari-afbrigði → BEINT á Sölu-vöru** (Agnar): afbrigðið er geymt í
+  STÆRÐ-reitnum (`uttaeki.size`) og kortlagt á vöru á búðarverði × heildarfjölda:
+  Batterís → „Reykskynjari" (grunn, „1") · Langlífis → „Reykskynjari 2" ·
+  Samtengjanlegir/samtengdir → „Reykskynjari 3". `reykVariantProduct(type,size,
+  services)` (í 129 OG 128, sama regla) tekur FORGANG — token-matcher-inn réð ekki
+  við tölu-afbrigðin (1/2/3 lítur út eins og stærðar-tóki). Venjulegt reykskynjari
+  (án afbrigðis, null-stærð) heldur fyrri hegðun (Yfirferð Reykskynjari, id 33).
+  Bulk-add (patch 73) sýnir afbrigðin þrjú sem Stærð-valkosti þegar Tegund=Reykskynjari.
+
 ## Afsláttar-samræming (úttekt 2026-07-08) — 121/142/165/233
 
 Full-system discount audit found & fixed three writer bugs. **The one supported

@@ -69,8 +69,24 @@
   // Sizeless service families have a single "Yfirferð X" entry with no size;
   // including the size ("30 m") would dilute the match below threshold.
   const SIZELESS_SVC = /brunaslang|brunaslöng|brunaslong|hose|reykskynj|hitaskynj|smoke|teppi|blanket/i;
+  // 2026-07-31 (Agnar): reykskynjari-afbrigði (stærð = batterís/langlífis/
+  // samtengjanlegir) → BEINT á Sölu-vöru (Reykskynjari / Reykskynjari 2 /
+  // Reykskynjari 3). Sama regla og patch 129 svo forskoðun og reikningur stemmi.
+  function reykVariantProduct(type, size, services) {
+    if (!/reykskynj|smoke/.test(norm(type))) return null;
+    const s = norm(size);
+    let want = null;
+    if (/batter/.test(s)) want = 'reykskynjari';
+    else if (/langl[íi]f|langlif|langl/.test(s)) want = 'reykskynjari 2';
+    else if (/samteng|samtengd/.test(s)) want = 'reykskynjari 3';
+    if (!want) return null;
+    return (services || []).find(p => norm(p.nafn) === want) || null;
+  }
+
   function pickService(type, size, services, kind) {
     kind = kind || 'hledsla';
+    const reyk = reykVariantProduct(type, size, services);
+    if (reyk) return reyk;
     const effSize = SIZELESS_SVC.test(type) ? '' : size;
     const queryTokens = norm(type + ' ' + effSize).split(' ').filter(Boolean);
     let best = null;

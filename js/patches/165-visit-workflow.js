@@ -235,7 +235,12 @@
       // "7.000 kr", "7,000 kr", "7 000 kr" all collapse to "7000". Previous
       // attempt used parseFloat after a dot-strip + comma-to-dot, which broke
       // on Chrome's "7,000" output (parseFloat treated . as decimal → 7).
-      const unitPrice = parseInt((tds[3].textContent || '').replace(/[^0-9]/g, ''), 10) || 0;
+      // 2026-07-31: PER STK er nú ritanlegur reitur (patch 129 line_price) —
+      // lesa gildið úr ._ctc-line-price ef hann er til, annars gamla textinn.
+      const priceInp = tds[3].querySelector('._ctc-line-price');
+      const unitPrice = priceInp
+        ? (parseInt(String(priceInp.value).replace(/[^0-9]/g, ''), 10) || 0)
+        : (parseInt((tds[3].textContent || '').replace(/[^0-9]/g, ''), 10) || 0);
       const vskPct = parseInt((tds[4].textContent || '').replace(/[^0-9]/g, ''), 10) || 24;
       // 2026-07-08: afsláttur (%) á hvern lið — lesinn úr Afsl.-reitnum (patch 129).
       // Reikningslínan fær AFSLÁTTAÐ einingaverð (round(verð×(1−d%)) — sama
