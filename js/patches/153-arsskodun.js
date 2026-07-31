@@ -147,7 +147,7 @@
     // Load ALL fyrirtaeki rows. Supabase caps each response at 1000 rows
     // (server-side "Max rows"), so .range() alone is not enough — page through.
     const companiesP = DB.fetchAll((from, to) => SB.from('fyrirtaeki')
-      .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu,customer_base_id,created_at')
+      .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu,customer_base_id,created_at,postnumer')
       .is('deleted_at', null)
       .order('nafn')
       .range(from, to)).catch(error => { console.error('[arsskodun] loadAll', error); return null; });
@@ -708,7 +708,7 @@
         .replace(/æ/g, 'ae').replace(/ö/g, 'o');
       const qn = fold(q);
       arr = arr.filter(c => {
-        const hay = (c.nafn || '') + ' ' + (c.kennitala || '') + ' ' + (c.heimilisfang || '');
+        const hay = (c.nafn || '') + ' ' + (c.kennitala || '') + ' ' + (c.heimilisfang || '') + ' ' + (c.postnumer || '');
         return fold(hay).includes(qn);
       });
     }
@@ -717,6 +717,8 @@
     // localStorage state.
     const SORT_COMPARATORS = {
       name: (a, b) => String(a.nafn || '').localeCompare(b.nafn || '', 'is'),
+      postnumer: (a, b) => ((parseInt(a.postnumer, 10) || 99999) - (parseInt(b.postnumer, 10) || 99999))
+                       || String(a.nafn || '').localeCompare(b.nafn || '', 'is'),
       address: (a, b) => String(a.heimilisfang || '').localeCompare(b.heimilisfang || '', 'is')
                        || String(a.nafn || '').localeCompare(b.nafn || '', 'is'),
       email: (a, b) => {
@@ -1060,6 +1062,7 @@
             </div>
             <select id="_ars-sort" aria-label="Raða eftir" title="Raða eftir" style="padding:7px 10px;border:1px solid var(--brd2);border-radius:8px;background:var(--surface);font:inherit;font-size:12px;color:var(--ink1);cursor:pointer">
               <option value="alpha" ${state.sort==='alpha'?'selected':''}>↕️ Stafrófsröð</option>
+              <option value="postnumer" ${state.sort==='postnumer'?'selected':''}>📍 Póstnúmer</option>
               <option value="month" ${state.sort==='month'?'selected':''}>📅 Eftir skoðunarmánuði (næst fyrst)</option>
               <option value="oldest" ${state.sort==='oldest'?'selected':''}>⏳ Þeir elstu fyrst (lengst síðan skoðað)</option>
             </select>
@@ -1186,9 +1189,10 @@
       // Drive the SAME sort path as the column headers (state.sortCol/Dir) so the
       // choice actually re-sorts the list — and so the print, which uses
       // filteredSorted(), matches exactly what is on screen.
-      if (v === 'alpha')       { state.sortCol = 'name';   state.sortDir = 'asc'; }
-      else if (v === 'month')  { state.sortCol = 'month';  state.sortDir = 'asc'; }
-      else if (v === 'oldest') { state.sortCol = 'lastYr'; state.sortDir = 'asc'; }
+      if (v === 'alpha')       { state.sortCol = 'name';      state.sortDir = 'asc'; }
+      else if (v === 'postnumer') { state.sortCol = 'postnumer'; state.sortDir = 'asc'; }
+      else if (v === 'month')  { state.sortCol = 'month';     state.sortDir = 'asc'; }
+      else if (v === 'oldest') { state.sortCol = 'lastYr';    state.sortDir = 'asc'; }
       state.sort = v; saveState(); render();
     });
     main.querySelector('#_ars-print')?.addEventListener('click', printList);
@@ -1621,7 +1625,7 @@
                 <div style="min-width:0;flex:1">
                   <div class="_ars-cn" style="font-weight:700;color:var(--ink1);font-size:13.5px;line-height:1.25">${esc(c.nafn || '—')}</div>
                   ${c.kennitala ? `<div style="font-size:10.5px;color:var(--ink4);font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
-                  ${c.heimilisfang ? `<div class="_ars-ca" style="font-size:11px;color:var(--ink3);margin-top:2px">📍 ${esc(c.heimilisfang)}</div>` : ''}
+                  ${c.heimilisfang ? `<div class="_ars-ca" style="font-size:11px;color:var(--ink3);margin-top:2px">📍 ${c.postnumer ? `<span class="_ars-pc" style="display:inline-block;min-width:34px;text-align:center;margin-right:4px;padding:0 5px;border-radius:5px;background:var(--surface2,#eef2ff);color:#3730a3;font-size:10px;font-weight:800;font-variant-numeric:tabular-nums">${esc(c.postnumer)}</span>` : ''}${esc(c.heimilisfang)}</div>` : ''}
                   ${(() => {
                     // 2026-05-26: surface netfang on the card so the operator can
                     // see at a glance which companies are missing it for the month.
@@ -1897,7 +1901,7 @@
                     ${c.kennitala ? `<div style="font-size:10.5px;color:var(--ink4);font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
                     ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''}</div>` : ''}
                   </td>
-                  <td style="padding:8px 7px;color:var(--ink2);font-size:11.5px">${esc(c.heimilisfang || '—')}</td>
+                  <td style="padding:8px 7px;color:var(--ink2);font-size:11.5px">${c.postnumer ? `<span class="_ars-pc" style="display:inline-block;min-width:34px;text-align:center;margin-right:6px;padding:1px 6px;border-radius:6px;background:var(--surface2,#eef2ff);color:#3730a3;font-size:10.5px;font-weight:800;font-variant-numeric:tabular-nums">${esc(c.postnumer)}</span>` : ''}${esc(c.heimilisfang || '—')}</td>
                   <td style="padding:8px 7px;font-size:11px">${(() => {
                     const e = (c.netfang || '').trim();
                     if (e) return `<a href="mailto:${esc(e)}" style="color:#0369a1;text-decoration:none" onclick="event.stopPropagation()">${esc(e)}</a>`;

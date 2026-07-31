@@ -12,6 +12,14 @@
   if (window.__companiesOpenEditInstalled) return;
   window.__companiesOpenEditInstalled = true;
 
+  // Sækir póstnúmer úr frjálsu heimilisfangi — síðasti gildi 3-stafa strengur
+  // á íslenska póstnúmera-bilinu (100–902). Notað til að forfylla reitinn.
+  function pcFromAddr(addr) {
+    var s = String(addr || ''), re = /(?:^|\D)(\d{3})(?=\D|$)/g, m, best = null;
+    while ((m = re.exec(s))) { var n = +m[1]; if (n >= 100 && n <= 902) best = m[1]; }
+    return best; // strengur eins og "105" eða null
+  }
+
   function ensure() {
     if (!window.Companies) { setTimeout(ensure, 300); return; }
     if (Companies.openEdit) return;
@@ -65,6 +73,40 @@
       set('nf-payday-delivery', co.payday_delivery);
     })();
 
+    // 2026-07-31: Póstnúmer-reitur — notaður til að raða „Fyrirtæki í þjónustu"
+    // eftir akstursleið. Sprautað inn RÉTT á eftir heimilisfangs-reitnum.
+    (function ensurePostnumer() {
+      if (!document.getElementById('nf-postnumer')) {
+        const heim = document.getElementById('nf-heimilisfang');
+        const anchor = heim ? (heim.closest('.form-row, .field, .modal-row, .nf-row') || heim.parentElement) : null;
+        if (anchor && anchor.parentElement) {
+          const wrap = document.createElement('div');
+          wrap.id = '_nf-postnumer-wrap';
+          wrap.style.cssText = 'margin:10px 0';
+          wrap.innerHTML =
+            '<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin-bottom:4px">📍 Póstnúmer</label>' +
+            '<input id="nf-postnumer" type="text" inputmode="numeric" maxlength="3" placeholder="t.d. 105" style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;background:#fff">' +
+            '<div style="font-size:10.5px;color:#94a3b8;margin-top:3px">3 stafa póstnúmer — notað til að raða eftir akstursleið</div>';
+          anchor.parentElement.insertBefore(wrap, anchor.nextSibling);
+        }
+      }
+      // Forfylla: nota vistað póstnúmer, annars lesa úr heimilisfanginu.
+      set('nf-postnumer', co.postnumer || pcFromAddr(co.heimilisfang) || '');
+      // Lifandi tillaga: þegar heimilisfangi er breytt OG póstnúmer er tómt,
+      // fylla það úr nýja heimilisfanginu.
+      const heim = document.getElementById('nf-heimilisfang');
+      const pn = document.getElementById('nf-postnumer');
+      if (heim && pn && !heim._pcWired) {
+        heim._pcWired = true;
+        heim.addEventListener('input', function () {
+          if (!(pn.value || '').trim()) {
+            const guess = pcFromAddr(heim.value);
+            if (guess) pn.value = guess;
+          }
+        });
+      }
+    })();
+
     const titleEl = modal.querySelector('h2');
     const origTitle = titleEl ? titleEl.textContent : null;
     if (titleEl) titleEl.textContent = 'Breyta fyrirtæki';
@@ -104,7 +146,8 @@
           tengiliður: get('nf-tengiliður'),
           heimilisfang: get('nf-heimilisfang'),
           athugasemdir: get('nf-athugasemdir'),
-          payday_delivery: get('nf-payday-delivery') || null
+          payday_delivery: get('nf-payday-delivery') || null,
+          postnumer: get('nf-postnumer') || null
         };
         const sb = (window.DB && DB.sb) || null;
         if (!sb) {
