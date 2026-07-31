@@ -581,6 +581,16 @@ við förum bara einu sinni á ári til hvers kúnna:
   heimilisfangi ef tómur, `pcFromAddr`), vistast í `postnumer`. Listinn sýnir
   póstnúmers-pillu í heimilisfang-dálknum, „📍 Póstnúmer" í röðunar-fellilistanum
   (`SORT_COMPARATORS.postnumer`, numeric asc) og leitin matchar póstnúmer.
+- **Heimilisfang-hausinn raðar eftir póstnúmeri (2026-07-31)** — dálkahausinn
+  „Heimilisfang 📍" er nú `data-sort="postnumer"` (var `address`) svo smellur raðar
+  eftir póstnúmeri með ▲/▼ ör eins og aðrir hausar (fyrir akstursleiðir); dropdown-ið
+  heldur líka sínu póstnúmer-vali.
+- **Mánaðar-sían er FJÖL-VAL + „🚫 Án mánaðar" (2026-07-31, ósk Agnars)** —
+  `state.months` (fylki, geymt í `arsskodun_months`; flyst yfir úr gamla eins-mánaðar
+  `arsskodun_month`). Smellur á mánuð VÍXLAR honum (má velja nokkra saman); „Allir"
+  hreinsar valið; nýr chip aftast **„🚫 Án mánaðar" (0)** sýnir fyrirtæki án skráðs
+  skoðunarmánaðar (`monthCounts[0]`). Sían: `inspect_month` í valinu, eða 0-chip →
+  þau sem hafa engan mánuð. `monthFilterLabel()` gefur samsett merki („Jan, Feb 2026").
 
 ## Ritanlegt PER STK-verð + Reykskynjari-kortlagning — 129/165/128/73 (2026-07-31)
 
