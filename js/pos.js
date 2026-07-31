@@ -286,7 +286,7 @@
       M+'#pos-checkout{position:fixed!important;left:0;right:0;bottom:0;width:auto!important;margin:0!important;border-radius:0!important;padding:18px!important;font-size:18px!important;min-height:58px!important;z-index:60;box-shadow:0 -6px 22px -6px rgba(0,0,0,.45)!important}',
       // ── ▦ Tafla — compact/dense desktop (NOT a table; a POS has no list form) ──
       T+'.pos-banner{margin:12px!important;min-height:0!important}',
-      T+'.pos-grid{grid-template-columns:1fr 330px!important;gap:12px!important}',
+      T+'.pos-grid{grid-template-columns:1fr 380px!important;gap:12px!important}',
       T+'#pos-services,'+T+'#pos-products{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))!important;gap:6px!important}',
       T+'.pos-svc,'+T+'.pos-prod{padding:7px 5px!important;gap:4px!important}',
       T+'.pos-tile-ic{width:32px!important;height:32px!important}',
@@ -448,7 +448,7 @@
   }
   function buildHTML(){
     return buildBannerHTML() +
-    '<div class="pos-grid" style="display:grid;grid-template-columns:1fr 380px;gap:16px;padding:0 16px 16px;min-height:calc(100vh - 160px)">' +
+    '<div class="pos-grid" style="display:grid;grid-template-columns:1fr 420px;gap:16px;padding:0 16px 16px;min-height:calc(100vh - 160px)">' +
       '<div class="pos-col-left">' +
         '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px">' +
@@ -524,11 +524,11 @@
             '</div>' +
           '</div>' +
           '<div id="pos-lines" style="overflow-y:auto;flex:1;min-height:100px"></div>' +
-          '<textarea id="pos-notes" rows="2" placeholder="Vegna…" style="width:100%;min-height:0;margin-top:8px;padding:7px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;line-height:1.3;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
+          '<textarea id="pos-notes" rows="2" placeholder="Vegna…" style="width:100%;min-height:0;margin-top:8px;padding:4px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;line-height:1.2;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
           // 2026-07-23 (Agnar): a SECOND note box just for staff — goes to the
           // workshop (verkbeidnir.notes → Verkröð/Verkstæði board), NOT onto the
           // reikningur. Same white style as the Vegna box; the placeholder tells them apart.
-          '<textarea id="pos-notes-staff" rows="2" placeholder="🔧 Fyrir starfsfólk — sést á verkstæði (ekki á reikning)" style="width:100%;min-height:0;margin-top:6px;padding:7px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;line-height:1.3;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
+          '<textarea id="pos-notes-staff" rows="2" placeholder="🔧 Fyrir starfsfólk — sést á verkstæði (ekki á reikning)" style="width:100%;min-height:0;margin-top:6px;padding:4px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;line-height:1.2;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
           '<div id="pos-totals" style="margin-top:8px"></div>' +
           '<button id="pos-checkout" style="width:100%;margin-top:14px;background:linear-gradient(180deg,#1f7a48 0%,#16613a 52%,#0d4226 100%);color:#fff;border:1px solid #0a3a20;padding:16px;border-radius:14px;font-weight:800;font-size:16px;letter-spacing:.03em;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 18px -8px rgba(13,66,38,.6)">✓ ÁFRAM</button>' +
         '</div>' +
