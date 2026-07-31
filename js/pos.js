@@ -243,7 +243,7 @@
       // !important beats patch 245). 2026-07-31: .pos-disc-edit added.
       '#view-sala .pos-cart .pos-price-edit,#view-sala .pos-cart .pos-disc-edit{height:auto!important;min-height:0!important;padding:0 2px!important;border:none!important;border-bottom:1px dotted #cbd5e1!important;border-radius:0!important;background:transparent!important;font-size:11px!important;text-align:right!important;color:#64748b!important}',
       '#view-sala .pos-cart .pos-price-edit{width:64px!important}',
-      '#view-sala .pos-cart .pos-disc-edit{width:36px!important;color:#dc2626!important;font-weight:700!important}',
+      '#view-sala .pos-cart .pos-disc-edit{width:34px!important;color:#dc2626!important}',
       '#view-sala .pos-cart .pos-disc-edit::placeholder{color:#cbd5e1!important;font-weight:400!important}',
       '#view-sala .pos-cart #pos-discount,#view-sala .pos-cart #pos-discount-kr{height:auto!important;min-height:0!important;padding:0!important;border:none!important;border-radius:0!important;background:transparent!important;font-size:13px!important;text-align:right!important;color:#0f172a!important}',
       '#view-sala .pos-cart #pos-discount{width:30px!important}',
