@@ -54,6 +54,7 @@
   const LS_SORTCOL = 'arsskodun_sortCol';
   const LS_SORTDIR = 'arsskodun_sortDir';
   const LS_MONTH = 'arsskodun_month';
+  const LS_MONTHS = 'arsskodun_months'; // 2026-07-31: fjöl-val mánaða (fylki; 0 = án mánaðar)
   const LS_STATUS = 'arsskodun_status';
   const LS_SEARCH = 'arsskodun_search';
 
@@ -593,7 +594,14 @@
     sort: localStorage.getItem(LS_SORT) || 'alpha',         // 'alpha' | 'month' | 'oldest' (legacy)
     sortCol: localStorage.getItem(LS_SORTCOL) || '',         // name|address|email|month|tools|estimate|priority|status|lastYr
     sortDir: localStorage.getItem(LS_SORTDIR) || 'asc',      // asc | desc
-    month: parseInt(localStorage.getItem(LS_MONTH) || '0', 10), // 0 = all
+    // 2026-07-31: mánaðar-sían er nú FJÖL-VAL (fylki). 0 = „Án mánaðar" (ekkert
+    // skoðunarmánuður skráður). Tómt fylki = allir mánuðir. Flyst yfir úr gamla
+    // eins-mánaðar LS_MONTH svo vistað val glatist ekki.
+    months: (() => {
+      try { const raw = localStorage.getItem(LS_MONTHS); if (raw != null) { const a = JSON.parse(raw); if (Array.isArray(a)) return a; } } catch (_) {}
+      const legacy = parseInt(localStorage.getItem(LS_MONTH) || '0', 10);
+      return (legacy >= 1 && legacy <= 12) ? [legacy] : [];
+    })(),
     status: localStorage.getItem(LS_STATUS) || 'all',        // 'all' | 'done' | 'pending' | 'never'
     search: ''
   };
@@ -602,8 +610,15 @@
     localStorage.setItem(LS_SORT, state.sort);
     localStorage.setItem(LS_SORTCOL, state.sortCol || '');
     localStorage.setItem(LS_SORTDIR, state.sortDir || 'asc');
-    localStorage.setItem(LS_MONTH, String(state.month));
+    localStorage.setItem(LS_MONTHS, JSON.stringify(state.months || []));
     localStorage.setItem(LS_STATUS, state.status);
+  }
+  // Label fyrir valda mánuði (fjöl-val + „Án mánaðar").
+  function monthFilterLabel(curYear) {
+    const ms = (state.months || []).slice().sort((a, b) => a - b);
+    if (!ms.length) return '';
+    const parts = ms.map(m => m === 0 ? 'Án mánaðar' : MONTHS_IS[m - 1]);
+    return parts.join(', ') + (ms.some(m => m >= 1 && m <= 12) ? ' ' + curYear : '');
   }
 
   function filteredSorted() {
@@ -617,8 +632,16 @@
     // address no matter which inspection month it sits in. The month filter
     // only applies when the search box is empty.
     const hasSearch = !!state.search.trim();
-    if (!hasSearch && state.month >= 1 && state.month <= 12) {
-      arr = arr.filter(c => +c._ars.inspect_month === state.month);
+    if (!hasSearch && state.months && state.months.length) {
+      // Fjöl-val: sýna fyrirtæki hvers skoðunarmánuður er í valinu. 0 = „Án
+      // mánaðar" (enginn mánuður skráður, m<1 eða >12).
+      const set = new Set(state.months);
+      const noMonth = set.has(0);
+      arr = arr.filter(c => {
+        const m = +c._ars.inspect_month || 0;
+        const inRange = m >= 1 && m <= 12;
+        return inRange ? set.has(m) : noMonth;
+      });
     }
     // 2026-07-17 (ósk Agnars): „líklega óvart í þjónustu" — fyrirtæki sem
     // lentu á listanum (t.d. gegnum afgreiðslu-sölu) en hafa ENGA þjónustusögu:
@@ -1012,7 +1035,8 @@
     const today = new Date();
     const curYear = today.getFullYear();
     const monthCounts = Array(13).fill(0);
-    arsAll.forEach(c => { const m = +c._ars.inspect_month || 0; if (m >= 1 && m <= 12) monthCounts[m]++; });
+    // index 0 = fjöldi án skráðs mánaðar („Án mánaðar"-chippurinn)
+    arsAll.forEach(c => { const m = +c._ars.inspect_month || 0; if (m >= 1 && m <= 12) monthCounts[m]++; else monthCounts[0]++; });
     const doneThisYear = arsAll.filter(c => +c._ars.last_year_inspected === curYear).length;
     const totalEstimate = arsAll.reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
     const estDoneThisYear = arsAll
@@ -1028,8 +1052,8 @@
       .reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
     const filteredRemain = Math.max(0, filteredTotal - filteredDone);
     const filteredDonePct = filteredTotal > 0 ? Math.round(filteredDone / filteredTotal * 100) : 0;
-    const filterLabel = state.month >= 1 && state.month <= 12
-      ? `${MONTHS_IS[state.month - 1]} ${curYear}`
+    const filterLabel = (state.months && state.months.length)
+      ? monthFilterLabel(curYear)
       : (state.status === 'done'    ? `Búið ${curYear} (allir mánuðir)`
        : state.status === 'pending' ? `Á eftir + sleppt (allir mánuðir)`
        : state.status === 'pending2026' ? `Eftir ${curYear} — allt óbúið (allir mánuðir)`
@@ -1121,16 +1145,23 @@
           </div>
         </div>
 
-        <!-- Month chip row -->
+        <!-- Month chip row (fjöl-val: veldu nokkra mánuði saman; „Án mánaðar" aftast) -->
         <div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px;align-items:center">
           <span style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;padding-right:3px">Mánuður:</span>
-          <button data-month="0" class="_ars-mo" style="padding:5px 11px;border:1px solid ${state.month===0?'var(--brand)':'var(--brd2)'};background:${state.month===0?'var(--brand)':'var(--surface)'};color:${state.month===0?'#fff':'var(--ink2)'};border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">Allir</button>
-          ${MONTHS_IS_SHORT.map((m, i) => {
-            const mn = i + 1;
-            const cnt = monthCounts[mn];
-            const sel = state.month === mn;
-            return `<button data-month="${mn}" class="_ars-mo" style="padding:5px 10px;border:1px solid ${sel?'var(--brand)':(cnt?'var(--brd2)':'var(--brd)')};background:${sel?'var(--brand)':'var(--surface)'};color:${sel?'#fff':(cnt?'var(--ink1)':'#64748b')};border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">${esc(m)} ${cnt?`<span style="opacity:.6;font-weight:500">${cnt}</span>`:''}</button>`;
-          }).join('')}
+          ${(() => {
+            const selSet = new Set(state.months || []);
+            const allActive = selSet.size === 0;
+            const chip = (dm, label, cnt, active, dim) =>
+              `<button data-month="${dm}" class="_ars-mo" aria-pressed="${active}" style="padding:5px 11px;border:1px solid ${active?'var(--brand)':(dim?'var(--brd)':'var(--brd2)')};background:${active?'var(--brand)':'var(--surface)'};color:${active?'#fff':(dim?'#64748b':'var(--ink1)')};border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">${label}${cnt?` <span style="opacity:.6;font-weight:500">${cnt}</span>`:''}</button>`;
+            let out = chip('all', 'Allir', 0, allActive, false);
+            out += MONTHS_IS_SHORT.map((m, i) => {
+              const mn = i + 1, cnt = monthCounts[mn];
+              return chip(mn, esc(m), cnt, selSet.has(mn), !cnt);
+            }).join('');
+            // „Án mánaðar" aftast (fyrirtæki án skráðs skoðunarmánaðar)
+            out += chip(0, '🚫 Án mánaðar', monthCounts[0], selSet.has(0), !monthCounts[0]);
+            return out;
+          })()}
         </div>
 
         ${filtered.length === 0 ? (all.length === 0 && _loadingAll ? `
@@ -1216,7 +1247,17 @@
       state.status = b.dataset.status; saveState(); render();
     }));
     main.querySelectorAll('._ars-mo').forEach(b => b.addEventListener('click', () => {
-      state.month = parseInt(b.dataset.month, 10); saveState(); render();
+      // Fjöl-val: „Allir" hreinsar; annars víxlar (add/remove) mánuðinum (0 = án mánaðar).
+      const raw = b.dataset.month;
+      if (raw === 'all') {
+        state.months = [];
+      } else {
+        const mn = parseInt(raw, 10);
+        const set = new Set(state.months || []);
+        if (set.has(mn)) set.delete(mn); else set.add(mn);
+        state.months = [...set].sort((a, b) => a - b);
+      }
+      saveState(); render();
     }));
     // 2026-05-26: column-header sort click — toggle dir if same col, else
     // switch to col with asc as default.
@@ -1228,7 +1269,7 @@
         state.sortCol = col;
         // Sensible default direction per column: name/address/email ascending,
         // numeric/priority/status descending (so biggest/most-important on top)
-        state.sortDir = (col === 'name' || col === 'address' || col === 'email' || col === 'month')
+        state.sortDir = (col === 'name' || col === 'address' || col === 'postnumer' || col === 'email' || col === 'month')
                         ? 'asc' : 'desc';
       }
       saveState(); render();
@@ -1335,8 +1376,8 @@
     if (!arr.length) { alert('Engin fyrirtæki í listanum til að prenta.'); return; }
     const curYear = new Date().getFullYear();
     const curMonth = new Date().getMonth() + 1;
-    const filterLabel = state.month >= 1 && state.month <= 12
-      ? `${MONTHS_IS[state.month - 1]} ${curYear}`
+    const filterLabel = (state.months && state.months.length)
+      ? monthFilterLabel(curYear)
       : (state.status === 'done'        ? `Búið ${curYear}`
        : state.status === 'pending'     ? 'Á eftir + sleppt'
        : state.status === 'pending2026' ? `Eftir ${curYear}`
@@ -1855,7 +1896,7 @@
                 const hover = `onmouseover="this.style.background='#eef2f7'" onmouseout="this.style.background='transparent'"`;
                 return `
                   <th data-sort="name"     class="_ars-sort" style="${css}" ${hover}>Fyrirtæki${arrow('name')}</th>
-                  <th data-sort="address"  class="_ars-sort" style="${css}" ${hover}>Heimilisfang${arrow('address')}</th>
+                  <th data-sort="postnumer" class="_ars-sort" style="${css}" ${hover} title="Raða eftir póstnúmeri (fyrir akstursleiðir)">Heimilisfang <span style="opacity:.7">📍</span>${arrow('postnumer')}</th>
                   <th data-sort="email"    class="_ars-sort" style="${css}" ${hover}>Netfang${arrow('email')}</th>
                   <th data-sort="month"    class="_ars-sort" style="${css};text-align:center" ${hover}>Skoðun${arrow('month')}</th>
                   <th data-sort="tools"    class="_ars-sort" style="${css};text-align:center" ${hover}>Tæki${arrow('tools')}</th>
