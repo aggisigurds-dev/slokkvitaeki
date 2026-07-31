@@ -908,7 +908,7 @@
   async function sendReply(payload) {
     if (!SEND_LIVE) return { ok: true, dryRun: true };
     try {
-      const from = /</.test(payload.from) ? payload.from : ('Slökkvitæki ehf <' + payload.from + '>');
+      const from = /</.test(payload.from) ? payload.from : ('Brunahólf Slökkvitæki ehf <' + payload.from + '>');
       const body = {
         from,
         to: Array.isArray(payload.to) ? payload.to : [payload.to],
@@ -941,7 +941,7 @@
       from: 'onboarding@resend.dev',
       to: 'aggisigurds@gmail.com',
       subject: 'Þjónustuver — prufusending ' + new Date().toLocaleString('is-IS'),
-      body: 'Halló Agnar,\n\nÞetta er prufusending úr Þjónustuver (Resend email-pípan) með PDF-viðhengi.\nEf þú færð þennan póst MEÐ viðhengi þá virkar bæði email- og skjala-sendingin. 🎉\n\n— Slökkvitæki ehf',
+      body: 'Halló Agnar,\n\nÞetta er prufusending úr Þjónustuver (Resend email-pípan) með PDF-viðhengi.\nEf þú færð þennan póst MEÐ viðhengi þá virkar bæði email- og skjala-sendingin. 🎉\n\n— Brunahólf Slökkvitæki ehf',
       attachments: [{ name: 'Prufa - Þjónustusamningur Thai Lindin', fileId: '1MGyQx87eQGFptuzYoaYmtrvv7d_Dxg57' }]
     });
     if (btn) { btn.disabled = false; btn.textContent = '✉️ Prufa send'; }
@@ -999,7 +999,7 @@
             <label style="color:#64748b">Til</label>
             <input id="_tv-s-to" value="${esc(toEmail)}" placeholder="netfang viðskiptavinar" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:12.5px">
             <label style="color:#64748b">Efni</label>
-            <input id="_tv-s-subj" value="Skjöl frá Slökkvitæki ehf" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:12.5px">
+            <input id="_tv-s-subj" value="Skjöl frá Brunahólf Slökkvitæki ehf" style="padding:7px 9px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:12.5px">
           </div>
           <div><div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:6px">Skjöl (viðhengi) — ${docs.length}</div>
             ${docs.length ? docs.map(docRow).join('') : '<div style="font-size:12px;color:#94a3b8;padding:6px 0">Engin skráð skjöl fyrir þennan viðskiptavin.</div>'}</div>
@@ -1009,7 +1009,7 @@
 Meðfylgjandi eru umbeðin skjöl.
 
 Kær kveðja,
-Slökkvitæki ehf</textarea></div>
+Brunahólf Slökkvitæki ehf</textarea></div>
         </div>
         <div id="_tv-s-foot1" style="display:flex;gap:8px;justify-content:flex-end;padding:13px 20px;border-top:1px solid #e2e8f0">
           <button id="_tv-s-cancel" style="padding:9px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;color:#475569">Hætta við</button>

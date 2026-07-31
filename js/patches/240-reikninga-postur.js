@@ -912,7 +912,7 @@
       fr.onerror = rej; fr.readAsDataURL(blob);
     });
   }
-  function emailFrom() { return localStorage.getItem('email_from') || 'Slökkvitæki ehf <reikningar@eldklar.is>'; }
+  function emailFrom() { return localStorage.getItem('email_from') || 'Brunahólf Slökkvitæki ehf <reikningar@eldklar.is>'; }
   function fmtKr(n) { return (Math.round(Number(n) || 0)).toLocaleString('is-IS') + ' kr'; }
 
   async function getFullSale(id) {
@@ -980,14 +980,14 @@
     const noteHtml = note ? '<p style="color:#334155;font-size:13.5px;white-space:pre-wrap;margin:0 0 14px">' + esc(note) + '</p>' : '';
     return '<!DOCTYPE html><html><head><meta charset="utf-8"></head>' +
       '<body style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:22px;color:#0f172a">' +
-      '<div style="background:#C93C1D;padding:16px 20px;border-radius:10px 10px 0 0"><h1 style="margin:0;color:#fff;font-size:18px">Slökkvitæki ehf</h1>' +
+      '<div style="background:#C93C1D;padding:16px 20px;border-radius:10px 10px 0 0"><h1 style="margin:0;color:#fff;font-size:18px">Brunahólf Slökkvitæki ehf</h1>' +
       '<p style="margin:4px 0 0;color:rgba(255,255,255,.85);font-size:13px">Reikningur ' + esc(sale.num || '') + '</p></div>' +
       '<div style="background:#fff;border:1px solid #e2e8f0;border-top:none;padding:20px;border-radius:0 0 10px 10px">' +
         '<p style="color:#334155;font-size:13.5px;margin:0 0 14px">Sæl/l,</p>' +
         noteHtml +
         '<p style="color:#334155;font-size:13.5px;margin:0 0 14px">Meðfylgjandi er reikningur <strong>' + esc(sale.num || '') + '</strong>' +
           (co && co.nafn ? ' fyrir ' + esc(co.nafn) : '') + ', að upphæð <strong>' + fmtKr(sale.samtals) + '</strong>.</p>' +
-        '<p style="color:#64748b;font-size:12.5px;margin:18px 0 0">Kær kveðja,<br><strong>Slökkvitæki ehf</strong><br>eldklar@eldklar.is</p>' +
+        '<p style="color:#64748b;font-size:12.5px;margin:18px 0 0">Kær kveðja,<br><strong>Brunahólf Slökkvitæki ehf</strong><br>eldklar@eldklar.is</p>' +
       '</div></body></html>';
   }
   async function doSend(m, invs) {
@@ -1013,7 +1013,7 @@
       setMsg('Sendi…', '');
       const payload = {
         from: emailFrom(), to: [to],
-        subject: 'Reikningur ' + (sale.num || '') + ' frá Slökkvitæki ehf',
+        subject: 'Reikningur ' + (sale.num || '') + ' frá Brunahólf Slökkvitæki ehf',
         html: buildEmailHtml(sale, co, note),
         attachments: [{ filename: fname, content: b64 }],
         apiKey: localStorage.getItem('resend_api_key') || undefined,
@@ -1051,7 +1051,7 @@
       // 2026-07-20: Gmail (AppMail → /api/gmail-send) í stað Resend.
       const payload = {
         from: emailFrom(), to: [to],
-        subject: 'Reikningur ' + (full.num || '') + ' frá Slökkvitæki ehf',
+        subject: 'Reikningur ' + (full.num || '') + ' frá Brunahólf Slökkvitæki ehf',
         html: buildEmailHtml(full, co, ''),
         attachments: [{ filename: fname, content: b64 }],
       };

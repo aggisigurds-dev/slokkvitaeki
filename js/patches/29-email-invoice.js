@@ -17,8 +17,8 @@
  * Settings keys:
  *   email_mode: "mailto" | "resend"
  *   resend_api_key: "re_..."
- *   email_from: "Slökkvitæki ehf <noreply@yourdomain.is>"
- *   email_from_name: "Slökkvitæki ehf"
+ *   email_from: "Brunahólf Slökkvitæki ehf <noreply@yourdomain.is>"
+ *   email_from_name: "Brunahólf Slökkvitæki ehf"
  */
 (() => {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
@@ -113,7 +113,7 @@
       + `Viðskiptavinur: ${sale.customer || ''}\n\n`
       + `${lineItems}\n\n`
       + `Samtals: ${fmtKr(sale.total || 0)}\n\n`
-      + `Kærar þakkir fyrir viðskiptin!\nSlökkvitæki ehf`;
+      + `Kærar þakkir fyrir viðskiptin!\nBrunahólf Slökkvitæki ehf`;
   }
 
   function buildHtmlEmail(sale) {
@@ -124,7 +124,7 @@
     }).join('');
     return `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
       <div style="background:#C93C1D;padding:16px 20px;border-radius:8px 8px 0 0;">
-        <h1 style="margin:0;color:#fff;font-size:18px;">Slökkvitæki ehf</h1>
+        <h1 style="margin:0;color:#fff;font-size:18px;">Brunahólf Slökkvitæki ehf</h1>
         <p style="margin:4px 0 0;color:rgba(255,255,255,.8);font-size:13px;">Reikningur ${esc(sale.num||'')}</p>
       </div>
       <div style="background:#fff;border:1px solid #e2e8f0;border-top:none;padding:20px;border-radius:0 0 8px 8px;">
@@ -140,14 +140,14 @@
         <div style="background:#f8fafc;border-radius:6px;padding:12px;text-align:right;font-size:16px;font-weight:700;">
           Samtals: ${fmtKr(sale.total||0)}
         </div>
-        <p style="font-size:12px;color:#64748b;margin-top:20px;">Kærar þakkir fyrir viðskiptin!<br><strong>Slökkvitæki ehf</strong></p>
+        <p style="font-size:12px;color:#64748b;margin-top:20px;">Kærar þakkir fyrir viðskiptin!<br><strong>Brunahólf Slökkvitæki ehf</strong></p>
       </div>
     </body></html>`;
   }
 
   // ── Send via mailto ───────────────────────────────────────────────────────
   function sendMailto(toEmail, sale) {
-    const subject = encodeURIComponent('Reikningur ' + (sale.num || '') + ' frá Slökkvitæki ehf');
+    const subject = encodeURIComponent('Reikningur ' + (sale.num || '') + ' frá Brunahólf Slökkvitæki ehf');
     const body = encodeURIComponent(buildEmailBody(sale));
     window.open(`mailto:${encodeURIComponent(toEmail)}?subject=${subject}&body=${body}`);
     if (window.Toast && Toast.show) Toast.show('✓ Tölvupóstur opnaður í póstforritinu');
@@ -162,11 +162,11 @@
     // (eldklar.is). Resend rejects any send from a domain without verified
     // SPF/DKIM records, so this MUST match the domain verified in the Resend
     // dashboard. A value set in Stillingar (localStorage) still overrides this.
-    const from = localStorage.getItem('email_from') || 'Slökkvitæki ehf <noreply@eldklar.is>';
+    const from = localStorage.getItem('email_from') || 'Brunahólf Slökkvitæki ehf <noreply@eldklar.is>';
     const payload = {
       from,
       to: [toEmail],
-      subject: 'Reikningur ' + (sale.num || '') + ' frá Slökkvitæki ehf',
+      subject: 'Reikningur ' + (sale.num || '') + ' frá Brunahólf Slökkvitæki ehf',
       html: buildHtmlEmail(sale),
       apiKey: apiKey || undefined  // server prefers env var; this is legacy fallback
     };
@@ -303,7 +303,7 @@
       </div>
       <div style="margin-bottom:12px;">
         <label style="font-size:12px;font-weight:600;color:#64748b;display:block;margin-bottom:4px;">Sendandi netfang (Resend)</label>
-        <input id="ei-from-email" type="text" placeholder="Slökkvitæki ehf <noreply@eldklar.is>" value="${esc(curFrom)}"
+        <input id="ei-from-email" type="text" placeholder="Brunahólf Slökkvitæki ehf <noreply@eldklar.is>" value="${esc(curFrom)}"
           style="width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;font-size:13px;box-sizing:border-box;">
       </div>
       <button onclick="
