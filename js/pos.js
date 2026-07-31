@@ -243,11 +243,15 @@
       // !important beats patch 245). 2026-07-31: .pos-disc-edit added.
       '#view-sala .pos-cart .pos-price-edit,#view-sala .pos-cart .pos-disc-edit{height:auto!important;min-height:0!important;padding:0 2px!important;border:none!important;border-bottom:1px dotted #cbd5e1!important;border-radius:0!important;background:transparent!important;font-size:11px!important;text-align:right!important;color:#64748b!important}',
       '#view-sala .pos-cart .pos-price-edit{width:64px!important}',
-      '#view-sala .pos-cart .pos-disc-edit{width:34px!important;color:#dc2626!important}',
+      '#view-sala .pos-cart .pos-disc-edit{width:40px!important;color:#dc2626!important;font-weight:700!important;text-align:center!important;background:#fff7ed!important;border:1px solid #f59e0b!important;border-radius:5px!important;padding:1px 3px!important}',
       '#view-sala .pos-cart .pos-disc-edit::placeholder{color:#cbd5e1!important;font-weight:400!important}',
       '#view-sala .pos-cart #pos-discount,#view-sala .pos-cart #pos-discount-kr{height:auto!important;min-height:0!important;padding:0!important;border:none!important;border-radius:0!important;background:transparent!important;font-size:13px!important;text-align:right!important;color:#0f172a!important}',
       '#view-sala .pos-cart #pos-discount{width:30px!important}',
-      '#view-sala .pos-cart #pos-discount-kr{width:46px!important}'
+      '#view-sala .pos-cart #pos-discount-kr{width:46px!important}',
+      // 2026-07-31 (ósk Agnars): karfan þrengd — nótu-reitir ~60% lægri, magn-stepper minni.
+      '#view-sala .pos-cart #pos-notes,#view-sala .pos-cart #pos-notes-staff{min-height:0!important;height:28px!important;padding:4px 10px!important;font-size:12.5px!important;line-height:1.25!important}',
+      '#view-sala .pos-cart .pos-qty-up,#view-sala .pos-cart .pos-qty-dn{width:22px!important;height:22px!important;font-size:13px!important;line-height:1!important}',
+      '#view-sala .pos-cart input[data-_cqi-input]{width:32px!important;padding:1px 2px!important;font-size:12px!important}'
     ].join('\n');
     (document.head||document.documentElement).appendChild(s);
   }
@@ -537,11 +541,11 @@
             '</div>' +
           '</div>' +
           '<div id="pos-lines" style="overflow-y:auto;flex:1;min-height:100px"></div>' +
-          '<textarea id="pos-notes" rows="2" placeholder="Vegna…" style="width:100%;min-height:0;margin-top:8px;padding:4px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;line-height:1.2;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
+          '<textarea id="pos-notes" rows="1" placeholder="Vegna…" style="width:100%;min-height:0;margin-top:8px;padding:4px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;line-height:1.2;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
           // 2026-07-23 (Agnar): a SECOND note box just for staff — goes to the
           // workshop (verkbeidnir.notes → Verkröð/Verkstæði board), NOT onto the
           // reikningur. Same white style as the Vegna box; the placeholder tells them apart.
-          '<textarea id="pos-notes-staff" rows="2" placeholder="🔧 Fyrir starfsfólk — sést á verkstæði (ekki á reikning)" style="width:100%;min-height:0;margin-top:6px;padding:4px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;line-height:1.2;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
+          '<textarea id="pos-notes-staff" rows="1" placeholder="🔧 Fyrir starfsfólk — sést á verkstæði (ekki á reikning)" style="width:100%;min-height:0;margin-top:6px;padding:4px 10px;border:1px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;line-height:1.2;box-sizing:border-box;resize:vertical;background:#fff"></textarea>' +
           '<div id="pos-totals" style="margin-top:8px"></div>' +
           '<button id="pos-checkout" style="width:100%;margin-top:14px;background:linear-gradient(180deg,#1f7a48 0%,#16613a 52%,#0d4226 100%);color:#fff;border:1px solid #0a3a20;padding:16px;border-radius:14px;font-weight:800;font-size:16px;letter-spacing:.03em;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 8px 18px -8px rgba(13,66,38,.6)">✓ ÁFRAM</button>' +
         '</div>' +
