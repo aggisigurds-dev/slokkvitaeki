@@ -109,7 +109,7 @@
   function standardText(kind, opts) {
     const nafn = (opts && opts.nafn) || '';
     const hi = 'Sæl(l)' + (nafn ? ' ' + nafn : '') + ',';
-    const sign = '\n\nKær kveðja,\nSlökkvitæki ehf.\nkt. 600508-0400\nsími 565-4080';
+    const sign = '\n\nKær kveðja,\nBrunahólf Slökkvitæki ehf.\nkt. 600508-0400\nsími 565-4080';
     if (kind === 'skyrsla') {
       return hi + '\n\n' +
         'Meðfylgjandi er úttektarskýrsla' + (opts && opts.ar ? ' fyrir ' + opts.ar : '') +
@@ -124,11 +124,11 @@
     }
     if (kind === 'samningur') {
       return hi + '\n\n' +
-        'Meðfylgjandi er þjónustusamningur við Slökkvitæki ehf.\n\n' +
+        'Meðfylgjandi er þjónustusamningur við Brunahólf Slökkvitæki ehf.\n\n' +
         'Ef spurningar vakna er velkomið að hafa samband.' + sign;
     }
     return hi + '\n\n' +
-      'Meðfylgjandi er reikningur' + (opts && opts.nr ? ' ' + opts.nr : '') + ' frá Slökkvitæki ehf.\n\n' +
+      'Meðfylgjandi er reikningur' + (opts && opts.nr ? ' ' + opts.nr : '') + ' frá Brunahólf Slökkvitæki ehf.\n\n' +
       'Ef spurningar vakna um reikninginn er velkomið að hafa samband.' + sign;
   }
 

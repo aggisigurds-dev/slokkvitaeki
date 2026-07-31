@@ -92,7 +92,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
      þegar fyrsta view-ið er orðið virkt (eða eftir 6,5 sek öryggis-fallback). -->
 <div id="boot-veil" style="position:fixed;inset:0;z-index:2147483000;background:#0a0b0d;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;transition:opacity .35s ease">
   <img src="/img/icon-192.png?v=flame1" alt="" style="width:78px;height:78px;border-radius:20px;box-shadow:0 10px 40px rgba(201,60,29,.35)">
-  <div style="color:#e2e8f0;font:800 17px system-ui,sans-serif;letter-spacing:.02em">Slökkvitæki ehf</div>
+  <div style="color:#e2e8f0;font:800 20px system-ui,sans-serif;letter-spacing:.02em;text-align:center;padding:0 16px">Brunahólf Slökkvitæki ehf.</div>
   <div class="bv-spin" aria-hidden="true"></div>
 </div>
 <style>.bv-spin{width:26px;height:26px;border:3px solid rgba(255,255,255,.14);border-top-color:#C93C1D;border-radius:50%;animation:bvr .9s linear infinite}@keyframes bvr{to{transform:rotate(360deg)}}</style>
@@ -414,7 +414,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/26-credit-invoice.js?v=20260708c"></script>
 <script defer src="/js/patches/27-tilbod-quote.js?v=20260612a"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 28-calendar.js -->
-<script defer src="/js/patches/29-email-invoice.js?v=20260720gmail"></script>
+<script defer src="/js/patches/29-email-invoice.js?v=20260731felag"></script>
 <script defer src="/js/patches/30-recurring-service.js?v=20260510f"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 31-route-optimizer.js -->
 <!-- hibernated 2026-06-21 (sign-in unused + the "Skrá inn" chip was in the way on mobile; dependents 10/182/67 all guard window.UserAuth): 32-user-auth.js -->
@@ -1010,12 +1010,12 @@ var Lanstaeki = {
 <script defer src="/js/patches/166-krofu-yfirlit.js?v=20260730mob"></script>
 <script defer src="/js/patches/167-hreyfingarlisti.js?v=20260722he"></script>
 <script defer src="/js/patches/168-company-inspection-report.js?v=20260730slong"></script>
-<script defer src="/js/patches/176-company-report-email.js?v=20260720img"></script>
+<script defer src="/js/patches/176-company-report-email.js?v=20260731felag"></script>
 <script defer src="/js/patches/178-beidnir.js?v=20260604f"></script>
 <script defer src="/js/patches/179-mottaka-arrival.js?v=20260720pg"></script>
 <script defer src="/js/patches/180-sidebar-stabilize.js?v=20260610a"></script>
 <script defer src="/js/patches/181-retire-old-invoice-navs.js?v=20260604a"></script>
-<script defer src="/js/patches/182-thjonustuver.js?v=20260720gmail"></script>
+<script defer src="/js/patches/182-thjonustuver.js?v=20260731felag"></script>
 <script defer src="/js/patches/183-thjonustuver-attachments.js?v=20260607a"></script>
 <script defer src="/js/patches/184-rekstrarfelag-tag.js?v=20260712live"></script>
 <script defer src="/js/patches/185-inservice-yfirlit.js?v=20260730taeki"></script>
@@ -1062,7 +1062,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/237-customer-brief.js?v=20260730client"></script>
 <script defer src="/js/patches/238-adstod-banner.js?v=20260629d"></script>
 <script defer src="/js/patches/239-adstodarmidstod.js?v=20260629d"></script>
-<script defer src="/js/patches/240-reikninga-postur.js?v=20260720gmail"></script>
+<script defer src="/js/patches/240-reikninga-postur.js?v=20260731felag"></script>
 <script defer src="/js/patches/240-brunastal-polish.js?v=20260630a"></script>
 <script defer src="/js/patches/241-sidebar-badge-unify.js?v=20260630a"></script>
 <script defer src="/js/patches/242-modal-widen.js?v=20260730mob"></script>
@@ -1072,7 +1072,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/246-brunastal-brand-logo.js?v=20260630a"></script>
 <script defer src="/js/patches/250-views-polish-brunastal.js?v=20260630a"></script>
 <script defer src="/js/patches/253-sala-customer-history.js?v=20260731bksend"></script>
-<script defer src="/js/patches/254-receipt-sender.js?v=20260731bksend"></script>
+<script defer src="/js/patches/254-receipt-sender.js?v=20260731felag"></script>
 <script defer src="/js/patches/255-auto-discount.js?v=20260729wt"></script>
 <!-- hibernated 2026-07-09 (rangur dökkur titil-bar úr #260, ekki í comps): 260-global-titlebar.js -->
 <script defer src="/js/patches/261-app-profiles.js?v=20260731jarvisrf2"></script>

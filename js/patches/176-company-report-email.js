@@ -23,7 +23,7 @@
   const H2P_URL = 'https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.2/dist/html2pdf.bundle.min.js';
   // Mirror the invoice mailer's default sender — must be a Resend-verified
   // domain (eldklar.is). A value in Stillingar (localStorage) overrides it.
-  const DEFAULT_FROM = 'Slökkvitæki ehf <noreply@eldklar.is>';
+  const DEFAULT_FROM = 'Brunahólf Slökkvitæki ehf <noreply@eldklar.is>';
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
@@ -107,14 +107,14 @@
     return `<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"></head>
       <body style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;padding:20px;color:#0f172a">
         <div style="background:#C93C1D;padding:16px 20px;border-radius:8px 8px 0 0">
-          <h1 style="margin:0;color:#fff;font-size:18px">Slökkvitæki ehf</h1>
+          <h1 style="margin:0;color:#fff;font-size:18px">Brunahólf Slökkvitæki ehf</h1>
           <p style="margin:4px 0 0;color:rgba(255,255,255,.85);font-size:13px">Úttektarskýrsla</p>
         </div>
         <div style="background:#fff;border:1px solid #e2e8f0;border-top:none;padding:20px;border-radius:0 0 8px 8px;font-size:14px;line-height:1.6">
           <p>Sæl/sæll,</p>
           <p>Meðfylgjandi er úttektarskýrsla vegna yfirferðar á brunaslöngum, slökkvitækjum og öðrum búnaði${nafn ? ' hjá ' + nafn : ''}.</p>
           <p>Skýrslan er í viðhengi sem PDF-skjal.</p>
-          <p style="margin-top:20px;color:#475569;font-size:13px">Kær kveðja,<br><strong>Slökkvitæki ehf</strong><br>Helluhrauni 10, 220 Hafnarfjörður · Sími 565 4080</p>
+          <p style="margin-top:20px;color:#475569;font-size:13px">Kær kveðja,<br><strong>Brunahólf Slökkvitæki ehf</strong><br>Helluhrauni 10, 220 Hafnarfjörður · Sími 565 4080</p>
         </div>
       </body></html>`;
   }
