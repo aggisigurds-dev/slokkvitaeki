@@ -60,7 +60,15 @@
       return null;
     }
     if(x.drive_file_id) return { filename: fallbackName, driveId: x.drive_file_id };
-    if(x.storage_path && getUrl){ var u2=await CompanyAttachments.getPublicUrl(x.storage_path); if(u2) return { filename: fallbackName, url:u2 }; }
+    if(x.storage_path){
+      // storage_path getur verið bucket-prefixed ('samningar/…' úr customer_documents,
+      // t.d. brunakerfis-skýrslur) EÐA bucket-relative. getPublicUrl (patch 111) væntir
+      // bucket-relative slóðar í `samningar` og skilar undirritaðri slóð sem gmail-send
+      // nær í — klippum forskeytið af ef það er til staðar, föllum á opinbera slóð annars.
+      var sp = String(x.storage_path).replace(/^samningar\//, '');
+      if(getUrl){ var u2=await CompanyAttachments.getPublicUrl(sp); if(u2) return { filename: fallbackName, url:u2 }; }
+      var su=storageUrl(x.storage_path); if(su) return { filename: fallbackName, url:su };
+    }
     return null;
   }
 
@@ -92,6 +100,17 @@
   async function fetchDocs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
     try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,fyrirtaeki_id').eq('customer_base_id', baseId);
+      return r.data||[]; }catch(e){ return []; }
+  }
+  // Brunakerfis-skoðanir (doc_type='brunakerfi') eru lyklaðar á fyrirtaeki_id —
+  // patch 273 skrifar customer_base_id NULL — svo base-leiðin (fetchDocs) nær þeim
+  // EKKI þegar staðurinn er ekki tengdur grunnskrá. Sækjum þær beint eftir
+  // fyrirtaeki_id svo brunakerfis-dálkurinn fyllist ALLTAF (líka fyrir ótengda staði).
+  async function fetchBrunakerfiDocs(coId){
+    var sb=SB(); if(!sb||!coId) return [];
+    try{ var r=await sb.from('customer_documents')
+        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,fyrirtaeki_id')
+        .eq('fyrirtaeki_id', coId).eq('doc_type','brunakerfi');
       return r.data||[]; }catch(e){ return []; }
   }
   // Payday-kröfur kúnnans (eftir kt) úr speglinum payday_invoices_slokk. Margar
@@ -426,6 +445,16 @@
       else if(k==='reikningur') (invByY[y]=invByY[y]||[]).push({_att:a});
     });
 
+    // ── brunakerfis-skoðanir beint eftir fyrirtaeki_id ──
+    // Tryggir að brunakerfis-skýrslan lendi í RÉTTUM dálki (🔥) líka þegar
+    // staðurinn er ekki tengdur customers_base (þá skilar fetchDocs engu).
+    var bruDocs = await fetchBrunakerfiDocs(coId);
+    bruDocs.forEach(function(d){
+      var y=parseInt(d.year,10); if(!(y>=2000&&y<=NOW+1)) return;
+      var dup=(bruByY[y]||[]).some(function(x){ return !x._att && x.id===d.id; });
+      if(!dup) (bruByY[y]=bruByY[y]||[]).push(d);
+    });
+
     // Brunakerfis-skýrslan er vistuð TVISVAR viljandi (customer_documents fyrir
     // yfirlitin + viðhengi fyrir skjalaspjaldið, sjá patch 273). Nú þegar báðar
     // lenda í sama dálki þarf að fella afritið burt: raunverulega skjalaröðin
@@ -511,9 +540,9 @@
     // ársgögnin á section svo wire()-smellurinn byggi viðhengin (async) þá.
     section._repByY = repByY; section._invByY = invByY; section._sendCo = { coId: coId, kt: kt, nafn: (co && co.nafn) || '' };
     function sendCell(y){
-      var hasRep=(repByY[y]||[]).length, hasInv=(invByY[y]||[]).length;
-      if(!hasRep && !hasInv) return '';
-      return '<button type="button" class="sk-doc _sk-send" data-send-year="'+y+'" title="Senda úttektarskýrslu og/eða reikning '+y+' í tölvupósti" style="border-color:#99f6e4;color:#0f766e">📧 Senda</button>';
+      var hasRep=(repByY[y]||[]).length, hasBru=(bruByY[y]||[]).length, hasInv=(invByY[y]||[]).length;
+      if(!hasRep && !hasBru && !hasInv) return '';
+      return '<button type="button" class="sk-doc _sk-send" data-send-year="'+y+'" title="Senda skýrslu(r) og/eða reikning '+y+' í tölvupósti" style="border-color:#99f6e4;color:#0f766e">📧 Senda</button>';
     }
     section._bruByY = bruByY;
     var rows=YEARS.map(function(y){
@@ -569,18 +598,27 @@
         if(!(window.ReceiptSender && ReceiptSender.compose)){ alert('Póst-ritillinn hlóðst ekki — endurhladdu síðunni.'); return; }
         var y=sendEl.getAttribute('data-send-year');
         var rep=(section._repByY && section._repByY[y]||[])[0];
+        var bru=(section._bruByY && section._bruByY[y]||[])[0];
         var inv=(section._invByY && section._invByY[y]||[])[0];
         var meta=section._sendCo||{}; var nafn=meta.nafn||'';
         // Netfang forfyllt af fyrirtækinu (má breyta í glugganum).
         var email=''; try{ var sb=SB(); if(sb && meta.coId){ var er=await sb.from('fyrirtaeki').select('netfang').eq('id', meta.coId).maybeSingle(); if(er&&er.data&&er.data.netfang) email=String(er.data.netfang).trim(); } }catch(_){}
+        // Hakað val — notandinn velur hvað fer með (🧯 úttektarskýrsla ·
+        // 🔥 brunakerfisskýrsla · 🧾 reikningur) og svo opnast venjulegi póst-glugginn.
+        // Aðeins bjóða skjöl sem raunverulega leysast í PDF-skrá — annars myndi
+        // hakað val hengja EKKERT (t.d. reikningur sem er aðeins solur-skráning án
+        // PDF-skjals; hann er sendur af brunakerfis-/sölu-síðunni þar sem hann er teiknaður).
+        var hasFile=function(x){ return x && ((x.drive_file_id && String(x.drive_file_id).indexOf('sb:')!==0) || x.storage_path || (x._att && x._att.path)); };
         var choices=[];
-        if(rep) choices.push({ label:'Úttektarskýrsla '+y, checked:true, build:function(){ return entryAttachment(rep,'Úttektarskýrsla '+y+'.pdf'); } });
-        if(inv) choices.push({ label:'Reikningur '+y, checked:true, build:function(){ return entryAttachment(inv,'Reikningur '+y+'.pdf'); } });
+        if(hasFile(rep)) choices.push({ label:'🧯 Úttektarskýrsla '+y, checked:true, build:function(){ return entryAttachment(rep,'Úttektarskýrsla '+y+'.pdf'); } });
+        if(hasFile(bru)) choices.push({ label:'🔥 Brunakerfisskýrsla '+y, checked:true, build:function(){ return entryAttachment(bru,'Brunakerfisskýrsla '+y+'.pdf'); } });
+        if(hasFile(inv)) choices.push({ label:'🧾 Reikningur '+(inv&&inv.invoice_number?inv.invoice_number:y), checked:true, build:function(){ return entryAttachment(inv,'Reikningur '+y+'.pdf'); } });
+        if(!choices.length){ alert('Engin PDF-skjöl til að senda fyrir '+y+'. Reikning sem er aðeins skráður í Sölu má senda af brunakerfis-/sölu-síðunni.'); return; }
         ReceiptSender.compose({
           title:'Senda — '+nafn,
           to:email,
-          subject:'Úttektarskýrsla og reikningur '+y+' — Slökkvitæki ehf',
-          bodyText:ReceiptSender.standardText('skyrsla', { nafn:nafn, ar:y }),
+          subject:(rep?'Úttektarskýrsla':bru?'Brunakerfisskýrsla':'Reikningur')+' '+y+' — Slökkvitæki ehf',
+          bodyText:ReceiptSender.standardText(rep?'skyrsla':bru?'brunakerfi':'reikningur', { nafn:nafn, ar:y }),
           attachmentChoices:choices,
         });
         return;

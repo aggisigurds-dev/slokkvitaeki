@@ -109,17 +109,27 @@
   function standardText(kind, opts) {
     const nafn = (opts && opts.nafn) || '';
     const hi = 'Sæl(l)' + (nafn ? ' ' + nafn : '') + ',';
+    const sign = '\n\nKær kveðja,\nSlökkvitæki ehf.\nkt. 600508-0400\nsími 565-4080';
     if (kind === 'skyrsla') {
       return hi + '\n\n' +
         'Meðfylgjandi er úttektarskýrsla' + (opts && opts.ar ? ' fyrir ' + opts.ar : '') +
         (opts && opts.stadur ? ' — ' + opts.stadur : '') + '.\n\n' +
-        'Skýrslan sýnir yfirferð slökkvitækja og brunavarna hjá ykkur. Ef eitthvað er óljóst eða þið viljið fá tilboð í úrbætur er velkomið að hafa samband.\n\n' +
-        'Kær kveðja,\nSlökkvitæki ehf.\nkt. 600508-0400\nsími 565-4080';
+        'Skýrslan sýnir yfirferð slökkvitækja og brunavarna hjá ykkur. Ef eitthvað er óljóst eða þið viljið fá tilboð í úrbætur er velkomið að hafa samband.' + sign;
+    }
+    if (kind === 'brunakerfi') {
+      return hi + '\n\n' +
+        'Meðfylgjandi er skoðunarskýrsla brunaviðvörunarkerfis' + (opts && opts.ar ? ' fyrir ' + opts.ar : '') +
+        (opts && opts.stadur ? ' — ' + opts.stadur : '') + '.\n\n' +
+        'Skýrslan sýnir yfirferð brunaviðvörunarkerfisins hjá ykkur. Ef eitthvað er óljóst eða þið viljið fá tilboð í úrbætur er velkomið að hafa samband.' + sign;
+    }
+    if (kind === 'samningur') {
+      return hi + '\n\n' +
+        'Meðfylgjandi er þjónustusamningur við Slökkvitæki ehf.\n\n' +
+        'Ef spurningar vakna er velkomið að hafa samband.' + sign;
     }
     return hi + '\n\n' +
       'Meðfylgjandi er reikningur' + (opts && opts.nr ? ' ' + opts.nr : '') + ' frá Slökkvitæki ehf.\n\n' +
-      'Ef spurningar vakna um reikninginn er velkomið að hafa samband.\n\n' +
-      'Kær kveðja,\nSlökkvitæki ehf.\nkt. 600508-0400\nsími 565-4080';
+      'Ef spurningar vakna um reikninginn er velkomið að hafa samband.' + sign;
   }
 
   // ── Ritill: viðtakandi + efni + SKILABOÐ (sýnileg og breytanleg) ──────────
