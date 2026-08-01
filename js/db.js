@@ -31,7 +31,17 @@ var DB = {
       return;
     }
     try {
-      this.sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      // 2026-08-01 (ósk Agnars, eftir endurtekið Realtime-tengingarrof í
+      // Supabase-niðurtíma sem hefur áður valdið svipuðum vandræðum): lengri
+      // timeout + hægari, veldisvaxandi endurtengingar-bil (1s→2s→4s…hám. 30s)
+      // í stað sjálfgefins hám. 10s. Kemur í veg fyrir að appið hamri á
+      // endurtengingu meðan Supabase-hliðin er í vandræðum.
+      this.sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+        realtime: {
+          timeout: 30000,
+          reconnectAfterMs: function (tries) { return Math.min(1000 * Math.pow(2, tries), 30000); },
+        },
+      });
       var _sb = document.getElementById('setup-banner'); if(_sb){ _sb.classList.add('hidden'); _sb.style.display='none'; }
       document.getElementById('sync-dot').className = 'sync-dot syncing';
       this.loadAll();
@@ -202,14 +212,27 @@ var DB = {
       // Other tables (solur, app_settings, etc.) — let observers/views
       // refetch lazily when they become active.
     }
-    this.sb.channel('changes').on('postgres_changes', {event:'*', schema:'public'}, function(payload) {
-      var t = payload && payload.table;
-      if (t) _pendingTables.add(t);
-      if (_debounce) clearTimeout(_debounce);
-      // 2026-06-11: 3s → 5s so a burst of edits (e.g. flipping several tæki
-      // statuses) coalesces into one refresh instead of several.
-      _debounce = setTimeout(applyChange, 5000);
-    }).subscribe();
+    // 2026-08-01 (ósk Agnars): ÁÐUR var þetta EIN ósíuð áskrift á ALLT
+    // `schema:'public'` — sami Supabase-grunnur og Brunahólf notar, svo ÞESSI
+    // vafraflipi fékk líka hverja einustu breytingu í Brunahólfs-töflunum
+    // (email_digest, ajour_registrations, automation_runs, redder_invoices …)
+    // þó kóðinn hér fyrir neðan hunsi þær hvort eð er. Skorðum áskriftina við
+    // AÐEINS þær töflur sem applyChange() bregst raunverulega við — minnkar
+    // umferðina verulega og gerir tenginguna síður viðkvæma fyrir álagi sem á
+    // ekkert skylt við þetta app.
+    var RT_TABLES = ['uttaeki', 'verkbeidnir', 'verklidur', 'fyrirtaeki', 'vidskiptavinir'];
+    var ch = this.sb.channel('changes');
+    RT_TABLES.forEach(function (tbl) {
+      ch.on('postgres_changes', { event: '*', schema: 'public', table: tbl }, function (payload) {
+        var t = payload && payload.table;
+        if (t) _pendingTables.add(t);
+        if (_debounce) clearTimeout(_debounce);
+        // 2026-06-11: 3s → 5s so a burst of edits (e.g. flipping several tæki
+        // statuses) coalesces into one refresh instead of several.
+        _debounce = setTimeout(applyChange, 5000);
+      });
+    });
+    ch.subscribe(function (status) { console.log('[db-rt] channel status:', status); });
   },
 
   // ---- JOBS ----
