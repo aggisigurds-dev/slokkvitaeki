@@ -33,6 +33,7 @@
     { k: 'verkbord',         label: 'Verkefnalisti',         short: 'Verkefni',   emoji: '📋' },
     { k: 'arsskodun',        label: 'Fyrirtæki í þjónustu',  short: 'Þjónusta',   emoji: '🏢' },
     { k: 'thjonustuverk',    label: 'Þjónustuverk',          short: 'Þj.verk',    emoji: '🛠' },
+    { k: 'thjonustu-verkstaedi', label: 'ÞjónustuVerkstæði', short: 'Verkstæði', emoji: '🔧' },
     { k: 'brunayfirlit',     label: 'Brunakerfi yfirlit',    short: 'Brunakerfi', emoji: '🚨' },
     { k: 'rekstrarfelog',    label: 'Rekstrarfélög',         short: 'Rekstrarf.', emoji: '🏢' },
     // Brunahólf-síður — birtar inni í appinu í iframe (deep-link á tab-ið).
@@ -61,7 +62,7 @@
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0e7a4f', dark: '#06402b',
       manifest: '/manifest-fjarmal.json', home: 'krofu-yfirlit',
       blurb: 'Kröfur, sala, fyrirtæki + Brunahólf reikningagerð',
-      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'rekstrarfelog', 'br-jarvis', 'br-maeting', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
+      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'br-krofuyfirlit', 'sala', 'vidskiptavinir', 'thjonustuverk', 'thjonustu-verkstaedi', 'rekstrarfelog', 'br-jarvis', 'br-maeting', 'br-gerdreikninga', 'br-vinnubok', 'br-krofur'] },
     { key: 'verkefni', emoji: '📋', name: 'Verkefnalisti', color: '#3b82f6', dark: '#1d4ed8',
       manifest: '/manifest-verkefni.json', home: 'verkbord',
       blurb: 'Verkborð — beiðnir, verkefni og eftirfylgni',
@@ -138,6 +139,7 @@
   //   __rf2   (2026-07-31): rekstrarfelog — á eftir vidskiptavinir í Fjármálum
   //   __jv2   (2026-07-31): br-jarvis — á eftir rekstrarfelog (Fjármál) og
   //   __jv2b                 á eftir br-dagurinn (Brunahólf)
+  //   __tvks1 (2026-08-01): thjonustu-verkstaedi — á eftir thjonustuverk (Fjármál)
   // KAPPHLAUPS-GALLI SEM VAR LAGAÐUR 2026-07-31: migrationin keyrði EINU SINNI
   // við hleðslu skrárinnar — löngu áður en AppSettings hafði sótt vistuðu
   // stillinguna úr skýinu. Þá var `c[appKey]` ekki fylki, ekkert var sett inn,
@@ -173,6 +175,7 @@
         insertOnce('__rf2',   'rekstrarfelog', 'vidskiptavinir');
         insertOnce('__jv2',   'br-jarvis',     'rekstrarfelog');
         insertOnce('__jv2b',  'br-jarvis',     'br-dagurinn', 'brunaholf');
+        insertOnce('__tvks1', 'thjonustu-verkstaedi', 'thjonustuverk');
         if (changed) {
           var s = JSON.stringify(c);
           try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
