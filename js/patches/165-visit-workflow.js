@@ -435,6 +435,25 @@
 
   // ── Actual save — runs only after the user confirms in the preview ─────
   async function finalizeVisit({ coId, coNafn, visit, linur, today, next, sb, starfsmadur, vd }) {
+    // 0. TVÍTÖKUVÖRN (2026-08-01) — rótin að BGT/Rafha tvítökunum: „Klára heimsókn"
+    //    var ýtt tvisvar (aðskildar forskoðanir, mínútum í sundur) og EKKERT stöðvaði
+    //    annan reikning. Ef reikningur úr úttektarflæði (source=uttekt, final) er ÞEGAR
+    //    til fyrir sama fyrirtæki SAMA DAG → spyrja áður en annar er búinn til.
+    //    Fellur leitin (t.d. nettengingarvilla) → höldum áfram (ALLTAF LEYFA VISTUN).
+    try {
+      const _t2 = new Date(today + 'T00:00:00Z'); _t2.setUTCDate(_t2.getUTCDate() + 1);
+      const _tomo = _t2.toISOString().slice(0, 10);
+      const dup = await sb.from('solur').select('num')
+        .eq('customer_nafn', coNafn).eq('source', 'uttekt').eq('status', 'final')
+        .gte('created_at', today + 'T00:00:00').lt('created_at', _tomo + 'T00:00:00');
+      const existing = (dup.data || []).map(s => s.num).filter(Boolean);
+      if (existing.length && !confirm(
+        '⚠️ Reikningur úr úttekt er ÞEGAR til fyrir „' + coNafn + '" í dag:\n' +
+        existing.join(', ') + '\n\nBúa til ANNAN reikning samt?\n(Ýttu á „Hætta við" til að sleppa — kemur í veg fyrir tvítekningu.)')) {
+        return;   // notandinn hætti við — engin tvítekning, ferðin helst óbreytt
+      }
+    } catch (_) { /* ALLTAF LEYFA VISTUN */ }
+
     // 1. Bump last_insp + next_insp on all serviced units.
     const updateRes = await sb.from('uttaeki')
       .update({ last_insp: today, next_insp: next })

@@ -553,6 +553,15 @@ birtist strax í „Skjöl & viðhengi" árstöflunni (patch 199), í úttektars
   ekki Drive-aðgang (engin googleapis/OAuth Netlify-function). Drive-pörunin lifir í
   Brunahólf-appinu (sjá „Laga pörun í Brunahólf →" hlekkinn á skjalaspjaldinu). Ef
   á að lenda í Drive þarf að flytja Drive-OAuth + upload-function úr Brunahólf.
+- **Tvítökuvörn (2026-08-01, `finalizeVisit` byrjun):** áður gat „✓ Klára heimsókn"
+  búið til tvo eins reikninga (BGT R-000664/665, Rafha R-000546/547 — ýtt tvisvar,
+  engin vörn). Nú spyr `finalizeVisit` FYRST hvort reikningur úr úttektarflæði
+  (`source='uttekt'`, `status='final'`) sé þegar til fyrir sama `customer_nafn`
+  SAMA DAG; ef svo → `confirm(...)` með R-númerinu, „Hætta við" sleppir (engin
+  tvítekning, ferðin óbreytt). Fellur leitin → heldur áfram (ALLTAF LEYFA VISTUN).
+  Fyrri tvítök voru hreinsuð með `status='void'` (afturkræft; `/api/solur` skilar
+  aðeins `final`). Húsmál úttektartextans (294) fært á skjalfest orðalag úr
+  `sara/references/husmal.md`: „Öll slökkvitæki … endurhlaðin … Skipt um stút".
 
 ## Póst-merki + Póstnúmer á „Fyrirtæki í þjónustu" (patch 153) — 2026-07-31
 
