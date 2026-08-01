@@ -562,6 +562,18 @@ birtist strax í „Skjöl & viðhengi" árstöflunni (patch 199), í úttektars
   Fyrri tvítök voru hreinsuð með `status='void'` (afturkræft; `/api/solur` skilar
   aðeins `final`). Húsmál úttektartextans (294) fært á skjalfest orðalag úr
   `sara/references/husmal.md`: „Öll slökkvitæki … endurhlaðin … Skipt um stút".
+- **Grænu „yfirfarið"-hökin haldast (2026-08-01, patch 224):** `_done` var aðeins í
+  minni („this round") svo grænu ✓-hökin hurfu við endurhleðslu OG við að opna
+  staðfesta listann (Agnar þurfti að endursmella 22 tæki). Nú geymd per-fyrirtæki í
+  `localStorage['sk_ut_done_<coId>']` (eins og læsingin `sk_ut_lock_`): `loadDone`
+  við `inner()`-teikningu, `saveDone` við ✓-tapp og fjöldaeyðingu. Hreinsast þegar
+  heimsókn er kláruð (165 `finalizeVisit` fjarlægir lykilinn) svo næsti hringur byrji
+  hreinn. NB hökin eru SJÓNRÆN yfirferðar-merki — stýra EKKI rukkun (tæki rukkast
+  eftir þjónustuvali, ekki ✓). Bulk-add (73) sjálfgefið magn 1 (var 20).
+- **Duft 2 kg. ABC yfirferð (vara id 358, 2026-08-01):** vantaði í `vorur` svo 2kg-duft
+  á „yfirferð" verðlagðist ekki. Stofnuð á 3.600 kr m.vsk (2903.23 án vsk, 24%, flokkur
+  Þjónusta, virkt). 129-token-matcherinn (`findMatchingServices`, les virkar vörur
+  lifandi) parar hana nú sjálfkrafa — engin kóðabreyting þurfti, bara varan.
 
 ## Póst-merki + Póstnúmer á „Fyrirtæki í þjónustu" (patch 153) — 2026-07-31
 

@@ -57,7 +57,7 @@
           '</div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">' +
             '<div><label style="display:block;font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:700;margin-bottom:4px">Magn</label>' +
-              '<input id="_ba_qty" type="number" min="1" max="200" value="20" style="width:100%;padding:9px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box"></div>' +
+              '<input id="_ba_qty" type="number" min="1" max="200" value="1" style="width:100%;padding:9px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box"></div>' +
             '<div><label style="display:block;font-size:11px;color:#6b7280;text-transform:uppercase;font-weight:700;margin-bottom:4px">Næsta skoðun</label>' +
               '<input id="_ba_next" type="date" value="' + nextYear + '" style="width:100%;padding:9px 10px;border:1.5px solid #e5e7eb;border-radius:8px;font-size:14px;box-sizing:border-box"></div>' +
           '</div>' +

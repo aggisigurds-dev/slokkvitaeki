@@ -492,8 +492,10 @@
       try { await ReportFactsSync.maybeComplete(coId, new Date().getFullYear(), { invoice: true }); } catch (_) {}
     }
 
-    // 3. Clear trip state.
+    // 3. Clear trip state. Líka grænu „yfirfarið"-hökin (224 `sk_ut_done_<coId>`)
+    //    svo næsta úttekt byrji með hreint borð (þau eru „þessi hringur").
     clearTrip(coId);
+    try { localStorage.removeItem('sk_ut_done_' + coId); } catch (_) {}
 
     // 4. Open the saved invoice for printing + vista reikninginn sem PDF.
     if (saleId) {
