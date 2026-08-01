@@ -83,7 +83,7 @@
   var SubRoutes = {
     register: function (name, def) {
       if (!name || !def || typeof def.open !== 'function') return;
-      ROUTES[name] = { parent: def.parent || '', open: def.open, reassert: !!def.reassert };
+      ROUTES[name] = { parent: def.parent || '', open: def.open };
     },
     setHash: setHash,
     apply: apply,
@@ -95,7 +95,6 @@
   // Company: #company/<id>
   SubRoutes.register('company', {
     parent: 'companies',
-    reassert: true,   // halda opnu gegn boot-lendurum (sala.js ~t=1.5s) — sjá boot()
     open: function (id) {
       var n = Number(id); if (!n) return;
       if (!window.Companies || typeof Companies.openDetail !== 'function') {
@@ -212,29 +211,6 @@
     wrapUnitDetail();
     // First apply runs after a tick so patch 218 finishes its own boot.
     setTimeout(apply, 60);
-
-    // Re-assert the deep link briefly so a page RELOAD on #company/<id> stays
-    // on that company. Boot-time auto-landers (sala.js) fire ~t=1.5s and would
-    // otherwise switch us back to Sala, dropping the sub-route — the same
-    // problem patch 218 solves for top-level views with its ~1.9s re-assert.
-    // Only for routes flagged `reassert` (re-opening is idempotent), and ONLY
-    // when an auto-lander has actually pulled us off the parent view — so there
-    // is no flicker once it settles, and one-shot routes (#sale opens a window)
-    // are never re-fired.
-    var p0 = parseHash();
-    var r0 = p0 && ROUTES[p0.name];
-    if (r0 && r0.reassert) {
-      var tries = 0;
-      (function tick() {
-        var parentViewId = r0.parent
-          ? ((window.UrlRouting && UrlRouting.resolveView) ? UrlRouting.resolveView(r0.parent) : r0.parent)
-          : null;
-        var active = document.querySelector('.view.active');
-        var onParent = !parentViewId || (active && active.id === 'view-' + parentViewId);
-        if (!onParent) { try { apply(); } catch (_) {} }   // auto-lander pulled us off → re-open
-        if (++tries < 24) setTimeout(tick, 80);            // ~1.9s window, same as patch 218
-      })();
-    }
   }
   window.addEventListener('hashchange', function () { if (!_suppress) apply(); });
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
