@@ -5,11 +5,12 @@
    hundruðum skýrslna á ári er það umtalsverður tími.
 
    ORÐALAGIÐ (Agnar/Elías, skjalfest 30.07.2026 — röðin skiptir máli):
-     1. Grunnur:      „Öll tæki yfirfarin og vottuð í lagi."
-     2. Hleðsla / ónýtt / ný tæki skjóta sér inn á milli.
-     3. Hausskipti:   „Skipta þurfti um nýjan haus á eina brunaslönguna."
-                      (fleirtala beygist: tvær/þrjár/fjórar brunaslöngur)
-     4. Slöngur SÍÐAST: „Brunaslöngur prófaðar á fullum þrýsting og vottaðar í lagi."
+     1. Grunnur:      „Öll slökkvitæki yfirfarin og vottuð í lagi."
+     2. Hleðsla („endurhlaðin") / ónýtt / ný tæki skjóta sér inn á milli.
+     3. Stútskipti:   „Skipt um stút á einni brunaslöngu."
+                      (fleirtala: „Skipt um stúta á N brunaslöngum.")
+     4. Slöngur SÍÐAST: „Brunaslöngur prófaðar á fullum þrýstingi." (EKKI vottun —
+        maður skrifar „og vottaðar í lagi" / leka-athugasemd sjálfur, sjá Blikkhella)
    Hausskiptin koma ALLTAF beint á undan slöngu-vottuninni svo hún endi
    setninguna.
 
@@ -125,10 +126,10 @@
     var st = skanna(coId), nHaus = hausar(coId), s = [];
     if (!st.alls) return '';
 
-    if (st.yfir > 0) s.push('Öll tæki yfirfarin og vottuð í lagi.');
+    if (st.yfir > 0) s.push('Öll slökkvitæki yfirfarin og vottuð í lagi.');
     if (st.hled > 0) s.push(st.hled === 1
-      ? 'Eitt tæki fékk hleðslu og fulla áfyllingu.'
-      : cap(hk(st.hled)) + ' tæki fengu hleðslu og fulla áfyllingu.');
+      ? 'Eitt slökkvitæki endurhlaðið.'
+      : cap(hk(st.hled)) + ' slökkvitæki endurhlaðin.');
     if (st.onytt > 0) s.push(st.onytt === 1
       ? 'Eitt tæki reyndist ónýtt og var tekið úr notkun.'
       : cap(hk(st.onytt)) + ' tæki reyndust ónýt og voru tekin úr notkun.');
@@ -137,9 +138,15 @@
       : cap(hk(st.nytt)) + ' ný tæki voru sett upp.');
     // Hausskiptin ALLTAF beint á undan slöngu-vottuninni.
     if (nHaus > 0) s.push(nHaus === 1
-      ? 'Skipta þurfti um nýjan haus á eina brunaslönguna.'
-      : 'Skipta þurfti um nýja hausa á ' + kvk(nHaus) + ' brunaslöngur.');
-    if (st.slanga > 0) s.push('Brunaslöngur prófaðar á fullum þrýsting og vottaðar í lagi.');
+      ? 'Skipt um stút á einni brunaslöngu.'
+      : 'Skipt um stúta á ' + nHaus + ' brunaslöngum.');
+    // Brunaslöngu-VOTTUN má ALDREI leiðast af tækjalistanum (Agnar + húsmál,
+    // Blikkhellu-gildran: „…og ein þeirra lekur"). Sjálfvirki textinn segir aðeins
+    // að slöngurnar hafi verið PRÓFAÐAR (verkið sem var unnið) — niðurstöðuna
+    // („og vottaðar í lagi" EÐA leka-athugasemd) skrifar maður handvirkt.
+    if (st.slanga > 0) s.push(st.slanga === 1
+      ? 'Brunaslanga prófuð á fullum þrýstingi.'
+      : 'Brunaslöngur prófaðar á fullum þrýstingi.');
 
     return s.join(' ');
   }

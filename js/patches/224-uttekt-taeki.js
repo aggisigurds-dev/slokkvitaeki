@@ -112,6 +112,7 @@
   }
 
   function inner(coId, units){
+    _done = loadDone(coId);   // endurheimta grænu hökin (per fyrirtæki) svo þau lifi opnun/endurhleðslu
     var selUnits = units.filter(function(u){return _sel[u.id];});
     var n = selUnits.length;
     var allSel = units.length>0 && n===units.length;
@@ -191,6 +192,19 @@
   };
 
   function isUtLocked(coId){ try{ return localStorage.getItem('sk_ut_lock_'+coId)==='1'; }catch(_){ return false; } }
+  // Grænu „yfirfarið"-hökin (_done) voru ÁÐUR aðeins í minni („this round") svo þau
+  // hurfu við endurhleðslu OG við að opna staðfesta listann — Agnar þurfti að
+  // endursmella allt (22 tæki = 22 auka smellir). Nú geymd per-fyrirtæki í
+  // localStorage (eins og læsingin `sk_ut_lock_`), svo þau lifi opnun. Hreinsast
+  // þegar heimsókn er kláruð (165 finalizeVisit fjarlægir `sk_ut_done_<coId>`).
+  function doneKey(coId){ return 'sk_ut_done_'+coId; }
+  function loadDone(coId){
+    var o={}; try{ (JSON.parse(localStorage.getItem(doneKey(coId))||'[]')||[]).forEach(function(id){ o[id]=true; }); }catch(_){}
+    return o;
+  }
+  function saveDone(coId){
+    try{ localStorage.setItem(doneKey(coId), JSON.stringify(Object.keys(_done).filter(function(k){return _done[k];}).map(Number))); }catch(_){}
+  }
   // Spegla staðfestingu listans í samstillta ársskoðunar-blobbinn
   // (arsskodun_customers[<id>]) svo ÞjónustuVerkstæðið (190) geti sýnt skrefið
   // „Tækjalisti staðfestur" — og hver/hvenær, eins og önnur skref bera.
@@ -248,6 +262,7 @@
     if((b=e.target.closest('.ut-check'))){
       var duid=+b.dataset.uid, dco=+b.dataset.co;
       if(_done[duid]) delete _done[duid]; else _done[duid]=true;
+      saveDone(dco);
       UttektTaeki.rerender(dco); return;
     }
     if(e.target.classList && e.target.classList.contains('ut-chk')){
@@ -361,6 +376,7 @@
           if(r.error) throw r.error;
           if(window.DB&&DB.cache&&DB.cache.units){ DB.cache.units=DB.cache.units.filter(function(u){return ids.indexOf(u.id)<0;}); }
           ids.forEach(function(id){ delete _sel[id]; delete _done[id]; });
+          saveDone(dco);
           UttektTaeki.rerender(dco);
           try{ if(window.recomputeCompanyTotalCost) recomputeCompanyTotalCost(); }catch(_){}
           if(window.Toast&&Toast.show) Toast.show('🗑 '+ids.length+' tæki eytt');
