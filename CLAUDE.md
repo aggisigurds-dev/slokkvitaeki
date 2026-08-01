@@ -509,6 +509,15 @@ endurhleðslu, og gerir ekkert við **afhök**. API: `window.Uttektartexti =
 {forskoda, fylla, skanna, hausar}` — `forskoda(coId)` skilar textanum án þess að
 skrifa neitt.
 
+**Brunaslöngu-VOTTUN aldrei sjálfvirk (2026-08-01):** áður sagði textinn alltaf
+„Brunaslöngur prófaðar á fullum þrýsting og vottaðar í lagi" um leið og slanga var í
+tækjalistanum. Það er liability-gildra (húsmál Blikkhellu: „…og ein þeirra lekur" —
+þá er EKKI vottað í lagi). Nú segir sjálfvirki textinn aðeins að slöngurnar hafi verið
+**PRÓFAÐAR** („Brunaslanga prófuð á fullum þrýstingi." / fleirtala „prófaðar") — verkið,
+ekki niðurstöðuna. Maður skrifar „og vottaðar í lagi" EÐA leka-athugasemd sjálfur.
+Vottunin má ALDREI leiðast af tækjalistanum (Agnar). Fuller lausn síðar = handvirkt
+slöngu-hak sem gæti þá bætt vottunar-línunni við þegar hún er staðfest.
+
 ## Sjálfvirk PDF-vistun úttektar-skjala — `js/patches/233-uttekt-pdf-autosave.js` (+168/165)
 
 Þegar **úttektarskýrsla** er búin til (patch 168, „📄 Búa til úttektarskýrslu") eða

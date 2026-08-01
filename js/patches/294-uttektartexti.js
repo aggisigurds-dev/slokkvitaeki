@@ -9,7 +9,8 @@
      2. Hleðsla („endurhlaðin") / ónýtt / ný tæki skjóta sér inn á milli.
      3. Stútskipti:   „Skipt um stút á einni brunaslöngu."
                       (fleirtala: „Skipt um stúta á N brunaslöngum.")
-     4. Slöngur SÍÐAST: „Brunaslöngur prófaðar á fullum þrýsting og vottaðar í lagi."
+     4. Slöngur SÍÐAST: „Brunaslöngur prófaðar á fullum þrýstingi." (EKKI vottun —
+        maður skrifar „og vottaðar í lagi" / leka-athugasemd sjálfur, sjá Blikkhella)
    Hausskiptin koma ALLTAF beint á undan slöngu-vottuninni svo hún endi
    setninguna.
 
@@ -139,7 +140,13 @@
     if (nHaus > 0) s.push(nHaus === 1
       ? 'Skipt um stút á einni brunaslöngu.'
       : 'Skipt um stúta á ' + nHaus + ' brunaslöngum.');
-    if (st.slanga > 0) s.push('Brunaslöngur prófaðar á fullum þrýsting og vottaðar í lagi.');
+    // Brunaslöngu-VOTTUN má ALDREI leiðast af tækjalistanum (Agnar + húsmál,
+    // Blikkhellu-gildran: „…og ein þeirra lekur"). Sjálfvirki textinn segir aðeins
+    // að slöngurnar hafi verið PRÓFAÐAR (verkið sem var unnið) — niðurstöðuna
+    // („og vottaðar í lagi" EÐA leka-athugasemd) skrifar maður handvirkt.
+    if (st.slanga > 0) s.push(st.slanga === 1
+      ? 'Brunaslanga prófuð á fullum þrýstingi.'
+      : 'Brunaslöngur prófaðar á fullum þrýstingi.');
 
     return s.join(' ');
   }
