@@ -371,10 +371,44 @@
       if (d.doc_type === 'uttektarskyrsla') { (bundlesByYear[y] = bundlesByYear[y] || {}).skyrsla = { rep: d }; }
       else if (d.doc_type === 'brunakerfi') { (bundlesByYear[y] = bundlesByYear[y] || {}).brunakerfi = { rep: d }; }
     });
+    // A kind can have an invoice but NO doc_type row of its own — e.g. one
+    // physical úttektarskýrsla that covers both Úttekt AND Brunakerfi in the
+    // same year (only ever filed once, as 'uttektarskyrsla'). Without this,
+    // the whole brunakerfi row for that year never even appears in the band.
+    ['uttekt', 'brunakerfi'].forEach(src => {
+      Object.keys(solBySrc).forEach(k => {
+        if (!k.startsWith(src + '|')) return;
+        const y = k.slice(src.length + 1);
+        const key = src === 'uttekt' ? 'skyrsla' : 'brunakerfi';
+        if (!(bundlesByYear[y] = bundlesByYear[y] || {})[key]) bundlesByYear[y][key] = { rep: null };
+      });
+    });
     Object.keys(bundlesByYear).forEach(y => {
       if (bundlesByYear[y].skyrsla) bundlesByYear[y].skyrsla.inv = solBySrc['uttekt|' + y] || null;
       if (bundlesByYear[y].brunakerfi) bundlesByYear[y].brunakerfi.inv = solBySrc['brunakerfi|' + y] || null;
     });
+    // 2026-08-05 (verkefnalisti 94295522): fill in a still-missing report from
+    // document_pairs — a persisted table that (among other things) records
+    // when one physical report already satisfies BOTH kinds for the same year
+    // (matched_by='shared_report'), which this purely doc_type-based grouping
+    // can't know on its own. Best-effort: never blocks the rest of the modal.
+    try {
+      if (baseIds.length) {
+        const dp = await sb.from('document_pairs')
+          .select('year,service_type,report_doc_id')
+          .in('customer_base_id', baseIds)
+          .not('report_doc_id', 'is', null);
+        (dp.data || []).forEach(row => {
+          const key = row.service_type === 'brunakerfi' ? 'brunakerfi' : 'skyrsla';
+          const y = String(row.year);
+          const slot = (bundlesByYear[y] = bundlesByYear[y] || {})[key];
+          if (slot && !slot.rep) {
+            const repDoc = docs.find(d => d.id === row.report_doc_id);
+            if (repDoc) slot.rep = repDoc;
+          }
+        });
+      }
+    } catch (_) {}
     // Combined-send: hakað val (skýrsla + reikningur) → venjulegi póst-glugginn (254).
     async function sendBundle(kind, year, b) {
       if (!(window.ReceiptSender && ReceiptSender.compose)) { if (window.Toast && Toast.show) Toast.show('Póstsending ekki tilbúin — endurhladdu síðunni.'); return; }
