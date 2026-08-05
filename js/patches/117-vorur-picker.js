@@ -38,29 +38,33 @@
   // Flokkur → íkon + grunnlitur (hue). Sami og í hönnunar-comp-inu; óþekktir
   // flokkar fá hlutlausan bláan fallback.
   const CAT_META = {
-    'Allt':                   { icon: '▦',  hue: '#1e3a8a' },
-    'Slökkvitæki':            { icon: '🧯', hue: '#dc2626' },
-    'Brunaslöngur':           { icon: '🚒', hue: '#c2410c' },
-    'Skilti':                 { icon: '🆘', hue: '#15803d' },
-    'Reykskynjarar':          { icon: '💨', hue: '#7c3aed' },
-    'Brunakerfi':             { icon: '🚨', hue: '#be123c' },
-    'Varahlutir':             { icon: '🔧', hue: '#475569' },
-    'Fylgihlutir':            { icon: '🔩', hue: '#0f766e' },
-    'Ýmsar vörur':            { icon: '📦', hue: '#b45309' },
-    'Þjónusta':               { icon: '📋', hue: '#0369a1' },
-    'Aukavörur':              { icon: '🏷️', hue: '#7c3aed' },
-    'Brunaslöngurhjól':       { icon: '🚒', hue: '#c2410c' },
-    'Eldvarnir':              { icon: '🔥', hue: '#dc2626' },
-    'Hleðsla slökkvitækja':   { icon: '🔄', hue: '#b45309' },
-    'Skilti, ljós og miðar':  { icon: '🆘', hue: '#15803d' },
-    'Skynjarar og rafhlöður': { icon: '🔋', hue: '#7c3aed' },
-    'Tæki':                   { icon: '🧰', hue: '#475569' },
-    'Viðvörunarkerfi':        { icon: '🚨', hue: '#be123c' },
-    'Vinna':                  { icon: '👷', hue: '#0369a1' },
-    'Vinna og akstur':        { icon: '🚙', hue: '#0e7490' },
-    'Yfirferð slökkvitækja':  { icon: '✅', hue: '#1f9d55' }
+    'Allt':                   { hue: '#1e3a8a' },
+    'Slökkvitæki':            { hue: '#dc2626' },
+    'Brunaslöngur':           { hue: '#c2410c' },
+    'Skilti':                 { hue: '#15803d' },
+    'Reykskynjarar':          { hue: '#7c3aed' },
+    'Brunakerfi':             { hue: '#be123c' },
+    'Varahlutir':             { hue: '#475569' },
+    'Fylgihlutir':            { hue: '#0f766e' },
+    'Ýmsar vörur':            { hue: '#b45309' },
+    'Þjónusta':               { hue: '#0369a1' },
+    'Aukavörur':              { hue: '#7c3aed' },
+    'Brunaslöngurhjól':       { hue: '#c2410c' },
+    'Eldvarnir':              { hue: '#dc2626' },
+    'Hleðsla slökkvitækja':   { hue: '#b45309' },
+    'Skilti, ljós og miðar':  { hue: '#15803d' },
+    'Skynjarar og rafhlöður': { hue: '#7c3aed' },
+    'Tæki':                   { hue: '#475569' },
+    'Viðvörunarkerfi':        { hue: '#be123c' },
+    'Vinna':                  { hue: '#0369a1' },
+    'Vinna og akstur':        { hue: '#0e7490' },
+    'Yfirferð slökkvitækja':  { hue: '#1f9d55' }
   };
-  function metaFor(cat) { return CAT_META[cat] || { icon: '▪', hue: '#1e3a8a' }; }
+  function metaFor(cat) { return CAT_META[cat] || { hue: '#1e3a8a' }; }
+  // 2026-08-05 (ósk Agnars: „þessi emoji eru voða barnalegir — meira faglegt"):
+  // emoji-táknin víkja fyrir stroke-teiknuðum SVG úr js/ui-icons.js, sem erfa
+  // lit flokksins og teiknast eins á öllum tækjum.
+  function iconFor(cat, size) { return window.UIIcons ? UIIcons.flokkurSvg(cat, { size: size || 15 }) : ''; }
 
   // „Mest notað" — nýjustu val notandans (localStorage) fyrst, svo sjálfgefnir
   // skýrslu-þjónustuliðir svo reiturinn er aldrei tómur í fyrsta skipti.
@@ -139,7 +143,8 @@
         // ── Haus ──
         '<div style="background:#1e3a8a;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">' +
           '<div>' +
-            '<div style="font-size:15px;font-weight:800">🔍 Velja vöru / þjónustu</div>' +
+            '<div style="font-size:15px;font-weight:800;display:flex;align-items:center;gap:7px">' +
+              (window.UIIcons ? UIIcons.svg('search', { size: 16 }) : '') + 'Velja vöru / þjónustu</div>' +
             '<div style="font-size:11.5px;opacity:.75">Smelltu á vöru til að nota nafn + verð sjálfvirkt</div>' +
           '</div>' +
           '<div id="_vp-x" title="Loka" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);border-radius:8px;font-size:14px;cursor:pointer">✕</div>' +
@@ -150,14 +155,14 @@
         // listi fyrir neðan (sjá renderList), sjálfgefið samanbrotinn.
         '<div style="padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.07);background:linear-gradient(180deg,#f4f6fa,#e9edf4)">' +
           '<div style="position:relative">' +
-            '<span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);font-size:15px;opacity:.5;pointer-events:none">🔍</span>' +
+            '<span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);display:flex;opacity:.55;color:#0f172a;pointer-events:none">' + (window.UIIcons ? UIIcons.svg('search', { size: 15 }) : '') + '</span>' +
             '<input id="_vp-search" type="text" autocomplete="off" placeholder="Leita að vöru, flokki eða lýsingu…" style="border:1.5px solid rgba(0,0,0,.18);border-radius:10px;padding:13px 36px 13px 34px;font-size:15px;font-weight:600;width:100%;box-sizing:border-box;background:#fff">' +
             '<div id="_vp-clear" title="Hreinsa leit" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:99px;background:rgba(0,0,0,.08);color:rgba(0,0,0,.55);font-size:13px;line-height:24px;text-align:center;cursor:pointer">✕</div>' +
           '</div>' +
         '</div>' +
         // ── Mest notað ──
         '<div id="_vp-recent-wrap" style="padding:10px 16px 4px;display:none;flex:none">' +
-          '<div style="font-size:10px;font-weight:800;color:rgba(0,0,0,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">★ Mest notað í þínum skýrslum</div>' +
+          '<div style="font-size:10px;font-weight:800;color:rgba(0,0,0,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px">' + (window.UIIcons ? UIIcons.svg('star', { size: 12 }) : '') + 'Mest notað í þínum skýrslum</div>' +
           '<div id="_vp-recent" style="display:flex;flex-wrap:wrap;gap:6px"></div>' +
         '</div>' +
         // ── Grúppaður listi ──
@@ -246,7 +251,7 @@
       const m = metaFor(cat);
       return '<div class="_vp-cat-header" data-cat="' + esc(cat) + '" style="position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:9px;padding:11px 16px;cursor:pointer;background:#fff;border-bottom:1px solid rgba(0,0,0,.06)">' +
           '<span style="display:inline-flex;transition:transform .15s ease;transform:rotate(' + (open ? '90deg' : '0deg') + ');color:rgba(0,0,0,.4);font-size:12px;flex:none">▶</span>' +
-          '<span style="font-size:15px;flex:none">' + m.icon + '</span>' +
+          '<span style="display:flex;flex:none;color:' + m.hue + '">' + iconFor(cat, 15) + '</span>' +
           '<span style="font-size:14px;font-weight:800;color:#1a1a1a;flex:1;min-width:0">' + esc(cat) + '</span>' +
           '<span style="font-size:11.5px;font-weight:700;color:rgba(0,0,0,.4)">' + count + '</span>' +
         '</div>';
