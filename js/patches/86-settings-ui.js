@@ -31,8 +31,8 @@
       #su-modal .su-back { display:none; }
       #su-modal .su-card { position:relative; background:var(--surface,#fff); border:1px solid var(--brd,#e2e8f0); border-radius:16px; box-shadow:0 1px 3px rgba(15,23,42,.06); width:100%; max-height:none; display:block; overflow:hidden; }
       #su-modal .su-hd { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:20px 24px; border-bottom:1px solid var(--brd,#e2e8f0); background:linear-gradient(135deg, var(--app-primary, #C93C1D) 0%, #7f1d1d 100%); color:#fff; }
-      #su-modal .su-hd h3 { margin:0; font-size:19px; font-weight:800; letter-spacing:-.01em; }
-      #su-modal .su-hd .su-sub { margin-top:3px; font-size:12.5px; opacity:.8; max-width:70ch; }
+      #su-modal .su-hd h3 { margin:0; font-size:19px; font-weight:800; letter-spacing:-.01em; color:#fff !important; }  /* þemað setur h3 dökkgrátt globalt */
+      #su-modal .su-hd .su-sub { color:#fff; margin-top:3px; font-size:12.5px; opacity:.8; max-width:70ch; }
       #su-modal .su-x { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25); color:#fff; padding:7px 12px; border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:600; }
       #su-modal .su-main { display:grid; grid-template-columns:268px 1fr; align-items:start; }
       /* Hliðarröndin — hver kafli með nafni OG lýsingu, ekki bara flipa-orði. */
