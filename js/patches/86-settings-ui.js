@@ -37,6 +37,12 @@
       #su-modal .su-main { display:grid; grid-template-columns:268px 1fr; align-items:start; }
       /* Hliðarröndin — hver kafli með nafni OG lýsingu, ekki bara flipa-orði. */
       #su-modal .su-tabs { display:flex; flex-direction:column; gap:2px; padding:12px; border-right:1px solid var(--brd,#e2e8f0); background:var(--surface2,#f8fafc); overflow:visible; }
+      #su-modal .su-leit { padding:2px 2px 10px; }
+      #su-modal .su-leit input { width:100%; box-sizing:border-box; padding:9px 11px; border:1px solid var(--brd2,#cbd5e1); border-radius:9px; font:inherit; font-size:13px; background:var(--surface,#fff); color:var(--ink1,#0f172a); }
+      #su-modal .su-leit input:focus { outline:none; border-color:#2563eb; box-shadow:0 0 0 1px #2563eb; }
+      #su-modal .su-hopur { margin-bottom:10px; }
+      #su-modal .su-hopur-nafn { padding:4px 11px 6px; font-size:10px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--ink3,#94a3b8); }
+      #su-modal .su-ekkert { padding:14px 11px; font-size:12px; font-style:italic; color:var(--ink4,#94a3b8); }
       #su-modal .su-tab { display:block; width:100%; text-align:left; padding:9px 11px; font:inherit; font-size:13px; font-weight:600; color:var(--ink2,#475569); background:transparent; border:1px solid transparent; border-bottom:none; border-radius:9px; cursor:pointer; white-space:normal; line-height:1.25; }
       #su-modal .su-tab .su-tab-desc { display:block; margin-top:2px; font-size:10.5px; font-weight:500; color:var(--ink3,#94a3b8); }
       #su-modal .su-tab:hover { background:rgba(15,23,42,.04); color:var(--ink1,#0f172a); }
@@ -106,19 +112,19 @@
 
   // Kaflar með MANNAMÁLS-lýsingu — nafnið eitt segir sjaldnast hvað er þarna inni.
   const SU_META = [
-    ['branding',     'Merki og borði',    'Nafn, merki, borði og litir sem birtast efst í appinu og á kvittunum.'],
-    ['sala',         'Sala — flísar',     'Hvaða vörur birtast sem flísar í Sölu og í hvaða röð.'],
-    ['shortcuts',    'Hraðtakkar',        'Flýtitakkar á Sölu-skjánum — algengustu verkin í einum smelli.'],
-    ['vorur',        'Vörur og þjónusta', 'Hvaða vörur eru virkar og sjást í vörulistanum.'],
-    ['starfsmenn',   'Starfsmenn',        'Hverjir skrá sig á verk og birtast í úttektarskýrslum.'],
-    ['utlit',        'Hliðarstika',       'Hvaða síður sjást í hliðarstikunni og í hvaða röð.'],
-    ['kvittun',      'Kvittun',           'Texti og útlit á kvittuninni sem viðskiptavinur fær.'],
-    ['prentun',      'Prentun',           'Pappírsstærð, spássíur og prentstillingar fyrir reikninga og miða.'],
-    ['tilkynningar', 'Tilkynningar',      'Hvenær kerfið lætur vita — áminningar og viðvaranir.'],
-    ['email',        'Tölvupóstur',       'Netföng sem sent er frá og hverjir fá afrit.'],
-    ['tenglar',      'Tenglar',           'Flýtileiðir í ytri kerfi — dkPlus, Payday, Drive og fleira.'],
-    ['backup',       'Afritun',           'Afritun og útflutningur á gögnum.'],
-    ['almennt',      'Almennt',           'VSK, gjaldmiðill, dagsetningarsnið og önnur grunngildi.']
+    ['branding',     'Merki og borði',    'Nafn, merki, borði og litir sem birtast efst í appinu og á kvittunum.', 'Vinnusvæði', 'logo banner litir nafn kennitala heimilisfang sími netfang'],
+    ['sala',         'Sala — flísar',     'Hvaða vörur birtast sem flísar í Sölu og í hvaða röð.', 'Vinnusvæði', 'pos karfa flísar vörur röð'],
+    ['shortcuts',    'Hraðtakkar',        'Flýtitakkar á Sölu-skjánum — algengustu verkin í einum smelli.', 'Vinnusvæði', 'flýtileiðir takkar'],
+    ['vorur',        'Vörur og þjónusta', 'Hvaða vörur eru virkar og sjást í vörulistanum.', 'Vinnusvæði', 'verð vsk vörulisti þjónusta virkt'],
+    ['starfsmenn',   'Starfsmenn',        'Hverjir skrá sig á verk og birtast í úttektarskýrslum.', 'Vinnusvæði', 'tæknimenn skoðunaraðili nöfn'],
+    ['utlit',        'Hliðarstika',       'Hvaða síður sjást í hliðarstikunni og í hvaða röð.', 'Vinnusvæði', 'valmynd nav síður röð fela'],
+    ['kvittun',      'Kvittun',           'Texti og útlit á kvittuninni sem viðskiptavinur fær.', 'Vinnusvæði', 'kvittun bon prentun texti'],
+    ['prentun',      'Prentun',           'Pappírsstærð, spássíur og prentstillingar fyrir reikninga og miða.', 'Vinnusvæði', 'prentari a4 miðar spássía'],
+    ['tilkynningar', 'Tilkynningar',      'Hvenær kerfið lætur vita — áminningar og viðvaranir.', 'Vinnusvæði', 'áminning viðvörun sms'],
+    ['email',        'Tölvupóstur',       'Netföng sem sent er frá og hverjir fá afrit.', 'Vinnusvæði', 'email netfang afrit bcc sendandi gmail'],
+    ['tenglar',      'Tenglar',           'Flýtileiðir í ytri kerfi — dkPlus, Payday, Drive og fleira.', 'Vinnusvæði', 'dkplus payday drive tenglar hlekkir'],
+    ['almennt',      'Almennt',           'VSK, gjaldmiðill, dagsetningarsnið og önnur grunngildi.', 'Vinnusvæði', 'vsk gjaldmiðill dagsetning kr prósenta'],
+    ['backup',       'Afritun',           'Afritun og útflutningur á gögnum.', 'Gögn', 'backup afrit útflutningur json']
   ];
   // Aðrir patchar mega bæta við kafla: SettingsUI.registerSection({id,nafn,lysing,render})
   const _extraSections = [];
@@ -131,8 +137,18 @@
     return true;
   }
   function allarSectionir() {
-    return SU_META.map(m => ({ id: m[0], nafn: m[1], lysing: m[2] }))
-      .concat(_extraSections.map(x => ({ id: x.id, nafn: x.nafn || x.id, lysing: x.lysing || '' })));
+    return SU_META.map(m => ({ id: m[0], nafn: m[1], lysing: m[2], hopur: m[3], ord: m[4] || '' }))
+      .concat(_extraSections.map(x => ({
+        id: x.id, nafn: x.nafn || x.id, lysing: x.lysing || '',
+        hopur: x.hopur || 'Kerfi', ord: x.ord || ''
+      })));
+  }
+  const HOPA_ROD = ['Vinnusvæði', 'Þetta tæki', 'Kerfi', 'Gögn'];
+  function hopar() {
+    const allt = allarSectionir();
+    const nofn = HOPA_ROD.filter(h => allt.some(s2 => s2.hopur === h))
+      .concat([...new Set(allt.map(s2 => s2.hopur))].filter(h => HOPA_ROD.indexOf(h) < 0));
+    return nofn.map(h => ({ nafn: h, kaflar: allt.filter(s2 => s2.hopur === h) }));
   }
   function metaFyrir(id) { return allarSectionir().find(x => x.id === id) || { id, nafn: id, lysing: '' }; }
 
@@ -158,10 +174,17 @@
         '</div>' +
         '<div class="su-main">' +
           '<div class="su-tabs">' +
-            allarSectionir().map(sec =>
-              '<button class="su-tab" data-tab="' + esc(sec.id) + '">' + esc(sec.nafn) +
-                (sec.lysing ? '<span class="su-tab-desc">' + esc(sec.lysing) + '</span>' : '') +
-              '</button>').join('') +
+            '<div class="su-leit"><input id="su-leit" type="search" autocomplete="off" placeholder="Leita í stillingum…"></div>' +
+            hopar().map(h =>
+              '<div class="su-hopur" data-hopur="' + esc(h.nafn) + '">' +
+                '<div class="su-hopur-nafn">' + esc(h.nafn) + '</div>' +
+                h.kaflar.map(sec =>
+                  '<button class="su-tab" data-tab="' + esc(sec.id) + '" data-leit="' +
+                    esc((sec.nafn + ' ' + sec.lysing + ' ' + sec.ord).toLowerCase()) + '">' + esc(sec.nafn) +
+                    (sec.lysing ? '<span class="su-tab-desc">' + esc(sec.lysing) + '</span>' : '') +
+                  '</button>').join('') +
+              '</div>').join('') +
+            '<div class="su-ekkert" style="display:none">Ekkert fannst</div>' +
           '</div>' +
           '<div class="su-pane">' +
             '<div class="su-pane-hd" id="su-pane-hd"></div>' +
@@ -189,6 +212,7 @@
 
     wrap.querySelector('.su-x').addEventListener('click', () => {
       // Full síða: „Loka" fer til baka þangað sem notandinn var.
+      if (!máYfirgefa('Loka og henda þeim?')) return;
       close();
       try { if (history.length > 1) history.back(); else if (typeof showMasterView === 'function') showMasterView('view-counter'); } catch (_) {}
     });
@@ -198,8 +222,55 @@
     wrap.querySelectorAll('.su-tab').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
-    switchTab(_activeTab);
+    // Leit: síar kaflana beint, engin endurteikning.
+    const leit = wrap.querySelector('#su-leit');
+    if (leit) {
+      leit.addEventListener('input', () => {
+        const q = leit.value.trim().toLowerCase();
+        let synilegir = 0;
+        wrap.querySelectorAll('.su-tab').forEach(t => {
+          const passar = !q || (t.dataset.leit || '').indexOf(q) >= 0;
+          t.style.display = passar ? '' : 'none';
+          if (passar) synilegir++;
+        });
+        wrap.querySelectorAll('.su-hopur').forEach(g => {
+          const einhver = [...g.querySelectorAll('.su-tab')].some(t => t.style.display !== 'none');
+          g.style.display = einhver ? '' : 'none';
+        });
+        const ekkert = wrap.querySelector('.su-ekkert');
+        if (ekkert) ekkert.style.display = synilegir ? 'none' : '';
+      });
+      leit.addEventListener('keydown', e => {
+        if (e.key === 'Escape') { leit.value = ''; leit.dispatchEvent(new Event('input')); }
+        if (e.key === 'Enter') {
+          const fyrsti = [...wrap.querySelectorAll('.su-tab')].find(t => t.style.display !== 'none');
+          if (fyrsti) fyrsti.click();
+        }
+      });
+    }
+
+    // Djúptengill: #settings/email opnar þann kafla beint.
+    const fráHash = (location.hash.match(/^#settings\/([a-z0-9_-]+)/i) || [])[1];
+    const gildir = allarSectionir().some(x => x.id === fráHash);
+    switchTab(gildir ? fráHash : _activeTab);
   }
+
+  // ── Óvistaðar breytingar ─────────────────────────────────────────────────
+  function óhreinirKaflar() {
+    if (!_draft || !_orig) return [];
+    return Object.keys(_draft).filter(k => JSON.stringify(_draft[k]) !== _orig[k]);
+  }
+  function máYfirgefa(hvað) {
+    const ó = óhreinirKaflar();
+    if (!ó.length) return true;
+    const nöfn = ó.map(k => metaFyrir(k).nafn).join(', ');
+    return confirm('Óvistaðar breytingar í: ' + nöfn + '\n\n' + (hvað || 'Halda áfram og henda þeim?'));
+  }
+  window.addEventListener('beforeunload', e => {
+    if (!document.getElementById('su-modal')) return;
+    if (!óhreinirKaflar().length) return;
+    e.preventDefault(); e.returnValue = '';
+  });
 
   // Eldri stillingasíðan (tækjategundir, innflutningur, hreinsun o.fl. sem aðrir
   // patchar setja í #settings-main) fer í samanbrotinn kassa fyrir neðan — hún
@@ -235,7 +306,10 @@
   }
 
   function switchTab(name) {
+    // Vörn: ekki henda óvistuðum breytingum þegjandi þegar skipt er um kafla.
+    if (_activeTab && name !== _activeTab && !máYfirgefa('Skipta yfir í annan kafla og henda þeim?')) return;
     _activeTab = name;
+    try { if (location.hash !== '#settings/' + name) history.replaceState(null, '', '#settings/' + name); } catch (_) {}
     const m = document.getElementById('su-modal');
     if (!m) return;
     m.querySelectorAll('.su-tab').forEach(t => {
