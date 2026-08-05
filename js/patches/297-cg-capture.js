@@ -131,6 +131,6 @@
   document.addEventListener('DOMContentLoaded', ensureTrigger);
   if (document.readyState !== 'loading') ensureTrigger();
   syncBanner();
-  console.log('[patch-296] cg-capture installed — 🎯 CG button bottom-left, sends to brunaholf cg-entries');
+  console.log('[patch-297] cg-capture installed — 🎯 CG button bottom-left, sends to brunaholf cg-entries');
 })();
 /* === END CG CAPTURE === */
