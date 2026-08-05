@@ -41,7 +41,15 @@
   let _breyta = false;            // ritháttur á/af
   let _vistT = null;
 
-  function lesa() {
+  // MIKILVÆGT: lesa AÐEINS af servernum þegar við höfum ekkert í höndunum eða
+  // engin vistun er í bið. Annars strokaði endurteikningin út það sem notandinn
+  // var að búa til, af því að vistunin er tafin (350 ms) og AppSettings.path()
+  // skilaði enn gamla gildinu — nýstofnuð síða hvarf um leið og hún birtist.
+  function lesa(force) {
+    if (_state && !force) {
+      if (!_virk && _state.sidur.length) _virk = _state.sidur[0].id;
+      return _state;
+    }
     const s = (window.AppSettings && AppSettings.path && AppSettings.path(KEY)) || null;
     _state = (s && Array.isArray(s.sidur)) ? JSON.parse(JSON.stringify(s)) : { sidur: [] };
     if (!_virk && _state.sidur.length) _virk = _state.sidur[0].id;
@@ -339,6 +347,8 @@
     v.style.display = ''; v.classList.add('active');
     document.querySelectorAll('.vnav-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
+    // Sækja ferskt af servernum þegar síðan er opnuð — nema vistun sé í bið.
+    if (!_vistT) lesa(true);
     teikna();
   }
 
