@@ -620,9 +620,13 @@
         (manual ? 'box-shadow:0 0 0 1px var(--brand) inset;' : '') + '">' +
       '<span style="font-size:11.5px;color:var(--ink1);font-weight:' + (manual ? '700' : '500') + '">' +
         (manual ? '• ' : '') + esc(p.nafn) + '</span>' +
-      '<select class="_ahop-move" data-vid="' + p.id + '" title="Færa í annan flokk" ' +
-        'style="border:none;background:transparent;font:inherit;font-size:10.5px;color:var(--ink3);cursor:pointer;max-width:26px;padding:0">' +
-        opts + '</select>' +
+      // ⇄ táknið er sýnilega merkið; fellilistinn liggur ósýnilegur ofan á því
+      // svo flísin haldist þröng en smellur opni samt venjulegan valmyndalista.
+      '<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;background:var(--surface2);color:var(--ink3);font-size:10px" title="Færa í annan flokk">⇄' +
+        '<select class="_ahop-move" data-vid="' + p.id + '" ' +
+          'style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:12px">' +
+          opts + '</select>' +
+      '</span>' +
       '<button class="_ahop-chip-x" data-vid="' + p.id + '" type="button" title="Taka út úr hópsafslætti" ' +
         'style="border:none;background:transparent;color:var(--ink4);cursor:pointer;font-size:11px;line-height:1;padding:2px 4px">✕</button>' +
     '</span>';
