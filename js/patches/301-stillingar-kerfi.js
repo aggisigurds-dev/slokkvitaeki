@@ -128,10 +128,12 @@
         return (r.data && r.data[0] && r.data[0][dalkur]) || null;
       } catch (_) { return null; }
     }
+    // Réttir tímadálkar per töflu — þær heita ekki allar `created_at`
+    // (staðfest í information_schema 2026-08-05).
     const [timavera, bankinn, postur] = await Promise.all([
-      nyjast('timavera_entries', 'created_at'),
-      nyjast('bank_transactions', 'created_at'),
-      nyjast('email_digest', 'created_at')
+      nyjast('timavera_entries', 'imported_at'),
+      nyjast('bank_transactions', 'imported_at'),
+      nyjast('email_digest', 'fetched_at')
     ]);
 
     async function fall(nafn) {
