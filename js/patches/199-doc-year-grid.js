@@ -299,7 +299,7 @@
     var dash=d.length===10?(d.slice(0,6)+'-'+d.slice(6)):d;
     try{
       var r=await sb.from('solur')
-        .select('num,samtals,created_at,customer_id,greitt_med,source')
+        .select('id,num,samtals,created_at,customer_id,greitt_med,source')
         .eq('greitt_med','reikningur')
         .or('customer_kt.eq.'+d+',customer_kt.eq.'+dash);
       if(r.error||!r.data) return [];
@@ -481,7 +481,7 @@
         var k=numKey(s.num); if(!k||haveInv[k]) return; haveInv[k]=1;
         var y=parseInt(String(s.created_at||'').slice(0,4),10);
         if(!(y>=2000&&y<=NOW+1)) return;
-        (invByY[y]=invByY[y]||[]).push({ invoice_number:s.num, amount:s.samtals, doc_date:s.created_at, _fromSolur:true });
+        (invByY[y]=invByY[y]||[]).push({ invoice_number:s.num, amount:s.samtals, doc_date:s.created_at, _fromSolur:true, _saleId:s.id });
       });
     }
 
@@ -599,7 +599,8 @@
         var y=sendEl.getAttribute('data-send-year');
         var rep=(section._repByY && section._repByY[y]||[])[0];
         var bru=(section._bruByY && section._bruByY[y]||[])[0];
-        var inv=(section._invByY && section._invByY[y]||[])[0];
+        var invArr=(section._invByY && section._invByY[y])||[];
+        var inv=invArr[0];
         var meta=section._sendCo||{}; var nafn=meta.nafn||'';
         // Netfang forfyllt af fyrirtækinu (má breyta í glugganum).
         var email=''; try{ var sb=SB(); if(sb && meta.coId){ var er=await sb.from('fyrirtaeki').select('netfang').eq('id', meta.coId).maybeSingle(); if(er&&er.data&&er.data.netfang) email=String(er.data.netfang).trim(); } }catch(_){}
@@ -609,11 +610,21 @@
         // hakað val hengja EKKERT (t.d. reikningur sem er aðeins solur-skráning án
         // PDF-skjals; hann er sendur af brunakerfis-/sölu-síðunni þar sem hann er teiknaður).
         var hasFile=function(x){ return x && ((x.drive_file_id && String(x.drive_file_id).indexOf('sb:')!==0) || x.storage_path || (x._att && x._att.path)); };
+        // „Nothing disappears" (Agnar): reikningur má ALDREI detta úr búnti þótt hann
+        // eigi ekkert Drive-PDF. Sölu-skráður reikningur (solur, `_saleId`) er teiknaður
+        // sem PDF beint úr sölunni gegnum ReceiptSender.invoiceAttachment (sama og
+        // 253 Fyrri viðskipti-búntið) — svo skýrsla + reikningur fara ALLTAF saman.
+        // Veljum fyrsta reikning ársins sem hægt er að hengja (PDF eða sölu-röð).
+        inv = invArr.filter(function(x){ return hasFile(x) || x._saleId; })[0] || invArr[0];
         var choices=[];
         if(hasFile(rep)) choices.push({ label:'🧯 Úttektarskýrsla '+y, checked:true, build:function(){ return entryAttachment(rep,'Úttektarskýrsla '+y+'.pdf'); } });
         if(hasFile(bru)) choices.push({ label:'🔥 Brunakerfisskýrsla '+y, checked:true, build:function(){ return entryAttachment(bru,'Brunakerfisskýrsla '+y+'.pdf'); } });
-        if(hasFile(inv)) choices.push({ label:'🧾 Reikningur '+(inv&&inv.invoice_number?inv.invoice_number:y), checked:true, build:function(){ return entryAttachment(inv,'Reikningur '+y+'.pdf'); } });
-        if(!choices.length){ alert('Engin PDF-skjöl til að senda fyrir '+y+'. Reikning sem er aðeins skráður í Sölu má senda af brunakerfis-/sölu-síðunni.'); return; }
+        if(hasFile(inv)){
+          choices.push({ label:'🧾 Reikningur '+(inv&&inv.invoice_number?inv.invoice_number:y), checked:true, build:function(){ return entryAttachment(inv,'Reikningur '+y+'.pdf'); } });
+        } else if(inv && inv._saleId && window.ReceiptSender && ReceiptSender.invoiceAttachment){
+          choices.push({ label:'🧾 Reikningur '+(inv.invoice_number||y), checked:true, build:function(){ return ReceiptSender.invoiceAttachment(inv._saleId); } });
+        }
+        if(!choices.length){ alert('Engin skjöl til að senda fyrir '+y+'.'); return; }
         ReceiptSender.compose({
           title:'Senda — '+nafn,
           to:email,
