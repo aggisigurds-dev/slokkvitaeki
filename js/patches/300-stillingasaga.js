@@ -190,29 +190,23 @@
     });
   }
 
-  // ── Flipi inni í Stillingar-glugganum (#su-modal, patch 86) ───────────────
+  // ── Eigin kafli í stillingasíðunni (patch 86 v2) ──────────────────────────
   function tengjaModal() {
-    setInterval(() => {
-      const m = document.getElementById('su-modal');
-      if (!m) return;
-      const einn = m.querySelector('.su-tab');
-      const bar = einn && einn.parentElement;
-      if (!bar || bar.querySelector('[data-tab="saga"]')) return;
-
-      const b = document.createElement('button');
-      b.className = 'su-tab';
-      b.dataset.tab = 'saga';
-      b.style.cssText = 'display:inline-flex;align-items:center;gap:6px';
-      b.innerHTML = ic('layers', 13) + '<span>Saga</span>';
-      b.addEventListener('click', async () => {
-        const body = document.getElementById('su-body');
-        if (!body) return;
-        body.innerHTML = '<div style="padding:20px;color:#94a3b8">Sæki söguna…</div>';
-        _raðir = await sækja();
-        body.innerHTML = '<div class="_ss-modal-body" style="padding:14px">' + sagaInnihald() + '</div>';
+    const skra = () => {
+      if (!window.SettingsUI || typeof SettingsUI.registerSection !== 'function') return false;
+      return SettingsUI.registerSection({
+        id: 'saga',
+        nafn: 'Saga stillinga',
+        lysing: 'Hvað breyttist, hvenær — og hvernig má taka einstaka breytingu til baka.',
+        render: async (body) => {
+          body.innerHTML = '<div style="padding:8px 0;color:var(--ink3,#94a3b8);font-size:12.5px">Sæki söguna…</div>';
+          _raðir = await sækja();
+          body.innerHTML = '<div class="_ss-modal-body">' + sagaInnihald() + '</div>';
+        }
       });
-      bar.appendChild(b);
-    }, 1000);
+    };
+    if (skra()) return;
+    const t = setInterval(() => { if (skra()) clearInterval(t); }, 800);
   }
 
   function tengja() {
