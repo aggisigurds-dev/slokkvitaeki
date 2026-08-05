@@ -471,10 +471,26 @@
     // 2. Insert sale row. Totals are derived from the line items (see
     //    totalsFromLinur) so vsk_upphaed/samtals always match the printed bill.
     const { subEx, vsk, total, afslattur } = totalsFromLinur(linur, visit.discount_pct);
+    // 2026-08-05 (Agnar: "Húsfélagið Engjasel 31" reikningur R-000703 hvorki
+    // paraður í Sölu 📦 Pör bandinu né sýnilegur í Kröfu yfirliti — tvö
+    // aðskilin einkenni, EIN rót): þessi insert setti ENGA af customer_id/
+    // customer_base_id/customer_kt á söluna. 📦 Pör-bandið og v_bundle_coverage
+    // lykla á customer_kt; Kröfu yfirlit lyklar fyrst og fremst á customer_id/
+    // customer_base_id (nafna-endurheimtin þar nær kt-inu en aldrei netfanginu).
+    // Sama uppfletting og 233-uttekt-pdf-autosave.js notar nú þegar fyrir
+    // reikningsins customer_documents-afrit — bara aldrei gerð fyrir solur-röðina.
+    let visitKt = null, visitBaseId = null;
+    try {
+      const cr = await sb.from('fyrirtaeki').select('kennitala,customer_base_id').eq('id', coId).maybeSingle();
+      if (cr.data) { visitKt = cr.data.kennitala || null; visitBaseId = cr.data.customer_base_id || null; }
+    } catch (_) {}
     let saleId = null;
     try {
       const ins = await sb.from('solur').insert({
         customer_nafn: coNafn,
+        customer_kt: visitKt,
+        customer_id: coId || null,
+        customer_base_id: visitBaseId,
         starfsmadur: starfsmadur || 'Kassi',
         linur,
         upphaed_an_vsk: subEx,
