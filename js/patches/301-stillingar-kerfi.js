@@ -122,19 +122,19 @@
       sidast = r.data && r.data.updated_at;
     } catch (_) {}
 
-    async function nyjast(tafla, dalkur) {
-      try {
-        const r = await sb.from(tafla).select(dalkur).order(dalkur, { ascending: false }).limit(1);
-        return (r.data && r.data[0] && r.data[0][dalkur]) || null;
-      } catch (_) { return null; }
-    }
-    // Réttir tímadálkar per töflu — þær heita ekki allar `created_at`
-    // (staðfest í information_schema 2026-08-05).
-    const [timavera, bankinn, postur] = await Promise.all([
-      nyjast('timavera_entries', 'imported_at'),
-      nyjast('bank_transactions', 'imported_at'),
-      nyjast('email_digest', 'fetched_at')
-    ]);
+    // Sumar töflur (timavera_entries, bank_transactions) eru með RLS kveikt og
+    // ENGAR reglur — vafrinn sér þær ekki og fyrirspurnin skilaði alltaf engu
+    // („aldrei" þótt gögnin séu til). Þess vegna er notað eitt öruggt fall sem
+    // skilar AÐEINS tímastimplum og fjölda, engum gögnum.
+    let h = {};
+    try {
+      const r = await sb.rpc('kerfis_heilsa');
+      if (!r.error && r.data) h = r.data;
+    } catch (_) {}
+    const timavera = h.timavera || null;
+    const bankinn  = h.banki || null;
+    const postur   = h.postur || null;
+    if (h.stillingar) sidast = h.stillingar;
 
     async function fall(nafn) {
       try {
@@ -153,9 +153,9 @@
       '<div style="display:flex;flex-direction:column;gap:7px">' +
         lina('Gagnagrunnur', pilla(dbOk, dbOk ? 'svarar · ' + dbMs + ' ms' : 'svarar ekki'), 'Supabase-tengingin sem allt appið byggir á.') +
         lina('Stillingar síðast vistaðar', pilla(null, fyrir(sidast)), sidast ? new Date(sidast).toLocaleString('is-IS') : '') +
-        lina('Tímavera', pilla(timavera ? true : null, fyrir(timavera)), 'Nýjasta færsla sem barst úr Tímaveru.') +
-        lina('Bankafærslur', pilla(bankinn ? (Date.now() - new Date(bankinn).getTime() < 7 * 864e5) : null, fyrir(bankinn)), 'Nýjasta bankafærsla — eldri en vika þýðir að innsogið liggur niðri.') +
-        lina('Póstsafn', pilla(postur ? true : null, fyrir(postur)), 'Nýjasti póstur sem kerfið las inn.') +
+        lina('Tímavera', pilla(timavera ? true : null, fyrir(timavera)), (h.timavera_radir || 0).toLocaleString('is-IS') + ' færslur — nýjasta sótt') +
+        lina('Bankafærslur', pilla(bankinn ? (Date.now() - new Date(bankinn).getTime() < 7 * 864e5) : null, fyrir(bankinn)), (h.banki_radir || 0).toLocaleString('is-IS') + ' færslur — innsog liggur niðri ef þetta er gamalt') +
+        lina('Póstsafn', pilla(postur ? true : null, fyrir(postur)), (h.postur_radir || 0).toLocaleString('is-IS') + ' póstar lesnir inn') +
         lina('Kennitöluuppfletting', pilla(ktOk, ktOk ? 'svarar' : 'svarar ekki'), '/api/kt-lookup') +
         lina('Skönnun (OCR)', pilla(ocrOk, ocrOk ? 'svarar' : 'svarar ekki'), '/api/ocr-scan') +
         (bygging ? lina('Útgáfa', pilla(null, bygging.trim().slice(0, 40)), 'Hvaða bygging keyrir í þessum vafra.') : '') +
