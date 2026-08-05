@@ -37,30 +37,44 @@
 
   // Flokkur → íkon + grunnlitur (hue). Sami og í hönnunar-comp-inu; óþekktir
   // flokkar fá hlutlausan bláan fallback.
+  // 2026-08-05 (ósk Agnars: „þessi emoji eru voða barnalegir — meira faglegt"):
+  // emoji-táknin víkja fyrir stroke-teiknuðum SVG úr js/ui-icons.js. Hver
+  // flokkur heldur sínum lit, en hann er nú notaður sem hófstilltur áherslulitur
+  // á táknið sjálft í stað glerjaðra litaflata.
   const CAT_META = {
-    'Allt':                   { icon: '▦',  hue: '#1e3a8a' },
-    'Slökkvitæki':            { icon: '🧯', hue: '#dc2626' },
-    'Brunaslöngur':           { icon: '🚒', hue: '#c2410c' },
-    'Skilti':                 { icon: '🆘', hue: '#15803d' },
-    'Reykskynjarar':          { icon: '💨', hue: '#7c3aed' },
-    'Brunakerfi':             { icon: '🚨', hue: '#be123c' },
-    'Varahlutir':             { icon: '🔧', hue: '#475569' },
-    'Fylgihlutir':            { icon: '🔩', hue: '#0f766e' },
-    'Ýmsar vörur':            { icon: '📦', hue: '#b45309' },
-    'Þjónusta':               { icon: '📋', hue: '#0369a1' },
-    'Aukavörur':              { icon: '🏷️', hue: '#7c3aed' },
-    'Brunaslöngurhjól':       { icon: '🚒', hue: '#c2410c' },
-    'Eldvarnir':              { icon: '🔥', hue: '#dc2626' },
-    'Hleðsla slökkvitækja':   { icon: '🔄', hue: '#b45309' },
-    'Skilti, ljós og miðar':  { icon: '🆘', hue: '#15803d' },
-    'Skynjarar og rafhlöður': { icon: '🔋', hue: '#7c3aed' },
-    'Tæki':                   { icon: '🧰', hue: '#475569' },
-    'Viðvörunarkerfi':        { icon: '🚨', hue: '#be123c' },
-    'Vinna':                  { icon: '👷', hue: '#0369a1' },
-    'Vinna og akstur':        { icon: '🚙', hue: '#0e7490' },
-    'Yfirferð slökkvitækja':  { icon: '✅', hue: '#1f9d55' }
+    'Allt':                   { hue: '#334155' },
+    'Slökkvitæki':            { hue: '#b91c1c' },
+    'Brunaslöngur':           { hue: '#c2410c' },
+    'Skilti':                 { hue: '#15803d' },
+    'Reykskynjarar':          { hue: '#6d28d9' },
+    'Brunakerfi':             { hue: '#be123c' },
+    'Varahlutir':             { hue: '#475569' },
+    'Fylgihlutir':            { hue: '#0f766e' },
+    'Ýmsar vörur':            { hue: '#b45309' },
+    'Þjónusta':               { hue: '#1d4ed8' },
+    'Aukavörur':              { hue: '#6d28d9' },
+    'Brunaslöngurhjól':       { hue: '#c2410c' },
+    'Eldvarnir':              { hue: '#b91c1c' },
+    'Hleðsla slökkvitækja':   { hue: '#b45309' },
+    'Skilti, ljós og miðar':  { hue: '#15803d' },
+    'Skynjarar og rafhlöður': { hue: '#6d28d9' },
+    'Tæki':                   { hue: '#475569' },
+    'Viðvörunarkerfi':        { hue: '#be123c' },
+    'Vinna':                  { hue: '#1d4ed8' },
+    'Vinna og akstur':        { hue: '#0e7490' },
+    'Yfirferð slökkvitækja':  { hue: '#15803d' }
   };
-  function metaFor(cat) { return CAT_META[cat] || { icon: '▪', hue: '#1e3a8a' }; }
+  function metaFor(cat) { return CAT_META[cat] || { hue: '#334155' }; }
+  function iconFor(cat, size) {
+    if (window.UIIcons) return UIIcons.flokkurSvg(cat, { size: size || 18 });
+    return '';
+  }
+  // #rrggbb → rgba(...) svo hægt sé að nota flokkslitinn sem daufa fyllingu.
+  function rgba(hex, a) {
+    const h = String(hex || '').replace('#', '');
+    const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+  }
 
   // „Mest notað" — nýjustu val notandans (localStorage) fyrst, svo sjálfgefnir
   // skýrslu-þjónustuliðir svo reiturinn er aldrei tómur í fyrsta skipti.
@@ -111,26 +125,16 @@
     return _loadingPromise;
   }
 
-  // ── Gler-tígull (flokkur) — sami stíll og comp-ið ────────────────────────
+  // ── Flokka-tígull — hófstilltur, engir glerjaðir litafletir ──────────────
   function tileStyle(hue, on) {
     return [
-      'display:flex', 'flex-direction:column', 'gap:3px', 'padding:13px 12px',
-      'min-height:62px', 'justify-content:center', 'border-radius:12px', 'cursor:pointer',
-      'position:relative', 'overflow:hidden', 'transition:all .15s ease',
-      // solid fallback fyrst (ef color-mix er ekki stutt), svo gler-image ofan á
-      'background-color:' + (on ? hue : '#eef1f6'),
-      'background-image:' + (on
-        ? 'linear-gradient(155deg, color-mix(in oklch, ' + hue + ' 55%, transparent) 0%, color-mix(in oklch, ' + hue + ' 78%, transparent) 100%), linear-gradient(155deg, rgba(255,255,255,.5), rgba(255,255,255,.08))'
-        : 'linear-gradient(155deg, color-mix(in oklch, ' + hue + ' 28%, rgba(255,255,255,.6)) 0%, color-mix(in oklch, ' + hue + ' 55%, transparent) 100%), rgba(255,255,255,.15)'),
-      'backdrop-filter:blur(10px)', '-webkit-backdrop-filter:blur(10px)',
-      'color:' + (on ? '#fff' : '#1a1a1a'),
-      'text-shadow:' + (on ? '0 1px 3px rgba(0,0,0,.25)' : 'none'),
-      'border:1px solid ' + (on ? 'color-mix(in oklch, ' + hue + ' 45%, rgba(255,255,255,.7))' : 'rgba(255,255,255,.9)'),
-      'outline:' + (on ? 'none' : '1px solid color-mix(in oklch, ' + hue + ' 55%, transparent)'),
-      'box-shadow:' + (on
-        ? 'inset 0 1px 1px rgba(255,255,255,.6), inset 0 -6px 14px color-mix(in oklch, ' + hue + ' 35%, transparent), 0 8px 20px color-mix(in oklch, ' + hue + ' 35%, transparent), 0 2px 4px rgba(0,0,0,.12)'
-        : 'inset 0 1px 1px rgba(255,255,255,.9), inset 0 -4px 10px color-mix(in oklch, ' + hue + ' 10%, transparent), 0 4px 12px rgba(30,50,90,.1), 0 1px 2px rgba(0,0,0,.05)'),
-      'transform:' + (on ? 'translateY(-2px)' : 'none')
+      'display:flex', 'align-items:center', 'gap:9px', 'padding:9px 11px',
+      'min-height:0', 'border-radius:10px', 'cursor:pointer',
+      'transition:background .12s ease,border-color .12s ease',
+      'background:' + (on ? '#0f172a' : '#fff'),
+      'color:' + (on ? '#fff' : '#0f172a'),
+      'border:1px solid ' + (on ? '#0f172a' : 'rgba(15,23,42,.12)'),
+      'box-shadow:' + (on ? '0 2px 6px rgba(15,23,42,.18)' : '0 1px 2px rgba(15,23,42,.05)')
     ].join(';');
   }
 
@@ -149,7 +153,8 @@
         // ── Haus ──
         '<div style="background:#1e3a8a;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">' +
           '<div>' +
-            '<div style="font-size:15px;font-weight:800">🔍 Velja vöru / þjónustu</div>' +
+            '<div style="font-size:15px;font-weight:800;display:flex;align-items:center;gap:7px">' +
+              (window.UIIcons ? UIIcons.svg('search', { size: 16 }) : '') + 'Velja vöru / þjónustu</div>' +
             '<div style="font-size:11.5px;opacity:.75">Smelltu á vöru til að nota nafn + verð sjálfvirkt</div>' +
           '</div>' +
           '<div id="_vp-x" title="Loka" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);border-radius:8px;font-size:14px;cursor:pointer">✕</div>' +
@@ -161,7 +166,8 @@
         '</div>' +
         // ── Mest notað ──
         '<div id="_vp-recent-wrap" style="padding:10px 16px 4px;display:none;flex:none">' +
-          '<div style="font-size:10px;font-weight:800;color:rgba(0,0,0,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">★ Mest notað í þínum skýrslum</div>' +
+          '<div style="font-size:10px;font-weight:800;color:rgba(0,0,0,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px">' +
+            (window.UIIcons ? UIIcons.svg('star', { size: 12 }) : '') + 'Mest notað í þínum skýrslum</div>' +
           '<div id="_vp-recent" style="display:flex;flex-wrap:wrap;gap:6px"></div>' +
         '</div>' +
         // ── Grúppaður listi ──
@@ -221,11 +227,14 @@
     function renderTiles() {
       tilesEl.innerHTML = categories().map(c => {
         const m = metaFor(c), on = state.cat === c;
-        const countClr = on ? 'rgba(255,255,255,.75)' : 'color-mix(in oklch, ' + m.hue + ' 65%, black)';
         return '<div data-cat="' + esc(c) + '" style="' + tileStyle(m.hue, on) + '">' +
-            '<div style="position:absolute;right:-6px;bottom:-10px;font-size:60px;opacity:.6;pointer-events:none;filter:saturate(1.5)">' + m.icon + '</div>' +
-            '<div style="font-size:18.5px;font-weight:800;line-height:1.15;position:relative">' + esc(c) + '</div>' +
-            '<div style="font-size:12px;font-weight:700;position:relative;color:' + countClr + '">' + catCount(c) + ' vörur</div>' +
+            '<span style="display:flex;align-items:center;justify-content:center;width:30px;height:30px;flex:none;border-radius:8px;' +
+              'background:' + (on ? 'rgba(255,255,255,.14)' : rgba(m.hue, .09)) + ';' +
+              'color:' + (on ? '#fff' : m.hue) + '">' + iconFor(c, 17) + '</span>' +
+            '<span style="min-width:0;line-height:1.25">' +
+              '<span style="display:block;font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(c) + '</span>' +
+              '<span style="display:block;font-size:10.5px;font-weight:600;color:' + (on ? 'rgba(255,255,255,.6)' : 'rgba(15,23,42,.45)') + '">' + catCount(c) + ' vörur</span>' +
+            '</span>' +
           '</div>';
       }).join('');
     }
@@ -266,13 +275,14 @@
 
     function bannerHtml(cat, count) {
       const m = metaFor(cat);
-      // Límdur (sticky) lita-borði per flokk — eins og comp-ið: hue → dekkri hue,
-      // hvítur texti, situr efst meðan skrunað er í gegnum flokkinn. Solid hue
-      // fallback ef color-mix er ekki stutt.
-      return '<div style="position:sticky;top:0;z-index:2;overflow:hidden;margin:8px 10px 4px;border-radius:11px;padding:12px 16px;display:flex;justify-content:space-between;align-items:baseline;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25);background-color:' + m.hue + ';background-image:linear-gradient(135deg, ' + m.hue + ', color-mix(in oklch, ' + m.hue + ' 70%, black));box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 4px 12px color-mix(in oklch, ' + m.hue + ' 30%, transparent)">' +
-          '<div style="position:absolute;right:2px;bottom:-14px;font-size:56px;opacity:.18;pointer-events:none">' + m.icon + '</div>' +
-          '<div style="font-size:18px;font-weight:800;position:relative">' + esc(cat) + '</div>' +
-          '<div style="font-size:12px;font-weight:700;opacity:.75;position:relative">' + count + ' vörur</div>' +
+      // Límdur flokka-haus: þunn rönd í flokkslitnum, ljós bakgrunnur, engin
+      // stór litaspjöld — listinn á að vera lesefnið, ekki borðinn.
+      return '<div style="position:sticky;top:0;z-index:2;margin:10px 0 0;padding:7px 16px;display:flex;align-items:center;gap:8px;' +
+          'background:#f8fafc;border-top:1px solid rgba(15,23,42,.08);border-bottom:1px solid rgba(15,23,42,.08);' +
+          'border-left:3px solid ' + m.hue + '">' +
+          '<span style="display:flex;color:' + m.hue + '">' + iconFor(cat, 15) + '</span>' +
+          '<span style="font-size:12px;font-weight:800;letter-spacing:.02em;color:#0f172a">' + esc(cat) + '</span>' +
+          '<span style="margin-left:auto;font-size:11px;font-weight:600;color:rgba(15,23,42,.45);font-variant-numeric:tabular-nums">' + count + '</span>' +
         '</div>';
     }
 

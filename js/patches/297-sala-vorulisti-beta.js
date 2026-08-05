@@ -31,6 +31,9 @@
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const kr = n => Math.round(+n || 0).toLocaleString('is-IS') + ' kr';
   const norm = s => String(s || '').toLowerCase();
+  // Tákn úr js/ui-icons.js — engin emoji (ósk Agnars 2026-08-05).
+  const ic = (n, sz) => (window.UIIcons ? UIIcons.svg(n, { size: sz || 14 }) : '');
+  const icf = (f, sz) => (window.UIIcons ? UIIcons.flokkurSvg(f, { size: sz || 15 }) : '');
 
   let term = '';
   const openGroups = new Set();
@@ -47,7 +50,7 @@
 ._vlb-search input{width:100%;box-sizing:border-box;background:#0f172a;color:#f1f5f9;border:1px solid #334155;border-radius:12px;padding:12px 34px 12px 34px;font:inherit;font-size:14px;font-weight:500;outline:none;transition:border-color .15s,box-shadow .15s}
 ._vlb-search input::placeholder{color:#64748b}
 ._vlb-search input:focus{border-color:#3b82f6;box-shadow:0 0 0 1px #3b82f6}
-._vlb-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:#64748b;font-size:14px;pointer-events:none}
+._vlb-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);display:flex;color:#64748b;pointer-events:none}
 ._vlb-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:#64748b;cursor:pointer;font-size:15px;padding:4px 6px;line-height:1}
 ._vlb-clear:hover{color:#cbd5e1}
 ._vlb-vsk{text-align:right;font-size:11px;background:#0f172a;padding:7px 11px;border-radius:9px;border:1px solid #1e293b;white-space:nowrap}
@@ -79,7 +82,7 @@
 ._vlb-mark{background:rgba(16,185,129,.2);color:#34d399;border-radius:3px;padding:0 2px;font-weight:800}
 ._vlb-empty{padding:26px;text-align:center;color:#64748b;font-size:13px;font-style:italic}
 ._vlb-switch{display:flex;gap:6px;align-items:center;margin-bottom:10px}
-._vlb-switch button{background:#fff;border:1px solid #e2e8f0;color:#64748b;padding:6px 12px;border-radius:9px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
+._vlb-switch button{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #e2e8f0;color:#64748b;padding:6px 12px;border-radius:9px;font:inherit;font-size:12px;font-weight:700;cursor:pointer}
 ._vlb-switch button[data-active="1"]{background:#0f172a;border-color:#0f172a;color:#fff}
 ._vlb-switch .-beta{margin-left:auto;font-size:10px;color:#94a3b8;font-weight:700;letter-spacing:.04em}
 `;
@@ -126,7 +129,8 @@
       const open = q ? true : openGroups.has(g.nafn);
       return '<div class="_vlb-grp" data-grp="' + esc(g.nafn) + '" data-open="' + (open ? '1' : '0') + '">' +
         '<button class="_vlb-hd" type="button">' +
-          '<span><span class="_vlb-cnt">[' + g.items.length + ']</span> ' + hi(g.nafn, q) + '</span>' +
+          '<span style="display:inline-flex;align-items:center;gap:8px">' + icf(g.nafn, 15) +
+            '<span class="_vlb-cnt">[' + g.items.length + ']</span>' + hi(g.nafn, q) + '</span>' +
           '<span class="_vlb-arrow">▼</span>' +
         '</button>' +
         '<div class="_vlb-body">' + g.items.map(p => {
@@ -196,14 +200,14 @@
     wrap.id = '_vlb-wrap';
     wrap.innerHTML =
       '<div class="_vlb-switch">' +
-        '<button type="button" data-mode="tiles">🔲 Flísar</button>' +
-        '<button type="button" data-mode="list">📋 Listi</button>' +
+        '<button type="button" data-mode="tiles">' + ic('grid', 13) + 'Flísar</button>' +
+        '<button type="button" data-mode="list">' + ic('list', 13) + 'Listi</button>' +
         '<span class="-beta">BETA — prufuútlit</span>' +
       '</div>' +
       '<div class="_vlb" id="_vlb-panel">' +
         '<div class="_vlb-top">' +
           '<div class="_vlb-search">' +
-            '<span class="_vlb-ico">🔍</span>' +
+            '<span class="_vlb-ico">' + ic('search', 14) + '</span>' +
             '<input id="_vlb-q" type="text" autocomplete="off" placeholder="Leita að vöru eða þjónustulið (t.d. hleðsla, yfirferð, skynjari)…">' +
             '<button class="_vlb-clear" type="button" style="display:none">✕</button>' +
           '</div>' +

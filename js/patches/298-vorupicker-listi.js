@@ -38,13 +38,10 @@
   const norm = s => String(s || '').toLowerCase();
   const SB = () => (window.DB && DB.sb) || null;
 
-  const ICON = {
-    'Þjónusta': '📋', 'Slökkvitæki': '🧯', 'Varahlutir': '🔧', 'Fylgihlutir': '🔩',
-    'Ýmsar vörur': '📦', 'Skilti, ljós og miðar': '🆘', 'Skynjarar og rafhlöður': '🔋',
-    'Brunaslöngurhjól': '🚒', 'Eldvarnir': '🔥', 'Hleðsla slökkvitækja': '🔄',
-    'Yfirferð slökkvitækja': '✅', 'Viðvörunarkerfi': '🚨', 'Vinna': '👷',
-    'Vinna og akstur': '🚙', 'Tæki': '🧰', 'Sjúkratöskur': '🩹', 'Slökkvitækjafestingar': '🔗'
-  };
+  // Tákn koma úr js/ui-icons.js (stroke-SVG) — engin emoji.
+  const ic = (name, size) => (window.UIIcons ? UIIcons.svg(name, { size: size || 15 }) : '');
+  const icf = (flokkur, size) => (window.UIIcons ? UIIcons.flokkurSvg(flokkur, { size: size || 15 }) : '');
+
   const RECENT_KEY = 'vp_recent_v1';
   const getRecents = () => { try { const a = JSON.parse(localStorage.getItem(RECENT_KEY)); return Array.isArray(a) ? a : []; } catch (_) { return []; } };
   function pushRecent(nafn) {
@@ -65,10 +62,10 @@
 ._vp2-ov{position:fixed;inset:0;z-index:100080;background:rgba(2,6,23,.62);display:flex;align-items:flex-start;justify-content:center;padding:min(6vh,60px) 16px 16px}
 ._vp2{width:min(680px,calc(100vw - 24px));max-height:calc(100vh - 90px);display:flex;flex-direction:column;background:#0f172a;border:1px solid #1e293b;border-radius:16px;overflow:hidden;box-shadow:0 28px 70px rgba(2,6,23,.6);font-family:inherit}
 ._vp2-hd{display:flex;align-items:center;gap:10px;padding:13px 15px;border-bottom:1px solid #1e293b;background:rgba(2,6,23,.55)}
-._vp2-ttl{font-size:14.5px;font-weight:800;color:#f1f5f9}
+._vp2-ttl{font-size:14.5px;font-weight:800;color:#f1f5f9;display:flex;align-items:center;gap:7px}
 ._vp2-sub{font-size:11px;color:#64748b;margin-top:1px}
 ._vp2-sw{margin-left:auto;display:flex;gap:5px}
-._vp2-sw button{background:rgba(30,41,59,.7);border:1px solid #334155;color:#94a3b8;border-radius:8px;padding:6px 10px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer}
+._vp2-sw button{display:inline-flex;align-items:center;gap:5px;background:rgba(30,41,59,.7);border:1px solid #334155;color:#94a3b8;border-radius:8px;padding:6px 10px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer}
 ._vp2-sw button[data-active="1"]{background:#2563eb;border-color:#3b82f6;color:#fff}
 ._vp2-x{background:rgba(30,41,59,.7);border:1px solid #334155;color:#cbd5e1;width:30px;height:30px;border-radius:8px;cursor:pointer;font-size:13px;line-height:1}
 ._vp2-top{padding:13px 15px;border-bottom:1px solid #1e293b;background:rgba(2,6,23,.35)}
@@ -80,7 +77,7 @@
 ._vp2-clr{position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;color:#64748b;cursor:pointer;font-size:14px;padding:4px 6px;line-height:1}
 ._vp2-clr:hover{color:#cbd5e1}
 ._vp2-rec{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
-._vp2-rec b{display:block;width:100%;font-size:9.5px;font-weight:800;color:#475569;letter-spacing:.07em;text-transform:uppercase;margin-bottom:1px}
+._vp2-rec b{display:flex;align-items:center;gap:4px;width:100%;font-size:9.5px;font-weight:800;color:#475569;letter-spacing:.07em;text-transform:uppercase;margin-bottom:1px}
 ._vp2-chip{background:rgba(37,99,235,.1);border:1px solid rgba(59,130,246,.3);color:#93c5fd;border-radius:99px;padding:5px 11px;font-size:11.5px;font-weight:700;cursor:pointer}
 ._vp2-chip:hover{background:#2563eb;color:#fff}
 ._vp2-list{flex:1;min-height:140px;overflow-y:auto}
@@ -147,16 +144,16 @@
     ov.innerHTML =
       '<div class="_vp2">' +
         '<div class="_vp2-hd">' +
-          '<div><div class="_vp2-ttl">🔍 Velja vöru / þjónustu</div>' +
+          '<div><div class="_vp2-ttl">' + ic('search', 15) + '<span>Velja vöru / þjónustu</span></div>' +
           '<div class="_vp2-sub">Skrifaðu til að leita — Enter velur efstu línu</div></div>' +
           '<div class="_vp2-sw">' +
-            '<button type="button" data-mode="list" data-active="1">📋 Listi</button>' +
-            '<button type="button" data-mode="tiles">🔲 Tíglar</button>' +
+            '<button type="button" data-mode="list" data-active="1">' + ic('list',13) + 'Listi</button>' +
+            '<button type="button" data-mode="tiles">' + ic('grid',13) + 'Tíglar</button>' +
           '</div>' +
           '<button class="_vp2-x" type="button" title="Loka">✕</button>' +
         '</div>' +
         '<div class="_vp2-top">' +
-          '<div class="_vp2-sbox"><span class="_vp2-ico">🔍</span>' +
+          '<div class="_vp2-sbox"><span class="_vp2-ico">' + ic('search',14) + '</span>' +
             '<input id="_vp2-q" type="text" autocomplete="off" placeholder="Leita að vöru, flokki eða lýsingu…">' +
             '<button class="_vp2-clr" type="button" style="display:none">✕</button>' +
           '</div>' +
@@ -213,7 +210,7 @@
       const top = getRecents().filter(n => byName[n]).slice(0, 5);
       if (!top.length) { recEl.style.display = 'none'; return; }
       recEl.style.display = '';
-      recEl.innerHTML = '<b>★ Mest notað</b>' + top.map(n => {
+      recEl.innerHTML = '<b>' + ic('star',11) + ' Mest notað</b>' + top.map(n => {
         const p = byName[n];
         const inc = (+p.verd_an_vsk || 0) * (1 + (+p.vsk_prosenta || 24) / 100);
         const lbl = n.length > 30 ? n.slice(0, 29) + '…' : n;
@@ -235,7 +232,7 @@
       listEl.innerHTML = gs.map(([nafn, rows]) => {
         const open = q ? true : openGroups.has(nafn);
         return '<div class="_vp2-grp" data-grp="' + esc(nafn) + '" data-open="' + (open ? '1' : '0') + '">' +
-          '<button class="_vp2-gh" type="button"><span>' + (ICON[nafn] || '▪') + ' ' + hi(nafn, firstTok) +
+          '<button class="_vp2-gh" type="button"><span style="display:inline-flex;align-items:center;gap:7px">' + icf(nafn,15) + hi(nafn, firstTok) +
             ' <span class="_vp2-cnt">[' + rows.length + ']</span></span><span class="_vp2-arr">▼</span></button>' +
           '<div class="_vp2-body">' + rows.map(p => {
             const ex = +p.verd_an_vsk || 0, vsk = p.vsk_prosenta == null ? 24 : +p.vsk_prosenta;
@@ -312,7 +309,7 @@
         const b = document.createElement('button');
         b.className = '_vp2-tog';
         b.type = 'button';
-        b.textContent = '📋 Listi';
+        b.innerHTML = (window.UIIcons ? UIIcons.svg('list',13) : '') + '<span>Listi</span>';
         b.title = 'Prófa lista-útgáfuna (beta)';
         b.style.cssText = 'margin-right:8px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer';
         b.addEventListener('click', ev => {
