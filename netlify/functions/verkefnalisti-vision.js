@@ -272,6 +272,7 @@ async function describe(images, row, key) {
 
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
+    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
     // Rúmt max_tokens (lýsingin sjálf er klippt í 2000 stafi hér að neðan):
     // 700 reyndist of naumt — verk með 4 þéttar skjámyndir kláraði kvótann
     // ÁÐUR en fyrsti textablokkin kom og skilaði þögn. Rýmið er þak, ekki
