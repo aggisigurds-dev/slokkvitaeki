@@ -25,6 +25,9 @@
   const ic = (n, sz) => (window.UIIcons ? UIIcons.svg(n, { size: sz || 14 }) : '');
   const toast = m => { try { if (window.Toast && Toast.show) Toast.show(m); } catch (_) {} };
 
+  // Íslensk þúsundamörk — toLocaleString skilar kommu í sumum vöfrum.
+  const tala = n => String(Math.round(+n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+
   const stilltur = 'padding:9px 12px;border:1px solid var(--brd);border-radius:9px;background:var(--surface)';
 
   // ── 1) ÞETTA TÆKI ─────────────────────────────────────────────────────────
@@ -153,9 +156,9 @@
       '<div style="display:flex;flex-direction:column;gap:7px">' +
         lina('Gagnagrunnur', pilla(dbOk, dbOk ? 'svarar · ' + dbMs + ' ms' : 'svarar ekki'), 'Supabase-tengingin sem allt appið byggir á.') +
         lina('Stillingar síðast vistaðar', pilla(null, fyrir(sidast)), sidast ? new Date(sidast).toLocaleString('is-IS') : '') +
-        lina('Tímavera', pilla(timavera ? true : null, fyrir(timavera)), (h.timavera_radir || 0).toLocaleString('is-IS') + ' færslur — nýjasta sótt') +
-        lina('Bankafærslur', pilla(bankinn ? (Date.now() - new Date(bankinn).getTime() < 7 * 864e5) : null, fyrir(bankinn)), (h.banki_radir || 0).toLocaleString('is-IS') + ' færslur — innsog liggur niðri ef þetta er gamalt') +
-        lina('Póstsafn', pilla(postur ? true : null, fyrir(postur)), (h.postur_radir || 0).toLocaleString('is-IS') + ' póstar lesnir inn') +
+        lina('Tímavera', pilla(timavera ? true : null, fyrir(timavera)), tala(h.timavera_radir) + ' færslur — nýjasta sótt') +
+        lina('Bankafærslur', pilla(bankinn ? (Date.now() - new Date(bankinn).getTime() < 7 * 864e5) : null, fyrir(bankinn)), tala(h.banki_radir) + ' færslur — innsog liggur niðri ef þetta er gamalt') +
+        lina('Póstsafn', pilla(postur ? true : null, fyrir(postur)), tala(h.postur_radir) + ' póstar lesnir inn') +
         lina('Kennitöluuppfletting', pilla(ktOk, ktOk ? 'svarar' : 'svarar ekki'), '/api/kt-lookup') +
         lina('Skönnun (OCR)', pilla(ocrOk, ocrOk ? 'svarar' : 'svarar ekki'), '/api/ocr-scan') +
         (bygging ? lina('Útgáfa', pilla(null, bygging.trim().slice(0, 40)), 'Hvaða bygging keyrir í þessum vafra.') : '') +
