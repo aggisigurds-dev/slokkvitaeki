@@ -136,3 +136,9 @@
 # vinnsluferill og 🔄 takkinn á Kröfu yfirlit.
 [functions."payday-sync-cron"]
   schedule = "0 10,15 * * *"
+
+# Myndlýsing á Verkefnalistanum á 15 mín fresti: skjámynd sem límd er á verk fær
+# íslenska lýsingu í claude_notes svo næsti agent sjái hvað er á henni. Sópunin
+# tekur 5 verk í senn og gerir ekkert þegar ekkert nýtt er (ein Supabase-fyrirspurn).
+[functions."verkefnalisti-vision-cron"]
+  schedule = "*/15 * * * *"
