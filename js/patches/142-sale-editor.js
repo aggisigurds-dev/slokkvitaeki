@@ -207,7 +207,7 @@
 
       <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-bottom:14px">
         <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📝 Athugasemdir</div>
-        <div id="_se-notes-log" style="font-size:12.5px;color:#334155;line-height:1.45;white-space:pre-wrap;max-height:140px;overflow:auto;background:#fffbeb;border:1px solid #fef3c7;border-radius:6px;padding:8px 10px;margin-bottom:8px;display:${_sale.athugasemdir ? 'block' : 'none'}">${esc(_sale.athugasemdir || '')}</div>
+        <div id="_se-notes-log" style="max-height:140px;overflow:auto;background:#fffbeb;border:1px solid #fef3c7;border-radius:6px;padding:2px 10px;margin-bottom:8px;display:none"></div>
         ${!locked ? `
         <div style="display:flex;gap:6px">
           <input id="_se-note-new" type="text" placeholder="+ Bæta við athugasemd…" style="flex:1;padding:7px 10px;border:1px solid #fcd34d;border-radius:6px;font:inherit;font-size:12.5px;background:#fff">
@@ -217,6 +217,7 @@
     `;
 
     renderLines();
+    renderNotesLog();
     wireBody();
     loadKtIfMissing();
   }
@@ -488,9 +489,58 @@
     const entry = '[' + stamp + '] ' + txt;
     _sale.athugasemdir = _sale.athugasemdir ? (_sale.athugasemdir + '\n' + entry) : entry;
     inp.value = '';
-    const log = _dlg.querySelector('#_se-notes-log');
-    log.textContent = _sale.athugasemdir;
-    log.style.display = '';
+    renderNotesLog();
+  }
+
+  // Each saved athugasemd is one newline-separated line in _sale.athugasemdir
+  // (there's no separate comments table/array — see addNote above). Splitting
+  // it back out lets us render + delete individual entries while keeping the
+  // storage format unchanged.
+  function noteLines() {
+    return String(_sale.athugasemdir || '').split('\n').filter(l => l.trim() !== '');
+  }
+
+  function renderNotesLog() {
+    const log = _dlg && _dlg.querySelector('#_se-notes-log');
+    if (!log) return;
+    const locked = isLocked(_sale);
+    const lines = noteLines();
+    if (!lines.length) { log.style.display = 'none'; log.innerHTML = ''; return; }
+    log.style.display = 'block';
+    log.innerHTML = lines.map((line, i) => `
+      <div class="_se-note-row" data-i="${i}" style="display:flex;align-items:flex-start;gap:8px;padding:6px 0;${i < lines.length - 1 ? 'border-bottom:1px solid #fde68a' : ''}">
+        <div style="flex:1;font-size:12.5px;color:#334155;line-height:1.45;white-space:pre-wrap">${esc(line)}</div>
+        ${!locked ? `<button type="button" data-action="rm-note" data-i="${i}" title="Eyða athugasemd" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:13px;font-weight:700;padding:2px 6px;flex-shrink:0;line-height:1">✕</button>` : ''}
+      </div>`).join('');
+    if (!locked) {
+      log.querySelectorAll('button[data-action="rm-note"]').forEach(btn => {
+        btn.addEventListener('click', () => removeNote(+btn.dataset.i));
+      });
+    }
+  }
+
+  async function removeNote(idx) {
+    const lines = noteLines();
+    const msg = 'Eyða athugasemd?\n\n' + (lines[idx] || '');
+    const ok = (window.Confirm && Confirm.show) ? await Confirm.show(msg) : window.confirm(msg);
+    if (!ok) return;
+    const log = _dlg && _dlg.querySelector('#_se-notes-log');
+    const row = log && log.querySelector('._se-note-row[data-i="' + idx + '"]');
+    const commitRemoval = () => {
+      const cur = noteLines();
+      cur.splice(idx, 1);
+      _sale.athugasemdir = cur.join('\n');
+      renderNotesLog();
+      if (window.Toast && Toast.show) Toast.show('✓ Athugasemd fjarlægð');
+    };
+    if (row) {
+      row.style.transition = 'opacity .15s ease, transform .15s ease';
+      row.style.opacity = '0';
+      row.style.transform = 'translateX(8px)';
+      setTimeout(commitRemoval, 150);
+    } else {
+      commitRemoval();
+    }
   }
 
   // ── Customer lookup ───────────────────────────────────────────────────────
