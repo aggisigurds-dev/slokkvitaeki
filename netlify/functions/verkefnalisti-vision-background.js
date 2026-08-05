@@ -7,24 +7,33 @@
  * samhengið glatað. Þetta fall les myndina og skrifar íslenska lýsingu í
  * `claude_notes` svo næsti agent sjái AF HVERJU Agnar segir þetta.
  *
- *   POST /api/verkefnalisti-vision
+ *   POST /api/verkefnalisti-vision      (→ 202 samstundis, vinnan heldur áfram)
  *   Body:
- *     {}                      → sópun: næstu N verk með mynd og enga lýsingu
+ *     {}                      → sópun: opin verk með mynd og enga lýsingu
  *     { id: "<uuid>" }        → eitt tiltekið verk (kallað eftir upload)
- *     { limit: 25 }           → hámark verka í sópun (sjálfgefið 10, þak 50)
+ *     { limit: 25 }           → hámark verka í sópun (sjálfgefið 10, þak 100)
  *     { statuses: [...] }     → sjálfgefið opin verk; ["*"] = öll (bakvirk keyrsla)
- *     { dry: true }           → reiknar og les myndir en SKRIFAR EKKI
+ *     { dry: true }           → les og lýsir en SKRIFAR EKKI (lýsingar í logg)
  *     { force: true }         → endurlýsir þótt lýsing sé þegar til
- *   → { ok, skodud, skrifad, sleppt, verk: [...] }
+ *
+ * BAKGRUNNSFALL (nafn endar á -background): skilar 202 strax og fær allt að 15
+ * mínútur. Það er ekki valfrjálst — mælt á forskoðun tók EITT myndaþungt verk
+ * 31,8 s og samstillt fall er drepið við ~30 s (HTTP 504). Lýsingin er
+ * eðlisþung: 4 skjámyndir inn og ~700 tákn út. Kallandinn les því ekki
+ * niðurstöðuna úr svarinu — hún lendir í claude_notes, og samantekt fer í
+ * fallaloggið (þar sjást líka dry-lýsingar).
  *
  * VARÚÐ — claude_notes er SAMEIGINLEGUR reitur: þar liggja handskrifaðar nótur
  * (t.d. „Cowork 2026-07-28: afgangur eftir sjálfvirka tengingu."). Fallið
  * SKEYTIR lýsingunni AFTAN Á og yfirskrifar ALDREI — sama regla og patch 82
- * lærði á athugasemdum í mánaðarreikningum.
+ * lærði á athugasemdum í mánaðarreikningum. Nóturnar eru LESNAR AFTUR rétt
+ * fyrir skrif, svo nóta sem einhver skrifaði á meðan lýsingin var í smíðum
+ * tapist ekki (og tvær samhliða keyrslur tvítaki ekki sömu lýsinguna).
  *
  * Sjálfvirkni: `verkefnalisti-vision-cron` keyrir sópunina á 15 mín fresti
  * (netlify.toml). Þess vegna þarf ENGA breytingu á brunaholf-framendanum —
- * mynd sem límd er inn fær lýsingu innan stundarfjórðungs af sjálfu sér.
+ * mynd sem límd er inn fær lýsingu af sjálfu sér. Vilji maður hana samstundis
+ * kallar framendinn beint með { id }.
  *
  * Lyklar: ANTHROPIC_API_KEY · SUPABASE_URL · SUPABASE_SERVICE_ROLE_KEY
  * (allir þegar á síðunni — sömu og ocr-scan/payday nota).
@@ -42,29 +51,31 @@ const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 // krónum er hverfandi. Yfirskrifanlegt með VERKEFNALISTI_VISION_MODEL.
 const MODEL = process.env.VERKEFNALISTI_VISION_MODEL || 'claude-sonnet-5';
 
-const MAX_IMAGES = 4;              // þak per verk — heldur kostnaði og svartíma í skefjum
+const MAX_IMAGES = 4;                     // þak per verk — heldur kostnaði og svartíma í skefjum
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;  // Anthropic-þak per mynd
 const DEFAULT_LIMIT = 10;
-const MAX_LIMIT = 50;
+const MAX_LIMIT = 100;
+// Rúmt undir 15-mín þaki fallsins OG vel innan 15-mín cron-bilsins, svo tvær
+// keyrslur skarist ekki að óþörfu. Mælt: ~25 s á myndaþungt verk.
+const TIME_BUDGET_MS = 10 * 60 * 1000;
 const OPEN_STATUSES = ['beidni', 'i_vinnu', 'i_yfirferd'];
 const OK_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
 const MARKER = '🖼️ Myndlýsing (Claude vision';
 
 export default async (req) => {
-  if (req.method === 'OPTIONS') return new Response('', { status: 204, headers: cors() });
-  if (req.method !== 'POST') return j(405, { error: 'POST only' });
+  const start = Date.now();
 
   // Default-open shared-secret gate: enforced AÐEINS þegar EDGE_SHARED_KEY er sett.
   const GATE = (process.env.EDGE_SHARED_KEY || '').trim();
   if (GATE) {
     const got = String(req.headers.get('x-eldklar-key') || '').trim();
-    if (got !== GATE) return j(401, { error: 'unauthorized' });
+    if (got !== GATE) return done(401, { error: 'unauthorized' });
   }
 
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  if (!anthropicKey) return j(400, { error: 'ANTHROPIC_API_KEY_MISSING' });
-  if (!SUPABASE_URL || !SUPABASE_KEY) return j(500, { error: 'Supabase env vantar.' });
+  if (!anthropicKey) return done(400, { error: 'ANTHROPIC_API_KEY_MISSING' });
+  if (!SUPABASE_URL || !SUPABASE_KEY) return done(500, { error: 'Supabase env vantar.' });
 
   let body = {};
   try { body = (await req.json()) || {}; } catch (_) { /* tómt body = sópun */ }
@@ -73,93 +84,77 @@ export default async (req) => {
   const force = body.force === true;
   const limit = Math.min(MAX_LIMIT, Math.max(1, Number(body.limit) || DEFAULT_LIMIT));
 
-  // --- 1. Sækja verk -------------------------------------------------------
   let rows;
   try {
     rows = await fetchTasks(body, limit);
   } catch (e) {
-    return j(502, { error: 'Supabase-lestur brást', message: String((e && e.message) || e).slice(0, 300) });
+    return done(502, { error: 'Supabase-lestur brást', message: msg(e) });
   }
 
-  // --- 2. Vinna hvert verk -------------------------------------------------
   const out = [];
-  let skrifad = 0, sleppt = 0;
+  let skrifad = 0, sleppt = 0, stoppad = false;
 
   for (const row of rows) {
+    if (Date.now() - start > TIME_BUDGET_MS) { stoppad = true; break; }
+
     const urls = imageUrls(row);
-    if (!urls.length) { sleppt++; out.push({ id: row.id, titill: row.title, stada: 'engin-mynd' }); continue; }
+    if (!urls.length) { sleppt++; out.push(mark(row, 'engin-mynd')); continue; }
 
     const fp = fingerprint(urls);
     if (!force && hasDescription(row.claude_notes, fp)) {
-      sleppt++;
-      out.push({ id: row.id, titill: row.title, stada: 'thegar-lyst' });
-      continue;
+      sleppt++; out.push(mark(row, 'thegar-lyst')); continue;
     }
 
     let images;
-    try {
-      images = await loadImages(urls);
-    } catch (e) {
-      sleppt++;
-      out.push({ id: row.id, titill: row.title, stada: 'mynd-sotti-ekki', villa: String((e && e.message) || e).slice(0, 200) });
-      continue;
-    }
-    if (!images.length) {
-      sleppt++;
-      out.push({ id: row.id, titill: row.title, stada: 'engin-nothaef-mynd' });
-      continue;
-    }
+    try { images = await loadImages(urls); }
+    catch (e) { sleppt++; out.push(mark(row, 'mynd-sotti-ekki', msg(e))); continue; }
+    if (!images.length) { sleppt++; out.push(mark(row, 'engin-nothaef-mynd')); continue; }
 
     let lysing;
-    try {
-      lysing = await describe(images, row, anthropicKey);
-    } catch (e) {
-      sleppt++;
-      out.push({ id: row.id, titill: row.title, stada: 'vision-brast', villa: String((e && e.message) || e).slice(0, 200) });
-      continue;
-    }
-
-    const nytt = appendNote(row.claude_notes, block(lysing, images.length, fp));
+    try { lysing = await describe(images, row, anthropicKey); }
+    catch (e) { sleppt++; out.push(mark(row, 'vision-brast', msg(e))); continue; }
 
     if (!dry) {
       try {
-        await saveNotes(row.id, nytt);
-      } catch (e) {
-        sleppt++;
-        out.push({ id: row.id, titill: row.title, stada: 'vistun-brast', villa: String((e && e.message) || e).slice(0, 200) });
-        continue;
-      }
+        const wrote = await appendDescription(row.id, block(lysing, images.length, fp), fp, force);
+        if (!wrote) { sleppt++; out.push(mark(row, 'thegar-lyst-a-medan')); continue; }
+      } catch (e) { sleppt++; out.push(mark(row, 'vistun-brast', msg(e))); continue; }
     }
 
     skrifad++;
-    out.push({
-      id: row.id,
-      titill: row.title,
-      stada: dry ? 'thurrkeyrsla' : 'skrifad',
-      myndir: images.length,
-      lysing,
-    });
+    out.push({ ...mark(row, dry ? 'thurrkeyrsla' : 'skrifad'), myndir: images.length, lysing });
   }
 
-  return j(200, { ok: true, dry, model: MODEL, skodud: rows.length, skrifad, sleppt, verk: out });
+  // Loggið er eina leiðin til að sjá útkomuna (bakgrunnsfall skilar 202 strax).
+  // Í dry-ham fylgja lýsingarnar með svo hægt sé að meta gæðin fyrir skrif.
+  console.log(`[verkefnalisti-vision] model=${MODEL} dry=${dry} skodud=${rows.length} skrifad=${skrifad} sleppt=${sleppt}` +
+    (stoppad ? ' STOPPAD_A_TIMA' : ''));
+  for (const v of out) {
+    console.log(`[verkefnalisti-vision] ${v.stada} · ${v.titill}${v.villa ? ' · ' + v.villa : ''}`);
+    if (dry && v.lysing) console.log(`[verkefnalisti-vision]   » ${v.lysing.replace(/\n/g, '\n[verkefnalisti-vision]   ')}`);
+  }
+
+  return done(200, { ok: true, dry, model: MODEL, skodud: rows.length, skrifad, sleppt, stoppad_a_tima: stoppad, verk: out });
 };
 
 // --- Supabase ---------------------------------------------------------------
 
+const COLS = 'id,title,description,status,category,claude_notes,request_image_url,request_image_urls';
+const SB = () => ({ apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` });
+
 async function fetchTasks(body, limit) {
   const id = typeof body.id === 'string' ? body.id.trim() : '';
-  const cols = 'id,title,description,status,category,claude_notes,request_image_url,request_image_urls';
   let url;
 
   if (id) {
-    url = `${SUPABASE_URL}/rest/v1/verkefnalisti?select=${cols}&id=eq.${encodeURIComponent(id)}`;
+    url = `${SUPABASE_URL}/rest/v1/verkefnalisti?select=${COLS}&id=eq.${encodeURIComponent(id)}`;
   } else {
     // Aðeins verk sem EIGA mynd. PostgREST getur ekki síað á jsonb-lengd, svo
     // við tökum bæði myndsviðin og hendum myndlausum röðum út hér að neðan.
     const statuses = Array.isArray(body.statuses) && body.statuses.length ? body.statuses : OPEN_STATUSES;
     const all = statuses.length === 1 && statuses[0] === '*';
     const filters = [
-      `select=${cols}`,
+      `select=${COLS}`,
       'or=(request_image_url.not.is.null,request_image_urls.not.is.null)',
       // Nýjast fyrst — nýlímd skjámynd er sú sem einhver bíður eftir.
       'order=updated_at.desc',
@@ -169,30 +164,36 @@ async function fetchTasks(body, limit) {
     url = `${SUPABASE_URL}/rest/v1/verkefnalisti?${filters.join('&')}`;
   }
 
-  const r = await fetch(url, {
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
-  });
+  const r = await fetch(url, { headers: SB() });
   if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
   const rows = await r.json();
   if (id) return rows;
   return rows.filter((row) => imageUrls(row).length).slice(0, limit);
 }
 
-async function saveNotes(id, claude_notes) {
+/**
+ * Les nóturnar UPP Á NÝTT og skeytir lýsingunni aftan á ferska gildið.
+ * Lýsingin tekur tugi sekúndna í smíðum; á þeim tíma getur Agnar (eða önnur
+ * keyrsla) hafa skrifað í reitinn. Að skrifa ofan á gildið sem lesið var í
+ * upphafi myndi henda þeirri nótu. Skilar false ef lýsing er þegar komin.
+ */
+async function appendDescription(id, addition, fp, force) {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/verkefnalisti?select=claude_notes&id=eq.${encodeURIComponent(id)}`, { headers: SB() });
+  if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  const fresh = (await r.json())[0];
+  if (!fresh) throw new Error('verk fannst ekki við skrif');
+  if (!force && hasDescription(fresh.claude_notes, fp)) return false;
+
   // ATH: updated_at er VILJANDI ekki snert — engir triggerar á töflunni, og
   // vélrituð lýsing á ekki að ýta verki upp listann eins og Agnar hafi
   // handleikið það.
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/verkefnalisti?id=eq.${encodeURIComponent(id)}`, {
+  const w = await fetch(`${SUPABASE_URL}/rest/v1/verkefnalisti?id=eq.${encodeURIComponent(id)}`, {
     method: 'PATCH',
-    headers: {
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      Prefer: 'return=minimal',
-    },
-    body: JSON.stringify({ claude_notes }),
+    headers: { ...SB(), 'Content-Type': 'application/json', Prefer: 'return=minimal' },
+    body: JSON.stringify({ claude_notes: appendNote(fresh.claude_notes, addition) }),
   });
-  if (!r.ok) throw new Error(`HTTP ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  if (!w.ok) throw new Error(`HTTP ${w.status}: ${(await w.text()).slice(0, 200)}`);
+  return true;
 }
 
 // --- Myndir -----------------------------------------------------------------
@@ -247,16 +248,17 @@ async function describe(images, row, key) {
     '(slokkvitaeki.netlify.app / brunaholf.netlify.app) — töflur, reikningar, ' +
     'úttektarskýrslur, kúnnaspjöld — eða af pappír/vinnublöðum.\n\n' +
     'Verkefnið:\n' + samhengi + '\n\n' +
-    'Skrifaðu á ÍSLENSKU, 2–6 setningar:\n' +
-    '1. Hvaða skjár/skjal sést og hvað er á honum (nefndu flipa, dálka, hnappa og ' +
+    'Skrifaðu á ÍSLENSKU, samfelldan texta í 2–6 setningum sem svarar þessu:\n' +
+    '· Hvaða skjár/skjal sést og hvað er á honum (nefndu flipa, dálka, hnappa og ' +
     'tölur sem sjást — nöfn og upphæðir eru oft kjarni málsins).\n' +
-    '2. Hvað er ATHUGAVERT á myndinni — það sem Agnar er að benda á: brotin ' +
-    'útlína, texti sem flæðir út fyrir, röng tala, tvítekin röð, villuskilaboð, ' +
-    'tómur listi, rauð merking. Ef eitthvað er hringað eða merkt, segðu hvað.\n' +
-    '3. Ef ekkert virðist að, segðu það hreint út.\n\n' +
+    '· Hvað er ATHUGAVERT — það sem Agnar er að benda á: brotin útlína, texti sem ' +
+    'flæðir út fyrir, röng tala, tvítekin röð, villuskilaboð, tómur listi, rauð ' +
+    'merking. Ef eitthvað er hringað, undirstrikað eða merkt með ör, segðu hvað.\n' +
+    '· Ef ekkert virðist að, segðu það hreint út.\n\n' +
     'Vertu áþreifanlegur og hlutlægur. Lestu raunverulegan texta af myndinni ' +
     'þegar hann skiptir máli. Engar tillögur að lausn, engin kurteisisorð, ' +
-    'engin fyrirsögn — aðeins lýsingin sjálf.';
+    'engar fyrirsagnir, engir tölusettir liðir — aðeins lýsingin sjálf sem ' +
+    'samfelldar málsgreinar.';
 
   const content = images.map((im) => ({
     type: 'image',
@@ -317,17 +319,20 @@ function appendNote(existing, addition) {
   return cur ? `${cur}\n\n${addition}` : addition;
 }
 
-// --- vefsvar -----------------------------------------------------------------
+// --- smától -------------------------------------------------------------------
 
-function cors() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, x-eldklar-key',
-  };
+function mark(row, stada, villa) {
+  const o = { id: row.id, titill: row.title, stada };
+  if (villa) o.villa = villa;
+  return o;
 }
-function j(status, obj) {
-  return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json', ...cors() } });
+function msg(e) {
+  return String((e && e.message) || e).slice(0, 200);
+}
+function done(status, obj) {
+  return new Response(JSON.stringify(obj), { status, headers: { 'Content-Type': 'application/json' } });
 }
 
+// Bakgrunnsfall (nafn endar á -background) svo 15 mín séu í boði í stað ~30 s.
+// Slóðin er skráð hér frekar en með redirect-reglu — sama og ocr-scan gerir.
 export const config = { path: '/api/verkefnalisti-vision' };
