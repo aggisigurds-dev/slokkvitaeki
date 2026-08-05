@@ -395,16 +395,28 @@
     try {
       if (baseIds.length) {
         const dp = await sb.from('document_pairs')
-          .select('year,service_type,report_doc_id')
+          .select('year,service_type,report_doc_id,invoice_doc_id')
           .in('customer_base_id', baseIds)
-          .not('report_doc_id', 'is', null);
+          .or('report_doc_id.not.is.null,invoice_doc_id.not.is.null');
         (dp.data || []).forEach(row => {
           const key = row.service_type === 'brunakerfi' ? 'brunakerfi' : 'skyrsla';
           const y = String(row.year);
           const slot = (bundlesByYear[y] = bundlesByYear[y] || {})[key];
-          if (slot && !slot.rep) {
+          if (!slot) return;
+          if (!slot.rep && row.report_doc_id) {
             const repDoc = docs.find(d => d.id === row.report_doc_id);
             if (repDoc) slot.rep = repDoc;
+          }
+          // 2026-08-05 (Húsfélagið Engjasel 31 — R-000703 til staðar en bandið
+          // sagði "vantar reikning"): solur-lyklunin (solBySrc, hér að ofan)
+          // saknar sölu sem vantar customer_kt (sjá 165-visit-workflow.js fix
+          // sama dag). document_pairs geymir invoice_doc_id beint á
+          // customer_documents-röðina óháð solur — notum það sem varaleið
+          // þegar solur-matchið brást. _fromDoc merkir uppruna svo render/
+          // sendBundle viti að opna/senda beint úr skjalinu, ekki úr solur.
+          if (!slot.inv && row.invoice_doc_id) {
+            const invDoc = docs.find(d => d.id === row.invoice_doc_id);
+            if (invDoc) slot.inv = { id: invDoc.id, num: invDoc.invoice_number, samtals: invDoc.amount, _url: invDoc._url, drive_file_id: invDoc.drive_file_id, _fromDoc: true };
           }
         });
       }
@@ -421,7 +433,15 @@
         choices.push({ label: (isBk ? '🔥 Brunakerfisskýrsla ' : '🧯 Úttektarskýrsla ') + year, checked: true,
           build: () => drv ? { filename: repName, driveId: drv } : { filename: repName, url: rep._url } });
       }
-      if (b && b.inv && b.inv.id && ReceiptSender.invoiceAttachment) {
+      if (b && b.inv && b.inv._fromDoc) {
+        // document_pairs fallback — no solur row, attach the file directly.
+        const idrv = b.inv.drive_file_id && String(b.inv.drive_file_id).indexOf('sb:') !== 0 ? b.inv.drive_file_id : '';
+        const invName = 'Reikningur ' + (b.inv.num || year) + '.pdf';
+        if (idrv || b.inv._url) {
+          choices.push({ label: '🧾 Reikningur ' + (b.inv.num || ''), checked: true,
+            build: () => idrv ? { filename: invName, driveId: idrv } : { filename: invName, url: b.inv._url } });
+        }
+      } else if (b && b.inv && b.inv.id && ReceiptSender.invoiceAttachment) {
         choices.push({ label: '🧾 Reikningur ' + (b.inv.num || ''), checked: true,
           build: () => ReceiptSender.invoiceAttachment(b.inv.id) });
       }
@@ -517,7 +537,11 @@
               '<button class="' + cls + '" ' + extra + ' type="button" style="padding:4px 9px;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;white-space:nowrap;background:' + bg + ';border:1px solid ' + bd + ';color:' + col + '">' + txt + '</button>';
             let bt = '';
             if (hasRep) bt += btn('_scb-rep', 'data-v="' + esc(b.rep._url) + '"', '#fff', '#bfdbfe', '#1d4ed8', '📄 Skýrsla');
-            if (inv) bt += btn('_scb-inv', 'data-v="' + esc(String(inv.id)) + '"', '#fff', '#ddd6fe', '#7c3aed', '🧾 Reikningur');
+            // 2026-08-05: fallback-invoice úr document_pairs (_fromDoc) hefur enga
+            // solur-röð til að opna með openInvoice() — opna skjalið sjálft í
+            // staðinn (sama leið og _scb-rep), og bara ef það á sér skrá í raun.
+            if (inv && inv._fromDoc && inv._url) bt += btn('_scb-inv-doc', 'data-v="' + esc(inv._url) + '"', '#fff', '#ddd6fe', '#7c3aed', '🧾 Reikningur');
+            else if (inv && !inv._fromDoc) bt += btn('_scb-inv', 'data-v="' + esc(String(inv.id)) + '"', '#fff', '#ddd6fe', '#7c3aed', '🧾 Reikningur');
             if (hasRep || inv) bt += btn('_scb-send', 'data-kind="' + k + '" data-year="' + y + '"', 'linear-gradient(180deg,#16a34a,#15803d)', '#15803d', '#fff', '📧 Senda');
             brows.push('<div style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-bottom:1px solid #f1f5f9">' +
               '<span style="font-size:17px">' + pair[1] + '</span>' +
@@ -549,6 +573,13 @@
       }));
       holder.querySelectorAll('._scb-inv').forEach(b => b.addEventListener('click', () => {
         if (b.dataset.v) openInvoice(b.dataset.v);
+      }));
+      // _fromDoc fallback invoice — no solur row to render from, open the
+      // linked file directly (same as _scb-rep).
+      holder.querySelectorAll('._scb-inv-doc').forEach(b => b.addEventListener('click', () => {
+        const u = b.dataset.v; if (!u) return;
+        const a = document.createElement('a'); a.href = u; a.target = '_blank'; a.rel = 'noopener';
+        document.body.appendChild(a); a.click(); a.remove();
       }));
       holder.querySelectorAll('._scb-send').forEach(b => b.addEventListener('click', () => {
         const yb = bundlesByYear[b.dataset.year];

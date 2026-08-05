@@ -456,14 +456,21 @@
       };
       const needKeys = new Set((_state.all || []).filter(s => !hasKt(s)).map(s => keyName(s.customer_nafn)).filter(Boolean));
       if (needKeys.size) {
-        const acc = {};   // key -> { kts:Set, coId, baseId }
-        const add = (nafn, kt, coId, baseId) => {
+        const acc = {};   // key -> { kts:Set, coId, baseId, netfang }
+        // 2026-08-05 (Agnar: "Húsfélagið Engjasel 31" ⚠️ vantar netfang þrátt
+        // fyrir að fyrirtaeki.netfang væri rétt til staðar): kt-endurheimtin
+        // hér fann kt-ið og hlekkjaði nafnið, en aldrei netfangið — svo bara
+        // sölur sem BÁRU customer_id/customer_base_id þegar fengu tölvupóst.
+        // Sama endurheimt, bara líka geymt netfang svo companyIdentity() eigi
+        // fallback fyrir sölur sem koma nafn-eingöngu úr POS.
+        const add = (nafn, kt, coId, baseId, netfang) => {
           const k = keyName(nafn); if (!k || !needKeys.has(k)) return;
           const d = ktDigits(kt); if (d.length !== 10) return;
-          const e = acc[k] || (acc[k] = { kts: new Set(), coId: null, baseId: null });
+          const e = acc[k] || (acc[k] = { kts: new Set(), coId: null, baseId: null, netfang: null });
           e.kts.add(d);
           if (coId != null && e.coId == null) e.coId = coId;
           if (baseId != null && e.baseId == null) e.baseId = baseId;
+          if (netfang && !e.netfang) e.netfang = netfang;
         };
         // NB síðuskipting (2026-07-17): báðar töflur eru komnar yfir 1000 raðir
         // og Supabase klippir ósíðuskipt select við 1000 — þá „týndust" félög
@@ -479,16 +486,16 @@
           return out;
         };
         const [fyAll, baseAll] = await Promise.all([
-          pageAll('fyrirtaeki', 'id,nafn,kennitala,customer_base_id'),
-          pageAll('customers_base', 'id,nafn,kennitala'),
+          pageAll('fyrirtaeki', 'id,nafn,kennitala,customer_base_id,netfang'),
+          pageAll('customers_base', 'id,nafn,kennitala,netfang'),
         ]);
-        fyAll.forEach(r => add(r.nafn, r.kennitala, r.id, r.customer_base_id));
-        baseAll.forEach(r => add(r.nafn, r.kennitala, null, r.id));
+        fyAll.forEach(r => add(r.nafn, r.kennitala, r.id, r.customer_base_id, r.netfang));
+        baseAll.forEach(r => add(r.nafn, r.kennitala, null, r.id, r.netfang));
         Object.keys(acc).forEach(k => {
           const e = acc[k];
           if (e.kts.size === 1) {   // unambiguous only — never guess a kt onto a bill
             const d = Array.from(e.kts)[0];
-            _state.nameKt[k] = { kt: d.slice(0, 6) + '-' + d.slice(6), coId: e.coId, baseId: e.baseId };
+            _state.nameKt[k] = { kt: d.slice(0, 6) + '-' + d.slice(6), coId: e.coId, baseId: e.baseId, netfang: e.netfang };
           }
         });
       }
@@ -1277,8 +1284,13 @@
     const firstSale = sales[0] || {};
     const baseRow = firstSale.customer_base_id ? (_state.baseMap || {})[firstSale.customer_base_id] : null;
     const directKt = (firstSale.customer_kt) || (fy && fy.kennitala) || (baseRow && baseRow.kennitala) || null;
-    const recovered = !directKt ? (_state.nameKt || {})[keyName(grp.display)] : null;
-    const email = (fy && fy.netfang) || (baseRow && baseRow.netfang) || null;
+    // 2026-08-05: recovered (nameKt) is looked up regardless of directKt now —
+    // a sale can carry a real customer_kt yet still miss customer_id/base_id
+    // (exactly the Engjasel 31 case: kt WAS null too here, but the general
+    // fix is the same either way) — email fallback shouldn't depend on kt
+    // already being present.
+    const recovered = (_state.nameKt || {})[keyName(grp.display)] || null;
+    const email = (fy && fy.netfang) || (baseRow && baseRow.netfang) || (recovered && recovered.netfang) || null;
     const ktHtml = directKt
       ? '<span style="color:#475569;font-family:ui-monospace,Menlo,monospace;font-size:11px">' + esc(directKt) + '</span>'
       : recovered
