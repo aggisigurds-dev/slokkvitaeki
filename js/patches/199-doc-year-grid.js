@@ -97,9 +97,19 @@
       var kt=(r.data&&r.data.kennitala)||null; _ktCache[coId]=kt; return kt; }
     catch(e){ return null; }
   }
+  // 2026-08-05 (Agnar: "how in the hell can I fix this damn chaos in center" —
+  // Miðgarður alone had 15 samningur rows, only 5 real): an earlier cleanup
+  // sweep already flags copies via `is_duplicate`, but this card never read
+  // that column — every "afrit" kept rendering as if it were a real document.
+  // Fetch it here (so it's available to filter); the actual filtering happens
+  // PER (year,type) GROUP further down (see dedupBucket) — NOT here, because
+  // `is_duplicate` is also (mis)used to flag rows whose Drive link died and
+  // needs re-finding ("dauður hlekkur... ÞARF AÐ FINNA AFTUR"), not just true
+  // copies. Blindly dropping every flagged row would hide those years
+  // entirely (0 left) instead of decluttering them — worse than the mess.
   async function fetchDocs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,fyrirtaeki_id').eq('customer_base_id', baseId);
+    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,fyrirtaeki_id,is_duplicate').eq('customer_base_id', baseId);
       return r.data||[]; }catch(e){ return []; }
   }
   // Brunakerfis-skoðanir (doc_type='brunakerfi') eru lyklaðar á fyrirtaeki_id —
@@ -109,9 +119,28 @@
   async function fetchBrunakerfiDocs(coId){
     var sb=SB(); if(!sb||!coId) return [];
     try{ var r=await sb.from('customer_documents')
-        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,fyrirtaeki_id')
+        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,fyrirtaeki_id,is_duplicate')
         .eq('fyrirtaeki_id', coId).eq('doc_type','brunakerfi');
       return r.data||[]; }catch(e){ return []; }
+  }
+  // Fjarlægja is_duplicate=true færslur úr EINUM (ár,þjónusta) hóp — EN AÐEINS
+  // ef a.m.k. ein ómerkt (eða handvirkt viðhengi, sem ber aldrei þetta flagg)
+  // stendur eftir. Annars stæði árið eftir með EKKERT í staðinn fyrir "óreiðu"
+  // — sýnilegt-en-brotið er skárra en að láta líta út fyrir að skoðun vanti.
+  function dedupBucket(arr){
+    if(!arr || arr.length<2) return arr||[];
+    var hasReal = arr.some(function(x){ return x._att || !x.is_duplicate; });
+    if(!hasReal) return arr;
+    return arr.filter(function(x){ return x._att || !x.is_duplicate; });
+  }
+  // samn er {src:'doc',d:...}/{src:'att',a:...} umbúðir, ekki hráar raðir —
+  // sama regla, bara sótt gegnum s.d.is_duplicate (viðhengi bera aldrei flaggið).
+  function dedupSamn(arr){
+    if(!arr || arr.length<2) return arr||[];
+    var isDup=function(s){ return s.src==='doc' && s.d && s.d.is_duplicate; };
+    var hasReal = arr.some(function(s){ return !isDup(s); });
+    if(!hasReal) return arr;
+    return arr.filter(function(s){ return !isDup(s); });
   }
   // Payday-kröfur kúnnans (eftir kt) úr speglinum payday_invoices_slokk. Margar
   // krófur eru stofnaðar BEINT í Payday (bókari/mánaðaruppgjör) og eiga hvorki
@@ -504,6 +533,12 @@
         (invByY[y]=invByY[y]||[]).push({ invoice_number:s.num, amount:s.samtals, doc_date:s.created_at, _fromSolur:true });
       });
     }
+
+    // ── fella burt is_duplicate=true úr hverjum (ár,þjónusta) hóp, sjá dedupBucket ──
+    [repByY, bruByY, invByY].forEach(function(byY){
+      Object.keys(byY).forEach(function(y){ byY[y] = dedupBucket(byY[y]); });
+    });
+    samn = dedupSamn(samn);
 
     // ── Payday greitt/ógreitt-staða per reikningsnúmer (bara sýnt þegar öruggt
     // er hvaða Payday-krafa svarar til hvers reiknings — annars sleppt frekar

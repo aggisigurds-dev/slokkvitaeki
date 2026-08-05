@@ -198,11 +198,17 @@
     const samOr = 'fyrirtaeki_id.eq.' + coId + (co.customer_base_id ? ',customer_base_id.eq.' + co.customer_base_id : '');
     const [repR, docR, samR] = await Promise.all([
       sb.from('brunakerfi_skyrslur').select('id,year,uttekt_nr,status,doc_id,data,updated_at').eq('fyrirtaeki_id', coId).order('updated_at', { ascending: false }),
-      sb.from('customer_documents').select('id,year,drive_file_id,storage_path,doc_date,source,notes').eq('doc_type', 'brunakerfi').eq('fyrirtaeki_id', coId).order('year', { ascending: false }),
-      sb.from('customer_documents').select('id,fyrirtaeki_id,drive_file_id,storage_path,doc_date,customer_name,notes').eq('doc_type', 'samningur').or(samOr).order('id', { ascending: false })
+      sb.from('customer_documents').select('id,year,drive_file_id,storage_path,doc_date,source,notes,is_duplicate').eq('doc_type', 'brunakerfi').eq('fyrirtaeki_id', coId).order('year', { ascending: false }),
+      sb.from('customer_documents').select('id,fyrirtaeki_id,drive_file_id,storage_path,doc_date,customer_name,notes,is_duplicate').eq('doc_type', 'samningur').or(samOr).order('id', { ascending: false })
     ]);
     let note = '';
     try { let m = (window.AppSettings && AppSettings.path && AppSettings.path('brunakerfi_co_notes')) || {}; if (!m || typeof m !== 'object' || Array.isArray(m)) m = {}; note = (m[String(coId)] && m[String(coId)].text) || ''; } catch (_) {}
+    // 2026-08-05 (sama "chaos in center" fund og patch 199): tvítök flöguð af
+    // eldri hreinsunar-sópun (`is_duplicate`) voru samt teiknuð hér — fellum
+    // þau burt, halda þeim gögnum sem aldrei fóru gegnum sópunina (NULL).
+    const dropDupes = arr => (arr || []).filter(d => !d.is_duplicate);
+    const docs = dropDupes((docR && docR.data) || []);
+    const samningar = dropDupes((samR && samR.data) || []);
     const reports = (repR && repR.data) || [];
     // Reikningur (solur) hverrar skýrslu (patch 291) — svo hann sjáist Í SÖMU LÍNU
     // og skýrslan (📄 Skýrsla · 🧾 Reikningur · 📧 Senda). Best-effort, stöðvar aldrei teikningu.
@@ -214,7 +220,7 @@
         } catch (_) { r._inv = null; }
       }));
     }
-    return { co, reports, docs: (docR && docR.data) || [], samningar: (samR && samR.data) || [], note };
+    return { co, reports, docs, samningar, note };
   }
 
   function saveNote(text) {
