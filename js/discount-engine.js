@@ -64,13 +64,30 @@
     return String(s == null ? '' : s).toLowerCase().trim();
   }
 
+  // Handvirk flokkun slær sjálfvirku regluna út. `overrides` er einfalt kort
+  // { "<vöru-id>": "<flokkslykill>" } úr app_settings (sjá patch 296) — þar
+  // getur Agnar dregið vöru í annan flokk eða tekið hana alveg út (NONE).
+  var NONE = 'none';                      // „ekki með í neinum hópsflokki"
+
+  function overrideFor(item, overrides) {
+    if (!overrides || !item) return null;
+    var id = item.id != null ? item.id : (item.product_id != null ? item.product_id : null);
+    if (id == null) return null;
+    var v = overrides[String(id)];
+    if (!v) return null;                  // null/'' = engin handvirk stilling
+    return (BY_KEY[v] || v === NONE) ? v : null;
+  }
+
   /**
-   * classifyItem({ nafn|desc, flokkur, type }) → category key
-   * Sértækasti flokkur vinnur; allt sem er ekki þjónusta telst „ný tæki/vörur".
+   * classifyItem({ id, nafn|desc, flokkur, type }[, overrides]) → category key
+   * Handvirk stilling fyrst, svo sértækasti sjálfvirki flokkurinn; allt sem er
+   * ekki þjónusta telst „ný tæki/vörur".
    */
-  function classifyItem(item) {
+  function classifyItem(item, overrides) {
     if (typeof item === 'string') item = { nafn: item };
     item = item || {};
+    var ov = overrideFor(item, overrides);
+    if (ov) return ov;
     var name = norm(item.nafn || item.desc || item.name);
     var flokkur = norm(item.flokkur);
 
@@ -143,10 +160,11 @@
     var baseNum = parseFloat(String(basePrice == null ? 0 : basePrice).replace(',', '.'));
     var base = (isFinite(baseNum) && baseNum > 0) ? baseNum : 0;
 
-    var category = (typeof itemCategory === 'string' && BY_KEY[itemCategory])
+    var category = (typeof itemCategory === 'string' && (BY_KEY[itemCategory] || itemCategory === NONE))
       ? itemCategory
-      : classifyItem(itemCategory);
-    var cat = BY_KEY[category] || BY_KEY.general_service;
+      : classifyItem(itemCategory, opts.overrides);
+    var cat = BY_KEY[category] ||
+      { key: NONE, col: null, label: 'Utan hópsflokka', stutt: 'Utan flokka', icon: '🚫' };
 
     var tier = tierOf(clientRow, opts);
     var fromTier = tierPct(tier, category);
@@ -220,6 +238,7 @@
 
   return {
     CATEGORIES: CATEGORIES,
+    NONE: NONE,
     byKey: function (k) { return BY_KEY[k] || null; },
     classifyItem: classifyItem,
     parsePct: parsePct,
