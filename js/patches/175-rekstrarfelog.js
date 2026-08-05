@@ -151,9 +151,11 @@
       P+'.rf-bname a{color:#11141c;text-decoration:none;font-weight:600}',
       P+'.rf-bname a:hover{color:#2f5fe0}',
       P+'.rf-baddr{display:block;font-size:11px;color:#9098a6;margin-top:1px}',
-      // ── per-building collapse (2026-08-05) — sjálfgefið samanþjappað: EIN
-      // samantektarfruma (rf-bldsum-cell) í stað 8 dálka af pillum/aðgerðum;
-      // ▸-takki víxlar is-collapsed af röðinni sjálfri, engin endurteikning.
+      // ── per-building collapse (2026-08-05, leiðrétt sama dag — sjálfgefið
+      // samanþjappað gerði 2023-2026 dálkana að tómum í fljótu bragði, sem leit
+      // út eins og gögnin hyrfu): SJÁLFGEFIÐ ÚTVÍKKAÐ (öll smáatriði sýnileg,
+      // nákvæmlega eins og áður) — ▸-takki (eða „Fela allar") felur niður í EINA
+      // samantektarfrumu (rf-bldsum-cell) fyrir þann sem VILL þjappa saman.
       P+'.rf-bldtoggle{all:unset;cursor:pointer;display:inline-block;width:14px;text-align:center;color:#9098a6;font-size:11px;margin-right:2px;vertical-align:middle;transition:transform .12s ease}',
       P+'.rf-bldtoggle:hover{color:#2f5fe0}',
       P+'.rf-bldrow:not(.is-collapsed) .rf-bldtoggle{transform:rotate(90deg)}',
@@ -1390,7 +1392,7 @@
              '<td class="rf-actionscell" style="text-align:right;white-space:nowrap">'+doc+
              ' <a href="#" class="_rf_editb" data-bi="'+_bi+'" title="Breyta byggingu / tengja rétt fyrirtæki" style="text-decoration:none;font-size:12px;margin-left:6px">✏️</a>'+
              ' <a href="#" class="_rf_delb" data-bi="'+_bi+'" title="Fjarlægja byggingu" style="color:#dc2626;text-decoration:none;font-size:12px;margin-left:6px">✕</a></td>';
-      return '<tr class="rf-bldrow is-collapsed" data-rfq="'+esc(((b.nafn||'')+' '+(b.heimilisfang||'')+' '+digits(b.kt)).toLowerCase())+'">'+
+      return '<tr class="rf-bldrow" data-rfq="'+esc(((b.nafn||'')+' '+(b.heimilisfang||'')+' '+digits(b.kt)).toLowerCase())+'">'+
              '<td class="rf-cellname"><span class="rf-rail '+railCls+'"></span>'+
                '<button type="button" class="rf-bldtoggle" data-bi="'+_bi+'" title="Sýna/fela smáatriði">▸</button>'+
                '<span class="rf-bname">'+link+oldLinks+'</span>'+
@@ -1440,7 +1442,7 @@
       '<span class="rf-leg"><i style="background:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#062815)"></i>skýrsla á skrá</span>'+
       '<span class="rf-leg"><i style="background:linear-gradient(145deg,#3a6ae8,#1c3d8c 60%,#0a1a3a)"></i>aðeins í búnaðarsögu</span>'+
       '<span class="rf-leg"><i style="background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10)"></i>skoðun liðin</span>'+
-      '<button type="button" class="rf-svcbtn _rf_expandall" title="Sýna/fela smáatriði allra bygginga í einu">▾ Opna allar</button>'+
+      '<button type="button" class="rf-svcbtn _rf_expandall" title="Sýna/fela smáatriði allra bygginga í einu">▸ Fela allar</button>'+
       '<span class="rf-bsearch">'+
         '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#9aa3b5" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>'+
         '<input class="_rf_bq" placeholder="Leita að byggingu…">'+
