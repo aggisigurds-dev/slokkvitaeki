@@ -72,14 +72,21 @@
     dot:          '<circle cx="12" cy="12" r="4"/>'
   };
 
+  // ⚠️ Appið ber alheimsreglu `svg { color: #f4f3e6 !important }` (þema-patch),
+  // sem gerir öll tákn nánast hvít hvar sem er. Presentation-attributes og
+  // venjulegur inline-stíll tapa fyrir !important, svo litnum er þvingað hér
+  // með inline !important: `color:inherit` lætur táknið erfa lit foreldris og
+  // `stroke:currentColor` fylgir honum.
   function svg(name, opts) {
     opts = opts || {};
     var d = P[name] || P.dot;
     var s = opts.size || 18;
+    var col = opts.color || 'inherit';
     return '<svg viewBox="0 0 24 24" width="' + s + '" height="' + s + '" fill="none" ' +
       'stroke="currentColor" stroke-width="' + (opts.weight || 1.6) + '" ' +
       'stroke-linecap="round" stroke-linejoin="round" ' +
-      'style="flex:none;display:block' + (opts.style ? ';' + opts.style : '') + '" ' +
+      'style="flex:none;display:block;color:' + col + '!important;stroke:currentColor!important;fill:none!important' +
+      (opts.style ? ';' + opts.style : '') + '" ' +
       'aria-hidden="true" focusable="false">' + d + '</svg>';
   }
 

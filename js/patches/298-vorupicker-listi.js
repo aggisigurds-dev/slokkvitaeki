@@ -311,7 +311,7 @@
         b.type = 'button';
         b.innerHTML = (window.UIIcons ? UIIcons.svg('list',13) : '') + '<span>Listi</span>';
         b.title = 'Prófa lista-útgáfuna (beta)';
-        b.style.cssText = 'margin-right:8px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer';
+        b.style.cssText = 'margin-right:8px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:6px 11px;font:inherit;font-size:11.5px;font-weight:700;cursor:pointer';
         b.addEventListener('click', ev => {
           ev.stopPropagation();
           setList(true);
