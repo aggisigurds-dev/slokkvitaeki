@@ -128,6 +128,26 @@
       return r.data||[];
     }catch(e){ return []; }
   }
+  // ── document_pairs (Brunahólf's skýrsla<->reikningur bundle table) ─────────
+  // 2026-08-05 (ósk Agnars: „auto generated bundle... but I want to create
+  // bundle for other companies, that claude have difficulties connecting").
+  // Read+write directly via the shared Supabase client — same project/anon
+  // grants patch 253's "📦 Pör" band already uses, no new endpoint needed.
+  // service_type is 'uttekt' (slökkvitæki) | 'brunakerfi' — NOT the app's own
+  // doc_type spelling, see sql/2026-08-05_document_pairs.sql in Brunahólf.
+  async function fetchPairs(baseId){
+    var sb=SB(); if(!sb||!baseId) return [];
+    try{ var r=await sb.from('document_pairs').select('id,year,service_type,report_doc_id,invoice_doc_id,solur_id,status,matched_by').eq('customer_base_id', baseId);
+      return r.data||[]; }catch(e){ return []; }
+  }
+  async function savePair(baseId, year, serviceType, patch){
+    var sb=SB(); if(!sb||!baseId) return;
+    try{
+      await sb.from('document_pairs').upsert(Object.assign({
+        customer_base_id: baseId, year: +year, service_type: serviceType, updated_at: new Date().toISOString(),
+      }, patch), { onConflict: 'customer_base_id,year,service_type' });
+    }catch(e){ /* best-effort — the live render already shows the pairing either way */ }
+  }
   function pdYear(p){ var s=String(p.created_date||p.due_date||''); var m=s.match(/(20[0-9]{2})/); return m?parseInt(m[1],10):null; }
   function pdChip(p){
     var lab='PD '+(p.number||p.payday_id||'');
@@ -485,6 +505,24 @@
       });
     }
 
+    // ── Payday greitt/ógreitt-staða per reikningsnúmer (bara sýnt þegar öruggt
+    // er hvaða Payday-krafa svarar til hvers reiknings — annars sleppt frekar
+    // en giskað, sama regla og annars staðar í þessari skrá) ──
+    var paydayByNum={};
+    payday.forEach(function(p){
+      [p.reference, p.number].forEach(function(v){ var k=numKey(v); if(k && !paydayByNum[k]) paydayByNum[k]=p; });
+    });
+    function paydayStatusFor(inv){
+      var k = inv && (inv.invoice_number?numKey(inv.invoice_number):numKey(chipInvNum(inv)));
+      var p = k && paydayByNum[k]; if(!p) return null;
+      return { paid: !!p.paid_date, dueDate: p.due_date||null };
+    }
+
+    // ── document_pairs (durable bundle store — sjá savePair) ──
+    var pairs = baseId ? await fetchPairs(baseId) : [];
+    var pairsByYear={};
+    pairs.forEach(function(pr){ (pairsByYear[pr.year]=pairsByYear[pr.year]||{})[pr.service_type]=pr; });
+
     // ── year set: every year with anything + the current year, newest first ──
     var ySet={}; ySet[NOW]=1;
     Object.keys(repByY).forEach(function(y){ySet[y]=1;});
@@ -504,59 +542,104 @@
       return '<button type="button" class="sk-doc rep" data-att="'+esc(s.a.id)+'" title="'+esc(s.a.name)+'">📑 Samningur'+(s.year?(' '+s.year):'')+'</button>';
     }).join('') + addChip('samningur','','+ samningur');
 
-    // ── year table rows ──
-    // Every cell carries a manual attach button — a compact ＋ when docs already
-    // exist (so a wrong/auto-indexed year can be corrected by hand), or the
-    // full „vantar"/„+ skýrsla" prompt when empty.
-    function repCell(y){
-      var arr=repByY[y]||[];
-      if(arr.length){ return arr.map(function(x){ return x._att?repAttChip(x._att):repDocChip(x); }).join('')+addChip('skyrsla',y,'＋'); }
+    // ── per-year × per-service bundle cards (verkefnalisti mockup, 2026-08-05) ──
+    // The newest year is expanded into two side-by-side service cards (🧯
+    // Slökkvitæki / 🔥 Brunakerfi), each showing its skýrsla + linked reikningur
+    // + payment status + a Senda button of its own. Older years collapse to one
+    // compact line per service. „Bundle" = report+invoice showing as connected —
+    // computed LIVE every render (never a stale cache), and persisted into
+    // Brunahólf's `document_pairs` only when the link is unambiguous, so other
+    // consumers (patch 253's Pör band) benefit too without ever risking a wrong
+    // guess: ambiguous years (two reports, or several invoices) get a manual
+    // „🔗 Tengja handvirkt" picker instead of a silent guess.
+    var SERVICES=[
+      { kind:'uttekt', label:'Slökkvitækjaþjónusta', icon:'🧯', repMap:repByY },
+      { kind:'brunakerfi', label:'Brunakerfisþjónusta', icon:'🔥', repMap:bruByY },
+    ];
+    // Resolve once per (year, service) — stored pairing wins; else an
+    // UNAMBIGUOUS 1 report + 1 invoice + no other active service that year is
+    // auto-linked (and saved); otherwise left for the manual picker.
+    var resolved={};
+    YEARS.forEach(function(y){
+      SERVICES.forEach(function(svc){
+        var repArr=svc.repMap[y]||[];
+        var otherArr=(svc.kind==='uttekt'?bruByY:repByY)[y]||[];
+        var invArr=invByY[y]||[];
+        var stored=pairsByYear[y]&&pairsByYear[y][svc.kind];
+        var inv=null;
+        if(stored&&stored.invoice_doc_id!=null){
+          inv=invArr.find(function(x){ return !x._att && x.id===stored.invoice_doc_id; })||null;
+        }
+        var autoSave=false;
+        if(!inv && repArr.length===1 && invArr.length===1 && otherArr.length===0){ inv=invArr[0]; autoSave=!stored; }
+        var ambiguous = !inv && invArr.length>=1;
+        if(autoSave && baseId){
+          var rep=repArr[0];
+          if(rep && inv && !rep._att && !inv._att && !inv._fromSolur && rep.id!=null && inv.id!=null){
+            savePair(baseId, y, svc.kind, { report_doc_id: rep.id, invoice_doc_id: inv.id, status:'klarad', matched_by:'exact' });
+          }
+        }
+        resolved[y+'|'+svc.kind]={ inv:inv, ambiguous:ambiguous, invCandidates:invArr };
+      });
+    });
+    section._repByY = repByY; section._bruByY = bruByY; section._invByY = invByY;
+    section._resolved = resolved; section._sendCo = { coId: coId, kt: kt, nafn: (co && co.nafn) || '' };
+
+    function manualLinkHtml(y, svc, invArr){
+      if(!invArr.length) return '';
+      var opts=invArr.map(function(x,i){ var lab=invLabel(x.invoice_number||chipInvNum(x)); var amt=x.amount!=null?(' · '+fmtKrLoc(x.amount)+' kr'):''; return '<option value="'+i+'">'+esc(lab+amt)+'</option>'; }).join('');
+      return '<span class="sk-link-wrap"><select class="sk-link-sel" data-link-sel="'+y+'|'+svc.kind+'"><option value="">— hvaða reikningur? —</option>'+opts+'</select>'+
+        '<button type="button" class="sk-link-btn" data-link-save="'+y+'|'+svc.kind+'" disabled>🔗 Tengja</button></span>';
+    }
+    function svcInvHtml(y, svc, forCompact){
+      var r=resolved[y+'|'+svc.kind];
+      if(r.inv){
+        var chip = r.inv._att?invAttChip(r.inv._att):invDocChip(r.inv, srcByNum);
+        var st=paydayStatusFor(r.inv);
+        var stBadge = st ? ('<span class="sk-svc-pay '+(st.paid?'ok':'due')+'">'+(st.paid?'✓ Greitt':'⚠ Ógreitt')+'</span>') : '';
+        var amt = (!forCompact && r.inv.amount!=null) ? ('<span class="sk-svc-amt">'+fmtKrLoc(r.inv.amount)+' kr</span>') : '';
+        return chip+stBadge+amt;
+      }
+      if(r.ambiguous) return manualLinkHtml(y, svc, r.invCandidates);
+      return addChip('reikningur', y, y===NOW?'+ reikningur':'vantar');
+    }
+    function svcRepHtml(y, svc){
+      var arr=svc.repMap[y]||[];
+      if(arr.length) return arr.map(function(x){ return x._att?repAttChip(x._att):repDocChip(x); }).join('')+addChip('skyrsla',y,'＋');
       if(y===NOW) return '<span class="sk-doc prog" title="Skoðun ársins ekki enn skjalfest">⏳ Í vinnslu</span>'+addChip('skyrsla',y,'+ skýrsla');
       return addChip('skyrsla',y,'vantar');
     }
-    // Brunakerfi-dálkur (eldvarnakerfi) — aðskilinn frá slökkvitæki-úttektum.
-    function bruCell(y){
-      var arr=bruByY[y]||[];
-      if(arr.length){ return arr.map(function(x){ return x._att?repAttChip(x._att):repDocChip(x); }).join(''); }
-      return '<span style="color:var(--ink4);font-size:11px">—</span>';
+    function svcSendBtn(y, svc){
+      var hasRep=(svc.repMap[y]||[]).length, r=resolved[y+'|'+svc.kind];
+      if(!hasRep && !r.inv) return '';
+      return '<button type="button" class="sk-svc-send" data-send-year="'+y+'" data-send-kind="'+svc.kind+'" title="Senda '+esc(svc.label)+' '+y+' í tölvupósti">📧 Senda</button>';
     }
-    function invCell(y){
-      var arr=invByY[y]||[], pd=pdByY[y]||[];
-      // Flokka reikningana: 🧯 Úttekt (úr ársskoðun) vs 🧾 Afgreiðsla (POS/Sótt);
-      // Payday-kröfur í sínum eigin hóp (uppruni óviss). Aðeins hópar með innihald.
-      var utt=[], afg=[];
-      arr.forEach(function(x){ (chipInvSrc(x,srcByNum)==='afgr'?afg:utt).push(x); });
-      var chip=function(x){ return x._att?invAttChip(x._att):invDocChip(x, srcByNum); };
-      var uttChips=utt.map(chip).join(''), afgChips=afg.map(chip).join(''), pdChips=pd.map(pdChip).join('');
-      var groups='';
-      if(uttChips) groups+=invGroup('🧯 Úttekt','#b45309','#fff7ed','#fed7aa',uttChips);
-      if(afgChips) groups+=invGroup('🧾 Afgreiðsla','#1e40af','#eff6ff','#bfdbfe',afgChips);
-      if(pdChips)  groups+=invGroup('💳 Payday','#6d28d9','#f5f3ff','#ddd6fe',pdChips);
-      if(groups) return groups+addChip('reikningur',y,'＋');
-      if(y===NOW) return addChip('reikningur',y,'+ reikningur');
-      return addChip('reikningur',y,'vantar');
+    function svcCardExpanded(y, svc){
+      var arr=svc.repMap[y]||[];
+      var repRow = arr.length || y===NOW ? '<div class="sk-svc-row"><span class="sk-svc-tag">SKÝRSLA</span>'+svcRepHtml(y,svc)+'</div>' : '';
+      var r=resolved[y+'|'+svc.kind];
+      var invRow = (arr.length || r.inv || r.ambiguous) ? '<div class="sk-svc-row"><span class="sk-svc-tag inv">REIKN.</span>'+svcInvHtml(y,svc,false)+'</div>' : '';
+      if(!repRow && !invRow) return '<div class="sk-svc-card sk-svc-empty"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b></div><div class="sk-svc-row">engin '+esc(svc.label.toLowerCase())+addChip('skyrsla',y,'+ skýrsla')+'</div></div>';
+      return '<div class="sk-svc-card"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+svcSendBtn(y,svc)+'</div>'+repRow+invRow+'</div>';
     }
-    // 📧 Senda-dálkur: hnappur á ári sem á skýrslu og/eða reikning. Geymum
-    // ársgögnin á section svo wire()-smellurinn byggi viðhengin (async) þá.
-    section._repByY = repByY; section._invByY = invByY; section._sendCo = { coId: coId, kt: kt, nafn: (co && co.nafn) || '' };
-    function sendCell(y){
-      var hasRep=(repByY[y]||[]).length, hasBru=(bruByY[y]||[]).length, hasInv=(invByY[y]||[]).length;
-      if(!hasRep && !hasBru && !hasInv) return '';
-      return '<button type="button" class="sk-doc _sk-send" data-send-year="'+y+'" title="Senda skýrslu(r) og/eða reikning '+y+' í tölvupósti" style="border-color:#99f6e4;color:#0f766e">📧 Senda</button>';
+    function svcCompact(y, svc){
+      var arr=svc.repMap[y]||[], r=resolved[y+'|'+svc.kind];
+      if(!arr.length && !r.inv && !r.ambiguous) return '<div class="sk-svc-compact sk-svc-empty">'+svc.icon+' engin '+esc(svc.label.toLowerCase())+'</div>';
+      var repChip = arr.length ? (arr[0]._att?repAttChip(arr[0]._att):repDocChip(arr[0])) : addChip('skyrsla',y,'vantar');
+      return '<div class="sk-svc-compact">'+svc.icon+' '+repChip+svcInvHtml(y,svc,true)+svcSendBtn(y,svc)+'</div>';
     }
-    section._bruByY = bruByY;
-    var rows=YEARS.map(function(y){
-      var cur=(y===NOW); var st=fcStatus(coId,y);
+
+    var yearBlocks=YEARS.map(function(y){
+      var cur=(y===YEARS[0]); var st=fcStatus(coId,y);
       var ycls='sk-yr'+(st==='human'?' sk-yr-ok':st==='claude'?' sk-yr-claude':st==='gap'?' sk-yr-gap':'')+(cur&&!st?' sk-yr-now':'');
       var mark=st==='human'?'✓ ':st==='claude'?'🔵 ':st==='gap'?'🟠 ':'';
       var ttl=st==='claude'?('Claude yfirfór'+(fcNote(coId,y)?(': '+fcNote(coId,y)):'')+' — tvísmelltu til að staðfesta')
              :st==='gap'?((fcNote(coId,y)||'Skýrsla vantar')+' — tvísmelltu til að fjarlægja flagg')
              :('Tvísmelltu til að staðfesta fact-check '+y);
-      return '<tr><td class="'+ycls+'" data-yr="'+y+'" title="'+esc(ttl)+'">'+mark+y+'</td>'+
-        '<td>'+repCell(y)+'</td>'+
-        '<td>'+bruCell(y)+'</td>'+
-        '<td>'+invCell(y)+'</td>'+
-        '<td>'+sendCell(y)+'</td></tr>';
+      var body = cur
+        ? '<div class="sk-svc-grid">'+SERVICES.map(function(svc){return svcCardExpanded(y,svc);}).join('')+'</div>'
+        : '<div class="sk-svc-compactrow">'+SERVICES.map(function(svc){return svcCompact(y,svc);}).join('')+'</div>';
+      return '<div class="sk-yrblock"><div class="'+ycls+' sk-yr-label" data-yr="'+y+'" title="'+esc(ttl)+'">'+mark+y+'</div>'+body+'</div>';
     }).join('');
 
     // ── önnur viðhengi strip ──
@@ -575,7 +658,10 @@
     section.innerHTML = hdr +
       '<div class="sk-strip"><div class="sk-strip-l">📊 Staða eftir ári</div><div class="sk-strip-r">'+ (pills||'<span style="color:var(--ink4);font-size:12px">engin gögn</span>') +'</div></div>'+
       '<div class="sk-strip"><div class="sk-strip-l">📑 Þjónustusamningur</div><div class="sk-strip-r">'+samnHtml+'</div></div>'+
-      '<div class="sk-gridwrap"><table class="sk-grid"><thead><tr><th>Ár</th><th>🧯 Slökkvitæki</th><th>🔥 Brunakerfi</th><th>Reikningur</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+      '<div class="sk-yrwrap">'+yearBlocks+
+        '<div class="sk-yr-add"><button type="button" class="sk-doc add" data-add-yr-svc="1">+ ár / þjónusta</button>'+
+        '<span class="sk-sub">skýrsla og reikningur parast sjálfkrafa eftir ári — nýjasta árið opið, eldri ár samanþjöppuð</span></div>'+
+      '</div>'+
       '<div class="sk-strip"><div class="sk-strip-l">📎 Önnur viðhengi</div><div class="sk-strip-r">'+otherHtml+'</div></div>'+
       notLinked + fixLink;
   }
@@ -592,14 +678,28 @@
 
       // 📧 Senda — opnar póst-ritilinn (patch 254) með hökum fyrir úttektarskýrslu
       // og reikning ársins + breytanlegan staðlaðan texta. Sent gegnum Gmail.
+      // Hver þjónustukort hefur SITT EIGIÐ Senda (data-send-kind) — sendir bara
+      // þá skýrslu + reikninginn sem er tengdur ÞEIRRI þjónustu þetta ár, ekki
+      // bæði slökkvitæki og brunakerfi í einu.
       var sendEl=e.target.closest('[data-send-year]');
       if(sendEl){
         e.preventDefault();
         if(!(window.ReceiptSender && ReceiptSender.compose)){ alert('Póst-ritillinn hlóðst ekki — endurhladdu síðunni.'); return; }
         var y=sendEl.getAttribute('data-send-year');
-        var rep=(section._repByY && section._repByY[y]||[])[0];
-        var bru=(section._bruByY && section._bruByY[y]||[])[0];
-        var inv=(section._invByY && section._invByY[y]||[])[0];
+        var kind=sendEl.getAttribute('data-send-kind');
+        var rep, bru, inv;
+        if(kind==='brunakerfi'){
+          bru=(section._bruByY && section._bruByY[y]||[])[0];
+          inv=(section._resolved && section._resolved[y+'|brunakerfi'] && section._resolved[y+'|brunakerfi'].inv)||null;
+        } else if(kind==='uttekt'){
+          rep=(section._repByY && section._repByY[y]||[])[0];
+          inv=(section._resolved && section._resolved[y+'|uttekt'] && section._resolved[y+'|uttekt'].inv)||null;
+        } else {
+          // fallback (shouldn't happen post-redesign, kept for safety)
+          rep=(section._repByY && section._repByY[y]||[])[0];
+          bru=(section._bruByY && section._bruByY[y]||[])[0];
+          inv=(section._invByY && section._invByY[y]||[])[0];
+        }
         var meta=section._sendCo||{}; var nafn=meta.nafn||'';
         // Netfang forfyllt af fyrirtækinu (má breyta í glugganum).
         var email=''; try{ var sb=SB(); if(sb && meta.coId){ var er=await sb.from('fyrirtaeki').select('netfang').eq('id', meta.coId).maybeSingle(); if(er&&er.data&&er.data.netfang) email=String(er.data.netfang).trim(); } }catch(_){}
@@ -624,6 +724,42 @@
         return;
       }
 
+      // 🔗 Tengja handvirkt — ambiguous year (multiple invoices / reports that
+      // year) where the auto-heuristic wouldn't guess confidently. Persists
+      // into document_pairs with matched_by='manual' so it's a durable link
+      // from here on, same as the auto-resolved case.
+      var linkSaveEl=e.target.closest('[data-link-save]');
+      if(linkSaveEl){
+        e.preventDefault();
+        var lk=linkSaveEl.getAttribute('data-link-save').split('|'), ly=+lk[0], lkind=lk[1];
+        var sel=section.querySelector('[data-link-sel="'+lk[0]+'|'+lkind+'"]');
+        var idx=sel && sel.value!=='' ? +sel.value : null;
+        if(idx==null) return;
+        var invArr=(section._resolved && section._resolved[ly+'|'+lkind] && section._resolved[ly+'|'+lkind].invCandidates)||[];
+        var inv=invArr[idx]; if(!inv) return;
+        var repArr=(lkind==='brunakerfi'?section._bruByY:section._repByY)[ly]||[];
+        var rep=repArr[0];
+        var baseId=null; try{ var k=(getCompany(coId)||{}).kennitala; baseId=k?await baseIdForKt(k):null; }catch(_){}
+        if(!baseId){ alert('Fyrirtækið er ekki tengt grunnskrá (customers_base) — hægt er að laga pörun í Brunahólf í staðinn.'); return; }
+        linkSaveEl.disabled=true; linkSaveEl.textContent='Vista…';
+        await savePair(baseId, ly, lkind, { report_doc_id: (rep&&!rep._att)?rep.id:null, invoice_doc_id: (inv&&!inv._att&&!inv._fromSolur)?inv.id:null, status:'klarad', matched_by:'manual' });
+        render(section, coId);
+        return;
+      }
+      // + ár / þjónusta — bæta við skýrslu/reikningi fyrir ár eða þjónustu sem
+      // ekki er þegar í listanum (t.d. brunakerfisþjónusta sem er nýhafin).
+      var addYrSvc=e.target.closest('[data-add-yr-svc]');
+      if(addYrSvc){
+        e.preventDefault();
+        var yStr=prompt('Fyrir hvaða ár?', String(NOW)); if(!yStr) return;
+        var yNum=parseInt(yStr,10); if(!(yNum>=2000&&yNum<=NOW+1)){ alert('Ógilt ár'); return; }
+        var svcAns=prompt('Þjónusta:\n1 = Slökkvitækjaþjónusta\n2 = Brunakerfisþjónusta\n\n1 eða 2:', '1');
+        var svcKind = svcAns==='2' ? 'brunakerfi' : 'skyrsla';
+        if(!(window.CompanyAttachments&&CompanyAttachments.pick)){ alert('Skjalakerfi ekki tilbúið — endurhladdu síðunni.'); return; }
+        await CompanyAttachments.pick(coId, { year:String(yNum), kind:svcKind });
+        render(section, coId);
+        return;
+      }
       var pickEl=e.target.closest('[data-pick]');
       if(pickEl){
         e.preventDefault();
@@ -688,6 +824,13 @@
         return;
       }
     });
+    // Enable the "🔗 Tengja" button only once an invoice is actually picked
+    // in its neighbouring <select> (both live in the same .sk-link-wrap).
+    section.addEventListener('change', function(e){
+      var sel=e.target.closest && e.target.closest('[data-link-sel]'); if(!sel) return;
+      var btn=sel.parentElement && sel.parentElement.querySelector('[data-link-save]');
+      if(btn) btn.disabled = (sel.value==='');
+    });
   }
 
   function inject(){
@@ -733,13 +876,43 @@
       '.sk-att-wrap .sk-doc{margin:0}',
       '.sk-att-x{border:1px solid var(--brd);border-left:0;background:var(--surface);color:var(--ink4);cursor:pointer;font-size:10px;padding:4px 6px;border-radius:0 8px 8px 0;line-height:1.2}',
       '.sk-att-x:hover{color:#dc2626;border-color:#fecaca}',
-      // Taflan má aldrei klippast af (.sk-card er overflow:hidden) — láta hana
-      // skruna lárétt í eigin kassa svo Reikningur-dálkurinn tapist ekki á síma.
-      '.sk-gridwrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -2px}',
-      '.sk-grid{width:100%;border-collapse:collapse;font-size:12.5px}',
-      '.sk-grid th{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink3);font-weight:700;padding:7px 10px;text-align:left;background:var(--bg);white-space:nowrap}',
-      '.sk-grid td{padding:5px 10px;border-top:1px solid var(--brd2,#f1f5f9);vertical-align:middle}',
-      '.sk-grid td:first-child{font-weight:700;color:var(--ink1);width:56px;white-space:nowrap}',
+      // ── per-year bundle cards (replaces the old flat table, 2026-08-05) ──
+      '.sk-yrwrap{padding:2px 14px 12px}',
+      '.sk-yrblock{border-top:1px solid var(--brd2,#f1f5f9);padding:10px 0}',
+      '.sk-yrblock:first-child{border-top:0}',
+      '.sk-yr-label{display:inline-block;font-weight:800;color:var(--ink1);font-size:13px;margin-bottom:6px;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation}',
+      '.sk-yr-label.sk-yr-now{color:var(--brand)}',
+      '.sk-yr-label.sk-yr-ok{color:#15803d!important}',
+      '.sk-yr-label.sk-yr-claude{color:#1d4ed8!important}',
+      '.sk-yr-label.sk-yr-gap{color:#b45309!important}',
+      // Expanded (newest) year: two service cards side by side, stacking on narrow screens.
+      '.sk-svc-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}',
+      '@media (max-width:620px){.sk-svc-grid{grid-template-columns:1fr}}',
+      '.sk-svc-card{background:var(--bg);border:1px solid var(--brd2,#f1f5f9);border-radius:10px;padding:10px 12px}',
+      '.sk-svc-card.sk-svc-empty{opacity:.65}',
+      '.sk-svc-hd{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:13px}',
+      '.sk-svc-send{all:unset;cursor:pointer;margin-left:auto;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid #99f6e4;color:#0f766e;background:var(--surface)}',
+      '.sk-svc-send:hover{background:#f0fdfa}',
+      '.sk-svc-row{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:4px 0}',
+      '.sk-svc-tag{font-size:9px;font-weight:700;color:var(--ink3);background:var(--surface2);border:1px solid var(--brd2,#f1f5f9);border-radius:99px;padding:1px 7px;white-space:nowrap}',
+      '.sk-svc-tag.inv{color:#15803d;background:#f0fdf4;border-color:#bbf7d0}',
+      '.sk-svc-pay{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:99px}',
+      '.sk-svc-pay.ok{color:#15803d;background:#f0fdf4}',
+      '.sk-svc-pay.due{color:#b45309;background:#fef3c7}',
+      '.sk-svc-amt{font-size:11px;font-weight:700;color:var(--ink2,var(--ink1))}',
+      // Older (collapsed) years: one compact line per service.
+      '.sk-svc-compactrow{display:flex;flex-direction:column;gap:3px}',
+      '.sk-svc-compact{display:flex;align-items:center;flex-wrap:wrap;gap:5px;font-size:12px;color:var(--ink2,var(--ink1))}',
+      '.sk-svc-compact.sk-svc-empty{color:var(--ink4);font-style:italic}',
+      '.sk-svc-btn{all:unset;cursor:pointer;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:7px;border:1px solid var(--brd2,#f1f5f9);color:var(--ink3)}',
+      '.sk-svc-btn:hover{color:var(--brand);border-color:var(--brand)}',
+      // 🔗 manual-link picker (shown only when auto-pairing is genuinely ambiguous).
+      '.sk-link-wrap{display:inline-flex;align-items:center;gap:5px}',
+      '.sk-link-sel{font:inherit;font-size:11px;padding:3px 6px;border:1px solid var(--brd2,#f1f5f9);border-radius:7px;background:var(--surface)}',
+      '.sk-link-btn{all:unset;cursor:pointer;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;border:1px solid #99f6e4;color:#0f766e;background:var(--surface)}',
+      '.sk-link-btn:disabled{opacity:.4;cursor:default}',
+      '.sk-yr-add{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:10px}',
+      '.sk-sub{font-size:11px;color:var(--ink4)}',
       // Skjala-chippar: fast há, þjöppuð leturstærð (yfirskrifar Brunastál-skinnið)
       // + stytting með … svo löng skráarnöfn víkki ekki töfluna endalaust.
       '.sk-card .sk-doc{font-size:11.5px!important;line-height:1.2!important;padding:4px 9px!important;max-width:min(52vw,230px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
@@ -758,13 +931,7 @@
       '.sk-pill.claude::before{background:#2563eb;box-shadow:0 0 5px 1px rgba(37,99,235,.8)}',
       // Appelsínugulur = skýrsla vantar (gap sem Claude fann).
       '.sk-pill.gap{border-color:#f59e0b;background:#fef3c7;color:#92400e}',
-      '.sk-pill.gap::before{background:#f59e0b}',
-      // Ár-reitur er tvísmellanlegur.
-      '.sk-grid td.sk-yr{cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation}',
-      '.sk-grid td.sk-yr-now{color:var(--brand)}',
-      '.sk-grid td.sk-yr-ok{color:#15803d!important;font-weight:800}',
-      '.sk-grid td.sk-yr-claude{color:#1d4ed8!important;font-weight:800}',
-      '.sk-grid td.sk-yr-gap{color:#b45309!important;font-weight:800}'
+      '.sk-pill.gap::before{background:#f59e0b}'
     ].join('\n');
     var st=document.createElement('style'); st.id='sk-card-css'; st.textContent=css; document.head.appendChild(st);
   }
