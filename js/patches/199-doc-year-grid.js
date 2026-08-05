@@ -632,10 +632,23 @@
     section._repByY = repByY; section._bruByY = bruByY; section._invByY = invByY;
     section._resolved = resolved; section._sendCo = { coId: coId, kt: kt, nafn: (co && co.nafn) || '' };
 
+    // 2026-08-05 (Agnar: "ég þarf að geta séð hvað í andsskotanum ég er að
+    // linka við" — a bare "R-107802 · 114.710 kr" gives no way to tell WHICH
+    // building/period a candidate invoice actually belongs to). Options now
+    // show the invoice date too, and a 👁 button opens the selected candidate's
+    // actual file so it can be checked before committing to "Tengja".
+    function fmtDagsShort(iso){ var m=String(iso||'').match(/^(\d{4})-(\d{2})-(\d{2})/); return m? m[3]+'.'+m[2]+'.'+m[1] : ''; }
     function manualLinkHtml(y, svc, invArr){
       if(!invArr.length) return '';
-      var opts=invArr.map(function(x,i){ var lab=invLabel(x.invoice_number||chipInvNum(x)); var amt=x.amount!=null?(' · '+fmtKrLoc(x.amount)+' kr'):''; return '<option value="'+i+'">'+esc(lab+amt)+'</option>'; }).join('');
+      var opts=invArr.map(function(x,i){
+        var lab=invLabel(x.invoice_number||chipInvNum(x));
+        var dt=x.doc_date?(' · '+fmtDagsShort(x.doc_date)):'';
+        var amt=x.amount!=null?(' · '+fmtKrLoc(x.amount)+' kr'):'';
+        var src=x._fromSolur?' · úr Sölu (ekkert PDF)':(x._att?' · viðhengi':'');
+        return '<option value="'+i+'">'+esc(lab+dt+amt+src)+'</option>';
+      }).join('');
       return '<span class="sk-link-wrap"><select class="sk-link-sel" data-link-sel="'+y+'|'+svc.kind+'"><option value="">— hvaða reikningur? —</option>'+opts+'</select>'+
+        '<button type="button" class="sk-link-peek" data-link-peek="'+y+'|'+svc.kind+'" title="Opna völdu skrána til að staðfesta áður en tengt er" disabled>👁</button>'+
         '<button type="button" class="sk-link-btn" data-link-save="'+y+'|'+svc.kind+'" disabled>🔗 Tengja</button></span>';
     }
     function svcInvHtml(y, svc, forCompact){
@@ -792,6 +805,23 @@
         return;
       }
 
+      // 👁 Skoða — opnar völdu skrána (Drive/storage) svo hægt sé að staðfesta
+      // að hún tilheyri ÞESSARI byggingu/tímabili áður en smellt er á Tengja.
+      var peekEl=e.target.closest('[data-link-peek]');
+      if(peekEl){
+        e.preventDefault();
+        var pk=peekEl.getAttribute('data-link-peek').split('|');
+        var psel=section.querySelector('[data-link-sel="'+pk[0]+'|'+pk[1]+'"]');
+        var pidx=psel && psel.value!=='' ? +psel.value : null;
+        if(pidx==null) return;
+        var pArr=(section._resolved && section._resolved[+pk[0]+'|'+pk[1]] && section._resolved[+pk[0]+'|'+pk[1]].invCandidates)||[];
+        var pinv=pArr[pidx];
+        var purl=pinv?docUrl(pinv):'';
+        if(purl) window.open(purl, '_blank', 'noopener');
+        else alert('Engin skrá tengd þessari sölu — hún kemur bara úr Sölu-skráningu, ekkert PDF til að skoða.');
+        return;
+      }
+
       // 🔗 Tengja handvirkt — ambiguous year (multiple invoices / reports that
       // year) where the auto-heuristic wouldn't guess confidently. Persists
       // into document_pairs with matched_by='manual' so it's a durable link
@@ -898,6 +928,8 @@
       var sel=e.target.closest && e.target.closest('[data-link-sel]'); if(!sel) return;
       var btn=sel.parentElement && sel.parentElement.querySelector('[data-link-save]');
       if(btn) btn.disabled = (sel.value==='');
+      var peek=sel.parentElement && sel.parentElement.querySelector('[data-link-peek]');
+      if(peek) peek.disabled = (sel.value==='');
     });
   }
 
@@ -981,6 +1013,8 @@
       '.sk-link-sel{font:inherit;font-size:11px;padding:3px 6px;border:1px solid var(--brd2,#f1f5f9);border-radius:7px;background:var(--surface)}',
       '.sk-link-btn{all:unset;cursor:pointer;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;border:1px solid #99f6e4;color:#0f766e;background:var(--surface)}',
       '.sk-link-btn:disabled{opacity:.4;cursor:default}',
+      '.sk-link-peek{all:unset;cursor:pointer;font-size:12px;padding:3px 7px;border-radius:7px;border:1px solid var(--brd2,#f1f5f9);color:var(--ink3);background:var(--surface)}',
+      '.sk-link-peek:disabled{opacity:.4;cursor:default}',
       '.sk-yr-add{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding-top:10px}',
       '.sk-sub{font-size:11px;color:var(--ink4)}',
       // Skjala-chippar: fast há, þjöppuð leturstærð (yfirskrifar Brunastál-skinnið)
