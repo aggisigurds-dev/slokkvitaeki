@@ -39,6 +39,9 @@
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const toast = m => { try { if (window.Toast && Toast.show) Toast.show(m); } catch (_) {} };
   const near = (a, b) => Math.abs((+a || 0) - (+b || 0)) < 0.05;
+  // Tákn úr js/ui-icons.js — engin emoji (osk Agnars 2026-08-05).
+  const ic = (n, sz) => (window.UIIcons ? UIIcons.svg(n, { size: sz || 14 }) : '');
+  const icc = (key, sz) => (window.UIIcons ? UIIcons.categorySvg(key, { size: sz || 14 }) : '');
 
   // ── Hópa-geymsla (discount_tiers) ─────────────────────────────────────────
   let _tiers = [], _tiersTs = 0, _inflight = null, _tableMissing = false;
@@ -236,8 +239,8 @@
           const b = document.createElement('span');
           b.className = '_ahop-badge';
           b.title = 'Afsláttarhópur: ' + tag;
-          b.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 6px;background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:99px;font-size:10px;font-weight:700';
-          b.textContent = '🏷️ Hópur';
+          b.style.cssText = 'display:inline-flex;align-items:center;gap:3px;vertical-align:middle;margin-left:6px;padding:1px 6px;background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:99px;font-size:10px;font-weight:700';
+          b.innerHTML = (window.UIIcons ? UIIcons.svg('tag', { size: 10 }) : '') + '<span>Hópur</span>';
           descEl.appendChild(b);
         }
       } else if (!tag && existing) {
@@ -277,8 +280,8 @@
     return E().CATEGORIES.map(c => {
       const p = E().parsePct(tier[c.col]);
       if (p === null) return '';
-      return '<span title="' + esc(c.label) + '" style="display:inline-flex;align-items:center;gap:3px;background:var(--surface2);border:1px solid var(--brd);border-radius:99px;padding:1px 7px;font-size:10.5px;font-weight:700;color:' + (p > 0 ? '#166534' : '#94a3b8') + '">' +
-        c.icon + ' ' + E().fmtPct(p) + '%</span>';
+      return '<span title="' + esc(c.label) + '" style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--brd);border-radius:99px;padding:2px 8px;font-size:10.5px;font-weight:700;color:' + (p > 0 ? '#166534' : '#94a3b8') + '">' +
+        icc(c.key, 11) + '<span>' + E().fmtPct(p) + '%</span></span>';
     }).join(' ');
   }
 
@@ -293,11 +296,11 @@
       : '';
     sec.innerHTML =
       '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-        '<span style="font-size:13px;font-weight:700;color:#1e3a8a">🏷️ Afsláttarhópur</span>' +
+        '<span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#1e3a8a">' + ic('tag', 15) + 'Afsláttarhópur</span>' +
         '<span style="font-size:10.5px;color:var(--ink3)">gengur framar sjálfvirkum afslætti</span>' +
         '<span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px">' +
           '<select class="_ahop-sel"' + (busy ? ' disabled' : '') + ' style="padding:6px 8px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:13px;background:var(--surface);color:var(--ink1);min-width:170px">' + opts + '</select>' +
-          '<button class="_ahop-manage" type="button" title="Sýsla með afsláttarhópa" style="padding:7px 12px;background:var(--surface2);border:1px solid var(--brd);color:var(--brand);border-radius:7px;cursor:pointer;font-size:13px;font-weight:700">⚙️ Hópar</button>' +
+          '<button class="_ahop-manage" type="button" title="Sýsla með afsláttarhópa" style="padding:7px 12px;background:var(--surface2);border:1px solid var(--brd);color:var(--brand);border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:6px">' + ic('sliders', 14) + 'Hópar</button>' +
         '</span>' +
       '</div>' +
       (tier ? '<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap">' + chipsFor(tier) +
@@ -363,7 +366,7 @@
         await saveTierOnCompany(coId, val);
         sec.dataset.tierId = val || '';
         renderSection(sec, coId, val, false);
-        toast(val ? ('🏷️ Afsláttarhópur vistaður: ' + (tierById(val) || {}).tier_name) : 'Afsláttarhópur fjarlægður.');
+        toast(val ? ('Afsláttarhópur vistaður: ' + (tierById(val) || {}).tier_name) : 'Afsláttarhópur fjarlægður.');
         applyCart();
       } catch (err) {
         renderSection(sec, coId, sec.dataset.tierId || null, false);
@@ -396,7 +399,7 @@
   function pctInput(cat, tier) {
     const v = tier ? E().parsePct(tier[cat.col]) : null;
     return '<label style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--brd);border-radius:9px;background:var(--surface)">' +
-      '<span style="font-size:16px;width:22px;text-align:center">' + cat.icon + '</span>' +
+      '<span style="display:flex;justify-content:center;width:22px;color:var(--ink2)">' + icc(cat.key, 16) + '</span>' +
       '<span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--ink1)">' + esc(cat.label) + '</span>' +
       '<input class="_ahop-pct" data-col="' + cat.col + '" type="text" inputmode="decimal" placeholder="—" ' +
         'value="' + (v === null ? '' : E().fmtPct(v)) + '" ' +
@@ -413,16 +416,16 @@
           '<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">' + (chipsFor(t) || '<span style="font-size:11px;color:var(--ink4);font-style:italic">engar prósentur skráðar</span>') + '</div>' +
           (t.athugasemd ? '<div style="margin-top:3px;font-size:10.5px;color:var(--ink3)">' + esc(t.athugasemd) + '</div>' : '') +
         '</div>' +
-        '<button class="_ahop-edit" data-id="' + t.id + '" type="button" title="Breyta" style="background:var(--surface2);border:1px solid var(--brd);border-radius:7px;padding:5px 9px;cursor:pointer;font-size:12px">✎</button>' +
-        '<button class="_ahop-del" data-id="' + t.id + '" type="button" title="Eyða" style="background:var(--surface);border:1px solid #fecaca;color:#dc2626;border-radius:7px;padding:5px 9px;cursor:pointer;font-size:12px">🗑</button>' +
+        '<button class="_ahop-edit" data-id="' + t.id + '" type="button" title="Breyta" style="background:var(--surface2);border:1px solid var(--brd);border-radius:7px;padding:5px 8px;cursor:pointer;line-height:0" title="Breyta">' + ic('pencil', 14) + '</button>' +
+        '<button class="_ahop-del" data-id="' + t.id + '" type="button" title="Eyða" style="background:var(--surface);border:1px solid #fecaca;color:#dc2626;border-radius:7px;padding:5px 8px;cursor:pointer;line-height:0" title="Eyða">' + ic('trash', 14) + '</button>' +
       '</div>'
     ).join('') : '<div style="padding:16px;text-align:center;color:var(--ink4);font-size:13px;font-style:italic">Enginn afsláttarhópur skráður — búðu til þann fyrsta hér að neðan.</div>';
 
     const t = _editing;
     const form =
       '<div style="margin-top:12px;padding:12px;border:1px solid var(--brd);border-radius:12px;background:var(--surface2)">' +
-        '<div style="font-size:12px;font-weight:800;color:var(--brand);text-transform:uppercase;letter-spacing:.05em;margin-bottom:9px">' +
-          (t && t.id ? '✎ Breyta hóp' : '➕ Nýr afsláttarhópur') + '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--brand);text-transform:uppercase;letter-spacing:.05em;margin-bottom:9px">' +
+          (t && t.id ? ic('pencil', 13) + 'Breyta hóp' : ic('plus', 13) + 'Nýr afsláttarhópur') + '</div>' +
         '<input id="_ahop-name" type="text" placeholder="Nafn hóps — t.d. Stórnotendur 2026" value="' + esc((t && t.tier_name) || '') + '" ' +
           'style="width:100%;padding:9px 11px;border:1px solid var(--brd2);border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;margin-bottom:9px">' +
         '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:7px">' +
@@ -440,13 +443,13 @@
       '</div>';
 
     return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:11px">' +
-        '<div style="font-size:16px;font-weight:800;color:var(--ink1)">🏷️ Afsláttarhópar</div>' +
+        '<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:800;color:var(--ink1)">' + ic('tag', 17) + 'Afsláttarhópar</div>' +
         '<div style="font-size:11px;color:var(--ink3)">prósenta per flokki — gengur framar afslætti af öllu</div>' +
         '<button class="_ahop-close" type="button" style="margin-left:auto;background:var(--surface2);border:1px solid var(--brd);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:15px;line-height:1">✕</button>' +
       '</div>' +
       list + form +
       '<div style="margin-top:14px;border-top:1px solid var(--brd);padding-top:11px">' +
-        '<button class="_ahop-preview" type="button" style="background:none;border:none;color:var(--brand);cursor:pointer;font-size:12.5px;font-weight:700;padding:0">🗂️ Flokkun vara — hvaða vörur lenda í hvaða flokki (breytanlegt)</button>' +
+        '<button class="_ahop-preview" type="button" style="background:none;border:none;color:var(--brand);cursor:pointer;font-size:12.5px;font-weight:700;padding:0;display:inline-flex;align-items:center;gap:6px">' + ic('layers', 14) + 'Flokkun vara — hvaða vörur lenda í hvaða flokki (breytanlegt)</button>' +
         '<div class="_ahop-preview-body" style="display:none;margin-top:9px"></div>' +
       '</div>';
   }
@@ -520,7 +523,7 @@
           if (body) renderFlokkun(body);
           applyCart();
           const c = E().byKey(cat);
-          toast('🗂️ ' + p.nafn + ' → ' + ((c && c.stutt) || 'utan flokka'));
+          toast(p.nafn + ' → ' + ((c && c.stutt) || 'utan flokka'));
         });
         return;
       }
@@ -560,7 +563,7 @@
           draw();
           if (sec) renderSection(sec, coId, sec.dataset.tierId, false);
           applyCart();
-          toast('🏷️ Hópur vistaður: ' + name);
+          toast('Hópur vistaður: ' + name);
         } catch (err) {
           alert('Villa við vistun: ' + (err.message || err) +
             (/does not exist/i.test(err.message || '') ? '\n\nKeyrðu sql/2026-08-05_afslattarhopar.sql í Supabase fyrst.' : ''));
@@ -605,7 +608,7 @@
 
   function allBuckets() {
     return E().CATEGORIES.concat([
-      { key: E().NONE, label: 'Utan flokka — enginn hópsafsláttur', stutt: 'Utan flokka', icon: '🚫' }
+      { key: E().NONE, label: 'Utan flokka — enginn hópsafsláttur', stutt: 'Utan flokka' }
     ]);
   }
 
@@ -613,7 +616,7 @@
     const opts = ['<option value=""' + (manual ? '' : ' selected') + '>↺ sjálfvirkt</option>']
       .concat(allBuckets().map(c =>
         '<option value="' + c.key + '"' + (manual && curKey === c.key ? ' selected' : '') + '>' +
-        c.icon + ' ' + esc(c.stutt) + '</option>'))
+        esc(c.stutt) + '</option>'))
       .join('');
     return '<span class="_ahop-chip" style="display:inline-flex;align-items:center;gap:4px;margin:0 5px 5px 0;padding:3px 4px 3px 9px;border:1px solid ' +
         (manual ? 'var(--brand)' : 'var(--brd)') + ';border-radius:99px;background:var(--surface);' +
@@ -653,10 +656,10 @@
         '<div style="margin-bottom:8px;padding:9px 11px;border:1px solid var(--brd);border-radius:10px;background:' +
             (c.key === E().NONE ? 'var(--surface2)' : 'var(--surface)') + '">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
-            '<span style="font-size:12px;font-weight:700;color:var(--ink1)">' + c.icon + ' ' + esc(c.label) + '</span>' +
+            '<span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--ink1)">' + icc(c.key, 15) + esc(c.label) + '</span>' +
             '<span style="font-size:11px;color:var(--ink3);font-weight:600">(' + buckets[c.key].length + ')</span>' +
             '<button class="_ahop-addvara" data-cat="' + c.key + '" type="button" ' +
-              'style="margin-left:auto;padding:4px 10px;background:var(--surface2);border:1px solid var(--brd);color:var(--brand);border-radius:7px;cursor:pointer;font-size:11px;font-weight:700">+ Bæta við vöru</button>' +
+              'style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:var(--surface2);border:1px solid var(--brd);color:var(--brand);border-radius:7px;cursor:pointer;font-size:11px;font-weight:700">' + ic('plus', 12) + 'Bæta við vöru</button>' +
           '</div>' +
           '<div style="line-height:1.9">' +
             (buckets[c.key].length
