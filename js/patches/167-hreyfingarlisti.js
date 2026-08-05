@@ -515,10 +515,37 @@
         else alert('Sölu-editor ekki tiltækur.');
       });
     });
-    main.querySelectorAll('._hr-nyjan').forEach(b => {
-      b.addEventListener('click', () => {
-        if (typeof window.SalaNyjan === 'function') window.SalaNyjan(b.dataset.kt, b.dataset.nafn);
-        else { try { if (window.App && App.switchView) App.switchView('sala'); } catch (_) {} }
+    main.querySelectorAll('._hr-bakfaera-nyjan').forEach(b => {
+      b.addEventListener('click', async () => {
+        if (!window.CreditInvoice || !CreditInvoice.open) { alert('Kreditfærslueining ekki tiltæk.'); return; }
+        if (typeof window.SalaNyjan !== 'function') { alert('Sala-eining ekki tiltæk.'); return; }
+        const SB = getSB(); if (!SB) return;
+        const r = await SB.from('solur')
+          .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,linur,greitt_med')
+          .eq('id', b.dataset.id).single();
+        if (r.error || !r.data) { alert('Salan fannst ekki.'); return; }
+        const d = r.data;
+        const lines = Array.isArray(d.linur) ? d.linur : [];
+        CreditInvoice.open({
+          id: d.id, num: d.num, customer: d.customer_nafn, customer_id: d.customer_id,
+          total: +(d.samtals || 0), ex: +(d.upphaed_an_vsk || 0), vsk: +(d.vsk_upphaed || 0),
+          lines, payment: d.greitt_med
+        });
+        // Once the credit modal closes (whether confirmed or cancelled), open a
+        // fresh sale for the same customer with the original lines copied in —
+        // that's the "og nýtt" half of this button (verkefnalisti d18b707d).
+        setTimeout(() => {
+          const modal = document.getElementById('ci-modal');
+          if (!modal) { window.SalaNyjan(d.customer_kt, d.customer_nafn, lines); return; }
+          const obs = new MutationObserver(() => {
+            if (modal.style.display === 'none' || !document.body.contains(modal)) {
+              obs.disconnect();
+              load(_state.month || new Date());
+              window.SalaNyjan(d.customer_kt, d.customer_nafn, lines);
+            }
+          });
+          obs.observe(modal, { attributes: true, attributeFilter: ['style'] });
+        }, 300);
       });
     });
     main.querySelectorAll('._hr-bakfaera').forEach(b => {
@@ -631,7 +658,14 @@
       defs.push({ cls: '_hr-edit', extra: 'data-id="' + s.id + '"', glyph: '✎', label: 'Breyta', color: '#c2410c', title: 'Breyta sölu — óSENDA reikninga má breyta beint' });
       defs.push({ cls: '_hr-bakfaera', extra: 'data-id="' + s.id + '"', glyph: '↩', label: 'Kredit', color: '#dc2626', title: 'Bakfæra (kreditfæra) þennan reikning' });
     }
-    defs.push({ cls: '_hr-nyjan', extra: 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', glyph: '＋', label: 'Nýr + kredit', color: '#0f7a43', title: 'Ný sala fyrir þennan viðskiptavin (opnar Sölu, afsláttur bætist sjálfkrafa)' });
+    if (!s.is_credit) {
+      // 2026-08-05 (verkefnalisti d18b707d): renamed from "Nýr + kredit" — the
+      // OLD button just opened a blank Sala for the customer with no credit and
+      // no line items, despite its name. Now genuinely bakfærir the original
+      // (same Kredit modal as the ↩ button above) and THEN opens a new sale
+      // with the original's lines already in the cart, obviously labelled.
+      defs.push({ cls: '_hr-bakfaera-nyjan', extra: 'data-id="' + s.id + '"', glyph: '↩＋', label: 'Bakfæra og nýtt', color: '#0f7a43', title: 'Bakfæra þennan reikning OG opna nýja sölu með sömu línum til að breyta' });
+    }
     return defs;
   }
   function actsAbtn(s) { return actionDefs(s).map(d => abtn(d.cls, d.extra, d.glyph, d.label, d.color, d.title)).join(''); }

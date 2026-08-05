@@ -1,4 +1,4 @@
-/* === SALA VÖRULISTI (BETA) v1 — patch 297, 2026-08-05 =======================
+/* === SALA VÖRULISTI (BETA) v1 — patch 299, 2026-08-05 =======================
  *
  * Önnur útgáfa af vöru-svæðinu í Sölu (ósk Agnars, mockup 2026-08-05):
  * leitarreitur efst sem grípur lyklaborðið strax + hreinn listi í fellilistum
@@ -279,6 +279,6 @@
   attach();
 
   window.SalaVorulistiBeta = { on, setOn: v => { setOn(v); applyMode(); }, mount };
-  console.log('[patch-297] 📋 Sala vörulisti (beta) — leit + fellilistar í stað flísa (slökkt sjálfgefið)');
+  console.log('[patch-299] 📋 Sala vörulisti (beta) — leit + fellilistar í stað flísa (slökkt sjálfgefið)');
 })();
 /* === END SALA VÖRULISTI BETA === */

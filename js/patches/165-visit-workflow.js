@@ -349,8 +349,10 @@
       samtals: total,
       afslattur: tot.afslattur,
       greitt_med: 'reikningur',
-      athugasemdir: `Heimsókn ${today} — ${visit.servicedIds.length} tæki, næsta skoðun ${next}`
-        + ((window.BeidniGate && BeidniGate.peek(coId)) ? ` · Beiðni nr: ${BeidniGate.peek(coId)}` : ''),
+      // 2026-08-05 (Agnar): stop auto-writing "Heimsókn … tæki, næsta skoðun …"
+      // onto the invoice — he doesn't want it there, and the device count it
+      // quoted didn't match reality. Beiðni nr (if any) is still worth keeping.
+      athugasemdir: (window.BeidniGate && BeidniGate.peek(coId)) ? `Beiðni nr: ${BeidniGate.peek(coId)}` : '',
       created_at: new Date().toISOString()
     };
 
@@ -475,7 +477,10 @@
         afslattur: afslattur,
         greitt_med: 'reikningur',
         source: 'uttekt',   // reikningur úr ársskoðun/úttektarskýrslu-flæði
-        athugasemdir: (() => { const _po = (window.BeidniGate && BeidniGate.take(coId)) || ''; return `Heimsókn ${today} — ${visit.servicedIds.length} tæki, næsta skoðun ${next}` + (_po ? ` · Beiðni nr: ${_po}` : ''); })()
+        // 2026-08-05 (Agnar): stop auto-writing "Heimsókn … tæki, næsta skoðun …"
+        // onto the invoice (unwanted + the device count was wrong). Beiðni nr
+        // (if any) is still worth keeping.
+        athugasemdir: (() => { const _po = (window.BeidniGate && BeidniGate.take(coId)) || ''; return _po ? `Beiðni nr: ${_po}` : ''; })()
       }).select('num,id').single();
       if (ins.error) throw ins.error;
       saleId = ins.data && ins.data.id;
