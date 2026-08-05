@@ -227,6 +227,35 @@
       notify();
       return false;
     }
+    // ── 2026-08-05: ATÓMÍSK VISTUN Á SERVERNUM (rót „étur vinnu af hinum
+    // vélunum"-gallans) ──────────────────────────────────────────────────────
+    // Gamla leiðin: lesa allan 1,4 MB blobbinn → sameina í vafranum → skrifa
+    // hann allan til baka. Milli lesturs og skrifar er GLUGGI: vél B les sama
+    // grunn og vél A, og sú sem skrifar seinna eyðir breytingu hinnar — þögult.
+    // Ekkert varúðar-endurlestur lokar þeim glugga, hann bara styttir hann.
+    //
+    // Nýja leiðin: serverinn sameinar sjálfur í EINNI setningu
+    // (`app_settings_merge`, sjá sql/2026-08-05_app_settings_atomisk_vistun.sql).
+    // Aðeins lyklarnir í `patch` fara á línuna og aðeins þeir snertast — tvær
+    // vélar geta vistað ólíka lykla samtímis án þess að trufla hvor aðra.
+    try {
+      const rpc = await window.DB.sb.rpc('app_settings_merge', { p_patch: patch });
+      if (!rpc.error) {
+        _settings = deepMerge(JSON.parse(JSON.stringify(_settings)), patch);
+        writeCache(_settings);
+        notify();
+        return true;
+      }
+      // Fallið ekki til (gamalt build / ókeyrt SQL) → gamla leiðin að neðan.
+      if (!/function|does not exist|PGRST202|404/i.test(rpc.error.message || '')) {
+        console.warn('[app-settings] app_settings_merge villa:', rpc.error.message);
+        return false;
+      }
+      console.warn('[app-settings] app_settings_merge ekki til — nota eldri leið');
+    } catch (e) {
+      console.warn('[app-settings] rpc undantekning, nota eldri leið:', e);
+    }
+
     try {
       // 2026-07-20: RE-SÆKJA nýjustu server-stillingar áður en við merge-um. Áður
       // merge-uðum við ofan á staðbundnu (hugsanlega gömlu) `_settings` og upsert-uðum
