@@ -182,6 +182,8 @@
       P+'.rf-ycell--todo{background:linear-gradient(145deg,#3a3e46,#23262d 60%,#111318);border:1px solid #0a0b0d}',
       P+'.rf-ycell--todo i{background:#cdd4de}',
       P+'.rf-ycell--none{color:#cbd2dc;background:none;box-shadow:none;text-shadow:none;font-weight:400;border:0}',
+      // 🧾 örlítið merki: reikningur ÞESSA árs/þjónustu er þegar paraður við skýrsluna.
+      P+'.rf-bundle-tag{font-size:8.5px;margin-left:1px;line-height:1;filter:drop-shadow(0 1px 0 rgba(0,0,0,.4))}',
       // næsta skoðun
       P+'.rf-next{font-family:"Space Mono",monospace;font-size:12.5px;white-space:nowrap}',
       P+'.rf-next--ok{color:#3a4250}',
@@ -1206,24 +1208,29 @@
     // grænn = skýrsla á skrá (hlekkur/viðhengi), blár = aðeins í búnaðarsögu /
     // í vinnslu, · = ekkert. Í „Bæði"-sýn er EFRI línan slökkvitæki og NEÐRI
     // brunakerfi — sama röð og dálkhausinn segir (🧯 SLÖKKVI / 🚨 BRUNA).
-    function yPillSl(done, rep, units, url, file, y){
+    // Örlítið "🧾" merki í hverri pillu þegar reikningur ÞESSA árs/þjónustu er
+    // þegar paraður við skýrsluna (Brunahólf's document_pairs, sjá patch 199)
+    // — 2026-08-05, ósk Agnars: "add tiny marking that shows that invoice is
+    // in the bundle". Reiknað per rekstrarfélag (batch) rétt fyrir row-lykkjuna.
+    function bundleTag(bundled){ return bundled ? '<b class="rf-bundle-tag" title="Reikningur paraður við skýrsluna (bundle)">🧾</b>' : ''; }
+    function yPillSl(done, rep, units, url, file, y, bundled){
       if(!done) return '<span class="rf-ycell rf-ycell--none">·</span>';
       var v = units>0 ? String(units) : '✓';
       var greenish = rep || url || file;
       var kind = greenish ? 'done' : 'hist';
-      var tip = (greenish?'Úttektarskýrsla á skrá':'Aðeins skráð í búnaðarsögu')+' · slökkvitæki · '+y;
+      var tip = (greenish?'Úttektarskýrsla á skrá':'Aðeins skráð í búnaðarsögu')+' · slökkvitæki · '+y+(bundled?' · 🧾 reikningur paraður':'');
       var inner = url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Google Drive">'+v+' 📄↗</a>'
         : (file ? fileLinkA(file,y,v)
         : (v+(rep?' 📄':'')));
-      return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+inner+'</span>';
+      return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+inner+bundleTag(bundled)+'</span>';
     }
-    function yPillBr(cell, units, y){
+    function yPillBr(cell, units, y, bundled){
       if(!cell) return '<span class="rf-ycell rf-ycell--none">·</span>';
       var kind = cell.kind==='rep' ? 'done' : 'hist';
       var v = units>0 ? String(units) : '✓';
-      var tip = (kind==='done'?'Brunakerfisskýrsla á skrá':'Brunakerfisskýrsla í vinnslu')+' · '+y;
+      var tip = (kind==='done'?'Brunakerfisskýrsla á skrá':'Brunakerfisskýrsla í vinnslu')+' · '+y+(bundled?' · 🧾 reikningur paraður':'');
       var inner = cell.url ? '<a href="'+esc(cell.url)+'" target="_blank" rel="noopener" title="Opna brunakerfisskýrslu">'+v+' 📄↗</a>' : (v+' 📄');
-      return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+inner+'</span>';
+      return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+inner+bundleTag(bundled)+'</span>';
     }
     // Staflar slökkvitækja-/brunakerfis-frumu eftir völdum þjónusturofa.
     // brOn=false → sleppa brunakerfis-línunni fyrir byggingu sem er EKKI í
@@ -1272,6 +1279,27 @@
         });
       }
     } catch(e) { console.warn('[rekstrarfelog] liveDocs', e); }
+    // ── document_pairs (Brunahólf bundle store, sjá patch 199) — batch-sótt
+    // per rekstrarfélag svo hver ár-pilla geti sýnt 🧾 þegar reikningur ÞESSA
+    // árs/þjónustu er þegar paraður við skýrsluna. baseByKt: digitsKt → base_id
+    // (customers_base) · pairByBase: base_id → { 'ár|þjónusta' → true }.
+    var baseByKt={}, pairByBase={};
+    try {
+      var ktDigits = blds.reduce(function(acc,b){ var d=digits(b.kt); if(d&&d.length>=10&&d!=='9999999999'&&acc.indexOf(d)<0) acc.push(d); return acc; }, []);
+      if (ktDigits.length && window.DB && DB.sb) {
+        var dashKts = ktDigits.map(function(d){ return d.slice(0,6)+'-'+d.slice(6); });
+        var br = await DB.sb.from('customers_base').select('id,kennitala').in('kennitala', dashKts);
+        (br.data||[]).forEach(function(x){ baseByKt[digits(x.kennitala)] = x.id; });
+        var baseIds = Object.keys(baseByKt).map(function(k){ return baseByKt[k]; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
+        if (baseIds.length) {
+          var pr = await DB.sb.from('document_pairs').select('customer_base_id,year,service_type,invoice_doc_id,solur_id').in('customer_base_id', baseIds);
+          (pr.data||[]).forEach(function(x){
+            if (!(x.invoice_doc_id || x.solur_id)) return;   // ekki merkja ár sem á enga tengda reikningsröð
+            (pairByBase[x.customer_base_id] = pairByBase[x.customer_base_id] || {})[x.year+'|'+x.service_type] = true;
+          });
+        }
+      }
+    } catch(e) { console.warn('[rekstrarfelog] bundlePairs', e); }
     // building table
     var rows=blds.map(function(b,_bi){
       var co=companyForBld(b);
@@ -1358,10 +1386,14 @@
       var unitCell = stackTd(
         '<span class="rf-cnt rf-cnt--sl'+(units>0?'':' is-zero')+'" title="Slökkvitæki á staðnum"><em>🧯</em>'+slCntTxt+'</span>',
         '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>', 'rf-cnt-cell', bHasData);
+      var bldBaseId = baseByKt[digits(b.kt)];
+      var bldPairs = bldBaseId ? pairByBase[bldBaseId] : null;
       var yTds='';
       ['2023','2024','2025','2026'].forEach(function(y,i){
         var done=[d23,d24,d25,d26][i], rep=[false,!!att[0],!!att[1],!!att[2]][i], file=[f23,f24,f25,f26][i];
-        yTds += stackTd(yPillSl(done,rep,units,lks[y],file,y), yPillBr(bY[y],bUnits,y), 'rf-yh-cell', bHasData);
+        var slBundled = !!(bldPairs && bldPairs[y+'|uttekt']);
+        var brBundled = !!(bldPairs && bldPairs[y+'|brunakerfi']);
+        yTds += stackTd(yPillSl(done,rep,units,lks[y],file,y,slBundled), yPillBr(bY[y],bUnits,y,brBundled), 'rf-yh-cell', bHasData);
       });
       var isOver=false;
       if(st && st.next){ isOver = st.next < today; }
