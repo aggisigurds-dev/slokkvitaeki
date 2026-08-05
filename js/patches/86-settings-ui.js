@@ -1155,7 +1155,19 @@
     }
   }
 
+  // Slóðin á að duga ein og sér: #settings (eða #settings/email) opnar síðuna
+  // beint — bókamerki, hlekkur í spjalli eða endurhlaðin síða lenda á réttum
+  // stað í stað þess að þurfa að finna hnappinn í 57 hnappa hliðarstiku.
+  function opnaAfSlod() {
+    if (!/^#settings(\/|$)/i.test(location.hash || '')) return;
+    if (document.getElementById('su-modal')) return;
+    if (!window.AppSettings || !AppSettings.isLoaded || !AppSettings.isLoaded()) { setTimeout(opnaAfSlod, 600); return; }
+    open();
+  }
+  window.addEventListener('hashchange', opnaAfSlod);
+
   function init() {
+    setTimeout(opnaAfSlod, 900);
     // Clean up any leftover duplicate from earlier versions of this patch
     // that injected its own nav button alongside the index.html one.
     const dup = document.getElementById('_su_nav');
