@@ -23,16 +23,30 @@
   if (!document.getElementById('su-style')) {
     const s = document.createElement('style'); s.id = 'su-style';
     s.textContent = `
-      #su-modal { position:fixed; inset:0; z-index:100020; display:flex; align-items:center; justify-content:center; font-family:inherit; }
-      #su-modal .su-back { position:absolute; inset:0; background:rgba(15,23,42,.55); }
-      #su-modal .su-card { position:relative; background:#fff; border-radius:14px; box-shadow:0 20px 60px rgba(0,0,0,.3); width:min(720px, calc(100vw - 24px)); max-height:calc(100vh - 40px); display:flex; flex-direction:column; overflow:hidden; }
-      #su-modal .su-hd { display:flex; justify-content:space-between; align-items:center; padding:16px 20px; border-bottom:1px solid #e2e8f0; background:linear-gradient(135deg, var(--app-primary, #C93C1D) 0%, #7f1d1d 100%); color:#fff; }
-      #su-modal .su-hd h3 { margin:0; font-size:17px; font-weight:700; }
-      #su-modal .su-x { background:rgba(255,255,255,.15); border:none; color:#fff; padding:6px 10px; border-radius:6px; cursor:pointer; font-size:14px; }
-      #su-modal .su-tabs { display:flex; gap:0; border-bottom:1px solid #e2e8f0; background:#f8fafc; padding:0 12px; overflow-x:auto; flex-shrink:0; }
-      #su-modal .su-tab { padding:11px 14px; font:inherit; font-size:13px; font-weight:600; color:#64748b; background:transparent; border:none; border-bottom:3px solid transparent; cursor:pointer; white-space:nowrap; }
-      #su-modal .su-tab.active { color:#0f172a; border-bottom-color: var(--app-primary, #C93C1D); }
-      #su-modal .su-body { padding:18px 20px; overflow-y:auto; flex:1; }
+      /* 2026-08-05 (ósk Agnars: „voða ræfillsleg popup — gera hana frekar
+         bara full page með betri lýsingum"): sami skjár, en sem heil síða með
+         hliðarrönd. Öll auðkenni (#su-modal/.su-card/.su-tabs/#su-body) haldast
+         svo allir 13 kaflarnir og vistunin virki óbreytt. */
+      #su-modal { position:relative; inset:auto; z-index:1; display:block; font-family:inherit; }
+      #su-modal .su-back { display:none; }
+      #su-modal .su-card { position:relative; background:var(--surface,#fff); border:1px solid var(--brd,#e2e8f0); border-radius:16px; box-shadow:0 1px 3px rgba(15,23,42,.06); width:100%; max-height:none; display:block; overflow:hidden; }
+      #su-modal .su-hd { display:flex; justify-content:space-between; align-items:flex-start; gap:16px; padding:20px 24px; border-bottom:1px solid var(--brd,#e2e8f0); background:linear-gradient(135deg, var(--app-primary, #C93C1D) 0%, #7f1d1d 100%); color:#fff; }
+      #su-modal .su-hd h3 { margin:0; font-size:19px; font-weight:800; letter-spacing:-.01em; }
+      #su-modal .su-hd .su-sub { margin-top:3px; font-size:12.5px; opacity:.8; max-width:70ch; }
+      #su-modal .su-x { background:rgba(255,255,255,.15); border:1px solid rgba(255,255,255,.25); color:#fff; padding:7px 12px; border-radius:8px; cursor:pointer; font-size:12.5px; font-weight:600; }
+      #su-modal .su-main { display:grid; grid-template-columns:268px 1fr; align-items:start; }
+      /* Hliðarröndin — hver kafli með nafni OG lýsingu, ekki bara flipa-orði. */
+      #su-modal .su-tabs { display:flex; flex-direction:column; gap:2px; padding:12px; border-right:1px solid var(--brd,#e2e8f0); background:var(--surface2,#f8fafc); overflow:visible; }
+      #su-modal .su-tab { display:block; width:100%; text-align:left; padding:9px 11px; font:inherit; font-size:13px; font-weight:600; color:var(--ink2,#475569); background:transparent; border:1px solid transparent; border-bottom:none; border-radius:9px; cursor:pointer; white-space:normal; line-height:1.25; }
+      #su-modal .su-tab .su-tab-desc { display:block; margin-top:2px; font-size:10.5px; font-weight:500; color:var(--ink3,#94a3b8); }
+      #su-modal .su-tab:hover { background:rgba(15,23,42,.04); color:var(--ink1,#0f172a); }
+      #su-modal .su-tab.active { background:var(--surface,#fff); border-color:var(--brd,#e2e8f0); color:var(--ink1,#0f172a); box-shadow:0 1px 2px rgba(15,23,42,.06); }
+      #su-modal .su-tab.active .su-tab-desc { color:var(--ink2,#64748b); }
+      #su-modal .su-pane { min-width:0; }
+      #su-modal .su-pane-hd { padding:18px 24px 0; }
+      #su-modal .su-pane-hd h4 { margin:0; font-size:16px; font-weight:800; color:var(--ink1,#0f172a); }
+      #su-modal .su-pane-hd p { margin:4px 0 0; font-size:12.5px; color:var(--ink3,#64748b); max-width:74ch; line-height:1.5; }
+      #su-modal .su-body { padding:16px 24px 22px; overflow:visible; max-width:900px; }
       #su-modal .su-row { display:grid; grid-template-columns:160px 1fr; gap:10px; align-items:center; margin-bottom:11px; }
       #su-modal .su-row label { font-size:12px; font-weight:600; color:#475569; }
       #su-modal .su-row input[type="text"], #su-modal .su-row input[type="number"], #su-modal .su-row input[type="email"], #su-modal .su-row select, #su-modal .su-row textarea { width:100%; padding:8px 11px; border:1px solid #cbd5e1; border-radius:7px; font:inherit; font-size:13px; box-sizing:border-box; }
@@ -42,7 +56,7 @@
       #su-modal .su-row .su-hint { font-size:11px; color:#94a3b8; margin-top:3px; }
       #su-modal .su-section-title { font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase; letter-spacing:.05em; margin:14px 0 8px; padding-bottom:5px; border-bottom:1px solid #e2e8f0; }
       #su-modal .su-section-title:first-child { margin-top:0; }
-      #su-modal .su-foot { display:flex; gap:8px; justify-content:space-between; padding:13px 20px; border-top:1px solid #e2e8f0; background:#f8fafc; flex-shrink:0; }
+      #su-modal .su-foot { display:flex; gap:8px; justify-content:space-between; align-items:center; padding:14px 24px; border-top:1px solid var(--brd,#e2e8f0); background:var(--surface2,#f8fafc); position:sticky; bottom:0; }
       #su-modal .su-cancel { padding:9px 18px; border:1px solid #cbd5e1; border-radius:8px; background:#fff; cursor:pointer; font:inherit; font-size:13px; color:#475569; }
       #su-modal .su-save { padding:9px 18px; background: var(--app-primary, #C93C1D); color:#fff; border:none; border-radius:8px; cursor:pointer; font:inherit; font-size:13px; font-weight:600; }
       #su-modal .su-save:disabled { opacity:.5; cursor:not-allowed; }
@@ -89,6 +103,39 @@
     return _allProducts;
   }
 
+
+  // Kaflar með MANNAMÁLS-lýsingu — nafnið eitt segir sjaldnast hvað er þarna inni.
+  const SU_META = [
+    ['branding',     'Merki og borði',    'Nafn, merki, borði og litir sem birtast efst í appinu og á kvittunum.'],
+    ['sala',         'Sala — flísar',     'Hvaða vörur birtast sem flísar í Sölu og í hvaða röð.'],
+    ['shortcuts',    'Hraðtakkar',        'Flýtitakkar á Sölu-skjánum — algengustu verkin í einum smelli.'],
+    ['vorur',        'Vörur og þjónusta', 'Hvaða vörur eru virkar og sjást í vörulistanum.'],
+    ['starfsmenn',   'Starfsmenn',        'Hverjir skrá sig á verk og birtast í úttektarskýrslum.'],
+    ['utlit',        'Hliðarstika',       'Hvaða síður sjást í hliðarstikunni og í hvaða röð.'],
+    ['kvittun',      'Kvittun',           'Texti og útlit á kvittuninni sem viðskiptavinur fær.'],
+    ['prentun',      'Prentun',           'Pappírsstærð, spássíur og prentstillingar fyrir reikninga og miða.'],
+    ['tilkynningar', 'Tilkynningar',      'Hvenær kerfið lætur vita — áminningar og viðvaranir.'],
+    ['email',        'Tölvupóstur',       'Netföng sem sent er frá og hverjir fá afrit.'],
+    ['tenglar',      'Tenglar',           'Flýtileiðir í ytri kerfi — dkPlus, Payday, Drive og fleira.'],
+    ['backup',       'Afritun',           'Afritun og útflutningur á gögnum.'],
+    ['almennt',      'Almennt',           'VSK, gjaldmiðill, dagsetningarsnið og önnur grunngildi.']
+  ];
+  // Aðrir patchar mega bæta við kafla: SettingsUI.registerSection({id,nafn,lysing,render})
+  const _extraSections = [];
+  function registerSection(sec) {
+    if (!sec || !sec.id || typeof sec.render !== 'function') return false;
+    if (_extraSections.some(x => x.id === sec.id)) return false;
+    _extraSections.push(sec);
+    const m = document.getElementById('su-modal');
+    if (m) { close(); open(); }
+    return true;
+  }
+  function allarSectionir() {
+    return SU_META.map(m => ({ id: m[0], nafn: m[1], lysing: m[2] }))
+      .concat(_extraSections.map(x => ({ id: x.id, nafn: x.nafn || x.id, lysing: x.lysing || '' })));
+  }
+  function metaFyrir(id) { return allarSectionir().find(x => x.id === id) || { id, nafn: id, lysing: '' }; }
+
   function open() {
     if (document.getElementById('su-modal')) return;
     if (!window.AppSettings) { alert('Stillingakerfi ekki tilbúið.'); return; }
@@ -104,41 +151,80 @@
       '<div class="su-back"></div>' +
       '<div class="su-card">' +
         '<div class="su-hd">' +
-          '<h3>⚙️ Stillingar</h3>' +
-          '<button class="su-x" type="button">✕</button>' +
+          '<div><h3>Stillingar</h3>' +
+            '<div class="su-sub">Allt sem stýrir því hvernig appið lítur út, hvað birtist hvar og hvernig reikningar og kvittanir eru unnin. Breytingar gilda á öllum tækjum um leið og þú vistar.</div>' +
+          '</div>' +
+          '<button class="su-x" type="button">Loka</button>' +
         '</div>' +
-        '<div class="su-tabs">' +
-          '<button class="su-tab" data-tab="branding">🏷 Branding</button>' +
-          '<button class="su-tab" data-tab="sala">🛒 Sala</button>' +
-          '<button class="su-tab" data-tab="shortcuts">⚡ Hraðtakkar</button>' +
-          '<button class="su-tab" data-tab="vorur">📦 Vörur</button>' +
-          '<button class="su-tab" data-tab="starfsmenn">👥 Starfsmenn</button>' +
-          '<button class="su-tab" data-tab="utlit">🎨 Útlit</button>' +
-          '<button class="su-tab" data-tab="kvittun">🧾 Kvittun</button>' +
-          '<button class="su-tab" data-tab="prentun">🖨 Prentun</button>' +
-          '<button class="su-tab" data-tab="tilkynningar">🔔 Tilkynningar</button>' +
-          '<button class="su-tab" data-tab="email">📧 Tölvupóstar</button>' +
-          '<button class="su-tab" data-tab="tenglar">🔗 Tenglar</button>' +
-          '<button class="su-tab" data-tab="backup">💾 Backup</button>' +
-          '<button class="su-tab" data-tab="almennt">⚙️ Almennt</button>' +
-        '</div>' +
-        '<div class="su-body" id="su-body"></div>' +
-        '<div class="su-foot">' +
-          '<button class="su-cancel" type="button">Hætta við</button>' +
-          '<button class="su-save" type="button">💾 Vista</button>' +
+        '<div class="su-main">' +
+          '<div class="su-tabs">' +
+            allarSectionir().map(sec =>
+              '<button class="su-tab" data-tab="' + esc(sec.id) + '">' + esc(sec.nafn) +
+                (sec.lysing ? '<span class="su-tab-desc">' + esc(sec.lysing) + '</span>' : '') +
+              '</button>').join('') +
+          '</div>' +
+          '<div class="su-pane">' +
+            '<div class="su-pane-hd" id="su-pane-hd"></div>' +
+            '<div class="su-body" id="su-body"></div>' +
+            '<div class="su-foot">' +
+              '<button class="su-cancel" type="button">Hætta við breytingar</button>' +
+              '<button class="su-save" type="button">Vista stillingar</button>' +
+            '</div>' +
+          '</div>' +
         '</div>' +
       '</div>' +
       '<div class="su-toast" id="su-toast"></div>';
-    document.body.appendChild(wrap);
 
-    wrap.querySelector('.su-back').addEventListener('click', close);
-    wrap.querySelector('.su-x').addEventListener('click', close);
-    wrap.querySelector('.su-cancel').addEventListener('click', close);
+    // Full síða: sest efst í Stillingar-sýnina, ekki sem yfirlag á allt appið.
+    const view = document.getElementById('view-settings');
+    const legacy = document.getElementById('settings-main');
+    if (view) {
+      view.insertBefore(wrap, view.firstChild);
+      if (legacy && !document.getElementById('_su-legacy')) faldaEldri(view, legacy);
+      try { if (typeof showMasterView === 'function') showMasterView('view-settings'); } catch (_) {}
+      if (location.hash !== '#settings') { try { location.hash = '#settings'; } catch (_) {} }
+    } else {
+      document.body.appendChild(wrap);   // neyðarlending ef sýnin finnst ekki
+    }
+
+    wrap.querySelector('.su-x').addEventListener('click', () => {
+      // Full síða: „Loka" fer til baka þangað sem notandinn var.
+      close();
+      try { if (history.length > 1) history.back(); else if (typeof showMasterView === 'function') showMasterView('view-counter'); } catch (_) {}
+    });
+    // „Hætta við breytingar" hendir uppkastinu og teiknar síðuna upp á nýtt.
+    wrap.querySelector('.su-cancel').addEventListener('click', () => { close(); open(); });
     wrap.querySelector('.su-save').addEventListener('click', save);
     wrap.querySelectorAll('.su-tab').forEach(btn => {
       btn.addEventListener('click', () => switchTab(btn.dataset.tab));
     });
     switchTab(_activeTab);
+  }
+
+  // Eldri stillingasíðan (tækjategundir, innflutningur, hreinsun o.fl. sem aðrir
+  // patchar setja í #settings-main) fer í samanbrotinn kassa fyrir neðan — hún
+  // hverfur ekki, en ryður ekki nýja skjánum úr vegi.
+  function faldaEldri(view, legacy) {
+    const box = document.createElement('div');
+    box.id = '_su-legacy';
+    box.style.cssText = 'margin:16px 0 0;border:1px solid var(--brd,#e2e8f0);border-radius:12px;background:var(--surface,#fff);overflow:hidden';
+    const hd = document.createElement('button');
+    hd.type = 'button';
+    hd.style.cssText = 'all:unset;box-sizing:border-box;display:flex;align-items:center;gap:9px;width:100%;padding:12px 16px;cursor:pointer;background:var(--surface2,#f8fafc)';
+    hd.innerHTML = '<span style="font-size:13px;color:var(--ink3,#94a3b8)">▸</span>' +
+      '<span style="font-size:13px;font-weight:700;color:var(--ink1,#0f172a)">Eldri stillingar</span>' +
+      '<span style="font-size:11px;color:var(--ink3,#94a3b8)">tækjategundir, þjónustutegundir, innflutningur og hreinsun</span>';
+    const holf = document.createElement('div');
+    holf.style.display = 'none';
+    hd.addEventListener('click', () => {
+      const opid = holf.style.display !== 'none';
+      holf.style.display = opid ? 'none' : 'block';
+      hd.firstChild.style.transform = opid ? 'rotate(0deg)' : 'rotate(90deg)';
+    });
+    view.appendChild(box);
+    box.appendChild(hd);
+    box.appendChild(holf);
+    holf.appendChild(legacy);
   }
 
   function close() {
@@ -155,7 +241,22 @@
     m.querySelectorAll('.su-tab').forEach(t => {
       t.classList.toggle('active', t.dataset.tab === name);
     });
+    // Haus yfir kaflanum: nafn + sama lýsing og í hliðarröndinni, svo maður viti
+    // alltaf hvað þessi skjár gerir án þess að giska út frá einu orði.
+    const hd = m.querySelector('#su-pane-hd');
+    if (hd) {
+      const meta = metaFyrir(name);
+      hd.innerHTML = '<h4>' + esc(meta.nafn) + '</h4>' + (meta.lysing ? '<p>' + esc(meta.lysing) + '</p>' : '');
+    }
     const body = m.querySelector('#su-body');
+    const auka = _extraSections.find(x => x.id === name);
+    if (auka) {
+      const fotur = m.querySelector('.su-foot');
+      if (fotur) fotur.style.display = 'none';      // aukakaflar vista sjálfir
+      Promise.resolve(auka.render(body)).catch(() => {});
+      return;
+    }
+    { const fotur = m.querySelector('.su-foot'); if (fotur) fotur.style.display = ''; }
     if (name === 'branding')   { body.innerHTML = renderBranding();   wireBranding(body); return; }
     if (name === 'sala')       { body.innerHTML = '<div style="padding:20px;color:#94a3b8">Hleður vörum…</div>'; loadProducts().then(() => { body.innerHTML = renderSala(); wireSala(body); }); return; }
     if (name === 'shortcuts')  { body.innerHTML = renderShortcuts(); wireShortcuts(body); return; }
@@ -1001,7 +1102,7 @@
     init();
   }
 
-  window.SettingsUI = { open, close, version: 'v1' };
+  window.SettingsUI = { open, close, registerSection, sections: allarSectionir, version: 'v2-fullpage' };
   console.log('[settings-ui] installed');
 })();
 /* === END SETTINGS UI v1 === */
