@@ -77,6 +77,17 @@
     return vid || 'all';   // elements outside any view are global-only
   }
   function ruleFor(sel, scp, create) {
+    // Öryggisventill: bert element-heiti („svg", „div", „span") á ÖLLUM síðum
+    // næði yfir allt appið. Færum slíka reglu sjálfkrafa á síðuna sem er opin.
+    if (scp === 'all' && /^[a-z][a-z0-9]*$/i.test(String(sel || '').trim())) {
+      const cur = document.querySelector('.view.active');
+      if (cur && cur.id) {
+        scp = cur.id;
+        try { toast('„' + sel + '" er of vítt fyrir allar síður — vistað á þessa síðu í staðinn.'); } catch (_) {}
+      } else {
+        return null;   // engin síða opin → sleppum frekar en að lita allt appið
+      }
+    }
     let r = state.rules.find(x => x.sel === sel && x.scope === scp);
     if (!r && create) { r = { sel, scope: scp, decls: {} }; state.rules.push(r); }
     return r;
@@ -87,6 +98,17 @@
   }
 
   // ── css injection ───────────────────────────────────────────────────────────
+  // 2026-08-05 (hraða-/þema-úttekt): EIN mis-smellt regla — `svg` með gildissvið
+  // „allar síður" — lenti hér inni og litaði ÖLL tákn í appinu #f4f3e6 með
+  // !important, svo engin táknmynd hélt sínum lit fyrr en hún þvingaði hann
+  // inline. Bert element-heiti á öllum síðum er alltaf slys: það nær yfir
+  // hundruð hluta sem notandinn sá aldrei. Slíkar reglur eru hunsaðar hér (og
+  // aldrei búnar til framar — sjá ruleFor).
+  const BARE_TAG = /^[a-z][a-z0-9]*$/i;
+  function isGlobalTagRule(r) {
+    return r && r.scope === 'all' && BARE_TAG.test(String(r.sel || '').trim());
+  }
+
   function applyCss() {
     let st = document.getElementById(STYLE_ID);
     if (!st) { st = document.createElement('style'); st.id = STYLE_ID; document.head.appendChild(st); }
@@ -94,6 +116,10 @@
     for (const r of state.rules) {
       const keys = r.decls ? Object.keys(r.decls) : [];
       if (!keys.length) continue;
+      if (isGlobalTagRule(r)) {
+        console.warn('[stílstjóri] hunsa alheimsreglu á berum tag-velja:', r.sel, r.decls);
+        continue;
+      }
       const body = keys.map(p => p + ':' + r.decls[p] + (/!important/.test(r.decls[p]) ? '' : ' !important')).join(';');
       const sel = r.scope === 'all' ? r.sel : '#' + r.scope + ' ' + r.sel;
       css += sel + '{' + body + '}\n';
@@ -451,19 +477,48 @@
     persist(); renderPanel();
   }
 
+  // 2026-08-05 (hraða-úttekt): bakgrunnsmyndin var lesin sem base64 data-URL og
+  // geymd INNI Í stillingunum — ein 179 kB PNG þýddi 179 kB aukalega í hverri
+  // einustu opnun appsins, á öllum tækjum. Myndin fer nú í Supabase Storage og
+  // aðeins slóðin geymist (vafrinn cachar hana þá líka). Data-URL er notað sem
+  // varaleið ef Storage svarar ekki, svo aðgerðin klikkar aldrei.
+  const BG_BUCKET = 'utlit';
+
+  async function uploadBg(f) {
+    const SB = (window.DB && DB.sb) || null;
+    if (!SB || !SB.storage) return null;
+    try {
+      const ext = (f.name.match(/\.[a-z0-9]+$/i) || ['.png'])[0].toLowerCase();
+      const path = 'bakgrunnur/' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) + ext;
+      const up = await SB.storage.from(BG_BUCKET).upload(path, f, {
+        upsert: false, contentType: f.type || 'image/png', cacheControl: '31536000'
+      });
+      if (up.error) return null;
+      const pub = SB.storage.from(BG_BUCKET).getPublicUrl(path);
+      return (pub && pub.data && pub.data.publicUrl) || null;
+    } catch (_) { return null; }
+  }
+
   function pickBackground() {
     const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
-    inp.onchange = () => {
+    inp.onchange = async () => {
       const f = inp.files && inp.files[0]; if (!f) return;
-      const fr = new FileReader();
-      fr.onload = () => {
-        const url = fr.result;
-        const where = prompt('Setja bakgrunn á:\n1 = þessa síðu\n2 = allar síður\n\n1 eða 2:', '1');
-        if (where === '2') { state.bg.all = url; }
-        else { const cur = document.querySelector('.view.active'); const id = cur && cur.id; if (!id) { toast('Opnaðu síðuna fyrst'); return; } state.bg.pages = state.bg.pages || {}; state.bg.pages[id] = url; }
-        persist();
-      };
-      fr.readAsDataURL(f);
+      const where = prompt('Setja bakgrunn á:\n1 = þessa síðu\n2 = allar síður\n\n1 eða 2:', '1');
+      if (where !== '1' && where !== '2') return;
+      const cur = document.querySelector('.view.active');
+      const id = cur && cur.id;
+      if (where === '1' && !id) { toast('Opnaðu síðuna fyrst'); return; }
+
+      toast('Hleð upp bakgrunni…');
+      let url = await uploadBg(f);
+      if (!url) {
+        url = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => res(null); fr.readAsDataURL(f); });
+        if (!url) { toast('Tókst ekki að lesa myndina.'); return; }
+        toast('Storage svaraði ekki — myndin geymist í stillingum í bili.');
+      }
+      if (where === '2') state.bg.all = url;
+      else { state.bg.pages = state.bg.pages || {}; state.bg.pages[id] = url; }
+      persist();
     };
     inp.click();
   }
