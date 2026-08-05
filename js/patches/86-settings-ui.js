@@ -14,6 +14,12 @@
   if (window.__settingsUIInstalled) return;
   window.__settingsUIInstalled = true;
 
+  // Appið endurskrifar slóðina (í #sala) meðan það ræsir sig, svo #settings er
+  // horfið þegar init() keyrir. Þess vegna er hún gripin hér — við keyrslu
+  // skriftunnar, áður en nokkur router kemst að.
+  const _slodVidRaesingu = String(location.hash || '');
+  let _upphafKafli = ((_slodVidRaesingu.match(/^#settings\/([a-z0-9_-]+)/i) || [])[1]) || null;
+
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -250,7 +256,8 @@
     }
 
     // Djúptengill: #settings/email opnar þann kafla beint.
-    const fráHash = (location.hash.match(/^#settings\/([a-z0-9_-]+)/i) || [])[1];
+    const fráHash = _upphafKafli || (location.hash.match(/^#settings\/([a-z0-9_-]+)/i) || [])[1];
+    _upphafKafli = null;
     const gildir = allarSectionir().some(x => x.id === fráHash);
     switchTab(gildir ? fráHash : _activeTab);
   }
@@ -1158,16 +1165,17 @@
   // Slóðin á að duga ein og sér: #settings (eða #settings/email) opnar síðuna
   // beint — bókamerki, hlekkur í spjalli eða endurhlaðin síða lenda á réttum
   // stað í stað þess að þurfa að finna hnappinn í 57 hnappa hliðarstiku.
-  function opnaAfSlod() {
-    if (!/^#settings(\/|$)/i.test(location.hash || '')) return;
+  function opnaAfSlod(fráRæsingu) {
+    const slod = fráRæsingu ? _slodVidRaesingu : (location.hash || '');
+    if (!/^#settings(\/|$)/i.test(slod)) return;
     if (document.getElementById('su-modal')) return;
-    if (!window.AppSettings || !AppSettings.isLoaded || !AppSettings.isLoaded()) { setTimeout(opnaAfSlod, 600); return; }
+    if (!window.AppSettings || !AppSettings.isLoaded || !AppSettings.isLoaded()) { setTimeout(() => opnaAfSlod(fráRæsingu), 600); return; }
     open();
   }
   window.addEventListener('hashchange', opnaAfSlod);
 
   function init() {
-    setTimeout(opnaAfSlod, 900);
+    setTimeout(() => opnaAfSlod(true), 900);
     // Clean up any leftover duplicate from earlier versions of this patch
     // that injected its own nav button alongside the index.html one.
     const dup = document.getElementById('_su_nav');
