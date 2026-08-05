@@ -176,7 +176,7 @@
 
     const flipar = _state.sidur.map(p =>
       '<button class="_ms-flipi" data-id="' + p.id + '" type="button" style="' + hnappur +
-        (p.id === _virk ? ';background:#0f172a;border-color:#0f172a;color:#fff' : '') + '">' + esc(p.nafn || 'Ónefnd síða') + '</button>').join('');
+        (p.id === _virk ? ';background:#0f172a;border-color:#0f172a;color:#fff!important' : '') + '">' + esc(p.nafn || 'Ónefnd síða') + '</button>').join('');
 
     const haus =
       '<div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px">' +
@@ -184,7 +184,7 @@
         flipar +
         '<button class="_ms-ny" type="button" style="' + hnappur + '">' + ic('plus', 12) + 'Ný síða</button>' +
         '<div style="margin-left:auto;display:flex;gap:6px">' +
-          (s ? '<button class="_ms-breyta" type="button" style="' + hnappur + (_breyta ? ';background:var(--brand);border-color:var(--brand);color:#fff' : '') + '">' +
+          (s ? '<button class="_ms-breyta" type="button" style="' + hnappur + (_breyta ? ';background:var(--brand);border-color:var(--brand);color:#fff!important' : '') + '">' +
                  ic('pencil', 12) + (_breyta ? 'Hætta að breyta' : 'Breyta') + '</button>' : '') +
           (s && _breyta ? '<button class="_ms-endurnefna" type="button" style="' + hnappur + '">Endurnefna</button>' +
                           '<button class="_ms-eyda-sidu" type="button" style="' + hnappur + ';border-color:#fecaca;color:#dc2626">Eyða síðu</button>' : '') +
@@ -198,7 +198,7 @@
           '<div style="font-size:12.5px;color:var(--ink3);line-height:1.6;margin-bottom:14px">' +
             'Búðu til þína eigin síðu og raðaðu á hana því sem þú notar daglega — tenglasafni, minnispunktum og flýtileiðum í appið. Síðan birtist á öllum tækjunum þínum.' +
           '</div>' +
-          '<button class="_ms-ny" type="button" style="' + hnappur + ';background:var(--brand);border-color:var(--brand);color:#fff">' + ic('plus', 13) + 'Búa til fyrstu síðuna</button>' +
+          '<button class="_ms-ny" type="button" style="' + hnappur + ';background:var(--brand);border-color:var(--brand);color:#fff!important">' + ic('plus', 13) + 'Búa til fyrstu síðuna</button>' +
         '</div></div>';
       return;
     }
