@@ -1709,7 +1709,13 @@
   // Prefills the kt so pos.js's lookup loads the customer + auto-applies their
   // saved afsláttur (patch 255). Exposed as window.SalaNyjan so Hreyfingarlisti
   // reuses the exact same behaviour.
-  function openNewSaleFor(kt, nafn) {
+  //
+  // 2026-08-05 (verkefnalisti d18b707d): optional `lines` (a sale's `linur`)
+  // copies the original order straight into the new cart instead of leaving
+  // it empty — Agnar's complaint was pressing "Bakfæra og gera nýjan" landed
+  // on a blank Sala with zero indication anything carried over. Also shows a
+  // one-time banner so it's obvious this cart is a copy, not a fresh start.
+  function openNewSaleFor(kt, nafn, lines) {
     const digits = String(kt || '').replace(/[^0-9]/g, '');
     try { if (window.App && App.switchView) App.switchView('sala'); } catch (_) {}
     let tries = 0;
@@ -1720,11 +1726,37 @@
           ktInp.value = digits.slice(0, 6) + '-' + digits.slice(6);
           ktInp.dispatchEvent(new Event('input', { bubbles: true }));
         }
+        if (Array.isArray(lines) && lines.length) fillCopiedLines(lines, nafn);
         return;
       }
       if (tries === 1) { try { location.hash = '#sala'; } catch (_) {} }  // fallback nav
       if (tries++ < 40) setTimeout(go, 150);
     })();
+  }
+  function fillCopiedLines(lines, nafn) {
+    let tries = 0;
+    (function go() {
+      if (window.POS && typeof POS.getState === 'function' && typeof POS.rerenderDynamic === 'function') {
+        const st = POS.getState();
+        st.lines = lines.map(l => Object.assign({}, l));
+        POS.rerenderDynamic();
+        showCopyBanner(nafn);
+        return;
+      }
+      if (tries++ < 40) setTimeout(go, 150);
+    })();
+  }
+  // Obvious one-time notice — "this cart didn't start empty, it's a copy".
+  function showCopyBanner(nafn) {
+    document.getElementById('_sn-copy-banner')?.remove();
+    const b = document.createElement('div');
+    b.id = '_sn-copy-banner';
+    b.style.cssText = 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:100090;background:linear-gradient(135deg,#0f7a43,#0a5c33);color:#fff;padding:12px 20px;border-radius:10px;box-shadow:0 12px 30px -10px rgba(0,0,0,.4);font:600 13px system-ui,-apple-system,sans-serif;display:flex;align-items:center;gap:10px';
+    b.innerHTML = '<span>📋 Bakfært' + (nafn ? ' — ' + String(nafn).replace(/[<>&]/g, '') : '') + '. Línurnar úr gömlu sölunni eru komnar í körfuna — breyttu og staðfestu sem nýja sölu.</span>' +
+      '<button type="button" style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:7px;padding:4px 10px;cursor:pointer;font:inherit">✕</button>';
+    b.querySelector('button').addEventListener('click', () => b.remove());
+    document.body.appendChild(b);
+    setTimeout(() => b.remove(), 12000);
   }
   window.SalaNyjan = openNewSaleFor;
 
