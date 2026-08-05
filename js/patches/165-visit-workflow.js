@@ -180,9 +180,15 @@
     if (error) throw error;
     const servicedIds = [];
     const grouped = {}; // {type|size|kind: count}
+    // 2026-08-05 (Agnar: refused to finish an invoice for a visit that was
+    // 100% brand-new installs at Engjasel 3 — "engin tæki merkt"): patch 131's
+    // "Nýtt" choice is stored as 'nyitt', but this only ever counted
+    // 'hledsla'/'yfirferd' as serviced. A visit installing only new units has
+    // neither, so servicedIds stayed empty and blocked "Klára heimsókn" even
+    // though real billable work (the new units) was done.
     for (const u of units) {
       const ch = choices[u.id] || 'yfirferd'; // safe default
-      if (ch !== 'hledsla' && ch !== 'yfirferd') continue;
+      if (ch !== 'hledsla' && ch !== 'yfirferd' && ch !== 'nyitt') continue;
       servicedIds.push(u.id);
       const k = (u.type || '—') + '|' + (u.size || '') + '|' + ch;
       grouped[k] = (grouped[k] || 0) + 1;
