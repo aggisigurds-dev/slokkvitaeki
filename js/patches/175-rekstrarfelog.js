@@ -85,7 +85,7 @@
       "@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');",
       // page band: dark → grey gradient, the view itself
       '#view-rekstrarfelog{padding:0!important;background:linear-gradient(180deg,#060607 0,#060607 95px,#aeb4be 360px,#9ba1ad 100%)!important}',
-      P+'.rf-page{max-width:1180px;margin:0 auto;padding:20px 24px 60px;font-family:"Space Grotesk",system-ui,-apple-system,sans-serif}',
+      P+'.rf-page{max-width:1560px;margin:0 auto;padding:20px 24px 60px;font-family:"Space Grotesk",system-ui,-apple-system,sans-serif}',
       // header
       P+'.rf-phead{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}',
       P+'.rf-ptitle{margin:0;font-size:24px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15}',
@@ -151,6 +151,22 @@
       P+'.rf-bname a{color:#11141c;text-decoration:none;font-weight:600}',
       P+'.rf-bname a:hover{color:#2f5fe0}',
       P+'.rf-baddr{display:block;font-size:11px;color:#9098a6;margin-top:1px}',
+      // ── per-building collapse (2026-08-05, leiðrétt sama dag — sjálfgefið
+      // samanþjappað gerði 2023-2026 dálkana að tómum í fljótu bragði, sem leit
+      // út eins og gögnin hyrfu): SJÁLFGEFIÐ ÚTVÍKKAÐ (öll smáatriði sýnileg,
+      // nákvæmlega eins og áður) — ▸-takki (eða „Fela allar") felur niður í EINA
+      // samantektarfrumu (rf-bldsum-cell) fyrir þann sem VILL þjappa saman.
+      P+'.rf-bldtoggle{all:unset;cursor:pointer;display:inline-block;width:14px;text-align:center;color:#9098a6;font-size:11px;margin-right:2px;vertical-align:middle;transition:transform .12s ease}',
+      P+'.rf-bldtoggle:hover{color:#2f5fe0}',
+      P+'.rf-bldrow:not(.is-collapsed) .rf-bldtoggle{transform:rotate(90deg)}',
+      P+'.rf-bldsum-cell{display:none;color:#5b6472;font-size:12.5px;white-space:nowrap}',
+      P+'.rf-bldrow.is-collapsed .rf-bldsum-cell{display:table-cell}',
+      P+'.rf-bldrow.is-collapsed>td.rf-cnt-cell,'+P+'.rf-bldrow.is-collapsed>td.rf-yh-cell,'+P+'.rf-bldrow.is-collapsed>td._rf_akcell,'+P+'.rf-bldrow.is-collapsed>td.rf-nextcell,'+P+'.rf-bldrow.is-collapsed>td.rf-actionscell{display:none}',
+      P+'.rf-sum-chip{display:inline-block;font-family:"Space Mono",monospace;font-weight:700;margin-right:8px}',
+      P+'.rf-sum-chip.is-zero{color:#cbd2dc}',
+      P+'.rf-sum-next{display:inline-block;color:#5b6472}',
+      P+'.rf-sum-next.is-over{color:#c0241f;font-weight:700}',
+      P+'.rf-sum-none{color:#cbd2dc;font-style:italic}',
       P+'.rf-mono{font-family:"Space Mono",monospace;font-size:12px;color:#5b6472;white-space:nowrap}',
       P+'.rf-taeki{font-family:"Space Mono",monospace;font-size:13px;font-weight:700;color:#11141c}',
       P+'.rf-taeki.is-zero{color:#cbd2dc}',
@@ -166,6 +182,8 @@
       P+'.rf-ycell--todo{background:linear-gradient(145deg,#3a3e46,#23262d 60%,#111318);border:1px solid #0a0b0d}',
       P+'.rf-ycell--todo i{background:#cdd4de}',
       P+'.rf-ycell--none{color:#cbd2dc;background:none;box-shadow:none;text-shadow:none;font-weight:400;border:0}',
+      // 🧾 örlítið merki: reikningur ÞESSA árs/þjónustu er þegar paraður við skýrsluna.
+      P+'.rf-bundle-tag{font-size:8.5px;margin-left:1px;line-height:1;filter:drop-shadow(0 1px 0 rgba(0,0,0,.4))}',
       // næsta skoðun
       P+'.rf-next{font-family:"Space Mono",monospace;font-size:12.5px;white-space:nowrap}',
       P+'.rf-next--ok{color:#3a4250}',
@@ -1190,24 +1208,29 @@
     // grænn = skýrsla á skrá (hlekkur/viðhengi), blár = aðeins í búnaðarsögu /
     // í vinnslu, · = ekkert. Í „Bæði"-sýn er EFRI línan slökkvitæki og NEÐRI
     // brunakerfi — sama röð og dálkhausinn segir (🧯 SLÖKKVI / 🚨 BRUNA).
-    function yPillSl(done, rep, units, url, file, y){
+    // Örlítið "🧾" merki í hverri pillu þegar reikningur ÞESSA árs/þjónustu er
+    // þegar paraður við skýrsluna (Brunahólf's document_pairs, sjá patch 199)
+    // — 2026-08-05, ósk Agnars: "add tiny marking that shows that invoice is
+    // in the bundle". Reiknað per rekstrarfélag (batch) rétt fyrir row-lykkjuna.
+    function bundleTag(bundled){ return bundled ? '<b class="rf-bundle-tag" title="Reikningur paraður við skýrsluna (bundle)">🧾</b>' : ''; }
+    function yPillSl(done, rep, units, url, file, y, bundled){
       if(!done) return '<span class="rf-ycell rf-ycell--none">·</span>';
       var v = units>0 ? String(units) : '✓';
       var greenish = rep || url || file;
       var kind = greenish ? 'done' : 'hist';
-      var tip = (greenish?'Úttektarskýrsla á skrá':'Aðeins skráð í búnaðarsögu')+' · slökkvitæki · '+y;
+      var tip = (greenish?'Úttektarskýrsla á skrá':'Aðeins skráð í búnaðarsögu')+' · slökkvitæki · '+y+(bundled?' · 🧾 reikningur paraður':'');
       var inner = url ? '<a href="'+esc(url)+'" target="_blank" rel="noopener" title="Opna úttektarskýrslu í Google Drive">'+v+' 📄↗</a>'
         : (file ? fileLinkA(file,y,v)
         : (v+(rep?' 📄':'')));
-      return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+inner+'</span>';
+      return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+inner+bundleTag(bundled)+'</span>';
     }
-    function yPillBr(cell, units, y){
+    function yPillBr(cell, units, y, bundled){
       if(!cell) return '<span class="rf-ycell rf-ycell--none">·</span>';
       var kind = cell.kind==='rep' ? 'done' : 'hist';
       var v = units>0 ? String(units) : '✓';
-      var tip = (kind==='done'?'Brunakerfisskýrsla á skrá':'Brunakerfisskýrsla í vinnslu')+' · '+y;
+      var tip = (kind==='done'?'Brunakerfisskýrsla á skrá':'Brunakerfisskýrsla í vinnslu')+' · '+y+(bundled?' · 🧾 reikningur paraður':'');
       var inner = cell.url ? '<a href="'+esc(cell.url)+'" target="_blank" rel="noopener" title="Opna brunakerfisskýrslu">'+v+' 📄↗</a>' : (v+' 📄');
-      return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+inner+'</span>';
+      return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+inner+bundleTag(bundled)+'</span>';
     }
     // Staflar slökkvitækja-/brunakerfis-frumu eftir völdum þjónusturofa.
     // brOn=false → sleppa brunakerfis-línunni fyrir byggingu sem er EKKI í
@@ -1256,6 +1279,27 @@
         });
       }
     } catch(e) { console.warn('[rekstrarfelog] liveDocs', e); }
+    // ── document_pairs (Brunahólf bundle store, sjá patch 199) — batch-sótt
+    // per rekstrarfélag svo hver ár-pilla geti sýnt 🧾 þegar reikningur ÞESSA
+    // árs/þjónustu er þegar paraður við skýrsluna. baseByKt: digitsKt → base_id
+    // (customers_base) · pairByBase: base_id → { 'ár|þjónusta' → true }.
+    var baseByKt={}, pairByBase={};
+    try {
+      var ktDigits = blds.reduce(function(acc,b){ var d=digits(b.kt); if(d&&d.length>=10&&d!=='9999999999'&&acc.indexOf(d)<0) acc.push(d); return acc; }, []);
+      if (ktDigits.length && window.DB && DB.sb) {
+        var dashKts = ktDigits.map(function(d){ return d.slice(0,6)+'-'+d.slice(6); });
+        var br = await DB.sb.from('customers_base').select('id,kennitala').in('kennitala', dashKts);
+        (br.data||[]).forEach(function(x){ baseByKt[digits(x.kennitala)] = x.id; });
+        var baseIds = Object.keys(baseByKt).map(function(k){ return baseByKt[k]; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
+        if (baseIds.length) {
+          var pr = await DB.sb.from('document_pairs').select('customer_base_id,year,service_type,invoice_doc_id,solur_id').in('customer_base_id', baseIds);
+          (pr.data||[]).forEach(function(x){
+            if (!(x.invoice_doc_id || x.solur_id)) return;   // ekki merkja ár sem á enga tengda reikningsröð
+            (pairByBase[x.customer_base_id] = pairByBase[x.customer_base_id] || {})[x.year+'|'+x.service_type] = true;
+          });
+        }
+      }
+    } catch(e) { console.warn('[rekstrarfelog] bundlePairs', e); }
     // building table
     var rows=blds.map(function(b,_bi){
       var co=companyForBld(b);
@@ -1341,11 +1385,15 @@
       var brCntTxt = bUnits>0 ? String(bUnits) : (bHasData?'–':'0');
       var unitCell = stackTd(
         '<span class="rf-cnt rf-cnt--sl'+(units>0?'':' is-zero')+'" title="Slökkvitæki á staðnum"><em>🧯</em>'+slCntTxt+'</span>',
-        '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>', '', bHasData);
+        '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>', 'rf-cnt-cell', bHasData);
+      var bldBaseId = baseByKt[digits(b.kt)];
+      var bldPairs = bldBaseId ? pairByBase[bldBaseId] : null;
       var yTds='';
       ['2023','2024','2025','2026'].forEach(function(y,i){
         var done=[d23,d24,d25,d26][i], rep=[false,!!att[0],!!att[1],!!att[2]][i], file=[f23,f24,f25,f26][i];
-        yTds += stackTd(yPillSl(done,rep,units,lks[y],file,y), yPillBr(bY[y],bUnits,y), '', bHasData);
+        var slBundled = !!(bldPairs && bldPairs[y+'|uttekt']);
+        var brBundled = !!(bldPairs && bldPairs[y+'|brunakerfi']);
+        yTds += stackTd(yPillSl(done,rep,units,lks[y],file,y,slBundled), yPillBr(bY[y],bUnits,y,brBundled), 'rf-yh-cell', bHasData);
       });
       var isOver=false;
       if(st && st.next){ isOver = st.next < today; }
@@ -1358,18 +1406,34 @@
       var anyDone = (showSl&&(d23||d24||d25||d26)) || (showBr&&Object.keys(bY).length>0);
       var anyOver = (showSl&&isOver&&slHasData) || (showBr&&bOver);
       var railCls = anyOver ? 'rf-rail--overdue' : (anyDone ? 'rf-rail--done' : 'rf-rail--none');
-      return '<tr data-rfq="'+esc(((b.nafn||'')+' '+(b.heimilisfang||'')+' '+digits(b.kt)).toLowerCase())+'">'+
+      // ── collapsed-row summary (2026-08-05, ósk Agnars: "meshy collection mesh"
+      // — mörg byggingar-röð með fullt af litlum reitum í einu er þreytandi að
+      // lesa). Sjálfgefið er hver röð samanþjöppuð í EINA línu (tæki + núverandi
+      // ár + næsta skoðun); ▸-takki opnar sömu frumur og áður (tæki/ár-dálkar/
+      // akstur/næst/aðgerðir) — engu var eytt, bara falið þar til smellt er.
+      var sumParts=[];
+      if(showSl) sumParts.push('<span class="rf-sum-chip'+(units<=0?' is-zero':'')+'">🧯'+(units>0?units:'–')+(d26?' ✓'+CURY:(slHasData?' …':''))+'</span>');
+      if(showBr && bHasData) sumParts.push('<span class="rf-sum-chip">🚨'+(bUnits>0?bUnits:'–')+(bY[CURY]?' ✓'+CURY:' …')+'</span>');
+      var sumNextDate = (st&&st.next) || (bx&&bx.next) || null;
+      var sumOver = (showSl&&isOver&&slHasData)||(showBr&&bOver);
+      if(sumNextDate) sumParts.push('<span class="rf-sum-next'+(sumOver?' is-over':'')+'">'+(sumOver?'⚠ ':'')+esc(sumNextDate)+'</span>');
+      var summaryCell='<td class="rf-bldsum-cell" colspan="8">'+(sumParts.join(' ')||'<span class="rf-sum-none">engin gögn</span>')+'</td>';
+      var detailCells=unitCell+yTds+
+             '<td class="c _rf_akcell"'+(co?(' data-rf-akstur="'+co.id+'"'):'')+'></td>'+
+             nextCell+
+             '<td class="rf-actionscell" style="text-align:right;white-space:nowrap">'+doc+
+             ' <a href="#" class="_rf_editb" data-bi="'+_bi+'" title="Breyta byggingu / tengja rétt fyrirtæki" style="text-decoration:none;font-size:12px;margin-left:6px">✏️</a>'+
+             ' <a href="#" class="_rf_delb" data-bi="'+_bi+'" title="Fjarlægja byggingu" style="color:#dc2626;text-decoration:none;font-size:12px;margin-left:6px">✕</a></td>';
+      return '<tr class="rf-bldrow" data-rfq="'+esc(((b.nafn||'')+' '+(b.heimilisfang||'')+' '+digits(b.kt)).toLowerCase())+'">'+
              '<td class="rf-cellname"><span class="rf-rail '+railCls+'"></span>'+
+               '<button type="button" class="rf-bldtoggle" data-bi="'+_bi+'" title="Sýna/fela smáatriði">▸</button>'+
                '<span class="rf-bname">'+link+oldLinks+'</span>'+
                (b.heimilisfang?'<span class="rf-baddr">📍 '+esc(b.heimilisfang)+'</span>':'')+
              '</td>'+
              '<td class="rf-mono">'+fmtKt(b.kt)+'</td>'+
-             unitCell+yTds+
-             '<td class="c _rf_akcell"'+(co?(' data-rf-akstur="'+co.id+'"'):'')+'></td>'+
-             nextCell+
-             '<td style="text-align:right;white-space:nowrap">'+doc+
-             ' <a href="#" class="_rf_editb" data-bi="'+_bi+'" title="Breyta byggingu / tengja rétt fyrirtæki" style="text-decoration:none;font-size:12px;margin-left:6px">✏️</a>'+
-             ' <a href="#" class="_rf_delb" data-bi="'+_bi+'" title="Fjarlægja byggingu" style="color:#dc2626;text-decoration:none;font-size:12px;margin-left:6px">✕</a></td></tr>';
+             summaryCell+
+             detailCells+
+             '</tr>';
     }).join('');
     // ── Áætlaðar árs-tekjur (gullkassi) — totSl tæki × yfirferð + hlutfall × hleðsla.
     // Verð koma úr vistuðum forsendum félagsins, annars úr athugasemdinni
@@ -1410,6 +1474,7 @@
       '<span class="rf-leg"><i style="background:linear-gradient(145deg,#2f9d63,#0f6e3a 60%,#062815)"></i>skýrsla á skrá</span>'+
       '<span class="rf-leg"><i style="background:linear-gradient(145deg,#3a6ae8,#1c3d8c 60%,#0a1a3a)"></i>aðeins í búnaðarsögu</span>'+
       '<span class="rf-leg"><i style="background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10)"></i>skoðun liðin</span>'+
+      '<button type="button" class="rf-svcbtn _rf_expandall" title="Sýna/fela smáatriði allra bygginga í einu">▸ Fela allar</button>'+
       '<span class="rf-bsearch">'+
         '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#9aa3b5" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>'+
         '<input class="_rf_bq" placeholder="Leita að byggingu…">'+
@@ -1594,6 +1659,22 @@
     // wire building -> company record
     body.querySelectorAll('._rf_open').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); openCompany(a.getAttribute('data-coid')); }); });
     body.querySelectorAll('._rf_docs').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); openCompany(a.getAttribute('data-coid')); }); });
+    // ▸ per-building collapse toggle — pure CSS class flip, no re-render.
+    body.querySelectorAll('.rf-bldtoggle').forEach(function(btn){
+      btn.addEventListener('click', function(e){
+        e.preventDefault();
+        var tr=btn.closest('tr.rf-bldrow'); if(!tr) return;
+        tr.classList.toggle('is-collapsed');
+      });
+    });
+    // ▾▸ Opna allar / Fela allar — hnappur í leitarröðinni togglar allar raðir félagsins í einu.
+    var expAllBtn=body.querySelector('._rf_expandall');
+    if(expAllBtn) expAllBtn.addEventListener('click', function(){
+      var rows=body.querySelectorAll('.rf-tbl tbody tr.rf-bldrow');
+      var anyCollapsed=Array.prototype.some.call(rows, function(tr){ return tr.classList.contains('is-collapsed'); });
+      rows.forEach(function(tr){ tr.classList.toggle('is-collapsed', !anyCollapsed); });
+      expAllBtn.textContent = anyCollapsed ? '▸ Fela allar' : '▾ Opna allar';
+    });
     // Akstursleið-chip á hverja byggingu (per staður) — sama gagnastaður og
     // félags-chip + aðal-borðið (arsskodun_customers[staður_id].akstur).
     body.querySelectorAll('td._rf_akcell[data-rf-akstur]').forEach(function(cell){

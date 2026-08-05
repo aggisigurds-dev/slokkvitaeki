@@ -180,9 +180,15 @@
     if (error) throw error;
     const servicedIds = [];
     const grouped = {}; // {type|size|kind: count}
+    // 2026-08-05 (Agnar: refused to finish an invoice for a visit that was
+    // 100% brand-new installs at Engjasel 3 — "engin tæki merkt"): patch 131's
+    // "Nýtt" choice is stored as 'nyitt', but this only ever counted
+    // 'hledsla'/'yfirferd' as serviced. A visit installing only new units has
+    // neither, so servicedIds stayed empty and blocked "Klára heimsókn" even
+    // though real billable work (the new units) was done.
     for (const u of units) {
       const ch = choices[u.id] || 'yfirferd'; // safe default
-      if (ch !== 'hledsla' && ch !== 'yfirferd') continue;
+      if (ch !== 'hledsla' && ch !== 'yfirferd' && ch !== 'nyitt') continue;
       servicedIds.push(u.id);
       const k = (u.type || '—') + '|' + (u.size || '') + '|' + ch;
       grouped[k] = (grouped[k] || 0) + 1;
@@ -349,8 +355,10 @@
       samtals: total,
       afslattur: tot.afslattur,
       greitt_med: 'reikningur',
-      athugasemdir: `Heimsókn ${today} — ${visit.servicedIds.length} tæki, næsta skoðun ${next}`
-        + ((window.BeidniGate && BeidniGate.peek(coId)) ? ` · Beiðni nr: ${BeidniGate.peek(coId)}` : ''),
+      // 2026-08-05 (Agnar): stop auto-writing "Heimsókn … tæki, næsta skoðun …"
+      // onto the invoice — he doesn't want it there, and the device count it
+      // quoted didn't match reality. Beiðni nr (if any) is still worth keeping.
+      athugasemdir: (window.BeidniGate && BeidniGate.peek(coId)) ? `Beiðni nr: ${BeidniGate.peek(coId)}` : '',
       created_at: new Date().toISOString()
     };
 
@@ -463,10 +471,26 @@
     // 2. Insert sale row. Totals are derived from the line items (see
     //    totalsFromLinur) so vsk_upphaed/samtals always match the printed bill.
     const { subEx, vsk, total, afslattur } = totalsFromLinur(linur, visit.discount_pct);
+    // 2026-08-05 (Agnar: "Húsfélagið Engjasel 31" reikningur R-000703 hvorki
+    // paraður í Sölu 📦 Pör bandinu né sýnilegur í Kröfu yfirliti — tvö
+    // aðskilin einkenni, EIN rót): þessi insert setti ENGA af customer_id/
+    // customer_base_id/customer_kt á söluna. 📦 Pör-bandið og v_bundle_coverage
+    // lykla á customer_kt; Kröfu yfirlit lyklar fyrst og fremst á customer_id/
+    // customer_base_id (nafna-endurheimtin þar nær kt-inu en aldrei netfanginu).
+    // Sama uppfletting og 233-uttekt-pdf-autosave.js notar nú þegar fyrir
+    // reikningsins customer_documents-afrit — bara aldrei gerð fyrir solur-röðina.
+    let visitKt = null, visitBaseId = null;
+    try {
+      const cr = await sb.from('fyrirtaeki').select('kennitala,customer_base_id').eq('id', coId).maybeSingle();
+      if (cr.data) { visitKt = cr.data.kennitala || null; visitBaseId = cr.data.customer_base_id || null; }
+    } catch (_) {}
     let saleId = null;
     try {
       const ins = await sb.from('solur').insert({
         customer_nafn: coNafn,
+        customer_kt: visitKt,
+        customer_id: coId || null,
+        customer_base_id: visitBaseId,
         starfsmadur: starfsmadur || 'Kassi',
         linur,
         upphaed_an_vsk: subEx,
@@ -475,7 +499,10 @@
         afslattur: afslattur,
         greitt_med: 'reikningur',
         source: 'uttekt',   // reikningur úr ársskoðun/úttektarskýrslu-flæði
-        athugasemdir: (() => { const _po = (window.BeidniGate && BeidniGate.take(coId)) || ''; return `Heimsókn ${today} — ${visit.servicedIds.length} tæki, næsta skoðun ${next}` + (_po ? ` · Beiðni nr: ${_po}` : ''); })()
+        // 2026-08-05 (Agnar): stop auto-writing "Heimsókn … tæki, næsta skoðun …"
+        // onto the invoice (unwanted + the device count was wrong). Beiðni nr
+        // (if any) is still worth keeping.
+        athugasemdir: (() => { const _po = (window.BeidniGate && BeidniGate.take(coId)) || ''; return _po ? `Beiðni nr: ${_po}` : ''; })()
       }).select('num,id').single();
       if (ins.error) throw ins.error;
       saleId = ins.data && ins.data.id;

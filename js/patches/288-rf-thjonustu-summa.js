@@ -37,9 +37,14 @@
     if (!sb) return _cache || loadLS();
     _fetching = (async () => {
       try {
-        const r = await sb.from("app_settings").select("settings").eq("id", 1).maybeSingle();
-        const s = (r && r.data && r.data.settings) || {};
-        _cache = { rf: s.rekstrarfelag_notes || {}, co: s.fyrirtaeki_notes || {} };
+        // 2026-08-05 (hraða-úttekt): `select("settings")` sótti ALLAN
+        // stillingar-blobbinn — 1,6 MB — í hvert sinn, bara til að lesa tvo
+        // litla lykla. PostgREST getur skilað json-slóð beint: 1,6 MB → ~9 kB.
+        const r = await sb.from("app_settings")
+          .select("rf:settings->rekstrarfelag_notes, co:settings->fyrirtaeki_notes")
+          .eq("id", 1).maybeSingle();
+        const d = (r && r.data) || {};
+        _cache = { rf: d.rf || {}, co: d.co || {} };
         _cacheTs = Date.now();
         saveLS();                                  // næsta hleðsla poppar strax
       } catch (e) { console.warn("[rf-summa] fetch villa:", e); if (!_cache) loadLS(); }

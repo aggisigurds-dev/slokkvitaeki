@@ -108,9 +108,13 @@
     const SB = getSB();
     if (!SB) return null;                       // engin tenging → engin sameining
     try {
-      const r = await SB.from('app_settings').select('settings').eq('id', 1).maybeSingle();
-      const s = r && r.data && r.data.settings;
-      const arr = s && s.company_attachments && s.company_attachments[String(coId)];
+      // 2026-08-05 (hraða-úttekt): sótti ALLAN stillingar-blobbinn (1,6 MB) í
+      // hvert sinn sem viðhengi eru vistuð, til að lesa eina fyrirtækjaröð.
+      // Sækjum bara viðhengja-lykilinn (450 kB → og aðeins við vistun).
+      const r = await SB.from('app_settings')
+        .select('att:settings->company_attachments').eq('id', 1).maybeSingle();
+      const map = (r && r.data && r.data.att) || null;
+      const arr = map && map[String(coId)];
       return Array.isArray(arr) ? arr : [];
     } catch (_) { return null; }
   }

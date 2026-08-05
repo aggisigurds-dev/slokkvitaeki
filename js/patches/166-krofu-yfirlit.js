@@ -456,14 +456,21 @@
       };
       const needKeys = new Set((_state.all || []).filter(s => !hasKt(s)).map(s => keyName(s.customer_nafn)).filter(Boolean));
       if (needKeys.size) {
-        const acc = {};   // key -> { kts:Set, coId, baseId }
-        const add = (nafn, kt, coId, baseId) => {
+        const acc = {};   // key -> { kts:Set, coId, baseId, netfang }
+        // 2026-08-05 (Agnar: "Húsfélagið Engjasel 31" ⚠️ vantar netfang þrátt
+        // fyrir að fyrirtaeki.netfang væri rétt til staðar): kt-endurheimtin
+        // hér fann kt-ið og hlekkjaði nafnið, en aldrei netfangið — svo bara
+        // sölur sem BÁRU customer_id/customer_base_id þegar fengu tölvupóst.
+        // Sama endurheimt, bara líka geymt netfang svo companyIdentity() eigi
+        // fallback fyrir sölur sem koma nafn-eingöngu úr POS.
+        const add = (nafn, kt, coId, baseId, netfang) => {
           const k = keyName(nafn); if (!k || !needKeys.has(k)) return;
           const d = ktDigits(kt); if (d.length !== 10) return;
-          const e = acc[k] || (acc[k] = { kts: new Set(), coId: null, baseId: null });
+          const e = acc[k] || (acc[k] = { kts: new Set(), coId: null, baseId: null, netfang: null });
           e.kts.add(d);
           if (coId != null && e.coId == null) e.coId = coId;
           if (baseId != null && e.baseId == null) e.baseId = baseId;
+          if (netfang && !e.netfang) e.netfang = netfang;
         };
         // NB síðuskipting (2026-07-17): báðar töflur eru komnar yfir 1000 raðir
         // og Supabase klippir ósíðuskipt select við 1000 — þá „týndust" félög
@@ -479,16 +486,16 @@
           return out;
         };
         const [fyAll, baseAll] = await Promise.all([
-          pageAll('fyrirtaeki', 'id,nafn,kennitala,customer_base_id'),
-          pageAll('customers_base', 'id,nafn,kennitala'),
+          pageAll('fyrirtaeki', 'id,nafn,kennitala,customer_base_id,netfang'),
+          pageAll('customers_base', 'id,nafn,kennitala,netfang'),
         ]);
-        fyAll.forEach(r => add(r.nafn, r.kennitala, r.id, r.customer_base_id));
-        baseAll.forEach(r => add(r.nafn, r.kennitala, null, r.id));
+        fyAll.forEach(r => add(r.nafn, r.kennitala, r.id, r.customer_base_id, r.netfang));
+        baseAll.forEach(r => add(r.nafn, r.kennitala, null, r.id, r.netfang));
         Object.keys(acc).forEach(k => {
           const e = acc[k];
           if (e.kts.size === 1) {   // unambiguous only — never guess a kt onto a bill
             const d = Array.from(e.kts)[0];
-            _state.nameKt[k] = { kt: d.slice(0, 6) + '-' + d.slice(6), coId: e.coId, baseId: e.baseId };
+            _state.nameKt[k] = { kt: d.slice(0, 6) + '-' + d.slice(6), coId: e.coId, baseId: e.baseId, netfang: e.netfang };
           }
         });
       }
@@ -712,6 +719,12 @@
       const key = normName(s.customer_nafn) || '(ekkert nafn)';
       const display = s.customer_nafn || '(ekkert nafn)';
       if (!grouped[key]) grouped[key] = { display, id: s.customer_id || null, sales: [], sum: 0, thisMonthSum: 0, olderSum: 0, latestUpdated: '', latestCreated: '' };
+      // 2026-08-05: don't get stuck on null forever just because the FIRST sale
+      // seen for this company happened to be an older name-only entry with no
+      // customer_id — any later sale that does carry one should still link the
+      // whole group to fyrirtaeki (fixes "vantar netfang" for companies whose
+      // email/kt is right there in the profile, verkefnalisti f1db7352).
+      if (!grouped[key].id && s.customer_id) grouped[key].id = s.customer_id;
       grouped[key].sales.push(s);
       grouped[key].sum += parseFloat(s.samtals) || 0;
       const t = new Date(s.created_at).getTime();
@@ -1271,8 +1284,13 @@
     const firstSale = sales[0] || {};
     const baseRow = firstSale.customer_base_id ? (_state.baseMap || {})[firstSale.customer_base_id] : null;
     const directKt = (firstSale.customer_kt) || (fy && fy.kennitala) || (baseRow && baseRow.kennitala) || null;
-    const recovered = !directKt ? (_state.nameKt || {})[keyName(grp.display)] : null;
-    const email = (fy && fy.netfang) || (baseRow && baseRow.netfang) || null;
+    // 2026-08-05: recovered (nameKt) is looked up regardless of directKt now —
+    // a sale can carry a real customer_kt yet still miss customer_id/base_id
+    // (exactly the Engjasel 31 case: kt WAS null too here, but the general
+    // fix is the same either way) — email fallback shouldn't depend on kt
+    // already being present.
+    const recovered = (_state.nameKt || {})[keyName(grp.display)] || null;
+    const email = (fy && fy.netfang) || (baseRow && baseRow.netfang) || (recovered && recovered.netfang) || null;
     const ktHtml = directKt
       ? '<span style="color:#475569;font-family:ui-monospace,Menlo,monospace;font-size:11px">' + esc(directKt) + '</span>'
       : recovered
@@ -1703,7 +1721,13 @@
   // Prefills the kt so pos.js's lookup loads the customer + auto-applies their
   // saved afsláttur (patch 255). Exposed as window.SalaNyjan so Hreyfingarlisti
   // reuses the exact same behaviour.
-  function openNewSaleFor(kt, nafn) {
+  //
+  // 2026-08-05 (verkefnalisti d18b707d): optional `lines` (a sale's `linur`)
+  // copies the original order straight into the new cart instead of leaving
+  // it empty — Agnar's complaint was pressing "Bakfæra og gera nýjan" landed
+  // on a blank Sala with zero indication anything carried over. Also shows a
+  // one-time banner so it's obvious this cart is a copy, not a fresh start.
+  function openNewSaleFor(kt, nafn, lines) {
     const digits = String(kt || '').replace(/[^0-9]/g, '');
     try { if (window.App && App.switchView) App.switchView('sala'); } catch (_) {}
     let tries = 0;
@@ -1714,11 +1738,37 @@
           ktInp.value = digits.slice(0, 6) + '-' + digits.slice(6);
           ktInp.dispatchEvent(new Event('input', { bubbles: true }));
         }
+        if (Array.isArray(lines) && lines.length) fillCopiedLines(lines, nafn);
         return;
       }
       if (tries === 1) { try { location.hash = '#sala'; } catch (_) {} }  // fallback nav
       if (tries++ < 40) setTimeout(go, 150);
     })();
+  }
+  function fillCopiedLines(lines, nafn) {
+    let tries = 0;
+    (function go() {
+      if (window.POS && typeof POS.getState === 'function' && typeof POS.rerenderDynamic === 'function') {
+        const st = POS.getState();
+        st.lines = lines.map(l => Object.assign({}, l));
+        POS.rerenderDynamic();
+        showCopyBanner(nafn);
+        return;
+      }
+      if (tries++ < 40) setTimeout(go, 150);
+    })();
+  }
+  // Obvious one-time notice — "this cart didn't start empty, it's a copy".
+  function showCopyBanner(nafn) {
+    document.getElementById('_sn-copy-banner')?.remove();
+    const b = document.createElement('div');
+    b.id = '_sn-copy-banner';
+    b.style.cssText = 'position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:100090;background:linear-gradient(135deg,#0f7a43,#0a5c33);color:#fff;padding:12px 20px;border-radius:10px;box-shadow:0 12px 30px -10px rgba(0,0,0,.4);font:600 13px system-ui,-apple-system,sans-serif;display:flex;align-items:center;gap:10px';
+    b.innerHTML = '<span>📋 Bakfært' + (nafn ? ' — ' + String(nafn).replace(/[<>&]/g, '') : '') + '. Línurnar úr gömlu sölunni eru komnar í körfuna — breyttu og staðfestu sem nýja sölu.</span>' +
+      '<button type="button" style="background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.4);color:#fff;border-radius:7px;padding:4px 10px;cursor:pointer;font:inherit">✕</button>';
+    b.querySelector('button').addEventListener('click', () => b.remove());
+    document.body.appendChild(b);
+    setTimeout(() => b.remove(), 12000);
   }
   window.SalaNyjan = openNewSaleFor;
 

@@ -29,7 +29,10 @@
   let target = null;        // currently selected DOM element
   let picking = false;      // element-pick mode
   let scope = 'page';       // 'page' | 'all'
+  let matchMode = 'one';    // 'one' = just this element, 'many' = every matching element (tag+class, no nth-of-type)
   let _saveT = null;
+  let undoStack = [];       // snapshot() before each mutation → ↩ Afturkalla pops the last one
+  const UNDO_MAX = 20;
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const cssEsc = s => (window.CSS && CSS.escape) ? CSS.escape(s) : String(s).replace(/[^\w-]/g, '\\$&');
@@ -51,21 +54,46 @@
       try { if (window.AppSettings && AppSettings.save) AppSettings.save({ [KEY]: JSON.stringify(state) }); } catch (_) {}
     }, 400);
   }
+  // ── undo ──────────────────────────────────────────────────────────────────
+  // Called BEFORE every state mutation (setDecl/applySize/applyPreset/reset/
+  // bakgrunnur/favorites) so „↩ Afturkalla" can step back one change at a time.
+  // In-memory only (not synced) — a fresh page load starts with an empty stack.
+  // Debounced: a slider drag fires setDecl/applySize dozens of times per second
+  // — without this, one drag would eat the whole undo stack and „↩" would only
+  // creep back one tiny increment. Collapsing rapid-fire pushes into a single
+  // step means one undo reverts one whole slider drag / preset click / reset.
+  let _lastSnapAt = 0;
+  function snapshot() {
+    const now = Date.now();
+    if (undoStack.length && now - _lastSnapAt < 600) return;
+    _lastSnapAt = now;
+    try { undoStack.push(JSON.stringify(state)); if (undoStack.length > UNDO_MAX) undoStack.shift(); } catch (_) {}
+  }
+  function undo() {
+    if (!undoStack.length) { toast('Ekkert til að afturkalla'); return; }
+    try { state = JSON.parse(undoStack.pop()); } catch (_) { return; }
+    persist(); renderPanel();
+  }
 
   // ── selector + scope helpers ────────────────────────────────────────────────
   function viewIdOf(el) { const v = el.closest ? el.closest('.view') : null; return v && v.id ? v.id : null; }
-  function relSelector(el) {
+  // general=true (📑 Alla eins mode) skips the :nth-of-type disambiguation at
+  // EVERY step, so the selector matches every sibling with the same tag+class
+  // (e.g. every row in a table) instead of pinning to just the one clicked.
+  function relSelector(el, general) {
     const parts = [];
     let node = el;
     while (node && node.nodeType === 1 && !node.classList.contains('view') && node !== document.body) {
-      if (node.id) { parts.unshift('#' + cssEsc(node.id)); break; }
+      if (node.id && !general) { parts.unshift('#' + cssEsc(node.id)); break; }
       let part = node.tagName.toLowerCase();
       const cls = Array.prototype.slice.call(node.classList).filter(c => c && !/(^active$|^on$|^open$|^show$|^selected$|^_pe-)/.test(c)).slice(0, 2);
       if (cls.length) part += '.' + cls.map(cssEsc).join('.');
-      const parent = node.parentNode;
-      if (parent && parent.children) { const sibs = Array.prototype.slice.call(parent.children).filter(x => x.tagName === node.tagName); if (sibs.length > 1) part += ':nth-of-type(' + (sibs.indexOf(node) + 1) + ')'; }
+      if (!general) {
+        const parent = node.parentNode;
+        if (parent && parent.children) { const sibs = Array.prototype.slice.call(parent.children).filter(x => x.tagName === node.tagName); if (sibs.length > 1) part += ':nth-of-type(' + (sibs.indexOf(node) + 1) + ')'; }
+      }
       parts.unshift(part);
-      node = parent;
+      node = node.parentNode;
       if (parts.length >= 5) break;
     }
     return parts.join(' > ') || el.tagName.toLowerCase();
@@ -77,16 +105,38 @@
     return vid || 'all';   // elements outside any view are global-only
   }
   function ruleFor(sel, scp, create) {
+    // Öryggisventill: bert element-heiti („svg", „div", „span") á ÖLLUM síðum
+    // næði yfir allt appið. Færum slíka reglu sjálfkrafa á síðuna sem er opin.
+    if (scp === 'all' && /^[a-z][a-z0-9]*$/i.test(String(sel || '').trim())) {
+      const cur = document.querySelector('.view.active');
+      if (cur && cur.id) {
+        scp = cur.id;
+        try { toast('„' + sel + '" er of vítt fyrir allar síður — vistað á þessa síðu í staðinn.'); } catch (_) {}
+      } else {
+        return null;   // engin síða opin → sleppum frekar en að lita allt appið
+      }
+    }
     let r = state.rules.find(x => x.sel === sel && x.scope === scp);
     if (!r && create) { r = { sel, scope: scp, decls: {} }; state.rules.push(r); }
     return r;
   }
   function currentRule(create) {
     if (!target) return null;
-    return ruleFor(relSelector(target), targetScope(), create);
+    return ruleFor(relSelector(target, matchMode === 'many'), targetScope(), create);
   }
 
   // ── css injection ───────────────────────────────────────────────────────────
+  // 2026-08-05 (hraða-/þema-úttekt): EIN mis-smellt regla — `svg` með gildissvið
+  // „allar síður" — lenti hér inni og litaði ÖLL tákn í appinu #f4f3e6 með
+  // !important, svo engin táknmynd hélt sínum lit fyrr en hún þvingaði hann
+  // inline. Bert element-heiti á öllum síðum er alltaf slys: það nær yfir
+  // hundruð hluta sem notandinn sá aldrei. Slíkar reglur eru hunsaðar hér (og
+  // aldrei búnar til framar — sjá ruleFor).
+  const BARE_TAG = /^[a-z][a-z0-9]*$/i;
+  function isGlobalTagRule(r) {
+    return r && r.scope === 'all' && BARE_TAG.test(String(r.sel || '').trim());
+  }
+
   function applyCss() {
     let st = document.getElementById(STYLE_ID);
     if (!st) { st = document.createElement('style'); st.id = STYLE_ID; document.head.appendChild(st); }
@@ -94,6 +144,10 @@
     for (const r of state.rules) {
       const keys = r.decls ? Object.keys(r.decls) : [];
       if (!keys.length) continue;
+      if (isGlobalTagRule(r)) {
+        console.warn('[stílstjóri] hunsa alheimsreglu á berum tag-velja:', r.sel, r.decls);
+        continue;
+      }
       const body = keys.map(p => p + ':' + r.decls[p] + (/!important/.test(r.decls[p]) ? '' : ' !important')).join(';');
       const sel = r.scope === 'all' ? r.sel : '#' + r.scope + ' ' + r.sel;
       css += sel + '{' + body + '}\n';
@@ -106,6 +160,7 @@
   // Set/clear one declaration on the current target.
   function setDecl(prop, val) {
     const r = currentRule(true); if (!r) return;
+    snapshot();
     if (val === '' || val == null) delete r.decls[prop]; else r.decls[prop] = val;
     persist();
   }
@@ -115,6 +170,7 @@
   function applySize(prop, unit, raw) {
     const r = currentRule(true); if (!r) return;
     let val = parseFloat(String(raw).replace(',', '.')); if (!isFinite(val)) return;
+    snapshot();
     if (prop === 'padding-top') { r.decls['padding-top'] = val + 'px'; r.decls['padding-bottom'] = val + 'px'; delete r.decls['padding']; }
     else if (prop === 'padding-left') { r.decls['padding-left'] = val + 'px'; r.decls['padding-right'] = val + 'px'; delete r.decls['padding']; }
     else if (prop === 'height' && val <= 0) { delete r.decls['height']; }   // 0 = auto (unset)
@@ -241,7 +297,7 @@
     ]},
   ];
   function applyPreset(decls) { if (!target) { toast('Veldu hlut fyrst (🎯 Velja)'); return; }
-    const r = currentRule(true); Object.assign(r.decls, decls); persist(); renderPanel();
+    const r = currentRule(true); snapshot(); Object.assign(r.decls, decls); persist(); renderPanel();
   }
   // Save the selected element's current look as a named favourite (synced).
   function saveFavorite() {
@@ -249,10 +305,11 @@
     const r = currentRule(false);
     if (!r || !r.decls || !Object.keys(r.decls).length) { toast('Enginn stíll á þessum hlut enn — breyttu einhverju fyrst'); return; }
     const nm = prompt('Nafn á uppáhalds-stíl:', 'Minn stíll'); if (!nm) return;
+    snapshot();
     state.favs = state.favs || []; state.favs.push({ n: nm.slice(0, 24), d: Object.assign({}, r.decls) });
     persist(); renderPanel();
   }
-  function deleteFavorite(i) { if (state.favs && state.favs[i]) { state.favs.splice(i, 1); persist(); renderPanel(); } }
+  function deleteFavorite(i) { if (state.favs && state.favs[i]) { snapshot(); state.favs.splice(i, 1); persist(); renderPanel(); } }
   // Chip preview: render the chip itself with the look (a real visual picker).
   function presetPreviewStyle(d) {
     const keep = ['background', 'color', 'border', 'box-shadow', 'text-shadow', 'font-weight', 'backdrop-filter'];
@@ -274,19 +331,35 @@
       '#' + BTN_ID + '{all:unset;cursor:pointer;font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;margin-right:6px;transition:background .12s}',
       '#' + BTN_ID + ':hover{background:rgba(255,255,255,.14)}',
       '#' + PANEL_ID + '{position:fixed;left:0;right:0;bottom:0;z-index:99990;max-height:56vh;overflow:auto;background:#f8fafc;border-top:1px solid #cbd5e1;box-shadow:0 -12px 34px -14px rgba(15,23,42,.35);font-family:"Space Grotesk",system-ui,sans-serif;color:#11141c;padding:14px 18px 22px}',
-      '#' + PANEL_ID + ' .pe-hd{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:10px}',
+      // Header is now its own column: title row, then a toolbar row (wraps
+      // cleanly instead of everything fighting for one line), then — only when
+      // a target is picked — its own row for the selector chip. Fixes the
+      // cramped/overlapping header when the selector text was long.
+      '#' + PANEL_ID + ' .pe-hd{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}',
+      '#' + PANEL_ID + ' .pe-titlerow{display:flex;align-items:flex-start;gap:12px}',
+      '#' + PANEL_ID + ' .pe-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
+      '#' + PANEL_ID + ' .pe-targetrow{display:flex;align-items:center;gap:8px}',
       '#' + PANEL_ID + ' .pe-h{font-size:16px;font-weight:800;margin:0}',
       '#' + PANEL_ID + ' .pe-sub{font-size:12px;color:#64748b}',
       '#' + PANEL_ID + ' .pe-btn{all:unset;cursor:pointer;font-size:12.5px;font-weight:700;padding:7px 13px;border-radius:9px;border:1px solid #cbd5e1;background:#fff;color:#334155}',
       '#' + PANEL_ID + ' .pe-btn:hover{background:#eef2f7}',
       '#' + PANEL_ID + ' .pe-btn.on{background:linear-gradient(145deg,#08080a,#3a3a41 50%,#070709);color:#fff;border-color:#0a0b0d}',
       '#' + PANEL_ID + ' .pe-btn.pri{background:#2563eb;color:#fff;border-color:#1d4ed8}',
+      '#' + PANEL_ID + ' .pe-btn:disabled{cursor:default;opacity:.4;background:#fff}',
+      '#' + PANEL_ID + ' .pe-btn:disabled:hover{background:#fff}',
       '#' + PANEL_ID + ' .pe-seg{display:inline-flex;background:#e9eef5;border-radius:10px;padding:3px;gap:3px}',
       '#' + PANEL_ID + ' .pe-seg button{all:unset;cursor:pointer;font-size:12px;font-weight:700;padding:6px 12px;border-radius:8px;color:#475569}',
       '#' + PANEL_ID + ' .pe-seg button.on{background:#fff;color:#11141c;box-shadow:0 1px 2px rgba(0,0,0,.12)}',
       '#' + PANEL_ID + ' .pe-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px 22px;margin-top:6px}',
       '#' + PANEL_ID + ' .pe-sec{background:#fff;border:1px solid #e6eaf0;border-radius:12px;padding:12px 14px}',
-      '#' + PANEL_ID + ' .pe-sec h4{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#64748b}',
+      '#' + PANEL_ID + ' .pe-sec h4{margin:0;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;display:inline}',
+      // Each section is a <details> now (verkefnalisti feedback: panel „takes
+      // huge space" — collapsed sections stay out of the way until needed).
+      '#' + PANEL_ID + ' .pe-sec summary{cursor:pointer;list-style:none;margin-bottom:8px}',
+      '#' + PANEL_ID + ' .pe-sec summary::-webkit-details-marker{display:none}',
+      '#' + PANEL_ID + ' .pe-sec summary:before{content:"▸ ";color:#94a3b8;font-size:11px}',
+      '#' + PANEL_ID + ' .pe-sec[open] summary:before{content:"▾ "}',
+      '#' + PANEL_ID + ' .pe-sec[open] summary{margin-bottom:10px}',
       '#' + PANEL_ID + ' .pe-row{display:flex;align-items:center;gap:10px;margin:7px 0}',
       '#' + PANEL_ID + ' .pe-row label{flex:0 0 118px;font-size:12.5px;font-weight:600;color:#334155}',
       '#' + PANEL_ID + ' .pe-row input[type=range]{flex:1;min-width:80px}',
@@ -324,42 +397,49 @@
   }
   function renderPanel() {
     const p = document.getElementById(PANEL_ID); if (!p) return;
-    const targetLbl = target ? relSelector(target) : '';
-    const scopeSeg = '<div class="pe-seg"><button data-scope="page"' + (scope === 'page' ? ' class="on"' : '') + '>Þessi síða</button>' +
+    const targetLbl = target ? relSelector(target, matchMode === 'many') : '';
+    const scopeSeg = '<div class="pe-seg" title="Vista breytingu á þessari síðu eingöngu, eða öllum síðum"><button data-scope="page"' + (scope === 'page' ? ' class="on"' : '') + '>Þessi síða</button>' +
       '<button data-scope="all"' + (scope === 'all' ? ' class="on"' : '') + '>Allar síður</button></div>';
+    const matchSeg = '<div class="pe-seg" title="Bara þennan staka hlut, eða ALLA hluti sem líta eins út (t.d. allar raðir í töflu í einu)"><button data-match="one"' + (matchMode === 'one' ? ' class="on"' : '') + '>🎯 Bara þennan</button>' +
+      '<button data-match="many"' + (matchMode === 'many' ? ' class="on"' : '') + '>📑 Alla eins</button></div>';
     const head = '<div class="pe-hd">' +
-      '<div><h3 class="pe-h">🎨 Stilla útlit</h3><div class="pe-sub">Veldu hlut og breyttu lit, letri, stærð, halla eða settu bakgrunn. Vistast strax' + (scope === 'all' ? ' — <b>allar síður</b>' : ' — <b>þessi síða</b>') + '.</div></div>' +
-      '<button class="pe-btn ' + (picking ? 'on' : 'pri') + '" id="pe-pick">' + (picking ? '🎯 Hætta að velja' : '🎯 Velja hlut') + '</button>' +
-      (target ? '<span class="pe-target" title="' + esc(targetLbl) + '">' + esc(targetLbl) + '</span><button class="pe-btn" id="pe-unpick">hreinsa val</button>' : '') +
-      scopeSeg +
-      '<div style="margin-left:auto;display:flex;gap:8px">' +
+      '<div class="pe-titlerow">' +
+        '<div style="flex:1"><h3 class="pe-h">🎨 Stilla útlit</h3><div class="pe-sub">Veldu hlut og breyttu lit, letri, stærð, halla eða settu bakgrunn. Vistast strax' + (scope === 'all' ? ' — <b>allar síður</b>' : ' — <b>þessi síða</b>') + '.</div></div>' +
+        '<button class="pe-btn" id="pe-close">✕ Loka</button>' +
+      '</div>' +
+      '<div class="pe-toolbar">' +
+        '<button class="pe-btn ' + (picking ? 'on' : 'pri') + '" id="pe-pick">' + (picking ? '🎯 Hætta að velja' : '🎯 Velja hlut') + '</button>' +
+        scopeSeg +
+        (target ? matchSeg : '') +
+        '<button class="pe-btn" id="pe-undo"' + (undoStack.length ? '' : ' disabled') + ' title="Afturkalla síðustu breytingu">↩ Afturkalla</button>' +
         '<button class="pe-btn" id="pe-reset">↺ Resetta ▾</button>' +
         '<button class="pe-btn" id="pe-bg">🖼 Bakgrunnsmynd</button>' +
-        '<button class="pe-btn" id="pe-close">✕ Loka</button>' +
-      '</div></div>';
+      '</div>' +
+      (target ? '<div class="pe-targetrow"><span class="pe-target" title="' + esc(targetLbl) + '">' + esc(targetLbl) + '</span><button class="pe-btn" id="pe-unpick">hreinsa val</button></div>' : '') +
+      '</div>';
 
     let body;
     if (!target) {
       body = '<div class="pe-empty">Ýttu á <b>🎯 Velja hlut</b> og smelltu svo á texta, box eða glugga á síðunni til að byrja að breyta.<br>Eða settu <b>🖼 Bakgrunnsmynd</b> á síðuna.</div>' + presetsSection();
     } else {
       body = '<div class="pe-grid">' +
-        '<div class="pe-sec"><h4>Stærð &amp; bil</h4>' +
+        '<details class="pe-sec"><summary><h4>Stærð &amp; bil</h4></summary>' +
           sliderRow('Letur', 'font-size', 8, 54, 1) +
           sliderRow('Línuhæð', 'line-height', 90, 240, 5, '%') +
           sliderRow('Leturþyngd', 'font-weight', 100, 900, 100, '') +
           sliderRow('Padding lóðrétt', 'padding-top', 0, 60, 1) +
           sliderRow('Padding lárétt', 'padding-left', 0, 60, 1) +
           sliderRow('Stafabil', 'letter-spacing', -2, 8, 0.5) +
-        '</div>' +
-        '<div class="pe-sec"><h4>Box &amp; gluggi</h4>' +
+        '</details>' +
+        '<details class="pe-sec"><summary><h4>Box &amp; gluggi</h4></summary>' +
           sliderRow('Breidd', 'width', 40, 1280, 5) +
           sliderRow('Hæð (0=sjálfv.)', 'height', 0, 600, 2) +
           sliderRow('Lágmarkshæð', 'min-height', 0, 600, 5) +
           sliderRow('Border þykkt', 'border-width', 0, 10, 1) +
           sliderRow('Border radíus', 'border-radius', 0, 44, 1) +
           sliderRow('Bil (gap)', 'gap', 0, 40, 1) +
-        '</div>' +
-        '<div class="pe-sec"><h4>Litir</h4>' +
+        '</details>' +
+        '<details class="pe-sec" open><summary><h4>Litir</h4></summary>' +
           colorRow('Texti', 'color') +
           colorRow('Bakgrunnur', 'background-color') +
           colorRow('Border', 'border-color') +
@@ -368,11 +448,11 @@
             '<input type="color" data-grad="c2" value="' + (gradPart(1) || '#3b82f6') + '">' +
             '<input type="range" data-grad="ang" min="0" max="360" step="5" value="' + (gradAngle() || 145) + '">' +
             '<button class="pe-btn" data-clear="background">✕</button></div>' +
-        '</div>' +
-        '<div class="pe-sec"><h4>Leturgerð</h4>' +
+        '</details>' +
+        '<details class="pe-sec"><summary><h4>Leturgerð</h4></summary>' +
           '<div class="pe-row"><label>Font</label><select data-font>' + FONTS.map(f => '<option value="' + esc(f) + '"' + ((getDecl('font-family') || '') === f ? ' selected' : '') + '>' + esc(f) + '</option>').join('') + '</select></div>' +
           '<div class="pe-sub" style="margin-top:6px">Border sést aðeins þegar þykkt &gt; 0.</div>' +
-        '</div>' +
+        '</details>' +
       '</div>' + presetsSection();
     }
     p.innerHTML = head + body;
@@ -383,12 +463,14 @@
     const favGroup = favs.length ? '<div class="pe-pgroup"><span class="pe-glabel">⭐ Uppáhald</span><div class="pe-presets">' +
       favs.map((f, i) => '<span class="pe-favwrap"><button class="pe-chip" data-fav="' + i + '" title="' + esc(f.n) + '" style="' + presetPreviewStyle(f.d) + '">' + esc(f.n) + '</button><button class="pe-favdel" data-favdel="' + i + '" title="Fjarlægja">✕</button></span>').join('') +
       '</div></div>' : '';
-    return '<div class="pe-sec" style="margin-top:12px"><div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h4 style="margin:0">Hnappa- &amp; merkja-safn — smelltu til að setja á valinn hlut (hnapp eða stöðu-merki)</h4>' +
-      '<button class="pe-btn" id="pe-fav" style="margin-left:auto" title="Vista núverandi stíl valins hlutar sem uppáhald">★ Vista stíl í uppáhald</button></div>' +
+    // Collapsed by default — this chip grid (6 groups × up to 7 swatches) was
+    // the single biggest space-eater in the panel (verkefnalisti feedback).
+    return '<details class="pe-sec" style="margin-top:12px"><summary style="display:flex;align-items:center;gap:10px;flex-wrap:wrap"><h4 style="margin:0;display:inline">Hnappa- &amp; merkja-safn — smelltu til að setja á valinn hlut (hnapp eða stöðu-merki)</h4>' +
+      '<button class="pe-btn" id="pe-fav" style="margin-left:auto" title="Vista núverandi stíl valins hlutar sem uppáhald">★ Vista stíl í uppáhald</button></summary>' +
       favGroup +
       PRESET_GROUPS.map((g, gi) => '<div class="pe-pgroup"><span class="pe-glabel">' + esc(g.label) + '</span><div class="pe-presets">' +
         g.items.map((it, ii) => '<button class="pe-chip" data-preset="' + gi + '-' + ii + '" title="' + esc(it[0]) + '" style="' + presetPreviewStyle(it[1]) + '">' + esc(it[0]) + '</button>').join('') +
-      '</div></div>').join('') + '</div>';
+      '</div></div>').join('') + '</details>';
   }
   // gradient current-value helpers (parse existing 'background' override)
   function gradParts() { const g = getDecl('background') || ''; const m = g.match(/linear-gradient\(([^)]*)\)/i); return m ? m[1] : null; }
@@ -408,7 +490,9 @@
     const up = q('#pe-unpick'); if (up) up.onclick = () => { target = null; hideHighlight(); renderPanel(); };
     const bg = q('#pe-bg'); if (bg) bg.onclick = pickBackground;
     const rs = q('#pe-reset'); if (rs) rs.onclick = resetMenu;
+    const un = q('#pe-undo'); if (un) un.onclick = undo;
     qa('[data-scope]').forEach(b => b.onclick = () => { scope = b.dataset.scope; renderPanel(); });
+    qa('[data-match]').forEach(b => b.onclick = () => { matchMode = b.dataset.match; renderPanel(); });
     qa('[data-slider]').forEach(inp => inp.addEventListener('input', () => {
       const num = p.querySelector('[data-num="' + inp.dataset.slider + '"]'); if (num) num.value = inp.value;
       applySize(inp.dataset.slider, inp.dataset.unit, inp.value);
@@ -425,7 +509,7 @@
     qa('[data-grad]').forEach(inp => inp.addEventListener('input', setGradient));
     const fs = q('[data-font]'); if (fs) fs.onchange = () => setDecl('font-family', fs.value === '(sjálfgefið)' ? '' : fs.value);
     qa('[data-preset]').forEach(b => b.onclick = () => { const p = b.dataset.preset.split('-'); const g = PRESET_GROUPS[+p[0]]; if (g && g.items[+p[1]]) applyPreset(g.items[+p[1]][1]); });
-    const favBtn = q('#pe-fav'); if (favBtn) favBtn.onclick = saveFavorite;
+    const favBtn = q('#pe-fav'); if (favBtn) favBtn.onclick = (e) => { e.preventDefault(); e.stopPropagation(); saveFavorite(); };
     qa('[data-fav]').forEach(b => b.onclick = () => { const f = (state.favs || [])[+b.dataset.fav]; if (f) applyPreset(f.d); });
     qa('[data-favdel]').forEach(b => b.onclick = (e) => { e.stopPropagation(); deleteFavorite(+b.dataset.favdel); });
   }
@@ -437,8 +521,9 @@
     opts.push('2 = þessa síðu' + (vid ? ' (' + vid + ')' : ''));
     opts.push('3 = ALLT (öll útlit)');
     const ans = prompt('Resetta útlit:\n' + opts.join('\n') + '\n\nSláðu inn 1, 2 eða 3:', target ? '1' : '2');
+    snapshot();
     if (ans === '1' && target) {
-      const sel = relSelector(target), scp = targetScope();
+      const sel = relSelector(target, matchMode === 'many'), scp = targetScope();
       state.rules = state.rules.filter(r => !(r.sel === sel && r.scope === scp));
     } else if (ans === '2') {
       const cur = document.querySelector('.view.active') || target && target.closest('.view');
@@ -447,23 +532,53 @@
     } else if (ans === '3') {
       if (!confirm('Eyða ÖLLUM útlits-breytingum á öllum síðum?')) return;
       state = { rules: [], bg: { all: null, pages: {} } };
-    } else return;
+    } else { undoStack.pop(); return; }
     persist(); renderPanel();
+  }
+
+  // 2026-08-05 (hraða-úttekt): bakgrunnsmyndin var lesin sem base64 data-URL og
+  // geymd INNI Í stillingunum — ein 179 kB PNG þýddi 179 kB aukalega í hverri
+  // einustu opnun appsins, á öllum tækjum. Myndin fer nú í Supabase Storage og
+  // aðeins slóðin geymist (vafrinn cachar hana þá líka). Data-URL er notað sem
+  // varaleið ef Storage svarar ekki, svo aðgerðin klikkar aldrei.
+  const BG_BUCKET = 'utlit';
+
+  async function uploadBg(f) {
+    const SB = (window.DB && DB.sb) || null;
+    if (!SB || !SB.storage) return null;
+    try {
+      const ext = (f.name.match(/\.[a-z0-9]+$/i) || ['.png'])[0].toLowerCase();
+      const path = 'bakgrunnur/' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) + ext;
+      const up = await SB.storage.from(BG_BUCKET).upload(path, f, {
+        upsert: false, contentType: f.type || 'image/png', cacheControl: '31536000'
+      });
+      if (up.error) return null;
+      const pub = SB.storage.from(BG_BUCKET).getPublicUrl(path);
+      return (pub && pub.data && pub.data.publicUrl) || null;
+    } catch (_) { return null; }
   }
 
   function pickBackground() {
     const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*';
-    inp.onchange = () => {
+    inp.onchange = async () => {
       const f = inp.files && inp.files[0]; if (!f) return;
-      const fr = new FileReader();
-      fr.onload = () => {
-        const url = fr.result;
-        const where = prompt('Setja bakgrunn á:\n1 = þessa síðu\n2 = allar síður\n\n1 eða 2:', '1');
-        if (where === '2') { state.bg.all = url; }
-        else { const cur = document.querySelector('.view.active'); const id = cur && cur.id; if (!id) { toast('Opnaðu síðuna fyrst'); return; } state.bg.pages = state.bg.pages || {}; state.bg.pages[id] = url; }
-        persist();
-      };
-      fr.readAsDataURL(f);
+      const where = prompt('Setja bakgrunn á:\n1 = þessa síðu\n2 = allar síður\n\n1 eða 2:', '1');
+      if (where !== '1' && where !== '2') return;
+      const cur = document.querySelector('.view.active');
+      const id = cur && cur.id;
+      if (where === '1' && !id) { toast('Opnaðu síðuna fyrst'); return; }
+
+      toast('Hleð upp bakgrunni…');
+      let url = await uploadBg(f);
+      if (!url) {
+        url = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => res(null); fr.readAsDataURL(f); });
+        if (!url) { toast('Tókst ekki að lesa myndina.'); return; }
+        toast('Storage svaraði ekki — myndin geymist í stillingum í bili.');
+      }
+      snapshot();
+      if (where === '2') state.bg.all = url;
+      else { state.bg.pages = state.bg.pages || {}; state.bg.pages[id] = url; }
+      persist();
     };
     inp.click();
   }

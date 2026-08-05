@@ -38,29 +38,33 @@
   // Flokkur → íkon + grunnlitur (hue). Sami og í hönnunar-comp-inu; óþekktir
   // flokkar fá hlutlausan bláan fallback.
   const CAT_META = {
-    'Allt':                   { icon: '▦',  hue: '#1e3a8a' },
-    'Slökkvitæki':            { icon: '🧯', hue: '#dc2626' },
-    'Brunaslöngur':           { icon: '🚒', hue: '#c2410c' },
-    'Skilti':                 { icon: '🆘', hue: '#15803d' },
-    'Reykskynjarar':          { icon: '💨', hue: '#7c3aed' },
-    'Brunakerfi':             { icon: '🚨', hue: '#be123c' },
-    'Varahlutir':             { icon: '🔧', hue: '#475569' },
-    'Fylgihlutir':            { icon: '🔩', hue: '#0f766e' },
-    'Ýmsar vörur':            { icon: '📦', hue: '#b45309' },
-    'Þjónusta':               { icon: '📋', hue: '#0369a1' },
-    'Aukavörur':              { icon: '🏷️', hue: '#7c3aed' },
-    'Brunaslöngurhjól':       { icon: '🚒', hue: '#c2410c' },
-    'Eldvarnir':              { icon: '🔥', hue: '#dc2626' },
-    'Hleðsla slökkvitækja':   { icon: '🔄', hue: '#b45309' },
-    'Skilti, ljós og miðar':  { icon: '🆘', hue: '#15803d' },
-    'Skynjarar og rafhlöður': { icon: '🔋', hue: '#7c3aed' },
-    'Tæki':                   { icon: '🧰', hue: '#475569' },
-    'Viðvörunarkerfi':        { icon: '🚨', hue: '#be123c' },
-    'Vinna':                  { icon: '👷', hue: '#0369a1' },
-    'Vinna og akstur':        { icon: '🚙', hue: '#0e7490' },
-    'Yfirferð slökkvitækja':  { icon: '✅', hue: '#1f9d55' }
+    'Allt':                   { hue: '#1e3a8a' },
+    'Slökkvitæki':            { hue: '#dc2626' },
+    'Brunaslöngur':           { hue: '#c2410c' },
+    'Skilti':                 { hue: '#15803d' },
+    'Reykskynjarar':          { hue: '#7c3aed' },
+    'Brunakerfi':             { hue: '#be123c' },
+    'Varahlutir':             { hue: '#475569' },
+    'Fylgihlutir':            { hue: '#0f766e' },
+    'Ýmsar vörur':            { hue: '#b45309' },
+    'Þjónusta':               { hue: '#0369a1' },
+    'Aukavörur':              { hue: '#7c3aed' },
+    'Brunaslöngurhjól':       { hue: '#c2410c' },
+    'Eldvarnir':              { hue: '#dc2626' },
+    'Hleðsla slökkvitækja':   { hue: '#b45309' },
+    'Skilti, ljós og miðar':  { hue: '#15803d' },
+    'Skynjarar og rafhlöður': { hue: '#7c3aed' },
+    'Tæki':                   { hue: '#475569' },
+    'Viðvörunarkerfi':        { hue: '#be123c' },
+    'Vinna':                  { hue: '#0369a1' },
+    'Vinna og akstur':        { hue: '#0e7490' },
+    'Yfirferð slökkvitækja':  { hue: '#1f9d55' }
   };
-  function metaFor(cat) { return CAT_META[cat] || { icon: '▪', hue: '#1e3a8a' }; }
+  function metaFor(cat) { return CAT_META[cat] || { hue: '#1e3a8a' }; }
+  // 2026-08-05 (ósk Agnars: „þessi emoji eru voða barnalegir — meira faglegt"):
+  // emoji-táknin víkja fyrir stroke-teiknuðum SVG úr js/ui-icons.js, sem erfa
+  // lit flokksins og teiknast eins á öllum tækjum.
+  function iconFor(cat, size) { return window.UIIcons ? UIIcons.flokkurSvg(cat, { size: size || 15 }) : ''; }
 
   // „Mest notað" — nýjustu val notandans (localStorage) fyrst, svo sjálfgefnir
   // skýrslu-þjónustuliðir svo reiturinn er aldrei tómur í fyrsta skipti.
@@ -111,27 +115,17 @@
     return _loadingPromise;
   }
 
-  // ── Gler-tígull (flokkur) — sami stíll og comp-ið ────────────────────────
-  function tileStyle(hue, on) {
-    return [
-      'display:flex', 'flex-direction:column', 'gap:3px', 'padding:13px 12px',
-      'min-height:62px', 'justify-content:center', 'border-radius:12px', 'cursor:pointer',
-      'position:relative', 'overflow:hidden', 'transition:all .15s ease',
-      // solid fallback fyrst (ef color-mix er ekki stutt), svo gler-image ofan á
-      'background-color:' + (on ? hue : '#eef1f6'),
-      'background-image:' + (on
-        ? 'linear-gradient(155deg, color-mix(in oklch, ' + hue + ' 55%, transparent) 0%, color-mix(in oklch, ' + hue + ' 78%, transparent) 100%), linear-gradient(155deg, rgba(255,255,255,.5), rgba(255,255,255,.08))'
-        : 'linear-gradient(155deg, color-mix(in oklch, ' + hue + ' 28%, rgba(255,255,255,.6)) 0%, color-mix(in oklch, ' + hue + ' 55%, transparent) 100%), rgba(255,255,255,.15)'),
-      'backdrop-filter:blur(10px)', '-webkit-backdrop-filter:blur(10px)',
-      'color:' + (on ? '#fff' : '#1a1a1a'),
-      'text-shadow:' + (on ? '0 1px 3px rgba(0,0,0,.25)' : 'none'),
-      'border:1px solid ' + (on ? 'color-mix(in oklch, ' + hue + ' 45%, rgba(255,255,255,.7))' : 'rgba(255,255,255,.9)'),
-      'outline:' + (on ? 'none' : '1px solid color-mix(in oklch, ' + hue + ' 55%, transparent)'),
-      'box-shadow:' + (on
-        ? 'inset 0 1px 1px rgba(255,255,255,.6), inset 0 -6px 14px color-mix(in oklch, ' + hue + ' 35%, transparent), 0 8px 20px color-mix(in oklch, ' + hue + ' 35%, transparent), 0 2px 4px rgba(0,0,0,.12)'
-        : 'inset 0 1px 1px rgba(255,255,255,.9), inset 0 -4px 10px color-mix(in oklch, ' + hue + ' 10%, transparent), 0 4px 12px rgba(30,50,90,.1), 0 1px 2px rgba(0,0,0,.05)'),
-      'transform:' + (on ? 'translateY(-2px)' : 'none')
-    ].join(';');
+  // Highlight matching tokens in a string (case-insensitive substring per token).
+  function highlight(text, tokens) {
+    const s = esc(text || '');
+    if (!tokens || !tokens.length) return s;
+    let out = s;
+    tokens.forEach(tok => {
+      if (!tok) return;
+      const re = new RegExp('(' + tok.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'ig');
+      out = out.replace(re, '<mark style="background:#fde68a;color:#78350f;border-radius:2px;padding:0 1px">$1</mark>');
+    });
+    return out;
   }
 
   function open(onPick) {
@@ -149,19 +143,26 @@
         // ── Haus ──
         '<div style="background:#1e3a8a;color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center">' +
           '<div>' +
-            '<div style="font-size:15px;font-weight:800">🔍 Velja vöru / þjónustu</div>' +
+            '<div style="font-size:15px;font-weight:800;display:flex;align-items:center;gap:7px">' +
+              (window.UIIcons ? UIIcons.svg('search', { size: 16 }) : '') + 'Velja vöru / þjónustu</div>' +
             '<div style="font-size:11.5px;opacity:.75">Smelltu á vöru til að nota nafn + verð sjálfvirkt</div>' +
           '</div>' +
           '<div id="_vp-x" title="Loka" style="width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.15);border-radius:8px;font-size:14px;cursor:pointer">✕</div>' +
         '</div>' +
-        // ── Leit + flokka-tíglar ──
-        '<div style="padding:12px 16px;display:flex;flex-direction:column;gap:9px;border-bottom:1px solid rgba(0,0,0,.07);background:radial-gradient(ellipse 70% 90% at 15% 0%, rgba(220,38,38,.12), transparent 60%),radial-gradient(ellipse 60% 80% at 85% 20%, rgba(30,58,138,.14), transparent 60%),radial-gradient(ellipse 50% 70% at 50% 100%, rgba(3,105,161,.1), transparent 65%),linear-gradient(180deg,#f4f6fa,#e9edf4)">' +
-          '<input id="_vp-search" type="text" autocomplete="off" placeholder="Leita að vöru, flokki eða lýsingu…" style="border:1.5px solid rgba(0,0,0,.15);border-radius:9px;padding:11px 13px;font-size:14px;width:100%;box-sizing:border-box">' +
-          '<div id="_vp-tiles" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px"></div>' +
+        // ── Leitarglugginn — efst, áberandi, sjálf-fókuserað. Flokka-tíglarnir
+        // (stórar mynda-flísar) eru farnir — óþarflega hægvirkir þegar leitað var
+        // að vöru (Agnar 2026-08-05). Flokkar birtast núna sem samanbrjótanlegur
+        // listi fyrir neðan (sjá renderList), sjálfgefið samanbrotinn.
+        '<div style="padding:12px 16px;border-bottom:1px solid rgba(0,0,0,.07);background:linear-gradient(180deg,#f4f6fa,#e9edf4)">' +
+          '<div style="position:relative">' +
+            '<span style="position:absolute;left:13px;top:50%;transform:translateY(-50%);display:flex;opacity:.55;color:#0f172a;pointer-events:none">' + (window.UIIcons ? UIIcons.svg('search', { size: 15 }) : '') + '</span>' +
+            '<input id="_vp-search" type="text" autocomplete="off" placeholder="Leita að vöru, flokki eða lýsingu…" style="border:1.5px solid rgba(0,0,0,.18);border-radius:10px;padding:13px 36px 13px 34px;font-size:15px;font-weight:600;width:100%;box-sizing:border-box;background:#fff">' +
+            '<div id="_vp-clear" title="Hreinsa leit" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:99px;background:rgba(0,0,0,.08);color:rgba(0,0,0,.55);font-size:13px;line-height:24px;text-align:center;cursor:pointer">✕</div>' +
+          '</div>' +
         '</div>' +
         // ── Mest notað ──
         '<div id="_vp-recent-wrap" style="padding:10px 16px 4px;display:none;flex:none">' +
-          '<div style="font-size:10px;font-weight:800;color:rgba(0,0,0,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px">★ Mest notað í þínum skýrslum</div>' +
+          '<div style="font-size:10px;font-weight:800;color:rgba(0,0,0,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px">' + (window.UIIcons ? UIIcons.svg('star', { size: 12 }) : '') + 'Mest notað í þínum skýrslum</div>' +
           '<div id="_vp-recent" style="display:flex;flex-wrap:wrap;gap:6px"></div>' +
         '</div>' +
         // ── Grúppaður listi ──
@@ -177,14 +178,18 @@
     document.body.appendChild(dlg);
 
     const search    = dlg.querySelector('#_vp-search');
-    const tilesEl   = dlg.querySelector('#_vp-tiles');
+    const clearBtn  = dlg.querySelector('#_vp-clear');
     const recentWrap= dlg.querySelector('#_vp-recent-wrap');
     const recentEl  = dlg.querySelector('#_vp-recent');
     const listEl    = dlg.querySelector('#_vp-list');
     const countEl   = dlg.querySelector('#_vp-count');
 
     let products = [];
-    const state = { query: '', cat: 'Allt' };
+    const state = { query: '' };
+    // Categories a user has manually expanded THIS time the picker is open.
+    // Always starts empty — "allir Categories Collapsed as default" (Agnar
+    // 2026-08-05) — searching auto-expands matching ones on top of this.
+    const manuallyOpen = new Set();
 
     function close() { dlg.remove(); }
     dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
@@ -212,26 +217,11 @@
       products.forEach(p => { const c = p.flokkur || 'Ýmsar vörur'; if (present.indexOf(c) < 0) present.push(c); });
       const ordered = Object.keys(CAT_META).filter(c => c !== 'Allt' && present.indexOf(c) >= 0);
       present.forEach(c => { if (ordered.indexOf(c) < 0) ordered.push(c); });
-      return ['Allt', ...ordered];
-    }
-    function catCount(c) {
-      return c === 'Allt' ? products.length : products.filter(p => (p.flokkur || 'Ýmsar vörur') === c).length;
-    }
-
-    function renderTiles() {
-      tilesEl.innerHTML = categories().map(c => {
-        const m = metaFor(c), on = state.cat === c;
-        const countClr = on ? 'rgba(255,255,255,.75)' : 'color-mix(in oklch, ' + m.hue + ' 65%, black)';
-        return '<div data-cat="' + esc(c) + '" style="' + tileStyle(m.hue, on) + '">' +
-            '<div style="position:absolute;right:-6px;bottom:-10px;font-size:60px;opacity:.6;pointer-events:none;filter:saturate(1.5)">' + m.icon + '</div>' +
-            '<div style="font-size:18.5px;font-weight:800;line-height:1.15;position:relative">' + esc(c) + '</div>' +
-            '<div style="font-size:12px;font-weight:700;position:relative;color:' + countClr + '">' + catCount(c) + ' vörur</div>' +
-          '</div>';
-      }).join('');
+      return ordered;
     }
 
     function renderRecent() {
-      if (state.query || state.cat !== 'Allt') { recentWrap.style.display = 'none'; return; }
+      if (state.query) { recentWrap.style.display = 'none'; return; }
       const byName = {};
       products.forEach(p => { if (!(p.nafn in byName)) byName[p.nafn] = p; });
       const names = [];
@@ -248,42 +238,33 @@
       }).join('');
     }
 
-    function filteredRows() {
-      const q = (state.query || '').trim().toLowerCase();
-      let rows = products;
-      if (state.cat !== 'Allt') rows = rows.filter(p => (p.flokkur || 'Ýmsar vörur') === state.cat);
-      if (q) {
-        // Tókenuð leit (2026-05-10): öll orð verða að finnast (í hvaða röð sem er)
-        // yfir nafn/flokk/lýsingu — svo „duft hleðsla 6" finnur „6 kg. Duft ABC hleðsla".
-        const tokens = q.split(/\s+/).filter(Boolean);
-        rows = rows.filter(p => {
-          const hay = ((p.nafn || '') + ' ' + (p.flokkur || '') + ' ' + (p.lysing || '')).toLowerCase();
-          return tokens.every(tok => hay.indexOf(tok) >= 0);
-        });
-      }
-      return rows;
+    // Tókenuð leit (2026-05-10): öll orð verða að finnast (í hvaða röð sem er)
+    // yfir nafn/flokk/lýsingu — svo „duft hleðsla 6" finnur „6 kg. Duft ABC hleðsla".
+    function queryTokens() { return (state.query || '').trim().toLowerCase().split(/\s+/).filter(Boolean); }
+    function matches(p, tokens) {
+      if (!tokens.length) return true;
+      const hay = ((p.nafn || '') + ' ' + (p.flokkur || '') + ' ' + (p.lysing || '')).toLowerCase();
+      return tokens.every(tok => hay.indexOf(tok) >= 0);
     }
 
-    function bannerHtml(cat, count) {
+    function headerHtml(cat, count, open) {
       const m = metaFor(cat);
-      // Límdur (sticky) lita-borði per flokk — eins og comp-ið: hue → dekkri hue,
-      // hvítur texti, situr efst meðan skrunað er í gegnum flokkinn. Solid hue
-      // fallback ef color-mix er ekki stutt.
-      return '<div style="position:sticky;top:0;z-index:2;overflow:hidden;margin:8px 10px 4px;border-radius:11px;padding:12px 16px;display:flex;justify-content:space-between;align-items:baseline;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25);background-color:' + m.hue + ';background-image:linear-gradient(135deg, ' + m.hue + ', color-mix(in oklch, ' + m.hue + ' 70%, black));box-shadow:inset 0 1px 0 rgba(255,255,255,.25), 0 4px 12px color-mix(in oklch, ' + m.hue + ' 30%, transparent)">' +
-          '<div style="position:absolute;right:2px;bottom:-14px;font-size:56px;opacity:.18;pointer-events:none">' + m.icon + '</div>' +
-          '<div style="font-size:18px;font-weight:800;position:relative">' + esc(cat) + '</div>' +
-          '<div style="font-size:12px;font-weight:700;opacity:.75;position:relative">' + count + ' vörur</div>' +
+      return '<div class="_vp-cat-header" data-cat="' + esc(cat) + '" style="position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:9px;padding:11px 16px;cursor:pointer;background:#fff;border-bottom:1px solid rgba(0,0,0,.06)">' +
+          '<span style="display:inline-flex;transition:transform .15s ease;transform:rotate(' + (open ? '90deg' : '0deg') + ');color:rgba(0,0,0,.4);font-size:12px;flex:none">▶</span>' +
+          '<span style="display:flex;flex:none;color:' + m.hue + '">' + iconFor(cat, 15) + '</span>' +
+          '<span style="font-size:14px;font-weight:800;color:#1a1a1a;flex:1;min-width:0">' + esc(cat) + '</span>' +
+          '<span style="font-size:11.5px;font-weight:700;color:rgba(0,0,0,.4)">' + count + '</span>' +
         '</div>';
     }
 
-    function rowHtml(p) {
+    function rowHtml(p, tokens) {
       const priceEx = +p.verd_an_vsk || 0;
       const vsk = +p.vsk_prosenta || 24;
       const priceInc = priceEx * (1 + vsk / 100);
-      return '<div class="_vp-row" data-id="' + esc(p.id) + '" style="padding:10px 16px;display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.04)">' +
+      return '<div class="_vp-row" data-id="' + esc(p.id) + '" style="padding:10px 16px 10px 39px;display:flex;justify-content:space-between;align-items:center;gap:12px;cursor:pointer;border-bottom:1px solid rgba(0,0,0,.04)">' +
           '<div style="flex:1;min-width:0">' +
-            '<div style="font-size:13.5px;font-weight:700;color:#1a1a1a">' + esc(p.nafn || '—') + '</div>' +
-            (p.lysing ? '<div style="font-size:11.5px;color:rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(p.lysing) + '</div>' : '') +
+            '<div style="font-size:13.5px;font-weight:700;color:#1a1a1a">' + highlight(p.nafn || '—', tokens) + '</div>' +
+            (p.lysing ? '<div style="font-size:11.5px;color:rgba(0,0,0,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + highlight(p.lysing, tokens) + '</div>' : '') +
           '</div>' +
           '<div style="text-align:right;flex:none">' +
             '<div style="font-size:14px;font-weight:800;color:#1a1a1a;font-variant-numeric:tabular-nums">' + fmtNum(priceInc) + ' kr</div>' +
@@ -293,51 +274,62 @@
     }
 
     function renderList() {
-      const rows = filteredRows();
-      countEl.textContent = rows.length + ' / ' + products.length;
-      if (!rows.length) {
-        listEl.innerHTML = '<div style="padding:40px;text-align:center;font-size:13px;color:rgba(0,0,0,.45)">Engin vara fannst — prófaðu annan flokk eða leitarorð</div>';
-        return;
-      }
+      const tokens = queryTokens();
+      const searching = tokens.length > 0;
       const groupMap = {};
-      rows.forEach(p => { const c = p.flokkur || 'Ýmsar vörur'; (groupMap[c] = groupMap[c] || []).push(p); });
-      const order = categories().filter(c => c !== 'Allt' && groupMap[c]);
-      Object.keys(groupMap).forEach(c => { if (order.indexOf(c) < 0) order.push(c); });
-      listEl.innerHTML = order.map(c =>
-        bannerHtml(c, groupMap[c].length) + groupMap[c].map(rowHtml).join('')
-      ).join('');
+      products.forEach(p => { const c = p.flokkur || 'Ýmsar vörur'; (groupMap[c] = groupMap[c] || []).push(p); });
+      const order = categories().filter(c => groupMap[c]);
+
+      let totalMatches = 0;
+      const html = order.map(c => {
+        const all = groupMap[c];
+        const rows = searching ? all.filter(p => matches(p, tokens)) : all;
+        if (searching && !rows.length) return ''; // hide empty categories while searching
+        totalMatches += rows.length;
+        // While searching, a category with hits is force-expanded regardless of
+        // manual state; otherwise it's exactly what the user toggled (default closed).
+        const open = searching ? true : manuallyOpen.has(c);
+        return headerHtml(c, rows.length, open) +
+          (open ? rows.map(p => rowHtml(p, tokens)).join('') : '');
+      }).join('');
+
+      countEl.textContent = (searching ? totalMatches : products.length) + ' / ' + products.length;
+      listEl.innerHTML = html || '<div style="padding:40px;text-align:center;font-size:13px;color:rgba(0,0,0,.45)">Engin vara fannst — prófaðu annað leitarorð</div>';
     }
 
-    function render() { renderTiles(); renderRecent(); renderList(); }
+    function render() { renderRecent(); renderList(); }
 
     // ── Atburðir (delegation) ──
-    tilesEl.addEventListener('click', e => {
-      const t = e.target.closest('[data-cat]'); if (!t) return;
-      state.cat = t.getAttribute('data-cat');
-      render();
-    });
     recentEl.addEventListener('click', e => {
       const t = e.target.closest('[data-name]'); if (!t) return;
       const p = products.find(x => x.nafn === t.getAttribute('data-name'));
       if (p) doPick(p);
     });
     listEl.addEventListener('click', e => {
-      const t = e.target.closest('._vp-row'); if (!t) return;
-      const p = products.find(x => String(x.id) === String(t.getAttribute('data-id')));
-      if (p) doPick(p);
+      const row = e.target.closest('._vp-row');
+      if (row) { const p = products.find(x => String(x.id) === String(row.getAttribute('data-id'))); if (p) doPick(p); return; }
+      const hdr = e.target.closest('._vp-cat-header');
+      if (hdr && !state.query) {
+        // Toggling only makes sense outside an active search (search force-expands).
+        const cat = hdr.getAttribute('data-cat');
+        if (manuallyOpen.has(cat)) manuallyOpen.delete(cat); else manuallyOpen.add(cat);
+        renderList();
+      }
     });
     listEl.addEventListener('mouseover', e => { const r = e.target.closest('._vp-row'); if (r) r.style.background = 'rgba(30,58,138,.05)'; });
     listEl.addEventListener('mouseout',  e => { const r = e.target.closest('._vp-row'); if (r) r.style.background = ''; });
 
-    search.addEventListener('input', () => { state.query = search.value; render(); });
+    function updateClearVisibility() { clearBtn.style.display = search.value ? 'block' : 'none'; }
+    search.addEventListener('input', () => { state.query = search.value; updateClearVisibility(); render(); });
     search.addEventListener('keydown', e => {
-      if (e.key === 'Escape') { e.preventDefault(); close(); }
+      if (e.key === 'Escape') { e.preventDefault(); if (search.value) { search.value = ''; state.query = ''; updateClearVisibility(); render(); } else close(); }
       if (e.key === 'Enter') {
         e.preventDefault();
         const first = listEl.querySelector('._vp-row');
         if (first) first.click();
       }
     });
+    clearBtn.addEventListener('click', () => { search.value = ''; state.query = ''; updateClearVisibility(); render(); search.focus(); });
 
     setTimeout(() => search.focus(), 80);
 
