@@ -1,0 +1,107 @@
+<!doctype html><html lang=is><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+<title>Kúnnaskrá — lifandi</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box}body{font:12px/1.4 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#1a2233;margin:0;background:#eef1f6}
+.w{max-width:1050px;margin:auto;padding:16px}
+h1{font-size:21px;margin:0 0 2px;color:#0b1f42}.sub{color:#64748b;font-size:12px;margin-bottom:12px}
+.bar{position:sticky;top:0;z-index:10;background:#0b1f42;border-radius:12px;padding:11px 14px;margin-bottom:12px;box-shadow:0 3px 12px rgba(11,31,66,.25)}
+.bar input{width:100%;border:0;border-radius:8px;padding:9px 12px;font-size:14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}
+.chip{font-size:11px;color:#cbd5e1;background:#1e293b;border:1px solid #334155;border-radius:16px;padding:4px 11px;cursor:pointer;user-select:none}
+.chip.on{background:#2563eb;color:#fff;border-color:#2563eb}
+.stat{color:#93c5fd;font-size:11.5px;margin-top:8px}.stat b{color:#fff}
+table{width:100%;border-collapse:collapse;font-size:11px;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 8px rgba(30,41,59,.06)}
+th{text-align:left;background:#0b1f42;color:#fff;padding:7px 8px;font-size:9.5px;text-transform:uppercase;cursor:pointer;position:sticky;top:64px;white-space:nowrap}
+th:hover{background:#16305a}
+td{padding:5px 8px;border-bottom:1px solid #eef2f7;vertical-align:top}
+tr:hover{background:#f8fafc}
+td.nm{font-weight:700;color:#0f172a}td.kt,td.em{color:#334155;font-variant-numeric:tabular-nums;white-space:nowrap;cursor:pointer}
+td.kt:hover,td.em:hover{color:#2563eb;text-decoration:underline}
+td.h{color:#64748b;font-size:10px}td.v{text-align:right;font-weight:700;white-space:nowrap;font-variant-numeric:tabular-nums}
+.b{display:inline-block;font-size:9px;font-weight:700;border-radius:10px;padding:1px 7px;white-space:nowrap}
+.b.r{background:#dcfce7;color:#166534}.b.s{background:#dbeafe;color:#1e40af}.b.u{background:#fef9c3;color:#854d0e}.b.p{background:#f1f5f9;color:#475569}.b.o{background:#fee2e2;color:#991b1b}
+.noem{color:#b45309;font-size:9px}
+.loading{text-align:center;padding:40px;color:#64748b}
+.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#0b1f42;color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;opacity:0;transition:.2s;pointer-events:none}
+.toast.show{opacity:1}
+.back{display:inline-block;font-size:12px;color:#2563eb;text-decoration:none;margin-bottom:8px}
+</style></head><body><div class=w>
+<a class=back href="./">&larr; Til baka i Bakenda / Verkbord</a>
+<h1>Kunnaskra &mdash; lifandi heildarskra</h1>
+<div class=sub id=sub>Saeki gogn ur kerfinu&hellip;</div>
+<div class=bar>
+ <input id=q placeholder="Leita eftir nafni, kennitolu, netfangi eda heimilisfangi" oninput=render()>
+ <div class=chips id=chips>
+  <span class=chip data-f=all onclick=setf(this)>Allir</span>
+  <span class="chip on" data-f=svc onclick=setf(this)>I thjonustu</span>
+  <span class=chip data-f=noem onclick=setf(this)>Vantar netfang</span>
+  <span class=chip data-f=ready onclick=setf(this)>Tilbuid ad rukka</span>
+  <span class=chip data-f=uttekt onclick=setf(this)>Uttekt eftir</span>
+  <span class=chip data-f=rukk onclick=setf(this)>Rukkad 2026</span>
+  <span class=chip data-f=off onclick=setf(this)>Ekki i thjonustu</span>
+ </div>
+ <div class=stat id=stat></div>
+</div>
+<div id=wrap><div class=loading>Hled...</div></div>
+</div><div class=toast id=toast></div>
+<script>
+var SB=window.supabase.createClient("https://osfdzskyvisifcwyjkuk.supabase.co","sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f");
+var MAN={1:"jan",2:"feb",3:"mar",4:"apr",5:"mai",6:"jun",7:"jul",8:"agu",9:"sep",10:"okt",11:"nov",12:"des"};
+var DATA=[],filt="svc",sortCol=1,sortDir=1;
+function kr(v){return v?(""+v).replace(/\B(?=(\d{3})+(?!\d))/g,".")+" kr":"-";}
+async function load(){
+ var all=[],from=0,pg=1000;
+ while(true){
+   var r=await SB.from("fyrirtaeki").select("id,nafn,kennitala,netfang,heimilisfang,er_i_thjonustu").order("nafn").range(from,from+pg-1);
+   if(r.error){document.getElementById('wrap').innerHTML='<div class=loading>Villa vid ad saekja fyrirtaeki: '+r.error.message+'</div>';return;}
+   all=all.concat(r.data); if(r.data.length<pg)break; from+=pg;
+ }
+ var ac={};
+ try{var s=await SB.from("app_settings").select("settings").limit(1).single();
+   if(s.data&&s.data.settings&&s.data.settings.arsskodun_customers)ac=s.data.settings.arsskodun_customers;}catch(e){}
+ DATA=all.map(function(f){
+   var a=ac[f.id]||{},st=(a.steps_2026||{});
+   var t=!!f.er_i_thjonustu;
+   var code=t?(st.reikningur?2:st.skyrsla?1:0):-1;
+   return [f.id,f.nafn||"",f.kennitala||"",f.netfang||"",f.heimilisfang||"",t?1:0,code,+(a.estimated_yearly||0),a.inspect_month||"",st.uttekt?1:0];
+ });
+ var ins=DATA.filter(function(r){return r[5]}).length;
+ document.getElementById('sub').innerHTML=DATA.length+" fyrirtaeki - "+ins+" i thjonustu - lifandi ur Supabase";
+ render();
+}
+function badge(r){var t=r[5],st=r[6],u=r[9];
+ if(!t)return '<span class="b o">Ekki i thjonustu</span>';
+ if(st==2)return '<span class="b r">Rukkad</span>';
+ if(st==1)return '<span class="b s">Skyrsla buin</span>';
+ if(u)return '<span class="b u">Uttekt buin</span>';
+ return '<span class="b p">I thjonustu</span>';}
+function pass(r){
+ if(filt=="svc"&&!r[5])return false;
+ if(filt=="off"&&r[5])return false;
+ if(filt=="noem"&&(!r[5]||r[3]))return false;
+ if(filt=="ready"&&!(r[5]&&r[6]==1))return false;
+ if(filt=="uttekt"&&!(r[5]&&r[6]<1))return false;
+ if(filt=="rukk"&&!(r[5]&&r[6]==2))return false;
+ return true;}
+function setf(el){filt=el.dataset.f;document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on')});el.classList.add('on');render();}
+function srt(c){if(sortCol==c)sortDir=-sortDir;else{sortCol=c;sortDir=1;}render();}
+function esc(s){return (s||'').replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+function cp(t){navigator.clipboard.writeText(t);var e=document.getElementById('toast');e.textContent='Afritad: '+t;e.classList.add('show');setTimeout(function(){e.classList.remove('show')},1200);}
+function render(){
+ if(!DATA.length)return;
+ var q=document.getElementById('q').value.toLowerCase().trim();
+ var out=DATA.filter(function(r){if(!pass(r))return false;if(q)return (r[1]+" "+r[2]+" "+r[3]+" "+r[4]).toLowerCase().indexOf(q)>=0;return true;});
+ out.sort(function(a,b){var x=a[sortCol],y=b[sortCol];if(sortCol==7){x=+x;y=+y;}else{x=(""+x).toLowerCase();y=(""+y).toLowerCase();}return x<y?-sortDir:x>y?sortDir:0;});
+ var sum=out.reduce(function(s,r){return s+(r[5]?r[7]:0);},0);
+ document.getElementById('stat').innerHTML='<b>'+out.length+'</b> fyrirtaeki - aaetlad virdi (i thjon.): <b>'+kr(sum)+'</b>';
+ var h='<table><thead><tr><th onclick=srt(1)>Fyrirtaeki</th><th onclick=srt(2)>Kennitala</th><th onclick=srt(3)>Netfang</th><th onclick=srt(4)>Heimilisfang</th><th onclick=srt(6)>Stada</th><th onclick=srt(8)>Man</th><th onclick=srt(7)>Virdi</th></tr></thead><tbody>';
+ for(var i=0;i<out.length;i++){var r=out[i];
+   h+='<tr><td class=nm>'+esc(r[1])+'</td><td class=kt onclick="cp(\''+r[2]+'\')">'+esc(r[2])+'</td>'
+    +'<td class=em '+(r[3]?'onclick="cp(\''+r[3].replace(/\x27/g,"")+'\')"':'')+'>'+(r[3]?esc(r[3]):'<span class=noem>vantar</span>')+'</td>'
+    +'<td class=h>'+esc(r[4])+'</td><td>'+badge(r)+'</td><td>'+(MAN[r[8]]||'')+'</td><td class=v>'+(r[5]&&r[7]?kr(r[7]):'')+'</td></tr>';}
+ h+='</tbody></table>';
+ document.getElementById('wrap').innerHTML=out.length?h:'<div class=loading>Ekkert fannst</div>';
+}
+load();
+</script></body></html>
