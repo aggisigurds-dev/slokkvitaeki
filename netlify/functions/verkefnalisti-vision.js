@@ -118,11 +118,6 @@ export default async (req) => {
       out.push({ id: row.id, titill: row.title, stada: 'vision-brast', villa: String((e && e.message) || e).slice(0, 200) });
       continue;
     }
-    if (!lysing) {
-      sleppt++;
-      out.push({ id: row.id, titill: row.title, stada: 'tom-lysing' });
-      continue;
-    }
 
     const nytt = appendNote(row.claude_notes, block(lysing, images.length, fp));
 
@@ -277,17 +272,23 @@ async function describe(images, row, key) {
 
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODEL, max_tokens: 700, messages: [{ role: 'user', content }] }),
+    // Rúmt max_tokens (lýsingin sjálf er klippt í 2000 stafi hér að neðan):
+    // 700 reyndist of naumt — verk með 4 þéttar skjámyndir kláraði kvótann
+    // ÁÐUR en fyrsti textablokkin kom og skilaði þögn. Rýmið er þak, ekki
+    // kostnaður; stutt svar kostar áfram stutt.
+    body: JSON.stringify({ model: MODEL, max_tokens: 3000, messages: [{ role: 'user', content }] }),
   });
   const data = await r.json();
   if (!r.ok) throw new Error((data && data.error && data.error.message) || `anthropic ${r.status}`);
 
-  const text = (data && data.content || [])
+  const text = ((data && data.content) || [])
     .filter((b) => b && b.type === 'text')
     .map((b) => b.text)
     .join('\n')
     .trim();
+  // Þögn án villu er versta útkoman — hún lítur út eins og „ekkert að segja".
+  // Láttu stop_reason fylgja svo næsta bilun sé greinanleg en ekki dularfull.
+  if (!text) throw new Error(`tómt svar frá módeli (stop_reason=${(data && data.stop_reason) || '?'})`);
   return text.slice(0, 2000);
 }
 
