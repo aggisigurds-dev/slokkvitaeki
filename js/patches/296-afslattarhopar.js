@@ -39,6 +39,9 @@
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const toast = m => { try { if (window.Toast && Toast.show) Toast.show(m); } catch (_) {} };
   const near = (a, b) => Math.abs((+a || 0) - (+b || 0)) < 0.05;
+  // Tákn úr js/ui-icons.js — engin emoji (osk Agnars 2026-08-05).
+  const ic = (n, sz) => (window.UIIcons ? UIIcons.svg(n, { size: sz || 14 }) : '');
+  const icc = (key, sz) => (window.UIIcons ? UIIcons.categorySvg(key, { size: sz || 14 }) : '');
 
   // ── Hópa-geymsla (discount_tiers) ─────────────────────────────────────────
   let _tiers = [], _tiersTs = 0, _inflight = null, _tableMissing = false;
@@ -66,6 +69,22 @@
     return _inflight;
   }
   const tierById = id => _tiers.find(t => String(t.id) === String(id)) || null;
+
+  // ── Handvirk flokkun vara (app_settings.afslattarflokkar_vorur) ───────────
+  // { "<vöru-id>": "ext_refill" | … | "none" | null }. Slær sjálfvirku
+  // nafna-regluna út, svo Agnar getur fært vöru milli flokka eða tekið hana
+  // alveg út úr hópsafslættinum.
+  const OVR_KEY = 'afslattarflokkar_vorur';
+  function overrides() {
+    const m = (window.AppSettings && AppSettings.path && AppSettings.path(OVR_KEY)) || {};
+    return (m && typeof m === 'object') ? m : {};
+  }
+  async function setOverride(id, key) {
+    if (!window.AppSettings || !AppSettings.save) { toast('AppSettings ekki tilbúið.'); return false; }
+    // ÞRÖNG vistun — aðeins þessi eina vara, svo við skrifum ekki yfir það sem
+    // aðrar vélar breyttu á meðan glugginn var opinn (sama regla og patch 113).
+    return await AppSettings.save({ [OVR_KEY]: { [String(id)]: key || null } });
+  }
 
   function ktPatterns(kt) {
     const d = digits(kt);
@@ -130,9 +149,9 @@
     if (l && l.product_id && st) {
       const all = (st.products || []).concat(st.services || []);
       const p = all.find(x => x.id === l.product_id);
-      if (p) return { nafn: p.nafn, flokkur: p.flokkur, type: l.type };
+      if (p) return { id: p.id, nafn: p.nafn, flokkur: p.flokkur, type: l.type };
     }
-    return { nafn: (l && l.desc) || '', type: (l && l.type) || '' };
+    return { id: (l && l.product_id) || null, nafn: (l && l.desc) || '', type: (l && l.type) || '' };
   }
 
   function unitExAfterLine(l) {
@@ -164,10 +183,11 @@
     if (!st || !st.customer || !Array.isArray(st.lines)) return;
 
     const tier = resolveTierFor(st.customer);
+    const ovr = overrides();
     let changed = false;
 
     st.lines.forEach(l => {
-      const cat = E().classifyItem(lineItem(l, st));
+      const cat = E().classifyItem(lineItem(l, st), ovr);
       const pct = tier ? E().tierPct(tier, cat) : null;
       const mine = (l._hopurPct == null) ? null : +l._hopurPct;
       const cur = Math.max(0, parseFloat(l.disc_pct) || 0);
@@ -219,8 +239,8 @@
           const b = document.createElement('span');
           b.className = '_ahop-badge';
           b.title = 'Afsláttarhópur: ' + tag;
-          b.style.cssText = 'display:inline-block;margin-left:6px;padding:1px 6px;background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:99px;font-size:10px;font-weight:700';
-          b.textContent = '🏷️ Hópur';
+          b.style.cssText = 'display:inline-flex;align-items:center;gap:3px;vertical-align:middle;margin-left:6px;padding:1px 6px;background:#dcfce7;color:#166534;border:1px solid #86efac;border-radius:99px;font-size:10px;font-weight:700';
+          b.innerHTML = (window.UIIcons ? UIIcons.svg('tag', { size: 10 }) : '') + '<span>Hópur</span>';
           descEl.appendChild(b);
         }
       } else if (!tag && existing) {
@@ -260,8 +280,8 @@
     return E().CATEGORIES.map(c => {
       const p = E().parsePct(tier[c.col]);
       if (p === null) return '';
-      return '<span title="' + esc(c.label) + '" style="display:inline-flex;align-items:center;gap:3px;background:var(--surface2);border:1px solid var(--brd);border-radius:99px;padding:1px 7px;font-size:10.5px;font-weight:700;color:' + (p > 0 ? '#166534' : '#94a3b8') + '">' +
-        c.icon + ' ' + E().fmtPct(p) + '%</span>';
+      return '<span title="' + esc(c.label) + '" style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--brd);border-radius:99px;padding:2px 8px;font-size:10.5px;font-weight:700;color:' + (p > 0 ? '#166534' : '#94a3b8') + '">' +
+        icc(c.key, 11) + '<span>' + E().fmtPct(p) + '%</span></span>';
     }).join(' ');
   }
 
@@ -276,11 +296,11 @@
       : '';
     sec.innerHTML =
       '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
-        '<span style="font-size:13px;font-weight:700;color:#1e3a8a">🏷️ Afsláttarhópur</span>' +
+        '<span style="display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:#1e3a8a">' + ic('tag', 15) + 'Afsláttarhópur</span>' +
         '<span style="font-size:10.5px;color:var(--ink3)">gengur framar sjálfvirkum afslætti</span>' +
         '<span style="margin-left:auto;display:inline-flex;align-items:center;gap:6px">' +
           '<select class="_ahop-sel"' + (busy ? ' disabled' : '') + ' style="padding:6px 8px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:13px;background:var(--surface);color:var(--ink1);min-width:170px">' + opts + '</select>' +
-          '<button class="_ahop-manage" type="button" title="Sýsla með afsláttarhópa" style="padding:7px 12px;background:var(--surface2);border:1px solid var(--brd);color:var(--brand);border-radius:7px;cursor:pointer;font-size:13px;font-weight:700">⚙️ Hópar</button>' +
+          '<button class="_ahop-manage" type="button" title="Sýsla með afsláttarhópa" style="padding:7px 12px;background:var(--surface2);border:1px solid var(--brd);color:var(--brand);border-radius:7px;cursor:pointer;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:6px">' + ic('sliders', 14) + 'Hópar</button>' +
         '</span>' +
       '</div>' +
       (tier ? '<div style="margin-top:8px;display:flex;gap:5px;flex-wrap:wrap">' + chipsFor(tier) +
@@ -346,7 +366,7 @@
         await saveTierOnCompany(coId, val);
         sec.dataset.tierId = val || '';
         renderSection(sec, coId, val, false);
-        toast(val ? ('🏷️ Afsláttarhópur vistaður: ' + (tierById(val) || {}).tier_name) : 'Afsláttarhópur fjarlægður.');
+        toast(val ? ('Afsláttarhópur vistaður: ' + (tierById(val) || {}).tier_name) : 'Afsláttarhópur fjarlægður.');
         applyCart();
       } catch (err) {
         renderSection(sec, coId, sec.dataset.tierId || null, false);
@@ -379,7 +399,7 @@
   function pctInput(cat, tier) {
     const v = tier ? E().parsePct(tier[cat.col]) : null;
     return '<label style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--brd);border-radius:9px;background:var(--surface)">' +
-      '<span style="font-size:16px;width:22px;text-align:center">' + cat.icon + '</span>' +
+      '<span style="display:flex;justify-content:center;width:22px;color:var(--ink2)">' + icc(cat.key, 16) + '</span>' +
       '<span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--ink1)">' + esc(cat.label) + '</span>' +
       '<input class="_ahop-pct" data-col="' + cat.col + '" type="text" inputmode="decimal" placeholder="—" ' +
         'value="' + (v === null ? '' : E().fmtPct(v)) + '" ' +
@@ -396,16 +416,16 @@
           '<div style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap">' + (chipsFor(t) || '<span style="font-size:11px;color:var(--ink4);font-style:italic">engar prósentur skráðar</span>') + '</div>' +
           (t.athugasemd ? '<div style="margin-top:3px;font-size:10.5px;color:var(--ink3)">' + esc(t.athugasemd) + '</div>' : '') +
         '</div>' +
-        '<button class="_ahop-edit" data-id="' + t.id + '" type="button" title="Breyta" style="background:var(--surface2);border:1px solid var(--brd);border-radius:7px;padding:5px 9px;cursor:pointer;font-size:12px">✎</button>' +
-        '<button class="_ahop-del" data-id="' + t.id + '" type="button" title="Eyða" style="background:var(--surface);border:1px solid #fecaca;color:#dc2626;border-radius:7px;padding:5px 9px;cursor:pointer;font-size:12px">🗑</button>' +
+        '<button class="_ahop-edit" data-id="' + t.id + '" type="button" title="Breyta" style="background:var(--surface2);border:1px solid var(--brd);border-radius:7px;padding:5px 8px;cursor:pointer;line-height:0" title="Breyta">' + ic('pencil', 14) + '</button>' +
+        '<button class="_ahop-del" data-id="' + t.id + '" type="button" title="Eyða" style="background:var(--surface);border:1px solid #fecaca;color:#dc2626;border-radius:7px;padding:5px 8px;cursor:pointer;line-height:0" title="Eyða">' + ic('trash', 14) + '</button>' +
       '</div>'
     ).join('') : '<div style="padding:16px;text-align:center;color:var(--ink4);font-size:13px;font-style:italic">Enginn afsláttarhópur skráður — búðu til þann fyrsta hér að neðan.</div>';
 
     const t = _editing;
     const form =
       '<div style="margin-top:12px;padding:12px;border:1px solid var(--brd);border-radius:12px;background:var(--surface2)">' +
-        '<div style="font-size:12px;font-weight:800;color:var(--brand);text-transform:uppercase;letter-spacing:.05em;margin-bottom:9px">' +
-          (t && t.id ? '✎ Breyta hóp' : '➕ Nýr afsláttarhópur') + '</div>' +
+        '<div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:800;color:var(--brand);text-transform:uppercase;letter-spacing:.05em;margin-bottom:9px">' +
+          (t && t.id ? ic('pencil', 13) + 'Breyta hóp' : ic('plus', 13) + 'Nýr afsláttarhópur') + '</div>' +
         '<input id="_ahop-name" type="text" placeholder="Nafn hóps — t.d. Stórnotendur 2026" value="' + esc((t && t.tier_name) || '') + '" ' +
           'style="width:100%;padding:9px 11px;border:1px solid var(--brd2);border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;margin-bottom:9px">' +
         '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:7px">' +
@@ -423,13 +443,13 @@
       '</div>';
 
     return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:11px">' +
-        '<div style="font-size:16px;font-weight:800;color:var(--ink1)">🏷️ Afsláttarhópar</div>' +
+        '<div style="display:flex;align-items:center;gap:7px;font-size:16px;font-weight:800;color:var(--ink1)">' + ic('tag', 17) + 'Afsláttarhópar</div>' +
         '<div style="font-size:11px;color:var(--ink3)">prósenta per flokki — gengur framar afslætti af öllu</div>' +
         '<button class="_ahop-close" type="button" style="margin-left:auto;background:var(--surface2);border:1px solid var(--brd);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:15px;line-height:1">✕</button>' +
       '</div>' +
       list + form +
-      '<div style="margin-top:12px">' +
-        '<button class="_ahop-preview" type="button" style="background:none;border:none;color:var(--brand);cursor:pointer;font-size:12.5px;font-weight:700;padding:0">🔍 Hvaða vörur lenda í hvaða flokki?</button>' +
+      '<div style="margin-top:14px;border-top:1px solid var(--brd);padding-top:11px">' +
+        '<button class="_ahop-preview" type="button" style="background:none;border:none;color:var(--brand);cursor:pointer;font-size:12.5px;font-weight:700;padding:0;display:inline-flex;align-items:center;gap:6px">' + ic('layers', 14) + 'Flokkun vara — hvaða vörur lenda í hvaða flokki (breytanlegt)</button>' +
         '<div class="_ahop-preview-body" style="display:none;margin-top:9px"></div>' +
       '</div>';
   }
@@ -484,8 +504,38 @@
         if (body.style.display === 'none') {
           body.style.display = 'block';
           body.innerHTML = '<div style="font-size:12px;color:var(--ink3)">Sæki vörulistann…</div>';
-          renderPreview(body);
+          loadVorur().then(() => renderFlokkun(body));
         } else { body.style.display = 'none'; }
+        return;
+      }
+
+      // „+ Bæta við vöru" — velur vöru úr vörulistanum og setur hana í flokkinn.
+      const addV = e.target.closest('._ahop-addvara');
+      if (addV) {
+        e.stopPropagation();
+        const cat = addV.dataset.cat;
+        if (!window.VorurPicker || !VorurPicker.open) { alert('Vörulistinn er ekki tilbúinn — endurhladdu síðunni.'); return; }
+        VorurPicker.open(async p => {
+          if (!p || p.id == null) return;
+          await setOverride(p.id, cat);
+          await loadVorur(true);
+          const body = panel.querySelector('._ahop-preview-body');
+          if (body) renderFlokkun(body);
+          applyCart();
+          const c = E().byKey(cat);
+          toast(p.nafn + ' → ' + ((c && c.stutt) || 'utan flokka'));
+        });
+        return;
+      }
+
+      // ✕ á vöruflís = taka hana út úr hópsafslættinum.
+      const rmV = e.target.closest('._ahop-chip-x');
+      if (rmV) {
+        e.stopPropagation();
+        await setOverride(rmV.dataset.vid, E().NONE);
+        const body = panel.querySelector('._ahop-preview-body');
+        if (body) renderFlokkun(body);
+        applyCart();
         return;
       }
 
@@ -513,40 +563,111 @@
           draw();
           if (sec) renderSection(sec, coId, sec.dataset.tierId, false);
           applyCart();
-          toast('🏷️ Hópur vistaður: ' + name);
+          toast('Hópur vistaður: ' + name);
         } catch (err) {
           alert('Villa við vistun: ' + (err.message || err) +
             (/does not exist/i.test(err.message || '') ? '\n\nKeyrðu sql/2026-08-05_afslattarhopar.sql í Supabase fyrst.' : ''));
         }
       }
     });
+
+    // Fellilisti á vöruflís → færa vöruna í annan flokk (eða aftur í sjálfvirkt).
+    ov.addEventListener('change', async e => {
+      const sel = e.target.closest('._ahop-move');
+      if (!sel) return;
+      const vid = sel.dataset.vid;
+      const val = sel.value || null;     // tómt = ↺ sjálfvirkt
+      sel.disabled = true;
+      try {
+        await setOverride(vid, val);
+        const body = panel.querySelector('._ahop-preview-body');
+        if (body) renderFlokkun(body);
+        applyCart();
+      } catch (err) {
+        sel.disabled = false;
+        alert('Villa við vistun: ' + (err.message || err));
+      }
+    });
   }
 
-  // „Hvaða vörur lenda hvar" — sannreynanleg flokkun beint úr `vorur`.
-  async function renderPreview(body) {
+  // ── Flokkun vara — RITANLEG ───────────────────────────────────────────────
+  // Vörurnar raðast sjálfkrafa í flokkana sex eftir nafni + vöruflokki, en
+  // hver einasta vara er færanleg: fellilisti á flísinni færir hana, ✕ tekur
+  // hana út, og „+ Bæta við vöru" sækir vöru úr vörulistanum inn í flokkinn.
+  let _vorur = null;
+  async function loadVorur(force) {
+    if (!force && _vorur) return _vorur;
     const sb = SB();
-    if (!sb) { body.innerHTML = '<div style="font-size:12px;color:#dc2626">Engin gagnabankatenging.</div>'; return; }
-    let rows = [];
+    if (!sb) return (_vorur = []);
     try {
-      const r = await sb.from('vorur').select('nafn,flokkur,virkt').eq('virkt', true).order('nafn');
-      rows = r.data || [];
-    } catch (_) {}
+      const r = await sb.from('vorur').select('id,nafn,flokkur,verd_an_vsk,virkt').eq('virkt', true).order('nafn');
+      _vorur = r.data || [];
+    } catch (_) { _vorur = _vorur || []; }
+    return _vorur;
+  }
+
+  function allBuckets() {
+    return E().CATEGORIES.concat([
+      { key: E().NONE, label: 'Utan flokka — enginn hópsafsláttur', stutt: 'Utan flokka' }
+    ]);
+  }
+
+  function chipHTML(p, curKey, manual) {
+    const opts = ['<option value=""' + (manual ? '' : ' selected') + '>↺ sjálfvirkt</option>']
+      .concat(allBuckets().map(c =>
+        '<option value="' + c.key + '"' + (manual && curKey === c.key ? ' selected' : '') + '>' +
+        esc(c.stutt) + '</option>'))
+      .join('');
+    return '<span class="_ahop-chip" style="display:inline-flex;align-items:center;gap:4px;margin:0 5px 5px 0;padding:3px 4px 3px 9px;border:1px solid ' +
+        (manual ? 'var(--brand)' : 'var(--brd)') + ';border-radius:99px;background:var(--surface);' +
+        (manual ? 'box-shadow:0 0 0 1px var(--brand) inset;' : '') + '">' +
+      '<span style="font-size:11.5px;color:var(--ink1);font-weight:' + (manual ? '700' : '500') + '">' +
+        (manual ? '• ' : '') + esc(p.nafn) + '</span>' +
+      // ⇄ táknið er sýnilega merkið; fellilistinn liggur ósýnilegur ofan á því
+      // svo flísin haldist þröng en smellur opni samt venjulegan valmyndalista.
+      '<span style="position:relative;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:5px;background:var(--surface2);color:var(--ink3);font-size:10px" title="Færa í annan flokk">⇄' +
+        '<select class="_ahop-move" data-vid="' + p.id + '" ' +
+          'style="position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:12px">' +
+          opts + '</select>' +
+      '</span>' +
+      '<button class="_ahop-chip-x" data-vid="' + p.id + '" type="button" title="Taka út úr hópsafslætti" ' +
+        'style="border:none;background:transparent;color:var(--ink4);cursor:pointer;font-size:11px;line-height:1;padding:2px 4px">✕</button>' +
+    '</span>';
+  }
+
+  function renderFlokkun(body) {
+    const ovr = overrides();
+    const cats = allBuckets();
     const buckets = {};
-    E().CATEGORIES.forEach(c => { buckets[c.key] = []; });
-    rows.forEach(p => {
-      const k = E().classifyItem(p);
-      (buckets[k] || (buckets[k] = [])).push(p.nafn);
+    cats.forEach(c => { buckets[c.key] = []; });
+    (_vorur || []).forEach(p => {
+      const k = E().classifyItem(p, ovr);
+      (buckets[k] || (buckets[k] = [])).push(p);
     });
-    body.innerHTML = E().CATEGORIES.map(c =>
-      '<div style="margin-bottom:8px;padding:8px 10px;border:1px solid var(--brd);border-radius:9px;background:var(--surface)">' +
-        '<div style="font-size:12px;font-weight:700;color:var(--ink1);margin-bottom:3px">' + c.icon + ' ' + esc(c.label) +
-          ' <span style="font-weight:600;color:var(--ink3)">(' + buckets[c.key].length + ')</span></div>' +
-        '<div style="font-size:11px;color:var(--ink2);line-height:1.5">' +
-          (buckets[c.key].length ? buckets[c.key].map(esc).join(' · ') : '<i style="color:var(--ink4)">engar vörur</i>') +
-        '</div>' +
-      '</div>'
-    ).join('') +
-    '<div style="font-size:10.5px;color:var(--ink3)">Flokkast sjálfkrafa úr nafni + vöruflokki (js/discount-engine.js). Vanti vöru í réttan flokk — segðu til og reglan er löguð.</div>';
+    const manualCount = Object.keys(ovr).filter(k => ovr[k]).length;
+
+    body.innerHTML =
+      '<div style="font-size:11px;color:var(--ink3);margin-bottom:8px">' +
+        'Vörurnar raðast sjálfkrafa, en þú mátt breyta öllu: <b>fellilistinn</b> á flísinni færir vöru milli flokka, ' +
+        '<b>✕</b> tekur hana út, <b>+ Bæta við vöru</b> sækir vöru úr vörulistanum. ' +
+        (manualCount ? '<b>' + manualCount + '</b> vörur eru handstilltar (merktar •).' : 'Engin vara handstillt enn.') +
+      '</div>' +
+      cats.map(c =>
+        '<div style="margin-bottom:8px;padding:9px 11px;border:1px solid var(--brd);border-radius:10px;background:' +
+            (c.key === E().NONE ? 'var(--surface2)' : 'var(--surface)') + '">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">' +
+            '<span style="display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--ink1)">' + icc(c.key, 15) + esc(c.label) + '</span>' +
+            '<span style="font-size:11px;color:var(--ink3);font-weight:600">(' + buckets[c.key].length + ')</span>' +
+            '<button class="_ahop-addvara" data-cat="' + c.key + '" type="button" ' +
+              'style="margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;background:var(--surface2);border:1px solid var(--brd);color:var(--brand);border-radius:7px;cursor:pointer;font-size:11px;font-weight:700">' + ic('plus', 12) + 'Bæta við vöru</button>' +
+          '</div>' +
+          '<div style="line-height:1.9">' +
+            (buckets[c.key].length
+              ? buckets[c.key].map(p => chipHTML(p, c.key, !!ovr[String(p.id)])).join('')
+              : '<i style="color:var(--ink4);font-size:11px">engar vörur</i>') +
+          '</div>' +
+        '</div>'
+      ).join('');
   }
 
   window.Afslattarhopar = {
