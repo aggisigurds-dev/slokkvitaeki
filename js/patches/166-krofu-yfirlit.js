@@ -712,6 +712,12 @@
       const key = normName(s.customer_nafn) || '(ekkert nafn)';
       const display = s.customer_nafn || '(ekkert nafn)';
       if (!grouped[key]) grouped[key] = { display, id: s.customer_id || null, sales: [], sum: 0, thisMonthSum: 0, olderSum: 0, latestUpdated: '', latestCreated: '' };
+      // 2026-08-05: don't get stuck on null forever just because the FIRST sale
+      // seen for this company happened to be an older name-only entry with no
+      // customer_id — any later sale that does carry one should still link the
+      // whole group to fyrirtaeki (fixes "vantar netfang" for companies whose
+      // email/kt is right there in the profile, verkefnalisti f1db7352).
+      if (!grouped[key].id && s.customer_id) grouped[key].id = s.customer_id;
       grouped[key].sales.push(s);
       grouped[key].sum += parseFloat(s.samtals) || 0;
       const t = new Date(s.created_at).getTime();
