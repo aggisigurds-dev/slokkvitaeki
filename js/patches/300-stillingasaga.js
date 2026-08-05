@@ -100,6 +100,17 @@
     '</div>';
   }
 
+  // Innihaldið sjálft — notað bæði á Stillingar-síðunni og í Stillingar-glugganum.
+  function sagaInnihald() {
+    const raðir = _raðir.map(röðHTML).join('');
+    return '<div style="border:1px solid var(--brd);border-radius:10px;overflow:hidden;background:var(--surface)">' +
+        '<div style="padding:8px 12px;background:var(--surface2);font-size:11px;color:var(--ink3)">' +
+          'Hver vistun skráir hvaða lyklar breyttust og hvað stóð þar áður. „Taka til baka" setur einn lykil aftur eins og hann var — og sú aðgerð er sjálf skráð, svo hana má líka taka til baka.' +
+        '</div>' +
+        (raðir || '<div style="padding:18px;text-align:center;color:var(--ink4);font-size:12.5px;font-style:italic">Engin saga skráð enn.</div>') +
+      '</div>';
+  }
+
   function teikna(sec) {
     const opið = sec.dataset.open === '1';
     const haus =
@@ -109,14 +120,7 @@
         '<span style="margin-left:auto;font-size:10.5px;color:var(--ink3)">hvað breyttist — og hvernig má taka það til baka</span>' +
       '</button>';
     if (!opið) { sec.innerHTML = haus; return; }
-    const raðir = _raðir.map(röðHTML).join('');
-    sec.innerHTML = haus +
-      '<div style="margin-top:9px;border:1px solid var(--brd);border-radius:10px;overflow:hidden;background:var(--surface)">' +
-        '<div style="padding:8px 12px;background:var(--surface2);font-size:11px;color:var(--ink3)">' +
-          'Hver vistun skráir hvaða lyklar breyttust og hvað stóð þar áður. „Taka til baka" setur einn lykil aftur eins og hann var — og sú aðgerð er sjálf skráð, svo hana má líka taka til baka.' +
-        '</div>' +
-        (raðir || '<div style="padding:18px;text-align:center;color:var(--ink4);font-size:12.5px;font-style:italic">Engin saga skráð enn.</div>') +
-      '</div>';
+    sec.innerHTML = haus + '<div style="margin-top:9px">' + sagaInnihald() + '</div>';
   }
 
   async function setja() {
@@ -138,9 +142,21 @@
           _raðir = await sækja();
         }
         teikna(sec);
-        return;
       }
+    });
+  }
 
+  // Endurteikna hvar sem sagan er sýnileg (síðan og/eða Stillingar-glugginn).
+  function endurteiknaAllt() {
+    const sec = document.querySelector('#settings-main ._ss-section');
+    if (sec && sec.dataset.open === '1') teikna(sec);
+    const mb = document.querySelector('._ss-modal-body');
+    if (mb) mb.innerHTML = sagaInnihald();
+  }
+
+  // Einn sameiginlegur atburðavörður fyrir báða staðina.
+  function tengjaAtburdi() {
+    document.addEventListener('click', async e => {
       const skoða = e.target.closest('._ss-allt');
       if (skoða) {
         const sb = SB();
@@ -165,13 +181,38 @@
           toast('Tekið til baka: ' + lykilNafn(key));
           if (window.AppSettings && AppSettings.load) await AppSettings.load();
           _raðir = await sækja();
-          teikna(sec);
+          endurteiknaAllt();
         } catch (err) {
           alert('Villa: ' + (err.message || err));
           back.disabled = false;
         }
       }
     });
+  }
+
+  // ── Flipi inni í Stillingar-glugganum (#su-modal, patch 86) ───────────────
+  function tengjaModal() {
+    setInterval(() => {
+      const m = document.getElementById('su-modal');
+      if (!m) return;
+      const einn = m.querySelector('.su-tab');
+      const bar = einn && einn.parentElement;
+      if (!bar || bar.querySelector('[data-tab="saga"]')) return;
+
+      const b = document.createElement('button');
+      b.className = 'su-tab';
+      b.dataset.tab = 'saga';
+      b.style.cssText = 'display:inline-flex;align-items:center;gap:6px';
+      b.innerHTML = ic('layers', 13) + '<span>Saga</span>';
+      b.addEventListener('click', async () => {
+        const body = document.getElementById('su-body');
+        if (!body) return;
+        body.innerHTML = '<div style="padding:20px;color:#94a3b8">Sæki söguna…</div>';
+        _raðir = await sækja();
+        body.innerHTML = '<div class="_ss-modal-body" style="padding:14px">' + sagaInnihald() + '</div>';
+      });
+      bar.appendChild(b);
+    }, 1000);
   }
 
   function tengja() {
@@ -184,9 +225,25 @@
       clearTimeout(t);
       t = setTimeout(setja, 320);
     }).observe(main, { childList: true, subtree: true });
+
+    // Stillingasíðan endurteiknar `#settings-main` með innerHTML þegar hún er
+    // opnuð — það þurrkar kortið út. MutationObserver-inn einn dugði ekki:
+    // patch 252 keyrir alla observera gegnum requestAnimationFrame, sem Chrome
+    // frystir í földum flipa, svo endurteikningin gat runnið í gegn án þess að
+    // við tækjum eftir. Létt vakt (aðeins DOM-uppfletting þegar síðan er opin)
+    // setur kortið aftur upp — kostar ekkert mælanlegt.
+    setInterval(() => {
+      const v = document.getElementById('view-settings');
+      if (!v || !v.classList.contains('active')) return;
+      const m = document.getElementById('settings-main');
+      if (m && !m.querySelector('._ss-section')) setja();
+    }, 1200);
+
     setTimeout(setja, 1500);
   }
   tengja();
+  tengjaAtburdi();
+  tengjaModal();
 
   window.Stillingasaga = { opna: setja, saekja: sækja };
   console.log('[patch-300] Stillingasaga — sjá og taka til baka yfirskrifaðar stillingar');
