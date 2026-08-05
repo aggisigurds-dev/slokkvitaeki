@@ -535,11 +535,23 @@
     var pills=YEARS.map(function(y){ return pill(y, (repByY[y]||[]).length>0, fcStatus(coId,y), fcNote(coId,y)); }).join('');
 
     // ── samningur strip ──
+    // 2026-08-05 (Agnar: „hefur hunsað öll endurnefndu skjölin"): samningur-raðir
+    // í customer_documents bera ALLTAF year=NULL (CHECK-reglan customer_
+    // documents_year_shape krefst þess) — svo „Samningur "+s.year sýndi ALDREI
+    // neitt greinandi, sama hvað notandinn endurnefndi skrána í (t.d. bætti
+    // stofnárinu inn í skráarheitið sjálft, af því ártals-dálkurinn er lokaður
+    // fyrir samninga). Sýnum núna alvöru skráarheitið (sama og docName() gerir
+    // fyrir skýrslur) svo endurnefningin — þ.m.t. ár í heitinu — birtist loksins.
+    function samnLabel(s){
+      if(s.src==='doc'){ var nm=String(s.d.notes||'').replace(/\s*[·•]\s*kt\b.*$/i,'').trim(); return nm || 'Samningur'; }
+      return String(s.a.name||'Samningur');
+    }
     samn.sort(function(a,b){return (b.year||0)-(a.year||0);});
     var samnHtml = samn.map(function(s){
-      if(s.src==='doc'){ var u=docUrl(s.d); var lab='Samningur'+(s.year?(' '+s.year):'');
-        return docWrap(u?'<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener">📑 '+esc(lab)+'</a>':'<span class="sk-doc rep">📑 '+esc(lab)+'</span>', s.d.id); }
-      return '<button type="button" class="sk-doc rep" data-att="'+esc(s.a.id)+'" title="'+esc(s.a.name)+'">📑 Samningur'+(s.year?(' '+s.year):'')+'</button>';
+      var full=samnLabel(s), disp=full.length>46?full.slice(0,44)+'…':full;
+      if(s.src==='doc'){ var u=docUrl(s.d);
+        return docWrap(u?'<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="'+esc(full)+'">📑 '+esc(disp)+'</a>':'<span class="sk-doc rep" title="'+esc(full)+'">📑 '+esc(disp)+'</span>', s.d.id); }
+      return '<button type="button" class="sk-doc rep" data-att="'+esc(s.a.id)+'" title="'+esc(full)+'">📑 '+esc(disp)+'</button>';
     }).join('') + addChip('samningur','','+ samningur');
 
     // ── per-year × per-service bundle cards (verkefnalisti mockup, 2026-08-05) ──
@@ -614,13 +626,23 @@
       if(!hasRep && !r.inv) return '';
       return '<button type="button" class="sk-svc-send" data-send-year="'+y+'" data-send-kind="'+svc.kind+'" title="Senda '+esc(svc.label)+' '+y+' í tölvupósti">📧 Senda</button>';
     }
+    // 🔗 Brunakerfi þjónustusíða (patch 274) — sérhæft vinnusvæði með skoðunar-
+    // skýrslu-forminu, búnaðarskránni og verðútreikningum. Þessi kortið hér er
+    // yfirlitið; smellur opnar sérsíðuna í stað þess að endurbyggja hana hér
+    // (Agnar 2026-08-05: "make them sepperate but still conected"). Sömu gögn
+    // (customer_documents doc_type='brunakerfi') fæða báðar síðurnar.
+    function svcWorkspaceLink(svc){
+      if(svc.kind!=='brunakerfi') return '';
+      return '<button type="button" class="sk-svc-ws" data-open-bkc="1" title="Opna sérhæfðu Brunakerfi þjónustusíðuna — skoðunarskýrslur, verð, búnaðarskrá">🔥 Þjónustusíða →</button>';
+    }
     function svcCardExpanded(y, svc){
       var arr=svc.repMap[y]||[];
       var repRow = arr.length || y===NOW ? '<div class="sk-svc-row"><span class="sk-svc-tag">SKÝRSLA</span>'+svcRepHtml(y,svc)+'</div>' : '';
       var r=resolved[y+'|'+svc.kind];
       var invRow = (arr.length || r.inv || r.ambiguous) ? '<div class="sk-svc-row"><span class="sk-svc-tag inv">REIKN.</span>'+svcInvHtml(y,svc,false)+'</div>' : '';
-      if(!repRow && !invRow) return '<div class="sk-svc-card sk-svc-empty"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b></div><div class="sk-svc-row">engin '+esc(svc.label.toLowerCase())+addChip('skyrsla',y,'+ skýrsla')+'</div></div>';
-      return '<div class="sk-svc-card"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+svcSendBtn(y,svc)+'</div>'+repRow+invRow+'</div>';
+      var wsLink=svcWorkspaceLink(svc);
+      if(!repRow && !invRow) return '<div class="sk-svc-card sk-svc-empty"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+wsLink+'</div><div class="sk-svc-row">engin '+esc(svc.label.toLowerCase())+addChip('skyrsla',y,'+ skýrsla')+'</div></div>';
+      return '<div class="sk-svc-card"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+svcSendBtn(y,svc)+wsLink+'</div>'+repRow+invRow+'</div>';
     }
     function svcCompact(y, svc){
       var arr=svc.repMap[y]||[], r=resolved[y+'|'+svc.kind];
@@ -675,6 +697,17 @@
     });
     section.addEventListener('click', async function(e){
       var coId=+section.dataset.coId; if(!coId) return;
+
+      // 🔥 Þjónustusíða → opnar patch 274's sérhæfðu Brunakerfi-yfirlitssíðu
+      // fyrirtækisins (skoðunarskýrsluform, verð, búnaðarskrá) — sama gögn,
+      // sérhæfðara vinnusvæði. Aðskilið kort, ein-smells hlekkur á milli.
+      var wsEl=e.target.closest('[data-open-bkc]');
+      if(wsEl){
+        e.preventDefault();
+        if(window.BrunakerfiFyrirtaeki && BrunakerfiFyrirtaeki.open) BrunakerfiFyrirtaeki.open(coId);
+        else alert('Brunakerfi þjónustusíðan hlóðst ekki — endurhladdu síðunni.');
+        return;
+      }
 
       // 📧 Senda — opnar póst-ritilinn (patch 254) með hökum fyrir úttektarskýrslu
       // og reikning ársins + breytanlegan staðlaðan texta. Sent gegnum Gmail.
@@ -893,6 +926,8 @@
       '.sk-svc-hd{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:13px}',
       '.sk-svc-send{all:unset;cursor:pointer;margin-left:auto;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid #99f6e4;color:#0f766e;background:var(--surface)}',
       '.sk-svc-send:hover{background:#f0fdfa}',
+      '.sk-svc-ws{all:unset;cursor:pointer;margin-left:auto;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid #fecaca;color:#b91c1c;background:var(--surface)}',
+      '.sk-svc-ws:hover{background:#fef2f2}',
       '.sk-svc-row{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:4px 0}',
       '.sk-svc-tag{font-size:9px;font-weight:700;color:var(--ink3);background:var(--surface2);border:1px solid var(--brd2,#f1f5f9);border-radius:99px;padding:1px 7px;white-space:nowrap}',
       '.sk-svc-tag.inv{color:#15803d;background:#f0fdf4;border-color:#bbf7d0}',
