@@ -136,9 +136,33 @@
     try {
       const { data: rows, error } = await getSB().from('vidskiptavinir').select('*').is('deleted_at', null).order('nafn', { ascending: true });
       if (error) throw error;
+
+      // 2026-08-06 (ósk Agnars: "many names are both in vidskiptavinir and
+      // allir vidskiptavinir"): þegar viðskiptavinur er skráður í viðskipti
+      // (188-promote-customer.js) er upprunalega vidskiptavinir-röðin
+      // MEÐVITAÐ EKKI eytt — hún er söguleg og heldur customer_base-tengingu.
+      // En það þýðir sama nafnið birtist tvisvar í listum ef ekkert er gert.
+      // Falin hér (ekki eytt, bara ekki sýnd í ÞESSUM lista) hvenær sem sama
+      // kennitala/customer_base_id er þegar til sem fyrirtaeki-röð — sá
+      // viðskiptavinur er núna réttilega heima í Allir viðskiptavinir.
+      let promotedKt = new Set(), promotedBaseIds = new Set();
+      try {
+        const { data: fy } = await getSB().from('fyrirtaeki').select('kennitala,customer_base_id').is('deleted_at', null);
+        (fy || []).forEach(f => {
+          if (f.kennitala) promotedKt.add(String(f.kennitala).replace(/[^0-9]/g, ''));
+          if (f.customer_base_id != null) promotedBaseIds.add(f.customer_base_id);
+        });
+      } catch (_) { /* non-fatal — falls back to showing everything */ }
+      const visibleRows = (rows || []).filter(r => {
+        const kt = String(r.kennitala || '').replace(/[^0-9]/g, '');
+        if (kt && promotedKt.has(kt)) return false;
+        if (r.customer_base_id != null && promotedBaseIds.has(r.customer_base_id)) return false;
+        return true;
+      });
+
       // Mutate-in-place to keep external references in sync (see decl note)
       customers.length = 0;
-      (rows || []).forEach(r => customers.push(r));
+      visibleRows.forEach(r => customers.push(r));
 
       const phones = customers.map(c => c.simi).filter(Boolean);
       const names = customers.map(c => c.nafn).filter(Boolean);
