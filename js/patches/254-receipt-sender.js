@@ -342,15 +342,43 @@
 
   // Teiknar reikning sölu sem base64-PDF viðhengi — fyrir attachmentChoices
   // (t.d. Kröfu yfirlit „📧 Senda"). Skilar null ef ekki hægt.
+  //
+  // 2026-08-06: sækir FYRST reikninginn sem patch 233 vistaði sjálfkrafa þegar
+  // salan var stofnuð (saveForSale → CompanyAttachments, kind:'reikningur') —
+  // sama skjal og birtist í „Skjöl & viðhengi" og sem viðtakandinn hefði fengið
+  // upphaflega — í stað þess að endursmíða nýtt PDF úr lifandi gögnum í hvert
+  // sinn sem sent er (áhætta: mismunandi niðurstaða ef sniðmát/verð breytist
+  // milli stofnunar og sendingar, og háð því að lógóið hlaðist rétt akkúrat
+  // núna). Endursmíð er nú aðeins VARALEIÐ — reikningar stofnaðir fyrir patch
+  // 233 (eða þar sem sjálfvirk vistun brást) eiga enga vistaða skrá.
   async function invoiceAttachment(saleId) {
     const sb = SB();
-    if (!sb || !window.UttektInvoicePdf || typeof UttektInvoicePdf.buildInvoiceBlob !== 'function') return null;
+    if (!sb) return null;
     const r = await sb.from('solur').select('*').eq('id', saleId).single();
     if (r.error || !r.data) return null;
     const sale = r.data;
+    const rnum = String(sale.num || '');
+    const coId = sale.customer_id;
+    if (coId && rnum && window.CompanyAttachments && CompanyAttachments.list && CompanyAttachments.getPublicUrl) {
+      try {
+        const have = CompanyAttachments.list(coId) || [];
+        const saved = have.find(a => a && a.kind === 'reikningur' && a.name && a.name.indexOf(rnum) >= 0);
+        if (saved && saved.path) {
+          const url = await CompanyAttachments.getPublicUrl(saved.path);
+          if (url) {
+            const rf = await fetch(url);
+            if (rf.ok) {
+              const blob = await rf.blob();
+              return { filename: 'Reikningur ' + rnum + '.pdf', content: await blobToBase64(blob) };
+            }
+          }
+        }
+      } catch (_) { /* fall through to rebuild */ }
+    }
+    if (!window.UttektInvoicePdf || typeof UttektInvoicePdf.buildInvoiceBlob !== 'function') return null;
     const co = await resolveCustomer(sale);
     const blob = await UttektInvoicePdf.buildInvoiceBlob(sale, co);
-    return { filename: 'Reikningur ' + (sale.num || '') + '.pdf', content: await blobToBase64(blob) };
+    return { filename: 'Reikningur ' + rnum + '.pdf', content: await blobToBase64(blob) };
   }
 
   window.ReceiptSender = { send, sendDoc, compose, status, standardText, invoiceAttachment };
