@@ -253,9 +253,17 @@
     injectChip();
     if (active) styleChip(true);
   });
-  function boot() {
-    obs.observe(document.body, { childList: true, subtree: true });
+  function tick() {
     injectChip();
+    if (active) styleChip(true);
+  }
+  function boot() {
+    try { obs.observe(document.body, { childList: true, subtree: true }); } catch (e) {}
+    tick();
+    // Bulletproof fallback: the app renders/re-renders the Þjónustuborð toolbar on
+    // route changes; a light idempotent poll guarantees the chip is (re)inserted
+    // regardless of MutationObserver timing. injectChip() is a no-op once present.
+    setInterval(tick, 800);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
