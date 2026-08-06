@@ -85,7 +85,12 @@
       "@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');",
       // page band: dark → grey gradient, the view itself
       '#view-rekstrarfelog{padding:0!important;background:linear-gradient(180deg,#060607 0,#060607 95px,#aeb4be 360px,#9ba1ad 100%)!important}',
-      P+'.rf-page{max-width:1560px;margin:0 auto;padding:20px 24px 60px;font-family:"Space Grotesk",system-ui,-apple-system,sans-serif}',
+      // 2026-08-06 (ósk Agnars: "adjust the width so everything is in the same
+      // wide" — borðið/status-kassarnir litu mjórri út en restin af síðunni af
+      // því 1560px hámarkið var mun þrengra en breidd skjásins leyfði). Ekkert
+      // hámark lengur — síðan fyllir sömu breidd og restin af skelinni, sama
+      // padding hvorum megin og áður.
+      P+'.rf-page{max-width:none;margin:0 auto;padding:20px 24px 60px;font-family:"Space Grotesk",system-ui,-apple-system,sans-serif}',
       // header
       P+'.rf-phead{display:flex;align-items:center;gap:14px;margin-bottom:14px;flex-wrap:wrap}',
       P+'.rf-ptitle{margin:0;font-size:24px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15}',
@@ -140,7 +145,13 @@
       P+'.rf-tbl tbody tr:nth-child(even){background:#fbfcfe}',
       P+'.rf-tbl tbody tr:hover{background:#f3f6fc}',
       P+'.rf-tbl tbody tr:hover .rf-rail{background:#2f5fe0}',
-      P+'.rf-tbl td{padding:11px 12px;border:0}',
+      // 2026-08-06 (ósk Agnars: "tighten the view, adaptable row height" —
+      // sjá rf-stack/rf-cnt/rf-ycell fyrir neðan): grunn-padding lækkað úr
+      // 11px í 7px svo raðir sem AÐEINS eru í slökkvitækjaþjónustu (ein lína í
+      // rf-stack, sjá stackTd/bHasData) verði greinilega lægri en raðir sem
+      // eru líka í brunakerfisþjónustu (tvær línur) — sami háttur og áður,
+      // bara þéttari svo munurinn sjáist.
+      P+'.rf-tbl td{padding:7px 12px;border:0}',
       P+'.rf-tbl td.c{text-align:center}',
       P+'.rf-cellname{position:relative;padding-left:16px!important}',
       P+'.rf-rail{position:absolute;left:0;top:6px;bottom:6px;width:4px;border-radius:3px;background:#dbe0e9}',
@@ -171,7 +182,7 @@
       P+'.rf-taeki{font-family:"Space Mono",monospace;font-size:13px;font-weight:700;color:#11141c}',
       P+'.rf-taeki.is-zero{color:#cbd2dc}',
       // year status pills
-      P+'.rf-ycell{display:inline-flex;align-items:center;gap:4px;font-family:"Space Mono",monospace;font-size:11.5px;font-weight:700;color:#fff;border-radius:7px;padding:3px 8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}',
+      P+'.rf-ycell{display:inline-flex;align-items:center;gap:4px;font-family:"Space Mono",monospace;font-size:11.5px;font-weight:700;color:#fff;border-radius:7px;padding:2px 7px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}',
       P+'.rf-ycell{white-space:nowrap}',
       P+'.rf-ycell i{width:6px;height:6px;border-radius:50%;display:inline-block;flex:none}',
       P+'.rf-ycell a{color:inherit;text-decoration:none;white-space:nowrap}',
@@ -181,6 +192,14 @@
       P+'.rf-ycell--hist i{background:#8fb0ff}',
       P+'.rf-ycell--todo{background:linear-gradient(145deg,#3a3e46,#23262d 60%,#111318);border:1px solid #0a0b0d}',
       P+'.rf-ycell--todo i{background:#cdd4de}',
+      // 2026-08-06 (ósk Agnars): árs-dálkur þessa árs sýndi bara „·" áður en
+      // skýrslan var komin — engin leið að sjá hvort staðurinn er á áætlun eða
+      // dottinn af. Sömu lit-kvarðar og efstu samantektarpillurnar (rf-pill--
+      // pending/--overdue): gult = vantar enn en ekki liðið, rautt = liðið.
+      P+'.rf-ycell--due{background:linear-gradient(145deg,#d4a94f,#8a5310 60%,#3f2905);border:1px solid #3f2905}',
+      P+'.rf-ycell--due i{background:#f3cf85}',
+      P+'.rf-ycell--overdue{background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #5a0c10}',
+      P+'.rf-ycell--overdue i{background:#ffb3b8}',
       P+'.rf-ycell--none{color:#cbd2dc;background:none;box-shadow:none;text-shadow:none;font-weight:400;border:0}',
       // 🧾 örlítið merki: reikningur ÞESSA árs/þjónustu er þegar paraður við skýrsluna.
       P+'.rf-bundle-tag{font-size:8.5px;margin-left:1px;line-height:1;filter:drop-shadow(0 1px 0 rgba(0,0,0,.4))}',
@@ -1232,6 +1251,15 @@
       var inner = cell.url ? '<a href="'+esc(cell.url)+'" target="_blank" rel="noopener" title="Opna brunakerfisskýrslu">'+v+' 📄↗</a>' : (v+' 📄');
       return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+inner+bundleTag(bundled)+'</span>';
     }
+    // 2026-08-06 (ósk Agnars): fyrir ÞETTA ÁR — í stað tóms „·" þegar skýrslan
+    // er ekki komin enn, sýnum lit-kóðaðan status miðað við næstu skoðunar-
+    // dagsetningu: gult = á áætlun (skoðun ókomin), rautt = liðið. Sömu tvö
+    // stig og efstu samantektarpillurnar (rf-pill--pending/--overdue).
+    function yPillDue(hasNext, overdue){
+      var kind = overdue ? 'overdue' : 'due';
+      var tip = overdue ? 'Skoðun liðin — engin skýrsla enn' : (hasNext ? 'Á áætlun — skoðun ókomin' : 'Skýrsla ekki komin enn');
+      return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+(overdue?'⚠':'…')+'</span>';
+    }
     // Staflar slökkvitækja-/brunakerfis-frumu eftir völdum þjónusturofa.
     // brOn=false → sleppa brunakerfis-línunni fyrir byggingu sem er EKKI í
     // brunakerfisþjónustu (ósk Agnars 2026-07-28: „taka út brunakerfisþjónustu
@@ -1388,15 +1416,23 @@
         '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>', 'rf-cnt-cell', bHasData);
       var bldBaseId = baseByKt[digits(b.kt)];
       var bldPairs = bldBaseId ? pairByBase[bldBaseId] : null;
+      // Sett upp HÉR (ekki eftir lykkjuna) svo þetta-árs dálkurinn geti notað
+      // sömu liðin-reikninginn og "næsta skoðun"-fruman fyrir neðan.
+      var isOver=false;
+      if(st && st.next){ isOver = st.next < today; }
       var yTds='';
       ['2023','2024','2025','2026'].forEach(function(y,i){
         var done=[d23,d24,d25,d26][i], rep=[false,!!att[0],!!att[1],!!att[2]][i], file=[f23,f24,f25,f26][i];
         var slBundled = !!(bldPairs && bldPairs[y+'|uttekt']);
         var brBundled = !!(bldPairs && bldPairs[y+'|brunakerfi']);
-        yTds += stackTd(yPillSl(done,rep,units,lks[y],file,y,slBundled), yPillBr(bY[y],bUnits,y,brBundled), 'rf-yh-cell', bHasData);
+        var slCell = yPillSl(done,rep,units,lks[y],file,y,slBundled);
+        var brCell = yPillBr(bY[y],bUnits,y,brBundled);
+        if (y===CURY) {
+          if (!done && slHasData) slCell = yPillDue(!!(st&&st.next), isOver);
+          if (!bY[y] && bHasData) brCell = yPillDue(!!(bx&&bx.next), bOver);
+        }
+        yTds += stackTd(slCell, brCell, 'rf-yh-cell', bHasData);
       });
-      var isOver=false;
-      if(st && st.next){ isOver = st.next < today; }
       if((showSl&&isOver&&slHasData)||(showBr&&bOver)) nOverdue++;
       var nextCell = stackTd(
         nextPill(st&&st.next?st.next:null,'sl',isOver&&slHasData),
@@ -1459,7 +1495,11 @@
           '<button type="button" class="_rf_rev_save">💾 Vista forsendur</button>'+
         '</div>'+
       '</div>';
-    var summary='<div class="rf-chiprow">'+
+    // "_ovr-totals" til viðbótar við "rf-chiprow" — sama flokks-nafn og
+    // renderOverview notar fyrir samantektarkassann sinn, svo SlokkPrint
+    // (186-print-overview.js) tíni þennan kassa með sjálfkrafa án breytinga
+    // þar (það leitar að fyrsta ._ovr-totals + fyrsta <table> í boxinu).
+    var summary='<div class="rf-chiprow _ovr-totals">'+
       '<span class="rf-pill rf-pill--done">✓ '+n2026+' með úttekt</span>'+
       '<span class="rf-pill rf-pill--pending">⚠ '+nNeed+' vantar</span>'+
       '<span class="rf-pill rf-pill--overdue">🔴 '+nOverdue+' liðin</span>'+
@@ -1475,6 +1515,7 @@
       '<span class="rf-leg"><i style="background:linear-gradient(145deg,#3a6ae8,#1c3d8c 60%,#0a1a3a)"></i>aðeins í búnaðarsögu</span>'+
       '<span class="rf-leg"><i style="background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10)"></i>skoðun liðin</span>'+
       '<button type="button" class="rf-svcbtn _rf_expandall" title="Sýna/fela smáatriði allra bygginga í einu">▸ Fela allar</button>'+
+      '<button type="button" class="rf-svcbtn _rf_printco" title="Prenta skýrslu fyrir þetta rekstrarfélag">🖨 Prenta</button>'+
       '<span class="rf-bsearch">'+
         '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="#9aa3b5" stroke-width="2"><circle cx="11" cy="11" r="7"></circle><path d="m21 21-4.3-4.3"></path></svg>'+
         '<input class="_rf_bq" placeholder="Leita að byggingu…">'+
@@ -1674,6 +1715,15 @@
       var anyCollapsed=Array.prototype.some.call(rows, function(tr){ return tr.classList.contains('is-collapsed'); });
       rows.forEach(function(tr){ tr.classList.toggle('is-collapsed', !anyCollapsed); });
       expAllBtn.textContent = anyCollapsed ? '▸ Fela allar' : '▾ Opna allar';
+    });
+    // 🖨 Prenta — eitt fyrir HVERT rekstrarfélag (ósk Agnars 2026-08-06), sama
+    // SlokkPrint-glugginn og yfirlits-flipinn notar (186-print-overview.js):
+    // tínir fyrsta <table> + fyrsta ._ovr-totals innan úr `body`-boxinu (sjá
+    // "_ovr-totals" flokkinn á rf-chiprow hér fyrir ofan) — svo hver útprentun
+    // sýnir AÐEINS þetta eina félag, ekki öll rekstrarfélögin.
+    var printBtn=body.querySelector('._rf_printco');
+    if(printBtn) printBtn.addEventListener('click', function(){
+      if(window.SlokkPrint) SlokkPrint('Rekstrarfélag — '+name, body);
     });
     // Akstursleið-chip á hverja byggingu (per staður) — sama gagnastaður og
     // félags-chip + aðal-borðið (arsskodun_customers[staður_id].akstur).
