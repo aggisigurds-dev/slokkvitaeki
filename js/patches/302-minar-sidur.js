@@ -72,6 +72,7 @@
   // ── Kubbar ────────────────────────────────────────────────────────────────
   const GERDIR = [
     { g: 'tolur',         nafn: 'Tala',          tákn: 'layers',    w: 3,  lysing: 'Ein lifandi tala úr kerfinu — fyrirtæki, sölur, tæki…' },
+    { g: 'skyrsla',       nafn: 'Skýrsla',       tákn: 'sliders',   w: 3,  lysing: 'Vistuð tala/samantekt með föstu auðkenni (Re-01) — þú skrifar gildið sjálf(ur) og getur breytt hvenær sem er.' },
     { g: 'listi',         nafn: 'Listi',         tákn: 'list',      w: 6,  lysing: 'Nýjustu sölurnar eða nýjustu fyrirtækin, beint úr gagnagrunninum.' },
     { g: 'tenglar',       nafn: 'Tenglasafn',    tákn: 'tag',       w: 6,  lysing: 'Hlekkir í hópum — dkPlus, Drive, bankinn, hvað sem er.' },
     { g: 'minnispunktar', nafn: 'Minnispunktar', tákn: 'clipboard', w: 6,  lysing: 'Frjáls texti sem vistast sjálfkrafa.' },
@@ -94,6 +95,13 @@
     { l: 'fyrirtaeki', nafn: 'Nýjustu fyrirtæki' }
   ];
 
+  // Re-01, Re-02… — sequential, ALDREI endurnýtt (talan hækkar bara), sameiginlegur
+  // teljari fyrir allar síður svo tvær skýrslur fái aldrei sama auðkenni.
+  function naestaRe() {
+    _state.reTeljari = (_state.reTeljari || 0) + 1;
+    return 'Re-' + String(_state.reTeljari).padStart(2, '0');
+  }
+
   function nyrKubbur(g) {
     const gerd = GERDIR.find(x => x.g === g) || {};
     const grunn = { id: nyttId(), g, titill: gerd.nafn || '', w: gerd.w || 6 };
@@ -102,6 +110,7 @@
     if (g === 'flytileidir') grunn.sidur = [];
     if (g === 'tolur') grunn.m = 'fyrirtaeki';
     if (g === 'listi') { grunn.l = 'solur'; grunn.fjoldi = 6; }
+    if (g === 'skyrsla') { grunn.reNum = naestaRe(); grunn.gildi = ''; grunn.undirtexti = ''; }
     return grunn;
   }
 
@@ -189,6 +198,18 @@
               MAELINGAR.map(x => '<option value="' + x.m + '"' + (x.m === k.m ? ' selected' : '') + '>' + esc(x.nafn) + '</option>').join('') +
             '</select>'
           : '');
+    }
+
+    if (k.g === 'skyrsla') {
+      innihald =
+        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+          '<span style="font-size:10.5px;font-weight:800;letter-spacing:.04em;padding:2px 7px;border-radius:5px;background:var(--surface2);border:1px solid var(--brd2);color:var(--ink3)">' + esc(k.reNum || '') + '</span>' +
+        '</div>' +
+        (_breyta
+          ? '<input class="_ms-gildi" data-id="' + k.id + '" value="' + esc(k.gildi || '') + '" placeholder="Gildi — t.d. 1.234.000 kr" style="width:100%;box-sizing:border-box;font-size:24px;font-weight:800;color:var(--ink1);border:1px dashed var(--brd2);border-radius:8px;padding:6px 9px;background:transparent;font-variant-numeric:tabular-nums">' +
+            '<input class="_ms-undirtexti" data-id="' + k.id + '" value="' + esc(k.undirtexti || '') + '" placeholder="Undirtexti — t.d. staðan 06.08" style="width:100%;box-sizing:border-box;margin-top:6px;font-size:11.5px;color:var(--ink3);border:1px dashed var(--brd2);border-radius:8px;padding:5px 9px;background:transparent">'
+          : '<div style="font-size:24px;font-weight:800;color:var(--ink1);font-variant-numeric:tabular-nums;line-height:1.1">' + (k.gildi ? esc(k.gildi) : '<span style="color:var(--ink4);font-weight:600;font-size:13px;font-style:italic">Ekkert gildi enn</span>') + '</div>' +
+            (k.undirtexti ? '<div style="font-size:11.5px;color:var(--ink3);margin-top:4px">' + esc(k.undirtexti) + '</div>' : ''));
     }
 
     if (k.g === 'listi') {
@@ -471,6 +492,12 @@
 
     const texti = e.target.closest('._ms-texti');
     if (texti) { const k = s.kubbar.find(x => x.id === texti.dataset.id); if (k) { k.texti = texti.value; vista(); } return; }
+
+    const gildi = e.target.closest('._ms-gildi');
+    if (gildi) { const k = s.kubbar.find(x => x.id === gildi.dataset.id); if (k) { k.gildi = gildi.value; vista(); } return; }
+
+    const undirtexti = e.target.closest('._ms-undirtexti');
+    if (undirtexti) { const k = s.kubbar.find(x => x.id === undirtexti.dataset.id); if (k) { k.undirtexti = undirtexti.value; vista(); } return; }
 
     const lnafn = e.target.closest('._ms-lnafn'), lurl = e.target.closest('._ms-lurl');
     if (lnafn || lurl) {
