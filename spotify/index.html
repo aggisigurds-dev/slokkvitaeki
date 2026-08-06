@@ -86,10 +86,24 @@ header p { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
   font-size: 11.5px; letter-spacing: 1.1px; cursor: pointer; padding: 4px 6px;
 }
 .rammi {
-  border-radius: var(--r); overflow: hidden; background: var(--card);
-  border: 1px solid var(--line); line-height: 0;
+  position: relative; border-radius: var(--r); overflow: hidden;
+  background: var(--card); border: 1px solid var(--line); line-height: 0;
 }
-.rammi iframe { width: 100%; border: 0; display: block; }
+/* Spotify-spilarinn er á öðru léni svo við ráðum engu um útlitið hans á meðan
+   hann hleðst — hann kemur hvítur inn. Þess vegna er ramminn hulinn þar til
+   hann er tilbúinn; þá er skiptin úr dökku í dökkt. */
+.hledur {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: var(--muted); font-size: 13px; line-height: 1.4;
+}
+.rammi.tilbuinn .hledur { display: none; }
+.rammi:not(.tilbuinn) iframe { opacity: 0; }
+/* Dökkur bakgrunnur á iframe-inn sjálfan: annars blikkar hvítur kassi á meðan
+   Spotify hleðst — og situr hvítur ef netið næst ekki. */
+.rammi iframe {
+  width: 100%; border: 0; display: block;
+  background: var(--card); color-scheme: dark;
+}
 
 /* ── spjöldin ────────────────────────────────────────────────────────── */
 #grid {
@@ -175,6 +189,40 @@ footer {
   text-align: center; line-height: 1.6;
 }
 footer a { color: var(--muted); }
+
+/* ── spjaldtölva ─────────────────────────────────────────────────────────
+   Aðal-tækið er spjaldtölva, oftast á langveginn. Á breiðum skjá er efnið
+   miðjað (annars teygist grindin yfir hálfan metra) og allt stækkað — 148px
+   spjald sem er mátulegt í síma er pínulítið á 11 tommum.                  */
+header, .bar, .umgjord, footer { max-width: 1180px; margin-inline: auto; }
+
+@media (min-width: 600px) {
+  :root { --pad: 24px; --r: 16px; }
+  h1 { font-size: 23px; }
+  header p { font-size: 13.5px; }
+  .mark { width: 46px; height: 46px; border-radius: 13px; }
+  .btn { font-size: 15px; padding: 12px 18px; }
+  #grid { gap: 16px; grid-template-columns: repeat(auto-fill, minmax(186px, 1fr)); }
+  .nafn { font-size: 15px; }
+  .undir { font-size: 12.5px; }
+  .texti { padding: 12px 13px 14px; }
+  footer { font-size: 12.5px; }
+}
+
+/* Á langveginn fer spilarinn í fasta súlu til hægri í stað þess að ýta öllum
+   spjöldunum niður — listinn helst sjáanlegur á meðan spilað er, og súlan
+   fylgir skruninu. Súlan birtist AÐEINS þegar eitthvað er í spilun (body.spilar
+   frá JS); annars fær grindin alla breiddina. */
+/* 780px nær líka spjaldtölvu á hæðina (iPad = 834 px) — þar er nóg pláss fyrir
+   tvær súlur af spjöldum við hliðina á spilaranum. Súlan er hlutfallsleg svo
+   hún gleypi ekki listann á mjórri skjám. */
+@media (min-width: 780px) {
+  .umgjord { display: grid; gap: 28px; align-items: start; }
+  body.spilar .umgjord { grid-template-columns: minmax(0, 1fr) min(400px, 38vw); }
+  .listi { order: 1; min-width: 0; }
+  #spilari { order: 2; position: sticky; top: 20px; margin-bottom: 0; }
+  #grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+}
 </style>
 </head>
 <body>
@@ -192,14 +240,17 @@ footer a { color: var(--muted); }
   <button class="btn btn--ghost" id="breyta">✏️ Breyta</button>
 </div>
 
+<main class="umgjord">
+
 <section id="spilari" aria-live="polite">
   <h2 class="hlutiTitill">
     <span>Í spilun</span>
     <button type="button" id="lokaSpilara">Loka ✕</button>
   </h2>
-  <div class="rammi"><iframe id="spilaraRammi" title="Spotify spilari" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>
+  <div class="rammi" id="rammiUmgjord"><span class="hledur">Sæki spilara…</span><iframe id="spilaraRammi" title="Spotify spilari" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>
 </section>
 
+<section class="listi">
 <h2 class="hlutiTitill"><span id="listiTitill">Listarnir mínir</span></h2>
 <div id="grid"></div>
 
@@ -209,6 +260,9 @@ footer a { color: var(--muted); }
   spilunarlista, plötu, lag, podcast eða þátt.<br><br>
   <code>open.spotify.com/playlist/…</code>
 </div>
+</section>
+
+</main>
 
 <dialog id="glugg">
   <form method="dialog" id="form">
@@ -255,6 +309,10 @@ footer a { color: var(--muted); }
   const $ = (s) => document.querySelector(s);
   const grid = $('#grid'), tomt = $('#tomt'), glugg = $('#glugg');
   const spilari = $('#spilari'), rammi = $('#spilaraRammi');
+  const rammiUmgjord = $('#rammiUmgjord');
+  const breidurSkjar = matchMedia('(min-width: 780px)');   // spilarinn í eigin súlu
+
+  rammi.addEventListener('load', () => rammiUmgjord.classList.add('tilbuinn'));
 
   let spjold = lesa();
   let valid = null;   // id spjaldsins sem er í spilun
@@ -386,16 +444,21 @@ footer a { color: var(--muted); }
   // ── spilun ────────────────────────────────────────────────────────────
   function spila(s) {
     const info = TEGUNDIR[s.tegund] || TEGUNDIR.playlist;
+    rammiUmgjord.classList.remove('tilbuinn');
     rammi.style.height = info.haed + 'px';
     rammi.src = 'https://open.spotify.com/embed/' + s.tegund + '/' + s.id + '?theme=0';
     spilari.classList.add('opinn');
+    document.body.classList.add('spilar');
     valid = s.id;
     teikna();
-    spilari.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Á breiðum skjá á spilarinn sína eigin súlu við hliðina á listanum — þá er
+    // ekkert að skruna að. Aðeins í síma-uppsetningunni situr hann fyrir ofan.
+    if (!breidurSkjar.matches) spilari.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function lokaSpilara() {
     spilari.classList.remove('opinn');
+    document.body.classList.remove('spilar');
     rammi.removeAttribute('src');   // stöðvar spilun
     valid = null;
     teikna();
