@@ -1064,6 +1064,7 @@
             WORKERS.map(w => '<option value="' + w + '"' + (state.fWorker === w ? ' selected' : '') + '>' + w + '</option>').join('') +
           '</select>' +
           '<button data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (engin tvítök)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:rgba(255,255,255,.85);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">✉️ Sækja póst</button>' +
+          '<a href="kunnaskra.html" target="_blank" rel="noopener" title="Opna heildar-kúnnaskrá — lifandi úr Supabase" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;text-decoration:none;' + V3_METAL + ';color:#7ee0c0;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🗂️ Kúnnaskrá</a>' +
           (noiseN ? '<button data-act="clearnoise" title="Fela allar Payday-greiðslutilkynningar í einu (endurheimtanlegt)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:#ff8a82;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🧹 ' + noiseN + '</button>' : '') +
         '</div>' +
       '</div>' +
