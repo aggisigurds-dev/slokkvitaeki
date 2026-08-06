@@ -56,7 +56,15 @@
     catch(e){ return ''; }
   }
 
-  window.SlokkPrint = function(title, boxEl){
+  // 2026-08-06 fix: the #view-rekstrarfelog/.rf-page wrapper below exists so
+  // 175-rekstrarfelog.js's own #_rf-styles-v4 rules (copied in via
+  // pageStyles()) apply to ITS table. But SlokkPrint is also called by
+  // 185-inservice-yfirlit.js for an unrelated print — if Rekstrarfélög had
+  // been visited earlier in the same session (so its stylesheet is sitting
+  // in document.head), that same wrapper div/class silently pulled in
+  // Rekstrarfélög's font/padding rules onto 185's print too. `rfScoped` is
+  // now explicit per caller instead of being applied unconditionally.
+  window.SlokkPrint = function(title, boxEl, rfScoped){
     if (!boxEl) return;
     const table  = boxEl.querySelector('table');
     const totals = boxEl.querySelector('._ovr-totals');
@@ -79,10 +87,10 @@
         '<div class="hd">' + (logo ? '<img src="' + esc(logo) + '" alt="">' : '') +
           '<div><div class="t">Slökkvitæki ehf</div><div class="s">' + esc(title) + '</div></div></div>' +
         '<div class="meta">Skýrsla útbúin ' + ds + ' · ' + rows + ' línur</div>' +
-        '<div id="view-rekstrarfelog"><div class="rf-page">' +
+        (rfScoped ? '<div id="view-rekstrarfelog"><div class="rf-page">' : '<div>') +
           (totals ? '<div class="tot">' + totals.innerHTML + '</div>' : '') +
           (table ? table.outerHTML : '<p>Engin gögn.</p>') +
-        '</div></div>' +
+        (rfScoped ? '</div></div>' : '</div>') +
         '<div class="ft">Sjálfvirk skýrsla úr þjónustukerfi Slökkvitækis ehf.</div>' +
       '</body></html>'
     );

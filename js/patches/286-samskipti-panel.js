@@ -209,8 +209,13 @@
           const val = ta.value.trim();
           const client = sb();
           const btn = body.querySelector("._ssk-note-save"); if (btn) { btn.disabled = true; btn.textContent = "Vista…"; }
+          // 2026-08-06 fix: án gagnagrunnstengingar hunsaði þetta áður
+          // vistunina alveg en sýndi samt textann eins og hann væri
+          // vistaður — týndi breytingunni þegjandi. Sama vörn og aðrir
+          // skrifpunktar í þessari skrá (if (!client) return ...).
+          if (!client) { alert("Engin gagnagrunnstenging — reyndu aftur eftir smástund."); if (btn) { btn.disabled = false; btn.textContent = "Vista"; } return; }
           try {
-            if (client) await client.from("fyrirtaeki").update({ athugasemdir: val }).eq("id", f.id);
+            await client.from("fyrirtaeki").update({ athugasemdir: val }).eq("id", f.id);
             f.athugasemdir = val; if (cache[f.id]) cache[f.id]._ts = 0;
           } catch (e) { alert("Gat ekki vistað samantekt: " + (e.message || e)); if (btn) { btn.disabled = false; btn.textContent = "Vista"; } return; }
           redraw(val);

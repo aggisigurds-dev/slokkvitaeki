@@ -1080,7 +1080,7 @@
     }); });
     box.querySelectorAll('._rf_fchip').forEach(function(c){ c.addEventListener('click', function(){ _state.fltr=c.getAttribute('data-f'); renderOverview(); }); });
     box.querySelectorAll('._rf_open').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); openCompany(a.getAttribute('data-coid')); }); });
-    var _pb=box.querySelector('#_rf_print'); if(_pb) _pb.onclick=function(){ if(window.SlokkPrint) window.SlokkPrint('Rekstrarfélög — byggingar og úttektir', box); };
+    var _pb=box.querySelector('#_rf_print'); if(_pb) _pb.onclick=function(){ if(window.SlokkPrint) window.SlokkPrint('Rekstrarfélög — byggingar og úttektir', box, true); };
   }
 
   async function renderList(){
@@ -1723,7 +1723,7 @@
     // sýnir AÐEINS þetta eina félag, ekki öll rekstrarfélögin.
     var printBtn=body.querySelector('._rf_printco');
     if(printBtn) printBtn.addEventListener('click', function(){
-      if(window.SlokkPrint) SlokkPrint('Rekstrarfélag — '+name, body);
+      if(window.SlokkPrint) SlokkPrint('Rekstrarfélag — '+name, body, true);
     });
     // Akstursleið-chip á hverja byggingu (per staður) — sama gagnastaður og
     // félags-chip + aðal-borðið (arsskodun_customers[staður_id].akstur).
