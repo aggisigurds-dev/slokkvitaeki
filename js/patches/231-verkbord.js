@@ -1249,9 +1249,13 @@
 
   function renderTop(rows) {
     const el = document.getElementById('vb-toprow'); if (!el) return;
-    const byNew = rows.slice().sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-    const nyjast = byNew.slice(0, TOP_N);
-    const pick = state.topFilter === 'aridandi' ? byNew.filter(x => !!x.important) : byNew;
+    // NÝJAST raðar sjálft (hrein dagsetning), en MÁL heldur röðun borðsins
+    // (Snjallröðun / dálkaröðun / innhólfs-röðin) — annars væru kortin tvö
+    // eins þegar „Allt" er valið.
+    const nyjast = rows.slice()
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, TOP_N);
+    const pick = state.topFilter === 'aridandi' ? rows.filter(x => !!x.important) : rows;
 
     const seg = (v, label) => {
       const on = state.topFilter === v;
