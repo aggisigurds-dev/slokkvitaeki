@@ -384,6 +384,16 @@
 
   window.Vikudagskra = { mount, render, open: openModal };
 
+  // Samningur við Verkborðið (#231, hönnun V3): „🗓 Á dagskrá" á röð — og
+  // „Setja á dagskrá" í VALIÐ MÁL — senda st-skra-verk og bannerinn opnar
+  // gluggann með nafn viðskiptavinarins forútfyllt á daginn í dag.
+  window.addEventListener('st-skra-verk', ev => {
+    const nafn = (ev && ev.detail && ev.detail.name) || '';
+    openModal(fmt(new Date()));
+    const n = document.getElementById('vd-name');
+    if (n && nafn) { n.value = nafn; n.setAttribute('data-original', nafn); n.select(); }
+  });
+
   // Borðið kann að vera teiknað ÁÐUR en þessi skrá er lesin: #231 og #303 eru
   // bæði `defer` og #231 situr ~50 script-tögum framar, svo `renderAll()` hafði
   // þegar keyrt og séð `window.Vikudagskra === undefined` — reiturinn stóð eftir

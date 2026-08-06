@@ -1,8 +1,11 @@
-/* js/patches/287-crm-board.js — 📇 Samskiptaborð (CRM) + Þjónustuborð
+/* js/patches/287-crm-board.js — 📇 Samskiptaborð (CRM) — hét áður Þjónustuborð
    ────────────────────────────────────────────────────────────
    v1: Flotandi hnappur neðst til hægri → borð með síðasta pósti,
    ósvöruðum spurningum og útvíkkanlegri póstsögu (crm_cache).
-   v2 (2026-07-29): Full síða „📇 Þjónustuborð" (view 'thjonustubord')
+   v2 (2026-07-29): Full síða „📇 Samskiptaborð" (view 'samskiptabord')
+       ENDURSKÍRT 2026-08-06 (ósk Agnars): hét „Þjónustuborð" og slug-ið
+       'thjonustubord'. Nafnið færðist yfir á Verkborðið (#231) svo tvær
+       síður beri ekki sama heiti; þessi er CRM-samskiptaborð og heitir það nú.
    yfir NÝJU sýnina crm_yfirlit — allt félagið á einni línu: síðasti
    póstur, skoðunarmánuður, skjalateljarar (S/Ú/R) og ógreitt í Payday.
    Hópun eftir rekstrarfélagi, leit, röðun, smellur opnar fyrirtækið.
@@ -78,7 +81,7 @@
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">' +
       '<div style="font-weight:800;font-size:15px">📇 SAMSKIPTABORÐ <span id="_crm-sub" style="font-weight:400;color:#94a3b8;font-size:12px"></span></div>' +
       '<div style="display:flex;gap:8px;align-items:center">' +
-      '<button id="_crm-full" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:6px 13px;font-size:12.5px;font-weight:700;cursor:pointer">Opna Þjónustuborð ↗</button>' +
+      '<button id="_crm-full" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:6px 13px;font-size:12.5px;font-weight:700;cursor:pointer">Opna Samskiptaborð ↗</button>' +
       '<button id="_crm-x" style="border:0;background:#f1f5f9;border-radius:99px;width:32px;height:32px;cursor:pointer;font-size:16px">✕</button></div></div>' +
       '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">' +
       '<input id="_crm-q" placeholder="Leita að félagi…" style="flex:1;min-width:180px;border:1px solid #cbd5e1;border-radius:10px;padding:8px 12px;font-size:14px">' +
@@ -89,7 +92,7 @@
       '<div id="_crm-list" style="overflow:auto;padding:10px 14px 16px">Sæki gögn…</div></div>';
     document.body.appendChild(ov);
     ov.addEventListener("click", e => { if (e.target === ov || e.target.id === "_crm-x") ov.remove(); });
-    ov.querySelector("#_crm-full").addEventListener("click", () => { ov.remove(); if (window.App && App.switchView && window.App._tbordSwitchPatched) App.switchView("thjonustubord"); else if (window.Thjonustubord) Thjonustubord.open(); });
+    ov.querySelector("#_crm-full").addEventListener("click", () => { ov.remove(); if (window.App && App.switchView && window.App._tbordSwitchPatched) App.switchView("samskiptabord"); else if (window.Samskiptabord) Samskiptabord.open(); });
     ov.querySelector("#_crm-q").addEventListener("input", e => { q = e.target.value.toLowerCase(); renderList(); });
     ov.querySelectorAll("._crm-f").forEach(b => b.addEventListener("click", () => { filter = b.dataset.f; renderList(); }));
     if (!DATA) {
@@ -165,7 +168,7 @@
   /* ════════════════════════════════════════════════════════════
      ÞJÓNUSTUBORÐ — full síða yfir crm_yfirlit (v2)
      ════════════════════════════════════════════════════════════ */
-  const NAV_KEY = "thjonustubord", VIEW_ID = "view-thjonustubord";
+  const NAV_KEY = "samskiptabord", VIEW_ID = "view-samskiptabord";
   const MAN = ["janúar", "febrúar", "mars", "apríl", "maí", "júní", "júlí", "ágúst", "september", "október", "nóvember", "desember"];
   const getSB = () => (window.DB && window.DB.sb) || null;
   const fmtISK = n => String(Math.round(+n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " kr";
@@ -409,7 +412,7 @@
       l + (n != null && n > 0 ? " (" + n + ")" : "") + "</button>";
     host.innerHTML =
       '<div class="tbord-top">' +
-      '<h2 class="tbord-title">📇 Þjónustuborð</h2>' +
+      '<h2 class="tbord-title">📇 Samskiptaborð</h2>' +
       '<span class="tbord-note">' + rows.length + " félög" + (hhmm ? " · Uppfært " + esc(hhmm) : "") + "</span>" +
       '<button id="tbord-refresh" class="tbord-btn" title="Sækja aftur"' + (T.loading ? " disabled" : "") + ">↻" + (T.loading ? " …" : "") + "</button>" +
       '<input id="tbord-q" placeholder="Leita — nafn / rekstrarfélag / kt…" value="' + esc(T.q) + '">' +
@@ -703,7 +706,7 @@
     const b = document.createElement("button");
     b.className = (tpl.className || "vnav-btn").replace(/\bactive\b/g, "").trim();
     b.setAttribute("data-view", NAV_KEY);
-    b.innerHTML = '<span style="margin-right:6px">📇</span>Þjónustuborð';
+    b.innerHTML = '<span style="margin-right:6px">📇</span>Samskiptaborð';
     b.addEventListener("click", e => {
       e.preventDefault(); e.stopPropagation();
       if (window.App && App.switchView && window.App._tbordSwitchPatched) App.switchView(NAV_KEY); else tShow();
@@ -712,7 +715,10 @@
   }
   tPatchSwitchView();
   tInjectNav();
-  window.Thjonustubord = { open: tShow, reload: () => tLoad(true) };
+  window.Samskiptabord = { open: tShow, reload: () => tLoad(true) };
+  // Gamla heitið lifir sem samnefni — ekkert utanaðkomandi notar það í dag,
+  // en deep-link/bókamerki úr eldri lotum mega ekki deyja þögult.
+  window.Thjonustubord = window.Samskiptabord;
 
-  console.log("[crm-board] v2 installed (flotandi borð + Þjónustuborð)");
+  console.log("[crm-board] v2 installed (flotandi borð + Samskiptaborð)");
 })();
