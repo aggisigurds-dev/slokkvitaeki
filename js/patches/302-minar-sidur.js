@@ -29,6 +29,10 @@
   const KEY = 'min_sidur';
   const VIEW_ID = 'view-minar-sidur';
 
+  // Gagnagrunnstenging — var notuð í gagnakubbunum en aldrei skilgreind hér
+  // (hjálparfallið kom úr patch 296/300/301). Afleiðing: „SB is not defined“
+  // inni í ósóttu loforði → engin sýnileg villa, tölurnar sátu bara í „…“.
+  const SB = () => (window.DB && DB.sb) || null;
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const ic = (n, sz) => (window.UIIcons ? UIIcons.svg(n, { size: sz || 14 }) : '');
@@ -354,11 +358,15 @@
   async function fyllaGogn() {
     const v = document.getElementById(VIEW_ID);
     if (!v) return;
+    // Hver kubbur er sóttur í sínu try/catch og villan BIRTIST í kubbnum.
+    // Áður féll allt á fyrsta hnökra og notandinn sá bara „…“ að eilífu.
     for (const el of v.querySelectorAll('._ms-tala')) {
-      el.textContent = await maelingGildi(el.dataset.m);
+      try { el.textContent = await maelingGildi(el.dataset.m); }
+      catch (e) { el.textContent = '—'; el.title = String(e && e.message || e); console.warn('[minar-sidur] tala:', e); }
     }
     for (const el of v.querySelectorAll('._ms-listi')) {
-      el.innerHTML = await listaHTML(el.dataset.l, Math.max(3, Math.min(20, +el.dataset.n || 6)));
+      try { el.innerHTML = await listaHTML(el.dataset.l, Math.max(3, Math.min(20, +el.dataset.n || 6))); }
+      catch (e) { el.textContent = 'Náði ekki í gögnin.'; console.warn('[minar-sidur] listi:', e); }
     }
   }
 
