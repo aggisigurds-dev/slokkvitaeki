@@ -1,0 +1,135 @@
+<!doctype html><html lang=is><head><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1">
+<title>Póstsvörun — Þjónustuborð</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+*{box-sizing:border-box}body{font:13px/1.5 -apple-system,'Segoe UI',Roboto,Arial,sans-serif;color:#1a2233;margin:0;background:#0b1f42}
+a{color:inherit}
+.top{background:#0b1f42;color:#fff;padding:11px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+.top h1{font-size:16px;margin:0;color:#fff}.top .m{color:#93c5fd;font-size:12.5px}.top .m b{color:#fff}
+.back{color:#93c5fd;text-decoration:none;font-size:12.5px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto}
+.chip{font-size:11.5px;color:#cbd5e1;background:#1e293b;border:1px solid #334155;border-radius:16px;padding:3px 11px;cursor:pointer;user-select:none}
+.chip.on{background:#2563eb;color:#fff;border-color:#2563eb}
+.searchbar{background:#0b1f42;padding:0 16px 10px}
+.searchbar input{width:100%;max-width:420px;border:0;border-radius:8px;padding:8px 12px;font-size:13px}
+.wrap{display:flex;height:calc(100vh - 92px);background:#eef1f6}
+.list{width:360px;min-width:300px;overflow:auto;background:#0e254e;border-right:1px solid #16305a}
+.li{padding:9px 13px;border-bottom:1px solid #16305a;cursor:pointer;color:#e2e8f0}
+.li:hover{background:#16305a}.li.on{background:#1d3a6b;border-left:3px solid #60a5fa;padding-left:10px}
+.li .nm{font-weight:700;font-size:12.5px;color:#fff}
+.li .ef{color:#cbd5e1;font-size:11.5px;margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .rr{display:flex;gap:6px;align-items:center;margin-top:4px;flex-wrap:wrap}
+.b{display:inline-block;font-size:9.5px;font-weight:700;border-radius:9px;padding:1px 7px;white-space:nowrap}
+.b.r{background:#fee2e2;color:#991b1b}.b.y{background:#fef9c3;color:#854d0e}.b.g{background:#dcfce7;color:#166534}.b.bl{background:#dbeafe;color:#1e40af}.b.p{background:#e2e8f0;color:#475569}
+.detail{flex:1;overflow:auto;padding:18px 24px}
+.ph{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:2px}
+.ph h2{font-size:18px;margin:0;color:#0b1f42}
+.meta{color:#475569;font-size:12.5px;margin-bottom:12px}.meta a{color:#2563eb}
+.box{background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:9px 12px;margin-bottom:11px;white-space:pre-wrap;font-size:12.5px}
+.box.beidni{background:#f8fafc}
+.l{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#64748b;margin:0 0 3px}
+textarea{width:100%;border:1px solid #d7dee8;border-radius:8px;padding:9px 11px;font:inherit;font-size:12.5px;line-height:1.55;resize:vertical;background:#fff}
+textarea.drog{min-height:150px;background:#fffdf5;border-color:#fde68a}
+textarea.skjol{min-height:52px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:10px 0}
+button.act{border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:8px;padding:6px 13px;font-size:12.5px;font-weight:700;cursor:pointer}
+button.save{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;border-radius:8px;padding:7px 18px;font-size:13px;font-weight:700;cursor:pointer}
+.stbtns{display:flex;gap:6px}
+.stbtns button{border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:7px;padding:5px 12px;font-size:12px;cursor:pointer;font-weight:600}
+.stbtns button.on.r{background:#fee2e2;color:#991b1b;border-color:#fca5a5}
+.stbtns button.on.bl{background:#dbeafe;color:#1e40af;border-color:#93c5fd}
+.stbtns button.on.g{background:#dcfce7;color:#166534;border-color:#86efac}
+.st{font-size:12px;color:#64748b}
+.att a{display:inline-block;background:#eff6ff;border:1px solid #bfdbfe;color:#1d4ed8;border-radius:7px;padding:3px 9px;margin:2px 5px 2px 0;font-size:12px;text-decoration:none}
+.empty{color:#94a3b8;padding:40px;text-align:center}.loading{color:#94a3b8;padding:18px}
+.mut{color:#94a3b8;font-size:11.5px}
+</style></head><body>
+<div class=top>
+ <a class=back href="./">&larr; Þjónustuborð</a>
+ <h1>✉️ Póstsvörun</h1>
+ <div class=m id=sub>Sæki…</div>
+ <div class=chips id=chips>
+  <span class="chip on" data-f=opin onclick=setf(this)>Opin</span>
+  <span class=chip data-f=osvarad onclick=setf(this)>Ósvarað</span>
+  <span class=chip data-f=tilbuid onclick=setf(this)>Tilbúið</span>
+  <span class=chip data-f=klarad onclick=setf(this)>Klárað</span>
+  <span class=chip data-f=allt onclick=setf(this)>Allt</span>
+ </div>
+</div>
+<div class=searchbar><input id=q placeholder="Leita eftir viðskiptavini, efni, flokki, netfangi…" oninput=render()></div>
+<div class=wrap>
+ <div class=list id=list><div class=loading>Hleð…</div></div>
+ <div class=detail id=detail><div class=empty>Veldu erindi til vinstri.</div></div>
+</div>
+<script>
+var SB=window.supabase.createClient("https://osfdzskyvisifcwyjkuk.supabase.co","sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f");
+var DATA=[],filt='opin',curId=null;
+function esc(s){return (s==null?"":""+s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
+function forgB(f){f=+f;if(f===1)return '<span class="b r">🔴 Hár</span>';if(f===2)return '<span class="b y">🟡 Mið</span>';return '<span class="b p">⚪ Lágur</span>';}
+function stB(s){if(s==='ósvarað')return '<span class="b r">Ósvarað</span>';if(s==='tilbuid')return '<span class="b bl">Tilbúið</span>';if(s==='klarad')return '<span class="b g">Klárað</span>';return '<span class="b p">'+esc(s||'')+'</span>';}
+function pass(r){
+ if(filt==='opin')return r.status==='ósvarað'||r.status==='tilbuid';
+ if(filt==='osvarad')return r.status==='ósvarað';
+ if(filt==='tilbuid')return r.status==='tilbuid';
+ if(filt==='klarad')return r.status==='klarad';
+ return true;
+}
+function setf(el){filt=el.dataset.f;document.querySelectorAll('.chip').forEach(function(c){c.classList.remove('on')});el.classList.add('on');render();}
+async function load(){
+ var r=await SB.from('cowork_postsvor').select('*');
+ if(r.error){document.getElementById('list').innerHTML='<div class=loading>Villa: '+r.error.message+'</div>';return;}
+ DATA=(r.data||[]).sort(function(a,b){return (a.forgangur||9)-(b.forgangur||9) || (''+(b.updated_at||'')).localeCompare(''+(a.updated_at||''));});
+ render();
+}
+function render(){
+ var q=(document.getElementById('q').value||'').toLowerCase().trim();
+ var out=DATA.filter(function(r){if(!pass(r))return false;if(q)return ((r.vidskiptavinur||'')+' '+(r.efni||'')+' '+(r.flokkur||'')+' '+(r.netfang||'')+' '+(r.beidni||'')).toLowerCase().indexOf(q)>=0;return true;});
+ var opin=DATA.filter(function(r){return r.status==='ósvarað'||r.status==='tilbuid';}).length;
+ document.getElementById('sub').innerHTML='<b>'+opin+'</b> opin · '+DATA.length+' alls';
+ var h='';
+ out.forEach(function(r){
+  h+='<div class="li'+(r.id===curId?' on':'')+'" onclick="sel('+r.id+')">'
+   +'<div class=nm>'+esc(r.vidskiptavinur||'(óþekkt)')+'</div>'
+   +'<div class=ef>'+esc(r.efni||'')+'</div>'
+   +'<div class=rr>'+forgB(r.forgangur)+' '+stB(r.status)+(r.flokkur?' <span class="b p">'+esc(r.flokkur)+'</span>':'')+'</div></div>';
+ });
+ document.getElementById('list').innerHTML=out.length?h:'<div class=loading>Ekkert erindi hér</div>';
+}
+function links(s){return (s||'').split('\n').map(function(x){x=x.trim();if(!x)return '';var m=x.match(/(https?:\/\/\S+)/);var url=m?m[1]:'';var nm=x.replace(/https?:\/\/\S+/,'').replace(/[\|\-–]\s*$/,'').trim()||url||x;return url?'<a href="'+esc(url)+'" target="_blank">📎 '+esc(nm)+'</a>':'<span class="mut">📎 '+esc(x)+'</span>';}).join('');}
+function sel(id){
+ curId=id;var r=DATA.find(function(x){return x.id===id;});if(!r)return;
+ render();
+ var mailto='mailto:'+encodeURIComponent(r.netfang||'')+'?subject='+encodeURIComponent('Re: '+(r.efni||''))+'&body='+encodeURIComponent(r.drog||'');
+ var d=document.getElementById('detail');
+ d.innerHTML=
+  '<div class=ph><h2>'+esc(r.vidskiptavinur||'(óþekkt)')+'</h2>'+forgB(r.forgangur)+' '+stB(r.status)+(r.flokkur?' <span class="b p">'+esc(r.flokkur)+'</span>':'')+'</div>'
+  +'<div class=meta>'+(r.netfang?'<a href="mailto:'+esc(r.netfang)+'">'+esc(r.netfang)+'</a> · ':'')+'<b>Efni:</b> '+esc(r.efni||'')+'</div>'
+  +(r.beidni?'<div class=l>Erindi</div><div class="box beidni">'+esc(r.beidni)+'</div>':'')
+  +(r.uppl?'<div class=l>Upplýsingar úr kerfinu</div><div class=box>'+esc(r.uppl)+'</div>':'')
+  +'<div class=l>✍️ Drög að svari</div><textarea class=drog id=f_drog>'+esc(r.drog||'')+'</textarea>'
+  +'<div class=row><button class=act onclick="cpy()">📋 Afrita svar</button><a class=act style="text-decoration:none" href="'+mailto+'">✉️ Opna í pósti</a></div>'
+  +'<div class=l>📎 Skjöl í viðhengi <span class=mut>(einn hlekk í línu, má hafa „Nafn — https://…")</span></div>'
+  +'<textarea class=skjol id=f_skjol>'+esc(r.skjol||'')+'</textarea>'
+  +'<div class=att id=attprev>'+links(r.skjol)+'</div>'
+  +'<div class=l style="margin-top:11px">Athugasemd</div><textarea id=f_athugasemd style="min-height:40px">'+esc(r.athugasemd||'')+'</textarea>'
+  +'<div class=row><span class=l style="margin:0">Staða:</span><div class=stbtns>'
+    +'<button class="r'+(r.status==='ósvarað'?' on':'')+'" onclick="setst(\'ósvarað\')">Ósvarað</button>'
+    +'<button class="bl'+(r.status==='tilbuid'?' on':'')+'" onclick="setst(\'tilbuid\')">Tilbúið</button>'
+    +'<button class="g'+(r.status==='klarad'?' on':'')+'" onclick="setst(\'klarad\')">Klárað</button>'
+  +'</div></div>'
+  +'<div class=row><button class=save onclick="saveCur()">💾 Vista</button><span class=st id=savest></span></div>';
+ document.getElementById('f_skjol').addEventListener('input',function(){document.getElementById('attprev').innerHTML=links(this.value);});
+}
+var pendStatus=null;
+function setst(s){pendStatus=s;var r=DATA.find(function(x){return x.id===curId;});if(r){r.status=s;}sel(curId);}
+function cpy(){var t=document.getElementById('f_drog').value;navigator.clipboard.writeText(t);var st=document.getElementById('savest');if(st){st.textContent='✓ Afritað';setTimeout(function(){st.textContent='';},1500);}}
+async function saveCur(){
+ var r=DATA.find(function(x){return x.id===curId;});if(!r)return;
+ var patch={drog:document.getElementById('f_drog').value,skjol:document.getElementById('f_skjol').value,athugasemd:document.getElementById('f_athugasemd').value,status:r.status,updated_at:new Date().toISOString()};
+ var st=document.getElementById('savest');st.textContent='Vista…';
+ var q=await SB.from('cowork_postsvor').update(patch).eq('id',curId);
+ if(q.error){st.textContent='Villa: '+q.error.message;return;}
+ Object.assign(r,patch);st.textContent='✓ Vistað '+new Date().toLocaleTimeString('is-IS');render();
+}
+load();
+</script></body></html>
