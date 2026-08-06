@@ -95,6 +95,31 @@
     }
   }
 
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result).split(',')[1] || '');
+      r.onerror = reject;
+      r.readAsDataURL(blob);
+    });
+  }
+
+  // 2026-08-06: preferred PDF source — the SAME vector jsPDF builder patch 168
+  // uses for Vista/Sækja PDF (buildReportPdfBlob(ctx)). The old html2canvas
+  // path below (htmlToPdfBase64) rendered a BLANK PDF for the Senda-í-
+  // tölvupósti flow ("it work everywhere else" bug report) — buildReportPdfBlob
+  // was already the fix applied to Vista/Sækja for the exact same blank-canvas
+  // issue (see the comment on buildReportPdfBlob in patch 168). Falls back to
+  // htmlToPdfBase64 only if reportCtx wasn't passed in (shouldn't happen from
+  // the only real caller, patch 168, but keeps this module usable standalone).
+  async function reportPdfBase64(html, filename, reportCtx) {
+    if (reportCtx && window.CompanyInspectionReport && typeof CompanyInspectionReport.buildReportPdfBlob === 'function') {
+      const blob = await CompanyInspectionReport.buildReportPdfBlob(reportCtx);
+      return blobToBase64(blob);
+    }
+    return htmlToPdfBase64(html, filename);
+  }
+
   function safeFileName(name) {
     const base = String(name || 'fyrirtaeki')
       .normalize('NFKD').replace(/[̀-ͯ]/g, '') // strip diacritics
@@ -120,14 +145,14 @@
   }
 
   // ── Send via the Resend proxy (PDF attachment) ────────────────────────────
-  async function sendViaResend(to, co, html) {
+  async function sendViaResend(to, co, html, reportCtx) {
     // Reports always go out as the noreply sender (noreply@eldklar.is) — a
     // dedicated `report_email_from` override, NOT the invoice mailer's
     // `email_from`, so the report sender can't be changed by accident.
     const from = localStorage.getItem('report_email_from') || DEFAULT_FROM;
     const apiKey = localStorage.getItem('resend_api_key') || ''; // server prefers env var
     const filename = safeFileName(co && co.nafn);
-    const base64 = await htmlToPdfBase64(html, filename);
+    const base64 = await reportPdfBase64(html, filename, reportCtx);
     if (!base64) throw new Error('Tókst ekki að búa til PDF.');
     const payload = {
       from,
@@ -151,6 +176,7 @@
   function open(ctx) {
     const co = (ctx && ctx.co) || {};
     const html = ctx && ctx.html;
+    const reportCtx = ctx && ctx.reportCtx;
     if (!html) { alert('Engin skýrsla til að senda.'); return; }
 
     const old = document.getElementById('_cre-modal');
@@ -187,29 +213,21 @@
     dlg.querySelector('#_cre-cancel').onclick = close;
     dlg.addEventListener('click', e => { if (e.target === dlg) close(); });
 
-    // Download fallback — render the PDF and save it locally.
+    // Download fallback — same PDF the send flow attaches (reportPdfBase64:
+    // vector jsPDF when reportCtx is available, html2canvas otherwise).
     dlg.querySelector('#_cre-dl').onclick = async () => {
       const btn = dlg.querySelector('#_cre-dl');
       const prev = btn.textContent; btn.disabled = true; btn.textContent = 'Bý til PDF…';
       try {
-        await loadHtml2Pdf();
-        const parsed = new DOMParser().parseFromString(html, 'text/html');
-        const styles = Array.from(parsed.querySelectorAll('style')).map(s => s.textContent).join('\n');
-        // Render at the viewport origin (not -10000px → blank). See htmlToPdfBase64.
-        const W = 794;
-        const holder = document.createElement('div');
-        holder.style.cssText = 'position:fixed;top:0;left:0;width:' + W + 'px;background:#fff;z-index:100000';
-        holder.innerHTML = (styles ? '<style>' + styles + '</style>' : '') + parsed.body.innerHTML;
-        document.body.appendChild(holder);
-        await waitForImages(holder);
-        const opt = {
-          margin: [12, 12, 12, 12], filename: safeFileName(co.nafn),
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, backgroundColor: '#ffffff' },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-        await window.html2pdf().set(opt).from(holder).save();
-        holder.remove();
+        const filename = safeFileName(co.nafn);
+        const base64 = await reportPdfBase64(html, filename, reportCtx);
+        const bin = atob(base64);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const blobUrl = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+        const a = document.createElement('a'); a.href = blobUrl; a.download = filename;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 4000);
       } catch (e) {
         toast('Villa: ' + (e.message || e));
       } finally {
@@ -223,7 +241,7 @@
       const btn = dlg.querySelector('#_cre-send');
       btn.disabled = true; btn.textContent = 'Sendir…';
       try {
-        await sendViaResend(to, co, html);
+        await sendViaResend(to, co, html, reportCtx);
         toast('✓ Úttektarskýrsla send á ' + to);
         close();
       } catch (e) {

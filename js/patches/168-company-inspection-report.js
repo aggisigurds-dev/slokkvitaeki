@@ -546,14 +546,18 @@
     setTimeout(() => _cirSaveReport(true), 450);
     dlg.querySelector('#_cir-email').addEventListener('click', () => {
       if (window.CompanyReportEmail && typeof CompanyReportEmail.open === 'function') {
-        CompanyReportEmail.open({ co: co, html: html, defaultTo: opts && opts.emailTo });
+        // 2026-08-06: pass reportCtx along so patch 176 can build the PDF with
+        // the SAME vector jsPDF renderer as Vista/Sækja (buildReportPdfBlob)
+        // instead of re-rendering `html` via html2canvas — that path was
+        // producing a blank PDF (see comment on buildReportPdfBlob above).
+        CompanyReportEmail.open({ co: co, html: html, reportCtx: ctx, defaultTo: opts && opts.emailTo });
       } else {
         alert('Tölvupóstseining er ekki tiltæk.');
       }
     });
   }
 
-  window.CompanyInspectionReport = { open: openReport };
+  window.CompanyInspectionReport = { open: openReport, buildReportPdfBlob };
   console.log('[patch-168] Company inspection report v2 installed — PDF-style, no prices');
 })();
 /* === END COMPANY INSPECTION REPORT v2 === */
