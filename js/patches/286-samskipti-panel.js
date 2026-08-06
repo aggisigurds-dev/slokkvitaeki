@@ -146,6 +146,19 @@
             "</div>"; }).join("")
       : '<div style="color:#94a3b8;padding:6px 0">Engar beiðnir skráðar á þetta félag.</div>';
     const aths = (f.athugasemdir || "").trim();
+    const athsHead = aths ? aths.split("\n")[0].trim() : "";
+    const athsRest = aths ? aths.split("\n").slice(1).join("\n").trim() : "";
+    const athsBlock = aths
+      ? '<details class="_ssk-note" style="margin:9px 0 2px">' +
+          '<summary class="_ssk-note-sum" style="list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:7px 11px;color:#4338ca;font-size:12px;font-weight:600;user-select:none">' +
+            '<span style="opacity:.7">📋</span>' +
+            '<span class="_ssk-note-head" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(athsHead) + '</span>' +
+            '<span class="_ssk-note-edit" title="Breyta samantekt" style="opacity:.75;cursor:pointer">✎</span>' +
+            '<span class="_ssk-note-car" style="opacity:.6;font-size:11px">▸</span>' +
+          '</summary>' +
+          '<div class="_ssk-note-body" style="white-space:pre-wrap;background:#fefce8;border:1px solid #fde68a;border-top:0;border-radius:0 0 8px 8px;padding:10px 12px;color:#334155;font-size:12.5px;line-height:1.55">' + esc(athsRest || athsHead) + '</div>' +
+        '</details>'
+      : '';
     card.innerHTML =
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px">' +
       '<div style="font-weight:800;font-size:12px;letter-spacing:.06em;color:#4f46e5">💬 SAMSKIPTASAGA &amp; BEIÐNIR</div>' +
@@ -157,8 +170,7 @@
       '<div class="_ssk-pts" style="margin-top:6px">' + ptsHtml + "</div>" +
       // Punktarnir ALLTAF sýnilegir (ósk Agnars 29.07: „ég mun aldrei fatta að
       // checka inn í edit" — textinn úr athugasemdareitnum birtist hér beint).
-      (aths ? '<div style="font-weight:700;font-size:11.5px;color:#64748b;letter-spacing:.05em;margin:9px 0 3px">📋 PUNKTAR &amp; UPPLÝSINGAR</div>' +
-        '<div style="white-space:pre-wrap;background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:9px 11px;color:#334155;max-height:180px;overflow:auto;font-size:12.5px;line-height:1.5">' + esc(aths) + "</div>" : "") +
+      athsBlock +
       '<div class="_ssk-full" style="display:none;margin-top:10px;border-top:1px dashed #e2e8f0;padding-top:9px">' +
       '<div style="font-weight:700;font-size:11.5px;color:#64748b;letter-spacing:.05em;margin-bottom:3px">✉️ SÍÐUSTU PÓSTAR <span style="font-weight:400;text-transform:none;letter-spacing:0">— smelltu á póst til að lesa hann allan</span></div>' + mailsHtml +
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:11px 0 3px">' +
@@ -166,6 +178,45 @@
         (window.Verkbord ? '<button type="button" class="_ssk-bord" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:2px 10px;font-size:11.5px;cursor:pointer;font-weight:700">Opna Þjónustuborðið ↗</button>' : "") +
       "</div>" + beidnirHtml +
       "</div>";
+    // Samantektar-glugginn: örin snýst við opnun/lokun + innbyggð ritun (vistast beint).
+    const noteEl = card.querySelector("._ssk-note");
+    if (noteEl) {
+      const car = noteEl.querySelector("._ssk-note-car");
+      noteEl.addEventListener("toggle", () => { if (car) car.textContent = noteEl.open ? "▾" : "▸"; });
+      const edBtn = noteEl.querySelector("._ssk-note-edit");
+      if (edBtn) edBtn.addEventListener("click", (ev) => {
+        ev.preventDefault(); ev.stopPropagation();
+        noteEl.open = true; if (car) car.textContent = "▾";
+        const body = noteEl.querySelector("._ssk-note-body");
+        if (!body || body.querySelector("textarea")) return;
+        const cur = (f.athugasemdir || "").trim();
+        body.innerHTML =
+          '<textarea class="_ssk-note-ta" style="width:100%;min-height:130px;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:6px;padding:8px;font:inherit;font-size:12.5px;line-height:1.5;resize:vertical">' + esc(cur) + '</textarea>' +
+          '<div style="font-size:10.5px;color:#94a3b8;margin:4px 0 0">Fyrsta línan = stutti hausinn sem sést þegar glugginn er lokaður.</div>' +
+          '<div style="display:flex;gap:8px;margin-top:7px">' +
+            '<button type="button" class="_ssk-note-save" style="border:1px solid #156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border-radius:8px;padding:5px 15px;font-size:12px;font-weight:700;cursor:pointer">Vista</button>' +
+            '<button type="button" class="_ssk-note-cancel" style="border:1px solid #cbd5e1;background:#fff;color:#475569;border-radius:8px;padding:5px 14px;font-size:12px;cursor:pointer">Hætta við</button>' +
+          '</div>';
+        const ta = body.querySelector("._ssk-note-ta"); if (ta) ta.focus();
+        const redraw = (val) => {
+          const h = (val.split("\n")[0] || "").trim();
+          const r = val.split("\n").slice(1).join("\n").trim();
+          const hd = noteEl.querySelector("._ssk-note-head"); if (hd) hd.textContent = h;
+          body.textContent = r || h;
+        };
+        body.querySelector("._ssk-note-cancel").addEventListener("click", () => redraw((f.athugasemdir || "").trim()));
+        body.querySelector("._ssk-note-save").addEventListener("click", async () => {
+          const val = ta.value.trim();
+          const client = sb();
+          const btn = body.querySelector("._ssk-note-save"); if (btn) { btn.disabled = true; btn.textContent = "Vista…"; }
+          try {
+            if (client) await client.from("fyrirtaeki").update({ athugasemdir: val }).eq("id", f.id);
+            f.athugasemdir = val; if (cache[f.id]) cache[f.id]._ts = 0;
+          } catch (e) { alert("Gat ekki vistað samantekt: " + (e.message || e)); if (btn) { btn.disabled = false; btn.textContent = "Vista"; } return; }
+          redraw(val);
+        });
+      });
+    }
     const bordBtn = card.querySelector("._ssk-bord");
     if (bordBtn) bordBtn.addEventListener("click", () => { try { Verkbord.open(); } catch (_) {} });
     // Smella á póstrað → sækja hann allan úr email_digest og fella út.
