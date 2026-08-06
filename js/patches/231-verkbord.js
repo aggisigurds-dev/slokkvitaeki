@@ -926,6 +926,8 @@
             'background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;' +
             'box-shadow:0 0 16px -4px rgba(160,16,16,.55),inset 0 1px 0 rgba(255,255,255,.16);display:inline-flex;align-items:center;gap:7px">＋ Nýtt mál</button>' +
         '</div>' +
+        // Vikudagskrá-banner (patch #303 fyllir reitinn) — vikan á undan listanum.
+        '<div id="vb-dagskra" style="margin-bottom:16px"></div>' +
         // Composer-kort (skráningarlínan + MERKI tagpicks)
         '<div id="vb-composer" style="' + V3_CARD + ';padding:14px 16px;margin-bottom:16px;display:' + (state.composerOpen ? 'block' : 'none') + '">' +
           '<div style="display:flex;gap:8px;align-items:center;margin-bottom:9px;flex-wrap:wrap">' +
@@ -960,6 +962,8 @@
         '</div>' +
       '</div>';
     renderControls(); renderList();
+    // renderAll skrifar yfir allt #vb-main, svo dagskráin er teiknuð aftur hér.
+    if (window.Vikudagskra) { try { Vikudagskra.mount(); } catch (e) { console.warn('[verkbord] dagskrá:', e); } }
   }
 
   // Stjórnkortið (v3): Innhólf/Allt/Verkefni/Lokað flipar + leit + röðun/sýn,
