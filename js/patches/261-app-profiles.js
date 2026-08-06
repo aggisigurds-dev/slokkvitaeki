@@ -36,6 +36,7 @@
     { k: 'thjonustu-verkstaedi', label: 'ÞjónustuVerkstæði', short: 'Verkstæði', emoji: '🔧' },
     { k: 'brunayfirlit',     label: 'Brunakerfi yfirlit',    short: 'Brunakerfi', emoji: '🚨' },
     { k: 'rekstrarfelog',    label: 'Rekstrarfélög',         short: 'Rekstrarf.', emoji: '🏢' },
+    { k: 'minar-sidur',      label: 'Mínar síður',           short: 'Mínar síður', emoji: '🧩' },
     // Brunahólf-síður — birtar inni í appinu í iframe (deep-link á tab-ið).
     { k: 'br-gerdreikninga', label: 'Gerð reikninga',        short: 'Reikn.gerð', emoji: '🧾', url: 'https://brunaholf.netlify.app/?embed=1#gerdreikninga' },
     { k: 'br-vinnubok',      label: 'Vinnubók',              emoji: '📓', url: 'https://brunaholf.netlify.app/?embed=1#vinnubok' },
