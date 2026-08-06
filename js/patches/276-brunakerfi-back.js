@@ -44,16 +44,19 @@
   function openCount() { return LAYERS.reduce((a, L) => { try { return a + (L.find() ? 1 : 0); } catch (_) { return a; } }, 0); }
   function closeTop() { const t = topLayer(); if (!t) return false; try { t.L.close(t.el); } catch (_) {} return true; }
 
-  if (APPMODE) {
-    // Uppsett app: bakk lokar lögum, lokar aldrei appinu.
-    const arm = () => { try { history.pushState({ bkApp: 1 }, ''); } catch (_) {} };
-    arm();
-    window.addEventListener('popstate', () => { closeTop(); arm(); });
-    console.log('[patch-276] bakk-takki: app-hamur (læst buffer)');
-    return;
-  }
+  // ── Botn-varnagli (AÐEINS uppsettu öppin): EIN færsla neðst svo síðu-bakk (277)
+  //    geti aldrei dottið út úr appinu — bakk lokar appinu ALDREI. Endurýtt ef hún
+  //    er poppuð. Á venjulega vefnum þarf hann ekki (flipinn má lokast eðlilega).
+  //    2026-08-06: áður hélt app-hamur BARA einum buffer og endurýtti á HVERT bakk,
+  //    svo bakk hoppaði alltaf á forsíðuna (engar síðu-færslur, 277 var sleppt).
+  //    Nú keyrir 277 líka í öppunum → hver síða fær færslu → bakk fer eitt skref;
+  //    varnaglinn grípur aðeins þegar við værum að detta út.
+  function armRoot() { if (APPMODE) { try { history.pushState({ bkRoot: 1 }, ''); } catch (_) {} } }
+  function atRoot() { return APPMODE && history.state && history.state.bkRoot; }
+  armRoot();
 
-  // ── venjulegi vefurinn: state ýtt inn þegar lag opnast, bakk lokar því ──────
+  // ── Lag-varnaglar (BÁÐIR hamir): færsla ýtt inn um leið og þekkt lag OPNast, svo
+  //    bakk poppi ÞVÍ (loki laginu) í stað þess að flakka síðu. ──────────────────
   let armed = 0;
   function sync() {
     const n = openCount();
@@ -74,9 +77,15 @@
   }
   new MutationObserver(() => { watchPersistent(); sync(); }).observe(document.body, { childList: true });
   watchPersistent();
+
   window.addEventListener('popstate', () => {
-    if (closeTop()) armed = Math.max(0, armed - 1);
+    // 1) Opið lag efst? Lokaðu ÞVÍ (eitt bakk = eitt lag). Færslan sem var poppuð
+    //    var lag-varnaglinn, svo engin síða færist.
+    if (closeTop()) { armed = Math.max(0, armed - 1); if (atRoot()) armRoot(); return; }
+    // 2) Ekkert lag → síðu-bakk (277-færslur). Í uppsettu appi: ef við lentum á
+    //    botn-varnaglanum, endurýttu honum svo næsta bakk loki EKKI appinu.
+    if (atRoot()) armRoot();
   });
-  console.log('[patch-276] bakk-takki: vefur (lokar opnum lögum)');
+  console.log('[patch-276] bakk-takki: lög + botn-varnagli (' + (APPMODE ? 'app' : 'vefur') + ')');
 })();
 /* === END BAKK-TAKKI === */
