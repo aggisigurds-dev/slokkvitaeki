@@ -1232,7 +1232,38 @@
   // Bæði kortin lesa SAMA `rows` og flokkakortin fyrir neðan, svo flipar, leit
   // og TÖG sem valin eru að ofan gilda hér líka — þetta eru útsýnisgluggar á
   // sama gagnasafn, ekki nýr listi.
-  const TOP_N = 15;
+  const TOP_N = 10;   // 10 nýjustu / 10 efstu í MÁL (ósk Agnars 6.8.)
+
+  // Röð í efstu kortunum (2026-08-06, ósk Agnars — hann strikaði út pilluna og
+  // 🗓-hnappinn): þéttari en flokkakortin. „bíður N daga"-pillan og „Á dagskrá"
+  // víkja; biðin birtist í staðinn sem þéttur „7D"-teljari undir dagsetningunni,
+  // sem er sjálf í meiri birtuskilum. Textinn fær þrjár línur alls — titill og
+  // tveggja lína lýsing. Hnappurinn lifir áfram í flokkakortunum fyrir neðan.
+  function topRow(r) {
+    const on = String(state.selId) === String(r.id);
+    const sub = (r.notes || r.customer_nafn || '').replace(/\s+/g, ' ').trim();
+    const d = isWaiting(r) ? waitDays(r) : null;
+    const dc = d === null ? '' : (d > 90 ? '#c3271c' : (d > 30 ? '#b8860b' : '#6b7280'));
+    return '<div class="vb-v3row" data-act="selrow" data-id="' + esc(r.id) + '" ' +
+      'style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-top:1px solid #eef0f2;cursor:pointer;' +
+      'background:' + (on ? 'rgba(195,39,28,.05)' : '#fff') + ';' + (on ? 'box-shadow:inset 3px 0 0 #c3271c;' : '') + '">' +
+        '<div style="flex:none;width:40px;padding-top:1px">' +
+          '<div style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px;font-weight:700;color:#3f4650">' +
+            esc(shortDate(r.created_at)) + '</div>' +
+          (d === null ? ''
+            : '<div title="bíður ' + d + ' daga" style="font-family:ui-monospace,Consolas,monospace;font-size:11px;' +
+              'font-weight:800;color:' + dc + ';margin-top:2px">' + d + 'D</div>') +
+        '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+            (r.important ? '<span style="color:#eab308">★ </span>' : '') + esc(r.title || '(ónefnt)') + '</div>' +
+          (sub
+            ? '<div style="font-size:12px;color:#6b7280;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;' +
+              '-webkit-box-orient:vertical;overflow:hidden">' + esc(sub) + '</div>'
+            : '') +
+        '</div>' +
+      '</div>';
+  }
 
   function topCard(title, emoji, count, headExtra, bodyHTML) {
     return '<div style="' + CARD_V3 + ';min-width:0">' +
@@ -1267,10 +1298,10 @@
     el.innerHTML =
       topCard('NÝJAST', '🆕', nyjast.length,
         '<span style="margin-left:auto;font-size:11px;font-weight:600;color:#9aa0aa">nýjast efst</span>',
-        nyjast.map(r => v3Row(r, false)).join('')) +
+        nyjast.map(topRow).join('')) +
       topCard('MÁL', '📋', pick.length,
         '<span style="margin-left:auto;display:inline-flex;gap:5px">' + seg('allt', 'Allt') + seg('aridandi', '⭐ Áríðandi') + '</span>',
-        pick.slice(0, TOP_N).map(r => v3Row(r, false)).join(''));
+        pick.slice(0, TOP_N).map(topRow).join(''));
   }
 
   function renderList() {
