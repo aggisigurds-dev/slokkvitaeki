@@ -330,14 +330,14 @@
       } catch (_) { return []; }
     })(),
     fWorker: (function () { try { return localStorage.getItem(WKEY) || ''; } catch (_) { return ''; } })(),  // '' = Allir
-    viewMode: (function () { try { return localStorage.getItem(VMKEY) || 'venjulegt'; } catch (_) { return 'venjulegt'; } })(),
+    viewMode: (function () { try { return localStorage.getItem(VMKEY) || 'itarlegt'; } catch (_) { return 'itarlegt'; } })(),
     search: '',
     addType: 'annad',
     addTags: [],        // merki valin í ný-beiðni línunni (hreinsast eftir skráningu)
     threadLatest: {},   // beidniId → nýjasti póstur í þræðinum (sjá loadThreadLatest)
     addRsk: null,       // síðasta RSK-uppfletting úr fyrirtækjareitnum {kt,nafn,heimilisfang}
     // Þjónustuverk v3: ⭐ Áríðandi-sía, dálkaröðun, síðuskipting, composer-sýnileiki
-    fStar: false,
+    fStar: true,
     colSort: null,      // {key:'dags'|'mal'|'stada', dir:'asc'|'desc'} | null
     page: 0,
     // Composer opið á tölvu, lokað á síma/spjaldtölvu (+ Nýtt mál opnar) —
