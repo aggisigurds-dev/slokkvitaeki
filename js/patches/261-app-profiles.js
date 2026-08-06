@@ -140,9 +140,9 @@
     var d = document.createElement('div');
     d.id = '_app-splash';
     d.style.cssText = 'position:fixed;inset:0;z-index:2147483600;display:flex;flex-direction:column;' +
-      'align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,' + a.color + ',' + a.dark + ');' +
+      'align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ');' +
       'color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif';
-    d.innerHTML = '<div style="font-size:56px;line-height:1">' + a.emoji + '</div>' +
+    d.innerHTML = '<div style="font-size:56px;line-height:1">' + esc(a.emoji) + '</div>' +
       '<div style="font-size:19px;font-weight:800;letter-spacing:.02em">' + esc(a.name) + '</div>' +
       '<div style="width:26px;height:26px;border-radius:50%;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;animation:_appspin .8s linear infinite"></div>' +
       '<style>@keyframes _appspin{to{transform:rotate(360deg)}}</style>';
@@ -457,10 +457,10 @@
       var pagesSection = a.standalone ? '' :
         ('<div class="op-sech">Síður í appinu</div>' + '<div class="op-pages">' + pageRows + '</div>');
       return '<div class="op-card">' +
-        '<div class="op-top"><div class="op-ic" style="background:linear-gradient(180deg,' + a.color + ',' + a.dark + ')">' + a.emoji + '</div>' +
+        '<div class="op-top"><div class="op-ic" style="background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')">' + esc(a.emoji) + '</div>' +
           '<div><div class="op-nm">' + esc(a.name) + '</div><div class="op-bl">' + esc(a.blurb) + '</div></div></div>' +
         '<div class="op-acts">' +
-          '<button class="op-btn prim _op-open" data-app="' + a.key + '" style="background:linear-gradient(180deg,' + a.color + ',' + a.dark + ')" type="button">▶ Opna</button>' +
+          '<button class="op-btn prim _op-open" data-app="' + a.key + '" style="background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')" type="button">▶ Opna</button>' +
           '<button class="op-btn _app-install _op-install" data-app="' + a.key + '" data-always="1" type="button">⤓ Setja upp í síma</button>' +
           '<button class="op-btn _op-link" data-app="' + a.key + '" type="button">🔗 Afrita hlekk</button>' +
           '<button class="op-btn _op-panel" data-app="' + a.key + '" type="button">⚙ Þjónustuborð</button>' +
@@ -517,7 +517,7 @@
 
     var hdr = document.getElementById('_app-hdr') || document.createElement('div');
     hdr.id = '_app-hdr'; hdr.style.display = ''; hdr.style.background = 'linear-gradient(180deg,' + a.color + ',' + a.dark + ')';
-    hdr.innerHTML = '<div class="nm">' + a.emoji + ' ' + esc(a.name) + '</div>' +
+    hdr.innerHTML = '<div class="nm">' + esc(a.emoji) + ' ' + esc(a.name) + '</div>' +
       (a.standalone ? '' : '<button id="_app-pages" type="button" title="Þjónustuborð — síður, útlit, útgáfa">⚙ Þjónustuborð</button>') +
       '<button class="_app-install" data-always="1" id="_app-inst2" type="button">⤓ Setja upp</button>' +
       '<button id="_app-exit" type="button" title="Loka appi">✕</button>';
@@ -617,9 +617,9 @@
               '<label style="display:flex;flex-direction:column;gap:4px">Tákn' +
                 '<input class="_pe-emoji" value="' + esc(a.emoji) + '" maxlength="4" style="width:64px;padding:9px 11px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:20px;text-align:center"></label>' +
               '<label style="display:flex;flex-direction:column;gap:4px">Litur (efst)' +
-                '<input class="_pe-color" type="color" value="' + a.color + '" style="width:52px;height:40px;padding:2px;border:1px solid #d7dce4;border-radius:9px"></label>' +
+                '<input class="_pe-color" type="color" value="' + esc(a.color) + '" style="width:52px;height:40px;padding:2px;border:1px solid #d7dce4;border-radius:9px"></label>' +
               '<label style="display:flex;flex-direction:column;gap:4px">Litur (neðst)' +
-                '<input class="_pe-dark" type="color" value="' + a.dark + '" style="width:52px;height:40px;padding:2px;border:1px solid #d7dce4;border-radius:9px"></label>' +
+                '<input class="_pe-dark" type="color" value="' + esc(a.dark) + '" style="width:52px;height:40px;padding:2px;border:1px solid #d7dce4;border-radius:9px"></label>' +
               '<button class="_pe-reset-look" type="button" style="font:inherit;font-size:13px;font-weight:700;padding:9px 13px;border-radius:9px;border:1px solid #d7dce4;background:#f1f5f9;color:#64748b;cursor:pointer;min-height:40px">Núllstilla</button>' +
             '</div>' +
             '<div style="font-size:11.5px;color:#94a3b8;line-height:1.5">Þetta breytir tákninu/litnum sem birtist HÉR í appinu (spjald, haus, hleðsluskjár) — ekki sjálfri heimaskjás-táknmyndinni, sem er föst mynd og krefst nýrrar hönnunar.</div>' +

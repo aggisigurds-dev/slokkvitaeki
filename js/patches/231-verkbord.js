@@ -1066,6 +1066,17 @@
           '<button data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (engin tvítök)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:rgba(255,255,255,.85);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">✉️ Sækja póst</button>' +
           '<a href="kunnaskra.html" target="_blank" rel="noopener" title="Opna heildar-kúnnaskrá — lifandi úr Supabase" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;text-decoration:none;' + V3_METAL + ';color:#7ee0c0;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🗂️ Kúnnaskrá</a>' +
           (noiseN ? '<button data-act="clearnoise" title="Fela allar Payday-greiðslutilkynningar í einu (endurheimtanlegt)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:#ff8a82;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🧹 ' + noiseN + '</button>' : '') +
+          // 2026-08-06: V3-endurhönnunin týndi einu leiðinni til að sjá aftur
+          // póst sem er í geymslu (ekkert eytt, bara falið) — state.showOld
+          // og smellhlustarinn voru enn til, bara enginn hnappur sem kveikti
+          // á þeim. Sýnd aðeins á Innhólf-flipanum þegar eitthvað er í geymslu
+          // (eða þegar þegar kveikt, svo hægt sé að slökkva aftur).
+          ((state.queue === 'post' && (c.geymsla || state.showOld))
+            ? '<button data-act="showold" title="Póstur í geymslu er aldrei eytt — sýna/fela hann hér" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' +
+              (state.showOld ? V3_METAL_ON + ';color:#fff' : V3_METAL + ';color:rgba(255,255,255,.85)') +
+              ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">' +
+              (state.showOld ? '▲ Fela geymslu' : '📦 Geymsla · ' + c.geymsla) + '</button>'
+            : '') +
         '</div>' +
       '</div>' +
       // TÖG-síuröðin
@@ -1546,7 +1557,7 @@
       if (act === 'import') { importOld(); return; }
       // Þjónustuborð v2: flokka-sía, geymsla, klára.
       if (act === 'flokk') { const f = t.getAttribute('data-f'); setFlokk(state.fFlokk === f ? '' : f); renderControls(); renderList(); return; }
-      if (act === 'showold') { state.showOld = !state.showOld; renderList(); return; }
+      if (act === 'showold') { state.showOld = !state.showOld; renderControls(); renderList(); return; }
       if (act === 'archive') {
         e.stopPropagation();
         saveRow(nid, { archived_at: nowIso() });

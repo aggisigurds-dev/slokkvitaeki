@@ -58,6 +58,16 @@
   // it — always mutate in-place so external code (Vidskiptavinir.list)
   // sees the same array as the closure does.
   const customers = [];
+  // 2026-08-06: separate FULL/unfiltered directory from the de-duped display
+  // list above. Vidskiptavinir.list is a shared contract other patches build
+  // on for lookups by kennitala (116-vidsk-pricing.js's sérkjör, 118-cart-
+  // savings.js, 114's POS search prefetch/create) — those need EVERY row,
+  // including ones this tab hides because a promoted fyrirtaeki duplicate
+  // exists. Filtering `customers` itself (as originally done) silently broke
+  // sérkjör lookups for the 144 already-promoted customers. `customers` stays
+  // the de-duped list this file's own render/search/selection code uses;
+  // `allCustomers` is what Vidskiptavinir.list now exposes.
+  const allCustomers = [];
   let unitsByPhone = {};   // phone -> [units]
   let unitsByName = {};    // name -> [units]
   // 2026-06-10: signature of the last-rendered detail page. refresh() can fire
@@ -163,6 +173,8 @@
       // Mutate-in-place to keep external references in sync (see decl note)
       customers.length = 0;
       visibleRows.forEach(r => customers.push(r));
+      allCustomers.length = 0;
+      (rows || []).forEach(r => allCustomers.push(r));
 
       const phones = customers.map(c => c.simi).filter(Boolean);
       const names = customers.map(c => c.nafn).filter(Boolean);
@@ -828,11 +840,13 @@
   // pointer behind everyone's back.
   window.Vidskiptavinir = {
     load, render: renderList, refresh,
-    get list() { return customers; },
+    // Full directory (see allCustomers decl note) — NOT the de-duped display
+    // list; use Vidskiptavinir.render()'s own DOM for "what's shown".
+    get list() { return allCustomers; },
     set list(v) {
       if (!Array.isArray(v)) return;
-      customers.length = 0;
-      v.forEach(x => customers.push(x));
+      allCustomers.length = 0;
+      v.forEach(x => allCustomers.push(x));
     },
     openDetail: c => { if (c?.id) openDetailById(c.id); },
     openNew: () => window.SalaMottaka?.openNewCustomer?.(),
