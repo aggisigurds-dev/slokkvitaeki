@@ -1174,6 +1174,23 @@
   }
   window.addEventListener('hashchange', opnaAfSlod);
 
+  // 2026-08-06: Hnappurinn var tengdur með addEventListener BEINT á hnappinn og
+  // merktur `data-_su-hooked`. Hliðarstiku-patcharnir (68/171/180 …) endurraða
+  // og KLÓNA hnappa — klónninn erfir merkinguna en EKKI hlustarann, svo
+  // addNavButton() sleppti honum og smellur gerði ekki neitt. Þess vegna er
+  // hér líka hlustari á skjalinu sjálfu sem virkar sama hvað gerist við
+  // hnappinn: hann finnur réttan hnapp út frá data-view.
+  document.addEventListener('click', e => {
+    const b = e.target.closest && e.target.closest('.vnav-btn[data-view="settings"]');
+    if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    if (!document.getElementById('su-modal')) open();
+    else {
+      const v = document.getElementById('view-settings');
+      if (v) { document.querySelectorAll('[id^=view-]').forEach(x => { x.style.display = 'none'; x.classList.remove('active'); }); v.style.display = ''; v.classList.add('active'); }
+    }
+  }, true);
+
   function init() {
     setTimeout(() => opnaAfSlod(true), 900);
     // Clean up any leftover duplicate from earlier versions of this patch
