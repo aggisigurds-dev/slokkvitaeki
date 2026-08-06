@@ -140,8 +140,10 @@
       .sort((a, b) => (String(a.time || '') < String(b.time || '') ? -1 : 1));
     return {
       // Ræman byrjar á DEGINUM Í DAG, svo vikudagsnafnið verður að koma úr
-      // dagsetningunni sjálfri — ekki úr sætinu í röðinni.
+      // dagsetningunni sjálfri — ekki úr sætinu í röðinni. Sama á við um helgina:
+      // lau/sun geta lent hvar sem er í ræmunni og þekkjast á vikudeginum.
       ds, name: NAMES[(d.getDay() + 6) % 7], num: d.getDate(), jobs,
+      isWeekend: (d.getDay() + 6) % 7 >= 5,
       bg:     isToday ? SURFACE_TODAY : SURFACE,
       border: isToday ? '#2563eb' : '#e5e7eb',
       head:   (isPast && !isToday) ? '#9aa3b2' : '#6b7280',
@@ -198,11 +200,23 @@
 
     const todayStr = fmt(new Date());
     // Ræman byrjar á DEGINUM Í DAG og telur fram á við (ósk Agnars 6.8.) í stað
-    // fastrar mánudagsviku. Þess vegna eru allir sjö reitirnir jafnstórir: helgin
-    // getur lent hvar sem er í röðinni og á ekki lengur fast sæti aftast.
+    // fastrar mánudagsviku — helgin getur því lent hvar sem er í röðinni.
     const start = new Date(); start.setHours(0, 0, 0, 0);
     start.setDate(start.getDate() + state.offset * 7);
     const days = [0, 1, 2, 3, 4, 5, 6].map(i => dayModel(start, i, todayStr));
+
+    // Lau/sun eru áfram hálfir reitir hvor ofan á öðrum — lokað um helgar, svo
+    // þeir þurfa ekki fulla hæð. Munurinn frá gömlu vikuræmunni er að parið
+    // situr núna á sínum rétta stað í röðinni í stað þess að vera alltaf aftast.
+    // (Byrji ræman á sunnudegi slitnar parið í sundur — þá stendur hvor um sig
+    // einn í hálfum reit á sínum stað.)
+    const cols = [];
+    for (let i = 0; i < days.length; i++) {
+      const m = days[i], nx = days[i + 1];
+      if (m.isWeekend && nx && nx.isWeekend) { cols.push([m, nx]); i++; }
+      else if (m.isWeekend) cols.push([m]);
+      else cols.push(m);
+    }
 
     const navBtn = (act, label, title, extra) =>
       '<button class="vd-nav" data-vd="' + act + '"' + (title ? ' title="' + title + '"' : '') + ' ' +
@@ -235,8 +249,12 @@
         '</div>' +
         // vikuræman
         '<div style="padding:10px 12px 12px">' +
-          '<div class="vd-grid" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px">' +
-            days.map(m => cellHTML(m, false)).join('') +
+          '<div class="vd-grid" style="display:grid;grid-template-columns:repeat(' + cols.length + ',minmax(0,1fr));gap:8px">' +
+            cols.map(c => Array.isArray(c)
+              ? '<div style="display:flex;flex-direction:column;gap:6px;min-width:0">' +
+                  c.map(m => cellHTML(m, true)).join('') +
+                '</div>'
+              : cellHTML(c, false)).join('') +
           '</div>' +
           '<div style="display:flex;gap:14px;margin-top:10px;padding:0 2px;flex-wrap:wrap">' +
             TYPES.map(t =>
