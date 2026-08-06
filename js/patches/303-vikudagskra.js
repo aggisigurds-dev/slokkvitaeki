@@ -375,16 +375,17 @@
   }
 
   // Stillingar hlaðast eftir á (og breytast þegar annað tæki vistar) → endurteikna.
-  if (window.AppSettings && AppSettings.onChange) {
-    AppSettings.onChange(() => {
-      const next = readJobs();
-      if (JSON.stringify(next) === JSON.stringify(state.jobs)) return;
-      state.jobs = next;
-      render();
-    });
-  }
+  if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(mount);
 
   window.Vikudagskra = { mount, render, open: openModal };
+
+  // Borðið kann að vera teiknað ÁÐUR en þessi skrá er lesin: #231 og #303 eru
+  // bæði `defer` og #231 situr ~50 script-tögum framar, svo `renderAll()` hafði
+  // þegar keyrt og séð `window.Vikudagskra === undefined` — reiturinn stóð eftir
+  // tómur og ekkert kveikti á honum aftur. Því mountum við okkur sjálf hér, og
+  // aftur við `load` fyrir seinni teikningu borðsins.
+  mount();
+  window.addEventListener('load', mount);
 
   console.log('[vikudagskra] installed');
 })();
