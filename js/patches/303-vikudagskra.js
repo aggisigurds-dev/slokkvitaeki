@@ -270,23 +270,28 @@
             '<button data-vd="close" style="border:none;background:none;cursor:pointer;font-size:16px;color:#9aa0aa;padding:2px 4px;font-family:inherit">✕</button>' +
           '</div>' +
           '<div style="display:flex;flex-direction:column;gap:12px">' +
+            // NB `data-original`: #177 (modal dirty-guard) telur <select> ALLTAF
+            // breyttan — `defaultValue` er undefined á select, svo ósnert form
+            // hefði spurt „óvistaðar breytingar?" við hvern bakgrunnssmell.
+            // data-original er þeirra eigin undanþága: ósnert = hreint, en um
+            // leið og Agnar skrifar nafn heldur vörnin sér.
             '<div style="display:flex;gap:8px">' +
               '<div style="flex:1"><div style="' + lbl + '">Dagsetning</div>' +
-                '<input type="date" id="vd-date" value="' + esc(f.date) + '" style="' + fld + '"></div>' +
+                '<input type="date" id="vd-date" value="' + esc(f.date) + '" data-original="' + esc(f.date) + '" style="' + fld + '"></div>' +
               '<div style="width:110px"><div style="' + lbl + '">Tími</div>' +
-                '<input type="time" id="vd-time" value="' + esc(f.time) + '" style="' + fld + '"></div>' +
+                '<input type="time" id="vd-time" value="' + esc(f.time) + '" data-original="' + esc(f.time) + '" style="' + fld + '"></div>' +
             '</div>' +
             '<div><div style="' + lbl + '">Fyrirtæki / viðskiptavinur</div>' +
               // sami fyrirtækjalisti og hraðlínan á Verkborði notar (#231)
               '<input type="text" id="vd-name" list="vb-companies" autocomplete="off" value="' + esc(f.name) + '" ' +
-                'placeholder="t.d. Distica" style="' + fld + '">' +
+                'data-original="' + esc(f.name) + '" placeholder="t.d. Distica" style="' + fld + '">' +
               '<div id="vd-err" style="display:none;font-size:11px;font-weight:600;color:' + ACCENT + ';margin-top:4px">Vantar nafn viðskiptavinar</div></div>' +
             '<div><div style="' + lbl + '">Tegund verks</div>' +
-              '<select id="vd-type" style="' + fld + ';cursor:pointer">' +
+              '<select id="vd-type" data-original="' + esc(f.type) + '" style="' + fld + ';cursor:pointer">' +
                 TYPES.map(t => '<option value="' + t[0] + '"' + (f.type === t[0] ? ' selected' : '') + '>' + t[0] + '</option>').join('') +
               '</select></div>' +
             '<div><div style="' + lbl + '">Athugasemd</div>' +
-              '<input type="text" id="vd-note" value="' + esc(f.note) + '" placeholder="Valfrjálst" style="' + fld + '"></div>' +
+              '<input type="text" id="vd-note" value="' + esc(f.note) + '" data-original="' + esc(f.note) + '" placeholder="Valfrjálst" style="' + fld + '"></div>' +
           '</div>' +
           '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px">' +
             '<button class="vd-nav" data-vd="close" style="height:36px;padding:0 14px;border:1px solid #3a3d45;border-radius:10px;' +
