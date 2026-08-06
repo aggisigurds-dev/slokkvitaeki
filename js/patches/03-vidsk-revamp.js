@@ -586,7 +586,7 @@
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="btn btn-sm" id="vk-promote" style="background:#16a34a;color:#fff;border:1px solid #16a34a;">⬆ Gera að fyrirtæki í þjónustu</button>
+          <button class="btn btn-sm" id="vk-promote" style="background:#16a34a;color:#fff;border:1px solid #16a34a;" title="Skráir í Allir viðskiptavinir — afsláttur og reikningasaga virkjast. EKKI árleg skoðunarþjónusta (sér ákvörðun á eftir).">🔖 Skrá í viðskipti</button>
           <button class="btn btn-outline btn-sm" id="vk-edit">Breyta</button>
           <button class="btn btn-outline btn-sm" id="vk-delete">🗑️ Eyða</button>
           <button class="btn btn-outline btn-sm" id="vk-c360">Staða</button>

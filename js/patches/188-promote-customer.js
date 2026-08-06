@@ -1,16 +1,23 @@
-/* === PROMOTE CUSTOMER → FYRIRTÆKJAÞJÓNUSTA v1 ===
+/* === PROMOTE CUSTOMER → VIÐSKIPTI v2 ===
  *
  * Turns a regular customer (a Viðskiptavinur / Sala-created `vidskiptavinir`
- * row) into a service company row in `fyrirtaeki` (er_i_thjonustu = true),
- * creating/linking the `customers_base` identity root so the whole record is
- * unified.
+ * row) into a company row in `fyrirtaeki`, creating/linking the
+ * `customers_base` identity root so the whole record is unified.
  *
- *   • Company NOT yet in Fyrirtækjaþjónusta → create it (status 'virkur',
- *     er_i_thjonustu true), copy name/kt/phone/email/address/notes.
- *   • Company ALREADY there → warn, then offer a SAFE fill-blanks merge:
+ * 2026-08-06 (ósk Agnars — sjá líka 280-company-service-toggle.js): áður setti
+ * þetta ALLTAF er_i_thjonustu=true, sem var rangt fyrir langflest tilvik —
+ * flestir sem þarf að skrá almennilega (afsláttur, reikningasaga) eru EKKI í
+ * árlegri skoðunarþjónustu, bara í viðskiptum. Fáninn er núna FALSE
+ * sjálfgefið; „⬆ Setja í þjónustu" (280) er sér ákvörðun sem Agnar tekur
+ * handvirkt á eftir, per fyrirtæki, ef þörf er á.
+ *
+ *   • Fyrirtæki EKKI til í fyrirtaeki → stofna það (status 'virkur',
+ *     er_i_thjonustu FALSE), copy name/kt/phone/email/address/notes.
+ *   • Fyrirtæki ÞEGAR til → warn, then offer a SAFE fill-blanks merge:
  *     only empty fields on the existing company get filled from the customer
- *     record. Nothing is ever overwritten or deleted. The originating
- *     vidskiptavinir row is kept and linked via the shared base.
+ *     record. Nothing is ever overwritten or deleted, and the service flag is
+ *     left exactly as it was — merging never turns service on by itself. The
+ *     originating vidskiptavinir row is kept and linked via the shared base.
  *
  * Public API:
  *   window.PromoteCustomer.run(seed, opts)
@@ -69,7 +76,7 @@
   async function doCreate(ktDash, seed) {
     const sb = SB(); if (!sb) return;
     const baseId = await ensureBase(ktDash, seed);
-    const row = { nafn: seed.nafn || '', kennitala: ktDash, status: 'virkur', er_i_thjonustu: true, customer_base_id: baseId || null };
+    const row = { nafn: seed.nafn || '', kennitala: ktDash, status: 'virkur', er_i_thjonustu: false, customer_base_id: baseId || null };
     SHARED.forEach(c => { if (!blank(seed[c])) row[c] = seed[c]; });
     let fy = null;
     try {
@@ -81,7 +88,7 @@
     if (seed.vidsk_id && baseId) {
       try { await sb.from('vidskiptavinir').update({ customer_base_id: baseId }).eq('id', seed.vidsk_id); } catch (_) {}
     }
-    toast('✓ ' + (seed.nafn || 'Fyrirtæki') + ' bætt í Fyrirtækjaþjónustu');
+    toast('✓ ' + (seed.nafn || 'Fyrirtæki') + ' skráð í viðskipti');
     afterPromote(fy);
   }
 
@@ -89,7 +96,7 @@
     const sb = SB(); if (!sb) return;
     const upd = {};
     SHARED.forEach(c => { if (blank(existing[c]) && !blank(seed[c])) upd[c] = seed[c]; });
-    if (!existing.er_i_thjonustu) { upd.er_i_thjonustu = true; if (blank(existing.status)) upd.status = 'virkur'; }
+    if (blank(existing.status)) upd.status = 'virkur';
     const baseId = existing.customer_base_id || await ensureBase(dash(existing.kennitala || seed.kennitala), seed);
     if (!existing.customer_base_id && baseId) upd.customer_base_id = baseId;
     if (Object.keys(upd).length) {
@@ -146,18 +153,19 @@
       const inServ = !!existing.er_i_thjonustu;
       confirmModal({
         title: '⚠ Nú þegar til',
-        body: `„${esc(existing.nafn || seed.nafn || '')}" (${esc(ktDash)}) er ${inServ ? 'nú þegar í <b>Fyrirtækjaþjónustu</b>' : 'þegar til sem fyrirtæki'}.<br><br>` +
-              `Viltu <b>sameina</b> viðbótarupplýsingar af viðskiptavininum yfir á fyrirtækið? Aðeins <b>tómir reitir</b> verða fylltir — engu sem þegar er skráð er breytt eða eytt.`,
+        body: `„${esc(existing.nafn || seed.nafn || '')}" (${esc(ktDash)}) er þegar til sem fyrirtæki${inServ ? ' og <b>í þjónustu</b>' : ''}.<br><br>` +
+              `Viltu <b>sameina</b> viðbótarupplýsingar af viðskiptavininum yfir á fyrirtækið? Aðeins <b>tómir reitir</b> verða fylltir — engu sem þegar er skráð er breytt eða eytt, og þjónustustaðan haldur sér óbreytt.`,
         okLabel: 'Sameina', okColor: '#2563eb',
         onOk: () => doMergeFillBlanks(existing, seed)
       });
       return;
     }
     confirmModal({
-      title: '⬆ Gera að fyrirtæki í þjónustu',
-      body: `Stofna „${esc(seed.nafn || '')}" (${esc(ktDash)}) sem <b>fyrirtæki í þjónustu</b>? ` +
-            `Upplýsingar verða afritaðar og fyrirtækið bætist í Fyrirtækjaþjónustu.`,
-      okLabel: 'Stofna', okColor: '#16a34a',
+      title: '🔖 Skrá í viðskipti',
+      body: `Skrá „${esc(seed.nafn || '')}" (${esc(ktDash)}) í viðskipti? Upplýsingar verða afritaðar og fyrirtækið birtist í ` +
+            `<b>Allir viðskiptavinir</b> með virkan afslátt og reikningasögu.<br><br>` +
+            `Fær <b>ekki</b> árlega skoðunarþjónustu sjálfkrafa — það er sér ákvörðun („⬆ Setja í þjónustu"-takkinn) ef við á.`,
+      okLabel: 'Skrá', okColor: '#16a34a',
       onOk: () => doCreate(ktDash, seed)
     });
   }

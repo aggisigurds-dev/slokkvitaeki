@@ -74,7 +74,7 @@
       // fyrirtaeki is >1000 rows — page through the Supabase cap, then re-shape
       // to { data } so the consumer below stays unchanged.
       DB.fetchAll((from, to) => SB.from('fyrirtaeki')
-        .select('id,nafn,simi,kennitala,heimilisfang,netfang,afslattur_pct,athugasemdir')
+        .select('id,nafn,simi,kennitala,heimilisfang,netfang,afslattur_pct,athugasemdir,er_i_thjonustu')
         .is('deleted_at', null)
         .order('nafn')
         .range(from, to)).then(rows => ({ data: rows })),
@@ -99,6 +99,41 @@
 
   // Public helper so other patches can force a refresh after editing.
   window._upsRefreshCustomers = () => prefetchCustomers(true);
+
+  // 2026-08-06 (ósk Agnars): kt-lookup.js spyr EINGÖNGU RSK Fyrirtækjaskrá —
+  // finni það kennitöluna þýðir það sjálfkrafa að hún er skráð FYRIRTÆKI, ekki
+  // einstaklingur (Fyrirtækjaskrá geymir aldrei kennitölur einstaklinga). Því
+  // á fundin RSK-niðurstaða að stofna beint í `fyrirtaeki` (Allir viðskipta-
+  // vinir), ekki `vidskiptavinir` — öfugt við „Skrá viðskiptavin"-flæðið sem
+  // er ætlað einstaklingum og heldur áfram að skrifa í vidskiptavinir eins og
+  // áður. Þjónustu-fáninn er FALSE — sér ákvörðun ef Agnar vill bæta við.
+  async function createFyrirtaekiFromRsk(ktDigits, data) {
+    const sb = window.DB && window.DB.sb;
+    if (!sb) throw new Error('Engin gagnabankatenging');
+    const ktDash = ktDigits.slice(0, 6) + '-' + ktDigits.slice(6);
+    // Defensive: reuse if a row already exists (race with another tab, or a
+    // stale local cache that missed a recent add).
+    const existing = await sb.from('fyrirtaeki').select('*').or('kennitala.eq.' + ktDash + ',kennitala.eq.' + ktDigits).is('deleted_at', null).limit(1).maybeSingle();
+    if (existing && existing.data) return { row: existing.data, reused: true };
+
+    let baseId = null;
+    const base = await sb.from('customers_base').select('id').eq('kennitala', ktDash).limit(1).maybeSingle();
+    if (base && base.data) baseId = base.data.id;
+    else {
+      const nb = await sb.from('customers_base').insert({
+        kennitala: ktDash, nafn: data.nafn || '', heimilisfang: data.heimilisfang || ''
+      }).select('id').single();
+      if (nb.error) throw nb.error;
+      baseId = nb.data.id;
+    }
+
+    const ins = await sb.from('fyrirtaeki').insert({
+      nafn: data.nafn || '', kennitala: ktDash, status: 'virkur', er_i_thjonustu: false,
+      customer_base_id: baseId, heimilisfang: data.heimilisfang || null, simi: data.simi || null
+    }).select().single();
+    if (ins.error) throw ins.error;
+    return { row: ins.data, reused: false };
+  }
 
   // 2026-05-10 (#2): Public opener so other patches (e.g. patch 19 RSK
   // lookup) can fall back to this when their flow can't proceed.
@@ -347,6 +382,7 @@
         heimilisfang: c.heimilisfang || c.heimilisFang || '',
         afslattur_pct: c.afslattur_pct || 0,
         athugasemdir: c.athugasemdir || '',
+        er_i_thjonustu: !!c.er_i_thjonustu,
         source: 'fyrirtaeki'
       });
     });
@@ -665,16 +701,25 @@
               if (window.KtLookup && typeof KtLookup.lookup === 'function') {
                 const data = await KtLookup.lookup(qDigits);
                 if (data && data.nafn) {
+                  // Found in RSK Fyrirtækjaskrá = definitely a company (that
+                  // registry never carries individuals) → create it directly
+                  // in fyrirtaeki, not vidskiptavinir.
+                  rsk.textContent = '⏳ Skrái í viðskipti...';
+                  const { row, reused } = await createFyrirtaekiFromRsk(qDigits, data);
+                  try {
+                    if (window.Companies && Array.isArray(Companies.list) && !reused) Companies.list.push(row);
+                  } catch (_) {}
                   results.style.display = 'none';
                   selectCustomer({
-                    id: null,
-                    nafn: data.nafn,
-                    kennitala: qDigits,
-                    simi: data.simi || '',
-                    heimilisfang: data.heimilisfang || '',
-                    afslattur_pct: 0
-                  }, 'rsk');
-                  if (window.Toast && Toast.show) Toast.show('✓ ' + data.nafn);
+                    id: row.id,
+                    nafn: row.nafn,
+                    kennitala: row.kennitala,
+                    simi: row.simi || '',
+                    heimilisfang: row.heimilisfang || '',
+                    afslattur_pct: row.afslattur_pct || 0,
+                    er_i_thjonustu: row.er_i_thjonustu
+                  }, 'fyrirtaeki');
+                  if (window.Toast && Toast.show) Toast.show((reused ? '✓ Fannst þegar: ' : '✓ Skráð í viðskipti: ') + row.nafn);
                   return;
                 }
               }
@@ -696,9 +741,15 @@
       }
       results.innerHTML = matches.map(m => {
         const ktDisp = m.kennitala ? esc(m.kennitala) : '';
+        // 2026-08-06 (ósk Agnars: "show in lookup what database they are in"):
+        // þrjú stig, ekki tvö — fyrirtaeki er annaðhvort í árlegri þjónustu
+        // eða bara í viðskiptum, og það er sitthvor síðan (Fyrirtæki í
+        // þjónustu vs. Allir viðskiptavinir).
         const sourceBadge = m.source === 'fyrirtaeki'
-          ? '<span style="font-size:9px;background:#dcfce7;color:#166534;padding:1px 6px;border-radius:99px;font-weight:700;margin-left:6px">B2B</span>'
-          : '<span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:99px;font-weight:700;margin-left:6px">Viðsk.</span>';
+          ? (m.er_i_thjonustu
+              ? '<span style="font-size:9px;background:#dcfce7;color:#166534;padding:1px 6px;border-radius:99px;font-weight:700;margin-left:6px">🧯 Þjónusta</span>'
+              : '<span style="font-size:9px;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:99px;font-weight:700;margin-left:6px">🏢 Viðskipti</span>')
+          : '<span style="font-size:9px;background:#dbeafe;color:#1e40af;padding:1px 6px;border-radius:99px;font-weight:700;margin-left:6px">👤 Viðsk.</span>';
         const discBadge = m.afslattur_pct > 0
           ? '<span style="font-size:9px;background:#dcfce7;color:#166534;padding:1px 6px;border-radius:99px;font-weight:700;margin-left:4px">' + m.afslattur_pct + '%</span>'
           : '';
@@ -891,10 +942,14 @@
     const notesTextEl = document.getElementById('_ups-sel-notes-text');
 
     if (srcEl) {
-      if (source === 'fyrirtaeki') {
-        srcEl.style.background = '#e0e7ff';
-        srcEl.style.color = '#3730a3';
-        srcEl.textContent = '🏢 B2B';
+      if (source === 'fyrirtaeki' && m.er_i_thjonustu) {
+        srcEl.style.background = '#dcfce7';
+        srcEl.style.color = '#166534';
+        srcEl.textContent = '🧯 Í ÞJÓNUSTU';
+      } else if (source === 'fyrirtaeki') {
+        srcEl.style.background = '#fef3c7';
+        srcEl.style.color = '#92400e';
+        srcEl.textContent = '🏢 Í VIÐSKIPTUM';
       } else if (source === 'walkin') {
         srcEl.style.background = '#f1f5f9';
         srcEl.style.color = '#475569';
