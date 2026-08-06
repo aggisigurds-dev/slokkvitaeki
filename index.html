@@ -26,7 +26,7 @@
    app from the path /app/<key>/ (new) or ?app=<key> / ?driver (legacy links). */
 (function(){
   try{
-    var MAN={fjarmal:'/manifest-fjarmal.json',verkefni:'/manifest-verkefni.json',bilstjori:'/manifest-bilstjori.json'};
+    var MAN={fjarmal:'/manifest-fjarmal.json',verkefni:'/manifest-verkefni.json',bilstjori:'/manifest-bilstjori.json',brunaholf:'/manifest-brunaholf.json',brunakerfi:'/manifest-brunakerfi.json'};
     var pm=(location.pathname||'').match(/^\/app\/([a-z]+)\/?/);
     var key=pm?pm[1]:'';
     if(!key){ var sp=new URLSearchParams(location.search); key=sp.get('app')||''; if(!key&&sp.has('driver')) key='bilstjori'; }
@@ -35,12 +35,12 @@
       if(l) l.setAttribute('href',MAN[key]+'?v=sep2');
       var tc=document.querySelector('meta[name="theme-color"]');
       if(tc&&key==='bilstjori') tc.setAttribute('content','#0a0b0d');
-      var TITLES={fjarmal:'Fjármál',verkefni:'Verkefni',bilstjori:'Bílstjóri'};
+      var TITLES={fjarmal:'Fjármál',verkefni:'Verkefni',bilstjori:'Bílstjóri',brunaholf:'Brunahólf',brunakerfi:'Brunakerfi'};
       var at=document.querySelector('meta[name="apple-mobile-web-app-title"]');
       if(at) at.setAttribute('content', TITLES[key]||key);
       try{ document.title=(TITLES[key]||key)+' — Slökkvitæki'; }catch(_){}
       // Sér-merki hvers mini-apps líka á iOS heimaskjá
-      var APPLE={fjarmal:'/img/app-fjarmal-apple.png',verkefni:'/img/app-verkefni-apple.png',bilstjori:'/img/app-bilstjori-apple.png'};
+      var APPLE={fjarmal:'/img/app-fjarmal-apple.png',verkefni:'/img/app-verkefni-apple.png',bilstjori:'/img/app-bilstjori-apple.png',brunaholf:'/img/app-brunaholf-apple.png',brunakerfi:'/img/app-brunakerfi-apple.png'};
       if(APPLE[key]) document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="apple-touch-icon-precomposed"]').forEach(function(a){a.setAttribute('href',APPLE[key]+'?v=1');});
     }
   }catch(e){}
