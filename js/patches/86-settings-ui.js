@@ -210,8 +210,18 @@
     if (view) {
       view.insertBefore(wrap, view.firstChild);
       if (legacy && !document.getElementById('_su-legacy')) faldaEldri(view, legacy);
-      try { if (typeof showMasterView === 'function') showMasterView('view-settings'); } catch (_) {}
-      if (location.hash !== '#settings') { try { location.hash = '#settings'; } catch (_) {} }
+      // 2026-08-06: hér stóð `showMasterView('view-settings')` eitt og sér.
+      // Fallið er til (patch 00-legacy) en skilaði sýninni EKKI sýnilegri —
+      // aðrir patchar stýra líka sýnileika og héldu fyrri síðu virkri. Því var
+      // stillingasíðan sett upp (slóðin fór í #settings) en notandinn sat áfram
+      // á sömu síðu: „Stillingar gerir ekki neitt." Sýnin er nú virkjuð beint,
+      // sama aðferð og aðrar sér-síður nota (patch 175 Rekstrarfélög).
+      document.querySelectorAll('[id^=view-]').forEach(v => { v.style.display = 'none'; v.classList.remove('active'); });
+      view.style.display = ''; view.classList.add('active');
+      document.querySelectorAll('.vnav-btn').forEach(b => b.classList.remove('active'));
+      const navBtn = document.querySelector('.vnav-btn[data-view="settings"]');
+      if (navBtn) navBtn.classList.add('active');
+      try { window.scrollTo(0, 0); } catch (_) {}
     } else {
       document.body.appendChild(wrap);   // neyðarlending ef sýnin finnst ekki
     }
