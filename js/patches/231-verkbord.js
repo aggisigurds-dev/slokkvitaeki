@@ -272,12 +272,18 @@
   // meira black metal sem líka lýsist upp"): grunnurinn var of GRÁR, svo munurinn
   // á af/á sást varla. Nú er ósnert chip verulega dekkra (nær svörtu) og valið
   // chip fær upplýstan bakgrunn OFAN Á glóðina — bæði dekkra og bjartara.
-  const FILTER_METAL = 'background:linear-gradient(180deg,#212429,#121416 58%,#050607);' +
-    'border:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)';
-  const FILTER_ON = 'opacity:1;background:linear-gradient(180deg,#4a4f59,#2b2f36 55%,#16181c);' +
+  // 2026-08-06 (ósk Agnars — „make it full color… dark grey black like the
+  // others and bright color text"): ósnert chip er ekki lengur deyft (engin
+  // opacity) heldur sami dökk-gráa málmurinn og hinir hnapparnir á borðinu
+  // (V3_METAL) með FULLUM merkjalit á textanum. Munurinn á af/á færist því
+  // alfarið yfir í FILTER_ON, sem er hertur á móti: ljósari málmur, sterkari
+  // glóð og meiri birta svo það sé augljóst að sían sé kveikt.
+  const FILTER_METAL = 'background:linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318);' +
+    'border:1px solid #0a0b0d;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)';
+  const FILTER_ON = 'opacity:1;background:linear-gradient(180deg,#5c636f,#363b45 55%,#1b1e24);' +
     'border:1.5px solid currentColor;outline:none;' +
-    'box-shadow:0 0 16px -3px currentColor, inset 0 0 12px -5px currentColor, inset 0 1px 0 rgba(255,255,255,.16);' +
-    'text-shadow:0 0 9px currentColor;filter:brightness(1.35) saturate(1.25)';
+    'box-shadow:0 0 22px -2px currentColor, inset 0 0 15px -4px currentColor, inset 0 1px 0 rgba(255,255,255,.24);' +
+    'text-shadow:0 0 11px currentColor;filter:brightness(1.5) saturate(1.35)';
   const state = {
     items: [],          // thjonustubeidni rows
     vd: [],             // open verkdagbok rows (folded in)
@@ -987,7 +993,10 @@
             '<button data-act="addmore" title="Skrá og opna alla valkosti (forgangur, frestur, nánar…)" ' +
               'style="flex:none;height:38px;padding:0 13px;border-radius:9px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#475569;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer">⚙ Fleiri</button>' +
           '</div>' +
-          '<div class="vb-scroll" style="align-items:center">' +
+          // Merkjaröðin er falin þar til eitthvað er skrifað í verk-reitinn
+          // (ósk Agnars 6.8.) — tómur reitur = ekkert að merkja. syncAddTags()
+          // kveikir/slekkur á henni.
+          '<div class="vb-scroll" id="vb-add-tags" style="align-items:center;display:none">' +
             '<span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:#94a3b8;margin-right:1px">🏷 MERKI</span>' +
             TAG_ORDER.map(t => {
               const d = TAGS[t], on = state.addTags.indexOf(t) !== -1;
@@ -1008,8 +1017,19 @@
         '</div>' +
       '</div>';
     renderControls(); renderList(); renderSel();
+    syncAddTags();
     // renderAll skrifar yfir allt #vb-main, svo dagskráin er teiknuð aftur hér.
     if (window.Vikudagskra) { try { Vikudagskra.mount(); } catch (e) { console.warn('[verkbord] dagskrá:', e); } }
+  }
+
+  // MERKI-röðin undir skráningarreitnum sést aðeins þegar það er eitthvað til
+  // að merkja: texti í reitnum — eða merki þegar valin, svo alltaf sé hægt að
+  // taka þau af aftur (annars sætu þau föst og ósýnileg á næsta verki).
+  function syncAddTags() {
+    const row = document.getElementById('vb-add-tags'); if (!row) return;
+    const inp = document.getElementById('vb-add-input');
+    const show = !!(inp && inp.value.trim()) || state.addTags.length > 0;
+    row.style.display = show ? '' : 'none';
   }
 
   // Stjórnkortið (v3): Innhólf/Allt/Verkefni/Lokað flipar + leit + röðun/sýn,
@@ -1083,7 +1103,7 @@
       '<div class="vb-scroll" style="align-items:center">' +
         '<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#8a93a5;margin-right:2px">TÖG</span>' +
         '<button data-act="starfilter" style="font-family:inherit;font-size:12px;font-weight:700;padding:5px 11px;border-radius:8px;' + FILTER_METAL + ';color:#f2c24e;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;' +
-          (state.fStar ? FILTER_ON : 'opacity:.78') + '">⭐ Áríðandi' + (c ? '' : '') + '</button>' +
+          (state.fStar ? FILTER_ON : 'opacity:1') + '">⭐ Áríðandi' + (c ? '' : '') + '</button>' +
         (function () {
           const tc = {};
           allItems().filter(x => inQueue(x)).forEach(x => rowChips(x).forEach(t => { tc[t] = (tc[t] || 0) + 1; }));
@@ -1094,7 +1114,7 @@
             if (!n && !on && t !== 'senda_skyrslur') return '';
             return '<button data-act="tagfilter" data-tag="' + t + '" title="Sía eftir merkinu ' + esc(d.label) + ' — fleiri mega vera valin í einu" ' +
               'style="font-family:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;' + FILTER_METAL + ';color:' + (TAG_DK[t] || '#c3ccd8') + ';cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;' +
-              (on ? FILTER_ON : 'opacity:.78') + '">' +
+              (on ? FILTER_ON : 'opacity:1') + '">' +
               d.emoji + ' ' + esc(d.label) + ' <span style="opacity:.6">' + n + '</span></button>';
           }).join('');
           // Með fjölvali þarf leið til að slökkva á öllu í einu.
@@ -1478,6 +1498,7 @@
         t.style.color = on ? '#fff' : d.color;
         t.style.background = on ? d.color : d.color + '12';
         t.style.borderColor = d.color + (on ? '' : '44');
+        syncAddTags();
         return;
       }
       if (act === 'addtype') {
@@ -1502,6 +1523,7 @@
         state.composerOpen = !state.composerOpen;
         const p = document.getElementById('vb-composer');
         if (p) { p.style.display = state.composerOpen ? 'block' : 'none'; if (state.composerOpen) { const i = document.getElementById('vb-add-input'); if (i) i.focus(); } }
+        syncAddTags();
         return;
       }
       if (act === 'starfilter') { state.fStar = !state.fStar; state.page = 0; renderControls(); renderList(); return; }
@@ -1665,6 +1687,8 @@
         _noteTimer = setTimeout(() => saveRow(id, { [f]: val }), 500);
       }
     });
+    // MERKI-röðin fylgir innihaldi verk-reitsins (sjá syncAddTags).
+    root.addEventListener('input', e => { if (e.target.id === 'vb-add-input') syncAddTags(); });
     root.addEventListener('keydown', e => {
       if (e.target.id === 'vb-add-input' && e.key === 'Enter') { e.preventDefault(); doAdd(); }
       if (e.target.id === 'vb-add-cust' && e.key === 'Enter') { e.preventDefault(); document.getElementById('vb-add-input')?.focus(); }
@@ -1742,6 +1766,7 @@
       const d = TAGS[c.getAttribute('data-tag')]; if (!d) return;
       c.style.color = d.color; c.style.background = d.color + '12'; c.style.borderColor = d.color + '44';
     });
+    syncAddTags();
     inp.focus();
   }
   // ✉️ Sækja tölvupóst — endurnýtir póst-innsogið úr Þjónustuveri (182, sama

@@ -132,13 +132,13 @@
       .sort((a, b) => (String(a.time || '') < String(b.time || '') ? -1 : 1));
     return {
       ds, name: NAMES[i], num: d.getDate(), jobs,
-      bg:     isToday ? 'rgba(195,39,28,.05)' : (isPast ? '#f3f4f6' : '#fafafa'),
-      border: isToday ? 'rgba(195,39,28,.6)'  : '#e5e7eb',
-      head:   (isPast && !isToday) ? '#b6bac2' : '#6b7280',
+      bg:     isToday ? 'rgba(37,99,235,.07)' : '#ffffff',
+      border: isToday ? '#2563eb' : '#e5e7eb',
+      head:   (isPast && !isToday) ? '#9aa3b2' : '#6b7280',
       numStyle: isToday
-        ? 'min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:' + ACCENT +
-          ';color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;box-sizing:border-box'
-        : 'font-size:13px;font-weight:800;color:' + (isPast ? '#b6bac2' : '#16181d')
+        ? 'min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:linear-gradient(180deg,#3b82f6,#1d4ed8);' +
+          'color:#fff;display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;box-sizing:border-box'
+        : 'font-size:13px;font-weight:800;color:' + (isPast ? '#9aa3b2' : '#16181d')
     };
   }
 
@@ -213,9 +213,9 @@
             navBtn('today', 'Í dag', '') +
             navBtn('next', 'Næsta vika <span style="font-size:15px;line-height:1">›</span>', 'Næsta vika') +
             '<div style="width:1px;height:22px;background:#3a3d45;margin:0 4px"></div>' +
-            '<button class="vd-cta" data-vd="add" style="height:30px;padding:0 14px;border:1px solid rgba(255,120,100,.5);' +
-              'border-radius:10px;background:linear-gradient(180deg,#c3271c,#8c1410);color:#fff;cursor:pointer;' +
-              'font-family:inherit;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(195,39,28,.35)">+ Skrá verk</button>' +
+            '<button class="vd-cta" data-vd="add" style="height:30px;padding:0 14px;border:1px solid rgba(59,130,246,.45);' +
+              'border-radius:10px;background:linear-gradient(180deg,#2c3e5c,#0f1c2e);color:#fff;cursor:pointer;' +
+              'font-family:inherit;font-size:13px;font-weight:800;box-shadow:0 2px 8px rgba(15,28,46,.45)">+ Skrá verk</button>' +
           '</div>' +
         '</div>' +
         // vikuræman
@@ -296,9 +296,9 @@
           '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px">' +
             '<button class="vd-nav" data-vd="close" style="height:36px;padding:0 14px;border:1px solid #3a3d45;border-radius:10px;' +
               'background:#23252c;color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700">Hætta við</button>' +
-            '<button class="vd-cta" data-vd="save" style="height:36px;padding:0 16px;border:1px solid rgba(255,120,100,.5);border-radius:10px;' +
-              'background:linear-gradient(180deg,#c3271c,#8c1410);color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:800;' +
-              'box-shadow:0 2px 8px rgba(195,39,28,.35)">Vista á dagskrá</button>' +
+            '<button class="vd-cta" data-vd="save" style="height:36px;padding:0 16px;border:1px solid rgba(59,130,246,.45);border-radius:10px;' +
+              'background:linear-gradient(180deg,#2c3e5c,#0f1c2e);color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:800;' +
+              'box-shadow:0 2px 8px rgba(15,28,46,.45)">Vista á dagskrá</button>' +
           '</div>' +
         '</div>' +
       '</div>';
