@@ -44,6 +44,10 @@
   let _virk = null;               // id á opinni síðu
   let _breyta = false;            // ritháttur á/af
   let _vistT = null;
+  let _hashLest = false;          // djúptengils-auðkenni (#minar/<id>) aðeins lesið EINU SINNI á hleðslu
+
+  // Djúptenging (t.d. Öpp-kubbur sem opnar EINA tiltekna síðu beint): #minar/<id>
+  const idFraHash = () => { const m = (location.hash || '').match(/^#minar\/([a-z0-9]+)/i); return m ? m[1] : null; };
 
   // MIKILVÆGT: lesa AÐEINS af servernum þegar við höfum ekkert í höndunum eða
   // engin vistun er í bið. Annars strokaði endurteikningin út það sem notandinn
@@ -264,6 +268,11 @@
     const v = document.getElementById(VIEW_ID);
     if (!v) return;
     lesa();
+    if (!_hashLest) {
+      _hashLest = true;
+      const vildi = idFraHash();
+      if (vildi && _state.sidur.some(p => p.id === vildi)) _virk = vildi;
+    }
     const s = sidan();
 
     const flipar = _state.sidur.map(p =>
@@ -624,7 +633,18 @@
   setInterval(setjaHnapp, 1200);
   setTimeout(setjaHnapp, 700);
 
-  window.MinarSidur = { teikna, opna: () => { const b = document.querySelector('[data-view="minar-sidur"]'); if (b) b.click(); } };
+  window.MinarSidur = {
+    teikna,
+    opna: () => { const b = document.querySelector('[data-view="minar-sidur"]'); if (b) b.click(); },
+    // Djúptenging á EINA tiltekna síðu (t.d. úr Öpp-þjónustuborði) — setur
+    // _virk beint OG hash-ið svo endurhlaðin síða haldi sömu síðu.
+    openPage: (id) => {
+      _hashLest = true; _virk = id;
+      try { location.hash = 'minar/' + id; } catch (_) {}
+      const b = document.querySelector('[data-view="minar-sidur"]');
+      if (b) b.click(); else teikna();
+    }
+  };
   console.log('[patch-302] Mínar síður — síðusmiður + tenglasafn');
 })();
 /* === END MÍNAR SÍÐUR === */
