@@ -102,6 +102,37 @@
     } catch (_) { return null; }
   })();
 
+  // ── forsíðu-hleðsluskjár (load screen) ───────────────────────────────────────
+  // Sýndur STRAX (fyrir sw/pages hafa hlaðið), falinn þegar buildShell() klárar.
+  // Standalone (Bílstjóri) sér um sitt eigið lok í patch 219 — skiptum okkur ekki af.
+  var _splashEl = null;
+  function showSplash(key) {
+    if (isStandalone(key)) return;
+    var a = effectiveApp(key); if (!a) return;
+    if (_splashEl || document.getElementById('_app-splash')) return;
+    var d = document.createElement('div');
+    d.id = '_app-splash';
+    d.style.cssText = 'position:fixed;inset:0;z-index:2147483600;display:flex;flex-direction:column;' +
+      'align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,' + a.color + ',' + a.dark + ');' +
+      'color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif';
+    d.innerHTML = '<div style="font-size:56px;line-height:1">' + a.emoji + '</div>' +
+      '<div style="font-size:19px;font-weight:800;letter-spacing:.02em">' + esc(a.name) + '</div>' +
+      '<div style="width:26px;height:26px;border-radius:50%;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;animation:_appspin .8s linear infinite"></div>' +
+      '<style>@keyframes _appspin{to{transform:rotate(360deg)}}</style>';
+    (document.body || document.documentElement).appendChild(d);
+    _splashEl = d;
+    setTimeout(hideSplash, 8000); // öryggisnet — aldrei sitja fastur á hleðsluskjá
+  }
+  function hideSplash() {
+    var el = _splashEl || document.getElementById('_app-splash');
+    if (!el) return;
+    _splashEl = null;
+    el.style.transition = 'opacity .25s ease';
+    el.style.opacity = '0';
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 260);
+  }
+  if (ACTIVE && !isStandalone(ACTIVE)) showSplash(ACTIVE);
+
   // ── config storage (which pages each app shows) — localStorage + AppSettings ─
   var CFG_KEY = 'app_profiles_json';
   function loadCfg() {
@@ -127,6 +158,47 @@
     var s = JSON.stringify(c);
     try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
     try { if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: s }); } catch (_) {}
+  }
+
+  // ── útlits-yfirskrift (nafn/lýsing/tákn/litur) á hverju appi — sjálfgefið úr
+  // APPS, notandi má breyta gegnum Þjónustuborðið. Sama vistunar-mynstur og cfg. ─
+  var OV_KEY = 'app_profiles_overrides_json';
+  function loadOverrides() {
+    var raw = null;
+    try { if (window.AppSettings && AppSettings.get) raw = AppSettings.get(OV_KEY); } catch (_) {}
+    if (!raw) { try { raw = localStorage.getItem(OV_KEY); } catch (_) {} }
+    if (!raw) return {};
+    try { return JSON.parse(raw) || {}; } catch (_) { return {}; }
+  }
+  function saveOverrides(key, patch) {
+    var o = loadOverrides();
+    var cur = o[key] || {};
+    for (var k in patch) { cur[k] = patch[k]; }
+    for (var k2 in cur) { if (cur[k2] === '' || cur[k2] == null) delete cur[k2]; }
+    o[key] = cur;
+    var s = JSON.stringify(o);
+    try { localStorage.setItem(OV_KEY, s); } catch (_) {}
+    try { if (window.AppSettings && AppSettings.save) { var payload = {}; payload[OV_KEY] = s; AppSettings.save(payload); } } catch (_) {}
+  }
+  // Sameinar fast-skilgreint app (APPS) við notenda-yfirskriftina — notað
+  // ALLS STAÐAR sem app er teiknað (launcher-kort, haus, splash) svo breyting
+  // birtist samstundis alls staðar.
+  function effectiveApp(key) {
+    var a = APP_BY_KEY[key]; if (!a) return null;
+    var ov = loadOverrides()[key] || {};
+    return {
+      key: a.key, manifest: a.manifest, home: a.home, standalone: a.standalone, defaults: a.defaults,
+      emoji: ov.emoji || a.emoji, name: ov.name || a.name, blurb: ov.blurb || a.blurb,
+      color: ov.color || a.color, dark: ov.dark || a.dark
+    };
+  }
+  function versionLine() {
+    var b = window.BUILD;
+    if (!b || !b.commit) return null;
+    var short = String(b.commit).slice(0, 7);
+    var when = '';
+    try { when = new Date(b.time).toLocaleString('is-IS', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }); } catch (_) {}
+    return short + (when ? ' · ' + when : '');
   }
 
   // Einskiptis-migrations: nýjar síður bætt í ÞEGAR-VISTAÐAR Fjármál-stillingar
@@ -347,7 +419,8 @@
   function render() {
     styles();
     var v = viewEl();
-    var cards = APPS.map(function (a) {
+    var cards = APPS.map(function (base) {
+      var a = effectiveApp(base.key);
       var sel = pagesFor(a.key);
       var selSet = {}; sel.forEach(function (k) { selSet[k] = 1; });
       var pageRows = PAGES.map(function (p) {
@@ -363,13 +436,17 @@
           '<button class="op-btn prim _op-open" data-app="' + a.key + '" style="background:linear-gradient(180deg,' + a.color + ',' + a.dark + ')" type="button">▶ Opna</button>' +
           '<button class="op-btn _app-install _op-install" data-app="' + a.key + '" data-always="1" type="button">⤓ Setja upp í síma</button>' +
           '<button class="op-btn _op-link" data-app="' + a.key + '" type="button">🔗 Afrita hlekk</button>' +
+          '<button class="op-btn _op-panel" data-app="' + a.key + '" type="button">⚙ Þjónustuborð</button>' +
         '</div>' +
         pagesSection +
       '</div>';
     }).join('');
+    var ver = versionLine();
     v.innerHTML = '<div class="op-main"><h1 class="op-h1">📱 Öpp</h1>' +
       '<p class="op-sub">Léttar, símavænar útgáfur með völdum síðum — hver með eigin hlekk og hægt að setja upp í símann.</p>' +
-      cards + '</div>';
+      cards +
+      (ver ? '<div style="text-align:center;font-size:11px;color:rgba(255,255,255,.4);margin-top:4px">Útgáfa ' + esc(ver) + '</div>' : '') +
+      '</div>';
     v.querySelectorAll('._op-open').forEach(function (b) { b.addEventListener('click', function () { location.href = appLink(b.dataset.app); }); });
     v.querySelectorAll('._op-install').forEach(function (b) { b.addEventListener('click', function () {
       // ALDREI nota deferredPrompt sem var fangaður HÉR á launcher-síðunni —
@@ -384,6 +461,7 @@
       var url = appLink(b.dataset.app);
       try { navigator.clipboard.writeText(url); toast('🔗 Hlekkur afritaður'); } catch (_) { toast(url); }
     }); });
+    v.querySelectorAll('._op-panel').forEach(function (b) { b.addEventListener('click', function () { openControlPanel(b.dataset.app); }); });
     v.querySelectorAll('._op-pg').forEach(function (cb) { cb.addEventListener('change', function () {
       var app = cb.dataset.app;
       var picked = PAGES.map(function (p) { return p.k; }).filter(function (k) {
@@ -398,7 +476,7 @@
   var _bootAt = Date.now();
   function buildShell() {
     _bootAt = Date.now();
-    var a = APP_BY_KEY[ACTIVE]; if (!a) return;
+    var a = effectiveApp(ACTIVE); if (!a) return;
     styles();
     document.body.classList.add('appmode');
     var pages = pagesFor(a.key); if (!pages.length) pages = a.defaults.slice();
@@ -413,7 +491,7 @@
     var hdr = document.getElementById('_app-hdr') || document.createElement('div');
     hdr.id = '_app-hdr'; hdr.style.display = ''; hdr.style.background = 'linear-gradient(180deg,' + a.color + ',' + a.dark + ')';
     hdr.innerHTML = '<div class="nm">' + a.emoji + ' ' + esc(a.name) + '</div>' +
-      (a.standalone ? '' : '<button id="_app-pages" type="button" title="Velja síður í appinu">⚙ Síður</button>') +
+      (a.standalone ? '' : '<button id="_app-pages" type="button" title="Þjónustuborð — síður, útlit, útgáfa">⚙ Þjónustuborð</button>') +
       '<button class="_app-install" data-always="1" id="_app-inst2" type="button">⤓ Setja upp</button>' +
       '<button id="_app-exit" type="button" title="Loka appi">✕</button>';
     if (!hdr.parentNode) document.body.appendChild(hdr);
@@ -440,13 +518,14 @@
     });
     hdr.querySelector('#_app-exit').addEventListener('click', function () { location.href = location.origin + '/'; });
     var _pgBtn = hdr.querySelector('#_app-pages');
-    if (_pgBtn) _pgBtn.addEventListener('click', openPagesEditor);
+    if (_pgBtn) _pgBtn.addEventListener('click', function () { openControlPanel(ACTIVE); });
 
     setManifest(a.manifest);   // install captures THIS app
     syncFrameBottom();
     // Endurbygging (vaktarinn) á EKKI að hoppa til baka á fyrstu síðu — nema
     // núverandi síða hafi verið tekin úr appinu (þá förum við á home/fyrstu).
     goPage((_curPage && pages.indexOf(_curPage) !== -1) ? _curPage : pages[0]);
+    hideSplash();
   }
   // Iframe-botninn = raunhæð navsins (var harðkóðað 150px — 3ja raða nav er ~225px
   // svo neðsti hluti síðunnar lenti Á BAK VIÐ navið og virtist klipptur).
@@ -475,38 +554,89 @@
       } catch (_) {}
     }, 1500);
   }
-  // ── In-app síðu-ritill ───────────────────────────────────────────────────────
+  // ── Þjónustuborð (síður + útlit + útgáfa) ───────────────────────────────────
   // Áður var EINA leiðin til að bæta síðu við app að fara á Öpp-launcher-síðuna í
   // vafranum → haka → og svo var uppsetta appið í símanum ekki uppfært fyrr en
-  // það var tekið út og sett upp aftur (buildShell keyrir bara við ferskt boot).
-  // Núna má breyta síðunum BEINT í appinu: haka → saveCfg → buildShell() endur-
-  // teiknar navið strax. Engin endur-uppsetning.
-  function openPagesEditor() {
-    var a = APP_BY_KEY[ACTIVE]; if (!a || a.standalone) return;
+  // það var tekið út og sett upp aftur. Núna má breyta síðum, nafni/lýsingu/tákni/
+  // lit BEINT — bæði inni í appinu sjálfu OG frá launcher-kortinu — breytist strax
+  // (buildShell()/render() endurteikna lifandi), engin endur-uppsetning. Tekur
+  // `key` (ekki bara ACTIVE) svo sama spjaldið dugi hvort sem kallað er innan úr
+  // appi eða af 📱 Öpp-síðunni áður en appið er einu sinni opnað.
+  function refreshAfterEdit(key) { if (ACTIVE === key) buildShell(); else render(); }
+  function openControlPanel(key) {
+    var a = effectiveApp(key); if (!a) return;
     var selSet = {}; pagesFor(a.key).forEach(function (k) { selSet[k] = 1; });
+    var ver = versionLine();
     var ov = document.getElementById('_app-pgedit') || document.createElement('div');
     ov.id = '_app-pgedit';
+    var pagesBlock = a.standalone ? '' :
+      '<div class="op-sech" style="margin:14px 18px 6px">Síður í appinu</div>' +
+      '<div class="_pe-sub">Hakaðu við síðurnar sem eiga að vera í appinu.</div>' +
+      '<div class="_pe-list">' + PAGES.map(function (p) {
+        return '<label class="_pe-row"><input type="checkbox" class="_pe-pg" data-k="' + p.k + '"' + (selSet[p.k] ? ' checked' : '') + '>' +
+          '<span class="e">' + p.emoji + '</span><span>' + esc(p.label) + '</span></label>';
+      }).join('') + '</div>';
     ov.innerHTML =
       '<div class="_pe-card">' +
-        '<div class="_pe-h"><span>⚙ Síður í ' + esc(a.name) + '</span><button id="_pe-close" type="button">Loka</button></div>' +
-        '<div class="_pe-sub">Hakaðu við síðurnar sem eiga að vera í appinu — breytist strax, engin endur-uppsetning.</div>' +
-        '<div class="_pe-list">' + PAGES.map(function (p) {
-          return '<label class="_pe-row"><input type="checkbox" data-k="' + p.k + '"' + (selSet[p.k] ? ' checked' : '') + '>' +
-            '<span class="e">' + p.emoji + '</span><span>' + esc(p.label) + '</span></label>';
-        }).join('') + '</div>' +
+        '<div class="_pe-h"><span>⚙ Þjónustuborð — ' + esc(a.name) + '</span><button id="_pe-close" type="button">Loka</button></div>' +
+        '<div class="_pe-list">' +
+          '<div class="op-sech" style="margin:4px 8px 8px">Útlit</div>' +
+          '<div style="display:flex;flex-direction:column;gap:10px;padding:0 10px 14px;font-size:13.5px;color:#334155">' +
+            '<label style="display:flex;flex-direction:column;gap:4px">Nafn' +
+              '<input class="_pe-name" value="' + esc(a.name) + '" style="padding:9px 11px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:15px"></label>' +
+            '<label style="display:flex;flex-direction:column;gap:4px">Lýsing' +
+              '<input class="_pe-blurb" value="' + esc(a.blurb || '') + '" style="padding:9px 11px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:15px"></label>' +
+            '<div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">' +
+              '<label style="display:flex;flex-direction:column;gap:4px">Tákn' +
+                '<input class="_pe-emoji" value="' + esc(a.emoji) + '" maxlength="4" style="width:64px;padding:9px 11px;border:1px solid #d7dce4;border-radius:9px;font:inherit;font-size:20px;text-align:center"></label>' +
+              '<label style="display:flex;flex-direction:column;gap:4px">Litur (efst)' +
+                '<input class="_pe-color" type="color" value="' + a.color + '" style="width:52px;height:40px;padding:2px;border:1px solid #d7dce4;border-radius:9px"></label>' +
+              '<label style="display:flex;flex-direction:column;gap:4px">Litur (neðst)' +
+                '<input class="_pe-dark" type="color" value="' + a.dark + '" style="width:52px;height:40px;padding:2px;border:1px solid #d7dce4;border-radius:9px"></label>' +
+              '<button class="_pe-reset-look" type="button" style="font:inherit;font-size:13px;font-weight:700;padding:9px 13px;border-radius:9px;border:1px solid #d7dce4;background:#f1f5f9;color:#64748b;cursor:pointer;min-height:40px">Núllstilla</button>' +
+            '</div>' +
+            '<div style="font-size:11.5px;color:#94a3b8;line-height:1.5">Þetta breytir tákninu/litnum sem birtist HÉR í appinu (spjald, haus, hleðsluskjár) — ekki sjálfri heimaskjás-táknmyndinni, sem er föst mynd og krefst nýrrar hönnunar.</div>' +
+          '</div>' +
+          pagesBlock +
+          '<div class="op-sech" style="margin:14px 18px 6px">Upplýsingar</div>' +
+          '<div style="padding:0 18px 18px;font-size:12.5px;color:#64748b;line-height:1.7">' +
+            'Útgáfa: ' + (ver ? esc(ver) : '—') + '<br>' +
+            'Hlekkur: <code style="font-size:11.5px">' + esc(appLink(a.key)) + '</code>' +
+          '</div>' +
+        '</div>' +
       '</div>';
     if (!ov.parentNode) document.body.appendChild(ov);
     ov.style.display = 'flex';
     ov.querySelector('#_pe-close').addEventListener('click', function () { ov.style.display = 'none'; });
     ov.addEventListener('click', function (e) { if (e.target === ov) ov.style.display = 'none'; });
-    ov.querySelectorAll('input[type="checkbox"]').forEach(function (cb) {
+    ov.querySelectorAll('._pe-pg').forEach(function (cb) {
       cb.addEventListener('change', function () {
-        var checked = Array.prototype.slice.call(ov.querySelectorAll('input[type="checkbox"]:checked')).map(function (x) { return x.dataset.k; });
+        var checked = Array.prototype.slice.call(ov.querySelectorAll('._pe-pg:checked')).map(function (x) { return x.dataset.k; });
         if (!checked.length) { cb.checked = true; return; }         // alltaf a.m.k. ein síða
         var picked = PAGES.map(function (p) { return p.k; }).filter(function (k) { return checked.indexOf(k) !== -1; });
         saveCfg(a.key, picked);
-        buildShell();                                               // endurteiknar navið LIFANDI
+        refreshAfterEdit(a.key);
       });
+    });
+    function bindLook(sel, field) {
+      var el = ov.querySelector(sel); if (!el) return;
+      el.addEventListener('change', function () {
+        var patch = {}; patch[field] = el.value.trim();
+        saveOverrides(a.key, patch);
+        refreshAfterEdit(a.key);
+        openControlPanel(a.key);   // endurteiknar spjaldið sjálft með nýjum gildum
+      });
+    }
+    bindLook('._pe-name', 'name');
+    bindLook('._pe-blurb', 'blurb');
+    bindLook('._pe-emoji', 'emoji');
+    bindLook('._pe-color', 'color');
+    bindLook('._pe-dark', 'dark');
+    var resetBtn = ov.querySelector('._pe-reset-look');
+    if (resetBtn) resetBtn.addEventListener('click', function () {
+      saveOverrides(a.key, { name: '', blurb: '', emoji: '', color: '', dark: '' });
+      refreshAfterEdit(a.key);
+      openControlPanel(a.key);
     });
   }
 
