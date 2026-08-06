@@ -365,7 +365,16 @@
 
   // ── data ─────────────────────────────────────────────────────────────────
   async function load() {
-    const SB = getSB(); if (!SB) return;
+    const SB = getSB();
+    if (!SB) {
+      // Köld hleðsla beint á /#verkbord: show() (og deep-link-vörnin) keyrir
+      // ÁÐUR en DB.sb er til. Gamla útgáfan gafst þá þegjandi upp og borðið sat
+      // eftir tómt — „🎉 Ekkert hér." ofan á 137 raunverulegum málum. Reynum
+      // aftur þar til tengingin er komin (10s þak).
+      if ((load._waits = (load._waits || 0) + 1) <= 40) setTimeout(load, 250);
+      return;
+    }
+    load._waits = 0;
     state.loading = true; renderList();
     try {
       const a = await SB.from('thjonustubeidni').select('*').is('deleted_at', null)
