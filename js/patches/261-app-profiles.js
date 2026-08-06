@@ -58,6 +58,32 @@
   ];
   var PAGE_BY_KEY = {}; PAGES.forEach(function (p) { PAGE_BY_KEY[p.k] = p; });
 
+  // ── einstakar Mínar síður-síður sem valkostir, ekki bara verkfærið í heild ──
+  // Kyrrstæði PAGES-listinn dugar fyrir „Mínar síður" sem EITT boð (sjá að ofan) —
+  // en hver vistuð síða notandans er ekki þekkt fyrr en í keyrslu, per-notanda.
+  // Því er þessi hluti REIKNAÐUR (ekki fastur), lesinn beint úr sömu AppSettings-
+  // slóð og patch 302 sjálft notar (min_sidur.sidur[]). k = 'minar-<id>' svo það
+  // rekist aldrei á neinn fastan lykil úr PAGES að ofan.
+  function dynamicPages() {
+    try {
+      var st = (window.AppSettings && AppSettings.path && AppSettings.path('min_sidur')) || null;
+      if (!st || !Array.isArray(st.sidur)) return [];
+      return st.sidur.map(function (s) {
+        var nm = s.nafn || 'Ónefnd síða';
+        return { k: 'minar-' + s.id, label: nm + ' (Mínar síður)', short: nm.length > 12 ? nm.slice(0, 12) + '…' : nm, emoji: '🧩', minarId: s.id };
+      });
+    } catch (_) { return []; }
+  }
+  function allPages() { return PAGES.concat(dynamicPages()); }
+  function pageByKey(k) {
+    if (PAGE_BY_KEY[k]) return PAGE_BY_KEY[k];
+    if (k && k.indexOf('minar-') === 0) {
+      var dyn = dynamicPages();
+      for (var i = 0; i < dyn.length; i++) { if (dyn[i].k === k) return dyn[i]; }
+    }
+    return null;
+  }
+
   // ── the apps (phase 1: Fjármál only) ────────────────────────────────────────
   var APPS = [
     { key: 'fjarmal', emoji: '💰', name: 'Fjármál', color: '#0e7a4f', dark: '#06402b',
@@ -152,7 +178,7 @@
     // read so already-saved configs pick up the fix without re-picking pages.
     arr = arr.map(function (k) { return k === 'companies' && key === 'fjarmal' ? 'vidskiptavinir' : k; });
     arr = arr.filter(function (k, i) { return arr.indexOf(k) === i; });   // de-dup
-    return arr.filter(function (k) { return PAGE_BY_KEY[k]; });
+    return arr.filter(function (k) { return pageByKey(k); });
   }
   function saveCfg(key, arr) {
     var c = loadCfg(); c[key] = arr;
@@ -424,7 +450,7 @@
       var a = effectiveApp(base.key);
       var sel = pagesFor(a.key);
       var selSet = {}; sel.forEach(function (k) { selSet[k] = 1; });
-      var pageRows = PAGES.map(function (p) {
+      var pageRows = allPages().map(function (p) {
         return '<label class="op-pg"><input type="checkbox" class="_op-pg" data-app="' + a.key + '" data-k="' + p.k + '"' + (selSet[p.k] ? ' checked' : '') + '>' +
           '<span class="e">' + p.emoji + '</span><span>' + esc(p.label) + '</span></label>';
       }).join('');
@@ -465,7 +491,7 @@
     v.querySelectorAll('._op-panel').forEach(function (b) { b.addEventListener('click', function () { openControlPanel(b.dataset.app); }); });
     v.querySelectorAll('._op-pg').forEach(function (cb) { cb.addEventListener('change', function () {
       var app = cb.dataset.app;
-      var picked = PAGES.map(function (p) { return p.k; }).filter(function (k) {
+      var picked = allPages().map(function (p) { return p.k; }).filter(function (k) {
         var el = v.querySelector('._op-pg[data-app="' + app + '"][data-k="' + k + '"]'); return el && el.checked;
       });
       saveCfg(app, picked);
@@ -500,7 +526,7 @@
     var nav = document.getElementById('_app-nav') || document.createElement('div');
     nav.id = '_app-nav'; nav.style.display = '';
     nav.innerHTML = pages.map(function (k) {
-      var p = PAGE_BY_KEY[k] || { emoji: '•', label: k };
+      var p = pageByKey(k) || { emoji: '•', label: k };
       return '<button class="_app-tab" data-k="' + k + '"><span class="e">' + p.emoji + '</span>' + esc(p.short || p.label) + '</button>';
     }).join('');
     if (!nav.parentNode) document.body.appendChild(nav);
@@ -573,7 +599,7 @@
     var pagesBlock = a.standalone ? '' :
       '<div class="op-sech" style="margin:14px 18px 6px">Síður í appinu</div>' +
       '<div class="_pe-sub">Hakaðu við síðurnar sem eiga að vera í appinu.</div>' +
-      '<div class="_pe-list">' + PAGES.map(function (p) {
+      '<div class="_pe-list">' + allPages().map(function (p) {
         return '<label class="_pe-row"><input type="checkbox" class="_pe-pg" data-k="' + p.k + '"' + (selSet[p.k] ? ' checked' : '') + '>' +
           '<span class="e">' + p.emoji + '</span><span>' + esc(p.label) + '</span></label>';
       }).join('') + '</div>';
@@ -614,7 +640,7 @@
       cb.addEventListener('change', function () {
         var checked = Array.prototype.slice.call(ov.querySelectorAll('._pe-pg:checked')).map(function (x) { return x.dataset.k; });
         if (!checked.length) { cb.checked = true; return; }         // alltaf a.m.k. ein síða
-        var picked = PAGES.map(function (p) { return p.k; }).filter(function (k) { return checked.indexOf(k) !== -1; });
+        var picked = allPages().map(function (p) { return p.k; }).filter(function (k) { return checked.indexOf(k) !== -1; });
         saveCfg(a.key, picked);
         refreshAfterEdit(a.key);
       });
@@ -643,8 +669,13 @@
 
   function goPage(k) {
     _curPage = k;
-    var p = PAGE_BY_KEY[k];
-    if (p && p.url) showFrame(p);      // external (Brunahólf) page → iframe
+    var p = pageByKey(k);
+    if (p && p.minarId) {
+      // Stök vistuð Mínar síður-síða — opna BEINT á hana (ekki bara flipann í heild).
+      hideFrame();
+      if (window.MinarSidur && window.MinarSidur.openPage) window.MinarSidur.openPage(p.minarId);
+      else navTo('minar-sidur');
+    } else if (p && p.url) showFrame(p);      // external (Brunahólf) page → iframe
     else { hideFrame(); navTo(k); }    // native slökkvitæki view
     var nav = document.getElementById('_app-nav');
     if (nav) nav.querySelectorAll('._app-tab').forEach(function (b) { b.classList.toggle('on', b.dataset.k === k); });
