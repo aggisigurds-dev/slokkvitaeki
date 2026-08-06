@@ -308,6 +308,9 @@
     // merki, og valið mál opnast í fastri hliðarspjaldi í stað þess að þenja
     // röðina út í listanum.
     selId: null,        // mál sem birtist í „VALIÐ MÁL"
+    // Innbyggða sían í MÁL-kortinu í efstu röðinni: 'allt' | 'aridandi'.
+    // Hún er sjálfstæð — snertir hvorki TÖG-síuna né ⭐-hnappinn að ofan.
+    topFilter: 'allt',
     catOpen: {},        // { '<tag>': false } — lokaðir flokkar (sjálfgefið opnir)
     catMore: {},        // { '<tag>': true } — flokkur sem sýnir ALLT (ekki bara fyrstu 5)
     filter: (function () { try { return localStorage.getItem(FKEY) || ''; } catch (_) { return ''; } })(),
@@ -930,6 +933,11 @@
       /* V3: tveggja-dálka útlitið (listi + VALIÐ MÁL) leggst í eina súlu þegar
          spjaldið á ekki lengur pláss — þá situr valið mál EFST, því á síma
          skoðar maður eitt mál í einu frekar en að renna listann. */
+      /* Efsta röðin (NÝJAST + MÁL) leggst í eina súlu áður en kortin verða
+         of mjó til að lesa titla í. */
+      @media (max-width: 1420px) {
+        #view-verkbord .vb-toprow { grid-template-columns: minmax(0,1fr) !important; }
+      }
       @media (max-width: 1180px) {
         #view-verkbord .vb-split { grid-template-columns: minmax(0,1fr) !important; }
         #view-verkbord #vb-sel { position: static !important; order: -1; }
@@ -1012,7 +1020,14 @@
         '<div id="vb-controls" style="' + V3_CARD + ';padding:12px 15px;margin-bottom:14px;position:sticky;top:8px;z-index:30"></div>' +
         // V3: listi vinstra megin, fast „VALIÐ MÁL" spjald hægra megin.
         '<div class="vb-split" style="display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:14px;align-items:start">' +
-          '<div id="vb-list" style="display:flex;flex-direction:column;gap:12px;min-width:0"></div>' +
+          '<div style="display:flex;flex-direction:column;gap:12px;min-width:0">' +
+            // Efsta röðin (2026-08-06, ósk Agnars): tvö kort hlið við hlið —
+            // NÝJAST (15 nýjustu) og MÁL með innbyggðri Allt/Áríðandi-síu.
+            // Með VALIÐ MÁL hægra megin gerir þetta þrjú kort í fyrstu röð;
+            // flokkakortin (GERA TILBOÐ o.fl.) færast niður fyrir hana.
+            '<div id="vb-toprow" class="vb-toprow" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start"></div>' +
+            '<div id="vb-list" style="display:flex;flex-direction:column;gap:12px;min-width:0"></div>' +
+          '</div>' +
           '<div id="vb-sel" style="position:sticky;top:118px;min-width:0"></div>' +
         '</div>' +
       '</div>';
@@ -1213,10 +1228,56 @@
     return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0');
   }
 
+  // ── Efsta röðin: NÝJAST + MÁL (innbyggð Allt/Áríðandi-sía) ────────────────
+  // Bæði kortin lesa SAMA `rows` og flokkakortin fyrir neðan, svo flipar, leit
+  // og TÖG sem valin eru að ofan gilda hér líka — þetta eru útsýnisgluggar á
+  // sama gagnasafn, ekki nýr listi.
+  const TOP_N = 15;
+
+  function topCard(title, emoji, count, headExtra, bodyHTML) {
+    return '<div style="' + CARD_V3 + ';min-width:0">' +
+      '<div style="' + CARDHEAD + ';padding:7px 12px">' +
+        '<span style="font-size:13px">' + emoji + '</span>' +
+        '<span style="color:#fff;font-weight:800;font-size:13px;letter-spacing:.6px">' + title + '</span>' +
+        '<span style="min-width:20px;height:18px;padding:0 6px;border-radius:9px;background:rgba(255,255,255,.14);color:#e6e9ee;' +
+          'font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box">' + count + '</span>' +
+        (headExtra || '') +
+      '</div>' +
+      (bodyHTML || '<div style="padding:22px 12px;text-align:center;color:#6b7280;font-size:12.5px">Ekkert hér.</div>') +
+    '</div>';
+  }
+
+  function renderTop(rows) {
+    const el = document.getElementById('vb-toprow'); if (!el) return;
+    const byNew = rows.slice().sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+    const nyjast = byNew.slice(0, TOP_N);
+    const pick = state.topFilter === 'aridandi' ? byNew.filter(x => !!x.important) : byNew;
+
+    const seg = (v, label) => {
+      const on = state.topFilter === v;
+      return '<button data-act="topfilter" data-tf="' + v + '" style="font-family:inherit;font-size:11px;font-weight:700;' +
+        'padding:3px 9px;border-radius:7px;cursor:pointer;white-space:nowrap;' +
+        (on ? V3_METAL_ON + ';color:#fff' : V3_METAL + ';color:rgba(255,255,255,.62)') + '">' + label + '</button>';
+    };
+
+    el.innerHTML =
+      topCard('NÝJAST', '🆕', nyjast.length,
+        '<span style="margin-left:auto;font-size:11px;font-weight:600;color:#9aa0aa">nýjast efst</span>',
+        nyjast.map(r => v3Row(r, false)).join('')) +
+      topCard('MÁL', '📋', pick.length,
+        '<span style="margin-left:auto;display:inline-flex;gap:5px">' + seg('allt', 'Allt') + seg('aridandi', '⭐ Áríðandi') + '</span>',
+        pick.slice(0, TOP_N).map(r => v3Row(r, false)).join(''));
+  }
+
   function renderList() {
     const el = document.getElementById('vb-list'); if (!el) return;
-    if (state.loading && !state.items.length) { el.innerHTML = '<div class="vb-empty">Sæki…</div>'; return; }
+    if (state.loading && !state.items.length) {
+      el.innerHTML = '<div class="vb-empty">Sæki…</div>';
+      const top = document.getElementById('vb-toprow'); if (top) top.innerHTML = '';
+      return;
+    }
     const rows = visibleRows();
+    renderTop(rows);
     if (!rows.length) {
       el.innerHTML = '<div style="' + CARD_V3 + ';padding:26px;text-align:center;color:#6b7280;font-size:13px">' +
         (state.search ? 'Ekkert fannst fyrir „' + esc(state.search) + '“.' : '🎉 Ekkert hér.') + '</div>';
@@ -1527,6 +1588,8 @@
         return;
       }
       if (act === 'starfilter') { state.fStar = !state.fStar; state.page = 0; renderControls(); renderList(); return; }
+      // Innbyggða sían í MÁL-kortinu (efsta röðin) — snertir aðeins það kort.
+      if (act === 'topfilter') { state.topFilter = t.getAttribute('data-tf') || 'allt'; renderTop(visibleRows()); return; }
       if (act === 'colsort') {
         e.stopPropagation();
         const k = t.getAttribute('data-k');
