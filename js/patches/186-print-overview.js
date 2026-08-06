@@ -4,6 +4,17 @@
  * full status table from an overview box. Used by the Rekstrarfélög and
  * Fyrirtæki í Þjónustu "yfirlit" views so they can be handed to the boss.
  * Self-contained.
+ *
+ * 2026-08-06 (ósk Agnars: "would want it in same look as it is" — printing
+ * Rekstrarfélög's per-company table, sem er byggð úr rf-cnt/rf-ycell/rf-pill/
+ * rf-gold CSS-klösum, kom út sem óstílaður, samanþjappaður texti því
+ * print-glugginn átti EKKERT nema `CSS` að ofan — engin af þessum klösum var
+ * skilgreind þar). Nú afritar SlokkPrint öll <style> á lifandi síðunni inn í
+ * print-gluggann OG pakkar innihaldinu í `<div id="view-rekstrarfelog">` svo
+ * `#view-rekstrarfelog .rf-xyz`-valararnir (allir forskeyttir þannig í
+ * 175-rekstrarfelog.js) passi við eitthvað. Yfirlits-borðin (renderOverview/
+ * 185-inservice-yfirlit) nota bara innline stíla á móti — óbreytt fyrir þau,
+ * bara auka (skaðlaus) CSS sem ekkert í þeirra HTML passar við.
  */
 (() => {
   if (window.SlokkPrint) return;
@@ -11,7 +22,7 @@
   const CSS = `
     @page { margin: 12mm; }
     * { -webkit-print-color-adjust: exact; print-color-adjust: exact; box-sizing: border-box; }
-    body { font-family: Arial, Helvetica, sans-serif; color:#0f172a; margin:20px; }
+    body { font-family: Arial, Helvetica, sans-serif; color:#0f172a; margin:20px; background:#fff; }
     .hd { display:flex; align-items:center; gap:14px; border-bottom:3px solid #b91c1c; padding-bottom:12px; margin-bottom:14px; }
     .hd img { height:54px; width:auto; }
     .hd .t { font-size:21px; font-weight:800; line-height:1.1; }
@@ -26,9 +37,24 @@
     a { color:#15803d; text-decoration:none; }
     .ft { margin-top:14px; font-size:10px; color:#94a3b8; border-top:1px solid #e2e8f0; padding-top:6px; }
     @media print { .noprint { display:none; } }
+    /* Rekstrarfélög's per-company table brings its own dark-metal look via
+       copied page styles below (real classes, real colors) — undo just the
+       full-bleed near-black PAGE background so print stays on white paper,
+       and drop the generic td border above so its zebra-striped rows (no
+       grid lines on screen) print the same way. */
+    #view-rekstrarfelog { background:#fff !important; padding:0 !important; }
+    #view-rekstrarfelog .rf-tbl th, #view-rekstrarfelog .rf-tbl td { border:0; }
   `;
 
   function pad(n){ return ('0'+n).slice(-2); }
+
+  // Live page's own <style> tags (theme.css-style per-view stylesheets like
+  // 175-rekstrarfelog.js's #_rf-styles-v4) — carries the real component
+  // colors (pills, status badges, table header) into the print window.
+  function pageStyles(){
+    try { return Array.from(document.querySelectorAll('style')).map(s => s.textContent || '').join('\n'); }
+    catch(e){ return ''; }
+  }
 
   window.SlokkPrint = function(title, boxEl){
     if (!boxEl) return;
@@ -49,12 +75,14 @@
     const w = window.open('', '_blank', 'width=1120,height=820');
     if (!w) { alert('Leyfðu sprettiglugga (popup) til að prenta skýrsluna.'); return; }
     w.document.write(
-      '<!doctype html><html lang="is"><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + CSS + '</style></head><body>' +
+      '<!doctype html><html lang="is"><head><meta charset="utf-8"><title>' + esc(title) + '</title><style>' + pageStyles() + '\n' + CSS + '</style></head><body>' +
         '<div class="hd">' + (logo ? '<img src="' + esc(logo) + '" alt="">' : '') +
           '<div><div class="t">Slökkvitæki ehf</div><div class="s">' + esc(title) + '</div></div></div>' +
         '<div class="meta">Skýrsla útbúin ' + ds + ' · ' + rows + ' línur</div>' +
-        (totals ? '<div class="tot">' + totals.innerHTML + '</div>' : '') +
-        (table ? table.outerHTML : '<p>Engin gögn.</p>') +
+        '<div id="view-rekstrarfelog"><div class="rf-page">' +
+          (totals ? '<div class="tot">' + totals.innerHTML + '</div>' : '') +
+          (table ? table.outerHTML : '<p>Engin gögn.</p>') +
+        '</div></div>' +
         '<div class="ft">Sjálfvirk skýrsla úr þjónustukerfi Slökkvitækis ehf.</div>' +
       '</body></html>'
     );
