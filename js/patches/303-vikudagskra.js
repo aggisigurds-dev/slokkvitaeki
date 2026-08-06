@@ -35,6 +35,14 @@
   const HOST_ID = 'vd-modal-host';     // glugginn lifir utan borðsins
   const ACCENT  = '#c3271c';
 
+  // Yfirborð dagareitanna (2026-08-06, ósk Agnars): SAMA áferð og vöruflísarnar
+  // í Sölu (.pos-prod) — ljós grunnur með fínum skálínum og mjúkum ljóma ofan á.
+  // Lesið beint af reiknuðum stíl flísanna svo þetta reki ekki í sundur.
+  const HAIRLINE = 'repeating-linear-gradient(108deg,rgba(255,255,255,.5) 0,rgba(255,255,255,.5) 1px,rgba(0,0,0,0) 1px,rgba(0,0,0,0) 4px)';
+  const SURFACE       = 'linear-gradient(rgba(255,255,255,.9),rgba(20,30,60,.05)),' + HAIRLINE + ',linear-gradient(#eef1f6,#eef1f6)';
+  const SURFACE_TODAY = 'linear-gradient(rgba(255,255,255,.82),rgba(37,99,235,.12)),' + HAIRLINE + ',linear-gradient(#e9eeff,#e9eeff)';
+  const SURFACE_SHADOW = '0 10px 28px -16px rgba(25,35,60,.18)';
+
   const TYPES = [
     ['Árskoðun',   '#c3271c'],
     ['Hleðsla',    '#b8770e'],
@@ -131,8 +139,10 @@
       .filter(j => j && j.date === ds)
       .sort((a, b) => (String(a.time || '') < String(b.time || '') ? -1 : 1));
     return {
-      ds, name: NAMES[i], num: d.getDate(), jobs,
-      bg:     isToday ? 'rgba(37,99,235,.07)' : '#ffffff',
+      // Ræman byrjar á DEGINUM Í DAG, svo vikudagsnafnið verður að koma úr
+      // dagsetningunni sjálfri — ekki úr sætinu í röðinni.
+      ds, name: NAMES[(d.getDay() + 6) % 7], num: d.getDate(), jobs,
+      bg:     isToday ? SURFACE_TODAY : SURFACE,
       border: isToday ? '#2563eb' : '#e5e7eb',
       head:   (isPast && !isToday) ? '#9aa3b2' : '#6b7280',
       numStyle: isToday
@@ -163,6 +173,7 @@
   function cellHTML(m, small) {
     return '<div class="vd-cell" data-vd="day" data-vd-date="' + m.ds + '" title="Smelltu til að skrá verk á þennan dag" ' +
       'style="cursor:pointer;border:1px solid ' + m.border + ';border-radius:12px;background:' + m.bg + ';' +
+      'box-shadow:' + SURFACE_SHADOW + ';' +
       'padding:' + (small ? '4px 6px 5px' : '6px 6px 8px') + ';' +
       (small ? 'flex:1;min-height:40px' : 'min-height:86px') + ';box-sizing:border-box;display:flex;flex-direction:column">' +
         '<div style="display:flex;align-items:center;gap:6px;padding:' + (small ? '1px 2px 0' : '2px 2px 0') + '">' +
@@ -186,9 +197,12 @@
     injectCSS();
 
     const todayStr = fmt(new Date());
-    const mon = monday(new Date()); mon.setDate(mon.getDate() + state.offset * 7);
-    const days    = [0, 1, 2, 3, 4].map(i => dayModel(mon, i, todayStr));
-    const weekend = [5, 6].map(i => dayModel(mon, i, todayStr));
+    // Ræman byrjar á DEGINUM Í DAG og telur fram á við (ósk Agnars 6.8.) í stað
+    // fastrar mánudagsviku. Þess vegna eru allir sjö reitirnir jafnstórir: helgin
+    // getur lent hvar sem er í röðinni og á ekki lengur fast sæti aftast.
+    const start = new Date(); start.setHours(0, 0, 0, 0);
+    start.setDate(start.getDate() + state.offset * 7);
+    const days = [0, 1, 2, 3, 4, 5, 6].map(i => dayModel(start, i, todayStr));
 
     const navBtn = (act, label, title, extra) =>
       '<button class="vd-nav" data-vd="' + act + '"' + (title ? ' title="' + title + '"' : '') + ' ' +
@@ -205,13 +219,14 @@
             '<span style="font-size:11px;font-weight:800;letter-spacing:1.6px;' +
               'background:linear-gradient(180deg,#96c2a4 0%,#4a8563 45%,#1e4631 100%);' +
               '-webkit-background-clip:text;background-clip:text;color:transparent">DAGSKRÁ</span>' +
-            '<span style="font-size:16px;font-weight:800;color:#fff">' + esc(weekLabel(mon)) + '</span>' +
-            '<span style="font-family:ui-monospace,\'Cascadia Mono\',Consolas,monospace;font-size:12px;color:#9aa0aa">· vika ' + isoWeek(mon) + '</span>' +
+            '<span style="font-size:16px;font-weight:800;color:#fff">' + esc(weekLabel(start)) + '</span>' +
+            '<span style="font-family:ui-monospace,\'Cascadia Mono\',Consolas,monospace;font-size:12px;color:#9aa0aa">· ' +
+              (state.offset === 0 ? 'næstu 7 dagar' : '7 daga ræma') + '</span>' +
           '</div>' +
           '<div style="display:flex;align-items:center;gap:8px">' +
-            navBtn('prev', '‹', 'Fyrri vika', 'width:32px;padding:0;font-size:16px;line-height:1') +
-            navBtn('today', 'Í dag', '') +
-            navBtn('next', 'Næsta vika <span style="font-size:15px;line-height:1">›</span>', 'Næsta vika') +
+            navBtn('prev', '‹', 'Fyrri 7 dagar', 'width:32px;padding:0;font-size:16px;line-height:1') +
+            navBtn('today', 'Í dag', 'Byrja aftur á deginum í dag') +
+            navBtn('next', 'Áfram <span style="font-size:15px;line-height:1">›</span>', 'Næstu 7 dagar') +
             '<div style="width:1px;height:22px;background:#3a3d45;margin:0 4px"></div>' +
             '<button class="vd-cta" data-vd="add" style="height:30px;padding:0 14px;border:1px solid rgba(59,130,246,.45);' +
               'border-radius:10px;background:linear-gradient(180deg,#2c3e5c,#0f1c2e);color:#fff;cursor:pointer;' +
@@ -220,11 +235,8 @@
         '</div>' +
         // vikuræman
         '<div style="padding:10px 12px 12px">' +
-          '<div class="vd-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:8px">' +
+          '<div class="vd-grid" style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px">' +
             days.map(m => cellHTML(m, false)).join('') +
-            '<div style="display:flex;flex-direction:column;gap:6px;min-width:0">' +
-              weekend.map(m => cellHTML(m, true)).join('') +
-            '</div>' +
           '</div>' +
           '<div style="display:flex;gap:14px;margin-top:10px;padding:0 2px;flex-wrap:wrap">' +
             TYPES.map(t =>
