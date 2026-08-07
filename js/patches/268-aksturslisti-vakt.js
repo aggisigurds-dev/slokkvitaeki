@@ -204,7 +204,13 @@
     const agg = aggregate();
 
     // Litakerfi: HVÍT textasvæði m/ svörtum texta · DÖKK-METALÍK headers/takkar m/ hvítum texta.
-    const INK = '#111827', INK2 = '#475569', INK3 = '#6b7280';
+    // 2026-08-07 (skjáskot Agnars: „much black on black" í símanum): INK var
+    // #111827 og INK3 #6b7280 — litir sem HVORKI dökka þemað (66) né þemabrúin
+    // (229) þekkja. Þemun flippa hvítu kortin (background:#fff → dökkt) með
+    // attribute-selectorum en skildu þessa tvo texta eftir dökka → svart á
+    // svörtu. Húslitirnir #0f172a og #64748b eru eins í ljósu en eru á
+    // remappa-listum beggja þema, svo textinn lýsist nú með kortunum.
+    const INK = '#0f172a', INK2 = '#475569', INK3 = '#64748b';
     const CARD = 'background:#fff;border:1px solid #d7dee7;border-radius:14px;box-shadow:0 1px 3px rgba(15,23,42,.14)';
     const METAL = 'background:linear-gradient(180deg,#3a3f48,#23272e 55%,#171a1f);color:#fff;border:1px solid #0c0e12;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 6px rgba(0,0,0,.35)';
     const METALBTN = 'background:linear-gradient(180deg,#3a3f48,#23272e);color:#fff;border:1px solid #0c0e12;box-shadow:inset 0 1px 0 rgba(255,255,255,.1);border-radius:99px;padding:6px 13px;font:inherit;font-size:12px;font-weight:700;cursor:pointer';

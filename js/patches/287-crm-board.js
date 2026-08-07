@@ -70,26 +70,77 @@
     return ["🟢", "Í lagi"];
   }
 
+  // Litir borðsins (2026-08-07, ósk Agnars: „total page audit fix for grey on
+  // grey — lack of contrast between text and background", skjáskot af símanum).
+  // Rótin: borðið erfði textalit frá <body> — undir dökku þema (66) eða dökkum
+  // Brunastál-bakgrunni (220/230) er sá litur LJÓS, svo félagsnöfnin (sem höfðu
+  // engan eigin lit) urðu nær ósýnileg á hvítu spjöldunum. Inline-litirnir
+  // (#475569/#94a3b8 …) voru að auki endurskrifaðir af attribute-selectorum
+  // annarra þema-patcha ([style*="color:#94a3b8"] → annar litur !important í
+  // 66/229/240), svo gráskalinn snerist við. Lausnin: ALLIR litir búa nú í
+  // þessu klasa-stílblaði með skýrum lit á hverjum texta — ekkert erft, engir
+  // inline-litastrengir sem þemu geta gripið. Borðið er alltaf ljóst spjald,
+  // líka ofan á dökku þema, og hver grár mælist ≥4,5:1 á sínum fleti (WCAG AA):
+  // #0f172a 16,9 · #334155 9,8 · #475569 7,5 · #525b6b 6,3 · #64748b 4,8 ·
+  // #b91c1c 5,9 · #b45309 4,6 · #4338ca 8,0 — allt mælt á hvítu.
+  function crmStyle() {
+    if (document.getElementById("_crm-style")) return;
+    const s = document.createElement("style");
+    s.id = "_crm-style";
+    s.textContent =
+      "#_crm-box{background:#f8fafc;color:#0f172a;border-radius:16px;max-width:860px;width:100%;height:fit-content;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.4)}" +
+      "#_crm-ov .crm-head{padding:16px 20px 10px;border-bottom:1px solid #e2e8f0;background:#fff;border-radius:16px 16px 0 0}" +
+      "#_crm-ov .crm-title{font-weight:800;font-size:15px;color:#0f172a}" +
+      "#_crm-ov .crm-subh{font-weight:400;color:#525b6b;font-size:12px}" +
+      "#_crm-ov .crm-input{flex:1;min-width:180px;border:1px solid #cbd5e1;border-radius:10px;padding:8px 12px;font-size:14px;background:#fff;color:#0f172a}" +
+      "#_crm-ov .crm-input::placeholder{color:#64748b}" +
+      "#_crm-ov .crm-chip{border-radius:99px;padding:6px 13px;font-size:12.5px;font-weight:700;cursor:pointer}" +
+      "#_crm-ov .crm-chip-red{border:1px solid #fecaca;background:#fef2f2;color:#b91c1c}" +
+      "#_crm-ov .crm-chip-ind{border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca}" +
+      "#_crm-ov .crm-chip-plain{border:1px solid #cbd5e1;background:#fff;color:#334155}" +
+      "#_crm-ov .crm-x{border:0;background:#e2e8f0;color:#0f172a;border-radius:99px;width:32px;height:32px;cursor:pointer;font-size:16px}" +
+      "#_crm-ov #_crm-list{overflow:auto;padding:10px 14px 16px}" +
+      "#_crm-ov .crm-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 13px;margin:6px 0;cursor:pointer;color:#0f172a}" +
+      "#_crm-ov .crm-card.osv{border-left:4px solid #ef4444}" +
+      "#_crm-ov .crm-name{font-weight:700;font-size:14px;color:#0f172a}" +
+      "#_crm-ov .crm-tengi{color:#475569;font-size:12.5px}" +
+      "#_crm-ov .crm-badge{background:#fef2f2;color:#b91c1c;border-radius:99px;padding:1px 9px;font-size:11.5px;font-weight:700}" +
+      "#_crm-ov .crm-meta{color:#475569;font-size:12.5px;margin-top:3px}" +
+      "#_crm-ov .crm-faint{color:#64748b}" +
+      "#_crm-ov .crm-banner{color:#b45309;font-size:12.5px;margin-top:2px}" +
+      "#_crm-ov .crm-empty{color:#64748b;padding:16px}" +
+      "#_crm-ov .crm-mail{background:#f8fafc;border-radius:8px;padding:6px 9px;margin:4px 0;color:#0f172a}" +
+      "#_crm-ov .crm-mail.q{background:#fef2f2}" +
+      "#_crm-ov .crm-mailmeta{font-size:11px;color:#525b6b}" +
+      "#_crm-ov .crm-mailsubj{font-weight:600;font-size:12.5px;color:#0f172a}" +
+      "#_crm-ov .crm-mailsnip{color:#475569;font-size:12px}" +
+      "#_crm-ov .crm-plabel{font-size:11px;font-weight:700;color:#525b6b;margin:8px 0 3px}" +
+      "#_crm-ov .crm-pbox{white-space:pre-wrap;background:#f8fafc;border-radius:8px;padding:8px 10px;font-size:12px;color:#334155}" +
+      "#_crm-ov .crm-links a{color:#1d4ed8;font-weight:600;text-decoration:none}";
+    document.head.appendChild(s);
+  }
+
   async function open() {
     let ov = document.getElementById("_crm-ov");
     if (ov) { ov.remove(); return; }
+    crmStyle();
     ov = document.createElement("div");
     ov.id = "_crm-ov";
     ov.style.cssText = "position:fixed;inset:0;background:rgba(15,23,42,.6);z-index:9999;display:flex;justify-content:center;padding:24px;overflow:auto";
-    ov.innerHTML = '<div id="_crm-box" style="background:#f8fafc;border-radius:16px;max-width:860px;width:100%;height:fit-content;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 24px 80px rgba(0,0,0,.4)">' +
-      '<div style="padding:16px 20px 10px;border-bottom:1px solid #e2e8f0;background:#fff;border-radius:16px 16px 0 0">' +
+    ov.innerHTML = '<div id="_crm-box">' +
+      '<div class="crm-head">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px">' +
-      '<div style="font-weight:800;font-size:15px">📇 SAMSKIPTABORÐ <span id="_crm-sub" style="font-weight:400;color:#94a3b8;font-size:12px"></span></div>' +
+      '<div class="crm-title">📇 SAMSKIPTABORÐ <span id="_crm-sub" class="crm-subh"></span></div>' +
       '<div style="display:flex;gap:8px;align-items:center">' +
-      '<button id="_crm-full" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:6px 13px;font-size:12.5px;font-weight:700;cursor:pointer">Opna Samskiptaborð ↗</button>' +
-      '<button id="_crm-x" style="border:0;background:#f1f5f9;border-radius:99px;width:32px;height:32px;cursor:pointer;font-size:16px">✕</button></div></div>' +
+      '<button id="_crm-full" class="crm-chip crm-chip-ind">Opna Samskiptaborð ↗</button>' +
+      '<button id="_crm-x" class="crm-x">✕</button></div></div>' +
       '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center">' +
-      '<input id="_crm-q" placeholder="Leita að félagi…" style="flex:1;min-width:180px;border:1px solid #cbd5e1;border-radius:10px;padding:8px 12px;font-size:14px">' +
-      '<button class="_crm-f" data-f="osvarad" style="border:1px solid #fecaca;background:#fef2f2;color:#dc2626;border-radius:99px;padding:6px 13px;font-size:12.5px;font-weight:700;cursor:pointer">🔴 Ósvarað <span id="_crm-n-osv"></span></button>' +
-      '<button class="_crm-f" data-f="med" style="border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:6px 13px;font-size:12.5px;font-weight:700;cursor:pointer">✉️ Með póstsögu</button>' +
-      '<button class="_crm-f" data-f="all" style="border:1px solid #cbd5e1;background:#fff;color:#334155;border-radius:99px;padding:6px 13px;font-size:12.5px;font-weight:700;cursor:pointer">Öll félög</button>' +
+      '<input id="_crm-q" class="crm-input" placeholder="Leita að félagi…">' +
+      '<button class="_crm-f crm-chip crm-chip-red" data-f="osvarad">🔴 Ósvarað <span id="_crm-n-osv"></span></button>' +
+      '<button class="_crm-f crm-chip crm-chip-ind" data-f="med">✉️ Með póstsögu</button>' +
+      '<button class="_crm-f crm-chip crm-chip-plain" data-f="all">Öll félög</button>' +
       "</div></div>" +
-      '<div id="_crm-list" style="overflow:auto;padding:10px 14px 16px">Sæki gögn…</div></div>';
+      '<div id="_crm-list">Sæki gögn…</div></div>';
     document.body.appendChild(ov);
     ov.addEventListener("click", e => { if (e.target === ov || e.target.id === "_crm-x") ov.remove(); });
     ov.querySelector("#_crm-full").addEventListener("click", () => { ov.remove(); if (window.App && App.switchView && window.App._tbordSwitchPatched) App.switchView("samskiptabord"); else if (window.Samskiptabord) Samskiptabord.open(); });
@@ -115,25 +166,25 @@
     if (filter === "osvarad") rows = rows.filter(r => r.osvarad > 0);
     if (filter === "med") rows = rows.filter(r => r.sidasti_postur);
     if (q) rows = rows.filter(r => (r.nafn || "").toLowerCase().includes(q) || (r.tengilidur || "").toLowerCase().includes(q) || (r.netfang || "").toLowerCase().includes(q));
-    host.innerHTML = rows.length ? "" : '<div style="color:#94a3b8;padding:16px">Ekkert félag fannst.</div>';
+    host.innerHTML = rows.length ? "" : '<div class="crm-empty">Ekkert félag fannst.</div>';
     for (const r of rows.slice(0, 400)) {
       const [dot, tip] = badge(r);
       const row = document.createElement("div");
-      row.style.cssText = "background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 13px;margin:6px 0;cursor:pointer" + (r.osvarad > 0 ? ";border-left:4px solid #ef4444" : "");
+      row.className = "crm-card" + (r.osvarad > 0 ? " osv" : "");
       row.innerHTML =
         '<div style="display:flex;gap:9px;align-items:baseline;flex-wrap:wrap">' +
         '<span title="' + esc(tip) + '">' + dot + '</span>' +
-        '<span style="font-weight:700;font-size:14px">' + esc(r.nafn) + "</span>" +
-        (r.tengilidur ? '<span style="color:#64748b;font-size:12.5px">👤 ' + esc(r.tengilidur) + "</span>" : "") +
-        (r.osvarad > 0 ? '<span style="background:#fef2f2;color:#dc2626;border-radius:99px;padding:1px 9px;font-size:11.5px;font-weight:700">' + r.osvarad + " ósvarað</span>" : "") +
+        '<span class="crm-name">' + esc(r.nafn) + "</span>" +
+        (r.tengilidur ? '<span class="crm-tengi">👤 ' + esc(r.tengilidur) + "</span>" : "") +
+        (r.osvarad > 0 ? '<span class="crm-badge">' + r.osvarad + " ósvarað</span>" : "") +
         "</div>" +
-        '<div style="color:#475569;font-size:12.5px;margin-top:3px">✉️ ' +
+        '<div class="crm-meta">✉️ ' +
         (r.sidasti_postur
           ? fmtD(r.sidasti_postur) + " — " + esc(r.sidasta_efni || "(ekkert efni)") +
-            ' <span style="color:#94a3b8">(' + (r.sidasti_fra_okkur ? "frá okkur" : "frá " + esc(r.sidasti_sendandi || "viðskiptavini")) + ")</span>"
-          : '<span style="color:#94a3b8">engin póstsaga' + (r.netfang ? "" : " — ekkert netfang skráð") + "</span>") +
+            ' <span class="crm-faint">(' + (r.sidasti_fra_okkur ? "frá okkur" : "frá " + esc(r.sidasti_sendandi || "viðskiptavini")) + ")</span>"
+          : '<span class="crm-faint">engin póstsaga' + (r.netfang ? "" : " — ekkert netfang skráð") + "</span>") +
         "</div>" +
-        (r.banner_note ? '<div style="color:#b45309;font-size:12.5px;margin-top:2px">📌 ' + esc(r.banner_note) + "</div>" : "") +
+        (r.banner_note ? '<div class="crm-banner">📌 ' + esc(r.banner_note) + "</div>" : "") +
         '<div class="_crm-exp" style="display:none"></div>';
       row.addEventListener("click", ev => { if (ev.target.closest("a")) return; expand(row, r); });
       host.appendChild(row);
@@ -144,7 +195,7 @@
     const box = row.querySelector("._crm-exp");
     if (box.style.display !== "none") { box.style.display = "none"; return; }
     box.style.display = "";
-    box.innerHTML = '<div style="color:#94a3b8;font-size:12px;padding:6px 0">Sæki póstsögu…</div>';
+    box.innerHTML = '<div class="crm-faint" style="font-size:12px;padding:6px 0">Sæki póstsögu…</div>';
     let mails = [];
     try {
       const res = await fetch(U + "/rest/v1/fyrirtaeki_samskipti?fyrirtaeki_id=eq." + r.fyrirtaeki_id +
@@ -153,13 +204,13 @@
     } catch (e) { }
     box.innerHTML = '<div style="border-top:1px dashed #e2e8f0;margin-top:8px;padding-top:8px">' +
       (mails.length ? mails.map(m =>
-        '<div style="padding:6px 9px;margin:4px 0;border-radius:8px;background:' + (m.is_question && !m.fra_okkur ? "#fef2f2" : "#f8fafc") + '">' +
-        '<div style="font-size:11px;color:#64748b">' + fmtD(m.received_at) + " · " + esc(m.fra_okkur ? "Slökkvitæki ehf" : (m.sender_name || "")) + "</div>" +
-        '<div style="font-weight:600;font-size:12.5px">' + esc(m.subject || "(ekkert efni)") + "</div>" +
-        '<div style="color:#475569;font-size:12px">' + esc((m.snippet || "").slice(0, 180)) + "</div></div>").join("")
-        : '<div style="color:#94a3b8;font-size:12px">Engir póstar.</div>') +
-      (r.athugasemdir_stubbur ? '<div style="font-size:11px;font-weight:700;color:#64748b;margin:8px 0 3px">📋 PUNKTAR</div><div style="white-space:pre-wrap;background:#f8fafc;border-radius:8px;padding:8px 10px;font-size:12px;color:#334155">' + esc(r.athugasemdir_stubbur) + "</div>" : "") +
-      (r.simi || r.netfang ? '<div style="margin-top:7px;font-size:12.5px">' +
+        '<div class="crm-mail' + (m.is_question && !m.fra_okkur ? " q" : "") + '">' +
+        '<div class="crm-mailmeta">' + fmtD(m.received_at) + " · " + esc(m.fra_okkur ? "Slökkvitæki ehf" : (m.sender_name || "")) + "</div>" +
+        '<div class="crm-mailsubj">' + esc(m.subject || "(ekkert efni)") + "</div>" +
+        '<div class="crm-mailsnip">' + esc((m.snippet || "").slice(0, 180)) + "</div></div>").join("")
+        : '<div class="crm-faint" style="font-size:12px">Engir póstar.</div>') +
+      (r.athugasemdir_stubbur ? '<div class="crm-plabel">📋 PUNKTAR</div><div class="crm-pbox">' + esc(r.athugasemdir_stubbur) + "</div>" : "") +
+      (r.simi || r.netfang ? '<div class="crm-links" style="margin-top:7px;font-size:12.5px">' +
         (r.simi ? '<a href="tel:' + esc(String(r.simi).replace(/[^\d+]/g, "")) + '">📞 ' + esc(r.simi) + "</a> · " : "") +
         (r.netfang ? '<a href="mailto:' + esc(r.netfang) + '">✉️ ' + esc(r.netfang) + "</a>" : "") + "</div>" : "") +
       "</div>";
@@ -613,46 +664,56 @@
     const s = document.createElement("style");
     s.id = "tbord-style";
     s.textContent =
+      // Kontrast-úttekt 2026-08-07 (ósk Agnars: „total page audit fix for grey
+      // on grey"): gráir textar dekktir upp fyrir WCAG AA á sínum fleti —
+      // sub #94a3b8→#525b6b (2,9→6,3), mut #cbd5e1→#64748b (1,5→4,8), tómu
+      // skjalateljararnir #94a3b8→#525b6b á #f1f5f9, osv-pillan #dc2626→#b91c1c
+      // á #fef2f2. Hvítu fletirnir (taflan, skúffan, póstkortin) fá líka SKÝRAN
+      // dökkan textalit í stað þess að erfa — undir dökku þema var erfði
+      // liturinn ljós og textinn hvarf á hvítu. Neðst eru dökk-þema mótreglur
+      // (html[data-theme="dark"], patch 66) svo dekktu gráirnir snúist við
+      // þegar patch 66 flippar flötunum sjálfum yfir í dökkt.
       "#" + VIEW_ID + "{color:var(--ink1,#0f172a)}" +
       ".tbord-top{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:16px 18px 12px}" +
       ".tbord-title{margin:0;font-size:19px;font-weight:800}" +
-      ".tbord-note{color:var(--ink2,#64748b);font-size:12.5px}" +
-      ".tbord-btn{border:1px solid var(--brd,#cbd5e1);background:#fff;border-radius:9px;padding:6px 12px;font-size:14px;font-weight:700;cursor:pointer}" +
-      "#tbord-q{flex:1;min-width:200px;border:1px solid var(--brd,#cbd5e1);border-radius:10px;padding:8px 12px;font-size:13.5px}" +
+      ".tbord-note{color:var(--ink2,#525b6b);font-size:12.5px}" +
+      ".tbord-btn{border:1px solid var(--brd,#cbd5e1);background:#fff;color:#334155;border-radius:9px;padding:6px 12px;font-size:14px;font-weight:700;cursor:pointer}" +
+      "#tbord-q{flex:1;min-width:200px;border:1px solid var(--brd,#cbd5e1);border-radius:10px;padding:8px 12px;font-size:13.5px;background:#fff;color:#0f172a}" +
       ".tbord-seg{display:flex;border:1px solid var(--brd,#cbd5e1);border-radius:10px;overflow:hidden}" +
       ".tbord-seg button{border:0;background:#fff;color:#475569;padding:7px 13px;font-size:12.5px;font-weight:700;cursor:pointer}" +
       ".tbord-seg button.on{background:#0f172a;color:#fff}" +
       ".tbord-tblwrap{margin:0 18px 40px;background:#fff;border:1px solid var(--brd,#e2e8f0);border-radius:12px;overflow:auto}" +
-      ".tbord-tbl{width:100%;border-collapse:collapse;font-size:13px}" +
-      ".tbord-tbl th{text-align:left;color:#64748b;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;padding:9px 10px;border-bottom:1px solid #e2e8f0;white-space:nowrap;background:#f8fafc;position:sticky;top:0}" +
+      ".tbord-tbl{width:100%;border-collapse:collapse;font-size:13px;color:#334155}" +
+      ".tbord-tbl th{text-align:left;color:#525b6b;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;padding:9px 10px;border-bottom:1px solid #e2e8f0;white-space:nowrap;background:#f8fafc;position:sticky;top:0}" +
       ".tbord-th{cursor:pointer;user-select:none}.tbord-th:hover{color:#0f172a}" +
       ".tbord-tbl td{padding:8px 10px;border-bottom:1px solid #eef1f5;vertical-align:top}" +
       ".tbord-row{cursor:pointer}.tbord-row:hover td{background:#f1f5f9}" +
-      ".tbord-nafn{font-weight:700}" +
-      ".tbord-sub{color:#94a3b8;font-size:11.5px}" +
-      ".tbord-mut{color:#cbd5e1}" +
+      ".tbord-nafn{font-weight:700;color:#0f172a}" +
+      ".tbord-sub{color:#525b6b;font-size:11.5px}" +
+      ".tbord-mut{color:#64748b}" +
       ".tbord-nowrap{white-space:nowrap}" +
-      ".tbord-osv{color:#dc2626;font-weight:700;background:#fef2f2;border-radius:99px;padding:1px 8px;font-size:11.5px}" +
+      ".tbord-osv{color:#b91c1c;font-weight:700;background:#fef2f2;border-radius:99px;padding:1px 8px;font-size:11.5px}" +
       ".tbord-red{color:#b91c1c;font-weight:700}" +
-      ".tbord-cnt{display:inline-block;border-radius:6px;padding:1px 6px;margin-right:3px;font-size:11.5px;font-weight:700;background:#f1f5f9;color:#94a3b8}" +
+      ".tbord-cnt{display:inline-block;border-radius:6px;padding:1px 6px;margin-right:3px;font-size:11.5px;font-weight:700;background:#f1f5f9;color:#525b6b}" +
       ".tbord-cnt.on{background:#f0fdf4;color:#15803d}" +
       ".tbord-ghead td{background:#0f172a;color:#fff;font-weight:800;font-size:12.5px;padding:7px 10px}" +
       ".tbord-gsub{font-weight:400;color:#cbd5e1}" +
       ".tbord-ghead .tbord-red{color:#fca5a5}.tbord-ghead .tbord-osv{background:transparent;padding:0;color:#fca5a5}" +
-      ".tbord-empty{text-align:center;color:#94a3b8;padding:26px}" +
+      ".tbord-ghead .tbord-gsub .tbord-mut{color:#cbd5e1}" +
+      ".tbord-empty{text-align:center;color:#64748b;padding:26px}" +
       ".tbord-osvtd{text-align:center}" +
       ".tbord-ok{color:#0f6e3a;font-weight:700;font-size:12px;white-space:nowrap}" +
       ".tbord-row.is-open td{background:#eef2ff}" +
       ".tbord-drawer td{background:#f8fafc;border-bottom:2px solid #c7d2fe;padding:0}" +
-      ".tbord-dbox{padding:12px 16px 14px}" +
+      ".tbord-dbox{padding:12px 16px 14px;color:#334155}" +
       ".tbord-dhead{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px}" +
       ".tbord-markbtn{border-color:#156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;font-weight:700}" +
       ".tbord-maillist{display:flex;flex-direction:column;gap:6px;max-height:420px;overflow:auto}" +
-      ".tbord-mail{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 11px}" +
+      ".tbord-mail{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:8px 11px;color:#334155}" +
       ".tbord-mail.open{background:#fef2f2;border-color:#fecaca}" +
-      ".tbord-mailmeta{font-size:11.5px;color:#64748b}" +
-      ".tbord-mailsubj{font-weight:600;font-size:13px}" +
-      ".tbord-mailsnip{font-size:12px;color:#64748b}" +
+      ".tbord-mailmeta{font-size:11.5px;color:#525b6b}" +
+      ".tbord-mailsubj{font-weight:600;font-size:13px;color:#0f172a}" +
+      ".tbord-mailsnip{font-size:12px;color:#525b6b}" +
       ".tbord-via{background:#eef2ff;border:1px solid #c7d2fe;color:#4338ca;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:700;white-space:nowrap}" +
       ".tbord-summary{padding:0 18px 4px;font-size:13.5px;font-weight:600}" +
       ".tbord-filters{display:flex;gap:7px;flex-wrap:wrap;padding:4px 18px 10px}" +
@@ -663,7 +724,35 @@
       ".tbord-minireply{border:1px solid #c7d2fe;background:#eef2ff;color:#4338ca;border-radius:99px;padding:1px 9px;font-size:11px;font-weight:700;cursor:pointer;margin-left:4px}" +
       ".tbord-contact{margin-left:auto;font-size:12px;color:#475569;white-space:nowrap}" +
       ".tbord-contact a{color:#1d4ed8;text-decoration:none;font-weight:600}" +
-      ".tbord-efni{color:#475569;font-size:12.5px;max-width:520px}";
+      ".tbord-efni{color:#475569;font-size:12.5px;max-width:520px}" +
+      // Dökk-þema mótreglur (patch 66 setur html[data-theme="dark"] og flippar
+      // töflunni/inntökum sjálfur í dökkt með !important — hér snúa gráir og
+      // hvít-hörðu fletirnir okkar við svo ekkert verði svart-á-svörtu):
+      'html[data-theme="dark"] #' + VIEW_ID + "{color:#e2e8f0}" +
+      'html[data-theme="dark"] .tbord-tbl,html[data-theme="dark"] .tbord-tbl td{color:#e2e8f0}' +
+      'html[data-theme="dark"] .tbord-nafn,html[data-theme="dark"] .tbord-mailsubj{color:#f1f5f9}' +
+      'html[data-theme="dark"] .tbord-sub,html[data-theme="dark"] .tbord-mut,html[data-theme="dark"] .tbord-mailmeta,html[data-theme="dark"] .tbord-mailsnip,html[data-theme="dark"] .tbord-empty{color:#94a3b8}' +
+      'html[data-theme="dark"] .tbord-tblwrap{background:#1e293b;border-color:#334155}' +
+      'html[data-theme="dark"] .tbord-mail{background:#1e293b;border-color:#334155;color:#e2e8f0}' +
+      'html[data-theme="dark"] .tbord-mail.open{background:rgba(220,38,38,.15);border-color:#7f1d1d}' +
+      'html[data-theme="dark"] .tbord-dbox{color:#cbd5e1}' +
+      'html[data-theme="dark"] .tbord-efni,html[data-theme="dark"] .tbord-contact{color:#cbd5e1}' +
+      'html[data-theme="dark"] .tbord-contact a{color:#93c5fd}' +
+      'html[data-theme="dark"] .tbord-osv{background:rgba(220,38,38,.2);color:#fca5a5}' +
+      'html[data-theme="dark"] .tbord-red{color:#fca5a5}' +
+      'html[data-theme="dark"] .tbord-ok{color:#4ade80}' +
+      'html[data-theme="dark"] .tbord-cnt{background:#334155;color:#94a3b8}' +
+      'html[data-theme="dark"] .tbord-cnt.on{background:rgba(34,197,94,.15);color:#4ade80}' +
+      'html[data-theme="dark"] .tbord-row:hover td{background:#0f172a}' +
+      'html[data-theme="dark"] .tbord-row.is-open td{background:#312e81}' +
+      'html[data-theme="dark"] .tbord-drawer td{background:#0f172a;border-bottom-color:#4338ca}' +
+      'html[data-theme="dark"] .tbord-btn,html[data-theme="dark"] .tbord-seg button,html[data-theme="dark"] .tbord-fchip{background:#1e293b;color:#cbd5e1;border-color:#334155}' +
+      'html[data-theme="dark"] .tbord-seg button.on,html[data-theme="dark"] .tbord-fchip.on{background:#e2e8f0;color:#0f172a;border-color:#e2e8f0}' +
+      'html[data-theme="dark"] .tbord-note{color:#94a3b8}' +
+      // Lit-hnapparnir halda stiglunum sínum líka í dökku (annars flatti
+      // .tbord-btn-mótreglan þá út — þeir bera báða klasana):
+      'html[data-theme="dark"] .tbord-markbtn{border-color:#156e3a;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff}' +
+      'html[data-theme="dark"] .tbord-replybtn{border-color:#3730a3;background:linear-gradient(150deg,#6366f1,#4338ca);color:#fff}';
     document.head.appendChild(s);
   }
 

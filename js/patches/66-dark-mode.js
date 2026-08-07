@@ -25,8 +25,19 @@
       html[data-theme="dark"] [style*="background:#fff"], html[data-theme="dark"] [style*="background: #fff"] { background:#1e293b !important; }
       html[data-theme="dark"] [style*="background:#f8fafc"], html[data-theme="dark"] [style*="background:#f1f5f9"] { background:#0f172a !important; }
       html[data-theme="dark"] [style*="color:#0f172a"], html[data-theme="dark"] [style*="color: #0f172a"] { color:#e2e8f0 !important; }
+      /* 2026-08-07 (skjáskot Agnars: „much black on black" á símanum): listinn
+         hér að ofan þekkti bara #0f172a sem aðal-blek, en síður eins og
+         Aksturslisti (268) notuðu #111827/#1e293b/#334155 — bakgrunnarnir
+         flipppuðust dökkir en textinn sat eftir svartur. Sömu fjölskyldu-litir
+         remappast nú líka. (Athuga: substring-selectorinn grípur líka
+         border-color:#334155 — það er sami afsláttur og eldri reglurnar gera.) */
+      html[data-theme="dark"] [style*="color:#111827"], html[data-theme="dark"] [style*="color:#1e293b"], html[data-theme="dark"] [style*="color:#334155"], html[data-theme="dark"] [style*="color:#111"] { color:#e2e8f0 !important; }
       html[data-theme="dark"] [style*="color:#475569"], html[data-theme="dark"] [style*="color:#64748b"] { color:#94a3b8 !important; }
-      html[data-theme="dark"] [style*="color:#94a3b8"] { color:#64748b !important; }
+      html[data-theme="dark"] [style*="color:#6b7280"], html[data-theme="dark"] [style*="color:#9ca3af"] { color:#94a3b8 !important; }
+      /* Fjarlægt 2026-08-07: reglan [style*="color:#94a3b8"]→#64748b DÖKKAÐI
+         daufa gráa textann í dökku þema — en fletirnir undir honum flippast
+         dökkir, svo útkoman var #64748b á #1e293b (2,4:1, grátt á gráu).
+         Án reglunnar stendur #94a3b8 áfram og mælist 4,9:1 á dökka fletinum. */
       .dark-toggle { background:none; border:none; cursor:pointer; padding:8px 10px; border-radius:8px; color:inherit; font-size:18px; }
       .dark-toggle:hover { background:rgba(255,255,255,.08); }
     `;
