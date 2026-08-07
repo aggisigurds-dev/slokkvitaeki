@@ -380,7 +380,7 @@
       // 2026-07-29: dokkan var 256px há með 52px emoji — á appi með fáar/eina síðu
       // varð þetta risaflís sem gleypti hálfan skjáinn. Nú þéttur þumal-dokki
       // (~84px) og felst alveg þegar appið hefur bara eina síðu (ekkert að velja).
-      '#_app-nav button{flex:1 0 84px;min-width:84px;background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.66);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 5px;border-radius:14px;min-height:80px;text-align:center;line-height:1.15;overflow:hidden}',
+      '#_app-nav button{flex:1 0 84px;min-width:84px;background:rgba(255,255,255,.05);border:none;color:rgba(255,255,255,.66);font:inherit;font-size:13.5px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:10px 5px;border-radius:14px;min-height:120px;text-align:center;line-height:1.15;overflow:hidden}',
       '#_app-nav button .e{font-size:28px;line-height:1}',
       'body.appmode-nonav #_app-nav{display:none !important}',
       'body.appmode.appmode-nonav .view.active{padding-bottom:24px !important}',
