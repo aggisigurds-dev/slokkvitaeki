@@ -600,12 +600,41 @@
       return String(s.a.name||'Samningur');
     }
     samn.sort(function(a,b){return (b.year||0)-(a.year||0);});
-    var samnHtml = samn.map(function(s){
+    function samnChip(s){
       var full=samnLabel(s), disp=full.length>46?full.slice(0,44)+'…':full;
       if(s.src==='doc'){ var u=docUrl(s.d);
         return docWrap(u?'<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="'+esc(full)+'">📑 '+esc(disp)+'</a>':'<span class="sk-doc rep" title="'+esc(full)+'">📑 '+esc(disp)+'</span>', s.d.id); }
       return '<button type="button" class="sk-doc rep" data-att="'+esc(s.a.id)+'" title="'+esc(full)+'">📑 '+esc(disp)+'</button>';
-    }).join('') + addChip('samningur','','+ samningur');
+    }
+    // 2026-08-07 (skissa Agnars): samningurinn fær sama kort-tungumál og árin —
+    // eitt kort per þjónustu með lituðum kanti og stöðupillu hægra megin.
+    // Flokkun á kort: nafnið/notes segja til um brunakerfis-samning; allt annað
+    // telst slökkvitækja-samningur (það er sögulega sjálfgefna tegundin).
+    // Gildis-mat er AÐEINS úr ártölum sem standa í skjalaheitinu sjálfu:
+    // „2024–2026" → Í GILDI þar til loka-árið er liðið, þá ÚTRUNNINN. Samningur
+    // án ártala í heiti telst Í GILDI (skjal á skrá = gildandi, venjan hans) —
+    // við giskum ekki á dagsetningar sem hvergi standa.
+    function samnCard(kind){
+      var bkc = kind==='brunakerfi';
+      var items = samn.filter(function(s){
+        var t=(samnLabel(s)+' '+String(s.src==='doc'?(s.d.notes||''):'')).toLowerCase();
+        return bkc === /brunakerfi|brunavarn|brunavi[ðd]v/i.test(t);
+      });
+      var pill, yrs='';
+      if(!items.length) pill='<span class="sk-samn-pill vantar">VANTAR</span>';
+      else {
+        var lbl=items.map(function(s){return samnLabel(s);}).join(' ');
+        var m=lbl.match(/(20\d{2})\s*[–—-]\s*(20\d{2})/);
+        var endY = m ? +m[2] : null;
+        if(m) yrs='<span class="sk-samn-yrs">📄 '+m[1]+'–'+m[2]+'</span>';
+        pill = (endY && endY < NOW)
+          ? '<span class="sk-samn-pill utrunn">ÚTRUNNINN '+endY+'</span>'
+          : '<span class="sk-samn-pill gildi">Í GILDI</span>';
+      }
+      var chips = items.map(samnChip).join('') + (items.length?'':addChip('samningur','','+ samningur'));
+      return '<div class="sk-samn-card '+(bkc?'bkc':'slk')+'">'+(bkc?'🔥':'🧯')+' <b>Samningur — '+(bkc?'brunakerfi':'slökkvitæki')+'</b>'+chips+yrs+pill+'</div>';
+    }
+    var samnHtml = samnCard('uttekt') + samnCard('brunakerfi');
 
     // ── per-year × per-service bundle cards (verkefnalisti mockup, 2026-08-05) ──
     // The newest year is expanded into two side-by-side service cards (🧯
@@ -748,7 +777,7 @@
 
     section.innerHTML = hdr +
       '<div class="sk-strip"><div class="sk-strip-l">📊 Staða eftir ári</div><div class="sk-strip-r">'+ (pills||'<span style="color:var(--ink4);font-size:12px">engin gögn</span>') +'</div></div>'+
-      '<div class="sk-strip"><div class="sk-strip-l">📑 Þjónustusamningur</div><div class="sk-strip-r">'+samnHtml+'</div></div>'+
+      '<div class="sk-svc-grid sk-samn-grid">'+samnHtml+'</div>'+
       '<div class="sk-yrwrap">'+yearBlocks+
         '<div class="sk-yr-add"><button type="button" class="sk-doc add" data-add-yr-svc="1">+ ár / þjónusta</button>'+
         '<span class="sk-sub">skýrsla og reikningur parast sjálfkrafa eftir ári — nýjasta árið opið, eldri ár samanþjöppuð</span></div>'+
@@ -1033,6 +1062,15 @@
       '.sk-dot{flex:0 0 9px;width:9px;height:9px;border-radius:50%}',
       '.sk-dot.ok{background:#22c55e}',
       '.sk-dot.miss{width:7px;height:7px;flex-basis:7px;background:transparent;border:2px dashed #f59e0b}',
+      // samnings-kortin tvö (vinstri 🧯 / hægri 🔥), sami grid og þjónustukortin
+      '.sk-samn-grid{margin:8px 0}',
+      '.sk-samn-card{display:flex;align-items:center;flex-wrap:wrap;gap:7px;background:var(--bg);border:1px solid var(--brd2,#f1f5f9);border-left:4px solid #3b82f6;border-radius:10px;padding:8px 12px;font-size:13px}',
+      '.sk-samn-card.bkc{border-left-color:#ef4444}',
+      '.sk-samn-yrs{font-size:11px;font-weight:700;color:var(--ink3);white-space:nowrap}',
+      '.sk-samn-pill{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.03em;padding:2px 9px;border-radius:99px;white-space:nowrap}',
+      '.sk-samn-pill.gildi{color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe}',
+      '.sk-samn-pill.vantar{color:#b45309;background:#fffbeb;border:1px solid #fde68a}',
+      '.sk-samn-pill.utrunn{color:#b91c1c;background:#fef2f2;border:1px solid #fecaca}',
       '.sk-svc-pay{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:99px}',
       '.sk-svc-pay.ok{color:#15803d;background:#f0fdf4}',
       '.sk-svc-pay.due{color:#b45309;background:#fef3c7}',
