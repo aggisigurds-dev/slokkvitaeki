@@ -1197,6 +1197,23 @@
       '<span style="width:6px;height:6px;border-radius:50%;background:' + c + '"></span>' + lbl + '</span>';
   }
 
+  // Hausinn á hverri röð: FYRIRTÆKIÐ fremst (blátt, opnar fyrirtækjaspjaldið) og
+  // málið sjálft á SÖMU línu hægra megin (ósk Agnars 7.8.). Nafninu er sleppt ef
+  // titillinn byrjar hvort sem er á því — margir póstar bera fyrirtækjanafnið í
+  // efnislínunni og þá stæði það tvisvar í sömu röð.
+  function rowHeadHTML(r) {
+    const title = String(r.title || '(ónefnt)');
+    const co = String(r.customer_nafn || '').trim();
+    const dupe = co && title.trim().toLowerCase().indexOf(co.toLowerCase()) === 0;
+    return (r.important ? '<span style="color:#eab308">★ </span>' : '') +
+      (co && !dupe
+        ? '<span data-act="openco" data-id="' + esc(r.id) + '" title="Opna fyrirtækjaspjald — ' + esc(co) + '" ' +
+            'style="color:#2f5fe0;cursor:pointer">' + esc(co) + '</span>' +
+          '<span style="color:#c3c8d0"> · </span>'
+        : '') +
+      esc(title);
+  }
+
   // Ein röð inni í korti. `clamp` = tveggja lína lýsing (flokkakortin), annars
   // ein lína (BÍÐUR SVARS er þéttara).
   function v3Row(r, clamp, tagColor) {
@@ -1229,7 +1246,7 @@
         '</div>' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-            (r.important ? '<span style="color:#eab308">★ </span>' : '') + esc(r.title || '(ónefnt)') + '</div>' +
+            rowHeadHTML(r) + '</div>' +
           (sub ? '<div style="' + subStyle + '">' + esc(sub) + '</div>' : '') +
         '</div>' +
         (clamp ? '' : waitPill(r)) +
@@ -1272,7 +1289,7 @@
         '</div>' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-            (r.important ? '<span style="color:#eab308">★ </span>' : '') + esc(r.title || '(ónefnt)') + '</div>' +
+            rowHeadHTML(r) + '</div>' +
           (sub
             ? '<div style="font-size:12px;color:#6b7280;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;' +
               '-webkit-box-orient:vertical;overflow:hidden">' + esc(sub) + '</div>'
@@ -1657,6 +1674,26 @@
         e.stopPropagation();
         state.page = Number(t.getAttribute('data-p')) || 0; renderList();
         const lc = document.getElementById('vb-list'); if (lc) lc.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        return;
+      }
+      // Fyrirtækjanafnið fremst í hausnum → fyrirtækjaspjaldið. Sama nafna-
+      // uppfletting og 'history' notar (raðirnar geyma nafn, ekki fyrirtækis-id).
+      // Finnist nafnið ekki á skrá opnast „fyrri viðskipti" á nafninu í staðinn,
+      // svo smellurinn skili alltaf einhverju.
+      if (act === 'openco') {
+        e.stopPropagation();
+        const row = state.items.find(x => String(x.id) === String(t.getAttribute('data-id')));
+        const nafn = row ? String(row.customer_nafn || '').trim() : '';
+        if (!nafn) return;
+        loadCompanies().then(cos => {
+          const co = (cos || []).find(c => String(c.nafn || '').trim().toLowerCase() === nafn.toLowerCase());
+          if (co && window._openCompanySafe) { window._openCompanySafe(co.id); return; }
+          if (window.SalaCustomerHistory && SalaCustomerHistory.open) {
+            SalaCustomerHistory.open({ id: '', source: '', kt: '', nafn });
+          } else {
+            toast('Fann ekki „' + nafn + '“ á fyrirtækjaskrá');
+          }
+        });
         return;
       }
       if (act === 'history') {
