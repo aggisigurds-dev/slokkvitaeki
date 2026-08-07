@@ -18,6 +18,29 @@
   if (window.__cartQtyInputInstalled) return;
   window.__cartQtyInputInstalled = true;
 
+  // 2026-08-07 (Agnar: „padding in the Fjöldi number is way too much … reduce
+  // padding to 0 … align fjöldi/percentage/kr-stk boxes … reduce total size").
+  // Rótin: patch 245 (Brunastál content-skin) þvingar height:42px + padding:0
+  // 14px + radius:11px á ÖLL .view input[type=text] með !important — 14px
+  // padding í 46px breiðu magn-boxi skildi ~18px eftir fyrir tölustafina, svo
+  // 2+ stafa tölur klipptust. Inline-stílar tapa fyrir !important, svo þessir
+  // þrír reitir þurfa eigin !important-reglur (sama mynstur og anti-245 í 175).
+  // Hærri sértækni (#view-sala .pos-cart input.…) tryggir sigur óháð hleðsluröð.
+  (function ensureCartInputCss() {
+    if (document.getElementById('_cqi-css')) return;
+    const s = document.createElement('style');
+    s.id = '_cqi-css';
+    s.textContent = [
+      // FJÖLDI — lítið, ekkert hliðar-padding, tölurnar fá plássið
+      '#view-sala .pos-cart input.pos-qty-inp{width:34px!important;height:22px!important;min-height:0!important;padding:0!important;font-size:13px!important;font-weight:700!important;text-align:center!important;border:1px solid #cbd5e1!important;border-radius:5px!important;background:#fff!important;box-shadow:none!important;line-height:1!important;font-variant-numeric:tabular-nums}',
+      // kr/stk + % — aftur punktalínu-reitir í línu við textann, ekki 42px box
+      '#view-sala .pos-cart input.pos-price-edit,#view-sala .pos-cart input.pos-disc-edit{height:16px!important;min-height:0!important;padding:0 1px!important;border:none!important;border-bottom:1px dotted #cbd5e1!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;font-size:11px!important;text-align:right!important;line-height:1.2!important;vertical-align:baseline!important}',
+      '#view-sala .pos-cart input.pos-price-edit{width:56px!important}',
+      '#view-sala .pos-cart input.pos-disc-edit{width:24px!important}',
+    ].join('\n');
+    document.head.appendChild(s);
+  })();
+
   function getPOS() { return window.POS && typeof window.POS.getState === 'function' ? window.POS : null; }
 
   // Find the qty <span> for a given pos-qty-up button.
@@ -48,6 +71,7 @@
   function makeInput(idx, currentQty) {
     const inp = document.createElement('input');
     inp.type = 'text';
+    inp.className = 'pos-qty-inp';
     inp.inputMode = 'numeric';
     inp.pattern = '[0-9]*';
     inp.value = String(currentQty);
