@@ -1207,7 +1207,10 @@
     const dupe = co && title.trim().toLowerCase().indexOf(co.toLowerCase()) === 0;
     return (r.important ? '<span style="color:#eab308">★ </span>' : '') +
       (co && !dupe
-        ? '<span data-act="openco" data-id="' + esc(r.id) + '" title="Opna fyrirtækjaspjald — ' + esc(co) + '" ' +
+        // Nafnið fylgir með í data-co: raðirnar koma úr fleiri en einni uppsprettu
+        // (allItems() sameinar thjonustubeidni og verkdagbók) svo uppfletting á
+        // state.items eftir id finnur ekki allar raðir — og skilaði því engu.
+        ? '<span data-act="openco" data-co="' + esc(co) + '" title="Opna fyrirtækjaspjald — ' + esc(co) + '" ' +
             'style="color:#2f5fe0;cursor:pointer">' + esc(co) + '</span>' +
           '<span style="color:#c3c8d0"> · </span>'
         : '') +
@@ -1682,8 +1685,7 @@
       // svo smellurinn skili alltaf einhverju.
       if (act === 'openco') {
         e.stopPropagation();
-        const row = state.items.find(x => String(x.id) === String(t.getAttribute('data-id')));
-        const nafn = row ? String(row.customer_nafn || '').trim() : '';
+        const nafn = String(t.getAttribute('data-co') || '').trim();
         if (!nafn) return;
         loadCompanies().then(cos => {
           const co = (cos || []).find(c => String(c.nafn || '').trim().toLowerCase() === nafn.toLowerCase());
