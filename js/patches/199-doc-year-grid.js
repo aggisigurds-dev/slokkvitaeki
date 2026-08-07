@@ -1083,7 +1083,10 @@
       '.sk-svc-btn:hover{color:var(--brand);border-color:var(--brand)}',
       // 🔗 manual-link picker (shown only when auto-pairing is genuinely ambiguous).
       '.sk-link-wrap{display:inline-flex;align-items:center;gap:5px}',
-      '.sk-link-sel{font:inherit;font-size:11px;padding:3px 6px;border:1px solid var(--brd2,#f1f5f9);border-radius:7px;background:var(--surface)}',
+      // 2026-08-07 (Agnar): valmyndin á að vera JAFNSTÓR chip-unum, en þemað
+      // (245-skinnið) málar öll select stór með !important — svo þessi regla
+      // þarf sömu vopn. Stærðirnar spegla .sk-doc (11.5px / 4px 10px).
+      '.sk-link-sel{font:inherit!important;font-size:11px!important;font-weight:600!important;padding:3px 8px!important;height:auto!important;min-height:0!important;line-height:1.2!important;max-width:180px!important;border:1px solid var(--brd2,#f1f5f9)!important;border-radius:8px!important;background:var(--surface)!important;box-shadow:none!important;color:var(--ink2,var(--ink1))!important}',
       '.sk-link-btn{all:unset;cursor:pointer;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;border:1px solid #99f6e4;color:#0f766e;background:var(--surface)}',
       '.sk-link-btn:disabled{opacity:.4;cursor:default}',
       '.sk-link-peek{all:unset;cursor:pointer;font-size:12px;padding:3px 7px;border-radius:7px;border:1px solid var(--brd2,#f1f5f9);color:var(--ink3);background:var(--surface)}',
