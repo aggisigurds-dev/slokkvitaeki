@@ -37,9 +37,15 @@
   window.__navBackInstalled = true;
 
   const path = location.pathname || '', search = location.search || '';
-  if (/^\/app\/[a-z]+\//.test(path) || /[?&]app=[a-z]+(?:$|[&])/.test(search)
-      || /[?&]driver(?:$|[=&])/.test(search)) {
-    return;   // 276 app-hamur / 219 sjá um öppin
+  // 2026-08-06 (Agnar: „back only one step, everywhere — not all the way to the
+  // beginning / closing the app"): áður var 277 SLEPPT í öllum uppsettu öppunum
+  // (/app/<key>/, ?app=) — þá bjó appið ALDREI til síðu-bakk-færslur þar og bakk
+  // hoppaði á forsíðuna. Nú keyrir 277 líka í uppsettu öppunum svo hver síða fái
+  // sína bakk-færslu; 276 heldur botn-varnaglanum (lokar aldrei appinu). AÐEINS
+  // Bílstjórinn er undanskilinn — hann á sitt eigið armBack í 219.
+  if (/^\/app\/bilstjori\//.test(path) || /[?&]driver(?:$|[=&])/.test(search)
+      || /[?&]app=bilstjori(?:$|[&])/.test(search)) {
+    return;   // 219 sér um Bílstjórann
   }
 
   const SETTLE = 2;      // fjöldi kyrra mælinga áður en ýtt er (~240ms)

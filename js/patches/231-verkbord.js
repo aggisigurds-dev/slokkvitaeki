@@ -337,7 +337,9 @@
     threadLatest: {},   // beidniId → nýjasti póstur í þræðinum (sjá loadThreadLatest)
     addRsk: null,       // síðasta RSK-uppfletting úr fyrirtækjareitnum {kt,nafn,heimilisfang}
     // Þjónustuverk v3: ⭐ Áríðandi-sía, dálkaröðun, síðuskipting, composer-sýnileiki
-    fStar: true,
+    // Áríðandi-sían byrjar AF (Agnar 2026-08-07) — borðið sýnir öll mál sjálfgefið,
+    // notandinn kveikir á ⭐ Áríðandi handvirkt þegar hann vill sía.
+    fStar: false,
     colSort: null,      // {key:'dags'|'mal'|'stada', dir:'asc'|'desc'} | null
     page: 0,
     // Composer opið á tölvu, lokað á síma/spjaldtölvu (+ Nýtt mál opnar) —

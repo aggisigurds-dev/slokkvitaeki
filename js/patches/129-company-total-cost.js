@@ -534,13 +534,13 @@
         '<div style="font-size:12.5px;color:var(--ink2);font-weight:700;text-transform:uppercase;letter-spacing:.05em">📝 Upplýsingar um úttekt</div>' +
       '</div>' +
       '<textarea id="_ctc-notes-ta" rows="4" placeholder="t.d. „Bára vill skipta öllum á neðri hæð" · „Hringja í Jón fyrir komu" · „Setja inn nýtt 6 kg ABC Duft"" ' +
-        'style="width:100%;padding:8px 10px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a;min-height:92px">' +
+        'style="width:100%;padding:8px 10px;border:1px solid #b4bcc8;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a;box-shadow:inset 0 1px 2px rgba(15,23,42,.06);min-height:92px">' +
         esc(tripNotes) +
       '</textarea>' +
       // 2026-06-10: report-only Athugasemdir, grouped here with the notes.
       '<div style="font-size:12px;color:var(--ink2);font-weight:600;margin:8px 0 3px">✍ Athugasemdir á skýrslu <span style="font-weight:400;color:var(--ink3)">(sést í „Athugasemdir" á úttektarskýrslunni, ekki á reikningnum)</span></div>' +
       '<textarea id="_ctc-athskyrsla" rows="2" placeholder="t.d. Mælt með að skipta út 2 tækjum á næsta ári" ' +
-        'style="width:100%;padding:8px 10px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
+        'style="width:100%;padding:8px 10px;border:1px solid #b4bcc8;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a;box-shadow:inset 0 1px 2px rgba(15,23,42,.06)">' +
         esc(athSkyrslaBox) +
       '</textarea>';
 
