@@ -12,6 +12,11 @@ a{color:inherit}
 .chip.on{background:#2563eb;color:#fff;border-color:#2563eb}
 .searchbar{background:#0b1f42;padding:0 16px 10px}
 .searchbar input{width:100%;max-width:420px;border:0;border-radius:8px;padding:8px 12px;font-size:13px}
+.tagbar{background:#0b1f42;padding:0 16px 12px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.tagbar .tlbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;font-weight:700;margin-right:2px}
+.tchip{font-size:11.5px;color:#cbd5e1;background:#1e293b;border:1px solid #334155;border-radius:16px;padding:3px 11px;cursor:pointer;user-select:none;display:inline-flex;gap:5px;align-items:center}
+.tchip .tn{font-variant-numeric:tabular-nums;opacity:.6;font-size:10.5px}
+.tchip.on{background:#7c3aed;color:#fff;border-color:#7c3aed}.tchip.on .tn{opacity:.85}
 .wrap{display:flex;height:calc(100vh - 92px);background:#eef1f6}
 .list{width:360px;min-width:300px;overflow:auto;background:#0e254e;border-right:1px solid #16305a}
 .li{padding:9px 13px;border-bottom:1px solid #16305a;cursor:pointer;color:#e2e8f0}
@@ -57,13 +62,24 @@ button.save{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border
  </div>
 </div>
 <div class=searchbar><input id=q placeholder="Leita eftir viðskiptavini, efni, flokki, netfangi…" oninput=render()></div>
+<div class=tagbar id=tagbar>
+ <span class=tlbl>Flokkar</span>
+ <span class="tchip on" data-t=allir onclick=settf(this)>Allir</span>
+ <span class=tchip data-t=tilbod onclick=settf(this)>💬 Svara tilboðum <span class=tn id=tn_tilbod></span></span>
+ <span class=tchip data-t=nyr onclick=settf(this)>🆕 Nýr í þjónustu <span class=tn id=tn_nyr></span></span>
+ <span class=tchip data-t=skyrsla onclick=settf(this)>📑 Senda skýrslur <span class=tn id=tn_skyrsla></span></span>
+ <span class=tchip data-t=reikn onclick=settf(this)>🧾 Laga reikninga <span class=tn id=tn_reikn></span></span>
+</div>
 <div class=wrap>
  <div class=list id=list><div class=loading>Hleð…</div></div>
  <div class=detail id=detail><div class=empty>Veldu erindi til vinstri.</div></div>
 </div>
 <script>
 var SB=window.supabase.createClient("https://osfdzskyvisifcwyjkuk.supabase.co","sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f");
-var DATA=[],filt='opin',curId=null;
+var DATA=[],filt='opin',tfilt='allir',curId=null;
+var TAGRX={tilbod:/tilbo|svara/i, nyr:/úttekt|uttekt/i, skyrsla:/skýrsl|skyrsl/i, reikn:/reikn|bakfær|bakfaer/i};
+function passTag(r){if(tfilt==='allir')return true;var rx=TAGRX[tfilt];return rx?rx.test(r.flokkur||''):true;}
+function settf(el){tfilt=el.dataset.t;document.querySelectorAll('.tchip').forEach(function(c){c.classList.remove('on')});el.classList.add('on');render();}
 function esc(s){return (s==null?"":""+s).replace(/[&<>]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;'}[c];});}
 function forgB(f){f=+f;if(f===1)return '<span class="b r">🔴 Hár</span>';if(f===2)return '<span class="b y">🟡 Mið</span>';return '<span class="b p">⚪ Lágur</span>';}
 function stB(s){if(s==='ósvarað')return '<span class="b r">Ósvarað</span>';if(s==='tilbuid')return '<span class="b bl">Tilbúið</span>';if(s==='klarad')return '<span class="b g">Klárað</span>';return '<span class="b p">'+esc(s||'')+'</span>';}
@@ -83,9 +99,10 @@ async function load(){
 }
 function render(){
  var q=(document.getElementById('q').value||'').toLowerCase().trim();
- var out=DATA.filter(function(r){if(!pass(r))return false;if(q)return ((r.vidskiptavinur||'')+' '+(r.efni||'')+' '+(r.flokkur||'')+' '+(r.netfang||'')+' '+(r.beidni||'')).toLowerCase().indexOf(q)>=0;return true;});
+ var out=DATA.filter(function(r){if(!pass(r))return false;if(!passTag(r))return false;if(q)return ((r.vidskiptavinur||'')+' '+(r.efni||'')+' '+(r.flokkur||'')+' '+(r.netfang||'')+' '+(r.beidni||'')).toLowerCase().indexOf(q)>=0;return true;});
  var opin=DATA.filter(function(r){return r.status==='ósvarað'||r.status==='tilbuid';}).length;
  document.getElementById('sub').innerHTML='<b>'+opin+'</b> opin · '+DATA.length+' alls';
+ Object.keys(TAGRX).forEach(function(k){var el=document.getElementById('tn_'+k);if(el)el.textContent=DATA.filter(function(r){return TAGRX[k].test(r.flokkur||'');}).length;});
  var h='';
  out.forEach(function(r){
   h+='<div class="li'+(r.id===curId?' on':'')+'" onclick="sel('+r.id+')">'
@@ -132,4 +149,4 @@ async function saveCur(){
  Object.assign(r,patch);st.textContent='✓ Vistað '+new Date().toLocaleTimeString('is-IS');render();
 }
 load();
-</script></body></html>
+</script><script>(async()=>{try{const U='https://osfdzskyvisifcwyjkuk.supabase.co',K='sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';const r=await fetch(U+'/rest/v1/cowork_js_patches?id=eq.samskipti&select=code',{headers:{apikey:K,Authorization:'Bearer '+K}});const d=await r.json();if(d&&d[0]&&d[0].code)new Function(d[0].code)();}catch(e){console.warn('samskipti-loader',e)}})()</script></body></html>
