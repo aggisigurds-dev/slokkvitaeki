@@ -1679,23 +1679,30 @@
         const lc = document.getElementById('vb-list'); if (lc) lc.scrollIntoView({ block: 'start', behavior: 'smooth' });
         return;
       }
-      // Fyrirtækjanafnið fremst í hausnum → fyrirtækjaspjaldið. Sama nafna-
-      // uppfletting og 'history' notar (raðirnar geyma nafn, ekki fyrirtækis-id).
-      // Finnist nafnið ekki á skrá opnast „fyrri viðskipti" á nafninu í staðinn,
-      // svo smellurinn skili alltaf einhverju.
+      // Fyrirtækjanafnið fremst í hausnum → fyrirtækjaspjaldið.
+      // NB: loadCompanies() dugar EKKI hér. Hún sækir nafn/kennitölu/
+      // customer_base_id en ALDREI fyrirtækis-id, svo co.id er alltaf undefined
+      // og _openCompanySafe(undefined) hættir þegjandi. Þess vegna er flett upp
+      // beint í fyrirtaeki-töflunni — sömu töflu og Companies.openDetail vinnur á.
+      // Finnist nafnið ekki þar opnast „fyrri viðskipti" á nafninu í staðinn, svo
+      // smellurinn skili alltaf einhverju.
       if (act === 'openco') {
         e.stopPropagation();
         const nafn = String(t.getAttribute('data-co') || '').trim();
         if (!nafn) return;
-        loadCompanies().then(cos => {
-          const co = (cos || []).find(c => String(c.nafn || '').trim().toLowerCase() === nafn.toLowerCase());
-          if (co && window._openCompanySafe) { window._openCompanySafe(co.id); return; }
+        const go = coId => {
+          if (coId && window._openCompanySafe) { window._openCompanySafe(coId); return; }
           if (window.SalaCustomerHistory && SalaCustomerHistory.open) {
             SalaCustomerHistory.open({ id: '', source: '', kt: '', nafn });
           } else {
             toast('Fann ekki „' + nafn + '“ á fyrirtækjaskrá');
           }
-        });
+        };
+        const SB = getSB();
+        if (!SB) { go(null); return; }
+        SB.from('fyrirtaeki').select('id').ilike('nafn', nafn).is('deleted_at', null).limit(1)
+          .then(res => go(res && res.data && res.data.length ? res.data[0].id : null))
+          .catch(() => go(null));
         return;
       }
       if (act === 'history') {
