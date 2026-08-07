@@ -55,6 +55,8 @@
     // án ?embed=1#… . Hún er þegar app-útlit (eigin haus, engin hliðarstika).
     { k: 'br-verkkaupar',    label: 'Verkkaupar (Brunahólf)', short: 'Verkkaupar', emoji: '🤝', url: 'https://brunaholf.netlify.app/verkkaupar.html' },
     { k: 'br-jarvis',        label: 'J.A.R.V.I.S. (Brunahólf)', short: 'Jarvis', emoji: '🧠', url: 'https://brunaholf.netlify.app/jarvis.html?embed=1' },
+    { k: 'br-raddminni',     label: 'Raddminni (Brunahólf)',  short: 'Raddminni', emoji: '🎙️', url: 'https://brunaholf.netlify.app/radd.html' },
+    { k: 'br-kerfisheilsa',  label: 'Kerfisheilsa (Brunahólf)', short: 'Kerfisheilsa', emoji: '🛡️', url: 'https://brunaholf.netlify.app/kerfisheilsa.html' },
   ];
   var PAGE_BY_KEY = {}; PAGES.forEach(function (p) { PAGE_BY_KEY[p.k] = p; });
 
