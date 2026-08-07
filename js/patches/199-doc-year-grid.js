@@ -679,13 +679,13 @@
         return chip+stBadge+amt;
       }
       if(r.ambiguous) return manualLinkHtml(y, svc, r.invCandidates);
-      return addChip('reikningur', y, y===NOW?'+ reikningur':'vantar');
+      return addChip('reikningur', y, y===NOW?'+ reikningur':'vantar reikning');
     }
     function svcRepHtml(y, svc){
       var arr=svc.repMap[y]||[];
       if(arr.length) return arr.map(function(x){ return x._att?repAttChip(x._att):repDocChip(x); }).join('')+addChip('skyrsla',y,'＋');
       if(y===NOW) return '<span class="sk-doc prog" title="Skoðun ársins ekki enn skjalfest">⏳ Í vinnslu</span>'+addChip('skyrsla',y,'+ skýrsla');
-      return addChip('skyrsla',y,'vantar');
+      return addChip('skyrsla',y,'vantar skýrslu');
     }
     function svcSendBtn(y, svc){
       var hasRep=(svc.repMap[y]||[]).length, r=resolved[y+'|'+svc.kind];
@@ -701,22 +701,24 @@
       if(svc.kind!=='brunakerfi') return '';
       return '<button type="button" class="sk-svc-ws" data-open-bkc="1" title="Opna sérhæfðu Brunakerfi þjónustusíðuna — skoðunarskýrslur, verð, búnaðarskrá">🔥 Þjónustusíða →</button>';
     }
+    // 2026-08-07 (skissa Agnars): hvert þjónustukort ber STÖÐUMERKI í hausnum
+    // (✓ FULLBÚIÐ / 1 AF 2 VANTAR) og hver lína fær punkt — grænan fylltan
+    // þegar skjalið er til, gulan brotinn hring þegar vantar — með lágstafa
+    // merkimiða (skýrsla/reikningur) AFTAN við chippið í stað borðans framan við.
     function svcCardExpanded(y, svc){
       var arr=svc.repMap[y]||[];
-      var repRow = arr.length || y===NOW ? '<div class="sk-svc-row"><span class="sk-svc-tag">SKÝRSLA</span>'+svcRepHtml(y,svc)+'</div>' : '';
       var r=resolved[y+'|'+svc.kind];
-      var invRow = (arr.length || r.inv || r.ambiguous) ? '<div class="sk-svc-row"><span class="sk-svc-tag inv">REIKN.</span>'+svcInvHtml(y,svc,false)+'</div>' : '';
+      var hasRep=arr.length>0, hasInv=!!r.inv;
       var wsLink=svcWorkspaceLink(svc);
-      if(!repRow && !invRow) return '<div class="sk-svc-card sk-svc-empty"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+wsLink+'</div><div class="sk-svc-row">engin '+esc(svc.label.toLowerCase())+addChip('skyrsla',y,'+ skýrsla')+'</div></div>';
-      return '<div class="sk-svc-card"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+svcSendBtn(y,svc)+wsLink+'</div>'+repRow+invRow+'</div>';
+      if(!hasRep && !hasInv && !r.ambiguous && y!==NOW)
+        return '<div class="sk-svc-card sk-svc-empty"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+wsLink+'</div><div class="sk-svc-row">engin '+esc(svc.label.toLowerCase())+addChip('skyrsla',y,'+ skýrsla')+'</div></div>';
+      var badge = hasRep&&hasInv ? '<span class="sk-svc-st ok">✓ FULLBÚIÐ</span>'
+                : (hasRep||hasInv) ? '<span class="sk-svc-st part">1 AF 2 VANTAR</span>'
+                : '<span class="sk-svc-st prog">⏳ Í VINNSLU</span>';
+      var repRow='<div class="sk-svc-row"><span class="sk-dot '+(hasRep?'ok':'miss')+'"></span>'+svcRepHtml(y,svc)+'<span class="sk-svc-tag">skýrsla</span></div>';
+      var invRow='<div class="sk-svc-row"><span class="sk-dot '+(hasInv?'ok':'miss')+'"></span>'+svcInvHtml(y,svc,false)+'<span class="sk-svc-tag inv">reikningur</span></div>';
+      return '<div class="sk-svc-card"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+badge+svcSendBtn(y,svc)+wsLink+'</div>'+repRow+invRow+'</div>';
     }
-    function svcCompact(y, svc){
-      var arr=svc.repMap[y]||[], r=resolved[y+'|'+svc.kind];
-      if(!arr.length && !r.inv && !r.ambiguous) return '<div class="sk-svc-compact sk-svc-empty">'+svc.icon+' engin '+esc(svc.label.toLowerCase())+'</div>';
-      var repChip = arr.length ? (arr[0]._att?repAttChip(arr[0]._att):repDocChip(arr[0])) : addChip('skyrsla',y,'vantar');
-      return '<div class="sk-svc-compact">'+svc.icon+' '+repChip+svcInvHtml(y,svc,true)+svcSendBtn(y,svc)+'</div>';
-    }
-
     var yearBlocks=YEARS.map(function(y){
       var cur=(y===YEARS[0]); var st=fcStatus(coId,y);
       var ycls='sk-yr'+(st==='human'?' sk-yr-ok':st==='claude'?' sk-yr-claude':st==='gap'?' sk-yr-gap':'')+(cur&&!st?' sk-yr-now':'');
@@ -724,9 +726,10 @@
       var ttl=st==='claude'?('Claude yfirfór'+(fcNote(coId,y)?(': '+fcNote(coId,y)):'')+' — tvísmelltu til að staðfesta')
              :st==='gap'?((fcNote(coId,y)||'Skýrsla vantar')+' — tvísmelltu til að fjarlægja flagg')
              :('Tvísmelltu til að staðfesta fact-check '+y);
-      var body = cur
-        ? '<div class="sk-svc-grid">'+SERVICES.map(function(svc){return svcCardExpanded(y,svc);}).join('')+'</div>'
-        : '<div class="sk-svc-compactrow">'+SERVICES.map(function(svc){return svcCompact(y,svc);}).join('')+'</div>';
+      // 2026-08-07: ÖLL ár fá spjöldin tvö hlið við hlið (skissa Agnars) —
+      // eldri ár voru áður þjappaðar línur, en stöðumerkið + punktarnir segja
+      // söguna betur og eins alls staðar. cur helst fyrir upphæðir (forCompact).
+      var body = '<div class="sk-svc-grid">'+SERVICES.map(function(svc){return svcCardExpanded(y,svc);}).join('')+'</div>';
       return '<div class="sk-yrblock"><div class="'+ycls+' sk-yr-label" data-yr="'+y+'" title="'+esc(ttl)+'">'+mark+y+'</div>'+body+'</div>';
     }).join('');
 
@@ -1022,6 +1025,14 @@
       '.sk-svc-row{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:4px 0}',
       '.sk-svc-tag{font-size:9px;font-weight:700;color:var(--ink3);background:var(--surface2);border:1px solid var(--brd2,#f1f5f9);border-radius:99px;padding:1px 7px;white-space:nowrap}',
       '.sk-svc-tag.inv{color:#15803d;background:#f0fdf4;border-color:#bbf7d0}',
+      // 2026-08-07 skissa: stöðumerki í kort-haus + punktar á línum
+      '.sk-svc-st{font-size:10px;font-weight:800;letter-spacing:.03em;padding:2px 8px;border-radius:99px;margin-left:auto;white-space:nowrap}',
+      '.sk-svc-st.ok{color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0}',
+      '.sk-svc-st.part{color:#b45309;background:#fffbeb;border:1px solid #fde68a}',
+      '.sk-svc-st.prog{color:#a16207;background:#fef9c3;border:1px solid #fde68a}',
+      '.sk-dot{flex:0 0 9px;width:9px;height:9px;border-radius:50%}',
+      '.sk-dot.ok{background:#22c55e}',
+      '.sk-dot.miss{width:7px;height:7px;flex-basis:7px;background:transparent;border:2px dashed #f59e0b}',
       '.sk-svc-pay{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:99px}',
       '.sk-svc-pay.ok{color:#15803d;background:#f0fdf4}',
       '.sk-svc-pay.due{color:#b45309;background:#fef3c7}',
