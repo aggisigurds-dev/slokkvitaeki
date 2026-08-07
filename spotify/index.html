@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tónlist — Spotify mælaborð</title>
+<meta name="description" content="Spotify-mælaborð fyrir heimaskjáinn: spilunarlistarnir á einum stað, einn snerting í spilun.">
+<meta name="theme-color" content="#0a0b0d">
+<link rel="manifest" href="/manifest-tonlist.json">
+<link rel="apple-touch-icon" href="/img/app-tonlist-apple.png">
+<link rel="icon" href="/img/app-tonlist-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Tónlist">
+<style>
+/* Sjálfstæð síða — hleður hvorki app.css né theme.css viljandi. Þetta er
+   heimaskjás-widget sem á að opnast á augabragði í símanum, svo allt er inline
+   og engin ytri beiðni fer af stað fyrr en notandinn snertir spjald. */
+:root {
+  --bg: #0a0b0d;
+  --bg-2: #121417;
+  --card: #16191d;
+  --card-hi: #1e2329;
+  --line: #262c33;
+  --txt: #f1f3f5;
+  --muted: #8b949e;
+  --green: #1db954;
+  --green-dim: #178a40;
+  --r: 14px;
+  --pad: 16px;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; }
+body {
+  background:
+    radial-gradient(120% 60% at 50% 0%, #16241b 0%, transparent 60%),
+    var(--bg);
+  background-attachment: fixed;
+  color: var(--txt);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  min-height: 100dvh;
+  padding: max(12px, env(safe-area-inset-top)) var(--pad)
+           calc(120px + env(safe-area-inset-bottom)) var(--pad);
+  overscroll-behavior-y: contain;
+}
+
+/* ── haus ────────────────────────────────────────────────────────────── */
+header { display: flex; align-items: center; gap: 12px; margin: 6px 0 18px; }
+.mark {
+  width: 40px; height: 40px; border-radius: 11px; flex: 0 0 auto;
+  background: linear-gradient(160deg, #1a1d21, #0d0f11);
+  border: 1px solid var(--line);
+  display: grid; place-items: center; gap: 2px; grid-auto-flow: column;
+}
+.mark i { display: block; width: 3px; border-radius: 2px; background: var(--green); }
+.mark i:nth-child(1) { height: 10px; }
+.mark i:nth-child(2) { height: 18px; }
+.mark i:nth-child(3) { height: 24px; }
+.mark i:nth-child(4) { height: 14px; }
+h1 { font-size: 19px; margin: 0; letter-spacing: -0.2px; }
+header p { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+
+/* ── takkar ──────────────────────────────────────────────────────────── */
+.btn {
+  appearance: none; border: 1px solid var(--line); background: var(--card);
+  color: var(--txt); font: inherit; font-size: 14px; font-weight: 600;
+  padding: 10px 14px; border-radius: 999px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px; min-height: 44px;
+}
+.btn:active { background: var(--card-hi); }
+.btn--main { background: var(--green); border-color: var(--green); color: #06210f; }
+.btn--main:active { background: var(--green-dim); }
+.btn--ghost { background: transparent; }
+.bar { display: flex; gap: 9px; flex-wrap: wrap; margin-bottom: 18px; }
+
+/* ── spilarinn ───────────────────────────────────────────────────────── */
+#spilari { margin-bottom: 22px; display: none; }
+#spilari.opinn { display: block; }
+.hlutiTitill {
+  font-size: 11.5px; font-weight: 700; letter-spacing: 1.1px;
+  text-transform: uppercase; color: var(--muted); margin: 0 0 9px 2px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.hlutiTitill button {
+  background: none; border: 0; color: var(--muted); font: inherit;
+  font-size: 11.5px; letter-spacing: 1.1px; cursor: pointer; padding: 4px 6px;
+}
+.rammi {
+  position: relative; border-radius: var(--r); overflow: hidden;
+  background: var(--card); border: 1px solid var(--line); line-height: 0;
+}
+/* Spotify-spilarinn er á öðru léni svo við ráðum engu um útlitið hans á meðan
+   hann hleðst — hann kemur hvítur inn. Þess vegna er ramminn hulinn þar til
+   hann er tilbúinn; þá er skiptin úr dökku í dökkt. */
+.hledur {
+  position: absolute; inset: 0; display: grid; place-items: center;
+  color: var(--muted); font-size: 13px; line-height: 1.4;
+}
+.rammi.tilbuinn .hledur { display: none; }
+.rammi:not(.tilbuinn) iframe { opacity: 0; }
+/* Dökkur bakgrunnur á iframe-inn sjálfan: annars blikkar hvítur kassi á meðan
+   Spotify hleðst — og situr hvítur ef netið næst ekki. */
+.rammi iframe {
+  width: 100%; border: 0; display: block;
+  background: var(--card); color-scheme: dark;
+}
+
+/* ── spjöldin ────────────────────────────────────────────────────────── */
+#grid {
+  display: grid; gap: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+}
+.spjald {
+  position: relative; text-align: left; padding: 0; cursor: pointer;
+  background: var(--card); border: 1px solid var(--line);
+  border-radius: var(--r); overflow: hidden; color: inherit;
+  font: inherit; display: flex; flex-direction: column;
+}
+.spjald:active { background: var(--card-hi); }
+.spjald.virkt { border-color: var(--green); }
+.mynd {
+  aspect-ratio: 1; width: 100%; object-fit: cover; display: block;
+  background: linear-gradient(150deg, #1d2228, #12151a);
+}
+.mynd--tomt { display: grid; place-items: center; font-size: 34px; }
+.texti { padding: 10px 11px 12px; }
+.nafn {
+  font-weight: 600; font-size: 13.5px; line-height: 1.3;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.undir { color: var(--muted); font-size: 11.5px; margin-top: 3px; }
+.merki {
+  position: absolute; top: 8px; left: 8px; background: rgba(0,0,0,.66);
+  backdrop-filter: blur(4px); border-radius: 7px; padding: 3px 7px;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .4px;
+}
+
+/* Breytingahamur: eyða + færa. Aðgerðirnar birtast aðeins þá, svo venjuleg
+   notkun er einn hreinn snertiflötur á hvert spjald. */
+.adgerdir { display: none; position: absolute; inset: 0; }
+body.breyta .adgerdir { display: block; }
+.adgerdir button {
+  position: absolute; width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--line); background: rgba(10,11,13,.86);
+  color: var(--txt); font-size: 15px; cursor: pointer; display: grid;
+  place-items: center; padding: 0;
+}
+.eyda { top: 7px; right: 7px; color: #ff6b6b; }
+.endurnefna { top: 7px; left: 7px; }
+.faera-v { bottom: 7px; left: 7px; }
+.faera-h { bottom: 7px; right: 7px; }
+body.breyta .spjald { animation: hrist .9s ease-in-out infinite; }
+@keyframes hrist { 0%,100% { transform: rotate(-.35deg); } 50% { transform: rotate(.35deg); } }
+@media (prefers-reduced-motion: reduce) { body.breyta .spjald { animation: none; } }
+
+/* ── tómur listi ─────────────────────────────────────────────────────── */
+#tomt {
+  border: 1px dashed var(--line); border-radius: var(--r);
+  padding: 30px 22px; text-align: center; color: var(--muted);
+}
+#tomt strong { color: var(--txt); display: block; margin-bottom: 6px; font-size: 15px; }
+#tomt code {
+  background: var(--bg-2); padding: 2px 6px; border-radius: 5px;
+  font-size: 12px; color: var(--green);
+}
+
+/* ── innsláttur ──────────────────────────────────────────────────────── */
+dialog {
+  border: 1px solid var(--line); background: var(--bg-2); color: var(--txt);
+  border-radius: 18px; padding: 20px; width: min(420px, calc(100vw - 32px));
+  margin: auto;
+}
+dialog::backdrop { background: rgba(0,0,0,.68); }
+dialog h2 { margin: 0 0 6px; font-size: 17px; }
+dialog p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+input[type=url], input[type=text] {
+  width: 100%; padding: 13px 14px; border-radius: 11px; font: inherit;
+  background: var(--card); border: 1px solid var(--line); color: var(--txt);
+}
+input:focus-visible, .btn:focus-visible, .spjald:focus-visible {
+  outline: 2px solid var(--green); outline-offset: 2px;
+}
+.villa { color: #ff6b6b; font-size: 12.5px; margin: 9px 0 0; min-height: 17px; }
+.dialog-bar { display: flex; gap: 9px; justify-content: flex-end; margin-top: 15px; }
+
+footer {
+  margin-top: 26px; color: var(--muted); font-size: 11.5px;
+  text-align: center; line-height: 1.6;
+}
+footer a { color: var(--muted); }
+
+/* ── spjaldtölva ─────────────────────────────────────────────────────────
+   Aðal-tækið er spjaldtölva, oftast á langveginn. Á breiðum skjá er efnið
+   miðjað (annars teygist grindin yfir hálfan metra) og allt stækkað — 148px
+   spjald sem er mátulegt í síma er pínulítið á 11 tommum.                  */
+header, .bar, .umgjord, footer { max-width: 1180px; margin-inline: auto; }
+
+@media (min-width: 600px) {
+  :root { --pad: 24px; --r: 16px; }
+  h1 { font-size: 23px; }
+  header p { font-size: 13.5px; }
+  .mark { width: 46px; height: 46px; border-radius: 13px; }
+  .btn { font-size: 15px; padding: 12px 18px; }
+  #grid { gap: 16px; grid-template-columns: repeat(auto-fill, minmax(186px, 1fr)); }
+  .nafn { font-size: 15px; }
+  .undir { font-size: 12.5px; }
+  .texti { padding: 12px 13px 14px; }
+  footer { font-size: 12.5px; }
+}
+
+/* Á langveginn fer spilarinn í fasta súlu til hægri í stað þess að ýta öllum
+   spjöldunum niður — listinn helst sjáanlegur á meðan spilað er, og súlan
+   fylgir skruninu. Súlan birtist AÐEINS þegar eitthvað er í spilun (body.spilar
+   frá JS); annars fær grindin alla breiddina. */
+/* 780px nær líka spjaldtölvu á hæðina (iPad = 834 px) — þar er nóg pláss fyrir
+   tvær súlur af spjöldum við hliðina á spilaranum. Súlan er hlutfallsleg svo
+   hún gleypi ekki listann á mjórri skjám. */
+@media (min-width: 780px) {
+  .umgjord { display: grid; gap: 28px; align-items: start; }
+  body.spilar .umgjord { grid-template-columns: minmax(0, 1fr) min(400px, 38vw); }
+  .listi { order: 1; min-width: 0; }
+  #spilari { order: 2; position: sticky; top: 20px; margin-bottom: 0; }
+  #grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+  <div>
+    <h1>Tónlist</h1>
+    <p id="undirtitill">Spotify-listarnir á einum stað</p>
+  </div>
+</header>
+
+<div class="bar">
+  <button class="btn btn--main" id="baeta">＋ Bæta við</button>
+  <button class="btn btn--ghost" id="breyta">✏️ Breyta</button>
+</div>
+
+<main class="umgjord">
+
+<section id="spilari" aria-live="polite">
+  <h2 class="hlutiTitill">
+    <span>Í spilun</span>
+    <button type="button" id="lokaSpilara">Loka ✕</button>
+  </h2>
+  <div class="rammi" id="rammiUmgjord"><span class="hledur">Sæki spilara…</span><iframe id="spilaraRammi" title="Spotify spilari" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe></div>
+</section>
+
+<section class="listi">
+<h2 class="hlutiTitill"><span id="listiTitill">Listarnir mínir</span></h2>
+<div id="grid"></div>
+
+<div id="tomt" hidden>
+  <strong>Ekkert spjald enn</strong>
+  Ýttu á <em>Bæta við</em> og límdu Spotify-hlekk —<br>
+  spilunarlista, plötu, lag, podcast eða þátt.<br><br>
+  <code>open.spotify.com/playlist/…</code>
+</div>
+</section>
+
+</main>
+
+<dialog id="glugg">
+  <form method="dialog" id="form">
+    <h2>Bæta við spjaldi</h2>
+    <p>Deildu hlekk úr Spotify („Deila → Afrita hlekk“) og límdu hann hér.</p>
+    <input type="url" id="hlekkur" placeholder="https://open.spotify.com/playlist/…"
+           inputmode="url" autocomplete="off" spellcheck="false" required>
+    <p class="villa" id="villa"></p>
+    <div class="dialog-bar">
+      <button type="button" class="btn btn--ghost" id="haetta">Hætta við</button>
+      <button type="submit" class="btn btn--main" id="vista">Bæta við</button>
+    </div>
+  </form>
+</dialog>
+
+<footer>
+  Spjöldin eru geymd í þessum vafra (localStorage) — engin gögn fara í Supabase.<br>
+  Spilun fer fram hjá Spotify; innskráður Premium-aðgangur spilar heilt lag, annars 30 sek. sýnishorn.
+</footer>
+
+<script>
+(() => {
+  'use strict';
+
+  const LYKILL = 'tonlist.spjold.v2';
+
+  // Spotify-tegundirnar sem embed-spilarinn styður. Hæðin er sú sem Spotify
+  // mælir með fyrir hverja tegund — listar fá fullan lista, stök lög ræmuna.
+  const TEGUNDIR = {
+    playlist: { heiti: 'Listi',    tákn: '🎧', haed: 380 },
+    album:    { heiti: 'Plata',    tákn: '💿', haed: 380 },
+    track:    { heiti: 'Lag',      tákn: '🎵', haed: 152 },
+    artist:   { heiti: 'Flytjandi',tákn: '🎤', haed: 380 },
+    show:     { heiti: 'Podcast',  tákn: '🎙️', haed: 232 },
+    episode:  { heiti: 'Þáttur',   tákn: '🎙️', haed: 232 },
+  };
+
+  // Nokkur dæmi svo widgetið sé ekki tómt í fyrsta skipti — öll fjarlægjanleg.
+  const SJALFGEFID = [
+    { tegund: 'playlist', id: '37i9dQZF1DXcBWIGoYBM5M', nafn: "Today's Top Hits" },
+    { tegund: 'playlist', id: '37i9dQZF1DX0XUsuxWHRQd', nafn: 'RapCaviar' },
+  ];
+
+  const $ = (s) => document.querySelector(s);
+  const grid = $('#grid'), tomt = $('#tomt'), glugg = $('#glugg');
+  const spilari = $('#spilari'), rammi = $('#spilaraRammi');
+  const rammiUmgjord = $('#rammiUmgjord');
+  const breidurSkjar = matchMedia('(min-width: 780px)');   // spilarinn í eigin súlu
+
+  rammi.addEventListener('load', () => rammiUmgjord.classList.add('tilbuinn'));
+
+  let spjold = lesa();
+  let valid = null;   // id spjaldsins sem er í spilun
+
+  function lesa() {
+    try {
+      const g = JSON.parse(localStorage.getItem(LYKILL) || 'null');
+      if (Array.isArray(g)) return g;
+    } catch (_) { /* ónýtt gildi — byrjum upp á nýtt */ }
+    return SJALFGEFID.slice();
+  }
+  function skrifa() {
+    try { localStorage.setItem(LYKILL, JSON.stringify(spjold)); }
+    catch (_) { /* fullt geymslupláss eða einkagluggi — spjöldin lifa lotuna af */ }
+  }
+
+  // ── hlekkja-þáttun ────────────────────────────────────────────────────
+  // Þrjú form þurfa öll að ganga upp, því þau koma öll út úr „Deila“ í Spotify:
+  //   https://open.spotify.com/playlist/<id>?si=…   ← vef-hlekkur (+ rakningarhali)
+  //   https://open.spotify.com/intl-is/track/<id>   ← tungumáls-forskeytið
+  //   spotify:album:<id>                            ← innra URI úr appinu
+  // Þess vegna er leitað að <tegund><skiltákn><id> hvar sem er í strengnum, en
+  // aðeins ef „spotify“ kemur fyrir — annars myndi hvaða slóð sem er passa.
+  function thatta(texti) {
+    const t = (texti || '').trim();
+    if (!t || !/spotify/i.test(t)) return null;
+    const tegundir = Object.keys(TEGUNDIR).join('|');
+    const m = t.match(new RegExp('(?:^|[/:])(' + tegundir + ')[/:]([A-Za-z0-9]{16,32})'));
+    if (!m) return null;
+    return { tegund: m[1], id: m[2] };
+  }
+
+  // Spotify oEmbed er opið og krefst engrar auðkenningar — þaðan fæst rétt
+  // nafn og plötuumslag. Mistakist það (net niðri, einkalisti) fellur spjaldið
+  // aftur á tegundartáknið og nafn sem notandinn slær inn.
+  async function saekjaUpplysingar(tegund, id) {
+    const slod = 'https://open.spotify.com/' + tegund + '/' + id;
+    const svar = await fetch('https://open.spotify.com/oembed?url=' + encodeURIComponent(slod));
+    if (!svar.ok) throw new Error('oembed ' + svar.status);
+    const j = await svar.json();
+    return { nafn: j.title || '', mynd: j.thumbnail_url || '' };
+  }
+
+  // ── teikning ──────────────────────────────────────────────────────────
+  function teikna() {
+    grid.textContent = '';
+    tomt.hidden = spjold.length > 0;
+    $('#listiTitill').textContent = spjold.length
+      ? 'Listarnir mínir · ' + spjold.length
+      : 'Listarnir mínir';
+
+    spjold.forEach((s, i) => {
+      const info = TEGUNDIR[s.tegund] || TEGUNDIR.playlist;
+      const spjald = document.createElement('button');
+      spjald.type = 'button';
+      spjald.className = 'spjald' + (s.id === valid ? ' virkt' : '');
+      spjald.setAttribute('aria-label', 'Spila ' + (s.nafn || info.heiti));
+
+      if (s.mynd) {
+        const img = document.createElement('img');
+        img.className = 'mynd'; img.src = s.mynd; img.alt = ''; img.loading = 'lazy';
+        // Umslagið getur horfið hjá Spotify — þá tekur tegundartáknið við.
+        img.addEventListener('error', () => img.replaceWith(taknReitur(info)));
+        spjald.append(img);
+      } else {
+        spjald.append(taknReitur(info));
+      }
+
+      const merki = document.createElement('span');
+      merki.className = 'merki'; merki.textContent = info.heiti;
+      spjald.append(merki);
+
+      const texti = document.createElement('div');
+      texti.className = 'texti';
+      const nafn = document.createElement('div');
+      nafn.className = 'nafn'; nafn.textContent = s.nafn || info.heiti;
+      const undir = document.createElement('div');
+      undir.className = 'undir';
+      undir.textContent = s.id === valid ? '▶ í spilun' : 'Ýttu til að spila';
+      texti.append(nafn, undir);
+      spjald.append(texti);
+
+      const adgerdir = document.createElement('div');
+      adgerdir.className = 'adgerdir';
+      adgerdir.append(
+        takki('✕', 'eyda', 'Fjarlægja ' + (s.nafn || info.heiti), () => {
+          spjold.splice(i, 1); if (s.id === valid) lokaSpilara(); skrifa(); teikna();
+        }),
+        takki('✎', 'endurnefna', 'Endurnefna ' + (s.nafn || info.heiti), () => {
+          const nytt = prompt('Nafn á spjaldinu:', s.nafn || info.heiti);
+          if (nytt === null) return;
+          s.nafn = nytt.trim(); skrifa(); teikna();
+        }),
+        takki('←', 'faera-v', 'Færa til vinstri', () => faera(i, -1)),
+        takki('→', 'faera-h', 'Færa til hægri', () => faera(i, 1)),
+      );
+      spjald.append(adgerdir);
+
+      spjald.addEventListener('click', () => {
+        if (document.body.classList.contains('breyta')) return;
+        spila(s);
+      });
+      grid.append(spjald);
+    });
+  }
+
+  function taknReitur(info) {
+    const d = document.createElement('div');
+    d.className = 'mynd mynd--tomt';
+    d.textContent = info.tákn;
+    return d;
+  }
+
+  function takki(merki, flokkur, label, virkni) {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = flokkur; b.textContent = merki;
+    b.setAttribute('aria-label', label);
+    b.addEventListener('click', (e) => { e.stopPropagation(); virkni(); });
+    return b;
+  }
+
+  function faera(fra, att) {
+    const til = fra + att;
+    if (til < 0 || til >= spjold.length) return;
+    [spjold[fra], spjold[til]] = [spjold[til], spjold[fra]];
+    skrifa(); teikna();
+  }
+
+  // ── spilun ────────────────────────────────────────────────────────────
+  function spila(s) {
+    const info = TEGUNDIR[s.tegund] || TEGUNDIR.playlist;
+    rammiUmgjord.classList.remove('tilbuinn');
+    rammi.style.height = info.haed + 'px';
+    rammi.src = 'https://open.spotify.com/embed/' + s.tegund + '/' + s.id + '?theme=0';
+    spilari.classList.add('opinn');
+    document.body.classList.add('spilar');
+    valid = s.id;
+    teikna();
+    // Á breiðum skjá á spilarinn sína eigin súlu við hliðina á listanum — þá er
+    // ekkert að skruna að. Aðeins í síma-uppsetningunni situr hann fyrir ofan.
+    if (!breidurSkjar.matches) spilari.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function lokaSpilara() {
+    spilari.classList.remove('opinn');
+    document.body.classList.remove('spilar');
+    rammi.removeAttribute('src');   // stöðvar spilun
+    valid = null;
+    teikna();
+  }
+
+  // ── bæta við ──────────────────────────────────────────────────────────
+  async function opnaGlugga() {
+    $('#villa').textContent = '';
+    $('#hlekkur').value = '';
+    glugg.showModal();
+    // Er Spotify-hlekkur þegar á klippiborðinu? Þá er hann forfylltur.
+    try {
+      const klipp = await navigator.clipboard.readText();
+      if (thatta(klipp)) $('#hlekkur').value = klipp.trim();
+    } catch (_) { /* enginn aðgangur að klippiborði — notandinn límir sjálfur */ }
+    $('#hlekkur').focus();
+  }
+
+  $('#baeta').addEventListener('click', opnaGlugga);
+
+  $('#haetta').addEventListener('click', () => glugg.close());
+
+  $('#form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const villa = $('#villa'), vista = $('#vista');
+    const nytt = thatta($('#hlekkur').value);
+    if (!nytt) {
+      villa.textContent = 'Þekki ekki þennan hlekk. Hann þarf að líta út eins og open.spotify.com/playlist/…';
+      return;
+    }
+    if (spjold.some((s) => s.id === nytt.id)) {
+      villa.textContent = 'Þetta spjald er nú þegar á listanum.';
+      return;
+    }
+    vista.disabled = true; vista.textContent = 'Sæki…';
+    let upplysingar = { nafn: '', mynd: '' };
+    try { upplysingar = await saekjaUpplysingar(nytt.tegund, nytt.id); }
+    catch (_) { /* nafnlaust spjald er skárra en ekkert — tegundin dugar */ }
+    vista.disabled = false; vista.textContent = 'Bæta við';
+
+    spjold.push({ ...nytt, ...upplysingar });
+    skrifa(); teikna(); glugg.close();
+  });
+
+  $('#breyta').addEventListener('click', () => {
+    const virkt = document.body.classList.toggle('breyta');
+    $('#breyta').textContent = virkt ? '✓ Búið' : '✏️ Breyta';
+  });
+
+  $('#lokaSpilara').addEventListener('click', lokaSpilara);
+
+  // Deilt beint í appið (share_target) eða ?add=<hlekkur> → spjald strax.
+  // Flýtileiðin á heimaskjánum (?nytt=1) opnar innsláttargluggann beint.
+  const fyrirspurn = new URLSearchParams(location.search);
+  const deilt = fyrirspurn.get('add') || fyrirspurn.get('text') || fyrirspurn.get('url');
+  if (fyrirspurn.get('nytt')) {
+    opnaGlugga();
+    history.replaceState(null, '', location.pathname);
+  }
+  if (deilt && thatta(deilt)) {
+    const nytt = thatta(deilt);
+    if (!spjold.some((s) => s.id === nytt.id)) {
+      saekjaUpplysingar(nytt.tegund, nytt.id)
+        .catch(() => ({ nafn: '', mynd: '' }))
+        .then((u) => { spjold.push({ ...nytt, ...u }); skrifa(); teikna(); });
+    }
+    history.replaceState(null, '', location.pathname);
+  }
+
+  // Spjöld sem vantar umslag eða nafn (sjálfgefnu dæmin, eða spjald sem bættist
+  // við þegar netið lá niðri) sækja upplýsingarnar við næstu opnun. Þess vegna
+  // er ekkert spjald fast nafnlaust — það lagast af sjálfu sér.
+  async function fyllaUpplysingar() {
+    let breyting = false;
+    for (const s of spjold) {
+      if (s.mynd && s.nafn) continue;
+      try {
+        const u = await saekjaUpplysingar(s.tegund, s.id);
+        if (u.mynd && !s.mynd) { s.mynd = u.mynd; breyting = true; }
+        if (u.nafn && !s.nafn) { s.nafn = u.nafn; breyting = true; }
+      } catch (_) { /* reynum aftur næst þegar appið er opnað */ }
+    }
+    if (breyting) { skrifa(); teikna(); }
+  }
+
+  teikna();
+  fyllaUpplysingar();
+
+  // Rót-þjónninn (sw.js) sendir allt beint á netið og geymir ekkert — hann er
+  // eingöngu til staðar svo Chrome bjóði „Bæta á heimaskjá" sem alvöru app.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>
