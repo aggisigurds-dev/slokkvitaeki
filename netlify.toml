@@ -131,6 +131,14 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# Tónlist-widgetið býr á /spotify/ (eigin PWA-scope, sjálfstæð síða — ekki hluti
+# af SPA-inu). Beiðnin er á "/spotify/" svo hvorki "/" né "/*.html" reglan nær
+# henni; án þessarar reglu sæti heimaskjás-appið fast á gamalli útgáfu.
+[[headers]]
+  for = "/spotify/*"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
 # Sjálfvirk greiðslu-samstilling úr Payday tvisvar á dag: kl. 10:00 og 15:00
 # (cron er í UTC; Ísland = UTC allt árið → sömu tímar að staðartíma). Sami
 # vinnsluferill og 🔄 takkinn á Kröfu yfirlit.

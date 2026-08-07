@@ -276,11 +276,29 @@
   // 2026-06-24: show the report's FILE NAME (from notes, minus the " · kt …"
   // suffix) instead of a generic „Skoðun" — so a wrong-matched report is spotted
   // at a glance and deleted with the ✕, without opening each one.
+  // 2026-08-07: `notes` geymir EKKI alltaf skráarheiti. Sumar innsogsleiðir
+  // skrifa UPPRUNA sinn þangað — „drive-multitool · 2010 · RESOLVE", „fasi0
+  // 2026-07-30: skráð úr samningar-bucket …" — og þá stóð sá texti í chippinu.
+  // Það segir ekkert um HVAÐA skýrsla þetta er og eyðilagði einmitt tilganginn
+  // hér að ofan: að sjá ranglega tengda skýrslu í fljótu bragði. Mælt á lifandi
+  // gögnum: 1.151 af 1.843 skýrslu-röðum (61%) báru slíkan stimpil.
+  var STAMP_RE = /^\s*(drive-multitool|doc-index|relink(-docs)?|skjalavarsla|uttekt-upload|fasi0)\b/i;
   function docName(d){
-    // Trim only the redundant " · kt 123456-7890" suffix the indexer appends —
-    // keep the rest of the filename verbatim (company · address · month · year).
-    var nm=String(d.notes||'').replace(/\s*[·•]\s*kt\b.*$/i,'').trim();
-    return nm || ('Skoðun'+(d.year?(' '+d.year):''));
+    var raw = String(d.notes || '').trim();
+    // Uppruna-stimpill er ekki nafn — henda honum og byggja nafn úr gögnunum.
+    var nm = STAMP_RE.test(raw) ? '' : raw
+      // " · kt 123456-7890" og " · app-útgáfa 2026-07-30" eru viðaukar sem
+      // indexarinn hengir aftan á RAUNVERULEGT skráarheiti — nafnið sjálft heldur
+      // sér orðrétt (fyrirtæki · heimilisfang · mánuður · ár).
+      .replace(/\s*[·•]\s*kt\b.*$/i, '')
+      .replace(/\s*[·•]\s*app-útgáfa\b.*$/i, '')
+      .trim();
+    if (nm) return nm;
+    // Varaleið: kúnnanafn + ár. Mælt: 1.130 af 1.151 stimpil-röðum eiga
+    // customer_name og 1.150 eiga year — engin á hvorugt, svo þetta er aldrei tómt.
+    var co = String(d.customer_name || '').trim();
+    var kind = d.doc_type === 'brunakerfi' ? 'Brunakerfi' : 'Skoðun';
+    return [co, kind + (d.year ? (' ' + d.year) : '')].filter(Boolean).join(' — ');
   }
   function repDocChip(d){
     var u=docUrl(d), full=docName(d);

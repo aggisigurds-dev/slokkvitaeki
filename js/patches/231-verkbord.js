@@ -272,12 +272,18 @@
   // meira black metal sem líka lýsist upp"): grunnurinn var of GRÁR, svo munurinn
   // á af/á sást varla. Nú er ósnert chip verulega dekkra (nær svörtu) og valið
   // chip fær upplýstan bakgrunn OFAN Á glóðina — bæði dekkra og bjartara.
-  const FILTER_METAL = 'background:linear-gradient(180deg,#212429,#121416 58%,#050607);' +
-    'border:1px solid #000;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)';
-  const FILTER_ON = 'opacity:1;background:linear-gradient(180deg,#4a4f59,#2b2f36 55%,#16181c);' +
+  // 2026-08-06 (ósk Agnars — „make it full color… dark grey black like the
+  // others and bright color text"): ósnert chip er ekki lengur deyft (engin
+  // opacity) heldur sami dökk-gráa málmurinn og hinir hnapparnir á borðinu
+  // (V3_METAL) með FULLUM merkjalit á textanum. Munurinn á af/á færist því
+  // alfarið yfir í FILTER_ON, sem er hertur á móti: ljósari málmur, sterkari
+  // glóð og meiri birta svo það sé augljóst að sían sé kveikt.
+  const FILTER_METAL = 'background:linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318);' +
+    'border:1px solid #0a0b0d;box-shadow:inset 0 1px 0 rgba(255,255,255,.1)';
+  const FILTER_ON = 'opacity:1;background:linear-gradient(180deg,#5c636f,#363b45 55%,#1b1e24);' +
     'border:1.5px solid currentColor;outline:none;' +
-    'box-shadow:0 0 16px -3px currentColor, inset 0 0 12px -5px currentColor, inset 0 1px 0 rgba(255,255,255,.16);' +
-    'text-shadow:0 0 9px currentColor;filter:brightness(1.35) saturate(1.25)';
+    'box-shadow:0 0 22px -2px currentColor, inset 0 0 15px -4px currentColor, inset 0 1px 0 rgba(255,255,255,.24);' +
+    'text-shadow:0 0 11px currentColor;filter:brightness(1.5) saturate(1.35)';
   const state = {
     items: [],          // thjonustubeidni rows
     vd: [],             // open verkdagbok rows (folded in)
@@ -302,6 +308,9 @@
     // merki, og valið mál opnast í fastri hliðarspjaldi í stað þess að þenja
     // röðina út í listanum.
     selId: null,        // mál sem birtist í „VALIÐ MÁL"
+    // Innbyggða sían í MÁL-kortinu í efstu röðinni: 'allt' | 'aridandi'.
+    // Hún er sjálfstæð — snertir hvorki TÖG-síuna né ⭐-hnappinn að ofan.
+    topFilter: 'allt',
     catOpen: {},        // { '<tag>': false } — lokaðir flokkar (sjálfgefið opnir)
     catMore: {},        // { '<tag>': true } — flokkur sem sýnir ALLT (ekki bara fyrstu 5)
     filter: (function () { try { return localStorage.getItem(FKEY) || ''; } catch (_) { return ''; } })(),
@@ -321,14 +330,14 @@
       } catch (_) { return []; }
     })(),
     fWorker: (function () { try { return localStorage.getItem(WKEY) || ''; } catch (_) { return ''; } })(),  // '' = Allir
-    viewMode: (function () { try { return localStorage.getItem(VMKEY) || 'venjulegt'; } catch (_) { return 'venjulegt'; } })(),
+    viewMode: (function () { try { return localStorage.getItem(VMKEY) || 'itarlegt'; } catch (_) { return 'itarlegt'; } })(),
     search: '',
     addType: 'annad',
     addTags: [],        // merki valin í ný-beiðni línunni (hreinsast eftir skráningu)
     threadLatest: {},   // beidniId → nýjasti póstur í þræðinum (sjá loadThreadLatest)
     addRsk: null,       // síðasta RSK-uppfletting úr fyrirtækjareitnum {kt,nafn,heimilisfang}
     // Þjónustuverk v3: ⭐ Áríðandi-sía, dálkaröðun, síðuskipting, composer-sýnileiki
-    fStar: false,
+    fStar: true,
     colSort: null,      // {key:'dags'|'mal'|'stada', dir:'asc'|'desc'} | null
     page: 0,
     // Composer opið á tölvu, lokað á síma/spjaldtölvu (+ Nýtt mál opnar) —
@@ -924,6 +933,11 @@
       /* V3: tveggja-dálka útlitið (listi + VALIÐ MÁL) leggst í eina súlu þegar
          spjaldið á ekki lengur pláss — þá situr valið mál EFST, því á síma
          skoðar maður eitt mál í einu frekar en að renna listann. */
+      /* Efsta röðin (NÝJAST + MÁL) leggst í eina súlu áður en kortin verða
+         of mjó til að lesa titla í. */
+      @media (max-width: 1420px) {
+        #view-verkbord .vb-toprow { grid-template-columns: minmax(0,1fr) !important; }
+      }
       @media (max-width: 1180px) {
         #view-verkbord .vb-split { grid-template-columns: minmax(0,1fr) !important; }
         #view-verkbord #vb-sel { position: static !important; order: -1; }
@@ -987,7 +1001,10 @@
             '<button data-act="addmore" title="Skrá og opna alla valkosti (forgangur, frestur, nánar…)" ' +
               'style="flex:none;height:38px;padding:0 13px;border-radius:9px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#475569;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer">⚙ Fleiri</button>' +
           '</div>' +
-          '<div class="vb-scroll" style="align-items:center">' +
+          // Merkjaröðin er falin þar til eitthvað er skrifað í verk-reitinn
+          // (ósk Agnars 6.8.) — tómur reitur = ekkert að merkja. syncAddTags()
+          // kveikir/slekkur á henni.
+          '<div class="vb-scroll" id="vb-add-tags" style="align-items:center;display:none">' +
             '<span style="font-size:10px;font-weight:700;letter-spacing:.1em;color:#94a3b8;margin-right:1px">🏷 MERKI</span>' +
             TAG_ORDER.map(t => {
               const d = TAGS[t], on = state.addTags.indexOf(t) !== -1;
@@ -1003,13 +1020,31 @@
         '<div id="vb-controls" style="' + V3_CARD + ';padding:12px 15px;margin-bottom:14px;position:sticky;top:8px;z-index:30"></div>' +
         // V3: listi vinstra megin, fast „VALIÐ MÁL" spjald hægra megin.
         '<div class="vb-split" style="display:grid;grid-template-columns:minmax(0,1fr) 440px;gap:14px;align-items:start">' +
-          '<div id="vb-list" style="display:flex;flex-direction:column;gap:12px;min-width:0"></div>' +
+          '<div style="display:flex;flex-direction:column;gap:12px;min-width:0">' +
+            // Efsta röðin (2026-08-06, ósk Agnars): tvö kort hlið við hlið —
+            // NÝJAST (15 nýjustu) og MÁL með innbyggðri Allt/Áríðandi-síu.
+            // Með VALIÐ MÁL hægra megin gerir þetta þrjú kort í fyrstu röð;
+            // flokkakortin (GERA TILBOÐ o.fl.) færast niður fyrir hana.
+            '<div id="vb-toprow" class="vb-toprow" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start"></div>' +
+            '<div id="vb-list" style="display:flex;flex-direction:column;gap:12px;min-width:0"></div>' +
+          '</div>' +
           '<div id="vb-sel" style="position:sticky;top:118px;min-width:0"></div>' +
         '</div>' +
       '</div>';
     renderControls(); renderList(); renderSel();
+    syncAddTags();
     // renderAll skrifar yfir allt #vb-main, svo dagskráin er teiknuð aftur hér.
     if (window.Vikudagskra) { try { Vikudagskra.mount(); } catch (e) { console.warn('[verkbord] dagskrá:', e); } }
+  }
+
+  // MERKI-röðin undir skráningarreitnum sést aðeins þegar það er eitthvað til
+  // að merkja: texti í reitnum — eða merki þegar valin, svo alltaf sé hægt að
+  // taka þau af aftur (annars sætu þau föst og ósýnileg á næsta verki).
+  function syncAddTags() {
+    const row = document.getElementById('vb-add-tags'); if (!row) return;
+    const inp = document.getElementById('vb-add-input');
+    const show = !!(inp && inp.value.trim()) || state.addTags.length > 0;
+    row.style.display = show ? '' : 'none';
   }
 
   // Stjórnkortið (v3): Innhólf/Allt/Verkefni/Lokað flipar + leit + röðun/sýn,
@@ -1064,14 +1099,26 @@
             WORKERS.map(w => '<option value="' + w + '"' + (state.fWorker === w ? ' selected' : '') + '>' + w + '</option>').join('') +
           '</select>' +
           '<button data-act="email" title="Flytja inn nýjar beiðnir úr eldklar-pósthólfinu (engin tvítök)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:rgba(255,255,255,.85);font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">✉️ Sækja póst</button>' +
+          '<a href="kunnaskra.html" target="_blank" rel="noopener" title="Opna heildar-kúnnaskrá — lifandi úr Supabase" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;text-decoration:none;' + V3_METAL + ';color:#7ee0c0;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🗂️ Kúnnaskrá</a><a href="postsvorun.html" target="_blank" rel="noopener" title="Opna heildar-kúnnaskrá — lifandi úr Supabase" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;text-decoration:none;' + V3_METAL + ';color:#f0b866;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">📨 Póstsvörun</a>' +
           (noiseN ? '<button data-act="clearnoise" title="Fela allar Payday-greiðslutilkynningar í einu (endurheimtanlegt)" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' + V3_METAL + ';color:#ff8a82;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">🧹 ' + noiseN + '</button>' : '') +
+          // 2026-08-06: V3-endurhönnunin týndi einu leiðinni til að sjá aftur
+          // póst sem er í geymslu (ekkert eytt, bara falið) — state.showOld
+          // og smellhlustarinn voru enn til, bara enginn hnappur sem kveikti
+          // á þeim. Sýnd aðeins á Innhólf-flipanum þegar eitthvað er í geymslu
+          // (eða þegar þegar kveikt, svo hægt sé að slökkva aftur).
+          ((state.queue === 'post' && (c.geymsla || state.showOld))
+            ? '<button data-act="showold" title="Póstur í geymslu er aldrei eytt — sýna/fela hann hér" style="display:inline-flex;align-items:center;height:38px;padding:0 13px;border-radius:11px;' +
+              (state.showOld ? V3_METAL_ON + ';color:#fff' : V3_METAL + ';color:rgba(255,255,255,.85)') +
+              ';font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;white-space:nowrap">' +
+              (state.showOld ? '▲ Fela geymslu' : '📦 Geymsla · ' + c.geymsla) + '</button>'
+            : '') +
         '</div>' +
       '</div>' +
       // TÖG-síuröðin
       '<div class="vb-scroll" style="align-items:center">' +
         '<span style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#8a93a5;margin-right:2px">TÖG</span>' +
         '<button data-act="starfilter" style="font-family:inherit;font-size:12px;font-weight:700;padding:5px 11px;border-radius:8px;' + FILTER_METAL + ';color:#f2c24e;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;' +
-          (state.fStar ? FILTER_ON : 'opacity:.78') + '">⭐ Áríðandi' + (c ? '' : '') + '</button>' +
+          (state.fStar ? FILTER_ON : 'opacity:1') + '">⭐ Áríðandi' + (c ? '' : '') + '</button>' +
         (function () {
           const tc = {};
           allItems().filter(x => inQueue(x)).forEach(x => rowChips(x).forEach(t => { tc[t] = (tc[t] || 0) + 1; }));
@@ -1082,7 +1129,7 @@
             if (!n && !on && t !== 'senda_skyrslur') return '';
             return '<button data-act="tagfilter" data-tag="' + t + '" title="Sía eftir merkinu ' + esc(d.label) + ' — fleiri mega vera valin í einu" ' +
               'style="font-family:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;' + FILTER_METAL + ';color:' + (TAG_DK[t] || '#c3ccd8') + ';cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;' +
-              (on ? FILTER_ON : 'opacity:.78') + '">' +
+              (on ? FILTER_ON : 'opacity:1') + '">' +
               d.emoji + ' ' + esc(d.label) + ' <span style="opacity:.6">' + n + '</span></button>';
           }).join('');
           // Með fjölvali þarf leið til að slökkva á öllu í einu.
@@ -1181,10 +1228,91 @@
     return String(d.getDate()).padStart(2, '0') + '.' + String(d.getMonth() + 1).padStart(2, '0');
   }
 
+  // ── Efsta röðin: NÝJAST + MÁL (innbyggð Allt/Áríðandi-sía) ────────────────
+  // Bæði kortin lesa SAMA `rows` og flokkakortin fyrir neðan, svo flipar, leit
+  // og TÖG sem valin eru að ofan gilda hér líka — þetta eru útsýnisgluggar á
+  // sama gagnasafn, ekki nýr listi.
+  const TOP_N = 10;   // 10 nýjustu / 10 efstu í MÁL (ósk Agnars 6.8.)
+
+  // Röð í efstu kortunum (2026-08-06, ósk Agnars — hann strikaði út pilluna og
+  // 🗓-hnappinn): þéttari en flokkakortin. „bíður N daga"-pillan og „Á dagskrá"
+  // víkja; biðin birtist í staðinn sem þéttur „7D"-teljari undir dagsetningunni,
+  // sem er sjálf í meiri birtuskilum. Textinn fær þrjár línur alls — titill og
+  // tveggja lína lýsing. Hnappurinn lifir áfram í flokkakortunum fyrir neðan.
+  function topRow(r) {
+    const on = String(state.selId) === String(r.id);
+    const sub = (r.notes || r.customer_nafn || '').replace(/\s+/g, ' ').trim();
+    const d = isWaiting(r) ? waitDays(r) : null;
+    const dc = d === null ? '' : (d > 90 ? '#c3271c' : (d > 30 ? '#b8860b' : '#6b7280'));
+    return '<div class="vb-v3row" data-act="selrow" data-id="' + esc(r.id) + '" ' +
+      'style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-top:1px solid #eef0f2;cursor:pointer;' +
+      'background:' + (on ? 'rgba(195,39,28,.05)' : '#fff') + ';' + (on ? 'box-shadow:inset 3px 0 0 #c3271c;' : '') + '">' +
+        '<div style="flex:none;width:40px;padding-top:1px">' +
+          '<div style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px;font-weight:700;color:#3f4650">' +
+            esc(shortDate(r.created_at)) + '</div>' +
+          (d === null ? ''
+            : '<div title="bíður ' + d + ' daga" style="font-family:ui-monospace,Consolas,monospace;font-size:11px;' +
+              'font-weight:800;color:' + dc + ';margin-top:2px">' + d + 'D</div>') +
+        '</div>' +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+            (r.important ? '<span style="color:#eab308">★ </span>' : '') + esc(r.title || '(ónefnt)') + '</div>' +
+          (sub
+            ? '<div style="font-size:12px;color:#6b7280;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;' +
+              '-webkit-box-orient:vertical;overflow:hidden">' + esc(sub) + '</div>'
+            : '') +
+        '</div>' +
+      '</div>';
+  }
+
+  function topCard(title, emoji, count, headExtra, bodyHTML) {
+    return '<div style="' + CARD_V3 + ';min-width:0">' +
+      '<div style="' + CARDHEAD + ';padding:7px 12px">' +
+        '<span style="font-size:13px">' + emoji + '</span>' +
+        '<span style="color:#fff;font-weight:800;font-size:13px;letter-spacing:.6px">' + title + '</span>' +
+        '<span style="min-width:20px;height:18px;padding:0 6px;border-radius:9px;background:rgba(255,255,255,.14);color:#e6e9ee;' +
+          'font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box">' + count + '</span>' +
+        (headExtra || '') +
+      '</div>' +
+      (bodyHTML || '<div style="padding:22px 12px;text-align:center;color:#6b7280;font-size:12.5px">Ekkert hér.</div>') +
+    '</div>';
+  }
+
+  function renderTop(rows) {
+    const el = document.getElementById('vb-toprow'); if (!el) return;
+    // NÝJAST raðar sjálft (hrein dagsetning), en MÁL heldur röðun borðsins
+    // (Snjallröðun / dálkaröðun / innhólfs-röðin) — annars væru kortin tvö
+    // eins þegar „Allt" er valið.
+    const nyjast = rows.slice()
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+      .slice(0, TOP_N);
+    const pick = state.topFilter === 'aridandi' ? rows.filter(x => !!x.important) : rows;
+
+    const seg = (v, label) => {
+      const on = state.topFilter === v;
+      return '<button data-act="topfilter" data-tf="' + v + '" style="font-family:inherit;font-size:11px;font-weight:700;' +
+        'padding:3px 9px;border-radius:7px;cursor:pointer;white-space:nowrap;' +
+        (on ? V3_METAL_ON + ';color:#fff' : V3_METAL + ';color:rgba(255,255,255,.62)') + '">' + label + '</button>';
+    };
+
+    el.innerHTML =
+      topCard('NÝJAST', '🆕', nyjast.length,
+        '<span style="margin-left:auto;font-size:11px;font-weight:600;color:#9aa0aa">nýjast efst</span>',
+        nyjast.map(topRow).join('')) +
+      topCard('MÁL', '📋', pick.length,
+        '<span style="margin-left:auto;display:inline-flex;gap:5px">' + seg('allt', 'Allt') + seg('aridandi', '⭐ Áríðandi') + '</span>',
+        pick.slice(0, TOP_N).map(topRow).join(''));
+  }
+
   function renderList() {
     const el = document.getElementById('vb-list'); if (!el) return;
-    if (state.loading && !state.items.length) { el.innerHTML = '<div class="vb-empty">Sæki…</div>'; return; }
+    if (state.loading && !state.items.length) {
+      el.innerHTML = '<div class="vb-empty">Sæki…</div>';
+      const top = document.getElementById('vb-toprow'); if (top) top.innerHTML = '';
+      return;
+    }
     const rows = visibleRows();
+    renderTop(rows);
     if (!rows.length) {
       el.innerHTML = '<div style="' + CARD_V3 + ';padding:26px;text-align:center;color:#6b7280;font-size:13px">' +
         (state.search ? 'Ekkert fannst fyrir „' + esc(state.search) + '“.' : '🎉 Ekkert hér.') + '</div>';
@@ -1285,7 +1413,11 @@
         '</div>' +
         '<div style="font-size:17px;font-weight:800;color:#16181d;line-height:1.3;margin-bottom:8px">' + esc(r.title || '(ónefnt)') + '</div>' +
         (r.customer_nafn ? '<div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:8px">🗂 ' + esc(r.customer_nafn) + '</div>' : '') +
-        (r.notes ? '<div style="font-size:13px;color:#4b5058;line-height:1.65;white-space:pre-wrap">' + esc(r.notes) + '</div>' : '') +
+        // 2026-08-06 (Agnar: "cant reach the edit button when text is too long")
+        // — r.notes had no height limit, so a long note pushed ✎ Breyta below
+        // the visible/sticky panel. Long text now scrolls in its own box
+        // instead of stretching the whole card past reach.
+        (r.notes ? '<div style="font-size:13px;color:#4b5058;line-height:1.65;white-space:pre-wrap;max-height:260px;overflow-y:auto">' + esc(r.notes) + '</div>' : '') +
         (editing
           ? '<div id="vb-sel-ed" style="margin-top:14px;padding-top:12px;border-top:1px solid #eef0f2">' + renderEditor(r) + '</div>'
           : '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #eef0f2">' +
@@ -1311,14 +1443,14 @@
     const done = !isOpen(r);
     const compact = state.viewMode === 'thett' && !open;
     // Breiðara viewið (▮ Ítarlegt, líka sjálfgefna „venjulegt"): skýringin fær
-    // allt að 4 línur í stað einnar (ósk Agnars 11.7.) — Þétt heldur einni.
+    // allt að 6 línur í stað einnar (ósk Agnars 11.7., +2 línur 2026-08-07) — Þétt heldur einni.
     const wide = state.viewMode !== 'thett';
     const di = dueInfo(r.due_at);
     const od = isOverdue(r);
     const chips = rowChips(r);
     // Innihaldslínan: nýjasta þráðasvar → ✨ samantekt → nótu-forsýn.
     const tl = state.threadLatest[r.id];
-    const pvMax = state.viewMode !== 'thett' ? 620 : 260;
+    const pvMax = state.viewMode !== 'thett' ? 930 : 260;
     const desc = tl
       ? '↩ ' + (tl.mine ? 'Við svöruðum' : tl.from) + ' · ' + fmtShortDate(tl.at) + ' — ' + cleanPreview(tl.text, pvMax)
       : (r.summary ? '✨ ' + r.summary : cleanPreview(r.notes || '', pvMax));
@@ -1345,7 +1477,7 @@
           '<div style="font-size:14px;font-weight:600;color:#11141c;' + (compact ? 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis' : 'line-height:1.35') + '">' +
             (done ? '<s style="color:#9098a6">' + esc(r.title || '(án titils)') + '</s>' : esc(r.title || '(án titils)')) + '</div>' +
           (!compact && desc ? '<div style="font-size:12.5px;color:' + descColor + ';margin-top:2px;' +
-            (wide ? 'display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;overflow-wrap:break-word;line-height:1.5'
+            (wide ? 'display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;overflow-wrap:break-word;line-height:1.5'
                   : 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis') + '">' + esc(desc) + '</div>' : '') +
           (!compact ? '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + linkLine + flags +
             (r.assigned_to ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;white-space:nowrap">👤 ' + esc(r.assigned_to) + '</span>' : '') +
@@ -1466,6 +1598,7 @@
         t.style.color = on ? '#fff' : d.color;
         t.style.background = on ? d.color : d.color + '12';
         t.style.borderColor = d.color + (on ? '' : '44');
+        syncAddTags();
         return;
       }
       if (act === 'addtype') {
@@ -1490,9 +1623,12 @@
         state.composerOpen = !state.composerOpen;
         const p = document.getElementById('vb-composer');
         if (p) { p.style.display = state.composerOpen ? 'block' : 'none'; if (state.composerOpen) { const i = document.getElementById('vb-add-input'); if (i) i.focus(); } }
+        syncAddTags();
         return;
       }
       if (act === 'starfilter') { state.fStar = !state.fStar; state.page = 0; renderControls(); renderList(); return; }
+      // Innbyggða sían í MÁL-kortinu (efsta röðin) — snertir aðeins það kort.
+      if (act === 'topfilter') { state.topFilter = t.getAttribute('data-tf') || 'allt'; renderTop(visibleRows()); return; }
       if (act === 'colsort') {
         e.stopPropagation();
         const k = t.getAttribute('data-k');
@@ -1545,7 +1681,7 @@
       if (act === 'import') { importOld(); return; }
       // Þjónustuborð v2: flokka-sía, geymsla, klára.
       if (act === 'flokk') { const f = t.getAttribute('data-f'); setFlokk(state.fFlokk === f ? '' : f); renderControls(); renderList(); return; }
-      if (act === 'showold') { state.showOld = !state.showOld; renderList(); return; }
+      if (act === 'showold') { state.showOld = !state.showOld; renderControls(); renderList(); return; }
       if (act === 'archive') {
         e.stopPropagation();
         saveRow(nid, { archived_at: nowIso() });
@@ -1653,6 +1789,8 @@
         _noteTimer = setTimeout(() => saveRow(id, { [f]: val }), 500);
       }
     });
+    // MERKI-röðin fylgir innihaldi verk-reitsins (sjá syncAddTags).
+    root.addEventListener('input', e => { if (e.target.id === 'vb-add-input') syncAddTags(); });
     root.addEventListener('keydown', e => {
       if (e.target.id === 'vb-add-input' && e.key === 'Enter') { e.preventDefault(); doAdd(); }
       if (e.target.id === 'vb-add-cust' && e.key === 'Enter') { e.preventDefault(); document.getElementById('vb-add-input')?.focus(); }
@@ -1730,6 +1868,7 @@
       const d = TAGS[c.getAttribute('data-tag')]; if (!d) return;
       c.style.color = d.color; c.style.background = d.color + '12'; c.style.borderColor = d.color + '44';
     });
+    syncAddTags();
     inp.focus();
   }
   // ✉️ Sækja tölvupóst — endurnýtir póst-innsogið úr Þjónustuveri (182, sama

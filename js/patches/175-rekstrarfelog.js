@@ -151,7 +151,7 @@
       // rf-stack, sjá stackTd/bHasData) verði greinilega lægri en raðir sem
       // eru líka í brunakerfisþjónustu (tvær línur) — sami háttur og áður,
       // bara þéttari svo munurinn sjáist.
-      P+'.rf-tbl td{padding:7px 12px;border:0}',
+      P+'.rf-tbl td{padding:4px 12px;border:0}',
       P+'.rf-tbl td.c{text-align:center}',
       P+'.rf-cellname{position:relative;padding-left:16px!important}',
       P+'.rf-rail{position:absolute;left:0;top:6px;bottom:6px;width:4px;border-radius:3px;background:#dbe0e9}',
@@ -182,7 +182,7 @@
       P+'.rf-taeki{font-family:"Space Mono",monospace;font-size:13px;font-weight:700;color:#11141c}',
       P+'.rf-taeki.is-zero{color:#cbd2dc}',
       // year status pills
-      P+'.rf-ycell{display:inline-flex;align-items:center;gap:4px;font-family:"Space Mono",monospace;font-size:11.5px;font-weight:700;color:#fff;border-radius:7px;padding:2px 7px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}',
+      P+'.rf-ycell{display:inline-flex;align-items:center;gap:4px;font-family:"Space Mono",monospace;font-size:11.5px;font-weight:700;color:#fff;border-radius:6px;padding:1px 7px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}',
       P+'.rf-ycell{white-space:nowrap}',
       P+'.rf-ycell i{width:6px;height:6px;border-radius:50%;display:inline-block;flex:none}',
       P+'.rf-ycell a{color:inherit;text-decoration:none;white-space:nowrap}',
@@ -206,7 +206,7 @@
       // næsta skoðun
       P+'.rf-next{font-family:"Space Mono",monospace;font-size:12.5px;white-space:nowrap}',
       P+'.rf-next--ok{color:#3a4250}',
-      P+'.rf-next--overdue{display:inline-flex;align-items:center;gap:5px;font-weight:700;color:#fff;background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #4a0a0e;border-radius:8px;padding:4px 10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}',
+      P+'.rf-next--overdue{display:inline-flex;align-items:center;gap:5px;font-weight:700;color:#fff;background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #4a0a0e;border-radius:7px;padding:2px 9px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}',
       P+'.rf-next--none{color:#cbd2dc}',
       // note input inside the white body
       P+'._rf_note{display:block;width:100%;padding:7px 10px;border:1px solid rgba(20,24,34,.14);border-radius:8px;font:inherit;font-size:12.5px;background:#fff;box-sizing:border-box;margin-bottom:12px;color:#141822}',
@@ -233,10 +233,10 @@
       P+'.rf-stat--sl{background:linear-gradient(180deg,#1c3d8c,#12296b 55%,#060f2e);border:1px solid #060f2e}',
       P+'.rf-stat--br{background:linear-gradient(180deg,#6c1014,#450a0d 55%,#1a0304);border:1px solid #1a0304}',
       P+'.rf-stat--od{background:linear-gradient(180deg,#8a6414,#5e430c 55%,#241804);border:1px solid #241804}',
-      P+'.rf-stack{display:flex;flex-direction:column;align-items:center;gap:5px}',
-      P+'.rf-stack>span{min-height:24px;display:flex;align-items:center;justify-content:center}',
+      P+'.rf-stack{display:flex;flex-direction:column;align-items:center;gap:2px}',
+      P+'.rf-stack>span{min-height:17px;display:flex;align-items:center;justify-content:center}',
       P+'.rf-tbl td.rf-nextcell .rf-stack{align-items:flex-start}',
-      P+'.rf-cnt{height:24px;display:inline-flex;align-items:center;justify-content:center;gap:4px;font-family:"Space Mono",monospace;font-size:12px;font-weight:700;color:#fff;border-radius:7px;padding:0 9px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3);white-space:nowrap}',
+      P+'.rf-cnt{height:17px;display:inline-flex;align-items:center;justify-content:center;gap:4px;font-family:"Space Mono",monospace;font-size:11px;font-weight:700;color:#fff;border-radius:6px;padding:0 8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.28),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3);white-space:nowrap}',
       P+'.rf-cnt em{font-style:normal;font-size:9px}',
       P+'.rf-cnt--sl{background:linear-gradient(145deg,#2a4c8f,#12296b 55%,#060f2e);border:1px solid #060f2e}',
       P+'.rf-cnt--br{background:linear-gradient(145deg,#8a1c22,#560c10 55%,#1a0304);border:1px solid #1a0304}',
@@ -1080,7 +1080,7 @@
     }); });
     box.querySelectorAll('._rf_fchip').forEach(function(c){ c.addEventListener('click', function(){ _state.fltr=c.getAttribute('data-f'); renderOverview(); }); });
     box.querySelectorAll('._rf_open').forEach(function(a){ a.addEventListener('click', function(e){ e.preventDefault(); openCompany(a.getAttribute('data-coid')); }); });
-    var _pb=box.querySelector('#_rf_print'); if(_pb) _pb.onclick=function(){ if(window.SlokkPrint) window.SlokkPrint('Rekstrarfélög — byggingar og úttektir', box); };
+    var _pb=box.querySelector('#_rf_print'); if(_pb) _pb.onclick=function(){ if(window.SlokkPrint) window.SlokkPrint('Rekstrarfélög — byggingar og úttektir', box, true); };
   }
 
   async function renderList(){
@@ -1723,7 +1723,7 @@
     // sýnir AÐEINS þetta eina félag, ekki öll rekstrarfélögin.
     var printBtn=body.querySelector('._rf_printco');
     if(printBtn) printBtn.addEventListener('click', function(){
-      if(window.SlokkPrint) SlokkPrint('Rekstrarfélag — '+name, body);
+      if(window.SlokkPrint) SlokkPrint('Rekstrarfélag — '+name, body, true);
     });
     // Akstursleið-chip á hverja byggingu (per staður) — sama gagnastaður og
     // félags-chip + aðal-borðið (arsskodun_customers[staður_id].akstur).

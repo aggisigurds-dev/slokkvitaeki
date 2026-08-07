@@ -58,6 +58,16 @@
   // it — always mutate in-place so external code (Vidskiptavinir.list)
   // sees the same array as the closure does.
   const customers = [];
+  // 2026-08-06: separate FULL/unfiltered directory from the de-duped display
+  // list above. Vidskiptavinir.list is a shared contract other patches build
+  // on for lookups by kennitala (116-vidsk-pricing.js's sérkjör, 118-cart-
+  // savings.js, 114's POS search prefetch/create) — those need EVERY row,
+  // including ones this tab hides because a promoted fyrirtaeki duplicate
+  // exists. Filtering `customers` itself (as originally done) silently broke
+  // sérkjör lookups for the 144 already-promoted customers. `customers` stays
+  // the de-duped list this file's own render/search/selection code uses;
+  // `allCustomers` is what Vidskiptavinir.list now exposes.
+  const allCustomers = [];
   let unitsByPhone = {};   // phone -> [units]
   let unitsByName = {};    // name -> [units]
   // 2026-06-10: signature of the last-rendered detail page. refresh() can fire
@@ -136,9 +146,35 @@
     try {
       const { data: rows, error } = await getSB().from('vidskiptavinir').select('*').is('deleted_at', null).order('nafn', { ascending: true });
       if (error) throw error;
+
+      // 2026-08-06 (ósk Agnars: "many names are both in vidskiptavinir and
+      // allir vidskiptavinir"): þegar viðskiptavinur er skráður í viðskipti
+      // (188-promote-customer.js) er upprunalega vidskiptavinir-röðin
+      // MEÐVITAÐ EKKI eytt — hún er söguleg og heldur customer_base-tengingu.
+      // En það þýðir sama nafnið birtist tvisvar í listum ef ekkert er gert.
+      // Falin hér (ekki eytt, bara ekki sýnd í ÞESSUM lista) hvenær sem sama
+      // kennitala/customer_base_id er þegar til sem fyrirtaeki-röð — sá
+      // viðskiptavinur er núna réttilega heima í Allir viðskiptavinir.
+      let promotedKt = new Set(), promotedBaseIds = new Set();
+      try {
+        const { data: fy } = await getSB().from('fyrirtaeki').select('kennitala,customer_base_id').is('deleted_at', null);
+        (fy || []).forEach(f => {
+          if (f.kennitala) promotedKt.add(String(f.kennitala).replace(/[^0-9]/g, ''));
+          if (f.customer_base_id != null) promotedBaseIds.add(f.customer_base_id);
+        });
+      } catch (_) { /* non-fatal — falls back to showing everything */ }
+      const visibleRows = (rows || []).filter(r => {
+        const kt = String(r.kennitala || '').replace(/[^0-9]/g, '');
+        if (kt && promotedKt.has(kt)) return false;
+        if (r.customer_base_id != null && promotedBaseIds.has(r.customer_base_id)) return false;
+        return true;
+      });
+
       // Mutate-in-place to keep external references in sync (see decl note)
       customers.length = 0;
-      (rows || []).forEach(r => customers.push(r));
+      visibleRows.forEach(r => customers.push(r));
+      allCustomers.length = 0;
+      (rows || []).forEach(r => allCustomers.push(r));
 
       const phones = customers.map(c => c.simi).filter(Boolean);
       const names = customers.map(c => c.nafn).filter(Boolean);
@@ -586,7 +622,7 @@
           </div>
         </div>
         <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <button class="btn btn-sm" id="vk-promote" style="background:#16a34a;color:#fff;border:1px solid #16a34a;">⬆ Gera að fyrirtæki í þjónustu</button>
+          <button class="btn btn-sm" id="vk-promote" style="background:#16a34a;color:#fff;border:1px solid #16a34a;" title="Skráir í Allir viðskiptavinir — afsláttur og reikningasaga virkjast. EKKI árleg skoðunarþjónusta (sér ákvörðun á eftir).">🔖 Skrá í viðskipti</button>
           <button class="btn btn-outline btn-sm" id="vk-edit">Breyta</button>
           <button class="btn btn-outline btn-sm" id="vk-delete">🗑️ Eyða</button>
           <button class="btn btn-outline btn-sm" id="vk-c360">Staða</button>
@@ -804,11 +840,13 @@
   // pointer behind everyone's back.
   window.Vidskiptavinir = {
     load, render: renderList, refresh,
-    get list() { return customers; },
+    // Full directory (see allCustomers decl note) — NOT the de-duped display
+    // list; use Vidskiptavinir.render()'s own DOM for "what's shown".
+    get list() { return allCustomers; },
     set list(v) {
       if (!Array.isArray(v)) return;
-      customers.length = 0;
-      v.forEach(x => customers.push(x));
+      allCustomers.length = 0;
+      v.forEach(x => allCustomers.push(x));
     },
     openDetail: c => { if (c?.id) openDetailById(c.id); },
     openNew: () => window.SalaMottaka?.openNewCustomer?.(),
