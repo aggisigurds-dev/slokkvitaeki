@@ -31,8 +31,13 @@
     const s = document.createElement('style');
     s.id = '_cqi-css';
     s.textContent = [
-      // FJÖLDI — lítið, ekkert hliðar-padding, tölurnar fá plássið
-      '#view-sala .pos-cart input.pos-qty-inp{width:34px!important;height:22px!important;min-height:0!important;padding:0!important;font-size:13px!important;font-weight:700!important;text-align:center!important;border:1px solid #cbd5e1!important;border-radius:5px!important;background:#fff!important;box-shadow:none!important;line-height:1!important;font-variant-numeric:tabular-nums}',
+      // FJÖLDI — 2026-08-07 (Agnar: „padding around the numbers is too much,
+      // reduce to 0, align it better"): talan var í EIGIN kassa (border+radius+
+      // hvítur bakgrunnur) OFAN Í stepper-kassanum (pos.js gefur ± -boxinu líka
+      // border+radius) → kassi-í-kassa, bilið milli rammanna las eins og padding.
+      // Núna er reiturinn RAMMALAUS/gegnsær og situr beint milli − og +, jafnhár
+      // tökkunum (24px) svo talan miðjast og engin nestuð-kassa-padding sést.
+      '#view-sala .pos-cart input.pos-qty-inp{width:30px!important;height:24px!important;min-height:0!important;padding:0!important;margin:0!important;font-size:13px!important;font-weight:800!important;text-align:center!important;border:none!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;line-height:1!important;color:#0f172a!important;font-variant-numeric:tabular-nums}',
       // kr/stk + % — aftur punktalínu-reitir í línu við textann, ekki 42px box
       '#view-sala .pos-cart input.pos-price-edit,#view-sala .pos-cart input.pos-disc-edit{height:16px!important;min-height:0!important;padding:0 1px!important;border:none!important;border-bottom:1px dotted #cbd5e1!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;font-size:11px!important;text-align:right!important;line-height:1.2!important;vertical-align:baseline!important}',
       '#view-sala .pos-cart input.pos-price-edit{width:56px!important}',
@@ -79,14 +84,16 @@
     inp.dataset._cqiInput = '1';
     inp.dataset._lastQty = String(currentQty);
     inp.title = 'Magn — sláðu inn beint';
+    // Rammalaus/gegnsær — situr beint í stepper-boxinu (engin nestuð kassa-padding).
     inp.style.cssText =
-      'width:46px;text-align:center;font-weight:700;font-size:13px;' +
-      'border:1px solid #cbd5e1;border-radius:5px;padding:2px 4px;' +
-      'background:#fff;font-family:inherit;font-variant-numeric:tabular-nums;' +
-      'outline:none;transition:border-color .12s';
-    inp.addEventListener('focus', () => { inp.style.borderColor = '#2563eb'; inp.select(); });
+      'width:30px;height:24px;text-align:center;font-weight:800;font-size:13px;' +
+      'border:none;border-radius:0;padding:0;margin:0;color:#0f172a;' +
+      'background:transparent;font-family:inherit;font-variant-numeric:tabular-nums;' +
+      'outline:none;transition:background-color .12s';
+    // Fókus-merki: ljós blár bakgrunnur (í stað ramma sem er ekki lengur til).
+    inp.addEventListener('focus', () => { inp.style.background = '#eff6ff'; inp.select(); });
     inp.addEventListener('blur',  () => {
-      inp.style.borderColor = '#cbd5e1';
+      inp.style.background = 'transparent';
       const target = parseInt(inp.value, 10);
       if (!Number.isFinite(target) || target < 0) {
         inp.value = inp.dataset._lastQty || '1';
