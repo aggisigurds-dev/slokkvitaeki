@@ -15,6 +15,14 @@
   if (window.__drogListInstalled) return;
   window.__drogListInstalled = true;
 
+  // 2026-08-07 (ósk Agnars „I don't like this popup pages, just a normal page"):
+  // Drög var áður fljótandi modal (position:fixed;inset:0). Núna er þetta VENJULEG
+  // view eins og önnur borð — hliðarstiku-hnappurinn (data-view) skiptir yfir í
+  // heil-síðu í #view-svæðinu, með hash-slóð (#drog), URL-routing (218) og
+  // bakk-takka (276/277). Fyrirmyndin er patch 231/268.
+  const VIEW_ID = 'view-drog';
+  const NAV_KEY = 'drog';
+
   function getSB() { return (window.DB && window.DB.sb) || null; }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
@@ -95,6 +103,9 @@
       _count = _items.filter(s => !s.hidden).length;   // badge = active (non-deleted) drög
       await attachLocations(SB);
       updateBadge();
+      // Lifandi endurnýjun (30s/sale-edited) uppfærir listann þegar viewið er opið.
+      const vv = document.getElementById(VIEW_ID);
+      if (vv && vv.classList.contains('active') && document.getElementById('_drog-body')) renderList();
     } catch (e) {
       console.warn('[drog-list] load exception:', e);
     }
@@ -112,11 +123,12 @@
     const btn = document.createElement('button');
     btn.className = salaBtn.className.replace(/\bactive\b/g, '').trim() + ' _drog-nav-btn';
     btn.setAttribute('data-drog-nav', '1');
+    btn.setAttribute('data-view', NAV_KEY);   // venjuleg view — App.switchView þekkir hana
     btn.innerHTML = '<span style="margin-right:6px">📝</span>Drög <span class="_drog-badge" style="display:none;margin-left:6px;background:#f59e0b;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px">0</span>';
     btn.addEventListener('click', e => {
       e.preventDefault();
       e.stopPropagation();
-      openListModal();
+      if (window.App && App.switchView) App.switchView(NAV_KEY); else show();
     });
     salaBtn.parentNode.insertBefore(btn, salaBtn.nextSibling);
     updateBadge();
@@ -129,48 +141,79 @@
     badge.style.display = _count > 0 ? 'inline-block' : 'none';
   }
 
-  // ── Modal listing ─────────────────────────────────────────────────────────
-  function openListModal() {
-    document.getElementById('_drog-list-modal')?.remove();
-    const m = document.createElement('div');
-    m.id = '_drog-list-modal';
-    m.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;padding:14px;font-family:inherit';
-    m.innerHTML = `
-      <div style="background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.3);width:min(960px,calc(100vw - 28px));max-height:calc(100vh - 28px);display:flex;flex-direction:column;overflow:hidden">
-        <div style="padding:14px 22px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <div>
-            <h2 style="margin:0;font-size:17px;font-weight:700">📝 Drög</h2>
-            <div style="font-size:12px;color:#fef3c7;margin-top:2px">Sölur sem hafa ekki verið kláraðar — birtast ekki í Bókhaldi fyrr en klárað er</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#fff;cursor:pointer;white-space:nowrap"><input type="checkbox" id="_drog-showdel" ${_showDeleted ? 'checked' : ''} style="cursor:pointer"> Sýna eydd</label>
-            <select id="_drog-sort" title="Raða" style="padding:6px 9px;border:1px solid rgba(255,255,255,0.4);border-radius:7px;background:rgba(255,255,255,0.15);color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">
-              <option value="updated_desc" style="color:#0f172a">🕐 Nýlega breytt fyrst</option>
-              <option value="created_desc" style="color:#0f172a">📅 Nýjast stofnað</option>
-              <option value="created_asc"  style="color:#0f172a">📅 Elst stofnað</option>
-              <option value="amount_desc"  style="color:#0f172a">💰 Hæsta upphæð</option>
-              <option value="amount_asc"   style="color:#0f172a">💰 Lægsta upphæð</option>
-            </select>
-            <button id="_drog-x" type="button" style="background:transparent;border:1px solid rgba(255,255,255,0.4);color:#fff;font-size:18px;width:34px;height:34px;border-radius:7px;cursor:pointer;line-height:1">✕</button>
-          </div>
-        </div>
-        <div id="_drog-body" style="flex:1;overflow-y:auto;background:#f8fafc"></div>
-      </div>`;
-    document.body.appendChild(m);
-    m.querySelector('#_drog-x').addEventListener('click', () => m.remove());
-    m.addEventListener('click', e => { if (e.target === m) m.remove(); });
-    const sortSel = m.querySelector('#_drog-sort');
+  // ── View (venjuleg heil-síða, ekki modal) ─────────────────────────────────
+  // Búið til dýnamískt eins og verkborð (231) / aksturslisti (268): eigin
+  // #view-drog í view-svæðinu, hausinn (titill + „Sýna eydd" + röðun) færður úr
+  // gamla modal-hausnum, ENGIN ✕ (bakk-takkinn/hliðarstikan sér um að fara burt).
+  function ensureView() {
+    let v = document.getElementById(VIEW_ID);
+    if (v) return v;
+    const sample = document.getElementById('view-counter') || document.getElementById('view-sala');
+    v = document.createElement('div');
+    v.id = VIEW_ID;
+    v.className = 'view';
+    v.innerHTML =
+      '<div style="min-height:100vh;background:#f8fafc;display:flex;flex-direction:column;font-family:inherit">' +
+        '<div style="padding:16px 22px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
+          '<div>' +
+            '<h2 style="margin:0;font-size:19px;font-weight:700;color:#fff">📝 Drög</h2>' +
+            '<div style="font-size:12px;color:#fef3c7;margin-top:2px">Sölur sem hafa ekki verið kláraðar — birtast ekki í Bókhaldi fyrr en klárað er</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">' +
+            '<label style="display:flex;align-items:center;gap:5px;font-size:12px;color:#fff;cursor:pointer;white-space:nowrap"><input type="checkbox" id="_drog-showdel" style="cursor:pointer"> Sýna eydd</label>' +
+            '<select id="_drog-sort" title="Raða" style="padding:6px 9px;border:1px solid rgba(255,255,255,0.4);border-radius:7px;background:rgba(255,255,255,0.15);color:#fff;font:inherit;font-size:12.5px;font-weight:600;cursor:pointer">' +
+              '<option value="updated_desc" style="color:#0f172a">🕐 Nýlega breytt fyrst</option>' +
+              '<option value="created_desc" style="color:#0f172a">📅 Nýjast stofnað</option>' +
+              '<option value="created_asc" style="color:#0f172a">📅 Elst stofnað</option>' +
+              '<option value="amount_desc" style="color:#0f172a">💰 Hæsta upphæð</option>' +
+              '<option value="amount_asc" style="color:#0f172a">💰 Lægsta upphæð</option>' +
+            '</select>' +
+          '</div>' +
+        '</div>' +
+        '<div id="_drog-body" style="flex:1;background:#f8fafc"></div>' +
+      '</div>';
+    (sample && sample.parentElement ? sample.parentElement : document.body).appendChild(v);
+    // Haus-stýringar vírðar einu sinni (viewið lifir áfram á milli heimsókna).
+    const sortSel = v.querySelector('#_drog-sort');
     if (sortSel) {
       sortSel.value = _sortMode;
-      sortSel.addEventListener('change', e => {
-        _sortMode = e.target.value;
-        saveSort(_sortMode);
-        renderList();
-      });
+      sortSel.addEventListener('change', e => { _sortMode = e.target.value; saveSort(_sortMode); renderList(); });
     }
-    const showDel = m.querySelector('#_drog-showdel');
-    if (showDel) showDel.addEventListener('change', async e => { _showDeleted = e.target.checked; await loadDrog(); renderList(); });
+    const showDel = v.querySelector('#_drog-showdel');
+    if (showDel) {
+      showDel.checked = _showDeleted;
+      showDel.addEventListener('change', async e => { _showDeleted = e.target.checked; await loadDrog(); renderList(); });
+    }
+    return v;
+  }
+
+  // Sýna viewið: fela önnur, virkja þetta, spegla #drog í slóðina (277 gerir
+  // það svo að alvöru bakk-færslu), sækja fersk gögn.
+  function show() {
+    ensureView();
+    document.querySelectorAll('.view,[id^="view-"]').forEach(x => { x.style.display = 'none'; x.classList.remove('active'); });
+    const v = document.getElementById(VIEW_ID);
+    if (v) { v.style.display = 'block'; v.classList.add('active'); }
+    document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === NAV_KEY));
+    try { if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
     renderList();
+    loadDrog().then(renderList).catch(() => {});
+  }
+
+  // Vefja App.switchView: okkar view → show(); annað → fela okkar view (fellur á
+  // .active-regluna hvort eð er, en 268-mynstrið gerir þetta skýrt).
+  function patchSwitchView() {
+    if (!window.App) { setTimeout(patchSwitchView, 150); return; }
+    if (window.App._drogSwitchPatched) return;
+    const orig = window.App.switchView;
+    window.App.switchView = function (view) {
+      if (view === NAV_KEY) { show(); return; }
+      const r = orig ? orig.apply(this, arguments) : undefined;
+      try { const el = document.getElementById(VIEW_ID); if (el) { el.style.display = 'none'; el.classList.remove('active'); } } catch (_) {}
+      return r;
+    };
+    for (const k in orig) { try { window.App.switchView[k] = orig[k]; } catch (_) {} }
+    window.App._drogSwitchPatched = true;
   }
 
   function renderList() {
@@ -232,8 +275,8 @@
     body.querySelectorAll('tbody tr').forEach(tr => {
       const id = tr.dataset.id;
       const on = (act, fn) => { const b = tr.querySelector('button[data-act="' + act + '"]'); if (b) b.addEventListener('click', fn); };
-      on('edit', () => { document.getElementById('_drog-list-modal')?.remove(); if (window.SaleEditor) window.SaleEditor.openById(id); });
-      on('finalize', () => { document.getElementById('_drog-list-modal')?.remove(); if (window.SaleEditor) window.SaleEditor.openById(id); });
+      on('edit', () => { if (window.SaleEditor) window.SaleEditor.openById(id); });
+      on('finalize', () => { if (window.SaleEditor) window.SaleEditor.openById(id); });
       on('delete', async () => {
         if (!window.confirm('Eyða þessum drögum?\n\nÞau hverfa af listanum en hægt er að endurheimta (haka í „Sýna eydd").')) return;
         const SB = getSB(); if (!SB) return;
@@ -258,16 +301,27 @@
   setInterval(loadDrog, 30000);
 
   // ── Boot ──────────────────────────────────────────────────────────────────
-  injectSidebar();
-  setTimeout(injectSidebar, 1000);
-  setTimeout(loadDrog, 600);
+  function boot() {
+    ensureView();               // #view-drog til strax svo patch 218 leysi #drog
+    injectSidebar();
+    setTimeout(injectSidebar, 1000);
+    patchSwitchView();
+    setTimeout(patchSwitchView, 1500);
+    setTimeout(loadDrog, 600);
+    // deep-link á fyrstu hleðslu + hashchange (samhliða patch 218-routing)
+    if ((location.hash || '').replace(/^#/, '') === NAV_KEY) setTimeout(() => { if (window.App && App.switchView) App.switchView(NAV_KEY); else show(); }, 300);
+    window.addEventListener('hashchange', () => { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) show(); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 
-  // Public API
+  // Public API (open opnar nú viewið; ytri kallar — pos.js pos-drog, patch 78
+  // Workshop.openDrog — halda áfram að virka).
   window.DrogList = {
-    open: openListModal,
+    open: show,
     refresh: loadDrog,
     count: () => _count
   };
-  console.log('[patch-143] drog-list installed — sidebar badge + modal');
+  console.log('[patch-143] drog-list installed — sidebar view + badge (#drog)');
 })();
 /* === END DRÖG LIST === */
