@@ -1443,14 +1443,14 @@
     const done = !isOpen(r);
     const compact = state.viewMode === 'thett' && !open;
     // Breiðara viewið (▮ Ítarlegt, líka sjálfgefna „venjulegt"): skýringin fær
-    // allt að 4 línur í stað einnar (ósk Agnars 11.7.) — Þétt heldur einni.
+    // allt að 6 línur í stað einnar (ósk Agnars 11.7., +2 línur 2026-08-07) — Þétt heldur einni.
     const wide = state.viewMode !== 'thett';
     const di = dueInfo(r.due_at);
     const od = isOverdue(r);
     const chips = rowChips(r);
     // Innihaldslínan: nýjasta þráðasvar → ✨ samantekt → nótu-forsýn.
     const tl = state.threadLatest[r.id];
-    const pvMax = state.viewMode !== 'thett' ? 620 : 260;
+    const pvMax = state.viewMode !== 'thett' ? 930 : 260;
     const desc = tl
       ? '↩ ' + (tl.mine ? 'Við svöruðum' : tl.from) + ' · ' + fmtShortDate(tl.at) + ' — ' + cleanPreview(tl.text, pvMax)
       : (r.summary ? '✨ ' + r.summary : cleanPreview(r.notes || '', pvMax));
@@ -1477,7 +1477,7 @@
           '<div style="font-size:14px;font-weight:600;color:#11141c;' + (compact ? 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis' : 'line-height:1.35') + '">' +
             (done ? '<s style="color:#9098a6">' + esc(r.title || '(án titils)') + '</s>' : esc(r.title || '(án titils)')) + '</div>' +
           (!compact && desc ? '<div style="font-size:12.5px;color:' + descColor + ';margin-top:2px;' +
-            (wide ? 'display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;overflow-wrap:break-word;line-height:1.5'
+            (wide ? 'display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;overflow-wrap:break-word;line-height:1.5'
                   : 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis') + '">' + esc(desc) + '</div>' : '') +
           (!compact ? '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + linkLine + flags +
             (r.assigned_to ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe;white-space:nowrap">👤 ' + esc(r.assigned_to) + '</span>' : '') +
