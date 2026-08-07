@@ -960,6 +960,34 @@
         #view-verkbord #vb-controls { padding: 12px 12px !important; }
         #view-verkbord #vb-composer { padding: 12px 12px !important; }
       }
+
+      /* ═══ VERKBORÐIÐ ER ALLTAF LJÓST (2026-08-07, skjáskot Agnars: „this
+         should be white") ═══
+         Dökka þemað (66) og þemabrúin (229) endurlita inline-stíla með
+         [style*=…]-attribute-selectorum og !important — undir dökku þema
+         flippuðust hvítu V3-kortin (CARD_V3/raðirnar) yfir í dökkblátt.
+         Borðið er hannað ljóst: ljósgrár síðubakgrunnur, hvít kort, dökkir
+         kortahausar. Hér er ÞAÐ útlit neglt fast: sömu attribute-selectorar,
+         en með #view-verkbord-forskeyti (hærri sértækni en báðar þemareglurnar,
+         (1,1,0)+ á móti (0,2,1)) og sama gildi og inline-stíllinn segir.
+         Pinnum AÐEINS litina sem þemun remappa og koma fyrir í þessari skrá —
+         aðrir litir standa óbreyttir. */
+      #view-verkbord [style*="background:#fff"] { background: #fff !important; }
+      #view-verkbord [style*="background:#f1f5f9"] { background: #f1f5f9 !important; }
+      #view-verkbord [style*="color:#16181d"] { color: #16181d !important; }
+      #view-verkbord [style*="color:#475569"] { color: #475569 !important; }
+      #view-verkbord [style*="color:#64748b"] { color: #64748b !important; }
+      #view-verkbord [style*="color:#6b7280"] { color: #6b7280 !important; }
+      #view-verkbord [style*="color:#94a3b8"] { color: #94a3b8 !important; }
+      /* Patch 66 dekkir líka input/select/textarea og .card með element-reglum
+         (án [style*=…]) — leitarreiturinn og stjórnkortin haldast ljós: */
+      html[data-theme="dark"] #view-verkbord input,
+      html[data-theme="dark"] #view-verkbord select,
+      html[data-theme="dark"] #view-verkbord textarea {
+        background: #fff !important; color: #141822 !important; border-color: #d8dadf !important; }
+      html[data-theme="dark"] #view-verkbord .card,
+      html[data-theme="dark"] #view-verkbord table {
+        background: #fff !important; color: #11141c !important; border-color: #e5e7eb !important; }
     `;
     document.head.appendChild(s);
   }
