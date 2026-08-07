@@ -1199,18 +1199,34 @@
 
   // Ein röð inni í korti. `clamp` = tveggja lína lýsing (flokkakortin), annars
   // ein lína (BÍÐUR SVARS er þéttara).
-  function v3Row(r, clamp) {
+  function v3Row(r, clamp, tagColor) {
     const on = String(state.selId) === String(r.id);
     const sub = (r.notes || r.customer_nafn || '').replace(/\s+/g, ' ').trim();
+    // ☰ Þétt / ▮ Ítarlegt (lagað 2026-08-07, ósk Agnars — „the þétt and ítarlegt
+    // have the same view"): V3-endurhönnunin skipti renderRow() út fyrir v3Row()
+    // og þá datt viewMode-lesturinn niður, svo hnapparnir tveir gerðu ekkert.
+    // Ítarlegt gefur lýsingunni tvær línur til viðbótar; Þétt heldur tveimur.
+    const lines = state.viewMode === 'thett' ? 2 : 4;
     const subStyle = clamp
-      ? 'font-size:12px;color:#6b7280;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden'
+      ? 'font-size:12px;color:#6b7280;line-height:1.5;display:-webkit-box;-webkit-line-clamp:' + lines +
+        ';-webkit-box-orient:vertical;overflow:hidden'
       : 'font-size:12px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
     return '<div class="vb-v3row" data-act="selrow" data-id="' + esc(r.id) + '" ' +
       'style="display:flex;align-items:' + (clamp ? 'flex-start' : 'center') + ';gap:10px;padding:' + (clamp ? '10px 12px' : '9px 12px') + ';' +
       'border-top:1px solid #eef0f2;cursor:pointer;background:' + (on ? 'rgba(195,39,28,.05)' : '#fff') + ';' +
       (on ? 'box-shadow:inset 3px 0 0 #c3271c;' : '') + '">' +
-        '<span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#9aa0aa;flex:none;width:42px' + (clamp ? ';padding-top:2px' : '') + '">' +
-          esc(shortDate(r.created_at)) + '</span>' +
+        // Dagsetningin í meiri birtuskilum, og undir henni aldur málsins sem
+        // þéttur „9D"-teljari í LIT MERKISINS sem kortið stendur fyrir (blátt,
+        // fjólublátt, grænt o.s.frv. — ósk Agnars 7.8.). Aðeins í flokkakortunum;
+        // BÍÐUR SVARS ber sína eigin „bíður N daga"-pillu og þarf ekki tvítekningu.
+        '<div style="flex:none;width:42px' + (clamp ? ';padding-top:2px' : '') + '">' +
+          '<div style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px;font-weight:700;color:#3f4650">' +
+            esc(shortDate(r.created_at)) + '</div>' +
+          (clamp
+            ? '<div title="' + waitDays(r) + ' dagar frá skráningu" style="font-family:ui-monospace,Consolas,monospace;' +
+              'font-size:11px;font-weight:800;color:' + (tagColor || '#9aa0aa') + ';margin-top:2px">' + waitDays(r) + 'D</div>'
+            : '') +
+        '</div>' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
             (r.important ? '<span style="color:#eab308">★ </span>' : '') + esc(r.title || '(ónefnt)') + '</div>' +
@@ -1364,7 +1380,7 @@
             (open ? '' : g.items.length + ' mál · smelltu til að opna') + '</span>' +
         '</div>' +
         (open
-          ? shown.map(r => v3Row(r, true)).join('') +
+          ? shown.map(r => v3Row(r, true, g.color)).join('') +
             (g.items.length > shown.length
               ? '<div data-act="catmore" data-cat="' + esc(g.key) + '" style="padding:8px 12px;border-top:1px solid #eef0f2;' +
                 'font-size:12px;font-weight:700;color:#6b7280;cursor:pointer">Sjá öll ' + g.items.length + ' mál →</div>'
