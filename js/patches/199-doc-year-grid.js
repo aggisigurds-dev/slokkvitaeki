@@ -600,12 +600,41 @@
       return String(s.a.name||'Samningur');
     }
     samn.sort(function(a,b){return (b.year||0)-(a.year||0);});
-    var samnHtml = samn.map(function(s){
+    function samnChip(s){
       var full=samnLabel(s), disp=full.length>46?full.slice(0,44)+'…':full;
       if(s.src==='doc'){ var u=docUrl(s.d);
         return docWrap(u?'<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="'+esc(full)+'">📑 '+esc(disp)+'</a>':'<span class="sk-doc rep" title="'+esc(full)+'">📑 '+esc(disp)+'</span>', s.d.id); }
       return '<button type="button" class="sk-doc rep" data-att="'+esc(s.a.id)+'" title="'+esc(full)+'">📑 '+esc(disp)+'</button>';
-    }).join('') + addChip('samningur','','+ samningur');
+    }
+    // 2026-08-07 (skissa Agnars): samningurinn fær sama kort-tungumál og árin —
+    // eitt kort per þjónustu með lituðum kanti og stöðupillu hægra megin.
+    // Flokkun á kort: nafnið/notes segja til um brunakerfis-samning; allt annað
+    // telst slökkvitækja-samningur (það er sögulega sjálfgefna tegundin).
+    // Gildis-mat er AÐEINS úr ártölum sem standa í skjalaheitinu sjálfu:
+    // „2024–2026" → Í GILDI þar til loka-árið er liðið, þá ÚTRUNNINN. Samningur
+    // án ártala í heiti telst Í GILDI (skjal á skrá = gildandi, venjan hans) —
+    // við giskum ekki á dagsetningar sem hvergi standa.
+    function samnCard(kind){
+      var bkc = kind==='brunakerfi';
+      var items = samn.filter(function(s){
+        var t=(samnLabel(s)+' '+String(s.src==='doc'?(s.d.notes||''):'')).toLowerCase();
+        return bkc === /brunakerfi|brunavarn|brunavi[ðd]v/i.test(t);
+      });
+      var pill, yrs='';
+      if(!items.length) pill='<span class="sk-samn-pill vantar">VANTAR</span>';
+      else {
+        var lbl=items.map(function(s){return samnLabel(s);}).join(' ');
+        var m=lbl.match(/(20\d{2})\s*[–—-]\s*(20\d{2})/);
+        var endY = m ? +m[2] : null;
+        if(m) yrs='<span class="sk-samn-yrs">📄 '+m[1]+'–'+m[2]+'</span>';
+        pill = (endY && endY < NOW)
+          ? '<span class="sk-samn-pill utrunn">ÚTRUNNINN '+endY+'</span>'
+          : '<span class="sk-samn-pill gildi">Í GILDI</span>';
+      }
+      var chips = items.map(samnChip).join('') + (items.length?'':addChip('samningur','','+ samningur'));
+      return '<div class="sk-samn-card '+(bkc?'bkc':'slk')+'">'+(bkc?'🔥':'🧯')+' <b>Samningur — '+(bkc?'brunakerfi':'slökkvitæki')+'</b>'+chips+yrs+pill+'</div>';
+    }
+    var samnHtml = samnCard('uttekt') + samnCard('brunakerfi');
 
     // ── per-year × per-service bundle cards (verkefnalisti mockup, 2026-08-05) ──
     // The newest year is expanded into two side-by-side service cards (🧯
@@ -679,13 +708,13 @@
         return chip+stBadge+amt;
       }
       if(r.ambiguous) return manualLinkHtml(y, svc, r.invCandidates);
-      return addChip('reikningur', y, y===NOW?'+ reikningur':'vantar');
+      return addChip('reikningur', y, y===NOW?'+ reikningur':'vantar reikning');
     }
     function svcRepHtml(y, svc){
       var arr=svc.repMap[y]||[];
       if(arr.length) return arr.map(function(x){ return x._att?repAttChip(x._att):repDocChip(x); }).join('')+addChip('skyrsla',y,'＋');
       if(y===NOW) return '<span class="sk-doc prog" title="Skoðun ársins ekki enn skjalfest">⏳ Í vinnslu</span>'+addChip('skyrsla',y,'+ skýrsla');
-      return addChip('skyrsla',y,'vantar');
+      return addChip('skyrsla',y,'vantar skýrslu');
     }
     function svcSendBtn(y, svc){
       var hasRep=(svc.repMap[y]||[]).length, r=resolved[y+'|'+svc.kind];
@@ -701,22 +730,24 @@
       if(svc.kind!=='brunakerfi') return '';
       return '<button type="button" class="sk-svc-ws" data-open-bkc="1" title="Opna sérhæfðu Brunakerfi þjónustusíðuna — skoðunarskýrslur, verð, búnaðarskrá">🔥 Þjónustusíða →</button>';
     }
+    // 2026-08-07 (skissa Agnars): hvert þjónustukort ber STÖÐUMERKI í hausnum
+    // (✓ FULLBÚIÐ / 1 AF 2 VANTAR) og hver lína fær punkt — grænan fylltan
+    // þegar skjalið er til, gulan brotinn hring þegar vantar — með lágstafa
+    // merkimiða (skýrsla/reikningur) AFTAN við chippið í stað borðans framan við.
     function svcCardExpanded(y, svc){
       var arr=svc.repMap[y]||[];
-      var repRow = arr.length || y===NOW ? '<div class="sk-svc-row"><span class="sk-svc-tag">SKÝRSLA</span>'+svcRepHtml(y,svc)+'</div>' : '';
       var r=resolved[y+'|'+svc.kind];
-      var invRow = (arr.length || r.inv || r.ambiguous) ? '<div class="sk-svc-row"><span class="sk-svc-tag inv">REIKN.</span>'+svcInvHtml(y,svc,false)+'</div>' : '';
+      var hasRep=arr.length>0, hasInv=!!r.inv;
       var wsLink=svcWorkspaceLink(svc);
-      if(!repRow && !invRow) return '<div class="sk-svc-card sk-svc-empty"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+wsLink+'</div><div class="sk-svc-row">engin '+esc(svc.label.toLowerCase())+addChip('skyrsla',y,'+ skýrsla')+'</div></div>';
-      return '<div class="sk-svc-card"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+svcSendBtn(y,svc)+wsLink+'</div>'+repRow+invRow+'</div>';
+      if(!hasRep && !hasInv && !r.ambiguous && y!==NOW)
+        return '<div class="sk-svc-card sk-svc-empty"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+wsLink+'</div><div class="sk-svc-row">engin '+esc(svc.label.toLowerCase())+addChip('skyrsla',y,'+ skýrsla')+'</div></div>';
+      var badge = hasRep&&hasInv ? '<span class="sk-svc-st ok">✓ FULLBÚIÐ</span>'
+                : (hasRep||hasInv) ? '<span class="sk-svc-st part">1 AF 2 VANTAR</span>'
+                : '<span class="sk-svc-st prog">⏳ Í VINNSLU</span>';
+      var repRow='<div class="sk-svc-row"><span class="sk-dot '+(hasRep?'ok':'miss')+'"></span>'+svcRepHtml(y,svc)+'<span class="sk-svc-tag">skýrsla</span></div>';
+      var invRow='<div class="sk-svc-row"><span class="sk-dot '+(hasInv?'ok':'miss')+'"></span>'+svcInvHtml(y,svc,false)+'<span class="sk-svc-tag inv">reikningur</span></div>';
+      return '<div class="sk-svc-card"><div class="sk-svc-hd">'+svc.icon+' <b>'+esc(svc.label)+'</b>'+badge+svcSendBtn(y,svc)+wsLink+'</div>'+repRow+invRow+'</div>';
     }
-    function svcCompact(y, svc){
-      var arr=svc.repMap[y]||[], r=resolved[y+'|'+svc.kind];
-      if(!arr.length && !r.inv && !r.ambiguous) return '<div class="sk-svc-compact sk-svc-empty">'+svc.icon+' engin '+esc(svc.label.toLowerCase())+'</div>';
-      var repChip = arr.length ? (arr[0]._att?repAttChip(arr[0]._att):repDocChip(arr[0])) : addChip('skyrsla',y,'vantar');
-      return '<div class="sk-svc-compact">'+svc.icon+' '+repChip+svcInvHtml(y,svc,true)+svcSendBtn(y,svc)+'</div>';
-    }
-
     var yearBlocks=YEARS.map(function(y){
       var cur=(y===YEARS[0]); var st=fcStatus(coId,y);
       var ycls='sk-yr'+(st==='human'?' sk-yr-ok':st==='claude'?' sk-yr-claude':st==='gap'?' sk-yr-gap':'')+(cur&&!st?' sk-yr-now':'');
@@ -724,9 +755,10 @@
       var ttl=st==='claude'?('Claude yfirfór'+(fcNote(coId,y)?(': '+fcNote(coId,y)):'')+' — tvísmelltu til að staðfesta')
              :st==='gap'?((fcNote(coId,y)||'Skýrsla vantar')+' — tvísmelltu til að fjarlægja flagg')
              :('Tvísmelltu til að staðfesta fact-check '+y);
-      var body = cur
-        ? '<div class="sk-svc-grid">'+SERVICES.map(function(svc){return svcCardExpanded(y,svc);}).join('')+'</div>'
-        : '<div class="sk-svc-compactrow">'+SERVICES.map(function(svc){return svcCompact(y,svc);}).join('')+'</div>';
+      // 2026-08-07: ÖLL ár fá spjöldin tvö hlið við hlið (skissa Agnars) —
+      // eldri ár voru áður þjappaðar línur, en stöðumerkið + punktarnir segja
+      // söguna betur og eins alls staðar. cur helst fyrir upphæðir (forCompact).
+      var body = '<div class="sk-svc-grid">'+SERVICES.map(function(svc){return svcCardExpanded(y,svc);}).join('')+'</div>';
       return '<div class="sk-yrblock"><div class="'+ycls+' sk-yr-label" data-yr="'+y+'" title="'+esc(ttl)+'">'+mark+y+'</div>'+body+'</div>';
     }).join('');
 
@@ -745,7 +777,7 @@
 
     section.innerHTML = hdr +
       '<div class="sk-strip"><div class="sk-strip-l">📊 Staða eftir ári</div><div class="sk-strip-r">'+ (pills||'<span style="color:var(--ink4);font-size:12px">engin gögn</span>') +'</div></div>'+
-      '<div class="sk-strip"><div class="sk-strip-l">📑 Þjónustusamningur</div><div class="sk-strip-r">'+samnHtml+'</div></div>'+
+      '<div class="sk-svc-grid sk-samn-grid">'+samnHtml+'</div>'+
       '<div class="sk-yrwrap">'+yearBlocks+
         '<div class="sk-yr-add"><button type="button" class="sk-doc add" data-add-yr-svc="1">+ ár / þjónusta</button>'+
         '<span class="sk-sub">skýrsla og reikningur parast sjálfkrafa eftir ári — nýjasta árið opið, eldri ár samanþjöppuð</span></div>'+
@@ -1022,6 +1054,23 @@
       '.sk-svc-row{display:flex;align-items:center;flex-wrap:wrap;gap:5px;margin:4px 0}',
       '.sk-svc-tag{font-size:9px;font-weight:700;color:var(--ink3);background:var(--surface2);border:1px solid var(--brd2,#f1f5f9);border-radius:99px;padding:1px 7px;white-space:nowrap}',
       '.sk-svc-tag.inv{color:#15803d;background:#f0fdf4;border-color:#bbf7d0}',
+      // 2026-08-07 skissa: stöðumerki í kort-haus + punktar á línum
+      '.sk-svc-st{font-size:10px;font-weight:800;letter-spacing:.03em;padding:2px 8px;border-radius:99px;margin-left:auto;white-space:nowrap}',
+      '.sk-svc-st.ok{color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0}',
+      '.sk-svc-st.part{color:#b45309;background:#fffbeb;border:1px solid #fde68a}',
+      '.sk-svc-st.prog{color:#a16207;background:#fef9c3;border:1px solid #fde68a}',
+      '.sk-dot{flex:0 0 9px;width:9px;height:9px;border-radius:50%}',
+      '.sk-dot.ok{background:#22c55e}',
+      '.sk-dot.miss{width:7px;height:7px;flex-basis:7px;background:transparent;border:2px dashed #f59e0b}',
+      // samnings-kortin tvö (vinstri 🧯 / hægri 🔥), sami grid og þjónustukortin
+      '.sk-samn-grid{margin:8px 0}',
+      '.sk-samn-card{display:flex;align-items:center;flex-wrap:wrap;gap:7px;background:var(--bg);border:1px solid var(--brd2,#f1f5f9);border-left:4px solid #3b82f6;border-radius:10px;padding:8px 12px;font-size:13px}',
+      '.sk-samn-card.bkc{border-left-color:#ef4444}',
+      '.sk-samn-yrs{font-size:11px;font-weight:700;color:var(--ink3);white-space:nowrap}',
+      '.sk-samn-pill{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.03em;padding:2px 9px;border-radius:99px;white-space:nowrap}',
+      '.sk-samn-pill.gildi{color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe}',
+      '.sk-samn-pill.vantar{color:#b45309;background:#fffbeb;border:1px solid #fde68a}',
+      '.sk-samn-pill.utrunn{color:#b91c1c;background:#fef2f2;border:1px solid #fecaca}',
       '.sk-svc-pay{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:99px}',
       '.sk-svc-pay.ok{color:#15803d;background:#f0fdf4}',
       '.sk-svc-pay.due{color:#b45309;background:#fef3c7}',
@@ -1034,7 +1083,10 @@
       '.sk-svc-btn:hover{color:var(--brand);border-color:var(--brand)}',
       // 🔗 manual-link picker (shown only when auto-pairing is genuinely ambiguous).
       '.sk-link-wrap{display:inline-flex;align-items:center;gap:5px}',
-      '.sk-link-sel{font:inherit;font-size:11px;padding:3px 6px;border:1px solid var(--brd2,#f1f5f9);border-radius:7px;background:var(--surface)}',
+      // 2026-08-07 (Agnar): valmyndin á að vera JAFNSTÓR chip-unum, en þemað
+      // (245-skinnið) málar öll select stór með !important — svo þessi regla
+      // þarf sömu vopn. Stærðirnar spegla .sk-doc (11.5px / 4px 10px).
+      '.sk-link-sel{font:inherit!important;font-size:11px!important;font-weight:600!important;padding:3px 8px!important;height:auto!important;min-height:0!important;line-height:1.2!important;max-width:180px!important;border:1px solid var(--brd2,#f1f5f9)!important;border-radius:8px!important;background:var(--surface)!important;box-shadow:none!important;color:var(--ink2,var(--ink1))!important}',
       '.sk-link-btn{all:unset;cursor:pointer;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;border:1px solid #99f6e4;color:#0f766e;background:var(--surface)}',
       '.sk-link-btn:disabled{opacity:.4;cursor:default}',
       '.sk-link-peek{all:unset;cursor:pointer;font-size:12px;padding:3px 7px;border-radius:7px;border:1px solid var(--brd2,#f1f5f9);color:var(--ink3);background:var(--surface)}',

@@ -158,10 +158,10 @@
       P+'.rf-rail--done{background:#1f9d57}',
       P+'.rf-rail--overdue{background:#e23232}',
       P+'.rf-rail--none{background:#dbe0e9}',
-      P+'.rf-bname{display:block;font-size:13.5px;font-weight:600;color:#11141c}',
+      P+'.rf-bname{display:block;font-size:13.5px;font-weight:600;color:#11141c;line-height:1.2}',
       P+'.rf-bname a{color:#11141c;text-decoration:none;font-weight:600}',
       P+'.rf-bname a:hover{color:#2f5fe0}',
-      P+'.rf-baddr{display:block;font-size:11px;color:#9098a6;margin-top:1px}',
+      P+'.rf-baddr{display:block;font-size:11px;color:#9098a6;margin-top:0;line-height:1.15}',
       // ── per-building collapse (2026-08-05, leiðrétt sama dag — sjálfgefið
       // samanþjappað gerði 2023-2026 dálkana að tómum í fljótu bragði, sem leit
       // út eins og gögnin hyrfu): SJÁLFGEFIÐ ÚTVÍKKAÐ (öll smáatriði sýnileg,
@@ -270,7 +270,10 @@
       P+'.rf-search input, '+P+'.rf-search input[type="text"]{background:transparent!important;border:0!important;box-shadow:none!important;height:auto!important;padding:0!important;border-radius:0!important;color:#141822!important}',
       P+'.rf-tbl thead tr, '+P+'.rf-tbl thead{background:'+METB+'!important}',
       P+'.rf-tbl thead th{background:transparent!important;color:#f0f2f5!important;box-shadow:none!important;padding:10px 12px!important;font-size:10.5px!important;letter-spacing:.08em!important}',
-      P+'.rf-tbl tbody td{border:0!important;padding:11px 12px!important;background:transparent!important}',
+      // 2026-08-07 (Agnar: „reduce the height by 20% per line") — lóðrétta
+      // paddingið var stærsti hæðargjafinn (11px × 2 = 22px af ~54px röð).
+      // 6px × 2 + þéttara línubil á nafn/heimilisfang = ~20% lægri röð.
+      P+'.rf-tbl tbody td{border:0!important;padding:6px 12px!important;background:transparent!important}',
       P+'.rf-tbl tbody tr:nth-child(even){background:#fbfcfe!important}',
       P+'.rf-tbl tbody tr:hover{background:#f3f6fc!important}',
       P+'.rfa__head{background:'+HERO+'!important;border:0!important;box-shadow:none!important;text-shadow:none!important;border-radius:0!important;height:auto!important}',

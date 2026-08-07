@@ -1199,23 +1199,59 @@
       '<span style="width:6px;height:6px;border-radius:50%;background:' + c + '"></span>' + lbl + '</span>';
   }
 
+  // Hausinn á hverri röð: FYRIRTÆKIÐ fremst (blátt, opnar fyrirtækjaspjaldið) og
+  // málið sjálft á SÖMU línu hægra megin (ósk Agnars 7.8.). Nafninu er sleppt ef
+  // titillinn byrjar hvort sem er á því — margir póstar bera fyrirtækjanafnið í
+  // efnislínunni og þá stæði það tvisvar í sömu röð.
+  function rowHeadHTML(r) {
+    const title = String(r.title || '(ónefnt)');
+    const co = String(r.customer_nafn || '').trim();
+    const dupe = co && title.trim().toLowerCase().indexOf(co.toLowerCase()) === 0;
+    return (r.important ? '<span style="color:#eab308">★ </span>' : '') +
+      (co && !dupe
+        // Nafnið fylgir með í data-co: raðirnar koma úr fleiri en einni uppsprettu
+        // (allItems() sameinar thjonustubeidni og verkdagbók) svo uppfletting á
+        // state.items eftir id finnur ekki allar raðir — og skilaði því engu.
+        ? '<span data-act="openco" data-co="' + esc(co) + '" title="Opna fyrirtækjaspjald — ' + esc(co) + '" ' +
+            'style="color:#2f5fe0;cursor:pointer">' + esc(co) + '</span>' +
+          '<span style="color:#c3c8d0"> · </span>'
+        : '') +
+      esc(title);
+  }
+
   // Ein röð inni í korti. `clamp` = tveggja lína lýsing (flokkakortin), annars
   // ein lína (BÍÐUR SVARS er þéttara).
-  function v3Row(r, clamp) {
+  function v3Row(r, clamp, tagColor) {
     const on = String(state.selId) === String(r.id);
     const sub = (r.notes || r.customer_nafn || '').replace(/\s+/g, ' ').trim();
+    // ☰ Þétt / ▮ Ítarlegt (lagað 2026-08-07, ósk Agnars — „the þétt and ítarlegt
+    // have the same view"): V3-endurhönnunin skipti renderRow() út fyrir v3Row()
+    // og þá datt viewMode-lesturinn niður, svo hnapparnir tveir gerðu ekkert.
+    // Ítarlegt gefur lýsingunni tvær línur til viðbótar; Þétt heldur tveimur.
+    const lines = state.viewMode === 'thett' ? 2 : 4;
     const subStyle = clamp
-      ? 'font-size:12px;color:#6b7280;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden'
+      ? 'font-size:12px;color:#6b7280;line-height:1.5;display:-webkit-box;-webkit-line-clamp:' + lines +
+        ';-webkit-box-orient:vertical;overflow:hidden'
       : 'font-size:12px;color:#6b7280;overflow:hidden;text-overflow:ellipsis;white-space:nowrap';
     return '<div class="vb-v3row" data-act="selrow" data-id="' + esc(r.id) + '" ' +
       'style="display:flex;align-items:' + (clamp ? 'flex-start' : 'center') + ';gap:10px;padding:' + (clamp ? '10px 12px' : '9px 12px') + ';' +
       'border-top:1px solid #eef0f2;cursor:pointer;background:' + (on ? 'rgba(195,39,28,.05)' : '#fff') + ';' +
       (on ? 'box-shadow:inset 3px 0 0 #c3271c;' : '') + '">' +
-        '<span style="font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#9aa0aa;flex:none;width:42px' + (clamp ? ';padding-top:2px' : '') + '">' +
-          esc(shortDate(r.created_at)) + '</span>' +
+        // Dagsetningin í meiri birtuskilum, og undir henni aldur málsins sem
+        // þéttur „9D"-teljari í LIT MERKISINS sem kortið stendur fyrir (blátt,
+        // fjólublátt, grænt o.s.frv. — ósk Agnars 7.8.). Aðeins í flokkakortunum;
+        // BÍÐUR SVARS ber sína eigin „bíður N daga"-pillu og þarf ekki tvítekningu.
+        '<div style="flex:none;width:42px' + (clamp ? ';padding-top:2px' : '') + '">' +
+          '<div style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px;font-weight:700;color:#3f4650">' +
+            esc(shortDate(r.created_at)) + '</div>' +
+          (clamp
+            ? '<div title="' + waitDays(r) + ' dagar frá skráningu" style="font-family:ui-monospace,Consolas,monospace;' +
+              'font-size:11px;font-weight:800;color:' + (tagColor || '#9aa0aa') + ';margin-top:2px">' + waitDays(r) + 'D</div>'
+            : '') +
+        '</div>' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-            (r.important ? '<span style="color:#eab308">★ </span>' : '') + esc(r.title || '(ónefnt)') + '</div>' +
+            rowHeadHTML(r) + '</div>' +
           (sub ? '<div style="' + subStyle + '">' + esc(sub) + '</div>' : '') +
         '</div>' +
         (clamp ? '' : waitPill(r)) +
@@ -1258,7 +1294,7 @@
         '</div>' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-            (r.important ? '<span style="color:#eab308">★ </span>' : '') + esc(r.title || '(ónefnt)') + '</div>' +
+            rowHeadHTML(r) + '</div>' +
           (sub
             ? '<div style="font-size:12px;color:#6b7280;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;' +
               '-webkit-box-orient:vertical;overflow:hidden">' + esc(sub) + '</div>'
@@ -1366,7 +1402,7 @@
             (open ? '' : g.items.length + ' mál · smelltu til að opna') + '</span>' +
         '</div>' +
         (open
-          ? shown.map(r => v3Row(r, true)).join('') +
+          ? shown.map(r => v3Row(r, true, g.color)).join('') +
             (g.items.length > shown.length
               ? '<div data-act="catmore" data-cat="' + esc(g.key) + '" style="padding:8px 12px;border-top:1px solid #eef0f2;' +
                 'font-size:12px;font-weight:700;color:#6b7280;cursor:pointer">Sjá öll ' + g.items.length + ' mál →</div>'
@@ -1643,6 +1679,32 @@
         e.stopPropagation();
         state.page = Number(t.getAttribute('data-p')) || 0; renderList();
         const lc = document.getElementById('vb-list'); if (lc) lc.scrollIntoView({ block: 'start', behavior: 'smooth' });
+        return;
+      }
+      // Fyrirtækjanafnið fremst í hausnum → fyrirtækjaspjaldið.
+      // NB: loadCompanies() dugar EKKI hér. Hún sækir nafn/kennitölu/
+      // customer_base_id en ALDREI fyrirtækis-id, svo co.id er alltaf undefined
+      // og _openCompanySafe(undefined) hættir þegjandi. Þess vegna er flett upp
+      // beint í fyrirtaeki-töflunni — sömu töflu og Companies.openDetail vinnur á.
+      // Finnist nafnið ekki þar opnast „fyrri viðskipti" á nafninu í staðinn, svo
+      // smellurinn skili alltaf einhverju.
+      if (act === 'openco') {
+        e.stopPropagation();
+        const nafn = String(t.getAttribute('data-co') || '').trim();
+        if (!nafn) return;
+        const go = coId => {
+          if (coId && window._openCompanySafe) { window._openCompanySafe(coId); return; }
+          if (window.SalaCustomerHistory && SalaCustomerHistory.open) {
+            SalaCustomerHistory.open({ id: '', source: '', kt: '', nafn });
+          } else {
+            toast('Fann ekki „' + nafn + '“ á fyrirtækjaskrá');
+          }
+        };
+        const SB = getSB();
+        if (!SB) { go(null); return; }
+        SB.from('fyrirtaeki').select('id').ilike('nafn', nafn).is('deleted_at', null).limit(1)
+          .then(res => go(res && res.data && res.data.length ? res.data[0].id : null))
+          .catch(() => go(null));
         return;
       }
       if (act === 'history') {
