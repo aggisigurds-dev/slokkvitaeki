@@ -1413,7 +1413,11 @@
         '</div>' +
         '<div style="font-size:17px;font-weight:800;color:#16181d;line-height:1.3;margin-bottom:8px">' + esc(r.title || '(ónefnt)') + '</div>' +
         (r.customer_nafn ? '<div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:8px">🗂 ' + esc(r.customer_nafn) + '</div>' : '') +
-        (r.notes ? '<div style="font-size:13px;color:#4b5058;line-height:1.65;white-space:pre-wrap">' + esc(r.notes) + '</div>' : '') +
+        // 2026-08-06 (Agnar: "cant reach the edit button when text is too long")
+        // — r.notes had no height limit, so a long note pushed ✎ Breyta below
+        // the visible/sticky panel. Long text now scrolls in its own box
+        // instead of stretching the whole card past reach.
+        (r.notes ? '<div style="font-size:13px;color:#4b5058;line-height:1.65;white-space:pre-wrap;max-height:260px;overflow-y:auto">' + esc(r.notes) + '</div>' : '') +
         (editing
           ? '<div id="vb-sel-ed" style="margin-top:14px;padding-top:12px;border-top:1px solid #eef0f2">' + renderEditor(r) + '</div>'
           : '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #eef0f2">' +
