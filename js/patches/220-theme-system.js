@@ -76,6 +76,26 @@
     return Object.assign({}, DEFAULT);
   }
   let S = load();
+  // 2026-08-07 (Agnar: „this color around the site should be white" — hann var á
+  // dökkri þema-forstillingu; dökk forstilling málar `.view`-bakgrunninn dökkan
+  // um allt appið gegnum `html[data-thm-dark="1"]`). EINU SINNI per tæki: ef
+  // vistaða forstillingin er DÖKK (birtustig bg < 128) → færa á ljósa „klassiskt"
+  // og vista (localStorage + samstillt á reikning). Varið með fána svo þeir sem
+  // VELJA dökkt síðar haldi því — þetta er leiðrétting, ekki að fjarlægja dökku þemun.
+  (function migrateDarkPresetToLight() {
+    try {
+      if (localStorage.getItem('_thm_darkreset_v1')) return;
+      localStorage.setItem('_thm_darkreset_v1', '1');
+      let _h = String((PRESETS[S.preset] || PRESETS.klassiskt).t.bg || '').replace('#', '');
+      if (_h.length === 3) _h = _h[0]+_h[0]+_h[1]+_h[1]+_h[2]+_h[2];
+      const _l = 0.299*parseInt(_h.slice(0,2),16) + 0.587*parseInt(_h.slice(2,4),16) + 0.114*parseInt(_h.slice(4,6),16);
+      if (_l < 128) {
+        S.preset = 'klassiskt';
+        try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (_) {}
+        try { if (window.AppSettings && AppSettings.save) AppSettings.save({ [AS_KEY]: S }); } catch (_) {}
+      }
+    } catch (_) {}
+  })();
   async function save(scopeAll) {
     try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch (_) {}
     if (scopeAll && window.AppSettings && AppSettings.save) {
