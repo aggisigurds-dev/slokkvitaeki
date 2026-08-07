@@ -25,6 +25,14 @@
   if (window.__paymentReviewInstalled) return;
   window.__paymentReviewInstalled = true;
 
+  // 2026-08-07 (ósk Agnars „I don't like this popup pages, just a normal page"):
+  // Yfirferð greiðslna var áður fljótandi modal (position:fixed;inset:0). Núna er
+  // þetta VENJULEG view eins og önnur borð — hliðarstiku-hnappurinn (data-view)
+  // skiptir yfir í heil-síðu í #view-svæðinu, með hash-slóð (#payrev, líka #greidslur),
+  // URL-routing (218) og bakk-takka (276/277). Fyrirmyndin er patch 231/268.
+  const VIEW_ID = 'view-payrev';
+  const NAV_KEY = 'payrev';
+
   function getSB() { return (window.DB && window.DB.sb) || null; }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
@@ -113,8 +121,9 @@
     const btn = document.createElement('button');
     btn.className = anchor.className.replace(/\bactive\b/g, '').trim() + ' _payrev-nav-btn';
     btn.setAttribute('data-payrev-nav', '1');
+    btn.setAttribute('data-view', NAV_KEY);   // venjuleg view — App.switchView þekkir hana
     btn.innerHTML = '<span style="margin-right:6px">🧾</span>Yfirferð greiðslna <span class="_payrev-badge" style="display:none;margin-left:6px;background:#0ea5e9;color:#fff;font-size:10px;font-weight:700;padding:1px 7px;border-radius:99px">0</span>';
-    btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); openModal(); });
+    btn.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); if (window.App && App.switchView) App.switchView(NAV_KEY); else show(); });
     anchor.parentNode.insertBefore(btn, anchor.nextSibling);
     updateBadge();
   }
@@ -125,41 +134,71 @@
     badge.style.display = _count > 0 ? 'inline-block' : 'none';
   }
 
-  // ── Modal ─────────────────────────────────────────────────────────────────
-  function openModal() {
-    document.getElementById('_payrev-modal')?.remove();
-    const m = document.createElement('div');
-    m.id = '_payrev-modal';
-    m.style.cssText = 'position:fixed;inset:0;z-index:100030;background:rgba(15,23,42,0.55);display:flex;align-items:center;justify-content:center;padding:14px;font-family:inherit';
-    m.innerHTML = `
-      <div style="background:#fff;border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,0.3);width:min(1040px,calc(100vw - 28px));max-height:calc(100vh - 28px);display:flex;flex-direction:column;overflow:hidden">
-        <div style="padding:14px 22px;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
-          <div>
-            <h2 style="margin:0;font-size:17px;font-weight:700">🧾 Yfirferð greiðslna</h2>
-            <div style="font-size:12px;color:#e0f2fe;margin-top:2px">Breyttu greiðslumáta, kláraðu drög, eða feldu/eyddu röngum sölum á meðan þú ferð yfir</div>
-          </div>
-          <div style="display:flex;gap:8px;align-items:center">
-            <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#fff;cursor:pointer;user-select:none">
-              <input id="_payrev-showhidden" type="checkbox" ${_showHidden ? 'checked' : ''} style="cursor:pointer"> Sýna falin/eydd
-            </label>
-            <button id="_payrev-x" type="button" style="background:transparent;border:1px solid rgba(255,255,255,0.4);color:#fff;font-size:18px;width:34px;height:34px;border-radius:7px;cursor:pointer;line-height:1">✕</button>
-          </div>
-        </div>
-        <div style="padding:8px 22px;background:#f1f5f9;border-bottom:1px solid #e2e8f0">
-          <div id="_payrev-filters" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-        </div>
-        <div id="_payrev-body" style="flex:1;overflow-y:auto;background:#f8fafc"></div>
-      </div>`;
-    document.body.appendChild(m);
-    m.querySelector('#_payrev-x').addEventListener('click', () => m.remove());
-    m.addEventListener('click', e => { if (e.target === m) m.remove(); });
-    m.querySelector('#_payrev-showhidden').addEventListener('change', e => {
-      _showHidden = e.target.checked;
-      renderFilters(); renderList();
-    });
+  // ── View (venjuleg heil-síða, ekki modal) ─────────────────────────────────
+  // Búið til dýnamískt eins og verkborð (231) / aksturslisti (268): eigin
+  // #view-payrev í view-svæðinu, hausinn (titill + „Sýna falin/eydd") + síuröðin
+  // færð úr gamla modal-hausnum, ENGIN ✕ (bakk-takkinn/hliðarstikan sér um það).
+  function ensureView() {
+    let v = document.getElementById(VIEW_ID);
+    if (v) return v;
+    const sample = document.getElementById('view-counter') || document.getElementById('view-sala');
+    v = document.createElement('div');
+    v.id = VIEW_ID;
+    v.className = 'view';
+    v.innerHTML =
+      '<div style="min-height:100vh;background:#f8fafc;display:flex;flex-direction:column;font-family:inherit">' +
+        '<div style="padding:16px 22px;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
+          '<div>' +
+            '<h2 style="margin:0;font-size:19px;font-weight:700;color:#fff">🧾 Yfirferð greiðslna</h2>' +
+            '<div style="font-size:12px;color:#e0f2fe;margin-top:2px">Breyttu greiðslumáta, kláraðu drög, eða feldu/eyddu röngum sölum á meðan þú ferð yfir</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;align-items:center">' +
+            '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#fff;cursor:pointer;user-select:none">' +
+              '<input id="_payrev-showhidden" type="checkbox" style="cursor:pointer"> Sýna falin/eydd' +
+            '</label>' +
+          '</div>' +
+        '</div>' +
+        '<div style="padding:8px 22px;background:#f1f5f9;border-bottom:1px solid #e2e8f0">' +
+          '<div id="_payrev-filters" style="display:flex;gap:6px;flex-wrap:wrap"></div>' +
+        '</div>' +
+        '<div id="_payrev-body" style="flex:1;background:#f8fafc"></div>' +
+      '</div>';
+    (sample && sample.parentElement ? sample.parentElement : document.body).appendChild(v);
+    const sh = v.querySelector('#_payrev-showhidden');
+    if (sh) {
+      sh.checked = _showHidden;
+      sh.addEventListener('change', e => { _showHidden = e.target.checked; renderFilters(); renderList(); });
+    }
+    return v;
+  }
+
+  // Sýna viewið: fela önnur, virkja þetta, spegla #payrev í slóðina (277 gerir
+  // það svo að alvöru bakk-færslu), teikna síur/lista og sækja fersk gögn.
+  function show() {
+    ensureView();
+    document.querySelectorAll('.view,[id^="view-"]').forEach(x => { x.style.display = 'none'; x.classList.remove('active'); });
+    const v = document.getElementById(VIEW_ID);
+    if (v) { v.style.display = 'block'; v.classList.add('active'); }
+    document.querySelectorAll('.vnav-btn').forEach(b => b.classList.toggle('active', b.getAttribute('data-view') === NAV_KEY));
+    try { if ((location.hash || '').replace(/^#/, '') !== NAV_KEY) history.replaceState(null, '', '#' + NAV_KEY); } catch (_) {}
     renderFilters();
     renderList();
     loadReview();
+  }
+
+  // Vefja App.switchView: okkar view → show(); annað → fela okkar view.
+  function patchSwitchView() {
+    if (!window.App) { setTimeout(patchSwitchView, 150); return; }
+    if (window.App._payrevSwitchPatched) return;
+    const orig = window.App.switchView;
+    window.App.switchView = function (view) {
+      if (view === NAV_KEY) { show(); return; }
+      const r = orig ? orig.apply(this, arguments) : undefined;
+      try { const el = document.getElementById(VIEW_ID); if (el) { el.style.display = 'none'; el.classList.remove('active'); } } catch (_) {}
+      return r;
+    };
+    for (const k in orig) { try { window.App.switchView[k] = orig[k]; } catch (_) {} }
+    window.App._payrevSwitchPatched = true;
   }
 
   // Filter chips
@@ -302,12 +341,10 @@
     if (!row) return;
 
     if (act === 'edit') {
-      document.getElementById('_payrev-modal')?.remove();
       if (window.SaleEditor) window.SaleEditor.openById(id);
       return;
     }
     if (act === 'finalize') {
-      document.getElementById('_payrev-modal')?.remove();
       if (window.SaleEditor) window.SaleEditor.openById(id); // review before finalize
       return;
     }
@@ -356,24 +393,25 @@
   document.addEventListener('sale-edited', loadReview);
   setInterval(loadReview, 45000);
 
-  // 2026-06-28: dismiss the modal on view switch + Esc, otherwise it stayed
-  // open across navigation and dimmed every subsequent page (the .55-alpha
-  // backdrop is fixed-position-inset-0).
-  function closeIfOpen() { document.getElementById('_payrev-modal')?.remove(); }
-  try {
-    if (window.App && typeof App.switchView === 'function' && !App.switchView.__payrev_hooked) {
-      const orig = App.switchView;
-      App.switchView = function () { closeIfOpen(); return orig.apply(this, arguments); };
-      App.switchView.__payrev_hooked = true;
-    }
-  } catch (_) {}
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeIfOpen(); });
+  // (Gamli modal-lokarinn á view-switch + Esc er horfinn — engin modal lengur;
+  //  bakk-takkinn/hliðarstikan fer af síðunni eins og af hverju öðru borði.)
 
-  injectSidebar();
-  setTimeout(injectSidebar, 1000);
-  setTimeout(loadReview, 700);
+  // ── Boot ──────────────────────────────────────────────────────────────────
+  function boot() {
+    ensureView();               // #view-payrev til strax svo patch 218 leysi #payrev
+    injectSidebar();
+    setTimeout(injectSidebar, 1000);
+    patchSwitchView();
+    setTimeout(patchSwitchView, 1500);
+    setTimeout(loadReview, 700);
+    // deep-link á fyrstu hleðslu + hashchange (samhliða patch 218-routing)
+    if ((location.hash || '').replace(/^#/, '') === NAV_KEY) setTimeout(() => { if (window.App && App.switchView) App.switchView(NAV_KEY); else show(); }, 300);
+    window.addEventListener('hashchange', () => { if ((location.hash || '').replace(/^#/, '') === NAV_KEY) show(); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 
-  window.PaymentReview = { open: openModal, refresh: loadReview, count: () => _count };
-  console.log('[patch-193] payment-review installed — sidebar badge + modal');
+  window.PaymentReview = { open: show, refresh: loadReview, count: () => _count };
+  console.log('[patch-193] payment-review installed — sidebar view + badge (#payrev)');
 })();
 /* === END PAYMENT REVIEW === */

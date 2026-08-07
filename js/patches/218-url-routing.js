@@ -49,6 +49,8 @@
     lan:           'lanstaeki',        // Lánstæki
     // identity entries — listed so the reverse map keeps these tidy names
     sala: 'sala', vorur: 'vorur', geymsla: 'geymsla', beidnir: 'beidnir',
+    drog: 'drog',                                 // 📝 Drög (patch 143)
+    payrev: 'payrev', greidslur: 'payrev',        // 🧾 Yfirferð greiðslna (patch 193; #greidslur = fallegri slóð)
     verkbord: 'verkbord', verkefni: 'verkbord',   // sameinað verkborð (patch 231)
     brunakerfi: 'brunakerfi', verkdagbok: 'verkdagbok', arsskodun: 'arsskodun',
     vidskiptavinir: 'vidskiptavinir', yfirlit: 'yfirlit',
