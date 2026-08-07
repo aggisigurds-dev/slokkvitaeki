@@ -2,6 +2,11 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
+  /* Ljós-hannað app: slekkur á sjálfvirkri „dark mode for web"-myrkvun í
+     Chrome/Samsung Internet á símanum (hún gerði hvít kort svört). Parað við
+     <meta name="color-scheme" content="light"> í index.html. */
+  color-scheme: light;
+
   /* Core brand */
   --brand: #C93C1D;
   --brand-dk: #a83018;
@@ -1767,6 +1772,11 @@ textarea.fi { resize: vertical; min-height: 72px; }
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
+  /* Ljós-hannað app: slekkur á sjálfvirkri „dark mode for web"-myrkvun í
+     Chrome/Samsung Internet á símanum (hún gerði hvít kort svört). Parað við
+     <meta name="color-scheme" content="light"> í index.html. */
+  color-scheme: light;
+
   /* Core brand */
   --brand: #C93C1D;
   --brand-dk: #a83018;
