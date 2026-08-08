@@ -117,10 +117,15 @@
     // Framkvæmda-yfirlit fyrir Agnar (ósk 8.8.): sama efni og Fjármál-appið að
     // hluta en breiðara — tekur líka Tekjur/Bókhald/Verkefnalisti/Rekstrarfélög
     // svo öll stóru KPI-in eru á einum stað án þess að velja Fjármál-undirmengið.
+    // Heimasíða = br-fjarmalyfirlit (Brunahólf iframe, EKKI þessa appsins Supabase-
+    // klient) — krofu-yfirlit sem heimasíða sló stundum í "Engin gagnabankatenging"
+    // á fyrstu opnun (DB.sb ekki tilbúinn þegar appmode-skelin snappar strax á
+    // heimasíðuna á boot); fjarmalyfirlit-iframe-ið hleður sínum eigin gögnum og
+    // forðast því kappleikinn alveg.
     { key: 'boss', emoji: '👑', name: 'The Big Boss', color: '#fbe9ab', dark: '#b8860b',
-      manifest: '/manifest-boss.json', home: 'krofu-yfirlit',
+      manifest: '/manifest-boss.json', home: 'br-fjarmalyfirlit',
       blurb: 'Framkvæmda-yfirlit þvert á bæði fyrirtækin — kröfur, fjármál, tekjur, bókhald, verkefni',
-      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
+      defaults: ['br-fjarmalyfirlit', 'krofu-yfirlit', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
   // Standalone apps (Bílstjóri) render their OWN full-screen locked view
