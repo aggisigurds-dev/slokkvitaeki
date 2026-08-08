@@ -60,6 +60,7 @@
     // Yfirferð efnislista — símavæn síða þar sem yfirmaður fer yfir flaggaða
     // Efnislista (Kröfu yfirlit 👔-takkinn), breytir magni, vistar og staðfestir.
     { k: 'br-yfirferd',      label: 'Yfirferð efnislista (Brunahólf)', short: 'Yfirferð', emoji: '👔', url: 'https://brunaholf.netlify.app/yfirferd.html' },
+    { k: 'br-eydublod',     label: 'Eyðublöð (Brunahólf)',            short: 'Eyðublöð', emoji: '📝', url: 'https://brunaholf.netlify.app/eydublod.html' },
   ];
   var PAGE_BY_KEY = {}; PAGES.forEach(function (p) { PAGE_BY_KEY[p.k] = p; });
 
@@ -128,7 +129,7 @@
     { key: 'boss', emoji: '👑', name: 'The Big Boss', color: '#fbe9ab', dark: '#b8860b',
       manifest: '/manifest-boss.json', home: 'br-fjarmalyfirlit',
       blurb: 'Framkvæmda-yfirlit þvert á bæði fyrirtækin — kröfur, fjármál, tekjur, bókhald, verkefni',
-      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'krofu-yfirlit', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
+      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-eydublod', 'krofu-yfirlit', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
   // Standalone apps (Bílstjóri) render their OWN full-screen locked view
