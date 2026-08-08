@@ -136,6 +136,9 @@
   // Röðun á Í-vinnslu listanum — "name" | "revenue" | "marked".
   let _sort = (function () { try { return localStorage.getItem('sv_sort') || 'name'; } catch (_) { return 'name'; } })();
   function setSort(s) { _sort = s; try { localStorage.setItem('sv_sort', s); } catch (_) {} render(); }
+  // Leit í Í-vinnslu listanum
+  let _search = '';
+  function setSearch(s) { _search = s.trim().toLowerCase(); render(); }
 
   // Companies that ALREADY have a reikningur filed for the current year in
   // customer_documents (Drive-indexed + POS-connected — the same store the
@@ -161,6 +164,21 @@
         (b.data || []).forEach(x => { const d = digits(x.kennitala); if (d.length >= 10) kts.add(d); });
       }
       _reik2026 = kts;
+      // Auto-remove: companies in „í vinnslu" that now have a reikningur in
+      // customer_documents are implicitly done — mark them without waiting for
+      // a manual button click (the same thing markBuid does on the checkbox).
+      const map = arsMap();
+      const cos = (window.Companies && Companies.list) || [];
+      for (const co of cos) {
+        if (!co || co.deleted_at || co.er_i_thjonustu === false) continue;
+        const a = map[String(co.id)] || {};
+        const fy = +a.field_inspected_year || 0;
+        const ly = +a.last_year_inspected || 0;
+        const inVinnsla = (fy === curYear && ly !== curYear);
+        if (inVinnsla && kts.has(digits(co.kennitala))) {
+          markBuid(co.id);   // sets last_year_inspected=curYear, field_inspected_year=0
+        }
+      }
     } catch (_) {}
     render();
   }
@@ -743,6 +761,10 @@
       b.dagskra = b.dagskra.filter(pass);
       b.buid    = b.buid.filter(pass);
     }
+    if (_search) {
+      const match = r => String(r.nafn || '').toLowerCase().includes(_search);
+      b.vinnsla = b.vinnsla.filter(match);
+    }
     const fmtSum = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.', ',') + ' m.kr.' : (n > 0 ? Math.round(n / 1000) + ' þ.kr.' : '');
     const vinnslaSum = b.vinnsla.reduce((s, r) => s + (+r.tekjur || 0), 0);
     // Yfirlitsband ársins — reiknað úr sömu gögnum og þegar eru hlaðin (skref +
@@ -842,6 +864,9 @@
               '<option value="revenue"' + (_sort === 'revenue' ? ' selected' : '') + '>Hæstu tekjur</option>' +
               '<option value="marked"' + (_sort === 'marked' ? ' selected' : '') + '>Nýlega merkt</option>' +
             '</select>' +
+            '<input class="sv-search" type="search" placeholder="🔍 Leita…" value="' + esc(_search) + '" ' +
+              'style="padding:7px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:13px;width:140px;outline:none" ' +
+              'title="Leita í Í-vinnslu listanum">' +
           '</div>' +
           moneyBox +
         '</div>' +
@@ -885,6 +910,12 @@
     // sort
     const sortSel = v.querySelector('.sv-sort');
     if (sortSel) sortSel.addEventListener('change', e => setSort(e.target.value));
+    // search
+    const searchInp = v.querySelector('.sv-search');
+    if (searchInp) {
+      searchInp.addEventListener('input', e => setSearch(e.target.value));
+      searchInp.addEventListener('search', e => setSearch(e.target.value));
+    }
     // collapse/expand sides
     v.querySelectorAll('[data-toggle]').forEach(ch => ch.addEventListener('click', () => {
       if (ch.dataset.toggle === 'dagskra') _openDagskra = !_openDagskra; else _openBuid = !_openBuid;
