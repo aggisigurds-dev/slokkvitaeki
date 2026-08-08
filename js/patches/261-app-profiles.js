@@ -114,6 +114,13 @@
       manifest: '/manifest-bilstjori.json', standalone: true,
       blurb: 'Ökumanns-app: leið dagsins, tækjaúttekt og skýrslur í símanum',
       defaults: [] },
+    // Framkvæmda-yfirlit fyrir Agnar (ósk 8.8.): sama efni og Fjármál-appið að
+    // hluta en breiðara — tekur líka Tekjur/Bókhald/Verkefnalisti/Rekstrarfélög
+    // svo öll stóru KPI-in eru á einum stað án þess að velja Fjármál-undirmengið.
+    { key: 'boss', emoji: '👑', name: 'The Big Boss', color: '#caa03a', dark: '#0a0a0b',
+      manifest: '/manifest-boss.json', home: 'krofu-yfirlit',
+      blurb: 'Framkvæmda-yfirlit þvert á bæði fyrirtækin — kröfur, fjármál, tekjur, bókhald, verkefni',
+      defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
   // Standalone apps (Bílstjóri) render their OWN full-screen locked view
