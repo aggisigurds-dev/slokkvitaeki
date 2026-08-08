@@ -146,6 +146,7 @@
   // banner + "Fjarlægja af borði" then lets the office clear them off the board.
   // Keyed by digits-only kennitala. Loaded once, async, then re-render.
   let _reik2026 = new Set();
+  let _reikBaseIds = new Set();  // customer_base_id-based (works for kt-less húsfélag)
   let _reik2026Loaded = false;
   // co.id → á reikning ársins (fyllt í buckets(), notað í skref-smellinum svo
   // smellurinn sjái SÖMU afleiddu skrefin og teiknuð eru)
@@ -156,10 +157,11 @@
       const r = await sb.from('customer_documents')
         .select('customer_base_id').eq('doc_type', 'reikningur').eq('year', curYear)
         .not('customer_base_id', 'is', null);
-      const baseIds = Array.from(new Set((r.data || []).map(x => x.customer_base_id).filter(v => v != null)));
+      const baseIdArr = Array.from(new Set((r.data || []).map(x => x.customer_base_id).filter(v => v != null)));
+      _reikBaseIds = new Set(baseIdArr);
       const kts = new Set();
-      for (let i = 0; i < baseIds.length; i += 500) {
-        const chunk = baseIds.slice(i, i + 500);
+      for (let i = 0; i < baseIdArr.length; i += 500) {
+        const chunk = baseIdArr.slice(i, i + 500);
         const b = await sb.from('customers_base').select('kennitala').in('id', chunk);
         (b.data || []).forEach(x => { const d = digits(x.kennitala); if (d.length >= 10) kts.add(d); });
       }
@@ -167,17 +169,16 @@
       // Auto-remove: companies in „í vinnslu" that now have a reikningur in
       // customer_documents are implicitly done — mark them without waiting for
       // a manual button click (the same thing markBuid does on the checkbox).
+      // Use customer_base_id (not kennitala) so húsfélag without kt are caught too.
       const map = arsMap();
       const cos = (window.Companies && Companies.list) || [];
       for (const co of cos) {
         if (!co || co.deleted_at || co.er_i_thjonustu === false) continue;
+        if (!co.customer_base_id || !_reikBaseIds.has(co.customer_base_id)) continue;
         const a = map[String(co.id)] || {};
         const fy = +a.field_inspected_year || 0;
         const ly = +a.last_year_inspected || 0;
-        const inVinnsla = (fy === curYear && ly !== curYear);
-        if (inVinnsla && kts.has(digits(co.kennitala))) {
-          markBuid(co.id);   // sets last_year_inspected=curYear, field_inspected_year=0
-        }
+        if (fy === curYear && ly !== curYear) markBuid(co.id);
       }
     } catch (_) {}
     render();
@@ -485,7 +486,7 @@
       const info = arsInfo(co.id);
       // A saved (óklárað) report in the cloud (patch 227/228) = work in progress.
       const hasDraft = !!(window.SavedReports && SavedReports.has && SavedReports.has(co.id));
-      const hasReik = _reik2026.has(digits(co.kennitala));
+      const hasReik = _reik2026.has(digits(co.kennitala)) || _reikBaseIds.has(co.customer_base_id);
       if (hasReik) _reikCoIds.add(co.id);
       const card = {
         id: co.id, nafn: co.nafn || ('#' + co.id), kennitala: co.kennitala || '',
