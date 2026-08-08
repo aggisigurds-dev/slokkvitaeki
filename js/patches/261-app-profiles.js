@@ -117,7 +117,7 @@
     // Framkvæmda-yfirlit fyrir Agnar (ósk 8.8.): sama efni og Fjármál-appið að
     // hluta en breiðara — tekur líka Tekjur/Bókhald/Verkefnalisti/Rekstrarfélög
     // svo öll stóru KPI-in eru á einum stað án þess að velja Fjármál-undirmengið.
-    { key: 'boss', emoji: '👑', name: 'The Big Boss', color: '#caa03a', dark: '#0a0a0b',
+    { key: 'boss', emoji: '👑', name: 'The Big Boss', color: '#fbe9ab', dark: '#b8860b',
       manifest: '/manifest-boss.json', home: 'krofu-yfirlit',
       blurb: 'Framkvæmda-yfirlit þvert á bæði fyrirtækin — kröfur, fjármál, tekjur, bókhald, verkefni',
       defaults: ['krofu-yfirlit', 'br-fjarmalyfirlit', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
