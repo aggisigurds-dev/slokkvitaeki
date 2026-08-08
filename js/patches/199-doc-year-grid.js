@@ -133,6 +133,19 @@
     if(!hasReal) return arr;
     return arr.filter(function(x){ return x._att || !x.is_duplicate; });
   }
+  // 2026-08-07 (Agnar, Þangbakki 8-10): afturkallaðar Payday-krófur voru sjálf-
+  // skráðar í customer_documents sem doc_type='reikningur' — CANCELLED (+X) OG
+  // kredit-tvíburinn CREDIT (−X) sem núllar hana. Þær eru EKKI raunverulegir
+  // reikningar (net-núll, ekkert PDF) en fylltu reiknings-lista ársins svo
+  // „1 skýrsla + 1 reikningur" varð „1 + 3" → sjálf-tenging neitaði (þarf nákvæmlega
+  // einn) og handvirki „hvaða reikningur?" veljarinn birtist í stað þess að
+  // nýi reikningurinn tengdist sjálfkrafa. Sleppum þeim úr reiknings-kandidötunum
+  // (líka úr chippunum — afturkallaður reikningur á ekki að sýnast sem útgefinn).
+  // Aðeins doc-raðir (viðhengi/sölu-raðir bera ekki þessa Payday-status-notu).
+  function isVoidInvoiceDoc(d){
+    if(!d || d._att || d._fromSolur) return false;
+    return /\((?:CANCELLED|CREDIT|AFTURK|KREDIT)\)/i.test(String(d.notes||''));
+  }
   // samn er {src:'doc',d:...}/{src:'att',a:...} umbúðir, ekki hráar raðir —
   // sama regla, bara sótt gegnum s.d.is_duplicate (viðhengi bera aldrei flaggið).
   function dedupSamn(arr){
@@ -498,7 +511,7 @@
       if(!(y>=2000&&y<=NOW+1)) return;
       if(t==='brunakerfi') (bruByY[y]=bruByY[y]||[]).push(d);
       else if(t==='uttektarskyrsla') (repByY[y]=repByY[y]||[]).push(d);
-      else if(t==='reikningur') (invByY[y]=invByY[y]||[]).push(d);
+      else if(t==='reikningur'){ if(!isVoidInvoiceDoc(d)) (invByY[y]=invByY[y]||[]).push(d); }
     });
 
     // ── merge manual attachments (company_attachments) ──
