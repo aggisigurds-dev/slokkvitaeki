@@ -362,7 +362,35 @@
   }
   async function doInstall() {
     if (deferredPrompt) { deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; refreshInstallBtns(); return; }
-    toast('Opnaðu valmynd vafrans → „Setja upp forrit / Bæta á heimaskjá".');
+    showInstallGuide();
+  }
+  function showInstallGuide() {
+    if (document.getElementById('_app-inst-guide')) return;
+    var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    var isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+    var steps = isIos
+      ? ['Opnaðu þessa síðu í <b>Safari</b> (ekki Chrome/Firefox á iOS)', 'Ýttu á <b>📤 Share</b> hnappinn neðst á skjánum', 'Veldu <b>„Bæta við heimaskjá"</b> úr listanum']
+      : ['Opnaðu valmynd vafrans (<b>⋮</b> efst til hægri)', 'Veldu <b>„Setja upp app"</b> eða <b>„Bæta á heimaskjá"</b>', 'Ýttu á <b>Setja upp</b> í staðfestingarglugganum'];
+    var hint = isIos && !isSafari
+      ? '<div style="background:#7c3aed;color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600">⚠️ iOS krefst Safari — Chrome á iPhone/iPad getur ekki sett upp heimaskjáforrit.</div>'
+      : '';
+    var d = document.createElement('div');
+    d.id = '_app-inst-guide';
+    d.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:flex-end;justify-content:center;background:rgba(0,0,0,.6);backdrop-filter:blur(4px)';
+    d.innerHTML = '<div style="background:#fff;border-radius:20px 20px 0 0;padding:24px 22px 36px;max-width:480px;width:100%;box-shadow:0 -8px 40px rgba(0,0,0,.25)">'
+      + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">'
+      + '<div style="font-size:17px;font-weight:800;color:#11141c">📲 Setja upp í síma</div>'
+      + '<button id="_app-inst-guide-x" type="button" style="width:32px;height:32px;background:#f1f5f9;border:none;border-radius:50%;cursor:pointer;font-size:18px;line-height:1;color:#64748b">✕</button>'
+      + '</div>'
+      + hint
+      + '<ol style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px">'
+      + steps.map(function(s){ return '<li style="font-size:15px;color:#1e293b;line-height:1.45">'+s+'</li>'; }).join('')
+      + '</ol>'
+      + '<div style="margin-top:18px;font-size:12.5px;color:#94a3b8;line-height:1.5">Þegar forritið er sett upp opnarðu það beint af heimaskjánum eins og hvaða app sem er.</div>'
+      + '</div>';
+    document.body.appendChild(d);
+    d.addEventListener('click', function(e) { if (e.target === d) d.remove(); });
+    d.querySelector('#_app-inst-guide-x').addEventListener('click', function() { d.remove(); });
   }
   function refreshInstallBtns() {
     document.querySelectorAll('._app-install').forEach(function (b) {
