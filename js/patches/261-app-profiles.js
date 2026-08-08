@@ -151,13 +151,14 @@
     if (isStandalone(key)) return;
     var a = effectiveApp(key); if (!a) return;
     if (_splashEl || document.getElementById('_app-splash')) return;
+    var isBoss = a.key === 'boss';
     var d = document.createElement('div');
     d.id = '_app-splash';
     d.style.cssText = 'position:fixed;inset:0;z-index:2147483600;display:flex;flex-direction:column;' +
-      'align-items:center;justify-content:center;gap:14px;background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ');' +
+      'align-items:center;justify-content:center;gap:14px;' + (isBoss ? BOSS_BG_CSS : ('background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')')) + ';' +
       'color:#fff;font-family:-apple-system,Segoe UI,Roboto,sans-serif';
-    d.innerHTML = '<div style="font-size:56px;line-height:1">' + esc(a.emoji) + '</div>' +
-      '<div style="font-size:19px;font-weight:800;letter-spacing:.02em">' + esc(a.name) + '</div>' +
+    d.innerHTML = (isBoss ? bossCrownSvg(64) : '<div style="font-size:56px;line-height:1">' + esc(a.emoji) + '</div>') +
+      '<div style="font-size:19px;font-weight:800;letter-spacing:.02em' + (isBoss ? ';' + BOSS_GOLD_CSS : '') + '">' + esc(a.name) + '</div>' +
       '<div style="width:26px;height:26px;border-radius:50%;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;animation:_appspin .8s linear infinite"></div>' +
       '<style>@keyframes _appspin{to{transform:rotate(360deg)}}</style>';
     (document.body || document.documentElement).appendChild(d);
@@ -302,6 +303,31 @@
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function appLink(key) { return location.origin + '/app/' + key + '/'; }
+
+  // ── „The Big Boss" gold-foil skin — pure metal, not a flat yellow bar ────────
+  // The generic header/splash (emoji + flat linear-gradient(color,dark)) reads
+  // as a plain yellow banner for this app; Agnar asked for the SAME banded
+  // gold-metal look as the install icon's "BOSS" wordmark. Scoped to key==='boss'
+  // only — every other mini-app keeps the plain emoji+flat-color header.
+  var BOSS_GOLD_CSS = 'background:linear-gradient(180deg,#fffbe8 0%,#f9e29a 12%,#e0ad3f 26%,' +
+    '#96631a 40%,#6e4a11 46%,#c99a3f 54%,#f6dd8f 64%,#d3a63f 78%,#8a5c17 90%,#f3dd97 100%);' +
+    '-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent';
+  var BOSS_BG_CSS = 'background:linear-gradient(135deg,#2c2c30 0%,#0a0a0b 45%,#000000 100%)';
+  var _bossSvgSeq = 0;
+  function bossCrownSvg(px) {
+    var id = 'bossFoil' + (++_bossSvgSeq);
+    return '<svg width="' + px + '" height="' + Math.round(px * 111 / 184) + '" viewBox="0 0 184 111" ' +
+      'xmlns="http://www.w3.org/2000/svg" style="flex:none">' +
+      '<defs><linearGradient id="' + id + '" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="#fff6d2"/><stop offset="45%" stop-color="#e2b34a"/>' +
+      '<stop offset="55%" stop-color="#8a5c17"/><stop offset="100%" stop-color="#f3dd97"/>' +
+      '</linearGradient></defs>' +
+      '<path d="M0 94L0 56L42 86L92 8L142 86L184 56L184 94Z" fill="url(#' + id + ')"/>' +
+      '<rect x="0" y="94" width="184" height="17" rx="4" fill="url(#' + id + ')"/>' +
+      '<circle cx="0" cy="49" r="11" fill="url(#' + id + ')"/>' +
+      '<circle cx="92" cy="2" r="12.5" fill="url(#' + id + ')"/>' +
+      '<circle cx="184" cy="49" r="11" fill="url(#' + id + ')"/></svg>';
+  }
 
   // Navigate to a page — click its real sidebar button when present (lazy pages
   // render most reliably that way), else fall back to App.switchView.
@@ -471,7 +497,7 @@
       var pagesSection = a.standalone ? '' :
         ('<div class="op-sech">Síður í appinu</div>' + '<div class="op-pages">' + pageRows + '</div>');
       return '<div class="op-card">' +
-        '<div class="op-top"><div class="op-ic" style="background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')">' + esc(a.emoji) + '</div>' +
+        '<div class="op-top"><div class="op-ic" style="' + (a.key === 'boss' ? BOSS_BG_CSS : ('background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')')) + '">' + (a.key === 'boss' ? bossCrownSvg(30) : esc(a.emoji)) + '</div>' +
           '<div><div class="op-nm">' + esc(a.name) + '</div><div class="op-bl">' + esc(a.blurb) + '</div></div></div>' +
         '<div class="op-acts">' +
           '<button class="op-btn prim _op-open" data-app="' + a.key + '" style="background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')" type="button">▶ Opna</button>' +
@@ -529,9 +555,10 @@
       pages = [a.home].concat(pages.filter(function (k) { return k !== a.home; }));
     }
 
+    var isBoss = a.key === 'boss';
     var hdr = document.getElementById('_app-hdr') || document.createElement('div');
-    hdr.id = '_app-hdr'; hdr.style.display = ''; hdr.style.background = 'linear-gradient(180deg,' + a.color + ',' + a.dark + ')';
-    hdr.innerHTML = '<div class="nm">' + esc(a.emoji) + ' ' + esc(a.name) + '</div>' +
+    hdr.id = '_app-hdr'; hdr.style.display = ''; hdr.style.background = isBoss ? BOSS_BG_CSS.replace('background:', '') : ('linear-gradient(180deg,' + a.color + ',' + a.dark + ')');
+    hdr.innerHTML = '<div class="nm">' + (isBoss ? bossCrownSvg(26) + '<span style="' + BOSS_GOLD_CSS + '">' + esc(a.name) + '</span>' : esc(a.emoji) + ' ' + esc(a.name)) + '</div>' +
       (a.standalone ? '' : '<button id="_app-pages" type="button" title="Þjónustuborð — síður, útlit, útgáfa">⚙ Þjónustuborð</button>') +
       '<button class="_app-install" data-always="1" id="_app-inst2" type="button">⤓ Setja upp</button>' +
       '<button id="_app-exit" type="button" title="Loka appi">✕</button>';
