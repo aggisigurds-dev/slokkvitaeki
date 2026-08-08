@@ -428,9 +428,19 @@
   // Fyrirtæki í Þjónustu notar (patch 153: uttaeki × yfirferð + skýrslugerð +
   // akstur, m. vsk). Hlaðið einu sinni þegar viewið opnast.
   let _arsLoadKicked = false;
+  let _arsWaitTries = 0;
+  // ⚠️ Hleðsluröð patch-anna er ekki tryggð: sé 153 (Arsskodun) ekki kominn þegar
+  // viewið opnast skilaði þetta fall áður ÞÖGULT og var aldrei kallað aftur —
+  // `ensureArsData()` er bara kallað í open(). Afleiðing: `r.tekjur` verður 0 á
+  // öllum spjöldum, `vinnslaSum` verður 0, og peningaboxið sýnir „—" í stað
+  // upphæðar. Það lítur út eins og gögnin séu horfin þótt þau séu í fínu lagi.
+  // Bíðum því eftir 153 í stað þess að gefast upp (0,3 s × 20 ≈ 6 s þak).
   function ensureArsData() {
     if (_arsLoadKicked) return;
-    if (!(window.Arsskodun && Arsskodun.loadAll)) return;
+    if (!(window.Arsskodun && Arsskodun.loadAll)) {
+      if (_arsWaitTries++ < 20) setTimeout(ensureArsData, 300);
+      return;
+    }
     _arsLoadKicked = true;
     Promise.resolve(Arsskodun.loadAll()).then(() => render()).catch(() => { _arsLoadKicked = false; });
   }
