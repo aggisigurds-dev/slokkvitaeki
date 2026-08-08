@@ -136,13 +136,24 @@
   // Röðun á Í-vinnslu listanum — "name" | "revenue" | "marked".
   let _sort = (function () { try { return localStorage.getItem('sv_sort') || 'name'; } catch (_) { return 'name'; } })();
   function setSort(s) { _sort = s; try { localStorage.setItem('sv_sort', s); } catch (_) {} render(); }
+  // Leit í Í-vinnslu listanum
+  let _search = '';
+  function setSearch(s) { _search = s.trim().toLowerCase(); render(); }
 
   // Companies that ALREADY have a reikningur filed for the current year in
   // customer_documents (Drive-indexed + POS-connected — the same store the
   // company profile "Skjöl & viðhengi" reads). A green "🧾 Reikningur <ár> sendur"
   // banner + "Fjarlægja af borði" then lets the office clear them off the board.
-  // Keyed by digits-only kennitala. Loaded once, async, then re-render.
-  let _reik2026 = new Set();
+  // ⚠️ Lykillinn hér er `fyrirtaeki_id` — STAÐURINN, ekki kennitalan og ekki
+  // `customer_base_id` (lögaðilinn). Kennitalan er EKKI einkvæm: 19 kennitölur
+  // ná yfir 78 staði (Heimaleiga 12, Pizzan 11, Center Hótel 10 …), svo bæði
+  // kt- og base_id-uppfletting lætur reikning á EINUM stað lita alla systkina-
+  // staðina græna og hreinsa þá af borðinu. Mælt 2026-08-08 á lifandi gögnum:
+  // base_id-lykill hreinsaði 11 staði en 4 þeirra RANGLEGA; `fyrirtaeki_id`
+  // hreinsar réttu 7. `customer_documents.fyrirtaeki_id` er útfylltur á 92,9%
+  // reikninga ársins — raðir án hans eru viljandi sleppt, því þá vitum við
+  // ekki hvaða stað reikningurinn tilheyrir.
+  let _reikStadir = new Set();   // Set<fyrirtaeki.id> með reikning ársins
   let _reik2026Loaded = false;
   // co.id → á reikning ársins (fyllt í buckets(), notað í skref-smellinum svo
   // smellurinn sjái SÖMU afleiddu skrefin og teiknuð eru)
@@ -151,16 +162,22 @@
     try {
       const sb = (window.DB && DB.sb); if (!sb) return;
       const r = await sb.from('customer_documents')
-        .select('customer_base_id').eq('doc_type', 'reikningur').eq('year', curYear)
-        .not('customer_base_id', 'is', null);
-      const baseIds = Array.from(new Set((r.data || []).map(x => x.customer_base_id).filter(v => v != null)));
-      const kts = new Set();
-      for (let i = 0; i < baseIds.length; i += 500) {
-        const chunk = baseIds.slice(i, i + 500);
-        const b = await sb.from('customers_base').select('kennitala').in('id', chunk);
-        (b.data || []).forEach(x => { const d = digits(x.kennitala); if (d.length >= 10) kts.add(d); });
+        .select('fyrirtaeki_id').eq('doc_type', 'reikningur').eq('year', curYear)
+        .not('fyrirtaeki_id', 'is', null);
+      _reikStadir = new Set((r.data || []).map(x => x.fyrirtaeki_id).filter(v => v != null));
+      // Auto-remove: staðir í „í vinnslu" sem eiga reikning ársins eru í raun
+      // kláraðir — merkjum þá án þess að bíða eftir handvirkum smelli (sama og
+      // markBuid gerir á hakinu).
+      const map = arsMap();
+      const cos = (window.Companies && Companies.list) || [];
+      for (const co of cos) {
+        if (!co || co.deleted_at || co.er_i_thjonustu === false) continue;
+        if (!_reikStadir.has(co.id)) continue;
+        const a = map[String(co.id)] || {};
+        const fy = +a.field_inspected_year || 0;
+        const ly = +a.last_year_inspected || 0;
+        if (fy === curYear && ly !== curYear) markBuid(co.id);
       }
-      _reik2026 = kts;
     } catch (_) {}
     render();
   }
@@ -411,9 +428,19 @@
   // Fyrirtæki í Þjónustu notar (patch 153: uttaeki × yfirferð + skýrslugerð +
   // akstur, m. vsk). Hlaðið einu sinni þegar viewið opnast.
   let _arsLoadKicked = false;
+  let _arsWaitTries = 0;
+  // ⚠️ Hleðsluröð patch-anna er ekki tryggð: sé 153 (Arsskodun) ekki kominn þegar
+  // viewið opnast skilaði þetta fall áður ÞÖGULT og var aldrei kallað aftur —
+  // `ensureArsData()` er bara kallað í open(). Afleiðing: `r.tekjur` verður 0 á
+  // öllum spjöldum, `vinnslaSum` verður 0, og peningaboxið sýnir „—" í stað
+  // upphæðar. Það lítur út eins og gögnin séu horfin þótt þau séu í fínu lagi.
+  // Bíðum því eftir 153 í stað þess að gefast upp (0,3 s × 20 ≈ 6 s þak).
   function ensureArsData() {
     if (_arsLoadKicked) return;
-    if (!(window.Arsskodun && Arsskodun.loadAll)) return;
+    if (!(window.Arsskodun && Arsskodun.loadAll)) {
+      if (_arsWaitTries++ < 20) setTimeout(ensureArsData, 300);
+      return;
+    }
     _arsLoadKicked = true;
     Promise.resolve(Arsskodun.loadAll()).then(() => render()).catch(() => { _arsLoadKicked = false; });
   }
@@ -467,7 +494,7 @@
       const info = arsInfo(co.id);
       // A saved (óklárað) report in the cloud (patch 227/228) = work in progress.
       const hasDraft = !!(window.SavedReports && SavedReports.has && SavedReports.has(co.id));
-      const hasReik = _reik2026.has(digits(co.kennitala));
+      const hasReik = _reikStadir.has(co.id);   // staður, ekki kt — sjá athugasemd við _reikStadir
       if (hasReik) _reikCoIds.add(co.id);
       const card = {
         id: co.id, nafn: co.nafn || ('#' + co.id), kennitala: co.kennitala || '',
@@ -743,6 +770,10 @@
       b.dagskra = b.dagskra.filter(pass);
       b.buid    = b.buid.filter(pass);
     }
+    if (_search) {
+      const match = r => String(r.nafn || '').toLowerCase().includes(_search);
+      b.vinnsla = b.vinnsla.filter(match);
+    }
     const fmtSum = n => n >= 1e6 ? (n / 1e6).toFixed(1).replace('.', ',') + ' m.kr.' : (n > 0 ? Math.round(n / 1000) + ' þ.kr.' : '');
     const vinnslaSum = b.vinnsla.reduce((s, r) => s + (+r.tekjur || 0), 0);
     // Yfirlitsband ársins — reiknað úr sömu gögnum og þegar eru hlaðin (skref +
@@ -842,6 +873,9 @@
               '<option value="revenue"' + (_sort === 'revenue' ? ' selected' : '') + '>Hæstu tekjur</option>' +
               '<option value="marked"' + (_sort === 'marked' ? ' selected' : '') + '>Nýlega merkt</option>' +
             '</select>' +
+            '<input class="sv-search" type="search" placeholder="🔍 Leita…" value="' + esc(_search) + '" ' +
+              'style="padding:7px 10px;border-radius:9px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:13px;width:140px;outline:none" ' +
+              'title="Leita í Í-vinnslu listanum">' +
           '</div>' +
           moneyBox +
         '</div>' +
@@ -885,6 +919,12 @@
     // sort
     const sortSel = v.querySelector('.sv-sort');
     if (sortSel) sortSel.addEventListener('change', e => setSort(e.target.value));
+    // search
+    const searchInp = v.querySelector('.sv-search');
+    if (searchInp) {
+      searchInp.addEventListener('input', e => setSearch(e.target.value));
+      searchInp.addEventListener('search', e => setSearch(e.target.value));
+    }
     // collapse/expand sides
     v.querySelectorAll('[data-toggle]').forEach(ch => ch.addEventListener('click', () => {
       if (ch.dataset.toggle === 'dagskra') _openDagskra = !_openDagskra; else _openBuid = !_openBuid;
