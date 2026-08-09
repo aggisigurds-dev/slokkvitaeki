@@ -777,6 +777,18 @@
     sample.parentElement.appendChild(v);
     injectStyle();
     wireDelegation(v);
+    // Skipulagsborð (#304) les live gögn í gegnum þetta fall.
+    window.VerkbordLiveItems = function () { return allItems(); };
+    // Skipulagsborð sendir þetta event þegar notandi smellir á spjald.
+    window.addEventListener('verkbord-select', function (ev) {
+      const id = ev && ev.detail && ev.detail.id;
+      if (!id) return;
+      state.selId = id;
+      state.expandedId = null;
+      renderSel(); renderList();
+      const el = document.getElementById('vb-controls');
+      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
   function show() {
     ensureView();
@@ -1021,6 +1033,8 @@
         '</div>' +
         // Vikudagskrá-banner (patch #303 fyllir reitinn) — vikan á undan listanum.
         '<div id="vb-dagskra" style="margin-bottom:16px"></div>' +
+        // Skipulagsborð (patch #304) — 12-rúða skipulagsgriðin undir dagskránni.
+        '<div id="vb-skipulag"></div>' +
         // Composer-kort (skráningarlínan + MERKI tagpicks)
         '<div id="vb-composer" style="' + V3_CARD + ';padding:14px 16px;margin-bottom:16px;display:' + (state.composerOpen ? 'block' : 'none') + '">' +
           '<div style="display:flex;gap:8px;align-items:center;margin-bottom:9px;flex-wrap:wrap">' +
@@ -1075,6 +1089,7 @@
     syncAddTags();
     // renderAll skrifar yfir allt #vb-main, svo dagskráin er teiknuð aftur hér.
     if (window.Vikudagskra) { try { Vikudagskra.mount(); } catch (e) { console.warn('[verkbord] dagskrá:', e); } }
+    if (window.Skipulagsbord) { try { Skipulagsbord.mount(); } catch (e) { console.warn('[verkbord] skipulagsbord:', e); } }
   }
 
   // MERKI-röðin undir skráningarreitnum sést aðeins þegar það er eitthvað til
@@ -1543,6 +1558,7 @@
                   '<button class="vb-btn" data-act="vd-archive" data-id="' + esc(r.id) + '" style="color:#dc2626">🗑 Fela</button>'
                 : (isPost(r) ? btn('reply', '✉ Svara') : '') +
                   btn('skra', '🗓 Setja á dagskrá', 'blue') +
+                  btn('sbpin', '📋 Skipulag', 'light') +
                   btn('edit', '⋯ Meira', 'light') +
                   (isOpen(r) ? btn('done', '✓ Loka máli', 'light') : '')) +
             '</div>') +
@@ -1922,6 +1938,12 @@
       if (act === 'vd-open') { e.stopPropagation(); if (window.App && App.switchView) App.switchView('verkdagbok'); return; }
       if (act === 'vd-done') { e.stopPropagation(); vdSetDone(id.slice(3)); return; }
       if (act === 'vd-archive') { e.stopPropagation(); vdArchive(id.slice(3)); return; }
+      if (act === 'sbpin') {
+        e.stopPropagation();
+        const row = allItems().find(x => String(x.id) === String(nid));
+        if (row && window.Skipulagsbord) Skipulagsbord.addFromRow(row);
+        return;
+      }
       if (act === 'expand') {
         const rid = t.getAttribute('data-id');
         const real = rid && rid.indexOf('vd:') !== 0 ? Number(rid) : rid;
