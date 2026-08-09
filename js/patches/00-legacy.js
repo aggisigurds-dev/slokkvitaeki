@@ -2354,14 +2354,26 @@ console.log('[patch-master] loaded with all fixes');
         btn.textContent = '\u2705 Merkja sko\u00f0un';
       }
     };
-    // 2026-07-14 (verkefni e0b72ec5): takkinn situr nú NIÐRI hjá
-    // „Úttekt búin / í Vinnslu" (165 ._vw-topbtn barnum) í stað efstu
-    // aðgerðaslárinnar. Ef 165-barinn er ekki kominn enn skilum við og
-    // MutationObserver-inn reynir aftur á næstu DOM-breytingu.
-    var vwBtn = main.querySelector('._vw-topbtn');
-    if (!vwBtn) return;
-    vwBtn.parentNode.insertBefore(btn, vwBtn);
-    vwBtn.parentNode.insertBefore(mSel, btn);   // mánuðurinn vinstra megin við takkann
+    // 2026-08-09 (ósk Agnars): takkinn fór framhjá starfsfólkinu uppi til
+    // hægri hjá „Úttekt búin / í Vinnslu" — fólk vinnur NIÐRI í tækjalistanum.
+    // Parið situr því núna hægra megin í svörtu velja-stikunni (.ut-bulk,
+    // patch 224) beint fyrir ofan tækin. Stikan er endurteiknuð af 224 við
+    // hverja breytingu; MutationObserver-inn hér að neðan setur parið þá
+    // aftur inn (varið með ._pm_quick_inspect-tékkinu efst).
+    // Fallback: gamli staðurinn við ._vw-topbtn ef stikan finnst ekki.
+    var bulkBar = main.querySelector('.ut-bulk');
+    if (bulkBar) {
+      mSel.style.marginLeft = 'auto';   // ýtir parinu í auða plássið hægra megin
+      mSel.style.flexShrink = '0';
+      btn.style.flexShrink = '0';
+      bulkBar.appendChild(mSel);
+      bulkBar.appendChild(btn);
+    } else {
+      var vwBtn = main.querySelector('._vw-topbtn');
+      if (!vwBtn) return;
+      vwBtn.parentNode.insertBefore(btn, vwBtn);
+      vwBtn.parentNode.insertBefore(mSel, btn);   // mánuðurinn vinstra megin við takkann
+    }
   }
   var mo = new MutationObserver(function(){ addQuickInspect(); });
   var vc = document.getElementById('view-companies');
