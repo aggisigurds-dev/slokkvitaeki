@@ -45,6 +45,29 @@
     document.head.appendChild(s);
   }
 
+  // 2026-08-09: Pre-hide CSS from sb_hidden_cache. Late-injected buttons
+  // (brunakerfi, drog — timeout ~1s) briefly paint at the top before reorder()
+  // sets display:none. Inject a <style> from the cache NOW so they're hidden from
+  // the instant they appear. reorder() removes this element before applying its
+  // own display logic so there's no conflict.
+  (function () {
+    try {
+      const c = localStorage.getItem('sb_hidden_cache');
+      if (!c) return;
+      const arr = JSON.parse(c);
+      if (!Array.isArray(arr) || !arr.length) return;
+      const rules = arr
+        .filter(h => typeof h === 'string' && h[0] !== '#' && h.trim())
+        .map(h => '.vnav-btn[data-view="' + h.replace(/"/g, '') + '"]{display:none !important}')
+        .join('');
+      if (!rules) return;
+      const st = document.createElement('style');
+      st.id = 'sb-prehide';
+      st.textContent = rules;
+      document.head.appendChild(st);
+    } catch (_) {}
+  })();
+
   // Sentinel for visual separators between groups.
   const SEP = '__SEP__';
 
@@ -116,9 +139,8 @@
     ['Allir'],  // "Allir Viðskiptavinir" (patch 157) — substring "Allir" is unique
     SEP,
     // 2026-05-20: Bill-and-claim cluster — grouped together below the
-    // customer list per Agnar's request. Drög → Til að rukka → Kröfu yfirlit
-    // → Hreyfingarlisti form a natural left-to-right billing flow.
-    ['Drög'],
+    // customer list per Agnar's request. Til að rukka → Kröfu yfirlit
+    // → Hreyfingarlisti form a natural billing flow.
     ['Til að rukka'],
     ['Kröfu yfirlit'],
     ['Bókhalds yfirlit', 'Bókhaldsyfirlit'],  // 2026-05-26: under Kröfu yfirlit
@@ -140,6 +162,8 @@
     ['Tenglar', 'Tenglir', 'Kort'],   // kort/links
     SEP,
     ['Leiðbeiningar'],
+    SEP,
+    ['Drög'],    // 2026-08-09: moved to bottom per Agnar — draft workflow, not primary nav
     SEP
     // Everything else flows after the last separator.
   ];
@@ -199,6 +223,13 @@
       const el = e.toLowerCase();
       f = buttons.find(b => !used.has(b) && !hidden.has(b) && btnText(b).indexOf(el) !== -1);
     }
+    // 2026-08-09: stale '#label N' entries (badge count baked in when saved)
+    // fail exact navId match when badge changes. Strip trailing digit-word and
+    // fuzzy-match so saved position survives badge updates (e.g. "📝Drög 3" → "Drög").
+    if (!f && e[0] === '#') {
+      const bare = e.slice(1).toLowerCase().replace(/\s+\d+$/, '').trim();
+      if (bare) f = buttons.find(b => !used.has(b) && !hidden.has(b) && btnText(b).replace(/\s+\d+$/, '').indexOf(bare) !== -1);
+    }
     return f || null;
   }
 
@@ -224,6 +255,8 @@
   // children), so this is idempotent and loop-free — safe to run on a live
   // MutationObserver. (.view-nav is display:flex column, so `order` applies.)
   function reorder() {
+    const ph = document.getElementById('sb-prehide');
+    if (ph) ph.remove();
     const nav = document.querySelector('nav.view-nav, .view-nav');
     if (!nav) return;
     const buttons = Array.from(nav.querySelectorAll('.vnav-btn'));
