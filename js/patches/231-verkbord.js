@@ -1082,7 +1082,7 @@
             '<div id="vb-toprow" class="vb-toprow" style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;align-items:start"></div>' +
             '<div id="vb-list" style="display:flex;flex-direction:column;gap:12px;min-width:0"></div>' +
           '</div>' +
-          '<div id="vb-sel" style="position:sticky;top:118px;min-width:0"></div>' +
+          '<div id="vb-sel" style="position:sticky;top:118px;min-width:0;max-height:calc(100vh - 130px);overflow-y:auto;scrollbar-width:thin"></div>' +
         '</div>' +
       '</div>';
     renderControls(); renderList(); renderSel();
