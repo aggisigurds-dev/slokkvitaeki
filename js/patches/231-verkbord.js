@@ -1446,12 +1446,28 @@
   // ── „VALIÐ MÁL" — fasta spjaldið hægra megin ─────────────────────────────
   // Kemur í stað gamla útþanda ritilsins í röðinni. Ritillinn sjálfur er EKKI
   // horfinn: „✎ Breyta" opnar hann hér inni (Agnar vill geta breytt öllu).
+  // 2026-08-09: VALIÐ MÁL er nú beint breytanlegt: titill sem input, fyrirtæki
+  // með ✏️-hnapp, öll merki sem toggle-chippar — án þess að þurfa að smella
+  // „✎ Breyta" fyrst. „⋯ Meira" opnar enn fulla ritilinn (gjalddagi, starfsm.).
+  function selCoHTML(row) {
+    if (row._vd) return row.customer_nafn ? '<span style="font-size:12px;font-weight:700;color:#6b7280">🗂 ' + esc(row.customer_nafn) + '</span>' : '';
+    const BTNST = 'font:inherit;font-size:11px;padding:2px 7px;border-radius:6px;border:1px solid #d8dadf;background:#f8fafc;color:#4b5058;cursor:pointer;white-space:nowrap';
+    return '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+      (row.customer_nafn
+        ? '<span style="font-size:12px;font-weight:700;color:#6b7280">🗂 ' + esc(row.customer_nafn) + '</span>'
+        : '<span style="font-size:12px;color:#94a3b8;font-style:italic">🔗 Engin tenging</span>') +
+      '<button data-act="editco" data-id="' + esc(row.id) + '" title="Breyta/tengja fyrirtæki" style="' + BTNST + '">✏️ Tengja</button>' +
+    '</div>';
+  }
   function renderSel() {
     const el = document.getElementById('vb-sel'); if (!el) return;
     const r = allItems().find(x => String(x.id) === String(state.selId));
     if (!r) {
       el.innerHTML = '<div style="' + CARD_V3 + ';padding:22px;text-align:center;color:#9aa0aa;font-size:12.5px">' +
-        'Smelltu á mál til að skoða það hér.</div>';
+        '<p style="margin:0 0 14px">Smelltu á mál til að skoða það hér.</p>' +
+        '<button data-act="composer" style="height:34px;padding:0 16px;border-radius:8px;border:1px solid rgba(190,32,28,.5);' +
+        'background:linear-gradient(180deg,#7f1d1d,#450a0a);color:#fca5a5;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">＋ Nýtt mál</button>' +
+      '</div>';
       return;
     }
     const chips = rowChips(r);
@@ -1471,34 +1487,65 @@
     el.innerHTML = '<div style="' + CARD_V3 + '">' +
       '<div style="' + CARDHEAD + '">' +
         '<span style="color:#fff;font-weight:800;font-size:13px;letter-spacing:.6px">VALIÐ MÁL</span>' +
+        '<button data-act="composer" title="Bæta við nýju máli efst" style="margin-left:6px;border:1px solid rgba(190,32,28,.5);' +
+          'background:linear-gradient(180deg,#5f0808,#300404);color:#fca5a5;border-radius:7px;' +
+          'padding:2px 8px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">＋ Nýtt</button>' +
         '<span style="margin-left:auto;font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#9aa0aa">' + esc(shortDate(r.created_at)) + '</span>' +
       '</div>' +
       '<div style="padding:14px 16px 16px">' +
+        // Status chips (not interactive here — stadaPill handles advance)
         '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px">' +
           chips.map(t => dkChip(t)).join('') + waitPill(r) + stadaPill(r) +
         '</div>' +
-        '<div style="font-size:17px;font-weight:800;color:#16181d;line-height:1.3;margin-bottom:8px">' + esc(r.title || '(ónefnt)') + '</div>' +
-        (r.customer_nafn ? '<div style="font-size:12px;font-weight:700;color:#6b7280;margin-bottom:8px">🗂 ' + esc(r.customer_nafn) + '</div>' : '') +
+        // BEINT BREYTANLEGUR TITILL — vistast 500ms eftir að hætt er að slá inn
+        (r._vd
+          ? '<div style="font-size:17px;font-weight:800;color:#16181d;line-height:1.3;margin-bottom:10px">' + esc(r.title || '(ónefnt)') + '</div>'
+          : '<input id="vb-sel-title" data-selid="' + esc(String(r.id)) + '" value="' + esc(r.title || '') + '" placeholder="Titill…" ' +
+            'style="font-size:17px;font-weight:800;color:#16181d;line-height:1.3;margin-bottom:10px;width:100%;' +
+            'border:1px solid transparent;border-radius:7px;padding:4px 7px;background:transparent;outline:none;' +
+            'box-sizing:border-box;font-family:inherit" ' +
+            'onfocus="this.style.borderColor=\'#d8dadf\';this.style.background=\'#f8fafc\'" ' +
+            'onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'">') +
+        // FYRIRTÆKI (með ✏️ Tengja hnappi)
+        '<div id="vb-sel-co" style="margin-bottom:10px">' + selCoHTML(r) + '</div>' +
         // 2026-08-06 (Agnar: "cant reach the edit button when text is too long")
-        // — r.notes had no height limit, so a long note pushed ✎ Breyta below
-        // the visible/sticky panel. Long text now scrolls in its own box
-        // instead of stretching the whole card past reach.
-        (r.notes ? '<div style="font-size:13px;color:#4b5058;line-height:1.65;white-space:pre-wrap;max-height:260px;overflow-y:auto">' + esc(r.notes) + '</div>' : '') +
+        (r.notes ? '<div style="font-size:13px;color:#4b5058;line-height:1.65;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:10px">' + esc(r.notes) + '</div>' : '') +
+        // MERKI — öll tiltæk merki sem toggle-chippar (sem hægt er að smella til að kveikja/slökkva)
+        (!r._vd
+          ? '<div style="border-top:1px solid #f1f3f5;padding-top:10px;margin-bottom:12px">' +
+            '<div style="font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Merki</div>' +
+            '<div style="display:flex;flex-wrap:wrap;gap:5px">' +
+              TAG_ORDER.map(function (tg) {
+                const d = TAGS[tg], on = rowChips(r).indexOf(tg) !== -1;
+                return '<button data-act="tagtoggle" data-id="' + esc(String(r.id)) + '" data-tag="' + tg + '" type="button" ' +
+                  'style="font:inherit;font-size:11px;font-weight:700;padding:4px 9px;border-radius:99px;cursor:pointer;' +
+                  'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + '">' +
+                  d.emoji + ' ' + esc(d.label) + '</button>';
+              }).join('') +
+            '</div></div>'
+          : '') +
         (editing
-          ? '<div id="vb-sel-ed" style="margin-top:14px;padding-top:12px;border-top:1px solid #eef0f2">' + renderEditor(r) + '</div>'
-          : '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid #eef0f2">' +
+          ? '<div id="vb-sel-ed" style="margin-top:4px;padding-top:12px;border-top:1px solid #eef0f2">' + renderEditor(r) + '</div>'
+          : '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;padding-top:12px;border-top:1px solid #eef0f2">' +
               (isPost(r) ? btn('reply', '✉ Svara') : '') +
               btn('skra', '🗓 Setja á dagskrá', 'blue') +
-              btn('edit', '✎ Breyta', 'light') +
+              btn('edit', '⋯ Meira', 'light') +
               (isOpen(r) ? btn('done', '✓ Loka máli', 'light') : '') +
-            '</div>' +
-            '<div style="margin-top:12px;font-size:11px;color:#9aa0aa">„Setja á dagskrá" opnar skráningargluggann í vikubannernum með nafnið forútfyllt.</div>') +
+            '</div>') +
       '</div>' +
     '</div>';
 
     if (editing) {
       const host = document.getElementById('vb-sel-ed');
       if (host) { wireEditor(host); loadCompanies().then(fillCompanyList); }
+    }
+    // Tengja title-input við vistun (debounced + blur/Enter)
+    const tInp = document.getElementById('vb-sel-title');
+    if (tInp) {
+      let _tt = null;
+      const saveTitle = () => { clearTimeout(_tt); saveRow(Number(tInp.dataset.selid), { title: tInp.value }); };
+      tInp.addEventListener('input', () => { clearTimeout(_tt); _tt = setTimeout(saveTitle, 500); });
+      tInp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); tInp.blur(); saveTitle(); } });
     }
   }
 
@@ -1751,6 +1798,48 @@
       }
       if (act === 'tagfilter') { toggleTag(t.getAttribute('data-tag')); state.page = 0; renderControls(); renderList(); return; }
       if (act === 'tagclear') { state.fTags = []; try { localStorage.setItem(TGKEY, '[]'); } catch (_) {} state.page = 0; renderControls(); renderList(); return; }
+      // ── Inline fyrirtæki-breyting í VALIÐ MÁL (2026-08-09) ───────────────
+      if (act === 'editco') {
+        e.stopPropagation();
+        const wrap = document.getElementById('vb-sel-co'); if (!wrap) return;
+        const cur = allItems().find(x => String(x.id) === String(id));
+        const curVal = (cur && cur.customer_nafn) || '';
+        const INP = 'flex:1;min-width:0;font:inherit;font-size:12.5px;padding:4px 8px;border:1.5px solid #4669b7;border-radius:7px;outline:none';
+        wrap.innerHTML =
+          '<div style="display:flex;align-items:center;gap:6px">' +
+            '<input id="vb-sel-co-inp" list="vb-sel-colist" value="' + esc(curVal) + '" ' +
+              'placeholder="Fyrirtæki…" autocomplete="off" style="' + INP + '">' +
+            '<datalist id="vb-sel-colist"></datalist>' +
+            '<button data-act="selco-save" data-id="' + esc(id) + '" title="Vista" ' +
+              'style="flex:none;height:28px;padding:0 10px;border-radius:6px;border:1px solid #16a34a;background:#dcfce7;color:#166534;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer">✓</button>' +
+            '<button data-act="selco-cancel" title="Hætta við" ' +
+              'style="flex:none;height:28px;padding:0 10px;border-radius:6px;border:1px solid #d8dadf;background:#f8fafc;color:#4b5058;font-family:inherit;font-size:12px;cursor:pointer">✕</button>' +
+          '</div>';
+        loadCompanies().then(() => {
+          const opts = (state.companies || []).slice(0, 1500).map(c => '<option value="' + esc(c.nafn) + '"></option>').join('');
+          const dl = document.getElementById('vb-sel-colist'); if (dl) dl.innerHTML = opts;
+        });
+        const inp = document.getElementById('vb-sel-co-inp');
+        if (inp) { inp.focus(); inp.select(); }
+        return;
+      }
+      if (act === 'selco-cancel') {
+        e.stopPropagation();
+        const row = allItems().find(x => String(x.id) === String(id));
+        const wrap = document.getElementById('vb-sel-co'); if (!wrap || !row) return;
+        wrap.innerHTML = selCoHTML(row);
+        return;
+      }
+      if (act === 'selco-save') {
+        e.stopPropagation();
+        const inp = document.getElementById('vb-sel-co-inp'); if (!inp) return;
+        const nafn = inp.value.trim();
+        const match = (state.companies || []).find(c => c.nafn === nafn);
+        const patch = { customer_nafn: nafn || null, customer_base_id: match ? (match.customer_base_id || null) : null };
+        saveRow(Number(id), patch);
+        renderSel(); renderList();
+        return;
+      }
       if (act === 'tagtoggle') {
         e.stopPropagation();
         const rid = Number(t.getAttribute('data-id'));
@@ -1767,7 +1856,7 @@
           patch.tags = cur.concat([tg]);
         }
         saveRow(rid, patch);
-        renderControls(); renderList();
+        renderControls(); renderList(); renderSel();
         return;
       }
       if (act === 'import') { importOld(); return; }
@@ -1886,6 +1975,10 @@
     root.addEventListener('keydown', e => {
       if (e.target.id === 'vb-add-input' && e.key === 'Enter') { e.preventDefault(); doAdd(); }
       if (e.target.id === 'vb-add-cust' && e.key === 'Enter') { e.preventDefault(); document.getElementById('vb-add-input')?.focus(); }
+      if (e.target.id === 'vb-sel-co-inp' && e.key === 'Enter') {
+        e.preventDefault();
+        const btn = root.querySelector('[data-act="selco-save"]'); if (btn) btn.click();
+      }
     });
     // Fyrirtækja-datalist quick-línunnar fyllist við fyrstu snertingu (lazy).
     root.addEventListener('focusin', e => {
