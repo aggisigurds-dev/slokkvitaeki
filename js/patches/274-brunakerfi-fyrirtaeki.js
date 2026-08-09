@@ -475,6 +475,7 @@
           source: 'app', found_by: 'manual-upload', notes: 'Handvirkt viðhengt: ' + f.name
         });
         if (ins.error) throw ins.error;
+        document.dispatchEvent(new CustomEvent('customer-doc-written'));
         if (st) st.textContent = '';
         reload();
       } catch (e) {
@@ -501,6 +502,7 @@
           source: 'app', found_by: 'manual-upload', notes: 'Handvirkt viðhengt: ' + f.name
         });
         if (ins.error) throw ins.error;
+        document.dispatchEvent(new CustomEvent('customer-doc-written'));
         if (st) st.textContent = '';
         reload();
         try { if (window.BrunakerfiYfirlit && BrunakerfiYfirlit.reload) BrunakerfiYfirlit.reload(); } catch (_) {}

@@ -1330,6 +1330,8 @@
         S.docId = r.data.id;
         await sb.from('brunakerfi_skyrslur').update({ doc_id: S.docId }).eq('id', S.id);
       }
+      // Skjalaspjaldið (199) endurteiknar sig strax (2026-08-09).
+      document.dispatchEvent(new CustomEvent('customer-doc-written'));
       // Skýrslan LÍKA í skýrsludálk ársins (Skjöl & viðhengi / Kröfu yfirlit,
       // patch 111/199) — noMark: EKKI merkja slökkvitækja-ársskoðunina.
       // Aðeins við fyrstu lokun (annars tvítekningar í dálknum).
