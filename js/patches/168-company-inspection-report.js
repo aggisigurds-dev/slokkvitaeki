@@ -486,6 +486,9 @@
               } else {
                 await sb.from('customer_documents').insert(rec);
               }
+              // Skjalaspjaldið (199) endurteiknar sig á þessum atburði — annars
+              // sést nýja skýrslan ekki fyrr en eftir hard reload (2026-08-09).
+              document.dispatchEvent(new CustomEvent('customer-doc-written'));
             }
           } catch (e) { console.warn('[uttektarskyrsla] customer_documents', e); }
           // 2026-07-16 (ósk Agnars): eintak af skýrslunni fer LÍKA í Google Drive

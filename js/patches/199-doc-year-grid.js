@@ -1024,6 +1024,28 @@
   document.addEventListener('attachment-year-changed', function(){
     var s=document.querySelector('._dyg-section'); if(s) render(s, +s.dataset.coId);
   });
+  // 2026-08-09 (Agnar: „þarf að force reset og finna fyrirtækið aftur") — inject()
+  // teiknaði AÐEINS þegar coId breyttist, svo að koma til baka á SAMA fyrirtæki
+  // eftir að reikningur/skýrsla varð til (t.d. R-719 í Klára-að-senda-flæðinu)
+  // skildi spjaldið eftir gamalt; fellilistinn sá ekki nýja reikninginn og eina
+  // leiðin var hard reload. fetchDocs() er alltaf ferskt — það var bara aldrei
+  // KALLAÐ aftur. Þrír kveikjarar (allir debounced á sama tímamæli):
+  //   • hashchange        — notandinn kom til baka á fyrirtækið í SPA-leiðsögninni
+  //   • visibilitychange  — annar flipi/annað tæki skrifaði á meðan
+  //   • customer-doc-written — skýrsla/reikningur varð til í þessari lotu
+  //     (168/273/274 dispatch-a þennan atburð eftir vel heppnað insert)
+  function _dygRefresh(){
+    var s=document.querySelector('._dyg-section'); if(!s) return;
+    var id=getCompanyId(); if(!id || String(id)!==String(s.dataset.coId)) return;
+    render(s, +s.dataset.coId);
+  }
+  var _dygRT=0;
+  function _dygRefreshSoon(){ clearTimeout(_dygRT); _dygRT=setTimeout(_dygRefresh, 250); }
+  window.addEventListener('hashchange', _dygRefreshSoon);
+  document.addEventListener('visibilitychange', function(){
+    if(document.visibilityState==='visible') _dygRefreshSoon();
+  });
+  document.addEventListener('customer-doc-written', _dygRefreshSoon);
 
   if(!document.getElementById('sk-card-css')){
     var css=[
