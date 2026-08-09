@@ -369,6 +369,17 @@
       return;
     }
     if (deferredPrompt) { deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; refreshInstallBtns(); return; }
+    // No native prompt yet. If we haven't tried a fresh page load, navigate to
+    // ?install=1 so Chrome gets a clean shot at beforeinstallprompt on load.
+    // The beforeinstallprompt listener will auto-call doInstall() if it fires.
+    if (ACTIVE) {
+      try {
+        var _params = new URLSearchParams(location.search);
+        if (!_params.has('install')) { location.href = appLink(ACTIVE) + '?install=1'; return; }
+      } catch (_) {}
+    }
+    // Already at ?install=1 and Chrome still won't offer the prompt — fall back
+    // to the manual guide (⋮ menu instructions).
     showInstallGuide();
     // Relabel all install buttons so it's clear that pressing them again just
     // re-opens the instructions — not the actual OS install dialog.
