@@ -1657,7 +1657,6 @@
                   '<button class="vb-btn" data-act="vd-archive" data-id="' + esc(r.id) + '" style="color:#dc2626">🗑 Fela</button>'
                 : (isPost(r) ? btn('reply', '✉ Svara') : '') +
                   btn('skra', '🗓 Setja á dagskrá', 'blue') +
-                  btn('sbpin', '📋 Skipulag', 'light') +
                   btn('edit', '⋯ Meira', 'light') +
                   (isOpen(r) ? btn('done', '✓ Loka máli', 'light') : '')) +
             '</div>') +
