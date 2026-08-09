@@ -205,7 +205,7 @@
 /* ===== 0. HELPERS ===== */
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function fmtKr(n){return Math.round(n||0).toLocaleString('is-IS');}
-function fmtDate(s){if(!s)return'';try{var d=new Date(s);if(isNaN(d))return s;return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}catch(e){return s;}}
+function fmtDate(s){if(!s)return'';try{var d=new Date(s);if(isNaN(d))return s;return String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+'.'+d.getFullYear();}catch(e){return s;}}
 function toast(m,c,ms){
   var t=document.createElement('div');
   t.style.cssText='position:fixed;top:80px;left:50%;transform:translateX(-50%);background:'+(c||'#1e293b')+';color:#fff;padding:14px 22px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.3);z-index:99999;font-weight:600;font-size:14px';
@@ -2272,24 +2272,78 @@ console.log('[patch-master] loaded with all fixes');
     var coId = parseInt(m[1],10);
     var co = window.Companies && Companies.list ? Companies.list.find(function(c){return c.id===coId;}) : null;
     if(!co) return;
+    // ── Mánaðarval við hliðina á takkanum (ósk Agnars 2026-08-08) ────────
+    // Áður stimplaði takkinn ALLTAF „í dag" og næstu skoðun „í dag + 1 ár".
+    // Það er rangt þegar skoðunin var farin fyrr í mánuðinum eða í fyrri mánuði
+    // — og mánaðarreiturinn sem stýrir reikningnum („Framkvæmd í Júlí 2026")
+    // býr niðri í REIKNINGUR-spjaldinu, langt frá takkanum. Núna stendur
+    // mánuðurinn við takkann og merkingin miðast við hann.
+    var MONTHS_IS = ['Jan\u00faar','Febr\u00faar','Mars','Apr\u00edl','Ma\u00ed','J\u00fan\u00ed',
+                     'J\u00fal\u00ed','\u00c1g\u00fast','September','Okt\u00f3ber','N\u00f3vember','Desember'];
+    function tripGet(){
+      try { return JSON.parse(localStorage.getItem('slokk_trip_' + coId) || '{}'); }
+      catch(_) { return {}; }
+    }
+    function tripSet(patch){
+      var st = tripGet();
+      for (var k in patch) st[k] = patch[k];
+      try { localStorage.setItem('slokk_trip_' + coId, JSON.stringify(st)); } catch(_) {}
+    }
+    // Sjálfgefið: mánuðurinn sem þegar er skráður á ferðina (svo takkinn og
+    // reikningurinn segi það sama), annars líðandi mánuður.
+    var _tst = tripGet();
+    var _now = new Date();
+    var _ym = /^\d{4}-\d{2}$/.test(String(_tst.skodun_ym || ''))
+      ? _tst.skodun_ym
+      : (function(){
+          var lbl = String(_tst.skodun_manudur || '').trim().toLowerCase();
+          var ix = -1;
+          for (var i = 0; i < MONTHS_IS.length; i++) {
+            if (MONTHS_IS[i].toLowerCase() === lbl) { ix = i; break; }
+          }
+          var mm = ix >= 0 ? ix : _now.getMonth();
+          return _now.getFullYear() + '-' + ('0' + (mm + 1)).slice(-2);
+        })();
+
+    var mSel = document.createElement('input');
+    mSel.type = 'month';
+    mSel.className = '_pm_quick_inspect_month';
+    mSel.value = _ym;
+    mSel.title = 'M\u00e1nu\u00f0urinn sem sko\u00f0unin f\u00f3r fram \u2014 merking og n\u00e6sta sko\u00f0un mi\u00f0ast vi\u00f0 hann';
+    mSel.style.cssText = 'margin-left:6px;padding:7px 9px;border:1px solid #cbd5e1;border-radius:8px;'
+      + 'font:inherit;font-size:13px;background:#fff;color:#0f172a;cursor:pointer';
+    mSel.addEventListener('click', function(e){ e.stopPropagation(); });
+    mSel.addEventListener('change', function(){
+      var mm = /^(\d{4})-(\d{2})$/.exec(mSel.value);
+      if (!mm) return;
+      // Halda mánaðar-LABELINU í takt svo reikningurinn segi „Framkvæmd í <mánuði>".
+      tripSet({ skodun_ym: mSel.value, skodun_manudur: MONTHS_IS[+mm[2] - 1] });
+    });
+
     // Add quick-inspect button
     var btn = document.createElement('button');
     btn.className = 'btn btn-primary btn-sm _pm_quick_inspect';
     btn.style.cssText = 'background:#16a34a;margin-left:6px;';
     btn.textContent = '\u2705 Merkja sko\u00f0un';
-    btn.title = 'Merkja \u00f6ll t\u00e6ki sem sko\u00f0u\u00f0 \u00ed dag';
+    btn.title = 'Merkja \u00f6ll t\u00e6ki sem sko\u00f0u\u00f0 \u00ed v\u00f6ldum m\u00e1nu\u00f0i';
     btn.onclick = async function(e){
       e.stopPropagation();
-      var today = new Date().toISOString().substring(0,10);
-      var nextYear = new Date();
-      nextYear.setFullYear(nextYear.getFullYear()+1);
-      var next = nextYear.toISOString().substring(0,10);
-      if(!await Confirm.show('Merkja \u00f6ll t\u00e6ki hj\u00e1 "'+co.nafn+'" sem sko\u00f0u\u00f0 \u00ed dag?\n\nS\u00ed\u00f0asta sko\u00f0un: '+today+'\nN\u00e6sta sko\u00f0un: '+next)) return;
+      var mm = /^(\d{4})-(\d{2})$/.exec(mSel.value);
+      if(!mm){ alert('Veldu m\u00e1nu\u00f0 fyrst.'); return; }
+      var yr = +mm[1], mo = mm[2];
+      // Skoðunin er stimpluð á 1. dag valins mánaðar og næsta skoðun 12 mánuðum
+      // síðar — sami dagur, ári seinna (t.d. júlí 2026 → 1.7.2027).
+      var today = yr + '-' + mo + '-01';
+      var next  = (yr + 1) + '-' + mo + '-01';
+      var lbl   = MONTHS_IS[+mo - 1] + ' ' + yr;
+      if(!await Confirm.show('Merkja \u00f6ll t\u00e6ki hj\u00e1 "'+co.nafn+'" sem sko\u00f0u\u00f0 \u00ed '+lbl+'?\n\nS\u00ed\u00f0asta sko\u00f0un: '+today+'\nN\u00e6sta sko\u00f0un: '+next)) return;
       btn.disabled = true;
       btn.textContent = '\u23f3 Uppf\u00e6ri...';
       try{
         var r = await window.DB.sb.from('uttaeki').update({last_insp:today, next_insp:next, status:'active'}).eq('client',co.nafn);
         if(r.error) throw r.error;
+        // Festa mánuðinn á ferðina svo reikningur og úttektarskýrsla segi það sama.
+        tripSet({ skodun_ym: mSel.value, skodun_manudur: MONTHS_IS[+mo - 1] });
         btn.textContent = '\u2705 Uppf\u00e6rt!';
         btn.style.background = '#22c55e';
         // Refresh detail after 1s
@@ -2307,6 +2361,7 @@ console.log('[patch-master] loaded with all fixes');
     var vwBtn = main.querySelector('._vw-topbtn');
     if (!vwBtn) return;
     vwBtn.parentNode.insertBefore(btn, vwBtn);
+    vwBtn.parentNode.insertBefore(mSel, btn);   // mánuðurinn vinstra megin við takkann
   }
   var mo = new MutationObserver(function(){ addQuickInspect(); });
   var vc = document.getElementById('view-companies');
