@@ -363,8 +363,18 @@
     if (l && href) l.setAttribute('href', href);
   }
   async function doInstall() {
+    // Already running as an installed PWA — nothing to do.
+    if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) {
+      toast('✓ Þetta app er þegar sett upp á þetta tæki');
+      return;
+    }
     if (deferredPrompt) { deferredPrompt.prompt(); try { await deferredPrompt.userChoice; } catch (_) {} deferredPrompt = null; refreshInstallBtns(); return; }
     showInstallGuide();
+    // Relabel all install buttons so it's clear that pressing them again just
+    // re-opens the instructions — not the actual OS install dialog.
+    document.querySelectorAll('#_app-inst2,._app-install[data-always]').forEach(function (b) {
+      b.textContent = '📖 Leiðbeiningar';
+    });
   }
   function showInstallGuide() {
     if (document.getElementById('_app-inst-guide')) return;
@@ -375,6 +385,12 @@
       : ['Opnaðu valmynd vafrans (<b>⋮</b> efst til hægri)', 'Veldu <b>„Setja upp app"</b> eða <b>„Bæta á heimaskjá"</b>', 'Ýttu á <b>Setja upp</b> í staðfestingarglugganum'];
     var hint = isIos && !isSafari
       ? '<div style="background:#7c3aed;color:#fff;border-radius:10px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600">⚠️ iOS krefst Safari — Chrome á iPhone/iPad getur ekki sett upp heimaskjáforrit.</div>'
+      : '';
+    // On Android Chrome the browser's own ⋮ menu is the only path once
+    // beforeinstallprompt has been consumed — make that crystal-clear.
+    var androidNote = !isIos
+      ? '<div style="background:#fef9c3;border-radius:10px;padding:10px 14px;margin-top:14px;font-size:13px;color:#713f12;line-height:1.5">'
+        + '💡 <b>Athugið:</b> „Setja upp"-takkinn í appinu vísar þér hér — þú þarft að nota <b>valmynd vafransins</b> (⋮) til að klára uppsetninguna.</div>'
       : '';
     var d = document.createElement('div');
     d.id = '_app-inst-guide';
@@ -388,6 +404,7 @@
       + '<ol style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px">'
       + steps.map(function(s){ return '<li style="font-size:15px;color:#1e293b;line-height:1.45">'+s+'</li>'; }).join('')
       + '</ol>'
+      + androidNote
       + '<div style="margin-top:18px;font-size:12.5px;color:#94a3b8;line-height:1.5">Þegar forritið er sett upp opnarðu það beint af heimaskjánum eins og hvaða app sem er.</div>'
       + '</div>';
     document.body.appendChild(d);
@@ -438,6 +455,10 @@
       'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){margin-left:0 !important;width:100vw !important;max-width:100vw !important}',
       'body.appmode .main-panel{margin-left:0 !important;margin-right:0 !important;max-width:none !important}',
       'body.appmode .view.active{padding-top:50px !important;padding-bottom:116px !important}',
+      // Force white background in app-mode so dark theme presets (data-thm-dark="1") don't
+      // bleed the dark gradient from 229-sala-theme-bridge into the page content area.
+      // The launcher (#view-opp) keeps its own dark gradient; all other views go white.
+      'body.appmode .view.active:not(#view-opp){background:#fff !important}',
       // Beat patch 230's ON+':not(#id)…{padding-top:160px}` (id-level specificity) when the
       // Brunastál banner attr is present — otherwise the content sits 160px below my header.
       'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:50px !important;padding-bottom:116px !important}',
