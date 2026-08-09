@@ -289,15 +289,30 @@
 
     el.querySelectorAll('.sb-slot').forEach(slot => {
       slot.addEventListener('dragover', e => {
-        if (!_drag) return;
+        if (!_drag && !window._vdCalDrag) return;
         e.preventDefault(); e.dataTransfer.dropEffect = 'move';
         slot.classList.add('sb-over');
       });
       slot.addEventListener('dragleave', () => slot.classList.remove('sb-over'));
       slot.addEventListener('drop', e => {
         e.preventDefault(); slot.classList.remove('sb-over');
-        if (!_drag) return;
         const toSlot = Number(slot.getAttribute('data-sb-slot'));
+
+        // Dagskrá-verk dregið af dagskrá → spjald á borðið
+        if (window._vdCalDrag) {
+          const job = window._vdCalDrag;
+          window._vdCalDrag = null;
+          const typeIdx = TYPES.findIndex(t => t[0] === job.type);
+          const targetSlot = state.cards.find(c => c.slot === toSlot) ? firstFreeSlot() : toSlot;
+          state.cards.push({ id: newId(), slot: targetSlot, verkbord_id: null,
+            name: job.name, title: job.note || '', type: typeIdx >= 0 ? typeIdx : null });
+          persist();
+          if (window.Vikudagskra && Vikudagskra.removeJob) Vikudagskra.removeJob(job.id);
+          return;
+        }
+
+        // Spjald flutt milli rúða á borðinu
+        if (!_drag) return;
         const from = state.cards.find(c => c.id === _drag);
         if (!from) return;
         const occ = state.cards.find(c => c.slot === toSlot && c.id !== _drag);

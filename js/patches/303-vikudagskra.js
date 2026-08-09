@@ -157,7 +157,7 @@
 
   function jobHTML(j, small) {
     const dot = small ? 7 : 8, tf = small ? 10 : 11, nf = small ? 11 : 12;
-    return '<div title="' + esc(j.note || 'Smella til að breyta') + '" data-vd="job" data-vd-id="' + esc(j.id) + '" data-vd-stop="1" ' +
+    return '<div title="' + esc(j.note || 'Smella til að breyta · draga á Skipulagsbord') + '" data-vd="job" data-vd-id="' + esc(j.id) + '" data-vd-stop="1" draggable="true" ' +
       'style="display:flex;align-items:center;gap:' + (small ? 5 : 6) + 'px;background:#fff;border:1px solid #e5e7eb;' +
       'border-radius:' + (small ? 8 : 9) + 'px;padding:' + (small ? '2px 5px 2px 7px' : '4px 5px 4px 7px') + ';' +
       'box-shadow:0 1px 2px rgba(0,0,0,.06);cursor:pointer">' +
@@ -265,6 +265,28 @@
           '</div>' +
         '</div>' +
       '</div>';
+    wireDagskraDrag();
+  }
+
+  // ── Drag til Skipulagsbords ───────────────────────────────────────────────
+  function wireDagskraDrag() {
+    const el = document.getElementById(SLOT_ID);
+    if (!el) return;
+    el.querySelectorAll('[data-vd="job"]').forEach(div => {
+      div.addEventListener('dragstart', e => {
+        const id = div.getAttribute('data-vd-id');
+        const job = state.jobs.find(j => j.id === id);
+        if (!job) return;
+        window._vdCalDrag = job;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', 'vd:' + id);
+        div.style.opacity = '.35';
+      });
+      div.addEventListener('dragend', () => {
+        window._vdCalDrag = null;
+        div.style.opacity = '';
+      });
+    });
   }
 
   // ── skráningargluggi ─────────────────────────────────────────────────────
@@ -432,7 +454,7 @@
   // Stillingar hlaðast eftir á (og breytast þegar annað tæki vistar) → endurteikna.
   if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(mount);
 
-  window.Vikudagskra = { mount, render, open: openModal };
+  window.Vikudagskra = { mount, render, open: openModal, removeJob: id => persist(state.jobs.filter(j => j && j.id !== id)) };
 
   // Samningur við Verkborðið (#231, hönnun V3): „🗓 Á dagskrá" á röð — og
   // „Setja á dagskrá" í VALIÐ MÁL — senda st-skra-verk og bannerinn opnar
