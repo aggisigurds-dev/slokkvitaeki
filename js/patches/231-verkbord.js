@@ -578,6 +578,16 @@
       renderControls(); renderList(); refreshBadge();
     } catch (e) { toast('Tókst ekki: ' + (e.message || e)); }
   }
+  async function vdArchive(rawId) {
+    const SB = getSB(); if (!SB) return;
+    try {
+      const r = await SB.from('verkdagbok').update({ archived: true }).eq('id', Number(rawId));
+      if (r.error) throw r.error;
+      state.vd = state.vd.filter(x => String(x.id) !== String(rawId));
+      if (String(state.selId) === 'vd:' + rawId) state.selId = null;
+      renderControls(); renderList(); renderSel(); refreshBadge();
+    } catch (e) { toast('Fela mistókst: ' + (e.message || e)); }
+  }
 
   // ✨ next-step suggestion via the existing /api/tv-summary endpoint (#182).
   async function aiSuggest(id) {
@@ -1510,7 +1520,7 @@
         '<div id="vb-sel-co" style="margin-bottom:10px">' + selCoHTML(r) + '</div>' +
         // 2026-08-06 (Agnar: "cant reach the edit button when text is too long")
         (r.notes ? '<div style="font-size:13px;color:#4b5058;line-height:1.65;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:10px">' + esc(r.notes) + '</div>' : '') +
-        // MERKI — öll tiltæk merki sem toggle-chippar (sem hægt er að smella til að kveikja/slökkva)
+        // MERKI — öll tiltæk merki sem toggle-chippar (dökk-metal eins og TÖG-sían)
         (!r._vd
           ? '<div style="border-top:1px solid #f1f3f5;padding-top:10px;margin-bottom:12px">' +
             '<div style="font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Merki</div>' +
@@ -1518,8 +1528,8 @@
               TAG_ORDER.map(function (tg) {
                 const d = TAGS[tg], on = rowChips(r).indexOf(tg) !== -1;
                 return '<button data-act="tagtoggle" data-id="' + esc(String(r.id)) + '" data-tag="' + tg + '" type="button" ' +
-                  'style="font:inherit;font-size:11px;font-weight:700;padding:4px 9px;border-radius:99px;cursor:pointer;' +
-                  'color:' + (on ? '#fff' : d.color) + ';background:' + (on ? d.color : d.color + '12') + ';border:1.5px solid ' + d.color + (on ? '' : '44') + '">' +
+                  'style="font-family:inherit;font-size:11px;font-weight:600;padding:4px 10px;border-radius:8px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;white-space:nowrap;' +
+                  FILTER_METAL + ';color:' + (TAG_DK[tg] || '#c3ccd8') + ';' + (on ? FILTER_ON : '') + '">' +
                   d.emoji + ' ' + esc(d.label) + '</button>';
               }).join('') +
             '</div></div>'
@@ -1527,10 +1537,14 @@
         (editing
           ? '<div id="vb-sel-ed" style="margin-top:4px;padding-top:12px;border-top:1px solid #eef0f2">' + renderEditor(r) + '</div>'
           : '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;padding-top:12px;border-top:1px solid #eef0f2">' +
-              (isPost(r) ? btn('reply', '✉ Svara') : '') +
-              btn('skra', '🗓 Setja á dagskrá', 'blue') +
-              btn('edit', '⋯ Meira', 'light') +
-              (isOpen(r) ? btn('done', '✓ Loka máli', 'light') : '') +
+              (r._vd
+                ? '<button class="vb-btn" data-act="vd-open" data-id="' + esc(r.id) + '">📓 Opna í Verkdagbók</button>' +
+                  '<button class="vb-btn green" data-act="vd-done" data-id="' + esc(r.id) + '">✓ Klárað</button>' +
+                  '<button class="vb-btn" data-act="vd-archive" data-id="' + esc(r.id) + '" style="color:#dc2626">🗑 Fela</button>'
+                : (isPost(r) ? btn('reply', '✉ Svara') : '') +
+                  btn('skra', '🗓 Setja á dagskrá', 'blue') +
+                  btn('edit', '⋯ Meira', 'light') +
+                  (isOpen(r) ? btn('done', '✓ Loka máli', 'light') : '')) +
             '</div>') +
       '</div>' +
     '</div>';
@@ -1907,6 +1921,7 @@
       if (act === 'collapse') { e.stopPropagation(); state.expandedId = null; renderList(); return; }
       if (act === 'vd-open') { e.stopPropagation(); if (window.App && App.switchView) App.switchView('verkdagbok'); return; }
       if (act === 'vd-done') { e.stopPropagation(); vdSetDone(id.slice(3)); return; }
+      if (act === 'vd-archive') { e.stopPropagation(); vdArchive(id.slice(3)); return; }
       if (act === 'expand') {
         const rid = t.getAttribute('data-id');
         const real = rid && rid.indexOf('vd:') !== 0 ? Number(rid) : rid;
