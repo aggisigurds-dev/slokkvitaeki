@@ -44,11 +44,11 @@
   const SURFACE_SHADOW = '0 10px 28px -16px rgba(25,35,60,.18)';
 
   const TYPES = [
-    ['Árskoðun',   '#c3271c'],
-    ['Hleðsla',    '#b8770e'],
-    ['Uppsetning', '#2c6e9e'],
-    ['Verkstæði',  '#5b6470'],
-    ['Annað',      '#8a8f98']
+    ['Árskoðun',          '#1d4ed8'],  // Blue
+    ['Brunakerfiskoðun',  '#c3271c'],  // Red
+    ['Fund',              '#7c3aed'],  // Purple
+    ['Uppsetning',        '#d97706'],  // Orange
+    ['Annað',             '#16a34a'],  // Green
   ];
   const COLOR  = TYPES.reduce((a, t) => { a[t[0]] = t[1]; return a; }, {});
   const NAMES  = ['mán', 'þri', 'mið', 'fim', 'fös', 'lau', 'sun'];
@@ -66,7 +66,7 @@
     jobs: [],
     modal: false,
     editingId: null,
-    form: { date: '', time: '09:00', name: '', type: 'Árskoðun', note: '' }
+    form: { date: '', time: '09:00', name: '', type: 'Árskoðun', note: '', allday: false }
   };
 
   // ── dagsetningar ─────────────────────────────────────────────────────────
@@ -163,8 +163,9 @@
       'box-shadow:0 1px 2px rgba(0,0,0,.06);cursor:pointer">' +
         '<span style="width:' + dot + 'px;height:' + dot + 'px;border-radius:50%;background:' +
           (COLOR[j.type] || '#8a8f98') + ';flex:none"></span>' +
-        '<span style="font-family:ui-monospace,\'Cascadia Mono\',Consolas,monospace;font-size:' + tf +
-          'px;font-weight:700;color:#6b7280;flex:none">' + esc(j.time || '') + '</span>' +
+        (j.allday ? '' :
+          '<span style="font-family:ui-monospace,\'Cascadia Mono\',Consolas,monospace;font-size:' + tf +
+          'px;font-weight:700;color:#6b7280;flex:none">' + esc(j.time || '') + '</span>') +
         '<span style="font-size:' + nf + 'px;font-weight:700;flex:1;min-width:0;overflow:hidden;' +
           'text-overflow:ellipsis;white-space:nowrap">' + esc(j.name) + '</span>' +
         '<button class="vd-x" data-vd="del" data-vd-id="' + esc(j.id) + '" title="Eyða af dagskrá" ' +
@@ -300,8 +301,8 @@
     state.modal = true;
     state.editingId = editJob ? editJob.id : null;
     state.form = editJob
-      ? { date: editJob.date, time: editJob.time || '09:00', name: editJob.name, type: editJob.type || 'Árskoðun', note: editJob.note || '' }
-      : { date: dateStr || fmt(new Date()), time: '09:00', name: '', type: 'Árskoðun', note: '' };
+      ? { date: editJob.date, time: editJob.time || '09:00', name: editJob.name, type: editJob.type || 'Árskoðun', note: editJob.note || '', allday: !!editJob.allday }
+      : { date: dateStr || fmt(new Date()), time: '09:00', name: '', type: 'Árskoðun', note: '', allday: false };
     renderModal();
   }
   function closeModal() { state.modal = false; state.editingId = null; renderModal(); }
@@ -332,23 +333,35 @@
             // hefði spurt „óvistaðar breytingar?" við hvern bakgrunnssmell.
             // data-original er þeirra eigin undanþága: ósnert = hreint, en um
             // leið og Agnar skrifar nafn heldur vörnin sér.
-            '<div style="display:flex;gap:8px">' +
+            '<div style="display:flex;gap:8px;align-items:flex-end">' +
               '<div style="flex:1"><div style="' + lbl + '">Dagsetning</div>' +
                 '<input type="date" id="vd-date" value="' + esc(f.date) + '" data-original="' + esc(f.date) + '" style="' + fld + '"></div>' +
-              '<div style="width:110px"><div style="' + lbl + '">Tími</div>' +
+              '<div id="vd-time-wrap" style="width:110px' + (f.allday ? ';display:none' : '') + '">' +
+                '<div style="' + lbl + '">Tími</div>' +
                 '<input type="time" id="vd-time" value="' + esc(f.time) + '" data-original="' + esc(f.time) + '" style="' + fld + '"></div>' +
+              '<label style="display:flex;align-items:center;gap:5px;padding-bottom:9px;cursor:pointer;font-size:12px;font-weight:700;color:#6b7280;white-space:nowrap;flex-shrink:0">' +
+                '<input type="checkbox" id="vd-allday"' + (f.allday ? ' checked' : '') + ' style="width:14px;height:14px;cursor:pointer" ' +
+                  'onchange="(function(cb){var w=document.getElementById(\'vd-time-wrap\');if(w)w.style.display=cb.checked?\'none\':\'\';})(this)"> Þennan Dag</label>' +
             '</div>' +
             '<div><div style="' + lbl + '">Fyrirtæki / viðskiptavinur</div>' +
-              // sami fyrirtækjalisti og hraðlínan á Verkborði notar (#231)
-              '<input type="text" id="vd-name" list="vb-companies" autocomplete="off" value="' + esc(f.name) + '" ' +
-                'data-original="' + esc(f.name) + '" placeholder="t.d. Distica" style="' + fld + '">' +
+              '<div style="display:flex;gap:4px">' +
+                // sami fyrirtækjalisti og hraðlínan á Verkborði notar (#231)
+                '<input type="text" id="vd-name" list="vb-companies" autocomplete="off" value="' + esc(f.name) + '" ' +
+                  'data-original="' + esc(f.name) + '" placeholder="t.d. Distica" style="' + fld + ';flex:1">' +
+                '<button data-vd="openco" title="Opna fyrirtækjaspjald" style="height:36px;padding:0 10px;border:1px solid #e0e2e7;border-radius:10px;' +
+                  'background:#f6f7f9;cursor:pointer;font-size:15px;flex-shrink:0;font-family:inherit">🏢</button>' +
+              '</div>' +
               '<div id="vd-err" style="display:none;font-size:11px;font-weight:600;color:' + ACCENT + ';margin-top:4px">Vantar nafn viðskiptavinar</div></div>' +
             '<div><div style="' + lbl + '">Tegund verks</div>' +
-              '<select id="vd-type" data-original="' + esc(f.type) + '" style="' + fld + ';cursor:pointer">' +
-                TYPES.map(t => '<option value="' + t[0] + '"' + (f.type === t[0] ? ' selected' : '') + '>' + t[0] + '</option>').join('') +
+              '<select id="vd-type" data-original="' + esc(f.type) + '" style="' + fld + ';cursor:pointer;' +
+                'border-left:4px solid ' + (COLOR[f.type] || '#888') + ';padding-left:8px" ' +
+                'onchange="(function(s){var c=window._vdTC;if(c)s.style.borderLeftColor=c[s.value]||(s.style.borderLeftColor=\'#888\')})(this)">' +
+                TYPES.map(t => '<option value="' + t[0] + '"' + (f.type === t[0] ? ' selected' : '') +
+                  ' style="background:' + t[1] + ';color:#fff;font-weight:700">' + t[0] + '</option>').join('') +
               '</select></div>' +
             '<div><div style="' + lbl + '">Athugasemd</div>' +
-              '<input type="text" id="vd-note" value="' + esc(f.note) + '" data-original="' + esc(f.note) + '" placeholder="Valfrjálst" style="' + fld + '"></div>' +
+              '<textarea id="vd-note" data-original="' + esc(f.note) + '" placeholder="Valfrjálst" rows="6" ' +
+                'style="' + fld + ';resize:vertical;min-height:110px;line-height:1.5">' + esc(f.note) + '</textarea></div>' +
           '</div>' +
           '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:18px">' +
             '<div>' +
@@ -379,9 +392,12 @@
     }
   }
 
+  window._vdTC = COLOR;   // color map for the select onchange handler above
+
   function readForm() {
     const v = id => { const el = document.getElementById(id); return el ? el.value : ''; };
-    return { date: v('vd-date'), time: v('vd-time'), name: v('vd-name'), type: v('vd-type'), note: v('vd-note') };
+    const allday = !!(document.getElementById('vd-allday') && document.getElementById('vd-allday').checked);
+    return { date: v('vd-date'), time: v('vd-time'), name: v('vd-name'), type: v('vd-type'), note: v('vd-note'), allday };
   }
 
   function saveJob() {
@@ -399,12 +415,12 @@
     renderModal();
     if (editId) {
       persist(state.jobs.map(j => j.id !== editId ? j : {
-        ...j, date, time: f.time || '09:00', name: f.name.trim(), type: f.type || 'Annað', note: (f.note || '').trim()
+        ...j, date, time: f.time || '09:00', name: f.name.trim(), type: f.type || 'Annað', note: (f.note || '').trim(), allday: !!f.allday
       }));
     } else {
       const job = {
         id: 'vd' + Date.now() + Math.random().toString(36).slice(2, 6),
-        date, time: f.time || '09:00', name: f.name.trim(), type: f.type || 'Annað', note: (f.note || '').trim()
+        date, time: f.time || '09:00', name: f.name.trim(), type: f.type || 'Annað', note: (f.note || '').trim(), allday: !!f.allday
       };
       persist(state.jobs.concat([job]));
     }
@@ -432,13 +448,34 @@
     if (act === 'del-edit') { ev.stopPropagation(); const delId = state.editingId; state.modal = false; state.editingId = null; renderModal(); persist(state.jobs.filter(j => j && j.id !== delId)); return; }
     if (act === 'job')      { ev.stopPropagation(); const j = state.jobs.find(x => x && x.id === hit.getAttribute('data-vd-id')); if (j) openModal(j.date, j); return; }
     if (act === 'close')    { if (!throughSolid) closeModal(); return; }
-    if (act === 'day')      { if (!throughSolid) openModal(hit.getAttribute('data-vd-date')); }
+    if (act === 'day')      { if (!throughSolid) openModal(hit.getAttribute('data-vd-date')); return; }
+    if (act === 'openco') {
+      ev.stopPropagation();
+      const nameEl = document.getElementById('vd-name');
+      const nafn = (nameEl ? nameEl.value : '').trim();
+      if (!nafn) return;
+      const go = coId => {
+        closeModal();
+        if (coId && window._openCompanySafe) { window._openCompanySafe(coId); return; }
+        if (window.SalaCustomerHistory && SalaCustomerHistory.open) {
+          SalaCustomerHistory.open({ id: '', source: '', kt: '', nafn });
+        }
+      };
+      const SB = (window.DB && window.DB.sb) || null;
+      if (SB) {
+        SB.from('fyrirtaeki').select('id').ilike('nafn', nafn).is('deleted_at', null).limit(1)
+          .then(res => go(res && res.data && res.data.length ? res.data[0].id : null))
+          .catch(() => go(null));
+      } else { go(null); }
+      return;
+    }
   });
 
   document.addEventListener('keydown', ev => {
     if (!state.modal) return;
     if (ev.key === 'Escape') { closeModal(); return; }
-    if (ev.key === 'Enter' && document.getElementById(HOST_ID) &&
+    if (ev.key === 'Enter' && document.activeElement.id !== 'vd-note' &&
+        document.getElementById(HOST_ID) &&
         document.getElementById(HOST_ID).contains(document.activeElement)) {
       ev.preventDefault(); saveJob();
     }
