@@ -2036,12 +2036,6 @@
       if (act === 'vd-open') { e.stopPropagation(); if (window.App && App.switchView) App.switchView('verkdagbok'); return; }
       if (act === 'vd-done') { e.stopPropagation(); vdSetDone(id.slice(3)); return; }
       if (act === 'vd-archive') { e.stopPropagation(); vdArchive(id.slice(3)); return; }
-      if (act === 'sbpin') {
-        e.stopPropagation();
-        const row = allItems().find(x => String(x.id) === String(nid));
-        if (row && window.Skipulagsbord) Skipulagsbord.addFromRow(row);
-        return;
-      }
       if (act === 'expand') {
         const rid = t.getAttribute('data-id');
         const real = rid && rid.indexOf('vd:') !== 0 ? Number(rid) : rid;
