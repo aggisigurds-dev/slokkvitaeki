@@ -1487,9 +1487,11 @@
   function renderSel() {
     const el = document.getElementById('vb-sel'); if (!el) return;
     const r = allItems().find(x => String(x.id) === String(state.selId));
-    if (!r) {
-      el.innerHTML = '<div style="' + CARD_V3 + ';padding:22px;text-align:center;color:#9aa0aa;font-size:12.5px">' +
-        '<p style="margin:0 0 14px">Smelltu á mál til að skoða það hér.</p>' +
+    if (!r || !r.important) {
+      el.innerHTML = '<div style="' + CARD_V3 + ';padding:28px 22px;text-align:center;color:#9aa0aa;font-size:12.5px">' +
+        '<div style="font-size:44px;margin-bottom:10px;color:#e0a93e;opacity:.35;line-height:1">★</div>' +
+        '<p style="margin:0 0 4px;font-weight:700;color:#6b7280;font-size:13px">Áríðandi mál</p>' +
+        '<p style="margin:0 0 18px;font-size:11.5px">Smelltu á ★ hjá máli til að skoða það hér.</p>' +
         '<button data-act="composer" style="height:34px;padding:0 16px;border-radius:8px;border:1px solid rgba(190,32,28,.5);' +
         'background:linear-gradient(180deg,#7f1d1d,#450a0a);color:#fca5a5;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">＋ Nýtt mál</button>' +
       '</div>';
@@ -1511,10 +1513,13 @@
 
     el.innerHTML = '<div style="' + CARD_V3 + '">' +
       '<div style="' + CARDHEAD + '">' +
-        '<span style="color:#fff;font-weight:800;font-size:13px;letter-spacing:.6px">VALIÐ MÁL</span>' +
+        '<span style="color:#e0a93e;font-weight:900;font-size:19px;letter-spacing:.4px;text-shadow:0 0 10px rgba(224,169,62,.3)">★ Áríðandi</span>' +
         '<button data-act="composer" title="Bæta við nýju máli efst" style="margin-left:6px;border:1px solid rgba(190,32,28,.5);' +
           'background:linear-gradient(180deg,#5f0808,#300404);color:#fca5a5;border-radius:7px;' +
           'padding:2px 8px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">＋ Nýtt</button>' +
+        '<button data-act="star" data-id="' + esc(r.id) + '" title="Fjarlægja Áríðandi merki" ' +
+          'style="border:1px solid rgba(224,169,62,.45);background:rgba(224,169,62,.12);color:#e0a93e;border-radius:7px;' +
+          'padding:2px 9px;font-size:11.5px;font-weight:700;cursor:pointer;font-family:inherit">☆ Fjarlægja</button>' +
         '<span style="margin-left:auto;font-family:ui-monospace,Consolas,monospace;font-size:11px;color:#9aa0aa">' + esc(shortDate(r.created_at)) + '</span>' +
       '</div>' +
       '<div style="padding:14px 16px 16px">' +
