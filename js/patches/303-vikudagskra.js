@@ -65,6 +65,7 @@
     offset: 0,
     jobs: [],
     modal: false,
+    editingId: null,
     form: { date: '', time: '09:00', name: '', type: 'Árskoðun', note: '' }
   };
 
@@ -156,10 +157,10 @@
 
   function jobHTML(j, small) {
     const dot = small ? 7 : 8, tf = small ? 10 : 11, nf = small ? 11 : 12;
-    return '<div title="' + esc(j.note || 'Smelltu á ✕ til að eyða') + '" data-vd-stop="1" ' +
+    return '<div title="' + esc(j.note || 'Smella til að breyta · draga á Skipulagsbord') + '" data-vd="job" data-vd-id="' + esc(j.id) + '" data-vd-stop="1" draggable="true" ' +
       'style="display:flex;align-items:center;gap:' + (small ? 5 : 6) + 'px;background:#fff;border:1px solid #e5e7eb;' +
       'border-radius:' + (small ? 8 : 9) + 'px;padding:' + (small ? '2px 5px 2px 7px' : '4px 5px 4px 7px') + ';' +
-      'box-shadow:0 1px 2px rgba(0,0,0,.06);cursor:default">' +
+      'box-shadow:0 1px 2px rgba(0,0,0,.06);cursor:pointer">' +
         '<span style="width:' + dot + 'px;height:' + dot + 'px;border-radius:50%;background:' +
           (COLOR[j.type] || '#8a8f98') + ';flex:none"></span>' +
         '<span style="font-family:ui-monospace,\'Cascadia Mono\',Consolas,monospace;font-size:' + tf +
@@ -264,6 +265,28 @@
           '</div>' +
         '</div>' +
       '</div>';
+    wireDagskraDrag();
+  }
+
+  // ── Drag til Skipulagsbords ───────────────────────────────────────────────
+  function wireDagskraDrag() {
+    const el = document.getElementById(SLOT_ID);
+    if (!el) return;
+    el.querySelectorAll('[data-vd="job"]').forEach(div => {
+      div.addEventListener('dragstart', e => {
+        const id = div.getAttribute('data-vd-id');
+        const job = state.jobs.find(j => j.id === id);
+        if (!job) return;
+        window._vdCalDrag = job;
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', 'vd:' + id);
+        div.style.opacity = '.35';
+      });
+      div.addEventListener('dragend', () => {
+        window._vdCalDrag = null;
+        div.style.opacity = '';
+      });
+    });
   }
 
   // ── skráningargluggi ─────────────────────────────────────────────────────
@@ -273,12 +296,15 @@
     return h;
   }
 
-  function openModal(dateStr) {
+  function openModal(dateStr, editJob) {
     state.modal = true;
-    state.form = { date: dateStr || fmt(new Date()), time: '09:00', name: '', type: 'Árskoðun', note: '' };
+    state.editingId = editJob ? editJob.id : null;
+    state.form = editJob
+      ? { date: editJob.date, time: editJob.time || '09:00', name: editJob.name, type: editJob.type || 'Árskoðun', note: editJob.note || '' }
+      : { date: dateStr || fmt(new Date()), time: '09:00', name: '', type: 'Árskoðun', note: '' };
     renderModal();
   }
-  function closeModal() { state.modal = false; renderModal(); }
+  function closeModal() { state.modal = false; state.editingId = null; renderModal(); }
 
   function renderModal() {
     const h = modalHost();
@@ -289,6 +315,7 @@
                 'background:#f6f7f9;outline:none;font-family:inherit;font-size:13px;color:#16181d';
     const lbl = 'font-size:12px;font-weight:700;color:#6b7280;margin-bottom:4px';
 
+    const isEdit = !!state.editingId;
     h.innerHTML =
       '<div data-vd="close" style="position:fixed;inset:0;background:rgba(10,10,12,.6);display:flex;align-items:center;' +
         'justify-content:center;z-index:4000;animation:vdDim .12s ease;padding:20px">' +
@@ -296,7 +323,7 @@
           'box-shadow:0 24px 70px rgba(0,0,0,.5);padding:18px 20px 20px;box-sizing:border-box;' +
           'animation:vdPop .16s ease;color:#16181d">' +
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
-            '<h2 style="margin:0;font-size:17px;font-weight:800">Skrá verk á dagskrá</h2>' +
+            '<h2 style="margin:0;font-size:17px;font-weight:800">' + (isEdit ? 'Breyta verk á dagskrá' : 'Skrá verk á dagskrá') + '</h2>' +
             '<button data-vd="close" style="border:none;background:none;cursor:pointer;font-size:16px;color:#9aa0aa;padding:2px 4px;font-family:inherit">✕</button>' +
           '</div>' +
           '<div style="display:flex;flex-direction:column;gap:12px">' +
@@ -323,12 +350,20 @@
             '<div><div style="' + lbl + '">Athugasemd</div>' +
               '<input type="text" id="vd-note" value="' + esc(f.note) + '" data-original="' + esc(f.note) + '" placeholder="Valfrjálst" style="' + fld + '"></div>' +
           '</div>' +
-          '<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:18px">' +
-            '<button class="vd-nav" data-vd="close" style="height:36px;padding:0 14px;border:1px solid #3a3d45;border-radius:10px;' +
-              'background:#23252c;color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700">Hætta við</button>' +
-            '<button class="vd-cta" data-vd="save" style="height:36px;padding:0 16px;border:1px solid rgba(59,130,246,.45);border-radius:10px;' +
-              'background:linear-gradient(180deg,#2c3e5c,#0f1c2e);color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:800;' +
-              'box-shadow:0 2px 8px rgba(15,28,46,.45)">Vista á dagskrá</button>' +
+          '<div style="display:flex;justify-content:space-between;gap:8px;margin-top:18px">' +
+            '<div>' +
+              (isEdit
+                ? '<button class="vd-cta" data-vd="del-edit" style="height:36px;padding:0 14px;border:1px solid rgba(195,39,28,.4);border-radius:10px;' +
+                    'background:linear-gradient(180deg,#5c1a15,#2e0a08);color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700">🗑 Eyða</button>'
+                : '') +
+            '</div>' +
+            '<div style="display:flex;gap:8px">' +
+              '<button class="vd-nav" data-vd="close" style="height:36px;padding:0 14px;border:1px solid #3a3d45;border-radius:10px;' +
+                'background:#23252c;color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:700">Hætta við</button>' +
+              '<button class="vd-cta" data-vd="save" style="height:36px;padding:0 16px;border:1px solid rgba(59,130,246,.45);border-radius:10px;' +
+                'background:linear-gradient(180deg,#2c3e5c,#0f1c2e);color:#fff;cursor:pointer;font-family:inherit;font-size:13px;font-weight:800;' +
+                'box-shadow:0 2px 8px rgba(15,28,46,.45)">' + (isEdit ? 'Vista breytingar' : 'Vista á dagskrá') + '</button>' +
+            '</div>' +
           '</div>' +
         '</div>' +
       '</div>';
@@ -358,16 +393,21 @@
       return;
     }
     const date = f.date || fmt(new Date());
-    const job = {
-      id: 'vd' + Date.now() + Math.random().toString(36).slice(2, 6),
-      date, time: f.time || '09:00', name: f.name.trim(), type: f.type || 'Annað', note: (f.note || '').trim()
-    };
-    // Hoppa á vikuna sem verkið lenti á svo notandinn sjái það strax.
-    const target = monday(new Date(date + 'T12:00:00'));
-    if (!isNaN(target)) state.offset = Math.round((target - monday(new Date())) / (7 * 864e5));
+    const editId = state.editingId;
     state.modal = false;
+    state.editingId = null;
     renderModal();
-    persist(state.jobs.concat([job]));
+    if (editId) {
+      persist(state.jobs.map(j => j.id !== editId ? j : {
+        ...j, date, time: f.time || '09:00', name: f.name.trim(), type: f.type || 'Annað', note: (f.note || '').trim()
+      }));
+    } else {
+      const job = {
+        id: 'vd' + Date.now() + Math.random().toString(36).slice(2, 6),
+        date, time: f.time || '09:00', name: f.name.trim(), type: f.type || 'Annað', note: (f.note || '').trim()
+      };
+      persist(state.jobs.concat([job]));
+    }
   }
 
   // ── atburðir ─────────────────────────────────────────────────────────────
@@ -383,14 +423,16 @@
     const stop = ev.target.closest('[data-vd-stop]');
     const throughSolid = stop && hit.contains(stop);
 
-    if (act === 'prev')  { state.offset--; render(); return; }
-    if (act === 'next')  { state.offset++; render(); return; }
-    if (act === 'today') { state.offset = 0; render(); return; }
-    if (act === 'add')   { ev.stopPropagation(); openModal(fmt(new Date())); return; }
-    if (act === 'save')  { ev.preventDefault(); saveJob(); return; }
-    if (act === 'del')   { ev.stopPropagation(); persist(state.jobs.filter(j => j && j.id !== hit.getAttribute('data-vd-id'))); return; }
-    if (act === 'close') { if (!throughSolid) closeModal(); return; }
-    if (act === 'day')   { if (!throughSolid) openModal(hit.getAttribute('data-vd-date')); }
+    if (act === 'prev')     { state.offset--; render(); return; }
+    if (act === 'next')     { state.offset++; render(); return; }
+    if (act === 'today')    { state.offset = 0; render(); return; }
+    if (act === 'add')      { ev.stopPropagation(); openModal(fmt(new Date())); return; }
+    if (act === 'save')     { ev.preventDefault(); saveJob(); return; }
+    if (act === 'del')      { ev.stopPropagation(); persist(state.jobs.filter(j => j && j.id !== hit.getAttribute('data-vd-id'))); return; }
+    if (act === 'del-edit') { ev.stopPropagation(); const delId = state.editingId; state.modal = false; state.editingId = null; renderModal(); persist(state.jobs.filter(j => j && j.id !== delId)); return; }
+    if (act === 'job')      { ev.stopPropagation(); const j = state.jobs.find(x => x && x.id === hit.getAttribute('data-vd-id')); if (j) openModal(j.date, j); return; }
+    if (act === 'close')    { if (!throughSolid) closeModal(); return; }
+    if (act === 'day')      { if (!throughSolid) openModal(hit.getAttribute('data-vd-date')); }
   });
 
   document.addEventListener('keydown', ev => {
@@ -412,7 +454,7 @@
   // Stillingar hlaðast eftir á (og breytast þegar annað tæki vistar) → endurteikna.
   if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(mount);
 
-  window.Vikudagskra = { mount, render, open: openModal };
+  window.Vikudagskra = { mount, render, open: openModal, removeJob: id => persist(state.jobs.filter(j => j && j.id !== id)) };
 
   // Samningur við Verkborðið (#231, hönnun V3): „🗓 Á dagskrá" á röð — og
   // „Setja á dagskrá" í VALIÐ MÁL — senda st-skra-verk og bannerinn opnar
