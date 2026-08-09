@@ -335,6 +335,7 @@
     addType: 'annad',
     addTags: [],        // merki valin í ný-beiðni línunni (hreinsast eftir skráningu)
     threadLatest: {},   // beidniId → nýjasti póstur í þræðinum (sjá loadThreadLatest)
+    attachments: {},    // beidniId → [{ id, name, path, url, mime_type, size }]
     addRsk: null,       // síðasta RSK-uppfletting úr fyrirtækjareitnum {kt,nafn,heimilisfang}
     // Þjónustuverk v3: ⭐ Áríðandi-sía, dálkaröðun, síðuskipting, composer-sýnileiki
     // Áríðandi-sían byrjar AF (Agnar 2026-08-07) — borðið sýnir öll mál sjálfgefið,
@@ -511,6 +512,97 @@
       if (expand && r.data) state.expandedId = r.data.id;   // ⚙ Fleiri valkostir → opna ritilinn strax
       renderControls(); renderList(); refreshBadge();
     } catch (e) { toast('Náði ekki að bæta við: ' + (e.message || e)); }
+  }
+
+  // ── Fylgiskjöl (attachments) ─────────────────────────────────────────────
+  const ATT_BUCKET = 'verkbord-files';
+
+  async function loadAttachments(beidniId) {
+    const SB = getSB(); if (!SB) return;
+    const { data } = await SB.from('thjonustubeidni_files').select('*').eq('beidni_id', beidniId).order('created_at');
+    state.attachments[beidniId] = data || [];
+  }
+
+  async function uploadAttachment(beidniId, file) {
+    const SB = getSB(); if (!SB) return;
+    toast('Hleð upp...');
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const path = String(beidniId) + '/' + Date.now() + '-' + safeName;
+    const { error: upErr } = await SB.storage.from(ATT_BUCKET).upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false });
+    if (upErr) { toast('Villa við upphleðslu: ' + (upErr.message || upErr)); return; }
+    const { data: urlData } = SB.storage.from(ATT_BUCKET).getPublicUrl(path);
+    const { error: insErr } = await SB.from('thjonustubeidni_files').insert({
+      beidni_id: Number(beidniId), name: file.name, path,
+      url: urlData ? urlData.publicUrl : null,
+      mime_type: file.type || null, size: file.size || null
+    });
+    if (insErr) { toast('Villa við skráningu: ' + (insErr.message || insErr)); return; }
+    toast(file.name + ' vistað');
+    await loadAttachments(beidniId);
+    renderSel();
+  }
+
+  async function deleteAttachment(attId, path, beidniId) {
+    const SB = getSB(); if (!SB) return;
+    if (path) await SB.storage.from(ATT_BUCKET).remove([path]);
+    await SB.from('thjonustubeidni_files').delete().eq('id', attId);
+    await loadAttachments(beidniId);
+    renderSel();
+  }
+
+  // Global handlers referenced from inline HTML (onchange/onclick)
+  window.__vbUpload = function (ev, beidniId) {
+    const f = ev.target && ev.target.files && ev.target.files[0]; if (!f) return;
+    uploadAttachment(beidniId, f);
+    ev.target.value = '';  // reset so same file can be re-uploaded
+  };
+  window.__vbDelAtt = function (attId, path, beidniId) {
+    if (!window.confirm('Eyða fylgiskjali?')) return;
+    deleteAttachment(attId, path, beidniId);
+  };
+
+  function attFileIcon(mime) {
+    if (!mime) return '📄';
+    if (mime.startsWith('image/')) return '🖼';
+    if (mime === 'application/pdf') return '📑';
+    if (mime.includes('word') || mime.includes('document')) return '📝';
+    if (mime.includes('sheet') || mime.includes('excel')) return '📊';
+    return '📄';
+  }
+
+  function fmtSize(bytes) {
+    if (!bytes) return '';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return Math.round(bytes / 1024) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  function attSectionHTML(r) {
+    const atts = state.attachments[r.id] || [];
+    const bid = esc(String(r.id));
+    return '<div style="border-top:1px solid #f1f3f5;padding-top:10px;margin-top:6px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+        '<span style="font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px">📎 Fylgiskjöl</span>' +
+        '<label style="cursor:pointer;height:26px;padding:0 10px;border-radius:7px;border:1px solid #d8dadf;background:#fff;' +
+          'font-size:11px;font-weight:700;color:#4b5058;font-family:inherit;display:inline-flex;align-items:center;gap:4px">' +
+          '＋ Hlaða inn<input type="file" multiple style="display:none" onchange="window.__vbUpload(event,' + bid + ')">' +
+        '</label>' +
+      '</div>' +
+      (atts.length
+        ? atts.map(function (a) {
+            return '<div style="display:flex;align-items:center;gap:7px;padding:5px 0;border-bottom:1px solid #f8fafc">' +
+              '<span style="font-size:15px;flex:none">' + attFileIcon(a.mime_type) + '</span>' +
+              '<a href="' + esc(a.url || '') + '" target="_blank" rel="noopener" ' +
+                'style="flex:1;min-width:0;font-size:12px;color:#2563eb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:none" ' +
+                'title="' + esc(a.name) + '">' + esc(a.name) + '</a>' +
+              '<span style="font-size:10.5px;color:#9aa0aa;flex:none">' + fmtSize(a.size) + '</span>' +
+              '<button onclick="window.__vbDelAtt(' + a.id + ',\'' + esc(a.path || '') + '\',' + bid + ')" ' +
+                'style="border:none;background:none;color:#dc2626;cursor:pointer;font-size:14px;padding:2px 5px;flex:none;line-height:1" ' +
+                'title="Eyða">✕</button>' +
+            '</div>';
+          }).join('')
+        : '<div style="font-size:12px;color:#9aa0aa;padding:4px 0">Engin fylgiskjöl</div>') +
+    '</div>';
   }
 
   async function saveRow(id, patch) {
@@ -1554,6 +1646,8 @@
               }).join('') +
             '</div></div>'
           : '') +
+        // FYLGISKJÖL — sýnd alltaf (nema á verkdagbók-færslum)
+        (!r._vd ? attSectionHTML(r) : '') +
         (editing
           ? '<div id="vb-sel-ed" style="margin-top:4px;padding-top:12px;border-top:1px solid #eef0f2">' + renderEditor(r) + '</div>'
           : '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;padding-top:12px;border-top:1px solid #eef0f2">' +
@@ -1563,7 +1657,6 @@
                   '<button class="vb-btn" data-act="vd-archive" data-id="' + esc(r.id) + '" style="color:#dc2626">🗑 Fela</button>'
                 : (isPost(r) ? btn('reply', '✉ Svara') : '') +
                   btn('skra', '🗓 Setja á dagskrá', 'blue') +
-                  btn('sbpin', '📋 Skipulag', 'light') +
                   btn('edit', '⋯ Meira', 'light') +
                   (isOpen(r) ? btn('done', '✓ Loka máli', 'light') : '')) +
             '</div>') +
@@ -1961,8 +2054,13 @@
       // ── V3-aðgerðir (flokkakort + valið mál) ─────────────────────────────
       if (act === 'selrow') {
         state.selId = t.getAttribute('data-id');
-        state.expandedId = null;          // nýtt mál valið → byrja í lestrarsýn
+        state.expandedId = null;
         renderList(); renderSel();
+        // Load attachments in background; re-render panel when ready
+        const _selId = state.selId;
+        loadAttachments(_selId).then(function () {
+          if (String(state.selId) === String(_selId)) renderSel();
+        });
         return;
       }
       if (act === 'cattoggle') {
