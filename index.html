@@ -568,8 +568,14 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     if (!el) return;
     el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3)">Hleður...</div>';
     if (DB.online) {
-      var r = await DB.sb.from('uttaeki').select('*').eq('status','geymsla').order('created_at', {ascending:false});
-      this.items = r.data || [];
+      try {
+        var r = await DB.sb.from('uttaeki').select('*').eq('status','geymsla').order('created_at', {ascending:false});
+        if (r.error) throw new Error(r.error.message || 'Supabase villa');
+        this.items = r.data || [];
+      } catch(e) {
+        el.innerHTML = '<div style="padding:40px;text-align:center"><div style="font-size:15px;color:#dc2626;font-weight:600;margin-bottom:8px">⚠ Geymsla: ' + (e.message||'Óþekkt villa') + '</div><button class="btn btn-sm" onclick="Geymsla.load()" style="margin-top:8px">↺ Reyna aftur</button></div>';
+        return;
+      }
     } else { this.items = []; }
     this.render();
   },
