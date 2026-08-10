@@ -193,8 +193,19 @@ ${all('button[style*="background: #16a34a"]')}{
    §5 — Search box: lift the slim flat input to the benchmark style
    Hits sala.js / vorur.js / tekjur.js / 11-bokhalds-yfirlit.js search
    fields (typed inline as #cbd5e1 borders).
+
+   2026-08-10: the selector below is far broader than "the search box" —
+   practically every dynamically-rendered input in this codebase
+   carries an inline style attribute, so this rule was also matching the
+   POS cart's hand-sized price/discount inputs (.pos-price-edit /
+   .pos-disc-edit), ballooning them to a 42px/14px-padded box and clipping
+   their digits (verkefnalisti: "numbers don't fit the box", months-old).
+   This file's own header already says Sala's cart is patch 230's territory
+   ("patch 230 already styles .pos-cart... we polish the rest") — the
+   selector just didn't actually honour that. Those two classes are now
+   excluded explicitly so this rule can't silently re-claim them again.
    ============================================================ */
-${all('input[type="text"][style]')},
+${all('input[type="text"][style]:not(.pos-price-edit):not(.pos-disc-edit)')},
 ${all('input[type="search"][style]')},
 ${all('input[placeholder*="Leita"]')},
 ${all('input[placeholder*="🔎"]')}{
