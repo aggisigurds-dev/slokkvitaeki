@@ -1064,7 +1064,11 @@
       @media (max-width: 1180px) {
         #view-verkbord .vb-split { grid-template-columns: minmax(0,1fr) !important; }
         #view-verkbord #vb-sel { position: static !important; order: -1; }
-        #view-verkbord #vb-controls { position: static !important; }
+        /* #vb-controls STAYS sticky here (2026-08-10, Agnar: "the top cuttes
+           off when scrolling... I should always be able to see it fully") —
+           this rule used to force it static too, but that fought its own
+           purpose (staying at hand while scrolling a long list) for no
+           layout reason tied to the single-column collapse above. */
       }
       @media (max-width: 820px) {
         #view-verkbord .vb-wrap { padding: 14px 10px 90px; }
