@@ -235,23 +235,24 @@
       '#view-sala .pos-cart #pos-notes-staff::placeholder{color:#94a3b8!important}',
       '#view-sala .pos-cart #pos-checkout{background:linear-gradient(180deg,#c2271c 0%,#8f150d 55%,#5f0c06 100%)!important;color:#fff!important;border:1px solid #3f0502!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 8px 18px -8px rgba(95,12,6,.65)!important;text-shadow:none!important}',
       '#view-sala .pos-cart #pos-checkout:disabled{opacity:.55!important;cursor:not-allowed!important}',
-      // The Brunastál skin (patch 245) styles EVERY .view input as a 42px-tall,
-      // 14px-padded box. That balloons the cart's tiny inline inputs (unit-price
-      // edit, the per-line „% afsl" field, and the 28/46px discount % / kr fields
-      // — the padding hides their value entirely → "percentage doesn't show").
-      // Re-assert the compact style for those inputs (higher specificity +
-      // !important beats patch 245). 2026-07-31: .pos-disc-edit added.
-      '#view-sala .pos-cart .pos-price-edit,#view-sala .pos-cart .pos-disc-edit{height:auto!important;min-height:0!important;padding:0 2px!important;border:none!important;border-bottom:1px dotted #cbd5e1!important;border-radius:0!important;background:transparent!important;font-size:11px!important;text-align:right!important;color:#64748b!important}',
-      '#view-sala .pos-cart .pos-price-edit{width:64px!important}',
-      '#view-sala .pos-cart .pos-disc-edit{width:40px!important;color:#dc2626!important;font-weight:700!important;text-align:center!important;background:#fff7ed!important;border:1px solid #f59e0b!important;border-radius:5px!important;padding:1px 3px!important}',
+      // 2026-08-10: .pos-price-edit/.pos-disc-edit sizing used to live here,
+      // fighting patch 245/250's global input rules for width/padding/font-size
+      // via stylesheet !important — a fight whose winner depended on selector
+      // specificity details and ended up flipping with each new patch (see
+      // buildLinesHTML for the full history). They're now sized INLINE with
+      // !important instead, which no stylesheet rule can ever outrank, so
+      // there's nothing left to assert at the stylesheet level for them.
       '#view-sala .pos-cart .pos-disc-edit::placeholder{color:#cbd5e1!important;font-weight:400!important}',
       '#view-sala .pos-cart #pos-discount,#view-sala .pos-cart #pos-discount-kr{height:auto!important;min-height:0!important;padding:0!important;border:none!important;border-radius:0!important;background:transparent!important;font-size:13px!important;text-align:right!important;color:#0f172a!important}',
       '#view-sala .pos-cart #pos-discount{width:30px!important}',
       '#view-sala .pos-cart #pos-discount-kr{width:46px!important}',
       // 2026-07-31 (ósk Agnars): karfan þrengd — nótu-reitir ~60% lægri, magn-stepper minni.
       '#view-sala .pos-cart #pos-notes,#view-sala .pos-cart #pos-notes-staff{min-height:0!important;height:28px!important;padding:4px 10px!important;font-size:12.5px!important;line-height:1.25!important}',
-      '#view-sala .pos-cart .pos-qty-up,#view-sala .pos-cart .pos-qty-dn{width:22px!important;height:22px!important;font-size:13px!important;line-height:1!important}',
-      '#view-sala .pos-cart input[data-_cqi-input]{width:32px!important;padding:1px 2px!important;font-size:12px!important}'
+      '#view-sala .pos-cart .pos-qty-up,#view-sala .pos-cart .pos-qty-dn{width:22px!important;height:22px!important;font-size:13px!important;line-height:1!important}'
+      // pos-price-edit/pos-disc-edit/pos-qty-edit sizing lives INLINE with
+      // !important on the elements themselves (2026-08-10) — see buildLinesHTML
+      // — so it can never again lose a specificity fight with a global input
+      // rule from another patch. Nothing to assert here for those three anymore.
     ].join('\n');
     (document.head||document.documentElement).appendChild(s);
   }
@@ -600,7 +601,7 @@
     // Dálka-haus (labels EINU SINNI — „afsl" stendur hér, ekki á hverri línu).
     var lineHeader = '<div style="display:flex;align-items:center;gap:7px;padding:1px 9px 5px;font-size:9px;font-weight:700;letter-spacing:.04em;color:#94a3b8;text-transform:uppercase">' +
         '<div style="flex:1;min-width:0">Einingarv. m/vsk · afsl%</div>' +
-        '<div style="width:74px;text-align:center;flex-shrink:0">Fjöldi</div>' +
+        '<div style="width:88px;text-align:center;flex-shrink:0">Fjöldi</div>' +
         '<div style="min-width:56px;text-align:right;flex-shrink:0">Samtals</div>' +
       '</div>';
     return lineHeader + state.lines.map(function(l,idx){
@@ -621,20 +622,39 @@
           // Verð (m. VSK) · afsláttur % — EIN lína (nowrap). Merkin standa í
           // hausnum að ofan svo hér eru aðeins tölurnar (2026-07-31, ósk Agnars).
           '<div style="display:flex;align-items:center;gap:3px;margin-top:2px;font-size:11px;color:#64748b;font-family:\'Space Mono\',monospace;white-space:nowrap;overflow:hidden">' +
+            // 2026-08-10 (Agnar: „numbers don't fit in the box, been troubling for
+            // months, differs between computers"): root cause was three separate
+            // patches (115, 245, 250) each fighting over these inputs' padding/
+            // font-size/width with stylesheet !important, with the winner depending
+            // on which theme preset was active — hence "differs between computers".
+            // A stylesheet rule, however specific, can never be more important than
+            // an *inline* !important — so these three cart inputs now carry their
+            // sizing inline with !important, which no current or future global
+            // input rule (however it's selectored) can ever override again.
             '<input class="pos-price-edit" data-idx="'+idx+'" type="text" inputmode="decimal" value="'+unitInc+'" ' +
               'title="Einingarverð m. VSK — smelltu til að breyta" ' +
-              'style="width:64px;padding:0 1px;border:none;border-bottom:1px dotted #cbd5e1;background:transparent;font:inherit;font-size:11px;color:#64748b;text-align:right;font-variant-numeric:tabular-nums">' +
+              'style="all:revert;box-sizing:border-box!important;appearance:none!important;-webkit-appearance:none!important;width:54px!important;min-width:54px!important;max-width:54px!important;height:16px!important;min-height:0!important;padding:0 2px!important;margin:0!important;border:none!important;border-bottom:1px dotted #cbd5e1!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;outline:none!important;font-family:\'Space Mono\',monospace!important;font-size:11px!important;font-weight:400!important;line-height:14px!important;color:#64748b!important;text-align:right!important;vertical-align:baseline!important;font-variant-numeric:tabular-nums!important">' +
             '<span>kr/stk</span>' +
             '<span style="opacity:.4;padding:0 1px">·</span>' +
             '<input class="pos-disc-edit" data-idx="'+idx+'" type="text" inputmode="decimal" value="'+(dPct>0?fmtPct(dPct):'')+'" placeholder="0" ' +
               'title="Afsláttur % á þessa línu" ' +
-              'style="width:24px;padding:0 1px;border:none;border-bottom:1px dotted '+(dPct>0?'#dc2626':'#cbd5e1')+';background:transparent;font:inherit;font-size:11px;color:'+(dPct>0?'#dc2626':'#64748b')+';text-align:right;font-variant-numeric:tabular-nums">' +
+              'style="all:revert;box-sizing:border-box!important;appearance:none!important;-webkit-appearance:none!important;width:32px!important;min-width:32px!important;max-width:32px!important;height:18px!important;min-height:0!important;padding:1px 3px!important;margin:0!important;border:1px solid '+(dPct>0?'#f59e0b':'#e2e8f0')+'!important;border-radius:5px!important;background:'+(dPct>0?'#fff7ed':'transparent')+'!important;box-shadow:none!important;outline:none!important;font-family:\'Space Mono\',monospace!important;font-size:11px!important;font-weight:'+(dPct>0?'700':'400')+'!important;line-height:16px!important;color:'+(dPct>0?'#dc2626':'#64748b')+'!important;text-align:center!important;vertical-align:baseline!important;font-variant-numeric:tabular-nums!important">' +
             '<span'+(dPct>0?' style="color:#dc2626"':'')+'>%</span>' +
           '</div>' +
         '</div>' +
         '<div style="display:flex;align-items:center;background:#fff;border:1px solid #dbe2ea;border-radius:8px;overflow:hidden;flex-shrink:0">' +
           '<button class="pos-qty-dn" data-idx="'+idx+'" style="background:#fff;border:none;width:24px;height:24px;cursor:pointer;font-weight:800;color:#475569;font-size:14px;line-height:1">−</button>' +
-          '<span style="min-width:18px;text-align:center;font-weight:800;font-size:13px;color:#0f172a;font-variant-numeric:tabular-nums">'+l.qty+'</span>' +
+          // Fjöldi — native editable input (2026-08-10, replaces the read-only
+          // span + a separate async patch that swapped it out after the fact).
+          // That patch raced pos.js's own re-renders: every qty change/price
+          // edit called rerenderDynamic(), which replaces #pos-lines.innerHTML
+          // wholesale, wiping the swapped-in input back to a span until the
+          // patch's MutationObserver reacted — a window where typed keystrokes
+          // could land on a plain span. Rendering the input directly here means
+          // it exists on every render, with no swap and no race, on every machine.
+          '<input class="pos-qty-edit" data-idx="'+idx+'" type="text" inputmode="numeric" pattern="[0-9]*" value="'+l.qty+'" ' +
+            'title="Fjöldi — smelltu til að slá inn beint" ' +
+            'style="all:revert;box-sizing:border-box!important;appearance:none!important;-webkit-appearance:none!important;width:36px!important;min-width:36px!important;max-width:36px!important;height:24px!important;min-height:0!important;max-height:24px!important;padding:0!important;margin:0!important;border:none!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;outline:none!important;font-family:\'Space Mono\',monospace!important;font-size:13px!important;font-weight:800!important;line-height:24px!important;color:#0f172a!important;text-align:center!important;vertical-align:baseline!important;font-variant-numeric:tabular-nums!important">' +
           '<button class="pos-qty-up" data-idx="'+idx+'" style="background:#fff;border:none;width:24px;height:24px;cursor:pointer;font-weight:800;color:#475569;font-size:14px;line-height:1">+</button>' +
         '</div>' +
         '<div class="pos-line-tot" data-idx="'+idx+'" style="flex-shrink:0;font-weight:800;color:#0f172a;font-size:13px;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace;white-space:nowrap;text-align:right">'+fmtKr(lineInc)+'</div>' +
@@ -892,6 +912,49 @@
       _updateTotalsCells();
       var cb = document.getElementById('pos-checkout');
       if (cb) { var tt = totals(); cb.innerHTML = tt.total > 0 ? ('✓ ÁFRAM · '+fmtKr(tt.total)) : '✓ ÁFRAM'; cb.disabled = tt.total === 0 || !beidniOk(); }
+    });
+    // Fjöldi — native input (2026-08-10, ósk Agnars: „I should be able to put
+    // in manual numbers in fjöldi instead of pushing up and down"). Same
+    // live-update-without-redrawing-the-input pattern as price/disc above, so
+    // the input never gets swapped out (and focus/cursor never lost) while
+    // typing — no MutationObserver, no re-render race. Deleting down to 0 is
+    // decided on commit (blur/Enter), not on every keystroke, so a
+    // momentarily-empty field while retyping doesn't drop the line.
+    function applyQtyLive(i, newQty) {
+      var l = state.lines[i]; if (!l) return;
+      l.qty = newQty;
+      var cell = document.querySelector('.pos-line-tot[data-idx="'+i+'"]');
+      if (cell) cell.textContent = fmtKr(lineTotalInc(l));
+      _updateTotalsCells();
+      var cbQ = document.getElementById('pos-checkout');
+      if (cbQ) { var ttQ = totals(); cbQ.innerHTML = ttQ.total > 0 ? ('✓ ÁFRAM · '+fmtKr(ttQ.total)) : '✓ ÁFRAM'; cbQ.disabled = ttQ.total === 0 || !beidniOk(); }
+    }
+    document.getElementById('pos-lines').addEventListener('input', function(e){
+      var q = e.target.closest('.pos-qty-edit');
+      if (!q) return;
+      var digits = String(q.value).replace(/[^0-9]/g,'');
+      if (digits === '') return; // mid-edit (field cleared) — wait for blur/Enter to decide
+      applyQtyLive(parseInt(q.getAttribute('data-idx'), 10), parseInt(digits, 10) || 0);
+    });
+    document.getElementById('pos-lines').addEventListener('keydown', function(e){
+      var q = e.target.closest('.pos-qty-edit');
+      if (!q) return;
+      var i = parseInt(q.getAttribute('data-idx'), 10);
+      var l = state.lines[i]; if (!l) return;
+      if (e.key === 'Enter') { e.preventDefault(); q.blur(); return; }
+      if (e.key === 'Escape') { e.preventDefault(); q.value = String(l.qty); q.blur(); return; }
+      if (e.key === 'ArrowUp') { e.preventDefault(); var nv1 = (parseInt(q.value, 10) || l.qty) + 1; q.value = String(nv1); applyQtyLive(i, nv1); return; }
+      if (e.key === 'ArrowDown') { e.preventDefault(); var nv2 = Math.max(0, (parseInt(q.value, 10) || l.qty) - 1); q.value = String(nv2); applyQtyLive(i, nv2); return; }
+    });
+    document.getElementById('pos-lines').addEventListener('focusout', function(e){
+      var q = e.target.closest('.pos-qty-edit');
+      if (!q) return;
+      var i = parseInt(q.getAttribute('data-idx'), 10);
+      var l = state.lines[i]; if (!l) return;
+      var val = parseInt(String(q.value).replace(/[^0-9]/g,''), 10);
+      if (!val || val <= 0) { state.lines.splice(i, 1); rerenderDynamic(); return; }
+      if (val !== l.qty) applyQtyLive(i, val);
+      q.value = String(val); // normalize (e.g. strip a leading "007")
     });
     // Discount % input — live update without re-rendering the input.
     // Previous version replaced #pos-totals.innerHTML on every keystroke,
