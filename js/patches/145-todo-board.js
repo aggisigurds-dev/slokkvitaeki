@@ -245,7 +245,11 @@
     });
     // Delete column
     colEl.querySelector('._tb-col-del').addEventListener('click', async () => {
-      if ((col.cards || []).length && !window.confirm('Eyða dálkinum "' + col.title + '" og ' + col.cards.length + ' kort?')) return;
+      if ((col.cards || []).length) {
+        const colDelMsg = 'Eyða dálkinum "' + col.title + '" og ' + col.cards.length + ' kort?';
+        const colDelOk = (window.Confirm && Confirm.show) ? await Confirm.show(colDelMsg) : window.confirm(colDelMsg);
+        if (!colDelOk) return;
+      }
       _data.columns = _data.columns.filter(c => c.id !== col.id);
       await save(_data);
       renderBoard();
@@ -368,7 +372,8 @@
         b.addEventListener('click', async e => {
           e.stopPropagation();
           const i = +b.dataset.rm;
-          if (!window.confirm('Eyða viðhenginu?')) return;
+          const attDelOk = (window.Confirm && Confirm.show) ? await Confirm.show('Eyða viðhenginu?') : window.confirm('Eyða viðhenginu?');
+          if (!attDelOk) return;
           card.attachments.splice(i, 1);
           card.updated_at = new Date().toISOString();
           await save(_data);
@@ -438,7 +443,8 @@
 
     // Delete card
     delBtn.addEventListener('click', async () => {
-      if (!window.confirm('Eyða kortinu?')) return;
+      const cardDelOk = (window.Confirm && Confirm.show) ? await Confirm.show('Eyða kortinu?') : window.confirm('Eyða kortinu?');
+      if (!cardDelOk) return;
       col.cards = col.cards.filter(c => c.id !== card.id);
       _expandedCard = null;
       await save(_data);
