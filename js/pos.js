@@ -1026,11 +1026,20 @@
     var m=document.createElement('div');
     m.id='pos-svc-modal';
     m.style.cssText='position:fixed;inset:0;z-index:10060;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    var mode='service'; // 'service' | 'product' — hvor flipinn er valinn
+    var vatMode='ex'; // 'ex' | 'gross' — hvernig VERÐ-reiturinn er lesinn/sýndur
+    var DEFAULT_DESC={service:'Önnur þjónusta',product:'Önnur Tæki'};
     m.innerHTML='<div style="background:#fff;border-radius:14px;padding:22px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.25)">'+
-      '<h2 style="margin:0 0 14px;font-size:17px;color:#0f172a">➕ Önnur þjónusta</h2>'+
+      '<div style="display:flex;align-items:baseline;gap:16px;margin:0 0 14px;flex-wrap:wrap">'+
+        '<button id="pos-svc-tab-service" style="border:none;background:none;padding:0;font:inherit;font-size:17px;font-weight:800;color:#0f172a;cursor:pointer">➕ Önnur þjónusta</button>'+
+        '<button id="pos-svc-tab-product" style="border:none;background:none;padding:0;font:inherit;font-size:13px;font-weight:600;color:#2563eb;cursor:pointer">➕ Önnur Tæki</button>'+
+      '</div>'+
       '<label style="display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 4px;text-transform:uppercase">Lýsing</label>'+
       '<input id="pos-svc-desc" value="Önnur þjónusta" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;margin-bottom:12px">'+
-      '<label style="display:block;font-size:11px;font-weight:700;color:#475569;margin:0 0 4px;text-transform:uppercase">Verð án VSK</label>'+
+      '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 4px">'+
+        '<label id="pos-svc-price-lbl" style="font-size:11px;font-weight:700;color:#475569;text-transform:uppercase">Verð án VSK</label>'+
+        '<button id="pos-svc-vat-toggle" style="border:none;background:none;padding:0;font:inherit;font-size:11px;font-weight:700;color:#2563eb;cursor:pointer;text-decoration:underline">Verð með vsk</button>'+
+      '</div>'+
       '<input id="pos-svc-price" type="text" inputmode="decimal" value="5000" style="width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;box-sizing:border-box;text-align:right">'+
       '<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px">'+
         '<button id="pos-svc-x" style="padding:9px 16px;border-radius:8px;border:1px solid #e2e8f0;background:#fff;color:#334155;cursor:pointer">Hætta við</button>'+
@@ -1041,16 +1050,56 @@
     var close=function(){m.remove();};
     m.querySelector('#pos-svc-x').addEventListener('click',close);
     m.addEventListener('click',function(e){if(e.target===m)close();});
+
+    var descEl=m.querySelector('#pos-svc-desc');
+    var priceEl=m.querySelector('#pos-svc-price');
+    var priceLblEl=m.querySelector('#pos-svc-price-lbl');
+    var vatToggleEl=m.querySelector('#pos-svc-vat-toggle');
+    var tabServiceEl=m.querySelector('#pos-svc-tab-service');
+    var tabProductEl=m.querySelector('#pos-svc-tab-product');
+
+    function setMode(next){
+      if(mode===next)return;
+      // Only swap the description if it's still an auto-fill default —
+      // never clobber text the user actually typed in.
+      if(descEl.value===DEFAULT_DESC[mode])descEl.value=DEFAULT_DESC[next];
+      mode=next;
+      var isSvc=mode==='service';
+      tabServiceEl.style.fontSize=isSvc?'17px':'13px';
+      tabServiceEl.style.fontWeight=isSvc?'800':'600';
+      tabServiceEl.style.color=isSvc?'#0f172a':'#2563eb';
+      tabProductEl.style.fontSize=isSvc?'13px':'17px';
+      tabProductEl.style.fontWeight=isSvc?'600':'800';
+      tabProductEl.style.color=isSvc?'#2563eb':'#0f172a';
+    }
+    tabServiceEl.addEventListener('click',function(){setMode('service');});
+    tabProductEl.addEventListener('click',function(){setMode('product');});
+
+    function setVatMode(next){
+      if(vatMode===next)return;
+      var raw=(priceEl.value||'').replace(/\./g,'').replace(',','.').replace(/[^0-9.]/g,'');
+      var n=parseFloat(raw);
+      if(!isNaN(n)){
+        n=next==='gross'?n*1.24:n/1.24;
+        priceEl.value=String(Math.round(n));
+      }
+      vatMode=next;
+      priceLblEl.textContent=vatMode==='gross'?'Verð með VSK':'Verð án VSK';
+      vatToggleEl.textContent=vatMode==='gross'?'Verð án vsk':'Verð með vsk';
+    }
+    vatToggleEl.addEventListener('click',function(){setVatMode(vatMode==='gross'?'ex':'gross');});
+
     m.querySelector('#pos-svc-ok').addEventListener('click',function(){
-      var d=(m.querySelector('#pos-svc-desc').value||'').trim();
-      var p=(m.querySelector('#pos-svc-price').value||'').replace(/\./g,'').replace(',','.').replace(/[^0-9.]/g,'');
+      var d=(descEl.value||'').trim();
+      var p=(priceEl.value||'').replace(/\./g,'').replace(',','.').replace(/[^0-9.]/g,'');
       var pr=parseFloat(p);
       if(!d){alert('Lýsing vantar');return;}
       if(isNaN(pr)){alert('Ógilt verð');return;}
-      state.lines.push({type:'service',desc:d,qty:1,unit_price_ex_vat:pr,vsk_pct:24,ref:''});
+      if(vatMode==='gross')pr=pr/1.24;
+      state.lines.push({type:mode,desc:d,qty:1,unit_price_ex_vat:pr,vsk_pct:24,ref:''});
       close();rerenderDynamic();
     });
-    setTimeout(function(){var f=m.querySelector('#pos-svc-desc');if(f){f.focus();f.select();}},40);
+    setTimeout(function(){descEl.focus();descEl.select();},40);
   }
   function scanQr(){if(!window.Scanner||typeof Scanner.open!=='function'){alert('QR skanni ekki tilbúinn');return;}var toast=function(msg){if(window.Toast&&Toast.show)Toast.show(msg);};Scanner.open(function(code){if(!code)return;DB.sb.from('uttaeki').select('serial,type,size').eq('serial',code).maybeSingle().then(function(r){if(r.data){var u=r.data;state.lines.push({type:'service',desc:'Áfylling · '+(u.type||'')+' '+(u.size||''),qty:1,unit_price_ex_vat:8900,vsk_pct:24,ref:u.serial});toast('✓ '+(u.serial||code)+' bætt við');}else{state.lines.push({type:'service',desc:'Þjónusta',qty:1,unit_price_ex_vat:8900,vsk_pct:24,ref:code});toast('Tæki „'+code+'" fannst ekki — bætt við sem þjónustu');}rerenderDynamic();}).catch(function(e){toast('Villa við skönnun: '+(e.message||e));});});}
   function addProductLine(pid){var p=state.products.find(function(x){return x.id===pid;});if(!p)return;var ex=state.lines.find(function(l){return l.type==='product'&&l.product_id===pid;});if(ex){ex.qty++;}else state.lines.push({type:'product',desc:p.nafn,qty:1,unit_price_ex_vat:p.verd_an_vsk,vsk_pct:p.vsk_prosenta||24,product_id:p.id,ref:''});rerenderDynamic();}
