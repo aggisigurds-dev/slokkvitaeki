@@ -1382,6 +1382,9 @@
       'style="display:flex;align-items:' + (clamp ? 'flex-start' : 'center') + ';gap:10px;padding:' + (clamp ? '10px 12px' : '9px 12px') + ';' +
       'border-top:1px solid #eef0f2;cursor:pointer;background:' + (on ? 'rgba(195,39,28,.05)' : '#fff') + ';' +
       (on ? 'box-shadow:inset 3px 0 0 #c3271c;' : '') + '">' +
+        // 2026-08-10 (ósk Agnars): smellanleg Áríðandi-stjarna — sama data-act="star"
+        // og eldri renderRow() notar, svo toggleStar()/wireDelegation grípa hana sjálfkrafa.
+        '<span data-act="star" data-id="' + esc(r.id) + '" title="Áríðandi" style="flex:none;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;line-height:1;color:' + (r.important ? '#e0a93e' : '#cbd2dc') + (clamp ? ';margin-top:1px' : '') + '">' + (r.important ? '★' : '☆') + '</span>' +
         '<div style="flex:none;width:42px' + (clamp ? ';padding-top:2px' : '') + '">' +
           '<div style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px;font-weight:700;color:#3f4650">' +
             esc(shortDate(r.created_at)) + '</div>' +
@@ -1394,7 +1397,7 @@
           // Email rows: sender name as the main bold line, subject as sub-line
           (emailFrom
             ? '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-                (r.important ? '<span style="color:#eab308">★ </span>' : '') + esc(emailFrom) + '</div>'
+                esc(emailFrom) + '</div>'
             : '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
                 rowHeadHTML(r) + '</div>') +
           (sub ? '<div style="' + subStyle + '">' + esc(sub) + '</div>' : '') +
@@ -1434,6 +1437,10 @@
     return '<div class="vb-v3row" data-act="selrow" data-id="' + esc(r.id) + '" ' +
       'style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-top:1px solid #eef0f2;cursor:pointer;' +
       'background:' + (on ? 'rgba(195,39,28,.05)' : '#fff') + ';' + (on ? 'box-shadow:inset 3px 0 0 #c3271c;' : '') + '">' +
+        // 2026-08-10 (ósk Agnars): smellanleg stjarna hér líka — þessi fallið teiknar
+        // BÆÐI „🆕 NÝJAST" og „★ Áríðandi" kortin, svo smellur hér inni í Áríðandi
+        // sjálfu fjarlægir málið úr þeim glugga samstundis (renderTop síar á r.important).
+        '<span data-act="star" data-id="' + esc(r.id) + '" title="Áríðandi" style="flex:none;width:20px;height:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:1px;font-size:16px;line-height:1;color:' + (r.important ? '#e0a93e' : '#cbd2dc') + '">' + (r.important ? '★' : '☆') + '</span>' +
         '<div style="flex:none;width:40px;padding-top:1px">' +
           '<div style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px;font-weight:700;color:#3f4650">' +
             esc(shortDate(r.created_at)) + '</div>' +
@@ -1444,7 +1451,7 @@
         '<div style="flex:1;min-width:0">' +
           (emailFrom
             ? '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-                (r.important ? '<span style="color:#eab308">★ </span>' : '') + esc(emailFrom) + '</div>'
+                esc(emailFrom) + '</div>'
             : '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
                 rowHeadHTML(r) + '</div>') +
           (sub
