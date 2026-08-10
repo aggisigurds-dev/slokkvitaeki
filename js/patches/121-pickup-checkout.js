@@ -117,6 +117,12 @@
   // 2026-05-24: Final-adjustments state — applied on top of the sale right
   // before the draft flips to final. Both reset to defaults on modal close.
   let pickupDiscountPct = 0;   // 0–100 (%), scales every line's unit_price
+  // 2026-08-10 (ósk Agnars): manual FIXED kr discount, alongside the % one —
+  // stacks on top of it (same convention as pos.js's own #pos-discount +
+  // #pos-discount-kr pair in the main Sala cart), clamped in calcTotals/
+  // finalizePickup so the two together can never exceed what's left to
+  // discount.
+  let pickupDiscountKr = 0;
   let pickupNote = '';         // free-text athugasemd appended to audit trail
   // 2026-06-23: the sale's OWN athugasemd (typed in KARFA, e.g. "Beiðnisnúmer
   // nr 9847265"). Surfaced in the Sótt window so the operator can edit it and
@@ -215,6 +221,7 @@
       // 2026-05-24: same reset for the new final-adjustments fields so the
       // next pickup starts with a clean slate (no leaked discount/note).
       pickupDiscountPct = 0;
+      pickupDiscountKr = 0;
       pickupNote = '';
       pickupSaleNote = '';
       pickupPrintNote = true;
@@ -303,8 +310,8 @@
             '<div style="flex:1;min-width:0">' +
               '<div style="font-size:13px;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(l.desc || l.name || 'Lína') + '</div>' +
               '<div style="font-size:11px;color:#64748b;margin-top:3px;display:flex;align-items:center;gap:5px">' +
-                '<input class="_pkc-line-price" data-li="' + li + '" type="number" min="0" step="1" value="' + Math.round(price) + '" style="width:84px;padding:3px 7px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right;font-variant-numeric:tabular-nums">' +
-                '<span>kr án vsk · vsk ' + vsk + '%</span>' +
+                '<input class="_pkc-line-price" data-li="' + li + '" type="number" min="0" step="1" value="' + Math.round(price * (1 + vsk / 100)) + '" style="width:84px;padding:3px 7px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right;font-variant-numeric:tabular-nums">' +
+                '<span>kr m. vsk (' + vsk + '%)</span>' +
               '</div>' +
             '</div>' +
             '<div style="color:#94a3b8;font-size:12px;font-variant-numeric:tabular-nums">×' + q + '</div>' +
@@ -312,7 +319,7 @@
           '</div>';
         });
         html += '</div>' +
-          '<div style="font-size:10px;color:#94a3b8;margin-top:3px">Breyttu einingaverði án vsk — uppfærist strax í samtölunni. Afsláttur (%) að neðan reiknast ofan á þetta.</div>' +
+          '<div style="font-size:10px;color:#94a3b8;margin-top:3px">Breyttu einingaverði m. vsk (fullt verð sem viðskiptavinur greiðir) — uppfærist strax í samtölunni. Afsláttur að neðan reiknast ofan á þetta.</div>' +
         '</div>';
       }
 
@@ -349,8 +356,8 @@
               // could change; price was locked to the vörulisti). Blank/invalid is
               // ignored on input — the last valid value stays.
               '<div style="font-size:11px;color:#64748b;margin-top:3px;display:flex;align-items:center;gap:5px">' +
-                '<input class="_pkc-extra-price" data-i="' + i + '" type="number" min="0" step="1" value="' + Math.round(ex.unit_price_ex_vat || 0) + '" style="width:84px;padding:3px 7px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right;font-variant-numeric:tabular-nums">' +
-                '<span>kr án vsk · vsk ' + (ex.vsk_pct || 24) + '%</span>' +
+                '<input class="_pkc-extra-price" data-i="' + i + '" type="number" min="0" step="1" value="' + Math.round((ex.unit_price_ex_vat || 0) * (1 + (ex.vsk_pct || 24) / 100)) + '" style="width:84px;padding:3px 7px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:12px;text-align:right;font-variant-numeric:tabular-nums">' +
+                '<span>kr m. vsk (' + (ex.vsk_pct || 24) + '%)</span>' +
               '</div>' +
             '</div>' +
             '<div style="display:flex;align-items:center;gap:6px">' +
@@ -376,13 +383,20 @@
         '<div style="font-size:12px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px">Lokastilling fyrir kvittun</div>' +
         '<div style="display:grid;grid-template-columns:auto auto 1fr;gap:8px 10px;align-items:center">' +
           '<label style="font-size:12px;font-weight:600;color:#78350f">Afsláttur:</label>' +
-          '<div style="display:flex;align-items:center;gap:6px">' +
+          // 2026-08-10 (ósk Agnars): fastur kr-afsláttur til viðbótar við %-ið —
+          // sama mynstur og #pos-discount/#pos-discount-kr parið í aðal-Sölu-
+          // körfunni (pos.js). Bæði mega vera notuð saman; reiknað í calcTotals.
+          '<div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">' +
             '<input id="_pkc-disc" type="number" min="0" max="100" step="1" value="' + (pickupDiscountPct || 0) + '" ' +
-              'style="width:64px;padding:5px 8px;border:1px solid #fde68a;border-radius:5px;font:inherit;font-size:13px;text-align:center;background:#fff">' +
+              'style="width:52px;padding:5px 7px;border:1px solid #fde68a;border-radius:5px;font:inherit;font-size:13px;text-align:center;background:#fff">' +
             '<span style="font-size:12px;color:#78350f;font-weight:600">%</span>' +
+            '<span style="font-size:11px;color:#b45309;padding:0 1px">eða</span>' +
+            '<input id="_pkc-disc-kr" type="number" min="0" step="1" value="' + (pickupDiscountKr || 0) + '" ' +
+              'style="width:74px;padding:5px 7px;border:1px solid #fde68a;border-radius:5px;font:inherit;font-size:13px;text-align:right;background:#fff">' +
+            '<span style="font-size:12px;color:#78350f;font-weight:600">kr</span>' +
           '</div>' +
-          '<div id="_pkc-disc-kr" style="font-size:11.5px;color:#92400e;font-style:italic">' +
-            (pickupDiscountPct ? '(reiknað þegar þú breytir % eða línum)' : '') +
+          '<div id="_pkc-disc-hint" style="font-size:11.5px;color:#92400e;font-style:italic">' +
+            ((pickupDiscountPct || pickupDiscountKr) ? '' : 'má nota % og/eða fasta kr-upphæð saman') +
           '</div>' +
           '<label style="font-size:12px;font-weight:600;color:#78350f;align-self:start;padding-top:5px">Athugasemd:</label>' +
           '<textarea id="_pkc-note" rows="2" placeholder="t.d. afsláttur — fastur kúnni · kennitala send eftir á · annað" ' +
@@ -434,7 +448,11 @@
           const v = parseFloat(inp.value);
           if (!Number.isFinite(v) || v < 0) return;
           if (pickupExtras[i]) {
-            pickupExtras[i].unit_price_ex_vat = v;
+            // 2026-08-10: input is now m. vsk (what the customer actually pays
+            // per unit) — convert back to the ex-VAT price this app stores
+            // internally, same convention as pos.js's own .pos-price-edit.
+            const vskPct = pickupExtras[i].vsk_pct || 24;
+            pickupExtras[i].unit_price_ex_vat = v / (1 + vskPct / 100);
             renderTotals();
             const cell = inp.closest('div[style*="padding:9px"]');
             if (cell) {
@@ -458,7 +476,11 @@
           const v = parseFloat(inp.value);
           if (!Number.isFinite(v) || v < 0) return;
           if (saleLinur[li]) {
-            saleLinur[li].unit_price_ex_vat = v;
+            // 2026-08-10: input is now m. vsk — convert back to the ex-VAT
+            // price this app stores internally (same as the extras field
+            // above and pos.js's own .pos-price-edit in the main Sala cart).
+            const vskPct = saleLinur[li].vsk_pct == null ? 24 : +saleLinur[li].vsk_pct;
+            saleLinur[li].unit_price_ex_vat = v / (1 + vskPct / 100);
             renderTotals();
             const cell = inp.closest('div[style*="padding:9px"]');
             const totEl = cell && cell.querySelector('._pkc-line-tot');
@@ -493,6 +515,14 @@
         discInp.addEventListener('input', () => {
           const v = parseFloat(discInp.value);
           pickupDiscountPct = Number.isFinite(v) && v >= 0 ? Math.min(100, v) : 0;
+          renderTotals();
+        });
+      }
+      const discKrInp = body.querySelector('#_pkc-disc-kr');
+      if (discKrInp) {
+        discKrInp.addEventListener('input', () => {
+          const v = parseFloat(discKrInp.value);
+          pickupDiscountKr = Number.isFinite(v) && v >= 0 ? v : 0;
           renderTotals();
         });
       }
@@ -538,8 +568,13 @@
       // kassa-afslátt was silently previewed AND charged at full price.
       const origDisc = Math.min(Math.max(0, Math.round(+(sale && sale.afslattur) || 0)), subTotal);
       // 2026-05-24: Apply optional pickup-time discount (0–100 %) on the rest.
+      const remainder = subTotal - origDisc;
       const discPct = Math.max(0, Math.min(100, +pickupDiscountPct || 0));
-      const discountKr = (subTotal - origDisc) * discPct / 100;
+      const pctDiscountKr = remainder * discPct / 100;
+      // 2026-08-10 (ósk Agnars): manual fixed-kr discount, stacks on top of
+      // the % one — clamped so the two together never exceed the remainder.
+      const manualDiscKr = Math.max(0, Math.min(remainder - pctDiscountKr, +pickupDiscountKr || 0));
+      const discountKr = pctDiscountKr + manualDiscKr;
       const grand = subTotal - origDisc - discountKr;
       return {
         totalUnits, takenCount, perUnit,
@@ -548,6 +583,7 @@
         subTotal: Math.round(subTotal),
         origDisc: Math.round(origDisc),
         discountPct: discPct,
+        discountKrManual: Math.round(manualDiscKr),
         discountKr: Math.round(discountKr),
         grand: Math.round(grand)
       };
@@ -570,7 +606,7 @@
             : ''
           ) +
           (t.discountKr
-            ? '<div style="color:#b45309;font-weight:600">− Afsláttur (' + t.discountPct + '%):</div>' +
+            ? '<div style="color:#b45309;font-weight:600">− Afsláttur' + (t.discountPct ? ' (' + t.discountPct + '%)' : '') + ':</div>' +
               '<div style="color:#b45309;font-weight:600;text-align:right">−' + esc(fmtKr(t.discountKr)) + '</div>'
             : ''
           ) +
@@ -583,11 +619,11 @@
             : ''
           ) +
         '</div>';
-      // Live-update the small "kr afsláttur" hint next to the discount input
-      const krEl = dlg.querySelector('#_pkc-disc-kr');
-      if (krEl) {
-        krEl.textContent = t.discountKr
-          ? '= −' + fmtKr(t.discountKr) + ' kr'
+      // Live-update the small combined-discount hint next to the % / kr inputs
+      const hintEl = dlg.querySelector('#_pkc-disc-hint');
+      if (hintEl) {
+        hintEl.textContent = t.discountKr
+          ? '(samtals −' + fmtKr(t.discountKr) + ' afsláttur)'
           : '';
       }
     }
@@ -623,10 +659,11 @@
         // captured in the modal. finalizePickup keeps line prices FULL and
         // stores draft-discount + pickup-discount combined in `afslattur`
         // (samtals = gross − afslattur); note is appended to the audit trail.
-        await finalizePickup(job, sale, unitState, pickupExtras, payMethod, t, customerInfo, pickupDiscountPct, pickupNote);
+        await finalizePickup(job, sale, unitState, pickupExtras, payMethod, t, customerInfo, pickupDiscountPct, pickupDiscountKr, pickupNote);
         // Reset extras + final-adjustments state for next pickup
         pickupExtras.length = 0;
         pickupDiscountPct = 0;
+        pickupDiscountKr = 0;
         pickupNote = '';
         const saleNumForPrint = parentSaleNum(job.num);
         // 2026-06-23: capture the printable sale-note + checkbox BEFORE close()
@@ -708,7 +745,7 @@
   }
 
   // ── Finalize: update solur, mark verkbeidnir collected, mark units done ─
-  async function finalizePickup(job, sale, unitState, extras, payMethod, totals, customerInfo, discountPct, userNote) {
+  async function finalizePickup(job, sale, unitState, extras, payMethod, totals, customerInfo, discountPct, discountKrManual, userNote) {
     const SB = getSB();
     if (!SB) throw new Error('Engin gagnabankatenging');
 
@@ -805,7 +842,13 @@
       (a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 24) / 100), 0);
     const preSamtals = preEx + preVsk;
     const origAfsl = Math.min(Math.max(0, Math.round(+(sale && sale.afslattur) || 0)), Math.round(preSamtals));
-    const pickupKr = Math.round((preSamtals - origAfsl) * discPct / 100);
+    const remainderAfterOrig = Math.round(preSamtals) - origAfsl;
+    const pctKr = Math.round(remainderAfterOrig * discPct / 100);
+    // 2026-08-10 (ósk Agnars): manual fixed-kr discount, stacks on top of the
+    // % one — clamped so the two together never exceed what's left to
+    // discount (mirrors calcTotals' preview so charged === previewed).
+    const manualKr = Math.max(0, Math.min(remainderAfterOrig - pctKr, Math.round(+discountKrManual || 0)));
+    const pickupKr = pctKr + manualKr;
     const afslatturKr = origAfsl + pickupKr;
     const newSamtals = Math.max(0, Math.round(preSamtals) - afslatturKr);
     // ex/vsk scaled proportionally (same as pos.js totals()); vsk takes the
@@ -817,11 +860,15 @@
     const brokenList = unitState.filter(s => !s.checked).map(s => s.unit.serial).filter(Boolean);
     const extraList = extras.map(ex => ex.qty + '× ' + ex.name);
     const trimmedNote = (userNote || '').trim();
+    // 2026-08-10: describe whichever of %/fast kr (or both) actually applied.
+    const pickupDiscParts = [];
+    if (discPct) pickupDiscParts.push(discPct + '%');
+    if (manualKr) pickupDiscParts.push(fmtKr(manualKr) + ' fast');
     const auditNote = '\n\n[Sótt ' + todayISO() + ']' +
       (brokenList.length ? '\nEkki afhent: ' + brokenList.join(', ') : '') +
       (extraList.length ? '\nViðbót: ' + extraList.join(', ') : '') +
       (origAfsl ? '\nAfsláttur úr sölu: −' + origAfsl + ' kr' : '') +
-      (pickupKr ? '\nAfsláttur við afhendingu: ' + discPct + '% (−' + pickupKr + ' kr)' : '') +
+      (pickupKr ? '\nAfsláttur við afhendingu: ' + pickupDiscParts.join(' + ') + ' (−' + pickupKr + ' kr)' : '') +
       (trimmedNote ? '\nAthugasemd: ' + trimmedNote : '') +
       '\nGreiðsla: ' + payMethod;
 
