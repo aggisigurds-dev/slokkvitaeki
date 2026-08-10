@@ -157,6 +157,7 @@
     // rates (single source of truth) with hardcoded fallbacks. Both run in
     // parallel with the company + settings loads.
     const unitsP = loadActiveUnitsByClient(SB).catch(() => ({}));
+    const nextInspP = loadNextInspByClient(SB).catch(() => ({}));
     const priceP = loadYfirferdPrices(SB).catch(() => ({}));
     // 2026-07-14: authoritative "last inspection" facts parsed from each
     // company's most-recent úttektarskýrsla PDF (inspection month + per-category
@@ -211,6 +212,7 @@
     _cache.byId = Object.fromEntries(allCompanies.map(c => [c.id, c]));
 
     const unitsByClient = await unitsP;
+    const nextInspByClient = await nextInspP;
     const PRICE = await priceP;
     const factsList = await factsP;
     const factsById = Object.fromEntries((factsList || []).map(f => [String(f.fyrirtaeki_id), f]));
@@ -321,6 +323,22 @@
             _ars._month_from_report = true;
           }
           if (fact.report_year) _ars._report_year = fact.report_year;
+        }
+        // 2026-08-10 (ósk Agnars, "Staða eftir ári" boxið á fyrirtækjasíðunni):
+        // þegar HVORUGT blob né skýrsla gefa mánuð, notum elstu (næstu)
+        // next_insp meðal tækjanna sem síðustu vörn — sama regla og "næsta
+        // skoðun" annars staðar (companieslist.js, 185-inservice-yfirlit.js:
+        // elsta dagsetning vinnur). Fyllir AÐEINS í eyðu, sama og skýrslu-
+        // þrepið að ofan — vinnur aldrei yfir blob eða skýrslu-mánuð.
+        // Samsvarandi þrep er í 199-doc-year-grid.js (skjalasíðan) svo báðar
+        // síður sýni sama gildi — sótt úr nextInspByClient (loadNextInspByClient),
+        // EKKI `units`/unitsByClient (sjá athugasemd við loadNextInspByClient).
+        if (!_ars.inspect_month) {
+          const nextInsp = nextInspByClient[foldName(c.nafn)];
+          if (nextInsp) {
+            const mm = +String(nextInsp).slice(5, 7);
+            if (mm >= 1 && mm <= 12) { _ars.inspect_month = mm; _ars._month_from_uttaeki = true; }
+          }
         }
         // Handvirk tækja-yfirskrift: nota blob-tölurnar (þegar afritaðar inn í
         // _ars gegnum Object.assign) og telja heildina fyrir röðun/print.
@@ -446,6 +464,35 @@
         from += page;
       }
     } catch (e) { console.warn('[arsskodun] units load', e); }
+    return byClient;
+  }
+  // 2026-08-10: separate from loadActiveUnitsByClient on purpose — that one
+  // filters status='active' (narrower than most of this codebase's "still in
+  // service" convention) and doesn't select next_insp at all. The "next
+  // inspection" derivation used everywhere else (companieslist.js, 185-
+  // inservice-yfirlit.js) is status != 'urelt' + earliest next_insp wins —
+  // matching that here so a company with real units sitting in status='ok'
+  // (the common case) isn't silently skipped.
+  async function loadNextInspByClient(SB) {
+    const byClient = {};
+    try {
+      let from = 0; const page = 1000;
+      while (true) {
+        const { data, error } = await SB.from('uttaeki')
+          .select('client,next_insp')
+          .neq('status', 'urelt')
+          .not('next_insp', 'is', null)
+          .range(from, from + page - 1);
+        if (error || !data) break;
+        data.forEach(u => {
+          const k = foldName(u.client);
+          if (!k) return;
+          if (!byClient[k] || u.next_insp < byClient[k]) byClient[k] = u.next_insp;
+        });
+        if (data.length < page) break;
+        from += page;
+      }
+    } catch (e) { console.warn('[arsskodun] next_insp load', e); }
     return byClient;
   }
   // Per-category ANNUAL revenue per unit, with VSK.
