@@ -179,16 +179,35 @@
   // doc_type spelling, see sql/2026-08-05_document_pairs.sql in Brunahólf.
   async function fetchPairs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('document_pairs').select('id,year,service_type,report_doc_id,invoice_doc_id,solur_id,status,matched_by').eq('customer_base_id', baseId);
+    try{ var r=await sb.from('document_pairs').select('id,year,service_type,report_doc_id,invoice_doc_id,solur_id,status,matched_by,fyrirtaeki_id').eq('customer_base_id', baseId);
       return r.data||[]; }catch(e){ return []; }
   }
-  async function savePair(baseId, year, serviceType, patch){
+  // 2026-08-10: the real unique index (Brunahólf, 2026-08-09) is
+  // (customer_base_id, year, service_type, COALESCE(fyrirtaeki_id,0)) — an
+  // EXPRESSION index. PostgREST's upsert onConflict= only matches a plain
+  // column-list constraint, never an expression, so the old
+  // onConflict:'customer_base_id,year,service_type' upsert here always threw
+  // "no unique or exclusion constraint matching ON CONFLICT" — silently
+  // swallowed by the catch below, so "🔗 Tengja" looked like it worked (button
+  // flashed "Vista…") but the row never saved and the picker reset to
+  // unselected on the next render. Select-then-insert/update sidesteps the
+  // expression-index limitation entirely. fyrirtaekiId scopes the pair to
+  // THIS location (fyrirtaeki.id) so multi-site customers (e.g. Heimaleiga)
+  // don't collide onto one shared row — see brunaholf CLAUDE.md 2026-08-09.
+  async function savePair(baseId, year, serviceType, fyrirtaekiId, patch){
     var sb=SB(); if(!sb||!baseId) return;
     try{
-      await sb.from('document_pairs').upsert(Object.assign({
-        customer_base_id: baseId, year: +year, service_type: serviceType, updated_at: new Date().toISOString(),
-      }, patch), { onConflict: 'customer_base_id,year,service_type' });
-    }catch(e){ /* best-effort — the live render already shows the pairing either way */ }
+      var q = sb.from('document_pairs').select('id').eq('customer_base_id', baseId).eq('year', +year).eq('service_type', serviceType);
+      q = (fyrirtaekiId!=null) ? q.eq('fyrirtaeki_id', fyrirtaekiId) : q.is('fyrirtaeki_id', null);
+      var existing = await q.maybeSingle();
+      var row = Object.assign({
+        customer_base_id: baseId, year: +year, service_type: serviceType,
+        fyrirtaeki_id: (fyrirtaekiId!=null?fyrirtaekiId:null), updated_at: new Date().toISOString(),
+      }, patch);
+      if(existing && existing.data && existing.data.id) await sb.from('document_pairs').update(row).eq('id', existing.data.id);
+      else await sb.from('document_pairs').insert(row);
+      return true;
+    }catch(e){ console.warn('[savePair]', e); return false; } // auto-path is best-effort; manual path checks this
   }
   function pdYear(p){ var s=String(p.created_date||p.due_date||''); var m=s.match(/(20[0-9]{2})/); return m?parseInt(m[1],10):null; }
   function pdChip(p){
@@ -639,9 +658,18 @@
     }
 
     // ── document_pairs (durable bundle store — sjá savePair) ──
+    // Multi-site kt (t.d. Heimaleiga): pör MEÐ fyrirtaeki_id tilheyra AÐEINS
+    // þeim eina stað — sibling-staðir sjá þau ekki. Pör ÁN fyrirtaeki_id (fyrir
+    // 2026-08-09) eru staðlaus fallback sem hvaða staður má nota þar til hann
+    // fær sitt eigið. Sama regla og document_pairs triggerinn í Brunahólf.
     var pairs = baseId ? await fetchPairs(baseId) : [];
     var pairsByYear={};
-    pairs.forEach(function(pr){ (pairsByYear[pr.year]=pairsByYear[pr.year]||{})[pr.service_type]=pr; });
+    pairs.forEach(function(pr){
+      if(pr.fyrirtaeki_id!=null && +pr.fyrirtaeki_id!==+coId) return; // á öðrum stað — ekki okkar
+      var y = pairsByYear[pr.year] = pairsByYear[pr.year]||{};
+      var mine = pr.fyrirtaeki_id!=null;
+      if(!y[pr.service_type] || mine) y[pr.service_type]=pr;
+    });
 
     // ── year set: every year with anything + the current year, newest first ──
     var ySet={}; ySet[NOW]=1;
@@ -739,7 +767,7 @@
         if(autoSave && baseId){
           var rep=repArr[0];
           if(rep && inv && !rep._att && !inv._att && !inv._fromSolur && rep.id!=null && inv.id!=null){
-            savePair(baseId, y, svc.kind, { report_doc_id: rep.id, invoice_doc_id: inv.id, status:'klarad', matched_by:'exact' });
+            savePair(baseId, y, svc.kind, coId, { report_doc_id: rep.id, invoice_doc_id: inv.id, status:'klarad', matched_by:'exact' });
           }
         }
         resolved[y+'|'+svc.kind]={ inv:inv, ambiguous:ambiguous, invCandidates:invArr };
@@ -1013,7 +1041,8 @@
         var baseId=null; try{ var k=(getCompany(coId)||{}).kennitala; baseId=k?await baseIdForKt(k):null; }catch(_){}
         if(!baseId){ alert('Fyrirtækið er ekki tengt grunnskrá (customers_base) — hægt er að laga pörun í Brunahólf í staðinn.'); return; }
         linkSaveEl.disabled=true; linkSaveEl.textContent='Vista…';
-        await savePair(baseId, ly, lkind, { report_doc_id: (rep&&!rep._att)?rep.id:null, invoice_doc_id: (inv&&!inv._att&&!inv._fromSolur)?inv.id:null, status:'klarad', matched_by:'manual' });
+        var saved = await savePair(baseId, ly, lkind, coId, { report_doc_id: (rep&&!rep._att)?rep.id:null, invoice_doc_id: (inv&&!inv._att&&!inv._fromSolur)?inv.id:null, status:'klarad', matched_by:'manual' });
+        if(!saved){ alert('Tenging vistaðist ekki — reyndu aftur eða láttu Agnar vita.'); linkSaveEl.disabled=false; linkSaveEl.textContent='🔗 Tengja'; return; }
         render(section, coId);
         return;
       }
