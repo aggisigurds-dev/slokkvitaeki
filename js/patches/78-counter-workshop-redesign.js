@@ -1116,7 +1116,9 @@
     Workshop._shOpen = Workshop._shOpen || false;
     Workshop.toggleSH = function() { Workshop._shOpen = !Workshop._shOpen; Workshop.render(); };
     Workshop.deleteUnit = async function(jobId, unitId) {
-      if (!window.confirm('Eyða þessu tæki af verkstæðinu?\n(fer í „Eydd tæki" — hægt að endurheimta síðar)')) return false;
+      var wsDelMsg = 'Eyða þessu tæki af verkstæðinu?\n(fer í „Eydd tæki" — hægt að endurheimta síðar)';
+      var wsDelOk = (window.Confirm && Confirm.show) ? await Confirm.show(wsDelMsg) : window.confirm(wsDelMsg);
+      if (!wsDelOk) return false;
       try { if (DB.online && DB.sb) await DB.sb.from('verklidur').update({ status: 'eytt' }).eq('id', unitId); }
       catch (e) { console.warn('[deleteUnit]', e); }
       const job = DB.getJob(jobId);

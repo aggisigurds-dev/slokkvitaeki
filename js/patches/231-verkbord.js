@@ -557,8 +557,9 @@
     uploadAttachment(beidniId, f);
     ev.target.value = '';  // reset so same file can be re-uploaded
   };
-  window.__vbDelAtt = function (attId, path, beidniId) {
-    if (!window.confirm('Eyða fylgiskjali?')) return;
+  window.__vbDelAtt = async function (attId, path, beidniId) {
+    const ok = (window.Confirm && Confirm.show) ? await Confirm.show('Eyða fylgiskjali?') : window.confirm('Eyða fylgiskjali?');
+    if (!ok) return;
     deleteAttachment(attId, path, beidniId);
   };
 
@@ -616,7 +617,8 @@
   }
   async function softDelete(id) {
     const SB = getSB(); if (!SB) return;
-    if (!window.confirm('Eyða þessu verki? (geymist sem eytt og endurheimtanlegt)')) return;
+    const delOk = (window.Confirm && Confirm.show) ? await Confirm.show('Eyða þessu verki? (geymist sem eytt og endurheimtanlegt)') : window.confirm('Eyða þessu verki? (geymist sem eytt og endurheimtanlegt)');
+    if (!delOk) return;
     try {
       const r = await SB.from('thjonustubeidni').update({ deleted_at: nowIso() }).eq('id', id);
       if (r.error) throw r.error;
@@ -650,7 +652,9 @@
     const SB = getSB(); if (!SB) return;
     const noisy = state.items.filter(isPaymentNoise);
     if (!noisy.length) { toast('Engar greiðslu-tilkynningar til að hreinsa'); return; }
-    if (!window.confirm('Fela ' + noisy.length + ' greiðslu-tilkynningar? (Payday „reikningur greiddur" — upplýsingar, ekki verk. Endurheimtanlegt.)')) return;
+    const clearMsg = 'Fela ' + noisy.length + ' greiðslu-tilkynningar? (Payday „reikningur greiddur" — upplýsingar, ekki verk. Endurheimtanlegt.)';
+    const clearOk = (window.Confirm && Confirm.show) ? await Confirm.show(clearMsg) : window.confirm(clearMsg);
+    if (!clearOk) return;
     const ids = noisy.map(x => x.id);
     state.items = state.items.filter(x => !isPaymentNoise(x));
     renderControls(); renderList(); refreshBadge();
@@ -980,7 +984,9 @@
       });
     }
     if (!toInsert.length) { toast('Ekkert nýtt að flytja inn — allt þegar komið.'); return; }
-    if (!window.confirm('Flytja inn ' + toInsert.length + ' atriði úr Verkefni + Þjónustuverk?')) return;
+    const impMsg = 'Flytja inn ' + toInsert.length + ' atriði úr Verkefni + Þjónustuverk?';
+    const impOk = (window.Confirm && Confirm.show) ? await Confirm.show(impMsg) : window.confirm(impMsg);
+    if (!impOk) return;
     try {
       const r = await SB.from('thjonustubeidni').insert(toInsert).select();
       if (r.error) throw r.error;

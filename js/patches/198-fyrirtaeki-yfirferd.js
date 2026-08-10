@@ -404,7 +404,8 @@
       + 'Sameina inn (verða falin, afturkræft): ' + deadNames + '\n\n'
       + 'Færir ' + (d.solur_customer_id_repoint || 0) + ' sölur á þann sem heldur og sameinar grunn-tengingar.\n'
       + 'Afrit vistað í cowork_merge_backups.\n\nStaðfesta sameiningu?';
-    if (!window.confirm(msg)) return;
+    const mergeOk = (window.Confirm && Confirm.show) ? await Confirm.show(msg) : window.confirm(msg);
+    if (!mergeOk) return;
     const r = await SB.rpc('merge_customers', { p_table: table, p_survivor: Number(survivor), p_dead: dead, p_dry: false });
     if (r.error) { toast('Villa við sameiningu: ' + r.error.message); return; }
     toast('✓ Sameinað → ' + (s.nafn || ('#' + survivor)));
