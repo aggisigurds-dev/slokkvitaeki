@@ -452,6 +452,73 @@
     render();
   }
 
+  // ── Month picker (2026-08-10) ──────────────────────────────────────────
+  function showMonthPicker(coId, anchorEl) {
+    const old = document.getElementById('_vd-mo-picker');
+    if (old) { old.remove(); return; }
+
+    const arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
+    const cur = +(arsMap[String(coId)] && arsMap[String(coId)].inspect_month) || 0;
+
+    const picker = document.createElement('div');
+    picker.id = '_vd-mo-picker';
+    const rect = anchorEl.getBoundingClientRect();
+    const left = Math.min(rect.left, window.innerWidth - 222);
+    picker.style.cssText = 'position:fixed;top:' + (rect.bottom + 4) + 'px;left:' + Math.max(4, left) + 'px;' +
+      'background:#fff;border:1.5px solid #e2e5ea;border-radius:12px;' +
+      'box-shadow:0 8px 32px rgba(0,0,0,.18);padding:10px;z-index:99999;' +
+      'display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:210px;';
+
+    const hdr = document.createElement('div');
+    hdr.style.cssText = 'grid-column:1/-1;font-size:10px;font-weight:700;color:#6b7280;' +
+      'text-transform:uppercase;letter-spacing:.06em;padding:0 2px 6px;border-bottom:1px solid #f3f4f6;margin-bottom:2px;';
+    hdr.textContent = 'Skoðunarmánuður';
+    picker.appendChild(hdr);
+
+    MONTHS_IS.forEach((mo, i) => {
+      const m = i + 1;
+      const sel = m === cur;
+      const btn = document.createElement('button');
+      btn.textContent = mo.slice(0, 3);
+      btn.style.cssText = 'padding:6px 4px;border-radius:7px;font-size:11.5px;font-weight:600;' +
+        'cursor:pointer;font:inherit;border:1.5px solid ' + (sel ? '#2563eb' : '#e2e5ea') + ';' +
+        'background:' + (sel ? '#eff6ff' : '#fff') + ';color:' + (sel ? '#2563eb' : '#374151') + ';';
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation(); picker.remove();
+        const newM = sel ? 0 : m;
+        const patch = newM >= 1
+          ? { inspect_month: newM, inspect_month_manual: true }
+          : { inspect_month: 0, inspect_month_manual: false };
+        if (window.AppSettings && window.AppSettings.save) {
+          await window.AppSettings.save({ arsskodun_customers: { [String(coId)]: patch } });
+        }
+        render();
+      });
+      picker.appendChild(btn);
+    });
+
+    const clrBtn = document.createElement('button');
+    clrBtn.textContent = '✕ Hreinsa';
+    clrBtn.style.cssText = 'grid-column:1/-1;padding:5px;border:none;background:none;' +
+      'cursor:pointer;font:inherit;font-size:11px;color:#9ca3af;margin-top:2px;';
+    clrBtn.addEventListener('click', async (e) => {
+      e.stopPropagation(); picker.remove();
+      if (window.AppSettings && window.AppSettings.save) {
+        await window.AppSettings.save({ arsskodun_customers: { [String(coId)]: { inspect_month: 0, inspect_month_manual: false } } });
+      }
+      render();
+    });
+    picker.appendChild(clrBtn);
+
+    document.body.appendChild(picker);
+    setTimeout(() => {
+      function outsideClick(ev) {
+        if (!picker.contains(ev.target)) { picker.remove(); document.removeEventListener('click', outsideClick, true); }
+      }
+      document.addEventListener('click', outsideClick, true);
+    }, 0);
+  }
+
   // ── Render ─────────────────────────────────────────────────────────────
   function render() {
     const main = document.getElementById('_vd-main');
@@ -556,7 +623,8 @@
               else if (fieldYr === curYear) pill = `<span style="${base}background:var(--blu-bg);color:var(--blu);border:1px solid var(--blu-bd)">🔵 Tekið út ${curYear} — skjöl eftir</span>`;
               else if (lastYr > 0) pill = `<span style="${base}background:var(--amb-bg);color:var(--amb);border:1px solid var(--amb-bd)">Síðast skoðað ${lastYr}</span>`;
               else pill = `<span style="${base}background:var(--surface2);color:var(--ink3);border:1px solid var(--brd)">Engin skoðun skráð</span>`;
-              return `<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${pill}${moLabel ? `<span style="font-size:10.5px;color:var(--ink3)">📅 ${esc(moLabel)}</span>` : ''}</div>`;
+              const moActive = im >= 1 && im <= 12;
+              return `<div style="margin-bottom:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">${pill}<button class="_vd-month-btn" type="button" style="font-size:10.5px;font-weight:600;padding:3px 9px;border-radius:99px;cursor:pointer;font:inherit;border:1px solid ${moActive ? '#2563eb' : 'var(--brd2)'};background:${moActive ? '#eff6ff' : 'var(--surface2)'};color:${moActive ? '#2563eb' : 'var(--ink3)'}">📅 ${moActive ? esc(moLabel) : 'Velja mánuð'}</button></div>`;
             })() : ''}
             ${hasArs ? (() => {
               // 2026-05-19: simplified top-left box. Date info (skoðunarmánuður,
@@ -817,6 +885,12 @@
         App.switchView('field');
       }
     }));
+
+    // 📅 Month register button — open picker to set inspection month.
+    main.querySelector('._vd-month-btn')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showMonthPicker(_currentId, e.currentTarget);
+    });
 
     // ── Commerce card wiring (Sjálfvirkur afsláttur · Tilboðsverð · Hreyfingar) ──
     wireCommerce(main, c);
