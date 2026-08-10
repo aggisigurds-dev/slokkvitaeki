@@ -381,6 +381,11 @@
     // Already at ?install=1 and Chrome still won't offer the prompt — fall back
     // to the manual guide (⋮ menu instructions).
     showInstallGuide();
+    // Relabel all install buttons so it's clear that pressing them again just
+    // re-opens the instructions — not the actual OS install dialog.
+    document.querySelectorAll('#_app-inst2,._app-install[data-always]').forEach(function (b) {
+      b.textContent = '📖 Leiðbeiningar';
+    });
   }
   function showInstallGuide() {
     if (document.getElementById('_app-inst-guide')) return;

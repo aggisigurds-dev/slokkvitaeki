@@ -120,7 +120,6 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
   window.addEventListener('error',function(){ setTimeout(go,1500) },{once:true});
 })();
 </script>
-
 <!-- SETUP BANNER (shown when config not set) -->
 <div id="setup-banner" class="setup-banner hidden">
   <div class="setup-banner-inner">
@@ -132,7 +131,6 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     <a href="/UPPSETNING.html" target="_blank" class="btn btn-sm btn-outline" style="color:white;border-color:rgba(255,255,255,.4)">Sjá leiðbeiningar</a>
   </div>
 </div>
-
 <!-- TOP BAR -->
 <div class="topbar">
   <div class="brand">
@@ -170,7 +168,6 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     </div>
   </div>
 </div>
-
 <!-- VIEWS -->
 <div id="view-counter" class="view">
   <div class="three-col">
@@ -201,7 +198,6 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     </aside>
   </div>
 </div>
-
 <div id="view-workshop" class="view">
   <div class="two-col">
     <main class="main-panel" id="workshop-queue">
@@ -216,7 +212,6 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     </aside>
   </div>
 </div>
-
 <div id="view-field" class="view field-view">
   <div class="field-toolbar">
     <button class="btn btn-outline btn-sm" onclick="Field.openScan()">
@@ -240,10 +235,8 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     </div>
   </div>
 </div>
-
 <!-- MODALS -->
 <div id="overlay" class="overlay" onclick="Modal.closeAll()"></div>
-
 <!-- New Job -->
 <div class="modal" id="modal-newjob">
   <div class="modal-hd">
@@ -273,7 +266,6 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     </button>
   </div>
 </div>
-
 <!-- Inspection -->
 <div class="modal modal-sm" id="modal-inspect">
   <div class="modal-hd">
@@ -306,7 +298,6 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     </button>
   </div>
 </div>
-
 <!-- Scan / Lookup -->
 <div class="modal modal-sm" id="modal-scan">
   <div class="modal-hd">
@@ -328,7 +319,6 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     <div id="scan-result" style="margin-top:4px"></div>
   </div>
 </div>
-
 <!-- Add Field Unit -->
 <div class="modal modal-sm" id="modal-addunit">
   <div class="modal-hd">
@@ -355,7 +345,6 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     <button class="btn btn-primary" onclick="Field.submitAddUnit()">Skrá tæki + Prenta QR</button>
   </div>
 </div>
-
 <!-- Print preview -->
 <div class="modal" id="modal-print">
   <div class="modal-hd">
@@ -371,12 +360,10 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     </button>
   </div>
 </div>
-
 <div id="view-companies" class="view"><main class="main-panel" id="companies-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="view-brunakerfi" class="view"><main class="main-panel" id="brunakerfi-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="view-tilbodhub" class="view"><main class="main-panel" id="tilbodhub-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="view-income" class="view"><main class="main-panel" id="income-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="view-lanstaeki" class="view"><main class="main-panel" id="lanstaeki-main" style="height:100%;overflow-y:auto;padding:24px"></main></div>
   <div id="view-geymsla" class="view"><main class="main-panel" id="geymsla-main" style="height:100%;overflow-y:auto;padding:20px"><div class="loading-state">Hleður...</div></main></div>
 <div id="view-settings" class="view"><main class="main-panel" id="settings-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="modal-nyfyrirtaeki" class="modal modal-sm"><div class="modal-hd"><h2>Nýtt fyrirtæki</h2><button class="modal-x" onclick="Modal.close('modal-nyfyrirtaeki')">✕</button></div><div class="modal-bd"><div class="fg"><label class="fl">Nafn *</label><input class="fi" id="nf-nafn" placeholder="Harpa ehf"/></div><div class="frow2"><div class="fg"><label class="fl">Kennitala</label><input class="fi" id="nf-kt" placeholder="000000-0000"/></div><div class="fg"><label class="fl">Sími</label><input class="fi" id="nf-simi" placeholder="+354 XXX XXXX"/></div></div><div class="frow2"><div class="fg"><label class="fl">Netfang</label><input class="fi" id="nf-netfang" placeholder="netfang@fyrirtaeki.is"/></div><div class="fg"><label class="fl">Tengiliður</label><input class="fi" id="nf-tengiliður" placeholder="Nafn"/></div></div><div class="fg"><label class="fl">Heimilisfang</label><input class="fi" id="nf-heimilisfang" placeholder="Götu 1, 101 Reykjavík"/></div><div class="fg"><label class="fl">Athugasemdir</label><input class="fi" id="nf-athugasemdir" placeholder="Valfrjálst..."/></div></div><div class="modal-ft"><button class="btn btn-outline" onclick="Modal.close('modal-nyfyrirtaeki')">Hætta við</button><button class="btn btn-primary" onclick="Companies.submitNew()">Vista fyrirtæki</button></div></div><div class="toast" id="toast"></div>
 <div id="printarea"></div>
-
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
@@ -528,7 +515,6 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script src="/js/features.js?v=20260611a"></script>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     <script src="/js/scanner.js?v=20260611a"></script>
-
   <!-- Geymsla modal -->
   <div class="modal" id="modal-geymsla">
     <div class="modal-hd">
@@ -724,7 +710,6 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
   }
   document.addEventListener('DOMContentLoaded',function(){tryPatch();setTimeout(tryPatch,300);setTimeout(tryPatch,1000);});
 })();</script>
-
   <!-- Lanstaeki: Register new loaner extinguisher -->
   <div class="modal" id="modal-lanstaeki-new">
     <div class="modal-hd">
@@ -746,7 +731,6 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
       <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="Lanstaeki.submitNew()">Vista tæki</button>
     </div>
   </div>
-
   <!-- Lanstaeki: Loan out modal -->
   <div class="modal" id="modal-lanstaeki-lana">
     <div class="modal-hd">
@@ -784,11 +768,9 @@ var Lanstaeki = {
     var items = q ? this.items.filter(function(i){
       return (i.serial||'').toLowerCase().includes(q)||(i.client||'').toLowerCase().includes(q)||(i.location||'').toLowerCase().includes(q);
     }) : this.items;
-
     var avail = this.items.filter(function(i){return i.status==='til_radstofunar';});
     var out   = this.items.filter(function(i){return i.status==='lant_ut';});
     var ws    = this.items.filter(function(i){return i.status==='verkstadi';});
-
     var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">'
       +'<div><div style="font-size:19px;font-weight:600">Lánstæki</div>'
       +'<div style="font-size:13px;color:var(--ink3)">'+this.items.length+' tæki &middot; '
@@ -799,9 +781,7 @@ var Lanstaeki = {
       +'<button class="btn btn-outline btn-sm" onclick="Lanstaeki.openScan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg> Skanna</button>'
       +'<button class="btn btn-primary btn-sm" onclick="Lanstaeki.openNew()">+ Skrá tæki</button>'
       +'</div></div>';
-
     html += '<input type="text" placeholder="Leita að raðnúmeri, viðtaka eða stað..." value="'+U.e(this.filter)+'" oninput="Lanstaeki.filter=this.value;Lanstaeki.render()" style="width:100%;padding:9px 12px;border:1px solid var(--brd);border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;background:var(--bg1);color:var(--ink1)">';
-
     if (!items.length) {
       html += '<div class="empty-state"><div class="es-icon">&#128295;</div>'
         +'<div class="es-title">'+(this.filter?'Ekkert fannst':'Engin lánstæki skráð')+'</div>'
@@ -1156,7 +1136,6 @@ var Lanstaeki = {
 <!-- <script src="/js/demoseed.js?v=1776797624642"></script> -->
 <script src="/js/fixcompanysave.js?v=1776797624642"></script>
 <script src="/js/geymslascan.js?v=1776797624642"></script>
-
 <!-- Sala-lending við ræsingu. 2026-07-28: VERÐUR að víkja fyrir djúptengli.
      Áður keyrði þetta skilyrðislaust — og af því patch 218 vefur switchView
      speglaði kallið slóðina yfir í "#sala" (replaceState), svo #rekstrarfelog

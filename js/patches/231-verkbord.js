@@ -11,7 +11,7 @@
  * óskýr, svo málin flokkast nú í kort eftir merki (⭐ BÍÐUR SVARS efst) og valið
  * mál opnast í föstu spjaldi hægra megin í stað þess að þenja röðina út.
  *
- * Sameinar gömlu efstu listana (Verkefni #145 · Þjónustuverk #172 ·
+ * Sameinar gömlu efstu listana (Verkefni #145 · Þjónustuverk #172 ·h
  * Beiðnir/Þjónustuver #182 · Eftirfylgni #194) + foldar Verkdagbók #04 inn —
  * í EITT hratt verkborð. Hugsað eins og léttur verkefna-/CRM-/tikket-listi:
  *
@@ -265,7 +265,7 @@
   // ── state ────────────────────────────────────────────────────────────────
   const QKEY = '_vb_queue', FKEY = '_vb_filter', SKEY = '_vb_sort', TGKEY = '_vb_tag', VMKEY = '_vb_viewmode', WKEY = '_vb_worker';
   // Starfsmenn (skráning + sía) — „Allir" = óúthlutað/engin sía (2026-07-13, ósk Agnars).
-  const WORKERS = ['Anni', 'Agnar', 'Andri', 'Elías', 'Hákon'];
+  const WORKERS = ['Anni', 'Agnar', 'Andri', 'Elías', 'Hákon', 'Sara'];
   // Valin sía: texti lýsist upp + glóð í lit chips-ins (2026-07-13, ósk Agnars —
   // „sést illa hvað er valið"). currentColor = litur chips-ins svo glóðin passar.
   // 2026-07-22 (ósk Agnars — „það sýnir illa þegar sían er á … hafðu svarta gráa
