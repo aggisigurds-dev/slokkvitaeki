@@ -113,6 +113,8 @@
       }
       #${SLOT_ID} .sb-card:hover .sb-x { opacity:1; }
       #${SLOT_ID} .sb-x:hover { color:#dc2626; }
+      #${SLOT_ID} .sb-card:hover .sb-co-btn { opacity:1 !important; }
+      #${SLOT_ID} .sb-co-btn:hover { color:#2563eb !important; }
       #${SLOT_ID} .sb-type-dot {
         display:inline-block; border-radius:50%; cursor:pointer; flex:none;
         transition:transform .1s, box-shadow .1s;
@@ -154,6 +156,12 @@
         'text-overflow:ellipsis;white-space:nowrap;flex:1">' +
         (card.type != null ? esc(TYPES[card.type][0]) : '') +
       '</span>' +
+      (card.name
+        ? '<button class="sb-co-btn" data-sb-co-name="' + esc(card.name) + '" ' +
+            'title="Opna fyrirtækisíðu: ' + esc(card.name) + '" ' +
+            'style="border:none;background:none;cursor:pointer;font-size:11px;color:#94a3b8;' +
+              'padding:0 2px;line-height:1;flex:none;opacity:0;transition:opacity .1s;margin-left:auto">🏢</button>'
+        : '') +
     '</div>';
   }
 
@@ -404,6 +412,26 @@
       if (act === 'toggle')     { state.collapsed = !state.collapsed; render(); return; }
       if (act === 'goal-plus')  { state.goal = Math.min(state.goal + 1, 12); persist(); return; }
       if (act === 'goal-minus') { state.goal = Math.max(state.goal - 1, 1);  persist(); return; }
+    }
+
+    // 🏢 Company profile button → open VidskDetail for this company
+    const coBtn = e.target.closest('.sb-co-btn');
+    if (coBtn) {
+      e.stopPropagation();
+      const name = coBtn.getAttribute('data-sb-co-name');
+      if (!name) return;
+      const cos = (window.Companies && Companies.list) || [];
+      const co = cos.find(function (c) {
+        return String(c.nafn || '').trim().toLowerCase() === name.trim().toLowerCase();
+      });
+      if (co && window.VidskDetail && typeof VidskDetail.show === 'function') {
+        VidskDetail.show(co.id);
+      } else if (co && window._openCompanySafe) {
+        _openCompanySafe(co.id);
+      } else {
+        toast('🏢 ' + name + ' — fyrirtæki fannst ekki í lista');
+      }
+      return;
     }
 
     // Card click → jump to item in board
