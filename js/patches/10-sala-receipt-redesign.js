@@ -182,6 +182,9 @@
         const qty = +l.qty || 0;
         const unitEx = +l.unit_price_ex_vat || 0;
         const vskPct = (l.vsk_pct == null ? 24 : +l.vsk_pct);
+        // 2026-08-10 (ósk Agnars): Einingaverð dálkurinn sýnir nú m. vsk — talan
+        // sem viðskiptavinurinn raunverulega greiðir per stk, ekki nettóverðið.
+        const unitGross = unitEx * (1 + vskPct / 100);
         const lineEx = qty * unitEx;
         const vskCode = vskPct >= 20 ? '2' : (vskPct >= 10 ? '1' : '0');
         return {
@@ -189,6 +192,7 @@
           desc: l.desc || '',
           qty,
           unitEx,
+          unitGross,
           lineEx,
           vskPct,
           vskCode
@@ -207,6 +211,9 @@
     // upphaflegt verð = bakað/(1−p) — svo hægt sé að SÝNA afsláttinn án þess
     // að snerta tölurnar sjálfar (upplýsinga-lína, ekki ný stærðfræði).
     let lineDiscEx = 0;
+    // 2026-08-10 (ósk Agnars): m.vsk hliðstæða lineDiscEx, fyrir totals-block
+    // sem sýnir nú afslátt m. vsk í stað án vsk.
+    let lineDiscGross = 0;
     const linePcts = [];
     let billableLines = 0, discLines = 0;
     for (const l of lines) {
@@ -222,7 +229,13 @@
         const m = String(l.desc || '').match(/·\s*[−-]\s*(\d+(?:[.,]\d+)?)\s*%\s*afsl/i);
         if (m) {
           const p = parseFloat(m[1].replace(',', '.'));
-          if (p > 0 && p < 100) { lineDiscEx += l.lineEx * (p / (100 - p)); if (linePcts.indexOf(p) < 0) linePcts.push(p); discLines++; }
+          if (p > 0 && p < 100) {
+            const reconstructedEx = l.lineEx * (p / (100 - p));
+            lineDiscEx += reconstructedEx;
+            lineDiscGross += reconstructedEx * (1 + l.vskPct / 100);
+            if (linePcts.indexOf(p) < 0) linePcts.push(p);
+            discLines++;
+          }
         }
       }
     }
@@ -265,6 +278,7 @@
       discountGross: (rawEx + rawVsk) - (subEx + vsk),
       // bakaðir línu-afslættir (upplýsinga-lína í samtölum, sjá að ofan)
       lineDiscEx: lineDiscEx,
+      lineDiscGross: lineDiscGross,
       // 2026-07-10 (📣 verkefnalisti 962a74f0): prósentan birtist AÐEINS þegar
       // sami afsláttur nær yfir ALLA vöruliðina — nái hann bara yfir hluta
       // þeirra stendur bara „Afsláttur" + upphæðin (annars villandi 20%).
@@ -431,7 +445,7 @@
         <td class="num-col">${esc(l.ref || '')}</td>
         <td class="desc-col">${esc(l.desc)}</td>
         <td class="qty-col">${l.qty ? l.qty.toLocaleString(ICELAND_LOCALE, { minimumFractionDigits: l.qty % 1 ? 1 : 0, maximumFractionDigits: 2 }) : ''}</td>
-        <td class="unit-col">${fmtAmt(l.unitEx)}</td>
+        <td class="unit-col">${fmtAmt(l.unitGross)}</td>
         <td class="amt-col">${fmtAmt(l.lineEx)}</td>
         <td class="vsk-col">${esc(l.vskCode)}</td>
       </tr>`).join('');
@@ -600,7 +614,7 @@
               <th class="num-col">Vörunúmer</th>
               <th class="desc-col">Lýsing</th>
               <th class="qty-col">Fjöldi</th>
-              <th class="unit-col">Einingaverð</th>
+              <th class="unit-col">Einingaverð m. vsk</th>
               <th class="amt-col">Upphæð</th>
               <th class="vsk-col">VSK</th>
             </tr>
@@ -612,16 +626,21 @@
 
         <div class="totals-block">
           ${(() => {
-            // 2026-07-10 (verkefnalisti ee3f5faf + 962a74f0): afsláttar-línurnar
-            // eru nú alltaf settar fram ÁN VSK (áður m. VSK í gross-ham) og
-            // bakaðir línu-afslættir sjást líka. Keðjan gengur upp:
-            // fyrir-afslátt − afsláttur = Samtals fyrir Vsk. Til greiðslu og
-            // VSK-sundurliðun eru ÓBREYTT (framsetning, ekki ný stærðfræði).
+            // 2026-08-10 (ósk Agnars): afsláttar-línurnar eru nú settar fram
+            // M. VSK (áður án VSK) — sami "hvað borgar viðskiptavinurinn"
+            // háttur og Einingaverð-dálkurinn og Karfan í POS. lineD/saleD/
+            // discEx eru enn í ex-vat einingum og notaðar ÓBREYTTAR fyrir
+            // núll-athugunina og pct-greininguna (hlutfall er mælikvarða-
+            // óháð — sama % hvort sem miðað er við án/með vsk), aðeins
+            // birtu-talan sjálf skiptir yfir í gross.
             const lineD = t.lineDiscEx || 0;
             const saleD = t.discountEx || 0;
             const discEx = saleD + lineD;
             if (discEx <= 0.5) return '';
-            const preEx = t.rawEx + lineD;
+            const lineDGross = t.lineDiscGross || 0;
+            const saleDGross = t.discountGross || 0;
+            const discGross = saleDGross + lineDGross;
+            const preGross = t.rawGross + lineDGross;
             let pct = 0;
             if (saleD > 0.005 && lineD <= 0.5) {
               if (t.discountPct > 0) pct = t.discountPct;
@@ -637,12 +656,12 @@
             }
             return `
             <div class="totals-line">
-              <span class="lbl">Samtals fyrir afslátt (án VSK):</span>
-              <span class="amt">${fmtAmt(preEx)}</span>
+              <span class="lbl">Samtals fyrir afslátt (m. vsk):</span>
+              <span class="amt">${fmtAmt(preGross)}</span>
             </div>
             <div class="totals-line" style="color:#b91c1c">
-              <span class="lbl">Afsláttur${pct > 0 ? ' (' + pct + '%)' : ''} án VSK:</span>
-              <span class="amt">−${fmtAmt(discEx)}</span>
+              <span class="lbl">Afsláttur${pct > 0 ? ' (' + pct + '%)' : ''} (m. vsk):</span>
+              <span class="amt">−${fmtAmt(discGross)}</span>
             </div>`;
           })()}
           <div class="totals-line">
