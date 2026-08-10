@@ -313,6 +313,7 @@
     topFilter: 'allt',
     catOpen: {},        // { '<tag>': false } — lokaðir flokkar (sjálfgefið opnir)
     catMore: {},        // { '<tag>': true } — flokkur sem sýnir ALLT (ekki bara fyrstu 5)
+    catAddOpen: {},     // { '<tag>': true } — flýtiskráningarform flokksins er opið
     filter: (function () { try { return localStorage.getItem(FKEY) || ''; } catch (_) { return ''; } })(),
     // 2026-07-10 (ósk Agnars): röðunar-valkostur — 'snjall' (sjálfgefið, áríðandi/
     // gjalddagi/forgangur eins og áður) eða 'nyjast' (hrein dagsetningarröð, nýjast efst).
@@ -1552,7 +1553,24 @@
             'font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box">' + g.items.length + '</span>' +
           '<span style="margin-left:auto;font-size:11px;font-weight:600;color:#6b7280">' +
             (open ? '' : g.items.length + ' mál · smelltu til að opna') + '</span>' +
+          // 2026-08-10 (ósk Agnars — „quite time consuming register projects"):
+          // flýtiskráning beint úr flokkahausnum — sami quickAdd() og aðal-
+          // composerinn notar, bara forfyllt með ÞESSU merki + valda starfsmanni
+          // (state.fWorker, sami veljari og „Agnar/Allir" efst á borðinu).
+          '<button data-act="catadd" data-cat="' + esc(g.key) + '" title="Fljótskrá í ' + esc(g.name) + '" ' +
+            'style="flex:none;width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,.4);' +
+            'background:' + (state.catAddOpen[g.key] ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.1)') + ';' +
+            'color:' + (state.catAddOpen[g.key] ? '#17181d' : '#fff') + ';font-size:13px;font-weight:800;line-height:1;' +
+            'display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0">+</button>' +
         '</div>' +
+        (state.catAddOpen[g.key]
+          ? '<div style="display:flex;gap:6px;padding:8px 12px;border-top:1px solid #eef0f2;background:#f8fafc">' +
+              '<input class="vb-catadd-cust" data-cat="' + esc(g.key) + '" list="vb-add-colist" placeholder="🗂 Fyrirtæki…" autocomplete="off" ' +
+                'style="flex:1 1 45%;min-width:0;height:32px;padding:0 10px;border-radius:7px;border:1px solid #cbd5e1;background:#fff;color:#141822;font-family:inherit;font-size:12.5px;outline:none">' +
+              '<input class="vb-catadd-txt" data-cat="' + esc(g.key) + '" placeholder="Texti… (Enter vistar)" autocomplete="off" ' +
+                'style="flex:1 1 55%;min-width:0;height:32px;padding:0 10px;border-radius:7px;border:1px solid #cbd5e1;background:#fff;color:#141822;font-family:inherit;font-size:12.5px;outline:none">' +
+            '</div>'
+          : '') +
         (open
           ? shown.map(r => v3Row(r, true, g.color)).join('') +
             (g.items.length > shown.length
@@ -2076,6 +2094,17 @@
         renderList();
         return;
       }
+      if (act === 'catadd') {
+        e.stopPropagation();
+        const k = t.getAttribute('data-cat');
+        state.catAddOpen[k] = !state.catAddOpen[k];
+        renderList();
+        if (state.catAddOpen[k]) {
+          const inp = document.querySelector('.vb-catadd-cust[data-cat="' + k + '"]');
+          if (inp) inp.focus();
+        }
+        return;
+      }
       if (act === 'catmore') {
         e.stopPropagation();
         state.catMore[t.getAttribute('data-cat')] = true;
@@ -2122,14 +2151,29 @@
     root.addEventListener('keydown', e => {
       if (e.target.id === 'vb-add-input' && e.key === 'Enter') { e.preventDefault(); doAdd(); }
       if (e.target.id === 'vb-add-cust' && e.key === 'Enter') { e.preventDefault(); document.getElementById('vb-add-input')?.focus(); }
+      // Flokka-flýtiformið (catadd): Enter í fyrirtækja-reitnum hoppar í texta-
+      // reitinn; Enter í texta-reitnum vistar — sama „Enter vistar" venja og
+      // aðal-composerinn.
+      if (e.target.classList && e.target.classList.contains('vb-catadd-cust') && e.key === 'Enter') {
+        e.preventDefault();
+        const k = e.target.getAttribute('data-cat');
+        document.querySelector('.vb-catadd-txt[data-cat="' + k + '"]')?.focus();
+      }
+      if (e.target.classList && e.target.classList.contains('vb-catadd-txt') && e.key === 'Enter') {
+        e.preventDefault();
+        catQuickAdd(e.target.getAttribute('data-cat'));
+      }
       if (e.target.id === 'vb-sel-co-inp' && e.key === 'Enter') {
         e.preventDefault();
         const btn = root.querySelector('[data-act="selco-save"]'); if (btn) btn.click();
       }
     });
     // Fyrirtækja-datalist quick-línunnar fyllist við fyrstu snertingu (lazy).
+    // Sami deilda datalistinn (#vb-add-colist) þjónar bæði aðal-composernum
+    // og öllum flokka-flýtiformunum.
     root.addEventListener('focusin', e => {
-      if (e.target.id === 'vb-add-cust' || e.target.id === 'vb-add-input') loadCompanies().then(fillCompanyList);
+      if (e.target.id === 'vb-add-cust' || e.target.id === 'vb-add-input' ||
+        (e.target.classList && e.target.classList.contains('vb-catadd-cust'))) loadCompanies().then(fillCompanyList);
     });
     // RSK-uppfletting (2026-07-10, ósk Agnars — „finna þá fyrirtæki á skrá eða
     // rsk"): sé KENNITALA (10 tölustafir) slegin í fyrirtækjareitinn flettist
@@ -2202,6 +2246,24 @@
     });
     syncAddTags();
     inp.focus();
+  }
+  // Flokka-flýtiskráning (2026-08-10, ósk Agnars): sama quickAdd() sem knýr
+  // aðal-composerinn, en kallað beint úr flokkahausnum — forfyllt með ÞESSU
+  // merki einu (ekki state.addTags, sem er fyrir aðal-composerinn) og núverandi
+  // starfsmanna-síu (state.fWorker — sama „Agnar/Allir" veljari og efst á
+  // borðinu, svo fljótskráð mál lendi hjá þeim sem borðið er síað á).
+  async function catQuickAdd(cat) {
+    const custEl = document.querySelector('.vb-catadd-cust[data-cat="' + cat + '"]');
+    const txtEl = document.querySelector('.vb-catadd-txt[data-cat="' + cat + '"]');
+    if (!txtEl) return;
+    const v = txtEl.value;
+    if (!v.trim()) { txtEl.focus(); return; }
+    const cv = custEl ? custEl.value : '';
+    txtEl.value = ''; if (custEl) custEl.value = '';
+    await quickAdd(v, null, cv, false, [cat], null, state.fWorker || '');
+    // quickAdd endurteiknar #vb-list — sækja ferskt eintak áður en fókusað er.
+    const freshTxt = document.querySelector('.vb-catadd-txt[data-cat="' + cat + '"]');
+    if (freshTxt) freshTxt.focus();
   }
   // ✉️ Sækja tölvupóst — endurnýtir póst-innsogið úr Þjónustuveri (182, sama
   // tafla thjonustubeidni, idempotent á channel_ref) og endurhleður borðið.
