@@ -364,14 +364,22 @@
   function invAttChip(a){ var m=String(a.name||'').match(/R-?\s?\d{3,}/i); return attWrap('<button type="button" class="sk-doc inv" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>', a.id); }
   function addChip(kind, year, label){ return '<button type="button" class="sk-doc add" data-pick="1" data-kind="'+esc(kind)+'"'+(year?' data-year="'+esc(year)+'"':'')+'>'+esc(label)+'</button>'; }
 
+  // 2026-08-11 (ósk Agnars — „connections between these buttons is needed and
+  // override enabled"): STAÐA EFTIR ÁRI-pillurnar voru DAUÐAR — hreinn skraut-
+  // <span> án `data-yr` og án smellhlustara. Þær sýndu sömu stöðu og árs-dálkarnir
+  // í listanum en ekkert var hægt að gera við þær, svo rangt grænt ár varð ekki
+  // leiðrétt þaðan. Nú bera þær `data-yr` og deila NÁKVÆMLEGA sama fact-check
+  // ástandi og árs-hausinn (`.sk-yr`) — tvísmellur hringar
+  // ekkert → ✓ staðfest → 🟠 skýrsla vantar → ekkert.
   function pill(y, hasReport, fcStat, note){
     var cls=hasReport?'ok':(y===NOW?'now':'none');
     if(fcStat==='human') cls+=' done'; else if(fcStat==='claude') cls+=' claude'; else if(fcStat==='gap') cls+=' gap';
-    var tip=fcStat==='human'?(y+' — ✓ staðfest handvirkt')
+    var tip=fcStat==='human'?(y+' — ✓ staðfest handvirkt — tvísmelltu til að merkja „skýrsla vantar"')
       :fcStat==='claude'?(y+' — 🔵 Claude yfirfór'+(note?(': '+note):'')+' — tvísmelltu til að staðfesta')
       :fcStat==='gap'?(y+' — 🟠 '+(note||'skýrsla vantar')+' — tvísmelltu til að fjarlægja flagg')
-      :(hasReport?(y+' — skýrsla á skrá'):(y===NOW?(y+' — í vinnslu'):(y+' — engin skýrsla')));
-    return '<span class="sk-pill '+cls+'" title="'+esc(tip)+'">'+String(y).slice(2)+'</span>';
+      :(hasReport?(y+' — skýrsla á skrá — tvísmelltu til að yfirtaka handvirkt')
+        :(y===NOW?(y+' — í vinnslu — tvísmelltu til að staðfesta'):(y+' — engin skýrsla — tvísmelltu til að staðfesta')));
+    return '<span class="sk-pill '+cls+'" data-yr="'+y+'" title="'+esc(tip)+'">'+String(y).slice(2)+'</span>';
   }
 
   // 2026-07-14 (ósk Agnars): aðgreina reikninga eftir uppruna á fyrirtækjaprófílnum.
@@ -485,11 +493,17 @@
       try{ document.dispatchEvent(new Event('attachment-year-changed')); }catch(_){}
     }catch(e){ alert('Villa: '+(e.message||e)); }
   }
-  // Tvísmella: 'human' → hreinsa · 'gap' → hreinsa (fjarlægja flagg) · annars
-  // (blátt/ekkert) → 'human' (staðfesta).
+  // Tvísmella hringar í ÞREMUR stigum (2026-08-11, Agnar: „I cant make it not
+  // green"). Áður komst maður aldrei í 'gap' handvirkt — aðeins Claude gat sett
+  // það — svo rangt grænt ár var ekki hægt að leiðrétta úr viðmótinu. Nú:
+  //   ekkert/blátt → 'human' (✓ staðfest)  →  'gap' (🟠 skýrsla vantar)  →  hreinsa
+  // 'gap' er nú líka RÍKJANDI í árs-dálkunum (patch 187), svo þetta slekkur
+  // ranglega grænt ár strax.
   async function fcToggle(coId,y){
     var st=fcStatus(coId,y);
-    if(st==='human'||st==='gap') await fcClear(coId,y); else await fcSet(coId,y,'human',null);
+    if(st==='human')      await fcSet(coId,y,'gap','Merkt handvirkt: skýrsla vantar');
+    else if(st==='gap')   await fcClear(coId,y);
+    else                  await fcSet(coId,y,'human',null);
   }
   // Einu sinni: flytja gömlu AppSettings-grænin (patch #465) yfir í töfluna.
   (function migrateGreens(){
@@ -849,9 +863,10 @@
       var cur=(y===YEARS[0]); var st=fcStatus(coId,y);
       var ycls='sk-yr'+(st==='human'?' sk-yr-ok':st==='claude'?' sk-yr-claude':st==='gap'?' sk-yr-gap':'')+(cur&&!st?' sk-yr-now':'');
       var mark=st==='human'?'✓ ':st==='claude'?'🔵 ':st==='gap'?'🟠 ':'';
-      var ttl=st==='claude'?('Claude yfirfór'+(fcNote(coId,y)?(': '+fcNote(coId,y)):'')+' — tvísmelltu til að staðfesta')
+      var ttl=st==='human'?('✓ Staðfest '+y+' — tvísmelltu til að merkja „skýrsla vantar" (🟠)')
+             :st==='claude'?('Claude yfirfór'+(fcNote(coId,y)?(': '+fcNote(coId,y)):'')+' — tvísmelltu til að staðfesta')
              :st==='gap'?((fcNote(coId,y)||'Skýrsla vantar')+' — tvísmelltu til að fjarlægja flagg')
-             :('Tvísmelltu til að staðfesta fact-check '+y);
+             :('Tvísmelltu til að staðfesta fact-check '+y+' (aftur = „skýrsla vantar")');
       // 2026-08-07: ÖLL ár fá spjöldin tvö hlið við hlið (skissa Agnars) —
       // eldri ár voru áður þjappaðar línur, en stöðumerkið + punktarnir segja
       // söguna betur og eins alls staðar. cur helst fyrir upphæðir (forCompact).
@@ -884,9 +899,12 @@
   }
 
   function wire(section){
-    // Tvísmella á árið → staðfesta/afturkalla fact-check ársins.
+    // Tvísmella á árið → hringa fact-check ársins. Virkar bæði á árs-hausnum
+    // (.sk-yr) OG á STAÐA EFTIR ÁRI-pillunni (.sk-pill) — sama ástand, sami
+    // hringur, svo hvor leiðin sem er dugar til að leiðrétta rangt ár.
     section.addEventListener('dblclick', async function(e){
-      var td=e.target.closest && e.target.closest('.sk-yr'); if(!td) return;
+      var td=e.target.closest && (e.target.closest('.sk-yr') || e.target.closest('.sk-pill'));
+      if(!td) return;
       var coId=+section.dataset.coId; var y=+td.getAttribute('data-yr'); if(!coId||!y) return;
       e.preventDefault(); await fcToggle(coId,y); render(section, coId);
     });
@@ -1320,7 +1338,8 @@
       // + stytting með … svo löng skráarnöfn víkki ekki töfluna endalaust.
       '.sk-card .sk-doc{font-size:11.5px!important;line-height:1.2!important;padding:4px 9px!important;max-width:min(52vw,230px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '.sk-card .sk-doc.add{max-width:none}',
-      '.sk-pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:99px;border:1px solid var(--brd);background:var(--surface);color:var(--ink4);font-variant-numeric:tabular-nums}',
+      '.sk-pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:99px;border:1px solid var(--brd);background:var(--surface);color:var(--ink4);font-variant-numeric:tabular-nums;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation}',
+      '.sk-pill:hover{filter:brightness(.97);box-shadow:0 0 0 2px rgba(0,0,0,.06)}',
       '.sk-pill::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--hairline)}',
       '.sk-pill.ok{border-color:#bbf7d0;background:#f0fdf4;color:#15803d}.sk-pill.ok::before{background:#15803d}',
       '.sk-pill.now{border-color:var(--brd);background:var(--surface2);color:var(--brand)}.sk-pill.now::before{background:var(--brand)}',
