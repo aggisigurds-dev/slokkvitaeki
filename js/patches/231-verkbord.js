@@ -1635,7 +1635,7 @@
           ? '<textarea id="vb-sel-notes" data-selid="' + esc(String(r.id)) + '" rows="3" placeholder="Athugasemdir…" ' +
             'style="font-size:13px;color:#4b5058;line-height:1.65;width:100%;resize:vertical;min-height:52px;max-height:220px;' +
             'border:1px solid transparent;border-radius:7px;padding:5px 7px;background:transparent;outline:none;' +
-            'box-sizing:border-box;font-family:inherit;margin-bottom:10px"' +
+            'box-sizing:border-box;font-family:inherit;margin-bottom:10px" ' +
             'onfocus="this.style.borderColor=\'#d8dadf\';this.style.background=\'#f8fafc\'" ' +
             'onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'">' + esc(r.notes || '') + '</textarea>'
           : (r.notes ? '<div style="font-size:13px;color:#4b5058;line-height:1.65;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:10px">' + esc(r.notes) + '</div>' : '')) +
