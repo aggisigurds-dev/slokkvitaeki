@@ -57,6 +57,11 @@
   const LS_MONTHS = 'arsskodun_months'; // 2026-07-31: fjöl-val mánaða (fylki; 0 = án mánaðar)
   const LS_STATUS = 'arsskodun_status';
   const LS_SEARCH = 'arsskodun_search';
+  // 2026-08-11 (ósk Agnars): fela „slepptir í fyrra" úr ÖLLUM öðrum sýnum og úr
+  // talningunum. Þeir eru sofandi kúnnar (endurvirkjunar-listi), ekki vinna sem
+  // stendur eftir á árinu — þeir blésu upp „Eftir"-tölurnar og duldu hvað er
+  // raunverulega eftir hjá virku kúnnunum.
+  const LS_SKIPHIDE = 'arsskodun_hideSkipped';
 
   function getSB() { return (window.DB && window.DB.sb) || null; }
   function esc(s) {
@@ -650,8 +655,18 @@
       return (legacy >= 1 && legacy <= 12) ? [legacy] : [];
     })(),
     status: localStorage.getItem(LS_STATUS) || 'all',        // 'all' | 'done' | 'pending' | 'never'
+    // Sjálfgefið AF (=sýna þá) svo ekkert hverfi óumbeðið hjá þeim sem þekkja
+    // listann eins og hann var. Gátreiturinn í „🟡 Slepptir í fyrra" kveikir.
+    hideSkipped: localStorage.getItem(LS_SKIPHIDE) === '1',
     search: ''
   };
+  // Sleppt í fyrra = síðast skoðað fyrir meira en ári síðan (en einhvern tíma).
+  // EIN skilgreining — bæði sían sjálf, feluglerið og talningarnar lesa hana,
+  // svo þær geta ekki rekið í sundur (sbr. 'skipped2025'-síuna hér að neðan).
+  function isSkippedLastYear(c, curYear) {
+    const last = +((c._ars || {}).last_year_inspected) || 0;
+    return last > 0 && last < curYear - 1;
+  }
   function saveState() {
     localStorage.setItem(LS_VIEW, state.view);
     localStorage.setItem(LS_SORT, state.sort);
@@ -659,6 +674,7 @@
     localStorage.setItem(LS_SORTDIR, state.sortDir || 'asc');
     localStorage.setItem(LS_MONTHS, JSON.stringify(state.months || []));
     localStorage.setItem(LS_STATUS, state.status);
+    localStorage.setItem(LS_SKIPHIDE, state.hideSkipped ? '1' : '0');
   }
   // Label fyrir valda mánuði (fjöl-val + „Án mánaðar").
   function monthFilterLabel(curYear) {
@@ -756,6 +772,12 @@
       // 🚗-chippinn í töflunni — ekki beint úr blobbinu, svo leiðin sem patch
       // 267 heldur utan um sé eina heimildin.
       arr = arr.filter(c => ((window.ArsAkstur && ArsAkstur.of) ? (+ArsAkstur.of(c.id) || 0) : (+(c._ars || {}).akstur || 0)) > 0);
+    }
+    // 2026-08-11: fela slepptu. Gildir EKKI á „🟡 Slepptir í fyrra" sjálfri (þar
+    // eru þeir efnið) og ekki meðan leitað er (leitin fer alltaf yfir allt, sbr.
+    // hasSearch að ofan) — annars myndi kúnni „hverfa" úr leit án skýringar.
+    if (state.hideSkipped && !hasSearch && state.status !== 'skipped2025') {
+      arr = arr.filter(c => !isSkippedLastYear(c, curYear));
     }
     // Akstursleiðin röðuð 1 → 2 → 3 svo listinn lesist eins og keyrsludagurinn.
     if (state.status === 'akstur') {
@@ -1077,10 +1099,17 @@
     // The full list still includes everyone — the user wanted the whole
     // fyrirtækjaregistur in one tab, but tiles only count the ones that
     // matter for yearly inspections.
-    const arsAll = all.filter(c => c._ars && c._ars.equipment);
-
     const today = new Date();
     const curYear = today.getFullYear();
+    // 2026-08-11: þegar „fela slepptu" er á taka ÖLL spjöldin, mánaðar-teljararnir
+    // og virðis-tölurnar mið af því — annars segði „Eftir 2026" áfram töluna sem
+    // innihélt sofandi kúnnana og listinn fyrir neðan sýndi aðra. Feluglerið er
+    // hunsað meðan leitað er, alveg eins og í filteredSorted().
+    const skipHidden = state.hideSkipped && !state.search.trim();
+    const arsAllRaw = all.filter(c => c._ars && c._ars.equipment);
+    const arsAll = skipHidden ? arsAllRaw.filter(c => !isSkippedLastYear(c, curYear)) : arsAllRaw;
+    const skippedCount = arsAllRaw.filter(c => isSkippedLastYear(c, curYear)).length;
+    const allCount = skipHidden ? all.filter(c => !isSkippedLastYear(c, curYear)).length : all.length;
     const monthCounts = Array(13).fill(0);
     // index 0 = fjöldi án skráðs mánaðar („Án mánaðar"-chippurinn)
     arsAll.forEach(c => { const m = +c._ars.inspect_month || 0; if (m >= 1 && m <= 12) monthCounts[m]++; else monthCounts[0]++; });
@@ -1122,7 +1151,7 @@
             <div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">🏢</div>
             <div style="min-width:0">
               <h1 style="margin:0;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">Fyrirtæki í Þjónustu</h1>
-              <div class="_ars-sub" style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">${all.length} fyrirtæki · ${arsAll.length} í árlegri slökkvitækjaskoðun</div>
+              <div class="_ars-sub" style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">${allCount} fyrirtæki · ${arsAll.length} í árlegri slökkvitækjaskoðun${skipHidden ? ` · <span style="color:#fcd34d">🟡 ${skippedCount} slepptir faldir</span>` : ''}</div>
             </div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1145,7 +1174,7 @@
         <div class="_ars-statgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
           <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Fjöldi</div>
-            <div style="font-size:22px;font-weight:800;color:var(--ink1);line-height:1.1;margin-top:2px">${all.length}</div>
+            <div style="font-size:22px;font-weight:800;color:var(--ink1);line-height:1.1;margin-top:2px">${allCount}</div>
             <div style="font-size:10.5px;color:var(--ink3)">${arsAll.length} í ársskoðun</div>
           </div>
           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px">
@@ -1188,6 +1217,13 @@
               { v: 'akstur', label: '🚗 Aksturslisti' }
             ].map(s => `
               <button data-status="${s.v}" class="_ars-st" style="padding:7px 11px;border:none;background:${state.status===s.v?'var(--brand)':'var(--surface)'};color:${state.status===s.v?'#fff':'var(--ink2)'};cursor:pointer;font:inherit;font-size:11.5px;font-weight:600">${esc(s.label)}</button>
+              ${s.v !== 'skipped2025' ? '' : `
+              <span id="_ars-skiphide" role="checkbox" tabindex="0" aria-checked="${state.hideSkipped ? 'true' : 'false'}"
+                title="${state.hideSkipped
+                  ? `Slepptir (${skippedCount}) eru FALDIR úr öllum öðrum sýnum og tölum — smelltu til að sýna þá aftur`
+                  : `Fela slepptu (${skippedCount}) úr öllum öðrum sýnum og tölum svo „Eftir“ sýni bara virku kúnnana`}"
+                style="display:inline-flex;align-items:center;gap:4px;padding:7px 9px;cursor:pointer;font:inherit;font-size:11.5px;font-weight:700;user-select:none;white-space:nowrap;border-left:1px solid var(--brd2);background:${state.hideSkipped ? '#a16207' : 'var(--surface)'};color:${state.hideSkipped ? '#fff' : 'var(--ink3)'}">${state.hideSkipped ? '☑' : '☐'} fela</span>
+              `}
             `).join('')}
           </div>
         </div>
@@ -1252,7 +1288,7 @@
         ` : ''}
 
         <div style="margin-top:18px;font-size:11px;color:var(--ink4);text-align:center">
-          Sýni <strong style="color:var(--ink2)">${filtered.length}</strong> af ${all.length} viðskiptavinum
+          Sýni <strong style="color:var(--ink2)">${filtered.length}</strong> af ${allCount} viðskiptavinum${skipHidden ? ` · ${skippedCount} slepptir faldir` : ''}
         </div>
       </div>
     `;
@@ -1293,6 +1329,21 @@
     main.querySelectorAll('._ars-st').forEach(b => b.addEventListener('click', () => {
       state.status = b.dataset.status; saveState(); render();
     }));
+    // 🟡 „fela"-gátreiturinn — víxlar hvort slepptir sjáist í hinum sýnunum.
+    // Stendur við hliðina á síunni sjálfri en kveikir hana EKKI (annars gætirðu
+    // ekki falið þá án þess að hoppa í listann yfir þá).
+    const skipBox = main.querySelector('#_ars-skiphide');
+    if (skipBox) {
+      const toggleSkip = (e) => {
+        e.preventDefault(); e.stopPropagation();
+        state.hideSkipped = !state.hideSkipped;
+        saveState(); render();
+      };
+      skipBox.addEventListener('click', toggleSkip);
+      skipBox.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') toggleSkip(e);
+      });
+    }
     main.querySelectorAll('._ars-mo').forEach(b => b.addEventListener('click', () => {
       // Fjöl-val: „Allir" hreinsar; annars víxlar (add/remove) mánuðinum (0 = án mánaðar).
       const raw = b.dataset.month;
@@ -1842,7 +1893,7 @@
         '#view-arsskodun #_ars-new,#view-arsskodun #_ars-print,#view-arsskodun #_ars-ovr{min-height:44px!important;font-size:13px!important}' +
         '#view-arsskodun ._ars-ovr-year{min-height:40px!important;font-size:12px!important}' +
         '#view-arsskodun #_ars-sort{min-height:44px!important;font-size:16px!important}' +
-        '#view-arsskodun ._ars-st,#view-arsskodun ._ars-mo,#view-arsskodun .by-preset{min-height:38px!important;font-size:12.5px!important;padding:7px 11px!important}' +
+        '#view-arsskodun ._ars-st,#view-arsskodun ._ars-mo,#view-arsskodun #_ars-skiphide,#view-arsskodun .by-preset{min-height:38px!important;font-size:12.5px!important;padding:7px 11px!important}' +
         /* 2026-06-28: stat-card grid was repeat(4,1fr) — overflowed S26.
            Collapse to 2 columns on mobile so all 4 cards fit. */
         '#view-arsskodun ._ars-statgrid{grid-template-columns:1fr 1fr!important;gap:8px!important}' +
@@ -1895,7 +1946,7 @@
       M + '#_ars-search{font-size:16px!important;padding:12px 13px!important;border-radius:10px!important;width:100%!important;box-sizing:border-box!important}' +
       M + '#_ars-new,' + M + '#_ars-print{min-height:44px!important;font-size:13px!important}' +
       M + '#_ars-sort{min-height:44px!important;font-size:16px!important}' +
-      M + '._ars-st,' + M + '._ars-mo{min-height:38px!important;font-size:12.5px!important;padding:7px 11px!important}' +
+      M + '._ars-st,' + M + '._ars-mo,' + M + '#_ars-skiphide{min-height:38px!important;font-size:12.5px!important;padding:7px 11px!important}' +
       M + '._ars-statgrid{grid-template-columns:1fr 1fr!important;gap:8px!important}' +
       M + '._ars-statusrow{overflow-x:auto!important;overflow-y:hidden!important;-webkit-overflow-scrolling:touch;max-width:100%}' +
       M + '._ars-statusrow>button{flex:0 0 auto!important;white-space:nowrap}' +
