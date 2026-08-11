@@ -1630,8 +1630,15 @@
             'onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'">') +
         // FYRIRTÆKI (með ✏️ Tengja hnappi)
         '<div id="vb-sel-co" style="margin-bottom:10px">' + selCoHTML(r) + '</div>' +
-        // 2026-08-06 (Agnar: "cant reach the edit button when text is too long")
-        (r.notes ? '<div style="font-size:13px;color:#4b5058;line-height:1.65;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:10px">' + esc(r.notes) + '</div>' : '') +
+        // 2026-08-11: inline-editable textarea (replaces read-only div — saves on 500ms debounce, same as title)
+        (!editing && !r._vd
+          ? '<textarea id="vb-sel-notes" data-selid="' + esc(String(r.id)) + '" rows="3" placeholder="Athugasemdir…" ' +
+            'style="font-size:13px;color:#4b5058;line-height:1.65;width:100%;resize:vertical;min-height:52px;max-height:220px;' +
+            'border:1px solid transparent;border-radius:7px;padding:5px 7px;background:transparent;outline:none;' +
+            'box-sizing:border-box;font-family:inherit;margin-bottom:10px"' +
+            'onfocus="this.style.borderColor=\'#d8dadf\';this.style.background=\'#f8fafc\'" ' +
+            'onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\'">' + esc(r.notes || '') + '</textarea>'
+          : (r.notes ? '<div style="font-size:13px;color:#4b5058;line-height:1.65;white-space:pre-wrap;max-height:200px;overflow-y:auto;margin-bottom:10px">' + esc(r.notes) + '</div>' : '')) +
         // MERKI — öll tiltæk merki sem toggle-chippar (dökk-metal eins og TÖG-sían)
         (!r._vd
           ? '<div style="border-top:1px solid #f1f3f5;padding-top:10px;margin-bottom:12px">' +
@@ -1674,6 +1681,13 @@
       const saveTitle = () => { clearTimeout(_tt); saveRow(Number(tInp.dataset.selid), { title: tInp.value }); };
       tInp.addEventListener('input', () => { clearTimeout(_tt); _tt = setTimeout(saveTitle, 500); });
       tInp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); tInp.blur(); saveTitle(); } });
+    }
+    // Tengja notes-textarea við vistun (debounced)
+    const nTa = document.getElementById('vb-sel-notes');
+    if (nTa) {
+      let _nt = null;
+      const saveNotes = () => { clearTimeout(_nt); saveRow(Number(nTa.dataset.selid), { notes: nTa.value }); };
+      nTa.addEventListener('input', () => { clearTimeout(_nt); _nt = setTimeout(saveNotes, 500); });
     }
   }
 
