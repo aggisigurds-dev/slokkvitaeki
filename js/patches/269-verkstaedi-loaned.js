@@ -151,7 +151,9 @@
     await loadShop(true); inject(true);
   }
   async function del(id) {
-    if (!window.confirm('Eyða þessu tæki? (t.d. ef mistalið úr skýrslu)')) return;
+    const delMsg = 'Eyða þessu tæki? (t.d. ef mistalið úr skýrslu)';
+    const delOk = (window.Confirm && Confirm.show) ? await Confirm.show(delMsg) : window.confirm(delMsg);
+    if (!delOk) return;
     _shop = _shop.filter(u => String(u.id) !== String(id));
     _loadedAt = Date.now(); await inject(false);   // hverfa strax
     await deleteUnit(id);

@@ -553,7 +553,8 @@
   };
 
   window.__tbmDelete = async function (id) {
-    if (!window.confirm('Eyða þessum beiðni?')) return;
+    const delBeidniOk = (window.Confirm && Confirm.show) ? await Confirm.show('Eyða þessum beiðni?') : window.confirm('Eyða þessum beiðni?');
+    if (!delBeidniOk) return;
     const SB = getSB(); if (!SB) return;
     await SB.from('thjonustubeidni').update({ deleted_at: nowIso() }).eq('id', id);
     state.items = state.items.filter(x => String(x.id) !== String(id));
@@ -588,7 +589,8 @@
   };
 
   window.__tbmDelAtt = async function (attId, path, beidniId) {
-    if (!window.confirm('Eyða fylgiskjali?')) return;
+    const delAttOk = (window.Confirm && Confirm.show) ? await Confirm.show('Eyða fylgiskjali?') : window.confirm('Eyða fylgiskjali?');
+    if (!delAttOk) return;
     const SB = getSB(); if (!SB) return;
     if (path) await SB.storage.from(ATT_BUCKET).remove([path]);
     await SB.from('thjonustubeidni_files').delete().eq('id', attId);

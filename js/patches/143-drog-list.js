@@ -278,7 +278,9 @@
       on('edit', () => { if (window.SaleEditor) window.SaleEditor.openById(id); });
       on('finalize', () => { if (window.SaleEditor) window.SaleEditor.openById(id); });
       on('delete', async () => {
-        if (!window.confirm('Eyða þessum drögum?\n\nÞau hverfa af listanum en hægt er að endurheimta (haka í „Sýna eydd").')) return;
+        const drogMsg = 'Eyða þessum drögum?\n\nÞau hverfa af listanum en hægt er að endurheimta (haka í „Sýna eydd").';
+        const drogOk = (window.Confirm && Confirm.show) ? await Confirm.show(drogMsg) : window.confirm(drogMsg);
+        if (!drogOk) return;
         const SB = getSB(); if (!SB) return;
         try { await SB.from('solur').update({ hidden: true, hidden_at: new Date().toISOString() }).eq('id', id); }
         catch (e) { alert('Tókst ekki að eyða: ' + (e.message || e)); return; }

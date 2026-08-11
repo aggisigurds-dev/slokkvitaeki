@@ -313,6 +313,7 @@
     topFilter: 'allt',
     catOpen: {},        // { '<tag>': false } — lokaðir flokkar (sjálfgefið opnir)
     catMore: {},        // { '<tag>': true } — flokkur sem sýnir ALLT (ekki bara fyrstu 5)
+    catAddOpen: {},     // { '<tag>': true } — flýtiskráningarform flokksins er opið
     filter: (function () { try { return localStorage.getItem(FKEY) || ''; } catch (_) { return ''; } })(),
     // 2026-07-10 (ósk Agnars): röðunar-valkostur — 'snjall' (sjálfgefið, áríðandi/
     // gjalddagi/forgangur eins og áður) eða 'nyjast' (hrein dagsetningarröð, nýjast efst).
@@ -556,8 +557,9 @@
     uploadAttachment(beidniId, f);
     ev.target.value = '';  // reset so same file can be re-uploaded
   };
-  window.__vbDelAtt = function (attId, path, beidniId) {
-    if (!window.confirm('Eyða fylgiskjali?')) return;
+  window.__vbDelAtt = async function (attId, path, beidniId) {
+    const ok = (window.Confirm && Confirm.show) ? await Confirm.show('Eyða fylgiskjali?') : window.confirm('Eyða fylgiskjali?');
+    if (!ok) return;
     deleteAttachment(attId, path, beidniId);
   };
 
@@ -615,7 +617,8 @@
   }
   async function softDelete(id) {
     const SB = getSB(); if (!SB) return;
-    if (!window.confirm('Eyða þessu verki? (geymist sem eytt og endurheimtanlegt)')) return;
+    const delOk = (window.Confirm && Confirm.show) ? await Confirm.show('Eyða þessu verki? (geymist sem eytt og endurheimtanlegt)') : window.confirm('Eyða þessu verki? (geymist sem eytt og endurheimtanlegt)');
+    if (!delOk) return;
     try {
       const r = await SB.from('thjonustubeidni').update({ deleted_at: nowIso() }).eq('id', id);
       if (r.error) throw r.error;
@@ -649,7 +652,9 @@
     const SB = getSB(); if (!SB) return;
     const noisy = state.items.filter(isPaymentNoise);
     if (!noisy.length) { toast('Engar greiðslu-tilkynningar til að hreinsa'); return; }
-    if (!window.confirm('Fela ' + noisy.length + ' greiðslu-tilkynningar? (Payday „reikningur greiddur" — upplýsingar, ekki verk. Endurheimtanlegt.)')) return;
+    const clearMsg = 'Fela ' + noisy.length + ' greiðslu-tilkynningar? (Payday „reikningur greiddur" — upplýsingar, ekki verk. Endurheimtanlegt.)';
+    const clearOk = (window.Confirm && Confirm.show) ? await Confirm.show(clearMsg) : window.confirm(clearMsg);
+    if (!clearOk) return;
     const ids = noisy.map(x => x.id);
     state.items = state.items.filter(x => !isPaymentNoise(x));
     renderControls(); renderList(); refreshBadge();
@@ -979,7 +984,9 @@
       });
     }
     if (!toInsert.length) { toast('Ekkert nýtt að flytja inn — allt þegar komið.'); return; }
-    if (!window.confirm('Flytja inn ' + toInsert.length + ' atriði úr Verkefni + Þjónustuverk?')) return;
+    const impMsg = 'Flytja inn ' + toInsert.length + ' atriði úr Verkefni + Þjónustuverk?';
+    const impOk = (window.Confirm && Confirm.show) ? await Confirm.show(impMsg) : window.confirm(impMsg);
+    if (!impOk) return;
     try {
       const r = await SB.from('thjonustubeidni').insert(toInsert).select();
       if (r.error) throw r.error;
@@ -1057,7 +1064,11 @@
       @media (max-width: 1180px) {
         #view-verkbord .vb-split { grid-template-columns: minmax(0,1fr) !important; }
         #view-verkbord #vb-sel { position: static !important; order: -1; }
-        #view-verkbord #vb-controls { position: static !important; }
+        /* #vb-controls STAYS sticky here (2026-08-10, Agnar: "the top cuttes
+           off when scrolling... I should always be able to see it fully") —
+           this rule used to force it static too, but that fought its own
+           purpose (staying at hand while scrolling a long list) for no
+           layout reason tied to the single-column collapse above. */
       }
       @media (max-width: 820px) {
         #view-verkbord .vb-wrap { padding: 14px 10px 90px; }
@@ -1382,6 +1393,9 @@
       'style="display:flex;align-items:' + (clamp ? 'flex-start' : 'center') + ';gap:10px;padding:' + (clamp ? '10px 12px' : '9px 12px') + ';' +
       'border-top:1px solid #eef0f2;cursor:pointer;background:' + (on ? 'rgba(195,39,28,.05)' : '#fff') + ';' +
       (on ? 'box-shadow:inset 3px 0 0 #c3271c;' : '') + '">' +
+        // 2026-08-10 (ósk Agnars): smellanleg Áríðandi-stjarna — sama data-act="star"
+        // og eldri renderRow() notar, svo toggleStar()/wireDelegation grípa hana sjálfkrafa.
+        '<span data-act="star" data-id="' + esc(r.id) + '" title="Áríðandi" style="flex:none;width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;line-height:1;color:' + (r.important ? '#e0a93e' : '#cbd2dc') + (clamp ? ';margin-top:1px' : '') + '">' + (r.important ? '★' : '☆') + '</span>' +
         '<div style="flex:none;width:42px' + (clamp ? ';padding-top:2px' : '') + '">' +
           '<div style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px;font-weight:700;color:#3f4650">' +
             esc(shortDate(r.created_at)) + '</div>' +
@@ -1394,7 +1408,7 @@
           // Email rows: sender name as the main bold line, subject as sub-line
           (emailFrom
             ? '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-                (r.important ? '<span style="color:#eab308">★ </span>' : '') + esc(emailFrom) + '</div>'
+                esc(emailFrom) + '</div>'
             : '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
                 rowHeadHTML(r) + '</div>') +
           (sub ? '<div style="' + subStyle + '">' + esc(sub) + '</div>' : '') +
@@ -1434,6 +1448,10 @@
     return '<div class="vb-v3row" data-act="selrow" data-id="' + esc(r.id) + '" ' +
       'style="display:flex;align-items:flex-start;gap:10px;padding:9px 12px;border-top:1px solid #eef0f2;cursor:pointer;' +
       'background:' + (on ? 'rgba(195,39,28,.05)' : '#fff') + ';' + (on ? 'box-shadow:inset 3px 0 0 #c3271c;' : '') + '">' +
+        // 2026-08-10 (ósk Agnars): smellanleg stjarna hér líka — þessi fallið teiknar
+        // BÆÐI „🆕 NÝJAST" og „★ Áríðandi" kortin, svo smellur hér inni í Áríðandi
+        // sjálfu fjarlægir málið úr þeim glugga samstundis (renderTop síar á r.important).
+        '<span data-act="star" data-id="' + esc(r.id) + '" title="Áríðandi" style="flex:none;width:20px;height:20px;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:1px;font-size:16px;line-height:1;color:' + (r.important ? '#e0a93e' : '#cbd2dc') + '">' + (r.important ? '★' : '☆') + '</span>' +
         '<div style="flex:none;width:40px;padding-top:1px">' +
           '<div style="font-family:ui-monospace,Consolas,monospace;font-size:11.5px;font-weight:700;color:#3f4650">' +
             esc(shortDate(r.created_at)) + '</div>' +
@@ -1444,7 +1462,7 @@
         '<div style="flex:1;min-width:0">' +
           (emailFrom
             ? '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
-                (r.important ? '<span style="color:#eab308">★ </span>' : '') + esc(emailFrom) + '</div>'
+                esc(emailFrom) + '</div>'
             : '<div style="font-size:13px;font-weight:700;color:#16181d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
                 rowHeadHTML(r) + '</div>') +
           (sub
@@ -1545,7 +1563,24 @@
             'font-size:11px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;box-sizing:border-box">' + g.items.length + '</span>' +
           '<span style="margin-left:auto;font-size:11px;font-weight:600;color:#6b7280">' +
             (open ? '' : g.items.length + ' mál · smelltu til að opna') + '</span>' +
+          // 2026-08-10 (ósk Agnars — „quite time consuming register projects"):
+          // flýtiskráning beint úr flokkahausnum — sami quickAdd() og aðal-
+          // composerinn notar, bara forfyllt með ÞESSU merki + valda starfsmanni
+          // (state.fWorker, sami veljari og „Agnar/Allir" efst á borðinu).
+          '<button data-act="catadd" data-cat="' + esc(g.key) + '" title="Fljótskrá í ' + esc(g.name) + '" ' +
+            'style="flex:none;width:20px;height:20px;border-radius:50%;border:1px solid rgba(255,255,255,.4);' +
+            'background:' + (state.catAddOpen[g.key] ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.1)') + ';' +
+            'color:' + (state.catAddOpen[g.key] ? '#17181d' : '#fff') + ';font-size:13px;font-weight:800;line-height:1;' +
+            'display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0">+</button>' +
         '</div>' +
+        (state.catAddOpen[g.key]
+          ? '<div style="display:flex;gap:6px;padding:8px 12px;border-top:1px solid #eef0f2;background:#f8fafc">' +
+              '<input class="vb-catadd-cust" data-cat="' + esc(g.key) + '" list="vb-add-colist" placeholder="🗂 Fyrirtæki…" autocomplete="off" ' +
+                'style="flex:1 1 45%;min-width:0;height:32px;padding:0 10px;border-radius:7px;border:1px solid #cbd5e1;background:#fff;color:#141822;font-family:inherit;font-size:12.5px;outline:none">' +
+              '<input class="vb-catadd-txt" data-cat="' + esc(g.key) + '" placeholder="Texti… (Enter vistar)" autocomplete="off" ' +
+                'style="flex:1 1 55%;min-width:0;height:32px;padding:0 10px;border-radius:7px;border:1px solid #cbd5e1;background:#fff;color:#141822;font-family:inherit;font-size:12.5px;outline:none">' +
+            '</div>'
+          : '') +
         (open
           ? shown.map(r => v3Row(r, true, g.color)).join('') +
             (g.items.length > shown.length
@@ -2083,6 +2118,17 @@
         renderList();
         return;
       }
+      if (act === 'catadd') {
+        e.stopPropagation();
+        const k = t.getAttribute('data-cat');
+        state.catAddOpen[k] = !state.catAddOpen[k];
+        renderList();
+        if (state.catAddOpen[k]) {
+          const inp = document.querySelector('.vb-catadd-cust[data-cat="' + k + '"]');
+          if (inp) inp.focus();
+        }
+        return;
+      }
       if (act === 'catmore') {
         e.stopPropagation();
         state.catMore[t.getAttribute('data-cat')] = true;
@@ -2129,14 +2175,29 @@
     root.addEventListener('keydown', e => {
       if (e.target.id === 'vb-add-input' && e.key === 'Enter') { e.preventDefault(); doAdd(); }
       if (e.target.id === 'vb-add-cust' && e.key === 'Enter') { e.preventDefault(); document.getElementById('vb-add-input')?.focus(); }
+      // Flokka-flýtiformið (catadd): Enter í fyrirtækja-reitnum hoppar í texta-
+      // reitinn; Enter í texta-reitnum vistar — sama „Enter vistar" venja og
+      // aðal-composerinn.
+      if (e.target.classList && e.target.classList.contains('vb-catadd-cust') && e.key === 'Enter') {
+        e.preventDefault();
+        const k = e.target.getAttribute('data-cat');
+        document.querySelector('.vb-catadd-txt[data-cat="' + k + '"]')?.focus();
+      }
+      if (e.target.classList && e.target.classList.contains('vb-catadd-txt') && e.key === 'Enter') {
+        e.preventDefault();
+        catQuickAdd(e.target.getAttribute('data-cat'));
+      }
       if (e.target.id === 'vb-sel-co-inp' && e.key === 'Enter') {
         e.preventDefault();
         const btn = root.querySelector('[data-act="selco-save"]'); if (btn) btn.click();
       }
     });
     // Fyrirtækja-datalist quick-línunnar fyllist við fyrstu snertingu (lazy).
+    // Sami deilda datalistinn (#vb-add-colist) þjónar bæði aðal-composernum
+    // og öllum flokka-flýtiformunum.
     root.addEventListener('focusin', e => {
-      if (e.target.id === 'vb-add-cust' || e.target.id === 'vb-add-input') loadCompanies().then(fillCompanyList);
+      if (e.target.id === 'vb-add-cust' || e.target.id === 'vb-add-input' ||
+        (e.target.classList && e.target.classList.contains('vb-catadd-cust'))) loadCompanies().then(fillCompanyList);
     });
     // RSK-uppfletting (2026-07-10, ósk Agnars — „finna þá fyrirtæki á skrá eða
     // rsk"): sé KENNITALA (10 tölustafir) slegin í fyrirtækjareitinn flettist
@@ -2209,6 +2270,24 @@
     });
     syncAddTags();
     inp.focus();
+  }
+  // Flokka-flýtiskráning (2026-08-10, ósk Agnars): sama quickAdd() sem knýr
+  // aðal-composerinn, en kallað beint úr flokkahausnum — forfyllt með ÞESSU
+  // merki einu (ekki state.addTags, sem er fyrir aðal-composerinn) og núverandi
+  // starfsmanna-síu (state.fWorker — sama „Agnar/Allir" veljari og efst á
+  // borðinu, svo fljótskráð mál lendi hjá þeim sem borðið er síað á).
+  async function catQuickAdd(cat) {
+    const custEl = document.querySelector('.vb-catadd-cust[data-cat="' + cat + '"]');
+    const txtEl = document.querySelector('.vb-catadd-txt[data-cat="' + cat + '"]');
+    if (!txtEl) return;
+    const v = txtEl.value;
+    if (!v.trim()) { txtEl.focus(); return; }
+    const cv = custEl ? custEl.value : '';
+    txtEl.value = ''; if (custEl) custEl.value = '';
+    await quickAdd(v, null, cv, false, [cat], null, state.fWorker || '');
+    // quickAdd endurteiknar #vb-list — sækja ferskt eintak áður en fókusað er.
+    const freshTxt = document.querySelector('.vb-catadd-txt[data-cat="' + cat + '"]');
+    if (freshTxt) freshTxt.focus();
   }
   // ✉️ Sækja tölvupóst — endurnýtir póst-innsogið úr Þjónustuveri (182, sama
   // tafla thjonustubeidni, idempotent á channel_ref) og endurhleður borðið.

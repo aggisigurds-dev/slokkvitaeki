@@ -138,6 +138,40 @@ js/patch-master.js      THE BIG ONE — to be split
 
 ---
 
+## Browser automation in Claude Code web/remote sessions (2026-08-10)
+
+A plain `playwright` `chromium.launch()` + `page.goto('https://...')` fails
+every time in a Claude Code **web/remote** session (`net::ERR_CONNECTION_RESET`)
+— NOT in a local/desktop session, and NOT for curl/fetch, only for a real
+Chromium instance. Root cause: Chromium sends a "ECH GREASE" TLS extension on
+every ClientHello (anti-ossification measure, on by default, NOT disabled by
+`--disable-features=EncryptedClientHello` on the Chromium build in that
+environment) and the remote session's egress proxy RSTs the connection when
+it sees that extension. **`tools/bh-browser.cjs`** works around it with a
+local TLS-splitting relay — full writeup + the "how do I re-diagnose this if
+it breaks again" note is in that file's header comment. Use it instead of
+calling `playwright` directly whenever a task needs a real rendered page
+(screenshots, verifying a UI fix, driving a form) from such a session:
+
+```js
+const { launch } = require('./tools/bh-browser.cjs');
+const { context, cleanup } = await launch();
+const page = await context.newPage();
+await page.goto('https://slokkvitaeki.netlify.app');
+// ...
+await cleanup();
+```
+
+`playwright` itself is installed **globally** in that environment, not as a
+repo dependency — run with `NODE_PATH=/opt/node22/lib/node_modules node
+your-script.js` (the file throws a clear error naming this if it's missing).
+The `.cjs` extension is required, not cosmetic — this repo's `package.json`
+has `"type": "module"`, so a plain `.js` file here loads through the ESM
+loader and its `module.exports` silently doesn't take effect (empty exports,
+`launch is not a function` — cost real time to track down once already).
+
+---
+
 ## Deploy workflow — `git push` ONLY (4 machines, must stay in sync)
 
 The ONLY supported way to deploy is to commit and push to `master`. GitHub

@@ -179,16 +179,35 @@
   // doc_type spelling, see sql/2026-08-05_document_pairs.sql in Brunahólf.
   async function fetchPairs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('document_pairs').select('id,year,service_type,report_doc_id,invoice_doc_id,solur_id,status,matched_by').eq('customer_base_id', baseId);
+    try{ var r=await sb.from('document_pairs').select('id,year,service_type,report_doc_id,invoice_doc_id,solur_id,status,matched_by,fyrirtaeki_id').eq('customer_base_id', baseId);
       return r.data||[]; }catch(e){ return []; }
   }
-  async function savePair(baseId, year, serviceType, patch){
+  // 2026-08-10: the real unique index (Brunahólf, 2026-08-09) is
+  // (customer_base_id, year, service_type, COALESCE(fyrirtaeki_id,0)) — an
+  // EXPRESSION index. PostgREST's upsert onConflict= only matches a plain
+  // column-list constraint, never an expression, so the old
+  // onConflict:'customer_base_id,year,service_type' upsert here always threw
+  // "no unique or exclusion constraint matching ON CONFLICT" — silently
+  // swallowed by the catch below, so "🔗 Tengja" looked like it worked (button
+  // flashed "Vista…") but the row never saved and the picker reset to
+  // unselected on the next render. Select-then-insert/update sidesteps the
+  // expression-index limitation entirely. fyrirtaekiId scopes the pair to
+  // THIS location (fyrirtaeki.id) so multi-site customers (e.g. Heimaleiga)
+  // don't collide onto one shared row — see brunaholf CLAUDE.md 2026-08-09.
+  async function savePair(baseId, year, serviceType, fyrirtaekiId, patch){
     var sb=SB(); if(!sb||!baseId) return;
     try{
-      await sb.from('document_pairs').upsert(Object.assign({
-        customer_base_id: baseId, year: +year, service_type: serviceType, updated_at: new Date().toISOString(),
-      }, patch), { onConflict: 'customer_base_id,year,service_type' });
-    }catch(e){ /* best-effort — the live render already shows the pairing either way */ }
+      var q = sb.from('document_pairs').select('id').eq('customer_base_id', baseId).eq('year', +year).eq('service_type', serviceType);
+      q = (fyrirtaekiId!=null) ? q.eq('fyrirtaeki_id', fyrirtaekiId) : q.is('fyrirtaeki_id', null);
+      var existing = await q.maybeSingle();
+      var row = Object.assign({
+        customer_base_id: baseId, year: +year, service_type: serviceType,
+        fyrirtaeki_id: (fyrirtaekiId!=null?fyrirtaekiId:null), updated_at: new Date().toISOString(),
+      }, patch);
+      if(existing && existing.data && existing.data.id) await sb.from('document_pairs').update(row).eq('id', existing.data.id);
+      else await sb.from('document_pairs').insert(row);
+      return true;
+    }catch(e){ console.warn('[savePair]', e); return false; } // auto-path is best-effort; manual path checks this
   }
   function pdYear(p){ var s=String(p.created_date||p.due_date||''); var m=s.match(/(20[0-9]{2})/); return m?parseInt(m[1],10):null; }
   function pdChip(p){
@@ -484,6 +503,60 @@
     }catch(_){}
   })();
 
+  // ── Skoðunarmánuður (deilt með Fyrirtæki í Þjónustu — 153-arsskodun.js) ────
+  // Sama forgangsröð og þar (MÁNAÐAR-FORGANGSREGLA): handvirk yfirskrift >
+  // blob-mánuður > skýrslu-mánuður (arsskodun_report_facts) > NÝTT: elsta
+  // næsta-skoðun (uttaeki.next_insp) meðal tækja staðarins — fyllir AÐEINS í
+  // eyðu þegar hvorugt hinna tveggja er til. Vistun fer í SÖMU
+  // arsskodun_customers-blokkina (AppSettings) sem 153-arsskodun.js les, svo
+  // Fyrirtæki í Þjónustu sýnir nákvæmlega sama gildi án nokkurrar
+  // viðbótarvinnu þar — sjá samsvarandi 4. forgangsþrep bætt við þá skrá.
+  var MONTHS_IS=['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
+  var MONTHS_IS_SHORT=['Jan','Feb','Mar','Apr','Maí','Jún','Júl','Ágú','Sep','Okt','Nóv','Des'];
+  var ARS_KEY='arsskodun_customers';
+  var _uttNextCache={};
+  // 2026-08-10: baseId-síað (ekki foldName-mátun eins og 153-arsskodun.js) —
+  // þessi skrá vinnur nú þegar með baseId/customer_base_id alls staðar annars
+  // staðar (fetchDocs, fetchPairs o.fl.), svo það er í samræmi við HANA sjálfa
+  // að nota sama lykil hér frekar en að taka upp aðra mátunar-aðferð.
+  function monthFromUttaeki(baseId){
+    if(!baseId) return Promise.resolve(null);
+    if(_uttNextCache[baseId]!==undefined) return Promise.resolve(_uttNextCache[baseId]);
+    var sb=SB(); if(!sb) return Promise.resolve(null);
+    return sb.from('uttaeki').select('next_insp').eq('customer_base_id',baseId).neq('status','urelt')
+      .not('next_insp','is',null).order('next_insp',{ascending:true}).limit(1)
+      .then(function(r){
+        var d=(r.data&&r.data[0]&&r.data[0].next_insp)||null;
+        var out=null;
+        if(d){ var mm=+String(d).slice(5,7); if(mm>=1&&mm<=12) out={month:mm,date:d}; }
+        _uttNextCache[baseId]=out; return out;
+      }, function(){ _uttNextCache[baseId]=null; return null; });
+  }
+  async function loadInspectMonth(coId, baseId){
+    var blob=(window.AppSettings&&AppSettings.path&&AppSettings.path(ARS_KEY))||{};
+    var manual=blob[String(coId)]||{};
+    var m=+manual.inspect_month||0;
+    if(m>=1&&m<=12) return {month:m, manual:!!manual.inspect_month_manual, source:'blob'};
+    var sb=SB();
+    if(sb){
+      try{
+        var r=await sb.from('arsskodun_report_facts').select('inspect_month').eq('fyrirtaeki_id',coId)
+          .not('inspect_month','is',null).order('report_year',{ascending:false}).limit(1);
+        var fm=r.data&&r.data[0]&&+r.data[0].inspect_month;
+        if(fm>=1&&fm<=12) return {month:fm, manual:false, source:'report'};
+      }catch(e){}
+    }
+    var derived=await monthFromUttaeki(baseId);
+    if(derived) return {month:derived.month, manual:false, source:'uttaeki', date:derived.date};
+    return null;
+  }
+  function monthPillHtml(info){
+    if(!info) return '<button type="button" class="sk-month-pill empty" data-month-edit="1" title="Enginn skoðunarmánuður skráður — smelltu til að setja">📅 mánuður?</button>';
+    var lbl=MONTHS_IS_SHORT[info.month-1];
+    var src = info.manual ? 'handvirkt valið' : (info.source==='report' ? 'úr úttektarskýrslu' : 'reiknað úr næstu skoðun tækja'+(info.date?(' ('+info.date+')'):''));
+    return '<button type="button" class="sk-month-pill'+(info.manual?' manual':'')+'" data-month-edit="1" title="'+esc('Skoðunarmánuður — '+src+' — smelltu til að breyta')+'">📅 '+esc(lbl)+'</button>';
+  }
+
   async function render(section, coId){
     var hdr='<div class="sk-h"><h3>📁 Skjöl &amp; viðhengi</h3>'+
             '<button type="button" class="sk-add-btn" data-pick="1">+ Viðhengi</button></div>';
@@ -585,9 +658,18 @@
     }
 
     // ── document_pairs (durable bundle store — sjá savePair) ──
+    // Multi-site kt (t.d. Heimaleiga): pör MEÐ fyrirtaeki_id tilheyra AÐEINS
+    // þeim eina stað — sibling-staðir sjá þau ekki. Pör ÁN fyrirtaeki_id (fyrir
+    // 2026-08-09) eru staðlaus fallback sem hvaða staður má nota þar til hann
+    // fær sitt eigið. Sama regla og document_pairs triggerinn í Brunahólf.
     var pairs = baseId ? await fetchPairs(baseId) : [];
     var pairsByYear={};
-    pairs.forEach(function(pr){ (pairsByYear[pr.year]=pairsByYear[pr.year]||{})[pr.service_type]=pr; });
+    pairs.forEach(function(pr){
+      if(pr.fyrirtaeki_id!=null && +pr.fyrirtaeki_id!==+coId) return; // á öðrum stað — ekki okkar
+      var y = pairsByYear[pr.year] = pairsByYear[pr.year]||{};
+      var mine = pr.fyrirtaeki_id!=null;
+      if(!y[pr.service_type] || mine) y[pr.service_type]=pr;
+    });
 
     // ── year set: every year with anything + the current year, newest first ──
     var ySet={}; ySet[NOW]=1;
@@ -599,6 +681,8 @@
 
     // ── status pills ──
     var pills=YEARS.map(function(y){ return pill(y, (repByY[y]||[]).length>0, fcStatus(coId,y), fcNote(coId,y)); }).join('');
+    var monthInfo = await loadInspectMonth(coId, baseId);
+    section._monthInfo = monthInfo;
 
     // ── samningur strip ──
     // 2026-08-05 (Agnar: „hefur hunsað öll endurnefndu skjölin"): samningur-raðir
@@ -683,7 +767,7 @@
         if(autoSave && baseId){
           var rep=repArr[0];
           if(rep && inv && !rep._att && !inv._att && !inv._fromSolur && rep.id!=null && inv.id!=null){
-            savePair(baseId, y, svc.kind, { report_doc_id: rep.id, invoice_doc_id: inv.id, status:'klarad', matched_by:'exact' });
+            savePair(baseId, y, svc.kind, coId, { report_doc_id: rep.id, invoice_doc_id: inv.id, status:'klarad', matched_by:'exact' });
           }
         }
         resolved[y+'|'+svc.kind]={ inv:inv, ambiguous:ambiguous, invCandidates:invArr };
@@ -789,7 +873,7 @@
     var fixLink = baseId ? '<div class="sk-strip" style="justify-content:flex-end"><a href="https://brunaholf.netlify.app/#bakendi/'+baseId+'" target="_blank" rel="noopener" style="font-size:11.5px;font-weight:700;color:var(--ink3);text-decoration:none" title="Laga pörun skýrslna/reikninga við staði í Brunahólf">🔗 Laga pörun í Brunahólf →</a></div>' : '';
 
     section.innerHTML = hdr +
-      '<div class="sk-strip"><div class="sk-strip-l">📊 Staða eftir ári</div><div class="sk-strip-r">'+ (pills||'<span style="color:var(--ink4);font-size:12px">engin gögn</span>') +'</div></div>'+
+      '<div class="sk-strip"><div class="sk-strip-l">📊 Staða eftir ári</div><div class="sk-strip-r">'+ (pills||'<span style="color:var(--ink4);font-size:12px">engin gögn</span>') + monthPillHtml(monthInfo) +'</div></div>'+
       '<div class="sk-svc-grid sk-samn-grid">'+samnHtml+'</div>'+
       '<div class="sk-yrwrap">'+yearBlocks+
         '<div class="sk-yr-add"><button type="button" class="sk-doc add" data-add-yr-svc="1">+ ár / þjónusta</button>'+
@@ -808,6 +892,54 @@
     });
     section.addEventListener('click', async function(e){
       var coId=+section.dataset.coId; if(!coId) return;
+
+      // 📅 Skoðunarmánuður — smellur opnar innfellt val, sama mynstur og
+      // ovrEditMonth í 153-arsskodun.js, vistar í SÖMU arsskodun_customers
+      // blokkina svo Fyrirtæki í Þjónustu sýni breytinguna án viðbótarvinnu.
+      var monthBtn=e.target.closest('[data-month-edit]');
+      if(monthBtn){
+        e.preventDefault();
+        if(monthBtn.parentNode && monthBtn.parentNode.querySelector('select[data-month-sel]')) return;
+        var curInfo=section._monthInfo||null;
+        var cur=curInfo?curInfo.month:0;
+        var isManual=curInfo?!!curInfo.manual:false;
+        var sel=document.createElement('select');
+        sel.setAttribute('data-month-sel','1');
+        sel.style.cssText='min-height:30px;padding:3px 8px;border:2px solid #6366f1;border-radius:8px;font:inherit;font-size:12px;background:var(--surface);color:var(--ink1);outline:none;cursor:pointer';
+        var opts='<option value="0"'+(cur===0?' selected':'')+'>— enginn —</option>';
+        MONTHS_IS.forEach(function(n,i){ opts+='<option value="'+(i+1)+'"'+(cur===i+1?' selected':'')+'>'+n+'</option>'; });
+        if(isManual) opts+='<option value="clear">↺ Hreinsa yfirskrift</option>';
+        sel.innerHTML=opts;
+        monthBtn.replaceWith(sel);
+        sel.focus();
+        var done=false;
+        var cancel=function(){ if(done)return; done=true; render(section, coId); };
+        sel.addEventListener('keydown', function(ev){ if(ev.key==='Escape'){ ev.stopPropagation(); cancel(); } });
+        sel.addEventListener('blur', function(){ setTimeout(cancel,150); });
+        sel.addEventListener('change', async function(){
+          if(done) return; done=true;
+          var v=sel.value;
+          var patch = v==='clear' ? {inspect_month:0, inspect_month_manual:false} : {inspect_month:parseInt(v,10)||0, inspect_month_manual:true};
+          var patchWrap={}; patchWrap[String(coId)]=patch;
+          var saveObj={}; saveObj[ARS_KEY]=patchWrap;
+          var ok=(window.AppSettings&&AppSettings.save) ? await AppSettings.save(saveObj) : false;
+          if(!ok){ alert('Vista mistókst'); render(section, coId); return; }
+          try{
+            var sbx=SB();
+            if(sbx){
+              var coObj=getCompany(coId);
+              sbx.from('override_log').insert({
+                co_id:coId, co_nafn:(coObj&&coObj.nafn)||null, field:'inspect_month',
+                old_value:cur?(MONTHS_IS[cur-1]||String(cur)):'—',
+                new_value: v==='clear' ? '↺ hreinsað' : (MONTHS_IS[patch.inspect_month-1]||'—'),
+                page:'doc-year-grid'
+              }).then(function(){},function(){});
+            }
+          }catch(_){}
+          render(section, coId);
+        });
+        return;
+      }
 
       // 🔥 Þjónustusíða → opnar patch 274's sérhæfðu Brunakerfi-yfirlitssíðu
       // fyrirtækisins (skoðunarskýrsluform, verð, búnaðarskrá) — sama gögn,
@@ -909,7 +1041,8 @@
         var baseId=null; try{ var k=(getCompany(coId)||{}).kennitala; baseId=k?await baseIdForKt(k):null; }catch(_){}
         if(!baseId){ alert('Fyrirtækið er ekki tengt grunnskrá (customers_base) — hægt er að laga pörun í Brunahólf í staðinn.'); return; }
         linkSaveEl.disabled=true; linkSaveEl.textContent='Vista…';
-        await savePair(baseId, ly, lkind, { report_doc_id: (rep&&!rep._att)?rep.id:null, invoice_doc_id: (inv&&!inv._att&&!inv._fromSolur)?inv.id:null, status:'klarad', matched_by:'manual' });
+        var saved = await savePair(baseId, ly, lkind, coId, { report_doc_id: (rep&&!rep._att)?rep.id:null, invoice_doc_id: (inv&&!inv._att&&!inv._fromSolur)?inv.id:null, status:'klarad', matched_by:'manual' });
+        if(!saved){ alert('Tenging vistaðist ekki — reyndu aftur eða láttu Agnar vita.'); linkSaveEl.disabled=false; linkSaveEl.textContent='🔗 Tengja'; return; }
         render(section, coId);
         return;
       }
@@ -1106,6 +1239,10 @@
       '.sk-samn-pill.gildi{color:#1d4ed8;background:#eff6ff;border:1px solid #bfdbfe}',
       '.sk-samn-pill.vantar{color:#b45309;background:#fffbeb;border:1px solid #fde68a}',
       '.sk-samn-pill.utrunn{color:#b91c1c;background:#fef2f2;border:1px solid #fecaca}',
+      '.sk-month-pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:3px 11px;border-radius:99px;border:1px solid #c7d2fe;background:#eef2ff;color:#3730a3;cursor:pointer;font:inherit;font-variant-numeric:tabular-nums}',
+      '.sk-month-pill:hover{background:#e0e7ff}',
+      '.sk-month-pill.manual{border-style:dashed;border-color:#f59e0b;background:#fffbeb;color:#92400e}',
+      '.sk-month-pill.empty{opacity:.6;border-style:dashed;color:var(--ink4);background:var(--surface)}',
       '.sk-svc-pay{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:99px}',
       '.sk-svc-pay.ok{color:#15803d;background:#f0fdf4}',
       '.sk-svc-pay.due{color:#b45309;background:#fef3c7}',

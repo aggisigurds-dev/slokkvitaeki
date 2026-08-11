@@ -210,10 +210,10 @@
     // and ALL data (er_i_thjonustu=false, nothing removed). Only a non-service
     // customer is actually deleted (so dupes/typos can still be removed).
     if (co.er_i_thjonustu === true) {
-      if (!window.confirm(
-        'Taka „' + nafn + '" úr Fyrirtækjaþjónustu?\n\n' +
-        'Hann færist niður í „Allir viðskiptavinir". Öll gögn (tæki, saga, skjöl) haldast.'
-      )) return;
+      const takeOutMsg = 'Taka „' + nafn + '" úr Fyrirtækjaþjónustu?\n\n' +
+        'Hann færist niður í „Allir viðskiptavinir". Öll gögn (tæki, saga, skjöl) haldast.';
+      const takeOutOk = (window.Confirm && Confirm.show) ? await Confirm.show(takeOutMsg) : window.confirm(takeOutMsg);
+      if (!takeOutOk) return;
       try {
         const r = await sb.from('fyrirtaeki').update({ er_i_thjonustu: false }).eq('id', _currentId);
         if (r.error) throw r.error;
@@ -229,7 +229,8 @@
     }
     let msg = 'Eyða viðskiptavininum „' + nafn + '"?\n\nHann hverfur úr öllum listum.';
     if (units > 0) msg += '\n\n⚠ ' + units + ' skráð tæki halda sér í tækjalistanum.';
-    if (!window.confirm(msg)) return;
+    const delOk = (window.Confirm && Confirm.show) ? await Confirm.show(msg) : window.confirm(msg);
+    if (!delOk) return;
 
     try {
       const r = await sb.from('fyrirtaeki').update({ deleted_at: new Date().toISOString() }).eq('id', _currentId);

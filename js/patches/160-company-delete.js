@@ -34,9 +34,8 @@
       ? '\n\n⚠ ' + linkedUnits + ' úttæki eru skráð á "' + co.nafn + '".'
         + '\nÞau halda sér í tækjalistanum — bara fyrirtækisspjaldið verður eytt.'
       : '';
-    const ok = window.confirm(
-      'Eyða fyrirtækinu "' + co.nafn + '"?' + warn + '\n\nFærist í ruslið (mjúk eyðing) — hægt að endurheimta.'
-    );
+    const delMsg = 'Eyða fyrirtækinu "' + co.nafn + '"?' + warn + '\n\nFærist í ruslið (mjúk eyðing) — hægt að endurheimta.';
+    const ok = (window.Confirm && Confirm.show) ? await Confirm.show(delMsg) : window.confirm(delMsg);
     if (!ok) return;
 
     const sb = window.DB && DB.sb;

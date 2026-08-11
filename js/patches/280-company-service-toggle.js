@@ -65,7 +65,8 @@
     const msg = toService
       ? 'Setja „' + name + '" í þjónustu?\n\nFyrirtækið birtist þá í „Fyrirtæki í þjónustu".'
       : 'Taka „' + name + '" úr þjónustu?\n\nFyrirtækið helst í „Allir viðskiptavinir" með ÖLL gögn — tæki, reikninga, sögu og skjöl. Þú getur kveikt aftur hvenær sem er.';
-    if (!window.confirm(msg)) return;
+    const svcOk = (window.Confirm && Confirm.show) ? await Confirm.show(msg) : window.confirm(msg);
+    if (!svcOk) return;
     const sb = SB();
     if (!sb) { toast('Engin nettenging'); return; }
     const oldLabel = btn ? btn.textContent : '';
