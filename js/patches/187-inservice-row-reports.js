@@ -197,8 +197,29 @@
         // year found in the filename ("Rjúpufell 2025.pdf" → 2025) so old
         // uploads light up without manual tagging. year === '0' = explicitly
         // cleared by the user — never auto-matched.
-        const f = files.find(x => String(x.year) === y) ||
-                  files.find(x => x.year == null && new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
+        // 2026-08-11 (Agnar: „this is very dangerous false flag … might make us
+        // miss going to this company in security inspections"): þetta mátaði
+        // HVAÐA viðhengi sem er með réttu ári — líka REIKNINGA og SAMNINGA — og
+        // málaði árið grænt eins og úttektarskýrsla væri á skrá. Dæmið sem fannst:
+        // Steypustöðin Þorlákshöfn (co 620) átti reikning „… R-106237 - 2026 -
+        // 109.868 kr.pdf" merktan 2026 → '26 varð grænt þótt ENGIN skoðun 2026
+        // væri til. Mælt á lifandi gögnum: 97 reikningar + 4 samningar bera
+        // árs-merki, 130 reitir lituðust af öðru en skýrslu, þar af 20 ÁN
+        // nokkurrar raunverulegrar skýrslu. Grænt = „skoðun skjalfest" og má
+        // ALDREI leiða af reikningi — reikningur sannar að rukkað var, ekki að
+        // farið hafi verið á staðinn.
+        const isReportKind = (x) => {
+          const k = String(x.kind || x.category || '').toLowerCase();
+          if (k) return k === 'skyrsla' || k === 'skýrsla' || k === 'uttektarskyrsla' || k === 'brunakerfi';
+          // Ómerkt (hvorki kind né category): fellum aftur á heitið, en aðeins ef
+          // það lítur EKKI út eins og reikningur — „R-106237", „109.868 kr",
+          // „reikningur". Ómerkt skýrsla („Steypustöðin Þorlákshöfn 2025.pdf")
+          // heldur sér því, en reikningur með ártali í heiti gerir það ekki.
+          return !/(\bR-?\s?\d{4,}\b|\bkr\b|reikning)/i.test(String(x.name || ''));
+        };
+        const f = files.find(x => String(x.year) === y && isReportKind(x)) ||
+                  files.find(x => x.year == null && isReportKind(x) &&
+                                  new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
         // Inspection-tag styling (matches the redesign): legible '23–'26 tag,
         // green = report on file, grey = none, amber = current year still due.
         const yy = y.slice(-2);
@@ -217,7 +238,20 @@
         const td = document.createElement('td');
         td.setAttribute('data-yrcell','1');
         td.style.cssText = 'padding:6px 4px;text-align:center;';
-        if (u) {
+        // 2026-08-11: „skýrsla vantar"-flaggið kemur FYRST — á undan skjala-
+        // vísbendingunum. Áður stóð það neðst, svo hvaða árs-merkt viðhengi sem er
+        // þaggaði það niður í hljóði: Steypustöðin Þorlákshöfn 2026 var MERKT
+        // `gap` („Skýrsla vantar fyrir þetta ár") og sýndi samt GRÆNT. Mælt: 12
+        // slík tilvik. Þetta er líka svarið við „I cant make it not green" —
+        // flaggið er skýr mannleg/Claude-niðurstaða og yfirgnæfir nú ágiskun úr
+        // skjölum. Skjalið sjálft er áfram aðgengilegt (📄-hlekkur á eftir).
+        if (isGap) {
+          const gapDoc = (u || f)
+            ? ' · ATH: skjal er á skrá fyrir ' + y + ' en það er EKKI úttektarskýrsla (eða flaggið stendur enn)'
+            : '';
+          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Skýrsla vantar fyrir ' + y + ' — hengdu við eða veldu úr safni' + gapDoc + '" style="' + TAG + 'background:#FEF3C7;border-color:rgba(245,158,11,.6);color:#92400E">' + gapDot + yy + '</a>';
+          if (u) td.innerHTML += '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Opna skjalið sem er á skrá fyrir ' + y + '" style="margin-left:3px;font-size:10px;text-decoration:none">📄</a>';
+        } else if (u) {
           td.innerHTML = '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Úttektarskýrsla ' + y + ' í Drive" style="' + TAG + 'background:#DBEEE3;border-color:' + okBorder + ';color:#0F5E3F">' + gdot + yy + '</a>';
         } else if (f) {
           td.innerHTML = '<a href="#" class="_yr-att" data-path="' + String(f.path||'').replace(/"/g,'&quot;') + '" title="' + String(f.name||'').replace(/"/g,'&quot;') + ' (' + y + ' — upphlaðið skjal)" style="' + TAG + 'background:#DBEEE3;border-color:' + okBorder + ';color:#0F5E3F">' + gdot + yy + '</a>';
@@ -227,9 +261,6 @@
         } else if (isClaude) {
           // Claude yfirfór — blár, bíður mannlegrar staðfestingar.
           td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Claude yfirfór ' + y + ' — bíður staðfestingar" style="' + TAG + 'background:#DBE7FE;border-color:rgba(37,99,235,.6);color:#1E3A8A">' + blueDot + yy + '</a>';
-        } else if (isGap) {
-          // Claude fann að skýrslu vantar fyrir þetta ár — appelsínugulur.
-          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Skýrsla vantar fyrir ' + y + ' — hengdu við eða veldu úr safni" style="' + TAG + 'background:#FEF3C7;border-color:rgba(245,158,11,.6);color:#92400E">' + gapDot + yy + '</a>';
         } else {
           // Empty = attach point: click to upload a skýrsla into (company, year).
           const due = (y === '2026');
@@ -293,6 +324,56 @@
     } catch (_) {}
     if (w) w.close();
     alert('Náði ekki að opna skjalið.');
+  });
+
+  // 2026-08-11 (ósk Agnars — „Manual override"): TVÍSMELLUR á árs-reit í
+  // listanum hringar fact-check ársins beint héðan, án þess að opna kúnnasíðuna:
+  //   ekkert → ✓ staðfest (grænt) → 🟠 skýrsla vantar → ekkert
+  // 'gap' er RÍKJANDI í litun reitsins, svo þetta er leiðin til að slökkva á
+  // ranglega grænu ári. Sama `year_factcheck`-tafla og kúnnasíðan (patch 199)
+  // skrifar í — ein staða, tvær leiðir að henni.
+  document.addEventListener('dblclick', async e => {
+    const cell = e.target.closest('._yr-add, ._yr-att, td[data-yrcell] a');
+    if (!cell) return;
+    const td = cell.closest('td[data-yrcell]'); if (!td) return;
+    const tr = td.closest('tr._ars-row'); if (!tr) return;
+    const coId = cell.dataset.coId || tr.getAttribute('data-co-id');
+    // Árið: af hlekknum sjálfum þegar það er til, annars úr stöðu reitsins í röðinni.
+    let year = cell.dataset.year;
+    if (!year) {
+      const cells = Array.from(tr.querySelectorAll('td[data-yrcell]'));
+      const i = cells.indexOf(td); if (i >= 0) year = YEARS[i];
+    }
+    if (!coId || !year) return;
+    e.preventDefault(); e.stopPropagation();
+    const sb = window.DB && DB.sb; if (!sb) return;
+    const cur = fcStat(coId, year);
+    const next = cur === 'human' ? 'gap' : (cur === 'gap' ? null : 'human');
+    try {
+      if (next === null) {
+        const r = await sb.from('year_factcheck').delete().eq('co_id', +coId).eq('year', +year);
+        if (r.error) throw r.error;
+      } else {
+        const r = await sb.from('year_factcheck').upsert({
+          co_id: +coId, year: +year, status: next,
+          note: next === 'gap' ? 'Merkt handvirkt: skýrsla vantar' : null,
+          updated_at: new Date().toISOString()
+        }, { onConflict: 'co_id,year' });
+        if (r.error) throw r.error;
+      }
+      // fcMap byrjar sem null (ekki hlaðið enn) — má ekki afvísa í það blint.
+      if (!fcMap) fcMap = {};
+      fcMap[String(coId)] = fcMap[String(coId)] || {};
+      if (next === null) delete fcMap[String(coId)][String(year)];
+      else fcMap[String(coId)][String(year)] = next;
+      document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
+      document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(r => r.removeAttribute('data-yrcol'));
+      process();
+      try { if (window.Toast && Toast.show) Toast.show(
+        next === 'gap' ? '🟠 ' + year + ' merkt: skýrsla vantar'
+        : next === 'human' ? '✓ ' + year + ' staðfest'
+        : '↺ ' + year + ' flagg hreinsað'); } catch (_) {}
+    } catch (err) { alert('Náði ekki að vista: ' + ((err && (err.message || err.hint)) || err)); }
   });
 
   // Clicking an empty year cell: pick a file and attach it to that
