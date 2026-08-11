@@ -1668,7 +1668,7 @@
         // 2026-08-11: inline-editable textarea (replaces read-only div — saves on 500ms debounce, same as title)
         (!editing && !r._vd
           ? '<textarea id="vb-sel-notes" data-selid="' + esc(String(r.id)) + '" rows="3" placeholder="Athugasemdir…" ' +
-            'style="font-size:13px;color:#4b5058;line-height:1.65;width:100%;resize:vertical;min-height:52px;max-height:220px;' +
+            'style="font-size:13px;color:#4b5058;line-height:1.65;width:100%;resize:vertical;min-height:52px;max-height:880px;overflow-y:auto;' +
             'border:1px solid transparent;border-radius:7px;padding:5px 7px;background:transparent;outline:none;' +
             'box-sizing:border-box;font-family:inherit;margin-bottom:10px" ' +
             'onfocus="this.style.borderColor=\'#d8dadf\';this.style.background=\'#f8fafc\'" ' +
@@ -1717,12 +1717,25 @@
       tInp.addEventListener('input', () => { clearTimeout(_tt); _tt = setTimeout(saveTitle, 500); });
       tInp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); tInp.blur(); saveTitle(); } });
     }
-    // Tengja notes-textarea við vistun (debounced)
+    // Tengja notes-textarea við vistun (debounced) + sjálf-stækkun eftir innihaldi.
+    // Stutt nóta (t.d. 5 línur) helst óbreytt (grunnhæð ~52px); löng nóta (t.d.
+    // 100 línur) vex upp í +300% af gömlu 220px hámarki (880px) — annars skrunar.
+    // setProperty(...,'important') — patch 245 (Brunastál) setur height:auto
+    // !important á allar textareur og vinnur annars á venjulegu inline-height.
     const nTa = document.getElementById('vb-sel-notes');
     if (nTa) {
       let _nt = null;
       const saveNotes = () => { clearTimeout(_nt); saveRow(Number(nTa.dataset.selid), { notes: nTa.value }); };
-      nTa.addEventListener('input', () => { clearTimeout(_nt); _nt = setTimeout(saveNotes, 500); });
+      const CAP = Math.min(880, Math.round(window.innerHeight * 0.7));
+      const grow = () => {
+        nTa.style.setProperty('height', 'auto', 'important');
+        nTa.style.setProperty('height', Math.min(nTa.scrollHeight + 4, CAP) + 'px', 'important');
+      };
+      grow();
+      nTa.addEventListener('input', () => {
+        grow();
+        clearTimeout(_nt); _nt = setTimeout(saveNotes, 500);
+      });
     }
   }
 
