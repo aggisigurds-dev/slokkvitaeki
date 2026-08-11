@@ -1082,12 +1082,63 @@
       }
       // Delete a customer_documents entry (wrong name / wrong year). Removes the
       // record from the page; the underlying Drive file is left in Drive.
+      //
+      // 2026-08-11 (Agnar: „I cant remove some auto generated stuck fake invoice
+      // in many companys"): ✕ gerði EKKERT á mörgum skráningum og sagði ekki af
+      // hverju. Tvær ástæður, báðar lagaðar hér:
+      //
+      //  1. `document_pairs` vísar í `customer_documents` með ON DELETE NO ACTION
+      //     (bæði invoice_doc_id og report_doc_id). Sé skjalið PARAÐ hafnar
+      //     Postgres eyðingunni. Mælt 2026-08-11: 80 af 167 „Stólpi
+      //     reikningayfirlit"-röðunum voru læstar svona — sjálfvirki pörunar-
+      //     triggerinn (sjá CLAUDE.md) parar þær um leið og þær verða til.
+      //  2. supabase-js KASTAR ekki á PostgREST-villu — það skilar {data,error}.
+      //     Gamla try/catch-ið greip því aldrei neitt, villan hvarf þegjandi og
+      //     chippið kom óbreytt til baka. Þess vegna leit þetta út eins og „fast".
+      //
+      // Nú er parið losað FYRST (nullum bara þessa hlið; parið sjálft fer ef
+      // hvorug hliðin er eftir) og svo eytt — og `error` er LESIÐ, ekki vonað.
       var delDoc=e.target.closest('[data-deldoc]');
       if(delDoc){
         e.preventDefault();
         var did=delDoc.getAttribute('data-deldoc');
+        if(!did || did==='undefined' || did==='null'){ alert('Þessi færsla á sér enga skráningu til að eyða (kemur beint úr Sölu).'); return; }
         var ok2 = (window.Confirm&&Confirm.show) ? await Confirm.show('Eyða þessari skráningu af síðunni?\n(skjalið sjálft helst í Google Drive)') : window.confirm('Eyða þessari skráningu af síðunni?');
-        if(ok2){ var sb=SB(); if(sb){ try{ await sb.from('customer_documents').delete().eq('id', did); }catch(err){ alert('Villa við eyðingu: '+(err.message||err)); } } render(section, coId); }
+        if(ok2){
+          var sb=SB();
+          if(sb){
+            try{
+              // (1) losa pörin sem vísa í skjalið — annars hafnar FK-in eyðingunni.
+              var pr=await sb.from('document_pairs').select('id,report_doc_id,invoice_doc_id')
+                .or('report_doc_id.eq.'+did+',invoice_doc_id.eq.'+did);
+              if(pr.error) throw pr.error;
+              for(var pi=0; pi<(pr.data||[]).length; pi++){
+                var pRow=pr.data[pi];
+                var keepRep = String(pRow.report_doc_id)===String(did) ? null : pRow.report_doc_id;
+                var keepInv = String(pRow.invoice_doc_id)===String(did) ? null : pRow.invoice_doc_id;
+                var res;
+                if(keepRep==null && keepInv==null){
+                  // Parið er tómt eftir losunina — engin ástæða til að geyma það.
+                  res=await sb.from('document_pairs').delete().eq('id', pRow.id);
+                } else {
+                  res=await sb.from('document_pairs').update({
+                    report_doc_id: keepRep,
+                    invoice_doc_id: keepInv,
+                    status: keepInv==null ? 'vantar_reikning' : 'vantar_skyrslu',
+                    matched_by: 'manual_unlink'
+                  }).eq('id', pRow.id);
+                }
+                if(res && res.error) throw res.error;
+              }
+              // (2) eyða skjalaskráningunni sjálfri.
+              var dr=await sb.from('customer_documents').delete().eq('id', did);
+              if(dr.error) throw dr.error;
+            }catch(err){
+              alert('Villa við eyðingu: '+((err&&(err.message||err.hint||err.details))||err));
+            }
+          }
+          render(section, coId);
+        }
         return;
       }
       var attEl=e.target.closest('[data-att]');
