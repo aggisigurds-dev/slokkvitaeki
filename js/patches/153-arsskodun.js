@@ -62,6 +62,9 @@
   // stendur eftir á árinu — þeir blésu upp „Eftir"-tölurnar og duldu hvað er
   // raunverulega eftir hjá virku kúnnunum.
   const LS_SKIPHIDE = 'arsskodun_hideSkipped';
+  // 2026-08-12 (ósk Agnars): póstnúmera-sían — 'all' = engin sía (öll númer),
+  // annars JSON-fylki af völdum númerum ('' = fyrirtæki án skráðs póstnúmers).
+  const LS_POSTNR = 'arsskodun_postnr';
 
   function getSB() { return (window.DB && window.DB.sb) || null; }
   function esc(s) {
@@ -654,12 +657,32 @@
       const legacy = parseInt(localStorage.getItem(LS_MONTH) || '0', 10);
       return (legacy >= 1 && legacy <= 12) ? [legacy] : [];
     })(),
+    // null = engin póstnúmera-sía (öll númer með). Fylki = AÐEINS þessi númer
+    // sjást ('' stendur fyrir „án skráðs númers"). Sjálfgefið er allt með og
+    // notandinn „tekur af" í Númer-glugganum — eða hreinsar allt og velur 1+.
+    postnr: (() => {
+      try {
+        const raw = localStorage.getItem(LS_POSTNR);
+        if (raw != null && raw !== 'all') { const a = JSON.parse(raw); if (Array.isArray(a)) return a.map(String); }
+      } catch (_) {}
+      return null;
+    })(),
     status: localStorage.getItem(LS_STATUS) || 'all',        // 'all' | 'done' | 'pending' | 'never'
     // Sjálfgefið AF (=sýna þá) svo ekkert hverfi óumbeðið hjá þeim sem þekkja
     // listann eins og hann var. Gátreiturinn í „🟡 Slepptir í fyrra" kveikir.
     hideSkipped: localStorage.getItem(LS_SKIPHIDE) === '1',
     search: ''
   };
+  // „Númer"-glugginn opinn/lokaður — bara fyrir þessa setu, ekki vistað.
+  let _pnrOpen = false;
+  // Smellur utan gluggans lokar honum. Skráð EINU SINNI á document (ekki í
+  // render()) svo hlustendur hlaðist ekki upp við hverja endurteikningu.
+  document.addEventListener('mousedown', e => {
+    if (!_pnrOpen) return;
+    if (e.target.closest && e.target.closest('#_ars-pnr-row')) return;
+    _pnrOpen = false;
+    if (document.getElementById('ars-main')) render();
+  });
   // Sleppt í fyrra = síðast skoðað fyrir meira en ári síðan (en einhvern tíma).
   // EIN skilgreining — bæði sían sjálf, feluglerið og talningarnar lesa hana,
   // svo þær geta ekki rekið í sundur (sbr. 'skipped2025'-síuna hér að neðan).
@@ -673,8 +696,18 @@
     localStorage.setItem(LS_SORTCOL, state.sortCol || '');
     localStorage.setItem(LS_SORTDIR, state.sortDir || 'asc');
     localStorage.setItem(LS_MONTHS, JSON.stringify(state.months || []));
+    localStorage.setItem(LS_POSTNR, state.postnr === null ? 'all' : JSON.stringify(state.postnr));
     localStorage.setItem(LS_STATUS, state.status);
     localStorage.setItem(LS_SKIPHIDE, state.hideSkipped ? '1' : '0');
+  }
+  // Póstnúmer fyrirtækis, samræmt: alltaf strengur, '' = ekkert skráð.
+  const pnrOf = c => String(c.postnumer == null ? '' : c.postnumer).trim();
+  // Label fyrir valin póstnúmer (samantektin + prentun lesa hann).
+  function postnrFilterLabel() {
+    if (state.postnr === null) return '';
+    if (!state.postnr.length) return '📍 ekkert póstnúmer valið';
+    const a = state.postnr.slice().sort((x, y) => (parseInt(x, 10) || 9999) - (parseInt(y, 10) || 9999));
+    return '📍 ' + a.map(p => p === '' ? 'án númers' : p).join(', ');
   }
   // Label fyrir valda mánuði (fjöl-val + „Án mánaðar").
   function monthFilterLabel(curYear) {
@@ -684,7 +717,11 @@
     return parts.join(', ') + (ms.some(m => m >= 1 && m <= 12) ? ' ' + curYear : '');
   }
 
-  function filteredSorted() {
+  // opts.ignorePostnr: sleppa póstnúmera-síunni en halda öllum hinum. Notað til
+  // að telja hvað hvert póstnúmer myndi skila undir núverandi stöðu/mánuði —
+  // þannig sýnir talan í „📍 Númer"-glugganum raunverulegan fjölda raða.
+  function filteredSorted(opts) {
+    const ignorePostnr = !!(opts && opts.ignorePostnr);
     const today = new Date();
     const curYear = today.getFullYear();
     const curMonth = today.getMonth() + 1;
@@ -705,6 +742,13 @@
         const inRange = m >= 1 && m <= 12;
         return inRange ? set.has(m) : noMonth;
       });
+    }
+    // 2026-08-12 (ósk Agnars): póstnúmera-sían — „📍 Númer"-takkinn fyrir ofan
+    // listann. null = allt með; fylki = aðeins valin númer ('' = án númers).
+    // Víkur fyrir frjálsri leit, alveg eins og mánaðar- og stöðusíurnar.
+    if (!hasSearch && !ignorePostnr && state.postnr !== null) {
+      const pset = new Set(state.postnr);
+      arr = arr.filter(c => pset.has(pnrOf(c)));
     }
     // 2026-07-17 (ósk Agnars): „líklega óvart í þjónustu" — fyrirtæki sem
     // lentu á listanum (t.d. gegnum afgreiðslu-sölu) en hafa ENGA þjónustusögu:
@@ -1113,6 +1157,44 @@
     const monthCounts = Array(13).fill(0);
     // index 0 = fjöldi án skráðs mánaðar („Án mánaðar"-chippurinn)
     arsAll.forEach(c => { const m = +c._ars.inspect_month || 0; if (m >= 1 && m <= 12) monthCounts[m]++; else monthCounts[0]++; });
+
+    // Póstnúmerin í gögnunum + fjöldi á hvert (fyrir „📍 Númer"-gluggann).
+    // Bæjarnafnið er lesið úr heimilisföngunum sjálfum (algengasti textinn
+    // aftan við númerið) — ekkert hardkóðað póstnúmerakort að viðhalda.
+    // Talan við hvert númer er fjöldinn undir NÚVERANDI stöðu/mánaðar-síu (án
+    // póstnúmera-síunnar sjálfrar) — þannig segir hún „svona margar raðir fæ ég
+    // ef ég vel þetta númer". Listi númeranna kemur samt úr öllum gögnunum svo
+    // hann hoppi ekki til þegar stöðusíu er breytt.
+    const pnrPool = filteredSorted({ ignorePostnr: true });
+    const pnrCounts = new Map();   // '101' -> fjöldi ('' = án skráðs númers)
+    const pnrTowns = new Map();    // '101' -> { 'Reykjavík': n, … }
+    pnrPool.forEach(c => {
+      const p = pnrOf(c);
+      pnrCounts.set(p, (pnrCounts.get(p) || 0) + 1);
+    });
+    all.forEach(c => {
+      const p = pnrOf(c);
+      if (!pnrCounts.has(p)) pnrCounts.set(p, 0);
+      if (!p) return;
+      const m = String(c.heimilisfang || '').match(new RegExp('(?:^|[\\s,])' + p + '\\s+([^\\d,]+?)\\s*$'));
+      if (m && m[1].trim()) {
+        const tm = pnrTowns.get(p) || {};
+        const t = m[1].trim();
+        tm[t] = (tm[t] || 0) + 1;
+        pnrTowns.set(p, tm);
+      }
+    });
+    const pnrCodes = [...pnrCounts.keys()].filter(p => p !== '')
+      .sort((a, b) => (parseInt(a, 10) || 9999) - (parseInt(b, 10) || 9999));
+    // Allir mögulegu lyklarnir — notað þegar „tekið er af" úr fullu vali.
+    const pnrAllKeys = pnrCodes.concat(pnrCounts.has('') ? [''] : []);
+    const pnrTownOf = p => {
+      const tm = pnrTowns.get(p);
+      if (!tm) return '';
+      return Object.entries(tm).sort((a, b) => b[1] - a[1])[0][0];
+    };
+    const pnrChecked = p => state.postnr === null || state.postnr.includes(p);
+    const pnrActive = state.postnr !== null;
     const doneThisYear = arsAll.filter(c => +c._ars.last_year_inspected === curYear).length;
     const totalEstimate = arsAll.reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
     const estDoneThisYear = arsAll
@@ -1142,7 +1224,9 @@
     // merkimiðinn má ekki halda áfram að segja „Jún 2026" — það var einmitt það
     // sem lét leitina líta út fyrir að vera biluð.
     const searching = !!state.search.trim();
-    const effFilterLabel = searching ? `Leit: „${esc(state.search.trim())}" — allir mánuðir og allar stöður` : filterLabel;
+    const effFilterLabel = searching
+      ? `Leit: „${esc(state.search.trim())}" — allir mánuðir og allar stöður`
+      : filterLabel + (pnrActive ? ' · ' + postnrFilterLabel() : '');
 
     main.innerHTML = `
       <div style="max-width:1720px;margin:0 auto;padding:10px 18px 60px">
@@ -1245,6 +1329,42 @@
             out += chip(0, '🚫 Án mánaðar', monthCounts[0], selSet.has(0), !monthCounts[0]);
             return out;
           })()}
+        </div>
+
+        <!-- Póstnúmera-sía (2026-08-12, ósk Agnars): „Númer"-takki sem opnar
+             langan glugga með ÖLLUM póstnúmerum — allt valið sjálfgefið, hægt
+             að taka af, hreinsa allt, velja allt, eða velja bara 1+ númer.
+             Fyrir keyrslur í bæi lengra í burtu. -->
+        <div id="_ars-pnr-row" style="display:flex;gap:5px;flex-wrap:wrap;margin:-8px 0 14px;align-items:center;position:relative">
+          <span style="font-size:10.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;padding-right:3px">Númer:</span>
+          <button id="_ars-pnr-btn" type="button" aria-expanded="${_pnrOpen}" title="Sía listann eftir póstnúmerum — fyrir keyrslur í bæi lengra í burtu" style="padding:5px 12px;border:1px solid ${pnrActive ? 'var(--brand)' : 'var(--brd2)'};background:${pnrActive ? 'var(--brand)' : 'var(--surface)'};color:${pnrActive ? '#fff' : 'var(--ink1)'};border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">📍 Númer${pnrActive ? ` · ${state.postnr.length} valin` : ''} ${_pnrOpen ? '▴' : '▾'}</button>
+          ${pnrActive ? `
+            <span style="font-size:11px;color:var(--ink2);max-width:520px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(postnrFilterLabel())}</span>
+            <button id="_ars-pnr-clear" type="button" title="Taka póstnúmera-síuna af — sýna öll númer aftur" style="padding:5px 11px;border:1px solid var(--brd2);background:var(--surface);color:var(--ink2);border-radius:99px;cursor:pointer;font:inherit;font-size:11px;font-weight:600">✕ Sýna öll</button>
+          ` : ''}
+          ${_pnrOpen ? `
+          <div id="_ars-pnr-panel" style="position:absolute;top:100%;left:0;margin-top:6px;z-index:80;background:var(--surface);border:1px solid var(--brd2);border-radius:12px;box-shadow:0 18px 44px rgba(0,0,0,.30);width:min(460px,94vw);max-height:65vh;display:flex;flex-direction:column;overflow:hidden">
+            <div style="display:flex;gap:6px;align-items:center;padding:9px 11px;border-bottom:1px solid var(--brd);background:var(--surface2)">
+              <span style="font-size:11px;font-weight:800;color:var(--ink1);margin-right:auto">📍 Póstnúmer${pnrActive ? ` — ${state.postnr.length} af ${pnrAllKeys.length} valin` : ' — öll valin'}</span>
+              <button id="_ars-pnr-selall" type="button" style="padding:4px 10px;border:1px solid var(--brd2);background:var(--surface);color:var(--ink1);border-radius:7px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">☑ Velja allt</button>
+              <button id="_ars-pnr-selnone" type="button" style="padding:4px 10px;border:1px solid var(--brd2);background:var(--surface);color:var(--ink1);border-radius:7px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:700">☐ Hreinsa allt</button>
+              <button id="_ars-pnr-close" type="button" style="padding:4px 10px;border:none;background:var(--brand);color:#fff;border-radius:7px;cursor:pointer;font:inherit;font-size:10.5px;font-weight:800">✓ Loka</button>
+            </div>
+            <div style="overflow-y:auto;padding:5px">
+              ${pnrAllKeys.map(p => {
+                const on = pnrChecked(p);
+                const town = p === '' ? '' : pnrTownOf(p);
+                const cnt = pnrCounts.get(p) || 0;
+                return `<button type="button" class="_ars-pnr-opt" data-pnr="${esc(p)}" aria-pressed="${on}" title="${cnt ? cnt + ' fyrirtæki með núverandi síu' : 'Ekkert fyrirtæki með núverandi síu'}" style="display:flex;width:100%;gap:9px;align-items:center;padding:7px 10px;border:none;border-radius:8px;background:${on ? 'transparent' : 'var(--surface2)'};cursor:pointer;font:inherit;text-align:left;opacity:${cnt ? 1 : .55}">
+                  <span style="font-size:14px;line-height:1;color:${on ? 'var(--brand)' : 'var(--ink4)'}">${on ? '☑' : '☐'}</span>
+                  <span style="min-width:38px;text-align:center;padding:1px 6px;border-radius:6px;background:${on ? 'var(--surface2,#eef2ff)' : 'transparent'};color:${on ? '#3730a3' : 'var(--ink4)'};font-size:11px;font-weight:800;font-variant-numeric:tabular-nums">${p === '' ? '—' : esc(p)}</span>
+                  <span style="flex:1;font-size:12px;color:${on ? 'var(--ink1)' : 'var(--ink4)'};font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p === '' ? '🚫 Án skráðs númers' : esc(town)}</span>
+                  <span style="font-size:11px;color:var(--ink3);font-variant-numeric:tabular-nums">${cnt}</span>
+                </button>`;
+              }).join('')}
+            </div>
+          </div>
+          ` : ''}
         </div>
 
         ${filtered.length === 0 ? (all.length === 0 && _loadingAll ? `
@@ -1354,6 +1474,37 @@
         const set = new Set(state.months || []);
         if (set.has(mn)) set.delete(mn); else set.add(mn);
         state.months = [...set].sort((a, b) => a - b);
+      }
+      saveState(); render();
+    }));
+    // 📍 Númer — póstnúmera-glugginn. Opinn/lokaður lifir yfir render (module-
+    // level _pnrOpen) svo glugginn haldist opinn meðan tekið er af/bætt við.
+    main.querySelector('#_ars-pnr-btn')?.addEventListener('click', () => {
+      _pnrOpen = !_pnrOpen; render();
+    });
+    main.querySelector('#_ars-pnr-clear')?.addEventListener('click', () => {
+      state.postnr = null; saveState(); render();
+    });
+    main.querySelector('#_ars-pnr-selall')?.addEventListener('click', () => {
+      state.postnr = null; saveState(); render();
+    });
+    main.querySelector('#_ars-pnr-selnone')?.addEventListener('click', () => {
+      state.postnr = []; saveState(); render();
+    });
+    main.querySelector('#_ars-pnr-close')?.addEventListener('click', () => {
+      _pnrOpen = false; render();
+    });
+    main.querySelectorAll('._ars-pnr-opt').forEach(b => b.addEventListener('click', () => {
+      const p = b.dataset.pnr;
+      if (state.postnr === null) {
+        // Fullt val → fyrsta „taka af" smellinn breytir í fylki án þessa númers.
+        state.postnr = pnrAllKeys.filter(k => k !== p);
+      } else {
+        const set = new Set(state.postnr);
+        if (set.has(p)) set.delete(p); else set.add(p);
+        // Ef ALLT er aftur valið → aftur í „engin sía" (null) svo ný númer í
+        // gögnunum detti sjálfkrafa inn í framtíðinni.
+        state.postnr = (pnrAllKeys.length && pnrAllKeys.every(k => set.has(k))) ? null : [...set];
       }
       saveState(); render();
     }));
@@ -1486,7 +1637,8 @@
        : state.status === 'skipped2025' ? 'Slepptir í fyrra'
        : state.status === 'priority'    ? 'Forgangur'
        : `Allir mánuðir ${curYear}`);
-    const searchNote = state.search.trim() ? ` · leit: “${esc(state.search.trim())}”` : '';
+    const pnrNote = (!state.search.trim() && state.postnr !== null) ? ` · ${esc(postnrFilterLabel())}` : '';
+    const searchNote = (state.search.trim() ? ` · leit: “${esc(state.search.trim())}”` : '') + pnrNote;
 
     let totalEst = 0;
     const rows = arr.map((c, i) => {
