@@ -177,6 +177,15 @@
       .select('fyrirtaeki_id,inspect_month,equipment,report_year,total_devices')
       .then(r => (r && r.data) || [])
       .catch(() => []);
+    // 2026-08-13 (Agnar): talnakortin þrjú efst (Fjöldi / Búið / Eftir) lesa
+    // EINA sannleikstölu úr Supabase-viewinu v_thjonustu_tolur í stað
+    // staðbundinna JS-útreikninga sem ráku í sundur við grunninn
+    // (689/309/314 á kortunum vs 612/245/263 í grunninum). buid_2026 +
+    // eftir_2026 = i_arsskodun alltaf. Á villu sýna kortin „—", aldrei
+    // heimareiknaða tölu.
+    const tolurP = SB.from('v_thjonustu_tolur').select('*').single()
+      .then(r => (r && r.data) || null)
+      .catch(() => null);
     // 2026-07-17 (❓ Óvíst triage): skýrslu-ÁR hvers félags úr customer_documents
     // (Drive-hryggnum) — knýr sönnunar-merkin á Óvíst-flipanum. Síðuskipt (töflurnar
     // eru komnar yfir 1000-raða klippingu Supabase) og fail-safe (tómt map á villu).
@@ -226,6 +235,7 @@
     const factsById = Object.fromEntries((factsList || []).map(f => [String(f.fyrirtaeki_id), f]));
     const docYears = await docYearsP;
     _cache.docYears = docYears;
+    _cache.tolur = await tolurP;
 
     // 2026-05-19: Only include companies that are ACTUALLY in service
     // (subscribed to ársskoðun, subscribed to brunakerfi, OR — new — they have
@@ -1196,6 +1206,10 @@
     const pnrChecked = p => state.postnr === null || state.postnr.includes(p);
     const pnrActive = state.postnr !== null;
     const doneThisYear = arsAll.filter(c => +c._ars.last_year_inspected === curYear).length;
+    // Talnakortin þrjú: AÐEINS viewið v_thjonustu_tolur (sjá athugasemd í
+    // _loadAllInner) — engir staðbundnir útreikningar mega birtast þar.
+    const T = _cache.tolur || {};
+    const tv = k => (T[k] == null ? '—' : T[k]);
     const totalEstimate = arsAll.reduce((s, c) => s + (+c._ars.estimated_yearly || 0), 0);
     const estDoneThisYear = arsAll
       .filter(c => +c._ars.last_year_inspected === curYear)
@@ -1235,7 +1249,7 @@
             <div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">🏢</div>
             <div style="min-width:0">
               <h1 style="margin:0;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">Fyrirtæki í Þjónustu</h1>
-              <div class="_ars-sub" style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">${allCount} fyrirtæki · ${arsAll.length} í árlegri slökkvitækjaskoðun${skipHidden ? ` · <span style="color:#fcd34d">🟡 ${skippedCount} slepptir faldir</span>` : ''}</div>
+              <div class="_ars-sub" style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">${tv('allar_i_thjonustu')} fyrirtæki · ${tv('i_arsskodun')} í árlegri slökkvitækjaskoðun${skipHidden ? ` · <span style="color:#fcd34d">🟡 ${skippedCount} slepptir faldir</span>` : ''}</div>
             </div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
