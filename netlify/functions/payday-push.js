@@ -170,9 +170,10 @@ exports.handler = async (event) => {
     // Priority: explicit body.delivery (tests) > the customer's saved preference
     // (fyrirtaeki.payday_delivery: 'electronic' | 'email' | 'both') > if a report
     // is attached, default to EMAIL (the delivery path proven to carry the
-    // fylgiskjal) > else keep buildPayload's auto default (rafrænt-first for a
-    // real kt, e-mail fallback). Whichever electronic path runs still falls back
-    // to e-mail if the customer rejects e-invoices (see the retry below).
+    // fylgiskjal) > else buildPayload's auto default: rafrænt (real kt) OG
+    // póstafrit þegar netfang er til — „both" í reynd. Whichever electronic
+    // path runs still falls back to e-mail if the customer rejects e-invoices
+    // (see the retry below).
     const custPref = (customer && customer.payday_delivery) || (site && site.payday_delivery) || null;
     const delivery = body.delivery || custPref || (attachment ? 'email' : null);
     const hasEmail = !!(payload.customer.email && /@/.test(payload.customer.email));
@@ -240,6 +241,10 @@ exports.handler = async (event) => {
 
     return json(200, {
       ok: true, mode, fellBackToNonElectronic, payload, created, customerId,
+      // Hvað var raunverulega afhent + á hvaða netfang — svo UI og log sýni það.
+      delivery: deliveryLabel(),
+      email_used: payload.sendEmail ? (custEmail || null) : null,
+      email_synced: custResult.email_synced || null,
       attached_report: attachment ? { name: attachment.name, bytes: attachment.bytes.length } : null,
       attach_skip_reason: attachment ? null : attachSkipReason,
     });
@@ -262,10 +267,6 @@ function buildPayload(sale, customer, opts) {
   // sale.customer_kt / customer_nafn first (POS writes them); fall back to enriched customer row.
   const ktRaw = sale.customer_kt || (customer && customer.kennitala) || '';
   const name = sale.customer_nafn || (customer && customer.nafn) || '';
-  // Netfang getur verið margar tölvupóstföng aðskilin með kommu/semíkommu
-  // (t.d. "reikningar@x.is, bokhald@x.is") — Payday hafnar því á kúnna-stofnun.
-  // Notum FYRSTA gilda netfangið.
-  const email = firstEmail((customer && customer.netfang) || '');
   const address = (customer && customer.heimilisfang) || '';
   const phone = (customer && customer.simi) || '';
   // „Vegna: <fyrirtæki – heimilisfang>" — staðurinn (starfsstöð) les-læsilega á
@@ -277,18 +278,29 @@ function buildPayload(sale, customer, opts) {
   // AÐEINS ef kennitala hans passar við kt sölunnar; annars nafn af sölunni.
   const _ktDigits = x => String(x || '').replace(/\D/g, '');
   const _siteOk = !!(_site && _ktDigits(_site.kennitala) && _ktDigits(_site.kennitala) === _ktDigits(ktRaw));
+  // Netfang getur verið margar tölvupóstföng aðskilin með kommu/semíkommu
+  // (t.d. "reikningar@x.is, bokhald@x.is") — Payday hafnar því á kúnna-stofnun.
+  // Bókhaldslegt netfang (reikning-/bokhald-/billing-) tekur forgang fram yfir
+  // fyrsta netfangið. Vanti grunnfélagið netfang er netfang STAÐARINS notað —
+  // en AÐEINS ef kennitala staðarins passar við söluna (_siteOk, sama vörn og
+  // „Vegna:" hér að neðan — PK-skörun getur bent á ótengt fyrirtæki).
+  const email = pickBillingEmail((customer && customer.netfang) || '')
+             || (_siteOk ? pickBillingEmail(_site.netfang || '') : '');
   const _vegnaLabel = _siteOk ? [_site.nafn, _site.heimilisfang].filter(Boolean).join(' – ')
                               : (sale.customer_nafn || '');
   const _vegna = _vegnaLabel ? ('Vegna: ' + _vegnaLabel) : '';
   const _notes = (sale.athugasemdir || '').trim();
-  // Afhending: í 'send' ham → rafrænt fyrst ef raunveruleg kt, annars tölvupóstur.
-  // Í 'draft' ham → ekkert afhent (aðeins drög í Payday sem sent er handvirkt).
-  // Rafrænt getur klikkað (kúnni tekur ekki við rafrænum) → handler reynir aftur
-  // án rafræns svo reikningurinn lendi samt í Payday.
+  // Afhending (sjálfgefið, 2026-08-13 — Center Hótel-lexían): rafræn krafa OG
+  // póstafrit þegar hvort tveggja er hægt. Áður drap rafrænt póstafritið
+  // (emailSend = !electronic && email) — rafræni reikningurinn „fór" en enginn
+  // maður sá hann ef móttakandinn les ekki skeytamiðlarann sinn. Manneskja á
+  // ALLTAF að fá PDF þegar netfang er til. Í 'draft' ham → ekkert afhent.
+  // Rafrænt getur klikkað (kúnni tekur ekki við rafrænum) → handler reynir
+  // aftur með pósti eingöngu svo reikningurinn lendi samt í Payday.
   const ssnDigits = digits(ktRaw);
   const realKt = ssnDigits.length === 10 && ssnDigits !== '9999999999';
   const electronic = mode === 'send' && realKt;
-  const emailSend = mode === 'send' && !electronic && !!email;
+  const emailSend = mode === 'send' && !!email;
   return {
     invoiceDate: isoToday,
     dueDate: due.toISOString().slice(0, 10),
@@ -474,7 +486,34 @@ async function findOrCreateCustomer(token, custObj) {
     if (matched.length) {
       const it = matched[0];
       out.customerId = it.id || it.customerId || it.ID || it.uuid || null;
-      if (out.customerId) return out;
+      if (out.customerId) {
+        // Netfangið í OKKAR skrá er sannleikurinn: Payday notar netfangið á
+        // SÍNUM kúnna fyrir sendEmail, svo ef það er gamalt/tómt fer PDF-inn
+        // á rangan stað þótt skráin okkar sé rétt. Best-effort samstilling —
+        // má aldrei fella sendinguna sjálfa.
+        const ourEmail = String(custObj.email || '').trim();
+        const theirEmail = String(it.email || '').trim();
+        if (ourEmail && ourEmail.toLowerCase() !== theirEmail.toLowerCase()) {
+          try {
+            const up = await fetch(API_BASE + '/customers/' + encodeURIComponent(out.customerId), {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json', Accept: 'application/json',
+                Authorization: `Bearer ${token}`, 'Api-Version': API_VERSION,
+              },
+              body: JSON.stringify({
+                name: custObj.name || it.name,
+                ssn: custObj.ssn,
+                email: ourEmail,
+                address: custObj.address || undefined,
+                phone: custObj.phone || undefined,
+              }),
+            });
+            out.email_synced = up.ok ? ((theirEmail || '(tómt)') + ' → ' + ourEmail) : ('mistókst (HTTP ' + up.status + ')');
+          } catch (e) { out.email_synced = 'mistókst: ' + String(e.message || e); }
+        }
+        return out;
+      }
     }
   }
   // Engin match í lookup → stofna nýjan
@@ -649,11 +688,13 @@ async function writeCachedToken(value) {
 // ---- helpers ---------------------------------------------------------------
 
 function digits(s) { return String(s || '').replace(/\D+/g, ''); }
-// Fyrsta gilda netfangið úr streng sem gæti innihaldið mörg (komma/semíkomma/bil).
-function firstEmail(s) {
-  const parts = String(s || '').split(/[,;\s]+/).map(x => x.trim()).filter(Boolean);
-  const valid = parts.find(x => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x));
-  return valid || '';
+// Netfang úr streng sem gæti innihaldið mörg (komma/semíkomma/bil):
+// bókhaldslegt netfang (reikning-/bokhald-/billing-/invoice-) tekur forgang,
+// annars fyrsta gilda netfangið.
+function pickBillingEmail(s) {
+  const parts = String(s || '').split(/[,;\s]+/).map(x => x.trim())
+    .filter(x => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(x));
+  return parts.find(x => /reikning|bokhald|bókhald|billing|invoice|account/i.test(x)) || parts[0] || '';
 }
 function num(v) { const n = Number(v); return Number.isFinite(n) ? n : 0; }
 function tryParseJson(s) { try { return JSON.parse(s); } catch(_) { return null; } }
