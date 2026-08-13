@@ -179,10 +179,15 @@ exports.handler = async (event) => {
     const hasEmail = !!(payload.customer.email && /@/.test(payload.customer.email));
     // 4) Afhendingargátt (Center Hótel-rótin): engin vistuð afhendingarstilling
     //    OG ekkert netfang → rafræni reikningurinn færi „út í tómið" án nokkurs
-    //    afrits. Biðstaða frekar en blind sending — skráðu netfang eða
-    //    payday_delivery á fyrirtækið, eða yfirskrifaðu meðvitað.
-    if (!dry && !body.delivery && !custPref && !hasEmail && !body.force_delivery) {
-      return json(422, { gate: 'delivery', error: 'Engin afhendingarleið: hvorki payday_delivery-stilling né netfang er skráð á kúnnann. Skráðu annað hvort á fyrirtækið og sendu svo — eða sendu með force_delivery:true (rafrænt eingöngu, ekkert afrit).' });
+    //    afrits. Sama gildir ef fyrirtækið er beinlínis stillt á „Tölvupóstur"
+    //    en ekkert netfang er skráð — þá færi EKKERT út nema bankakrafan.
+    //    Biðstaða frekar en blind sending — skráðu netfang eða payday_delivery
+    //    á fyrirtækið, eða yfirskrifaðu meðvitað.
+    const emailOnlyNoEmail = (body.delivery || custPref) === 'email' && !hasEmail;
+    if (!dry && !body.force_delivery && ((!body.delivery && !custPref && !hasEmail) || emailOnlyNoEmail)) {
+      return json(422, { gate: 'delivery', error: emailOnlyNoEmail
+        ? 'Fyrirtækið er stillt á „Tölvupóstur" en ekkert netfang er skráð — reikningurinn myndi hvergi berast. Skráðu netfang á fyrirtækið eða breyttu afhendingarstillingunni.'
+        : 'Engin afhendingarleið: hvorki payday_delivery-stilling né netfang er skráð á kúnnann. Skráðu annað hvort á fyrirtækið og sendu svo — eða sendu með force_delivery:true (rafrænt eingöngu, ekkert afrit).' });
     }
     if (delivery === 'email') { payload.createElectronicInvoice = false; payload.sendEmail = hasEmail; }
     else if (delivery === 'electronic') { payload.createElectronicInvoice = true; payload.sendEmail = false; }
