@@ -20,7 +20,8 @@
 
   const ICELAND_LOCALE = 'is-IS';
   const COMPANY_FALLBACK = {
-    name: 'Slökkvitæki ehf',
+    name: 'Slökkvitæki ehf',      // LEGAL entity name — used in VAT address block, alt text
+    nameLogo: 'Slökkvitæki',      // VISUAL identity for the logo area (drops "ehf")
     tag: 'Brunahólf',
     kt: '600508-0400',
     vsk: '98107',
@@ -32,8 +33,12 @@
   // every time a receipt is built. Falls back to hardcoded values until
   // settings load. Uses a Proxy-free pattern via getter object.
   const COMPANY = {
-    get name()  { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.company_name) || COMPANY_FALLBACK.name; },
-    get tag()   { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.tagline)      || COMPANY_FALLBACK.tag; },
+    get name()     { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.company_name) || COMPANY_FALLBACK.name; },
+    // nameLogo = visual identity for the logo area at the top of the receipt.
+    // Auto-trims " ehf" from the legal name ("Slökkvitæki ehf" → "Slökkvitæki").
+    // The in-app top banner uses banner_text directly so it can keep "ehf" internally.
+    get nameLogo() { return this.name.replace(/\s+ehf\.?\s*$/i, ''); },
+    get tag()      { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.tagline)      || COMPANY_FALLBACK.tag; },
     get kt()    { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.kennitala)    || COMPANY_FALLBACK.kt; },
     get vsk()   { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.vsk_nr)       || COMPANY_FALLBACK.vsk; },
     get addr1() { const b = window.AppSettings && window.AppSettings.path('branding'); return (b && b.address1)     || COMPANY_FALLBACK.addr1; },
@@ -112,19 +117,29 @@
     return `${dd}.${mm}.${yy}`;
   }
 
+  // 2026-05-21: lookupCustomer used to blindly trust `co_id` against
+  // Companies.list (= fyrirtaeki). But solur.customer_id may have come from
+  // the SEPARATE `vidskiptavinir` table — and ids overlap between the two.
+  // Example: R-000165 (Höldur ehf.) had customer_id=513 because Höldur lives
+  // in vidskiptavinir, but fyrirtaeki ALSO has id=513 (Gólfbúðin) — so the
+  // invoice was printing "Gólfbúðin" for a Höldur bill. Fix: id-lookup only
+  // wins if the name matches what's stored on the sale; otherwise fall
+  // through to name-based matching across the actual company list.
   function lookupCustomer(state) {
     const list = (window.Companies && Companies.list) || [];
     if (!list.length) return null;
+    const rawName = state && state.customer && (state.customer.nafn || '').trim();
+    const norm = s => String(s || '').trim().toLowerCase().replace(/[\s\.,;:]+$/g, '');
+    const expected = norm(rawName);
+
     if (state && state.customer && state.customer.co_id) {
       const byId = list.find(c => c.id === state.customer.co_id);
-      if (byId) return byId;
+      // Trust the id ONLY when the names agree (or no name was stored).
+      if (byId && (!expected || norm(byId.nafn) === expected)) return byId;
     }
-    const name = state && state.customer && (state.customer.nafn || '').trim();
-    if (name) {
-      const norm = s => String(s || '').trim().toLowerCase();
-      const target = norm(name);
-      return list.find(c => norm(c.nafn) === target)
-          || list.find(c => norm(c.nafn).startsWith(target))
+    if (rawName) {
+      return list.find(c => norm(c.nafn) === expected)
+          || list.find(c => norm(c.nafn).indexOf(expected) === 0)
           || null;
     }
     const kt = state && state.customer && (state.customer.kt || '').replace(/[^0-9]/g, '');
@@ -309,7 +324,7 @@
     }
 
     .footer { margin-top: 18px; font-size: 9pt; }
-    .signature { display: flex; align-items: baseline; gap: 8px; }
+    .signature { display: flex; align-items: baseline; gap: 8px; margin-top: 28px; }
     .signature .lbl { white-space: nowrap; }
     .signature .line {
       flex: 1; max-width: 280px; border-bottom: 0.6pt solid #000; height: 1.2em;
@@ -337,9 +352,11 @@
   // The receipt opens in a popup whose URL is `about:blank`, so root-relative
   // paths like "/img/logo.png" don't resolve. Build an absolute URL from the
   // parent window's origin so the logo loads correctly in print + preview.
+  // 2026-05-20: cache-bust so browsers pick up the new Slökkvitæki Brunahólf
+  // wordmark logo (replaces the small extinguisher icon).
   const LOGO_URL = (typeof window !== 'undefined' && window.location && window.location.origin)
-    ? window.location.origin + '/img/logo.png'
-    : '/img/logo.png';
+    ? window.location.origin + '/img/logo.png?v=20260520b'
+    : '/img/logo.png?v=20260520b';
 
   function buildHTML(ctx) {
     const t = ctx.totals;
@@ -390,12 +407,42 @@
     // paymentTerms now conveys the same info; the stamp on the receipt is just
     // duplicate noise. Keep whatever real free-form note remains.
     if (ctx.vegna) {
-      const cleaned = String(ctx.vegna)
+      let cleaned = String(ctx.vegna)
         .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]\s*verður\s+greitt\s+við\s+afhendingu\s*[—\-:]?\s*/i, '')
         .replace(/^[\s⚠❗]*(?:Ó|O)GREITT\s*[—\-:]?\s*/i, '')
         .trim();
       if (cleaned) {
-        customerRows.push(`<div class="vegna">vegna ${esc(cleaned)}</div>`);
+        // 2026-05-27: Aggi asked to clean up the chaotic vegna line.
+        // The walk-in flow often produces strings like:
+        //   "Kt: 150486-2389 [Sótt 2026-05-27] Afsláttur: 20% (-1040 kr) Greiðsla: kort"
+        // We pull each known token out into its own row, drop the redundant
+        // "Greiðsla: ..." (already shown in Greiðsl.skilm. on the right) and
+        // drop "Afsláttur: ..." (already shown in totals at the bottom).
+        const ktMatch    = cleaned.match(/\bKt[:.]?\s*(\d{6}-?\d{4})/i);
+        const sottMatch  = cleaned.match(/\bSótt[\s:]*\[?\s*(\d{4}-\d{2}-\d{2})\s*\]?/i);
+        // Strip recognised tokens to reveal any leftover free-form note
+        let remainder = cleaned
+          .replace(/\bKt[:.]?\s*\d{6}-?\d{4}/i, '')
+          .replace(/\[?\s*Sótt[\s:]*\d{4}-\d{2}-\d{2}\s*\]?/i, '')
+          .replace(/\bAfsl(?:áttur)?[:.]?\s*[\d,.]+%?\s*\(?[-−–\s]*[\d.,]*\s*kr?\)?/i, '')
+          .replace(/\bGreiðsla[:.]?\s*\w+/i, '')
+          // Tidy leftover punctuation
+          .replace(/^\s*[,.\s]+|[,.\s]+$/g, '')
+          .replace(/\s{2,}/g, ' ')
+          .trim();
+        if (ktMatch && !co.kennitala) {
+          // Only show kt separately if it wasn't already on its own line
+          customerRows.push(`<div class="bt-line">${esc(fmtKt(ktMatch[1]))}</div>`);
+        }
+        if (sottMatch) {
+          const d = sottMatch[1];
+          // Convert YYYY-MM-DD → DD.MM.YYYY for Icelandic format
+          const [y, m, dd] = d.split('-');
+          customerRows.push(`<div class="bt-line">Sótt: ${dd}.${m}.${y}</div>`);
+        }
+        if (remainder) {
+          customerRows.push(`<div class="vegna">vegna ${esc(remainder)}</div>`);
+        }
       }
     }
 
@@ -411,18 +458,36 @@
               // Honor Stillingar → Kvittun → "Birta logo" toggle. When off,
               // logo is skipped entirely (the company name takes its place).
               const showLogo = !window.AppSettings || window.AppSettings.path('kvittun.show_logo') !== false;
-              return showLogo ? `<img src="${esc(LOGO_URL)}" alt="${esc(COMPANY.name)}"
-              style="width:72px;height:72px;object-fit:contain;flex-shrink:0;border-radius:50%"
-              onerror="this.outerHTML='&lt;div aria-hidden=&quot;true&quot; style=&quot;width:72px;height:72px;flex-shrink:0;border-radius:50%;background:#dc2626;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:36pt;letter-spacing:-0.02em;font-family:Arial,Helvetica,sans-serif;&quot;&gt;S&lt;/div&gt;'">` : '';
+              if (!showLogo) return '';
+              // 2026-05-20: 3:1 container so any wordmark logo fits without
+              // distortion. Was a 72x72 circle (designed for the old
+              // extinguisher icon); now reads as a horizontal brand bar.
+              // 2026-05-20: bumped from 60 → 110 per Agnar's request — let
+              // the wordmark be the visual hero of the receipt.
+              if (window.SlokkLogo && SlokkLogo.imgHtml) {
+                return SlokkLogo.imgHtml({ heightPx: 110, alt: COMPANY.name, absoluteUrl: true });
+              }
+              return `<img src="${esc(LOGO_URL)}" alt="${esc(COMPANY.name)}"
+              style="height:110px;width:330px;object-fit:contain;display:inline-block"
+              onerror="this.style.visibility='hidden'">`;
             })()}
-            <div class="hdr-co">
-              <div class="co-name">${esc(COMPANY.name)}</div>
-              <div class="co-tag">${esc(COMPANY.tag)}</div>
-              <div class="co-kt">Kt. ${esc(COMPANY.kt)}</div>
-            </div>
+            ${(() => {
+              // 2026-05-20: Logo is the visual hero on the left. When the
+              // wordmark logo is on, drop ALL the duplicate text on the left
+              // (name/tag/kt). Kt now lives on the right block under the
+              // company-name line. With logo off, restore the legacy text.
+              const showLogo = !window.AppSettings || window.AppSettings.path('kvittun.show_logo') !== false;
+              if (showLogo) return '';
+              return '<div class="hdr-co">' +
+                '<div class="co-name">' + esc(COMPANY.nameLogo) + '</div>' +
+                '<div class="co-tag">' + esc(COMPANY.tag) + '</div>' +
+                '<div class="co-kt">Kt. ' + esc(COMPANY.kt) + '</div>' +
+              '</div>';
+            })()}
           </div>
           <div class="hdr-right">
             <div>${esc(COMPANY.name)} &nbsp;&nbsp;<span class="vsk-line">VSK nr. ${esc(COMPANY.vsk)}</span></div>
+            <div>Kt. ${esc(COMPANY.kt)}</div>
             <div>${esc(COMPANY.addr1)}</div>
             <div>${esc(COMPANY.addr2)}</div>
           </div>
@@ -434,10 +499,11 @@
           </div>
           <div class="invoice-meta">
             <div class="inv-title-row">
-              <em>Reikningur</em>
+              <em>${ctx.isCredit ? 'KREDITREIKNINGUR' : 'Reikningur'}</em>
               <span class="inv-num">${esc(ctx.invoiceNum || '')}</span>
             </div>
             <div class="inv-meta-grid">
+              ${ctx.isCredit && ctx.creditOf ? `<div class="lbl">Vegna reiknings:</div><div class="val">${esc(ctx.creditOf)}</div>` : ''}
               <div class="lbl">Dagsetning:</div><div class="val">${esc(ctx.dateStr)}</div>
               <div class="lbl">Greiðsl.skilm.:</div><div class="val">${esc(ctx.paymentTerms)}</div>
               <div class="lbl">Afh.skilm.:</div><div class="val">${esc(ctx.deliveryTerms)}</div>
@@ -566,15 +632,19 @@
       employee: opts.employee || resolveEmployee(),
       // Tilvísun is a freeform reference field; don't auto-fill with phone.
       tilvisun: opts.tilvisun || '',
-      vegna: opts.vegna || notes
+      vegna: opts.vegna || notes,
+      // Credit-note presentation (KREDITREIKNINGUR heading + "vegna" ref).
+      isCredit: !!opts.isCredit,
+      creditOf: opts.creditOf || ''
     };
 
     try {
       const doc = win.document;
+      const docTitle = (ctx.isCredit ? 'Kreditreikningur ' : 'Reikningur ') + ctx.invoiceNum;
       doc.open();
-      doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reikningur ${esc(ctx.invoiceNum)}</title><style>${CSS}</style></head><body>${buildHTML(ctx)}</body></html>`);
+      doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(docTitle)}</title><style>${CSS}</style></head><body>${buildHTML(ctx)}</body></html>`);
       doc.close();
-      doc.title = 'Reikningur ' + ctx.invoiceNum;
+      doc.title = docTitle;
       return true;
     } catch (e) {
       console.error('[SalaInvoice] render error', e);
@@ -587,20 +657,40 @@
   // views when the user wants to re-print a historical receipt. The saved
   // row already has the correct invoice number, lines, totals, etc., so we
   // just unpack it into a synthetic POS-state shape and call render().
-  function renderFromSale(win, sale, customerLookup) {
+  function renderFromSale(win, sale, customerLookup, extraOpts) {
     if (!win || win.closed || !sale) return false;
+    const xo = extraOpts || {};
     // Build a synthetic state. The renderer reads `state.lines`,
     // `state.discount_pct`, `state.discount`, `state.notes` and
     // `state.customer.{nafn,kt,co_id,heimilisfang}`.
     const linur = Array.isArray(sale.linur) ? sale.linur : [];
-    // Reconstruct discount % from saved data when possible. We saved
-    // `afslattur` as the absolute kr amount applied at sale time; pass it
-    // through as discount_pct=0, discount=afslattur so the receipt totals
-    // match what was originally printed.
+    // 2026-05-21: discount rendering — three cases.
+    //   (A) All lines share a non-zero discount_pct AND afslattur is 0:
+    //       lines carry PRE-discount prices, discount applied as % at the
+    //       totals section. Bill prints "Söluverð / Afsláttur (N%) / Til
+    //       greiðslu". This is the desired modern format.
+    //   (B) Some line has discount_pct > 0 AND afslattur > 0 (legacy data
+    //       where discount was baked into prices AND stored as afslattur):
+    //       ignore both, totalsByRate sums lines as-is. Avoids the previous
+    //       double-discount bug that miscounted R-000166 as 42k.
+    //   (C) No line discount_pct, sale-level afslattur set: legacy flat
+    //       discount. Apply afslattur as opts.discount.
+    const allPcts = linur.map(l => Number(l.discount_pct) || 0);
+    const uniformPct = allPcts.length && allPcts[0] > 0 && allPcts.every(p => p === allPcts[0])
+      ? allPcts[0] : 0;
+    const afsl = +sale.afslattur || 0;
+    let optsDiscount = 0, optsDiscountPct = 0;
+    if (uniformPct > 0 && afsl === 0) {
+      optsDiscountPct = uniformPct;                // case A
+    } else if (uniformPct > 0 && afsl > 0) {
+      /* case B — both 0 */
+    } else if (uniformPct === 0 && afsl > 0) {
+      optsDiscount = afsl;                          // case C
+    }
     const fakeState = {
       lines: linur,
-      discount: +sale.afslattur || 0,
-      discount_pct: 0,
+      discount: optsDiscount,
+      discount_pct: optsDiscountPct,
       notes: sale.athugasemdir || '',
       customer: {
         nafn: sale.customer_nafn || '',
@@ -627,7 +717,10 @@
         employee: sale.starfsmadur || '',
         customerName: sale.customer_nafn || '',
         customerKt: customerLookup ? customerLookup.kennitala : '',
-        customerHeimilisfang: customerLookup ? customerLookup.heimilisfang : ''
+        customerHeimilisfang: customerLookup ? customerLookup.heimilisfang : '',
+        // Forward credit-note presentation flags (set by printCreditNote).
+        isCredit: !!xo.isCredit,
+        creditOf: xo.creditOf || ''
       });
     } finally {
       if (window.POS) window.POS.getState = origGetState;

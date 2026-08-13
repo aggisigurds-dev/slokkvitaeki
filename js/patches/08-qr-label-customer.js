@@ -38,14 +38,43 @@
       document.head.appendChild(s);
     });
   }
-  function qrPNG(text, size) {
+  function qrPNG(text, size, opts) {
+    opts = opts || {};
+    // 2026-05-27: qrcodejs caps at 352 bytes for correctLevel.M and ~440 for L.
+    // Aggi hit "code length overflow (420>352)" when a sale's name + phone +
+    // extra exceeded the limit. Strategy:
+    //   1. Try at L (lowest error correction → most capacity ~2953 bytes)
+    //   2. If still too long, truncate the input progressively until it fits.
+    //      Keep the SERIAL token (after the last "·") since that's what the
+    //      scanner needs to identify the unit.
     return new Promise(resolve => {
-      const div = document.createElement('div');
-      new window.QRCode(div, {
-        text, width: size, height: size,
-        colorDark: '#000000', colorLight: '#ffffff',
-        correctLevel: window.QRCode.CorrectLevel.M
-      });
+      function tryBuild(t) {
+        const div = document.createElement('div');
+        try {
+          new window.QRCode(div, {
+            text: t, width: size, height: size,
+            colorDark: '#000000', colorLight: '#ffffff',
+            correctLevel: window.QRCode.CorrectLevel.L,
+          });
+          return div;
+        } catch (e) {
+          return null;
+        }
+      }
+      // Extract a "must-keep" tail: prefer the last token after " · " (serial)
+      const serialTail = (String(text).split(' · ').pop() || text).trim();
+      let attempt = String(text);
+      let div = tryBuild(attempt);
+      // If creation threw, progressively shrink until it fits or only serial remains
+      let safety = 8;
+      while (!div && safety-- > 0) {
+        if (attempt.length <= serialTail.length + 1) { attempt = serialTail; div = tryBuild(attempt); break; }
+        // Drop the LEFTMOST token each round (keeps the serial at the end intact)
+        const idx = attempt.indexOf(' · ');
+        attempt = idx >= 0 ? attempt.slice(idx + 3) : serialTail;
+        div = tryBuild(attempt);
+      }
+      if (!div) { resolve(''); return; }
       setTimeout(() => {
         const canvas = div.querySelector('canvas');
         const img = div.querySelector('img');
@@ -492,15 +521,20 @@
               <option value="100">100 mm — löng</option>
             </select>
           </div>
-          <div style="display:flex;align-items:flex-end">
-            <button type="button" class="qrlc-btn" id="_qrlc_testpattern" style="width:100%" title="Prentar kvörðunarmynstur með hornum og krosshair fyrir að stilla prentara/límband.">
-              🎯 Prufuprent (kvörðun)
-            </button>
+          <div>
+            <label for="_qrlc_count">Fjöldi miða</label>
+            <input type="number" id="_qrlc_count" min="1" max="20" step="1" value="1" style="font-variant-numeric:tabular-nums">
           </div>
         </div>
 
+        <div style="margin-top:6px">
+          <button type="button" class="qrlc-btn" id="_qrlc_testpattern" style="width:100%" title="Prentar kvörðunarmynstur með hornum og krosshair fyrir að stilla prentara/límband.">
+            🎯 Prufuprent (kvörðun)
+          </button>
+        </div>
+
         <div class="qrlc-actions">
-          <button class="qrlc-btn" id="_qrlc_cancel">Hætta við</button>
+          <button class="qrlc-btn" id="_qrlc_cancel">Loka</button>
           <button class="qrlc-btn primary" id="_qrlc_print" disabled>🖨 Prenta</button>
         </div>
       </div>
@@ -569,14 +603,111 @@
     });
 
     document.getElementById('_qrlc_print').addEventListener('click', async () => {
-      const previewEl = document.getElementById('_qrlc_preview');
-      const ds = previewEl.dataset;
-      const labelHTML = buildPrintLabel({
-        qrDataUrl: ds.qr || '', name: ds.name, phone: ds.phone, serial: ds.serial, extra: ds.extra
-      });
-      const lengthMm = +(document.getElementById('_qrlc_length')?.value || 70);
-      openPrintWindow(labelHTML, lengthMm);
+      const printBtn = document.getElementById('_qrlc_print');
+      // Reentrancy guard: prevent double-clicks while we're generating.
+      if (printBtn.dataset.busy === '1') return;
+      printBtn.dataset.busy = '1';
+      printBtn.disabled = true;
+
+      // Sequential-serial generation for multi-label print. Parses the
+      // current serial (e.g. "S0001") and increments for labels 2..N.
+      // If the serial doesn't match SnnnnnZ, falls back to appending "-N".
+      function nextSerial(base, n) {
+        if (n === 0) return base;
+        const m = String(base || '').match(/^([A-Za-z]*)(\d+)$/);
+        if (m) {
+          const prefix = m[1];
+          const num = parseInt(m[2], 10) + n;
+          return prefix + String(num).padStart(m[2].length, '0');
+        }
+        return base + '-' + (n + 1);
+      }
+
+      try {
+        // Read directly from inputs at click-time. The dataset on
+        // _qrlc_preview can be stale because refreshPreview is async and
+        // multiple concurrent calls (openDialog + selectCustomer +
+        // fetchNextSerial completion) can race for kt-customer flow.
+        const name   = (document.getElementById('_qrlc_name')?.value   || '').trim();
+        const phone  = (document.getElementById('_qrlc_phone')?.value  || '').trim();
+        let   serialBase = (document.getElementById('_qrlc_serial')?.value || '').trim();
+        const extra  = (document.getElementById('_qrlc_extra')?.value  || '').trim();
+
+        // If the serial input is still empty (openWithCustomer's
+        // fetchNextSerial hadn't returned yet when the user clicked),
+        // pull one now so we don't print "-2"/"-3" fallback labels.
+        if (!serialBase) {
+          printBtn.textContent = '⏳ Sæki raðnúmer…';
+          serialBase = await fetchNextSerial();
+          if (serialBase) {
+            const inp = document.getElementById('_qrlc_serial');
+            if (inp) inp.value = serialBase;
+          }
+        }
+
+        const lengthMm = +(document.getElementById('_qrlc_length')?.value || 70);
+        const count = Math.max(1, Math.min(20, +(document.getElementById('_qrlc_count')?.value || 1)));
+
+        printBtn.textContent = count > 1 ? '⏳ Bý til ' + count + ' miða…' : '⏳ Bý til miða…';
+
+        // refreshPreview swallows ensureQRLib errors in its try/catch, so
+        // the QR library might have silently failed to load. Force-await
+        // it here before we try to generate — otherwise the first qrPNG
+        // call will throw TypeError on `new window.QRCode(...)` and the
+        // whole handler will die silently.
+        await ensureQRLib();
+
+        // Generate all QRs in parallel. This minimises the delay between
+        // the click and window.open (popup blockers can revoke the
+        // user-gesture grant if too much time passes between them) and
+        // keeps multi-label print snappy.
+        const serials = [];
+        for (let i = 0; i < count; i++) serials.push(nextSerial(serialBase || '', i));
+        const qrTexts = serials.map(s => {
+          const t = [name, phone, s, extra].filter(Boolean).join(' · ');
+          // qrcodejs throws on empty input — always pass at least one char.
+          return t || s || '—';
+        });
+        const qrUrls = await Promise.all(qrTexts.map(t => qrPNG(t, 320)));
+
+        let labelHTML = '';
+        for (let i = 0; i < count; i++) {
+          labelHTML += buildPrintLabel({
+            qrDataUrl: qrUrls[i], name, phone, serial: serials[i], extra
+          });
+        }
+
+        openPrintWindow(labelHTML, lengthMm);
+
+        // Advance the visible serial input so the NEXT manual print starts
+        // from where this batch ended.
+        if (count > 1) {
+          const inp = document.getElementById('_qrlc_serial');
+          if (inp) { inp.value = nextSerial(serialBase || '', count); refreshPreview(); }
+        }
+      } catch (err) {
+        console.error('[qrlc] print failed', err);
+        try { alert('Villa við að prenta: ' + (err && err.message ? err.message : err)); } catch (_) {}
+      } finally {
+        printBtn.dataset.busy = '0';
+        printBtn.disabled = false;
+        // Restore label via syncCountLabel (defined below in same closure).
+        try { if (typeof syncCountLabel === 'function') syncCountLabel(); } catch (_) {}
+      }
     });
+
+    // Live-update the Prenta button label so the operator sees "Prenta 5 miða"
+    // when they bump the count.
+    const countInput = document.getElementById('_qrlc_count');
+    const printBtnEl = document.getElementById('_qrlc_print');
+    function syncCountLabel() {
+      const n = Math.max(1, Math.min(20, +(countInput?.value || 1)));
+      if (printBtnEl) printBtnEl.textContent = n > 1 ? '🖨 Prenta ' + n + ' miða' : '🖨 Prenta';
+    }
+    if (countInput) {
+      countInput.addEventListener('input', syncCountLabel);
+      syncCountLabel();
+    }
 
     // Length dropdown updates the preview caption so the user sees what they
     // are about to print.
@@ -620,12 +751,22 @@
   obs.observe(document.body, { childList: true, subtree: true });
 
   // Allow callers (e.g. patch 07 checkout) to open the dialog with a customer
-  // pre-selected and a fresh serial auto-fetched.
-  async function openWithCustomer(customer) {
+  // pre-selected and a fresh serial auto-fetched. 2026-05-19: optional
+  // labelCount pre-fills the Fjöldi miða input so a 5-tæki refill auto-
+  // batches all 5 labels with sequential serials.
+  async function openWithCustomer(customer, labelCount) {
     openDialog();
     if (customer && (customer.nafn || customer.kt || customer.simi)) {
       // Reuse selectCustomer to wire up devices & names
       selectCustomer({ nafn: customer.nafn || '', kennitala: customer.kt || '', simi: customer.simi || '' });
+    }
+    // Pre-fill label count if caller knows how many tæki to print labels for
+    if (typeof labelCount === 'number' && labelCount > 1) {
+      const cnt = document.getElementById('_qrlc_count');
+      if (cnt) {
+        cnt.value = Math.min(20, Math.max(1, Math.floor(labelCount)));
+        cnt.dispatchEvent(new Event('input'));
+      }
     }
     // Auto-populate serial with next from sequence
     const next = await fetchNextSerial();
@@ -634,6 +775,12 @@
       if (inp) { inp.value = next; refreshPreview(); }
     }
   }
-  window.QrLabelCustomer = { open: openWithCustomer, openEmpty: openDialog, fetchNextSerial, printTestPattern, version: 'v4' };
+  window.QrLabelCustomer = {
+    open: openWithCustomer, openEmpty: openDialog, fetchNextSerial, printTestPattern,
+    // Exposed so other patches (e.g. 139-print-brother-labels) can reuse the
+    // exact same template/CSS rather than copy-pasting it.
+    openPrintWindow, buildPrintLabel, ensureQRLib, qrPNG, LABEL_LENGTHS, LABEL_HEIGHT_MM,
+    version: 'v5-20260519b'
+  };
 })();
 /* === END QR LABEL CUSTOMER === */

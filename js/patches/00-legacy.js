@@ -16,15 +16,19 @@
 (function(){
 'use strict';
 /* ===== JOBS REALTIME FIX (Afgrei\u00f0sla sync) ===== */
-/* The original db.js subscribes to 'realtime:changes' and calls DB.loadAll() on any change.
- * In practice this callback never fires (likely because v9.js's per-table channels
- * supersede it). Result: when Sala POS creates a verkbei\u00f0ni, the cache stays stale
- * and Afgrei\u00f0sla doesn't show the new job until manual page reload.
+/* 2026-05-11: DISABLED \u2014 db.js subscribeRealtime was rewritten with a
+ * smart debounced subscription that handles this correctly. Running
+ * BOTH together meant every DB write fired loadAll() 2-3 times. The
+ * remaining `if(false)` keeps the source visible for reference; to
+ * re-enable, flip the guard.
  *
- * Fix: subscribe directly to verkbei\u00f0nir/uttaeki/lanstaeki changes and call DB.loadAll()
- * with a debounce, then re-render Counter/Workshop/Field views.
+ * Original problem this fixed (no longer present):
+ *   The original db.js subscribed to 'realtime:changes' but the callback
+ *   never fired because v9.js's per-table channels superseded it.
  */
 (function(){
+  if (true) return; // 2026-05-11: disabled \u2014 see comment above. Was redundant
+                    // with the new db.js smart subscription.
   var attempts = 0;
   function trySetup(){
     attempts++;
@@ -201,7 +205,7 @@
 /* ===== 0. HELPERS ===== */
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function fmtKr(n){return Math.round(n||0).toLocaleString('is-IS');}
-function fmtDate(s){if(!s)return'';try{var d=new Date(s);return d.toLocaleDateString('is-IS');}catch(e){return s;}}
+function fmtDate(s){if(!s)return'';try{var d=new Date(s);if(isNaN(d))return s;return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();}catch(e){return s;}}
 function toast(m,c,ms){
   var t=document.createElement('div');
   t.style.cssText='position:fixed;top:80px;left:50%;transform:translateX(-50%);background:'+(c||'#1e293b')+';color:#fff;padding:14px 22px;border-radius:10px;box-shadow:0 4px 20px rgba(0,0,0,.3);z-index:99999;font-weight:600;font-size:14px';
@@ -1131,25 +1135,69 @@ function openReikModal(){
   if(!window.DB || !window.DB.sb)return;
   // Reikningar modal should only show invoice-type rows (Setja í reikning + Greitt síðar).
   // Sales paid by card/cash (type='sale') belong in Bókhaldsyfirlit / Tekjur, not here.
-  window.DB.sb.from('sala_transactions').select('*').neq('type','sale').order('created_at',{ascending:false}).then(function(r){
+  // 2026-05-09 (F-4): legacy modal var a\u00f0 querya `sala_transactions` t\u00f6flu \u2014
+  // en n\u00fdjar s\u00f6lur fara n\u00fa \u00ed `solur`, svo bara einn forn r\u00f6\u00f0 birtist. Skiptum
+  // yfir \u00ed `solur` me\u00f0 r\u00e9ttri filter: reikningur / greitt_sidar, ekki greiddar,
+  // ekki dr\u00f6g.
+  Promise.all([
+    window.DB.sb.from('solur')
+      .select('id,num,customer_nafn,customer_id,samtals,greitt_med,created_at,paid_at,status')
+      .in('greitt_med',['reikningur','greitt_sidar'])
+      .is('paid_at',null)
+      .neq('status','drog')
+      .order('created_at',{ascending:false}),
+    window.DB.sb.from('vidskiptavinir').select('id,kennitala,nafn')
+  ]).then(function(results){
+    var sr=results[0], cr=results[1];
     var holder=document.getElementById('_reik_table');
     if(!holder)return;
-    if(r.error){holder.innerHTML='<div style="color:#dc2626">Villa: '+esc(r.error.message)+'</div>';return;}
-    var rows=r.data||[];
-    var open=rows.filter(function(x){return x.status!=='paid';});
-    var paid=rows.filter(function(x){return x.status==='paid';});
+    if(sr.error){holder.innerHTML='<div style="color:#dc2626">Villa: '+esc(sr.error.message)+'</div>';return;}
+    var custMap={};
+    (cr.data||[]).forEach(function(c){custMap[c.id]=c;});
+    var rows=(sr.data||[]).map(function(s){
+      var cust=s.customer_id && custMap[s.customer_id];
+      return {
+        id: s.id,
+        customer: s.customer_nafn || (cust && cust.nafn) || '',
+        kennitala: (cust && cust.kennitala) || '',
+        type: s.greitt_med==='greitt_sidar' ? 'greitt_sidar' : 'reikningur',
+        total: +s.samtals || 0,
+        invoice_amount: +s.samtals || 0,
+        created_at: s.created_at,
+        status: 'open'
+      };
+    });
     var html='';
-    if(open.length){
-      html+='<h3 style="color:#fff;margin:0 0 8px">\u23f3 \u00d3greitt</h3>'+invTbl(open,true);
-    }
-    // Greitt section removed \u2014 once paid, rows no longer matter for the monthly
-    // heimabanki upload. User reviews paid history in B\u00f3khaldsyfirlit instead.
-    if(!html){
+    if(rows.length){
+      html+='<h3 style="color:#fff;margin:0 0 8px">\u23f3 \u00d3greitt</h3>'+invTbl(rows,true);
+    } else {
       html='<div style="opacity:.6;padding:40px;text-align:center">Engir \u00f3greiddir reikningar</div>';
     }
     holder.innerHTML=html;
     holder.querySelectorAll('.mk-paid').forEach(function(btn){
       btn.addEventListener('click',function(){markPaid(btn.dataset.id, parseFloat(btn.dataset.amt));});
+    });
+    // 2026-05-09 (F-2): Kredit button wired to patch 26's CreditInvoice.open
+    holder.querySelectorAll('.mk-credit').forEach(function(btn){
+      btn.addEventListener('click', async function(){
+        if (!window.CreditInvoice || !window.CreditInvoice.open) {
+          alert('Kreditreikningur er ekki tilbúinn — endurhladdu síðunni.');
+          return;
+        }
+        var id = btn.dataset.id;
+        var sr = await window.DB.sb.from('solur')
+          .select('id,num,customer_nafn,customer_id,samtals,greitt_med,linur,upphaed_an_vsk,vsk_upphaed,created_at')
+          .eq('id', id).single();
+        if (sr.error || !sr.data) { alert('Villa: '+(sr.error && sr.error.message || 'sala fannst ekki')); return; }
+        var d = sr.data;
+        window.CreditInvoice.open({
+          id: d.id, num: d.num,
+          customer: d.customer_nafn, customer_id: d.customer_id,
+          total: +(d.samtals||0), ex: +(d.upphaed_an_vsk||0), vsk: +(d.vsk_upphaed||0),
+          lines: Array.isArray(d.linur) ? d.linur : [],
+          payment: d.greitt_med
+        });
+      });
     });
   });
 }
@@ -1160,16 +1208,19 @@ function invTbl(invs, withAct){
     var typeLabel = inv.type==='sale'?'\uD83D\uDCB0 Sala':'\uD83D\uDCCB Reikningur';
     h+='<tr style="border-bottom:1px solid rgba(255,255,255,.05)"><td style="padding:12px">'+esc(inv.customer||'')+'</td><td style="padding:12px;font-family:monospace;font-size:12px">'+esc(inv.kennitala||'')+'</td><td style="padding:12px">'+typeLabel+'</td><td style="padding:12px;text-align:right;font-weight:600">'+fmtKr(inv.invoice_amount||inv.total||0)+' kr</td><td style="padding:12px;font-size:12px;opacity:.7">'+fmtDate(inv.created_at)+'</td>';
     if(withAct){
-      h+='<td style="padding:12px;text-align:right"><button class="mk-paid" data-id="'+inv.id+'" data-amt="'+(inv.invoice_amount||inv.total||0)+'" style="padding:6px 12px;border:none;border-radius:6px;background:#16a34a;color:#fff;font-size:12px;font-weight:600;cursor:pointer">\u2705 Mark a\u00f0 greitt</button></td>';
+      h+='<td style="padding:12px;text-align:right;white-space:nowrap"><button class="mk-paid" data-id="'+inv.id+'" data-amt="'+(inv.invoice_amount||inv.total||0)+'" style="padding:6px 12px;border:none;border-radius:6px;background:#16a34a;color:#fff;font-size:12px;font-weight:600;cursor:pointer;margin-right:6px">\u2705 Greitt</button>'
+       +'<button class="mk-credit" data-id="'+inv.id+'" style="padding:6px 12px;border:1px solid #fed7aa;border-radius:6px;background:#fff7ed;color:#c2410c;font-size:12px;font-weight:600;cursor:pointer">\u21a9 Kredit</button></td>';
     }
     h+='</tr>';
   });
   h+='</tbody></table></div>';
   return h;
 }
-function markPaid(id, amt){
-  if(!confirm('Stadfesta gretslu?'))return;
-  window.DB.sb.from('sala_transactions').update({status:'paid',invoice_amount:amt,paid_at:new Date().toISOString()}).eq('id',id).select().single().then(function(r){
+async function markPaid(id, amt){
+  if(!await Confirm.show('Staðfesta greiðslu?'))return;
+  // 2026-05-09 (F-4): markPaid uppfærir nú `solur`, ekki gamla
+  // `sala_transactions` (samrænd Reikningar listanum sem nú les úr `solur`).
+  window.DB.sb.from('solur').update({paid_at:new Date().toISOString(),paid_method:'reikningur'}).eq('id',id).select().single().then(function(r){
     if(r.error){toast('\u274c Villa','#dc2626');return;}
     toast('\u2705 Reikningur grei\u00f0ur','#16a34a');
     setTimeout(openReikModal,300);
@@ -1642,6 +1693,11 @@ console.log('[patch-master] loaded with all fixes');
 
 
 /* ===== FYRIRTÆKI DELETE BUTTON ===== */
+// 2026-05-19: Superseded by patch 160 (company-delete) which has a
+// safer "linked uttaeki" warning + cleaner UI. Disabled here to avoid
+// rendering two Eyða buttons side-by-side in the new redesigned
+// header (features.js v20260519b). The notes-display (count chip)
+// below the company name is still useful — keep that, drop the button.
 (function(){
   function addDeleteBtn(){
     var main = document.getElementById('companies-main');
@@ -1649,6 +1705,13 @@ console.log('[patch-master] loaded with all fixes');
     // Only on detail view (has 'Breyta' button)
     var editBtn = main.querySelector('button[onclick*="openEdit"]');
     if(!editBtn || main.querySelector('._pm_delete_btn')) return;
+    // 2026-05-19: skip button — patch 160 handles delete now.
+    var SKIP_DELETE_BTN = true;
+    if (SKIP_DELETE_BTN) {
+      // Still render the notes/count display below the name (useful chip)
+      // by falling through, but mark the dataset so we don't re-do it.
+      main.dataset._pmDeleteSkipped = '1';
+    }
     // Show athugasemdir (notes) under company name
     var nameDiv = main.querySelector('div[style*="font-size:21px"]');
     if(nameDiv && !main.querySelector('._pm_notes_display')){
@@ -1694,17 +1757,19 @@ console.log('[patch-master] loaded with all fixes');
     var m = editBtn.getAttribute('onclick').match(/openEdit\((\d+)\)/);
     if(!m) return;
     var coId = parseInt(m[1],10);
+    // 2026-05-19: bail before the duplicate Ey\u00f0a button is inserted.
+    if (SKIP_DELETE_BTN) return;
     // Add delete button
     var btn = document.createElement('button');
     btn.className = 'btn btn-outline btn-sm _pm_delete_btn';
     btn.style.cssText = 'color:#dc2626;border-color:#dc2626;';
     btn.textContent = '\uD83D\uDDD1\uFE0F Ey\u00f0a';
-    btn.onclick = function(e){
+    btn.onclick = async function(e){
       e.stopPropagation();
       var name = main.querySelector('.company-initials');
       var nameText = name ? name.parentElement.querySelector('div[style*="font-size:21px"]') : null;
       var label = nameText ? nameText.textContent : 'fyrirt\u00e6ki #'+coId;
-      if(!confirm('Ertu viss um a\u00f0 ey\u00f0a "'+label+'"?\n\n\u00deetta er ekki h\u00e6gt a\u00f0 afturkalla.')) return;
+      if(!await Confirm.show('Ertu viss um a\u00f0 ey\u00f0a "'+label+'"?\n\n\u00deetta er ekki h\u00e6gt a\u00f0 afturkalla.')) return;
       // Delete ALL related records, then delete company
       Promise.all([
         window.DB.sb.from('solur').delete().eq('customer_id', coId),
@@ -2096,7 +2161,7 @@ console.log('[patch-master] loaded with all fixes');
     if(main.querySelector('._pm_fin')) return;
     _finInjected = true;
     // Fetch all solur records
-    var r = await window.DB.sb.from('solur').select('*').order('created_at',{ascending:false});
+    var r = await window.DB.sb.from('solur').select('*').neq('status','drog').order('created_at',{ascending:false});
     if(!r.data) return;
     var sales = r.data;
     // Group by month
@@ -2215,7 +2280,7 @@ console.log('[patch-master] loaded with all fixes');
       var nextYear = new Date();
       nextYear.setFullYear(nextYear.getFullYear()+1);
       var next = nextYear.toISOString().substring(0,10);
-      if(!confirm('Merkja \u00f6ll t\u00e6ki hj\u00e1 "'+co.nafn+'" sem sko\u00f0u\u00f0 \u00ed dag?\n\nS\u00ed\u00f0asta sko\u00f0un: '+today+'\nN\u00e6sta sko\u00f0un: '+next)) return;
+      if(!await Confirm.show('Merkja \u00f6ll t\u00e6ki hj\u00e1 "'+co.nafn+'" sem sko\u00f0u\u00f0 \u00ed dag?\n\nS\u00ed\u00f0asta sko\u00f0un: '+today+'\nN\u00e6sta sko\u00f0un: '+next)) return;
       btn.disabled = true;
       btn.textContent = '\u23f3 Uppf\u00e6ri...';
       try{
@@ -2474,10 +2539,19 @@ console.log('[patch-master] loaded with all fixes');
         };
         window.DB.sb.from('fyrirtaeki').update(update).eq('id',companyId).then(function(res){
           if(res.error){alert('Villa: '+res.error.message);return;}
-          m.remove();
-          // Reload detail page
-          if(window.Companies&&window.Companies.openDetail) window.Companies.openDetail(companyId);
-          else location.reload();
+          function _finishEdit(){
+            m.remove();
+            // Reload detail page
+            if(window.Companies&&window.Companies.openDetail) window.Companies.openDetail(companyId);
+            else location.reload();
+          }
+          // Equipment (uttaeki/lanstaeki) links to the company by `client`
+          // name only — cascade the rename so tæki don't get orphaned.
+          if(window.DB&&DB.renameClientCascade&&(c.nafn||'')!==update.nafn){
+            DB.renameClientCascade(c.nafn, update.nafn).then(_finishEdit, _finishEdit);
+          } else {
+            _finishEdit();
+          }
         });
       };
     });
@@ -2486,16 +2560,58 @@ console.log('[patch-master] loaded with all fixes');
 
   // Hook Breyta buttons in company detail view
   // Wrap openDetail to track current company ID
+  // 2026-05-12: Was running setInterval(wrapOpenDetail, 500) forever just
+  // to re-wrap if openDetail gets replaced. Once-on-init + a retry guard
+  // is plenty — Companies.openDetail is stable after page load.
   function wrapOpenDetail(){
-    if(!window.Companies||!window.Companies.openDetail||window.Companies.openDetail._pmW) return;
+    if(!window.Companies||!window.Companies.openDetail||window.Companies.openDetail._pmW) return true;
     var orig=window.Companies.openDetail;
     window.Companies.openDetail=function(id){
       window._currentCompanyId=id;
       return orig.apply(this,arguments);
     };
     window.Companies.openDetail._pmW=true;
+    return true;
   }
-  setInterval(wrapOpenDetail,500);
+  (function tryWrap(attempts){
+    if(wrapOpenDetail()) return;
+    if(attempts>=20) return; // give up after 10s
+    setTimeout(function(){tryWrap(attempts+1);}, 500);
+  })(0);
+
+  // 2026-05-14: Resolve the currently-viewed company id from multiple
+  // sources so the Breyta button always works — even when the detail page
+  // was opened via a code path that doesn't go through the wrapped
+  // Companies.openDetail (e.g. customer-search "Sjá →", nav-history
+  // restore, or patch 141's force-enter flow). Falls back to scanning the
+  // detail DOM for any embedded openEdit / openDetail / openMap onclick.
+  function resolveCurrentCompanyId(){
+    // 2026-05-14: ALWAYS read from current DOM first — never trust the
+    // cached _currentCompanyId across navigations. The cache is updated
+    // from the DOM scan so subsequent calls hit it cleanly.
+    var main = document.getElementById('companies-main') ||
+               document.querySelector('#view-companies, #view-fyrirtaeki');
+    if (!main) return window._currentCompanyId || null;
+    // Try to parse from any button's onclick that references a company id
+    var ids = [];
+    main.querySelectorAll('[onclick]').forEach(function(el){
+      var oc = el.getAttribute('onclick') || '';
+      var m = oc.match(/Companies\.(?:openEdit|openMap|openDetail|render)\((\d+)\)/);
+      if (m) ids.push(+m[1]);
+    });
+    if (ids.length) {
+      // Most common id wins — usually all buttons reference the same company
+      var counts = {};
+      ids.forEach(function(id){ counts[id] = (counts[id]||0) + 1; });
+      var best = ids[0], bestN = 0;
+      Object.keys(counts).forEach(function(k){
+        if (counts[k] > bestN) { best = +k; bestN = counts[k]; }
+      });
+      window._currentCompanyId = best; // cache for next call
+      return best;
+    }
+    return null;
+  }
 
   function hookBreytaButtons(){
     var btns=document.querySelectorAll('button');
@@ -2509,7 +2625,7 @@ console.log('[patch-master] loaded with all fixes');
         btn.dataset._pmHooked='1';
         btn.addEventListener('click',function(e){
           e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-          var id=window._currentCompanyId;
+          var id = resolveCurrentCompanyId();
           if(id) openEditModal(id);
           else alert('Veldu fyrirtaeki fyrst');
         },true);
@@ -2534,6 +2650,10 @@ console.log('[patch-master] loaded with all fixes');
     var tables = document.querySelectorAll('table');
     tables.forEach(function(table){
       if(table.dataset._pmStatusDone) return;
+      // 2026-05-14: Skip when the table is inside modals that have their own
+      // "Staða" column meaning (kúnnareikningur statement, bókhald yfirlit
+      // detail, etc.) — they show transaction status, not equipment status.
+      if (table.closest('#_kr-statement, #_kr-picker, #ci-modal, #_se-dlg, #_drog-list-modal, #counter-detail-modal, #workshop-detail-modal')) return;
       // Check if this table has STAÐA column
       var ths = table.querySelectorAll('th');
       var statusIdx = -1;
@@ -2590,8 +2710,11 @@ console.log('[patch-master] loaded with all fixes');
               }
             });
           };
-          // Insert after the status badge
-          cell.appendChild(document.createTextNode(' '));
+          // 2026-05-11: Replace the cell with JUST the dropdown — the
+          // dropdown already shows the status visually (colored background),
+          // having both produced a duplicate "Í vinnslu / Active" stack
+          // that confused the user.
+          cell.innerHTML = '';
           cell.appendChild(sel);
         }
       });
@@ -2681,8 +2804,8 @@ console.log('[patch-master] loaded with all fixes');
           if(window._currentCompanyId && window.Companies) window.Companies.openDetail(window._currentCompanyId);
         });
       };
-      m.querySelector('._pm_dev_del').onclick=function(){
-        if(!confirm('Eyda taeki '+serial+'?')) return;
+      m.querySelector('._pm_dev_del').onclick=async function(){
+        if(!await Confirm.show('Eyda taeki '+serial+'?')) return;
         window.DB.sb.from('uttaeki').delete().eq('serial',serial).then(function(res){
           if(res.error){alert('Villa: '+res.error.message);return;}
           m.remove();
@@ -2739,26 +2862,40 @@ console.log('[patch-master] loaded with all fixes');
 
   // Find company ID by looking at the page heading
   function findCompanyId(){
-    // 1. Check if already set
-    if(window._currentCompanyId) return Promise.resolve(window._currentCompanyId);
-    // 2. Find company name from the page heading (h1/h2 near Til baka)
+    // 2026-05-14: The cache (_currentCompanyId) was returned BEFORE scanning
+    // the live DOM \u2014 which left the memo box loading the PREVIOUS company's
+    // athugasemdir when the user navigated A\u2192B via any path that didn't go
+    // through the wrapped Companies.openDetail. Now we always read fresh
+    // from the page first; cache is only a last-resort fallback.
+    var main = document.getElementById('companies-main');
+    if (main) {
+      var btns = main.querySelectorAll('[onclick]');
+      for (var i = 0; i < btns.length; i++) {
+        var oc = btns[i].getAttribute('onclick') || '';
+        var m = oc.match(/Companies\.(?:openEdit|openMap|openDetail|render)\((\d+)\)/);
+        if (m) {
+          var freshId = +m[1];
+          window._currentCompanyId = freshId; // update cache to match DOM
+          return Promise.resolve(freshId);
+        }
+      }
+    }
+    if (window._currentCompanyId) return Promise.resolve(window._currentCompanyId);
+    // Fallback: find company name in page heading + DB lookup
     var headings = document.querySelectorAll('h1,h2,h3,[class*="name"],[class*="title"]');
     var companyName = null;
     headings.forEach(function(h){
       var text = h.textContent.trim();
-      // Skip generic headings
       if(text.length > 3 && text.length < 100 && !/Geymsla|Verkbei|Tekjur|Sala|Vorur|Sl\u00f6kkvi/i.test(text)){
         if(!companyName) companyName = text;
       }
     });
     if(!companyName) return Promise.resolve(null);
-    // 3. Look up in DB by name
     return window.DB.sb.from('fyrirtaeki').select('id').eq('nafn',companyName).single().then(function(r){
       if(r.data){
         window._currentCompanyId = r.data.id;
         return r.data.id;
       }
-      // Try partial match
       return window.DB.sb.from('fyrirtaeki').select('id').ilike('nafn','%'+companyName.substring(0,10)+'%').limit(1).then(function(r2){
         if(r2.data && r2.data.length){
           window._currentCompanyId = r2.data[0].id;
@@ -2777,6 +2914,11 @@ console.log('[patch-master] loaded with all fixes');
       ths.forEach(function(th){if(/RA[\u00d0D]N|serial/i.test(th.textContent))hasSerial=true;});
       if(!hasSerial) return;
       if(table.parentNode.querySelector('._pm_memo_wrap')) return;
+      // 2026-05-12: Skip when the table is inside a verkbei\u00f0ni detail view
+      // (Counter / Workshop). The memo box is tied to fyrirtaeki.athugasemdir
+      // and shows "Engin fyrirt\u00e6ki tengt" for walk-in customers, which is
+      // noise. Only show on Companies detail page.
+      if (table.closest('#counter-main, #workshop-detail, #counter-detail-modal, #workshop-detail-modal')) return;
       // Create memo box now, load data async
       var wrap=document.createElement('div');wrap.className='_pm_memo_wrap';
       wrap.innerHTML='<label>\u2709 Minn\u00f3 / Athugasemdir <span class="_pm_memo_saved" id="_memo_saved">\u2713 Vista\u00f0!</span></label><textarea class="_pm_memo_ta" id="_pm_memo_input" placeholder="Skrifa\u00f0u athugasemdir h\u00e9r..."></textarea>';

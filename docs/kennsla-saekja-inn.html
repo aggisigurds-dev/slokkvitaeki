@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kennslubók — Sækja inn úr fyrirtæki | Slökkvitæki ehf</title>
+<link rel="stylesheet" href="kennsla.css">
+</head>
+<body>
+<div class="wrap">
+
+<div class="print-bar">
+  <a class="secondary" href="kennsla-walk-in.html">→ Walk-in sala</a>
+  <a class="secondary" href="index.html">← Forsíða</a>
+  <button onclick="window.print()">🖨 Prenta / Vista PDF</button>
+</div>
+
+<h1>Sækja inn úr fyrirtæki</h1>
+
+<div class="intro">
+<p><b>Þetta er tilfellið:</b> Bílstjóri kemur úr eftirliti hjá fyrirtæki með 10 slökkvitæki sem þarf að hlaða og skoða. Hér er hvernig þú færir þau í gegnum kerfið — frá innkomu og þangað til viðskiptavinur fær úttektarskýrslu og reikning.</p>
+</div>
+
+<div class="toc">
+  <h3>Skrefin í einu — 5 mínútur</h3>
+  <ul>
+    <li><a href="#s1">1. Opna Verkstæði</a></li>
+    <li><a href="#s2">2. Smella á „Sækja inn úr fyrirtæki"</a></li>
+    <li><a href="#s3">3. Velja fyrirtæki úr listanum</a></li>
+    <li><a href="#s4">4. Velja tækin og smella á „Stofna verk"</a></li>
+    <li><a href="#s5">5. Verk búið til með R-númeri</a></li>
+    <li><a href="#s6">6. Opna verkið</a></li>
+    <li><a href="#s7">7. Klára tækin (smella á ✓)</a></li>
+    <li><a href="#s8">8. Verkið flyst í Tilbúin</a></li>
+    <li><a href="#s9">9. Smella á „Sótt ✓" þegar viðsk. mætir</a></li>
+    <li><a href="#s10">10. Velja greiðslumáta og klára</a></li>
+    <li><a href="#s11">11. Prenta úttektarskýrslu</a></li>
+  </ul>
+</div>
+
+<div class="step" id="s1">
+  <div class="step-header"><span class="step-num">1</span><h3>Opna Verkstæði</h3></div>
+  <div class="step-body">
+    <p>Smelltu á <b>Verkstæði</b> í vinstri valröðinni. Þú sérð tvær súlur:</p>
+    <ul>
+      <li><b>Verk</b> — öll virk verk í vinnslu</li>
+      <li><b>Samningshafar</b> — verk hjá fyrirtækjum með þjónustusamning</li>
+    </ul>
+    <img class="step-img" src="img/01-verkstaedi.jpg" alt="Verkstæði grunnsýn">
+    <p class="step-caption">Bláa takkann „Sækja inn úr fyrirtæki" notarðu þegar þú kemur með tæki úr eftirliti.</p>
+  </div>
+</div>
+
+<div class="step" id="s2">
+  <div class="step-header"><span class="step-num">2</span><h3>Smella á „Sækja inn úr fyrirtæki"</h3></div>
+  <div class="step-body">
+    <p>Þetta opnar lista yfir öll fyrirtæki í kerfinu. Fyrirtæki sem eru með <b>þjónustusamning</b> birtast efst með bláu „Samningshafi" merki.</p>
+    <img class="step-img" src="img/02-saekja-modal.jpg" alt="Sækja inn modal opnast">
+    <div class="tip"><b>💡 Ráð:</b> Þú getur skrifað nafn eða kennitölu í leitarreitinn ef listinn er langur.</div>
+  </div>
+</div>
+
+<div class="step" id="s3">
+  <div class="step-header"><span class="step-num">3</span><h3>Velja fyrirtæki</h3></div>
+  <div class="step-body">
+    <p>Smelltu á fyrirtækið. Kerfið sýnir <b>öll tæki sem skráð eru á fyrirtækið</b> með gátreitum. Sjálfgefið eru þau öll valin.</p>
+    <img class="step-img" src="img/03-saekja-units.jpg" alt="Listi yfir tæki fyrirtækis">
+    <p>Þrjár leiðir til að haka af:</p>
+    <ul>
+      <li><b>Velja öll</b> — gátreitur efst hakar/afhakar öllum í einu</li>
+      <li><b>Hakka eitt og eitt</b> — ef þú komst bara með nokkur tæki</li>
+      <li><b>Þjónustudropdown</b> hægra megin — breyta þjónustu („Hleðsla + Skoðun" / „Skoðun" / etc.)</li>
+    </ul>
+    <div class="note"><b>📌 Ath:</b> „Útrunnið" merki birtist rauðlitað við tæki þar sem næsta skoðun er liðin.</div>
+  </div>
+</div>
+
+<div class="step" id="s4">
+  <div class="step-header"><span class="step-num">4</span><h3>Smella á „Stofna verk"</h3></div>
+  <div class="step-body">
+    <p>Þegar þú hefur valið rétt tæki smellirðu á <b>græna „Stofna verk"</b> takkann neðst.</p>
+    <p>Kerfið býr sjálfvirkt til:</p>
+    <ul>
+      <li>📥 Verkbeiðni með númeri (t.d. <code>R-000052</code>)</li>
+      <li>💰 Drög að reikningi með upphæðum úr þjónustu-/vörutöflu</li>
+      <li>📋 Verklínu fyrir hvert tæki sem þú valdir</li>
+    </ul>
+  </div>
+</div>
+
+<div class="step" id="s5">
+  <div class="step-header"><span class="step-num">5</span><h3>Verkið birtist í verkröð</h3></div>
+  <div class="step-body">
+    <p>Verkið er nú í báðum súlum: <b>Verk</b> og <b>Samningshafar</b> (af því Test Bygging er með samning). Toast-skilaboð staðfesta upphæðina.</p>
+    <img class="step-img" src="img/04-job-created.jpg" alt="Nýtt verk birtist í Verkstæði">
+    <div class="tip"><b>💡 R-númerið</b> er sama númerið og endar á reikningnum þegar verkið er afgreitt.</div>
+  </div>
+</div>
+
+<div class="step" id="s6">
+  <div class="step-header"><span class="step-num">6</span><h3>Opna verkið</h3></div>
+  <div class="step-body">
+    <p>Smelltu á verkið í Verk-súlunni til að opna verkglugga. Þú sérð öll tækin sem þarf að vinna á, með takka fyrir hvert: <b>Skanna</b>, <b>✓</b>, <b>Breyta</b>, <b>Athugasemd</b>, <b>Ónýtt</b>.</p>
+    <img class="step-img" src="img/05-job-detail.jpg" alt="Verkgluggi opnaður">
+  </div>
+</div>
+
+<div class="step" id="s7">
+  <div class="step-header"><span class="step-num">7</span><h3>Smella á ✓ þegar tæki er klárað</h3></div>
+  <div class="step-body">
+    <p>Þegar tæki er hlaðið / skoðað smellirðu á <b>✓ takkann</b> við hliðina á því. Hringurinn fyllist <b style="color:#10b981">grænn</b> og verkið flyst úr „í vinnslu" í „lokið".</p>
+    <img class="step-img" src="img/06-one-done.jpg" alt="Eitt tæki merkt sem klárað">
+    <p class="step-caption">Vinstri kortið sýnir framvindu: „1/10 lokið".</p>
+
+    <p style="margin-top:14px">Halda áfram þangað til öll 10 tæki eru græn:</p>
+    <img class="step-img" src="img/07-all-done.jpg" alt="Öll tæki merkt sem kláruð">
+
+    <div class="note"><b>📌 Sjálfvirkt:</b> Þegar tæki er merkt klárað breytist <code>status='done'</code> á verklínunni. Næsta skoðun á uppsettu tækinu (uttaeki) uppfærist í <b>+12 mánuði</b> sjálfvirkt þegar viðskiptavinur sækir.</div>
+  </div>
+</div>
+
+<div class="step" id="s8">
+  <div class="step-header"><span class="step-num">8</span><h3>Verkið flyst yfir í „Tilbúin"</h3></div>
+  <div class="step-body">
+    <p>Eftir að öll tæki eru kláruð (<b>10/10 lokið</b>) flyst verkið sjálfvirkt í Afgreiðslu-súluna <b>TILBÚIN</b>. Þaðan tekur afgreiðsla við.</p>
+    <img class="step-img" src="img/08-afgreidsla-tilbuin.jpg" alt="Verk komið í Tilbúin súlu í Afgreiðslu">
+    <p class="step-caption">Smelltu á <b>Afgreiðsla</b> í valröð til að sjá þessa sýn.</p>
+  </div>
+</div>
+
+<div class="step" id="s9">
+  <div class="step-header"><span class="step-num">9</span><h3>Viðskiptavinur mætir → smella „Sótt ✓"</h3></div>
+  <div class="step-body">
+    <p>Þegar viðskiptavinur kemur að sækja tækin smellirðu á græna takkann <b>„Sótt ✓"</b> á verkkortinu.</p>
+    <img class="step-img" src="img/09-checkout-modal.jpg" alt="Sókn modal birtist">
+    <p>Sókn-glugginn opnast og sýnir:</p>
+    <ul>
+      <li>Lista yfir <b>öll tæki frá viðgerð</b> með gátreitum (sjálfgefið öll valin)</li>
+      <li>Verðlína per tæki og <b>SAMTALS</b> neðst</li>
+      <li>Greiðslumáta (Reiðufé / Kort / Reikningur / Greitt síðar)</li>
+    </ul>
+  </div>
+</div>
+
+<div class="step" id="s10">
+  <div class="step-header"><span class="step-num">10</span><h3>Velja greiðslumáta og smella „Klára sölu og afhenda"</h3></div>
+  <div class="step-body">
+    <p>Veldu greiðslumáta í dropdown-inum neðst (sjálfgefið <b>Reiðufé</b>) og smelltu á græna takkann <b>„✓ Klára sölu og afhenda"</b>.</p>
+    <img class="step-img" src="img/10-checkout-done.jpg" alt="Sala kláruð, toast staðfestir">
+    <p class="step-caption">Toast neðst staðfestir: „✓ Sótt og selt — 84,100 kr"</p>
+    <p>Sjálfvirkt núna:</p>
+    <ul>
+      <li>💵 Sala fer í <code>final</code> stöðu (sést í Bókhaldi/Tekjum)</li>
+      <li>📅 Næsta skoðun á öllum tækjunum + 12 mánuðir</li>
+      <li>📤 Verkbeiðnin „lokið" — kortið hverfur úr Verkstæði</li>
+    </ul>
+  </div>
+</div>
+
+<div class="step" id="s11">
+  <div class="step-header"><span class="step-num">11</span><h3>Prenta úttektarskýrslu</h3></div>
+  <div class="step-body">
+    <p>Á reikningi/sölu finnur þú takkann <b>„Skýrsla"</b>. Smelltu á hann til að opna A4 prentanlega úttektarskýrslu með:</p>
+    <ul>
+      <li>Hausi með auðkenni Slökkvitækis ehf og R-númeri</li>
+      <li>Viðskiptavinaupplýsingum</li>
+      <li>Töflu yfir öll tæki (raðnúmer, gerð, þjónusta, staða, næsta skoðun)</li>
+      <li>Reikningssamtölu með VSK</li>
+      <li>Undirskriftarsvæði</li>
+    </ul>
+    <img class="step-img" src="img/11-skyrsla.jpg" alt="A4 úttektarskýrsla tilbúin til prentunar">
+    <div class="tip"><b>💡 Prenta eða vista PDF:</b> Smelltu á „🖨 Prenta" takkann efst í glugganum. Þú getur valið prentara eða „Save as PDF".</div>
+  </div>
+</div>
+
+<h2>📋 Yfirlit — hvað er sjálfvirkt</h2>
+<table>
+  <tr><th>Aðgerð</th><th>Sjálfvirkt í kerfinu</th></tr>
+  <tr><td>Stofna verk</td><td>Verkbeiðni + drög að sölu + verklínur (1 per tæki)</td></tr>
+  <tr><td>Smella ✓ á tæki</td><td>verklidur.status = 'done'</td></tr>
+  <tr><td>Öll tæki kláruð</td><td>Verkkort flyst yfir í „Tilbúin"</td></tr>
+  <tr><td>Smella „Sótt ✓"</td><td>Sala fer í <code>final</code>, +12 mán á uttaeki, lokar verkbeiðni</td></tr>
+  <tr><td>Greitt síðar</td><td>Sala fer í Reikninga (Ógreitt) þangað til Greitt</td></tr>
+</table>
+
+<h2>❓ Algengar spurningar</h2>
+
+<h3>Hvað ef tæki er ónýtt?</h3>
+<p>Smelltu á <b>🚫 Ónýtt</b> takkann í verkglugga í stað ✓. Tækið fer í <code>scrapped</code> stöðu og viðskiptavinur fær <b>nýtt tæki</b> í staðinn (kerfið býr til viðbótarvörulínu).</p>
+
+<h3>Hvað ef ég vil bæta við aukatæki sem var ekki á listanum?</h3>
+<p>Í verkglugganum er takkinn <b>„+ Bæta við tæki"</b> efst. Þú getur skannað strikamerki eða slegið inn raðnúmer handvirkt.</p>
+
+<h3>Hvað ef viðsk. greiðir EKKI við sókn?</h3>
+<p>Veldu <b>„Greitt síðar"</b> í dropdown-inum við útreikninga. Salan fer í <b>Reikningar</b> sem ógreidd og bíður þangað til þú merkir Greitt.</p>
+
+<h3>Hvað ef viðskiptavinur mætir með aukatæki sem ekki var pantað?</h3>
+<p>Bæta má við aukatækjum í verkglugganum með „+ Bæta við tæki" áður en þú merkir verkið Tilbúið. Eða stofnaðu nýja sölu með „Walk-in" leiðinni.</p>
+
+<hr>
+
+<p style="text-align:center;color:var(--muted);font-size:13px">
+  <b>Slökkvitæki ehf</b> · 565-4080 · eldklar@eldklar.is<br>
+  <a href="kennsla-walk-in.html" style="color:var(--primary)">→ Næsta kennslubók: Walk-in sala</a>
+</p>
+
+</div>
+</body>
+</html>

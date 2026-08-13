@@ -41,7 +41,7 @@
     if (!iso) return '';
     const d = new Date(iso);
     if (isNaN(d)) return '';
-    return d.getDate().toString().padStart(2,'0') + '.' + (d.getMonth()+1).toString().padStart(2,'0') + '.' + d.getFullYear() + ' ' + d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+    return d.getDate().toString().padStart(2,'0') + '/' + (d.getMonth()+1).toString().padStart(2,'0') + '/' + d.getFullYear() + ' ' + d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
   }
   function fmtDateOnly(iso) {
     if (!iso) return '';
@@ -309,6 +309,20 @@
   // ----- State -----
   let allSales = [];
   let customerMap = new Map(); // id -> { kennitala, simi, netfang, ... }
+  let vbByParent = {};         // R-NNN -> [status1, status2, ...] from verkbeidnir
+
+  // Pickup-status helper: returns { icon, label, color } based on whether all
+  // related verkbeiðnir for a sale have been collected, are still at the shop,
+  // or there's no linkage. Only meaningful for greitt_sidar / reikningur sales.
+  function pickupStatusFor(saleNum) {
+    const statuses = vbByParent[saleNum] || [];
+    if (!statuses.length) return null;
+    const allCollected = statuses.every(s => s === 'collected' || s === 'done');
+    const anyAtShop = statuses.some(s => s === 'received' || s === 'ready' || s === 'inprogress');
+    if (allCollected) return { icon: '✅', label: 'Sótt', color: '#16a34a' };
+    if (anyAtShop) return { icon: '🏪', label: 'Hjá þér', color: '#f59e0b' };
+    return null;
+  }
   let productMap = new Map();  // id -> { nafn, ... }
   let filtered = [];
   let sortKey = 'date';
@@ -320,12 +334,21 @@
   async function loadAllSales() {
     const SB = getSB();
     if (!SB) throw new Error('Supabase not initialized');
-    const [salesRes, custRes, prodRes] = await Promise.all([
-      SB.from('solur').select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,paid_at,paid_method').order('created_at', { ascending: false }),
+    const [salesRes, custRes, prodRes, vbRes] = await Promise.all([
+      SB.from('solur').select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,paid_at,paid_method').neq('status','drog').order('created_at', { ascending: false }),
       SB.from('vidskiptavinir').select('id,kennitala,nafn,simi,netfang'),
-      SB.from('vorur').select('id,nafn,flokkur')
+      SB.from('vorur').select('id,nafn,flokkur'),
+      // Pickup status for greitt_sidar / reikningur sales: read verkbeidnir
+      // status per parent sale-number so the row can show 🏪 Hjá þér / ✅ Sótt.
+      SB.from('verkbeidnir').select('num,status').like('num', 'R-%-V%')
     ]);
     if (salesRes.error) throw salesRes.error;
+    // Build a (parent → statuses[]) map for pickup-status lookup later.
+    vbByParent = {};
+    (vbRes && vbRes.data || []).forEach(v => {
+      const parent = String(v.num || '').replace(/-V\d+$/, '');
+      (vbByParent[parent] = vbByParent[parent] || []).push(v.status);
+    });
     allSales = (salesRes.data || []).map(s => {
       const linur = Array.isArray(s.linur) ? s.linur : [];
       // Recompute totals from linur for safety (fallback to stored values)
@@ -435,9 +458,12 @@
   function sortSales() {
     const key = sortKey;
     const dir = sortDir === 'asc' ? 1 : -1;
+    // 2026-05-12 (#8): Date sort uses paid_at for paid greitt_sidar /
+    // reikningur sales (same as the displayed date), so the table sorts
+    // by the date the user actually cares about — when money landed.
     const get = {
       num: s => s.num,
-      date: s => s.date,
+      date: s => (((s.payment === 'greitt_sidar' || s.payment === 'reikningur') && s.paid_at) ? s.paid_at : s.date),
       customer: s => (s.customer || '').toLowerCase(),
       staff: s => (s.staff || '').toLowerCase(),
       lines: s => s.lines.length,
@@ -519,14 +545,30 @@
       rows.push(
         '<tr class="by-sale-row' + (isOpen ? ' expanded' : '') + '" data-id="' + esc(s.id) + '">'
         + '<td class="by-num-cell">' + esc(s.num) + '</td>'
-        + '<td>' + esc(fmtDate(s.date)) + '</td>'
+        // 2026-05-12 (#8): For paid greitt_sidar / reikningur sales, show
+        // the date of payment (when the customer actually picked up & paid)
+        // — not the date the verkbeiðni was created. That way the row
+        // appears where the user expects in the date sort. The original
+        // created date is still visible in the expanded detail ("Móttekið").
+        + '<td>' + esc(fmtDate(((s.payment === 'greitt_sidar' || s.payment === 'reikningur') && s.paid_at) ? s.paid_at : s.date))
+        + ((s.paid_at && (s.payment === 'greitt_sidar' || s.payment === 'reikningur')) ? '<div style="font-size:10px;color:#94a3b8">móttekið ' + esc(fmtDate(s.date)) + '</div>' : '')
+        + '</td>'
         + '<td>' + esc(s.customer || '—') + (getKt(s) ? '<div style="font-size:11px;color:#64748b;">' + esc(getKt(s)) + '</div>' : '') + '</td>'
         + '<td>' + esc(s.staff || '') + '</td>'
         + '<td class="num-col">' + s.lines.length + '</td>'
         + '<td class="num-col">' + fmtNum(s.ex) + '</td>'
         + '<td class="num-col">' + fmtNum(s.vsk) + '</td>'
         + '<td class="num-col" style="font-weight:700;">' + fmtNum(s.total) + '</td>'
-        + '<td><span class="by-payment-pill ' + payClass(s.payment) + '">' + esc(s.payment || '—') + '</span></td>'
+        + '<td><span class="by-payment-pill ' + payClass(s.payment) + '">' + esc(s.payment || '—') + '</span>'
+        + (
+          // For unpaid greitt_sidar / reikningur, show a tiny pickup-status
+          // chip so the user knows at a glance whether to bill the customer
+          // (✅ Sótt) or wait (🏪 Hjá þér).
+          !s.paid_at && (s.payment === 'greitt_sidar' || s.payment === 'reikningur')
+            ? (() => { const ps = pickupStatusFor(s.num); return ps ? '<div style="display:inline-block;margin-left:6px;font-size:11px;color:' + ps.color + ';font-weight:600;white-space:nowrap" title="Pickup status">' + ps.icon + ' ' + esc(ps.label) + '</div>' : ''; })()
+            : ''
+          )
+        + '</td>'
         + '</tr>'
       );
       if (isOpen) {
@@ -562,21 +604,40 @@
       <div class="by-detail-inner">
         <div class="by-detail-meta">
           <div class="item"><span class="lbl">Salnúmer</span><span class="val">${esc(sale.num)}</span></div>
-          <div class="item"><span class="lbl">Dagsetning</span><span class="val">${esc(fmtDate(sale.date))}</span></div>
+          <div class="item"><span class="lbl">Móttekið</span><span class="val">${esc(fmtDate(sale.date))}</span></div>
+          ${(() => {
+            // 2026-05-12 (#8): Show the paid date as its own row, prominent,
+            // so it's easy to scan when looking for "what got paid today".
+            if (sale.paid_at) {
+              return `<div class="item"><span class="lbl">Greitt</span><span class="val" style="color:#166534;font-weight:700;">${esc(fmtDate(sale.paid_at))}${sale.paid_method ? ' <span style="font-weight:500;color:#475569">('+esc(sale.paid_method)+')</span>' : ''}</span></div>`;
+            }
+            return '';
+          })()}
           <div class="item"><span class="lbl">Kennitala</span><span class="val">${esc(getKt(sale) || '—')}</span></div>
           <div class="item"><span class="lbl">Starfsmaður</span><span class="val">${esc(sale.staff || '—')}</span></div>
           <div class="item"><span class="lbl">Greiðsluaðferð</span><span class="val">${esc(sale.payment || '—')}</span></div>
           ${(() => {
-            // Show paid/unpaid status for invoice/pay-later sales
             const isInvoice = sale.payment === 'reikningur' || sale.payment === 'greitt_sidar';
             if (!isInvoice) return '';
             if (sale.paid_at) {
-              return `<div class="item"><span class="lbl">Greiðslustaða</span><span class="val" style="color:#166534;font-weight:600;">✓ Greitt ${esc(fmtDate(sale.paid_at))}${sale.paid_method ? ' (' + esc(sale.paid_method) + ')' : ''}</span></div>`;
+              return `<div class="item"><span class="lbl">Greiðslustaða</span><span class="val" style="color:#166534;font-weight:600;">✓ Greitt</span></div>`;
             }
             return `<div class="item"><span class="lbl">Greiðslustaða</span><span class="val" style="color:#dc2626;font-weight:700;">⚠ Ógreitt</span></div>`;
           })()}
           ${sale.afslattur ? `<div class="item"><span class="lbl">Afsláttur</span><span class="val">${fmtKr(sale.afslattur)}</span></div>` : ''}
-          ${sale.notes ? `<div class="item"><span class="lbl">Athugasemd</span><span class="val">${esc(sale.notes)}</span></div>` : ''}
+        </div>
+
+        <!-- 2026-05-12 (#10): Editable, append-only athugasemd log. Existing
+             notes display in a scrollable read-only history block; a small
+             input lets the user append a new timestamped entry that survives
+             across sessions and is visible to everyone. -->
+        <div class="by-note-box" data-sale-id="${esc(sale.id)}" style="margin:0 0 12px;padding:10px 13px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;">
+          <div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px">📝 Athugasemdir</div>
+          ${sale.notes ? `<div class="by-note-history" style="white-space:pre-wrap;font-size:12.5px;color:#334155;line-height:1.45;margin-bottom:7px;max-height:120px;overflow-y:auto;background:#fff;border:1px solid #fef3c7;border-radius:6px;padding:7px 9px;">${esc(sale.notes)}</div>` : ''}
+          <div style="display:flex;gap:6px;align-items:stretch">
+            <input type="text" class="by-note-input" placeholder="+ Bæta við athugasemd…" style="flex:1;padding:7px 10px;border:1px solid #fcd34d;border-radius:6px;font:inherit;font-size:12.5px;background:#fff;outline:none">
+            <button type="button" class="by-note-add" style="padding:7px 13px;background:#f59e0b;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;white-space:nowrap">Vista</button>
+          </div>
         </div>
         <div style="margin:8px 0 12px;display:flex;gap:8px;flex-wrap:wrap;">
           <button class="by-reprint-btn" data-sale-id="${esc(sale.id)}" type="button"
@@ -782,6 +843,15 @@
     // Delegated row-click handler — survives every renderTable() rebuild
     const tbody = document.getElementById('by-tbody');
     if (tbody) {
+      // 2026-05-12 (#10): Enter on note input == click Vista button
+      tbody.addEventListener('keydown', (e) => {
+        if (e.key !== 'Enter') return;
+        const inp = e.target && e.target.classList && e.target.classList.contains('by-note-input') ? e.target : null;
+        if (!inp) return;
+        e.preventDefault();
+        const btn = inp.closest('.by-note-box')?.querySelector('.by-note-add');
+        if (btn) btn.click();
+      });
       tbody.addEventListener('click', async (e) => {
         // "Merkja greitt" button — open the mark-paid modal for unpaid
         // invoice/pay-later sales. Don't bubble to the row toggle.
@@ -850,6 +920,49 @@
           }, cust);
           return;
         }
+        // 2026-05-12 (#10): "Vista" button on the athugasemd-strengur — append
+        // a timestamped entry to solur.athugasemdir. Append-only so previous
+        // entries are preserved as a breadcrumb trail.
+        const noteBtn = e.target.closest('.by-note-add');
+        if (noteBtn) {
+          e.stopPropagation();
+          const box = noteBtn.closest('.by-note-box');
+          if (!box) return;
+          const sid = box.getAttribute('data-sale-id');
+          const sale = allSales.find(s => String(s.id) === String(sid));
+          if (!sale) { alert('Salan fannst ekki.'); return; }
+          const input = box.querySelector('.by-note-input');
+          const txt = (input.value || '').trim();
+          if (!txt) { input.focus(); return; }
+          const now = new Date();
+          const stamp = now.getFullYear() + '-' +
+                        String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                        String(now.getDate()).padStart(2, '0') + ' ' +
+                        String(now.getHours()).padStart(2, '0') + ':' +
+                        String(now.getMinutes()).padStart(2, '0');
+          const newEntry = '[' + stamp + '] ' + txt;
+          const merged = sale.notes ? (sale.notes + '\n' + newEntry) : newEntry;
+          noteBtn.disabled = true;
+          noteBtn.textContent = '…';
+          try {
+            const SB = window.DB && window.DB.sb;
+            if (!SB) throw new Error('Engin gagnabankatenging');
+            const { error } = await SB.from('solur').update({ athugasemdir: merged }).eq('id', sale.id);
+            if (error) throw error;
+            sale.notes = merged;
+            // Re-render the detail panel so the new entry appears in the history
+            const detailTr = box.closest('tr.by-detail-row');
+            const detailTd = detailTr && detailTr.querySelector('td');
+            if (detailTd) detailTd.innerHTML = renderDetail(sale);
+            if (window.Toast && Toast.show) Toast.show('✓ Athugasemd vistuð');
+          } catch (err) {
+            alert('Villa: ' + (err.message || err));
+            noteBtn.disabled = false;
+            noteBtn.textContent = 'Vista';
+          }
+          return;
+        }
+
         const tr = e.target.closest('.by-sale-row');
         if (!tr || !tbody.contains(tr)) return;
         const id = tr.dataset.id;

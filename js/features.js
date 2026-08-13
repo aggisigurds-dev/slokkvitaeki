@@ -91,26 +91,61 @@ var Companies = {
     var units = DB.cache.units.filter(function(u) { return u.client === c.nafn; });
     var el = document.getElementById('companies-main');
     var nafn = U.e(c.nafn);
-    var html = '<button class="btn btn-ghost btn-sm" onclick="Companies.render()" style="margin-bottom:16px">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="15 18 9 12 15 6"/></svg>' +
-        'Til baka</button>' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">' +
-        '<div style="display:flex;align-items:center;gap:14px">' +
-          '<div class="company-initials" style="width:52px;height:52px;font-size:20px;border-radius:14px">' + c.nafn.slice(0, 2).toUpperCase() + '</div>' +
-          '<div><div style="font-size:21px;font-weight:600">' + nafn + '</div>' +
-          (c.heimilisFang ? '<div style="font-size:13px;color:var(--ink3)">' + U.e(c.heimilisFang) + '</div>' : '') +
-          '</div>' +
-        '</div>' +
-        '<div style="display:flex;gap:7px">' +
-        '<button class="btn btn-outline btn-sm" onclick="Companies.openEdit(' + c.id + ')">Breyta</button>' +
-        '<button class="btn btn-outline btn-sm" onclick="FloorPlan.load(' + c.id + ');FloorPlan.open(' + c.id + ',\'' + nafn + '\',' + 'Companies.list.find(function(x){return x.id===' + c.id + ';}) ? DB.cache.units.filter(function(u){return u.client===\'' + nafn + '\';}) : [])"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Teikning</button>' +
-        '<button class="btn btn-primary btn-sm" onclick="Companies.addUnit(' + c.id + ',\'' + nafn + '\')">+ B\u00e6ta vi\u00f0 t\u00e6ki</button>' +
+    var kt = c.kennitala ? U.e(c.kennitala) : '';
+    var addr = U.e(c.heimilisFang || c.heimilisfang || '');
+    var simi = c.simi ? U.e(c.simi) : '';
+    var netfang = c.netfang ? U.e(c.netfang) : '';
+    // 2026-05-19: redesigned header \u2014 company name gets its own line at
+    // the top (no longer squeezed next to a row of 8 action buttons),
+    // info chips below, then a clean wrap-friendly action bar. Patches
+    // 91 (Mikilv\u00e6gt), 154 (Ey\u00f0a), 123 (\u00dattektarsk\u00fdrsla), 73 (M\u00f6rg t\u00e6ki),
+    // 137 (Merkja sko\u00f0un) inject into the action bar via the existing
+    // selectors so nothing needs re-wiring.
+    var html =
+      // Top bar: back button on its own line
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">' +
+        '<button class="btn btn-ghost btn-sm" onclick="App.switchView(\'arsskodun\')" style="padding:6px 12px;display:inline-flex;align-items:center;gap:4px">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><polyline points="15 18 9 12 15 6"/></svg>' +
+          ' Til baka' +
+        '</button>' +
+        '<div style="display:flex;gap:6px;align-items:center">' +
+          '<button class="btn btn-outline btn-sm" onclick="Companies.openEdit(' + c.id + ')" style="padding:6px 12px;display:inline-flex;align-items:center;gap:5px">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>' +
+            ' Breyta' +
+          '</button>' +
         '</div>' +
       '</div>' +
-      '<div class="info-grid" style="margin-bottom:20px">';
-    if (c.simi) html += '<div class="ic"><div class="ic-lbl">S\u00edmi</div><div class="ic-val">' + U.e(c.simi) + '</div></div>';
-    if (c.netfang) html += '<div class="ic"><div class="ic-lbl">Netfang</div><div class="ic-val">' + U.e(c.netfang) + '</div></div>';
-    html += '</div>';
+
+      // Header card: avatar + name + info chips
+      '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 22px;margin-bottom:16px;box-shadow:0 1px 2px rgba(0,0,0,0.03)">' +
+        '<div style="display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap">' +
+          '<div class="company-initials" style="width:58px;height:58px;font-size:22px;border-radius:14px;flex-shrink:0">' + c.nafn.slice(0, 2).toUpperCase() + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:22px;font-weight:700;color:#0f172a;line-height:1.2;margin-bottom:3px">' + nafn + '</div>' +
+            (kt ? '<div style="font-size:12px;color:#64748b;font-family:monospace;margin-bottom:8px">kt. ' + kt + '</div>' : '<div style="margin-bottom:8px"></div>') +
+            '<div style="display:flex;flex-wrap:wrap;gap:14px;font-size:12.5px;color:#475569">' +
+              (addr    ? '<div><span style="color:#94a3b8">\ud83d\udccd </span>' + addr + '</div>' : '') +
+              (simi    ? '<div><span style="color:#94a3b8">\ud83d\udcde </span><a href="tel:' + simi + '" style="color:#475569;text-decoration:none">' + simi + '</a></div>' : '') +
+              (netfang ? '<div><span style="color:#94a3b8">\u2709 </span><a href="mailto:' + netfang + '" style="color:#475569;text-decoration:none">' + netfang + '</a></div>' : '') +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+
+      // Action bar (patches 102/91/154/137/73/123 etc. inject into this row).
+      // 2026-05-19: data-co-id makes the row addressable independently of
+      // the Companies.openEdit button (which lives in the top bar now).
+      '<div data-co-id="' + c.id + '" style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:18px">' +
+        // Hidden anchor button \u2014 patches that derive co_id from a
+        // Companies.openEdit onclick handler (e.g. patch 102) still find
+        // it here without showing a duplicate visible button.
+        '<button class="_co-edit-anchor" type="button" onclick="Companies.openEdit(' + c.id + ')" style="display:none">edit anchor</button>' +
+        '<button class="btn btn-primary btn-sm" onclick="Companies.addUnit(' + c.id + ',\'' + nafn + '\')">+ B\u00e6ta vi\u00f0 t\u00e6ki</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="FloorPlan.load(' + c.id + ');FloorPlan.open(' + c.id + ',\'' + nafn + '\',' + 'Companies.list.find(function(x){return x.id===' + c.id + ';}) ? DB.cache.units.filter(function(u){return u.client===\'' + nafn + '\';}) : [])"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg> Teikning</button>' +
+      '</div>';
+    // Keep the legacy info-grid empty (kept for other patches that
+    // selectorize into it). S\u00edmi + netfang already shown in the card above.
+    html += '<div class="info-grid" style="display:none"></div>';
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">' +
       '<span style="font-size:14px;font-weight:600">Sl\u00f6kkvit\u00e6ki (' + units.length + ')</span>' +
       '<button class="btn btn-outline btn-sm" onclick="Companies.addUnit(' + c.id + ',\'' + nafn + '\')">+ B\u00e6ta vi\u00f0</button>' +

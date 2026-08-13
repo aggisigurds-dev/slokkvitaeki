@@ -67,9 +67,12 @@
         e.stopPropagation();
         openLineUnitsDialog(line, +idx);
       });
-      // Insert before × button (or just append if not found)
-      if (delBtn) {
-        line.insertBefore(tagBtn, delBtn);
+      // Insert before × button (or just append if not found).
+      // 2026-05-12: pos.js cart line is now a 2-row layout — × button is
+      // inside the first row, not a direct child of `line`. Insert into
+      // delBtn's actual parent so insertBefore doesn't throw.
+      if (delBtn && delBtn.parentNode) {
+        delBtn.parentNode.insertBefore(tagBtn, delBtn);
       } else {
         line.appendChild(tagBtn);
       }
@@ -211,8 +214,9 @@
       });
     });
 
-    dlg.querySelector('#_slu-clear').addEventListener('click', () => {
-      if (!confirm('Hreinsa öll raðnúmer og athugasemd á þessari línu?')) return;
+    dlg.querySelector('#_slu-clear').addEventListener('click', async () => {
+      // 2026-05-10 (B5+): Confirm.show í stað native confirm
+      if (!(await Confirm.show('Hreinsa öll raðnúmer og athugasemd á þessari línu?', {danger:true, okText:'Hreinsa'}))) return;
       UNIT_DATA_BY_IDX.delete(idx);
       close();
       refreshTagBadge(lineEl);
@@ -270,22 +274,20 @@
     UNIT_DATA_BY_IDX.forEach((data, idx) => {
       if (!data || !data.desc) return;
       if (row.notes.indexOf(data.desc) >= 0) {
-        // pick the first match (for now)
         if (!best) { best = data; bestKey = idx; }
       }
     });
     if (!best) return row;
-    const units = (best.units || []).filter(u => u.serial && u.serial.trim()).map(u => ({
-      serial: u.serial.trim(),
-      notes: u.notes || '',
-      added_at: new Date().toISOString()
-    }));
     const result = { ...row };
-    if (units.length) result.units = units;
+    // 2026-05-14: DO NOT add `units` to the verkbeidnir row — that column
+    // does not exist on the table (PGRST204 "Could not find the 'units'
+    // column"). The serials are written to the verklidur table by pos.js,
+    // which is the canonical place. Trying to write them here as well
+    // caused EVERY verkbeidnir insert with serials to fail silently, with
+    // pos.js still claiming "1 verkbeiðni búin til".
     if (best.lineNote) {
       result.notes = (row.notes || '') + '\n— ' + best.lineNote;
     }
-    // Consume — so it doesn't apply twice
     UNIT_DATA_BY_IDX.delete(bestKey);
     return result;
   }

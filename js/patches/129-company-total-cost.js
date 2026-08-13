@@ -1,0 +1,766 @@
+/* Heildarkostnaður næstu þjónustu — neðst á fyrirtækisspjaldi.
+ *
+ * Aggregar per-unit val (Hleðsla / Yfirferð / Sleppa — frá patch 131)
+ * í kostnaðarútlit:
+ *   • Hver tegund+stærð er sýnd með fjölda í hverri þjónustu
+ *     (t.d. "ABC Duft 2 kg — 10× Hleðsla + 4× Yfirferð")
+ *   • Verðlisti úr `vorur` (Þjónusta-flokkur)
+ *   • Tilboðsverð yfirstígur (patch 113)
+ *   • Aksturskostnaður user-editable (vistast per fyrirtæki)
+ *
+ * Vistun: localStorage[`slokk_trip_<coId>`] = { units: {uid: 'hledsla'|...}, drive: kr }.
+ */
+(() => {
+  if (window.__companyTotalCostInstalled) return;
+  window.__companyTotalCostInstalled = true;
+
+  let _services = null;
+  let _servicesPromise = null;
+
+  function fmtKr(n) {
+    return Math.round(Number(n) || 0).toLocaleString('is-IS') + ' kr';
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // 2026-05-19: collapse brand variants into a canonical family label.
+  // "ABC Duft", "PFC Duft", "Duft" all bill the same — should bucket as
+  // one "Duft" line in the cost table. Mirrors patch 131's typeBucket()
+  // but returns a human-readable label instead of a slug.
+  function normalizeTypeFamily(t) {
+    const s = String(t || '').toLowerCase();
+    if (!s.trim()) return '—';
+    if (/\bduft\b|\babc\b|\bpfc\b/.test(s)) return 'Duft';
+    if (/co2|co₂|co_?2|kolsyr|kolsýr/.test(s)) return 'CO₂';
+    if (/léttv|lettv|abf|froð|frod/.test(s)) return 'Léttvatn';
+    // brunaslang/brunaslöng singular+plural, but NOT 'slönguskápur' (separate fixture).
+    if (/brunaslang|brunaslöng|brunaslong|hose/.test(s)) return 'Brunaslanga';
+    if (/reykskynj|smoke/.test(s)) return 'Reykskynjari';
+    if (/teppi|blanket/.test(s)) return 'Eldvarnateppi';
+    // Unknown — keep original label so it still shows in the table.
+    return t || '—';
+  }
+
+  async function loadServices() {
+    if (_services) return _services;
+    if (_servicesPromise) return _servicesPromise;
+    _servicesPromise = (async () => {
+      const sb = window.DB && window.DB.sb;
+      if (!sb) return [];
+      const { data } = await sb.from('vorur')
+        .select('id,nafn,flokkur,verd_an_vsk,vsk_prosenta,virkt')
+        .eq('virkt', true);
+      // 2026-05-11: Include ALL active vörur, not just Þjónusta. Items like
+      // Eldvarnateppi live under flokkur='Eldvarnir' but still represent the
+      // price the customer is charged when one needs replacing — we just
+      // can't match them via hleðsla/yfirferð token, so they fall through
+      // a secondary lookup path (see findReplacementProduct below).
+      _services = (data || []);
+      return _services;
+    })();
+    return _servicesPromise;
+  }
+
+  function norm(s) {
+    return String(s || '').toLowerCase()
+      .replace(/ð/g, 'd').replace(/þ/g, 'th')
+      .replace(/æ/g, 'ae').replace(/[áàâ]/g, 'a').replace(/[éèê]/g, 'e')
+      .replace(/[íìî]/g, 'i').replace(/[óòô]/g, 'o').replace(/[úùû]/g, 'u')
+      .replace(/[ýỳ]/g, 'y').replace(/ö/g, 'o')
+      // 2026-05-14: Normalize Unicode subscript digits (U+2080..U+2089) to
+      // ASCII 0-9 so "CO₂" / "H₂O" etc. match against "CO2" / "H2O" tokens.
+      // Same for superscript digits (U+2070..U+2079) just in case.
+      .replace(/[₀-₉]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0x2080 + 0x30))
+      .replace(/[⁰¹²³⁴-⁹]/g, ch => {
+        const map = { '⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9' };
+        return map[ch] || ch;
+      })
+      .replace(/[._,()]/g, ' ')
+      // Split "5kg" → "5 kg" so number+unit tokenize separately.
+      .replace(/(\d)([a-z])/g, '$1 $2')
+      // 2026-05-19: DO NOT split letter+digit like "co2" → "co 2". That
+      // breaks chemical-compound tokens (CO2, H2O) into 1-2-char fragments
+      // which then fail the strongMatches >=3 check, so all CO2 services
+      // get rejected. Chemical names are real distinguishing tokens and
+      // should stay intact. "kg5"/"ltr5"-style anti-patterns don't exist
+      // in the actual product names.
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  // Stem-based token match: short tokens must match exactly, longer tokens
+  // match if either is a prefix of the other (or one contains the other).
+  // This is how we get "brunaslöngur" (query) to match "Yfirferð Brunaslanga"
+  // (service name) without a full stemmer for Icelandic.
+  function tokenMatches(qTok, nTok) {
+    if (qTok === nTok) return true;
+    if (qTok.length < 4 || nTok.length < 4) return false;
+    const stemLen = Math.min(qTok.length, nTok.length, 5);
+    const qs = qTok.slice(0, stemLen);
+    const ns = nTok.slice(0, stemLen);
+    if (qs === ns) return true;
+    // Also accept substring containment for compound words.
+    if (qTok.includes(nTok) || nTok.includes(qTok)) return true;
+    return false;
+  }
+
+  function findMatchingServices(type, size, services) {
+    const qTokens = norm(type + ' ' + size).split(' ').filter(Boolean);
+    // Boost: distinguishing tokens (non-generic, length>=4) carry more weight
+    // than short / generic ones like "kg" or "l".
+    const candidates = [];
+    for (const p of services) {
+      const n = norm(p.nafn);
+      const isHledsla = /hledsla/.test(n);
+      const isYfirferd = /yfirferd/.test(n);
+      if (!isHledsla && !isYfirferd) continue;
+      const nTokens = n.split(' ').filter(Boolean);
+      let matched = 0;
+      let strongMatches = 0;
+      for (const q of qTokens) {
+        if (nTokens.some(nt => tokenMatches(q, nt))) {
+          matched++;
+          // 2026-05-19: lowered from >=4 to >=3 so "co2" qualifies as a
+          // strong token. Was rejecting all CO2 matches because the token
+          // is only 3 chars long.
+          if (q.length >= 3) strongMatches++;
+        }
+      }
+      // Need at least one "strong" semantic token match (e.g. brunaslang,
+      // duft, co2 — not just kg / 6). Pure size matches don't qualify.
+      if (strongMatches === 0) continue;
+      const score = matched / Math.max(1, qTokens.length);
+      if (score >= 0.5) candidates.push({ product: p, score, kind: isHledsla ? 'hledsla' : 'yfirferd' });
+    }
+    candidates.sort((a, b) => {
+      if (a.kind !== b.kind) return a.kind === 'hledsla' ? -1 : 1;
+      return b.score - a.score;
+    });
+    return candidates.map(c => c.product);
+  }
+
+  function pickByKind(matching, kind) {
+    for (const p of matching) {
+      const n = norm(p.nafn);
+      if (kind === 'hledsla' && /hledsla/.test(n)) return p;
+      if (kind === 'yfirferd' && /yfirferd/.test(n)) return p;
+    }
+    return matching[0] || null;
+  }
+
+  // Fallback: when there's no hleðsla/yfirferð service for this type+size,
+  // find a product whose name shares the same stem. Used for items like
+  // Eldvarnateppi where the customer is charged the replacement price.
+  function findReplacementProduct(type, size, services) {
+    const qTokens = norm(type + ' ' + size).split(' ').filter(Boolean);
+    let best = null;
+    for (const p of services) {
+      const n = norm(p.nafn);
+      // Skip hleðsla/yfirferð — those go through the main matcher.
+      if (/hledsla|yfirferd/.test(n)) continue;
+      const nTokens = n.split(' ').filter(Boolean);
+      let matched = 0;
+      let strongMatches = 0;
+      for (const q of qTokens) {
+        if (nTokens.some(nt => tokenMatches(q, nt))) {
+          matched++;
+          // 2026-05-19: lowered from >=4 to >=3 so "co2" qualifies as a
+          // strong token. Was rejecting all CO2 matches because the token
+          // is only 3 chars long.
+          if (q.length >= 3) strongMatches++;
+        }
+      }
+      if (strongMatches === 0) continue;
+      const score = matched / Math.max(1, qTokens.length);
+      if (score >= 0.5 && (!best || score > best.score)) {
+        best = { product: p, score };
+      }
+    }
+    return best ? best.product : null;
+  }
+
+  function findOverride(coId, productName) {
+    if (!coId || !productName) return null;
+    if (!window.CompanyPricing || !window.CompanyPricing.list) return null;
+    const list = window.CompanyPricing.list(coId);
+    if (!list || !list.length) return null;
+    const n = String(productName).toLowerCase().trim();
+    let best = null;
+    for (const o of list) {
+      const oName = String(o.name || '').toLowerCase().trim();
+      if (!oName) continue;
+      if (n.indexOf(oName) >= 0 || oName.indexOf(n) >= 0) {
+        if (!best || oName.length > String(best.name).length) best = o;
+      }
+    }
+    return best;
+  }
+
+  function getCompanyId() {
+    const main = document.getElementById('companies-main');
+    if (!main) return null;
+    const editBtn = main.querySelector('button[onclick*="Companies.openEdit"]');
+    if (!editBtn) return null;
+    const m = editBtn.getAttribute('onclick').match(/openEdit\((\d+)/);
+    return m ? +m[1] : null;
+  }
+  function getCompanyName() {
+    if (!window.Companies || !Companies.list) return '';
+    const id = getCompanyId();
+    if (!id) return '';
+    const c = (Companies.list || []).find(x => x.id === id);
+    return c ? c.nafn : '';
+  }
+
+  function tripStateKey(coId) { return 'slokk_trip_' + coId; }
+  function loadTripState(coId) {
+    try { return JSON.parse(localStorage.getItem(tripStateKey(coId)) || '{}'); }
+    catch (_) { return {}; }
+  }
+  function saveTripState(coId, state) {
+    try { localStorage.setItem(tripStateKey(coId), JSON.stringify(state)); } catch (_) {}
+  }
+  function getUnitChoice(coId, unitId, typeText) {
+    if (window.UnitServicePicker && window.UnitServicePicker.getChoice) {
+      return window.UnitServicePicker.getChoice(coId, unitId, typeText);
+    }
+    const st = loadTripState(coId);
+    if (st.units && st.units[unitId]) return st.units[unitId];
+    const t = String(typeText || '').toLowerCase();
+    if (/\bduft\b|\babc\b|\bpfc\b/.test(t)) return 'hledsla';
+    return 'yfirferd';
+  }
+
+  async function fetchUnits(client) {
+    const sb = window.DB && window.DB.sb;
+    if (!sb) return [];
+    let all = [];
+    let from = 0, pageSize = 1000;
+    while (true) {
+      // 2026-05-19: only 'active' counts toward the next-service total.
+      // Was returning i_vinnslu + active = inflated counts (e.g. IKEA
+      // showed 72 instead of 71 because of one in-workshop unit).
+      const { data, error } = await sb.from('uttaeki')
+        .select('id,serial,type,size,status')
+        .eq('client', client)
+        .eq('status', 'active')
+        .range(from, from + pageSize - 1);
+      if (error || !data) break;
+      all = all.concat(data);
+      if (data.length < pageSize) break;
+      from += pageSize;
+    }
+    return all;
+  }
+
+  let _lastKey = '';
+  let _rendering = false;
+  let _lastRender = 0;
+
+  async function render() {
+    const main = document.getElementById('companies-main');
+    if (!main) return;
+    const coId = getCompanyId();
+    const coNafn = getCompanyName();
+    if (!coId || !coNafn) return;
+
+    const units = await fetchUnits(coNafn);
+    const services = await loadServices();
+    const tripState = loadTripState(coId);
+    // 2026-05-19: defaults for in-service Fyrirtækjaþjónustu customers —
+    //   Akstur:      3000 kr ex VSK (× 1 — multiplier 2 = 6000)
+    //   Skýrslugerð: 3500 kr ex VSK
+    // Only seeded when the entry is brand new (=== undefined). User can
+    // clear them to 0 in the inputs if not applicable for a given trip.
+    const driveCost      = (tripState.drive      != null) ? Number(tripState.drive)      : 3000;
+    const driveQty       = (tripState.driveQty   != null) ? Math.max(0, Number(tripState.driveQty)) : 1;
+    const skyrslugerdEx  = (tripState.skyrslugerd != null) ? Number(tripState.skyrslugerd) : 3500;
+    // 2026-05-21: manual line items added via "+ Bæta við vöru eða þjónustu".
+    // Each: {id, name, qty, unit_price_ex_vat, vsk_pct, vorur_id?}.
+    const extras = Array.isArray(tripState.extras) ? tripState.extras : [];
+
+    // Aggregate by type+size, AND split count by chosen kind.
+    // 2026-05-19: normalize type-family so "ABC Duft", "PFC Duft", and "Duft"
+    // all bucket together — they are billed identically (the brand prefix is
+    // just a label, the service price is the same Hleðsla/Yfirferð Duft).
+    // Same for CO₂ vs "CO2", Léttvatn vs "ABF Léttvatn", etc.
+    const agg = {};
+    units.forEach(u => {
+      const typeNorm = normalizeTypeFamily(u.type);
+      const key = typeNorm + '|' + (u.size || '');
+      if (!agg[key]) agg[key] = { key, type: typeNorm, size: u.size || '', hledsla: 0, yfirferd: 0, nyitt: 0, skip: 0 };
+      const choice = getUnitChoice(coId, u.id, u.type);
+      if (choice === 'hledsla') agg[key].hledsla++;
+      else if (choice === 'yfirferd') agg[key].yfirferd++;
+      else if (choice === 'nyitt') agg[key].nyitt++;
+      else agg[key].skip++;
+    });
+    const groups = Object.values(agg)
+      .filter(g => g.hledsla + g.yfirferd + g.nyitt + g.skip > 0)
+      .sort((a, b) => (b.hledsla + b.yfirferd + b.nyitt) - (a.hledsla + a.yfirferd + a.nyitt));
+
+    // 2026-05-20: blue notes box above the green cost section — free-text
+    // for the visit (e.g. "Bára vill skipta öllum á neðri hæð"). Persisted in
+    // the trip-state localStorage so it survives reload.
+    let notesBox = main.querySelector('#_ctc-notes');
+    if (!notesBox) {
+      notesBox = document.createElement('div');
+      notesBox.id = '_ctc-notes';
+      notesBox.style.cssText =
+        'margin:22px 0 12px;padding:14px 16px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
+      // Insert before the existing cost section if it already exists, so the
+      // notes box always appears ABOVE Heildarkostnaður.
+      const existingSection = main.querySelector('#_ctc-section');
+      if (existingSection) main.insertBefore(notesBox, existingSection);
+      else main.appendChild(notesBox);
+    }
+    const tripNotes = (tripState.notes != null) ? String(tripState.notes) : '';
+    notesBox.innerHTML =
+      '<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px">' +
+        '<div style="font-size:13px;color:#166534;font-weight:700;text-transform:uppercase;letter-spacing:.05em">📝 Upplýsingar um úttekt</div>' +
+      '</div>' +
+      '<textarea id="_ctc-notes-ta" rows="2" placeholder="t.d. „Bára vill skipta öllum á neðri hæð" · „Hringja í Jón fyrir komu" · „Setja inn nýtt 6 kg ABC Duft"" ' +
+        'style="width:100%;padding:8px 10px;border:1px solid #86efac;border-radius:7px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;box-sizing:border-box;background:#fff;color:#0f172a">' +
+        esc(tripNotes) +
+      '</textarea>';
+
+    let section = main.querySelector('#_ctc-section');
+    if (!section) {
+      section = document.createElement('div');
+      section.id = '_ctc-section';
+      section.style.cssText =
+        'margin:6px 0 26px;padding:18px;background:#f0fdf4;border:1px solid #86efac;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,.04)';
+      main.appendChild(section);
+    }
+
+    if (!groups.length) {
+      section.innerHTML = '<div style="font-size:13px;color:#166534;font-weight:700">💵 Heildarkostnaður næstu þjónustu</div>' +
+        '<div style="padding:14px 0;color:#94a3b8;font-style:italic">Engin skráð tæki — kostnaður er 0 kr.</div>';
+      return;
+    }
+
+    let totalSubEx = 0;
+    let totalVsk = 0;
+    let unmatched = [];
+    const rows = [];
+
+    groups.forEach(g => {
+      const matching = findMatchingServices(g.type, g.size, services);
+      if (!matching.length && (g.hledsla > 0 || g.yfirferd > 0)) {
+        // Fallback: try replacement product (Eldvarnateppi, Reykskynjari etc.)
+        const replacement = findReplacementProduct(g.type, g.size, services);
+        if (replacement) {
+          const override = findOverride(coId, replacement.nafn);
+          const unitPrice = override ? +override.price_ex_vat : +replacement.verd_an_vsk;
+          const vskPct = override ? (+override.vsk_pct || 24) : (+replacement.vsk_prosenta || 24);
+          const total = g.hledsla + g.yfirferd;
+          const subEx = unitPrice * total;
+          const vskKr = subEx * (vskPct / 100);
+          totalSubEx += subEx;
+          totalVsk += vskKr;
+          rows.push('<tr>' +
+            '<td style="padding:7px 10px;font-size:13px;color:#0f172a">' + esc(g.type) + ' / ' + esc(g.size) +
+              '<div style="font-size:11px;color:#64748b">' + esc(replacement.nafn) + '</div></td>' +
+            '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + total + '</td>' +
+            '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f3e8ff;color:#6b21a8">Vara</span></td>' +
+            '<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">' + fmtKr(unitPrice) +
+              (override ? ' <span style="margin-left:4px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') + '</td>' +
+            '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
+            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + '</td>' +
+          '</tr>');
+          return;
+        }
+        unmatched.push(g);
+        rows.push('<tr><td style="padding:7px 10px;font-size:13px;color:#0f172a">' + esc(g.type) + ' / ' + esc(g.size) + '</td>' +
+          '<td colspan="5" style="padding:7px 10px;color:#dc2626;font-size:12px;font-style:italic">⚠ Engin matchandi þjónusta í verðlista</td></tr>');
+        return;
+      }
+      // Each kind that has count > 0 gets its own row.
+      [['hledsla', 'Hleðsla'], ['yfirferd', 'Yfirferð']].forEach(([kindKey, kindLabel]) => {
+        const n = g[kindKey];
+        if (!n) return;
+        const product = pickByKind(matching, kindKey);
+        if (!product) return;
+        const override = findOverride(coId, product.nafn);
+        const unitPrice = override ? +override.price_ex_vat : +product.verd_an_vsk;
+        const vskPct = override ? (+override.vsk_pct || 24) : (+product.vsk_prosenta || 24);
+        const subEx = unitPrice * n;
+        const vskKr = subEx * (vskPct / 100);
+        totalSubEx += subEx;
+        totalVsk += vskKr;
+        rows.push('<tr>' +
+          '<td style="padding:7px 10px;font-size:13px;color:#0f172a">' + esc(g.type) + ' / ' + esc(g.size) +
+            '<div style="font-size:11px;color:#64748b">' + esc(product.nafn) + '</div></td>' +
+          '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + n + '</td>' +
+          '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;' +
+            (kindKey === 'hledsla' ? 'background:#dcfce7;color:#166534' : 'background:#dbeafe;color:#1e40af') + '">' +
+            kindLabel + '</span></td>' +
+          '<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">' + fmtKr(unitPrice) +
+            (override ? ' <span title="' + esc(override.notes || '') + '" style="margin-left:4px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') + '</td>' +
+          '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
+          '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + '</td>' +
+        '</tr>');
+      });
+      // 2026-05-20: "Nýtt" row — bill the store price of a brand-new unit.
+      // Uses findReplacementProduct (same matcher used for Eldvarnateppi etc.)
+      // which looks for non-hleðsla/yfirferð products by type+size tokens.
+      if (g.nyitt > 0) {
+        const newProduct = findReplacementProduct(g.type, g.size, services);
+        if (newProduct) {
+          const override = findOverride(coId, newProduct.nafn);
+          const unitPrice = override ? +override.price_ex_vat : +newProduct.verd_an_vsk;
+          const vskPct = override ? (+override.vsk_pct || 24) : (+newProduct.vsk_prosenta || 24);
+          const subEx = unitPrice * g.nyitt;
+          const vskKr = subEx * (vskPct / 100);
+          totalSubEx += subEx;
+          totalVsk += vskKr;
+          rows.push('<tr>' +
+            '<td style="padding:7px 10px;font-size:13px;color:#0f172a">' + esc(g.type) + ' / ' + esc(g.size) +
+              '<div style="font-size:11px;color:#64748b">' + esc(newProduct.nafn) + '</div></td>' +
+            '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + g.nyitt + '</td>' +
+            '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f3e8ff;color:#6b21a8">Nýtt</span></td>' +
+            '<td style="padding:7px 10px;text-align:right;font-variant-numeric:tabular-nums">' + fmtKr(unitPrice) +
+              (override ? ' <span title="' + esc(override.notes || '') + '" style="margin-left:4px;padding:1px 5px;background:#fef9c3;color:#854d0e;border:1px solid #fde047;border-radius:99px;font-size:9px;font-weight:700">💰</span>' : '') + '</td>' +
+            '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
+            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + '</td>' +
+          '</tr>');
+        } else {
+          rows.push('<tr><td style="padding:7px 10px;font-size:13px;color:#0f172a">' + esc(g.type) + ' / ' + esc(g.size) + '</td>' +
+            '<td style="padding:7px 10px;text-align:center;font-weight:600">' + g.nyitt + '</td>' +
+            '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f3e8ff;color:#6b21a8">Nýtt</span></td>' +
+            '<td colspan="3" style="padding:7px 10px;color:#dc2626;font-size:12px;font-style:italic">⚠ Engin matchandi vara í verðlista — bæta við í Vörur og þjónusta</td></tr>');
+        }
+      }
+      if (g.skip > 0) {
+        rows.push('<tr style="opacity:.55">' +
+          '<td style="padding:5px 10px;font-size:12px;color:#94a3b8">' + esc(g.type) + ' / ' + esc(g.size) + '</td>' +
+          '<td style="padding:5px 10px;text-align:center;font-size:12px;color:#94a3b8">' + g.skip + '</td>' +
+          '<td style="padding:5px 10px"><span style="padding:1px 6px;border-radius:4px;font-size:10px;font-weight:600;background:#f1f5f9;color:#64748b">Sleppt</span></td>' +
+          '<td colspan="3" style="padding:5px 10px;color:#94a3b8;font-size:11px;font-style:italic">(Ekki í þessari ferð)</td>' +
+        '</tr>');
+      }
+    });
+
+    // 2026-05-21: Manual extras rows — rendered above Skýrslugerð/Akstur.
+    // Each has inline editable qty + price + a ✕ remove button. Total
+    // contributes to subEx/vsk so the SAMTALS at the bottom stays accurate.
+    extras.forEach((ex, exIdx) => {
+      const exQty   = Math.max(0, Number(ex.qty) || 0);
+      const exPrice = Math.max(0, Number(ex.unit_price_ex_vat) || 0);
+      const exVskPct = Number(ex.vsk_pct) || 24;
+      const exSubEx = exQty * exPrice;
+      const exVskKr = exSubEx * (exVskPct / 100);
+      totalSubEx += exSubEx;
+      totalVsk += exVskKr;
+      rows.push('<tr style="border-top:1px dashed #bfdbfe;background:#eff6ff">' +
+        '<td colspan="2" style="padding:7px 10px;font-size:13px;color:#0f172a">📦 ' + esc(ex.name) + '</td>' +
+        '<td style="padding:7px 10px;text-align:center">' +
+          '<input class="_ctc-extra-qty" data-i="' + exIdx + '" type="number" min="0" step="1" value="' + exQty + '" ' +
+          'style="width:54px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:center;background:#fff;font-variant-numeric:tabular-nums;font-weight:700">' +
+        '</td>' +
+        '<td style="padding:7px 10px;text-align:right">' +
+          '<input class="_ctc-extra-price" data-i="' + exIdx + '" type="number" min="0" step="1" value="' + Math.round(exPrice) + '" ' +
+          'style="width:90px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums"> kr' +
+        '</td>' +
+        '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + exVskPct + '%</td>' +
+        '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">' + fmtKr(exSubEx) +
+          ' <button class="_ctc-extra-rm" data-i="' + exIdx + '" type="button" title="Eyða línu" ' +
+          'style="margin-left:6px;background:none;border:none;color:#94a3b8;cursor:pointer;font-size:15px;line-height:1;padding:0 2px;vertical-align:middle">×</button>' +
+        '</td>' +
+      '</tr>');
+    });
+
+    // Skýrslugerð row (3500 + VSK by default).
+    const skyrsluVskPct = 24;
+    const skyrsluVskKr = skyrslugerdEx * (skyrsluVskPct / 100);
+    totalSubEx += skyrslugerdEx;
+    totalVsk += skyrsluVskKr;
+    rows.push(
+      '<tr style="border-top:1px dashed #86efac;background:#f0fdf4">' +
+        '<td colspan="3" style="padding:7px 10px;font-size:13px;color:#0f172a">📋 Skýrslugerð</td>' +
+        '<td style="padding:7px 10px;text-align:right">' +
+          '<input id="_ctc-skyrslu" type="number" min="0" step="1" value="' + Math.round(skyrslugerdEx) + '" ' +
+          'style="width:90px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums" placeholder="0"> kr' +
+        '</td>' +
+        '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">24%</td>' +
+        '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(skyrslugerdEx) + '</td>' +
+      '</tr>'
+    );
+
+    // Akstur row. Quantity input lets Agnar bill multiple trips (e.g. 2× 3.000).
+    const driveVskPct = 24;
+    const driveSubEx = driveCost * driveQty;
+    const driveVskKr = driveSubEx * (driveVskPct / 100);
+    totalSubEx += driveSubEx;
+    totalVsk += driveVskKr;
+    rows.push(
+      '<tr style="border-top:1px dashed #86efac;background:#f0fdf4">' +
+        '<td colspan="2" style="padding:7px 10px;font-size:13px;color:#0f172a">🚗 Akstur</td>' +
+        '<td style="padding:7px 10px;text-align:center">' +
+          '<input id="_ctc-drive-qty" type="number" min="0" step="1" value="' + driveQty + '" ' +
+          'title="Fjöldi ferða" ' +
+          'style="width:54px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:center;background:#fff;font-variant-numeric:tabular-nums;font-weight:700">' +
+        '</td>' +
+        '<td style="padding:7px 10px;text-align:right">' +
+          '<input id="_ctc-drive" type="number" min="0" step="1" value="' + Math.round(driveCost) + '" ' +
+          'style="width:90px;padding:4px 8px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;font-variant-numeric:tabular-nums" placeholder="0"> kr' +
+        '</td>' +
+        '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">24%</td>' +
+        '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(driveSubEx) + '</td>' +
+      '</tr>'
+    );
+
+    const totalInc = totalSubEx + totalVsk;
+    const activeUnits = units.length - groups.reduce((s, g) => s + g.skip, 0);
+
+    const skodunaradili = (tripState.skodunaradili != null) ? String(tripState.skodunaradili) : '';
+    section.innerHTML =
+      '<div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:6px">' +
+        '<div>' +
+          '<div style="font-size:13px;color:#166534;font-weight:700;text-transform:uppercase;letter-spacing:.05em">💵 Heildarkostnaður næstu þjónustu</div>' +
+          '<div style="font-size:11px;color:#15803d;margin-top:2px">' + activeUnits + ' af ' + units.length + ' tæki í þessari ferð · Veldu Hleðsla / Yfirferð / Sleppa fyrir hvert tæki í töflunni að ofan</div>' +
+        '</div>' +
+        '<div style="font-size:24px;font-weight:800;color:#166534;font-variant-numeric:tabular-nums">' + fmtKr(totalInc) + '</div>' +
+      '</div>' +
+      // 2026-05-20: Skoðunaraðili (inspector) input + Úttektarskýrsla button.
+      // Persisted in tripState so the field stays filled across visits.
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">' +
+        '<label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#0f172a;flex:1;min-width:200px">' +
+          '<span style="font-weight:600;color:#166534;white-space:nowrap">🧑 Skoðunaraðili</span>' +
+          '<input id="_ctc-skodun" type="text" value="' + esc(skodunaradili) + '" placeholder="t.d. Elías" ' +
+            'style="flex:1;padding:6px 10px;border:1px solid #86efac;border-radius:6px;font:inherit;font-size:13px;background:#fff">' +
+        '</label>' +
+        '<button id="_ctc-skyrsla" type="button" ' +
+          'style="padding:7px 14px;background:#0f172a;color:#fff;border:none;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.15)">' +
+          '📄 Búa til úttektarskýrslu</button>' +
+      '</div>' +
+      // 2026-05-21: "+ Bæta við vöru eða þjónustu" button opens the shared
+      // VorurPicker (patch 117) and appends the choice to tripState.extras.
+      '<div style="display:flex;justify-content:flex-end;margin-bottom:10px">' +
+        '<button id="_ctc-add-extra" type="button" ' +
+          'style="padding:6px 12px;background:#dbeafe;border:1px solid #93c5fd;color:#1e40af;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer">' +
+          '+ Bæta við vöru eða þjónustu</button>' +
+      '</div>' +
+      '<div style="background:#fff;border:1px solid #86efac;border-radius:8px;overflow:hidden">' +
+        '<table style="width:100%;border-collapse:collapse">' +
+          '<thead style="background:#dcfce7"><tr>' +
+            '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Tegund / Stærð</th>' +
+            '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em;width:60px">Fjöldi</th>' +
+            '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em;width:90px">Þjónusta</th>' +
+            '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Per stk</th>' +
+            '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em;width:50px">VSK</th>' +
+            '<th style="padding:8px 10px;text-align:right;font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Samtals</th>' +
+          '</tr></thead>' +
+          '<tbody>' + rows.join('') + '</tbody>' +
+          '<tfoot>' +
+            '<tr style="border-top:2px solid #166534;background:#f0fdf4">' +
+              '<td colspan="5" style="padding:8px 10px;font-size:12px;color:#475569;text-align:right">Án vsk:</td>' +
+              '<td style="padding:8px 10px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums">' + fmtKr(totalSubEx) + '</td>' +
+            '</tr>' +
+            '<tr><td colspan="5" style="padding:5px 10px;font-size:12px;color:#475569;text-align:right">VSK:</td>' +
+              '<td style="padding:5px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(totalVsk) + '</td></tr>' +
+            '<tr style="background:#dcfce7"><td colspan="5" style="padding:10px;font-size:14px;font-weight:800;color:#166534;text-align:right">SAMTALS M. VSK:</td>' +
+              '<td style="padding:10px;text-align:right;font-weight:800;color:#166534;font-size:16px;font-variant-numeric:tabular-nums">' + fmtKr(totalInc) + '</td></tr>' +
+          '</tfoot>' +
+        '</table>' +
+      '</div>' +
+      (unmatched.length ? '<div style="margin-top:8px;padding:8px 10px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#78350f">⚠ ' + unmatched.length + ' tegund(ir) fundu ekki matchandi þjónustu í verðlista. Bæta við í <b>Vörur og þjónusta</b>.</div>' : '');
+
+    // Wire Skoðunaraðili input.
+    const skodunInp = section.querySelector('#_ctc-skodun');
+    if (skodunInp) {
+      const onSkodun = () => {
+        const st = loadTripState(coId);
+        st.skodunaradili = skodunInp.value;
+        saveTripState(coId, st);
+      };
+      skodunInp.addEventListener('blur', onSkodun);
+      skodunInp.addEventListener('change', onSkodun);
+    }
+    // Wire úttektarskýrsla button → patch 168.
+    const skyrsluBtn = section.querySelector('#_ctc-skyrsla');
+    if (skyrsluBtn) {
+      skyrsluBtn.addEventListener('click', () => {
+        // Save inspector first so the report picks it up.
+        if (skodunInp) {
+          const st = loadTripState(coId);
+          st.skodunaradili = skodunInp.value;
+          saveTripState(coId, st);
+        }
+        if (window.CompanyInspectionReport && CompanyInspectionReport.open) {
+          CompanyInspectionReport.open(coId);
+        } else {
+          alert('Úttektarskýrslu-mótið er ekki tiltækt.');
+        }
+      });
+    }
+
+    // Wire notes textarea — autosave on blur + change (debounced via blur).
+    const notesTa = notesBox.querySelector('#_ctc-notes-ta');
+    if (notesTa) {
+      const onNotes = () => {
+        const st = loadTripState(coId);
+        st.notes = notesTa.value;
+        saveTripState(coId, st);
+      };
+      notesTa.addEventListener('blur', onNotes);
+      notesTa.addEventListener('change', onNotes);
+    }
+
+    // 2026-05-21: + Bæta við vöru eða þjónustu — opens VorurPicker, appends
+    // the chosen product to tripState.extras with qty=1 + product's default
+    // price + VSK%. The user can then edit qty/price inline.
+    const addExtraBtn = section.querySelector('#_ctc-add-extra');
+    if (addExtraBtn) {
+      addExtraBtn.addEventListener('click', () => {
+        if (!window.VorurPicker || typeof VorurPicker.open !== 'function') {
+          alert('Vörulistinn er ekki tiltækur (patch 117).'); return;
+        }
+        VorurPicker.open(prod => {
+          if (!prod) return;
+          const st = loadTripState(coId);
+          if (!Array.isArray(st.extras)) st.extras = [];
+          st.extras.push({
+            name: prod.nafn || 'Vara',
+            qty: 1,
+            unit_price_ex_vat: Number(prod.verd_an_vsk) || 0,
+            vsk_pct: Number(prod.vsk_prosenta) || 24,
+            vorur_id: prod.id || null
+          });
+          saveTripState(coId, st);
+          _lastKey = '';
+          render();
+        });
+      });
+    }
+    // Wire per-extra qty / price / remove controls.
+    section.querySelectorAll('._ctc-extra-qty').forEach(inp => {
+      const onChange = () => {
+        const i = +inp.dataset.i;
+        const v = Math.max(0, parseInt(inp.value, 10) || 0);
+        const st = loadTripState(coId);
+        if (Array.isArray(st.extras) && st.extras[i]) {
+          st.extras[i].qty = v;
+          saveTripState(coId, st);
+        }
+        _lastKey = '';
+        render();
+      };
+      inp.addEventListener('change', onChange);
+      inp.addEventListener('blur', onChange);
+    });
+    section.querySelectorAll('._ctc-extra-price').forEach(inp => {
+      const onChange = () => {
+        const i = +inp.dataset.i;
+        const v = Math.max(0, parseFloat(inp.value) || 0);
+        const st = loadTripState(coId);
+        if (Array.isArray(st.extras) && st.extras[i]) {
+          st.extras[i].unit_price_ex_vat = v;
+          saveTripState(coId, st);
+        }
+        _lastKey = '';
+        render();
+      };
+      inp.addEventListener('change', onChange);
+      inp.addEventListener('blur', onChange);
+    });
+    section.querySelectorAll('._ctc-extra-rm').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const i = +btn.dataset.i;
+        const st = loadTripState(coId);
+        if (Array.isArray(st.extras) && st.extras[i]) {
+          st.extras.splice(i, 1);
+          saveTripState(coId, st);
+        }
+        _lastKey = '';
+        render();
+      });
+    });
+
+    // Wire driving input (per-trip price).
+    const driveInp = section.querySelector('#_ctc-drive');
+    if (driveInp) {
+      const onDrive = () => {
+        const v = parseFloat(driveInp.value) || 0;
+        const st = loadTripState(coId);
+        st.drive = v;
+        saveTripState(coId, st);
+        _lastKey = '';
+        render();
+      };
+      driveInp.addEventListener('change', onDrive);
+      driveInp.addEventListener('blur', onDrive);
+    }
+    // Wire driving quantity input (number of trips).
+    const driveQtyInp = section.querySelector('#_ctc-drive-qty');
+    if (driveQtyInp) {
+      const onDriveQty = () => {
+        const v = Math.max(0, parseInt(driveQtyInp.value, 10) || 0);
+        const st = loadTripState(coId);
+        st.driveQty = v;
+        saveTripState(coId, st);
+        _lastKey = '';
+        render();
+      };
+      driveQtyInp.addEventListener('change', onDriveQty);
+      driveQtyInp.addEventListener('blur', onDriveQty);
+    }
+    // Wire Skýrslugerð input.
+    const skyrsluInp = section.querySelector('#_ctc-skyrslu');
+    if (skyrsluInp) {
+      const onSkyrslu = () => {
+        const v = parseFloat(skyrsluInp.value) || 0;
+        const st = loadTripState(coId);
+        st.skyrslugerd = v;
+        saveTripState(coId, st);
+        _lastKey = '';
+        render();
+      };
+      skyrsluInp.addEventListener('change', onSkyrslu);
+      skyrsluInp.addEventListener('blur', onSkyrslu);
+    }
+  }
+
+  async function maybeRender() {
+    if (_rendering) return;
+    if (Date.now() - _lastRender < 800) return;
+    const coId = getCompanyId();
+    const coNafn = getCompanyName();
+    if (!coId || !coNafn) return;
+    const key = String(coId);
+    if (key === _lastKey && document.getElementById('_ctc-section')) return;
+    _lastKey = key;
+    _rendering = true;
+    try {
+      await render();
+      _lastRender = Date.now();
+    } finally {
+      _rendering = false;
+    }
+  }
+
+  window.recomputeCompanyTotalCost = () => { _lastKey = ''; return maybeRender(); };
+
+  function attach() {
+    const main = document.getElementById('companies-main');
+    const view = document.getElementById('view-companies');
+    if (!main || !view) { setTimeout(attach, 800); return; }
+    let _t = 0;
+    new MutationObserver((muts) => {
+      if (!view.classList.contains('active')) return;
+      const allOurs = muts.every(m => {
+        const t = m.target;
+        return t && (t.id === '_ctc-section' || (t.closest && t.closest('#_ctc-section')));
+      });
+      if (allOurs) return;
+      clearTimeout(_t);
+      _t = setTimeout(maybeRender, 400);
+    }).observe(main, { childList: true, subtree: true });
+    setTimeout(maybeRender, 1500);
+  }
+  attach();
+
+  console.log('[company-total-cost] v4 installed — duft now defaults to hleðsla');
+})();

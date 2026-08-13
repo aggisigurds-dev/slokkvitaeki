@@ -268,7 +268,7 @@
   }
 
   async function _delete(id) {
-    if (!confirm('Eyða þessari skráningu?')) return;
+    if (!await Confirm.show('Eyða þessari skráningu?')) return;
     const SB = getSB();
     if (SB) await SB.from('timabok').delete().eq('id',id);
     if(window.Toast) Toast.show('Skráning eytt');

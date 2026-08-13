@@ -153,12 +153,27 @@
     return m ? +m[1] : null;
   }
 
+  // 2026-05-21: small flag so our own moveToBottom() doesn't bounce back
+  // through the MutationObserver and into patch 129's observer in a loop.
+  let _moving = false;
   function injectSection() {
     const main = document.getElementById('companies-main');
     if (!main) return;
     const coId = getCompanyId();
     if (!coId) return;
-    if (main.querySelector('._cat-section')) return;
+    const existing = main.querySelector('._cat-section');
+    if (existing) {
+      // already injected — keep at the very bottom even when later patches
+      // (heildarkostnaður, notes, visit-workflow) append their own sections.
+      if (main.lastElementChild !== existing) {
+        _moving = true;
+        main.appendChild(existing);
+        // Clear the flag after the current microtask so the MutationObserver
+        // callback (queued sync by appendChild) sees _moving=true and skips.
+        setTimeout(() => { _moving = false; }, 0);
+      }
+      return;
+    }
 
     const section = document.createElement('div');
     section.className = '_cat-section';
@@ -166,7 +181,8 @@
     section.style.cssText = 'margin:18px 0 24px;padding:16px;border:1px solid #e2e8f0;border-radius:12px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,0.04)';
     section.innerHTML = renderSection(coId);
 
-    // Insert near the bottom of companies-main (before the equipment table is fine)
+    // Append last — and the early-return above re-appends on every render
+    // so it stays last.
     main.appendChild(section);
     wireSection(section, coId);
   }
@@ -238,7 +254,7 @@
         e.stopPropagation();
         const f = getCompanyAttachments(coId).find(x => x.id === delBtn.dataset.id);
         if (!f) return;
-        if (confirm('Eyða skjalinu „' + f.name + '"? Þetta er ekki afturkræft.')) {
+        if (await Confirm.show('Eyða skjalinu „' + f.name + '"? Þetta er ekki afturkræft.')) {
           delBtn.disabled = true;
           await deleteAttachment(coId, f);
           refreshSection(section, coId);
@@ -298,6 +314,15 @@
 
   // ── Preview / download ──────────────────────────────────────────────────
   async function openPreview(file) {
+    // Drive-link attachments (added by patch 147's brunakerfi bulk-import in
+    // session 2026-05-15) carry `drive_url` / `drive_id` instead of a Supabase
+    // Storage `path`. Open them directly in Drive viewer — patch 111's
+    // preview lightbox can't host Google Drive content securely anyway.
+    if (file && (file.drive_url || file.drive_id || file.external)) {
+      const driveUrl = file.drive_url || ('https://drive.google.com/file/d/' + file.drive_id + '/view');
+      window.open(driveUrl, '_blank', 'noopener');
+      return;
+    }
     const url = await getPublicUrl(file.path);
     if (!url) { alert('Gat ekki opnað skrá. Athugaðu nettengingu.'); return; }
     const ic = iconForType(file.content_type, file.name);
@@ -351,6 +376,12 @@
   }
 
   async function downloadFile(file) {
+    if (file && (file.drive_url || file.drive_id || file.external)) {
+      // Drive files — open the viewer; Drive handles download itself.
+      const driveUrl = file.drive_url || ('https://drive.google.com/file/d/' + file.drive_id + '/view');
+      window.open(driveUrl, '_blank', 'noopener');
+      return;
+    }
     const url = await getPublicUrl(file.path);
     if (!url) { alert('Gat ekki sótt skrá.'); return; }
     const a = document.createElement('a');
@@ -368,10 +399,27 @@
     const main = document.getElementById('companies-main');
     if (!main) { setTimeout(attach, 800); return; }
     let _t = 0;
-    new MutationObserver(() => {
+    // 2026-05-21: narrowed scope + self-mutation guard + bigger debounce.
+    //   • childList only (no subtree): we just need to react when sections
+    //     are added/removed at the top level, not on every text-node update
+    //     inside _ctc-section that happens every keystroke or re-render.
+    //   • _moving guard: ignore the synthetic mutation produced by our own
+    //     "move to bottom" appendChild — otherwise that mutation triggers
+    //     patch 129's observer → re-render → moves things → triggers us →
+    //     re-append → loop. Killed responsiveness on the detail view.
+    //   • 600ms debounce (was 200ms): coalesces bursts of patches that
+    //     inject their sections in rapid succession.
+    new MutationObserver((muts) => {
+      if (_moving) return;
+      // Ignore mutations where only our own ._cat-section was added/removed
+      const ours = muts.every(m => {
+        const nodes = [].concat(Array.from(m.addedNodes), Array.from(m.removedNodes));
+        return nodes.length > 0 && nodes.every(n => n.classList && n.classList.contains('_cat-section'));
+      });
+      if (ours) return;
       clearTimeout(_t);
-      _t = setTimeout(injectSection, 200);
-    }).observe(main, { childList: true, subtree: true });
+      _t = setTimeout(injectSection, 600);
+    }).observe(main, { childList: true });
   }
   attach();
   setTimeout(injectSection, 1500);
@@ -391,7 +439,10 @@
   window.CompanyAttachments = {
     list: getCompanyAttachments,
     upload: uploadAttachment,
-    delete: deleteAttachment
+    delete: deleteAttachment,
+    openPreview: openPreview,
+    download: downloadFile,
+    getPublicUrl: getPublicUrl
   };
 
   console.log('[company-attachments] installed — 📎 Skjöl & skýrslur on company detail');

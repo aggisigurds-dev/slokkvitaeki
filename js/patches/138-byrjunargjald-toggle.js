@@ -1,0 +1,209 @@
+/* Byrjunargjald-haki á körfunni á Sölu.
+ *
+ * Bætir litlu hakaboxi „🚚 Byrjunargjald 1.000 kr" milli totals og áfram-takka.
+ * Þegar hakað er á → kerfi bætir „CO₂ byrjunargjald" (úr vörum, 1000 kr +
+ * VSK) sjálfvirkt í körfu.  Þegar afhakað er → línan er fjarlægð.
+ *
+ * Hakar ekki sjálfvirkt — notandi velur ef við á (ekki á öllum sölum).
+ */
+(() => {
+  if (window.__byrjunargjaldToggleInstalled) return;
+  window.__byrjunargjaldToggleInstalled = true;
+
+  // 2026-05-14: Word is "byrjunargjald" (b-y-r-j-u-n-A-R-g-j-a-l-d). The
+  // previous regex /byrjun[ar]gjald/ required exactly ONE of [a,r] between
+  // "byrjun" and "gjald", so it failed to match the actual two-char "ar".
+  // Result: cart had the line but the toggle never recognized it (stayed
+  // unchecked, auto-add tried to add it again, etc.). Use a literal match.
+  const PRODUCT_NAME_RX = /byrjunargjald/i;
+  let _byrjunarProduct = null; // cached
+
+  async function loadProduct() {
+    if (_byrjunarProduct) return _byrjunarProduct;
+    const sb = window.DB && window.DB.sb;
+    if (!sb) return null;
+    const { data } = await sb.from('vorur')
+      .select('id,nafn,verd_an_vsk,vsk_prosenta')
+      .ilike('nafn', '%byrjun%')
+      .eq('virkt', true)
+      .order('nafn')
+      .limit(1)
+      .maybeSingle();
+    _byrjunarProduct = data || null;
+    return _byrjunarProduct;
+  }
+
+  function cartHasByrjunar(state) {
+    return (state.lines || []).some(l => PRODUCT_NAME_RX.test(l.desc || ''));
+  }
+
+  function addByrjunar(state, product) {
+    if (cartHasByrjunar(state)) return false;
+    state.lines.push({
+      type: 'product',
+      desc: product.nafn,
+      qty: 1,
+      unit_price_ex_vat: +product.verd_an_vsk || 1000,
+      vsk_pct: +product.vsk_prosenta || 24,
+      product_id: product.id,
+      ref: ''
+    });
+    return true;
+  }
+
+  function removeByrjunar(state) {
+    const before = state.lines.length;
+    state.lines = (state.lines || []).filter(l => !PRODUCT_NAME_RX.test(l.desc || ''));
+    return state.lines.length !== before;
+  }
+
+  function rerenderCart() {
+    // Mirror what pos.js rerenderDynamic does
+    const linesEl = document.getElementById('pos-lines');
+    const totalsEl = document.getElementById('pos-totals');
+    if (window.POS && typeof POS.totals === 'function') {
+      // pos.js exposes rerenderDynamic only internally; trigger via input
+      // event on a line input (no-op effect but pos.js wires this to total
+      // recompute). Simpler: just call buildLinesHTML via a tiny dispatch.
+      try {
+        const evt = new Event('input', { bubbles: true });
+        document.dispatchEvent(evt);
+      } catch(_){}
+    }
+    // Force a re-render by dispatching cart-changed
+    document.dispatchEvent(new CustomEvent('pos-cart-changed'));
+    // Also re-render via direct call if available
+    if (window.POS && POS.rerenderDynamic) POS.rerenderDynamic();
+  }
+
+  // 2026-05-12: Show the byrjunargjald toggle only when the cart contains
+  // CO₂ 100gr (the only service where the user actually charges this fee).
+  // NOTE: the product name uses Unicode subscript ₂ (U+2082), not ASCII 2 —
+  // so we must match either, OR the Icelandic word "kolsýra". We also match
+  // any line whose product_id is the known CO₂ 100gr SKU (#83).
+  const CO2_NAME_RX = /(co[2₂]|kols[ýy]ra).*100\s*gr|100\s*gr.*(co[2₂]|kols[ýy]ra)/i;
+  const CO2_100GR_PRODUCT_ID = 83;
+  function cartHasCo2Refill(state) {
+    return (state.lines || []).some(l => {
+      if (+l.product_id === CO2_100GR_PRODUCT_ID) return true;
+      return CO2_NAME_RX.test(l.desc || '');
+    });
+  }
+
+  // 2026-05-12: Track whether the user has explicitly dismissed (unchecked)
+  // the byrjunargjald for this cart session. If they did, don't re-auto-add
+  // it on every cart mutation — would feel like the checkbox is fighting
+  // them. Reset when cart is empty (= fresh sale starting).
+  let _userDismissed = false;
+  let _hasAutoTickedThisCart = false;
+
+  function setToggleVisibility(state) {
+    const wrap = document.getElementById('_bg-toggle-wrap');
+    if (!wrap) return;
+    const show = cartHasCo2Refill(state);
+    wrap.style.display = show ? 'flex' : 'none';
+    // Reset session flags when cart is fully empty (new sale)
+    if (!state.lines || !state.lines.length) {
+      _userDismissed = false;
+      _hasAutoTickedThisCart = false;
+      return;
+    }
+    // Auto-add byrjunargjald on first CO₂ 100gr detection per cart session.
+    // Only do it once — if user unchecks it, we honour that.
+    if (show && !_hasAutoTickedThisCart && !_userDismissed && !cartHasByrjunar(state)) {
+      _hasAutoTickedThisCart = true;
+      loadProduct().then(p => {
+        if (!p) return;
+        if (cartHasByrjunar(state)) return; // race-guard
+        addByrjunar(state, p);
+        if (window.POS && typeof POS.rerenderDynamic === 'function') {
+          POS.rerenderDynamic();
+        }
+      });
+    }
+  }
+
+  function injectToggle() {
+    const totalsEl = document.getElementById('pos-totals');
+    if (!totalsEl) return;
+    if (document.getElementById('_bg-toggle-wrap')) return;
+    const wrap = document.createElement('label');
+    wrap.id = '_bg-toggle-wrap';
+    wrap.style.cssText = 'display:none;align-items:center;gap:8px;margin-top:8px;padding:8px 10px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:13px;color:#0f172a;cursor:pointer;user-select:none';
+    wrap.innerHTML =
+      '<input type="checkbox" id="_bg-toggle" style="width:16px;height:16px;cursor:pointer;accent-color:#16a34a">' +
+      '<span style="flex:1">🚚 Byrjunargjald</span>' +
+      '<span id="_bg-price" style="font-weight:600;color:#64748b">1.240 kr</span>';
+    totalsEl.parentNode.insertBefore(wrap, totalsEl.nextSibling);
+
+    const cb = wrap.querySelector('#_bg-toggle');
+    const priceEl = wrap.querySelector('#_bg-price');
+    loadProduct().then(p => {
+      if (!p) {
+        wrap.style.opacity = '.55';
+        cb.disabled = true;
+        wrap.title = 'CO₂ byrjunargjald vara ekki fundin í Vörur og þjónusta';
+        priceEl.textContent = '?';
+        return;
+      }
+      const inc = (+p.verd_an_vsk || 0) * (1 + (+p.vsk_prosenta || 24) / 100);
+      priceEl.textContent = Math.round(inc).toLocaleString('is-IS') + ' kr';
+    });
+
+    // Sync checkbox to current cart state.
+    function syncFromCart() {
+      const state = (window.POS && POS.getState && POS.getState()) || null;
+      if (!state) return;
+      // Visibility tied to CO₂ 100gr line being present.
+      setToggleVisibility(state);
+      cb.checked = cartHasByrjunar(state);
+      wrap.style.background = cb.checked ? '#dcfce7' : '#f8fafc';
+      wrap.style.borderColor = cb.checked ? '#86efac' : '#e2e8f0';
+    }
+    syncFromCart();
+
+    cb.addEventListener('change', async () => {
+      const state = (window.POS && POS.getState && POS.getState()) || null;
+      if (!state) return;
+      const product = await loadProduct();
+      if (!product) { cb.checked = false; return; }
+      if (cb.checked) {
+        addByrjunar(state, product);
+        _userDismissed = false;
+      } else {
+        removeByrjunar(state);
+        // Remember the user said NO for this cart session.
+        _userDismissed = true;
+      }
+      // Trigger pos.js to redraw cart + totals
+      if (window.POS && typeof POS.rerenderDynamic === 'function') {
+        POS.rerenderDynamic();
+      } else {
+        // Fallback — synth input on something pos.js watches
+        const inp = document.querySelector('.pos-price-edit');
+        if (inp) inp.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      syncFromCart();
+    });
+
+    // Keep in sync when other patches change the cart.
+    new MutationObserver(syncFromCart).observe(
+      document.getElementById('pos-lines'), { childList: true, subtree: true }
+    );
+  }
+
+  function attach() {
+    const totalsEl = document.getElementById('pos-totals');
+    if (!totalsEl) { setTimeout(attach, 600); return; }
+    injectToggle();
+    // Re-inject if cart UI re-renders (Sala view loads fresh).
+    new MutationObserver(() => {
+      const t = document.getElementById('pos-totals');
+      if (t && !document.getElementById('_bg-toggle-wrap')) injectToggle();
+    }).observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', attach);
+  else attach();
+
+  console.log('[byrjunargjald-toggle] installed');
+})();

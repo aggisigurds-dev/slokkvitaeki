@@ -39,11 +39,31 @@
     const SB = getSB();
     if (!SB) { alert('Engin gagnabankatenging'); return; }
 
-    const { data, error } = await SB
-      .from('solur')
-      .select('id,num,customer_nafn,customer_id,samtals,greitt_med,linur,upphaed_an_vsk,vsk_upphaed,is_credit,credit_of,created_at')
-      .eq('num', num)
-      .single();
+    // 2026-05-12: Tolerate missing is_credit / credit_of columns. The SQL
+    // migration in patch 26 hasn't been run on every install, so a hard
+    // SELECT on those columns was failing with 42703 "column does not exist"
+    // — making the whole kredit flow appear broken. Now we try with the
+    // optional columns first; on a column-missing error fall back to the
+    // base columns and skip the duplicate / already-credit checks.
+    const baseCols = 'id,num,customer_nafn,customer_id,samtals,greitt_med,linur,upphaed_an_vsk,vsk_upphaed,created_at';
+    let data, error;
+    {
+      const res = await SB
+        .from('solur')
+        .select(baseCols + ',is_credit,credit_of')
+        .eq('num', num)
+        .single();
+      data = res.data; error = res.error;
+      if (error && /column.*does not exist|42703/i.test(error.message || '')) {
+        const res2 = await SB
+          .from('solur')
+          .select(baseCols)
+          .eq('num', num)
+          .single();
+        data = res2.data; error = res2.error;
+        if (data) { data._kreditColsMissing = true; }
+      }
+    }
 
     if (error || !data) {
       alert('Reikningur ' + num + ' fannst ekki.\n\n' +
@@ -56,15 +76,20 @@
       return;
     }
 
-    const { data: existingCredits } = await SB
-      .from('solur')
-      .select('id,num')
-      .eq('credit_of', data.id);
-    if (existingCredits && existingCredits.length) {
-      const proceed = confirm('Reikningur ' + num + ' var áður kreditfærður (' +
-        existingCredits.map(c => c.num).join(', ') +
-        ').\n\nViltu samt halda áfram með nýja kreditfærslu?');
-      if (!proceed) return;
+    // Duplicate-credit check only works when credit_of column exists.
+    if (!data._kreditColsMissing) {
+      try {
+        const { data: existingCredits } = await SB
+          .from('solur')
+          .select('id,num')
+          .eq('credit_of', data.id);
+        if (existingCredits && existingCredits.length) {
+          const proceed = confirm('Reikningur ' + num + ' var áður kreditfærður (' +
+            existingCredits.map(c => c.num).join(', ') +
+            ').\n\nViltu samt halda áfram með nýja kreditfærslu?');
+          if (!proceed) return;
+        }
+      } catch (_) { /* non-fatal */ }
     }
 
     const sale = {

@@ -21,6 +21,11 @@
   window.__docTemplatesInstalled = true;
 
   const STORAGE_KEY = 'skjalasnidmat';
+  // 2026-05-13: Storage for FILLED-IN copies of templates (with values).
+  // Lets the user save a Þjónustusamningur for Customer X, come back later,
+  // re-print, edit fields, etc. — just like patch 50's contracts list but
+  // for any of our six templates.
+  const FILLED_KEY = 'skjalasnidmat_filled';
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
@@ -37,7 +42,7 @@
       html: `
 <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:780px;margin:0 auto;padding:24px 32px 28px;background:#fff;border:2px solid #0f172a">
   <div style="text-align:center;margin-bottom:4px;line-height:0">
-    <img src="/img/logo.png" alt="Slökkvitæki ehf" style="max-height:90px;max-width:100%;display:inline-block">
+    ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:90, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:90px;width:270px;object-fit:contain;display:inline-block">'}
   </div>
 
   <div style="text-align:right;font-size:13px;color:#475569;margin:0 0 6px">Dags: {{dagsetning}}</div>
@@ -85,7 +90,7 @@
     <div>
       <div style="font-size:12px;color:#475569;margin-bottom:4px;font-weight:600">Fyrir hönd Slökkvitækja ehf:</div>
       <div style="height:60px;border-bottom:1px solid #0f172a;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px">{{sig_slokkvitaeki}}</div>
-      <div style="font-size:13px;margin-top:4px;font-weight:600">Elías Ásgeir Baldvinsson</div>
+      <div style="font-size:13px;margin-top:4px;font-weight:600">{{starfsmadur}}</div>
     </div>
     <div>
       <div style="font-size:12px;color:#475569;margin-bottom:4px;font-weight:600">Fyrir hönd fyrirtækis/húsfélags:</div>
@@ -112,7 +117,7 @@
       html: `
 <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:780px;margin:0 auto;padding:24px 32px 28px;background:#fff;border:2px solid #0f172a">
   <div style="text-align:center;margin-bottom:4px;line-height:0">
-    <img src="/img/logo.png" alt="Slökkvitæki ehf" style="max-height:90px;max-width:100%;display:inline-block">
+    ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:90, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:90px;width:270px;object-fit:contain;display:inline-block">'}
   </div>
 
   <div style="text-align:right;font-size:13px;color:#475569;margin:0 0 6px">Dagsetning: {{dagsetning}}</div>
@@ -173,7 +178,7 @@
       html: `
 <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:780px;margin:0 auto;padding:24px 32px 28px;background:#fff;border:2px solid #0f172a">
   <div style="text-align:center;margin-bottom:4px;line-height:0">
-    <img src="/img/logo.png" alt="Slökkvitæki ehf" style="max-height:80px;max-width:100%;display:inline-block">
+    ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:80, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:80px;width:240px;object-fit:contain;display:inline-block">'}
   </div>
 
   <div style="text-align:center;font-size:12px;color:#475569;margin:4px 0 14px">
@@ -224,104 +229,106 @@
       name: 'Ársskoðun brunakerfa (viðtökupróf)',
       type: 'arsskodun_brunakerfa',
       _seed: true,
+      // 2026-05-13: Compressed to fit a single A4 page. Reduced paddings,
+      // shrunk fonts (10pt body, 9pt table rows), smaller logo + signature
+      // strip, tighter margins. The @page rule forces narrow print margins.
       html: `
-<div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:820px;margin:0 auto;padding:20px 28px 24px;background:#fff;border:2px solid #0f172a">
-  <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:10px">
-    <div style="line-height:0"><img src="/img/logo.png" alt="Slökkvitæki ehf" style="max-height:70px"></div>
-    <div style="text-align:right;font-size:12px;color:#475569">Dags: <strong>{{dagsetning}}</strong></div>
+<style>
+  @media print { @page { size: A4; margin: 8mm 10mm } }
+  .ab-doc { font-family: Arial, Helvetica, sans-serif; color:#0f172a; max-width:820px;
+            margin:0 auto; padding:10px 14px 12px; background:#fff; border:1.5px solid #0f172a; }
+  .ab-doc table { width:100%; border-collapse:collapse }
+  .ab-doc .info-tbl td { border:1px solid #cbd5e1; padding:3px 6px; font-size:10px }
+  .ab-doc .chk-tbl th, .ab-doc .chk-tbl td { border:1px solid #cbd5e1; padding:2px 5px; font-size:9.5px; line-height:1.25 }
+  .ab-doc .chk-tbl th { background:#f1f5f9; text-align:left }
+  .ab-doc .chk-tbl .c { text-align:center; font-size:11px; width:42px }
+  .ab-doc .chk-tbl .sect { background:#fef3c7; font-weight:700 }
+  .ab-doc .chk-tbl .ath { width:22% }
+</style>
+<div class="ab-doc">
+  <div style="text-align:right;font-size:10px;color:#475569;margin-bottom:2px">Dags: <strong>{{dagsetning}}</strong></div>
+  <div style="text-align:center;line-height:0;margin:2px 0 8px">${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:68, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:68px;width:204px;object-fit:contain;display:inline-block">'}</div>
+
+  <div style="text-align:center;margin:2px 0 6px">
+    <div style="font-size:15px;font-weight:800;line-height:1.1">Viðtökupróf / Árleg prófun · Brunaviðvörunarkerfi</div>
   </div>
 
-  <div style="text-align:center;margin:8px 0 14px">
-    <div style="font-size:20px;font-weight:800">Viðtökupróf / Árleg prófun</div>
-    <div style="font-size:14px;font-weight:600;margin-top:2px">Brunaviðvörunarkerfi</div>
-  </div>
-
-  <table style="width:100%;border-collapse:collapse;margin-bottom:8px">
+  <table class="info-tbl" style="margin-bottom:4px">
     <tr>
-      <td style="border:1px solid #cbd5e1;padding:6px 9px;font-size:12px"><strong>Verkkaupi:</strong> {{verkkaupi}}</td>
-      <td style="border:1px solid #cbd5e1;padding:6px 9px;font-size:12px"><strong>Kennitala:</strong> {{kennitala}}</td>
-      <td style="border:1px solid #cbd5e1;padding:6px 9px;font-size:12px"><strong>Sími:</strong> {{simi}}</td>
+      <td><strong>Verkkaupi:</strong> {{verkkaupi}}</td>
+      <td><strong>Kennitala:</strong> {{kennitala}}</td>
+      <td><strong>Sími:</strong> {{simi}}</td>
     </tr>
     <tr>
-      <td style="border:1px solid #cbd5e1;padding:6px 9px;font-size:12px"><strong>Tengiliður:</strong> {{tengilidur}}</td>
-      <td style="border:1px solid #cbd5e1;padding:6px 9px;font-size:12px"><strong>Heimilisf.:</strong> {{heimilisfang}}</td>
-      <td style="border:1px solid #cbd5e1;padding:6px 9px;font-size:12px"><strong>Póstnr.:</strong> {{postnr}}</td>
+      <td><strong>Tengiliður:</strong> {{tengilidur}}</td>
+      <td><strong>Heimilisf.:</strong> {{heimilisfang}}</td>
+      <td><strong>Póstnr.:</strong> {{postnr}}</td>
     </tr>
     <tr>
-      <td colspan="2" style="border:1px solid #cbd5e1;padding:6px 9px;font-size:12px"><strong>Prófun (allt kerfið/hluti af kerfi):</strong> {{profunarsvid}}</td>
-      <td style="border:1px solid #cbd5e1;padding:6px 9px;font-size:12px"><strong>Tegund kerfis:</strong> {{tegund_kerfis}}</td>
-    </tr>
-    <tr style="background:#f8fafc">
-      <td style="border:1px solid #cbd5e1;padding:6px 9px;font-size:12px"><strong>Verktaki:</strong> Slökkvitæki ehf</td>
-      <td style="border:1px solid #cbd5e1;padding:6px 9px;font-size:12px">Helluhraun 10 · kt: 600508-0400</td>
-      <td style="border:1px solid #cbd5e1;padding:6px 9px;font-size:12px">Sími: 565-4080</td>
+      <td colspan="2"><strong>Prófun:</strong> {{profunarsvid}}</td>
+      <td><strong>Tegund kerfis:</strong> {{tegund_kerfis}}</td>
     </tr>
   </table>
 
-  <div style="margin:8px 0 12px;font-size:13px;line-height:1.6"><strong>Næsta skoðun kerfis:</strong> {{naesta_skodun}}</div>
+  <div style="margin:3px 0 5px;font-size:10px"><strong>Næsta skoðun:</strong> {{naesta_skodun}}</div>
 
-  <table style="width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:14px">
-    <thead>
-      <tr style="background:#f1f5f9">
-        <th style="border:1px solid #cbd5e1;padding:5px 7px;text-align:left">Heiti</th>
-        <th style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;width:60px">Í lagi</th>
-        <th style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;width:60px">Ólagi</th>
-        <th style="border:1px solid #cbd5e1;padding:5px 7px;text-align:left;width:25%">Athugasemd</th>
-      </tr>
-    </thead>
+  <table class="chk-tbl" style="margin-bottom:6px">
+    <thead><tr>
+      <th>Heiti</th><th class="c">Í lagi</th><th class="c">Ólagi</th><th class="ath">Athugasemd</th>
+    </tr></thead>
     <tbody>
-      <tr><td colspan="4" style="border:1px solid #cbd5e1;padding:5px 7px;background:#fef3c7;font-weight:700">Prófun á stjórnstöð</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Analog gildi lesin og yfirfarin á stjórnstöð</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a1}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a1n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_a1}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Skynjarar prófaðir frá stöð</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a2}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a2n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_a2}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Lampaprófun</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a3}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a3n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_a3}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Bilun ef skynjararás er rofin</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a4}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a4n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_a4}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Bilun ef aðvörunarrás er rofin</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a5}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a5n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_a5}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Bilun frá aðalaflgjafa ath.</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a6}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a6n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_a6}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Bilun frá varaaflgjafa ath.</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a7}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a7n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_a7}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Hleðsluspenna og straumnotkun mæld</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a8}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a8n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_a8}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Prófun útganga</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a9}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a9n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_a9}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Merkingar, þjónustubók og yfirlitsmynd í lagi</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a10}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a10n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_a10}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Rafhlöður (merking/dagsetning)</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a11}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_a11n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{rafhl_dags}}</td></tr>
-      <tr><td colspan="4" style="border:1px solid #cbd5e1;padding:5px 7px;background:#fef3c7;font-weight:700">Prófun á jaðarbúnaði</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Prófun á öllum reykskynjurum með gasi</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b1}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b1n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_b1}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Prófun á öllum hitaskynjurum með hitagjafa</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b2}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b2n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_b2}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Prófun á öllum handboðum</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b3}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b3n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_b3}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Bilun þegar skynjari er fjarlægður (5% per rás)</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b4}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b4n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_b4}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Gaumljós athuguð, hvort þau séu í lagi</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b5}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b5n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_b5}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Bjöllur (hljóðprófun)</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b6}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b6n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_b6}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Ath. með hurðasegla</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b7}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b7n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_b7}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Textar lesnir saman við númer og staðsetn.</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b8}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b8n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_b8}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Stýribúnaður (loftræsting, reyklúgur, sprinkler o.fl.)</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b9}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_b9n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_b9}}</td></tr>
-      <tr><td colspan="4" style="border:1px solid #cbd5e1;padding:5px 7px;background:#fef3c7;font-weight:700">Undirstöðvar</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Athuga hvort textar og boð skili sér</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_c1}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_c1n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_c1}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Merking á þjónustubók og yfirlitsmynd í lagi</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_c2}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_c2n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_c2}}</td></tr>
-      <tr><td colspan="4" style="border:1px solid #cbd5e1;padding:5px 7px;background:#fef3c7;font-weight:700">Boðsendir</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Skilar brunaboð sér frá hverri rás</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_d1}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_d1n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_d1}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Skila bilunarboð sér</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_d2}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_d2n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_d2}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Skynjari tekinn úr sökkli</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_d3}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_d3n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_d3}}</td></tr>
-      <tr><td style="border:1px solid #cbd5e1;padding:5px 7px">Ath útkallsleiðbeinungar og tengiliði</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_d4}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px;text-align:center;font-size:14px">{{chk_d4n}}</td><td style="border:1px solid #cbd5e1;padding:5px 7px">{{ath_d4}}</td></tr>
+      <tr><td colspan="4" class="sect">Prófun á stjórnstöð</td></tr>
+      <tr><td>Analog gildi lesin og yfirfarin á stjórnstöð</td><td class="c">{{chk_a1}}</td><td class="c">{{chk_a1n}}</td><td>{{ath_a1}}</td></tr>
+      <tr><td>Skynjarar prófaðir frá stöð</td><td class="c">{{chk_a2}}</td><td class="c">{{chk_a2n}}</td><td>{{ath_a2}}</td></tr>
+      <tr><td>Lampaprófun</td><td class="c">{{chk_a3}}</td><td class="c">{{chk_a3n}}</td><td>{{ath_a3}}</td></tr>
+      <tr><td>Bilun ef skynjararás er rofin</td><td class="c">{{chk_a4}}</td><td class="c">{{chk_a4n}}</td><td>{{ath_a4}}</td></tr>
+      <tr><td>Bilun ef aðvörunarrás er rofin</td><td class="c">{{chk_a5}}</td><td class="c">{{chk_a5n}}</td><td>{{ath_a5}}</td></tr>
+      <tr><td>Bilun frá aðalaflgjafa ath.</td><td class="c">{{chk_a6}}</td><td class="c">{{chk_a6n}}</td><td>{{ath_a6}}</td></tr>
+      <tr><td>Bilun frá varaaflgjafa ath.</td><td class="c">{{chk_a7}}</td><td class="c">{{chk_a7n}}</td><td>{{ath_a7}}</td></tr>
+      <tr><td>Hleðsluspenna og straumnotkun mæld</td><td class="c">{{chk_a8}}</td><td class="c">{{chk_a8n}}</td><td>{{ath_a8}}</td></tr>
+      <tr><td>Prófun útganga</td><td class="c">{{chk_a9}}</td><td class="c">{{chk_a9n}}</td><td>{{ath_a9}}</td></tr>
+      <tr><td>Merkingar, þjónustubók og yfirlitsmynd í lagi</td><td class="c">{{chk_a10}}</td><td class="c">{{chk_a10n}}</td><td>{{ath_a10}}</td></tr>
+      <tr><td>Rafhlöður (merking/dagsetning)</td><td class="c">{{chk_a11}}</td><td class="c">{{chk_a11n}}</td><td>{{rafhl_dags}}</td></tr>
+      <tr><td colspan="4" class="sect">Prófun á jaðarbúnaði</td></tr>
+      <tr><td>Reykskynjarar prófaðir með gasi</td><td class="c">{{chk_b1}}</td><td class="c">{{chk_b1n}}</td><td>{{ath_b1}}</td></tr>
+      <tr><td>Hitaskynjarar prófaðir með hitagjafa</td><td class="c">{{chk_b2}}</td><td class="c">{{chk_b2n}}</td><td>{{ath_b2}}</td></tr>
+      <tr><td>Prófun á öllum handboðum</td><td class="c">{{chk_b3}}</td><td class="c">{{chk_b3n}}</td><td>{{ath_b3}}</td></tr>
+      <tr><td>Bilun þegar skynjari er fjarlægður (5% per rás)</td><td class="c">{{chk_b4}}</td><td class="c">{{chk_b4n}}</td><td>{{ath_b4}}</td></tr>
+      <tr><td>Gaumljós athuguð</td><td class="c">{{chk_b5}}</td><td class="c">{{chk_b5n}}</td><td>{{ath_b5}}</td></tr>
+      <tr><td>Bjöllur (hljóðprófun)</td><td class="c">{{chk_b6}}</td><td class="c">{{chk_b6n}}</td><td>{{ath_b6}}</td></tr>
+      <tr><td>Hurðaseglar</td><td class="c">{{chk_b7}}</td><td class="c">{{chk_b7n}}</td><td>{{ath_b7}}</td></tr>
+      <tr><td>Textar lesnir saman við númer og staðsetn.</td><td class="c">{{chk_b8}}</td><td class="c">{{chk_b8n}}</td><td>{{ath_b8}}</td></tr>
+      <tr><td>Stýribúnaður (loftræsting, reyklúgur, sprinkler o.fl.)</td><td class="c">{{chk_b9}}</td><td class="c">{{chk_b9n}}</td><td>{{ath_b9}}</td></tr>
+      <tr><td colspan="4" class="sect">Undirstöðvar</td></tr>
+      <tr><td>Athuga hvort textar og boð skili sér</td><td class="c">{{chk_c1}}</td><td class="c">{{chk_c1n}}</td><td>{{ath_c1}}</td></tr>
+      <tr><td>Merking á þjónustubók og yfirlitsmynd í lagi</td><td class="c">{{chk_c2}}</td><td class="c">{{chk_c2n}}</td><td>{{ath_c2}}</td></tr>
+      <tr><td colspan="4" class="sect">Boðsendir</td></tr>
+      <tr><td>Skilar brunaboð sér frá hverri rás</td><td class="c">{{chk_d1}}</td><td class="c">{{chk_d1n}}</td><td>{{ath_d1}}</td></tr>
+      <tr><td>Skila bilunarboð sér</td><td class="c">{{chk_d2}}</td><td class="c">{{chk_d2n}}</td><td>{{ath_d2}}</td></tr>
+      <tr><td>Skynjari tekinn úr sökkli</td><td class="c">{{chk_d3}}</td><td class="c">{{chk_d3n}}</td><td>{{ath_d3}}</td></tr>
+      <tr><td>Ath útkallsleiðbeiningar og tengiliði</td><td class="c">{{chk_d4}}</td><td class="c">{{chk_d4n}}</td><td>{{ath_d4}}</td></tr>
     </tbody>
   </table>
 
-  <div style="margin:14px 0 4px;font-size:14px;line-height:1.6"><strong>Prófun framkvæmd af:</strong> {{profun_af}}</div>
+  <div style="margin:4px 0 2px;font-size:10px"><strong>Prófun framkvæmd af:</strong> {{profun_af}}</div>
 
-  <div style="margin:18px 0 4px;font-size:14px;font-weight:700">Athugasemdir:</div>
-  <div style="border:1px solid #cbd5e1;min-height:80px;padding:10px 12px;font-size:13px;border-radius:4px;line-height:1.6;white-space:pre-wrap">{{athugasemdir}}</div>
+  <div style="margin:6px 0 2px;font-size:10px;font-weight:700">Athugasemdir:</div>
+  <div style="border:1px solid #cbd5e1;min-height:34px;padding:4px 6px;font-size:10px;line-height:1.3;white-space:pre-wrap">{{athugasemdir}}</div>
 
-  <div style="margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:30px">
+  <div style="margin-top:8px;display:grid;grid-template-columns:1fr 1fr;gap:18px">
     <div>
-      <div style="font-size:12px;color:#475569;margin-bottom:4px;font-weight:600">F.h. Slökkvitæki ehf:</div>
-      <div style="height:55px;border-bottom:1px solid #0f172a;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px">{{sig_starfsmanns}}</div>
-      <div style="font-size:13px;margin-top:4px;font-weight:600">{{starfsmadur}}</div>
+      <div style="font-size:9px;color:#475569;margin-bottom:2px;font-weight:600">F.h. Slökkvitæki ehf:</div>
+      <div style="height:32px;border-bottom:1px solid #0f172a;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px">{{sig_starfsmanns}}</div>
+      <div style="font-size:10px;margin-top:2px;font-weight:600">{{starfsmadur}}</div>
     </div>
     <div>
-      <div style="font-size:12px;color:#475569;margin-bottom:4px;font-weight:600">F.h. verkkaupa:</div>
-      <div style="height:55px;border-bottom:1px solid #0f172a;display:flex;align-items:flex-end;justify-content:center;padding-bottom:4px">{{sig_verkkaupa}}</div>
-      <div style="font-size:13px;margin-top:4px;font-weight:600">{{verkkaupi}}</div>
+      <div style="font-size:9px;color:#475569;margin-bottom:2px;font-weight:600">F.h. verkkaupa:</div>
+      <div style="height:32px;border-bottom:1px solid #0f172a;display:flex;align-items:flex-end;justify-content:center;padding-bottom:2px">{{sig_verkkaupa}}</div>
+      <div style="font-size:10px;margin-top:2px;font-weight:600">{{verkkaupi}}</div>
     </div>
   </div>
 
-  <div style="margin-top:18px;padding-top:10px;border-top:1px solid #cbd5e1;text-align:center;font-size:11px;color:#64748b">
+  <div style="margin-top:6px;padding-top:4px;border-top:1px solid #cbd5e1;text-align:center;font-size:8.5px;color:#64748b">
     Slökkvitæki ehf · Helluhrauni 10, 220 Hafnarfirði · kt. 600508-0400 · vsknr. 98107 · Sími 565-4080
   </div>
 </div>`
@@ -334,7 +341,7 @@
       html: `
 <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:780px;margin:0 auto;padding:24px 32px 28px;background:#fff;border:2px solid #0f172a">
   <div style="text-align:center;margin-bottom:4px;line-height:0">
-    <img src="/img/logo.png" alt="Slökkvitæki ehf" style="max-height:90px;max-width:100%;display:inline-block">
+    ${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:90, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:90px;width:270px;object-fit:contain;display:inline-block">'}
   </div>
 
   <div style="text-align:right;font-size:13px;color:#475569;margin:0 0 6px">Dagsetning: {{dagsetning}}</div>
@@ -389,7 +396,7 @@
       html: `
 <div style="font-family:Arial,Helvetica,sans-serif;color:#0f172a;max-width:820px;margin:0 auto;padding:20px 28px 24px;background:#fff;border:2px solid #0f172a">
   <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:8px">
-    <div style="line-height:0"><img src="/img/logo.png" alt="Slökkvitæki ehf" style="max-height:60px"></div>
+    <div style="line-height:0">${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:60, alt:"Slökkvitæki / Brunahólf"}) : '<img src="/img/logo.png?v=20260520b" alt="Slökkvitæki / Brunahólf" style="height:60px;width:180px;object-fit:contain;display:inline-block">'}</div>
     <div style="text-align:right;font-size:11px;color:#475569;line-height:1.4">
       Nr. 15.11.01.01 · útgáfa nr. 2<br>
       <strong style="color:#0f172a;font-size:13px">SKOÐUN Á SLÖKKVIBÚNAÐI</strong><br>
@@ -658,14 +665,31 @@
     return fields;
   }
 
-  function fillTemplate(html, values) {
+  function fillTemplate(html, values, opts) {
+    // 2026-05-13: `opts.forPrint=true` renders empty fields as truly empty
+    // (no helper `[Label]` placeholder text). Use this when printing or
+    // saving — the helper text belongs only in the on-screen editor preview
+    // so the user knows which boxes to fill.
+    const forPrint = !!(opts && opts.forPrint);
     return html.replace(/\{\{([^}]+)\}\}/g, (_, key) => {
       const k = key.trim();
       const t = fieldType(k);
       const v = values[k];
 
       if (t === 'checkbox') {
-        return v ? '<span style="font-size:18px;line-height:1">☒</span>' : '<span style="font-size:18px;line-height:1">☐</span>';
+        const glyph = v ? '☒' : '☐';
+        // 2026-05-20: in the editor preview, render checkboxes as click-
+        // targets so the user can toggle them by tapping the box itself
+        // (no need to hunt for the matching field on the left). On print
+        // we keep the plain glyph so no interactive attributes leak in.
+        if (forPrint) {
+          return '<span style="font-size:18px;line-height:1">' + glyph + '</span>';
+        }
+        return '<span class="_dt-chk" data-chk-field="' + esc(k) + '" ' +
+          'role="checkbox" aria-checked="' + (v ? 'true' : 'false') + '" tabindex="0" ' +
+          'style="font-size:20px;line-height:1;cursor:pointer;user-select:none;padding:2px 4px;border-radius:4px;display:inline-block">' +
+          glyph +
+        '</span>';
       }
 
       if (t === 'signature') {
@@ -675,7 +699,9 @@
         return ''; // empty when no signature drawn
       }
 
-      return (v != null && v !== '') ? esc(v) : '<span style="color:#94a3b8;font-style:italic">[' + esc(fieldLabel(k)) + ']</span>';
+      if (v != null && v !== '') return esc(v);
+      // Empty field: hide the placeholder hint when printing/saving
+      return forPrint ? '' : '<span style="color:#94a3b8;font-style:italic">[' + esc(fieldLabel(k)) + ']</span>';
     });
   }
 
@@ -684,6 +710,35 @@
     const userTemplates = Array.isArray(stored) ? stored : [];
     // Seeds first, then user-added
     return SEED_TEMPLATES.concat(userTemplates);
+  }
+
+  // 2026-05-20: Hidden-template handling. User templates carry a `hidden`
+  // boolean directly. Seeds are read-only constants so we track hidden seed
+  // IDs in a separate AppSettings list. isHidden() works for both.
+  const HIDDEN_KEY = 'document_templates_hidden';
+  function getHiddenSeedIds() {
+    const stored = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(HIDDEN_KEY)) || [];
+    return Array.isArray(stored) ? stored : [];
+  }
+  function isHidden(t) {
+    if (!t) return false;
+    if (t._seed) return getHiddenSeedIds().indexOf(t.id) >= 0;
+    return !!t.hidden;
+  }
+  async function setHidden(id, hidden) {
+    const t = getTemplates().find(x => x.id === id);
+    if (!t) return false;
+    if (t._seed) {
+      const cur = getHiddenSeedIds().slice();
+      const idx = cur.indexOf(id);
+      if (hidden && idx < 0) cur.push(id);
+      else if (!hidden && idx >= 0) cur.splice(idx, 1);
+      if (!window.AppSettings || !window.AppSettings.save) return false;
+      return await window.AppSettings.save({ [HIDDEN_KEY]: cur });
+    }
+    // User template — mutate and save.
+    t.hidden = !!hidden;
+    return await saveUserTemplate(t);
   }
 
   async function saveUserTemplate(t) {
@@ -706,6 +761,33 @@
     return await window.AppSettings.save({ [STORAGE_KEY]: next });
   }
 
+  // ── Filled-document persistence (Þjónustusamningar etc.) ──────────────────
+  function getFilledList() {
+    const stored = (window.AppSettings && window.AppSettings.path && window.AppSettings.path(FILLED_KEY)) || [];
+    return Array.isArray(stored) ? stored : [];
+  }
+  async function saveFilled(rec) {
+    if (!window.AppSettings || !window.AppSettings.save) {
+      alert('AppSettings ekki tilbúið');
+      return false;
+    }
+    const list = getFilledList().slice();
+    const idx = list.findIndex(x => x.id === rec.id);
+    if (idx >= 0) list[idx] = rec; else list.push(rec);
+    return await window.AppSettings.save({ [FILLED_KEY]: list });
+  }
+  async function deleteFilled(id) {
+    if (!window.AppSettings || !window.AppSettings.save) return false;
+    const next = getFilledList().filter(x => x.id !== id);
+    return await window.AppSettings.save({ [FILLED_KEY]: next });
+  }
+  function fmtDateShort(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear();
+  }
+
   // ── UI: Section in Samningar view ──────────────────────────────────────────
   function injectSection() {
     const main = document.querySelector('#view-samningar #ct-main');
@@ -718,22 +800,129 @@
     section.innerHTML = renderSection();
     main.appendChild(section);
     wireSection(section);
+
+    // 2026-05-13: Filled-documents section below the templates list
+    if (!main.querySelector('._dt-filled-section')) {
+      const filled = document.createElement('div');
+      filled.className = '_dt-filled-section';
+      filled.style.cssText = 'max-width:1180px;margin:24px auto 0;padding-top:18px;border-top:1px dashed #e2e8f0';
+      filled.innerHTML = renderFilledSection();
+      main.appendChild(filled);
+      wireFilledSection(filled);
+    }
+  }
+
+  function renderFilledSection() {
+    const list = getFilledList()
+      .slice()
+      .sort((a, b) => (b.updated_at || b.created_at || '').localeCompare(a.updated_at || a.created_at || ''));
+    if (!list.length) {
+      return '' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+          '<div><h2 style="margin:0;font-size:18px;color:#0f172a">📁 Vistuð skjöl</h2>' +
+          '<div style="font-size:12px;color:#64748b;margin-top:2px">Útfyllt sniðmát birtast hér eftir að þú smellir „💾 Vista í kerfi" í forskoðunarglugganum.</div></div>' +
+        '</div>' +
+        '<div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:24px;color:#94a3b8;font-style:italic;font-size:13px;text-align:center">Engin vistuð skjöl ennþá.</div>';
+    }
+    const rows = list.map(rec => {
+      const tmpl = getTemplates().find(x => x.id === rec.template_id);
+      const tName = tmpl ? tmpl.name : (rec.template_name || 'Sniðmát');
+      return '' +
+        '<tr data-fid="' + esc(rec.id) + '">' +
+          '<td style="padding:9px 12px;font-weight:600;color:#0f172a">' + esc(rec.name || tName) + '</td>' +
+          '<td style="padding:9px 12px;color:#475569">' + esc(tName) + '</td>' +
+          '<td style="padding:9px 12px;color:#475569">' + esc(rec.customer || '—') + '</td>' +
+          '<td style="padding:9px 12px;color:#475569;font-family:monospace;font-size:12px">' + esc(rec.kennitala || '—') + '</td>' +
+          '<td style="padding:9px 12px;color:#64748b;font-size:12px">' + esc(fmtDateShort(rec.updated_at || rec.created_at)) + '</td>' +
+          '<td style="padding:6px 12px;text-align:right;white-space:nowrap">' +
+            '<button class="_dt-filled-open" data-fid="' + esc(rec.id) + '" type="button" style="padding:6px 12px;background:#2563eb;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:12px;font-weight:600;margin-right:4px">📝 Opna</button>' +
+            '<button class="_dt-filled-del" data-fid="' + esc(rec.id) + '" type="button" title="Eyða" style="padding:6px 10px;background:#fff;color:#dc2626;border:1px solid #fecaca;border-radius:6px;cursor:pointer;font:inherit;font-size:13px">✕</button>' +
+          '</td>' +
+        '</tr>';
+    }).join('');
+    return '' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">' +
+        '<div><h2 style="margin:0;font-size:18px;color:#0f172a">📁 Vistuð skjöl <span style="font-size:12px;color:#64748b;font-weight:500">· ' + list.length + '</span></h2>' +
+        '<div style="font-size:12px;color:#64748b;margin-top:2px">Þjónustusamningar, tilboð og skýrslur sem þú hefur vistað. Smelltu á „Opna" til að halda áfram eða endurprenta.</div></div>' +
+      '</div>' +
+      '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.04)">' +
+        '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
+          '<thead><tr style="background:#f8fafc;text-align:left">' +
+            '<th style="padding:9px 12px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Skjal</th>' +
+            '<th style="padding:9px 12px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Sniðmát</th>' +
+            '<th style="padding:9px 12px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Viðskiptavinur</th>' +
+            '<th style="padding:9px 12px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Kennitala</th>' +
+            '<th style="padding:9px 12px;font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em">Dags</th>' +
+            '<th style="padding:9px 12px"></th>' +
+          '</tr></thead>' +
+          '<tbody>' + rows + '</tbody>' +
+        '</table>' +
+      '</div>';
+  }
+
+  function wireFilledSection(section) {
+    section.addEventListener('click', async e => {
+      const openBtn = e.target.closest('._dt-filled-open');
+      const delBtn  = e.target.closest('._dt-filled-del');
+      if (openBtn) {
+        e.stopPropagation();
+        const rec = getFilledList().find(x => x.id === openBtn.dataset.fid);
+        if (rec) openTemplateForm(rec.template_id, { filledId: rec.id });
+        return;
+      }
+      if (delBtn) {
+        e.stopPropagation();
+        const id = delBtn.dataset.fid;
+        const rec = getFilledList().find(x => x.id === id);
+        if (rec && confirm('Eyða „' + (rec.name || 'skjali') + '"?')) {
+          await deleteFilled(id);
+          refreshFilledSection();
+        }
+      }
+    });
+  }
+
+  function refreshFilledSection() {
+    const section = document.querySelector('._dt-filled-section');
+    if (!section) { injectSection(); return; }
+    section.innerHTML = renderFilledSection();
+    wireFilledSection(section);
   }
 
   function renderSection() {
     const templates = getTemplates();
     const cards = templates.map(t => {
       const isSeed = !!t._seed;
+      const hidden = isHidden(t);
+      const cardStyle = 'background:#fff;border:1px solid ' + (hidden ? '#cbd5e1' : '#e2e8f0') +
+        ';border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,0.04)' +
+        (hidden ? ';opacity:.6' : '');
+      const hiddenBadge = hidden
+        ? '<span title="Birtist ekki í vali í brunakerfi/Fyrirtæki" style="font-size:9px;font-weight:700;background:#f1f5f9;color:#475569;padding:2px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:0.04em;margin-left:4px">🚫 Falið</span>'
+        : '';
       return '' +
-      '<div class="_dt-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px;display:flex;flex-direction:column;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,0.04)">' +
-        '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px">' +
-          '<div style="font-weight:700;font-size:14px;color:#0f172a;line-height:1.3">' + esc(t.name) + '</div>' +
-          (isSeed ? '<span style="font-size:9px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:2px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:0.04em">forsniðið</span>'
-                  : '<span style="font-size:9px;font-weight:700;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:0.04em">eigið</span>') +
+      '<div class="_dt-card" style="' + cardStyle + '">' +
+        '<div style="display:flex;justify-content:space-between;align-items:start;gap:8px;flex-wrap:wrap">' +
+          '<div style="font-weight:700;font-size:14px;color:#0f172a;line-height:1.3;flex:1;min-width:0">' + esc(t.name) + '</div>' +
+          '<div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">' +
+            (isSeed ? '<span style="font-size:9px;font-weight:700;background:#e0e7ff;color:#3730a3;padding:2px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:0.04em">forsniðið</span>'
+                    : '<span style="font-size:9px;font-weight:700;background:#dcfce7;color:#166534;padding:2px 6px;border-radius:99px;text-transform:uppercase;letter-spacing:0.04em">eigið</span>') +
+            hiddenBadge +
+          '</div>' +
         '</div>' +
         '<div style="font-size:11px;color:#64748b">' + extractFields(t.html).length + ' reitir til útfyllingar</div>' +
+        // 2026-05-20: hide-from-picker checkbox. When ticked, the template
+        // stops showing up in the brunakerfi/Fyrirtæki sniðmáta-veljara,
+        // but stays editable here in Samningar.
+        '<label style="display:flex;align-items:center;gap:7px;font-size:12px;color:#475569;cursor:pointer;user-select:none;padding:5px 0">' +
+          '<input class="_dt-hide" type="checkbox" data-id="' + esc(t.id) + '"' + (hidden ? ' checked' : '') + ' style="width:15px;height:15px;cursor:pointer">' +
+          '<span>Falið — birtist ekki í vali</span>' +
+        '</label>' +
         '<div style="display:flex;gap:6px;margin-top:auto">' +
           '<button class="_dt-open btn btn-primary btn-sm" data-id="' + esc(t.id) + '" style="flex:1">📝 Opna og útfylla</button>' +
+          // 2026-05-13: Seed templates get an "Afrita" button (clone into an
+          // editable user-template). User-templates keep edit/delete.
+          (isSeed ? '<button class="_dt-clone btn btn-outline btn-sm" data-id="' + esc(t.id) + '" title="Afrita sem mitt eigið sniðmát sem hægt er að breyta">📋</button>' : '') +
           (!isSeed ? '<button class="_dt-edit btn btn-outline btn-sm" data-id="' + esc(t.id) + '" title="Breyta sniðmáti">✎</button>' : '') +
           (!isSeed ? '<button class="_dt-del btn btn-outline btn-sm" data-id="' + esc(t.id) + '" style="color:#dc2626;border-color:#fecaca" title="Eyða">✕</button>' : '') +
         '</div>' +
@@ -753,10 +942,11 @@
 
   function wireSection(section) {
     section.addEventListener('click', e => {
-      const openBtn = e.target.closest('._dt-open');
-      const editBtn = e.target.closest('._dt-edit');
-      const delBtn  = e.target.closest('._dt-del');
-      const addBtn  = e.target.closest('._dt-add');
+      const openBtn  = e.target.closest('._dt-open');
+      const editBtn  = e.target.closest('._dt-edit');
+      const delBtn   = e.target.closest('._dt-del');
+      const addBtn   = e.target.closest('._dt-add');
+      const cloneBtn = e.target.closest('._dt-clone');
       if (openBtn) { e.stopPropagation(); openTemplateForm(openBtn.dataset.id); return; }
       if (editBtn) { e.stopPropagation(); openTemplateEditor(editBtn.dataset.id); return; }
       if (delBtn)  {
@@ -768,8 +958,59 @@
         }
         return;
       }
-      if (addBtn) { e.stopPropagation(); openTemplateEditor(null); return; }
+      if (cloneBtn) { e.stopPropagation(); cloneSeedTemplate(cloneBtn.dataset.id); return; }
+      if (addBtn)   { e.stopPropagation(); openTemplateEditor(null); return; }
     });
+    // 2026-05-20: hide-from-picker checkbox change handler.
+    section.addEventListener('change', async e => {
+      const cb = e.target.closest('._dt-hide');
+      if (!cb) return;
+      e.stopPropagation();
+      const ok = await setHidden(cb.dataset.id, cb.checked);
+      if (!ok) {
+        alert('Tókst ekki að vista földunarstöðu.');
+        cb.checked = !cb.checked;
+        return;
+      }
+      if (window.Toast && Toast.show) {
+        Toast.show(cb.checked ? '🚫 Sniðmát falið — birtist ekki í vali' : '✓ Sniðmát birt aftur');
+      }
+      refreshSection();
+    });
+  }
+
+  // 2026-05-13: Clone a forsniðið (seed) template into an editable
+  // user-template. The new template is identical in content + fields, but
+  // marked as eigið so it can be modified via the editor without touching
+  // the originals. After saving, opens the editor on the new copy.
+  async function cloneSeedTemplate(seedId) {
+    const seed = getTemplates().find(x => x.id === seedId);
+    if (!seed) { alert('Sniðmát fannst ekki'); return; }
+    const baseName = (seed.name || 'Sniðmát') + ' (afrit)';
+    // Avoid clashing names if the user clones the same template twice
+    const existing = getTemplates().map(x => (x.name || '').toLowerCase());
+    let candidate = baseName;
+    let n = 2;
+    while (existing.includes(candidate.toLowerCase())) {
+      candidate = (seed.name || 'Sniðmát') + ' (afrit ' + n + ')';
+      n++;
+    }
+    const clone = {
+      id: 'user_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+      name: candidate,
+      type: seed.type || 'eigid',
+      html: seed.html,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      cloned_from: seedId
+      // NOTE: no _seed flag — that's what makes the editor allow it
+    };
+    const ok = await saveUserTemplate(clone);
+    if (!ok) { alert('Villa við vistun afrits.'); return; }
+    if (window.Toast && Toast.show) Toast.show('✓ „' + candidate + '" búið til — opna ritil…');
+    refreshSection();
+    // Slight delay so the section rebuild settles before the editor opens
+    setTimeout(() => openTemplateEditor(clone.id), 60);
   }
 
   function refreshSection() {
@@ -780,19 +1021,31 @@
   }
 
   // ── Form modal: fill in placeholders → preview/print ──────────────────────
-  function openTemplateForm(templateId) {
+  function openTemplateForm(templateId, opts) {
     const t = getTemplates().find(x => x.id === templateId);
     if (!t) { alert('Sniðmát fannst ekki'); return; }
 
-    // Default dagsetning to today
+    // 2026-05-13: If opening an existing filled doc, hydrate its values.
+    // Otherwise create a fresh form, defaulting dagsetning to today.
+    const existing = (opts && opts.filledId)
+      ? getFilledList().find(x => x.id === opts.filledId)
+      : null;
+
     const today = new Date();
     const dStr = String(today.getDate()).padStart(2,'0') + '.' + String(today.getMonth()+1).padStart(2,'0') + '.' + today.getFullYear();
 
     const fields = extractFields(t.html);
     const values = {};
-    fields.forEach(f => {
-      if (f.key === 'dagsetning') values[f.key] = dStr;
-    });
+    if (existing && existing.values) {
+      Object.assign(values, existing.values);
+    } else {
+      fields.forEach(f => {
+        if (f.key === 'dagsetning') values[f.key] = dStr;
+      });
+    }
+    // Track id of the filled doc we're editing (null = new)
+    let filledId = existing ? existing.id : null;
+    let filledName = existing ? (existing.name || '') : '';
 
     let dlg = document.getElementById('_dt-form-modal');
     if (dlg) dlg.remove();
@@ -812,7 +1065,15 @@
         '</div>' +
         '<div style="display:flex;gap:8px;justify-content:flex-end;padding:12px 20px;border-top:1px solid #e2e8f0;background:#f8fafc">' +
           '<button id="_dt-cancel" type="button" style="padding:9px 16px;border:1px solid #cbd5e1;border-radius:8px;background:#fff;cursor:pointer;font:inherit;font-size:13px;color:#475569">Loka</button>' +
-          '<button id="_dt-print" type="button" style="padding:9px 18px;background:#0f172a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">🖨 Prenta</button>' +
+          // 2026-05-13: Vista í kerfi — saves the filled-in values into
+          // AppSettings.skjalasnidmat_filled so the doc can be reopened
+          // and edited later from the "Vistuð skjöl" list in Samningar.
+          '<button id="_dt-save" type="button" title="Vista útfyllt skjal í kerfið (Vistuð skjöl listi)" style="padding:9px 16px;background:#16a34a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">💾 Vista í kerfi</button>' +
+          // 2026-05-13: Second print button — forces signature fields blank
+          // so you can print a clean copy for pen signing, regardless of what
+          // has been drawn in the signature canvases.
+          '<button id="_dt-print-blank" type="button" title="Prenta tóma undirskriftarreiti til að skrifa undir með penna" style="padding:9px 16px;background:#fff;color:#0f172a;border:1px solid #0f172a;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">✍️ Til undirritunar (auður)</button>' +
+          '<button id="_dt-print" type="button" title="Prenta með rafrænni undirskrift (það sem þú teiknaðir)" style="padding:9px 18px;background:#0f172a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">🖨 Prenta (rafrænt)</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(dlg);
@@ -945,20 +1206,169 @@
       });
     }
 
+    // 2026-05-20: click anywhere on a checkbox in the preview to toggle it.
+    // Keeps the left-side form checkbox in sync so both views stay consistent.
+    previewEl.addEventListener('click', e => {
+      const box = e.target.closest('._dt-chk');
+      if (!box) return;
+      e.preventDefault();
+      const key = box.dataset.chkField;
+      if (!key) return;
+      values[key] = !values[key];
+      const cb = formEl.querySelector('input[data-type="checkbox"][data-field="' + (window.CSS && CSS.escape ? CSS.escape(key) : key) + '"]');
+      if (cb) cb.checked = !!values[key];
+      updatePreview();
+    });
+    // Keyboard accessibility — space/enter toggles a focused checkbox.
+    previewEl.addEventListener('keydown', e => {
+      if (e.key !== ' ' && e.key !== 'Enter') return;
+      const box = e.target.closest && e.target.closest('._dt-chk');
+      if (!box) return;
+      e.preventDefault();
+      box.click();
+    });
+
     function updatePreview() {
       previewEl.innerHTML = fillTemplate(t.html, values);
     }
     updatePreview();
 
-    dlg.querySelector('#_dt-print').addEventListener('click', () => {
-      const html = fillTemplate(t.html, values);
+    function openPrintWindow(printValues) {
+      // forPrint=true → empty fields render as blank (no [Label] hint text)
+      const html = fillTemplate(t.html, printValues, { forPrint: true });
       const win = window.open('', 'doc-print', 'width=900,height=1100');
       if (!win) { alert('Sprettigluggi var lokaður — leyfðu sprettiglugga til að prenta.'); return; }
       win.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + esc(t.name) + '</title>' +
         '<style>@media print{@page{size:A4;margin:14mm}}body{margin:0;padding:14mm;background:#fff;font-family:Arial,Helvetica,sans-serif}@media print{body{padding:0}}</style>' +
         '</head><body>' + html + '<scr' + 'ipt>setTimeout(function(){window.print();},250);</scr' + 'ipt></body></html>');
       win.document.close();
+    }
+
+    dlg.querySelector('#_dt-print').addEventListener('click', () => {
+      // Digital print — use values as-is (signatures included if drawn)
+      openPrintWindow(values);
     });
+
+    // 2026-05-13: Blank-signature print — clone values but strip every
+    // signature field so the printed sheet has clean undirskriftarlínur
+    // for pen signing.
+    dlg.querySelector('#_dt-print-blank').addEventListener('click', () => {
+      const blank = Object.assign({}, values);
+      fields.forEach(f => { if (f.type === 'signature') blank[f.key] = ''; });
+      openPrintWindow(blank);
+    });
+
+    // 2026-05-13: Vista í kerfi — store the filled values so we can come
+    // back later. If editing an existing filled doc (filledId set) we
+    // update in place; otherwise insert a new record.
+    // For Þjónustusamningur templates we ALSO upsert into the actual
+    // `thjonustusamningar` Supabase table so the contract appears in the
+    // existing Þjónustusamningar list (patch 50) — single source of truth.
+    dlg.querySelector('#_dt-save').addEventListener('click', async () => {
+      const saveBtn = dlg.querySelector('#_dt-save');
+      const customer = (values.vidskiptavinur_nafn || values.verkkaupi || '').toString().trim();
+      const kt = (values.kennitala || '').toString().trim();
+      const autoName = customer ? (t.name + ' — ' + customer) : t.name;
+      const isThjonusta = (t.type === 'thjonusta' || t.type === 'thjonusta_brunakerfi');
+      const rec = {
+        id: filledId || ('filled_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8)),
+        template_id: t.id,
+        template_name: t.name,
+        name: filledName || autoName,
+        customer,
+        kennitala: kt,
+        values: Object.assign({}, values),
+        created_at: existing ? existing.created_at : new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        // Keep any previously-linked thjonustusamningar.id so subsequent saves
+        // update the same row instead of inserting duplicates.
+        thjonustusamningar_id: existing ? existing.thjonustusamningar_id : null
+      };
+      saveBtn.disabled = true;
+      saveBtn.textContent = '…';
+
+      // Dual-write for Þjónustusamningur templates
+      let contractMsg = '';
+      if (isThjonusta) {
+        try {
+          const linkedId = await upsertThjonustusamningur(t, values, rec.thjonustusamningar_id);
+          if (linkedId) {
+            rec.thjonustusamningar_id = linkedId;
+            contractMsg = ' · Birtist í Þjónustusamningar';
+          }
+        } catch (err) {
+          console.warn('[patch-94] thjonustusamningar upsert failed:', err);
+          contractMsg = ' (en samningalisti uppfærður ekki)';
+        }
+      }
+
+      const ok = await saveFilled(rec);
+      saveBtn.disabled = false;
+      saveBtn.textContent = '💾 Vista í kerfi';
+      if (!ok) { alert('Vistun mistókst.'); return; }
+      filledId = rec.id;
+      filledName = rec.name;
+      if (window.Toast && Toast.show) Toast.show('✓ Vistað' + contractMsg);
+      refreshFilledSection();
+      // Refresh the patch-50 contracts list so the new/updated row appears
+      if (isThjonusta && window.ServiceContracts && typeof window.ServiceContracts.load === 'function') {
+        try { window.ServiceContracts.load(); } catch (_) {}
+      }
+    });
+  }
+
+  // 2026-05-13: When the user saves a Þjónustusamningur template, mirror the
+  // filled values into the `thjonustusamningar` Supabase table that patch 50
+  // already renders as the main contracts list. That way the saved doc shows
+  // up in the familiar Þjónustusamningar table immediately. Returns the row
+  // id (existing or new) so subsequent updates target the same row.
+  async function upsertThjonustusamningur(template, values, existingId) {
+    const SB = (window.DB && window.DB.sb) || null;
+    if (!SB) return null;
+    // Parse the dagsetning (dd.mm.yyyy) to ISO if possible, else today
+    function parseDate(s) {
+      if (!s) return new Date().toISOString().slice(0, 10);
+      const m = String(s).match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+      if (m) return m[3] + '-' + m[2] + '-' + m[1];
+      const d = new Date(s);
+      if (!isNaN(d)) return d.toISOString().slice(0, 10);
+      return new Date().toISOString().slice(0, 10);
+    }
+    const signedAt = parseDate(values.dagsetning);
+    const next = new Date(signedAt);
+    next.setMonth(next.getMonth() + 12);
+    const nextDue = next.toISOString().slice(0, 10);
+
+    // Brunaslöngur isn't a top-level column — fold into umsjon_annad if ticked
+    const annadParts = [];
+    if (values.annad) annadParts.push(String(values.annad).trim());
+    if (values.chk_brunaslongur) annadParts.push('Brunaslöngur');
+    if (template.type === 'thjonusta_brunakerfi') annadParts.push('Brunaviðvörunarkerfi');
+
+    const rec = {
+      company_nafn: (values.vidskiptavinur_nafn || '').trim(),
+      kennitala: (values.kennitala || '').trim(),
+      heimilisfang: (values.heimilisfang || '').trim(),
+      umsjon_slokkvitaeki: !!values.chk_slokkvitaeki,
+      umsjon_reykskynjarar: !!values.chk_reykskynjarar,
+      umsjon_annad: annadParts.join(' · '),
+      thjonusta: 'Árleg þjónusta',
+      upphaed_an_vsk: 0,
+      tidni_man: 12,
+      next_due: nextDue,
+      signed_at: signedAt,
+      status: 'virkur'
+    };
+    if (!rec.company_nafn) return null; // can't create a row without a name
+
+    if (existingId) {
+      const { data, error } = await SB.from('thjonustusamningar').update(rec).eq('id', existingId).select().single();
+      if (error) throw error;
+      return data && data.id;
+    }
+    const { data, error } = await SB.from('thjonustusamningar').insert(rec).select().single();
+    if (error) throw error;
+    return data && data.id;
   }
 
   // ── Editor for user-added templates ────────────────────────────────────────
@@ -1086,12 +1496,30 @@
     });
   }
 
-  window.DocTemplates = {
+  // 2026-05-15: Expose a convenience `openFilled(filledId)` that opens a
+  // previously-saved filled-in document directly (used by Brunakerfisþjónusta
+  // to re-open saved Ársskoðun / Þjónustusamningur entries).
+  function openFilled(filledId) {
+    const rec = getFilledList().find(x => x.id === filledId);
+    if (!rec) { alert('Skjalið fannst ekki.'); return; }
+    openTemplateForm(rec.template_id, { filledId: rec.id });
+  }
+
+  const api = {
     open: openTemplateForm,
+    openFilled,
     edit: openTemplateEditor,
+    cloneSeed: cloneSeedTemplate,   // For UIs that want "edit a seed" semantics
     list: getTemplates,
-    refresh: refreshSection
+    refresh: refreshSection,
+    // 2026-05-20: hidden-template controls — used by the picker in patch 147
+    // to filter, and by the Samningar UI to toggle the flag.
+    isHidden,
+    setHidden
   };
+  window.DocTemplates = api;
+  // Alias under the more discoverable name (patches search both)
+  window.DocumentTemplates = api;
 
   console.log('[doc-templates] installed — 3 forsniðin sniðmát + eigin sniðmát aðgengileg í Samningum');
 })();

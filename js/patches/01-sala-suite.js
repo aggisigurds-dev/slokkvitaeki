@@ -1924,7 +1924,7 @@
           errBox.appendChild(el('div', { class: 'sm-err', text: 'Ekkert valið' }));
           return;
         }
-        if (!confirm('Skrá ' + checked.size + ' verk sem Greitt? Þetta er ekki auðveldlega afturkallað.')) return;
+        if (!await Confirm.show('Skrá ' + checked.size + ' verk sem Greitt? Þetta er ekki auðveldlega afturkallað.')) return;
         finalize.disabled = true; finalize.textContent = 'Vistar…';
         try {
           const label = 'REIKN-' + todayISO().replace(/-/g, '').slice(2);

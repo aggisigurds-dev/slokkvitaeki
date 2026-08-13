@@ -7,7 +7,8 @@
   function fmtDate(d){
     if (!d) return '—';
     var dt = new Date(d);
-    return dt.toLocaleDateString('is-IS');
+    if (isNaN(dt)) return '—';
+    return String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + dt.getFullYear();
   }
 
   function daysUntil(d){
@@ -201,7 +202,7 @@
               return '<div style="padding:10px;border:1px solid #e5e7eb;border-radius:8px;display:flex;justify-content:space-between;align-items:center;">'+
                 '<div>'+
                   '<div style="font-weight:600;">'+escHtml(j.num||'—')+'  ·  '+escHtml(j.customer||'—')+'</div>'+
-                  '<div style="font-size:12px;color:#888;margin-top:2px;">Móttekið: '+fmtDate(j.dropoff||j.created_at)+' · Afhending: '+fmtDate(j.pickup)+'</div>'+
+                  '<div style="font-size:12px;color:#888;margin-top:2px;">Móttekið: '+fmtDate(j.dropoff||j.created_at)+'</div>'+
                 '</div>'+
                 '<div>'+statusBadge(j.status)+'</div>'+
               '</div>';
@@ -228,13 +229,13 @@
     var retireBtn = document.getElementById('_ud_retire');
     var unretireBtn = document.getElementById('_ud_unretire');
     if (retireBtn) retireBtn.onclick = async function(){
-      if (!confirm('Merkja '+unit.serial+' sem úrelt?')) return;
+      if (!await Confirm.show('Merkja '+unit.serial+' sem úrelt?')) return;
       await DB.sb.from('uttaeki').update({status:'urelt'}).eq('id', unit.id);
       modal.remove();
       showUnitDetail(unit.serial);
     };
     if (unretireBtn) unretireBtn.onclick = async function(){
-      if (!confirm('Endurvirkja '+unit.serial+'?')) return;
+      if (!await Confirm.show('Endurvirkja '+unit.serial+'?')) return;
       await DB.sb.from('uttaeki').update({status:'active'}).eq('id', unit.id);
       modal.remove();
       showUnitDetail(unit.serial);

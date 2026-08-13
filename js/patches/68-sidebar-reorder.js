@@ -42,12 +42,36 @@
   // Sentinel for visual separators between groups.
   const SEP = '__SEP__';
 
+  // 2026-05-21: a user-supplied ORDER (from AppSettings.sidebar_order) trumps
+  // the default. Format: array of items, where each item is either '__SEP__'
+  // (separator) or a string (one of the user's nav-button labels). Items in
+  // settings.sidebar_hidden are skipped entirely. Items not listed flow to
+  // the tail as before (so newly-shipped nav buttons aren't lost).
+  function getCustomOrder() {
+    try {
+      if (!window.AppSettings || !AppSettings.path) return null;
+      const v = AppSettings.path('sidebar_order');
+      if (!Array.isArray(v) || !v.length) return null;
+      // Convert flat string array into ORDER's nested-array shape.
+      return v.map(x => x === SEP ? SEP : (Array.isArray(x) ? x : [x]));
+    } catch (_) { return null; }
+  }
+  function getHidden() {
+    try {
+      if (!window.AppSettings || !AppSettings.path) return [];
+      const v = AppSettings.path('sidebar_hidden');
+      return Array.isArray(v) ? v : [];
+    } catch (_) { return []; }
+  }
+
   // Each entry is either SEP (insert a divider) or an array of substrings
   // — the first nav button whose text contains ANY of those substrings
   // gets placed at this position. Multiple substrings let us tolerate
   // the user's typos (e.g. "Stjórnborð" vs "Stjórnstöð") and short forms.
   const ORDER = [
     ['Verkdagbók'],
+    ['Verkefni'],
+    ['Þjónustuverk'],
     ['Fletta upp'],
     SEP,
     ['Yfirlit'],
@@ -56,25 +80,38 @@
     ['Sala'],
     ['Afgreiðsla'],
     ['Verkstæði'],
+    ['Vörur og þjónusta'],   // 2026-05-26: moved up — Aggi flýtt sögurefli
     SEP,
     ['Þjónustutæki'],
-    ['Fyrirtækjaþjónusta', 'Fyrirtæki'],
+    ['Leiðsögn'],  // 2026-05-19: placed above Fyrirtæki í Þjónustu — driver workflow starts on map
+    ['Fyrirtæki í Þjónustu', 'Fyrirtækjaþjónusta', 'Fyrirtæki'],  // patch 153 hijacks this slot — old Fyrirtæki (view-companies) is hidden
+    ['Brunakerfisþjónusta'],
     ['Viðskiptavinir'],
+    ['Allir'],  // "Allir Viðskiptavinir" (patch 157) — substring "Allir" is unique
+    SEP,
+    // 2026-05-20: Bill-and-claim cluster — grouped together below the
+    // customer list per Agnar's request. Drög → Til að rukka → Kröfu yfirlit
+    // → Hreyfingarlisti form a natural left-to-right billing flow.
+    ['Drög'],
+    ['Til að rukka'],
+    ['Kröfu yfirlit'],
+    ['Bókhalds yfirlit', 'Bókhaldsyfirlit'],  // 2026-05-26: under Kröfu yfirlit
+    ['Hreyfingarlisti'],
     SEP,
     ['Geymsla'],
     ['Lánstæki'],
     ['Birgðir'],
-    ['Vörur og þjónusta'],
     SEP,
     ['Tilboð'],
     ['Samningar'],
     SEP,
-    ['Bókhalds yfirlit', 'Bókhaldsyfirlit'],
     ['Tekjur'],
     ['Reikningar'],
     ['Kreditreikning', 'Kreditfæra'],
     SEP,
     ['Tenglar', 'Tenglir', 'Kort'],   // kort/links
+    SEP,
+    ['Leiðbeiningar'],
     SEP
     // Everything else flows after the last separator.
   ];
@@ -121,7 +158,16 @@
       let qlinksUsed = false;
       const ordered = [];
 
-      for (const item of ORDER) {
+      // 2026-05-21: prefer custom order from AppSettings when set.
+      const activeOrder = getCustomOrder() || ORDER;
+      const hiddenList = getHidden().map(s => String(s).toLowerCase());
+      function isHiddenBtn(b) {
+        if (!hiddenList.length) return false;
+        const txt = btnText(b);
+        return hiddenList.some(h => txt.indexOf(h) !== -1);
+      }
+      const hiddenButtons = new Set(buttons.filter(isHiddenBtn));
+      for (const item of activeOrder) {
         if (item === SEP) {
           // Marked with `nav-sep-group` so our injected CSS gives it more
           // breathing room than the default thin-line separator.
@@ -137,13 +183,16 @@
             qlinksUsed = true;
             continue;
           }
-          const found = buttons.find(b => !used.has(b) && matches(b, item));
+          const found = buttons.find(b => !used.has(b) && !hiddenButtons.has(b) && matches(b, item));
           if (found) { ordered.push(found); used.add(found); }
         }
       }
 
+      // Hide hidden buttons (skip them in the ordered list).
+      hiddenButtons.forEach(b => { b.style.display = 'none'; });
+
       // "rest" — any nav-button not explicitly placed stays at the end.
-      const rest = buttons.filter(b => !used.has(b));
+      const rest = buttons.filter(b => !used.has(b) && !hiddenButtons.has(b));
       if (rest.length || (qlinks && !qlinksUsed)) {
         const last = ordered[ordered.length - 1];
         if (!last || !last.classList?.contains('nav-sep')) {
@@ -245,7 +294,18 @@
   }
   attachDelegated();
 
-  window.SidebarReorder = { reorder, version: 'v1' };
-  console.log('[sidebar-reorder] v1 ready');
+  // 2026-05-21: re-apply when the user saves a new sidebar order via the
+  // customizer modal (patch 171). Show any previously-hidden buttons too so
+  // toggling visibility off→on works without a reload.
+  if (window.AppSettings && typeof AppSettings.onChange === 'function') {
+    AppSettings.onChange(() => {
+      const nav = document.querySelector('nav.view-nav, .view-nav');
+      if (nav) nav.querySelectorAll('.vnav-btn').forEach(b => { b.style.display = ''; });
+      scheduleReorder();
+    });
+  }
+
+  window.SidebarReorder = { reorder, scheduleReorder, ORDER, SEP, getCustomOrder, getHidden, version: 'v2' };
+  console.log('[sidebar-reorder] v2 ready — custom order via AppSettings.sidebar_order');
 })();
 /* === END SIDEBAR REORDER === */

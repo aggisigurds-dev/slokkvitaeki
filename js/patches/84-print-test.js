@@ -33,12 +33,14 @@
     wrap.style.cssText =
       'position:fixed;bottom:16px;right:16px;z-index:99990;font-family:inherit;' +
       'display:flex;flex-direction:column;align-items:flex-end;gap:8px';
+    // 2026-05-19: Re-enabled panel after Aggi flagged that disabling the
+     // whole thing was wrong. The 🟢 QR-merki áfylling (24×100 mm) button
+     // was the one to remove; the kvittun + strikamerki tests are wanted.
     wrap.innerHTML =
       '<div id="pt-menu" style="display:none;background:#fff;border:1px solid #cbd5e1;border-radius:10px;padding:10px;box-shadow:0 10px 30px rgba(15,23,42,.18);min-width:240px">' +
         '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Prufa prentun</div>' +
         '<button class="pt-act" data-pt="receipt" style="width:100%;text-align:left;padding:9px 11px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;margin-bottom:6px">📄 Prufa kvittun (A4)</button>' +
-        '<button class="pt-act" data-pt="barcode" style="width:100%;text-align:left;padding:9px 11px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;margin-bottom:6px">🏷 Prufa strikamerki (62×17 mm Brother QL)</button>' +
-        '<button class="pt-act" data-pt="qrlabel" style="width:100%;text-align:left;padding:9px 11px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;cursor:pointer;font:inherit;font-size:13px">🟢 Prufa QR-merki áfylling (24×100 mm)</button>' +
+        '<button class="pt-act" data-pt="barcode" style="width:100%;text-align:left;padding:9px 11px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:7px;cursor:pointer;font:inherit;font-size:13px">🏷 Prufa strikamerki (62×17 mm Brother QL)</button>' +
         '<div style="font-size:11px;color:#94a3b8;margin-top:8px;line-height:1.4">Engar gögn vistuð í gagnagrunn. Gakk úr skugga um að réttur prentari er valinn í prentglugganum.</div>' +
       '</div>' +
       '<button id="pt-toggle" type="button" title="Prufa prentun" ' +
@@ -92,15 +94,16 @@
     }
   }
 
-  // 2026-05-08: Floating "🧪 Prufa prentun" panel disabled per user request.
-  // Modules SalaCheckout.printReceipt / .printBarcodes are still available
-  // for any tooling that needs them. To re-enable the panel, uncomment the
-  // init() call below.
+  // 2026-05-19: Re-enabled the "🧪 Prufa prentun" panel. The 2026-05-08
+  // disable removed all three buttons when only the 🟢 QR-merki áfylling
+  // (24×100 mm) one was meant to go — Aggi flagged this today. Now we
+  // build the panel with only the kvittun + strikamerki tests.
   function init() {
-    // buildPanel();  // disabled
-    // Also remove any panel that might have been built before the change
-    const existing = document.getElementById('pt-panel');
-    if (existing) existing.remove();
+    // 2026-05-19: floating "🧪 Prufa prentun" button disabled per Agnar —
+    // printers are set up and the FAB clutters the bottom-right corner.
+    // The print routines stay reachable via window.SalaCheckout for any
+    // future tooling.
+    // buildPanel();
   }
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

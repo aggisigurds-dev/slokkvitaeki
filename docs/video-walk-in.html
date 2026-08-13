@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Video — Walk-in sala | Slökkvitæki ehf</title>
+<link rel="stylesheet" href="video-player.css">
+</head>
+<body>
+<div class="player">
+
+<div class="topbar">
+  <div><a href="index.html">← Forsíða</a> · <a href="kennsla-walk-in.html">📄 Texti útgáfa</a></div>
+  <div><a href="video-saekja-inn.html">← Sækja inn video</a></div>
+</div>
+
+<h1>🛒 Walk-in sala</h1>
+<p class="subtitle">Viðskiptavinur kemur beint í verslun með tæki sem þarf að hlaða eða skoða.</p>
+
+<div class="stage" id="stage">
+  <div class="step-tag" id="step-tag">1 / 8</div>
+  <div class="progress"><div class="progress-fill" id="progress-fill"></div></div>
+</div>
+
+<div class="caption" id="caption">…</div>
+
+<div class="controls">
+  <button class="btn primary" id="play-btn">▶ Spila með talsetningu</button>
+  <button class="btn" id="prev-btn">⏮ Aftur</button>
+  <button class="btn" id="next-btn">⏭ Næsta</button>
+  <button class="btn" id="replay-btn">⟲ Byrja aftur</button>
+  <span class="spacer"></span>
+  <span class="step-counter" id="step-counter">Skref 1 af 8</span>
+</div>
+
+<div class="controls" style="margin-top:8px">
+  <div class="lang-toggle" id="lang-toggle">
+    <button data-lang="auto">Sjálfvirkt</button>
+    <button data-lang="is">Íslenska</button>
+    <button data-lang="en">English</button>
+  </div>
+  <span class="spacer"></span>
+  <div class="voice-pick">
+    <span>🔊 Rödd:</span>
+    <select id="voice-select"></select>
+  </div>
+</div>
+
+<div class="voice-warn" id="voice-warn">
+  ⚠ Engin íslensk rödd uppsett í þessu tæki. Smelltu á <b>English</b> hér að ofan, eða settu upp íslenska rödd í Windows: <i>Settings → Time & Language → Speech → Add voices → Icelandic</i>.
+</div>
+
+<div class="thumbs" id="thumbs"></div>
+
+</div>
+
+<script>
+window.__SLIDES = [
+  {
+    img: 'img/21-sala.jpg',
+    text_is: 'Velkomin í kennslubók um walk-in sölu. Þetta er sala sýnin, kassakerfið. Efst er leitarreitur fyrir viðskiptavin, til hægri er karfan, og í miðjunni eru þjónustu- og vöruflísar sem þú smellir á til að bæta í körfu.',
+    text_en: 'Welcome to the walk-in sales tutorial. This is the Sales view, the point of sale system. At the top is the customer search, on the right is the cart, and in the middle are service and product tiles that you click to add to the cart.'
+  },
+  {
+    img: 'img/22-search-no-match.jpg',
+    text_is: 'Þegar viðskiptavinur kemur skrifar þú nafn, kennitölu eða síma í leitarreitinn. Ef viðsk. er ekki til í kerfinu birtist grænn takki sem segir stofna nýjan viðskiptavin.',
+    text_en: 'When a customer arrives, type their name, ID number or phone in the search field. If the customer is not in the system, a green button appears that says Create new customer.'
+  },
+  {
+    img: 'img/23-new-cust-form.jpg',
+    text_is: 'Smelltu á stofna nýjan og fylltu inn upplýsingar. Nafn er forfyllt úr leitinni. Þú getur slegið inn kennitölu og smellt á fletta upp til að sækja sjálfvirkt nafn og heimilisfang úr þjóðskrá. Smelltu vista og velja til að klára.',
+    text_en: 'Click Create new and fill in the details. The name is pre-filled from the search. You can enter the ID number and click Look up to automatically pull the name and address from the national registry. Click Save and select to finish.'
+  },
+  {
+    img: 'img/24-rsk-fallback.jpg',
+    text_is: 'Ef kennitalan finnst ekki í þjóðskrá, til dæmis fyrir erlendan ríkisborgara eða nýja kennitölu, birtist staðfestingargluggi sem býður þér að skrá viðskiptavin handvirkt með þeirri kennitölu.',
+    text_en: 'If the ID number is not found in the national registry, for example for a foreign citizen or a new ID, a confirmation dialog appears asking if you want to register the customer manually with that ID number.'
+  },
+  {
+    img: 'img/25-cart-discount.jpg',
+    text_is: 'Bæta tækjum í körfu með því að smella á þjónustuflísar. Hver smellur bætir einu eintaki, eða notaðu plús og mínus í körfunni. Sláðu inn afslátt í afsláttar-reitinn ef á við. Karfan reiknar samtals sjálfvirkt.',
+    text_en: 'Add equipment to the cart by clicking the service tiles. Each click adds one item, or use the plus and minus buttons in the cart. Enter a discount in the discount field if applicable. The cart calculates the total automatically.'
+  },
+  {
+    img: 'img/26-payment-modal.jpg',
+    text_is: 'Smelltu á stóra græna áfram-takkann. Greiðsluglugginn opnast með fjórum valmöguleikum: greitt með korti, greitt með pening, setja í reikning, eða greitt síðar. Greitt síðar setur söluna í drög þangað til viðskiptavinur kemur að sækja.',
+    text_en: 'Click the large green Continue button. The payment dialog opens with four options: paid by card, paid in cash, send invoice, or pay later. Pay later puts the sale in draft state until the customer comes to pick up the equipment.'
+  },
+  {
+    img: 'img/27-skra-taeki.jpg',
+    text_is: 'Næst opnast skrá tæki gluggi. Hér slærðu inn raðnúmer fyrir hvert tæki, eða smellir á QR til að skanna strikamerki, eða á strikamerki-takkann til að búa til nýtt nafnaspjald.',
+    text_en: 'Next, the register equipment dialog opens. Here you enter the serial number for each unit, or click QR to scan a barcode, or the label icon to generate a new name tag.'
+  },
+  {
+    img: 'img/28-skra-taeki-filled.jpg',
+    text_is: 'Þegar þú hefur slegið inn raðnúmerin smellirðu halda áfram. Kerfið býr sjálfvirkt til verkbeiðni sem birtist í verkröðinni á verkstæði, og drög að sölu sem bíður þangað til viðskiptavinur sækir tækin og greiðir.',
+    text_en: 'When you have entered the serial numbers, click Continue. The system automatically creates a work request that appears in the workshop queue, and a draft sale that waits until the customer picks up the equipment and pays.'
+  }
+];
+</script>
+<script src="video-player.js"></script>
+
+</body>
+</html>

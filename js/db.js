@@ -29,10 +29,27 @@ var DB = {
   loadAll: async function() {
     this.setSyncState('syncing');
     try {
+      // Paginate uttaeki: PostgREST default cap is 1000 rows. We now have
+      // 3,777+ active rows (after the bulk insert from arsskodun) so a
+      // single .select() returns at most 1000. Fetch in chunks via .range()
+      // until exhausted so the full cache is consistent with the DB.
+      async function loadAllUttaeki(sb) {
+        var pageSize = 1000;
+        var allRows = [];
+        for (var start = 0; ; start += pageSize) {
+          var res = await sb.from('uttaeki').select('*').order('client').range(start, start + pageSize - 1);
+          if (res.error) throw res.error;
+          var rows = res.data || [];
+          allRows = allRows.concat(rows);
+          if (rows.length < pageSize) break;
+          if (start > 50000) break; // safety stop
+        }
+        return { data: allRows };
+      }
       var [j, v, u, s, h] = await Promise.all([
         this.sb.from('verkbeidnir').select('*').order('created_at', {ascending:false}),
         this.sb.from('verklidur').select('*'),
-        this.sb.from('uttaeki').select('*').order('client'),
+        loadAllUttaeki(this.sb),
         this.sb.from('dagskra').select('*').order('date'),
         this.sb.from('skodunar_saga').select('*').order('created_at', {ascending:false}).limit(20)
       ]);
@@ -154,7 +171,15 @@ var DB = {
   updateJobStatus: async function(id, status) {
     if (this.online) { await this.sb.from('verkbeidnir').update({status}).eq('id', id); }
     var job = this.getJob(id);
-    if (job) { job.status = status; if (status === 'ready') job.units.forEach(function(u) { u.status = 'done'; }); }
+    if (job) {
+      job.status = status;
+      // 2026-05-24: When promoting a job to 'ready', cascade any unfinished
+      // units to 'done' so the workshop column shows full progress. Broken
+      // units MUST be preserved — the pickup flow keys off `status==='broken'`
+      // to default-uncheck them in the Sókn modal. Previously this loop
+      // overwrote broken→done, silently re-delivering bad units.
+      if (status === 'ready') job.units.forEach(function(u) { if (u.status !== 'broken') u.status = 'done'; });
+    }
     App.refreshAll();
   },
 
@@ -164,6 +189,17 @@ var DB = {
     if (job) {
       var unit = job.units.find(function(u) { return u.id === unitId; });
       if (unit) unit.status = status;
+      // 2026-05-24: Auto-promote the whole verkbeidni to 'ready' (= moves
+      // to Afgreiðsla column) as soon as the last outstanding unit gets a
+      // 'done' or 'broken' click. Before this, the user had to click
+      // Tilbúið twice — once on the tile, once on the job card. Broken
+      // units count as "accounted for"; pickup flow handles non-delivery.
+      var allAccountedFor = (status === 'done' || status === 'broken')
+        && job.units.every(function(u) { return u.status === 'done' || u.status === 'broken'; });
+      if (allAccountedFor && job.status !== 'ready') {
+        await this.updateJobStatus(jobId, 'ready');
+        return;
+      }
       if (job.status === 'received') { await this.updateJobStatus(jobId, 'inprogress'); return; }
     }
     App.refreshAll();
@@ -205,6 +241,63 @@ var DB = {
     }
     this.cache.history.unshift({ id: Date.now(), date: today, client: unit.client, tech: 'Jón S.', result: data.result, notes: data.notes });
     App.refreshAll();
+  },
+
+  // ---- COMPANY RENAME CASCADE ----
+  // Equipment (uttaeki) and loaned gear (lanstaeki) are linked to a company
+  // ONLY by their free-text `client` column matching fyrirtaeki.nafn. Every
+  // view that lists a company's tæki filters on `u.client === c.nafn` (~17
+  // sites). So renaming a company silently orphans all its tæki until the
+  // name happens to match again. Call this right after a successful
+  // fyrirtaeki rename to keep the child rows in sync. Updates the DB
+  // (uttaeki + lanstaeki) and, on success, the in-memory caches: each unit's
+  // `.client`, plus the `unitsByClient` bucket map db.js pre-builds for O(1)
+  // per-company lookups. No-op when the name is blank or unchanged.
+  // Returns { ok:boolean, moved:number, ... }.
+  renameClientCascade: async function(oldNafn, newNafn) {
+    oldNafn = (oldNafn == null ? '' : String(oldNafn)).trim();
+    newNafn = (newNafn == null ? '' : String(newNafn)).trim();
+    if (!oldNafn || !newNafn || oldNafn === newNafn) {
+      return { ok: true, moved: 0, skipped: true };
+    }
+    var self = this;
+    function applyCache() {
+      var n = 0;
+      var arr = self.cache.units || [];
+      for (var i = 0; i < arr.length; i++) {
+        if (arr[i].client === oldNafn) { arr[i].client = newNafn; n++; }
+      }
+      // Re-key the pre-bucketed lookup map. Bucket entries are the SAME
+      // object references as cache.units, so their `.client` is already
+      // fixed by the loop above — we only need to move them under the new key.
+      var ubc = self.cache.unitsByClient;
+      if (ubc && ubc[oldNafn]) {
+        ubc[newNafn] = (ubc[newNafn] || []).concat(ubc[oldNafn]);
+        delete ubc[oldNafn];
+      }
+      return n;
+    }
+    // Offline: no DB round-trip, but keep the session's cache consistent.
+    // A later loadAll() reconciles from the server.
+    if (!this.online || !this.sb) {
+      return { ok: true, moved: applyCache(), offline: true };
+    }
+    try {
+      var uRes = await this.sb.from('uttaeki')
+        .update({ client: newNafn }).eq('client', oldNafn).select('id');
+      if (uRes.error) throw uRes.error;
+      var moved = (uRes.data && uRes.data.length) || 0;
+      // lanstaeki isn't held in cache; DB-only, best-effort. A failure here
+      // must not strand the main uttaeki cascade that already succeeded.
+      try {
+        await this.sb.from('lanstaeki').update({ client: newNafn }).eq('client', oldNafn);
+      } catch (e) { console.warn('[renameClientCascade] lanstaeki update failed', e); }
+      applyCache();
+      return { ok: true, moved: moved };
+    } catch (e) {
+      console.error('[renameClientCascade] uttaeki update failed', e);
+      return { ok: false, moved: 0, error: e };
+    }
   },
 
   // ---- DEMO DATA (when no Supabase) ----

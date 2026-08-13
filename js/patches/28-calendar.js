@@ -348,7 +348,7 @@
       const delBtn = document.createElement('button');
       delBtn.className = 'cal-del'; delBtn.textContent = '🗑 Eyða';
       delBtn.onclick = async () => {
-        if (!confirm('Eyða þessari tímasetningu?')) return;
+        if (!await Confirm.show('Eyða þessari tímasetningu?')) return;
         const SB = getSB(); if (!SB) return;
         await SB.from('dagbok').delete().eq('id', ev.id);
         events = events.filter(e => e.id !== ev.id);

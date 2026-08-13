@@ -168,6 +168,7 @@
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
             <input type="text" class="ct-search" placeholder="🔍 Leita..." value="${esc(searchQuery)}" oninput="ServiceContracts._search(this.value)">
+            <a href="https://brunaholf-tilbod.netlify.app" target="_blank" rel="noopener noreferrer" class="btn btn-outline" title="Opna Brunahólf tilboðakerfið í nýjum flipa" style="text-decoration:none">📄 Tilboðakerfi ↗</a>
             <button class="btn btn-outline" onclick="ServiceContracts._open(null,'legacy')" title="Skanna eldri pappírssamninga inn í kerfið">📥 Eldri samningur</button>
             <button class="btn btn-primary" onclick="ServiceContracts._open()">+ Nýr samningur</button>
           </div>
@@ -223,7 +224,10 @@
     m.id = 'ct-modal'; m.className = 'ct-modal-wrap';
     m.dataset.id = id || '';
     m.dataset.mode = mode || '';
-    m.onclick = e => { if(e.target===m) m.remove(); };
+    // 2026-05-27: removed accidental click-outside-to-close. Aggi was losing
+    // half-filled contract forms to stray mouse/finger taps. Use the ✕ button
+    // or Loka button to close instead.
+    m.onclick = e => { /* backdrop click no longer closes — too easy to lose work */ };
     const title = isNew
       ? (isLegacy ? '📥 Skanna eldri samning' : 'Nýr þjónustusamningur')
       : 'Samningur við '+esc(c.company_nafn||'');
@@ -245,7 +249,7 @@
                   Dags: <input type="date" id="ct-signed" value="${esc(c.signed_at||defaultSigned)}" style="border:none;border-bottom:1px solid #0f172a;background:transparent;margin-left:6px">
                 </div>
                 <div class="title">Þjónustusamningur</div>
-                <div class="brand">🔥 ${COMPANY.nafn}</div>
+                <div class="brand" style="line-height:0">${(window.SlokkLogo && SlokkLogo.imgHtml) ? SlokkLogo.imgHtml({heightPx:80, alt:COMPANY.nafn}) : '<img src="/img/logo.png?v=20260520b" alt="'+COMPANY.nafn+'" style="height:80px;width:240px;object-fit:contain;display:inline-block">'}</div>
                 <div class="slogan">${COMPANY.slogan}</div>
                 <div class="phone">Sími: ${COMPANY.sími}</div>
               </div>
@@ -342,6 +346,11 @@
       </div>`;
     document.body.appendChild(m);
     setTimeout(() => document.getElementById('ct-co')?.focus(), 50);
+    // 2026-05-24: Auto-format the kennitala field to XXXXXX-XXXX on input/blur.
+    // DB trigger also normalises on write — this is the UI-feedback layer.
+    if (window.U && typeof U.bindKtInput === 'function') {
+      U.bindKtInput('ct-kt');
+    }
   }
 
   // Picks a file. If a record exists already (editing), upload immediately.
@@ -514,7 +523,7 @@
   async function _bill(id) {
     const c = contracts.find(x=>x.id===id);
     if (!c) return;
-    if (!confirm(`Marka sem rukkað og færa næstu rukkun fram um ${c.tidni_man||12} mán?`)) return;
+    if (!await Confirm.show(`Marka sem rukkað og færa næstu rukkun fram um ${c.tidni_man||12} mán?`)) return;
     const SB = getSB();
     await SB.from('thjonustusamningar').update({
       last_billed: new Date().toISOString().slice(0,10),
@@ -524,7 +533,7 @@
   }
 
   async function _delete(id) {
-    if (!confirm('Eyða þessum samning?')) return;
+    if (!await Confirm.show('Eyða þessum samning?')) return;
     await getSB().from('thjonustusamningar').delete().eq('id', id);
     load();
   }

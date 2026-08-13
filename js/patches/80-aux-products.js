@@ -153,22 +153,63 @@
 
   function findOriginalTile(name) {
     // Find the hidden tile in #pos-products whose product name matches.
-    // Exact match preferred; fall back to startsWith to avoid substring overlap
-    // (e.g. "Skilti græn lím 150x300" vs "150x150" both contain "150x").
+    // pos.js renderTile structure includes stock-chip + icon-div + image
+    // BEFORE the name div, so `tile.querySelector('div')` returns the stock
+    // chip or icon container — NOT the name. We have to scan every inner
+    // div and look for an EXACT match against the aux name.
     const grid = document.getElementById('pos-products');
     if (!grid) return null;
     const target = String(name || '').trim().toLowerCase();
-    let exact = null, prefix = null;
     for (const tile of grid.querySelectorAll('.pos-prod')) {
-      const txt = tile.textContent.trim().toLowerCase();
-      if (!exact) {
-        // Tiles include both name and price; check if name is a leading line
-        const firstLine = (tile.querySelector('div')?.textContent || '').trim().toLowerCase();
-        if (firstLine === target) { exact = tile; continue; }
-        if (firstLine.startsWith(target) || target.startsWith(firstLine)) prefix = prefix || tile;
+      for (const div of tile.querySelectorAll('div')) {
+        const txt = div.textContent.trim().toLowerCase();
+        if (txt === target) return tile;
       }
     }
-    return exact || prefix || null;
+    return null;
+  }
+
+  // Fallback: add the aux product DIRECTLY to the cart by looking up the
+  // product in DB.cache.products / state.products. The simplest reliable
+  // path is to dispatch a click event with the right data-id on a synthetic
+  // tile — but we don't have direct access to pos.js state. So we look up
+  // the product id in DB.cache and call addProductLine() if exposed, else
+  // we manually push to state.lines via window.POS or a custom event.
+  async function addAuxToCartDirect(auxName) {
+    const sb = window.DB && window.DB.sb;
+    if (!sb) return false;
+    // Look up the product id in the database by exact name match.
+    const { data, error } = await sb.from('vorur')
+      .select('id,nafn,verd_an_vsk,vsk_prosenta')
+      .ilike('nafn', auxName)
+      .limit(1);
+    if (error || !data || !data.length) {
+      console.warn('[aux-products] DB lookup failed for:', auxName, error && error.message);
+      return false;
+    }
+    const product = data[0];
+    // Look for the original tile in the DOM (it should exist even if hidden)
+    // and synthesise a click. We construct a synthetic element with the right
+    // data-id so the existing click delegate picks it up.
+    const grid = document.getElementById('pos-products');
+    if (!grid) return false;
+    const existingTile = grid.querySelector('.pos-prod[data-id="' + product.id + '"]');
+    if (existingTile) {
+      // Make sure it's clickable: pos.js delegate reads data-id off the closest
+      // .pos-prod element regardless of display:none.
+      existingTile.click();
+      return true;
+    }
+    // If no tile in DOM (catalog hasn't loaded yet), inject a temporary one
+    // so we can click it.
+    const tmp = document.createElement('button');
+    tmp.className = 'pos-prod';
+    tmp.setAttribute('data-id', product.id);
+    tmp.style.display = 'none';
+    grid.appendChild(tmp);
+    tmp.click();
+    setTimeout(() => tmp.remove(), 100);
+    return true;
   }
 
   function buildAuxHtml() {
@@ -279,20 +320,27 @@
     });
     search.addEventListener('input', e => renderGrid(e.target.value));
 
-    auxGrid.addEventListener('click', e => {
+    auxGrid.addEventListener('click', async e => {
       const btn = e.target.closest('._aux-tile');
       if (!btn) return;
       const name = btn.getAttribute('data-aux-name');
+      // Visual feedback
+      btn.style.background = '#dcfce7';
+      setTimeout(() => { btn.style.background = '#fff'; }, 400);
+      // Try the original hidden-tile route first.
       const orig = findOriginalTile(name);
       if (orig) {
-        // Trigger the existing pos.js click delegate by clicking the hidden tile
         orig.click();
-        if (window.Toast && Toast.show) {
-          // toast feedback so user sees something happened (since the hidden tile
-          // doesn't visibly highlight)
-        }
+        if (window.Toast && Toast.show) Toast.show('+ ' + name);
+        return;
+      }
+      // Fallback: DB lookup + synthetic click on data-id tile.
+      const ok = await addAuxToCartDirect(name);
+      if (ok) {
+        if (window.Toast && Toast.show) Toast.show('+ ' + name);
       } else {
-        console.warn('[aux-products] no original tile found for:', name);
+        console.warn('[aux-products] could not add to cart:', name);
+        if (window.Toast && Toast.show) Toast.show('⚠ Gat ekki bætt í körfu: ' + name);
       }
     });
 

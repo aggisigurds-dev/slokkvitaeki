@@ -231,8 +231,16 @@
 
     const { data, error } = await SB.from('solur').insert(row).select().single();
     if (error) {
-      // If is_credit/credit_of columns don't exist yet, retry without them
-      if (/column.*does not exist/i.test(error.message)) {
+      // 2026-05-12: Two distinct error shapes from Postgres/PostgREST when the
+      // optional credit columns aren't present:
+      //   - direct PG:   "column \"is_credit\" of relation \"solur\" does not exist"
+      //   - PostgREST:   "Could not find the 'credit_of' column of 'solur' in the schema cache"
+      // Match either so the fallback INSERT (without is_credit/credit_of) fires.
+      const msg = (error.message || '') + ' ' + (error.details || '');
+      const isMissingCol = /column.*does not exist/i.test(msg)
+        || /could not find the.*column.*in the schema cache/i.test(msg)
+        || /(is_credit|credit_of)/i.test(msg);
+      if (isMissingCol) {
         delete row.is_credit; delete row.credit_of;
         const { data: d2, error: e2 } = await SB.from('solur').insert(row).select().single();
         if (e2) throw e2;
@@ -244,23 +252,47 @@
   }
 
   // ── Print credit note ─────────────────────────────────────────────────────
+  // 2026-05-29: render(win, opts) ignores opts.lines and reads the live POS
+  // cart (empty here) → blank first print. Use renderFromSale instead, which
+  // builds a synthetic POS state from the saved sale's `linur`. We forward
+  // isCredit/creditOf so the heading shows "KREDITREIKNINGUR" + the credited
+  // reference, and the negative amounts come straight from creditSale.linur.
   function printCreditNote(creditSale, origSale) {
-    if (window.SalaInvoice && SalaInvoice.render) {
+    if (window.SalaInvoice && SalaInvoice.renderFromSale) {
       const win = window.open('', 'credit-note', 'width=900,height=1100');
       if (!win) return;
-      const opts = {
+      // Normalise to the shape renderFromSale expects (it reads `linur`).
+      const sale = {
+        num: creditSale.num,
+        customer_nafn: creditSale.customer_nafn || creditSale.customer || '',
+        customer_id: creditSale.customer_id || null,
+        linur: creditSale.linur || creditSale.lines || [],
+        afslattur: creditSale.afslattur || 0,
+        upphaed_an_vsk: creditSale.upphaed_an_vsk != null ? creditSale.upphaed_an_vsk : (creditSale.ex || 0),
+        vsk_upphaed: creditSale.vsk_upphaed != null ? creditSale.vsk_upphaed : (creditSale.vsk || 0),
+        samtals: creditSale.samtals != null ? creditSale.samtals : (creditSale.total || 0),
+        athugasemdir: creditSale.athugasemdir || creditSale.notes || '',
+        greitt_med: creditSale.greitt_med || creditSale.payment || '',
+        starfsmadur: creditSale.starfsmadur || ''
+      };
+      SalaInvoice.renderFromSale(win, sale, null, {
+        isCredit: true,
+        creditOf: origSale.num
+      });
+    } else if (window.SalaInvoice && SalaInvoice.render) {
+      // Fallback for older SalaInvoice without renderFromSale.
+      const win = window.open('', 'credit-note', 'width=900,height=1100');
+      if (!win) return;
+      SalaInvoice.render(win, {
         num: creditSale.num,
         isCredit: true,
         creditOf: origSale.num,
-        customer: creditSale.customer_nafn || creditSale.customer || '',
-        lines: creditSale.lines || creditSale.linur || [],
-        total: creditSale.samtals || creditSale.total || 0,
-        ex: creditSale.upphaed_an_vsk || creditSale.ex || 0,
-        vsk: creditSale.vsk_upphaed || creditSale.vsk || 0,
+        invoiceNum: creditSale.num,
+        customerName: creditSale.customer_nafn || creditSale.customer || '',
+        lines: creditSale.linur || creditSale.lines || [],
         notes: creditSale.athugasemdir || creditSale.notes || '',
-        payment: creditSale.greitt_med || creditSale.payment || ''
-      };
-      SalaInvoice.render(win, opts);
+        paymentMethod: creditSale.greitt_med || creditSale.payment || ''
+      });
     }
   }
 

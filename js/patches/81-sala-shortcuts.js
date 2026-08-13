@@ -27,7 +27,16 @@
     btn.title = 'Bókhalds yfirlit';
     btn.style.cssText = 'background:#f1f5f9;color:#334155;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600;margin-left:6px';
     btn.addEventListener('click', () => {
-      if (window.App && App.switchView) App.switchView('bokhalds-yfirlit');
+      // 2026-05-09 (F-3): App.switchView only flips the view's active
+      // class — it doesn't trigger Bókhalds yfirlit's init/loadAllSales,
+      // so the table stayed stuck on the static "Hleður sölum…"
+      // placeholder. BokhaldsYfirlit.open() is the proper entry point
+      // (patch 11) that calls switchToView → init → loadAllSales.
+      if (window.BokhaldsYfirlit && BokhaldsYfirlit.open) {
+        BokhaldsYfirlit.open();
+      } else if (window.App && App.switchView) {
+        App.switchView('bokhalds-yfirlit');
+      }
     });
     addEigin.insertAdjacentElement('afterend', btn);
   }

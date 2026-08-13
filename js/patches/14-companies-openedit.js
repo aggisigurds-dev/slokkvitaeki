@@ -92,6 +92,14 @@
           if (r.error) throw r.error;
           const idx = Companies.list.findIndex(c => c.id === id);
           if (idx >= 0) Companies.list[idx] = Object.assign({}, Companies.list[idx], r.data);
+          // Keep this company's tæki linked across the rename — uttaeki/lanstaeki
+          // match the company only by `client` name, so a rename would orphan them.
+          if (window.DB && DB.renameClientCascade && (co.nafn || '') !== nafn) {
+            const cr = await DB.renameClientCascade(co.nafn, nafn);
+            if (cr && cr.ok === false && window.Toast && Toast.show) {
+              Toast.show('⚠ Nafn vistað, en tæki fylgdu ekki með — athugaðu nettengingu');
+            }
+          }
           restore();
           if (window.Modal && Modal.close) Modal.close('modal-nyfyrirtaeki');
           if (window.Toast && Toast.show) Toast.show('✓ ' + nafn + ' uppfært');

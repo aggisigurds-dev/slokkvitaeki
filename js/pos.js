@@ -122,6 +122,12 @@
   function rerenderCatalog(){
     var sv=document.getElementById('pos-services');if(sv)sv.innerHTML=buildServicesHTML();
     var pr=document.getElementById('pos-products');if(pr)pr.innerHTML=buildProductsHTML();
+    // 2026-05-09: notify patches (87-sala-from-settings) that the catalog
+    // tiles were re-rendered so they can re-apply custom order, pinned tiles,
+    // hidden product filtering. Without this, the periodic loadAll() watcher
+    // on line 769 would silently reset the user's custom ordering to the
+    // alphabetical default and patch 87 wouldn't notice (no observer).
+    try { document.dispatchEvent(new CustomEvent('sala-catalog-rendered')); } catch (_) {}
   }
   function rerenderDynamic(){
     var l=document.getElementById('pos-lines');if(l)l.innerHTML=buildLinesHTML();
@@ -259,11 +265,19 @@
     '<div style="display:grid;grid-template-columns:1fr 380px;gap:16px;padding:0 16px 16px;min-height:calc(100vh - 160px)">' +
       '<div>' +
         '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;gap:8px">' +
             '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Viðskiptavinur</div>' +
-            '<div style="display:flex;gap:4px">' +
-              '<button class="pos-mode-btn" data-mode="kt" style="padding:6px 12px;border:1px solid #60a5fa;background:#eff6ff;color:#1e40af;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">Kennitala</button>' +
-              '<button class="pos-mode-btn" data-mode="manual" style="padding:6px 12px;border:1px solid #cbd5e1;background:#fff;color:#64748b;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">Nafn/Sími</button>' +
+            // 2026-05-19: scan button between Viðskiptavinur label and Án-kennitölu
+            // toggle — scanning a tæki QR looks up its client and fills the
+            // customer box in one step.
+            //
+            // The legacy "→ Án kennitölu" toggle (pos-mode-toggle) is now
+            // hidden — patch 114's "⚡ Án kennitölu" walk-in button (right
+            // of the search input) is the canonical control. Kept in DOM
+            // so pos.js's existing click handler attaches without erroring.
+            '<div style="display:flex;gap:6px;align-items:center">' +
+              '<button id="pos-scan-top" type="button" title="Skanna QR / strikamerki á tæki — finnur viðskiptavin" style="padding:6px 12px;border:1px solid #cbd5e1;background:#0f172a;color:#fff;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px">📷 Skanna</button>' +
+              '<button id="pos-mode-toggle" type="button" style="display:none">→ Án kennitölu</button>' +
             '</div>' +
           '</div>' +
           '<div id="pos-kt-box">' +
@@ -280,7 +294,12 @@
           // 3700, 20% afsl. af nýjum tækjum") so the operator sees them while
           // adding line items. The actual sale-level athugasemdir textarea
           // is in the Karfa panel (pos-notes) and is independent of this.
-          '<div id="pos-customer-memo" style="display:none;margin-top:10px;padding:10px 12px;background:#fef9c3;border:1px solid #fde047;border-radius:8px;border-left:4px solid #ca8a04">' +
+          // 2026-05-11: Hidden permanently — patch 114's "Valinn viðskiptavinur"
+          // card already shows the same athugasemdir block in the white panel
+          // above. Showing both produced a duplicate yellow box that confused
+          // the user. Keep the node so other patches (e.g. pos.js reset) that
+          // toggle its display don't error out, but never let it appear.
+          '<div id="pos-customer-memo" style="display:none !important;margin-top:10px;padding:10px 12px;background:#fef9c3;border:1px solid #fde047;border-radius:8px;border-left:4px solid #ca8a04" hidden>' +
             '<div style="font-size:11px;font-weight:700;color:#854d0e;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:4px;display:flex;align-items:center;gap:6px">' +
               '<span>📝 Athugasemdir / Verðupplýsingar</span>' +
             '</div>' +
@@ -290,7 +309,13 @@
         '<div style="background:#fff;border-radius:12px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
             '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Þjónusta</div>' +
-            '<button id="pos-scan" style="background:#1e293b;color:#fff;border:none;padding:6px 12px;border-radius:6px;font-weight:600;cursor:pointer;font-size:12px">📷 Skanna QR</button>' +
+            // 2026-05-19: removed "📷 Skanna QR" button — user reported the
+            // camera scanner works poorly and the location uses a handheld
+            // laser QR scanner instead (it types into the focused field
+            // directly, no button needed). The top Skanna button in the
+            // Viðskiptavinur header is the manual fallback. Kept the id
+            // so the wireUp handler can defensively check.
+            '<button id="pos-scan" style="display:none">unused</button>' +
           '</div>' +
           '<div id="pos-services" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px"></div>' +
         '</div>' +
@@ -303,7 +328,7 @@
         '<div style="background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid #f1f5f9;position:sticky;top:12px;display:flex;flex-direction:column;max-height:calc(100vh - 200px)">' +
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
             '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.06em">Karfa</div>' +
-            '<button id="pos-add-service" style="background:#f1f5f9;color:#334155;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600">+ Eigin</button>' +
+            '<button id="pos-add-service" style="background:#f1f5f9;color:#334155;border:none;padding:4px 10px;border-radius:6px;font-size:11px;cursor:pointer;font-weight:600">+ Annað</button>' +
           '</div>' +
           '<div id="pos-lines" style="overflow-y:auto;flex:1;min-height:100px"></div>' +
           '<div id="pos-totals" style="margin-top:10px"></div>' +
@@ -332,32 +357,41 @@
   function buildProductsHTML(){if(!state.products.length)return'<div style="color:#94a3b8;font-size:13px;text-align:center;padding:16px;grid-column:1/-1">Engar vörur skráðar.</div>';return state.products.map(function(p){return renderTile(p,false);}).join('');}
   function buildLinesHTML(){
     if(!state.lines.length)return'<div style="color:#94a3b8;text-align:center;padding:32px 16px;font-size:13px;border:2px dashed #e2e8f0;border-radius:8px">Karfan er tóm<br><span style="font-size:11px">Smelltu á flísar til að bæta við</span></div>';
+    // 2026-05-12: Two-row layout. Old layout crammed icon + name + qty +
+    // price + total + delete onto one flex row, which made the name wrap
+    // ugly in the narrow cart column. Now: row 1 = icon + name + delete;
+    // row 2 = qty stepper + price input + line total. Name gets the full
+    // row width so it never wraps mid-word.
     return state.lines.map(function(l,idx){
       var lineTotal=l.qty*l.unit_price_ex_vat*(1+(l.vsk_pct||24)/100);
       var col=l.type==='service'?'#b45309':'#0d6efd';
-      return '<div style="display:flex;align-items:center;padding:8px 0;border-bottom:1px solid #f1f5f9">' +
-        '<div style="width:28px;height:28px;background:'+col+'15;color:'+col+';border-radius:6px;display:flex;align-items:center;justify-content:center;margin-right:8px;flex-shrink:0;font-size:14px">'+(l.type==='service'?'🔧':'🛒')+'</div>' +
-        '<div style="flex:1;min-width:0">' +
-          '<div style="font-weight:600;color:#0f172a;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(l.desc)+'</div>' +
-          // Price is now an inline-editable input. Click and edit.
-          '<div style="color:#64748b;font-size:11px;display:flex;align-items:center;gap:3px">' +
-            '<span>'+l.qty+' × </span>' +
-            '<input class="pos-price-edit" data-idx="'+idx+'" type="number" min="0" step="1" value="'+l.unit_price_ex_vat+'" ' +
-              'title="Smelltu til að breyta verði (án VSK)" ' +
-              'style="width:72px;padding:1px 4px;border:1px solid #e2e8f0;border-radius:4px;font:inherit;font-size:11px;text-align:right;font-variant-numeric:tabular-nums">' +
-            '<span>kr án vsk</span>' +
-            (l.ref?' · '+esc(l.ref):'') +
-          '</div>' +
+      return '<div style="padding:8px 0;border-bottom:1px solid #f1f5f9">' +
+        // Row 1 — icon + name + delete
+        '<div style="display:flex;align-items:flex-start;gap:8px">' +
+          '<div style="width:26px;height:26px;background:'+col+'15;color:'+col+';border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px">'+(l.type==='service'?'🔧':'🛒')+'</div>' +
+          '<div style="flex:1;min-width:0;font-weight:600;color:#0f172a;font-size:13px;line-height:1.25;overflow-wrap:break-word;word-break:break-word">'+esc(l.desc)+(l.ref?'<div style="font-weight:400;font-size:11px;color:#64748b;margin-top:1px">'+esc(l.ref)+'</div>':'')+'</div>' +
+          '<button class="pos-line-del" data-idx="'+idx+'" title="Fjarlægja" style="background:none;color:#cbd5e1;border:none;cursor:pointer;font-size:18px;padding:0 2px;line-height:1;flex-shrink:0">×</button>' +
         '</div>' +
-        '<div style="display:flex;align-items:center;gap:4px;margin-left:6px"><button class="pos-qty-dn" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b">−</button><span style="font-weight:600;font-size:13px;min-width:18px;text-align:center">'+l.qty+'</span><button class="pos-qty-up" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b">+</button></div>' +
-        '<div style="font-weight:700;color:#0f172a;margin-left:8px;white-space:nowrap;font-size:12px;min-width:60px;text-align:right">'+fmtKr(lineTotal)+'</div>' +
-        '<button class="pos-line-del" data-idx="'+idx+'" style="background:none;color:#cbd5e1;border:none;cursor:pointer;font-size:18px;padding:2px 6px">×</button>' +
+        // Row 2 — qty stepper + price input + line total (indented under name)
+        '<div style="display:flex;align-items:center;gap:6px;margin-top:5px;margin-left:34px">' +
+          '<button class="pos-qty-dn" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b">−</button>' +
+          '<span style="font-weight:600;font-size:13px;min-width:18px;text-align:center">'+l.qty+'</span>' +
+          '<button class="pos-qty-up" data-idx="'+idx+'" style="background:#f1f5f9;border:none;width:22px;height:22px;border-radius:6px;cursor:pointer;font-weight:700;color:#64748b">+</button>' +
+          '<span style="color:#94a3b8;font-size:11px;margin:0 1px">×</span>' +
+          '<input class="pos-price-edit" data-idx="'+idx+'" type="number" min="0" step="1" value="'+l.unit_price_ex_vat+'" ' +
+            'title="Smelltu til að breyta verði (án VSK)" ' +
+            'style="width:64px;padding:2px 5px;border:1px solid #e2e8f0;border-radius:4px;font:inherit;font-size:11px;text-align:right;font-variant-numeric:tabular-nums">' +
+          '<span style="color:#94a3b8;font-size:11px">kr</span>' +
+          '<div style="flex:1"></div>' +
+          '<div style="font-weight:700;color:#0f172a;font-size:13px;white-space:nowrap;font-variant-numeric:tabular-nums">'+fmtKr(lineTotal)+'</div>' +
+        '</div>' +
       '</div>';
     }).join('');
   }
   function buildTotalsHTML(){
     var t = totals();
     var pct = state.discount_pct || 0;
+    var disc = state.discount || 0;
     var hasDisc = (pct > 0) || (state.discount > 0);
     // Customer-discount badge: show "↺ 10% (≈ 1.200 kr)" so user sees in
     // kr what would be saved before applying.
@@ -375,14 +409,20 @@
         '<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;color:#64748b;font-size:13px">' +
           '<span>Afsláttur:' + custDisc + '</span>' +
           '<span style="display:flex;align-items:center;gap:4px">' +
+            '<span id="pos-disc-kr" style="color:#dc2626;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums;'+(hasDisc?'':'display:none;')+'">−'+fmtKr(t.pct_disc + t.abs_disc)+'</span>' +
             '<input id="pos-discount" type="text" inputmode="decimal" pattern="[0-9.,]*" value="' + pct + '" ' +
-              'autocomplete="off" ' +
-              'style="width:60px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;' +
+              'autocomplete="off" title="Afsláttur %"' +
+              'style="width:50px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;' +
               'text-align:right;font-variant-numeric:tabular-nums">' +
             '<span style="color:#94a3b8">%</span>' +
+            '<input id="pos-discount-kr" type="text" inputmode="decimal" pattern="[0-9.,]*" value="' + (disc || '') + '" ' +
+              'autocomplete="off" title="Afsláttur í krónum" placeholder="0"' +
+              'style="width:70px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;' +
+              'text-align:right;font-variant-numeric:tabular-nums;margin-left:6px">' +
+            '<span style="color:#94a3b8">kr</span>' +
           '</span>' +
         '</div>' +
-        '<div id="pos-tot-disc-row" style="display:flex;justify-content:space-between;padding:3px 0;color:#dc2626;font-size:12px;'+(hasDisc?'':'display:none;')+'"><span id="pos-tot-disc-lbl">− Afsláttur '+(pct>0?pct+'% ':'')+'</span><span id="pos-tot-disc-amt">−'+fmtKr(t.pct_disc + t.abs_disc)+'</span></div>' +
+        '<div id="pos-tot-disc-row" style="display:none"></div>' +
         '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>Án VSK (eftir afslátt):</span><span id="pos-tot-ex">'+fmtKr(t.ex)+'</span></div>' +
         '<div style="display:flex;justify-content:space-between;padding:3px 0;color:#64748b;font-size:13px"><span>VSK:</span><span id="pos-tot-vsk">'+fmtKr(t.vsk)+'</span></div>' +
         '<div style="display:flex;justify-content:space-between;padding:6px 0;font-weight:700;font-size:18px;color:#0f172a;margin-top:4px;border-top:1px solid #f1f5f9"><span>Samtals:</span><span id="pos-tot-total">'+fmtKr(t.total)+'</span></div>' +
@@ -399,13 +439,27 @@
     setText('pos-tot-ex', fmtKr(t.ex));
     setText('pos-tot-vsk', fmtKr(t.vsk));
     setText('pos-tot-total', fmtKr(t.total));
-    var row = document.getElementById('pos-tot-disc-row');
-    if (row) row.style.display = hasDisc ? '' : 'none';
-    setText('pos-tot-disc-lbl', '− Afsláttur ' + (pct>0?pct+'% ':''));
-    setText('pos-tot-disc-amt', '−' + fmtKr(t.pct_disc + t.abs_disc));
+    var krEl = document.getElementById('pos-disc-kr');
+    if (krEl) {
+      krEl.textContent = '−' + fmtKr(t.pct_disc + t.abs_disc);
+      krEl.style.display = hasDisc ? '' : 'none';
+    }
   }
   function bindEvents(){
-    document.querySelectorAll('.pos-mode-btn').forEach(function(b){b.addEventListener('click',function(){var m=b.getAttribute('data-mode');state.customer.mode=m;document.querySelectorAll('.pos-mode-btn').forEach(function(x){var a=x.getAttribute('data-mode')===m;x.style.background=a?'#eff6ff':'#fff';x.style.borderColor=a?'#60a5fa':'#cbd5e1';x.style.color=a?'#1e40af':'#64748b';});document.getElementById('pos-kt-box').style.display=m==='kt'?'':'none';document.getElementById('pos-manual-box').style.display=m==='manual'?'':'none';});});
+    // Single mode-toggle button: kt <-> manual. Label shows the OTHER mode
+    // (the destination) so the button text reads like an action.
+    var modeBtn = document.getElementById('pos-mode-toggle');
+    function syncModeUI(){
+      var m = state.customer.mode;
+      document.getElementById('pos-kt-box').style.display = m==='kt' ? '' : 'none';
+      document.getElementById('pos-manual-box').style.display = m==='manual' ? '' : 'none';
+      if (modeBtn) modeBtn.textContent = m==='kt' ? '→ Án kennitölu' : '← Með kennitölu';
+    }
+    if (modeBtn) modeBtn.addEventListener('click', function(){
+      state.customer.mode = state.customer.mode==='kt' ? 'manual' : 'kt';
+      syncModeUI();
+    });
+    syncModeUI();
     var ktEl=document.getElementById('pos-kt');
     if (ktEl) {
       ktEl.addEventListener('input', function () {
@@ -433,8 +487,22 @@
               }
             }
             if (m) {
-              state.customer.nafn = m.nafn;
-              state.customer.simi = m.simi;
+              // 2026-05-11: For walk-in (kt 999999-9999) the synthetic
+              // lookup returns nafn='Staðgreitt'. But patch 114's walk-in
+              // flow sets state.customer.nafn to the user-typed name AFTER
+              // dispatching the kt input (sync) — and this lookupKt
+              // callback is async. So this would overwrite the user's
+              // typed name with 'Staðgreitt'. Preserve user-typed name.
+              if (m.source === 'walkin' && state.customer.nafn && state.customer.nafn !== 'Staðgreitt') {
+                // keep current nafn
+              } else {
+                state.customer.nafn = m.nafn;
+              }
+              if (m.source === 'walkin' && state.customer.simi && state.customer.simi !== '') {
+                // keep current simi
+              } else {
+                state.customer.simi = m.simi;
+              }
               state.customer.co_id = m.co_id;
               state.customer.heimilisfang = m.heimilisfang || '';
               state.customer.afslattur_pct = m.afslattur_pct || 0;
@@ -476,6 +544,8 @@
     if(sEl)sEl.addEventListener('input',function(){state.customer.simi=sEl.value;});
     document.getElementById('pos-add-service').addEventListener('click',promptService);
     document.getElementById('pos-scan').addEventListener('click',scanQr);
+    var topScanBtn = document.getElementById('pos-scan-top');
+    if (topScanBtn) topScanBtn.addEventListener('click', scanQr);
     document.getElementById('pos-services').addEventListener('click',function(e){var b=e.target.closest('.pos-svc');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);var s=state.services.find(function(x){return x.id===id;});if(!s)return;state.lines.push({type:'service',desc:s.nafn,qty:1,unit_price_ex_vat:s.verd_an_vsk,vsk_pct:s.vsk_prosenta||24,ref:'',product_id:s.id});rerenderDynamic();});
     document.getElementById('pos-products').addEventListener('click',function(e){var b=e.target.closest('.pos-prod');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);addProductLine(id);});
     document.getElementById('pos-lines').addEventListener('click',function(e){var d=e.target.closest('.pos-line-del'),u=e.target.closest('.pos-qty-up'),n=e.target.closest('.pos-qty-dn');if(d){state.lines.splice(parseInt(d.getAttribute('data-idx'),10),1);rerenderDynamic();return;}if(u){var i=parseInt(u.getAttribute('data-idx'),10);state.lines[i].qty++;rerenderDynamic();return;}if(n){var j=parseInt(n.getAttribute('data-idx'),10);state.lines[j].qty--;if(state.lines[j].qty<=0)state.lines.splice(j,1);rerenderDynamic();return;}});
@@ -499,9 +569,17 @@
     // delivered keystrokes (e.g. "20" became "2"). Now we update only the
     // calculated cells in place; the input stays mounted and focused.
     document.getElementById('pos-totals').addEventListener('input', function(e){
-      var d = e.target.closest('#pos-discount'); if (!d) return;
-      var raw = String(d.value || '').replace(/[^0-9.,]/g, '').replace(',', '.');
-      state.discount_pct = Math.max(0, Math.min(100, parseFloat(raw) || 0));
+      var pctEl = e.target.closest('#pos-discount');
+      var krEl  = e.target.closest('#pos-discount-kr');
+      if (!pctEl && !krEl) return;
+      var raw = String(e.target.value || '').replace(/[^0-9.,]/g, '').replace(',', '.');
+      if (pctEl) {
+        state.discount_pct = Math.max(0, Math.min(100, parseFloat(raw) || 0));
+      } else {
+        // Clamp the kr discount so it never exceeds the cart subtotal.
+        var subEx = state.lines.reduce(function(s, l){ return s + (l.qty * l.unit_price_ex_vat); }, 0);
+        state.discount = Math.max(0, Math.min(subEx, parseFloat(raw) || 0));
+      }
       _updateTotalsCells();
       // Update checkout button label
       var t = totals();
@@ -520,7 +598,7 @@
     // Auto-select all text when user focuses the discount field, so they
     // can immediately type a replacement value without manually clearing.
     document.getElementById('pos-totals').addEventListener('focusin', function(e){
-      var d = e.target.closest('#pos-discount'); if (!d) return;
+      var d = e.target.closest('#pos-discount, #pos-discount-kr'); if (!d) return;
       setTimeout(function () { try { d.select(); } catch(_) {} }, 0);
     });
     // "Sækja afslátt viðskiptavinar" button — applies the customer's
@@ -539,8 +617,19 @@
   async function checkout(){
     if(!state.lines.length){alert('Engar línur');return;}
     var cust=state.customer.nafn.trim();
-    if(!cust&&state.customer.mode==='kt'&&state.customer.kt)cust='kt: '+state.customer.kt;
-    if(!cust){if(!confirm('Enginn viðskiptavinur — halda áfram?'))return;cust='Staðgreitt';}
+    // 2026-05-11: For walk-in (kt 999999-9999), if user didn't type a name
+    // we want "Staðgreitt" on the receipt — NOT "kt: 999999-9999" which
+    // looks confusing. The walk-in flow auto-fills 'Staðgreitt' but timing
+    // bugs can leave nafn empty. Prefer 'Staðgreitt' over the kt string.
+    if(!cust&&state.customer.mode==='kt'&&state.customer.kt){
+      var ktClean=state.customer.kt.replace(/[^0-9]/g,'');
+      if(ktClean==='9999999999') cust='Staðgreitt';
+      else cust='kt: '+state.customer.kt;
+    }
+    // 2026-05-10 (B5+): replaced native await Confirm.show() with Confirm.show — native
+    // confirm freezes browser, esp. blocking automation/MCP tools. Async-safe
+    // because submitNew is already async.
+    if(!cust){if(!(await Confirm.show('Enginn viðskiptavinur — halda áfram?')))return;cust='Staðgreitt';}
     var t=totals();var btn=document.getElementById('pos-checkout');btn.disabled=true;btn.innerHTML='Vista...';
     try{
       // Use the pre-allocated R-NNNNNN if one was reserved by the checkout
@@ -556,7 +645,10 @@
       // that as `afslattur` on solur for backward-compatibility with the
       // existing accounting/Bókhald yfirlit reports.
       var discKr = Math.round((t.pct_disc || 0) + (t.abs_disc || 0));
-      var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,linur:state.lines,upphaed_an_vsk:Math.round(t.ex),vsk_upphaed:Math.round(t.vsk),afslattur:discKr,samtals:Math.round(t.total),greitt_med:pmLabel,athugasemdir:state.notes}).select().single();
+      // 2026-05-09 (Phase B): „Greitt síðar" býr til DRÖG sem patch 121
+      // (pickup-checkout) klárar við Sótt ✓. Drög birtast ekki í Tekjum/Bókhaldi.
+      var saleStatus = pmCode === 'greitt_sidar' ? 'drog' : 'final';
+      var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,linur:state.lines,upphaed_an_vsk:Math.round(t.ex),vsk_upphaed:Math.round(t.vsk),afslattur:discKr,samtals:Math.round(t.total),greitt_med:pmLabel,athugasemdir:state.notes,status:saleStatus}).select().single();
       if(sr.error)throw sr.error;
       var num = sr.data && sr.data.num ? sr.data.num : preNum;
       window._pendingReikningurNum = '';
@@ -601,6 +693,21 @@
       var skipVerk = window._pendingSkipVerk === true;
       window._pendingSkipVerk = false; // reset for next sale
       var verkCount = 0;
+      // 2026-05-12: Detect CO₂ byrjunargjald in the cart. It's a 'product'
+      // line so it doesn't get its own verkbeiðni — but the user wants it
+      // visible alongside the CO₂ 100gr refill it accompanies. We fold its
+      // amount + a note into the matching CO₂ 100gr verkbeiðni below.
+      var _bgLine = (state.lines || []).find(function(l){
+        return /byrjunargjald/i.test(l.desc || '');
+      });
+      var _bgInc = 0;
+      if (_bgLine) {
+        var _bgQty = +_bgLine.qty || 1;
+        var _bgEx  = +_bgLine.unit_price_ex_vat || 0;
+        var _bgVat = +_bgLine.vsk_pct || 24;
+        _bgInc = Math.round(_bgQty * _bgEx * (1 + _bgVat/100));
+      }
+      var _bgConsumed = false; // ensure we only bundle once even with multiple CO₂ lines
       if (!skipVerk) {
         // Pickup-offset comes from Stillingar → Almennt → "Default sókn (dagar)".
         // Default VSK% (when product/service didn't specify) also from settings.
@@ -634,6 +741,36 @@
         for(var i=0;i<svc.length;i++){
           var sl=svc[i];
           var vatRate=(sl.vsk_pct!=null?sl.vsk_pct:defVsk);
+          // 2026-05-11: Include the cart's general "Athugasemd" textarea
+          // in verkbeidnir.notes so workshop / counter staff actually see
+          // the note the salesperson wrote at sale time. Previously the
+          // note only landed on solur.athugasemdir and was invisible to
+          // workshop, which made it easy to forget.
+          // 2026-05-11 (later): only attach the general note to the FIRST
+          // verkbeiðni — not every one. Otherwise patch 134 surfaces the
+          // same note on every order in Counter/Workshop, making it look
+          // like the note belongs to all orders ("Þeir hringdu..." sticky
+          // on every job).
+          var notesParts = [sl.desc + (sl.ref ? ' · ' + sl.ref : '')];
+          if (i === 0 && state.notes && state.notes.trim()) notesParts.push(state.notes.trim());
+          // 2026-05-12: For gram-based services (CO₂ 100gr × 20 = 1 cylinder)
+          // the verklidur count is 1 but the price should reflect the FULL line
+          // total (qty × unit). modal.js / counter view computes
+          // totalKr = verd × units.length — so for 1-unit gram-based jobs we
+          // must store qty × unit_price as verd, not just unit_price.
+          var _qty = parseInt(sl.qty, 10) || 1;
+          var _isGramBasedLine = /\b\d+\s*(gr?\.?|gramm|ml|litr?)\b/i.test(sl.desc);
+          var _verd = Math.round(sl.unit_price_ex_vat * (1 + vatRate/100));
+          if (_isGramBasedLine) _verd = Math.round(sl.unit_price_ex_vat * _qty * (1 + vatRate/100));
+          // Fold CO₂ byrjunargjald into the CO₂ 100gr verkbeiðni (price + note)
+          // Match Unicode ₂ (U+2082) as well as ASCII 2, plus 'kolsýra'.
+          var _isCo2_100gr = (+sl.product_id === 83)
+            || /(co[2₂]|kols[ýy]ra).*100\s*gr|100\s*gr.*(co[2₂]|kols[ýy]ra)/i.test(sl.desc);
+          if (_isCo2_100gr && _bgInc > 0 && !_bgConsumed) {
+            _verd += _bgInc;
+            notesParts.push('🚚 Byrjunargjald: ' + _bgInc.toLocaleString('is-IS') + ' kr (innifalið)');
+            _bgConsumed = true;
+          }
           var insertResult = await DB.sb.from('verkbeidnir').insert({
             num: num+'-V'+(i+1),
             status: 'received',
@@ -641,17 +778,32 @@
             phone: state.customer.simi,
             dropoff: new Date().toISOString().substring(0,10),
             pickup: new Date(Date.now()+pickupOffsetDays*86400000).toISOString().substring(0,10),
-            notes: sl.desc+(sl.ref?' · '+sl.ref:''),
-            verd: Math.round(sl.unit_price_ex_vat*(1+vatRate/100))
+            notes: notesParts.join('\n— '),
+            verd: _verd
           }).select('id').single();
+          // 2026-05-14: Don't lie about success when the insert errored out.
+          // Log the error so it's visible, AND don't bump verkCount for the
+          // failed insert — the post-sale modal then shows the real count.
+          if (insertResult && insertResult.error) {
+            console.error('[pos] verkbeidnir insert failed:', insertResult.error);
+            continue; // skip verklidur creation for this line
+          }
           verkCount++;
           // Insert verklidur rows so workshop view has clickable units
           var jobId = insertResult && insertResult.data && insertResult.data.id;
           if (jobId) {
             var qty = parseInt(sl.qty, 10) || 1;
             var registered = pendingUnitsByDesc[sl.desc] || [];
+            // 2026-05-12: Gram-based services (e.g. "CO₂ 100 gr.") use qty as
+            // the WEIGHT (20 × 100gr = 2kg refill into a single cylinder),
+            // not as a count of separate units. Treat as 1 verklidur in that
+            // case so workshop sees the cylinder once, not 20 phantom rows.
+            // Detect via "gr" / "gramm" / "ml" / "litr" tokens in desc, OR by
+            // checking that user didn't register multiple serials.
+            var isGramBased = /\b\d+\s*(gr?\.?|gramm|ml|litr?)\b/i.test(sl.desc) && registered.length <= 1;
+            var verklidurCount = isGramBased ? 1 : qty;
             var verklidurRows = [];
-            for (var u=0; u<qty; u++) {
+            for (var u=0; u<verklidurCount; u++) {
               var registeredUnit = registered[u];
               var serial = (registeredUnit && registeredUnit.serial && registeredUnit.serial.trim())
                 || makeTmpSerial();
@@ -660,7 +812,9 @@
                 serial: serial,
                 type: '—',                // workshop will fill in correct type
                 size: '',
-                service: sl.desc,
+                service: isGramBased
+                  ? sl.desc + ' × ' + qty + ' (samtals)'
+                  : sl.desc,
                 status: 'received'
               });
             }
@@ -671,15 +825,135 @@
           }
         }
       }
-      var verkMsg = skipVerk
-        ? '\n(verkbeiðnir slepptar)'
-        : ('\n' + verkCount + ' verkbeiðnir búnar til');
-      alert('✓ Sala '+num+'\n'+fmtKr(t.total)+verkMsg);
+      // 2026-05-11: Replaced the blocking native alert() with a non-blocking
+      // success modal that shows a clear summary + an explicit "Prenta aftur"
+      // button. The alert() was confusing because it interrupted the print
+      // window flow and the user had to dismiss it before they could see
+      // what actually happened. Now the modal lives alongside the print
+      // window (if it opened) so the user can compare or re-print easily.
+      var verkMsgShort = skipVerk
+        ? '⏭ Engar verkbeiðnir búnar til'
+        : (verkCount + ' verkbeiðni' + (verkCount === 1 ? '' : 'r') + ' búin' + (verkCount === 1 ? '' : 'ar') + ' til');
+      // 2026-05-19: Skip the "Sala kláruð" success modal when payment is
+      // "greitt_sidar" (pay when picking up). The customer doesn't need a
+      // receipt yet — the pickup-checkout flow (patch 121) will print one
+      // at pickup. Showing the success modal here is just a click-to-
+      // dismiss for the operator. Quick toast confirmation is enough.
+      if (pmCode === 'greitt_sidar') {
+        if (window.Toast && Toast.show) {
+          Toast.show('✓ Drög stofnuð — ' + num + ' · greitt við afhendingu', 'success');
+        }
+      } else {
+        showSaleSuccess({
+          num: num,
+          total: t.total,
+          customer: cust,
+          verkMsg: verkMsgShort,
+          lines: state.lines.slice(),
+          totals: t,
+          method: pmLabel,
+          phone: state.customer.simi || '',
+          // 2026-05-18: snapshot discount so "Prenta aftur" shows it on the receipt.
+          // Without these, fakeSale below hardcodes afslattur=0 and the re-print
+          // silently drops the discount.
+          discount_pct: state.discount_pct || 0,
+          discount: state.discount || 0
+        });
+      }
       state.customer={mode:'kt',kt:'',nafn:'',simi:'',co_id:null,afslattur_pct:0,athugasemdir:''};state.lines=[];state.notes='';state.discount=0;state.discount_pct=0;
       // Hide the customer memo box on reset so it doesn't leak into the next sale
       var memoBoxReset=document.getElementById('pos-customer-memo');if(memoBoxReset)memoBoxReset.style.display='none';
       var v=document.getElementById('view-sala');v.removeAttribute('data-pos-v3');render();
     }catch(e){alert('Villa: '+(e.message||e));}finally{btn.disabled=false;btn.innerHTML='✓ ÁFRAM';}
+  }
+
+  // Non-blocking success modal that replaces the old alert('✓ Sala ...').
+  // Shows: invoice number, total, customer, verkbeiðnir count, and quick
+  // actions (Prenta aftur, Skoða í reikningum, Ný sala).
+  function showSaleSuccess(info) {
+    var existing = document.getElementById('_pos-success');
+    if (existing) existing.remove();
+    var ov = document.createElement('div');
+    ov.id = '_pos-success';
+    ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;animation:_psFade .2s ease-out';
+    if (!document.getElementById('_ps-anim')) {
+      var st = document.createElement('style');
+      st.id = '_ps-anim';
+      st.textContent = '@keyframes _psFade{from{opacity:0}to{opacity:1}}@keyframes _psSlide{from{transform:translateY(-12px);opacity:0}to{transform:translateY(0);opacity:1}}';
+      document.head.appendChild(st);
+    }
+    ov.innerHTML =
+      '<div style="background:#fff;border-radius:16px;max-width:440px;width:100%;box-shadow:0 24px 60px rgba(0,0,0,.35);overflow:hidden;animation:_psSlide .25s ease-out">' +
+        '<div style="background:linear-gradient(135deg,#10b981,#047857);color:#fff;padding:22px 26px">' +
+          '<div style="font-size:36px;line-height:1;margin-bottom:6px">✓</div>' +
+          '<div style="font-size:13px;text-transform:uppercase;letter-spacing:.05em;opacity:.85">Sala kláruð</div>' +
+          '<div style="font-size:26px;font-weight:800;margin-top:4px;font-variant-numeric:tabular-nums">' + fmtKr(info.total) + '</div>' +
+        '</div>' +
+        '<div style="padding:20px 26px;font-size:14px;color:#0f172a">' +
+          '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9"><span style="color:#64748b">Reikningsnúmer:</span><span style="font-weight:700;font-family:monospace">' + esc(info.num) + '</span></div>' +
+          '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9"><span style="color:#64748b">Viðskiptavinur:</span><span style="font-weight:600">' + esc(info.customer) + '</span></div>' +
+          '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #f1f5f9"><span style="color:#64748b">Greitt með:</span><span style="font-weight:600">' + esc(info.method) + '</span></div>' +
+          '<div style="display:flex;justify-content:space-between;padding:6px 0"><span style="color:#64748b">Verkstæði:</span><span style="font-weight:600;color:#1e40af">' + esc(info.verkMsg) + '</span></div>' +
+        '</div>' +
+        '<div style="padding:12px 22px 18px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">' +
+          '<button id="_ps-reprint" type="button" style="background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-weight:600">🖨 Prenta aftur</button>' +
+          '<button id="_ps-view" type="button" style="background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-weight:600">📋 Reikningar</button>' +
+          '<button id="_ps-close" type="button" style="background:#10b981;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;font-weight:700">↺ Ný sala</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+
+    function closeOv() { if (ov.parentNode) ov.parentNode.removeChild(ov); }
+    ov.addEventListener('click', function(e){ if (e.target === ov) closeOv(); });
+    document.getElementById('_ps-close').onclick = closeOv;
+    document.getElementById('_ps-view').onclick = function(){
+      closeOv();
+      if (window.App && App.switchView) App.switchView('reikningar');
+    };
+    document.getElementById('_ps-reprint').onclick = function(){
+      var btn = this;
+      btn.disabled = true; btn.textContent = '🖨 Prentar...';
+      var w = window.open('', '_blank', 'width=900,height=1100');
+      if (!w) { alert('Vinsamlegast leyfðu sprettiglugga til að prenta'); btn.disabled = false; btn.textContent = '🖨 Prenta aftur'; return; }
+      if (window.SalaInvoice && typeof SalaInvoice.render === 'function') {
+        // Synthesise a sale row so SalaInvoice.renderFromSale produces the
+        // same A4 layout that historical re-prints use.
+        // 2026-05-18: include the discount snapshot from the original sale
+        // so the re-print matches the first print. `afslattur` is the kr value
+        // applied; renderFromSale reads it as discount=afslattur, discount_pct=0.
+        var fakeAfslattur = Math.round((+info.totals?.pct_disc || 0) + (+info.totals?.abs_disc || 0));
+        var fakeSale = {
+          num: info.num,
+          customer_nafn: info.customer,
+          greitt_med: info.method,
+          starfsmadur: 'Kassi',
+          linur: info.lines || [],
+          afslattur: fakeAfslattur,
+          athugasemdir: ''
+        };
+        if (typeof SalaInvoice.renderFromSale === 'function') {
+          SalaInvoice.renderFromSale(w, fakeSale, null);
+        } else {
+          SalaInvoice.render(w, {
+            customerName: info.customer,
+            paymentMethod: info.method,
+            invoiceNum: info.num,
+            discount_pct: info.discount_pct || 0,
+            discount: info.discount || fakeAfslattur || 0
+          });
+        }
+      } else {
+        showReceipt(info.num, info.customer, info.lines || [], info.totals, 0, info.phone || '', '');
+      }
+      setTimeout(function(){ btn.disabled = false; btn.textContent = '🖨 Prenta aftur'; }, 800);
+    };
+
+    // Auto-focus the "Ný sala" button so Enter closes the modal.
+    setTimeout(function(){ var b = document.getElementById('_ps-close'); if (b) b.focus(); }, 50);
+    // Esc closes too.
+    document.addEventListener('keydown', function escH(e){
+      if (e.key === 'Escape') { closeOv(); document.removeEventListener('keydown', escH); }
+    });
   }
   function showReceipt(num, cust, lines, totals, svcCount, phone, notes){
     var now = new Date();
@@ -762,7 +1036,7 @@
     w.document.close();
   }
   function watch(){setInterval(function(){var v=document.getElementById('view-sala');if(!v||!v.classList.contains('active'))return;if(!document.getElementById('pos-checkout')){v.removeAttribute('data-pos-v3');loadAll().then(render);}},300);}
-  window.POS = { getState: function(){ return state; }, totals: totals };
+  window.POS = { getState: function(){ return state; }, totals: totals, rerenderDynamic: rerenderDynamic };
   function init(){watch();console.log('[POS v3] Ready');}
   if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',init);}else{init();}
 })();

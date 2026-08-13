@@ -59,7 +59,12 @@
 
     dlg = document.createElement('div');
     dlg.id = '_vp-dialog';
-    dlg.style.cssText = 'position:fixed;inset:0;z-index:100060;background:rgba(15,23,42,0.6);display:flex;align-items:center;justify-content:center;padding:16px';
+    // 2026-05-21: 100080 (was 100060) so the picker always sits ABOVE
+    // any host modal that opened it — Þjónustuverk editor (100070), the
+    // sale editor, and company-pricing dialogs all reside in the 100050-
+    // 100070 band. Without this the picker rendered behind the host and
+    // looked like the "+ Bæta vöru" button didn't respond.
+    dlg.style.cssText = 'position:fixed;inset:0;z-index:100080;background:rgba(15,23,42,0.6);display:flex;align-items:center;justify-content:center;padding:16px';
 
     dlg.innerHTML =
       '<div style="background:#fff;border-radius:14px;box-shadow:0 24px 64px rgba(0,0,0,0.3);width:min(640px,calc(100vw - 24px));max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden">' +
@@ -107,11 +112,15 @@
       if (f === 'vorur') rows = rows.filter(p => p.flokkur !== 'Þjónusta');
       else if (f === 'thjonusta') rows = rows.filter(p => p.flokkur === 'Þjónusta');
       if (q) {
-        rows = rows.filter(p =>
-          (p.nafn || '').toLowerCase().indexOf(q) >= 0 ||
-          (p.flokkur || '').toLowerCase().indexOf(q) >= 0 ||
-          (p.lysing || '').toLowerCase().indexOf(q) >= 0
-        );
+        // 2026-05-10 (F2 fix): Tokenized search — split query by whitespace
+        // and require ALL tokens to appear (in any order) across nafn/flokkur/
+        // lysing. So "duft hleðsla 6" finds "6 kg. Duft ABC hleðsla", which
+        // the previous strict-substring search missed.
+        const tokens = q.split(/\s+/).filter(Boolean);
+        rows = rows.filter(p => {
+          const hay = ((p.nafn || '') + ' ' + (p.flokkur || '') + ' ' + (p.lysing || '')).toLowerCase();
+          return tokens.every(tok => hay.indexOf(tok) >= 0);
+        });
       }
       countEl.textContent = rows.length + ' / ' + products.length;
 

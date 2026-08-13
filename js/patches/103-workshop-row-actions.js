@@ -19,6 +19,41 @@
   }
   function getSB() { return (window.DB && window.DB.sb) || null; }
 
+  // ── Status label/colour extension (moved here from retired patch 176) ─────
+  // Ensures unit statuses render with proper Icelandic labels + colours via
+  // U.sl / U.sc (used by U.badge) instead of raw status strings.
+  const STATUS_LABEL = {
+    active:   'Virkt',
+    scrap:    'Ónýtt',
+    broken:   'Brotið',
+    urelt:    'Úrelt',
+    geymsla:  'Í geymslu',
+    repair:   'Þarfnast viðgerðar',
+    fail:     'Bilað',
+  };
+  const STATUS_CLASS = {
+    active:   'st-ok',
+    scrap:    'st-ov',
+    broken:   'st-ov',
+    urelt:    'st-ov',
+    geymsla:  'st-col',
+    repair:   'st-due',
+    fail:     'st-ov',
+  };
+  if (window.U && !U.__statusLabelsExtended) {
+    U.__statusLabelsExtended = true;
+    const origSl = U.sl;
+    const origSc = U.sc;
+    U.sl = function(s) {
+      if (STATUS_LABEL[s]) return STATUS_LABEL[s];
+      try { return origSl.call(U, s); } catch (_) { return s; }
+    };
+    U.sc = function(s) {
+      if (STATUS_CLASS[s]) return STATUS_CLASS[s];
+      try { return origSc.call(U, s); } catch (_) { return ''; }
+    };
+  }
+
   function unitFromRow(row) {
     // Try classic table cell .ser, then .ws-ser (workshop modal redesign)
     let serialEl = row.querySelector('.ser') || row.querySelector('.ws-ser');
@@ -115,8 +150,9 @@
     }
 
     dlg.querySelector('#_wrac-add').addEventListener('click', () => save(false));
-    dlg.querySelector('#_wrac-replace').addEventListener('click', () => {
-      if (existingNotes && !confirm('Skrifa yfir fyrri athugasemdir? Þetta er ekki afturkræft.')) return;
+    dlg.querySelector('#_wrac-replace').addEventListener('click', async () => {
+      // 2026-05-10 (B5+): Confirm.show í stað native confirm
+      if (existingNotes && !(await Confirm.show('Skrifa yfir fyrri athugasemdir? Þetta er ekki afturkræft.', {danger:true, okText:'Skrifa yfir'}))) return;
       save(true);
     });
     ta.addEventListener('keydown', e => {
@@ -126,17 +162,30 @@
   }
 
   // ── Toggle ónýtt status ───────────────────────────────────────────────────
+  // 2026-05-29: read the CURRENT status from the DB before deciding direction
+  // so reverting scrap→active works on the first click even if the cached
+  // unit.status is stale (was the root cause of the brittle 176 workaround).
   async function toggleScrap(unit, btn) {
     const SB = getSB();
     if (!SB) { alert('Engin gagnabankatenging'); return; }
-    const isScrapNow = unit.status === 'scrap';
-    const newStatus = isScrapNow ? 'active' : 'scrap';
-    if (!isScrapNow) {
-      if (!confirm('Merkja tæki ' + (unit.serial || unit.id) + ' sem ÓNÝTT?\n\nÞetta merkir tækið sem brotið/ónýtt — það mun birtast með rauðum status í kerfinu.')) return;
-    }
     btn.disabled = true;
     btn.textContent = '...';
     try {
+      // Truth from DB — not the (possibly stale) cached unit.
+      let currentStatus = unit.status;
+      try {
+        const cur = await SB.from('uttaeki').select('status').eq('id', unit.id).single();
+        if (!cur.error && cur.data && cur.data.status != null) currentStatus = cur.data.status;
+      } catch (_) { /* fall back to cached status */ }
+      const isScrapNow = currentStatus === 'scrap';
+      const newStatus = isScrapNow ? 'active' : 'scrap';
+      if (!isScrapNow) {
+        // 2026-05-10 (B5+): Confirm.show í stað native confirm
+        if (!(await Confirm.show('Merkja tæki ' + (unit.serial || unit.id) + ' sem ÓNÝTT?\n\nÞetta merkir tækið sem brotið/ónýtt — það mun birtast með rauðum status í kerfinu.', {danger:true, okText:'Merkja ónýtt'}))) {
+          stylizeScrapBtn(btn, currentStatus);
+          return;
+        }
+      }
       const r = await SB.from('uttaeki').update({ status: newStatus }).eq('id', unit.id);
       if (r.error) throw r.error;
       unit.status = newStatus;
@@ -144,8 +193,9 @@
         const idx = window.DB.cache.units.findIndex(u => u.id === unit.id);
         if (idx >= 0) window.DB.cache.units[idx].status = newStatus;
       }
-      // Update button visual
+      // Update button + the row's Staða cell immediately.
       stylizeScrapBtn(btn, newStatus);
+      repaintStatusCell(btn, newStatus);
       if (window.Toast && Toast.show) Toast.show(newStatus === 'scrap' ? '🚫 Tæki merkt ónýtt' : '✓ Tæki merkt aftur í lagi');
     } catch (e) {
       alert('Villa: ' + (e.message || e));
@@ -153,6 +203,18 @@
     } finally {
       btn.disabled = false;
     }
+  }
+  // Repaint the row's Staða <td> (and row tint) so the change is visible
+  // immediately. Replaces the old 176 timed-repaint hack.
+  function repaintStatusCell(btn, status) {
+    const row = btn.closest && btn.closest('tr');
+    if (!row) return;
+    const cells = row.querySelectorAll('td');
+    cells.forEach(td => {
+      const span = td.querySelector('span.st');
+      if (span && window.U && U.badge) td.innerHTML = U.badge(status);
+    });
+    row.style.background = status === 'scrap' ? '#fef2f2' : '';
   }
   function stylizeScrapBtn(btn, status) {
     if (status === 'scrap') {
@@ -290,6 +352,76 @@
     });
     wrap.appendChild(noteBtn);
 
+    // 2026-05-12: Add 🚫 Ónýtt button on workshop rows (ws-row) too. Patch
+    // 120 only targets `counter-main` table rows but the workshop redesign
+    // modal uses div-based ws-row layout so 120's button never appeared
+    // here. We toggle the verklidur status directly (the workshop rows
+    // have a matching verklidur row even when no uttaeki exists).
+    const scrapBtn = document.createElement('button');
+    scrapBtn.className = 'btn btn-ghost btn-sm _wra-scrap-line';
+    scrapBtn.type = 'button';
+    scrapBtn.style.cssText = 'padding:5px 10px;background:#fff;border:1px solid #fecaca;color:#dc2626;font-weight:600;border-radius:6px;font-size:12px;cursor:pointer';
+    scrapBtn.innerHTML = '🚫 Ónýtt';
+    scrapBtn.title = 'Merkja sem ónýtt (verklidur.status=broken)';
+    scrapBtn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const SB = getSB();
+      if (!SB) { alert('Engin gagnabankatenging'); return; }
+      // Find the verklidur row by serial across all jobs
+      let liveUnit = null;
+      if (window.DB && DB.cache && Array.isArray(DB.cache.jobs)) {
+        for (const job of DB.cache.jobs) {
+          if (!Array.isArray(job.units)) continue;
+          const u = job.units.find(x => x.serial === serial);
+          if (u) { liveUnit = u; break; }
+        }
+      }
+      if (!liveUnit) { alert('Tæki ekki fundið í kerfi'); return; }
+      const isBroken = liveUnit.status === 'broken';
+      const newStatus = isBroken ? 'received' : 'broken';
+      if (!isBroken && !confirm('Merkja tæki ' + serial + ' sem ÓNÝTT?\n\nAfgreiðslufólk fær viðvörun við sókn.')) return;
+      scrapBtn.disabled = true;
+      scrapBtn.textContent = '…';
+      try {
+        const r = await SB.from('verklidur').update({ status: newStatus }).eq('id', liveUnit.id);
+        if (r.error) throw r.error;
+        liveUnit.status = newStatus;
+        // Visual toggle
+        if (newStatus === 'broken') {
+          scrapBtn.style.background = '#dc2626';
+          scrapBtn.style.borderColor = '#991b1b';
+          scrapBtn.style.color = '#fff';
+          scrapBtn.innerHTML = '🚫 Ónýtt ✓';
+          row.style.background = '#fef2f2';
+        } else {
+          scrapBtn.style.background = '#fff';
+          scrapBtn.style.borderColor = '#fecaca';
+          scrapBtn.style.color = '#dc2626';
+          scrapBtn.innerHTML = '🚫 Ónýtt';
+          row.style.background = '';
+        }
+        if (window.Toast && Toast.show) {
+          Toast.show(newStatus === 'broken' ? '🚫 Tæki merkt ónýtt' : '✓ Tæki aftur í lagi');
+        }
+      } catch (err) {
+        alert('Villa: ' + (err.message || err));
+      } finally {
+        scrapBtn.disabled = false;
+      }
+    });
+    // Apply initial visual state if already broken
+    try {
+      const liveUnit = (DB.cache.jobs || []).flatMap(j => j.units || []).find(u => u.serial === serial);
+      if (liveUnit && liveUnit.status === 'broken') {
+        scrapBtn.style.background = '#dc2626';
+        scrapBtn.style.borderColor = '#991b1b';
+        scrapBtn.style.color = '#fff';
+        scrapBtn.innerHTML = '🚫 Ónýtt ✓';
+        row.style.background = '#fef2f2';
+      }
+    } catch(_) {}
+    wrap.appendChild(scrapBtn);
+
     target.appendChild(wrap);
   }
 
@@ -392,8 +524,9 @@
       close();
     }
     dlg.querySelector('#_wral-add').addEventListener('click', () => save(false));
-    dlg.querySelector('#_wral-replace').addEventListener('click', () => {
-      if (existing && !confirm('Skrifa yfir fyrri athugasemdir?')) return;
+    dlg.querySelector('#_wral-replace').addEventListener('click', async () => {
+      // 2026-05-10 (B5+): Confirm.show í stað native confirm
+      if (existing && !(await Confirm.show('Skrifa yfir fyrri athugasemdir?', {danger:true, okText:'Skrifa yfir'}))) return;
       save(true);
     });
     ta.addEventListener('keydown', e => {

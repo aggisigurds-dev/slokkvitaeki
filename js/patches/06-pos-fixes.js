@@ -89,7 +89,7 @@
     });
     removeBox();
   }
-  function showBox(matches, anchorEl) {
+  function showBox(matches, anchorEl, ktDigits) {
     removeBox();
     if (!anchorEl) return;
     const box = document.createElement('div');
@@ -99,6 +99,40 @@
       e.className = 'pos-sug-empty';
       e.textContent = 'Engin samsvörun';
       box.appendChild(e);
+      // When the search is a 10-digit kennitala AND no local match, offer to
+      // pull the company info from RSK Fyrirtækjaskrá via patch 19's lookup.
+      if (ktDigits && ktDigits.length === 10 && window.KtLookup && typeof KtLookup.lookup === 'function') {
+        const rsk = document.createElement('div');
+        rsk.className = 'pos-sug-item';
+        rsk.style.background = '#eff6ff';
+        rsk.style.color = '#1e40af';
+        rsk.style.fontWeight = '600';
+        rsk.innerHTML = '<div class="pos-sug-name">📋 Leita að ' + ktDigits.slice(0,6) + '-' + ktDigits.slice(6) + ' í RSK</div>' +
+          '<div class="pos-sug-meta" style="color:#3b82f6">Sækir nafn + heimilisfang úr fyrirtækjaskrá</div>';
+        rsk.addEventListener('mousedown', async (ev) => {
+          ev.preventDefault();
+          rsk.querySelector('.pos-sug-name').textContent = '⏳ Sæki úr RSK...';
+          try {
+            const data = await KtLookup.lookup(ktDigits);
+            if (data && data.nafn) {
+              fillFromMatch({ kennitala: ktDigits, nafn: data.nafn, simi: data.simi || '' });
+              const nafnInput = document.getElementById('pos-nafn');
+              const addrInput = document.getElementById('pos-heimilisfang') || document.querySelector('input[id*="heimilis"], input[name*="heimilis"]');
+              if (addrInput && data.heimilisfang) addrInput.value = data.heimilisfang;
+              if (window.Toast && Toast.show) Toast.show('✓ ' + data.nafn);
+            } else {
+              rsk.querySelector('.pos-sug-name').textContent = '⚠ Fannst ekki í RSK';
+              rsk.style.background = '#fee2e2';
+              rsk.style.color = '#991b1b';
+            }
+          } catch (err) {
+            rsk.querySelector('.pos-sug-name').textContent = '⚠ ' + (err.message || 'Uppfletting mistókst');
+            rsk.style.background = '#fee2e2';
+            rsk.style.color = '#991b1b';
+          }
+        });
+        box.appendChild(rsk);
+      }
     } else {
       for (const m of matches) {
         const item = document.createElement('div');
@@ -152,7 +186,9 @@
         const { data, error } = await q;
         if (reqId !== activeRequest) return;
         if (error) return;
-        showBox(data || [], anchorEl);
+        // Pass kt-digits so showBox can offer RSK lookup on empty results.
+        const ktDigits = field === 'kt' ? v.replace(/\D/g, '') : '';
+        showBox(data || [], anchorEl, ktDigits);
       } catch (e) {}
     }, 180);
   }

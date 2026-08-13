@@ -390,8 +390,6 @@ if (window.MapModule && MapModule._geocode) {
   };
 }
 
-  window._slokk_markers=_markers;
-  window._slokk_refresh=function(){if(window._slokk_markers)window._slokk_markers();};
 })(); /* end SLOKK v7 */
 
 

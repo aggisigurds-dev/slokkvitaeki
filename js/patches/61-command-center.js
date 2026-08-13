@@ -62,19 +62,55 @@
     const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate()+1);
     const in30 = new Date(today); in30.setDate(in30.getDate()+30);
 
-    const [revM, unpaid, openJobs, todayJobs, dueInsp, lowStock, contractsDue] = await Promise.all([
-      safe(SB.from('solur').select('samtals,created_at').gte('created_at', monthStart.toISOString())),
-      safe(SB.from('solur').select('id,samtals,customer_nafn').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null)),
+    // 7-day window for the revenue chart. We pull 7 days back from
+    // "today + 1 day" so today's sales (created_at = today 14:32) are
+    // included (gte uses the start-of-day, lt uses start-of-tomorrow).
+    const sevenBack = new Date(today); sevenBack.setDate(sevenBack.getDate() - 6);
+    const [revM, unpaid, openJobs, todayJobs, dueInsp, lowStock, contractsDue, rev7] = await Promise.all([
+      safe(SB.from('solur').select('samtals,created_at').neq('status','drog').gte('created_at', monthStart.toISOString())),
+      safe(SB.from('solur').select('id,samtals,customer_nafn').neq('status','drog').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null)),
       safe(SB.from('verkbeidnir').select('id,num,customer,status').neq('status','done').neq('status','cancelled')),
       safe(SB.from('verkdagbok').select('id,fyrirtaeki,job_date,athugasemdir').gte('job_date', today.toISOString().slice(0,10)).lt('job_date', tomorrow.toISOString().slice(0,10)).order('job_date')),
       safe(SB.from('uttaeki').select('id,serial,client,next_insp').not('next_insp','is',null).lte('next_insp', in30.toISOString().slice(0,10))),
       safe(SB.from('birgdir').select('id,nafn,magn,lagmark').filter('magn','lt','lagmark')),
-      safe(SB.from('thjonustusamningar').select('id,company_nafn,upphaed_an_vsk,next_due').lte('next_due', in30.toISOString().slice(0,10)).eq('status','virkur'))
+      safe(SB.from('thjonustusamningar').select('id,company_nafn,upphaed_an_vsk,next_due').lte('next_due', in30.toISOString().slice(0,10)).eq('status','virkur')),
+      safe(SB.from('solur').select('samtals,created_at').neq('status','drog').gte('created_at', sevenBack.toISOString()).lt('created_at', tomorrow.toISOString()))
     ]);
 
     const monthRev = (revM.data||[]).reduce((s,r)=>s+(parseFloat(r.samtals)||0),0);
     const unpaidTotal = (unpaid.data||[]).reduce((s,r)=>s+(parseFloat(r.samtals)||0),0);
     const techs = new Set((todayJobs.data||[]).map(r=>r.assigned_to).filter(Boolean));
+
+    // Build the last-7-days revenue buckets. Key = YYYY-MM-DD in LOCAL
+    // timezone (not UTC) so sales made at 22:00 don't get pushed into
+    // the next day's bucket.
+    const dayBuckets = [];
+    const todayLocalKey = (() => {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    })();
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      dayBuckets.push({
+        key,
+        date: d,
+        label: ['Sun','Mán','Þri','Mið','Fim','Fös','Lau'][d.getDay()],
+        dayNum: d.getDate(),
+        isToday: key === todayLocalKey,
+        total: 0
+      });
+    }
+    (rev7.data || []).forEach(r => {
+      const d = new Date(r.created_at);
+      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+      const b = dayBuckets.find(x => x.key === key);
+      if (b) b.total += parseFloat(r.samtals) || 0;
+    });
+    const max7 = Math.max(1, ...dayBuckets.map(b => b.total));
+    const week7Total = dayBuckets.reduce((s, b) => s + b.total, 0);
+    const avg7 = week7Total / 7;
 
     const greeting = (() => {
       const h = new Date().getHours();
@@ -84,7 +120,14 @@
       return '🌆 Gott kvöld';
     })();
 
-    const dayName = new Date().toLocaleDateString('is-IS', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    // Build the date string manually — Chrome on Windows falls back to
+    // en-US for 'is-IS' long-form locale data ("Saturday, May 16, 2026"),
+    // so we use Icelandic arrays directly to guarantee Icelandic output.
+    const WEEKDAYS_IS = ['sunnudagur','mánudagur','þriðjudagur','miðvikudagur','fimmtudagur','föstudagur','laugardagur'];
+    const MONTHS_LONG_IS = ['janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
+    const _dn = new Date();
+    const dayName = WEEKDAYS_IS[_dn.getDay()].charAt(0).toUpperCase() + WEEKDAYS_IS[_dn.getDay()].slice(1) +
+                    ', ' + _dn.getDate() + '. ' + MONTHS_LONG_IS[_dn.getMonth()] + ' ' + _dn.getFullYear();
 
     main.innerHTML = `
       <div style="max-width:1280px;margin:0 auto">
@@ -102,6 +145,8 @@
           ${cardHtml('📦', 'Lág-birgðir', (lowStock.data||[]).length, '#ec4899', '#fce7f3', (lowStock.data||[]).length?'Þarf að panta':'Allt í lagi')}
           ${cardHtml('📑', 'Samningar á rukkun', (contractsDue.data||[]).length, '#0ea5e9', '#e0f2fe', 'Næstu 30 daga')}
         </div>
+
+        ${revenueChartHtml(dayBuckets, max7, week7Total, avg7)}
 
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:14px">
           <div class="cc-section">
@@ -155,6 +200,20 @@
         .cc-row:last-child{border-bottom:none}
         .cc-empty{padding:14px;text-align:center;color:#94a3b8;font-size:13px}
         .cc-tag{display:inline-block;padding:1px 6px;background:#eff6ff;color:#1d4ed8;border-radius:99px;font-size:10px;font-weight:600;margin-left:4px}
+        .cc-chart-bars{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;align-items:end;min-height:180px}
+        .cc-chart-col{display:flex;flex-direction:column;align-items:center;gap:6px;cursor:default}
+        .cc-chart-val{font-size:10.5px;font-weight:600;font-variant-numeric:tabular-nums;height:14px;line-height:14px}
+        .cc-chart-bar-wrap{width:100%;height:140px;display:flex;align-items:flex-end;justify-content:center;padding:0 4px}
+        .cc-chart-bar{width:100%;max-width:42px;border-radius:6px 6px 2px 2px;transition:height .35s cubic-bezier(.4,0,.2,1)}
+        .cc-chart-col:hover .cc-chart-bar{filter:brightness(1.08);transform:translateY(-2px);transition:transform .15s, filter .15s, height .35s cubic-bezier(.4,0,.2,1)}
+        .cc-chart-day{font-size:11px;font-weight:600}
+        .cc-chart-date{font-size:10px}
+        @media (max-width:600px){
+          .cc-chart-bars{gap:5px;min-height:140px}
+          .cc-chart-bar-wrap{height:100px}
+          .cc-chart-val{font-size:9px}
+          .cc-chart-bar{max-width:32px}
+        }
       `;
       document.head.appendChild(s);
     }
@@ -169,6 +228,73 @@
       <div style="font-size:24px;font-weight:700;color:${color}">${value}</div>
       ${sub?`<div style="font-size:11px;color:#94a3b8;margin-top:2px">${esc(sub)}</div>`:''}
     </div>`;
+  }
+
+  // 7-day revenue bar chart. Renders as inline HTML/CSS bars (no SVG library
+  // needed). Each bar is a flex column with the bar height scaled to the
+  // max value in the window; today's bar is highlighted, and bars with
+  // zero revenue still show a thin baseline so the day labels stay aligned.
+  function revenueChartHtml(buckets, max, weekTotal, avg) {
+    // Scale by absolute value so a day with a -323k credit gets a visible
+    // bar (going down) without being lost to a height of 1.5%.
+    const absMax = Math.max(1, ...buckets.map(b => Math.abs(b.total)));
+    const bars = buckets.map(b => {
+      const isNeg = b.total < 0;
+      const pct = Math.abs(b.total) / absMax * 100;
+      const heightPct = Math.max(b.total !== 0 ? 4 : 1.5, pct);
+      const barColor = b.isToday ? '#dc2626'
+                       : isNeg ? '#f87171'
+                       : (b.total > 0 ? '#16a34a' : '#e2e8f0');
+      const labelColor = b.isToday ? '#dc2626' : (isNeg ? '#dc2626' : '#64748b');
+      const valueLabel = b.total === 0 ? '—' : fmtKr(b.total);
+      const labelText = b.total === 0 ? '' : (isNeg ? '−' + fmtKrShort(Math.abs(b.total)) : fmtKrShort(b.total));
+      // Negative days render the bar from the top down so it visually
+      // reads as a deduction. Otherwise normal bottom-up bar.
+      const negStyle = isNeg
+        ? 'align-self:flex-start;border-radius:2px 2px 6px 6px;'
+        : '';
+      return `
+        <div class="cc-chart-col" title="${b.label} ${b.dayNum} · ${valueLabel}">
+          <div class="cc-chart-val" style="color:${labelColor};${b.total === 0 ? 'opacity:.5' : ''}">${labelText}</div>
+          <div class="cc-chart-bar-wrap">
+            <div class="cc-chart-bar" style="height:${heightPct}%;background:${barColor};${negStyle}${b.isToday ? 'box-shadow:0 0 0 2px rgba(220,38,38,.18)' : ''}"></div>
+          </div>
+          <div class="cc-chart-day" style="color:${labelColor};font-weight:${b.isToday ? '700' : '500'}">${b.label}</div>
+          <div class="cc-chart-date" style="color:${labelColor};opacity:.7">${b.dayNum}</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="cc-section" style="margin-bottom:14px;padding:18px 20px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+          <div>
+            <h3 style="margin:0;font-size:13px;font-weight:700">📈 Tekjur síðustu 7 daga</h3>
+            <div style="font-size:11px;color:#94a3b8;margin-top:2px">Daglegar sölur (án draga)</div>
+          </div>
+          <div style="display:flex;gap:18px;align-items:baseline">
+            <div style="text-align:right">
+              <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Samtals</div>
+              <div style="font-size:18px;font-weight:700;color:#16a34a">${fmtKr(weekTotal)}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:.05em;font-weight:600">Meðaltal/dag</div>
+              <div style="font-size:14px;font-weight:600;color:#475569">${fmtKr(avg)}</div>
+            </div>
+          </div>
+        </div>
+        <div class="cc-chart-bars">${bars}</div>
+      </div>`;
+  }
+
+  // Compact currency formatter for above-bar labels: "12.500 kr" → "12,5þ"
+  // when the value is large enough to need shortening. Keeps the chart from
+  // wrapping label text under narrow bars.
+  function fmtKrShort(n) {
+    const v = Math.round(Number(n) || 0);
+    if (v >= 1000000) return (v / 1000000).toFixed(1).replace('.0','').replace('.', ',') + 'M';
+    if (v >= 10000) return Math.round(v / 1000) + 'þ';
+    if (v >= 1000) return (v / 1000).toFixed(1).replace('.', ',') + 'þ';
+    return String(v);
   }
 
   function init(){ ensureNav(); ensureView(); patchSwitch(); }

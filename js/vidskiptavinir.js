@@ -11,7 +11,7 @@ function isIndividualKt(kt){
   return day>=1 && day<=31;
 }
 function fmtKt(kt){if(!kt)return '';var c=String(kt).replace(/[^0-9]/g,'');return c.length>=10?c.slice(0,6)+'-'+c.slice(6,10):c;}
-function fmtDate(d){if(!d)return '—';var dt=new Date(d);return dt.toLocaleDateString('is-IS');}
+function fmtDate(d){if(!d)return '—';var dt=new Date(d);if(isNaN(dt))return '—';return String(dt.getDate()).padStart(2,'0')+'/'+String(dt.getMonth()+1).padStart(2,'0')+'/'+dt.getFullYear();}
 function escHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 
 async function loadIndividuals(){

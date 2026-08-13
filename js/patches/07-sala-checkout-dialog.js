@@ -163,7 +163,14 @@
       simi:  simiInput?.value.trim() || stateCust.simi || '',
       co_id: stateCust.co_id || null
     };
-    return { items, grandTotal, customer };
+    // 2026-05-18: capture discount from POS state so the printed receipt
+    // includes it. SalaInvoice.render falls back to POS.getState() but if
+    // that path ever fails we still pass it explicitly here.
+    const posState = (window.POS && typeof window.POS.getState === 'function')
+      ? window.POS.getState() : null;
+    const discount_pct = (posState && +posState.discount_pct) || 0;
+    const discount     = (posState && +posState.discount)     || 0;
+    return { items, grandTotal, customer, discount_pct, discount };
   }
 
   // --- Modal ---
@@ -190,6 +197,29 @@
         </div>
         <div class="scd-body">
           <div class="scd-amount">${esc(cart.grandTotal || '0 kr')}</div>
+          ${(() => {
+            // Prominent "Bills to:" card so the user always sees the customer
+            // name + kt before paying. Helps catch cases where the customer
+            // wasn't populated properly.
+            const cu = cart.customer || {};
+            const hasInfo = !!(cu.nafn || cu.kt);
+            if (!hasInfo) {
+              return '<div style="margin:0 0 14px;padding:10px 14px;background:#fef3c7;border:1px solid #fde68a;border-radius:8px;font-size:13px;color:#78350f">' +
+                '⚠ Enginn viðskiptavinur skráður — kvittunin verður án nafns. ' +
+                'Smelltu „Hætta við" og veldu viðskiptavin ef það á við.' +
+              '</div>';
+            }
+            const parts = [];
+            if (cu.nafn) parts.push('<div style="font-weight:700;font-size:15px;color:#0f172a">' + esc(cu.nafn) + '</div>');
+            const meta = [];
+            if (cu.kt) meta.push('kt. ' + esc(cu.kt));
+            if (cu.simi) meta.push('📞 ' + esc(cu.simi));
+            if (meta.length) parts.push('<div style="font-size:12px;color:#475569;margin-top:2px">' + meta.join(' · ') + '</div>');
+            return '<div style="margin:0 0 14px;padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px">' +
+              '<div style="font-size:10px;font-weight:700;color:#1e40af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px">Reikningur á</div>' +
+              parts.join('') +
+            '</div>';
+          })()}
           <div class="scd-section">
             <div class="scd-section-title">Greiðslumáti</div>
             <div class="scd-methods">
@@ -216,15 +246,11 @@
           <div class="scd-section">
             <div class="scd-section-title">Prenta</div>
             <label class="scd-check">
-              <input type="checkbox" id="scd-receipt" ${(window.AppSettings && window.AppSettings.path('prentun.default_print_kvittun') !== false) ? 'checked' : ''}>
+              <input type="checkbox" id="scd-receipt" ${(window.AppSettings && window.AppSettings.path('prentun.default_print_kvittun') === true) ? 'checked' : ''}>
               <span>🧾 Prenta kvittun</span>
             </label>
-            <label class="scd-check ${hasProducts ? '' : 'disabled'}">
-              <input type="checkbox" id="scd-barcodes" ${hasProducts && (!window.AppSettings || window.AppSettings.path('prentun.default_print_strikamerki') !== false) ? 'checked' : (hasProducts ? '' : 'disabled')}>
-              <span>🏷️ Prenta strikamerki fyrir tæki${hasProducts ? ' (' + productCount + ')' : ' (engin tæki í körfu)'}</span>
-            </label>
             <label class="scd-check">
-              <input type="checkbox" id="scd-refill-label" ${(window.AppSettings && window.AppSettings.path('prentun.default_print_qr_label') === true) ? 'checked' : ''}>
+              <input type="checkbox" id="scd-refill-label" ${(!window.AppSettings || window.AppSettings.path('prentun.default_print_qr_label') !== false) ? 'checked' : ''}>
               <span>🏷️ Prenta QR-merki fyrir tæki í áfyllingu (24 × 100 mm)</span>
             </label>
           </div>
@@ -257,7 +283,7 @@
       btn.addEventListener('click', () => {
         const method = btn.dataset.method;
         const doReceipt = modal.querySelector('#scd-receipt').checked;
-        const doBarcodes = modal.querySelector('#scd-barcodes').checked && hasProducts;
+        const doBarcodes = false; // strikamerki checkbox removed (54×17mm format retired)
         const doRefillLabel = modal.querySelector('#scd-refill-label')?.checked;
         const skipVerk = modal.querySelector('#scd-skip-verk')?.checked;
         // Pass-through to pos.js — its checkout() reads this global to decide
@@ -298,8 +324,17 @@
     if (doReceipt) printReceipt(cart, method);
     if (doBarcodes) printBarcodes(cart);
     if (doRefillLabel && window.QrLabelCustomer && typeof QrLabelCustomer.open === 'function') {
+      // 2026-05-19: count refill lines so the dialog pre-fills Fjöldi miða.
+      // Any service line whose name contains Hleðsla/Áfylling counts as a
+      // refill tæki; multiplied by qty so 2× Hleðsla CO₂ → 2 labels.
+      const refillCount = (cart.items || []).reduce((s, l) => {
+        const name = String(l.name || '');
+        if (l.isProduct) return s;
+        if (!/hleðsla|áfylling|yfirferð|skoðun/i.test(name)) return s;
+        return s + (parseInt(l.qty, 10) || 1);
+      }, 0);
       // Open the existing 24×100mm QR-label dialog with the customer prefilled.
-      setTimeout(() => QrLabelCustomer.open(cart.customer), 100);
+      setTimeout(() => QrLabelCustomer.open(cart.customer, refillCount || 1), 100);
     }
     close();
     // Allow the original click to go through this time
@@ -322,7 +357,11 @@
         customerKt: cart.customer.kt || '',
         customerSimi: cart.customer.simi || '',
         paymentMethod: method,            // 'kort' / 'pening' / 'reikningur'
-        invoiceNum: cart.invoiceNum || '' // assigned by DB trigger on save
+        invoiceNum: cart.invoiceNum || '', // assigned by DB trigger on save
+        // 2026-05-18: pass discount explicitly so it appears on the printed
+        // receipt even if POS.getState() is unavailable or stale at render time.
+        discount_pct: cart.discount_pct || 0,
+        discount:     cart.discount     || 0
       });
       if (ok) return;
     }

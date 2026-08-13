@@ -25,5 +25,41 @@ desktop.ini
 /scratch/
 *.bak
 
+# Local-only PII / source assets — never commit, never deploy
+_customer-import-data.json
+
+# Supabase data backups — local restore points; never push (contain
+# customer PII and would bloat the repo). Run `node backup-supabase.mjs`
+# to refresh.
+backups/
+
+# One-shot scratch scripts and data dumps used during data migrations
+tmp_*.mjs
+tmp_*.json
+tmp_*.txt
+
+# 2026-05-18/19 data sync working files — PII (kennitalas, áminning notes)
+# and ephemeral migration scripts. Keep local only.
+_pdf_master_customers.json
+_sheet_master_data.json
+_sheet_equipment.json
+_dk_useful.json
+_unmatched_*.json
+_stage*.json
+_*_import.py
+_create_unmatched.py
+_apply_chains.py
+_*_import_log.json
+STAGE3-REMAINING.json
+_user-screenshot.png
+_pdf/
+_barcode-photo.jpg
+_barcode2.jpg
+_logo2.jpg
+_pricelist1.jpg
+_pricelist2.jpg
+_reikningar.png
+_extract_logo.cjs
+
 # Netlify CLI cache (if you ever install it)
 .netlify/

@@ -48,16 +48,11 @@
 
     grid.innerHTML = html;
 
-    // Athugasemdir as a yellow card right below the info grid
-    if (c.athugasemdir && String(c.athugasemdir).trim() && !main.querySelector('._fyr_notes')) {
-      const notes = document.createElement('div');
-      notes.className = '_fyr_notes';
-      notes.style.cssText = 'background:#fffbeb;border:1px solid #fcd34d;border-radius:10px;padding:12px 14px;margin-bottom:20px';
-      notes.innerHTML =
-        '<div style="font-size:11px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Athugasemdir</div>' +
-        `<div style="font-size:13px;color:#78350f;white-space:pre-wrap">${esc(c.athugasemdir)}</div>`;
-      grid.parentNode.insertBefore(notes, grid.nextSibling);
-    }
+    // 2026-05-12: Yellow `_fyr_notes` block removed. Athugasemdir er nú þegar
+    // sýnd á 2 öðrum stöðum (bláum _pm_notes_display og editable MINNÓ-textarea
+    // sem er kanóníska geymslan). Hér í patch 75 var þetta þriðja birting sem
+    // varð til þess að patch 107 keyrði 1.5s setInterval forever til að taka
+    // þetta út aftur. Lausnin var einföld: ekki bæta því við yfir höfuð.
 
     // Fix the address line under the company name (was reading capital-F heimilisFang)
     if (addr) {

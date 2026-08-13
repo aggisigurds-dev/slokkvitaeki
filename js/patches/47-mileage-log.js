@@ -272,7 +272,7 @@
   }
 
   async function _delete(id) {
-    if (!confirm('Eyða þessari færslu?')) return;
+    if (!await Confirm.show('Eyða þessari færslu?')) return;
     const { error } = await getSB().from('akstursdagbok').delete().eq('id', id);
     if (error) { alert('Villa: '+error.message); return; }
     load();

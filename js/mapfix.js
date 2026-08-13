@@ -88,26 +88,90 @@
     state.clickHooked = true;
   }
 
+  // Status for a contract customer whose equipment lives in
+  // arsskodun_customers[id].equipment (category counts from the
+  // 2025 Úttektarskýrsla import) — NOT in the uttaeki table.
+  // We treat the totals as real registered tæki and color the pin
+  // by inspection status (last_year_inspected + inspect_month).
+  function arsContractStatus(ars, company) {
+    var today = new Date();
+    var curYear = today.getFullYear();
+    var curMonth = today.getMonth() + 1;
+    var eq = (ars && ars.equipment) || {};
+    var totalCount = 0;
+    Object.keys(eq).forEach(function(k){ totalCount += (+eq[k] || 0); });
+    var m = +((ars||{}).inspect_month) || 0;
+    var lastYr = +((ars||{}).last_year_inspected) || 0;
+    var isDone = lastYr === curYear;
+    var isOverdue = !isDone && m > 0 && m < curMonth;
+    var isDueNow = !isDone && m === curMonth;
+    if (isDone)    return { color:'#1a7f4b', label:'Í lagi (sk. ' + curYear + ')', count: totalCount };
+    if (isOverdue) return { color:'#dc2626', label:'Útrunnið (skoda mb ' + m + ')', count: totalCount };
+    if (isDueNow)  return { color:'#b45309', label:'Rennur út í mánuði', count: totalCount };
+    if (m > 0)     return { color:'#475569', label:'Á dagskrá (mb. ' + m + ')', count: totalCount };
+    return { color:'#475569', label:'Á samningi (engin dagsetning)', count: totalCount };
+  }
+
   function instantRender(){
     var map = window._slokk_map;
     if(!map){ return false; }
     if(!window.Companies || !Companies.list || !Companies.list.length){ return false; }
     var units = (DB.cache && DB.cache.units) || [];
     var cache = readCache();
+    // Pre-tally active units by client name and read the contract maps
+    // so we know which companies belong on the map at all. Þjónustutæki
+    // should show:
+    //   • Companies with active uttaeki rows (the May 2026 import set)
+    //   • Companies with a service contract (Fyrirtækjaþjónustu OR
+    //     Brunakerfi) — even without unit records yet, the driver still
+    //     drives to them; they just need their tæki logged.
+    // Companies with neither are walk-in / sale-only and don't belong.
+    var hasUnits = {};
+    units.forEach(function(u){
+      if (u.status === 'active') hasUnits[u.client] = true;
+    });
+    var arsMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('arsskodun_customers')) || {};
+    var bruMap = (window.AppSettings && window.AppSettings.path && window.AppSettings.path('brunakerfi_customers')) || {};
     var rendered = 0;
     Companies.list.forEach(function(c){
       if(state.markers[c.id]) return;
+      var hasU = !!hasUnits[c.nafn];
+      var ars = arsMap[String(c.id)];
+      var bru = bruMap[String(c.id)];
+      var hasContract = !!((ars && ars.equipment) || bru);
+      if(!hasU && !hasContract) return; // skip walk-in only
       var coord = cache[c.nafn] || cache[c.heimilisfang||''] || null;
       if(!coord){ return; }
-      var status = statusFor(units, c.nafn);
+      var status;
+      if (hasU) {
+        // Has uttaeki rows — drive status from inspection dates
+        status = statusFor(units, c.nafn);
+      } else {
+        // Contract holder with no INDIVIDUAL uttaeki rows, but the
+        // arsskodun_customers entry has category-count equipment data
+        // (from the 2025 Úttektarskýrsla import). That counts as real
+        // registered tæki — just stored as totals not per-unit. Use
+        // inspect_month + last_year_inspected to pick a meaningful
+        // color, sum the equipment values for the popup count.
+        status = arsContractStatus(ars, c);
+      }
       var m = makeMarker(map, c, coord, status);
       state.markers[c.id] = m;
       state.rendered[c.id] = true;
       rendered++;
     });
     if(rendered){
-      var pts = Object.values(state.markers).map(function(m){return m.getLatLng();});
-      if(pts.length > 1){ map.fitBounds(L.latLngBounds(pts).pad(0.15)); }
+      // Only fit bounds on the very first batch — re-running tick adds
+      // new markers as the geocode cache fills, but we don't want the
+      // map to keep jerking around. After the first fit, user controls
+      // pan/zoom themselves.
+      if(!state.boundsFit){
+        var pts = Object.values(state.markers).map(function(m){return m.getLatLng();});
+        if(pts.length > 1){
+          map.fitBounds(L.latLngBounds(pts).pad(0.15));
+          state.boundsFit = true;
+        }
+      }
     }
     hookClickDelegate();
     return rendered;
@@ -185,10 +249,14 @@
     var view = document.getElementById('view-field');
     if(!view || !view.classList.contains('active')) return;
     loadCompaniesIfNeeded().then(function(){
-      if(!Object.keys(state.markers).length){
-        var n = instantRender();
-        if(n) console.log('[MapFix v4] Rendered', n, 'markers from cache');
-      }
+      // Always re-run instantRender — it skips companies that already
+      // have a marker (line 'if(state.markers[c.id]) return;'). This is
+      // important because the geocode cache fills over time via the
+      // shared-pull (~10s) and the background pre-warm (1.5s per
+      // address). Without this, the first render might only see ~6
+      // matching addresses and we'd never add the other ~250.
+      var n = instantRender();
+      if(n) console.log('[MapFix v4] Added', n, 'new markers (total', Object.keys(state.markers).length + ')');
       hookUppfaeraButton();
     });
   }
@@ -204,4 +272,40 @@
   } else {
     init();
   }
+
+  // Public API for deep-linking from other views (e.g. the new Fyrirtæki
+  // page in patch 153). Call MapFix.focusCompany(coId) — it pans, zooms,
+  // and opens the popup. Caller is responsible for switching to view-field
+  // first; this helper retries while the map / markers are still loading.
+  window.MapFix = window.MapFix || {};
+  window.MapFix.focusCompany = function(coId, opts){
+    coId = parseInt(coId, 10);
+    opts = opts || {};
+    var maxTries = opts.maxTries || 20;
+    var zoom = opts.zoom != null ? opts.zoom : 16;
+    var tries = 0;
+    return new Promise(function(resolve){
+      function attempt(){
+        tries++;
+        var map = window._slokk_map;
+        var marker = map && state.markers && state.markers[coId];
+        if(map && marker){
+          try {
+            map.setView(marker.getLatLng(), zoom, { animate: true });
+            // Defer popup open until pan finishes so it lands centred.
+            setTimeout(function(){ try { marker.openPopup(); } catch(_){} }, 350);
+            resolve({ ok: true, marker: marker });
+            return;
+          } catch(e){ /* fall through to retry */ }
+        }
+        // Not ready yet — keep polling. instantRender() is called from
+        // tick() every 500 ms once view-field is active.
+        if(tries < maxTries){ setTimeout(attempt, 250); }
+        else resolve({ ok: false, reason: !map ? 'no-map' : 'no-marker' });
+      }
+      attempt();
+    });
+  };
+  // Expose marker map (read-only diagnostic; patches shouldn't mutate)
+  window.MapFix.getMarkers = function(){ return state.markers; };
 })();
