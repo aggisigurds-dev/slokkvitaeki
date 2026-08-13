@@ -902,6 +902,21 @@
         };
         const r = await SB.from('fyrirtaeki').update(updateRec).eq('id', coId);
         if (r.error) { showErr('Vista mistókst: ' + r.error.message); return; }
+        // 2026-08-13 — LÁTA NAFNBREYTINGU FYLGJA TÆKJUNUM (sama og 14-companies-
+        // openedit.js:178 gerir). `uttaeki`/`lanstaeki` eiga engan staðar-lykil;
+        // tækjalistinn finnst með `u.client === c.nafn`. Þessi brunakerfis-
+        // breytingargluggi breytir líka nafni og skildi tækin annars eftir
+        // munaðarlaus á gamla nafninu.
+        const _oldNafn = (co.nafn || '').trim();
+        if (_oldNafn && nafn && _oldNafn !== nafn) {
+          for (const tafla of ['uttaeki', 'lanstaeki']) {
+            try {
+              const cc = await SB.from(tafla).update({ client: nafn }).eq('client', _oldNafn);
+              if (cc && cc.error) console.warn('[147] cascade ' + tafla + ':', cc.error.message);
+            } catch (e) { console.warn('[147] cascade ' + tafla + ':', e && e.message); }
+          }
+          try { if (window.DB && DB.refresh) DB.refresh(); } catch (_) {}
+        }
         // Refresh Companies cache so the new info shows up everywhere
         try { if (window.Companies && Companies.load) Companies.load(); } catch (_) {}
       } catch (e) {

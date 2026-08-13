@@ -2594,8 +2594,21 @@
       }
       const SB = getSB();
       if (!SB) { alert('Engin tenging við gagnagrunn'); return; }
+      const _oldNafn = (c.nafn || '').trim();
       const { error } = await SB.from('fyrirtaeki').update(patch).eq('id', coId);
       if (error) { alert('Vista mistókst: ' + error.message); return; }
+      // 2026-08-13 — LÁTA NAFNBREYTINGU FYLGJA TÆKJUNUM (sama og 14-companies-
+      // openedit.js:178). Þetta breytingarform getur breytt `nafn` og tækin
+      // (uttaeki/lanstaeki) tengjast fyrirtækinu AÐEINS gegnum client-nafnið.
+      if (patch.nafn && _oldNafn && patch.nafn !== _oldNafn) {
+        for (const tafla of ['uttaeki', 'lanstaeki']) {
+          try {
+            const cc = await SB.from(tafla).update({ client: patch.nafn }).eq('client', _oldNafn);
+            if (cc && cc.error) console.warn('[153] cascade ' + tafla + ':', cc.error.message);
+          } catch (e) { console.warn('[153] cascade ' + tafla + ':', e && e.message); }
+        }
+        try { if (window.DB && DB.refresh) DB.refresh(); } catch (_) {}
+      }
       // Update local cache + close modal & re-render
       Object.assign(c, patch);
       Object.assign(_cache.byId[coId] || {}, patch);
