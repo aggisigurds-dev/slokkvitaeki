@@ -1218,6 +1218,20 @@
     mode = mode === 'draft' ? 'draft' : 'send';
     const sel = selectedSales();
     if (!sel.length) return;
+    // 2026-08-13 (rukkunarkeðju-rannsókn, liður 5): bunkinn sendi 7 kröfur á
+    // sömu kennitölu á 78 sekúndum (Vélrás 02.07) — sprengja, ekki afhending.
+    // Hópum valið á kennitölu og krefjumst sérstakrar staðfestingar þegar sami
+    // kúnni fengi fleiri en eina kröfu í sömu keyrslu, með ábendingu um að
+    // sameina frekar (🔗 Sameina flæðið) eða dreifa yfir daga.
+    const _byKt = {};
+    sel.forEach(s => { const k = String(s.customer_kt || s.customer_nafn || '?'); (_byKt[k] = _byKt[k] || []).push(s); });
+    const _multi = Object.entries(_byKt).filter(([, arr]) => arr.length > 1);
+    if (mode !== 'draft' && _multi.length) {
+      const lines = _multi.map(([kt, arr]) => '• ' + (arr[0].customer_nafn || kt) + ': ' + arr.length + ' kröfur (' +
+        arr.reduce((t, s) => t + (Number(s.samtals) || 0), 0).toLocaleString('is-IS') + ' kr)').join('\n');
+      if (!confirm('⚠ Sami kúnni fengi FLEIRI EN EINA kröfu í þessari keyrslu:\n\n' + lines +
+        '\n\nÍhugaðu að sameina sölurnar í einn reikning (🔗 Sameina) eða dreifa sendingum yfir daga.\n\nSenda samt allar núna?')) return;
+    }
     const note = mode === 'draft'
       ? 'Aðeins DRÖG verða stofnuð í Payday — þú sendir þau handvirkt þaðan.'
       : 'Reikningar SENDAST sjálfkrafa (rafrænt ef kúnni tekur við því, annars í tölvupósti).';

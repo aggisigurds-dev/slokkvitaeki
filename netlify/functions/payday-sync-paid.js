@@ -113,7 +113,11 @@ exports.handler = async (event) => {
 // ---- Supabase ---------------------------------------------------------------
 
 async function fetchUnpaidSales() {
-  const url = `${SUPABASE_URL}/rest/v1/solur?select=id,num,customer_nafn,samtals,dk_invoice_id,paid_at&greitt_med=eq.reikningur&paid_at=is.null&dk_invoice_id=not.is.null&limit=3000`;
+  // 2026-08-13: status fylgir með svo greiðsla á void/drog sölu sjáist sem
+  // frávik (fjórar void-sölur fengu greiðslu af því krafan lifði í bankanum).
+  // paid_at er ÁFRAM skráð — peningurinn kom, það er sannleikurinn — en frávikið
+  // er merkt í svarinu og eftirlitið (rukkun_eftirlit) flaggar það daglega.
+  const url = `${SUPABASE_URL}/rest/v1/solur?select=id,num,customer_nafn,samtals,dk_invoice_id,paid_at,status&greitt_med=eq.reikningur&paid_at=is.null&dk_invoice_id=not.is.null&limit=3000`;
   const r = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
   if (!r.ok) throw new Error('Supabase solur ' + r.status + ': ' + (await r.text()).slice(0, 200));
   return r.json();
