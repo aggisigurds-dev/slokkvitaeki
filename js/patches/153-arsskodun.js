@@ -1272,17 +1272,17 @@
         <div class="_ars-statgrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px">
           <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em">Fjöldi</div>
-            <div style="font-size:22px;font-weight:800;color:var(--ink1);line-height:1.1;margin-top:2px">${allCount}</div>
-            <div style="font-size:10.5px;color:var(--ink3)">${arsAll.length} í ársskoðun</div>
+            <div style="font-size:22px;font-weight:800;color:var(--ink1);line-height:1.1;margin-top:2px">${tv('fjoldi')}</div>
+            <div style="font-size:10.5px;color:var(--ink3)">${tv('i_arsskodun')} í ársskoðun</div>
           </div>
           <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Búið ${curYear}</div>
-            <div style="font-size:22px;font-weight:800;color:#15803d;line-height:1.1;margin-top:2px">${doneThisYear}</div>
-            <div style="font-size:10.5px;color:#16a34a">${Math.round(doneThisYear/Math.max(arsAll.length,1)*100)}% af ársskoðun</div>
+            <div style="font-size:22px;font-weight:800;color:#15803d;line-height:1.1;margin-top:2px">${tv('buid_2026')}</div>
+            <div style="font-size:10.5px;color:#16a34a">${tv('buid_2026_pct')}% af ársskoðun</div>
           </div>
           <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em">Eftir ${curYear}</div>
-            <div style="font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${arsAll.length - doneThisYear}</div>
+            <div style="font-size:22px;font-weight:800;color:#b45309;line-height:1.1;margin-top:2px">${tv('eftir_2026')}</div>
             <div style="font-size:10.5px;color:#b45309">í pípunni</div>
           </div>
           <div class="bstal-hero" style="background:var(--thm-sumh);color:#fff;border:1px solid var(--brand);border-radius:10px;padding:11px 13px">
