@@ -92,7 +92,9 @@
           // VSK% from AppSettings.almennt.default_vsk_pct (Stillingar → Almennt).
           let vskPct = 24;
           try { const v = window.AppSettings && window.AppSettings.path('almennt.default_vsk_pct'); if (Number.isFinite(+v) && +v > 0) vskPct = +v; } catch (_) {}
-          st.lines.push({ type: 'service', desc: label, qty: 1, unit_price_ex_vat: exVat, vsk_pct: vskPct, ref: '' });
+          // Stillinga-flýtisala er handvalin þjónusta → heldur gömlu verkstæðis-
+          // hegðuninni (starfsmaður valdi hana meðvitað sem þjónustu).
+          st.lines.push({ type: 'service', desc: label, qty: 1, unit_price_ex_vat: exVat, vsk_pct: vskPct, ref: '', krefst_verkbeidni: true });
           if (typeof window.POS.rerender === 'function') window.POS.rerender();
           else if (typeof window.rerenderDynamic === 'function') window.rerenderDynamic();
           if (window.Toast && Toast.show) Toast.show('+ ' + label);

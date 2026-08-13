@@ -879,7 +879,7 @@
     document.getElementById('pos-scan').addEventListener('click',scanQr);
     var topScanBtn = document.getElementById('pos-scan-top');
     if (topScanBtn) topScanBtn.addEventListener('click', scanQr);
-    document.getElementById('pos-services').addEventListener('click',function(e){var b=e.target.closest('.pos-svc');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);var s=state.services.find(function(x){return x.id===id;});if(!s)return;state.lines.push({type:'service',desc:s.nafn,qty:1,unit_price_ex_vat:s.verd_an_vsk,vsk_pct:s.vsk_prosenta||24,ref:'',product_id:s.id});rerenderDynamic();});
+    document.getElementById('pos-services').addEventListener('click',function(e){var b=e.target.closest('.pos-svc');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);var s=state.services.find(function(x){return x.id===id;});if(!s)return;state.lines.push({type:'service',desc:s.nafn,qty:1,unit_price_ex_vat:s.verd_an_vsk,vsk_pct:s.vsk_prosenta||24,ref:'',product_id:s.id,krefst_verkbeidni:!!s.krefst_verkbeidni});rerenderDynamic();});
     document.getElementById('pos-products').addEventListener('click',function(e){var b=e.target.closest('.pos-prod');if(!b)return;var id=parseInt(b.getAttribute('data-id'),10);addProductLine(id);});
     document.getElementById('pos-lines').addEventListener('click',function(e){var d=e.target.closest('.pos-line-del'),u=e.target.closest('.pos-qty-up'),n=e.target.closest('.pos-qty-dn');if(d){state.lines.splice(parseInt(d.getAttribute('data-idx'),10),1);rerenderDynamic();return;}if(u){var i=parseInt(u.getAttribute('data-idx'),10);state.lines[i].qty++;rerenderDynamic();return;}if(n){var j=parseInt(n.getAttribute('data-idx'),10);state.lines[j].qty--;if(state.lines[j].qty<=0)state.lines.splice(j,1);rerenderDynamic();return;}});
     // Per-line price + discount editing — live, WITHOUT redrawing the inputs
@@ -1096,13 +1096,15 @@
       if(!d){alert('Lýsing vantar');return;}
       if(isNaN(pr)){alert('Ógilt verð');return;}
       if(vatMode==='gross')pr=pr/1.24;
-      state.lines.push({type:mode,desc:d,qty:1,unit_price_ex_vat:pr,vsk_pct:24,ref:''});
+      // Handvirk lína: „þjónusta" valin af starfsmanni fer áfram á verkstæði
+      // (gamla hegðunin); handvirk vara stofnar ekki verkbeiðni.
+      state.lines.push({type:mode,desc:d,qty:1,unit_price_ex_vat:pr,vsk_pct:24,ref:'',krefst_verkbeidni:(mode==='service')});
       close();rerenderDynamic();
     });
     setTimeout(function(){descEl.focus();descEl.select();},40);
   }
-  function scanQr(){if(!window.Scanner||typeof Scanner.open!=='function'){alert('QR skanni ekki tilbúinn');return;}var toast=function(msg){if(window.Toast&&Toast.show)Toast.show(msg);};Scanner.open(function(code){if(!code)return;DB.sb.from('uttaeki').select('serial,type,size').eq('serial',code).maybeSingle().then(function(r){if(r.data){var u=r.data;state.lines.push({type:'service',desc:'Áfylling · '+(u.type||'')+' '+(u.size||''),qty:1,unit_price_ex_vat:8900,vsk_pct:24,ref:u.serial});toast('✓ '+(u.serial||code)+' bætt við');}else{state.lines.push({type:'service',desc:'Þjónusta',qty:1,unit_price_ex_vat:8900,vsk_pct:24,ref:code});toast('Tæki „'+code+'" fannst ekki — bætt við sem þjónustu');}rerenderDynamic();}).catch(function(e){toast('Villa við skönnun: '+(e.message||e));});});}
-  function addProductLine(pid){var p=state.products.find(function(x){return x.id===pid;});if(!p)return;var ex=state.lines.find(function(l){return l.type==='product'&&l.product_id===pid;});if(ex){ex.qty++;}else state.lines.push({type:'product',desc:p.nafn,qty:1,unit_price_ex_vat:p.verd_an_vsk,vsk_pct:p.vsk_prosenta||24,product_id:p.id,ref:''});rerenderDynamic();}
+  function scanQr(){if(!window.Scanner||typeof Scanner.open!=='function'){alert('QR skanni ekki tilbúinn');return;}var toast=function(msg){if(window.Toast&&Toast.show)Toast.show(msg);};Scanner.open(function(code){if(!code)return;DB.sb.from('uttaeki').select('serial,type,size').eq('serial',code).maybeSingle().then(function(r){if(r.data){var u=r.data;state.lines.push({type:'service',desc:'Áfylling · '+(u.type||'')+' '+(u.size||''),qty:1,unit_price_ex_vat:8900,vsk_pct:24,ref:u.serial,krefst_verkbeidni:true});toast('✓ '+(u.serial||code)+' bætt við');}else{state.lines.push({type:'service',desc:'Þjónusta',qty:1,unit_price_ex_vat:8900,vsk_pct:24,ref:code,krefst_verkbeidni:true});toast('Tæki „'+code+'" fannst ekki — bætt við sem þjónustu');}rerenderDynamic();}).catch(function(e){toast('Villa við skönnun: '+(e.message||e));});});}
+  function addProductLine(pid){var p=state.products.find(function(x){return x.id===pid;});if(!p)return;var ex=state.lines.find(function(l){return l.type==='product'&&l.product_id===pid;});if(ex){ex.qty++;}else state.lines.push({type:'product',desc:p.nafn,qty:1,unit_price_ex_vat:p.verd_an_vsk,vsk_pct:p.vsk_prosenta||24,product_id:p.id,ref:'',krefst_verkbeidni:!!p.krefst_verkbeidni});rerenderDynamic();}
   async function checkout(){
     if(!state.lines.length){alert('Engar línur');return;}
     if(!beidniOk()){alert('Sláðu inn Beiðninúmer Reykjavíkurborgar áður en salan er kláruð.\n(Frumrit beiðni verður að fylgja reikningi.)');var _be=document.getElementById('pos-beidni');if(_be)_be.focus();return;}
@@ -1289,7 +1291,10 @@
           }
         }catch(_e){console.warn('[POS] name-kt backfill:',_e);}
       }
-      var svc=state.lines.filter(function(l){return l.type==='service';});
+      // 2026-08-13 (Agnar): verkbeiðni stofnast AÐEINS fyrir línur þar sem varan
+      // er merkt „fer á verkstæði" (vorur.krefst_verkbeidni) — ekki lengur fyrir
+      // hverja þjónustulínu. Reykskynjari yfir borðið á ekki að fá verkbeiðnis-QR.
+      var svc=state.lines.filter(function(l){return l.krefst_verkbeidni===true;});
       // The checkout dialog's "Sleppa að búa til verkbeiðnir" checkbox sets
       // window._pendingSkipVerk = true. Useful when a refill/hleðsla
       // happens on the spot and no follow-up work request is needed.

@@ -335,7 +335,10 @@
 
       // Are there any service lines?
       const allLines = readCartLines();
-      const serviceLines = allLines.filter(l => l.type === 'service');
+      // 2026-08-13: QR/raðnúmera-glugginn fylgir verkbeiðnunum — aðeins línur
+      // merktar „fer á verkstæði" (krefst_verkbeidni) fá hann, ekki hver
+      // þjónustulína. Bein sala yfir borðið sleppur.
+      const serviceLines = allLines.filter(l => l.krefst_verkbeidni === true);
       if (!serviceLines.length) return; // no services → nothing to prompt
 
       // 2026-05-11: If the user already opted to skip verkbeiðnir in the

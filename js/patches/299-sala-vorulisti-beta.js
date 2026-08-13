@@ -165,7 +165,8 @@
       desc: p.nafn, qty: 1,
       unit_price_ex_vat: p.verd_an_vsk,
       vsk_pct: p.vsk_prosenta || 24,
-      product_id: p.id, ref: ''
+      product_id: p.id, ref: '',
+      krefst_verkbeidni: !!p.krefst_verkbeidni
     });
     POS.rerenderDynamic();
   }

@@ -65,6 +65,13 @@
         </div>
         <label style="font-size:11px;color:#64748b;font-weight:600;text-transform:uppercase">Lýsing</label>
         <textarea id="pi-desc" rows="3" style="width:100%;padding:8px;border:1px solid #e2e8f0;border-radius:6px;box-sizing:border-box;margin-bottom:12px">${esc(vara.lysing||vara.description||'')}</textarea>
+        <label style="display:flex;gap:9px;align-items:flex-start;margin-bottom:12px;cursor:pointer;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:9px 11px">
+          <input type="checkbox" id="pi-wb" ${vara.krefst_verkbeidni ? 'checked' : ''} style="margin-top:2px;width:15px;height:15px;flex-shrink:0">
+          <span style="min-width:0">
+            <span style="font-size:13px;font-weight:600;color:#0f172a">🔧 Fer á verkstæði — stofnar verkbeiðni</span><br>
+            <span style="font-size:11px;color:#94a3b8;line-height:1.4">Hakaðu við ef tækið kemur inn til okkar — hleðsla, yfirferð, þrif. Ómerkt = bein sala yfir borðið.</span>
+          </span>
+        </label>
         <div id="pi-status" style="font-size:12px;color:#64748b;margin-bottom:8px"></div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button class="btn btn-outline" onclick="document.getElementById('pi-modal').remove()">Loka</button>
@@ -79,7 +86,7 @@
     const file = document.getElementById('pi-file').files[0];
     const desc = document.getElementById('pi-desc').value.trim();
     const status = document.getElementById('pi-status');
-    const update = { lysing: desc };
+    const update = { lysing: desc, krefst_verkbeidni: !!(document.getElementById('pi-wb')||{}).checked };
     if (file) {
       if (file.size > 5*1024*1024) { alert('Mynd er of stór (>5MB)'); return; }
       status.textContent = '⏳ Hleð upp mynd...';
