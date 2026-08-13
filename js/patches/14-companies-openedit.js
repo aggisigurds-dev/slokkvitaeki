@@ -69,11 +69,18 @@
               '<option value="email">📧 Aðeins tölvupóstur</option>' +
               '<option value="both">🔗 + 📧 Bæði (rafrænt og tölvupóstur)</option>' +
             '</select>' +
-            '<div style="font-size:10.5px;color:#94a3b8;margin-top:3px">Bankakrafan fer ALLTAF í heimabankann, óháð þessu vali. Úttektarskýrsla fylgir sjálfkrafa með í tölvupósti þegar hún er til — veldu „Aðeins rafrænn" fyrir félög sem vilja engan tölvupóst.</div>';
+            '<div style="font-size:10.5px;color:#94a3b8;margin-top:3px">Bankakrafan fer ALLTAF í heimabankann, óháð þessu vali — veldu „Aðeins rafrænn" fyrir félög sem vilja engan tölvupóst.</div>' +
+            '<label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#475569;margin-top:8px;cursor:pointer">' +
+              '<input type="checkbox" id="nf-skyrsla-med" style="width:15px;height:15px;accent-color:#2563eb">' +
+              '📎 Úttektarskýrsla fylgir kröfu (viðhengi á reikningnum — fer rafrænt og í pósti)' +
+            '</label>';
           anchor.parentElement.insertBefore(wrap, anchor.nextSibling);
         }
       }
       set('nf-payday-delivery', co.payday_delivery);
+      // Hak: NULL/true = skýrslan fylgir (sjálfgefið); false = fylgir ekki.
+      const sm = document.getElementById('nf-skyrsla-med');
+      if (sm) sm.checked = co.skyrsla_med_krofu !== false;
     })();
 
     // 2026-07-31: Póstnúmer-reitur — notaður til að raða „Fyrirtæki í þjónustu"
@@ -150,6 +157,7 @@
           heimilisfang: get('nf-heimilisfang'),
           athugasemdir: get('nf-athugasemdir'),
           payday_delivery: get('nf-payday-delivery') || null,
+          skyrsla_med_krofu: !!((document.getElementById('nf-skyrsla-med') || { checked: true }).checked),
           postnumer: get('nf-postnumer') || null
         };
         const sb = (window.DB && DB.sb) || null;

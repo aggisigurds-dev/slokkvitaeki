@@ -156,6 +156,10 @@ exports.handler = async (event) => {
     if (attachReport) {
       if (sale.source !== 'uttekt') {
         attachSkipReason = 'sale.source er ekki uttekt (' + (sale.source || 'null') + ') — engin skýrsla fest';
+      } else if (site && site.skyrsla_med_krofu === false) {
+        // Per-fyrirtæki hak í prófílnum (patch 14): sum félög vilja EKKI
+        // skýrsluna með reikningnum.
+        attachSkipReason = 'fyrirtækið er stillt á að fá EKKI úttektarskýrslu með kröfu';
       } else {
         try {
           attachment = await findReportPdf(sale, body.report_storage_path);
@@ -168,14 +172,14 @@ exports.handler = async (event) => {
 
     // ── Delivery method ────────────────────────────────────────────────────
     // Priority: explicit body.delivery (tests) > the customer's saved preference
-    // (fyrirtaeki.payday_delivery: 'electronic' | 'email' | 'both') > if a report
-    // is attached, default to EMAIL (the delivery path proven to carry the
-    // fylgiskjal) > else buildPayload's auto default: rafrænt (real kt) OG
-    // póstafrit þegar netfang er til — „both" í reynd. Whichever electronic
-    // path runs still falls back to e-mail if the customer rejects e-invoices
-    // (see the retry below).
+    // (fyrirtaeki.payday_delivery: 'electronic' | 'email' | 'both') > buildPayload's
+    // auto default: rafrænt (real kt) OG póstafrit þegar netfang er til — „both"
+    // í reynd. Úttektarskýrslan þvingar EKKI lengur póst-leið (breytt 13.08.2026,
+    // Agnar): hún er viðhengi á reikningnum sjálfum í Payday og fylgir því
+    // sendingunni — rafrænni jafnt sem pósti. Whichever electronic path runs
+    // still falls back to e-mail if the customer rejects e-invoices (retry below).
     const custPref = (customer && customer.payday_delivery) || (site && site.payday_delivery) || null;
-    const delivery = body.delivery || custPref || (attachment ? 'email' : null);
+    const delivery = body.delivery || custPref || null;
     const hasEmail = !!(payload.customer.email && /@/.test(payload.customer.email));
     // 4) Afhendingargátt (Center Hótel-rótin): engin vistuð afhendingarstilling
     //    OG ekkert netfang → rafræni reikningurinn færi „út í tómið" án nokkurs
@@ -204,7 +208,7 @@ exports.handler = async (event) => {
       would_attach: !!attachment,
       attach_skip_reason: attachSkipReason,
       delivery: deliveryLabel(),
-      delivery_source: body.delivery ? 'explicit' : (custPref ? 'customer-pref:' + custPref : (attachment ? 'report→email' : 'auto')),
+      delivery_source: body.delivery ? 'explicit' : (custPref ? 'customer-pref:' + custPref : 'auto'),
     });
 
     const token = await getAccessToken();
@@ -391,7 +395,7 @@ async function findBilledTwin(sale) {
   } catch (_) { return null; }
 }
 async function fetchFyrirtaeki(id) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/fyrirtaeki?id=eq.${encodeURIComponent(id)}&select=id,nafn,kennitala,netfang,heimilisfang,payday_delivery`, {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/fyrirtaeki?id=eq.${encodeURIComponent(id)}&select=id,nafn,kennitala,netfang,heimilisfang,payday_delivery,skyrsla_med_krofu`, {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
   });
   if (!r.ok) return null;
