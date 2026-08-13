@@ -643,6 +643,10 @@ async function findReportPdf(sale, explicitPath) {
     if (cd && cd.storage_path) path = cd.storage_path;
   }
   if (!path) return null;
+  // Sumar vistaðar slóðir bera bucket-nafnið fremst („samningar/company_...")
+  // — þá varð URL-ið samningar/samningar/... og storage svaraði 400, svo
+  // skýrslan fylgdi aldrei hjá þeim félögum (fannst 13.08 á sölu R-000395).
+  path = String(path).replace(/^\/?(?:samningar\/)+/, '');
   const objUrl = `${SUPABASE_URL}/storage/v1/object/samningar/` + path.split('/').map(encodeURIComponent).join('/');
   const r = await fetch(objUrl, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
   if (!r.ok) throw new Error('storage download ' + r.status + ' fyrir ' + path);
