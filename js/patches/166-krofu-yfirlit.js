@@ -968,7 +968,7 @@
           const j = await r.json().catch(() => ({}));
           if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
           markWorkflowSent(sale, j);
-          if (window.Toast && Toast.show) Toast.show('🏦 ✓ Krafa send í Payday');
+          if (window.Toast && Toast.show) Toast.show('🏦 ✓ Krafa send í Payday' + deliveryNote(j));
           await load(_state.month);
         } catch (e) {
           alert('Payday push villa: ' + (e.message || e));
@@ -1272,7 +1272,7 @@
           const j = await r.json().catch(() => ({}));
           if (!r.ok || !j.ok) throw new Error(j.error || ('HTTP ' + r.status));
           markWorkflowSent(sale, j);
-          sent++; results.push({ num: sale.num, ok: true });
+          sent++; results.push({ num: sale.num, ok: true, dlv: deliveryNote(j) });
           _state.selected.delete(String(sale.id));
         }
       } catch (e) {
@@ -1283,11 +1283,25 @@
     }
     _state.sending = false; _state.stop = false;
     const failLines = results.filter(r => !r.ok).map(r => '• ' + (r.num || '?') + ': ' + (r.error || 'villa')).join('\n');
+    const okLines = results.filter(r => r.ok && r.dlv).map(r => '• ' + (r.num || '?') + r.dlv).join('\n');
     alert('🏦 Payday sendingar\n\n✓ Sendar: ' + sent + '\n✗ Villur: ' + failed +
       (skipped ? ('\n⏸ Sleppt (stöðvað): ' + skipped) : '') +
+      (okLines ? ('\n\n' + okLines) : '') +
       (failLines ? ('\n\n' + failLines) : ''));
     await load(_state.month);
     refreshBadge();
+  }
+
+  // Hvernig var afhent — lesið úr payday-push svarinu (delivery/email_used/
+  // fellBackToNonElectronic) svo notandinn sjái strax hvert reikningurinn fór.
+  function deliveryNote(j) {
+    if (!j) return '';
+    if (j.fellBackToNonElectronic) return ' — rafrænt hafnað, sent í pósti' + (j.email_used ? ' á ' + j.email_used : '');
+    if (j.delivery === 'both') return ' — ⚡ rafrænt + ✉ ' + (j.email_used || 'póstafrit');
+    if (j.delivery === 'electronic') return ' — ⚡ rafrænt (ekkert póstafrit)';
+    if (j.delivery === 'email') return ' — ✉ ' + (j.email_used || 'tölvupóstur');
+    if (j.delivery === 'none' && j.mode !== 'draft') return ' — ⚠ engin afhending';
+    return '';
   }
 
   // ── Shared per-company / per-row builders (used by all three view modes) ────
