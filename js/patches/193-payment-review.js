@@ -360,11 +360,28 @@
       return;
     }
     if (act === 'void') {
-      const msg = 'Eyða sölu ' + (row.num || '') + '?\n\nÞetta er mjúk eyðing — salan fer úr Bókhaldi en er endurheimtanleg.';
+      // 2026-08-13: void á sölu með lifandi Payday-kröfu skildi kröfuna eftir
+      // í bankanum (kúnninn gat greitt „eydda" sölu). Greidd sala → kredit,
+      // ekki void; ógreidd með dk_invoice_id → afturkalla kröfuna fyrst.
+      if (row.paid_at) {
+        alert('Þessi sala er GREIDD (' + String(row.paid_at).slice(0, 10) + ') — eyðing felur tekjur. Gerðu kreditreikning í staðinn.');
+        return;
+      }
+      const msg = 'Eyða sölu ' + (row.num || '') + '?\n\nÞetta er mjúk eyðing — salan fer úr Bókhaldi en er endurheimtanleg.'
+        + (row.dk_invoice_id ? '\n\n⚠ Salan er með lifandi kröfu í Payday — hún verður afturkölluð um leið.' : '');
       const ok = (window.Confirm && Confirm.show)
         ? await Confirm.show(msg, { okText: '🗑 Eyða', cancelText: 'Hætta við' })
         : window.confirm(msg);
       if (!ok) return;
+      if (row.dk_invoice_id) {
+        const cr = await fetch('/api/payday-push', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'cancel', sale_id: id }),
+        });
+        const cj = await cr.json().catch(() => ({}));
+        if (!cr.ok || !cj.ok) { alert('Afturköllun í Payday mistókst: ' + (cj.error || cr.status) + '\n\nSalan var EKKI eydd — krafan lifir enn.'); return; }
+        if (window.Toast && Toast.show) Toast.show('⊘ Krafa afturkölluð í Payday');
+      }
       const { error } = await SB.from('solur').update({ status: 'void' }).eq('id', id);
       if (error) { alert('Villa: ' + error.message); return; }
       row.status = 'void';

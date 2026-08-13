@@ -216,6 +216,30 @@
   // ── action SQL → supabase-js (afturkræft) ────────────────────────────────
   async function doSaleAct(act, id, row) {
     const SB = getSB(); if (!SB) return;
+    // 2026-08-13: void á sölu sem er komin í kröfu VARÐ að fella kröfuna líka —
+    // R-000473 (Véltindar) var void-uð hér en bankakrafan lifði og kúnninn
+    // greiddi hana. Röð: greidd sala → má ekki void-a (þarf kredit);
+    // ógreidd með dk_invoice_id → afturkalla í Payday fyrst, svo void.
+    if (act === 'void') {
+      try {
+        const cur = await SB.from('solur').select('id,dk_invoice_id,paid_at,num').eq('id', id).single();
+        const s = cur && cur.data;
+        if (s && s.paid_at) {
+          alert('Þessi sala er GREIDD (' + String(s.paid_at).slice(0, 10) + ') — void á greiddri sölu felur tekjur. Gerðu kreditreikning í staðinn.');
+          return;
+        }
+        if (s && s.dk_invoice_id) {
+          if (!confirm('Salan ' + (s.num || id) + ' er með lifandi kröfu í Payday.\n\nAfturkalla kröfuna OG void-a söluna?')) return;
+          const cr = await fetch('/api/payday-push', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'cancel', sale_id: id }),
+          });
+          const cj = await cr.json().catch(() => ({}));
+          if (!cr.ok || !cj.ok) { alert('Afturköllun í Payday mistókst: ' + (cj.error || cr.status) + '\n\nSalan var EKKI void-uð — krafan lifir enn.'); return; }
+          toast('⊘ Krafa afturkölluð í Payday');
+        }
+      } catch (e) { alert('Gat ekki staðfest kröfustöðu: ' + (e.message || e)); return; }
+    }
     let patch;
     if (act === 'hide') patch = { hidden: true, hidden_at: nowISO(), updated_at: nowISO() };
     else if (act === 'show') patch = { hidden: false, hidden_at: null, updated_at: nowISO() };

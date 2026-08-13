@@ -105,6 +105,36 @@ exports.handler = async (event) => {
     if (sale.dk_invoice_id || sale.invoiced_at) {
       return json(409, { error: 'Sala þegar í reikningi (' + (sale.dk_invoice_id || sale.invoiced_at) + ')' });
     }
+
+    // ═══ RUKKUNAR-GÁTTIR (2026-08-13 — sjá docs/RUKKUNARKEDJAN.md) ═══════════
+    // Allar sendingarleiðir (stök sending, bulk, endursending — patch 166 öll
+    // þrjú köllin) fara um ÞETTA eina fall, svo gáttirnar hér gilda alls staðar.
+    // UI má yfirskrifa hverja gátt með skýru force-flaggi — meðvituð ákvörðun,
+    // aldrei sjálfgefin. Vistun sölu er ALDREI stöðvuð (ALLTAF LEYFA VISTUN);
+    // gáttirnar gilda aðeins um að senda kröfu í banka.
+    // 1) void = afturkölluð sala. Hún má aldrei rukkast — engin yfirskrift.
+    if (String(sale.status || '') === 'void') {
+      return json(409, { gate: 'void', error: 'Salan er void (afturkölluð) — void sala fer aldrei í kröfu. Endurvektu hana fyrst („gild") ef þetta er rangt.' });
+    }
+    // 2) Krafa án customer_base_id er órekjanleg á kúnna (15 slíkar fundust 13.08).
+    if (!sale.customer_base_id && !body.force_no_base) {
+      return json(422, { gate: 'base_id', error: 'Söluna vantar customer_base_id — krafan yrði órekjanleg á kúnna. Tengdu söluna við kúnna fyrst, eða sendu aftur með force_no_base:true ef þetta er meðvitað.' });
+    }
+    // 3) Tvítakavörn (Vélrás-mynstrið R-000259/276): önnur sala á sömu kennitölu
+    //    með nákvæmlega sömu línur og sömu upphæð sem er ÞEGAR komin í kröfu.
+    //    Gamla „vörnin" var handvirk yfirferð (patch 197 flaggar tvítök eftir á)
+    //    — hún greip Véltindar af því einhver yfirfór, en ekkert stöðvaði
+    //    sendinguna sjálfa. Þessi gátt gerir það, á einum stað.
+    if (!body.force_duplicate && !sale.is_credit) {
+      const twin = await findBilledTwin(sale);
+      if (twin) {
+        return json(409, {
+          gate: 'duplicate',
+          error: 'Möguleg tvírukkun: ' + (twin.num || twin.id) + ' (send ' + String(twin.krafa_sent_at || '').slice(0, 10) + ') er á sömu kennitölu með nákvæmlega sömu línur og sömu upphæð. Ef þetta eru raunverulega tvö aðskilin verk: sendu aftur með force_duplicate:true.',
+          twin: { id: twin.id, num: twin.num, samtals: twin.samtals, krafa_sent_at: twin.krafa_sent_at },
+        });
+      }
+    }
     // Customer enrichment — try in order: customer_base_id → customer_id (fyrirtaeki).
     // sale.customer_kt + sale.customer_nafn are authoritative if present (POS writes them).
     let customer = null;
@@ -146,6 +176,13 @@ exports.handler = async (event) => {
     const custPref = (customer && customer.payday_delivery) || (site && site.payday_delivery) || null;
     const delivery = body.delivery || custPref || (attachment ? 'email' : null);
     const hasEmail = !!(payload.customer.email && /@/.test(payload.customer.email));
+    // 4) Afhendingargátt (Center Hótel-rótin): engin vistuð afhendingarstilling
+    //    OG ekkert netfang → rafræni reikningurinn færi „út í tómið" án nokkurs
+    //    afrits. Biðstaða frekar en blind sending — skráðu netfang eða
+    //    payday_delivery á fyrirtækið, eða yfirskrifaðu meðvitað.
+    if (!dry && !body.delivery && !custPref && !hasEmail && !body.force_delivery) {
+      return json(422, { gate: 'delivery', error: 'Engin afhendingarleið: hvorki payday_delivery-stilling né netfang er skráð á kúnnann. Skráðu annað hvort á fyrirtækið og sendu svo — eða sendu með force_delivery:true (rafrænt eingöngu, ekkert afrit).' });
+    }
     if (delivery === 'email') { payload.createElectronicInvoice = false; payload.sendEmail = hasEmail; }
     else if (delivery === 'electronic') { payload.createElectronicInvoice = true; payload.sendEmail = false; }
     else if (delivery === 'both') { payload.createElectronicInvoice = true; payload.sendEmail = hasEmail; }
@@ -311,6 +348,31 @@ async function fetchSale(id) {
   const rows = await r.json();
   return rows[0] || null;
 }
+
+// Tvítakavörn: finna aðra sölu á sömu kennitölu, með sömu samtölu og nákvæmlega
+// sömu línur (jsonb er kanónískt raðað svo JSON.stringify ber saman byte-eins),
+// sem er ÞEGAR farin í kröfu. Gengur fram hjá göngukúnna-kt (9999...) og
+// kreditfærslum. Skilar fyrstu samsvörun eða null.
+async function findBilledTwin(sale) {
+  const kt = String(sale.customer_kt || '').trim();
+  const ktDigits = kt.replace(/\D/g, '');
+  if (!ktDigits || ktDigits === '9999999999') return null;
+  const samtals = Number(sale.samtals);
+  if (!Number.isFinite(samtals) || samtals === 0) return null;
+  const url = `${SUPABASE_URL}/rest/v1/solur`
+    + `?customer_kt=eq.${encodeURIComponent(kt)}`
+    + `&samtals=eq.${encodeURIComponent(samtals)}`
+    + `&id=neq.${encodeURIComponent(sale.id)}`
+    + `&krafa_sent_at=not.is.null`
+    + `&select=id,num,samtals,linur,krafa_sent_at,is_credit,status&limit=10`;
+  try {
+    const r = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+    if (!r.ok) return null;   // vörnin má aldrei fella löglega sendingu á netvillu
+    const rows = await r.json();
+    const mine = JSON.stringify(sale.linur || null);
+    return rows.find(x => !x.is_credit && String(x.status || '') !== 'void' && JSON.stringify(x.linur || null) === mine) || null;
+  } catch (_) { return null; }
+}
 async function fetchFyrirtaeki(id) {
   const r = await fetch(`${SUPABASE_URL}/rest/v1/fyrirtaeki?id=eq.${encodeURIComponent(id)}&select=id,nafn,kennitala,netfang,heimilisfang,payday_delivery`, {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
@@ -330,7 +392,11 @@ async function fetchCustomerBase(id) {
 async function markSaleInvoiced(saleId, created) {
   const payloadId = created && (created.id || created.invoiceId || created.number) || null;
   const now = new Date().toISOString();
-  const body = { invoiced_at: now, krafa_sent_at: now };
+  // 2026-08-13 (Agnar): kröfusending LYFTIR stöðunni í 'final'. Áður sat salan
+  // áfram sem 'drog' þótt hún væri rukkuð og greidd (6 slíkar, 264.302 kr) og
+  // tekjuskýrslur sem sía á status='final' undirtöldu um þá upphæð. Sending er
+  // frágangur — verkið er klárað um leið og krafan fer í banka.
+  const body = { invoiced_at: now, krafa_sent_at: now, status: 'final' };
   if (payloadId) body.dk_invoice_id = String(payloadId);
   return fetch(`${SUPABASE_URL}/rest/v1/solur?id=eq.${encodeURIComponent(saleId)}`, {
     method: 'PATCH',
