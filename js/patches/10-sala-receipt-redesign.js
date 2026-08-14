@@ -946,8 +946,13 @@
         creditOf: xo.creditOf || '',
         // Verbatim reference line (visit-invoice flow passes "Vegna heimsókn …").
         vegnaRaw: xo.vegnaRaw || '',
-        // Optional explicit invoice date (visit flow passes the custom date).
-        dateStr: xo.dateStr || ''
+        // 2026-08-14 (ALVARLEG VILLA, skjáskot Agnars — R-000258): endurprentun
+        // VISTAÐRAR sölu sendi tóma dagsetningu og render() féll þá á daginn í
+        // dag — hver endurprentun eldri reiknings fékk NÝJA dagsetningu.
+        // Dagsetning eldri reiknings má ALDREI breytast: salan prentar alltaf
+        // SÍNA dagsetningu (created_at); xo.dateStr yfirskrifar áfram (visit-
+        // flæðið), og dagurinn-í-dag gildir aðeins um óvistaða POS-kvittun.
+        dateStr: xo.dateStr || (sale.created_at && !isNaN(new Date(sale.created_at)) ? fmtDate(new Date(sale.created_at)) : '')
       });
     } finally {
       if (window.POS) window.POS.getState = origGetState;
