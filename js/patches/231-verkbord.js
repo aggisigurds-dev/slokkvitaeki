@@ -1611,6 +1611,33 @@
       '<button data-act="editco" data-id="' + esc(row.id) + '" title="Breyta/tengja fyrirtæki" style="' + BTNST + '">✏️ Tengja</button>' +
     '</div>';
   }
+  // Sticky-rúmfræði VALINS MÁLS (2026-08-14, skjáskot Agnars): stjórnkortið
+  // fyrir ofan er LÍKA sticky og MISHÁTT eftir skjá (chip-línurnar brotna í
+  // 1–3 raðir) — harðkóðaða top:118px lét topp spjaldsins hverfa undir það
+  // og botninn rann út fyrir skjáinn. Mælum kortið og stillum top+max-height
+  // eftir því; ResizeObserver heldur þessu réttu þegar kortið breytir hæð.
+  function fixSelViewport() {
+    const sel = document.getElementById('vb-sel');
+    const ctr = document.getElementById('vb-controls');
+    if (!sel || !ctr) return;
+    if (window.matchMedia('(max-width:1180px)').matches) {   // ein súla → static
+      sel.style.removeProperty('top'); sel.style.removeProperty('max-height');
+    } else {
+      const top = 8 + Math.ceil(ctr.getBoundingClientRect().height) + 10;
+      sel.style.top = top + 'px';
+      sel.style.maxHeight = 'calc(100vh - ' + (top + 10) + 'px)';
+    }
+    if (window.ResizeObserver && !ctr._selRo) {
+      ctr._selRo = new ResizeObserver(() => fixSelViewport());
+      ctr._selRo.observe(ctr);
+    }
+  }
+  window.addEventListener('resize', fixSelViewport);
+
+  // Fella/stækka athugasemdaglugga VALINS MÁLS — langur texti þvingaði annars
+  // allt spjaldið í skrun. Valið lifir milli mála/heimsókna.
+  function notesMin() { try { return localStorage.getItem('vb_notes_min') === '1'; } catch (_) { return false; } }
+
   function renderSel() {
     const el = document.getElementById('vb-sel'); if (!el) return;
     const r = allItems().find(x => String(x.id) === String(state.selId));
@@ -1622,6 +1649,7 @@
         '<button data-act="composer" style="height:34px;padding:0 16px;border-radius:8px;border:1px solid rgba(190,32,28,.5);' +
         'background:linear-gradient(180deg,#7f1d1d,#450a0a);color:#fca5a5;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer">＋ Nýtt mál</button>' +
       '</div>';
+      fixSelViewport();
       return;
     }
     const chips = rowChips(r);
@@ -1667,7 +1695,14 @@
         '<div id="vb-sel-co" style="margin-bottom:10px">' + selCoHTML(r) + '</div>' +
         // 2026-08-11: inline-editable textarea (replaces read-only div — saves on 500ms debounce, same as title)
         (!editing && !r._vd
-          ? '<textarea id="vb-sel-notes" data-selid="' + esc(String(r.id)) + '" rows="3" placeholder="Athugasemdir…" ' +
+          ? '<div style="display:flex;align-items:center;margin-bottom:1px">' +
+              '<span style="font-size:10.5px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px">Athugasemdir</span>' +
+              '<button data-act="notesmin" type="button" title="Fella/stækka textagluggann" ' +
+                'style="margin-left:auto;border:1px solid #d8dadf;background:#f8fafc;color:#4b5058;border-radius:6px;' +
+                'padding:1px 8px;font-size:10.5px;cursor:pointer;font-family:inherit">' +
+                (notesMin() ? '▸ Stækka' : '▾ Fella') + '</button>' +
+            '</div>' +
+            '<textarea id="vb-sel-notes" data-selid="' + esc(String(r.id)) + '" rows="3" placeholder="Athugasemdir…" ' +
             'style="font-size:13px;color:#4b5058;line-height:1.65;width:100%;resize:vertical;min-height:52px;max-height:880px;overflow-y:auto;' +
             'border:1px solid transparent;border-radius:7px;padding:5px 7px;background:transparent;outline:none;' +
             'box-sizing:border-box;font-family:inherit;margin-bottom:10px" ' +
@@ -1728,6 +1763,9 @@
       const saveNotes = () => { clearTimeout(_nt); saveRow(Number(nTa.dataset.selid), { notes: nTa.value }); };
       const CAP = Math.min(880, Math.round(window.innerHeight * 0.7));
       const grow = () => {
+        // Fellt (▾ Fella): fast ~3ja lína hæð með innra skruni — langa nótan
+        // þvingar þá ekki allt spjaldið í skrun. ▸ Stækka skilar sjálf-stækkun.
+        if (notesMin()) { nTa.style.setProperty('height', '70px', 'important'); return; }
         nTa.style.setProperty('height', 'auto', 'important');
         nTa.style.setProperty('height', Math.min(nTa.scrollHeight + 4, CAP) + 'px', 'important');
       };
@@ -1737,6 +1775,7 @@
         clearTimeout(_nt); _nt = setTimeout(saveNotes, 500);
       });
     }
+    fixSelViewport();
   }
 
   // v3 task-röðin: 5px flokkslituð rönd · stjarna · mono-dags · titill+lýsing+
@@ -1930,6 +1969,10 @@
         return;
       }
       if (act === 'starfilter') { state.fStar = !state.fStar; state.page = 0; renderControls(); renderList(); return; }
+      if (act === 'notesmin') {
+        try { localStorage.setItem('vb_notes_min', notesMin() ? '0' : '1'); } catch (_) {}
+        renderSel(); return;
+      }
       // Innbyggða sían í MÁL-kortinu (efsta röðin) — snertir aðeins það kort.
       if (act === 'topfilter') { state.topFilter = t.getAttribute('data-tf') || 'allt'; renderTop(visibleRows()); return; }
       if (act === 'colsort') {
