@@ -1521,44 +1521,24 @@
   function decorate() {
     const root = document.getElementById('_bky-root'); if (!root) return;
     injectListButton(root);
-    const rows = root.querySelectorAll('tr._bky-row');
-    if (!rows.length) return;
-    loadReportIndex().then(idx => {
-      rows.forEach(tr => {
-        const id = tr.dataset.id;
-        const info = idx[id] || {};
-        let b = tr.querySelector('._bks-btn');
-        if (!b) {
-          b = document.createElement('button');
-          b.type = 'button'; b.className = '_bks-btn';
-          b.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); openFlow(+id); });
-          const cell = tr.querySelector('td');
-          const nameDiv = cell && cell.firstElementChild;
-          (nameDiv || cell || tr).appendChild(b);
-        }
-        const want = info.draft ? '📝 Drög' : '📋 Skýrsla';
-        if (b.textContent !== want) {
-          b.textContent = want;
-          b.title = 'Skoðunarskýrsla brunakerfis' + (info.draft ? ' — drög í vinnslu' : '');
-          b.style.cssText = 'margin-left:8px;padding:2px 10px;border-radius:99px;border:1px solid ' +
-            (info.draft ? 'rgba(176,122,16,.55);background:#fdf3d7;color:#8a6100' : 'rgba(42,120,214,.4);background:#eaf1fe;color:#1f63b8') +
-            ';font-size:10.5px;font-weight:800;cursor:pointer;vertical-align:middle;font-family:inherit';
-        }
-      });
-      // Eldri HTML-skýrslur í storage þjónast sem text/plain hjá Supabase →
-      // beina þeim í /api/skyrsla-proxy. PDF-skjöl opnast beint (engin umskrift).
-      root.querySelectorAll('a[href*="/samningar/brunakerfi-skyrslur/"]').forEach(a => {
-        const part = (a.getAttribute('href') || '').split('/samningar/')[1];
-        if (!part || !/\.html?(\?|$)/i.test(part)) return;
-        try { a.href = '/api/skyrsla-proxy?p=' + encodeURIComponent(decodeURIComponent(part)); } catch (_) {}
-      });
-      // Drive-hlekkir spyrja „Select an account" í hvert sinn í símum með marga
-      // Google-reikninga (kvörtun Agnars) → beina á brunahólf /api/skjal sem
-      // streymir PDF-inu með server-OAuth, engin innskráning.
-      root.querySelectorAll('a[href^="https://drive.google.com/file/d/"]').forEach(a => {
-        const m = (a.getAttribute('href') || '').match(/\/file\/d\/([^/?#]+)/);
-        if (m) a.href = 'https://brunaholf.netlify.app/api/skjal?id=' + m[1];
-      });
+    // 2026-08-14 (ósk Agnars, skjáskot): „📋 Skýrsla"-hnappurinn af listaröðunum
+    // — röðin sjálf opnar fyrirtækjasíðuna þar sem skýrsluflæðið er áfram
+    // aðgengilegt (og Verðlisti-hnappurinn í hausnum stendur). Hreinsum líka
+    // hnappa sem eldri render skildi eftir.
+    root.querySelectorAll('tr._bky-row ._bks-btn').forEach(b => b.remove());
+    // Eldri HTML-skýrslur í storage þjónast sem text/plain hjá Supabase →
+    // beina þeim í /api/skyrsla-proxy. PDF-skjöl opnast beint (engin umskrift).
+    root.querySelectorAll('a[href*="/samningar/brunakerfi-skyrslur/"]').forEach(a => {
+      const part = (a.getAttribute('href') || '').split('/samningar/')[1];
+      if (!part || !/\.html?(\?|$)/i.test(part)) return;
+      try { a.href = '/api/skyrsla-proxy?p=' + encodeURIComponent(decodeURIComponent(part)); } catch (_) {}
+    });
+    // Drive-hlekkir spyrja „Select an account" í hvert sinn í símum með marga
+    // Google-reikninga (kvörtun Agnars) → beina á brunahólf /api/skjal sem
+    // streymir PDF-inu með server-OAuth, engin innskráning.
+    root.querySelectorAll('a[href^="https://drive.google.com/file/d/"]').forEach(a => {
+      const m = (a.getAttribute('href') || '').match(/\/file\/d\/([^/?#]+)/);
+      if (m) a.href = 'https://brunaholf.netlify.app/api/skjal?id=' + m[1];
     });
   }
 
