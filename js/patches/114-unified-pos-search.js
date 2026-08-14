@@ -682,11 +682,15 @@
             '📋 Leita að ' + qDigits.slice(0,6) + '-' + qDigits.slice(6,10) + ' í þjóðskrá / RSK' +
           '</div>';
         }
+        // 2026-08-14 (ósk Agnars): hlutlaus röð með GRÆNUM plús sem áherslu —
+        // heili ljósgræni flöturinn stakk í stúf við hvítu raðirnar. RSK-röðin
+        // (_ups-rsk) heldur sínum lit — hún er annars eðlis (uppfletting).
         const newLabel = qDigits.length === 10
-          ? '+ Stofna nýjan viðskiptavin (handvirkt)'
-          : '+ Stofna nýjan viðskiptavin' + (q ? ': „' + esc(q) + '"' : '');
-        html += '<div class="_ups-new" style="padding:11px 14px;cursor:pointer;background:#dcfce7;color:#166534;font-weight:600;font-size:13px;border-top:1px solid #e2e8f0">' +
-          newLabel +
+          ? 'Stofna nýjan viðskiptavin (handvirkt)'
+          : 'Stofna nýjan viðskiptavin' + (q ? ': „' + esc(q) + '"' : '');
+        html += '<div class="_ups-new" style="padding:11px 14px;cursor:pointer;background:#fff;color:#0f172a;font-weight:600;font-size:13px;border-top:1px solid #e2e8f0" ' +
+          'onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'#fff\'">' +
+          '<span style="color:#15803d;font-weight:800;margin-right:6px">+</span>' + newLabel +
         '</div>';
         if (!html) html = '<div style="padding:14px;text-align:center;color:#94a3b8;font-size:13px">Engin niðurstaða — prófaðu „⚡ Staðgreitt" eða sláðu inn fulla kennitölu.</div>';
         results.innerHTML = html;
