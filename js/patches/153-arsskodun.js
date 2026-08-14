@@ -132,7 +132,9 @@
     } catch (_) { return null; }
   }
   function writeSnapshot() {
-    try { localStorage.setItem(SNAP_KEY, JSON.stringify({ t: Date.now(), list: _cache.list })); }
+    // tolur fylgir með svo talnakortin sýni síðustu þekktu tölu STRAX á
+    // snapshot-málun (í stað „—" þar til ferska sóknin klárar).
+    try { localStorage.setItem(SNAP_KEY, JSON.stringify({ t: Date.now(), list: _cache.list, tolur: _cache.tolur || null })); }
     catch (_) {}   // t.d. QuotaExceeded — snapshot er bara hraðabót
   }
 
@@ -947,7 +949,10 @@
   // material changed.
   function dataSig() {
     const a = (_cache && _cache.list) || [];
-    let s = a.length + ':';
+    // tolur er hluti undirskriftarinnar: annars endurteiknaðist síðan EKKI
+    // þegar view-talan kom inn eftir snapshot-málun (listinn óbreyttur →
+    // sama sig → korpin sátu föst á „—"). Sást live 13.08.
+    let s = JSON.stringify((_cache && _cache.tolur) || 0) + '|' + a.length + ':';
     for (let i = 0; i < a.length; i++) {
       const c = a[i], x = c._ars || {};
       s += c.id + ',' + (x.last_year_inspected || '') + ',' + (x.inspect_month || '')
@@ -986,6 +991,7 @@
     if (snap) {
       _cache.list = snap.list;
       _cache.byId = Object.fromEntries(snap.list.map(c => [c.id, c]));   // detail-smellir virka strax
+      if (snap.tolur && !_cache.tolur) _cache.tolur = snap.tolur;        // talnakortin strax, ekki „—"
       render();
       _rendered = true;
       _lastDataSig = dataSig();
