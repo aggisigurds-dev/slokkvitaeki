@@ -113,8 +113,10 @@
       }
       #${SLOT_ID} .sb-card:hover .sb-x { opacity:1; }
       #${SLOT_ID} .sb-x:hover { color:#dc2626; }
-      #${SLOT_ID} .sb-card:hover .sb-co-btn { opacity:1 !important; }
-      #${SLOT_ID} .sb-co-btn:hover { color:#2563eb !important; }
+      #${SLOT_ID} .sb-card:hover .sb-co-btn, #${SLOT_ID} .sb-card:hover .sb-print-btn { opacity:1 !important; }
+      #${SLOT_ID} .sb-co-btn:hover, #${SLOT_ID} .sb-print-btn:hover { color:#2563eb !important; }
+      /* Síminn hefur ekkert hover — hljóðlátu hnapparnir yrðu ósýnilegir að eilífu. */
+      @media (hover:none){ #${SLOT_ID} .sb-co-btn, #${SLOT_ID} .sb-print-btn { opacity:.55 !important; } }
       #${SLOT_ID} .sb-type-dot {
         display:inline-block; border-radius:50%; cursor:pointer; flex:none;
         transition:transform .1s, box-shadow .1s;
@@ -161,6 +163,18 @@
             'title="Opna fyrirtækisíðu: ' + esc(card.name) + '" ' +
             'style="border:none;background:none;cursor:pointer;font-size:11px;color:#94a3b8;' +
               'padding:0 2px;line-height:1;flex:none;opacity:0;transition:opacity .1s;margin-left:auto">🏢</button>'
+        : '') +
+      // 🖨 Fyrirtækjablaðið (Pakki 5) — sama hljóðláta mynstur og 🏢 hér að ofan.
+      // Spjöld af dagskrá bera ekkert verkbord_id → blaðið finnur á nafni.
+      ((card.verkbord_id != null || card.name)
+        ? '<button class="sb-print-btn" ' +
+            (card.verkbord_id != null
+              ? 'data-sb-print="' + esc(card.verkbord_id) + '" '
+              : 'data-sb-print-name="' + esc(card.name) + '" ') +
+            'title="Prenta fyrirtækjablað" ' +
+            'style="border:none;background:none;cursor:pointer;font-size:11px;color:#94a3b8;' +
+              'padding:0 2px;line-height:1;flex:none;opacity:0;transition:opacity .1s' +
+              (card.name ? '' : ';margin-left:auto') + '">🖨</button>'
         : '') +
     '</div>';
   }
@@ -256,6 +270,10 @@
                 'style="width:22px;height:22px;border:1px solid #3a3d45;border-radius:6px;' +
                 'background:#23252c;color:#9aa0aa;cursor:pointer;font-size:13px;font-family:inherit;padding:0">+</button>' +
             '</div>' +
+            '<button data-sb="print-all" title="Prenta fyrirtækjablað fyrir öll spjöld á borðinu — eitt skjal, síða per fyrirtæki" ' +
+              'style="height:26px;padding:0 10px;border:1px solid #3a3d45;border-radius:8px;' +
+              'background:#23252c;color:#9aa0aa;cursor:pointer;font-family:inherit;' +
+              'font-size:11px;font-weight:700">🖨 Prenta öll spjöld</button>' +
             '<button data-sb="toggle" style="height:26px;padding:0 10px;border:1px solid #3a3d45;' +
               'border-radius:8px;background:#23252c;color:#9aa0aa;cursor:pointer;' +
               'font-family:inherit;font-size:11px;font-weight:700">▲ Fela</button>' +
@@ -412,6 +430,28 @@
       if (act === 'toggle')     { state.collapsed = !state.collapsed; render(); return; }
       if (act === 'goal-plus')  { state.goal = Math.min(state.goal + 1, 12); persist(); return; }
       if (act === 'goal-minus') { state.goal = Math.max(state.goal - 1, 1);  persist(); return; }
+      if (act === 'print-all') {
+        // Dagsskammturinn í einu skjali — síða per fyrirtæki (page-break í blaðinu).
+        const ids = state.cards.filter(c => c.verkbord_id != null).map(c => c.verkbord_id);
+        if (!ids.length) { toast('🖨 Engin spjöld með máli á borðinu'); return; }
+        window.open('/fyrirtaekjablad.html?beidni_id=' + ids.join(','), '_blank');
+        return;
+      }
+    }
+
+    // 🖨 Fyrirtækjablaðið — opna prentanlegu samantektina í nýjum flipa.
+    // stopPropagation nauðsynlegt: spjaldið sjálft gleypir annars smellinn
+    // („Smella til að opna málið hér að neðan").
+    const pBtn = e.target.closest('.sb-print-btn');
+    if (pBtn) {
+      e.stopPropagation();
+      e.preventDefault();
+      const bid = pBtn.getAttribute('data-sb-print');
+      const nm = pBtn.getAttribute('data-sb-print-name');
+      window.open('/fyrirtaekjablad.html?' + (bid
+        ? 'beidni_id=' + encodeURIComponent(bid)
+        : 'nafn=' + encodeURIComponent(nm || '')), '_blank');
+      return;
     }
 
     // 🏢 Company profile button → open VidskDetail for this company

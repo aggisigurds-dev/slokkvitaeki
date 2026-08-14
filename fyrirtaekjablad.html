@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fyrirtækjablað</title>
+<!--
+  Fyrirtækjablaðið — prentanleg A4-samantekt af öllu sem kerfið veit um
+  fyrirtæki (Pakki 5, 2026-08-14). Opnast af 🖨 á Skipulagsborðs-spjaldi.
+
+    /fyrirtaekjablad.html?beidni_id=<thjonustubeidni.id>     (má vera 1,2,3…)
+    /fyrirtaekjablad.html?fyrirtaeki_id=<fyrirtaeki.id>
+    /fyrirtaekjablad.html?base_id=<customer_base_id>
+    /fyrirtaekjablad.html?nafn=<nafn>                        (spjald án beiðni-id)
+    …&print=0  → sleppa sjálfvirku window.print() (prófun)
+
+  LES-EINGÖNGU — engin UPDATE/INSERT nokkurs staðar. Talar beint við Supabase
+  með sama anon-lykli og appið (js/config.js), engin Netlify-föll.
+  Hver tafla er sótt EINU SINNI með .in(...) yfir öll fyrirtæki í einu.
+  Klikki fyrirspurn prentast blaðið samt með „⚠ náði ekki í …" fyrir þann
+  kafla — aldrei auð síða.
+-->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="/js/config.js"></script>
+<style>
+  * { box-sizing:border-box; }
+  body { margin:0; font:13px/1.45 -apple-system,'Segoe UI',Roboto,sans-serif; background:#eef1f5; color:#111; }
+  .noprint-bar { position:sticky; top:0; z-index:5; display:flex; gap:10px; align-items:center;
+    background:#0f172a; color:#e2e8f0; padding:9px 16px; font-size:13px; }
+  .noprint-bar button { padding:6px 14px; border:none; border-radius:7px; background:#2563eb; color:#fff;
+    font:inherit; font-weight:700; cursor:pointer; }
+  .sheet { background:#fff; max-width:210mm; margin:14px auto; padding:12mm; box-shadow:0 2px 14px rgba(0,0,0,.12); }
+  .sheet + .sheet { margin-top:22px; }
+  h1 { margin:0; font-size:21pt; line-height:1.15; letter-spacing:-.01em; }
+  .hd-kt { font-size:13pt; font-weight:800; white-space:nowrap; }
+  .hd-tel { font-size:16pt; font-weight:800; white-space:nowrap; }
+  .hd-sub { color:#444; margin-top:2px; font-size:10.5pt; }
+  .case { margin-top:7px; padding:7px 10px; border:1.5px solid #111; border-radius:6px; font-size:10.5pt; }
+  .case b { font-size:11.5pt; }
+  h2 { font-size:10pt; text-transform:uppercase; letter-spacing:.07em; border-bottom:1.5px solid #111;
+    padding-bottom:2px; margin:14px 0 6px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:0 22px; }
+  table { width:100%; border-collapse:collapse; font-size:9.5pt; }
+  th { text-align:left; font-size:8pt; text-transform:uppercase; letter-spacing:.04em; color:#555;
+    border-bottom:1px solid #bbb; padding:2px 6px 2px 0; }
+  td { padding:2.5px 6px 2.5px 0; border-bottom:1px solid #eee; vertical-align:top; }
+  .kv td:first-child { color:#555; width:34%; white-space:nowrap; padding-right:10px; }
+  .empty { color:#b3b8c0; }
+  .warn { color:#b45309; font-weight:700; }
+  .big-missing { border:3px solid #b91c1c; border-radius:8px; padding:14px; margin:12px 0;
+    font-size:15pt; font-weight:800; color:#b91c1c; text-align:center; }
+  .note-block { white-space:pre-wrap; border-left:3px solid #cbd5e1; padding:3px 0 3px 10px; margin:4px 0; font-size:9.5pt; }
+  .tag { display:inline-block; padding:0 7px; border:1px solid #999; border-radius:99px; font-size:8.5pt; margin-left:5px; }
+  a { color:#1d4ed8; text-decoration:none; }
+  @media print {
+    @page { size:A4; margin:12mm; }
+    body { background:#fff; color:#000; font-size:10.5pt; }
+    .noprint { display:none !important; }
+    .sheet { box-shadow:none; margin:0; padding:0; max-width:none; }
+    .sheet.brk { page-break-after:always; }
+    a { color:#000; }
+  }
+</style>
+</head>
+<body>
+<div class="noprint noprint-bar">
+  <span id="bar-status">Sæki gögn…</span>
+  <button onclick="window.print()">🖨 Prenta</button>
+</div>
+<div id="out"></div>
+<script>
+(async () => {
+  const $bar = document.getElementById('bar-status');
+  const $out = document.getElementById('out');
+  const sb = window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_KEY);
+  const P = new URLSearchParams(location.search);
+  const noPrint = P.get('print') === '0';
+
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const d10 = s => String(s || '').replace(/\D/g, '');
+  const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  const kr = n => (n == null ? '—' : String(Math.round(+n || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr');
+  const dt = s => { if (!s) return ''; const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '.' + m[2] + '.' + m[1] : String(s).slice(0, 10); };
+  const dash = () => '<span class="empty">—</span>';
+  const V = v => (v == null || String(v).trim() === '') ? dash() : esc(v);
+  const MAN = ['', 'janúar','febrúar','mars','apríl','maí','júní','júlí','ágúst','september','október','nóvember','desember'];
+
+  // Fyrirspurnar-hlíf: klikki tafla fer „⚠ náði ekki í X" á blaðið — aldrei auð síða.
+  const warns = [];
+  async function q(label, promise) {
+    try {
+      const r = await promise;
+      if (r.error) throw r.error;
+      return r.data || [];
+    } catch (e) { console.warn('[blad]', label, e); warns.push(label); return []; }
+  }
+
+  // ── 1) Leysa inntakið í lista af „verkum" ─────────────────────────────────
+  // Hvert verk: { beidni?, base?, sites[], focus?, notFound? }
+  const jobs = [];
+  const beidniIds = (P.get('beidni_id') || '').split(',').map(s => s.trim()).filter(Boolean);
+  const fyrId = P.get('fyrirtaeki_id');
+  const baseIdP = P.get('base_id');
+  const nafnP = (P.get('nafn') || '').trim();
+
+  let beidnir = [];
+  if (beidniIds.length) {
+    beidnir = await q('þjónustubeiðnir', sb.from('thjonustubeidni').select('*').in('id', beidniIds));
+    // halda röð URL-sins
+    beidnir.sort((a, b) => beidniIds.indexOf(String(a.id)) - beidniIds.indexOf(String(b.id)));
+    for (const b of beidnir) jobs.push({ beidni: b, baseId: b.customer_base_id || null });
+  } else if (fyrId) {
+    jobs.push({ fyrId: Number(fyrId) });
+  } else if (baseIdP) {
+    jobs.push({ baseId: Number(baseIdP) });
+  } else if (nafnP) {
+    jobs.push({ nameOnly: nafnP });
+  } else {
+    $out.innerHTML = '<div class="sheet"><div class="big-missing">Vantar beidni_id / fyrirtaeki_id / base_id / nafn í slóðina.</div></div>';
+    $bar.textContent = 'Ekkert til að sækja.';
+    return;
+  }
+
+  // Nafnamatch fyrir beiðnir án base (og ?nafn=) — ILIKE á fyrirtaeki OG customers_base.
+  for (const j of jobs) {
+    const name = j.nameOnly || (j.beidni && !j.baseId ? (j.beidni.customer_nafn || '').trim() : '');
+    if (!name || j.baseId || j.fyrId) continue;
+    const like = '%' + name.replace(/[%_,]/g, ' ').trim() + '%';
+    const fy = await q('nafnaleit (fyrirtaeki)', sb.from('fyrirtaeki').select('id,nafn,customer_base_id').is('deleted_at', null).ilike('nafn', like).limit(3));
+    if (fy.length === 1 || (fy.length > 1 && fold(fy[0].nafn) === fold(name))) {
+      j.fyrId = fy[0].id; j.baseId = fy[0].customer_base_id || null; continue;
+    }
+    const cb = await q('nafnaleit (customers_base)', sb.from('customers_base').select('id,nafn').ilike('nafn', like).limit(3));
+    if (cb.length === 1 || (cb.length > 1 && fold(cb[0].nafn) === fold(name))) { j.baseId = cb[0].id; continue; }
+    j.notFound = true;   // „EKKI TIL Í KERFINU" — verðmæt niðurstaða, ekki villa
+  }
+
+  // fyrirtaeki_id-leiðin: sækja röðina til að fá base-id
+  const directFyrIds = jobs.filter(j => j.fyrId).map(j => j.fyrId);
+  let directFyr = [];
+  if (directFyrIds.length) {
+    directFyr = await q('fyrirtæki (beint)', sb.from('fyrirtaeki').select('*').in('id', directFyrIds));
+    for (const j of jobs) {
+      const f = directFyr.find(x => x.id === j.fyrId);
+      if (f) { j.focusRow = f; j.baseId = j.baseId || f.customer_base_id || null; }
+    }
+  }
+
+  // ── 2) Sækja hverja töflu EINU SINNI yfir öll verkin ──────────────────────
+  const baseIds = [...new Set(jobs.map(j => j.baseId).filter(x => x != null))];
+
+  const [bases, sitesAll] = await Promise.all([
+    baseIds.length ? q('customers_base', sb.from('customers_base').select('*').in('id', baseIds)) : [],
+    baseIds.length ? q('fyrirtæki (staðir)', sb.from('fyrirtaeki').select('*').in('customer_base_id', baseIds).is('deleted_at', null)) : [],
+  ]);
+  // beinu fyrirtækin (án base) inn í staðalistann líka
+  for (const f of directFyr) if (!sitesAll.find(x => x.id === f.id)) sitesAll.push(f);
+
+  for (const j of jobs) {
+    if (j.notFound) continue;
+    j.base  = bases.find(b => b.id === j.baseId) || null;
+    j.sites = sitesAll.filter(s => j.baseId != null && s.customer_base_id === j.baseId);
+    if (j.focusRow && !j.sites.find(s => s.id === j.focusRow.id)) j.sites.push(j.focusRow);
+    // Fókus-staður: beint valinn > eini staðurinn > besta nafnamatch við beiðnina
+    if (!j.focusRow) {
+      const nm = fold((j.beidni && j.beidni.customer_nafn) || '');
+      j.focusRow = (j.sites.length === 1 ? j.sites[0] : null)
+        || (nm ? j.sites.find(s => fold(s.nafn) === nm) : null)
+        || (nm ? j.sites.find(s => fold(s.nafn).includes(nm) || nm.includes(fold(s.nafn))) : null)
+        || null;
+    }
+  }
+
+  const fyrIds = [...new Set(sitesAll.map(s => s.id))];
+  const kts = [...new Set(
+    [].concat(bases.map(b => b.kennitala), sitesAll.map(s => s.kennitala)).filter(Boolean)
+      .flatMap(k => { const d = d10(k); return d.length === 10 ? [k, d, d.slice(0, 6) + '-' + d.slice(6)] : [k]; })
+  )];
+  const names = [...new Set([].concat(bases.map(b => b.nafn), sitesAll.map(s => s.nafn)).filter(Boolean))];
+
+  const [uttA, uttB, repFacts, invFacts, skMan, docs, salesAll, payday, cinfoKt, cinfoName, contacts, samsk, beidnAll] = await Promise.all([
+    baseIds.length ? q('tæki (base)', sb.from('uttaeki').select('id,type,size,next_insp,status,client,customer_base_id').in('customer_base_id', baseIds)) : [],
+    names.length ? q('tæki (nafn)', sb.from('uttaeki').select('id,type,size,next_insp,status,client,customer_base_id').in('client', names)) : [],
+    fyrIds.length ? q('skýrslu-fakta', sb.from('arsskodun_report_facts').select('fyrirtaeki_id,report_year,inspect_month,total_devices').in('fyrirtaeki_id', fyrIds)) : [],
+    fyrIds.length ? q('úttektar-reikninga-fakta', sb.from('uttekt_reikningur_facts').select('fyrirtaeki_id,invoice_date,invoice_number,total_devices,inspect_month').in('fyrirtaeki_id', fyrIds).order('invoice_date', { ascending: false })) : [],
+    fyrIds.length ? q('skoðunarmánuður (view)', sb.from('v_skodunar_manudur').select('fyrirtaeki_id,inspect_month,heimild').in('fyrirtaeki_id', fyrIds)) : [],
+    fyrIds.length ? q('skjöl', sb.from('customer_documents').select('fyrirtaeki_id,doc_type,year,invoice_number,drive_file_id').in('fyrirtaeki_id', fyrIds).order('year', { ascending: false })) : [],
+    baseIds.length ? q('sölur', sb.from('solur').select('id,customer_base_id,samtals,created_at,greitt_med,paid_at,num,status').in('customer_base_id', baseIds)) : [],
+    kts.length ? q('Payday-kröfur', sb.from('payday_invoices_slokk').select('id,kt').in('kt', kts)) : [],
+    kts.length ? q('customer_info (kt)', sb.from('customer_info').select('*').in('kennitala', kts)) : [],
+    names.length ? q('customer_info (nafn)', sb.from('customer_info').select('*').in('customer_name', names)) : [],
+    kts.length ? q('tengiliðir (charlize)', sb.from('charlize_contacts').select('kennitala,netfang,heiti,hlutverk,sidast_sest').in('kennitala', kts)) : [],
+    fyrIds.length ? q('samskipta-staða', sb.from('samskipti_stada').select('fyrirtaeki_id,note,handled_at').in('fyrirtaeki_id', fyrIds)) : [],
+    baseIds.length ? q('fyrri beiðnir', sb.from('thjonustubeidni').select('id,title,created_at,status,flokkur,customer_base_id').in('customer_base_id', baseIds).is('deleted_at', null).order('created_at', { ascending: false })) : [],
+  ]);
+  const utt = [...uttA];
+  for (const u of uttB) if (!utt.find(x => x.id === u.id)) utt.push(u);
+  const cinfo = [...cinfoKt];
+  for (const c of cinfoName) if (!cinfo.includes(c)) cinfo.push(c);
+
+  // ── 3) Teikna eitt blað per verk ──────────────────────────────────────────
+  function section(title, inner) { return '<h2>' + esc(title) + '</h2>' + inner; }
+  function kv(rows) {
+    return '<table class="kv">' + rows.map(r => '<tr><td>' + esc(r[0]) + '</td><td>' + (r[1] == null || r[1] === '' ? dash() : r[1]) + '</td></tr>').join('') + '</table>';
+  }
+  function sheet(j, isLast) {
+    const b = j.beidni || null;
+    const caseBox = b
+      ? '<div class="case"><b>' + esc(b.title || '(án titils)') + '</b>'
+        + ' <span class="tag">' + esc(b.status || '—') + '</span>'
+        + (b.flokkur ? '<span class="tag">' + esc(b.flokkur) + '</span>' : '')
+        + '<div style="margin-top:2px;color:#444">' + dt(b.created_at) + (b.customer_nafn ? ' · ' + esc(b.customer_nafn) : '') + '</div>'
+        + (b.summary || b.notes ? '<div class="note-block">' + esc(b.summary || b.notes) + '</div>' : '')
+        + '</div>'
+      : '';
+
+    // „EKKI TIL Í KERFINU" — allt sem stendur í málinu fylgir með
+    if (j.notFound) {
+      return '<div class="sheet' + (isLast ? '' : ' brk') + '">'
+        + '<div class="big-missing">EKKI TIL Í KERFINU — þarf að stofna</div>'
+        + (b ? ('<h1>' + esc(b.customer_nafn || '(ekkert nafn)') + '</h1>' + caseBox
+          + section('Allt sem málið segir', kv([
+              ['Titill', esc(b.title)], ['Nafn', esc(b.customer_nafn)], ['Staða', esc(b.status)],
+              ['Flokkur', esc(b.flokkur || '')], ['Stofnað', dt(b.created_at)], ['Uppruni', esc(b.source || '')],
+              ['Samantekt', b.summary ? '<div class="note-block">' + esc(b.summary) + '</div>' : ''],
+              ['Nótur', b.notes ? '<div class="note-block">' + esc(b.notes) + '</div>' : ''],
+            ])))
+          : '<h1>' + esc(j.nameOnly || '?') + '</h1><p>Ekkert fannst með þessu nafni í fyrirtaeki né customers_base.</p>')
+        + '</div>';
+    }
+
+    const f = j.focusRow || null;
+    const base = j.base || null;
+    const nafn = (f && f.nafn) || (base && base.nafn) || (b && b.customer_nafn) || '?';
+    const ktRaw = (f && f.kennitala) || (base && base.kennitala) || '';
+    const myKts = new Set(kts.filter(k => d10(k) === d10(ktRaw)).concat(ktRaw ? [ktRaw] : []));
+    const myFyrIds = new Set((j.sites.length ? j.sites : (f ? [f] : [])).map(s => s.id));
+    const focusIds = f ? new Set([f.id]) : myFyrIds;   // fókus fyrst, annars allir staðir
+    const multi = j.sites.length > 1;
+    const siteName = id => { const s = j.sites.find(x => x.id === id); return s ? s.nafn : ('#' + id); };
+    const pref = id => (multi ? '<span style="color:#555">' + esc(siteName(id)) + ':</span> ' : '');
+
+    // Haus
+    const simi = (f && (f.simi || f.farsimi)) || (base && base.simi) || '';
+    let h = '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">'
+      + '<div style="min-width:0"><h1>' + esc(nafn) + '</h1>'
+      + '<div class="hd-sub">' + V([(f && f.heimilisfang) || (base && base.heimilisfang), f && f.postnumer].filter(Boolean).join(', '))
+      + ' · ' + ((f ? f.er_i_thjonustu === true : j.sites.some(s => s.er_i_thjonustu)) ? '<b>Í ÞJÓNUSTU</b>' : 'ekki í þjónustu') + '</div></div>'
+      + '<div style="text-align:right"><div class="hd-kt">kt ' + V(ktRaw) + '</div><div class="hd-tel">📞 ' + V(simi) + '</div></div>'
+      + '</div>' + caseBox;
+
+    if (warns.length) h += '<div class="warn" style="margin-top:6px">⚠ náði ekki í: ' + warns.map(esc).join(', ') + '</div>';
+
+    // ── Samband + Tæki (tveir dálkar) ──
+    const ci = cinfo.find(c => (c.kennitala && myKts.has(c.kennitala)) || (c.customer_name && fold(c.customer_name) === fold(nafn))) || {};
+    const myContacts = contacts.filter(c => c.kennitala && [...myKts].some(k => d10(k) === d10(c.kennitala)));
+    const sambandHtml = kv([
+      ['Sími', V((f && f.simi) || (base && base.simi))],
+      ['Farsími', V(f && f.farsimi)],
+      ['Netfang', V((f && f.netfang) || (base && base.netfang))],
+      ['Tengiliður', V((f && (f['tengiliður'] || f.tengilidur)) || '')],
+      ['Vefsíða', V(f && f.vefsida)],
+      ['Sími (customer_info)', V(ci.contact_phone)],
+      ['Netfang (customer_info)', V(ci.contact_email)],
+      ['Greiðslumáti', V(ci.payment_method)],
+      ['Greiðsluskilmálar', V(ci.payment_terms)],
+    ]) + (ci.general_notes ? '<div class="note-block">' + esc(ci.general_notes) + '</div>' : '')
+    + (myContacts.length
+      ? '<table><tr><th>Póstsamskipti við</th><th>Hlutverk</th><th>Síðast</th></tr>'
+        + myContacts.slice(0, 6).map(c => '<tr><td>' + esc(c.heiti || c.netfang) + (c.heiti ? ' &lt;' + esc(c.netfang) + '&gt;' : '') + '</td><td>' + V(c.hlutverk) + '</td><td>' + dt(c.sidast_sest) + '</td></tr>').join('') + '</table>'
+      : '<div class="empty" style="font-size:9.5pt">Engin skráð póstsamskipti (charlize_contacts) — vitum ekki við hvern við tölum.</div>');
+
+    const myUtt = utt.filter(u =>
+      (u.customer_base_id != null && u.customer_base_id === j.baseId) ||
+      (u.client && j.sites.concat(f ? [f] : []).some(s => s && fold(s.nafn) === fold(u.client))) ||
+      (u.client && base && fold(u.client) === fold(base.nafn)));
+    const today = new Date().toISOString().slice(0, 10);
+    const expired = myUtt.filter(u => u.next_insp && String(u.next_insp).slice(0, 10) < today).length;
+    const byType = {};
+    myUtt.forEach(u => { const k = [u.type || '?', u.size || ''].filter(Boolean).join(' '); byType[k] = (byType[k] || 0) + 1; });
+    const taekiHtml = myUtt.length
+      ? '<table><tr><th>Tegund</th><th style="text-align:right">Fjöldi</th></tr>'
+        + Object.entries(byType).sort((a, b2) => b2[1] - a[1]).map(e => '<tr><td>' + esc(e[0]) + '</td><td style="text-align:right">' + e[1] + '</td></tr>').join('')
+        + '<tr><td><b>Samtals</b>' + (expired ? ' · <span class="warn">' + expired + ' útrunnin</span>' : '') + '</td><td style="text-align:right"><b>' + myUtt.length + '</b></td></tr></table>'
+      : '<div class="big-missing" style="font-size:12pt;margin:4px 0">ENGIN TÆKI SKRÁÐ</div>';
+
+    h += '<div class="grid2"><div>' + section('Samband', sambandHtml) + '</div><div>' + section('Tæki', taekiHtml);
+
+    // ── Skoðunarsaga (undir Tæki í hægri dálki) ──
+    const ids = [...focusIds];
+    const rep = repFacts.filter(r => ids.includes(r.fyrirtaeki_id));
+    const inv = invFacts.filter(r => ids.includes(r.fyrirtaeki_id));
+    const man = skMan.find(r => ids.includes(r.fyrirtaeki_id));
+    let skodun = kv([
+      ['Skoðunarmánuður', man && man.inspect_month ? esc(MAN[man.inspect_month] || man.inspect_month) + ' <span class="tag">' + esc(man.heimild || '') + '</span>' : ''],
+    ]);
+    skodun += rep.length
+      ? '<table><tr><th>Skýrsla (nýjasta lesna)</th><th>Mán.</th><th style="text-align:right">Tæki</th></tr>'
+        + rep.map(r => '<tr><td>' + pref(r.fyrirtaeki_id) + (r.report_year || '—') + '</td><td>' + (MAN[r.inspect_month] || '—') + '</td><td style="text-align:right">' + (r.total_devices != null ? r.total_devices : '—') + '</td></tr>').join('') + '</table>'
+      : '<div class="empty" style="font-size:9.5pt">Engin lesin skýrsla (arsskodun_report_facts geymir aðeins þá nýjustu per stað)</div>';
+    skodun += inv.length
+      ? '<table style="margin-top:4px"><tr><th>Úttektar-reikningur</th><th>Nr.</th><th style="text-align:right">Tæki</th></tr>'
+        + inv.slice(0, 6).map(r => '<tr><td>' + pref(r.fyrirtaeki_id) + dt(r.invoice_date) + '</td><td>' + V(r.invoice_number) + '</td><td style="text-align:right">' + (r.total_devices != null ? r.total_devices : '—') + '</td></tr>').join('') + '</table>'
+      : '<div class="empty" style="font-size:9.5pt">Engir lesnir úttektar-reikningar (uttekt_reikningur_facts: hver úttekt fyrir sig)</div>';
+    h += section('Skoðunarsaga', skodun) + '</div></div>';
+
+    // ── Athugasemdir (breið lína — orðrétt, ekki stytt) ──
+    const noteRows = [];
+    for (const s of (f ? [f] : j.sites)) {
+      if (s.athugasemdir) noteRows.push([s.nafn, s.athugasemdir]);
+      if (s.banner_note) noteRows.push([s.nafn + ' · banner', s.banner_note]);
+      if (s.review_note) noteRows.push([s.nafn + ' · yfirferð', s.review_note]);
+      const sk = samsk.find(x => x.fyrirtaeki_id === s.id);
+      if (sk && sk.note) noteRows.push([s.nafn + ' · samskipti (' + dt(sk.handled_at) + ')', sk.note]);
+    }
+    h += section('Athugasemdir', noteRows.length
+      ? noteRows.map(r => '<div class="note-block"><b style="font-size:8.5pt;color:#555">' + esc(r[0]) + '</b><br>' + esc(r[1]) + '</div>').join('')
+      : dash());
+
+    // ── Tengsl — systurstaðir á sömu kt ──
+    if (multi) {
+      h += section('Tengsl — aðrir staðir sömu kennitölu (' + (j.sites.length - (f ? 1 : 0)) + ')',
+        '<table><tr><th>Staður</th><th>Heimilisfang</th><th>Í þjónustu</th><th>Skoðunarmán.</th></tr>'
+        + j.sites.filter(s => !f || s.id !== f.id).map(s => {
+            const m = skMan.find(x => x.fyrirtaeki_id === s.id);
+            return '<tr><td>' + esc(s.nafn) + '</td><td>' + V(s.heimilisfang) + '</td><td>' + (s.er_i_thjonustu ? 'já' : 'nei') + '</td><td>' + (m && m.inspect_month ? MAN[m.inspect_month] : '—') + '</td></tr>';
+          }).join('') + '</table>');
+    }
+
+    // ── Skjöl + Viðskipti (tveir dálkar) ──
+    const myDocs = docs.filter(d => myFyrIds.has(d.fyrirtaeki_id));
+    const byDt = {};
+    myDocs.forEach(d => { byDt[d.doc_type || '?'] = (byDt[d.doc_type || '?'] || 0) + 1; });
+    const docHtml = myDocs.length
+      ? '<div style="font-size:9.5pt;margin-bottom:3px">' + Object.entries(byDt).map(e => esc(e[0]) + ': <b>' + e[1] + '</b>').join(' · ') + '</div>'
+        + '<table><tr><th>Ár</th><th>Teg</th><th>Nr.</th><th></th></tr>'
+        + myDocs.slice(0, 5).map(d => '<tr><td>' + (d.year || '—') + '</td><td>' + esc(d.doc_type) + '</td><td>' + V(d.invoice_number) + '</td><td>'
+          + (d.drive_file_id ? '<a href="https://drive.google.com/file/d/' + esc(d.drive_file_id) + '/view" class="noprint">Drive ↗</a>' : '') + '</td></tr>').join('') + '</table>'
+      : dash();
+
+    const mySales = salesAll.filter(s => s.customer_base_id === j.baseId);
+    const unpaid = mySales.filter(s => s.greitt_med === 'reikningur' && !s.paid_at);
+    const newest = mySales.slice().sort((a, b2) => String(b2.created_at).localeCompare(String(a.created_at)))[0];
+    const myPayday = payday.filter(p => p.kt && [...myKts].some(k => d10(k) === d10(p.kt)));
+    const pd = f ? f.payday_delivery : null;
+    const vidskHtml = kv([
+      ['Sölur alls', mySales.length ? mySales.length + ' · ' + kr(mySales.reduce((s, x) => s + (+x.samtals || 0), 0)) : ''],
+      ['Nýjasta sala', newest ? dt(newest.created_at) + ' · ' + kr(newest.samtals) + (newest.num ? ' · ' + esc(newest.num) : '') : ''],
+      ['Ógreiddar kröfur', unpaid.length ? '<span class="warn">' + unpaid.length + ' · ' + kr(unpaid.reduce((s, x) => s + (+x.samtals || 0), 0)) + '</span>' : (mySales.length ? '0' : '')],
+      ['Payday-kröfur', myPayday.length ? String(myPayday.length) : ''],
+      ['Rafræn afhending', pd ? esc(pd) : '<span class="warn">ekki stillt</span> — sjálfgefið gildir (rafrænt + póstafrit ef netfang er til)'],
+    ]);
+    h += '<div class="grid2"><div>' + section('Skjöl', docHtml) + '</div><div>' + section('Viðskipti', vidskHtml) + '</div></div>';
+
+    // ── Fyrri samskipti (breið lína) ──
+    const prev = beidnAll.filter(x => x.customer_base_id === j.baseId && (!b || x.id !== b.id));
+    h += section('Fyrri samskipti (' + prev.length + ')', prev.length
+      ? '<table><tr><th>Dags.</th><th>Titill</th><th>Staða</th><th>Flokkur</th></tr>'
+        + prev.slice(0, 12).map(x => '<tr><td style="white-space:nowrap">' + dt(x.created_at) + '</td><td>' + esc(x.title || '') + '</td><td>' + V(x.status) + '</td><td>' + V(x.flokkur) + '</td></tr>').join('')
+        + '</table>' + (prev.length > 12 ? '<div class="empty" style="font-size:8.5pt">+ ' + (prev.length - 12) + ' eldri</div>' : '')
+      : dash());
+
+    return '<div class="sheet' + (isLast ? '' : ' brk') + '">' + h + '</div>';
+  }
+
+  $out.innerHTML = jobs.map((j, i) => sheet(j, i === jobs.length - 1)).join('');
+  $bar.textContent = jobs.length + (jobs.length === 1 ? ' blað tilbúið' : ' blöð tilbúin')
+    + (warns.length ? ' · ⚠ ' + warns.length + ' fyrirspurnir klikkuðu' : '');
+  document.title = 'Fyrirtækjablað — ' + (jobs[0] && ((jobs[0].focusRow && jobs[0].focusRow.nafn) || (jobs[0].base && jobs[0].base.nafn) || (jobs[0].beidni && jobs[0].beidni.customer_nafn) || ''));
+
+  // Prenta sjálfkrafa ÞEGAR allt er komið (öll await búin hér að ofan).
+  if (!noPrint) requestAnimationFrame(() => setTimeout(() => window.print(), 150));
+})();
+</script>
+</body>
+</html>
