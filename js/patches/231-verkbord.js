@@ -1624,8 +1624,12 @@
       sel.style.removeProperty('top'); sel.style.removeProperty('max-height');
     } else {
       const top = 8 + Math.ceil(ctr.getBoundingClientRect().height) + 10;
+      // Skrunið gerist í innri containernum (#vb-main), ekki glugganum —
+      // sticky-top OG sýnileg hæð miðast við HANS viewport, ekki 100vh.
+      const scroller = sel.closest('#vb-main');
+      const viewH = (scroller && scroller.clientHeight) || window.innerHeight;
       sel.style.top = top + 'px';
-      sel.style.maxHeight = 'calc(100vh - ' + (top + 10) + 'px)';
+      sel.style.maxHeight = Math.max(220, viewH - top - 10) + 'px';
     }
     if (window.ResizeObserver && !ctr._selRo) {
       ctr._selRo = new ResizeObserver(() => fixSelViewport());
