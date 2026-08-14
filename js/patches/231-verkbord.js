@@ -122,7 +122,9 @@
     eftir_ad_rukka:     { label: 'Eftir að rukka',     emoji: '💰', color: '#be123c' },
     thjonusta:          { label: 'Þjónusta',           emoji: '🔧', color: '#0d9488' },
     senda_tolvupost:    { label: 'Senda tölvupóst',    emoji: '✉️', color: '#0369a1' },
-    senda_skyrslur:     { label: 'Senda skýrslur',     emoji: '📑', color: '#4338ca' }
+    senda_skyrslur:     { label: 'Senda skýrslur',     emoji: '📑', color: '#4338ca' },
+    // 2026-08-14 (ósk Agnars): uppsetningarverk — silfur-málm texti (sjá dkChip).
+    uppsetning:         { label: 'Uppsetning',         emoji: '🔩', color: '#9aa3ad' }
   };
   const TAG_ORDER = Object.keys(TAGS);
 
@@ -167,8 +169,12 @@
     gera_tilbod: '#b79cff', thjonustusamningur: '#c3ccd8', bokhald: '#8fb0ff',
     kvortun: '#ff8a82', hringja: '#f2c24e', brunakerfi: '#ff8a82',
     eftir_ad_rukka: '#ff8a82', thjonusta: '#4fd08a', senda_tolvupost: '#8fb0ff',
-    senda_skyrslur: '#a5b4fc'
+    senda_skyrslur: '#a5b4fc', uppsetning: '#d7dce3'
   };
+  // Silfur-málm texti (Uppsetning) — gradient-clip á INNRI span svo hann
+  // stangist ekki á við metal-bakgrunn chippsins sjálfs.
+  const SILVER_TXT = 'background:linear-gradient(180deg,#ffffff,#cfd6df 40%,#8f979f 70%,#e8ecf1);' +
+    '-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:800';
   // 5px vinstri-röndin litast af FLOKKI raðarinnar (mynstrið í referensinum).
   const RAIL = { tilbod: '#2f5fe0', thjonusta: '#22b063', brunakerfi: '#df2c2c', rukkun: '#be123c', samskipti: '#e0a93e' };
   function railColor(r) { return RAIL[rowFlokk(r)] || '#8a929e'; }
@@ -193,8 +199,28 @@
   }
   function dkChip(t, act, rid) {
     const d = TAGS[t]; if (!d) return '';
+    const lbl = t === 'uppsetning' ? '<span style="' + SILVER_TXT + '">' + esc(d.label) + '</span>' : esc(d.label);
     return '<span' + (act ? ' data-act="' + act + '" data-tag="' + t + '"' + (rid != null ? ' data-id="' + esc(rid) + '"' : '') : '') +
-      ' style="display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:104px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;' + V3_METAL + ';color:' + (TAG_DK[t] || '#c3ccd8') + ';white-space:nowrap;cursor:pointer">' + d.emoji + ' ' + esc(d.label) + '</span>';
+      ' style="display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:104px;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;' + V3_METAL + ';color:' + (TAG_DK[t] || '#c3ccd8') + ';white-space:nowrap;cursor:pointer">' + d.emoji + ' ' + lbl + '</span>';
+  }
+  // Litlu merkja-chipparnir hægra megin á röð í hópaða viewinu (2026-08-14,
+  // ósk Agnars): sýna HIN merkin sem málið ber — merki hópsins sjálfs er
+  // sleppt (það sæist tvöfalt). Mest 4, svo „+N".
+  function miniTagChips(r, excl) {
+    const ts = rowChips(r).filter(t => t !== excl);
+    if (!ts.length) return '';
+    const MAXN = 4;
+    const chips = ts.slice(0, MAXN).map(t => {
+      const d = TAGS[t]; if (!d) return '';
+      const lbl = t === 'uppsetning' ? '<span style="' + SILVER_TXT + '">' + esc(d.label) + '</span>' : esc(d.label);
+      return '<span title="' + esc(d.label) + '" style="display:inline-flex;align-items:center;gap:3px;' +
+        'font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;' + V3_METAL + ';' +
+        'color:' + (TAG_DK[t] || '#c3ccd8') + ';white-space:nowrap">' + d.emoji + ' ' + lbl + '</span>';
+    }).join('');
+    const more = ts.length > MAXN
+      ? '<span style="font-size:10px;color:#9aa0aa;font-weight:800;align-self:center">+' + (ts.length - MAXN) + '</span>' : '';
+    return '<div style="flex:none;display:flex;flex-wrap:wrap;gap:4px;justify-content:flex-end;' +
+      'max-width:200px;align-content:flex-start;margin-top:2px">' + chips + more + '</div>';
   }
   // Metallíska STAÐA-pillan (Ný = blá; beint úr referensinum).
   const PILL_GRAD = {
@@ -1377,7 +1403,7 @@
 
   // Ein röð inni í korti. `clamp` = tveggja lína lýsing (flokkakortin), annars
   // ein lína (BÍÐUR SVARS er þéttara).
-  function v3Row(r, clamp, tagColor) {
+  function v3Row(r, clamp, tagColor, groupKey) {
     const on = String(state.selId) === String(r.id);
     const tl = (state.threadLatest && state.threadLatest[r.id]) || null;
     const emailFrom = isPost(r) ? (tl && tl.from ? tl.from : (r.customer_nafn || '')) : '';
@@ -1414,6 +1440,8 @@
           (sub ? '<div style="' + subStyle + '">' + esc(sub) + '</div>' : '') +
         '</div>' +
         (clamp ? '' : waitPill(r)) +
+        // HIN merkin sem málið ber — sýnileg beint á röðinni (ósk Agnars 14.08).
+        miniTagChips(r, groupKey || '') +
         '<button data-act="skra" data-id="' + esc(r.id) + '" title="Setja á dagskrá" ' +
           'style="flex:none;border:1px solid #d8dadf;border-radius:7px;background:#fff;cursor:pointer;padding:3px 8px;' +
           'font-size:11px;font-weight:700;color:#4b5058;font-family:inherit' + (clamp ? ';margin-top:2px' : '') + '">🗓 Á dagskrá</button>' +
@@ -1582,7 +1610,7 @@
             '</div>'
           : '') +
         (open
-          ? shown.map(r => v3Row(r, true, g.color)).join('') +
+          ? shown.map(r => v3Row(r, true, g.color, g.key)).join('') +
             (g.items.length > shown.length
               ? '<div data-act="catmore" data-cat="' + esc(g.key) + '" style="padding:8px 12px;border-top:1px solid #eef0f2;' +
                 'font-size:12px;font-weight:700;color:#6b7280;cursor:pointer">Sjá öll ' + g.items.length + ' mál →</div>'
