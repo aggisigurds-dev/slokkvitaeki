@@ -82,6 +82,33 @@
     } catch (e) { console.warn('[inservice-rows] fetchAll', e); return []; }
   }
 
+  // 2026-08-14 (Norðurbrú-lexían): úttekt sem við eigum BARA reikning fyrir
+  // sýndist ógerð — starfsmaður les grátt ár sem „aldrei farið" og fer að
+  // óþörfu. v_uttekt_ar sameinar skýrslu-ár og reikninga-ár per stað;
+  // heimild 'reikningur' = úttekt staðfest með reikningi en skýrslan vantar
+  // (viewið sleppir reikningi þegar skýrsla er til fyrir sama ár). Þau ár
+  // litast BLÁ — greinilega virk, ekki grá — en telja ÁFRAM sem „vantar
+  // skýrslu" í síum/fact-check (has=false), því skýrslan vantar enn.
+  let invMap = null, invLoading = false;   // co_id(str) → { year(str) → {nr,dags} }
+  async function loadInv(){
+    if (invLoading || invMap) return; invLoading = true;
+    try {
+      const sb = window.DB && DB.sb; if (!sb) { invLoading = false; return; }
+      const rows = await fetchAll(() => sb.from('v_uttekt_ar')
+        .select('fyrirtaeki_id,ar,heimild,nr,dags').eq('heimild','reikningur'));
+      const map = {};
+      rows.forEach(x => {
+        if (x.fyrirtaeki_id == null || !x.ar) return;
+        (map[String(x.fyrirtaeki_id)] = map[String(x.fyrirtaeki_id)] || {})[String(x.ar)] = { nr: x.nr || '', dags: x.dags || '' };
+      });
+      invMap = map;
+      document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
+      document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
+      process();
+    } catch (_) {}
+    invLoading = false;
+  }
+
   let locMap = null, locLoading = false;
   async function loadLoc(){
     if (locLoading || locMap) return; locLoading = true;
@@ -255,6 +282,15 @@
           td.innerHTML = '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Úttektarskýrsla ' + y + ' í Drive" style="' + TAG + 'background:#DBEEE3;border-color:' + okBorder + ';color:#0F5E3F">' + gdot + yy + '</a>';
         } else if (f) {
           td.innerHTML = '<a href="#" class="_yr-att" data-path="' + String(f.path||'').replace(/"/g,'&quot;') + '" title="' + String(f.name||'').replace(/"/g,'&quot;') + ' (' + y + ' — upphlaðið skjal)" style="' + TAG + 'background:#DBEEE3;border-color:' + okBorder + ';color:#0F5E3F">' + gdot + yy + '</a>';
+        } else if (invMap && invMap[coId] && invMap[coId][y]) {
+          // BLÁTT: úttektin var GERÐ (reikningur til) en skýrslan vantar.
+          // Grænt = skýrsla til · blátt = við fórum, skýrsla vantar · grátt = ekkert.
+          // Smellur = hengja skýrsluna við (sama _yr-add flæði og tómur reitur).
+          const iv = invMap[coId][y];
+          const invDot = '<span style="width:5px;height:5px;border-radius:50%;background:#2563EB;flex:0 0 auto"></span>';
+          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" ' +
+            'title="Úttekt staðfest með reikningi ' + String(iv.nr).replace(/"/g,'&quot;') + ' (' + String(iv.dags).replace(/"/g,'&quot;') + ') — skýrsla vantar. Smelltu til að hengja skýrsluna við." ' +
+            'style="' + TAG + 'background:#DBEAFE;border-color:rgba(37,99,235,.6);color:#1E3A8A">' + invDot + yy + '</a>';
         } else if (confirmed) {
           // Fact-checkað handvirkt þótt ekkert skjal sé á þessari hlið.
           td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Fact-checkað ' + y + ' (staðfest handvirkt)" style="' + TAG + 'background:#DBEEE3;border-color:rgba(22,163,74,.7);color:#0F5E3F">' + glowDot + yy + '</a>';
@@ -285,7 +321,7 @@
   // identical '23/'24/'25/'26 status without duplicating the data plumbing.
   // Returns { '2023': {has, due, reik}, … }. `has` = úttektarskýrsla á skrá.
   function yearInfo(c) {
-    try { loadLoc(); loadReik(); } catch (_) {}   // best-effort warm (idempotent)
+    try { loadLoc(); loadReik(); loadInv(); } catch (_) {}   // best-effort warm (idempotent)
     const out = {};
     if (!c) { YEARS.forEach(y => out[y] = { has: false, due: (y === '2026'), reik: false }); return out; }
     let uf = {}, att = {};
@@ -302,7 +338,10 @@
       const u = locRec[y] || ((ktCount[kt] || 0) <= 1 ? rec[y] : null);
       const f = files.find(x => String(x.year) === y) ||
                 files.find(x => x.year == null && new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
-      out[y] = { has: !!(u || f), due: (y === '2026'), reik: !!(reikMap && reikMap[kt] && reikMap[kt].has(y)) };
+      // `inv` = úttekt staðfest með reikningi (v_uttekt_ar) en skýrsla vantar —
+      // `has` er ÁFRAM skýrslu-eingöngu svo „vantar skýrslu"-talningar standi.
+      out[y] = { has: !!(u || f), due: (y === '2026'), reik: !!(reikMap && reikMap[kt] && reikMap[kt].has(y)),
+        inv: !!(invMap && invMap[coId] && invMap[coId][y]) };
     });
     return out;
   }
@@ -423,4 +462,5 @@
   setTimeout(loadReik, 900);   // load reikningur-status once, then re-render cells with 🧾
   setTimeout(loadLoc, 600);    // load location-precise reports once, then re-render cells
   setTimeout(loadFc, 750);     // load fact-check (blár/grænn) once, then re-render cells
+  setTimeout(loadInv, 800);    // load v_uttekt_ar (úttekt-með-reikningi = blátt ár)
 })();

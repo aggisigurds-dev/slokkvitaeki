@@ -188,6 +188,13 @@
     const tolurP = SB.from('v_thjonustu_tolur').select('*').single()
       .then(r => (r && r.data) || null)
       .catch(() => null);
+    // 2026-08-14: besti þekkti skoðunarmánuðurinn úr v_skodunar_manudur —
+    // sameinar skýrslu- OG reikninga-mánuði (44 staðir eiga mánuð sem kemur
+    // AÐEINS úr úttektar-reikningi, t.d. Norðurbrú 1 → maí). Fyllir aðeins í
+    // eyðu, á undan next_insp-ágiskuninni.
+    const skManP = SB.from('v_skodunar_manudur').select('fyrirtaeki_id,inspect_month,heimild').limit(3000)
+      .then(r => (r && r.data) || [])
+      .catch(() => []);
     // 2026-07-17 (❓ Óvíst triage): skýrslu-ÁR hvers félags úr customer_documents
     // (Drive-hryggnum) — knýr sönnunar-merkin á Óvíst-flipanum. Síðuskipt (töflurnar
     // eru komnar yfir 1000-raða klippingu Supabase) og fail-safe (tómt map á villu).
@@ -238,6 +245,7 @@
     const docYears = await docYearsP;
     _cache.docYears = docYears;
     _cache.tolur = await tolurP;
+    const skManById = Object.fromEntries((await skManP).map(r => [String(r.fyrirtaeki_id), r]));
 
     // 2026-05-19: Only include companies that are ACTUALLY in service
     // (subscribed to ársskoðun, subscribed to brunakerfi, OR — new — they have
@@ -343,6 +351,17 @@
             _ars._month_from_report = true;
           }
           if (fact.report_year) _ars._report_year = fact.report_year;
+        }
+        // 2026-08-14: mánuður úr v_skodunar_manudur — viewið sameinar skýrslu-
+        // og reikninga-mánuði (heimild 'skyrsla'/'reikningur'). Fyllir aðeins í
+        // eyðu: manual > blob > fact > VIEW > next_insp-ágiskun.
+        if (!_ars.inspect_month) {
+          const sm = skManById[String(c.id)];
+          if (sm && +sm.inspect_month >= 1 && +sm.inspect_month <= 12) {
+            _ars.inspect_month = +sm.inspect_month;
+            if (sm.heimild === 'skyrsla') _ars._month_from_report = true;
+            else _ars._month_from_reikningur = true;
+          }
         }
         // 2026-08-10 (ósk Agnars, "Staða eftir ári" boxið á fyrirtækjasíðunni):
         // þegar HVORUGT blob né skýrsla gefa mánuð, notum elstu (næstu)
