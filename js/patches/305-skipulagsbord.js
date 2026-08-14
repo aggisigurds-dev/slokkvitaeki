@@ -130,6 +130,14 @@
     document.head.appendChild(s);
   }
 
+  // Spjald → snöggskoðunar-spec: beiðnin EF hún er til, annars nafnamatch —
+  // og spjaldstextinn (title+name) fylgir ALLTAF, hann er oft eina heimildin.
+  function cardSpec(c) {
+    const spec = { card_title: c.title || '', card_name: c.name || '' };
+    if (c.verkbord_id != null) spec.beidni_id = c.verkbord_id; else spec.nafn = c.name || '';
+    return spec;
+  }
+
   // ── Live row lookup ────────────────────────────────────────────────────────
   function liveRow(card) {
     try {
@@ -165,12 +173,10 @@
               'padding:0 2px;line-height:1;flex:none;opacity:0;transition:opacity .1s;margin-left:auto">🏢</button>'
         : '') +
       // 👁 Snöggskoðun (Pakki 5 v2) — sama hljóðláta mynstur og 🏢 hér að ofan.
-      // Spjöld af dagskrá bera ekkert verkbord_id → skoðunin finnur á nafni.
+      // Ber spjald-ID: skoðunin fær ALLT spjaldið (title+name eru oft eina
+      // heimildin — „Um 16 tæki" stendur í spjaldstitli, ekki í málinu).
       ((card.verkbord_id != null || card.name)
-        ? '<button class="sb-eye-btn" ' +
-            (card.verkbord_id != null
-              ? 'data-sb-eye="' + esc(card.verkbord_id) + '" '
-              : 'data-sb-eye-name="' + esc(card.name) + '" ') +
+        ? '<button class="sb-eye-btn" data-sb-eye="' + esc(card.id) + '" ' +
             'title="Snöggskoðun — allt sem kerfið veit um málið" ' +
             'style="border:none;background:none;cursor:pointer;font-size:11px;color:#94a3b8;' +
               'padding:0 2px;line-height:1;flex:none;opacity:0;transition:opacity .1s' +
@@ -432,11 +438,12 @@
       if (act === 'goal-minus') { state.goal = Math.max(state.goal - 1, 1);  persist(); return; }
       if (act === 'print-all') {
         // Dagsskammturinn í einum snöggskoðunar-glugga — page-break milli
-        // fyrirtækja við prentun. Spjöld án beiðni-ids (dregin af dagskrá)
-        // fylgja með á nafni — enginn dettur þegjandi úr bunkanum.
+        // fyrirtækja við prentun. Spjöld án beiðni-ids fylgja á nafni og
+        // spjaldstextinn fylgir ALLTAF með — enginn dettur þegjandi úr bunka.
         const specs = state.cards
-          .map(c => c.verkbord_id != null ? { beidni_id: c.verkbord_id } : (c.name ? { nafn: c.name } : null))
-          .filter(Boolean);
+          .filter(c => c.verkbord_id != null || c.name)
+          .sort((a, b) => (a.slot || 0) - (b.slot || 0))
+          .map(cardSpec);
         if (!specs.length) { toast('🖨 Engin spjöld á borðinu'); return; }
         if (window.Snoggskodun) Snoggskodun.open(specs);
         else toast('👁 Snöggskoðunin er ekki hlaðin');
@@ -451,9 +458,9 @@
     if (eyeBtn) {
       e.stopPropagation();
       e.preventDefault();
-      const bid = eyeBtn.getAttribute('data-sb-eye');
-      const nm = eyeBtn.getAttribute('data-sb-eye-name');
-      if (window.Snoggskodun) Snoggskodun.open([bid != null ? { beidni_id: bid } : { nafn: nm || '' }]);
+      const card = state.cards.find(c => String(c.id) === String(eyeBtn.getAttribute('data-sb-eye')));
+      if (!card) return;
+      if (window.Snoggskodun) Snoggskodun.open([cardSpec(card)]);
       else toast('👁 Snöggskoðunin er ekki hlaðin');
       return;
     }

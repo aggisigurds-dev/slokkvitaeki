@@ -108,19 +108,30 @@
     if (ids.length) {
       beidnir = await q('þjónustubeiðnir', sb.from('thjonustubeidni').select('*').in('id', ids));
       beidnir.sort((a, b) => ids.indexOf(String(a.id)) - ids.indexOf(String(b.id)));
-      beidnir.forEach(b => jobs.push({ beidni: b, baseId: b.customer_base_id || null }));
+      beidnir.forEach(b => {
+        const spec = jobsSpec.find(s => String(s.beidni_id) === String(b.id)) || {};
+        jobs.push({ beidni: b, baseId: b.customer_base_id || null, cardTitle: spec.card_title || '', cardName: spec.card_name || '' });
+      });
     }
-    jobsSpec.filter(j => j.beidni_id == null && j.nafn).forEach(j => jobs.push({ nameOnly: j.nafn }));
+    jobsSpec.filter(j => j.beidni_id == null && j.nafn).forEach(j =>
+      jobs.push({ nameOnly: j.nafn, cardTitle: j.card_title || '', cardName: j.card_name || '' }));
 
     // Nafnamatch fyrir beiðnir án base + nafn-spjöld (ILIKE, eitt í einu — fá).
+    // Verður að þola tvö lík nöfn (Kjarrhólmi 14 OG 18 bæði á borðinu):
+    // nákvæm samsvörun (fold) vinnur ALLTAF óháð röð niðurstaðna; margar
+    // niðurstöður án nákvæmrar samsvörunar → EKKI giskað (notFound).
+    const pickByName = (list, name) => {
+      const ex = (list || []).find(x => fold(x.nafn) === fold(name));
+      return ex || ((list || []).length === 1 ? list[0] : null);
+    };
     for (const j of jobs) {
       const name = j.nameOnly || (j.beidni && !j.baseId ? (j.beidni.customer_nafn || '').trim() : '');
       if (!name || j.baseId) continue;
       const like = '%' + name.replace(/[%_,]/g, ' ').trim() + '%';
-      const fy = await q('nafnaleit', sb.from('fyrirtaeki').select('id,nafn,customer_base_id').is('deleted_at', null).ilike('nafn', like).limit(3));
-      if (fy.length === 1 || (fy.length > 1 && fold(fy[0].nafn) === fold(name))) { j.fyrId = fy[0].id; j.baseId = fy[0].customer_base_id || null; continue; }
-      const cb = await q('nafnaleit (base)', sb.from('customers_base').select('id,nafn').ilike('nafn', like).limit(3));
-      if (cb.length === 1 || (cb.length > 1 && fold(cb[0].nafn) === fold(name))) { j.baseId = cb[0].id; continue; }
+      const fy = pickByName(await q('nafnaleit', sb.from('fyrirtaeki').select('id,nafn,customer_base_id').is('deleted_at', null).ilike('nafn', like).limit(5)), name);
+      if (fy) { j.fyrId = fy.id; j.baseId = fy.customer_base_id || null; continue; }
+      const cb = pickByName(await q('nafnaleit (base)', sb.from('customers_base').select('id,nafn').ilike('nafn', like).limit(5)), name);
+      if (cb) { j.baseId = cb.id; continue; }
       j.notFound = true;
     }
     const directFyrIds = jobs.filter(j => j.fyrId).map(j => j.fyrId);
@@ -181,17 +192,28 @@
   function sheet(j, D) {
     const b = j.beidni || null;
     const caseText = b ? [b.title, b.notes, b.summary].filter(Boolean).join('\n') : '';
+    // Spjaldið sjálft er heimild: 9 af 11 spjöldum bera töluna/símann/götuna
+    // í EIGIN titli („Um 16 tæki") — hann leitast eins og málstextinn en
+    // merkist „úr spjaldinu" til aðgreiningar.
+    const cardText = [j.cardTitle, j.cardName].filter(Boolean).join('\n');
+    const cardTitleBlock = j.cardTitle
+      ? '<div class="qv-note" style="border-color:#e0a93e">📋 ' + esc(j.cardTitle) + ' <span class="qv-badge">af spjaldinu</span></div>'
+      : '';
 
     if (j.notFound) {
+      const phAll = [...new Set([...phonesFromText(caseText).map(p => [p, 'úr málinu']), ...phonesFromText(cardText).map(p => [p, 'úr spjaldinu'])].map(x => x.join('|')))].map(s => s.split('|'));
       return '<div class="qv-sheet"><div class="qv-big-missing">EKKI TIL Í KERFINU — þarf að stofna</div>' +
-        '<h1>' + esc((b && b.customer_nafn) || j.nameOnly || '?') + '</h1>' +
-        (b ? '<h2>Allt sem stendur í málinu</h2>' + kv([
-          ['Titill', esc(b.title)], ['Barst', dt(b.created_at)], ['Staða', esc(b.status)],
-          ['Flokkur', esc(b.flokkur || '')],
-          ['Nótur', b.notes ? '<div class="qv-note">' + esc(b.notes) + '</div>' : ''],
-          ['Símanúmer í máli', phonesFromText(caseText).map(p => '<a href="tel:' + p + '">' + p.slice(0, 3) + '-' + p.slice(3) + '</a>').join(' · ')],
-          ['Staðsetning í máli', esc(addrFromText(caseText))],
-        ]) : '<p>Ekkert fannst með þessu nafni.</p>') + '</div>';
+        '<h1>' + esc((b && b.customer_nafn) || j.cardName || j.nameOnly || '?') + '</h1>' +
+        cardTitleBlock +
+        '<h2>Allt sem stendur í málinu' + (j.cardTitle ? ' og á spjaldinu' : '') + '</h2>' + kv([
+          ['Titill', esc((b && b.title) || '')],
+          ['Barst', b ? dt(b.created_at) : ''],
+          ['Staða', esc((b && b.status) || '')],
+          ['Nótur', b && b.notes ? '<div class="qv-note">' + esc(b.notes) + '</div>' : ''],
+          ['Símanúmer', phAll.map(p => '<a href="tel:' + p[0] + '">' + p[0].slice(0, 3) + '-' + p[0].slice(3) + '</a> <span class="qv-badge">' + p[1] + '</span>').join(' · ')],
+          ['Staðsetning', esc(addrFromText(caseText) || addrFromText(cardText))],
+          ['Tækjavísbending', esc(taekiFromText(caseText) || taekiFromText(cardText))],
+        ]) + '</div>';
     }
 
     const f = j.focus, base = j.base;
@@ -216,6 +238,7 @@
     let addr = (f && [f.heimilisfang, f.postnumer].filter(Boolean).join(', ')) || (base && base.heimilisfang) || '';
     let addrSrc = '';
     if (!addr) { const t = addrFromText(caseText); if (t) { addr = t; addrSrc = ' <span class="qv-warn">(úr málinu, ekki skráð)</span>'; } }
+    if (!addr) { const t = addrFromText(cardText); if (t) { addr = t; addrSrc = ' <span class="qv-warn">(úr spjaldinu, ekki skráð)</span>'; } }
     h += '<h2>📍 Staðsetning</h2><div style="font-size:14px;font-weight:700">' + (addr ? esc(addr) + addrSrc : dash + ' <span class="qv-warn">— engin staðsetning finnanleg</span>') + '</div>';
 
     // 📞 Hringja fyrst? — öll númer með uppruna, tel:-hlekkir.
@@ -227,7 +250,8 @@
     const ci = D.cinfo.find(c => (c.kennitala && myKts(c.kennitala)) || (c.customer_name && fold(c.customer_name) === fold(nafn)));
     if (ci) push('customer_info', ci.contact_phone);
     phonesFromText(caseText).forEach(p => push('úr málinu', p));
-    const hringjaFlag = /hring|b[óo]ka\s*t[íi]ma/i.test(caseText);
+    phonesFromText(cardText).forEach(p => push('úr spjaldinu', p));
+    const hringjaFlag = /hring|b[óo]ka\s*t[íi]ma/i.test(caseText + '\n' + cardText);
     h += '<h2>📞 Hringja fyrst?</h2>' +
       (hringjaFlag ? '<div style="display:inline-block;background:#dc2626;color:#fff;font-weight:800;padding:3px 12px;border-radius:8px;margin-bottom:5px">📞 HRINGJA FYRST</div>' : '') +
       (phones.length
@@ -242,6 +266,7 @@
     const rep = D.repFacts.filter(r => focusIds.includes(r.fyrirtaeki_id))[0];
     const inv = D.invFacts.filter(r => focusIds.includes(r.fyrirtaeki_id))[0];
     const txtT = taekiFromText(caseText);
+    const txtC = taekiFromText(cardText);
     let taeki;
     if (myUtt.length) {
       const byType = {};
@@ -254,6 +279,8 @@
       taeki = '<div style="font-size:15px;font-weight:800">' + inv.total_devices + ' tæki <span class="qv-badge">úr reikningi ' + dt(inv.invoice_date) + '</span></div>';
     } else if (txtT) {
       taeki = '<div style="font-size:15px;font-weight:800">„' + esc(txtT) + '" <span class="qv-badge">úr málinu</span></div>';
+    } else if (txtC) {
+      taeki = '<div style="font-size:15px;font-weight:800">„' + esc(txtC) + '" <span class="qv-badge">úr spjaldinu</span></div>';
     } else {
       taeki = '<div class="qv-warn" style="font-size:14px">ÓÞEKKT — engin vísbending um tækjafjölda.</div>';
     }
@@ -261,7 +288,7 @@
 
     // 📄 Samningur
     const mySamn = D.samningar.filter(s => myFyrIds.has(s.company_id) || (s.kennitala && myKts(s.kennitala)) || (s.company_nafn && fold(s.company_nafn) === fold(nafn)));
-    const samnNefndur = /samning|skrifa[ðd]\s*undir/i.test(caseText);
+    const samnNefndur = /samning|samn\b|skrifa[ðd]\s*undir/i.test(caseText + '\n' + cardText);
     h += '<h2>📄 Samningur</h2>' + (mySamn.length
       ? mySamn.map(s => kv([
           ['Þjónusta', esc(s.thjonusta || '')],
@@ -272,14 +299,16 @@
           ['Staða', esc(s.status || '')],
         ])).join('')
       : (samnNefndur
-          ? '<div class="qv-warn">Samningur nefndur í máli en ekki skráður:</div><div class="qv-note">' +
-            esc((caseText.match(/[^\n]*samning[^\n]*|[^\n]*[Ss]krifa[ðd] undir[^\n]*/) || [''])[0]) + '</div>'
+          ? '<div class="qv-warn">Samningur nefndur í máli/spjaldi en ekki skráður:</div><div class="qv-note">' +
+            esc(((caseText + '\n' + cardText).match(/[^\n]*(?:samning|[Ss]amn\b|[Ss]krifa[ðd] undir)[^\n]*/) || [''])[0]) + '</div>'
           : dash));
 
     // 💬 Öll samskipti — nótur ORÐRÉTT + öll önnur mál + póst-tengiliðir.
     const prev = D.prevAll.filter(x => x.customer_base_id === j.baseId && (!b || x.id !== b.id));
     const myContacts = D.contacts.filter(c => c.kennitala && myKts(c.kennitala));
     h += '<h2>💬 Öll samskipti</h2>' +
+      // Spjaldstitillinn ORÐRÉTTUR efst — handskrifuð athugasemd sem má ekki týnast.
+      cardTitleBlock +
       (b && b.notes ? '<div class="qv-note">' + esc(b.notes) + '</div>' : '') +
       (b && b.summary ? '<div class="qv-note" style="border-color:#93c5fd">✨ ' + esc(b.summary) + '</div>' : '') +
       (prev.length
@@ -318,7 +347,10 @@
     if (b) bits.push((b.title || 'Mál').replace(/\.$/, '') + ' (' + ageDays + (ageDays === 1 ? ' dags' : ' daga') + ' gamalt)');
     if (mySamn.length) bits.push('samningur skráður');
     else if (samnNefndur) bits.push('samningur nefndur í máli en EKKI skráður');
-    if (!myUtt.length && !(rep && rep.total_devices) && !(inv && inv.total_devices)) bits.push(txtT ? 'tækjafjöldi aðeins úr texta („' + txtT + '")' : 'engin tæki skráð og engin vísbending');
+    if (!myUtt.length && !(rep && rep.total_devices) && !(inv && inv.total_devices)) {
+      const tx = txtT || txtC;
+      bits.push(tx ? 'tækjafjöldi aðeins úr ' + (txtT ? 'máli' : 'spjaldi') + ' („' + tx + '")' : 'engin tæki skráð og engin vísbending');
+    }
     if (!phones.length) bits.push('ekkert símanúmer — þarf að finna tengilið áður en farið er');
     else if (hringjaFlag) bits.push('á að hringja fyrst (' + phones[0][1].slice(0, 3) + '-' + phones[0][1].slice(3) + ')');
     if (!addr) bits.push('engin staðsetning');
