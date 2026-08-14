@@ -49,18 +49,29 @@ exports.handler = async () => {
       eftirlit = await er.json().catch(() => null);
       if (eftirlit) {
         const issues = [];
-        const arr = (k) => Array.isArray(eftirlit[k]) ? eftirlit[k] : [];
-        if (arr('doc_nr_a_fleiri_felog').length) issues.push('🔴 Reikningsnúmer á FLEIRI en eitt félag (rangt-PDF hætta): ' + arr('doc_nr_a_fleiri_felog').map(x => x.invoice_number + ' (' + x.felog + ' félög)').join(', '));
-        if (arr('tvinotud_num').length) issues.push('🔴 Tvínotuð sölunúmer: ' + arr('tvinotud_num').map(x => x.num).join(', '));
-        if (arr('rukkad_ekki_final').length) issues.push('🟡 Rukkað en ekki final: ' + arr('rukkad_ekki_final').map(x => x.num + ' (' + x.status + ')').join(', '));
-        if (arr('void_greitt').length) issues.push('🔴 Void-sala fékk greiðslu: ' + arr('void_greitt').map(x => x.num).join(', '));
-        if (arr('byte_eins_tvitok').length) issues.push('🟡 Byte-eins tvítök enn virk: ' + arr('byte_eins_tvitok').map(x => x.num_a + '/' + x.num_b + ' ' + x.customer_nafn).join(', '));
+        // 2026-08-14 (Agnar — „talan á aldrei að vera lægri en veruleikinn"):
+        // gátlistarnir bera nú { alls, daemi } — pósturinn segir HEILDARTÖLUNA
+        // og merkir „(sýni N)" þegar dæmin ná ekki yfir allt. Gamla hreina
+        // fylkja-formið er stutt áfram til öryggis.
+        const lst = (k) => {
+          const v = eftirlit[k];
+          if (v && Array.isArray(v.daemi)) return { alls: Number(v.alls) || v.daemi.length, daemi: v.daemi };
+          if (Array.isArray(v)) return { alls: v.length, daemi: v };
+          return { alls: 0, daemi: [] };
+        };
+        const tala = (l) => l.alls + (l.alls > l.daemi.length ? ' (sýni ' + l.daemi.length + ')' : '');
+        const push = (l, merki, heiti, fmt) => { if (l.alls > 0) issues.push(merki + ' ' + heiti + ': ' + tala(l) + ' — ' + l.daemi.map(fmt).join(', ')); };
+        push(lst('doc_nr_a_fleiri_felog'), '🔴', 'Reikningsnúmer á FLEIRI en eitt félag (rangt-PDF hætta)', x => x.invoice_number + ' (' + x.felog + ' félög)');
+        push(lst('tvinotud_num'), '🔴', 'Tvínotuð sölunúmer', x => x.num);
+        push(lst('rukkad_ekki_final'), '🟡', 'Rukkað en ekki final', x => x.num + ' (' + x.status + ')');
+        push(lst('void_greitt'), '🔴', 'Void-sala fékk greiðslu', x => x.num);
+        push(lst('byte_eins_tvitok'), '🟡', 'Byte-eins tvítök enn virk', x => x.num_a + '/' + x.num_b + ' ' + x.customer_nafn);
         if (Number(eftirlit.rukkad_an_kt) > 0) issues.push('🟡 Rukkað án customer_base_id: ' + eftirlit.rukkad_an_kt + ' sölur');
-        if (arr('rukkad_an_netfangs').length) issues.push('🟡 Rukkað á félag án netfangs: ' + arr('rukkad_an_netfangs').map(x => x.num).join(', '));
+        push(lst('rukkad_an_netfangs'), '🟡', 'Rukkað á félag án netfangs', x => x.num);
         if (Number(eftirlit.felog_an_afhendingar) > 0) issues.push('⚪ Félög í þjónustu án payday_delivery: ' + eftirlit.felog_an_afhendingar);
         // Verkstæðis-vöktunin (14.08): óútkljáð „greitt síðar" + sótt án final sölu.
-        if (arr('greitt_sidar_gamalt').length) issues.push('🟡 „Greitt síðar" eldra en 14 daga (óútkljáð uppgjör): ' + arr('greitt_sidar_gamalt').map(x => x.num + ' ' + (x.customer_nafn || '') + ' (' + x.dagar + 'd)').join(', '));
-        if (arr('sott_ekki_final').length) issues.push('🔴 Sótt verk með sölu sem er EKKI final: ' + arr('sott_ekki_final').map(x => x.verk + ' → ' + x.sala + ' (' + x.status + ')').join(', '));
+        push(lst('greitt_sidar_gamalt'), '🟡', '„Greitt síðar" eldra en 14 daga (óútkljáð uppgjör)', x => x.num + ' ' + (x.customer_nafn || '') + ' (' + x.dagar + 'd)');
+        push(lst('sott_ekki_final'), '🔴', 'Sótt verk með sölu sem er EKKI final', x => x.verk + ' → ' + x.sala + ' (' + x.status + ')');
         if (issues.length) {
           console.warn('[payday-sync-cron] eftirlit frávik:', issues.length);
           try {
