@@ -1310,7 +1310,7 @@
             const d = TAGS[t], on = state.fTags.indexOf(t) !== -1, n = tc[t] || 0;
             // Merki sem enginn ber er falið — nema það sé valið, eða splunkunýtt
             // og enn ónotað (annars væri ekki hægt að byrja að nota það).
-            if (!n && !on && t !== 'senda_skyrslur') return '';
+            if (!n && !on && t !== 'senda_skyrslur' && t !== 'uppsetning') return '';
             return '<button data-act="tagfilter" data-tag="' + t + '" title="Sía eftir merkinu ' + esc(d.label) + ' — fleiri mega vera valin í einu" ' +
               'style="font-family:inherit;font-size:12px;font-weight:600;padding:5px 11px;border-radius:8px;' + FILTER_METAL + ';color:' + (TAG_DK[t] || '#c3ccd8') + ';cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px;' +
               (on ? FILTER_ON : 'opacity:1') + '">' +
