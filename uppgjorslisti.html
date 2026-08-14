@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Uppgjörslisti — Slökkvitæki ehf.</title>
+<style>
+:root{
+  --bg:#f4f5f7; --kort:#ffffff; --texti:#16181d; --dauft:#6b7280; --lina:#e3e6eb;
+  --r1:#dc2626; --r2:#ea580c; --r3:#ca8a04; --r4:#2563eb; --r5:#6b7280;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--texti);
+  font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.umgjord{max-width:820px;margin:0 auto;padding:16px 14px 64px}
+header.toppur{padding:8px 0 4px}
+h1{font-size:26px;line-height:1.2;margin:0 0 4px}
+.undirtitill{color:var(--dauft);margin:0 0 18px;font-size:14px}
+.yfirlit{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:0 0 12px}
+.yfirlitskort{display:flex;flex-direction:column;gap:2px;background:var(--kort);border:1px solid var(--lina);
+  border-left:6px solid var(--r5);border-radius:12px;padding:12px 14px;text-decoration:none;color:inherit;min-height:86px}
+.yfirlitskort.g1{border-left-color:var(--r1)} .yfirlitskort.g2{border-left-color:var(--r2)}
+.yfirlitskort.g3{border-left-color:var(--r3)} .yfirlitskort.g4{border-left-color:var(--r4)}
+.yfirlitskort.g5{border-left-color:var(--r5)}
+.yh{font-size:13px;color:var(--dauft);line-height:1.3}
+.yn{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.yk{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px}
+.heildarkort{background:#16181d;color:#fff;border-color:#16181d;border-left-color:#16181d;
+  display:flex;justify-content:space-between;align-items:center;flex-direction:row;gap:12px;margin-bottom:26px;
+  border-radius:12px;padding:14px 16px;border:1px solid #16181d}
+.heildarkort .yh{color:#c9ccd3;font-size:14px}
+.heildarkort .yk{font-size:22px;font-weight:700}
+.hluti{margin:0 0 34px}
+.hlutihaus{border-top:3px solid var(--r5);padding-top:12px;margin-bottom:14px}
+.hluti.g1 .hlutihaus{border-top-color:var(--r1)} .hluti.g2 .hlutihaus{border-top-color:var(--r2)}
+.hluti.g3 .hlutihaus{border-top-color:var(--r3)} .hluti.g4 .hlutihaus{border-top-color:var(--r4)}
+.hluti.g5 .hlutihaus{border-top-color:var(--r5)}
+h2{font-size:19px;margin:0 0 6px;letter-spacing:.2px}
+.kula{margin-right:4px}
+.inngangur{margin:0 0 6px;color:var(--dauft);font-size:14px}
+.tolur{margin:0;font-size:14px}
+.kort{background:var(--kort);border:1px solid var(--lina);border-left:6px solid var(--r5);
+  border-radius:14px;padding:14px 16px 12px;margin:0 0 12px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.kort.g1{border-left-color:var(--r1)} .kort.g2{border-left-color:var(--r2)}
+.kort.g3{border-left-color:var(--r3)} .kort.g4{border-left-color:var(--r4)}
+.kort.g5{border-left-color:var(--r5)}
+.haus{margin-bottom:10px}
+.nr{font-size:22px;font-weight:700;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;letter-spacing:-.5px}
+.nafn{font-size:19px;font-weight:600;line-height:1.25;word-break:break-word}
+.simi{display:block;text-align:center;font-size:22px;font-weight:700;letter-spacing:.5px;
+  background:#eef2ff;color:#1d4ed8;border:1px solid #c7d2fe;border-radius:10px;
+  padding:14px 12px;margin:0 0 12px;text-decoration:none;min-height:52px}
+.simi.ekkert{background:#fef2f2;border-color:#fecaca;color:var(--r1);font-size:18px}
+.reitir{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:0 0 12px}
+.reitur{border-top:1px solid var(--lina);padding-top:6px;min-width:0}
+.reitur.breidur{grid-column:1/-1}
+dt{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--dauft);margin-bottom:2px}
+dd{margin:0;font-size:15px;word-break:break-word}
+dd.haegri{text-align:right}
+.kr{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-weight:600;white-space:nowrap}
+.tom{color:#9aa1ab}
+.smatt{font-size:12px;color:var(--dauft)}
+.chip{display:inline-block;font-size:12px;padding:2px 8px;border-radius:999px;border:1px solid var(--lina);
+  background:#f3f4f6;color:#374151;white-space:nowrap;vertical-align:middle}
+.chip-drog{background:#fef9c3;border-color:#fde68a;color:#854d0e}
+.chip-final{background:#dcfce7;border-color:#bbf7d0;color:#166534}
+.chip-void{background:#fee2e2;border-color:#fecaca;color:#991b1b}
+.chip-anon{background:#f3e8ff;border-color:#e9d5ff;color:#6b21a8}
+.adgerd{border-top:1px dashed var(--lina);padding-top:10px;font-size:15px;font-weight:600}
+.merki{display:inline-block;font-size:11px;text-transform:uppercase;letter-spacing:.8px;
+  background:#16181d;color:#fff;border-radius:4px;padding:2px 6px;margin-right:6px;vertical-align:1px;font-weight:700}
+.tomurhluti{color:var(--dauft)}
+footer{color:var(--dauft);font-size:13px;border-top:1px solid var(--lina);padding-top:12px}
+@media (max-width:420px){ .reitir{grid-template-columns:1fr} .nr{font-size:20px} }
+@media print{
+  @page{size:A4;margin:12mm}
+  html,body{background:#fff;color:#000;font-size:11pt}
+  .umgjord{max-width:none;padding:0}
+  a{color:#000;text-decoration:none}
+  .yfirlitskort,.kort,.heildarkort{box-shadow:none;background:#fff;color:#000;border:1px solid #000;
+    border-left-width:4px;border-radius:0;page-break-inside:avoid;break-inside:avoid}
+  .heildarkort .yh,.heildarkort .yk{color:#000}
+  .simi{background:#fff;border:1px solid #000;color:#000;font-size:14pt}
+  .simi.ekkert{background:#fff;color:#000;border:1px dashed #000}
+  .chip{background:#fff;border:1px solid #000;color:#000}
+  .hluti{page-break-before:auto}
+  .hlutihaus{border-top:2px solid #000;page-break-after:avoid;break-after:avoid}
+  .tom,.smatt,.inngangur,footer{color:#333}
+  .merki{background:#000;color:#fff}
+}
+</style>
+</head>
+<body>
+<div class="umgjord">
+  <header class="toppur">
+    <h1>Uppgjörslisti — opin mál</h1>
+    <p class="undirtitill">Slökkvitæki ehf. · verkstæði og sala · útbúið 14. ágúst 2026 · 97 mál alls</p>
+    <div class="yfirlit">
+      <a class="yfirlitskort g1" href="#hopur-1"><span class="yh">🔴 Á hillunni</span><span class="yn">16</span><span class="yk">149.754 kr</span></a>
+      <a class="yfirlitskort g2" href="#hopur-2"><span class="yh">🟠 Sótt – sala ókláruð</span><span class="yn">11</span><span class="yk">70.506 kr</span></a>
+      <a class="yfirlitskort g3" href="#hopur-3a"><span class="yh">🟡 Engin sala (R-)</span><span class="yn">12</span><span class="yk">0 kr</span></a>
+      <a class="yfirlitskort g3" href="#hopur-3b"><span class="yh">🟡 Engin sala (#)</span><span class="yn">19</span><span class="yk">0 kr</span></a>
+      <a class="yfirlitskort g4" href="#hopur-4"><span class="yh">🔵 Kortasala ógreidd</span><span class="yn">20</span><span class="yk">181.488 kr</span></a>
+      <a class="yfirlitskort g5" href="#hopur-5"><span class="yh">⚪ Greitt síðar</span><span class="yn">19</span><span class="yk">183.072 kr</span></a>
+    </div>
+    <div class="heildarkort"><span class="yh">Heildarupphæð allra hópa</span><span class="yk">584.820 kr</span></div>
+  </header>
+
+  <section class="hluti g1" id="hopur-1">
+    <header class="hlutihaus">
+      <h2><span class="kula">🔴</span> Á HILLUNNI — sala í drögum</h2>
+      <p class="inngangur">Verkbeiðni er tilbúin (<em>ready</em>) og salan liggur enn í drögum, ógreidd. Tækið er inni hjá okkur.</p>
+      <p class="tolur"><strong>16 mál</strong> · <span class="kr">149.754 kr</span></p>
+    </header>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000236</div><div class="nafn">WILD ICELAND ehf.</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>700524-2640</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.410 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>73 dagar <span class="smatt">· 2. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000236 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000273</div><div class="nafn">Elli</div></div>
+      <a class="simi" href="tel:+3547715555">📞 771 5555</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">0 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>66 dagar <span class="smatt">· 9. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000273 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000421</div><div class="nafn">Grétar</div></div>
+      <a class="simi" href="tel:+3548439132">📞 843 9132</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.410 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>50 dagar <span class="smatt">· 25. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000421 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000433</div><div class="nafn">Antonio</div></div>
+      <a class="simi" href="tel:+3548576593">📞 857 6593</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">5.890 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>49 dagar <span class="smatt">· 26. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000433 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000485</div><div class="nafn">Arni 3</div></div>
+      <a class="simi" href="tel:+3548240412">📞 824 0412</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">10.540 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>43 dagar <span class="smatt">· 2. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000485 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000490</div><div class="nafn">Bílaverkstæði Íslands ehf.</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>491115-0760</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">16.740 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>39 dagar <span class="smatt">· 6. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000490 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000494</div><div class="nafn">Andrea</div></div>
+      <a class="simi" href="tel:+3547736607">📞 773 6607</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">12.400 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>39 dagar <span class="smatt">· 6. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000494 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000533</div><div class="nafn">Sendó sendibílar ehf.</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>480517-0320</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">33.640 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>32 dagar <span class="smatt">· 13. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>4</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000533 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000565</div><div class="nafn">Haldor</div></div>
+      <a class="simi" href="tel:+3548930090">📞 893 0090</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.410 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>29 dagar <span class="smatt">· 16. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000565 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000624</div><div class="nafn">ivar</div></div>
+      <a class="simi" href="tel:+3547727005">📞 772 7005</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">5.332 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>21 dagar <span class="smatt">· 24. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000624 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000695</div><div class="nafn">Björn</div></div>
+      <a class="simi" href="tel:+3548650785">📞 865 0785</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.410 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>10 dagar <span class="smatt">· 4. ágúst 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000695 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000699</div><div class="nafn">beghamar</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">4.055 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>9 dagar <span class="smatt">· 5. ágúst 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000699 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000715</div><div class="nafn">Rafael</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">5.200 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>7 dagar <span class="smatt">· 7. ágúst 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000715 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000724</div><div class="nafn">Guðjón</div></div>
+      <a class="simi" href="tel:+3548622482">📞 862 2482</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">10.912 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>4 dagar <span class="smatt">· 10. ágúst 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000724 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000726</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">186 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>4 dagar <span class="smatt">· 10. ágúst 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000726 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+    <article class="kort g1">
+      <div class="haus"><div class="nr">R-000732</div><div class="nafn">Dentia Tannsmiðja ehf.</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>580913-0750</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">11.219 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>3 dagar <span class="smatt">· 11. ágúst 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000732 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja — tækið bíður og er ógreitt</div>
+    </article>
+  </section>
+
+  <section class="hluti g2" id="hopur-2">
+    <header class="hlutihaus">
+      <h2><span class="kula">🟠</span> SÓTT — sala aldrei kláruð</h2>
+      <p class="inngangur">Tækið er sótt (<em>collected</em>) en salan er í drögum eða bakfærð og ógreidd.</p>
+      <p class="tolur"><strong>11 mál</strong> · <span class="kr">70.506 kr</span></p>
+    </header>
+    <article class="kort g2">
+      <div class="haus"><div class="nr">R-000599</div><div class="nafn">Hjortur</div></div>
+      <a class="simi" href="tel:+3548221677">📞 822 1677</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>420993-2269</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.680 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>77 dagar <span class="smatt">· 29. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000599 <span class="chip chip-drog">drög</span> <span class="smatt">(2 sölur á númerinu)</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Senda reikning eða bakfæra — tækið er farið</div>
+    </article>
+    <article class="kort g2">
+      <div class="haus"><div class="nr">R-000600</div><div class="nafn">Gudnar</div></div>
+      <a class="simi" href="tel:+3548606912">📞 860 6912</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>420993-2269</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">3.906 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>77 dagar <span class="smatt">· 29. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000600 <span class="chip chip-drog">drög</span> <span class="smatt">(2 sölur á númerinu)</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Senda reikning eða bakfæra — tækið er farið</div>
+    </article>
+    <article class="kort g2">
+      <div class="haus"><div class="nr">R-000224</div><div class="nafn"><span class="tom">—</span></div></div>
+      <a class="simi" href="tel:+3547772481">📞 777 2481</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">0 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>74 dagar <span class="smatt">· 1. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000224 <span class="chip chip-void">bakfærð</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Senda reikning eða bakfæra — tækið er farið</div>
+    </article>
+    <article class="kort g2">
+      <div class="haus"><div class="nr">R-000230</div><div class="nafn">hjallabraut 41</div></div>
+      <a class="simi" href="tel:+3546247535">📞 624 7535</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>520592-2379</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">5.200 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>73 dagar <span class="smatt">· 2. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000230 <span class="chip chip-drog">drög</span> <span class="smatt">· reikningur</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Senda reikning eða bakfæra — tækið er farið</div>
+    </article>
+    <article class="kort g2">
+      <div class="haus"><div class="nr">R-000239</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.410 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>72 dagar <span class="smatt">· 3. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000239 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Senda reikning eða bakfæra — tækið er farið</div>
+    </article>
+    <article class="kort g2">
+      <div class="haus"><div class="nr">R-000248</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">4.960 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>71 dagar <span class="smatt">· 4. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000248 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Senda reikning eða bakfæra — tækið er farið</div>
+    </article>
+    <article class="kort g2">
+      <div class="haus"><div class="nr">R-000253</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">18.810 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>71 dagar <span class="smatt">· 4. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>3</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000253 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Senda reikning eða bakfæra — tækið er farið</div>
+    </article>
+    <article class="kort g2">
+      <div class="haus"><div class="nr">R-000338</div><div class="nafn">KBK Eignir ehf.</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.410 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>59 dagar <span class="smatt">· 16. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000338 <span class="chip chip-void">bakfærð</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Senda reikning eða bakfæra — tækið er farið</div>
+    </article>
+    <article class="kort g2">
+      <div class="haus"><div class="nr">R-000367</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.410 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>55 dagar <span class="smatt">· 20. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000367 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Senda reikning eða bakfæra — tækið er farið</div>
+    </article>
+    <article class="kort g2">
+      <div class="haus"><div class="nr">R-000368</div><div class="nafn">,jyfkuyf</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">0 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>55 dagar <span class="smatt">· 20. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000368 <span class="chip chip-void">bakfærð</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Senda reikning eða bakfæra — tækið er farið</div>
+    </article>
+    <article class="kort g2">
+      <div class="haus"><div class="nr">R-000527</div><div class="nafn">Jón</div></div>
+      <a class="simi" href="tel:+3548920350">📞 892 0350</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>530169-3759</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">3.720 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>34 dagar <span class="smatt">· 11. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000527 <span class="chip chip-drog">drög</span> <span class="smatt">(2 sölur á númerinu)</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Senda reikning eða bakfæra — tækið er farið</div>
+    </article>
+  </section>
+
+  <section class="hluti g3" id="hopur-3a">
+    <header class="hlutihaus">
+      <h2><span class="kula">🟡</span> SÓTT — engin sala finnst · R-númer</h2>
+      <p class="inngangur">Ætti að vera hægt að tengja við sölu — skoða hvers vegna sala vantar.</p>
+      <p class="tolur"><strong>12 mál</strong> · <span class="kr">0 kr</span></p>
+    </header>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">R-000001</div><div class="nafn">Vidskiptavinur 999999-9999</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="smatt">(úr nafni)</span> <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>103 dagar <span class="smatt">· 3. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>9</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Búa til sölu úr verkliðunum — eða staðfesta að ekkert hafi verið selt</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">R-000002</div><div class="nafn">Vidskiptavinur 150486-2389</div></div>
+      <a class="simi" href="tel:+3546955927">📞 695 5927</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>150486-2389 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>103 dagar <span class="smatt">· 3. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Búa til sölu úr verkliðunum — eða staðfesta að ekkert hafi verið selt</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">R-000004</div><div class="nafn">Vidskiptavinur 640517-0930</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>640517-0930 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>103 dagar <span class="smatt">· 3. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>5</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Búa til sölu úr verkliðunum — eða staðfesta að ekkert hafi verið selt</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">R-000005</div><div class="nafn">Vidskiptavinur 150583-3659</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>150583-3659 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>103 dagar <span class="smatt">· 3. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Búa til sölu úr verkliðunum — eða staðfesta að ekkert hafi verið selt</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">R-000011</div><div class="nafn">Vidskiptavinur 150486-2389</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>150486-2389 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>103 dagar <span class="smatt">· 3. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Búa til sölu úr verkliðunum — eða staðfesta að ekkert hafi verið selt</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">R-000029</div><div class="nafn">Agnar</div></div>
+      <a class="simi" href="tel:+3546955927">📞 695 5927</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd><span class="tom">—</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>103 dagar <span class="smatt">· 3. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>5</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Búa til sölu úr verkliðunum — eða staðfesta að ekkert hafi verið selt</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">R-000030</div><div class="nafn">lullluu</div></div>
+      <a class="simi" href="tel:+3546955927">📞 695 5927</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd><span class="tom">—</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>103 dagar <span class="smatt">· 3. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Búa til sölu úr verkliðunum — eða staðfesta að ekkert hafi verið selt</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">R-000031</div><div class="nafn">joi</div></div>
+      <a class="simi" href="tel:+3546955555">📞 695 5555</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd><span class="tom">—</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>103 dagar <span class="smatt">· 3. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Búa til sölu úr verkliðunum — eða staðfesta að ekkert hafi verið selt</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">R-000032</div><div class="nafn">Vidskiptavinur 999999-9999</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="smatt">(úr nafni)</span> <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>103 dagar <span class="smatt">· 3. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Búa til sölu úr verkliðunum — eða staðfesta að ekkert hafi verið selt</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">R-000021</div><div class="nafn">Agnar sigurðsson</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd><span class="tom">—</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>100 dagar <span class="smatt">· 6. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Búa til sölu úr verkliðunum — eða staðfesta að ekkert hafi verið selt</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">R-000055</div><div class="nafn">0</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd><span class="tom">—</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>95 dagar <span class="smatt">· 11. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>10</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Búa til sölu úr verkliðunum — eða staðfesta að ekkert hafi verið selt</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">R-000087</div><div class="nafn">0</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd><span class="tom">—</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>93 dagar <span class="smatt">· 13. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Búa til sölu úr verkliðunum — eða staðfesta að ekkert hafi verið selt</div>
+    </article>
+  </section>
+
+  <section class="hluti g3" id="hopur-3b">
+    <header class="hlutihaus">
+      <h2><span class="kula">🟡</span> SÓTT — engin sala finnst · gamla #-númerakerfið</h2>
+      <p class="inngangur">Tengist aldrei sölu eftir númeri — þarf handvirkt mat.</p>
+      <p class="tolur"><strong>19 mál</strong> · <span class="kr">0 kr</span></p>
+    </header>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-219</div><div class="nafn">Anni</div></div>
+      <a class="simi" href="tel:+3546955927">📞 +3546955927</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd><span class="tom">—</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>116 dagar <span class="smatt">· 20. apríl 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-243</div><div class="nafn">Agnar Sigurðsson</div></div>
+      <a class="simi" href="tel:+3546955927">📞 695 5927</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd><span class="tom">—</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>115 dagar <span class="smatt">· 21. apríl 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-298</div><div class="nafn">Hlíðablóm</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd><span class="tom">—</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>115 dagar <span class="smatt">· 21. apríl 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-96852</div><div class="nafn">kt: 150486-2389</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>150486-2389 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>113 dagar <span class="smatt">· 23. apríl 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-28324</div><div class="nafn">Vidskiptavinur 150486-2389</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>150486-2389 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>110 dagar <span class="smatt">· 26. apríl 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-84480</div><div class="nafn">Vidskiptavinur 150486-2389</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>150486-2389 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>109 dagar <span class="smatt">· 27. apríl 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-86781</div><div class="nafn">Teitur</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd><span class="tom">—</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>107 dagar <span class="smatt">· 29. apríl 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-95464</div><div class="nafn">Aggi test</div></div>
+      <a class="simi" href="tel:+3546955927">📞 695 5927</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd><span class="tom">—</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>106 dagar <span class="smatt">· 30. apríl 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-18638</div><div class="nafn">Vidskiptavinur 999999-1355</div></div>
+      <a class="simi" href="tel:+3545551234">📞 555 1234</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-1355 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>105 dagar <span class="smatt">· 1. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-25067</div><div class="nafn">kt: 150486-2389</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>150486-2389 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>105 dagar <span class="smatt">· 1. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-40691</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd><span class="tom">—</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>105 dagar <span class="smatt">· 1. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-49431</div><div class="nafn">Vidskiptavinur 150486-2389</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>150486-2389 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>105 dagar <span class="smatt">· 1. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-61609</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd><span class="tom">—</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>105 dagar <span class="smatt">· 1. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-65872</div><div class="nafn">kt: 999999-9999</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="smatt">(úr nafni)</span> <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>105 dagar <span class="smatt">· 1. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-79698</div><div class="nafn">Vidskiptavinur 150486-2389</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>150486-2389 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>105 dagar <span class="smatt">· 1. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-56498</div><div class="nafn">Vidskiptavinur 150486-2389</div></div>
+      <a class="simi" href="tel:+3546955927">📞 695 5927</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>150486-2389 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>104 dagar <span class="smatt">· 2. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-29182</div><div class="nafn">Vidskiptavinur 110989-2889</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>110989-2889 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>103 dagar <span class="smatt">· 3. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-30407</div><div class="nafn">Vidskiptavinur 150486-2389</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>150486-2389 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>103 dagar <span class="smatt">· 3. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+    <article class="kort g3">
+      <div class="haus"><div class="nr">#2026-73270</div><div class="nafn">Vidskiptavinur 150486-2389</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>150486-2389 <span class="smatt">(úr nafni)</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr tom">engin sala</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>103 dagar <span class="smatt">· 3. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd><span class="tom">engin sala</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Meta handvirkt — gamalt númer, tengist ekki sölu sjálfkrafa</div>
+    </article>
+  </section>
+
+  <section class="hluti g4" id="hopur-4">
+    <header class="hlutihaus">
+      <h2><span class="kula">🔵</span> KORTASALA ÁN GREIÐSLU</h2>
+      <p class="inngangur">Sala skráð sem kort eða reiðufé en engin greiðsla skráð. Kortasala á að vera greidd samstundis.</p>
+      <p class="tolur"><strong>20 mál</strong> · <span class="kr">181.488 kr</span></p>
+    </header>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000124</div><div class="nafn">viðskiptavinur</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">7.650 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>88 dagar <span class="smatt">· 18. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd><span class="tom">—</span> <span class="smatt">(engin verkbeiðni)</span></dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000124 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000125</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">7.650 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>88 dagar <span class="smatt">· 18. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd><span class="tom">—</span> <span class="smatt">(engin verkbeiðni)</span></dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000125 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000130</div><div class="nafn">viðskiptavinur</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">5.200 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>88 dagar <span class="smatt">· 18. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd><span class="tom">—</span> <span class="smatt">(engin verkbeiðni)</span></dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000130 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000141</div><div class="nafn">..</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">3.162 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>87 dagar <span class="smatt">· 19. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd><span class="tom">—</span> <span class="smatt">(engin verkbeiðni)</span></dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000141 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000162</div><div class="nafn">Stella</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">13.500 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>86 dagar <span class="smatt">· 20. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd><span class="tom">—</span> <span class="smatt">(engin verkbeiðni)</span></dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000162 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000167</div><div class="nafn">Gosi Trésmiðja ehf.</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>631299-2459</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">12.325 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>85 dagar <span class="smatt">· 21. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd><span class="tom">—</span> <span class="smatt">(engin verkbeiðni)</span></dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000167 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000170</div><div class="nafn">viðskipavinur</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">17.138 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>85 dagar <span class="smatt">· 21. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd><span class="tom">—</span> <span class="smatt">(engin verkbeiðni)</span></dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000170 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000171</div><div class="nafn">Hafsteinn</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>200267-5329</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">14 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>85 dagar <span class="smatt">· 21. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000171 <span class="chip chip-final">frágengin</span> <span class="smatt">· Pening</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000183</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.000 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>80 dagar <span class="smatt">· 26. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000183 <span class="chip chip-final">frágengin</span> <span class="smatt">· Pening</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000184</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.556 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>80 dagar <span class="smatt">· 26. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000184 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000185</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.556 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>80 dagar <span class="smatt">· 26. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000185 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000192</div><div class="nafn">Meistaralagnir ehf</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>620408-0420</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.500 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>79 dagar <span class="smatt">· 27. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd><span class="tom">—</span> <span class="smatt">(engin verkbeiðni)</span></dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000192 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000196</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">4.092 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>78 dagar <span class="smatt">· 28. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000196 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000198</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">4.092 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>78 dagar <span class="smatt">· 28. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000198 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000201</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.556 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>78 dagar <span class="smatt">· 28. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000201 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000202</div><div class="nafn">Svalþúfa ehf.</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">11.662 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>78 dagar <span class="smatt">· 28. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd><span class="tom">—</span> <span class="smatt">(engin verkbeiðni)</span></dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000202 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000210</div><div class="nafn">Staðgreitt</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">21.177 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>77 dagar <span class="smatt">· 29. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000210 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000215</div><div class="nafn">petur</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">5.332 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>77 dagar <span class="smatt">· 29. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd><span class="tom">—</span> <span class="smatt">(engin verkbeiðni)</span></dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000215 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000216</div><div class="nafn">Áróra ehf</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>670404-3740</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">16.966 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>77 dagar <span class="smatt">· 29. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd><span class="tom">—</span> <span class="smatt">(engin verkbeiðni)</span></dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000216 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+    <article class="kort g4">
+      <div class="haus"><div class="nr">R-000218</div><div class="nafn">Go to joy Iceland ehf.</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>681016-0900</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">9.360 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>77 dagar <span class="smatt">· 29. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000218 <span class="chip chip-final">frágengin</span> <span class="smatt">· kort</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Staðfesta hvort kortagreiðslan barst</div>
+    </article>
+  </section>
+
+  <section class="hluti g5" id="hopur-5">
+    <header class="hlutihaus">
+      <h2><span class="kula">⚪</span> GREITT SÍÐAR — drög eldri en 14 daga</h2>
+      <p class="inngangur">Drög með „greitt síðar“ sem eru hvorki á hillunni né tengd sóttu tæki (t.d. lausasala).</p>
+      <p class="tolur"><strong>19 mál</strong> · <span class="kr">183.072 kr</span></p>
+    </header>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000138</div><div class="nafn">Stefán ólafsson</div></div>
+      <a class="simi" href="tel:+3548610560">📞 861 0560</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">28.768 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>87 dagar <span class="smatt">· 19. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000138 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000143</div><div class="nafn">Kristinn már</div></div>
+      <a class="simi" href="tel:+3548993717">📞 899 3717</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">18.950 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>87 dagar <span class="smatt">· 19. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000143 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000213</div><div class="nafn">Zoran</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.500 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>77 dagar <span class="smatt">· 29. maí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd><span class="tom">—</span> <span class="smatt">(engin verkbeiðni)</span></dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000213 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000235</div><div class="nafn">david</div></div>
+      <a class="simi" href="tel:+3548967489">📞 896 7489</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">5.332 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>73 dagar <span class="smatt">· 2. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000235 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000242</div><div class="nafn">OTTO</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">5.200 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>72 dagar <span class="smatt">· 3. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000242 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000332</div><div class="nafn">kt: 611299-3979</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>611299-3979</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">4.680 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>59 dagar <span class="smatt">· 16. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000332 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000337</div><div class="nafn">Travelshift ehf.</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">5.200 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>59 dagar <span class="smatt">· 16. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000337 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000376</div><div class="nafn">Nasir</div></div>
+      <a class="simi" href="tel:+3547670929">📞 767 0929</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">5.200 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>53 dagar <span class="smatt">· 22. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000376 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000388</div><div class="nafn">thor</div></div>
+      <a class="simi" href="tel:+3547742930">📞 774 2930</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">12.400 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>52 dagar <span class="smatt">· 23. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000388 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000405</div><div class="nafn">Sverrir</div></div>
+      <a class="simi" href="tel:+3548943915">📞 894 3915</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">16.120 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>51 dagar <span class="smatt">· 24. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000405 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000426</div><div class="nafn">Konrad</div></div>
+      <a class="simi" href="tel:+3548970851">📞 897 0851</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">9.600 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>49 dagar <span class="smatt">· 26. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000426 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000437</div><div class="nafn">Húsfélagið Hverfisgata 82</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>540694-2069</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.410 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>49 dagar <span class="smatt">· 26. júní 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000437 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000540</div><div class="nafn">Hrafn</div></div>
+      <a class="simi" href="tel:+3548942131">📞 894 2131</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">3.960 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>31 dagar <span class="smatt">· 14. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000540 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000555</div><div class="nafn">Einar</div></div>
+      <a class="simi" href="tel:+3548946586">📞 894 6586</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">8.410 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>30 dagar <span class="smatt">· 15. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000555 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000583</div><div class="nafn">Einar</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">2.790 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>25 dagar <span class="smatt">· 20. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000583 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000586</div><div class="nafn">test</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">1.426 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>25 dagar <span class="smatt">· 20. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000586 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000601</div><div class="nafn">SyNord ehf.</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>520417-2650</dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">10.540 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>23 dagar <span class="smatt">· 22. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>1</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000601 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000602</div><div class="nafn">Einar</div></div>
+      <a class="simi" href="tel:86221210">📞 86221210</a>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">12.586 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>23 dagar <span class="smatt">· 22. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd>2</dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000602 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+    <article class="kort g5">
+      <div class="haus"><div class="nr">R-000650</div><div class="nafn">Gasman</div></div>
+      <div class="simi ekkert">ekkert símanúmer</div>
+      <dl class="reitir">
+        <div class="reitur"><dt>Kennitala</dt><dd>999999-9999 <span class="chip chip-anon">nafnlaus — engin krafa möguleg</span></dd></div>
+        <div class="reitur"><dt>Upphæð</dt><dd class="haegri"><span class="kr">15.000 kr</span></dd></div>
+        <div class="reitur"><dt>Aldur</dt><dd>16 dagar <span class="smatt">· 29. júlí 2026</span></dd></div>
+        <div class="reitur"><dt>Fjöldi tækja</dt><dd><span class="tom">—</span> <span class="smatt">(engin verkbeiðni)</span></dd></div>
+        <div class="reitur breidur"><dt>Sala</dt><dd>R-000650 <span class="chip chip-drog">drög</span> <span class="smatt">· greitt_sidar</span></dd></div>
+      </dl>
+      <div class="adgerd"><span class="merki">Aðgerð</span> Hringja og innheimta — annars bakfæra</div>
+    </article>
+  </section>
+
+  <footer>
+    <p>Listinn er unninn úr <strong>verkbeidnir</strong> og <strong>solur</strong>. Verkbeiðni með fleiri en einn <code>-V</code> hluta telst eitt mál; elsta dagsetning gildir. Hvert mál birtist aðeins í einum hópi — í þeim hópi sem hefur lægsta númerið.</p>
+    <p>Útbúið 14. ágúst 2026.</p>
+  </footer>
+</div>
+</body>
+</html>
