@@ -1555,7 +1555,10 @@
     });
     main.querySelectorAll('._ars-row, ._ars-card').forEach(el => {
       el.addEventListener('click', e => {
-        if (e.target.closest('button, a, ._ars-ovr-month, ._ars-ovr-eq, ._ars-ovr-year, ._ars-ovr-pop')) return;
+        // input/select/textarea í varnarlistanum (2026-08-14): ferðanótu-reiturinn
+        // opnaði annars fyrirtækið við smell — guard hér er öruggari en að
+        // treysta á stopPropagation á reitnum sjálfum.
+        if (e.target.closest('button, a, input, select, textarea, ._ars-ovr-month, ._ars-ovr-eq, ._ars-ovr-year, ._ars-ovr-pop')) return;
         const id = +el.dataset.coId;
         if (!id) return;
         // 2026-06-18: skip the intermediate quick-view modal — go straight to
