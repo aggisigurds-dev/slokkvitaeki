@@ -147,6 +147,31 @@ exports.handler = async (event) => {
     const payload = buildPayload(sale, customer, { mode, site });
     if (body.email_override) payload.customer.email = String(body.email_override).trim();
 
+    // ── Bókunarupplýsingar → Payday accountingCost (2026-08-14) ────────────
+    // Kostnaðarstöð kúnnans — ferðast í rafræna XML-inu, ólíkt „Vegna:"
+    // frítextanum. fyrirtaeki.bokunarnumer þegar fyllt; annars SJÁLFGEFIÐ
+    // fyrir kt með fleiri en einn lifandi stað: „<nafn staðar> – <gata>".
+    // stadur_nr EITT dugar ekki (aðeins einkvæmt innan rekstrarfélags —
+    // Plaza er nr. 2 hjá Center OG Máni nr. 2 hjá Heimaleigu). Staðurinn er
+    // AÐEINS notaður þegar kennitala hans passar við söluna (sama PK-skörunar-
+    // vörn og „Vegna:"/netfangs-fallbackið í buildPayload).
+    const _d10 = x => String(x || '').replace(/\D/g, '');
+    const _siteTrusted = !!(site && _d10(site.kennitala) && _d10(site.kennitala) === _d10(sale.customer_kt || (customer && customer.kennitala)));
+    let accountingCost = (_siteTrusted && site.bokunarnumer && String(site.bokunarnumer).trim()) || '';
+    if (!accountingCost && _siteTrusted && sale.customer_base_id) {
+      try {
+        const sr = await fetch(`${SUPABASE_URL}/rest/v1/fyrirtaeki?customer_base_id=eq.${encodeURIComponent(sale.customer_base_id)}&deleted_at=is.null&select=id&limit=3`, {
+          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+        });
+        const siteRows = await sr.json().catch(() => []);
+        if (Array.isArray(siteRows) && siteRows.length > 1) {
+          const street = String(site.heimilisfang || '').split(',')[0].trim();
+          accountingCost = [String(site.nafn || '').trim(), street].filter(Boolean).join(' – ');
+        }
+      } catch (_) { /* sjálfgefna gildið er best-effort — fellir aldrei sendingu */ }
+    }
+    if (accountingCost) payload.accountingCost = accountingCost.slice(0, 100);
+
     // ── Úttektarskýrsla fylgiskjal — ONLY for inspection invoices ──────────
     // HARD SAFETY GATE: attach the report ONLY when the sale really is an
     // úttekt (source==='uttekt'). A regular POS sale (source 'pos'/'sott'/null)
@@ -395,7 +420,7 @@ async function findBilledTwin(sale) {
   } catch (_) { return null; }
 }
 async function fetchFyrirtaeki(id) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/fyrirtaeki?id=eq.${encodeURIComponent(id)}&select=id,nafn,kennitala,netfang,heimilisfang,payday_delivery,skyrsla_med_krofu`, {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/fyrirtaeki?id=eq.${encodeURIComponent(id)}&select=id,nafn,kennitala,netfang,heimilisfang,payday_delivery,skyrsla_med_krofu,bokunarnumer`, {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
   });
   if (!r.ok) return null;

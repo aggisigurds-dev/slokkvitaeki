@@ -73,7 +73,11 @@
             '<label style="display:flex;align-items:center;gap:7px;font-size:12.5px;color:#475569;margin-top:8px;cursor:pointer">' +
               '<input type="checkbox" id="nf-skyrsla-med" style="width:15px;height:15px;accent-color:#2563eb">' +
               '📎 Úttektarskýrsla fylgir kröfu (viðhengi á reikningnum — fer rafrænt og í pósti)' +
-            '</label>';
+            '</label>' +
+            '<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin:10px 0 4px">🧾 Bókunarnúmer (kostnaðarstöð viðskiptavinar)</label>' +
+            '<input id="nf-bokunarnumer" type="text" maxlength="100" placeholder="t.d. 4520 eða deildarheiti" ' +
+              'style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;background:#fff;box-sizing:border-box">' +
+            '<div style="font-size:10.5px;color:#94a3b8;margin-top:3px">Ferðast í rafræna reikningnum (XML) svo hann bókist rétt hjá kúnnanum. Tómt = staðir rekstrarfélaga fá sjálfkrafa „Nafn – Gata".</div>';
           anchor.parentElement.insertBefore(wrap, anchor.nextSibling);
         }
       }
@@ -81,6 +85,7 @@
       // Hak: NULL/true = skýrslan fylgir (sjálfgefið); false = fylgir ekki.
       const sm = document.getElementById('nf-skyrsla-med');
       if (sm) sm.checked = co.skyrsla_med_krofu !== false;
+      set('nf-bokunarnumer', co.bokunarnumer);
     })();
 
     // 2026-07-31: Póstnúmer-reitur — notaður til að raða „Fyrirtæki í þjónustu"
@@ -158,6 +163,7 @@
           athugasemdir: get('nf-athugasemdir'),
           payday_delivery: get('nf-payday-delivery') || null,
           skyrsla_med_krofu: !!((document.getElementById('nf-skyrsla-med') || { checked: true }).checked),
+          bokunarnumer: get('nf-bokunarnumer') || null,
           postnumer: get('nf-postnumer') || null
         };
         const sb = (window.DB && DB.sb) || null;
