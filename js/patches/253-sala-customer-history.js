@@ -111,7 +111,7 @@
     if (!parts.length) { body.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8">Ekki hægt að fletta upp þessum viðskiptavini.</div>'; return; }
 
     const r = await sb.from('solur')
-      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,greitt_med,created_at,paid_at,is_credit,dk_invoice_id')
+      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,greitt_med,created_at,paid_at,is_credit,dk_invoice_id,vidskiptategund')
       .or(parts.join(','))
       .order('created_at', { ascending: false })
       .limit(500);
@@ -191,10 +191,23 @@
 
     const total = rows.filter(s => !s.is_credit).reduce((a, s) => a + (+s.samtals || 0), 0);
     const pdTotal = pdOnly.filter(p => !/credit|cancel/i.test(p.status || '')).reduce((a, p) => a + (+p.amount_total || 0), 0);
+    // Viðskiptategunda-sían (Pakki 7): leitin sjálf síar ALDREI neitt burt —
+    // hér sést allt sem kúnninn hefur nokkru sinni keypt. Chipparnir þrengja
+    // aðeins sýnina eftir á (sjálfgefið Allt) og fela/sýna raðir í DOM-inu.
+    const nUt = rows.filter(s => s.vidskiptategund === 'uttekt').length;
+    const nBud = rows.filter(s => s.vidskiptategund === 'bud').length;
+    const nOv = rows.length - nUt - nBud;
+    const CHIP = 'font:inherit;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;border:1px solid #cbd5e1;background:#fff;color:#475569;cursor:pointer';
+    const tegChips = '<div id="_sch-teg" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">' +
+      '<button data-teg="allt" style="' + CHIP + ';background:#0f172a;color:#fff;border-color:#0f172a">Allt (' + rows.length + ')</button>' +
+      '<button data-teg="uttekt" style="' + CHIP + '">🧯 Úttektir (' + nUt + ')</button>' +
+      '<button data-teg="bud" style="' + CHIP + '">🛒 Búð (' + nBud + ')</button>' +
+      (nOv ? '<button data-teg="ovisst" style="' + CHIP + '">❓ Óvíst (' + nOv + ')</button>' : '') +
+    '</div>';
     body.innerHTML =
-      '<div style="font-size:12px;color:#475569;margin-bottom:10px">' + rows.length + ' færslur · samtals ' + esc(fmtKr(total)) +
+      '<div style="font-size:12px;color:#475569;margin-bottom:6px">' + rows.length + ' færslur · samtals ' + esc(fmtKr(total)) +
         (pdOnly.length ? ' &nbsp;·&nbsp; <span style="color:#6d28d9;font-weight:600">+ ' + pdOnly.length + ' Payday-kröfur · ' + esc(fmtKr(pdTotal)) + '</span>' : '') +
-      '</div>' +
+      '</div>' + tegChips +
       '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">' +
         '<table style="width:100%;border-collapse:collapse;font-size:13px">' +
           '<thead><tr style="background:#f1f5f9;border-bottom:1px solid #e2e8f0">' +
@@ -211,6 +224,20 @@
       '<div id="_sch-docs"><div style="padding:16px 4px;color:#94a3b8;font-size:12px">Sæki skjöl…</div></div>';
     body.querySelectorAll('._sch-view').forEach(b => b.addEventListener('click', () => openInvoice(b.dataset.id)));
     body.querySelectorAll('._sch-send').forEach(b => b.addEventListener('click', () => sendReceipt(b.dataset.id)));
+    // Tegunda-chipparnir: fela/sýna raðir (Payday-raðir án tegundar sjást undir Allt)
+    const tegBox = body.querySelector('#_sch-teg');
+    if (tegBox) tegBox.querySelectorAll('button[data-teg]').forEach(btn => btn.addEventListener('click', () => {
+      const f = btn.dataset.teg;
+      tegBox.querySelectorAll('button[data-teg]').forEach(b2 => {
+        const on = b2 === btn;
+        b2.style.background = on ? '#0f172a' : '#fff';
+        b2.style.color = on ? '#fff' : '#475569';
+        b2.style.borderColor = on ? '#0f172a' : '#cbd5e1';
+      });
+      body.querySelectorAll('tr[data-vt]').forEach(tr => {
+        tr.style.display = (f === 'allt' || tr.dataset.vt === f) ? '' : 'none';
+      });
+    }));
     loadDocs(idty, body).catch(() => { const h = body.querySelector('#_sch-docs'); if (h) h.innerHTML = ''; });
   }
 
@@ -649,9 +676,15 @@
       : isInvoice ? '<span style="font-size:10px;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:99px">⚠ Ógreitt</span>'
       : '<span style="color:#94a3b8;font-size:11px">—</span>';
     const amt = isCredit ? '-' + fmtKr(Math.abs(+s.samtals || 0)) : fmtKr(+s.samtals || 0);
-    return '<tr style="border-bottom:1px solid #f1f5f9">' +
+    // Viðskiptategund (Pakki 7): 🧯 úttekt · 🛒 búð · ❓ óvíst — merkið sýnir
+    // strax hvort færslan tilheyrir árlegu úttektinni eða lausasölu.
+    const vt = s.vidskiptategund === 'uttekt' ? 'uttekt' : (s.vidskiptategund === 'bud' ? 'bud' : 'ovisst');
+    const vtBadge = vt === 'uttekt' ? '<span title="Árleg úttekt" style="margin-left:5px">🧯</span>'
+      : vt === 'bud' ? '<span title="Búðarsala / lausasala" style="margin-left:5px">🛒</span>'
+      : '<span title="Óvíst — hvorki greint sem úttekt né búð (þarf yfirferð)" style="margin-left:5px">❓</span>';
+    return '<tr data-vt="' + vt + '" style="border-bottom:1px solid #f1f5f9">' +
       '<td style="padding:8px 10px;color:#475569;white-space:nowrap">' + esc(fmtDate(s.created_at)) + '</td>' +
-      '<td style="padding:8px 10px;font-family:monospace;font-size:11.5px;font-weight:600;color:#0f172a">' + esc(s.num || '') +
+      '<td style="padding:8px 10px;font-family:monospace;font-size:11.5px;font-weight:600;color:#0f172a">' + esc(s.num || '') + vtBadge +
         (s._pd_number ? '<span title="Payday-númerið sem kúnninn sér á kröfunni" style="display:inline-block;margin-left:6px;padding:1px 6px;background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;border-radius:99px;font-size:10px;font-weight:700">PD ' + esc(s._pd_number) + '</span>' : '') +
       '</td>' +
       '<td style="padding:8px 10px;font-size:11.5px;color:#475569">' + methodLabel(s.greitt_med) + '</td>' +

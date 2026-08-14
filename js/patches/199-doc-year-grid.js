@@ -391,9 +391,11 @@
     var d=String(kt).replace(/\D/g,''); if(d.length<7) return {};
     var dash=d.length===10?(d.slice(0,6)+'-'+d.slice(6)):d;
     try{
-      var r=await sb.from('solur').select('num,source').or('customer_kt.eq.'+d+',customer_kt.eq.'+dash);
+      var r=await sb.from('solur').select('num,source,vidskiptategund').or('customer_kt.eq.'+d+',customer_kt.eq.'+dash);
       if(r.error||!r.data) return {};
-      var m={}; r.data.forEach(function(s){ var k=numKey(s.num); if(k) m[k]=s.source||'pos'; }); return m;
+      // Pakki 7: vidskiptategund (uttekt/bud/ovisst) er nákvæmari en source —
+      // geymum bæði; chipInvSrc lætur tegundina ráða þegar hún er til.
+      var m={}; r.data.forEach(function(s){ var k=numKey(s.num); if(k) m[k]={ src:s.source||'pos', teg:s.vidskiptategund||null }; }); return m;
     }catch(_){ return {}; }
   }
   // Reikningur-sölur kúnnans (greitt_med='reikningur' — sömu og Kröfu yfirlit
@@ -422,8 +424,15 @@
     var mm=nm.match(/R-?\s?0*(\d{3,})/i); return mm?('R-'+mm[1]):'';
   }
   function chipInvSrc(x, srcMap){
-    var k=numKey(chipInvNum(x)); var src=k?srcMap[k]:null;
-    return (src==='pos'||src==='sott')?'afgr':'uttekt';
+    var k=numKey(chipInvNum(x)); var e=k?srcMap[k]:null;
+    if(e&&typeof e==='object'){
+      // vidskiptategund ræður (Pakki 7): bud → afgreiðsla, uttekt → úttekt;
+      // ovisst/óþekkt fellur á gömlu source-regluna.
+      if(e.teg==='bud') return 'afgr';
+      if(e.teg==='uttekt') return 'uttekt';
+      return (e.src==='pos'||e.src==='sott')?'afgr':'uttekt';
+    }
+    return (e==='pos'||e==='sott')?'afgr':'uttekt';
   }
   function invGroup(tag, col, bg, brd, chips){
     return '<div style="display:flex;align-items:center;flex-wrap:wrap;gap:4px;margin:2px 0">'+

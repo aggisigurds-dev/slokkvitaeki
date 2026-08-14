@@ -145,10 +145,23 @@
     if (reikLoading || reikMap) return; reikLoading = true;
     try {
       const sb = window.DB && DB.sb; if (!sb) { reikLoading = false; return; }
-      const reikRows = await fetchAll(() => sb.from('customer_documents').select('customer_base_id,year')
+      const reikRows = await fetchAll(() => sb.from('customer_documents').select('customer_base_id,year,invoice_number')
         .eq('doc_type','reikningur').not('customer_base_id','is',null));
+      // Pakki 7: búðarreikningar (solur.vidskiptategund='bud') kveikja EKKI
+      // 🧾-ársmerkið í ársskoðunarlistanum — það er skoðunar-samhengi og
+      // búðarsala segir ekkert um úttekt ársins. ovisst/óþekkt telja áfram.
+      const budNums = new Set();
+      try {
+        const bs = await fetchAll(() => sb.from('solur').select('num').eq('vidskiptategund', 'bud'));
+        bs.forEach(s => { const n = String(s.num || '').trim().toUpperCase(); if (n) budNums.add(n); });
+      } catch (_) {}
       const byBase = {};
-      reikRows.forEach(x => { if (x.customer_base_id != null && x.year) (byBase[x.customer_base_id] = byBase[x.customer_base_id] || new Set()).add(String(x.year)); });
+      reikRows.forEach(x => {
+        if (x.customer_base_id == null || !x.year) return;
+        const inv = String(x.invoice_number || '').trim().toUpperCase();
+        if (inv && budNums.has(inv)) return;
+        (byBase[x.customer_base_id] = byBase[x.customer_base_id] || new Set()).add(String(x.year));
+      });
       const ids = Object.keys(byBase);
       const map = {};
       for (let i = 0; i < ids.length; i += 500) {
