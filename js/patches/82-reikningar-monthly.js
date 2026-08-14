@@ -74,6 +74,9 @@
       .select('id,num,customer_nafn,customer_id,samtals,greitt_med,paid_at,paid_method,created_at')
       .eq('greitt_med', 'reikningur')
       .is('paid_at', null)
+      // void má aldrei parast við bankagreiðslu hér (Véltindar-mynstrið) —
+      // greiðsla á bakfærðri sölu er frávik sem eftirlitið flaggar, ekki match.
+      .neq('status', 'void')
       .gte('created_at', since.toISOString())
       .order('created_at', { ascending: false });
 

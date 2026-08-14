@@ -108,6 +108,10 @@
         .select('id,num,customer_nafn,customer_id,samtals,created_at,paid_at,paid_method,athugasemdir,greitt_med')
         .in('greitt_med', ['reikningur', 'greitt_sidar'])
         .is('paid_at', null)
+        // void/drog teljast ALDREI skuld (2026-08-14, R-000232 lexían):
+        // bakfærður/ósendur reikningur er ekki útistandandi krafa.
+        .neq('status', 'void')
+        .neq('status', 'drog')
         .order('created_at', { ascending: true });
       data = res.data; error = res.error;
     } catch (_) {

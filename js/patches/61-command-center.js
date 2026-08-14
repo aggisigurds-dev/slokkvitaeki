@@ -128,7 +128,8 @@
       // voru SKRÁÐAR og raðir sem voru GREIDDAR í glugganum (gömul drög sótt í dag).
       safe(SB.from('solur').select('samtals,created_at,paid_at,greitt_med,source,status')
         .or('created_at.gte.' + fetchSince.toISOString() + ',paid_at.gte.' + fetchSince.toISOString())),
-      safe(SB.from('solur').select('id,samtals,customer_nafn').neq('status','drog').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null)),
+      // void teljist ALDREI skuld (2026-08-14, R-000232 lexían) — drog var þegar síað.
+      safe(SB.from('solur').select('id,samtals,customer_nafn').neq('status','drog').neq('status','void').in('greitt_med',['reikningur','greitt_sidar']).is('paid_at',null)),
       safe(SB.from('verkbeidnir').select('id,num,customer,status').neq('status','done').neq('status','cancelled')),
       safe(SB.from('verkdagbok').select('id,fyrirtaeki,job_date,athugasemdir').gte('job_date', today.toISOString().slice(0,10)).lt('job_date', tomorrow.toISOString().slice(0,10)).order('job_date')),
       // 3.749 tæki eru á gjalddaga innan 30 daga — stök .select() skilaði 1000,

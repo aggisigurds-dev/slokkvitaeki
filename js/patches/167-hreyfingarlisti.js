@@ -113,6 +113,9 @@
     if (s.paid_at) {
       return '<span class="hl-mono" style="font-size:11px;color:#16a34a;font-weight:700">✓ ' + esc(fmtDate(s.paid_at)) + '</span> <span class="hl-mono" style="font-size:10px;color:#16a34a">' + esc(fmtTime(s.paid_at)) + '</span>';
     }
+    // 4-þrepa staðan (2026-08-14): void/drog mega aldrei líta út sem ógreitt.
+    if (String(s.status || '') === 'void') return '<span style="font-size:10.5px;color:#64748b;font-weight:700">↩ Bakfært</span>';
+    if (String(s.status || '') === 'drog') return '<span style="font-size:10.5px;color:#64748b;font-weight:700">✎ Drög</span>';
     const la = lastAct(s);
     if (la && new Date(la) > new Date(s.created_at) && fmtDate(la) !== fmtDate(s.created_at)) {
       return '<span class="hl-mono" style="font-size:11px;color:#64748b">' + esc(fmtDate(la)) + '</span> <span class="hl-mono" style="font-size:10px;color:#94a3b8">' + esc(fmtTime(la)) + '</span>';
@@ -280,7 +283,7 @@
     if (!parts.length) { main.innerHTML = '<div style="padding:40px;text-align:center;color:#94a3b8">Enginn kúnni fannst fyrir „' + esc(q) + '".</div>'; return; }
 
     const r = await SB.from('solur')
-      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,updated_at,paid_at,is_credit,credit_of,starfsmadur')
+      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,updated_at,paid_at,is_credit,credit_of,starfsmadur,status')
       .or(parts.join(','))
       .order('created_at', { ascending: false })
       .limit(1000);
@@ -318,7 +321,7 @@
 
     // 2026-07-01: scope — Mánuður (default) · Ár (whole year) · Allt (all time).
     let q = SB.from('solur')
-      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,updated_at,paid_at,is_credit,credit_of,starfsmadur')
+      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,updated_at,paid_at,is_credit,credit_of,starfsmadur,status')
       .order('created_at', { ascending: false });
     if (_state.scope === 'all') {
       q = q.limit(5000);

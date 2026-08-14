@@ -111,7 +111,7 @@
     if (!parts.length) { body.innerHTML = '<div style="padding:30px;text-align:center;color:#94a3b8">Ekki hægt að fletta upp þessum viðskiptavini.</div>'; return; }
 
     const r = await sb.from('solur')
-      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,greitt_med,created_at,paid_at,is_credit,dk_invoice_id,vidskiptategund')
+      .select('id,num,customer_nafn,customer_id,customer_kt,samtals,greitt_med,created_at,paid_at,is_credit,dk_invoice_id,vidskiptategund,status,kredit_a')
       .or(parts.join(','))
       .order('created_at', { ascending: false })
       .limit(500);
@@ -184,8 +184,20 @@
       return;
     }
 
-    // Fléttað í eina tímaröð (nýjast efst).
-    const merged = rows.map(s => ({ t: s.created_at || '', h: rowHtml(s) }))
+    // Kredit-pörun (2026-08-14): kredit með kredit_a birtist sem PAR beint
+    // undir reikningnum sem það bakfærir — ekki tvær ótengdar línur.
+    const byNum = new Map();
+    rows.forEach(s => { const n = String(s.num || '').trim().toUpperCase(); if (n) byNum.set(n, s); });
+    const pairedIds = new Set();
+    rows.forEach(s => {
+      if (s.is_credit && s.kredit_a) {
+        const o = byNum.get(String(s.kredit_a).trim().toUpperCase());
+        if (o && o !== s) { (o._credits = o._credits || []).push(s); pairedIds.add(s.id); }
+      }
+    });
+    // Fléttað í eina tímaröð (nýjast efst); pöruð kredit fylgja sínum reikningi.
+    const merged = rows.filter(s => !pairedIds.has(s.id))
+      .map(s => ({ t: s.created_at || '', h: rowHtml(s) + (s._credits || []).map(c => rowHtml(c, true)).join('') }))
       .concat(pdOnly.map(p => ({ t: (p.created_date || '') + 'T00:00:00', h: pdRowHtml(p) })));
     merged.sort((a, b) => String(b.t).localeCompare(String(a.t)));
 
@@ -668,28 +680,38 @@
     render();
   }
 
-  function rowHtml(s) {
+  function rowHtml(s, paired) {
     const isCredit = !!s.is_credit;
     const isInvoice = (s.greitt_med === 'greitt_sidar' || s.greitt_med === 'reikningur');
-    const status = isCredit ? '<span style="color:#991b1b;font-size:11px">↩ Kredit</span>'
+    // 4-þrepa staða (2026-08-14, staðfest villa R-000232): paid_at EITT dugar
+    // ekki — void/drog sala sýndist „Ógreitt" og taldist með í skuld.
+    // Röðin: Greitt → Bakfært (void) → Drög → Ógreitt.
+    const isVoid = String(s.status || '') === 'void';
+    const isDrog = String(s.status || '') === 'drog';
+    const status = isCredit
+      ? '<span style="color:#991b1b;font-size:11px">↩ Kredit' + (s.kredit_a ? ' á ' + esc(s.kredit_a) : '') + '</span>'
       : s.paid_at ? '<span style="font-size:10px;font-weight:700;background:#dcfce7;color:#166534;padding:2px 8px;border-radius:99px">✓ Greitt</span>'
+      : isVoid ? '<span style="font-size:10px;font-weight:700;background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:99px">↩ Bakfært</span>'
+      : isDrog ? '<span style="font-size:10px;font-weight:700;background:#f1f5f9;color:#64748b;padding:2px 8px;border-radius:99px">✎ Drög</span>'
       : isInvoice ? '<span style="font-size:10px;font-weight:700;background:#fef3c7;color:#92400e;padding:2px 8px;border-radius:99px">⚠ Ógreitt</span>'
       : '<span style="color:#94a3b8;font-size:11px">—</span>';
     const amt = isCredit ? '-' + fmtKr(Math.abs(+s.samtals || 0)) : fmtKr(+s.samtals || 0);
+    const amtExtra = (isVoid && !s.paid_at && !isCredit) ? ';text-decoration:line-through;color:#94a3b8' : '';
     // Viðskiptategund (Pakki 7): 🧯 úttekt · 🛒 búð · ❓ óvíst — merkið sýnir
     // strax hvort færslan tilheyrir árlegu úttektinni eða lausasölu.
     const vt = s.vidskiptategund === 'uttekt' ? 'uttekt' : (s.vidskiptategund === 'bud' ? 'bud' : 'ovisst');
     const vtBadge = vt === 'uttekt' ? '<span title="Árleg úttekt" style="margin-left:5px">🧯</span>'
       : vt === 'bud' ? '<span title="Búðarsala / lausasala" style="margin-left:5px">🛒</span>'
       : '<span title="Óvíst — hvorki greint sem úttekt né búð (þarf yfirferð)" style="margin-left:5px">❓</span>';
-    return '<tr data-vt="' + vt + '" style="border-bottom:1px solid #f1f5f9">' +
-      '<td style="padding:8px 10px;color:#475569;white-space:nowrap">' + esc(fmtDate(s.created_at)) + '</td>' +
+    return '<tr data-vt="' + vt + '" style="border-bottom:1px solid #f1f5f9' +
+      (((isVoid && !s.paid_at) || isDrog) ? ';opacity:.6' : '') + (paired ? ';background:#fafbfc' : '') + '">' +
+      '<td style="padding:8px 10px;color:#475569;white-space:nowrap">' + (paired ? '<span style="color:#cbd5e1;margin-right:3px">↳</span>' : '') + esc(fmtDate(s.created_at)) + '</td>' +
       '<td style="padding:8px 10px;font-family:monospace;font-size:11.5px;font-weight:600;color:#0f172a">' + esc(s.num || '') + vtBadge +
         (s._pd_number ? '<span title="Payday-númerið sem kúnninn sér á kröfunni" style="display:inline-block;margin-left:6px;padding:1px 6px;background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;border-radius:99px;font-size:10px;font-weight:700">PD ' + esc(s._pd_number) + '</span>' : '') +
       '</td>' +
       '<td style="padding:8px 10px;font-size:11.5px;color:#475569">' + methodLabel(s.greitt_med) + '</td>' +
       '<td style="padding:8px 10px">' + status + '</td>' +
-      '<td style="padding:8px 10px;text-align:right;font-weight:700;color:' + (isCredit ? '#dc2626' : '#0f172a') + ';font-variant-numeric:tabular-nums">' + esc(amt) + '</td>' +
+      '<td style="padding:8px 10px;text-align:right;font-weight:700;color:' + (isCredit ? '#dc2626' : '#0f172a') + ';font-variant-numeric:tabular-nums' + amtExtra + '">' + esc(amt) + '</td>' +
       '<td style="padding:8px 10px;text-align:right;white-space:nowrap">' +
         '<button class="_sch-send" data-id="' + s.id + '" type="button" title="Senda kvittun í tölvupósti" style="padding:4px 8px;background:#fff;color:#0f766e;border:1px solid #99f6e4;border-radius:5px;cursor:pointer;font:inherit;font-size:11px;margin-right:4px">📧</button>' +
         '<button class="_sch-view" data-id="' + s.id + '" type="button" title="Skoða / prenta / vista PDF" style="padding:4px 8px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:5px;cursor:pointer;font:inherit;font-size:11px">🖨</button>' +

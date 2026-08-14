@@ -365,7 +365,7 @@
       .select('id,num,customer_nafn,customer_id,customer_base_id,customer_kt,samtals,greitt_med,athugasemdir,krafa_note,created_at,updated_at,paid_at,invoiced_at,krafa_sent_at,dk_invoice_id,is_credit,credit_of,source')
       .eq('greitt_med', 'reikningur');
     const vf = _state.viewFilter || 'krofur';
-    if (vf === 'krofur')        q = q.is('paid_at', null);                      // útistandandi (eins og áður)
+    if (vf === 'krofur')        q = q.is('paid_at', null).neq('status', 'void'); // útistandandi — void telst ALDREI skuld (2026-08-14, R-000232)
     else if (vf === 'osendar')  q = q.is('paid_at', null).is('krafa_sent_at', null).is('invoiced_at', null).is('dk_invoice_id', null); // ósendar
     else if (vf === 'greiddar') q = q.not('paid_at', 'is', null);              // greiddar kröfur
     // 'allt' → engin paid_at-sía (bæði ógreiddar OG greiddar)
