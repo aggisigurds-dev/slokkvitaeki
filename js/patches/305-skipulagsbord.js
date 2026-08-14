@@ -113,10 +113,10 @@
       }
       #${SLOT_ID} .sb-card:hover .sb-x { opacity:1; }
       #${SLOT_ID} .sb-x:hover { color:#dc2626; }
-      #${SLOT_ID} .sb-card:hover .sb-co-btn, #${SLOT_ID} .sb-card:hover .sb-print-btn { opacity:1 !important; }
-      #${SLOT_ID} .sb-co-btn:hover, #${SLOT_ID} .sb-print-btn:hover { color:#2563eb !important; }
+      #${SLOT_ID} .sb-card:hover .sb-co-btn, #${SLOT_ID} .sb-card:hover .sb-eye-btn { opacity:1 !important; }
+      #${SLOT_ID} .sb-co-btn:hover, #${SLOT_ID} .sb-eye-btn:hover { color:#2563eb !important; }
       /* Síminn hefur ekkert hover — hljóðlátu hnapparnir yrðu ósýnilegir að eilífu. */
-      @media (hover:none){ #${SLOT_ID} .sb-co-btn, #${SLOT_ID} .sb-print-btn { opacity:.55 !important; } }
+      @media (hover:none){ #${SLOT_ID} .sb-co-btn, #${SLOT_ID} .sb-eye-btn { opacity:.55 !important; } }
       #${SLOT_ID} .sb-type-dot {
         display:inline-block; border-radius:50%; cursor:pointer; flex:none;
         transition:transform .1s, box-shadow .1s;
@@ -164,17 +164,17 @@
             'style="border:none;background:none;cursor:pointer;font-size:11px;color:#94a3b8;' +
               'padding:0 2px;line-height:1;flex:none;opacity:0;transition:opacity .1s;margin-left:auto">🏢</button>'
         : '') +
-      // 🖨 Fyrirtækjablaðið (Pakki 5) — sama hljóðláta mynstur og 🏢 hér að ofan.
-      // Spjöld af dagskrá bera ekkert verkbord_id → blaðið finnur á nafni.
+      // 👁 Snöggskoðun (Pakki 5 v2) — sama hljóðláta mynstur og 🏢 hér að ofan.
+      // Spjöld af dagskrá bera ekkert verkbord_id → skoðunin finnur á nafni.
       ((card.verkbord_id != null || card.name)
-        ? '<button class="sb-print-btn" ' +
+        ? '<button class="sb-eye-btn" ' +
             (card.verkbord_id != null
-              ? 'data-sb-print="' + esc(card.verkbord_id) + '" '
-              : 'data-sb-print-name="' + esc(card.name) + '" ') +
-            'title="Prenta fyrirtækjablað" ' +
+              ? 'data-sb-eye="' + esc(card.verkbord_id) + '" '
+              : 'data-sb-eye-name="' + esc(card.name) + '" ') +
+            'title="Snöggskoðun — allt sem kerfið veit um málið" ' +
             'style="border:none;background:none;cursor:pointer;font-size:11px;color:#94a3b8;' +
               'padding:0 2px;line-height:1;flex:none;opacity:0;transition:opacity .1s' +
-              (card.name ? '' : ';margin-left:auto') + '">🖨</button>'
+              (card.name ? '' : ';margin-left:auto') + '">👁</button>'
         : '') +
     '</div>';
   }
@@ -431,32 +431,30 @@
       if (act === 'goal-plus')  { state.goal = Math.min(state.goal + 1, 12); persist(); return; }
       if (act === 'goal-minus') { state.goal = Math.max(state.goal - 1, 1);  persist(); return; }
       if (act === 'print-all') {
-        // Dagsskammturinn í einu skjali — síða per fyrirtæki (page-break í blaðinu).
-        // Spjöld án beiðni-ids (dregin af dagskrá) fylgja með sem &nafn= —
-        // enginn dettur þegjandi úr bunkanum.
-        const ids = state.cards.filter(c => c.verkbord_id != null).map(c => c.verkbord_id);
-        const names = state.cards.filter(c => c.verkbord_id == null && c.name).map(c => c.name);
-        if (!ids.length && !names.length) { toast('🖨 Engin spjöld á borðinu'); return; }
-        const qs = [];
-        if (ids.length) qs.push('beidni_id=' + ids.join(','));
-        names.forEach(function (n) { qs.push('nafn=' + encodeURIComponent(n)); });
-        window.open('/fyrirtaekjablad.html?' + qs.join('&'), '_blank');
+        // Dagsskammturinn í einum snöggskoðunar-glugga — page-break milli
+        // fyrirtækja við prentun. Spjöld án beiðni-ids (dregin af dagskrá)
+        // fylgja með á nafni — enginn dettur þegjandi úr bunkanum.
+        const specs = state.cards
+          .map(c => c.verkbord_id != null ? { beidni_id: c.verkbord_id } : (c.name ? { nafn: c.name } : null))
+          .filter(Boolean);
+        if (!specs.length) { toast('🖨 Engin spjöld á borðinu'); return; }
+        if (window.Snoggskodun) Snoggskodun.open(specs);
+        else toast('👁 Snöggskoðunin er ekki hlaðin');
         return;
       }
     }
 
-    // 🖨 Fyrirtækjablaðið — opna prentanlegu samantektina í nýjum flipa.
+    // 👁 Snöggskoðun — gluggi ofan á borðinu með öllu sem kerfið veit (306).
     // stopPropagation nauðsynlegt: spjaldið sjálft gleypir annars smellinn
     // („Smella til að opna málið hér að neðan").
-    const pBtn = e.target.closest('.sb-print-btn');
-    if (pBtn) {
+    const eyeBtn = e.target.closest('.sb-eye-btn');
+    if (eyeBtn) {
       e.stopPropagation();
       e.preventDefault();
-      const bid = pBtn.getAttribute('data-sb-print');
-      const nm = pBtn.getAttribute('data-sb-print-name');
-      window.open('/fyrirtaekjablad.html?' + (bid
-        ? 'beidni_id=' + encodeURIComponent(bid)
-        : 'nafn=' + encodeURIComponent(nm || '')), '_blank');
+      const bid = eyeBtn.getAttribute('data-sb-eye');
+      const nm = eyeBtn.getAttribute('data-sb-eye-name');
+      if (window.Snoggskodun) Snoggskodun.open([bid != null ? { beidni_id: bid } : { nafn: nm || '' }]);
+      else toast('👁 Snöggskoðunin er ekki hlaðin');
       return;
     }
 
