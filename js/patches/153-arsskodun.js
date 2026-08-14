@@ -158,7 +158,7 @@
     // Load ALL fyrirtaeki rows. Supabase caps each response at 1000 rows
     // (server-side "Max rows"), so .range() alone is not enough — page through.
     const companiesP = DB.fetchAll((from, to) => SB.from('fyrirtaeki')
-      .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu,customer_base_id,created_at,postnumer')
+      .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,tengiliður,athugasemdir,vefsida,er_i_thjonustu,customer_base_id,created_at,postnumer,plan_note')
       .is('deleted_at', null)
       .order('nafn')
       .range(from, to)).catch(error => { console.error('[arsskodun] loadAll', error); return null; });
@@ -2211,6 +2211,10 @@
                     <div style="font-weight:600;color:var(--ink1);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${esc(c.nafn || '—')}${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}${(window.RekstrarfelagBadge && c.kennitala) ? RekstrarfelagBadge.html(c.kennitala) : ''}</div>
                     ${c.kennitala ? `<div style="font-size:10.5px;color:var(--ink4);font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
                     ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''}</div>` : ''}
+                    <input class="_ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="✈ ferðanóta…" maxlength="140"
+                      style="margin-top:2px;display:block;width:min(250px,100%);font:inherit;font-size:10.5px;color:var(--ink2);background:transparent;border:1px dashed transparent;border-radius:6px;padding:1px 5px;outline:none;opacity:.5;box-sizing:border-box"
+                      onfocus="this.style.borderColor='var(--brd2)';this.style.background='var(--surface)';this.style.opacity='1'"
+                      onblur="this.style.borderColor='transparent';this.style.background='transparent';this.style.opacity='.5'">
                   </td>
                   <td style="padding:8px 7px;color:var(--ink2);font-size:11.5px">${c.postnumer ? `<span class="_ars-pc" style="display:inline-block;min-width:34px;text-align:center;margin-right:6px;padding:1px 6px;border-radius:6px;background:var(--surface2,#eef2ff);color:#3730a3;font-size:10.5px;font-weight:800;font-variant-numeric:tabular-nums">${esc(c.postnumer)}</span>` : ''}${esc(c.heimilisfang || '—')}</td>
                   <td style="padding:8px 7px;font-size:11px">${(() => {
