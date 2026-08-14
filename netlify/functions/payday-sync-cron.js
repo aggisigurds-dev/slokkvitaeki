@@ -58,6 +58,9 @@ exports.handler = async () => {
         if (Number(eftirlit.rukkad_an_kt) > 0) issues.push('🟡 Rukkað án customer_base_id: ' + eftirlit.rukkad_an_kt + ' sölur');
         if (arr('rukkad_an_netfangs').length) issues.push('🟡 Rukkað á félag án netfangs: ' + arr('rukkad_an_netfangs').map(x => x.num).join(', '));
         if (Number(eftirlit.felog_an_afhendingar) > 0) issues.push('⚪ Félög í þjónustu án payday_delivery: ' + eftirlit.felog_an_afhendingar);
+        // Verkstæðis-vöktunin (14.08): óútkljáð „greitt síðar" + sótt án final sölu.
+        if (arr('greitt_sidar_gamalt').length) issues.push('🟡 „Greitt síðar" eldra en 14 daga (óútkljáð uppgjör): ' + arr('greitt_sidar_gamalt').map(x => x.num + ' ' + (x.customer_nafn || '') + ' (' + x.dagar + 'd)').join(', '));
+        if (arr('sott_ekki_final').length) issues.push('🔴 Sótt verk með sölu sem er EKKI final: ' + arr('sott_ekki_final').map(x => x.verk + ' → ' + x.sala + ' (' + x.status + ')').join(', '));
         if (issues.length) {
           console.warn('[payday-sync-cron] eftirlit frávik:', issues.length);
           try {

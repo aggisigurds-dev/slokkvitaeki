@@ -206,7 +206,9 @@
                 '<option value="kort" selected>💳 Kort</option>' +
                 '<option value="reidufe">💵 Reiðufé</option>' +
                 '<option value="reikningur">📋 Setja í reikning</option>' +
-                '<option value="greitt_sidar">⏳ Greitt síðar</option>' +
+                // 2026-08-14 (líkanið): „Greitt síðar" er EKKI uppgjör heldur
+                // óútkljáð staða við MÓTTÖKU — við afhendingu VERÐUR hún að
+                // leysast í kort/reikning/reiðufé. Valkosturinn er því farinn.
               '</select>' +
               '<button id="_pkc-finalize" type="button" style="padding:9px 18px;background:#059669;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:700">✓ Klára sölu og afhenda</button>' +
             '</div>'
@@ -744,10 +746,42 @@
     setTimeout(() => { inp.focus(); inp.select(); }, 30);
   }
 
+  // Línur úr verkliðum (verk 2): parað við vorur á þjónustu + stærð/tegund.
+  // Besta samsvörun þarf a.m.k. þjónustuorðið + eitt einkenni; annars 0-kr
+  // lína með „⚠ verð vantar" — sýnileg, aldrei þögul.
+  async function linurUrVerklidum(units) {
+    const SB = getSB(); if (!SB || !units.length) return [];
+    let vorur = [];
+    try { const r = await SB.from('vorur').select('id,nafn,verd_an_vsk,vsk_prosenta').eq('virkt', true); vorur = r.data || []; } catch (_) {}
+    const fold = s => String(s || '').toLowerCase();
+    return units.map(s => {
+      const u = s.unit || {};
+      const service = fold(u.service);
+      const tokens = fold((u.type || '') + ' ' + (u.size || '')).split(/[\s.]+/).filter(w => w.length > 1);
+      let best = null, bestScore = 0;
+      vorur.forEach(v => {
+        const n = fold(v.nafn);
+        let sc = 0;
+        if (service && n.indexOf(service) !== -1) sc += 2;
+        tokens.forEach(w => { if (n.indexOf(w) !== -1) sc++; });
+        if (sc > bestScore) { bestScore = sc; best = v; }
+      });
+      if (best && bestScore >= 3) {
+        return { desc: best.nafn, qty: 1, unit_price_ex_vat: +best.verd_an_vsk || 0, vsk_pct: +best.vsk_prosenta || 24, type: 'service', product_id: best.id };
+      }
+      return { desc: ((u.type || 'Tæki') + ' ' + (u.size || '') + ' — ' + (u.service || 'þjónusta')).replace(/\s+/g, ' ').trim() + ' ⚠ verð vantar', qty: 1, unit_price_ex_vat: 0, vsk_pct: 24, type: 'service' };
+    });
+  }
+
   // ── Finalize: update solur, mark verkbeidnir collected, mark units done ─
   async function finalizePickup(job, sale, unitState, extras, payMethod, totals, customerInfo, discountPct, discountKrManual, userNote) {
     const SB = getSB();
     if (!SB) throw new Error('Engin gagnabankatenging');
+    // Gátt á VERKLOK (2026-08-14, ekki á vistun): tæki fer ekki út með
+    // óútkljáð uppgjör — „greitt síðar" leysist hér í kort/reikning/reiðufé.
+    if (payMethod === 'greitt_sidar' || !['kort', 'reidufe', 'pening', 'reikningur'].includes(String(payMethod || ''))) {
+      throw new Error('Uppgjör vantar: veldu Kort, Reikning eða Reiðufé — „greitt síðar" er ekki uppgjör við afhendingu.');
+    }
 
     // Phase B (2026-05-09): Replace linur to reflect what was ACTUALLY
     // delivered. Original linur are scaled proportionally by takenCount /
@@ -801,6 +835,16 @@
       }
     }
     const newLinur = workingLinur.filter(l => l.qty > 0);
+
+    // Verk 2 (2026-08-14): ENGIN sala og engar upprunalínur → línurnar koma
+    // ÚR VERKLIÐUNUM — tæki fer aldrei út án sölu. Verðið finnst í vorur
+    // (þjónusta + stærð/tegund); finnist það ekki fer línan inn með 0 kr og
+    // „⚠ verð vantar" svo hún sé sýnileg og leiðréttanleg í Sale editor —
+    // aldrei ósýnileg afhending.
+    if ((!sale || !sale.id) && newLinur.length === 0 && takenCount > 0) {
+      const seeded = await linurUrVerklidum(unitState.filter(s => s.checked));
+      seeded.forEach(l => newLinur.push(l));
+    }
 
     extras.forEach(ex => {
       newLinur.push({
@@ -905,7 +949,7 @@
         afslattur: afslatturKr,
         samtals: Math.round(newSamtals),
         greitt_med: payMethod,
-        paid_at: payMethod === 'greitt_sidar' || payMethod === 'reikningur' ? null : new Date().toISOString(),
+        paid_at: payMethod === 'reikningur' ? null : new Date().toISOString(),   // kort/reiðufé stimpla ALLTAF paid_at (verk 3)
         customer_nafn: customerNafnToSave,
         customer_id: customerIdToSave,
         athugasemdir: (sale.athugasemdir || '') + ktAuditNote + auditNote
@@ -942,7 +986,7 @@
         afslattur: afslatturKr,
         samtals: Math.round(newSamtals),
         greitt_med: payMethod,
-        paid_at: payMethod === 'greitt_sidar' || payMethod === 'reikningur' ? null : new Date().toISOString(),
+        paid_at: payMethod === 'reikningur' ? null : new Date().toISOString(),   // kort/reiðufé stimpla ALLTAF paid_at (verk 3)
         athugasemdir: 'Stofnað við Sótt ✓ úr verkstæðis-afhendingu' + auditNote,
         status: 'final'
       };

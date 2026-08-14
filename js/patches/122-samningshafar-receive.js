@@ -533,6 +533,20 @@
       const draftVsk = linur.reduce((a, l) => a + (+l.qty || 0) * (+l.unit_price_ex_vat || 0) * ((+l.vsk_pct || 0) / 100), 0);
       const draftTotal = Math.round(draftEx + draftVsk);
 
+      // Verk 5 (2026-08-14): „greitt síðar" krefst GILDS símanúmers — annars
+      // er enginn til að hringja í við afhendingu. Plássfyllingar („0000",
+      // „000", „0000000", endurteknir stafir) hafnað; 7 stafir skilyrði.
+      const _validPhone = p => { const d = String(p || '').replace(/\D/g, ''); return d.length === 7 && !/^(\d)\1{6}$/.test(d); };
+      let _phoneToUse = _selectedCompany.simi || '';
+      if (!_validPhone(_phoneToUse)) {
+        const _inp = prompt('„Greitt síðar" krefst gilds símanúmers (7 stafir) — hver sækir/borgar?\n\nSímanúmer:', '');
+        if (!_validPhone(_inp)) {
+          if (window.Toast && Toast.show) Toast.show('❌ Gilt símanúmer vantar — móttaka ekki kláruð');
+          return;
+        }
+        _phoneToUse = String(_inp).replace(/\D/g, '');
+      }
+
       // 2026-05-10 (B4 fix): Insert solur FIRST so the BEFORE-INSERT trigger
       // can assign the canonical R-NNNNNN num. Then use that same num on the
       // verkbeiðni so patch 121's parentSaleNum() lookup finds the draft.
@@ -595,7 +609,7 @@
         num,
         status: 'received',
         customer: _selectedCompany.nafn || '',
-        phone: _selectedCompany.simi || '',
+        phone: _phoneToUse,
         dropoff: today,
         pickup: pickupISO,
         notes: 'Sótt úr field-service — ' + picked.length + ' tæki',
