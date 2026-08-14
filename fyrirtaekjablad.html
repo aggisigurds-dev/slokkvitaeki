@@ -101,7 +101,9 @@
   const beidniIds = (P.get('beidni_id') || '').split(',').map(s => s.trim()).filter(Boolean);
   const fyrId = P.get('fyrirtaeki_id');
   const baseIdP = P.get('base_id');
-  const nafnP = (P.get('nafn') || '').trim();
+  // ?nafn= má endurtaka (…&nafn=A&nafn=B) — „Prenta öll spjöld" sendir spjöld
+  // án beiðni-ids þannig, svo þau detti ekki þegjandi úr bunkanum.
+  const nafnList = P.getAll('nafn').map(s => s.trim()).filter(Boolean);
 
   let beidnir = [];
   if (beidniIds.length) {
@@ -109,13 +111,11 @@
     // halda röð URL-sins
     beidnir.sort((a, b) => beidniIds.indexOf(String(a.id)) - beidniIds.indexOf(String(b.id)));
     for (const b of beidnir) jobs.push({ beidni: b, baseId: b.customer_base_id || null });
-  } else if (fyrId) {
-    jobs.push({ fyrId: Number(fyrId) });
-  } else if (baseIdP) {
-    jobs.push({ baseId: Number(baseIdP) });
-  } else if (nafnP) {
-    jobs.push({ nameOnly: nafnP });
-  } else {
+  }
+  if (fyrId) jobs.push({ fyrId: Number(fyrId) });
+  if (baseIdP) jobs.push({ baseId: Number(baseIdP) });
+  for (const n of nafnList) jobs.push({ nameOnly: n });
+  if (!jobs.length) {
     $out.innerHTML = '<div class="sheet"><div class="big-missing">Vantar beidni_id / fyrirtaeki_id / base_id / nafn í slóðina.</div></div>';
     $bar.textContent = 'Ekkert til að sækja.';
     return;

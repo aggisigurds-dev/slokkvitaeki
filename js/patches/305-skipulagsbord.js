@@ -432,9 +432,15 @@
       if (act === 'goal-minus') { state.goal = Math.max(state.goal - 1, 1);  persist(); return; }
       if (act === 'print-all') {
         // Dagsskammturinn í einu skjali — síða per fyrirtæki (page-break í blaðinu).
+        // Spjöld án beiðni-ids (dregin af dagskrá) fylgja með sem &nafn= —
+        // enginn dettur þegjandi úr bunkanum.
         const ids = state.cards.filter(c => c.verkbord_id != null).map(c => c.verkbord_id);
-        if (!ids.length) { toast('🖨 Engin spjöld með máli á borðinu'); return; }
-        window.open('/fyrirtaekjablad.html?beidni_id=' + ids.join(','), '_blank');
+        const names = state.cards.filter(c => c.verkbord_id == null && c.name).map(c => c.name);
+        if (!ids.length && !names.length) { toast('🖨 Engin spjöld á borðinu'); return; }
+        const qs = [];
+        if (ids.length) qs.push('beidni_id=' + ids.join(','));
+        names.forEach(function (n) { qs.push('nafn=' + encodeURIComponent(n)); });
+        window.open('/fyrirtaekjablad.html?' + qs.join('&'), '_blank');
         return;
       }
     }
