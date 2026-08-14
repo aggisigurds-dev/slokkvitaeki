@@ -1592,6 +1592,29 @@
       else if (window.App && App.switchView) App.switchView('companies');
     }));
 
+    // ✈ Ferðanótan (2026-08-14, ósk Agnars): dauft innsláttarsvæði undir
+    // fyrirtækjanafninu á listanum — tímabundnar nótur við ferðaskipulag.
+    // Vistast debounced í fyrirtaeki.plan_note; skjá-cache uppfærður svo
+    // endurteiknun sópi ekki gildinu burt. Smellur opnar EKKI fyrirtækið.
+    main.querySelectorAll('._ars-plannote').forEach(inp => {
+      inp.addEventListener('click', e => e.stopPropagation());
+      inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') inp.blur(); });
+      inp.addEventListener('input', () => {
+        clearTimeout(inp._t);
+        inp._t = setTimeout(async () => {
+          const id = +inp.dataset.coId;
+          const val = inp.value.trim() || null;
+          const SB = getSB(); if (!SB || !id) return;
+          try {
+            const r = await SB.from('fyrirtaeki').update({ plan_note: val }).eq('id', id);
+            if (r.error) throw r.error;
+            const c1 = _cache.byId && _cache.byId[id]; if (c1) c1.plan_note = val;
+            const c2 = _cache.list.find(x => x.id === id); if (c2) c2.plan_note = val;
+          } catch (err) { console.warn('[arsskodun] plan_note', err); }
+        }, 600);
+      });
+    });
+
     // "Tekið út" toggle (2026-05-25): operator can mark physical inspection done
     // without finishing the paperwork. Persists to arsskodun_customers[co].field_inspected_year.
     main.querySelectorAll('._ars-tu-toggle').forEach(btn => btn.addEventListener('click', async e => {
