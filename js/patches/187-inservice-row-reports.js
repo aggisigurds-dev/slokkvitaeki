@@ -318,15 +318,16 @@
         // („not with green dot light up untill factchecked").
         const yrCls = (effRep) => {
           const lit = confirmed ? ' lit' : '';
-          if (isGap) return '_yr now' + lit;
+          // gull þegar skoðunarmánuður YFIRSTANDANDI árs er ekki kominn — líka
+          // þegar gap-flagg stendur (Claude-yfirferðirnar flögguðu fjölda 2026-
+          // raða „skýrsla vantar" þótt skoðunin sé ekki tímabær fyrr en seinna
+          // á árinu; Agnar: „we dont have to go yet"). Liðinn mánuður = rautt.
+          const _im = _arsMonthById[String(coId)] || (+(((_arsBlob[String(coId)]) || {}).inspect_month) || 0);
+          const notDue = isNow && !(_im > 0 && _im <= _curMonth);
+          if (isGap) return '_yr ' + (notDue ? 'penda' : 'now') + lit;
           if (effRep) return '_yr ' + (isNow ? 'now' : 'on') + ' both' + lit;
           if (hasInvYear || isClaude) return '_yr ' + (isNow ? 'now' : 'on') + ' inv-only' + lit;
-          if (isNow) {
-            // gull þegar skoðunarmánuðurinn er ekki kominn (eða enginn skráður)
-            const _im = _arsMonthById[String(coId)] || (+(((_arsBlob[String(coId)]) || {}).inspect_month) || 0);
-            const overdue = _im > 0 && _im <= _curMonth;
-            return '_yr ' + (overdue ? 'now' : 'penda') + lit;
-          }
+          if (isNow) return '_yr ' + (notDue ? 'penda' : 'now') + lit;
           return '_yr' + lit;
         };
         // 2026-08-11: „skýrsla vantar"-flaggið kemur FYRST — á undan skjala-
