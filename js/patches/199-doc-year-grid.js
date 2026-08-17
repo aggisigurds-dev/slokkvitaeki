@@ -115,7 +115,7 @@
   // entirely (0 left) instead of decluttering them — worse than the mess.
   async function fetchDocs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,fyrirtaeki_id,is_duplicate').eq('customer_base_id', baseId);
+    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,fyrirtaeki_id,is_duplicate,found_by').eq('customer_base_id', baseId);
       return r.data||[]; }catch(e){ return []; }
   }
   // Brunakerfis-skoðanir (doc_type='brunakerfi') eru lyklaðar á fyrirtaeki_id —
@@ -125,7 +125,7 @@
   async function fetchBrunakerfiDocs(coId){
     var sb=SB(); if(!sb||!coId) return [];
     try{ var r=await sb.from('customer_documents')
-        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,fyrirtaeki_id,is_duplicate')
+        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,fyrirtaeki_id,is_duplicate,found_by')
         .eq('fyrirtaeki_id', coId).eq('doc_type','brunakerfi');
       return r.data||[]; }catch(e){ return []; }
   }
@@ -354,11 +354,30 @@
                  : '<span class="sk-doc rep miss" data-misstitle="'+esc(String(d.notes||'').slice(0,500))+'" title="Skjalið er ekki lengur í Drive — þarf að finna frumritið aftur. Smelltu fyrir söguna.">⚠ '+esc(disp)+'</span>';
     return docWrap(chip, d.id);
   }
+  // 2026-08-17 (regla Agnars: „Kröfuyfirlits-eintakið er truth"): bakfylltu/
+  // endursmíðuðu eintökin frá 18.–19.7 (cowork-regen/-payday-backfill/-backfill,
+  // claude-code:fasi0) og skjöl með upphæð sem stangast á við söluna eru EKKI
+  // frumrit — sölu-reikningurinn gildir. Þau víkja: salan verður aðaleintakið
+  // og skjalið sést sem dauft ⚠-merki með skýringu (ekkert eytt).
+  var SUSPECT_FOUND = /^(cowork-regen|cowork-payday-backfill|cowork-backfill|claude-code:fasi0)/i;
   function invDocChip(d, srcByNum){
     var u=docUrl(d); var lab=invLabel(d.invoice_number);
     var chip;
     var nk = d.invoice_number ? numKey(d.invoice_number) : '';
     var inSolur = nk && srcByNum && srcByNum[nk];
+    if(inSolur){
+      var _s = srcByNum[nk];
+      var _amtOff = (d.amount != null && _s.samtals != null && Math.abs(+d.amount - _s.samtals) > 2);
+      if(_amtOff || SUSPECT_FOUND.test(String(d.found_by||''))){
+        var _why = _amtOff
+          ? ('upphæð skjalsins (' + d.amount + ' kr) stangast á við söluna (' + _s.samtals + ' kr)')
+          : ('bakfyllt/endurgert eintak: ' + String(d.found_by||''));
+        return docWrap(
+          '<button type="button" class="sk-doc inv" data-invopen="'+esc(d.invoice_number)+'" title="Opna reikninginn úr Sölu — Kröfuyfirlits-eintakið gildir">🧾 '+esc(lab)+'</button>' +
+          '<span class="sk-doc inv miss" title="⚠ '+esc(_why)+' — sölu-reikningurinn er rétthærri. Smelltu á ✕ til að fjarlægja skráninguna.">⚠</span>',
+          d.id);
+      }
+    }
     if(u){
       chip = '<a class="sk-doc inv" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna reikning í Drive">🧾 '+esc(lab)+'</a>';
     } else if(inSolur){
@@ -412,11 +431,11 @@
     var d=String(kt).replace(/\D/g,''); if(d.length<7) return {};
     var dash=d.length===10?(d.slice(0,6)+'-'+d.slice(6)):d;
     try{
-      var r=await sb.from('solur').select('num,source,vidskiptategund').or('customer_kt.eq.'+d+',customer_kt.eq.'+dash);
+      var r=await sb.from('solur').select('num,source,vidskiptategund,samtals').or('customer_kt.eq.'+d+',customer_kt.eq.'+dash);
       if(r.error||!r.data) return {};
       // Pakki 7: vidskiptategund (uttekt/bud/ovisst) er nákvæmari en source —
       // geymum bæði; chipInvSrc lætur tegundina ráða þegar hún er til.
-      var m={}; r.data.forEach(function(s){ var k=numKey(s.num); if(k) m[k]={ src:s.source||'pos', teg:s.vidskiptategund||null }; }); return m;
+      var m={}; r.data.forEach(function(s){ var k=numKey(s.num); if(k) m[k]={ src:s.source||'pos', teg:s.vidskiptategund||null, samtals:(s.samtals!=null?+s.samtals:null) }; }); return m;
     }catch(_){ return {}; }
   }
   // Reikningur-sölur kúnnans (greitt_med='reikningur' — sömu og Kröfu yfirlit
@@ -695,7 +714,14 @@
     // en giskað, sama regla og annars staðar í þessari skrá) ──
     var paydayByNum={};
     payday.forEach(function(p){
-      [p.reference, p.number].forEach(function(v){ var k=numKey(v); if(k && !paydayByNum[k]) paydayByNum[k]=p; });
+      // 2026-08-17 (Steypustöðin R-000157 sýnd GREITT ranglega): Payday-
+      // HLAUPANÚMERIÐ (p.number, t.d. „157") árekst við R-númer ANNARS
+      // reiknings (R-000157) í numKey-vörpuninni og víxlaði greiðslustöðu.
+      // Lyklum því aðeins á reference (ber R-númerið) — og á number eingöngu
+      // þegar það ber sjálft R-forskeyti.
+      var _keys=[p.reference];
+      if(/^\s*r/i.test(String(p.number||''))) _keys.push(p.number);
+      _keys.forEach(function(v){ var k=numKey(v); if(k && !paydayByNum[k]) paydayByNum[k]=p; });
     });
     function paydayStatusFor(inv){
       var k = inv && (inv.invoice_number?numKey(inv.invoice_number):numKey(chipInvNum(inv)));
@@ -1310,6 +1336,7 @@
       '.sk-doc{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid;cursor:pointer;margin:2px 4px 2px 0;text-decoration:none;font-family:inherit;line-height:1.2}',
       '.sk-doc.rep{background:var(--surface2);color:#0f172a;border-color:var(--brd)}',
       '.sk-doc.rep.miss{cursor:help;opacity:.62;border-style:dashed;color:#92400e;background:#fffbeb;border-color:#fcd34d}',
+      '.sk-doc.inv.miss{cursor:help;opacity:.62;border-style:dashed;color:#92400e;background:#fffbeb;border-color:#fcd34d;padding:4px 7px}',
       '.sk-doc.inv{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}',
       '.sk-doc.pd{background:#f5f3ff;color:#6d28d9;border-color:#ddd6fe;cursor:default}',
       '.sk-doc.prog{background:#fef3c7;color:#92400e;border-color:#fcd34d;font-weight:700}',
