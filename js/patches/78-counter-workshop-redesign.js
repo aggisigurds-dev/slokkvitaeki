@@ -220,15 +220,40 @@
     return html;
   }
 
+  // 2026-08-17 (Agnar: „add the type color indicator part border on everything
+  // in Afgreiðsla"): tegundar-litakantur vinstra megin á öll verk-kort — sami
+  // litur og Sala/Vörur/Verkstæðis-flísarnar (SlokkTypeColor úr vorur.js).
+  // Kanturinn er inset box-shadow (ekki border) svo hover-handler kortanna
+  // (sem yfirskrifa borderColor/background) slökkvi ekki á honum. Fyrsti
+  // fundni liturinn ræður kantinum; blandað verk fær auka-depla í meta-línuna.
+  function jobTypeColors(jobs) {
+    const cols = [];
+    if (typeof window.SlokkTypeColor !== 'function') return cols;
+    (Array.isArray(jobs) ? jobs : [jobs]).forEach(j => {
+      live(j && j.units).forEach(u => {
+        const c = window.SlokkTypeColor({ nafn: [u.type, u.size, u.service].filter(Boolean).join(' ') });
+        if (c && cols.indexOf(c) === -1) cols.push(c);
+      });
+    });
+    return cols;
+  }
+  function typeFrame(cols) { return cols.length ? 'box-shadow:inset 4px 0 0 ' + cols[0] + ';' : ''; }
+  function typeDots(cols) {
+    if (cols.length < 2) return '';
+    return ' <span style="display:inline-flex;gap:3px;margin-left:2px;vertical-align:middle">' +
+      cols.map(c => '<span style="width:6px;height:6px;border-radius:50%;background:' + c + ';display:inline-block"></span>').join('') + '</span>';
+  }
+
   function jobCard(j) {
     const dot = (window.U && U.dc) ? U.dc(j.status) : '';
     const badge = (window.U && U.badge) ? U.badge(j.status) : '';
-    return '<div onclick="Counter.select(' + j.id + ')" style="display:flex;gap:10px;padding:10px;border-radius:10px;cursor:pointer;margin-bottom:6px;background:#fff;border:1px solid #f1f5f9;transition:all .12s" onmouseover="this.style.background=\'#f8fafc\';this.style.borderColor=\'#e2e8f0\'" onmouseout="this.style.background=\'#fff\';this.style.borderColor=\'#f1f5f9\'">' +
+    const tcols = jobTypeColors(j);
+    return '<div onclick="Counter.select(' + j.id + ')" style="' + typeFrame(tcols) + 'display:flex;gap:10px;padding:10px;border-radius:10px;cursor:pointer;margin-bottom:6px;background:#fff;border:1px solid #f1f5f9;transition:all .12s" onmouseover="this.style.background=\'#f8fafc\';this.style.borderColor=\'#e2e8f0\'" onmouseout="this.style.background=\'#fff\';this.style.borderColor=\'#f1f5f9\'">' +
       `<div class="jli-dot ${dot}" style="flex-shrink:0;margin-top:4px"></div>` +
       '<div style="min-width:0;flex:1">' +
         `<div style="font-family:var(--mono,monospace);font-size:11px;color:#94a3b8;font-weight:600">${dnum(j.num)}</div>` +
         `<div style="font-size:13px;font-weight:600;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</div>` +
-        `<div style="font-size:11px;color:#64748b">${j.units ? j.units.length : 0} slökkvitæki${digitsOnly(j.phone) ? ' · ☎ ' + esc(digitsOnly(j.phone)) : ''}${jobDate(j) ? ' · ' + jobDate(j) : ''} ${badge}</div>` +
+        `<div style="font-size:11px;color:#64748b">${j.units ? j.units.length : 0} slökkvitæki${digitsOnly(j.phone) ? ' · ☎ ' + esc(digitsOnly(j.phone)) : ''}${jobDate(j) ? ' · ' + jobDate(j) : ''} ${badge}${typeDots(tcols)}</div>` +
       '</div>' +
     '</div>';
   }
@@ -237,13 +262,14 @@
     // 2026-07-14: compacted to a 2-line info block + centred controls so every
     // ready card is roughly the same (short) height as a collapsed group card,
     // and a small 🗑 Eyða (soft-delete via patch 234) sits before the actions.
-    return '<div class="cw-rcard" style="display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:10px;margin-bottom:5px;background:#ecfdf5;border:1px solid #a7f3d0">' +
+    const tcols = jobTypeColors(j);
+    return '<div class="cw-rcard" style="' + typeFrame(tcols) + 'display:flex;align-items:center;gap:7px;padding:7px 10px;border-radius:10px;margin-bottom:5px;background:#ecfdf5;border:1px solid #a7f3d0">' +
       '<div class="cw-rcard-info" onclick="Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer;line-height:1.25">' +
         '<div style="display:flex;align-items:baseline;gap:6px;min-width:0">' +
           `<span style="font-family:'Space Mono',monospace;font-size:10px;color:#047857;font-weight:700;flex:none">${dnum(j.num)}</span>` +
           `<span class="cw-rcard-name" style="font-size:13px;font-weight:600;color:#11141c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</span>` +
         '</div>' +
-        `<div style="font-family:'Space Mono',monospace;font-size:10.5px;color:#047857;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${live(j.units).length} slökkvitæki${jobDate(j) ? ' · ' + jobDate(j) : ''}</div>` +
+        `<div style="font-family:'Space Mono',monospace;font-size:10.5px;color:#047857;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${live(j.units).length} slökkvitæki${jobDate(j) ? ' · ' + jobDate(j) : ''}${typeDots(tcols)}</div>` +
       '</div>' +
       `<button type="button" class="_cw-del" onclick="event.stopPropagation();window.Workshop&&Workshop.deleteVerkGroup&&Workshop.deleteVerkGroup([${j.id}])" title="Eyða verki (fer í Eydd verk)" style="flex:none;align-self:center;border:0;background:transparent;color:#b91c1c;font-size:13px;line-height:1;padding:2px 4px;cursor:pointer;opacity:.55">🗑</button>` +
       `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;padding:4px 8px;background:#fffbeb;border:1px solid #fde68a;color:#b45309;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
@@ -260,21 +286,22 @@
       inner = '<div style="padding:4px 4px 8px 18px">' + co.jobs.map(j => {
         const badge = (window.U && U.badge) ? U.badge(j.status) : '';
         const dot = (window.U && U.dc) ? U.dc(j.status) : '';
+        const jtc = jobTypeColors(j);
         if (isReady) {
-          return '<div class="cw-rcard" style="display:flex;gap:8px;padding:7px 8px;border-radius:8px;margin-bottom:3px;background:#f0fdf4;border:1px solid #bbf7d0">' +
+          return '<div class="cw-rcard" style="' + typeFrame(jtc) + 'display:flex;gap:8px;padding:7px 8px;border-radius:8px;margin-bottom:3px;background:#f0fdf4;border:1px solid #bbf7d0">' +
             '<div class="cw-rcard-info" onclick="event.stopPropagation();Counter.select(' + j.id + ')" style="min-width:0;flex:1;cursor:pointer">' +
               `<div style="font-family:var(--mono,monospace);font-size:10px;color:#059669;font-weight:600">${dnum(j.num)}</div>` +
-              `<div style="font-size:12px;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${live(j.units).length} slökkvitæki</div>` +
+              `<div style="font-size:12px;color:#0f172a;margin:1px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${live(j.units).length} slökkvitæki${typeDots(jtc)}</div>` +
             '</div>' +
             `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;margin-right:5px;padding:3px 8px;background:#fff;border:1px solid #fbbf24;color:#92400e;border-radius:99px;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
             `<button class="btn btn-sm btn-success" onclick="event.stopPropagation();Counter.markCollected(${j.id})" style="flex-shrink:0;align-self:center">Sótt ✓</button>` +
           '</div>';
         }
-        return '<div onclick="event.stopPropagation();Counter.select(' + j.id + ')" style="display:flex;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;margin-bottom:3px;background:#f8fafc;border:1px solid #f1f5f9" onmouseover="this.style.background=\'#eef2f7\'" onmouseout="this.style.background=\'#f8fafc\'">' +
+        return '<div onclick="event.stopPropagation();Counter.select(' + j.id + ')" style="' + typeFrame(jtc) + 'display:flex;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer;margin-bottom:3px;background:#f8fafc;border:1px solid #f1f5f9" onmouseover="this.style.background=\'#eef2f7\'" onmouseout="this.style.background=\'#f8fafc\'">' +
           `<div class="jli-dot ${dot}" style="flex-shrink:0;margin-top:3px"></div>` +
           '<div style="min-width:0;flex:1">' +
             `<div style="font-family:var(--mono,monospace);font-size:10px;color:#94a3b8">${dnum(j.num)}</div>` +
-            `<div style="font-size:12px;color:#0f172a;margin:1px 0">${j.units ? j.units.length : 0} slökkvitæki ${badge}</div>` +
+            `<div style="font-size:12px;color:#0f172a;margin:1px 0">${j.units ? j.units.length : 0} slökkvitæki ${badge}${typeDots(jtc)}</div>` +
           '</div>' +
         '</div>';
       }).join('') + '</div>';
