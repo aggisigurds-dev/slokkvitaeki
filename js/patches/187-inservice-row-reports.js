@@ -324,9 +324,15 @@
           // á árinu; Agnar: „we dont have to go yet"). Liðinn mánuður = rautt.
           const _im = _arsMonthById[String(coId)] || (+(((_arsBlob[String(coId)]) || {}).inspect_month) || 0);
           const notDue = isNow && !(_im > 0 && _im <= _curMonth);
+          // 2026-08-17 (Agnar, Heimaleiga Hamraborg 7: „this one is still not
+          // conected"): fyrirtæki sem er MERKT SKOÐAÐ á árinu (Skoðað-hnappurinn
+          // / last_year_inspected í ársskoðunar-blobbinu) sýndi samt RAUTT 26 —
+          // heimsóknin var farin en engin skýrsla/reikningur enn. Skoðað ár án
+          // skjala er „úttekt gerð, skjöl vantar" = blátt, ekki rautt.
+          const _visited = +(((_arsBlob[String(coId)]) || {}).last_year_inspected) === y;
           if (isGap) return '_yr ' + (notDue ? 'penda' : 'now') + lit;
           if (effRep) return '_yr ' + (isNow ? 'now' : 'on') + ' both' + lit;
-          if (hasInvYear || isClaude) return '_yr ' + (isNow ? 'now' : 'on') + ' inv-only' + lit;
+          if (hasInvYear || isClaude || _visited) return '_yr ' + (isNow ? 'now' : 'on') + ' inv-only' + lit;
           if (isNow) return '_yr ' + (notDue ? 'penda' : 'now') + lit;
           return '_yr' + lit;
         };
