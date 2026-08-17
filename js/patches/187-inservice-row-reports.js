@@ -207,7 +207,10 @@
       const tbl = htr.closest('table');
       if (!tbl || !tbl.querySelector('tr._ars-row')) return;      // only the árskoðun table
       if (htr.querySelector('th[data-yrcol]')) return;            // already done this render
-      const ref = htr.children[1] || null;   // right after the "Fyrirtæki" name column
+      // 2026-08-17: Nóta-dálkurinn (153, th[data-notacol]) situr næst á eftir
+      // nafninu — árs-dálkarnir hliðra sér þá um eitt sæti til hægri.
+      let ref = htr.children[1] || null;
+      if (ref && ref.getAttribute && ref.getAttribute('data-notacol')) ref = htr.children[2] || null;
       YEARS.forEach(y => {
         const th = document.createElement('th');
         th.setAttribute('data-yrcol','1');
@@ -225,7 +228,10 @@
       const kt = c ? digits(c.kennitala) : '';
       const rec = uf[kt] || {};
       const files = Array.isArray(att[coId]) ? att[coId] : [];
-      const ref = tr.children[1] || null;   // right after the company name cell
+      // 2026-08-17: hoppa yfir Nóta-reitinn (153, td._ars-notacell) — árs-
+      // reitirnir koma á eftir honum, eins og í hausnum.
+      let ref = tr.children[1] || null;
+      if (ref && ref.classList && ref.classList.contains('_ars-notacell')) ref = tr.children[2] || null;
       const locRec = (locMap && locMap[coId]) || {};
       YEARS.forEach(y => {
         // Uppruna-röð: (1) STAÐRÉTT customer_documents skýrsla (fyrirtaeki_id

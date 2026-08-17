@@ -1541,6 +1541,21 @@
     main.querySelectorAll('._ars-goskip').forEach(el => el.addEventListener('click', (e) => {
       e.stopPropagation(); state.status = 'skipped2025'; saveState(); render();
     }));
+    // ✕ á áminningu beint á röðinni (2026-08-17, Agnar: „they are stuck on
+    // some companies and I cant remove them") — sama vistun og 🗑 í ítarsýninni.
+    main.querySelectorAll('._ars-amin-x').forEach(b => b.addEventListener('click', async (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const id = +b.dataset.coId; if (!id) return;
+      if (!confirm('Eyða áminningunni af þessu fyrirtæki?')) return;
+      const ok = (window.AppSettings && AppSettings.save)
+        ? await AppSettings.save({ [STORAGE_KEY]: { [String(id)]: { aminning: '' } } })
+        : false;
+      if (!ok) { alert('Vistun mistókst — reyndu aftur'); return; }
+      ovrLog(id, 'aminning', 'texti', '');
+      const c2 = (_cache.list || []).find(x => +x.id === id);
+      if (c2 && c2._ars) c2._ars.aminning = '';
+      render();
+    }));
     // ↩ Virkja aftur / aftur í sleppt — handvirk ekki_sleppt-yfirskrift per
     // fyrirtæki (vistast samstillt í arsskodun_customers + override_log).
     main.querySelectorAll('._ars-unskip').forEach(b => b.addEventListener('click', async (e) => {
@@ -2286,6 +2301,7 @@
                 const hover = `onmouseover="this.style.background='#eef2f7'" onmouseout="this.style.background='transparent'"`;
                 return `
                   <th data-sort="name"     class="_ars-sort" style="${css}" ${hover}>Fyrirtæki${arrow('name')}</th>
+                  <th data-notacol="1" style="padding:9px 8px;color:#9A9CA2;font-weight:700;font-size:10px" title="✈ Ferðanóta — tímabundnar nótur við ferðaskipulag">Nóta</th>
                   <th data-sort="postnumer" class="_ars-sort" style="${css}" ${hover} title="Raða eftir póstnúmeri (fyrir akstursleiðir)">Heimilisfang <span style="opacity:.7">📍</span>${arrow('postnumer')}</th>
                   <th data-sort="email"    class="_ars-sort" style="${css}" ${hover}>Netfang${arrow('email')}</th>
                   <th data-sort="month"    class="_ars-sort" style="${css};text-align:center" ${hover}>Skoðun${arrow('month')}</th>
@@ -2293,7 +2309,7 @@
                   <th data-sort="estimate" class="_ars-sort" style="${css};text-align:right" ${hover}>Áætl.${arrow('estimate')}</th>
                   <th data-sort="akstur"   class="_ars-sort" style="${css};text-align:center" ${hover} title="Aksturslisti (1/2/3) — raða til að prenta per bílstjóra">🚗${arrow('akstur')}</th>
                   <th data-sort="priority" class="_ars-sort" style="${css};text-align:center" ${hover}>❗${arrow('priority')}</th>
-                  <th data-sort="status"   class="_ars-sort" style="${css};text-align:right" ${hover}>${curYear}${arrow('status')}</th>
+                  <th data-sort="status"   class="_ars-sort" style="${css}" ${hover}><span style="display:flex;align-items:center;justify-content:space-between;gap:10px"><span style="color:#9A9CA2;font-size:9px;font-weight:700;letter-spacing:.03em;white-space:nowrap" title="Gráu hakirnir — merkja Í vinnslu (skoðun hafin, skýrsla/reikningur eftir)">Í VINNSLU</span><span style="white-space:nowrap">${curYear}${arrow('status')}</span></span></th>
                 `;
               })()}
             </tr>
@@ -2332,11 +2348,13 @@
                       ? `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Handvirkt virkjaður aftur — smelltu til að merkja aftur sem sleppt" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #86efac;background:#f0fdf4;color:#15803d;cursor:pointer;font-weight:700">✓ virkur · ↩ aftur í sleppt</button>`
                       : `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Virkja aftur — telst þá ekki lengur sleppt og birtist í öllum sýnum og tölum" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #fde68a;background:#fef3c7;color:#a16207;cursor:pointer;font-weight:700">↩ Virkja aftur</button>`) : ''}</div>
                     ${c.kennitala ? `<div style="font-size:10.5px;color:var(--ink4);font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
-                    ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''}</div>` : ''}
-                    <input class="_ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="✈ ferðanóta…" maxlength="140"
-                      style="margin-top:2px;display:block;width:min(250px,100%);font:inherit;font-size:10.5px;color:var(--ink2);background:transparent;border:1px dashed transparent;border-radius:6px;padding:1px 5px;outline:none;opacity:.5;box-sizing:border-box"
+                    ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''} <button class="_ars-amin-x" data-co-id="${c.id}" type="button" title="Eyða áminningunni af þessu fyrirtæki" style="border:none;background:transparent;color:#b45309;cursor:pointer;font-size:10px;padding:0 3px;opacity:.7">✕</button></div>` : ''}
+                  </td>
+                  <td class="_ars-notacell" style="padding:8px 7px;vertical-align:middle">
+                    <input class="_ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="✈ nóta…" maxlength="140"
+                      style="display:block;width:min(180px,100%);font:inherit;font-size:10.5px;color:var(--ink2);background:transparent;border:1px dashed var(--brd);border-radius:6px;padding:2px 6px;outline:none;opacity:.6;box-sizing:border-box"
                       onfocus="this.style.borderColor='var(--brd2)';this.style.background='var(--surface)';this.style.opacity='1'"
-                      onblur="this.style.borderColor='transparent';this.style.background='transparent';this.style.opacity='.5'">
+                      onblur="this.style.borderColor='var(--brd)';this.style.background='transparent';this.style.opacity='.6'">
                   </td>
                   <td style="padding:8px 7px;color:var(--ink2);font-size:11.5px">${c.postnumer ? `<span class="_ars-pc" style="display:inline-block;min-width:34px;text-align:center;margin-right:6px;padding:1px 6px;border-radius:6px;background:var(--surface2,#eef2ff);color:#3730a3;font-size:10.5px;font-weight:800;font-variant-numeric:tabular-nums">${esc(c.postnumer)}</span>` : ''}${esc(c.heimilisfang || '—')}</td>
                   <td style="padding:8px 7px;font-size:11px">${(() => {
