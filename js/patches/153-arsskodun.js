@@ -179,6 +179,15 @@
       .select('fyrirtaeki_id,inspect_month,equipment,report_year,total_devices')
       .then(r => (r && r.data) || [])
       .catch(() => []);
+    // 2026-08-17 (Agnar — Pizzan: „everything yellow but still Skoðað 2026 …
+    // link that also to the 26 label color"): fact-check staða yfirstandandi
+    // árs (year_factcheck, sama tafla og árs-merkin í 187/199) TROMPAR
+    // „Skoðað <ár>"-stöðuna: 'gap' (gult) = EKKI búið · 'human' (grænt) = búið
+    // · annars ræður blobbinn (last_year_inspected). Tvísmellur á '26-merkið
+    // verður þannig rofinn fyrir stöðuna líka.
+    const fcCurP = SB.from('year_factcheck').select('co_id,status').eq('year', new Date().getFullYear())
+      .then(r => { const m = {}; ((r && r.data) || []).forEach(x => { m[String(x.co_id)] = x.status; }); return m; })
+      .catch(() => ({}));
     // 2026-08-13 (Agnar): talnakortin þrjú efst (Fjöldi / Búið / Eftir) lesa
     // EINA sannleikstölu úr Supabase-viewinu v_thjonustu_tolur í stað
     // staðbundinna JS-útreikninga sem ráku í sundur við grunninn
@@ -246,6 +255,7 @@
     _cache.docYears = docYears;
     _cache.tolur = await tolurP;
     const skManById = Object.fromEntries((await skManP).map(r => [String(r.fyrirtaeki_id), r]));
+    _cache.fcCur = await fcCurP;   // co_id → 'human'|'claude'|'gap' fyrir yfirstandandi ár
 
     // 2026-05-19: Only include companies that are ACTUALLY in service
     // (subscribed to ársskoðun, subscribed to brunakerfi, OR — new — they have
@@ -726,6 +736,18 @@
     if (a.ekki_sleppt) return false;
     const last = +a.last_year_inspected || 0;
     return last > 0 && last < curYear - 1;
+  }
+  // 2026-08-17 (Agnar — Pizzan: gult '26-merki en samt „Skoðað 2026" og „I
+  // cant change that"): EIN skilgreining á „árið búið". Fact-check litur
+  // yfirstandandi árs (year_factcheck — sami og '26-merkin í 187/199 hringa
+  // með tvísmelli) TROMPAR blobbinn: gult (gap) = EKKI búið · grænt (human) =
+  // búið · blátt/ekkert = last_year_inspected ræður. Tvísmellur á '26-merkið
+  // er þar með rofinn fyrir Skoðað-stöðuna, síurnar og talnakortið.
+  function isDoneYear(c, curYear) {
+    const fc = (_cache.fcCur || {})[String(c.id)];
+    if (fc === 'gap') return false;
+    if (fc === 'human') return true;
+    return (+((c._ars || {}).last_year_inspected) || 0) === curYear;
   }
   function saveState() {
     localStorage.setItem(LS_VIEW, state.view);
