@@ -85,7 +85,13 @@
     var d=dash(kt); if(!d) return null;
     if(_baseCache[d]!==undefined) return _baseCache[d];
     var sb=SB(); if(!sb) return null;
-    try{ var r=await sb.from('customers_base').select('id').eq('kennitala', d).limit(1);
+    // 2026-08-17 (E Fasteignafélag o.fl., 9 raðir): customers_base geymdi kt
+    // sumstaðar ÁN bandstriks — .eq á strikuðu myndina fann þá enga tengingu,
+    // „Ekki enn tengt grunnskrá" birtist ranglega og skjöl grunnskrárinnar
+    // (skýrslur + reikningar) hlóðust ekki. Gögnin voru normalíseruð, en
+    // uppflettingin þolir nú BÁÐAR myndir svo nýr innflutningur brjóti ekkert.
+    var digits=String(d).replace(/\D/g,'');
+    try{ var r=await sb.from('customers_base').select('id').or('kennitala.eq.'+d+',kennitala.eq.'+digits).limit(1);
       var id=(r.data&&r.data[0])?r.data[0].id:null; _baseCache[d]=id; return id; }
     catch(e){ return null; }
   }
