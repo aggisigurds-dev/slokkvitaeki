@@ -2307,8 +2307,8 @@
       V+'.data-table{min-width:1300px;width:100%;table-layout:fixed}',
       // Súlubreiddirnar koma úr <colgroup> í renderTable (skothelt í fixed
       // layout, ónæmt fyrir colspan-hausnum) — design: 186/118/4×64/284/62/158/74/66/150.
-      // árs-reitirnir fjórir (187 sprautar) — miðjaðir, þétt bil
-      V+'.data-table td:nth-child(3),'+V+'.data-table td:nth-child(4),'+V+'.data-table td:nth-child(5),'+V+'.data-table td:nth-child(6){padding-left:2px;padding-right:2px;text-align:center}',
+      // árs-reitirnir fjórir (187 sprautar, sitja nú á 4–7 á eftir heimilisfangi)
+      V+'.data-table td:nth-child(4),'+V+'.data-table td:nth-child(5),'+V+'.data-table td:nth-child(6),'+V+'.data-table td:nth-child(7){padding-left:2px;padding-right:2px;text-align:center}',
       V+'._co{display:block;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       V+'._kt{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.02em;white-space:nowrap;line-height:1.2}',
       V+'._addr{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}',
@@ -2392,8 +2392,9 @@
         <table class="data-table">
           <colgroup>
             <col style="width:186px"><col style="width:118px">
+            <col style="width:284px">
             <col style="width:64px"><col style="width:64px"><col style="width:64px"><col style="width:64px">
-            <col style="width:284px"><col style="width:62px"><col style="width:158px">
+            <col style="width:62px"><col style="width:158px">
             <col style="width:74px"><col style="width:66px"><col style="width:150px">
           </colgroup>
           <thead>
@@ -2407,7 +2408,7 @@
                 return `
                   <th data-sort="name" class="_ars-sort">Fyrirtæki${arrow('name')}</th>
                   <th data-notacol="1" title="✈ Ferðanóta — tímabundnar nótur við ferðaskipulag">Ferðanóta</th>
-                  <th data-sort="postnumer" class="_ars-sort" title="Raða eftir póstnúmeri (fyrir akstursleiðir)">Heimilisfang${arrow('postnumer')}</th>
+                  <th data-addrcol="1" data-sort="postnumer" class="_ars-sort" title="Raða eftir póstnúmeri (fyrir akstursleiðir)">Heimilisfang${arrow('postnumer')}</th>
                   <th data-sort="month" class="_ars-sort center">Skoðun${arrow('month')}</th>
                   <th data-sort="tools" class="_ars-sort num">Tæki${arrow('tools')}</th>
                   <th data-sort="akstur" class="_ars-sort center" title="Aksturslisti (1/2/3) — raða til að prenta per bílstjóra">Akstur${arrow('akstur')}</th>
@@ -2456,7 +2457,7 @@
                     ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3;white-space:normal"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''} <button class="_ars-amin-x" data-co-id="${c.id}" type="button" title="Eyða áminningunni af þessu fyrirtæki" style="border:none;background:transparent;color:#b45309;cursor:pointer;font-size:10px;padding:0 3px;opacity:.7">✕</button></div>` : ''}
                   </td>
                   <td class="_ars-notacell"><input class="_note _ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="Ferðanóta…" maxlength="140"></td>
-                  <td><span class="_addr">${c.postnumer ? `<span class="_post">${esc(c.postnumer)}</span>` : ''}${esc(c.heimilisfang || '—')}</span></td>
+                  <td class="_ars-addrcell"><span class="_addr">${c.postnumer ? `<span class="_post">${esc(c.postnumer)}</span>` : ''}${esc(c.heimilisfang || '—')}</span></td>
                   <td class="center${ovr ? ' _ars-ovr-month' : ''}"${ovr ? ` data-co-id="${c.id}" title="⚡ Smelltu til að breyta skoðunarmánuði" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}><span class="_mo" style="${m===curMonth?'color:#c0241f;font-weight:700':''}">${manualMark(esc(MONTHS_IS_SHORT[m-1] || '—'), !!ars.inspect_month_manual)}</span></td>
                   <td ${ovr ? `class="_ars-ovr-eq" data-co-id="${c.id}" title="⚡ Smelltu til að breyta tækjatölum" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}>
                     <div class="_devs">

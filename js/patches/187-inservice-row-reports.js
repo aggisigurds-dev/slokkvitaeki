@@ -207,13 +207,12 @@
       const tbl = htr.closest('table');
       if (!tbl || !tbl.querySelector('tr._ars-row')) return;      // only the árskoðun table
       if (htr.querySelector('th[data-yrcol]')) return;            // already done this render
-      // 2026-08-17: Nóta-dálkurinn (153, th[data-notacol]) situr næst á eftir
-      // nafninu — árs-dálkarnir hliðra sér þá um eitt sæti til hægri, og fá
-      // EINN samhaus „Skoðanir · skjöl" (colspan=4) eins og mockupið, í stað
-      // fjögurra '23–'26 hausa. Röð-reitirnir eru áfram fjórir undir honum.
+      // 2026-08-17: Nóta- og Heimilisfangs-dálkarnir (153, data-notacol/-addrcol)
+      // sitja á eftir nafninu — árs-dálkarnir hoppa yfir þá og fá EINN samhaus
+      // „Skoðanir · skjöl" (colspan=4). Röð-reitirnir eru áfram fjórir undir.
       let ref = htr.children[1] || null;
       const hasNota = !!(ref && ref.getAttribute && ref.getAttribute('data-notacol'));
-      if (hasNota) ref = htr.children[2] || null;
+      while (ref && ref.getAttribute && (ref.getAttribute('data-notacol') || ref.getAttribute('data-addrcol'))) ref = ref.nextElementSibling;
       if (hasNota) {
         // Design v3: EINN samhaus yfir árin fjögur — erfir þema-hausstílinn
         // (.thm .data-table th) svo hann er eins og hinir hausarnir.
@@ -240,10 +239,10 @@
       const kt = c ? digits(c.kennitala) : '';
       const rec = uf[kt] || {};
       const files = Array.isArray(att[coId]) ? att[coId] : [];
-      // 2026-08-17: hoppa yfir Nóta-reitinn (153, td._ars-notacell) — árs-
-      // reitirnir koma á eftir honum, eins og í hausnum.
+      // 2026-08-17: hoppa yfir Nóta- OG Heimilisfangs-reitina (153,
+      // ._ars-notacell/._ars-addrcell) — árs-reitirnir koma á eftir þeim.
       let ref = tr.children[1] || null;
-      if (ref && ref.classList && ref.classList.contains('_ars-notacell')) ref = tr.children[2] || null;
+      while (ref && ref.classList && (ref.classList.contains('_ars-notacell') || ref.classList.contains('_ars-addrcell'))) ref = ref.nextElementSibling;
       const locRec = (locMap && locMap[coId]) || {};
       YEARS.forEach(y => {
         // Uppruna-röð: (1) STAÐRÉTT customer_documents skýrsla (fyrirtaeki_id
