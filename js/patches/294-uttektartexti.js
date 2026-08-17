@@ -144,29 +144,59 @@
     var st = skanna(coId), nHaus = hausar(coId), s = [];
     if (!st.alls) return '';
 
-    if (st.yfir > 0) s.push('Öll slökkvitæki yfirfarin og vottuð í lagi.');
-    if (st.hled > 0) s.push(st.hled === 1
-      ? 'Eitt slökkvitæki endurhlaðið.'
-      : cap(hk(st.hled)) + ' slökkvitæki endurhlaðin.');
-    if (st.onytt > 0) s.push(st.onytt === 1
-      ? 'Eitt tæki reyndist ónýtt og var tekið úr notkun.'
-      : cap(hk(st.onytt)) + ' tæki reyndust ónýt og voru tekin úr notkun.');
+    // 1. Grunnsetningin. Sé ALLT endurhlaðið fellur það inn í hana
+    //    („yfirfarin, endurhlaðin og vottuð í lagi") — annars kemur hleðslan
+    //    sem sér setning á eftir. Ónýtt skeytist inn í grunnsetninguna
+    //    („nema eitt sem var dæmt ónýtt"), fær ALDREI sér setningu.
+    var grunn = '';
+    if (st.yfir > 0)      grunn = 'Öll slökkvitæki yfirfarin og vottuð í lagi';
+    else if (st.hled > 0) grunn = 'Öll slökkvitæki yfirfarin, endurhlaðin og vottuð í lagi';
+    if (grunn) {
+      if (st.onytt > 0) grunn += st.onytt === 1
+        ? ' nema eitt sem var dæmt ónýtt'
+        : ' nema ' + hk(st.onytt) + ' sem voru dæmd ónýt';
+      s.push(grunn + '.');
+    } else if (st.onytt > 0) {
+      // Jaðartilvik: ekkert yfirfarið/hlaðið, bara ónýtt.
+      s.push(st.onytt === 1
+        ? 'Eitt slökkvitæki var dæmt ónýtt og tekið úr notkun.'
+        : cap(hk(st.onytt)) + ' slökkvitæki dæmd ónýt og tekin úr notkun.');
+    }
+
+    // 2. Endurhleðsla að hluta — sér setning með vottun (einfaldasta
+    //    húsmálsformið: „Fjögur slökkvitæki endurhlaðin og vottuð í lagi.").
+    if (st.yfir > 0 && st.hled > 0) s.push(st.hled === 1
+      ? 'Eitt slökkvitæki endurhlaðið og vottað í lagi.'
+      : cap(hk(st.hled)) + ' slökkvitæki endurhlaðin og vottuð í lagi.');
+
+    // 3. Ný tæki í þágufalli.
     if (st.nytt > 0) s.push(st.nytt === 1
-      ? 'Eitt nýtt tæki var sett upp.'
-      : cap(hk(st.nytt)) + ' ný tæki voru sett upp.');
-    // Hausskiptin ALLTAF beint á undan slöngu-vottuninni.
-    if (nHaus > 0) s.push(nHaus === 1
-      ? 'Skipt um stút á einni brunaslöngu.'
-      : 'Skipt um stúta á ' + nHaus + ' brunaslöngum.');
+      ? 'Einu nýju slökkvitæki bætt við.'
+      : st.nytt + ' nýjum slökkvitækjum bætt við.');
+
+    // 4. Reykskynjarar — sér lína í húsmálinu, rafhlöðuskipti eru hluti af
+    //    árlegri þjónustu.
+    if (st.skynj > 0) s.push(st.skynj === 1
+      ? 'Reykskynjari hljóðprófaður og skipt um rafhlöður.'
+      : 'Reykskynjarar hljóðprófaðir og skipt um rafhlöður.');
+
+    var txt = s.join(' ');
+
+    // 5.+6. Stútskipti og slöngu-línan — SÉR LÍNA neðst, alltaf síðast.
     // Brunaslöngu-VOTTUN má ALDREI leiðast af tækjalistanum (Agnar + húsmál,
     // Blikkhellu-gildran: „…og ein þeirra lekur"). Sjálfvirki textinn segir aðeins
     // að slöngurnar hafi verið PRÓFAÐAR (verkið sem var unnið) — niðurstöðuna
     // („og vottaðar í lagi" EÐA leka-athugasemd) skrifar maður handvirkt.
-    if (st.slanga > 0) s.push(st.slanga === 1
+    var slongur = [];
+    if (nHaus > 0) slongur.push(nHaus === 1
+      ? 'Skipt um stút á einni brunaslöngu.'
+      : 'Skipt um stúta á ' + nHaus + ' brunaslöngum.');
+    if (st.slanga > 0) slongur.push(st.slanga === 1
       ? 'Brunaslanga prófuð á fullum þrýstingi.'
       : 'Brunaslöngur prófaðar á fullum þrýstingi.');
+    if (slongur.length) txt = (txt ? txt + '\n' : '') + slongur.join(' ');
 
-    return s.join(' ');
+    return txt;
   }
 
   function fylla(coId, yfirskrifa) {
