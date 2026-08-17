@@ -717,8 +717,14 @@
   // Sleppt í fyrra = síðast skoðað fyrir meira en ári síðan (en einhvern tíma).
   // EIN skilgreining — bæði sían sjálf, feluglerið og talningarnar lesa hana,
   // svo þær geta ekki rekið í sundur (sbr. 'skipped2025'-síuna hér að neðan).
+  // 2026-08-17 (Agnar: „be able to unhide some of them"): handvirk yfirskrift
+  // `ekki_sleppt` (vistuð í arsskodun_customers-blokkinni, sett með ↩ Virkja-
+  // takkanum í 🟡 Slepptir-sýninni) trompar reikninguna — fyrirtækið telst þá
+  // virkt aftur í öllum sýnum og tölum þótt síðasta skoðunarár sé gamalt.
   function isSkippedLastYear(c, curYear) {
-    const last = +((c._ars || {}).last_year_inspected) || 0;
+    const a = c._ars || {};
+    if (a.ekki_sleppt) return false;
+    const last = +a.last_year_inspected || 0;
     return last > 0 && last < curYear - 1;
   }
   function saveState() {
@@ -813,7 +819,7 @@
         const last = +c._ars.last_year_inspected || 0;
         if (last === curYear) return false;
         if (+(c._ars.field_inspected_year || 0) === curYear) return false;   // Í vinnslu
-        const skipped = last > 0 && last < curYear - 1;
+        const skipped = isSkippedLastYear(c, curYear);
         const m = +c._ars.inspect_month || 0;
         return skipped || (m > 0 && m <= curMonth);
       });
@@ -829,6 +835,9 @@
     } else if (state.status === 'skipped2025') {
       // 2026-05-26: companies inspected 2024 but skipped 2025 — the "weird year"
       // hole. Detect by last_year_inspected === 2024 (or any year < curYear-1).
+      // 2026-08-17: VILJANDI hráa reglan (án ekki_sleppt-yfirskriftar) — þessi
+      // sýn er stjórnborðið: hún sýnir líka þá sem voru handvirkt virkjaðir
+      // aftur (með ✓-merki + takka til að snúa við) svo yfirlitið tapist ekki.
       arr = arr.filter(c => {
         const last = +c._ars.last_year_inspected || 0;
         return last > 0 && last < curYear - 1;
@@ -919,7 +928,7 @@
           const m = +ars.inspect_month || 0;
           if (lastYr === curYear) return 0;
           if (fieldYr === curYear) return 1;
-          if (lastYr > 0 && lastYr < curYear - 1) return 3;
+          if (isSkippedLastYear(c, curYear)) return 3;
           if (m > 0 && m <= curMonth) return 2;
           return 4;
         };
@@ -1274,7 +1283,7 @@
             <div style="width:38px;height:38px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;background:linear-gradient(180deg,#4a4e57,#2b2e34);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.18),inset 0 -3px 6px rgba(0,0,0,.4)">🏢</div>
             <div style="min-width:0">
               <h1 style="margin:0;font-size:20px;font-weight:700;color:#fff;letter-spacing:-.01em;line-height:1.15">Fyrirtæki í Þjónustu</h1>
-              <div class="_ars-sub" style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">${tv('allar_i_thjonustu')} fyrirtæki · ${tv('i_arsskodun')} í árlegri slökkvitækjaskoðun${skipHidden ? ` · <span style="color:#fcd34d">🟡 ${skippedCount} slepptir faldir</span>` : ''}</div>
+              <div class="_ars-sub" style="font-size:12px;color:rgba(255,255,255,.6);margin-top:1px">${tv('allar_i_thjonustu')} fyrirtæki · ${tv('i_arsskodun')} í árlegri slökkvitækjaskoðun${skipHidden ? ` · <span class="_ars-goskip" title="Opna listann yfir slepptu — þar má virkja einstaka aftur með ↩" style="color:#fcd34d;cursor:pointer;text-decoration:underline dotted">🟡 ${skippedCount} slepptir faldir</span>` : ''}</div>
             </div>
           </div>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -1447,7 +1456,7 @@
         ` : ''}
 
         <div style="margin-top:18px;font-size:11px;color:var(--ink4);text-align:center">
-          Sýni <strong style="color:var(--ink2)">${filtered.length}</strong> af ${allCount} viðskiptavinum${skipHidden ? ` · ${skippedCount} slepptir faldir` : ''}
+          Sýni <strong style="color:var(--ink2)">${filtered.length}</strong> af ${allCount} viðskiptavinum${skipHidden ? ` · <span class="_ars-goskip" title="Opna listann yfir slepptu" style="cursor:pointer;text-decoration:underline dotted">${skippedCount} slepptir faldir</span>` : ''}
         </div>
       </div>
     `;
@@ -1487,6 +1496,33 @@
     }
     main.querySelectorAll('._ars-st').forEach(b => b.addEventListener('click', () => {
       state.status = b.dataset.status; saveState(); render();
+    }));
+    // 2026-08-17: „N slepptir faldir"-textinn (haus + fótur) er smellanlegur og
+    // stekkur beint í 🟡 Slepptir-sýnina þar sem má yfirfara og virkja aftur.
+    main.querySelectorAll('._ars-goskip').forEach(el => el.addEventListener('click', (e) => {
+      e.stopPropagation(); state.status = 'skipped2025'; saveState(); render();
+    }));
+    // ↩ Virkja aftur / aftur í sleppt — handvirk ekki_sleppt-yfirskrift per
+    // fyrirtæki (vistast samstillt í arsskodun_customers + override_log).
+    main.querySelectorAll('._ars-unskip').forEach(b => b.addEventListener('click', async (e) => {
+      e.preventDefault(); e.stopPropagation();
+      const coId = +b.dataset.coId; if (!coId) return;
+      const c = (_cache.byId && _cache.byId[coId]) || (_cache.list || []).find(x => +x.id === coId);
+      if (!c) return;
+      const cur = !!((c._ars || {}).ekki_sleppt);
+      const next = !cur;
+      b.disabled = true;
+      try {
+        if (window.AppSettings && AppSettings.save) {
+          await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { ekki_sleppt: next } } });
+        }
+        c._ars = c._ars || {}; c._ars.ekki_sleppt = next;
+        ovrLog(coId, 'ekki_sleppt', String(cur), String(next));
+        if (window.Toast && Toast.show) Toast.show(next
+          ? '↩ ' + (c.nafn || '') + ' virkur aftur — telst ekki lengur sleppt'
+          : '🟡 ' + (c.nafn || '') + ' aftur merkt sleppt');
+      } catch (err) { alert('Vistun mistókst: ' + (err && err.message || err)); }
+      render();
     }));
     // 🟡 „fela"-gátreiturinn — víxlar hvort slepptir sjáist í hinum sýnunum.
     // Stendur við hliðina á síunni sjálfri en kveikir hana EKKI (annars gætirðu
@@ -1718,7 +1754,7 @@
       // colours and meaning) so the printed list matches what's on screen.
       const isDone = lastYr === curYear;
       const isFieldOnly = !isDone && fieldYr === curYear;
-      const isSkipped = !isDone && !isFieldOnly && lastYr > 0 && lastYr < curYear - 1;
+      const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
       const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
       // „Á dagskrá" = himinblátt (sky) eins og pillan á skjánum (var grátt) svo
       // prentaði listinn passi við aðallistann.
@@ -1954,7 +1990,7 @@
           // 2026-05-26: "skipped last year" — last inspection was 2024 (or older)
           // even though curYear-1 (2025) should have happened. Coworker reported
           // 2025 was a chaotic year and several locations never got visited.
-          const isSkipped = !isDone && !isFieldOnly && lastYr > 0 && lastYr < curYear - 1;
+          const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
           const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
           const aminning = cleanAminning(ars.aminning);
           const est = +ars.estimated_yearly || 0;
@@ -2233,7 +2269,7 @@
               const fieldYr = +ars.field_inspected_year || 0;
               const isDone = lastYr === curYear;
               const isFieldOnly = !isDone && fieldYr === curYear;
-              const isSkipped = !isDone && !isFieldOnly && lastYr > 0 && lastYr < curYear - 1;
+              const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
               const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
               const est = +ars.estimated_yearly || 0;
               const aminning = cleanAminning(ars.aminning);
@@ -2253,7 +2289,9 @@
               return `
                 <tr class="_ars-row" data-co-id="${c.id}" style="border-bottom:1px solid var(--brd);cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
                   <td style="padding:8px 11px">
-                    <div style="font-weight:600;color:var(--ink1);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${esc(c.nafn || '—')}${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}${(window.RekstrarfelagBadge && c.kennitala) ? RekstrarfelagBadge.html(c.kennitala) : ''}</div>
+                    <div style="font-weight:600;color:var(--ink1);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${esc(c.nafn || '—')}${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}${(window.RekstrarfelagBadge && c.kennitala) ? RekstrarfelagBadge.html(c.kennitala) : ''}${state.status === 'skipped2025' ? (ars.ekki_sleppt
+                      ? `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Handvirkt virkjaður aftur — smelltu til að merkja aftur sem sleppt" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #86efac;background:#f0fdf4;color:#15803d;cursor:pointer;font-weight:700">✓ virkur · ↩ aftur í sleppt</button>`
+                      : `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Virkja aftur — telst þá ekki lengur sleppt og birtist í öllum sýnum og tölum" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #fde68a;background:#fef3c7;color:#a16207;cursor:pointer;font-weight:700">↩ Virkja aftur</button>`) : ''}</div>
                     ${c.kennitala ? `<div style="font-size:10.5px;color:var(--ink4);font-family:monospace;margin-top:1px">kt. ${esc(fmtKt(c.kennitala))}</div>` : ''}
                     ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''}</div>` : ''}
                     <input class="_ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="✈ ferðanóta…" maxlength="140"
