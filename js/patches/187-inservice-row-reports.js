@@ -231,6 +231,12 @@
       });
     });
 
+    // 2026-08-17 (Agnar — „Des-skoðun, we dont have to go yet"): skoðunar-
+    // mánuðurinn ræður hvort tómt yfirstandandi ár er RAUTT (mánuður kominn/
+    // liðinn = á eftir) eða GULL (mánuður seinna á árinu / enginn = á dagskrá).
+    const _arsBlob = (window.AppSettings && AppSettings.path && AppSettings.path('arsskodun_customers')) || {};
+    const _curMonth = new Date().getMonth() + 1;
+
     // 2) each company row — add the four year cells at the same position
     document.querySelectorAll('tr._ars-row:not([data-yrcol])').forEach(tr => {
       tr.setAttribute('data-yrcol','1');
@@ -305,7 +311,12 @@
           if (isGap) return '_yr now' + lit;
           if (effRep) return '_yr ' + (isNow ? 'now' : 'on') + ' both' + lit;
           if (hasInvYear || isClaude) return '_yr ' + (isNow ? 'now' : 'on') + ' inv-only' + lit;
-          if (isNow) return '_yr now' + lit;
+          if (isNow) {
+            // gull þegar skoðunarmánuðurinn er ekki kominn (eða enginn skráður)
+            const _im = +(((_arsBlob[String(coId)]) || {}).inspect_month) || 0;
+            const overdue = _im > 0 && _im <= _curMonth;
+            return '_yr ' + (overdue ? 'now' : 'penda') + lit;
+          }
           return '_yr' + lit;
         };
         // 2026-08-11: „skýrsla vantar"-flaggið kemur FYRST — á undan skjala-
