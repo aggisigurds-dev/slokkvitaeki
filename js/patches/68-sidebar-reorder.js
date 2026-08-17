@@ -273,10 +273,14 @@
       // (gamla stillingasíðan, patch 86/88) — svo hvorugt kerfið af-feli það
       // sem hitt faldi. Rótin að „Brunakerfisþjónusta/Verkdagbók popping up":
       // 88 núllstillti display á öllu sem var ekki í HANS lista.
+      // NB gamli listinn geymir data-view NÖFN (88 felur með [data-view=…]) —
+      // þau mega AÐEINS matcha nákvæmt id, ALDREI label-substring: 'yfirlit'-
+      // færslan (útdauður takki) faldi annars Kröfu/Bókhalds/Brunakerfi yfirlit.
       const hiddenRaw = getHidden().slice();
+      const utlitHidden = new Set();
       try {
         const u = (window.AppSettings && AppSettings.path && AppSettings.path('utlit')) || {};
-        (u.hidden_nav_views || []).forEach(h => { if (hiddenRaw.indexOf(h) === -1) hiddenRaw.push(h); });
+        (u.hidden_nav_views || []).forEach(h => utlitHidden.add(String(h)));
       } catch (_) {}
       // Set of every real data-view id present. A hidden entry that IS a data-view
       // id (e.g. "yfirlit") must match ONLY its own button by id — never loosely
@@ -284,8 +288,9 @@
       // "Bókhalds yfirlit" (their labels merely contain the word "yfirlit").
       const allViewIds = new Set(buttons.map(b => b.getAttribute && b.getAttribute('data-view')).filter(Boolean));
       function isHiddenBtn(b) {
-        if (!hiddenRaw.length) return false;
         const id = navId(b);
+        if (utlitHidden.has(id)) return true;   // gamli listinn: nákvæm data-view samsvörun eingöngu
+        if (!hiddenRaw.length) return false;
         const txt = btnText(b);
         return hiddenRaw.some(h => {
           h = String(h);

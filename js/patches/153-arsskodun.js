@@ -1197,6 +1197,12 @@
     const arsAllRaw = all.filter(c => c._ars && c._ars.equipment);
     const arsAll = skipHidden ? arsAllRaw.filter(c => !isSkippedLastYear(c, curYear)) : arsAllRaw;
     const skippedCount = arsAllRaw.filter(c => isSkippedLastYear(c, curYear)).length;
+    // 2026-08-17 (Agnar: „sýndu frekar 303-309 töluna og síðan 245 töluna fyrir
+    // neðan"): Búið-spjaldið sýnir nú SÖMU tölu og listinn/sían — fjölda merkta
+    // „Skoðað <ár>" (last_year_inspected) — með skjalfestu grunntöluna
+    // (v_thjonustu_tolur.buid_2026 = 2026-skýrsla skráð) sem undirlínu. Bilið
+    // milli talnanna = skoðaðir staðir sem vantar skráða skýrslu.
+    const buidTalin = all.filter(c => +((c._ars || {}).last_year_inspected) === curYear).length;
     const allCount = skipHidden ? all.filter(c => !isSkippedLastYear(c, curYear)).length : all.length;
     const monthCounts = Array(13).fill(0);
     // index 0 = fjöldi án skráðs mánaðar („Án mánaðar"-chippurinn)
@@ -1309,10 +1315,10 @@
             <div style="font-size:22px;font-weight:800;color:var(--ink1);line-height:1.1;margin-top:2px">${tv('fjoldi')}</div>
             <div style="font-size:10.5px;color:var(--ink3)">${tv('i_arsskodun')} í ársskoðun</div>
           </div>
-          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px">
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px" title="Stóra talan = merkt „Skoðað ${curYear}" (sama og listinn). Neðri talan = 2026-skýrsla skráð í skjalagrunninn (v_thjonustu_tolur). Munurinn = skoðaðir staðir sem vantar skráða skýrslu.">
             <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Búið ${curYear}</div>
-            <div style="font-size:22px;font-weight:800;color:#15803d;line-height:1.1;margin-top:2px">${tv('buid_2026')}</div>
-            <div style="font-size:10.5px;color:#16a34a">${tv('buid_2026_pct')}% af ársskoðun</div>
+            <div style="font-size:22px;font-weight:800;color:#15803d;line-height:1.1;margin-top:2px">${buidTalin}</div>
+            <div style="font-size:10.5px;color:#16a34a">þar af ${tv('buid_2026')} með skýrslu skjalfesta</div>
           </div>
           <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:10px;padding:11px 13px">
             <div style="font-size:10px;font-weight:700;color:#92400e;text-transform:uppercase;letter-spacing:.05em">Eftir ${curYear}</div>
