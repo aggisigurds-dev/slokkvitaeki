@@ -41,7 +41,7 @@
       var rows=[],from=0;
       // 2026-07-30 (Verkefnalisti 93677d13): worksite_id tekið með svo röð geti
       // talið tækin sem eru BEINT tengd sínum stað (sjá coEquipSt að neðan).
-      try{ while(true){ var r=await SB.from('uttaeki').select('client,last_insp,next_insp,worksite_id').range(from,from+999);
+      try{ while(true){ var r=await SB.from('uttaeki').select('client,last_insp,next_insp,worksite_id').order('id').range(from,from+999);
         if(r.error)break; rows=rows.concat(r.data||[]); if(!r.data||r.data.length<1000)break; from+=1000; if(from>20000)break; } }catch(e){}
       // Per-staðar sannleikur síðustu skýrslu (PK fyrirtaeki_id) — trompa talninguna.
       var factRows=[];

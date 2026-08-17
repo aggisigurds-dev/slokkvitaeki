@@ -2398,7 +2398,7 @@ console.log('[patch-master] loaded with all fixes');
       var d30 = new Date(Date.now()+30*86400000).toISOString().substring(0,10);
       // 6.301 virk tæki — ein .select() skilaði 1000 og útrunnin/vikan/mánuðurinn
       // töldu því aðeins brot. Blaðsíðuflett gegnum 1000-raða þakið.
-      var units = { data: await window.DB.fetchAll(function(from,to){ return window.DB.sb.from('uttaeki').select('id,next_insp,status,client').eq('status','active').range(from,to); }) };
+      var units = { data: await window.DB.fetchAll(function(from,to){ return window.DB.sb.from('uttaeki').select('id,next_insp,status,client').eq('status','active').order('id').range(from,to); }) };
       if(!units.data) return;
       var all = units.data;
       var overdue = all.filter(function(u){return u.next_insp && u.next_insp < today;});

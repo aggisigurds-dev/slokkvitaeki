@@ -110,7 +110,12 @@ var DB = {
         var pageSize = 1000;
         var allRows = [];
         for (var start = 0; ; start += pageSize) {
-          var res = await sb.from('uttaeki').select('*').order('client').range(start, start + pageSize - 1);
+          // 2026-08-17: .order('id') tiebreaker — ORDER BY client eitt og sér er
+          // ekki einkvæmt (hundruð raða deila sama client) svo Postgres má raða
+          // jafningjum MISMUNANDI milli síðu-fyrirspurna og raðir detta þá milli
+          // síðna: skyndiminnið endaði með 6191 af 6197 tækjum og Afltak (6 ný
+          // tæki) „átti engin tæki" — reikningsglugginn opnaðist ekki.
+          var res = await sb.from('uttaeki').select('*').order('client').order('id').range(start, start + pageSize - 1);
           if (res.error) throw res.error;
           var rows = res.data || [];
           allRows = allRows.concat(rows);

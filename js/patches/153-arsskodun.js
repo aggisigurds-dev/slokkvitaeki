@@ -502,6 +502,7 @@
         const { data, error } = await SB.from('uttaeki')
           .select('id,serial,type,size,client,status')
           .eq('status', 'active')
+          .order('id')
           .range(from, from + page - 1);
         if (error || !data) break;
         data.forEach(u => {
@@ -531,6 +532,7 @@
           .select('client,next_insp')
           .neq('status', 'urelt')
           .not('next_insp', 'is', null)
+          .order('id')
           .range(from, from + page - 1);
         if (error || !data) break;
         data.forEach(u => {

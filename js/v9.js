@@ -714,7 +714,7 @@
           console.log('[rt]', tbl, p.eventType);
           // Refresh cache on change
           if (tbl === 'uttaeki') {
-            DB.fetchAll(function(from,to){ return DB.sb.from('uttaeki').select('*').range(from,to); }).then(function(_rows){  // page through 1000-row cap
+            DB.fetchAll(function(from,to){ return DB.sb.from('uttaeki').select('*').order('client').order('id').range(from,to); }).then(function(_rows){  // page through 1000-row cap; sama röðun og loadAll svo cache haldist eins
               DB.cache.units = _rows;
               // Trigger UI refresh
               try { if (App.refreshCurrentView) App.refreshCurrentView(); } catch(e){}

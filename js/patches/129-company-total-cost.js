@@ -331,6 +331,7 @@
       const { data, error } = await sb.from('uttaeki')
         .select('id,serial,type,size,status')
         .eq('client', client)
+        .order('id')
         .range(from, from + pageSize - 1);
       if (error || !data) break;
       all = all.concat(data);

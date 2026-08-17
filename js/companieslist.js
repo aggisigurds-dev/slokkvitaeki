@@ -7,7 +7,7 @@ async function loadData(){
   _cacheTime=Date.now();
   // 6.385 tæki eru ekki 'urelt' — ein .select() skilaði bara fyrstu 1000 (84% vantaði)
   // svo tækjatalning og „næsta skoðun" á fyrirtækjalistanum voru rangar. Blaðsíðuflett.
-  var r={ data: await DB.fetchAll(function(from,to){ return DB.sb.from('uttaeki').select('client,type,next_insp,status').neq('status','urelt').range(from,to); }) };
+  var r={ data: await DB.fetchAll(function(from,to){ return DB.sb.from('uttaeki').select('client,type,next_insp,status').neq('status','urelt').order('id').range(from,to); }) };  // .order('id'): án einkvæmrar röðunar getur síðuskipting sleppt röðum
   var byClient={};
   if(r&&r.data){
     r.data.forEach(function(u){

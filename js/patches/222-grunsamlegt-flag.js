@@ -41,7 +41,7 @@
     var map = {}, from = 0;
     try {
       while (true) {
-        var r = await SB.from('uttaeki').select('client,last_insp,status').range(from, from + 999);
+        var r = await SB.from('uttaeki').select('client,last_insp,status').order('id').range(from, from + 999);
         if (r.error) break;
         (r.data || []).forEach(function (u) {
           if (u.status && u.status !== 'active') return;   // match the in-service list
