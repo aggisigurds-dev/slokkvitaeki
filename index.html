@@ -1,32 +1,32 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="is">
 <head>
-<!-- Villuvöktun: FYRST og ÓSEINKAÐ, svo hún grípi líka villur í boot-kóðanum
-     og í patch-skránum. Skýrslan fer á /api/villur hjá Brunahólfi (CORS *) —
-     EITT borð yfir bæði öppin, ekki tvö sem enginn les. -->
+<!-- VilluvÃ¶ktun: FYRST og Ã“SEINKAÃ, svo hÃºn grÃ­pi lÃ­ka villur Ã­ boot-kÃ³Ã°anum
+     og Ã­ patch-skrÃ¡num. SkÃ½rslan fer Ã¡ /api/villur hjÃ¡ BrunahÃ³lfi (CORS *) â€”
+     EITT borÃ° yfir bÃ¦Ã°i Ã¶ppin, ekki tvÃ¶ sem enginn les. -->
 <script src="/js/villuvakt.js?v=1"></script>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#C93C1D"/>
-<!-- Appið er ljós-hannað (engin dark-mode stílblöð). Án þessa neyðir „dark mode
-     for web" í Chrome/Samsung Internet á símanum sjálfvirka umsnúninga á hvítu
-     kortin (t.d. Þjónustuborðið varð svart) þótt tölvan sýni þau hvít. Þessi
-     yfirlýsing slekkur á þeirri sjálfvirku myrkvun svo síminn birti nákvæmlega
-     eins og tölvan; hannaðir dökkir fletir (hliðarstika, korthausar) haldast. -->
+<!-- AppiÃ° er ljÃ³s-hannaÃ° (engin dark-mode stÃ­lblÃ¶Ã°). Ãn Ã¾essa neyÃ°ir â€ždark mode
+     for web" Ã­ Chrome/Samsung Internet Ã¡ sÃ­manum sjÃ¡lfvirka umsnÃºninga Ã¡ hvÃ­tu
+     kortin (t.d. ÃžjÃ³nustuborÃ°iÃ° varÃ° svart) Ã¾Ã³tt tÃ¶lvan sÃ½ni Ã¾au hvÃ­t. Ãžessi
+     yfirlÃ½sing slekkur Ã¡ Ã¾eirri sjÃ¡lfvirku myrkvun svo sÃ­minn birti nÃ¡kvÃ¦mlega
+     eins og tÃ¶lvan; hannaÃ°ir dÃ¶kkir fletir (hliÃ°arstika, korthausar) haldast. -->
 <meta name="color-scheme" content="light"/>
-<title>Slökkvitæki ehf — Brunakerfi</title>
+<title>SlÃ¶kkvitÃ¦ki ehf â€” Brunakerfi</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png?v=flame1"/>
 <link rel="icon" type="image/png" sizes="192x192" href="/img/icon-192.png?v=flame1"/>
 <link rel="icon" type="image/png" sizes="512x512" href="/img/icon-512.png?v=flame1"/>
 <link rel="apple-touch-icon" sizes="180x180" href="/img/apple-touch-icon.png?v=flame1"/>
 <link rel="apple-touch-icon-precomposed" sizes="180x180" href="/img/apple-touch-icon.png?v=flame1"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-title" content="Slökkvitæki"/>
+<meta name="apple-mobile-web-app-title" content="SlÃ¶kkvitÃ¦ki"/>
 <link rel="manifest" href="/manifest.json?v=flame1"/>
 <script>
-/* Mini-app manifest picker — runs synchronously in <head> so the browser's
+/* Mini-app manifest picker â€” runs synchronously in <head> so the browser's
    install prompt captures the RIGHT app (each has its own /app/<key>/ scope,
    so they install as separate, non-conflicting home-screen apps). Detects the
    app from the path /app/<key>/ (new) or ?app=<key> / ?driver (legacy links). */
@@ -41,11 +41,11 @@
       if(l) l.setAttribute('href',MAN[key]+'?v=sep2');
       var tc=document.querySelector('meta[name="theme-color"]');
       if(tc&&key==='bilstjori') tc.setAttribute('content','#0a0b0d');
-      var TITLES={fjarmal:'Fjármál',verkefni:'Verkefni',bilstjori:'Bílstjóri',brunaholf:'Brunahólf',brunakerfi:'Brunakerfi',boss:'The Big Boss'};
+      var TITLES={fjarmal:'FjÃ¡rmÃ¡l',verkefni:'Verkefni',bilstjori:'BÃ­lstjÃ³ri',brunaholf:'BrunahÃ³lf',brunakerfi:'Brunakerfi',boss:'The Big Boss'};
       var at=document.querySelector('meta[name="apple-mobile-web-app-title"]');
       if(at) at.setAttribute('content', TITLES[key]||key);
-      try{ document.title=(TITLES[key]||key)+' — Slökkvitæki'; }catch(_){}
-      // Sér-merki hvers mini-apps líka á iOS heimaskjá
+      try{ document.title=(TITLES[key]||key)+' â€” SlÃ¶kkvitÃ¦ki'; }catch(_){}
+      // SÃ©r-merki hvers mini-apps lÃ­ka Ã¡ iOS heimaskjÃ¡
       var APPLE={fjarmal:'/img/app-fjarmal-apple.png',verkefni:'/img/app-verkefni-apple.png',bilstjori:'/img/app-bilstjori-apple.png',brunaholf:'/img/app-brunaholf-apple.png',brunakerfi:'/img/app-brunakerfi-apple.png',boss:'/img/app-boss-apple.png'};
       if(APPLE[key]) document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="apple-touch-icon-precomposed"]').forEach(function(a){a.setAttribute('href',APPLE[key]+'?v=1');});
     }
@@ -72,7 +72,7 @@ input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
    disappear. Gated on a class the inline script below removes on DOMContentLoaded
    (or a 1.8s failsafe), so a failed/slow patch can never leave the nav hidden. */
 html.sb-settling nav.view-nav { visibility: hidden !important; }
-/* Pinch-zoom restored (2026-07-14, WCAG 1.4.4 — field staff read serials in sunlight):
+/* Pinch-zoom restored (2026-07-14, WCAG 1.4.4 â€” field staff read serials in sunlight):
    dropped maximum-scale/user-scalable from the viewport. touch-action:manipulation keeps
    buttons responsive (no double-tap-zoom delay) without disabling pinch-zoom on content. */
 button, .vnav-btn, [role="button"] { touch-action: manipulation; }
@@ -92,13 +92,13 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 </script>
 </head>
 <body>
-<!-- Ræsi-hula (2026-07-17, ósk Agnars — startið „svo chaotic"): mælt boot sýndi
-     ~3,5 sek þar sem stakir fljótandi takkar poppa inn á tómum grunni áður en
-     fyrsta síðan birtist. Hulan liggur yfir öllu frá fyrsta ramma og lyftist
-     þegar fyrsta view-ið er orðið virkt (eða eftir 6,5 sek öryggis-fallback). -->
+<!-- RÃ¦si-hula (2026-07-17, Ã³sk Agnars â€” startiÃ° â€žsvo chaotic"): mÃ¦lt boot sÃ½ndi
+     ~3,5 sek Ã¾ar sem stakir fljÃ³tandi takkar poppa inn Ã¡ tÃ³mum grunni Ã¡Ã°ur en
+     fyrsta sÃ­Ã°an birtist. Hulan liggur yfir Ã¶llu frÃ¡ fyrsta ramma og lyftist
+     Ã¾egar fyrsta view-iÃ° er orÃ°iÃ° virkt (eÃ°a eftir 6,5 sek Ã¶ryggis-fallback). -->
 <div id="boot-veil" style="position:fixed;inset:0;z-index:2147483000;background:#0a0b0d;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;transition:opacity .35s ease">
   <img src="/img/icon-192.png?v=flame1" alt="" style="width:78px;height:78px;border-radius:20px;box-shadow:0 10px 40px rgba(201,60,29,.35)">
-  <div style="color:#e2e8f0;font:800 20px system-ui,sans-serif;letter-spacing:.02em;text-align:center;padding:0 16px">Brunahólf Slökkvitæki ehf.</div>
+  <div style="color:#e2e8f0;font:800 20px system-ui,sans-serif;letter-spacing:.02em;text-align:center;padding:0 16px">BrunahÃ³lf SlÃ¶kkvitÃ¦ki ehf.</div>
   <div class="bv-spin" aria-hidden="true"></div>
 </div>
 <style>.bv-spin{width:26px;height:26px;border:3px solid rgba(255,255,255,.14);border-top-color:#C93C1D;border-radius:50%;animation:bvr .9s linear infinite}@keyframes bvr{to{transform:rotate(360deg)}}</style>
@@ -107,28 +107,28 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
   var v=document.getElementById('boot-veil'),done=false;
   function go(){ if(done||!v)return; done=true; v.style.opacity='0'; v.style.pointerEvents='none'; setTimeout(function(){ try{v.remove()}catch(_){} },420); }
   var iv=setInterval(function(){
-    // Lyfta AÐEINS þegar bæði: (1) síðan er full-hlaðin (load-atburður búinn —
-    // annars lyftist hulan á hálf-teiknaða millistiginu sem var einmitt óreiðan)
-    // og (2) eitthvert view er orðið virkt.
-    // Þrjú skilyrði: load búið, view virkt OG það hefur RAUNVERULEGT innihald
-    // (patcharnir mála eftir load — tómt view = enn á óreiðu-millistiginu).
+    // Lyfta AÃEINS Ã¾egar bÃ¦Ã°i: (1) sÃ­Ã°an er full-hlaÃ°in (load-atburÃ°ur bÃºinn â€”
+    // annars lyftist hulan Ã¡ hÃ¡lf-teiknaÃ°a millistiginu sem var einmitt Ã³reiÃ°an)
+    // og (2) eitthvert view er orÃ°iÃ° virkt.
+    // ÃžrjÃº skilyrÃ°i: load bÃºiÃ°, view virkt OG Ã¾aÃ° hefur RAUNVERULEGT innihald
+    // (patcharnir mÃ¡la eftir load â€” tÃ³mt view = enn Ã¡ Ã³reiÃ°u-millistiginu).
     var a=document.querySelector('[id^="view-"].active,[id^="view-"][style*="display: block"]');
     var hasContent=a && ((a.innerText||'').trim().length>40 || a.querySelector('button,table,input'));
     if(a && hasContent && document.readyState==='complete'){ clearInterval(iv); setTimeout(go,350); }
   },150);
-  setTimeout(go,6500);   // öryggis-fallback: hulan hverfur ALLTAF
+  setTimeout(go,6500);   // Ã¶ryggis-fallback: hulan hverfur ALLTAF
   window.addEventListener('error',function(){ setTimeout(go,1500) },{once:true});
 })();
 </script>
 <!-- SETUP BANNER (shown when config not set) -->
 <div id="setup-banner" class="setup-banner hidden">
   <div class="setup-banner-inner">
-    <span class="setup-icon">⚙️</span>
+    <span class="setup-icon">âš™ï¸</span>
     <div>
       <strong>Stilla gagnagrunn</strong>
-      <span>Opnaðu <code>js/config.js</code> og settu inn Supabase lykla þína</span>
+      <span>OpnaÃ°u <code>js/config.js</code> og settu inn Supabase lykla Ã¾Ã­na</span>
     </div>
-    <a href="/UPPSETNING.html" target="_blank" class="btn btn-sm btn-outline" style="color:white;border-color:rgba(255,255,255,.4)">Sjá leiðbeiningar</a>
+    <a href="/UPPSETNING.html" target="_blank" class="btn btn-sm btn-outline" style="color:white;border-color:rgba(255,255,255,.4)">SjÃ¡ leiÃ°beiningar</a>
   </div>
 </div>
 <!-- TOP BAR -->
@@ -136,35 +136,35 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
   <div class="brand">
       <div class="brand-logo"><svg viewBox="0 0 36 48" aria-hidden="true"><defs><linearGradient id="sbfl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffd24a"/><stop offset=".4" stop-color="#ff7a1a"/><stop offset="1" stop-color="#e5231f"/></linearGradient></defs><path d="M18 3c1.6 6 8 8 8 17a8 8 0 0 1-16 0c0-2 .6-3.4 1.7-5 .3 3.2 2.4 4.2 3.2 3.2 1.3-1.6-1.6-5 3.1-15.4z" fill="url(#sbfl)"/></svg></div>
       <div class="brand-text">
-        <div class="brand-name" data-banner-title>Slökkvitæki</div>
-        <div class="brand-sub" data-banner-subtitle>Slökkvitækjaþjónusta</div>
+        <div class="brand-name" data-banner-title>SlÃ¶kkvitÃ¦ki</div>
+        <div class="brand-sub" data-banner-subtitle>SlÃ¶kkvitÃ¦kjaÃ¾jÃ³nusta</div>
       </div>
     </div>
 <nav class="view-nav">
     <div class="nav-section-label">Dagleg vinna</div>
     <button class="vnav-btn" data-view="counter" onclick="App.switchView('counter')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-      <span>Afgreiðsla</span>
+      <span>AfgreiÃ°sla</span>
     </button>
     <button class="vnav-btn" data-view="workshop" onclick="App.switchView('workshop')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-      <span>Verkstæði</span>
+      <span>VerkstÃ¦Ã°i</span>
     </button>
     <button class="vnav-btn" data-view="field" onclick="App.switchView('field')">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-      <span>Þjónustutæki</span>
+      <span>ÃžjÃ³nustutÃ¦ki</span>
     </button>
-  <div class="nav-sep"></div><div class="nav-section-label">Skrár</div><button class="vnav-btn" data-view="companies" onclick="App.switchView('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Fyrirtæki</span></button><button class="vnav-btn" data-view="income" onclick="App.switchView('income')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span>Tekjur</span></button><div class="nav-sep"></div><button class="vnav-btn" data-view="settings" onclick="App.switchView('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span>Stillingar</span></button><div class="nav-sep"></div><div class="nav-section-label">Birgðir</div><button class="vnav-btn" data-view="lanstaeki" onclick="App.switchView('lanstaeki')">
+  <div class="nav-sep"></div><div class="nav-section-label">SkrÃ¡r</div><button class="vnav-btn" data-view="companies" onclick="App.switchView('companies')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>FyrirtÃ¦ki</span></button><button class="vnav-btn" data-view="income" onclick="App.switchView('income')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg><span>Tekjur</span></button><div class="nav-sep"></div><button class="vnav-btn" data-view="settings" onclick="App.switchView('settings')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span>Stillingar</span></button><div class="nav-sep"></div><div class="nav-section-label">BirgÃ°ir</div><button class="vnav-btn" data-view="lanstaeki" onclick="App.switchView('lanstaeki')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 16l3-8 3 8"/><path d="M14 12h8M3 8h10v13H3z"/><path d="M8 8V5"/></svg>
-        Lánstæki
+        LÃ¡nstÃ¦ki
       </button>
       <button class="vnav-btn" data-view="geymsla" onclick="App.switchView('geymsla')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8h14M5 8a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v0a2 2 0 01-2 2M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8M10 12h4"/></svg><span>Geymsla</span></button></nav>
   <div class="topbar-right">
-    <div class="sync-dot" id="sync-dot" title="Tengt við gagnagrunn"></div>
+    <div class="sync-dot" id="sync-dot" title="Tengt viÃ° gagnagrunn"></div>
     <div class="alert-badge" id="alert-badge">0</div>
     <div class="online-chip"><div class="sync-dot"></div><span>Tengt</span></div><div class="user-chip">
       <div class="user-avatar">JS</div>
-      <span>Jón S.</span>
+      <span>JÃ³n S.</span>
     </div>
   </div>
 </div>
@@ -174,40 +174,40 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     <!-- Sidebar -->
     <aside class="sidebar" id="counter-sidebar">
       <div class="sidebar-header">
-        <span class="sec-label">Verkbeiðnir</span>
+        <span class="sec-label">VerkbeiÃ°nir</span>
         <button class="btn btn-primary btn-sm" onclick="Counter.openNew()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Ný verk
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>NÃ½ verk
         </button>
       </div>
       <div class="sidebar-scroll" id="job-list">
-        <div class="loading-state">Hleður verkbeiðnum…</div>
+        <div class="loading-state">HleÃ°ur verkbeiÃ°numâ€¦</div>
       </div>
       <div class="sidebar-ready" id="sidebar-ready"></div>
     </aside>
     <!-- Main -->
     <main class="main-panel" id="counter-main">
       <div class="empty-state">
-        <div class="es-icon">📋</div>
+        <div class="es-icon">ðŸ“‹</div>
         <div class="es-title">Veldu verk</div>
-        <div class="es-sub">Smelltu á verk til vinstri til að skoða</div>
+        <div class="es-sub">Smelltu Ã¡ verk til vinstri til aÃ° skoÃ°a</div>
       </div>
     </main>
     <!-- Print panel -->
     <aside class="print-aside" id="print-aside">
-      <div style="padding:16px;color:var(--ink3);font-size:13px;text-align:center">Veldu verk til að sjá prentmöguleika</div>
+      <div style="padding:16px;color:var(--ink3);font-size:13px;text-align:center">Veldu verk til aÃ° sjÃ¡ prentmÃ¶guleika</div>
     </aside>
   </div>
 </div>
 <div id="view-workshop" class="view">
   <div class="two-col">
     <main class="main-panel" id="workshop-queue">
-      <div class="loading-state">Hleður verkröð…</div>
+      <div class="loading-state">HleÃ°ur verkrÃ¶Ã°â€¦</div>
     </main>
     <aside class="detail-panel" id="workshop-detail">
       <div class="empty-state">
-        <div class="es-icon">🔧</div>
+        <div class="es-icon">ðŸ”§</div>
         <div class="es-title">Veldu verk</div>
-        <div class="es-sub">Smelltu á verk til að vinna í því</div>
+        <div class="es-sub">Smelltu Ã¡ verk til aÃ° vinna Ã­ Ã¾vÃ­</div>
       </div>
     </aside>
   </div>
@@ -216,22 +216,22 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
   <div class="field-toolbar">
     <button class="btn btn-outline btn-sm" onclick="Field.openScan()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg>
-      Skanna tæki
+      Skanna tÃ¦ki
     </button>
     <button class="btn btn-outline btn-sm" onclick="Field.openAddUnit()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Nýtt tæki
+      NÃ½tt tÃ¦ki
     </button>
   </div>
   <div class="field-body">
     <div class="field-col" id="field-alerts">
-      <div class="loading-state">Hleður…</div>
+      <div class="loading-state">HleÃ°urâ€¦</div>
     </div>
     <div class="field-col" id="field-schedule">
-      <div class="loading-state">Hleður dagskrá…</div>
+      <div class="loading-state">HleÃ°ur dagskrÃ¡â€¦</div>
     </div>
     <div class="field-col" id="field-history">
-      <div class="loading-state">Hleður sögu…</div>
+      <div class="loading-state">HleÃ°ur sÃ¶guâ€¦</div>
     </div>
   </div>
 </div>
@@ -240,26 +240,26 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <!-- New Job -->
 <div class="modal" id="modal-newjob">
   <div class="modal-hd">
-    <h2>Ný verkbeiðni</h2>
-    <button class="modal-x" onclick="Modal.close('modal-newjob')">✕</button>
+    <h2>NÃ½ verkbeiÃ°ni</h2>
+    <button class="modal-x" onclick="Modal.close('modal-newjob')">âœ•</button>
   </div>
   <div class="modal-bd">
     <div class="frow2">
-      <div class="fg"><label class="fl">Nafn viðskiptavinar</label><input class="fi" id="nj-name" placeholder="Jón Jónsson"/></div>
-      <div class="fg"><label class="fl">Símanúmer</label><input class="fi" id="nj-phone" placeholder="+354 XXX XXXX"/></div>
+      <div class="fg"><label class="fl">Nafn viÃ°skiptavinar</label><input class="fi" id="nj-name" placeholder="JÃ³n JÃ³nsson"/></div>
+      <div class="fg"><label class="fl">SÃ­manÃºmer</label><input class="fi" id="nj-phone" placeholder="+354 XXX XXXX"/></div>
     </div>
     <div class="frow2">
-      <div class="fg"><label class="fl">Móttökudagur</label><input class="fi" id="nj-drop" type="date"/></div>
+      <div class="fg"><label class="fl">MÃ³ttÃ¶kudagur</label><input class="fi" id="nj-drop" type="date"/></div>
       <div class="fg"><label class="fl">Afhendingardagur</label><input class="fi" id="nj-pick" type="date"/></div>
     </div>
-    <div class="frow2"><div class="fg"><label class="fl">Verð (kr)</label><input class="fi" id="nj-verd" type="number" placeholder="0" min="0" step="100"/></div><div class="fg"><label class="fl">Athugasemdir</label><input class="fi" id="nj-notes" placeholder="Valfrjálst…"/></div></div><div class="units-hd">
-      <span class="fl" style="margin:0">Slökkvitæki</span>
-      <button class="add-unit-btn" onclick="Counter.addRow()">+ Bæta við</button>
+    <div class="frow2"><div class="fg"><label class="fl">VerÃ° (kr)</label><input class="fi" id="nj-verd" type="number" placeholder="0" min="0" step="100"/></div><div class="fg"><label class="fl">Athugasemdir</label><input class="fi" id="nj-notes" placeholder="ValfrjÃ¡lstâ€¦"/></div></div><div class="units-hd">
+      <span class="fl" style="margin:0">SlÃ¶kkvitÃ¦ki</span>
+      <button class="add-unit-btn" onclick="Counter.addRow()">+ BÃ¦ta viÃ°</button>
     </div>
     <div id="nj-rows"></div>
   </div>
   <div class="modal-ft">
-    <button class="btn btn-outline" onclick="Modal.close('modal-newjob')">Hætta við</button>
+    <button class="btn btn-outline" onclick="Modal.close('modal-newjob')">HÃ¦tta viÃ°</button>
     <button class="btn btn-primary" onclick="Counter.submitNew()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
       Stofna + Prenta
@@ -269,29 +269,29 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <!-- Inspection -->
 <div class="modal modal-sm" id="modal-inspect">
   <div class="modal-hd">
-    <h2>Skrá skoðun</h2>
-    <button class="modal-x" onclick="Modal.close('modal-inspect')">✕</button>
+    <h2>SkrÃ¡ skoÃ°un</h2>
+    <button class="modal-x" onclick="Modal.close('modal-inspect')">âœ•</button>
   </div>
   <div class="modal-bd">
     <div class="unit-badge" id="inspect-badge"></div>
-    <div class="fg"><label class="fl">Niðurstaða</label>
+    <div class="fg"><label class="fl">NiÃ°urstaÃ°a</label>
       <div class="result-row">
-        <button class="rbtn pass active" id="rb-pass" onclick="Field.setResult('pass')">✓ Í lagi</button>
-        <button class="rbtn fail" id="rb-fail" onclick="Field.setResult('fail')">✗ Ekki í lagi</button>
+        <button class="rbtn pass active" id="rb-pass" onclick="Field.setResult('pass')">âœ“ Ã lagi</button>
+        <button class="rbtn fail" id="rb-fail" onclick="Field.setResult('fail')">âœ— Ekki Ã­ lagi</button>
       </div>
     </div>
     <div class="frow2">
-      <div class="fg"><label class="fl">Þrýstingur (bar)</label><input class="fi" id="ip-pressure" type="number" placeholder="14"/></div>
-      <div class="fg"><label class="fl">Þyngd</label>
+      <div class="fg"><label class="fl">ÃžrÃ½stingur (bar)</label><input class="fi" id="ip-pressure" type="number" placeholder="14"/></div>
+      <div class="fg"><label class="fl">Ãžyngd</label>
         <select class="fi" id="ip-weight">
-          <option>Innan marka</option><option>Lág — þarf hleðslu</option><option>Tómt — skipta um</option>
+          <option>Innan marka</option><option>LÃ¡g â€” Ã¾arf hleÃ°slu</option><option>TÃ³mt â€” skipta um</option>
         </select>
       </div>
     </div>
-    <div class="fg"><label class="fl">Athugasemdir</label><textarea class="fi" id="ip-notes" rows="3" placeholder="Valfrjálst…"></textarea></div>
+    <div class="fg"><label class="fl">Athugasemdir</label><textarea class="fi" id="ip-notes" rows="3" placeholder="ValfrjÃ¡lstâ€¦"></textarea></div>
   </div>
   <div class="modal-ft">
-    <button class="btn btn-outline" onclick="Modal.close('modal-inspect')">Hætta við</button>
+    <button class="btn btn-outline" onclick="Modal.close('modal-inspect')">HÃ¦tta viÃ°</button>
     <button class="btn btn-primary" onclick="Field.submitInspect()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
       Vista + Prenta QR
@@ -301,18 +301,18 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <!-- Scan / Lookup -->
 <div class="modal modal-sm" id="modal-scan">
   <div class="modal-hd">
-    <h2>Skanna tæki</h2>
-    <button class="modal-x" onclick="Modal.close('modal-scan')">✕</button>
+    <h2>Skanna tÃ¦ki</h2>
+    <button class="modal-x" onclick="Modal.close('modal-scan')">âœ•</button>
   </div>
   <div class="modal-bd">
     <div class="scan-box-ui">
       <div class="scan-frame"><div class="scan-line"></div></div>
-      <p class="scan-hint">Puntur myndavélina á QR kóðann — eða sláðu inn handvirkt:</p>
+      <p class="scan-hint">Puntur myndavÃ©lina Ã¡ QR kÃ³Ã°ann â€” eÃ°a slÃ¡Ã°u inn handvirkt:</p>
     </div>
     <div class="fg">
-      <label class="fl">Raðnúmer</label>
+      <label class="fl">RaÃ°nÃºmer</label>
       <div style="display:flex;gap:8px">
-        <input class="fi" id="scan-serial" placeholder="SÆ-2023-XXXX" style="font-family:var(--mono)" onkeydown="if(event.key==='Enter')Field.doLookup()"/>
+        <input class="fi" id="scan-serial" placeholder="SÃ†-2023-XXXX" style="font-family:var(--mono)" onkeydown="if(event.key==='Enter')Field.doLookup()"/>
         <button class="btn btn-primary" onclick="Field.doLookup()">Leita</button>
       </div>
     </div>
@@ -322,34 +322,34 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <!-- Add Field Unit -->
 <div class="modal modal-sm" id="modal-addunit">
   <div class="modal-hd">
-    <h2>Skrá nýtt tæki</h2>
-    <button class="modal-x" onclick="Modal.close('modal-addunit')">✕</button>
+    <h2>SkrÃ¡ nÃ½tt tÃ¦ki</h2>
+    <button class="modal-x" onclick="Modal.close('modal-addunit')">âœ•</button>
   </div>
   <div class="modal-bd">
     <div class="frow2">
       <div class="fg"><label class="fl">Tegund</label>
-        <select class="fi" id="au-type" onchange="if(/Brunaslanga|Reykskynjari|Eldvarnateppi/.test(this.value)){var s=document.getElementById('au-size');if(s&&!s.value.trim())s.value='----';}"><option>Duft</option><option>ABC Duft</option><option>CO₂</option><option>Léttvatn</option><option>Vatn</option><option>Froðu</option><option>Blautt efni</option><option>Brunaslanga</option><option>Reykskynjari</option><option>Eldvarnateppi</option></select>
+        <select class="fi" id="au-type" onchange="if(/Brunaslanga|Reykskynjari|Eldvarnateppi/.test(this.value)){var s=document.getElementById('au-size');if(s&&!s.value.trim())s.value='----';}"><option>Duft</option><option>ABC Duft</option><option>COâ‚‚</option><option>LÃ©ttvatn</option><option>Vatn</option><option>FroÃ°u</option><option>Blautt efni</option><option>Brunaslanga</option><option>Reykskynjari</option><option>Eldvarnateppi</option></select>
       </div>
-      <div class="fg"><label class="fl">Stærð</label><input class="fi" id="au-size" list="au-size-list" placeholder="6 kg eða ----"/>
-        <datalist id="au-size-list"><option value="----">---- (engin stærð / brunaslanga, reykskynjari)</option><option value="1 kg"></option><option value="2 kg"></option><option value="4 kg"></option><option value="6 kg"></option><option value="9 kg"></option><option value="12 kg"></option><option value="50 kg"></option><option value="2 ltr"></option><option value="6 ltr"></option><option value="9 ltr"></option><option value="25 m"></option></datalist></div>
+      <div class="fg"><label class="fl">StÃ¦rÃ°</label><input class="fi" id="au-size" list="au-size-list" placeholder="6 kg eÃ°a ----"/>
+        <datalist id="au-size-list"><option value="----">---- (engin stÃ¦rÃ° / brunaslanga, reykskynjari)</option><option value="1 kg"></option><option value="2 kg"></option><option value="4 kg"></option><option value="6 kg"></option><option value="9 kg"></option><option value="12 kg"></option><option value="50 kg"></option><option value="2 ltr"></option><option value="6 ltr"></option><option value="9 ltr"></option><option value="25 m"></option></datalist></div>
     </div>
-    <div class="fg"><label class="fl">Viðskiptavinur / Staðsetning</label><input class="fi" id="au-client" placeholder="Harpa — Aðalsal"/></div>
-    <div class="fg"><label class="fl">Nákvæm staðsetning</label><input class="fi" id="au-loc" placeholder="1. hæð, við aðalinngang"/></div>
+    <div class="fg"><label class="fl">ViÃ°skiptavinur / StaÃ°setning</label><input class="fi" id="au-client" placeholder="Harpa â€” AÃ°alsal"/></div>
+    <div class="fg"><label class="fl">NÃ¡kvÃ¦m staÃ°setning</label><input class="fi" id="au-loc" placeholder="1. hÃ¦Ã°, viÃ° aÃ°alinngang"/></div>
     <div class="frow2">
       <div class="fg"><label class="fl">Uppsett</label><input class="fi" id="au-inst" type="date"/></div>
-      <div class="fg"><label class="fl">Næsta skoðun</label><input class="fi" id="au-next" type="date"/></div>
+      <div class="fg"><label class="fl">NÃ¦sta skoÃ°un</label><input class="fi" id="au-next" type="date"/></div>
     </div>
   </div>
   <div class="modal-ft">
-    <button class="btn btn-outline" onclick="Modal.close('modal-addunit')">Hætta við</button>
-    <button class="btn btn-primary" onclick="Field.submitAddUnit()">Skrá tæki + Prenta QR</button>
+    <button class="btn btn-outline" onclick="Modal.close('modal-addunit')">HÃ¦tta viÃ°</button>
+    <button class="btn btn-primary" onclick="Field.submitAddUnit()">SkrÃ¡ tÃ¦ki + Prenta QR</button>
   </div>
 </div>
 <!-- Print preview -->
 <div class="modal" id="modal-print">
   <div class="modal-hd">
     <h2>Prentyfirlit</h2>
-    <button class="modal-x" onclick="Modal.close('modal-print')">✕</button>
+    <button class="modal-x" onclick="Modal.close('modal-print')">âœ•</button>
   </div>
   <div class="modal-bd" id="print-body"></div>
   <div class="modal-ft">
@@ -360,9 +360,9 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     </button>
   </div>
 </div>
-<div id="view-companies" class="view"><main class="main-panel" id="companies-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="view-brunakerfi" class="view"><main class="main-panel" id="brunakerfi-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="view-tilbodhub" class="view"><main class="main-panel" id="tilbodhub-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="view-income" class="view"><main class="main-panel" id="income-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="view-lanstaeki" class="view"><main class="main-panel" id="lanstaeki-main" style="height:100%;overflow-y:auto;padding:24px"></main></div>
-  <div id="view-geymsla" class="view"><main class="main-panel" id="geymsla-main" style="height:100%;overflow-y:auto;padding:20px"><div class="loading-state">Hleður...</div></main></div>
-<div id="view-settings" class="view"><main class="main-panel" id="settings-main" style="height:100%;overflow-y:auto"><div class="loading-state">Hleður...</div></main></div><div id="modal-nyfyrirtaeki" class="modal modal-sm"><div class="modal-hd"><h2>Nýtt fyrirtæki</h2><button class="modal-x" onclick="Modal.close('modal-nyfyrirtaeki')">✕</button></div><div class="modal-bd"><div class="fg"><label class="fl">Nafn *</label><input class="fi" id="nf-nafn" placeholder="Harpa ehf"/></div><div class="frow2"><div class="fg"><label class="fl">Kennitala</label><input class="fi" id="nf-kt" placeholder="000000-0000"/></div><div class="fg"><label class="fl">Sími</label><input class="fi" id="nf-simi" placeholder="+354 XXX XXXX"/></div></div><div class="frow2"><div class="fg"><label class="fl">Netfang</label><input class="fi" id="nf-netfang" placeholder="netfang@fyrirtaeki.is"/></div><div class="fg"><label class="fl">Tengiliður</label><input class="fi" id="nf-tengiliður" placeholder="Nafn"/></div></div><div class="fg"><label class="fl">Heimilisfang</label><input class="fi" id="nf-heimilisfang" placeholder="Götu 1, 101 Reykjavík"/></div><div class="fg"><label class="fl">Athugasemdir</label><input class="fi" id="nf-athugasemdir" placeholder="Valfrjálst..."/></div></div><div class="modal-ft"><button class="btn btn-outline" onclick="Modal.close('modal-nyfyrirtaeki')">Hætta við</button><button class="btn btn-primary" onclick="Companies.submitNew()">Vista fyrirtæki</button></div></div><div class="toast" id="toast"></div>
+<div id="view-companies" class="view"><main class="main-panel" id="companies-main" style="height:100%;overflow-y:auto"><div class="loading-state">HleÃ°ur...</div></main></div><div id="view-brunakerfi" class="view"><main class="main-panel" id="brunakerfi-main" style="height:100%;overflow-y:auto"><div class="loading-state">HleÃ°ur...</div></main></div><div id="view-tilbodhub" class="view"><main class="main-panel" id="tilbodhub-main" style="height:100%;overflow-y:auto"><div class="loading-state">HleÃ°ur...</div></main></div><div id="view-income" class="view"><main class="main-panel" id="income-main" style="height:100%;overflow-y:auto"><div class="loading-state">HleÃ°ur...</div></main></div><div id="view-lanstaeki" class="view"><main class="main-panel" id="lanstaeki-main" style="height:100%;overflow-y:auto;padding:24px"></main></div>
+  <div id="view-geymsla" class="view"><main class="main-panel" id="geymsla-main" style="height:100%;overflow-y:auto;padding:20px"><div class="loading-state">HleÃ°ur...</div></main></div>
+<div id="view-settings" class="view"><main class="main-panel" id="settings-main" style="height:100%;overflow-y:auto"><div class="loading-state">HleÃ°ur...</div></main></div><div id="modal-nyfyrirtaeki" class="modal modal-sm"><div class="modal-hd"><h2>NÃ½tt fyrirtÃ¦ki</h2><button class="modal-x" onclick="Modal.close('modal-nyfyrirtaeki')">âœ•</button></div><div class="modal-bd"><div class="fg"><label class="fl">Nafn *</label><input class="fi" id="nf-nafn" placeholder="Harpa ehf"/></div><div class="frow2"><div class="fg"><label class="fl">Kennitala</label><input class="fi" id="nf-kt" placeholder="000000-0000"/></div><div class="fg"><label class="fl">SÃ­mi</label><input class="fi" id="nf-simi" placeholder="+354 XXX XXXX"/></div></div><div class="frow2"><div class="fg"><label class="fl">Netfang</label><input class="fi" id="nf-netfang" placeholder="netfang@fyrirtaeki.is"/></div><div class="fg"><label class="fl">TengiliÃ°ur</label><input class="fi" id="nf-tengiliÃ°ur" placeholder="Nafn"/></div></div><div class="fg"><label class="fl">Heimilisfang</label><input class="fi" id="nf-heimilisfang" placeholder="GÃ¶tu 1, 101 ReykjavÃ­k"/></div><div class="fg"><label class="fl">Athugasemdir</label><input class="fi" id="nf-athugasemdir" placeholder="ValfrjÃ¡lst..."/></div></div><div class="modal-ft"><button class="btn btn-outline" onclick="Modal.close('modal-nyfyrirtaeki')">HÃ¦tta viÃ°</button><button class="btn btn-primary" onclick="Companies.submitNew()">Vista fyrirtÃ¦ki</button></div></div><div class="toast" id="toast"></div>
 <div id="printarea"></div>
 <!-- Supabase SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -411,7 +411,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/29-email-invoice.js?v=20260731felag"></script>
 <script defer src="/js/patches/30-recurring-service.js?v=20260510f"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 31-route-optimizer.js -->
-<!-- hibernated 2026-06-21 (sign-in unused + the "Skrá inn" chip was in the way on mobile; dependents 10/182/67 all guard window.UserAuth): 32-user-auth.js -->
+<!-- hibernated 2026-06-21 (sign-in unused + the "SkrÃ¡ inn" chip was in the way on mobile; dependents 10/182/67 all guard window.UserAuth): 32-user-auth.js -->
 <script defer src="/js/patches/33-sms-reminder.js?v=20260510f"></script>
 <!-- hibernated 2026-06-21 (unused, hidden in sidebar): 34-dashboard.js -->
 <script defer src="/js/patches/35-service-certificate.js?v=20260510f"></script>
@@ -491,7 +491,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/117-vorur-picker.js?v=20260805icons"></script>
 <script defer src="/js/patches/113-company-pricing.js?v=20260730txt"></script>
 <script defer src="/js/patches/114-unified-pos-search.js?v=20260814plus"></script>
-<!-- 115-cart-qty-input.js removed 2026-08-10: superseded — Fjöldi is now a
+<!-- 115-cart-qty-input.js removed 2026-08-10: superseded â€” FjÃ¶ldi is now a
      native input rendered directly by pos.js (buildLinesHTML), no longer an
      async span-to-input swap. See pos.js for the full history. -->
 <script defer src="/js/patches/116-vidsk-pricing.js?v=20260730txt"></script>
@@ -505,7 +505,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script defer src="/js/patches/126-show-settings-tab.js?v=20260510a"></script>
 <script defer src="/js/patches/127-companies-edit-guard.js?v=20260511g"></script>
 <script defer src="/js/patches/128-bulk-add-pricing.js?v=20260511d"></script>
-<script defer src="/js/patches/129-company-total-cost.js?v=20260817rodun"></script>
+<script defer src="/js/patches/129-company-total-cost.js?v=20260817vakt"></script>
 <script defer src="/js/patches/130-companies-refresh-btn.js?v=20260511g"></script>
 <script defer src="/js/patches/131-unit-service-picker.js?v=20260612a"></script>
 <script defer src="/js/patches/132-unit-size-column.js?v=20260602a"></script>
@@ -520,12 +520,12 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
   <!-- Geymsla modal -->
   <div class="modal" id="modal-geymsla">
     <div class="modal-hd">
-      <h2>Skrá tæki í geymslu</h2>
-      <button class="modal-x" onclick="Modal.close('modal-geymsla')">✕</button>
+      <h2>SkrÃ¡ tÃ¦ki Ã­ geymslu</h2>
+      <button class="modal-x" onclick="Modal.close('modal-geymsla')">âœ•</button>
     </div>
     <div class="modal-bd">
       <div class="frow2">
-        <div class="fg"><label class="fl">Raðnúmer *</label><input class="fi" id="gs-serial" placeholder="SL-2024-1234"></div>
+        <div class="fg"><label class="fl">RaÃ°nÃºmer *</label><input class="fi" id="gs-serial" placeholder="SL-2024-1234"></div>
         <div class="fg"><label class="fl">Tegund</label>
           <select class="fi" id="gs-type"><option>ABC Duft</option><option>CO&#178;</option><option>Vatn</option><option>Fro&#240;u</option><option>Blautt efni</option></select>
         </div>
@@ -554,14 +554,14 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
   load: async function() {
     var el = document.getElementById('geymsla-main');
     if (!el) return;
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3)">Hleður...</div>';
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3)">HleÃ°ur...</div>';
     if (DB.online) {
       try {
         var r = await DB.sb.from('uttaeki').select('*').eq('status','geymsla').order('created_at', {ascending:false});
         if (r.error) throw new Error(r.error.message || 'Supabase villa');
         this.items = r.data || [];
       } catch(e) {
-        el.innerHTML = '<div style="padding:40px;text-align:center"><div style="font-size:15px;color:#dc2626;font-weight:600;margin-bottom:8px">⚠ Geymsla: ' + (e.message||'Óþekkt villa') + '</div><button class="btn btn-sm" onclick="Geymsla.load()" style="margin-top:8px">↺ Reyna aftur</button></div>';
+        el.innerHTML = '<div style="padding:40px;text-align:center"><div style="font-size:15px;color:#dc2626;font-weight:600;margin-bottom:8px">âš  Geymsla: ' + (e.message||'Ã“Ã¾ekkt villa') + '</div><button class="btn btn-sm" onclick="Geymsla.load()" style="margin-top:8px">â†º Reyna aftur</button></div>';
         return;
       }
     } else { this.items = []; }
@@ -583,37 +583,37 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     var html = '';
     if (overdueItems.length) {
       html += '<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:14px 18px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">'
-        +'<div><div style="font-weight:600;color:#991b1b">&#9888; '+overdueItems.length+' tæki hafa legið yfir 12 mánuði!</div>'
-        +'<div style="font-size:13px;color:#b91c1c">Þessi tæki eru tilúüin til að henda</div></div>'
-        +'<button class="btn" style="background:#dc2626;color:#fff;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:600;font-size:13px" onclick="Geymsla.disposeOverdue()">Henda '+overdueItems.length+' tæki</button>'
+        +'<div><div style="font-weight:600;color:#991b1b">&#9888; '+overdueItems.length+' tÃ¦ki hafa legiÃ° yfir 12 mÃ¡nuÃ°i!</div>'
+        +'<div style="font-size:13px;color:#b91c1c">Ãžessi tÃ¦ki eru tilÃºÃ¼in til aÃ° henda</div></div>'
+        +'<button class="btn" style="background:#dc2626;color:#fff;padding:8px 14px;border-radius:8px;border:none;cursor:pointer;font-weight:600;font-size:13px" onclick="Geymsla.disposeOverdue()">Henda '+overdueItems.length+' tÃ¦ki</button>'
       +'</div>';
     }
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:12px;flex-wrap:wrap">'
       +'<div><div style="font-size:19px;font-weight:600">Geymsla</div>'
-      +'<div style="font-size:13px;color:var(--ink3)">'+this.items.length+' tæki &middot; '+overdueItems.length+' komin yfir 12 mánuði</div></div>'
-      +'<button class="btn btn-primary btn-sm" onclick="Geymsla.openNew()">+ Skrá tæki</button>'
+      +'<div style="font-size:13px;color:var(--ink3)">'+this.items.length+' tÃ¦ki &middot; '+overdueItems.length+' komin yfir 12 mÃ¡nuÃ°i</div></div>'
+      +'<button class="btn btn-primary btn-sm" onclick="Geymsla.openNew()">+ SkrÃ¡ tÃ¦ki</button>'
     +'</div>';
-    html += '<input type="text" placeholder="Leita að raðnúmeri eða viðskiptavini..."'
+    html += '<input type="text" placeholder="Leita aÃ° raÃ°nÃºmeri eÃ°a viÃ°skiptavini..."'
       +' value="'+U.e(this.filter)+'" oninput="Geymsla.filter=this.value;Geymsla.render()"'
       +' style="width:100%;padding:9px 12px;border:1px solid var(--brd);border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;background:var(--bg1);color:var(--ink1)">';
     if (!items.length) {
       html += '<div class="empty-state"><div class="es-icon">&#128230;</div>'
-        +'<div class="es-title">'+(this.filter?'Ekkert fannst':'Engin tæki í geymslu')+'</div>'
-        +'<div class="es-sub">'+(this.filter?'Reyndu aðra leit':'Bættu við tæki sem érðu keypt með fyrirtækinu')+'</div></div>';
+        +'<div class="es-title">'+(this.filter?'Ekkert fannst':'Engin tÃ¦ki Ã­ geymslu')+'</div>'
+        +'<div class="es-sub">'+(this.filter?'Reyndu aÃ°ra leit':'BÃ¦ttu viÃ° tÃ¦ki sem Ã©rÃ°u keypt meÃ° fyrirtÃ¦kinu')+'</div></div>';
     } else {
       html += '<div class="tcard"><table class="dtbl"><thead><tr>'
-        +'<th>Raðnúmer</th><th>Tegund</th><th>Stærð</th><th>Viðskiptavinur</th><th>Aldur</th><th>Staða</th><th></th>'
+        +'<th>RaÃ°nÃºmer</th><th>Tegund</th><th>StÃ¦rÃ°</th><th>ViÃ°skiptavinur</th><th>Aldur</th><th>StaÃ°a</th><th></th>'
         +'</tr></thead><tbody>';
       items.forEach(function(i) {
         var age = i.created_at ? (now - new Date(i.created_at))/(1000*60*60*24) : 0;
         var months = Math.floor(age/30);
         var isOv = months >= 12;
         var ageStr = isOv
-          ? '<span style="color:#dc2626;font-weight:600">'+months+' mán. &#9888;</span>'
-          : '<span>'+months+' mán.</span>';
+          ? '<span style="color:#dc2626;font-weight:600">'+months+' mÃ¡n. &#9888;</span>'
+          : '<span>'+months+' mÃ¡n.</span>';
         var badge = isOv
           ? '<span style="background:#fee2e2;color:#dc2626;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600">Henta</span>'
-          : '<span class="st st-ok">Í geymslu</span>';
+          : '<span class="st st-ok">Ã geymslu</span>';
         html += '<tr>'
           +'<td><span class="ser">'+U.e(i.serial)+'</span></td>'
           +'<td>'+U.e(i.type||'')+'</td>'
@@ -623,7 +623,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
           +'<td>'+badge+'</td>'
           +'<td><div style="display:flex;gap:4px">'
           +(i.phone?'<button class="btn btn-ghost btn-sm" onclick="Geymsla.contact('+i.id+')" title="Hafa samband">&#128222;</button>':'')
-          +'<button class="btn btn-ghost btn-sm" onclick="Geymsla.markReturned('+i.id+')" style="color:var(--grn)">&#10003; Sótt</button>'
+          +'<button class="btn btn-ghost btn-sm" onclick="Geymsla.markReturned('+i.id+')" style="color:var(--grn)">&#10003; SÃ³tt</button>'
           +'<button class="btn btn-ghost btn-sm" onclick="Geymsla.disposeOne('+i.id+')" style="color:#dc2626">&#128465;</button>'
           +'</div></td>'
         +'</tr>';
@@ -647,7 +647,7 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
   },
   submitNew: async function() {
     var serial = document.getElementById('gs-serial').value.trim();
-    if (!serial) { Toast.show('Sláðu inn raðnúmer'); return; }
+    if (!serial) { Toast.show('SlÃ¡Ã°u inn raÃ°nÃºmer'); return; }
     var typeEl = document.getElementById('gs-type');
     var data = {
       serial: serial,
@@ -663,32 +663,32 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
     if (btn) { btn.disabled=true; btn.textContent='Vista...'; }
     if (DB.online) {
       var r = await DB.sb.from('uttaeki').insert(data).select().single();
-      if (r.error) { Toast.show('Villa: '+r.error.message); if(btn){btn.disabled=false;btn.textContent='Vista tæki';} return; }
+      if (r.error) { Toast.show('Villa: '+r.error.message); if(btn){btn.disabled=false;btn.textContent='Vista tÃ¦ki';} return; }
       this.items.unshift(r.data);
     } else { data.id=Date.now(); data.created_at=new Date().toISOString(); this.items.unshift(data); }
-    if (btn) { btn.disabled=false; btn.textContent='Vista tæki'; }
+    if (btn) { btn.disabled=false; btn.textContent='Vista tÃ¦ki'; }
     Modal.close('modal-geymsla');
     this.render();
-    Toast.show('Tæki skráð í geymslu ✓');
+    Toast.show('TÃ¦ki skrÃ¡Ã° Ã­ geymslu âœ“');
   },
   contact: function(id) {
     var i = this.items.find(function(x){return x.id===id;});
     if (!i) return;
-    var msg = 'Slökkvitæki ehf: Við höfum slökkvitæki ('+i.serial+') í geymslu hjá okkur. Vinsamlegast hafið samband.';
+    var msg = 'SlÃ¶kkvitÃ¦ki ehf: ViÃ° hÃ¶fum slÃ¶kkvitÃ¦ki ('+i.serial+') Ã­ geymslu hjÃ¡ okkur. Vinsamlegast hafiÃ° samband.';
     if (i.phone) { window.open('sms:'+i.phone+'?body='+encodeURIComponent(msg)); }
-    else { Toast.show('Engir símanúmer skráður'); }
+    else { Toast.show('Engir sÃ­manÃºmer skrÃ¡Ã°ur'); }
   },
   markReturned: async function(id) {
-    if (!confirm('Mæla við tækinu sem sótt?')) return;
+    if (!confirm('MÃ¦la viÃ° tÃ¦kinu sem sÃ³tt?')) return;
     if (DB.online) await DB.sb.from('uttaeki').update({status:'ok'}).eq('id',id);
     this.items = this.items.filter(function(i){return i.id!==id;});
-    this.render(); Toast.show('Tæki mælt sem sótt ✓');
+    this.render(); Toast.show('TÃ¦ki mÃ¦lt sem sÃ³tt âœ“');
   },
   disposeOne: async function(id) {
-    if (!confirm('Henda þessu tæki?')) return;
+    if (!confirm('Henda Ã¾essu tÃ¦ki?')) return;
     if (DB.online) await DB.sb.from('uttaeki').update({status:'disposed'}).eq('id',id);
     this.items = this.items.filter(function(i){return i.id!==id;});
-    this.render(); Toast.show('Tæki hentt');
+    this.render(); Toast.show('TÃ¦ki hentt');
   },
   disposeOverdue: async function() {
     var now = new Date();
@@ -696,10 +696,10 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
       return i.created_at && (now-new Date(i.created_at))/(1000*60*60*24*365)>=1;
     }).map(function(i){return i.id;});
     if (!ids.length) return;
-    if (!confirm('Henda '+ids.length+' tæki?')) return;
+    if (!confirm('Henda '+ids.length+' tÃ¦ki?')) return;
     if (DB.online) { for (var j=0;j<ids.length;j++) await DB.sb.from('uttaeki').update({status:'disposed'}).eq('id',ids[j]); }
     this.items = this.items.filter(function(i){return ids.indexOf(i.id)===-1;});
-    this.render(); Toast.show(ids.length+' tæki hentt');
+    this.render(); Toast.show(ids.length+' tÃ¦ki hentt');
   }
 };
 (function(){
@@ -715,36 +715,36 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
   <!-- Lanstaeki: Register new loaner extinguisher -->
   <div class="modal" id="modal-lanstaeki-new">
     <div class="modal-hd">
-      <h2>Skrá lánstæki</h2>
-      <button class="modal-x" onclick="Modal.close('modal-lanstaeki-new')">✕</button>
+      <h2>SkrÃ¡ lÃ¡nstÃ¦ki</h2>
+      <button class="modal-x" onclick="Modal.close('modal-lanstaeki-new')">âœ•</button>
     </div>
     <div class="modal-bd">
-      <div class="fg"><label class="fl">Raðnúmer *</label><input class="fi" id="ln-serial" placeholder="L-001"></div>
+      <div class="fg"><label class="fl">RaÃ°nÃºmer *</label><input class="fi" id="ln-serial" placeholder="L-001"></div>
       <div class="frow2" style="margin-top:10px">
         <div class="fg"><label class="fl">Tegund</label>
           <select class="fi" id="ln-type"><option>ABC Duft</option><option>CO&#178;</option><option>Vatn</option><option>Fro&#240;u</option><option>Blautt efni</option></select>
         </div>
-        <div class="fg"><label class="fl">Stærð</label><input class="fi" id="ln-size" placeholder="6 kg"></div>
+        <div class="fg"><label class="fl">StÃ¦rÃ°</label><input class="fi" id="ln-size" placeholder="6 kg"></div>
       </div>
       <div class="fg" style="margin-top:10px;margin-bottom:14px">
         <label class="fl">Athugasemdir</label>
-        <textarea class="fi" id="ln-notes" rows="2" placeholder="'ston, lit, sérstakleg marks..." style="resize:vertical"></textarea>
+        <textarea class="fi" id="ln-notes" rows="2" placeholder="'ston, lit, sÃ©rstakleg marks..." style="resize:vertical"></textarea>
       </div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="Lanstaeki.submitNew()">Vista tæki</button>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="Lanstaeki.submitNew()">Vista tÃ¦ki</button>
     </div>
   </div>
   <!-- Lanstaeki: Loan out modal -->
   <div class="modal" id="modal-lanstaeki-lana">
     <div class="modal-hd">
-      <h2>Lána út tæki</h2>
-      <button class="modal-x" onclick="Modal.close('modal-lanstaeki-lana')">✕</button>
+      <h2>LÃ¡na Ãºt tÃ¦ki</h2>
+      <button class="modal-x" onclick="Modal.close('modal-lanstaeki-lana')">âœ•</button>
     </div>
     <div class="modal-bd">
       <div id="ll-unit-info" style="background:var(--bg2);border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:13px"></div>
-      <div class="fg"><label class="fl">Viðtaki (fyrirtæki eða nafn) *</label><input class="fi" id="ll-client" placeholder="Nafn viðtakanda" list="ll-client-list" autocomplete="off"><datalist id="ll-client-list"></datalist></div>
-      <div class="fg" style="margin-top:10px"><label class="fl">Staðsetning</label><input class="fi" id="ll-location" placeholder="T.d. Austurstrati 1, Reykjavík"></div>
+      <div class="fg"><label class="fl">ViÃ°taki (fyrirtÃ¦ki eÃ°a nafn) *</label><input class="fi" id="ll-client" placeholder="Nafn viÃ°takanda" list="ll-client-list" autocomplete="off"><datalist id="ll-client-list"></datalist></div>
+      <div class="fg" style="margin-top:10px"><label class="fl">StaÃ°setning</label><input class="fi" id="ll-location" placeholder="T.d. Austurstrati 1, ReykjavÃ­k"></div>
       <div class="fg" style="margin-top:10px;margin-bottom:14px"><label class="fl">Athugasemdir</label><textarea class="fi" id="ll-notes" rows="2" style="resize:vertical"></textarea></div>
-      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="Lanstaeki.submitLoan()">Lána út</button>
+      <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="Lanstaeki.submitLoan()">LÃ¡na Ãºt</button>
     </div>
   </div>
 <script>
@@ -755,7 +755,7 @@ var Lanstaeki = {
   load: async function() {
     var el = document.getElementById('lanstaeki-main');
     if (!el) return;
-    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3)">Hleður...</div>';
+    el.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3)">HleÃ°ur...</div>';
     if (DB.online) {
       var r = await DB.sb.from('lanstaeki').select('*').order('serial');
       this.items = r.data || [];
@@ -774,30 +774,30 @@ var Lanstaeki = {
     var out   = this.items.filter(function(i){return i.status==='lant_ut';});
     var ws    = this.items.filter(function(i){return i.status==='verkstadi';});
     var html = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">'
-      +'<div><div style="font-size:19px;font-weight:600">Lánstæki</div>'
-      +'<div style="font-size:13px;color:var(--ink3)">'+this.items.length+' tæki &middot; '
+      +'<div><div style="font-size:19px;font-weight:600">LÃ¡nstÃ¦ki</div>'
+      +'<div style="font-size:13px;color:var(--ink3)">'+this.items.length+' tÃ¦ki &middot; '
       +'<span style="color:var(--grn);font-weight:600">'+avail.length+' laus</span> &middot; '
-      +'<span style="color:var(--amb);font-weight:600">'+out.length+' út</span> &middot; '
-      +'<span style="color:var(--blu);font-weight:600">'+ws.length+' í verkstæði</span></div></div>'
+      +'<span style="color:var(--amb);font-weight:600">'+out.length+' Ãºt</span> &middot; '
+      +'<span style="color:var(--blu);font-weight:600">'+ws.length+' Ã­ verkstÃ¦Ã°i</span></div></div>'
       +'<div style="display:flex;gap:8px">'
       +'<button class="btn btn-outline btn-sm" onclick="Lanstaeki.openScan()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M4 6V4h2"/><path d="M4 18v2h2"/><path d="M20 6V4h-2"/><path d="M20 18v2h-2"/><line x1="4" y1="12" x2="20" y2="12"/></svg> Skanna</button>'
-      +'<button class="btn btn-primary btn-sm" onclick="Lanstaeki.openNew()">+ Skrá tæki</button>'
+      +'<button class="btn btn-primary btn-sm" onclick="Lanstaeki.openNew()">+ SkrÃ¡ tÃ¦ki</button>'
       +'</div></div>';
-    html += '<input type="text" placeholder="Leita að raðnúmeri, viðtaka eða stað..." value="'+U.e(this.filter)+'" oninput="Lanstaeki.filter=this.value;Lanstaeki.render()" style="width:100%;padding:9px 12px;border:1px solid var(--brd);border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;background:var(--bg1);color:var(--ink1)">';
+    html += '<input type="text" placeholder="Leita aÃ° raÃ°nÃºmeri, viÃ°taka eÃ°a staÃ°..." value="'+U.e(this.filter)+'" oninput="Lanstaeki.filter=this.value;Lanstaeki.render()" style="width:100%;padding:9px 12px;border:1px solid var(--brd);border-radius:8px;font-size:14px;margin-bottom:14px;box-sizing:border-box;background:var(--bg1);color:var(--ink1)">';
     if (!items.length) {
       html += '<div class="empty-state"><div class="es-icon">&#128295;</div>'
-        +'<div class="es-title">'+(this.filter?'Ekkert fannst':'Engin lánstæki skráð')+'</div>'
-        +'<div class="es-sub">'+(this.filter?'Reyndu aðra leit':'Smelltu á &ldquo;+ Skrá tæki&rdquo; til að skrá lánstæki')+'</div></div>';
+        +'<div class="es-title">'+(this.filter?'Ekkert fannst':'Engin lÃ¡nstÃ¦ki skrÃ¡Ã°')+'</div>'
+        +'<div class="es-sub">'+(this.filter?'Reyndu aÃ°ra leit':'Smelltu Ã¡ &ldquo;+ SkrÃ¡ tÃ¦ki&rdquo; til aÃ° skrÃ¡ lÃ¡nstÃ¦ki')+'</div></div>';
     } else {
       html += '<div class="tcard"><table class="dtbl"><thead><tr>'
-        +'<th>Raðnúmer</th><th>Tegund</th><th>Stærð</th><th>Viðtaki</th><th>Staðsetning</th><th>Staða</th><th></th>'
+        +'<th>RaÃ°nÃºmer</th><th>Tegund</th><th>StÃ¦rÃ°</th><th>ViÃ°taki</th><th>StaÃ°setning</th><th>StaÃ°a</th><th></th>'
         +'</tr></thead><tbody>';
       items.forEach(function(i) {
         var statusBadge, statusTxt;
         if (i.status==='lant_ut') {
-          statusBadge = '<span class="st" style="background:var(--amb-bg);color:var(--amb);border:1px solid var(--amb-bd)">Út lánað</span>';
+          statusBadge = '<span class="st" style="background:var(--amb-bg);color:var(--amb);border:1px solid var(--amb-bd)">Ãšt lÃ¡naÃ°</span>';
         } else if (i.status==='verkstadi') {
-          statusBadge = '<span class="st" style="background:var(--blu-bg);color:var(--blu);border:1px solid var(--blu-bd)">Í verkstæði</span>';
+          statusBadge = '<span class="st" style="background:var(--blu-bg);color:var(--blu);border:1px solid var(--blu-bd)">Ã verkstÃ¦Ã°i</span>';
         } else {
           statusBadge = '<span class="st st-ok">Laust</span>';
         }
@@ -814,9 +814,9 @@ var Lanstaeki = {
           +'<td>'+(i.location?U.e(i.location):'<span style="color:var(--ink3)">&#8212;</span>')+'</td>'
           +'<td>'+statusBadge+'</td>'
           +'<td><div style="display:flex;gap:4px">'
-          +(i.status!=='lant_ut'?'<button class="btn btn-ghost btn-sm" onclick="Lanstaeki.openLoan('+i.id+')" style="color:var(--amb);font-size:12px">Út</button>':'')
-          +(i.status==='lant_ut'?'<button class="btn btn-ghost btn-sm" onclick="Lanstaeki.returnUnit('+i.id+')" style="color:var(--grn);font-size:12px">↩ Skila</button>':'')
-          +(i.status!=='verkstadi'?'<button class="btn btn-ghost btn-sm" onclick="Lanstaeki.sendToWorkshop('+i.id+')" style="color:var(--blu);font-size:12px">🔧</button>':'')
+          +(i.status!=='lant_ut'?'<button class="btn btn-ghost btn-sm" onclick="Lanstaeki.openLoan('+i.id+')" style="color:var(--amb);font-size:12px">Ãšt</button>':'')
+          +(i.status==='lant_ut'?'<button class="btn btn-ghost btn-sm" onclick="Lanstaeki.returnUnit('+i.id+')" style="color:var(--grn);font-size:12px">â†© Skila</button>':'')
+          +(i.status!=='verkstadi'?'<button class="btn btn-ghost btn-sm" onclick="Lanstaeki.sendToWorkshop('+i.id+')" style="color:var(--blu);font-size:12px">ðŸ”§</button>':'')
           +(i.status==='verkstadi'?'<button class="btn btn-ghost btn-sm" onclick="Lanstaeki.setAvailable('+i.id+')" style="color:var(--grn);font-size:12px">&#10003;</button>':'')
           +'</div></td>'
         +'</tr>';
@@ -834,20 +834,20 @@ var Lanstaeki = {
     if (typeof Scanner!=='undefined') {
       Scanner.open(function(code){
         var item=Lanstaeki.items.find(function(i){return i.serial===code;});
-        if(item){Lanstaeki.openLoan(item.id); Toast.show('Tæki fundist: '+code);}
-        else{Toast.show('Þetta raðnúmer er ekki í lánstækaflóa: '+code);}
+        if(item){Lanstaeki.openLoan(item.id); Toast.show('TÃ¦ki fundist: '+code);}
+        else{Toast.show('Ãžetta raÃ°nÃºmer er ekki Ã­ lÃ¡nstÃ¦kaflÃ³a: '+code);}
       });
     } else {
-      var code = prompt('Sláðu inn raðnúmer:');
+      var code = prompt('SlÃ¡Ã°u inn raÃ°nÃºmer:');
       if (!code) return;
       var item = Lanstaeki.items.find(function(i){return i.serial===code.trim();});
       if (item) { Lanstaeki.openLoan(item.id); }
-      else { Toast.show('Tæki ekki fundist: '+code); }
+      else { Toast.show('TÃ¦ki ekki fundist: '+code); }
     }
   },
   submitNew: async function() {
     var serial=(document.getElementById('ln-serial')||{}).value.trim();
-    if(!serial){Toast.show('Sláðu inn raðnúmer');return;}
+    if(!serial){Toast.show('SlÃ¡Ã°u inn raÃ°nÃºmer');return;}
     var typeEl=document.getElementById('ln-type');
     var data={
       serial:serial,
@@ -860,14 +860,14 @@ var Lanstaeki = {
     if(btn){btn.disabled=true;btn.textContent='Vista...';}
     if(DB.online){
       var r=await DB.sb.from('lanstaeki').insert(data).select().single();
-      if(r.error){Toast.show('Villa: '+r.error.message);if(btn){btn.disabled=false;btn.textContent='Vista tæki';}return;}
+      if(r.error){Toast.show('Villa: '+r.error.message);if(btn){btn.disabled=false;btn.textContent='Vista tÃ¦ki';}return;}
       this.items.push(r.data);
       this.items.sort(function(a,b){return a.serial<b.serial?-1:1;});
     } else {data.id=Date.now();this.items.push(data);}
-    if(btn){btn.disabled=false;btn.textContent='Vista tæki';}
+    if(btn){btn.disabled=false;btn.textContent='Vista tÃ¦ki';}
     Modal.close('modal-lanstaeki-new');
     this.render();
-    Toast.show('Lánstæki skráð: '+serial+' ✓');
+    Toast.show('LÃ¡nstÃ¦ki skrÃ¡Ã°: '+serial+' âœ“');
   },
   openLoan: function(id) {
     var i=this.items.find(function(x){return x.id===id;});
@@ -886,7 +886,7 @@ var Lanstaeki = {
   submitLoan: async function() {
     var id=this.sel; if(!id)return;
     var client=(document.getElementById('ll-client')||{}).value.trim();
-    if(!client){Toast.show('Sláðu inn nafn viðtaka');return;}
+    if(!client){Toast.show('SlÃ¡Ã°u inn nafn viÃ°taka');return;}
     var loc=(document.getElementById('ll-location')||{}).value.trim();
     var notes=(document.getElementById('ll-notes')||{}).value.trim();
     var today=U.today();
@@ -899,23 +899,23 @@ var Lanstaeki = {
     }
     var item=this.items.find(function(i){return i.id===id;});
     if(item){item.status='lant_ut';item.client=client;item.location=loc||null;item.loaned_at=today;}
-    if(btn){btn.disabled=false;btn.textContent='Lána út';}
+    if(btn){btn.disabled=false;btn.textContent='LÃ¡na Ãºt';}
     Modal.close('modal-lanstaeki-lana');
     this.render();
-    Toast.show('Tæki lánað til '+client+' ✓');
+    Toast.show('TÃ¦ki lÃ¡naÃ° til '+client+' âœ“');
   },
   returnUnit: async function(id) {
     var item=this.items.find(function(i){return i.id===id;});
     if(!item)return;
-    if(!confirm('Skrá '+item.serial+(item.client?' skilað frá '+item.client:'')+' sem skilað?'))return;
+    if(!confirm('SkrÃ¡ '+item.serial+(item.client?' skilaÃ° frÃ¡ '+item.client:'')+' sem skilaÃ°?'))return;
     var update={status:'til_radstofunar',client:null,location:null,loaned_at:null};
     if(DB.online){
       await DB.sb.from('lanstaeki').update(update).eq('id',id);
-      await DB.sb.from('lanstaeki_saga').insert({lanstaeki_id:id,action:'skilad',client:item.client,notes:'Skilað'});
+      await DB.sb.from('lanstaeki_saga').insert({lanstaeki_id:id,action:'skilad',client:item.client,notes:'SkilaÃ°'});
     }
     item.status='til_radstofunar';item.client=null;item.location=null;item.loaned_at=null;
     this.render();
-    Toast.show('Tæki skilað og laust ✓');
+    Toast.show('TÃ¦ki skilaÃ° og laust âœ“');
   },
   sendToWorkshop: async function(id) {
     var item=this.items.find(function(i){return i.id===id;});
@@ -927,7 +927,7 @@ var Lanstaeki = {
     }
     item.status='verkstadi';item.client=null;item.location=null;
     this.render();
-    Toast.show('Tæki sent í verkstæði');
+    Toast.show('TÃ¦ki sent Ã­ verkstÃ¦Ã°i');
   },
   setAvailable: async function(id) {
     var item=this.items.find(function(i){return i.id===id;});
@@ -935,7 +935,7 @@ var Lanstaeki = {
     if(DB.online) await DB.sb.from('lanstaeki').update({status:'til_radstofunar'}).eq('id',id);
     item.status='til_radstofunar';
     this.render();
-    Toast.show('Tæki laust ✓');
+    Toast.show('TÃ¦ki laust âœ“');
   }
 };
 (function(){
@@ -1069,7 +1069,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/253-sala-customer-history.js?v=20260814stada"></script>
 <script defer src="/js/patches/254-receipt-sender.js?v=20260731felag"></script>
 <script defer src="/js/patches/255-auto-discount.js?v=20260729wt"></script>
-<!-- hibernated 2026-07-09 (rangur dökkur titil-bar úr #260, ekki í comps): 260-global-titlebar.js -->
+<!-- hibernated 2026-07-09 (rangur dÃ¶kkur titil-bar Ãºr #260, ekki Ã­ comps): 260-global-titlebar.js -->
 <script defer src="/js/patches/261-app-profiles.js?v=20260809a"></script>
 <script defer src="/js/patches/262-sidebar-polish.js?v=20260705c"></script>
 <script defer src="/js/patches/262-page-editor.js?v=20260817guard"></script>
@@ -1133,19 +1133,19 @@ var Lanstaeki = {
 <script src="/js/vorur.js?v=20260726halfrevert"></script>
 <script src="/js/sala.js?v=20260728deeplink"></script>
 <script src="/js/searchbox.js?v=1776797624642"></script>
-<!-- demoseed.js Í DVALA 2026-07-11: sáði sýnishornsvörum aftur (t.d. „Slökkvitæki 6kg
-     ABC Duft"/„Slökkvitæki 2kg CO₂"/„Reykskynjari" 2026-07-10) þegar count-tékkið
-     brást á nýju tæki — bjó til afritin sem Agnar bað um að eyða. Taflan er löngu
-     full af alvöru vörum; sáning á aldrei aftur við. -->
+<!-- demoseed.js Ã DVALA 2026-07-11: sÃ¡Ã°i sÃ½nishornsvÃ¶rum aftur (t.d. â€žSlÃ¶kkvitÃ¦ki 6kg
+     ABC Duft"/â€žSlÃ¶kkvitÃ¦ki 2kg COâ‚‚"/â€žReykskynjari" 2026-07-10) Ã¾egar count-tÃ©kkiÃ°
+     brÃ¡st Ã¡ nÃ½ju tÃ¦ki â€” bjÃ³ til afritin sem Agnar baÃ° um aÃ° eyÃ°a. Taflan er lÃ¶ngu
+     full af alvÃ¶ru vÃ¶rum; sÃ¡ning Ã¡ aldrei aftur viÃ°. -->
 <!-- <script src="/js/demoseed.js?v=1776797624642"></script> -->
 <script src="/js/fixcompanysave.js?v=1776797624642"></script>
 <script src="/js/geymslascan.js?v=1776797624642"></script>
-<!-- Sala-lending við ræsingu. 2026-07-28: VERÐUR að víkja fyrir djúptengli.
-     Áður keyrði þetta skilyrðislaust — og af því patch 218 vefur switchView
-     speglaði kallið slóðina yfir í "#sala" (replaceState), svo #rekstrarfelog
-     (og hvaða annað hash sem er) tapaðist ~500ms eftir load og notandinn lenti
-     alltaf á Sölu. Sama vörn og patch 154 notar: hreint slug-hash (engin '=',
-     ekkert '/') þýðir að notandinn bað um ákveðna síðu — snertum ekki. -->
+<!-- Sala-lending viÃ° rÃ¦singu. 2026-07-28: VERÃUR aÃ° vÃ­kja fyrir djÃºptengli.
+     ÃÃ°ur keyrÃ°i Ã¾etta skilyrÃ°islaust â€” og af Ã¾vÃ­ patch 218 vefur switchView
+     speglaÃ°i kalliÃ° slÃ³Ã°ina yfir Ã­ "#sala" (replaceState), svo #rekstrarfelog
+     (og hvaÃ°a annaÃ° hash sem er) tapaÃ°ist ~500ms eftir load og notandinn lenti
+     alltaf Ã¡ SÃ¶lu. Sama vÃ¶rn og patch 154 notar: hreint slug-hash (engin '=',
+     ekkert '/') Ã¾Ã½Ã°ir aÃ° notandinn baÃ° um Ã¡kveÃ°na sÃ­Ã°u â€” snertum ekki. -->
 <script>document.addEventListener("DOMContentLoaded",function(){setTimeout(function(){var h=(location.hash||"").replace(/^#/,"");if(h&&h.indexOf("=")===-1&&h.indexOf("/")===-1)return;if(document.querySelector(".view.active"))return;if(window.App&&App.switchView)App.switchView("sala");},500);});</script>
 </body>
 </html>

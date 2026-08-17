@@ -1231,12 +1231,24 @@
     }
   }
 
+  let _retryT = 0;
   async function maybeRender() {
     if (_rendering) return;
-    if (Date.now() - _lastRender < 800) return;
+    // 2026-08-17 („invoice calculator keeps falling out"): þessir tveir
+    // þöglu returnar átu SÍÐASTA kallið — endurteiknun eftir „Merkja skoðun"
+    // lenti innan 800ms-gluggans (eða Companies.list var enn ólistaður) og
+    // enginn mutation kom á eftir, svo blokkin kom aldrei aftur. Í stað þess
+    // að gefast upp er alltaf bókað retry.
+    if (Date.now() - _lastRender < 800) {
+      clearTimeout(_retryT); _retryT = setTimeout(maybeRender, 900);
+      return;
+    }
     const coId = getCompanyId();
     const coNafn = getCompanyName();
-    if (!coId || !coNafn) return;
+    if (!coId || !coNafn) {
+      if (coId && !coNafn) { clearTimeout(_retryT); _retryT = setTimeout(maybeRender, 900); }
+      return;
+    }
     const key = String(coId);
     if (key === _lastKey && document.getElementById('_ctc-section')) return;
     _lastKey = key;
@@ -1267,6 +1279,13 @@
       _t = setTimeout(maybeRender, 400);
     }).observe(main, { childList: true, subtree: true });
     setTimeout(maybeRender, 1500);
+    // Öryggisventill: maybeRender er nær ókeypis þegar allt er á sínum stað
+    // (key-samanburður + getElementById) — púlsinn tryggir að blokkin jafni
+    // sig innan ~2,5s þótt allar kveikjur klikki (belti OG axlabönd).
+    setInterval(function () {
+      const v = document.getElementById('view-companies');
+      if (v && v.classList.contains('active')) maybeRender();
+    }, 2500);
   }
   attach();
 
