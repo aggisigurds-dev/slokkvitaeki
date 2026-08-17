@@ -105,9 +105,12 @@
     return vid || 'all';   // elements outside any view are global-only
   }
   function ruleFor(sel, scp, create) {
-    // Öryggisventill: bert element-heiti („svg", „div", „span") á ÖLLUM síðum
-    // næði yfir allt appið. Færum slíka reglu sjálfkrafa á síðuna sem er opin.
-    if (scp === 'all' && /^[a-z][a-z0-9]*$/i.test(String(sel || '').trim())) {
+    // Öryggisventill: selector án nokkurs klasa/#id/[attr]-akkeri — bert
+    // element-heiti („svg", „div") EÐA keðja af berum heitum
+    // („div > div > div > div > div", 2026-08-17: litaði ALLAN texta appsins
+    // hvítan) — á ÖLLUM síðum næði yfir allt appið. Færum slíka reglu
+    // sjálfkrafa á síðuna sem er opin.
+    if (scp === 'all' && !/[.#\[]/.test(String(sel || ''))) {
       const cur = document.querySelector('.view.active');
       if (cur && cur.id) {
         scp = cur.id;
