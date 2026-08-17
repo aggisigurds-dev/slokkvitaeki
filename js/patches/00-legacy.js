@@ -2747,7 +2747,10 @@ console.log('[patch-master] loaded with all fixes');
       // fann orðið „STAÐA" í hausnum, henti chippunni og setti tækja-fellilista
       // (Active / Í geymslu / Ónýtt) í staðinn — sem hefði skrifað í uttaeki.status
       // á RÖNGU auðkenni. Sama undanþága og #view-bakendi fékk.
-      if (table.closest('#_kr-statement, #_kr-picker, #ci-modal, #_se-dlg, #_drog-list-modal, #counter-detail-modal, #workshop-detail-modal, #view-bakendi, #view-brunakerfi-yfirlit')) return;
+      // 2026-08-17: Fyrirtæki í Þjónustu-taflan (153) fékk „Staða 2026"-haus í
+      // mockup-eftirmyndinni — þessi inndæling greip hann og setti enskan
+      // Active-fellilista ofan í stöðu-pilluna. Sama undanþága og hinir.
+      if (table.closest('#_kr-statement, #_kr-picker, #ci-modal, #_se-dlg, #_drog-list-modal, #counter-detail-modal, #workshop-detail-modal, #view-bakendi, #view-brunakerfi-yfirlit, #view-arsskodun')) return;
       // Check if this table has STAÐA column
       var ths = table.querySelectorAll('th');
       var statusIdx = -1;

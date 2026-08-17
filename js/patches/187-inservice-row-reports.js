@@ -276,24 +276,37 @@
         const f = files.find(x => String(x.year) === y && isReportKind(x)) ||
                   files.find(x => x.year == null && isReportKind(x) &&
                                   new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
-        // Inspection-tag styling (matches the redesign): legible '23–'26 tag,
-        // green = report on file, grey = none, amber = current year still due.
+        // 2026-08-17 (mockup-eftirmynd, „exact copy"): FYLLTAR dökkar pillur —
+        // grænt = skýrsla til · blátt = úttekt staðfest/yfirfarin án skýrslu ·
+        // dökkrautt = vantar (gap-flagg eða yfirstandandi ár án skýrslu) ·
+        // fölgrá útlína = ekkert. Undir hverri pillu: skjala-deplar (grænn =
+        // úttektarskýrsla · blár = reikningur), sbr. skýringar mockupsins.
+        // Allar smell-hegðanir (opna skjal / _yr-add / _yr-att / tvísmellur)
+        // og titlar halda sér — aðeins útlitið breyttist.
         const yy = y.slice(-2);
-        const TAG = "display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 9px 0 7px;border-radius:3px 9px 9px 3px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;text-decoration:none;border:1px solid transparent;box-sizing:border-box;";
-        const dotGreen = '<span style="width:4px;height:4px;border-radius:50%;background:#1C8F60;flex:0 0 auto"></span>';
-        // Fact-check depill: 'human' → glóandi grænn · 'claude' → blár.
         const fst = fcStat(coId, y);
         const confirmed = fst === 'human';
         const isClaude  = fst === 'claude';
         const isGap     = fst === 'gap';
-        const glowDot = '<span title="Staðfest" style="width:6px;height:6px;border-radius:50%;background:#16A34A;box-shadow:0 0 5px 1.5px rgba(22,163,74,.9);flex:0 0 auto"></span>';
-        const blueDot = '<span title="Claude yfirfór — bíður staðfestingar" style="width:6px;height:6px;border-radius:50%;background:#2563EB;box-shadow:0 0 5px 1px rgba(37,99,235,.8);flex:0 0 auto"></span>';
-        const gapDot  = '<span title="Skýrsla vantar fyrir þetta ár" style="width:6px;height:6px;border-radius:50%;background:#F59E0B;flex:0 0 auto"></span>';
-        const gdot = confirmed ? glowDot : (isClaude ? blueDot : dotGreen);
-        const okBorder = confirmed ? 'rgba(22,163,74,.7)' : 'rgba(28,143,96,.35)';
+        const BDG = "display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 10px;border-radius:6px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;text-decoration:none;box-sizing:border-box;border:1px solid transparent;";
+        const FILL = {
+          green: 'background:#0d6b3d;color:#fff;border-color:#0a5730',
+          blue:  'background:#2563eb;color:#fff;border-color:#1d4fc4',
+          red:   'background:#a61b1b;color:#fff;border-color:#8c1414',
+          ghost: 'background:#f4f4f1;color:#9ca3af;border-color:#e2dfd6'
+        };
+        const wdot = '<span style="width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.85;flex:0 0 auto"></span>';
+        const TAG = BDG;   // eldri nafngift í branch-unum að neðan
+        const hasInvYear = !!((invMap && invMap[coId] && invMap[coId][y]) || (reikMap && reikMap[kt] && reikMap[kt].has(y)));
         const td = document.createElement('td');
         td.setAttribute('data-yrcell','1');
         td.style.cssText = 'padding:6px 4px;text-align:center;';
+        const wrapBadge = (badgeHtml, hasRep) => {
+          const dots = (hasRep ? '<span style="width:5px;height:5px;border-radius:50%;background:#16a34a"></span>' : '') +
+                       (hasInvYear ? '<span style="width:5px;height:5px;border-radius:50%;background:#2563eb"></span>' : '');
+          return '<span style="display:inline-flex;flex-direction:column;align-items:center;gap:2px">' + badgeHtml +
+            '<span style="display:flex;gap:3px;justify-content:center;height:5px">' + dots + '</span></span>';
+        };
         // 2026-08-11: „skýrsla vantar"-flaggið kemur FYRST — á undan skjala-
         // vísbendingunum. Áður stóð það neðst, svo hvaða árs-merkt viðhengi sem er
         // þaggaði það niður í hljóði: Steypustöðin Þorlákshöfn 2026 var MERKT
@@ -305,39 +318,27 @@
           const gapDoc = (u || f)
             ? ' · ATH: skjal er á skrá fyrir ' + y + ' en það er EKKI úttektarskýrsla (eða flaggið stendur enn)'
             : '';
-          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Skýrsla vantar fyrir ' + y + ' — hengdu við eða veldu úr safni' + gapDoc + '" style="' + TAG + 'background:#FEF3C7;border-color:rgba(245,158,11,.6);color:#92400E">' + gapDot + yy + '</a>';
-          if (u) td.innerHTML += '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Opna skjalið sem er á skrá fyrir ' + y + '" style="margin-left:3px;font-size:10px;text-decoration:none">📄</a>';
+          td.innerHTML = wrapBadge('<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Skýrsla vantar fyrir ' + y + ' — hengdu við eða veldu úr safni' + gapDoc + '" style="' + TAG + FILL.red + '">' + wdot + yy + '</a>' +
+            (u ? '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Opna skjalið sem er á skrá fyrir ' + y + '" style="margin-left:3px;font-size:10px;text-decoration:none">📄</a>' : ''), false);
         } else if (u) {
-          td.innerHTML = '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Úttektarskýrsla ' + y + ' í Drive" style="' + TAG + 'background:#DBEEE3;border-color:' + okBorder + ';color:#0F5E3F">' + gdot + yy + '</a>';
+          td.innerHTML = wrapBadge('<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Úttektarskýrsla ' + y + ' í Drive' + (confirmed ? ' · ✓ staðfest handvirkt' : (isClaude ? ' · Claude yfirfór' : '')) + '" style="' + TAG + FILL.green + '">' + wdot + yy + '</a>', true);
         } else if (f) {
-          td.innerHTML = '<a href="#" class="_yr-att" data-path="' + String(f.path||'').replace(/"/g,'&quot;') + '" title="' + String(f.name||'').replace(/"/g,'&quot;') + ' (' + y + ' — upphlaðið skjal)" style="' + TAG + 'background:#DBEEE3;border-color:' + okBorder + ';color:#0F5E3F">' + gdot + yy + '</a>';
+          td.innerHTML = wrapBadge('<a href="#" class="_yr-att" data-path="' + String(f.path||'').replace(/"/g,'&quot;') + '" title="' + String(f.name||'').replace(/"/g,'&quot;') + ' (' + y + ' — upphlaðið skjal)" style="' + TAG + FILL.green + '">' + wdot + yy + '</a>', true);
         } else if (invMap && invMap[coId] && invMap[coId][y]) {
           // BLÁTT: úttektin var GERÐ (reikningur til) en skýrslan vantar.
-          // Grænt = skýrsla til · blátt = við fórum, skýrsla vantar · grátt = ekkert.
-          // Smellur = hengja skýrsluna við (sama _yr-add flæði og tómur reitur).
           const iv = invMap[coId][y];
-          const invDot = '<span style="width:5px;height:5px;border-radius:50%;background:#2563EB;flex:0 0 auto"></span>';
-          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" ' +
+          td.innerHTML = wrapBadge('<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" ' +
             'title="Úttekt staðfest með reikningi ' + String(iv.nr).replace(/"/g,'&quot;') + ' (' + String(iv.dags).replace(/"/g,'&quot;') + ') — skýrsla vantar. Smelltu til að hengja skýrsluna við." ' +
-            'style="' + TAG + 'background:#DBEAFE;border-color:rgba(37,99,235,.6);color:#1E3A8A">' + invDot + yy + '</a>';
+            'style="' + TAG + FILL.blue + '">' + wdot + yy + '</a>', false);
         } else if (confirmed) {
-          // Fact-checkað handvirkt þótt ekkert skjal sé á þessari hlið.
-          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Fact-checkað ' + y + ' (staðfest handvirkt)" style="' + TAG + 'background:#DBEEE3;border-color:rgba(22,163,74,.7);color:#0F5E3F">' + glowDot + yy + '</a>';
+          td.innerHTML = wrapBadge('<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Fact-checkað ' + y + ' (staðfest handvirkt)" style="' + TAG + FILL.green + '">' + wdot + yy + '</a>', false);
         } else if (isClaude) {
-          // Claude yfirfór — blár, bíður mannlegrar staðfestingar.
-          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Claude yfirfór ' + y + ' — bíður staðfestingar" style="' + TAG + 'background:#DBE7FE;border-color:rgba(37,99,235,.6);color:#1E3A8A">' + blueDot + yy + '</a>';
+          td.innerHTML = wrapBadge('<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Claude yfirfór ' + y + ' — bíður staðfestingar" style="' + TAG + FILL.blue + '">' + wdot + yy + '</a>', false);
         } else {
-          // Empty = attach point: click to upload a skýrsla into (company, year).
-          const due = (y === '2026');
-          const bg = due ? '#FBEAC6' : '#F0EFEA', bd = due ? 'rgba(217,146,6,.5)' : '#E2DFD6', col = due ? '#8A5C04' : '#9CA0A6';
-          const eye = due
-            ? '<span style="width:4px;height:4px;border-radius:50%;background:#D99206;flex:0 0 auto"></span>'
-            : '<span style="width:4px;height:4px;border-radius:50%;box-shadow:inset 0 0 0 1.5px #B9B6AC;flex:0 0 auto"></span>';
-          td.innerHTML = '<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Hengja skýrslu við ' + y + '" style="' + TAG + 'background:' + bg + ';border-color:' + bd + ';color:' + col + '">' + eye + yy + '</a>';
-        }
-        // 🧾 reikningur ársins tengdur (customer_documents) → lítið tákn við hlið skýrslu-stöðunnar
-        if (reikMap && reikMap[kt] && reikMap[kt].has(y)) {
-          td.innerHTML += '<span title="Reikningur ' + y + ' sendur / tengdur" style="margin-left:3px;font-size:10px;line-height:1;vertical-align:middle">🧾</span>';
+          // Empty = attach point. Yfirstandandi ár án skýrslu = dökkrautt
+          // (mockup); eldri tóm ár = fölgrá útlínupilla.
+          const due = (y === String(new Date().getFullYear()));
+          td.innerHTML = wrapBadge('<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Hengja skýrslu við ' + y + '" style="' + TAG + (due ? FILL.red : FILL.ghost) + '">' + wdot + yy + '</a>', false);
         }
         tr.insertBefore(td, ref);
       });
