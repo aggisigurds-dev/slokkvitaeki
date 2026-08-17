@@ -296,11 +296,13 @@
         const wrapBadge = (badgeHtml, hasRep) =>
           '<span class="_dd">' + badgeHtml +
             '<u><i class="' + (hasRep ? 'rep' : '') + '"></i><i class="' + (hasInvYear ? 'inv' : '') + '"></i></u></span>';
-        // Ástands-klasar merkisins (effRep = skýrsla eða handstaðfest):
+        // Ástands-klasar merkisins (effRep = skýrsla eða handstaðfest).
+        // 2026-08-17 (Agnar: „It should not be black. make it green instead"):
+        // merki MEÐ skýrslu fá alltaf dökkgræna málminn (both-stílinn), líka á
+        // yfirstandandi ári — rauða/svarta 'now'-útlitið er aðeins fyrir VANTAR.
         const yrCls = (effRep) => {
           if (isGap) return '_yr now' + (effRep ? ' lit' : '');
-          if (effRep && hasInvYear) return '_yr ' + (isNow ? 'now' : 'on') + ' both lit';
-          if (effRep) return '_yr ' + (isNow ? 'now' : 'on') + ' lit';
+          if (effRep) return '_yr ' + (isNow ? 'now' : 'on') + ' both lit';
           if (hasInvYear || isClaude) return '_yr ' + (isNow ? 'now' : 'on') + ' inv-only lit';
           if (isNow) return '_yr now';
           return '_yr';

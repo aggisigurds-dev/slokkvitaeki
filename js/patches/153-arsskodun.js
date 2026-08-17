@@ -2324,7 +2324,10 @@
       V+'._yr.now.lit::before,'+V+'._yr.both.lit::before{background:#7df0b4;box-shadow:0 0 5px rgba(125,240,180,.9)}',
       V+'._yr.inv-only.lit::before{background:#9fc3ff;box-shadow:0 0 5px rgba(159,195,255,.9)}',
       V+'._yr.on{color:#3a4250;background:#e7ebf2;border-color:#d8dde6}',
-      V+'._yr.now{color:#fff;background:var(--btn-grad);border-color:rgba(120,10,10,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}',
+      // 2026-08-17 (Agnar: „should not be black"): --btn-grad rann í svart í
+      // 20px hæð — vantar-merkin nota nú sama skýra rauða gradient og Á eftir-
+      // pillan svo þau lesist RAUÐ, ekki svört.
+      V+'._yr.now{color:#fff;background:linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%);border-color:#4d0a08;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.25),inset 0 -2px 4px rgba(0,0,0,.26)}',
       V+'._yr.both,'+V+'._yr.on.both,'+V+'._yr.now.both{color:#fff;background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border-color:#041c0e;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.2),inset 0 -2px 4px rgba(0,0,0,.26)}',
       V+'._yr.inv-only{color:#fff;background:linear-gradient(145deg,#5a86e0 0%,#2f5fe0 42%,#1a3a8c 72%,#2d55c4 100%);border-color:#12296b;text-shadow:0 1px 1px rgba(0,0,0,.3);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.32),inset 0 -2px 4px rgba(0,0,0,.22)}',
       V+'._devs{display:flex;justify-content:flex-end;align-items:stretch}',
