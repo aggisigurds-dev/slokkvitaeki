@@ -405,6 +405,28 @@
     return n;
   }
 
+  // 2026-08-17 (ósk Agnars: afslættir sjálfvirkir líka í úttektum): afsláttar-
+  // hópur fyrirtækisins (discount_tiers, patch 296/engine) er sóttur einu sinni
+  // per fyrirtæki og notaður í verðlykkjunni að neðan. Fast hópsverð (kr án
+  // vsk) verður sjálfgefna línuverðið — handvirk yfirskrift á ferðinni trompar
+  // áfram — og telst „endanlegt verð" eins og tilboðsverð: almenni afslátturinn
+  // leggst ekki ofan á.
+  let _tierCache = { coId: null, tier: null };
+  async function loadTierFor(coId) {
+    if (_tierCache.coId === coId) return _tierCache.tier;
+    let tier = null;
+    try {
+      const c = ((window.Companies && Companies.list) || []).find(x => +x.id === +coId);
+      const tid = c && c.discount_tier_id;
+      if (tid && window.DB && DB.sb) {
+        const r = await DB.sb.from('discount_tiers').select('*').eq('id', tid).maybeSingle();
+        if (!r.error && r.data && r.data.virkt !== false) tier = r.data;
+      }
+    } catch (_) {}
+    _tierCache = { coId: coId, tier: tier };
+    return tier;
+  }
+
   let _lastKey = '';
   let _rendering = false;
   let _lastRender = 0;
@@ -423,7 +445,17 @@
 
     const units = await fetchUnits(coNafn);
     const services = await loadServices();
+    const tier = await loadTierFor(coId);
     const tripState = loadTripState(coId);
+    const tierFastFor = (product) => {
+      if (!tier || !window.DiscountEngine || !product) return null;
+      try {
+        const cat = DiscountEngine.classifyItem({ id: product.id, nafn: product.nafn, flokkur: product.flokkur });
+        return DiscountEngine.tierFast(tier, cat);
+      } catch (_) { return null; }
+    };
+    const tierHwPct = (tier && window.DiscountEngine) ? DiscountEngine.tierPct(tier, 'hardware_purchase') : null;
+    const tierBadgeObj = { notes: 'Afsláttarhópur „' + ((tier && tier.tier_name) || '') + '" — fast samningsverð án vsk (handvirk breyting hér trompar)' };
     // 2026-05-19: defaults for in-service Fyrirtækjaþjónustu customers —
     //   Akstur:      3600 kr ex VSK (× 1 — multiplier 2 = 7200) [3600 frá 2026-08-17, var 3000]
     //   Skýrslugerð: 5600 kr ex VSK [5600 frá 2026-08-17, var 3500]
@@ -618,7 +650,7 @@
               '<div style="font-size:11px;color:#64748b">' + esc(reykP.nafn) + '</div></td>' +
             '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + total + '</td>' +
             '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#e0e7ff;color:#3730a3">Reykskynjari</span></td>' +
-            priceCell(dKey, unitPrice, override) +
+            priceCell(dKey, unitPrice, override || tierMark) +
             '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
             discCell(dKey, dPct) +
             '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
@@ -641,23 +673,27 @@
         const replacement = findReplacementProduct(g.type, g.size, services);
         if (replacement) {
           const override = findOverride(coId, replacement.nafn);
-          const unitPrice = override ? +override.price_ex_vat : +replacement.verd_an_vsk;
+          let unitPrice = override ? +override.price_ex_vat : +replacement.verd_an_vsk;
           const vskPct = override ? (+override.vsk_pct || 24) : (+replacement.vsk_prosenta || 24);
+          let tierMark = null;
+          if (!override) { const tf = tierFastFor(replacement); if (tf != null && tf <= unitPrice) { unitPrice = tf; tierMark = tierBadgeObj; } }
           const total = g.hledsla + g.yfirferd;
           const dKey = 'svc|' + g.type + '|' + g.size + '|vara';
-          const dPct = discFor(dKey);
+          let dPct = discFor(dKey);
+          let tierPctMark = false;
+          if (!dPct && !tierMark && !override && tierHwPct != null && tierHwPct > 0) { dPct = tierHwPct; tierPctMark = true; }
           const effUnit = priceFor(dKey, unitPrice);
           const subEx = discUnitOf(effUnit, dPct) * total;
           const vskKr = subEx * (vskPct / 100);
           totalSubEx += subEx;
           totalVsk += vskKr;
-          if (override) { overrideSubEx += subEx; overrideVsk += vskKr; }
+          if (override || tierMark || tierPctMark) { overrideSubEx += subEx; overrideVsk += vskKr; }
           rows.push('<tr>' +
             '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
               '<div style="font-size:11px;color:#64748b">' + esc(replacement.nafn) + '</div></td>' +
             '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + total + '</td>' +
             '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f3e8ff;color:#6b21a8">Vara</span></td>' +
-            priceCell(dKey, unitPrice, override) +
+            priceCell(dKey, unitPrice, override || tierMark) +
             '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
             discCell(dKey, dPct) +
             '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
@@ -676,8 +712,10 @@
         const product = pickByKind(matching, kindKey);
         if (!product) return;
         const override = findOverride(coId, product.nafn);
-        const unitPrice = override ? +override.price_ex_vat : +product.verd_an_vsk;
+        let unitPrice = override ? +override.price_ex_vat : +product.verd_an_vsk;
         const vskPct = override ? (+override.vsk_pct || 24) : (+product.vsk_prosenta || 24);
+        let tierMark = null;
+        if (!override) { const tf = tierFastFor(product); if (tf != null && tf <= unitPrice) { unitPrice = tf; tierMark = tierBadgeObj; } }
         const dKey = 'svc|' + g.type + '|' + g.size + '|' + kindKey;
         const dPct = discFor(dKey);
         const effUnit = priceFor(dKey, unitPrice);
@@ -685,7 +723,7 @@
         const vskKr = subEx * (vskPct / 100);
         totalSubEx += subEx;
         totalVsk += vskKr;
-        if (override) { overrideSubEx += subEx; overrideVsk += vskKr; }
+        if (override || tierMark) { overrideSubEx += subEx; overrideVsk += vskKr; }
         rows.push('<tr>' +
           '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
             '<div style="font-size:11px;color:#64748b">' + esc(product.nafn) + '</div></td>' +
@@ -693,7 +731,7 @@
           '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;' +
             (kindKey === 'hledsla' ? 'background:#dcfce7;color:#166534' : 'background:#dbeafe;color:#1e40af') + '">' +
             kindLabel + '</span></td>' +
-          priceCell(dKey, unitPrice, override) +
+          priceCell(dKey, unitPrice, override || tierMark) +
           '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
           discCell(dKey, dPct) +
           '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
@@ -706,22 +744,28 @@
         const newProduct = findReplacementProduct(g.type, g.size, services);
         if (newProduct) {
           const override = findOverride(coId, newProduct.nafn);
-          const unitPrice = override ? +override.price_ex_vat : +newProduct.verd_an_vsk;
+          let unitPrice = override ? +override.price_ex_vat : +newProduct.verd_an_vsk;
           const vskPct = override ? (+override.vsk_pct || 24) : (+newProduct.vsk_prosenta || 24);
+          let tierMark = null;
+          if (!override) { const tf = tierFastFor(newProduct); if (tf != null && tf <= unitPrice) { unitPrice = tf; tierMark = tierBadgeObj; } }
           const dKey = 'svc|' + g.type + '|' + g.size + '|nyitt';
-          const dPct = discFor(dKey);
+          let dPct = discFor(dKey);
+          let tierPctMark = false;
+          // Ný tæki: hóps-prósentan á „Ný tæki og vörur" (t.d. Center −20%)
+          // fyllir tóma afsláttarreitinn sjálfkrafa — handslegin tala trompar.
+          if (!dPct && !tierMark && !override && tierHwPct != null && tierHwPct > 0) { dPct = tierHwPct; tierPctMark = true; }
           const effUnit = priceFor(dKey, unitPrice);
           const subEx = discUnitOf(effUnit, dPct) * g.nyitt;
           const vskKr = subEx * (vskPct / 100);
           totalSubEx += subEx;
           totalVsk += vskKr;
-          if (override) { overrideSubEx += subEx; overrideVsk += vskKr; }
+          if (override || tierMark || tierPctMark) { overrideSubEx += subEx; overrideVsk += vskKr; }
           rows.push('<tr>' +
             '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
               '<div style="font-size:11px;color:#64748b">' + esc(newProduct.nafn) + '</div></td>' +
             '<td style="padding:7px 10px;text-align:center;font-weight:600;font-variant-numeric:tabular-nums">' + g.nyitt + '</td>' +
             '<td style="padding:7px 10px"><span style="padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600;background:#f3e8ff;color:#6b21a8">Nýtt</span></td>' +
-            priceCell(dKey, unitPrice, override) +
+            priceCell(dKey, unitPrice, override || tierMark) +
             '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
             discCell(dKey, dPct) +
             '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
@@ -1306,7 +1350,7 @@
     }
   }
 
-  window.recomputeCompanyTotalCost = () => { _lastKey = ''; return maybeRender(); };
+  window.recomputeCompanyTotalCost = () => { _lastKey = ''; _tierCache = { coId: null, tier: null }; return maybeRender(); };
 
   // 2026-08-17: observerinn tengist companies-main AFTUR ef viewið endursmíðar
   // nóðuna — gamli hlustaði á aftengda nóðu og þagnaði (sama rót og hjá 165).
