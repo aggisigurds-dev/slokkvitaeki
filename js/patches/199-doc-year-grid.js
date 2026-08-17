@@ -795,6 +795,21 @@
         var otherArr=(svc.kind==='uttekt'?bruByY:repByY)[y]||[];
         var invArr=invByY[y]||[];
         var stored=pairsByYear[y]&&pairsByYear[y][svc.kind];
+        // 2026-08-17 (Agnar, Afltak): reikningur sem er ÞEGAR tengdur HINNI
+        // þjónustunni (geymt par eða þegar-leyst í þessari umferð — uttekt
+        // leysist á undan brunakerfi innan ársins) er FRÁTEKINN og á hvorki að
+        // bjóðast í „hvaða reikningur?"-veljaranum né gera árið tvírætt.
+        // Brunakerfis-kortið spurði annars um R-númer sem sat þegar fast á
+        // Slökkvitækjaþjónustunni.
+        var _taken={};
+        SERVICES.forEach(function(o){
+          if(o.kind===svc.kind) return;
+          var op=pairsByYear[y]&&pairsByYear[y][o.kind];
+          if(op&&op.invoice_doc_id!=null) _taken[op.invoice_doc_id]=1;
+          var or=resolved[y+'|'+o.kind];
+          if(or&&or.inv&&or.inv.id!=null) _taken[or.inv.id]=1;
+        });
+        invArr=invArr.filter(function(x){ return x._att || x.id==null || !_taken[x.id]; });
         var inv=null;
         if(stored&&stored.invoice_doc_id!=null){
           inv=invArr.find(function(x){ return !x._att && x.id===stored.invoice_doc_id; })||null;
