@@ -75,8 +75,20 @@
   // núllast — heimsóknin er búin — en RITAÐIR REITIR lifa áfram. Þeir eru
   // hvort eð er réttir fyrir næstu heimsókn (sami skoðunaraðili, sami mánuður)
   // og starfsmaðurinn breytir þeim frekar en að slá þá inn upp á nýtt.
-  const KEEP_FIELDS = ['skodunaradili', 'skodun_manudur', 'skodun_dagsetning',
+  const KEEP_FIELDS = ['skodunaradili', 'skodun_manudur', 'skodun_ym', 'skodun_dagsetning',
                        'athugasemdir_skyrsla', 'athugasemdir', 'invoice_text'];
+  // 2026-08-17 (CRITICAL, staðfest í agent-villuleit): keep-skrifið eitt og sér
+  // hreinsaði skýið ALDREI — deepMerge (85 + server) EYÐIR ekki lyklum, svo
+  // units/extras/notes/lás/hök gömlu heimsóknarinnar sátu áfram í skýinu með
+  // fersku _ts og gengu aftur á hinum vélunum (draugur 2026-07-08 endurvakinn:
+  // næsta heimsókn rukkaði gömlu línurnar). Búk-lyklarnir fá því EXPLICIT null
+  // (client-deepMerge skrifar null í gegn = eyðing í reynd) og lás/hök fá
+  // false/[] svo applyCloud-speglunin (227) taki lásinn og hökin af öllum vélum.
+  const CLEAR_BODY = {
+    units: null, extras: null, notes: null, computed: null, discount_pct: null,
+    drive: null, driveQty: null, skyrslugerd: null, line_disc: null, line_price: null,
+    _locked: false, _doneIds: []
+  };
   function clearTrip(coId) {
     try {
       let keep = {};
@@ -84,13 +96,11 @@
         const st = JSON.parse(localStorage.getItem(CHOICE_KEY + coId) || '{}') || {};
         KEEP_FIELDS.forEach(k => { if (st[k] !== undefined && st[k] !== null && st[k] !== '') keep[k] = st[k]; });
       } catch (_) { keep = {}; }
-      if (Object.keys(keep).length) {
-        // Skrifum aftur (í stað removeItem) svo 227 spegli þetta í skýið sem
-        // ALVÖRU færslu en ekki legstein — annars kæmi textinn ekki til baka.
-        localStorage.setItem(CHOICE_KEY + coId, JSON.stringify(keep));
-      } else {
-        localStorage.removeItem(CHOICE_KEY + coId);
-      }
+      // Alltaf setItem með keep + tæmdum búk — removeItem-legsteinninn dugði
+      // ekki: keep-skrif á eftir honum (eða computed-skrif 129) af-legsteinaði
+      // hann og skýja-mergið hélt gamla búknum. Tæming með null-um er
+      // idempotent og virkar eins á allar vélar.
+      localStorage.setItem(CHOICE_KEY + coId, JSON.stringify(Object.assign({}, CLEAR_BODY, keep)));
     } catch (_) {
       try { localStorage.removeItem(CHOICE_KEY + coId); } catch (__) {}
     }

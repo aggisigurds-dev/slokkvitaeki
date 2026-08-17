@@ -851,8 +851,19 @@
       const _c = tripState.computed || {};
       if (_c.total !== totalInc || _c.ex !== netSubEx) {
         const _st = loadTripState(coId);
-        _st.computed = { ex: netSubEx, vsk: netVsk, total: totalInc, units: activeUnits, at: new Date().toISOString().slice(0, 10) };
-        saveTripState(coId, _st);
+        // 2026-08-17 (agent-villuleit, HIGH): computed-skrifið BJÓ TIL ferð í
+        // skýinu við það eitt að OPNA fyrirtæki (tóm ferð ≠ totalInc alltaf) og
+        // af-legsteinaði nýkláraðar heimsóknir (finalize → openDetail → render).
+        // Vél sem bara horfði varð „nýjasti skrifari" og skyggði á alvöru
+        // breytingar annarra véla. Núna skrifast computed AÐEINS þegar ferðin
+        // hefur raunverulegt innihald frá notanda.
+        const _substance = !!((_st.units && Object.keys(_st.units).length) ||
+          (Array.isArray(_st.extras) && _st.extras.length) || _st._locked ||
+          String(_st.notes || '').trim());
+        if (_substance) {
+          _st.computed = { ex: netSubEx, vsk: netVsk, total: totalInc, units: activeUnits, at: new Date().toISOString().slice(0, 10) };
+          saveTripState(coId, _st);
+        }
       }
     } catch (_) {}
 
