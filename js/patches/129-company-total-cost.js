@@ -438,13 +438,27 @@
     // svo úttektarreikningurinn fór út á fullu verði. Nú er hann SJÁLFGEFINN
     // þegar ferðin hefur engan afslátt skráðan; handvirkt gildi (líka 0)
     // trompar áfram, svo hægt sé að fella hann niður fyrir eina heimsókn.
-    const coAfsl = (() => {
-      try {
-        const c = ((window.Companies && Companies.list) || []).find(x => +x.id === +coId);
-        return c ? Math.max(0, Math.min(100, Number(c.afslattur_pct) || 0)) : 0;
-      } catch (_) { return 0; }
-    })();
-    const discountPct    = (tripState.discount_pct != null) ? Math.max(0, Math.min(100, Number(tripState.discount_pct) || 0)) : coAfsl;
+    // 2026-08-17 (afsláttur týndist á reikningi — Vélrás): EIN sameiginleg
+    // skilgreining á virka heildarafslættinum. Taflan hér OG reikningsleiðin
+    // (165 collectVisit) nota báðar window.CtcDiscount.effectivePct — áður
+    // hafði BARA taflan fyrirtækja-fallbackið (sett 2026-07-29) svo hún sýndi
+    // −20% en reikningurinn fór út á fullu verði nema % væri handslegin.
+    window.CtcDiscount = window.CtcDiscount || {
+      companyPct(cid) {
+        try {
+          const c = ((window.Companies && Companies.list) || []).find(x => +x.id === +cid);
+          return c ? Math.max(0, Math.min(100, Number(c.afslattur_pct) || 0)) : 0;
+        } catch (_) { return 0; }
+      },
+      // Handvirkt gildi í ferðinni (líka 0) trompar; annars fasti fyrirtækjaafslátturinn.
+      effectivePct(cid, ts) {
+        ts = ts || {};
+        return (ts.discount_pct != null)
+          ? Math.max(0, Math.min(100, Number(ts.discount_pct) || 0))
+          : this.companyPct(cid);
+      }
+    };
+    const discountPct    = window.CtcDiscount.effectivePct(coId, tripState);
     // 2026-05-21: manual line items added via "+ Bæta við vöru eða þjónustu".
     // Each: {id, name, qty, unit_price_ex_vat, vsk_pct, vorur_id?, disc_pct?}.
     const extras = Array.isArray(tripState.extras) ? tripState.extras : [];

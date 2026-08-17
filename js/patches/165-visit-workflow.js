@@ -209,7 +209,18 @@
       extras:      Array.isArray(trip.extras) ? trip.extras : [],
       // 2026-07-08: heildar-afsláttur (%) úr patch-129 töflunni — var áður
       // aldrei lesinn hér, svo reikningurinn varð hærri en taflan lofaði.
-      discount_pct: Math.max(0, Math.min(100, Number(trip.discount_pct) || 0))
+      // 2026-08-17 (Vélrás — afsláttur týndist AFTUR): fyrirtækja-fallbackið
+      // (fyrirtaeki.afslattur_pct sjálfgefið, sett í töfluna 2026-07-29) var
+      // BARA í 129 en ekki hér — taflan sýndi −20%, reikningurinn 0%. Nú les
+      // SAMA fall og taflan notar (window.CtcDiscount, skilgreint í 129);
+      // gamla tjáningin stendur sem varaleið ef 129 er ekki hlaðið.
+      discount_pct: (window.CtcDiscount && window.CtcDiscount.effectivePct)
+        ? window.CtcDiscount.effectivePct(coId, trip)
+        : Math.max(0, Math.min(100, Number(trip.discount_pct) || 0)),
+      // Samtalan sem taflan SÝNDI notandanum (129 vistar computed.total á
+      // hverjum render) — varðan í forskoðuninni ber reikninginn saman við hana.
+      table_total: (trip.computed && isFinite(+trip.computed.total))
+        ? Math.round(+trip.computed.total) : null
     };
   }
 
@@ -394,6 +405,27 @@
       '</div>';
     document.body.appendChild(dlg);
 
+    // ── VARÐA (2026-08-17, Agnar: „make precautions so it wont happen again"):
+    // reikningurinn verður að segja SÖMU samtölu og kostnaðartaflan sýndi.
+    // 129 vistar sýndu töluna í trip-state (computed.total → visit.table_total);
+    // víki forskoðunin frá henni um meira en 2 kr — týndur afsláttur, línu-
+    // skekkja, hvað sem er — birtist rauður borði og „Staðfesta" spyr sér-
+    // staklega. Stöðvar ekkert alfarið (ALLTAF LEYFA VISTUN-andinn) en enginn
+    // reikningur fer lengur ÓSÉÐUR út á annarri tölu en notandanum var sýnd.
+    const _kr = n => String(Math.round(Number(n) || 0)).replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' kr';
+    const _promised = ctx.visit ? ctx.visit.table_total : null;
+    const _mismatch = (_promised != null) && Math.abs(_promised - (Number(previewSale.samtals) || 0)) > 2;
+    if (_mismatch) {
+      const fr0 = dlg.querySelector('#_vw-frame');
+      const warn = document.createElement('div');
+      warn.id = '_vw-mismatch';
+      warn.style.cssText = 'padding:10px 18px;background:#fee2e2;border-bottom:2px solid #dc2626;color:#991b1b;font-size:13px;font-weight:700;line-height:1.45';
+      warn.textContent = '⚠ MISRÆMI: Kostnaðartaflan sýndi ' + _kr(_promised) +
+        ' en reikningurinn segir ' + _kr(previewSale.samtals) +
+        '. Farðu „Aftur" og athugaðu afsláttinn/línurnar — staðfestu aðeins ef þú veist að reikningurinn er réttur.';
+      fr0.parentNode.insertBefore(warn, fr0);
+    }
+
     const frame = dlg.querySelector('#_vw-frame');
     frame.src = 'about:blank';
     // Defer until the iframe's blank document is ready, then render.
@@ -428,6 +460,12 @@
 
     const confirmBtn = dlg.querySelector('#_vw-confirm');
     confirmBtn.addEventListener('click', async () => {
+      // Varðan að ofan: misræmi tafla ⇄ reikningur þarf sérstaka staðfestingu.
+      if (_mismatch && !confirm(
+        '⚠ Reikningurinn (' + _kr(previewSale.samtals) + ') stemmir EKKI við ' +
+        'kostnaðartöfluna (' + _kr(_promised) + ').\n\nBúa hann til SAMT?')) {
+        return;
+      }
       confirmBtn.disabled = true;
       confirmBtn.textContent = 'Vinn úr…';
       try {
