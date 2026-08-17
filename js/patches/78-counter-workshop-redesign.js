@@ -629,9 +629,28 @@
       const isBroken = unit.status === 'broken';
       const cls = isDone ? 'yes' : (isBroken ? 'broken' : 'no');
       const txt = isDone ? '✓ Tilbúið' : (isBroken ? '🚫 Ónýtt' : '☐ Tilbúið');
-      const typeRaw = String(unit.type || '—').split(/\s+/).slice(0, 2).join(' ');
-      const sizeRaw = unit.size ? String(unit.size) : '';
+      // 2026-08-17 (Agnar: „show what type and size each verk contains"):
+      // móttöku-tæki (TMP-…) bera oft hvorki type né size — flísin sýndi bara
+      // „—" þótt þjónustulínan segði t.d. „Duft 2 kg. ABC hleðsla". Leiðum
+      // tegund+stærð úr unit.service með parseSvcName þegar tækið sjálft er
+      // ómerkt; „× 20" og svigar síast burt („CO₂ 100 gr. × 20 (samtals)" → CO₂).
+      let typeSrc = String(unit.type || '').replace(/^—$/, '').trim();
+      let sizeSrc = unit.size ? String(unit.size) : '';
+      if (!typeSrc && unit.service) {
+        const ps = parseSvcName(String(unit.service).replace(/[×x]\s*\d+/gi, '').replace(/\([^)]*\)/g, ''));
+        if (ps.type) typeSrc = ps.type;
+        if (!sizeSrc && ps.size) sizeSrc = ps.size;
+      }
+      const typeRaw = (typeSrc || '—').split(/\s+/).slice(0, 2).join(' ');
+      const sizeRaw = sizeSrc;
       const label   = typeRaw + (sizeRaw ? ' ' + sizeRaw : '');
+      // Tegundar-litakantur vinstra megin — sami litur og vöru-/sölu-spjöldin
+      // (window.SlokkTypeColor, deilt úr vorur.js — Duft blátt · CO₂ rautt ·
+      // Léttvatn himinblátt · Froða/ABF blágrænt).
+      const tileColor = (typeof window.SlokkTypeColor === 'function')
+        ? window.SlokkTypeColor({ nafn: typeSrc + ' ' + sizeSrc + ' ' + String(unit.service || '') })
+        : null;
+      const tileFrame = tileColor ? ' style="border-left:3px solid ' + tileColor + ';box-sizing:border-box"' : '';
       const serialShort = String(unit.serial || '').replace(/^.*-/, '').slice(0, 8);
       const parts = Array.isArray(unit.parts) ? unit.parts : [];
       const partCount = parts.reduce((s, p) => s + (+p.qty || 1), 0);
@@ -643,7 +662,7 @@
       const chkClick = isBroken
         ? `Workshop.openUnitModal(${jobId},${unit.id})`
         : `Workshop.toggleUnit(${jobId},${unit.id})`;
-      return '<div class="bw-tile" title="' + esc((unit.serial || '') + ' — ' + label) + '">' +
+      return '<div class="bw-tile"' + tileFrame + ' title="' + esc((unit.serial || '') + ' — ' + label + (unit.service ? ' · ' + unit.service : '')) + '">' +
           `<button class="bw-tile-x" onclick="event.stopPropagation();Workshop.deleteUnit(${jobId},${unit.id})" title="Eyða tæki (fer í Eydd tæki)">✕</button>` +
           `<div class="bw-tile-body" onclick="event.stopPropagation();Workshop.openUnitModal(${jobId},${unit.id})">` +
             `<div class="bw-tile-ty">${esc(label)}</div>` +
