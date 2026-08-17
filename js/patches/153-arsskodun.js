@@ -2300,19 +2300,8 @@
       V+'.data-table tbody td{padding:7px 12px;border-top:1px solid #eceff4;line-height:1.25;height:44px;white-space:nowrap;font-size:13px}',
       V+'.data-table tbody tr:hover{background:#f7f9fd}',
       V+'.data-table{min-width:1300px;width:100%;table-layout:fixed}',
-      // table-layout:fixed les súlubreiddirnar úr HAUS-röðinni — hún er 9 hólf
-      // (samhausinn spannar árin fjögur), svo th-númerin eru ÖNNUR en td-in:
-      // th: 1 nafn · 2 nóta · 3 [x4 ár] · 4 heimilisfang · 5 skoðun · 6 tæki
-      //     · 7 akstur · 8 forg · 9 staða — design: 186/118/256/284/62/158/74/66/150.
-      V+'.data-table th:nth-child(1){width:186px}',
-      V+'.data-table th:nth-child(2){width:118px}',
-      V+'.data-table th:nth-child(3)[colspan]{width:256px}',
-      V+'.data-table th:nth-child(4){width:284px}',
-      V+'.data-table th:nth-child(5){width:62px}',
-      V+'.data-table th:nth-child(6){width:158px}',
-      V+'.data-table th:nth-child(7){width:74px}',
-      V+'.data-table th:nth-child(8){width:66px}',
-      V+'.data-table th:nth-child(9){width:150px}',
+      // Súlubreiddirnar koma úr <colgroup> í renderTable (skothelt í fixed
+      // layout, ónæmt fyrir colspan-hausnum) — design: 186/118/4×64/284/62/158/74/66/150.
       // árs-reitirnir fjórir (187 sprautar) — miðjaðir, þétt bil
       V+'.data-table td:nth-child(3),'+V+'.data-table td:nth-child(4),'+V+'.data-table td:nth-child(5),'+V+'.data-table td:nth-child(6){padding-left:2px;padding-right:2px;text-align:center}',
       V+'._co{display:block;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
@@ -2393,6 +2382,12 @@
       <div class="data-table-wrap">
         <div class="_ars-tblscroll data-table-scroll">
         <table class="data-table">
+          <colgroup>
+            <col style="width:186px"><col style="width:118px">
+            <col style="width:64px"><col style="width:64px"><col style="width:64px"><col style="width:64px">
+            <col style="width:284px"><col style="width:62px"><col style="width:158px">
+            <col style="width:74px"><col style="width:66px"><col style="width:150px">
+          </colgroup>
           <thead>
             <tr>
               ${(() => {
