@@ -38,7 +38,17 @@ bíður yfirferðar Agnars._
 - **Steypustöðin R-000157**: sýnd GREITT ranglega — numKey-árekstur við Payday-
   hlaupanúmer 157 (= R-000158) — **LAGAÐ í kóða** (sjá neðst)
 
-## ÓKEYRT SQL — bíður Agnars (afrit + flögg/leiðrétting, aldrei DELETE)
+## ✅ KEYRT 2026-08-17 að samþykki Agnars („ja keyra þetta")
+
+Afrit: `backup_20260817_cd_samraeming` (55 raðir). Niðurstöður: **30 payday-númer
+→ R-númer** · **23 tvítök flögguð** · **4 endursmíð flögguð** (33 flögg alls) ·
+**31 upphæð samræmd við söluna**. Undanskilið meðvitað: 3 raðir með neikvæðri
+upphæð (kredit-tvíburar, m.a. Þangbakki R-000017) og 4 Stólpa-raðir (S-1077xx).
+**1 opið tilvik: Ferðafélag Íslands R-000528 — TVÆR solur-raðir bera sama númer
+(59.520 og 39.680 kr)** — tvítekið sölunúmer, tengist dup-num hreinsuninni í
+RUKKUNARKEDJAN kafla 5; þarf úrskurð Agnars.
+
+## SQL-ið sem var keyrt (til viðmiðunar)
 
 ATH skref 3 (upphæðirnar 8): agentinn varar við að stöku tilvik gæti verið
 réttmæt endurútgáfa þar sem Drive-PDF-ið er hið útsenda skjal — **yfirfara röð
