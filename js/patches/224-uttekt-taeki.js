@@ -203,7 +203,13 @@
     return o;
   }
   function saveDone(coId){
-    try{ localStorage.setItem(doneKey(coId), JSON.stringify(Object.keys(_done).filter(function(k){return _done[k];}).map(Number))); }catch(_){}
+    try{
+      var ids = Object.keys(_done).filter(function(k){return _done[k];}).map(Number);
+      localStorage.setItem(doneKey(coId), JSON.stringify(ids));
+      // 2026-08-17: hökin speglast í samstillta ferðahlutinn (slokk_trip_*,
+      // patch 227 mirrorar í skýið) svo þau fylgi milli véla — voru tækjabundin.
+      var st=JSON.parse(localStorage.getItem('slokk_trip_'+coId)||'{}'); st._doneIds=ids; localStorage.setItem('slokk_trip_'+coId, JSON.stringify(st));
+    }catch(_){}
   }
   // Spegla staðfestingu listans í samstillta ársskoðunar-blobbinn
   // (arsskodun_customers[<id>]) svo ÞjónustuVerkstæðið (190) geti sýnt skrefið
@@ -247,6 +253,9 @@
       // hann speglaður í arsskodun_customers sem samstillist milli allra véla.
       // Ártal (ekki bool) svo það núllist um áramót eins og önnur skref.
       markListiStadfest(lco, !on);
+      // 2026-08-17: læsingin speglast líka í samstillta ferðahlutinn (227 →
+      // ský) svo staðfestur listi sé LÆSTUR á öllum vélum, ekki bara þessari.
+      try{ var lst=JSON.parse(localStorage.getItem('slokk_trip_'+lco)||'{}'); lst._locked=!on; localStorage.setItem('slokk_trip_'+lco, JSON.stringify(lst)); }catch(_){}
       UttektTaeki.rerender(lco); return;
     }
     if((b=e.target.closest('.ut-svc'))){

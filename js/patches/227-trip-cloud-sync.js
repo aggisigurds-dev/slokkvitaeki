@@ -75,6 +75,7 @@
   // ── cloud → local restore (newest-wins) ─────────────────────────────────
   function applyCloud(cloud) {
     if (!cloud || typeof cloud !== 'object') return;
+    var changed = [];
     Object.keys(cloud).forEach(function (co) {
       var c = cloud[co]; if (!c || typeof c !== 'object') return;
       var lk = PREFIX + co, local = null;
@@ -82,15 +83,49 @@
       var ct = +(c._ts || 0), lt = +((local && local._ts) || 0);
       // Tombstone (trip was cleared, e.g. „✓ Klára heimsókn"): remove the
       // local copy too — unless the local one is strictly newer (a new trip
-      // was already started on this device).
+      // was already started on this device). Læsing + hök fylgja með út.
       if (c._deleted === true) {
-        if (!(local && lt > ct)) { try { origRemove(lk); } catch (_) {} }
+        if (!(local && lt > ct)) {
+          try { origRemove(lk); origRemove('sk_ut_lock_' + co); origRemove('sk_ut_done_' + co); } catch (_) {}
+          changed.push(String(co));
+        }
         return;
       }
       // Only overwrite when the cloud copy is strictly newer (so active local
       // edits are never clobbered by a stale cloud snapshot).
-      if (!local || ct > lt) { try { origSet(lk, JSON.stringify(c)); } catch (_) {} }
+      if (!local || ct > lt) {
+        try { origSet(lk, JSON.stringify(c)); } catch (_) {}
+        // Læsingin og grænu hökin ferðast með ferðinni (224 speglar þau í st)
+        // — voru áður tækjabundin svo aðrar vélar sáu ólæstan lista í grunnstöðu.
+        try {
+          if (typeof c._locked === 'boolean') { if (c._locked) origSet('sk_ut_lock_' + co, '1'); else origRemove('sk_ut_lock_' + co); }
+          if (Array.isArray(c._doneIds)) origSet('sk_ut_done_' + co, JSON.stringify(c._doneIds));
+        } catch (_) {}
+        changed.push(String(co));
+      }
     });
+    notifyRestored(changed);
+  }
+
+  // 2026-08-17 („aldrei nokkurntíman má þetta breytast"): endurheimtin skrifaði
+  // BEINT í localStorage (origSet) og lét viðmótið ALDREI vita. Borð sem var
+  // þegar teiknað — kassaskjárinn, eða strax eftir F5 áður en skýið náði inn —
+  // sat áfram á SJÁLFGEFNU gildunum (léttvatn → yfirferð) þótt rétta valið
+  // (t.d. 5 hleðslur Afltaks) væri komið heilt undir. Leit út eins og valið
+  // hefði breyst af sjálfu sér. Nú endurteiknast opna fyrirtækið um leið og
+  // endurheimt lendir, og aðrir hlustendur fá 'trip-cloud-restored'.
+  function notifyRestored(cos) {
+    if (!cos || !cos.length) return;
+    try { window.dispatchEvent(new CustomEvent('trip-cloud-restored', { detail: { coIds: cos } })); } catch (_) {}
+    try {
+      var main = document.getElementById('companies-main');
+      var el = main && main.querySelector('[data-co-id]:not(._cat-section)');
+      var open = el && el.getAttribute('data-co-id');
+      if (open && cos.indexOf(String(open)) >= 0) {
+        if (window.UttektTaeki && UttektTaeki.rerender) UttektTaeki.rerender(+open);
+        if (window.recomputeCompanyTotalCost) window.recomputeCompanyTotalCost();
+      }
+    } catch (_) {}
   }
 
   function boot() {
