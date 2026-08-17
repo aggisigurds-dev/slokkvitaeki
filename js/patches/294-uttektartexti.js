@@ -4,15 +4,22 @@
    í „📝 Upplýsingar um úttekt" — Elías skrifaði hann áður í hvert sinn, og með
    hundruðum skýrslna á ári er það umtalsverður tími.
 
-   ORÐALAGIÐ (Agnar/Elías, skjalfest 30.07.2026 — röðin skiptir máli):
+   ORÐALAGIÐ (húsmálið, talið úr 27 frágengnum skýrslum — röðin skiptir máli):
      1. Grunnur:      „Öll slökkvitæki yfirfarin og vottuð í lagi."
-     2. Hleðsla („endurhlaðin") / ónýtt / ný tæki skjóta sér inn á milli.
-     3. Stútskipti:   „Skipt um stút á einni brunaslöngu."
+        · allt endurhlaðið → „…yfirfarin, endurhlaðin og vottuð í lagi."
+        · ónýtt skeytist INN í grunnsetninguna, fær ekki sér setningu:
+          „…vottuð í lagi nema eitt sem var dæmt ónýtt." („nema tvö … dæmd ónýt")
+     2. Hleðsla að hluta: „Fjögur slökkvitæki endurhlaðin og vottuð í lagi."
+     3. Ný tæki í ÞÁGUFALLI: „Einu nýju slökkvitæki bætt við." / „3 nýjum
+        slökkvitækjum bætt við."
+     4. Reykskynjarar sér lína: „Reykskynjarar hljóðprófaðir og skipt um
+        rafhlöður." — skynjarar og slöngur teljast EKKI með slökkvitækjunum.
+     5. Stútskipti:   „Skipt um stút á einni brunaslöngu."
                       (fleirtala: „Skipt um stúta á N brunaslöngum.")
-     4. Slöngur SÍÐAST: „Brunaslöngur prófaðar á fullum þrýstingi." (EKKI vottun —
-        maður skrifar „og vottaðar í lagi" / leka-athugasemd sjálfur, sjá Blikkhella)
-   Hausskiptin koma ALLTAF beint á undan slöngu-vottuninni svo hún endi
-   setninguna.
+     6. Slöngur SÍÐAST, sér lína: „Brunaslöngur prófaðar á fullum þrýstingi."
+        (EKKI vottun — maður skrifar „og vottaðar í lagi" / leka-athugasemd
+        sjálfur, sjá Blikkhella)
+   Hausskiptin koma ALLTAF beint á undan slöngu-línunni svo hún endi textann.
 
    HVAÐAN GÖGNIN KOMA — og af hverju EKKI DOM-skröpun:
    Fyrri drög lásu ástandið með því að leita að `button.active` og lesa texta
@@ -73,6 +80,13 @@
     return /brunaslang|brunaslöng|slang|hose/.test(t);
   }
 
+  // Reykskynjarar fá sér setningu í húsmálinu („hljóðprófaðir og skipt um
+  // rafhlöður") og mega ekki teljast með í „Öll slökkvitæki yfirfarin".
+  function isSkynjari(u) {
+    var t = ((u && u.type) || '').toLowerCase();
+    return /skynjar|smoke|detector/.test(t);
+  }
+
   /* Telur þjónustuval per tæki — SÖMU gildi og reikningurinn les.
      NB `getChoice` skilar SJÁLFGEFNU gildi þegar tækið hefur ekki verið snert
      (duft → hleðsla, annað → yfirferð, sjá 131 `defaultForType`). Það er
@@ -80,7 +94,10 @@
      reikningurinn geta aldrei sagt sitt hvað. „Sleppa" (`none`) telst hvorki
      með í heildinni né í slöngu-talningunni — tækið fór ekki í þessa ferð. */
   function skanna(coId) {
-    var st = { yfir: 0, hled: 0, nytt: 0, onytt: 0, slanga: 0, alls: 0 };
+    // yfir/hled/nytt/onytt telja aðeins SLÖKKVITÆKI — slöngur og skynjarar
+    // eiga sínar eigin setningar í húsmálinu og mengast ekki inn í
+    // „Öll slökkvitæki yfirfarin".
+    var st = { yfir: 0, hled: 0, nytt: 0, onytt: 0, slanga: 0, skynj: 0, alls: 0 };
     var units = unitsFor(coId);
     units.forEach(function (u) {
       var val = '';
@@ -90,7 +107,8 @@
       } catch (_) {}
       if (val === 'none') return;
       st.alls++;
-      if (isSlanga(u)) st.slanga++;
+      if (isSlanga(u)) { st.slanga++; return; }
+      if (isSkynjari(u)) { st.skynj++; return; }
       if (val === 'hledsla') st.hled++;
       else if (val === 'nyitt') st.nytt++;
       else if (val === 'onytt') st.onytt++;
