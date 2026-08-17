@@ -188,7 +188,17 @@
 
     st.lines.forEach(l => {
       const cat = E().classifyItem(lineItem(l, st), ovr);
-      const pct = tier ? E().tierPct(tier, cat) : null;
+      // 2026-08-17: fast hópsverð (kr án vsk) gengur framar prósentunni —
+      // þýtt yfir í nákvæma línuprósentu svo endanlega línuverðið lendi upp á
+      // krónu á samningsverðinu (t.d. Center: 3.150 → 2.600 = 17,4603%).
+      let pct = tier ? E().tierPct(tier, cat) : null;
+      let fastKr = null;
+      const baseEx = +l.unit_price_ex_vat || 0;
+      const fast = (tier && E().tierFast) ? E().tierFast(tier, cat) : null;
+      if (fast !== null && baseEx > 0 && fast <= baseEx) {
+        pct = Math.round((1 - fast / baseEx) * 100000) / 1000;
+        fastKr = Math.round(fast);
+      }
       const mine = (l._hopurPct == null) ? null : +l._hopurPct;
       const cur = Math.max(0, parseFloat(l.disc_pct) || 0);
 
@@ -207,7 +217,8 @@
         l._hopurPct = pct;
         const c = E().byKey(cat);
         l._hopur = (tier.tier_name || 'Afsláttarhópur') + ' · ' + ((c && c.stutt) || cat) +
-                   (pct > 0 ? ' −' + E().fmtPct(pct) + '%' : ' 0%');
+                   (fastKr != null ? ' fast verð ' + fastKr + ' kr'
+                     : (pct > 0 ? ' −' + E().fmtPct(pct) + '%' : ' 0%'));
       }
     });
 
@@ -278,7 +289,13 @@
   function chipsFor(tier) {
     if (!tier) return '';
     return E().CATEGORIES.map(c => {
+      const fv = E().parseVerd ? E().parseVerd(tier[c.colVerd]) : null;
       const p = E().parsePct(tier[c.col]);
+      // Fast verð birtist framar prósentunni — það er líka forgangurinn í vélinni.
+      if (fv !== null) {
+        return '<span title="' + esc(c.label) + ' — fast verð án vsk" style="display:inline-flex;align-items:center;gap:4px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:99px;padding:2px 8px;font-size:10.5px;font-weight:700;color:#1e40af">' +
+          icc(c.key, 11) + '<span>' + Math.round(fv) + ' kr</span></span>';
+      }
       if (p === null) return '';
       return '<span title="' + esc(c.label) + '" style="display:inline-flex;align-items:center;gap:4px;background:var(--surface2);border:1px solid var(--brd);border-radius:99px;padding:2px 8px;font-size:10.5px;font-weight:700;color:' + (p > 0 ? '#166534' : '#94a3b8') + '">' +
         icc(c.key, 11) + '<span>' + E().fmtPct(p) + '%</span></span>';
@@ -398,6 +415,9 @@
 
   function pctInput(cat, tier) {
     const v = tier ? E().parsePct(tier[cat.col]) : null;
+    // 2026-08-17 (Center Hótel): fast verð (kr ÁN vsk) per línu í flokknum —
+    // gengur framar prósentunni. Tómt = ekkert fast verð.
+    const fv = tier && E().parseVerd ? E().parseVerd(tier[cat.colVerd]) : null;
     return '<label style="display:flex;align-items:center;gap:8px;padding:7px 9px;border:1px solid var(--brd);border-radius:9px;background:var(--surface)">' +
       '<span style="display:flex;justify-content:center;width:22px;color:var(--ink2)">' + icc(cat.key, 16) + '</span>' +
       '<span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;color:var(--ink1)">' + esc(cat.label) + '</span>' +
@@ -405,6 +425,11 @@
         'value="' + (v === null ? '' : E().fmtPct(v)) + '" ' +
         'style="width:58px;padding:5px 7px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:13px;text-align:right;font-variant-numeric:tabular-nums">' +
       '<span style="font-size:12px;color:var(--ink2);font-weight:700">%</span>' +
+      '<input class="_ahop-verd" data-col="' + cat.colVerd + '" type="text" inputmode="decimal" placeholder="fast kr" ' +
+        'title="Fast verð ÁN VSK á hverja línu í flokknum — gengur framar prósentunni (t.d. Center: yfirferð 2600)" ' +
+        'value="' + (fv === null ? '' : String(fv).replace('.', ',')) + '" ' +
+        'style="width:72px;padding:5px 7px;border:1px solid var(--brd2);border-radius:7px;font:inherit;font-size:13px;text-align:right;font-variant-numeric:tabular-nums">' +
+      '<span style="font-size:12px;color:var(--ink2);font-weight:700">kr</span>' +
     '</label>';
   }
 
@@ -432,7 +457,8 @@
           E().CATEGORIES.map(c => pctInput(c, t)).join('') +
         '</div>' +
         '<div style="margin-top:7px;font-size:10.5px;color:var(--ink3)">' +
-          'Auður reitur = <b>almenni afslátturinn</b> gildir á þann flokk. Talan <b>0</b> = enginn afsláttur (hópurinn gengur samt framar).' +
+          'Auður reitur = <b>almenni afslátturinn</b> gildir á þann flokk. Talan <b>0</b> = enginn afsláttur (hópurinn gengur samt framar). ' +
+          '<b>Fast kr</b> = samningsverð ÁN VSK á hverja línu í flokknum — gengur framar prósentunni og lækkar aðeins (hækkar aldrei verð).' +
         '</div>' +
         '<input id="_ahop-note" type="text" placeholder="Athugasemd (valkvætt)" value="' + esc((t && t.athugasemd) || '') + '" ' +
           'style="width:100%;margin-top:9px;padding:8px 11px;border:1px solid var(--brd2);border-radius:8px;font:inherit;font-size:13px;box-sizing:border-box">' +
@@ -546,6 +572,9 @@
         const row = { tier_name: name, athugasemd: (panel.querySelector('#_ahop-note').value || '').trim() || null };
         panel.querySelectorAll('._ahop-pct').forEach(inp => {
           row[inp.dataset.col] = E().parsePct(inp.value);   // tómt → null
+        });
+        panel.querySelectorAll('._ahop-verd').forEach(inp => {
+          row[inp.dataset.col] = E().parseVerd(inp.value);  // tómt → null (fast verð án vsk)
         });
         try {
           const sb = SB();

@@ -32,13 +32,16 @@
 })(typeof globalThis !== 'undefined' ? globalThis : (typeof self !== 'undefined' ? self : this), function () {
   'use strict';
 
+  // colVerd (2026-08-17): fast verð ISK ÁN VSK per línu í flokknum — sett var
+  // fram af Center Hótel-málinu (samningsverð 2.600/2.500/4.100 án vsk).
+  // Fast verð gengur framar prósentu hópsins; NULL = ekkert fast verð.
   var CATEGORIES = [
-    { key: 'ext_refill',        col: 'ext_refill_pct',        label: 'Hleðsla slökkvitækja',   stutt: 'Hleðsla',    icon: '🔥' },
-    { key: 'ext_service',       col: 'ext_service_pct',       label: 'Yfirferð slökkvitækja',  stutt: 'Yfirferð',   icon: '🧯' },
-    { key: 'hose_service',      col: 'hose_service_pct',      label: 'Yfirferð brunaslangna',  stutt: 'Brunaslöngur', icon: '💧' },
-    { key: 'detector_service',  col: 'detector_service_pct',  label: 'Yfirferð og þjónusta reykskynjara', stutt: 'Reykskynjarar', icon: '🚨' },
-    { key: 'general_service',   col: 'general_service_pct',   label: 'Aðrir þjónustuliðir',    stutt: 'Þjónusta',   icon: '🛠️' },
-    { key: 'hardware_purchase', col: 'hardware_purchase_pct', label: 'Ný tæki og vörur',       stutt: 'Ný tæki',    icon: '📦' }
+    { key: 'ext_refill',        col: 'ext_refill_pct',        colVerd: 'ext_refill_verd',        label: 'Hleðsla slökkvitækja',   stutt: 'Hleðsla',    icon: '🔥' },
+    { key: 'ext_service',       col: 'ext_service_pct',       colVerd: 'ext_service_verd',       label: 'Yfirferð slökkvitækja',  stutt: 'Yfirferð',   icon: '🧯' },
+    { key: 'hose_service',      col: 'hose_service_pct',      colVerd: 'hose_service_verd',      label: 'Yfirferð brunaslangna',  stutt: 'Brunaslöngur', icon: '💧' },
+    { key: 'detector_service',  col: 'detector_service_pct',  colVerd: 'detector_service_verd',  label: 'Yfirferð og þjónusta reykskynjara', stutt: 'Reykskynjarar', icon: '🚨' },
+    { key: 'general_service',   col: 'general_service_pct',   colVerd: 'general_service_verd',   label: 'Aðrir þjónustuliðir',    stutt: 'Þjónusta',   icon: '🛠️' },
+    { key: 'hardware_purchase', col: 'hardware_purchase_pct', colVerd: 'hardware_purchase_verd', label: 'Ný tæki og vörur',       stutt: 'Ný tæki',    icon: '📦' }
   ];
   var BY_KEY = {};
   CATEGORIES.forEach(function (c) { BY_KEY[c.key] = c; });
@@ -133,9 +136,31 @@
     return parsePct(tier[cat.col]);
   }
 
-  /** Ber hópurinn yfirhöfuð einhverja prósentu? */
+  // Kommu-þolinn verð-lestur; tómt/NULL → null. Neikvætt telst ógilt.
+  function parseVerd(v) {
+    if (v === null || v === undefined) return null;
+    var s = String(v).trim();
+    if (!s) return null;
+    var n = parseFloat(s.replace(/\s/g, '').replace(',', '.'));
+    if (!isFinite(n) || n < 0) return null;
+    return n;
+  }
+
+  /** Fast verð hópsins (ISK án vsk) fyrir flokkinn — null ef ekkert sett. */
+  function tierFast(tier, categoryKey) {
+    if (!tier) return null;
+    var cat = BY_KEY[categoryKey];
+    if (!cat || !cat.colVerd) return null;
+    if (tier.virkt === false) return null;
+    return parseVerd(tier[cat.colVerd]);
+  }
+
+  /** Ber hópurinn yfirhöfuð einhverja prósentu eða fast verð? */
   function tierHasAny(tier) {
-    return CATEGORIES.some(function (c) { return parsePct(tier && tier[c.col]) !== null; });
+    return CATEGORIES.some(function (c) {
+      return parsePct(tier && tier[c.col]) !== null ||
+             parseVerd(tier && tier[c.colVerd]) !== null;
+    });
   }
 
   function tierOf(clientRow, opts) {
@@ -167,6 +192,25 @@
       { key: NONE, col: null, label: 'Utan hópsflokka', stutt: 'Utan flokka', icon: '🚫' };
 
     var tier = tierOf(clientRow, opts);
+
+    // Fast verð hópsins gengur framar ÖLLU (líka prósentu hópsins) — en aðeins
+    // niður á við: fast verð hærra en grunnverðið er hunsað (afsláttarhópur
+    // hækkar aldrei verð).
+    var fast = tierFast(tier, category);
+    if (fast !== null && base > 0 && fast <= base) {
+      var fpct = Math.round((1 - fast / base) * 10000) / 100;
+      return {
+        category: category,
+        category_label: cat.label,
+        discount_pct: fpct,
+        discount_source: 'tier_fast',
+        discount_desc: 'Afsláttarhópur „' + (tier.tier_name || 'ónefndur') + '" · ' + cat.label + ' — fast verð ' + Math.round(fast) + ' kr',
+        base_price: base,
+        final_price: Math.round(fast),
+        saved: Math.round(base) - Math.round(fast)
+      };
+    }
+
     var fromTier = tierPct(tier, category);
     var flat = parsePct(clientRow && clientRow.afslattur_pct) || 0;
 
@@ -226,7 +270,8 @@
     out.forEach(function (r) {
       var s = r.qty * r.final_price;
       tot += s;
-      if (r.discount_source !== 'tier') open += s;
+      // Línur með hóps-afslátt EÐA fast hópsverð fá ekki körfu-afsláttinn ofan á.
+      if (r.discount_source !== 'tier' && r.discount_source !== 'tier_fast') open += s;
     });
     return {
       lines: out,
@@ -242,8 +287,10 @@
     byKey: function (k) { return BY_KEY[k] || null; },
     classifyItem: classifyItem,
     parsePct: parsePct,
+    parseVerd: parseVerd,
     fmtPct: fmtPct,
     tierPct: tierPct,
+    tierFast: tierFast,
     tierHasAny: tierHasAny,
     calculateLineItemPrice: calculateLineItemPrice,
     calculateCart: calculateCart
