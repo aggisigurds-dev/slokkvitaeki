@@ -724,6 +724,18 @@
     _pnrOpen = false;
     if (document.getElementById('ars-main')) render();
   });
+  // 2026-08-17: árs-merki breytt (tvísmellur í 187 eða á kúnnasíðunni 199) →
+  // ferskt fact-check fyrir yfirstandandi ár + endurteikna, svo „Skoðað <ár>"-
+  // staðan fylgi litnum á '26-merkinu samstundis (sjá isDoneYear).
+  document.addEventListener('attachment-year-changed', async () => {
+    try {
+      const SB = getSB(); if (!SB) return;
+      const r = await SB.from('year_factcheck').select('co_id,status').eq('year', new Date().getFullYear());
+      const m = {}; ((r && r.data) || []).forEach(x => { m[String(x.co_id)] = x.status; });
+      _cache.fcCur = m;
+      if (document.getElementById('ars-main')) render();
+    } catch (_) {}
+  });
   // Sleppt í fyrra = síðast skoðað fyrir meira en ári síðan (en einhvern tíma).
   // EIN skilgreining — bæði sían sjálf, feluglerið og talningarnar lesa hana,
   // svo þær geta ekki rekið í sundur (sbr. 'skipped2025'-síuna hér að neðan).
@@ -829,7 +841,7 @@
     if (hasSearch) {
       // engin stöðusía meðan leitað er
     } else if (state.status === 'done') {
-      arr = arr.filter(c => +c._ars.last_year_inspected === curYear);
+      arr = arr.filter(c => isDoneYear(c, curYear));
     } else if (state.status === 'suspect') {
       arr = arr.filter(isSuspect);
     } else if (state.status === 'pending') {
@@ -838,8 +850,7 @@
       // Sýnir EKKI „Á dagskrá" (mánuður seinna á árinu / enginn mánuður) og ekki
       // „Í vinnslu" — það á heima í nýja „Eftir 2026" flipanum.
       arr = arr.filter(c => {
-        const last = +c._ars.last_year_inspected || 0;
-        if (last === curYear) return false;
+        if (isDoneYear(c, curYear)) return false;
         if (+(c._ars.field_inspected_year || 0) === curYear) return false;   // Í vinnslu
         const skipped = isSkippedLastYear(c, curYear);
         const m = +c._ars.inspect_month || 0;
@@ -848,7 +859,7 @@
     } else if (state.status === 'pending2026') {
       // Allt sem er óbúið á árinu: Eftir + Sleppt + Á dagskrá + Í vinnslu —
       // en ÁN „❓ Óvíst" (líklega óvart í þjónustu, sjá isSuspect).
-      arr = arr.filter(c => (+c._ars.last_year_inspected || 0) < curYear && !isSuspect(c));
+      arr = arr.filter(c => !isDoneYear(c, curYear) && !isSuspect(c));
     } else if (state.status === 'nytt') {
       // Handvirkt merkt NÝTT á fyrirtækjaprófílnum (patch 281).
       arr = arr.filter(c => !!(window.NyttBadge && NyttBadge.is(c.id)));
@@ -872,7 +883,7 @@
       // dökkbláa „Í vinnslu"-pillan í töflunni notar (field_inspected_year), svo
       // sían og merkið á röðinni segja ALLTAF það sama.
       arr = arr.filter(c => +(c._ars.field_inspected_year || 0) === curYear &&
-                            (+c._ars.last_year_inspected || 0) < curYear);
+                            !isDoneYear(c, curYear));
     } else if (state.status === 'akstur') {
       // Allir sem eru á akstursleið (1/2/3). Lesið gegnum ArsAkstur eins og
       // 🚗-chippinn í töflunni — ekki beint úr blobbinu, svo leiðin sem patch
@@ -948,7 +959,7 @@
           const lastYr = +ars.last_year_inspected || 0;
           const fieldYr = +ars.field_inspected_year || 0;
           const m = +ars.inspect_month || 0;
-          if (lastYr === curYear) return 0;
+          if (isDoneYear(c, curYear)) return 0;
           if (fieldYr === curYear) return 1;
           if (isSkippedLastYear(c, curYear)) return 3;
           if (m > 0 && m <= curMonth) return 2;
@@ -1224,7 +1235,7 @@
     // „Skoðað <ár>" (last_year_inspected) — með skjalfestu grunntöluna
     // (v_thjonustu_tolur.buid_2026 = 2026-skýrsla skráð) sem undirlínu. Bilið
     // milli talnanna = skoðaðir staðir sem vantar skráða skýrslu.
-    const buidTalin = all.filter(c => +((c._ars || {}).last_year_inspected) === curYear).length;
+    const buidTalin = all.filter(c => isDoneYear(c, curYear)).length;
     const allCount = skipHidden ? all.filter(c => !isSkippedLastYear(c, curYear)).length : all.length;
     const monthCounts = Array(13).fill(0);
     // index 0 = fjöldi án skráðs mánaðar („Án mánaðar"-chippurinn)
@@ -1780,7 +1791,7 @@
       totalEst += est;
       // Mirror the on-screen "${curYear}" status dot exactly (same flags,
       // colours and meaning) so the printed list matches what's on screen.
-      const isDone = lastYr === curYear;
+      const isDone = isDoneYear(c, curYear);
       const isFieldOnly = !isDone && fieldYr === curYear;
       const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
       const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
@@ -2013,7 +2024,7 @@
           const monthLabel = m >= 1 && m <= 12 ? MONTHS_IS[m-1] : '—';
           const lastYr = +ars.last_year_inspected || 0;
           const fieldYr = +ars.field_inspected_year || 0;     // 2026-05-25: physical inspection done, paperwork pending
-          const isDone = lastYr === curYear;
+          const isDone = isDoneYear(c, curYear);
           const isFieldOnly = !isDone && fieldYr === curYear; // Tekið út — skjöl eftir
           // 2026-05-26: "skipped last year" — last inspection was 2024 (or older)
           // even though curYear-1 (2025) should have happened. Coworker reported
@@ -2295,7 +2306,7 @@
               const m = +ars.inspect_month || 0;
               const lastYr = +ars.last_year_inspected || 0;
               const fieldYr = +ars.field_inspected_year || 0;
-              const isDone = lastYr === curYear;
+              const isDone = isDoneYear(c, curYear);
               const isFieldOnly = !isDone && fieldYr === curYear;
               const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
               const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);

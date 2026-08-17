@@ -426,6 +426,9 @@
       document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
       document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(r => r.removeAttribute('data-yrcol'));
       process();
+      // 2026-08-17: láta 153 vita — „Skoðað <ár>"-staðan fylgir nú litnum á
+      // árs-merkinu (isDoneYear les year_factcheck), svo hún á að uppfærast strax.
+      try { document.dispatchEvent(new Event('attachment-year-changed')); } catch (_) {}
       try { if (window.Toast && Toast.show) Toast.show(
         next === 'gap' ? '🟠 ' + year + ' merkt: skýrsla vantar'
         : next === 'human' ? '✓ ' + year + ' staðfest'
