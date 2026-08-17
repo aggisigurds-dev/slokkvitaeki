@@ -320,7 +320,11 @@
   // Það segir ekkert um HVAÐA skýrsla þetta er og eyðilagði einmitt tilganginn
   // hér að ofan: að sjá ranglega tengda skýrslu í fljótu bragði. Mælt á lifandi
   // gögnum: 1.151 af 1.843 skýrslu-röðum (61%) báru slíkan stimpil.
-  var STAMP_RE = /^\s*(drive-multitool|doc-index|relink(-docs)?|skjalavarsla|uttekt-upload|fasi0)\b/i;
+  // 2026-08-17: „uttekt-master" bætt við — Drive-pörunarbakfyllingin 2026-06-06
+  // stimplaði 378 raðir hjá 275 fyrirtækjum með „uttekt-master MATCH nn: …" og
+  // sá hrástimpill birtist sem skjalanafn (skráarheitið í honum er hvort eð er
+  // ótraust skv. skjol.md — auto-renamer skemmdi ~1/3 nafna).
+  var STAMP_RE = /^\s*(drive-multitool|doc-index|relink(-docs)?|skjalavarsla|uttekt-upload|uttekt-master|fasi0)\b/i;
   function docName(d){
     var raw = String(d.notes || '').trim();
     // Uppruna-stimpill er ekki nafn — henda honum og byggja nafn úr gögnunum.
@@ -342,8 +346,12 @@
     var u=docUrl(d), full=docName(d);
     var disp=full.length>46?full.slice(0,44)+'…':full;
     var ico = d.doc_type==='brunakerfi' ? '🔥' : '📄';
+    // 2026-08-17 (Agnar: „get ekkert opnað"): skjalalausa chippið leit út eins
+    // og hlekkur (cursor:pointer á .sk-doc) en gerði ekkert. Nú er það sýnilega
+    // dautt (⚠, dauft, strikaður rammi) og smellur útskýrir sig — sýnir söguna
+    // úr notes („dauður Drive-hlekkur fjarlægður … ÞARF AÐ FINNA AFTUR").
     var chip = u ? '<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="'+esc(full)+' — opna í Drive">'+ico+' '+esc(disp)+'</a>'
-                 : '<span class="sk-doc rep" title="'+esc(full)+' (engin Drive-slóð)">'+ico+' '+esc(disp)+'</span>';
+                 : '<span class="sk-doc rep miss" data-misstitle="'+esc(String(d.notes||'').slice(0,500))+'" title="Skjalið er ekki lengur í Drive — þarf að finna frumritið aftur. Smelltu fyrir söguna.">⚠ '+esc(disp)+'</span>';
     return docWrap(chip, d.id);
   }
   function invDocChip(d, srcByNum){
@@ -738,7 +746,7 @@
     function samnChip(s){
       var full=samnLabel(s), disp=full.length>46?full.slice(0,44)+'…':full;
       if(s.src==='doc'){ var u=docUrl(s.d);
-        return docWrap(u?'<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="'+esc(full)+'">📑 '+esc(disp)+'</a>':'<span class="sk-doc rep" title="'+esc(full)+'">📑 '+esc(disp)+'</span>', s.d.id); }
+        return docWrap(u?'<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="'+esc(full)+'">📑 '+esc(disp)+'</a>':'<span class="sk-doc rep miss" data-misstitle="'+esc(String(s.d.notes||'').slice(0,500))+'" title="Skjalið er ekki lengur í Drive — smelltu fyrir söguna.">⚠ '+esc(disp)+'</span>', s.d.id); }
       return '<button type="button" class="sk-doc rep" data-att="'+esc(s.a.id)+'" title="'+esc(full)+'">📑 '+esc(disp)+'</button>';
     }
     // 2026-08-07 (skissa Agnars): samningurinn fær sama kort-tungumál og árin —
@@ -1301,6 +1309,7 @@
       '.sk-strip-r{display:flex;align-items:center;gap:6px;flex-wrap:wrap;flex:1}',
       '.sk-doc{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid;cursor:pointer;margin:2px 4px 2px 0;text-decoration:none;font-family:inherit;line-height:1.2}',
       '.sk-doc.rep{background:var(--surface2);color:#0f172a;border-color:var(--brd)}',
+      '.sk-doc.rep.miss{cursor:help;opacity:.62;border-style:dashed;color:#92400e;background:#fffbeb;border-color:#fcd34d}',
       '.sk-doc.inv{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}',
       '.sk-doc.pd{background:#f5f3ff;color:#6d28d9;border-color:#ddd6fe;cursor:default}',
       '.sk-doc.prog{background:#fef3c7;color:#92400e;border-color:#fcd34d;font-weight:700}',
@@ -1400,6 +1409,16 @@
     ].join('\n');
     var st=document.createElement('style'); st.id='sk-card-css'; st.textContent=css; document.head.appendChild(st);
   }
+  // 2026-08-17: dauð skjala-chips (skjal horfið úr Drive) svara smelli með
+  // sögunni úr notes — þar stendur hvers vegna hlekkurinn var hreinsaður og
+  // „ÞARF AÐ FINNA AFTUR"-áminningin. Betra en þögult dautt span.
+  document.addEventListener('click', function(e){
+    var m = e.target && e.target.closest ? e.target.closest('.sk-doc.rep.miss') : null;
+    if(!m) return;
+    e.preventDefault();
+    var saga = m.getAttribute('data-misstitle') || '';
+    alert('Skjalið er ekki lengur aðgengilegt í Drive — frumritið þarf að finna aftur.\n\nSagan:\n' + (saga || '(engin skráð saga)'));
+  }, false);
   console.log('[patch-199] unified Skjöl & viðhengi card installed');
 })();
 /* === END DOC YEAR GRID === */
