@@ -233,7 +233,17 @@
 
     // 2026-08-17 (Agnar — „Des-skoðun, we dont have to go yet"): skoðunar-
     // mánuðurinn ræður hvort tómt yfirstandandi ár er RAUTT (mánuður kominn/
-    // liðinn = á eftir) eða GULL (mánuður seinna á árinu / enginn = á dagskrá).
+    // liðinn = á eftir) eða GULL (mánuður seinna á árinu = á dagskrá).
+    // Lesið úr SÖMU samsettu heimild og SKOÐUN-dálkurinn sýnir
+    // (Arsskodun._cache.list → _ars.inspect_month: handvirkt + skýrslugögn +
+    // v_skodunar_manudur) — handvirka blobbið eitt missti af fyrirtækjum þar
+    // sem mánuðurinn kemur úr skýrslu/reikningi (Okt-raðir sýndust rauðar).
+    const _arsMonthById = {};
+    try {
+      (((window.Arsskodun || {})._cache || {}).list || []).forEach(c => {
+        _arsMonthById[String(c.id)] = +(((c._ars || {}).inspect_month)) || 0;
+      });
+    } catch (_) {}
     const _arsBlob = (window.AppSettings && AppSettings.path && AppSettings.path('arsskodun_customers')) || {};
     const _curMonth = new Date().getMonth() + 1;
 
@@ -313,7 +323,7 @@
           if (hasInvYear || isClaude) return '_yr ' + (isNow ? 'now' : 'on') + ' inv-only' + lit;
           if (isNow) {
             // gull þegar skoðunarmánuðurinn er ekki kominn (eða enginn skráður)
-            const _im = +(((_arsBlob[String(coId)]) || {}).inspect_month) || 0;
+            const _im = _arsMonthById[String(coId)] || (+(((_arsBlob[String(coId)]) || {}).inspect_month) || 0);
             const overdue = _im > 0 && _im <= _curMonth;
             return '_yr ' + (overdue ? 'now' : 'penda') + lit;
           }
