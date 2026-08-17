@@ -78,18 +78,22 @@
   }
 
   // ── The inline cycling chip ─────────────────────────────────────────────
+  // 2026-08-17 (Agnar: „make akstur red label dark metal.... but add the
+  // number 1-2-3"): design v3-vörubíllinn (Lucide-SVG, ekkert emoji skv.
+  // handoff-README) — dökkrauður málmur + leiðarnúmer þegar á lista,
+  // hvít útlínu-flís (._icbtn-stíllinn) þegar enginn.
+  const TRUCK_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="flex:none"><path d="M3 17h1a2 2 0 0 0 4 0h8a2 2 0 0 0 4 0h1v-5l-3-4h-3V7H3z"/></svg>';
   function styleChip(chip, v) {
-    const c = v ? BLUE : GREY;
     chip.dataset.ak = String(v);
-    chip.textContent = v ? ('🚗' + v) : '🚗';
+    chip.innerHTML = TRUCK_SVG + (v ? '<b style="font-family:\'Space Mono\',ui-monospace,monospace;font-size:11px;font-weight:700;line-height:1">' + v + '</b>' : '');
     chip.title = v ? ('Akstur ' + v + ' — smelltu til að breyta') : 'Enginn aksturslisti — smelltu til að setja á lista';
     chip.style.cssText =
-      'display:inline-flex;align-items:center;justify-content:center;gap:1px;flex:none;' +
-      'width:36px;box-sizing:border-box;height:26px;padding:0;border-radius:99px;cursor:pointer;' +   // föst breidd → dálkar raðast
-      'font:inherit;font-size:11.5px;font-weight:800;line-height:1;user-select:none;' +
-      'border:1px solid ' + c.bd + ';background:' + c.bg + ';color:' + c.fg + ';' +
-      (v ? 'box-shadow:0 1px 4px -1px rgba(14,165,233,.6);' : 'opacity:.85;') +
-      'transition:transform .12s,background .12s';
+      'display:inline-flex;align-items:center;justify-content:center;gap:3px;flex:none;' +
+      'width:44px;box-sizing:border-box;height:24px;padding:0;border-radius:8px;cursor:pointer;' +   // föst breidd → dálkar raðast
+      'font:inherit;line-height:1;user-select:none;transition:transform .12s,background .12s;' +
+      (v
+        ? 'border:1px solid #4d0a08;background:linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%);color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.25),inset 0 -2px 4px rgba(0,0,0,.26);'
+        : 'border:1px solid #e2e6ed;background:#fff;color:#6b7482;opacity:.9;');
   }
   function makeChip(coId) {
     const chip = document.createElement('span');
