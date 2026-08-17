@@ -635,8 +635,10 @@
         const total = g.hledsla + g.yfirferd + g.nyitt;
         if (total > 0) {
           const override = findOverride(coId, reykP.nafn);
-          const unitPrice = override ? +override.price_ex_vat : +reykP.verd_an_vsk;
+          let unitPrice = override ? +override.price_ex_vat : +reykP.verd_an_vsk;
           const vskPct = override ? (+override.vsk_pct || 24) : (+reykP.vsk_prosenta || 24);
+          let tierMark = null;
+          if (!override) { const tf = tierFastFor(reykP); if (tf != null && tf <= unitPrice) { unitPrice = tf; tierMark = tierBadgeObj; } }
           const dKey = 'svc|' + g.type + '|' + g.size + '|reyk';
           const dPct = discFor(dKey);
           const effUnit = priceFor(dKey, unitPrice);
@@ -644,7 +646,7 @@
           const vskKr = subEx * (vskPct / 100);
           totalSubEx += subEx;
           totalVsk += vskKr;
-          if (override) { overrideSubEx += subEx; overrideVsk += vskKr; }
+          if (override || tierMark) { overrideSubEx += subEx; overrideVsk += vskKr; }
           rows.push('<tr>' +
             '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + (g.size ? ' / ' + esc(g.size) : '') +
               '<div style="font-size:11px;color:#64748b">' + esc(reykP.nafn) + '</div></td>' +
