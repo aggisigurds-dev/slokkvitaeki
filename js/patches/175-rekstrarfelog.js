@@ -1468,6 +1468,13 @@
                '<button type="button" class="rf-bldtoggle" data-bi="'+_bi+'" title="Sýna/fela smáatriði">▸</button>'+
                '<span class="rf-bname">'+link+oldLinks+'</span>'+
                (b.heimilisfang?'<span class="rf-baddr">📍 '+esc(b.heimilisfang)+'</span>':'')+
+               // ✈ lágstemmd nóta á bygginguna (2026-08-17, ósk Agnars) — SAMI
+               // reitur og ferðanótan á Fyrirtæki í Þjónustu (fyrirtaeki.plan_note)
+               // svo nótan fylgir staðnum milli sýna. Aðeins tengdar byggingar.
+               (co?'<input class="_rf-plannote" data-co-id="'+co.id+'" value="'+esc(co.plan_note||'')+'" placeholder="✈ nóta…" maxlength="140" '+
+                 'style="display:block;width:min(240px,100%);margin-top:2px;font:inherit;font-size:10.5px;color:#141822;background:transparent;border:1px dashed transparent;border-radius:6px;padding:1px 5px;outline:none;opacity:.45;box-sizing:border-box" '+
+                 'onfocus="this.style.borderColor=\'rgba(20,24,34,.25)\';this.style.background=\'#fff\';this.style.opacity=\'1\'" '+
+                 'onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\';this.style.opacity=\'.45\'">':'')+
              '</td>'+
              '<td class="rf-mono">'+fmtKt(b.kt)+'</td>'+
              summaryCell+
@@ -1735,6 +1742,42 @@
       if(!coId) return;
       cell.appendChild(makeRfAksturChip([coId]));
     });
+    // ✈ Byggingar-nótan — vökvun + vistun (debounced í fyrirtaeki.plan_note,
+    // sama og ferðanótan í 153). Companies.list ber ekki alltaf plan_note svo
+    // gildin eru sótt fersk; reitur í notkun (focus) er ekki yfirskrifaður.
+    (function(){
+      var inputs = body.querySelectorAll('._rf-plannote');
+      if(!inputs.length) return;
+      var ids = Array.prototype.map.call(inputs, function(i){ return parseInt(i.getAttribute('data-co-id'),10); }).filter(Boolean);
+      try {
+        SB.from('fyrirtaeki').select('id,plan_note').in('id', ids).then(function(r){
+          if(r.error||!r.data) return;
+          var m={}; r.data.forEach(function(x){ m[x.id]=x.plan_note||''; });
+          inputs.forEach(function(inp){
+            var id=parseInt(inp.getAttribute('data-co-id'),10);
+            if(m[id]!=null && document.activeElement!==inp) inp.value=m[id];
+          });
+        });
+      } catch(_){}
+      inputs.forEach(function(inp){
+        var t=null;
+        inp.addEventListener('click', function(e){ e.stopPropagation(); });
+        inp.addEventListener('keydown', function(e){ e.stopPropagation(); if(e.key==='Enter') inp.blur(); });
+        inp.addEventListener('input', function(){
+          if(t) clearTimeout(t);
+          t=setTimeout(async function(){
+            var id=parseInt(inp.getAttribute('data-co-id'),10);
+            var val=inp.value.trim()||null;
+            if(!id) return;
+            try {
+              var r=await SB.from('fyrirtaeki').update({plan_note:val}).eq('id',id);
+              if(r.error) throw r.error;
+              try { var c=((window.Companies&&Companies.list)||[]).find(function(x){return +x.id===id;}); if(c) c.plan_note=val; } catch(_){}
+            } catch(err){ console.warn('[rekstrarfelog] plan_note', err); }
+          },600);
+        });
+      });
+    })();
 
     // wire add / remove building — self-service editing, no code needed
     var addB = body.querySelector('._rf_addb');
