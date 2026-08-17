@@ -215,10 +215,12 @@
       const hasNota = !!(ref && ref.getAttribute && ref.getAttribute('data-notacol'));
       if (hasNota) ref = htr.children[2] || null;
       if (hasNota) {
+        // Design v3: EINN samhaus yfir árin fjögur — erfir þema-hausstílinn
+        // (.thm .data-table th) svo hann er eins og hinir hausarnir.
         const th = document.createElement('th');
         th.setAttribute('data-yrcol', '1');
         th.colSpan = YEARS.length;
-        th.style.cssText = "padding:10px 5px;text-align:center;font-weight:700;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;font-family:'Space Mono',monospace";
+        th.className = 'center';
         th.textContent = 'Skoðanir · skjöl';
         htr.insertBefore(th, ref);
       } else YEARS.forEach(y => {
@@ -276,36 +278,32 @@
         const f = files.find(x => String(x.year) === y && isReportKind(x)) ||
                   files.find(x => x.year == null && isReportKind(x) &&
                                   new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
-        // 2026-08-17 (mockup-eftirmynd, „exact copy"): FYLLTAR dökkar pillur —
-        // grænt = skýrsla til · blátt = úttekt staðfest/yfirfarin án skýrslu ·
-        // dökkrautt = vantar (gap-flagg eða yfirstandandi ár án skýrslu) ·
-        // fölgrá útlína = ekkert. Undir hverri pillu: skjala-deplar (grænn =
-        // úttektarskýrsla · blár = reikningur), sbr. skýringar mockupsins.
-        // Allar smell-hegðanir (opna skjal / _yr-add / _yr-att / tvísmellur)
-        // og titlar halda sér — aðeins útlitið breyttist.
+        // 2026-08-17 (Design v3, 842ebdfe — README: „CSS-ið í <style>-blokkinni
+        // er nákvæma uppskriftin"): _yr-merkin 52×20 með LED-stöðupunkti
+        // (::before) + tveir örpunktar undir (grænn = úttektarskýrsla, blár =
+        // reikningur). Ástönd: tómt/on/both/now/inv-only — CSS í 153
+        // (_ars-mock-css). Allar smell-hegðanir og titlar halda sér.
         const yy = y.slice(-2);
         const fst = fcStat(coId, y);
         const confirmed = fst === 'human';
         const isClaude  = fst === 'claude';
         const isGap     = fst === 'gap';
-        const BDG = "display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 10px;border-radius:6px;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;text-decoration:none;box-sizing:border-box;border:1px solid transparent;";
-        const FILL = {
-          green: 'background:#0d6b3d;color:#fff;border-color:#0a5730',
-          blue:  'background:#2563eb;color:#fff;border-color:#1d4fc4',
-          red:   'background:#a61b1b;color:#fff;border-color:#8c1414',
-          ghost: 'background:#f4f4f1;color:#9ca3af;border-color:#e2dfd6'
-        };
-        const wdot = '<span style="width:4px;height:4px;border-radius:50%;background:currentColor;opacity:.85;flex:0 0 auto"></span>';
-        const TAG = BDG;   // eldri nafngift í branch-unum að neðan
+        const isNow = (y === String(new Date().getFullYear()));
         const hasInvYear = !!((invMap && invMap[coId] && invMap[coId][y]) || (reikMap && reikMap[kt] && reikMap[kt].has(y)));
         const td = document.createElement('td');
         td.setAttribute('data-yrcell','1');
-        td.style.cssText = 'padding:6px 4px;text-align:center;';
-        const wrapBadge = (badgeHtml, hasRep) => {
-          const dots = (hasRep ? '<span style="width:5px;height:5px;border-radius:50%;background:#16a34a"></span>' : '') +
-                       (hasInvYear ? '<span style="width:5px;height:5px;border-radius:50%;background:#2563eb"></span>' : '');
-          return '<span style="display:inline-flex;flex-direction:column;align-items:center;gap:2px">' + badgeHtml +
-            '<span style="display:flex;gap:3px;justify-content:center;height:5px">' + dots + '</span></span>';
+        td.style.cssText = 'text-align:center;';
+        const wrapBadge = (badgeHtml, hasRep) =>
+          '<span class="_dd">' + badgeHtml +
+            '<u><i class="' + (hasRep ? 'rep' : '') + '"></i><i class="' + (hasInvYear ? 'inv' : '') + '"></i></u></span>';
+        // Ástands-klasar merkisins (effRep = skýrsla eða handstaðfest):
+        const yrCls = (effRep) => {
+          if (isGap) return '_yr now' + (effRep ? ' lit' : '');
+          if (effRep && hasInvYear) return '_yr ' + (isNow ? 'now' : 'on') + ' both lit';
+          if (effRep) return '_yr ' + (isNow ? 'now' : 'on') + ' lit';
+          if (hasInvYear || isClaude) return '_yr ' + (isNow ? 'now' : 'on') + ' inv-only lit';
+          if (isNow) return '_yr now';
+          return '_yr';
         };
         // 2026-08-11: „skýrsla vantar"-flaggið kemur FYRST — á undan skjala-
         // vísbendingunum. Áður stóð það neðst, svo hvaða árs-merkt viðhengi sem er
@@ -318,27 +316,23 @@
           const gapDoc = (u || f)
             ? ' · ATH: skjal er á skrá fyrir ' + y + ' en það er EKKI úttektarskýrsla (eða flaggið stendur enn)'
             : '';
-          td.innerHTML = wrapBadge('<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Skýrsla vantar fyrir ' + y + ' — hengdu við eða veldu úr safni' + gapDoc + '" style="' + TAG + FILL.red + '">' + wdot + yy + '</a>' +
-            (u ? '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Opna skjalið sem er á skrá fyrir ' + y + '" style="margin-left:3px;font-size:10px;text-decoration:none">📄</a>' : ''), false);
+          td.innerHTML = wrapBadge('<a href="#" class="' + yrCls(false) + ' _yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Skýrsla vantar fyrir ' + y + ' — hengdu við eða veldu úr safni' + gapDoc + '">' + yy + '</a>' +
+            (u ? '<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Opna skjalið sem er á skrá fyrir ' + y + '" style="font-size:10px;text-decoration:none">📄</a>' : ''), false);
         } else if (u) {
-          td.innerHTML = wrapBadge('<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Úttektarskýrsla ' + y + ' í Drive' + (confirmed ? ' · ✓ staðfest handvirkt' : (isClaude ? ' · Claude yfirfór' : '')) + '" style="' + TAG + FILL.green + '">' + wdot + yy + '</a>', true);
+          td.innerHTML = wrapBadge('<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="' + yrCls(true) + '" title="Úttektarskýrsla ' + y + ' í Drive' + (confirmed ? ' · ✓ staðfest handvirkt' : (isClaude ? ' · Claude yfirfór' : '')) + '">' + yy + '</a>', true);
         } else if (f) {
-          td.innerHTML = wrapBadge('<a href="#" class="_yr-att" data-path="' + String(f.path||'').replace(/"/g,'&quot;') + '" title="' + String(f.name||'').replace(/"/g,'&quot;') + ' (' + y + ' — upphlaðið skjal)" style="' + TAG + FILL.green + '">' + wdot + yy + '</a>', true);
+          td.innerHTML = wrapBadge('<a href="#" class="' + yrCls(true) + ' _yr-att" data-path="' + String(f.path||'').replace(/"/g,'&quot;') + '" title="' + String(f.name||'').replace(/"/g,'&quot;') + ' (' + y + ' — upphlaðið skjal)">' + yy + '</a>', true);
         } else if (invMap && invMap[coId] && invMap[coId][y]) {
-          // BLÁTT: úttektin var GERÐ (reikningur til) en skýrslan vantar.
+          // BLÁTT (inv-only): úttektin var GERÐ (reikningur til) en skýrslan vantar.
           const iv = invMap[coId][y];
-          td.innerHTML = wrapBadge('<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" ' +
-            'title="Úttekt staðfest með reikningi ' + String(iv.nr).replace(/"/g,'&quot;') + ' (' + String(iv.dags).replace(/"/g,'&quot;') + ') — skýrsla vantar. Smelltu til að hengja skýrsluna við." ' +
-            'style="' + TAG + FILL.blue + '">' + wdot + yy + '</a>', false);
+          td.innerHTML = wrapBadge('<a href="#" class="' + yrCls(false) + ' _yr-add" data-co-id="' + coId + '" data-year="' + y + '" ' +
+            'title="Úttekt staðfest með reikningi ' + String(iv.nr).replace(/"/g,'&quot;') + ' (' + String(iv.dags).replace(/"/g,'&quot;') + ') — skýrsla vantar. Smelltu til að hengja skýrsluna við.">' + yy + '</a>', false);
         } else if (confirmed) {
-          td.innerHTML = wrapBadge('<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Fact-checkað ' + y + ' (staðfest handvirkt)" style="' + TAG + FILL.green + '">' + wdot + yy + '</a>', false);
+          td.innerHTML = wrapBadge('<a href="#" class="' + yrCls(true) + ' _yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Fact-checkað ' + y + ' (staðfest handvirkt)">' + yy + '</a>', true);
         } else if (isClaude) {
-          td.innerHTML = wrapBadge('<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Claude yfirfór ' + y + ' — bíður staðfestingar" style="' + TAG + FILL.blue + '">' + wdot + yy + '</a>', false);
+          td.innerHTML = wrapBadge('<a href="#" class="' + yrCls(false) + ' _yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Claude yfirfór ' + y + ' — bíður staðfestingar">' + yy + '</a>', false);
         } else {
-          // Empty = attach point. Yfirstandandi ár án skýrslu = dökkrautt
-          // (mockup); eldri tóm ár = fölgrá útlínupilla.
-          const due = (y === String(new Date().getFullYear()));
-          td.innerHTML = wrapBadge('<a href="#" class="_yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Hengja skýrslu við ' + y + '" style="' + TAG + (due ? FILL.red : FILL.ghost) + '">' + wdot + yy + '</a>', false);
+          td.innerHTML = wrapBadge('<a href="#" class="' + yrCls(false) + ' _yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Hengja skýrslu við ' + y + '">' + yy + '</a>', false);
         }
         tr.insertBefore(td, ref);
       });

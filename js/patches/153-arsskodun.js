@@ -2284,8 +2284,91 @@
     document.head.appendChild(s);
   }
 
+  // ── Design-eftirmynd töflunnar (2026-08-17): CSS beint úr Claude Design
+  // verkefninu „Ground 0 - Fyrirtaeki i thjonustu v3.dc.html" (842ebdfe…),
+  // skorðað við #view-arsskodun. Grunn-töfluklassarnir (.data-table o.fl.)
+  // koma úr theme-scoped.css (.thm-vafið), þetta eru yfirlags-reglurnar +
+  // sérklasar designsins (_yr/_dd/_devs/_st/_chk …). AÐEINS taflan — ekkert
+  // annað á síðunni (ósk Agnars).
+  function _ensureMockCss() {
+    if (document.getElementById('_ars-mock-css')) return;
+    const s = document.createElement('style');
+    s.id = '_ars-mock-css';
+    const V = '#view-arsskodun ';
+    s.textContent = [
+      V+'.data-table th{padding:11px 12px;font-size:10.5px;letter-spacing:.15em}',
+      V+'.data-table tbody td{padding:7px 12px;border-top:1px solid #eceff4;line-height:1.25;height:44px;white-space:nowrap;font-size:13px}',
+      V+'.data-table tbody tr:hover{background:#f7f9fd}',
+      V+'.data-table{min-width:1300px;width:100%;table-layout:fixed}',
+      V+'.data-table th:nth-child(1),'+V+'.data-table td:nth-child(1){width:186px}',
+      V+'.data-table th:nth-child(2),'+V+'.data-table td:nth-child(2){width:118px}',
+      // árin fjögur (187 sprautar) deila 250px design-dálksins
+      V+'.data-table td:nth-child(3),'+V+'.data-table td:nth-child(4),'+V+'.data-table td:nth-child(5),'+V+'.data-table td:nth-child(6){width:64px;padding-left:2px;padding-right:2px;text-align:center}',
+      V+'.data-table th:nth-child(7),'+V+'.data-table td:nth-child(7){width:284px}',
+      V+'.data-table th:nth-child(8),'+V+'.data-table td:nth-child(8){width:62px}',
+      V+'.data-table th:nth-child(9),'+V+'.data-table td:nth-child(9){width:158px}',
+      V+'.data-table th:nth-child(10),'+V+'.data-table td:nth-child(10){width:74px}',
+      V+'.data-table th:nth-child(11),'+V+'.data-table td:nth-child(11){width:66px}',
+      V+'.data-table th:nth-child(12),'+V+'.data-table td:nth-child(12){width:150px}',
+      V+'._co{display:block;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      V+'._kt{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.02em;white-space:nowrap;line-height:1.2}',
+      V+'._addr{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}',
+      V+'._post{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted);margin-right:8px}',
+      V+'._mo{font-family:var(--mono);font-size:12px;color:var(--ink-2)}',
+      V+'._note{width:100%;height:24px;border:1px solid #e6e9ef;border-radius:7px;background:#fbfcfd;color:#3a4250;font-family:var(--ui);font-size:11.5px;padding:0 9px;box-sizing:border-box}',
+      V+'._note::placeholder{color:#8f98a6}',
+      V+'._note:focus{outline:none;border-color:#2f5fe0;background:#fff;color:#0f172a}',
+      V+'._yrs{display:flex;gap:11px;justify-content:center}',
+      V+'._dd{display:inline-flex;flex-direction:column;align-items:center;gap:3px}',
+      V+'._dd > u{display:flex;gap:3px;text-decoration:none}',
+      V+'._dd > u > i{width:5px;height:5px;border-radius:50%;background:#dfe3ea}',
+      V+'._dd > u > i.rep{background:#1f9d57}',
+      V+'._dd > u > i.inv{background:#2f5fe0}',
+      V+'._yr{display:inline-flex;align-items:center;justify-content:center;gap:5px;width:52px;height:20px;border-radius:6px;font-family:var(--mono);font-size:11px;font-weight:700;color:#aab3c0;background:#f4f6f9;border:1px solid #e7eaf0;text-decoration:none;cursor:pointer}',
+      V+'._yr::before{content:"";width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,.14);flex:none}',
+      V+'._yr.lit::before{background:#37c47e;box-shadow:0 0 5px rgba(55,196,126,.8)}',
+      V+'._yr.now.lit::before,'+V+'._yr.both.lit::before{background:#7df0b4;box-shadow:0 0 5px rgba(125,240,180,.9)}',
+      V+'._yr.inv-only.lit::before{background:#9fc3ff;box-shadow:0 0 5px rgba(159,195,255,.9)}',
+      V+'._yr.on{color:#3a4250;background:#e7ebf2;border-color:#d8dde6}',
+      V+'._yr.now{color:#fff;background:var(--btn-grad);border-color:rgba(120,10,10,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}',
+      V+'._yr.both,'+V+'._yr.on.both,'+V+'._yr.now.both{color:#fff;background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border-color:#041c0e;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.2),inset 0 -2px 4px rgba(0,0,0,.26)}',
+      V+'._yr.inv-only{color:#fff;background:linear-gradient(145deg,#5a86e0 0%,#2f5fe0 42%,#1a3a8c 72%,#2d55c4 100%);border-color:#12296b;text-shadow:0 1px 1px rgba(0,0,0,.3);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.32),inset 0 -2px 4px rgba(0,0,0,.22)}',
+      V+'._devs{display:flex;justify-content:flex-end;align-items:stretch}',
+      V+'._devs div{padding:0 10px;text-align:right}',
+      V+'._devs div + div{border-left:1px solid #e9ecf1}',
+      V+'._devs b{display:block;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ink);line-height:1.15}',
+      V+'._devs i{font-style:normal;font-size:8px;letter-spacing:.1em;color:var(--muted)}',
+      V+'._devs div.off b{color:var(--empty)}',
+      V+'._devs div.off i{color:#d8dde4}',
+      V+'._estcell{padding:0 0 0 10px;border-left:1px solid #e9ecf1;text-align:right}',
+      V+'._estcell b{display:block;font-family:var(--mono);font-size:13px;font-weight:700;color:var(--ink);line-height:1.15}',
+      V+'._estcell i{font-style:normal;font-size:8px;letter-spacing:.1em;color:var(--muted)}',
+      V+'.data-table tbody tr.overdue td:first-child{box-shadow:inset 2px 0 0 var(--accent)}',
+      V+'.data-table tbody tr:focus-visible{outline:none;background:#eef3ff;box-shadow:inset 0 0 0 2px rgba(47,95,224,.35)}',
+      V+'._stcell{display:grid;grid-template-columns:32px 1fr;align-items:center;justify-items:start}',
+      V+'._st{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:7px;white-space:nowrap}',
+      V+'._st--work{color:#fff;background:linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%);border:1px solid #060f24;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.2)}',
+      V+'._st--done{color:#fff;background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border:1px solid #041c0e;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.22),inset 0 -2px 4px rgba(0,0,0,.28),0 2px 5px -2px rgba(10,40,20,.5)}',
+      V+'._st--plan{color:#fff;background:linear-gradient(145deg,#5a86e0 0%,#2f5fe0 42%,#1a3a8c 72%,#2d55c4 100%);border:1px solid #12296b;text-shadow:0 1px 1px rgba(0,0,0,.3);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.35),inset 0 -2px 4px rgba(0,0,0,.22),0 2px 5px -2px rgba(20,40,90,.45)}',
+      V+'._st--late{color:#fff;background:linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%);border:1px solid #4d0a08;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.28),inset 0 -2px 4px rgba(0,0,0,.26),0 2px 5px -2px rgba(90,15,10,.5)}',
+      // Sleppt — gull-málmur (pill--gold úr theme.css); designið átti ekki skip-stöðu
+      V+'._st--skip{color:#fff;background:linear-gradient(145deg,#d4a94f 0%,#ab7f2a 42%,#775213 72%,#9c7828 100%);border:1px solid #7a5410;text-shadow:0 1px 1px rgba(0,0,0,.3);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.3),inset 0 -2px 4px rgba(0,0,0,.22)}',
+      V+'._chk{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:1px solid #d8dde6;background:#fff;color:#c3cad6;cursor:pointer;padding:0}',
+      V+'._chk:hover{border-color:#b9c1cd;color:#7d8794}',
+      V+'._chk.on{border-color:#060f24;color:#fff;background:linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.28),0 2px 6px -2px rgba(10,25,60,.6)}',
+      V+'._tfoot{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 14px;border-top:1px solid #eceff4;background:#fbfcfe}',
+      V+'._tfoot > span{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--body)}',
+      V+'._pager{display:flex;gap:6px}',
+      V+'._pager button{height:26px;padding:0 11px;border-radius:7px;border:1px solid #e2e6ed;background:#fff;color:#5b6472;font-family:var(--ui);font-size:12px;cursor:pointer}',
+      V+'._pager button:hover{border-color:#c3cad6;color:#3a4250}',
+      V+'._pager button[disabled]{opacity:.45;cursor:default}'
+    ].join('\n');
+    document.head.appendChild(s);
+  }
+
   function renderTable(arr) {
     _ensureStatusCss();
+    _ensureMockCss();
     const today = new Date();
     const curYear = today.getFullYear();
     const curMonth = today.getMonth() + 1;
@@ -2301,33 +2384,27 @@
     const pageArr = arr.slice(p0, p0 + PER);
     const pgBtn = 'padding:7px 16px;border:1px solid var(--brd2);border-radius:8px;background:var(--surface);font:inherit;font-size:12px;font-weight:600;color:var(--ink1);cursor:pointer';
     return `
-      <div style="background:var(--surface);border:1px solid var(--brd);border-radius:10px;overflow:hidden">
-        <div class="_ars-tblscroll" style="overflow-x:auto;-webkit-overflow-scrolling:touch">
-        <table style="width:100%;min-width:1180px;border-collapse:collapse;font-size:12px">
-          <thead style="background:linear-gradient(180deg,#1a1d23,#0d0f13);border-bottom:1px solid #000">
-            <tr style="text-align:left;color:#eef1f6;font-weight:700;text-transform:uppercase;font-size:9.5px;letter-spacing:.07em;font-family:'Space Mono',ui-monospace,monospace">
+      <div class="thm">
+      <div class="data-table-wrap">
+        <div class="_ars-tblscroll data-table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
               ${(() => {
-                // 2026-05-26: clickable sort headers. Smelltu → bring upp;
-                // smelltu aftur → snúa.
-                // 2026-08-17 (Agnar: „change the look … into the one above —
-                // fonts, color, layout"): dökkur málm-haus + Space Mono, eins
-                // og skoðana-taflan á Rekstrarfélögum/mockupinu.
+                // Röðunarhausar — design v3 (842ebdfe): grunnstíllinn (málm-band,
+                // hvítt uppercase, sticky) kemur úr theme-scoped .thm .data-table.
                 const cur = state.sortCol;
                 const dir = state.sortDir;
-                const arrow = (col) => cur === col
-                  ? `<span style="color:#fff;margin-left:3px;font-weight:700">${dir==='asc' ? '▲' : '▼'}</span>`
-                  : '<span style="color:rgba(255,255,255,.35);margin-left:3px;font-size:9px">⇅</span>';
-                const css = 'padding:10px 11px;cursor:pointer;user-select:none;transition:background .12s';
-                const hover = `onmouseover="this.style.background='rgba(255,255,255,.07)'" onmouseout="this.style.background='transparent'"`;
+                const arrow = (col) => '<span class="sort-ar">' + (cur === col ? (dir === 'asc' ? '▲' : '▼') : '⇅') + '</span>';
                 return `
-                  <th data-sort="name"     class="_ars-sort" style="${css}" ${hover}>Fyrirtæki${arrow('name')}</th>
-                  <th data-notacol="1" style="padding:10px 8px" title="✈ Ferðanóta — tímabundnar nótur við ferðaskipulag">Ferðanóta</th>
-                  <th data-sort="postnumer" class="_ars-sort" style="${css}" ${hover} title="Raða eftir póstnúmeri (fyrir akstursleiðir)">Heimilisfang${arrow('postnumer')}</th>
-                  <th data-sort="month"    class="_ars-sort" style="${css};text-align:center" ${hover}>Skoðun${arrow('month')}</th>
-                  <th data-sort="tools"    class="_ars-sort" style="${css};text-align:center" ${hover}>Tæki${arrow('tools')}</th>
-                  <th data-sort="akstur"   class="_ars-sort" style="${css};text-align:center" ${hover} title="Aksturslisti (1/2/3) — raða til að prenta per bílstjóra">Akstur${arrow('akstur')}</th>
-                  <th data-sort="priority" class="_ars-sort" style="${css};text-align:center" ${hover}>Forg.${arrow('priority')}</th>
-                  <th data-sort="status"   class="_ars-sort" style="${css};text-align:right" ${hover} title="Gráu hakirnir merkja Í vinnslu — skoðun hafin, skýrsla/reikningur eftir">Staða ${curYear}${arrow('status')}</th>
+                  <th data-sort="name" class="_ars-sort">Fyrirtæki${arrow('name')}</th>
+                  <th data-notacol="1" title="✈ Ferðanóta — tímabundnar nótur við ferðaskipulag">Ferðanóta</th>
+                  <th data-sort="postnumer" class="_ars-sort" title="Raða eftir póstnúmeri (fyrir akstursleiðir)">Heimilisfang${arrow('postnumer')}</th>
+                  <th data-sort="month" class="_ars-sort center">Skoðun${arrow('month')}</th>
+                  <th data-sort="tools" class="_ars-sort num">Tæki${arrow('tools')}</th>
+                  <th data-sort="akstur" class="_ars-sort center" title="Aksturslisti (1/2/3) — raða til að prenta per bílstjóra">Akstur${arrow('akstur')}</th>
+                  <th data-sort="priority" class="_ars-sort center">Forg.${arrow('priority')}</th>
+                  <th data-sort="status" class="_ars-sort center" title="Hringlaga hakið merkir Í vinnslu — skoðun hafin, skýrsla/reikningur eftir">Staða ${curYear}${arrow('status')}</th>
                 `;
               })()}
             </tr>
@@ -2359,41 +2436,40 @@
               const markBtn = !isDone
                 ? `<button class="_ars-tu-toggle _ars-mark${isFieldOnly ? ' on' : ''}" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Í vinnslu (skýrslugerð) — smelltu til að hreinsa' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}">✓</button>`
                 : '';
-              // Mockup-eftirmynd (2026-08-17): rauð vinstri-rönd á „Á eftir".
-              const railCss = stState === 'over' ? ';box-shadow:inset 3px 0 0 #dc2626' : '';
+              const g = eqGroups(ars.equipment || {});
               return `
-                <tr class="_ars-row" data-co-id="${c.id}" style="border-bottom:1px solid var(--brd);cursor:pointer;transition:background .1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background='transparent'">
-                  <td style="padding:11px 13px${railCss}">
-                    <div style="font-weight:700;font-size:13px;color:var(--ink1);display:flex;align-items:center;gap:6px;flex-wrap:wrap">${esc(c.nafn || '—')}${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}${(window.RekstrarfelagBadge && c.kennitala) ? RekstrarfelagBadge.html(c.kennitala) : ''}${state.status === 'skipped2025' ? (ars.ekki_sleppt
+                <tr class="_ars-row${stState === 'over' ? ' overdue' : ''}" data-co-id="${c.id}" tabindex="0" style="cursor:pointer">
+                  <td>
+                    <span class="_co">${esc(c.nafn || '—')}</span>
+                    ${c.kennitala ? `<span class="_kt">${esc(fmtKt(c.kennitala))}</span>` : ''}
+                    ${((window.NyttBadge && NyttBadge.is(c.id)) || (window.RekstrarfelagBadge && c.kennitala && RekstrarfelagBadge.html(c.kennitala)) || state.status === 'skipped2025') ? `<span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;align-items:center">${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}${(window.RekstrarfelagBadge && c.kennitala) ? RekstrarfelagBadge.html(c.kennitala) : ''}${state.status === 'skipped2025' ? (ars.ekki_sleppt
                       ? `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Handvirkt virkjaður aftur — smelltu til að merkja aftur sem sleppt" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #86efac;background:#f0fdf4;color:#15803d;cursor:pointer;font-weight:700">✓ virkur · ↩ aftur í sleppt</button>`
-                      : `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Virkja aftur — telst þá ekki lengur sleppt og birtist í öllum sýnum og tölum" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #fde68a;background:#fef3c7;color:#a16207;cursor:pointer;font-weight:700">↩ Virkja aftur</button>`) : ''}</div>
-                    ${c.kennitala ? `<div style="font-size:10px;color:#7f9db8;font-family:'Space Mono',ui-monospace,monospace;margin-top:1px">${esc(fmtKt(c.kennitala))}</div>` : ''}
-                    ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''} <button class="_ars-amin-x" data-co-id="${c.id}" type="button" title="Eyða áminningunni af þessu fyrirtæki" style="border:none;background:transparent;color:#b45309;cursor:pointer;font-size:10px;padding:0 3px;opacity:.7">✕</button></div>` : ''}
+                      : `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Virkja aftur — telst þá ekki lengur sleppt og birtist í öllum sýnum og tölum" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #fde68a;background:#fef3c7;color:#a16207;cursor:pointer;font-weight:700">↩ Virkja aftur</button>`) : ''}</span>` : ''}
+                    ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3;white-space:normal"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''} <button class="_ars-amin-x" data-co-id="${c.id}" type="button" title="Eyða áminningunni af þessu fyrirtæki" style="border:none;background:transparent;color:#b45309;cursor:pointer;font-size:10px;padding:0 3px;opacity:.7">✕</button></div>` : ''}
                   </td>
-                  <td class="_ars-notacell" style="padding:11px 8px;vertical-align:middle">
-                    <input class="_ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="Ferðanóta…" maxlength="140"
-                      style="display:block;width:min(170px,100%);font:inherit;font-size:11px;color:var(--ink1);background:var(--surface);border:1px solid var(--brd);border-radius:9px;padding:6px 10px;outline:none;box-sizing:border-box"
-                      onfocus="this.style.borderColor='var(--brd2)';this.style.boxShadow='0 0 0 2px rgba(59,130,246,.12)'"
-                      onblur="this.style.borderColor='var(--brd)';this.style.boxShadow='none'">
+                  <td class="_ars-notacell"><input class="_note _ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="Ferðanóta…" maxlength="140"></td>
+                  <td><span class="_addr">${c.postnumer ? `<span class="_post">${esc(c.postnumer)}</span>` : ''}${esc(c.heimilisfang || '—')}</span></td>
+                  <td class="center${ovr ? ' _ars-ovr-month' : ''}"${ovr ? ` data-co-id="${c.id}" title="⚡ Smelltu til að breyta skoðunarmánuði" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}><span class="_mo" style="${m===curMonth?'color:#c0241f;font-weight:700':''}">${manualMark(esc(MONTHS_IS_SHORT[m-1] || '—'), !!ars.inspect_month_manual)}</span></td>
+                  <td ${ovr ? `class="_ars-ovr-eq" data-co-id="${c.id}" title="⚡ Smelltu til að breyta tækjatölum" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}>
+                    <div class="_devs">
+                      <div class="${g.slt ? '' : 'off'}" title="Slökkvitæki"><b>${g.slt || 0}</b><i>SLT</i></div>
+                      <div class="${g.bsl ? '' : 'off'}" title="Brunaslöngur"><b>${g.bsl || 0}</b><i>BSL</i></div>
+                      <div class="${g.rs ? '' : 'off'}" title="Reykskynjarar"><b>${g.rs || 0}</b><i>RS</i></div>
+                      ${g.other ? `<div title="Annað"><b>${g.other}</b><i>ANNAÐ</i></div>` : ''}
+                      <div class="_estcell" title="Áætlað virði ársþjónustu"><b>${fmtKrShort(est)}</b><i>ÁÆTL</i></div>
+                    </div>${ars.equipment_manual ? '<span title="Handvirkt yfirskrifað" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#f59e0b;margin-left:4px;vertical-align:top"></span>' : ''}
                   </td>
-                  <td style="padding:11px 8px;color:var(--ink1);font-size:12px">${c.postnumer ? `<span class="_ars-pc" style="font-family:'Space Mono',ui-monospace,monospace;color:#4c9fd8;font-weight:700;font-size:11px;margin-right:8px">${esc(c.postnumer)}</span>` : ''}${esc(c.heimilisfang || '—')}</td>
-                  <td ${ovr ? `class="_ars-ovr-month" data-co-id="${c.id}" title="⚡ Smelltu til að breyta skoðunarmánuði"` : ''} style="padding:8px 7px;text-align:center;font-weight:600;color:${m===curMonth?'#dc2626':'var(--ink2)'}${ovr ? ';cursor:pointer;background:rgba(245,158,11,.07)' : ''}">${manualMark(esc(MONTHS_IS_SHORT[m-1] || '—'), !!ars.inspect_month_manual)}</td>
-                  <td ${ovr ? `class="_ars-ovr-eq" data-co-id="${c.id}" title="⚡ Smelltu til að breyta tækjatölum"` : ''} style="padding:11px 8px;text-align:center${ovr ? ';cursor:pointer;background:rgba(245,158,11,.07)' : ''}">
-                    <div style="display:inline-flex;align-items:center;gap:12px">
-                      ${manualMark(eqTrioHtml(c._ars && c._ars.equipment, 'screen'), !!ars.equipment_manual)}
-                      <span style="display:inline-flex;flex-direction:column;align-items:center;line-height:1.1" title="Áætlað virði ársþjónustu">
-                        <span style="font-family:'Space Mono',ui-monospace,monospace;font-weight:700;font-size:12px;color:#15803d">${fmtKrShort(est)}</span>
-                        <span style="font-size:7.5px;color:var(--ink4);font-weight:700;letter-spacing:.05em">ÁÆTL</span>
+                  <td class="center _arsak-cell" onclick="event.stopPropagation()"></td>
+                  <td class="center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
+                  <td class="center">
+                    <div class="_stcell">
+                      ${!isDone
+                        ? `<button class="_chk _ars-tu-toggle _ars-mark${isFieldOnly ? ' on' : ''}" data-co-id="${c.id}" type="button" title="${isFieldOnly ? 'Í vinnslu (skýrslugerð) — smelltu til að hreinsa' : 'Merkja sem Í vinnslu (skýrsla/reikningur eftir)'}"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 13 4 4L19 7"/></svg></button>`
+                        : '<span></span>'}
+                      <span style="display:inline-flex;align-items:center;gap:6px">
+                        <span class="_st ${stState === 'done' ? '_st--done' : stState === 'work' ? '_st--work' : stState === 'skip' ? '_st--skip' : stState === 'over' ? '_st--late' : '_st--plan'}" title="${esc(stTitle)}">${stState === 'over' ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m10.3 3.9-8.2 14.2a1.9 1.9 0 0 0 1.7 2.9h16.4a1.9 1.9 0 0 0 1.7-2.9L13.7 3.9a1.9 1.9 0 0 0-3.4 0Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>' : ''}${esc(stLabel)}</span>
+                        ${ovr ? `<span class="_ars-ovr-year" data-co-id="${c.id}" title="⚡ Síðast skoðað (ár) — smelltu til að breyta" style="display:inline-flex;align-items:center;min-height:24px;padding:2px 8px;border:1px dashed #d97706;background:#fffbeb;color:#92400e;border-radius:8px;font-size:10px;font-weight:700;cursor:pointer;white-space:nowrap">📅 ${lastYr || '—'}</span>` : ''}
                       </span>
-                    </div>
-                  </td>
-                  <td class="_arsak-cell" style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()"></td>
-                  <td style="padding:8px 7px;text-align:center" onclick="event.stopPropagation()">${(window.Priority && window.Priority.btnHtml(c.id, 18)) || ''}</td>
-                  <td style="padding:8px 11px">
-                    <div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">
-                      ${ovr ? `<span class="_ars-ovr-year" data-co-id="${c.id}" title="⚡ Síðast skoðað (ár) — smelltu til að breyta" style="display:inline-flex;align-items:center;min-height:26px;padding:3px 9px;border:1px dashed #d97706;background:#fffbeb;color:#92400e;border-radius:8px;font-size:10.5px;font-weight:700;cursor:pointer;white-space:nowrap">📅 ${lastYr || '—'}</span>` : ''}
-                      ${markBtn}
-                      ${statusPill(stState, stLabel, stTitle)}
                     </div>
                   </td>
                 </tr>
@@ -2402,13 +2478,14 @@
           </tbody>
         </table>
         </div>
-        <div style="display:flex;align-items:center;gap:12px;padding:10px 15px;background:linear-gradient(180deg,#f1f4f9,#e7ebf2);border-top:1px solid var(--brd);font-family:'Space Mono',ui-monospace,monospace;font-size:11px;color:#6b7686;text-transform:uppercase;letter-spacing:.06em">
-          <span>Sýni ${totalRows ? (p0 + 1) : 0}–${Math.min(p0 + PER, totalRows)} af ${totalRows}</span>
-          <div style="margin-left:auto;display:flex;gap:8px">
-            <button id="_ars-pgprev" type="button" ${state._page <= 1 ? 'disabled style="' + pgBtn + ';opacity:.45;cursor:default"' : 'style="' + pgBtn + '"'}>Fyrri</button>
-            <button id="_ars-pgnext" type="button" ${state._page >= pages ? 'disabled style="' + pgBtn + ';opacity:.45;cursor:default"' : 'style="' + pgBtn + '"'}>Næsta</button>
+        <div class="_tfoot">
+          <span>SÝNI ${totalRows ? (p0 + 1) : 0}–${Math.min(p0 + PER, totalRows)} AF ${totalRows}</span>
+          <div class="_pager">
+            <button id="_ars-pgprev" type="button" ${state._page <= 1 ? 'disabled' : ''}>Fyrri</button>
+            <button id="_ars-pgnext" type="button" ${state._page >= pages ? 'disabled' : ''}>Næsta</button>
           </div>
         </div>
+      </div>
       </div>
     `;
   }
