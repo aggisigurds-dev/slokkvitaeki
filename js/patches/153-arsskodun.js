@@ -1536,6 +1536,13 @@
     main.querySelectorAll('._ars-st').forEach(b => b.addEventListener('click', () => {
       state.status = b.dataset.status; saveState(); render();
     }));
+    // Síðuskipting töflunnar (Fyrri/Næsta) — skruna efst á töfluna eftir flettingu.
+    const pgPrev = main.querySelector('#_ars-pgprev');
+    const pgNext = main.querySelector('#_ars-pgnext');
+    const pgGo = d => { state._page = Math.max(1, (state._page || 1) + d); render();
+      try { const t = document.querySelector('._ars-tblscroll'); if (t) t.scrollIntoView({ block: 'start', behavior: 'smooth' }); } catch (_) {} };
+    if (pgPrev && !pgPrev.disabled) pgPrev.addEventListener('click', () => pgGo(-1));
+    if (pgNext && !pgNext.disabled) pgNext.addEventListener('click', () => pgGo(1));
     // 2026-08-17: „N slepptir faldir"-textinn (haus + fótur) er smellanlegur og
     // stekkur beint í 🟡 Slepptir-sýnina þar sem má yfirfara og virkja aftur.
     main.querySelectorAll('._ars-goskip').forEach(el => el.addEventListener('click', (e) => {

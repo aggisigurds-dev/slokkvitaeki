@@ -208,10 +208,20 @@
       if (!tbl || !tbl.querySelector('tr._ars-row')) return;      // only the árskoðun table
       if (htr.querySelector('th[data-yrcol]')) return;            // already done this render
       // 2026-08-17: Nóta-dálkurinn (153, th[data-notacol]) situr næst á eftir
-      // nafninu — árs-dálkarnir hliðra sér þá um eitt sæti til hægri.
+      // nafninu — árs-dálkarnir hliðra sér þá um eitt sæti til hægri, og fá
+      // EINN samhaus „Skoðanir · skjöl" (colspan=4) eins og mockupið, í stað
+      // fjögurra '23–'26 hausa. Röð-reitirnir eru áfram fjórir undir honum.
       let ref = htr.children[1] || null;
-      if (ref && ref.getAttribute && ref.getAttribute('data-notacol')) ref = htr.children[2] || null;
-      YEARS.forEach(y => {
+      const hasNota = !!(ref && ref.getAttribute && ref.getAttribute('data-notacol'));
+      if (hasNota) ref = htr.children[2] || null;
+      if (hasNota) {
+        const th = document.createElement('th');
+        th.setAttribute('data-yrcol', '1');
+        th.colSpan = YEARS.length;
+        th.style.cssText = "padding:10px 5px;text-align:center;font-weight:700;font-size:9.5px;letter-spacing:.07em;text-transform:uppercase;font-family:'Space Mono',monospace";
+        th.textContent = 'Skoðanir · skjöl';
+        htr.insertBefore(th, ref);
+      } else YEARS.forEach(y => {
         const th = document.createElement('th');
         th.setAttribute('data-yrcol','1');
         th.style.cssText = "padding:9px 5px;text-align:center;color:#9A9CA2;font-weight:700;font-size:10px;font-family:'Space Mono',monospace;text-transform:none;letter-spacing:0";
