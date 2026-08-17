@@ -268,7 +268,16 @@
       const customOrder = getCustomOrder();
       const activeOrder = customOrder || ORDER;
       const isCustom = !!customOrder;
-      const hiddenRaw = getHidden();
+      // 2026-08-17: afrit (ekki lifandi settings-fylkið) + samband beggja
+      // falda-lista — sidebar_hidden (módallinn hér) OG utlit.hidden_nav_views
+      // (gamla stillingasíðan, patch 86/88) — svo hvorugt kerfið af-feli það
+      // sem hitt faldi. Rótin að „Brunakerfisþjónusta/Verkdagbók popping up":
+      // 88 núllstillti display á öllu sem var ekki í HANS lista.
+      const hiddenRaw = getHidden().slice();
+      try {
+        const u = (window.AppSettings && AppSettings.path && AppSettings.path('utlit')) || {};
+        (u.hidden_nav_views || []).forEach(h => { if (hiddenRaw.indexOf(h) === -1) hiddenRaw.push(h); });
+      } catch (_) {}
       // Set of every real data-view id present. A hidden entry that IS a data-view
       // id (e.g. "yfirlit") must match ONLY its own button by id — never loosely
       // by label substring, which is what wrongly hid "Kröfu yfirlit" and

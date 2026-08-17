@@ -195,7 +195,7 @@
         `<div class="cw-col-title" style="font-size:11px;font-weight:700;color:${titleCol};text-transform:uppercase;letter-spacing:.06em">${esc(title)}</div>` +
         `<div class="cw-col-sub" style="font-size:10px;color:#94a3b8;margin-top:1px">${esc(sub)}</div>` +
       '</div>' +
-      `<div style="overflow-y:auto;padding:6px;flex:1;min-height:0">${body}</div>` +
+      `<div class="cw-col-scroll" style="overflow-y:auto;padding:6px;flex:1;min-height:0">${body}</div>` +
     '</div>';
   }
 
@@ -477,7 +477,7 @@
         `<div class="cw-col-title" style="font-size:12px;font-weight:700;color:${titleCol};text-transform:uppercase;letter-spacing:.06em">${esc(title)}</div>` +
         `<div class="cw-col-sub" style="font-size:11px;color:#94a3b8;margin-top:2px">${esc(sub)}</div>` +
       '</div>' +
-      `<div style="overflow-y:auto;padding:8px;flex:1;min-height:0">${body}</div>` +
+      `<div class="cw-col-scroll" style="overflow-y:auto;padding:8px;flex:1;min-height:0">${body}</div>` +
     '</div>';
   }
 
@@ -1024,7 +1024,20 @@
 
     Counter.expandedCos = Counter.expandedCos || {};
     Counter.search = Counter.search || '';
-    Counter.render = counterRender;
+    // 2026-08-17 (Agnar: „If I try to open a bundle client with many tæki I
+    // jump upp the list and have to go back down"): innerHTML-endurteiknunin
+    // núllstillti scroll-stöðu dálkanna svo listinn stökk efst við að opna hóp,
+    // refresh o.fl. Geymum scrollTop hvers dálks (eftir röð) yfir hverja render.
+    function preserveColScroll(viewId, renderFn) {
+      return function () {
+        const sel = '#' + viewId + ' .cw-col .cw-col-scroll';
+        const pos = Array.from(document.querySelectorAll(sel)).map(el => el.scrollTop || 0);
+        const r = renderFn.apply(this, arguments);
+        document.querySelectorAll(sel).forEach((el, i) => { if (pos[i]) el.scrollTop = pos[i]; });
+        return r;
+      };
+    }
+    Counter.render = preserveColScroll('view-counter', counterRender);
     Counter.toggleCo = function(key) { Counter.expandedCos[key] = !Counter.expandedCos[key]; Counter.render(); };
     // 2026-06-20: Afgreiðsla customer search. Re-render then restore focus +
     // caret so typing isn't interrupted by the innerHTML rebuild.
@@ -1149,7 +1162,7 @@
     Counter.renderList = function() { /* legacy stub �?" render() now drives this */ };
 
     Workshop.expandedCos = Workshop.expandedCos || {};
-    Workshop.render = workshopRender;
+    Workshop.render = preserveColScroll('view-workshop', workshopRender);
     Workshop.toggleCo   = function(key) { Workshop.expandedCos[key] = !Workshop.expandedCos[key]; Workshop.render(); };
     Workshop.openDetail = function() { const m = document.getElementById('workshop-detail-modal'); if (m) m.style.display = 'flex'; };
     Workshop.closeDetail= function() { const m = document.getElementById('workshop-detail-modal'); if (m) m.style.display = 'none'; Workshop.sel = null; };

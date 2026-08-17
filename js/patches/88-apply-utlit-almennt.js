@@ -14,9 +14,14 @@
   function applyHiddenNav(s) {
     const u = (s && s.utlit) || (window.AppSettings && window.AppSettings.path('utlit')) || {};
     const hidden = new Set(u.hidden_nav_views || []);
+    // 2026-08-17 (Agnar: „Brunakerfisþjónusta og Verkdagbók always popping up"):
+    // HIDE-ONLY. Áður núllstillti þetta display á ÖLLUM tökkum sem voru ekki í
+    // þessum (gamla) lista — og reif þar með upp takka sem hliðarstiku-módallinn
+    // (68, sidebar_hidden) hafði falið, í hvert sinn sem AppSettings breyttist.
+    // Patch 68 á sýnileikann (og les nú BÁÐA listana); hér er aðeins falið.
+    if (!hidden.size) return;
     document.querySelectorAll('.vnav-btn[data-view]').forEach(btn => {
-      const v = btn.getAttribute('data-view');
-      btn.style.display = hidden.has(v) ? 'none' : '';
+      if (hidden.has(btn.getAttribute('data-view'))) btn.style.display = 'none';
     });
   }
   function applyCompact(s) {
