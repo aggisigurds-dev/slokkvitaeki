@@ -791,8 +791,21 @@
 
     try {
       const doc = win.document;
+      // 2026-08-17 (Agnar): gluggatitillinn er sjálfgefna skráarheitið í
+      // „Save as"/prenta-í-PDF — Fyrirtæki - Heimilisfang - kt - R-númer - Ár
+      // (var „Reikningur R-000754"). Tilboð/kredit halda gamla forminu.
+      const _tc = ctx.customer || {};
+      const _bits = [
+        String(_tc.nafn || ctx.customerName || '').trim(),
+        String(_tc.heimilisfang || '').split(/[,\n]/)[0].trim(),   // gatan ein — ekki póstnr/staður
+        String(_tc.kennitala || '').trim(),
+        String(ctx.invoiceNum || '').trim(),
+        (String(ctx.dateStr || '').match(/(\d{4})/) || [])[1] || ''
+      ].filter(Boolean);
       const docTitle = ctx.isTilbod ? ('Tilboð ' + ctx.invoiceNum)
-        : (ctx.isCredit ? 'Kreditreikningur ' : 'Reikningur ') + ctx.invoiceNum;
+        : ctx.isCredit ? ('Kreditreikningur ' + ctx.invoiceNum)
+        : _bits.length > 1 ? _bits.join(' - ').replace(/[\\/:*?"<>|]/g, '')
+        : ('Reikningur ' + ctx.invoiceNum);
       doc.open();
       doc.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(docTitle)}</title><style>${CSS}</style></head><body>${buildHTML(ctx)}</body></html>`);
       doc.close();
