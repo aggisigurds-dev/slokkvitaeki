@@ -425,13 +425,13 @@
     const services = await loadServices();
     const tripState = loadTripState(coId);
     // 2026-05-19: defaults for in-service Fyrirtækjaþjónustu customers —
-    //   Akstur:      3000 kr ex VSK (× 1 — multiplier 2 = 6000)
-    //   Skýrslugerð: 3500 kr ex VSK
+    //   Akstur:      3600 kr ex VSK (× 1 — multiplier 2 = 7200) [3600 frá 2026-08-17, var 3000]
+    //   Skýrslugerð: 5600 kr ex VSK [5600 frá 2026-08-17, var 3500]
     // Only seeded when the entry is brand new (=== undefined). User can
     // clear them to 0 in the inputs if not applicable for a given trip.
-    const driveCost      = (tripState.drive      != null) ? Number(tripState.drive)      : 3000;
+    const driveCost      = (tripState.drive      != null) ? Number(tripState.drive)      : 3600;
     const driveQty       = (tripState.driveQty   != null) ? Math.max(0, Number(tripState.driveQty)) : 1;
-    const skyrslugerdEx  = (tripState.skyrslugerd != null) ? Number(tripState.skyrslugerd) : 3500;
+    const skyrslugerdEx  = (tripState.skyrslugerd != null) ? Number(tripState.skyrslugerd) : 5600;
     // 2026-06: afsláttur (%) á heildina — dregst af án-vsk og vsk hlutfallslega.
     // 2026-07-29 (Agnar: „sjálfvirkur afsláttur kemur heldur ekki inn þar"):
     // fyrirtæki með fastan afslátt (fyrirtaeki.afslattur_pct — settur á
@@ -824,6 +824,41 @@
     const _td = new Date();
     const todayDDMM = String(_td.getDate()).padStart(2, '0') + '.' +
       String(_td.getMonth() + 1).padStart(2, '0') + '.' + _td.getFullYear();
+    // 2026-08-17 (ósk Agnars): valmöguleikar á reitina þrjá í stað blinds
+    // innsláttar — mánuðurinn býður líðandi + tvo síðustu, starfsmenn fasta
+    // listann (+ AppSettings.starfsmenn), dagsetningin „í dag" og síðasta dag
+    // skráða skoðunarmánaðarins. Native <datalist> — birtist við smell/fókus.
+    const MONTHS_IS = ['Janúar','Febrúar','Mars','Apríl','Maí','Júní','Júlí','Ágúst','September','Október','Nóvember','Desember'];
+    const _mNow = _td.getMonth(), _yNow = _td.getFullYear();
+    let monthOpts = '';
+    for (let k = 0; k < 3; k++) {
+      const ix = (_mNow - k + 12) % 12;
+      const yr = _mNow - k < 0 ? _yNow - 1 : _yNow;
+      monthOpts += '<option value="' + MONTHS_IS[ix] + '" label="' + MONTHS_IS[ix] + ' ' + yr + '"></option>';
+    }
+    const STAFF = ['Hákon', 'Agnar', 'Binni', 'Andri', 'Elías'];
+    try {
+      const extra = (window.AppSettings && AppSettings.path && AppSettings.path('starfsmenn')) || [];
+      extra.forEach(s => { const n = s && String(s.name || '').trim(); if (n && STAFF.indexOf(n) < 0) STAFF.push(n); });
+    } catch (_) {}
+    const staffOpts = STAFF.map(n => '<option value="' + esc(n) + '"></option>').join('');
+    // Dagsetningar-tillögur: í dag + síðasti dagur skráða mánaðarins (skodun_ym
+    // er nákvæmast; annars mánaðarnafnið; sé hann líðandi mánuður er „í dag" nóg).
+    let dagsOpts = '<option value="' + todayDDMM + '" label="í dag"></option>';
+    (function () {
+      let ym = /^(\d{4})-(\d{2})$/.exec(String(tripState.skodun_ym || ''));
+      let y = ym ? +ym[1] : _yNow, mIx = ym ? (+ym[2] - 1) : -1;
+      if (mIx < 0) {
+        const lbl = String(skodunManudur || '').trim().toLowerCase();
+        mIx = MONTHS_IS.findIndex(m => m.toLowerCase() === lbl);
+        if (mIx > _mNow) y = _yNow - 1;   // t.d. „Desember" valinn í janúar
+      }
+      if (mIx >= 0 && !(y === _yNow && mIx === _mNow)) {
+        const last = new Date(y, mIx + 1, 0).getDate();
+        dagsOpts += '<option value="' + String(last).padStart(2, '0') + '.' + String(mIx + 1).padStart(2, '0') + '.' + y +
+          '" label="síðasti dagur ' + MONTHS_IS[mIx].toLowerCase() + '"></option>';
+      }
+    })();
     section.innerHTML =
       '<div style="background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;border-radius:12px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 6px 16px -10px rgba(0,0,0,.6)">' +
         '<div style="font-size:13px;font-weight:800;letter-spacing:.06em;display:flex;align-items:center;gap:7px">🧾 REIKNINGUR</div>' +
@@ -836,18 +871,21 @@
       // mjóa hægri-dálkinum ("boxes don't line up"). Takkar fá sína eigin röð.
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">' +
         '<label style="display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">🧑 Skoðunaraðili' +
-          '<input id="_ctc-skodun" type="text" value="' + esc(skodunaradili) + '" placeholder="t.d. Elías" ' +
+          '<input id="_ctc-skodun" type="text" list="_ctc-skodun-dl" value="' + esc(skodunaradili) + '" placeholder="t.d. Elías" ' +
             'style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;font-weight:400;text-transform:none;letter-spacing:normal;color:#0f172a;background:#fff">' +
         '</label>' +
         '<label style="display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">📅 Framkvæmd' +
-          '<input id="_ctc-manudur" type="text" value="' + esc(skodunManudur) + '" placeholder="t.d. Maí" ' +
+          '<input id="_ctc-manudur" type="text" list="_ctc-manudur-dl" value="' + esc(skodunManudur) + '" placeholder="t.d. Maí" ' +
             'style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;font-weight:400;text-transform:none;letter-spacing:normal;color:#0f172a;background:#fff">' +
         '</label>' +
         '<label style="display:flex;flex-direction:column;gap:3px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em">Dags.' +
-          '<input id="_ctc-dags" type="text" value="' + esc(skodunDags) + '" placeholder="' + esc(todayDDMM) + '" ' +
+          '<input id="_ctc-dags" type="text" list="_ctc-dags-dl" value="' + esc(skodunDags) + '" placeholder="' + esc(todayDDMM) + '" ' +
             'style="width:100%;box-sizing:border-box;padding:7px 9px;border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:13px;font-weight:400;text-transform:none;letter-spacing:normal;color:#0f172a;background:#fff">' +
         '</label>' +
       '</div>' +
+      '<datalist id="_ctc-skodun-dl">' + staffOpts + '</datalist>' +
+      '<datalist id="_ctc-manudur-dl">' + monthOpts + '</datalist>' +
+      '<datalist id="_ctc-dags-dl">' + dagsOpts + '</datalist>' +
       // 2026-06-22: skipa takkana eins og á mockup-inu — stóri græni Úttektar-
       // skýrslu-takkinn LEFT (flex:1), Vista óklárað RIGHT (flex:0 0 auto, mjór).
       '<div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">' +
@@ -955,6 +993,13 @@
       const onManudur = () => {
         const st = loadTripState(coId);
         st.skodun_manudur = manudurInp.value;
+        // Halda skodun_ym í takt — „Merkja skoðun"-mánaðarveljarinn (00-legacy)
+        // les hann fram yfir nafnið, svo reitirnir tveir mega aldrei ósammælast.
+        const _ix = MONTHS_IS.findIndex(m => m.toLowerCase() === String(manudurInp.value).trim().toLowerCase());
+        if (_ix >= 0) {
+          const _y = _ix > _mNow ? _yNow - 1 : _yNow;
+          st.skodun_ym = _y + '-' + String(_ix + 1).padStart(2, '0');
+        }
         saveTripState(coId, st);
       };
       manudurInp.addEventListener('input', onManudur);

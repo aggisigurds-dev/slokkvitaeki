@@ -377,10 +377,17 @@
   // leiðrétt þaðan. Nú bera þær `data-yr` og deila NÁKVÆMLEGA sama fact-check
   // ástandi og árs-hausinn (`.sk-yr`) — tvísmellur hringar
   // ekkert → ✓ staðfest → 🟠 skýrsla vantar → ekkert.
-  function pill(y, hasReport, fcStat, note){
+  // 2026-08-17 (ósk Agnars: „Láta þetta verða grænt þegar ég er búinn að gera
+  // bæði"): árið verður GRÆNT sjálfkrafa þegar BÆÐI skýrsla og reikningur eru
+  // á skrá (sama regla og ✓ FULLBÚIÐ á þjónustukortinu og '_yr both' á
+  // listanum). Skjölin eru staðreyndir og tromma því gap/claude-flögg;
+  // handvirk staðfesting (glóandi grænt) heldur sínu útliti ofar öllu.
+  function pill(y, hasReport, fcStat, note, hasInv){
     var cls=hasReport?'ok':(y===NOW?'now':'none');
-    if(fcStat==='human') cls+=' done'; else if(fcStat==='claude') cls+=' claude'; else if(fcStat==='gap') cls+=' gap';
+    var both=!!(hasReport&&hasInv);
+    if(fcStat==='human') cls+=' done'; else if(both) cls+=' both'; else if(fcStat==='claude') cls+=' claude'; else if(fcStat==='gap') cls+=' gap';
     var tip=fcStat==='human'?(y+' — ✓ staðfest handvirkt (grænt) — tvísmelltu fyrir 🟠 „skýrsla vantar"')
+      :both?(y+' — ✓ fullbúið: skýrsla OG reikningur á skrá — tvísmelltu til að staðfesta handvirkt')
       :fcStat==='claude'?(y+' — 🔵 blátt: úttekt gerð / yfirfarið, skýrsla vantar'+(note?(': '+note):'')+' — tvísmelltu til að hreinsa (sjálfvirk staða)')
       :fcStat==='gap'?(y+' — 🟠 '+(note||'skýrsla vantar')+' — tvísmelltu fyrir 🔵 „úttekt gerð, skýrsla vantar"')
       :(hasReport?(y+' — skýrsla á skrá — tvísmelltu til að yfirtaka handvirkt (grænt → gult → blátt → sjálfvirkt)')
@@ -711,7 +718,7 @@
     var YEARS=Object.keys(ySet).map(Number).sort(function(a,b){return b-a;});
 
     // ── status pills ──
-    var pills=YEARS.map(function(y){ return pill(y, (repByY[y]||[]).length>0, fcStatus(coId,y), fcNote(coId,y)); }).join('');
+    var pills=YEARS.map(function(y){ return pill(y, (repByY[y]||[]).length>0, fcStatus(coId,y), fcNote(coId,y), (invByY[y]||[]).length>0); }).join('');
     var monthInfo = await loadInspectMonth(coId, baseId);
     section._monthInfo = monthInfo;
 
@@ -878,8 +885,10 @@
     }
     var yearBlocks=YEARS.map(function(y){
       var cur=(y===YEARS[0]); var st=fcStatus(coId,y);
-      var ycls='sk-yr'+(st==='human'?' sk-yr-ok':st==='claude'?' sk-yr-claude':st==='gap'?' sk-yr-gap':'')+(cur&&!st?' sk-yr-now':'');
-      var mark=st==='human'?'✓ ':st==='claude'?'🔵 ':st==='gap'?'🟠 ':'';
+      // Bæði skjölin til → árshausinn grænn líka (sama regla og pillan).
+      var yBoth=(repByY[y]||[]).length>0 && (invByY[y]||[]).length>0;
+      var ycls='sk-yr'+(st==='human'?' sk-yr-ok':yBoth?' sk-yr-ok':st==='claude'?' sk-yr-claude':st==='gap'?' sk-yr-gap':'')+(cur&&!st&&!yBoth?' sk-yr-now':'');
+      var mark=st==='human'?'✓ ':yBoth?'✓ ':st==='claude'?'🔵 ':st==='gap'?'🟠 ':'';
       var ttl=st==='human'?('✓ Staðfest '+y+' — tvísmelltu til að merkja „skýrsla vantar" (🟠)')
              :st==='claude'?('Claude yfirfór'+(fcNote(coId,y)?(': '+fcNote(coId,y)):'')+' — tvísmelltu til að staðfesta')
              :st==='gap'?((fcNote(coId,y)||'Skýrsla vantar')+' — tvísmelltu til að fjarlægja flagg')
@@ -1362,6 +1371,8 @@
       '.sk-pill.now{border-color:var(--brd);background:var(--surface2);color:var(--brand)}.sk-pill.now::before{background:var(--brand)}',
       '.sk-pill.none{opacity:.55}',
       // Glóandi grænn = handvirkt staðfest (human).
+      '.sk-pill.both{border-color:#16a34a;background:#dcfce7;color:#14532d}',
+      '.sk-pill.both::before{background:#16a34a}',
       '.sk-pill.done{border-color:#16a34a;background:#dcfce7;color:#14532d;box-shadow:0 0 0 1px rgba(22,163,74,.25)}',
       '.sk-pill.done::before{background:#16a34a;box-shadow:0 0 6px 1.5px rgba(22,163,74,.9);animation:sk-glow 1.6s ease-in-out infinite}',
       '@keyframes sk-glow{0%,100%{box-shadow:0 0 5px 1px rgba(22,163,74,.75)}50%{box-shadow:0 0 8px 2.5px rgba(22,163,74,1)}}',
