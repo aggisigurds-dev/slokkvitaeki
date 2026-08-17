@@ -2296,6 +2296,11 @@
     s.id = '_ars-mock-css';
     const V = '#view-arsskodun ';
     s.textContent = [
+      // 245 (Brunastál content-skin) málar `.view table th` ljósgrá með
+      // !important — dökka málm-bandið úr designinu þarf sama vopn hér.
+      V+'.data-table thead tr{background:linear-gradient(180deg,#3a3d45 0%,#2a2d33 45%,#1b1d22 100%)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -1px 0 #000!important}',
+      V+'.data-table th{background:transparent!important;color:#f0f2f5!important;text-shadow:0 1px 1px rgba(0,0,0,.4)!important;border:0!important;text-transform:uppercase!important;font-weight:700!important}',
+      V+'.data-table .sort-ar{color:rgba(255,255,255,.5)!important}',
       V+'.data-table th{padding:11px 12px;font-size:10.5px;letter-spacing:.15em}',
       V+'.data-table tbody td{padding:7px 12px;border-top:1px solid #eceff4;line-height:1.25;height:44px;white-space:nowrap;font-size:13px}',
       V+'.data-table tbody tr:hover{background:#f7f9fd}',
