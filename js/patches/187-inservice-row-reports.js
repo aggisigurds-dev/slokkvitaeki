@@ -379,11 +379,14 @@
   });
 
   // 2026-08-11 (ósk Agnars — „Manual override"): TVÍSMELLUR á árs-reit í
-  // listanum hringar fact-check ársins beint héðan, án þess að opna kúnnasíðuna:
-  //   ekkert → ✓ staðfest (grænt) → 🟠 skýrsla vantar → ekkert
+  // listanum hringar fact-check ársins beint héðan, án þess að opna kúnnasíðuna.
+  // 2026-08-17 (Agnar: „toggle the status. green yellow, blue"): blátt bætt í
+  // hringinn — handmerkið fyrir „úttekt gerð / yfirfarið en skýrsla vantar":
+  //   ekkert → ✓ staðfest (grænt) → 🟠 skýrsla vantar (gult) → 🔵 blátt → ekkert
   // 'gap' er RÍKJANDI í litun reitsins, svo þetta er leiðin til að slökkva á
-  // ranglega grænu ári. Sama `year_factcheck`-tafla og kúnnasíðan (patch 199)
-  // skrifar í — ein staða, tvær leiðir að henni.
+  // ranglega grænu ári. Sama `year_factcheck`-tafla og NÁKVÆMLEGA sami hringur
+  // og STAÐA EFTIR ÁRI-pillurnar á kúnnasíðunni (patch 199 fcToggle) — ein
+  // staða, tvær leiðir að henni; yfirskrift á öðrum staðnum birtist á hinum.
   document.addEventListener('dblclick', async e => {
     const cell = e.target.closest('._yr-add, ._yr-att, td[data-yrcell] a');
     if (!cell) return;
@@ -400,7 +403,7 @@
     e.preventDefault(); e.stopPropagation();
     const sb = window.DB && DB.sb; if (!sb) return;
     const cur = fcStat(coId, year);
-    const next = cur === 'human' ? 'gap' : (cur === 'gap' ? null : 'human');
+    const next = cur === 'human' ? 'gap' : (cur === 'gap' ? 'claude' : (cur === 'claude' ? null : 'human'));
     try {
       if (next === null) {
         const r = await sb.from('year_factcheck').delete().eq('co_id', +coId).eq('year', +year);
@@ -408,7 +411,9 @@
       } else {
         const r = await sb.from('year_factcheck').upsert({
           co_id: +coId, year: +year, status: next,
-          note: next === 'gap' ? 'Merkt handvirkt: skýrsla vantar' : null,
+          note: next === 'gap' ? 'Merkt handvirkt: skýrsla vantar'
+              : next === 'claude' ? 'Merkt handvirkt: úttekt gerð — skýrsla vantar'
+              : null,
           updated_at: new Date().toISOString()
         }, { onConflict: 'co_id,year' });
         if (r.error) throw r.error;
@@ -424,7 +429,8 @@
       try { if (window.Toast && Toast.show) Toast.show(
         next === 'gap' ? '🟠 ' + year + ' merkt: skýrsla vantar'
         : next === 'human' ? '✓ ' + year + ' staðfest'
-        : '↺ ' + year + ' flagg hreinsað'); } catch (_) {}
+        : next === 'claude' ? '🔵 ' + year + ' merkt: úttekt gerð — skýrsla vantar'
+        : '↺ ' + year + ' flagg hreinsað — sjálfvirk staða'); } catch (_) {}
     } catch (err) { alert('Náði ekki að vista: ' + ((err && (err.message || err.hint)) || err)); }
   });
 

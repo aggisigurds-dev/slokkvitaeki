@@ -374,10 +374,10 @@
   function pill(y, hasReport, fcStat, note){
     var cls=hasReport?'ok':(y===NOW?'now':'none');
     if(fcStat==='human') cls+=' done'; else if(fcStat==='claude') cls+=' claude'; else if(fcStat==='gap') cls+=' gap';
-    var tip=fcStat==='human'?(y+' — ✓ staðfest handvirkt — tvísmelltu til að merkja „skýrsla vantar"')
-      :fcStat==='claude'?(y+' — 🔵 Claude yfirfór'+(note?(': '+note):'')+' — tvísmelltu til að staðfesta')
-      :fcStat==='gap'?(y+' — 🟠 '+(note||'skýrsla vantar')+' — tvísmelltu til að fjarlægja flagg')
-      :(hasReport?(y+' — skýrsla á skrá — tvísmelltu til að yfirtaka handvirkt')
+    var tip=fcStat==='human'?(y+' — ✓ staðfest handvirkt (grænt) — tvísmelltu fyrir 🟠 „skýrsla vantar"')
+      :fcStat==='claude'?(y+' — 🔵 blátt: úttekt gerð / yfirfarið, skýrsla vantar'+(note?(': '+note):'')+' — tvísmelltu til að hreinsa (sjálfvirk staða)')
+      :fcStat==='gap'?(y+' — 🟠 '+(note||'skýrsla vantar')+' — tvísmelltu fyrir 🔵 „úttekt gerð, skýrsla vantar"')
+      :(hasReport?(y+' — skýrsla á skrá — tvísmelltu til að yfirtaka handvirkt (grænt → gult → blátt → sjálfvirkt)')
         :(y===NOW?(y+' — í vinnslu — tvísmelltu til að staðfesta'):(y+' — engin skýrsla — tvísmelltu til að staðfesta')));
     return '<span class="sk-pill '+cls+'" data-yr="'+y+'" title="'+esc(tip)+'">'+String(y).slice(2)+'</span>';
   }
@@ -502,16 +502,18 @@
       try{ document.dispatchEvent(new Event('attachment-year-changed')); }catch(_){}
     }catch(e){ alert('Villa: '+(e.message||e)); }
   }
-  // Tvísmella hringar í ÞREMUR stigum (2026-08-11, Agnar: „I cant make it not
-  // green"). Áður komst maður aldrei í 'gap' handvirkt — aðeins Claude gat sett
-  // það — svo rangt grænt ár var ekki hægt að leiðrétta úr viðmótinu. Nú:
-  //   ekkert/blátt → 'human' (✓ staðfest)  →  'gap' (🟠 skýrsla vantar)  →  hreinsa
-  // 'gap' er nú líka RÍKJANDI í árs-dálkunum (patch 187), svo þetta slekkur
-  // ranglega grænt ár strax.
+  // Tvísmella hringar nú í FJÓRUM stigum (2026-08-17, Agnar: „double click …
+  // to toggle the status. green yellow, blue"). Blátt varð handvirkt aðgengilegt
+  // — áður gat aðeins Claude sett 'claude'; nú er það líka handmerkið fyrir
+  // „úttekt gerð / yfirfarið en skýrsla vantar":
+  //   ekkert → 'human' (✓ grænt) → 'gap' (🟠 gult) → 'claude' (🔵 blátt) → hreinsa
+  // SAMI hringur og í árs-dálkum listans (patch 187, sama year_factcheck-tafla)
+  // svo yfirskrift héðan breytir reitnum á Fyrirtæki í þjónustu og öfugt.
   async function fcToggle(coId,y){
     var st=fcStatus(coId,y);
     if(st==='human')      await fcSet(coId,y,'gap','Merkt handvirkt: skýrsla vantar');
-    else if(st==='gap')   await fcClear(coId,y);
+    else if(st==='gap')   await fcSet(coId,y,'claude','Merkt handvirkt: úttekt gerð — skýrsla vantar');
+    else if(st==='claude')await fcClear(coId,y);
     else                  await fcSet(coId,y,'human',null);
   }
   // Einu sinni: flytja gömlu AppSettings-grænin (patch #465) yfir í töfluna.
