@@ -1263,13 +1263,13 @@
 
   window.recomputeCompanyTotalCost = () => { _lastKey = ''; return maybeRender(); };
 
+  // 2026-08-17: observerinn tengist companies-main AFTUR ef viewið endursmíðar
+  // nóðuna — gamli hlustaði á aftengda nóðu og þagnaði (sama rót og hjá 165).
   function attach() {
-    const main = document.getElementById('companies-main');
-    const view = document.getElementById('view-companies');
-    if (!main || !view) { setTimeout(attach, 800); return; }
-    let _t = 0;
-    new MutationObserver((muts) => {
-      if (!view.classList.contains('active')) return;
+    let observed = null, _t = 0;
+    const obs = new MutationObserver((muts) => {
+      const view = document.getElementById('view-companies');
+      if (!view || !view.classList.contains('active')) return;
       const allOurs = muts.every(m => {
         const t = m.target;
         return t && (t.id === '_ctc-section' || (t.closest && t.closest('#_ctc-section')));
@@ -1277,12 +1277,22 @@
       if (allOurs) return;
       clearTimeout(_t);
       _t = setTimeout(maybeRender, 400);
-    }).observe(main, { childList: true, subtree: true });
+    });
+    function ensure() {
+      const main = document.getElementById('companies-main');
+      if (main && main !== observed) {
+        try { obs.disconnect(); } catch (_) {}
+        obs.observe(main, { childList: true, subtree: true });
+        observed = main;
+      }
+    }
+    ensure();
     setTimeout(maybeRender, 1500);
     // Öryggisventill: maybeRender er nær ókeypis þegar allt er á sínum stað
     // (key-samanburður + getElementById) — púlsinn tryggir að blokkin jafni
     // sig innan ~2,5s þótt allar kveikjur klikki (belti OG axlabönd).
     setInterval(function () {
+      ensure();
       const v = document.getElementById('view-companies');
       if (v && v.classList.contains('active')) maybeRender();
     }, 2500);

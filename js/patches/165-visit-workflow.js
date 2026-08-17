@@ -637,15 +637,32 @@
 
   function injectAll() { injectButtons(); injectTopButton(); }
 
+  // 2026-08-17 („I cant check out"): observerinn var tengdur á companies-main
+  // EINU SINNI við ræsingu — þegar viewið endursmíðar nóðuna hlustar hann á
+  // aftengda nóðu og takkarnir koma aldrei aftur eftir að 129 endurbyggir
+  // _ctc-section. Nú er nóðan endur-tengd um leið og hún skiptist út, plús
+  // 2,5s öryggispúls (injectAll er ódýrt no-op þegar allt er á sínum stað).
   function attach() {
-    const main = document.getElementById('companies-main');
-    if (!main) { setTimeout(attach, 800); return; }
-    let _t = 0;
-    new MutationObserver(() => {
+    let observed = null, _t = 0;
+    const obs = new MutationObserver(() => {
       clearTimeout(_t);
       _t = setTimeout(injectAll, 350);
-    }).observe(main, { childList: true, subtree: true });
-    injectAll();
+    });
+    function ensure() {
+      const main = document.getElementById('companies-main');
+      if (main && main !== observed) {
+        try { obs.disconnect(); } catch (_) {}
+        obs.observe(main, { childList: true, subtree: true });
+        observed = main;
+        injectAll();
+      }
+    }
+    ensure();
+    setInterval(() => {
+      ensure();
+      const v = document.getElementById('view-companies');
+      if (v && v.classList.contains('active')) injectAll();
+    }, 2500);
   }
   attach();
 
