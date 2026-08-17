@@ -1,11 +1,10 @@
 /* === 230-brunastal-theme.js — „🔥 Brunastál" dark-metallic POS theme =========
  *
- * High-fidelity recreation of the uploaded “Dark Metallic POS Theme” handoff,
- * wired into the app's own Útlit theme system (patch 220) as a preset called
- * `brunastal`. It is OPT-IN: nothing changes until a user picks 🔥 Brunastál in
- * ⚙️ Útlit. Everything keys off `html[data-thm-preset="brunastal"]`, so the whole
- * effect appears/disappears with the preset and is fully reversible (delete this
- * file + its <script> + the preset entry in 220).
+ * High-fidelity recreation of the uploaded “Dark Metallic POS Theme” handoff.
+ * 2026-08-17: this is now the FROZEN base look of the app (see 220) — the old
+ * opt-in preset switching, the ⚙️ Útlit board and the banner accent swatches
+ * are gone. Everything still keys off `html[data-thm-preset="brunastal"]`,
+ * which 220 sets unconditionally on boot.
  *
  * The look (per the design spec):
  *   • a thick brushed-STEEL banner across the top of the content area with the
@@ -15,7 +14,7 @@
  *   • a brushed steel-grey page BACKDROP, WHITE product/document cards;
  *   • metallic-black / accent CONTROLS, brushed tiles, glossy status pills;
  *   • Space Grotesk (UI) · Sora (wordmark) · Space Mono (numbers) fonts;
- *   • a switchable accent — red (default) · blue · gold — via the banner swatches.
+ *   • the red accent (fastur — accent-skiptirinn var fjarlægður 2026-08-17).
  *
  * ROBUSTNESS: the banner is a SINGLE position:fixed element parented to <body>,
  * so it is never destroyed by a view's innerHTML re-render (pos.js owns
@@ -28,37 +27,9 @@
   if (window.__brunastal) return; window.__brunastal = true;
 
   const PRESET = 'brunastal';
-  const ACC_LS = 'brunastal_accent';
-  const PREV_LS = 'bstal_prev_preset';   // remembers the non-brunastal preset to return to
-
-  // ── theme switch (Brunastál ⇄ sjálfgefið) ───────────────────────────────────
-  function curPreset() { return document.documentElement.getAttribute('data-thm-preset') || ''; }
-  // Apply a preset live (Theme API) AND persist it the same way ⚙️ Útlit does
-  // (localStorage 'slokk_theme' + AppSettings 'ui_theme') so the choice sticks
-  // across reloads and syncs across the machines.
-  function setPreset(name) {
-    try {
-      if (window.Theme && typeof Theme.set === 'function') {
-        Theme.set({ preset: name });
-        const st = (Theme.get && Theme.get()) || { preset: name };
-        try { localStorage.setItem('slokk_theme', JSON.stringify(st)); } catch (_) {}
-        try { if (window.AppSettings && AppSettings.save) AppSettings.save({ ui_theme: st }); } catch (_) {}
-      } else {
-        document.documentElement.setAttribute('data-thm-preset', name);
-      }
-    } catch (_) {}
-  }
-  function prevPreset() {
-    let p = 'klassiskt';
-    try { p = localStorage.getItem(PREV_LS) || 'klassiskt'; } catch (_) {}
-    return p === PRESET ? 'klassiskt' : p;
-  }
-  function goDefault() { setPreset(prevPreset()); }      // brunastal → sjálfgefið
-  function goBrunastal() {                               // sjálfgefið → brunastal
-    const c = curPreset();
-    if (c && c !== PRESET) { try { localStorage.setItem(PREV_LS, c); } catch (_) {} }
-    setPreset(PRESET);
-  }
+  // 2026-08-17: þemaskiptirinn (Brunastál ⇄ önnur þemu), accent-kassarnir
+  // (rautt/blátt/gyllt) og 🔥 endurkveikju-flísin eru farin — Brunastál með
+  // rauðum accent er nú frosna grunnútlitið (sjá 220). Borðinn er alltaf á.
   // Nice page titles for the banner (fallback: active nav label, then brand).
   const VIEW_TITLES = {
     sala:'Sala', counter:'Afgreiðsla', workshop:'Verkstæði', field:'Leiðsögn',
@@ -88,18 +59,12 @@
   function styles() {
     if (document.getElementById('bstal-css')) return;
     const css = [
-      /* ── accent variable sets (red default · blue · gold) ───────────────── */
+      /* ── accent variables — rautt, frosið (blátt/gyllt sett fjarlægð 2026-08-17) ── */
       P+'{'
         +'--bstal-accent:#c92a2a; --bstal-accent2:#f0584c; --bstal-ring:rgba(190,32,28,.55); --bstal-glow:rgba(160,16,16,.55);'
         +'--bstal-grad:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);'
         +'--bstal-plate:#eef1f6; --bstal-plate-img:'+PLATE_IMG+';'
       +'}',
-      'html[data-thm-preset="'+PRESET+'"][data-bstal-accent="blue"]{'
-        +'--bstal-accent:#5b86ff; --bstal-accent2:#82a4ff; --bstal-ring:rgba(110,155,255,.55); --bstal-glow:rgba(64,113,240,.5);'
-        +'--bstal-grad:linear-gradient(145deg,#03040a 0%,#0c1730 24%,#1d3c80 48%,#264c9e 56%,#0f2042 78%,#03060d 100%);}',
-      'html[data-thm-preset="'+PRESET+'"][data-bstal-accent="gold"]{'
-        +'--bstal-accent:#d9af52; --bstal-accent2:#e6c578; --bstal-ring:rgba(200,160,80,.55); --bstal-glow:rgba(200,160,80,.46);'
-        +'--bstal-grad:linear-gradient(145deg,#120c03 0%,#332507 22%,#6f5318 44%,#9a7a2c 54%,#5a4314 74%,#181004 100%);}',
 
       /* ── fonts ──────────────────────────────────────────────────────────── */
       P+'body, '+P+'.view, '+P+'.topbar, '+P+'.vnav-btn, '+P+'#bstal-banner{font-family:"Space Grotesk",system-ui,-apple-system,sans-serif}',
@@ -315,9 +280,6 @@
       P+'.modal .btn-primary{background:var(--bstal-grad)!important;border:1px solid var(--bstal-ring)!important;color:#fff!important}',
       /* toasts → dark glossy */
       P+'.toast{background:linear-gradient(180deg,#1c1f25,#0e1014)!important;color:#fff!important;border:1px solid rgba(255,255,255,.08)!important;box-shadow:0 12px 30px -10px rgba(0,0,0,.7)!important}',
-      /* hide the duplicate generic accent dots under Brunastál — the accent lives
-       * in the banner swatches (Cowork §B1: unify accents). */
-      'html[data-thm-preset="'+PRESET+'"] #view-utlit .thm-card:has(#thm-accents){display:none}',
 
       /* ═══ THE STEEL BANNER ═══════════════════════════════════════════════ */
       '#bstal-banner{position:fixed;top:10px;left:calc(var(--sidebar-w,220px) + 14px);right:14px;height:134px;z-index:40;'
@@ -348,14 +310,6 @@
       '#bstal-banner .bb-eyebrow{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.22em;color:rgba(255,178,77,.55)}',
       '#bstal-banner .bb-clock{font-family:"Space Mono",monospace;font-size:28px;font-weight:700;line-height:1.05;color:#ffb24d;font-variant-numeric:tabular-nums;letter-spacing:.5px;text-shadow:0 0 14px rgba(255,160,40,.85);contain:layout style}',
       '#bstal-banner .bb-date{font-size:10px;color:rgba(255,178,77,.5);font-family:"Space Mono",monospace;margin-top:1px;text-transform:uppercase}',
-      '#bstal-banner .bb-sw{display:flex;gap:4px;padding:4px;border-radius:12px;background:#070809;border:1px solid #000;box-shadow:inset 0 2px 6px #000}',
-      '#bstal-banner .bb-sw button{width:28px;height:22px;border-radius:7px;cursor:pointer;padding:0;border:2px solid rgba(255,255,255,.18);opacity:.5;transition:opacity .15s,border-color .15s}',
-      '#bstal-banner .bb-sw button.on{opacity:1;border-color:#fff;box-shadow:0 0 0 2px rgba(255,255,255,.18)}',
-      '#bstal-banner .bb-sw button.red{background:linear-gradient(145deg,#0d0102,#6c0d10 50%,#971515 60%,#100102)}',
-      '#bstal-banner .bb-sw button.blue{background:linear-gradient(145deg,#03040a,#1d3c80 52%,#264c9e 60%,#03060d)}',
-      '#bstal-banner .bb-sw button.gold{background:linear-gradient(145deg,#0d0802,#5c4413 52%,#82661f 60%,#100b03)}',
-      '#bstal-banner .bb-themebtn{display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:11px;cursor:pointer;font-size:18px;line-height:1;border:1px solid #000;background:'+METAL_BLACK+';box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}',
-      '#bstal-banner .bb-themebtn:hover{filter:brightness(1.25)}',
       /* ember underglow bleeding below the banner */
       '#bstal-ember{position:fixed;top:146px;left:calc(var(--sidebar-w,220px) + 8%);right:8%;height:60px;z-index:39;pointer-events:none;'
         +'background:radial-gradient(62% 100% at 50% 0%,rgba(255,110,30,.32),rgba(255,80,20,.08) 55%,transparent 76%);filter:blur(13px);display:none;'
@@ -374,8 +328,7 @@
   // ── the banner element ──────────────────────────────────────────────────────
   function buildBanner() {
     if (document.getElementById('bstal-banner')) return;
-    const acc = localStorage.getItem(ACC_LS) || 'red';
-    document.documentElement.setAttribute('data-bstal-accent', acc);
+    document.documentElement.setAttribute('data-bstal-accent', 'red');
     const b = document.createElement('div');
     b.id = 'bstal-banner';
     b.innerHTML =
@@ -388,12 +341,6 @@
           '<div class="bb-word">SLÖKKVITÆKI <b>EHF.</b></div>'+
         '</div>'+
         '<div class="bb-rightwrap">'+
-          '<div class="bb-sw" id="bstal-sw">'+
-            '<button class="blue'+(acc==='blue'?' on':'')+'" data-acc="blue" title="Blátt"></button>'+
-            '<button class="red'+(acc==='red'?' on':'')+'" data-acc="red" title="Rautt"></button>'+
-            '<button class="gold'+(acc==='gold'?' on':'')+'" data-acc="gold" title="Gyllt"></button>'+
-          '</div>'+
-          '<button class="bb-themebtn" id="bstal-themebtn" title="Til baka í venjulegt útlit (slökkva á Brunastáli)">🔥</button>'+
           '<div class="bb-clockbox">'+
             '<div class="bb-eyebrow">KASSAKERFI</div>'+
             '<div class="bb-clock" id="bstal-clock">--:--</div>'+
@@ -403,30 +350,6 @@
       '</div>';
     const ember = document.createElement('div'); ember.id = 'bstal-ember';
     document.body.appendChild(b); document.body.appendChild(ember);
-    b.querySelector('#bstal-sw').addEventListener('click', (e) => {
-      const btn = e.target.closest('button[data-acc]'); if (!btn) return;
-      document.documentElement.setAttribute('data-bstal-accent', btn.dataset.acc);
-      try { localStorage.setItem(ACC_LS, btn.dataset.acc); } catch (_) {}
-      b.querySelectorAll('#bstal-sw button').forEach(x => x.classList.toggle('on', x === btn));
-    });
-    const tb = b.querySelector('#bstal-themebtn');
-    if (tb) tb.addEventListener('click', goDefault);
-  }
-
-  // Always-present floating chip to turn Brunastál back ON when it's off
-  // (the banner — and its toggle — only exist while brunastal is active).
-  function ensureRestore() {
-    if (document.getElementById('bstal-restore')) return;
-    const r = document.createElement('button');
-    r.id = 'bstal-restore';
-    r.type = 'button';
-    r.title = 'Kveikja á Brunastáls-útliti';
-    r.innerHTML = '🔥';
-    // Icon-only, top-right — same corner as the banner clock/toggle, so the
-    // flame switch lives in one consistent spot whether Brunastál is on or off.
-    r.style.cssText = 'display:none;position:fixed;right:16px;top:14px;z-index:9998;align-items:center;justify-content:center;width:40px;height:40px;border-radius:11px;cursor:pointer;font-size:19px;line-height:1;color:#fff;border:1px solid #971515;background:linear-gradient(145deg,#0d0102,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102);box-shadow:0 6px 20px -6px rgba(160,16,16,.6)';
-    r.addEventListener('click', goBrunastal);
-    document.body.appendChild(r);
   }
 
   // ── live clock ──────────────────────────────────────────────────────────────
@@ -447,14 +370,8 @@
     if (d) { const st = staffName(); d.textContent = WK[n.getDay()]+' '+n.getDate()+'. '+MO[n.getMonth()] + (st ? ' · ' + st : ''); }
   }
 
-  // ── show/hide + live page title ─────────────────────────────────────────────
-  let lastTitle = '';
+  // ── alltaf á — borðinn er hluti af frosna grunnútlitinu ─────────────────────
   function refresh() {
-    const on = document.documentElement.getAttribute('data-thm-preset') === PRESET;
-    ensureRestore();
-    const rst = document.getElementById('bstal-restore');
-    if (rst) rst.style.display = on ? 'none' : 'flex';
-    if (!on) { document.documentElement.removeAttribute('data-bstal-banner'); lastTitle=''; return; }
     fonts(); styles(); buildBanner();
     document.documentElement.setAttribute('data-bstal-banner', 'on');
     if (!clockTimer) { tickClock(); clockTimer = setInterval(tickClock, 1000); }
@@ -462,10 +379,7 @@
     // title update needed.
   }
 
-  // ── hooks: theme attr changes + every view switch ───────────────────────────
-  try {
-    new MutationObserver(refresh).observe(document.documentElement, { attributes:true, attributeFilter:['data-thm-preset'] });
-  } catch (_) {}
+  // ── hooks: every view switch (endurbyggir borðann ef eitthvað þurrkar hann) ─
   (function wrap(){
     if (!window.App || typeof App.switchView !== 'function') { return void setTimeout(wrap, 120); }
     if (App.switchView.__bstal) return;
@@ -477,6 +391,6 @@
   if (document.readyState !== 'loading') refresh();
   else document.addEventListener('DOMContentLoaded', refresh);
 
-  console.log('[patch-230] 🔥 Brunastál metallic theme ready (pick it in ⚙️ Útlit)');
+  console.log('[patch-230] 🔥 Brunastál — frosið grunnútlit virkt');
 })();
 /* === END BRUNASTÁL THEME === */
