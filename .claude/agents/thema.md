@@ -6,6 +6,30 @@ tools: Bash, Read, Grep, Glob, Edit
 
 Þú kannt **þemað** — class-based theme.css, scoped undir `.thm`. GILDRA: patch 245 (Brunastál) berst við theme.css (whitear `[class*=-card]`) — þarf hærri sérhæfni.
 
+## ⚠️ ÞEMAÐ ER FROSIÐ (2026-08-17)
+
+Þemaskiptikerfið var fjarlægt að ósk Agnars („nota núverandi stillingar sem
+grunnstillingu, eyða öðrum þemum og þemu-veseninu"):
+
+- **220-theme-system.js** er nú lítill frosinn applier: Brunastál-tókenar hart
+  kóðaðir, setur alltaf `data-thm-preset="brunastal"`, `data-thm-dark="0"`,
+  `data-thm-density="venju"`, `data-bstal-accent="red"` (230). Engin 11-preseta
+  skrá, ekkert ⚙️ Útlit-stjórnborð, engin vistun — `slokk_theme` /
+  `ui_theme` / `brunastal_accent` eru EKKI lesin lengur (localStorage-leifar
+  hreinsaðar við ræsingu; AppSettings `ui_theme` stendur ónotað).
+- **230-brunastal-theme.js**: accent-kassarnir (rautt/blátt/gyllt), 🔥
+  þemaskiptirinn og endurkveikju-flísin (`#bstal-restore`) eru farin; borðinn
+  er alltaf á. Blau/gylltu accent-CSS-settin fjarlægð.
+- `window.Theme` stendur sem lágmarks-stubb (get/set/apply/open) svo eldri
+  kallarar brotni ekki — `set()` skiptir ENGU, endur-applyar bara grunninn.
+- Playwright-ráðið að neðan um `localStorage slokk_theme={preset:'brunastal'}`
+  er ÓÞARFT núna (skaðlaust no-op) — presetið er alltaf á.
+- Stílstjórinn (262, 🎨) lifir áfram og er ótengdur þessu — hann geymir
+  fínstillingar notandans í AppSettings `page_editor_v1_json` og er með
+  öryggisventil gegn akkerislausum selectorum (sjá c6fc57c).
+- Vilji menn þemaskipti aftur: endurvekja 220/230 úr git fyrir 2026-08-17
+  (commit cd54337 hefur gömlu skrárnar í foreldra sínum).
+
 
 ---
 
