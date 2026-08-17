@@ -371,12 +371,38 @@
   // leiðrétt þaðan. Nú bera þær `data-yr` og deila NÁKVÆMLEGA sama fact-check
   // ástandi og árs-hausinn (`.sk-yr`) — tvísmellur hringar
   // ekkert → ✓ staðfest → 🟠 skýrsla vantar → ekkert.
-  function pill(y, hasReport, fcStat, note){
+  // 2026-08-17 (Agnar: „why wont it automatly become green when it got both
+  // invoice and uttektarskyrslu"): FJÓRÐA stigið — 'auto' = MATTGRÆNT.
+  // Spurningin afhjúpaði að pillan svaraði aldrei þeirri spurningu sem spurt var
+  // um: hún las AÐEINS `year_factcheck` + hvort skýrsla væri til, og leit ALDREI
+  // á reikninginn (sjá `complete`-rökin í yearDocsComplete). Spjaldamerkið
+  // (✓ FULLBÚIÐ) reiknaði skjala-þekjuna rétt allan tímann, en pillan endurspeglaði
+  // hana hvergi — svo fullbúið ár sat áfram blátt/ólitað og leit út eins og ógert.
+  //
+  // Nú bera pillurnar BÁÐAR sögurnar og þær eru VÍSVITANDI ekki sama sagan:
+  //   MATTGRÆNT (útlínur) = skjölin eru til — vélin sá það, enginn staðfesti
+  //   GLÓANDI GRÆNT (fyllt) = manneskja tvísmellti og skrifaði undir
+  // Undirskriftin má ALDREI reiknast sjálfkrafa — það er allur tilgangur hennar.
+  //
+  // Forgangur: human > gap > auto > claude. `gap` verður að vinna á auto, annars
+  // brotnar „I cant make it not green"-leiðréttingin frá 2026-08-11: ranglega
+  // grænt ár á skjölum sem eru á röngu ári/stað yrði endurlitað í hvert sinn og
+  // handvirka flaggið yrði gagnslaust. `auto` vinnur á 'claude' því fullbúin
+  // skjöl eru sannreynanleg staðreynd en 'claude' er álit — tooltipið heldur samt
+  // báðum svo ekkert tapast.
+  function pill(y, hasReport, fcStat, note, complete){
     var cls=hasReport?'ok':(y===NOW?'now':'none');
-    if(fcStat==='human') cls+=' done'; else if(fcStat==='claude') cls+=' claude'; else if(fcStat==='gap') cls+=' gap';
+    var auto = !!complete && fcStat!=='human' && fcStat!=='gap';
+    if(fcStat==='human') cls+=' done';
+    else if(fcStat==='gap') cls+=' gap';
+    else if(auto) cls+=' auto';
+    else if(fcStat==='claude') cls+=' claude';
     var tip=fcStat==='human'?(y+' — ✓ staðfest handvirkt — tvísmelltu til að merkja „skýrsla vantar"')
-      :fcStat==='claude'?(y+' — 🔵 Claude yfirfór'+(note?(': '+note):'')+' — tvísmelltu til að staðfesta')
       :fcStat==='gap'?(y+' — 🟠 '+(note||'skýrsla vantar')+' — tvísmelltu til að fjarlægja flagg')
+      :auto?(y+' — 🟢 skjöl fullbúin: skýrsla OG reikningur á hverri virkri þjónustu'
+             +(fcStat==='claude'?(' · 🔵 Claude yfirfór'+(note?(': '+note):'')):'')
+             +' — tvísmelltu til að staðfesta handvirkt')
+      :fcStat==='claude'?(y+' — 🔵 Claude yfirfór'+(note?(': '+note):'')+' — tvísmelltu til að staðfesta')
       :(hasReport?(y+' — skýrsla á skrá — tvísmelltu til að yfirtaka handvirkt')
         :(y===NOW?(y+' — í vinnslu — tvísmelltu til að staðfesta'):(y+' — engin skýrsla — tvísmelltu til að staðfesta')));
     return '<span class="sk-pill '+cls+'" data-yr="'+y+'" title="'+esc(tip)+'">'+String(y).slice(2)+'</span>';
@@ -703,7 +729,9 @@
     var YEARS=Object.keys(ySet).map(Number).sort(function(a,b){return b-a;});
 
     // ── status pills ──
-    var pills=YEARS.map(function(y){ return pill(y, (repByY[y]||[]).length>0, fcStatus(coId,y), fcNote(coId,y)); }).join('');
+    // 2026-08-17: pillurnar eru NÚNA reiknaðar NEÐAR (á eftir `resolved`), því
+    // mattgræna 'auto'-stigið þarf að vita hvaða reikningur parast við hvaða
+    // skýrslu — og sú pörun verður ekki til fyrr en í `resolved`-lykkjunni.
     var monthInfo = await loadInspectMonth(coId, baseId);
     section._monthInfo = monthInfo;
 
@@ -798,6 +826,31 @@
     });
     section._repByY = repByY; section._bruByY = bruByY; section._invByY = invByY;
     section._resolved = resolved; section._sendCo = { coId: coId, kt: kt, nafn: (co && co.nafn) || '' };
+
+    // 2026-08-17: er ÁRIÐ fullbúið á skjölum? Nákvæmlega sömu rök og stöðumerki
+    // þjónustuspjaldsins (`svcCardExpanded`) — hasRep && hasInv — bara samanlagt
+    // yfir þjónusturnar, svo pillan og spjöldin geti aldrei sagt sitt hvað.
+    //
+    // Þjónusta sem á EKKERT þetta ár telst ekki með. Flestir kúnnar kaupa aðeins
+    // slökkvitækjaþjónustu, og ef tóm brunakerfis-þjónusta felldi árið væri
+    // mattgrænt nánast aldrei til — merkið yrði gagnslaust. Þjónusta sem á
+    // AÐRA hliðina (t.d. skýrslu en engan reikning) fellir árið hins vegar, því
+    // þá er raunverulega eitthvað ógert — sbr. Tjarnarból 2025 þar sem
+    // brunakerfið vantar skýrslu.
+    function yearDocsComplete(y){
+      var active=0, done=0;
+      SERVICES.forEach(function(svc){
+        var hasRep=(svc.repMap[y]||[]).length>0;
+        var r=resolved[y+'|'+svc.kind]||{};
+        var hasInv=!!r.inv;
+        if(!hasRep && !hasInv) return;
+        active++; if(hasRep && hasInv) done++;
+      });
+      return active>0 && active===done;
+    }
+    var pills=YEARS.map(function(y){
+      return pill(y, (repByY[y]||[]).length>0, fcStatus(coId,y), fcNote(coId,y), yearDocsComplete(y));
+    }).join('');
 
     // 2026-08-05 (Agnar: "ég þarf að geta séð hvað í andsskotanum ég er að
     // linka við" — a bare "R-107802 · 114.710 kr" gives no way to tell WHICH
@@ -1362,7 +1415,16 @@
       '.sk-pill.claude::before{background:#2563eb;box-shadow:0 0 5px 1px rgba(37,99,235,.8)}',
       // Appelsínugulur = skýrsla vantar (gap sem Claude fann).
       '.sk-pill.gap{border-color:#f59e0b;background:#fef3c7;color:#92400e}',
-      '.sk-pill.gap::before{background:#f59e0b}'
+      '.sk-pill.gap::before{background:#f59e0b}',
+      // 2026-08-17 — 'auto' (skjöl fullbúin) vs 'done' (manneskja staðfesti).
+      // Munurinn er FYLLING, ekki litur: mattgrænt er ÚTLÍNUR á venjulegum
+      // fleti með kyrrum depli · staðfest er FYLLTUR grænn flötur með glóandi
+      // púlsandi depli. Tveir grænir tónar hefðu verið ólæsilegir hlið við hlið
+      // (og ósýnilegir í sólarljósi á S26 úti á verkstað); fylling vs útlína
+      // sést í fljótu bragði. Kemur á EFTIR .ok/.done/.claude í stílblaðinu svo
+      // það vinni við sama vægi (single-class reglur — sú síðasta ræður).
+      '.sk-pill.auto{border-color:#16a34a;background:var(--surface);color:#15803d;box-shadow:inset 0 0 0 1px rgba(22,163,74,.3)}',
+      '.sk-pill.auto::before{background:#16a34a}'
     ].join('\n');
     var st=document.createElement('style'); st.id='sk-card-css'; st.textContent=css; document.head.appendChild(st);
   }

@@ -273,8 +273,20 @@
         const glowDot = '<span title="Staðfest" style="width:6px;height:6px;border-radius:50%;background:#16A34A;box-shadow:0 0 5px 1.5px rgba(22,163,74,.9);flex:0 0 auto"></span>';
         const blueDot = '<span title="Claude yfirfór — bíður staðfestingar" style="width:6px;height:6px;border-radius:50%;background:#2563EB;box-shadow:0 0 5px 1px rgba(37,99,235,.8);flex:0 0 auto"></span>';
         const gapDot  = '<span title="Skýrsla vantar fyrir þetta ár" style="width:6px;height:6px;border-radius:50%;background:#F59E0B;flex:0 0 auto"></span>';
-        const gdot = confirmed ? glowDot : (isClaude ? blueDot : dotGreen);
-        const okBorder = confirmed ? 'rgba(22,163,74,.7)' : 'rgba(28,143,96,.35)';
+        // 2026-08-17 (Agnar: „why wont it automatly become green when it got both
+        // invoice and uttektarskyrslu"): fjórði depillinn — KYRR GRÆNN = skjöl
+        // fullbúin (skýrsla OG reikningur á skrá), óstaðfest. Sama nýja 'auto'
+        // stigið og pillurnar á kúnnasíðunni fengu (patch 199) svo listinn og
+        // síðan segi ALDREI sitt hvað um sama ár.
+        //   glóandi grænn = manneskja staðfesti · kyrr grænn = skjölin eru til
+        //   blár = Claude yfirfór · lítill flatur grænn = skýrsla ein á skrá
+        // ATH: hér er þekjan á ÁRS-stigi (invMap er per fyrirtæki+ár), ekki per
+        // þjónustu eins og í patch 199. Á listanum er einn reitur per ár svo
+        // fínni skiptingin kemst hvergi að; kúnnasíðan er nákvæmari heimildin.
+        const hasInvYr = !!(invMap && invMap[coId] && invMap[coId][y]);
+        const autoDot = '<span title="Skjöl fullbúin — skýrsla og reikningur á skrá (óstaðfest)" style="width:6px;height:6px;border-radius:50%;background:#16A34A;flex:0 0 auto"></span>';
+        const gdot = confirmed ? glowDot : (hasInvYr ? autoDot : (isClaude ? blueDot : dotGreen));
+        const okBorder = confirmed ? 'rgba(22,163,74,.7)' : (hasInvYr ? 'rgba(22,163,74,.55)' : 'rgba(28,143,96,.35)');
         const td = document.createElement('td');
         td.setAttribute('data-yrcell','1');
         td.style.cssText = 'padding:6px 4px;text-align:center;';
