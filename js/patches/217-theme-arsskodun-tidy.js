@@ -1,16 +1,13 @@
-/* 217-theme-arsskodun-tidy.js — redesign tidy for the Fyrirtæki í Þjónustu list.
+/* 217-theme-arsskodun-tidy.js — ÚRELT (2026-08-17).
 
-   Hides the e-mail (Netfang) column so the row matches the mockup. The email
-   still lives on each company's own page/detail — it's only dropped from this
-   dense list view. CSS only, reversible.
-
-   (The year columns '23–'26 are styled as inspection tags in patch 187.) */
+   Faldi áður Netfangs-dálkinn (nth-child(7)) svo röðin passaði við gamla
+   mockupið. Í Design v3-eftirmyndinni (153, fab659e+) er Netfangs-dálkurinn
+   HORFINN úr töflunni og HEIMILISFANGIÐ situr á sæti 7 — þessi eina lína
+   (display:none !important á dálk 7) faldi því heimilisfangs-súluna í heilu
+   lagi og lét hana mælast 0px þrátt fyrir colgroup/fixed-layout ("you are
+   forgetting the address"). Skráin stendur tóm sem minnisvarði; má eyða
+   ásamt <script>-tagginu hvenær sem er. */
 (function () {
   if (window.__thmArsTidyInstalled) return;
   window.__thmArsTidyInstalled = true;
-  if (document.getElementById('thm-ars-tidy')) return;
-  var st = document.createElement('style');
-  st.id = 'thm-ars-tidy';
-  st.textContent = "#view-arsskodun thead tr th:nth-child(7),#view-arsskodun tr._ars-row > td:nth-child(7){display:none !important;}";
-  document.head.appendChild(st);
 })();
