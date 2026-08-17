@@ -1315,7 +1315,7 @@
             <div style="font-size:22px;font-weight:800;color:var(--ink1);line-height:1.1;margin-top:2px">${tv('fjoldi')}</div>
             <div style="font-size:10.5px;color:var(--ink3)">${tv('i_arsskodun')} í ársskoðun</div>
           </div>
-          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px" title="Stóra talan = merkt „Skoðað ${curYear}" (sama og listinn). Neðri talan = 2026-skýrsla skráð í skjalagrunninn (v_thjonustu_tolur). Munurinn = skoðaðir staðir sem vantar skráða skýrslu.">
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:11px 13px" title="Stóra talan = merkt Skoðað ${curYear} — sama tala og listinn sýnir. Neðri talan = ${curYear}-skýrsla skráð í skjalagrunninn. Munurinn = skoðaðir staðir sem vantar skráða skýrslu.">
             <div style="font-size:10px;font-weight:700;color:#166534;text-transform:uppercase;letter-spacing:.05em">Búið ${curYear}</div>
             <div style="font-size:22px;font-weight:800;color:#15803d;line-height:1.1;margin-top:2px">${buidTalin}</div>
             <div style="font-size:10.5px;color:#16a34a">þar af ${tv('buid_2026')} með skýrslu skjalfesta</div>
