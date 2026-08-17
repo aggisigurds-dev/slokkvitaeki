@@ -297,15 +297,17 @@
           '<span class="_dd">' + badgeHtml +
             '<u><i class="' + (hasRep ? 'rep' : '') + '"></i><i class="' + (hasInvYear ? 'inv' : '') + '"></i></u></span>';
         // Ástands-klasar merkisins (effRep = skýrsla eða handstaðfest).
-        // 2026-08-17 (Agnar: „It should not be black. make it green instead"):
-        // merki MEÐ skýrslu fá alltaf dökkgræna málminn (both-stílinn), líka á
-        // yfirstandandi ári — rauða/svarta 'now'-útlitið er aðeins fyrir VANTAR.
+        // 2026-08-17 (Agnar): grænt = skoðað (skýrsla til), rautt = EKKI skoðað
+        // („red when not inspected"), blátt = bara reikningur/yfirfarið — og
+        // LED-glóðin (.lit) kviknar AÐEINS við fact-check-staðfestingu
+        // („not with green dot light up untill factchecked").
         const yrCls = (effRep) => {
-          if (isGap) return '_yr now' + (effRep ? ' lit' : '');
-          if (effRep) return '_yr ' + (isNow ? 'now' : 'on') + ' both lit';
-          if (hasInvYear || isClaude) return '_yr ' + (isNow ? 'now' : 'on') + ' inv-only lit';
-          if (isNow) return '_yr now';
-          return '_yr';
+          const lit = confirmed ? ' lit' : '';
+          if (isGap) return '_yr now' + lit;
+          if (effRep) return '_yr ' + (isNow ? 'now' : 'on') + ' both' + lit;
+          if (hasInvYear || isClaude) return '_yr ' + (isNow ? 'now' : 'on') + ' inv-only' + lit;
+          if (isNow) return '_yr now' + lit;
+          return '_yr' + lit;
         };
         // 2026-08-11: „skýrsla vantar"-flaggið kemur FYRST — á undan skjala-
         // vísbendingunum. Áður stóð það neðst, svo hvaða árs-merkt viðhengi sem er
