@@ -2336,9 +2336,10 @@
       V+'._yr.both,'+V+'._yr.on.both,'+V+'._yr.now.both{color:#fff;background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border-color:#041c0e;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.2),inset 0 -2px 4px rgba(0,0,0,.26)}',
       V+'._yr.inv-only{color:#fff;background:linear-gradient(145deg,#5a86e0 0%,#2f5fe0 42%,#1a3a8c 72%,#2d55c4 100%);border-color:#12296b;text-shadow:0 1px 1px rgba(0,0,0,.3);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.32),inset 0 -2px 4px rgba(0,0,0,.22)}',
       // 2026-08-17 (Agnar): GULL á yfirstandandi ár þegar skoðunarmánuðurinn er
-      // EKKI kominn (t.d. Des-skoðun) — sami gull-málmur og Sleppt-pillan;
-      // rautt er aðeins fyrir mánuð sem er kominn/liðinn án skoðunar.
-      V+'._yr.penda{color:#fff;background:linear-gradient(145deg,#d4a94f 0%,#ab7f2a 42%,#775213 72%,#9c7828 100%);border-color:#7a5410;text-shadow:0 1px 1px rgba(0,0,0,.3);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.3),inset 0 -2px 4px rgba(0,0,0,.22)}',
+      // EKKI kominn (t.d. Des-skoðun) — rautt er aðeins fyrir mánuð sem er
+      // kominn/liðinn án skoðunar. Gull-tónninn er rf-gullið (árs-tekju-
+      // kassinn á Rekstrarfélögum) að ósk Agnars — „use this golden color".
+      V+'._yr.penda{color:#fff8e6;background:linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);border-color:rgba(255,220,130,.45);text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1px 0 rgba(255,240,190,.28),inset 0 -2px 4px rgba(0,0,0,.25)}',
       V+'._devs{display:flex;justify-content:flex-end;align-items:stretch}',
       V+'._devs div{padding:0 10px;text-align:right}',
       V+'._devs div + div{border-left:1px solid #e9ecf1}',
@@ -2357,8 +2358,8 @@
       V+'._st--done{color:#fff;background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border:1px solid #041c0e;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.22),inset 0 -2px 4px rgba(0,0,0,.28),0 2px 5px -2px rgba(10,40,20,.5)}',
       V+'._st--plan{color:#fff;background:linear-gradient(145deg,#5a86e0 0%,#2f5fe0 42%,#1a3a8c 72%,#2d55c4 100%);border:1px solid #12296b;text-shadow:0 1px 1px rgba(0,0,0,.3);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.35),inset 0 -2px 4px rgba(0,0,0,.22),0 2px 5px -2px rgba(20,40,90,.45)}',
       V+'._st--late{color:#fff;background:linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%);border:1px solid #4d0a08;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.28),inset 0 -2px 4px rgba(0,0,0,.26),0 2px 5px -2px rgba(90,15,10,.5)}',
-      // Sleppt — gull-málmur (pill--gold úr theme.css); designið átti ekki skip-stöðu
-      V+'._st--skip{color:#fff;background:linear-gradient(145deg,#d4a94f 0%,#ab7f2a 42%,#775213 72%,#9c7828 100%);border:1px solid #7a5410;text-shadow:0 1px 1px rgba(0,0,0,.3);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.3),inset 0 -2px 4px rgba(0,0,0,.22)}',
+      // Sleppt — sama rf-gull og .penda svo gullið er eitt í töflunni
+      V+'._st--skip{color:#fff8e6;background:linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);border:1px solid rgba(255,220,130,.45);text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1px 0 rgba(255,240,190,.28),inset 0 -2px 4px rgba(0,0,0,.25)}',
       V+'._chk{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;border-radius:50%;border:1px solid #d8dde6;background:#fff;color:#c3cad6;cursor:pointer;padding:0}',
       V+'._chk:hover{border-color:#b9c1cd;color:#7d8794}',
       V+'._chk.on{border-color:#060f24;color:#fff;background:linear-gradient(145deg,#2a4c8f 0%,#183363 45%,#0a1a3a 75%,#122750 100%);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.28),0 2px 6px -2px rgba(10,25,60,.6)}',
