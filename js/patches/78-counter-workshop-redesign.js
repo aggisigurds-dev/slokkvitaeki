@@ -133,6 +133,7 @@
     byStatus.received.sort(byName);
     byStatus.inprogress.sort(byName);
     byStatus.ready.sort(byName);
+    Counter._readyJobs = byStatus.ready;   // fyrir 🖨 Prenta-listann
 
     const html =
       '<div id="counter-sidebar" style="padding:10px 16px;border-bottom:1px solid var(--brd,#e4e6ea);display:flex;align-items:center;gap:10px;background:#f8f9fb;flex-wrap:wrap">' +
@@ -156,7 +157,10 @@
         colHtml('Í vinnslu', byStatus.inprogress.length + ' verk', '#d97706', '#fef3c7',
                 renderJobs('inprogress', byStatus.inprogress, false)) +
         colHtml('Tilbúin',   byStatus.ready.length + ' verk',      '#059669', '#ecfdf5',
-                renderJobs('ready',      byStatus.ready,      true)) +
+                renderJobs('ready',      byStatus.ready,      true),
+                // 2026-08-18 (ósk Agnars): prentvænn listi af tilbúnu verkunum
+                // með símanúmerum — til að hringja út „tækin þín eru tilbúin".
+                '<button type="button" onclick="Counter.printReady()" title="Prenta lista yfir tilbúin verk (með símanúmerum)" style="flex:none;padding:5px 10px;border:1px solid #a7f3d0;background:#fff;color:#047857;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap">🖨 Prenta</button>') +
       '</div>' +
       // Detail modal: holds #counter-main + #print-aside so legacy renderDetail/renderPrintAside still work
       '<div id="counter-detail-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;padding:24px">' +
@@ -189,11 +193,61 @@
     }
   }
 
-  function colHtml(title, sub, titleCol, bgGrad, body) {
+  // 2026-08-18 (ósk Agnars): prentvænn A4-listi af Tilbúin-dálknum með síma-
+  // númerum — til að hringja út og haka við. Röð: stafrófsröð (sama og dálkurinn).
+  // Counter er legacy-hnöttur sem er ekki endilega til við hleðslu þessa patch
+  // (sbr. vörðinn neðar) — því fest með biðleið en ekki beinni úthlutun.
+  function printReadyList() {
+    const jobs = (window.Counter && Counter._readyJobs) || [];
+    if (!jobs.length) { alert('Engin tilbúin verk á listanum.'); return; }
+    const shelves = (window.AppSettings && AppSettings.path && AppSettings.path('job_shelves')) || {};
+    const today = new Date();
+    const dstr = String(today.getDate()).padStart(2, '0') + '.' + String(today.getMonth() + 1).padStart(2, '0') + '.' + today.getFullYear();
+    const rows = jobs.map(j => {
+      const phone = digitsOnly(j.phone);
+      return '<tr>' +
+        '<td class="mono">' + esc(dnum(j.num)) + '</td>' +
+        '<td><b>' + esc(j.customer || '') + '</b></td>' +
+        '<td class="mono">' + (phone ? esc(phone) : '—') + '</td>' +
+        '<td class="mid">' + (j.units ? j.units.length : 0) + '</td>' +
+        '<td class="mono">' + (jobDate(j) || '') + '</td>' +
+        '<td class="mid mono">' + esc(shelves[String(j.id)] || '—') + '</td>' +
+        '<td class="chk">☐</td><td class="chk">☐</td>' +
+      '</tr>';
+    }).join('');
+    const w = window.open('', '_blank', 'width=900,height=1100');
+    if (!w) { alert('Popup-vörn stöðvaði prentgluggann — leyfðu popup fyrir síðuna.'); return; }
+    w.document.write('<!DOCTYPE html><html lang="is"><head><meta charset="utf-8"><title>Tilbúin verk ' + dstr + '</title><style>' +
+      'body{font-family:system-ui,Segoe UI,Arial,sans-serif;font-size:12px;color:#111;margin:14mm}' +
+      'h1{font-size:17px;margin:0 0 2px}' +
+      '.sub{color:#555;font-size:11px;margin-bottom:12px}' +
+      'table{width:100%;border-collapse:collapse}' +
+      'th{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;text-align:left;color:#333;border-bottom:2px solid #111;padding:4px 6px}' +
+      'td{padding:5px 6px;border-bottom:1px solid #ccc;vertical-align:middle}' +
+      '.mono{font-family:Consolas,Menlo,monospace;font-size:11px;white-space:nowrap}' +
+      '.mid{text-align:center}.chk{text-align:center;font-size:14px;width:34px}' +
+      'tr{page-break-inside:avoid}' +
+      '@media print{body{margin:8mm}}' +
+      '</style></head><body onload="setTimeout(function(){window.print()},300)">' +
+      '<h1>Tilbúin verk — sótt/hringt</h1>' +
+      '<div class="sub">' + jobs.length + ' verk · prentað ' + dstr + ' · Slökkvitæki ehf</div>' +
+      '<table><thead><tr><th>Nr</th><th>Viðskiptavinur</th><th>☎ Sími</th><th>Tæki</th><th>Dags</th><th>Hilla</th><th>Hringt</th><th>Sótt</th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></body></html>');
+    w.document.close();
+  }
+  (function attachPrintReady() {
+    if (window.Counter) { Counter.printReady = printReadyList; return; }
+    setTimeout(attachPrintReady, 500);
+  })();
+
+  function colHtml(title, sub, titleCol, bgGrad, body, extra) {
     return '<div class="cw-col" style="display:flex;flex-direction:column;background:#fff;border-radius:14px;border:1px solid #e5e7eb;overflow:hidden;min-height:0;min-width:0">' +
-      `<div class="cw-col-head" style="padding:8px 12px;border-bottom:1px solid #f1f5f9;background:linear-gradient(180deg,${bgGrad} 0%,#fff 100%);flex-shrink:0">` +
-        `<div class="cw-col-title" style="font-size:11px;font-weight:700;color:${titleCol};text-transform:uppercase;letter-spacing:.06em">${esc(title)}</div>` +
-        `<div class="cw-col-sub" style="font-size:10px;color:#94a3b8;margin-top:1px">${esc(sub)}</div>` +
+      `<div class="cw-col-head" style="padding:8px 12px;border-bottom:1px solid #f1f5f9;background:linear-gradient(180deg,${bgGrad} 0%,#fff 100%);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px">` +
+        '<div style="min-width:0">' +
+          `<div class="cw-col-title" style="font-size:11px;font-weight:700;color:${titleCol};text-transform:uppercase;letter-spacing:.06em">${esc(title)}</div>` +
+          `<div class="cw-col-sub" style="font-size:10px;color:#94a3b8;margin-top:1px">${esc(sub)}</div>` +
+        '</div>' +
+        (extra || '') +
       '</div>' +
       `<div class="cw-col-scroll" style="overflow-y:auto;padding:6px;flex:1;min-height:0">${body}</div>` +
     '</div>';
@@ -269,7 +323,7 @@
           `<span style="font-family:'Space Mono',monospace;font-size:10px;color:#047857;font-weight:700;flex:none">${dnum(j.num)}</span>` +
           `<span class="cw-rcard-name" style="font-size:13px;font-weight:600;color:#11141c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(j.customer)}</span>` +
         '</div>' +
-        `<div style="font-family:'Space Mono',monospace;font-size:10.5px;color:#047857;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${live(j.units).length} slökkvitæki${jobDate(j) ? ' · ' + jobDate(j) : ''}${typeDots(tcols)}</div>` +
+        `<div style="font-family:'Space Mono',monospace;font-size:10.5px;color:#047857;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${live(j.units).length} slökkvitæki${digitsOnly(j.phone) ? ' · ☎ ' + esc(digitsOnly(j.phone)) : ''}${jobDate(j) ? ' · ' + jobDate(j) : ''}${typeDots(tcols)}</div>` +
       '</div>' +
       `<button type="button" class="_cw-del" onclick="event.stopPropagation();window.Workshop&&Workshop.deleteVerkGroup&&Workshop.deleteVerkGroup([${j.id}])" title="Eyða verki (fer í Eydd verk)" style="flex:none;align-self:center;border:0;background:transparent;color:#b91c1c;font-size:13px;line-height:1;padding:2px 4px;cursor:pointer;opacity:.55">🗑</button>` +
       `<button type="button" class="_sbw-inline" onclick="event.stopPropagation();window.Counter&&Counter.sendBackToWorkshop&&Counter.sendBackToWorkshop(${j.id})" title="Senda aftur til verkstæðis" style="flex-shrink:0;align-self:center;padding:4px 8px;background:#fffbeb;border:1px solid #fde68a;color:#b45309;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap">← Verkstæði</button>` +
