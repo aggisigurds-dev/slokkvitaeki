@@ -623,7 +623,16 @@
   }
 
   async function render(section, coId){
+    // 2026-08-18 (Agnar): rafræna krafan fer ALLTAF — rofinn hér stýrir aðeins
+    // hvort tölvupóstafrit (reikningur+skýrsla) fylgi. payday_delivery:
+    // 'electronic' = póstur AF; annað/tómt = póstur Á (sjálfgefið).
+    var _co0=getCompany(coId);
+    var _postOff=!!(_co0 && _co0.payday_delivery==='electronic');
     var hdr='<div class="sk-h"><h3>📁 Skjöl &amp; viðhengi</h3>'+
+            '<button type="button" class="sk-mailpref" data-co="'+coId+'" data-off="'+(_postOff?'1':'')+'" '+
+              'title="Rafræn krafa fer alltaf. Þessi rofi stýrir hvort tölvupóstafrit (reikningur + úttektarskýrsla) fylgi að auki þegar netfang er skráð." '+
+              'style="font-size:11.5px;font-weight:700;border:1px solid '+(_postOff?'#fca5a5':'#a7f3d0')+';background:'+(_postOff?'#fef2f2':'#ecfdf5')+';color:'+(_postOff?'#b91c1c':'#065f46')+';border-radius:99px;padding:5px 11px;cursor:pointer">'+
+              (_postOff?'📧 Póstafrit: AF':'📧 Póstafrit: Á')+'</button>'+
             '<button type="button" class="sk-add-btn" data-pick="1">+ Viðhengi</button></div>';
     section.innerHTML=hdr+'<div style="padding:14px;color:var(--ink3);font-size:13px">Hleð…</div>';
 
@@ -1436,6 +1445,38 @@
     ].join('\n');
     var st=document.createElement('style'); st.id='sk-card-css'; st.textContent=css; document.head.appendChild(st);
   }
+  // 2026-08-18: Póstafrits-rofinn í hausnum — víxlar fyrirtaeki.payday_delivery
+  // milli 'electronic' (póstur AF) og 'both' (póstur Á). Rafræna krafan fer
+  // alltaf, óháð rofanum (payday-push þvingar createElectronicInvoice=true).
+  document.addEventListener('click', async function(e){
+    var b = e.target && e.target.closest ? e.target.closest('.sk-mailpref') : null;
+    if(!b) return;
+    e.preventDefault();
+    var coId = +b.dataset.co; if(!coId) return;
+    var turnOff = !b.dataset.off;   // núverandi Á → slökkva
+    b.disabled = true;
+    try{
+      var sb = SB();
+      var r = await sb.from('fyrirtaeki').update({ payday_delivery: turnOff ? 'electronic' : 'both' }).eq('id', coId);
+      if(r.error) throw r.error;
+      try{
+        var co = (window.Companies && Companies.list || []).find(function(x){ return +x.id === +coId; });
+        if(co) co.payday_delivery = turnOff ? 'electronic' : 'both';
+      }catch(_){}
+      var sec = b.closest('[data-co-id], #_sk-card, .sk-card') || null;
+      if(window.Toast && Toast.show) Toast.show(turnOff ? '📧 Póstafrit SLÖKKT — aðeins rafræn krafa' : '📧 Póstafrit KVEIKT — rafrænt + póstur');
+      // Endurteikna hausinn: einfaldast að endursmíða spjaldið.
+      var host = document.querySelector('#_sk-doc-card, ._sk-doc-card');
+      b.dataset.off = turnOff ? '1' : '';
+      b.textContent = turnOff ? '📧 Póstafrit: AF' : '📧 Póstafrit: Á';
+      b.style.borderColor = turnOff ? '#fca5a5' : '#a7f3d0';
+      b.style.background = turnOff ? '#fef2f2' : '#ecfdf5';
+      b.style.color = turnOff ? '#b91c1c' : '#065f46';
+    }catch(err){
+      alert('Villa við vistun afhendingar: ' + ((err && err.message) || err));
+    }finally{ b.disabled = false; }
+  }, false);
+
   // 2026-08-17: dauð skjala-chips (skjal horfið úr Drive) svara smelli með
   // sögunni úr notes — þar stendur hvers vegna hlekkurinn var hreinsaður og
   // „ÞARF AÐ FINNA AFTUR"-áminningin. Betra en þögult dautt span.
