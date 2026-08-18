@@ -351,7 +351,12 @@
     const coId = getCompanyId();
     if (!coId) return;
     if (main.querySelector('._ahop-section')) return;
-    if (!E()) return;
+    // 2026-08-18 (Agnar, Center Arnarhvoll: „get ekki valið afsláttarhópinn"):
+    // DiscountEngine (discount-engine.js) getur hlaðist EFTIR að síðasta DOM-
+    // breyting kveikti á injectSection — þá hætti fallið þögult og veljarinn
+    // birtist aldrei (engin frekari mutation til að reyna aftur). Núna er
+    // bókað retry svo hann komi um leið og vélin er tilbúin.
+    if (!E()) { setTimeout(injectSection, 400); return; }
 
     const sec = document.createElement('div');
     sec.className = '_ahop-section';
