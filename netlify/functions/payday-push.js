@@ -204,24 +204,23 @@ exports.handler = async (event) => {
     // sendingunni — rafrænni jafnt sem pósti. Whichever electronic path runs
     // still falls back to e-mail if the customer rejects e-invoices (retry below).
     const custPref = (customer && customer.payday_delivery) || (site && site.payday_delivery) || null;
-    const delivery = body.delivery || custPref || null;
+    // 2026-08-18 (ákvörðun Agnars: „settu bara default — bæði invoice og skýrsla
+    // sem fylgiskjal í rafrænt, og invoice og skýrslu í tölvupósti ef hann er
+    // skráður"): SJÁLFGEFIÐ er 'both' — rafræn krafa (með skýrsluna sem viðhengi
+    // á reikningnum, sjá attachReport að ofan) OG tölvupóstur með reikningi+skýrslu
+    // þegar netfang er skráð. Gamla 422-afhendingargáttin (Center Hótel-rótin)
+    // gildir ÞVÍ AÐEINS um „email"-stillingu án netfangs — þar færi raunverulega
+    // ekkert út. Stillinga-laus kúnni fer rafrænt á kennitöluna, sem berst alltaf.
+    const delivery = body.delivery || custPref || 'both';
     const hasEmail = !!(payload.customer.email && /@/.test(payload.customer.email));
-    // 4) Afhendingargátt (Center Hótel-rótin): engin vistuð afhendingarstilling
-    //    OG ekkert netfang → rafræni reikningurinn færi „út í tómið" án nokkurs
-    //    afrits. Sama gildir ef fyrirtækið er beinlínis stillt á „Tölvupóstur"
-    //    en ekkert netfang er skráð — þá færi EKKERT út nema bankakrafan.
-    //    Biðstaða frekar en blind sending — skráðu netfang eða payday_delivery
-    //    á fyrirtækið, eða yfirskrifaðu meðvitað.
     const emailOnlyNoEmail = (body.delivery || custPref) === 'email' && !hasEmail;
-    if (!dry && !body.force_delivery && ((!body.delivery && !custPref && !hasEmail) || emailOnlyNoEmail)) {
-      return json(422, { gate: 'delivery', error: emailOnlyNoEmail
-        ? 'Fyrirtækið er stillt á „Tölvupóstur" en ekkert netfang er skráð — reikningurinn myndi hvergi berast. Skráðu netfang á fyrirtækið eða breyttu afhendingarstillingunni.'
-        : 'Engin afhendingarleið: hvorki payday_delivery-stilling né netfang er skráð á kúnnann. Skráðu annað hvort á fyrirtækið og sendu svo — eða sendu með force_delivery:true (rafrænt eingöngu, ekkert afrit).' });
+    if (!dry && !body.force_delivery && emailOnlyNoEmail) {
+      return json(422, { gate: 'delivery', error:
+        'Fyrirtækið er stillt á „Tölvupóstur" en ekkert netfang er skráð — reikningurinn myndi hvergi berast. Skráðu netfang á fyrirtækið eða breyttu afhendingarstillingunni.' });
     }
     if (delivery === 'email') { payload.createElectronicInvoice = false; payload.sendEmail = hasEmail; }
     else if (delivery === 'electronic') { payload.createElectronicInvoice = true; payload.sendEmail = false; }
-    else if (delivery === 'both') { payload.createElectronicInvoice = true; payload.sendEmail = hasEmail; }
-    // else: leave buildPayload's auto default untouched.
+    else { payload.createElectronicInvoice = true; payload.sendEmail = hasEmail; } // 'both' — sjálfgefið
 
     const custEmail = payload.customer.email || (customer && customer.netfang) || '';
     const deliveryLabel = () => payload.createElectronicInvoice
