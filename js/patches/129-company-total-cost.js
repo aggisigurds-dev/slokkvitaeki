@@ -952,6 +952,13 @@
         '<button id="_ctc-vista" type="button" title="Vista óklárað — opnast sjálfkrafa næst, líka í síma" ' +
           'style="flex:0 0 auto;padding:8px 14px;background:#fff;color:var(--ink1);border:1px solid var(--brd);border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">' +
           '💾 Vista óklárað</button>' +
+        // 2026-08-18 (ósk Agnars): endurreikna-takki sem núllstillir handvirk
+        // línu-verð OG línu-afslætti á ferðinni svo ALLT reiknist upp á nýtt frá
+        // afsláttarhópi/tilboðsverði/verðlista. Nauðsyn eftir Center-málið: gömul
+        // föst verð sátu eftir og hunsuðu hópinn. Snertir EKKI tækjaval/nótur/mánuð.
+        '<button id="_ctc-endurreikna" type="button" title="Núllstilla handvirk verð og afslætti á þessari heimsókn — allt reiknast upp á nýtt frá hóp/tilboðsverði/verðlista" ' +
+          'style="flex:0 0 auto;padding:8px 14px;background:#fff;color:#1e40af;border:1px solid #bfdbfe;border-radius:7px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">' +
+          '↻ Endurreikna verð</button>' +
       '</div>' +
       // 2026-06-10: free-text line printed on the reikningur.
       '<div style="margin-bottom:10px">' +
@@ -1104,6 +1111,30 @@
           if (window.Toast && Toast.show) Toast.show('💾 Óklárað vistað — opnast sjálfkrafa næst (líka í síma).');
           setTimeout(() => { vistaBtn.disabled = false; vistaBtn.textContent = '💾 Vista óklárað'; }, 1800);
         });
+      });
+    }
+    // Wire "↻ Endurreikna verð" — núllstillir handvirk línu-verð/-afslætti svo
+    // allt reiknist upp á nýtt frá hóp/tilboðsverði/verðlista. Snertir ekki
+    // tækjaval, nótur, mánuð né heildar-afsláttinn. Vistar gegnum trip-state
+    // (227 speglar í ský) svo hreinsunin fylgi milli véla.
+    const endurBtn = section.querySelector('#_ctc-endurreikna');
+    if (endurBtn) {
+      endurBtn.addEventListener('click', () => {
+        const st = loadTripState(coId);
+        const hadPrice = st.line_price && Object.keys(st.line_price).length;
+        const hadDisc = st.line_disc && Object.keys(st.line_disc).length;
+        if (!hadPrice && !hadDisc) {
+          if (window.Toast && Toast.show) Toast.show('↻ Engin handvirk verð að núllstilla — verðin koma þegar frá hóp/verðlista.');
+          return;
+        }
+        if (!confirm('Núllstilla öll handvirk verð og afslætti á þessari heimsókn?\n\nAllt reiknast þá upp á nýtt frá afsláttarhóp / tilboðsverði / verðlista. Tækjaval, nótur og mánuður haldast óbreytt.')) return;
+        st.line_price = {};
+        st.line_disc = {};
+        saveTripState(coId, st);
+        try { if (window.TripCloudSync && TripCloudSync.saveNow) TripCloudSync.saveNow(coId); } catch (_) {}
+        _tierCache = { coId: null, tier: null };
+        if (window.Toast && Toast.show) Toast.show('↻ Verð endurreiknuð frá hóp/verðlista.');
+        if (typeof window.recomputeCompanyTotalCost === 'function') window.recomputeCompanyTotalCost();
       });
     }
     // Wire úttektarskýrsla button → patch 168.
