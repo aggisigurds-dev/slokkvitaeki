@@ -203,17 +203,20 @@
       const k = (u.type || '—') + '|' + (u.size || '') + '|' + ch;
       grouped[k] = (grouped[k] || 0) + 1;
     }
-    // 2026-05-20: same defaults as patch 129 (3000 / 3500 / 1). The patch-129
-    // input boxes show the defaults visually but only persist to localStorage
-    // on blur — so if the user never touches them, trip.drive/skyrslugerd
-    // are undefined and we'd previously bill 0 kr for both.
+    // Sjálfgildin VERÐA að vera NÁKVÆMLEGA þau sömu og í patch 129 (kostnaðar-
+    // taflan) — annars segir reikningurinn aðra tölu en taflan og misræmis-
+    // vörnin stöðvar staðfestingu. 2026-08-18: uppfært í 3600 / 5600 (var
+    // 3000 / 3500) til samræmis við 129 breytinguna frá 2026-08-17. Reitirnir
+    // í 129 birta sjálfgildin en persista aðeins í localStorage við blur, svo
+    // ef notandinn snertir þá ekki eru trip.drive/skyrslugerd undefined og
+    // þessi sjálfgildi verða að stemma.
     return {
       units,
       servicedIds,
       grouped,
-      drive:       (trip.drive       != null) ? +trip.drive       : 3000,
+      drive:       (trip.drive       != null) ? +trip.drive       : 3600,
       driveQty:    (trip.driveQty    != null) ? Math.max(0, +trip.driveQty) : 1,
-      skyrslugerd: (trip.skyrslugerd != null) ? +trip.skyrslugerd : 3500,
+      skyrslugerd: (trip.skyrslugerd != null) ? +trip.skyrslugerd : 5600,
       skodunaradili: (trip.skodunaradili || '').trim(),
       // 2026-05-21: manual line items added via "+ Bæta við vöru eða þjónustu"
       extras:      Array.isArray(trip.extras) ? trip.extras : [],
