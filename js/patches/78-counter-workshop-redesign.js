@@ -132,8 +132,12 @@
     const byName = (a, b) => String(a.customer || '').localeCompare(String(b.customer || ''), 'is', { sensitivity: 'base' });
     byStatus.received.sort(byName);
     byStatus.inprogress.sort(byName);
-    byStatus.ready.sort(byName);
-    Counter._readyJobs = byStatus.ready;   // fyrir 🖨 Prenta-listann
+    // 2026-08-18 (ósk Agnars): Tilbúin raðast eftir dagsetningu, NÝJAST EFST —
+    // nýjustu verkin eru þau sem kúnninn bíður eftir; jafnteflið brotið á nafni.
+    const byDateDesc = (a, b) =>
+      String((b.dropoff || b.created_at) || '').localeCompare(String((a.dropoff || a.created_at) || '')) || byName(a, b);
+    byStatus.ready.sort(byDateDesc);
+    Counter._readyJobs = byStatus.ready;   // fyrir 🖨 Prenta-listann (sama röð)
 
     const html =
       '<div id="counter-sidebar" style="padding:10px 16px;border-bottom:1px solid var(--brd,#e4e6ea);display:flex;align-items:center;gap:10px;background:#f8f9fb;flex-wrap:wrap">' +
