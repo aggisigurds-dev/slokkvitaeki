@@ -203,20 +203,19 @@
       const k = (u.type || '—') + '|' + (u.size || '') + '|' + ch;
       grouped[k] = (grouped[k] || 0) + 1;
     }
-    // Sjálfgildin VERÐA að vera NÁKVÆMLEGA þau sömu og í patch 129 (kostnaðar-
-    // taflan) — annars segir reikningurinn aðra tölu en taflan og misræmis-
-    // vörnin stöðvar staðfestingu. 2026-08-18: uppfært í 3600 / 5600 (var
-    // 3000 / 3500) til samræmis við 129 breytinguna frá 2026-08-17. Reitirnir
-    // í 129 birta sjálfgildin en persista aðeins í localStorage við blur, svo
-    // ef notandinn snertir þá ekki eru trip.drive/skyrslugerd undefined og
-    // þessi sjálfgildi verða að stemma.
+    // 2026-08-18: sjálfgildin koma nú úr EINNI heimild (window.SlokkVisitDefaults,
+    // sett í patch 129) svo reikningurinn og kostnaðartaflan geti ekki sagt
+    // sitt hvað. Fallback-tölurnar hér eru aðeins öryggisnet ef 129 hefur ekki
+    // hlaðist — collectVisit keyrir við notanda-smell, löngu eftir hleðslu, svo
+    // í reynd ræður alltaf 129-heimildin.
+    const _D = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 5600 };
     return {
       units,
       servicedIds,
       grouped,
-      drive:       (trip.drive       != null) ? +trip.drive       : 3600,
-      driveQty:    (trip.driveQty    != null) ? Math.max(0, +trip.driveQty) : 1,
-      skyrslugerd: (trip.skyrslugerd != null) ? +trip.skyrslugerd : 5600,
+      drive:       (trip.drive       != null) ? +trip.drive       : _D.akstur,
+      driveQty:    (trip.driveQty    != null) ? Math.max(0, +trip.driveQty) : _D.driveQty,
+      skyrslugerd: (trip.skyrslugerd != null) ? +trip.skyrslugerd : _D.skyrslugerd,
       skodunaradili: (trip.skodunaradili || '').trim(),
       // 2026-05-21: manual line items added via "+ Bæta við vöru eða þjónustu"
       extras:      Array.isArray(trip.extras) ? trip.extras : [],

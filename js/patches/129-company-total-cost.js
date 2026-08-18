@@ -14,6 +14,13 @@
   if (window.__companyTotalCostInstalled) return;
   window.__companyTotalCostInstalled = true;
 
+  // 2026-08-18: EIN heimild fyrir sjálfgildi Aksturs/Skýrslugerðar — bæði
+  // kostnaðartaflan (þessi patch) OG reikningsleiðin (165 collectVisit) lesa
+  // HÉÐAN. Áður voru tölurnar harðkóðaðar á báðum stöðum; ég breytti töflunni
+  // (3600/5600) en gleymdi reikningnum (3000/3500) svo þeir sögðu sitt hvað og
+  // misræmis-vörnin stöðvaði staðfestingu. Nú er aðeins EINN staður að breyta.
+  window.SlokkVisitDefaults = window.SlokkVisitDefaults || { akstur: 3600, driveQty: 1, skyrslugerd: 5600 };
+
   let _services = null;
   let _servicesPromise = null;
 
@@ -461,9 +468,10 @@
     //   Skýrslugerð: 5600 kr ex VSK [5600 frá 2026-08-17, var 3500]
     // Only seeded when the entry is brand new (=== undefined). User can
     // clear them to 0 in the inputs if not applicable for a given trip.
-    const driveCost      = (tripState.drive      != null) ? Number(tripState.drive)      : 3600;
-    const driveQty       = (tripState.driveQty   != null) ? Math.max(0, Number(tripState.driveQty)) : 1;
-    const skyrslugerdEx  = (tripState.skyrslugerd != null) ? Number(tripState.skyrslugerd) : 5600;
+    const _D = window.SlokkVisitDefaults;
+    const driveCost      = (tripState.drive      != null) ? Number(tripState.drive)      : _D.akstur;
+    const driveQty       = (tripState.driveQty   != null) ? Math.max(0, Number(tripState.driveQty)) : _D.driveQty;
+    const skyrslugerdEx  = (tripState.skyrslugerd != null) ? Number(tripState.skyrslugerd) : _D.skyrslugerd;
     // 2026-06: afsláttur (%) á heildina — dregst af án-vsk og vsk hlutfallslega.
     // 2026-07-29 (Agnar: „sjálfvirkur afsláttur kemur heldur ekki inn þar"):
     // fyrirtæki með fastan afslátt (fyrirtaeki.afslattur_pct — settur á
