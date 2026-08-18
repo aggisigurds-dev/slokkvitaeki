@@ -484,6 +484,28 @@
   // snertir enga vafra-sögu. Fest á <body> (utan .view) svo patch 245 skinnið
   // hreyfi það ekki. renderInto fær iframe.contentWindow (SalaInvoice skrifar
   // í .document — sama og window).
+  // 2026-08-18: opna reikning BEINT úr sölu-röðinni (solur → SalaInvoice.
+  // renderFromSale, sama mót og „Prenta aftur"). Notað af BÆÐI 🧾-chippinu
+  // (data-invopen) OG 👁-skoða-takkanum í „hvaða reikningur?"-veljaranum svo
+  // reikningur án PDF opnist alltaf án þess að fara á Sölu-síðuna og leita.
+  async function openInvFromSale(num, coId){
+    try{
+      var sb=SB(); if(!sb) throw new Error('engin gagnatenging');
+      var rs=await sb.from('solur').select('*').eq('num', num).limit(1);
+      var sale=rs&&rs.data&&rs.data[0];
+      if(!sale) throw new Error('salan '+num+' fannst ekki í Sölu');
+      if(!(window.SalaInvoice&&SalaInvoice.renderFromSale)) throw new Error('reikningsmótið er ekki tiltækt');
+      var co=getCompany(coId);
+      openInvoiceOverlay(num, function(iwin){
+        SalaInvoice.renderFromSale(iwin, sale, {
+          kennitala: (co&&co.kennitala)||sale.customer_kt||'',
+          heimilisfang: (co&&co.heimilisfang)||''
+        });
+      });
+    }catch(err){
+      alert('Gat ekki opnað reikninginn: '+(err&&err.message||err));
+    }
+  }
   function openInvoiceOverlay(title, renderInto){
     var prev=document.getElementById('_sk-inv-ov'); if(prev){ try{prev.remove();}catch(_){} }
     var ov=document.createElement('div');
@@ -1120,8 +1142,14 @@
         var pArr=(section._resolved && section._resolved[+pk[0]+'|'+pk[1]] && section._resolved[+pk[0]+'|'+pk[1]].invCandidates)||[];
         var pinv=pArr[pidx];
         var purl=pinv?docUrl(pinv):'';
-        if(purl) window.open(purl, '_blank', 'noopener');
-        else alert('Engin skrá tengd þessari sölu — hún kemur bara úr Sölu-skráningu, ekkert PDF til að skoða.');
+        if(purl){ window.open(purl, '_blank', 'noopener'); return; }
+        // 2026-08-18 (Agnar, Icecom: „nú vill reikningurinn ekki opnast … pirrandi
+        // að þurfa að fara á sölusíðu og leita aftur"): ekkert PDF EN reikningurinn
+        // er til sem sölu-röð → opna hann beint úr sölunni (sama og data-invopen),
+        // í stað þess að segja „ekkert til". Notandinn þarf ekki lengur að fara á
+        // Sölu-síðuna og leita handvirkt.
+        if(pinv && pinv.invoice_number){ await openInvFromSale(pinv.invoice_number, coId); return; }
+        alert('Engin skrá tengd þessari sölu — hún kemur bara úr Sölu-skráningu, ekkert PDF til að skoða.');
         return;
       }
 
@@ -1257,23 +1285,7 @@
       var invEl=e.target.closest('[data-invopen]');
       if(invEl){
         e.preventDefault();
-        var num=invEl.getAttribute('data-invopen');
-        try{
-          var sb=SB(); if(!sb) throw new Error('engin gagnatenging');
-          var rs=await sb.from('solur').select('*').eq('num', num).limit(1);
-          var sale=rs&&rs.data&&rs.data[0];
-          if(!sale) throw new Error('salan '+num+' fannst ekki í Sölu');
-          if(!(window.SalaInvoice&&SalaInvoice.renderFromSale)) throw new Error('reikningsmótið er ekki tiltækt');
-          var co=getCompany(coId);
-          openInvoiceOverlay(num, function(iwin){
-            SalaInvoice.renderFromSale(iwin, sale, {
-              kennitala: (co&&co.kennitala)||sale.customer_kt||'',
-              heimilisfang: (co&&co.heimilisfang)||''
-            });
-          });
-        }catch(err){
-          alert('Gat ekki opnað reikninginn: '+(err&&err.message||err));
-        }
+        await openInvFromSale(invEl.getAttribute('data-invopen'), coId);
         return;
       }
     });
