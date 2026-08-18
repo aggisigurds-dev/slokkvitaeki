@@ -152,8 +152,18 @@
     try { return Promise.resolve(as.save(o)); } catch (_) { return Promise.resolve(false); }
   }
 
+  // 2026-08-18: hljóðlát staðbundin skrif — HVORKI _ts-stimpill né skýjaspeglun.
+  // Fyrir AFLEIDD gildi (computed-samtalan í 129): venjulega setItem-leiðin
+  // stimplaði allan ferðahlutinn ferskan og endursendi hann heilan í skýið við
+  // það eitt að HORFA á fyrirtæki — stöðnuð vél gekk þá aftur með gömul föst
+  // verð (Center CO₂ 3270-draugurinn) og hreinsanir héldust aldrei.
+  function silentSet(coId, obj) {
+    try { origSet(PREFIX + coId, JSON.stringify(obj)); } catch (_) {}
+  }
+
   window.TripCloudSync = {
     saveNow: saveNow,
+    silentSet: silentSet,
     flush: function () { clearTimeout(timer); flush(); }
   };
 

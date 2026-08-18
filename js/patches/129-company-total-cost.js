@@ -870,7 +870,14 @@
           String(_st.notes || '').trim());
         if (_substance) {
           _st.computed = { ex: netSubEx, vsk: netVsk, total: totalInc, units: activeUnits, at: new Date().toISOString().slice(0, 10) };
-          saveTripState(coId, _st);
+          // 2026-08-18: computed er AFLEIDD tala — skrifuð HLJÓÐLÁTT (ekkert
+          // _ts-bump, engin skýjaspeglun). Venjulega leiðin endursendi allan
+          // ferðahlutinn ferskan við það eitt að opna fyrirtæki, svo stöðnuð
+          // vél gekk aftur með gömul föst verð og skýja-hreinsanir héldust
+          // aldrei (Center CO₂ 3270). Raunbreytingar notenda fara áfram
+          // gegnum venjulegu leiðina og samstillast eðlilega.
+          if (window.TripCloudSync && TripCloudSync.silentSet) TripCloudSync.silentSet(coId, _st);
+          else saveTripState(coId, _st);
         }
       }
     } catch (_) {}
