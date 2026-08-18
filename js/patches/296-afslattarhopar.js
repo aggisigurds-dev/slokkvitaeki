@@ -401,16 +401,35 @@
     });
   }
 
+  // 2026-08-18 (Agnar: „Afsláttarhópurinn birtist bara stundum eftir mjög langa
+  // stund eða ekki" — mældist ~50 sek): sami dauða-nóðu galli og 129/165 fengu
+  // lagaðan í gær — observerinn var tengdur companies-main EINU SINNI við
+  // ræsingu; þegar viewið endursmíðar nóðuna hlustaði hann á aftengda nóðu og
+  // hlutinn beið eftir tilviljanakenndri seinni hreyfingu (t.d. realtime-
+  // endursókn). Nú: endurtenging þegar nóðan skiptist út + 2,5s öryggispúls
+  // (injectSection er ódýrt no-op þegar hlutinn er þegar á síðunni).
   function attachCard() {
-    const main = document.getElementById('companies-main');
-    if (!main) { setTimeout(attachCard, 800); return; }
-    const view = document.getElementById('view-companies');
-    let t = 0;
-    new MutationObserver(() => {
+    let observed = null, t = 0;
+    const obs = new MutationObserver(() => {
+      const view = document.getElementById('view-companies');
       if (view && !view.classList.contains('active')) return;
       clearTimeout(t);
       t = setTimeout(injectSection, 280);
-    }).observe(main, { childList: true, subtree: true });
+    });
+    function ensure() {
+      const main = document.getElementById('companies-main');
+      if (main && main !== observed) {
+        try { obs.disconnect(); } catch (_) {}
+        obs.observe(main, { childList: true, subtree: true });
+        observed = main;
+      }
+    }
+    ensure();
+    setInterval(() => {
+      ensure();
+      const view = document.getElementById('view-companies');
+      if (view && view.classList.contains('active')) injectSection();
+    }, 2500);
     setTimeout(injectSection, 1500);
   }
   attachCard();
