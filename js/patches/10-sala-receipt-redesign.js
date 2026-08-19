@@ -480,13 +480,6 @@
   function buildHTML(ctx) {
     const t = ctx.totals;
     const lines = ctx.lines;
-    // 2026-08-19 (Agnar — „you forgot to show the discount percentes in what made
-    // the discount"): a SALE-LEVEL afslattur reduces every line by the same factor
-    // (subEx/rawEx). Fold that factor into each line so the Afsl.% column shows the
-    // effective % and Upphæð is the post-discount net — Einingaverð × Fjöldi ×
-    // (1 − Afsl%) = Upphæð, the reference-invoice format. Per-line-only discounts
-    // have saleFactor 1, so their lines are unchanged. Totals block below untouched.
-    const saleFactor = t.rawEx ? t.subEx / t.rawEx : 1;
     const rateOrder = Object.keys(t.byRate).sort((a, b) => +a - +b);
     const vskBreakdown = rateOrder.map(k => {
       const r = t.byRate[k];
@@ -502,8 +495,8 @@
         <td class="desc-col">${esc(l.desc)}</td>
         <td class="qty-col">${l.qty ? l.qty.toLocaleString(ICELAND_LOCALE, { minimumFractionDigits: l.qty % 1 ? 1 : 0, maximumFractionDigits: 2 }) : ''}</td>
         <td class="unit-col">${fmtAmt(l.unitBase)}</td>
-        <td class="afsl-col">${(() => { const ep = l.unitBase > 0 ? (1 - (l.unitEx * saleFactor) / l.unitBase) * 100 : 0; return ep > 0.005 ? fmtPct(ep) : ''; })()}</td>
-        <td class="amt-col">${fmtAmt(l.lineEx * saleFactor)}</td>
+        <td class="afsl-col">${l.dispPct ? fmtPct(l.dispPct) : ''}</td>
+        <td class="amt-col">${fmtAmt(l.lineEx)}</td>
         <td class="vsk-col">${esc(l.vskCode)}</td>
       </tr>`).join('');
 
