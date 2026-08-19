@@ -682,7 +682,7 @@
               `<div class="bw-cname">${esc(co.name)}</div>` +
               `<button class="bw-edit-verk" title="Breyta verki (nafn / sími)" onclick="event.stopPropagation();Workshop.editVerk('${jobIds}')">✏️</button>` +
               `<button class="bw-edit-verk" title="Bæta við tæki" onclick="event.stopPropagation();Workshop.addUnit(${co.jobs[0] ? co.jobs[0].id : 0})">➕</button>` +
-              `<button class="bw-edit-verk" title="Opna Drög (breyta / eyða reikningi)" onclick="event.stopPropagation();Workshop.openDrog()">📝</button>` +
+              `<button class="bw-edit-verk" title="Opna Drög (breyta / eyða reikningi)" onclick="event.stopPropagation();Workshop.openDrog('${co.jobs[0] ? co.jobs[0].num : ''}')">📝</button>` +
             '</div>' +
             `<div class="bw-cmeta">${co.jobs.length} verk · ${co.doneUnits}/${co.totalUnits} lokið${co.jobs[0] && digitsOnly(co.jobs[0].phone) ? ' · ☎ ' + esc(digitsOnly(co.jobs[0].phone)) : ''}</div>` +
           '</div>' +
@@ -1470,7 +1470,15 @@
     };
 
     // ── 📝 Opna Drög — drafts list (✏️ Breyta / 🗑 eyða) frá Verkröð ────────
-    Workshop.openDrog = function() {
+    Workshop.openDrog = function(verkNum) {
+      // Opna DRAGIÐ sem tengist þessu verki beint (breyta / eyða reikningi).
+      // SaleEditor.openFromJob strippar -Vn og finnur móður-söluna (R-000XXX)
+      // svo notandinn fer beint í rétta dragið í stað Drög-yfirlitsins.
+      // Ósk Agnars 2026-08-19.
+      if (verkNum && window.SaleEditor && typeof SaleEditor.openFromJob === 'function') {
+        SaleEditor.openFromJob(verkNum); return;
+      }
+      // Fallback ef ekki tókst að leysa tiltekið drag: gamla hegðunin (listinn).
       if (window.DrogList && typeof DrogList.open === 'function') { DrogList.open(); return; }
       if (window.App && typeof App.switchView === 'function') App.switchView('sala');
     };
