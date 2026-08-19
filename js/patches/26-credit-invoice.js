@@ -201,7 +201,13 @@
     // Build negative lines
     const creditLines = lines.map(l => ({
       ...l,
-      qty: -(+l.qty || 0)
+      qty: -(+l.qty || 0),
+      // 2026-08-19: kreditlínur bera NETTÓ-verðið sem á að bakfæra (ratio-skalað að
+      // neðan svo Σ línur === geymd heild). discount_pct má EKKI fylgja með — annars
+      // les per-line grein Payday (payday-push buildPayload, Slice 3) afsláttinn OFAN Á
+      // þegar-lækkað verð og tvöfaldar hann → kreditkrafan verður of lág (R-000178:
+      // −8.774 í stað −10.968). Prentun sjálf-leiðréttir en bankakrafan ekki.
+      discount_pct: 0
     }));
     // BUG-FIX 2026-07-07: the credit note must honour the ORIGINAL sale's
     // afsláttur. `linur` carry FULL unit prices (the discount lives only in the

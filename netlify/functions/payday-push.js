@@ -362,7 +362,12 @@ function buildPayload(sale, customer, opts) {
           * num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0)
           * (1 - Math.max(0, Math.min(100, num(l.discount_pct))) / 100), 0);
         const target = num(sale.upphaed_an_vsk);
-        if (!(target > 0) || Math.abs(perLineNet - target) <= 2) {
+        // 2026-08-19: treystum per-line % AÐEINS ef það endurskapar geymt upphaed_an_vsk.
+        // Áður stytti `!(target > 0)` framhjá vörninni þegar target var 0/null/neikvætt —
+        // en það er EINMITT þar sem tvíkóðun tvöfaldar afsláttinn: kreditnóta ber
+        // neikvætt target og double-encoded eldri raðir bera 0/null. 100% afsláttur
+        // stenst enn (perLineNet 0 === target 0). Passar ekki → uniform-afleiðslan að neðan.
+        if (Math.abs(perLineNet - target) <= 2) {
           return linur.map(l => mapLine(l, Math.max(0, Math.min(100, num(l.discount_pct)))));
         }
       }
