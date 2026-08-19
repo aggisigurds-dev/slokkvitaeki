@@ -183,61 +183,49 @@
   // Opnar spurningar sem AI hefur EKKI merkt „þarf ekkert svar" (default: telst með).
   function actionableOpen(g) { return (g.open || []).filter((m) => { const b = STATE.briefs.get(m.id); return !b || b.needs_action !== false; }); }
 
-  // ── DATA LAYER (felag_samskipti VIEW ⇐ email_digest; staðfest 2026-08-19) ─────
+  // ── DATA LAYER ──────────────────────────────────────────────────────────────
+  // felag_samskipti er DÝR view (lateral address-matching) — full scan fellur á
+  // statement_timeout úr anon (mælt 2026-08-19: 500 statement timeout). Því er
+  // hópunin gerð server-hlið í public.tv_postar_list() (SECURITY DEFINER, hækkað
+  // timeout, sql/2026-08-19_tv_postar_list.sql). Svarstaða/AI/„svarað" áfram hér.
   async function loadData() {
     const sb = getSB(); if (!sb) throw new Error('DB.sb vantar');
     STATE.loading = true;
 
-    // 1) Fyrirtæki í þjónustu → sett af customer_base_id (grúppun + sía). Base telst
-    //    „í þjónustu" ef EITTHVERT hús þess er í þjónustu (er_i_thjonustu á húsi).
-    const inService = new Set();
+    // 1) Efnisleg gögn (in-service kúnnar + póstar hópaðir) frá server-fallinu.
+    let payload;
     try {
-      const { data } = await sb.from('fyrirtaeki')
-        .select('customer_base_id').eq('er_i_thjonustu', true).is('deleted_at', null).not('customer_base_id', 'is', null).limit(6000);
-      (data || []).forEach((f) => { if (f.customer_base_id != null) inService.add(f.customer_base_id); });
-    } catch (_) {}
-
-    // 2) Nýleg samskipti (báðar áttir). Nafn kúnnans = felag_nafn (customers_base.nafn).
-    let rows = [];
-    try {
-      const { data, error } = await sb.from('felag_samskipti')
-        .select('email_id,customer_base_id,felag_nafn,fyrirtaeki_nafn,sender_name,sender_email,subject,snippet,is_question,fra_okkur,received_at,via')
-        .not('customer_base_id', 'is', null)
-        .order('received_at', { ascending: false }).limit(3000);
+      const { data, error } = await sb.rpc('tv_postar_list');
       if (error) throw error;
-      rows = data || [];
+      payload = data || {};
     } catch (e) { STATE.loading = false; throw e; }
+    STATE.freshestOut = payload.freshest_outbound || '';
 
-    // 3) Hvað er þegar á Þjónustuborðinu (channel_ref='email:<id>') → forðast tvítak.
+    // 2) Hvað er þegar á Þjónustuborðinu (channel_ref='email:<id>') → forðast tvítak.
     STATE.promoted = new Set();
     try {
       const { data } = await sb.from('thjonustubeidni').select('channel_ref').eq('source', 'email').is('deleted_at', null).limit(5000);
       (data || []).forEach((r) => { if (r.channel_ref) STATE.promoted.add(r.channel_ref); });
     } catch (_) {}
 
-    // 4) Grúppa per kúnna (aðeins fyrirtæki í þjónustu).
-    const byId = new Map();
-    let freshestOut = '';
-    for (const r of rows) {
-      const id = r.customer_base_id;
-      if (!inService.has(id)) continue;
-      let g = byId.get(id);
-      if (!g) { g = { base_id: id, nafn: r.felag_nafn || r.fyrirtaeki_nafn || 'Óþekkt fyrirtæki', mails: [], _open: false }; byId.set(id, g); }
-      const mail = {
-        id: r.email_id, subject: r.subject || '(ekkert efni)',
-        sender_name: r.sender_name || '', sender_email: r.sender_email || '',
-        snippet: r.snippet || '', is_question: r.is_question === true,
-        fra_okkur: r.fra_okkur === true, received_at: r.received_at || '', via: r.via || '',
-      };
-      g.mails.push(mail);
-      if (mail.fra_okkur && String(mail.received_at) > freshestOut) freshestOut = mail.received_at;
-    }
-    STATE.freshestOut = freshestOut;
-
-    // 5) Reikna svarstöðu per kúnna.
+    // 3) Byggja hópa + reikna svarstöðu client-hlið (handled-marks, needs_action, recency).
     const handled = loadHandled();
     const groups = [];
-    for (const g of byId.values()) { computeGroup(g, handled); groups.push(g); }
+    for (const c of (payload.customers || [])) {
+      const g = {
+        base_id: c.base_id,
+        nafn: c.nafn || 'Óþekkt fyrirtæki',
+        mails: (c.mails || []).map((r) => ({
+          id: r.id, subject: r.subject || '(ekkert efni)',
+          sender_name: r.sender_name || '', sender_email: r.sender_email || '',
+          snippet: r.snippet || '', is_question: r.is_question === true,
+          fra_okkur: r.fra_okkur === true, received_at: r.received_at || '', via: r.via || '',
+        })),
+        _open: false,
+      };
+      computeGroup(g, handled);
+      groups.push(g);
+    }
     groups.sort((a, b) => (Number(b.needs_reply) - Number(a.needs_reply)) || String(b.last_in).localeCompare(String(a.last_in)));
     STATE.groups = groups;
     STATE.loading = false; STATE.loaded = true;
