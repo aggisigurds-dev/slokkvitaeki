@@ -1106,6 +1106,7 @@
   function scanQr(){if(!window.Scanner||typeof Scanner.open!=='function'){alert('QR skanni ekki tilbúinn');return;}var toast=function(msg){if(window.Toast&&Toast.show)Toast.show(msg);};Scanner.open(function(code){if(!code)return;DB.sb.from('uttaeki').select('serial,type,size').eq('serial',code).maybeSingle().then(function(r){if(r.data){var u=r.data;state.lines.push({type:'service',desc:'Áfylling · '+(u.type||'')+' '+(u.size||''),qty:1,unit_price_ex_vat:8900,vsk_pct:24,ref:u.serial,krefst_verkbeidni:true});toast('✓ '+(u.serial||code)+' bætt við');}else{state.lines.push({type:'service',desc:'Þjónusta',qty:1,unit_price_ex_vat:8900,vsk_pct:24,ref:code,krefst_verkbeidni:true});toast('Tæki „'+code+'" fannst ekki — bætt við sem þjónustu');}rerenderDynamic();}).catch(function(e){toast('Villa við skönnun: '+(e.message||e));});});}
   function addProductLine(pid){var p=state.products.find(function(x){return x.id===pid;});if(!p)return;var ex=state.lines.find(function(l){return l.type==='product'&&l.product_id===pid;});if(ex){ex.qty++;}else state.lines.push({type:'product',desc:p.nafn,qty:1,unit_price_ex_vat:p.verd_an_vsk,vsk_pct:p.vsk_prosenta||24,product_id:p.id,ref:'',krefst_verkbeidni:!!p.krefst_verkbeidni});rerenderDynamic();}
   async function checkout(){
+    if(checkout._busy)return;   // 2026-08-19: re-entrancy vörn (óvart tvísmellt → tvíteknar sölur)
     if(!state.lines.length){alert('Engar línur');return;}
     if(!beidniOk()){alert('Sláðu inn Beiðninúmer Reykjavíkurborgar áður en salan er kláruð.\n(Frumrit beiðni verður að fylgja reikningi.)');var _be=document.getElementById('pos-beidni');if(_be)_be.focus();return;}
     var cust=state.customer.nafn.trim();
@@ -1128,7 +1129,7 @@
     // every reader reproduce exactly what the karfa showed. `totals()` already
     // reflects the same baked prices, so t.ex/t.vsk/t.total match `linur`.
     var linur=bakedLines();
-    var btn=document.getElementById('pos-checkout');btn.disabled=true;btn.innerHTML='Vista...';
+    var btn=document.getElementById('pos-checkout');btn.disabled=true;btn.innerHTML='Vista...';checkout._busy=true;
     try{
       // Use the pre-allocated R-NNNNNN if one was reserved by the checkout
       // dialog (so the printed receipt matches the saved row). Otherwise the
@@ -1190,8 +1191,17 @@
       // totalsFromLinur/165). Áður var hver rúnnuð sér svo ex+vsk gat verið
       // samtals ± 1 kr (sást á Bókhalds-yfirliti).
       var samtalsR=Math.round(t.total), exR=Math.round(t.ex), vskR=samtalsR-exR;
+      // Tvíteknar-sölur vörn (Agnar 2026-08-19, R-000775/776/777 = þrjár eins sölur
+      // ~2 mín á milli): mjúk staðfesting ef sama kt+upphæð var vistuð fyrir innan
+      // við 2 mín. ALDREI hörð stöðvun (ALLTAF LEYFA VISTUN) — bara spurning svo
+      // óvart-endurtekning (veik afgreiðslu-staðfesting → endursmellt) stöðvist.
+      var _dupSig=(custKt||'')+'|'+samtalsR;
+      if(checkout._lastSig===_dupSig && Date.now()-(checkout._lastTs||0)<120000){
+        if(!(await Confirm.show('Sama kúnni og sama upphæð var vistuð fyrir innan við 2 mín.\nVista söluna aftur?')))return;
+      }
       var sr=await DB.sb.from('solur').insert({num:preNum||undefined,starfsmadur:'Kassi',customer_nafn:cust,customer_id:state.customer.co_id,customer_kt:custKt,linur:linur,upphaed_an_vsk:exR,vsk_upphaed:vskR,afslattur:discKr,samtals:samtalsR,greitt_med:pmLabel,athugasemdir:saleNotes,status:saleStatus,source:'pos',paid_at:isPaidNow?nowIso:null,paid_method:isPaidNow?pmLabel:null}).select().single();
       if(sr.error)throw sr.error;
+      checkout._lastSig=_dupSig; checkout._lastTs=Date.now();   // muna síðustu sölu fyrir tvítöku-vörnina
       var num = sr.data && sr.data.num ? sr.data.num : preNum;
       window._pendingReikningurNum = '';
       window._pendingPaymentMethod = '';
@@ -1475,7 +1485,7 @@
       // Hide the customer memo box on reset so it doesn't leak into the next sale
       var memoBoxReset=document.getElementById('pos-customer-memo');if(memoBoxReset)memoBoxReset.style.display='none';
       var v=document.getElementById('view-sala');v.removeAttribute('data-pos-v3');render();
-    }catch(e){alert('Villa: '+(e.message||e));}finally{btn.disabled=false;btn.innerHTML='✓ ÁFRAM';}
+    }catch(e){alert('Villa: '+(e.message||e));}finally{checkout._busy=false;btn.disabled=false;btn.innerHTML='✓ ÁFRAM';}
   }
 
   // Non-blocking success modal that replaces the old alert('✓ Sala ...').
