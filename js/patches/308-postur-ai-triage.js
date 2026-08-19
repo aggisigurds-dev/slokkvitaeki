@@ -28,6 +28,7 @@
     catch (_) { return 'Slökkvitæki'; }
   };
   const dt = (s) => { const m = String(s || '').match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + '.' + m[2] + '.' + m[1] : ''; };
+  const fold = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 
   // Orðaforði borðsins — verður að stemma við js/patches/231-verkbord.js.
   const FLOKKAR = {
@@ -174,20 +175,45 @@
   }
 
   // ── Samþykkja / hafna ─────────────────────────────────────────────────────────
+  // Nákvæm kúnna-tenging (ósk Agnars): AI-nafnið er aðeins notað ef það stemmir
+  // NÁKVÆMLEGA (normað) við nákvæmlega EITT fyrirtæki/lögaðila — annars ekki giskað.
+  async function resolveCustomer(sb, hint) {
+    const name = String(hint || '').trim();
+    if (name.length < 3) return null;
+    const foldName = fold(name);
+    const like = '%' + name.replace(/[%_,]/g, ' ').trim() + '%';
+    try {
+      const fy = (await sb.from('fyrirtaeki').select('nafn,customer_base_id').is('deleted_at', null).ilike('nafn', like).limit(8)).data || [];
+      const hit = fy.filter((x) => x.customer_base_id != null && fold(x.nafn) === foldName);
+      if (hit.length === 1) return { base_id: hit[0].customer_base_id, nafn: hit[0].nafn };
+    } catch (_) {}
+    try {
+      const cb = (await sb.from('customers_base').select('id,nafn').ilike('nafn', like).limit(8)).data || [];
+      const hit = cb.filter((x) => fold(x.nafn) === foldName);
+      if (hit.length === 1) return { base_id: hit[0].id, nafn: hit[0].nafn };
+    } catch (_) {}
+    return null;
+  }
   async function apply(id) {
     const sb = getSB(); if (!sb) return;
     const m = STATE.mals.find((x) => String(x.id) === String(id));
     const s = STATE.sugg.get(String(id));
     if (!m || !s) return;
     const patch = { updated_at: nowIso() };
-    if (s.flokkur && FLOKKAR[s.flokkur] && !m.flokkur) patch.flokkur = s.flokkur;   // fill-if-empty
-    const cur = parseTags(m.tags);
-    const merged = [...new Set(cur.concat(parseTags(s.tags)))];
-    if (merged.length !== cur.length) patch.tags = merged;                          // union
-    if (s.summary && !(m.summary && String(m.summary).trim())) patch.summary = s.summary;  // fill-if-empty
-    if (s.important === true && m.important !== true) patch.important = true;        // upgrade-only
+    // Yfirskrift (ósk Agnars): tillagan vinnur — en aðeins þar sem AI hefur skoðun
+    // (null flokkur / tóm merki = „óviss", ekki „hreinsaðu").
+    if (s.flokkur && FLOKKAR[s.flokkur]) patch.flokkur = s.flokkur;
+    const st = parseTags(s.tags);
+    if (st.length) patch.tags = st;
+    if (s.summary) patch.summary = s.summary;
+    patch.important = s.important === true;
+    // Sjálfvirk kúnna-tenging (ósk Agnars): aðeins ótengd mál, aðeins nákvæm samsvörun.
+    if (!m.customer_base_id && s.customer_hint) {
+      const link = await resolveCustomer(sb, s.customer_hint);
+      if (link) { patch.customer_base_id = link.base_id; patch.customer_nafn = link.nafn; }
+    }
     try {
-      if (Object.keys(patch).length > 1) { const r = await sb.from('thjonustubeidni').update(patch).eq('id', m.id); if (r.error) throw r.error; Object.assign(m, patch); }
+      const r = await sb.from('thjonustubeidni').update(patch).eq('id', m.id); if (r.error) throw r.error; Object.assign(m, patch);
       await sb.from('postur_ai_flokkun').update({ status: 'samthykkt', decided_at: nowIso(), decided_by: me() }).eq('beidni_id', m.id);
       s.status = 'samthykkt';
     } catch (e) { toast('Villa við að nota: ' + (e.message || e), true); return; }
@@ -205,7 +231,7 @@
   async function applyAll() {
     const list = toReview();
     if (!list.length) return;
-    if (!window.confirm('Nota allar ' + list.length + ' AI-tillögur? (fyllir aðeins tóma reiti — yfirskrifar ekkert handvirkt)')) return;
+    if (!window.confirm('Nota allar ' + list.length + ' AI-tillögur? (yfirskrifar flokk/merki/samantekt með tillögunni; tengir ótengd mál við kúnna þegar nafn stemmir nákvæmlega)')) return;
     for (const m of list) { await apply(m.id); }  // eslint gott: sequential á tilgangi (fá köll, forðast DB-þrýsting)
     toast('✓ Samþykkti ' + list.length + ' tillögur');
   }
@@ -233,7 +259,7 @@
         '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">' + aiFlokk + ' ' + aiTags + '</div>' +
         (s.summary ? '<div class="pat-sum"><b>Samantekt:</b> ' + esc(s.summary) + '</div>' : '') +
         (s.action ? '<div class="pat-sum"><b>Næsta skref:</b> ' + esc(s.action) + '</div>' : '') +
-        (s.customer_hint && !m.customer_base_id ? '<div class="pat-sum"><b>Mögulegur kúnni:</b> ' + esc(s.customer_hint) + ' <span class="pat-cur">(ekki sjálfkrafa tengt)</span></div>' : '') +
+        (s.customer_hint && !m.customer_base_id ? '<div class="pat-sum"><b>Mögulegur kúnni:</b> ' + esc(s.customer_hint) + ' <span class="pat-cur">(tengist sjálfkrafa ef nafn stemmir nákvæmlega)</span></div>' : '') +
         '<div class="pat-acts">' +
           '<button class="pat-btn go" data-act="apply" data-id="' + esc(m.id) + '">✓ Nota</button>' +
           '<button class="pat-btn" data-act="reject" data-id="' + esc(m.id) + '">✕ Hafna</button>' +
