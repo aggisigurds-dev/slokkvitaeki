@@ -155,13 +155,16 @@ function tvPrompt(list) {
     'value er stutt (t.d. „12 stk", „45.000 kr", „Ármúli 6, 3. hæð", „fyrir föstudag"). Tómt fylki ef ekkert áþreifanlegt.\n' +
     '- contact: {name,phone,email} — tengiliður/sími/netfang EF það kemur fram í póstinum, annars tómir strengir.\n' +
     '- important: true ef áríðandi (kvörtun, öryggismál, gjaldfallið, „strax"), annars false.\n' +
+    '- needs_action: true EF pósturinn kallar á svar eða aðgerð frá okkur (spurning, pöntun, ' +
+    'beiðni, kvörtun). false EF þetta er BARA þökk/staðfesting/kvittun/„takk"/sjálfvirk tilkynning ' +
+    'sem þarf EKKERT svar. Vertu varfærinn: ef í vafa, true.\n' +
     '- urgency: lagur|venjulegur|har.\n' +
     '- reply_hint: EIN stutt setning — hvað starfsmaður ætti að gera næst / svara.\n' +
     '- flokkur: gróf flokkun — NÁKVÆMLEGA einn af tilbod|thjonusta|brunakerfi|rukkun|samskipti, eða null.\n' +
     '- customer_hint: nafn fyrirtækis/kúnna EF það kemur skýrt fram, annars "".\n\n' +
     'Svaraðu EINGÖNGU sem hreint JSON fylki, í sömu röð og málin, einn hlutur per mál, ekkert annað:\n' +
     '[{"summary":"…","ask":"…","details":[{"label":"Magn","value":"12 stk"}],' +
-    '"contact":{"name":"","phone":"","email":""},"important":false,"urgency":"venjulegur",' +
+    '"contact":{"name":"","phone":"","email":""},"important":false,"needs_action":true,"urgency":"venjulegur",' +
     '"reply_hint":"…","flokkur":"tilbod","customer_hint":""}, …]\n\n' +
     'PÓSTARNIR:\n' + list;
 }
@@ -185,6 +188,7 @@ function validateTv(o, model) {
     details,
     contact: hasContact ? contact : null,
     important: o.important === true,
+    needs_action: o.needs_action === false ? false : true,   // varfærið: aðeins skýrt false þaggar niður
     urgency: URGENCY.includes(o.urgency) ? o.urgency : 'venjulegur',
     reply_hint: o.reply_hint ? String(o.reply_hint).slice(0, 240) : '',
     flokkur: FLOKKAR.includes(o.flokkur) ? o.flokkur : null,
