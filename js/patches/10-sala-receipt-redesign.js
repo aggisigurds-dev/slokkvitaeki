@@ -218,6 +218,15 @@
           unitBase = unitEx;
           unitEx = Math.round(unitEx * (1 - dp / 100));
           dispPct = dp;
+        } else {
+          // 2026-08-19 (Slice 3 — Agnar „it was 15% only from few lines"): a SAVED
+          // per-line discount lives in l.discount_pct (the editor's Afsl.% column).
+          // Show the % in the column and discount the line — UNROUNDED so Σ matches
+          // the stored upphaed_an_vsk exactly (the editor's recomputeTotals is
+          // unrounded too). No baking → no 150→128→151 rounding drift, and Payday
+          // bills the SAME per-line % (payday-push buildPayload, per-line branch).
+          const ds = Math.max(0, Math.min(100, parseFloat(l.discount_pct) || 0));
+          if (ds > 0) { unitBase = unitEx; unitEx = unitEx * (1 - ds / 100); dispPct = ds; }
         }
         const vskPct = (l.vsk_pct == null ? 24 : +l.vsk_pct);
         // 2026-08-10 (ósk Agnars): Einingaverð dálkurinn sýnir nú m. vsk — talan
@@ -914,15 +923,29 @@
       const le = (Number(l.qty) || 0) * (Number(l.unit_price_ex_vat) || 0);
       return a + le * (1 + ((l.vsk_pct == null ? 24 : Number(l.vsk_pct)) || 0) / 100);
     }, 0);
-    if (uniformPct > 0 && afsl === 0) {
-      optsDiscountPct = uniformPct;                // case A
+    if (anyPct && afsl === 0) {
+      // 2026-08-19 (Slice 3 — Agnar „it was 15% only from few lines"): per-line
+      // discount_pct with NO sale-level lump. Normal case → apply the % per line
+      // (buildLines does, unrounded): the Afsl.% column shows „15,00" on the tæki
+      // lines, Upphæð = unit×qty×(1−%), Σ = upphaed_an_vsk exactly, and Payday bills
+      // the same per line. A few LEGACY rows baked the discount into the price AND
+      // kept discount_pct (double-encoded) — re-applying would double-discount, so
+      // keep discount_pct only when applying it reproduces samtals; else strip it.
+      const applied = linur.reduce((a, l) => {
+        const d = Math.max(0, Math.min(100, Number(l.discount_pct) || 0));
+        const le = (Number(l.qty) || 0) * (Number(l.unit_price_ex_vat) || 0) * (1 - d / 100);
+        return a + le * (1 + ((l.vsk_pct == null ? 24 : Number(l.vsk_pct)) || 0) / 100);
+      }, 0);
+      const rawT = sumT(linur), saved = Number(sale.samtals);
+      lines = (isFinite(saved) && saved !== 0 && Math.abs(rawT - saved) < Math.abs(applied - saved))
+        ? linur.map(l => (Number(l.discount_pct) ? Object.assign({}, l, { discount_pct: 0 }) : l))
+        : linur;
     } else if (anyPct) {
-      // 2026-07-08 (afsláttar-úttekt): non-uniform line discounts, or line
-      // discounts combined with a sale-level afslattur, used to fall into
-      // "case B — ignore both" and printed FULL price. Decide by reproducing
-      // the stored samtals: bake the per-line discounts into the prices
-      // (± afslattur on top), or leave raw for TRUE legacy case-B rows where
-      // the discount was already baked in AND discount_pct kept.
+      // per-line discount_pct COMBINED with a sale-level lump (afsl != 0) — bake the
+      // line discounts into the prices (± afslattur on top), or leave already-net
+      // rows raw. Whichever reproduces the stored samtals. NB buildLines now applies
+      // a raw discount_pct, so the "raw" branch STRIPS it to keep the old full-price
+      // meaning.
       const baked = linur.map(l => {
         const d = Math.max(0, Math.min(100, Number(l.discount_pct) || 0));
         if (!d) return l;
@@ -932,6 +955,7 @@
         nl.discount_pct = 0;
         return nl;
       });
+      const rawStripped = linur.map(l => (Number(l.discount_pct) ? Object.assign({}, l, { discount_pct: 0 }) : l));
       const rawT = sumT(linur), bakedT = sumT(baked);
       const saved = Number(sale.samtals);
       const cands = [
@@ -941,7 +965,7 @@
       ];
       let best = cands[0];
       if (isFinite(saved) && saved !== 0) cands.forEach(c => { if (c.diff < best.diff) best = c; });
-      if (best.useBaked) lines = baked;
+      lines = best.useBaked ? baked : rawStripped;
       if (best.useAfsl) optsDiscount = afsl;
     } else if (afsl > 0) {
       optsDiscount = afsl;                          // case C

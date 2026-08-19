@@ -341,27 +341,43 @@ function buildPayload(sale, customer, opts) {
       phone,
     },
     lines: (() => {
-      // Reikna discount % út frá samtali line-verða ex-VAT vs solur.upphaed_an_vsk
-      // (sem er final ex-VAT eftir afslátt). Þetta handlar alla 3 POS-vistunar-
-      // hætti: (a) afslattur=0, (b) afslattur ex-VAT (pre-2026-06-12),
-      // (c) afslattur m.vsk (post-2026-06-12, með ratio bakaðri í line-verð líka).
-      const lineTotalEx = linur.reduce((s, l) => {
-        const lqty = num(l.qty || l.fjoldi || l.quantity || 1);
-        const lpx = num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0);
-        return s + lqty * lpx;
-      }, 0);
+      const mapLine = (l, discPct) => ({
+        description: l.desc || l.nafn || l.lysing || l.text || l.description || 'Vara',
+        quantity: num(l.qty || l.fjoldi || l.quantity || 1),
+        unitPriceExcludingVat: num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0),
+        vatPercentage: num(l.vsk_pct || l.vsk_prosenta || l.vat || l.vatRate || 24),
+        discountPercentage: discPct,
+      });
+      // 2026-08-19 (Slice 3): when the sale carries PER-LINE discounts
+      // (linur[].discount_pct — the editor's Afsl.% column), bill each line at its
+      // OWN %, so „15% á tækjalínunum, 0% á byrjunargjaldi" berst í bankakröfuna
+      // NÁKVÆMLEGA eins og prentað er — í stað þess að jafna út í eina prósentu.
+      const anyLinePct = linur.some(l => num(l.discount_pct) > 0);
+      if (anyLinePct) {
+        // Öryggisvörn: treystum per-line % AÐEINS ef það endurskapar geymt
+        // upphaed_an_vsk. Ver gegn eldri „double-encoded" röðum þar sem verðið er
+        // ÞEGAR lækkað OG discount_pct enn sett (t.d. R-000461) — þar myndi per-line
+        // tvöfalda afsláttinn. Passar ekki → föllum í uniform-afleiðsluna að neðan.
+        const perLineNet = linur.reduce((s, l) => s + num(l.qty || l.fjoldi || l.quantity || 1)
+          * num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0)
+          * (1 - Math.max(0, Math.min(100, num(l.discount_pct))) / 100), 0);
+        const target = num(sale.upphaed_an_vsk);
+        if (!(target > 0) || Math.abs(perLineNet - target) <= 2) {
+          return linur.map(l => mapLine(l, Math.max(0, Math.min(100, num(l.discount_pct)))));
+        }
+      }
+      // Enginn per-line afsláttur → afleiðum EINA prósentu úr line-verðum ex-VAT vs
+      // solur.upphaed_an_vsk (final ex-VAT eftir afslátt). Handlar alla vistunar-
+      // hætti: afslattur=0, ex-VAT afslattur, m.vsk afslattur (bakað í line-verð).
+      // Baked per-line afslættir (verð þegar lækkað, discount_pct=0) lenda hér með
+      // lineDiscountPct=0 og rukkast eins og prentað (afslátturinn er í verðinu).
+      const lineTotalEx = linur.reduce((s, l) => s + num(l.qty || l.fjoldi || l.quantity || 1) * num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0), 0);
       const targetExVat = num(sale.upphaed_an_vsk);
       let lineDiscountPct = 0;
       if (lineTotalEx > 0 && targetExVat > 0 && targetExVat < lineTotalEx - 0.5) {
         lineDiscountPct = Math.max(0, Math.min(100, (1 - targetExVat / lineTotalEx) * 100));
       }
-      return linur.map(l => ({
-        description: l.desc || l.nafn || l.lysing || l.text || l.description || 'Vara',
-        quantity: num(l.qty || l.fjoldi || l.quantity || 1),
-        unitPriceExcludingVat: num(l.unit_price_ex_vat || l.verd_an_vsk || l.unit_price || l.price || 0),
-        vatPercentage: num(l.vsk_pct || l.vsk_prosenta || l.vat || l.vatRate || 24),
-        discountPercentage: lineDiscountPct,
-      }));
+      return linur.map(l => mapLine(l, lineDiscountPct));
     })(),
     currencyCode: 'ISK',
     // 'send' → SENT (Payday klárar + afhendir strax); 'draft' → DRAFT (aðeins drög
