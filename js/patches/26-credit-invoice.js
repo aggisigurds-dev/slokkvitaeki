@@ -153,6 +153,14 @@
         <input id="ci-reason" type="text" class="ci-input" placeholder="t.d. Skilavara, rangur reikningur…">
       </div>`;
 
+    // Reset the confirm button on every open. buildModal() builds the modal
+    // once and reuses it, so the same #ci-confirm element persists across
+    // opens — and the success path only calls closeCIModal() without restoring
+    // the button, leaving it disabled + "Bíð…". Without this reset the NEXT
+    // credit showed a stuck button until a full page reload. (Agnar 2026-08-19)
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = '✓ Gefa út kreditreikning';
+
     modal.style.display = 'flex';
 
     confirmBtn.onclick = async () => {
