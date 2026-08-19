@@ -217,7 +217,9 @@
   }
 
   // ── Data load ────────────────────────────────────────────────────────────
-  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'greitt', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'month' };
+  // scope sjálfgefið 'all' (Allt) — ósk Agnars 2026-08-19: opnast á ÖLLUM
+  // færslum, ekki bara mánuðinum. Notandinn getur enn valið Mán/Ár í seg-rofa.
+  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'greitt', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'all' };
 
   // 2026-07-01: customer lookup by NAME or KENNITALA — pull a customer's WHOLE
   // sölu-/reikningasaga (all time, not month-bounded) so "sendu mér kvittun frá
@@ -319,7 +321,7 @@
     const m = filterMonth || _state.month || new Date();
     _state.month = m;
 
-    // 2026-07-01: scope — Mánuður (default) · Ár (whole year) · Allt (all time).
+    // 2026-07-01: scope — Mánuður · Ár (whole year) · Allt (all time, default).
     let q = SB.from('solur')
       .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,updated_at,paid_at,is_credit,credit_of,starfsmadur,status')
       .order('created_at', { ascending: false });
