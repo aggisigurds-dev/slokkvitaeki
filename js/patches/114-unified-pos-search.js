@@ -80,6 +80,7 @@
         .range(from, to)).then(rows => ({ data: rows })),
       SB.from('vidskiptavinir')
         .select('id,nafn,kennitala,simi,farsimi,heimilisfang,netfang,afslattur_pct,athugasemdir')
+        .is('deleted_at', null)   // 2026-08-19 (Agnar #9): sömu sía og fyrirtaeki að ofan — eyddir einstaklingar hurfu ekki úr POS-leit
         .order('nafn')
     ]).then(results => {
       const fy = (results[0] && results[0].data) || [];
@@ -438,6 +439,25 @@
         source: 'vidskiptavinir'
       });
     });
+
+    // 2026-08-19 (Agnar, POS-leit #9): fella kt-lausa „Viðskipti"-stubba inn í
+    // raunverulegu has-kt færsluna. kt-lykla-dedupið að ofan nær kt-lausum stub
+    // ALDREI (hann á engan lykil) svo hann skyggði á alvöru færsluna — t.d.
+    // „Indverska matarfélagið ehf" (kt-laus) á móti raun-færslunni með kt.
+    // Fjarlægðu kt-lausa röð AÐEINS þegar has-kt röð með sama normaliseraða nafni
+    // er til. Sameina ALDREI tvær has-kt raðir — tvær ólíkar kt = tveir aðilar
+    // (varúð úr kúnna-líkaninu).
+    (function collapseKtlessStubs() {
+      const norm = s => String(s || '').toLowerCase()
+        .replace(/\b(ehf|hf|slf|sf)\.?\s*$/, '')
+        .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+      const ktNames = new Set();
+      all.forEach(r => { if (ktDigits(r.kennitala)) ktNames.add(norm(r.nafn)); });
+      for (let i = all.length - 1; i >= 0; i--) {
+        const nm = norm(all[i].nafn);
+        if (nm && !ktDigits(all[i].kennitala) && ktNames.has(nm)) all.splice(i, 1);
+      }
+    })();
 
     const matches = all.filter(c => {
       const n = (c.nafn || '').toLowerCase();
