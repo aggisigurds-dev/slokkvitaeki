@@ -8,7 +8,8 @@
  *   1. Upplýsingar — týpa, stærð, staðsetning, viðskiptavinur, sími, þrýstingur,
  *      næsta skoðun, síðasta skoðun, dagsetningar
  *   2. Strikamerki / QR — núverandi gildi sýnt sem QR-kóði + texti, hnappur
- *      til að breyta (slá inn handsmíðað eða skanna), prenta á 54×17mm
+ *      til að breyta (slá inn handsmíðað eða skanna). „Prenta miða" í fæti
+ *      endurnýtir afgreiðslu-miðaflæðið (Print.showJob → Brother 18×Nmm, patch 139/08)
  *   3. Staða — quick-buttons: Í lagi · Þarfnast viðgerðar · Bilað · Ónýtt
  *   4. Athugasemdir — textareiti með auto-save (debounce)
  *   5. Saga — listi yfir verkbeiðnir tengdar þessu tæki (síðustu 10)
@@ -86,8 +87,30 @@
     return true;
   }
 
-  // ── Print 54×17mm label (re-uses BarcodeMgr logic) ────────────────────────
+  // ── Prenta miða ───────────────────────────────────────────────────────────
+  // Endurnýtir NÁKVÆMLEGA afgreiðslu-miðaflæðið sem Agnar staðfestir að prenti
+  // rétt: patch 139 Print.showJob (miðinn sem prentast þegar sala+verkbeiðni er
+  // búin til). Við pökkum þessu eina tæki sem eins-línu „job" svo það fari um
+  // sömu showJobBrother-leiðina → pickLength valmynd (Brother PT-P750W 18×Nmm) +
+  // patch-08 QrLabelCustomer sniðmátið, í stað gamla 54×17mm BarcodeMgr-kortsins.
+  // showJobBrother les job.units[].serial/type/size + job.customer/phone — allt
+  // til staðar á uttaeki/lanstaeki röðinni sem modalið hleður.
   function printLabel(unit) {
+    const P = window.Print;
+    if (P && typeof P.showJob === 'function') {
+      P.showJob({
+        units: [unit],
+        customer: unit.client || unit.customer || '',
+        phone: unit.phone || ''
+      });
+      return;
+    }
+    // Varaleið 1: eins-tækis Brother-leiðin (sama sniðmát, án job-hjúps).
+    if (P && typeof P.showQR === 'function') {
+      P.showQR(unit);
+      return;
+    }
+    // Varaleið 2: gamli patch-95 prentarinn ef Brother-einingin er ekki hlaðin.
     if (window.BarcodeMgr && window.BarcodeMgr.print) {
       let jobCustomer = unit.client || '', jobPhone = unit.phone || '';
       try {
@@ -98,7 +121,7 @@
       } catch (_) {}
       window.BarcodeMgr.print(unit, jobCustomer, jobPhone);
     } else {
-      alert('Prentvirknin (patch 95) ekki hlaðin.');
+      alert('Prentvirknin er ekki hlaðin.');
     }
   }
 
@@ -146,7 +169,7 @@
         // Footer
         '<div style="padding:12px 22px;border-top:1px solid #e2e8f0;background:#f8fafc;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap">' +
           '<span id="_ud-status-text" style="flex:1;font-size:12px;color:#94a3b8;align-self:center"></span>' +
-          '<button id="_ud-print" type="button" style="padding:9px 16px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">🖨 Prenta label</button>' +
+          '<button id="_ud-print" type="button" style="padding:9px 16px;background:#fff;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">🖨 Prenta miða</button>' +
           '<button id="_ud-close" type="button" style="padding:9px 18px;background:#0f172a;color:#fff;border:none;border-radius:8px;cursor:pointer;font:inherit;font-size:13px;font-weight:600">Loka</button>' +
         '</div>' +
       '</div>';
