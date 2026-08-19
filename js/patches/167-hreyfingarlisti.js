@@ -122,6 +122,12 @@
     }
     return '<span style="color:#cbd5e1">—</span>';
   }
+  // 2026-08-19 (Agnar): merki á upprunareikning sem hefur verið kreditfærður.
+  // Leitt af credit_of (kreditnóta vísar á id frumreikningsins) — engin schema-breyting.
+  function creditedBadge(s) {
+    if (s.is_credit || !_hlCreditedIds.has(s.id)) return '';
+    return '<span title="Þessi reikningur hefur verið kreditfærður" style="display:inline-block;font-size:10px;font-weight:700;color:#9f1239;background:#ffe4e6;border:1px solid #fecdd3;padding:2px 7px;border-radius:99px;white-space:nowrap;margin-left:6px">↩ kreditfært</span>';
+  }
   function fmtTime(iso) {
     if (!iso) return '';
     const d = new Date(iso);
@@ -217,7 +223,10 @@
   }
 
   // ── Data load ────────────────────────────────────────────────────────────
-  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'greitt', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'month' };
+  // scope sjálfgefið 'all' (Allt) — ósk Agnars 2026-08-19: opnast á ÖLLUM
+  // færslum, ekki bara mánuðinum. Notandinn getur enn valið Mán/Ár í seg-rofa.
+  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'created_at', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'all' };
+  let _hlCreditedIds = new Set();  // 2026-08-19: id upprunareikninga sem hafa verið kreditfærðir (fyllt í render())
 
   // 2026-07-01: customer lookup by NAME or KENNITALA — pull a customer's WHOLE
   // sölu-/reikningasaga (all time, not month-bounded) so "sendu mér kvittun frá
@@ -319,7 +328,7 @@
     const m = filterMonth || _state.month || new Date();
     _state.month = m;
 
-    // 2026-07-01: scope — Mánuður (default) · Ár (whole year) · Allt (all time).
+    // 2026-07-01: scope — Mánuður · Ár (whole year) · Allt (all time, default).
     let q = SB.from('solur')
       .select('id,num,customer_nafn,customer_id,customer_kt,samtals,upphaed_an_vsk,vsk_upphaed,greitt_med,athugasemdir,created_at,updated_at,paid_at,is_credit,credit_of,starfsmadur,status')
       .order('created_at', { ascending: false });
@@ -391,6 +400,9 @@
     if (!main) return;
 
     const all = _state.all;
+    // 2026-08-19 (Agnar): safn af id-um upprunareikninga sem einhver kreditnóta
+    // vísar á (credit_of) → merkjum þá „kreditfært" í listanum.
+    _hlCreditedIds = new Set(all.filter(r => r.is_credit && r.credit_of != null).map(r => r.credit_of));
     const q = String(_state.search || '').trim().toLowerCase();
     const rows = sortRows(applyFilter(all).filter(r => searchMatch(r, q)));
 
@@ -745,7 +757,7 @@
       <td style="white-space:nowrap">${ktCell(s.customer_kt)}</td>
       <td>${typeBtnFor(s)}</td>
       <td>${methodBtn(s.greitt_med)}</td>
-      <td>${statusBtnFor(s)}</td>
+      <td>${statusBtnFor(s)}${creditedBadge(s)}</td>
       <td style="text-align:right;white-space:nowrap">${amountHtml(s)}</td>
       <td><div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:nowrap">${acts}</div></td>
     </tr>`;
@@ -769,7 +781,7 @@
           <div style="margin-top:8px;font-size:15px;font-weight:700;color:#11141c;overflow-wrap:anywhere;line-height:1.3">${custNameHtml(s)}</div>
           <div style="margin-top:4px">${ktCell(s.customer_kt)}</div>
           <div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-            ${typeBtnFor(s)} ${methodBtn(s.greitt_med)} ${statusBtnFor(s)}
+            ${typeBtnFor(s)} ${methodBtn(s.greitt_med)} ${statusBtnFor(s)} ${creditedBadge(s)}
           </div>
         </div>
         <div class="hl-macts">${actsAbtn(s)}</div>
@@ -788,7 +800,7 @@
       <td style="padding:10px 14px;white-space:nowrap">${ktCell(s.customer_kt)}</td>
       <td style="padding:10px 14px">${typeBtnFor(s)}</td>
       <td style="padding:10px 14px">${methodBtn(s.greitt_med)}</td>
-      <td style="padding:10px 14px">${statusBtnFor(s)}</td>
+      <td style="padding:10px 14px">${statusBtnFor(s)}${creditedBadge(s)}</td>
       <td style="padding:10px 14px;text-align:right">${amountHtml(s)}</td>
       <td style="padding:7px 14px;border-left:1px solid #eef1f6">
         <div style="display:flex;gap:6px;justify-content:flex-end">${actsAbtn(s)}</div>

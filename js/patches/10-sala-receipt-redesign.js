@@ -180,7 +180,20 @@
     if (state && Array.isArray(state.lines) && state.lines.length) {
       return state.lines.map((l, i) => {
         const qty = +l.qty || 0;
-        const unitEx = +l.unit_price_ex_vat || 0;
+        let unitEx = +l.unit_price_ex_vat || 0;
+        let desc = l.desc || '';
+        // 2026-08-19 (Agnar): honour a LIVE per-line discount (disc_pct) the POS
+        // "Afsláttur %" box writes on the cart line. Baking it into the price +
+        // the "· −N% afsl." marker normally happens in bakedLines() AT SAVE, but
+        // the checkout dialog prints the receipt from the live, unbaked state
+        // BEFORE the save — so a per-line discount printed at full price with no
+        // Afsláttur line. disc_pct is a live-only field (0 saved rows carry it),
+        // so this can't collide with renderFromSale's kept-pct (case A) path.
+        const dp = Math.max(0, Math.min(100, parseFloat(l.disc_pct) || 0));
+        if (dp > 0 && !/·\s*[−-]\s*\d/.test(desc)) {
+          unitEx = Math.round(unitEx * (1 - dp / 100));
+          desc = desc + ' · −' + (Math.round(dp * 100) / 100).toString().replace('.', ',') + '% afsl.';
+        }
         const vskPct = (l.vsk_pct == null ? 24 : +l.vsk_pct);
         // 2026-08-10 (ósk Agnars): Einingaverð dálkurinn sýnir nú m. vsk — talan
         // sem viðskiptavinurinn raunverulega greiðir per stk, ekki nettóverðið.
@@ -189,7 +202,7 @@
         const vskCode = vskPct >= 20 ? '2' : (vskPct >= 10 ? '1' : '0');
         return {
           ref: l.ref || (l.product_id ? String(l.product_id) : ''),
-          desc: l.desc || '',
+          desc: desc,
           qty,
           unitEx,
           unitGross,
@@ -292,7 +305,13 @@
       .no-print { display: none !important; }
       body { background: #fff !important; padding: 0 !important; }
       .sheet { box-shadow: none !important; margin: 0 !important; padding: 16mm !important; }
+      .sheet[contenteditable="true"] { outline: none !important; }
     }
+    /* 2026-08-19 (Agnar #7): „Breyta texta" gerir reikninginn ritanlegan á
+       forskoðunar-skjánum og prentast þá eins og skilið er við hann. Ramminn
+       sjálfur prentast aldrei — sjá regluna í @media print að ofan. */
+    .sheet[contenteditable="true"] { outline: 2px dashed #d8451a; outline-offset: 6px; }
+    .sheet[contenteditable="true"]:focus-within { outline-color: #b8390f; }
     html, body {
       font-family: Arial, Helvetica, 'Helvetica Neue', sans-serif;
       background: #f1f5f9; margin: 0; padding: 24px 16px; color: #000;
@@ -540,6 +559,7 @@
     return `
       <div class="no-print">
         <button onclick="window.print()" class="btn-primary">🖨 ${ctx.isTilbod ? 'Prenta tilboð' : 'Prenta reikning'}</button>
+        <button type="button" onclick="var s=document.querySelector('.sheet');if(!s)return;var on=s.getAttribute('contenteditable')==='true';s.setAttribute('contenteditable',on?'false':'true');this.textContent=on?'✏️ Breyta texta':'✓ Búið að breyta';if(!on){s.focus();}" class="btn-secondary" title="Gerðu reikninginn ritanlegan og lagaðu texta áður en þú prentar">✏️ Breyta texta</button>
         <button onclick="window.close()" class="btn-secondary">Loka</button>
       </div>
       <div class="sheet">
@@ -721,7 +741,18 @@
     // printed. Merging unconditionally fixes that for every print path.
     const sc = (state && state.customer) || {};
     const billNafn = (customer && customer.nafn) || sc.nafn || opts.customerName || '';
-    const billKt   = (customer && customer.kennitala) || sc.kennitala || sc.kt || opts.customerKt || '';
+    // 2026-08-19 (Agnar, R-000773): the SAVED sale's own kennitala wins. A
+    // legacy walk-in row saved under the same first name was matched by
+    // lookupCustomer (name before kt) and its 999999-9999 overrode the real kt
+    // here — so the invoice printed 999999-9999 even though solur.customer_kt
+    // was correct. Only fall back to the looked-up / opts kt when the sale
+    // carries no real kt (keeps genuine walk-ins and the empty-kt recovery
+    // case intact).
+    const _scKt = String(sc.kt || sc.kennitala || '').replace(/[^0-9]/g, '');
+    const _scRealKt = _scKt.length === 10 && _scKt !== '9999999999';
+    const billKt   = _scRealKt
+      ? (sc.kt || sc.kennitala)
+      : ((customer && customer.kennitala) || sc.kennitala || sc.kt || opts.customerKt || '');
     const billAddr = (customer && customer.heimilisfang) || sc.heimilisfang || opts.customerHeimilisfang || '';
     if (billNafn || billKt || billAddr) {
       customer = Object.assign({}, customer, {
