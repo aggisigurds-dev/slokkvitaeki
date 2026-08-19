@@ -42,6 +42,20 @@
 
   // ── helpers ───────────────────────────────────────────────────────────────
   const getSB = () => (window.DB && window.DB.sb) || null;
+  // DB.sb er sett í DB.init() við ræsingu — á síma getur síðan opnast (deep-link/
+  // nav) ÁÐUR en það gerist. Bíðum eftir að biðlarinn verði til í stað þess að
+  // kasta strax „DB.sb vantar".
+  function waitForSB(ms) {
+    ms = ms || 15000;
+    return new Promise((resolve) => {
+      const first = getSB(); if (first) return resolve(first);
+      const t0 = Date.now();
+      const iv = setInterval(() => {
+        const sb = getSB();
+        if (sb || Date.now() - t0 > ms) { clearInterval(iv); resolve(sb || null); }
+      }, 200);
+    });
+  }
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const me = () => { try { return localStorage.getItem('bh_me') || localStorage.getItem('me') || localStorage.getItem('slokk_me') || 'Slökkvitæki'; } catch (_) { return 'Slökkvitæki'; } };
   const emailFrom = () => { try { return localStorage.getItem('email_from') || 'Brunahólf Slökkvitæki ehf <reikningar@eldklar.is>'; } catch (_) { return 'Brunahólf Slökkvitæki ehf <reikningar@eldklar.is>'; } };
@@ -191,7 +205,7 @@
   // hópunin gerð server-hlið í public.tv_postar_list() (SECURITY DEFINER, hækkað
   // timeout, sql/2026-08-19_tv_postar_list.sql). Svarstaða/AI/„svarað" áfram hér.
   async function loadData() {
-    const sb = getSB(); if (!sb) throw new Error('DB.sb vantar');
+    const sb = await waitForSB(); if (!sb) throw new Error('Gagnagrunnur (DB) varð ekki tilbúinn — reyndu að endurhlaða síðuna');
     STATE.loading = true;
 
     // 1) Efnisleg gögn (in-service kúnnar + póstar hópaðir) frá server-fallinu.
