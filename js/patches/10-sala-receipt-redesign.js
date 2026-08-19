@@ -180,7 +180,20 @@
     if (state && Array.isArray(state.lines) && state.lines.length) {
       return state.lines.map((l, i) => {
         const qty = +l.qty || 0;
-        const unitEx = +l.unit_price_ex_vat || 0;
+        let unitEx = +l.unit_price_ex_vat || 0;
+        let desc = l.desc || '';
+        // 2026-08-19 (Agnar): honour a LIVE per-line discount (disc_pct) the POS
+        // "Afsláttur %" box writes on the cart line. Baking it into the price +
+        // the "· −N% afsl." marker normally happens in bakedLines() AT SAVE, but
+        // the checkout dialog prints the receipt from the live, unbaked state
+        // BEFORE the save — so a per-line discount printed at full price with no
+        // Afsláttur line. disc_pct is a live-only field (0 saved rows carry it),
+        // so this can't collide with renderFromSale's kept-pct (case A) path.
+        const dp = Math.max(0, Math.min(100, parseFloat(l.disc_pct) || 0));
+        if (dp > 0 && !/·\s*[−-]\s*\d/.test(desc)) {
+          unitEx = Math.round(unitEx * (1 - dp / 100));
+          desc = desc + ' · −' + (Math.round(dp * 100) / 100).toString().replace('.', ',') + '% afsl.';
+        }
         const vskPct = (l.vsk_pct == null ? 24 : +l.vsk_pct);
         // 2026-08-10 (ósk Agnars): Einingaverð dálkurinn sýnir nú m. vsk — talan
         // sem viðskiptavinurinn raunverulega greiðir per stk, ekki nettóverðið.
@@ -189,7 +202,7 @@
         const vskCode = vskPct >= 20 ? '2' : (vskPct >= 10 ? '1' : '0');
         return {
           ref: l.ref || (l.product_id ? String(l.product_id) : ''),
-          desc: l.desc || '',
+          desc: desc,
           qty,
           unitEx,
           unitGross,
