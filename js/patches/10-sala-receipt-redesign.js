@@ -305,7 +305,13 @@
       .no-print { display: none !important; }
       body { background: #fff !important; padding: 0 !important; }
       .sheet { box-shadow: none !important; margin: 0 !important; padding: 16mm !important; }
+      .sheet[contenteditable="true"] { outline: none !important; }
     }
+    /* 2026-08-19 (Agnar #7): „Breyta texta" gerir reikninginn ritanlegan á
+       forskoðunar-skjánum og prentast þá eins og skilið er við hann. Ramminn
+       sjálfur prentast aldrei — sjá regluna í @media print að ofan. */
+    .sheet[contenteditable="true"] { outline: 2px dashed #d8451a; outline-offset: 6px; }
+    .sheet[contenteditable="true"]:focus-within { outline-color: #b8390f; }
     html, body {
       font-family: Arial, Helvetica, 'Helvetica Neue', sans-serif;
       background: #f1f5f9; margin: 0; padding: 24px 16px; color: #000;
@@ -553,6 +559,7 @@
     return `
       <div class="no-print">
         <button onclick="window.print()" class="btn-primary">🖨 ${ctx.isTilbod ? 'Prenta tilboð' : 'Prenta reikning'}</button>
+        <button type="button" onclick="var s=document.querySelector('.sheet');if(!s)return;var on=s.getAttribute('contenteditable')==='true';s.setAttribute('contenteditable',on?'false':'true');this.textContent=on?'✏️ Breyta texta':'✓ Búið að breyta';if(!on){s.focus();}" class="btn-secondary" title="Gerðu reikninginn ritanlegan og lagaðu texta áður en þú prentar">✏️ Breyta texta</button>
         <button onclick="window.close()" class="btn-secondary">Loka</button>
       </div>
       <div class="sheet">
