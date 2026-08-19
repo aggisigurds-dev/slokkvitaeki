@@ -316,7 +316,13 @@
                 '<span>kr m. vsk (' + vsk + '%)</span>' +
               '</div>' +
             '</div>' +
-            '<div style="color:#94a3b8;font-size:12px;font-variant-numeric:tabular-nums">×' + q + '</div>' +
+            // 2026-08-19 (ósk Agnars): qty is now inline-editable so the operator
+            // can bill the ACTUAL amount delivered — e.g. a 100gr CO₂ line entered
+            // as ×26 but only 20 were really filled. Mirrors the extras-qty input.
+            '<div style="display:flex;align-items:center;gap:6px">' +
+              '<input class="_pkc-line-qty" data-li="' + li + '" type="number" min="1" step="1" value="' + q + '" style="width:56px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;text-align:center;font-variant-numeric:tabular-nums">' +
+              '<span style="color:#94a3b8;font-size:12px">×</span>' +
+            '</div>' +
             '<div class="_pkc-line-tot" style="font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;min-width:80px;text-align:right">' + esc(fmtKr(lineTot)) + '</div>' +
           '</div>';
         });
@@ -483,6 +489,32 @@
             // above and pos.js's own .pos-price-edit in the main Sala cart).
             const vskPct = saleLinur[li].vsk_pct == null ? 24 : +saleLinur[li].vsk_pct;
             saleLinur[li].unit_price_ex_vat = v / (1 + vskPct / 100);
+            renderTotals();
+            const cell = inp.closest('div[style*="padding:9px"]');
+            const totEl = cell && cell.querySelector('._pkc-line-tot');
+            if (totEl) {
+              const l = saleLinur[li];
+              const vsk = (l.vsk_pct == null ? 24 : +l.vsk_pct);
+              totEl.textContent = fmtKr((+l.qty || 0) * (+l.unit_price_ex_vat || 0) * (1 + vsk / 100));
+            }
+          }
+        });
+      });
+      // Wire qty edit on the original sale lines (2026-08-19, ósk Agnars).
+      // Mirrors the line-price wiring — mutates sale.linur in place
+      // (saleLinur === sale.linur), which calcTotals() and finalizePickup()
+      // both read live, then refreshes the totals band + this line's own total
+      // cell. Lets the operator bill the actual delivered qty (e.g. a 100gr CO₂
+      // line that came in as ×26 but only 20 were filled). In the normal pickup
+      // (all units checked) the peeling logic is a no-op, so the edited qty is
+      // charged verbatim; when units are unchecked, peeling still applies on top.
+      body.querySelectorAll('._pkc-line-qty').forEach(inp => {
+        inp.addEventListener('input', () => {
+          const li = +inp.dataset.li;
+          const v = parseInt(inp.value, 10);
+          if (!Number.isFinite(v) || v < 1) return;
+          if (saleLinur[li]) {
+            saleLinur[li].qty = v;
             renderTotals();
             const cell = inp.closest('div[style*="padding:9px"]');
             const totEl = cell && cell.querySelector('._pkc-line-tot');

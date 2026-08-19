@@ -1584,7 +1584,7 @@
           <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
             <div style="flex:1;min-width:0">
               <div style="font-size:10px;color:#8a93a5;text-transform:uppercase;letter-spacing:.1em;font-weight:700">Krafa</div>
-              <div class="ky-num" style="font-size:22px;font-weight:800;color:#2f5fe0;white-space:nowrap">${fmtKr(grp.sum)}</div>
+              <div class="ky-num" style="font-size:22px;font-weight:800;color:#11141c;white-space:nowrap">${fmtKr(grp.sum)}</div>
             </div>
             <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð" style="width:44px;height:44px;background:#f1f5f9;color:#475569;border:1px solid rgba(20,24,34,.14);border-radius:10px;cursor:pointer;font:inherit;font-size:15px;flex-shrink:0">📋</button>
             <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt" style="height:44px;padding:0 14px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;border-radius:11px;cursor:pointer;font:inherit;font-size:13px;font-weight:700;white-space:nowrap;flex-shrink:0">✓ Allar greiddar</button>
@@ -1624,7 +1624,7 @@
         <td>${sendableIds.length ? `<input type="checkbox" class="_ky-pick-co" data-ids="${sendableIds.join(',')}" title="Velja allar ósendar kröfur" style="width:16px;height:16px;cursor:pointer;accent-color:#2f5fe0">` : ''}</td>
         <td colspan="3" style="font-size:13px;overflow-wrap:anywhere">${ident.nameHtml}</td>
         <td style="color:#8a93a5;font-weight:600;white-space:nowrap">${sales.length} kröfur</td>
-        <td class="ky-num" style="text-align:right;color:#2f5fe0;font-weight:800;white-space:nowrap">${fmtKr(grp.sum)}</td>
+        <td class="ky-num" style="text-align:right;color:#11141c;font-weight:800;white-space:nowrap">${fmtKr(grp.sum)}</td>
         <td>
           <div style="display:flex;gap:5px;align-items:center">
             <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð" style="width:28px;height:28px;background:#fff;color:#475569;border:1px solid rgba(20,24,34,.16);border-radius:7px;cursor:pointer;font-size:12px;flex-shrink:0">📋</button>
@@ -1694,7 +1694,7 @@
           <div style="display:flex;gap:10px;align-items:center">
             <div style="text-align:right">
               <div style="font-size:10px;color:#8a93a5;text-transform:uppercase;letter-spacing:.1em;font-weight:700">Krafa</div>
-              <div class="ky-num" style="font-size:22px;font-weight:700;color:#2f5fe0">${fmtKr(grp.sum)}</div>
+              <div class="ky-num" style="font-size:22px;font-weight:700;color:#11141c">${fmtKr(grp.sum)}</div>
             </div>
             <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð" style="width:38px;height:38px;background:#f1f5f9;color:#475569;border:1px solid rgba(20,24,34,.14);border-radius:10px;cursor:pointer;font:inherit;font-size:13px">📋</button>
             <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt" style="height:40px;padding:0 16px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;border-radius:11px;cursor:pointer;font:inherit;font-size:13px;font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)">✓ Allar greiddar</button>

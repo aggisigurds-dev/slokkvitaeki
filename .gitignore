@@ -77,3 +77,7 @@ _extract_logo.cjs
 # á hverri vél. Slæddist inn í eitt commit af skrifborðsvélinni (176 þúsund
 # línur af AST-skyndiminni) — á aldrei heima í git.
 graphify-out/
+
+# Keep shared subagents version-controlled
+!.claude/agents/
+!.claude/agents/**
