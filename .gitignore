@@ -20,10 +20,11 @@ desktop.ini
 *.swp
 *~
 
-# Claude Code local settings (but keep shared skills version-controlled)
+# Claude Code local settings (but keep shared skills + shared settings version-controlled)
 .claude/*
 !.claude/skills/
 !.claude/skills/**
+!.claude/settings.json
 
 # Local outputs / scratch
 /tmp/
