@@ -103,6 +103,24 @@ Sérsvið: **(1) útlits-lagfæring** (layout fixing), **(2) farsíma-fínstilli
 
 ---
 
+## Sjónræn stefna — Brunastál (eldur + stál)
+
+Grunnútlit Slökkvitæki-appsins (Agnar staðfesti með skjámynd — „base for
+slokkvitæki theme"): **dramatískt, dökkt, iðnaðarlegt — eldur + stál.**
+
+- **Grunnur:** nær-svartur/kolagrár bakgrunnur; dökk spjöld á dökkum grunni.
+- **Hero:** loga-borði (eldur) á bak við „BRUNAHÓLF / SLÖKKVITÆKI EHF" wordmark —
+  feitletrað, iðnaðarlegt.
+- **Áherslulitir:** eldrautt/appelsínugult (eldur) = aðal-accent; blátt á valið/
+  aðal-KPI spjald; gyllt á Kassakerfi-widget.
+- **Aðgerðatakkar:** grænn = jákvætt (Greitt/Send), blár = sending, gulur/rauður =
+  bakfæra/afturkalla. Litríkir, virknimiðaðir.
+- **Tilfinning:** þétt, gagna-fyrst, há-orka.
+- **Nákvæmir tókenar (hex/bil/letur) búa í frosnu `theme.css` (Brunastál, patch
+  220/230)** — dragðu þá ÞAÐAN þegar þú hannar, ekki giska. Tóken-breyting → `thema`.
+
+---
+
 ## Skills sem þú kallar á (Skill-tólið) — „öll hönnunar-skillin"
 
 Þú átt heilt spil af sérhæfðum hönnunar-skillum. Kallaðu á þau með `Skill`-tólinu
