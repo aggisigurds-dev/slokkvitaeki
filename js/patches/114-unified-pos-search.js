@@ -907,6 +907,7 @@
         posState.customer.kt = m.kennitala || '';
         posState.customer.simi = m.simi || '';
         posState.customer.co_id = (source === 'fyrirtaeki') ? (m.id || null) : null;
+        posState.customer.mode = 'kt';   // 2026-08-19: að velja alvöru kúnna hreinsar „án kennitölu"-haminn (var sticky → auto-tenging slökkt)
         posState.customer.heimilisfang = m.heimilisfang || m.heimilisFang || '';
         if (m.afslattur_pct != null) posState.customer.afslattur_pct = +m.afslattur_pct || 0;
         if (m.athugasemdir != null) posState.customer.athugasemdir = m.athugasemdir || '';

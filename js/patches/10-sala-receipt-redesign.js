@@ -721,7 +721,18 @@
     // printed. Merging unconditionally fixes that for every print path.
     const sc = (state && state.customer) || {};
     const billNafn = (customer && customer.nafn) || sc.nafn || opts.customerName || '';
-    const billKt   = (customer && customer.kennitala) || sc.kennitala || sc.kt || opts.customerKt || '';
+    // 2026-08-19 (Agnar, R-000773): the SAVED sale's own kennitala wins. A
+    // legacy walk-in row saved under the same first name was matched by
+    // lookupCustomer (name before kt) and its 999999-9999 overrode the real kt
+    // here — so the invoice printed 999999-9999 even though solur.customer_kt
+    // was correct. Only fall back to the looked-up / opts kt when the sale
+    // carries no real kt (keeps genuine walk-ins and the empty-kt recovery
+    // case intact).
+    const _scKt = String(sc.kt || sc.kennitala || '').replace(/[^0-9]/g, '');
+    const _scRealKt = _scKt.length === 10 && _scKt !== '9999999999';
+    const billKt   = _scRealKt
+      ? (sc.kt || sc.kennitala)
+      : ((customer && customer.kennitala) || sc.kennitala || sc.kt || opts.customerKt || '');
     const billAddr = (customer && customer.heimilisfang) || sc.heimilisfang || opts.customerHeimilisfang || '';
     if (billNafn || billKt || billAddr) {
       customer = Object.assign({}, customer, {
