@@ -99,6 +99,12 @@
     if (n == null || isNaN(n)) return '0,00';
     return n.toLocaleString(ICELAND_LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
+  // Afsl.% column — reference-invoice style „15,00" (2 aukastafir, íslensk komma).
+  // toFixed+replace svo það sé alltaf komma óháð locale-gögnum vafrans. Tómt við 0.
+  function fmtPct(p) {
+    if (p == null || isNaN(p) || +p <= 0) return '';
+    return (+p).toFixed(2).replace('.', ',');
+  }
   function fmtKt(s) {
     s = String(s || '').replace(/[^0-9]/g, '');
     if (s.length === 10) return s.slice(0, 6) + '-' + s.slice(6);
@@ -190,9 +196,37 @@
         // Afsláttur line. disc_pct is a live-only field (0 saved rows carry it),
         // so this can't collide with renderFromSale's kept-pct (case A) path.
         const dp = Math.max(0, Math.min(100, parseFloat(l.disc_pct) || 0));
-        if (dp > 0 && !/·\s*[−-]\s*\d/.test(desc)) {
+        // 2026-08-19 (Agnar — reference-invoice format „make all calculations
+        // follow the same rule"): the per-line discount now lives in its OWN
+        // Afsl.% column, so the Einingaverð column can show the NET unit price and
+        // Upphæð = unitBase×qty×(1−afsl%) — exactly the reikningur Agnar sent and
+        // exactly what Payday bills (net unit + line discount %). Display-only:
+        // unitEx/lineEx (and therefore totalsByRate) are byte-unchanged; we only
+        // (a) remember the pre-discount base + the %, and (b) stop printing the
+        // „· −N% afsl." marker in the Lýsing (it would double up with the column).
+        let unitBase = unitEx;   // net unit BEFORE the per-line discount
+        let dispPct = 0;         // per-line discount % for the Afsl.% column
+        const bakedMarker = String(desc).match(/·\s*[−-]\s*(\d+(?:[.,]\d+)?)\s*%\s*afsl\.?/i);
+        if (bakedMarker) {
+          // saved sale: unitEx is ALREADY the discounted net — recover the base.
+          const p = parseFloat(bakedMarker[1].replace(',', '.'));
+          if (p > 0 && p < 100) { dispPct = p; unitBase = unitEx / (1 - p / 100); }
+          desc = desc.replace(/\s*·\s*[−-]\s*\d+(?:[.,]\d+)?\s*%\s*afsl\.?/i, '').trim();
+        } else if (dp > 0) {
+          // live checkout line: bake the discount into unitEx (unchanged) and keep
+          // the base + % for display; no marker text added.
+          unitBase = unitEx;
           unitEx = Math.round(unitEx * (1 - dp / 100));
-          desc = desc + ' · −' + (Math.round(dp * 100) / 100).toString().replace('.', ',') + '% afsl.';
+          dispPct = dp;
+        } else {
+          // 2026-08-19 (Slice 3 — Agnar „it was 15% only from few lines"): a SAVED
+          // per-line discount lives in l.discount_pct (the editor's Afsl.% column).
+          // Show the % in the column and discount the line — UNROUNDED so Σ matches
+          // the stored upphaed_an_vsk exactly (the editor's recomputeTotals is
+          // unrounded too). No baking → no 150→128→151 rounding drift, and Payday
+          // bills the SAME per-line % (payday-push buildPayload, per-line branch).
+          const ds = Math.max(0, Math.min(100, parseFloat(l.discount_pct) || 0));
+          if (ds > 0) { unitBase = unitEx; unitEx = unitEx * (1 - ds / 100); dispPct = ds; }
         }
         const vskPct = (l.vsk_pct == null ? 24 : +l.vsk_pct);
         // 2026-08-10 (ósk Agnars): Einingaverð dálkurinn sýnir nú m. vsk — talan
@@ -205,6 +239,8 @@
           desc: desc,
           qty,
           unitEx,
+          unitBase,
+          dispPct,
           unitGross,
           lineEx,
           vskPct,
@@ -239,16 +275,17 @@
       byRate[key].vsk += v;
       if (l.lineEx > 0) {
         billableLines++;
-        const m = String(l.desc || '').match(/·\s*[−-]\s*(\d+(?:[.,]\d+)?)\s*%\s*afsl/i);
-        if (m) {
-          const p = parseFloat(m[1].replace(',', '.'));
-          if (p > 0 && p < 100) {
-            const reconstructedEx = l.lineEx * (p / (100 - p));
-            lineDiscEx += reconstructedEx;
-            lineDiscGross += reconstructedEx * (1 + l.vskPct / 100);
-            if (linePcts.indexOf(p) < 0) linePcts.push(p);
-            discLines++;
-          }
+        // per-line discount % now travels as l.dispPct (buildLines sets it from the
+        // live disc_pct OR a saved „· −N% afsl." marker). Same value the marker
+        // gave, so lineDiscEx/Gross — and therefore every displayed total — are
+        // unchanged; the source is just cleaner now that the marker is stripped.
+        const p = (l.dispPct != null ? +l.dispPct : 0);
+        if (p > 0 && p < 100) {
+          const reconstructedEx = l.lineEx * (p / (100 - p));
+          lineDiscEx += reconstructedEx;
+          lineDiscGross += reconstructedEx * (1 + l.vskPct / 100);
+          if (linePcts.indexOf(p) < 0) linePcts.push(p);
+          discLines++;
         }
       }
     }
@@ -392,13 +429,15 @@
     .items th.num-col { width: 9%; }
     .items th.desc-col { width: 36%; }
     .items th.qty-col { width: 9%; text-align: right; }
-    .items th.unit-col { width: 16%; text-align: right; }
-    .items th.amt-col { width: 18%; text-align: right; }
+    .items th.unit-col { width: 14%; text-align: right; }
+    .items th.afsl-col { width: 8%; text-align: right; }
+    .items th.amt-col { width: 16%; text-align: right; }
     .items th.vsk-col { width: 6%; text-align: right; padding-right: 0; }
     .items td { padding: 4px 6px; vertical-align: top; font-size: 10pt; }
-    .items td.qty-col, .items td.unit-col, .items td.amt-col, .items td.vsk-col {
+    .items td.qty-col, .items td.unit-col, .items td.afsl-col, .items td.amt-col, .items td.vsk-col {
       text-align: right; white-space: nowrap;
     }
+    .items td.afsl-col { color: #444; }
     .items td.vsk-col { padding-right: 0; }
 
     .spacer { flex: 1 1 auto; min-height: 24mm; }
@@ -464,7 +503,8 @@
         <td class="num-col">${esc(l.ref || '')}</td>
         <td class="desc-col">${esc(l.desc)}</td>
         <td class="qty-col">${l.qty ? l.qty.toLocaleString(ICELAND_LOCALE, { minimumFractionDigits: l.qty % 1 ? 1 : 0, maximumFractionDigits: 2 }) : ''}</td>
-        <td class="unit-col">${fmtAmt(l.unitGross)}</td>
+        <td class="unit-col">${fmtAmt(l.unitBase)}</td>
+        <td class="afsl-col">${l.dispPct ? fmtPct(l.dispPct) : ''}</td>
         <td class="amt-col">${fmtAmt(l.lineEx)}</td>
         <td class="vsk-col">${esc(l.vskCode)}</td>
       </tr>`).join('');
@@ -634,7 +674,8 @@
               <th class="num-col">Vörunúmer</th>
               <th class="desc-col">Lýsing</th>
               <th class="qty-col">Fjöldi</th>
-              <th class="unit-col">Einingaverð m. vsk</th>
+              <th class="unit-col">Einingaverð</th>
+              <th class="afsl-col">Afsl.%</th>
               <th class="amt-col">Upphæð</th>
               <th class="vsk-col">VSK</th>
             </tr>
@@ -882,15 +923,29 @@
       const le = (Number(l.qty) || 0) * (Number(l.unit_price_ex_vat) || 0);
       return a + le * (1 + ((l.vsk_pct == null ? 24 : Number(l.vsk_pct)) || 0) / 100);
     }, 0);
-    if (uniformPct > 0 && afsl === 0) {
-      optsDiscountPct = uniformPct;                // case A
+    if (anyPct && afsl === 0) {
+      // 2026-08-19 (Slice 3 — Agnar „it was 15% only from few lines"): per-line
+      // discount_pct with NO sale-level lump. Normal case → apply the % per line
+      // (buildLines does, unrounded): the Afsl.% column shows „15,00" on the tæki
+      // lines, Upphæð = unit×qty×(1−%), Σ = upphaed_an_vsk exactly, and Payday bills
+      // the same per line. A few LEGACY rows baked the discount into the price AND
+      // kept discount_pct (double-encoded) — re-applying would double-discount, so
+      // keep discount_pct only when applying it reproduces samtals; else strip it.
+      const applied = linur.reduce((a, l) => {
+        const d = Math.max(0, Math.min(100, Number(l.discount_pct) || 0));
+        const le = (Number(l.qty) || 0) * (Number(l.unit_price_ex_vat) || 0) * (1 - d / 100);
+        return a + le * (1 + ((l.vsk_pct == null ? 24 : Number(l.vsk_pct)) || 0) / 100);
+      }, 0);
+      const rawT = sumT(linur), saved = Number(sale.samtals);
+      lines = (isFinite(saved) && saved !== 0 && Math.abs(rawT - saved) < Math.abs(applied - saved))
+        ? linur.map(l => (Number(l.discount_pct) ? Object.assign({}, l, { discount_pct: 0 }) : l))
+        : linur;
     } else if (anyPct) {
-      // 2026-07-08 (afsláttar-úttekt): non-uniform line discounts, or line
-      // discounts combined with a sale-level afslattur, used to fall into
-      // "case B — ignore both" and printed FULL price. Decide by reproducing
-      // the stored samtals: bake the per-line discounts into the prices
-      // (± afslattur on top), or leave raw for TRUE legacy case-B rows where
-      // the discount was already baked in AND discount_pct kept.
+      // per-line discount_pct COMBINED with a sale-level lump (afsl != 0) — bake the
+      // line discounts into the prices (± afslattur on top), or leave already-net
+      // rows raw. Whichever reproduces the stored samtals. NB buildLines now applies
+      // a raw discount_pct, so the "raw" branch STRIPS it to keep the old full-price
+      // meaning.
       const baked = linur.map(l => {
         const d = Math.max(0, Math.min(100, Number(l.discount_pct) || 0));
         if (!d) return l;
@@ -900,6 +955,7 @@
         nl.discount_pct = 0;
         return nl;
       });
+      const rawStripped = linur.map(l => (Number(l.discount_pct) ? Object.assign({}, l, { discount_pct: 0 }) : l));
       const rawT = sumT(linur), bakedT = sumT(baked);
       const saved = Number(sale.samtals);
       const cands = [
@@ -909,7 +965,7 @@
       ];
       let best = cands[0];
       if (isFinite(saved) && saved !== 0) cands.forEach(c => { if (c.diff < best.diff) best = c; });
-      if (best.useBaked) lines = baked;
+      lines = best.useBaked ? baked : rawStripped;
       if (best.useAfsl) optsDiscount = afsl;
     } else if (afsl > 0) {
       optsDiscount = afsl;                          // case C
