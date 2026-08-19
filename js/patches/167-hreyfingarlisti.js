@@ -53,6 +53,12 @@
       V + '.hl-table tr.hl-trow:hover td{background:#f7f9fd}' +
       V + '.hl-ticon{width:29px;height:29px;border-radius:7px;cursor:pointer;font:inherit;font-size:13px;line-height:1;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fff,#e7ebf1);transition:transform .1s ease}' +
       V + '.hl-ticon:hover{transform:translateY(-1px)}' +
+      // ── ↩ Kreditfært-merki (Agnar 2026-08-19): punktur á Sölu/Kort, borði á Greitt.
+      //    Sellur/raðir klippa ekki (overflow:visible sjálfgefið); .hl-mcard hefur
+      //    overflow:hidden en borðinn situr í 9px bilinu ofan við takkaröðina. ──
+      V + '.btn-kredit-wrap{position:relative;display:inline-flex}' +
+      V + '.kredit-dot{position:absolute;top:-7px;right:-7px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#a78bfa,#6d28d9);color:#fff;font-size:9px;font-weight:800;border-radius:999px;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(90,33,182,.5);pointer-events:none}' +
+      V + '.kredit-ribbon{position:absolute;top:-6px;right:-9px;transform:rotate(12deg);background:linear-gradient(180deg,#a78bfa,#6d28d9);color:#fff;font-size:6.5px;font-weight:800;letter-spacing:.02em;padding:1px 4px;border-radius:5px;border:1px solid #fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 3px rgba(90,33,182,.4);white-space:nowrap;pointer-events:none}' +
       // ── 📱 Sími (mobile) mode — single-column stacked cards, big taps, wrap ──
       V + '.hl-mcard{background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;margin-bottom:11px;overflow:hidden;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)}' +
       V + '.hl-mhead{padding:12px 13px 11px;border-bottom:1px solid #eef1f6}' +
@@ -122,11 +128,15 @@
     }
     return '<span style="color:#cbd5e1">—</span>';
   }
-  // 2026-08-19 (Agnar): merki á upprunareikning sem hefur verið kreditfærður.
-  // Leitt af credit_of (kreditnóta vísar á id frumreikningsins) — engin schema-breyting.
-  function creditedBadge(s) {
-    if (s.is_credit || !_hlCreditedIds.has(s.id)) return '';
-    return '<span title="Þessi reikningur hefur verið kreditfærður" style="display:inline-block;font-size:10px;font-weight:700;color:#9f1239;background:#ffe4e6;border:1px solid #fecdd3;padding:2px 7px;border-radius:99px;white-space:nowrap;margin-left:6px">↩ kreditfært</span>';
+  // 2026-08-19 (Agnar): kreditfært-merki er nú vafið UTAN UM Sölu/Kort/Greitt
+  // takkana á kreditfærðum upprunareikningi (credit_of vísar á id hans) — lítill
+  // ↩-punktur á Sölu+Kort, snúinn „↩ KREDITFÆRT"-borði á Greitt. Engin schema-breyting.
+  function kMark(s, inner, kind) {
+    if (s.is_credit || !_hlCreditedIds.has(s.id)) return inner;
+    const badge = kind === 'ribbon'
+      ? '<span class="kredit-ribbon">↩ KREDITFÆRT</span>'
+      : '<span class="kredit-dot">↩</span>';
+    return '<span class="btn-kredit-wrap" title="Þessi reikningur hefur verið kreditfærður">' + inner + badge + '</span>';
   }
   function fmtTime(iso) {
     if (!iso) return '';
@@ -755,9 +765,9 @@
       <td><span class="hl-mono" style="font-size:11px;color:#1d4ed8;font-weight:700">${esc(s.num || '')}</span></td>
       <td style="font-size:12px;font-weight:600;overflow-wrap:anywhere;max-width:220px">${custNameHtml(s)}</td>
       <td style="white-space:nowrap">${ktCell(s.customer_kt)}</td>
-      <td>${typeBtnFor(s)}</td>
-      <td>${methodBtn(s.greitt_med)}</td>
-      <td>${statusBtnFor(s)}${creditedBadge(s)}</td>
+      <td>${kMark(s, typeBtnFor(s), 'dot')}</td>
+      <td>${kMark(s, methodBtn(s.greitt_med), 'dot')}</td>
+      <td>${kMark(s, statusBtnFor(s), 'ribbon')}</td>
       <td style="text-align:right;white-space:nowrap">${amountHtml(s)}</td>
       <td><div style="display:flex;gap:4px;justify-content:flex-end;flex-wrap:nowrap">${acts}</div></td>
     </tr>`;
@@ -781,7 +791,7 @@
           <div style="margin-top:8px;font-size:15px;font-weight:700;color:#11141c;overflow-wrap:anywhere;line-height:1.3">${custNameHtml(s)}</div>
           <div style="margin-top:4px">${ktCell(s.customer_kt)}</div>
           <div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-            ${typeBtnFor(s)} ${methodBtn(s.greitt_med)} ${statusBtnFor(s)} ${creditedBadge(s)}
+            ${kMark(s, typeBtnFor(s), 'dot')} ${kMark(s, methodBtn(s.greitt_med), 'dot')} ${kMark(s, statusBtnFor(s), 'ribbon')}
           </div>
         </div>
         <div class="hl-macts">${actsAbtn(s)}</div>
@@ -798,9 +808,9 @@
       <td style="padding:10px 14px"><span class="hl-mono" style="font-size:12px;color:#1d4ed8;font-weight:700">${esc(s.num || '')}</span></td>
       <td style="padding:10px 14px;font-size:13.5px;font-weight:600;color:#11141c">${custNameHtml(s)}</td>
       <td style="padding:10px 14px;white-space:nowrap">${ktCell(s.customer_kt)}</td>
-      <td style="padding:10px 14px">${typeBtnFor(s)}</td>
-      <td style="padding:10px 14px">${methodBtn(s.greitt_med)}</td>
-      <td style="padding:10px 14px">${statusBtnFor(s)}${creditedBadge(s)}</td>
+      <td style="padding:10px 14px">${kMark(s, typeBtnFor(s), 'dot')}</td>
+      <td style="padding:10px 14px">${kMark(s, methodBtn(s.greitt_med), 'dot')}</td>
+      <td style="padding:10px 14px">${kMark(s, statusBtnFor(s), 'ribbon')}</td>
       <td style="padding:10px 14px;text-align:right">${amountHtml(s)}</td>
       <td style="padding:7px 14px;border-left:1px solid #eef1f6">
         <div style="display:flex;gap:6px;justify-content:flex-end">${actsAbtn(s)}</div>
