@@ -52,12 +52,22 @@
     afgreidsla: { label:'Afgreiðsla',  emoji:'📦', color:'#166534', bg:'#dcfce7', bd:'#bbf7d0' },
     sott:       { label:'Sótt · klára', emoji:'✅', color:'#1e40af', bg:'#dbeafe', bd:'#bfdbfe' },
     drog:       { label:'Bara drög',   emoji:'📝', color:'#475569', bg:'#f1f5f9', bd:'#e2e8f0' },
+    // 2026-08-19 (ósk Agnars): drög sem eiga afturkallaða/eydda verkbeiðni fá
+    // eigin merki svo þau líti ekki eins út og glæný drög á listanum.
+    afturkallad:{ label:'Verkbeiðni afturkölluð', emoji:'🚫', color:'#9f1239', bg:'#ffe4e6', bd:'#fecdd3' },
+    verkeytt:   { label:'Verkbeiðni eytt',        emoji:'❌', color:'#7f1d1d', bg:'#fee2e2', bd:'#fecaca' },
   };
   function locFor(statuses) {
     if (!statuses || !statuses.size) return LOC.drog;
     if (statuses.has('received') || statuses.has('inprogress') || statuses.has('in_progress')) return LOC.verkstaedi;
     if (statuses.has('ready')) return LOC.afgreidsla;
     if (statuses.has('collected')) return LOC.sott;
+    // Dautt verk kemur Á EFTIR lifandi stöðunum að ofan: drag með einhverja
+    // lifandi verkbeiðni heldur sinni stöðu, en þegar ALLAR verkbeiðnir eru
+    // afturkallaðar/eyddar birtist rauða merkið (og drög sem aldrei fengu
+    // verkbeiðni falla áfram á „Bara drög").
+    if (statuses.has('cancelled')) return LOC.afturkallad;
+    if (statuses.has('eytt'))      return LOC.verkeytt;
     return LOC.drog;
   }
   function locBadge(loc) {
