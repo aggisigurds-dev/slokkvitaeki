@@ -9,7 +9,7 @@
  *      næsta skoðun, síðasta skoðun, dagsetningar
  *   2. Strikamerki / QR — núverandi gildi sýnt sem QR-kóði + texti, hnappur
  *      til að breyta (slá inn handsmíðað eða skanna). „Prenta miða" í fæti
- *      endurnýtir Sala-miðaflæðið (Print.showQR → Brother 18×Nmm, patch 139/08)
+ *      endurnýtir afgreiðslu-miðaflæðið (Print.showJob → Brother 18×Nmm, patch 139/08)
  *   3. Staða — quick-buttons: Í lagi · Þarfnast viðgerðar · Bilað · Ónýtt
  *   4. Athugasemdir — textareiti með auto-save (debounce)
  *   5. Saga — listi yfir verkbeiðnir tengdar þessu tæki (síðustu 10)
@@ -88,17 +88,29 @@
   }
 
   // ── Prenta miða ───────────────────────────────────────────────────────────
-  // Endurnýtir Sala→Verkbeiðnir miðaflæðið: patch 139 Print.showQR → pickLength
-  // valmynd (Brother PT-P750W, 18×Nmm) + patch-08 QrLabelCustomer sniðmátið. Þannig
-  // prentar tæki-modalið NÁKVÆMLEGA sama miða og afgreiðslan, í stað gamla 54×17mm
-  // BarcodeMgr-kortsins. Print.showQR les unit.client/phone/serial/type/size beint,
-  // sem eru einmitt reitirnir á uttaeki/lanstaeki röðinni sem modalið hleður.
+  // Endurnýtir NÁKVÆMLEGA afgreiðslu-miðaflæðið sem Agnar staðfestir að prenti
+  // rétt: patch 139 Print.showJob (miðinn sem prentast þegar sala+verkbeiðni er
+  // búin til). Við pökkum þessu eina tæki sem eins-línu „job" svo það fari um
+  // sömu showJobBrother-leiðina → pickLength valmynd (Brother PT-P750W 18×Nmm) +
+  // patch-08 QrLabelCustomer sniðmátið, í stað gamla 54×17mm BarcodeMgr-kortsins.
+  // showJobBrother les job.units[].serial/type/size + job.customer/phone — allt
+  // til staðar á uttaeki/lanstaeki röðinni sem modalið hleður.
   function printLabel(unit) {
-    if (window.Print && typeof window.Print.showQR === 'function') {
-      window.Print.showQR(unit);
+    const P = window.Print;
+    if (P && typeof P.showJob === 'function') {
+      P.showJob({
+        units: [unit],
+        customer: unit.client || unit.customer || '',
+        phone: unit.phone || ''
+      });
       return;
     }
-    // Varaleið: gamli patch-95 prentarinn ef Brother-einingin er ekki hlaðin.
+    // Varaleið 1: eins-tækis Brother-leiðin (sama sniðmát, án job-hjúps).
+    if (P && typeof P.showQR === 'function') {
+      P.showQR(unit);
+      return;
+    }
+    // Varaleið 2: gamli patch-95 prentarinn ef Brother-einingin er ekki hlaðin.
     if (window.BarcodeMgr && window.BarcodeMgr.print) {
       let jobCustomer = unit.client || '', jobPhone = unit.phone || '';
       try {
