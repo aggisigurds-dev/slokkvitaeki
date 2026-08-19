@@ -2316,8 +2316,9 @@
       V+'._addr{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}',
       V+'._post{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted);margin-right:8px}',
       V+'._mo{font-family:var(--mono);font-size:12px;color:var(--ink-2)}',
-      V+'._note{width:100%;height:24px;border:1px solid #e6e9ef;border-radius:7px;background:#fbfcfd;color:#3a4250;font-family:var(--ui);font-size:11.5px;padding:0 9px;box-sizing:border-box}',
-      V+'._note::placeholder{color:#8f98a6}',
+      V+'._note{width:100%;height:24px;border:1px solid transparent;border-radius:7px;background:transparent;color:#3a4250;font-family:var(--ui);font-size:11.5px;padding:0 9px;box-sizing:border-box;transition:background .12s,border-color .12s}',
+      V+'._note::placeholder{color:#c7ccd6;letter-spacing:.16em}',
+      V+'._note:hover{border-color:#e6e9ef;background:#fbfcfd}',
       V+'._note:focus{outline:none;border-color:#2f5fe0;background:#fff;color:#0f172a}',
       V+'._yrs{display:flex;gap:11px;justify-content:center}',
       V+'._dd{display:inline-flex;flex-direction:column;align-items:center;gap:3px}',
@@ -2463,7 +2464,7 @@
                       : `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Virkja aftur — telst þá ekki lengur sleppt og birtist í öllum sýnum og tölum" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #fde68a;background:#fef3c7;color:#a16207;cursor:pointer;font-weight:700">↩ Virkja aftur</button>`) : ''}</span>` : ''}
                     ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3;white-space:normal"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''} <button class="_ars-amin-x" data-co-id="${c.id}" type="button" title="Eyða áminningunni af þessu fyrirtæki" style="border:none;background:transparent;color:#b45309;cursor:pointer;font-size:10px;padding:0 3px;opacity:.7">✕</button></div>` : ''}
                   </td>
-                  <td class="_ars-notacell"><input class="_note _ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="Ferðanóta…" maxlength="140"></td>
+                  <td class="_ars-notacell"><input class="_note _ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="·····" title="Ferðanóta — tímabundnar nótur við ferðaskipulag" maxlength="140"></td>
                   <td class="_ars-addrcell"><span class="_addr">${c.postnumer ? `<span class="_post">${esc(c.postnumer)}</span>` : ''}${esc(c.heimilisfang || '—')}</span></td>
                   <td class="center${ovr ? ' _ars-ovr-month' : ''}"${ovr ? ` data-co-id="${c.id}" title="⚡ Smelltu til að breyta skoðunarmánuði" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}><span class="_mo" style="${m===curMonth?'color:#c0241f;font-weight:700':''}">${manualMark(esc(MONTHS_IS_SHORT[m-1] || '—'), !!ars.inspect_month_manual)}</span></td>
                   <td ${ovr ? `class="_ars-ovr-eq" data-co-id="${c.id}" title="⚡ Smelltu til að breyta tækjatölum" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}>
