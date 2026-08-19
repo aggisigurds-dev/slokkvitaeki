@@ -33,6 +33,15 @@
   // on the year cell so the office sees "reikningur sendur" right in the list,
   // alongside the úttektarskýrslu status. Loaded once, then cells are rebuilt.
   let reikMap = null, reikLoading = false;
+  // 2026-08-19 (Agnar #11 — „fyrirtæki í þjónustu are not syncing to ársskoðun …
+  // Hamraborg 7"): document_pairs.status='klarad' (skýrsla↔reikningur paruð, per
+  // fyrirtaeki_id, service_type='uttekt') er DVARANDI „úttekt ársins fullbúin"-
+  // merkið sem Agnar viðheldur handvirkt þvert á öppin. Það TROMPAR gamalt/staðnað
+  // `gap`-flagg (year_factcheck skrifað ÁÐUR en verkið kláraðist): Hamraborg 7 (co
+  // 1488) á klarad-par 2026 en `gap` frá 2026-07-22 → sýndist rautt. Steypustöðin
+  // (co 620) á ENGIN klarad-par → helst rétt rautt (engin fals-græn — sama lexía
+  // og árs-merkt viðhengi hér að ofan). pairMap[fyrirtaeki_id(str)] = Set(ár).
+  let pairMap = null, pairLoading = false;
   // 2026-07-09 (critical bug, Agnar): fyrir rekstrarfélög með marga staði (ein
   // kt → margar fyrirtaeki-raðir, t.d. Heimaleiga með 8 staði) opnuðu '25/'26
   // flögurnar SÖMU kt-víðu Drive-skýrsluna (uttekt_files er keyed á kt) á
@@ -190,6 +199,29 @@
     } catch (_) {}
     fcLoading = false;
   }
+  async function loadPairs(){
+    if (pairLoading || pairMap) return; pairLoading = true;
+    try {
+      const sb = window.DB && DB.sb; if (!sb) { pairLoading = false; return; }
+      // Aðeins fullbúin úttektar-pör (ekki brunakerfi, ekki vantar_*). Keyed á
+      // fyrirtaeki_id svo fjölstaða-viðskiptavinur (t.d. Heimaleiga, 12 staðir á
+      // sömu kt) haldi hverjum stað sjálfstæðum — sama regla og document_pairs
+      // einkvæmnin í Brunahólf.
+      const rows = await fetchAll(() => sb.from('document_pairs')
+        .select('fyrirtaeki_id,year')
+        .eq('service_type','uttekt').eq('status','klarad').not('fyrirtaeki_id','is',null));
+      const map = {};
+      rows.forEach(x => {
+        if (x.fyrirtaeki_id == null || !x.year) return;
+        (map[String(x.fyrirtaeki_id)] = map[String(x.fyrirtaeki_id)] || new Set()).add(String(x.year));
+      });
+      pairMap = map;
+      document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
+      document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
+      process();
+    } catch (_) {}
+    pairLoading = false;
+  }
 
   function process(){
     let uf = {}, att = {};
@@ -305,6 +337,8 @@
         const isGap     = fst === 'gap';
         const isNow = (y === String(new Date().getFullYear()));
         const hasInvYear = !!((invMap && invMap[coId] && invMap[coId][y]) || (reikMap && reikMap[kt] && reikMap[kt].has(y)));
+        // Fullbúið úttektar-par (klarad) fyrir þennan stað+ár — trompar staðnað gap.
+        const isKlarad = !!(pairMap && pairMap[coId] && pairMap[coId].has(y));
         const td = document.createElement('td');
         td.setAttribute('data-yrcell','1');
         td.style.cssText = 'text-align:center;';
@@ -330,6 +364,10 @@
           // heimsóknin var farin en engin skýrsla/reikningur enn. Skoðað ár án
           // skjala er „úttekt gerð, skjöl vantar" = blátt, ekki rautt.
           const _visited = +(((_arsBlob[String(coId)]) || {}).last_year_inspected) === y;
+          // klarad-par = úttekt ársins fullbúin (Agnar-viðhaldið, þvert á öppin) →
+          // grænt, TROMPAR staðnað gap. Sett á undan isGap svo Hamraborg 7 o.fl.
+          // sýni loksins rétt grænt. Steypustöðin á ekkert par → fellur í isGap.
+          if (isKlarad) return '_yr ' + (isNow ? 'now' : 'on') + ' both' + lit;
           if (isGap) return '_yr ' + (notDue ? 'penda' : 'now') + lit;
           if (effRep) return '_yr ' + (isNow ? 'now' : 'on') + ' both' + lit;
           if (hasInvYear || isClaude || _visited) return '_yr ' + (isNow ? 'now' : 'on') + ' inv-only' + lit;
@@ -343,7 +381,7 @@
         // slík tilvik. Þetta er líka svarið við „I cant make it not green" —
         // flaggið er skýr mannleg/Claude-niðurstaða og yfirgnæfir nú ágiskun úr
         // skjölum. Skjalið sjálft er áfram aðgengilegt (📄-hlekkur á eftir).
-        if (isGap) {
+        if (isGap && !isKlarad) {
           const gapDoc = (u || f)
             ? ' · ATH: skjal er á skrá fyrir ' + y + ' en það er EKKI úttektarskýrsla (eða flaggið stendur enn)'
             : '';
@@ -353,6 +391,11 @@
           td.innerHTML = wrapBadge('<a href="' + u + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="' + yrCls(true) + '" title="Úttektarskýrsla ' + y + ' í Drive' + (confirmed ? ' · ✓ staðfest handvirkt' : (isClaude ? ' · Claude yfirfór' : '')) + '">' + yy + '</a>', true);
         } else if (f) {
           td.innerHTML = wrapBadge('<a href="#" class="' + yrCls(true) + ' _yr-att" data-path="' + String(f.path||'').replace(/"/g,'&quot;') + '" title="' + String(f.name||'').replace(/"/g,'&quot;') + ' (' + y + ' — upphlaðið skjal)">' + yy + '</a>', true);
+        } else if (isKlarad) {
+          // GRÆNT (klarad án tengdrar skýrslu): parið er staðfest fullbúið (t.d.
+          // handvirkt reikning-eingöngu par, Hamraborg 7) en skýrslu-skjalið er
+          // ekki tengt. Grænt = úttekt ársins lokið; smellur opnar skýrslu-tengingu.
+          td.innerHTML = wrapBadge('<a href="#" class="' + yrCls(true) + ' _yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="✓ Fullbúið fyrir ' + y + ' — skýrsla↔reikningur paruð (klarad). Skýrsla ekki tengd; smelltu til að hengja hana við.">' + yy + '</a>', false);
         } else if (invMap && invMap[coId] && invMap[coId][y]) {
           // BLÁTT (inv-only): úttektin var GERÐ (reikningur til) en skýrslan vantar.
           const iv = invMap[coId][y];
@@ -376,9 +419,9 @@
   // identical '23/'24/'25/'26 status without duplicating the data plumbing.
   // Returns { '2023': {has, due, reik}, … }. `has` = úttektarskýrsla á skrá.
   function yearInfo(c) {
-    try { loadLoc(); loadReik(); loadInv(); } catch (_) {}   // best-effort warm (idempotent)
+    try { loadLoc(); loadReik(); loadInv(); loadPairs(); } catch (_) {}   // best-effort warm (idempotent)
     const out = {};
-    if (!c) { YEARS.forEach(y => out[y] = { has: false, due: (y === '2026'), reik: false }); return out; }
+    if (!c) { YEARS.forEach(y => out[y] = { has: false, due: (y === '2026'), reik: false, klarad: false }); return out; }
     let uf = {}, att = {};
     try { if (window.AppSettings && AppSettings.path) uf = AppSettings.path('uttekt_files') || {}; } catch (e) {}
     try { if (window.AppSettings && AppSettings.path) att = AppSettings.path('company_attachments') || {}; } catch (e) {}
@@ -396,11 +439,14 @@
       // `inv` = úttekt staðfest með reikningi (v_uttekt_ar) en skýrsla vantar —
       // `has` er ÁFRAM skýrslu-eingöngu svo „vantar skýrslu"-talningar standi.
       out[y] = { has: !!(u || f), due: (y === '2026'), reik: !!(reikMap && reikMap[kt] && reikMap[kt].has(y)),
-        inv: !!(invMap && invMap[coId] && invMap[coId][y]) };
+        inv: !!(invMap && invMap[coId] && invMap[coId][y]),
+        klarad: !!(pairMap && pairMap[coId] && pairMap[coId].has(y)) };
     });
     return out;
   }
-  window.InserviceRowReports = { YEARS: YEARS.slice(), yearInfo };
+  // O(1) klarad-uppfletting fyrir 153 (isDoneYear) — engin þung yearInfo-smíð.
+  function isKlaradYear(coId, y){ try { loadPairs(); } catch(_){} return !!(pairMap && pairMap[String(coId)] && pairMap[String(coId)].has(String(y))); }
+  window.InserviceRowReports = { YEARS: YEARS.slice(), yearInfo, isKlarad: isKlaradYear };
 
   // Clicking an uploaded-document icon: open a signed Storage URL. The tab is
   // opened synchronously (before the await) so popup blockers stay quiet.
@@ -526,5 +572,6 @@
   setTimeout(loadReik, 900);   // load reikningur-status once, then re-render cells with 🧾
   setTimeout(loadLoc, 600);    // load location-precise reports once, then re-render cells
   setTimeout(loadFc, 750);     // load fact-check (blár/grænn) once, then re-render cells
+  setTimeout(loadPairs, 850);  // klarad úttektar-pör → grænt trompar staðnað gap
   setTimeout(loadInv, 800);    // load v_uttekt_ar (úttekt-með-reikningi = blátt ár)
 })();

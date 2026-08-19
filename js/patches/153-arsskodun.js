@@ -188,6 +188,15 @@
     const fcCurP = SB.from('year_factcheck').select('co_id,status').eq('year', new Date().getFullYear())
       .then(r => { const m = {}; ((r && r.data) || []).forEach(x => { m[String(x.co_id)] = x.status; }); return m; })
       .catch(() => ({}));
+    // 2026-08-19 (Agnar #11 — „fyrirtæki í þjónustu are not syncing to ársskoðun …
+    // Hamraborg 7"): document_pairs klarad úttektar-pör yfirstandandi árs (per
+    // fyrirtaeki_id) er DVARANDI „úttekt ársins fullbúin"-merkið sem Agnar viðheldur
+    // handvirkt þvert á öppin. Það TROMPAR staðnað `gap`-flagg í isDoneYear (gap var
+    // oft skrifað ÁÐUR en verkið kláraðist). Sami lykill og '26-merkin í 187/199.
+    const klaradCurP = SB.from('document_pairs').select('fyrirtaeki_id')
+      .eq('year', new Date().getFullYear()).eq('service_type', 'uttekt').eq('status', 'klarad')
+      .then(r => { const s = new Set(); ((r && r.data) || []).forEach(x => { if (x.fyrirtaeki_id != null) s.add(String(x.fyrirtaeki_id)); }); return s; })
+      .catch(() => new Set());
     // 2026-08-13 (Agnar): talnakortin þrjú efst (Fjöldi / Búið / Eftir) lesa
     // EINA sannleikstölu úr Supabase-viewinu v_thjonustu_tolur í stað
     // staðbundinna JS-útreikninga sem ráku í sundur við grunninn
@@ -256,6 +265,7 @@
     _cache.tolur = await tolurP;
     const skManById = Object.fromEntries((await skManP).map(r => [String(r.fyrirtaeki_id), r]));
     _cache.fcCur = await fcCurP;   // co_id → 'human'|'claude'|'gap' fyrir yfirstandandi ár
+    _cache.klaradCur = await klaradCurP;   // Set<fyrirtaeki_id(str)> með klarad úttektar-par í ár
 
     // 2026-05-19: Only include companies that are ACTUALLY in service
     // (subscribed to ársskoðun, subscribed to brunakerfi, OR — new — they have
@@ -759,6 +769,11 @@
   // er þar með rofinn fyrir Skoðað-stöðuna, síurnar og talnakortið.
   function isDoneYear(c, curYear) {
     const fc = (_cache.fcCur || {})[String(c.id)];
+    // 2026-08-19 (Agnar #11): klarad úttektar-par (skýrsla↔reikningur paruð, per
+    // stað, Agnar-viðhaldið) TROMPAR staðnað gap — Hamraborg 7 o.fl. voru merkt
+    // gap ÁÐUR en verkið kláraðist. klaradCur er yfirstandandi árs, svo aðeins
+    // fyrir það ár (sama gildissvið og fc/gap sem það trompar).
+    if (curYear === new Date().getFullYear() && _cache.klaradCur && _cache.klaradCur.has(String(c.id))) return true;
     if (fc === 'gap') return false;
     if (fc === 'human') return true;
     return (+((c._ars || {}).last_year_inspected) || 0) === curYear;
