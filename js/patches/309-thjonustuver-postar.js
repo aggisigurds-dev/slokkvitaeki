@@ -181,7 +181,9 @@
     g.needs_reply = actionableOpen(g).length > 0;
   }
   // Opnar spurningar sem AI hefur EKKI merkt „þarf ekkert svar" (default: telst með).
-  function actionableOpen(g) { return (g.open || []).filter((m) => { const b = STATE.briefs.get(m.id); return !b || b.needs_action !== false; }); }
+  // ATH: briefs eru lyklaðar á STRENG (Object.keys úr /api), m.id er tala → String().
+  const briefOf = (m) => STATE.briefs.get(String(m && m.id));
+  function actionableOpen(g) { return (g.open || []).filter((m) => { const b = briefOf(m); return !b || b.needs_action !== false; }); }
 
   // ── DATA LAYER ──────────────────────────────────────────────────────────────
   // felag_samskipti er DÝR view (lateral address-matching) — full scan fellur á
@@ -245,7 +247,7 @@
 
   // ── AI-yfirlit (batch, mode:'thjonustuver') ──────────────────────────────────
   async function analyzeGroup(g, btn) {
-    const targets = (g.open.length ? g.open : g.mails.filter((m) => !m.fra_okkur && !isAuto(m))).filter((m) => !STATE.briefs.has(m.id)).slice(0, 12);
+    const targets = (g.open.length ? g.open : g.mails.filter((m) => !m.fra_okkur && !isAuto(m))).filter((m) => !STATE.briefs.has(String(m.id))).slice(0, 12);
     if (!targets.length) { render(); return; }
     if (btn) { btn.disabled = true; btn.textContent = '✨ Greini…'; }
     try {
@@ -259,7 +261,7 @@
       const out = await r.json();
       if (!r.ok) { toast('AI-villa: ' + (out.error || r.status), true); return; }
       const results = out.results || {};
-      Object.keys(results).forEach((id) => STATE.briefs.set(id, results[id]));
+      Object.keys(results).forEach((id) => STATE.briefs.set(String(id), results[id]));
       computeGroup(g, loadHandled());   // needs_action gæti hafa þaggað niður opna spurningu
     } catch (e) { toast('Netvilla: ' + (e.message || e), true); return; }
     finally { if (btn) btn.disabled = false; }
@@ -281,7 +283,7 @@
     if (!m) return;
     const ref = 'email:' + m.id;
     if (STATE.promoted.has(ref)) { toast('Þegar á Þjónustuborði'); return; }
-    const brief = STATE.briefs.get(m.id) || {};
+    const brief = briefOf(m) || {};
     const row = {
       title: m.subject || ('Póstur frá ' + g.nafn),
       notes: m.snippet || '',
@@ -383,7 +385,7 @@
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   function briefHtml(m) {
-    const b = STATE.briefs.get(m.id);
+    const b = briefOf(m);
     if (!b) return '';
     const det = (b.details || []).map((d) => '<span class="tvp-kv"><b>' + esc(d.label) + '</b><span>' + esc(d.value) + '</span></span>').join('');
     const c = b.contact || null;
