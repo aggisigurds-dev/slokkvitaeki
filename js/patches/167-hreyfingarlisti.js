@@ -219,7 +219,7 @@
   // ── Data load ────────────────────────────────────────────────────────────
   // scope sjálfgefið 'all' (Allt) — ósk Agnars 2026-08-19: opnast á ÖLLUM
   // færslum, ekki bara mánuðinum. Notandinn getur enn valið Mán/Ár í seg-rofa.
-  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'greitt', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'all' };
+  let _state = { month: null, all: [], filter: 'all', search: '', sortKey: 'created_at', sortDir: 'desc', mode: 'month', ktInfo: null, scope: 'all' };
 
   // 2026-07-01: customer lookup by NAME or KENNITALA — pull a customer's WHOLE
   // sölu-/reikningasaga (all time, not month-bounded) so "sendu mér kvittun frá
