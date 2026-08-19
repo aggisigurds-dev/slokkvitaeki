@@ -31,6 +31,9 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | Flipa, borð, nav — Verkborð, Bakendi, Bílstjóri, Aksturslisti, URL-routing, bakk, app-síður | `bord-flettur` |
 | theme.css hönnunarkerfið + per-page skeletons | `thema` |
 | AI-aðstoðarmanninn (Customer brief, watchlist, Aðstoðarmiðstöð) | `adstod` |
+| Útlit, farsímaskjái, brotna/þrönga skjái, endurhönnun — hönnuðurinn 🃏 | `joker` |
+| QR-merki, miðaprentun (Brother PT-P750W), raðnúmer, skannann | `prentun` |
+| Kort, Leaflet, mapfix-merkin, geocode/Nominatim, kill-dots | `kort` |
 
 **Notkun:** kallaðu á sérfræðinginn með Agent-tólinu (`subagent_type`), eða lestu skrána
 hans beint þegar þú þarft bara þekkinguna. **Ekki afrita innihald þeirra hingað** — ein
@@ -62,7 +65,8 @@ maps.
 - **Backend**: Supabase (PostgreSQL + Storage + Realtime)
 - **Frontend**: Plain HTML/CSS/vanilla JS — no framework, no bundler
 - **Map**: Leaflet
-- **QR**: jsQR (scan), qrcode-generator (print)
+- **QR**: jsQR (scan); prent notar qrcodejs o.fl. — ⚠️ þrjú ósamrýmanleg söfn deila
+  `window.QRCode`, sjá `prentun`-sérfræðinginn
 
 ---
 
@@ -114,8 +118,7 @@ js/db.js                DB global, wraps supabase client
 js/utils.js             helpers (esc, fmtKr, dates)
 js/app.js               view routing — showMasterView('view-foo')
 js/pos.js               Sala (POS) view + showReceipt() popup
-js/field.js             Þjónustutæki (field service map)
-js/mapfix.js            map markers
+js/mapfix.js            kort-merkin + geocode (js/field.js er EKKI til — sjá `kort`)
 js/qrbulkprint.js       Bulk QR sheet printing
 js/qrscan.js            Camera QR scanning
 js/vidskiptavinir.js    Customers
