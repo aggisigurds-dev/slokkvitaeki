@@ -99,10 +99,11 @@
     if (n == null || isNaN(n)) return '0,00';
     return n.toLocaleString(ICELAND_LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
-  // Afsl.% column — reference-invoice style „15,00" (2 aukastafir, komma). Tómt við 0.
+  // Afsl.% column — reference-invoice style „15,00" (2 aukastafir, íslensk komma).
+  // toFixed+replace svo það sé alltaf komma óháð locale-gögnum vafrans. Tómt við 0.
   function fmtPct(p) {
     if (p == null || isNaN(p) || +p <= 0) return '';
-    return (+p).toLocaleString(ICELAND_LOCALE, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return (+p).toFixed(2).replace('.', ',');
   }
   function fmtKt(s) {
     s = String(s || '').replace(/[^0-9]/g, '');
