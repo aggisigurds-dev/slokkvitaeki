@@ -58,7 +58,7 @@
       //    overflow:hidden en borðinn situr í 9px bilinu ofan við takkaröðina. ──
       V + '.btn-kredit-wrap{position:relative;display:inline-flex}' +
       V + '.kredit-dot{position:absolute;top:-7px;right:-7px;width:16px;height:16px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#a78bfa,#6d28d9);color:#fff;font-size:9px;font-weight:800;border-radius:999px;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(90,33,182,.5);pointer-events:none}' +
-      V + '.kredit-ribbon{position:absolute;top:-8px;right:-14px;transform:rotate(12deg);background:linear-gradient(180deg,#a78bfa,#6d28d9);color:#fff;font-size:9.5px;font-weight:800;letter-spacing:.04em;padding:2px 8px;border-radius:6px;border:1.5px solid #fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 2px 5px rgba(90,33,182,.45);white-space:nowrap;pointer-events:none}' +
+      V + '.kredit-ribbon{position:absolute;top:-6px;right:-9px;transform:rotate(12deg);background:linear-gradient(180deg,#a78bfa,#6d28d9);color:#fff;font-size:6.5px;font-weight:800;letter-spacing:.02em;padding:1px 4px;border-radius:5px;border:1px solid #fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 1px 3px rgba(90,33,182,.4);white-space:nowrap;pointer-events:none}' +
       // ── 📱 Sími (mobile) mode — single-column stacked cards, big taps, wrap ──
       V + '.hl-mcard{background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;margin-bottom:11px;overflow:hidden;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)}' +
       V + '.hl-mhead{padding:12px 13px 11px;border-bottom:1px solid #eef1f6}' +
