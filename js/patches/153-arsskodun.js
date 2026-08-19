@@ -188,6 +188,15 @@
     const fcCurP = SB.from('year_factcheck').select('co_id,status').eq('year', new Date().getFullYear())
       .then(r => { const m = {}; ((r && r.data) || []).forEach(x => { m[String(x.co_id)] = x.status; }); return m; })
       .catch(() => ({}));
+    // 2026-08-19 (Agnar #11 — „fyrirtæki í þjónustu are not syncing to ársskoðun …
+    // Hamraborg 7"): document_pairs klarad úttektar-pör yfirstandandi árs (per
+    // fyrirtaeki_id) er DVARANDI „úttekt ársins fullbúin"-merkið sem Agnar viðheldur
+    // handvirkt þvert á öppin. Það TROMPAR staðnað `gap`-flagg í isDoneYear (gap var
+    // oft skrifað ÁÐUR en verkið kláraðist). Sami lykill og '26-merkin í 187/199.
+    const klaradCurP = SB.from('document_pairs').select('fyrirtaeki_id')
+      .eq('year', new Date().getFullYear()).eq('service_type', 'uttekt').eq('status', 'klarad')
+      .then(r => { const s = new Set(); ((r && r.data) || []).forEach(x => { if (x.fyrirtaeki_id != null) s.add(String(x.fyrirtaeki_id)); }); return s; })
+      .catch(() => new Set());
     // 2026-08-13 (Agnar): talnakortin þrjú efst (Fjöldi / Búið / Eftir) lesa
     // EINA sannleikstölu úr Supabase-viewinu v_thjonustu_tolur í stað
     // staðbundinna JS-útreikninga sem ráku í sundur við grunninn
@@ -256,6 +265,7 @@
     _cache.tolur = await tolurP;
     const skManById = Object.fromEntries((await skManP).map(r => [String(r.fyrirtaeki_id), r]));
     _cache.fcCur = await fcCurP;   // co_id → 'human'|'claude'|'gap' fyrir yfirstandandi ár
+    _cache.klaradCur = await klaradCurP;   // Set<fyrirtaeki_id(str)> með klarad úttektar-par í ár
 
     // 2026-05-19: Only include companies that are ACTUALLY in service
     // (subscribed to ársskoðun, subscribed to brunakerfi, OR — new — they have
@@ -759,6 +769,11 @@
   // er þar með rofinn fyrir Skoðað-stöðuna, síurnar og talnakortið.
   function isDoneYear(c, curYear) {
     const fc = (_cache.fcCur || {})[String(c.id)];
+    // 2026-08-19 (Agnar #11): klarad úttektar-par (skýrsla↔reikningur paruð, per
+    // stað, Agnar-viðhaldið) TROMPAR staðnað gap — Hamraborg 7 o.fl. voru merkt
+    // gap ÁÐUR en verkið kláraðist. klaradCur er yfirstandandi árs, svo aðeins
+    // fyrir það ár (sama gildissvið og fc/gap sem það trompar).
+    if (curYear === new Date().getFullYear() && _cache.klaradCur && _cache.klaradCur.has(String(c.id))) return true;
     if (fc === 'gap') return false;
     if (fc === 'human') return true;
     return (+((c._ars || {}).last_year_inspected) || 0) === curYear;
@@ -2316,8 +2331,9 @@
       V+'._addr{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}',
       V+'._post{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted);margin-right:8px}',
       V+'._mo{font-family:var(--mono);font-size:12px;color:var(--ink-2)}',
-      V+'._note{width:100%;height:24px;border:1px solid #e6e9ef;border-radius:7px;background:#fbfcfd;color:#3a4250;font-family:var(--ui);font-size:11.5px;padding:0 9px;box-sizing:border-box}',
-      V+'._note::placeholder{color:#8f98a6}',
+      V+'._note{width:100%;height:24px;border:1px solid transparent;border-radius:7px;background:transparent;color:#3a4250;font-family:var(--ui);font-size:11.5px;padding:0 9px;box-sizing:border-box;transition:background .12s,border-color .12s}',
+      V+'._note::placeholder{color:#c7ccd6;letter-spacing:.16em}',
+      V+'._note:hover{border-color:#e6e9ef;background:#fbfcfd}',
       V+'._note:focus{outline:none;border-color:#2f5fe0;background:#fff;color:#0f172a}',
       V+'._yrs{display:flex;gap:11px;justify-content:center}',
       V+'._dd{display:inline-flex;flex-direction:column;align-items:center;gap:3px}',
@@ -2463,7 +2479,7 @@
                       : `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Virkja aftur — telst þá ekki lengur sleppt og birtist í öllum sýnum og tölum" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #fde68a;background:#fef3c7;color:#a16207;cursor:pointer;font-weight:700">↩ Virkja aftur</button>`) : ''}</span>` : ''}
                     ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3;white-space:normal"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''} <button class="_ars-amin-x" data-co-id="${c.id}" type="button" title="Eyða áminningunni af þessu fyrirtæki" style="border:none;background:transparent;color:#b45309;cursor:pointer;font-size:10px;padding:0 3px;opacity:.7">✕</button></div>` : ''}
                   </td>
-                  <td class="_ars-notacell"><input class="_note _ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="Ferðanóta…" maxlength="140"></td>
+                  <td class="_ars-notacell"><input class="_note _ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="·····" title="Ferðanóta — tímabundnar nótur við ferðaskipulag" maxlength="140"></td>
                   <td class="_ars-addrcell"><span class="_addr">${c.postnumer ? `<span class="_post">${esc(c.postnumer)}</span>` : ''}${esc(c.heimilisfang || '—')}</span></td>
                   <td class="center${ovr ? ' _ars-ovr-month' : ''}"${ovr ? ` data-co-id="${c.id}" title="⚡ Smelltu til að breyta skoðunarmánuði" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}><span class="_mo" style="${m===curMonth?'color:#c0241f;font-weight:700':''}">${manualMark(esc(MONTHS_IS_SHORT[m-1] || '—'), !!ars.inspect_month_manual)}</span></td>
                   <td ${ovr ? `class="_ars-ovr-eq" data-co-id="${c.id}" title="⚡ Smelltu til að breyta tækjatölum" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}>

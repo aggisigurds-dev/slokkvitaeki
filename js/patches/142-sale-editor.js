@@ -463,8 +463,13 @@
           unit_price_ex_vat: +p.verd_an_vsk || 0,
           vsk_pct: +p.vsk_prosenta || 24,
           discount_pct: 0,
-          type: p.flokkur === 'þjónusta' ? 'service' : 'product',
-          product_id: p.id
+          // 2026-08-19 (Agnar #12): flokkur er geymt „Þjónusta" (stór Þ); gamla
+          // === 'þjónusta' (lítið þ) merkti CO₂-þjónustu ranglega sem 'product' og
+          // sleppti krefst_verkbeidni, svo ritillinn bjó ekki til verkbeiðni fyrir
+          // nýtt tæki. Nú case-insensitive + krefst_verkbeidni sett.
+          type: /þjónusta/i.test(p.flokkur || '') ? 'service' : 'product',
+          product_id: p.id,
+          krefst_verkbeidni: /þjónusta/i.test(p.flokkur || '')
         });
         renderLines();
       });
@@ -744,6 +749,48 @@
       try {
         await SB.from('verkbeidnir').update({ customer: nafn }).like('num', _sale.num + '-V%');
       } catch (e) { console.warn('[sale-editor] verkbeidnir cascade:', e); }
+    }
+
+    // 2026-08-19 (Agnar #12): Sölu-ritillinn bjó áður ALDREI til verkbeiðnir — hann
+    // skrifaði bara solur.linur. Tæki sem bætt var við í ritlinum EFTIR afgreiðslu
+    // skilaði sér því aldrei á Verkstæði. Speglum pos.js: hver tæki-lína fær sína
+    // verkbeiðni (num+'-V<n>') + verklidur (gram-based → 1 stk, með qty í service;
+    // annars qty stk). Aðeins VIÐBÓT umfram núverandi -V<n>, talið upp frá hæsta
+    // svo endurvistun tvítekur ekki. byrjunargjald (Fylgihlutir) verður aldrei tæki.
+    if (_sale.num) {
+      try {
+        const isTaeki = l => (l.type === 'service' || l.krefst_verkbeidni === true)
+          && !/byrjunargjald/i.test(l.desc || '');
+        const taeki = (_sale.linur || []).filter(isTaeki);
+        const ex = await SB.from('verkbeidnir').select('num').like('num', _sale.num + '-V%');
+        const existing = ex.data || [];
+        let maxIdx = 0;
+        existing.forEach(row => { const m = /-V(\d+)$/.exec(row.num || ''); if (m) maxIdx = Math.max(maxIdx, +m[1]); });
+        const tmpSerial = () => { const A = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; let s = ''; for (let z = 0; z < 6; z++) s += A[Math.floor(Math.random() * A.length)]; return 'TMP-' + s; };
+        for (let k = existing.length; k < taeki.length; k++) {
+          const sl = taeki[k];
+          const gram = /\b\d+\s*(gr?\.?|gramm|ml|litr?)\b/i.test(sl.desc || '');
+          const qty = parseInt(sl.qty, 10) || 1;
+          const vat = (sl.vsk_pct != null ? +sl.vsk_pct : 24);
+          const verd = Math.round((+sl.unit_price_ex_vat || 0) * (gram ? qty : 1) * (1 + vat / 100));
+          const job = await SB.from('verkbeidnir').insert({
+            num: _sale.num + '-V' + (++maxIdx),
+            status: 'received',
+            customer: nafn,
+            dropoff: new Date().toISOString().slice(0, 10),
+            notes: sl.desc,
+            verd: verd
+          }).select('id').single();
+          if (job.error || !job.data) { console.warn('[sale-editor] verkbeidni insert:', job.error); continue; }
+          const count = gram ? 1 : qty;
+          const rows = [];
+          for (let u = 0; u < count; u++) rows.push({
+            job_id: job.data.id, serial: tmpSerial(), type: '—', size: '', status: 'received',
+            service: gram ? (sl.desc + ' × ' + qty + ' (samtals)') : sl.desc
+          });
+          if (rows.length) { try { await SB.from('verklidur').insert(rows); } catch (e) { console.warn('[sale-editor] verklidur insert:', e); } }
+        }
+      } catch (e) { console.warn('[sale-editor] verkbeidnir reconcile:', e); }
     }
 
     if (window.Toast && Toast.show) Toast.show(finalize ? '✓ Sala kláruð · birtist í Bókhaldi' : '✓ Drög vistuð');
