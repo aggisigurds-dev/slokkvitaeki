@@ -10,7 +10,8 @@ It contains everything Claude Code needs to know to be useful immediately.
 > [`docs/ORYGGISNET.md`](docs/ORYGGISNET.md) — **öryggisnetið (the safety net): READ
 > before changing any guarded path (invoice OUT `10/233/254`, kennitala `121/pos.js`,
 > billing `payday-push.js`, readiness `153/187`) and run `node tools/audit-all.cjs`
-> before EVERY push. Do not cut the power line without reconnecting + testing it.**
+> before EVERY push. Route the change through the **`netvordur`** guardian agent
+> (`subagent_type: netvordur`). Do not cut the power line without reconnecting + testing it.**
 >
 > **📋 Í upphafi vinnu-session:** líta á opin verk á Verkefnalistanum —
 > `GET https://brunaholf.netlify.app/api/verkefnalisti` (beidni/i_vinnu) — áður en
