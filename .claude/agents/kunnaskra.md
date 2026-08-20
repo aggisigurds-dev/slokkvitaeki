@@ -76,20 +76,26 @@ verkdagbok       (id uuid PK, created_at, job_date, fyrirtaeki, athugasemdir,
 Tvær viðbætur á árssoðun-listann (patch 153) til að hjálpa við þjónustuna, því
 við förum bara einu sinni á ári til hvers kúnna:
 
-- **📩 Póst-merki (`js/patches/295-company-mail-badge.js`)** — rautt umslag birtist
-  á fyrirtæki þegar SÍÐASTA póstsamskiptið frá kúnnanum er ÓSVARAÐ, svo póstur frá
-  því fyrir marga mánuði gleymist ekki. Gögn koma úr Brunahólfs-endapunktinum
-  **`/api/company-mail`** (`netlify/functions/company-mail.js` í Brunahólf, service
-  role, þjónar báðum öppunum) sem matchar INN-póst við hvert `fyrirtaeki_id` á
-  **nákvæmu netfangi** (aldrei giskað; netfang sem tvö félög deila er sleppt) og
-  merkir `unreplied` = enginn SENT-póstur til þess eftir nýjasta inn-póstinn.
-  Merkið er DEKORERAÐ á raðir/spjöld með MutationObserver (patch 153 ósnert;
-  async-gögnin birtast um leið og þau berast, cache í localStorage 20 mín). Smellur
-  á umslagið → lítið spjald með efnislínu/dagsetningu + „↩️ Svara" (mailto) +
-  „🔕 Slökkva á merki". **Slökkva per fyrirtæki:** `arsskodun_customers[<id>]
-  .mail_off` (sama AppSettings-blob og akstur/nytt_manual, deep-merge, samstillist)
-  — takki „📩 Póstmerki" á fyrirtækjaprófílnum (birtist aðeins þegar matchað
-  póstsamskipti er til). Public: `window.CompanyMail = {show, data, setMuted, refresh}`.
+- **📩 Póst-stöðumerki v2 — umferðarljós (`js/patches/295-company-mail-badge.js`, 2026-08-20)** —
+  🔴🟡🟢 merki á Fyrirtæki í þjónustu (mánaðar-yfirlitinu): **🔴 rautt** = síðasta
+  póstsamskipti frá kúnna ÓSVARAÐ · **🟡 gult** = mikilvægt/möguleg breyting í póstsögu
+  (uppsögn/flutt/eigendaskipti/gjaldþrot/kvörtun/bilun/áríðandi) EÐA handvirkt merkt ·
+  **🟢 grænt** = póstsaga svöruð (í sambandi) · ekkert = engin samskipti. Röð:
+  rautt > gult > grænt. Gögn úr Brunahólfs-endapunktinum **`/api/company-mail`**
+  (`netlify/functions/company-mail.js`, service role, þjónar báðum öppunum) sem skilar
+  per `fyrirtaeki_id`: `unreplied` + `important` + `signals[]` ({type,subject,received_at}).
+  **Mátun:** rautt er STRANGT (nákvæmt netfang per bygging, aldrei giskað; deilt netfang
+  sleppt). Gult (signals) er VÍÐARA — netfang→lögaðili→allar byggingar hans (company-mail
+  `detectSignals()` leitarorð, skannar allan gluggann, ekki bara nýjasta). ⚠️ Hrá
+  leitarorða-talning á „cancel/uppsögn" er MJÖG hávær (fundarafbókanir/áskriftir); raun-
+  lífsferils-pósta á kúnna eru fáir (~2/ár) — sjá Charlize, ekki hræðast hráar tölur.
+  DEKORERAÐ með MutationObserver (patch 153 ósnert, cache 20 mín). Smellur → spjald með
+  „⚠️ MERKI Í PÓSTSÖGU" (lífsferils-merki lituð sér) + nýjasta pósti + „↩️ Svara" +
+  „⭐ Mikilvægt" (handvirkt gult) + „🔕 Slökkva rautt". **Flögg per fyrirtæki í**
+  `arsskodun_customers[<id>]`: `mail_off` (slökkva rautt), `mail_important` (kveikja gult)
+  — deep-merge AppSettings, samstillist. Public: `window.CompanyMail =
+  {show, status, data, setMuted, setImportant, refresh}`. Víðtækari þekja (185 lögaðilar
+  eins og Þjónustuver póstar sér, í stað ~36) = `felag_samskipti`-mátun; ógert.
 - **📍 Póstnúmer (patch 153 + `14-companies-openedit.js`)** — nýr ADDITIVE dálkur
   **`fyrirtaeki.postnumer` (text)** svo raða/sía megi eftir póstnúmeri fyrir
   akstursleiðir ÁN þess að snerta free-text `heimilisfang`. Bakfylltur úr
