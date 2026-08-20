@@ -115,7 +115,7 @@
   // entirely (0 left) instead of decluttering them — worse than the mess.
   async function fetchDocs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,fyrirtaeki_id,is_duplicate,found_by').eq('customer_base_id', baseId);
+    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by').eq('customer_base_id', baseId);
       return r.data||[]; }catch(e){ return []; }
   }
   // Brunakerfis-skoðanir (doc_type='brunakerfi') eru lyklaðar á fyrirtaeki_id —
@@ -125,7 +125,7 @@
   async function fetchBrunakerfiDocs(coId){
     var sb=SB(); if(!sb||!coId) return [];
     try{ var r=await sb.from('customer_documents')
-        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,fyrirtaeki_id,is_duplicate,found_by')
+        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by')
         .eq('fyrirtaeki_id', coId).eq('doc_type','brunakerfi');
       return r.data||[]; }catch(e){ return []; }
   }
@@ -326,6 +326,12 @@
   // ótraust skv. skjol.md — auto-renamer skemmdi ~1/3 nafna).
   var STAMP_RE = /^\s*(drive-multitool|doc-index|relink(-docs)?|skjalavarsla|uttekt-upload|uttekt-master|fasi0)\b/i;
   function docName(d){
+    // 2026-08-20: raunverulegt Drive-skráarheiti er nú geymt í `file_name`
+    // (structured „Fyrirtæki - Heimilisfang - kt - tegund - ár"). Það er ALLTAF
+    // rétta nafnið — kýs það fram yfir `notes` (sem bar oft uppruna-stimpil). Sýnir
+    // líka heimilisfangið beint í nafninu → augljóst ef samningur á rangt fyrirtæki.
+    var fn = String(d.file_name || '').trim().replace(/\.(pdf|docx?|jpe?g|png)$/i, '');
+    if (fn) return fn;
     var raw = String(d.notes || '').trim();
     // Uppruna-stimpill er ekki nafn — henda honum og byggja nafn úr gögnunum.
     var nm = STAMP_RE.test(raw) ? '' : raw
