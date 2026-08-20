@@ -55,6 +55,14 @@ automation health and pings Agnar *only* when something needs him.
 
 ## The rules — do not cut the power line
 
+0. **Go through the map before you touch the network.** Any Claude session or
+   agent about to edit a guarded path MUST first (a) read this file, (b) run the
+   **`netvordur`** guardian agent to review the change (`subagent_type: netvordur`),
+   and (c) get `node tools/audit-all.cjs` green — **before and after** the edit.
+   Do not cut a wire you have not traced on the map. If `netvordur` says
+   **CUTS-A-WIRE**, reconnect it before pushing. The guardian is the last barrier
+   between a change and live customers.
+
 1. **Never remove or weaken a guard** without a replacement guard **and**
    re‑running its audit green.
 2. **Any change to a guarded path** — invoice OUT (`10` / `233` / `254`), kt save
@@ -113,6 +121,12 @@ baseline rows and lowering the constant is how the net tightens over time.
 - **Sweep:** Routine `trig_013hqjttRBk7TqbrPum2MskF` — 3×/day (08/13/18), reads
   `v_app_problems_open` + `automation_runs`, opens a draft fix or pings Agnar only
   on need.
+- **Guardian:** `.claude/agents/netvordur.md` — the `netvordur` subagent reviews any
+  change to a guarded path against this map + `audit-all` and rules **SAFE** or
+  **CUTS-A-WIRE**. It is Rule 0 above — the last barrier before live customers.
+- **The map:** the visual power grid lives on Miro (recorded in Charlize, topic
+  `kerfiskort`) — origins → flows → data → outputs, secured baseline in green,
+  open risks in red. Keep it current when the wiring changes.
 - **Memory:** Charlize (`charlize_knowledge`) — the 5 root causes + this net's
   lessons (scope `slokkvitaeki` / `kerfi`). Read before changing; write when you
   learn.
