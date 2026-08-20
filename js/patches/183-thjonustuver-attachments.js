@@ -33,7 +33,7 @@
     return String(s == null ? '' : s).replace(/[&<>"']/g, c =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
-  function driveUrl(id) { return id ? 'https://drive.google.com/file/d/' + id + '/view' : ''; }
+  function driveUrl(id) { return id && String(id).indexOf('sb:') !== 0 ? 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(id) : ''; }
 
   // ── Styles ────────────────────────────────────────────────────────────────
   if (!document.getElementById('_tva-style')) {

@@ -1410,8 +1410,8 @@
         const url = await CompanyAttachments.getPublicUrl(res.doc.storage_path);
         if (url) { window.open(url, '_blank', 'noopener'); return; }
       }
-      if (res.doc.drive_file_id) {
-        window.open('https://drive.google.com/file/d/' + encodeURIComponent(res.doc.drive_file_id) + '/view', '_blank', 'noopener');
+      if (res.doc.drive_file_id && String(res.doc.drive_file_id).indexOf('sb:') !== 0) {
+        window.open('https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(res.doc.drive_file_id), '_blank', 'noopener');
         return;
       }
     }

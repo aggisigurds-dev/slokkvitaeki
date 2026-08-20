@@ -148,6 +148,12 @@ baseline rows and lowering the constant is how the net tightens over time.
   re‑activation (er_i_thjonustu=true / subscribed=true — patch 158/198/280) and
   carves out a still‑live brunakerfi contract (`!bruMap`). netvordur SAFE, verified
   on live data (55/57 removed vetoed, 2 correctly escaped, 0 brunakerfi collisions).
+- **2026‑08‑20** — Doc‑open links (`153`/`187`) storage‑first + authed proxy: report &
+  attachment chips route through Brunahólf `/api/skjal` (server‑OAuth streams the PDF
+  inline) instead of raw `drive.google.com/file/d/` links that 404 on un‑shared files.
+  Part of the cross‑app "fix‑it‑once" sweep (26 files, both apps → the one live proxy).
+  netvordur SAFE (measured 1231==1231 rows keep a link, 0 lost); audit‑all 3/3. Pure
+  open‑URL change — no readiness/OUT/kt/save touched.
 - *Add a line here every time you make something bulletproof.*
 
 ---
