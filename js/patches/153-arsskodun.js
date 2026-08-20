@@ -905,7 +905,11 @@
       // Allir sem eru á akstursleið (1/2/3). Lesið gegnum ArsAkstur eins og
       // 🚗-chippinn í töflunni — ekki beint úr blobbinu, svo leiðin sem patch
       // 267 heldur utan um sé eina heimildin.
-      arr = arr.filter(c => ((window.ArsAkstur && ArsAkstur.of) ? (+ArsAkstur.of(c.id) || 0) : (+(c._ars || {}).akstur || 0)) > 0);
+      // state._akOnly (1/2/3) = AÐEINS sá listi — svo prenta megi hvern aksturslista
+      // fyrir sig (per bílstjóra) í póstnúmeraröð. 0/undefined = allir listar (óbreytt).
+      const _AKof = c => ((window.ArsAkstur && ArsAkstur.of) ? (+ArsAkstur.of(c.id) || 0) : (+(c._ars || {}).akstur || 0));
+      const _only = +state._akOnly || 0;
+      arr = arr.filter(c => { const v = _AKof(c); return (_only >= 1 && _only <= 3) ? (v === _only) : (v > 0); });
     }
     // 2026-08-11: fela slepptu. Gildir EKKI á „🟡 Slepptir í fyrra" sjálfri (þar
     // eru þeir efnið) og ekki meðan leitað er (leitin fer alltaf yfir allt, sbr.
@@ -1354,7 +1358,17 @@
               <option value="month" ${state.sort==='month'?'selected':''}>📅 Eftir skoðunarmánuði (næst fyrst)</option>
               <option value="oldest" ${state.sort==='oldest'?'selected':''}>⏳ Þeir elstu fyrst (lengst síðan skoðað)</option>
             </select>
-            <button id="_ars-print" type="button" title="Prenta listann eins og hann er síaður núna" style="padding:7px 12px;border:1px solid var(--brd2);border-radius:8px;background:var(--surface);font:inherit;font-size:12px;font-weight:600;color:var(--ink1);cursor:pointer">🖨 Prenta lista</button>
+            <span id="_ars-print-wrap" style="position:relative;display:inline-flex;align-items:stretch">
+              <button id="_ars-print" type="button" title="Prenta listann eins og hann er síaður núna" style="padding:7px 12px;border:1px solid var(--brd2);border-radius:8px 0 0 8px;background:var(--surface);font:inherit;font-size:12px;font-weight:600;color:var(--ink1);cursor:pointer">🖨 Prenta lista</button>
+              <button id="_ars-print-caret" type="button" aria-haspopup="true" aria-expanded="false" title="Prenta aksturslista (per bílstjóra) í póstnúmeraröð" style="padding:7px 9px;border:1px solid var(--brd2);border-left:none;border-radius:0 8px 8px 0;background:var(--surface);font:inherit;font-size:11px;font-weight:700;color:var(--ink2);cursor:pointer;display:inline-flex;align-items:center;gap:2px">🚗<span style="font-size:9px">▾</span></button>
+              <div id="_ars-print-menu" role="menu" style="display:none;position:absolute;top:calc(100% + 5px);right:0;z-index:60;min-width:236px;background:var(--surface);border:1px solid var(--brd2);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.20);padding:5px">
+                <div style="font-size:10px;font-weight:800;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;padding:6px 9px 4px">Prenta aksturslista · póstnúmeraröð</div>
+                <button data-ak="1" class="_ars-pak" type="button" style="display:block;width:100%;text-align:left;padding:8px 10px;border:none;background:none;border-radius:7px;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink1);cursor:pointer">🚗 Aksturslisti 1</button>
+                <button data-ak="2" class="_ars-pak" type="button" style="display:block;width:100%;text-align:left;padding:8px 10px;border:none;background:none;border-radius:7px;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink1);cursor:pointer">🚗 Aksturslisti 2</button>
+                <button data-ak="3" class="_ars-pak" type="button" style="display:block;width:100%;text-align:left;padding:8px 10px;border:none;background:none;border-radius:7px;font:inherit;font-size:12.5px;font-weight:600;color:var(--ink1);cursor:pointer">🚗 Aksturslisti 3</button>
+                <button data-ak="0" class="_ars-pak" type="button" style="display:block;width:100%;text-align:left;padding:8px 10px;border:none;background:none;border-radius:7px;font:inherit;font-size:12px;font-weight:600;color:var(--ink2);cursor:pointer;border-top:1px solid var(--brd);margin-top:3px">🚗 Allir listar saman</button>
+              </div>
+            </span>
             <button id="_ars-ovr" type="button" aria-pressed="${overrideOn()}" title="" style="padding:6px 8px;border:none;border-radius:8px;background:${overrideOn() ? 'rgba(245,158,11,.18)' : 'transparent'};font:inherit;font-size:13px;cursor:pointer;opacity:${overrideOn() ? '1' : '.35'};min-width:36px;min-height:36px">⚡</button>
           </div>
         </div>
@@ -1534,6 +1548,28 @@
       state.sort = v; saveState(); render();
     });
     main.querySelector('#_ars-print')?.addEventListener('click', printList);
+    // 🚗▾ Prenta-aksturslista fellilisti (per bílstjóra, póstnúmeraröð). Gagnsæ bakgrunns-
+    // hlíf lokar honum — engir document-hlustarar sem leka milli render-umferða.
+    (() => {
+      const caret = main.querySelector('#_ars-print-caret');
+      const menu  = main.querySelector('#_ars-print-menu');
+      if (!caret || !menu) return;
+      const close = () => { menu.style.display = 'none'; caret.setAttribute('aria-expanded', 'false'); document.getElementById('_ars-print-back')?.remove(); };
+      const open  = () => {
+        menu.style.display = 'block'; caret.setAttribute('aria-expanded', 'true');
+        const back = document.createElement('div');
+        back.id = '_ars-print-back';
+        back.style.cssText = 'position:fixed;inset:0;z-index:59;background:transparent';
+        back.addEventListener('click', close);
+        document.body.appendChild(back);
+      };
+      caret.addEventListener('click', (e) => { e.stopPropagation(); (menu.style.display === 'block') ? close() : open(); });
+      menu.querySelectorAll('._ars-pak').forEach(btn => {
+        btn.addEventListener('mouseenter', () => { btn.style.background = 'var(--surface2,#eef2ff)'; });
+        btn.addEventListener('mouseleave', () => { btn.style.background = 'none'; });
+        btn.addEventListener('click', (e) => { e.stopPropagation(); close(); printAksturList(+btn.dataset.ak || 0); });
+      });
+    })();
     main.querySelector('#_ars-ovr')?.addEventListener('click', () => {
       try { localStorage.setItem(OVR_LS, overrideOn() ? '0' : '1'); } catch (_) {}
       render();
@@ -1799,6 +1835,30 @@
   // ── Print the currently-filtered list ─────────────────────────────────────
   // Prints exactly what filteredSorted() returns (same search + status + month
   // filters and sort the user sees), as a clean A4-landscape worklist.
+  // Prenta EINN aksturslista (1/2/3) í póstnúmeraröð svo hver bílstjóri fái sitt blað.
+  // n=0 → allir listar saman. Endurnýtir printList()/filteredSorted(): setur stöðuna
+  // tímabundið (akstur-sía + póstnúmera-röðun, heill listi óháð völdum mánuði/leit/
+  // póstnúmera-síu), prentar, og SKILAR stöðunni óbreyttri — skjárinn hreyfist ekki og
+  // ekkert er vistað (OUT-hlið; brýtur ekki ALLTAF-LEYFA-VISTUN).
+  function printAksturList(n) {
+    n = +n || 0;
+    const snap = {
+      status: state.status, sortCol: state.sortCol, sortDir: state.sortDir, sort: state.sort,
+      months: state.months, search: state.search, postnr: state.postnr, _akOnly: state._akOnly
+    };
+    try {
+      state.status  = 'akstur';
+      state._akOnly = (n >= 1 && n <= 3) ? n : 0;
+      state.sortCol = 'postnumer'; state.sortDir = 'asc'; state.sort = 'postnumer';
+      state.months  = [];            // heill aksturslisti — ekki bundinn við valinn mánuð
+      state.search  = '';
+      state.postnr  = null;          // engin póstnúmera-sía — öll númer í röð
+      printList();                   // filteredSorted() les stöðuna hér-og-nú (synchronous)
+    } finally {
+      Object.assign(state, snap);    // skila nákvæmlega fyrri stöðu (skjár + localStorage óbreytt)
+    }
+  }
+
   function printList() {
     const arr = filteredSorted();
     if (!arr.length) { alert('Engin fyrirtæki í listanum til að prenta.'); return; }
@@ -1811,7 +1871,7 @@
        : state.status === 'pending2026' ? `Eftir ${curYear}`
        : state.status === 'suspect'     ? 'Óvíst — líklega óvart í þjónustu'
        : state.status === 'ivinnslu'    ? 'Í vinnslu'
-       : state.status === 'akstur'      ? 'Aksturslisti'
+       : state.status === 'akstur'      ? ('Aksturslisti' + ((+state._akOnly >= 1 && +state._akOnly <= 3) ? (' ' + state._akOnly + ' · póstnúmeraröð') : ''))
        : state.status === 'never'       ? 'Aldrei skoðað'
        : state.status === 'skipped2025' ? 'Slepptir í fyrra'
        : state.status === 'priority'    ? 'Forgangur'
