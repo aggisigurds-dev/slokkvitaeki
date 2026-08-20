@@ -274,6 +274,19 @@
     function inService(c) {
       const key = String(c.id);
       const a = arsMap[key];
+      // 2026-08-20: explicit "⬇ Úr þjónustu" veto. A hand-removal stamps
+      // removed_from_service_at + subscribed:false together (takeOutOfService
+      // ~2165 / patch 280) AND clears er_i_thjonustu on the fyrirtaeki row — but
+      // that alone did NOT make the company leave the list: the manual equipment
+      // blob and live uttaeki rows below re-qualified it on every refresh, so a
+      // deliberately-removed customer kept reappearing (Gullsmári 9 → went to a
+      // competitor, still had 10+10 equipment + 20 units, would not go away).
+      // The stamp lives on in the blob; its EFFECT is overridden the moment the
+      // company is re-activated on the fyrirtaeki row (er_i_thjonustu=true —
+      // patch 198/280) OR re-subscribed (subscribed=true — patch 158/280). An
+      // active brunakerfi subscription still wins (!bruMap): removal clears the
+      // slökkvitæki service, never a live fire-system contract.
+      if (a && a.removed_from_service_at && c.er_i_thjonustu !== true && a.subscribed !== true && !bruMap[key]) return false;
       // A company qualifies if it has equipment with counts > 0 (legacy
       // migration data) OR was explicitly subscribed via the button (patch 158
       // stamps `subscribed: true`) OR has real active units in uttaeki.
