@@ -137,7 +137,12 @@
       // buildings table (dark-metal head, zebra, rails)
       P+'.rf-tblwrap{border-radius:13px;border:1px solid rgba(20,24,34,.1);overflow:hidden;background:#fff}',
       P+'.rf-tblscroll{overflow-x:auto}',
-      P+'.rf-tbl{width:100%;min-width:980px;border-collapse:collapse;font-size:13px}',
+      // table-layout:fixed + <colgroup> (2026-08-20) — eins og listi Fyrirtækja í
+      // þjónustu (153). Fastar súlubreiddir gera raðirnar jafnar og láta löng
+      // byggingaheiti stytta sig með „…" í stað þess að vefjast í 2-3 línur (það
+      // var stærsti hæðargjafinn í nýju útliti). Breiddirnar búa í <colgroup> við
+      // töfluna sjálfa.
+      P+'.rf-tbl{width:100%;min-width:1210px;border-collapse:collapse;font-size:13px;table-layout:fixed}',
       P+'.rf-tbl thead tr{background:'+METB+'}',
       P+'.rf-tbl th{text-align:left;padding:10px 12px;font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#f0f2f5;white-space:nowrap;text-transform:uppercase;border:0}',
       P+'.rf-tbl th.c{text-align:center}',
@@ -158,10 +163,28 @@
       P+'.rf-rail--done{background:#1f9d57}',
       P+'.rf-rail--overdue{background:#e23232}',
       P+'.rf-rail--none{background:#dbe0e9}',
-      P+'.rf-bname{display:block;font-size:13.5px;font-weight:600;color:#11141c;line-height:1.2}',
+      P+'.rf-bname{display:block;font-size:13.5px;font-weight:600;color:#11141c;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       P+'.rf-bname a{color:#11141c;text-decoration:none;font-weight:600}',
+      // eldri-ára hlekkir (📄2022↗) sitja UNDIR nafninu svo ellipsis á nafninu
+      // klippi þá aldrei af — þeir eru eina leiðin að gömlu skýrslunum.
+      P+'.rf-boldlinks{display:block;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       P+'.rf-bname a:hover{color:#2f5fe0}',
-      P+'.rf-baddr{display:block;font-size:11px;color:#9098a6;margin-top:0;line-height:1.15}',
+      // 2026-08-20 (ósk Agnars „more compact / decrease row height / not all over
+      // the place"): kt undir nafni (eins og ._kt í 153), heimilisfang OG nóta
+      // hvort í SÍNUM dálki — svo þau bæti ekki hæð/línubroti á nafnfrumuna eins
+      // og þegar þau sátu öll þrjú stöfluð þar inni. Sami þéttleiki og listi
+      // Fyrirtækja í þjónustu (153 .data-table: td 7px/44px · ._co 13 / ._kt 10).
+      P+'.rf-bkt{display:block;font-family:"Space Mono",monospace;font-size:10px;color:#9098a6;letter-spacing:.02em;line-height:1.3;white-space:nowrap}',
+      P+'.rf-baddr{display:block;font-size:12px;color:#5b6472;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}',
+      P+'.rf-baddr--empty{color:#c3c9d3}',
+      // Nóta-dálkur — ferðanótan (fyrirtaeki.plan_note), sami reitur og ._note í 153.
+      P+'.rf-plannote{display:block;width:100%;min-width:120px;height:24px;border:1px solid transparent;border-radius:7px;background:transparent;color:#3a4250;font:inherit;font-size:11.5px;padding:0 8px;box-sizing:border-box;outline:none;transition:background .12s,border-color .12s}',
+      P+'.rf-plannote::placeholder{color:#c7ccd6}',
+      P+'.rf-plannote:hover{border-color:#e6e9ef;background:#fbfcfd}',
+      P+'.rf-plannote:focus{border-color:#2f5fe0;background:#fff;color:#0f172a}',
+      // auðkennis-dálkarnir tveir (heimilisfang/nóta) mega EKKI hverfa við
+      // samanþjöppun (ólíkt gagna-dálkunum sem is-collapsed felur) — miðjað lóðrétt.
+      P+'.rf-tbl td.rf-addrcell,'+P+'.rf-tbl td.rf-notacell{vertical-align:middle}',
       // ── per-building collapse (2026-08-05, leiðrétt sama dag — sjálfgefið
       // samanþjappað gerði 2023-2026 dálkana að tómum í fljótu bragði, sem leit
       // út eins og gögnin hyrfu): SJÁLFGEFIÐ ÚTVÍKKAÐ (öll smáatriði sýnileg,
@@ -1369,6 +1392,13 @@
       var bUnits = bx ? (bx.units||0) : 0;
       var bY = bx ? (bx.years||{}) : {};
       var bHasData = !!(bx && (bx.inService || Object.keys(bY).length));
+      // „Í brunakerfisþjónustu" = skráð í þjónustukortið (brunakerfi_customers → inService),
+      // EKKI bara að stakt brunakerfis-skjal sé til í kerfinu. Ósk Agnars 2026-08-20:
+      // „dont show the brunakerfisþjónusta in companies that dont have them" — svo
+      // brunakerfis-línan (🚨) birtist AÐEINS fyrir byggingar sem eru raunverulega í
+      // þjónustunni; hinar falla saman í eina línu (slökkvitæki). bHasData er áfram
+      // notað fyrir samtölur/röð-rönd (staks-skjals byggingar teljast enn með gögn).
+      var bruInSvc = !!(bx && bx.inService);
       var bOver = !!(bx && bx.next && bx.next < today);
       if (firstTime(co,b)) {
         if (bHasData) nBruSvc++;
@@ -1424,7 +1454,7 @@
       var brCntTxt = bUnits>0 ? String(bUnits) : (bHasData?'–':'0');
       var unitCell = stackTd(
         '<span class="rf-cnt rf-cnt--sl'+(units>0?'':' is-zero')+'" title="Slökkvitæki á staðnum"><em>🧯</em>'+slCntTxt+'</span>',
-        '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>', 'rf-cnt-cell', bHasData);
+        '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>', 'rf-cnt-cell', bruInSvc);
       var bldBaseId = baseByKt[digits(b.kt)];
       var bldPairs = bldBaseId ? pairByBase[bldBaseId] : null;
       // Sett upp HÉR (ekki eftir lykkjuna) svo þetta-árs dálkurinn geti notað
@@ -1442,12 +1472,12 @@
           if (!done && slHasData) slCell = yPillDue(!!(st&&st.next), isOver);
           if (!bY[y] && bHasData) brCell = yPillDue(!!(bx&&bx.next), bOver);
         }
-        yTds += stackTd(slCell, brCell, 'rf-yh-cell', bHasData);
+        yTds += stackTd(slCell, brCell, 'rf-yh-cell', bruInSvc);
       });
       if((showSl&&isOver&&slHasData)||(showBr&&bOver)) nOverdue++;
       var nextCell = stackTd(
         nextPill(st&&st.next?st.next:null,'sl',isOver&&slHasData),
-        nextPill(bx?bx.next:null,'br',bOver), 'rf-nextcell', bHasData);
+        nextPill(bx?bx.next:null,'br',bOver), 'rf-nextcell', bruInSvc);
       // 4px litarönd vinstra megin: rauð = skoðun liðin, græn = eitthvert ár
       // með úttekt/skýrslu, annars grá (blánar á hover gegnum CSS).
       var anyDone = (showSl&&(d23||d24||d25||d26)) || (showBr&&Object.keys(bY).length>0);
@@ -1474,17 +1504,18 @@
       return '<tr class="rf-bldrow" data-rfq="'+esc(((b.nafn||'')+' '+(b.heimilisfang||'')+' '+digits(b.kt)).toLowerCase())+'">'+
              '<td class="rf-cellname"><span class="rf-rail '+railCls+'"></span>'+
                '<button type="button" class="rf-bldtoggle" data-bi="'+_bi+'" title="Sýna/fela smáatriði">▸</button>'+
-               '<span class="rf-bname">'+link+oldLinks+'</span>'+
-               (b.heimilisfang?'<span class="rf-baddr">📍 '+esc(b.heimilisfang)+'</span>':'')+
-               // ✈ lágstemmd nóta á bygginguna (2026-08-17, ósk Agnars) — SAMI
-               // reitur og ferðanótan á Fyrirtæki í Þjónustu (fyrirtaeki.plan_note)
-               // svo nótan fylgir staðnum milli sýna. Aðeins tengdar byggingar.
-               (co?'<input class="_rf-plannote" data-co-id="'+co.id+'" value="'+esc(co.plan_note||'')+'" placeholder="✈ nóta…" maxlength="140" '+
-                 'style="display:block;width:min(240px,100%);margin-top:2px;font:inherit;font-size:10.5px;color:#141822;background:transparent;border:1px dashed transparent;border-radius:6px;padding:1px 5px;outline:none;opacity:.45;box-sizing:border-box" '+
-                 'onfocus="this.style.borderColor=\'rgba(20,24,34,.25)\';this.style.background=\'#fff\';this.style.opacity=\'1\'" '+
-                 'onblur="this.style.borderColor=\'transparent\';this.style.background=\'transparent\';this.style.opacity=\'.45\'">':'')+
+               '<span class="rf-bname">'+link+'</span>'+
+               // kt undir nafni (2026-08-20) — var áður eiginn dálkur (rf-mono).
+               (b.kt?'<span class="rf-bkt">'+esc(fmtKt(b.kt))+'</span>':'')+
+               (oldLinks?'<span class="rf-boldlinks">'+oldLinks+'</span>':'')+
              '</td>'+
-             '<td class="rf-mono">'+fmtKt(b.kt)+'</td>'+
+             // heimilisfang — eiginn dálkur (2026-08-20), nowrap+ellipsis svo það
+             // vindi ekki upp á hæðina eins og þegar það sat inni í nafnfrumunni.
+             '<td class="rf-addrcell">'+(b.heimilisfang?'<span class="rf-baddr" title="'+esc(b.heimilisfang)+'">📍 '+esc(b.heimilisfang)+'</span>':'<span class="rf-baddr rf-baddr--empty">—</span>')+'</td>'+
+             // ✈ nóta — eiginn dálkur (2026-08-20). SAMI reitur og ferðanótan á
+             // Fyrirtæki í Þjónustu (fyrirtaeki.plan_note; class _rf-plannote svo
+             // vökvunar-/vistunar-lykkjan neðar nái í hann). Aðeins tengdar byggingar.
+             '<td class="rf-notacell">'+(co?'<input class="_rf-plannote rf-plannote" data-co-id="'+co.id+'" value="'+esc(co.plan_note||'')+'" placeholder="✈ nóta…" maxlength="140">':'')+'</td>'+
              summaryCell+
              detailCells+
              '</tr>';
@@ -1604,9 +1635,23 @@
         '<div style="flex:1 1 100%;min-width:280px">'+
           '<div style="font-weight:600;font-size:13px;color:var(--ink2);margin-bottom:6px">Byggingar / húsfélög — úttektir</div>'+
           summary+ svcBar + statsHtml +
-          '<div class="rf-tblwrap"><div class="rf-tblscroll"><table class="rf-tbl"><thead><tr>'+
+          '<div class="rf-tblwrap"><div class="rf-tblscroll"><table class="rf-tbl">'+
+          // fastar súlubreiddir (table-layout:fixed) — jafnar raðir, nöfn styttast
+          // með „…" í stað þess að vefjast. Summa = 1210px (sbr. min-width).
+          '<colgroup>'+
+            '<col style="width:236px">'+   // Bygging (nafn + kt)
+            '<col style="width:210px">'+   // Heimilisfang
+            '<col style="width:150px">'+   // Nóta
+            '<col style="width:76px">'+    // Tæki
+            '<col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:62px">'+  // 2023–2026
+            '<col style="width:46px">'+    // 🚗
+            '<col style="width:152px">'+   // Næsta skoðun
+            '<col style="width:90px">'+    // aðgerðir
+          '</colgroup>'+
+          '<thead><tr>'+
           '<th>Bygging</th>'+
-          '<th>Kennitala</th>'+
+          '<th>Heimilisfang</th>'+
+          '<th>Nóta</th>'+
           '<th class="c">Tæki'+svcKey()+'</th>'+
           '<th class="c rf-yh">2023'+svcKey()+'</th>'+
           '<th class="c rf-yh">2024'+svcKey()+'</th>'+
@@ -1615,7 +1660,7 @@
           '<th class="c" title="Akstursleið — smelltu til að setja stað á leið 1/2/3">🚗</th>'+
           '<th>Næsta skoðun'+svcKey()+'</th>'+
           '<th></th></tr></thead><tbody>'+rows+
-          '<tr class="_rf_norow" style="display:none"><td colspan="10" class="rf-nores">Engin bygging passar við leitina.</td></tr>'+
+          '<tr class="_rf_norow" style="display:none"><td colspan="11" class="rf-nores">Engin bygging passar við leitina.</td></tr>'+
           '</tbody></table></div>'+
           '<div class="rf-tblfoot"><span><b>'+blds.length+'</b> byggingar'+
             (showSl?' · <b style="color:#1f9d57">'+slDoneCur+'</b> slökkvitækjaskýrslur '+CURY:'')+
