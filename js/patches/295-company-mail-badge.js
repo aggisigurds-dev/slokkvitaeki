@@ -10,6 +10,8 @@
  *                eigendaskipti, gjaldþrot, kvörtun, bilun, áríðandi) EÐA handvirkt
  *                merkt mikilvægt af þér. Smelltu til að sjá hvað og hvenær.
  *   🟢 GRÆNT   = við eigum póstsögu og henni er svarað (í sambandi, allt í lagi).
+ *   ⚪ GRÁTT   = eldri póstsaga TIL (nýlega EÐA fyrir löngu) en ekkert nýlegt merki —
+ *                hol grá hringur svo ~100 kúnnar með eldri sögu hætti að vera ósýnilegir.
  *   (ekkert)   = engin póstsamskipti fundust við kúnnann.
  *
  * Röð: rautt (ósvarað) > gult (mikilvægt/breyting) > grænt (saga). Slökkt
@@ -25,7 +27,7 @@
  *   (slökkva ósvarað-merki) og `mail_important` (handvirkt gult). Sama blob og
  *   akstur/urgent/nytt_manual (deep-merge, samstillist milli tækja).
  *
- * Public: window.CompanyMail = { show, status, data, setMuted, setImportant, refresh }
+ * Public: window.CompanyMail = { show, status, data, hasHistory, setMuted, setImportant, refresh, onListRender }
  */
 (() => {
   if (window.__companyMailBadge) return;
@@ -39,9 +41,10 @@
   const TTL = 20 * 60 * 1000; // 20 mín
 
   let MAIL = {};  // { <fyrirtaeki_id>: {from,subject,snippet,received_at,is_question,unreplied,important,signals[]} }
+  let HIST = new Set();  // fyrirtaeki_id sem við eigum EINHVERJA póstsögu við (nýlega EÐA eldri) — /api/company-mail histIds
 
-  const DOT = { red: '#dc2626', yellow: '#d97706', green: '#16a34a' };
-  const ST_LABEL = { red: 'Ósvarað', yellow: 'Mikilvægt / breyting?', green: 'Í sambandi' };
+  const DOT = { red: '#dc2626', yellow: '#d97706', green: '#16a34a', hist: '#94a3b8' };
+  const ST_LABEL = { red: 'Ósvarað', yellow: 'Mikilvægt / breyting?', green: 'Í sambandi', hist: 'Eldri póstsaga' };
   // Merki úr póstsögunni — lífsferils-merkin (life:true) eru þau sem má ekki gleyma.
   const SIG = {
     uppsogn:    { t: 'Sagði upp þjónustu',          ic: '🚪', life: true },
@@ -72,21 +75,24 @@
   const setImportant = (coId, on) => saveFlag(coId, IMP_FLAG, on);
 
   function data(coId) { return MAIL[String(coId)] || null; }
-  // 'red' | 'yellow' | 'green' | null
+  // 'red' | 'yellow' | 'green' | 'hist' | null
   function status(coId) {
     const d = data(coId);
     if (d && d.unreplied && !muted(coId)) return 'red';
     if (manualImp(coId) || (d && d.important)) return 'yellow';
     if (d) return 'green';
+    if (HIST.has(+coId)) return 'hist';   // eldri póstsaga til — ekkert nýlegt merki
     return null;
   }
+  // Eigum við EINHVERJA póstsögu við þennan kúnna (nýlega eða eldri)? — fyrir röðun/síu.
+  function hasHistory(coId) { return HIST.has(+coId) || !!data(coId); }
   function show(coId) { return status(coId) !== null; }
 
   // ── sækja gögn (cache-first svo merki birtist strax) ─────────────────────
   function loadCache() {
     try {
       const o = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
-      if (o && o.byId) { MAIL = o.byId; return !!o.t && (Date.now() - o.t) < TTL; }
+      if (o && o.byId) { MAIL = o.byId; HIST = new Set((o.histIds || []).map(Number)); return !!o.t && (Date.now() - o.t) < TTL; }
     } catch (_) {}
     return false;
   }
@@ -96,7 +102,8 @@
       if (!r.ok) return;
       const j = await r.json();
       MAIL = (j && j.byId) || {};
-      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), byId: MAIL })); } catch (_) {}
+      HIST = new Set(((j && j.histIds) || []).map(Number));
+      try { localStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), byId: MAIL, histIds: [...HIST] })); } catch (_) {}
       stampAll();
       reinjectProfile();
     } catch (_) { /* aldrei brjóta síðuna */ }
@@ -131,9 +138,12 @@
     span.title = tipFor(coId, st, d);
     span.style.cssText = 'display:inline-flex;align-items:center;margin-right:6px;cursor:pointer;vertical-align:middle';
     const color = DOT[st] || '#94a3b8';
-    if (st === 'green') {
-      // rólegt grænt punktamerki (saga, allt í lagi) — ekkert umslag
-      span.innerHTML = '<span style="width:9px;height:9px;border-radius:50%;background:' + color + ';display:inline-block;box-shadow:0 0 0 1.5px var(--surface,#fff)"></span>';
+    if (st === 'green' || st === 'hist') {
+      // grænt = fyllt (í sambandi nýlega) · eldri saga = hol grá hringur (til, en ekkert nýlegt) — ekkert umslag
+      const solid = st === 'green';
+      span.innerHTML = '<span style="width:9px;height:9px;border-radius:50%;box-sizing:border-box;' +
+        (solid ? 'background:' + color : 'background:transparent;border:1.5px solid ' + color) +
+        ';display:inline-block;box-shadow:0 0 0 1.5px var(--surface,#fff)"></span>';
     } else {
       // rautt/gult: umslag með lituðum punkti (það er póstur að skoða)
       span.innerHTML = '<span style="position:relative;display:inline-flex;font-size:13px;line-height:1">✉️' +
@@ -210,7 +220,7 @@
           '<div style="font-size:12px;color:#334155"><b>' + esc(fmtDate(d.received_at)) + '</b> · ' + esc(relDay(d.received_at)) + (d.unreplied ? ' · <span style="color:#dc2626;font-weight:800">ósvarað</span>' : ' · svarað') + '</div>' +
           '<div style="font-weight:700;font-size:13px;margin:5px 0 3px">' + esc(d.subject || '(engin efnislína)') + '</div>' +
           (d.snippet ? '<div style="font-size:12px;color:#64748b;line-height:1.4;max-height:80px;overflow:auto">' + esc(d.snippet) + '</div>' : '') +
-        '</div>' : '<div style="font-size:12px;color:#94a3b8;margin-top:6px">Engin póstsamskipti fundust.</div>') +
+        '</div>' : '<div style="font-size:12px;color:#94a3b8;margin-top:6px">' + (st === 'hist' ? 'Eldri póstsaga skráð — smelltu „📜 Sjá alla póstsöguna" til að opna hana.' : 'Engin póstsamskipti fundust.') + '</div>') +
       '<div style="display:flex;gap:7px;margin-top:12px;flex-wrap:wrap">' +
         (d ? '<a href="' + mailto + '" id="_mp-reply" style="flex:1 1 auto;text-align:center;background:#1a7f4b;color:#fff;text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:700">↩️ Svara</a>' : '') +
         '<button id="_mp-imp" style="flex:1 1 auto;background:' + (isImp ? '#fef3c7' : '#f1f5f9') + ';border:1px solid ' + (isImp ? '#fde68a' : '#e2e8f0') + ';color:#334155;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer">' + (isImp ? '☆ Afmerkja' : '⭐ Mikilvægt') + '</button>' +
@@ -376,7 +386,7 @@
           '<div style="font-weight:700;font-size:13px;margin:4px 0 3px">' + esc(d.subject || '(engin efnislína)') + '</div>' +
           (d.snippet ? '<div style="font-size:12px;color:#64748b;line-height:1.4;max-height:66px;overflow:auto">' + esc(d.snippet) + '</div>' : '') +
         '</div>'
-        : '<div style="margin-top:7px;font-size:12.5px;color:#94a3b8;line-height:1.45">Engin nýleg póstmerki á þessum kúnna. Smelltu á <b>📜 Öll póstsaga</b> til að sjá hvort einhver samskipti eru skráð.</div>') +
+        : '<div style="margin-top:7px;font-size:12.5px;color:#94a3b8;line-height:1.45">' + (st === 'hist' ? 'Eldri póstsaga er til við þennan kúnna (ekkert nýlegt merki). Smelltu á <b>📜 Öll póstsaga</b> til að opna hana.' : 'Engin nýleg póstmerki á þessum kúnna. Smelltu á <b>📜 Öll póstsaga</b> til að sjá hvort einhver samskipti eru skráð.') + '</div>') +
       '<div style="display:flex;gap:7px;margin-top:12px;flex-wrap:wrap">' +
         (d ? '<a href="' + mailto + '" class="_cmb-reply" style="flex:1 1 auto;text-align:center;background:#1a7f4b;color:#fff;text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:700">↩️ Svara</a>' : '') +
         '<button type="button" class="_cmb-imp" style="flex:1 1 auto;background:' + (isImp ? '#fef3c7' : '#f1f5f9') + ';border:1px solid ' + (isImp ? '#fde68a' : '#e2e8f0') + ';color:#334155;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer">' + (isImp ? '☆ Afmerkja' : '⭐ Mikilvægt') + '</button>' +
@@ -426,7 +436,7 @@
   // onListRender: called by patch 153 at the END of its render() so the badges
   // are re-stamped deterministically after every filter/month/sort re-render
   // (the MutationObserver alone raced the re-render and the dots vanished).
-  window.CompanyMail = { show, status, data, setMuted, setImportant, refresh, onListRender: () => { try { stampAll(); } catch (_) {} } };
+  window.CompanyMail = { show, status, data, hasHistory, setMuted, setImportant, refresh, onListRender: () => { try { stampAll(); } catch (_) {} } };
   console.log('[company-mail-badge] v3 installed (prófíl-box + umferðarljós)');
 })();
 /* === END PÓST-STÖÐUMERKI Á FYRIRTÆKI Í ÞJÓNUSTU === */

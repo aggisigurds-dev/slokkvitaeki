@@ -1012,15 +1012,23 @@
       },
       lastYr: (a, b) => (+a._ars.last_year_inspected || 0) - (+b._ars.last_year_inspected || 0)
                        || String(a.nafn).localeCompare(b.nafn, 'is'),
-      // Póst-staða: ósvarað (rautt) → mikilvægt (gult) → saga (grænt) → engin.
-      // Les stöðuna úr póst-merkinu (patch 295 / CompanyMail.status); ef það er
-      // ekki hlaðið fellur allt í sama flokk og röðin verður stafrófsröð (skaðlaust).
+      // Póst-staða: ósvarað (rautt) → mikilvægt (gult) → í sambandi (grænt) →
+      // eldri saga (grátt) → engin. Les stöðuna úr póst-merkinu (patch 295 /
+      // CompanyMail.status); ef það er ekki hlaðið fellur allt í sama flokk og
+      // röðin verður stafrófsröð (skaðlaust).
       poststada: (a, b) => {
         const rank = c => {
           const s = (window.CompanyMail && CompanyMail.status) ? CompanyMail.status(c.id) : null;
-          return s === 'red' ? 0 : s === 'yellow' ? 1 : s === 'green' ? 2 : 3;
+          return s === 'red' ? 0 : s === 'yellow' ? 1 : s === 'green' ? 2 : s === 'hist' ? 3 : 4;
         };
         return rank(a) - rank(b) || String(a.nafn || '').localeCompare(b.nafn || '', 'is');
+      },
+      // Póstsaga til / engin — hrein „availability"-röðun: kúnnar sem við eigum
+      // EINHVER póstsamskipti við (nýleg EÐA eldri) efst, hinir neðst. Nær yfir
+      // öll ~200 félögin með sögu, ekki bara ~100 með nýlegt merki (CompanyMail.hasHistory).
+      postavail: (a, b) => {
+        const has = c => (window.CompanyMail && CompanyMail.hasHistory && CompanyMail.hasHistory(c.id)) ? 0 : 1;
+        return has(a) - has(b) || String(a.nafn || '').localeCompare(b.nafn || '', 'is');
       },
     };
     // Legacy fallback
@@ -1386,7 +1394,8 @@
               <option value="postnumer" ${state.sort==='postnumer'?'selected':''}>📍 Póstnúmer</option>
               <option value="month" ${state.sort==='month'?'selected':''}>📅 Eftir skoðunarmánuði (næst fyrst)</option>
               <option value="oldest" ${state.sort==='oldest'?'selected':''}>⏳ Þeir elstu fyrst (lengst síðan skoðað)</option>
-              <option value="poststada" ${state.sort==='poststada'?'selected':''}>🚦 Póst-staða (ósvarað fyrst)</option>
+              <option value="poststada" ${state.sort==='poststada'?'selected':''}>🚦 Póst-staða (ósvarað → saga → engin)</option>
+              <option value="postavail" ${state.sort==='postavail'?'selected':''}>📧 Póstsaga til (fyrst)</option>
             </select>
             <span id="_ars-print-wrap" style="position:relative;display:inline-flex;align-items:stretch">
               <button id="_ars-print" type="button" title="Prenta listann eins og hann er síaður núna" style="padding:7px 12px;border:1px solid var(--brd2);border-radius:8px 0 0 8px;background:var(--surface);font:inherit;font-size:12px;font-weight:600;color:var(--ink1);cursor:pointer">🖨 Prenta lista</button>
@@ -1582,6 +1591,7 @@
       else if (v === 'month')  { state.sortCol = 'month';     state.sortDir = 'asc'; }
       else if (v === 'oldest') { state.sortCol = 'lastYr';    state.sortDir = 'asc'; }
       else if (v === 'poststada') { state.sortCol = 'poststada'; state.sortDir = 'asc'; }
+      else if (v === 'postavail') { state.sortCol = 'postavail'; state.sortDir = 'asc'; }
       state.sort = v; saveState(); render();
     });
     main.querySelector('#_ars-print')?.addEventListener('click', printList);
