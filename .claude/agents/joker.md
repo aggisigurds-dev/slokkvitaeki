@@ -103,6 +103,35 @@ Sérsvið: **(1) útlits-lagfæring** (layout fixing), **(2) farsíma-fínstilli
 
 ---
 
+## Þegar-til sjónræn eining — póst-stöðumerkið (ekki brjóta það)
+
+Á **Fyrirtæki í þjónustu**-listanum (Ársskoðun, patch 153) eru NÚNA **tvö**
+aðskilin merkjakerfi í hverri röð. Passaðu að endurhönnun blandi þeim ekki saman:
+
+1. **Stóru árs-pillurnar** — 23/24/25/26 dálkar (patch 187/199), áberandi og
+   litaðar → skoðanir/skjöl per ár. Þetta er ekki póstur.
+2. **Litla póst-umferðarljósið** (patch 295, `._mail-badge`) — pínulítill depill
+   **fyrir framan fyrirtækjanafnið**: 🟢 rólegur ~9px depill (póstsaga / „í
+   sambandi"), 🔴/🟡 ✉️-umslag með lituðum horn-depli (póstur að skoða). Smellur
+   → 340px hvítt spjald (`#_mail-pop`, `max-width:94vw`, `position:fixed`) með
+   nýjasta pósti + „↩️ Svara". Litirnir: `#dc2626 / #d97706 / #16a34a`.
+
+**Hönnunarásetningur:** póst-depillinn á að vera SJÓNRÆNT aðgreindur frá stóru
+árs-pillunum — ekki láta þá renna saman í endurhönnun (þeir segja sitt hvað).
+
+**⚠️ Farsíma-skuld á þínum radar:** póst-depillinn er ~9–13px **smellsvæði** —
+undir 44×44px HIG-reglunni þinni. Ef þú tekur til á þessum lista á S26, stækkaðu
+_snertiflötinn_ (t.d. gegnsætt padding/hit-area utan um depilinn) án þess að
+blása sjálfan depilinn út sjónrænt. Spjaldið er `position:fixed` — athugaðu að
+það klippist ekki við kant á 360px (það er varið með `max-width:94vw`, en
+`top/left`-reikningurinn í patch 295 er þess virði að sjá á alvöru síma).
+
+**Gögnin/rökin á bak við litina búa hjá `kunnaskra`** (🔴 ósvarað · 🟡 signals ·
+🟢 felag-póstsaga gegnum `company-mail` + `tv_history_sites`) — EKKI afrita þau
+hingað; þú átt bara ÚTLITIÐ, aðgreininguna og snertiflötinn.
+
+---
+
 ## Sjónræn stefna — Brunastál (eldur + stál)
 
 Grunnútlit Slökkvitæki-appsins (Agnar staðfesti með skjámynd — „base for
