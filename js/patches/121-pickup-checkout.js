@@ -809,9 +809,16 @@
   async function finalizePickup(job, sale, unitState, extras, payMethod, totals, customerInfo, discountPct, discountKrManual, userNote) {
     const SB = getSB();
     if (!SB) throw new Error('Engin gagnabankatenging');
+    // 2026-08-20: prepaid = greitt fyrirfram (speglar isAlreadyPaid, línu 156).
+    // Sala sem er ÞEGAR greidd (paid_at + kort/reiðufé/pening) þarf ENGIN uppgjör
+    // við afhendingu — peningurinn er inn. Áður kastaði vörnin því payMethod kom
+    // þá úr sale.greitt_med ('Kort', hástafað) og féll á lágstafa-hvítlistanum
+    // → „greitt fyrirfram" var ómögulegt að afhenda.
+    const prepaid = !!(sale && sale.paid_at && sale.greitt_med &&
+      /^(kort|reidufe|peningar|pening)$/i.test(String(sale.greitt_med)));
     // Gátt á VERKLOK (2026-08-14, ekki á vistun): tæki fer ekki út með
-    // óútkljáð uppgjör — „greitt síðar" leysist hér í kort/reikning/reiðufé.
-    if (payMethod === 'greitt_sidar' || !['kort', 'reidufe', 'pening', 'reikningur'].includes(String(payMethod || ''))) {
+    // óútkljáð uppgjör — „greitt síðar" leysist hér í kort/reikning/reiðufé. Prepaid sleppur.
+    if (!prepaid && (payMethod === 'greitt_sidar' || !['kort', 'reidufe', 'pening', 'reikningur'].includes(String(payMethod || '')))) {
       throw new Error('Uppgjör vantar: veldu Kort, Reikning eða Reiðufé — „greitt síðar" er ekki uppgjör við afhendingu.');
     }
 
@@ -986,8 +993,8 @@
         // 2026-05-24: Record pickup-time discount kr; 0 if none was set.
         afslattur: afslatturKr,
         samtals: Math.round(newSamtals),
-        greitt_med: payMethod,
-        paid_at: payMethod === 'reikningur' ? null : new Date().toISOString(),   // kort/reiðufé stimpla ALLTAF paid_at (verk 3)
+        greitt_med: prepaid ? sale.greitt_med : payMethod,
+        paid_at: prepaid ? sale.paid_at : (payMethod === 'reikningur' ? null : new Date().toISOString()),   // prepaid: haltu upprunalegu greiðslu; annars kort/reiðufé stimpla ALLTAF paid_at (verk 3)
         customer_nafn: customerNafnToSave,
         customer_id: customerIdToSave,
         athugasemdir: (sale.athugasemdir || '') + ktAuditNote + auditNote
