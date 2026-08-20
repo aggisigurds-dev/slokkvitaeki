@@ -220,6 +220,17 @@
               try { const a = await c.build(); if (a) atts.push(a); }
               catch (e) { fail('Gat ekki búið til viðhengi (' + esc(c.label) + '): ' + ((e && e.message) || e)); return; }
             }
+            // 2026-08-20 (Agnar — „sending blank invoices or nothing at all"): a picked
+            // attachment that built to null/empty (saved-PDF fetch failed, sale had no
+            // línur, jsPDF vantaði) used to be silently skipped and the póstur sendur
+            // SAMT — kúnninn fékk reikningslausan/​tóman póst á meðan skrifstofan sá
+            // „✅ Sent". Refuse: if any hökuð viðhengi vantar eða er tómt, EKKI senda.
+            const _okAtts = atts.filter(a => a && a.content && String(a.content).length > 256);
+            if (picked.length && _okAtts.length < picked.length) {
+              fail('Reikningur/viðhengi teiknaðist ekki (' + _okAtts.length + ' af ' + picked.length + ' tilbúin). Sendi EKKI á kúnna — opnaðu reikninginn og athugaðu hvort hann sé tómur.');
+              return;
+            }
+            atts = _okAtts;
           } else if (typeof o.buildAttachments === 'function') {
             atts = await o.buildAttachments();
           }
