@@ -140,6 +140,14 @@ baseline rows and lowering the constant is how the net tightens over time.
   Problem registry + `window.logProblem` + 3×/day sweep (#661). Five root causes
   recorded in Charlize (invoice‑blank, kt‑trap, kt‑search, email‑token, red‑when‑ready,
   freeze). This doc + `audit-all.cjs` created.
+- **2026‑08‑20** — Readiness (`153`) `inService()` **explicit‑removal veto**: a
+  hand `⬇ Úr þjónustu` (removed_from_service_at + subscribed:false + er_i_thjonustu
+  cleared) now STICKS. Before, the manual equipment blob and live `uttaeki` rows
+  re‑qualified a removed company on every refresh, so it kept reappearing
+  (Gullsmári 9 → competitor, would not go away). Veto is overridden by any
+  re‑activation (er_i_thjonustu=true / subscribed=true — patch 158/198/280) and
+  carves out a still‑live brunakerfi contract (`!bruMap`). netvordur SAFE, verified
+  on live data (55/57 removed vetoed, 2 correctly escaped, 0 brunakerfi collisions).
 - *Add a line here every time you make something bulletproof.*
 
 ---
