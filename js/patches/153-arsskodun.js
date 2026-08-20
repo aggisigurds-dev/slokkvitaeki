@@ -997,6 +997,16 @@
       },
       lastYr: (a, b) => (+a._ars.last_year_inspected || 0) - (+b._ars.last_year_inspected || 0)
                        || String(a.nafn).localeCompare(b.nafn, 'is'),
+      // Póst-staða: ósvarað (rautt) → mikilvægt (gult) → saga (grænt) → engin.
+      // Les stöðuna úr póst-merkinu (patch 295 / CompanyMail.status); ef það er
+      // ekki hlaðið fellur allt í sama flokk og röðin verður stafrófsröð (skaðlaust).
+      poststada: (a, b) => {
+        const rank = c => {
+          const s = (window.CompanyMail && CompanyMail.status) ? CompanyMail.status(c.id) : null;
+          return s === 'red' ? 0 : s === 'yellow' ? 1 : s === 'green' ? 2 : 3;
+        };
+        return rank(a) - rank(b) || String(a.nafn || '').localeCompare(b.nafn || '', 'is');
+      },
     };
     // Legacy fallback
     if (!state.sortCol) {
@@ -1357,6 +1367,7 @@
               <option value="postnumer" ${state.sort==='postnumer'?'selected':''}>📍 Póstnúmer</option>
               <option value="month" ${state.sort==='month'?'selected':''}>📅 Eftir skoðunarmánuði (næst fyrst)</option>
               <option value="oldest" ${state.sort==='oldest'?'selected':''}>⏳ Þeir elstu fyrst (lengst síðan skoðað)</option>
+              <option value="poststada" ${state.sort==='poststada'?'selected':''}>🚦 Póst-staða (ósvarað fyrst)</option>
             </select>
             <span id="_ars-print-wrap" style="position:relative;display:inline-flex;align-items:stretch">
               <button id="_ars-print" type="button" title="Prenta listann eins og hann er síaður núna" style="padding:7px 12px;border:1px solid var(--brd2);border-radius:8px 0 0 8px;background:var(--surface);font:inherit;font-size:12px;font-weight:600;color:var(--ink1);cursor:pointer">🖨 Prenta lista</button>
@@ -1531,6 +1542,12 @@
       </div>
     `;
 
+    // Re-stamp the póst-stöðumerki (patch 295) deterministically after every
+    // render. Filter/month/sort re-renders rebuild the rows, and the badge's own
+    // MutationObserver raced that — so the dots vanished. This runs right after
+    // the rows are in the DOM. No-op if the badge patch isn't loaded.
+    try { window.CompanyMail && CompanyMail.onListRender && CompanyMail.onListRender(); } catch (_) {}
+
     // Wire interactions
     main.querySelectorAll('._ars-vm').forEach(b => b.addEventListener('click', () => {
       state.view = b.dataset.viewMode; saveState(); render();
@@ -1545,6 +1562,7 @@
       else if (v === 'postnumer') { state.sortCol = 'postnumer'; state.sortDir = 'asc'; }
       else if (v === 'month')  { state.sortCol = 'month';     state.sortDir = 'asc'; }
       else if (v === 'oldest') { state.sortCol = 'lastYr';    state.sortDir = 'asc'; }
+      else if (v === 'poststada') { state.sortCol = 'poststada'; state.sortDir = 'asc'; }
       state.sort = v; saveState(); render();
     });
     main.querySelector('#_ars-print')?.addEventListener('click', printList);
