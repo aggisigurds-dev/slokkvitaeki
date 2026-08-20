@@ -368,6 +368,9 @@ button, .vnav-btn, [role="button"] { touch-action: manipulation; }
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="/js/config.js"></script>
 <script src="/js/db.js?v=20260817rodun"></script>
+<!-- Problem registry: loads right after db.js so window.logProblem + auto error
+     capture are live before every patch below (records problems to app_problems). -->
+<script defer src="/js/patches/309-problem-registry.js?v=20260820a"></script>
 <script src="/js/utils.js?v=20260512d"></script>
 <script src="/js/ui-icons.js?v=20260805c"></script>
 <script src="/js/modal.js?v=20260514a"></script>

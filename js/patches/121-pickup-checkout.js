@@ -953,10 +953,16 @@
     // by kt to link customer_id if present, otherwise just store the nafn.
     let customerIdToSave = sale && sale.customer_id;
     let customerNafnToSave = sale ? sale.customer_nafn : (job.customer || '');
+    let customerKtToSave = null;   // 2026-08-20: raunveruleg kt sem á að VISTA í dálkinn
     if (customerInfo && customerInfo.nafn) customerNafnToSave = customerInfo.nafn;
     if (customerInfo && customerInfo.kt) {
       const cleanKt = customerInfo.kt.replace(/[^0-9]/g, '');
       if (cleanKt.length === 10 && cleanKt !== '9999999999') {
+        // 2026-08-20 (Agnar — „kennitala … it prints 999999-9999"): innslegin kt var
+        // AÐEINS notuð til að fletta upp customer_id + sem „Kt:"-nótu — aldrei vistuð
+        // í customer_kt-dálkinn, svo walk-in 999999-9999 stóð eftir á reikningnum.
+        // Vista hana núna á bandstriks-formi (öll niðurstreymis-lög lesa customer_kt).
+        customerKtToSave = cleanKt.replace(/(\d{6})(\d{4})/, '$1-$2');
         try {
           const fy = await SB.from('fyrirtaeki').select('id,nafn').eq('kennitala', cleanKt).maybeSingle();
           if (fy.data) { customerIdToSave = fy.data.id; if (!customerInfo.nafn) customerNafnToSave = fy.data.nafn; }
@@ -986,6 +992,7 @@
         customer_id: customerIdToSave,
         athugasemdir: (sale.athugasemdir || '') + ktAuditNote + auditNote
       };
+      if (customerKtToSave) updates.customer_kt = customerKtToSave;   // 2026-08-20: vista innslegna kt
       let r = await SB.from('solur').update(updates).eq('id', sale.id);
       if (r.error && /status/i.test(r.error.message || '')) {
         // status column missing — retry without status
@@ -1022,6 +1029,7 @@
         athugasemdir: 'Stofnað við Sótt ✓ úr verkstæðis-afhendingu' + auditNote,
         status: 'final'
       };
+      if (customerKtToSave) newSale.customer_kt = customerKtToSave;   // 2026-08-20: vista innslegna kt
       let r = await SB.from('solur').insert(newSale).select().single();
       if (r.error && /status/i.test(r.error.message || '')) {
         const { status, ...rest } = newSale;

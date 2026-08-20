@@ -227,6 +227,7 @@
             // „✅ Sent". Refuse: if any hökuð viðhengi vantar eða er tómt, EKKI senda.
             const _okAtts = atts.filter(a => a && a.content && String(a.content).length > 256);
             if (picked.length && _okAtts.length < picked.length) {
+              try { if (window.logProblem) window.logProblem('blank_invoice_blocked', 'Sending stöðvuð: ' + _okAtts.length + '/' + picked.length + ' viðhengi tilbúin (tómur/vantandi reikningur)', { fingerprint: 'blank_send_block' }); } catch (_) {}
               fail('Reikningur/viðhengi teiknaðist ekki (' + _okAtts.length + ' af ' + picked.length + ' tilbúin). Sendi EKKI á kúnna — opnaðu reikninginn og athugaðu hvort hann sé tómur.');
               return;
             }
@@ -247,6 +248,7 @@
           });
           const j = await resp.json().catch(() => ({}));
           if (!resp.ok || j.error) {
+            try { if (window.logProblem) window.logProblem('send_failed', 'gmail-send HTTP ' + resp.status + ' — ' + (j.error || j.message || 'óþekkt') + (/NOT_CONNECTED/i.test(JSON.stringify(j || {})) ? ' (Google token útrunninn?)' : ''), { fingerprint: 'send_failed' }); } catch (_) {}
             fail(j.message || j.error || ('Sending mistókst (HTTP ' + resp.status + ')'));
             return;
           }

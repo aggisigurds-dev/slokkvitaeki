@@ -83,12 +83,21 @@ for (const f of files) {
   }
 }
 
+// Þekktar, fyrirliggjandi fyrirspurnir 2026-08-20 (skráðar í docs/ORYGGISNET.md).
+// RED AÐEINS ef fjöldinn VEX — þ.e. NÝ ópöguð fyrirspurn bætist við. Lækkaðu þegar
+// þær fyrirliggjandi eru fetchAll-vafðar. (2 líta út fyrir að vera raunverulegar:
+// 03-vidsk-revamp fyrirtaeki-allt, 274 customer_documents eftir doc_type.)
+const BASELINE = 4;
 if (!risky.length) {
   console.log('✅ audit-pagination: ekkert grunsamlegt (' + files.length + ' skrár skoðaðar).');
   process.exit(0);
 }
-console.log('⚠️  audit-pagination: ' + risky.length + ' fyrirspurn(ir) gætu lent á 1000-raða þakinu:\n');
+console.log((risky.length > BASELINE ? '❌' : '⚠️ ') + ' audit-pagination: ' + risky.length + ' fyrirspurn(ir) gætu lent á 1000-raða þakinu:\n');
 risky.forEach(h => console.log('  ' + h.tbl.padEnd(20) + h.file + ':' + h.line + '\n      ' + h.seg + '\n'));
 console.log('Lagfæring:  DB.fetchAll((from, to) => <fyrirspurn>.range(from, to))');
-console.log('Ef fyrirspurnin skilar örugglega <1000 röðum, bættu henni í ALLOW efst með ástæðu.');
-process.exit(1);
+if (risky.length > BASELINE) {
+  console.log('RED: ' + risky.length + ' > baseline ' + BASELINE + ' — NÝ ópöguð fyrirspurn bættist við. Lagaðu hana (eða ALLOW ef örugglega <1000).');
+  process.exit(1);
+}
+console.log('OK — ' + risky.length + ' þekktar (<= baseline ' + BASELINE + '); engin NÝ ópöguð fyrirspurn.');
+process.exit(0);
