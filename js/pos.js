@@ -1162,6 +1162,12 @@
       // only name/phone is a walk-in → the synthetic 999999-9999.
       var custKt;
       var _ktd=(state.customer.kt||'').replace(/[^0-9]/g,'');
+      // 2026-08-20 (Agnar — starfsfólk slær kt í NAFN-reitinn í stað kt-reitsins, svo
+      // hún tapaðist og 999999-9999 stóð eftir): dragðu 10-stafa kt úr nafninu sem
+      // varaleið áður en fallið er á walk-in.
+      var _nmKtM=String(state.customer.nafn||'').match(/(\d{6}[- ]?\d{4})/);
+      var _nmKtRaw=_nmKtM ? _nmKtM[1].replace(/[^0-9]/g,'') : '';
+      var _nmKtD=(_nmKtRaw.length===10 && _nmKtRaw!=='9999999999') ? _nmKtRaw.replace(/(\d{6})(\d{4})/,'$1-$2') : '';
       if(_ktd.length===10 && _ktd!=='9999999999'){
         custKt=state.customer.kt.trim();
       } else if(state.customer.co_id){
@@ -1179,9 +1185,14 @@
           var _k=_pick&&String(_pick.kennitala||'').replace(/[^0-9]/g,'');
           if(_k&&_k.length===10&&_k!=='9999999999')custKt=_pick.kennitala;
         }catch(_){}
-        if(!custKt)custKt='999999-9999';
+        if(!custKt)custKt=_nmKtD||'999999-9999';
       } else {
-        custKt='999999-9999';
+        custKt=_nmKtD||'999999-9999';
+      }
+      // Ef kt var dregin úr nafninu, hreinsa hana úr prentaða nafninu (annars stæði
+      // t.d. „1304496899" sem nafn kúnnans á reikningnum). Tómt eftir → Staðgreitt.
+      if(_nmKtD && custKt===_nmKtD){
+        cust=String(cust).replace(/(\d{6}[- ]?\d{4})/,'').replace(/\s{2,}/g,' ').trim() || 'Staðgreitt';
       }
       // #1: prepend the Reykjavíkurborg beiðninúmer so it prints on the reikningur.
       var _beidni=(needsBeidni() && String(state.beidninumer||'').trim()) ? String(state.beidninumer).trim() : '';
