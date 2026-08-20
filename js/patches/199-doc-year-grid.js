@@ -817,7 +817,16 @@
     // fyrir samninga). Sýnum núna alvöru skráarheitið (sama og docName() gerir
     // fyrir skýrslur) svo endurnefningin — þ.m.t. ár í heitinu — birtist loksins.
     function samnLabel(s){
-      if(s.src==='doc'){ var nm=String(s.d.notes||'').replace(/\s*[·•]\s*kt\b.*$/i,'').trim(); return nm || 'Samningur'; }
+      if(s.src==='doc'){
+        // 2026-08-20: kýs raunverulegt Drive-skráarheiti (file_name) fram yfir
+        // notes — SÖMU rök og docName(). Áður las þetta notes beint, svo uppruna-
+        // stimpillinn („drive-multitool · 2024") stóð sem nafn þótt raunheitið
+        // væri þegar til í file_name (259 af 358 samningum). Nú birtist það loksins.
+        var fn=String(s.d.file_name||'').trim().replace(/\.(pdf|docx?|jpe?g|png)$/i,'');
+        if(fn) return fn;
+        var nm=String(s.d.notes||'').replace(/\s*[·•]\s*kt\b.*$/i,'').trim();
+        return (nm && !STAMP_RE.test(nm)) ? nm : 'Samningur';
+      }
       return String(s.a.name||'Samningur');
     }
     samn.sort(function(a,b){return (b.year||0)-(a.year||0);});
