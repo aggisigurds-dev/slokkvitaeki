@@ -745,7 +745,9 @@
       const r = await SB.from('year_factcheck').select('co_id,status').eq('year', new Date().getFullYear());
       const m = {}; ((r && r.data) || []).forEach(x => { m[String(x.co_id)] = x.status; });
       _cache.fcCur = m;
-      if (document.getElementById('ars-main')) render();
+      const _en = document.activeElement && document.activeElement.classList
+        && document.activeElement.classList.contains('_ars-plannote');
+      if (document.getElementById('ars-main') && !_en) render();   // ekki sópa burt ferðanótu í ritun
     } catch (_) {}
   });
   // Sleppt í fyrra = síðast skoðað fyrir meira en ári síðan (en einhvern tíma).
@@ -1061,8 +1063,12 @@
       await loadAll();
       _lastLoad = Date.now();
       const ns = dataSig();
-      if (ns !== _lastDataSig) render();          // only rebuild if the data really changed
-      _lastDataSig = ns;
+      // Ekki endurteikna (sópa burt röðum) á meðan notandi skrifar í ferðanótu —
+      // textinn hyrfi úr reitnum. Sleppum þessari umferð; _lastDataSig stendur óbreytt
+      // svo næsta refresh teiknar þegar reiturinn er ekki lengur í fókus.
+      const _editingNote = document.activeElement && document.activeElement.classList
+        && document.activeElement.classList.contains('_ars-plannote');
+      if (ns !== _lastDataSig && !_editingNote) { render(); _lastDataSig = ns; }  // only rebuild if data changed
     } catch (_) {} finally { _bgRefreshing = false; }
   }
 
@@ -1789,20 +1795,29 @@
     main.querySelectorAll('._ars-plannote').forEach(inp => {
       inp.addEventListener('click', e => e.stopPropagation());
       inp.addEventListener('keydown', e => { e.stopPropagation(); if (e.key === 'Enter') inp.blur(); });
-      inp.addEventListener('input', () => {
-        clearTimeout(inp._t);
-        inp._t = setTimeout(async () => {
-          const id = +inp.dataset.coId;
-          const val = inp.value.trim() || null;
-          const SB = getSB(); if (!SB || !id) return;
-          try {
-            const r = await SB.from('fyrirtaeki').update({ plan_note: val }).eq('id', id);
-            if (r.error) throw r.error;
-            const c1 = _cache.byId && _cache.byId[id]; if (c1) c1.plan_note = val;
-            const c2 = _cache.list.find(x => x.id === id); if (c2) c2.plan_note = val;
-          } catch (err) { console.warn('[arsskodun] plan_note', err); }
-        }, 600);
-      });
+      // Vistun ferðanótu — EITT fall svo bæði debounce OG blur noti sömu leið.
+      // Blur vistar STRAX (fara úr reit) svo textinn tapist ekki þótt endurteikning
+      // hafi ekki enn gripið hann; villa er sýnileg (rauð útlína + logProblem), ekki þögul.
+      inp.dataset.saved = (inp.value.trim() || '');
+      const savePlanNote = async () => {
+        const id = +inp.dataset.coId;
+        const val = inp.value.trim() || null;
+        if (inp.dataset.saved === (val == null ? '' : val)) return;   // óbreytt → sleppa
+        const SB = getSB(); if (!SB || !id) return;
+        try {
+          const r = await SB.from('fyrirtaeki').update({ plan_note: val }).eq('id', id);
+          if (r.error) throw r.error;
+          inp.dataset.saved = (val == null ? '' : val);
+          const c1 = _cache.byId && _cache.byId[id]; if (c1) c1.plan_note = val;
+          const c2 = _cache.list.find(x => x.id === id); if (c2) c2.plan_note = val;
+        } catch (err) {
+          console.warn('[arsskodun] plan_note', err);
+          try { if (window.logProblem) window.logProblem('plan_note_save_failed', 'co ' + id); } catch (_) {}
+          inp.style.outline = '2px solid #dc2626'; inp.title = 'Ferðanóta vistaðist EKKI — reyndu aftur';
+        }
+      };
+      inp.addEventListener('input', () => { inp.style.outline = ''; clearTimeout(inp._t); inp._t = setTimeout(savePlanNote, 500); });
+      inp.addEventListener('blur', () => { clearTimeout(inp._t); savePlanNote(); });
     });
 
     // "Tekið út" toggle (2026-05-25): operator can mark physical inspection done
