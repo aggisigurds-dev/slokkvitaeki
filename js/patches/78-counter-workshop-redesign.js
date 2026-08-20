@@ -955,6 +955,7 @@
       '.bw-act.broken.on{background:linear-gradient(150deg,#e25555,#a01818);color:#fff;border-color:transparent}' +
       '.bw-act.laga{background:linear-gradient(145deg,#0d0102,#6c0d10 50%,#971515 60%,#100102);color:#fff;grid-column:1/-1;height:48px;font-size:13.5px}' +
       '.bw-act.edit{background:#fff;color:#1e40af;border:1px solid #bfdbfe;grid-column:1/-1;height:42px;font-size:13px}' +
+      '.bw-act.print{background:#fff;color:#6d28d9;border:1px solid #ddd6fe;grid-column:1/-1;height:44px;font-size:13.5px}' +
       '.bw-act.del{background:#fff;color:#64748b;border:1px solid #e2e8f0;grid-column:1/-1;height:40px;font-size:12.5px}' +
       '.bw-ta{width:100%;min-height:56px;margin-top:6px;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;background:#f6f8fb;font:inherit;font-size:13px;resize:vertical;box-sizing:border-box}' +
       // edit-form inputs + Vista/Hætta row (Breyta tæki / Breyta verki)
@@ -1037,6 +1038,7 @@
             '<div class="bw-act broken' + (isBroken ? ' on' : '') + '" onclick="Workshop.setUnitStatusToggle(' + job.id + ',' + u.id + ',\'broken\')">🚫 Ónýtt</div>' +
             '<div class="bw-act laga" onclick="Workshop.addPartToUnit(' + job.id + ',' + u.id + ')">🔧 Laga — bæta við varahlut / þjónustu</div>' +
             '<div class="bw-act edit" onclick="Workshop.editUnit(' + job.id + ',' + u.id + ')">✏️ Breyta tæki (tegund / stærð / raðnr.)</div>' +
+            '<div class="bw-act print" onclick="Workshop.printUnit(' + job.id + ',' + u.id + ')">🖨 Prenta miða</div>' +
             '<div class="bw-act del" onclick="Workshop.deleteUnitFromModal(' + job.id + ',' + u.id + ')">🗑 Eyða tæki</div>' +
           '</div>' +
           '<div style="margin-top:14px">' +
@@ -1302,6 +1304,22 @@
       if (ov) ov.remove();
       Workshop._unitCtx = null;
       Workshop.render();
+    };
+    // 🖨 Prenta miða — the Verkstæði board opens THIS modal (Workshop.openUnitModal),
+    // not patch 101's UnitDetail, so #10's button never showed here. Wrap the one
+    // verklidur tæki as a one-line job and hand it to Print.showJob (patch 139 →
+    // QrLabelCustomer Brother 18×Nmm) — the exact checkout/patch-101 path. Works for
+    // TMP-* móttöku-tæki too (QR text = serial; no uttaeki row needed).
+    Workshop.printUnit = function(jobId, unitId) {
+      const job = DB.getJob(jobId); if (!job) return;
+      const u = (job.units || []).find(x => x.id === unitId); if (!u) return;
+      if (window.Print && typeof Print.showJob === 'function') {
+        Print.showJob({ units: [u], customer: job.customer || '', phone: job.phone || '' });
+      } else if (window.Print && typeof Print.showQR === 'function') {
+        Print.showQR(u);
+      } else {
+        alert('Prentvirknin er ekki hlaðin.');
+      }
     };
     Workshop._renderUnitModal = function() {
       const ctx = Workshop._unitCtx; if (!ctx) return;
