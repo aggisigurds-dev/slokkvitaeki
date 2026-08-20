@@ -628,7 +628,7 @@
     // Storage `path`. Open them directly in Drive viewer — patch 111's
     // preview lightbox can't host Google Drive content securely anyway.
     const driveUrl = (file && file.drive_url) ? file.drive_url
-      : (file && file.drive_id ? 'https://drive.google.com/file/d/' + file.drive_id + '/view' : '');
+      : (file && file.drive_id ? 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(file.drive_id) : '');
     if (driveUrl) { window.open(driveUrl, '_blank', 'noopener'); return; }
     if (!file || !file.path) { alert('Engin skrá fylgir þessari færslu — þetta er skráning (t.d. úr Samningar.xlsx), ekki upphlaðið skjal.'); return; }
     const url = await getPublicUrl(file.path);
@@ -687,7 +687,7 @@
     // Drive files — open the viewer; Drive handles download itself. Only when a
     // real reference exists, so marker rows don't build …/file/d/undefined/view.
     const driveUrl = (file && file.drive_url) ? file.drive_url
-      : (file && file.drive_id ? 'https://drive.google.com/file/d/' + file.drive_id + '/view' : '');
+      : (file && file.drive_id ? 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(file.drive_id) : '');
     if (driveUrl) { window.open(driveUrl, '_blank', 'noopener'); return; }
     if (!file || !file.path) { alert('Engin skrá fylgir þessari færslu — þetta er skráning (t.d. úr Samningar.xlsx), ekki upphlaðið skjal.'); return; }
     const url = await getPublicUrl(file.path);

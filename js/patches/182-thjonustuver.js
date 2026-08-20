@@ -928,7 +928,15 @@
       return { ok: true, id: data && data.id };
     } catch (e) { return { ok: false, error: String((e && e.message) || e) }; }
   }
-  function driveUrl(id) { return id ? 'https://drive.google.com/file/d/' + id + '/view' : ''; }
+  function driveUrl(id) { return id && String(id).indexOf('sb:') !== 0 ? 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(id) : ''; }
+  function storageUrl(p) {
+    if (!p) return '';
+    var base = String(window.SUPABASE_URL || '').replace(/\/+$/, ''); if (!base) return '';
+    var s = String(p).replace(/^\/+/, ''); var i = s.indexOf('/'); if (i < 1) return '';
+    return base + '/storage/v1/object/public/' + s.slice(0, i) + '/' + s.slice(i + 1).split('/').map(encodeURIComponent).join('/');
+  }
+  // Storage-first: opinbert Supabase-URL ef til, annars authed Drive-proxy.
+  function docUrl(d) { if (!d) return ''; return storageUrl(d.storage_path) || driveUrl(d.drive_file_id); }
 
   // One-click pipeline test: emails aggisigurds@gmail.com via Resend (test
   // sender) WITH a small PDF attachment so the whole chain — Drive→base64
@@ -954,7 +962,7 @@
     if (!row.customer_base_id) { toast('Tengdu fyrst viðskiptavin — engin skjöl án tengingar.'); return; }
     await loadCompanies();
     let docs = [];
-    try { const { data } = await SB.from('customer_documents').select('id,doc_type,year,drive_file_id,amount,notes').eq('customer_base_id', row.customer_base_id).order('year', { ascending: false }); docs = data || []; } catch (_) {}
+    try { const { data } = await SB.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,amount,notes').eq('customer_base_id', row.customer_base_id).order('year', { ascending: false }); docs = data || []; } catch (_) {}
     let toEmail = '';
     if (row.source === 'email' && row.channel_ref) {
       const id = String(row.channel_ref).replace(/^email:/, '');
@@ -985,7 +993,7 @@
       <span style="font-weight:600;color:#0f172a">${esc(DOC_LABELS[d.doc_type] || d.doc_type)}${d.year ? ' ' + d.year : ''}</span>
       ${d.amount ? `<span style="color:#64748b">· ${Math.round(d.amount).toLocaleString('is-IS')} kr</span>` : ''}
       <span style="flex:1"></span>
-      ${d.drive_file_id ? `<a href="${driveUrl(d.drive_file_id)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#2563eb;text-decoration:none;font-size:11px">opna ↗</a>` : '<span style="color:#cbd5e1;font-size:11px">ekkert skjal</span>'}</label>`;
+      ${docUrl(d) ? `<a href="${docUrl(d)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#2563eb;text-decoration:none;font-size:11px">opna ↗</a>` : '<span style="color:#cbd5e1;font-size:11px">ekkert skjal</span>'}</label>`;
     m.innerHTML = `
       <div style="position:absolute;inset:0;background:rgba(15,23,42,.55)"></div>
       <div style="position:relative;background:#fff;border-radius:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);width:min(580px,calc(100vw - 20px));max-height:92vh;overflow-y:auto">

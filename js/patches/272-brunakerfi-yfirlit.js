@@ -30,7 +30,7 @@
 
   function SB() { return (window.DB && DB.sb) || null; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
-  function driveUrl(id) { return id && String(id).indexOf('sb:') !== 0 ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view' : ''; }
+  function driveUrl(id) { return id && String(id).indexOf('sb:') !== 0 ? 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(id) : ''; }
   function storageUrl(p) {
     if (!p) return '';
     const base = String(window.SUPABASE_URL || '').replace(/\/+$/, ''); if (!base) return '';
@@ -77,7 +77,7 @@
         years: {}, months: {}, count: 0, latest: 0, latestMonth: 0 });
       const y = String(d.year || '');
       if (!y) return;
-      const url = driveUrl(d.drive_file_id) || storageUrl(d.storage_path);
+      const url = storageUrl(d.storage_path) || driveUrl(d.drive_file_id);
       if (!r.years[y] || url) r.years[y] = url || r.years[y] || '#';
       r.count++;
       const m = d.doc_date ? (new Date(d.doc_date).getUTCMonth() + 1) : 0;

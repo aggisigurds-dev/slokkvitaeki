@@ -17,7 +17,15 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function digits(s){ return String(s||'').replace(/\D/g,''); }
   function dash(kt){ var d=digits(kt); return d.length>=10?d.slice(0,6)+'-'+d.slice(6,10):d; }
-  function driveUrl(id){ return id?'https://drive.google.com/file/d/'+id+'/view':''; }
+  function driveUrl(id){ return id && String(id).indexOf('sb:')!==0 ? 'https://brunaholf.netlify.app/api/skjal?id='+encodeURIComponent(id) : ''; }
+  function storageUrl(p){
+    if(!p) return '';
+    var base=String(window.SUPABASE_URL||'').replace(/\/+$/,''); if(!base) return '';
+    var s=String(p).replace(/^\/+/,''); var i=s.indexOf('/'); if(i<1) return '';
+    return base+'/storage/v1/object/public/'+s.slice(0,i)+'/'+s.slice(i+1).split('/').map(encodeURIComponent).join('/');
+  }
+  // Storage-first: opinbert Supabase-URL ef til, annars authed Drive-proxy.
+  function docUrl(d){ if(!d) return ''; return storageUrl(d.storage_path) || driveUrl(d.drive_file_id); }
 
   // Which report the tækjalisti was built from — saved per company (synced via
   // AppSettings) so the proof shows on every device.
@@ -25,7 +33,7 @@
   function saveSource(coId, src){ try{ if(window.AppSettings&&AppSettings.save){ var o={inspection_source:{}}; o.inspection_source[String(coId)]=src; return AppSettings.save(o); } }catch(_){} return Promise.resolve(); }
   async function fetchReportDocs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('customer_documents').select('year,drive_file_id,notes').eq('customer_base_id',baseId).eq('doc_type','uttektarskyrsla'); return r.data||[]; }catch(e){ return []; }
+    try{ var r=await sb.from('customer_documents').select('year,drive_file_id,storage_path,notes').eq('customer_base_id',baseId).eq('doc_type','uttektarskyrsla'); return r.data||[]; }catch(e){ return []; }
   }
   // The report the tækjalisti is based on: prefer the recorded import source,
   // else the newest attached úttektarskýrsla, else the newest report on file.
@@ -35,7 +43,7 @@
       var k=a.kind||''; return k==='skyrsla' || /sko(ð|d)un|(ú|u)ttekt|sk(ý|y)rsl/i.test(a.name||'');
     });
     if(atts.length){ atts.sort(function(x,y){return (Date.parse(y.uploaded_at||0)||0)-(Date.parse(x.uploaded_at||0)||0);}); var a=atts[0]; return {name:a.name, att_id:a.id, year:a.year}; }
-    if(repDocs&&repDocs.length){ var ds=repDocs.slice().sort(function(x,y){return (+y.year||0)-(+x.year||0);}); var d=ds[0]; return {name:(d.notes||('Skýrsla '+(d.year||''))), drive_file_id:d.drive_file_id, year:d.year}; }
+    if(repDocs&&repDocs.length){ var ds=repDocs.slice().sort(function(x,y){return (+y.year||0)-(+x.year||0);}); var d=ds[0]; return {name:(d.notes||('Skýrsla '+(d.year||''))), drive_file_id:d.drive_file_id, storage_path:d.storage_path, year:d.year}; }
     return null;
   }
   function sourceFooter(s){
@@ -43,7 +51,8 @@
     var lab=s._basis?'Tækjalisti byggður á':'Tengd skýrsla';
     var when=s.ts?(' · '+new Date(s.ts).toLocaleDateString('is-IS')):'';
     var nm=esc(String(s.name).length>46?String(s.name).slice(0,44)+'…':s.name);
-    var link = s.drive_file_id ? '<a href="'+esc(driveUrl(s.drive_file_id))+'" target="_blank" rel="noopener" class="rdr-srcname">📄 '+nm+' ↗</a>'
+    var du = docUrl(s);
+    var link = du ? '<a href="'+esc(du)+'" target="_blank" rel="noopener" class="rdr-srcname">📄 '+nm+' ↗</a>'
              : (s.att_id ? '<button type="button" class="rdr-srcname" data-srcatt="'+esc(s.att_id)+'">📄 '+nm+'</button>'
              : '<span class="rdr-srcname">📄 '+nm+'</span>');
     return '<div class="rdr-srcbar">📌 '+lab+': '+link+when+'</div>';

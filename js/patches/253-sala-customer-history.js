@@ -260,7 +260,7 @@
   // Skjöl lifa á tveimur stöðum: Drive (drive_file_id) og Supabase Storage
   // (storage_path, með bucket-nafninu fremst). Bucket-arnir eru public svo bein
   // slóð dugar. Skilar '' þegar hvorugt er til → engin „Opna"-hnappur.
-  function driveUrl(id) { return id ? 'https://drive.google.com/file/d/' + encodeURIComponent(id) + '/view' : ''; }
+  function driveUrl(id) { return id ? 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(id) : ''; }
 
   // Netfang kúnnans til að forfylla ritilinn — má alltaf breyta í glugganum.
   const _emailCache = {};
@@ -340,7 +340,7 @@
       // er til og röðin birtist þá án „opna"-hnapps í stað þess að hverfa.
       docs = (r.data || []).map(x => {
         const drv = x.drive_file_id && String(x.drive_file_id).indexOf('sb:') !== 0 ? x.drive_file_id : null;
-        return Object.assign({}, x, { _url: drv ? driveUrl(drv) : storageUrl(x.storage_path) });
+        return Object.assign({}, x, { _url: storageUrl(x.storage_path) || (drv ? driveUrl(drv) : '') });
       });
     } catch (_) {}
 

@@ -1112,7 +1112,7 @@
           const isExt = !!(a.external || a.drive_url || a.drive_id);
           const kindIcon = a.kind === 'bill' ? '🧾' : (a.kind === 'contract' ? '📜' : (isExt ? '🔗' : '📄'));
           const dataAttr = isExt
-            ? `data-drive-url="${esc(a.drive_url || ('https://drive.google.com/file/d/' + a.drive_id + '/view'))}"`
+            ? `data-drive-url="${esc(a.drive_url || ('https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(a.drive_id)))}"`
             : `data-path="${esc(a.path || '')}"`;
           return `<div class="_bk-att-row" ${dataAttr} data-name="${esc(name)}" style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#f8fafc;border-radius:6px;font-size:11.5px;gap:8px;cursor:pointer" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#f8fafc'">
             <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1e40af">${kindIcon} ${esc(name)}${isExt ? ' <span style="font-size:9px;color:#64748b">↗ Drive</span>' : ''}</div>

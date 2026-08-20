@@ -135,9 +135,11 @@
       const map = {};
       rows.forEach(x => {
         if (x.fyrirtaeki_id == null || !x.year) return;
-        const u = x.drive_file_id
-          ? 'https://drive.google.com/file/d/' + x.drive_file_id + '/view'
-          : storageUrl(x.storage_path);
+        // 2026-08-20: storage-first + authed proxy (Drive rotnar / óskráðar skrár
+        // opna ekki með hráum hlekk → /api/skjal á Brunahólfi streymir með server-OAuth).
+        const su = storageUrl(x.storage_path);
+        const did = x.drive_file_id && String(x.drive_file_id).indexOf('sb:') !== 0 ? x.drive_file_id : '';
+        const u = su || (did ? 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(did) : '');
         if (!u) return;
         const k = String(x.fyrirtaeki_id);
         (map[k] = map[k] || {})[String(x.year)] = u;

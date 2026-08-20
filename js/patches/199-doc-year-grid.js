@@ -29,7 +29,11 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function digits(s){ return String(s||'').replace(/\D/g,''); }
   function dash(kt){ var d=digits(kt); return d.length>=10 ? d.slice(0,6)+'-'+d.slice(6,10) : d; }
-  function driveUrl(id){ return id ? 'https://drive.google.com/file/d/'+id+'/view' : ''; }
+  // 2026-08-20: Drive-hlekkir opna EKKI óskráðar (ódeildar) skrár → „file does not exist".
+  // Beinum í gegnum /api/skjal á Brunahólfi — server-OAuth (freshAccessToken,
+  // supportsAllDrives) streymir PDF-inu inline, engin Google-innskráning. Sama leið og
+  // patch 273/274. 'sb:'-forskeytt er storage-vísun, ekki Drive-auðkenni.
+  function driveUrl(id){ return id && String(id).indexOf('sb:')!==0 ? 'https://brunaholf.netlify.app/api/skjal?id='+encodeURIComponent(id) : ''; }
   // Skjöl lifa á TVEIMUR stöðum: eldri/Drive-lesin skjöl bera `drive_file_id`, en
   // skjöl sem appið sjálft býr til (patch 111/233 viðhengi, endurgerðar skýrslur úr
   // Cowork o.fl.) liggja í Supabase Storage og bera AÐEINS `storage_path` — með
@@ -45,7 +49,18 @@
     var i = s.indexOf('/'); if(i < 1) return '';
     return base+'/storage/v1/object/public/'+s.slice(0,i)+'/'+s.slice(i+1).split('/').map(encodeURIComponent).join('/');
   }
-  function docUrl(d){ return d ? (driveUrl(d.drive_file_id) || storageUrl(d.storage_path)) : ''; }
+  // 2026-08-20: Storage FYRST — Drive-hlekkir rotna (skrár færðar/óskráðar til deilingar
+  // → „Sorry, the file you have requested does not exist"), storage_path er STÖÐUG opinber
+  // slóð sem krefst engrar Google-innskráningar. Sama forgangsröðun og customer.js
+  // docViewUrl í Brunahólf (2026-08-07). 'sb:'-forskeytt drive_file_id er storage-vísun,
+  // EKKI Drive-auðkenni (sbr. hasFile-vörnina á línu 1114) → aldrei byggja Drive-slóð úr því.
+  function docUrl(d){
+    if(!d) return '';
+    var su = storageUrl(d.storage_path); if(su) return su;
+    var did = d.drive_file_id;
+    if(did && String(did).indexOf('sb:') !== 0) return driveUrl(did);
+    return '';
+  }
   var NOW = new Date().getFullYear();
 
   // Ein færsla úr ársnetinu (handvirkt viðhengi {_att:a} EÐA customer_documents

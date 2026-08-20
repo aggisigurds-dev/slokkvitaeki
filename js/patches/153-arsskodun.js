@@ -2889,7 +2889,7 @@
                     // before this fix rendered href="#" which reloaded the SPA
                     // back to the list view.
                     const isStorage = !a.drive_url && !a.drive_id && a.path;
-                    const url = a.drive_url || (a.drive_id ? 'https://drive.google.com/file/d/' + a.drive_id + '/view' : null);
+                    const url = a.drive_url || (a.drive_id && String(a.drive_id).indexOf('sb:') !== 0 ? 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(a.drive_id) : null);
                     const icon = a.kind === 'samningur' ? '📜' : '🧾';
                     const yearTag = a.year ? `<span style="background:#f0fdf4;color:#15803d;font-size:10px;font-weight:700;padding:1px 6px;border-radius:99px;border:1px solid #bbf7d0;margin-left:6px">${a.year}</span>` : '';
                     const autoTag = a.auto_matched ? '<span style="color:var(--ink4);font-size:10px" title="Sjálfkrafa pörun">✦</span>' : '';

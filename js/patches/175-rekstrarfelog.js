@@ -745,6 +745,15 @@
     var s=String(p).replace(/^\/+/,''); var i=s.indexOf('/'); if(i<1) return '';
     return base+'/storage/v1/object/public/'+s.slice(0,i)+'/'+s.slice(i+1).split('/').map(encodeURIComponent).join('/');
   }
+  // Storage-first opnun: opinbert Supabase-URL ef til, annars authed Drive-proxy
+  // (á brunaholf) — aldrei hrár drive/view hlekkur, aldrei 'sb:'-forskeyti.
+  function docUrl(d){
+    if(!d) return '';
+    var su=storageUrl(d.storage_path); if(su) return su;
+    var did=d.drive_file_id;
+    if(did && String(did).indexOf('sb:')!==0) return 'https://brunaholf.netlify.app/api/skjal?id='+encodeURIComponent(did);
+    return '';
+  }
 
   // ── BRUNAKERFIS-VÍSITALA (2026-07-27, ósk Agnars: „geta líka séð þau sem eru
   //    í brunakerfisþjónustu") ────────────────────────────────────────────────
@@ -790,7 +799,7 @@
             bkRows.forEach(function(d){
               if(d.is_duplicate||!d.year) return;
               var e=rec(d.fyrirtaeki_id), y=String(d.year);
-              var u=d.drive_file_id ? ('https://drive.google.com/file/d/'+encodeURIComponent(d.drive_file_id)+'/view') : storageUrl(d.storage_path);
+              var u=docUrl(d);
               if(!e.years[y]||u) e.years[y]={url:u||'',kind:'rep'};
               var m=d.doc_date?(new Date(d.doc_date).getUTCMonth()+1):0;
               if(m) e.months[y]=m;
@@ -1297,13 +1306,12 @@
         // Skýrslur sem appið/Cowork býr til liggja í Supabase Storage og bera AÐEINS
         // `storage_path` (ekkert drive_file_id) — þær duttu því út úr árs-dálkunum
         // og litu út fyrir að vanta. Taka báðar gerðir með (sbr. patch 187/199).
-        var _stUrl = storageUrl;   // sameiginlegt hjálparfall (sjá ofar)
         var ld = await DB.sb.from('customer_documents')
           .select('fyrirtaeki_id,year,drive_file_id,storage_path,doc_type,is_duplicate')
           .in('fyrirtaeki_id', coIds).eq('doc_type','uttektarskyrsla');
         (ld.data||[]).forEach(function(d){
           if (d.is_duplicate || !d.year) return;
-          var u = d.drive_file_id ? 'https://drive.google.com/file/d/' + d.drive_file_id + '/view' : _stUrl(d.storage_path);
+          var u = docUrl(d);
           if (!u) return;
           var k = String(d.fyrirtaeki_id);
           (liveDocs[k] = liveDocs[k] || {})[String(d.year)] = u;

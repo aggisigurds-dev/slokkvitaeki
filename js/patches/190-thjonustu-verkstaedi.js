@@ -195,7 +195,7 @@
   function docUrl(d) {
     if (!d) return '';
     if (d.public_url) return d.public_url;
-    if (d.drive_file_id) return 'https://drive.google.com/file/d/' + encodeURIComponent(d.drive_file_id) + '/view';
+    if (d.drive_file_id && String(d.drive_file_id).indexOf('sb:') !== 0) return 'https://brunaholf.netlify.app/api/skjal?id=' + encodeURIComponent(d.drive_file_id);
     return '';
   }
   async function loadYearDocs() {
