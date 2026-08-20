@@ -280,6 +280,16 @@
     doc.setFont('helvetica', 'normal').setFontSize(9.5).setTextColor(20);
     var byRate = {};
     var _pp = preprocessLines(sale);
+    // 2026-08-20 (Agnar — „sending blank invoices or nothing at all"): NEVER return
+    // a blank invoice. If the sale has no lines (40 legacy solur rows carry linur=[],
+    // and sott/pickup insert paths can too) the old code still drew the header and
+    // „Til greiðslu: 0 kr" and returned a valid-looking BLANK PDF that ReceiptSender
+    // emailed to the customer. Refuse at the source — the send path catches this throw
+    // and blocks the send instead of shipping an empty reikningur. Draft-save is
+    // unaffected (this is the OUT/PDF side, not vistun).
+    if (!_pp || !Array.isArray(_pp.lines) || !_pp.lines.length) {
+      throw new Error('Reikningur er tómur — engar línur (' + ((sale && sale.num) || 'sala') + '). Sendi ekki.');
+    }
     _pp.lines.forEach(function (l) {
       var qty = Number(l.qty) || 0, unit = Number(l.unit_price_ex_vat) || 0;
       var pct = (l.vsk_pct == null ? 24 : Number(l.vsk_pct)) || 0;
