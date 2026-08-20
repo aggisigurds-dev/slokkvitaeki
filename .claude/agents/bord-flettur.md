@@ -277,3 +277,28 @@ fóru líka í einskiptis-`insertOnce`-migrations (`__rf1`, `__jv1`, `__jv1b`) �
 mynstur og `__brky1`/`__vkp1`. Þær bætast við ÞEGAR-vistaðar stillingar EINU SINNI;
 af-haki notandinn þær eftirá troða þær sér ekki inn aftur.
 
+
+## Þjónustuver póstar (síða patch 309, 2026-08-20)
+
+Ný SJÁLFSTÆÐ síða fyrir kúnnaþjónustu Í PÓSTI — aðskilin frá Þjónustuborði
+(patch 231, sem er áfram innra skipulag). Nákvæmt 231-mynstur: `NAV_KEY=
+'thjonustuver-postar'`, view `view-thjonustuver-postar`; `injectNav()` bætir
+`.vnav-btn`, `ensureView()` klónar `.view`-klasann inn í content-panel,
+`patchSwitchView()` grípur `App.switchView('thjonustuver-postar')`, deep-link
+`#thjonustuver-postar` (patch 218 leysir sjálfkrafa því view-ið er búið til við
+boot). Sidebar-röð (patch 68) við hlið Reikninga-pósts. `waitForSB()` bíður eftir
+`DB.sb` — síðan opnast stundum (deep-link á síma) á undan `DB.init()`.
+
+- **Gögn:** `sb.rpc('tv_postar_list')` (Brunahólf SQL `public.tv_postar_list()`,
+  SECURITY DEFINER + hækkað `statement_timeout`) hópar in-service kúnna
+  (`er_i_thjonustu`) + pósta þeirra server-hlið — því `felag_samskipti`-viewið
+  fellur á statement_timeout í full-scan úr anon.
+- **✨ AI-yfirlit:** `/api/postur-triage` `mode:'thjonustuver'` (Haiku, server-hlið)
+  → summary/ask/details[]/contact/needs_action/reply_hint. ⚠️ briefs eru lyklaðar á
+  STRENG (Object.keys) en póst-id úr RPC er tala → nota `String(id)` við get/has/set.
+- **Svarstaða:** cutOf (patch 286) + eigin „svarað"-merki í `localStorage.tvp_handled`
+  (lifir innsognstöf) + AI `needs_action` (þaggar „takk"-pósta) + 150 d. recency-gólf.
+- **Aðgerðir:** ✍️ Svara (uppkast `/api/postur-reply` → sending gegnum AppMail/
+  email-send eins og patch 240), → Flytja á Þjónustuborð (`thjonustubeidni`,
+  `channel_ref='email:<id>'`, ekki tvítak), ✓ Merki svarað. Public:
+  `window.ThjonustuverPostar = {open, reload}`.
