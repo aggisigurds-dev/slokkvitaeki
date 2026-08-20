@@ -347,13 +347,21 @@
     return { start, end };
   }
 
-  async function load(filterMonth) {
+  async function load(filterMonth, retry) {
     const main = document.getElementById('ky-main');
     if (!main) return;
     const thmWrap = (inner) => '<div class="thm"><div class="app-page"><main class="app-main">' + inner + '</main></div></div>';
     main.innerHTML = thmWrap('<div style="padding:32px;text-align:center;color:#cbd5e1">Hleður kröfum…</div>');
     const SB = getSB();
-    if (!SB) { main.innerHTML = thmWrap('<div style="padding:32px;color:#fca5a5">Engin gagnabankatenging.</div>'); return; }
+    if (!SB) {
+      // DB-biðlarinn (window.DB.sb) er oft ekki tilbúinn þegar Kröfuyfirlit er
+      // UPPHAFSSÍÐA appsins (kalt start) — þá birtist „Engin gagnabankatenging"
+      // ranglega. Það lagast við að fara á aðra síðu og til baka því biðlarinn
+      // er þá tilbúinn. Bíð + reyni aftur í ~10s (eins og patch 240) og held
+      // „Hleður…"-stöðunni á meðan, í stað þess að sýna falska villu strax.
+      if ((retry || 0) < 20) { setTimeout(() => load(filterMonth, (retry || 0) + 1), 500); return; }
+      main.innerHTML = thmWrap('<div style="padding:32px;color:#fca5a5">Engin gagnabankatenging.</div>'); return;
+    }
 
     const m = filterMonth || new Date();
     _state.month = m;
