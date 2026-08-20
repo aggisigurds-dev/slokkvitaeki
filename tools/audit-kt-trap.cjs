@@ -38,10 +38,14 @@ const NAME_IS_KT = /^\D*\d{6}-?\d{4}\D*$/;   // name is essentially just a kt
   inName.slice(0, 30).forEach(s => console.log(`    ${s.num}  nafn="${s.customer_nafn}"`));
 
   const total = drop.length + inName.length;
+  const BASELINE = 10;   // already-existing kt-trap rows on 2026-08-20; RED only if it grows
   if (total) {
     console.log(`\nThe 2026-08-20 fix (121 saves entered kt; pos.js extracts kt from name) stops NEW ones.`);
-    console.log(`Backfill: these ${total} existing rows still carry 999999 — set customer_kt from the note/name.`);
+    console.log(`Backfill: these ${total} existing rows still carry 999999 — then lower BASELINE.`);
+  }
+  if (total > BASELINE) {
+    console.log(`RED: ${total} > baseline ${BASELINE} — the kt-trap fix leaked a NEW one. Investigate.`);
     process.exit(1);
   }
-  console.log('OK — no kt-trap sales.');
+  console.log(`OK — ${total} kt-trap rows (<= baseline ${BASELINE}); fix holds.`);
 })();

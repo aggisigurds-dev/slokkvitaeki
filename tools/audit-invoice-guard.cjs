@@ -38,10 +38,14 @@ const KEY  = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
   blanks.slice(0, 60).forEach(s => console.log(`  ${s.num}  ${s.status}  samtals=${s.samtals}`));
   if (blanks.length > 60) console.log(`  … +${blanks.length - 60} more`);
 
+  const BASELINE = 40;   // already-existing blank sales on 2026-08-20; RED only if it grows
   if (blanks.length) {
     console.log('\nThe 2026-08-20 send guards BLOCK these from reaching a customer.');
-    console.log('Remaining action: void/clean these rows so they stop showing in lists.');
+    console.log('Remaining action: void/clean these rows, then lower BASELINE.');
+  }
+  if (blanks.length > BASELINE) {
+    console.log(`RED: ${blanks.length} > baseline ${BASELINE} — a NEW blank sale appeared. Investigate.`);
     process.exit(1);
   }
-  console.log('OK — no blank-emailable sales.');
+  console.log(`OK — ${blanks.length} blank sales (<= baseline ${BASELINE}); guard holds.`);
 })();

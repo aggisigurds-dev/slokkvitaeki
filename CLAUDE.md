@@ -6,7 +6,11 @@ It contains everything Claude Code needs to know to be useful immediately.
 > **📖 ALSO READ**: [`docs/STADREYNDIR.md`](docs/STADREYNDIR.md) — sannreyndar
 > grunnstaðreyndir (kúnna-líkanið, töflur, vinnureglur) — **lesa á undan öllu öðru
 > þegar spurning snýst um viðskiptavini/gögn**; and
-> [`docs/CLAUDE-LEIDBEININGAR.md`](docs/CLAUDE-LEIDBEININGAR.md) — operational playbook
+> [`docs/CLAUDE-LEIDBEININGAR.md`](docs/CLAUDE-LEIDBEININGAR.md) — operational playbook; and
+> [`docs/ORYGGISNET.md`](docs/ORYGGISNET.md) — **öryggisnetið (the safety net): READ
+> before changing any guarded path (invoice OUT `10/233/254`, kennitala `121/pos.js`,
+> billing `payday-push.js`, readiness `153/187`) and run `node tools/audit-all.cjs`
+> before EVERY push. Do not cut the power line without reconnecting + testing it.**
 >
 > **📋 Í upphafi vinnu-session:** líta á opin verk á Verkefnalistanum —
 > `GET https://brunaholf.netlify.app/api/verkefnalisti` (beidni/i_vinnu) — áður en
