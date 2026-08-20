@@ -303,7 +303,26 @@
     }
   }
 
-  // ── takki á fyrirtækjaprófílnum (kveikja/slökkva ósvarað-merki) ───────────
+  // ── PÓST-SAMSKIPTABOX Á FYRIRTÆKJAPRÓFÍLNUM ──────────────────────────────
+  // Ósk Agnars 2026-08-20: „sé engar upplýsingar" á prófílnum — sömu póst-
+  // upplýsingar og umferðarljósið á listanum eiga að BLASA VIÐ inni á hverju
+  // fyrirtæki. Áður setti þetta aðeins pínulítinn „📩 Póstmerki"-takka í
+  // hnapparöðina OG hætti alveg (`return`) ef enginn nýlegur póstur fannst —
+  // svo langflest fyrirtæki sýndu ekkert. Núna: alvöru kort sem sýnir stöðu,
+  // nýjasta póst, lífsferils-merki og hnapp á ALLA póstsöguna (?co=… sækir
+  // öll samskipti base-ins, líka eldri en glugginn sem listinn notar), OG er
+  // ALLTAF sýnilegt — líka „engin nýleg merki, smelltu á Öll póstsaga".
+  //
+  // Stöðu-undirskrift (dataset.sig) ver gegn endurteikni-lykkju: MutationObserver
+  // (watch) kallar injectProfile við hverja DOM-breytingu, og box-innsetning er
+  // sjálf DOM-breyting — án sig-varnar teiknaðist kortið upp á 150 ms fresti að
+  // eilífu. Nú er aðeins teiknað þegar staðan raunverulega breytist.
+  function boxSig(coId) {
+    const d = data(coId);
+    return [status(coId) || '-', muted(coId) ? 1 : 0, manualImp(coId) ? 1 : 0,
+      d ? (d.received_at || '') : '', d ? (d.unreplied ? 1 : 0) : '',
+      d && d.signals ? d.signals.length : 0].join('|');
+  }
   function injectProfile() {
     const main = document.getElementById('companies-main');
     if (!main) return;
@@ -312,38 +331,78 @@
     const m = editBtn.getAttribute('onclick').match(/openEdit\((\d+)\)/);
     if (!m) return;
     const coId = +m[1];
-    const d = data(coId);
-    const row = editBtn.parentElement;
-    const old = row.querySelector('._co-mail-toggle');
-    if (!d) { if (old) old.remove(); return; }
-    if (old) { paintProfile(old, coId); return; }
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = (editBtn.className || 'btn btn-outline btn-sm') + ' _co-mail-toggle';
-    const es = editBtn.getAttribute('style');
-    if (es) btn.setAttribute('style', es);
-    paintProfile(btn, coId);
-    btn.addEventListener('click', async e => {
-      e.preventDefault(); e.stopPropagation();
-      const next = !muted(coId);
-      btn.disabled = true;
-      const ok = await setMuted(coId, next);
-      btn.disabled = false;
-      if (!ok) { if (window.Toast && Toast.show) Toast.show('⚠ Vistun mistókst'); return; }
-      paintProfile(btn, coId);
-      stampAll();
-    });
-    const svcBtn = row.querySelector('._co-nytt-toggle') || row.querySelector('._co-svc-toggle');
-    row.insertBefore(btn, svcBtn || editBtn);
+    let box = main.querySelector('._co-mail-box');
+    if (box) {
+      if (+box.dataset.co === coId && box.dataset.sig === boxSig(coId)) return; // óbreytt — engin endurteikning
+      if (+box.dataset.co !== coId) { box.remove(); box = null; }              // skiptum um fyrirtæki
+    }
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'card pad _co-mail-box';
+      box.dataset.co = String(coId);
+      box.style.cssText = 'margin:10px 0;border:1px solid var(--brd,#e2e8f0);border-left:4px solid #6366f1;border-radius:12px;padding:12px 15px;font-size:13.5px;background:var(--surface,#fff)';
+      // Akkeri: helst hnapparöðin með „Merkja mikilvægt" (sama og samskipti-
+      // spjaldið 286 notar) svo kortið lendir beint undir aðgerðahnöppunum;
+      // annars röðin með Breyta-takkanum.
+      let anchor = null;
+      const mk = [...main.querySelectorAll('button')].find(b => /Merkja mikilv[aæ]g/i.test(b.textContent || ''));
+      if (mk) anchor = mk.parentElement;
+      if (!anchor) anchor = editBtn.parentElement;
+      (anchor.parentElement || main).insertBefore(box, anchor.nextSibling);
+    }
+    paintBox(box, coId);
   }
-  function paintProfile(btn, coId) {
+  function paintBox(box, coId) {
     const d = data(coId);
+    const st = status(coId);
     const off = muted(coId);
-    btn.textContent = off ? '🔕 Póstmerki (slökkt)' : '📩 Póstmerki';
-    btn.title = (d ? 'Nýjasti póstur: ' + fmtDate(d.received_at) + ' — „' + (d.subject || '') + '"' + (d.unreplied ? ' (ósvarað)' : ' (svarað)') + '. ' : '') +
-      (off ? 'Rauða ósvarað-merkið er SLÖKKT — smelltu til að kveikja.' : 'Rautt umslag birtist á listanum þegar ósvarað. Smelltu til að slökkva.');
-    if (off) { btn.style.setProperty('color', '#a78bfa', 'important'); btn.style.setProperty('font-weight', '800', 'important'); }
-    else { btn.style.removeProperty('color'); btn.style.removeProperty('font-weight'); }
+    const isImp = manualImp(coId);
+    const stColor = DOT[st] || '#94a3b8';
+    const stTxt = st ? (ST_LABEL[st] || '') : 'Engin nýleg merki';
+    const co = ((window.Companies && Companies.list) || []).find(c => String(c.id) === String(coId));
+    const nafn = (co && co.nafn) || ('#' + coId);
+    const mailto = d ? 'mailto:' + encodeURIComponent(d.from || '') + '?subject=' + encodeURIComponent('Re: ' + (d.subject || '')) : '';
+    box.innerHTML =
+      '<div style="display:flex;align-items:center;gap:8px">' +
+        '<span style="width:11px;height:11px;border-radius:50%;background:' + stColor + ';flex:0 0 auto;box-shadow:0 0 0 2px var(--surface,#fff)"></span>' +
+        '<div style="font-weight:800;font-size:11.5px;letter-spacing:.06em;color:#4f46e5">📬 PÓSTSTAÐA &amp; SAMSKIPTI</div>' +
+        '<div style="margin-left:auto;font-size:11.5px;font-weight:700;color:' + stColor + '">' + esc(stTxt) + '</div>' +
+      '</div>' +
+      signalsHtml(d) +
+      (d ?
+        '<div style="margin-top:8px">' +
+          '<div style="font-size:11.5px;color:#64748b">Nýjasti póstur · ' + esc(d.from || '') + '</div>' +
+          '<div style="font-size:12.5px;color:#334155"><b>' + esc(fmtDate(d.received_at)) + '</b> · ' + esc(relDay(d.received_at)) + (d.unreplied ? ' · <span style="color:#dc2626;font-weight:800">ósvarað</span>' : ' · svarað') + '</div>' +
+          '<div style="font-weight:700;font-size:13px;margin:4px 0 3px">' + esc(d.subject || '(engin efnislína)') + '</div>' +
+          (d.snippet ? '<div style="font-size:12px;color:#64748b;line-height:1.4;max-height:66px;overflow:auto">' + esc(d.snippet) + '</div>' : '') +
+        '</div>'
+        : '<div style="margin-top:7px;font-size:12.5px;color:#94a3b8;line-height:1.45">Engin nýleg póstmerki á þessum kúnna. Smelltu á <b>📜 Öll póstsaga</b> til að sjá hvort einhver samskipti eru skráð.</div>') +
+      '<div style="display:flex;gap:7px;margin-top:12px;flex-wrap:wrap">' +
+        (d ? '<a href="' + mailto + '" class="_cmb-reply" style="flex:1 1 auto;text-align:center;background:#1a7f4b;color:#fff;text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:700">↩️ Svara</a>' : '') +
+        '<button type="button" class="_cmb-imp" style="flex:1 1 auto;background:' + (isImp ? '#fef3c7' : '#f1f5f9') + ';border:1px solid ' + (isImp ? '#fde68a' : '#e2e8f0') + ';color:#334155;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer">' + (isImp ? '☆ Afmerkja' : '⭐ Mikilvægt') + '</button>' +
+        (d && d.unreplied ? '<button type="button" class="_cmb-mute" style="flex:1 1 auto;background:#f1f5f9;border:1px solid #e2e8f0;color:#334155;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer">' + (off ? '🔔 Kveikja rautt' : '🔕 Slökkva rautt') + '</button>' : '') +
+      '</div>' +
+      '<button type="button" class="_cmb-hist" style="width:100%;margin-top:8px;background:#f8fafc;border:1px solid #e2e8f0;color:#334155;padding:9px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📜 Öll póstsaga</button>';
+    box.dataset.sig = boxSig(coId);
+    const impB = box.querySelector('._cmb-imp');
+    if (impB) impB.addEventListener('click', async () => {
+      impB.disabled = true;
+      const next = !manualImp(coId);
+      const ok = await setImportant(coId, next);
+      impB.disabled = false;
+      if (window.Toast && Toast.show) Toast.show(ok ? (next ? '⭐ Merkt mikilvægt: ' + nafn : '☆ Afmerkt: ' + nafn) : '⚠ Vistun mistókst');
+      paintBox(box, coId); stampAll();
+    });
+    const muteB = box.querySelector('._cmb-mute');
+    if (muteB) muteB.addEventListener('click', async () => {
+      muteB.disabled = true;
+      const ok = await setMuted(coId, !muted(coId));
+      muteB.disabled = false;
+      if (window.Toast && Toast.show) Toast.show(ok ? '🔕 Uppfært: ' + nafn : '⚠ Vistun mistókst');
+      paintBox(box, coId); stampAll();
+    });
+    const histB = box.querySelector('._cmb-hist');
+    if (histB) histB.addEventListener('click', () => openHistory(coId, nafn));
   }
   function reinjectProfile() { try { injectProfile(); } catch (_) {} }
 
@@ -368,6 +427,6 @@
   // are re-stamped deterministically after every filter/month/sort re-render
   // (the MutationObserver alone raced the re-render and the dots vanished).
   window.CompanyMail = { show, status, data, setMuted, setImportant, refresh, onListRender: () => { try { stampAll(); } catch (_) {} } };
-  console.log('[company-mail-badge] v2 installed');
+  console.log('[company-mail-badge] v3 installed (prófíl-box + umferðarljós)');
 })();
 /* === END PÓST-STÖÐUMERKI Á FYRIRTÆKI Í ÞJÓNUSTU === */
