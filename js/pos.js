@@ -1190,9 +1190,10 @@
         custKt=_nmKtD||'999999-9999';
       }
       // Ef kt var dregin úr nafninu, hreinsa hana úr prentaða nafninu (annars stæði
-      // t.d. „1304496899" sem nafn kúnnans á reikningnum). Tómt eftir → Staðgreitt.
+      // t.d. „1304496899" sem nafn kúnnans á reikningnum). Tómt eftir → Viðskiptavinur
+      // (raun-kt ⇒ EKKI walk-in, svo aldrei „Staðgreitt" — sama merki og lína 1258).
       if(_nmKtD && custKt===_nmKtD){
-        cust=String(cust).replace(/(\d{6}[- ]?\d{4})/,'').replace(/\s{2,}/g,' ').trim() || 'Staðgreitt';
+        cust=String(cust).replace(/(\d{6}[- ]?\d{4})/,'').replace(/\s{2,}/g,' ').trim() || 'Viðskiptavinur';
       }
       // #1: prepend the Reykjavíkurborg beiðninúmer so it prints on the reikningur.
       var _beidni=(needsBeidni() && String(state.beidninumer||'').trim()) ? String(state.beidninumer).trim() : '';
