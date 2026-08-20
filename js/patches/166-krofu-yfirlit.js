@@ -69,7 +69,14 @@
       V + '.ky-table tr.ky-tgrp td{background:#eef2f8;font-weight:700;border-top:2px solid #d7dee9}' +
       V + '.ky-table tr.ky-trow:hover td{background:#f7f9fd}' +
       B + '.ky-table td{color:#11141c}' +
-      B + ".ky-num{font-family:'Space Mono',ui-monospace,SFMono-Regular,Menlo,monospace !important}";
+      B + ".ky-num{font-family:'Space Mono',ui-monospace,SFMono-Regular,Menlo,monospace !important}" +
+      // 2026-08-20: full horizontal reach on phones — each company's rows scroll
+      // sideways so EVERY per-row action button (…Bakfæra · Afturkalla · Nýr) is
+      // reachable, matching the desktop layout. Scoped to the .ky-rows wrapper
+      // (the outer/overflow container) — we NEVER touch the .ky-row flex itself
+      // (v5 trap: wrap / margin-left:auto / flex-basis). Pinch-zoom (the viewport
+      // already allows it) magnifies; this makes the full width reachable.
+      '@media (max-width:900px){#view-krofu-yfirlit .ky-rows{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
@@ -840,7 +847,10 @@
 
         ${shown.length
           ? (getViewMode() === 'table' ? renderTable(shown)
-             : getViewMode() === 'mobile' ? shown.map(renderCompanyMobile).join('')
+             // 2026-08-20 (Agnar „just use my desktop theme"): keep the DESKTOP
+             // layout on phones — no more auto-reflow into the cramped mobile
+             // cards. Same page as desktop; pinch-zoom + sideways scroll reach it.
+             // (renderCompanyMobile stays defined but is no longer auto-selected.)
              : shown.map(renderCompany).join(''))
           : (q
               ? '<div style="background:#fff;border:1px solid #e2e8f0;border-radius:9px;padding:40px;text-align:center;color:#94a3b8;font-style:italic">Ekkert fyrirtæki passar við „' + esc(_state.search) + '"</div>'
@@ -1700,7 +1710,7 @@
             <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt" style="height:40px;padding:0 16px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;border-radius:11px;cursor:pointer;font:inherit;font-size:13px;font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)">✓ Allar greiddar</button>
           </div>
         </div>
-        <div>
+        <div class="ky-rows">
           ${sales.map(s => {
             const da = daysAgo(s.created_at);
             // 2026-06-30: 📎 fylgiskjal — leita úttektarskýrslu sömu ár.
