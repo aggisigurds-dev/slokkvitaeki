@@ -80,13 +80,16 @@ við förum bara einu sinni á ári til hvers kúnna:
   🔴🟡🟢 merki á Fyrirtæki í þjónustu (mánaðar-yfirlitinu): **🔴 rautt** = síðasta
   póstsamskipti frá kúnna ÓSVARAÐ · **🟡 gult** = mikilvægt/möguleg breyting í póstsögu
   (uppsögn/flutt/eigendaskipti/gjaldþrot/kvörtun/bilun/áríðandi) EÐA handvirkt merkt ·
-  **🟢 grænt** = póstsaga svöruð (í sambandi) · ekkert = engin samskipti. Röð:
+  **🟢 grænt** = við eigum póstsögu við kúnnann (INN eða ÚT-póst — í sambandi) · ekkert = engin samskipti. Röð:
   rautt > gult > grænt. Gögn úr Brunahólfs-endapunktinum **`/api/company-mail`**
   (`netlify/functions/company-mail.js`, service role, þjónar báðum öppunum) sem skilar
   per `fyrirtaeki_id`: `unreplied` + `important` + `signals[]` ({type,subject,received_at}).
   **Mátun:** rautt er STRANGT (nákvæmt netfang per bygging, aldrei giskað; deilt netfang
   sleppt). Gult (signals) er VÍÐARA — netfang→lögaðili→allar byggingar hans (company-mail
-  `detectSignals()` leitarorð, skannar allan gluggann, ekki bara nýjasta). ⚠️ Hrá
+  `detectSignals()` leitarorð, skannar allan gluggann, ekki bara nýjasta). **Grænt er
+  VÍÐAST** — hver kúnni sem við eigum póstsögu við (INN `sender_email` EÐA ÚT `to_addresses`),
+  base-level EN aðeins single-site svo eina in-service byggingin er ótvíræð; multi-site
+  rekstrarfélög fá grænt bara af nákvæmri per-bygginga-mátun (systur aldrei ranglega). ⚠️ Hrá
   leitarorða-talning á „cancel/uppsögn" er MJÖG hávær (fundarafbókanir/áskriftir); raun-
   lífsferils-pósta á kúnna eru fáir (~2/ár) — sjá Charlize, ekki hræðast hráar tölur.
   DEKORERAÐ með MutationObserver (patch 153 ósnert, cache 20 mín). Smellur → spjald með
@@ -94,8 +97,13 @@ við förum bara einu sinni á ári til hvers kúnna:
   „⭐ Mikilvægt" (handvirkt gult) + „🔕 Slökkva rautt". **Flögg per fyrirtæki í**
   `arsskodun_customers[<id>]`: `mail_off` (slökkva rautt), `mail_important` (kveikja gult)
   — deep-merge AppSettings, samstillist. Public: `window.CompanyMail =
-  {show, status, data, setMuted, setImportant, refresh}`. Víðtækari þekja (185 lögaðilar
-  eins og Þjónustuver póstar sér, í stað ~36) = `felag_samskipti`-mátun; ógert.
+  {show, status, data, setMuted, setImportant, refresh}`. **Víðtæk græn þekja KOMIN
+  (2026-08-20, brunaholf company-mail):** grænar byggingar leiddar úr `felag_samskipti`
+  SJÁLFU gegnum `tv_history_sites(days)` RPC (SECURITY DEFINER, kallað í parallel úr
+  company-mail) — sama mátun og Þjónustuver póstar, svo skjáirnir reka ekki í sundur; auk
+  in-JS single-site fallback ef RPC bregst. ⚠️ „185 lögaðilar" er ALL-TIME; í 365d-glugga á
+  felag AÐEINS ~96 byggingar með póstsögu (hitt var substring-tálmynd). Patch 295-KÓÐINN er
+  óbreyttur — bara fleiri grænar `byId`-færslur að baki.
 - **📍 Póstnúmer (patch 153 + `14-companies-openedit.js`)** — nýr ADDITIVE dálkur
   **`fyrirtaeki.postnumer` (text)** svo raða/sía megi eftir póstnúmeri fyrir
   akstursleiðir ÁN þess að snerta free-text `heimilisfang`. Bakfylltur úr
