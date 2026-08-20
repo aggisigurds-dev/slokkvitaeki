@@ -153,8 +153,11 @@
     // modal must NOT show payment options — that's confusing. Show a
     // big GREEN "GREITT" banner instead so the operator can see at a
     // glance that no payment is needed.
-    const isAlreadyPaid = !!(sale && sale.paid_at &&
-      sale.greitt_med && /^(kort|reidufe|peningar|pening)$/i.test(sale.greitt_med));
+    // 2026-08-20: paid_at er stimplað AÐEINS við raun-greiðslu (kort/reiðufé/pening/
+    // posi/millifærsla — sjá modal.js:71); reikningur/greitt_sidar hafa það null. Svo
+    // paid_at sett ⟺ ÞEGAR GREITT. Gamla regexið sá ekki „Reiðufé"/„peningur"/„posi"
+    // (broddstafir/afbrigði) og faldi GREITT-borðann → hætta á tvírukkun. Treystum paid_at.
+    const isAlreadyPaid = !!(sale && sale.paid_at);
     const paidMethodLabel = (sale && sale.greitt_med) === 'kort'    ? '💳 Kort' :
                             (sale && sale.greitt_med) === 'reidufe' ? '💵 Reiðufé' :
                             (sale && sale.greitt_med) ? esc(sale.greitt_med) : '';
@@ -809,13 +812,12 @@
   async function finalizePickup(job, sale, unitState, extras, payMethod, totals, customerInfo, discountPct, discountKrManual, userNote) {
     const SB = getSB();
     if (!SB) throw new Error('Engin gagnabankatenging');
-    // 2026-08-20: prepaid = greitt fyrirfram (speglar isAlreadyPaid, línu 156).
-    // Sala sem er ÞEGAR greidd (paid_at + kort/reiðufé/pening) þarf ENGIN uppgjör
-    // við afhendingu — peningurinn er inn. Áður kastaði vörnin því payMethod kom
-    // þá úr sale.greitt_med ('Kort', hástafað) og féll á lágstafa-hvítlistanum
-    // → „greitt fyrirfram" var ómögulegt að afhenda.
-    const prepaid = !!(sale && sale.paid_at && sale.greitt_med &&
-      /^(kort|reidufe|peningar|pening)$/i.test(String(sale.greitt_med)));
+    // 2026-08-20: prepaid = greitt fyrirfram (í lockstep við isAlreadyPaid, línu 156).
+    // paid_at sett ⟺ greitt (kort/reiðufé/pening/posi/millifærsla); reikningur/greitt_sidar
+    // eru null → falla í gegn og krefjast uppgjörs eins og áður. Sala sem er ÞEGAR greidd
+    // þarf ENGIN uppgjör við afhendingu — peningurinn er inn. Áður kastaði vörnin því
+    // payMethod kom þá úr sale.greitt_med ('Kort', hástafað) og féll á lágstafa-hvítlistanum.
+    const prepaid = !!(sale && sale.paid_at);
     // Gátt á VERKLOK (2026-08-14, ekki á vistun): tæki fer ekki út með
     // óútkljáð uppgjör — „greitt síðar" leysist hér í kort/reikning/reiðufé. Prepaid sleppur.
     if (!prepaid && (payMethod === 'greitt_sidar' || !['kort', 'reidufe', 'pening', 'reikningur'].includes(String(payMethod || '')))) {
