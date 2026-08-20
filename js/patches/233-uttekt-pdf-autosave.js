@@ -288,6 +288,7 @@
     // and blocks the send instead of shipping an empty reikningur. Draft-save is
     // unaffected (this is the OUT/PDF side, not vistun).
     if (!_pp || !Array.isArray(_pp.lines) || !_pp.lines.length) {
+      try { if (window.logProblem) window.logProblem('blank_invoice_source', 'buildInvoiceBlob: tóm sala ' + ((sale && sale.num) || '?') + ' (engar línur) — PDF stöðvað', { fingerprint: 'blank_pdf' }); } catch (_) {}
       throw new Error('Reikningur er tómur — engar línur (' + ((sale && sale.num) || 'sala') + '). Sendi ekki.');
     }
     _pp.lines.forEach(function (l) {
