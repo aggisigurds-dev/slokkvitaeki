@@ -1975,8 +1975,7 @@
         const reik = info.reik ? '<span class="reik" title="Reikningur tengdur">🧾</span>' : '';
         return `<span class="yrtag" style="background:${bg};border-color:${bd};color:${col}"><span class="yrdot" style="background:${dc}"></span>${y.slice(-2)}</span>${reik}`;
       });
-      const yearCells = yearBadges.map(h => `<td class="yr">${h}</td>`).join('');   // fullt: 4 reitir
-      const yearStrip = yearBadges.join('');                                         // þjappað: einn reitur
+      const yearCells = yearBadges.map(h => `<td class="yr">${h}</td>`).join('');   // fullt: 4 reitir (aðeins skrifstofu-prentun)
       // Aksturslisti (bílstjóra-númer) — sama gildi og chip-inn á skjánum
       const akv = (window.ArsAkstur && ArsAkstur.of) ? (+ArsAkstur.of(c.id) || 0) : (+ars.akstur || 0);
       const aksturCell = `<td class="c">${akv ? `<span class="akstur">🚗${akv}</span>` : ''}</td>`;
@@ -1989,16 +1988,12 @@
       return compact ? `<tr>
         <td class="num">${i + 1}</td>
         ${nameCell}
-        <td class="yrs">${yearStrip}</td>
         <td>${esc(c.heimilisfang || '')}</td>
         <td class="nowrap">${esc(phone)}</td>
+        <td class="c taeki">${eqTrioHtml(ars.equipment, 'screen') || ''}</td>
         <td class="nota">${c.plan_note ? '✈ ' + esc(c.plan_note) : ''}</td>
         <td class="c">${esc(MONTHS_IS_SHORT[m - 1] || '—')}</td>
-        <td class="c taeki">${eqTrioHtml(ars.equipment, 'screen') || ''}</td>
-        <td class="r">${est ? fmtKr(est) : ''}</td>
-        ${aksturCell}
-        ${priCell}
-        ${stCell}
+        <td class="chk"><span class="box"></span></td>
       </tr>` : `<tr>
         <td class="num">${i + 1}</td>
         ${nameCell}
@@ -2056,12 +2051,13 @@
   @media print { .toolbar { display:none; } body { padding:0; } }
   ${compact ? `
   :root { --ink1:#0f172a; --ink3:#94a3b8; }
-  table { font-size:10.5px; }
-  th, td { padding:3px 5px; }
-  td.yrs { white-space:nowrap; text-align:center; }
-  td.yrs .yrtag { margin-right:2px; }
-  td.nota { font-size:9px; color:#334155; max-width:180px; line-height:1.15; white-space:normal; }
-  td.taeki { text-align:center; }
+  table { font-size:12px; }
+  th, td { padding:6px 8px; }
+  tbody tr { page-break-inside: avoid; }
+  td.taeki { text-align:center; font-weight:700; letter-spacing:.02em; }
+  td.nota { font-size:10.5px; color:#334155; max-width:240px; line-height:1.2; white-space:normal; }
+  th.chk, td.chk { text-align:center; width:70px; }
+  td.chk .box { display:inline-block; width:16px; height:16px; border:1.5px solid #64748b; border-radius:4px; vertical-align:middle; }
   ` : ''}
 </style>
 <style id="pgstyle">@page { size: A4 landscape; margin: 12mm; }</style></head><body class="landscape">
@@ -2074,20 +2070,21 @@
   </div>
   <div class="hd">
     <div>
-      <h1>Fyrirtæki í Þjónustu</h1>
-      <div class="sub">Sía: <strong>${esc(filterLabel)}</strong>${searchNote} · ${arr.length} fyrirtæki</div>
+      <h1>${compact ? '🚗 Aksturslisti' : 'Fyrirtæki í Þjónustu'}</h1>
+      <div class="sub">${compact
+        ? `<strong>${esc(filterLabel)}</strong> · ${arr.length} stopp &nbsp;·&nbsp; Bílstjóri: ______________`
+        : `Sía: <strong>${esc(filterLabel)}</strong>${searchNote} · ${arr.length} fyrirtæki`}</div>
     </div>
     <div class="meta">${logo}<div style="margin-top:4px">Slökkvitæki ehf · ${dateStr}</div></div>
   </div>
   <table>
     <thead><tr>${compact ? `
       <th class="num">#</th><th>Fyrirtæki</th>
-      <th class="c" title="Skoðanir · skjöl '23–'26">Skoðanir</th>
       <th>Heimilisfang</th><th>Sími</th>
+      <th class="c">Tæki (SLT·BSL·RS)</th>
       <th title="Ferðanóta">✈ Nóta</th>
-      <th class="c">Skoðun</th><th class="c">Tæki</th><th class="r">Áætl.</th>
-      <th class="c" title="Aksturslisti">🚗</th><th class="c" title="Forgangur">❗</th>
-      <th>Staða ${curYear}</th>` : `
+      <th class="c">Mán.</th>
+      <th class="c chk">✓ Búið</th>` : `
       <th class="num">#</th><th>Fyrirtæki</th>
       <th class="c yr">'23</th><th class="c yr">'24</th><th class="c yr">'25</th><th class="c yr">'26</th>
       <th>Heimilisfang</th><th>Sími</th>
@@ -2096,7 +2093,9 @@
       <th>Staða ${curYear}</th>`}
     </tr></thead>
     <tbody>${rows}</tbody>
-    <tfoot><tr><td></td><td>Samtals ${arr.length} fyrirtæki</td><td colspan="${compact ? 6 : 8}"></td><td class="r">${fmtKr(totalEst)}</td><td colspan="3"></td></tr></tfoot>
+    <tfoot><tr>${compact
+      ? `<td></td><td>Samtals ${arr.length} stopp</td><td colspan="6"></td>`
+      : `<td></td><td>Samtals ${arr.length} fyrirtæki</td><td colspan="8"></td><td class="r">${fmtKr(totalEst)}</td><td colspan="3"></td>`}</tr></tfoot>
   </table>
   <script>
     function setOrient(o){
