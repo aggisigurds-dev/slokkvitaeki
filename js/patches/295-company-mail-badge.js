@@ -215,7 +215,8 @@
         (d ? '<a href="' + mailto + '" id="_mp-reply" style="flex:1 1 auto;text-align:center;background:#1a7f4b;color:#fff;text-decoration:none;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:700">↩️ Svara</a>' : '') +
         '<button id="_mp-imp" style="flex:1 1 auto;background:' + (isImp ? '#fef3c7' : '#f1f5f9') + ';border:1px solid ' + (isImp ? '#fde68a' : '#e2e8f0') + ';color:#334155;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer">' + (isImp ? '☆ Afmerkja' : '⭐ Mikilvægt') + '</button>' +
         (d && d.unreplied ? '<button id="_mp-mute" style="flex:1 1 auto;background:#f1f5f9;border:1px solid #e2e8f0;color:#334155;padding:8px 10px;border-radius:8px;font-size:12.5px;font-weight:700;cursor:pointer">' + (muted(coId) ? '🔔 Kveikja' : '🔕 Slökkva rautt') + '</button>' : '') +
-      '</div>';
+      '</div>' +
+      '<button id="_mp-hist" style="width:100%;margin-top:8px;background:#f8fafc;border:1px solid #e2e8f0;color:#334155;padding:9px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">📜 Sjá alla póstsöguna</button>';
     document.body.appendChild(pop);
     pop.addEventListener('click', e => e.stopPropagation());
     pop.querySelector('#_mp-x').addEventListener('click', closePopover);
@@ -232,11 +233,74 @@
       if (window.Toast && Toast.show) Toast.show(ok ? '🔕 Uppfært: ' + nafn : '⚠ Vistun mistókst');
       closePopover(); stampAll(); reinjectProfile();
     });
+    const hb = pop.querySelector('#_mp-hist');
+    if (hb) hb.addEventListener('click', () => openHistory(coId, nafn));
     setTimeout(() => document.addEventListener('click', onDocClick), 0);
   }
   function onDocClick(e) {
     const p = document.getElementById('_mail-pop');
     if (p && !p.contains(e.target)) { closePopover(); document.removeEventListener('click', onDocClick); }
+  }
+
+  // ── ÖLL póstsaga (full communication history, on-demand) ──────────────────
+  // Fetches the whole thread for one company from the hub
+  // (/api/company-mail?co=<id> → felag_samskipti via tv_company_history) and
+  // shows it as a scrollable modal — in/out direction, date, subject, snippet.
+  function histRow(m) {
+    const out = !!m.fra_okkur;
+    const dir = out
+      ? { ic: '📤', t: 'Frá okkur', c: '#0369a1' }
+      : { ic: '📥', t: 'Frá kúnna', c: '#166534' };
+    const who = out ? 'Slökkvitæki ehf' : (m.sender_name || m.sender_email || '');
+    return '<div style="display:flex;gap:10px;padding:9px 4px;border-bottom:1px solid #f4f6f9">' +
+      '<div style="flex:0 0 auto;text-align:center;width:56px">' +
+        '<div style="font-size:15px;line-height:1.1">' + dir.ic + '</div>' +
+        '<div style="font-size:9px;font-weight:800;color:' + dir.c + ';margin-top:1px">' + dir.t + '</div>' +
+        '<div style="font-size:10px;color:#94a3b8;margin-top:3px">' + esc(fmtDate(m.received_at)) + '</div>' +
+      '</div>' +
+      '<div style="min-width:0;flex:1">' +
+        '<div style="font-weight:700;font-size:12.5px;color:#0f172a;line-height:1.3">' + esc(m.subject || '(engin efnislína)') + (m.is_question && !out ? ' <span title="Spurning" style="color:#b45309">❓</span>' : '') + '</div>' +
+        (m.snippet ? '<div style="font-size:11.5px;color:#64748b;line-height:1.4;margin-top:2px;max-height:56px;overflow:hidden">' + esc(String(m.snippet).slice(0, 240)) + '</div>' : '') +
+        '<div style="font-size:10px;color:#94a3b8;margin-top:3px">' + esc(who) + ' · ' + esc(relDay(m.received_at)) + '</div>' +
+      '</div>' +
+    '</div>';
+  }
+  async function openHistory(coId, nafn) {
+    closePopover();
+    const old = document.getElementById('_mail-hist'); if (old) old.remove();
+    const wrap = document.createElement('div');
+    wrap.id = '_mail-hist';
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;padding:16px';
+    wrap.innerHTML =
+      '<div style="background:#fff;border-radius:14px;max-width:560px;width:100%;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.35)">' +
+        '<div style="padding:14px 16px;border-bottom:1px solid #eef2f7;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex:0 0 auto">' +
+          '<div style="min-width:0"><div style="font-weight:800;font-size:15px;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + esc(nafn) + '</div>' +
+          '<div id="_mh-sub" style="font-size:12px;color:#64748b;margin-top:2px">Sæki alla póstsögu…</div></div>' +
+          '<button id="_mh-x" style="background:none;border:none;font-size:18px;cursor:pointer;color:#94a3b8;line-height:1">✕</button>' +
+        '</div>' +
+        '<div id="_mh-body" style="overflow-y:auto;padding:6px 12px 14px"><div style="text-align:center;color:#94a3b8;padding:34px;font-size:13px">⏳ Hleð póstsögu…</div></div>' +
+      '</div>';
+    document.body.appendChild(wrap);
+    const close = () => { wrap.remove(); document.removeEventListener('keydown', onEsc); };
+    function onEsc(e) { if (e.key === 'Escape') close(); }
+    wrap.addEventListener('click', e => { if (e.target === wrap) close(); });
+    wrap.querySelector('#_mh-x').addEventListener('click', close);
+    document.addEventListener('keydown', onEsc);
+    try {
+      const r = await fetch(API + '?co=' + encodeURIComponent(coId), { cache: 'no-store' });
+      const j = await r.json();
+      const mails = (j && j.mails) || [];
+      const sub = wrap.querySelector('#_mh-sub');
+      if (sub) sub.textContent = mails.length ? ('Öll póstsaga · ' + mails.length + (mails.length === 1 ? ' póstur' : ' póstar')) : 'Engin póstsaga fannst';
+      const body = wrap.querySelector('#_mh-body');
+      if (body) body.innerHTML = mails.length
+        ? mails.map(histRow).join('')
+        : '<div style="text-align:center;color:#94a3b8;padding:30px;font-size:13px">Engin póstsamskipti fundust.</div>';
+    } catch (_) {
+      try { window.logProblem && logProblem('mail_history_fetch_failed', String(coId)); } catch (e) {}
+      const body = wrap.querySelector('#_mh-body');
+      if (body) body.innerHTML = '<div style="text-align:center;color:#dc2626;padding:26px;font-size:13px">Villa við að sækja póstsögu. Reyndu aftur.</div>';
+    }
   }
 
   // ── takki á fyrirtækjaprófílnum (kveikja/slökkva ósvarað-merki) ───────────
@@ -300,7 +364,10 @@
   if (!fresh) refresh(); else { stampAll(); refresh(); }
   [800, 2500, 6000].forEach(t => setTimeout(() => { stampAll(); injectProfile(); }, t));
 
-  window.CompanyMail = { show, status, data, setMuted, setImportant, refresh };
+  // onListRender: called by patch 153 at the END of its render() so the badges
+  // are re-stamped deterministically after every filter/month/sort re-render
+  // (the MutationObserver alone raced the re-render and the dots vanished).
+  window.CompanyMail = { show, status, data, setMuted, setImportant, refresh, onListRender: () => { try { stampAll(); } catch (_) {} } };
   console.log('[company-mail-badge] v2 installed');
 })();
 /* === END PÓST-STÖÐUMERKI Á FYRIRTÆKI Í ÞJÓNUSTU === */
