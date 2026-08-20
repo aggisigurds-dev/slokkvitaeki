@@ -1384,6 +1384,13 @@
       var bUnits = bx ? (bx.units||0) : 0;
       var bY = bx ? (bx.years||{}) : {};
       var bHasData = !!(bx && (bx.inService || Object.keys(bY).length));
+      // „Í brunakerfisþjónustu" = skráð í þjónustukortið (brunakerfi_customers → inService),
+      // EKKI bara að stakt brunakerfis-skjal sé til í kerfinu. Ósk Agnars 2026-08-20:
+      // „dont show the brunakerfisþjónusta in companies that dont have them" — svo
+      // brunakerfis-línan (🚨) birtist AÐEINS fyrir byggingar sem eru raunverulega í
+      // þjónustunni; hinar falla saman í eina línu (slökkvitæki). bHasData er áfram
+      // notað fyrir samtölur/röð-rönd (staks-skjals byggingar teljast enn með gögn).
+      var bruInSvc = !!(bx && bx.inService);
       var bOver = !!(bx && bx.next && bx.next < today);
       if (firstTime(co,b)) {
         if (bHasData) nBruSvc++;
@@ -1439,7 +1446,7 @@
       var brCntTxt = bUnits>0 ? String(bUnits) : (bHasData?'–':'0');
       var unitCell = stackTd(
         '<span class="rf-cnt rf-cnt--sl'+(units>0?'':' is-zero')+'" title="Slökkvitæki á staðnum"><em>🧯</em>'+slCntTxt+'</span>',
-        '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>', 'rf-cnt-cell', bHasData);
+        '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>', 'rf-cnt-cell', bruInSvc);
       var bldBaseId = baseByKt[digits(b.kt)];
       var bldPairs = bldBaseId ? pairByBase[bldBaseId] : null;
       // Sett upp HÉR (ekki eftir lykkjuna) svo þetta-árs dálkurinn geti notað
@@ -1457,12 +1464,12 @@
           if (!done && slHasData) slCell = yPillDue(!!(st&&st.next), isOver);
           if (!bY[y] && bHasData) brCell = yPillDue(!!(bx&&bx.next), bOver);
         }
-        yTds += stackTd(slCell, brCell, 'rf-yh-cell', bHasData);
+        yTds += stackTd(slCell, brCell, 'rf-yh-cell', bruInSvc);
       });
       if((showSl&&isOver&&slHasData)||(showBr&&bOver)) nOverdue++;
       var nextCell = stackTd(
         nextPill(st&&st.next?st.next:null,'sl',isOver&&slHasData),
-        nextPill(bx?bx.next:null,'br',bOver), 'rf-nextcell', bHasData);
+        nextPill(bx?bx.next:null,'br',bOver), 'rf-nextcell', bruInSvc);
       // 4px litarönd vinstra megin: rauð = skoðun liðin, græn = eitthvert ár
       // með úttekt/skýrslu, annars grá (blánar á hover gegnum CSS).
       var anyDone = (showSl&&(d23||d24||d25||d26)) || (showBr&&Object.keys(bY).length>0);
