@@ -146,6 +146,7 @@
     ['Bókhalds yfirlit', 'Bókhaldsyfirlit'],  // 2026-05-26: under Kröfu yfirlit
     ['Hreyfingarlisti'],
     ['Reikninga-póstur'],  // 2026-07-03: invoice-email helper (patch 240) in the billing cluster
+    ['Þjónustuver póstar'],  // 2026-08-19: customer-service-via-mail page (patch 309)
     SEP,
     ['Geymsla'],
     ['Lánstæki'],
