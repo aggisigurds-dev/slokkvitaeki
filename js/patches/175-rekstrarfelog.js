@@ -236,10 +236,14 @@
       // töfluna. 🧾-merkið er absolute í horninu svo það ýti EKKI pillunum til.
       P+'.rf-yrs{display:flex;gap:4px;justify-content:center;align-items:center;flex-wrap:nowrap;white-space:nowrap}',
       P+'.rf-yrs+.rf-yrs{margin-top:5px}',
-      P+'.rf-yrs__ic{width:15px;flex:none;text-align:center;font-size:11px;line-height:20px}',
-      P+'.rf-dd{position:relative;width:38px;flex:none;display:flex;align-items:center;justify-content:center}',
+      // FASTAR breiddir með !important — patch 245 (Brunastál-skin) málar .view a
+      // með padding svo hlekk-pillur (ár með skýrslu) urðu breiðari en span-pillur
+      // og súlurnar ráku í sundur. Föst 34px pilla + 38px fruma + 15px tákn á
+      // öllum → nákvæmlega jafnar súlur.
+      P+'.rf-yrs__ic{width:15px!important;flex:none!important;text-align:center;font-size:11px;line-height:20px;margin:0!important;padding:0!important}',
+      P+'.rf-dd{position:relative;width:38px!important;flex:none!important;display:flex;align-items:center;justify-content:center;margin:0!important;padding:0!important}',
       P+'.rf-dd .rf-bundle-tag{position:absolute;top:-5px;right:-1px;margin:0;font-size:8px;line-height:1;pointer-events:none}',
-      P+'.rf-yr{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:20px;padding:0 6px;border-radius:6px;font-family:"Space Mono",monospace;font-size:11px;font-weight:700;color:#aab3c0;background:#f4f6f9;border:1px solid #e7eaf0;text-decoration:none;cursor:default;box-sizing:border-box}',
+      P+'.rf-yr{display:inline-flex!important;align-items:center;justify-content:center;width:34px!important;min-width:34px!important;max-width:34px!important;height:20px!important;padding:0!important;margin:0!important;border-radius:6px;font-family:"Space Mono",monospace;font-size:11px;font-weight:700;color:#aab3c0;background:#f4f6f9;border:1px solid #e7eaf0;text-decoration:none;cursor:default;box-sizing:border-box}',
       P+'a.rf-yr{cursor:pointer}',
       P+'.rf-yr--none{color:#c3c9d3!important;background:#f7f8fa!important;border-color:#eef0f4!important}',
       P+'.rf-yr--hist{color:#fff!important;background:linear-gradient(145deg,#5a86e0,#2f5fe0 42%,#1a3a8c 72%,#2d55c4)!important;border-color:#12296b!important;text-shadow:0 1px 1px rgba(0,0,0,.3)}',
@@ -1333,9 +1337,11 @@
       return '<span class="'+cls+'" title="'+t+'">'+yy+'</span>';
     }
     function _yrDot(pillHtml, hasRep, bundled){
-      // 2026-08-21 (ósk Agnars „skip the icon under it"): engir skjala-örpunktar
-      // undir pillunum — liturinn einn ber stöðuna (grænt=skýrsla, blátt=saga …).
-      return '<span class="rf-dd">'+pillHtml+(bundled?bundleTag(true):'')+'</span>';
+      // 2026-08-21: EKKERT aukamerki í strimlinum — hvorki punktur né 🧾 — svo
+      // hver pilla sé nákvæmlega jafn-breið og árin standi í beinum lóðréttum
+      // súlum (ósk Agnars „straight line downward, not zic zac"). „Reikningur
+      // paraður" upplýsingin lifir áfram í titli/hover pillunnar.
+      return '<span class="rf-dd">'+pillHtml+'</span>';
     }
     // slökkvitæki ártölu-pilla fyrir eitt ár
     function yrMiniSl(y, done, rep, url, file, units, bundled, isCur, hasData, over, hasNext){
