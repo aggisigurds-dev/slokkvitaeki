@@ -530,6 +530,7 @@
             '<button id="_ups-sel-clear" type="button" title="Hætta við" style="background:#fff;border:1px solid #cbd5e1;color:#64748b;font-size:13px;width:26px;height:24px;border-radius:5px;cursor:pointer;line-height:1">✕</button>' +
           '</div>' +
         '</div>' +
+        '<input id="_ups-sel-simi" type="tel" inputmode="tel" autocomplete="off" placeholder="📞 Sími (valkvætt — fer á verkbeiðni og miða)" style="margin-top:7px;width:100%;padding:7px 10px;border:1px solid #cbd5e1;border-radius:6px;font:inherit;font-size:13px;box-sizing:border-box">' +
         '<div id="_ups-sel-disc" style="display:none;margin-top:5px;padding:3px 8px;background:#dbeafe;color:#1e3a8a;border:1px solid #bfdbfe;border-radius:5px;font-size:11px;font-weight:600"></div>' +
         '<div id="_ups-sel-pricing" style="display:none;margin-top:5px;padding:4px 8px;background:#f1f5f9;color:#334155;border:1px solid #e2e8f0;border-radius:5px;font-size:11px"></div>' +
         '<div id="_ups-sel-notes" style="display:none;margin-top:6px;padding:7px 10px;background:#fff;border:1px solid #e2e8f0;border-left:3px solid #64748b;border-radius:5px">' +
@@ -1003,11 +1004,31 @@
 
     // Meta line: phone + heimilisfang
     const metaParts = [];
-    if (m.simi) metaParts.push('📞 ' + m.simi);
+    // 2026-08-21: the primary sími now lives in the editable #_ups-sel-simi input
+    // below (Agnar needed a place to TYPE a phone at Sala). Keep farsími + address.
     if (m.farsimi && m.farsimi !== m.simi) metaParts.push('📱 ' + m.farsimi);
     const heim = m.heimilisfang || m.heimilisFang;
     if (heim) metaParts.push('📍 ' + heim);
     if (metaEl) metaEl.innerHTML = metaParts.map(p => esc(p)).join(' &nbsp;·&nbsp; ');
+
+    // 2026-08-21 (Agnar): editable phone at Sala for the selected customer / kt.
+    // Pre-fill from the record; mirror keystrokes into the bound #pos-simi input
+    // (pos.js → state.customer.simi) so it flows to vidskiptavinir.simi +
+    // verkbeidnir.phone + the label. solur has no phone column — nothing new stored.
+    const simiInp = document.getElementById('_ups-sel-simi');
+    if (simiInp) {
+      simiInp.value = m.simi || '';
+      simiInp.oninput = function () {
+        if (m) m.simi = simiInp.value;
+        // Set state.customer.simi DIRECTLY — the #pos-simi mirror alone is unreliable
+        // for a PICKED customer (that hidden input isn't always mounted, so pos.js:859
+        // never fires). Live test 2026-08-21 caught the phone not persisting this way;
+        // POS.getState() is the sure path. Mirror kept as belt-and-suspenders.
+        try { const st = window.POS && POS.getState && POS.getState(); if (st && st.customer) st.customer.simi = simiInp.value; } catch (_) {}
+        const ps = document.getElementById('pos-simi');
+        if (ps) { ps.value = simiInp.value; ps.dispatchEvent(new Event('input', { bubbles: true })); }
+      };
+    }
 
     // Discount badge
     if (discEl) {

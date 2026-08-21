@@ -6,7 +6,17 @@
    Thin wrapper: reuses the template/CSS/QR generation already in patch 08
    (window.QrLabelCustomer). One label per job.units entry, length picker
    defaults to 70mm (50/70/90/100mm choices). Does NOT touch the checkout
-   flow — only replaces the legacy Print.showJob. */
+   flow — only replaces the legacy Print.showJob.
+
+   2026-08-21 (Agnar #17): the length picker now also carries a ☎ Sími field,
+   pre-filled from job.phone / unit.phone. For a company tæki til hleðslu the
+   phone is usually blank (companies are keyed by kt, no phone on the verk), so
+   the label printed with an empty phone line and nobody could call when it was
+   ready. The field is the foolproof "place to put the number" at print time —
+   whatever is typed flows to QrLabelCustomer.buildPrintLabel({phone}) and prints
+   under the company name. (The ✏️ Breyta verki SÍMI box in patch 78 still
+   persists the number to verkbeidnir.phone; this just makes it unmissable and
+   editable at the moment of printing.) */
 (() => {
   if (typeof window === 'undefined' || typeof document === 'undefined') return;
   if (!window.Print) return;
@@ -17,7 +27,7 @@
     }[c]));
   }
 
-  function pickLength() {
+  function pickLength(defaultPhone) {
     return new Promise(resolve => {
       document.getElementById('_pbl-picker')?.remove();
       const m = document.createElement('div');
@@ -34,12 +44,18 @@
             <option value="90">90 mm</option>
             <option value="100">100 mm — löng</option>
           </select>
+          <label style="display:block;font-size:12px;font-weight:600;color:#475569;margin:14px 0 4px;text-transform:uppercase;letter-spacing:.04em;">☎ Sími á miða</label>
+          <input id="_pbl-phone" type="tel" inputmode="tel" autocomplete="off" placeholder="Símanúmer — prentast á miðann" value="${esc(defaultPhone || '')}" style="width:100%;padding:9px 11px;border:1px solid #e2e8f0;border-radius:8px;font:inherit;font-size:14px;color:#0f172a;background:#fff;outline:none;box-sizing:border-box;">
           <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
             <button id="_pbl-cancel" style="padding:9px 16px;border-radius:8px;font-size:14px;cursor:pointer;border:1px solid #e2e8f0;background:#fff;color:#334155;font-weight:500;">Hætta við</button>
             <button id="_pbl-ok" style="padding:9px 16px;border-radius:8px;font-size:14px;cursor:pointer;border:1px solid #2563eb;background:#2563eb;color:#fff;font-weight:600;">🖨 Prenta</button>
           </div>
         </div>`;
       document.body.appendChild(m);
+      function result() {
+        return { length: +document.getElementById('_pbl-len').value,
+                 phone: String((document.getElementById('_pbl-phone') || {}).value || '').trim() };
+      }
       function done(val) {
         document.removeEventListener('keydown', onKey);
         m.remove();
@@ -47,11 +63,11 @@
       }
       function onKey(e) {
         if (e.key === 'Escape') { e.preventDefault(); done(null); }
-        else if (e.key === 'Enter') { e.preventDefault(); done(+document.getElementById('_pbl-len').value); }
+        else if (e.key === 'Enter') { e.preventDefault(); done(result()); }
       }
       document.addEventListener('keydown', onKey);
       m.querySelector('#_pbl-cancel').addEventListener('click', () => done(null));
-      m.querySelector('#_pbl-ok').addEventListener('click', () => done(+document.getElementById('_pbl-len').value));
+      m.querySelector('#_pbl-ok').addEventListener('click', () => done(result()));
       m.addEventListener('click', e => { if (e.target === m) done(null); });
       setTimeout(() => document.getElementById('_pbl-len')?.focus(), 30);
     });
@@ -68,8 +84,10 @@
       return;
     }
 
-    const lengthMm = await pickLength();
-    if (lengthMm == null) return;
+    const res = await pickLength(job.phone || '');
+    if (res == null) return;
+    const lengthMm = res.length;
+    const phone = res.phone;
 
     try { await QLC.ensureQRLib(); } catch (e) {
       alert('Gat ekki hlaðið QR safn.');
@@ -83,7 +101,7 @@
       return QLC.buildPrintLabel({
         qrDataUrl,
         name: job.customer || '—',
-        phone: job.phone || '',
+        phone: phone || '',
         serial: u.serial || '',
         extra: [u.type, u.size].filter(Boolean).join(' ') || u.service || ''
       });
@@ -115,8 +133,10 @@
       alert('QR-miðakerfið er ekki hlaðið — get ekki prentað.');
       return;
     }
-    const lengthMm = await pickLength();
-    if (lengthMm == null) return;
+    const res = await pickLength(unit.phone || '');
+    if (res == null) return;
+    const lengthMm = res.length;
+    const phone = res.phone;
     try { await QLC.ensureQRLib(); } catch (e) {
       alert('Gat ekki hlaðið QR safn.');
       return;
@@ -126,7 +146,7 @@
     const labelHTML = QLC.buildPrintLabel({
       qrDataUrl,
       name: unit.client || unit.customer || '—',
-      phone: unit.phone || '',
+      phone: phone || '',
       serial: unit.serial || '',
       extra: [unit.type, unit.size].filter(Boolean).join(' ') || unit.location || ''
     });

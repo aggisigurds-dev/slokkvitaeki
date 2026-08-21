@@ -81,6 +81,28 @@
   function openWith(sale) {
     _sale = JSON.parse(JSON.stringify(sale)); // deep clone
     _sale.linur = Array.isArray(_sale.linur) ? _sale.linur : [];
+    // 2026-08-21: POS bakes per-line discounts into the net unit price + a
+    // " · −N% afsl." desc suffix and drops discount_pct (pos.js bakedLines:171-177).
+    // The editor reads discount_pct, so a reopened draft/edit showed Afsl.% = 0 with
+    // the net price as if it were full → the discount was invisible AND re-entering
+    // it double-applied. Un-bake on load: lift the % back into discount_pct and
+    // reconstruct the full unit price. Lines with no suffix (or already carrying a
+    // discount_pct) are left untouched.
+    _sale.linur = _sale.linur.map(function (l) {
+      var mm = /\s*·\s*[−-]\s*([\d.,]+)\s*%\s*afsl\.?\s*$/i.exec(String(l.desc || ''));
+      if (mm && !(+l.discount_pct)) {
+        var d = parseFloat(mm[1].replace(',', '.')) || 0;
+        if (d > 0 && d < 100) {
+          var net = +l.unit_price_ex_vat || 0;
+          return Object.assign({}, l, {
+            desc: String(l.desc).slice(0, mm.index),
+            discount_pct: d,
+            unit_price_ex_vat: Math.round(net / (1 - d / 100) * 100) / 100  // 2 aukastafir → recompute lendir aftur á sömu (nettó) samtölu; heiltölu-námundun drfeatði ~1-2 kr (live-test 2026-08-21)
+          });
+        }
+      }
+      return l;
+    });
     // 2026-07-08 (afsláttar-úttekt): carry the sale-level kr discount into the
     // editor. Before, recomputeTotals ignored `afslattur` and the save omitted
     // it — opening a discounted sale and pressing Vista rewrote samtals at

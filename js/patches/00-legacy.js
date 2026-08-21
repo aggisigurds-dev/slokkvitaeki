@@ -760,6 +760,10 @@ function hookGreida(){
             // when we have a real name to add or no record exists.
             var custKt = (snap.customer.kennitala||'').trim();
             var custNafn = (sale.customer_nafn || snap.customer.nafn || '').trim();
+            // 2026-08-21: never mirror a "kt: <kt>" / bare-kt placeholder as a real
+            // name (old rows + the pos.js:1120 bug produced these). Blank it so the
+            // upsert below keeps the existing real name instead of clobbering it.
+            if(/^kt:\s*\d{6}[- ]?\d{4}$/i.test(custNafn) || /^\d{6}[- ]?\d{4}$/.test(custNafn)) custNafn='';
             if(custKt || custNafn){
               if(custKt){
                 // Check if customer already exists with a name

@@ -1117,7 +1117,11 @@
     if(!cust&&state.customer.mode==='kt'&&state.customer.kt){
       var ktClean=state.customer.kt.replace(/[^0-9]/g,'');
       if(ktClean==='9999999999') cust='Staðgreitt';
-      else cust='kt: '+state.customer.kt;
+      // 2026-08-21: real kt + empty name → "Viðskiptavinur" (NOT "kt: <kt>" as the
+      // customer NAME — that junk string propagated into vidskiptavinir.nafn,
+      // verkbeidnir.customer and the Brother label). The kt is already saved in
+      // customer_kt (line ~1214); same fallback convention as lines ~1196 and ~1259.
+      else cust='Viðskiptavinur';
     }
     // 2026-05-10 (B5+): replaced native await Confirm.show() with Confirm.show — native
     // confirm freezes browser, esp. blocking automation/MCP tools. Async-safe

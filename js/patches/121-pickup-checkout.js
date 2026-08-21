@@ -153,11 +153,19 @@
     // modal must NOT show payment options — that's confusing. Show a
     // big GREEN "GREITT" banner instead so the operator can see at a
     // glance that no payment is needed.
-    // 2026-08-20: paid_at er stimplað AÐEINS við raun-greiðslu (kort/reiðufé/pening/
-    // posi/millifærsla — sjá modal.js:71); reikningur/greitt_sidar hafa það null. Svo
-    // paid_at sett ⟺ ÞEGAR GREITT. Gamla regexið sá ekki „Reiðufé"/„peningur"/„posi"
-    // (broddstafir/afbrigði) og faldi GREITT-borðann → hætta á tvírukkun. Treystum paid_at.
-    const isAlreadyPaid = !!(sale && sale.paid_at);
+    // 2026-08-20: paid_at er stimplað við raun-greiðslu (kort/reiðufé/pening/posi/
+    // millifærsla — sjá modal.js:71) EN líka SÍÐAR þegar bankagreiðsla reiknings
+    // syncast inn. 2026-08-21: að treysta !!paid_at eitt (breytingin í gær) flaggaði
+    // 187 reikningssölur ranglega sem „greitt fyrirfram" → Sótt sýndi GREITT-borðann
+    // og tæki fóru út óuppgerð. RÉTT: GREITT AÐEINS fyrir raun-fyrirframgreiðslu —
+    // undanskilja reikning + „greitt síðar". Denylist (ekki allowlist) svo ÖLL afbrigði
+    // kort/reiðufé/pening/posi/millifærslu haldi borðanum — það lagar líka gamla
+    // allowlist-regexið sem faldi „Reiðufé"/„posi" (raun-tvírukkunar-vörnin). Aðeins
+    // BIRTING — uppgjörsrökin (prepaid, lína ~820) eru ÓBREYTT svo engin greidd sala
+    // raskast (netvordur SAFE 2026-08-21).
+    const _gm = String((sale && sale.greitt_med) || '').trim().toLowerCase();
+    const _settledUpfront = _gm !== '' && _gm !== 'reikningur' && !/^greitt[_\s]?s[ií][dð]ar$/.test(_gm);
+    const isAlreadyPaid = !!(sale && sale.paid_at && _settledUpfront);
     const paidMethodLabel = (sale && sale.greitt_med) === 'kort'    ? '💳 Kort' :
                             (sale && sale.greitt_med) === 'reidufe' ? '💵 Reiðufé' :
                             (sale && sale.greitt_med) ? esc(sale.greitt_med) : '';

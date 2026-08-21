@@ -154,6 +154,21 @@ baseline rows and lowering the constant is how the net tightens over time.
   Part of the cross‑app "fix‑it‑once" sweep (26 files, both apps → the one live proxy).
   netvordur SAFE (measured 1231==1231 rows keep a link, 0 lost); audit‑all 3/3. Pure
   open‑URL change — no readiness/OUT/kt/save touched.
+- **2026-08-21** — Sala/Sótt fix cluster (netvordur SAFE, audit-all 3/3):
+  **Sótt prepaid banner** (`121`, 8d2ba49): the GREITT "greitt fyrirfram" gate had been
+  flipped to `!!paid_at` (08-20), lighting green on 187 reikningur sales (bank-sync
+  stamps paid_at) so tæki went out óuppgerð; display gate reverted to a denylist
+  (paid_at AND greitt_med ∉ {reikningur, greitt síðar}), settlement `prepaid=!!paid_at`
+  left intact so no paid sale is disturbed. **POS name corruption**
+  (`pos.js`/`00-legacy`, 422449f): real kt + empty name saved "kt: <kt>" as the NAME →
+  only the kt reached label/Verkstæði/Afgreiðsla, then it dropped; now falls back to
+  'Viðskiptavinur' (kt stays in customer_kt) + 00-legacy blanks a kt-placeholder before
+  the vidskiptavinir upsert so it can't clobber a real name; kt-trap invariant unchanged.
+  **Editor discount un-bake** (`142`, f56ce35): un-bakes POS "· −N% afsl." lines on load
+  so the per-line % shows in drafts/edits and re-entry can't double-apply; print==booking
+  verified, bounded ≤~1 kr re-save drift on drafts. **Phone at Sala** (`114`, 5cd173a):
+  editable Sími box on the selected-customer card → state.customer.simi. Non-guarded same
+  day: label-print phone field (`139`, #17) + rekstrarfélög upload-key sanitise (`111`, #18).
 - *Add a line here every time you make something bulletproof.*
 
 ---
