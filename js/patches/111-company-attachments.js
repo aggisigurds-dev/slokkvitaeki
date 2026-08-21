@@ -250,7 +250,14 @@
     }
     const ts = Date.now();
     const safeName = file.name.replace(/[^\w.\-]+/g, '_');
-    const path = FOLDER_PREFIX + '/' + coId + '/' + ts + '_' + safeName;
+    // 2026-08-21: Supabase Storage keys reject ':', spaces and non-ASCII. coId is
+    // usually a numeric fyrirtæki.id (safe) but rekstrarfélög pass a synthetic
+    // 'rf:<name>' (patch 175 firmAttachId) — e.g. 'rf:Center Hótel' → "Invalid
+    // key". Sanitise the PATH segment only; the logical coId (AppSettings key,
+    // line ~139) stays untouched so lookups still resolve, and numeric ids are
+    // unchanged by this (no regression for existing company files).
+    const safeCoId = String(coId).replace(/[^\w.\-]+/g, '_');
+    const path = FOLDER_PREFIX + '/' + safeCoId + '/' + ts + '_' + safeName;
     try {
       const r = await SB.storage.from(BUCKET).upload(path, file, {
         cacheControl: '3600',
