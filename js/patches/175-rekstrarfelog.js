@@ -230,11 +230,16 @@
       // punktar — hvorki LED innan í né skjala-punktur undir; liturinn einn ber
       // stöðuna: grænt=skýrsla á skrá · blátt=aðeins búnaðarsaga · gull=þetta ár á
       // áætlun (ókomið) · rautt=liðið án skýrslu · grátt=ekkert.
-      P+'.rf-yrs{display:flex;gap:6px;justify-content:center;align-items:flex-start;flex-wrap:nowrap}',
+      // FÖST súlu-jöfnun (ósk Agnars „straight line downward, not zic zac"): hver
+      // pilla situr í jafn-breiðri (38px) frumu og 🧯/🚨-táknið í fastri 15px súlu
+      // á HVERRI röð, svo árin 23/24/25/26 mynda beinar lóðréttar línur niður alla
+      // töfluna. 🧾-merkið er absolute í horninu svo það ýti EKKI pillunum til.
+      P+'.rf-yrs{display:flex;gap:4px;justify-content:center;align-items:center;flex-wrap:nowrap;white-space:nowrap}',
       P+'.rf-yrs+.rf-yrs{margin-top:5px}',
-      P+'.rf-yrs__ic{font-size:11px;line-height:20px;flex:none;margin-right:1px}',
-      P+'.rf-dd{display:inline-flex;align-items:center;gap:1px}',
-      P+'.rf-yr{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:20px;padding:0 7px;border-radius:6px;font-family:"Space Mono",monospace;font-size:11px;font-weight:700;color:#aab3c0;background:#f4f6f9;border:1px solid #e7eaf0;text-decoration:none;cursor:default;box-sizing:border-box}',
+      P+'.rf-yrs__ic{width:15px;flex:none;text-align:center;font-size:11px;line-height:20px}',
+      P+'.rf-dd{position:relative;width:38px;flex:none;display:flex;align-items:center;justify-content:center}',
+      P+'.rf-dd .rf-bundle-tag{position:absolute;top:-5px;right:-1px;margin:0;font-size:8px;line-height:1;pointer-events:none}',
+      P+'.rf-yr{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:20px;padding:0 6px;border-radius:6px;font-family:"Space Mono",monospace;font-size:11px;font-weight:700;color:#aab3c0;background:#f4f6f9;border:1px solid #e7eaf0;text-decoration:none;cursor:default;box-sizing:border-box}',
       P+'a.rf-yr{cursor:pointer}',
       P+'.rf-yr--none{color:#c3c9d3!important;background:#f7f8fa!important;border-color:#eef0f4!important}',
       P+'.rf-yr--hist{color:#fff!important;background:linear-gradient(145deg,#5a86e0,#2f5fe0 42%,#1a3a8c 72%,#2d55c4)!important;border-color:#12296b!important;text-shadow:0 1px 1px rgba(0,0,0,.3)}',
@@ -1535,10 +1540,11 @@
       // EINN „Skoðanir · Skjöl" dálkur með láréttum ártölu-strimli — eins og
       // „Fyrirtæki í þjónustu". Í „Bæði"-sýn: efri strimill = 🧯 slökkvitæki,
       // neðri = 🚨 brunakerfi (aðeins fyrir byggingar í brunakerfisþjónustu).
-      var _bothStrips = showSl && showBr && bruInSvc;
+      // 🧯/🚨-táknið er ALLTAF með (líka á byggingum með aðeins eina þjónustu) svo
+      // 15px táknsúlan sé frátekin á hverri röð → pillurnar standa í beinum súlum.
       var _yStrips='';
-      if(showSl) _yStrips += '<div class="rf-yrs"'+(_bothStrips?' title="🧯 Slökkvitæki"':'')+'>'+(_bothStrips?'<b class="rf-yrs__ic">🧯</b>':'')+slPills+'</div>';
-      if(showBr && bruInSvc) _yStrips += '<div class="rf-yrs"'+(_bothStrips?' title="🚨 Brunakerfi"':'')+'>'+(_bothStrips?'<b class="rf-yrs__ic">🚨</b>':'')+brPills+'</div>';
+      if(showSl) _yStrips += '<div class="rf-yrs" title="🧯 Slökkvitæki"><b class="rf-yrs__ic">🧯</b>'+slPills+'</div>';
+      if(showBr && bruInSvc) _yStrips += '<div class="rf-yrs" title="🚨 Brunakerfi"><b class="rf-yrs__ic">🚨</b>'+brPills+'</div>';
       var yTds = '<td class="c rf-yh-cell rf-yrs-cell">'+_yStrips+'</td>';
       if((showSl&&isOver&&slHasData)||(showBr&&bOver)) nOverdue++;
       var nextCell = stackTd(
