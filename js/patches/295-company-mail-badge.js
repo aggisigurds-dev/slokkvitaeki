@@ -170,6 +170,19 @@
     document.querySelectorAll('._ars-card[data-co-id]').forEach(card => {
       stampInto(card.querySelector('._ars-cn'), +card.dataset.coId);
     });
+    // Hópaða/grunsemda-listinn (patch 153, ~l.2170): nafnið er BER `._ars-open`
+    // hlekkur í flex-div — hvorki tr._ars-row né ._ars-card — svo hann fékk aldrei
+    // merki. Stimpla depilinn sem systkini FRAMAN við hlekkinn.
+    document.querySelectorAll('._ars-open[data-co-id]').forEach(a => {
+      if (a.closest('tr._ars-row') || a.closest('._ars-card')) return; // þegar meðhöndlað að ofan
+      const coId = +a.dataset.coId, st = status(coId);
+      const prev = a.previousElementSibling;
+      const has = prev && prev.classList && prev.classList.contains('_mail-badge');
+      if (st) {
+        if (!has) a.parentNode.insertBefore(badgeEl(coId), a);
+        else if (prev.dataset.mailSt !== st) prev.replaceWith(badgeEl(coId));
+      } else if (has) prev.remove();
+    });
   }
 
   // ── smá-spjald þegar smellt er á merkið ──────────────────────────────────
@@ -437,6 +450,6 @@
   // are re-stamped deterministically after every filter/month/sort re-render
   // (the MutationObserver alone raced the re-render and the dots vanished).
   window.CompanyMail = { show, status, data, hasHistory, setMuted, setImportant, refresh, onListRender: () => { try { stampAll(); } catch (_) {} } };
-  console.log('[company-mail-badge] v3 installed (prófíl-box + umferðarljós)');
+  console.log('[company-mail-badge] v4 installed (prófíl-box + umferðarljós + hópalisti)');
 })();
 /* === END PÓST-STÖÐUMERKI Á FYRIRTÆKI Í ÞJÓNUSTU === */
