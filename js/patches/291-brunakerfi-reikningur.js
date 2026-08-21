@@ -186,6 +186,33 @@
     } catch (e) { console.warn('[bkr] openSale', e); }
   }
 
+  // ── handtengja NÚVERANDI reikning við brunakerfi-stöðulínu (ósk Agnars
+  //    2026-08-21) — fyrir fyrirtæki með aðeins gamlar (Drive) skýrslur og enga
+  //    app-skýrslu LOKIÐ. Geymt sem BENDILL í AppSettings.bk_inv_links[coId_ár].
+  //    Ekkert nýtt reikningsdrag stofnað og ENGUM reikningi breytt — aðeins
+  //    fletta upp og geyma id/num svo stöðulínan sýni hann (findInvoice tekur
+  //    saleId beint). Aftengja setur null. ──────────────────────────────────────
+  function getInvLink(coId, year) {
+    try { const m = (window.AppSettings && AppSettings.path && AppSettings.path('bk_inv_links')) || {}; return m[coId + '_' + year] || null; }
+    catch (_) { return null; }
+  }
+  async function setInvLink(coId, year, val) {
+    try { if (window.AppSettings && AppSettings.save) await AppSettings.save({ bk_inv_links: { [coId + '_' + year]: val } }); } catch (_) {}
+  }
+  // Fletta upp sölu eftir reikningsnúmeri — tekur „R-000651", „000651" eða „651".
+  async function findSaleByNum(raw) {
+    const sb = SB(); if (!sb) return null;
+    const n = String(raw == null ? '' : raw).trim().toUpperCase().replace(/\s+/g, '');
+    if (!n) return null;
+    const tries = [n];
+    const digits = n.replace(/[^0-9]/g, '');
+    if (digits) { tries.push('R-' + digits.padStart(6, '0')); if ('R-' + digits !== 'R-' + digits.padStart(6, '0')) tries.push('R-' + digits); }
+    for (const t of tries) {
+      try { const r = await sb.from('solur').select('id,num,status,samtals').eq('num', t).neq('status', 'void').maybeSingle(); if (r && r.data) return r.data; } catch (_) {}
+    }
+    return null;
+  }
+
   // ── stöðulínan á brunakerfis-prófílnum (kallað úr 274 render) ──────────────
   async function decorateProfile(C, w) {
     try {
@@ -213,8 +240,22 @@
 
       // reikningsstaðan — sale_id sem einhver skýrsla ársins geymir er sterkasta sönnunin
       const linkedId = yrReps.map(r => r.data && r.data.verd && r.data.verd.sale_id).find(Boolean) || null;
-      const inv = await findInvoice(C.co.id, yr, linkedId);
+      const manual = getInvLink(C.co.id, yr);
+      const inv = await findInvoice(C.co.id, yr, (manual && manual.id) || linkedId);
       const span = el.querySelector('#_bkr-inv'); if (!span || !span.isConnected) return;
+
+      // 🔗 Tengja NÚVERANDI reikning — birt þegar enginn reikningur er sjálf-fundinn
+      // (t.d. fyrirtæki með aðeins gamlar Drive-skýrslur). Stofnar EKKERT, tengir bara.
+      const LINKBTN = '<button type="button" id="_bkr-link" style="padding:5px 12px;border-radius:8px;border:1px solid #c6d4e8;background:#eef4ff;color:#1f63b8;font:inherit;font-size:12px;font-weight:700;cursor:pointer">🔗 Tengja reikning</button>';
+      async function doLink() {
+        const raw = prompt('Reikningsnúmer til að tengja við brunakerfi ' + yr + ' (t.d. R-000651):', '');
+        if (raw == null || !String(raw).trim()) return;
+        const sale = await findSaleByNum(raw);
+        if (!sale) { toast('Reikningur „' + String(raw).trim() + '" fannst ekki.', true); return; }
+        await setInvLink(C.co.id, yr, { id: sale.id, num: sale.num });
+        toast('🔗 Reikningur ' + (sale.num || '') + ' tengdur við brunakerfi ' + yr);
+        decorateProfile(C, w);
+      }
 
       if (inv) {
         const stTxt = inv.status === 'draft' ? 'drög' : inv.status === 'final' ? 'stofnaður' : (inv.status || '');
@@ -222,12 +263,14 @@
           ' <span style="padding:2px 8px;border-radius:99px;font-size:10.5px;font-weight:800;background:' +
           (inv.status === 'final' ? '#dcf1e4;color:#166b3a' : '#fdf3d7;color:#8a6100') + '">' + esc(stTxt) + '</span>' +
           ' ' + fmtKr(+inv.samtals || 0) +
-          ' <button type="button" id="_bkr-open" style="padding:5px 12px;border-radius:8px;border:1px solid #c6d4e8;background:#eaf1fe;color:#1f63b8;font:inherit;font-size:12px;font-weight:700;cursor:pointer">Opna</button>';
-        const b = span.querySelector('#_bkr-open');
-        if (b) b.addEventListener('click', () => openSale(inv));
+          ' <button type="button" id="_bkr-open" style="padding:5px 12px;border-radius:8px;border:1px solid #c6d4e8;background:#eaf1fe;color:#1f63b8;font:inherit;font-size:12px;font-weight:700;cursor:pointer">Opna</button>' +
+          (manual ? ' <button type="button" id="_bkr-unlink" title="Aftengja handtengdan reikning" style="padding:5px 10px;border-radius:8px;border:1px solid #e6c6c6;background:#fdeeee;color:#b23b3b;font:inherit;font-size:12px;font-weight:700;cursor:pointer">Aftengja</button>' : '');
+        const b = span.querySelector('#_bkr-open'); if (b) b.addEventListener('click', () => openSale(inv));
+        const u = span.querySelector('#_bkr-unlink');
+        if (u) u.addEventListener('click', async () => { await setInvLink(C.co.id, yr, null); toast('Reikningur aftengdur.'); decorateProfile(C, w); });
       } else if (finalRep) {
         span.innerHTML = '· Reikningur: <b style="color:#c93c1d">enginn</b> ' +
-          '<button type="button" id="_bkr-make" style="padding:5px 12px;border-radius:8px;border:0;background:#1f8a4c;color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer">＋ Stofna drög</button>';
+          '<button type="button" id="_bkr-make" style="padding:5px 12px;border-radius:8px;border:0;background:#1f8a4c;color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer">＋ Stofna drög</button> ' + LINKBTN;
         const b = span.querySelector('#_bkr-make');
         if (b) b.addEventListener('click', async () => {
           b.disabled = true; b.textContent = '⏳ Stofna…';
@@ -237,8 +280,11 @@
           if (row) decorateProfile(C, w);
           else { b.disabled = false; b.textContent = '＋ Stofna drög'; }
         });
+        const lk = span.querySelector('#_bkr-link'); if (lk) lk.addEventListener('click', doLink);
       } else {
-        span.innerHTML = '· Reikningur: — <span style="color:#8b93a1">(stofnast sjálfkrafa þegar skýrslu er LOKIÐ)</span>';
+        span.innerHTML = '· Reikningur: — ' + LINKBTN +
+          ' <span style="color:#8b93a1">eða stofnast sjálfkrafa þegar skýrslu er LOKIÐ</span>';
+        const lk = span.querySelector('#_bkr-link'); if (lk) lk.addEventListener('click', doLink);
       }
     } catch (e) { console.warn('[bkr] decorateProfile', e); }
   }
