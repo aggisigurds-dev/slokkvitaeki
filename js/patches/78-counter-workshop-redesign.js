@@ -1522,7 +1522,7 @@
         if (Workshop._unitCtx) Workshop._renderUnitModal();
         Workshop.render();
         if (window.Toast && Toast.show) Toast.show('🔧 ' + p.nafn + ' bætt við');
-      });
+      }, { favorites: true });   // Verkstæði: sýna „⭐ Uppáhald" efst + stjörnu-val (patch 117)
     };
     Workshop.removePartFromUnit = async function(jobId, unitId, idx) {
       const job = DB.getJob(jobId);

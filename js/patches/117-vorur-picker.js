@@ -89,6 +89,25 @@
     } catch (_) {}
   }
 
+  // „Uppáhald" — handvalið af notanda (ekki sjálfvirkt eins og „Mest notað").
+  // Geymt sem listi af vöru-ID (strengir). Sýnt EINGÖNGU þegar tíninn er opnaður
+  // með { favorites:true } — í dag aðeins úr Verkstæði (78 → „Laga/varahlutur").
+  // Geymt í localStorage (per-tæki). Ósk Agnars 2026-08-21.
+  const FAV_KEY = 'vp_fav_v1';
+  function getFavs() {
+    try { const a = JSON.parse(localStorage.getItem(FAV_KEY)); return Array.isArray(a) ? a.map(String) : []; }
+    catch (_) { return []; }
+  }
+  function isFav(id) { return getFavs().indexOf(String(id)) >= 0; }
+  function toggleFav(id) {
+    const sid = String(id);
+    try {
+      let a = getFavs();
+      if (a.indexOf(sid) >= 0) a = a.filter(x => x !== sid); else a.push(sid);
+      localStorage.setItem(FAV_KEY, JSON.stringify(a));
+    } catch (_) {}
+  }
+
   let _cache = null;
   let _loadingPromise = null;
 
@@ -128,7 +147,8 @@
     return out;
   }
 
-  function open(onPick) {
+  function open(onPick, opts) {
+    const wantFav = !!(opts && opts.favorites);
     let dlg = document.getElementById('_vp-dialog');
     if (dlg) dlg.remove();
 
@@ -160,6 +180,11 @@
             '<div id="_vp-clear" title="Hreinsa leit" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);width:24px;height:24px;border-radius:99px;background:rgba(0,0,0,.08);color:rgba(0,0,0,.55);font-size:13px;line-height:24px;text-align:center;cursor:pointer">✕</div>' +
           '</div>' +
         '</div>' +
+        // ── Uppáhald (handvalið — aðeins þegar wantFav) ──
+        '<div id="_vp-fav-wrap" style="padding:10px 16px 4px;display:none;flex:none">' +
+          '<div style="font-size:10px;font-weight:800;color:#b45309;text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px">' + (window.UIIcons ? UIIcons.svg('star', { size: 12 }) : '★') + 'Uppáhald</div>' +
+          '<div id="_vp-fav" style="display:flex;flex-wrap:wrap;gap:6px"></div>' +
+        '</div>' +
         // ── Mest notað ──
         '<div id="_vp-recent-wrap" style="padding:10px 16px 4px;display:none;flex:none">' +
           '<div style="font-size:10px;font-weight:800;color:rgba(0,0,0,.4);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;display:flex;align-items:center;gap:5px">' + (window.UIIcons ? UIIcons.svg('star', { size: 12 }) : '') + 'Mest notað í þínum skýrslum</div>' +
@@ -179,6 +204,8 @@
 
     const search    = dlg.querySelector('#_vp-search');
     const clearBtn  = dlg.querySelector('#_vp-clear');
+    const favWrap   = dlg.querySelector('#_vp-fav-wrap');
+    const favEl     = dlg.querySelector('#_vp-fav');
     const recentWrap= dlg.querySelector('#_vp-recent-wrap');
     const recentEl  = dlg.querySelector('#_vp-recent');
     const listEl    = dlg.querySelector('#_vp-list');
@@ -220,8 +247,30 @@
       return ordered;
     }
 
+    // Uppáhald efst (aðeins wantFav) — handvalið, kemur í stað „Mest notað" þar.
+    function renderFav() {
+      if (!wantFav || state.query) { favWrap.style.display = 'none'; return; }
+      favWrap.style.display = '';
+      const byId = {};
+      products.forEach(p => { byId[String(p.id)] = p; });
+      const items = getFavs().map(id => byId[id]).filter(Boolean);
+      if (!items.length) {
+        favEl.innerHTML = '<div style="font-size:11.5px;color:rgba(0,0,0,.45);font-weight:600">Engin uppáhald enn — ýttu á ☆ við vöru að neðan til að festa hana hér.</div>';
+        return;
+      }
+      favEl.innerHTML = items.map(p => {
+        const priceInc = (+p.verd_an_vsk || 0) * (1 + (+p.vsk_prosenta || 24) / 100);
+        const nm = p.nafn || '—';
+        const label = nm.length > 30 ? nm.slice(0, 29) + '…' : nm;
+        return '<div class="_vp-fav-chip" data-id="' + esc(p.id) + '" style="font-size:12px;font-weight:700;background:rgba(180,83,9,.08);border:1px solid rgba(180,83,9,.3);color:#92400e;padding:8px 8px 8px 12px;border-radius:99px;cursor:pointer;display:inline-flex;align-items:center;gap:8px">' +
+            '<span>' + esc(label) + ' · <b>' + fmtNum(priceInc) + ' kr</b></span>' +
+            '<span class="_vp-fav-x" data-id="' + esc(p.id) + '" title="Taka úr uppáhaldi" style="opacity:.55;font-size:13px;line-height:1;padding:0 2px">✕</span>' +
+          '</div>';
+      }).join('');
+    }
+
     function renderRecent() {
-      if (state.query) { recentWrap.style.display = 'none'; return; }
+      if (wantFav || state.query) { recentWrap.style.display = 'none'; return; }
       const byName = {};
       products.forEach(p => { if (!(p.nafn in byName)) byName[p.nafn] = p; });
       const names = [];
@@ -270,6 +319,7 @@
             '<div style="font-size:14px;font-weight:800;color:#1a1a1a;font-variant-numeric:tabular-nums">' + fmtNum(priceInc) + ' kr</div>' +
             '<div style="font-size:10.5px;color:rgba(0,0,0,.45);font-variant-numeric:tabular-nums">' + fmtNum(priceEx) + ' kr án vsk · ' + vsk + '%</div>' +
           '</div>' +
+          (wantFav ? '<div class="_vp-star" data-id="' + esc(p.id) + '" title="Setja í / úr uppáhaldi" style="flex:none;font-size:19px;line-height:1;cursor:pointer;padding:2px 2px 2px 6px;color:' + (isFav(p.id) ? '#f59e0b' : 'rgba(0,0,0,.22)') + '">' + (isFav(p.id) ? '★' : '☆') + '</div>' : '') +
         '</div>';
     }
 
@@ -297,7 +347,7 @@
       listEl.innerHTML = html || '<div style="padding:40px;text-align:center;font-size:13px;color:rgba(0,0,0,.45)">Engin vara fannst — prófaðu annað leitarorð</div>';
     }
 
-    function render() { renderRecent(); renderList(); }
+    function render() { renderFav(); renderRecent(); renderList(); }
 
     // ── Atburðir (delegation) ──
     recentEl.addEventListener('click', e => {
@@ -305,7 +355,17 @@
       const p = products.find(x => x.nafn === t.getAttribute('data-name'));
       if (p) doPick(p);
     });
+    favEl.addEventListener('click', e => {
+      const x = e.target.closest('._vp-fav-x');
+      if (x) { e.stopPropagation(); toggleFav(x.getAttribute('data-id')); render(); return; }
+      const chip = e.target.closest('._vp-fav-chip'); if (!chip) return;
+      const p = products.find(y => String(y.id) === String(chip.getAttribute('data-id')));
+      if (p) doPick(p);
+    });
     listEl.addEventListener('click', e => {
+      // stjörnu-smellur festir/losar úr uppáhaldi — velur EKKI vöruna.
+      const star = e.target.closest('._vp-star');
+      if (star) { e.stopPropagation(); toggleFav(star.getAttribute('data-id')); render(); return; }
       const row = e.target.closest('._vp-row');
       if (row) { const p = products.find(x => String(x.id) === String(row.getAttribute('data-id'))); if (p) doPick(p); return; }
       const hdr = e.target.closest('._vp-cat-header');
