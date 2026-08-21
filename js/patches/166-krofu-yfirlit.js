@@ -206,6 +206,11 @@
   const VM_ID = '_ky-vm-toggle';
   const VM_MODES = ['mobile', 'table', 'desktop'];
   function getViewMode() {
+    // Í uppsettu öpp-i (app-mode) er appið SJÁLFT síminn — nota alltaf hreina
+    // síma-útlitið (renderCompanyMobile), óháð vistuðu Sími/Tafla/Skjár vali.
+    // (Ósk Agnars 2026-08-20: „create it for the app format in Öpp".) Vafra-/hub-
+    // sýnin heldur áfram að hlýða rofanum að neðan.
+    try { if (document.body && document.body.classList.contains('appmode')) return 'mobile'; } catch (_) {}
     const m = document.documentElement.dataset.viewmode;
     return VM_MODES.indexOf(m) >= 0 ? m : 'desktop';
   }
