@@ -1759,6 +1759,20 @@
       }
       saveState(); render();
     }));
+    // 🚦 Póst-staða röðun beint úr Fyrirtæki-hausnum (merkin birtast í þeim dálki).
+    // Smellur hringar: ósvarað→saga→engin (poststada) → póstsaga til fyrst (postavail)
+    // → til baka í stafrófsröð. stopPropagation svo nafn-röðun th-sins fari ekki í gang.
+    main.querySelectorAll('._ars-mailsort').forEach(el => el.addEventListener('click', e => {
+      e.stopPropagation();
+      if (state.sortCol === 'poststada') {
+        state.sortCol = 'postavail'; state.sortDir = 'asc'; state.sort = 'postavail';
+      } else if (state.sortCol === 'postavail') {
+        state.sortCol = 'name'; state.sortDir = 'asc'; state.sort = 'alpha';
+      } else {
+        state.sortCol = 'poststada'; state.sortDir = 'asc'; state.sort = 'poststada';
+      }
+      saveState(); render();
+    }));
     let _searchTimer = null;
     main.querySelector('#_ars-search')?.addEventListener('input', e => {
       clearTimeout(_searchTimer);
@@ -2581,7 +2595,7 @@
                 const dir = state.sortDir;
                 const arrow = (col) => '<span class="sort-ar">' + (cur === col ? (dir === 'asc' ? '▲' : '▼') : '⇅') + '</span>';
                 return `
-                  <th data-sort="name" class="_ars-sort">Fyrirtæki${arrow('name')}</th>
+                  <th data-sort="name" class="_ars-sort">Fyrirtæki${arrow('name')}<span class="_ars-mailsort" title="Raða eftir póst-stöðu (merkin í þessum dálki). 1× smellur: ósvarað → saga → engin · 2×: póstsaga til fyrst · 3×: til baka í stafrófsröð" style="margin-left:7px;cursor:pointer;font-size:10px;font-weight:800;padding:1px 5px;border-radius:6px;vertical-align:middle;white-space:nowrap;${(cur==='poststada'||cur==='postavail')?'background:rgba(59,130,246,.22);outline:1px solid rgba(59,130,246,.55);color:#fff':'opacity:.5'}">🚦${cur==='poststada'?' staða '+(dir==='asc'?'▲':'▼'):cur==='postavail'?' saga '+(dir==='asc'?'▲':'▼'):''}</span></th>
                   <th data-notacol="1" title="✈ Ferðanóta — tímabundnar nótur við ferðaskipulag">Ferðanóta</th>
                   <th data-addrcol="1" data-sort="postnumer" class="_ars-sort" title="Raða eftir póstnúmeri (fyrir akstursleiðir)">Heimilisfang${arrow('postnumer')}</th>
                   <th data-sort="month" class="_ars-sort center">Skoðun${arrow('month')}</th>
