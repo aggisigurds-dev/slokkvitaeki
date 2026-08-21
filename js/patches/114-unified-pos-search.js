@@ -1020,6 +1020,11 @@
       simiInp.value = m.simi || '';
       simiInp.oninput = function () {
         if (m) m.simi = simiInp.value;
+        // Set state.customer.simi DIRECTLY — the #pos-simi mirror alone is unreliable
+        // for a PICKED customer (that hidden input isn't always mounted, so pos.js:859
+        // never fires). Live test 2026-08-21 caught the phone not persisting this way;
+        // POS.getState() is the sure path. Mirror kept as belt-and-suspenders.
+        try { const st = window.POS && POS.getState && POS.getState(); if (st && st.customer) st.customer.simi = simiInp.value; } catch (_) {}
         const ps = document.getElementById('pos-simi');
         if (ps) { ps.value = simiInp.value; ps.dispatchEvent(new Event('input', { bubbles: true })); }
       };

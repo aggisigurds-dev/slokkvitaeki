@@ -97,7 +97,7 @@
           return Object.assign({}, l, {
             desc: String(l.desc).slice(0, mm.index),
             discount_pct: d,
-            unit_price_ex_vat: Math.round(net / (1 - d / 100))
+            unit_price_ex_vat: Math.round(net / (1 - d / 100) * 100) / 100  // 2 aukastafir → recompute lendir aftur á sömu (nettó) samtölu; heiltölu-námundun drfeatði ~1-2 kr (live-test 2026-08-21)
           });
         }
       }
