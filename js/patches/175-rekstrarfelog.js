@@ -142,7 +142,7 @@
       // byggingaheiti stytta sig með „…" í stað þess að vefjast í 2-3 línur (það
       // var stærsti hæðargjafinn í nýju útliti). Breiddirnar búa í <colgroup> við
       // töfluna sjálfa.
-      P+'.rf-tbl{width:100%;min-width:1210px;border-collapse:collapse;font-size:13px;table-layout:fixed}',
+      P+'.rf-tbl{width:100%;min-width:1160px;border-collapse:collapse;font-size:13px;table-layout:fixed}',
       P+'.rf-tbl thead tr{background:'+METB+'}',
       P+'.rf-tbl th{text-align:left;padding:10px 12px;font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#f0f2f5;white-space:nowrap;text-transform:uppercase;border:0}',
       P+'.rf-tbl th.c{text-align:center}',
@@ -224,6 +224,24 @@
       P+'.rf-ycell--overdue{background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #5a0c10}',
       P+'.rf-ycell--overdue i{background:#ffb3b8}',
       P+'.rf-ycell--none{color:#cbd2dc;background:none;box-shadow:none;text-shadow:none;font-weight:400;border:0}',
+      // ── compact ártala-strimill (2026-08-21, ósk Agnars: „same as fyrirtæki í
+      // þjónustu") — í stað fjögurra breiðra árs-dálka: EINN dálkur með láréttum
+      // strimli af litlum ártölu-pillum (34×20). Ósk Agnars 2026-08-21: engir
+      // punktar — hvorki LED innan í né skjala-punktur undir; liturinn einn ber
+      // stöðuna: grænt=skýrsla á skrá · blátt=aðeins búnaðarsaga · gull=þetta ár á
+      // áætlun (ókomið) · rautt=liðið án skýrslu · grátt=ekkert.
+      P+'.rf-yrs{display:flex;gap:6px;justify-content:center;align-items:flex-start;flex-wrap:nowrap}',
+      P+'.rf-yrs+.rf-yrs{margin-top:5px}',
+      P+'.rf-yrs__ic{font-size:11px;line-height:20px;flex:none;margin-right:1px}',
+      P+'.rf-dd{display:inline-flex;align-items:center;gap:1px}',
+      P+'.rf-yr{display:inline-flex;align-items:center;justify-content:center;min-width:34px;height:20px;padding:0 7px;border-radius:6px;font-family:"Space Mono",monospace;font-size:11px;font-weight:700;color:#aab3c0;background:#f4f6f9;border:1px solid #e7eaf0;text-decoration:none;cursor:default;box-sizing:border-box}',
+      P+'a.rf-yr{cursor:pointer}',
+      P+'.rf-yr--none{color:#c3c9d3!important;background:#f7f8fa!important;border-color:#eef0f4!important}',
+      P+'.rf-yr--hist{color:#fff!important;background:linear-gradient(145deg,#5a86e0,#2f5fe0 42%,#1a3a8c 72%,#2d55c4)!important;border-color:#12296b!important;text-shadow:0 1px 1px rgba(0,0,0,.3)}',
+      P+'.rf-yr--done{color:#fff!important;background:linear-gradient(145deg,#1c7a45,#0f4f2b 42%,#062815 72%,#0c3f22)!important;border-color:#041c0e!important;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
+      P+'.rf-yr--due{color:#fff8e6!important;background:linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08)!important;border-color:rgba(255,220,130,.45)!important;text-shadow:0 1px 1px rgba(0,0,0,.35)}',
+      P+'.rf-yr--overdue{color:#fff!important;background:linear-gradient(145deg,#d84f4a,#b0201b 42%,#6e100d 72%,#9c1d18)!important;border-color:#4d0a08!important;text-shadow:0 1px 1px rgba(0,0,0,.26)}',
+      P+'.rf-yrs a.rf-yr{text-decoration:none!important;box-shadow:none!important}',
       // 🧾 örlítið merki: reikningur ÞESSA árs/þjónustu er þegar paraður við skýrsluna.
       P+'.rf-bundle-tag{font-size:8.5px;margin-left:1px;line-height:1;filter:drop-shadow(0 1px 0 rgba(0,0,0,.4))}',
       // næsta skoðun
@@ -1295,6 +1313,51 @@
       var tip = overdue ? 'Skoðun liðin — engin skýrsla enn' : (hasNext ? 'Á áætlun — skoðun ókomin' : 'Skýrsla ekki komin enn');
       return '<span class="rf-ycell rf-ycell--'+kind+'" title="'+esc(tip)+'"><i></i>'+(overdue?'⚠':'…')+'</span>';
     }
+    // ── compact ártölu-pillur fyrir „Skoðanir · Skjöl" strimilinn (eins og 153/187) ──
+    // ártalan sjálf er merkið; skjala-örpunktur (grænn) undir segir að skýrsla sé
+    // á skrá. Pillan er hlekkur þegar skýrsla er til (Drive-url eða upphlaðið skjal
+    // gegnum patch 187's _yr-att-höndlara), annars stakur reitur.
+    function _yrPill(cls, tip, yy, url, file){
+      var t = esc(tip);
+      if(url) return '<a href="'+esc(url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="'+cls+'" title="'+t+'">'+yy+'</a>';
+      if(file){
+        var fu = file.drive_url||file.url;
+        if(fu) return '<a href="'+esc(fu)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="'+cls+'" title="'+t+'">'+yy+'</a>';
+        return '<a href="#" class="'+cls+' _yr-att" data-path="'+esc(file.path||'')+'" onclick="event.stopPropagation()" title="'+t+'">'+yy+'</a>';
+      }
+      return '<span class="'+cls+'" title="'+t+'">'+yy+'</span>';
+    }
+    function _yrDot(pillHtml, hasRep, bundled){
+      // 2026-08-21 (ósk Agnars „skip the icon under it"): engir skjala-örpunktar
+      // undir pillunum — liturinn einn ber stöðuna (grænt=skýrsla, blátt=saga …).
+      return '<span class="rf-dd">'+pillHtml+(bundled?bundleTag(true):'')+'</span>';
+    }
+    // slökkvitæki ártölu-pilla fyrir eitt ár
+    function yrMiniSl(y, done, rep, url, file, units, bundled, isCur, hasData, over, hasNext){
+      var yy=y.slice(-2), state, tip;
+      if(isCur && !done && hasData){ state = over?'overdue':'due';
+        tip = over?('Skoðun liðin — engin skýrsla enn · '+y):(hasNext?('Á áætlun — skoðun ókomin · '+y):('Skýrsla ekki komin enn · '+y)); }
+      else if(!done){ state='none'; tip='Engin skýrsla · slökkvitæki · '+y; }
+      else { var greenish=rep||url||file; state=greenish?'done':'hist';
+        tip=(greenish?'Úttektarskýrsla á skrá':'Aðeins skráð í búnaðarsögu')+' · slökkvitæki · '+y+(units>0?(' · '+units+' tæki'):'')+(bundled?' · 🧾 reikningur paraður':''); }
+      var pill = (state==='none'||state==='due'||state==='overdue')
+        ? '<span class="rf-yr rf-yr--'+state+'" title="'+esc(tip)+'">'+yy+'</span>'
+        : _yrPill('rf-yr rf-yr--'+state, tip, yy, url, file);
+      return _yrDot(pill, state==='done', bundled && state==='done');
+    }
+    // brunakerfi ártölu-pilla fyrir eitt ár
+    function yrMiniBr(y, cell, units, bundled, isCur, hasData, over, hasNext){
+      var yy=y.slice(-2), state, tip, url=cell?cell.url:'';
+      if(isCur && !cell && hasData){ state=over?'overdue':'due';
+        tip=over?('Brunakerfisskoðun liðin — engin skýrsla enn · '+y):(hasNext?('Á áætlun — brunakerfisskoðun ókomin · '+y):('Brunakerfisskýrsla ekki komin enn · '+y)); }
+      else if(!cell){ state='none'; tip='Engin brunakerfisskýrsla · '+y; }
+      else { state=cell.kind==='rep'?'done':'hist';
+        tip=(state==='done'?'Brunakerfisskýrsla á skrá':'Brunakerfisskýrsla í vinnslu')+' · '+y+(units>0?(' · '+units+' búnaður'):'')+(bundled?' · 🧾 reikningur paraður':''); }
+      var pill = (state==='none'||state==='due'||state==='overdue')
+        ? '<span class="rf-yr rf-yr--'+state+'" title="'+esc(tip)+'">'+yy+'</span>'
+        : _yrPill('rf-yr rf-yr--'+state, tip, yy, url, null);
+      return _yrDot(pill, state==='done', bundled && state==='done');
+    }
     // Staflar slökkvitækja-/brunakerfis-frumu eftir völdum þjónusturofa.
     // brOn=false → sleppa brunakerfis-línunni fyrir byggingu sem er EKKI í
     // brunakerfisþjónustu (ósk Agnars 2026-07-28: „taka út brunakerfisþjónustu
@@ -1461,19 +1524,22 @@
       // sömu liðin-reikninginn og "næsta skoðun"-fruman fyrir neðan.
       var isOver=false;
       if(st && st.next){ isOver = st.next < today; }
-      var yTds='';
+      var slPills='', brPills='';
       ['2023','2024','2025','2026'].forEach(function(y,i){
         var done=[d23,d24,d25,d26][i], rep=[false,!!att[0],!!att[1],!!att[2]][i], file=[f23,f24,f25,f26][i];
         var slBundled = !!(bldPairs && bldPairs[y+'|uttekt']);
         var brBundled = !!(bldPairs && bldPairs[y+'|brunakerfi']);
-        var slCell = yPillSl(done,rep,units,lks[y],file,y,slBundled);
-        var brCell = yPillBr(bY[y],bUnits,y,brBundled);
-        if (y===CURY) {
-          if (!done && slHasData) slCell = yPillDue(!!(st&&st.next), isOver);
-          if (!bY[y] && bHasData) brCell = yPillDue(!!(bx&&bx.next), bOver);
-        }
-        yTds += stackTd(slCell, brCell, 'rf-yh-cell', bruInSvc);
+        slPills += yrMiniSl(y, done, rep, lks[y], file, units, slBundled, y===CURY, slHasData, isOver, !!(st&&st.next));
+        brPills += yrMiniBr(y, bY[y], bUnits, brBundled, y===CURY, bHasData, bOver, !!(bx&&bx.next));
       });
+      // EINN „Skoðanir · Skjöl" dálkur með láréttum ártölu-strimli — eins og
+      // „Fyrirtæki í þjónustu". Í „Bæði"-sýn: efri strimill = 🧯 slökkvitæki,
+      // neðri = 🚨 brunakerfi (aðeins fyrir byggingar í brunakerfisþjónustu).
+      var _bothStrips = showSl && showBr && bruInSvc;
+      var _yStrips='';
+      if(showSl) _yStrips += '<div class="rf-yrs"'+(_bothStrips?' title="🧯 Slökkvitæki"':'')+'>'+(_bothStrips?'<b class="rf-yrs__ic">🧯</b>':'')+slPills+'</div>';
+      if(showBr && bruInSvc) _yStrips += '<div class="rf-yrs"'+(_bothStrips?' title="🚨 Brunakerfi"':'')+'>'+(_bothStrips?'<b class="rf-yrs__ic">🚨</b>':'')+brPills+'</div>';
+      var yTds = '<td class="c rf-yh-cell rf-yrs-cell">'+_yStrips+'</td>';
       if((showSl&&isOver&&slHasData)||(showBr&&bOver)) nOverdue++;
       var nextCell = stackTd(
         nextPill(st&&st.next?st.next:null,'sl',isOver&&slHasData),
@@ -1643,7 +1709,7 @@
             '<col style="width:210px">'+   // Heimilisfang
             '<col style="width:150px">'+   // Nóta
             '<col style="width:76px">'+    // Tæki
-            '<col style="width:62px"><col style="width:62px"><col style="width:62px"><col style="width:62px">'+  // 2023–2026
+            '<col style="width:200px">'+  // Skoðanir · Skjöl (ártölu-strimill 2023–2026)
             '<col style="width:46px">'+    // 🚗
             '<col style="width:152px">'+   // Næsta skoðun
             '<col style="width:90px">'+    // aðgerðir
@@ -1653,14 +1719,11 @@
           '<th>Heimilisfang</th>'+
           '<th>Nóta</th>'+
           '<th class="c">Tæki'+svcKey()+'</th>'+
-          '<th class="c rf-yh">2023'+svcKey()+'</th>'+
-          '<th class="c rf-yh">2024'+svcKey()+'</th>'+
-          '<th class="c rf-yh">2025'+svcKey()+'</th>'+
-          '<th class="c rf-yh">2026'+svcKey()+'</th>'+
+          '<th class="c rf-yh rf-yrs-th" title="Skoðunarár 2023–2026 · smelltu á ár til að opna skýrsluna">Skoðanir · Skjöl</th>'+
           '<th class="c" title="Akstursleið — smelltu til að setja stað á leið 1/2/3">🚗</th>'+
           '<th>Næsta skoðun'+svcKey()+'</th>'+
           '<th></th></tr></thead><tbody>'+rows+
-          '<tr class="_rf_norow" style="display:none"><td colspan="11" class="rf-nores">Engin bygging passar við leitina.</td></tr>'+
+          '<tr class="_rf_norow" style="display:none"><td colspan="8" class="rf-nores">Engin bygging passar við leitina.</td></tr>'+
           '</tbody></table></div>'+
           '<div class="rf-tblfoot"><span><b>'+blds.length+'</b> byggingar'+
             (showSl?' · <b style="color:#1f9d57">'+slDoneCur+'</b> slökkvitækjaskýrslur '+CURY:'')+
@@ -1668,7 +1731,7 @@
             (showBr?' · <b>'+nBruSvc+'</b> í brunakerfisþjónustu':'')+
           '</span></div></div>'+
           '<button class="_rf_addb" style="margin-top:8px;padding:6px 12px;background:var(--surface);border:1px dashed var(--brd2);border-radius:8px;color:var(--brand);font-weight:600;font-size:12.5px;cursor:pointer">+ Bæta við byggingu / fyrirtæki</button>'+
-          '<div style="font-size:11px;color:var(--ink4);margin-top:6px">Efri lína hverrar frumu = <b>🧯 slökkvitæki</b>, neðri = <b>🚨 brunakerfi</b> (skiptu með rofanum að ofan). Árdálkar sýna fjölda tækja sem skoðunin nær til. <span style="color:#15803d">Grænn + 📄</span> = skýrsla á skrá; <span style="color:var(--brand)">blár</span> = aðeins skráð í búnaðarsögu / skýrsla í vinnslu. «Næsta skoðun» = fyrsti gjalddagi, ⚠ = liðinn. Brunakerfis-gögnin koma úr sömu heimild og «🔥 Brunakerfi yfirlit».</div>'+
+          '<div style="font-size:11px;color:var(--ink4);margin-top:6px">Efri strimill = <b>🧯 slökkvitæki</b>, neðri = <b>🚨 brunakerfi</b> (skiptu með rofanum að ofan). Ártölu-strimillinn sýnir skoðunarárin <b>‘23–‘26</b> — smelltu á ár til að opna skýrsluna; fjöldi tækja sést í «Tæki» og þegar bent er á árið. <span style="color:#15803d">Grænt</span> = skýrsla á skrá; <span style="color:var(--brand)">blátt</span> = aðeins búnaðarsaga / í vinnslu; <span style="color:#a97514">gull</span> = þetta ár á áætlun (ókomið); <span style="color:#c0241f">rautt</span> = liðið án skýrslu. «Næsta skoðun» = fyrsti gjalddagi, ⚠ = liðinn. Brunakerfis-gögnin koma úr sömu heimild og «🔥 Brunakerfi yfirlit».</div>'+
         '</div>'+
         '<div style="flex:1;min-width:260px">'+
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
