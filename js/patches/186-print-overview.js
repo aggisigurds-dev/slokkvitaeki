@@ -48,11 +48,33 @@
 
   function pad(n){ return ('0'+n).slice(-2); }
 
+  // Strip `@media print { … }` blocks out of copied page CSS. The popup IS the
+  // print target and carries its own print rules (CSS above); the live page's
+  // print rules assume the app's DOM and can BLANK the popup. Concretely,
+  // 273-brunakerfi-skyrsla ships `@media print{body>*{display:none!important}}`
+  // to isolate its own overlay — copied in, it hid the entire popup, so the
+  // Rekstrarfélög print came out empty (empty preview + blank PDF). (2026-08-21)
+  function stripPrintMedia(css){
+    if (!css || css.indexOf('@media') < 0) return css || '';
+    var re = /@media\s+print\b[^{]*\{/gi, m;
+    while ((m = re.exec(css))) {
+      var start = m.index, i = m.index + m[0].length, depth = 1;
+      for (; i < css.length && depth > 0; i++) {
+        if (css[i] === '{') depth++;
+        else if (css[i] === '}') depth--;
+      }
+      css = css.slice(0, start) + css.slice(i);
+      re.lastIndex = start;
+    }
+    return css;
+  }
+
   // Live page's own <style> tags (theme.css-style per-view stylesheets like
   // 175-rekstrarfelog.js's #_rf-styles-v4) — carries the real component
-  // colors (pills, status badges, table header) into the print window.
+  // colors (pills, status badges, table header) into the print window. We copy
+  // the on-screen rules but DROP their @media print blocks (see stripPrintMedia).
   function pageStyles(){
-    try { return Array.from(document.querySelectorAll('style')).map(s => s.textContent || '').join('\n'); }
+    try { return Array.from(document.querySelectorAll('style')).map(s => stripPrintMedia(s.textContent || '')).join('\n'); }
     catch(e){ return ''; }
   }
 
