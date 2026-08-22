@@ -18,7 +18,9 @@
 
 const P = require('./_portal');
 const crypto = require('crypto');
-const MAIL_ACCOUNT = 'eldklar@eldklar.is';
+// Póstur fer gegnum slokkvitaeki /api/email-send (Resend). „from" verður að vera
+// staðfest lén í Resend — stillanlegt með PORTAL_MAIL_FROM env.
+const MAIL_FROM = process.env.PORTAL_MAIL_FROM || 'Slökkvitæki ehf <noreply@slokkvitaeki.is>';
 
 function slugify(s) {
   return String(s || '').toLowerCase()
@@ -157,10 +159,14 @@ exports.handler = async (event) => {
         '<p><b>Vefslóð:</b> <a href="' + esc(url) + '">' + esc(url) + '</a><br>' +
         '<b>Notandanafn:</b> ' + esc(u.email || '') + (pw ? '<br><b>Lykilorð:</b> ' + esc(pw) : '') + '</p>' +
         '<p style="color:#666;font-size:12px">Kveðja,<br>Slökkvitæki ehf.</p></div>';
-      const gmail = require('./gmail-send');
-      const res = await gmail.handler({ httpMethod: 'POST', headers: {}, body: JSON.stringify({
-        account: MAIL_ACCOUNT, to: [to], subject: 'Aðgangur að þjónustuvef Slökkvitækja ehf.', html: html }) });
-      if (!res || res.statusCode !== 200) return P.json(502, { error: 'Póstur sendist ekki', detail: res && res.body });
+      const hdrs = { 'Content-Type': 'application/json' };
+      if (process.env.EDGE_SHARED_KEY) hdrs['x-eldklar-key'] = process.env.EDGE_SHARED_KEY;
+      let mres;
+      try {
+        mres = await fetch(origin(event) + '/api/email-send', { method: 'POST', headers: hdrs,
+          body: JSON.stringify({ from: MAIL_FROM, to: [to], subject: 'Aðgangur að þjónustuvef Slökkvitækja ehf.', html: html }) });
+      } catch (e) { return P.json(502, { error: 'Póstur sendist ekki', detail: String((e && e.message) || e) }); }
+      if (!mres.ok) { const t = await mres.text().catch(() => ''); return P.json(502, { error: 'Póstur sendist ekki', detail: t.slice(0, 300) }); }
       return P.json(200, { ok: true, sent_to: to });
     }
 
