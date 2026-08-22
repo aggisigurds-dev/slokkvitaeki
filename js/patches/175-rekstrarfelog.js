@@ -226,10 +226,11 @@
       P+'.rf-ycell--none{color:#cbd2dc;background:none;box-shadow:none;text-shadow:none;font-weight:400;border:0}',
       // ── compact ártala-strimill (2026-08-21, ósk Agnars: „same as fyrirtæki í
       // þjónustu") — í stað fjögurra breiðra árs-dálka: EINN dálkur með láréttum
-      // strimli af litlum ártölu-pillum (34×20). Ósk Agnars 2026-08-21: engir
-      // punktar — hvorki LED innan í né skjala-punktur undir; liturinn einn ber
-      // stöðuna: grænt=skýrsla á skrá · blátt=aðeins búnaðarsaga · gull=þetta ár á
-      // áætlun (ókomið) · rautt=liðið án skýrslu · grátt=ekkert.
+      // strimli af litlum ártölu-pillum (34×20). Litur pillunnar ber stöðuna:
+      // grænt=skýrsla á skrá · blátt=aðeins búnaðarsaga · gull=þetta ár á áætlun
+      // (ókomið) · rautt=liðið án skýrslu · grátt=ekkert. Ósk Agnars 2026-08-22:
+      // TVEIR örpunktar undir hverri pillu eins og í Ársskoðun (grænn=skýrsla á
+      // skrá, blár=reikningur paraður) — sjá .rf-dd og _yrDot neðar.
       // FÖST súlu-jöfnun (ósk Agnars „straight line downward, not zic zac"): hver
       // pilla situr í jafn-breiðri (38px) frumu og 🧯/🚨-táknið í fastri 15px súlu
       // á HVERRI röð, svo árin 23/24/25/26 mynda beinar lóðréttar línur niður alla
@@ -241,7 +242,14 @@
       // og súlurnar ráku í sundur. Föst 34px pilla + 38px fruma + 15px tákn á
       // öllum → nákvæmlega jafnar súlur.
       P+'.rf-yrs__ic{width:15px!important;flex:none!important;text-align:center;font-size:11px;line-height:20px;margin:0!important;padding:0!important}',
-      P+'.rf-dd{position:relative;width:38px!important;flex:none!important;display:flex;align-items:center;justify-content:center;margin:0!important;padding:0!important}',
+      // .rf-dd = föst 38px súlu-fruma; pillan efst og TVEIR örpunktar undir (eins
+      // og ._dd í Ársskoðun/153). Punktarnir 5px miðjaðir → breidd frumunnar
+      // breytist ekki og árin standa áfram í beinum lóðréttum súlum.
+      P+'.rf-dd{position:relative;width:38px!important;flex:none!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;margin:0!important;padding:0!important}',
+      P+'.rf-dd>u{display:flex;gap:3px;text-decoration:none;line-height:0}',
+      P+'.rf-dd>u>i{width:5px;height:5px;border-radius:50%;background:#dfe3ea;flex:none}',
+      P+'.rf-dd>u>i.rep{background:#1f9d57}',
+      P+'.rf-dd>u>i.inv{background:#2f5fe0}',
       P+'.rf-dd .rf-bundle-tag{position:absolute;top:-5px;right:-1px;margin:0;font-size:8px;line-height:1;pointer-events:none}',
       P+'.rf-yr{display:inline-flex!important;align-items:center;justify-content:center;width:34px!important;min-width:34px!important;max-width:34px!important;height:20px!important;padding:0!important;margin:0!important;border-radius:6px;font-family:"Space Mono",monospace;font-size:11px;font-weight:700;color:#aab3c0;background:#f4f6f9;border:1px solid #e7eaf0;text-decoration:none;cursor:default;box-sizing:border-box}',
       P+'a.rf-yr{cursor:pointer}',
@@ -1337,11 +1345,14 @@
       return '<span class="'+cls+'" title="'+t+'">'+yy+'</span>';
     }
     function _yrDot(pillHtml, hasRep, bundled){
-      // 2026-08-21: EKKERT aukamerki í strimlinum — hvorki punktur né 🧾 — svo
-      // hver pilla sé nákvæmlega jafn-breið og árin standi í beinum lóðréttum
-      // súlum (ósk Agnars „straight line downward, not zic zac"). „Reikningur
-      // paraður" upplýsingin lifir áfram í titli/hover pillunnar.
-      return '<span class="rf-dd">'+pillHtml+'</span>';
+      // 2026-08-22 (ósk Agnars „bæta punktunum við"): TVEIR örpunktar undir hverri
+      // pillu eins og í Ársskoðun — grænn = úttektarskýrsla á skrá, blár =
+      // reikningur ÞESSA árs paraður. Pillan helst föst 34px og punktarnir 5px
+      // miðjaðir í 38px frumunni svo árin standi áfram í beinum lóðréttum súlum
+      // (uppfærir „engir punktar"-ákvörðunina frá 21.08). Staðan sést líka í titli.
+      return '<span class="rf-dd">'+pillHtml+
+        '<u><i class="'+(hasRep?'rep':'')+'"></i><i class="'+(bundled?'inv':'')+'"></i></u>'+
+        '</span>';
     }
     // slökkvitæki ártölu-pilla fyrir eitt ár
     function yrMiniSl(y, done, rep, url, file, units, bundled, isCur, hasData, over, hasNext){
