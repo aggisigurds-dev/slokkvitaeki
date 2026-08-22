@@ -3046,11 +3046,14 @@
         if (mv !== (+ars.inspect_month || 0)) {
           monthChanged = true;
           try {
-            const blob = (window.AppSettings && AppSettings.path('arsskodun_customers')) || {};
-            const rec = blob[String(coId)] = blob[String(coId)] || { co_id: coId };
-            if (mv >= 1 && mv <= 12) { rec.inspect_month = mv; rec.inspect_month_manual = true; }
-            else { delete rec.inspect_month; delete rec.inspect_month_manual; }
-            if (window.AppSettings && AppSettings.save) await AppSettings.save({ arsskodun_customers: blob });
+            // Vista AÐEINS þennan reit með 0/false sentinel við hreinsun. Áður var
+            // `delete` keyrt á LIFANDI blob úr AppSettings.path(); deep-merge getur
+            // ekki eytt lykli svo mánuðurinn kom aftur við endurhleðslu (fix
+            // 2026-08-22, save-audit F3). Sama leið og hreinsun á línu ~1189.
+            const patch = (mv >= 1 && mv <= 12)
+              ? { inspect_month: mv, inspect_month_manual: true }
+              : { inspect_month: 0, inspect_month_manual: false };
+            if (window.AppSettings && AppSettings.save) await AppSettings.save({ arsskodun_customers: { [String(coId)]: patch } });
             ovrLog(coId, 'inspect_month', MONTHS_IS[(+ars.inspect_month || 0) - 1] || '—', MONTHS_IS[mv - 1] || '↺ hreinsað');
             ars.inspect_month = mv || undefined;
           } catch (e) { alert('Mánuður vistaðist ekki: ' + (e.message || e)); }
