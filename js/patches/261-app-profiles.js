@@ -466,10 +466,16 @@
       'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){margin-left:0 !important;width:100vw !important;max-width:100vw !important}',
       'body.appmode .main-panel{margin-left:0 !important;margin-right:0 !important;max-width:none !important}',
       'body.appmode .view.active{padding-top:50px !important;padding-bottom:116px !important}',
-      // Force white background in app-mode so dark theme presets (data-thm-dark="1") don't
-      // bleed the dark gradient from 229-sala-theme-bridge into the page content area.
-      // The launcher (#view-opp) keeps its own dark gradient; all other views go white.
-      'body.appmode .view.active:not(#view-opp){background:#fff !important}',
+      // App-síðurnar sitja á STEEL-GRÁA bakgrunni skjáborðsþemunnar (Brunastál),
+      // ekki flötu hvítu. Áður þvingaðum við hvítt (til að dökka gradientinn frá
+      // 229-sala-theme-bridge blæddi ekki inn) — en það drap grámann sem síðurnar
+      // eru hannaðar fyrir og hvítu titlarnir hurfu (hvítt-á-hvítu). Nú notum við
+      // gráu stoppin úr Brunastál-gradientinum (patch 230: #aeb4be→#9ba1ad) EN án
+      // svarta toppsins (0–95px) sem olli „dökka yfirlaginu" (#671). Þannig fá
+      // síðurnar aftur skjáborðs-grámann og hvítu titlarnir verða læsilegir.
+      // (Ósk Agnars 2026-08-22: „settu gráa upprunalega bakgrunninn aftur á þær".)
+      // Launcher (#view-opp) heldur sínum eigin dökka gradient.
+      'body.appmode .view.active:not(#view-opp){background:linear-gradient(180deg,#aeb4be 0px,#9ba1ad 340px,#9ba1ad 100%) !important}',
       // Beat patch 230's ON+':not(#id)…{padding-top:160px}` (id-level specificity) when the
       // Brunastál banner attr is present — otherwise the content sits 160px below my header.
       'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:50px !important;padding-bottom:116px !important}',
