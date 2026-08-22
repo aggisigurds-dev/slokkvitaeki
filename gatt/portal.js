@@ -69,7 +69,12 @@
   /* ── boot ── */
   function boot() {
     var demo = /[?&]demo=1/.test(location.search);
-    if (demo) { state.demo = true; renderPortal(DEMO); showDemoRibbon(); return; }
+    if (demo) {
+      state.demo = true;
+      var qt = /[?&]theme=([a-z]+)/.exec(location.search); // ?theme=cream til að forskoða þema
+      if (qt) DEMO.account.theme = qt[1];
+      renderPortal(DEMO); showDemoRibbon(); return;
+    }
     fetch('/api/gatt', { credentials: 'same-origin', headers: { Accept: 'application/json' } })
       .then(function (r) {
         if (r.ok) return r.json().then(function (d) { renderPortal(normalize(d)); });

@@ -78,6 +78,10 @@
         '<div class="fld"><label>Lykilorð</label><div class="inrow">' +
           '<input class="inp mono" data-f="pw" placeholder="' + (a.hasPassword ? '•••••••• (sett — skrifaðu nýtt til að breyta)' : 'ekkert lykilorð enn') + '">' +
           '<button class="btn btn--sm" data-act="gen">Búa til</button></div></div>' +
+        '<div class="fld"><label>Þema</label><select class="inp" data-f="theme">' +
+          '<option value="steel"' + (a.theme !== 'cream' ? ' selected' : '') + '>Hlutlaust — stál / appelsínugult</option>' +
+          '<option value="cream"' + (a.theme === 'cream' ? ' selected' : '') + '>Center — krem / gull</option>' +
+        '</select></div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">' +
           '<button class="btn btn--sm btn--accent" data-act="save">Vista aðgang</button>' +
           '<button class="btn btn--sm" data-act="toggle">' + (a.active ? 'Afvirkja' : 'Virkja') + '</button>' +
@@ -109,6 +113,7 @@
     row.querySelector('[data-act="save"]').onclick = function () {
       var body = { action: 'save', id: a.id, email: emailEl.value };
       if (pwEl.value.trim()) body.password = pwEl.value.trim();
+      var themeEl = row.querySelector('[data-f="theme"]'); if (themeEl) body.theme = themeEl.value;
       api(body).then(function (res) { if (res.ok) { toast('Vistað'); load(); } else toast(res.error || 'Villa'); });
     };
     row.querySelector('[data-act="toggle"]').onclick = function () {
