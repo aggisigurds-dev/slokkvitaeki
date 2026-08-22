@@ -32,7 +32,7 @@
   const BUN_LABELS = ['Stjórnstöð', 'Boðbúnaður', 'Reykskynjarar', 'Hitaskynjarar', 'Handboðar', 'Bjöllur / Sírenur', 'Rafhlöður'];
 
   let C = null;          // { co, reports, docs, note }
-  let _noteT = null;
+  let _noteT = null, _notePending = null;
 
   function SB() { return (window.DB && DB.sb) || null; }
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
@@ -183,6 +183,7 @@
   }
 
   function close() {
+    flushNote();
     const ov = document.getElementById('_bkc-overlay'); if (ov) ov.style.display = 'none';
     document.body.style.overflow = '';
     try { if (window.BrunakerfiYfirlit && BrunakerfiYfirlit.reload) BrunakerfiYfirlit.reload(); } catch (_) {}
@@ -223,15 +224,28 @@
     return { co, reports, docs, samningar, note };
   }
 
+  // Persist the pending note to the company it was TYPED on. Called from the
+  // debounce, from close(), and on pagehide so a note typed <1.2s before leaving
+  // is never lost — and never lands on the wrong profile.
+  function flushNote() {
+    clearTimeout(_noteT); _noteT = null;
+    const p = _notePending; _notePending = null;
+    if (!p || !p.coId) return;
+    try {
+      if (window.AppSettings && AppSettings.save) {
+        AppSettings.save({ brunakerfi_co_notes: { [p.coId]: { text: p.text, t: new Date().toISOString() } } });
+      }
+    } catch (e) { console.warn('[bkc] note save', e); }
+  }
   function saveNote(text) {
+    // Capture the company id NOW, at edit time. Reading C.co.id when the timer
+    // fired wrote the note to whatever company was open THEN — switching company
+    // within 1.2s corrupted the note onto the wrong profile (fix 2026-08-22, S3).
+    const coId = (C && C.co) ? String(C.co.id) : null;
+    if (!coId) return;
+    _notePending = { coId, text };
     clearTimeout(_noteT);
-    _noteT = setTimeout(async () => {
-      try {
-        if (window.AppSettings && AppSettings.save) {
-          await AppSettings.save({ brunakerfi_co_notes: { [String(C.co.id)]: { text, t: new Date().toISOString() } } });
-        }
-      } catch (e) { console.warn('[bkc] note save', e); }
-    }, 1200);
+    _noteT = setTimeout(flushNote, 1200);
   }
 
   // ── teikning ────────────────────────────────────────────────────────────────
@@ -517,7 +531,13 @@
     try { if (window.BrunakerfiReikningur && BrunakerfiReikningur.decorateProfile) BrunakerfiReikningur.decorateProfile(C, w); } catch (_) {}
   }
 
+  try {
+    window.addEventListener('pagehide', flushNote);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushNote(); });
+  } catch (_) {}
+
   async function open(coId) {
+    flushNote();
     const ov = ensureOverlay();
     ov.style.display = 'block';
     document.body.style.overflow = 'hidden';
