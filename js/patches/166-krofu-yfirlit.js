@@ -40,6 +40,9 @@
     // síma — breiða/tafla-sýnin (data-viewmode desktop/table) er ósnert. Ný ky-m*/
     // ky-co*/ky-acts kort-element eru eingöngu á síma svo þau þurfa ekki þennan skala.
     const M = 'html[data-viewmode="mobile"] #view-krofu-yfirlit ';
+    // App-ham + sími (uppsett öpp): sama og M en AÐEINS í appi — notað til að gera
+    // haus-texta dökkan því .view fær þvingaðan hvítan bakgrunn í appmode (patch 261).
+    const MA = 'html[data-viewmode="mobile"] body.appmode #view-krofu-yfirlit ';
     s.textContent =
       // v3 handoff: light-metallic labelled action buttons (Krafa send / Greitt / …)
       V + '.ky-abtn{display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;min-width:46px;height:42px;padding:0 7px;border-radius:9px;border:1px solid rgba(20,24,34,.2);background:linear-gradient(180deg,#ffffff,#dbe0e9);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 3px 6px -3px rgba(20,30,60,.3);cursor:pointer;font:inherit;transition:transform .12s ease,box-shadow .12s ease}' +
@@ -118,7 +121,24 @@
       M + '.stat-card__label{font-size:9.5px !important;letter-spacing:.06em !important;line-height:1.3}' +
       M + '.stat-card__value{font-size:16px !important;margin-top:5px !important}' +
       M + '.filter-chip{padding:9px 14px !important;font-size:13px !important}' +
-      M + '.ky-filterbar ._ky-search{flex:1 1 100% !important;margin-left:0 !important;margin-top:2px}';
+      M + '.ky-filterbar ._ky-search{flex:1 1 100% !important;margin-left:0 !important;margin-top:2px}' +
+      // Haus á síma: forskotið (📄 titill + undirtexti) STAFLAST ofan á verkfærin
+      // (◀ mánuður ▶ + röðun) svo þau skarist ekki og röðunar-valið flæði ekki út af
+      // hægri kanti á 390 px. Verkfærin fá eigin línu; röðun sín eigin. (Agnar 2026-08-22.)
+      M + '.page-title{flex-direction:column;align-items:stretch;gap:10px;margin-bottom:13px}' +
+      M + '.page-title__lead{align-items:flex-start;gap:11px}' +
+      M + '.page-title__icon{width:38px !important;height:38px !important;flex:none}' +
+      M + '.page-title h1{font-size:20px !important;line-height:1.15}' +
+      M + '.page-title p{font-size:11.5px !important;line-height:1.4;margin-top:2px}' +
+      M + '.page-title__tools{justify-content:flex-start !important;flex-wrap:wrap;gap:7px;width:100%}' +
+      M + '.page-title__tools .ky-month{min-width:0 !important;padding:0 6px}' +
+      M + '.page-title__tools ._ky-sort{margin-left:0 !important;flex:1 1 100%;min-width:0}' +
+      // App-ham situr á LJÓSUM bakgrunni (patch 261 þvingar hvítt á .view í appi) svo
+      // hvíti titillinn/undirtextinn/mánuðurinn hverfur — gera þau dökk-læsileg. Hub-
+      // síma-sýnin (án appmode) situr áfram á dökka Brunastál-borðanum og heldur hvítu.
+      MA + '.page-title h1{color:#11141c !important;text-shadow:none !important}' +
+      MA + '.page-title p{color:#5b6472 !important}' +
+      MA + '.ky-month{color:#11141c !important}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
@@ -205,16 +225,23 @@
   const VM_KEY = 'slokk_viewmode';
   const VM_ID = '_ky-vm-toggle';
   const VM_MODES = ['mobile', 'table', 'desktop'];
+  // Uppsett öpp (body.appmode) = appið sjálft er síminn.
+  function inAppMode() {
+    try { return !!(document.body && document.body.classList.contains('appmode')); } catch (_) { return false; }
+  }
   function getViewMode() {
     // Í uppsettu öpp-i (app-mode) er appið SJÁLFT síminn — nota alltaf hreina
     // síma-útlitið (renderCompanyMobile), óháð vistuðu Sími/Tafla/Skjár vali.
     // (Ósk Agnars 2026-08-20: „create it for the app format in Öpp".) Vafra-/hub-
     // sýnin heldur áfram að hlýða rofanum að neðan.
-    try { if (document.body && document.body.classList.contains('appmode')) return 'mobile'; } catch (_) {}
+    if (inAppMode()) return 'mobile';
     const m = document.documentElement.dataset.viewmode;
     return VM_MODES.indexOf(m) >= 0 ? m : 'desktop';
   }
   function loadViewMode() {
+    // App-ham þvingar 'mobile' — en snertir EKKI vistaða vafra-valið (applyViewMode
+    // sleppir localStorage í app-ham) svo Sími/Tafla/Skjár í hubbinu helst óbreytt.
+    if (inAppMode()) return 'mobile';
     let m = null;
     try { m = localStorage.getItem(VM_KEY); } catch (_) {}
     if (VM_MODES.indexOf(m) < 0) {
@@ -229,7 +256,9 @@
     // listen and re-render its own layout for the chosen mode. Kröfu yfirlit's
     // own re-render below stays intact — this is purely additive.
     try { document.dispatchEvent(new CustomEvent('slokk-viewmode', { detail: mode })); } catch (_) {}
-    try { localStorage.setItem(VM_KEY, mode); } catch (_) {}
+    // Í app-ham vistum við EKKI — annars skrifaði þvingaða 'mobile' yfir raunverulegt
+    // Sími/Tafla/Skjár val notandans í vafranum/hubbinu.
+    if (!inAppMode()) { try { localStorage.setItem(VM_KEY, mode); } catch (_) {} }
     const wrap = document.getElementById(VM_ID);
     if (wrap) wrap.querySelectorAll('[data-vm]').forEach(b => b.classList.toggle('on', b.dataset.vm === mode));
     if (rerender) {
@@ -749,6 +778,12 @@
   function render() {
     const main = document.getElementById('ky-main');
     if (!main) return;
+    // App-ham: tryggja að <html data-viewmode="mobile"> sé sett ÁÐUR en við teiknum,
+    // svo M-scoped síma-CSS (KPI 2×2, haus, síu-borði) virkist — ekki bara render-
+    // greinin. applyViewMode vistar ekki í app-ham svo vafra-valið helst. (Agnar 2026-08-22.)
+    if (inAppMode() && document.documentElement.dataset.viewmode !== 'mobile') {
+      try { applyViewMode('mobile', false); } catch (_) {}
+    }
     const all = _state.all;
     const { start, end } = monthBounds(_state.month);
 
