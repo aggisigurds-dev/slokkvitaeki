@@ -1,4 +1,4 @@
-/* === DOC PAIRS BAND v1 (patch 307-doc-pairs-band) ===
+/* === DOC PAIRS BAND v1 (patch 311-doc-pairs-band) ===
  *
  * The reusable "📦 Pör" bundle band — a report+invoice pair per (year ×
  * þjónusta), each row carrying 📄 Skýrsla / 🧾 Reikningur / 📧 Senda — lifted
@@ -454,6 +454,6 @@
   setInterval(mountSala, 700);
   setTimeout(mountSala, 900);
 
-  console.log('[patch-307] DocPairs pör-band installed (company detail + Sala)');
+  console.log('[patch-311] DocPairs pör-band installed (company detail + Sala)');
 })();
 /* === END DOC PAIRS BAND === */
