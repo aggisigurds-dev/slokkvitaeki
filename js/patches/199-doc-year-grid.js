@@ -601,14 +601,22 @@
   }
   // Einu sinni: flytja gömlu AppSettings-grænin (patch #465) yfir í töfluna.
   (function migrateGreens(){
-    try{
-      if(localStorage.getItem('fc_migrated_v1')) return;
-      var old=(window.AppSettings&&AppSettings.path&&AppSettings.path('year_factcheck'))||{};
-      var sb=SB(); if(!sb){ return; } // reynt aftur síðar (næsta hleðsla)
-      var rows=[]; Object.keys(old).forEach(function(co){ Object.keys(old[co]||{}).forEach(function(yr){ if(old[co][yr]) rows.push({co_id:+co, year:+yr, status:'human'}); }); });
-      localStorage.setItem('fc_migrated_v1','1');
-      if(rows.length) sb.from('year_factcheck').upsert(rows,{onConflict:'co_id,year'}).then(function(){},function(){});
-    }catch(_){}
+    function run(){
+      try{
+        if(localStorage.getItem('fc_migrated_v1')) return;
+        var sb=SB(); if(!sb){ return; }                    // reynt aftur síðar (næsta onChange)
+        var old=(window.AppSettings&&AppSettings.path&&AppSettings.path('year_factcheck'))||{};
+        var rows=[]; Object.keys(old).forEach(function(co){ Object.keys(old[co]||{}).forEach(function(yr){ if(old[co][yr]) rows.push({co_id:+co, year:+yr, status:'human'}); }); });
+        localStorage.setItem('fc_migrated_v1','1');
+        if(rows.length) sb.from('year_factcheck').upsert(rows,{onConflict:'co_id,year'}).then(function(){},function(){});
+      }catch(_){}
+    }
+    // Keyra EFTIR að AppSettings er hlaðið. Áður keyrði þetta við parse (áður en
+    // async-load kláraðist), las {} og merkti sig samt búið => ekkert fluttist
+    // (fix 2026-08-22, save-audit S5).
+    if(window.AppSettings && AppSettings.isLoaded && AppSettings.isLoaded()) run();
+    else if(window.AppSettings && AppSettings.onChange) AppSettings.onChange(run);
+    else setTimeout(run, 3000);
   })();
 
   // ── Skoðunarmánuður (deilt með Fyrirtæki í Þjónustu — 153-arsskodun.js) ────
