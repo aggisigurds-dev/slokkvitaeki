@@ -2,8 +2,9 @@
 //
 //   GET /api/gatt-doc?doc=<customer_documents.id>
 //
-// 1) Les session → base_id (úr tokeni).  2) Sækir skjalið.  3) SANNREYNIR að
-// skjalið tilheyri base_id notandans (annars 403 — IDOR-vörn).  4) Skilar
+// 1) Les session → base_id (úr tokeni) EÐA opinn aðgangur um ?c=<slug> (félag
+//    virkt MEÐ EKKERT lykilorð).  2) Sækir skjalið.  3) SANNREYNIR að skjalið
+//    tilheyri base_id (annars 403 — IDOR-vörn, líka í opnum ham).  4) Skilar
 // skammlífum signed-URL (Supabase Storage) eða beinir á /api/skjal (Drive).
 // Vafrinn fær ALDREI hráan/opinberan bucket-hlekk né skjal annars félags.
 
@@ -14,10 +15,25 @@ const SIGN_TTL = 120; // sekúndur — mínútur, aldrei langt (leka-vörn)
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: P.secHeaders(), body: '' };
   if (event.httpMethod !== 'GET') return P.json(405, { error: 'GET only' });
-  if (!P.envReady()) return P.json(503, { error: 'Þjónustuvefur ekki uppsettur' });
+  if (!P.dbReady()) return P.json(503, { error: 'Þjónustuvefur ekki uppsettur' });
 
+  // Auðkenning: innskráð session EÐA opinn aðgangur um ?c=<slug> (félag virkt
+  // MEÐ EKKERT lykilorð). Skjöl læsast sjálfkrafa um leið og lykilorð er sett.
   const session = P.getSession(event);
-  if (!session) return P.json(401, { error: 'Ekki innskráð(ur)' });
+  let baseId = null;
+  if (session) {
+    baseId = session.base_id;
+  } else {
+    const slug = String((event.queryStringParameters || {}).c || '').trim();
+    if (slug) {
+      try {
+        const ur = await P.sbGet(`portal_users?slug=eq.${encodeURIComponent(slug)}&select=base_id,active,pass_hash&limit=1`);
+        const u = (ur.ok ? await ur.json() : [])[0];
+        if (u && u.active && !u.pass_hash) baseId = u.base_id;
+      } catch (_) {}
+    }
+    if (baseId == null) return P.json(401, { error: 'Ekki innskráð(ur)' });
+  }
 
   const docId = parseInt((event.queryStringParameters || {}).doc, 10);
   if (!docId) return P.json(400, { error: 'doc vantar' });
@@ -28,12 +44,12 @@ exports.handler = async (event) => {
     const doc = rows[0];
     if (!doc) return P.json(404, { error: 'Skjal finnst ekki' });
 
-    // ── Eignarhald: skjalið verður að tilheyra base_id notandans ──
-    let owns = doc.customer_base_id != null && Number(doc.customer_base_id) === Number(session.base_id);
+    // ── Eignarhald: skjalið verður að tilheyra base_id (session eða opnum aðgangi) ──
+    let owns = doc.customer_base_id != null && Number(doc.customer_base_id) === Number(baseId);
     if (!owns && doc.fyrirtaeki_id != null) {
       const fr = await P.sbGet(`fyrirtaeki?id=eq.${doc.fyrirtaeki_id}&select=customer_base_id&limit=1`);
       const frows = fr.ok ? await fr.json() : [];
-      owns = frows[0] && Number(frows[0].customer_base_id) === Number(session.base_id);
+      owns = frows[0] && Number(frows[0].customer_base_id) === Number(baseId);
     }
     if (!owns) return P.json(403, { error: 'Óheimill aðgangur' });
 
