@@ -1271,7 +1271,13 @@
     _ensureArsVmCss();
     const vm = arsViewMode();
     const isPhone = (window.innerWidth || document.documentElement.clientWidth) <= 768;
-    const effView = vm === 'mobile' ? 'card'
+    // 2026-08-23 (app-ham, samþykkt mockup v2): sími/app-ham fær nýtt ÞÉTT
+    // raða-útlit — EIN lína á fyrirtæki (nafn · 4-ára reitir · mánuður · akstur ·
+    // staða). Kviknar á data-viewmode="mobile" (viewmode-rofinn) EÐA body.appmode
+    // (app-skelin, patch 261 — hún setur líka data-viewmode=mobile gegnum 166, en
+    // við lesum bæði svo það sé skothelt). Skjáborðið (Kort/Listi) er ÓBREYTT.
+    const appMode = !!(document.body && document.body.classList.contains('appmode'));
+    const effView = (vm === 'mobile' || appMode) ? 'mrows'
                   : vm === 'table'  ? 'list'
                   : (isPhone ? 'card' : state.view);
     // Stats restricted to companies that ARE in árskoðun (have equipment).
@@ -1536,7 +1542,7 @@
             <div style="font-size:14px;font-weight:600;color:var(--ink1);margin-bottom:3px">Engin fyrirtæki passa við þessa síu</div>
             <div style="font-size:12px">Reyndu að breyta sía eða leitarstreng.</div>
           </div>
-        `) : (state.status === 'suspect' ? renderSuspectList(filtered) : (effView === 'card' ? renderCards(filtered) : renderTable(filtered)))}
+        `) : (state.status === 'suspect' ? renderSuspectList(filtered) : (effView === 'mrows' ? renderMobileRows(filtered) : effView === 'card' ? renderCards(filtered) : renderTable(filtered)))}
 
         ${filteredAars.length > 0 ? `
         <div class="_ars-summary" style="margin-top:14px;padding:13px 16px;background:var(--surface2);border:1px solid var(--brd);border-radius:10px;display:flex;gap:24px;justify-content:space-between;flex-wrap:wrap;align-items:center">
@@ -1801,6 +1807,29 @@
       });
     });
 
+    // 📱 app-ham: akstur-toggle í þéttu röðunum (0→1→2→3→0). Skrifar í
+    // RAUNVERULEGU akstur-geymsluna (arsskodun_customers[id].akstur) gegnum
+    // window.ArsAkstur.set — sama einingar-skrif og patch 267/Bílstjóri lesa
+    // (deep-merge, eyðir aldrei öðrum lyklum). Endurlitar hnappinn STRAX; vistun
+    // er debounce-uð svo hröð 0→1→2→3 smelling verður EIN vistun. stopPropagation
+    // svo röð-smellur opni ekki fyrirtækið um leið.
+    main.querySelectorAll('._arsm-ak').forEach(btn => btn.addEventListener('click', e => {
+      e.preventDefault(); e.stopPropagation();
+      const id = +btn.dataset.akco; if (!id) return;
+      const now = btn.classList.contains('d1') ? 1 : btn.classList.contains('d2') ? 2 : btn.classList.contains('d3') ? 3 : 0;
+      const next = (now + 1) % 4;
+      btn.classList.remove('d1', 'd2', 'd3');
+      if (next) btn.classList.add('d' + next);
+      btn.textContent = next || '—';
+      btn.title = next ? ('Akstur ' + next + ' — smelltu til að breyta') : 'Enginn aksturslisti — smelltu til að setja á lista';
+      const c = (_cache.byId && _cache.byId[id]) || (_cache.list || []).find(x => +x.id === id);
+      if (c) { c._ars = c._ars || {}; c._ars.akstur = next; }   // svo endurteikning haldi litnum
+      clearTimeout(_mrowAkTimers[id]);
+      _mrowAkTimers[id] = setTimeout(() => {
+        if (window.ArsAkstur && window.ArsAkstur.set) window.ArsAkstur.set(id, next);
+        else if (window.AppSettings && AppSettings.save) AppSettings.save({ [STORAGE_KEY]: { [String(id)]: { akstur: next } } });
+      }, 550);
+    }));
 
     // ❓ Óvíst triage-listi: opna fyrirtæki + taka úr þjónustu
     main.querySelectorAll('._ars-open').forEach(a => a.addEventListener('click', e => {
@@ -2212,6 +2241,159 @@
       alert('Villa: ' + (e && e.message || e));
       if (btn) { btn.disabled = false; btn.textContent = '⬇ Úr þjónustu'; }
     }
+  }
+
+  // ── 📱 Sími/app-ham — ÞÉTT raðir: EIN lína á fyrirtæki (samþykkt mockup v2) ──
+  // Röð: [nafn · 4-ára reitir · mánuður · akstur · staða]. Hvítt spjald sem
+  // poppar á steel-gráa app-bakgrunninum (patch 261). Endurnýtir NÁKVÆMLEGA sömu
+  // gögn og skjáborðstaflan — engin ný gagnaleiðsla:
+  //   • 4-ára reitir: grænt = úttektarskýrsla skráð það ár (_ars._docYears, reiknað
+  //     úr customer_documents ~216-330); gult = skoðað en skýrslu vantar
+  //     (last_year_inspected / arsskodun_report_facts._report_year); grátt = ekkert.
+  //   • staða: sama stState (isDoneYear/field/skip/over/queue) og renderTable.
+  //   • akstur: window.ArsAkstur (arsskodun_customers[id].akstur) — sama einingar-
+  //     skrif og patch 267/Bílstjóri lesa.
+  // Röð-smellur opnar fyrirtækið gegnum ._ars-row-handlerinn (~1786). Skjáborðið er
+  // ósnert — þetta er sér render-grein sem kviknar aðeins í mobile/app-ham.
+  const _mrowAkTimers = Object.create(null);   // debounce vistunar við hraðar 0→1→2→3 smellingar
+  function arsAksturOf(c) {
+    const v = +((c && c._ars && c._ars.akstur)) || 0;
+    return (v >= 1 && v <= 3) ? v : 0;
+  }
+  function _ensureArsMrowCss() {
+    if (document.getElementById('_ars-mrow-css')) return;
+    const s = document.createElement('style');
+    s.id = '_ars-mrow-css';
+    const V = '#view-arsskodun ';
+    const A = 'body.appmode #view-arsskodun ';   // app-ham yfirlög (beat patch 261 .view button)
+    s.textContent = [
+      // hvítt spjald sem poppar á steel-gráa app-bakgrunninum
+      V+'._arsm-tbl{background:#fff;border:1px solid #e6e9ee;border-radius:14px;overflow:hidden;box-shadow:0 1px 2px rgba(20,30,25,.05),0 14px 30px -24px rgba(20,30,25,.45);margin-top:4px}',
+      // ein lína = grind: nafn | 4-ára | mánuður | akstur | staða
+      V+'._arsm-row{display:grid;grid-template-columns:minmax(0,1fr) 66px 34px 34px 26px;gap:7px;align-items:center;padding:9px 11px;border-bottom:1px solid #eef1f5;cursor:pointer;background:#fff}',
+      V+'._arsm-row:last-child{border-bottom:none}',
+      V+'._arsm-row:active{background:#f3f5f8}',
+      // haus-röð — árin sýnd einu sinni efst
+      V+'._arsm-head{background:#eef1f5;cursor:default}',
+      V+'._arsm-head:active{background:#eef1f5}',
+      V+'._arsm-h{font-size:8.5px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:#8a94a3}',
+      V+'._arsm-c{text-align:center}',
+      V+'._arsm-yrhead{display:flex;gap:2px}',
+      V+'._arsm-yrhead span{flex:1;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;color:#8a94a3}',
+      // nafn + undirlína (póstnr · tækjafjöldi · ✉ vantar)
+      V+'._arsm-name{min-width:0}',
+      V+'._arsm-nm{font-size:13.5px;font-weight:600;color:#141a22;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em;line-height:1.2}',
+      V+'._arsm-sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;color:#8a94a3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}',
+      // 4-ára reitir
+      V+'._arsm-yr{display:flex;gap:2px}',
+      V+'._arsm-yr i{flex:1;height:17px;border-radius:3px;background:#e3e6ea;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;font-style:normal;font-weight:700;line-height:1}',
+      V+'._arsm-yr i.rep{background:#1f9d57}',
+      V+'._arsm-yr i.gap{background:#e0a83a}',
+      // mánuður (rautt ef núverandi mánuður · grátt „—" ef enginn)
+      V+'._arsm-mo{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;font-weight:700;color:#141a22;text-align:center;line-height:1.1;white-space:nowrap}',
+      V+'._arsm-mo.none{color:#8a94a3;font-weight:400}',
+      V+'._arsm-mo.due{color:#c0392b}',
+      // akstur-toggle (0=grár „—" · 1=blár · 2=grænn · 3=fjólublár) — sbr. mockup v2
+      V+'._arsm-ak{width:30px;height:26px;margin:0 auto;border-radius:8px;border:1.5px solid #e6e9ee;background:#f4f6f9;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;font-weight:700;color:#8a94a3;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;line-height:1}',
+      V+'._arsm-ak.d1{background:#e8f0fe;border-color:#2563eb;color:#2563eb}',
+      V+'._arsm-ak.d2{background:#e7f7ee;border-color:#1f9d57;color:#1f9d57}',
+      V+'._arsm-ak.d3{background:#f1ecfe;border-color:#8b5cf6;color:#8b5cf6}',
+      // staða-punktur
+      V+'._arsm-st{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;margin:0 auto;line-height:1}',
+      V+'._arsm-st.done{background:#e7f7ee;color:#1f9d57}',
+      V+'._arsm-st.eftir{background:#fdf3e0;color:#c98a1a}',
+      V+'._arsm-st.til{background:#e8f0fe;color:#2563eb}',
+      V+'._arsm-st.vantar{background:#fdeceb;color:#c0392b}',
+      // ── app-ham yfirlög: patch 261 þvingar .view button{min-height:50px;
+      //    font-size:17px;padding:12px} + .view{font-size:17px}. #view-arsskodun-
+      //    sértækni + !important heldur röðunum þéttum (sama vopn og 261 notar
+      //    sjálft á töfluna, sjá 261:518-522). ──
+      A+'._arsm-ak{min-height:0!important;height:26px!important;font-size:12px!important;padding:0!important;line-height:1!important}',
+      A+'._arsm-nm{font-size:13.5px!important}',
+      A+'._arsm-sub{font-size:9.5px!important}',
+      A+'._arsm-mo{font-size:11px!important}',
+      A+'._arsm-h,'+A+'._arsm-yrhead span{font-size:8.5px!important}',
+      A+'._arsm-yr i{font-size:8px!important}',
+      A+'._arsm-st{font-size:11px!important}'
+    ].join('\n');
+    document.head.appendChild(s);
+  }
+  function renderMobileRows(arr) {
+    _ensureArsMrowCss();
+    const today = new Date();
+    const curYear = today.getFullYear();
+    const curMonth = today.getMonth() + 1;
+    const ovr = overrideOn();
+    const years = [curYear - 3, curYear - 2, curYear - 1, curYear];
+    // done→grænt✓ · work(í skýrslugerð)→blátt📄 · over→rautt⚠ · skip/queue→amber⏳
+    const rows = arr.map(c => {
+      const ars = c._ars || {};
+      const m = +ars.inspect_month || 0;
+      const lastYr = +ars.last_year_inspected || 0;
+      const fieldYr = +ars.field_inspected_year || 0;
+      const totalEq = eqGroups(ars.equipment || {}).total;
+      // 4-ára reitir — grænt (skýrsla) / gult (skoðað, skýrslu vantar) / grátt
+      const repSet = new Set((ars._docYears || []).map(Number));
+      const factYr = +ars._report_year || 0;
+      const yrHtml = years.map(y => {
+        if (repSet.has(y)) return `<i class="rep" title="Úttektarskýrsla ${y} á skrá">✓</i>`;
+        if (y === lastYr || y === factYr) return `<i class="gap" title="Skoðað ${y} — skýrslu vantar">!</i>`;
+        return `<i title="Engin skoðun skráð ${y}"></i>`;
+      }).join('');
+      // Staða — sama stState-rök og renderTable (~2618-2624)
+      const isDone = isDoneYear(c, curYear);
+      const isFieldOnly = !isDone && fieldYr === curYear;
+      const isSkipped = !isDone && !isFieldOnly && isSkippedLastYear(c, curYear);
+      const isOverdue = !isDone && !isFieldOnly && !isSkipped && (m > 0 && m <= curMonth);
+      const stState = isDone ? 'done' : isFieldOnly ? 'work' : isSkipped ? 'skip' : isOverdue ? 'over' : 'queue';
+      const stMap = {
+        done:  ['done',   '✓', 'Skoðað ' + curYear],
+        work:  ['til',    '📄', 'Í vinnslu — skýrsla/reikningur eftir'],
+        over:  ['vantar', '⚠', 'Á eftir — skoðun ókláruð'],
+        skip:  ['eftir',  '⏳', 'Sleppt í fyrra (síðast ' + (lastYr || '—') + ')'],
+        queue: ['eftir',  '⏳', 'Á dagskrá']
+      };
+      const st = stMap[stState] || stMap.queue;
+      // Mánuður
+      const moLabel = (m >= 1 && m <= 12) ? MONTHS_IS_SHORT[m - 1] : '—';
+      const moCls = (m >= 1 && m <= 12) ? (m === curMonth ? 'due' : '') : 'none';
+      // í Lagfæringar-ham (overrideOn) heldur mánaðar-reiturinn _ars-ovr-month
+      // handlernum (1626) — annars hreinn texti (smellur á röð opnar fyrirtæki).
+      const moCell = ovr
+        ? `<div class="_ars-ovr-month _arsm-mo ${moCls}" data-co-id="${c.id}" title="⚡ Smelltu til að breyta skoðunarmánuði">${esc(moLabel)}</div>`
+        : `<div class="_arsm-mo ${moCls}">${esc(moLabel)}</div>`;
+      // Akstur (0→1→2→3→0)
+      const ak = arsAksturOf(c);
+      // Undirlína: póstnr · N tæki · ✉ vantar
+      const pnr = pnrOf(c);
+      const email = (c.netfang || '').trim();
+      const subBits = [];
+      if (pnr) subBits.push(esc(pnr));
+      subBits.push(totalEq + ' tæki');
+      if (!email) subBits.push('✉ vantar');
+      return `
+        <div class="_ars-row _arsm-row" data-co-id="${c.id}" tabindex="0">
+          <div class="_arsm-name">
+            <div class="_arsm-nm">${esc(c.nafn || '—')}</div>
+            <div class="_arsm-sub">${subBits.join(' · ')}</div>
+          </div>
+          <div class="_arsm-yr">${yrHtml}</div>
+          ${moCell}
+          <button type="button" class="_arsm-ak${ak ? ' d' + ak : ''}" data-akco="${c.id}" title="${ak ? 'Akstur ' + ak + ' — smelltu til að breyta' : 'Enginn aksturslisti — smelltu til að setja á lista'}">${ak || '—'}</button>
+          <span class="_arsm-st ${st[0]}" title="${esc(st[2])}">${st[1]}</span>
+        </div>`;
+    }).join('');
+    return `
+      <div class="_arsm-tbl">
+        <div class="_arsm-row _arsm-head">
+          <div class="_arsm-h">Fyrirtæki</div>
+          <div class="_arsm-yrhead">${years.map(y => `<span>'${String(y).slice(-2)}</span>`).join('')}</div>
+          <div class="_arsm-h _arsm-c">Mán</div>
+          <div class="_arsm-h _arsm-c">🚗</div>
+          <div class="_arsm-h _arsm-c">St</div>
+        </div>
+        ${rows}
+      </div>`;
   }
 
   function renderCards(arr) {
