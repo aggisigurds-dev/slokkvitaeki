@@ -180,9 +180,10 @@
           box.querySelectorAll('[data-base]').forEach(function (row) {
             row.onclick = function () {
               var base = parseInt(row.getAttribute('data-base'), 10);
+              box.classList.add('hidden'); $('#coSearch').value = '';   // loka strax við val
               if (state.access.some(function (a) { return a.base_id === base; })) { toast('Vefur er þegar til fyrir þetta félag'); return; }
               api({ action: 'create', base_id: base }).then(function (res) {
-                if (res.ok) { toast('Aðgangur stofnaður'); $('#coSearch').value = ''; box.classList.add('hidden'); load(); }
+                if (res.ok) { toast('Aðgangur stofnaður'); load(); }
                 else toast(res.error || 'Villa');
               });
             };
@@ -191,6 +192,7 @@
     }, 250);
   });
   document.addEventListener('click', function (e) { if (!e.target.closest('.picker')) $('#coResults').classList.add('hidden'); });
+  $('#coSearch').addEventListener('keydown', function (e) { if (e.key === 'Escape') { $('#coResults').classList.add('hidden'); this.blur(); } });
 
   load();
 })();
