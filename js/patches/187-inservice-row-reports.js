@@ -358,8 +358,13 @@
           // þegar gap-flagg stendur (Claude-yfirferðirnar flögguðu fjölda 2026-
           // raða „skýrsla vantar" þótt skoðunin sé ekki tímabær fyrr en seinna
           // á árinu; Agnar: „we dont have to go yet"). Liðinn mánuður = rautt.
+          // 2026-08-23 (Factcheck Task 3): AÐEINS liðinn mánuður (_im < curMonth)
+          // telst „á eftir" (rautt). YFIRSTANDANDI mánuður er enn framundan —
+          // skoðunin má gerast hvenær sem er í mánuðinum — svo hann er gull, sbr.
+          // year_factcheck-nóturnar („Ekki komið að skoðun — skoðunarmánuður er
+          // ágúst"). Var <= (gerði yfirstandandi mánuð rauðan, á skjön við nótuna).
           const _im = _arsMonthById[String(coId)] || (+(((_arsBlob[String(coId)]) || {}).inspect_month) || 0);
-          const notDue = isNow && !(_im > 0 && _im <= _curMonth);
+          const notDue = isNow && !(_im > 0 && _im < _curMonth);
           // 2026-08-17 (Agnar, Heimaleiga Hamraborg 7: „this one is still not
           // conected"): fyrirtæki sem er MERKT SKOÐAÐ á árinu (Skoðað-hnappurinn
           // / last_year_inspected í ársskoðunar-blobbinu) sýndi samt RAUTT 26 —
