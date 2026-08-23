@@ -166,8 +166,8 @@
     // real uttaeki table (status='active'); pricing from the vorur "yfirferð"
     // rates (single source of truth) with hardcoded fallbacks. Both run in
     // parallel with the company + settings loads.
-    const unitsP = loadActiveUnitsByClient(SB).catch(() => ({}));
-    const nextInspP = loadNextInspByClient(SB).catch(() => ({}));
+    const unitsP = loadActiveUnitsByFid(SB).catch(() => ({}));
+    const nextInspP = loadNextInspByFid(SB).catch(() => ({}));
     const priceP = loadYfirferdPrices(SB).catch(() => ({}));
     // 2026-07-14: authoritative "last inspection" facts parsed from each
     // company's most-recent úttektarskýrsla PDF (inspection month + per-category
@@ -255,8 +255,8 @@
     _cache.allCompanies = allCompanies;
     _cache.byId = Object.fromEntries(allCompanies.map(c => [c.id, c]));
 
-    const unitsByClient = await unitsP;
-    const nextInspByClient = await nextInspP;
+    const unitsByFid = await unitsP;        // lyklað á uttaeki.fyrirtaeki_id (starfsstöð)
+    const nextInspByFid = await nextInspP;  // sama — ekki lengur client-nafn
     const PRICE = await priceP;
     const factsList = await factsP;
     const factsById = Object.fromEntries((factsList || []).map(f => [String(f.fyrirtaeki_id), f]));
@@ -299,7 +299,7 @@
         (a.equipment && Object.values(a.equipment).some(v => +v > 0))
       ));
       const hasBru = !!bruMap[key];
-      const hasUnits = (unitsByClient[foldName(c.nafn)] || []).length > 0;
+      const hasUnits = (unitsByFid[c.id] || []).length > 0;
       return hasArs || hasBru || hasUnits;
     }
 
@@ -318,7 +318,7 @@
       .map(c => {
         const manual = arsMap[String(c.id)] || {};
         const _ars = Object.assign({}, manual);
-        const units = unitsByClient[foldName(c.nafn)] || [];
+        const units = unitsByFid[c.id] || [];
         _ars._units = units;   // keep the raw uttaeki rows so the modal can list + delete individual tæki
         // Skýrslu-ár úr customer_documents (fyrir Óvíst-sönnunarmerkin)
         const dySet = new Set([
@@ -403,10 +403,10 @@
         // elsta dagsetning vinnur). Fyllir AÐEINS í eyðu, sama og skýrslu-
         // þrepið að ofan — vinnur aldrei yfir blob eða skýrslu-mánuð.
         // Samsvarandi þrep er í 199-doc-year-grid.js (skjalasíðan) svo báðar
-        // síður sýni sama gildi — sótt úr nextInspByClient (loadNextInspByClient),
-        // EKKI `units`/unitsByClient (sjá athugasemd við loadNextInspByClient).
+        // síður sýni sama gildi — sótt úr nextInspByFid (loadNextInspByFid),
+        // EKKI `units`/unitsByFid (sjá athugasemd við loadNextInspByFid).
         if (!_ars.inspect_month) {
-          const nextInsp = nextInspByClient[foldName(c.nafn)];
+          const nextInsp = nextInspByFid[c.id];
           if (nextInsp) {
             const mm = +String(nextInsp).slice(5, 7);
             if (mm >= 1 && mm <= 12) { _ars.inspect_month = mm; _ars._month_from_uttaeki = true; }
@@ -517,57 +517,73 @@
       (g.other ? cell(g.other, 'Annað', 'Eldvarnarteppi / annað') : '') +
     '</span>';
   }
-  async function loadActiveUnitsByClient(SB) {
-    const byClient = {};
+  // 2026-08-23 (Factcheck-átak, borð-entry 2/13): para tæki á beina FK-inu
+  // uttaeki.fyrirtaeki_id → fyrirtaeki.id, í stað fólduðu client-nafni. Gamli
+  // nafna-joininn tvítaldi fjölstaða-rekstrarfélög — hver starfsstöð erfði ÖLL
+  // tæki móðurfélagsins (Bílabúð Benna: 13 tæki á Krókhálsi sýndust líka á
+  // Fiskislóð). 39 tæki eiga fyrirtaeki_id=null (óleyst tvítök, sjá entry 13):
+  // þau falla sjálfkrafa út hér — birtast EKKI á neinum stað — uns Agnar
+  // samþykkir sameiningarnar. location-textinn stendur óbreyttur (bakvörður).
+  async function loadActiveUnitsByFid(SB) {
+    const byFid = {};
+    let nullFk = 0;   // virk tæki án starfsstöðvar-FK (entry 13 bakstaða)
     try {
       let from = 0; const page = 1000;
       while (true) {
         const { data, error } = await SB.from('uttaeki')
-          .select('id,serial,type,size,client,status')
+          .select('id,serial,type,size,client,status,fyrirtaeki_id')
           .eq('status', 'active')
           .order('id')
           .range(from, from + page - 1);
         if (error || !data) break;
         data.forEach(u => {
-          const k = foldName(u.client);
-          if (!k) return;
-          (byClient[k] = byClient[k] || []).push(u);
+          if (u.fyrirtaeki_id == null) { nullFk++; return; }  // birtist á engum stað uns Cowork tengir
+          (byFid[u.fyrirtaeki_id] = byFid[u.fyrirtaeki_id] || []).push(u);
         });
         if (data.length < page) break;
         from += page;
       }
+      // Yfirborð (netvörður regla 3): virk null-FK tæki birtast hvergi. Auditið
+      // tools/audit-fk-join.cjs ver að ENGINN lifandi kúnni detti út af joininu;
+      // hér skráum við bakstöðuna svo hún sjáist á Kerfisheilsu uns Cowork tengir
+      // hana (entry 13, → 0). Fingerprint dedup, ekkert kt.
+      if (nullFk > 0) {
+        try { if (window.logProblem) window.logProblem('uttaeki_null_fid', nullFk + ' virk tæki án starfsstöðvar-FK — teljast á engum stað (bíða tengingar)', { fingerprint: 'uttaeki_null_fid' }); } catch (_) {}
+      }
     } catch (e) { console.warn('[arsskodun] units load', e); }
-    return byClient;
+    return byFid;
   }
-  // 2026-08-10: separate from loadActiveUnitsByClient on purpose — that one
+  // 2026-08-10: separate from loadActiveUnitsByFid on purpose — that one
   // filters status='active' (narrower than most of this codebase's "still in
   // service" convention) and doesn't select next_insp at all. The "next
   // inspection" derivation used everywhere else (companieslist.js, 185-
   // inservice-yfirlit.js) is status != 'urelt' + earliest next_insp wins —
   // matching that here so a company with real units sitting in status='ok'
   // (the common case) isn't silently skipped.
-  async function loadNextInspByClient(SB) {
-    const byClient = {};
+  // 2026-08-23: lyklað á uttaeki.fyrirtaeki_id (starfsstöð) eins og hér að ofan.
+  async function loadNextInspByFid(SB) {
+    const byFid = {};
     try {
       let from = 0; const page = 1000;
       while (true) {
         const { data, error } = await SB.from('uttaeki')
-          .select('client,next_insp')
+          .select('fyrirtaeki_id,next_insp')
           .neq('status', 'urelt')
           .not('next_insp', 'is', null)
+          .not('fyrirtaeki_id', 'is', null)
           .order('id')
           .range(from, from + page - 1);
         if (error || !data) break;
         data.forEach(u => {
-          const k = foldName(u.client);
-          if (!k) return;
-          if (!byClient[k] || u.next_insp < byClient[k]) byClient[k] = u.next_insp;
+          const k = u.fyrirtaeki_id;
+          if (k == null) return;
+          if (!byFid[k] || u.next_insp < byFid[k]) byFid[k] = u.next_insp;
         });
         if (data.length < page) break;
         from += page;
       }
     } catch (e) { console.warn('[arsskodun] next_insp load', e); }
-    return byClient;
+    return byFid;
   }
   // Per-category ANNUAL revenue per unit, with VSK.
   // 2026-06-02: this used to return yfirferð only, án VSK — which understated

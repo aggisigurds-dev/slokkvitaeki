@@ -50,6 +50,7 @@ automation health and pings Agnar *only* when something needs him.
 | **An entered kennitala is never dropped to `999999‑9999`** | `121` saves `customer_kt` on both save paths; `js/pos.js` extracts a kt typed into the name field | *(kt signals to come)* | `audit-kt-trap.cjs` |
 | **POS search doesn't silently drop customers past 1000 rows** | `DB.fetchAll` pagination on the big tables | — | `audit-pagination.cjs` |
 | **Per‑line discount + credit notes bill Payday correctly** | `payday-push.js` per‑line gate + credit `discount_pct=0` strip | `send_failed` (token) | *verified vs 697 live sales; audit TODO* |
+| **The tæki→starfsstöð FK join hides no live in‑service customer** | `153` counts devices by `uttaeki.fyrirtaeki_id` (not folded client‑name); soft‑deleted excluded at `153:162` | `uttaeki_null_fid` | `audit-fk-join.cjs` |
 
 ---
 
@@ -169,6 +170,17 @@ baseline rows and lowering the constant is how the net tightens over time.
   verified, bounded ≤~1 kr re-save drift on drafts. **Phone at Sala** (`114`, 5cd173a):
   editable Sími box on the selected-customer card → state.customer.simi. Non-guarded same
   day: label-print phone field (`139`, #17) + rekstrarfélög upload-key sanitise (`111`, #18).
+- **2026‑08‑23 — Factcheck Task 1: tæki→starfsstöð FK join** (`153`, `199`, PR #706):
+  `153-arsskodun.js` taldi tæki per fyrirtæki með fólduðu client‑nafni
+  (`uttaeki.client == fyrirtaeki.nafn`) → tvítaldi fjölstaða‑rekstrarfélög (Bílabúð
+  Benna sýndi 13 tæki á báðum Krókhálsi og Fiskislóð). Fært á beina FK‑ið
+  `uttaeki.fyrirtaeki_id` (`loadActiveUnitsByFid`/`loadNextInspByFid`, `hasUnits`
+  `153:302`); `199` skoðunarmánaðar‑fallback samræmt (base→fyrirtaeki_id). Vörður:
+  readiness‑settið óbreytt á lifandi gögnum (in‑service OLD 683 = NEW 683, 0 drop‑outs
+  — netvörður hermdi tvisvar), soft‑eydd fyrirtæki síuð burt (`153:162`), null‑FK virk
+  tæki (36, entry 13) talin + `logProblem('uttaeki_null_fid')` svo þau sjáist á
+  Kerfisheilsu uns Cowork tengir þau. Nýtt audit `audit-fk-join.cjs` (BASELINE 0) sannar
+  að enginn lifandi kúnni detti úr þjónustu vegna joinsins; `audit-all` nú 4/4 grænt.
 - *Add a line here every time you make something bulletproof.*
 
 ---
