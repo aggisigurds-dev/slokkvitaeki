@@ -309,8 +309,9 @@
 
   // ── Refresh hooks ─────────────────────────────────────────────────────────
   document.addEventListener('sale-edited', loadDrog);
-  // Periodic refresh in case other tabs/devices change drög
-  setInterval(loadDrog, 30000);
+  // Periodic refresh in case other tabs/devices change drög (only while the view
+  // is active — pattern from 268-aksturslisti-vakt.js:401)
+  setInterval(() => { const el = document.getElementById(VIEW_ID); if (el && el.classList.contains('active')) loadDrog(); }, 30000);
 
   // ── Boot ──────────────────────────────────────────────────────────────────
   function boot() {

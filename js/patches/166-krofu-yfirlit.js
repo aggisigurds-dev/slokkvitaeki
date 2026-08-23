@@ -813,7 +813,12 @@
     // Group by company across the whole dataset for the per-company section.
     const grouped = {};
     all.forEach(s => {
-      const key = normName(s.customer_nafn) || '(ekkert nafn)';
+      // Group key prefers kennitala, then customer_id, then the normalized name —
+      // so two distinct entities that share a name (different kt) don't merge into
+      // one company. The human name stays as the display label below.
+      const key = ktDigits(s.customer_kt)
+                || (s.customer_id != null ? 'id:' + s.customer_id : '')
+                || normName(s.customer_nafn) || '(ekkert nafn)';
       const display = s.customer_nafn || '(ekkert nafn)';
       if (!grouped[key]) grouped[key] = { display, id: s.customer_id || null, sales: [], sum: 0, thisMonthSum: 0, olderSum: 0, latestUpdated: '', latestCreated: '' };
       // 2026-08-05: don't get stuck on null forever just because the FIRST sale
@@ -930,7 +935,7 @@
 
         <div style="font-size:12.5px;color:#5b6472;margin-bottom:14px;padding:11px 15px;background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18);line-height:1.5">
           💡 Útistandandi kröfur per fyrirtæki sem þarf að setja í heimabankann.
-          Þegar krafan er mynduð, smelltu <b style="color:#0f7a43">„✓ Allar greiddar"</b> til að hreinsa þær út.
+          Þegar krafan er greidd, merktu hverja sölu greidda með <b style="color:#0f7a43">✓</b> — eða „🔄 Payday" sækir greiðslustöðuna sjálfkrafa.
         </div>
 
         ${q && companies.length ? `<div style="font-size:12px;color:#e2e6ee;margin-bottom:10px;text-shadow:0 1px 2px rgba(0,0,0,.4)">🔍 ${shown.length} af ${companies.length} fyrirtækjum passa við „${esc(_state.search)}"</div>` : ''}
@@ -1082,19 +1087,6 @@
         const r = await SB.from('solur').update({ paid_at: isOn ? null : new Date().toISOString() }).eq('id', id);
         if (r.error) { alert('Villa: ' + r.error.message); return; }
         if (window.Toast && Toast.show) Toast.show(isOn ? '↩ Afhakað' : '✓ Merkt sem greitt');
-        await load(_state.month);
-        refreshBadge();
-      });
-    });
-    main.querySelectorAll('._ky-mark-all-paid').forEach(b => {
-      b.addEventListener('click', async () => {
-        const ids = b.dataset.ids.split(',').map(Number);
-        const name = b.dataset.name || 'þetta fyrirtæki';
-        if (!confirm('Merkja allar ' + ids.length + ' kröfur sem greitt fyrir "' + name + '"?\n\n(Notist eftir að krafa hefur verið send í heimabanka.)')) return;
-        const SB = getSB();
-        const r = await SB.from('solur').update({ paid_at: new Date().toISOString() }).in('id', ids);
-        if (r.error) { alert('Villa: ' + r.error.message); return; }
-        if (window.Toast && Toast.show) Toast.show('✓ ' + ids.length + ' kröfur merktar greiddar');
         await load(_state.month);
         refreshBadge();
       });
@@ -1714,7 +1706,6 @@
   }
   function renderTableGroup(grp) {
     const sales = grp.sales.slice().sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
-    const ids = sales.map(s => s.id).join(',');
     const totalStr = String(Math.round(grp.sum));
     const sendableIds = sales.filter(isSendable).map(s => s.id);
     const ident = companyIdentity(grp);
@@ -1727,7 +1718,6 @@
         <td>
           <div style="display:flex;gap:5px;align-items:center">
             <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð" style="width:28px;height:28px;background:#fff;color:#475569;border:1px solid rgba(20,24,34,.16);border-radius:7px;cursor:pointer;font-size:12px;flex-shrink:0">📋</button>
-            <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt" style="height:28px;padding:0 10px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;border-radius:7px;cursor:pointer;font:inherit;font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0">✓ Allar</button>
           </div>
         </td>
       </tr>`;
@@ -1761,7 +1751,6 @@
   function renderCompany(grp) {
     // Sort sales chronological asc within the company card for easier review.
     const sales = grp.sales.slice().sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''));
-    const ids = sales.map(s => s.id).join(',');
     const totalStr = String(Math.round(grp.sum));
     // Ids of claims not yet pushed to Payday — these get a pick checkbox and are
     // what the company "select all" toggles.
@@ -1796,7 +1785,6 @@
               <div class="ky-num" style="font-size:22px;font-weight:700;color:#11141c">${fmtKr(grp.sum)}</div>
             </div>
             <button class="_ky-copy-total" data-value="${esc(totalStr)}" type="button" title="Afrita upphæð" style="width:38px;height:38px;background:#f1f5f9;color:#475569;border:1px solid rgba(20,24,34,.14);border-radius:10px;cursor:pointer;font:inherit;font-size:13px">📋</button>
-            <button class="_ky-mark-all-paid" data-ids="${ids}" data-name="${esc(grp.display)}" type="button" title="Merkja allar kröfur sem greitt" style="height:40px;padding:0 16px;background:linear-gradient(150deg,#2bbf6c,#0f6e3a);color:#fff;border:1px solid #156e3a;border-radius:11px;cursor:pointer;font:inherit;font-size:13px;font-weight:700;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)">✓ Allar greiddar</button>
           </div>
         </div>
         <div>

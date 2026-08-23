@@ -950,7 +950,8 @@
           !order.some(x => { const v = String(x).toLowerCase(); return v === 'verkbord' || v.indexOf('verkborð') !== -1; })) {
         patch.sidebar_order = ['verkbord'].concat(order);
       }
-      await AppSettings.save(patch);
+      const ok = await AppSettings.save(patch);
+      if (!ok) { console.warn('[verkbord] retireOldOnce: save() returned false — skipping hide/toast'); return; }
       hideOldButtonsNow();
       toast('Faldi gömlu listana — sjást aftur í Stillingar → Valmynd ef þú vilt.');
     } catch (e) { console.warn('[verkbord] retireOldOnce', e); }

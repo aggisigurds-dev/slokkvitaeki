@@ -220,7 +220,17 @@
       paid_at: date ? new Date(date).toISOString() : new Date().toISOString(),
       paid_method: method
     };
-    if (notes) update.athugasemdir = notes;
+    if (notes) {
+      // APPEND, never overwrite: the POS stores pickup/„Beiðni …" refs in
+      // athugasemdir and a blind replace destroyed that link. Read the current
+      // value into scope first, then append the new note on a fresh line.
+      let existing = '';
+      try {
+        const { data } = await SB.from('solur').select('athugasemdir').eq('id', saleId).single();
+        existing = (data && data.athugasemdir) ? data.athugasemdir : '';
+      } catch (_) { existing = ''; }
+      update.athugasemdir = (existing ? existing + '\n' : '') + notes;
+    }
     const { error } = await SB.from('solur').update(update).eq('id', saleId);
     if (error) throw error;
   }

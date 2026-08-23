@@ -121,7 +121,6 @@ index.html              shell — declares <script> tags + <div id="view-*"> con
 js/config.js            Supabase URL + anon key
 js/db.js                DB global, wraps supabase client
 js/utils.js             helpers (esc, fmtKr, dates)
-js/app.js               view routing — showMasterView('view-foo')
 js/pos.js               Sala (POS) view + showReceipt() popup
 js/mapfix.js            kort-merkin + geocode (js/field.js er EKKI til — sjá `kort`)
 js/qrbulkprint.js       Bulk QR sheet printing
@@ -131,8 +130,6 @@ js/sala.js              Sales list (older — superseded by Bókhalds yfirlit)
 js/tekjur.js            Income overview
 js/companieslist.js     Company list
 js/v9.js                Realtime sync (Supabase channels)
-js/gaedakerfi.js        Quality system / audit-trail modal
-js/patch-master.js      THE BIG ONE — to be split
 ```
 
 ---
