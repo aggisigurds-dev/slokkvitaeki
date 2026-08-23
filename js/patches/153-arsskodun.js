@@ -526,23 +526,29 @@
   // samþykkir sameiningarnar. location-textinn stendur óbreyttur (bakvörður).
   async function loadActiveUnitsByFid(SB) {
     const byFid = {};
+    let nullFk = 0;   // virk tæki án starfsstöðvar-FK (entry 13 bakstaða)
     try {
       let from = 0; const page = 1000;
       while (true) {
         const { data, error } = await SB.from('uttaeki')
           .select('id,serial,type,size,client,status,fyrirtaeki_id')
           .eq('status', 'active')
-          .not('fyrirtaeki_id', 'is', null)
           .order('id')
           .range(from, from + page - 1);
         if (error || !data) break;
         data.forEach(u => {
-          const k = u.fyrirtaeki_id;
-          if (k == null) return;
-          (byFid[k] = byFid[k] || []).push(u);
+          if (u.fyrirtaeki_id == null) { nullFk++; return; }  // birtist á engum stað uns Cowork tengir
+          (byFid[u.fyrirtaeki_id] = byFid[u.fyrirtaeki_id] || []).push(u);
         });
         if (data.length < page) break;
         from += page;
+      }
+      // Yfirborð (netvörður regla 3): virk null-FK tæki birtast hvergi. Auditið
+      // tools/audit-fk-join.cjs ver að ENGINN lifandi kúnni detti út af joininu;
+      // hér skráum við bakstöðuna svo hún sjáist á Kerfisheilsu uns Cowork tengir
+      // hana (entry 13, → 0). Fingerprint dedup, ekkert kt.
+      if (nullFk > 0) {
+        try { if (window.logProblem) window.logProblem('uttaeki_null_fid', nullFk + ' virk tæki án starfsstöðvar-FK — teljast á engum stað (bíða tengingar)', { fingerprint: 'uttaeki_null_fid' }); } catch (_) {}
       }
     } catch (e) { console.warn('[arsskodun] units load', e); }
     return byFid;
