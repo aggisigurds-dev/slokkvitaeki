@@ -163,7 +163,7 @@
       P+'.rf-rail--done{background:#1f9d57}',
       P+'.rf-rail--overdue{background:#e23232}',
       P+'.rf-rail--none{background:#dbe0e9}',
-      P+'.rf-bname{display:block;font-size:13.5px;font-weight:600;color:#11141c;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      P+'.rf-bname{display:block;font-size:13.5px;font-weight:600;color:#11141c;line-height:1.25;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}',
       P+'.rf-bname a{color:#11141c;text-decoration:none;font-weight:600}',
       // eldri-ára hlekkir (📄2022↗) sitja UNDIR nafninu svo ellipsis á nafninu
       // klippi þá aldrei af — þeir eru eina leiðin að gömlu skýrslunum.
@@ -175,7 +175,7 @@
       // og þegar þau sátu öll þrjú stöfluð þar inni. Sami þéttleiki og listi
       // Fyrirtækja í þjónustu (153 .data-table: td 7px/44px · ._co 13 / ._kt 10).
       P+'.rf-bkt{display:block;font-family:"Space Mono",monospace;font-size:10px;color:#9098a6;letter-spacing:.02em;line-height:1.3;white-space:nowrap}',
-      P+'.rf-baddr{display:block;font-size:12px;color:#5b6472;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:230px}',
+      P+'.rf-baddr{display:block;font-size:12px;color:#5b6472;line-height:1.25;white-space:normal;overflow:visible;overflow-wrap:anywhere}',
       P+'.rf-baddr--empty{color:#c3c9d3}',
       // Nóta-dálkur — ferðanótan (fyrirtaeki.plan_note), sami reitur og ._note í 153.
       P+'.rf-plannote{display:block;width:100%;min-width:120px;height:24px;border:1px solid transparent;border-radius:7px;background:transparent;color:#3a4250;font:inherit;font-size:11.5px;padding:0 8px;box-sizing:border-box;outline:none;transition:background .12s,border-color .12s}',
