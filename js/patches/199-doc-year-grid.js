@@ -700,22 +700,24 @@
   var MONTHS_IS_SHORT=['Jan','Feb','Mar','Apr','Maí','Jún','Júl','Ágú','Sep','Okt','Nóv','Des'];
   var ARS_KEY='arsskodun_customers';
   var _uttNextCache={};
-  // 2026-08-10: baseId-síað (ekki foldName-mátun eins og 153-arsskodun.js) —
-  // þessi skrá vinnur nú þegar með baseId/customer_base_id alls staðar annars
-  // staðar (fetchDocs, fetchPairs o.fl.), svo það er í samræmi við HANA sjálfa
-  // að nota sama lykil hér frekar en að taka upp aðra mátunar-aðferð.
-  function monthFromUttaeki(baseId){
-    if(!baseId) return Promise.resolve(null);
-    if(_uttNextCache[baseId]!==undefined) return Promise.resolve(_uttNextCache[baseId]);
+  // 2026-08-10: baseId-síað upphaflega. 2026-08-23 (Factcheck-átak, borð-entry
+  // 2): fært á uttaeki.fyrirtaeki_id (per starfsstöð) svo skoðunarmánuðurinn
+  // hér sýni NÁKVÆMLEGA sama gildi og 153-arsskodun.js (sem er líka fært á
+  // fyrirtaeki_id). Gamla base-víða leitin blandaði saman systkina-stöðum í
+  // fjölstaða-rekstrarfélögum. Tæki með fyrirtaeki_id=null (39, entry 13)
+  // detta út — enginn staður erfir þau.
+  function monthFromUttaeki(coId){
+    if(!coId) return Promise.resolve(null);
+    if(_uttNextCache[coId]!==undefined) return Promise.resolve(_uttNextCache[coId]);
     var sb=SB(); if(!sb) return Promise.resolve(null);
-    return sb.from('uttaeki').select('next_insp').eq('customer_base_id',baseId).neq('status','urelt')
+    return sb.from('uttaeki').select('next_insp').eq('fyrirtaeki_id',coId).neq('status','urelt')
       .not('next_insp','is',null).order('next_insp',{ascending:true}).limit(1)
       .then(function(r){
         var d=(r.data&&r.data[0]&&r.data[0].next_insp)||null;
         var out=null;
         if(d){ var mm=+String(d).slice(5,7); if(mm>=1&&mm<=12) out={month:mm,date:d}; }
-        _uttNextCache[baseId]=out; return out;
-      }, function(){ _uttNextCache[baseId]=null; return null; });
+        _uttNextCache[coId]=out; return out;
+      }, function(){ _uttNextCache[coId]=null; return null; });
   }
   async function loadInspectMonth(coId, baseId){
     var blob=(window.AppSettings&&AppSettings.path&&AppSettings.path(ARS_KEY))||{};
@@ -731,7 +733,7 @@
         if(fm>=1&&fm<=12) return {month:fm, manual:false, source:'report'};
       }catch(e){}
     }
-    var derived=await monthFromUttaeki(baseId);
+    var derived=await monthFromUttaeki(coId);   // per starfsstöð (fyrirtaeki_id), sbr. 153
     if(derived) return {month:derived.month, manual:false, source:'uttaeki', date:derived.date};
     return null;
   }
