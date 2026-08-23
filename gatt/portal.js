@@ -98,8 +98,8 @@
       .catch(function () { showLogin(); });
   }
 
-  // Opinn forsýnar-aðgangur (open_preview, ekkert lykilorð): sækir raungögn
-  // félagsins um slug ÁN innskráningar. Læsist um leið og lykilorð er sett.
+  // Opinn aðgangur (virkur + ekkert lykilorð): sækir raungögn félagsins um
+  // slug ÁN innskráningar. Læsist um leið og lykilorð er sett.
   function openBoot() {
     fetch('/api/gatt?c=' + encodeURIComponent(SLUG), { headers: { Accept: 'application/json' } })
       .then(function (r) { if (!r.ok) throw 0; return r.json(); })

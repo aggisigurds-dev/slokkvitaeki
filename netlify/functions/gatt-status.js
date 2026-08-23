@@ -17,15 +17,15 @@ exports.handler = async (event) => {
   if (!slug) return P.json(200, { exists: false, active: false });
 
   try {
-    const r = await P.sbGet(`portal_users?slug=eq.${encodeURIComponent(slug)}&select=slug,active,pass_hash,open_preview,display_name,theme&limit=1`);
+    const r = await P.sbGet(`portal_users?slug=eq.${encodeURIComponent(slug)}&select=slug,active,pass_hash,display_name,theme&limit=1`);
     const u = (r.ok ? await r.json() : [])[0];
     if (!u) return P.json(200, { exists: false, active: false });
     return P.json(200, {
       exists: true,
       active: !!(u.active && u.pass_hash),   // login opnast aðeins þegar lykilorð er virkt
-      // opinn forsýnar-aðgangur: virkur + ekkert lykilorð + open_preview → vefurinn
-      // opnast með raungögnum ÁN innskráningar. Læsist um leið og lykilorð er sett.
-      open: !!(u.active && !u.pass_hash && u.open_preview),
+      // Regla: virkur + TÓMT lykilorð → vefurinn OPINN með raungögnum ÁN innskráningar.
+      // Um leið og lykilorð (pass_hash) er sett → læsist, krefst innskráningar.
+      open: !!(u.active && !u.pass_hash),
       name: u.display_name || '',
       theme: u.theme || 'steel',
     });

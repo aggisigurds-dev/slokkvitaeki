@@ -4,9 +4,9 @@
 //   POST /api/gatt   { body }  → viðskiptavinur sendir fyrirspurn (skilaboð)
 //
 // base_id kemur úr session-tokeninu (aldrei úr slóð) → einangrun. UNDANTEKNING:
-// „opinn forsýnar-aðgangur" — ef ?c=<slug> vísar á félag sem er virkt, MEÐ EKKERT
-// lykilorð OG open_preview=true, þá er base_id lesið úr slug-inu og gögn þjónuð án
-// innskráningar. Um leið og lykilorð (pass_hash) er sett slokknar á þessu sjálfkrafa.
+// „opinn aðgangur" — ef ?c=<slug> vísar á félag sem er virkt MEÐ EKKERT lykilorð,
+// þá er base_id lesið úr slug-inu og gögn þjónuð án innskráningar. Um leið og
+// lykilorð (pass_hash) er sett slokknar á þessu sjálfkrafa (→ krefst innskráningar).
 // Les beint úr Supabase (service-role) og skilar AÐEINS hvítlistuðum, kúnna-
 // öruggum reitum. Skjöl sótt gegnum /api/gatt-doc (eignarhaldsprófað).
 
@@ -19,9 +19,9 @@ exports.handler = async (event) => {
   if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') return P.json(405, { error: 'GET/POST only' });
   if (!P.dbReady()) return P.json(503, { error: 'Þjónustuvefur ekki uppsettur' });
 
-  // Auðkenning: annaðhvort innskráð session, EÐA opinn forsýnar-aðgangur um slug.
-  // Opna leiðin þjónar AÐEINS þegar félagið er virkt, ekkert lykilorð sett OG
-  // open_preview=true — annars 401. (Krefst ekki JWT; þess vegna dbReady, ekki envReady.)
+  // Auðkenning: annaðhvort innskráð session, EÐA opinn aðgangur um slug.
+  // Opna leiðin þjónar AÐEINS þegar félagið er virkt OG ekkert lykilorð sett —
+  // annars 401. (Krefst ekki JWT; þess vegna dbReady, ekki envReady.)
   const session = P.getSession(event);
   let baseId, openMode = false, openAcct = null;
   if (session) {
@@ -30,9 +30,9 @@ exports.handler = async (event) => {
     const slug = String((event.queryStringParameters || {}).c || '').trim();
     if (slug) {
       try {
-        const ur = await P.sbGet(`portal_users?slug=eq.${encodeURIComponent(slug)}&select=base_id,active,pass_hash,open_preview,display_name,theme&limit=1`);
+        const ur = await P.sbGet(`portal_users?slug=eq.${encodeURIComponent(slug)}&select=base_id,active,pass_hash,display_name,theme&limit=1`);
         const u = (ur.ok ? await ur.json() : [])[0];
-        if (u && u.active && !u.pass_hash && u.open_preview) { baseId = u.base_id; openMode = true; openAcct = u; }
+        if (u && u.active && !u.pass_hash) { baseId = u.base_id; openMode = true; openAcct = u; }
       } catch (_) {}
     }
     if (!openMode) return P.json(401, { error: 'Ekki innskráð(ur)' });
