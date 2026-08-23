@@ -86,7 +86,7 @@
           '<button class="btn btn--sm btn--accent" data-act="save">Vista aðgang</button>' +
           '<button class="btn btn--sm" data-act="toggle">' + (a.active ? 'Afvirkja' : 'Virkja') + '</button>' +
         '</div>' +
-        '<div class="note">Tómt aðgangsorð + lykilorð → innskráningin opnast EKKI hjá viðskiptavini fyrr en hvort tveggja er sett.</div>' +
+        '<div class="note">Tómt lykilorð → vefurinn er OPINN (raungögn, engin innskráning) þar til lykilorð er sett. Um leið og lykilorð er sett krefst hann innskráningar.</div>' +
       '</div>' +
       '<div><h3>Hlekkur & sending</h3>' +
         '<div class="fld"><label>Vefslóð viðskiptavinar</label><div class="urlbox"><code>' + esc(urlOf(a)) + '</code><button class="btn btn--sm" data-act="copy2">⧉</button></div></div>' +

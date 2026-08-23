@@ -23,6 +23,9 @@ exports.handler = async (event) => {
     return P.json(200, {
       exists: true,
       active: !!(u.active && u.pass_hash),   // login opnast aðeins þegar lykilorð er virkt
+      // Regla: virkur + TÓMT lykilorð → vefurinn OPINN með raungögnum ÁN innskráningar.
+      // Um leið og lykilorð (pass_hash) er sett → læsist, krefst innskráningar.
+      open: !!(u.active && !u.pass_hash),
       name: u.display_name || '',
       theme: u.theme || 'steel',
     });
