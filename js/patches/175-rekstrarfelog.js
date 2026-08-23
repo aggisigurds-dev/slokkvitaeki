@@ -167,7 +167,7 @@
       P+'.rf-bname a{color:#11141c;text-decoration:none;font-weight:600}',
       // eldri-ára hlekkir (📄2022↗) sitja UNDIR nafninu svo ellipsis á nafninu
       // klippi þá aldrei af — þeir eru eina leiðin að gömlu skýrslunum.
-      P+'.rf-boldlinks{display:block;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      P+'.rf-boldlinks{display:block;line-height:1.4;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}',
       P+'.rf-bname a:hover{color:#2f5fe0}',
       // 2026-08-20 (ósk Agnars „more compact / decrease row height / not all over
       // the place"): kt undir nafni (eins og ._kt í 153), heimilisfang OG nóta
