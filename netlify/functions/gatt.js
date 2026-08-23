@@ -65,6 +65,14 @@ exports.handler = async (event) => {
       if (sr.ok) (await sr.json()).forEach((r) => { stById[r.site_id] = r; });
     } catch (_) {}
 
+    // 2b) Virkur skoðunarmánuður per stað — SAMA forgangsregla og „📅"-takkinn í
+    //     appinu (v_next_inspection: handvirkt/blob > skýrsla > reikningur).
+    const imById = {};
+    try {
+      const nr = await P.sbGet(`v_next_inspection?base_id=eq.${baseId}&select=site_id,inspect_month`);
+      if (nr.ok) (await nr.json()).forEach((r) => { imById[r.site_id] = r.inspect_month; });
+    } catch (_) {}
+
     // 3) Skjöl (skýrslur + reikningar) — bundin base_id EÐA byggingu félagsins
     let docs = [];
     try {
@@ -82,7 +90,8 @@ exports.handler = async (event) => {
         i_thjonustu: s.er_i_thjonustu !== false,
         stada: st.stada || (s.er_i_thjonustu === false ? 'ekki_i_thjonustu' : 'engin_skyrsla'),
         sidasta_ar: st.report_year || null,
-        skodun_manudur: st.inspect_month != null ? st.inspect_month : null,  // 1-12 (skoðunarmánuður)
+        // skoðunarmánuður úr v_next_inspection (eins og „📅"-takkinn); fallback á skýrslu-mánuð
+        skodun_manudur: imById[s.id] != null ? imById[s.id] : (st.inspect_month != null ? st.inspect_month : null),
         taeki: st.total_devices != null ? st.total_devices : null,
       };
     });
