@@ -76,9 +76,12 @@ exports.handler = async (event) => {
       // fall-through ef signun bregst
     }
 
-    // (b) Drive → beina á núverandi auðkennda Drive-proxy
+    // (b) Drive → Drive-proxy. Hann býr á BRUNAHÓLF (brunaholf.netlify.app/api/skjal),
+    //     ekki slokkvitaeki (þar er ekkert skjal-fall → 404). Proxy-inn þjónar
+    //     Drive-PDF án notenda-auðkenningar (server-hlið Google OAuth). Eignarhald
+    //     skjalsins er þegar sannreynt hér að ofan svo aðeins skjöl félagsins berast.
     if (doc.drive_file_id && !String(doc.drive_file_id).startsWith('sb:')) {
-      return { statusCode: 302, headers: { Location: `/api/skjal?id=${encodeURIComponent(doc.drive_file_id)}`, 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' }, body: '' };
+      return { statusCode: 302, headers: { Location: `https://brunaholf.netlify.app/api/skjal?id=${encodeURIComponent(doc.drive_file_id)}`, 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' }, body: '' };
     }
 
     return P.json(404, { error: 'Engin skrá tengd þessu skjali' });
