@@ -1156,9 +1156,17 @@
             '<div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:4px">Tilboð, fyrirspurnir og póstar sem þarf að fylgja eftir</div>' +
             '<div id="vb-morgun" style="font-size:12px;color:rgba(255,255,255,.55);margin-top:3px;font-family:\'Space Mono\',monospace"></div>' +
           '</div>' +
-          '<button data-act="composer" class="abtn" style="height:42px;padding:0 18px;border-radius:12px;border:1px solid rgba(190,32,28,.55);' +
-            'background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;' +
-            'box-shadow:0 0 16px -4px rgba(160,16,16,.55),inset 0 1px 0 rgba(255,255,255,.16);display:inline-flex;align-items:center;gap:7px">＋ Nýtt mál</button>' +
+          // Hnappahópur hægra megin: 🔑 Viðskiptavinavefir (opnar /gatt-admin/ í
+          // nýjum flipa — sjálfstæð stjórnsíða aðgangs/lykilorða/fyrirspurna,
+          // ekki view) + „＋ Nýtt mál". Grúppað svo þeir haldist saman og brjóti
+          // sig eðlilega niður fyrir titilinn á síma (ytri röðin er flex-wrap).
+          '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+            '<button data-act="gattadmin" title="Opna Viðskiptavinavefi — stjórn aðgangs, lykilorða og fyrirspurna (ný síða)" ' +
+              'style="height:42px;padding:0 18px;border-radius:12px;' + V3_METAL + ';color:rgba(255,255,255,.9);font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px">🔑 Viðskiptavinavefir</button>' +
+            '<button data-act="composer" class="abtn" style="height:42px;padding:0 18px;border-radius:12px;border:1px solid rgba(190,32,28,.55);' +
+              'background:linear-gradient(145deg,#0d0102 0%,#380506 20%,#6c0d10 43%,#971515 53%,#420607 74%,#100102 100%);color:#fff;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;' +
+              'box-shadow:0 0 16px -4px rgba(160,16,16,.55),inset 0 1px 0 rgba(255,255,255,.16);display:inline-flex;align-items:center;gap:7px">＋ Nýtt mál</button>' +
+          '</div>' +
         '</div>' +
         // Vikudagskrá-banner (patch #303 fyllir reitinn) — vikan á undan listanum.
         '<div id="vb-dagskra" style="margin-bottom:16px"></div>' +
@@ -1964,6 +1972,9 @@
       if (act === 'add') { doAdd(); return; }
       if (act === 'addmore') { doAdd(true); return; }
       if (act === 'email') { ingestEmailHere(t); return; }
+      // 🔑 Viðskiptavinavefir — sjálfstæð stjórnsíða (/gatt-admin/), ekki view.
+      // Opnast í nýjum flipa svo starfsfólk missi ekki Þjónustuborðið.
+      if (act === 'gattadmin') { window.open('/gatt-admin/', '_blank', 'noopener'); return; }
       if (act === 'addtag') {
         const tg = t.getAttribute('data-tag'), d = TAGS[tg];
         const i = state.addTags.indexOf(tg);
