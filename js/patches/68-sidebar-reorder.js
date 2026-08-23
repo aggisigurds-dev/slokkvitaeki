@@ -137,6 +137,7 @@
     ['Brunakerfisþjónusta'],
     ['Viðskiptavinir'],
     ['Allir'],  // "Allir Viðskiptavinir" (patch 157) — substring "Allir" is unique
+    ['Viðskiptavinavefir'],  // 2026-08-23: static <a> → /gatt-admin/ (customer-portal admin, standalone page). Placed by the customer cluster; self-heals here even under a saved custom order.
     SEP,
     // 2026-05-20: Bill-and-claim cluster — grouped together below the
     // customer list per Agnar's request. Til að rukka → Kröfu yfirlit
