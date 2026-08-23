@@ -127,7 +127,7 @@
       ],
       buildings: (d.buildings || []).map(function (b) {
         return { nafn: b.nafn, heimilisfang: b.heimilisfang, sl: b.taeki, slo: null, br: b.i_thjonustu,
-          y: yearsFromStatus(b), nt: '', docId: null, stada: b.stada };
+          y: yearsFromStatus(b), nt: nextInspText(b), docId: null, stada: b.stada };
       }),
       reports: (d.reports || []).map(function (r) {
         return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, ar: r.ar };
@@ -138,6 +138,15 @@
       messages: d.messages || [],
     };
   }
+  var MONTHS_IS = ['janúar', 'febrúar', 'mars', 'apríl', 'maí', 'júní', 'júlí', 'ágúst', 'september', 'október', 'nóvember', 'desember'];
+  // Næsta skoðun = skoðunarmánuður í árinu eftir síðustu skoðun (árleg lota).
+  function nextInspText(b) {
+    var m = b.skodun_manudur;
+    if (!m || m < 1 || m > 12) return '';
+    var yr = b.sidasta_ar ? (Number(b.sidasta_ar) + 1) : null;
+    return 'Næsta skoðun: ' + MONTHS_IS[m - 1] + (yr ? ' ' + yr : '');
+  }
+
   function yearsFromStatus(b) {
     // Einföld nálgun þar til full 4-ára tafla er reiknuð server-megin.
     var cur = b.sidasta_ar || 0;

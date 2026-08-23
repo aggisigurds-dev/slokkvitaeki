@@ -61,7 +61,7 @@ exports.handler = async (event) => {
     // 2) Skoðanastaða per byggingu (view)
     const stById = {};
     try {
-      const sr = await P.sbGet(`v_stadir_skyrslu_stada?base_id=eq.${baseId}&select=site_id,report_year,stada,total_devices`);
+      const sr = await P.sbGet(`v_stadir_skyrslu_stada?base_id=eq.${baseId}&select=site_id,report_year,inspect_month,stada,total_devices`);
       if (sr.ok) (await sr.json()).forEach((r) => { stById[r.site_id] = r; });
     } catch (_) {}
 
@@ -82,6 +82,7 @@ exports.handler = async (event) => {
         i_thjonustu: s.er_i_thjonustu !== false,
         stada: st.stada || (s.er_i_thjonustu === false ? 'ekki_i_thjonustu' : 'engin_skyrsla'),
         sidasta_ar: st.report_year || null,
+        skodun_manudur: st.inspect_month != null ? st.inspect_month : null,  // 1-12 (skoðunarmánuður)
         taeki: st.total_devices != null ? st.total_devices : null,
       };
     });
