@@ -336,10 +336,11 @@
                   <th data-sort="vsk" class="num-col">VSK<span class="arr"></span></th>
                   <th data-sort="total" class="num-col">Samtals<span class="arr"></span></th>
                   <th data-sort="payment">Greitt<span class="arr"></span></th>
+                  <th title="🧯 slökkvitæki · 🔥 brunakerfi · 🏪 almennt/búð (in-store)">Tegund</th>
                 </tr>
               </thead>
               <tbody id="by-tbody">
-                <tr><td colspan="9"><div class="by-loading">Hleður sölum…</div></td></tr>
+                <tr><td colspan="10"><div class="by-loading">Hleður sölum…</div></td></tr>
               </tbody>
             </table>
            </div>
@@ -396,7 +397,7 @@
     // server-side (bounded) and „Allt" loads the full history on demand — so the
     // accounting periods stay complete.
     let salesQ = SB.from('solur')
-      .select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,updated_at,paid_at,paid_method,status')
+      .select('id,num,starfsmadur,customer_nafn,customer_id,linur,upphaed_an_vsk,vsk_upphaed,afslattur,samtals,greitt_med,athugasemdir,created_at,updated_at,paid_at,paid_method,status,vidskiptategund')
       // Röðum eftir SÍÐUSTU AÐGERÐ (updated_at) svo sjálfgefna „nýjustu 400"
       // sóknin nái líka gömlum sölum sem voru sóttar/greiddar/kredittaðar nýlega
       // (t.d. tæki úr hleðslu frá því fyrir 2 mánuðum) — annars duttu þær út.
@@ -455,7 +456,8 @@
         payment: s.greitt_med || '',
         paid_at: s.paid_at || null,
         paid_method: s.paid_method || '',
-        notes: s.athugasemdir || ''
+        notes: s.athugasemdir || '',
+        vidskiptategund: s.vidskiptategund || ''
       };
     });
     customerMap = new Map((custRes.data || []).map(c => [c.id, c]));
@@ -689,7 +691,7 @@
     const tbody = document.getElementById('by-tbody');
     if (!tbody) return;
     if (!filtered.length) {
-      tbody.innerHTML = '<tr><td colspan="9"><div class="by-empty">Engar sölur fundust á völdu tímabili</div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10"><div class="by-empty">Engar sölur fundust á völdu tímabili</div></td></tr>';
       document.getElementById('by-count').textContent = '';
       return;
     }
@@ -701,6 +703,10 @@
       const draftBadge = s.isDraft
         ? ' <span style="font-size:9px;font-weight:700;background:#fef3c7;color:#92400e;padding:1px 6px;border-radius:99px;vertical-align:middle">DRÖG</span>'
         : '';
+      // Reikninga-tegund (2026-08-22, Agnar): tákn + þrír hakreitir (ein í einu) → solur.vidskiptategund.
+      const _vt = s.vidskiptategund || '';
+      const _vtIcon = { uttekt: '🧯', brunakerfi: '🔥', bud: '🏪' }[_vt] || '❓';
+      const _vtBox = (val, ic, lbl) => '<label title="' + lbl + '" style="cursor:pointer;display:inline-flex;align-items:center;gap:1px"><input type="checkbox" class="by-vt-box" data-sale-id="' + esc(s.id) + '" value="' + val + '"' + (_vt === val ? ' checked' : '') + '>' + ic + '</label>';
       let h = '<tr class="by-sale-row' + (isOpen ? ' expanded' : '') + '" data-id="' + esc(s.id) + '"' + (s.isDraft ? ' style="background:#fffbeb"' : '') + '>'
         + '<td class="by-num-cell">' + esc(s.num) + draftBadge + '</td>'
         // 2026-05-12 (#8): For paid greitt_sidar / reikningur sales, show
@@ -731,8 +737,10 @@
         + (s.isDraft ? ' <button class="by-edit-draft" data-sale-id="' + esc(s.id) + '" type="button" title="Breyta drögunum (verð, línur, viðskiptavinur)" style="margin-left:6px;padding:3px 9px;background:#fff;color:#1d4ed8;border:1px solid #bfdbfe;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✏️ Breyta</button>' : '')
         + (s.isDraft ? ' <button class="by-finish-draft" data-sale-id="' + esc(s.id) + '" type="button" style="margin-left:6px;padding:3px 9px;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;font:inherit;font-size:11px;font-weight:700">✅ Klára</button>' : '')
         + '</td>'
+        + '<td class="by-teg-cell" style="white-space:nowrap"><span class="by-teg-icon" style="margin-right:7px;font-size:15px">' + _vtIcon + '</span>'
+          + '<span style="display:inline-flex;gap:8px;align-items:center;font-size:13px">' + _vtBox('uttekt', '🧯', 'Slökkvitæki') + _vtBox('brunakerfi', '🔥', 'Brunakerfi') + _vtBox('bud', '🏪', 'Almennt / búð (in-store)') + '</span></td>'
         + '</tr>';
-      if (isOpen) h += '<tr class="by-detail-row"><td colspan="9">' + renderDetail(s) + '</td></tr>';
+      if (isOpen) h += '<tr class="by-detail-row"><td colspan="10">' + renderDetail(s) + '</td></tr>';
       return h;
     };
     // 2026-07-01 (Agnar): the „Ógreitt" pull-to-top group was removed. The
@@ -996,7 +1004,7 @@
       await loadAllSales();
     } catch (e) {
       const tbody = document.getElementById('by-tbody');
-      if (tbody) tbody.innerHTML = '<tr><td colspan="9"><div class="by-empty" style="color:#dc2626;">Villa við að sækja sölur: ' + esc(e.message) + '</div></td></tr>';
+      if (tbody) tbody.innerHTML = '<tr><td colspan="10"><div class="by-empty" style="color:#dc2626;">Villa við að sækja sölur: ' + esc(e.message) + '</div></td></tr>';
       return;
     }
     populateFilterDropdowns();
@@ -1182,6 +1190,26 @@
       // straight away; switching to "reikningur" surfaces the sale in
       // Kröfuyfirlit (krafa í heimabanka).
       tbody.addEventListener('change', async (e) => {
+        // Reikninga-tegund (2026-08-22, Agnar): þrír hakreitir víxla solur.vidskiptategund
+        // — 🧯 slökkvitæki (uttekt) · 🔥 brunakerfi · 🏪 almennt/búð (bud). Ein í einu; tóm ⇒ ovisst.
+        const vtb = e.target.closest('.by-vt-box');
+        if (vtb) {
+          const tr = vtb.closest('tr');
+          const vsid = vtb.getAttribute('data-sale-id');
+          tr.querySelectorAll('.by-vt-box').forEach(b => { if (b !== vtb) b.checked = false; });
+          const vval = vtb.checked ? vtb.value : 'ovisst';
+          const vsale = allSales.find(s => String(s.id) === String(vsid));
+          try {
+            const SB2 = getSB(); if (!SB2) throw new Error('Engin gagnabankatenging');
+            const { error } = await SB2.from('solur').update({ vidskiptategund: vval }).eq('id', vsid);
+            if (error) throw error;
+            if (vsale) vsale.vidskiptategund = vval;
+            const ic = tr.querySelector('.by-teg-icon');
+            if (ic) ic.textContent = { uttekt: '🧯', brunakerfi: '🔥', bud: '🏪' }[vval] || '❓';
+            if (window.Toast && Toast.show) Toast.show('✓ Tegund uppfærð');
+          } catch (err) { alert('Villa við að breyta tegund: ' + (err.message || err)); }
+          return;
+        }
         const sel = e.target.closest('.by-payment-select');
         if (!sel) return;
         const sid = sel.getAttribute('data-sale-id');
