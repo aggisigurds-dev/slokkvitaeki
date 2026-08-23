@@ -320,6 +320,12 @@
   function docWrap(chip, id){
     return '<span class="sk-att-wrap">'+chip+'<button type="button" class="sk-att-x" data-deldoc="'+esc(id)+'" title="Eyða skráningu af síðunni">✕</button></span>';
   }
+  // 2026-08-23 (ósk Agnars): sama og docWrap en með 3-stiga factcheck-checkmarki
+  // fremst — AÐEINS á skýrslum og reikningum. dfcMark skilar tómu fyrir skjöl án
+  // customer_documents-id (t.d. _fromSolur sölu-reikningar) svo þau fá aðeins ✕.
+  function docWrapFc(chip, id){
+    return '<span class="sk-att-wrap">'+dfcMark(id)+chip+'<button type="button" class="sk-att-x" data-deldoc="'+esc(id)+'" title="Eyða skráningu af síðunni">✕</button></span>';
+  }
   // 2026-06-24: same ✕ for MANUAL / auto-saved attachments (company_attachments)
   // so the úttektarskýrslu/reikninga-reitir geta líka eytt þeim — áður var ✕
   // bara á sjálfvirkt-skráðu customer_documents. data-del → CompanyAttachments.delete.
@@ -373,7 +379,7 @@
     // úr notes („dauður Drive-hlekkur fjarlægður … ÞARF AÐ FINNA AFTUR").
     var chip = u ? '<a class="sk-doc rep" href="'+esc(u)+'" target="_blank" rel="noopener" title="'+esc(full)+' — opna í Drive">'+ico+' '+esc(disp)+'</a>'
                  : '<span class="sk-doc rep miss" data-misstitle="'+esc(String(d.notes||'').slice(0,500))+'" title="Skjalið er ekki lengur í Drive — þarf að finna frumritið aftur. Smelltu fyrir söguna.">⚠ '+esc(disp)+'</span>';
-    return docWrap(chip, d.id);
+    return docWrapFc(chip, d.id);
   }
   // 2026-08-17 (regla Agnars: „Kröfuyfirlits-eintakið er truth"): bakfylltu/
   // endursmíðuðu eintökin frá 18.–19.7 (cowork-regen/-payday-backfill/-backfill,
@@ -393,7 +399,7 @@
         var _why = _amtOff
           ? ('upphæð skjalsins (' + d.amount + ' kr) stangast á við söluna (' + _s.samtals + ' kr)')
           : ('bakfyllt/endurgert eintak: ' + String(d.found_by||''));
-        return docWrap(
+        return docWrapFc(
           '<button type="button" class="sk-doc inv" data-invopen="'+esc(d.invoice_number)+'" title="Opna reikninginn úr Sölu — Kröfuyfirlits-eintakið gildir">🧾 '+esc(lab)+'</button>' +
           '<span class="sk-doc inv miss" title="⚠ '+esc(_why)+' — sölu-reikningurinn er rétthærri. Smelltu á ✕ til að fjarlægja skráninguna.">⚠</span>',
           d.id);
@@ -412,7 +418,7 @@
     } else {
       chip = '<span class="sk-doc inv" title="Skráning úr eldra bókhaldi — ekkert PDF-skjal né sölureikningur í kerfinu">🧾 '+esc(lab)+'</span>';
     }
-    return docWrap(chip, d.id);
+    return docWrapFc(chip, d.id);
   }
   function repAttChip(a){ var nm=String(a.name||'Skoðun'); var disp=nm.length>46?nm.slice(0,44)+'…':nm; return attWrap('<button type="button" class="sk-doc rep" data-att="'+esc(a.id)+'" title="'+esc(nm)+'">📄 '+esc(disp)+'</button>', a.id); }
   function invAttChip(a){ var m=String(a.name||'').match(/R-?\s?\d{3,}/i); return attWrap('<button type="button" class="sk-doc inv" data-att="'+esc(a.id)+'" title="'+esc(a.name)+'">🧾 '+esc(m?invLabel(m[0]):'Reikningur')+'</button>', a.id); }
@@ -599,6 +605,69 @@
     else if(st==='claude')await fcClear(coId,y);
     else                  await fcSet(coId,y,'human',null);
   }
+
+  // ── Fact-check per SKJAL (doc_id) — ÞRJÚ STIG (2026-08-23, ósk Agnars) ───────
+  // Hliðstæða year_factcheck hér að ofan, en á HVERT skjal (skýrslu/reikning) í
+  // stað (fyrirtæki,ár). Geymt í Supabase-töflunni `doc_factcheck`
+  // (doc_id bigint PK, status smallint) — RLS slökkt, vafrinn skrifar beint eins
+  // og year_factcheck. Hringur (ósk Agnars, orðrétt „grey→blue→green→grey"):
+  //   0 grátt (sjálfgefið) → 1 blátt (Claude factcheck) → 2 grænt (staðfest) → 0.
+  // Aðeins á skjölum sem eiga customer_documents.id — sölu-reikningar án id
+  // (_fromSolur/_saleId) fá ekkert merki (dfcMark skilar tómu).
+  var _dfc = {};             // doc_id(str) → status (1|2); vantar => 0 (grátt)
+  function dfcStatus(docId){ var v=_dfc[String(docId)]; return v==null?0:+v; }
+  function dfcCls(st){ return st===2?'green':st===1?'blue':'grey'; }
+  function dfcTip(st){
+    return st===2 ? 'Staðfest (grænt) — smelltu til að núllstilla'
+         : st===1 ? 'Claude factcheck (blátt) — smelltu til að staðfesta (grænt)'
+         : 'Ekki yfirfarið (grátt) — smelltu fyrir Claude factcheck (blátt)';
+  }
+  // Lítill smellanlegur checkmark fyrir eitt skjal. Tómt ef ekkert customer_
+  // documents-id → þau eiga ekkert að merkja (og brotna ekki).
+  function dfcMark(docId){
+    if(docId==null) return '';
+    var s=String(docId); if(s===''||s==='undefined'||s==='null') return '';
+    var st=dfcStatus(docId);
+    return '<button type="button" class="sk-dfc '+dfcCls(st)+'" data-dfc="'+esc(s)+'" title="'+esc(dfcTip(st))+'">✓</button>';
+  }
+  // Hlaða stöðu fyrir tiltekin skjala-id (öll skjöl félagsins) — kallað í render
+  // rétt á eftir fcLoad(coId). doc_factcheck hefur engan co_id-dálk svo þetta
+  // tekur DOCIDS (ekki coId): safnað úr docs+bruDocs sem félagið á.
+  async function dfcLoad(docIds){
+    var sb=SB(); if(!sb) return;
+    var ids=(docIds||[]).filter(function(x){ var s=String(x); return x!=null && s!=='' && s!=='undefined' && s!=='null'; });
+    if(!ids.length) return;
+    ids.forEach(function(id){ delete _dfc[String(id)]; });  // reset: eytt fact-check (status 0) verði grátt aftur
+    try{
+      var r=await sb.from('doc_factcheck').select('doc_id,status').in('doc_id', ids);
+      (r.data||[]).forEach(function(x){ _dfc[String(x.doc_id)]=x.status; });
+    }catch(_){}
+  }
+  async function dfcSet(docId, status){
+    var sb=SB(); if(!sb) return;
+    var id=/^\d+$/.test(String(docId))?+docId:docId;
+    try{
+      var r=await sb.from('doc_factcheck').upsert({doc_id:id, status:status, updated_at:new Date().toISOString()}, {onConflict:'doc_id'});
+      if(r && r.error) throw r.error;
+      _dfc[String(docId)]=status;
+    }catch(e){ alert('Villa við vistun: '+(e.message||e)); }
+  }
+  async function dfcClear(docId){
+    var sb=SB(); if(!sb) return;
+    var id=/^\d+$/.test(String(docId))?+docId:docId;
+    try{
+      var r=await sb.from('doc_factcheck').delete().eq('doc_id', id);
+      if(r && r.error) throw r.error;
+      delete _dfc[String(docId)];
+    }catch(e){ alert('Villa: '+(e.message||e)); }
+  }
+  // 0→1 (blátt) → 2 (grænt) → 0 (grátt, eytt).
+  async function dfcToggle(docId){
+    var st=dfcStatus(docId);
+    if(st===1)      await dfcSet(docId,2);
+    else if(st===2) await dfcClear(docId);
+    else            await dfcSet(docId,1);
+  }
   // Einu sinni: flytja gömlu AppSettings-grænin (patch #465) yfir í töfluna.
   (function migrateGreens(){
     function run(){
@@ -743,6 +812,14 @@
         bruByY[y] = arr.filter(function(x){ return !x._att; });
       }
     });
+
+    // ── hlaða skjala-factcheck fyrir öll skjöl félagsins (skýrslur + reikningar) ──
+    // Eftir að docs+bruDocs eru komin en ÁÐUR en chippar eru teiknaðir, svo
+    // litur checkmarksins sé réttur við fyrstu teikn (sama og fcLoad hér að ofan).
+    var _docIds=[];
+    docs.forEach(function(d){ if(d && d.id!=null) _docIds.push(d.id); });
+    bruDocs.forEach(function(d){ if(d && d.id!=null) _docIds.push(d.id); });
+    await dfcLoad(_docIds);
 
     // ── merge reikningur-sölur beint úr solur (sömu og í Kröfu yfirliti) ──
     // 2026-07-21 (Agnar): reikningar sem sjást í Kröfu yfirliti (solur með
@@ -1054,6 +1131,22 @@
     });
     section.addEventListener('click', async function(e){
       var coId=+section.dataset.coId; if(!coId) return;
+
+      // ✓ Skjala-factcheck (3-stiga) — smellur hringar 0→1→2→0 fyrir EITT skjal.
+      // Verður að grípa á undan öllu öðru + stöðva bólun svo smellur á merkið
+      // opni EKKI skjalið/PDF-ið (checkmarkið er systkini chip-hlekksins).
+      var dfcEl=e.target.closest('[data-dfc]');
+      if(dfcEl){
+        e.preventDefault(); e.stopPropagation();
+        var ddid=dfcEl.getAttribute('data-dfc');
+        if(!ddid || ddid==='undefined' || ddid==='null') return;
+        await dfcToggle(ddid);
+        var dst=dfcStatus(ddid);           // uppfært (eða óbreytt ef vistun brást)
+        dfcEl.classList.remove('grey','blue','green');
+        dfcEl.classList.add(dfcCls(dst));
+        dfcEl.title=dfcTip(dst);
+        return;
+      }
 
       // 📅 Skoðunarmánuður — smellur opnar innfellt val, sama mynstur og
       // ovrEditMonth í 153-arsskodun.js, vistar í SÖMU arsskodun_customers
@@ -1491,7 +1584,13 @@
       '.sk-pill.claude::before{background:#2563eb;box-shadow:0 0 5px 1px rgba(37,99,235,.8)}',
       // Appelsínugulur = skýrsla vantar (gap sem Claude fann).
       '.sk-pill.gap{border-color:#f59e0b;background:#fef3c7;color:#92400e}',
-      '.sk-pill.gap::before{background:#f59e0b}'
+      '.sk-pill.gap::before{background:#f59e0b}',
+      // ── 3-stiga skjala-factcheck checkmark (2026-08-23): grátt→blátt→grænt ──
+      '.sk-dfc{display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;width:19px;height:19px;padding:0;margin:2px 5px 2px 0;border-radius:50%;border:1px solid;font-size:11px;font-weight:800;line-height:1;cursor:pointer;font-family:inherit;user-select:none;-webkit-user-select:none;touch-action:manipulation}',
+      '.sk-dfc.grey{background:#f1f5f9;color:#94a3b8;border-color:#cbd5e1}',
+      '.sk-dfc.blue{background:#dbeafe;color:#1d4ed8;border-color:#2563eb}',
+      '.sk-dfc.green{background:#dcfce7;color:#15803d;border-color:#16a34a}',
+      '.sk-dfc:hover{filter:brightness(.97);box-shadow:0 0 0 2px rgba(0,0,0,.08)}'
     ].join('\n');
     var st=document.createElement('style'); st.id='sk-card-css'; st.textContent=css; document.head.appendChild(st);
   }
