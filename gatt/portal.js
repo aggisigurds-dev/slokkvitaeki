@@ -64,7 +64,7 @@
   };
 
   var SLUG = (function () { var m = /[?&]c=([^&]+)/.exec(location.search); return m ? decodeURIComponent(m[1]) : ''; })();
-  var state = { data: null, demo: false };
+  var state = { data: null, demo: false, open: false };
 
   /* ── boot ── */
   function boot() {
@@ -90,10 +90,21 @@
     return fetch('/api/gatt-status?c=' + encodeURIComponent(SLUG), { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json(); })
       .then(function (s) {
-        if (s && s.active) { if (s.theme) document.documentElement.setAttribute('data-theme', s.theme); showLogin(); }
+        if (s && s.theme) document.documentElement.setAttribute('data-theme', s.theme);
+        if (s && s.active) showLogin();       // lykilorð virkt → innskráning
+        else if (s && s.open) openBoot();      // opinn forsýnar-aðgangur → raungögn án innskráningar
         else showNotReady(s && s.name);
       })
       .catch(function () { showLogin(); });
+  }
+
+  // Opinn forsýnar-aðgangur (open_preview, ekkert lykilorð): sækir raungögn
+  // félagsins um slug ÁN innskráningar. Læsist um leið og lykilorð er sett.
+  function openBoot() {
+    fetch('/api/gatt?c=' + encodeURIComponent(SLUG), { headers: { Accept: 'application/json' } })
+      .then(function (r) { if (!r.ok) throw 0; return r.json(); })
+      .then(function (d) { state.open = true; renderPortal(normalize(d)); showOpenRibbon(); })
+      .catch(function () { showNotReady(); });
   }
   function showNotReady(name) {
     $('#login').classList.add('hidden');
@@ -165,6 +176,7 @@
     document.documentElement.setAttribute('data-theme', (data.account && data.account.theme) || 'steel');
     $('#login').classList.add('hidden');
     $('#portal').classList.remove('hidden');
+    var lo = $('#logoutBtn'); if (lo) lo.style.display = state.open ? 'none' : '';  // ekkert að útskrá í opnum ham
     var d = new Date();
     var today = ('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + d.getFullYear();
     $('#yf-kicker').textContent = 'Staða brunavarna · uppfært ' + today;
@@ -232,7 +244,8 @@
   }
 
   function docLink(label, docId) {
-    if (state.demo || !docId) return '<a class="pdf" href="#" onclick="return false">' + label + '</a>';
+    // Opinn ham: gatt-doc krefst enn innskráningar → skjöl læst þar til lykilorð er sett.
+    if (state.demo || state.open || !docId) return '<a class="pdf" href="#" onclick="return false">' + label + '</a>';
     return '<a class="pdf" href="/api/gatt-doc?doc=' + encodeURIComponent(docId) + '" target="_blank" rel="noopener">' + label + '</a>';
   }
 
@@ -307,7 +320,8 @@
         renderMessages(state.data.messages); inp.value = ''; return;
       }
       var btn = e.target.querySelector('button'); btn.disabled = true;
-      fetch('/api/gatt', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: text }) })
+      var purl = state.open ? ('/api/gatt?c=' + encodeURIComponent(SLUG)) : '/api/gatt';
+      fetch(purl, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: text }) })
         .then(function (r) { return r.json(); })
         .then(function () {
           state.data.messages.push({ sender: 'kunni', author_name: state.data.account.name || 'Þú', body: text, created_at: new Date().toISOString() });
@@ -320,6 +334,13 @@
 
   function showDemoRibbon() {
     var r = document.createElement('div'); r.className = 'demo-ribbon'; r.textContent = 'Sýnishorn';
+    document.body.appendChild(r);
+  }
+
+  function showOpenRibbon() {
+    var r = document.createElement('div'); r.className = 'open-ribbon';
+    r.textContent = '🔓 Opinn aðgangur — vefurinn læsist þegar lykilorð er sett';
+    r.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;padding:6px 14px;border-radius:99px;font-size:12px;font-weight:600;background:rgba(138,109,47,.96);color:#fff;box-shadow:0 4px 14px rgba(0,0,0,.22);max-width:92vw;text-align:center';
     document.body.appendChild(r);
   }
 
