@@ -101,7 +101,7 @@
       alert('AppSettings ekki tilbúið — get ekki vistað.');
       return false;
     }
-    const list = getFilledList();
+    const list = getFilledList().slice();
     const idx = list.findIndex(x => x && x.id === rec.id);
     if (idx >= 0) list[idx] = rec;
     else list.unshift(rec);

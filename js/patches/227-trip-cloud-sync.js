@@ -61,15 +61,27 @@
     return origRemove(k);
   };
 
-  function flush() {
+  async function flush() {
     var as = AS();
     if (!(as && as.save)) { setTimeout(flush, 1000); return; }   // AppSettings not ready yet
+    // Snapshot the current batch and hand `pending` a fresh object so writes that
+    // land during the await queue up separately (never lost, never double-saved).
+    var sending = pending; pending = {};
     var patch = {}, any = false;
-    Object.keys(pending).forEach(function (co) {
-      try { patch[co] = JSON.parse(pending[co]); any = true; } catch (_) {}
+    Object.keys(sending).forEach(function (co) {
+      try { patch[co] = JSON.parse(sending[co]); any = true; } catch (_) {}
     });
-    pending = {};
-    if (any) { var o = {}; o[KEY] = patch; try { as.save(o); } catch (_) {} } // deep-merges per coId
+    if (!any) return;
+    var ok = false;
+    var o = {}; o[KEY] = patch;                                  // deep-merges per coId
+    try { ok = await as.save(o); } catch (_) { ok = false; }
+    // Only the entries that actually saved get dropped. On failure re-queue this
+    // batch for the next timer (mirror patch 147's notes-flush re-queue) without
+    // clobbering any newer write that arrived while we were awaiting.
+    if (!ok) {
+      Object.keys(sending).forEach(function (co) { if (!(co in pending)) pending[co] = sending[co]; });
+      clearTimeout(timer); timer = setTimeout(flush, 1200);
+    }
   }
 
   // ── cloud → local restore (newest-wins) ─────────────────────────────────

@@ -1681,7 +1681,8 @@
       b.disabled = true;
       try {
         if (window.AppSettings && AppSettings.save) {
-          await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { ekki_sleppt: next } } });
+          const ok = await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { ekki_sleppt: next } } });
+          if (!ok) { alert('Vistun mistókst'); b.disabled = false; return; }
         }
         c._ars = c._ars || {}; c._ars.ekki_sleppt = next;
         ovrLog(coId, 'ekki_sleppt', String(cur), String(next));
@@ -1825,9 +1826,12 @@
       const c = (_cache.byId && _cache.byId[id]) || (_cache.list || []).find(x => +x.id === id);
       if (c) { c._ars = c._ars || {}; c._ars.akstur = next; }   // svo endurteikning haldi litnum
       clearTimeout(_mrowAkTimers[id]);
-      _mrowAkTimers[id] = setTimeout(() => {
+      _mrowAkTimers[id] = setTimeout(async () => {
         if (window.ArsAkstur && window.ArsAkstur.set) window.ArsAkstur.set(id, next);
-        else if (window.AppSettings && AppSettings.save) AppSettings.save({ [STORAGE_KEY]: { [String(id)]: { akstur: next } } });
+        else if (window.AppSettings && AppSettings.save) {
+          const ok = await AppSettings.save({ [STORAGE_KEY]: { [String(id)]: { akstur: next } } });
+          if (!ok) alert('Vista mistókst');
+        }
       }, 550);
     }));
 
@@ -2229,7 +2233,8 @@
       const SB = window.DB && DB.sb;
       await SB.from('fyrirtaeki').update({ er_i_thjonustu: false }).eq('id', coId);
       if (window.AppSettings && AppSettings.save) {
-        await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { subscribed: false, removed_from_service_at: new Date().toISOString().slice(0, 10) } } });
+        const ok = await AppSettings.save({ [STORAGE_KEY]: { [String(coId)]: { subscribed: false, removed_from_service_at: new Date().toISOString().slice(0, 10) } } });
+        if (!ok) { alert('Vista mistókst'); if (btn) { btn.disabled = false; btn.textContent = '⬇ Úr þjónustu'; } return; }
       }
       try {   // audit-slóð: sama override_log og ⚡-hamurinn notar
         await SB.from('override_log').insert({ co_id: +coId, co_nafn: name, field: 'er_i_thjonustu', old_value: 'true', new_value: 'false', page: 'arsskodun-ovist' });
@@ -3149,7 +3154,10 @@
     // fyrirtæki án skýrslu. Vistast í arsskodun_customers (nytt_manual + inspect_month).
     bg.querySelector('._ars-nytt-chk')?.addEventListener('change', async (e) => {
       const on = !!e.target.checked;
-      try { await window.AppSettings.save({ arsskodun_customers: { [String(coId)]: { nytt_manual: on } } }); } catch (_) {}
+      let ok;
+      try { ok = await window.AppSettings.save({ arsskodun_customers: { [String(coId)]: { nytt_manual: on } } }); }
+      catch (err) { alert('Vista mistókst: ' + (err && err.message || err)); return; }
+      if (!ok) { alert('Vista mistókst'); return; }
       if (ars) ars.nytt_manual = on;
       try { ovrLog(coId, 'nytt_manual', on ? '—' : '🆕', on ? '🆕 Nýtt' : '↺ hreinsað'); } catch (_) {}
       bg.remove(); openDetail(coId);
@@ -3157,9 +3165,11 @@
     bg.querySelector('._ars-nytt-month')?.addEventListener('change', async (e) => {
       const mv = parseInt(e.target.value, 10) || 0;
       const old = MONTHS_IS[(+ (ars && ars.inspect_month) || 0) - 1] || '—';
+      let ok;
       try {
-        await window.AppSettings.save({ arsskodun_customers: { [String(coId)]: mv ? { inspect_month: mv, inspect_month_manual: true } : { inspect_month: 0, inspect_month_manual: false } } });
-      } catch (_) {}
+        ok = await window.AppSettings.save({ arsskodun_customers: { [String(coId)]: mv ? { inspect_month: mv, inspect_month_manual: true } : { inspect_month: 0, inspect_month_manual: false } } });
+      } catch (err) { alert('Vista mistókst: ' + (err && err.message || err)); return; }
+      if (!ok) { alert('Vista mistókst'); return; }
       if (ars) { ars.inspect_month = mv; ars.inspect_month_manual = !!mv; }
       try { ovrLog(coId, 'inspect_month', old, MONTHS_IS[mv - 1] || '↺ hreinsað'); } catch (_) {}
     });
@@ -3235,7 +3245,9 @@
             const patch = (mv >= 1 && mv <= 12)
               ? { inspect_month: mv, inspect_month_manual: true }
               : { inspect_month: 0, inspect_month_manual: false };
-            if (window.AppSettings && AppSettings.save) await AppSettings.save({ arsskodun_customers: { [String(coId)]: patch } });
+            let ok = true;
+            if (window.AppSettings && AppSettings.save) ok = await AppSettings.save({ arsskodun_customers: { [String(coId)]: patch } });
+            if (!ok) { alert('Mánuður vistaðist ekki'); return; }
             ovrLog(coId, 'inspect_month', MONTHS_IS[(+ars.inspect_month || 0) - 1] || '—', MONTHS_IS[mv - 1] || '↺ hreinsað');
             ars.inspect_month = mv || undefined;
           } catch (e) { alert('Mánuður vistaðist ekki: ' + (e.message || e)); }

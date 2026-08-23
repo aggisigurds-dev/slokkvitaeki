@@ -157,7 +157,7 @@
       // viðskiptavinur er núna réttilega heima í Allir viðskiptavinir.
       let promotedKt = new Set(), promotedBaseIds = new Set();
       try {
-        const { data: fy } = await getSB().from('fyrirtaeki').select('kennitala,customer_base_id').is('deleted_at', null);
+        const fy = await DB.fetchAll((from, to) => getSB().from('fyrirtaeki').select('kennitala,customer_base_id').is('deleted_at', null).range(from, to)); // page through 1000-row cap (PostgREST caps a single select at 1000)
         (fy || []).forEach(f => {
           if (f.kennitala) promotedKt.add(String(f.kennitala).replace(/[^0-9]/g, ''));
           if (f.customer_base_id != null) promotedBaseIds.add(f.customer_base_id);

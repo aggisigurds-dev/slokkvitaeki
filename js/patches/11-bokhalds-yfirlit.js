@@ -613,16 +613,28 @@
     const drafts = filtered.filter(s => s.isDraft);
     const totalSamtals = real.reduce((a, s) => a + (s.total || 0), 0);
     const totalEx = real.reduce((a, s) => a + (s.ex || 0), 0);
-    // Per-rate VSK breakdown
+    // Per-rate VSK breakdown. Stored lines carry PRE-discount unit prices —
+    // the sale-level afsláttur lives only in solur.total/ex. Summing raw line
+    // values overstates output VSK and makes Σ(per-rate ex) ≠ the „Án VSK"
+    // headline. Scale each sale's line ex/vsk by total/(rawEx+rawVsk) so the
+    // breakdown reflects post-discount amounts (guard divide-by-zero) — mirrors
+    // 10-sala-receipt-redesign.js:300-321.
     const byRate = new Map();
     for (const s of real) {
+      let rawEx = 0, rawVsk = 0;
+      const figs = [];
       for (const l of s.lines) {
         const rate = +l.vsk_pct || 0;
         const lineEx = (+l.qty||0) * (+l.unit_price_ex_vat||0);
         const lineVsk = lineEx * (rate/100);
-        const cur = byRate.get(rate) || { ex: 0, vsk: 0 };
-        cur.ex += lineEx; cur.vsk += lineVsk;
-        byRate.set(rate, cur);
+        rawEx += lineEx; rawVsk += lineVsk;
+        figs.push({ rate, ex: lineEx, vsk: lineVsk });
+      }
+      const scale = (rawEx + rawVsk) > 0 ? (s.total || 0) / (rawEx + rawVsk) : 1;
+      for (const f of figs) {
+        const cur = byRate.get(f.rate) || { ex: 0, vsk: 0 };
+        cur.ex += f.ex * scale; cur.vsk += f.vsk * scale;
+        byRate.set(f.rate, cur);
       }
     }
     const customers = new Set();
@@ -735,11 +747,21 @@
   }
 
   function renderDetail(sale) {
+    // Stored line prices are PRE-discount; the sale-level afsláttur lives in
+    // sale.total/ex only. Scale line ex/vsk/inc by total/(rawEx+rawVsk) so the
+    // detail rows foot to the sale total shown in the row above and match the
+    // per-rate VSK cards (guard divide-by-zero) — mirrors the summary fix.
+    let _rawEx = 0, _rawVsk = 0;
+    for (const l of sale.lines) {
+      const _ex = (+l.qty||0) * (+l.unit_price_ex_vat||0);
+      _rawEx += _ex; _rawVsk += _ex * ((+l.vsk_pct||0) / 100);
+    }
+    const _scale = (_rawEx + _rawVsk) > 0 ? (sale.total || 0) / (_rawEx + _rawVsk) : 1;
     const lineRows = sale.lines.map(l => {
       const qty = +l.qty || 0;
       const unitEx = +l.unit_price_ex_vat || 0;
       const rate = +l.vsk_pct || 0;
-      const lineEx = qty * unitEx;
+      const lineEx = qty * unitEx * _scale;
       const lineVsk = lineEx * (rate / 100);
       const lineInc = lineEx + lineVsk;
       const product = l.product_id ? productMap.get(l.product_id) : null;

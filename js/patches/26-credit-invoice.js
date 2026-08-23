@@ -123,7 +123,7 @@
     const lineRows = linur.map((l, i) => {
       const qty = +l.qty || 0;
       const unitEx = +l.unit_price_ex_vat || 0;
-      const rate = +l.vsk_pct || 0;
+      const rate = (l.vsk_pct == null ? 24 : +l.vsk_pct);
       const lineInc = qty * unitEx * (1 + rate / 100);
       return `<tr>
         <td><input type="checkbox" class="ci-check" data-ci-line="${i}" checked></td>
@@ -218,7 +218,7 @@
     //   • crediting SOME lines → scale the selected lines by the same
     //     discounted/full ratio the sale had.
     const selEx  = creditLines.reduce((a, l) => a + (Math.abs(+l.qty||0) * (+l.unit_price_ex_vat||0)), 0);
-    const selVsk = creditLines.reduce((a, l) => a + (Math.abs(+l.qty||0) * (+l.unit_price_ex_vat||0) * ((+l.vsk_pct||0)/100)), 0);
+    const selVsk = creditLines.reduce((a, l) => a + (Math.abs(+l.qty||0) * (+l.unit_price_ex_vat||0) * ((l.vsk_pct == null ? 24 : +l.vsk_pct)/100)), 0);
     const fullEx = (Array.isArray(origSale.lines) ? origSale.lines : []).reduce(
       (a, l) => a + (Math.abs(+l.qty||0) * (+l.unit_price_ex_vat||0)), 0);
     const saleEx  = +origSale.ex  || 0;   // upphaed_an_vsk (POST-discount)
@@ -468,7 +468,7 @@
       linur: lines,
       upphaed_an_vsk: Math.round(ex),
       vsk_upphaed: Math.round(vsk),
-      samtals: Math.round(ex + vsk),
+      samtals: Math.round(ex) + Math.round(vsk),
       greitt_med: payMethod || 'reikningur',
       athugasemdir: 'Leiðréttur reikningur (kredit á ' + (origSale.num || '') + ')',
       status: 'final',
