@@ -2282,7 +2282,7 @@
       V+'._arsm-yrhead span{flex:1;text-align:center;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:8.5px;color:#8a94a3}',
       // nafn + undirlína (póstnr · tækjafjöldi · ✉ vantar)
       V+'._arsm-name{min-width:0}',
-      V+'._arsm-nm{font-size:13.5px;font-weight:600;color:#141a22;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em;line-height:1.2}',
+      V+'._arsm-nm{font-size:13.5px;font-weight:600;color:#141a22;white-space:normal;overflow:visible;overflow-wrap:anywhere;letter-spacing:-.01em;line-height:1.2}',
       V+'._arsm-sub{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:9.5px;color:#8a94a3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}',
       // 4-ára reitir
       V+'._arsm-yr{display:flex;gap:2px}',
@@ -2606,8 +2606,8 @@
       // ── 📱 Sími — ÞÉTT single-column spjöld (~3× lægri hæð per fyrirtæki) ──
       M + '._ars-cardgrid{grid-template-columns:1fr!important;gap:6px!important}' +
       M + '._ars-card{padding:8px 11px!important;gap:2px!important;border-radius:10px!important}' +
-      M + '._ars-cn{font-size:13.5px!important;line-height:1.15!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
-      M + '._ars-ca{font-size:11px!important;margin-top:0!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+      M + '._ars-cn{font-size:13.5px!important;line-height:1.15!important;overflow:visible;white-space:normal;overflow-wrap:anywhere}' +
+      M + '._ars-ca{font-size:11px!important;margin-top:0!important;overflow:visible;white-space:normal;overflow-wrap:anywhere}' +
       // fela kt-línu + netfangs-línu á spjaldinu (sést í ítarsýn/fyrirtæki) svo hæðin hrynur
       M + '._ars-card ._ars-cn+div{font-size:9px!important}' +
       // þrír stat-kassar → ein þjöppuð lína, engir rammar
@@ -2674,9 +2674,9 @@
       // layout, ónæmt fyrir colspan-hausnum) — design: 186/118/4×64/284/62/158/74/66/150.
       // árs-reitirnir fjórir (187 sprautar, sitja nú á 4–7 á eftir heimilisfangi)
       V+'.data-table td:nth-child(4),'+V+'.data-table td:nth-child(5),'+V+'.data-table td:nth-child(6),'+V+'.data-table td:nth-child(7){padding-left:2px;padding-right:2px;text-align:center}',
-      V+'._co{display:block;font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
+      V+'._co{display:block;font-size:13px;font-weight:600;color:var(--ink);white-space:normal;overflow:visible;overflow-wrap:anywhere}',
       V+'._kt{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.02em;white-space:nowrap;line-height:1.2}',
-      V+'._addr{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}',
+      V+'._addr{white-space:normal;overflow:visible;overflow-wrap:anywhere;display:block}',
       V+'._post{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted);margin-right:8px}',
       V+'._mo{font-family:var(--mono);font-size:12px;color:var(--ink-2)}',
       V+'._note{width:100%;height:24px;border:1px solid transparent;border-radius:7px;background:transparent;color:#3a4250;font-family:var(--ui);font-size:11.5px;padding:0 9px;box-sizing:border-box;transition:background .12s,border-color .12s}',
