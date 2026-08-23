@@ -244,9 +244,10 @@
   }
 
   function docLink(label, docId) {
-    // Opinn ham: gatt-doc krefst enn innskráningar → skjöl læst þar til lykilorð er sett.
-    if (state.demo || state.open || !docId) return '<a class="pdf" href="#" onclick="return false">' + label + '</a>';
-    return '<a class="pdf" href="/api/gatt-doc?doc=' + encodeURIComponent(docId) + '" target="_blank" rel="noopener">' + label + '</a>';
+    if (state.demo || !docId) return '<a class="pdf" href="#" onclick="return false">' + label + '</a>';
+    // Opinn ham: gatt-doc opnar skjöl félagsins með ?c=<slug> (án innskráningar).
+    var href = '/api/gatt-doc?doc=' + encodeURIComponent(docId) + (state.open ? '&c=' + encodeURIComponent(SLUG) : '');
+    return '<a class="pdf" href="' + href + '" target="_blank" rel="noopener">' + label + '</a>';
   }
 
   function buildingsOf(rows) {
