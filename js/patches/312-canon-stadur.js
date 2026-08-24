@@ -55,7 +55,13 @@
           from += 1000; if(from > 50000) break;
         }
       }
-    } catch(e){ console.warn('[CanonStadur] load villa', e); }
+    } catch(e){
+      console.warn('[CanonStadur] load villa', e);
+      // 2026-08-24 (netvordur vír 3): þögult tap á canonical brunninum tæmir mánaðar-
+      // listann (89) og skilar öðrum flötum í fyrra gisk — skrá í vandamála-registrið
+      // (309) svo það sjáist á Kerfisheilsu í stað þess að hverfa hljóðlaust.
+      try{ if(window.logProblem) window.logProblem('canon_stadur_load_failed', String((e&&e.message)||e), {severity:'error'}); }catch(_){}
+    }
     var m = {};
     (rows||[]).forEach(function(c){ if(c && c.fyrirtaeki_id != null) m[String(c.fyrirtaeki_id)] = c; });
     return m;
@@ -69,9 +75,17 @@
     _p = _load().then(function(m){
       _p = null;
       _map = m || {};
-      _at = (m && Object.keys(m).length) ? Date.now() : 0;   // _at=0 → endurles næst
+      var n = Object.keys(_map).length;
+      _at = n ? Date.now() : 0;   // _at=0 → endurles næst
+      // v_stadur_yfirlit hefur alltaf raðir (>1000). 0 raðir = brotið view/þekja →
+      // mánaðar-listinn (89) tæmist. Skrá svo það sjáist (netvordur vír 3).
+      if(!n){ try{ if(window.logProblem) window.logProblem('canon_stadur_empty','v_stadur_yfirlit skilaði 0 röðum',{severity:'error'}); }catch(_){} }
       return _map;
-    }).catch(function(){ _p = null; _map = _map || {}; _at = 0; return _map; });
+    }).catch(function(e){
+      _p = null; _map = _map || {}; _at = 0;
+      try{ if(window.logProblem) window.logProblem('canon_stadur_load_failed', String((e&&e.message)||e), {severity:'error'}); }catch(_){}
+      return _map;
+    });
     return _p;
   }
 
