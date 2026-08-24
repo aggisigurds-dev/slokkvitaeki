@@ -62,6 +62,10 @@
     // Efnislista (Kröfu yfirlit 👔-takkinn), breytir magni, vistar og staðfestir.
     { k: 'br-yfirferd',      label: 'Yfirferð efnislista (Brunahólf)', short: 'Yfirferð', emoji: '👔', url: 'https://brunaholf.netlify.app/yfirferd.html' },
     { k: 'br-eydublod',     label: 'Eyðublöð (Brunahólf)',            short: 'Eyðublöð', emoji: '📝', url: 'https://brunaholf.netlify.app/eydublod.html' },
+    // Skýrslu-stöð úr Bakendanum — einangraður flipi í brunaholf (?embed=1#skyrslustod)
+    // svo AÐEINS stöðin birtist í appinu, ekki allur Bakendinn. Tengja skýrslu/reikning
+    // við réttan stað + ár beint úr símanum.
+    { k: 'br-skyrslustod',  label: 'Skýrslu-stöð (Brunahólf)',        short: 'Skýrslust.', emoji: '📊', url: 'https://brunaholf.netlify.app/?embed=1#skyrslustod' },
   ];
   var PAGE_BY_KEY = {}; PAGES.forEach(function (p) { PAGE_BY_KEY[p.k] = p; });
 
@@ -104,7 +108,7 @@
     { key: 'brunaholf', emoji: '🔥', name: 'Brunahólf', color: '#6d28d9', dark: '#4c1d95',
       manifest: '/manifest-brunaholf.json', home: 'br-dagurinn',
       blurb: 'Brunahólf-hubbið í símanum — Dagurinn, Krófur, Reikningagerð, Vinnubók, Mæting o.fl.',
-      defaults: ['br-dagurinn', 'br-jarvis', 'br-verkkaupar', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting'] },
+      defaults: ['br-dagurinn', 'br-jarvis', 'br-verkkaupar', 'br-skyrslustod', 'br-krofur', 'br-krofuyfirlit', 'br-gerdreikninga', 'br-vinnubok', 'br-maeting'] },
     // Brunakerfi-appið fyrir skoðunarmenn á staðnum (ósk Agnars 2026-07-21):
     // yfirlitið er heimasíðan; fyrirtækjasíðan (274) og skýrslu-formið (273)
     // opnast þaðan sem yfirlög — allt innan sömu læstu skeljar.
@@ -130,7 +134,7 @@
     { key: 'boss', emoji: '👑', name: 'The Big Boss', color: '#fbe9ab', dark: '#b8860b',
       manifest: '/manifest-boss.json', home: 'br-fjarmalyfirlit',
       blurb: 'Framkvæmda-yfirlit þvert á bæði fyrirtækin — kröfur, fjármál, tekjur, bókhald, verkefni',
-      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-eydublod', 'krofu-yfirlit', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
+      defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
   // Standalone apps (Bílstjóri) render their OWN full-screen locked view
