@@ -157,6 +157,7 @@
     document.addEventListener('keydown', escHandler);
     renderBody();
     renderFooter();
+    renderVerkBadge();
   }
 
   function escHandler(e) { if (e.key === 'Escape') { e.preventDefault(); close(); } }
@@ -179,6 +180,44 @@
     if (isNaN(d)) return '—';
     return String(d.getDate()).padStart(2,'0') + '.' + String(d.getMonth()+1).padStart(2,'0') + '.' + d.getFullYear() +
            ' ' + String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+  }
+
+  // 2026-08-24 (Agnar): staðfesting í reikningnum að tækin séu komin á Verkstæði.
+  // verkbeiðnir num = <sölunúmer>-V<n>, verklidur = tækin (búin til við sölu/vistun).
+  // Aðeins upplýsandi grænn borði; snertir ekki söluna né verkin.
+  async function renderVerkBadge() {
+    const host = _dlg && _dlg.querySelector('#_se-verk');
+    if (!host || !_sale || !_sale.num) return;
+    try {
+      const SB = getSB(); if (!SB) return;
+      const jr = await SB.from('verkbeidnir').select('id,num').like('num', _sale.num + '-V%').order('num');
+      const jobs = (jr && jr.data) || [];
+      if (!jobs.length) return;
+      const ids = jobs.map(j => j.id);
+      const ur = await SB.from('verklidur').select('job_id,size').in('job_id', ids);
+      const units = (ur && ur.data) || [];
+      if (!_dlg || !_dlg.querySelector('#_se-verk')) return; // closed mid-fetch
+      const byJob = {};
+      units.forEach(u => { (byJob[u.job_id] = byJob[u.job_id] || []).push(u); });
+      const parts = jobs.map(j => {
+        const us = byJob[j.id] || [];
+        const size = (us.find(u => u.size) || {}).size || '';
+        const vm = /-V(\d+)$/.exec(j.num || '');
+        return 'V' + (vm ? vm[1] : '?') + ': ' + us.length + (size ? '×' + esc(size) : ' stk');
+      });
+      host.innerHTML =
+        '<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">'
+        + '<div style="font-size:13px;color:#166534"><b>✅ ' + units.length + ' tæki komin á Verkstæði</b>'
+        +   '<span style="color:#15803d"> · ' + parts.join(' · ') + '</span></div>'
+        + '<button id="_se-open-verk" type="button" style="font-size:12px;font-weight:700;padding:6px 12px;border:1px solid #16a34a;background:#fff;color:#15803d;border-radius:7px;cursor:pointer;white-space:nowrap">Opna á Verkstæði →</button>'
+        + '</div>';
+      const ob = host.querySelector('#_se-open-verk');
+      if (ob) ob.addEventListener('click', function () {
+        close();
+        try { if (window.App && App.switchView) { App.switchView('workshop'); return; } } catch (_) {}
+        try { location.hash = '#workshop'; } catch (_) {}
+      });
+    } catch (e) { /* informational badge only */ }
   }
 
   // ── Customer block ────────────────────────────────────────────────────────
@@ -226,6 +265,8 @@
         <div id="_se-lines"></div>
         <div id="_se-totals" style="margin-top:14px;padding-top:10px;border-top:1px solid #e2e8f0"></div>
       </div>
+
+      <div id="_se-verk"></div>
 
       <div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;margin-bottom:14px">
         <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">📝 Athugasemdir</div>
@@ -806,8 +847,10 @@
           if (job.error || !job.data) { console.warn('[sale-editor] verkbeidni insert:', job.error); continue; }
           const count = gram ? 1 : qty;
           const rows = [];
+          // 2026-08-24: label tegund+stærð úr vöruheitinu (var „—"/tómt á Verkstæði)
+          const pv = (window.parseSvcName ? window.parseSvcName(sl.desc) : null);
           for (let u = 0; u < count; u++) rows.push({
-            job_id: job.data.id, serial: tmpSerial(), type: '—', size: '', status: 'received',
+            job_id: job.data.id, serial: tmpSerial(), type: (pv && pv.type) || '—', size: (pv && pv.size) || '', status: 'received',
             service: gram ? (sl.desc + ' × ' + qty + ' (samtals)') : sl.desc
           });
           if (rows.length) { try { await SB.from('verklidur').insert(rows); } catch (e) { console.warn('[sale-editor] verklidur insert:', e); } }
