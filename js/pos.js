@@ -1537,8 +1537,8 @@
         '</div>' +
         '<div style="padding:12px 22px 18px;display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end">' +
           '<button id="_ps-reprint" type="button" style="background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-weight:600">🖨 Prenta aftur</button>' +
-          '<button id="_ps-view" type="button" style="background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-weight:600">📋 Reikningar</button>' +
-          '<button id="_ps-close" type="button" style="background:#10b981;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;font-weight:700">↺ Ný sala</button>' +
+          '<button id="_ps-view" type="button" style="background:#f1f5f9;color:#0f172a;border:1px solid #cbd5e1;border-radius:8px;padding:9px 14px;font-size:13px;cursor:pointer;font-weight:600">📋 Sjá reikning</button>' +
+          '<button id="_ps-close" type="button" style="background:#10b981;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:14px;cursor:pointer;font-weight:700">↺ Loka · Aftur á söluborð</button>' +
         '</div>' +
       '</div>';
     document.body.appendChild(ov);
@@ -1593,7 +1593,7 @@
       setTimeout(function(){ btn.disabled = false; btn.textContent = '🖨 Prenta aftur'; }, 800);
     };
 
-    // Auto-focus the "Ný sala" button so Enter closes the modal.
+    // Auto-focus the "Loka" button so Enter closes the modal.
     setTimeout(function(){ var b = document.getElementById('_ps-close'); if (b) b.focus(); }, 50);
     // Esc closes too.
     document.addEventListener('keydown', function escH(e){
