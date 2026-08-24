@@ -130,7 +130,7 @@
   // entirely (0 left) instead of decluttering them — worse than the mess.
   async function fetchDocs(baseId){
     var sb=SB(); if(!sb||!baseId) return [];
-    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by').eq('customer_base_id', baseId);
+    try{ var r=await sb.from('customer_documents').select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund').eq('customer_base_id', baseId);
       return r.data||[]; }catch(e){ return []; }
   }
   // Brunakerfis-skoðanir (doc_type='brunakerfi') eru lyklaðar á fyrirtaeki_id —
@@ -140,7 +140,7 @@
   async function fetchBrunakerfiDocs(coId){
     var sb=SB(); if(!sb||!coId) return [];
     try{ var r=await sb.from('customer_documents')
-        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by')
+        .select('id,doc_type,year,drive_file_id,storage_path,invoice_number,amount,doc_date,notes,file_name,fyrirtaeki_id,is_duplicate,found_by,vidskiptategund')
         .eq('fyrirtaeki_id', coId).eq('doc_type','brunakerfi');
       return r.data||[]; }catch(e){ return []; }
   }
@@ -389,6 +389,10 @@
   var SUSPECT_FOUND = /^(cowork-regen|cowork-payday-backfill|cowork-backfill|claude-code:fasi0)/i;
   function invDocChip(d, srcByNum){
     var u=docUrl(d); var lab=invLabel(d.invoice_number);
+    // Reikninga-tegund (2026-08-22, Agnar): táknið á reikninga-chippi fylgir
+    // vidskiptategund — 🧯 slökkvitæki (uttekt) · 🔥 brunakerfi · 🏪 almennt/búð (bud).
+    var _teg=(d&&d.vidskiptategund)||(function(){ var k=numKey(d&&d.invoice_number); var e=k?srcByNum[k]:null; return (e&&typeof e==='object')?e.teg:null; })();
+    var _ico=_teg==='brunakerfi'?'🔥':_teg==='bud'?'🏪':_teg==='uttekt'?'🧯':'🧾';
     var chip;
     var nk = d.invoice_number ? numKey(d.invoice_number) : '';
     var inSolur = nk && srcByNum && srcByNum[nk];
@@ -400,13 +404,13 @@
           ? ('upphæð skjalsins (' + d.amount + ' kr) stangast á við söluna (' + _s.samtals + ' kr)')
           : ('bakfyllt/endurgert eintak: ' + String(d.found_by||''));
         return docWrapFc(
-          '<button type="button" class="sk-doc inv" data-invopen="'+esc(d.invoice_number)+'" title="Opna reikninginn úr Sölu — Kröfuyfirlits-eintakið gildir">🧾 '+esc(lab)+'</button>' +
+          '<button type="button" class="sk-doc inv" data-invopen="'+esc(d.invoice_number)+'" title="Opna reikninginn úr Sölu — Kröfuyfirlits-eintakið gildir">'+_ico+' '+esc(lab)+'</button>' +
           '<span class="sk-doc inv miss" title="⚠ '+esc(_why)+' — sölu-reikningurinn er rétthærri. Smelltu á ✕ til að fjarlægja skráninguna.">⚠</span>',
           d.id);
       }
     }
     if(u){
-      chip = '<a class="sk-doc inv" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna reikning í Drive">🧾 '+esc(lab)+'</a>';
+      chip = '<a class="sk-doc inv" href="'+esc(u)+'" target="_blank" rel="noopener" title="Opna reikning í Drive">'+_ico+' '+esc(lab)+'</a>';
     } else if(inSolur){
       // 2026-07-09: POS-tengdar skráningar („kt-tengt úr Sölu") hafa EKKERT
       // skjal (drive_file_id null) en EIGA sölu-röð → smellur opnar reikninginn
@@ -414,9 +418,9 @@
       // aftur" í Bókhalds yfirliti). AÐEINS gert þegar númerið er raunveruleg
       // sala (2026-07-21, Agnar: „i only want 000419") — Stólpi/eldra-bókhalds
       // færslur án sölu-raðar hafa ekkert að opna og teiknast sem óvirk merki.
-      chip = '<button type="button" class="sk-doc inv" data-invopen="'+esc(d.invoice_number)+'" title="Opna reikning úr Sölu">🧾 '+esc(lab)+'</button>';
+      chip = '<button type="button" class="sk-doc inv" data-invopen="'+esc(d.invoice_number)+'" title="Opna reikning úr Sölu">'+_ico+' '+esc(lab)+'</button>';
     } else {
-      chip = '<span class="sk-doc inv" title="Skráning úr eldra bókhaldi — ekkert PDF-skjal né sölureikningur í kerfinu">🧾 '+esc(lab)+'</span>';
+      chip = '<span class="sk-doc inv" title="Skráning úr eldra bókhaldi — ekkert PDF-skjal né sölureikningur í kerfinu">'+_ico+' '+esc(lab)+'</span>';
     }
     return docWrapFc(chip, d.id);
   }
