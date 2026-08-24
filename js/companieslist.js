@@ -22,6 +22,25 @@ async function loadData(){
       if(u.next_insp && (!s.nextInsp || u.next_insp<s.nextInsp)) s.nextInsp=u.next_insp;
     });
   }
+  // 2026-08-24 (Agnar ein-uppspretta): „Næsta skoðun" á að koma úr skýrslu/reikningi
+  // (canonical brunnur 312), EKKI nafna-strengs-lágmarki á uttaeki.next_insp — það gaf
+  // rangan mánuð sem stangaðist á við skýrsluna (t.d. janúar í stað ágúst). Yfirskrifum
+  // dagsetninguna fyrir hvert fyrirtæki sem Á canonical skoðunarmánuð; nöfn án fyrirtaeki-
+  // raðar (engin skýrsla til að stangast á við) halda sínu fyrra gildi.
+  try{
+    if(window.CanonStadur){
+      await CanonStadur.ready();
+      var _cos=(window.Companies&&Companies.list)||[];
+      _cos.forEach(function(c){
+        if(!c||c.id==null||!c.nafn) return;
+        var cd=CanonStadur.nextDateOf(c.id);
+        if(cd){
+          if(!byClient[c.nafn]) byClient[c.nafn]={ext:0,hose:0,smoke:0,other:0,nextInsp:null};
+          byClient[c.nafn].nextInsp=cd;
+        }
+      });
+    }
+  }catch(e){ console.warn('[CompaniesList] canonical merge', e); }
   _cache=byClient;
   return byClient;
 }

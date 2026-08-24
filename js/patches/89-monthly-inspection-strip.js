@@ -118,6 +118,20 @@
       ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
+  // 2026-08-24 (Agnar ein-uppspretta): staða skoðunar byggir á CANONICAL skoðunar-
+  // dagsetningu (skýrsla/reikningur, canonical 312), ekki dauðum tækja-dagsetningum.
+  // Þannig samræmist liturinn skoðunarmánuðinum sem prófíllinn/Ársskoðun sýna.
+  function canonStatusFor(cd) {
+    if (!cd) return { color:'#9ca3af', emoji:'⚪', label:'Óþekkt' };
+    const today = new Date(); today.setHours(0,0,0,0);
+    const d30 = new Date(today.getTime() + 30*86400000);
+    const ni = new Date(cd); ni.setHours(0,0,0,0);
+    if (isNaN(ni)) return { color:'#9ca3af', emoji:'⚪', label:'Óþekkt' };
+    if (ni < today) return { color:'#dc2626', emoji:'🔴', label:'Útrunnið' };
+    if (ni <= d30) return { color:'#b45309', emoji:'🟠', label:'Rennur út' };
+    return { color:'#16a34a', emoji:'🟢', label:'Í lagi' };
+  }
+
   function refreshList() {
     const list = document.getElementById('_mis-list');
     if (!list) return;
@@ -133,23 +147,23 @@
 
     const rows = [];
     companies.forEach(co => {
-      const units = ubc ? (ubc[co.nafn] || []) : allUnits.filter(u => u.client === co.nafn);
-      const earliest = earliestInspForMonth(units, _selectedYear, _selectedMonth);
-      // Filter: row only included if it has a matching next_insp in selected month
-      // (or any next_insp at all for "Allt árið").
-      if (_selectedMonth == null) {
-        // "Allt árið" — include companies that have any active unit (with or w/o date)
-        if (!units.some(u => u && u.status === 'active')) return;
-      } else {
-        if (!earliest) return;
-      }
+      if (!co || co.id == null) return;
+      // 2026-08-24 (Agnar ein-uppspretta / ÖRYGGISMÁL): hvaða mánuð fyrirtæki lendir í
+      // kemur AÐEINS úr skýrslu/reikningi (canonical 312 → v_stadur_yfirlit), ALDREI úr
+      // tækja-next_insp. Rangur mánuður hér = fyrirtæki sést ekki í rétta mánuðinum =
+      // gleymd skoðun = brunahætta. Fyrirtæki án áætlaðs mánaðar (engin skýrsla/reikningur/
+      // handvirkt) birtist ekki í mánaðar-listanum — það kemur fram sem gloppa í Ársskoðun.
+      const cd = (window.CanonStadur && CanonStadur.nextDateOf) ? CanonStadur.nextDateOf(co.id) : null;
+      const cdt = cd ? new Date(cd) : null;
+      if (!cdt || isNaN(cdt) || cdt.getFullYear() !== _selectedYear) return;
+      if (_selectedMonth != null && cdt.getMonth() !== _selectedMonth) return;
       rows.push({
         coId: co.id,
         nafn: co.nafn || '',
         heimilisfang: co.heimilisfang || '',
-        status: statusFor(units),
-        dateStr: earliest ? fmtDate(earliest) : '—',
-        sortKey: earliest ? earliest.getTime() : Infinity
+        status: canonStatusFor(cd),
+        dateStr: fmtDate(cd),
+        sortKey: cdt.getTime()
       });
     });
     rows.sort((a, b) => a.sortKey - b.sortKey || a.nafn.localeCompare(b.nafn, 'is'));
@@ -256,6 +270,13 @@
     const fv = document.getElementById('view-field');
     if (!fv || !fv.classList.contains('active')) return;
     rebuildStrip();
+    // 312: mánaðar-bucketing byggir á canonical skoðunarmánuði — tryggja að hann sé
+    // hlaðinn og endurteikna þegar hann kemur (annars sæist tómur listi fyrsta augnablikið).
+    try{
+      if (window.CanonStadur && !window.__misCanonLoaded) {
+        CanonStadur.ready().then(function(){ window.__misCanonLoaded = true; rebuildStrip(); });
+      }
+    }catch(e){}
   }
   document.addEventListener('view-shown', e => {
     if (e && e.detail && e.detail.name === 'field') setTimeout(ensure, 200);
