@@ -80,6 +80,17 @@
       if(w && w.units>0) st = w;
       var f = equip.factOf ? equip.factOf(c.id) : null;                  // (a)
       if(f && +f.total_devices>0) st = Object.assign({}, st||_blank(), { units:+f.total_devices });
+      // 2026-08-24 (Agnar ein-uppspretta / öryggismál): canonical brunnur (312)
+      // RÆÐUR skoðunarmánuði + tækjafjölda — nákvæmlega sami staður og prófíllinn
+      // og 175 Rekstrarfélög lesa. SKOÐUNARMÁNUÐUR = AÐEINS skýrsla/reikningur, annars
+      // óþekkt (null); ALDREI nafna-strengs-dagsetningin (rangur mánuður = brunahætta).
+      // Tækjafjöldi = canonical þegar til, annars fyrra best-gisk (aldrei falsað 0).
+      if(window.CanonStadur && CanonStadur.rowOf && CanonStadur.rowOf(c.id)){
+        st = Object.assign({}, st||_blank());
+        var cu = CanonStadur.countOf(c.id);
+        if(cu!=null) st.units = cu;
+        st.next = CanonStadur.nextDateOf(c.id);
+      }
     }
     return st || null;
   }
@@ -110,6 +121,7 @@
   async function renderOverview(box){
     box.innerHTML='<div style="color:#94a3b8;padding:24px">Hleð…</div>';
     var equip=await getEquip(); var uf=uttektFiles(); var today=todayStr();
+    try{ if(window.CanonStadur) await CanonStadur.ready(); }catch(e){}   // 312: hlaða canonical mánuð/fjölda áður en coEquipSt les hann
     var all=inServiceList().map(function(c){
       // Per-staðar talning (facts → worksite → nafn) — sjá coEquipSt að ofan.
       var kt=digits(c.kennitala); var st=coEquipSt(equip,c); var lks=uf[kt]||{};

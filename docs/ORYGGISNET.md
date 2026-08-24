@@ -51,6 +51,7 @@ automation health and pings Agnar *only* when something needs him.
 | **POS search doesn't silently drop customers past 1000 rows** | `DB.fetchAll` pagination on the big tables | — | `audit-pagination.cjs` |
 | **Per‑line discount + credit notes bill Payday correctly** | `payday-push.js` per‑line gate + credit `discount_pct=0` strip | `send_failed` (token) | *verified vs 697 live sales; audit TODO* |
 | **The tæki→starfsstöð FK join hides no live in‑service customer** | `153` counts devices by `uttaeki.fyrirtaeki_id` (not folded client‑name); soft‑deleted excluded at `153:162` | `uttaeki_null_fid` | `audit-fk-join.cjs` |
+| **Skoðunarmánuður er sá sami alls staðar og engin skoðun gleymist þögult** | `312` `CanonStadur` les `v_stadur_yfirlit` (skýrsla/reikningur) sem EINA uppspretta fyrir `175`/`185`/`companieslist`/`89`/`77`; mánuður kemur ALDREI úr nafna‑strengs `uttaeki.next_insp` | `canon_stadur_load_failed`, `canon_stadur_empty` | `audit-canon-stadur.cjs` |
 
 ---
 
@@ -181,6 +182,21 @@ baseline rows and lowering the constant is how the net tightens over time.
   tæki (36, entry 13) talin + `logProblem('uttaeki_null_fid')` svo þau sjáist á
   Kerfisheilsu uns Cowork tengir þau. Nýtt audit `audit-fk-join.cjs` (BASELINE 0) sannar
   að enginn lifandi kúnni detti úr þjónustu vegna joinsins; `audit-all` nú 4/4 grænt.
+- **2026‑08‑24 — Ein uppspretta skoðunarmánaðar (`312 CanonStadur`).** Skoðunarmánuður
+  fyrirtækis birtist á 5 flötum (`175` Rekstrarfélög, `185` Í þjónustu, `companieslist`,
+  `89` mánaðar‑röð, `77` gjaldfallið) og hver reiknaði sinn eigin úr nafna‑strengs
+  `min(uttaeki.next_insp)` → ólíkar niðurstöður (Center Hótel Arnarhvoll sýndi janúar
+  í stað ágúst; rangur mánuður = gleymd skoðun = brunahætta). Nýr sameiginlegur brunnur
+  `js/patches/312-canon-stadur.js` (`window.CanonStadur`) les `v_stadur_yfirlit`
+  (skýrsla/reikningur, ein röð per `fyrirtaeki_id`) EINU SINNI; `nextDateOf(id)` skilar
+  mánuði AÐEINS úr skýrslu/reikningi, annars `null` (aldrei nafna‑strengs‑dagsetning).
+  Allir 5 flötir + `199` prófíllinn lesa nú sama stað. Vörður: `logProblem`
+  (`canon_stadur_load_failed`/`canon_stadur_empty`) svo þögult tap sjáist á Kerfisheilsu;
+  nýtt audit `audit-canon-stadur.cjs` (BASELINE 0) sannar á lifandi gögnum að ekkert
+  fyrirtæki með þekktan skýrslu-/reikningsmánuð tapi honum í viewinu (0/658; 589 í
+  þjónustu með mánuð, 69 án → birtast sem gloppur í Ársskoðun `153`, ekki þögult horfin).
+  `audit-all` nú 5/5 grænt. Varðir vírar (`153/187`, `10/233/254`, `121`, `payday-push`)
+  ósnertir.
 - *Add a line here every time you make something bulletproof.*
 
 ---
