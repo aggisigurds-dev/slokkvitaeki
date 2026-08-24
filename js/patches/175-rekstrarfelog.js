@@ -742,25 +742,31 @@
         fetchAllRows(SB, 'arsskodun_report_facts',
                      'fyrirtaeki_id,total_devices,report_year'),
         fetchAllRows(SB, 'uttaeki', 'worksite_id,last_insp,next_insp',
-                     function(q){ return q.not('worksite_id','is',null); })
+                     function(q){ return q.not('worksite_id','is',null); }),
+        // 2026-08-23 (Agnar ein-uppspretta): canonical per-staðar brunnur — ræður
+        // tækjafjölda + skoðunarmánuði (skýrsla/reikningur, ALDREI virk/dauð tæki).
+        fetchAllRows(SB, 'v_stadur_yfirlit',
+                     'fyrirtaeki_id,taeki_count,inspect_month,report_year,invoice_year')
       ]);
-      var rows=_res[0], factRows=_res[1], wsRows=_res[2];
+      var rows=_res[0], factRows=_res[1], wsRows=_res[2], canonRows=_res[3]||[];
       var base={},comp={},street={};
       rows.forEach(function(u){ var b=_norm(u.client); if(!b)return; var c=_compact(u.client), s=_streetnum(u.client);
         (base[b]||(base[b]=_blank())); _add(base[b],u);
         (comp[c]||(comp[c]=_blank())); _add(comp[c],u);
         if(s){ (street[s]||(street[s]=_blank())); _add(street[s],u); } });
-      var ws={}, facts={};
+      var ws={}, facts={}, canon={};
       wsRows.forEach(function(u){ if(u.worksite_id==null)return; var k=String(u.worksite_id);
         (ws[k]||(ws[k]=_blank())); _addRaw(ws[k],u); });
       factRows.forEach(function(f){ if(f&&f.fyrirtaeki_id!=null) facts[String(f.fyrirtaeki_id)]=f; });
+      canonRows.forEach(function(c){ if(c&&c.fyrirtaeki_id!=null) canon[String(c.fyrirtaeki_id)]=c; });
       // 2026-07-16 (Agnar): TÆKI = nákvæmlega tækin sem standa á fyrirtækinu
       // (sama og prófíllinn sýnir) — götu+númer-giskið safnaði gömlum
       // client-strengja-útgáfum saman (Hamraborg 7 sýndi 30 í stað 14).
       _equip={ match:function(name){ var b=_norm(name); if(base[b])return base[b];
         var c=_compact(name); if(comp[c])return comp[c]; return null; },
         wsOf:function(id){ return id==null?null:(ws[String(id)]||null); },
-        factOf:function(id){ return id==null?null:(facts[String(id)]||null); } };
+        factOf:function(id){ return id==null?null:(facts[String(id)]||null); },
+        canonOf:function(id){ return id==null?null:(canon[String(id)]||null); } };
       _equipAt=Date.now();
       return _equip;
     })().catch(function(e){
@@ -791,6 +797,31 @@
       if(w && w.units>0) st = w;
       var f = equip.factOf ? equip.factOf(co.id) : null;                 // (a)
       if(f && +f.total_devices>0) st = Object.assign({}, st||_blank(), { units:+f.total_devices });
+      // 2026-08-23 (Agnar ein-uppspretta / öryggismál): canonical brunnur
+      // v_stadur_yfirlit RÆÐUR tækjafjölda + skoðunarmánuði (skýrsla > reikningur;
+      // virk/dauð tæki ALDREI). Yfirskrifar nafn/worksite-giskið svo Rekstrarfélög
+      // sýni NÁKVÆMLEGA sama og fyrirtækjaprófíllinn (Arnarhvoll: ágúst, ekki janúar
+      // sem nafn-strengs-rollupinn gaf). Ártala-dálkarnir (y2024–26) haldast.
+      var c = equip.canonOf ? equip.canonOf(co.id) : null;
+      if(c){
+        st = Object.assign({}, st||_blank());
+        // TÆKJAFJÖLDI: canonical (skýrsla > reikningur > handvirkt) þegar hann er til.
+        // Sé hann ekki til höldum við fyrri best-giski (facts→worksite→nafn) frekar en
+        // að falsa „0" — 0 læsi sem „engin tæki" á stað sem á skýrslu óútdregna í facts.
+        var cu = (c.taeki_count!=null ? +c.taeki_count : null);
+        if(cu!=null) st.units = cu;
+        // SKOÐUNARMÁNUÐUR (öryggismál): AÐEINS canonical (skýrsla/reikningur). Sé hann
+        // ekki til → óþekkt (null). ALDREI nafna-strengs-dagsetningin (t.d. janúar hjá
+        // Arnarhvoli) — rangur mánuður = gleymd skoðun = brunahætta.
+        var mm = +c.inspect_month||0;
+        if(mm>=1 && mm<=12){
+          var baseY = Math.max(+c.report_year||0, +c.invoice_year||0);
+          var yr = baseY>0 ? baseY+1 : new Date().getFullYear();
+          st.next = yr+'-'+('0'+mm).slice(-2)+'-01';   // skoðunarmánuður úr skýrslu/reikningi
+        } else {
+          st.next = null;   // enginn skýrslu-/reikningsmánuður → óþekkt (ekki fölsuð dauð dagsetning)
+        }
+      }
     }
     return st || null;
   }
