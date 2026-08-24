@@ -113,6 +113,9 @@
     const type = s.replace(/\./g, ' ').replace(/\s{2,}/g, ' ').trim();
     return { type, size, service };
   }
+  // 2026-08-24: expose so pos.js / 142-sale-editor can label verklidur type+size
+  // from the product name (var áður „—"/tómt á Verkstæði-borðinu).
+  try { if (typeof window !== 'undefined' && !window.parseSvcName) window.parseSvcName = parseSvcName; } catch (_) {}
   function svcOptionsHtml(selected) {
     const cur = String(selected == null ? '' : selected);
     const opts = (SVC_PRODUCTS || []).map(n =>

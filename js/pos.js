@@ -1435,6 +1435,9 @@
             var isGramBased = /\b\d+\s*(gr?\.?|gramm|ml|litr?)\b/i.test(sl.desc) && registered.length <= 1;
             var verklidurCount = isGramBased ? 1 : qty;
             var verklidurRows = [];
+            // 2026-08-24: merkja tegund+stærð úr vöruheitinu (var „—"/tómt) svo
+            // Verkstæði sýni t.d. „6 kg" strax; tæknimaður má breyta áfram.
+            var _pv = (window.parseSvcName ? window.parseSvcName(sl.desc) : null);
             for (var u=0; u<verklidurCount; u++) {
               var registeredUnit = registered[u];
               var serial = (registeredUnit && registeredUnit.serial && registeredUnit.serial.trim())
@@ -1442,8 +1445,8 @@
               verklidurRows.push({
                 job_id: jobId,
                 serial: serial,
-                type: '—',                // workshop will fill in correct type
-                size: '',
+                type: (_pv && _pv.type) || '—',   // tegund/stærð úr vöruheiti; workshop má breyta
+                size: (_pv && _pv.size) || '',
                 service: isGramBased
                   ? sl.desc + ' × ' + qty + ' (samtals)'
                   : sl.desc,
