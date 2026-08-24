@@ -736,6 +736,11 @@
       // per-STAÐAR sannleikann — arsskodun_report_facts (total_devices síðustu
       // skýrslu, PK fyrirtaeki_id) og worksite-tengdu tækin (uttaeki.worksite_id,
       // ~200 raðir) — svo byggingaröð þurfi ekki að treysta nafna-giskinu einu.
+      // 2026-08-24 (Agnar ein-uppspretta): canonical mánuður/fjöldi kemur nú frá
+      // sameiginlega brunninum CanonStadur (312) — EINN staður, EIN formúla, deilt með
+      // 185/companieslist/89/77. 175 sækir v_stadur_yfirlit ekki lengur sér (engin
+      // tvítekin formúla sem getur rekið í sundur).
+      try{ if(window.CanonStadur) await CanonStadur.ready(); }catch(e){}
       var _res = await Promise.all([
         fetchAllRows(SB, 'v_uttaeki_client_rollup',
                      'client,units,y2024,y2025,y2026,next_insp'),
@@ -760,7 +765,8 @@
       _equip={ match:function(name){ var b=_norm(name); if(base[b])return base[b];
         var c=_compact(name); if(comp[c])return comp[c]; return null; },
         wsOf:function(id){ return id==null?null:(ws[String(id)]||null); },
-        factOf:function(id){ return id==null?null:(facts[String(id)]||null); } };
+        factOf:function(id){ return id==null?null:(facts[String(id)]||null); },
+        canonOf:function(id){ return (id!=null&&window.CanonStadur)?CanonStadur.rowOf(id):null; } };
       _equipAt=Date.now();
       return _equip;
     })().catch(function(e){
@@ -791,6 +797,24 @@
       if(w && w.units>0) st = w;
       var f = equip.factOf ? equip.factOf(co.id) : null;                 // (a)
       if(f && +f.total_devices>0) st = Object.assign({}, st||_blank(), { units:+f.total_devices });
+      // 2026-08-23 (Agnar ein-uppspretta / öryggismál): canonical brunnur
+      // v_stadur_yfirlit RÆÐUR tækjafjölda + skoðunarmánuði (skýrsla > reikningur;
+      // virk/dauð tæki ALDREI). Yfirskrifar nafn/worksite-giskið svo Rekstrarfélög
+      // sýni NÁKVÆMLEGA sama og fyrirtækjaprófíllinn (Arnarhvoll: ágúst, ekki janúar
+      // sem nafn-strengs-rollupinn gaf). Ártala-dálkarnir (y2024–26) haldast.
+      var c = equip.canonOf ? equip.canonOf(co.id) : null;
+      if(c){
+        st = Object.assign({}, st||_blank());
+        // TÆKJAFJÖLDI: canonical (skýrsla > reikningur > handvirkt) þegar hann er til.
+        // Sé hann ekki til höldum við fyrri best-giski (facts→worksite→nafn) frekar en
+        // að falsa „0" — 0 læsi sem „engin tæki" á stað sem á skýrslu óútdregna í facts.
+        var cu = window.CanonStadur ? CanonStadur.countOf(co.id) : null;
+        if(cu!=null) st.units = cu;
+        // SKOÐUNARMÁNUÐUR (öryggismál): AÐEINS canonical (skýrsla/reikningur). Sé hann
+        // ekki til → óþekkt (null). ALDREI nafna-strengs-dagsetningin (t.d. janúar hjá
+        // Arnarhvoli) — rangur mánuður = gleymd skoðun = brunahætta. Formúlan býr í 312.
+        st.next = window.CanonStadur ? CanonStadur.nextDateOf(co.id) : null;
+      }
     }
     return st || null;
   }

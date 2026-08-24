@@ -78,9 +78,15 @@
       const units = byClient[clientName];
       const earliest = units.map(u => u.next_insp).filter(Boolean).sort()[0];
       const co = companiesList.find(c => (c.nafn || '').trim() === clientName.trim());
+      // 2026-08-24 (Agnar ein-uppspretta): „næsta skoðun" á að koma úr skýrslu/reikningi
+      // (canonical 312) þegar fyrirtækið er þekkt — ekki dauðri tækja-dagsetningu. Sé
+      // canonical mánuður til er hann sýndur (og gefur til kynna að gjaldfallin-flöggun
+      // tækjanna byggi á úreltum gögnum); annars föllum við á elstu tækja-dagsetninguna.
+      const canonNext = (co && window.CanonStadur && CanonStadur.nextDateOf) ? CanonStadur.nextDateOf(co.id) : null;
+      const showDate = canonNext || earliest;
       const card = document.createElement('div');
       card.className = 'alert-card due';
-      const nextLine = earliest ? ` · næsta skoðun ${fmtDate(earliest)}` : '';
+      const nextLine = showDate ? ` · næsta skoðun ${fmtDate(showDate)}` : '';
       const btnHtml = co
         ? `<button class="btn btn-outline btn-sm" onclick="window._openCompanySafe?window._openCompanySafe(${co.id}):(App.switchView('companies'),setTimeout(function(){Companies.openDetail(${co.id});},200));">Opna fyrirtæki</button>`
         : '';
@@ -93,6 +99,12 @@
     titleEl.parentNode.insertBefore(frag, titleEl.nextSibling);
   }
 
+  // 312: „næsta skoðun" les canonical brunninn — tryggja að hann sé hlaðinn áður.
+  function regroupWhenReady() {
+    try{ if(window.CanonStadur){ CanonStadur.ready().then(regroup).catch(regroup); return; } }catch(e){}
+    regroup();
+  }
+
   function install() {
     if (!window.Field || typeof Field.render !== 'function') {
       setTimeout(install, 300);
@@ -103,10 +115,10 @@
     const orig = Field.render;
     Field.render = function() {
       orig.apply(this, arguments);
-      setTimeout(regroup, 0);
+      setTimeout(regroupWhenReady, 0);
     };
     // Also handle the case where Field.render was already called before we installed
-    setTimeout(regroup, 100);
+    setTimeout(regroupWhenReady, 100);
     console.log('[gjaldfallid-group] installed');
   }
   install();
