@@ -461,6 +461,21 @@
         return DiscountEngine.tierFast(tier, cat);
       } catch (_) { return null; }
     };
+    // 2026-08-24 (Center Hótel — hóps-PRÓSENTUR skiluðu sér ekki í úttektina):
+    // hópsverð per línu-flokk (t.d. Center: Hleðsla −20%, Yfirferð −10%, Brunaslöngur
+    // −32%). Áður var AÐEINS hardware_purchase-prósentan (tierHwPct) fyllt í Afsl.-
+    // reitinn — og bara á Ný tæki/Vöru-línur — svo þjónustulínurnar (Hleðsla/Yfirferð/
+    // Brunaslöngur) sátu á 0% þótt hópurinn ætti prósentu á þeim. Núna fær hver lína
+    // prósentu SÍNS eigin flokks (nákvæmlega eins og DiscountEngine gerir í Sölu).
+    // Fast hópsverð trompar áfram (tierMark); handvirkur afsláttur/verð trompar líka.
+    const tierPctFor = (product) => {
+      if (!tier || !window.DiscountEngine || !product) return null;
+      try {
+        const cat = DiscountEngine.classifyItem({ id: product.id, nafn: product.nafn, flokkur: product.flokkur });
+        const p = DiscountEngine.tierPct(tier, cat);
+        return (p != null && p > 0) ? p : null;
+      } catch (_) { return null; }
+    };
     const tierHwPct = (tier && window.DiscountEngine) ? DiscountEngine.tierPct(tier, 'hardware_purchase') : null;
     const tierBadgeObj = { notes: 'Afsláttarhópur „' + ((tier && tier.tier_name) || '') + '" — fast samningsverð án vsk (handvirk breyting hér trompar)' };
     // 2026-05-19: defaults for in-service Fyrirtækjaþjónustu customers —
@@ -648,13 +663,15 @@
           let tierMark = null;
           if (!override) { const tf = tierFastFor(reykP); if (tf != null && tf <= unitPrice) { unitPrice = tf; tierMark = tierBadgeObj; } }
           const dKey = 'svc|' + g.type + '|' + g.size + '|reyk';
-          const dPct = discFor(dKey);
+          let dPct = discFor(dKey);
+          let tierPctMark = false;
+          if (!dPct && !tierMark && !override) { const tp = tierPctFor(reykP); if (tp != null) { dPct = tp; tierPctMark = true; } }
           const effUnit = priceFor(dKey, unitPrice);
           const subEx = discUnitOf(effUnit, dPct) * total;
           const vskKr = subEx * (vskPct / 100);
           totalSubEx += subEx;
           totalVsk += vskKr;
-          if (override || tierMark) { overrideSubEx += subEx; overrideVsk += vskKr; }
+          if (override || tierMark || tierPctMark) { overrideSubEx += subEx; overrideVsk += vskKr; }
           rows.push('<tr>' +
             '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + (g.size ? ' / ' + esc(g.size) : '') +
               '<div style="font-size:11px;color:#64748b">' + esc(reykP.nafn) + '</div></td>' +
@@ -727,13 +744,17 @@
         let tierMark = null;
         if (!override) { const tf = tierFastFor(product); if (tf != null && tf <= unitPrice) { unitPrice = tf; tierMark = tierBadgeObj; } }
         const dKey = 'svc|' + g.type + '|' + g.size + '|' + kindKey;
-        const dPct = discFor(dKey);
+        let dPct = discFor(dKey);
+        let tierPctMark = false;
+        // Tóm Afsl.-reit → prósenta hóps-flokksins (Hleðsla/Yfirferð/Brunaslöngur …).
+        // Handslegin tala OG fast hópsverð (tierMark) OG sérverð (override) tromp'a.
+        if (!dPct && !tierMark && !override) { const tp = tierPctFor(product); if (tp != null) { dPct = tp; tierPctMark = true; } }
         const effUnit = priceFor(dKey, unitPrice);
         const subEx = discUnitOf(effUnit, dPct) * n;
         const vskKr = subEx * (vskPct / 100);
         totalSubEx += subEx;
         totalVsk += vskKr;
-        if (override || tierMark) { overrideSubEx += subEx; overrideVsk += vskKr; }
+        if (override || tierMark || tierPctMark) { overrideSubEx += subEx; overrideVsk += vskKr; }
         rows.push('<tr>' +
           '<td style="padding:7px 10px;font-size:13px;color:#0f172a;' + typeBorder(g.type) + '">' + esc(g.type) + ' / ' + esc(g.size) +
             '<div style="font-size:11px;color:#64748b">' + esc(product.nafn) + '</div></td>' +
