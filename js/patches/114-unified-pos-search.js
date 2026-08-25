@@ -930,8 +930,11 @@
         posState.customer.co_id = (source === 'fyrirtaeki') ? (m.id || null) : null;
         posState.customer.mode = 'kt';   // 2026-08-19: að velja alvöru kúnna hreinsar „án kennitölu"-haminn (var sticky → auto-tenging slökkt)
         posState.customer.heimilisfang = m.heimilisfang || m.heimilisFang || '';
-        if (m.afslattur_pct != null) posState.customer.afslattur_pct = +m.afslattur_pct || 0;
+        // Always write, including 0 — otherwise the previous customer's % stays in the cart.
+        posState.customer.afslattur_pct = +m.afslattur_pct || 0;
+        posState.discount_pct = +m.afslattur_pct || 0;
         if (m.athugasemdir != null) posState.customer.athugasemdir = m.athugasemdir || '';
+        try { if (typeof POS.rerenderDynamic === 'function') POS.rerenderDynamic(); } catch (_) {}
       }
     } catch (_) {}
 
