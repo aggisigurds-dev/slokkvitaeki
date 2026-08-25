@@ -14,11 +14,29 @@
   function digits(s) { return String(s == null ? '' : s).replace(/\D/g, ''); }
 
   let _ktMap = null; // digits(kt) -> firm name
+  // 2026-08-25: byggja kortið úr SAMEINUÐU gögnunum (window.RekstrarfelagData.getMerged),
+  // sem fléttar lifandi `customers_base.rekstrarfelag` (DB — kanóníska aðildin) OFAN Á
+  // handvirku AppSettings-listann. Áður las badge-inn AÐEINS AppSettings, svo
+  // rekstrarfélög sem voru sett í gagnagrunni (t.d. gegnum Bakenda/sameiningu) en ekki
+  // handskráð í AppSettings fengu EKKERT merki í ársskoðun/prófíl — sama villa og 184
+  // var lagað út af 2026-07-12. Fallback á AppSettings ef 175 (RekstrarfelagData) er
+  // ekki komið.
+  function readData() {
+    try {
+      if (window.RekstrarfelagData && typeof window.RekstrarfelagData.getMerged === 'function') {
+        return window.RekstrarfelagData.getMerged() || {};
+      }
+    } catch (_) {}
+    try {
+      if (window.AppSettings && typeof AppSettings.path === 'function') return AppSettings.path('rekstrarfelog') || {};
+    } catch (_) {}
+    return {};
+  }
   function ktMap() {
     if (_ktMap) return _ktMap;
     _ktMap = {};
     try {
-      const data = (window.AppSettings && AppSettings.path && AppSettings.path('rekstrarfelog')) || {};
+      const data = readData();
       Object.keys(data).forEach(firm => {
         (data[firm].buildings || []).forEach(b => {
           const k = digits(b.kt);
@@ -28,7 +46,7 @@
     } catch (_) {}
     return _ktMap;
   }
-  // AppSettings loads async on app start — don't cache a possibly-empty map forever.
+  // AppSettings + lifandi DB hlaðast async á ræsingu — ekki festa hugsanlega tómt/úrelt kort.
   function forKt(kt) {
     const k = digits(kt);
     if (!k) return null;
@@ -36,6 +54,14 @@
     if (!Object.keys(m).length) { _ktMap = null; m = ktMap(); } // one retry, cheap
     return m[k] || null;
   }
+  // Sækja lifandi rekstrarfélaga-listann (gegnum 175) við ræsingu og ógilda kt-kortið
+  // þegar hann kemur — svo DB-sett rekstrarfélög fái merkið um leið og notandi opnar
+  // (eða endur-teiknar) ársskoðun/prófíl. Ræst strax svo gögnin séu tilbúin fyrir fyrstu skoðun.
+  try {
+    if (window.RekstrarfelagData && typeof window.RekstrarfelagData.ensureLive === 'function') {
+      window.RekstrarfelagData.ensureLive().then(() => { _ktMap = null; }).catch(() => {});
+    }
+  } catch (_) {}
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   // Small pill, consistent wherever it's dropped in (table row, card, profile banner).
   function html(kt) {
