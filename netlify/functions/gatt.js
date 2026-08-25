@@ -104,7 +104,7 @@ exports.handler = async (event) => {
       const filt = siteIds.length
         ? `or=(customer_base_id.eq.${baseId},fyrirtaeki_id.in.(${siteIds.join(',')}))`
         : `customer_base_id=eq.${baseId}`;
-      const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id`);
+      const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id,vidskiptategund`);
       if (dr.ok) docs = await dr.json();
     } catch (_) {}
 
@@ -147,7 +147,8 @@ exports.handler = async (event) => {
       (d) => normNr(d.invoice_number) || ('id:' + d.id),
     )
       .map((d) => ({ docId: d.id, nr: d.invoice_number || null, dags: d.doc_date || null, ar: d.year || null,
-        bygging: nafnById[d.fyrirtaeki_id] || '', upphaed: d.amount != null ? d.amount : null }))
+        bygging: nafnById[d.fyrirtaeki_id] || '', upphaed: d.amount != null ? d.amount : null,
+        tegund: d.vidskiptategund || null }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
 
     const stats = {

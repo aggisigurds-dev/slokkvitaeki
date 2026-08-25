@@ -224,6 +224,14 @@ baseline rows and lowering the constant is how the net tightens over time.
   `fyrirtaeki_id`; base-only reikningar gilda aðeins þegar base á einn stað.
   `isReportKind` telur ekki `brunakerfi` sem úttektarskýrslu. Invoice OUT /
   payday / kt-save ósnert. Audit `audit-rekstrarfelog-sites.cjs` (187 source).
+- **2026‑08‑25 — Reikningar per þjónusta, ekki einn pottur.** `doc_type` er
+  alltaf `reikningur` fyrir slökkvitæki OG brunakerfi; merkið er
+  `vidskiptategund`. Ársskoðun `187`/`153` sleppir `brunakerfi`/`bud` af
+  úttektar-🧾 og `klarad`-grænu (Grandi 2026 par 1295 → R-108001). Prófíll
+  `199` skiptir í `invUtByY`/`invBrByY` (óþekkt → úttektarkortið aðeins).
+  Rekstrarfélög `175` kveikir ekki 🧾 þegar par og reikningur stangast á.
+  Gátt merkir þjónustu. Pörin sjálf eru **ekki** eydd. Invoice OUT / payday /
+  kt-save ósnert. Audit `audit-rekstrarfelog-sites.cjs` (`isUttektInvoiceTeg`).
 - *Add a line here every time you make something bulletproof.*
 
 ---

@@ -13,6 +13,7 @@
     return m ? (m[3] + '.' + m[2] + '.' + m[1]) : String(d);
   };
   var TYPE_LABEL = { uttektarskyrsla: 'Slökkvitæki', brunakerfi: 'Brunakerfi' };
+  var INV_TEG = { uttekt: 'Slökkvitæki', brunakerfi: 'Brunakerfi', bud: 'Búð', ovisst: 'Óvíst' };
 
   /* ── SÝNISHORN (úr v3 Steel hönnun) ── */
   var DEMO = {
@@ -45,10 +46,10 @@
       { dags: '2025-09-01', bygging: 'Þingholt', heimilisfang: 'Þingholtsstræti 3–5', tegund: 'Brunakerfi', magn: null, ar: 2025 },
     ],
     invoices: [
-      { nr: 'R-000668', dags: '2026-08-03', bygging: 'Klöpp', lysing: 'Úttekt — slökkvitæki og brunaslöngur', upphaed: 174747 },
-      { nr: 'R-000670', dags: '2026-08-03', bygging: 'Skjaldbreið', lysing: 'Úttekt — slökkvitæki', upphaed: 19778 },
-      { nr: 'R-107802', dags: '2026', bygging: 'Plaza', lysing: 'Þjónusta', upphaed: null },
-      { nr: 'R-108001', dags: '2026', bygging: 'Grandi', lysing: 'Þjónusta', upphaed: null },
+      { nr: 'R-000668', dags: '2026-08-03', bygging: 'Klöpp', lysing: 'Úttekt — slökkvitæki og brunaslöngur', upphaed: 174747, tegund: 'Slökkvitæki' },
+      { nr: 'R-000670', dags: '2026-08-03', bygging: 'Skjaldbreið', lysing: 'Úttekt — slökkvitæki', upphaed: 19778, tegund: 'Slökkvitæki' },
+      { nr: 'R-107802', dags: '2026', bygging: 'Plaza', lysing: 'Þjónusta', upphaed: null, tegund: 'Slökkvitæki' },
+      { nr: 'R-108001', dags: '2026', bygging: 'Grandi', lysing: 'Þjónusta', upphaed: null, tegund: 'Brunakerfi' },
       { nr: 'R-108134', dags: '2026', bygging: 'Grandi', lysing: 'Þjónusta', upphaed: null },
       { nr: 'R-107257', dags: '2025', bygging: 'Plaza', lysing: 'Úttekt', upphaed: null },
       { nr: 'R-107258', dags: '2025', bygging: 'Arnarhvoll', lysing: 'Úttekt', upphaed: null },
@@ -133,7 +134,7 @@
         return { docId: r.docId, dags: r.dags || r.ar, bygging: r.bygging, heimilisfang: '', tegund: TYPE_LABEL[r.tegund] || r.tegund, magn: r.magn, ar: r.ar };
       }),
       invoices: (d.invoices || []).map(function (i) {
-        return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: '', upphaed: i.upphaed };
+        return { docId: i.docId, nr: i.nr, dags: i.dags || i.ar, bygging: i.bygging, lysing: i.lysing || '', upphaed: i.upphaed, tegund: INV_TEG[i.tegund] || i.tegund || '' };
       }),
       messages: d.messages || [],
     };
@@ -302,10 +303,11 @@
       return '<tr><td class="kt">' + esc(r.nr || '—') + '</td>' +
         '<td class="num">' + esc(fmtDate(r.dags)) + '</td>' +
         '<td><span class="bname" style="font-size:17px">' + esc(r.bygging) + '</span></td>' +
+        '<td><span class="tb">' + esc(r.tegund || '—') + '</span></td>' +
         '<td class="dim">' + esc(r.lysing || '') + '</td>' +
         '<td class="r num">' + (r.upphaed != null ? esc(fmtKr(r.upphaed)) : '<span class="dim">—</span>') + '</td>' +
         '<td class="r">' + docLink('PDF ⬇', r.docId) + '</td></tr>';
-    }).join('') || '<tr><td colspan="6" class="empty">Engir reikningar skráðir</td></tr>';
+    }).join('') || '<tr><td colspan="7" class="empty">Engir reikningar skráðir</td></tr>';
   }
 
   /* ── nav / lang / logout ── */

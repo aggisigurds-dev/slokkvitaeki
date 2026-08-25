@@ -180,11 +180,19 @@
     } catch (_) {}
     locLoading = false;
   }
+  // Úttektar-🧾 á Ársskoðun. Brunakerfisreikningar (og búð) mega EKKI kveikja
+  // slökkvitækja-punktinn — doc_type er alltaf 'reikningur' fyrir báðar þjónustur;
+  // raunverulegi merkimiðinn er customer_documents.vidskiptategund. Óþekkt/ovisst
+  // halda áfram (77 reikningar) svo Hamraborg 7 o.fl. slokkni ekki.
+  function isUttektInvoiceTeg(teg) {
+    const t = String(teg || '').toLowerCase();
+    return t !== 'brunakerfi' && t !== 'bud';
+  }
   async function loadReik(){
     if (reikLoading || reikByCo) return; reikLoading = true;
     try {
       const sb = window.DB && DB.sb; if (!sb) { reikLoading = false; return; }
-      const reikRows = await fetchAll(() => sb.from('customer_documents').select('fyrirtaeki_id,customer_base_id,year,invoice_number')
+      const reikRows = await fetchAll(() => sb.from('customer_documents').select('id,fyrirtaeki_id,customer_base_id,year,invoice_number,vidskiptategund')
         .eq('doc_type','reikningur'));
       // Pakki 7: búðarreikningar (solur.vidskiptategund='bud') kveikja EKKI
       // 🧾-ársmerkið í ársskoðunarlistanum — það er skoðunar-samhengi og
@@ -198,6 +206,7 @@
       const byBaseLoose = {};
       reikRows.forEach(x => {
         if (!x.year) return;
+        if (!isUttektInvoiceTeg(x.vidskiptategund)) return;
         const inv = String(x.invoice_number || '').trim().toUpperCase();
         if (inv && budNums.has(inv)) return;
         const y = String(x.year);
@@ -239,11 +248,25 @@
       // sömu kt) haldi hverjum stað sjálfstæðum — sama regla og document_pairs
       // einkvæmnin í Brunahólf.
       const rows = await fetchAll(() => sb.from('document_pairs')
-        .select('fyrirtaeki_id,year')
+        .select('fyrirtaeki_id,year,invoice_doc_id')
         .eq('service_type','uttekt').eq('status','klarad').not('fyrirtaeki_id','is',null));
+      // Display-omit: uttekt+klarad par sem vísar á brunakerfis-reikning
+      // (t.d. Grandi 2026 par 1295 → R-108001). EKKI UPDATE/DELETE parinu —
+      // málarinn sleppir því bara. Fail-open ef skip-sóknin klikkar.
+      const bruInvIds = new Set();
+      try {
+        const bruRows = await fetchAll(() => sb.from('customer_documents')
+          .select('id').eq('doc_type','reikningur').eq('vidskiptategund','brunakerfi'));
+        bruRows.forEach(d => { if (d && d.id != null) bruInvIds.add(d.id); });
+      } catch (e) {
+        if (typeof window.logProblem === 'function') {
+          window.logProblem('inservice_row_reports', 'bru_invoice_skip_failed', { detail: String((e && e.message) || e).slice(0, 200) });
+        }
+      }
       const map = {};
       rows.forEach(x => {
         if (x.fyrirtaeki_id == null || !x.year) return;
+        if (x.invoice_doc_id && bruInvIds.has(x.invoice_doc_id)) return;
         (map[String(x.fyrirtaeki_id)] = map[String(x.fyrirtaeki_id)] || new Set()).add(String(x.year));
       });
       pairMap = map;

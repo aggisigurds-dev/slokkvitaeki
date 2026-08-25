@@ -193,10 +193,38 @@
     // fyrirtaeki_id) er DVARANDI „úttekt ársins fullbúin"-merkið sem Agnar viðheldur
     // handvirkt þvert á öppin. Það TROMPAR staðnað `gap`-flagg í isDoneYear (gap var
     // oft skrifað ÁÐUR en verkið kláraðist). Sami lykill og '26-merkin í 187/199.
-    const klaradCurP = SB.from('document_pairs').select('fyrirtaeki_id')
-      .eq('year', new Date().getFullYear()).eq('service_type', 'uttekt').eq('status', 'klarad')
-      .then(r => { const s = new Set(); ((r && r.data) || []).forEach(x => { if (x.fyrirtaeki_id != null) s.add(String(x.fyrirtaeki_id)); }); return s; })
-      .catch(() => new Set());
+    const klaradCurP = (async () => {
+      const r = await SB.from('document_pairs').select('fyrirtaeki_id,invoice_doc_id')
+        .eq('year', new Date().getFullYear()).eq('service_type', 'uttekt').eq('status', 'klarad');
+      const rows = (r && r.data) || [];
+      // Sama sía og 187 loadPairs: uttekt+klarad par á brunakerfis-reikningi
+      // (Grandi 2026 → R-108001) má ekki græn-mála slökkvitækja-árið. Fail-open
+      // ef skip-sóknin klikkar — annars slokknar Hamraborg 7.
+      const skip = new Set();
+      try {
+        for (let from = 0; ; from += 500) {
+          const ir = await SB.from('customer_documents')
+            .select('id')
+            .eq('doc_type', 'reikningur')
+            .eq('vidskiptategund', 'brunakerfi')
+            .range(from, from + 499);
+          const invs = (ir && ir.data) || [];
+          invs.forEach(d => { if (d && d.id != null) skip.add(d.id); });
+          if (invs.length < 500) break;
+        }
+      } catch (e) {
+        if (typeof window.logProblem === 'function') {
+          window.logProblem('arsskodun', 'bru_invoice_skip_failed', { detail: String((e && e.message) || e).slice(0, 200) });
+        }
+      }
+      const s = new Set();
+      rows.forEach(x => {
+        if (x.fyrirtaeki_id == null) return;
+        if (x.invoice_doc_id && skip.has(x.invoice_doc_id)) return;
+        s.add(String(x.fyrirtaeki_id));
+      });
+      return s;
+    })().catch(() => new Set());
     // 2026-08-13 (Agnar): talnakortin þrjú efst (Fjöldi / Búið / Eftir) lesa
     // EINA sannleikstölu úr Supabase-viewinu v_thjonustu_tolur í stað
     // staðbundinna JS-útreikninga sem ráku í sundur við grunninn
