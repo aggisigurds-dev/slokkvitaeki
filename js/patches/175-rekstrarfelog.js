@@ -5,8 +5,9 @@
  * - Data lives in AppSettings.rekstrarfelog (shared, server-backed, editable).
  *   Seeds once from the email-mined defaults if empty.
  * - Per firm: billing emails, building list (with kennitölur), doc counts.
- * - Each building links to its company record via Companies.openDetail(id)
- *   (matched by kennitala against window.Companies.list).
+ * - Each building links to its company record via Companies.openDetail(id).
+ *   Live rows carry fyrirtaeki.id as co_id — one kennitala may own many
+ *   independent sites (Heimaleiga, Center Hótel). NEVER match/merge by kt.
  * - Attach / view documents per firm using window.CompanyAttachments,
  *   keyed to a synthetic firm id, plus quick links to each building's own
  *   attachments.
@@ -175,6 +176,10 @@
       // og þegar þau sátu öll þrjú stöfluð þar inni. Sami þéttleiki og listi
       // Fyrirtækja í þjónustu (153 .data-table: td 7px/44px · ._co 13 / ._kt 10).
       P+'.rf-bkt{display:block;font-family:"Space Mono",monospace;font-size:10px;color:#9098a6;letter-spacing:.02em;line-height:1.3;white-space:nowrap}',
+      P+'.rf-bmeta{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:1px;align-items:baseline}',
+      P+'.rf-bnr{font-family:"Space Mono",monospace;font-size:10px;color:#5b6475;font-weight:700}',
+      P+'.rf-bpd{font-family:"Space Mono",monospace;font-size:10px;color:#1d4ed8;font-weight:600;white-space:nowrap}',
+      P+'.rf-bpd.is-paid{color:#15803d}',
       P+'.rf-baddr{display:block;font-size:12px;color:#5b6472;line-height:1.25;white-space:normal;overflow:visible;overflow-wrap:anywhere}',
       P+'.rf-baddr--empty{color:#c3c9d3}',
       // Nóta-dálkur — ferðanótan (fyrirtaeki.plan_note), sami reitur og ._note í 153.
@@ -394,13 +399,24 @@
         var baseIds = Object.keys(bases).map(function(x){return parseInt(x,10);});
         if (baseIds.length){
           var siteRows = await fetchAllRows(SB, 'fyrirtaeki',
-            'nafn,kennitala,heimilisfang,netfang,simi,customer_base_id',
+            'id,nafn,kennitala,heimilisfang,netfang,simi,customer_base_id,bokunarnumer,stadur_nr',
             function(q){ return q.in('customer_base_id', baseIds); });
           siteRows.forEach(function(f){
             var rek = bases[f.customer_base_id]; if(!rek) return;
-            // netfang/simi fylgja með svo Upplýsinga-spjaldið geti LEITT út
-            // tengiliðaupplýsingar félagsins þegar ekkert er handskráð (sjá derivedInfo)
-            (out[rek]||(out[rek]=[])).push({ kt: f.kennitala||'', nafn: f.nafn||'', heimilisfang: f.heimilisfang||'', netfang: f.netfang||'', simi: f.simi||'' });
+            // co_id = fyrirtaeki.id — PINNINN. Ein kt á marga staði (Heimaleiga
+            // 10 hús, Center 11 hótel) og hver er sjálfstæð skoðunar-/Payday-eining.
+            // Án id mátaði síðan aftur á nafni/kt og hrúgaði systkinum saman.
+            (out[rek]||(out[rek]=[])).push({
+              co_id: f.id,
+              kt: f.kennitala||'',
+              nafn: f.nafn||'',
+              heimilisfang: f.heimilisfang||'',
+              netfang: f.netfang||'',
+              simi: f.simi||'',
+              customer_base_id: f.customer_base_id,
+              bokunarnumer: f.bokunarnumer||'',
+              stadur_nr: f.stadur_nr
+            });
           });
         }
       } catch(e){ console.warn('[rekstrarfelog] live load', e); }
@@ -532,18 +548,32 @@
     var d = digits(kt);
     return list.find(function(c){ return digits(c.kennitala)===d; }) || null;
   }
-  // 2026-07-15 (Agnar: „þetta fer bara alltaf inn í hotel grandi"): rekstrarfélög
-  // deila EINNI kt á mörgum húsum — kt-uppfletting skilar alltaf fyrsta félaginu.
-  // Byggingar-röð flettist því upp á NAFNI fyrst (fold á broddstafi/hástafi/bil/
-  // bandstrik), svo á kt AÐEINS ef hún er einkvæm í skránni. Ekkert match → null
-  // (röðin þá ósmelanleg frekar en að opna rangt hús).
+  // 2026-07-15 (Agnar: „þetta fer bara alltaf inn í hotel grandi") + 2026-08-25:
+  // ein kt á mörgum húsum. Live-raðir bera co_id = fyrirtaeki.id — það ER
+  // skoðunar-einingin (Máni #869 ≠ Midtown #1486, sama kt, sama hús, ólíkar hæðir).
+  // Nafn/kt er AÐEINS fyrir gamlar handskráðar raðir án pinnans. Ekkert einstakt
+  // match → null (ósmelanlegt), ALDREI fyrsta hitt.
   function foldNm(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,''); }
   function companyForBld(b){
     var list = (window.Companies && Companies.list) || [];
-    // Handfest tenging (✏️ á röðinni) trompar ALLA sjálfvirkni — b.co_id.
+    // Handfest tenging (✏️ eða live-hleðsla) trompar ALLA sjálfvirkni — b.co_id.
     if (b && b.co_id != null) {
       var pinned = list.find(function(c){ return String(c.id)===String(b.co_id); });
       if (pinned) return pinned;
+      // Companies.list ekki tilbúið / vantar röðina — pinninn nægir samt svo
+      // skýrslur, CanonStadur og Payday lyklast á RÉTTUM stað, ekki á nafni.
+      return {
+        id: b.co_id,
+        kennitala: b.kt,
+        nafn: b.nafn,
+        heimilisfang: b.heimilisfang,
+        netfang: b.netfang,
+        simi: b.simi,
+        customer_base_id: b.customer_base_id,
+        bokunarnumer: b.bokunarnumer,
+        stadur_nr: b.stadur_nr,
+        plan_note: b.plan_note || ''
+      };
     }
     var fn = foldNm(b && b.nafn);
     if (fn) {
@@ -552,8 +582,8 @@
       if (hits.length > 1) {
         var d0 = digits(b.kt);
         var kh = hits.filter(function(c){ return digits(c.kennitala)===d0; });
-        if (kh.length >= 1) return kh[0];
-        return hits[0];
+        if (kh.length === 1) return kh[0];
+        return null;
       }
     }
     var d = digits(b && b.kt);
@@ -932,16 +962,23 @@
     Object.keys(counts).forEach(function(d){ if(counts[d]>1) set[d]=true; });
     return set;
   }
-  // street prefix (declension-proof) + house number that identifies one building
+  // street prefix (declension-proof) + house number that identifies one building.
+  // Bókstafurinn (13 vs 13A) er HLUTI af merkinu — áður féllu Ármúli 13 og 13A
+  // á sama num="13".
   function _bldSig(b){
-    var m=_norm(((b&&b.nafn)||'')+' '+((b&&b.heimilisfang)||'')).match(/([a-záðéíóúýþæö]{4,})\s*(\d+)[a-d]?/);
-    return m ? { street:m[1].slice(0,6), num:m[2] } : null;
+    var m=_norm(((b&&b.nafn)||'')+' '+((b&&b.heimilisfang)||'')).match(/([a-záðéíóúýþæö]{4,})\s*(\d+)([a-d])?/);
+    return m ? { street:m[1].slice(0,6), num:m[2], letter:(m[3]||'').toLowerCase() } : null;
   }
   function fileMatchesBuilding(file,b){
     var hay=_norm(file&&(file.name||file.file||'')); if(!hay) return false;
     // (a) street prefix + house number both present in the file name
     var sig=_bldSig(b);
-    if(sig && hay.indexOf(sig.street)>=0 && new RegExp('(^|\\D)'+sig.num+'(\\D|$)').test(hay)) return true;
+    if(sig && hay.indexOf(sig.street)>=0){
+      var numPat = sig.letter
+        ? new RegExp('(^|\\D)'+sig.num+sig.letter+'(\\D|$)','i')
+        : new RegExp('(^|\\D)'+sig.num+'(?![a-d])(\\D|$)','i');
+      if(numPat.test(hay)) return true;
+    }
     // (b) a parenthetical building alias, e.g. "Laugavegur 1 (Ice Apartments)"
     //     → matches a report named "ice apartments …" that carries no address.
     var al=(String((b&&b.nafn)||'').match(/\(([^)]+)\)/)||[])[1];
@@ -1139,6 +1176,7 @@
     var trs=rows.map(function(r){
       var b=r.b, s=r.s;
       var bname = s.co ? '<a href="#" data-coid="'+s.co.id+'" class="_rf_open" style="color:var(--brand);text-decoration:none">'+esc(b.nafn)+'</a>' : esc(b.nafn)+' <span style="color:var(--brd2);font-size:11px">(ekki í skrá)</span>';
+      if (b.stadur_nr!=null && b.stadur_nr!=='') bname += ' <span style="color:#5b6475;font-size:11px;font-family:\'Space Mono\',monospace">nr. '+esc(String(b.stadur_nr))+'</span>';
       var unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(s.units>0?'font-weight:600':'color:#b45309')+'">'+(s.units>0?s.units:(s.hasRep?'–':'0'))+'</td>';
       var y23=yCellO(s.d23,false,s.units,s.lks['2023'],s.f23,'2023'),y24=yCellO(s.d24,!!s.att[0],s.units,s.lks['2024'],s.f24,'2024'),y25=yCellO(s.d25,!!s.att[1],s.units,s.lks['2025'],s.f25,'2025'),y26=yCellO(s.d26,!!s.att[2],s.units,s.lks['2026'],s.f26,'2026');
       var nextCell = s.next ? '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(s.overdue?'background:#fef2f2;color:#b91c1c;':'color:var(--ink2);')+'font-variant-numeric:tabular-nums;white-space:nowrap">'+esc(s.next)+(s.overdue?' ⚠':'')+'</td>' : '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:var(--brd2)">—</td>';
@@ -1432,8 +1470,8 @@
     // Kerfis-kort + öll tengitól dagsins skrifa í) — per staðar-id (fyrirtaeki_id).
     // Gömlu handfærslurnar (linkMap/viðhengi) halda sér sem fallback.
     var liveDocs = {};   // co.id → { '2026': driveUrl, … }
+    var coIds = blds.map(function(b){ var c=companyForBld(b); return c?c.id:null; }).filter(function(x){return x!=null;});
     try {
-      var coIds = blds.map(function(b){ var c=companyForBld(b); return c?c.id:null; }).filter(function(x){return x!=null;});
       if (coIds.length && window.DB && DB.sb) {
         // Skýrslur sem appið/Cowork býr til liggja í Supabase Storage og bera AÐEINS
         // `storage_path` (ekkert drive_file_id) — þær duttu því út úr árs-dálkunum
@@ -1450,27 +1488,62 @@
         });
       }
     } catch(e) { console.warn('[rekstrarfelog] liveDocs', e); }
-    // ── document_pairs (Brunahólf bundle store, sjá patch 199) — batch-sótt
-    // per rekstrarfélag svo hver ár-pilla geti sýnt 🧾 þegar reikningur ÞESSA
-    // árs/þjónustu er þegar paraður við skýrsluna. baseByKt: digitsKt → base_id
-    // (customers_base) · pairByBase: base_id → { 'ár|þjónusta' → true }.
-    var baseByKt={}, pairByBase={};
+    // ── document_pairs — sama regla og 187/199: pör MEÐ fyrirtaeki_id tilheyra
+    // AÐEINS þeim stað. Áður var lyklað á customer_base_id → eitt 2026-par á
+    // Heimaleigu (base 293) kveikti 🧾 á ÖLLUM 10 húsunum. Pör ÁN staðar
+    // (eldri raðir) eru aðeins notuð þegar sú kt á nákvæmlega EINN stað hér.
+    var baseByKt={}, pairByCo={}, pairByBaseLoose={}, sitesPerBase={};
     try {
       var ktDigits = blds.reduce(function(acc,b){ var d=digits(b.kt); if(d&&d.length>=10&&d!=='9999999999'&&acc.indexOf(d)<0) acc.push(d); return acc; }, []);
       if (ktDigits.length && window.DB && DB.sb) {
         var dashKts = ktDigits.map(function(d){ return d.slice(0,6)+'-'+d.slice(6); });
         var br = await DB.sb.from('customers_base').select('id,kennitala').in('kennitala', dashKts);
         (br.data||[]).forEach(function(x){ baseByKt[digits(x.kennitala)] = x.id; });
+        blds.forEach(function(b){
+          var bid = (b.customer_base_id!=null ? b.customer_base_id : baseByKt[digits(b.kt)]);
+          if (bid!=null) sitesPerBase[bid] = (sitesPerBase[bid]||0)+1;
+        });
         var baseIds = Object.keys(baseByKt).map(function(k){ return baseByKt[k]; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
         if (baseIds.length) {
-          var pr = await DB.sb.from('document_pairs').select('customer_base_id,year,service_type,invoice_doc_id,solur_id').in('customer_base_id', baseIds);
+          var pr = await DB.sb.from('document_pairs').select('customer_base_id,fyrirtaeki_id,year,service_type,invoice_doc_id,solur_id').in('customer_base_id', baseIds);
           (pr.data||[]).forEach(function(x){
-            if (!(x.invoice_doc_id || x.solur_id)) return;   // ekki merkja ár sem á enga tengda reikningsröð
-            (pairByBase[x.customer_base_id] = pairByBase[x.customer_base_id] || {})[x.year+'|'+x.service_type] = true;
+            if (!(x.invoice_doc_id || x.solur_id)) return;
+            var key = x.year+'|'+x.service_type;
+            if (x.fyrirtaeki_id != null) {
+              (pairByCo[String(x.fyrirtaeki_id)] = pairByCo[String(x.fyrirtaeki_id)] || {})[key] = true;
+            } else if (x.customer_base_id != null) {
+              (pairByBaseLoose[x.customer_base_id] = pairByBaseLoose[x.customer_base_id] || {})[key] = true;
+            }
           });
         }
       }
     } catch(e) { console.warn('[rekstrarfelog] bundlePairs', e); }
+    // Payday per STAÐ: R-númer úr solur.customer_id (= fyrirtaeki.id), svo PD-númer
+    // úr speglinum á reference. Aldrei „allar kröfur kennitölunnar" á hverja línu
+    // (Urðarhvarf 2 = R-000719/PD 208; Máni á ekkert af Heimaleigu-kröfunum).
+    var pdByCo = {};
+    try {
+      if (coIds.length && window.DB && DB.sb) {
+        var sr = await DB.sb.from('solur').select('num,customer_id,created_at').in('customer_id', coIds).order('created_at', { ascending: false }).limit(800);
+        var latest = {};
+        (sr.data||[]).forEach(function(s){
+          if (s.customer_id==null || !s.num) return;
+          var k = String(s.customer_id);
+          if (!latest[k]) latest[k] = s.num;
+        });
+        var refs = Object.keys(latest).map(function(k){ return latest[k]; });
+        var pdMap = {};
+        if (refs.length) {
+          var pdr = await DB.sb.from('payday_invoices_slokk').select('number,reference,paid_date').in('reference', refs);
+          (pdr.data||[]).forEach(function(p){ if (p.reference) pdMap[String(p.reference)] = p; });
+        }
+        Object.keys(latest).forEach(function(k){
+          var rnum = latest[k];
+          var p = pdMap[rnum];
+          pdByCo[k] = { r: rnum, pd: p ? String(p.number||'') : '', paid: !!(p && p.paid_date) };
+        });
+      }
+    } catch(e) { console.warn('[rekstrarfelog] paydayBySite', e); }
     // building table
     var rows=blds.map(function(b,_bi){
       var co=companyForBld(b);
@@ -1564,8 +1637,13 @@
       var unitCell = stackTd(
         '<span class="rf-cnt rf-cnt--sl'+(units>0?'':' is-zero')+'" title="Slökkvitæki á staðnum"><em>🧯</em>'+slCntTxt+'</span>',
         '<span class="rf-cnt rf-cnt--br'+(bUnits>0?'':' is-zero')+'" title="'+(bHasData?'Brunakerfisbúnaður á staðnum':'Ekki í brunakerfisþjónustu')+'"><em>🚨</em>'+brCntTxt+'</span>', 'rf-cnt-cell', bruInSvc);
-      var bldBaseId = baseByKt[digits(b.kt)];
-      var bldPairs = bldBaseId ? pairByBase[bldBaseId] : null;
+      var bldBaseId = (co && co.customer_base_id != null) ? co.customer_base_id
+                    : (b.customer_base_id != null ? b.customer_base_id : baseByKt[digits(b.kt)]);
+      var bldPairs = {};
+      if (co && pairByCo[String(co.id)]) Object.assign(bldPairs, pairByCo[String(co.id)]);
+      if (bldBaseId != null && sitesPerBase[bldBaseId] === 1 && pairByBaseLoose[bldBaseId]) {
+        Object.assign(bldPairs, pairByBaseLoose[bldBaseId]);
+      }
       // Sett upp HÉR (ekki eftir lykkjuna) svo þetta-árs dálkurinn geti notað
       // sömu liðin-reikninginn og "næsta skoðun"-fruman fyrir neðan.
       var isOver=false;
@@ -1618,8 +1696,20 @@
              '<td class="rf-cellname"><span class="rf-rail '+railCls+'"></span>'+
                '<button type="button" class="rf-bldtoggle" data-bi="'+_bi+'" title="Sýna/fela smáatriði">▸</button>'+
                '<span class="rf-bname">'+link+'</span>'+
-               // kt undir nafni (2026-08-20) — var áður eiginn dálkur (rf-mono).
+               '<span class="rf-bmeta">'+
                (b.kt?'<span class="rf-bkt">'+esc(fmtKt(b.kt))+'</span>':'')+
+               (function(){
+                 var nr = (b.stadur_nr!=null && b.stadur_nr!=='') ? b.stadur_nr
+                        : (co && co.stadur_nr!=null && co.stadur_nr!=='' ? co.stadur_nr : null);
+                 var bok = (b.bokunarnumer||(co&&co.bokunarnumer)||'').toString().trim();
+                 var pd = co ? pdByCo[String(co.id)] : null;
+                 var bits=[];
+                 if (nr!=null) bits.push('<span class="rf-bnr" title="Staðurinnúmer innan rekstrarfélagsins — aðgreinir eignir sömu kennitölu í Payday">nr. '+esc(String(nr))+'</span>');
+                 if (bok) bits.push('<span class="rf-bnr" title="Bókunarnúmer / kostnaðarstöð í Payday">'+esc(bok)+'</span>');
+                 if (pd) bits.push('<span class="rf-bpd'+(pd.paid?' is-paid':'')+'" title="Nýjasta krafa ÞESSARAR byggingar (solur.customer_id='+esc(String(co.id))+') — ekki allar kröfur kennitölunnar">'+esc(pd.r)+(pd.pd?' · PD '+esc(pd.pd):'')+(pd.paid?' ✓':'')+'</span>');
+                 return bits.join('');
+               })()+
+               '</span>'+
                (oldLinks?'<span class="rf-boldlinks">'+oldLinks+'</span>':'')+
              '</td>'+
              // heimilisfang — eiginn dálkur (2026-08-20), nowrap+ellipsis svo það
