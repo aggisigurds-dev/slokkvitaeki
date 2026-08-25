@@ -439,7 +439,11 @@
     var css = [
       // launcher page
       '#' + VIEW_ID + '{padding:0 !important;background:linear-gradient(180deg,#060607 0px,#060607 95px,#aeb4be 360px,#9ba1ad 100%) !important;min-height:100vh}',
-      '#' + VIEW_ID + ' .op-main{max-width:760px;margin:0 auto;padding:22px 18px 60px;box-sizing:border-box}',
+      // Launcher-inn er hub-síða → fasti Brunastál-borðinn (og hamborgarinn) liggja
+      // ofan á honum. Ýtum innihaldinu niður fyrir borðann svo „📱 Öpp" titillinn
+      // sé ekki falinn. Á síma er borðinn grennri en á skjáborði.
+      '#' + VIEW_ID + ' .op-main{max-width:760px;margin:0 auto;padding:96px 18px 60px;box-sizing:border-box}',
+      '@media (min-width:901px){#' + VIEW_ID + ' .op-main{padding-top:118px}}',
       '#' + VIEW_ID + ' .op-h1{margin:0 0 4px;font-size:26px;font-weight:800;color:#fff}',
       '#' + VIEW_ID + ' .op-sub{margin:0 0 20px;font-size:13px;color:rgba(255,255,255,.65)}',
       '#' + VIEW_ID + ' .op-card{background:#fff;border-radius:18px;padding:18px;margin:0 0 16px;box-shadow:0 18px 44px -22px rgba(10,20,40,.5)}',
@@ -452,7 +456,16 @@
       '#' + VIEW_ID + ' .op-btn.prim{color:#fff;border:none}',
       '#' + VIEW_ID + ' .op-btn:hover{filter:brightness(1.04)}',
       '#' + VIEW_ID + ' .op-sech{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#94a3b8;margin:18px 0 8px}',
-      '#' + VIEW_ID + ' .op-pages{display:flex;flex-direction:column;gap:2px}',
+      // Samanbrjótanlegt síðuval (lokað sjálfgefið) — heldur launcher þéttum.
+      '#' + VIEW_ID + ' .op-pagesbox{margin-top:14px;border-top:1px solid #eef1f5;padding-top:6px}',
+      '#' + VIEW_ID + ' .op-pgsum{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;padding:9px 4px;border-radius:10px;min-height:44px;-webkit-tap-highlight-color:transparent}',
+      '#' + VIEW_ID + ' .op-pgsum::-webkit-details-marker{display:none}',
+      '#' + VIEW_ID + ' .op-pgsum:hover{background:#f6f8fb}',
+      '#' + VIEW_ID + ' .op-pgsum-t{font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#64748b}',
+      '#' + VIEW_ID + ' .op-pgcount{margin-left:auto;font-size:12.5px;font-weight:700;color:#0e7a4f;background:#e7f5ee;padding:3px 10px;border-radius:99px}',
+      '#' + VIEW_ID + ' .op-pgchev{font-size:12px;color:#94a3b8;transition:transform .18s}',
+      '#' + VIEW_ID + ' .op-pagesbox[open] .op-pgchev{transform:rotate(180deg)}',
+      '#' + VIEW_ID + ' .op-pages{display:flex;flex-direction:column;gap:2px;margin-top:6px}',
       '#' + VIEW_ID + ' .op-pg{display:flex;align-items:center;gap:11px;padding:11px 10px;border-radius:10px;cursor:pointer;font-size:14.5px;color:#1f2937}',
       '#' + VIEW_ID + ' .op-pg:hover{background:#f1f5f9}',
       '#' + VIEW_ID + ' .op-pg input{width:20px;height:20px;accent-color:#0e7a4f;flex:none}',
@@ -570,8 +583,15 @@
         return '<label class="op-pg"><input type="checkbox" class="_op-pg" data-app="' + a.key + '" data-k="' + p.k + '"' + (selSet[p.k] ? ' checked' : '') + '>' +
           '<span class="e">' + p.emoji + '</span><span>' + esc(p.label) + '</span></label>';
       }).join('');
+      // Síðuvalið var áður alltaf opið undir HVERJU appi → risalöng, kaótísk síða
+      // (6 öpp × allur síðulistinn). Nú lokað sjálfgefið í <details> með teljara,
+      // svo launcher-inn er þéttur; smellt til að velja síður.
       var pagesSection = a.standalone ? '' :
-        ('<div class="op-sech">Síður í appinu</div>' + '<div class="op-pages">' + pageRows + '</div>');
+        ('<details class="op-pagesbox"><summary class="op-pgsum">' +
+          '<span class="op-pgsum-t">⚙ Síður í appinu</span>' +
+          '<span class="op-pgcount" data-app="' + a.key + '">' + sel.length + ' valdar</span>' +
+          '<span class="op-pgchev">▾</span>' +
+        '</summary><div class="op-pages">' + pageRows + '</div></details>');
       return '<div class="op-card">' +
         '<div class="op-top"><div class="op-ic" style="' + (a.key === 'boss' ? BOSS_BG_CSS : ('background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')')) + '">' + (a.key === 'boss' ? bossCrownSvg(30) : esc(a.emoji)) + '</div>' +
           '<div><div class="op-nm">' + esc(a.name) + '</div><div class="op-bl">' + esc(a.blurb) + '</div></div></div>' +
@@ -611,6 +631,8 @@
         var el = v.querySelector('._op-pg[data-app="' + app + '"][data-k="' + k + '"]'); return el && el.checked;
       });
       saveCfg(app, picked);
+      var cnt = v.querySelector('.op-pgcount[data-app="' + app + '"]');
+      if (cnt) cnt.textContent = picked.length + ' valdar';
     }); });
   }
 
