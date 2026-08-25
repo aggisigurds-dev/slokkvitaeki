@@ -78,6 +78,20 @@
       V + '.ky-table tr.ky-trow:hover td{background:#f7f9fd}' +
       B + '.ky-table td{color:#11141c}' +
       B + ".ky-num{font-family:'Space Mono',ui-monospace,SFMono-Regular,Menlo,monospace !important}" +
+      // 2026-08-25: Stílstjóri málaði síðuna (grár bakgrunnur, svartur titill,
+      // hetjukortið hvítt). Læsum Brunastál-útlitinu aftur + jöfnum KPI-spjöldin
+      // (flex-wrap lét Heildarkröfur blása út). Sími-2×2 kemur á eftir (M).
+      V + '.page-title h1{color:#fff!important;text-shadow:0 2px 8px rgba(0,0,0,.55)!important}' +
+      V + '.page-title p{color:rgba(255,255,255,.62)!important}' +
+      V + '.ky-month{color:#fff!important}' +
+      V + '.stat-row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin-bottom:16px}' +
+      V + '.stat-card{min-width:0!important}' +
+      V + '.stat-card__label{white-space:normal;line-height:1.35}' +
+      V + '.stat-card.stat-card--hero{background:linear-gradient(160deg,#7ba0ff 0%,#3a6ae8 34%,#1c3d8c 68%,#0a1630 100%)!important;border:1px solid rgba(255,255,255,.18)!important}' +
+      V + '.stat-card.stat-card--hero .stat-card__label{color:rgba(255,255,255,.72)!important}' +
+      V + '.stat-card.stat-card--hero .stat-card__value{color:#fff!important}' +
+      V + '.ky-exprow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}' +
+      V + '.ky-exprow ._ky-exp{min-width:0}' +
 
       // ── 📱 Sími — hreinsað kort-útlit (2026-08, samþykkt mockup „kyf-clean") ──
       // Rein hvít fyrirtækjakort; aðgerða-hnappar BROTNA (flex-wrap) í stað
@@ -960,7 +974,7 @@
           <div class="stat-card stat-card--green"><span class="stat-card__icon">🏦</span><div><div class="stat-card__label">Sendar kröfur · ${sent.length} sölur · ${sentCompanies} fyrirtæki</div><div class="stat-card__value ky-num">${fmtKr(sentTotal)}</div></div></div>
         </div>
 
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-bottom:14px">
+        <div class="ky-exprow">
           ${expCardHtml('payday', '⏳', 'Ógreiddar í Payday', paydayUnpaid.length, paydayUnpaidTotal, '#b45309', '#fff7ed', '#fed7aa')}
           ${expCardHtml('osendar', '📤', 'Ósendar kröfur', osendarRows.length, osendarTotal, '#1d4ed8', '#eff6ff', '#bfdbfe')}
         </div>
@@ -2029,6 +2043,108 @@
   setTimeout(refreshBadge, 2500);
   setTimeout(refreshBadge, 8000);
   document.addEventListener('sale-edited', () => setTimeout(refreshBadge, 600));
+
+  // 2026-08-25: Stílstjóri (262) saved accidental paint on this page only
+  // (gray app-main, black title on the fire band, white/blue hero). Those
+  // rules live in AppSettings page_editor_v1_json with scope view-krofu-yfirlit
+  // and land in #_pe-overrides with !important, beating theme.css. Strip the
+  // DOM immediately, then merge a cleaned JSON (that key only) so every
+  // machine stays clean after reload.
+  const PE_KEY = 'page_editor_v1_json';
+  const KY_SCOPE = 'view-krofu-yfirlit';
+  function stripPeOverridesDom() {
+    const st = document.getElementById('_pe-overrides');
+    if (!st || !st.textContent) return false;
+    const next = st.textContent.split('\n').filter(function (line) {
+      return !/#view-krofu-yfirlit\b/.test(line);
+    }).join('\n');
+    if (next === st.textContent) return false;
+    st.textContent = next;
+    return true;
+  }
+  function watchPeOverrides() {
+    const attach = function (st) {
+      if (!st || st.__kyPeWatch) return;
+      st.__kyPeWatch = true;
+      try {
+        new MutationObserver(function () { stripPeOverridesDom(); })
+          .observe(st, { childList: true, characterData: true, subtree: true });
+      } catch (_) {}
+      stripPeOverridesDom();
+    };
+    const existing = document.getElementById('_pe-overrides');
+    if (existing) attach(existing);
+    try {
+      new MutationObserver(function () {
+        const st = document.getElementById('_pe-overrides');
+        if (st) attach(st);
+      }).observe(document.documentElement, { childList: true, subtree: true });
+    } catch (_) {}
+    [0, 80, 400, 1500, 4000].forEach(function (ms) { setTimeout(stripPeOverridesDom, ms); });
+  }
+  let _kyPeScrubTries = 0;
+  async function scrubKrofuPageEditor() {
+    if (window.__kyPeScrubDone) return;
+    const AS = window.AppSettings;
+    const sb = window.DB && window.DB.sb;
+    if (!AS || typeof AS.save !== 'function' || !sb) return;
+    let raw = null;
+    try {
+      const r = await sb.from('app_settings').select('settings').eq('id', 1).maybeSingle();
+      if (r && r.error) {
+        console.warn('[patch-166] Stílstjóri-hreinsun: náði ekki stillingum', r.error.message);
+        return;
+      }
+      raw = r && r.data && r.data.settings && r.data.settings[PE_KEY];
+    } catch (e) {
+      console.warn('[patch-166] Stílstjóri-hreinsun: lestrarvilla', e);
+      return;
+    }
+    stripPeOverridesDom();
+    if (!raw) { window.__kyPeScrubDone = true; return; }
+    let obj;
+    try { obj = (typeof raw === 'string') ? JSON.parse(raw) : raw; } catch (_) { return; }
+    if (!obj || typeof obj !== 'object') return;
+    if (!Array.isArray(obj.rules)) obj.rules = [];
+    const before = obj.rules.length;
+    obj.rules = obj.rules.filter(function (r) { return !r || r.scope !== KY_SCOPE; });
+    let bgCut = false;
+    if (obj.bg && obj.bg.pages && Object.prototype.hasOwnProperty.call(obj.bg.pages, KY_SCOPE)) {
+      delete obj.bg.pages[KY_SCOPE];
+      bgCut = true;
+    }
+    if (obj.rules.length === before && !bgCut) {
+      window.__kyPeScrubDone = true;
+      stripPeOverridesDom();
+      return;
+    }
+    if (_kyPeScrubTries >= 5) {
+      console.warn('[patch-166] Stílstjóri-hreinsun: hætti eftir', _kyPeScrubTries, 'tilraunir');
+      return;
+    }
+    _kyPeScrubTries += 1;
+    try {
+      const ok = await AS.save({ [PE_KEY]: JSON.stringify(obj) });
+      if (ok) {
+        console.log('[patch-166] hreinsaði', before - obj.rules.length, 'Stílstjóri-reglur af Kröfu yfirliti');
+      } else {
+        console.warn('[patch-166] Stílstjóri-hreinsun: vistaðist ekki');
+      }
+    } catch (e) {
+      console.warn('[patch-166] Stílstjóri-hreinsun: vistunarvilla', e);
+    }
+    stripPeOverridesDom();
+  }
+  watchPeOverrides();
+  [400, 1500, 4000, 9000].forEach(function (ms) { setTimeout(scrubKrofuPageEditor, ms); });
+  try {
+    if (window.AppSettings && typeof AppSettings.onChange === 'function') {
+      AppSettings.onChange(function () {
+        stripPeOverridesDom();
+        if (!window.__kyPeScrubDone) scrubKrofuPageEditor();
+      });
+    }
+  } catch (_) {}
 
   window.KrofuYfirlit = { show, load, refreshBadge, getViewMode, setViewMode: (m) => applyViewMode(m, true) };
   console.log('[patch-166] Kröfu yfirlit installed — krafa í heimabanka per fyrirtæki');
