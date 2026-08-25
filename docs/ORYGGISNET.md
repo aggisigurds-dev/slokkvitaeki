@@ -50,6 +50,7 @@ automation health and pings Agnar *only* when something needs him.
 | **An entered kennitala is never dropped to `999999‑9999`** | `121` saves `customer_kt` on both save paths; `js/pos.js` extracts a kt typed into the name field | *(kt signals to come)* | `audit-kt-trap.cjs` |
 | **POS search doesn't silently drop customers past 1000 rows** | `DB.fetchAll` pagination on the big tables | — | `audit-pagination.cjs` |
 | **Per‑line discount + credit notes bill Payday correctly** | `payday-push.js` per‑line gate + credit `discount_pct=0` strip | `send_failed` (token) | *verified vs 697 live sales; audit TODO* |
+| **GET cannot mark invoices paid or upsert the Payday mirror** | `payday-sync-paid` / `payday-pull-slokk`: GET is always dry; POST is the only commit (cron + Kröfu 🔄) | — | `audit-payday-get.cjs` |
 | **The tæki→starfsstöð FK join hides no live in‑service customer** | `153` counts devices by `uttaeki.fyrirtaeki_id` (not folded client‑name); soft‑deleted excluded at `153:162` | `uttaeki_null_fid` | `audit-fk-join.cjs` |
 | **Skoðunarmánuður er sá sami alls staðar og engin skoðun gleymist þögult** | `312` `CanonStadur` les `v_stadur_yfirlit` (skýrsla/reikningur) sem EINA uppspretta fyrir `175`/`185`/`companieslist`/`89`/`77`; mánuður kemur ALDREI úr nafna‑strengs `uttaeki.next_insp` | `canon_stadur_load_failed`, `canon_stadur_empty` | `audit-canon-stadur.cjs` |
 
@@ -197,6 +198,14 @@ baseline rows and lowering the constant is how the net tightens over time.
   þjónustu með mánuð, 69 án → birtast sem gloppur í Ársskoðun `153`, ekki þögult horfin).
   `audit-all` nú 5/5 grænt. Varðir vírar (`153/187`, `10/233/254`, `121`, `payday-push`)
   ósnertir.
+- **2026‑08‑25 — GET má ekki skrifa Payday.** `payday-sync-paid` og
+  `payday-pull-slokk` skrifuðu á óinnskráð GET (paid_at / payday_invoices_slokk
+  spegill). GET er nú alltaf dry-run; POST er eina skrifleiðin. Cron
+  (`payday-sync-cron`) POSTar báða leggina. `payday-push.js` ósnert. Nýtt
+  audit `audit-payday-get.cjs` + `audit-brunakerfi-stada.cjs` (`audit-all` 7/7).
+  Sama lota: Brunakerfi yfirlit Staða sýnir ✅ Skoðað YYYY AÐEINS þegar
+  `customer_documents` á brunakerfi-skýrslu það ár (`272` `r.years`), ekki
+  `last_year_inspected` (Ársskoðunar-flagg).
 - *Add a line here every time you make something bulletproof.*
 
 ---

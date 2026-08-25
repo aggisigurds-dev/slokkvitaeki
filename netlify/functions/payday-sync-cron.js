@@ -24,7 +24,11 @@ exports.handler = async () => {
     // eldri raðir standa — allt sagan sótt einu sinni með ?all=1).
     let mirror = null;
     try {
-      const m = await fetch(base + '/api/payday-pull-slokk', { headers: { 'x-eldklar-key': process.env.EDGE_SHARED_KEY || '' } });
+      const m = await fetch(base + '/api/payday-pull-slokk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-eldklar-key': process.env.EDGE_SHARED_KEY || '' },
+        body: '{}',
+      });
       mirror = await m.json().catch(() => ({ error: 'Ógilt svar (HTTP ' + m.status + ')' }));
       console.log('[payday-sync-cron] mirror', m.status, JSON.stringify(mirror));
     } catch (e2) { console.error('[payday-sync-cron] mirror error', e2); }

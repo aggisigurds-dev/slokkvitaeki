@@ -147,13 +147,15 @@
   }
   // ── Staða: „Í vinnslu" (2026-07-28, ósk Agnars) ────────────────────────────
   // Brunakerfis-skoðun sem er BYRJUÐ en ekki búin átti hvergi heima — hún sást
-  // ekki í „Fyrirtæki í Þjónustu" né á ÞjónustuVerkstæði. Við skrifum í NÁKVÆMLEGA
-  // sama gagnastað og patch 153 („Tekið út"-hakið) og 190 (verkstæðisborðið) lesa:
+  // ekki í „Fyrirtæki í Þjónustu" né á ÞjónustuVerkstæði. „Í vinnslu" skrifar í
+  // NÁKVÆMLEGA sama gagnastað og patch 153 („Tekið út"-hakið) og 190
+  // (verkstæðisborðið) lesa:
   //   AppSettings.arsskodun_customers[fyrirtaeki_id].field_inspected_year
   //     === þetta ár  →  🔵 „Í vinnslu"   (skoðun hafin, skjöl eftir)
-  //   last_year_inspected === þetta ár    →  ✅ „Skoðað"  (fullklárað)
-  // Þannig birtist brunakerfis-verk sjálfkrafa á hinum tveimur borðunum án
-  // nokkurrar nýrrar töflu eða samstillingar.
+  // ✅ „Skoðað YYYY" kemur AÐEINS úr raunverulegri brunakerfi-skýrslu
+  // (r.years[árið] ← customer_documents doc_type=brunakerfi). last_year_inspected
+  // er sameiginlegt Ársskoðunar-flagg og má EKKI ráða hér — annars sýnir Klöpp
+  // o.fl. grænt 2026 þó síðasta brunakerfi-skýrsla sé 2025 (Agnar 2026-08-24).
   const ARS_KEY = 'arsskodun_customers';
   function arsFor(id) {
     try {
@@ -163,19 +165,18 @@
   }
   function stodaHtml(r) {
     const a = arsFor(r.id);
-    const done = +a.last_year_inspected === NOW;
+    const done = !!r.years[String(NOW)];
     const wip = !done && +a.field_inspected_year === NOW;
     const base = 'display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;' +
-      'font-size:10.5px;font-weight:800;letter-spacing:.02em;white-space:nowrap;cursor:pointer;border:1px solid;';
-    if (done) return '<span class="_bky-stada" data-id="' + r.id + '" data-st="done" ' +
-      'title="Skoðun ' + NOW + ' fullkláruð — smelltu til að setja aftur í vinnslu" ' +
-      'style="' + base + 'background:#dcfce7;border-color:#86efac;color:#166534">✅ Skoðað ' + NOW + '</span>';
+      'font-size:10.5px;font-weight:800;letter-spacing:.02em;white-space:nowrap;border:1px solid;';
+    if (done) return '<span title="Skoðun ' + NOW + ' staðfest með brunakerfi-skýrslu" ' +
+      'style="' + base + 'cursor:default;background:#dcfce7;border-color:#86efac;color:#166534">✅ Skoðað ' + NOW + '</span>';
     if (wip) return '<span class="_bky-stada" data-id="' + r.id + '" data-st="wip" ' +
       'title="Í vinnslu — birtist á ÞjónustuVerkstæði og í Fyrirtæki í Þjónustu. Smelltu til að taka úr vinnslu" ' +
-      'style="' + base + 'background:#2563eb;border-color:#1d4ed8;color:#fff">⏳ Í vinnslu</span>';
+      'style="' + base + 'cursor:pointer;background:#2563eb;border-color:#1d4ed8;color:#fff">⏳ Í vinnslu</span>';
     return '<span class="_bky-stada" data-id="' + r.id + '" data-st="none" ' +
       'title="Setja í vinnslu — þá birtist fyrirtækið á ÞjónustuVerkstæði og sem „Í vinnslu" í Fyrirtæki í Þjónustu" ' +
-      'style="' + base + 'background:#fff;border-color:#cbd5e1;color:#64748b">＋ Í vinnslu</span>';
+      'style="' + base + 'cursor:pointer;background:#fff;border-color:#cbd5e1;color:#64748b">＋ Í vinnslu</span>';
   }
   function sortTh(label, col, align, cls) {
     const active = state.sortCol === col;
@@ -357,7 +358,7 @@
       const id = +chip.dataset.id; if (!id) return;
       if (!window.AppSettings || !AppSettings.save) { alert('Engar stillingar tiltækar'); return; }
       const st = chip.dataset.st;
-      // none → í vinnslu · wip → af · done → aftur í vinnslu (opnar fullklárað verk)
+      // none → í vinnslu · wip → af. „Skoðað" er ekki smellanlegt (skýrsla ræður).
       const patch = (st === 'wip')
         ? { field_inspected_year: 0 }
         : { field_inspected_year: NOW, last_year_inspected: 0 };

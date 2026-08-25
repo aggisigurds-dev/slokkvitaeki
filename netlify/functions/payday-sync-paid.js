@@ -3,6 +3,8 @@
 // Modes:
 //   GET  /api/payday-sync-paid?probe=1
 //     → auth-test + sýnir 3 hráa reikninga svo hægt sé að staðfesta field-nöfn.
+//   GET  /api/payday-sync-paid            (án probe)
+//     → ALLTAF dry-run. GET skrifar ALDREI paid_at (vörn 2026-08-25).
 //   POST /api/payday-sync-paid            (body: { dry?, since? })
 //     → finnur ógreiddar reikningur-sölur (paid_at null, dk_invoice_id sett),
 //       spyr Payday um reikningana og setur solur.paid_at á þá sem eru greiddir.
@@ -54,7 +56,9 @@ exports.handler = async (event) => {
       return json(200, { ok: true, probe: true, count: Array.isArray(first) ? first.length : 0, sample: Array.isArray(first) ? first.slice(0, 3) : first });
     }
 
-    const dry = !!body.dry || !!p.dry;
+    // GET never writes — even ?dry=0 / missing dry. POST is the only commit path
+    // (cron + Kröfu yfirlit 🔄). audit-payday-get.cjs greps this assignment.
+    const dry = event.httpMethod !== 'POST' || !!body.dry || !!p.dry;
     const since = body.since || p.since || defaultSince();
 
     // 1) Ógreiddar reikningur-sölur sem eiga Payday-auðkenni.
