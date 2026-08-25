@@ -21,7 +21,18 @@
   const steel = () => ({ r: 155, g: 161, b: 173, a: 1 });
 
   function prefixed(sel) {
-    return String(sel).split(',').map(s => s.trim()).filter(Boolean).map(s => B + s).join(',');
+    const parts = [];
+    let buf = '', q = null;
+    const str = String(sel);
+    for (let i = 0; i < str.length; i++) {
+      const ch = str[i];
+      if (q) { if (ch === q) q = null; buf += ch; continue; }
+      if (ch === '"' || ch === "'") { q = ch; buf += ch; continue; }
+      if (ch === ',') { if (buf.trim()) parts.push(buf.trim()); buf = ''; continue; }
+      buf += ch;
+    }
+    if (buf.trim()) parts.push(buf.trim());
+    return parts.map(p => B + p).join(',');
   }
 
   function injectCss() {
@@ -59,6 +70,19 @@
       /* Drög orange bar — ID beats the brunastál h2 dark lock. */
       '#view-drog h2{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.35)!important}',
       '#view-drog h2 + div{color:#fef3c7!important}',
+
+      /* ID beats 230/231 pins that keep 55% white and slate on steel. */
+      '#view-arsskodun ._ars-sub,#view-hreyfingarlisti .page-title p,',
+      '#view-krofu-yfirlit .page-title p,#view-income h1 + div,#view-income .page-title p',
+      '{color:' + INK_MUTED + '!important;text-shadow:none!important}',
+      '#view-verkbord [style*="font-size:28px"]{color:' + INK + '!important;text-shadow:none!important}',
+      '#view-verkbord #vb-morgun,',
+      '#view-verkbord div[style*="rgba(255,255,255,.6)"],',
+      '#view-verkbord div[style*="rgba(255,255,255,.55)"]',
+      '{color:' + INK_MUTED + '!important}',
+      '#view-verkbord [style*="color:#64748b"],#view-verkbord [style*="color:#94a3b8"],',
+      '#view-verkbord [style*="color:#6b7280"],#view-verkbord [style*="color:#475569"]',
+      '{color:' + INK_MUTED + '!important}',
       prefixed('.view [style*="linear-gradient(135deg,#f59e0b"] h1,' +
         '.view [style*="linear-gradient(135deg,#f59e0b"] h2,' +
         '.view [style*="linear-gradient(135deg,#f59e0b"] > div:first-child > div'),
@@ -223,7 +247,8 @@
       };
       if (chroma(fg) >= 48) continue;
       if (isSteelish(bg)) {
-        if (ratio(fg, bg) >= 4.5) continue;
+        const lightOnSteel = lum(fg) > 0.62;
+        if (!lightOnSteel && ratio(fg, bg) >= 4.5) continue;
         const size = parseFloat(cs.fontSize);
         const w = parseInt(cs.fontWeight, 10) || 400;
         el.style.setProperty('color', (size >= 20 || w >= 700) ? INK : INK_MUTED, 'important');
