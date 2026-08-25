@@ -77,7 +77,9 @@
         '<div class="fld"><label>Aðgangsorð (netfang)</label><input class="inp" data-f="email" value="' + esc(a.email || '') + '" placeholder="nafn@fyrirtaeki.is"></div>' +
         '<div class="fld"><label>Lykilorð</label><div class="inrow">' +
           '<input class="inp mono" data-f="pw" placeholder="' + (a.hasPassword ? '•••••••• (sett — skrifaðu nýtt til að breyta)' : 'ekkert lykilorð enn') + '">' +
-          '<button class="btn btn--sm" data-act="gen">Búa til</button></div></div>' +
+          '<button class="btn btn--sm" data-act="gen">Búa til</button>' +
+          (a.hasPassword ? '<button class="btn btn--sm" data-act="clearpw" title="Fjarlægja lykilorð — vefurinn opnast þá beint með raungögnum, engin innskráning">🔓 Fjarlægja</button>' : '') +
+        '</div></div>' +
         '<div class="fld"><label>Þema</label><select class="inp" data-f="theme">' +
           '<option value="steel"' + (a.theme !== 'cream' ? ' selected' : '') + '>Hlutlaust — stál / appelsínugult</option>' +
           '<option value="cream"' + (a.theme === 'cream' ? ' selected' : '') + '>Center — krem / gull</option>' +
@@ -86,7 +88,7 @@
           '<button class="btn btn--sm btn--accent" data-act="save">Vista aðgang</button>' +
           '<button class="btn btn--sm" data-act="toggle">' + (a.active ? 'Afvirkja' : 'Virkja') + '</button>' +
         '</div>' +
-        '<div class="note">Tómt lykilorð → vefurinn er OPINN (raungögn, engin innskráning) þar til lykilorð er sett. Um leið og lykilorð er sett krefst hann innskráningar.</div>' +
+        '<div class="note">Tómt lykilorð → vefurinn er OPINN (raungögn, engin innskráning) þar til lykilorð er sett. Um leið og lykilorð er sett krefst hann innskráningar. Til að forskoða meðan á uppsetningu stendur: hafðu lykilorðið tómt (eða ýttu á „🔓 Fjarlægja") og smelltu svo á „Opna vef".</div>' +
       '</div>' +
       '<div><h3>Hlekkur & sending</h3>' +
         '<div class="fld"><label>Vefslóð viðskiptavinar</label><div class="urlbox"><code>' + esc(urlOf(a)) + '</code><button class="btn btn--sm" data-act="copy2">⧉</button></div></div>' +
@@ -119,8 +121,29 @@
     row.querySelector('[data-act="toggle"]').onclick = function () {
       api({ action: 'toggle', id: a.id, active: !a.active }).then(function (res) { if (res.ok) { toast(a.active ? 'Afvirkjað' : 'Virkjað'); load(); } });
     };
+    var clearBtn = row.querySelector('[data-act="clearpw"]');
+    if (clearBtn) clearBtn.onclick = function () {
+      if (!confirm('Fjarlægja lykilorð fyrir „' + a.base_nafn + '"?\nVefurinn verður þá OPINN með raungögnum (engin innskráning) — hentugt meðan á uppsetningu stendur.')) return;
+      api({ action: 'clear-password', id: a.id }).then(function (res) {
+        if (res.ok) { toast('Lykilorð fjarlægt — vefurinn er opinn'); load(); }
+        else toast(res.error || 'Villa');
+      });
+    };
     row.querySelector('[data-act="copy2"]').onclick = function () { copy(urlOf(a)); };
-    row.querySelector('[data-act="open"]').onclick = function () { window.open(urlOf(a), '_blank'); };
+    row.querySelector('[data-act="open"]').onclick = function () {
+      // Með lykilorði krefst vefurinn innskráningar. Bjóða að fjarlægja það svo
+      // hann opnist beint með raungögnum (forskoðun meðan á uppsetningu stendur).
+      if (a.hasPassword) {
+        if (confirm('„' + a.base_nafn + '" er með lykilorð og opnast með innskráningu.\n\nViltu fjarlægja lykilorðið svo vefurinn opnist beint með raungögnum (forskoðun, engin innskráning)?\n\nÍ lagi = fjarlægja + opna  ·  Hætta við = opna samt (með innskráningu)')) {
+          api({ action: 'clear-password', id: a.id }).then(function (res) {
+            if (res.ok) { a.hasPassword = false; toast('Lykilorð fjarlægt — vefurinn er nú opinn'); window.open(urlOf(a), '_blank'); load(); }
+            else { toast(res.error || 'Villa'); window.open(urlOf(a), '_blank'); }
+          });
+          return;
+        }
+      }
+      window.open(urlOf(a), '_blank');
+    };
     row.querySelector('[data-act="send"]').onclick = function () {
       if (!emailEl.value.trim()) { toast('Settu netfang fyrst'); return; }
       var body = { action: 'send', id: a.id, to: emailEl.value.trim() };
