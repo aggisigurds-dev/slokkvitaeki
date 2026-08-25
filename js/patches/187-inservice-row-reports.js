@@ -28,11 +28,39 @@
   let fcMap = null, fcLoading = false;   // co_id(str) → { year(str) → status }
   function fcStat(coId,y){ var m=fcMap&&fcMap[String(coId)]; return (m&&m[String(y)])||null; }
 
-  // kt (digits) → Set of years that already have a reikningur filed in
-  // customer_documents (Drive-indexed + POS-connected). Drives a small 🧾 marker
-  // on the year cell so the office sees "reikningur sendur" right in the list,
-  // alongside the úttektarskýrslu status. Loaded once, then cells are rebuilt.
-  let reikMap = null, reikLoading = false;
+  // Slökkvitækja-ársmerki = úttektarskýrsla. Brunakerfi er ANNAÐ kerfi
+  // (STADREYNDIR: skýrslur mega ALDREI leka milli kerfanna). Center Hótel
+  // Arnarhvoll á 2026 brunakerfi-PDF án 2026 úttektar — má ekki mála '26 grænt.
+  function isReportKind(x) {
+    const k = String(x.kind || x.category || '').toLowerCase();
+    if (k) return k === 'skyrsla' || k === 'skýrsla' || k === 'uttektarskyrsla';
+    return !/(\bR-?\s?\d{4,}\b|\bkr\b|reikning|brunakerfi)/i.test(String(x.name || ''));
+  }
+  function findReportAtt(files, y) {
+    const list = Array.isArray(files) ? files : [];
+    return list.find(x => String(x.year) === String(y) && isReportKind(x)) ||
+           list.find(x => x.year == null && isReportKind(x) &&
+                           new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
+  }
+
+  // Reikningar per STAÐ (fyrirtaeki_id), ekki per kennitölu. Ein kt → mörg
+  // hótel (Center Hótel 11 staðir) mátti ÁÐUR bláan 🧾-punkt á ÖLLUM
+  // systkinum ef eitt þeirra var rukkað — sama 🧾-leki og 175 lagaði.
+  // Base-only raðir (enginn fyrirtaeki_id) gilda AÐEINS þegar base á einn stað.
+  let reikByCo = null, reikByBaseLoose = null, reikLoading = false;
+  function hasReikYear(coId, c, y) {
+    const ys = String(y);
+    if (reikByCo && reikByCo[String(coId)] && reikByCo[String(coId)].has(ys)) return true;
+    const bid = c && c.customer_base_id;
+    if (bid == null || !reikByBaseLoose) return false;
+    const loose = reikByBaseLoose[bid] || reikByBaseLoose[String(bid)];
+    if (!loose || !loose.has(ys)) return false;
+    const cos = (window.Companies && Companies.list) || [];
+    let n = 0;
+    const b = String(bid);
+    cos.forEach(x => { if (x.customer_base_id != null && String(x.customer_base_id) === b) n++; });
+    return n === 1;
+  }
   // 2026-08-19 (Agnar #11 — „fyrirtæki í þjónustu are not syncing to ársskoðun …
   // Hamraborg 7"): document_pairs.status='klarad' (skýrsla↔reikningur paruð, per
   // fyrirtaeki_id, service_type='uttekt') er DVARANDI „úttekt ársins fullbúin"-
@@ -153,11 +181,11 @@
     locLoading = false;
   }
   async function loadReik(){
-    if (reikLoading || reikMap) return; reikLoading = true;
+    if (reikLoading || reikByCo) return; reikLoading = true;
     try {
       const sb = window.DB && DB.sb; if (!sb) { reikLoading = false; return; }
-      const reikRows = await fetchAll(() => sb.from('customer_documents').select('customer_base_id,year,invoice_number')
-        .eq('doc_type','reikningur').not('customer_base_id','is',null));
+      const reikRows = await fetchAll(() => sb.from('customer_documents').select('fyrirtaeki_id,customer_base_id,year,invoice_number')
+        .eq('doc_type','reikningur'));
       // Pakki 7: búðarreikningar (solur.vidskiptategund='bud') kveikja EKKI
       // 🧾-ársmerkið í ársskoðunarlistanum — það er skoðunar-samhengi og
       // búðarsala segir ekkert um úttekt ársins. ovisst/óþekkt telja áfram.
@@ -166,20 +194,21 @@
         const bs = await fetchAll(() => sb.from('solur').select('num').eq('vidskiptategund', 'bud'));
         bs.forEach(s => { const n = String(s.num || '').trim().toUpperCase(); if (n) budNums.add(n); });
       } catch (_) {}
-      const byBase = {};
+      const byCo = {};
+      const byBaseLoose = {};
       reikRows.forEach(x => {
-        if (x.customer_base_id == null || !x.year) return;
+        if (!x.year) return;
         const inv = String(x.invoice_number || '').trim().toUpperCase();
         if (inv && budNums.has(inv)) return;
-        (byBase[x.customer_base_id] = byBase[x.customer_base_id] || new Set()).add(String(x.year));
+        const y = String(x.year);
+        if (x.fyrirtaeki_id != null) {
+          (byCo[String(x.fyrirtaeki_id)] = byCo[String(x.fyrirtaeki_id)] || new Set()).add(y);
+        } else if (x.customer_base_id != null) {
+          (byBaseLoose[x.customer_base_id] = byBaseLoose[x.customer_base_id] || new Set()).add(y);
+        }
       });
-      const ids = Object.keys(byBase);
-      const map = {};
-      for (let i = 0; i < ids.length; i += 500) {
-        const b = await sb.from('customers_base').select('id,kennitala').in('id', ids.slice(i, i + 500));
-        (b.data || []).forEach(row => { const d = digits(row.kennitala); if (d.length >= 10) map[d] = byBase[row.id]; });
-      }
-      reikMap = map;
+      reikByCo = byCo;
+      reikByBaseLoose = byBaseLoose;
       // rebuild the year cells so the new 🧾 markers appear
       document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
       document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
@@ -315,18 +344,7 @@
         // nokkurrar raunverulegrar skýrslu. Grænt = „skoðun skjalfest" og má
         // ALDREI leiða af reikningi — reikningur sannar að rukkað var, ekki að
         // farið hafi verið á staðinn.
-        const isReportKind = (x) => {
-          const k = String(x.kind || x.category || '').toLowerCase();
-          if (k) return k === 'skyrsla' || k === 'skýrsla' || k === 'uttektarskyrsla' || k === 'brunakerfi';
-          // Ómerkt (hvorki kind né category): fellum aftur á heitið, en aðeins ef
-          // það lítur EKKI út eins og reikningur — „R-106237", „109.868 kr",
-          // „reikningur". Ómerkt skýrsla („Steypustöðin Þorlákshöfn 2025.pdf")
-          // heldur sér því, en reikningur með ártali í heiti gerir það ekki.
-          return !/(\bR-?\s?\d{4,}\b|\bkr\b|reikning)/i.test(String(x.name || ''));
-        };
-        const f = files.find(x => String(x.year) === y && isReportKind(x)) ||
-                  files.find(x => x.year == null && isReportKind(x) &&
-                                  new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
+        const f = findReportAtt(files, y);
         // 2026-08-17 (Design v3, 842ebdfe — README: „CSS-ið í <style>-blokkinni
         // er nákvæma uppskriftin"): _yr-merkin 52×20 með LED-stöðupunkti
         // (::before) + tveir örpunktar undir (grænn = úttektarskýrsla, blár =
@@ -338,7 +356,7 @@
         const isClaude  = fst === 'claude';
         const isGap     = fst === 'gap';
         const isNow = (y === String(new Date().getFullYear()));
-        const hasInvYear = !!((invMap && invMap[coId] && invMap[coId][y]) || (reikMap && reikMap[kt] && reikMap[kt].has(y)));
+        const hasInvYear = !!((invMap && invMap[coId] && invMap[coId][y]) || hasReikYear(coId, c, y));
         // Fullbúið úttektar-par (klarad) fyrir þennan stað+ár — trompar staðnað gap.
         const isKlarad = !!(pairMap && pairMap[coId] && pairMap[coId].has(y));
         const td = document.createElement('td');
@@ -441,11 +459,11 @@
     const locRec = (locMap && locMap[coId]) || {};
     YEARS.forEach(y => {
       const u = locRec[y] || ((ktCount[kt] || 0) <= 1 ? rec[y] : null);
-      const f = files.find(x => String(x.year) === y) ||
-                files.find(x => x.year == null && new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
+      const f = findReportAtt(files, y);
       // `inv` = úttekt staðfest með reikningi (v_uttekt_ar) en skýrsla vantar —
       // `has` er ÁFRAM skýrslu-eingöngu svo „vantar skýrslu"-talningar standi.
-      out[y] = { has: !!(u || f), due: (y === '2026'), reik: !!(reikMap && reikMap[kt] && reikMap[kt].has(y)),
+      // `reik` per stað (fyrirtaeki_id), aldrei kt-vítt á rekstrarfélagi.
+      out[y] = { has: !!(u || f), due: (y === '2026'), reik: hasReikYear(coId, c, y),
         inv: !!(invMap && invMap[coId] && invMap[coId][y]),
         klarad: !!(pairMap && pairMap[coId] && pairMap[coId].has(y)) };
     });

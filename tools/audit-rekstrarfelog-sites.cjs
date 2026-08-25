@@ -10,9 +10,8 @@
  * This audit proves:
  *   (1) SOURCE: live load selects id and pins co_id; companyForBld never
  *       `return hits[0]`; document_pairs query includes fyrirtaeki_id.
- *   (2) DATA: known multi-site kennitölur still have many fyrirtaeki rows
- *       (Heimaleiga ehf, Center Hótel) and Midtown ≠ Máni; Ármúli 13A is its
- *       own kt (S30), not folded into Heimaleiga ehf.
+ *   (3) SOURCE 187: invoice-year dots key on fyrirtaeki_id (reikByCo), never
+ *       kennitala; brunakerfi is not an úttektarskýrsla for slökkvitæki pills.
  *
  * Read-only, publishable key.
  */
@@ -23,6 +22,16 @@ const SUPA = 'https://osfdzskyvisifcwyjkuk.supabase.co';
 const KEY  = 'sb_publishable_YVpznM5EK01qOdevQwOcIg_rMjTkT7f';
 
 const SRC = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '175-rekstrarfelog.js'), 'utf8');
+const SRC187 = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '187-inservice-row-reports.js'), 'utf8');
+if (/reikMap\[kt\]/.test(SRC187)) {
+  fail('187 still keys invoice-year dots on kennitala — 🧾 leaks across Center Hótel / Heimaleiga sites.');
+}
+if (/k === 'brunakerfi'/.test(SRC187)) {
+  fail('187 isReportKind still treats brunakerfi as úttektarskýrsla — slökkvitæki year pills would light from fire-system PDFs.');
+}
+if (!/hasReikYear/.test(SRC187) || !/reikByCo/.test(SRC187)) {
+  fail('187 lost per-site invoice lookup (hasReikYear / reikByCo).');
+}
 
 function fail(msg) {
   console.log('RED: ' + msg);

@@ -218,6 +218,12 @@ baseline rows and lowering the constant is how the net tightens over time.
   ótengt stað. Nú: `co_id` pinnaður, engin `hits[0]`-gisk, `document_pairs` og
   R/PD-númer per stað (`solur.customer_id`). Staðirnir eru **aldrei sameinaðir**.
   `payday-push.js` ósnert. Audit `audit-rekstrarfelog-sites.cjs`.
+- **2026‑08‑25 — Ársskoðun 🧾-punktar per stað.** `187` `reikMap` var lyklað á
+  kennitölu svo einn 2026-reikningur á Center Hótel kveikti bláan punkt á öllum
+  11 hótelunum (Hlaðvarpinn, Þverholt 14, Arnarhvoll, …). Nú `reikByCo` á
+  `fyrirtaeki_id`; base-only reikningar gilda aðeins þegar base á einn stað.
+  `isReportKind` telur ekki `brunakerfi` sem úttektarskýrslu. Invoice OUT /
+  payday / kt-save ósnert. Audit `audit-rekstrarfelog-sites.cjs` (187 source).
 - *Add a line here every time you make something bulletproof.*
 
 ---
