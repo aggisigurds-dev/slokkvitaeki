@@ -4,8 +4,8 @@
 :root {
   /* Ljós-hannað app: slekkur á sjálfvirkri „dark mode for web"-myrkvun í
      Chrome/Samsung Internet á símanum (hún gerði hvít kort svört). Parað við
-     <meta name="color-scheme" content="light"> í index.html. */
-  color-scheme: light;
+     <meta name="color-scheme" content="light only"> í index.html. */
+  color-scheme: light only;
 
   /* Core brand */
   --brand: #C93C1D;
@@ -1774,8 +1774,8 @@ textarea.fi { resize: vertical; min-height: 72px; }
 :root {
   /* Ljós-hannað app: slekkur á sjálfvirkri „dark mode for web"-myrkvun í
      Chrome/Samsung Internet á símanum (hún gerði hvít kort svört). Parað við
-     <meta name="color-scheme" content="light"> í index.html. */
-  color-scheme: light;
+     <meta name="color-scheme" content="light only"> í index.html. */
+  color-scheme: light only;
 
   /* Core brand */
   --brand: #C93C1D;

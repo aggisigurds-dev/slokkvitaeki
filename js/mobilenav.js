@@ -1,4 +1,10 @@
-/* Mobile nav v4 — state-aware, no per-tick style stomp.
+/* Mobile nav v5 — phone detection ignores Chrome "desktop site" viewport.
+ *
+ * v4: state-aware, no per-tick style stomp.
+ * v5 (2026-08-25): isMobile() used only innerWidth<=900. Samsung S26 + Chrome
+ * "desktop site" reports ~980px, so the hamburger stayed hidden and the full
+ * desktop sidebar (white labels on grey) was squeezed onto the phone. Now:
+ * real phone (screen short side) OR data-viewmode=mobile OR innerWidth<=900.
  *
  * v3 wrote the entire inline-style sheet onto `.topbar` every 1500 ms via
  * setInterval. Mid-animation that re-applied the transform + transition
@@ -12,7 +18,25 @@
  * (sidebar open OR closed, no resize) the interval becomes a free no-op
  * and the CSS transition runs cleanly. */
 (function(){'use strict';
-function isMobile(){return window.innerWidth<=900;}
+function isPhoneDevice(){
+  try {
+    if (typeof window.SlokkIsPhoneDevice === 'function') return window.SlokkIsPhoneDevice();
+    var short = Math.min(screen.width||0, screen.height||0);
+    if (short > 0 && short <= 500) return true;
+    if ((navigator.maxTouchPoints||0) > 1 && short > 0 && short <= 700) return true;
+  } catch (e) {}
+  return false;
+}
+// Hamburger on: real phones (even Chrome "desktop site" with innerWidth~980),
+// Sími view-mode, or a genuinely narrow viewport. Do NOT use innerWidth alone
+// — that was why the S26 showed the full desktop sidebar (white labels on grey).
+function isMobile(){
+  try {
+    if (document.documentElement.getAttribute('data-viewmode') === 'mobile') return true;
+  } catch (e) {}
+  if (isPhoneDevice()) return true;
+  return window.innerWidth<=900;
+}
 
 // ── Hamburger button ────────────────────────────────────────────────────
 let _btnKey = '';
@@ -138,6 +162,12 @@ document.addEventListener('keydown',function(e){
 
 window.addEventListener('resize',function(){
   if(!isMobile() && document.body.classList.contains('mobile-nav-open'))closeNav();
+  applyTopbarStyles();
+  ensureBtn();
+});
+document.addEventListener('slokk-viewmode', function(){
+  _btnKey = '';
+  _topbarKey = '';
   applyTopbarStyles();
   ensureBtn();
 });
