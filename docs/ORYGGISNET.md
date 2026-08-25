@@ -206,6 +206,12 @@ baseline rows and lowering the constant is how the net tightens over time.
   Sama lota: Brunakerfi yfirlit Staða sýnir ✅ Skoðað YYYY AÐEINS þegar
   `customer_documents` á brunakerfi-skýrslu það ár (`272` `r.years`), ekki
   `last_year_inspected` (Ársskoðunar-flagg).
+- **2026‑08‑25 — Brunakerfi Staða krefst skýrslu-skrár.** Fyrsta `r.years`
+  leiðréttingin taldi tóm `'#'` og HTML-rusl sem skýrslu. `272` `hasReport`
+  krefst nú `http…` URL (PDF/Drive), hafnar `'#'` og `.html`. Center Hótel
+  Klöpp / Laugavegur / Plaza halda áfram 2025-skýrslu + Ársskoðunar-flaggi
+  2026 án þess að Staða ljúgi „Skoðað 2026". `audit-brunakerfi-stada.cjs`
+  uppfært. `153/187` ósnert.
 - *Add a line here every time you make something bulletproof.*
 
 ---
