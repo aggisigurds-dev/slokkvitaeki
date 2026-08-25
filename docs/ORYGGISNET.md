@@ -52,7 +52,7 @@ automation health and pings Agnar *only* when something needs him.
 | **Per‑line discount + credit notes bill Payday correctly** | `payday-push.js` per‑line gate + credit `discount_pct=0` strip | `send_failed` (token) | *verified vs 697 live sales; audit TODO* |
 | **GET cannot mark invoices paid or upsert the Payday mirror** | `payday-sync-paid` / `payday-pull-slokk`: GET is always dry; POST is the only commit (cron + Kröfu 🔄) | — | `audit-payday-get.cjs` |
 | **The tæki→starfsstöð FK join hides no live in‑service customer** | `153` counts devices by `uttaeki.fyrirtaeki_id` (not folded client‑name); soft‑deleted excluded at `153:162` | `uttaeki_null_fid` | `audit-fk-join.cjs` |
-| **Skoðunarmánuður er sá sami alls staðar og engin skoðun gleymist þögult** | `312` `CanonStadur` les `v_stadur_yfirlit` (skýrsla/reikningur) sem EINA uppspretta fyrir `175`/`185`/`companieslist`/`89`/`77`; mánuður kemur ALDREI úr nafna‑strengs `uttaeki.next_insp` | `canon_stadur_load_failed`, `canon_stadur_empty` | `audit-canon-stadur.cjs` |
+| **Rekstrarfélaga-staðir hrúgast ekki saman á kennitölu** | `175` live-raðir bera `co_id = fyrirtaeki.id`; `companyForBld` giskar aldrei `hits[0]`; `document_pairs` lyklað á `fyrirtaeki_id` (ekki base) | — | `audit-rekstrarfelog-sites.cjs` |
 
 ---
 
@@ -212,6 +212,12 @@ baseline rows and lowering the constant is how the net tightens over time.
   Klöpp / Laugavegur / Plaza halda áfram 2025-skýrslu + Ársskoðunar-flaggi
   2026 án þess að Staða ljúgi „Skoðað 2026". `audit-brunakerfi-stada.cjs`
   uppfært. `153/187` ósnert.
+- **2026‑08‑25 — Rekstrarfélög: ein eign = einn `fyrirtaeki.id`.** Ein kennitala
+  á margar eignir (Heimaleiga, Center Hótel). `175` týndi `id` við live-hleðslu
+  og mátaði aftur á nafni/kt — Hotel Grandi, 🧾-leki á öll systkini, Payday
+  ótengt stað. Nú: `co_id` pinnaður, engin `hits[0]`-gisk, `document_pairs` og
+  R/PD-númer per stað (`solur.customer_id`). Staðirnir eru **aldrei sameinaðir**.
+  `payday-push.js` ósnert. Audit `audit-rekstrarfelog-sites.cjs`.
 - *Add a line here every time you make something bulletproof.*
 
 ---
