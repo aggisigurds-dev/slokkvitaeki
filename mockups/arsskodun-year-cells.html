@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ársskoðun — útlit ársreitanna</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0f172a; --ink-2:#334155; --body:#64748b; --muted:#5b6472; --empty:#cbd2dc;
+    --ui:'Space Grotesk',system-ui,sans-serif; --mono:'Space Mono',monospace;
+    --g:#0f4f2b; --g2:#1c7a45; --r:#b0201b; --r2:#d84f4a; --b:#2f5fe0; --b2:#5a86e0;
+    --gold:#c99a1e; --gold2:#8a6410;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#e8eaef;color:var(--ink);font-family:var(--ui)}
+  body{padding:28px 22px 80px}
+  h1{margin:0;font-size:22px;letter-spacing:-.02em}
+  .lede{margin:6px 0 0;color:var(--body);font-size:14px;max-width:720px;line-height:1.45}
+  .meta{margin-top:18px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:11px;font-weight:600;padding:5px 10px;border-radius:99px;background:#fff;border:1px solid #d8dde6;color:var(--ink-2)}
+  .legend{display:flex;flex-wrap:wrap;gap:14px 22px;margin:22px 0 8px;padding:14px 16px;background:#fff;border:1px solid #e2e6ed;border-radius:12px;font-size:12.5px;color:var(--ink-2)}
+  .legend b{display:inline-block;width:14px;height:14px;border-radius:4px;vertical-align:-2px;margin-right:6px}
+  .board{display:flex;flex-direction:column;gap:22px;margin-top:18px}
+  .card{background:#fff;border:1px solid #dce1e8;border-radius:16px;overflow:hidden;box-shadow:0 10px 28px -20px rgba(15,23,42,.35)}
+  .card head, .card .hd{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;padding:16px 18px 12px;border-bottom:1px solid #eef1f4}
+  .card h2{margin:0;font-size:15px;letter-spacing:.02em}
+  .card .tag{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin-bottom:4px}
+  .card p{margin:4px 0 0;font-size:13px;color:var(--body);line-height:1.4;max-width:640px}
+  .pick{flex:none;font-size:11px;font-weight:700;padding:6px 10px;border-radius:8px;background:#0f172a;color:#fff}
+  .tbl{width:100%;border-collapse:collapse;table-layout:fixed}
+  .tbl th{background:linear-gradient(180deg,#3a3d45,#1b1d22);color:#f0f2f5;font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:10px 8px;text-align:left;font-weight:700}
+  .tbl th.c{text-align:center}
+  .tbl td{border-top:1px solid #eceff4;padding:8px 10px;height:52px;vertical-align:middle;font-size:13px}
+  .tbl tr:hover td{background:#f7f9fd}
+  ._co{font-weight:600;color:var(--ink)}
+  ._kt{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);margin-top:1px}
+  ._mo{font-family:var(--mono);font-size:12px;color:#dc2626;font-weight:700}
+  ._devs{text-align:right}
+  ._devs b{display:block;font-family:var(--mono);font-size:15px;font-weight:700;line-height:1.1}
+  ._devs i{font-style:normal;font-size:8px;letter-spacing:.12em;color:var(--muted)}
+  .yrs{display:flex;gap:8px;justify-content:center;align-items:flex-end}
+
+  /* ── A current ── */
+  .a ._dd{display:inline-flex;flex-direction:column;align-items:center;gap:3px}
+  .a ._dd u{display:flex;gap:3px;text-decoration:none}
+  .a ._dd u i{width:5px;height:5px;border-radius:50%;background:#dfe3ea}
+  .a ._dd u i.rep{background:#1f9d57}
+  .a ._dd u i.inv{background:#2f5fe0}
+  .a ._yr{display:inline-flex;align-items:center;justify-content:center;gap:5px;width:52px;height:20px;border-radius:6px;font-family:var(--mono);font-size:11px;font-weight:700;color:#aab3c0;background:#f4f6f9;border:1px solid #e7eaf0}
+  .a ._yr::before{content:"";width:6px;height:6px;border-radius:50%;background:rgba(0,0,0,.14);flex:none}
+  .a ._yr.lit::before{background:#37c47e;box-shadow:0 0 5px rgba(55,196,126,.8)}
+  .a ._yr.now.lit::before,.a ._yr.both.lit::before{background:#7df0b4;box-shadow:0 0 5px rgba(125,240,180,.9)}
+  .a ._yr.inv-only.lit::before{background:#9fc3ff;box-shadow:0 0 5px rgba(159,195,255,.9)}
+  .a ._yr.now{color:#fff;background:linear-gradient(145deg,#d84f4a 0%,#b0201b 42%,#6e100d 72%,#9c1d18 100%);border-color:#4d0a08;box-shadow:inset 0 1.5px 0 rgba(255,255,255,.25),inset 0 -2px 4px rgba(0,0,0,.26)}
+  .a ._yr.both{color:#fff;background:linear-gradient(145deg,#1c7a45 0%,#0f4f2b 42%,#062815 72%,#0c3f22 100%);border-color:#041c0e;text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.2),inset 0 -2px 4px rgba(0,0,0,.26)}
+  .a ._yr.inv-only{color:#fff;background:linear-gradient(145deg,#5a86e0 0%,#2f5fe0 42%,#1a3a8c 72%,#2d55c4 100%);border-color:#12296b;text-shadow:0 1px 1px rgba(0,0,0,.3);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.32),inset 0 -2px 4px rgba(0,0,0,.22)}
+  .a ._yr.penda{color:#fff8e6;background:linear-gradient(150deg,#8a6410,#c99a1e 44%,#5a3f08);border-color:rgba(255,220,130,.45);text-shadow:0 1px 1px rgba(0,0,0,.35);box-shadow:inset 0 1px 0 rgba(255,240,190,.28),inset 0 -2px 4px rgba(0,0,0,.25)}
+
+  /* ── B flat tile ── */
+  .b .yrs{gap:6px;align-items:stretch}
+  .b .cell{width:48px;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .b .tile{width:48px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;letter-spacing:.02em;border:1px solid transparent;position:relative}
+  .b .tile.empty{color:#9aa3b2;background:#f3f5f8;border-color:#e6eaef}
+  .b .tile.ok{color:#fff;background:#157a45}
+  .b .tile.late{color:#fff;background:#c52622}
+  .b .tile.inv{color:#fff;background:#2f5fe0}
+  .b .tile.wait{color:#fff8e6;background:#b8860b}
+  .b .tile.fc::after{content:"";position:absolute;top:3px;right:4px;width:5px;height:5px;border-radius:50%;background:#b8ffd4;box-shadow:0 0 4px #7df0b4}
+  .b .dots{display:flex;gap:3px}
+  .b .dots i{width:5px;height:5px;border-radius:50%;background:#dfe3ea}
+  .b .dots i.on.g{background:#1f9d57}
+  .b .dots i.on.bl{background:#2f5fe0}
+
+  /* ── C split ── */
+  .c .yrs{gap:6px}
+  .c .cell{width:50px;display:flex;flex-direction:column;align-items:center;gap:0}
+  .c .split{width:50px;height:32px;border-radius:9px;overflow:hidden;display:grid;grid-template-columns:1fr 1fr;position:relative;border:1.5px solid #e2e6ed;background:#f4f6f9}
+  .c .split.late{border-color:#b0201b;box-shadow:0 0 0 2px rgba(176,32,27,.12)}
+  .c .split.wait{border-color:#c99a1e}
+  .c .split .L,.c .split .R{display:flex;align-items:flex-end;justify-content:center;padding-bottom:3px;font-size:8px;font-weight:700;letter-spacing:.04em;color:rgba(255,255,255,.0)}
+  .c .split .L.on{background:#157a45}
+  .c .split .R.on{background:#2f5fe0}
+  .c .split .L.off{background:#eef1f5}
+  .c .split .R.off{background:#e8ebf0}
+  .c .split .yy{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:13px;font-weight:700;color:#3a4250;text-shadow:0 1px 0 rgba(255,255,255,.55);pointer-events:none}
+  .c .split.has .yy{color:#fff;text-shadow:0 1px 1px rgba(0,0,0,.35)}
+  .c .split.half .yy{color:#0f172a;text-shadow:0 1px 0 rgba(255,255,255,.7)}
+  .c .cap{display:flex;width:50px;justify-content:space-between;padding:2px 4px 0;font-size:7.5px;letter-spacing:.04em;color:#9aa3b2;font-weight:700}
+
+  /* ── D rail ── */
+  .d .rail{display:flex;border-radius:10px;overflow:hidden;border:1px solid #d8dde6;background:#f4f6f9}
+  .d .seg{width:52px;height:34px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;position:relative;font-family:var(--mono);font-size:12px;font-weight:700;color:#9aa3b2}
+  .d .seg + .seg{border-left:1px solid rgba(15,23,42,.08)}
+  .d .seg.ok{background:#157a45;color:#fff}
+  .d .seg.late{background:#c52622;color:#fff}
+  .d .seg.inv{background:#2f5fe0;color:#fff}
+  .d .seg.wait{background:#b8860b;color:#fff8e6}
+  .d .seg .dots{display:flex;gap:3px}
+  .d .seg .dots i{width:4px;height:4px;border-radius:50%;background:rgba(255,255,255,.28)}
+  .d .seg.empty .dots i{background:#dfe3ea}
+  .d .seg .dots i.g{background:#b8ffd4}
+  .d .seg .dots i.bl{background:#cfe0ff}
+  .d .seg.now::after{content:"";position:absolute;top:0;left:50%;transform:translateX(-50%);width:10px;height:3px;border-radius:0 0 3px 3px;background:#fff}
+
+  /* ── E rings ── */
+  .e .yrs{gap:10px;align-items:center}
+  .e .ring{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;font-weight:700;border:2.5px solid #dfe3ea;color:#9aa3b2;background:#fff;position:relative}
+  .e .ring.ok{border-color:#157a45;color:#0f4f2b;background:#f0fdf4}
+  .e .ring.late{border-color:#c52622;color:#fff;background:#c52622;box-shadow:0 0 0 3px rgba(197,38,34,.14)}
+  .e .ring.inv{border-color:#2f5fe0;color:#16306f;background:#eef3ff}
+  .e .ring.wait{border-color:#c99a1e;color:#7a5a0a;background:#fffbeb}
+  .e .ring .t{position:absolute;bottom:-3px;display:flex;gap:2px}
+  .e .ring .t i{width:6px;height:6px;border-radius:50%;background:#dfe3ea;border:1.5px solid #fff}
+  .e .ring .t i.g{background:#1f9d57}
+  .e .ring .t i.bl{background:#2f5fe0}
+
+  /* ── F quiet ── */
+  .f .yrs{gap:10px;align-items:center}
+  .f .q{min-width:40px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--mono);font-size:12px;font-weight:700;color:#94a3b8}
+  .f .q .mark{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;background:#f4f6f9;color:#c3cad6}
+  .f .q.ok{color:#157a45}
+  .f .q.ok .mark{background:#e8f7ee;color:#157a45}
+  .f .q.late{color:#c52622}
+  .f .q.late .mark{background:#c52622;color:#fff;box-shadow:0 4px 10px -4px rgba(197,38,34,.7)}
+  .f .q.inv{color:#2f5fe0}
+  .f .q.inv .mark{background:#e8efff;color:#2f5fe0}
+  .f .q.wait{color:#a16207}
+  .f .q.wait .mark{background:#fef3c7;color:#a16207}
+  .f .q .dots{display:flex;gap:3px}
+  .f .q .dots i{width:4px;height:4px;border-radius:50%;background:#e5e7eb}
+  .f .q .dots i.g{background:#1f9d57}
+  .f .q .dots i.bl{background:#2f5fe0}
+
+  .note{padding:10px 18px 16px;font-size:12px;color:var(--body);line-height:1.45;border-top:1px dashed #eef1f4}
+  body.solo h1, body.solo .lede, body.solo .meta, body.solo .legend{display:none}
+  body.solo{padding:16px;background:#dfe3ea}
+  body.solo .board{margin-top:0}
+  .note strong{color:var(--ink-2)}
+</style>
+</head>
+<body>
+  <h1>Ársskoðun — annað útlit á 23 / 24 / 25 / 26</h1>
+  <p class="lede">Sömu gögn, fimm nýjar lesleiðir. Litirnir halda merkingu sinni: grænt = skoðað með skýrslu, rautt = á eftir, blátt = reikningur/heimsókn án skýrslu, gull = þetta ár enn framundan, grátt = ekkert. Tveir punktar = skýrsla · reikningur.</p>
+  <div class="meta">
+    <span class="chip">64 px súla — passar í töfluna</span>
+    <span class="chip">Smellur opnar áfram skýrslu/tengingu</span>
+    <span class="chip">Engin merking breytt — bara form</span>
+  </div>
+  <div class="legend">
+    <span><b style="background:#157a45"></b>Skoðað + skýrsla</span>
+    <span><b style="background:#c52622"></b>Á eftir / vantar</span>
+    <span><b style="background:#2f5fe0"></b>Bara reikningur</span>
+    <span><b style="background:#b8860b"></b>Á dagskrá (ekki komið)</span>
+    <span><b style="background:#f4f6f9;border:1px solid #e7eaf0"></b>Ekkert á skrá</span>
+    <span>●●  vinstri grænn = skýrsla · hægri blár = reikningur</span>
+  </div>
+
+  <div class="board">
+
+    <!-- A -->
+    <section class="card a" id="a">
+      <div class="hd">
+        <div>
+          <div class="tag">A · núverandi</div>
+          <h2>Gljáandi hylki með LED-punkti</h2>
+          <p>Það sem er í loftinu. Sterkt Brunastál-útlit — en 20 px hæð + dökkur gradient gerir ártölin stundum erfiðari að lesa, og LED-punkturinn + tveir punktar undir er þrjú merki í smáu rými.</p>
+        </div>
+      </div>
+      <table class="tbl">
+        <thead><tr><th style="width:160px">Fyrirtæki</th><th class="c" colspan="4">Skoðanir · skjöl</th><th class="c" style="width:70px">Skoðun</th><th class="c" style="width:64px">Tæki</th></tr></thead>
+        <tbody id="rows-a"></tbody>
+      </table>
+    </section>
+
+    <!-- B -->
+    <section class="card b" id="b">
+      <div class="hd">
+        <div>
+          <div class="tag">B · tillaga</div>
+          <h2>Flöt flís — liturinn er merkið</h2>
+          <p>Sleppt er 3D-gljáanum. Hver reitur er 48×28, árið stærra, fact-check er lítill punktur uppi til hægri. Sömu tveir punktar undir. Auðveldara að skanna niður súluna — grænt/rautt/blátt lesast strax.</p>
+        </div>
+        <span class="pick">Mælt með ef þú vilt halda 4 reitum</span>
+      </div>
+      <table class="tbl">
+        <thead><tr><th style="width:160px">Fyrirtæki</th><th class="c" colspan="4">Skoðanir · skjöl</th><th class="c" style="width:70px">Skoðun</th><th class="c" style="width:64px">Tæki</th></tr></thead>
+        <tbody id="rows-b"></tbody>
+      </table>
+      <div class="note"><strong>Kostur:</strong> minnsta breytingin á lestri — þú þekkir strax súlurnar. <strong>Gallar:</strong> punktarnir tveir eru enn smáir.</div>
+    </section>
+
+    <!-- C -->
+    <section class="card c" id="c">
+      <div class="hd">
+        <div>
+          <div class="tag">C · tillaga</div>
+          <h2>Tvískiptur reitur — skýrsla | reikningur</h2>
+          <p>Vinstri helmingur = úttektarskýrsla, hægri = reikningur. Árið situr ofan á. Rauður rammi = á eftir. Þetta gerir punktana óþarfa — þú sérð strax hvort skýrslan eða reikningurinn vantar.</p>
+        </div>
+        <span class="pick">Mælt með ef punktarnir rugla</span>
+      </div>
+      <table class="tbl">
+        <thead><tr><th style="width:160px">Fyrirtæki</th><th class="c" colspan="4">Skoðanir · skjöl</th><th class="c" style="width:70px">Skoðun</th><th class="c" style="width:64px">Tæki</th></tr></thead>
+        <tbody id="rows-c"></tbody>
+      </table>
+      <div class="note"><strong>Kostur:</strong> engin leyndarmál — tveir punktar verða tveir helmingar. <strong>Gallar:</strong> aðeins hærri röð (~32 px), og „heildarstaða" er ramminn, ekki fyllingin.</div>
+    </section>
+
+    <!-- D -->
+    <section class="card d" id="d">
+      <div class="hd">
+        <div>
+          <div class="tag">D · tillaga</div>
+          <h2>Árs-teinn — einn strimill, fjögur ár</h2>
+          <p>Fjögur hylki verða ein samfelld teinn. Hvítur naggur ofan á merkir yfirstandandi ár. Lesturinn er „saga fyrirtækisins" fremur en fjórir takkar. Punktarnir sitja inni í hverjum hluta.</p>
+        </div>
+      </div>
+      <table class="tbl">
+        <thead><tr><th style="width:160px">Fyrirtæki</th><th class="c">Skoðanir · skjöl</th><th class="c" style="width:70px">Skoðun</th><th class="c" style="width:64px">Tæki</th></tr></thead>
+        <tbody id="rows-d"></tbody>
+      </table>
+      <div class="note"><strong>Kostur:</strong> rólegra, minna „takka-útlit", auðvelt að sjá holur í sögunni. <strong>Gallar:</strong> erfiðara að hitta nákvæmlega eitt ár með þumli á síma.</div>
+    </section>
+
+    <!-- E -->
+    <section class="card e" id="e">
+      <div class="hd">
+        <div>
+          <div class="tag">E · tillaga</div>
+          <h2>Hringir — umferðarljós ársins</h2>
+          <p>Hver reitur er 34 px hringur. Rautt er fyllt (það sem má ekki missa), grænt og blátt eru hringlaga umgjörð. Punktarnir sitja á neðri brúninni. Mjög skýrt í síma — stærri snertiflötur.</p>
+        </div>
+      </div>
+      <table class="tbl">
+        <thead><tr><th style="width:160px">Fyrirtæki</th><th class="c" colspan="4">Skoðanir · skjöl</th><th class="c" style="width:70px">Skoðun</th><th class="c" style="width:64px">Tæki</th></tr></thead>
+        <tbody id="rows-e"></tbody>
+      </table>
+      <div class="note"><strong>Kostur:</strong> 34×34 nær 44 px snertifleti, rautt poppar. <strong>Gallar:</strong> tekur meira lóðrétt pláss; fjórir hringir þurfa ~160 px.</div>
+    </section>
+
+    <!-- F -->
+    <section class="card f" id="f">
+      <div class="hd">
+        <div>
+          <div class="tag">F · tillaga</div>
+          <h2>Lágstemmt — aðeins vandinn er litur</h2>
+          <p>Liðin ár með skýrslu eru lítið hak + ártal. Tóm ár eru föl. Aðeins rautt (á eftir) og gull (á dagskrá) fá þungan lit. Taflan róast — augað fer beint á það sem vantar.</p>
+        </div>
+      </div>
+      <table class="tbl">
+        <thead><tr><th style="width:160px">Fyrirtæki</th><th class="c" colspan="4">Skoðanir · skjöl</th><th class="c" style="width:70px">Skoðun</th><th class="c" style="width:64px">Tæki</th></tr></thead>
+        <tbody id="rows-f"></tbody>
+      </table>
+      <div class="note"><strong>Kostur:</strong> minnstur hávaði, best fyrir langan lista. <strong>Gallar:</strong> græna „allt í lagi" merkið er veikara — sem er einmitt málið, en þú missir kannski yfirsýn yfir söguna.</div>
+    </section>
+
+  </div>
+
+<script>
+const COS = [
+  {n:'Aðalstræti ehf', kt:'430169-4449', yrs:['ok','ok','late','empty'], m:'Ágú', t:44, fc:[1,1,0,0]},
+  {n:'Hafnargata 12', kt:'550169-2269', yrs:['ok','ok','late','empty'], m:'Ágú', t:3, fc:[1,0,0,0]},
+  {n:'Nýlenda ehf', kt:'700169-1189', yrs:['empty','empty','ok','empty'], m:'Ágú', t:0, fc:[0,0,1,0]},
+  {n:'Iðngarðar', kt:'610169-3379', yrs:['ok','ok','late','wait'], m:'Ágú', t:7, fc:[1,1,0,0]},
+  {n:'Hamraborg 7', kt:'480169-5519', yrs:['ok','ok','ok','inv'], m:'Ágú', t:30, fc:[1,1,1,0]}
+];
+const YY = ['23','24','25','26'];
+const dotsFor = (st) => {
+  const g = (st==='ok');
+  const b = (st==='ok' || st==='inv');
+  return {g,b};
+};
+
+function rowShell(co, yearsHtml, extraTh='') {
+  return `<tr>
+    <td><span class="_co">${co.n}</span><span class="_kt">${co.kt}</span></td>
+    ${extraTh || `<td colspan="4">${yearsHtml}</td>`}
+    <td class="c"><span class="_mo">${co.m}</span></td>
+    <td><div class="_devs"><b>${co.t}</b><i>SLT</i></div></td>
+  </tr>`;
+}
+
+function renderA(){
+  return COS.map(co => {
+    const cells = co.yrs.map((st,i) => {
+      const d = dotsFor(st);
+      const cls = st==='ok'?'both':st==='late'?'now':st==='inv'?'inv-only':st==='wait'?'penda':'';
+      const lit = co.fc[i] ? ' lit' : '';
+      return `<span class="_dd"><span class="_yr ${cls}${lit}">${YY[i]}</span><u><i class="${d.g?'rep':''}"></i><i class="${d.b?'inv':''}"></i></u></span>`;
+    }).join('');
+    return rowShell(co, `<div class="yrs">${cells}</div>`);
+  }).join('');
+}
+function renderB(){
+  return COS.map(co => {
+    const cells = co.yrs.map((st,i) => {
+      const d = dotsFor(st);
+      const cls = st==='ok'?'ok':st==='late'?'late':st==='inv'?'inv':st==='wait'?'wait':'empty';
+      return `<span class="cell"><span class="tile ${cls}${co.fc[i]?' fc':''}">${YY[i]}</span><span class="dots"><i class="${d.g?'on g':''}"></i><i class="${d.b?'on bl':''}"></i></span></span>`;
+    }).join('');
+    return rowShell(co, `<div class="yrs">${cells}</div>`);
+  }).join('');
+}
+function renderC(){
+  return COS.map(co => {
+    const cells = co.yrs.map((st,i) => {
+      const d = dotsFor(st);
+      const late = st==='late'?' late':'';
+      const wait = st==='wait'?' wait':'';
+      const has = (d.g&&d.b)?' has':((d.g||d.b)?' half':'');
+      return `<span class="cell"><span class="split${late}${wait}${has}"><span class="L ${d.g?'on':'off'}"></span><span class="R ${d.b?'on':'off'}"></span><span class="yy">${YY[i]}</span></span><span class="cap"><span>S</span><span>R</span></span></span>`;
+    }).join('');
+    return rowShell(co, `<div class="yrs">${cells}</div>`);
+  }).join('');
+}
+function renderD(){
+  return COS.map(co => {
+    const segs = co.yrs.map((st,i) => {
+      const d = dotsFor(st);
+      const cls = st==='ok'?'ok':st==='late'?'late':st==='inv'?'inv':st==='wait'?'wait':'empty';
+      const now = i===3?' now':'';
+      return `<span class="seg ${cls}${now}">${YY[i]}<span class="dots"><i class="${d.g?'g':''}"></i><i class="${d.b?'bl':''}"></i></span></span>`;
+    }).join('');
+    return rowShell(co, `<div class="rail">${segs}</div>`);
+  }).join('');
+}
+function renderE(){
+  return COS.map(co => {
+    const cells = co.yrs.map((st,i) => {
+      const d = dotsFor(st);
+      const cls = st==='ok'?'ok':st==='late'?'late':st==='inv'?'inv':st==='wait'?'wait':'';
+      return `<span class="ring ${cls}">${YY[i]}<span class="t"><i class="${d.g?'g':''}"></i><i class="${d.b?'bl':''}"></i></span></span>`;
+    }).join('');
+    return rowShell(co, `<div class="yrs">${cells}</div>`);
+  }).join('');
+}
+function renderF(){
+  const icon = {ok:'✓', late:'!', inv:'R', wait:'·', empty:'–'};
+  return COS.map(co => {
+    const cells = co.yrs.map((st,i) => {
+      const d = dotsFor(st);
+      const cls = st==='ok'?'ok':st==='late'?'late':st==='inv'?'inv':st==='wait'?'wait':'';
+      return `<span class="q ${cls}"><span class="mark">${icon[st]}</span>${YY[i]}<span class="dots"><i class="${d.g?'g':''}"></i><i class="${d.b?'bl':''}"></i></span></span>`;
+    }).join('');
+    return rowShell(co, `<div class="yrs">${cells}</div>`);
+  }).join('');
+}
+
+document.getElementById('rows-a').innerHTML = renderA();
+document.getElementById('rows-b').innerHTML = renderB();
+document.getElementById('rows-c').innerHTML = renderC();
+document.getElementById('rows-d').innerHTML = renderD();
+document.getElementById('rows-e').innerHTML = renderE();
+document.getElementById('rows-f').innerHTML = renderF();
+
+const only = new URLSearchParams(location.search).get('only');
+if (only) {
+  document.body.classList.add('solo');
+  document.querySelectorAll('.board .card').forEach(c => {
+    if (c.id !== only) c.remove();
+  });
+}
+</script>
+</body>
+</html>
