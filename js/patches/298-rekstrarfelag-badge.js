@@ -54,6 +54,38 @@
     if (!Object.keys(m).length) { _ktMap = null; m = ktMap(); } // one retry, cheap
     return m[k] || null;
   }
+
+  // 2026-08-25 (Charlize/kunnaskra yfirferð): KANÓNÍSKA leiðin er base_id → félag beint
+  // úr `customers_base.rekstrarfelag` — nákvæmlega eins og Fyrirtæki-yfirferð (patch 198).
+  // Kt-lyklun (forKt) hefur tvö raunveruleg vandamál vegna handskráða SEED-listans í 175:
+  //   (a) 4 kennitölur skráðar undir TVEIMUR félögum → badge valdi handahófskennt;
+  //   (b) 9 fyrirtæki sem eru EKKI tengd rekstrarfélagi fengu samt merki af því kt rakst
+  //       á SEED-byggingu (t.d. Distica). Base_id-lyklun eyðir báðum.
+  // Þess vegna: þegar kallandinn hefur customer_base_id → notum base_id (ótvírætt úr DB),
+  // annars föllum við aftur á kt (eldri kallendur án base_id).
+  let _baseMap = null; // customer_base_id -> firm name (úr customers_base.rekstrarfelag)
+  function loadBaseMap() {
+    try {
+      const SB = window.__vdaSB || (window.DB && window.DB.sb);
+      if (!SB) return;
+      const build = (rows) => {
+        const m = {};
+        (rows || []).forEach(r => { if (r && r.rekstrarfelag) m[r.id] = r.rekstrarfelag; });
+        _baseMap = m;
+      };
+      if (window.DB && typeof window.DB.fetchAll === 'function') {
+        window.DB.fetchAll((from, to) => SB.from('customers_base').select('id,rekstrarfelag').not('rekstrarfelag', 'is', null).range(from, to))
+          .then(build).catch(() => {});
+      } else {
+        SB.from('customers_base').select('id,rekstrarfelag').not('rekstrarfelag', 'is', null)
+          .then(r => build(r && r.data)).catch(() => {});
+      }
+    } catch (_) {}
+  }
+  function forBase(baseId) {
+    if (baseId == null || _baseMap == null) return null;
+    return _baseMap[baseId] || null;
+  }
   // Forhlaða lifandi rekstrarfélaga-listanum (DB) svo DB-sett rekstrarfélög fái merkið
   // strax og notandi opnar ársskoðun/prófíl, og ógilda kt-kortið þegar hann kemur.
   // MIKILVÆGT: bíða þar til Supabase-klientinn (DB.sb) er tilbúinn. Ef ensureLive er
@@ -64,8 +96,9 @@
     try {
       const RD = window.RekstrarfelagData;
       const sbReady = window.__vdaSB || (window.DB && window.DB.sb);
-      if (RD && typeof RD.ensureLive === 'function' && sbReady) {
-        RD.ensureLive().then(() => { _ktMap = null; }).catch(() => {});
+      if (sbReady) {
+        loadBaseMap();                                              // kanóníska base_id → félag varpan
+        if (RD && typeof RD.ensureLive === 'function') RD.ensureLive().then(() => { _ktMap = null; }).catch(() => {}); // fyrir kt-fallback + Rekstrarfélög flipa
         return;
       }
     } catch (_) {}
@@ -73,13 +106,15 @@
   })(0);
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   // Small pill, consistent wherever it's dropped in (table row, card, profile banner).
-  function html(kt) {
-    const firm = forKt(kt);
+  // html(kt, baseId): ef base_id fylgir er það notað (kanónískt, engin fölsk merki),
+  // annars fallback á kt fyrir eldri kallendur.
+  function html(kt, baseId) {
+    const firm = (baseId != null) ? forBase(baseId) : forKt(kt);
     if (!firm) return '';
     return '<span title="Rekstrarfélag — sér um margar byggingar" style="display:inline-flex;align-items:center;gap:3px;font-size:9.5px;font-weight:700;background:#ede9fe;color:#6d28d9;padding:1px 7px;border-radius:99px;border:1px solid #ddd6fe;white-space:nowrap">🏢 ' + esc(firm) + '</span>';
   }
 
-  window.RekstrarfelagBadge = { forKt, html };
-  console.log('[patch-298] rekstrarfelag-badge installed — RekstrarfelagBadge.forKt(kt)/.html(kt)');
+  window.RekstrarfelagBadge = { forKt, forBase, html };
+  console.log('[patch-298] rekstrarfelag-badge installed — RekstrarfelagBadge.html(kt, baseId)');
 })();
 /* === END REKSTRARFÉLAG BADGE === */

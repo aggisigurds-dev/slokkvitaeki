@@ -141,7 +141,7 @@ var Companies = {
         '<div class="co-banner-id">' +
           '<div class="co-banner-mono">' + c.nafn.slice(0, 2).toUpperCase() + '</div>' +
           '<div style="min-width:0">' +
-            '<div class="co-banner-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + nafn + ((window.RekstrarfelagBadge && c.kennitala) ? RekstrarfelagBadge.html(c.kennitala) : '') + '</div>' +
+            '<div class="co-banner-name" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' + nafn + ((window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala)) ? RekstrarfelagBadge.html(c.kennitala, c.customer_base_id) : '') + '</div>' +
             (kt ? '<div class="co-banner-kt">kt. ' + kt + '</div>' : '') +
             '<div class="co-banner-facts">' +
               (addr    ? '<span>\ud83d\udccd <b>' + addr + '</b></span>' : '') +
