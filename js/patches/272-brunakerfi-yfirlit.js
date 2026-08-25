@@ -37,6 +37,21 @@
     const s = String(p).replace(/^\/+/, ''); const i = s.indexOf('/'); if (i < 1) return '';
     return base + '/storage/v1/object/public/' + s.slice(0, i) + '/' + s.slice(i + 1).split('/').map(encodeURIComponent).join('/');
   }
+  // Raunveruleg skýrsla = opnanleg skrá (PDF/Drive), ekki tómt '#' og ekki
+  // HTML-rusl úr samningar-bucket. last_year_inspected (Ársskoðun) kemur
+  // HÉR ALDREI inn — Center Hótel Klöpp o.fl. voru merkt slökkvitækjaskoðuð
+  // 2026 án brunakerfis-skýrslu (Agnar 2026-08-25).
+  function reportUrl(d) {
+    const path = String((d && d.storage_path) || '');
+    if (/\.html?(\b|$)/i.test(path)) return '';
+    const url = storageUrl(path) || driveUrl(d && d.drive_file_id);
+    if (!url || url === '#') return '';
+    return url;
+  }
+  function hasReport(r, y) {
+    const u = r && r.years && r.years[String(y)];
+    return !!(u && u !== '#' && String(u).indexOf('http') === 0);
+  }
   async function fetchAll(mk) {
     if (window.DB && DB.fetchAll) return DB.fetchAll(mk, 1000);
     const out = []; let from = 0; for (;;) { const r = await mk(from, from + 999); const d = (r && r.data) || []; out.push(...d); if (d.length < 1000) break; from += 1000; } return out;
@@ -72,13 +87,14 @@
     const byCo = {};
     docs.forEach(d => {
       const c = coMap[d.fyrirtaeki_id]; if (!c) return;
+      const y = String(d.year || '');
+      if (!y) return;
+      const url = reportUrl(d);
+      if (!url) return;                          // engin skrá / HTML = ekki skýrsla
       const r = byCo[c.id] || (byCo[c.id] = { id: c.id, nafn: c.nafn || '', address: c.heimilisfang || '',
         simi: c.simi || c.farsimi || '', netfang: c.netfang || '', tengilidur: c['tengiliður'] || '',
         years: {}, months: {}, count: 0, latest: 0, latestMonth: 0 });
-      const y = String(d.year || '');
-      if (!y) return;
-      const url = storageUrl(d.storage_path) || driveUrl(d.drive_file_id);
-      if (!r.years[y] || url) r.years[y] = url || r.years[y] || '#';
+      if (!r.years[y] || url) r.years[y] = url;
       r.count++;
       const m = d.doc_date ? (new Date(d.doc_date).getUTCMonth() + 1) : 0;
       if (m) r.months[y] = m;
@@ -116,8 +132,8 @@
     const q = state.search.trim().toLowerCase();
     if (q) arr = arr.filter(r => (r.nafn + ' ' + r.address + ' ' + r.tengilidur + ' ' + r.simi + ' ' + r.netfang).toLowerCase().indexOf(q) !== -1);
     else if (state.month >= 1 && state.month <= 12) arr = arr.filter(r => r.latestMonth === state.month);
-    if (state.filter === 'done') arr = arr.filter(r => !!r.years[String(NOW)]);
-    else if (state.filter === 'pending') arr = arr.filter(r => !r.years[String(NOW)] && !r.isNew);
+    if (state.filter === 'done') arr = arr.filter(r => hasReport(r, NOW));
+    else if (state.filter === 'pending') arr = arr.filter(r => !hasReport(r, NOW) && !r.isNew);
     else if (state.filter === 'new') arr = arr.filter(r => r.isNew);
     const cmp = CMP[state.sortCol] || CMP.name;
     arr.sort(cmp);
@@ -131,7 +147,7 @@
     const tdPad = cmp ? '3px 2px' : '6px 4px';
     const pill = cmp ? 'padding:2px 6px;font-size:10.5px' : 'padding:3px 9px;font-size:12px';
     const dotSz = cmp ? '6px' : '7px';
-    const url = r.years[y];
+    const url = hasReport(r, y) ? r.years[y] : '';
     const yy = y.slice(-2);
     if (url) {
       return '<td class="_bky-yr" style="text-align:center;padding:' + tdPad + '"><a href="' + esc(url) + '" target="_blank" rel="noopener" title="Opna skýrslu ' + y + '" ' +
@@ -153,9 +169,11 @@
   //   AppSettings.arsskodun_customers[fyrirtaeki_id].field_inspected_year
   //     === þetta ár  →  🔵 „Í vinnslu"   (skoðun hafin, skjöl eftir)
   // ✅ „Skoðað YYYY" kemur AÐEINS úr raunverulegri brunakerfi-skýrslu
-  // (r.years[árið] ← customer_documents doc_type=brunakerfi). last_year_inspected
-  // er sameiginlegt Ársskoðunar-flagg og má EKKI ráða hér — annars sýnir Klöpp
-  // o.fl. grænt 2026 þó síðasta brunakerfi-skýrsla sé 2025 (Agnar 2026-08-24).
+  // (hasReport ← customer_documents doc_type=brunakerfi með opnanlegri skrá).
+  // last_year_inspected er sameiginlegt Ársskoðunar-flagg og má EKKI ráða hér —
+  // annars sýnir Klöpp o.fl. grænt 2026 þó síðasta brunakerfi-skýrsla sé 2025
+  // (Agnar 2026-08-24 / 2026-08-25: enn false flag án skýrslu og án merktrar
+  // brunakerfis-skoðunar). Tóm röð eða HTML-skrá telst ekki skýrsla.
   const ARS_KEY = 'arsskodun_customers';
   function arsFor(id) {
     try {
@@ -165,7 +183,7 @@
   }
   function stodaHtml(r) {
     const a = arsFor(r.id);
-    const done = !!r.years[String(NOW)];
+    const done = hasReport(r, NOW);
     const wip = !done && +a.field_inspected_year === NOW;
     const base = 'display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;' +
       'font-size:10.5px;font-weight:800;letter-spacing:.02em;white-space:nowrap;border:1px solid;';
@@ -190,7 +208,7 @@
     if (_loading && !_rows) { root.innerHTML = '<div style="padding:40px;text-align:center;color:#94a3b8">Hleð brunakerfi-gögnum…</div>'; return; }
     const rows = filteredSorted();
     const all = _rows || [];
-    const doneNow = all.filter(r => !!r.years[String(NOW)]).length;
+    const doneNow = all.filter(r => hasReport(r, NOW)).length;
     const totalReports = all.reduce((s, r) => s + r.count, 0);
     const newCount = all.filter(r => r.isNew).length;
 
@@ -265,7 +283,7 @@
               '<tr><td colspan="' + (6 + YEARS.length) + '" style="padding:30px;text-align:center;color:#94a3b8;font-style:italic">Engin fyrirtæki passa við síuna.</td></tr>') +
             '</tbody></table>' +
         '</div>' +
-        '<div style="margin-top:10px;font-size:11.5px;color:#64748b">Grænn = skýrsla þess árs (smelltu til að opna) · gulur = vantar ' + NOW + ' · grár = engin skýrsla það ár.</div>' +
+        '<div style="margin-top:10px;font-size:11.5px;color:#64748b">Grænn / ✅ Skoðað = brunakerfis-skýrsla þess árs á skrá (PDF). Slökkvitækja-merkið „Skoðað" og tóm/HTML-skjöl gilda ekki hér. Gulur = vantar ' + NOW + ' · grár = engin skýrsla það ár.</div>' +
       '</div>';
 
     wire(root);
@@ -277,7 +295,7 @@
     // Mánaðardálkurinn: mánuður síðustu skoðunar. RAUTT+feitletrað þegar 12
     // mánuðirnir eru liðnir (mánuðurinn kominn/framhjá og engin skýrsla í ár).
     const nowMon = new Date().getMonth() + 1;
-    const due = !r.years[String(NOW)] && r.latestMonth && r.latestMonth <= nowMon && !r.isNew;
+    const due = !hasReport(r, NOW) && r.latestMonth && r.latestMonth <= nowMon && !r.isNew;
     const monCell = r.latestMonth
       ? '<span style="' + (due ? 'color:#b91c1c;font-weight:800' : 'color:#0f172a;font-weight:600') + '"' +
         (due ? ' title="12 mánuðir liðnir — skoðun komin á tíma"' : '') + '>' + esc(MON[r.latestMonth - 1]) + (due ? ' ⚠' : '') + '</span>'
