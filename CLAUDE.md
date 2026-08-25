@@ -31,7 +31,7 @@ fært, orðrétt. Hver þeirra hleðst AÐEINS þegar hann er kallaður til.
 | Spurningin snýst um … | → Sérfræðingur |
 |---|---|
 | Sölu, reikninga, dkPlus/Payday, afslætti, PDF-vistun, reikninga-póst, úttektartexta | `sala-reikningar` |
-| Fylla úttektarskýrslur LIVE, úttektar-texta, verðin, Cowork/MCP-flæðið 🤝 | `sara-coworker` |
+| Fylla úttektarskýrslur LIVE, úttektar-texta, verðin, skýrsla↔reikning (tækjafjöldi / vegna / tvær þjónustur), Cowork/MCP-flæðið 🤝 | `sara-coworker` |
 | Viðskiptavini, kennitölur, DB-skema, sameiningu, kerfis-kort, póst-merki | `kunnaskra` |
 | Flipa, borð, nav — Verkborð, Bakendi, Bílstjóri, Aksturslisti, URL-routing, bakk, app-síður | `bord-flettur` |
 | theme.css hönnunarkerfið + per-page skeletons | `thema` |
