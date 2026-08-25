@@ -69,6 +69,8 @@ _extract_logo.cjs
 
 # Netlify CLI cache (if you ever install it)
 .netlify/
+# Netlify dev / edge-bundler (Deno) lockfile — local dev artifact
+deno.lock
 
 # Stadbundid session-minni (memsearch) - inniheldur vinnugogn, ALDREI i git
 .memsearch/
