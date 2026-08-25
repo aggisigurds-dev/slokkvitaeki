@@ -149,15 +149,19 @@ exports.handler = async (event) => {
 
     // ── Bókunarupplýsingar → Payday accountingCost (2026-08-14) ────────────
     // Kostnaðarstöð kúnnans — ferðast í rafræna XML-inu, ólíkt „Vegna:"
-    // frítextanum. fyrirtaeki.bokunarnumer þegar fyllt; annars SJÁLFGEFIÐ
-    // fyrir kt með fleiri en einn lifandi stað: „<nafn staðar> – <gata>".
-    // stadur_nr EITT dugar ekki (aðeins einkvæmt innan rekstrarfélags —
-    // Plaza er nr. 2 hjá Center OG Máni nr. 2 hjá Heimaleigu). Staðurinn er
-    // AÐEINS notaður þegar kennitala hans passar við söluna (sama PK-skörunar-
-    // vörn og „Vegna:"/netfangs-fallbackið í buildPayload).
+    // frítextanum. fyrirtaeki.bokunarnumer þegar fyllt; annars (2026-08-25,
+    // Agnar): kennitala + staðurinnúmer — „450905-1430 nr. 8". stadur_nr EITT
+    // dugar ekki (Plaza er nr. 2 hjá Center OG Máni nr. 2 hjá Heimaleigu);
+    // með kt sölunnar er parið einkvæmt. Staðurinn er AÐEINS notaður þegar
+    // kennitala hans passar við söluna (sama PK-skörunarvörn og „Vegna:" /
+    // netfangs-fallbackið í buildPayload).
     const _d10 = x => String(x || '').replace(/\D/g, '');
     const _siteTrusted = !!(site && _d10(site.kennitala) && _d10(site.kennitala) === _d10(sale.customer_kt || (customer && customer.kennitala)));
+    const _ktDash = (d => d.length === 10 ? d.slice(0, 6) + '-' + d.slice(6) : '')(_d10(sale.customer_kt || (customer && customer.kennitala) || (site && site.kennitala)));
     let accountingCost = (_siteTrusted && site.bokunarnumer && String(site.bokunarnumer).trim()) || '';
+    if (!accountingCost && _siteTrusted && site.stadur_nr != null && String(site.stadur_nr).trim() !== '' && _ktDash) {
+      accountingCost = _ktDash + ' nr. ' + String(site.stadur_nr).trim();
+    }
     if (!accountingCost && _siteTrusted && sale.customer_base_id) {
       try {
         const sr = await fetch(`${SUPABASE_URL}/rest/v1/fyrirtaeki?customer_base_id=eq.${encodeURIComponent(sale.customer_base_id)}&deleted_at=is.null&select=id&limit=3`, {
@@ -314,8 +318,11 @@ function buildPayload(sale, customer, opts) {
   // „Vegna:" hér að neðan — PK-skörun getur bent á ótengt fyrirtæki).
   const email = pickBillingEmail((customer && customer.netfang) || '')
              || (_siteOk ? pickBillingEmail(_site.netfang || '') : '');
-  const _vegnaLabel = _siteOk ? [_site.nafn, _site.heimilisfang].filter(Boolean).join(' – ')
-                              : (sale.customer_nafn || '');
+  const _nrBit = (_siteOk && _site.stadur_nr != null && String(_site.stadur_nr).trim() !== '')
+    ? ('nr. ' + String(_site.stadur_nr).trim()) : '';
+  const _vegnaLabel = _siteOk
+    ? [_site.nafn, _nrBit, _site.heimilisfang].filter(Boolean).join(' – ')
+    : (sale.customer_nafn || '');
   const _vegna = _vegnaLabel ? ('Vegna: ' + _vegnaLabel) : '';
   const _notes = (sale.athugasemdir || '').trim();
   // Afhending (sjálfgefið, 2026-08-13 — Center Hótel-lexían): rafræn krafa OG
@@ -435,7 +442,7 @@ async function findBilledTwin(sale) {
   } catch (_) { return null; }
 }
 async function fetchFyrirtaeki(id) {
-  const r = await fetch(`${SUPABASE_URL}/rest/v1/fyrirtaeki?id=eq.${encodeURIComponent(id)}&select=id,nafn,kennitala,netfang,heimilisfang,payday_delivery,skyrsla_med_krofu,bokunarnumer`, {
+  const r = await fetch(`${SUPABASE_URL}/rest/v1/fyrirtaeki?id=eq.${encodeURIComponent(id)}&select=id,nafn,kennitala,netfang,heimilisfang,payday_delivery,skyrsla_med_krofu,bokunarnumer,stadur_nr`, {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
   });
   if (!r.ok) return null;

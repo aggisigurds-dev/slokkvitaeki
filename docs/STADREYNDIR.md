@@ -84,7 +84,7 @@ bokhald@eldklar.is SENT). Könnun á Stolpi-gögnunum sjálfum er skráð á Ver
 - Hjálpartöflur (ekki kúnnalistar): `customer_worksite_map` (119 — greiðandi→verkstaður
   í Brunahólfi) og `customer_info` (33 — greiðsluhegðunar-nótur).
 
-**Rekstrarfélög — einn kt á marga staði. ALDREI sameina/eyða stöðum rekstrarfélags** (Agnar, standandi regla). Stærstu *(DB 2026-07-30)*:
+**Rekstrarfélög — einn kt á marga staði. ALDREI sameina/eyða stöðum rekstrarfélags** (Agnar, standandi regla). Auðkenni staðar er **kennitála + `stadur_nr`** (Agnar 2026-08-25) — nr. eitt er ekki nóg (Plaza nr. 2 hjá Center Hótel er ekki Máni nr. 2 hjá Heimaleigu). Innri lykill er samt `fyrirtaeki.id`. Stærstu *(DB 2026-07-30)*:
 
 | Merki/félag | Staðir |
 |---|---:|

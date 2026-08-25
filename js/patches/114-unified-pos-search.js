@@ -74,7 +74,7 @@
       // fyrirtaeki is >1000 rows — page through the Supabase cap, then re-shape
       // to { data } so the consumer below stays unchanged.
       DB.fetchAll((from, to) => SB.from('fyrirtaeki')
-        .select('id,nafn,simi,kennitala,heimilisfang,netfang,afslattur_pct,athugasemdir,er_i_thjonustu')
+        .select('id,nafn,simi,kennitala,heimilisfang,netfang,afslattur_pct,athugasemdir,er_i_thjonustu,stadur_nr')
         .is('deleted_at', null)
         .order('nafn')
         .range(from, to)).then(rows => ({ data: rows })),
@@ -384,6 +384,7 @@
         afslattur_pct: c.afslattur_pct || 0,
         athugasemdir: c.athugasemdir || '',
         er_i_thjonustu: !!c.er_i_thjonustu,
+        stadur_nr: c.stadur_nr,
         source: 'fyrirtaeki'
       });
     });
@@ -465,6 +466,8 @@
       const siDigits = String(c.simi || '').replace(/[^0-9]/g, '');
       const farDigits = String(c.farsimi || '').replace(/[^0-9]/g, '');
       if (n.includes(qLow)) return true;
+      const nrQ = qLow.match(/\bnr\.?\s*(\d+)\b/);
+      if (nrQ && String(c.stadur_nr) === nrQ[1]) return true;
       if (looksLikeKt) {
         if (ktDigits.includes(qDigits)) return true;
         if (siDigits.includes(qDigits)) return true;
@@ -586,7 +589,8 @@
           const kt = row.dataset.kt || '', nafn = row.dataset.nafn || '';
           results.style.display = 'none';
           if (window.SalaCustomerHistory && SalaCustomerHistory.open) {
-            const fy = getCompanies().find(c => String(c.kennitala || '').replace(/[^0-9]/g, '') === kt);
+            const fyHits = getCompanies().filter(c => String(c.kennitala || '').replace(/[^0-9]/g, '') === kt);
+            const fy = fyHits.length === 1 ? fyHits[0] : null;
             SalaCustomerHistory.open(fy
               ? { id: fy.id, source: 'fyrirtaeki', kt: fy.kennitala || kt, nafn: fy.nafn }
               : { id: '', source: '', kt: kt, nafn: nafn });
@@ -766,6 +770,8 @@
       }
       results.innerHTML = matches.map(m => {
         const ktDisp = m.kennitala ? esc(m.kennitala) : '';
+        const nrDisp = (m.source === 'fyrirtaeki' && m.stadur_nr != null && String(m.stadur_nr).trim() !== '')
+          ? ' · nr. ' + esc(String(m.stadur_nr)) : '';
         // 2026-08-06 (ósk Agnars: "show in lookup what database they are in"):
         // þrjú stig, ekki tvö — fyrirtaeki er annaðhvort í árlegri þjónustu
         // eða bara í viðskiptum, og það er sitthvor síðan (Fyrirtæki í
@@ -780,7 +786,7 @@
           : '';
         return '<div class="_ups-result" data-id="' + esc(m.id) + '" data-source="' + esc(m.source) + '" style="padding:9px 14px;cursor:pointer;border-bottom:1px solid #f1f5f9;font-size:13px">' +
           '<div style="font-weight:700;color:#0f172a">' + esc(m.nafn) + sourceBadge + discBadge + '</div>' +
-          (ktDisp ? '<div style="font-size:11px;color:#64748b;font-family:monospace">kt. ' + ktDisp + (m.simi ? ' · sími: ' + esc(m.simi) : '') + '</div>' : '') +
+          (ktDisp ? '<div style="font-size:11px;color:#64748b;font-family:monospace">kt. ' + ktDisp + nrDisp + (m.simi ? ' · sími: ' + esc(m.simi) : '') + '</div>' : '') +
         '</div>';
       }).join('');
       results.style.display = 'block';
@@ -828,8 +834,15 @@
         if (card && card.style.display !== 'none') return;
         if (kt.length !== 10) return;
         // Find customer in companies/vidsk by kt
-        const fy = getCompanies().find(c => String(c.kennitala || '').replace(/[^0-9]/g, '') === kt);
-        const vk = !fy && getVidsk().find(c => String(c.kennitala || '').replace(/[^0-9]/g, '') === kt);
+        const fyHits = getCompanies().filter(c => String(c.kennitala || '').replace(/[^0-9]/g, '') === kt);
+        let fy = null;
+        try {
+          const st = window.POS && POS.getState && POS.getState();
+          const pin = st && st.customer && st.customer.co_id;
+          if (pin != null) fy = fyHits.find(c => String(c.id) === String(pin)) || null;
+        } catch (_) {}
+        if (!fy && fyHits.length === 1) fy = fyHits[0];
+        const vk = !fyHits.length && getVidsk().find(c => String(c.kennitala || '').replace(/[^0-9]/g, '') === kt);
         if (fy) showSelectedCard(fy, 'fyrirtaeki');
         else if (vk) showSelectedCard(vk, 'vidskiptavinir');
       }).observe(posKtResult, { childList: true, characterData: true, subtree: true });
@@ -1003,7 +1016,11 @@
     }
 
     if (nafnEl) nafnEl.textContent = m.nafn || '—';
-    if (ktEl) ktEl.textContent = m.kennitala ? 'kt. ' + m.kennitala : '';
+    if (ktEl) {
+      const nr = (source === 'fyrirtaeki' && m.stadur_nr != null && String(m.stadur_nr).trim() !== '')
+        ? ' · nr. ' + m.stadur_nr : '';
+      ktEl.textContent = m.kennitala ? 'kt. ' + m.kennitala + nr : (nr ? nr.trim() : '');
+    }
 
     // Meta line: phone + heimilisfang
     const metaParts = [];

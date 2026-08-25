@@ -102,7 +102,7 @@
     var ktOr = 'kennitala.eq.' + dash + ',kennitala.eq.' + kt;
     return Promise.all([
       DB.sb.from('fyrirtaeki')
-        .select('id,nafn,simi,kennitala,heimilisfang,afslattur_pct,athugasemdir')
+        .select('id,nafn,simi,kennitala,heimilisfang,afslattur_pct,athugasemdir,stadur_nr')
         .or(ktOr).is('deleted_at', null).order('afslattur_pct', { ascending: false }).limit(20),
       DB.sb.from('vidskiptavinir')
         .select('id,nafn,simi,kennitala,heimilisfang,afslattur_pct,athugasemdir')
@@ -122,29 +122,32 @@
           var pinned = arr.find(function(r){ return String(r.id) === String(pinnedId); });
           if (pinned) return pinned;
         }
-        arr.sort(function(a,b){ return ((+b.afslattur_pct||0) - (+a.afslattur_pct||0)) || ((b.id?1:0) - (a.id?1:0)); });
-        return arr[0];
+        if (arr.length === 1) return arr[0];
+        // Rekstrarfélag: fleiri en einn staður á sömu kt (Center Hótel nr. 1–11).
+        // Giskum ekki á arr[0] — starfsmaður velur nr. í leitinni. Afsláttur
+        // kemur samt (hæsta %) svo karfan sé ekki 0%.
+        return null;
       }
-      var fy = pickBest(results[0] && results[0].data);
-      var vk = pickBest(results[1] && results[1].data);
-      if (fy || vk) {
-        var fyDisc = +(fy && fy.afslattur_pct) || 0;
+      var fyRows = (results[0] && results[0].data) || [];
+      var vkRows = (results[1] && results[1].data) || [];
+      var fy = pickBest(fyRows);
+      var vk = pickBest(vkRows);
+      var fyMaxDisc = fyRows.reduce(function(m, r){ return Math.max(m, +r.afslattur_pct || 0); }, 0);
+      if (fy || vk || fyRows.length) {
+        var fyDisc = fy ? (+fy.afslattur_pct || 0) : fyMaxDisc;
         var vkDisc = +(vk && vk.afslattur_pct) || 0;
-        var best   = Math.max(fyDisc, vkDisc);  // whichever table has a saved discount wins
-        // Prefer whichever table has actual notes; if both have notes (rare),
-        // prefer vidskiptavinir since that's the canonical customer record.
+        var best   = Math.max(fyDisc, vkDisc);
         var notes = (vk && vk.athugasemdir) || (fy && fy.athugasemdir) || '';
         return {
           nafn:  (fy && fy.nafn) || (vk && vk.nafn) || '',
-          // Carry the kt back so state.customer.kt is always set on a name/company
-          // pick — the beiðni-gate (264) + auto-discount key on it (2026-07-13).
-          kennitala: (fy && fy.kennitala) || (vk && vk.kennitala) || kt,
+          kennitala: (fy && fy.kennitala) || (vk && vk.kennitala) || (fyRows[0] && fyRows[0].kennitala) || kt,
           simi:  (fy && fy.simi) || (vk && vk.simi) || '',
           heimilisfang: (fy && fy.heimilisfang) || (vk && vk.heimilisfang) || '',
           co_id: fy ? fy.id : null,
+          stadur_nr: fy && fy.stadur_nr != null ? fy.stadur_nr : null,
           afslattur_pct: best,
           athugasemdir: notes,
-          source: fy ? 'fyrirtaeki' : 'vidskiptavinir'
+          source: fy ? 'fyrirtaeki' : (vk ? 'vidskiptavinir' : 'fyrirtaeki')
         };
       }
       // Not in either local table — fall back to the external registry.
@@ -1247,11 +1250,14 @@
               var fid = null;
               if (coId) { var _c = await DB.sb.from('fyrirtaeki').select('id').eq('id', coId).maybeSingle(); if (_c && _c.data) fid = _c.data.id; }
               if (!fid) {
+                // Rekstrarfélag: .limit(1) á kt gat festa reikninginn á RANGAN
+                // hótel-stað (Center 11 hótel). Aðeins einkvæm kt má falla hingað.
                 var _k = String(kt || '').replace(/[^0-9]/g, '');
                 if (_k.length === 10 && _k !== '9999999999') {
                   var _d = _k.slice(0, 6) + '-' + _k.slice(6);
-                  var _f = await DB.sb.from('fyrirtaeki').select('id').or('kennitala.eq.' + _d + ',kennitala.eq.' + _k).limit(1).maybeSingle();
-                  if (_f && _f.data) fid = _f.data.id;
+                  var _f = await DB.sb.from('fyrirtaeki').select('id').or('kennitala.eq.' + _d + ',kennitala.eq.' + _k).is('deleted_at', null).limit(3);
+                  var _rows = (_f && _f.data) || [];
+                  if (_rows.length === 1) fid = _rows[0].id;
                 }
               }
               if (fid) await UttektInvoicePdf.saveForSale(fid, saleRow);
@@ -1280,9 +1286,13 @@
             // If this kt already belongs to a COMPANY (fyrirtaeki), link the sale to it
             // instead of creating a duplicate row in vidskiptavinir.
             var dashedKt=cleanKt.slice(0,6)+'-'+cleanKt.slice(6);
-            var fyMatch=await DB.sb.from('fyrirtaeki').select('id,nafn').or('kennitala.eq.'+dashedKt+',kennitala.eq.'+cleanKt).limit(1).maybeSingle();
-            if(fyMatch&&fyMatch.data&&fyMatch.data.id){
-              custId=fyMatch.data.id;
+            var fyMatch=await DB.sb.from('fyrirtaeki').select('id,nafn').or('kennitala.eq.'+dashedKt+',kennitala.eq.'+cleanKt).is('deleted_at',null).limit(3);
+            var fyRows=(fyMatch&&fyMatch.data)||[];
+            if(fyRows.length===1){
+              custId=fyRows[0].id;
+            }else if(fyRows.length>1){
+              // Rekstrarfélag — ekki giska á fyrsta hótelið. Sala vistast
+              // með kt; starfsmaður velur nr. næst.
             }else{
               // Re-use existing viðskiptavinur if same kennitala already in DB
               var existing=await DB.sb.from('vidskiptavinir').select('id,nafn').eq('kennitala',cleanKt).limit(1).maybeSingle();

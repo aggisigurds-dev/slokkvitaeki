@@ -77,7 +77,11 @@
             '<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin:10px 0 4px">🧾 Bókunarnúmer (kostnaðarstöð viðskiptavinar)</label>' +
             '<input id="nf-bokunarnumer" type="text" maxlength="100" placeholder="t.d. 4520 eða deildarheiti" ' +
               'style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;background:#fff;box-sizing:border-box">' +
-            '<div style="font-size:10.5px;color:#94a3b8;margin-top:3px">Ferðast í rafræna reikningnum (XML) svo hann bókist rétt hjá kúnnanum. Tómt = staðir rekstrarfélaga fá sjálfkrafa „Nafn – Gata".</div>';
+            '<div style="font-size:10.5px;color:#94a3b8;margin-top:3px">Ferðast í rafræna reikningnum (XML) svo hann bókist rétt hjá kúnnanum. Tómt = staðir rekstrarfélaga fá sjálfkrafa kennitölu + nr. (t.d. „450905-1430 nr. 8").</div>' +
+            '<label style="display:block;font-size:12px;font-weight:600;color:#475569;margin:10px 0 4px">#️⃣ Staðurinnúmer (innan rekstrarfélags)</label>' +
+            '<input id="nf-stadur-nr" type="text" inputmode="numeric" maxlength="8" placeholder="t.d. 8" ' +
+              'style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;font:inherit;font-size:14px;background:#fff;box-sizing:border-box">' +
+            '<div style="font-size:10.5px;color:#94a3b8;margin-top:3px">Notað <b>með</b> kennitölunni — Plaza er nr. 2 hjá Center og Máni nr. 2 hjá Heimaleigu. Einkvæmt aðeins sem kt + nr.</div>';
           anchor.parentElement.insertBefore(wrap, anchor.nextSibling);
         }
       }
@@ -86,6 +90,7 @@
       const sm = document.getElementById('nf-skyrsla-med');
       if (sm) sm.checked = co.skyrsla_med_krofu !== false;
       set('nf-bokunarnumer', co.bokunarnumer);
+      set('nf-stadur-nr', co.stadur_nr != null ? String(co.stadur_nr) : '');
     })();
 
     // 2026-07-31: Póstnúmer-reitur — notaður til að raða „Fyrirtæki í þjónustu"
@@ -164,6 +169,12 @@
           payday_delivery: get('nf-payday-delivery') || null,
           skyrsla_med_krofu: !!((document.getElementById('nf-skyrsla-med') || { checked: true }).checked),
           bokunarnumer: get('nf-bokunarnumer') || null,
+          stadur_nr: (function () {
+            const v = get('nf-stadur-nr');
+            if (!v) return null;
+            const n = parseInt(v, 10);
+            return Number.isFinite(n) ? n : null;
+          })(),
           postnumer: get('nf-postnumer') || null
         };
         const sb = (window.DB && DB.sb) || null;

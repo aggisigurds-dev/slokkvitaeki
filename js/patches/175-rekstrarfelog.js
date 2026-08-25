@@ -590,6 +590,15 @@
     if (d) {
       var ktHits = list.filter(function(c){ return digits(c.kennitala)===d && !c.deleted_at; });
       if (ktHits.length === 1) return ktHits[0];   // einkvæm kt → öruggt
+      // 2026-08-25 (Agnar): rekstrarfélög = kennitala + staðurinnúmer.
+      // Plaza nr. 2 ≠ Máni nr. 2 — nr. eitt er ekki nóg; parið er einkvæmt.
+      if (ktHits.length > 1) {
+        var nr = (b.stadur_nr!=null && b.stadur_nr!=='') ? b.stadur_nr : null;
+        if (nr!=null) {
+          var nrHits = ktHits.filter(function(c){ return String(c.stadur_nr)===String(nr); });
+          if (nrHits.length === 1) return nrHits[0];
+        }
+      }
     }
     return null;
   }
@@ -617,6 +626,15 @@
     } catch(e){ throw new Error('base: '+(e.message||e)); }
     var row = { nafn: nafn, kennitala: ktDash, status:'virkur', er_i_thjonustu:true, customer_base_id: baseId };
     if(heim) row.heimilisfang = heim;
+    try {
+      var nq = await SB.from('fyrirtaeki').select('stadur_nr').or('kennitala.eq.'+ktDash+',kennitala.eq.'+dd).is('deleted_at',null);
+      var maxN = 0;
+      ((nq && nq.data) || []).forEach(function(x){
+        var n = parseInt(x.stadur_nr, 10);
+        if (Number.isFinite(n) && n > maxN) maxN = n;
+      });
+      row.stadur_nr = maxN + 1;
+    } catch(_) {}
     var r = await SB.from('fyrirtaeki').insert(row).select().single();
     if(r.error) throw r.error;
     var co = r.data;
@@ -1320,6 +1338,15 @@
   }
   async function _fillBodyInner(body, name, info){
     var blds=info.buildings||[];
+    blds.sort(function(a,c){
+      var na=parseInt(a.stadur_nr,10), nc=parseInt(c.stadur_nr,10);
+      var ha=a.stadur_nr!=null && a.stadur_nr!=='' && Number.isFinite(na);
+      var hc=c.stadur_nr!=null && c.stadur_nr!=='' && Number.isFinite(nc);
+      if (ha && hc && na!==nc) return na-nc;
+      if (ha && !hc) return -1;
+      if (!ha && hc) return 1;
+      return String(a.nafn||'').localeCompare(String(c.nafn||''),'is');
+    });
     var equip=await getEquipIndex();
     var attMap={}; try{ if(window.AppSettings&&AppSettings.path){ attMap=AppSettings.path('rf_uttekt_att')||{}; } }catch(e){}
     var linkMap={}; try{ if(window.AppSettings&&AppSettings.path){ linkMap=AppSettings.path('rf_uttekt_links')||{}; } }catch(e){}
@@ -1697,14 +1724,18 @@
                '<button type="button" class="rf-bldtoggle" data-bi="'+_bi+'" title="Sýna/fela smáatriði">▸</button>'+
                '<span class="rf-bname">'+link+'</span>'+
                '<span class="rf-bmeta">'+
-               (b.kt?'<span class="rf-bkt">'+esc(fmtKt(b.kt))+'</span>':'')+
+               (b.kt?'<span class="rf-bkt">'+esc(fmtKt(b.kt))+(function(){
+                 var nr = (b.stadur_nr!=null && b.stadur_nr!=='') ? b.stadur_nr
+                        : (co && co.stadur_nr!=null && co.stadur_nr!=='' ? co.stadur_nr : null);
+                 return nr!=null ? ' · nr. '+esc(String(nr)) : '';
+               })()+'</span>':'')+
                (function(){
                  var nr = (b.stadur_nr!=null && b.stadur_nr!=='') ? b.stadur_nr
                         : (co && co.stadur_nr!=null && co.stadur_nr!=='' ? co.stadur_nr : null);
                  var bok = (b.bokunarnumer||(co&&co.bokunarnumer)||'').toString().trim();
                  var pd = co ? pdByCo[String(co.id)] : null;
                  var bits=[];
-                 if (nr!=null) bits.push('<span class="rf-bnr" title="Staðurinnúmer innan rekstrarfélagsins — aðgreinir eignir sömu kennitölu í Payday">nr. '+esc(String(nr))+'</span>');
+                 if (!b.kt && nr!=null) bits.push('<span class="rf-bnr" title="Staðurinnúmer innan rekstrarfélagsins">nr. '+esc(String(nr))+'</span>');
                  if (bok) bits.push('<span class="rf-bnr" title="Bókunarnúmer / kostnaðarstöð í Payday">'+esc(bok)+'</span>');
                  if (pd) bits.push('<span class="rf-bpd'+(pd.paid?' is-paid':'')+'" title="Nýjasta krafa ÞESSARAR byggingar (solur.customer_id='+esc(String(co.id))+') — ekki allar kröfur kennitölunnar">'+esc(pd.r)+(pd.pd?' · PD '+esc(pd.pd):'')+(pd.paid?' ✓':'')+'</span>');
                  return bits.join('');
