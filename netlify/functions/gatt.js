@@ -14,6 +14,31 @@ const P = require('./_portal');
 
 const REPORT_TYPES = ['uttektarskyrsla', 'brunakerfi'];
 
+// ── Afmörkun skjala ─────────────────────────────────────────────────────────
+// customer_documents inniheldur oft FLEIRI raðir fyrir sömu skoðun (t.d.
+// Drive-indexuð skýrsla + handvirk skráning) sem eru EKKI merktar is_duplicate.
+// Aðal-yfirlitin (brunakerfisyfirlit 272, rekstrarfélög 175) sýna EINA reit per
+// (bygging, tegund, ár); gáttin sýndi hverja röð → falskar auka-skoðanir. Hér
+// veljum við bestu röðina per lykli: skjal með sótt-hæfa skrá vinnur, svo
+// ódauðkennt, svo nýrri dagsetning, svo lægra id (stöðugt val).
+function docScore(d) {
+  return (d.storage_path || d.drive_file_id ? 2 : 0) + (d.is_duplicate ? 0 : 1);
+}
+function betterDoc(a, b) {
+  if (!a) return b;
+  const sa = docScore(a), sb = docScore(b);
+  if (sb !== sa) return sb > sa ? b : a;
+  const da = String(a.doc_date || ''), db = String(b.doc_date || '');
+  if (db !== da) return db > da ? b : a;
+  return (b.id < a.id) ? b : a;
+}
+function dedupeDocs(rows, keyFn) {
+  const m = new Map();
+  for (const d of rows) m.set(keyFn(d), betterDoc(m.get(keyFn(d)), d));
+  return [...m.values()];
+}
+function normNr(s) { return String(s == null ? '' : s).replace(/\s+/g, '').replace(/^R-?/i, '').replace(/^0+/, '').toUpperCase(); }
+
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: P.secHeaders(), body: '' };
   if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') return P.json(405, { error: 'GET/POST only' });
@@ -79,9 +104,19 @@ exports.handler = async (event) => {
       const filt = siteIds.length
         ? `or=(customer_base_id.eq.${baseId},fyrirtaeki_id.in.(${siteIds.join(',')}))`
         : `customer_base_id=eq.${baseId}`;
-      const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate`);
+      const dr = await P.sbGet(`customer_documents?${filt}&select=id,doc_type,year,doc_date,amount,invoice_number,fyrirtaeki_id,customer_base_id,is_duplicate,storage_path,drive_file_id`);
       if (dr.ok) docs = await dr.json();
     } catch (_) {}
+
+    // Brunakerfis-ár per byggingu (raunveruleg brunakerfis-skjöl) — svo yfirlitið
+    // merki brunakerfi AÐEINS þar sem raunverulegt brunakerfis-skjal er til, í stað
+    // þess að spegla slökkvitækja-stöðuna (sem gaf falskar brunakerfis-skoðanir).
+    const bruYearsByFy = {};
+    docs.forEach((d) => {
+      if (d.doc_type === 'brunakerfi' && !d.is_duplicate && d.fyrirtaeki_id != null && d.year != null) {
+        (bruYearsByFy[d.fyrirtaeki_id] = bruYearsByFy[d.fyrirtaeki_id] || new Set()).add(String(d.year));
+      }
+    });
 
     const buildings = sites.map((s) => {
       const st = stById[s.id] || {};
@@ -90,20 +125,27 @@ exports.handler = async (event) => {
         i_thjonustu: s.er_i_thjonustu !== false,
         stada: st.stada || (s.er_i_thjonustu === false ? 'ekki_i_thjonustu' : 'engin_skyrsla'),
         sidasta_ar: st.report_year || null,
+        ar_bru: [...(bruYearsByFy[s.id] || [])].sort(),
         // skoðunarmánuður úr v_next_inspection (eins og „📅"-takkinn); fallback á skýrslu-mánuð
         skodun_manudur: imById[s.id] != null ? imById[s.id] : (st.inspect_month != null ? st.inspect_month : null),
         taeki: st.total_devices != null ? st.total_devices : null,
       };
     });
 
-    const reports = docs
-      .filter((d) => REPORT_TYPES.includes(d.doc_type) && !d.is_duplicate)
+    // Ein skýrsla per (bygging, tegund, ár) — sama regla og aðal-yfirlitin.
+    const reports = dedupeDocs(
+      docs.filter((d) => REPORT_TYPES.includes(d.doc_type) && !d.is_duplicate),
+      (d) => `${d.fyrirtaeki_id == null ? '' : d.fyrirtaeki_id}|${d.doc_type}|${d.year == null ? '' : d.year}`,
+    )
       .map((d) => ({ docId: d.id, dags: d.doc_date || null, ar: d.year || null, tegund: d.doc_type,
         bygging: nafnById[d.fyrirtaeki_id] || '', magn: d.amount != null ? d.amount : null }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
 
-    const invoices = docs
-      .filter((d) => d.doc_type === 'reikningur' && !d.is_duplicate)
+    // Einn reikningur per reikningsnúmer (ver gegn tvítekningum úr fleiri heimildum).
+    const invoices = dedupeDocs(
+      docs.filter((d) => d.doc_type === 'reikningur' && !d.is_duplicate),
+      (d) => normNr(d.invoice_number) || ('id:' + d.id),
+    )
       .map((d) => ({ docId: d.id, nr: d.invoice_number || null, dags: d.doc_date || null, ar: d.year || null,
         bygging: nafnById[d.fyrirtaeki_id] || '', upphaed: d.amount != null ? d.amount : null }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
