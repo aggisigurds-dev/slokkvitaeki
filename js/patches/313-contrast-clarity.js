@@ -30,14 +30,16 @@
       '.view h3[style*="color:#fff"],.view h3[style*="color: #fff"]',
       '{color:#fff!important;text-shadow:0 2px 8px rgba(0,0,0,.55)!important}',
 
-      /* Themed page titles live on the dark/fire band. */
-      '.view .page-title h1,.view .thm .page-title h1,.view .app-page .page-title h1,',
-      '.view .page-title h2,.view .bw-page-h1,.view .tbord-title,.view .ky-h1',
+      /* Themed page titles on the fire/dark band (krofu, …). */
+      '.view .thm .page-title h1,.view .app-page .page-title h1,.view .bw-page-h1,.view .tbord-title,.view .ky-h1',
       '{color:#fff!important;text-shadow:0 2px 8px rgba(0,0,0,.55)!important}',
-      '.view .page-title p,.view .thm .page-title p,.view .bw-page-sub,.view .tbord-note,.view .ky-sub',
-      '{color:rgba(255,255,255,.9)!important}',
-      '.view .page-title .ky-month,.view .page-title__tools,.view .page-title__tools .ky-month',
+      '.view .thm .page-title p,.view .bw-page-sub,.view .tbord-note,.view .ky-sub',
+      '{color:rgba(255,255,255,.92)!important}',
+      '.view .page-title .ky-month,.view .page-title__tools .ky-month',
       '{color:#fff!important}',
+      /* Same .page-title sitting on brushed steel: dark ink, never pale grey. */
+      '.view .page-title p{color:#1e293b!important}',
+      '.view .thm .page-title p{color:rgba(255,255,255,.92)!important}',
 
       /* Colored page bars (Drög orange, similar headers): white title + sub. */
       '.view [style*="linear-gradient(135deg,#f59e0b"] h1,',
@@ -58,6 +60,11 @@
       /* Muted labels: dark enough on steel AND on white cards (WCAG AA). */
       '.view .muted,.view .text-muted,.view .empty-state,.view .empty-state .es-sub,.view .empty-state .es-title,',
       '.view .vb-empty,.view .vb-hint',
+      '{color:#1e293b!important}',
+      '.view [style*="color:#64748b"],.view [style*="color: #64748b"],',
+      '.view [style*="color:#94a3b8"],.view [style*="color: #94a3b8"],',
+      '.view [style*="color:#9ca3af"],.view [style*="color:#6b7280"],',
+      '.view [style*="color:#9aa3b3"],.view [style*="color:#8891a0"]',
       '{color:#1e293b!important}',
 
       /* Placeholders must stay visible (240 already darkens the field itself). */
@@ -142,13 +149,19 @@
       const cs = getComputedStyle(el);
       if (cs.display === 'none' || cs.visibility === 'hidden') continue;
       if (parseFloat(cs.fontSize) < 8) continue;
-      const fg = parseRgb(cs.color);
-      if (!fg || fg.a < 0.2) continue;
-      if (chroma(fg) >= 48) continue;          /* keep green/orange/blue figures */
+      const fg0 = parseRgb(cs.color);
+      if (!fg0 || fg0.a < 0.12) continue;
       const bg = bgOf(el);
       if (!bg) continue;
-      const greyishBg = chroma(bg) < 50;
-      const greyishFg = chroma(fg) < 50;
+      const fg = {
+        r: fg0.r * fg0.a + bg.r * (1 - fg0.a),
+        g: fg0.g * fg0.a + bg.g * (1 - fg0.a),
+        b: fg0.b * fg0.a + bg.b * (1 - fg0.a),
+        a: 1
+      };
+      if (chroma(fg) >= 48) continue;          /* keep green/orange/blue figures */
+      const greyishBg = chroma(bg) < 55;
+      const greyishFg = chroma(fg) < 55;
       if (!greyishFg || !greyishBg) continue;
       if (ratio(fg, bg) >= 4.5) continue;
       const darkBg = lum(bg) < 0.45;
