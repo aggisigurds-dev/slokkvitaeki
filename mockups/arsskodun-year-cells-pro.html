@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="is">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ársskoðun — professional ársreitir</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#14181f; --ink-2:#3d4553; --body:#6b7380; --line:#e6e8ec;
+    --ui:'IBM Plex Sans',system-ui,sans-serif; --mono:'IBM Plex Mono',ui-monospace,monospace;
+    --ok:#0d5c38; --ok-bg:#eef6f1; --ok-bd:#c5ddd0;
+    --late:#9b1c1c; --late-bg:#fdf2f2; --late-bd:#e8c4c4;
+    --inv:#1e3a8a; --inv-bg:#eef2fa; --inv-bd:#c9d4ee;
+    --wait:#7a5a12; --wait-bg:#faf6ee; --wait-bd:#e6d7b0;
+    --void:#8b929c;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#f3f4f6;color:var(--ink);font-family:var(--ui)}
+  body{padding:28px 22px 80px}
+  h1{margin:0;font-size:22px;font-weight:600;letter-spacing:-.03em}
+  .lede{margin:8px 0 0;color:var(--body);font-size:14.5px;max-width:740px;line-height:1.5}
+  .meta{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px}
+  .chip{font-size:11px;font-weight:500;padding:4px 10px;border-radius:4px;background:#fff;border:1px solid var(--line);color:var(--ink-2)}
+  .board{display:flex;flex-direction:column;gap:28px;margin-top:22px}
+  .card{background:#fff;border:1px solid #dddfe3;border-radius:4px;overflow:hidden}
+  .hd{padding:18px 20px 14px;border-bottom:1px solid var(--line)}
+  .tag{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--body);margin-bottom:5px}
+  .card h2{margin:0;font-size:16px;font-weight:600;letter-spacing:-.02em}
+  .card .hd p{margin:5px 0 0;font-size:13.5px;color:var(--body);line-height:1.45;max-width:680px}
+  .pick{display:inline-block;margin-top:10px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:var(--ink);padding:5px 9px;border-radius:3px}
+  .tbl{width:100%;border-collapse:collapse;table-layout:fixed}
+  .tbl th{background:#fafbfc;color:#5c6570;font-size:10px;letter-spacing:.14em;text-transform:uppercase;padding:9px 12px;text-align:left;font-weight:600;border-bottom:1px solid #dfe2e6}
+  .tbl th.c{text-align:center}
+  .tbl td{border-bottom:1px solid var(--line);padding:11px 12px;height:54px;vertical-align:middle;font-size:13.5px}
+  .tbl tbody tr:last-child td{border-bottom:0}
+  .tbl tr:hover td{background:#fafbfc}
+  ._co{font-weight:600;color:var(--ink);letter-spacing:-.01em}
+  ._kt{display:block;font-family:var(--mono);font-size:10.5px;color:#8b929c;margin-top:2px;letter-spacing:.02em}
+  ._mo{font-family:var(--mono);font-size:12px;color:var(--late);font-weight:500}
+  ._devs{text-align:right}
+  ._devs b{display:block;font-family:var(--mono);font-size:14px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums}
+  ._devs i{font-style:normal;font-size:9px;letter-spacing:.14em;color:var(--void);text-transform:uppercase}
+  .yrs{display:flex;gap:6px;justify-content:center;align-items:center}
+  .note{padding:11px 20px 16px;font-size:12.5px;color:var(--body);line-height:1.5;border-top:1px solid var(--line);background:#fafbfc}
+  .note strong{color:var(--ink-2);font-weight:600}
+
+  /* G pale civic */
+  .g .cell{width:52px;display:flex;flex-direction:column;align-items:center;gap:4px}
+  .g .chipyr{width:52px;height:26px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12.5px;font-weight:600;letter-spacing:.04em;border:1px solid transparent}
+  .g .chipyr.empty{color:var(--void);background:#f7f8f9;border-color:#eceef1}
+  .g .chipyr.ok{color:var(--ok);background:var(--ok-bg);border-color:var(--ok-bd)}
+  .g .chipyr.late{color:var(--late);background:var(--late-bg);border-color:var(--late-bd)}
+  .g .chipyr.inv{color:var(--inv);background:var(--inv-bg);border-color:var(--inv-bd)}
+  .g .chipyr.wait{color:var(--wait);background:var(--wait-bg);border-color:var(--wait-bd)}
+  .g .chipyr.fc{box-shadow:inset 0 -2px 0 var(--ok)}
+  .g .docs{display:flex;gap:5px;font-family:var(--mono);font-size:8px;letter-spacing:.08em;color:#d0d4da;font-weight:600}
+  .g .docs .on.s{color:var(--ok)}
+  .g .docs .on.r{color:var(--inv)}
+
+  /* H hairline + bar */
+  .h .cell{min-width:48px}
+  .h .bar{display:flex;align-items:center;gap:7px;height:28px;padding:0 8px 0 0;border:1px solid #e2e5ea;border-radius:2px;background:#fff}
+  .h .bar i.accent{width:3px;align-self:stretch;background:#e2e5ea;border-radius:2px 0 0 2px;flex:none}
+  .h .bar .yy{font-family:var(--mono);font-size:12.5px;font-weight:600;color:var(--ink);letter-spacing:.03em}
+  .h .bar .mk{font-size:10px;color:var(--void);margin-left:auto}
+  .h .bar.ok{border-color:var(--ok-bd);background:var(--ok-bg)}
+  .h .bar.ok i.accent{background:var(--ok)}
+  .h .bar.ok .mk{color:var(--ok)}
+  .h .bar.late{border-color:var(--late-bd);background:var(--late-bg)}
+  .h .bar.late i.accent{background:var(--late)}
+  .h .bar.late .mk{color:var(--late)}
+  .h .bar.inv{border-color:var(--inv-bd);background:var(--inv-bg)}
+  .h .bar.inv i.accent{background:var(--inv)}
+  .h .bar.inv .mk{color:var(--inv)}
+  .h .bar.wait{border-color:var(--wait-bd);background:var(--wait-bg)}
+  .h .bar.wait i.accent{background:var(--wait)}
+  .h .bar.wait .mk{color:var(--wait)}
+  .h .bar.empty .yy{color:var(--void);font-weight:500}
+
+  /* I type ledger */
+  .i .yrs{gap:18px;align-items:flex-start}
+  .i .cell{min-width:44px;text-align:center}
+  .i .yy{display:block;font-family:var(--mono);font-size:13px;font-weight:600;color:var(--ink);letter-spacing:.04em}
+  .i .st{display:block;margin-top:2px;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;color:var(--void)}
+  .i .docs{display:flex;justify-content:center;gap:3px;margin-top:4px}
+  .i .docs i{width:4px;height:4px;border-radius:1px;background:#e4e6ea}
+  .i .ok .yy{color:var(--ok)}
+  .i .ok .st{color:var(--ok)}
+  .i .late .yy{color:var(--late)}
+  .i .late .st{color:var(--late)}
+  .i .inv .yy{color:var(--inv)}
+  .i .inv .st{color:var(--inv)}
+  .i .wait .yy{color:var(--wait)}
+  .i .wait .st{color:var(--wait)}
+  .i .empty .yy{color:#b4b9c1;font-weight:500}
+  .i .docs i.s{background:var(--ok)}
+  .i .docs i.r{background:var(--inv)}
+
+  /* J ink only */
+  .j .yrs{gap:16px}
+  .j .cell{min-width:40px;text-align:center;position:relative}
+  .j .yy{font-family:var(--mono);font-size:13px;font-weight:500;color:#b0b6be;letter-spacing:.06em}
+  .j .ok .yy{color:var(--ink);font-weight:600;border-bottom:1.5px solid var(--ok);padding-bottom:1px}
+  .j .late .yy{color:var(--late);font-weight:700;background:var(--late-bg);padding:3px 7px;border-radius:2px}
+  .j .inv .yy{color:var(--inv);font-weight:600;border-bottom:1.5px solid var(--inv);padding-bottom:1px}
+  .j .wait .yy{color:var(--wait);font-weight:600;border-bottom:1.5px dashed var(--wait);padding-bottom:1px}
+  .j .sup{font-size:8px;font-weight:600;margin-left:1px;vertical-align:super;letter-spacing:0}
+  .j .docs{display:flex;justify-content:center;gap:3px;margin-top:5px}
+  .j .docs i{width:3px;height:3px;border-radius:50%;background:#e4e6ea}
+  .j .docs i.s{background:var(--ok)}
+  .j .docs i.r{background:var(--inv)}
+
+  body.solo h1, body.solo .lede, body.solo .meta{display:none}
+  body.solo{padding:16px;background:#eceef1}
+  body.solo .board{margin-top:0}
+</style>
+</head>
+<body>
+  <h1>Ársskoðun — stilltara, meira professional</h1>
+  <p class="lede">Gljáandi takkar með hvítum staf á dökkum fleti lesast eins og spilakassi. Hér er pappír og blek: föl fylling, dökkur texti, enginn LED, enginn 3D-skuggi. Liturinn er upplýsing, ekki skraut.</p>
+  <div class="meta">
+    <span class="chip">IBM Plex — skýrsla / bókhald</span>
+    <span class="chip">Aldrei hvítur texti á dökkum takka</span>
+    <span class="chip">Sama merking: skýrsla · reikningur · á eftir</span>
+  </div>
+
+  <div class="board">
+
+    <section class="card g" id="g">
+      <div class="hd">
+        <div class="tag">G · nordic civic</div>
+        <h2>Föl flís, dökkur stafur</h2>
+        <p>Eins og island.is og norræn stjórnsýsla. Árið er lesið sem texti ofan á fölum grænum/rauðum/bláum fleti — ekki sem merki ofan á takka. S og R undir = skýrsla og reikningur. Fact-check er þunn græn lína neðst.</p>
+        <span class="pick">Mælt með — professional án þess að tapa yfirsýn</span>
+      </div>
+      <table class="tbl">
+        <thead><tr><th style="width:168px">Fyrirtæki</th><th class="c">Skoðanir · skjöl</th><th class="c" style="width:72px">Skoðun</th><th class="c" style="width:64px">Tæki</th></tr></thead>
+        <tbody id="rows-g"></tbody>
+      </table>
+      <div class="note"><strong>Kostur:</strong> lesanlegt, rólegt, passar í þétta töflu. <strong>Galli:</strong> rautt poppar minna en á gljáandi takkanum — sem er einmitt ætlunin, en „á eftir“ þarf samt að sjást.</div>
+    </section>
+
+    <section class="card h" id="h">
+      <div class="hd">
+        <div class="tag">H · hairline</div>
+        <h2>Vinstri strik + ártal + merki</h2>
+        <p>Eins og stöðumerki í Stripe eða Linear. 3 px strik til vinstri ber stöðuna; árið er blek; hak/útroparmerki til hægri. Engir punktar — merkið er orðið hluti af reitnum.</p>
+      </div>
+      <table class="tbl">
+        <thead><tr><th style="width:168px">Fyrirtæki</th><th class="c">Skoðanir · skjöl</th><th class="c" style="width:72px">Skoðun</th><th class="c" style="width:64px">Tæki</th></tr></thead>
+        <tbody id="rows-h"></tbody>
+      </table>
+      <div class="note"><strong>Kostur:</strong> mjög „hugbúnaðarlegt“, skýr staða án litaflóðs. <strong>Galli:</strong> skýrsla vs. reikningur er ekki lengur tveir punktar — hak merkir skýrslu, „R“ merkir reikning.</div>
+    </section>
+
+    <section class="card i" id="i">
+      <div class="hd">
+        <div class="tag">I · ledger</div>
+        <h2>Ártal + staða sem orð</h2>
+        <p>Enginn kassi. ’23 situr ofan á orðinu SKOÐAÐ / VANTAR / REIKN. / —. Þetta er úttektarskýrsla, ekki stjórnborð. Tveir ferningar undir = skýrsla og reikningur.</p>
+      </div>
+      <table class="tbl">
+        <thead><tr><th style="width:168px">Fyrirtæki</th><th class="c">Skoðanir · skjöl</th><th class="c" style="width:72px">Skoðun</th><th class="c" style="width:64px">Tæki</th></tr></thead>
+        <tbody id="rows-i"></tbody>
+      </table>
+      <div class="note"><strong>Kostur:</strong> mest professional — enginn „takki“. <strong>Galli:</strong> tekur meira lárétt pláss; orðin þarf að læra; erfiðara að skanna lit niður súluna.</div>
+    </section>
+
+    <section class="card j" id="j">
+      <div class="hd">
+        <div class="tag">J · ink</div>
+        <h2>Bara blek — litur aðeins á vandanum</h2>
+        <p>Skoðað ár er dökk tala með grænni undirstrikun. Reikningur án skýrslu er blá undirstrikun. Á eftir er eina fyllta merkið (fölrautt). Tóm ár eru föl tala. Taflan verður eins og prentuð skýrsla.</p>
+      </div>
+      <table class="tbl">
+        <thead><tr><th style="width:168px">Fyrirtæki</th><th class="c">Skoðanir · skjöl</th><th class="c" style="width:72px">Skoðun</th><th class="c" style="width:64px">Tæki</th></tr></thead>
+        <tbody id="rows-j"></tbody>
+      </table>
+      <div class="note"><strong>Kostur:</strong> rólegast, mest „skjal“. <strong>Galli:</strong> sagan (grænt ár eftir ár) hverfur — þú sérð aðallega það sem vantar.</div>
+    </section>
+
+  </div>
+
+<script>
+const COS = [
+  {n:'Aðalstræti ehf', kt:'430169-4449', yrs:['ok','ok','late','empty'], m:'Ágú', t:44, fc:[1,1,0,0]},
+  {n:'Hafnargata 12', kt:'550169-2269', yrs:['ok','ok','late','empty'], m:'Ágú', t:3, fc:[1,0,0,0]},
+  {n:'Nýlenda ehf', kt:'700169-1189', yrs:['empty','empty','ok','empty'], m:'Ágú', t:0, fc:[0,0,1,0]},
+  {n:'Iðngarðar', kt:'610169-3379', yrs:['ok','ok','late','wait'], m:'Ágú', t:7, fc:[1,1,0,0]},
+  {n:'Hamraborg 7', kt:'480169-5519', yrs:['ok','ok','ok','inv'], m:'Ágú', t:30, fc:[1,1,1,0]}
+];
+const YY = ['23','24','25','26'];
+const dotsFor = (st) => ({g: st==='ok', b: st==='ok' || st==='inv'});
+const word = {ok:'Skoðað', late:'Vantar', inv:'Reikn.', wait:'Áætl.', empty:'—'};
+const mark = {ok:'✓', late:'!', inv:'R', wait:'·', empty:''};
+
+function rowShell(co, yearsHtml) {
+  return `<tr>
+    <td><span class="_co">${co.n}</span><span class="_kt">${co.kt}</span></td>
+    <td>${yearsHtml}</td>
+    <td class="c"><span class="_mo">${co.m}</span></td>
+    <td><div class="_devs"><b>${co.t}</b><i>SLT</i></div></td>
+  </tr>`;
+}
+
+document.getElementById('rows-g').innerHTML = COS.map(co => {
+  const cells = co.yrs.map((st,i) => {
+    const d = dotsFor(st);
+    const fc = co.fc[i] ? ' fc' : '';
+    return `<span class="cell"><span class="chipyr ${st}${fc}">${YY[i]}</span><span class="docs"><span class="${d.g?'on s':''}">S</span><span class="${d.b?'on r':''}">R</span></span></span>`;
+  }).join('');
+  return rowShell(co, `<div class="yrs">${cells}</div>`);
+}).join('');
+
+document.getElementById('rows-h').innerHTML = COS.map(co => {
+  const cells = co.yrs.map((st,i) => {
+    return `<span class="cell"><span class="bar ${st}"><i class="accent"></i><span class="yy">${YY[i]}</span><span class="mk">${mark[st]}</span></span></span>`;
+  }).join('');
+  return rowShell(co, `<div class="yrs">${cells}</div>`);
+}).join('');
+
+document.getElementById('rows-i').innerHTML = COS.map(co => {
+  const cells = co.yrs.map((st,i) => {
+    const d = dotsFor(st);
+    return `<span class="cell ${st}"><span class="yy">${YY[i]}</span><span class="st">${word[st]}</span><span class="docs"><i class="${d.g?'s':''}"></i><i class="${d.b?'r':''}"></i></span></span>`;
+  }).join('');
+  return rowShell(co, `<div class="yrs">${cells}</div>`);
+}).join('');
+
+document.getElementById('rows-j').innerHTML = COS.map(co => {
+  const cells = co.yrs.map((st,i) => {
+    const d = dotsFor(st);
+    return `<span class="cell ${st}"><span class="yy">${YY[i]}</span><span class="docs"><i class="${d.g?'s':''}"></i><i class="${d.b?'r':''}"></i></span></span>`;
+  }).join('');
+  return rowShell(co, `<div class="yrs">${cells}</div>`);
+}).join('');
+
+const only = new URLSearchParams(location.search).get('only');
+if (only) {
+  document.body.classList.add('solo');
+  document.querySelectorAll('.board .card').forEach(c => { if (c.id !== only) c.remove(); });
+}
+</script>
+</body>
+</html>
