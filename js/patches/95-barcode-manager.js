@@ -34,7 +34,9 @@
     if (window.ZXing || window.ZXingBrowser) return Promise.resolve(true);
     return new Promise((resolve) => {
       const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/index.min.js';
+      // @zxing/browser@0.1.5 has no umd/index.min.js (404) — the UMD bundle is
+      // umd/zxing-browser.min.js, which exposes window.ZXingBrowser.
+      s.src = 'https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js';
       s.onload = () => resolve(true);
       s.onerror = () => resolve(false);
       document.head.appendChild(s);
