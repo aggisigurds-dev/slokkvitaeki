@@ -9,11 +9,11 @@
 //
 //   GET /api/payday-pull-slokk?probe=1
 //     → auth-test + 3 hráir reikningar (engin skrif). Keyra fyrst.
-//   GET /api/payday-pull-slokk?dry=1[&since=YYYY-MM-DD|&all=1]
-//     → sækir + varpar, skilar sýnishorni, EKKERT vistað.
-//   GET /api/payday-pull-slokk[?since=YYYY-MM-DD]  (sjálfgefið ~180 dagar)
-//   GET /api/payday-pull-slokk?all=1
-//     → sækir ALLT (engin dagsetningarsía) — fyrsta keyrslan notar þetta.
+//   GET /api/payday-pull-slokk[?dry=1][&since=YYYY-MM-DD|&all=1]
+//     → ALLTAF dry-run. GET upsertar ALDREI (vörn 2026-08-25).
+//   POST /api/payday-pull-slokk[?since=YYYY-MM-DD|&all=1]  (body: { dry?, since?, all? })
+//     → sækir og upsertar í payday_invoices_slokk. dry:true → ekkert vistað.
+//     → sjálfgefið ~180 dagar; ?all=1 / body.all sækir ALLT.
 //
 // Notar SÖMU Slökkvitæki-Payday creds og payday-push/payday-sync-paid
 // (PAYDAY_CLIENT_ID/SECRET í slokkvitaeki Netlify env; token-cache
@@ -33,8 +33,8 @@ const API_VERSION = process.env.PAYDAY_API_VERSION || 'alpha';
 function cors() {
   return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'GET,OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, x-eldklar-key',
+    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
   };
 }
 function json(code, obj) {
@@ -43,14 +43,26 @@ function json(code, obj) {
 
 exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors(), body: '' };
-  if (event.httpMethod !== 'GET') return json(405, { error: 'GET only' });
+
+  // Default-open shared-secret gate: enforced AÐEINS þegar EDGE_SHARED_KEY er sett.
+  const KEY = (process.env.EDGE_SHARED_KEY || '').trim();
+  if (KEY) {
+    const got = String((event.headers && event.headers['x-eldklar-key']) || '').trim();
+    if (got !== KEY) return json(401, { error: 'unauthorized' });
+  }
+
+  if (event.httpMethod !== 'GET' && event.httpMethod !== 'POST') return json(405, { error: 'GET eða POST only' });
   if (!CLIENT_ID || !CLIENT_SECRET) return json(500, { error: 'PAYDAY_CLIENT_ID / PAYDAY_CLIENT_SECRET vantar í Netlify env vars.' });
   if (!SUPABASE_URL || !SUPABASE_KEY) return json(500, { error: 'Supabase env vantar.' });
 
   const p = event.queryStringParameters || {};
-  const isDry = p.dry === '1' || p.dry === 'true';
-  const all = p.all === '1' || p.all === 'true';
-  const since = all ? null : (p.since || defaultSince());
+  let body = {}; try { body = event.body ? JSON.parse(event.body) : {}; } catch (_) {}
+  const askedDry = p.dry === '1' || p.dry === 'true' || !!body.dry;
+  // GET never writes — even without ?dry=1. POST is the only commit path
+  // (payday-sync-cron). audit-payday-get.cjs greps this assignment.
+  const isDry = event.httpMethod !== 'POST' || askedDry;
+  const all = p.all === '1' || p.all === 'true' || !!body.all;
+  const since = all ? null : (body.since || p.since || defaultSince());
 
   try {
     const token = await getAccessToken();
