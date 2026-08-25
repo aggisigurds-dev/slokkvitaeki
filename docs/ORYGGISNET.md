@@ -54,6 +54,7 @@ automation health and pings Agnar *only* when something needs him.
 | **GET cannot mark invoices paid or upsert the Payday mirror** | `payday-sync-paid` / `payday-pull-slokk`: GET is always dry; POST is the only commit (cron + Kröfu 🔄) | — | `audit-payday-get.cjs` |
 | **The tæki→starfsstöð FK join hides no live in‑service customer** | `153` counts devices by `uttaeki.fyrirtaeki_id` (not folded client‑name); soft‑deleted excluded at `153:162` | `uttaeki_null_fid` | `audit-fk-join.cjs` |
 | **Rekstrarfélaga-staðir hrúgast ekki saman á kennitölu** | `175` live-raðir bera `co_id = fyrirtaeki.id`; `companyForBld` giskar aldrei `hits[0]`; `document_pairs` lyklað á `fyrirtaeki_id` (ekki base) | — | `audit-rekstrarfelog-sites.cjs` |
+| **Ársskoðun blár reiknings-punktur er per stað** | `187` `hasReikYear`: `byCo[fyrirtaeki_id]` + unique-kt orphan; ekki `reikMap[kt]` | — | `audit-arsskodun-inv-dot.cjs` |
 
 ---
 
@@ -224,6 +225,12 @@ baseline rows and lowering the constant is how the net tightens over time.
   15% Colas Gullhellu. Nú: tveggja-forma `.or` (eins og checkout), 114 skrifar
   `discount_pct` strax, `pickBest` heldur völdum stað. `payday-push` / `totals()`
   / 10/233/254 ósnert. Audit `audit-pos-kt-discount.cjs`.
+- **2026‑08‑25 — Ársskoðun blár punktur = reikningur *þessa* staðar.** `187`
+  `loadReik` lyklaði `customer_documents` reikning á kennitölu, svo einn
+  Center Hótel-reikningur málaði bláan punkt á öll 11 hótel (Hlaðvarpinn /
+  Þverholt 14 / Þingholt Apartments 2024+ án eigin reiknings). Nú:
+  `hasReikYear` per `fyrirtaeki_id` (+ unique-kt orphan). Skoðað/klarad/
+  `isDoneYear` ósnert. Audit `audit-arsskodun-inv-dot.cjs`.
 - *Add a line here every time you make something bulletproof.*
 
 ---

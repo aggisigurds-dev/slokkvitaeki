@@ -28,11 +28,23 @@
   let fcMap = null, fcLoading = false;   // co_id(str) → { year(str) → status }
   function fcStat(coId,y){ var m=fcMap&&fcMap[String(coId)]; return (m&&m[String(y)])||null; }
 
-  // kt (digits) → Set of years that already have a reikningur filed in
-  // customer_documents (Drive-indexed + POS-connected). Drives a small 🧾 marker
-  // on the year cell so the office sees "reikningur sendur" right in the list,
-  // alongside the úttektarskýrslu status. Loaded once, then cells are rebuilt.
+  // Reikningur-ár per STAÐ (fyrirtaeki_id), ekki per kennitölu.
+  // 2026-08-25 (Agnar, false-flag hunt): loadReik lyklaði á customer_base_id →
+  // kt-tölustafir, svo EINN Center Hótel-reikningur (450905-1430, 11 hótel)
+  // málaði bláan reiknings-punkt á ÖLL systkini ársins — Hlaðvarpinn /
+  // Þverholt 14 / Þingholt Apartments 2024+ sýndu „reikningur til" án
+  // eigin reiknings og án skýrslu. Sama lekinn á Heimaleiga, Steypustöðinni,
+  // Pizzunni, Vélrás. Nú: byCo[fyrirtaeki_id] = Set(ár); reikningar ÁN
+  // fyrirtaeki_id (byKtOrphan) aðeins þegar kt-in á EINN stað — sama regla
+  // og uttekt_files hér að neðan. Búðarsala er áfram útilokuð.
   let reikMap = null, reikLoading = false;
+  function hasReikYear(coId, kt, y, ktCount) {
+    if (invMap && invMap[coId] && invMap[coId][y]) return true;
+    if (!reikMap) return false;
+    if (reikMap.byCo && reikMap.byCo[coId] && reikMap.byCo[coId].has(y)) return true;
+    if ((ktCount[kt] || 0) <= 1 && reikMap.byKtOrphan && reikMap.byKtOrphan[kt] && reikMap.byKtOrphan[kt].has(y)) return true;
+    return false;
+  }
   // 2026-08-19 (Agnar #11 — „fyrirtæki í þjónustu are not syncing to ársskoðun …
   // Hamraborg 7"): document_pairs.status='klarad' (skýrsla↔reikningur paruð, per
   // fyrirtaeki_id, service_type='uttekt') er DVARANDI „úttekt ársins fullbúin"-
@@ -156,8 +168,8 @@
     if (reikLoading || reikMap) return; reikLoading = true;
     try {
       const sb = window.DB && DB.sb; if (!sb) { reikLoading = false; return; }
-      const reikRows = await fetchAll(() => sb.from('customer_documents').select('customer_base_id,year,invoice_number')
-        .eq('doc_type','reikningur').not('customer_base_id','is',null));
+      const reikRows = await fetchAll(() => sb.from('customer_documents').select('customer_base_id,fyrirtaeki_id,year,invoice_number')
+        .eq('doc_type','reikningur'));
       // Pakki 7: búðarreikningar (solur.vidskiptategund='bud') kveikja EKKI
       // 🧾-ársmerkið í ársskoðunarlistanum — það er skoðunar-samhengi og
       // búðarsala segir ekkert um úttekt ársins. ovisst/óþekkt telja áfram.
@@ -166,20 +178,33 @@
         const bs = await fetchAll(() => sb.from('solur').select('num').eq('vidskiptategund', 'bud'));
         bs.forEach(s => { const n = String(s.num || '').trim().toUpperCase(); if (n) budNums.add(n); });
       } catch (_) {}
-      const byBase = {};
+      const byCo = {};
+      const byBaseOrphan = {};
       reikRows.forEach(x => {
-        if (x.customer_base_id == null || !x.year) return;
+        if (!x.year) return;
         const inv = String(x.invoice_number || '').trim().toUpperCase();
         if (inv && budNums.has(inv)) return;
-        (byBase[x.customer_base_id] = byBase[x.customer_base_id] || new Set()).add(String(x.year));
+        const y = String(x.year);
+        if (x.fyrirtaeki_id != null) {
+          (byCo[String(x.fyrirtaeki_id)] = byCo[String(x.fyrirtaeki_id)] || new Set()).add(y);
+        } else if (x.customer_base_id != null) {
+          (byBaseOrphan[String(x.customer_base_id)] = byBaseOrphan[String(x.customer_base_id)] || new Set()).add(y);
+        }
       });
-      const ids = Object.keys(byBase);
-      const map = {};
+      const byKtOrphan = {};
+      const ids = Object.keys(byBaseOrphan);
       for (let i = 0; i < ids.length; i += 500) {
         const b = await sb.from('customers_base').select('id,kennitala').in('id', ids.slice(i, i + 500));
-        (b.data || []).forEach(row => { const d = digits(row.kennitala); if (d.length >= 10) map[d] = byBase[row.id]; });
+        (b.data || []).forEach(row => {
+          const d = digits(row.kennitala);
+          if (d.length < 10) return;
+          const years = byBaseOrphan[String(row.id)];
+          if (!years) return;
+          const set = (byKtOrphan[d] = byKtOrphan[d] || new Set());
+          years.forEach(y => set.add(y));
+        });
       }
-      reikMap = map;
+      reikMap = { byCo, byKtOrphan };
       // rebuild the year cells so the new 🧾 markers appear
       document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
       document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
@@ -338,7 +363,7 @@
         const isClaude  = fst === 'claude';
         const isGap     = fst === 'gap';
         const isNow = (y === String(new Date().getFullYear()));
-        const hasInvYear = !!((invMap && invMap[coId] && invMap[coId][y]) || (reikMap && reikMap[kt] && reikMap[kt].has(y)));
+        const hasInvYear = hasReikYear(coId, kt, y, ktCount);
         // Fullbúið úttektar-par (klarad) fyrir þennan stað+ár — trompar staðnað gap.
         const isKlarad = !!(pairMap && pairMap[coId] && pairMap[coId].has(y));
         const td = document.createElement('td');
@@ -445,7 +470,7 @@
                 files.find(x => x.year == null && new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
       // `inv` = úttekt staðfest með reikningi (v_uttekt_ar) en skýrsla vantar —
       // `has` er ÁFRAM skýrslu-eingöngu svo „vantar skýrslu"-talningar standi.
-      out[y] = { has: !!(u || f), due: (y === '2026'), reik: !!(reikMap && reikMap[kt] && reikMap[kt].has(y)),
+      out[y] = { has: !!(u || f), due: (y === '2026'), reik: hasReikYear(coId, kt, y, ktCount),
         inv: !!(invMap && invMap[coId] && invMap[coId][y]),
         klarad: !!(pairMap && pairMap[coId] && pairMap[coId].has(y)) };
     });
