@@ -272,9 +272,30 @@
     }
     return m;
   }
+  function lockPhoneViewport(mode) {
+    // Chrome "Request desktop site" ignores width=device-width and lays the
+    // page out at ~980px. Sími on a real phone must use the short screen
+    // side so the UI fills the S26, not a centred/left strip.
+    if (!isPhoneDevice()) return;
+    try {
+      let vp = document.querySelector('meta[name="viewport"]');
+      if (!vp) {
+        vp = document.createElement('meta');
+        vp.setAttribute('name', 'viewport');
+        (document.head || document.documentElement).appendChild(vp);
+      }
+      const short = Math.min(screen.width || 0, screen.height || 0);
+      if (mode === 'mobile' && short >= 320 && short <= 700) {
+        vp.setAttribute('content', 'width=' + short + ', initial-scale=1, viewport-fit=cover');
+      } else {
+        vp.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+      }
+    } catch (_) {}
+  }
   function applyViewMode(mode, rerender) {
     if (VM_MODES.indexOf(mode) < 0) mode = 'desktop';
     document.documentElement.dataset.viewmode = mode;
+    lockPhoneViewport(mode);
     // Broadcast an app-wide signal so ANY page (not just Kröfu yfirlit) can
     // listen and re-render its own layout for the chosen mode. Kröfu yfirlit's
     // own re-render below stays intact — this is purely additive.
