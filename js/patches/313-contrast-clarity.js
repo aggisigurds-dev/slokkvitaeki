@@ -74,6 +74,7 @@
       '#view-arsskodun h1,#view-hreyfingarlisti h1,#view-income h1,',
       '#view-workshop .bw-page-h1,#view-companies h1,#view-bokhalds-yfirlit h1',
       '{color:' + INK + '!important;text-shadow:none!important}',
+      '#view-arsskodun ._ars-sub,#view-hreyfingarlisti .page-title p,',
       '#view-krofu-yfirlit .page-title p,#view-income h1 + div,#view-income .page-title p',
       '{color:' + INK_MUTED + '!important;text-shadow:none!important}',
       '#view-verkbord [style*="font-size:28px"]{color:' + INK + '!important;text-shadow:none!important}',
