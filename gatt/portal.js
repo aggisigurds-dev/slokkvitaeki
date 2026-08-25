@@ -148,11 +148,16 @@
   }
 
   function yearsFromStatus(b) {
-    // Einföld nálgun þar til full 4-ára tafla er reiknuð server-megin.
+    // Hvert ár sýnir tvö merki: [slökkvitæki, brunakerfi].
+    // Slökkvitæki: einföld nálgun út frá skoðunarstöðu (síðasta úttektarár).
+    // Brunakerfi: AÐEINS ár þar sem raunverulegt brunakerfis-skjal er til (b.ar_bru)
+    //   — annars birtust falskar brunakerfis-skoðanir sem spegluðu slökkvitækin.
     var cur = b.sidasta_ar || 0;
+    var bru = {}; (b.ar_bru || []).forEach(function (y) { bru[String(y)] = 1; });
     return ['2023', '2024', '2025', '2026'].map(function (y) {
-      var on = b.stada === 'ok' && Number(y) <= cur ? 'ok' : (b.stada === 'engin_skyrsla' ? 'no' : (Number(y) <= cur ? 'ok' : 'no'));
-      return [on, on];
+      var sl = b.stada === 'engin_skyrsla' ? 'no' : (Number(y) <= cur ? 'ok' : 'no');
+      var br = bru[y] ? 'ok' : 'no';
+      return [sl, br];
     });
   }
 
