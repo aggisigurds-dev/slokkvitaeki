@@ -71,8 +71,9 @@
       '#view-drog h2{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.35)!important}',
       '#view-drog h2 + div{color:#fef3c7!important}',
 
-      /* ID beats 230/231 pins that keep 55% white and slate on steel. */
-      '#view-arsskodun ._ars-sub,#view-hreyfingarlisti .page-title p,',
+      '#view-arsskodun h1,#view-hreyfingarlisti h1,#view-income h1,',
+      '#view-workshop .bw-page-h1,#view-companies h1,#view-bokhalds-yfirlit h1',
+      '{color:' + INK + '!important;text-shadow:none!important}',
       '#view-krofu-yfirlit .page-title p,#view-income h1 + div,#view-income .page-title p',
       '{color:' + INK_MUTED + '!important;text-shadow:none!important}',
       '#view-verkbord [style*="font-size:28px"]{color:' + INK + '!important;text-shadow:none!important}',
