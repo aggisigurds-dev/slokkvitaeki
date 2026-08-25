@@ -75,8 +75,6 @@
       '.view .stat-card--hero .stat-card__label{color:rgba(255,255,255,.86)!important}',
       '.view .stat-card--hero .stat-card__value,.view .stat-card--hero .ky-num{color:#fff!important}',
       '.view .stat-card__label{color:#334155!important}',
-      '.view .stat-card__value{color:#0f172a!important}',
-      '.view .stat-card--hero .stat-card__value{color:#fff!important}',
 
       /* Table body already dark in 240; keep header captions light-on-dark. */
       '.view table thead th{color:#fff!important}',
