@@ -14,14 +14,16 @@
   let qrLibPromise = null;
   function loadQRLib(){
     if (qrLibPromise) return qrLibPromise;
-    qrLibPromise = new Promise((resolve, reject) => {
-      if (window.QRCode) return resolve(window.QRCode);
-      const s = document.createElement('script');
-      s.src = 'https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js';
-      s.onload = () => resolve(window.QRCode);
-      s.onerror = reject;
-      document.head.appendChild(s);
-    });
+    qrLibPromise = (async () => {
+      if (window.QRCode) return window.QRCode;
+      // node-qrcode ships NO browser-global UMD build on npm/jsdelivr (build/ is not
+      // published; the old build/qrcode.min.js path 404s). Load the ESM bundle via
+      // jsdelivr +esm and expose it as window.QRCode — preserves the
+      // QRCode.toDataURL(text, opts) API used by generateQRDataUrl() below.
+      const mod = await import('https://cdn.jsdelivr.net/npm/qrcode@1.5.3/+esm');
+      window.QRCode = mod.default || mod;
+      return window.QRCode;
+    })();
     return qrLibPromise;
   }
 
