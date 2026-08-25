@@ -48,6 +48,7 @@ automation health and pings Agnar *only* when something needs him.
 |---|---|---|---|
 | **No blank / 0‑kr invoice can be emailed to a customer** | `233` `buildInvoiceBlob` throws on empty lines; `254` `compose` refuses to send a missing/empty attachment | `blank_invoice_source`, `blank_invoice_blocked`, `send_failed` | `audit-invoice-guard.cjs` |
 | **An entered kennitala is never dropped to `999999‑9999`** | `121` saves `customer_kt` on both save paths; `js/pos.js` extracts a kt typed into the name field | *(kt signals to come)* | `audit-kt-trap.cjs` |
+| **POS fastur afsláttur skilar sér í körfuna** | `lookupKt` sækir kt **með og án** bandstriks (sama `.or` og checkout); 114 skrifar `discount_pct` strax; `pickBest` heldur pönnuðum `co_id` | — | `audit-pos-kt-discount.cjs` |
 | **POS search doesn't silently drop customers past 1000 rows** | `DB.fetchAll` pagination on the big tables | — | `audit-pagination.cjs` |
 | **Per‑line discount + credit notes bill Payday correctly** | `payday-push.js` per‑line gate + credit `discount_pct=0` strip | `send_failed` (token) | *verified vs 697 live sales; audit TODO* |
 | **GET cannot mark invoices paid or upsert the Payday mirror** | `payday-sync-paid` / `payday-pull-slokk`: GET is always dry; POST is the only commit (cron + Kröfu 🔄) | — | `audit-payday-get.cjs` |
@@ -232,6 +233,11 @@ baseline rows and lowering the constant is how the net tightens over time.
   Rekstrarfélög `175` kveikir ekki 🧾 þegar par og reikningur stangast á.
   Gátt merkir þjónustu. Pörin sjálf eru **ekki** eydd. Invoice OUT / payday /
   kt-save ósnert. Audit `audit-rekstrarfelog-sites.cjs` (`isUttektInvoiceTeg`).
+- **2026‑08‑25 — POS fastur afsláttur í körfu.** `lookupKt` spurði aðeins
+  tölustafa-kt; DB geymir bandstrik (`420187-1499`) → 0 raðir → RSK 0% yfirskrifaði
+  15% Colas Gullhellu. Nú: tveggja-forma `.or` (eins og checkout), 114 skrifar
+  `discount_pct` strax, `pickBest` heldur völdum stað. `payday-push` / `totals()`
+  / 10/233/254 ósnert. Audit `audit-pos-kt-discount.cjs`.
 - *Add a line here every time you make something bulletproof.*
 
 ---

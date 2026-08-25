@@ -93,21 +93,35 @@
     // fyrirtaeki for co_id linkage, but always pick whichever table has
     // the highest non-zero discount so the user's saved discount actually
     // applies. Falls back to RSK/já.is when neither table has the kt.
+    //
+    // 2026-08-25 (Colas Gullhella 15% sást á spjaldinu en karfan var 0%):
+    // kennitala í DB er með bandstriki (420187-1499). .eq á hreinum tölustöfum
+    // skilaði 0 röðum → RSK með afslattur_pct:0 yfirskrifaði fastan afslátt.
+    // Sama tveggja-forma .or og checkout (1238/1268). .limit(20) haldið.
+    var dash = kt.slice(0, 6) + '-' + kt.slice(6);
+    var ktOr = 'kennitala.eq.' + dash + ',kennitala.eq.' + kt;
     return Promise.all([
       DB.sb.from('fyrirtaeki')
         .select('id,nafn,simi,kennitala,heimilisfang,afslattur_pct,athugasemdir')
-        .eq('kennitala', kt).order('afslattur_pct', { ascending: false }).limit(20),
+        .or(ktOr).is('deleted_at', null).order('afslattur_pct', { ascending: false }).limit(20),
       DB.sb.from('vidskiptavinir')
         .select('id,nafn,simi,kennitala,heimilisfang,afslattur_pct,athugasemdir')
-        .eq('kennitala', kt).order('afslattur_pct', { ascending: false }).limit(20)
+        .or(ktOr).is('deleted_at', null).order('afslattur_pct', { ascending: false }).limit(20)
     ]).then(function (results) {
       // 2026-06-23 (#2): a kt can have several rows (multi-site customers like
       // Colas — 5 starfsstöðvar). maybeSingle() errored on those, so the saved
       // discount never applied. Fetch all, pick the row with the highest
       // afslattur_pct (prefer one carrying an id for co_id linkage).
+      // 2026-08-25: if Sala already pinned a site (Gullhella #218), keep THAT
+      // row — do not swap to Álfhella just because both have 15%.
       function pickBest(arr){
         arr = (arr || []).slice();
         if (!arr.length) return null;
+        var pinnedId = state.customer && state.customer.co_id;
+        if (pinnedId != null) {
+          var pinned = arr.find(function(r){ return String(r.id) === String(pinnedId); });
+          if (pinned) return pinned;
+        }
         arr.sort(function(a,b){ return ((+b.afslattur_pct||0) - (+a.afslattur_pct||0)) || ((b.id?1:0) - (a.id?1:0)); });
         return arr[0];
       }

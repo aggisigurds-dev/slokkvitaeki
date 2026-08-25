@@ -680,7 +680,7 @@
             priceCell(dKey, unitPrice, override || tierMark) +
             '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
             discCell(dKey, dPct) +
-            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
+            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
           '</tr>');
         }
         if (g.skip > 0) {
@@ -723,7 +723,7 @@
             priceCell(dKey, unitPrice, override || tierMark) +
             '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
             discCell(dKey, dPct) +
-            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
+            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
           '</tr>');
           return;
         }
@@ -765,7 +765,7 @@
           priceCell(dKey, unitPrice, override || tierMark) +
           '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
           discCell(dKey, dPct) +
-          '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
+          '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
         '</tr>');
       });
       // 2026-05-20: "Nýtt" row — bill the store price of a brand-new unit.
@@ -799,7 +799,7 @@
             priceCell(dKey, unitPrice, override || tierMark) +
             '<td style="padding:7px 10px;text-align:center;font-size:12px;color:#475569">' + vskPct + '%</td>' +
             discCell(dKey, dPct) +
-            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
+            '<td style="padding:7px 10px;text-align:right;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap">' + fmtKr(subEx) + (dPct > 0 ? '<div style="font-size:10px;color:#b91c1c;font-weight:600">−' + dPct + '%</div>' : '') + '</td>' +
           '</tr>');
         } else {
           rows.push('<tr><td style="padding:7px 10px;font-size:13px;color:#0f172a">' + esc(g.type) + ' / ' + esc(g.size) + '</td>' +
@@ -1016,7 +1016,7 @@
       // aldrei af; heildartölurnar eru í fullbreiðu spjaldi fyrir neðan (sem
       // klippist aldrei — sjá #_ctc-sum-*).
       '<div style="background:#fff;border:1px solid var(--brd);border-bottom:none;border-radius:8px 8px 0 0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch">' +
-        '<table style="width:100%;border-collapse:collapse">' +
+        '<table style="width:100%;min-width:740px;border-collapse:collapse">' +
           '<thead style="background:var(--surface2)"><tr>' +
             '<th style="padding:8px 10px;text-align:left;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em">Tegund / Stærð</th>' +
             '<th style="padding:8px 10px;text-align:center;font-size:10px;font-weight:700;color:var(--ink2);text-transform:uppercase;letter-spacing:.05em;width:60px">Fjöldi</th>' +
