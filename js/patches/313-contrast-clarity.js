@@ -1,13 +1,14 @@
-/* === CONTRAST CLARITY v2 =====================================================
+/* === CONTRAST CLARITY v3 =====================================================
  * Grey-on-grey / hidden-text sweep for the whole hub.
  *
  * Brunastál paints the page as brushed steel (#9ba1ad) under the banner.
- * Theme + patches 230/245 then paint titles WHITE (meant for a dark band that
- * sits behind the fire banner) and muted labels in slate / 55% white — both
- * wash out on steel. Patch 240 maps muted to #3a4250, still short of AA.
+ * Patch 230 prefixes `html[data-thm-preset="brunastal"]` and paints titles
+ * WHITE (meant for a dark band behind the fire banner) plus 55–74% white
+ * subtitles — both vanish on steel. This sheet uses the SAME prefix so it
+ * actually wins, then a scan inks leftover mid-grey pairs.
  *
- * This patch does not edit theme-scoped.css (frozen). Invoice OUT / kennitala
- * / Payday paths are untouched — display CSS + a conservative contrast pass.
+ * Frozen theme-scoped.css is not edited. Invoice OUT / kennitala / Payday
+ * paths are untouched.
  * ========================================================================== */
 (() => {
   if (window.__contrastClarityInstalled) return;
@@ -16,6 +17,12 @@
   const STYLE_ID = 'contrast-clarity-css';
   const INK = '#11141c';
   const INK_MUTED = '#1e293b';
+  const B = 'html[data-thm-preset="brunastal"] ';
+  const steel = () => ({ r: 155, g: 161, b: 173, a: 1 });
+
+  function prefixed(sel) {
+    return String(sel).split(',').map(s => s.trim()).filter(Boolean).map(s => B + s).join(',');
+  }
 
   function injectCss() {
     let s = document.getElementById(STYLE_ID);
@@ -25,46 +32,39 @@
       (document.head || document.documentElement).appendChild(s);
     }
     s.textContent = [
-      /* Token: steel wants dark ink, not white (white-on-#9ba1ad ≈ 2.5:1). */
       ':root{--ink-on-steel:' + INK + '!important;--ink-muted-readable:' + INK_MUTED + '!important}',
 
-      /* Beat 230/245/theme-scoped white titles that sit on steel, not fire. */
-      '.view h1,.view h2,.view h3,',
-      '.view > .main-panel > h1:first-child,',
-      '.view > h1:first-child,',
-      '.view > .main-panel > div > h1:first-child,',
-      '.view .page-title h1,.view .thm .page-title h1,.view .app-page .page-title h1,',
-      '.view .bw-page-h1,.view .tbord-title',
+      /* Beat 230's html[data-thm-preset] .view h1 {#fff} — titles sit on steel. */
+      prefixed('.view h1,.view h2,.view h3,' +
+        '.view > .main-panel > h1:first-child,.view > h1:first-child,' +
+        '.view > .main-panel > div > h1:first-child,' +
+        '.view .page-title h1,.view .thm .page-title h1,.view .app-page .page-title h1,' +
+        '.view .bw-page-h1,.view .tbord-title,.view .ky-h1'),
       '{color:' + INK + '!important;text-shadow:none!important}',
 
-      '.view .page-title p,.view .thm .page-title p,.view .bw-page-sub,',
-      '.view ._ars-sub,.view ._cl_subtitle,.view .tbord-note,',
-      '#view-allir-vidsk h1 + div,#view-allir-vidskiptavinir h1 + div',
+      prefixed('.view .page-title p,.view .thm .page-title p,.view .bw-page-sub,' +
+        '.view ._ars-sub,.view ._cl_subtitle,.view .tbord-note,.view .ky-sub,' +
+        '.view h1 + div,.view h1 + p,.view h2 + div,.view h2 + p,' +
+        '#view-allir-vidsk h1 + div,#view-krofu-yfirlit .page-title p'),
       '{color:' + INK_MUTED + '!important;text-shadow:none!important}',
 
       /* Author-intended WHITE headings on a coloured/dark bar (inline). */
-      '.view h1[style*="color:#fff"],.view h1[style*="color: #fff"],.view h1[style*="color:#ffffff"],',
-      '.view h2[style*="color:#fff"],.view h2[style*="color: #fff"],.view h2[style*="color:#ffffff"],',
-      '.view h3[style*="color:#fff"],.view h3[style*="color: #fff"]',
+      prefixed('.view h1[style*="color:#fff"],.view h1[style*="color: #fff"],.view h1[style*="color:#ffffff"],' +
+        '.view h2[style*="color:#fff"],.view h2[style*="color: #fff"],.view h2[style*="color:#ffffff"]'),
       '{color:#fff!important;text-shadow:0 2px 8px rgba(0,0,0,.55)!important}',
 
-      /* Kröfu: keep white only if 166 actually marked the title; steel scan
-         will re-ink it if the computed background is mid-grey. */
-      '.view .ky-h1,.view h1.ky-h1,.view > .main-panel .ky-h1',
-      '{color:#fff!important;text-shadow:0 2px 8px rgba(0,0,0,.55)!important}',
-      '.view .ky-sub{color:rgba(255,255,255,.92)!important}',
-      '.view .page-title .ky-month,.view .page-title__tools .ky-month',
+      prefixed('.view .page-title .ky-month,.view .page-title__tools .ky-month'),
       '{color:' + INK + '!important}',
 
-      /* Colored page bars (Drög orange): white title + cream sub. */
-      '.view [style*="linear-gradient(135deg,#f59e0b"] h1,',
-      '.view [style*="linear-gradient(135deg,#f59e0b"] h2,',
-      '.view [style*="linear-gradient(135deg,#f59e0b"] > div:first-child > div',
-      '{color:#fff!important}',
+      /* Drög orange bar — ID beats the brunastál h2 dark lock. */
       '#view-drog h2{color:#fff!important;text-shadow:0 1px 2px rgba(0,0,0,.35)!important}',
       '#view-drog h2 + div{color:#fef3c7!important}',
+      prefixed('.view [style*="linear-gradient(135deg,#f59e0b"] h1,' +
+        '.view [style*="linear-gradient(135deg,#f59e0b"] h2,' +
+        '.view [style*="linear-gradient(135deg,#f59e0b"] > div:first-child > div'),
+      '{color:#fff!important}',
 
-      /* App-mode is a white canvas — dark titles, not white-on-white. */
+      /* App-mode: force dark on white canvas. */
       'body.appmode .view .page-title h1,body.appmode .view .page-title h2,',
       'body.appmode .view .bw-page-h1,body.appmode .view .ky-h1,body.appmode #view-drog h2',
       '{color:' + INK + '!important;text-shadow:none!important}',
@@ -72,65 +72,65 @@
       'body.appmode #view-drog h2 + div',
       '{color:#334155!important}',
 
-      /* Muted labels: dark enough on steel AND on white cards (WCAG AA). */
-      '.view .muted,.view .text-muted,.view .empty-state,.view .empty-state .es-sub,',
-      '.view .empty-state .es-title,.view .vb-empty,.view .vb-hint,.view .sec-label,',
-      '.view .empty,.view .loading-state',
+      prefixed('.view .muted,.view .text-muted,.view .empty-state,.view .empty-state .es-sub,' +
+        '.view .empty-state .es-title,.view .vb-empty,.view .vb-hint,.view .sec-label,' +
+        '.view .empty,.view .loading-state,.view .kt,.view .kennitala'),
       '{color:' + INK_MUTED + '!important}',
-      '.view .empty-state .es-sub{color:#334155!important}',
+      prefixed('.view .empty-state .es-sub'),
+      '{color:#334155!important}',
 
-      /* Inline slate — but restore light ink on dark chrome afterwards. */
-      '.view [style*="color:#64748b"],.view [style*="color: #64748b"],',
-      '.view [style*="color:#94a3b8"],.view [style*="color: #94a3b8"],',
-      '.view [style*="color:#9ca3af"],.view [style*="color: #9ca3af"],',
-      '.view [style*="color:#6b7280"],.view [style*="color: #6b7280"],',
-      '.view [style*="color:#9aa3b3"],.view [style*="color:#8891a0"],',
-      '.view [style*="color:#5b6472"],.view [style*="color:#5b6573"],',
-      '.view [style*="color:#8a93a5"],.view [style*="color:#9aa1ab"]',
+      prefixed('.view [style*="color:#64748b"],.view [style*="color: #64748b"],' +
+        '.view [style*="color:#94a3b8"],.view [style*="color: #94a3b8"],' +
+        '.view [style*="color:#9ca3af"],.view [style*="color: #9ca3af"],' +
+        '.view [style*="color:#6b7280"],.view [style*="color: #6b7280"],' +
+        '.view [style*="color:#9aa3b3"],.view [style*="color:#8891a0"],' +
+        '.view [style*="color:#5b6472"],.view [style*="color:#5b6573"],' +
+        '.view [style*="color:#8a93a5"],.view [style*="color:#9aa1ab"]'),
       '{color:' + INK_MUTED + '!important}',
 
-      /* Dark metal chrome (Afgreiðsla / Verkstæði headers): keep light type. */
-      '.view .cw-col-head,.view .cw-col-head *,',
-      '.view .cw-toolbar,.view .cw-toolbar > span,.view .cw-toolbar > div:first-child,',
-      '.view #counter-sidebar,.view #counter-sidebar > span',
+      /* Translucent white (230 subtitles) on steel → dark ink. */
+      prefixed('.view [style*="color:rgba(255,255,255,.6)"],' +
+        '.view [style*="color:rgba(255,255,255, .6)"],' +
+        '.view [style*="color:rgba(255,255,255,.55)"],' +
+        '.view [style*="color:rgba(255,255,255,.62)"],' +
+        '.view [style*="color:rgba(255,255,255,.74)"]'),
+      '{color:' + INK_MUTED + '!important}',
+
+      prefixed('.view .cw-col-head,.view .cw-col-head *,' +
+        '.view .cw-toolbar,.view .cw-toolbar > span,.view .cw-toolbar > div:first-child,' +
+        '.view #counter-sidebar,.view #counter-sidebar > span'),
       '{color:#e8edf5!important}',
-      '.view .cw-col-title[style*="#64748b"]{color:#d5dbe6!important}',
-      '.view .cw-col-title[style*="#d97706"]{color:#f6b545!important}',
-      '.view .cw-col-title[style*="#059669"]{color:#34d399!important}',
-      '.view .cw-col-title[style*="#0d6efd"]{color:#6ea8ff!important}',
-      '.view .cw-col-sub{color:rgba(255,255,255,.82)!important}',
-      '.view .cw-archive span{color:#e7eaf0!important}',
+      prefixed('.view .cw-col-title[style*="#64748b"]') + '{color:#d5dbe6!important}',
+      prefixed('.view .cw-col-title[style*="#d97706"]') + '{color:#f6b545!important}',
+      prefixed('.view .cw-col-title[style*="#059669"]') + '{color:#34d399!important}',
+      prefixed('.view .cw-col-title[style*="#0d6efd"]') + '{color:#6ea8ff!important}',
+      prefixed('.view .cw-col-sub') + '{color:rgba(255,255,255,.82)!important}',
+      prefixed('.view .cw-archive span') + '{color:#e7eaf0!important}',
 
-      /* Placeholders must stay visible (240 already darkens the field itself). */
-      '.view input::placeholder,.view textarea::placeholder,.view select::placeholder,',
-      'input::placeholder,textarea::placeholder',
+      prefixed('.view input::placeholder,.view textarea::placeholder,.view select::placeholder'),
       '{color:#475569!important;opacity:1!important}',
-      '.view .field-dark::placeholder,.view .darkfield::placeholder',
+      'input::placeholder,textarea::placeholder{color:#475569!important;opacity:1!important}',
+      prefixed('.view .field-dark::placeholder,.view .darkfield::placeholder'),
       '{color:#475569!important;opacity:1!important}',
 
-      /* Search / tools on the dark band: white field, dark ink — never grey-on-grey. */
-      '.view .page-title input,.view .page-title select,.view .field-dark,.view input.darkfield,',
-      '.view .page-title__tools input,.view .page-title__tools select',
+      prefixed('.view .page-title input,.view .page-title select,.view .field-dark,.view input.darkfield,' +
+        '.view .page-title__tools input,.view .page-title__tools select'),
       '{background:#fff!important;color:' + INK + '!important;border:1px solid #cbd5e1!important}',
 
-      /* Hero / dark-blue stat cards keep light figures. */
-      '.view .stat-card--hero .stat-card__label{color:rgba(255,255,255,.86)!important}',
-      '.view .stat-card--hero .stat-card__value,.view .stat-card--hero .ky-num{color:#fff!important}',
-      '.view .stat-card__label{color:#334155!important}',
-      '.view .bstal-hero,.view .bstal-hero *,.view .hero-stat,.view .hero-stat *',
+      prefixed('.view .stat-card--hero .stat-card__label') + '{color:rgba(255,255,255,.86)!important}',
+      prefixed('.view .stat-card--hero .stat-card__value,.view .stat-card--hero .ky-num') + '{color:#fff!important}',
+      prefixed('.view .stat-card__label') + '{color:#334155!important}',
+      prefixed('.view .bstal-hero,.view .bstal-hero *,.view .hero-stat,.view .hero-stat *'),
       '{color:#fff!important}',
 
-      /* Table body already dark in 240; keep header captions light-on-dark. */
-      '.view table thead th,.view table thead th *,.view table thead .sort-ar',
+      prefixed('.view table thead th,.view table thead th *,.view table thead .sort-ar'),
       '{color:#fff!important}',
 
-      /* Sidebar section labels were 30% white — bump so groups are findable. */
       '.nav-section-label{color:rgba(255,255,255,.82)!important}',
       '.vnav-btn{color:rgba(255,255,255,.92)!important}',
-      '#gs-trigger{color:#fff!important}'
+      '#gs-trigger{background:#fff!important;color:' + INK + '!important;border:1px solid #cbd5e1!important;opacity:1!important}',
+      '#gs-trigger kbd{color:#334155!important;background:#e2e8f0!important}'
     ].join('');
-    /* Keep this sheet last so it wins equal-specificity !important ties
-       against Stílstjóri (#_pe-overrides) after that tag is injected. */
     if (s.parentNode) s.parentNode.appendChild(s);
   }
 
@@ -153,17 +153,28 @@
     const hi = Math.max(x, y), lo = Math.min(x, y);
     return (hi + 0.05) / (lo + 0.05);
   }
+  function isPageSurface(el) {
+    return !!(el.matches && el.matches('html,body,.view,.main-panel,.app-page,.app-main,.thm,main.app-main'));
+  }
+  function firstStop(img) {
+    const m = String(img || '').match(/rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/);
+    return m ? { r: +m[1], g: +m[2], b: +m[3], a: 1 } : null;
+  }
   function bgOf(el) {
     let n = el;
     while (n && n !== document.documentElement) {
       const cs = getComputedStyle(n);
-      const c = parseRgb(cs.backgroundColor);
-      if (c && c.a > 0.04) {
-        if (!(c.r === 0 && c.g === 0 && c.b === 0 && c.a === 0)) return c;
+      const img = cs.backgroundImage;
+      const hasImg = img && img !== 'none';
+      const page = isPageSurface(n);
+      if (hasImg && !page) {
+        return firstStop(img) || { r: 18, g: 20, b: 28, a: 1 };
       }
+      const c = parseRgb(cs.backgroundColor);
+      if (c && c.a > 0.08 && !(c.r === 0 && c.g === 0 && c.b === 0 && c.a === 0)) return c;
       n = n.parentElement;
     }
-    return { r: 155, g: 161, b: 173, a: 1 }; /* steel fallback */
+    return steel();
   }
 
   const SKIP_TAG = /^(SCRIPT|STYLE|SVG|PATH|CANVAS|VIDEO|IMG|BR|HR|SOURCE|LINK|META)$/;
@@ -181,6 +192,10 @@
 
   function pickInk(bg) {
     return ratio(DARK, bg) >= ratio(WHITE, bg) ? INK : '#ffffff';
+  }
+  function isSteelish(bg) {
+    const L = lum(bg);
+    return chroma(bg) < 42 && L > 0.22 && L < 0.62;
   }
 
   function scan(root) {
@@ -206,7 +221,16 @@
         b: fg0.b * fg0.a + bg.b * (1 - fg0.a),
         a: 1
       };
-      if (chroma(fg) >= 48) continue;          /* keep green/orange/blue figures */
+      if (chroma(fg) >= 48) continue;
+      if (isSteelish(bg)) {
+        if (ratio(fg, bg) >= 4.5) continue;
+        const size = parseFloat(cs.fontSize);
+        const w = parseInt(cs.fontWeight, 10) || 400;
+        el.style.setProperty('color', (size >= 20 || w >= 700) ? INK : INK_MUTED, 'important');
+        if (parseFloat(cs.opacity) < 0.7) el.style.setProperty('opacity', '1', 'important');
+        fixed++;
+        continue;
+      }
       const greyishBg = chroma(bg) < 55;
       const greyishFg = chroma(fg) < 55;
       if (!greyishFg || !greyishBg) continue;
@@ -271,6 +295,6 @@
   else boot();
 
   window.ContrastClarity = { rescan: () => schedule('now') };
-  console.log('[patch-313] contrast clarity v2 installed');
+  console.log('[patch-313] contrast clarity v3 installed');
 })();
 /* === END CONTRAST CLARITY === */
