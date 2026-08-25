@@ -54,14 +54,23 @@
     if (!Object.keys(m).length) { _ktMap = null; m = ktMap(); } // one retry, cheap
     return m[k] || null;
   }
-  // Sækja lifandi rekstrarfélaga-listann (gegnum 175) við ræsingu og ógilda kt-kortið
-  // þegar hann kemur — svo DB-sett rekstrarfélög fái merkið um leið og notandi opnar
-  // (eða endur-teiknar) ársskoðun/prófíl. Ræst strax svo gögnin séu tilbúin fyrir fyrstu skoðun.
-  try {
-    if (window.RekstrarfelagData && typeof window.RekstrarfelagData.ensureLive === 'function') {
-      window.RekstrarfelagData.ensureLive().then(() => { _ktMap = null; }).catch(() => {});
-    }
-  } catch (_) {}
+  // Forhlaða lifandi rekstrarfélaga-listanum (DB) svo DB-sett rekstrarfélög fái merkið
+  // strax og notandi opnar ársskoðun/prófíl, og ógilda kt-kortið þegar hann kemur.
+  // MIKILVÆGT: bíða þar til Supabase-klientinn (DB.sb) er tilbúinn. Ef ensureLive er
+  // kallað of snemma (án SB) frystir 175 TÓMAN lista (_liveRF={}) fyrir ALLA lotuna —
+  // þá skilar getMerged aðeins AppSettings og DB-sett rekstrarfélög týnast (og það
+  // bryti líka Rekstrarfélög-flipann/viðskiptavina-merkið). Þess vegna pollum við eftir SB.
+  (function warm(tries) {
+    try {
+      const RD = window.RekstrarfelagData;
+      const sbReady = window.__vdaSB || (window.DB && window.DB.sb);
+      if (RD && typeof RD.ensureLive === 'function' && sbReady) {
+        RD.ensureLive().then(() => { _ktMap = null; }).catch(() => {});
+        return;
+      }
+    } catch (_) {}
+    if ((tries || 0) < 60) setTimeout(() => warm((tries || 0) + 1), 500);
+  })(0);
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
   // Small pill, consistent wherever it's dropped in (table row, card, profile banner).
   function html(kt) {
