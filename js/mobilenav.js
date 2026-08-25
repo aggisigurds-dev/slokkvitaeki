@@ -1,10 +1,13 @@
-/* Mobile nav v5 — phone detection ignores Chrome "desktop site" viewport.
+/* Mobile nav v6 — phone detection ignores Chrome "desktop site" viewport.
  *
  * v4: state-aware, no per-tick style stomp.
  * v5 (2026-08-25): isMobile() used only innerWidth<=900. Samsung S26 + Chrome
  * "desktop site" reports ~980px, so the hamburger stayed hidden and the full
  * desktop sidebar (white labels on grey) was squeezed onto the phone. Now:
  * real phone (screen short side) OR data-viewmode=mobile OR innerWidth<=900.
+ * v6 (2026-08-25): v5 hid the sidebar but left `.view { width: calc(100vw -
+ * var(--sidebar-w)) }` — a 220px white gutter on the right ("Not the right
+ * wide"). Phone-nav now forces full-width content + --sidebar-w:0.
  *
  * v3 wrote the entire inline-style sheet onto `.topbar` every 1500 ms via
  * setInterval. Mid-animation that re-applied the transform + transition
@@ -89,6 +92,10 @@ function applyTopbarStyles(){
   if(!tb)return;
   var mobile = isMobile();
 
+  try {
+    document.documentElement.classList.toggle('slokk-phone-nav', mobile);
+  } catch (e) {}
+
   if (!mobile) {
     // Desktop — only reset once when transitioning from mobile.
     if (_topbarKey !== 'D') {
@@ -96,6 +103,8 @@ function applyTopbarStyles(){
       document.querySelectorAll('.view').forEach(function(v){
         v.style.removeProperty('margin-left');
         v.style.removeProperty('padding-top');
+        v.style.removeProperty('width');
+        v.style.removeProperty('max-width');
       });
       _topbarKey = 'D';
     }
@@ -125,6 +134,8 @@ function applyTopbarStyles(){
   tb.style.setProperty('box-shadow','2px 0 24px rgba(0,0,0,.25)','important');
   document.querySelectorAll('.view').forEach(function(v){
     v.style.setProperty('margin-left','0','important');
+    v.style.setProperty('width','100%','important');
+    v.style.setProperty('max-width','100%','important');
     v.style.setProperty('padding-top','60px','important');
   });
   _topbarKey = wantKey;
@@ -184,5 +195,5 @@ init();
 // CSS transition during the sidebar slide-in.
 setInterval(init, 3000);
 
-console.log('[MobileNav v4] loaded — state-aware, isMobile='+isMobile()+' innerWidth='+window.innerWidth);
+console.log('[MobileNav v6] loaded — full-width phone nav, isMobile='+isMobile()+' innerWidth='+window.innerWidth);
 })();

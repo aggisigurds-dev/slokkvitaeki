@@ -36,6 +36,20 @@
     ':not([id="view-sala"]):not([id="view-hreyfingarlisti"])';
 
   const css = [
+    // ── 0. Full-width when the sidebar is a hidden drawer ───────────────────
+    // app.css: `.view { width: calc(100vw - var(--sidebar-w)) !important }`.
+    // After the hamburger hides the rail, that still reserved 220px — white
+    // gutter on the right (Agnar 2026-08-25: "Not the right wide"). ALL views,
+    // including the four that otherwise opt out of this baseline.
+    'html.slokk-phone-nav,html[data-viewmode="mobile"]{--sidebar-w:0px}',
+    'html.slokk-phone-nav .view,html.slokk-phone-nav .view.active,' +
+      'html[data-viewmode="mobile"] .view,html[data-viewmode="mobile"] .view.active{' +
+      'margin-left:0!important;width:100%!important;max-width:100%!important;box-sizing:border-box!important}',
+    'html.slokk-phone-nav #bstal-banner,html[data-viewmode="mobile"] #bstal-banner{' +
+      'left:58px!important;right:10px!important}',
+    'html.slokk-phone-nav #bstal-ember,html[data-viewmode="mobile"] #bstal-ember{' +
+      'left:10px!important;right:10px!important}',
+
     // ── 1. Kill horizontal page overflow ────────────────────────────────────
     // Root guarantee: in mobile mode the page never scrolls sideways, whatever
     // the viewport width. This is the recoverable escape-hatch behaviour —
