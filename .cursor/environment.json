@@ -1,0 +1,11 @@
+{
+  "name": "Slökkvitæki web app",
+  "install": "npm install --no-save --no-package-lock netlify-cli && node build-dist.js",
+  "terminals": [
+    {
+      "name": "netlify-dev",
+      "command": "./node_modules/.bin/netlify dev --offline"
+    }
+  ],
+  "ports": [8888]
+}
