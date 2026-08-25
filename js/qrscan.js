@@ -11,7 +11,10 @@ function loadJsQR(){
   return new Promise(function(res,rej){
     if(window.jsQR){_jsqr=window.jsQR;res();return;}
     var s=document.createElement('script');
-    s.src='https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js';
+    // jsdelivr — cdnjs's jsQR/1.4.0/jsQR.min.js path 404s. Previously this loader
+    // never ran because index.html preloaded window.jsQR eagerly; now that jsQR is
+    // lazy, this URL must actually resolve.
+    s.src='https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js';
     s.onload=function(){_jsqr=window.jsQR;res();};
     s.onerror=function(){rej(new Error('Get ekki hlaðið QR lesara'));};
     document.head.appendChild(s);
