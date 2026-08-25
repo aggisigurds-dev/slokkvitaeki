@@ -496,16 +496,19 @@
       'html[data-thm-dark="1"] #view-verkbord .vb-empty,'+
       'html[data-thm-dark="1"] #view-verkbord .vb-hint{color:#cbd5e1!important}',
       '.ut-list{background:var(--surface);border:1px solid var(--brd);border-radius:12px;overflow:hidden;margin-bottom:14px}',
-      /* two-column layout: tæki left, cost calculator right */
+      /* two-column layout: tæki left, cost calculator right.
+         Hægri spjaldið var 560px — 7-dálka REIKNINGUR (Per stk input + Samtals)
+         kramdist og „59.880 kr" klipptist. 780px rúmar línuna; min-width á
+         töflunni + overflow-x (í 129) skrunar frekar en að klippa. */
       '.uttekt-cols{display:flex;gap:16px;align-items:flex-start}',
-      '.uttekt-col-l{flex:1;min-width:0}',
-      '.uttekt-col-r{flex:0 0 560px;max-width:560px;min-width:0}',
+      '.uttekt-col-l{flex:1 1 0;min-width:0}',
+      '.uttekt-col-r{flex:0 0 780px;width:780px;max-width:780px;min-width:640px}',
       '#_ctc-section{margin:0 !important}',
-      '.uttekt-col-r #_ctc-section table{font-size:12px}',
-      /* aðeins meira loft í dálkum nú þegar hægri-spjaldið er 560px — Tegund/Stærð
-         þarf ekki að línast í 3 línur lengur */
-      '.uttekt-col-r #_ctc-section table th,.uttekt-col-r #_ctc-section table td{padding:8px 10px !important}',
-      '@media(max-width:1240px){.uttekt-cols{flex-direction:column}.uttekt-col-r{flex:1 1 auto;max-width:none;width:100%}}',
+      '.uttekt-col-r #_ctc-section table{font-size:12px;min-width:740px}',
+      '.uttekt-col-r #_ctc-section table th,.uttekt-col-r #_ctc-section table td{padding:8px 8px !important}',
+      '.uttekt-col-r #_ctc-section table th:last-child,.uttekt-col-r #_ctc-section table td:last-child{white-space:nowrap}',
+      '.uttekt-col-r #_ctc-section table td:nth-child(2),.uttekt-col-r #_ctc-section table td:nth-child(4),.uttekt-col-r #_ctc-section table td:nth-child(5),.uttekt-col-r #_ctc-section table td:nth-child(6){white-space:nowrap}',
+      '@media(max-width:1420px){.uttekt-cols{flex-direction:column}.uttekt-col-r{flex:1 1 auto;width:100%;max-width:none;min-width:0}}',
       '.ut-bulk{display:none;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 15px;background:var(--ink1);color:#fff}',
       '.ut-bulk.show{display:flex}',
       '.ut-bulk-cnt{font-weight:800;font-size:13px}',
