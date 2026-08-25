@@ -225,6 +225,18 @@
   const VM_KEY = 'slokk_viewmode';
   const VM_ID = '_ky-vm-toggle';
   const VM_MODES = ['mobile', 'table', 'desktop'];
+  // Phone vs viewport: Chrome "Request desktop site" on a Samsung makes
+  // innerWidth ~980px so matchMedia(max-width:640px) lies. screen.width is
+  // the real CSS-pixel short side (~412 on S26).
+  function isPhoneDevice() {
+    try {
+      const short = Math.min(screen.width || 0, screen.height || 0);
+      if (short > 0 && short <= 500) return true;
+      if ((navigator.maxTouchPoints || 0) > 1 && short > 0 && short <= 700) return true;
+    } catch (_) {}
+    return false;
+  }
+  window.SlokkIsPhoneDevice = isPhoneDevice;
   // Uppsett öpp (body.appmode) = appið sjálft er síminn.
   function inAppMode() {
     try { return !!(document.body && document.body.classList.contains('appmode')); } catch (_) { return false; }
@@ -244,8 +256,19 @@
     if (inAppMode()) return 'mobile';
     let m = null;
     try { m = localStorage.getItem(VM_KEY); } catch (_) {}
+    // 2026-08-25: sími lenti í 🖥 Skjár (hvítir nav-textar á gráu, þrjár
+    // Afgreiðslu-dálkar klemmdir) því Chrome „desktop site" vistaði desktop.
+    // Einu-sinni reset — notandi getur ýtt á Skjár aftur ef hann vill.
+    if (isPhoneDevice()) {
+      try {
+        if (!localStorage.getItem('slokk_viewmode_phone_v1')) {
+          localStorage.setItem('slokk_viewmode_phone_v1', '1');
+          if (m === 'desktop' || m === 'table') m = 'mobile';
+        }
+      } catch (_) {}
+    }
     if (VM_MODES.indexOf(m) < 0) {
-      m = (window.matchMedia && window.matchMedia('(max-width:640px)').matches) ? 'mobile' : 'desktop';
+      m = (isPhoneDevice() || (window.matchMedia && window.matchMedia('(max-width:640px)').matches)) ? 'mobile' : 'desktop';
     }
     return m;
   }
