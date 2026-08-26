@@ -124,9 +124,14 @@ var DB = {
         }
         return { data: allRows };
       }
+      // verkbeidnir + verklidur ALSO hit the 1000-row cap (verklidur is at ~926
+      // and climbing). A single .select() there silently returns only the first
+      // 1000 rows — jobs would then lose their unit rows (Counter/Workshop unit
+      // counts + Income go wrong) with no error. Page through both like uttaeki.
+      var self = this;
       var [j, v, u, s, h] = await Promise.all([
-        this.sb.from('verkbeidnir').select('*').order('created_at', {ascending:false}),
-        this.sb.from('verklidur').select('*'),
+        self.fetchAll(function(from,to){ return self.sb.from('verkbeidnir').select('*').order('created_at', {ascending:false}).order('id').range(from,to); }).then(function(data){ return { data: data }; }),
+        self.fetchAll(function(from,to){ return self.sb.from('verklidur').select('*').order('id').range(from,to); }).then(function(data){ return { data: data }; }),
         loadAllUttaeki(this.sb),
         this.sb.from('dagskra').select('*').order('date'),
         this.sb.from('skodunar_saga').select('*').order('created_at', {ascending:false}).limit(20)
