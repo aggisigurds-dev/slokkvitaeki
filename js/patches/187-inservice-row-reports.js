@@ -332,7 +332,10 @@
       // 2026-08-17: Nóta- og Heimilisfangs-dálkarnir (153, data-notacol/-addrcol)
       // sitja á eftir nafninu — árs-dálkarnir hoppa yfir þá og fá EINN samhaus
       // „Skoðanir · skjöl" (colspan=4). Röð-reitirnir eru áfram fjórir undir.
-      let ref = htr.children[1] || null;
+      // 2026-08-26: festum við data-notacol-hausinn með SELECTOR, ekki children[1]
+      // — nýr póst-stöðu dálkur (153, ._ars-mailhdr) fremst mátti annars færa
+      // children[1] yfir á nafna-hausinn og árs-hausinn lenti á röngum stað.
+      let ref = htr.querySelector('th[data-notacol]') || htr.children[1] || null;
       const hasNota = !!(ref && ref.getAttribute && ref.getAttribute('data-notacol'));
       while (ref && ref.getAttribute && (ref.getAttribute('data-notacol') || ref.getAttribute('data-addrcol'))) ref = ref.nextElementSibling;
       if (hasNota) {
@@ -379,7 +382,10 @@
       const files = Array.isArray(att[coId]) ? att[coId] : [];
       // 2026-08-17: hoppa yfir Nóta- OG Heimilisfangs-reitina (153,
       // ._ars-notacell/._ars-addrcell) — árs-reitirnir koma á eftir þeim.
-      let ref = tr.children[1] || null;
+      // 2026-08-26: festum við ._ars-notacell með SELECTOR, ekki children[1]
+      // — póst-stöðu dálkurinn fremst (153, ._ars-mailcol) hefði annars fært
+      // children[1] yfir á nafna-reitinn og árin lent milli pósts og nafns.
+      let ref = tr.querySelector('td._ars-notacell') || tr.children[1] || null;
       while (ref && ref.classList && (ref.classList.contains('_ars-notacell') || ref.classList.contains('_ars-addrcell'))) ref = ref.nextElementSibling;
       const locRec = (locMap && locMap[coId]) || {};
       YEARS.forEach(y => {

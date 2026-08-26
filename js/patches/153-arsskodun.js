@@ -2730,8 +2730,11 @@
       V+'.data-table{min-width:1300px;width:100%;table-layout:fixed}',
       // Súlubreiddirnar koma úr <colgroup> í renderTable (skothelt í fixed
       // layout, ónæmt fyrir colspan-hausnum) — design: 186/118/4×64/284/62/158/74/66/150.
-      // árs-reitirnir fjórir (187 sprautar) — með póst-dálkinn fremst hliðrast þeir
-      // í 5–8 (áður 4–7): póstur(1) nafn(2) nóta(3) heimilisfang(4) mánuður(5) tæki(6) akstur(7) forg(8)
+      // árs-reitirnir fjórir (187 sprautar RUNTIME á eftir Heimilisfangi) — með
+      // nýja póst-dálkinn fremst hliðrast þeir úr 4–7 í 5–8. FULL keyrslu-röð:
+      // póstur(1) nafn(2) nóta(3) heimilisfang(4) ÁR×4(5–8) mánuður(9) tæki(10)
+      // akstur(11) forg(12) staða(13). 187 festir sig á ._ars-notacell (ekki
+      // children[1]) svo árin lenda rétt þrátt fyrir póst-dálkinn.
       V+'.data-table td:nth-child(5),'+V+'.data-table td:nth-child(6),'+V+'.data-table td:nth-child(7),'+V+'.data-table td:nth-child(8){padding-left:2px;padding-right:2px;text-align:center}',
       // póst-stöðu dálkurinn (nýr, fremstur) — mjór, miðjaður, merkið án hægri-spássíu
       V+'.data-table th._ars-mailhdr{padding-left:4px!important;padding-right:4px!important;text-align:center;font-size:12px;letter-spacing:0}',
