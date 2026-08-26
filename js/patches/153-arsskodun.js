@@ -265,8 +265,11 @@
             if (d.fyrirtaeki_id != null) {
               const m = bruna ? bruByCo : byCo;
               (m[String(d.fyrirtaeki_id)] = m[String(d.fyrirtaeki_id)] || new Set()).add(y);
+            } else if (!bruna && d.customer_base_id != null) {
+              // Aðeins munaðir (engin fyrirtaeki_id). Site-merktar skýrslur í
+              // byBase máluðu 2026-grænt á Plaza frá Klöpp/Grandi (base 146).
+              (byBase[String(d.customer_base_id)] = byBase[String(d.customer_base_id)] || new Set()).add(y);
             }
-            if (!bruna && d.customer_base_id != null) (byBase[String(d.customer_base_id)] = byBase[String(d.customer_base_id)] || new Set()).add(y);
           });
           if (rows.length < 1000) break;
         }
@@ -349,10 +352,13 @@
         const units = unitsByFid[c.id] || [];
         _ars._units = units;   // keep the raw uttaeki rows so the modal can list + delete individual tæki
         // Skýrslu-ár úr customer_documents (fyrir Óvíst-sönnunarmerkin)
-        const dySet = new Set([
-          ...(docYears.byCo[String(c.id)] || []),
-          ...(c.customer_base_id != null ? (docYears.byBase[String(c.customer_base_id)] || []) : []),
-        ]);
+        // Rekstrarfélags-vörn (sama og last_year_inspected hér að neðan):
+        // base-munaðar skýrslur gilda AÐEINS þegar base á nákvæmlega EINN stað.
+        // Án þessa fékk Plaza (193) 2026-grænt á Síma frá systurskýrslum.
+        const dySet = new Set([...(docYears.byCo[String(c.id)] || [])]);
+        if (c.customer_base_id != null && (_baseSiteCount[String(c.customer_base_id)] || 0) <= 1) {
+          (docYears.byBase[String(c.customer_base_id)] || []).forEach(y => dySet.add(y));
+        }
         _ars._docYears = Array.from(dySet).sort();          // AÐEINS úttektarskýrslur
         // Brunakerfis-ár til hliðar: sanna að kúnninn sé raunverulegur (❓ Óvíst)
         // en mega ALDREI látast vera slökkvitækjaskoðun ársins.

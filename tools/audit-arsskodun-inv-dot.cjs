@@ -87,6 +87,19 @@ if (!/bruInvIds/.test(SRC) || !/invoice_doc_id/.test(SRC)) {
   fail('187 loadPairs no longer skips uttekt+klarad pairs whose invoice is brunakerfi.');
 }
 
+const SRC153 = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '153-arsskodun.js'), 'utf8');
+if (/if \(!bruna && d\.customer_base_id != null\) \(byBase/.test(SRC153)) {
+  fail('153 still dumps every úttektarskýrsla into byBase — Plaza Sími would inherit sibling 2026 reports.');
+}
+if (!/fyrirtaeki_id == null && d\.customer_base_id != null/.test(SRC153) &&
+    !/else if \(!bruna && d\.customer_base_id != null\)/.test(SRC153)) {
+  fail('153 byBase is not orphan-only (docs without fyrirtaeki_id).');
+}
+if (!/_baseSiteCount\[String\(c\.customer_base_id\)\] \|\| 0\) <= 1/.test(SRC153) &&
+    !/_baseSiteCount\[String\(c\.customer_base_id\)\] \|\| 0\) === 1/.test(SRC153)) {
+  fail('153 _docYears lost the single-site guard — rekstrarfélög Sími year cells would share reports.');
+}
+
 const klarad = SRC.slice(SRC.indexOf('function isKlaradYear'), SRC.indexOf('function isKlaradYear') + 280);
 if (!/pairMap && pairMap\[String\(coId\)\]/.test(klarad) && !/pairMap && pairMap\[String\(coId\)\]/.test(SRC)) {
   fail('187 isKlaradYear is no longer pairMap per fyrirtaeki_id.');

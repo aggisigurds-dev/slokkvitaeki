@@ -252,6 +252,8 @@ baseline rows and lowering the constant is how the net tightens over time.
   01.02.26, hleðsla) merktan `uttekt` á staðnum — Rekstrarfélög/prófíls-pillur
   rétt án blás, Ársskoðun kveikti LED af `reikMap.byCo`. Nú: 🧾 við skýrslu =
   site-keyed úttekt; inv-only = `v_uttekt_ar` eða `solur.customer_id`.
+  `153` `_docYears` tekur ekki lengur allar base-skýrslur inn á hvert systkini
+  (Plaza Sími málaðist grænt 2026 af Klöpp/Grandi). Invoice OUT / payday / kt-save ósnert.
 - *Add a line here every time you make something bulletproof.*
 
 ---
