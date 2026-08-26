@@ -537,6 +537,12 @@
       // 50px sporöskjur af thumb-target reglunni (.view button{min-height:50px})
       // — „pulled circle". Undanskiljum þá svo þeir haldist hringlaga.
       'body.appmode #ars-main table button,body.appmode #ars-main table .akstur,body.appmode #ars-main table ._arsak-chip{min-height:0 !important;height:auto !important;padding-top:2px !important;padding-bottom:2px !important;line-height:1.1 !important}',
+      // Kröfu yfirlit is an OVERVIEW list. The 50px-on-every-button rule turns
+      // 8 .ky-abtn + month ◀▶ into sausages and the 52px input blows the
+      // always-visible minnispunktur. Patch 166 owns compact sizes; we only
+      // stop the hammer here (same pattern as #ars-main above).
+      'body.appmode #view-krofu-yfirlit .ky-abtn,body.appmode #view-krofu-yfirlit .ky-navbtn,body.appmode #view-krofu-yfirlit .ky-mcopy,body.appmode #view-krofu-yfirlit .filter-chip,body.appmode #view-krofu-yfirlit ._ky-sync,body.appmode #view-krofu-yfirlit ._ky-exp{min-height:0 !important;padding-top:0 !important;padding-bottom:0 !important}',
+      'body.appmode #view-krofu-yfirlit input._ky-note,body.appmode #view-krofu-yfirlit input._ky-search,body.appmode #view-krofu-yfirlit select._ky-sort{min-height:44px !important;font-size:16px !important}',
       // Full lárétt skrun á töflunni svo hægt sé að ná alla leið að „2026"-dálknum.
       // Staða-pillan í síðasta dálki (grænn/blár/gulur) datt út af hægri brún —
       // hún flæddi út fyrir skrun-breidd töflunnar. Víkkum töfluna + bætum
@@ -644,6 +650,7 @@
     var a = effectiveApp(ACTIVE); if (!a) return;
     styles();
     document.body.classList.add('appmode');
+    document.body.setAttribute('data-app', a.key);
     var pages = pagesFor(a.key); if (!pages.length) pages = a.defaults.slice();
     // App-mode á að opnast á SÍNU auðkennis-síðu (home), ekki hvað sem raðast
     // fremst í valdar síður. „Síður í appinu"-hökin vistast í PAGES-röð, svo t.d.

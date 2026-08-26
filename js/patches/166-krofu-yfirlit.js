@@ -147,12 +147,70 @@
       M + '.page-title__tools{justify-content:flex-start !important;flex-wrap:wrap;gap:7px;width:100%}' +
       M + '.page-title__tools .ky-month{min-width:0 !important;padding:0 6px}' +
       M + '.page-title__tools ._ky-sort{margin-left:0 !important;flex:1 1 100%;min-width:0}' +
-      // App-ham situr á LJÓSUM bakgrunni (patch 261 þvingar hvítt á .view í appi) svo
+      // App-ham situr á LJÓSUM bakgrunni (patch 261 þvingar hvítt/stál á .view í appi) svo
       // hvíti titillinn/undirtextinn/mánuðurinn hverfur — gera þau dökk-læsileg. Hub-
       // síma-sýnin (án appmode) situr áfram á dökka Brunastál-borðanum og heldur hvítu.
-      MA + '.page-title h1{color:#11141c !important;text-shadow:none !important}' +
-      MA + '.page-title p{color:#5b6472 !important}' +
-      MA + '.ky-month{color:#11141c !important}';
+      MA + '.page-title h1{color:#11141c !important;text-shadow:none !important;font-size:20px !important}' +
+      MA + '.page-title p{color:#1e293b !important}' +
+      MA + '.ky-month{color:#11141c !important}' +
+
+      // ── 📱 Dense overview (2026-08-26 P0) ──
+      // Patch 261 `body.appmode .view button{min-height:50px;padding:12px}` +
+      // `input{min-height:52px}` + `td{font-size:16.5px}` blew this list:
+      // 8 ky-abtn sausages, always-open 52px minnispunktur, 50px ◀▶ in the
+      // title gap, grey 14–24px gutters around .app-page. 263 skips this view
+      // so it cannot save us. Collapse actions/notes until the row is opened.
+      M + '>.main-panel{padding-left:0!important;padding-right:0!important;max-width:none!important}' +
+      // Beat patch 230's `>.main-panel{padding:8px 14px}` — those three
+      // `:not(#id)` count as ID specificity, so a plain #view-… >.main-panel loses.
+      'html[data-viewmode="mobile"] #view-krofu-yfirlit.view.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel{padding-left:0!important;padding-right:0!important;padding-top:4px!important;max-width:none!important}' +
+      'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode #view-krofu-yfirlit.view.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel{padding-left:0!important;padding-right:0!important;padding-top:4px!important}' +
+      M + '.thm .app-main{padding:6px 0 16px!important}' +
+      M + '.thm .app-page{background:transparent!important;min-height:0!important}' +
+      M + '.page-title,' + M + '.stat-row,' + M + '.ky-exprow,' + M + '.ky-filterbar,' + M + '.ky-hint{padding-left:10px;padding-right:10px;box-sizing:border-box}' +
+      M + '.page-title{margin-bottom:8px!important;gap:8px!important}' +
+      M + '.page-title p{display:none!important}' +
+      M + '.page-title__tools ._ky-prev,' + M + '.page-title__tools ._ky-next{min-width:44px;min-height:44px!important;height:44px!important;padding:0!important;font-size:16px!important;line-height:1}' +
+      M + '.page-title__tools ._ky-sort{flex:1 1 160px!important;min-height:44px!important;font-size:16px!important;padding:8px 10px!important}' +
+      M + '.ky-hint{display:none!important}' +
+      M + '.stat-row{margin-bottom:6px!important;gap:6px!important}' +
+      M + '.stat-card{padding:6px 8px!important;border-radius:10px!important}' +
+      M + '.stat-card__value{font-size:14px!important;margin-top:1px!important}' +
+      M + '.stat-card__label{font-size:9px!important}' +
+      M + '.ky-exprow{gap:6px!important;margin-bottom:6px!important}' +
+      M + '.ky-exprow ._ky-exp{min-height:0!important;height:auto!important;padding:6px 8px!important;gap:6px!important;border-radius:10px!important;align-items:center!important}' +
+      M + '.ky-exprow ._ky-exp>span:first-child{display:none!important}' +
+      M + '.ky-exprow ._ky-exp div>div:first-child{font-size:9px!important;letter-spacing:.03em}' +
+      M + '.ky-exprow ._ky-exp div>div:last-child{font-size:14px!important}' +
+      M + '.ky-filterbar{margin-bottom:6px!important;gap:6px!important}' +
+      M + '.ky-filterbar .filter-chip,' + M + '._ky-sync{flex:1 1 auto;min-height:40px!important;height:auto!important;padding:6px 10px!important;font-size:12px!important}' +
+      M + '.ky-filterbar ._ky-search{flex:1 1 100%!important;min-height:40px!important;font-size:16px!important;padding:8px 10px!important}' +
+      M + '.ky-co{border-radius:0;border-left:none;border-right:none;margin-bottom:0;box-shadow:none}' +
+      M + '.ky-cohead{padding:8px 12px 4px}' +
+      M + '.ky-coname{font-size:15px;line-height:1.2}' +
+      M + '.ky-cometa{font-size:11px;margin-top:1px}' +
+      M + '.ky-kraflbl{display:none}' +
+      M + '.ky-krafamt{font-size:15px;margin-top:0}' +
+      M + '.ky-cobar{margin-top:4px}' +
+      M + '.ky-cobar>div{height:4px!important;width:100%!important;max-width:100%!important;margin-top:0!important}' +
+      M + '.ky-cosub{margin-top:4px;font-size:11px}' +
+      M + '.ky-mcopy{width:36px;height:36px;min-height:36px!important}' +
+      M + '.ky-mrow{padding:0;border-top:1px solid #e8ecf2}' +
+      M + '.ky-saletop{min-height:44px;padding:8px 12px;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
+      M + '.ky-mdetail{display:none;padding:0 12px 10px}' +
+      M + '.ky-mrow.open .ky-mdetail,' + M + '.ky-mrow:focus-within .ky-mdetail{display:block}' +
+      M + '.ky-mrow.open .ky-saletop,' + M + '.ky-mrow:focus-within .ky-saletop{background:#f4f7fb}' +
+      M + '.ky-chev{margin-left:4px;flex:none;color:#334155;font-size:16px;line-height:1;transition:transform .12s}' +
+      M + '.ky-mrow.open .ky-chev,' + M + '.ky-mrow:focus-within .ky-chev{transform:rotate(90deg)}' +
+      M + '.ky-hasnote{flex:none;font-size:12px;opacity:.8}' +
+      M + '.ky-mnote{margin-top:4px;min-height:44px!important;font-size:16px!important;padding:8px 10px!important}' +
+      M + '.ky-acts{margin-top:8px;gap:8px}' +
+      M + '.ky-acts .ky-abtn{flex:1 1 calc(50% - 8px);min-width:calc(50% - 8px);min-height:44px!important;height:44px!important;padding:0 6px!important;font-size:11px!important}' +
+      // Beat 261's 50px hammer with ID-level !important (this view is skipped in 263).
+      M + 'button.ky-abtn,' + M + 'button.ky-navbtn{min-height:44px!important;padding-top:0!important;padding-bottom:0!important}' +
+      M + 'button._ky-exp{min-height:0!important;padding:6px 8px!important}' +
+      M + 'input._ky-note,' + M + 'input._ky-search,' + M + 'select._ky-sort{min-height:44px!important;font-size:16px!important}' +
+      M + '{overflow-x:hidden}';
     (document.head || document.documentElement).appendChild(s);
   })();
 
@@ -459,7 +517,9 @@
                  selected: new Set(), sending: false, stop: false, search: '',
                  // Sýnarsía: 'krofur' (útistandandi, eins og áður) · 'osendar' ·
                  // 'greiddar' · 'allt' (bæði ógreiddar OG greiddar).
-                 viewFilter: 'krofur' };
+                 viewFilter: 'krofur',
+                 // Síma/app: hvaða kröfu-raðir eru opnar (aðgerðir + minnispunktur).
+                 openSales: new Set() };
 
   // A sale is "sendanleg" (queueable) if it hasn't already been pushed to
   // Payday. krafa_sent_at / invoiced_at / dk_invoice_id all mark a sent claim —
@@ -991,7 +1051,7 @@
           <input class="_ky-search ky-navbtn darkfield" type="search" placeholder="🔍 Leita (nafn · kt · R-nr)…" value="${esc(_state.search)}" style="flex:1 1 160px;min-width:130px;margin-left:auto;padding:7px 11px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;font:inherit;font-size:13px">
         </div>
 
-        <div style="font-size:12.5px;color:#5b6472;margin-bottom:14px;padding:11px 15px;background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18);line-height:1.5">
+        <div class="ky-hint" style="font-size:12.5px;color:#1e293b;margin-bottom:14px;padding:11px 15px;background:#fff;border:1px solid rgba(20,24,34,.08);border-radius:14px;box-shadow:0 8px 22px -16px rgba(25,35,60,.18);line-height:1.5">
           💡 Útistandandi kröfur per fyrirtæki sem þarf að setja í heimabankann.
           Þegar krafan er greidd, merktu hverja sölu greidda með <b style="color:#0f7a43">✓</b> — eða „🔄 Payday" sækir greiðslustöðuna sjálfkrafa.
         </div>
@@ -1249,6 +1309,28 @@
           await navigator.clipboard.writeText(v);
           if (window.Toast && Toast.show) Toast.show('✓ Afritað: ' + v + ' kr');
         } catch (_) {}
+      });
+    });
+
+    // Síma/app: stutt yfirlit — smellur á röð opnar minnispunkt + aðgerðir.
+    if (!_state.openSales) _state.openSales = new Set();
+    main.querySelectorAll('.ky-mrow .ky-saletop').forEach(top => {
+      const row = top.closest('.ky-mrow');
+      if (!row) return;
+      const toggle = (ev) => {
+        if (ev.target.closest('input,button,a,select,textarea,.ky-acts,._ky-note')) return;
+        ev.preventDefault();
+        const id = String(row.dataset.saleId || '');
+        const on = !row.classList.contains('open');
+        row.classList.toggle('open', on);
+        top.setAttribute('aria-expanded', on ? 'true' : 'false');
+        if (id) {
+          if (on) _state.openSales.add(id); else _state.openSales.delete(id);
+        }
+      };
+      top.addEventListener('click', toggle);
+      top.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter' || ev.key === ' ') toggle(ev);
       });
     });
 
@@ -1687,9 +1769,12 @@
     const rows = sales.map(s => {
       const da = daysAgo(s.created_at);
       const skyrslaBtn = skyrslaBtnFor(s);
+      const sid = String(s.id);
+      const isOpen = _state.openSales && _state.openSales.has(sid);
+      const hasNote = !!(s.krafa_note && String(s.krafa_note).trim());
       return `
-        <div class="ky-row ky-mrow">
-          <div class="ky-saletop">
+        <div class="ky-row ky-mrow${isOpen ? ' open' : ''}" data-sale-id="${esc(sid)}">
+          <div class="ky-saletop" role="button" tabindex="0" aria-expanded="${isOpen ? 'true' : 'false'}" title="Opna aðgerðir">
             ${isSendable(s)
               ? `<input type="checkbox" class="_ky-pick" data-id="${s.id}" data-amount="${Math.round(parseFloat(s.samtals) || 0)}" title="Velja kröfu í Payday-sendingu">`
               : '<span class="ky-pick-sp"></span>'}
@@ -1697,12 +1782,16 @@
             <span class="ky-num ky-mdate">${fmtDate(s.created_at)}</span>
             ${agingPill(da)}
             <span class="ky-num ky-mamt">${fmtKr(s.samtals)}</span>
+            ${hasNote ? '<span class="ky-hasnote" title="Minnispunktur">🗒</span>' : ''}
+            <span class="ky-chev" aria-hidden="true">›</span>
           </div>
+          <div class="ky-mdetail">
           <input class="_ky-note ky-mnote" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="🗒 minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — vistast sjálfkrafa.">
           <!-- Sama röð og á breiða borðinu (2026-07-22 v2): skjölin fremst
                (Senda · Reikningur · Skýrsla), svo staðan (Krafa send · Greitt),
                svo hitt. Röðin er eins á síma og skjá svo handtökin séu þau sömu.
-               Munurinn: hér BROTNA hnapparnir (flex-wrap) í stað láréttrar skrunar. -->
+               Munurinn: hér BROTNA hnapparnir (flex-wrap) í stað láréttrar skrunar.
+               Í yfirliti eru þau FALIN uns röðin er opnuð (261 blés þau í 50px). -->
           <div class="ky-acts">
             ${kyAbtn('_ky-email', 'data-id="' + s.id + '"', '📧', 'Senda', '#0f766e', 'Senda reikning og/eða úttektarskýrslu í tölvupósti', false)}
             ${kyAbtn('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', 'Reikning', '#2f5fe0', 'Skoða / prenta reikning', false)}
@@ -1713,6 +1802,7 @@
             ${kyAbtn('_ky-kredit', 'data-id="' + s.id + '"', '↩', 'Bakfæra', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
             ${s.dk_invoice_id ? kyAbtn('_ky-afturkalla', 'data-id="' + s.id + '"', '⊘', 'Afturkalla', '#b45309', 'Afturkalla kröfuna í Payday (fella niður kröfu + reikning)', false) : ''}
             ${kyAbtn('_ky-nyjan', 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', '＋', 'Nýr', '#0f7a43', 'Ný sala fyrir þennan viðskiptavin', false)}
+          </div>
           </div>
         </div>`;
     }).join('');

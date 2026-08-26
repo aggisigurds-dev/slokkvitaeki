@@ -161,7 +161,7 @@
 
 /* Tablet/small-laptop pinch (481-768px): looser version of phone rules */
 @media (min-width: 481px) and (max-width: 768px){
-  #pos-products,#pos-services{grid-template-columns:repeat(3,1fr) !important}
+  #pos-products,#pos-services{grid-template-columns:repeat(2,minmax(0,1fr)) !important}
   ._pm_dash{grid-template-columns:repeat(2,1fr) !important}
   .field-body{display:block !important}
   .field-col{width:100% !important;margin-bottom:14px}
