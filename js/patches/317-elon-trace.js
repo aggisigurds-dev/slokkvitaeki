@@ -1,11 +1,17 @@
 /* ELON TRACE — hidden junction-box stamps on bulbs (as-built, patch 317).
  *
- * Puts machine-readable numbers on year cells, 🧾, month chips and status
- * labels WITHOUT changing visible design. Look-A ._yr gradients stay in 153.
- * Hover title:  ELON · f193 · 2026 · both · src=facts
- * data-elon:    ELON|fid=193|y=2026|k=both|src=facts
+ * Puts machine-readable numbers on year cells, FULLBÚIÐ/VANTAR, date pill,
+ * SKOÐUN cells, month FILTER chips, status FILTERS, KPI/summaries, TÆKI,
+ * STAÐA EFTIR ÁRI, 🧾 — WITHOUT changing visible design.
+ * Look-A ._yr gradients stay in 153. No CSS on ._yr.
  *
- * See docs/RAFKERFI.md. Do not restyle ._yr. Do not merge hotels.
+ * Hover:  ELON · f193 · 2026 · both · src=facts · YEAR CELL
+ * data-elon: ELON|fid=193|y=2026|k=both|src=facts|role=YEAR CELL
+ *
+ * SOURCE vs FILTER: 📅 .sk-month-pill / span._mo = SOURCE (inspect_month).
+ * ._ars-mo chips and ._ars-st tabs = FILTER (do not write inspect_month).
+ *
+ * See docs/RAFKERFI.md (kaflar 8–12). Do not restyle ._yr. Do not merge hotels.
  */
 (() => {
   if (window.__elonTraceInstalled) return;
@@ -33,6 +39,11 @@
     const coid = el.closest('[data-coid]');
     if (coid) {
       const v = coid.getAttribute('data-coid');
+      if (v && /^\d+$/.test(v)) return v;
+    }
+    const viewCo = document.querySelector('#view-company[data-co-id], #view-company [data-co-id]');
+    if (viewCo) {
+      const v = viewCo.getAttribute('data-co-id');
       if (v && /^\d+$/.test(v)) return v;
     }
     return '';
@@ -75,6 +86,7 @@
     let o = el.getAttribute('data-elon-orig');
     if (o != null) return o;
     o = el.getAttribute('title') || '';
+    o = o.replace(/^ELON · .*?(?: · src=\S+)?(?: · (?:YEAR CELL|SOURCE|FILTER|KPI|FULLB[ÚU]I[ĐD]|VANTAR|STA[ĐD]A|SWITCH|TÆKI|DOT|LED|CALC).*)?/, '');
     o = o.replace(/^ELON · .*? · src=\S+\s*(?:·\s*)?/, '');
     el.setAttribute('data-elon-orig', o);
     return o;
@@ -105,7 +117,8 @@
     const y = year != null ? String(year) : '';
     const k = state || '';
     const s = src || '';
-    const pipe = 'ELON|fid=' + f + '|y=' + y + '|k=' + k + '|src=' + s;
+    const r = role || '';
+    const pipe = 'ELON|fid=' + f + '|y=' + y + '|k=' + k + '|src=' + s + (r ? '|role=' + r : '');
     const prev = el.getAttribute('data-elon');
     if (prev === pipe && el.getAttribute('title') && String(el.getAttribute('title')).indexOf('ELON ·') === 0) return;
     origTitle(el);
@@ -114,10 +127,10 @@
     if (y) el.setAttribute('data-year', y);
     if (k) el.setAttribute('data-state', k);
     if (s) el.setAttribute('data-elon-src', s);
-    if (role) el.setAttribute('data-elon-role', role);
+    if (r) el.setAttribute('data-elon-role', r);
     const o = el.getAttribute('data-elon-orig') || '';
     let hover = 'ELON · f' + (f || '?') + ' · ' + (y || '—') + ' · ' + (k || '—') + ' · src=' + (s || '?');
-    if (role) hover += ' · ' + role;
+    if (r) hover += ' · ' + r;
     if (o) hover += ' · ' + o;
     el.setAttribute('title', hover);
   }
@@ -141,89 +154,136 @@
   function scan(root) {
     const scope = root && root.querySelectorAll ? root : document;
     if (!scope.querySelectorAll) return;
+    const yNow = String(new Date().getFullYear());
 
+    /* --- Ársskoðun year cells (look-A). Role YEAR CELL. No CSS. --- */
     scope.querySelectorAll('a._yr, span._yr').forEach(el => {
       const fid = fidOf(el) || el.getAttribute('data-co-id') || '';
       const y = yearOf(el) || el.getAttribute('data-year') || '';
       const k = stateOfYr(el);
-      stamp(el, fid, y, k, srcOfYr(el, k), '');
+      const role = el.classList.contains('lit') ? 'YEAR CELL LED' : 'YEAR CELL';
+      stamp(el, fid, y, k, srcOfYr(el, k), role);
     });
 
+    /* Dots under year cells — report / invoice presence. */
+    scope.querySelectorAll('#view-arsskodun ._dd u i.rep, #view-arsskodun ._dd u i.inv, #ars-main ._dd u i.rep, #ars-main ._dd u i.inv').forEach(el => {
+      const isInv = el.classList.contains('inv');
+      stamp(el, fidOf(el), yearOf(el.closest('._dd') || el), isInv ? 'inv' : 'rep', isInv ? 'solur' : 'docs', 'DOT');
+    });
+
+    /* SKOÐUN cell = SOURCE (per-row inspect_month). NOT the month filter. */
     scope.querySelectorAll('#view-arsskodun span._mo, #ars-main span._mo').forEach(el => {
-      stamp(el, fidOf(el), '', 'month', 'month', '');
+      stamp(el, fidOf(el), '', 'month', 'month', 'SOURCE');
     });
 
+    /* Month chips Ágú 32 = FILTER. Count = visible rows with that inspect_month. */
     scope.querySelectorAll('._ars-mo').forEach(el => {
       const m = el.getAttribute('data-month');
-      stamp(el, '', m === 'all' ? '' : String(m || ''), 'filter', 'month', '');
+      stamp(el, '', m === 'all' ? '' : String(m || ''), 'filter', 'month', 'FILTER');
     });
 
+    /* Status tabs Forgangur/Óvíst/Aldrei/… = FILTER. */
+    scope.querySelectorAll('._ars-st').forEach(el => {
+      const k = (el.getAttribute('data-status') || el.textContent || '').trim().slice(0, 24);
+      stamp(el, '', yNow, k || 'filter', 'month', 'FILTER');
+    });
+
+    /* Per-row status pill (BÍÐUR / Í VINNSLU / KLÁRAÐ). */
     scope.querySelectorAll('span._st').forEach(el => {
       const k = stState(el);
-      stamp(el, fidOf(el), String(new Date().getFullYear()), k, k === 'done' ? 'facts' : 'month', '');
+      stamp(el, fidOf(el), yNow, k, k === 'done' ? 'facts' : 'month', 'STATUS');
     });
 
-    scope.querySelectorAll('._ars-statgrid > div').forEach((el, i) => {
-      stamp(el, '', String(new Date().getFullYear()), 'kpi', 'facts', 'KPI-' + i);
+    /* TÆKI "2 SLT" — eqGroups from uttaeki.tegund. */
+    scope.querySelectorAll('#view-arsskodun td._devs, #ars-main td._devs, #view-arsskodun ._devs, #ars-main ._devs').forEach(el => {
+      stamp(el, fidOf(el), yNow, 'taeki', 'uttaeki', 'TÆKI');
     });
 
-    scope.querySelectorAll('._ars-summary').forEach(el => {
-      stamp(el, '', String(new Date().getFullYear()), 'summary', 'facts', '');
+    /* KPI tiles + summary strip. */
+    scope.querySelectorAll('._ars-statgrid > div, #ars-kpi-row > *').forEach((el, i) => {
+      stamp(el, '', yNow, 'kpi', 'facts', 'KPI');
+    });
+    scope.querySelectorAll('._ars-summary, ._ars-kpi').forEach(el => {
+      stamp(el, '', yNow, 'summary', 'facts', 'KPI');
     });
 
+    /* Rekstrarfélög. */
     scope.querySelectorAll('.rf-bundle-tag').forEach(el => {
       const pill = el.closest('.rf-dd, .rf-ycell, .rf-yrs');
       const yrEl = pill && pill.querySelector('.rf-yr');
-      stamp(el, fidOf(el), yearOf(yrEl || el), 'bundle', 'pairs', '');
+      stamp(el, fidOf(el), yearOf(yrEl || el), 'bundle', 'pairs', 'BUNDLE');
     });
-
     scope.querySelectorAll('.rf-yr').forEach(el => {
       const k = rfYrState(el);
       const src = (k === 'done') ? 'docs' : (k === 'due' || k === 'overdue' ? 'month' : 'docs');
-      stamp(el, fidOf(el), yearOf(el), k, src, '');
+      stamp(el, fidOf(el), yearOf(el), k, src, 'YEAR CELL');
     });
-
     scope.querySelectorAll('.rf-pill').forEach(el => {
-      stamp(el, fidOf(el), String(new Date().getFullYear()), 'pill', 'facts', '');
+      stamp(el, fidOf(el), yNow, 'pill', 'facts', 'PILL');
     });
-
     scope.querySelectorAll('.rf-sum-chip, .rf-sum-next, .rf-next').forEach(el => {
-      stamp(el, fidOf(el), String(new Date().getFullYear()), 'next', 'month', '');
+      stamp(el, fidOf(el), yNow, 'next', 'month', 'SOURCE');
     });
 
+    /* Company profile — 📅 date pill = SOURCE SWITCH (inspect_month). */
     scope.querySelectorAll('.sk-month-pill, [data-month-edit]').forEach(el => {
       stamp(el, fidOf(el), '', 'switch', 'switch', 'SOURCE SWITCH');
     });
 
+    /* STAÐA EFTIR ÁRI pills (pink "26" on Center Hotels). */
     scope.querySelectorAll('.sk-pill').forEach(el => {
       const y = yearOf(el);
       let k = 'none', src = 'docs';
-      if (el.classList.contains('both') || el.classList.contains('done')) { k = 'both'; src = el.classList.contains('done') ? 'facts' : 'pairs'; }
+      if (el.classList.contains('both') || el.classList.contains('done')) { k = 'both'; src = 'pairs'; }
       else if (el.classList.contains('ok')) { k = 'ok'; src = 'docs'; }
       else if (el.classList.contains('gap')) { k = 'gap'; src = 'facts'; }
       else if (el.classList.contains('claude')) { k = 'inv-only'; src = 'solur'; }
       else if (el.classList.contains('now')) { k = 'now'; src = 'month'; }
-      stamp(el, fidOf(el), y, k, src, '');
+      stamp(el, fidOf(el), y, k, src, 'STAÐA EFTIR ÁRI');
     });
-
-    scope.querySelectorAll('.sk-svc-st').forEach(el => {
-      const t = String(el.textContent || '');
-      const k = /FULLBÚIÐ/.test(t) ? 'both' : (/VANTAR/.test(t) ? 'part' : 'prog');
-      stamp(el, fidOf(el), yearOf(el.closest('.sk-yrblock') || el), k, k === 'both' ? 'pairs' : 'docs', '');
-    });
-
     scope.querySelectorAll('.sk-yr-label, .sk-yr[data-yr]').forEach(el => {
       let k = 'none', src = 'docs';
       if (el.classList.contains('sk-yr-ok')) { k = 'both'; src = 'docs'; }
       else if (el.classList.contains('sk-yr-gap')) { k = 'gap'; src = 'facts'; }
       else if (el.classList.contains('sk-yr-claude')) { k = 'inv-only'; src = 'solur'; }
       else if (el.classList.contains('sk-yr-now')) { k = 'now'; src = 'month'; }
-      stamp(el, fidOf(el), yearOf(el), k, src, '');
+      stamp(el, fidOf(el), yearOf(el), k, src, 'STAÐA EFTIR ÁRI');
     });
 
-    scope.querySelectorAll('.sk-doc.inv, .sk-doc.rep').forEach(el => {
-      const src = el.classList.contains('inv') ? 'solur' : 'docs';
-      stamp(el, fidOf(el), yearOf(el), el.classList.contains('inv') ? 'inv' : 'rep', src, '');
+    /* FULLBÚIÐ / n AF 2 VANTAR / Í VINNSLU — accordion service status.
+       Slökkvitækjaþjónusta vs Brunakerfisþjónusta are SEPARATE circuits. */
+    scope.querySelectorAll('.sk-svc-st').forEach(el => {
+      const t = String(el.textContent || '');
+      let k = 'prog', src = 'docs', role = 'Í VINNSLU';
+      if (/FULLBÚIÐ/.test(t)) { k = 'both'; src = 'pairs'; role = 'FULLBÚIÐ'; }
+      else if (/VANTAR/.test(t)) { k = 'part'; src = 'docs'; role = 'VANTAR'; }
+      stamp(el, fidOf(el), yearOf(el.closest('.sk-yrblock') || el), k, src, role);
+    });
+
+    /* Report / invoice checkmarks (skýrsla, R-000803). */
+    scope.querySelectorAll('.sk-doc.inv, .sk-doc.rep, .sk-doc').forEach(el => {
+      const isInv = el.classList.contains('inv');
+      const isRep = el.classList.contains('rep');
+      const src = isInv ? 'solur' : 'docs';
+      stamp(el, fidOf(el), yearOf(el), isInv ? 'inv' : (isRep ? 'rep' : 'doc'), src, isInv ? 'REIKNINGUR' : (isRep ? 'SKÝRSLA' : 'DOC'));
+    });
+    scope.querySelectorAll('.sk-dot').forEach(el => {
+      stamp(el, fidOf(el), yearOf(el.closest('.sk-yrblock') || el), 'dot', 'docs', 'DOT');
+    });
+
+    /* Afslættir % pills + custom % — CALC, not month. */
+    scope.querySelectorAll('._afsl-step, ._cad-inp').forEach(el => {
+      stamp(el, fidOf(el), yNow, 'discount', 'afslattur', 'CALC');
+    });
+
+    /* POS / Sala receipt totals if present. */
+    scope.querySelectorAll('#pos-totals, #view-pos .pos-total, #view-sala .pos-total, .kvittun-total, [data-elon-calc]').forEach(el => {
+      stamp(el, fidOf(el), yNow, 'total', 'solur', 'CALC');
+    });
+
+    /* Hide-skipped checkbox sits in the FILTER strip. */
+    scope.querySelectorAll('#_ars-skiphide').forEach(el => {
+      stamp(el, '', yNow, 'hide-skipped', 'month', 'FILTER');
     });
   }
 
