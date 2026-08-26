@@ -30,6 +30,8 @@
   let picking = false;      // element-pick mode
   let scope = 'page';       // 'page' | 'all'
   let matchMode = 'one';    // 'one' = just this element, 'many' = every matching element (tag+class, no nth-of-type)
+  let extraTargets = [];    // „Velja marga" (2026-08-26): fleiri valdir hlutir — sömu breytingar á alla
+  let multiPick = false;    // ☑-hamur: smellir BÆTA VIÐ valið í stað þess að skipta um
   let _saveT = null;
   let undoStack = [];       // snapshot() before each mutation → ↩ Afturkalla pops the last one
   const UNDO_MAX = 20;
@@ -161,26 +163,48 @@
   }
 
   // Set/clear one declaration on the current target.
+  // Rule fyrir AUKA-valinn hlut (Velja marga) — sama leið og currentRule.
+  function ruleForEl(el, create) {
+    const scp = scope === 'all' ? 'all' : (viewIdOf(el) || 'all');
+    return ruleFor(relSelector(el, matchMode === 'many'), scp, create);
+  }
+  // Keyrir fn á reglu aðal-valsins OG hvers auka-valins hlutar (Velja marga).
+  function eachRule(create, fn) {
+    const seen = {};
+    const r0 = currentRule(create);
+    if (r0) { fn(r0); seen[r0.scope + '|' + r0.sel] = 1; }
+    extraTargets.forEach(el => {
+      if (!el || !el.isConnected) return;
+      const r = ruleForEl(el, create); if (!r) return;
+      const k = r.scope + '|' + r.sel; if (seen[k]) return; seen[k] = 1;
+      fn(r);
+    });
+    return r0;
+  }
   function setDecl(prop, val) {
-    const r = currentRule(true); if (!r) return;
     snapshot();
-    if (val === '' || val == null) delete r.decls[prop]; else r.decls[prop] = val;
+    const r0 = eachRule(true, r => {
+      if (val === '' || val == null) delete r.decls[prop]; else r.decls[prop] = val;
+    });
+    if (!r0) return;
     persist();
   }
   function getDecl(prop) { const r = currentRule(false); return r && r.decls ? r.decls[prop] : undefined; }
   // Apply a numeric size (from slider OR manual number box). Padding V/H set BOTH
   // sides and drop any `padding` shorthand so squared buttons actually shrink.
   function applySize(prop, unit, raw) {
-    const r = currentRule(true); if (!r) return;
     let val = parseFloat(String(raw).replace(',', '.')); if (!isFinite(val)) return;
     snapshot();
-    if (prop === 'padding-top') { r.decls['padding-top'] = val + 'px'; r.decls['padding-bottom'] = val + 'px'; delete r.decls['padding']; }
-    else if (prop === 'padding-left') { r.decls['padding-left'] = val + 'px'; r.decls['padding-right'] = val + 'px'; delete r.decls['padding']; }
-    else if (prop === 'height' && val <= 0) { delete r.decls['height']; }   // 0 = auto (unset)
-    else if (prop === 'line-height') { r.decls['line-height'] = String(val / 100); }
-    else if (unit === '%') { r.decls[prop] = val + '%'; }
-    else if (unit === '') { r.decls[prop] = String(val); }
-    else { if (prop === 'border-width') r.decls['border-style'] = 'solid'; r.decls[prop] = val + 'px'; }
+    const r0 = eachRule(true, r => {
+      if (prop === 'padding-top') { r.decls['padding-top'] = val + 'px'; r.decls['padding-bottom'] = val + 'px'; delete r.decls['padding']; }
+      else if (prop === 'padding-left') { r.decls['padding-left'] = val + 'px'; r.decls['padding-right'] = val + 'px'; delete r.decls['padding']; }
+      else if (prop === 'height' && val <= 0) { delete r.decls['height']; }   // 0 = auto (unset)
+      else if (prop === 'line-height') { r.decls['line-height'] = String(val / 100); }
+      else if (unit === '%') { r.decls[prop] = val + '%'; }
+      else if (unit === '') { r.decls[prop] = String(val); }
+      else { if (prop === 'border-width') r.decls['border-style'] = 'solid'; r.decls[prop] = val + 'px'; }
+    });
+    if (!r0) return;
     persist();
   }
   // Read the element's live value (override → computed) for slider init.
@@ -400,7 +424,8 @@
   }
   function renderPanel() {
     const p = document.getElementById(PANEL_ID); if (!p) return;
-    const targetLbl = target ? relSelector(target, matchMode === 'many') : '';
+    extraTargets = extraTargets.filter(el => el && el.isConnected && el !== target);
+    const targetLbl = target ? relSelector(target, matchMode === 'many') + (extraTargets.length ? '  (+' + extraTargets.length + ' valdir)' : '') : '';
     const scopeSeg = '<div class="pe-seg" title="Vista breytingu á þessari síðu eingöngu, eða öllum síðum"><button data-scope="page"' + (scope === 'page' ? ' class="on"' : '') + '>Þessi síða</button>' +
       '<button data-scope="all"' + (scope === 'all' ? ' class="on"' : '') + '>Allar síður</button></div>';
     const matchSeg = '<div class="pe-seg" title="Bara þennan staka hlut, eða ALLA hluti sem líta eins út (t.d. allar raðir í töflu í einu)"><button data-match="one"' + (matchMode === 'one' ? ' class="on"' : '') + '>🎯 Bara þennan</button>' +
@@ -412,6 +437,7 @@
       '</div>' +
       '<div class="pe-toolbar">' +
         '<button class="pe-btn ' + (picking ? 'on' : 'pri') + '" id="pe-pick">' + (picking ? '🎯 Hætta að velja' : '🎯 Velja hlut') + '</button>' +
+        '<button class="pe-btn' + (multiPick ? ' on' : '') + '" id="pe-multi" title="Smelltu á nokkra hluti — sömu breytingar fara á þá alla">☑ Velja marga</button>' +
         scopeSeg +
         (target ? matchSeg : '') +
         '<button class="pe-btn" id="pe-undo"' + (undoStack.length ? '' : ' disabled') + ' title="Afturkalla síðustu breytingu">↩ Afturkalla</button>' +
@@ -490,7 +516,13 @@
     const q = s => p.querySelector(s), qa = s => Array.prototype.slice.call(p.querySelectorAll(s));
     q('#pe-close').onclick = closePanel;
     const pk = q('#pe-pick'); if (pk) pk.onclick = () => setPicking(!picking);
-    const up = q('#pe-unpick'); if (up) up.onclick = () => { target = null; hideHighlight(); renderPanel(); };
+    const mu = q('#pe-multi'); if (mu) mu.onclick = () => {
+      multiPick = !multiPick;
+      if (multiPick && !picking) setPicking(true);   // beint í val-ham
+      if (!multiPick) extraTargets = [];
+      renderPanel();
+    };
+    const up = q('#pe-unpick'); if (up) up.onclick = () => { target = null; extraTargets = []; hideHighlight(); renderPanel(); };
     const bg = q('#pe-bg'); if (bg) bg.onclick = pickBackground;
     const rs = q('#pe-reset'); if (rs) rs.onclick = resetMenu;
     const un = q('#pe-undo'); if (un) un.onclick = undo;
@@ -605,7 +637,16 @@
   function onPick(e) {
     if (!picking) return; const el = e.target; if (!el || insideEditor(el)) return;
     e.preventDefault(); e.stopPropagation();
-    target = el; setPicking(false);
+    if (multiPick && target && el !== target) {
+      // „Velja marga": smellur BÆTIR VIÐ (eða fjarlægir ef sami hlutur aftur).
+      const i = extraTargets.indexOf(el);
+      if (i >= 0) extraTargets.splice(i, 1); else extraTargets.push(el);
+      highlight(el); setTimeout(hideHighlight, 500);
+      renderPanel();   // picking helst Á — hægt að smella áfram
+      return;
+    }
+    target = el;
+    if (!multiPick) setPicking(false);
     // keep the highlight on the chosen element briefly
     highlight(el); setTimeout(hideHighlight, 700);
     renderPanel();
