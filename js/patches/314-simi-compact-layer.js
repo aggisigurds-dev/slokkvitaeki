@@ -262,5 +262,30 @@
   style.textContent = css;
   (document.head || document.documentElement).appendChild(style);
 
-  window.SimiCompactLayer = { installed: true, styleId: STYLE_ID };
+  // mobilenav.js stamps padding-top on every .view as inline !important
+  // (hamburger clearance). Stylesheets cannot beat that. Re-assert: 86px
+  // under the slim Sími banner, 48px under the Öpp header.
+  function pinPad() {
+    const app = !!(document.body && document.body.classList.contains('appmode'));
+    const mobile = document.documentElement.getAttribute('data-viewmode') === 'mobile';
+    if (!app && !mobile) return;
+    const pad = app ? '48px' : '86px';
+    document.querySelectorAll('.view').forEach(function (v) {
+      if (v.style.getPropertyValue('padding-top') !== pad) {
+        v.style.setProperty('padding-top', pad, 'important');
+      }
+    });
+  }
+  pinPad();
+  document.addEventListener('slokk-viewmode', pinPad);
+  document.addEventListener('DOMContentLoaded', pinPad);
+  [400, 1200, 3000].forEach(function (ms) { setTimeout(pinPad, ms); });
+  try {
+    new MutationObserver(pinPad).observe(document.documentElement, {
+      subtree: true, childList: true, attributes: true,
+      attributeFilter: ['class', 'data-viewmode']
+    });
+  } catch (_) {}
+
+  window.SimiCompactLayer = { installed: true, styleId: STYLE_ID, pinPad: pinPad };
 })();
