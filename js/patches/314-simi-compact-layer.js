@@ -164,7 +164,63 @@
 
     // Maps: do not clip Leaflet tiles (263 already leaves these alone).
     g(' .leaflet-container', ' .leaflet-container img', ' .leaflet-container canvas') +
-      '{max-width:none;overflow:visible}'
+      '{max-width:none;overflow:visible}',
+
+    // ── Banner: Sími is a MODE, not a media query ──────────────────────────
+    'html[data-viewmode="mobile"] #bstal-banner{height:66px!important;top:8px!important;left:58px!important;right:8px!important}',
+    'html[data-viewmode="mobile"] #bstal-banner .bb-rightwrap{display:none!important}',
+    'html[data-viewmode="mobile"] #bstal-banner .bb-logo img{height:34px!important}',
+    'html[data-viewmode="mobile"] #bstal-ember{display:none!important}',
+    'html[data-viewmode="mobile"] .view.active{padding-top:86px!important}',
+    'html[data-viewmode="mobile"][data-bstal-banner="on"] #view-field.active,' +
+    'html[data-viewmode="mobile"][data-bstal-banner="on"] #view-counter.active,' +
+    'html[data-viewmode="mobile"][data-bstal-banner="on"] #view-workshop.active' +
+      '{padding-top:86px!important}',
+    'html[data-viewmode="mobile"][data-bstal-banner="on"] .view.active:not(#view-field):not(#view-counter):not(#view-workshop)' +
+      '{padding-top:86px!important}',
+
+    // ── Verkborð 2-col (media-query stacks miss Sími-on-wide-window) ───────
+    M + '#view-verkbord .vb-toprow,' + M + '#view-verkbord .vb-split,' +
+    A + '#view-verkbord .vb-toprow,' + A + '#view-verkbord .vb-split' +
+      '{grid-template-columns:minmax(0,1fr)!important}',
+    M + '#view-verkbord #vb-sel,' + A + '#view-verkbord #vb-sel{position:static!important}',
+    M + '#view-verkbord .vb-wrap{padding:12px 8px 80px!important}',
+    M + '#view-verkbord .vb-rowflex{flex-wrap:wrap!important}',
+    M + '#view-verkbord .vb-acts{flex:1 1 100%!important;justify-content:flex-end}',
+
+    // ── Afgreiðsla 3-col + height clip under banner ────────────────────────
+    M + '#view-counter [style*="grid-template-columns:1fr 1fr 1fr"],' +
+    A + '#view-counter [style*="grid-template-columns:1fr 1fr 1fr"]' +
+      '{grid-template-columns:1fr!important;height:auto!important;overflow:visible!important;min-height:0;padding-bottom:24px!important}',
+    M + '#view-counter.active,' + A + '#view-counter.active' +
+      '{overflow-x:hidden!important;overflow-y:auto!important}',
+    M + '#view-counter .cw-rcard,' + A + '#view-counter .cw-rcard{flex-wrap:wrap!important;gap:8px 6px!important}',
+    M + '#view-counter .cw-rcard-info,' + A + '#view-counter .cw-rcard-info{flex:1 1 100%!important}',
+    M + '#view-counter .cw-rcard > button,' + A + '#view-counter .cw-rcard > button' +
+      '{flex:1 1 auto!important;min-height:44px!important;font-size:13px!important}',
+    M + '#view-workshop .bw-flow,' + A + '#view-workshop .bw-flow' +
+      '{flex-direction:column!important;align-items:stretch!important;padding:2px 8px 76px!important}',
+    M + '#view-workshop .bw-card{flex:none!important;width:100%!important}',
+    M + '#view-workshop .bw-sh-col{width:auto!important;position:static!important;max-height:none!important}',
+
+    // ── POS 2-col tiles (V excludes #view-sala from the floor; pin here) ──
+    'html[data-viewmode="mobile"] #view-sala .pos-grid,body.appmode #view-sala .pos-grid' +
+      '{grid-template-columns:1fr!important}',
+    'html[data-viewmode="mobile"] #view-sala #pos-services,' +
+    'html[data-viewmode="mobile"] #view-sala #pos-products,' +
+    'body.appmode #view-sala #pos-services,body.appmode #view-sala #pos-products' +
+      '{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}',
+
+    // ── Ársskoðun chrome; do NOT touch ._yr look-A ─────────────────────────
+    M + '#view-arsskodun [style*="max-width:1720px"]{max-width:none!important;padding:8px 8px 48px!important}',
+    M + '#view-arsskodun ._ars-statgrid{grid-template-columns:1fr 1fr!important;gap:8px!important}',
+    M + '#view-arsskodun ._mail-badge,' + A + '#view-arsskodun ._mail-badge' +
+      '{position:relative;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center;margin:-12px 0 -12px -8px;padding:12px 8px;box-sizing:border-box}',
+
+    // ── Rekstrarfélög row density (Heimaleiga data is another ticket) ──────
+    M + '#view-rekstrarfelog .rf-page,' + A + '#view-rekstrarfelog .rf-page{padding:8px 8px 40px!important}',
+    M + '#view-rekstrarfelog .rf-tbl tbody td,' + A + '#view-rekstrarfelog .rf-tbl tbody td{padding:4px 8px!important}',
+    M + '#view-rekstrarfelog .rf-stat{flex:1 1 140px!important;min-width:0!important;padding:10px 12px!important}'
   ].join('\n');
 
   const style = document.createElement('style');

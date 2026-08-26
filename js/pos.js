@@ -298,10 +298,14 @@
       M+'.pos-grid{grid-template-columns:1fr!important;gap:12px!important;padding:0 10px 104px!important;min-height:0!important}',
       M+'.pos-col-left>div{padding:13px!important;margin-bottom:10px!important}',
       M+'#pos-kt{font-size:17px!important;padding:14px 14px!important}',
-      // large tappable product/service tiles (≥44px targets, roomy text)
-      M+'#pos-services,'+M+'#pos-products{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))!important;gap:10px!important}',
-      M+'.pos-svc,'+M+'.pos-prod{padding:14px 10px!important;min-height:100px!important;border-radius:14px!important;gap:8px!important}',
-      M+'.pos-tile-ic{width:48px!important;height:48px!important}',
+      // 2-col tiles — auto-fill minmax(150px) became 4 skinny columns in Sími.
+      M+'#pos-services,'+M+'#pos-products{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important}',
+      M+'.pos-svc,'+M+'.pos-prod{display:grid!important;grid-template-columns:42px minmax(0,1fr)!important;grid-template-rows:auto auto auto!important;align-items:center!important;justify-items:start!important;text-align:left!important;padding:10px 8px!important;min-height:72px!important;border-radius:12px!important;column-gap:8px!important;row-gap:1px!important;position:relative!important}',
+      M+'.pos-tile-ic,'+M+'.pos-svc>img,'+M+'.pos-prod>img{grid-column:1!important;grid-row:1/span 3!important;width:40px!important;height:40px!important}',
+      M+'.pos-tile-name{grid-column:2!important;min-height:0!important;font-size:13px!important}',
+      M+'.pos-tile-price{grid-column:2!important;font-size:16px!important;font-weight:800!important}',
+      M+'.pos-tile-exvat{grid-column:2!important;font-size:12px!important}',
+      M+'.pos-cart>div:first-child{flex-wrap:wrap!important}',
       // cart flows in the column (un-stuck, full height) …
       M+'.pos-cart{position:static!important;max-height:none!important;border-radius:16px!important}',
       M+'#pos-lines{max-height:none!important;overflow:visible!important}',
@@ -598,8 +602,9 @@
     var cls = isService ? 'pos-svc' : 'pos-prod';
     return '<button class="'+cls+'" data-id="'+item.id+'" style="padding:10px 8px;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;cursor:pointer;text-align:center;transition:all .15s;display:flex;flex-direction:column;align-items:center;gap:6px;position:relative">' +
       stockChip + img + iconDiv +
-      '<div style="font-weight:600;font-size:12px;color:#0f172a;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:29px">'+esc(item.nafn)+'</div>' +
-      '<div style="font-size:14px;color:#0f172a;font-weight:800;line-height:1.1">'+fmtKr(verd)+'</div><div style="font-size:10px;color:#94a3b8;font-weight:500;margin-top:1px">'+fmtKr(item.verd_an_vsk)+' án vsk</div>' +
+      '<div class="pos-tile-name" style="font-weight:600;font-size:12px;color:#0f172a;line-height:1.2;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;min-height:29px">'+esc(item.nafn)+'</div>' +
+      '<div class="pos-tile-price" style="font-size:14px;color:#0f172a;font-weight:800;line-height:1.1">'+fmtKr(verd)+'</div>' +
+      '<div class="pos-tile-exvat" style="font-size:10px;color:#94a3b8;font-weight:500;margin-top:1px">'+fmtKr(item.verd_an_vsk)+' án vsk</div>' +
     '</button>';
   }
   function buildServicesHTML(){if(!state.services.length)return'<div style="color:#94a3b8;font-size:13px;text-align:center;padding:16px;grid-column:1/-1">Engin þjónusta skráð. Bættu við í Vörur og þjónusta tab.</div>';return state.services.map(function(s){return renderTile(s,true);}).join('');}
