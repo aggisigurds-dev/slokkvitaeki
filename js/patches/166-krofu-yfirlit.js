@@ -49,6 +49,8 @@
       V + '.ky-abtn:hover{transform:translateY(-1px);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.95),0 6px 12px -4px rgba(20,30,60,.42)}' +
       V + '.ky-abtn.on{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);border-color:#156e3a;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 3px 7px -3px rgba(15,110,58,.5)}' +
       V + '.ky-row:hover{background:#f7f9fd}' +
+      // Skjár: wrap the 8 .ky-abtn instead of clipping them (card is overflow:hidden).
+      V + '.ky-row{flex-wrap:wrap}' +
       // Barely-visible per-krafa athugasemd/áminning reitur — svartur texti,
       // ósýnilegur rammi þar til hann er valinn.
       V + '._ky-note{color:#11141c !important;background:transparent !important;border:1px solid transparent !important;border-bottom:1px dashed #d7dce4 !important;border-radius:5px !important;box-shadow:none !important}' +
@@ -124,8 +126,8 @@
       V + '.ky-mdate{color:#64748b;font-size:12px;white-space:nowrap}' +
       V + '.ky-mamt{margin-left:auto;font-weight:800;color:#11141c;font-size:15px;white-space:nowrap;flex:none}' +
       V + '.ky-mnote{display:block;width:100%;margin-top:9px;padding:8px 2px;font-size:16px;line-height:1.3}' +
-      V + '.ky-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}' +
-      V + '.ky-acts .ky-abtn{flex:1 1 auto;min-width:76px;height:42px;white-space:nowrap}' +
+      V + '.ky-acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;padding:0 14px 12px;pointer-events:auto}' +
+      V + '.ky-acts .ky-abtn{display:inline-flex;flex:1 1 auto;min-width:76px;height:42px;white-space:nowrap;pointer-events:auto}' +
 
       // Sameiginlegur haus á síma: 2×2 KPI-spjöld (án táknmyndar) + síu-borði þar
       // sem leitin fær eigin línu. AÐEINS data-viewmode="mobile" — breiða/tafla ósnert.
@@ -154,12 +156,12 @@
       MA + '.page-title p{color:#1e293b !important}' +
       MA + '.ky-month{color:#11141c !important}' +
 
-      // ── 📱 Dense overview (2026-08-26 P0) ──
+      // ── 📱 Dense overview (2026-08-26 P0, restored actions P1) ──
       // Patch 261 `body.appmode .view button{min-height:50px;padding:12px}` +
-      // `input{min-height:52px}` + `td{font-size:16.5px}` blew this list:
-      // 8 ky-abtn sausages, always-open 52px minnispunktur, 50px ◀▶ in the
-      // title gap, grey 14–24px gutters around .app-page. 263 skips this view
-      // so it cannot save us. Collapse actions/notes until the row is opened.
+      // `input{min-height:52px}` blew this list into 50px sausages. 263 skips
+      // this view so it cannot save us. Compact sizes stay; the P0 collapse
+      // (`display:none` on .ky-mdetail until .open) hid Senda kröfu / Greitt
+      // entirely — expand never revealed them. Buttons + notes stay visible.
       M + '>.main-panel{padding-left:0!important;padding-right:0!important;max-width:none!important}' +
       // Beat patch 230's `>.main-panel{padding:8px 14px}` — those three
       // `:not(#id)` count as ID specificity, so a plain #view-… >.main-panel loses.
@@ -196,18 +198,15 @@
       M + '.ky-cosub{margin-top:4px;font-size:11px}' +
       M + '.ky-mcopy{width:36px;height:36px;min-height:36px!important}' +
       M + '.ky-mrow{padding:0;border-top:1px solid #e8ecf2}' +
-      M + '.ky-saletop{min-height:44px;padding:8px 12px;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
-      M + '.ky-mdetail{display:none;padding:0 12px 10px}' +
-      M + '.ky-mrow.open .ky-mdetail,' + M + '.ky-mrow:focus-within .ky-mdetail{display:block}' +
-      M + '.ky-mrow.open .ky-saletop,' + M + '.ky-mrow:focus-within .ky-saletop{background:#f4f7fb}' +
-      M + '.ky-chev{margin-left:4px;flex:none;color:#334155;font-size:16px;line-height:1;transition:transform .12s}' +
-      M + '.ky-mrow.open .ky-chev,' + M + '.ky-mrow:focus-within .ky-chev{transform:rotate(90deg)}' +
+      M + '.ky-saletop{min-height:44px;padding:8px 12px;gap:8px;-webkit-tap-highlight-color:transparent}' +
+      M + '.ky-mdetail{display:block!important;padding:4px 12px 10px;height:auto!important;overflow:visible!important}' +
+      M + '.ky-chev{margin-left:4px;flex:none;color:#334155;font-size:16px;line-height:1}' +
       M + '.ky-hasnote{flex:none;font-size:12px;opacity:.8}' +
-      M + '.ky-mnote{margin-top:4px;min-height:44px!important;font-size:16px!important;padding:8px 10px!important}' +
-      M + '.ky-acts{margin-top:8px;gap:8px}' +
-      M + '.ky-acts .ky-abtn{flex:1 1 calc(50% - 8px);min-width:calc(50% - 8px);min-height:44px!important;height:44px!important;padding:0 6px!important;font-size:11px!important}' +
+      M + '.ky-mnote{display:block!important;margin-top:4px;min-height:44px!important;font-size:16px!important;padding:8px 10px!important}' +
+      M + '.ky-acts{display:flex!important;flex-wrap:wrap!important;visibility:visible!important;height:auto!important;max-height:none!important;overflow:visible!important;pointer-events:auto!important;margin-top:8px;gap:8px;padding:0 12px 10px}' +
+      M + '.ky-acts .ky-abtn{display:inline-flex!important;visibility:visible!important;pointer-events:auto!important;flex:1 1 calc(50% - 8px);min-width:calc(50% - 8px);min-height:44px!important;height:44px!important;padding:0 6px!important;font-size:11px!important}' +
       // Beat 261's 50px hammer with ID-level !important (this view is skipped in 263).
-      M + 'button.ky-abtn,' + M + 'button.ky-navbtn{min-height:44px!important;padding-top:0!important;padding-bottom:0!important}' +
+      M + 'button.ky-abtn,' + M + 'button.ky-navbtn{display:inline-flex!important;min-height:44px!important;height:44px!important;padding-top:0!important;padding-bottom:0!important;overflow:visible!important;pointer-events:auto!important}' +
       M + 'button._ky-exp{min-height:0!important;padding:6px 8px!important}' +
       M + 'input._ky-note,' + M + 'input._ky-search,' + M + 'select._ky-sort{min-height:44px!important;font-size:16px!important}' +
       M + '{overflow-x:hidden}';
@@ -1801,11 +1800,12 @@
           </div>
           <div class="ky-mdetail">
           <input class="_ky-note ky-mnote" data-id="${s.id}" value="${esc(s.krafa_note || '')}" placeholder="🗒 minnispunktur (t.d. senda í tölvupósti · finna netfang)…" title="Minnispunktur fyrir þessa kröfu — vistast sjálfkrafa.">
+          </div>
           <!-- Sama röð og á breiða borðinu (2026-07-22 v2): skjölin fremst
                (Senda · Reikningur · Skýrsla), svo staðan (Krafa send · Greitt),
                svo hitt. Röðin er eins á síma og skjá svo handtökin séu þau sömu.
                Munurinn: hér BROTNA hnapparnir (flex-wrap) í stað láréttrar skrunar.
-               Í yfirliti eru þau FALIN uns röðin er opnuð (261 blés þau í 50px). -->
+               Alltaf sýnilegir — EKKI inni í .ky-mdetail (P0 fól þá bak við expand). -->
           <div class="ky-acts">
             ${kyAbtn('_ky-email', 'data-id="' + s.id + '"', '📧', 'Senda', '#0f766e', 'Senda reikning og/eða úttektarskýrslu í tölvupósti', false)}
             ${kyAbtn('_ky-view-invoice', 'data-id="' + s.id + '"', '🖨', 'Reikning', '#2f5fe0', 'Skoða / prenta reikning', false)}
@@ -1816,7 +1816,6 @@
             ${kyAbtn('_ky-kredit', 'data-id="' + s.id + '"', '↩', 'Bakfæra', '#dc2626', 'Bakfæra (kreditfæra) reikninginn', false)}
             ${s.dk_invoice_id ? kyAbtn('_ky-afturkalla', 'data-id="' + s.id + '"', '⊘', 'Afturkalla', '#b45309', 'Afturkalla kröfuna í Payday (fella niður kröfu + reikning)', false) : ''}
             ${kyAbtn('_ky-nyjan', 'data-kt="' + esc(s.customer_kt || '') + '" data-nafn="' + esc(s.customer_nafn || '') + '"', '＋', 'Nýr', '#0f7a43', 'Ný sala fyrir þennan viðskiptavin', false)}
-          </div>
           </div>
         </div>`;
     }).join('');
