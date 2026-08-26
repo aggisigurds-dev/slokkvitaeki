@@ -181,7 +181,8 @@
       // bara þéttari svo munurinn sjáist.
       P+'.rf-tbl td{padding:4px 12px;border:0}',
       P+'.rf-tbl td.c{text-align:center}',
-      P+'.rf-cellname{position:relative;padding-left:16px!important}',
+      P+'.rf-cellname{position:relative;padding-left:16px!important;display:flex;align-items:center;gap:4px;min-height:44px}',
+      P+'.rf-nameid{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}',
       P+'.rf-rail{position:absolute;left:0;top:6px;bottom:6px;width:4px;border-radius:3px;background:#dbe0e9}',
       P+'.rf-rail--done{background:#1f9d57}',
       P+'.rf-rail--overdue{background:#e23232}',
@@ -198,7 +199,7 @@
       // og þegar þau sátu öll þrjú stöfluð þar inni. Sami þéttleiki og listi
       // Fyrirtækja í þjónustu (153 .data-table: td 7px/44px · ._co 13 / ._kt 10).
       P+'.rf-bkt{display:block;font-family:"Space Mono",monospace;font-size:10px;color:#9098a6;letter-spacing:.02em;line-height:1.3;white-space:nowrap}',
-      P+'.rf-bmeta{display:flex;flex-wrap:wrap;gap:4px 8px;margin-top:1px;align-items:baseline}',
+      P+'.rf-bmeta{display:flex;flex-wrap:nowrap;gap:4px 8px;margin-top:1px;align-items:baseline;overflow:hidden}',
       P+'.rf-bnr{font-family:"Space Mono",monospace;font-size:10px;color:#5b6475;font-weight:700}',
       P+'.rf-bpd{font-family:"Space Mono",monospace;font-size:10px;color:#1d4ed8;font-weight:600;white-space:nowrap}',
       P+'.rf-bpd.is-paid{color:#15803d}',
@@ -217,7 +218,7 @@
       // út eins og gögnin hyrfu): SJÁLFGEFIÐ ÚTVÍKKAÐ (öll smáatriði sýnileg,
       // nákvæmlega eins og áður) — ▸-takki (eða „Fela allar") felur niður í EINA
       // samantektarfrumu (rf-bldsum-cell) fyrir þann sem VILL þjappa saman.
-      P+'.rf-bldtoggle{all:unset;cursor:pointer;display:inline-block;width:14px;text-align:center;color:#9098a6;font-size:11px;margin-right:2px;vertical-align:middle;transition:transform .12s ease}',
+      P+'.rf-bldtoggle{all:unset;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none;width:18px;min-width:18px;min-height:28px;text-align:center;color:#9098a6;font-size:11px;margin-right:0;transition:transform .12s ease}',
       P+'.rf-bldtoggle:hover{color:#2f5fe0}',
       P+'.rf-bldrow:not(.is-collapsed) .rf-bldtoggle{transform:rotate(90deg)}',
       P+'.rf-bldsum-cell{display:none;color:#5b6472;font-size:12.5px;white-space:nowrap}',
@@ -340,17 +341,17 @@
         P+'.rf-bsearch{margin-left:0;width:100%}'+
         // 390px: sticky name so the site identity stays readable while the
         // rest of the Brunastál table still scrolls horizontally — no new UI.
-        P+'.rf-tbl{min-width:760px;font-size:16px}'+
+        P+'.rf-tbl{min-width:760px;font-size:13px}'+
         P+'.rf-tbl th:first-child,'+P+'.rf-tbl td.rf-cellname{position:sticky;left:0;z-index:1;background:#fff;box-shadow:4px 0 8px -6px rgba(10,20,50,.35)}'+
         P+'.rf-tbl thead th:first-child{background:'+METB+'!important;z-index:2}'+
         P+'.rf-tbl tbody tr:nth-child(even) td.rf-cellname{background:#fbfcfe}'+
         P+'.rf-tbl tbody tr:hover td.rf-cellname{background:#f3f6fc}'+
-        P+'.rf-tbl tbody td{padding:4px 8px!important}'+
+        P+'.rf-tbl tbody td{padding:5px 8px!important}'+
         P+'.rf-bname{font-size:16px}'+
         P+'.rf-baddr{font-size:14px}'+
         P+'.rf-bldrow{min-height:44px}'+
+        P+'.rf-cellname{min-height:44px}'+
         P+'.rf-bldtoggle{width:44px;min-width:44px;min-height:44px}'+
-        P+'.rf-bname a{min-height:44px;display:inline-flex;align-items:center}'+
         P+'.rfa__pad{padding:10px 10px}'+
       '}',
       // Síma-úttekt 2026-07-30 (mælt): .rfa__pills var flex:none svo pillu-röðin
@@ -382,7 +383,7 @@
       // the 6px padding with the same density so wrapping names don't inflate
       // the accordion past the fold.
       P+'.rf-tbl tbody td{border:0!important;padding:5px 10px!important;background:transparent!important;vertical-align:middle!important}',
-      P+'.rf-tbl tbody tr{height:44px}',
+      P+'.rf-tbl tbody tr{min-height:44px}',
       P+'.rf-tbl tbody tr:nth-child(even){background:#fbfcfe!important}',
       P+'.rf-tbl tbody tr:hover{background:#f3f6fc!important}',
       P+'.rfa__head{background:'+HERO+'!important;border:0!important;box-shadow:none!important;text-shadow:none!important;border-radius:0!important;height:auto!important}',
@@ -397,12 +398,12 @@
       P+'.rf-svcbtn.is-on{background:'+METB+'!important;color:#fff!important;border:1px solid #0a0b0d!important}',
       // Sími/appmode (261): .view button{min-height:50px} + input{52px} blésu
       // hverja byggingaröð. Sama undantekning og #ars-main í 261.
-      'body.appmode #view-rekstrarfelog .rf-tbl button,body.appmode #view-rekstrarfelog .rf-tbl .rf-bldtoggle,body.appmode #view-rekstrarfelog .rf-svcbtn{min-height:0!important;height:auto!important;padding-top:2px!important;padding-bottom:2px!important;font-size:13px!important;line-height:1.1!important}',
+      'body.appmode #view-rekstrarfelog .rf-tbl button:not(.rf-bldtoggle),body.appmode #view-rekstrarfelog .rf-svcbtn{min-height:0!important;height:auto!important;padding-top:2px!important;padding-bottom:2px!important;font-size:13px!important;line-height:1.1!important}',
       'body.appmode #view-rekstrarfelog .rf-tbl input.rf-plannote,body.appmode #view-rekstrarfelog .rf-tbl input._rf-plannote{min-height:24px!important;height:24px!important;font-size:13px!important;padding-top:0!important;padding-bottom:0!important}',
-      'body.appmode #view-rekstrarfelog .rf-tbl td{font-size:16px!important;padding:5px 8px!important}',
+      'body.appmode #view-rekstrarfelog .rf-tbl td{font-size:13px!important;padding:5px 8px!important}',
       'body.appmode #view-rekstrarfelog .rf-bname{font-size:16px!important}',
       'body.appmode #view-rekstrarfelog .rf-btn{min-height:44px!important;height:44px!important;font-size:16px!important;padding-top:0!important;padding-bottom:0!important}',
-      'body.appmode #view-rekstrarfelog .rf-bldtoggle{min-width:44px!important;min-height:44px!important}',
+      'body.appmode #view-rekstrarfelog .rf-tbl .rf-bldtoggle{min-width:44px!important;min-height:44px!important;height:44px!important;padding:0!important}',
       '@media(max-width:560px){'+
         P+'.rf-btn{min-height:44px!important;height:44px!important;font-size:16px!important;padding-top:0!important;padding-bottom:0!important}'+
         P+'.rf-bname{font-size:16px!important}'+
@@ -611,7 +612,10 @@
         if (liveNm[kNm] || liveNm[kNmRaw]) return;
         if (kAddr && liveAddr[kAddr]) return;
         if (a && liveAddrAny[a] && !b.co_id) return;  // old street name, possibly wrong kt
-        if (d && liveKtN[d] === 1 && !b.co_id) return;
+        // Any live row on this kt already represents the property. Seed leftovers
+        // on a shared kt (Urðarhvarf 4 vs live Urðarhvarf 2 / Blue Mountain) must
+        // not reappear — unique-kt (=== 1) was not enough for Heimaleiga ehf's 10 sites.
+        if (d && liveKtN[d] >= 1 && !b.co_id) return;
         if (d && liveKtOwner[d] && liveKtOwner[d] !== name) return;
         if (seen[kNm] || seen[kNmRaw]) return;
         seen[kNm] = 1; seen[kNmRaw] = 1;
@@ -1878,6 +1882,7 @@
       return '<tr class="rf-bldrow" data-rfq="'+esc(((b.nafn||'')+' '+(b.heimilisfang||'')+' '+digits(b.kt)).toLowerCase())+'">'+
              '<td class="rf-cellname"><span class="rf-rail '+railCls+'"></span>'+
                '<button type="button" class="rf-bldtoggle" data-bi="'+_bi+'" title="Sýna/fela smáatriði">▸</button>'+
+               '<span class="rf-nameid">'+
                '<span class="rf-bname" title="'+esc(b.nafn||'')+'">'+link+'</span>'+
                '<span class="rf-bmeta">'+
                (b.kt?'<span class="rf-bkt">'+esc(fmtKt(b.kt))+(function(){
@@ -1898,6 +1903,7 @@
                })()+
                '</span>'+
                (oldLinks?'<span class="rf-boldlinks">'+oldLinks+'</span>':'')+
+               '</span>'+
              '</td>'+
              // heimilisfang — eiginn dálkur (2026-08-20), nowrap+ellipsis svo það
              // vindi ekki upp á hæðina eins og þegar það sat inni í nafnfrumunni.

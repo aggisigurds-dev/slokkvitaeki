@@ -55,11 +55,11 @@ if (!/is\('deleted_at',\s*null\)/.test(SRC)) {
 if (!/ktToRek/.test(SRC)) {
   fail('175 lost kennitala recovery — unlinked Heimaleiga sites would be dropped.');
 }
-if (!/liveKtN\[d\] === 1/.test(SRC)) {
-  fail('175 no longer drops seed aliases (Aegina/EA Law) on a unique live kt.');
+if (!/liveKtN\[d\] >= 1/.test(SRC)) {
+  fail('175 no longer drops seed aliases (Aegina / Urðarhvarf 4) when the kt already has a live site.');
 }
-if (!/white-space:nowrap;overflow:hidden;text-overflow:ellipsis/.test(SRC)) {
-  fail('175 building names wrap again — Heimaleiga rows would be too tall.');
+if (!/rf-nameid/.test(SRC)) {
+  fail('175 name cell is no longer a flex row (rf-nameid) — toggle would stack above the name and inflate Heimaleiga rows.');
 }
 if (!/max-height:none/.test(SRC) && !/max-height:200000px/.test(SRC)) {
   fail('175 accordion max-height is back to a small cap — last Heimaleiga rows would clip.');
