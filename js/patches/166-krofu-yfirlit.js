@@ -167,20 +167,30 @@
       M + '.page-title{margin-bottom:8px!important;gap:8px!important}' +
       M + '.page-title p{display:none!important}' +
       M + '.page-title__tools ._ky-prev,' + M + '.page-title__tools ._ky-next{min-width:44px;min-height:44px!important;height:44px!important;padding:0!important;font-size:16px!important;line-height:1}' +
-      M + '.page-title__tools ._ky-sort{min-height:44px!important;font-size:16px!important;padding:8px 10px!important}' +
+      M + '.page-title__tools ._ky-sort{flex:1 1 160px!important;min-height:44px!important;font-size:16px!important;padding:8px 10px!important}' +
       M + '.ky-hint{display:none!important}' +
-      M + '.stat-row{margin-bottom:8px!important;gap:8px!important}' +
-      M + '.stat-card{padding:8px 10px!important;border-radius:10px!important}' +
-      M + '.stat-card__value{font-size:15px!important;margin-top:2px!important}' +
-      M + '.ky-exprow{gap:8px!important;margin-bottom:8px!important}' +
-      M + '.ky-filterbar{margin-bottom:8px!important;gap:6px!important}' +
-      M + '.ky-filterbar .filter-chip,' + M + '._ky-sync{min-height:44px!important;height:auto!important;padding:8px 12px!important;font-size:13px!important}' +
-      M + '.ky-filterbar ._ky-search{min-height:44px!important;font-size:16px!important;padding:8px 10px!important}' +
+      M + '.stat-row{margin-bottom:6px!important;gap:6px!important}' +
+      M + '.stat-card{padding:6px 8px!important;border-radius:10px!important}' +
+      M + '.stat-card__value{font-size:14px!important;margin-top:1px!important}' +
+      M + '.stat-card__label{font-size:9px!important}' +
+      M + '.ky-exprow{gap:6px!important;margin-bottom:6px!important}' +
+      M + '.ky-exprow ._ky-exp{min-height:0!important;height:auto!important;padding:6px 8px!important;gap:6px!important;border-radius:10px!important;align-items:center!important}' +
+      M + '.ky-exprow ._ky-exp>span:first-child{display:none!important}' +
+      M + '.ky-exprow ._ky-exp div>div:first-child{font-size:9px!important;letter-spacing:.03em}' +
+      M + '.ky-exprow ._ky-exp div>div:last-child{font-size:14px!important}' +
+      M + '.ky-filterbar{margin-bottom:6px!important;gap:6px!important}' +
+      M + '.ky-filterbar .filter-chip,' + M + '._ky-sync{flex:1 1 auto;min-height:40px!important;height:auto!important;padding:6px 10px!important;font-size:12px!important}' +
+      M + '.ky-filterbar ._ky-search{flex:1 1 100%!important;min-height:40px!important;font-size:16px!important;padding:8px 10px!important}' +
       M + '.ky-co{border-radius:0;border-left:none;border-right:none;margin-bottom:0;box-shadow:none}' +
-      M + '.ky-cohead{padding:10px 12px 8px}' +
-      M + '.ky-coname{font-size:16px;line-height:1.2}' +
-      M + '.ky-krafamt{font-size:16px}' +
-      M + '.ky-mcopy{width:44px;height:44px}' +
+      M + '.ky-cohead{padding:8px 12px 4px}' +
+      M + '.ky-coname{font-size:15px;line-height:1.2}' +
+      M + '.ky-cometa{font-size:11px;margin-top:1px}' +
+      M + '.ky-kraflbl{display:none}' +
+      M + '.ky-krafamt{font-size:15px;margin-top:0}' +
+      M + '.ky-cobar{margin-top:4px}' +
+      M + '.ky-cobar>div{height:4px!important;width:100%!important;max-width:100%!important;margin-top:0!important}' +
+      M + '.ky-cosub{margin-top:4px;font-size:11px}' +
+      M + '.ky-mcopy{width:36px;height:36px;min-height:36px!important}' +
       M + '.ky-mrow{padding:0;border-top:1px solid #e8ecf2}' +
       M + '.ky-saletop{min-height:44px;padding:8px 12px;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}' +
       M + '.ky-mdetail{display:none;padding:0 12px 10px}' +
@@ -193,7 +203,8 @@
       M + '.ky-acts{margin-top:8px;gap:8px}' +
       M + '.ky-acts .ky-abtn{flex:1 1 calc(50% - 8px);min-width:calc(50% - 8px);min-height:44px!important;height:44px!important;padding:0 6px!important;font-size:11px!important}' +
       // Beat 261's 50px hammer with ID-level !important (this view is skipped in 263).
-      M + 'button.ky-abtn,' + M + 'button.ky-navbtn,' + M + '.ky-mcopy{min-height:44px!important;padding-top:0!important;padding-bottom:0!important}' +
+      M + 'button.ky-abtn,' + M + 'button.ky-navbtn{min-height:44px!important;padding-top:0!important;padding-bottom:0!important}' +
+      M + 'button._ky-exp{min-height:0!important;padding:6px 8px!important}' +
       M + 'input._ky-note,' + M + 'input._ky-search,' + M + 'select._ky-sort{min-height:44px!important;font-size:16px!important}' +
       M + '{overflow-x:hidden}';
     (document.head || document.documentElement).appendChild(s);

@@ -541,7 +541,7 @@
       // 8 .ky-abtn + month ◀▶ into sausages and the 52px input blows the
       // always-visible minnispunktur. Patch 166 owns compact sizes; we only
       // stop the hammer here (same pattern as #ars-main above).
-      'body.appmode #view-krofu-yfirlit .ky-abtn,body.appmode #view-krofu-yfirlit .ky-navbtn,body.appmode #view-krofu-yfirlit .ky-mcopy,body.appmode #view-krofu-yfirlit .filter-chip,body.appmode #view-krofu-yfirlit ._ky-sync{min-height:0 !important;padding-top:0 !important;padding-bottom:0 !important}',
+      'body.appmode #view-krofu-yfirlit .ky-abtn,body.appmode #view-krofu-yfirlit .ky-navbtn,body.appmode #view-krofu-yfirlit .ky-mcopy,body.appmode #view-krofu-yfirlit .filter-chip,body.appmode #view-krofu-yfirlit ._ky-sync,body.appmode #view-krofu-yfirlit ._ky-exp{min-height:0 !important;padding-top:0 !important;padding-bottom:0 !important}',
       'body.appmode #view-krofu-yfirlit input._ky-note,body.appmode #view-krofu-yfirlit input._ky-search,body.appmode #view-krofu-yfirlit select._ky-sort{min-height:44px !important;font-size:16px !important}',
       // Full lárétt skrun á töflunni svo hægt sé að ná alla leið að „2026"-dálknum.
       // Staða-pillan í síðasta dálki (grænn/blár/gulur) datt út af hægri brún —
