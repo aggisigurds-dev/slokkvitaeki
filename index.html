@@ -10,12 +10,13 @@
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <meta name="theme-color" content="#C93C1D"/>
-<!-- Appið er ljós-hannað (engin dark-mode stílblöð). Án þessa neyðir „dark mode
-     for web" í Chrome/Samsung Internet á símanum sjálfvirka umsnúninga á hvítu
-     kortin (t.d. Þjónustuborðið varð svart) þótt tölvan sýni þau hvít. Þessi
-     yfirlýsing slekkur á þeirri sjálfvirku myrkvun svo síminn birti nákvæmlega
-     eins og tölvan; hannaðir dökkir fletir (hliðarstika, korthausar) haldast. -->
-<meta name="color-scheme" content="light only"/>
+<!-- Appið er ljós-hannað (engin dark-mode stílblöð). Chrome Android Theme /
+     Force Dark Pages inverts unspecified form controls unless we opt out.
+     Blink: `light` is still force-darkened; `only light` is the documented
+     Auto Dark opt-out (https://developer.chrome.com/blog/auto-dark-theme).
+     Hannaðir dökkir fletir (hliðarstika, korthausar) haldast — við mála
+     ekki body #ffffff. Patch 318 paints native widgets with theme tokens. -->
+<meta name="color-scheme" content="light"/>
 <title>Slökkvitæki ehf — Brunakerfi</title>
 <link rel="icon" type="image/png" sizes="32x32" href="/img/favicon-32.png?v=flame1"/>
 <link rel="icon" type="image/png" sizes="192x192" href="/img/icon-192.png?v=flame1"/>
@@ -54,7 +55,7 @@
 </script>
 <script>if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}</script>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="/css/app.css?v=20260825phone"/>
+<link rel="stylesheet" href="/css/app.css?v=20260826csl"/>
 <link rel="stylesheet" href="/css/mobile.css?v=20260622b">
 <link rel="stylesheet" href="/css/theme-scoped.css?v=20260703g">
 <style>
@@ -64,6 +65,11 @@
 input[type="number"]::-webkit-inner-spin-button,
 input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; appearance: none; margin: 0; }
 input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+/* Chrome Android Force Dark — first paint, before deferred patch 318.
+   `html { color-scheme: light }` as required; `only light` is the Blink
+   opt-out. Do not paint body white (flame/navy chrome stays). */
+html { color-scheme: light; }
+html, body { color-scheme: only light; }
 </style>
 <style>
 /* Sidebar anti-FOUC (2026-07-14): the nav's final order + visibility is computed by
@@ -1081,6 +1087,7 @@ var Lanstaeki = {
 <script defer src="/js/patches/262-sidebar-polish.js?v=20260705c"></script>
 <script defer src="/js/patches/262-page-editor.js?v=20260817guard"></script>
 <script defer src="/js/patches/313-contrast-clarity.js?v=20260825d"></script>
+<script defer src="/js/patches/318-color-scheme-light.js?v=20260826a"></script>
 <!-- hibernated 2026-08-23: TEMPORARY event-logging debug patch, no longer needed → _attic/patches/145-companies-diagnose.js -->
 <!-- <script defer src="/js/patches/145-companies-diagnose.js?v=20260516a"></script> -->
 <script defer src="/js/patches/263-mobile-baseline.js?v=20260826miswire"></script>

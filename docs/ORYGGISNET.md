@@ -222,6 +222,20 @@ baseline rows and lowering the constant is how the net tightens over time.
   ótengt stað. Nú: `co_id` pinnaður, engin `hits[0]`-gisk, `document_pairs` og
   R/PD-númer per stað (`solur.customer_id`). Staðirnir eru **aldrei sameinaðir**.
   `payday-push.js` ósnert. Audit `audit-rekstrarfelog-sites.cjs`.
+- **2026‑08‑25 — Ársskoðun 🧾-punktar per stað.** `187` `reikMap` var lyklað á
+  kennitölu svo einn 2026-reikningur á Center Hótel kveikti bláan punkt á öllum
+  11 hótelunum (Hlaðvarpinn, Þverholt 14, Arnarhvoll, …). Nú `reikByCo` á
+  `fyrirtaeki_id`; base-only reikningar gilda aðeins þegar base á einn stað.
+  `isReportKind` telur ekki `brunakerfi` sem úttektarskýrslu. Invoice OUT /
+  payday / kt-save ósnert. Audit `audit-rekstrarfelog-sites.cjs` (187 source).
+- **2026‑08‑25 — Reikningar per þjónusta, ekki einn pottur.** `doc_type` er
+  alltaf `reikningur` fyrir slökkvitæki OG brunakerfi; merkið er
+  `vidskiptategund`. Ársskoðun `187`/`153` sleppir `brunakerfi`/`bud` af
+  úttektar-🧾 og `klarad`-grænu (Grandi 2026 par 1295 → R-108001). Prófíll
+  `199` skiptir í `invUtByY`/`invBrByY` (óþekkt → úttektarkortið aðeins).
+  Rekstrarfélög `175` kveikir ekki 🧾 þegar par og reikningur stangast á.
+  Gátt merkir þjónustu. Pörin sjálf eru **ekki** eydd. Invoice OUT / payday /
+  kt-save ósnert. Audit `audit-rekstrarfelog-sites.cjs` (`isUttektInvoiceTeg`).
 - **2026‑08‑25 — POS fastur afsláttur í körfu.** `lookupKt` spurði aðeins
   tölustafa-kt; DB geymir bandstrik (`420187-1499`) → 0 raðir → RSK 0% yfirskrifaði
   15% Colas Gullhellu. Nú: tveggja-forma `.or` (eins og checkout), 114 skrifar
