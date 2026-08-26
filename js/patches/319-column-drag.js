@@ -27,7 +27,34 @@
     if (v && typeof v === 'object' && !('w' in v) && !('align' in v) && !('padY' in v)) store[k] = { w: v };
   });
 
-  const save = () => { try { localStorage.setItem(LS, JSON.stringify(store)); } catch (_) {} };
+  // ☁️ Samstilling (matseðill 5): AppSettings er aðal-geymslan (fylgir appinu
+  // milli allra tækja), localStorage er hraðvirkt afrit/offline-vari.
+  let _cloudT = null;
+  const save = () => {
+    try { localStorage.setItem(LS, JSON.stringify(store)); } catch (_) {}
+    try {
+      if (window.AppSettings && AppSettings.save) {
+        clearTimeout(_cloudT);
+        _cloudT = setTimeout(() => { try { AppSettings.save({ [LS]: JSON.stringify(store) }); } catch (_) {} }, 500);
+      }
+    } catch (_) {}
+  };
+  let _cloudLoaded = false;
+  function syncFromCloud() {
+    if (_cloudLoaded) return;
+    try {
+      if (!(window.AppSettings && AppSettings.path)) return;
+      const raw = AppSettings.path(LS);
+      _cloudLoaded = true;
+      if (raw) {
+        const cloud = JSON.parse(raw);
+        if (cloud && typeof cloud === 'object' && Object.keys(cloud).length) { store = cloud; applyCss(); return; }
+      }
+      // Skýið tómt en tækið á stillingar → ýta þeim upp (fyrsta samstilling).
+      if (Object.keys(store).length) save();
+    } catch (_) {}
+  }
+  [1500, 4000, 9000].forEach(ms => setTimeout(syncFromCloud, ms));
 
   function viewIdOf(el) { const v = el && el.closest ? el.closest('.view') : null; return v && v.id ? v.id : null; }
   function tableKey(t) {
@@ -51,6 +78,16 @@
       wKeys.forEach(n => { css += base + ' col:nth-child(' + n + '){width:' + w[n] + 'px!important}\n'; });
       aKeys.forEach(n => { css += base + ' tbody td:nth-child(' + n + '),' + base + ' thead th:nth-child(' + n + '){text-align:' + al[n] + '!important}\n'; });
       if (e.padY != null) css += base + ' tbody td{padding-top:' + e.padY + 'px!important;padding-bottom:' + e.padY + 'px!important;min-height:0!important;height:auto!important}\n';
+      Object.keys(e.hide || {}).forEach(n => {
+        css += base + ' tbody td:nth-child(' + n + '),' + base + ' thead th:nth-child(' + n + '){display:none!important}\n';
+        css += base + ' col:nth-child(' + n + '){display:none!important;width:0!important}\n';
+      });
+      if (e.fs) css += base + ' tbody td{font-size:' + e.fs + 'px!important}\n';
+      if (e.sticky) {
+        css += base + ' thead th{position:sticky!important;top:0!important;z-index:25!important}\n';
+        css += 'html.slokk-phone-nav ' + base.slice(5) + ' thead th{top:74px!important}\n';
+      }
+      if (e.zebra) css += base + ' tbody tr:nth-child(even) td{background-image:linear-gradient(rgba(100,116,139,.09),rgba(100,116,139,.09))!important}\n';
     }
     s.textContent = css;
     if (s.parentNode) s.parentNode.appendChild(s);   // sitja síðast → vinna 314
@@ -83,6 +120,7 @@
           th.__cdAlign = true;
           th.addEventListener('click', ev => {
             if (!on) return;
+            if (th.__cdSuppress) { th.__cdSuppress = false; ev.preventDefault(); ev.stopPropagation(); return; }
             if (ev.target && ev.target.closest && ev.target.closest('._cd-handle')) return;
             ev.preventDefault(); ev.stopPropagation();
             const ths2 = Array.prototype.slice.call(t.querySelectorAll('thead th'));
@@ -94,6 +132,34 @@
             save(); applyCss();
             try { if (window.Toast && Toast.show) Toast.show('Dálkur ' + n + ': ' + (next === 'left' ? 'vinstri ⟸' : next === 'center' ? 'miðjað ⟺' : next === 'right' ? 'hægri ⟹' : 'sjálfgefið')); } catch (_) {}
           }, true);
+        }
+        // 👁 Long-press (600ms kyrr) á haus FELUR dálkinn — „👁 Sýna dálka"
+        // í toolbar birtir aftur. Bælir jöfnunar-smellinn sem fylgir á eftir.
+        if (!th.__cdHide) {
+          th.__cdHide = true;
+          th.addEventListener('pointerdown', ev => {
+            if (!on) return;
+            if (ev.target && ev.target.closest && ev.target.closest('._cd-handle')) return;
+            const sx = ev.clientX, sy = ev.clientY;
+            let fired = false;
+            const tm = setTimeout(() => {
+              fired = true;
+              const ths2 = Array.prototype.slice.call(t.querySelectorAll('thead th'));
+              const n = ths2.indexOf(th) + 1; if (!n) return;
+              const st = (store[key] = store[key] || {}); (st.hide = st.hide || {})[n] = 1;
+              th.__cdSuppress = true;
+              save(); applyCss(); buildHandles();
+              try { if (window.Toast && Toast.show) Toast.show('👁 Dálkur ' + n + ' falinn — „👁 Sýna dálka" birtir aftur'); } catch (_) {}
+            }, 600);
+            const cancel = e2 => {
+              if (e2 && e2.type === 'pointermove' && Math.hypot(e2.clientX - sx, e2.clientY - sy) < 8) return;
+              clearTimeout(tm);
+              document.removeEventListener('pointermove', cancel);
+              document.removeEventListener('pointerup', cancel);
+            };
+            document.addEventListener('pointermove', cancel);
+            document.addEventListener('pointerup', cancel);
+          });
         }
       });
     });
@@ -152,6 +218,41 @@
     save(); applyCss();
     try { if (window.Toast && Toast.show) Toast.show('Raðhæð: padding ' + (d > 0 ? '+' : '−') + '1px'); } catch (_) {}
   }
+  // Beitir fn á store-færslu HVERRAR töflu virku síðunnar (matseðils-tólin).
+  function eachViewTable(fn) {
+    const view = document.querySelector('.view.active'); if (!view) return false;
+    let hit = false;
+    view.querySelectorAll('table').forEach(t => {
+      if (!t.querySelector('colgroup col')) return;
+      const key = tableKey(t); if (!key) return;
+      fn((store[key] = store[key] || {}), t); hit = true;
+    });
+    if (hit) { save(); applyCss(); }
+    return hit;
+  }
+  function bumpFs(d) {
+    eachViewTable((st, t) => {
+      const cur = st.fs || (() => { const td = t.querySelector('tbody td'); return td ? Math.round(parseFloat(getComputedStyle(td).fontSize) || 13) : 13; })();
+      st.fs = Math.max(9, Math.min(cur + d, 22));
+    });
+    try { if (window.Toast && Toast.show) Toast.show('🔤 Leturstærð ' + (d > 0 ? '+' : '−') + '1px'); } catch (_) {}
+  }
+  function toggleFlag(flag, label) {
+    let onNow = null;
+    eachViewTable(st => { if (onNow == null) onNow = !st[flag]; if (onNow) st[flag] = 1; else delete st[flag]; });
+    try { if (window.Toast && Toast.show) Toast.show(label + (onNow ? ' Á' : ' AF')); } catch (_) {}
+  }
+  function hiddenColCount() {
+    const view = document.querySelector('.view.active'); if (!view || !view.id) return 0;
+    let n = 0;
+    Object.keys(store).forEach(k => { if (k.indexOf(view.id + '|') === 0) n += Object.keys((store[k] || {}).hide || {}).length; });
+    return n;
+  }
+  function showAllCols() {
+    eachViewTable(st => { delete st.hide; });
+    buildHandles();
+    try { if (window.Toast && Toast.show) Toast.show('👁 Allir dálkar sýndir'); } catch (_) {}
+  }
   function syncReset(bar) {
     // ↕ raðhæðar-steppari (aðeins þegar ↔-hamur er á)
     let dn = bar.querySelector('#pe-rowh-dn'), upB = bar.querySelector('#pe-rowh-up');
@@ -172,13 +273,44 @@
         bar.appendChild(upB);
       }
     }
+    // 🔤 / 📌 / 🦓 / 👁 (matseðill 1–4)
+    const MB = [
+      ['pe-fs-dn', '🔤−', 'Minnka letur í töflum síðunnar', () => bumpFs(-1)],
+      ['pe-fs-up', '🔤+', 'Stækka letur í töflum síðunnar', () => bumpFs(1)],
+      ['pe-sticky', '📌', 'Límdur haus — dálkhausar fylgja við skroll', () => toggleFlag('sticky', '📌 Límdur haus')],
+      ['pe-zebra', '🦓', 'Zebra-rendur — önnur hver röð lituð', () => toggleFlag('zebra', '🦓 Zebra')],
+    ];
+    MB.forEach(([id, label, title, fn]) => {
+      let b = bar.querySelector('#' + id);
+      if (!on) { if (b) b.remove(); return; }
+      if (!b) {
+        b = document.createElement('button');
+        b.id = id; b.type = 'button'; b.className = 'pe-btn';
+        b.textContent = label; b.title = title;
+        b.addEventListener('click', e => { e.preventDefault(); fn(); });
+        bar.appendChild(b);
+      }
+    });
+    let sh = bar.querySelector('#pe-showcols');
+    const hc = on ? hiddenColCount() : 0;
+    if (!hc) { if (sh) sh.remove(); }
+    else {
+      if (!sh) {
+        sh = document.createElement('button');
+        sh.id = 'pe-showcols'; sh.type = 'button'; sh.className = 'pe-btn';
+        sh.addEventListener('click', e => { e.preventDefault(); showAllCols(); syncReset(bar); });
+        bar.appendChild(sh);
+      }
+      sh.textContent = '👁 Sýna dálka (' + hc + ')';
+      sh.title = 'Birta falda dálka á þessari síðu';
+    }
     let r = bar.querySelector('#pe-coldrag-reset');
     if (!on) { if (r) r.remove(); return; }
     if (!r) {
       r = document.createElement('button');
       r.id = 'pe-coldrag-reset'; r.type = 'button'; r.className = 'pe-btn';
       r.textContent = '↺ tafla';
-      r.title = 'Núllstilla dregnar breiddir, jöfnun og raðhæð á þessari síðu';
+      r.title = 'Núllstilla ALLAR töflustillingar síðunnar (breiddir, jöfnun, raðhæð, letur, falda dálka, 📌, 🦓)';
       r.addEventListener('click', e => {
         e.preventDefault();
         const view = document.querySelector('.view.active'); const vid = view && view.id;
