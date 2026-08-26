@@ -66,6 +66,14 @@
     // stay table-laid-out so the columns still read.
     V + ' table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}',
     V + ' table>thead,' + V + ' table>tbody,' + V + ' table>tfoot{display:table;width:100%;table-layout:auto}',
+    // 2026-08-26 (Agnar column-shift): Rekstrarfélög already scrolls inside
+    // .rf-tblscroll. Splitting thead/tbody into two tables + td.rf-cellname
+    // {display:flex} shifted Heimilisfang/Nóta/Tæki one column. Keep one table.
+    'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-tbl{display:table!important;overflow:visible!important;max-width:none}',
+    'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-tbl>thead{display:table-header-group!important;width:auto;table-layout:fixed}',
+    'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-tbl>tbody{display:table-row-group!important;width:auto;table-layout:fixed}',
+    'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-tbl>tfoot{display:table-footer-group!important}',
+    'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-tbl>colgroup{display:table-column-group}',
 
     // ── 3. Stack common multi-column rows ───────────────────────────────────
     // Conservative, class-based only (inline-style selectors are too broad).
