@@ -1287,13 +1287,10 @@
     _ensureArsVmCss();
     const vm = arsViewMode();
     const isPhone = (window.innerWidth || document.documentElement.clientWidth) <= 768;
-    // 2026-08-23 (app-ham, samþykkt mockup v2): sími/app-ham fær nýtt ÞÉTT
-    // raða-útlit — EIN lína á fyrirtæki (nafn · 4-ára reitir · mánuður · akstur ·
-    // staða). Kviknar á data-viewmode="mobile" (viewmode-rofinn) EÐA body.appmode
-    // (app-skelin, patch 261 — hún setur líka data-viewmode=mobile gegnum 166, en
-    // við lesum bæði svo það sé skothelt). Skjáborðið (Kort/Listi) er ÓBREYTT.
+    // 2026-08-26: Sími/app uses the SAME desktop table (glossy year pills,
+    // metallic header, status chips) — patch 314 compacts it to 390px.
     const appMode = !!(document.body && document.body.classList.contains('appmode'));
-    const effView = (vm === 'mobile' || appMode) ? 'mrows'
+    const effView = (vm === 'mobile' || appMode) ? 'list'
                   : vm === 'table'  ? 'list'
                   : (isPhone ? 'card' : state.view);
     // Stats restricted to companies that ARE in árskoðun (have equipment).
