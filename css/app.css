@@ -1,11 +1,15 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+html { color-scheme: light; }
+html, body { color-scheme: only light; }
+
 :root {
   /* Ljós-hannað app: slekkur á sjálfvirkri „dark mode for web"-myrkvun í
      Chrome/Samsung Internet á símanum (hún gerði hvít kort svört). Parað við
-     <meta name="color-scheme" content="light only"> í index.html. */
-  color-scheme: light only;
+     <meta name="color-scheme" content="light"> í index.html. Blink Auto Dark
+     still inverts `light`; `only light` on html/body is the real opt-out. */
+  color-scheme: only light;
 
   /* Core brand */
   --brand: #C93C1D;
@@ -1771,11 +1775,15 @@ textarea.fi { resize: vertical; min-height: 72px; }
 /* end SLOKK */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
+html { color-scheme: light; }
+html, body { color-scheme: only light; }
+
 :root {
   /* Ljós-hannað app: slekkur á sjálfvirkri „dark mode for web"-myrkvun í
      Chrome/Samsung Internet á símanum (hún gerði hvít kort svört). Parað við
-     <meta name="color-scheme" content="light only"> í index.html. */
-  color-scheme: light only;
+     <meta name="color-scheme" content="light"> í index.html. Blink Auto Dark
+     still inverts `light`; `only light` on html/body is the real opt-out. */
+  color-scheme: only light;
 
   /* Core brand */
   --brand: #C93C1D;
@@ -3565,8 +3573,8 @@ textarea.fi { resize: vertical; min-height: 72px; }
 }
 
 
-/* SCROLL FIX */
-html, body { overflow-y: auto !important; overflow-x: hidden; }
+/* SCROLL FIX + Chrome Android Force Dark opt-out (see patch 318). */
+html, body { overflow-y: auto !important; overflow-x: hidden; color-scheme: only light; }
 
 
 /* MODAL FIX — keep header/body/footer as one unified card */
@@ -3631,3 +3639,48 @@ html, body { overflow-y: auto !important; overflow-x: hidden; }
 /* 2026-06-10: wider Fyrirtæki-í-þjónustu detail so the tæki table (Áætlað +
    Í vinnslu + Umfylling columns) fits without cramping. */
 #view-companies.active .main-panel { max-width: 1720px !important; }
+
+/* Chrome Android Force Dark — native form widgets (2026-08-26).
+   Opt-out is `color-scheme: only light` on html/body (above). These
+   explicit theme-token colours stop leftover dark UA inputs without
+   painting body #ffffff or restyling `a` / `._yr` / navy buttons.
+   Patch 318 mirrors + adds autofill. No !important so .fi / .field-dark
+   / overlay / brand fills still win. */
+input, textarea, select, button { color-scheme: only light; }
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="image"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not(.field-dark):not(.darkfield),
+textarea:not(.field-dark):not(.darkfield),
+select:not(.field-dark):not(.darkfield) {
+  background-color: var(--surface, #ffffff);
+  color: var(--ink1, #0f1117);
+  border-color: var(--brd, #e4e6ea);
+}
+input::placeholder, textarea::placeholder, select::placeholder {
+  color: var(--ink4, #626b7a);
+  opacity: 1;
+}
+input[type="checkbox"], input[type="radio"] {
+  color-scheme: only light;
+  accent-color: var(--brand, #C93C1D);
+}
+input:not(.field-dark):not(.darkfield):-webkit-autofill,
+input:not(.field-dark):not(.darkfield):-webkit-autofill:hover,
+input:not(.field-dark):not(.darkfield):-webkit-autofill:focus,
+textarea:not(.field-dark):not(.darkfield):-webkit-autofill,
+select:not(.field-dark):not(.darkfield):-webkit-autofill {
+  -webkit-text-fill-color: var(--ink1, #0f1117);
+  caret-color: var(--ink1, #0f1117);
+  box-shadow: 0 0 0 1000px var(--surface, #ffffff) inset;
+  -webkit-box-shadow: 0 0 0 1000px var(--surface, #ffffff) inset;
+  transition: background-color 99999s ease-out;
+}
+@media (prefers-color-scheme: dark) {
+  html { color-scheme: light; }
+  html, body { color-scheme: only light; }
+  input, textarea, select, button { color-scheme: only light; }
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):not([type="image"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not(.field-dark):not(.darkfield),
+  textarea:not(.field-dark):not(.darkfield),
+  select:not(.field-dark):not(.darkfield) {
+    background-color: var(--surface, #ffffff);
+    color: var(--ink1, #0f1117);
+  }
+}
