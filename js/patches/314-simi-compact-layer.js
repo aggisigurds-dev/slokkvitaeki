@@ -109,6 +109,9 @@
     // collapses back to compact desktop sizes; FORM controls stay ≥44px with
     // 16px type (iOS will not zoom).
     //
+    // Appmode only: undo 261's 50px on list/table chrome. Floor at 36px so
+    // rows stay compact but still tap-able. Sími hub keeps 263's 40px floor
+    // (do NOT min-height:0 there — that crushed .mip-btn to ~21px).
     // Selectors never match `._yr` (those are bare <a>, not button/.btn).
     A + V + ' table button,' +
     A + V + ' table .btn,' +
@@ -120,15 +123,8 @@
     A + V + ' .data-table .btn,' +
     A + V + ' .row-actions button,' +
     A + V + ' .row-actions .btn,' +
-    A + V + ' .jd-actions button,' +
-    A + V + ' .abtn5,' +
-    A + V + ' .ky-abtn,' +
-    M + V + ' .abtn5,' +
-    M + V + ' .ky-abtn,' +
-    M + V + ' table button,' +
-    M + V + ' table .btn,' +
-    M + V + ' tbody button' +
-      '{min-height:0!important;padding-top:2px!important;padding-bottom:2px!important;' +
+    A + V + ' .jd-actions button' +
+      '{min-height:36px!important;padding-top:4px!important;padding-bottom:4px!important;' +
        'line-height:1.15!important;font-size:13px!important}',
 
     g(' .abtn5') + '{min-height:40px!important;height:40px!important;padding:0 10px!important;font-size:9.5px!important}',
