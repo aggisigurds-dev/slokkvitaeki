@@ -592,14 +592,17 @@
       // „Heimaleiga - Laugavegur 42" eru sitt hvor lögaðilinn á sama húsi).
       var info = merged[name];
       var curated = Array.isArray(info.buildings) ? info.buildings.slice() : [];
-      var liveNm = {}, liveAddr = {}, liveKtN = {}, liveAddrAny = {};
+      var liveNm = {}, liveAddr = {}, liveKtN = {}, liveAddrAny = {}, liveSiteNm = {};
+      var liveCo = {};
       sites.forEach(function(s){
         var d = digits(s.kt);
         liveNm[d+'::'+foldNm(s.nafn)] = 1;
         liveNm[d+'::'+foldSiteNm(s.nafn)] = 1;
+        var sn = foldSiteNm(s.nafn); if (sn) liveSiteNm[sn] = 1;
         var a = foldAddr(s.heimilisfang) || foldNm(s.heimilisfang);
         if (a) { liveAddr[d+'::'+a] = 1; liveAddrAny[a] = 1; }
         if (d) liveKtN[d] = (liveKtN[d]||0)+1;
+        if (s.co_id != null) liveCo[String(s.co_id)] = 1;
       });
       var blds = sites.map(function(s){ return Object.assign({}, s, { _live:true }); });
       var seen = {};
@@ -609,13 +612,17 @@
         var kNmRaw = d+'::'+foldNm(b.nafn);
         var a = foldAddr(b.heimilisfang) || foldNm(b.heimilisfang);
         var kAddr = a ? (d+'::'+a) : null;
+        var sn = foldSiteNm(b.nafn);
+        if (b.co_id != null && liveCo[String(b.co_id)]) return;
         if (liveNm[kNm] || liveNm[kNmRaw]) return;
         if (kAddr && liveAddr[kAddr]) return;
-        if (a && liveAddrAny[a] && !b.co_id) return;  // old street name, possibly wrong kt
-        // Any live row on this kt already represents the property. Seed leftovers
-        // on a shared kt (Urðarhvarf 4 vs live Urðarhvarf 2 / Blue Mountain) must
-        // not reappear — unique-kt (=== 1) was not enough for Heimaleiga ehf's 10 sites.
+        if (a && liveAddrAny[a] && !b.co_id) return;
         if (d && liveKtN[d] >= 1 && !b.co_id) return;
+        if (sn && liveSiteNm[sn] && !b.co_id) return;
+        // AppSettings leftovers without a pin: "Heimaleiga ehf", "SAB ehf.",
+        // "Máni Apartments" with no kt — production showed 25 rows, 10 of them
+        // "(ekki í skrá)". Live fyrirtaeki rows are the list.
+        if (sites.length && !b.co_id && (!d || !a)) return;
         if (d && liveKtOwner[d] && liveKtOwner[d] !== name) return;
         if (seen[kNm] || seen[kNmRaw]) return;
         seen[kNm] = 1; seen[kNmRaw] = 1;
