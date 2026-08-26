@@ -27,14 +27,26 @@
     'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode[data-app="boss"] .view.active:not(#view-field):not(#view-counter):not(#view-workshop)' +
       '{padding-bottom:calc(64px + env(safe-area-inset-bottom,0px))!important}',
 
+    // 230 Brunastál: `.view.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel{padding:8px 14px}`
+    // The three :not(#id) bump specificity past a plain `#ars-main` rule — copy the
+    // chain plus the view id so the white list can go full-bleed.
+    'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode #view-krofu-yfirlit.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel,' +
+    'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode #view-arsskodun.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel,' +
+    'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode #view-hreyfingarlisti.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel' +
+      '{padding-left:0!important;padding-right:0!important}',
+
     // ── Kröfur: kill remaining grey gutters around the white company card ──
     KY + '.thm .app-main{padding:8px 0 12px!important}',
     KY + '.page-title,' + KY + '.stat-row,' + KY + '.ky-exprow,' + KY + '.ky-filterbar' +
       '{padding-left:10px;padding-right:10px;box-sizing:border-box}',
-    KY + '.stat-card{padding:8px 10px!important;border-radius:10px!important;min-height:0!important}',
-    KY + '.stat-card__value{font-size:15px!important;margin-top:2px!important}',
-    KY + '.stat-row{margin-bottom:8px!important;gap:8px!important}',
-    KY + '.ky-exprow{gap:8px!important;margin-bottom:8px!important}',
+    KY + '.page-title{margin-bottom:6px!important;gap:6px!important}',
+    KY + '.page-title h1{font-size:18px!important}',
+    KY + '.stat-card{padding:6px 8px!important;border-radius:10px!important;min-height:0!important}',
+    KY + '.stat-card__label{font-size:9px!important}',
+    KY + '.stat-card__value{font-size:14px!important;margin-top:1px!important}',
+    KY + '.stat-row{margin-bottom:6px!important;gap:6px!important}',
+    KY + '.ky-exprow{gap:6px!important;margin-bottom:6px!important}',
+    KY + '.ky-exprow > *{padding:6px 8px!important;min-height:0!important}',
     KY + '.ky-filterbar{margin-bottom:8px!important}',
     KY + '.ky-co{border-radius:0;border-left:none;border-right:none;margin-bottom:8px;box-shadow:none}',
     KY + '.ky-coname{font-size:16px!important;line-height:1.2}',
@@ -67,13 +79,15 @@
 
     // ── Þjónusta / Ársskoðun mrows: full-bleed, short rows, ≥16px names ──
     // Do NOT restyle `._yr` (look-A lives on another ticket).
-    // #ars-main IS `.main-panel` — 314 still leaves 10px sides; the inner wrap
-    // is inline `padding:10px 18px`. Zero both so the white list is full-bleed.
     ARS + '#ars-main,' + ARS + '#ars-main.main-panel' +
       '{padding-left:0!important;padding-right:0!important;max-width:none!important;margin:0!important}',
-    ARS + '#ars-main > div{padding-left:0!important;padding-right:0!important;max-width:none!important;margin:0!important}',
+    ARS + '#ars-main > div,' + ARS + '#ars-main [style*="max-width:1720"]' +
+      '{padding-left:0!important;padding-right:0!important;max-width:none!important;margin:0!important}',
     ARS + '#ars-main > div > :not(._arsm-tbl){padding-left:10px;padding-right:10px;box-sizing:border-box}',
-    ARS + '._arsm-tbl{border-radius:0;border-left:none;border-right:none;margin-top:0;box-shadow:none}',
+    ARS + 'h1{font-size:18px!important;line-height:1.15!important}',
+    ARS + '._ars-statgrid{gap:6px!important;margin-bottom:8px!important}',
+    ARS + '._ars-statgrid > div{padding:8px 10px!important}',
+    ARS + '._arsm-tbl{border-radius:0;border-left:none;border-right:none;margin-top:0;box-shadow:none;width:100%}',
     ARS + '._arsm-row{padding:6px 10px;gap:4px;grid-template-columns:minmax(0,1fr) 66px 34px 32px 26px}',
     ARS + '._arsm-row._arsm-head{padding:5px 10px}',
     'html body.appmode #view-arsskodun ._arsm-row ._arsm-nm{font-size:16px!important;font-weight:700;line-height:1.2}',
