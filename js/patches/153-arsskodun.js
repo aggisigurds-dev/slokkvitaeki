@@ -2694,15 +2694,16 @@
       // tight vertical padding + single-line cells (taflan skrunar lárétt hvort eð er)
       T + 'table tbody td{padding:2px 8px!important;font-size:11px!important;line-height:1.1!important;white-space:nowrap!important;vertical-align:middle!important}' +
       T + 'table tbody td div{line-height:1.1!important;margin-top:0!important}' +
-      // kt-lína örsmá (bara í nafna-dálknum)
-      T + 'table tbody td:first-child>div:nth-child(2){font-size:8.5px!important}' +
+      // kt-lína örsmá (bara í nafna-dálknum) — nafna-dálkurinn er nú 2. dálkur
+      // (póst-dálkurinn fremstur), svo miðum við ._ars-namecell frekar en :first-child
+      T + 'table tbody td._ars-namecell>div:nth-child(2){font-size:8.5px!important}' +
       // fletja SLT/BSL/RS-þrenninguna í EINA línu (var 2 línur = hæsta atriðið)
       T + '._ars-eqtrio{gap:7px!important}' +
       T + '._ars-eqtrio>span{flex-direction:row!important;gap:2px!important;align-items:baseline!important;line-height:1!important}' +
       T + '._ars-eqtrio>span>span:first-child{font-size:11px!important}' +
       T + '._ars-eqtrio>span>span:last-child{font-size:8px!important}' +
       // fela áminningar-línu í töflu (sést á spjaldinu/ítarlegri sýn)
-      T + 'table tbody td:first-child>div:nth-child(3){display:none!important}';
+      T + 'table tbody td._ars-namecell>div:nth-child(3){display:none!important}';
     document.head.appendChild(s);
   }
 
@@ -2729,8 +2730,13 @@
       V+'.data-table{min-width:1300px;width:100%;table-layout:fixed}',
       // Súlubreiddirnar koma úr <colgroup> í renderTable (skothelt í fixed
       // layout, ónæmt fyrir colspan-hausnum) — design: 186/118/4×64/284/62/158/74/66/150.
-      // árs-reitirnir fjórir (187 sprautar, sitja nú á 4–7 á eftir heimilisfangi)
-      V+'.data-table td:nth-child(4),'+V+'.data-table td:nth-child(5),'+V+'.data-table td:nth-child(6),'+V+'.data-table td:nth-child(7){padding-left:2px;padding-right:2px;text-align:center}',
+      // árs-reitirnir fjórir (187 sprautar) — með póst-dálkinn fremst hliðrast þeir
+      // í 5–8 (áður 4–7): póstur(1) nafn(2) nóta(3) heimilisfang(4) mánuður(5) tæki(6) akstur(7) forg(8)
+      V+'.data-table td:nth-child(5),'+V+'.data-table td:nth-child(6),'+V+'.data-table td:nth-child(7),'+V+'.data-table td:nth-child(8){padding-left:2px;padding-right:2px;text-align:center}',
+      // póst-stöðu dálkurinn (nýr, fremstur) — mjór, miðjaður, merkið án hægri-spássíu
+      V+'.data-table th._ars-mailhdr{padding-left:4px!important;padding-right:4px!important;text-align:center;font-size:12px;letter-spacing:0}',
+      V+'.data-table td._ars-mailcol{padding-left:4px;padding-right:4px;text-align:center;white-space:nowrap}',
+      V+'.data-table td._ars-mailcol ._mail-badge{margin:0!important}',
       V+'._co{display:block;font-size:13px;font-weight:600;color:var(--ink);white-space:normal;overflow:visible;overflow-wrap:anywhere}',
       V+'._kt{display:block;font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.02em;white-space:nowrap;line-height:1.2}',
       V+'._addr{white-space:normal;overflow:visible;overflow-wrap:anywhere;display:block}',
@@ -2822,7 +2828,7 @@
         <div class="_ars-tblscroll data-table-scroll">
         <table class="data-table">
           <colgroup>
-            <col style="width:186px"><col style="width:118px">
+            <col style="width:34px"><col style="width:186px"><col style="width:118px">
             <col style="width:284px">
             <col style="width:64px"><col style="width:64px"><col style="width:64px"><col style="width:64px">
             <col style="width:62px"><col style="width:158px">
@@ -2837,6 +2843,7 @@
                 const dir = state.sortDir;
                 const arrow = (col) => '<span class="sort-ar">' + (cur === col ? (dir === 'asc' ? '▲' : '▼') : '⇅') + '</span>';
                 return `
+                  <th class="_ars-mailhdr center" title="Póst-staða — umslag/pera birtir samskiptastöðu. Smelltu á merkið í röðinni til að sjá póstinn.">✉</th>
                   <th data-sort="name" class="_ars-sort">Fyrirtæki${arrow('name')}<span class="_ars-mailsort" title="Raða eftir póst-stöðu (merkin í þessum dálki). 1× smellur: ósvarað → saga → engin · 2×: póstsaga til fyrst · 3×: til baka í stafrófsröð" style="margin-left:7px;cursor:pointer;font-size:10px;font-weight:800;padding:1px 5px;border-radius:6px;vertical-align:middle;white-space:nowrap;${(cur==='poststada'||cur==='postavail')?'background:rgba(59,130,246,.22);outline:1px solid rgba(59,130,246,.55);color:#fff':'opacity:.5'}">🚦${cur==='poststada'?' staða '+(dir==='asc'?'▲':'▼'):cur==='postavail'?' saga '+(dir==='asc'?'▲':'▼'):''}</span></th>
                   <th data-notacol="1" title="✈ Ferðanóta — tímabundnar nótur við ferðaskipulag">Ferðanóta</th>
                   <th data-addrcol="1" data-sort="postnumer" class="_ars-sort" title="Raða eftir póstnúmeri (fyrir akstursleiðir)">Heimilisfang${arrow('postnumer')}</th>
@@ -2879,7 +2886,8 @@
               const g = eqGroups(ars.equipment || {});
               return `
                 <tr class="_ars-row${stState === 'over' ? ' overdue' : ''}" data-co-id="${c.id}" tabindex="0" style="cursor:pointer">
-                  <td>
+                  <td class="center _ars-mailcol" data-co-id="${c.id}" onclick="event.stopPropagation()"></td>
+                  <td class="_ars-namecell">
                     <span class="_co">${esc(c.nafn || '—')}</span>
                     ${c.kennitala ? `<span class="_kt">${esc(fmtKt(c.kennitala))}</span>` : ''}
                     ${((window.NyttBadge && NyttBadge.is(c.id)) || (window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala) && RekstrarfelagBadge.html(c.kennitala, c.customer_base_id)) || state.status === 'skipped2025') ? `<span style="display:flex;gap:4px;flex-wrap:wrap;margin-top:2px;align-items:center">${(window.NyttBadge && NyttBadge.is(c.id)) ? NyttBadge.badgeHtml() : ''}${(window.RekstrarfelagBadge && (c.customer_base_id != null || c.kennitala)) ? RekstrarfelagBadge.html(c.kennitala, c.customer_base_id) : ''}${state.status === 'skipped2025' ? (ars.ekki_sleppt

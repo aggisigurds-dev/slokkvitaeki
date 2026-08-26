@@ -138,14 +138,18 @@
     span.title = tipFor(coId, st, d);
     span.style.cssText = 'display:inline-flex;align-items:center;margin-right:6px;cursor:pointer;vertical-align:middle';
     const color = DOT[st] || '#94a3b8';
-    if (st === 'green' || st === 'hist') {
+    if (st === 'yellow') {
+      // gult = mikilvægt / möguleg breyting → ljósapera (ósk Agnars: 💡 fyrir
+      // mikilvæg samskipti). Glóandi amber-skuggi svo hún „kviknar" á listanum.
+      span.innerHTML = '<span style="display:inline-flex;font-size:15px;line-height:1;filter:drop-shadow(0 0 3px rgba(217,119,6,.6))">💡</span>';
+    } else if (st === 'green' || st === 'hist') {
       // grænt = fyllt (í sambandi nýlega) · eldri saga = hol grá hringur (til, en ekkert nýlegt) — ekkert umslag
       const solid = st === 'green';
       span.innerHTML = '<span style="width:9px;height:9px;border-radius:50%;box-sizing:border-box;' +
         (solid ? 'background:' + color : 'background:transparent;border:1.5px solid ' + color) +
         ';display:inline-block;box-shadow:0 0 0 1.5px var(--surface,#fff)"></span>';
     } else {
-      // rautt/gult: umslag með lituðum punkti (það er póstur að skoða)
+      // rautt: umslag með rauðum punkti (ósvarað — kallar á svar)
       span.innerHTML = '<span style="position:relative;display:inline-flex;font-size:13px;line-height:1">✉️' +
         '<span style="position:absolute;top:-3px;right:-4px;width:8px;height:8px;border-radius:50%;background:' + color + ';box-shadow:0 0 0 1.5px var(--surface,#fff)"></span></span>';
     }
@@ -164,6 +168,10 @@
   }
   function stampAll() {
     document.querySelectorAll('tr._ars-row[data-co-id]').forEach(tr => {
+      // Nýr sér-dálkur fremst (patch 153) — stimpla merkið í hann. Fallback =
+      // nafna-reiturinn (eldri/aðrar töflur sem endurnýta ._ars-row án póst-dálks).
+      const mailTd = tr.querySelector('td._ars-mailcol');
+      if (mailTd) { stampInto(mailTd, +tr.dataset.coId); return; }
       const td = tr.querySelector('td');
       stampInto((td && td.querySelector('div')) || td, +tr.dataset.coId);
     });
