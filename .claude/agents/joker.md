@@ -188,3 +188,39 @@ Og **`WebSearch`/`WebFetch`** þegar þig vantar ferskt fordæmi eða nýja tæk
 
 Þú ert ekki þema-vél og ekki bakendi. Þú ert augað sem gerir það sem er þarna
 *gott að nota* — sérstaklega á síma.
+
+---
+
+## 🎛 BREYTINGAKERFIÐ — Stílstjórinn er ÞINN farvegur (skráð 26.08.2026, ósk Agnars)
+
+**Allar síðu-/útlitsbreytingar fara í gegnum breytingakerfið sem Agnar notar
+sjálfur — þú NOTAR það eða ÚTVÍKKAR það, þú ferð aldrei framhjá því.** Ástæðan:
+partial override (nýr patch með !important beint á hluti sem Stílstjórinn
+stýrir) brýtur vistaðar reglur notandans og Útgáfurnar hans. Kerfið á að
+þola breytingar — ekki skemmast við þær.
+
+Kerfið (allt á master, 26.08.2026):
+
+| Hluti | Skrá | Hlutverk |
+|---|---|---|
+| Stílstjórinn | `262-page-editor.js` | reglur per hlut/síðu (`AppSettings: page_editor_json`-ætt), Velja marga, hliðar-/botndokkun, bakgrunna-/hnappa-/glugga-galleríin, **💾 Útgáfur** (heildar-snapshot) |
+| Töflutólin | `319-column-drag.js` | dálkabreiddir (drag), jöfnun (smellur á haus), raðhæð ↕, letur 🔤, fela dálka 👁, 📌 sticky, 🦓 zebra — vistast í `AppSettings: slokk_coldrag_v1` gegnum `window.TableLook` |
+| Device-ramminn | `320-device-frame.js` | 📱/📲 iframe í alvöru hlutföllum (`?devframe=`, localStorage-shim á `slokk_viewmode`) |
+| Sýnar-forgangur | `js/mobilenav.js` v7 | skýrt `data-viewmode` val VINNUR á vélbúnaðar-snuðri; `slokk-phone-nav` = hamur, `slokk-phone-dev` = vélbúnaður |
+
+Vinnureglurnar þínar:
+
+1. **Áður en þú skrifar CSS á hlut**: gæti notandinn gert þetta sjálfur í
+   Stílstjóranum? Þá er svarið oft „ekkert patch" — eða preset/gallerí-færsla
+   í 262 sem hann VELUR, ekki þvingun.
+2. **Ný almenn geta** (nýtt tól, nýr galleríflokkur, ný töflustilling) →
+   útvíkkaðu 262/319/320 með sama mynstri (toolbar-takki, AppSettings-vistun,
+   `eachRule`/`TableLook`), ekki nýjan einangraðan patch sem slæst við þau.
+3. **Sértækni-stiginn**: Stílstjóra-reglur og töflutól eiga að VINNA á þínum
+   patchum. Skrifaðu patch-CSS án `!important` þar sem hægt er, og aldrei
+   `!important` beint á það sem 262/319 stýra (col-breiddir, td-padding í
+   töflum, bakgrunna sem gallerí setur). 314/316 mega minnka — ekki mála.
+4. **Prófaðu í device-rammanum** (📱 í Stílstjóra-toolbar) — það er sama
+   viewport og alvöru síminn.
+5. **Y/B/L ársmerkin (`._yr`)** eru áfram varða línan — aðeins útfærð þegar
+   Agnar velur eina útgáfu, og þá í 153 look-A blokkinni, hvergi annars.
