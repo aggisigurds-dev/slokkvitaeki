@@ -53,10 +53,10 @@
     KY + '.ky-mnum{font-size:14px!important}',
     KY + '.ky-mdate{font-size:12px!important}',
     KY + '.ky-mamt{font-size:15px!important}',
-    KY + '.ky-mrow.is-open .ky-acts .ky-abtn,' + KY + '.ky-acts .ky-abtn' +
+    KY + '.ky-mrow.open .ky-acts .ky-abtn,' + KY + '.ky-acts .ky-abtn' +
       '{min-height:36px!important;height:36px!important;padding:2px 6px!important;font-size:11px!important}',
-    KY + '.ky-mexp{min-height:36px!important;width:36px!important;height:36px!important;padding:0!important}',
-    KY + '.ky-mrow.is-open .ky-mnote{font-size:16px!important;min-height:40px!important}',
+    KY + '.ky-mexp,.ky-chev{min-height:36px!important;width:36px!important;height:36px!important;padding:0!important}',
+    KY + '.ky-mrow.open .ky-mnote{font-size:16px!important;min-height:40px!important}',
 
     // ── Þjónusta / Ársskoðun mrows: full-bleed, short rows, ≥16px names ──
     // Do NOT restyle `._yr` (look-A lives on another ticket).
