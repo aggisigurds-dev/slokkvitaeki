@@ -1116,6 +1116,26 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
-  window.PageEditor = { open: openPanel, close: closePanel, toggle: togglePanel, reset: () => { state = { rules: [], bg: { all: null, pages: {} } }; persist(); } };
+  window.PageEditor = {
+    open: openPanel, close: closePanel, toggle: togglePanel,
+    reset: () => { state = { rules: [], bg: { all: null, pages: {} } }; persist(); },
+    // Fyrir hjálpar-patcha (321-toflunet o.fl.): skrifa/lesa staka decl á reglu
+    // með eigin selector — sama farvegur og allt annað (snapshot + persist +
+    // AppSettings-sync), svo breytingakerfið helst eitt.
+    upsertDecl: (scp, sel, prop, val) => {
+      snapshot();
+      const r = ruleFor(sel, scp, true); if (!r) return;
+      if (val == null || val === '') delete r.decls[prop]; else r.decls[prop] = val;
+      persist(); renderPanel();
+    },
+    readDecl: (scp, sel, prop) => {
+      const r = state.rules.find(x => x.sel === sel && x.scope === scp);
+      return r && r.decls ? (r.decls[prop] || null) : null;
+    },
+    clearRule: (scp, sel) => {
+      const i = state.rules.findIndex(x => x.sel === sel && x.scope === scp);
+      if (i >= 0) { snapshot(); state.rules.splice(i, 1); persist(); renderPanel(); }
+    }
+  };
   console.log('[patch-262] Stílstjóri (page editor) installed');
 })();
