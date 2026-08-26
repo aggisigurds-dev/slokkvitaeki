@@ -496,7 +496,7 @@
 
     let body;
     if (!target) {
-      body = '<div class="pe-empty">Ýttu á <b>🎯 Velja hlut</b> og smelltu svo á texta, box eða glugga á síðunni til að byrja að breyta.<br>Eða settu <b>🖼 Bakgrunnsmynd</b> á síðuna.</div>' + presetsSection() + bgGallerySection() + versionsSection();
+      body = '<div class="pe-empty">Ýttu á <b>🎯 Velja hlut</b> og smelltu svo á texta, box eða glugga á síðunni til að byrja að breyta.<br>Eða settu <b>🖼 Bakgrunnsmynd</b> á síðuna.</div>' + presetsSection() + bgGallerySection() + versionsSection() + linkasafnSection();
     } else {
       body = '<div class="pe-grid">' +
         '<details class="pe-sec"><summary><h4>Stærð &amp; bil</h4></summary>' +
@@ -529,7 +529,7 @@
           '<div class="pe-row"><label>Font</label><select data-font>' + FONTS.map(f => '<option value="' + esc(f) + '"' + ((getDecl('font-family') || '') === f ? ' selected' : '') + '>' + esc(f) + '</option>').join('') + '</select></div>' +
           '<div class="pe-sub" style="margin-top:6px">Border sést aðeins þegar þykkt &gt; 0.</div>' +
         '</details>' +
-      '</div>' + presetsSection() + bgGallerySection() + versionsSection();
+      '</div>' + presetsSection() + bgGallerySection() + versionsSection() + linkasafnSection();
     }
     p.innerHTML = head + body;
     wirePanel();
@@ -640,6 +640,38 @@
       '<div class="pe-sub" style="margin-top:6px">Útgáfa geymir allar Stílstjóra-breytingar, bakgrunna og töflustillingar (breiddir/jöfnun/raðhæð).</div>' +
     '</details>';
   }
+  // ── 🔗 Linkasafn (2026-08-26, ósk Agnars: Keldan-leitarboxið + „Teikningar
+  // rvk") — flýtileitir út á ytri vefi, opnast í nýjum flipa. Iframe er EKKI
+  // í boði (Keldan sendir X-Frame-Options: DENY + frame-ancestors 'none'),
+  // svo boxin SENDA leitina út: keldan.is/Leit?search=… og FotoWeb-safnið
+  // tekur ?q=… (hvort tveggja staðfest í vafra 26.08 — ATH ?q= á Keldan
+  // virkar EKKI, paramið þar heitir search). Nýr tengill = ein lína í LINKS.
+  const LINKS = [
+    { name: '🏢 Keldan — fyrirtækjaleit', ph: 'Nafn eða kennitala…',
+      base: 'https://keldan.is/Fyrirtaeki/Leit',
+      srch: 'https://keldan.is/Leit?search=', quote: false },
+    { name: '📐 Teikningar rvk — aðaluppdrættir', ph: 'Heimilisfang…',
+      base: 'https://skjalasafn.reykjavik.is/fotoweb/archives/5000-A%C3%B0aluppdr%C3%A6ttir/',
+      srch: 'https://skjalasafn.reykjavik.is/fotoweb/archives/5000-A%C3%B0aluppdr%C3%A6ttir/?q=', quote: true }
+  ];
+  function linkGo(i, qtxt) {
+    const L = LINKS[i]; if (!L) return;
+    let qq = String(qtxt || '').trim();
+    // FotoWeb-ráðið af síðunni sjálfri: gæsalappir þrengja heimilisfangaleit.
+    if (L.quote && qq && /\s/.test(qq) && !/"/.test(qq)) qq = '"' + qq + '"';
+    try { window.open(qq ? L.srch + encodeURIComponent(qq) : L.base, '_blank', 'noopener'); } catch (_) {}
+  }
+  function linkasafnSection() {
+    return '<details class="pe-sec" style="margin-top:10px"><summary><h4>🔗 Linkasafn — flýtileitir</h4></summary>' +
+      LINKS.map((L, i) =>
+        '<div class="pe-row" style="margin:5px 0;flex-wrap:wrap">' +
+          '<button class="pe-btn" data-lk-open="' + i + '" title="Opna síðuna í nýjum flipa" style="flex:1 1 100%;text-align:left">' + esc(L.name) + '</button>' +
+          '<input type="search" data-lk-q="' + i + '" placeholder="' + esc(L.ph) + '" style="flex:1;min-width:0;border:1px solid #cbd5e1;border-radius:9px;padding:8px 10px;font:inherit">' +
+          '<button class="pe-btn" data-lk-go="' + i + '" title="Leita — niðurstaðan opnast í nýjum flipa">🔍</button>' +
+        '</div>').join('') +
+      '<div class="pe-sub" style="margin-top:4px">Sláðu inn og ýttu á Enter eða 🔍 — niðurstaðan opnast í nýjum flipa. Tómt opnar síðuna sjálfa.</div>' +
+    '</details>';
+  }
   function presetsSection() {
     const favs = (state.favs || []);
     const favGroup = favs.length ? '<div class="pe-pgroup"><span class="pe-glabel">⭐ Uppáhald</span><div class="pe-presets">' +
@@ -679,6 +711,9 @@
     const vs = q('#pe-ver-save'); if (vs) vs.onclick = saveVersionAs;
     qa('[data-ver-go]').forEach(b => b.onclick = () => activateVersion(+b.dataset.verGo));
     qa('[data-ver-del]').forEach(b => b.onclick = () => deleteVersion(+b.dataset.verDel));
+    qa('[data-lk-open]').forEach(b => b.onclick = () => linkGo(+b.dataset.lkOpen, ''));
+    qa('[data-lk-go]').forEach(b => b.onclick = () => { const inp = q('[data-lk-q="' + b.dataset.lkGo + '"]'); linkGo(+b.dataset.lkGo, inp ? inp.value : ''); });
+    qa('[data-lk-q]').forEach(inp => inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); linkGo(+inp.dataset.lkQ, inp.value); } }));
     const pk = q('#pe-pick'); if (pk) pk.onclick = () => setPicking(!picking);
     const mu = q('#pe-multi'); if (mu) mu.onclick = () => {
       multiPick = !multiPick;
