@@ -32,11 +32,61 @@
     return c ? 'table.' + c : 'table';
   }
 
-  function chip(label, title, sel, extra) {
-    return '<button type="button" data-tn-sel="' + esc(sel) + '" data-tn-label="' + esc(label) + '" title="' + esc(title) + '" ' +
-      'style="all:unset;cursor:pointer;pointer-events:auto;font:800 11px \'Space Grotesk\',sans-serif;color:#fff;background:#2563eb;padding:3px 9px;border-radius:7px;box-shadow:0 3px 10px rgba(0,0,0,.35);white-space:nowrap;' + (extra || '') + '">' + esc(label) + '</button>';
+  // Töflureiknis-rammi (v2, Agnar 26.08: „hefði helst bara viljað fá að sjá
+  // töflunetið svona" + Sheets-skjámynd): bókstafir A B C … yfir dálkunum,
+  // raðnúmer 1 2 3 … vinstra megin, H fyrir hausinn og ⬚ hornreitur fyrir
+  // töfluna alla — smellur á reit opnar litla ritilinn.
+  const STRIP = 26;   // þykkt bókstafa-/númera-randanna
+  function colLetter(i) {
+    let s = ''; i = i + 1;
+    while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); }
+    return s;
   }
-
+  function cell(x, y, w, h, label, sel, title, dark, dragAttrs) {
+    return '<button type="button" data-tn-sel="' + esc(sel) + '" data-tn-label="' + esc(title) + '" title="' + esc(title) + '" ' +
+      'style="all:unset;box-sizing:border-box;position:fixed;left:' + Math.round(x) + 'px;top:' + Math.round(y) + 'px;width:' + Math.round(w) + 'px;height:' + Math.round(h) + 'px;' +
+      'pointer-events:auto;cursor:pointer;display:flex;align-items:center;justify-content:center;' +
+      'font:700 10.5px \'Space Grotesk\',sans-serif;border:1px solid #c6cdd6;' +
+      (dark ? 'background:#0f172a;color:#fff;' : 'background:#f1f3f6;color:#334155;') +
+      'overflow:visible;white-space:nowrap">' + esc(label) +
+      // dráttar-svæði á hægri brún bókstafa-reits: dragðu = dálkbreiddin
+      (dragAttrs ? '<span ' + dragAttrs + ' style="position:absolute;right:-5px;top:0;width:11px;height:100%;cursor:col-resize;display:block"><span style="position:absolute;left:4px;top:15%;bottom:15%;width:2px;background:#2563eb;border-radius:1px"></span></span>' : '') +
+      '</button>';
+  }
+  // Dálkbreiddar-drag úr bókstafa-röndinni — vistast í sama kerfi og
+  // ↔ Dálkar (319, window.TableLook) svo allt helst á einum stað.
+  let _tnTables = [];
+  let _justDragged = false;
+  function tlKeyFor(t) {
+    const v = t.closest('.view'); const vid = v && v.id; if (!vid) return null;
+    const cls = t.id ? ('#' + t.id) : (t.classList[0] ? ('.' + t.classList[0]) : '');
+    return vid + '|' + (cls || 'table');
+  }
+  function colDrag(ev, t, n) {
+    ev.preventDefault(); ev.stopPropagation();
+    const ths = t.querySelectorAll('thead th');
+    const th = ths[n - 1] || t.querySelector('thead tr') && t.querySelector('thead tr').children[n - 1];
+    const col = t.querySelectorAll('colgroup col')[n - 1];
+    const startX = ev.clientX;
+    const startW = (th || t).getBoundingClientRect().width;
+    let w = Math.round(startW);
+    const mv = e2 => {
+      w = Math.max(24, Math.min(Math.round(startW + (e2.clientX - startX)), Math.round(window.innerWidth * 0.9)));
+      if (col) col.style.width = w + 'px'; else if (th) th.style.width = w + 'px';
+    };
+    const up = () => {
+      document.removeEventListener('pointermove', mv);
+      document.removeEventListener('pointerup', up);
+      _justDragged = true; setTimeout(() => { _justDragged = false; }, 250);
+      try {
+        const TL = window.TableLook, key = tlKeyFor(t);
+        if (TL && key) { const s = TL.get(); (s[key] = s[key] || {}); (s[key].w = s[key].w || {})[n] = w; TL.set(s); }
+      } catch (_) {}
+      build();   // endursmíða röndina á nýju breiddirnar
+    };
+    document.addEventListener('pointermove', mv);
+    document.addEventListener('pointerup', up);
+  }
   function build() {
     destroyOverlay();
     const view = activeView();
@@ -47,36 +97,58 @@
     ov.id = OV_ID;
     ov.style.cssText = 'position:fixed;inset:0;z-index:99940;pointer-events:none';
     let html = '';
-    tables.forEach(t => {
+    _tnTables = tables;
+    tables.forEach((t, ti) => {
       const tr = t.getBoundingClientRect();
       const ts = tableSel(t);
+      const lx = Math.max(0, tr.left - STRIP);          // vinstri röndin
+      const ty = Math.max(0, tr.top - STRIP);           // efri röndin
+      // ⬚ hornreitur = taflan öll (eins og select-all hornið í Sheets)
+      html += cell(lx, ty, STRIP, STRIP, '⬚', ts, 'Taflan í heild', true);
+      // Bókstafir yfir dálkunum — smellur stílar dálkinn (haus + reitir),
+      // drag á bláu línunni við hægri brún reitsins breytir dálkbreiddinni.
       const ths = Array.prototype.slice.call(t.querySelectorAll('thead th')).filter(th => getComputedStyle(th).display !== 'none');
-      // dálka-flögg + þunn lóðrétt lína yfir hvern dálk
       ths.forEach((th, i) => {
-        const n = Array.prototype.indexOf.call(th.parentNode.children, th) + 1;
         const r = th.getBoundingClientRect();
-        if (r.width < 14) return;
-        html += '<div style="position:fixed;left:' + r.left + 'px;top:' + tr.top + 'px;width:' + r.width + 'px;height:' + tr.height + 'px;border-left:1px dashed rgba(37,99,235,.5);pointer-events:none"></div>';
-        html += '<div style="position:fixed;left:' + (r.left + 2) + 'px;top:' + Math.max(2, tr.top - 24) + 'px;pointer-events:none">' +
-          chip('D' + (i + 1), 'Stíla dálk ' + (i + 1) + ' — haus + allir reitir', ts + ' tr>*:nth-child(' + n + ')') + '</div>';
+        if (r.width < 8) return;
+        const n = Array.prototype.indexOf.call(th.parentNode.children, th) + 1;
+        const drag = i < ths.length - 1 ? 'data-tn-drag="1" data-tn-table="' + ti + '" data-tn-col="' + n + '"' : '';
+        html += cell(r.left, ty, r.width, STRIP, colLetter(i), ts + ' tr>*:nth-child(' + n + ')', 'Dálkur ' + colLetter(i) + ' — smellur stílar; dragðu bláu línuna fyrir breidd', false, drag);
       });
-      // HAUS / RAÐIR / TAFLAN flögg efst til hægri við töfluna
-      html += '<div style="position:fixed;left:' + Math.max(4, tr.left) + 'px;top:' + Math.max(2, tr.top - 52) + 'px;display:flex;gap:6px;pointer-events:none">' +
-        chip('HAUS', 'Stíla töfluhausinn (allar haus-sellur)', ts + ' thead th', 'background:#0f172a') +
-        chip('RAÐIR', 'Stíla allar raðir (alla reiti í body)', ts + ' tbody td', 'background:#0f172a') +
-        chip('TAFLAN', 'Stíla töfluna í heild', ts, 'background:#0f172a') +
-      '</div>';
+      // H = haus-röðin; svo raðnúmer fyrir sýnilegu raðirnar
+      const thead = t.querySelector('thead');
+      if (thead) {
+        const hr = thead.getBoundingClientRect();
+        if (hr.height > 6) html += cell(lx, hr.top, STRIP, hr.height, 'H', ts + ' thead th', 'Haus-röðin (allar haus-sellur)', true);
+      }
+      const tb = t.querySelector('tbody');
+      if (tb) {
+        const rows = Array.prototype.slice.call(tb.children);
+        let drawn = 0;
+        for (let n = 1; n <= rows.length && drawn < 80; n++) {
+          const r = rows[n - 1].getBoundingClientRect();
+          if (r.bottom < STRIP || r.top > window.innerHeight || r.height < 6) continue;
+          html += cell(lx, r.top, STRIP, r.height, String(n), ts + ' tbody tr:nth-child(' + n + ')>td', 'Röð ' + n);
+          drawn++;
+        }
+      }
     });
     ov.innerHTML = html;
     document.body.appendChild(ov);
     ov.querySelectorAll('[data-tn-sel]').forEach(b => b.addEventListener('click', e => {
       e.preventDefault(); e.stopPropagation();
+      if (_justDragged) return;   // dráttur endar ekki sem stíl-smellur
       openEditor(b.dataset.tnSel, b.dataset.tnLabel, b.getBoundingClientRect());
+    }));
+    ov.querySelectorAll('[data-tn-drag]').forEach(h => h.addEventListener('pointerdown', ev => {
+      const t = _tnTables[+h.dataset.tnTable];
+      if (t) colDrag(ev, t, +h.dataset.tnCol);
     }));
   }
   function destroyOverlay() { const o = document.getElementById(OV_ID); if (o) o.remove(); }
   function closeEditor() { const d = document.getElementById(ED_ID); if (d) d.remove(); editing = null; }
 
+  const TN_FONTS = ['', 'Space Grotesk', 'Space Mono', 'Source Serif 4', 'Georgia, serif', 'system-ui, sans-serif', 'Arial, sans-serif', 'Courier New, monospace', 'Impact, sans-serif'];
   function pe() { return window.PageEditor || {}; }
   function readD(prop) { return editing && pe().readDecl ? pe().readDecl(editing.scope, editing.sel, prop) : null; }
   function setD(prop, val) { if (editing && pe().upsertDecl) pe().upsertDecl(editing.scope, editing.sel, prop, val); }
@@ -105,6 +177,10 @@
       '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><span style="flex:1;color:#64748b">Bakgrunnur</span>' +
         '<input type="color" data-tn-c="background-color" value="' + esc(String(curBg).slice(0, 7)) + '" style="width:44px;height:30px;border:1px solid #cbd5e1;border-radius:7px;padding:1px;background:#fff">' +
         '<button type="button" data-tn-x="background-color" title="Hreinsa" style="all:unset;cursor:pointer;color:#94a3b8;font-weight:800;padding:2px 5px">✕</button></div>' +
+      '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><span style="flex:1;color:#64748b">Font</span>' +
+        '<select data-tn-font style="flex:1.6;padding:6px;border:1px solid #cbd5e1;border-radius:7px;font:inherit;min-width:0">' +
+          TN_FONTS.map(f => '<option value="' + esc(f) + '"' + ((readD('font-family') || '') === f ? ' selected' : '') + '>' + esc(f || '(sjálfgefið)') + '</option>').join('') +
+        '</select></div>' +
       '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><span style="flex:1;color:#64748b">Leturstærð</span>' +
         '<input type="range" data-tn-fs min="8" max="30" step="1" value="' + (curFs || 13) + '" style="flex:1.4">' +
         '<span data-tn-fsv style="width:34px;text-align:right;font-weight:700">' + (curFs ? curFs + 'px' : '—') + '</span></div>' +
@@ -120,6 +196,8 @@
     d.querySelector('#_tn-clear').onclick = () => { if (pe().clearRule) pe().clearRule(editing.scope, editing.sel); closeEditor(); };
     d.querySelectorAll('[data-tn-c]').forEach(inp => inp.addEventListener('input', () => setD(inp.dataset.tnC, inp.value)));
     d.querySelectorAll('[data-tn-x]').forEach(b => b.onclick = () => setD(b.dataset.tnX, null));
+    const fsel = d.querySelector('[data-tn-font]');
+    if (fsel) fsel.addEventListener('change', () => setD('font-family', fsel.value || null));
     const fs = d.querySelector('[data-tn-fs]'), fsv = d.querySelector('[data-tn-fsv]');
     fs.addEventListener('input', () => { setD('font-size', fs.value + 'px'); fsv.textContent = fs.value + 'px'; });
     d.querySelectorAll('[data-tn-al]').forEach(b => b.onclick = () => {
