@@ -346,7 +346,7 @@
         P+'.rf-tbl thead th:first-child{background:'+METB+'!important;z-index:2}'+
         P+'.rf-tbl tbody tr:nth-child(even) td.rf-cellname{background:#fbfcfe}'+
         P+'.rf-tbl tbody tr:hover td.rf-cellname{background:#f3f6fc}'+
-        P+'.rf-tbl tbody td{padding:5px 8px!important}'+
+        P+'.rf-tbl tbody td{padding:0 8px!important}'+
         P+'.rf-bname{font-size:16px}'+
         P+'.rf-baddr{font-size:14px}'+
         P+'.rf-bldrow{min-height:44px}'+
@@ -405,7 +405,7 @@
       // hverja byggingaröð. Sama undantekning og #ars-main í 261.
       'body.appmode #view-rekstrarfelog .rf-tbl button:not(.rf-bldtoggle),body.appmode #view-rekstrarfelog .rf-svcbtn{min-height:0!important;height:auto!important;padding-top:2px!important;padding-bottom:2px!important;font-size:13px!important;line-height:1.1!important}',
       'body.appmode #view-rekstrarfelog .rf-tbl input.rf-plannote,body.appmode #view-rekstrarfelog .rf-tbl input._rf-plannote{min-height:24px!important;height:24px!important;font-size:13px!important;padding-top:0!important;padding-bottom:0!important}',
-      'body.appmode #view-rekstrarfelog .rf-tbl td{font-size:13px!important;padding:5px 8px!important}',
+      'body.appmode #view-rekstrarfelog .rf-tbl td{font-size:13px!important;padding:0 8px!important}',
       'body.appmode #view-rekstrarfelog .rf-bname{font-size:16px!important}',
       'body.appmode #view-rekstrarfelog .rf-btn{min-height:44px!important;height:44px!important;font-size:16px!important;padding-top:0!important;padding-bottom:0!important}',
       'body.appmode #view-rekstrarfelog .rf-tbl .rf-bldtoggle{min-width:44px!important;min-height:44px!important;height:44px!important;padding:0!important}',

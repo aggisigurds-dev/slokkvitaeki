@@ -61,6 +61,12 @@ if (!/liveKtN\[d\] >= 1/.test(SRC)) {
 if (!/_rf-styles-v6/.test(SRC)) {
   fail('175 styles id is not v6 — old accordion CSS would keep Heimaleiga rows tall.');
 }
+if (!/rf-nameid/.test(SRC)) {
+  fail('175 name cell is no longer a flex row (rf-nameid) — toggle would stack above the name and inflate Heimaleiga rows.');
+}
+if (!/white-space:nowrap;overflow:hidden;text-overflow:ellipsis/.test(SRC)) {
+  fail('175 building names wrap again — Heimaleiga rows would be too tall.');
+}
 if (!/max-height:none/.test(SRC) && !/max-height:200000px/.test(SRC)) {
   fail('175 accordion max-height is back to a small cap — last Heimaleiga rows would clip.');
 }
