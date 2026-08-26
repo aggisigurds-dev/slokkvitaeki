@@ -68,6 +68,27 @@ if (!/fetchAllIn/.test(SRC)) {
   fail('175 live .in() is no longer chunked — a long base-id list would 414 and drop Heimaleiga sites.');
 }
 
+const SRC187 = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '187-inservice-row-reports.js'), 'utf8');
+const SRC199 = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '199-doc-year-grid.js'), 'utf8');
+if (/reikMap\[kt\]/.test(SRC187)) {
+  fail('187 still keys invoice-year dots on kennitala — 🧾 leaks across Center Hótel / Heimaleiga sites.');
+}
+if (/k === 'brunakerfi'/.test(SRC187)) {
+  fail('187 isReportKind still treats brunakerfi as úttektarskýrsla — slökkvitæki year pills would light from fire-system PDFs.');
+}
+if (!/hasReikYear/.test(SRC187) || !/reikMap = \{ byCo, byKtOrphan/.test(SRC187)) {
+  fail('187 lost per-site invoice lookup (hasReikYear / reikMap.byCo + byKtOrphan).');
+}
+if (!/isUttektInvoiceTeg/.test(SRC187) || !/vidskiptategund/.test(SRC187)) {
+  fail('187 no longer filters invoice dots by vidskiptategund — brunakerfi invoices would light úttekt 🧾.');
+}
+if (!/invUtByY/.test(SRC199) || !/invoiceServiceKind/.test(SRC199)) {
+  fail('199 no longer splits invoices by service (invUtByY / invoiceServiceKind) — both cards would share one pool.');
+}
+if (!/tegByInv/.test(SRC)) {
+  fail('175 no longer checks invoice vidskiptategund on document_pairs — 🧾 would light the wrong service strip.');
+}
+
 // ── (2) live data: do not merge ────────────────────────────────────────────
 async function pageAll(pathAndQuery) {
   const out = [];
@@ -144,6 +165,14 @@ async function pageAll(pathAndQuery) {
   console.log(`Heimaleiga ehf sites: ${heim.length} (ids ${heim.map(x => x.id).sort((a,b)=>a-b).join(',')})`);
   console.log(`Heimaleiga GROUP (rekstrarfelag): ${group.length} sites across ${rfBases.length} bases`);
   console.log(`Center Hótel sites: ${center.length}`);
+  const grandi = center.find(x => /grandi/.test(fold(x.nafn)));
+  if (grandi) {
+    const gInv = await pageAll(`customer_documents?fyrirtaeki_id=eq.${grandi.id}&doc_type=eq.reikningur&year=eq.2026&select=invoice_number,vidskiptategund`);
+    const r108 = gInv.find(d => /108001/.test(String(d.invoice_number || '')));
+    if (r108 && String(r108.vidskiptategund || '').toLowerCase() === 'brunakerfi') {
+      console.log(`Grandi #${grandi.id} 2026 R-108001 is brunakerfi — painters must not count it as úttekt 🧾`);
+    }
+  }
   console.log(`S30 / Ármúli 13A: #${s30[0].id} ${s30[0].nafn}`);
   console.log(`Máni #${mani && mani.id} · Midtown #${mid && mid.id} — separate`);
   console.log('source: co_id pin + no hits[0] + pairs keyed on fyrirtaeki_id + Payday per solur.customer_id + deleted_at + kt recover');

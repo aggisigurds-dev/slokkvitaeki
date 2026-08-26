@@ -193,10 +193,38 @@
     // fyrirtaeki_id) er DVARANDI „úttekt ársins fullbúin"-merkið sem Agnar viðheldur
     // handvirkt þvert á öppin. Það TROMPAR staðnað `gap`-flagg í isDoneYear (gap var
     // oft skrifað ÁÐUR en verkið kláraðist). Sami lykill og '26-merkin í 187/199.
-    const klaradCurP = SB.from('document_pairs').select('fyrirtaeki_id')
-      .eq('year', new Date().getFullYear()).eq('service_type', 'uttekt').eq('status', 'klarad')
-      .then(r => { const s = new Set(); ((r && r.data) || []).forEach(x => { if (x.fyrirtaeki_id != null) s.add(String(x.fyrirtaeki_id)); }); return s; })
-      .catch(() => new Set());
+    const klaradCurP = (async () => {
+      const r = await SB.from('document_pairs').select('fyrirtaeki_id,invoice_doc_id')
+        .eq('year', new Date().getFullYear()).eq('service_type', 'uttekt').eq('status', 'klarad');
+      const rows = (r && r.data) || [];
+      // Sama sía og 187 loadPairs: uttekt+klarad par á brunakerfis-reikningi
+      // (Grandi 2026 → R-108001) má ekki græn-mála slökkvitækja-árið. Fail-open
+      // ef skip-sóknin klikkar — annars slokknar Hamraborg 7.
+      const skip = new Set();
+      try {
+        for (let from = 0; ; from += 500) {
+          const ir = await SB.from('customer_documents')
+            .select('id')
+            .eq('doc_type', 'reikningur')
+            .eq('vidskiptategund', 'brunakerfi')
+            .range(from, from + 499);
+          const invs = (ir && ir.data) || [];
+          invs.forEach(d => { if (d && d.id != null) skip.add(d.id); });
+          if (invs.length < 500) break;
+        }
+      } catch (e) {
+        if (typeof window.logProblem === 'function') {
+          window.logProblem('arsskodun', 'bru_invoice_skip_failed', { detail: String((e && e.message) || e).slice(0, 200) });
+        }
+      }
+      const s = new Set();
+      rows.forEach(x => {
+        if (x.fyrirtaeki_id == null) return;
+        if (x.invoice_doc_id && skip.has(x.invoice_doc_id)) return;
+        s.add(String(x.fyrirtaeki_id));
+      });
+      return s;
+    })().catch(() => new Set());
     // 2026-08-13 (Agnar): talnakortin þrjú efst (Fjöldi / Búið / Eftir) lesa
     // EINA sannleikstölu úr Supabase-viewinu v_thjonustu_tolur í stað
     // staðbundinna JS-útreikninga sem ráku í sundur við grunninn
@@ -237,8 +265,11 @@
             if (d.fyrirtaeki_id != null) {
               const m = bruna ? bruByCo : byCo;
               (m[String(d.fyrirtaeki_id)] = m[String(d.fyrirtaeki_id)] || new Set()).add(y);
+            } else if (!bruna && d.customer_base_id != null) {
+              // Aðeins munaðir (engin fyrirtaeki_id). Site-merktar skýrslur í
+              // byBase máluðu 2026-grænt á Plaza frá Klöpp/Grandi (base 146).
+              (byBase[String(d.customer_base_id)] = byBase[String(d.customer_base_id)] || new Set()).add(y);
             }
-            if (!bruna && d.customer_base_id != null) (byBase[String(d.customer_base_id)] = byBase[String(d.customer_base_id)] || new Set()).add(y);
           });
           if (rows.length < 1000) break;
         }
@@ -321,10 +352,13 @@
         const units = unitsByFid[c.id] || [];
         _ars._units = units;   // keep the raw uttaeki rows so the modal can list + delete individual tæki
         // Skýrslu-ár úr customer_documents (fyrir Óvíst-sönnunarmerkin)
-        const dySet = new Set([
-          ...(docYears.byCo[String(c.id)] || []),
-          ...(c.customer_base_id != null ? (docYears.byBase[String(c.customer_base_id)] || []) : []),
-        ]);
+        // Rekstrarfélags-vörn (sama og last_year_inspected hér að neðan):
+        // base-munaðar skýrslur gilda AÐEINS þegar base á nákvæmlega EINN stað.
+        // Án þessa fékk Plaza (193) 2026-grænt á Síma frá systurskýrslum.
+        const dySet = new Set([...(docYears.byCo[String(c.id)] || [])]);
+        if (c.customer_base_id != null && (_baseSiteCount[String(c.customer_base_id)] || 0) <= 1) {
+          (docYears.byBase[String(c.customer_base_id)] || []).forEach(y => dySet.add(y));
+        }
         _ars._docYears = Array.from(dySet).sort();          // AÐEINS úttektarskýrslur
         // Brunakerfis-ár til hliðar: sanna að kúnninn sé raunverulegur (❓ Óvíst)
         // en mega ALDREI látast vera slökkvitækjaskoðun ársins.

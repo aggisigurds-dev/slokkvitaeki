@@ -41,12 +41,18 @@ if (!/byCo/.test(loadReik) || !/byKtOrphan/.test(loadReik)) {
 if (!/fetchAll/.test(loadReik)) {
   fail('187 loadReik dropped fetchAll — customer_documents would truncate at 1000.');
 }
-if (/vidskiptategund['"]\s*,\s*['"]bud/.test(loadReik) === false && !/vidskiptategund',\s*'bud'/.test(loadReik) && !/eq\('vidskiptategund',\s*'bud'\)/.test(loadReik)) {
-  fail('187 loadReik no longer excludes búðarreikningar.');
+if (!/vidskiptategund/.test(loadReik) || !/isUttektInvoiceTeg/.test(SRC)) {
+  fail('187 loadReik no longer excludes búð/brunakerfi via vidskiptategund.');
+}
+if (!/bySolurCo/.test(loadReik)) {
+  fail('187 loadReik lost bySolurCo — POS site invoices would not confirm inv-only.');
 }
 
 if (!/function hasReikYear/.test(SRC)) {
   fail('187 hasReikYear missing — invoice-dot helper was the site-level gate.');
+}
+if (!/function hasConfirmedInvYear/.test(SRC)) {
+  fail('187 hasConfirmedInvYear missing — Drive-only invoices would paint inv-only (Plaza R-107802).');
 }
 const helperStart = SRC.indexOf('function hasReikYear');
 const helper = SRC.slice(helperStart, helperStart + 900);
@@ -62,8 +68,36 @@ if (/reikMap\[kt\]/.test(SRC)) {
 if (!/hasInvYear = hasReikYear\(coId, kt, y, ktCount\)/.test(SRC)) {
   fail('187 hasInvYear is not hasReikYear(coId, kt, y, ktCount) — year pills may still OR a kt map.');
 }
-if (!/reik: hasReikYear\(coId, kt, y, ktCount\)/.test(SRC)) {
-  fail('187 yearInfo().reik is not site-scoped — print 🧾 would leak across a shared kt.');
+if (!/hasInvOnly = hasConfirmedInvYear\(coId, y\)/.test(SRC)) {
+  fail('187 hasInvOnly is not hasConfirmedInvYear — Plaza Drive invoice would still paint inv-only.');
+}
+if (!/showInvLed/.test(SRC)) {
+  fail('187 lost showInvLed — invoice LED would light from any site Drive row again.');
+}
+if (!/hasReikYear\(coId, kt, y, ktCount\)/.test(SRC) || !/hasConfirmedInvYear\(coId, y\)/.test(SRC)) {
+  fail('187 yearInfo/process lost site-scoped hasReikYear / hasConfirmedInvYear.');
+}
+if (!/isUttektInvoiceTeg/.test(SRC) || !/vidskiptategund/.test(loadReik)) {
+  fail('187 loadReik no longer filters by vidskiptategund — brunakerfi invoices would light úttekt 🧾.');
+}
+if (/k === 'brunakerfi'/.test(SRC)) {
+  fail('187 isReportKind still treats brunakerfi as úttektarskýrsla.');
+}
+if (!/bruInvIds/.test(SRC) || !/invoice_doc_id/.test(SRC)) {
+  fail('187 loadPairs no longer skips uttekt+klarad pairs whose invoice is brunakerfi.');
+}
+
+const SRC153 = fs.readFileSync(path.join(__dirname, '..', 'js', 'patches', '153-arsskodun.js'), 'utf8');
+if (/if \(!bruna && d\.customer_base_id != null\) \(byBase/.test(SRC153)) {
+  fail('153 still dumps every úttektarskýrsla into byBase — Plaza Sími would inherit sibling 2026 reports.');
+}
+if (!/fyrirtaeki_id == null && d\.customer_base_id != null/.test(SRC153) &&
+    !/else if \(!bruna && d\.customer_base_id != null\)/.test(SRC153)) {
+  fail('153 byBase is not orphan-only (docs without fyrirtaeki_id).');
+}
+if (!/_baseSiteCount\[String\(c\.customer_base_id\)\] \|\| 0\) <= 1/.test(SRC153) &&
+    !/_baseSiteCount\[String\(c\.customer_base_id\)\] \|\| 0\) === 1/.test(SRC153)) {
+  fail('153 _docYears lost the single-site guard — rekstrarfélög Sími year cells would share reports.');
 }
 
 const klarad = SRC.slice(SRC.indexOf('function isKlaradYear'), SRC.indexOf('function isKlaradYear') + 280);
@@ -92,10 +126,12 @@ async function pageAll(pathAndQuery) {
   }
   const hlad = center.find(c => +c.id === 1750);
   const grandi = center.find(c => +c.id === 197);
+  const plaza = center.find(c => +c.id === 193);
   if (!hlad) fail('Center Hótel Hlaðvarpinn (id 1750) missing — false-flag fixture gone.');
   if (!grandi) fail('Center Hótel Grandi (id 197) missing — sibling invoice fixture gone.');
+  if (!plaza) fail('Center Hótel Plaza (id 193) missing — 2026 Drive-invoice fixture gone.');
 
-  const docs = await pageAll('customer_documents?doc_type=eq.reikningur&customer_base_id=eq.146&select=year,invoice_number,fyrirtaeki_id');
+  const docs = await pageAll('customer_documents?doc_type=eq.reikningur&customer_base_id=eq.146&select=year,invoice_number,fyrirtaeki_id,vidskiptategund');
   const years = new Set(['2024', '2025', '2026']);
   const hladInv = docs.filter(d => +d.fyrirtaeki_id === 1750 && years.has(String(d.year)));
   const grandiInv = docs.filter(d => +d.fyrirtaeki_id === 197 && years.has(String(d.year)));
@@ -105,5 +141,22 @@ async function pageAll(pathAndQuery) {
   if (!grandiInv.length) {
     fail('Grandi has no 2024–2026 site invoice — sibling leak would be untestable.');
   }
-  console.log('GREEN: Ársskoðun invoice-dot is per fyrirtaeki_id (Hlaðvarpinn 0 own 24–26, Grandi ' + grandiInv.length + ' sibling; Center sites ' + center.length + ').');
+  const plaza26 = docs.filter(d => +d.fyrirtaeki_id === 193 && String(d.year) === '2026');
+  const plazaDrive = plaza26.find(d => /107802/.test(String(d.invoice_number || '')));
+  if (!plazaDrive) {
+    fail('Plaza 2026 R-107802 missing — the Drive-only false-flag fixture is gone.');
+  }
+  const plazaSolur = await pageAll('solur?num=eq.R-107802&select=id,customer_id');
+  if (plazaSolur.length) {
+    fail('Plaza R-107802 unexpectedly has a solur row — confirmed-invoice gate would light Plaza again.');
+  }
+  const plazaView = await pageAll('v_uttekt_ar?fyrirtaeki_id=eq.193&ar=eq.2026&heimild=eq.reikningur&select=fyrirtaeki_id');
+  if (plazaView.length) {
+    fail('v_uttekt_ar now lists Plaza 2026 as reikningur — inv-only would return.');
+  }
+  const grandiBru = docs.filter(d => +d.fyrirtaeki_id === 197 && String(d.year) === '2026' && String(d.vidskiptategund || '').toLowerCase() === 'brunakerfi');
+  if (!grandiBru.length) {
+    fail('Grandi 2026 brunakerfi invoice fixture missing (R-108001) — tegund filter untestable.');
+  }
+  console.log('GREEN: Ársskoðun invoice-dot is per fyrirtaeki_id + confirmed inv-only (Plaza Drive R-107802 not in POS/v_uttekt_ar; Hlaðvarpinn 0 own 24–26, Grandi ' + grandiInv.length + ' sibling; Center sites ' + center.length + ').');
 })().catch(e => fail(e.message || String(e)));
