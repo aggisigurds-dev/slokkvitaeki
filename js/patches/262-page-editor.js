@@ -500,7 +500,7 @@
 
     let body;
     if (!target) {
-      body = '<div class="pe-empty">Ýttu á <b>🎯 Velja hlut</b> og smelltu svo á texta, box eða glugga á síðunni til að byrja að breyta.<br>Eða settu <b>🖼 Bakgrunnsmynd</b> á síðuna.</div>' + presetsSection() + bgGallerySection() + versionsSection() + linkasafnSection();
+      body = '<div class="pe-empty">Ýttu á <b>🎯 Velja hlut</b> og smelltu svo á texta, box eða glugga á síðunni til að byrja að breyta.<br>Eða settu <b>🖼 Bakgrunnsmynd</b> á síðuna.</div>' + presetsSection() + bgGallerySection() + versionsSection() + tableHelpSection() + linkasafnSection();
     } else {
       body = '<div class="pe-grid">' +
         '<details class="pe-sec"><summary><h4>Stærð &amp; bil</h4></summary>' +
@@ -533,7 +533,7 @@
           '<div class="pe-row"><label>Font</label><select data-font>' + FONTS.map(f => '<option value="' + esc(f) + '"' + ((getDecl('font-family') || '') === f ? ' selected' : '') + '>' + esc(f) + '</option>').join('') + '</select></div>' +
           '<div class="pe-sub" style="margin-top:6px">Border sést aðeins þegar þykkt &gt; 0.</div>' +
         '</details>' +
-      '</div>' + presetsSection() + bgGallerySection() + versionsSection() + linkasafnSection();
+      '</div>' + presetsSection() + bgGallerySection() + versionsSection() + tableHelpSection() + linkasafnSection();
     }
     p.innerHTML = head + body;
     wirePanel();
@@ -721,6 +721,21 @@
         '<button type="button" data-pl-del="' + i + '" title="Fjarlægja takkann af síðunni" style="all:unset;cursor:pointer;width:16px;height:16px;line-height:16px;text-align:center;border-radius:99px;background:#f1f5f9;color:#64748b;font-size:10px">✕</button>' +
       '</span>').join('');
     box.querySelectorAll('[data-pl-del]').forEach(b => b.onclick = e => { e.preventDefault(); removePageLink(+b.dataset.plDel); });
+  }
+  // Hjálp fyrir töflutólin (319) — „ég sé ekki alveg hvernig maður velur
+  // coloms, eða þá raðirnar" (Agnar 26.08). Dálkar eru EKKI valdir með
+  // 🎯 Velja hlut heldur beint á töflunni þegar ↔ Dálkar er kveikt.
+  function tableHelpSection() {
+    return '<details class="pe-sec" style="margin-top:10px"><summary><h4>📊 Töflur — svona velurðu dálka &amp; raðir</h4></summary>' +
+      '<div style="font-size:12.5px;line-height:1.65;color:#334155">' +
+        '<div>1️⃣ Kveiktu á <b>↔ Dálkar</b> hér uppi í tækjastikunni — þá birtast bláar griplínur í töfluhausnum.</div>' +
+        '<div style="margin-top:5px"><b>Breidd:</b> dragðu bláu línuna við brún dálks.</div>' +
+        '<div><b>Jöfnun:</b> smelltu á haus dálksins — víxlar vinstri ⟸ → miðjað ⟺ → hægri ⟹ → sjálfgefið.</div>' +
+        '<div><b>Fela dálk:</b> haltu fingri/mús á hausnum í ~sekúndu. <b>👁 Sýna dálka</b> birtir þá aftur.</div>' +
+        '<div style="margin-top:5px"><b>Raðir:</b> <b>↕−</b> / <b>↕+</b> lækka/hækka allar raðir í töflum síðunnar (ekkert val þarf) · <b>🔤−</b>/<b>🔤+</b> leturstærð · <b>📌</b> límdur haus · <b>🦓</b> röndóttar raðir · <b>↺ tafla</b> núllstillir.</div>' +
+        '<div style="margin-top:5px;color:#64748b">Allt vistast sjálfkrafa og fylgir milli tækja (☁️). 🎯 Velja hlut er fyrir annað en dálka — texta, box og glugga.</div>' +
+      '</div>' +
+    '</details>';
   }
   function linkasafnSection() {
     const links = allLinks();
