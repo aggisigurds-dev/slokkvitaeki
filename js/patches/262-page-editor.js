@@ -52,6 +52,8 @@
       if (!Array.isArray(state.rules)) state.rules = [];
       if (!Array.isArray(state.favs)) state.favs = [];
       if (!Array.isArray(state.versions)) state.versions = [];
+      if (!Array.isArray(state.customLinks)) state.customLinks = [];
+      if (!state.pageLinks || typeof state.pageLinks !== 'object') state.pageLinks = {};
     } catch (_) {}
   }
   function persist() {
@@ -400,7 +402,9 @@
       // Hliðar-dokkun: hægri panel í fullri hæð á breiðum skjá — stýringarnar
       // hlaðast lóðrétt og skyggja ekki á töfluna sem verið er að stilla.
       '@media (min-width:900px){' +
-        '#' + PANEL_ID + '.pe-side{left:auto;right:0;top:0;bottom:0;width:410px;max-width:94vw;max-height:none;height:auto;border-top:0;border-left:1px solid #cbd5e1;box-shadow:-16px 0 36px -18px rgba(15,23,42,.45);padding:14px 16px 26px;overflow-y:auto}' +
+        /* 2026-08-26 (Agnar): hliðarpanellinn VINSTRA megin, yfir app-sidebarnum
+           — maður þarf ekki nav-ið á meðan verið er að stíla. */
+        '#' + PANEL_ID + '.pe-side{left:0;right:auto;top:0;bottom:0;width:410px;max-width:94vw;max-height:none;height:auto;border-top:0;border-left:0;border-right:1px solid #cbd5e1;box-shadow:16px 0 36px -18px rgba(15,23,42,.45);padding:14px 16px 26px;overflow-y:auto}' +
         '#' + PANEL_ID + '.pe-side .pe-grid{grid-template-columns:1fr;gap:10px}' +
         '#' + PANEL_ID + '.pe-side .pe-target{max-width:100%}' +
       '}',
@@ -654,22 +658,85 @@
       base: 'https://skjalasafn.reykjavik.is/fotoweb/archives/5000-A%C3%B0aluppdr%C3%A6ttir/',
       srch: 'https://skjalasafn.reykjavik.is/fotoweb/archives/5000-A%C3%B0aluppdr%C3%A6ttir/?q=', quote: true }
   ];
+  // Sameinaður listi: innbyggðu leitirnar + link-takkar notandans (v2 26.08:
+  // „vantar að geta búið til lítinn link takka til að setja á síðuna").
+  function allLinks() {
+    return LINKS.concat((state.customLinks || []).map(c => ({ name: c.name, ph: '', base: c.url, srch: null, custom: true })));
+  }
   function linkGo(i, qtxt) {
-    const L = LINKS[i]; if (!L) return;
+    const L = allLinks()[i]; if (!L) return;
     let qq = String(qtxt || '').trim();
     // FotoWeb-ráðið af síðunni sjálfri: gæsalappir þrengja heimilisfangaleit.
     if (L.quote && qq && /\s/.test(qq) && !/"/.test(qq)) qq = '"' + qq + '"';
-    try { window.open(qq ? L.srch + encodeURIComponent(qq) : L.base, '_blank', 'noopener'); } catch (_) {}
+    try { window.open((qq && L.srch) ? L.srch + encodeURIComponent(qq) : L.base, '_blank', 'noopener'); } catch (_) {}
+  }
+  // ── link-takkar Á síðunni sjálfri ──────────────────────────────────────────
+  function curViewId() { const v = document.querySelector('.view.active'); return (v && v.id) || 'all'; }
+  let _plKey = null;
+  function placeLink(i) {
+    const L = allLinks()[i]; if (!L) return;
+    const k = curViewId();
+    if (!state.pageLinks || typeof state.pageLinks !== 'object') state.pageLinks = {};
+    (state.pageLinks[k] = state.pageLinks[k] || []).push({ n: L.name, u: L.base });
+    persist(); renderPageLinks(true); toast('🔗 „' + L.name + '" kominn á þessa síðu');
+  }
+  function removePageLink(idx) {
+    const k = curViewId(); const arr = (state.pageLinks || {})[k]; if (!arr) return;
+    const gone = arr.splice(idx, 1)[0];
+    if (!arr.length) delete state.pageLinks[k];
+    persist(); renderPageLinks(true); toast('✕ „' + ((gone || {}).n || 'takki') + '" fjarlægður');
+  }
+  function addCustomLink() {
+    const name = prompt('Nafn á nýja link-takkanum:', ''); if (!name || !name.trim()) return;
+    let url = prompt('Slóðin (URL) sem hann opnar:', 'https://'); if (!url || !url.trim() || url.trim() === 'https://') return;
+    url = url.trim(); if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+    state.customLinks = state.customLinks || [];
+    state.customLinks.push({ name: name.trim(), url: url });
+    persist(); renderPanel(); toast('🔗 „' + name.trim() + '" kominn í Linkasafnið — ➕ setur hann á síðuna');
+  }
+  function deleteCustomLink(ci) {
+    const c = (state.customLinks || [])[ci]; if (!c) return;
+    if (!confirm('Eyða „' + c.name + '" úr Linkasafninu?')) return;
+    state.customLinks.splice(ci, 1);
+    persist(); renderPanel();
+  }
+  // Chips-röndin: fastir link-takkar neðst til hægri á hverri síðu (per síða,
+  // vistast í AppSettings → fylgja milli tækja). ✕ er alltaf sýnilegt en smátt.
+  function renderPageLinks(force) {
+    const k = curViewId();
+    if (!force && k === _plKey && document.getElementById('pe-pagelinks')) return;
+    _plKey = k;
+    let box = document.getElementById('pe-pagelinks');
+    const arr = ((state.pageLinks || {})[k] || []);
+    if (!arr.length) { if (box) box.remove(); return; }
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'pe-pagelinks';
+      box.style.cssText = 'position:fixed;right:12px;bottom:14px;z-index:99500;display:flex;flex-direction:column;gap:8px;align-items:flex-end';
+      document.body.appendChild(box);
+    }
+    box.innerHTML = arr.map((l, i) =>
+      '<span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #cbd5e1;border-radius:99px;padding:7px 8px 7px 13px;box-shadow:0 6px 18px -8px rgba(15,23,42,.4)">' +
+        '<a href="' + esc(l.u) + '" target="_blank" rel="noopener" style="font:700 12.5px \'Space Grotesk\',sans-serif;color:#0f172a;text-decoration:none;white-space:nowrap;max-width:52vw;overflow:hidden;text-overflow:ellipsis">' + esc(l.n) + '</a>' +
+        '<button type="button" data-pl-del="' + i + '" title="Fjarlægja takkann af síðunni" style="all:unset;cursor:pointer;width:16px;height:16px;line-height:16px;text-align:center;border-radius:99px;background:#f1f5f9;color:#64748b;font-size:10px">✕</button>' +
+      '</span>').join('');
+    box.querySelectorAll('[data-pl-del]').forEach(b => b.onclick = e => { e.preventDefault(); removePageLink(+b.dataset.plDel); });
   }
   function linkasafnSection() {
-    return '<details class="pe-sec" style="margin-top:10px"><summary><h4>🔗 Linkasafn — flýtileitir</h4></summary>' +
-      LINKS.map((L, i) =>
+    const links = allLinks();
+    return '<details class="pe-sec" style="margin-top:10px"><summary><h4>🔗 Linkasafn — flýtileitir &amp; link-takkar</h4></summary>' +
+      links.map((L, i) =>
         '<div class="pe-row" style="margin:5px 0;flex-wrap:wrap">' +
-          '<button class="pe-btn" data-lk-open="' + i + '" title="Opna síðuna í nýjum flipa" style="flex:1 1 100%;text-align:left">' + esc(L.name) + '</button>' +
-          '<input type="search" data-lk-q="' + i + '" placeholder="' + esc(L.ph) + '" style="flex:1;min-width:0;border:1px solid #cbd5e1;border-radius:9px;padding:8px 10px;font:inherit">' +
-          '<button class="pe-btn" data-lk-go="' + i + '" title="Leita — niðurstaðan opnast í nýjum flipa">🔍</button>' +
+          '<button class="pe-btn" data-lk-open="' + i + '" title="Opna síðuna í nýjum flipa" style="flex:1 1 auto;min-width:0;text-align:left">' + esc(L.name) + '</button>' +
+          '<button class="pe-btn" data-lk-place="' + i + '" title="Setja lítinn link-takka á síðuna sem er opin">➕ Á síðuna</button>' +
+          (L.custom ? '<button class="pe-btn" data-lk-delc="' + (i - LINKS.length) + '" title="Eyða úr safninu" style="padding:7px 9px">🗑</button>' : '') +
+          (L.srch ?
+            '<input type="search" data-lk-q="' + i + '" placeholder="' + esc(L.ph) + '" style="flex:1;min-width:0;border:1px solid #cbd5e1;border-radius:9px;padding:8px 10px;font:inherit">' +
+            '<button class="pe-btn" data-lk-go="' + i + '" title="Leita — niðurstaðan opnast í nýjum flipa">🔍</button>'
+          : '') +
         '</div>').join('') +
-      '<div class="pe-sub" style="margin-top:4px">Sláðu inn og ýttu á Enter eða 🔍 — niðurstaðan opnast í nýjum flipa. Tómt opnar síðuna sjálfa.</div>' +
+      '<button class="pe-btn pri" id="pe-lk-new" style="margin-top:6px">＋ Nýr link-takki…</button>' +
+      '<div class="pe-sub" style="margin-top:6px">Leit: sláðu inn og ýttu á Enter — niðurstaðan opnast í nýjum flipa. <b>➕ Á síðuna</b> setur takkann neðst til hægri á síðuna sem er opin (✕ á takkanum fjarlægir). Nýr link-takki = nafn + slóð.</div>' +
     '</details>';
   }
   function presetsSection() {
@@ -714,6 +781,9 @@
     qa('[data-lk-open]').forEach(b => b.onclick = () => linkGo(+b.dataset.lkOpen, ''));
     qa('[data-lk-go]').forEach(b => b.onclick = () => { const inp = q('[data-lk-q="' + b.dataset.lkGo + '"]'); linkGo(+b.dataset.lkGo, inp ? inp.value : ''); });
     qa('[data-lk-q]').forEach(inp => inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); linkGo(+inp.dataset.lkQ, inp.value); } }));
+    qa('[data-lk-place]').forEach(b => b.onclick = () => placeLink(+b.dataset.lkPlace));
+    qa('[data-lk-delc]').forEach(b => b.onclick = () => deleteCustomLink(+b.dataset.lkDelc));
+    const lkn = q('#pe-lk-new'); if (lkn) lkn.onclick = addCustomLink;
     const pk = q('#pe-pick'); if (pk) pk.onclick = () => setPicking(!picking);
     const mu = q('#pe-multi'); if (mu) mu.onclick = () => {
       multiPick = !multiPick;
@@ -881,8 +951,13 @@
     document.addEventListener('mousemove', onMove, true);
     document.addEventListener('click', onPick, true);
     // re-hydrate overrides once settings sync from the DB
-    try { if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(() => { loadState(); applyCss(); }); } catch (_) {}
+    try { if (window.AppSettings && AppSettings.onChange) AppSettings.onChange(() => { loadState(); applyCss(); renderPageLinks(true); }); } catch (_) {}
     window.addEventListener('scroll', () => { if (picking) hideHighlight(); }, true);
+    // link-takkar á síðum: teikna við ræsingu og elta síðu-skipti
+    renderPageLinks(true);
+    window.addEventListener('hashchange', () => setTimeout(() => renderPageLinks(true), 120));
+    document.addEventListener('slokk-viewmode', () => renderPageLinks(true));
+    setInterval(() => renderPageLinks(false), 2000);   // ódýrt: no-op nema view breytist
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
