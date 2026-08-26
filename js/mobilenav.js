@@ -1,10 +1,16 @@
-/* Mobile nav v6 — phone detection ignores Chrome "desktop site" viewport.
+/* Mobile nav v7 — explicit Skjár/Tafla choice beats phone-sniffing.
  *
  * v4: state-aware, no per-tick style stomp.
  * v5 (2026-08-25): isMobile() used only innerWidth<=900. Samsung S26 + Chrome
  * "desktop site" reports ~980px, so the hamburger stayed hidden and the full
  * desktop sidebar (white labels on grey) was squeezed onto the phone. Now:
  * real phone (screen short side) OR data-viewmode=mobile OR innerWidth<=900.
+ * v7 (2026-08-26, Agnar: „if i press desktop view … the table get pulled to
+ * the left"): isPhoneDevice() vann á 🖥 Skjár/▦ Tafla valinu — slokk-phone-nav
+ * hreinsaðist ALDREI á S26, svo 316-compact þjappan hélt töflunni í ~390px
+ * vinstra megin á ~980px viewport-i. Skýrt val notandans (data-viewmode
+ * desktop/table úr rofanum í borðanum) ræður nú YFIR vélbúnaðar-snuðri;
+ * snuðrið gildir áfram þegar ekkert val er sett (sjálfgefið Sími á síma).
  * v6 (2026-08-25): v5 hid the sidebar but left `.view { width: calc(100vw -
  * var(--sidebar-w)) }` — a 220px white gutter on the right ("Not the right
  * wide"). Phone-nav now forces full-width content + --sidebar-w:0.
@@ -35,7 +41,11 @@ function isPhoneDevice(){
 // — that was why the S26 showed the full desktop sidebar (white labels on grey).
 function isMobile(){
   try {
-    if (document.documentElement.getAttribute('data-viewmode') === 'mobile') return true;
+    var vm = document.documentElement.getAttribute('data-viewmode');
+    if (vm === 'mobile') return true;
+    // Skýrt Skjár/Tafla val í rofanum ræður — annars situr síminn fastur í
+    // símaþjöppun á breiðu viewporti (taflan límd vinstra megin).
+    if (vm === 'desktop' || vm === 'table') return false;
   } catch (e) {}
   if (isPhoneDevice()) return true;
   return window.innerWidth<=900;

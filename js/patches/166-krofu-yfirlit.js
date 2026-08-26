@@ -227,10 +227,13 @@
       '.ky-vm-ico{font-size:14px;line-height:1}' +
       '@media (max-width:760px){.ky-vm-lbl{display:none}.ky-vm-seg{padding:7px 9px}}' +
       // Skjár on a phone: clock yields so 📱 Sími is never clipped by overflow:hidden.
-      'html.slokk-phone-nav #bstal-banner .bb-face{overflow:visible;gap:8px;padding:0 10px}' +
-      'html.slokk-phone-nav #bstal-banner .bb-clockbox{display:none}' +
-      'html.slokk-phone-nav .ky-vm-lbl{display:none}' +
-      'html.slokk-phone-nav .ky-vm-seg{padding:7px 9px}' +
+      // Keyed á .slokk-phone-dev (VÉLBÚNAÐUR, sett hér að neðan) en ekki
+      // .slokk-phone-nav — phone-nav hreinsast nú réttilega í Skjár/Tafla
+      // (mobilenav v7) og þá mátti klippingin ekki koma aftur.
+      'html.slokk-phone-dev #bstal-banner .bb-face{overflow:visible;gap:8px;padding:0 10px}' +
+      'html.slokk-phone-dev #bstal-banner .bb-clockbox{display:none}' +
+      'html.slokk-phone-dev .ky-vm-lbl{display:none}' +
+      'html.slokk-phone-dev .ky-vm-seg{padding:7px 9px}' +
       // Síma-úttekt 2026-07-30 (mælt á 834 px): síðasti aðgerða-hnappurinn í
       // hverri röð (t.d. ._ky-nyjan) klipptist 42 px út fyrir kortið, sem er
       // með inline overflow:hidden. AÐEINS media-regla á umgjörðina — við
@@ -371,6 +374,9 @@
   function applyViewMode(mode, rerender) {
     if (VM_MODES.indexOf(mode) < 0) mode = 'desktop';
     document.documentElement.dataset.viewmode = mode;
+    // Vélbúnaðar-flagg (óháð valinni sýn) — banner-reglurnar í injectVmStyle
+    // klippa aldrei rofann/klukkuna á alvöru síma, líka í Skjár/Tafla.
+    try { document.documentElement.classList.toggle('slokk-phone-dev', isPhoneDevice()); } catch (_) {}
     lockPhoneViewport(mode);
     // Broadcast an app-wide signal so ANY page (not just Kröfu yfirlit) can
     // listen and re-render its own layout for the chosen mode. Kröfu yfirlit's
