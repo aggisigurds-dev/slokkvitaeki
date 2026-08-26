@@ -65,6 +65,15 @@ if (!/hasInvYear = hasReikYear\(coId, kt, y, ktCount\)/.test(SRC)) {
 if (!/reik: hasReikYear\(coId, kt, y, ktCount\)/.test(SRC)) {
   fail('187 yearInfo().reik is not site-scoped — print 🧾 would leak across a shared kt.');
 }
+if (!/isUttektInvoiceTeg/.test(SRC) || !/vidskiptategund/.test(loadReik)) {
+  fail('187 loadReik no longer filters by vidskiptategund — brunakerfi invoices would light úttekt 🧾.');
+}
+if (/k === 'brunakerfi'/.test(SRC)) {
+  fail('187 isReportKind still treats brunakerfi as úttektarskýrsla.');
+}
+if (!/bruInvIds/.test(SRC) || !/invoice_doc_id/.test(SRC)) {
+  fail('187 loadPairs no longer skips uttekt+klarad pairs whose invoice is brunakerfi.');
+}
 
 const klarad = SRC.slice(SRC.indexOf('function isKlaradYear'), SRC.indexOf('function isKlaradYear') + 280);
 if (!/pairMap && pairMap\[String\(coId\)\]/.test(klarad) && !/pairMap && pairMap\[String\(coId\)\]/.test(SRC)) {

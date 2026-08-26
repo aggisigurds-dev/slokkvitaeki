@@ -28,6 +28,21 @@
   let fcMap = null, fcLoading = false;   // co_id(str) → { year(str) → status }
   function fcStat(coId,y){ var m=fcMap&&fcMap[String(coId)]; return (m&&m[String(y)])||null; }
 
+  // Slökkvitækja-ársmerki = úttektarskýrsla. Brunakerfi er ANNAÐ kerfi
+  // (STADREYNDIR: skýrslur mega ALDREI leka milli kerfanna). Center Hótel
+  // Arnarhvoll á 2026 brunakerfi-PDF án 2026 úttektar — má ekki mála '26 grænt.
+  function isReportKind(x) {
+    const k = String(x.kind || x.category || '').toLowerCase();
+    if (k) return k === 'skyrsla' || k === 'skýrsla' || k === 'uttektarskyrsla';
+    return !/(\bR-?\s?\d{4,}\b|\bkr\b|reikning|brunakerfi)/i.test(String(x.name || ''));
+  }
+  function findReportAtt(files, y) {
+    const list = Array.isArray(files) ? files : [];
+    return list.find(x => String(x.year) === String(y) && isReportKind(x)) ||
+           list.find(x => x.year == null && isReportKind(x) &&
+                           new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
+  }
+
   // Reikningur-ár per STAÐ (fyrirtaeki_id), ekki per kennitölu.
   // 2026-08-25 (Agnar, false-flag hunt): loadReik lyklaði á customer_base_id →
   // kt-tölustafir, svo EINN Center Hótel-reikningur (450905-1430, 11 hótel)
@@ -164,11 +179,19 @@
     } catch (_) {}
     locLoading = false;
   }
+  // Úttektar-🧾 á Ársskoðun. Brunakerfisreikningar (og búð) mega EKKI kveikja
+  // slökkvitækja-punktinn — doc_type er alltaf 'reikningur' fyrir báðar þjónustur;
+  // raunverulegi merkimiðinn er customer_documents.vidskiptategund. Óþekkt/ovisst
+  // halda áfram (77 reikningar) svo Hamraborg 7 o.fl. slokkni ekki.
+  function isUttektInvoiceTeg(teg) {
+    const t = String(teg || '').toLowerCase();
+    return t !== 'brunakerfi' && t !== 'bud';
+  }
   async function loadReik(){
     if (reikLoading || reikMap) return; reikLoading = true;
     try {
       const sb = window.DB && DB.sb; if (!sb) { reikLoading = false; return; }
-      const reikRows = await fetchAll(() => sb.from('customer_documents').select('customer_base_id,fyrirtaeki_id,year,invoice_number')
+      const reikRows = await fetchAll(() => sb.from('customer_documents').select('customer_base_id,fyrirtaeki_id,year,invoice_number,vidskiptategund')
         .eq('doc_type','reikningur'));
       // Pakki 7: búðarreikningar (solur.vidskiptategund='bud') kveikja EKKI
       // 🧾-ársmerkið í ársskoðunarlistanum — það er skoðunar-samhengi og
@@ -182,6 +205,7 @@
       const byBaseOrphan = {};
       reikRows.forEach(x => {
         if (!x.year) return;
+        if (!isUttektInvoiceTeg(x.vidskiptategund)) return;
         const inv = String(x.invoice_number || '').trim().toUpperCase();
         if (inv && budNums.has(inv)) return;
         const y = String(x.year);
@@ -235,11 +259,25 @@
       // sömu kt) haldi hverjum stað sjálfstæðum — sama regla og document_pairs
       // einkvæmnin í Brunahólf.
       const rows = await fetchAll(() => sb.from('document_pairs')
-        .select('fyrirtaeki_id,year')
+        .select('fyrirtaeki_id,year,invoice_doc_id')
         .eq('service_type','uttekt').eq('status','klarad').not('fyrirtaeki_id','is',null));
+      // Display-omit: uttekt+klarad par sem vísar á brunakerfis-reikning
+      // (t.d. Grandi 2026 par 1295 → R-108001). EKKI UPDATE/DELETE parinu —
+      // málarinn sleppir því bara. Fail-open ef skip-sóknin klikkar.
+      const bruInvIds = new Set();
+      try {
+        const bruRows = await fetchAll(() => sb.from('customer_documents')
+          .select('id').eq('doc_type','reikningur').eq('vidskiptategund','brunakerfi'));
+        bruRows.forEach(d => { if (d && d.id != null) bruInvIds.add(d.id); });
+      } catch (e) {
+        if (typeof window.logProblem === 'function') {
+          window.logProblem('inservice_row_reports', 'bru_invoice_skip_failed', { detail: String((e && e.message) || e).slice(0, 200) });
+        }
+      }
       const map = {};
       rows.forEach(x => {
         if (x.fyrirtaeki_id == null || !x.year) return;
+        if (x.invoice_doc_id && bruInvIds.has(x.invoice_doc_id)) return;
         (map[String(x.fyrirtaeki_id)] = map[String(x.fyrirtaeki_id)] || new Set()).add(String(x.year));
       });
       pairMap = map;
@@ -340,18 +378,7 @@
         // nokkurrar raunverulegrar skýrslu. Grænt = „skoðun skjalfest" og má
         // ALDREI leiða af reikningi — reikningur sannar að rukkað var, ekki að
         // farið hafi verið á staðinn.
-        const isReportKind = (x) => {
-          const k = String(x.kind || x.category || '').toLowerCase();
-          if (k) return k === 'skyrsla' || k === 'skýrsla' || k === 'uttektarskyrsla' || k === 'brunakerfi';
-          // Ómerkt (hvorki kind né category): fellum aftur á heitið, en aðeins ef
-          // það lítur EKKI út eins og reikningur — „R-106237", „109.868 kr",
-          // „reikningur". Ómerkt skýrsla („Steypustöðin Þorlákshöfn 2025.pdf")
-          // heldur sér því, en reikningur með ártali í heiti gerir það ekki.
-          return !/(\bR-?\s?\d{4,}\b|\bkr\b|reikning)/i.test(String(x.name || ''));
-        };
-        const f = files.find(x => String(x.year) === y && isReportKind(x)) ||
-                  files.find(x => x.year == null && isReportKind(x) &&
-                                  new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
+        const f = findReportAtt(files, y);
         // 2026-08-17 (Design v3, 842ebdfe — README: „CSS-ið í <style>-blokkinni
         // er nákvæma uppskriftin"): _yr-merkin 52×20 með LED-stöðupunkti
         // (::before) + tveir örpunktar undir (grænn = úttektarskýrsla, blár =
@@ -466,8 +493,7 @@
     const locRec = (locMap && locMap[coId]) || {};
     YEARS.forEach(y => {
       const u = locRec[y] || ((ktCount[kt] || 0) <= 1 ? rec[y] : null);
-      const f = files.find(x => String(x.year) === y) ||
-                files.find(x => x.year == null && new RegExp('\\b' + y + '\\b').test(String(x.name || '')));
+      const f = findReportAtt(files, y);
       // `inv` = úttekt staðfest með reikningi (v_uttekt_ar) en skýrsla vantar —
       // `has` er ÁFRAM skýrslu-eingöngu svo „vantar skýrslu"-talningar standi.
       out[y] = { has: !!(u || f), due: (y === '2026'), reik: hasReikYear(coId, kt, y, ktCount),

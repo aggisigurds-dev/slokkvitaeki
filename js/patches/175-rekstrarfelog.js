@@ -1694,7 +1694,7 @@
             }
           } catch (e) {
             if (typeof window.logProblem === 'function') {
-              window.logProblem('rekstrarfelog', 'pair_invoice_tegund_failed');
+              window.logProblem('rekstrarfelog', 'pair_invoice_tegund_failed', { detail: String((e && e.message) || e).slice(0, 200) });
             }
           }
           (pr.data||[]).forEach(function(x){

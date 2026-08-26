@@ -56,6 +56,7 @@ automation health and pings Agnar *only* when something needs him.
 | **Rekstrarfélaga-staðir hrúgast ekki saman á kennitölu** | `175` live-raðir bera `co_id = fyrirtaeki.id`; `companyForBld` giskar aldrei `hits[0]`; `document_pairs` lyklað á `fyrirtaeki_id` (ekki base) | — | `audit-rekstrarfelog-sites.cjs` |
 | **Rekstrarfélög = kennitala + staðurinnúmer** | `payday-push` `accountingCost` `"kt nr. N"` aðeins þegar `_siteTrusted`; POS giskar ekki `.limit(1)` á fyrsta hótel | — | `audit-stadur-nr.cjs` |
 | **Ársskoðun blár reiknings-punktur er per stað** | `187` `hasReikYear`: `byCo[fyrirtaeki_id]` + unique-kt orphan; ekki `reikMap[kt]` | — | `audit-arsskodun-inv-dot.cjs` |
+| **Ársskoðun 🧾 er úttekt, ekki brunakerfi** | `187` `isUttektInvoiceTeg` + pair-skip; `isReportKind` telur ekki brunakerfi-PDF; `199` `invUtByY`/`invBrByY`; `175` `tegByInv` | — | `audit-arsskodun-inv-dot.cjs` / `audit-rekstrarfelog-sites.cjs` |
 
 ---
 
@@ -238,6 +239,14 @@ baseline rows and lowering the constant is how the net tightens over time.
   er treystur; POS hættir að `.limit(1)` festa reikning á fyrsta hótel
   kennitölunnar; 114 sýnir `kt · nr. N`; 175 parar kt+nr. Audit
   `audit-stadur-nr.cjs`.
+- **2026‑08‑26 — Ársskoðun 🧾 = slökkvitækjaúttekt, ekki brunakerfi.** `doc_type`
+  er alltaf `reikningur` fyrir báðar þjónustur; merkið er `vidskiptategund`.
+  `187` `isUttektInvoiceTeg` sleppir `brunakerfi`/`bud` af `reikMap.byCo` (master
+  site-keyed maps, not #728 `reikByCo`). `loadPairs`/`153` `klaradCurP` sleppa
+  uttekt+klarad pörum sem vísa á brunakerfis-reikning (Grandi R-108001).
+  `isReportKind` telur ekki brunakerfi-PDF sem úttektarskýrslu (Arnarhvoll 2026).
+  `199` skiptir í `invUtByY`/`invBrByY`. `175` kt·nr helst; `tegByInv` bætist.
+  Pörin sjálf eru **ekki** eydd. Invoice OUT / payday / kt-save ósnert.
 - *Add a line here every time you make something bulletproof.*
 
 ---
