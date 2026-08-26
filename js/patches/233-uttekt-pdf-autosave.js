@@ -30,8 +30,13 @@
     });
   }
 
-  // Helvetica (WinAnsi) ræður við íslensku en EKKI undirskrift ₂ → Co₂ verður Co2.
-  function pdfText(s) { return String(s == null ? '' : s).replace(/₂/g, '2'); }
+  // Helvetica (WinAnsi) ræður við íslensku en EKKI tákn utan Latin-1. Lendi slíkt
+  // í streng skiptir jsPDF ÖLLUM strengnum yfir í UTF-16 → fontinn ræður ekki við
+  // það og textinn kemur út með null-bætum milli stafa (breið stafabil + skörun
+  // yfir tölu-dálkana, sést AÐEINS á kúndavefnum þar sem geymda PDF-ið er birt).
+  // Því: undirskrift ₂ → 2, og mínus/þankastrik (− U+2212 úr „−20% afsl.", – —)
+  // → venjulegt bandstrik.
+  function pdfText(s) { return String(s == null ? '' : s).replace(/₂/g, '2').replace(/[−–—]/g, '-'); }
   function fmtKr(n) {
     var v = Math.round(Number(n) || 0); var s = Math.abs(v).toString(), p = [];
     while (s.length > 3) { p.unshift(s.slice(-3)); s = s.slice(0, -3); } p.unshift(s);
