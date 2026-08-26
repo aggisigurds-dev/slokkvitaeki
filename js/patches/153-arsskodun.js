@@ -2737,7 +2737,7 @@
       V+'._post{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted);margin-right:8px}',
       V+'._mo{font-family:var(--mono);font-size:12px;color:var(--ink-2)}',
       // Ein-lína ferðanóta: dökkgrá punktalína sem skreppur (min-width:0).
-      V+'._note, '+V+'input._ars-plannote{display:block;width:100%;min-width:0;max-width:100%;height:22px;min-height:22px;border:0;border-bottom:1px dotted #c3c9d3;border-radius:0;background:transparent;color:#3a4250;font-family:var(--ui);font-size:12px;padding:0 2px;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      V+'._note, '+V+'input._ars-plannote{display:block;width:100%;min-width:0;max-width:100%;height:22px!important;min-height:22px!important;max-height:22px!important;border:0!important;border-bottom:1px dotted #c3c9d3!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#3a4250;font-family:var(--ui);font-size:12px!important;padding:0 2px!important;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       V+'._note::placeholder,'+V+'input._ars-plannote::placeholder{color:#c7ccd6;letter-spacing:.14em}',
       V+'._note:hover,'+V+'input._ars-plannote:hover{border-bottom-color:#9aa3b2;background:transparent}',
       V+'._note:focus,'+V+'input._ars-plannote:focus{outline:none;border-bottom-color:#2f5fe0;border-bottom-style:solid;background:#fff;color:#0f172a}',

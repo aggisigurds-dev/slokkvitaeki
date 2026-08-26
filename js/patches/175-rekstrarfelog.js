@@ -436,6 +436,10 @@
       P+'.rf-cellname{padding-left:16px!important}',
       // sömu varnir fyrir nýju brunakerfis-hlutana (245 málar .view input/th/button)
       P+'.rf-bsearch input, '+P+'.rf-bsearch input[type="text"]{background:transparent!important;border:0!important;box-shadow:none!important;height:auto!important;padding:0!important;border-radius:0!important;color:#141822!important}',
+      // 245/230 mála .view input sem 42px hvítan múrstein — ferðanótan á að vera
+      // ein punktalína (Sími OG Skjár).
+      P+'.rf-tbl input.rf-plannote,'+P+'.rf-tbl input._rf-plannote,'+P+'.rf-tbl input.rf-plannote[type="text"]{height:22px!important;min-height:22px!important;max-height:22px!important;padding:0 2px!important;border:0!important;border-bottom:1px dotted #c3c9d3!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;width:100%!important;min-width:0!important;font-size:12px!important}',
+      P+'.rf-tbl{display:table!important}',
       P+'.rf-tbl thead th.rf-yh{font-family:"Space Mono",monospace!important;font-size:12.5px!important;letter-spacing:0!important;text-transform:none!important;color:#fff!important;vertical-align:middle!important;padding:8px 6px!important}',
       P+'.rf-svcbtn{text-shadow:none!important;box-shadow:none!important;height:34px!important;border-radius:20px!important}',
       P+'.rf-svcbtn.is-on{background:'+METB+'!important;color:#fff!important;border:1px solid #0a0b0d!important}',
