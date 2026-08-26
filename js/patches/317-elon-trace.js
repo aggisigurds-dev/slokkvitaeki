@@ -7,6 +7,8 @@
  *
  * Hover:  ELON · f193 · 2026 · both · src=facts · YEAR CELL
  * data-elon: ELON|fid=193|y=2026|k=both|src=facts|role=YEAR CELL
+ * Year cells / FULLBÚIÐ / SKOÐUN: numeric fyrirtaeki.id only (never fid=).
+ * Board KPI/FILTER/POS CALC: fid=board.
  *
  * SOURCE vs FILTER: 📅 .sk-month-pill / span._mo = SOURCE (inspect_month).
  * ._ars-mo chips and ._ars-st tabs = FILTER (do not write inspect_month).
@@ -111,9 +113,28 @@
     return 'docs';
   }
 
+  /* Per-company bulbs must carry numeric fyrirtaeki.id. Board chrome uses fid=board. */
+  const PER_COMPANY_ROLES = {
+    'YEAR CELL': 1, 'YEAR CELL LED': 1, 'SOURCE': 1, 'STATUS': 1, 'TÆKI': 1,
+    'BUNDLE': 1, 'PILL': 1, 'SOURCE SWITCH': 1, 'STAÐA EFTIR ÁRI': 1,
+    'FULLBÚIÐ': 1, 'VANTAR': 1, 'Í VINNSLU': 1,
+    'REIKNINGUR': 1, 'SKÝRSLA': 1, 'DOC': 1, 'DOT': 1
+  };
+  const BOARD_ROLES = { FILTER: 1, KPI: 1, CALC: 1 };
+
+  function numericFid(v) {
+    const s = v == null ? '' : String(v);
+    return /^\d+$/.test(s) ? s : '';
+  }
+
   function stamp(el, fid, year, state, src, role) {
     if (!el || !el.setAttribute) return;
-    const f = fid != null ? String(fid) : '';
+    let f = numericFid(fid);
+    if (!f) {
+      if (PER_COMPANY_ROLES[role]) return;
+      if (BOARD_ROLES[role] || fid === 'board') f = 'board';
+      else return;
+    }
     const y = year != null ? String(year) : '';
     const k = state || '';
     const s = src || '';
@@ -129,7 +150,8 @@
     if (s) el.setAttribute('data-elon-src', s);
     if (r) el.setAttribute('data-elon-role', r);
     const o = el.getAttribute('data-elon-orig') || '';
-    let hover = 'ELON · f' + (f || '?') + ' · ' + (y || '—') + ' · ' + (k || '—') + ' · src=' + (s || '?');
+    const fHover = /^\d+$/.test(f) ? ('f' + f) : f;
+    let hover = 'ELON · ' + fHover + ' · ' + (y || '—') + ' · ' + (k || '—') + ' · src=' + (s || '?');
     if (r) hover += ' · ' + r;
     if (o) hover += ' · ' + o;
     el.setAttribute('title', hover);
@@ -158,7 +180,7 @@
 
     /* --- Ársskoðun year cells (look-A). Role YEAR CELL. No CSS. --- */
     scope.querySelectorAll('a._yr, span._yr').forEach(el => {
-      const fid = fidOf(el) || el.getAttribute('data-co-id') || '';
+      const fid = numericFid(fidOf(el) || el.getAttribute('data-co-id'));
       const y = yearOf(el) || el.getAttribute('data-year') || '';
       const k = stateOfYr(el);
       const role = el.classList.contains('lit') ? 'YEAR CELL LED' : 'YEAR CELL';
@@ -179,13 +201,13 @@
     /* Month chips Ágú 32 = FILTER. Count = visible rows with that inspect_month. */
     scope.querySelectorAll('._ars-mo').forEach(el => {
       const m = el.getAttribute('data-month');
-      stamp(el, '', m === 'all' ? '' : String(m || ''), 'filter', 'month', 'FILTER');
+      stamp(el, 'board', m === 'all' ? '' : String(m || ''), 'filter', 'month', 'FILTER');
     });
 
     /* Status tabs Forgangur/Óvíst/Aldrei/… = FILTER. */
     scope.querySelectorAll('._ars-st').forEach(el => {
       const k = (el.getAttribute('data-status') || el.textContent || '').trim().slice(0, 24);
-      stamp(el, '', yNow, k || 'filter', 'month', 'FILTER');
+      stamp(el, 'board', yNow, k || 'filter', 'month', 'FILTER');
     });
 
     /* Per-row status pill (BÍÐUR / Í VINNSLU / KLÁRAÐ). */
@@ -201,10 +223,10 @@
 
     /* KPI tiles + summary strip. */
     scope.querySelectorAll('._ars-statgrid > div, #ars-kpi-row > *').forEach((el, i) => {
-      stamp(el, '', yNow, 'kpi', 'facts', 'KPI');
+      stamp(el, 'board', yNow, 'kpi', 'facts', 'KPI');
     });
     scope.querySelectorAll('._ars-summary, ._ars-kpi').forEach(el => {
-      stamp(el, '', yNow, 'summary', 'facts', 'KPI');
+      stamp(el, 'board', yNow, 'summary', 'facts', 'KPI');
     });
 
     /* Rekstrarfélög. */
@@ -273,17 +295,19 @@
 
     /* Afslættir % pills + custom % — CALC, not month. */
     scope.querySelectorAll('._afsl-step, ._cad-inp').forEach(el => {
-      stamp(el, fidOf(el), yNow, 'discount', 'afslattur', 'CALC');
+      const fid = numericFid(fidOf(el));
+      if (!fid) return;
+      stamp(el, fid, yNow, 'discount', 'afslattur', 'CALC');
     });
 
     /* POS / Sala receipt totals if present. */
     scope.querySelectorAll('#pos-totals, #view-pos .pos-total, #view-sala .pos-total, .kvittun-total, [data-elon-calc]').forEach(el => {
-      stamp(el, fidOf(el), yNow, 'total', 'solur', 'CALC');
+      stamp(el, 'board', yNow, 'total', 'solur', 'CALC');
     });
 
     /* Hide-skipped checkbox sits in the FILTER strip. */
     scope.querySelectorAll('#_ars-skiphide').forEach(el => {
-      stamp(el, '', yNow, 'hide-skipped', 'month', 'FILTER');
+      stamp(el, 'board', yNow, 'hide-skipped', 'month', 'FILTER');
     });
   }
 

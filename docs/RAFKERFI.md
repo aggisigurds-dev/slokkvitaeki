@@ -259,7 +259,7 @@ Fyrir hverja peru: switch, wire, bulb, hidden id (317 stimplar `data-elon`).
 | 175 `.rf-sum-chip` / `.rf-sum-next` | collapsed-röð | tæki + ár + next | accordion-samantekt | `month`/`docs` |
 | 175 `.rf-next` | CanonStadur / bru.month | next date vs today | næsta skoðun | `month` |
 
-Hidden id á öllum: `data-elon="ELON|fid=<id>|y=<year>|k=<state>|src=<…>"`. Fid kemur úr `tr[data-co-id]`, `a[data-coid]`, eða `._dyg-section[data-co-id]`.
+Hidden id á öllum: `data-elon="ELON|fid=<id>|y=<year>|k=<state>|src=<…>"`. Fid kemur úr `tr[data-co-id]`, `a[data-coid]`, eða `._dyg-section[data-co-id]`. Ársreitir / FULLBÚIÐ / SKOÐUN fá aðeins tölulegt `fyrirtaeki.id` (tómt fid er ekki stimplað). Board KPI / FILTER / POS CALC nota `fid=board`.
 
 ---
 
@@ -311,8 +311,11 @@ ELON · f11 · — · switch · src=switch · SOURCE SWITCH
 ELON|fid=11|y=|k=month|src=month|role=SOURCE               ← SKOÐUN Ágú (ekki filter)
 ELON · f11 · — · month · src=month · SOURCE
 
-ELON|fid=|y=8|k=filter|src=month|role=FILTER               ← chip Ágú 32
-ELON · f? · 8 · filter · src=month · FILTER
+ELON|fid=board|y=8|k=filter|src=month|role=FILTER          ← chip Ágú 32
+ELON · board · 8 · filter · src=month · FILTER
+
+ELON|fid=board|y=2026|k=total|src=solur|role=CALC           ← POS #pos-totals (ekki fyrirtæki)
+ELON · board · 2026 · total · src=solur · CALC
 
 ELON|fid=11|y=2026|k=both|src=pairs|role=FULLBÚIÐ
 ELON · f11 · 2026 · both · src=pairs · FULLBÚIÐ
@@ -651,9 +654,10 @@ Smellur á FILTER felur raðir; hann **skrifar ekki** inspect_month. Smellur á 
 
 ### 13.3 Tracer leftover (317) — pera rétt, stimpill getur logið
 
-- `srcOfYr`: `inv-only` → alltaf `src=solur` (`317:102`) líka þegar rofinn var `last_year_inspected` eða `year_factcheck=claude`.
-- `._ars-mo` FILTER: `y=` mánaðarnúmer (`data-month`), ekki ár (`317:156–158`).
+- `srcOfYr`: `inv-only` → alltaf `src=solur` líka þegar rofinn var `last_year_inspected` eða `year_factcheck=claude`.
+- `._ars-mo` FILTER: `y=` mánaðarnúmer (`data-month`), ekki ár. `fid=board`.
 - `.sk-doc.inv` → `src=solur` líka fyrir Drive-einn reikning.
+- POS `#pos-totals` er `role=CALC` `fid=board` — ekki tómt fid og ekki ársreitur.
 
 Hover `data-elon` er vísbending, ekki sönnun. Lesa `file:line` í köflum 1–3.
 
