@@ -210,6 +210,12 @@
   document.addEventListener('slokk-viewmode', kick);
   applyCss();
   setInterval(applyCss, 8000);   // sitja síðast þó önnur blöð endur-appendist
+  // 262 „Útgáfur" les/skrifar töflustillingarnar gegnum þetta.
+  window.TableLook = {
+    get: () => JSON.parse(JSON.stringify(store)),
+    set: (v) => { store = (v && typeof v === 'object') ? v : {}; save(); applyCss();
+      document.querySelectorAll('colgroup col').forEach(c => c.style.removeProperty('width')); },
+  };
   console.log('[patch-319] column drag ready');
 })();
 /* === END COLUMN DRAG === */

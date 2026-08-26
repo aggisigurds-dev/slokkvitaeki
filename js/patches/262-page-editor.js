@@ -51,6 +51,7 @@
       if (!state.bg) state.bg = { all: null, pages: {} };
       if (!Array.isArray(state.rules)) state.rules = [];
       if (!Array.isArray(state.favs)) state.favs = [];
+      if (!Array.isArray(state.versions)) state.versions = [];
     } catch (_) {}
   }
   function persist() {
@@ -161,8 +162,11 @@
       const sel = r.scope === 'all' ? r.sel : '#' + r.scope + ' ' + r.sel;
       css += sel + '{' + body + '}\n';
     }
-    if (state.bg && state.bg.all) css += 'body{background-image:url(' + state.bg.all + ') !important;background-size:cover !important;background-position:center !important;background-attachment:fixed !important}\n';
-    if (state.bg && state.bg.pages) for (const vid in state.bg.pages) { if (state.bg.pages[vid]) css += '#' + vid + '{background-image:url(' + state.bg.pages[vid] + ') !important;background-size:cover !important;background-position:center !important}\n'; }
+    const bgDecl = (v, fixed) => String(v).indexOf('css:') === 0
+      ? 'background:' + v.slice(4) + ' !important'
+      : 'background-image:url(' + v + ') !important;background-size:cover !important;background-position:center !important' + (fixed ? ';background-attachment:fixed !important' : '');
+    if (state.bg && state.bg.all) css += 'body{' + bgDecl(state.bg.all, true) + '}\n';
+    if (state.bg && state.bg.pages) for (const vid in state.bg.pages) { if (state.bg.pages[vid]) css += '#' + vid + '{' + bgDecl(state.bg.pages[vid], false) + '}\n'; }
     st.textContent = css;
   }
 
@@ -277,7 +281,38 @@
     'box-shadow': 'inset 0 1px 0 rgba(255,255,255,.28), inset 0 -3px 7px rgba(0,0,0,.55), 0 4px 10px rgba(0,0,0,.4)'
   });
 
+  // Hnappa- og glugga-galleríin (2026-08-26, söfn Agnars endurgerð í CSS).
+  const BTN_GALLERY = [
+    ['01 Fægt gull', { background: 'linear-gradient(180deg,#f3d98b,#c9a44a 55%,#a67c28)', color: '#2a1f08', border: '1px solid #8a6a1f', 'border-radius': '9px', 'box-shadow': 'inset 0 1px 0 rgba(255,255,255,.6),0 2px 5px rgba(0,0,0,.35)', 'text-shadow': '0 1px 0 rgba(255,255,255,.35)', 'font-weight': '700' }],
+    ['02 Gljái sweep', { background: 'linear-gradient(105deg,#c9a44a 0%,#f7e6a8 45%,#c9a44a 62%)', color: '#3a2b0a', border: '1px solid #9a7a24', 'border-radius': '9px', 'box-shadow': '0 2px 6px rgba(0,0,0,.3)', 'font-weight': '700' }],
+    ['03 Burstað stál', { background: 'repeating-linear-gradient(90deg,rgba(255,255,255,.06) 0 1px,transparent 1px 3px),linear-gradient(180deg,#3a4049,#23272e)', color: '#eef1f5', border: '1px solid #14171c', 'border-radius': '9px', 'box-shadow': 'inset 0 1px 0 rgba(255,255,255,.12),0 2px 4px rgba(0,0,0,.4)' }],
+    ['04 Króm silfur', { background: 'linear-gradient(180deg,#f5f7fa,#c3cad4 50%,#98a1ad)', color: '#1c2230', border: '1px solid #7d8794', 'border-radius': '9px', 'box-shadow': 'inset 0 1px 0 #fff,0 2px 5px rgba(0,0,0,.3)', 'font-weight': '700' }],
+    ['05 Gler frosted', { background: 'rgba(30,34,42,.55)', color: '#f2f4f8', border: '1px solid rgba(255,255,255,.25)', 'border-radius': '10px', 'backdrop-filter': 'blur(6px)', 'box-shadow': '0 2px 8px rgba(0,0,0,.25)' }],
+    ['06 Gler gullrönd', { background: 'rgba(22,17,8,.5)', color: '#e9d9a6', border: '1px solid #c9a44a', 'border-radius': '10px', 'box-shadow': 'inset 0 0 8px rgba(201,164,74,.15)' }],
+    ['07 Vélað rautt', { background: 'linear-gradient(135deg,#e2555f,#8e1219 60%,#5a0c10)', color: '#fff', border: '1px solid #4a0a0e', 'border-radius': '9px', 'box-shadow': 'inset 0 1px 0 rgba(255,255,255,.25),0 2px 5px rgba(0,0,0,.4)', 'text-shadow': '0 1px 1px rgba(0,0,0,.35)', 'font-weight': '700' }],
+    ['08 Neumorphic', { background: '#efece4', color: '#3a3f4a', border: '0', 'border-radius': '12px', 'box-shadow': '6px 6px 12px rgba(0,0,0,.12),-6px -6px 12px #ffffff', 'font-weight': '600' }],
+    ['09 Grafið inset', { background: '#ece9e1', color: '#5a5f6a', border: '0', 'border-radius': '10px', 'box-shadow': 'inset 3px 3px 7px rgba(0,0,0,.16),inset -3px -3px 7px #ffffff' }],
+    ['10 3D chunky', { background: 'linear-gradient(180deg,#2fa866,#1f8a50)', color: '#fff', border: '0', 'border-radius': '10px', 'box-shadow': '0 5px 0 #14663a,0 7px 10px rgba(0,0,0,.3)', 'font-weight': '800' }],
+    ['11 Foil-rammi', { background: 'transparent', color: '#e9d9a6', border: '2px solid #d4af5a', 'border-radius': '10px', 'box-shadow': 'inset 0 0 12px rgba(212,175,90,.22)', 'font-weight': '700' }],
+    ['12 Glóð pulse', { background: '#171310', color: '#f3d98b', border: '1px solid #d4af5a', 'border-radius': '10px', 'box-shadow': '0 0 14px rgba(212,175,90,.45)', 'font-weight': '700' }],
+    ['13 Holographic', { background: 'linear-gradient(115deg,#c9b7ff,#a8e6cf 40%,#ffd3e0 70%,#c1e3ff)', color: '#21262e', border: '1px solid rgba(120,120,160,.35)', 'border-radius': '10px', 'font-weight': '700' }],
+    ['14 Satín gull-texti', { background: 'transparent', color: '#d9b967', border: '0', 'text-shadow': '0 1px 1px rgba(0,0,0,.25)', 'font-weight': '800', 'letter-spacing': '.03em' }],
+    ['15 Kolefnistrefjar', { background: 'repeating-linear-gradient(45deg,#17191d 0 6px,#22252b 6px 12px)', color: '#dfe3ea', border: '1px solid #0d0f13', 'border-radius': '9px' }],
+    ['16 Leður saumur', { background: '#2a1c12', color: '#e8d9c0', border: '1px dashed #c9a05f', 'border-radius': '10px', 'box-shadow': 'inset 0 0 10px rgba(0,0,0,.5)' }],
+  ];
+  const PANEL_GALLERY = [
+    ['G1 Hvítt kort', { background: '#ffffff', color: '#11141c', border: '1px solid #e6eaf0', 'border-radius': '14px', 'box-shadow': '0 2px 10px rgba(15,23,42,.08)' }],
+    ['G2 Lux dökkt + gull', { background: 'linear-gradient(180deg,#15130e,#0c0b08)', color: '#efe6cd', border: '1px solid rgba(212,175,90,.5)', 'border-radius': '12px' }],
+    ['G3 Gler frosted', { background: 'rgba(18,21,28,.6)', color: '#eef1f6', border: '1px solid rgba(255,255,255,.18)', 'border-radius': '14px', 'backdrop-filter': 'blur(8px)' }],
+    ['G4 Pappír + litarönd', { background: '#faf7ef', color: '#23262e', border: '1px solid #e4ded0', 'border-top': '3px solid #C93C1D', 'border-radius': '12px' }],
+    ['G5 Grafið krem', { background: '#efece4', color: '#3a3f4a', border: '0', 'border-radius': '14px', 'box-shadow': 'inset 3px 3px 8px rgba(0,0,0,.13),inset -3px -3px 8px #ffffff' }],
+    ['G6 Kolefni', { background: 'repeating-linear-gradient(45deg,#17191d 0 8px,#22252b 8px 16px)', color: '#e6e9ef', border: '1px solid #0d0f13', 'border-radius': '12px' }],
+    ['G7 Burstað stál', { background: 'repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 3px),linear-gradient(180deg,#565d68,#454c56)', color: '#f2f4f8', border: '1px solid #2b3037', 'border-radius': '12px' }],
+    ['G8 Pergament vignetta', { background: 'radial-gradient(120% 100% at 50% 40%,transparent 55%,rgba(150,110,40,.16)),#f1e9d6', color: '#4a3c22', border: '1px solid rgba(160,120,40,.4)', 'border-radius': '12px' }],
+  ];
   const PRESET_GROUPS = [
+    { label: '🔘 Hnappa-gallerí (safnið þitt)', items: BTN_GALLERY },
+    { label: '🪟 Glugga & spjalda-gallerí', items: PANEL_GALLERY },
     { label: 'Glans-pillur', items: [
       ['Silfur', glossPill('#ffffff', '#b9bfc6', '#2a2f36', '0 1px 0 rgba(255,255,255,.7)')],
       ['Gull', glossPill('#ffe08a', '#c8892b', '#fff', '0 1px 2px rgba(0,0,0,.4)')],
@@ -328,7 +363,7 @@
     ]},
   ];
   function applyPreset(decls) { if (!target) { toast('Veldu hlut fyrst (🎯 Velja)'); return; }
-    const r = currentRule(true); snapshot(); Object.assign(r.decls, decls); persist(); renderPanel();
+    snapshot(); eachRule(true, r => Object.assign(r.decls, decls)); persist(); renderPanel();
   }
   // Save the selected element's current look as a named favourite (synced).
   function saveFavorite() {
@@ -461,7 +496,7 @@
 
     let body;
     if (!target) {
-      body = '<div class="pe-empty">Ýttu á <b>🎯 Velja hlut</b> og smelltu svo á texta, box eða glugga á síðunni til að byrja að breyta.<br>Eða settu <b>🖼 Bakgrunnsmynd</b> á síðuna.</div>' + presetsSection();
+      body = '<div class="pe-empty">Ýttu á <b>🎯 Velja hlut</b> og smelltu svo á texta, box eða glugga á síðunni til að byrja að breyta.<br>Eða settu <b>🖼 Bakgrunnsmynd</b> á síðuna.</div>' + presetsSection() + bgGallerySection() + versionsSection();
     } else {
       body = '<div class="pe-grid">' +
         '<details class="pe-sec"><summary><h4>Stærð &amp; bil</h4></summary>' +
@@ -494,10 +529,116 @@
           '<div class="pe-row"><label>Font</label><select data-font>' + FONTS.map(f => '<option value="' + esc(f) + '"' + ((getDecl('font-family') || '') === f ? ' selected' : '') + '>' + esc(f) + '</option>').join('') + '</select></div>' +
           '<div class="pe-sub" style="margin-top:6px">Border sést aðeins þegar þykkt &gt; 0.</div>' +
         '</details>' +
-      '</div>' + presetsSection();
+      '</div>' + presetsSection() + bgGallerySection() + versionsSection();
     }
     p.innerHTML = head + body;
     wirePanel();
+  }
+  // ── „Útgáfur" (2026-08-26, ósk Agnars: „save as … nokkrar útgáfur af layout
+  // og litum") — nafngreind heildar-snapshot af öllu útlitinu: allar
+  // Stílstjóra-reglur + bakgrunnar + töflustillingar (319: breiddir/jöfnun/
+  // raðhæð). Vistast í AppSettings með state → fylgja milli tækja.
+  function tableLookGet() {
+    try { return window.TableLook && TableLook.get ? TableLook.get() : {}; } catch (_) { return {}; }
+  }
+  function tableLookSet(v) {
+    try { if (window.TableLook && TableLook.set) TableLook.set(v || {}); } catch (_) {}
+  }
+  function saveVersionAs() {
+    let name = prompt('Nafn útgáfu (t.d. „Þétt vinnusýn"):', '');
+    if (!name) return; name = String(name).trim().slice(0, 40); if (!name) return;
+    snapshot();
+    const snap = {
+      name, savedAt: new Date().toISOString().slice(0, 16),
+      rules: JSON.parse(JSON.stringify(state.rules || [])),
+      bg: JSON.parse(JSON.stringify(state.bg || { all: null, pages: {} })),
+      tables: tableLookGet(),
+    };
+    const i = state.versions.findIndex(v => v.name === name);
+    if (i >= 0) state.versions[i] = snap; else state.versions.push(snap);
+    persist(); renderPanel(); toast('💾 Útgáfa „' + name + '" vistuð');
+  }
+  function activateVersion(i) {
+    const v = state.versions && state.versions[i]; if (!v) return;
+    snapshot();
+    state.rules = JSON.parse(JSON.stringify(v.rules || []));
+    state.bg = JSON.parse(JSON.stringify(v.bg || { all: null, pages: {} }));
+    tableLookSet(v.tables || {});
+    persist(); renderPanel(); toast('✓ Útgáfa „' + v.name + '" virk');
+  }
+  function deleteVersion(i) {
+    const v = state.versions && state.versions[i]; if (!v) return;
+    if (!confirm('Eyða útgáfunni „' + v.name + '"?')) return;
+    snapshot(); state.versions.splice(i, 1); persist(); renderPanel();
+  }
+  // ── Bakgrunna-gallerí (2026-08-26, ósk Agnars — F/BG safnið hans úr Claude,
+  // endurgert sem HREINT CSS: gradients+mynstur, engar myndir, hlaðast strax).
+  const BG_GALLERY = [
+    ['F1 Miðnæturolía', 'linear-gradient(180deg,#0a1428,#0d1b3a 60%,#0a1224)'],
+    ['F2 Kolasvart + glóð', 'radial-gradient(620px 320px at 78% 10%,rgba(255,171,64,.16),transparent 62%) #0b0b0d'],
+    ['F3 Grænflöskugler', 'linear-gradient(180deg,#0d2d20,#0a1f16)'],
+    ['F4 Aurora', 'radial-gradient(800px 420px at 18% 18%,rgba(74,118,255,.26),transparent 60%),radial-gradient(720px 400px at 82% 32%,rgba(146,92,255,.2),transparent 62%) #101425'],
+    ['F5 Ritstjórnarhvítt', 'repeating-linear-gradient(0deg,transparent 0 31px,rgba(30,25,15,.05) 31px 32px),repeating-linear-gradient(90deg,transparent 0 31px,rgba(30,25,15,.05) 31px 32px) #faf8f2'],
+    ['F6 Grafít + teikninet', 'repeating-linear-gradient(0deg,transparent 0 47px,rgba(255,255,255,.055) 47px 48px),repeating-linear-gradient(90deg,transparent 0 47px,rgba(255,255,255,.055) 47px 48px) #14161c'],
+    ['F7 Sandsteinn', 'radial-gradient(700px 260px at 50% 0,rgba(214,120,80,.14),transparent 65%),linear-gradient(180deg,#f3e7d8,#e8d9c4)'],
+    ['F8 Fjólublátt flauel', 'linear-gradient(180deg,#241a4d,#1b1338)'],
+    ['F9 Hafnarþoka', 'linear-gradient(180deg,#39434f,#6b7686)'],
+    ['F10 Brúnt bókband', 'radial-gradient(130% 95% at 50% 6%,#3a2a1c,#221610 70%,#150d09)'],
+    ['F11 Pergament + gullrönd', 'linear-gradient(90deg,rgba(197,160,89,.6) 0 3px,transparent 3px calc(100% - 3px),rgba(197,160,89,.6) calc(100% - 3px)),#f4ecd9'],
+    ['F12 Svart gler', 'linear-gradient(105deg,#0a0a0c 38%,#22242a 50%,#0a0a0c 62%)'],
+    ['BG1 Grafít → silfur', 'linear-gradient(180deg,#2b2f36,#9aa1ab)'],
+    ['BG2 Burstað stál', 'repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 1px,transparent 1px 3px),linear-gradient(180deg,#565d68,#454c56)'],
+    ['BG3 Kolefnistrefjar', 'repeating-linear-gradient(45deg,#17191d 0 8px,#22252b 8px 16px)'],
+    ['BG4 Filmukorn', 'radial-gradient(rgba(255,255,255,.05) 1px,transparent 1.4px) 0 0/3px 3px repeat #1a1c21'],
+    ['BG5 Kastljós grátt', 'radial-gradient(92% 72% at 50% 28%,#9aa2ad,#565e69 82%)'],
+    ['BG6 Gatað málm', 'radial-gradient(rgba(10,12,15,.8) 1.6px,transparent 2px) 0 0/14px 14px repeat #596069'],
+    ['BG7 Espresso → gullglóð', 'radial-gradient(600px 280px at 50% 100%,rgba(210,160,70,.22),transparent 60%),linear-gradient(180deg,#201510,#3d2c17)'],
+    ['BG8 Leður djúpbrúnt', 'radial-gradient(rgba(0,0,0,.25) 1px,transparent 1.3px) 0 0/5px 5px repeat,linear-gradient(180deg,#2e2015,#241811)'],
+    ['BG9 Mokka → latte', 'linear-gradient(180deg,#4e3d2b,#cbb392)'],
+    ['BG10 Pergament + vignetta', 'radial-gradient(120% 100% at 50% 40%,transparent 55%,rgba(150,110,40,.16)),#f1e9d6'],
+    ['BG11 Lín krem', 'repeating-linear-gradient(0deg,transparent 0 7px,rgba(90,70,40,.07) 7px 8px),repeating-linear-gradient(90deg,transparent 0 7px,rgba(90,70,40,.07) 7px 8px) #f4eeda'],
+    ['BG12 Steypa ljósgrá', 'radial-gradient(500px 300px at 30% 20%,rgba(255,255,255,.5),transparent 60%),linear-gradient(180deg,#d8d7d3,#c9c8c4)'],
+  ];
+  function applyGalleryBg(i) {
+    const g = BG_GALLERY[i]; if (!g) return;
+    snapshot();
+    const val = 'css:' + g[1];
+    if (scope === 'all') { state.bg.all = val; }
+    else {
+      const cur = document.querySelector('.view.active');
+      if (!cur || !cur.id) { state.bg.all = val; } else { state.bg.pages[cur.id] = val; }
+    }
+    persist(); toast('🖼 ' + g[0] + (scope === 'all' ? ' — allar síður' : ' — þessi síða'));
+  }
+  function clearGalleryBg() {
+    snapshot();
+    if (scope === 'all') state.bg.all = null;
+    else { const cur = document.querySelector('.view.active'); if (cur && cur.id) state.bg.pages[cur.id] = null; else state.bg.all = null; }
+    persist(); toast('Bakgrunnur hreinsaður');
+  }
+  function bgGallerySection() {
+    const chips = BG_GALLERY.map((g, i) =>
+      '<button class="pe-chip" data-bgg="' + i + '" title="' + esc(g[0]) + '" style="flex-direction:column;gap:4px;padding:6px;min-width:86px">' +
+        '<span style="display:block;width:78px;height:44px;border-radius:7px;border:1px solid rgba(0,0,0,.18);background:' + esc(g[1]) + '"></span>' +
+        '<span style="font-size:9.5px;line-height:1.1;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(g[0]) + '</span>' +
+      '</button>').join('');
+    return '<details class="pe-sec" style="margin-top:10px"><summary><h4>🖼 Bakgrunna-gallerí — F/BG safnið</h4></summary>' +
+      '<div class="pe-sub" style="margin-bottom:6px">Smellur setur á ' + (scope === 'all' ? 'ALLAR síður' : 'þessa síðu') + ' (skv. gildissviðs-valinu efst).</div>' +
+      '<div class="pe-presets">' + chips + '<button class="pe-chip" id="pe-bgg-clear" title="Hreinsa bakgrunn">✕ Hreinsa</button></div>' +
+    '</details>';
+  }
+  function versionsSection() {
+    const rows = (state.versions || []).map((v, i) =>
+      '<div class="pe-row" style="margin:4px 0">' +
+        '<span style="flex:1;min-width:0;font-size:12.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(v.savedAt || '') + '">' + esc(v.name) + '</span>' +
+        '<button class="pe-btn" data-ver-go="' + i + '">Virkja</button>' +
+        '<button class="pe-btn" data-ver-del="' + i + '" title="Eyða" style="padding:7px 9px">🗑</button>' +
+      '</div>').join('');
+    return '<details class="pe-sec" style="margin-top:10px"' + ((state.versions || []).length ? ' open' : '') + '><summary><h4>💾 Útgáfur — vista og skipta um heildar-útlit</h4></summary>' +
+      '<button class="pe-btn pri" id="pe-ver-save">＋ Vista núverandi útlit sem…</button>' +
+      '<div style="margin-top:6px">' + (rows || '<div class="pe-sub">Engin útgáfa vistuð enn.</div>') + '</div>' +
+      '<div class="pe-sub" style="margin-top:6px">Útgáfa geymir allar Stílstjóra-breytingar, bakgrunna og töflustillingar (breiddir/jöfnun/raðhæð).</div>' +
+    '</details>';
   }
   function presetsSection() {
     const favs = (state.favs || []);
@@ -533,6 +674,11 @@
       try { localStorage.setItem('pe_dock', dock); } catch (_) {}
       renderPanel();
     };
+    qa('[data-bgg]').forEach(b => b.onclick = () => applyGalleryBg(+b.dataset.bgg));
+    const bgc = q('#pe-bgg-clear'); if (bgc) bgc.onclick = clearGalleryBg;
+    const vs = q('#pe-ver-save'); if (vs) vs.onclick = saveVersionAs;
+    qa('[data-ver-go]').forEach(b => b.onclick = () => activateVersion(+b.dataset.verGo));
+    qa('[data-ver-del]').forEach(b => b.onclick = () => deleteVersion(+b.dataset.verDel));
     const pk = q('#pe-pick'); if (pk) pk.onclick = () => setPicking(!picking);
     const mu = q('#pe-multi'); if (mu) mu.onclick = () => {
       multiPick = !multiPick;
