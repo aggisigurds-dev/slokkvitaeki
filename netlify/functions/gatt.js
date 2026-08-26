@@ -157,7 +157,7 @@ exports.handler = async (event) => {
       if (need.length) {
         const quoted = [...new Set(need.map((i) => String(i.nr).replace(/"/g, '')))]
           .map((n) => `"${n}"`).join(',');
-        const sr = await P.sbGet(`solur?num=in.(${quoted})&select=num,samtals,created_at,source,athugasemdir`);
+        const sr = await P.sbGet(`solur?num=in.(${quoted})&select=num,samtals,created_at,source`);
         if (sr.ok) {
           const byNr = {};
           (await sr.json()).forEach((s) => { if (s && s.num) byNr[normNr(s.num)] = s; });
@@ -167,11 +167,11 @@ exports.handler = async (event) => {
             if (!s) return;
             if (i.upphaed == null && s.samtals != null && s.samtals !== '') i.upphaed = Number(s.samtals);
             if (!i.dags && s.created_at) i.dags = String(s.created_at).slice(0, 10);
-            if (!i.lysing) {
-              const t = SRC[s.source] || '';
-              const note = String(s.athugasemdir || '').trim();
-              i.lysing = t || (note ? note.slice(0, 80) : '');
-            }
+            // AÐEINS örugg þjónustu-merki (Úttekt/Brunakerfi/Sala) — aldrei
+            // athugasemdir úr solur: sá reitur getur borið innri nótur
+            // (t.d. afritaðar af kúnnaspjaldi í POS) og gáttin er kúnna-sýnileg,
+            // líka í opna hamnum án lykilorðs.
+            if (!i.lysing) i.lysing = SRC[s.source] || '';
           });
         }
       }
