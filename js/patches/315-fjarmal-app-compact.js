@@ -52,9 +52,9 @@
     KY + '.ky-coname{font-size:16px!important;line-height:1.2}',
     KY + '.ky-cometa{font-size:12px!important;margin-top:2px}',
     KY + '.ky-krafamt{font-size:16px!important}',
-    KY + '.ky-cohead{padding:10px 12px 6px!important}',
-    KY + '.ky-cobar{margin-top:6px!important}',
-    KY + '.ky-cosub{margin-top:4px!important;font-size:11px}',
+    KY + '.ky-cohead{padding:8px 10px 4px!important}',
+    KY + '.ky-cobar{margin-top:4px!important}',
+    KY + '.ky-cosub{margin-top:2px!important;font-size:11px}',
     KY + '.ky-mcopy{display:none!important}',
     KY + '.filter-chip,' + KY + '.ky-navbtn,' + KY + '._ky-sync,' + KY + '._ky-exp,' +
     KY + '.page-title__tools button,' + KY + '.page-title__tools select' +
@@ -67,13 +67,14 @@
     // (and 17px type), which is why collapsed rows stayed huge.
     KY + '.ky-mrow{padding:0!important;min-height:0}',
     KY + '.ky-saletop,' + KY + '.ky-saletop[role="button"]' +
-      '{min-height:44px!important;height:auto!important;padding:6px 12px!important;' +
-       'font-size:14px!important;line-height:1.2!important}',
-    KY + '.ky-mnum{font-size:14px!important}',
+      '{min-height:44px!important;height:auto!important;padding:6px 10px!important;' +
+       'font-size:14px!important;line-height:1.2!important;flex-wrap:nowrap!important}',
+    KY + '.ky-mnum{font-size:14px!important;min-width:0}',
     KY + '.ky-mdate{font-size:12px!important}',
     KY + '.ky-mamt{font-size:15px!important}',
+    KY + '.ky-mrow.open .ky-acts{gap:6px}',
     KY + '.ky-mrow.open .ky-acts .ky-abtn,' + KY + '.ky-acts .ky-abtn' +
-      '{min-height:44px!important;height:44px!important;padding:2px 6px!important;font-size:11px!important}',
+      '{flex:1 1 calc(25% - 6px);min-width:calc(25% - 6px);min-height:44px!important;height:44px!important;padding:2px 4px!important;font-size:10px!important}',
     KY + '.ky-mexp,.ky-chev{min-height:44px!important;width:36px!important;height:36px!important;padding:0!important;font-size:16px!important}',
     KY + '.ky-mrow.open .ky-mnote{font-size:16px!important;min-height:44px!important}',
 
@@ -83,7 +84,6 @@
       '{padding-left:0!important;padding-right:0!important;max-width:none!important;margin:0!important}',
     ARS + '#ars-main > div,' + ARS + '#ars-main [style*="max-width:1720"]' +
       '{padding-left:0!important;padding-right:0!important;max-width:none!important;margin:0!important}',
-    ARS + '#ars-main > div > :not(._arsm-tbl){padding-left:10px;padding-right:10px;box-sizing:border-box}',
     ARS + 'h1{font-size:18px!important;line-height:1.15!important}',
     ARS + '._ars-statgrid{gap:6px!important;margin-bottom:8px!important}',
     ARS + '._ars-statgrid > div{padding:8px 10px!important}',
