@@ -32,6 +32,10 @@
   let matchMode = 'one';    // 'one' = just this element, 'many' = every matching element (tag+class, no nth-of-type)
   let extraTargets = [];    // „Velja marga" (2026-08-26): fleiri valdir hlutir — sömu breytingar á alla
   let multiPick = false;    // ☑-hamur: smellir BÆTA VIÐ valið í stað þess að skipta um
+  // Dokkun (2026-08-26, ósk Agnars): 'side' = hægri hliðarpanel (pláss fyrir
+  // fleiri stýringar), 'bottom' = gamla botn-sheetið. Vistast per tæki.
+  let dock = 'side';
+  try { dock = localStorage.getItem('pe_dock') || 'side'; } catch (_) {}
   let _saveT = null;
   let undoStack = [];       // snapshot() before each mutation → ↩ Afturkalla pops the last one
   const UNDO_MAX = 20;
@@ -358,6 +362,13 @@
       '#' + BTN_ID + '{all:unset;cursor:pointer;font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;margin-right:6px;transition:background .12s}',
       '#' + BTN_ID + ':hover{background:rgba(255,255,255,.14)}',
       '#' + PANEL_ID + '{position:fixed;left:0;right:0;bottom:0;z-index:99990;max-height:56vh;overflow:auto;background:#f8fafc;border-top:1px solid #cbd5e1;box-shadow:0 -12px 34px -14px rgba(15,23,42,.35);font-family:"Space Grotesk",system-ui,sans-serif;color:#11141c;padding:14px 18px 22px}',
+      // Hliðar-dokkun: hægri panel í fullri hæð á breiðum skjá — stýringarnar
+      // hlaðast lóðrétt og skyggja ekki á töfluna sem verið er að stilla.
+      '@media (min-width:900px){' +
+        '#' + PANEL_ID + '.pe-side{left:auto;right:0;top:0;bottom:0;width:410px;max-width:94vw;max-height:none;height:auto;border-top:0;border-left:1px solid #cbd5e1;box-shadow:-16px 0 36px -18px rgba(15,23,42,.45);padding:14px 16px 26px;overflow-y:auto}' +
+        '#' + PANEL_ID + '.pe-side .pe-grid{grid-template-columns:1fr;gap:10px}' +
+        '#' + PANEL_ID + '.pe-side .pe-target{max-width:100%}' +
+      '}',
       // Header is now its own column: title row, then a toolbar row (wraps
       // cleanly instead of everything fighting for one line), then — only when
       // a target is picked — its own row for the selector chip. Fixes the
@@ -433,6 +444,7 @@
     const head = '<div class="pe-hd">' +
       '<div class="pe-titlerow">' +
         '<div style="flex:1"><h3 class="pe-h">🎨 Stilla útlit</h3><div class="pe-sub">Veldu hlut og breyttu lit, letri, stærð, halla eða settu bakgrunn. Vistast strax' + (scope === 'all' ? ' — <b>allar síður</b>' : ' — <b>þessi síða</b>') + '.</div></div>' +
+        '<button class="pe-btn" id="pe-dock" title="Færa stjórnborðið milli hliðar og botns">' + (dock === 'side' ? '⇓ Botn' : '⇥ Hlið') + '</button>' +
         '<button class="pe-btn" id="pe-close">✕ Loka</button>' +
       '</div>' +
       '<div class="pe-toolbar">' +
@@ -515,6 +527,12 @@
     const p = document.getElementById(PANEL_ID); if (!p) return;
     const q = s => p.querySelector(s), qa = s => Array.prototype.slice.call(p.querySelectorAll(s));
     q('#pe-close').onclick = closePanel;
+    p.classList.toggle('pe-side', dock === 'side');
+    const dk = q('#pe-dock'); if (dk) dk.onclick = () => {
+      dock = dock === 'side' ? 'bottom' : 'side';
+      try { localStorage.setItem('pe_dock', dock); } catch (_) {}
+      renderPanel();
+    };
     const pk = q('#pe-pick'); if (pk) pk.onclick = () => setPicking(!picking);
     const mu = q('#pe-multi'); if (mu) mu.onclick = () => {
       multiPick = !multiPick;
