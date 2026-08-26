@@ -161,6 +161,10 @@
       // title gap, grey 14–24px gutters around .app-page. 263 skips this view
       // so it cannot save us. Collapse actions/notes until the row is opened.
       M + '>.main-panel{padding-left:0!important;padding-right:0!important;max-width:none!important}' +
+      // Beat patch 230's `>.main-panel{padding:8px 14px}` — those three
+      // `:not(#id)` count as ID specificity, so a plain #view-… >.main-panel loses.
+      'html[data-viewmode="mobile"] #view-krofu-yfirlit.view.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel{padding-left:0!important;padding-right:0!important;padding-top:4px!important;max-width:none!important}' +
+      'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode #view-krofu-yfirlit.view.active:not(#view-field):not(#view-counter):not(#view-workshop)>.main-panel{padding-left:0!important;padding-right:0!important;padding-top:4px!important}' +
       M + '.thm .app-main{padding:6px 0 16px!important}' +
       M + '.thm .app-page{background:transparent!important;min-height:0!important}' +
       M + '.page-title,' + M + '.stat-row,' + M + '.ky-exprow,' + M + '.ky-filterbar,' + M + '.ky-hint{padding-left:10px;padding-right:10px;box-sizing:border-box}' +
