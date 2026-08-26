@@ -287,7 +287,7 @@
         '</div>' +
         // Grid
         '<div style="padding:10px 12px 12px">' +
-          '<div style="display:grid;grid-template-columns:repeat(' + COLS + ',minmax(0,1fr));gap:8px">' +
+          '<div class="sb-grid" style="display:grid;grid-template-columns:repeat(' + COLS + ',minmax(0,1fr));gap:8px">' +
             slots.join('') +
           '</div>' +
           (onBoard === 0

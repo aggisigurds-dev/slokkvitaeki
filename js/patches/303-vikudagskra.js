@@ -127,6 +127,10 @@
       @media (max-width: 640px) {
         #${SLOT_ID} .vd-grid { grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) !important; }
       }
+      html[data-viewmode="mobile"] #${SLOT_ID} .vd-grid,
+      html.slokk-phone-nav #${SLOT_ID} .vd-grid {
+        grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) !important;
+      }
     `;
     document.head.appendChild(s);
   }
