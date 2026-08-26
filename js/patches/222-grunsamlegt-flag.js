@@ -66,7 +66,10 @@
   }
 
   function addBadge(tr, yr) {
-    var cell = tr.querySelector('td'); if (!cell) return;
+    // 2026-08-26: festa á nafna-reitinn með klasa, ekki fyrsta <td> — nýr
+    // póst-stöðu dálkur fremst (153, ._ars-mailcol) er nú fyrsti reiturinn og
+    // „⚠ grunsamlegt" pillan hefði annars lent þar ofan í póst-merkinu (295).
+    var cell = tr.querySelector('td._ars-namecell') || tr.querySelector('td'); if (!cell) return;
     if (cell.querySelector('._grun-badge')) return;
     var b = document.createElement('span');
     b.className = '_grun-badge';

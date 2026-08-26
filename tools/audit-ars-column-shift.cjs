@@ -23,6 +23,7 @@ const path = require('path');
 const root = path.join(__dirname, '..');
 const src187 = fs.readFileSync(path.join(root, 'js/patches/187-inservice-row-reports.js'), 'utf8');
 const src153 = fs.readFileSync(path.join(root, 'js/patches/153-arsskodun.js'), 'utf8');
+const src222 = fs.readFileSync(path.join(root, 'js/patches/222-grunsamlegt-flag.js'), 'utf8');
 
 const fails = [];
 
@@ -53,6 +54,21 @@ if (iTdMail !== -1 && iTdName !== -1 && iTdMail > iTdName) {
 // Leading narrow <col> for the mail column (keeps fixed-layout widths 1:1)
 if (!/<colgroup>\s*<col style="width:34px">/.test(src153)) {
   fails.push('153 colgroup missing the leading <col style="width:34px"> for the mail column');
+}
+
+// ── 222: the "⚠ grunsamlegt" pill must anchor on the name cell, not the first
+// <td> (which is now the mail column) — else it lands on top of the 295 badge ─
+if (!/_ars-namecell/.test(src222)) {
+  fails.push('222 addBadge() does not anchor on td._ars-namecell — the ⚠ grunsamlegt pill would land in the leftmost mail column, colliding with the 295 badge');
+}
+
+// ── tightening: the dense-mode (viewmode=table) rules and the year-padding rule
+// must stay position-independent of the prepended mail column ────────────────
+if (/tbody td:first-child>div:nth-child\([23]\)/.test(src153)) {
+  fails.push('153 dense-mode CSS reverted to td:first-child — now the empty mail cell; must stay ._ars-namecell');
+}
+if (!/data-table td:nth-child\(5\).*data-table td:nth-child\(8\)/.test(src153)) {
+  fails.push('153 year-cell padding rule is not nth-child(5..8) — the four 187 year cells shifted right by the mail column');
 }
 
 if (fails.length) {
