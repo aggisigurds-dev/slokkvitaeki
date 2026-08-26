@@ -1,6 +1,7 @@
 /* Fjármál/Boss overview density — per-page polish on top of patch 314.
    Agnar 2026-08-26: "Fjármála app. Has everything way too big as an overview
-   app. Waste of space." Kröfur collapse lives in 166 (`.ky-mdetail` / `.open`).
+   app. Waste of space." Compact sizes stay; 166 no longer hides `.ky-acts`
+   behind `.open` (Senda kröfu / Greitt were gone entirely).
    This sheet: full-bleed lists, short Ársskoðun mrows, hide the stray copy-icon,
    and beat 261’s `[role=button]` 12px padding on `.ky-saletop`.
    Does not edit theme-scoped.css or restyle Ársskoðun `._yr` look-A. */
@@ -72,11 +73,14 @@
     KY + '.ky-mnum{font-size:14px!important;min-width:0}',
     KY + '.ky-mdate{font-size:12px!important}',
     KY + '.ky-mamt{font-size:15px!important}',
-    KY + '.ky-mrow.open .ky-acts{gap:6px}',
-    KY + '.ky-mrow.open .ky-acts .ky-abtn,' + KY + '.ky-acts .ky-abtn' +
-      '{flex:1 1 calc(25% - 6px);min-width:calc(25% - 6px);min-height:44px!important;height:44px!important;padding:2px 4px!important;font-size:10px!important}',
+    // Force the row-action set visible in Öpp (do not re-collapse behind .open).
+    KY + '.ky-mdetail{display:block!important;height:auto!important;overflow:visible!important}',
+    KY + '.ky-acts{display:flex!important;flex-wrap:wrap!important;visibility:visible!important;height:auto!important;max-height:none!important;overflow:visible!important;pointer-events:auto!important;gap:6px;padding:0 10px 10px}',
+    KY + '.ky-acts .ky-abtn,body.appmode #view-krofu-yfirlit button.ky-abtn' +
+      '{display:inline-flex!important;visibility:visible!important;pointer-events:auto!important;' +
+       'flex:1 1 calc(50% - 6px);min-width:calc(50% - 6px);min-height:44px!important;height:44px!important;padding:2px 4px!important;font-size:11px!important}',
     KY + '.ky-mexp,.ky-chev{min-height:44px!important;width:36px!important;height:36px!important;padding:0!important;font-size:16px!important}',
-    KY + '.ky-mrow.open .ky-mnote{font-size:16px!important;min-height:44px!important}',
+    KY + '.ky-mnote{display:block!important;font-size:16px!important;min-height:44px!important}',
 
     // ── Þjónusta / Ársskoðun mrows: full-bleed, short rows, ≥16px names ──
     // Do NOT restyle `._yr` (look-A lives on another ticket).
