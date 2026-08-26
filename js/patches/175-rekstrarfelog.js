@@ -353,6 +353,11 @@
         P+'.rf-cellname{min-height:44px}'+
         P+'.rf-bldtoggle{width:44px;min-width:44px;min-height:44px}'+
         P+'.rfa__pad{padding:10px 10px}'+
+        P+'.rf-acclist{gap:8px}'+
+        P+'.rfa__head{padding:10px 12px;gap:10px}'+
+        P+'.rfa__logo{width:36px;height:36px;border-radius:10px}'+
+        P+'.rfa__name{font-size:16px}'+
+        P+'.rfa__chev{width:28px;height:28px}'+
       '}',
       // Síma-úttekt 2026-07-30 (mælt): .rfa__pills var flex:none svo pillu-röðin
       // hélt fullri breidd og NAFNIÐ (flex:1 + ellipsis) fór í 0 px — félags-
