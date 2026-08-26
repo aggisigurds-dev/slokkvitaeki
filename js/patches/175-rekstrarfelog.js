@@ -38,6 +38,12 @@
     var m = monthFromDate(date);
     return m > 0 && m === (new Date().getMonth() + 1);
   }
+  // NÆSTA SKOÐUN — aðeins mánuður (Ágú) eins og Ársskoðun span._mo.
+  // Full dagsetning situr í title. Litur (rf-next--overdue) merkir liðið.
+  function monthLabel(date){
+    var m = monthFromDate(date);
+    return m ? MONTHS_IS_SHORT[m-1] : '—';
+  }
 
   // ── SAMHLIÐA blaðsíðu-sókn (2026-07-30, Agnar: „load time … takes forever") ──
   // Supabase skilar í mesta lagi 1000 röðum per kall, svo stórar töflur þurfa
@@ -186,6 +192,12 @@
       P+'.rf-tbl>thead{display:table-header-group}',
       P+'.rf-tbl>tbody{display:table-row-group}',
       P+'.rf-tbl>colgroup{display:table-column-group}',
+      // Sami varnargarður undir Sími-viewmode OG appmode (261) — 263/261 mega
+      // ekki kljúfa töfluna í súlurugl (heimilisfang undir NÓTA).
+      'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-tbl,body.appmode #view-rekstrarfelog table.rf-tbl{display:table!important;overflow:visible!important;max-width:none}',
+      'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-tbl>thead,body.appmode #view-rekstrarfelog table.rf-tbl>thead{display:table-header-group!important}',
+      'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-tbl>tbody,body.appmode #view-rekstrarfelog table.rf-tbl>tbody{display:table-row-group!important}',
+      'html[data-viewmode="mobile"] #view-rekstrarfelog table.rf-tbl>colgroup,body.appmode #view-rekstrarfelog table.rf-tbl>colgroup{display:table-column-group}',
       P+'.rf-tbl thead tr{background:'+METB+'}',
       P+'.rf-tbl th{text-align:left;padding:10px 12px;font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#f0f2f5;white-space:nowrap;text-transform:uppercase;border:0}',
       P+'.rf-tbl th.c{text-align:center}',
@@ -229,7 +241,7 @@
       P+'.rf-baddr{display:block;font-size:12px;color:#5b6472;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       P+'.rf-baddr--empty{color:#c3c9d3}',
       // Nóta-dálkur — ferðanótan (fyrirtaeki.plan_note), sami reitur og ._note í 153.
-      // Ein lína, grár punktalína, min-width:0 svo dálkurinn minnkar í þröngu.
+      // Ein lína, dökkgrá punktalína, min-width:0 svo dálkurinn skreppur í þröngu.
       P+'.rf-plannote{display:block;width:100%;min-width:0;max-width:100%;height:22px;border:0;border-bottom:1px dotted #c3c9d3;border-radius:0;background:transparent;color:#3a4250;font:inherit;font-size:12px;padding:0 2px;box-sizing:border-box;outline:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       P+'.rf-plannote::placeholder{color:#c7ccd6;letter-spacing:.14em}',
       P+'.rf-plannote:hover{border-bottom-color:#9aa3b2;background:transparent}',
@@ -314,11 +326,11 @@
       P+'.rf-yrs a.rf-yr{text-decoration:none!important;box-shadow:none!important}',
       // 🧾 örlítið merki: reikningur ÞESSA árs/þjónustu er þegar paraður við skýrsluna.
       P+'.rf-bundle-tag{font-size:8.5px;margin-left:1px;line-height:1;filter:drop-shadow(0 1px 0 rgba(0,0,0,.4))}',
-      // næsta skoðun
-      P+'.rf-next{font-family:"Space Mono",monospace;font-size:12.5px;white-space:nowrap;overflow:visible}',
+      // næsta skoðun — aðeins mánuður (Ágú/Sep). Rautt box = liðið. EKKI rf-yr/_yr.
+      P+'.rf-next{font-family:"Space Mono",monospace;font-size:12px;white-space:nowrap;overflow:visible}',
       P+'.rf-tbl td.rf-nextcell{overflow:visible}',
       P+'.rf-next--ok{color:#3a4250}',
-      P+'.rf-next--overdue{display:inline-flex;align-items:center;gap:5px;font-weight:700;color:#fff;background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #4a0a0e;border-radius:7px;padding:2px 9px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}',
+      P+'.rf-next--overdue{display:inline-flex;align-items:center;gap:3px;font-weight:700;color:#fff;background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #4a0a0e;border-radius:7px;padding:2px 7px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}',
       P+'.rf-next--none{color:#cbd2dc}',
       // note input inside the white body
       P+'._rf_note{display:block;width:100%;padding:7px 10px;border:1px solid rgba(20,24,34,.14);border-radius:8px;font:inherit;font-size:12.5px;background:#fff;box-sizing:border-box;margin-bottom:12px;color:#141822}',
@@ -430,7 +442,7 @@
       // Sími/appmode (261): .view button{min-height:50px} + input{52px} blésu
       // hverja byggingaröð. Sama undantekning og #ars-main í 261.
       'body.appmode #view-rekstrarfelog .rf-tbl button:not(.rf-bldtoggle),body.appmode #view-rekstrarfelog .rf-svcbtn{min-height:0!important;height:auto!important;padding-top:2px!important;padding-bottom:2px!important;font-size:13px!important;line-height:1.1!important}',
-      'body.appmode #view-rekstrarfelog .rf-tbl input.rf-plannote,body.appmode #view-rekstrarfelog .rf-tbl input._rf-plannote{min-height:24px!important;height:24px!important;font-size:13px!important;padding-top:0!important;padding-bottom:0!important}',
+      'html[data-viewmode="mobile"] #view-rekstrarfelog .rf-tbl input.rf-plannote,html[data-viewmode="mobile"] #view-rekstrarfelog .rf-tbl input._rf-plannote,body.appmode #view-rekstrarfelog .rf-tbl input.rf-plannote,body.appmode #view-rekstrarfelog .rf-tbl input._rf-plannote{min-height:22px!important;height:22px!important;font-size:16px!important;padding:0 2px!important;border:0!important;border-bottom:1px dotted #c3c9d3!important;border-radius:0!important;background:transparent!important}',
       'body.appmode #view-rekstrarfelog .rf-tbl td{font-size:13px!important;padding:0 8px!important}',
       'body.appmode #view-rekstrarfelog .rf-bname{font-size:16px!important}',
       'body.appmode #view-rekstrarfelog .rf-btn{min-height:44px!important;height:44px!important;font-size:16px!important;padding-top:0!important;padding-bottom:0!important}',
@@ -1370,7 +1382,7 @@
       if (b.stadur_nr!=null && b.stadur_nr!=='') bname += ' <span style="color:#5b6475;font-size:11px;font-family:\'Space Mono\',monospace">nr. '+esc(String(b.stadur_nr))+'</span>';
       var unitCell='<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(s.units>0?'font-weight:600':'color:#b45309')+'">'+(s.units>0?s.units:(s.hasRep?'–':'0'))+'</td>';
       var y23=yCellO(s.d23,false,s.units,s.lks['2023'],s.f23,'2023'),y24=yCellO(s.d24,!!s.att[0],s.units,s.lks['2024'],s.f24,'2024'),y25=yCellO(s.d25,!!s.att[1],s.units,s.lks['2025'],s.f25,'2025'),y26=yCellO(s.d26,!!s.att[2],s.units,s.lks['2026'],s.f26,'2026');
-      var nextCell = s.next ? '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(s.overdue?'background:#fef2f2;color:#b91c1c;':'color:var(--ink2);')+'font-variant-numeric:tabular-nums;white-space:nowrap">'+esc(s.next)+(s.overdue?' ⚠':'')+'</td>' : '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:var(--brd2)">—</td>';
+      var nextCell = s.next ? '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;'+(s.overdue?'background:#fef2f2;color:#b91c1c;font-weight:700;':'color:var(--ink2);')+'font-variant-numeric:tabular-nums;white-space:nowrap" title="'+esc(s.next)+'">'+esc(monthLabel(s.next))+'</td>' : '<td style="padding:5px 6px;border-bottom:'+bd+';text-align:center;color:var(--brd2)">—</td>';
       return '<tr>'+
         '<td style="padding:5px 6px;border-bottom:'+bd+';color:var(--ink2);white-space:nowrap">'+esc(r.firm)+'</td>'+
         '<td style="padding:5px 6px;border-bottom:'+bd+'">'+bname+'</td>'+
@@ -1664,9 +1676,11 @@
     function nextPill(date, svc, overdue){
       var icon = svc==='sl' ? '🧯' : '🚨';
       if(!date) return '<span class="rf-next rf-next--none">'+icon+' —</span>';
+      var lab = monthLabel(date);
+      var tip = esc(String(date));
       return overdue
-        ? '<span class="rf-next rf-next--overdue">'+icon+' ⚠ '+esc(date)+'</span>'
-        : '<span class="rf-next rf-next--ok">'+icon+' '+esc(date)+'</span>';
+        ? '<span class="rf-next rf-next--overdue" title="'+tip+'">'+icon+' '+esc(lab)+'</span>'
+        : '<span class="rf-next rf-next--ok" title="'+tip+'">'+icon+' '+esc(lab)+'</span>';
     }
     // 2026-07-15 (Agnar: „skjölin uppfærast aldrei … eldgömul nöfn og tengingar"):
     // lesum úttektarskýrslur LIFANDI úr customer_documents (sama uppspretta og
@@ -1911,7 +1925,7 @@
       if(showBr && bHasData) sumParts.push('<span class="rf-sum-chip">🚨'+(bUnits>0?bUnits:'–')+(bY[CURY]?' ✓'+CURY:' …')+'</span>');
       var sumNextDate = (st&&st.next) || (bx&&bx.next) || null;
       var sumOver = (showSl&&isOver&&slHasData)||(showBr&&bOver);
-      if(sumNextDate) sumParts.push('<span class="rf-sum-next'+(sumOver?' is-over':'')+'">'+(sumOver?'⚠ ':'')+esc(sumNextDate)+'</span>');
+      if(sumNextDate) sumParts.push('<span class="rf-sum-next'+(sumOver?' is-over':'')+'" title="'+esc(sumNextDate)+'">'+(sumOver?'⚠ ':'')+esc(monthLabel(sumNextDate))+'</span>');
       var summaryCell='<td class="rf-bldsum-cell" colspan="8">'+(sumParts.join(' ')||'<span class="rf-sum-none">engin gögn</span>')+'</td>';
       var detailCells=unitCell+yTds+
              '<td class="c _rf_akcell"'+(co?(' data-rf-akstur="'+co.id+'"'):'')+'></td>'+
@@ -1953,7 +1967,9 @@
              // ✈ nóta — eiginn dálkur (2026-08-20). SAMI reitur og ferðanótan á
              // Fyrirtæki í Þjónustu (fyrirtaeki.plan_note; class _rf-plannote svo
              // vökvunar-/vistunar-lykkjan neðar nái í hann). Aðeins tengdar byggingar.
-             '<td class="rf-notacell">'+(co?'<input class="_rf-plannote rf-plannote" data-co-id="'+co.id+'" value="'+esc(co.plan_note||'')+'" placeholder="✈ nóta…" maxlength="140">':'')+'</td>'+
+             '<td class="rf-notacell">'+(co
+               ? '<input class="_rf-plannote rf-plannote" data-co-id="'+co.id+'" value="'+esc(co.plan_note||'')+'" placeholder="···" maxlength="140" title="Ferðanóta">'
+               : '<input class="rf-plannote" placeholder="···" disabled>')+'</td>'+
              summaryCell+
              detailCells+
              '</tr>';

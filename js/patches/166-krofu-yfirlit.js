@@ -221,12 +221,17 @@
     const s = document.createElement('style');
     s.id = 'ky-vm-style';
     s.textContent =
-      '.ky-vm{display:inline-flex;align-items:center;gap:0;background:rgba(10,14,24,.5);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:2px;margin:0 8px 0 4px;flex-shrink:0}' +
-      '.ky-vm-seg{display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border:none;background:transparent;color:rgba(255,255,255,.62);border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;line-height:1;transition:background .12s,color .12s}' +
+      '.ky-vm{display:inline-flex;align-items:center;gap:0;background:rgba(10,14,24,.5);border:1px solid rgba(255,255,255,.16);border-radius:10px;padding:2px;margin:0 8px 0 4px;flex-shrink:0;flex:none;z-index:7;position:relative;overflow:visible}' +
+      '.ky-vm-seg,.ky-vm-seg[data-vm="mobile"],html[data-viewmode="desktop"] .ky-vm-seg[data-vm="mobile"],html[data-viewmode="table"] .ky-vm-seg[data-vm="mobile"]{display:inline-flex!important;visibility:visible!important;opacity:1!important;align-items:center;gap:5px;padding:6px 9px;border:none;background:transparent;color:rgba(255,255,255,.62);border-radius:8px;cursor:pointer;font:inherit;font-size:12px;font-weight:700;line-height:1;transition:background .12s,color .12s;flex:none}' +
       '.ky-vm-seg:hover{color:#fff}' +
       '.ky-vm-seg.on{background:linear-gradient(180deg,#3b82f6,#2563eb);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}' +
       '.ky-vm-ico{font-size:14px;line-height:1}' +
       '@media (max-width:760px){.ky-vm-lbl{display:none}.ky-vm-seg{padding:7px 9px}}' +
+      // Skjár on a phone: clock yields so 📱 Sími is never clipped by overflow:hidden.
+      'html.slokk-phone-nav #bstal-banner .bb-face{overflow:visible;gap:8px;padding:0 10px}' +
+      'html.slokk-phone-nav #bstal-banner .bb-clockbox{display:none}' +
+      'html.slokk-phone-nav .ky-vm-lbl{display:none}' +
+      'html.slokk-phone-nav .ky-vm-seg{padding:7px 9px}' +
       // Síma-úttekt 2026-07-30 (mælt á 834 px): síðasti aðgerða-hnappurinn í
       // hverri röð (t.d. ._ky-nyjan) klipptist 42 px út fyrir kortið, sem er
       // með inline overflow:hidden. AÐEINS media-regla á umgjörðina — við
@@ -405,12 +410,20 @@
   function ensureToggle() {
     injectVmStyle();
     const existing = document.getElementById(VM_ID);
-    const clockbox = document.querySelector('.bb-clockbox');
-    if (clockbox && clockbox.parentNode) {
-      if (existing && existing.parentNode === clockbox.parentNode) return;
+    // Sit in .bb-face, NOT inside .bb-rightwrap: 314 hides the clock wrap in
+    // Sími-ham, and Skjár-on-phone overflow used to clip 📱 Sími.
+    const face = document.querySelector('#bstal-banner .bb-face');
+    const rightwrap = document.querySelector('#bstal-banner .bb-rightwrap');
+    if (face) {
       const t = existing || buildToggle();
-      t.className = 'ky-vm'; t.style.cssText = '';   // clear any floating style
-      clockbox.parentNode.insertBefore(t, clockbox);
+      t.className = 'ky-vm'; t.style.cssText = '';
+      if (rightwrap) {
+        if (t.parentNode !== face || t.nextElementSibling !== rightwrap) {
+          face.insertBefore(t, rightwrap);
+        }
+      } else if (t.parentNode !== face) {
+        face.appendChild(t);
+      }
       return;
     }
     if (existing) return;   // floating already present, banner absent
