@@ -39,6 +39,8 @@ Rás: **switch → wire → junction → bulb**. Vitlaus litur = slæmur vír e�
 | **10** | **Skjala-tengingar** (allur staðurinn) |
 | **11** | **Hver eiginleiki — uppruni** (öll borð/síður) |
 | **12** | **SOURCE vs FILTER** (mánaðar-rásin í tveimur hæðum) |
+| **13** | **Known faults** (Plaza leftover, dual circuits, 317) |
+| **14** | **Punch list — 7 Agnar-skot (2026-08-26)** |
 
 ---
 
@@ -666,4 +668,74 @@ Hover `data-elon` er vísbending, ekki sönnun. Lesa `file:line` í köflum 1–
 - Plaza **9868** / R-107802 situr áfram á fid **193**, `vidskiptategund=uttekt`. Kveikir **ekki** inv-only. Getur enn birtst sem reiknings-chip á prófíl og, **ef** 2026-skýrsla bætist við, auto-parast (`199:1004`) → FULLBÚIÐ á Stolpi-reikningi.
 - `filterDocsToLocation` (`199:272–281`): reikningur/samningur **án** fid → sýndur á **öllum** kt-stöðum. 9868 **hefur** fid=193 → Plaza only. Ómerkt Drive-reikningur = fail-open á Center-systkinum (prófíls-chip, ekki `._yr`).
 
+---
+
+## 14. Punch list — 7 Agnar-skot (2026-08-26)
+
+Agnar merkti 7 gólf á **lifandi** síðu. Hvert skot = pera → rofi → vír → live miswire eða tví-rofa false-alarm. **Engin `._yr` gradient-endurstílun.** Payday-push óhreyfður.
+
+### 14.1 Skjámynd 1–2 — Rekstrarfélög Heimaleiga
+
+| Pera (magenta) | Rofi | Vír | Úrskurður |
+|---|---|---|---|
+| Titill „Byggingar / húsfélög — úttektir" | `fillBody` haus | `175:2044` | **rétt pera.** Þetta er Heimaleiga-borðið, ekki Ársskoðun. |
+| **→ nóta…** á Dalbrekka 4-6 bílskúr | `fyrirtaeki.plan_note` | `175` `input.rf-plannote` (placeholder `✈ nóta…`) | **live miswire (útlit).** Tóma-nótan sat **undir TÆKI** vegna dálkahliðrunar (14.2). Eftir lagfæringu situr hún undir NÓTA. |
+| TÆKI-talning | `uttaeki` per `fyrirtaeki_id` | `bldEquipSt` | **rétt pera** þegar dálkar standa. Ekki kt-summa. |
+| Ártölu-punktar '23–'26 | skýrsla / saga / áætlun / liðið | `yrMiniSl` / `yrMiniBr` | **rétt pera.** Stolpi kveikir **ekki** hér (lykill = `co.id`, ekki `rf:Heimaleiga`). |
+| NÆSTA SKOÐUN `2027-` | `uttaeki.next_insp` min | `nextPill` | **útlit.** `2027-` var klipping (dálkur klemmdur af hliðrun). Tóm dagsetning á grænu ári = `next_insp` ekki skrifað eftir úttekt — **gögn, ekki renderer.** |
+| Skjöl félagsins Stolpi_Invoice_*.pdf | `CompanyAttachments.list('rf:'+firm)` | `listFirmDocs` | **false-alarm fyrir úttektar-perur.** Félags-dump (Drive-mappa rekstrarfélagsins), ekki per-bygging. Plaza-lexía: Stolpi má **ekki** kveikja úttektar-perur — og gerir það ekki. |
+
+### 14.2 Skjámynd 3 — COLUMN SHIFT (P0, live miswire)
+
+**Pera:** HEIMILISFANG / NÓTA / TÆKI. Gögn undir NÓTA = heimilisföng; gögn undir TÆKI = `✈ nóta…`.
+
+**Tveir rofar í röngum stöðu:**
+
+1. **263** `html[data-viewmode=mobile] .view table { display:block }` + `thead/tbody { display:table }` — klífur eina töflu í tvær. Rekstrarfélög var **ekki** á undantekningarlistanum.
+2. **175** `.rf-cellname { display:flex }` — fyrsta `<td>` hætti að vera `table-cell`.
+
+**Lagfæring (ekki PE-lás #731):** `td.rf-cellname` er aftur `table-cell`; flex er á innri `.rf-cellinner`. `.rf-tbl { display:table !important }` + 263-undantekning. `audit-rf-column-shift.cjs` varðveitir þetta.
+
+### 14.3 Skjámynd 4 — Ársskoðun Ágú-dot vs STAÐA
+
+**Tveir rofar, ekki einn vír í tveimur litum.** Ekki lagað (myndi endurstíla `._yr` / STAÐA).
+
+| Pera | Rofi | Samanburður |
+|---|---|---|
+| STAÐA 2026 (`Á eftir` / `Skoðað`) | `153` `isDoneYear` / `isOverdue` | `m > 0 && m <= curMonth` → **ágúst telst á eftir** |
+| Ágú `._yr` (gull / rautt / grænt) | `187` `yrCls` | `notDue = !(_im < _curMonth)` → **ágúst er enn gull** |
+
+- Raðir 1–2 Á eftir + **gult** Ágú: tví-rofa false-alarm (yfirstandandi mánuður).
+- NR5 Á eftir + **rautt** Ágú: `inspect_month < ágúst` — báðir sammála.
+- Afltak Skoðað + **gult** Ágú: STAÐA = ár búið; punktur getur verið `isGap` á undan `_visited`. Tveir rofar.
+
+### 14.4 Skjámynd 5 — NÆSTA SKOÐUN vs skjöl vs árs-punktar
+
+| Pera | Rofi | Úrskurður |
+|---|---|---|
+| 5 liðnar raðir, **skjöl vantar** | `doc = co ? skjöl : —` | **útlit + rofi.** Hliðrun klemmti aðgerðadálkinn. Ótengd bygging sýnir `—`. |
+| Grænt '26 + tóm næsta skoðun | `uttaeki.next_insp` | **gögn.** Renderer sýnir `—` þegar `!date`. |
+| Gull '26 + `2026-09-01` | áætlun + next_insp | **rétt pera.** |
+
+### 14.5 Skjámynd 6 — Kröfu yfirlit KPI
+
+Heildarkröfur ≠ Payday + Ósendar. **Tveir heimar, ekki röng samlagning:**
+
+| Kort | Rofi | Úrtak |
+|---|---|---|
+| Heildarkröfur | `_state.all` eftir `viewFilter` | þessi sýn |
+| Ógreiddar í Payday | ógreitt **alla mánuði** með `dk_invoice_id` | `166:760–768` |
+| Ósendar | ógreitt **alla mánuði** án sendi-merkja | sama |
+
+Mismunur = kröfur merktar sendar án `dk_invoice_id`. Payday-push óhreyfður. Display: „í þessari sýn" vs „Allir mánuðir".
+
+### 14.6 Skjámynd 7 — Þjónustuvefur Reikningar
+
+| Pera | Rofi | Úrskurður |
+|---|---|---|
+| UPPHÆÐ `—` með PDF | `customer_documents.amount` | Drive-einn Stolpi-class. `gatt.js` fyllir `solur.samtals` **aðeins** þegar R-númer stemmir. Annars `—`. |
+| DAGSETNING aðeins ár | `doc_date` tómt | Fyllt úr `solur.created_at` þegar R-númer stemmir. |
+| LÝSING tóm | `normalize()` núllaði `lysing` | **live miswire (display).** `portal.js` ber nú `i.lysing`. |
+
+R-108001 = Grandi brunakerfi. Ef engin `solur`-röð, pera áfram `—`.
 

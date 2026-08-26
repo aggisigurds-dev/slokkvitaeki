@@ -23,6 +23,21 @@
   function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   function fmtKt(k){ if(!k) return ''; var c=String(k).replace(/\D/g,''); return c.length>=10? c.slice(0,6)+'-'+c.slice(6,10):c; }
   function digits(s){ return String(s||'').replace(/\D/g,''); }
+  // Same compact month labels as Ársskoðun `span._mo` (153 MONTHS_IS_SHORT).
+  var MONTHS_IS_SHORT = ['Jan','Feb','Mar','Apr','Maí','Jún','Júl','Ágú','Sep','Okt','Nóv','Des'];
+  function monthFromDate(date){
+    if (!date) return 0;
+    var s = String(date);
+    var m = s.match(/^\d{4}-(\d{1,2})/);
+    if (m) { var n = +m[1]; return (n >= 1 && n <= 12) ? n : 0; }
+    var d = new Date(s);
+    if (!isNaN(d)) return d.getMonth() + 1;
+    return 0;
+  }
+  function isDueMonth(date){
+    var m = monthFromDate(date);
+    return m > 0 && m === (new Date().getMonth() + 1);
+  }
 
   // ── SAMHLIÐA blaðsíðu-sókn (2026-07-30, Agnar: „load time … takes forever") ──
   // Supabase skilar í mesta lagi 1000 röðum per kall, svo stórar töflur þurfa
@@ -95,9 +110,9 @@
   // (its .btn/.pill/.chip names collide with the app), so the needed
   // classes are inlined here with an rf-/rfa- prefix.
   function injectStyles(){
-    if(document.getElementById('_rf-styles-v6')) return;
-    ['_rf-styles','_rf-styles-v3','_rf-styles-v4','_rf-styles-v5'].forEach(function(id){ var o=document.getElementById(id); if(o) o.remove(); });
-    var s=document.createElement('style'); s.id='_rf-styles-v6';
+    if(document.getElementById('_rf-styles-v8')) return;
+    ['_rf-styles','_rf-styles-v3','_rf-styles-v4','_rf-styles-v5','_rf-styles-v6','_rf-styles-v7'].forEach(function(id){ var o=document.getElementById(id); if(o) o.remove(); });
+    var s=document.createElement('style'); s.id='_rf-styles-v8';
     var P='#view-rekstrarfelog ';
     var METB='linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318)';
     var HERO='linear-gradient(110deg,#0c1018 0%,#13203f 45%,#274a9e 100%)';
@@ -165,7 +180,12 @@
       // byggingaheiti stytta sig með „…" í stað þess að vefjast í 2-3 línur (það
       // var stærsti hæðargjafinn í nýju útliti). Breiddirnar búa í <colgroup> við
       // töfluna sjálfa.
-      P+'.rf-tbl{width:100%;min-width:1160px;border-collapse:collapse;font-size:13px;table-layout:fixed}',
+      // display:table !important beats 263's mobile `table{display:block}` which
+      // split thead/tbody into two tables and shifted Nóta under Tæki.
+      P+'.rf-tbl{display:table!important;width:100%;min-width:1160px;border-collapse:collapse;font-size:13px;table-layout:fixed}',
+      P+'.rf-tbl>thead{display:table-header-group}',
+      P+'.rf-tbl>tbody{display:table-row-group}',
+      P+'.rf-tbl>colgroup{display:table-column-group}',
       P+'.rf-tbl thead tr{background:'+METB+'}',
       P+'.rf-tbl th{text-align:left;padding:10px 12px;font-size:10.5px;font-weight:700;letter-spacing:.08em;color:#f0f2f5;white-space:nowrap;text-transform:uppercase;border:0}',
       P+'.rf-tbl th.c{text-align:center}',
@@ -181,7 +201,10 @@
       // bara þéttari svo munurinn sjáist.
       P+'.rf-tbl td{padding:4px 12px;border:0}',
       P+'.rf-tbl td.c{text-align:center}',
-      P+'.rf-cellname{position:relative;padding-left:16px!important;display:flex;align-items:center;gap:4px;min-height:44px}',
+      // td MUST stay table-cell — display:flex here dropped the name column out
+      // of the grid (Agnar 2026-08-26: addresses under Nóta, nóta under Tæki).
+      P+'.rf-cellname{position:relative;padding-left:16px!important;min-height:44px;vertical-align:middle}',
+      P+'.rf-cellinner{display:flex;align-items:center;gap:4px;min-height:44px}',
       P+'.rf-nameid{min-width:0;flex:1;display:flex;flex-direction:column;justify-content:center}',
       P+'.rf-rail{position:absolute;left:0;top:6px;bottom:6px;width:4px;border-radius:3px;background:#dbe0e9}',
       P+'.rf-rail--done{background:#1f9d57}',
@@ -206,13 +229,15 @@
       P+'.rf-baddr{display:block;font-size:12px;color:#5b6472;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       P+'.rf-baddr--empty{color:#c3c9d3}',
       // Nóta-dálkur — ferðanótan (fyrirtaeki.plan_note), sami reitur og ._note í 153.
-      P+'.rf-plannote{display:block;width:100%;min-width:120px;height:24px;border:1px solid transparent;border-radius:7px;background:transparent;color:#3a4250;font:inherit;font-size:11.5px;padding:0 8px;box-sizing:border-box;outline:none;transition:background .12s,border-color .12s}',
-      P+'.rf-plannote::placeholder{color:#c7ccd6}',
-      P+'.rf-plannote:hover{border-color:#e6e9ef;background:#fbfcfd}',
-      P+'.rf-plannote:focus{border-color:#2f5fe0;background:#fff;color:#0f172a}',
+      // Ein lína, grár punktalína, min-width:0 svo dálkurinn minnkar í þröngu.
+      P+'.rf-plannote{display:block;width:100%;min-width:0;max-width:100%;height:22px;border:0;border-bottom:1px dotted #c3c9d3;border-radius:0;background:transparent;color:#3a4250;font:inherit;font-size:12px;padding:0 2px;box-sizing:border-box;outline:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      P+'.rf-plannote::placeholder{color:#c7ccd6;letter-spacing:.14em}',
+      P+'.rf-plannote:hover{border-bottom-color:#9aa3b2;background:transparent}',
+      P+'.rf-plannote:focus{border-bottom-color:#2f5fe0;border-bottom-style:solid;background:#fff;color:#0f172a}',
+      P+'.rf-plannote:disabled{opacity:.35;pointer-events:none}',
       // auðkennis-dálkarnir tveir (heimilisfang/nóta) mega EKKI hverfa við
       // samanþjöppun (ólíkt gagna-dálkunum sem is-collapsed felur) — miðjað lóðrétt.
-      P+'.rf-tbl td.rf-addrcell,'+P+'.rf-tbl td.rf-notacell{vertical-align:middle}',
+      P+'.rf-tbl td.rf-addrcell,'+P+'.rf-tbl td.rf-notacell{vertical-align:middle;min-width:0;overflow:hidden}',
       // ── per-building collapse (2026-08-05, leiðrétt sama dag — sjálfgefið
       // samanþjappað gerði 2023-2026 dálkana að tómum í fljótu bragði, sem leit
       // út eins og gögnin hyrfu): SJÁLFGEFIÐ ÚTVÍKKAÐ (öll smáatriði sýnileg,
@@ -290,7 +315,8 @@
       // 🧾 örlítið merki: reikningur ÞESSA árs/þjónustu er þegar paraður við skýrsluna.
       P+'.rf-bundle-tag{font-size:8.5px;margin-left:1px;line-height:1;filter:drop-shadow(0 1px 0 rgba(0,0,0,.4))}',
       // næsta skoðun
-      P+'.rf-next{font-family:"Space Mono",monospace;font-size:12.5px;white-space:nowrap}',
+      P+'.rf-next{font-family:"Space Mono",monospace;font-size:12.5px;white-space:nowrap;overflow:visible}',
+      P+'.rf-tbl td.rf-nextcell{overflow:visible}',
       P+'.rf-next--ok{color:#3a4250}',
       P+'.rf-next--overdue{display:inline-flex;align-items:center;gap:5px;font-weight:700;color:#fff;background:linear-gradient(145deg,#e2555f,#a01820 60%,#5a0c10);border:1px solid #4a0a0e;border-radius:7px;padding:2px 9px;box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 2px 4px -2px rgba(0,0,0,.4);text-shadow:0 1px 1px rgba(0,0,0,.3)}',
       P+'.rf-next--none{color:#cbd2dc}',
@@ -1748,7 +1774,9 @@
       var co=companyForBld(b);
       var link= co ? '<a href="#" data-coid="'+co.id+'" class="_rf_open" title="'+esc(b.nafn)+'">'+esc(b.nafn)+'</a>'
                    : '<span title="'+esc(b.nafn)+'">'+esc(b.nafn)+'</span> <span style="color:#9098a6;font-size:11px;font-weight:400">(ekki í skrá)</span>';
-      var doc = co ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:#1d4ed8;text-decoration:underline">skjöl</a>' : '';
+      var doc = co
+        ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:#1d4ed8;text-decoration:underline">skjöl</a>'
+        : '<span class="rf-nodoc" title="Bygging ekki tengd fyrirtæki í skrá — engin skjalamappa">—</span>';
       // Per-byggingar talning (facts → worksite → nafn) — sjá bldEquipSt að ofan.
       // Áður equip.match(b.nafn) eitt og sér: sam-nefndar byggingar sömu kt
       // sýndu þá báðar kt-summuna í Tæki-dálknum.
@@ -1893,6 +1921,7 @@
              ' <a href="#" class="_rf_delb" data-bi="'+_bi+'" title="Fjarlægja byggingu" style="color:#dc2626;text-decoration:none;font-size:12px;margin-left:6px">✕</a></td>';
       return '<tr class="rf-bldrow" data-rfq="'+esc(((b.nafn||'')+' '+(b.heimilisfang||'')+' '+digits(b.kt)).toLowerCase())+'">'+
              '<td class="rf-cellname"><span class="rf-rail '+railCls+'"></span>'+
+               '<div class="rf-cellinner">'+
                '<button type="button" class="rf-bldtoggle" data-bi="'+_bi+'" title="Sýna/fela smáatriði">▸</button>'+
                '<span class="rf-nameid">'+
                '<span class="rf-bname" title="'+esc(b.nafn||'')+'">'+link+'</span>'+
@@ -1916,6 +1945,7 @@
                '</span>'+
                (oldLinks?'<span class="rf-boldlinks">'+oldLinks+'</span>':'')+
                '</span>'+
+               '</div>'+
              '</td>'+
              // heimilisfang — eiginn dálkur (2026-08-20), nowrap+ellipsis svo það
              // vindi ekki upp á hæðina eins og þegar það sat inni í nafnfrumunni.
@@ -2077,7 +2107,8 @@
         '</div>'+
         '<div style="flex:1;min-width:260px">'+
           '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
-            '<div style="font-weight:600;font-size:13px;color:var(--ink2)">Skjöl félagsins</div>'+
+            '<div><div style="font-weight:600;font-size:13px;color:var(--ink2)">Skjöl félagsins</div>'+
+            '<div style="font-size:11px;color:var(--ink4);margin-top:2px">Drive-dump félagsins — ekki per-bygging. Stolpi/reikningar hér kveikja ekki úttektar-perur.</div></div>'+
             '<button class="_rf_upload btn btn-ghost btn-sm" style="font-size:12px;padding:4px 10px">+ Hlaða upp</button></div>'+
           (info.drive? '<a href="'+esc(info.drive)+'" target="_blank" style="display:inline-block;margin-bottom:8px;font-size:13px;color:var(--brand);font-weight:600;text-decoration:none">📁 Opna skjalamöppu í Drive →</a>':'')+
           '<div class="_rf_doclist">'+docHtml+'</div>'+

@@ -862,13 +862,14 @@
 
   // Stækkanleg samantektarspjöld (Payday-ógreitt / Ósendar) — smellur víxlar
   // _state.expandCard og endurteiknar → listinn birtist undir.
-  function expCardHtml(key, icon, label, count, total, color, bg, border) {
+  function expCardHtml(key, icon, label, count, total, color, bg, border, sub) {
     const open = _state.expandCard === key;
     return '<button type="button" class="_ky-exp" data-exp="' + key + '" title="Smelltu til að sjá listann" style="text-align:left;cursor:pointer;background:' + bg + ';border:1px solid ' + border + ';border-radius:12px;padding:13px 15px;display:flex;align-items:center;gap:12px;font:inherit;box-shadow:' + (open ? 'inset 0 0 0 2px ' + color : '0 1px 3px rgba(0,0,0,.04)') + '">' +
       '<span style="font-size:22px">' + icon + '</span>' +
       '<div style="flex:1;min-width:0">' +
         '<div style="font-size:11px;color:' + color + ';font-weight:700;text-transform:uppercase;letter-spacing:.04em">' + esc(label) + ' · ' + count + '</div>' +
         '<div style="font-size:20px;font-weight:800;color:' + color + ';font-family:monospace">' + fmtKr(total) + '</div>' +
+        (sub ? '<div style="font-size:10px;font-weight:600;color:' + color + ';opacity:.8;margin-top:2px">' + esc(sub) + '</div>' : '') +
       '</div>' +
       '<span style="font-size:14px;color:' + color + ';font-weight:800">' + (open ? '▾' : '▸') + '</span>' +
     '</button>';
@@ -1030,13 +1031,13 @@
         <div class="stat-row">
           <div class="stat-card"><span class="stat-card__icon">📄</span><div><div class="stat-card__label">Þessi mánuður · ${thisMonth.length} kröfur</div><div class="stat-card__value ky-num">${fmtKr(thisMonthTotal)}</div></div></div>
           <div class="stat-card stat-card--amber"><span class="stat-card__icon">⏳</span><div><div class="stat-card__label">Eldri ógreitt · ${older.length} kröfur</div><div class="stat-card__value ky-num">${fmtKr(olderTotal)}</div></div></div>
-          <div class="stat-card stat-card--hero"><span class="stat-card__icon">💰</span><div><div class="stat-card__label">Heildarkröfur · ${all.length} sölur · ${companies.length} fyrirtæki</div><div class="stat-card__value ky-num">${fmtKr(grandTotal)}</div></div></div>
+          <div class="stat-card stat-card--hero"><span class="stat-card__icon">💰</span><div><div class="stat-card__label">Heildarkröfur í þessari sýn · ${all.length} sölur · ${companies.length} fyrirtæki</div><div class="stat-card__value ky-num">${fmtKr(grandTotal)}</div></div></div>
           <div class="stat-card stat-card--green"><span class="stat-card__icon">🏦</span><div><div class="stat-card__label">Sendar kröfur · ${sent.length} sölur · ${sentCompanies} fyrirtæki</div><div class="stat-card__value ky-num">${fmtKr(sentTotal)}</div></div></div>
         </div>
 
         <div class="ky-exprow">
-          ${expCardHtml('payday', '⏳', 'Ógreiddar í Payday', paydayUnpaid.length, paydayUnpaidTotal, '#b45309', '#fff7ed', '#fed7aa')}
-          ${expCardHtml('osendar', '📤', 'Ósendar kröfur', osendarRows.length, osendarTotal, '#1d4ed8', '#eff6ff', '#bfdbfe')}
+          ${expCardHtml('payday', '⏳', 'Ógreiddar í Payday', paydayUnpaid.length, paydayUnpaidTotal, '#b45309', '#fff7ed', '#fed7aa', 'Allir mánuðir — ekki hluti af Heildarkröfum')}
+          ${expCardHtml('osendar', '📤', 'Ósendar kröfur', osendarRows.length, osendarTotal, '#1d4ed8', '#eff6ff', '#bfdbfe', 'Allir mánuðir — ekki hluti af Heildarkröfum')}
         </div>
         ${_state.expandCard === 'payday' ? expDetailHtml('payday', '⏳ Ógreiddar kröfur í Payday', paydayUnpaid, paydayUnpaidTotal, '#b45309')
           : _state.expandCard === 'osendar' ? expDetailHtml('osendar', '📤 Ósendar kröfur (aldrei sendar í banka/Payday)', osendarRows, osendarTotal, '#1d4ed8')

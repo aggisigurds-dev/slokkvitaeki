@@ -147,8 +147,35 @@ exports.handler = async (event) => {
       (d) => normNr(d.invoice_number) || ('id:' + d.id),
     )
       .map((d) => ({ docId: d.id, nr: d.invoice_number || null, dags: d.doc_date || null, ar: d.year || null,
-        bygging: nafnById[d.fyrirtaeki_id] || '', upphaed: d.amount != null ? d.amount : null }))
+        bygging: nafnById[d.fyrirtaeki_id] || '', upphaed: d.amount != null ? d.amount : null, lysing: '' }))
       .sort((a, b) => String(b.dags || b.ar || '').localeCompare(String(a.dags || a.ar || '')));
+
+    // Drive-einn Stolpi-class docs often have PDF + year but no kr / full date.
+    // Fill from solur when the R-númer matches — never invent amounts.
+    try {
+      const need = invoices.filter((i) => i.nr && (i.upphaed == null || !i.dags || !i.lysing));
+      if (need.length) {
+        const quoted = [...new Set(need.map((i) => String(i.nr).replace(/"/g, '')))]
+          .map((n) => `"${n}"`).join(',');
+        const sr = await P.sbGet(`solur?num=in.(${quoted})&select=num,samtals,created_at,source,athugasemdir`);
+        if (sr.ok) {
+          const byNr = {};
+          (await sr.json()).forEach((s) => { if (s && s.num) byNr[normNr(s.num)] = s; });
+          const SRC = { uttekt: 'Úttekt', brunakerfi: 'Brunakerfi', pos: 'Sala' };
+          invoices.forEach((i) => {
+            const s = byNr[normNr(i.nr)];
+            if (!s) return;
+            if (i.upphaed == null && s.samtals != null && s.samtals !== '') i.upphaed = Number(s.samtals);
+            if (!i.dags && s.created_at) i.dags = String(s.created_at).slice(0, 10);
+            if (!i.lysing) {
+              const t = SRC[s.source] || '';
+              const note = String(s.athugasemdir || '').trim();
+              i.lysing = t || (note ? note.slice(0, 80) : '');
+            }
+          });
+        }
+      }
+    } catch (_) {}
 
     const stats = {
       byggingar: buildings.filter((b) => b.i_thjonustu).length,
