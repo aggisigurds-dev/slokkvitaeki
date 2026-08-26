@@ -591,31 +591,30 @@
       // „Heimaleiga - Laugavegur 42" eru sitt hvor lögaðilinn á sama húsi).
       var info = merged[name];
       var curated = Array.isArray(info.buildings) ? info.buildings.slice() : [];
-      var liveNm = {}, liveAddr = {}, liveKtN = {};
+      var liveNm = {}, liveAddr = {}, liveKtN = {}, liveAddrAny = {};
       sites.forEach(function(s){
         var d = digits(s.kt);
         liveNm[d+'::'+foldNm(s.nafn)] = 1;
-        var a = foldNm(s.heimilisfang);
-        if (a) liveAddr[d+'::'+a] = 1;
+        liveNm[d+'::'+foldSiteNm(s.nafn)] = 1;
+        var a = foldAddr(s.heimilisfang) || foldNm(s.heimilisfang);
+        if (a) { liveAddr[d+'::'+a] = 1; liveAddrAny[a] = 1; }
         if (d) liveKtN[d] = (liveKtN[d]||0)+1;
       });
-      // Lifandi staðirnir fyrst, merktir svo þeir frjósi ekki inn í handskráða
-      // blobið við næstu vistun (sjá saveData) — það var uppspretta afritanna.
       var blds = sites.map(function(s){ return Object.assign({}, s, { _live:true }); });
       var seen = {};
       curated.forEach(function(b){
         var d = digits(b.kt);
-        var kNm = d+'::'+foldNm(b.nafn);
-        var a = foldNm(b.heimilisfang);
+        var kNm = d+'::'+foldSiteNm(b.nafn);
+        var kNmRaw = d+'::'+foldNm(b.nafn);
+        var a = foldAddr(b.heimilisfang) || foldNm(b.heimilisfang);
         var kAddr = a ? (d+'::'+a) : null;
-        if (liveNm[kNm]) return;                      // sami staður og lifandi röð
-        if (kAddr && liveAddr[kAddr]) return;         // sama kt + sama heimilisfang
-        // Seed alias: Aegina ehf / EA Law / S&H — same unique kt, old legal name.
+        if (liveNm[kNm] || liveNm[kNmRaw]) return;
+        if (kAddr && liveAddr[kAddr]) return;
+        if (a && liveAddrAny[a] && !b.co_id) return;  // old street name, possibly wrong kt
         if (d && liveKtN[d] === 1 && !b.co_id) return;
-        // That kt already belongs to another live rekstrarfélag (Húsfélag 42 → Eignaumsjón).
         if (d && liveKtOwner[d] && liveKtOwner[d] !== name) return;
-        if (seen[kNm]) return;                        // tvítekning innan handskráða listans
-        seen[kNm] = 1;
+        if (seen[kNm] || seen[kNmRaw]) return;
+        seen[kNm] = 1; seen[kNmRaw] = 1;
         blds.push(b);
       });
       merged[name] = Object.assign({}, info, { buildings: blds });
@@ -673,6 +672,19 @@
   // Nafn/kt er AÐEINS fyrir gamlar handskráðar raðir án pinnans. Ekkert einstakt
   // match → null (ósmelanlegt), ALDREI fyrsta hitt.
   function foldNm(s){ return String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,''); }
+  function foldSiteNm(s){
+    return foldNm(s)
+      .replace(/^(heimaleiga|eignaumsjon|eignarekstur|rekstrarumsjon|centerhotel|pizzan)+/,'')
+      .replace(/(ehf|slf|sf|svf)$/,'');
+  }
+  function foldAddr(s){
+    return foldNm(s)
+      .replace(/laugarvegur/g,'laugavegur')
+      .replace(/vegi/g,'vegur')
+      .replace(/mula/g,'muli')
+      .replace(/gotu/g,'gata')
+      .replace(/(bilskur|[0-9]+haed).*$/,'');
+  }
   function companyForBld(b){
     var list = (window.Companies && Companies.list) || [];
     // Handfest tenging (✏️ eða live-hleðsla) trompar ALLA sjálfvirkni — b.co_id.
@@ -1844,7 +1856,7 @@
       return '<tr class="rf-bldrow" data-rfq="'+esc(((b.nafn||'')+' '+(b.heimilisfang||'')+' '+digits(b.kt)).toLowerCase())+'">'+
              '<td class="rf-cellname"><span class="rf-rail '+railCls+'"></span>'+
                '<button type="button" class="rf-bldtoggle" data-bi="'+_bi+'" title="Sýna/fela smáatriði">▸</button>'+
-               '<span class="rf-bname">'+link+'</span>'+
+               '<span class="rf-bname" title="'+esc(b.nafn||'')+'">'+link+'</span>'+
                '<span class="rf-bmeta">'+
                (b.kt?'<span class="rf-bkt">'+esc(fmtKt(b.kt))+(function(){
                  var nr = (b.stadur_nr!=null && b.stadur_nr!=='') ? b.stadur_nr
