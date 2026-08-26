@@ -95,9 +95,9 @@
   // (its .btn/.pill/.chip names collide with the app), so the needed
   // classes are inlined here with an rf-/rfa- prefix.
   function injectStyles(){
-    if(document.getElementById('_rf-styles-v5')) return;
-    ['_rf-styles','_rf-styles-v3','_rf-styles-v4'].forEach(function(id){ var o=document.getElementById(id); if(o) o.remove(); });
-    var s=document.createElement('style'); s.id='_rf-styles-v5';
+    if(document.getElementById('_rf-styles-v6')) return;
+    ['_rf-styles','_rf-styles-v3','_rf-styles-v4','_rf-styles-v5'].forEach(function(id){ var o=document.getElementById(id); if(o) o.remove(); });
+    var s=document.createElement('style'); s.id='_rf-styles-v6';
     var P='#view-rekstrarfelog ';
     var METB='linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318)';
     var HERO='linear-gradient(110deg,#0c1018 0%,#13203f 45%,#274a9e 100%)';
