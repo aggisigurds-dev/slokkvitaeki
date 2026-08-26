@@ -24,6 +24,12 @@
   const REQUIRE_NAMES = [/\bcolas\b/i];        // fallback þegar kt vantar á söluna
   // "er beiðninúmer þegar í textanum?" — merkiorð + a.m.k. 3 tölustafir nálægt
   const HAS_PO = s => /(bei[ðd]n|p[öo]ntun|\bpo\b)\D{0,14}\d{3,}/i.test(String(s || ''));
+  // Glugginn okkar skrifar ALLTAF "Beiðni nr: <inntak>". Hvað sem slegið er inn
+  // (líka "Deild 15" eða "D15" án 3ja samliggjandi tölustafa) telst þá fullnægjandi
+  // — annars endurræsist hliðið eftir að glugginn er fylltur og salan festist í lykkju.
+  const HAS_MARK = s => /bei[ðd]ni\s*nr:\s*\S/i.test(String(s || ''));
+  // Telst beiðninúmer skráð? Alvöru PO-númer EÐA okkar eigin "Beiðni nr:" merki.
+  const HAS_PONOTE = s => HAS_PO(s) || HAS_MARK(s);
 
   function requiresPO(kt, nafn) {
     const d = String(kt || '').replace(/\D/g, '');
@@ -44,7 +50,7 @@
           '<div style="font-size:12px;color:#fde68a;margin-top:3px">' + esc(nafn || 'Þessi viðskiptavinur') + ' krefst beiðni-/pöntunarnúmers á hverjum reikningi — salan verður ekki kláruð án þess.</div>' +
         '</div>' +
         '<div style="padding:18px">' +
-          '<input id="_bg-po" type="text" inputmode="numeric" placeholder="t.d. 9847265" autocomplete="off" ' +
+          '<input id="_bg-po" type="text" placeholder="t.d. 9847265 eða Deild 15" autocomplete="off" ' +
             'style="width:100%;padding:12px 14px;border:2px solid #f59e0b;border-radius:9px;font:inherit;font-size:16px;box-sizing:border-box;font-family:monospace">' +
           '<div id="_bg-err" style="display:none;font-size:12px;color:#b91c1c;margin-top:6px">Sláðu inn beiðninúmerið.</div>' +
         '</div>' +
@@ -90,7 +96,7 @@
     try { st = window.POS && POS.getState && POS.getState(); } catch (_) {}
     const c = (st && st.customer) || {};
     if (!requiresPO(c.kt || c.kennitala, c.nafn)) return;
-    if (HAS_PO(st && st.notes)) return;
+    if (HAS_PONOTE(st && st.notes)) return;
     e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
     ask(c.nafn, po => {
       const line = 'Beiðni nr: ' + po;
@@ -111,7 +117,7 @@
     const nafn = (document.getElementById('_pkc-cust-nafn') || {}).value || '';
     if (!requiresPO(kt, nafn)) return;
     const noteEl = document.getElementById('_pkc-salenote');
-    if (noteEl && HAS_PO(noteEl.value)) return;
+    if (noteEl && HAS_PONOTE(noteEl.value)) return;
     e.preventDefault(); e.stopImmediatePropagation(); e.stopPropagation();
     ask(nafn, po => {
       if (noteEl) {
@@ -141,7 +147,7 @@
     });
   }, true);
 
-  window.BeidniGate = { requiresPO, peek, take, HAS_PO };
+  window.BeidniGate = { requiresPO, peek, take, HAS_PO, HAS_MARK, HAS_PONOTE };
   console.log('[patch-264] beiðni-númers skilyrði (Colas) installed');
 })();
 /* === END BEIÐNI-NÚMERS SKILYRÐI === */
