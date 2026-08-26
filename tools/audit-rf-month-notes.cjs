@@ -38,7 +38,7 @@ console.log('175 Rekstrarfélög');
 ok('monthLabel helper present', /function monthLabel\(date\)/.test(rf));
 ok('nextPill uses monthLabel', /monthLabel\(date\)/.test(rf) && /rf-next--overdue/.test(rf));
 ok('does not dump full date in overdue pill', !/rf-next--overdue.{0,40}esc\(date\)/.test(rf));
-ok('dotted rf-plannote', /rf-plannote\{[^}]*border-bottom:1px dotted/.test(rf));
+ok('dotted rf-plannote beats 245', /rf-plannote\[type="text"\]\{[^}]*border-bottom:1px dotted/.test(rf));
 ok('rf-plannote min-width:0', /rf-plannote\{[^}]*min-width:0/.test(rf));
 ok('rf-tbl stays display:table on Sími', /table\.rf-tbl\{display:table!important/.test(rf));
 ok('did not restyle ._yr gradients', !/\._yr\{[^}]*background:/.test(rf));
