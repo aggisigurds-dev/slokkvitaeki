@@ -2050,6 +2050,13 @@
     // Handskráð gildi ganga alltaf fyrir; annars leiðum við út úr byggingunum.
     var der=derivedInfo(info);
     var effKt=info.kt||der.kt;
+    // Keldan-takki (2026-08-26, ósk Agnars): beint á fyrirtækjasíðuna —
+    // /Fyrirtaeki/Yfirlit/<kt 10 stafir án bandstriks> (staðfest mynstur,
+    // sjá Charlize #233). Walk-in kt 9999999999 fær engan takka.
+    var ktDigits=String(effKt||'').replace(/[^0-9]/g,'');
+    var keldanBtn=(ktDigits.length===10&&ktDigits!=='9999999999')
+      ? ' <a href="https://keldan.is/Fyrirtaeki/Yfirlit/'+ktDigits+'" target="_blank" rel="noopener" title="Opna fyrirtækið á Keldunni — skráning og ársreikningar" style="display:inline-block;font-size:10.5px;font-weight:700;color:var(--brand);border:1px solid var(--brd2);border-radius:99px;padding:1px 8px;text-decoration:none;margin-left:6px;white-space:nowrap">🏢 Keldan</a>'
+      : '';
     var effEmails=(info.emails&&info.emails.length)?info.emails:der.emails;
     var effSimi=info.simi||der.simi;
     var derTag=' <span style="font-size:10.5px;font-weight:700;color:var(--ink3);background:var(--brd);border-radius:99px;padding:1px 7px;white-space:nowrap">úr byggingum</span>';
@@ -2064,7 +2071,7 @@
           '<button class="_rf_info_edit" type="button" style="font-size:12px;padding:4px 10px;background:var(--surface);border:1px solid var(--brd2);border-radius:7px;color:var(--ink1);font-weight:600;cursor:pointer">✏️ Breyta</button>'+
         '</div>'+
         '<div class="_rf_info_view" style="font-size:13px;color:var(--ink1);line-height:1.6">'+
-          '<div><b style="color:var(--ink1)">Kennitala:</b> '+(effKt?esc(fmtKt(effKt))+(ktDer?derTag:''):'—')+'</div>'+
+          '<div><b style="color:var(--ink1)">Kennitala:</b> '+(effKt?esc(fmtKt(effKt))+(ktDer?derTag:''):'—')+keldanBtn+'</div>'+
           '<div><b style="color:var(--ink1)">Netföng:</b> '+(emails||'—')+(emDer?derTag:'')+(info.domain?' &nbsp;·&nbsp; <span style="color:var(--ink2)">'+esc(info.domain)+'</span>':'')+'</div>'+
           '<div><b style="color:var(--ink1)">Sími:</b> '+(effSimi?esc(effSimi)+(siDer?derTag:''):'—')+' &nbsp;·&nbsp; <b style="color:var(--ink1)">Tengiliður:</b> '+(info.tengilidur?esc(info.tengilidur):'—')+'</div>'+
           '<div style="margin-top:4px"><b style="color:var(--ink1)">Athugasemdir:</b><div style="white-space:pre-wrap;color:var(--ink1);margin-top:2px">'+(info.notes?esc(info.notes):'—')+'</div></div>'+
