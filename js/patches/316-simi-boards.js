@@ -28,14 +28,27 @@
   const css = [
     // ── Öpp launcher: full-bleed stacked cards (☰ already pads .view 60px) ─
     trio('#view-opp') + '{min-height:0}',
-    trio('#view-opp .op-main') + '{max-width:none;padding:12px 12px 28px;box-sizing:border-box}',
+    trio('#view-opp .op-main') + '{max-width:none;padding:80px 12px 28px;box-sizing:border-box}',
     trio('#view-opp .op-h1') + '{font-size:22px}',
     trio('#view-opp .op-sub') + '{margin:0 0 12px;font-size:12.5px}',
     trio('#view-opp .op-card') + '{padding:12px;margin:0 0 10px;border-radius:14px}',
     trio('#view-opp .op-ic') + '{width:40px;height:40px;font-size:22px;border-radius:11px}',
     trio('#view-opp .op-nm') + '{font-size:16px}',
     trio('#view-opp .op-acts') + '{gap:6px;margin:10px 0 0;flex-wrap:wrap}',
-    trio('#view-opp .op-btn') + '{padding:8px 12px;min-height:40px;font-size:13px}',
+    trio('#view-opp .op-btn') +
+      '{padding:8px 12px;min-height:40px!important;font-size:13px!important}',
+    trio('#view-opp .op-pg') + '{padding:8px 8px;min-height:40px;font-size:14px}',
+    trio('#view-opp .op-pgsum') + '{min-height:40px;padding:8px 4px}',
+
+    // ── Öpp chrome: 261 header is 50px + two fat labels; nav was 120px ────
+    A + '#_app-hdr{height:44px;padding:0 8px;gap:6px}',
+    A + '#_app-hdr .nm{font-size:15px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+    A + '#_app-hdr button{height:32px;min-height:32px;padding:0 8px;font-size:12px}',
+    A + '#_app-hdr #_app-pages,' + A + '#_app-hdr #_app-inst2' +
+      '{max-width:40px;overflow:hidden;white-space:nowrap;padding:0 6px;font-size:16px}',
+    A + '.view.active{padding-top:48px!important}',
+    'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop)' +
+      '{padding-top:48px!important}',
 
     // ── Öpp bottom nav: 261 still paints min-height:120px ──────────────────
     A + '#_app-nav{padding:4px 6px calc(4px + env(safe-area-inset-bottom,0px))!important;gap:4px}',
@@ -44,7 +57,7 @@
     A + '.view.active{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))!important}',
     'html[data-bstal-banner="on"][data-thm-preset="brunastal"] body.appmode .view.active:not(#view-field):not(#view-counter):not(#view-workshop)' +
       '{padding-bottom:calc(68px + env(safe-area-inset-bottom,0px))!important}',
-    A + '#_app-frame{bottom:64px!important}',
+    A + '#_app-frame{top:44px!important;bottom:64px!important}',
     'body.appmode.appmode-nonav .view.active{padding-bottom:24px!important}',
 
     // ── Bakendi ────────────────────────────────────────────────────────────
@@ -81,7 +94,17 @@
     // ── Bílstjóri hub overlay ──────────────────────────────────────────────
     trio('#view-bilstjori') +
       '{margin-left:0!important;width:100%!important;max-width:100%!important;left:0!important}',
-    'body.bs-active #_mnav_btn,body.bs-active #_mnav_bd{display:none!important}'
+    'body.bs-active #_mnav_btn,body.bs-active #_mnav_bd{display:none!important}',
+
+    // ── Brunakerfi yfirlit (Öpp home): 261 50px hammer on filter chips ─────
+    trio('#view-brunakerfi-yfirlit ._bky-filter') + ',' +
+    trio('#view-brunakerfi-yfirlit ._bky-month') + ',' +
+    trio('#view-brunakerfi-yfirlit ._bky-viewbtn') +
+      '{min-height:36px!important;padding-top:6px!important;padding-bottom:6px!important;font-size:13px!important}',
+    trio('#view-brunakerfi-yfirlit [style*="max-width:1280px"]') +
+      '{max-width:none!important;padding:12px 10px 48px!important}',
+    trio('#view-brunakerfi-yfirlit [style*="display:flex;gap:12px;flex-wrap:wrap"]') +
+      '{display:grid!important;grid-template-columns:1fr 1fr!important;gap:8px!important}'
   ].join('\n');
 
   function mountCss() {
@@ -127,5 +150,57 @@
   try { mo.observe(document.documentElement, { subtree: true, attributes: true, attributeFilter: ['class'] }); } catch (_) {}
   document.addEventListener('slokk-viewmode', mountCss);
 
-  window.SimiBoards = { installed: true, activeAppKey: activeAppKey, mountCss: mountCss };
+  // #opp: 261 creates #view-opp lazily in viewEl(). 218 applyHash bails when
+  // the node is missing (~1.9s window), then sala.js / 154 land on #sala.
+  // Stub the view immediately so 218 can switchView, and re-assert the
+  // launcher for 12s (same window as 261's app-home lock). No pushState —
+  // 277 already turns replaceState into back entries after user gestures.
+  function stubOppView() {
+    if (document.getElementById('view-opp')) return;
+    const v = document.createElement('div');
+    v.id = 'view-opp';
+    v.className = 'view';
+    const anchor = document.getElementById('view-counter') || document.querySelector('.view');
+    if (anchor && anchor.parentNode) anchor.parentNode.appendChild(v);
+    else (document.body || document.documentElement).appendChild(v);
+  }
+  function hashIsOpp() {
+    try { return (location.hash || '').replace(/^#/, '') === 'opp'; } catch (_) { return false; }
+  }
+  const wantOpp = hashIsOpp();
+  let oppUser = false;
+  ['mousedown', 'keydown', 'touchstart', 'pointerdown'].forEach(function (evt) {
+    window.addEventListener(evt, function () { oppUser = true; }, { capture: true, passive: true });
+  });
+  function openOpp() {
+    stubOppView();
+    try {
+      if (window.AppProfiles && typeof AppProfiles.open === 'function') AppProfiles.open();
+      else if (window.App && typeof App.switchView === 'function') App.switchView('opp');
+      if (!hashIsOpp()) history.replaceState(null, '', '#opp');
+    } catch (_) {}
+  }
+  function oppIsActive() {
+    const v = document.getElementById('view-opp');
+    return !!(v && v.classList.contains('active') && hashIsOpp());
+  }
+  function holdOpp() {
+    if (!wantOpp) return;
+    stubOppView();
+    const until = Date.now() + 12000;
+    (function tick() {
+      if (oppUser) return;
+      if (Date.now() > until) return;
+      if (!oppIsActive()) openOpp();
+      setTimeout(tick, 200);
+    })();
+  }
+  window.addEventListener('hashchange', function () {
+    if (hashIsOpp()) openOpp();
+  });
+  stubOppView();
+  if (document.body) holdOpp();
+  else document.addEventListener('DOMContentLoaded', holdOpp);
+
+  window.SimiBoards = { installed: true, activeAppKey: activeAppKey, mountCss: mountCss, openOpp: openOpp };
 })();
