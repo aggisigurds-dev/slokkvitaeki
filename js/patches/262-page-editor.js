@@ -153,6 +153,7 @@
     let st = document.getElementById(STYLE_ID);
     if (!st) { st = document.createElement('style'); st.id = STYLE_ID; document.head.appendChild(st); }
     let css = '';
+    const colorSels = [];
     for (const r of state.rules) {
       const keys = r.decls ? Object.keys(r.decls) : [];
       if (!keys.length) continue;
@@ -161,15 +162,37 @@
         continue;
       }
       const body = keys.map(p => p + ':' + r.decls[p] + (/!important/.test(r.decls[p]) ? '' : ' !important')).join(';');
-      const sel = r.scope === 'all' ? r.sel : '#' + r.scope + ' ' + r.sel;
+      // Tvöfalt id (#view-x#view-x) + html-forskeyti: Stílstjóra-reglan á að
+      // VINNA á contrast-/þema-læsingum með !important id-pinnum (232/313
+      // o.fl.) — notandinn valdi þetta sjálfur (Agnar 26.08: „næ ekki að
+      // breyta litnum af neinum af fyrirsögnunum").
+      const sel = r.scope === 'all' ? 'html ' + r.sel : '#' + r.scope + '#' + r.scope + ' ' + r.sel;
       css += sel + '{' + body + '}\n';
+      if (r.decls.color) colorSels.push(sel);
     }
+    window.__peColorSels = colorSels;
     const bgDecl = (v, fixed) => String(v).indexOf('css:') === 0
       ? 'background:' + v.slice(4) + ' !important'
       : 'background-image:url(' + v + ') !important;background-size:cover !important;background-position:center !important' + (fixed ? ';background-attachment:fixed !important' : '');
     if (state.bg && state.bg.all) css += 'body{' + bgDecl(state.bg.all, true) + '}\n';
     if (state.bg && state.bg.pages) for (const vid in state.bg.pages) { if (state.bg.pages[vid]) css += '#' + vid + '{' + bgDecl(state.bg.pages[vid], false) + '}\n'; }
     st.textContent = css;
+    try { scrubContrastInk(); } catch (_) {}
+  }
+  // 313-contrast-clarity skrifar inline-lit með !important (merkir data-cc313).
+  // Þegar Stílstjórinn á lit-reglu sem nær yfir hlutinn víkur inline-liturinn
+  // svo val notandans sjáist strax — 313 sleppir honum svo framvegis.
+  function controlsColor(el) {
+    const sels = window.__peColorSels || [];
+    for (let i = 0; i < sels.length; i++) {
+      try { if (el.closest && el.closest(sels[i])) return true; } catch (_) {}
+    }
+    return false;
+  }
+  function scrubContrastInk() {
+    document.querySelectorAll('[data-cc313]').forEach(el => {
+      if (controlsColor(el)) { el.style.removeProperty('color'); el.removeAttribute('data-cc313'); }
+    });
   }
 
   // Set/clear one declaration on the current target.
@@ -819,11 +842,41 @@
     setDecl('background', 'linear-gradient(' + ang + 'deg,' + c1 + ',' + c2 + ')');
   }
 
+  // Draganleg panel-breidd (Agnar 26.08: „dregið hliðarstikuna saman og
+  // sundur eftir þörfum") — handfang á hægri brún, vistast á tækinu.
+  let _sideW = 336;
+  try { _sideW = Math.max(240, parseInt(localStorage.getItem('pe_side_w'), 10) || 336); } catch (_) {}
+  function ensureResizeHandle(p) {
+    if (p.querySelector('#pe-resize')) return;
+    const rh = document.createElement('div');
+    rh.id = 'pe-resize';
+    rh.title = 'Dragðu til að breikka eða mjókka stjórnborðið';
+    rh.style.cssText = 'position:absolute;top:0;right:-2px;width:14px;height:100%;cursor:ew-resize;z-index:6;touch-action:none';
+    rh.innerHTML = '<div style="position:absolute;top:0;bottom:0;right:6px;width:3px;border-radius:2px;background:#cbd5e1"></div>';
+    rh.addEventListener('pointerdown', ev => {
+      ev.preventDefault();
+      const sx = ev.clientX, sw = p.getBoundingClientRect().width;
+      const mv = e2 => {
+        _sideW = Math.max(240, Math.min(Math.round(sw + (e2.clientX - sx)), Math.round(window.innerWidth * 0.94)));
+        p.style.width = _sideW + 'px';
+      };
+      const up = () => {
+        document.removeEventListener('pointermove', mv);
+        document.removeEventListener('pointerup', up);
+        try { localStorage.setItem('pe_side_w', String(_sideW)); } catch (_) {}
+      };
+      document.addEventListener('pointermove', mv);
+      document.addEventListener('pointerup', up);
+    });
+    p.appendChild(rh);
+  }
   function wirePanel() {
     const p = document.getElementById(PANEL_ID); if (!p) return;
     const q = s => p.querySelector(s), qa = s => Array.prototype.slice.call(p.querySelectorAll(s));
     q('#pe-close').onclick = closePanel;
     p.classList.toggle('pe-side', dock === 'side');
+    if (dock === 'side') { p.style.width = _sideW + 'px'; ensureResizeHandle(p); }
+    else { p.style.width = ''; }
     const dk = q('#pe-dock'); if (dk) dk.onclick = () => {
       dock = dock === 'side' ? 'bottom' : 'side';
       try { localStorage.setItem('pe_dock', dock); } catch (_) {}

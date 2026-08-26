@@ -234,6 +234,9 @@
       if (SKIP_TAG.test(el.tagName)) continue;
       if (el.closest && el.closest(SKIP_CLOSEST)) continue;
       if (!hasOwnText(el)) continue;
+      // Stílstjórinn ræður (26.08): hlutur sem lit-regla notandans nær yfir
+      // (sjálfur eða gegnum erfðir) fær EKKI inline-blek frá skannanum.
+      if (peGoverned(el)) continue;
       const cs = getComputedStyle(el);
       if (cs.display === 'none' || cs.visibility === 'hidden') continue;
       if (parseFloat(cs.fontSize) < 8) continue;
@@ -254,6 +257,7 @@
         const size = parseFloat(cs.fontSize);
         const w = parseInt(cs.fontWeight, 10) || 400;
         el.style.setProperty('color', (size >= 20 || w >= 700) ? INK : INK_MUTED, 'important');
+        el.setAttribute('data-cc313', '1');
         if (parseFloat(cs.opacity) < 0.7) el.style.setProperty('opacity', '1', 'important');
         fixed++;
         continue;
@@ -263,10 +267,20 @@
       if (!greyishFg || !greyishBg) continue;
       if (ratio(fg, bg) >= 4.5) continue;
       el.style.setProperty('color', pickInk(bg), 'important');
+      el.setAttribute('data-cc313', '1');
       if (parseFloat(cs.opacity) < 0.7) el.style.setProperty('opacity', '1', 'important');
       fixed++;
     }
     return fixed;
+  }
+
+  // Er hluturinn undir lit-reglu Stílstjórans? (262 birtir __peColorSels.)
+  function peGoverned(el) {
+    const sels = window.__peColorSels || [];
+    for (let i = 0; i < sels.length; i++) {
+      try { if (el.closest && el.closest(sels[i])) return true; } catch (_) {}
+    }
+    return false;
   }
 
   let _t = null;
