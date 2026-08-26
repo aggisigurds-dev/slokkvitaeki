@@ -39,32 +39,40 @@
       '{margin:0!important;border-radius:12px!important}',
       M + '.thm,' + A + '.thm{padding:0!important}',
 
-      /* Inline col widths (186/118/284/64…) would keep the table ~728px
-         even after hiding columns. Zero everything, then size the keepers. */
+      /* v2 (2026-08-26, Agnar): PRÓSENTU-dálkar sem summa í 100% — taflan
+         fyllir ALLTAF viewportið (412px Sími jafnt sem ~980px "desktop site")
+         í stað þess að hrynja til vinstri þegar föstu pixlarnir < viewport.
+         Nótan fær SINN eigin mjóa dálk (col2, sem áður var falinn) og
+         under-name línan hverfur → raðhæðin lækkar ~35%. */
       M + 'col,' + A + 'col{width:0!important}',
-      M + 'col:nth-child(1),' + A + 'col:nth-child(1){width:34%!important}',
+      M + 'col:nth-child(1),' + A + 'col:nth-child(1){width:26%!important}',
+      M + 'col:nth-child(2),' + A + 'col:nth-child(2){width:13%!important}',
       M + 'col:nth-child(4),' + A + 'col:nth-child(4),',
       M + 'col:nth-child(5),' + A + 'col:nth-child(5),',
       M + 'col:nth-child(6),' + A + 'col:nth-child(6),',
-      M + 'col:nth-child(7),' + A + 'col:nth-child(7){width:30px!important}',
-      M + 'col:nth-child(8),' + A + 'col:nth-child(8){width:38px!important}',
-      M + 'col:nth-child(10),' + A + 'col:nth-child(10){width:36px!important}',
-      M + 'col:nth-child(12),' + A + 'col:nth-child(12){width:78px!important}',
+      M + 'col:nth-child(7),' + A + 'col:nth-child(7){width:7%!important}',
+      M + 'col:nth-child(8),' + A + 'col:nth-child(8){width:9%!important}',
+      M + 'col:nth-child(10),' + A + 'col:nth-child(10){width:8%!important}',
+      M + 'col:nth-child(12),' + A + 'col:nth-child(12){width:16%!important}',
 
-      /* Hide desktop-only columns: ferðanóta, heimilisfang, tæki, forg. */
-      M + 'th[data-notacol],'+ A + 'th[data-notacol],',
-      M + 'td._ars-notacell,'+ A + 'td._ars-notacell,',
+      /* Hide desktop-only columns: heimilisfang, tæki, forgangur.
+         (Nótu-dálkurinn col2 er aftur SÝNILEGUR — sjá v2 að ofan.) */
       M + 'th[data-addrcol],'+ A + 'th[data-addrcol],',
       M + 'td._ars-addrcell,'+ A + 'td._ars-addrcell,',
       M + 'th[data-sort="tools"],'+ A + 'th[data-sort="tools"],',
       M + 'td:has(._devs),'+ A + 'td:has(._devs),',
       M + 'th[data-sort="priority"],'+ A + 'th[data-sort="priority"],',
       M + 'td:has(._pri-btn),'+ A + 'td:has(._pri-btn),',
-      M + 'col:nth-child(2),'+ A + 'col:nth-child(2),',
       M + 'col:nth-child(3),'+ A + 'col:nth-child(3),',
       M + 'col:nth-child(9),'+ A + 'col:nth-child(9),',
       M + 'col:nth-child(11),'+ A + 'col:nth-child(11)',
       '{display:none!important;width:0!important}',
+      /* Nótu-dálkurinn: mjór, ein punktalína, öll nótan í title/tap. */
+      M + 'th[data-notacol],'+ A + 'th[data-notacol]{display:table-cell!important;font-size:8px!important;padding:6px 1px!important}',
+      M + 'td._ars-notacell,'+ A + 'td._ars-notacell{display:table-cell!important;padding:2px 2px!important;vertical-align:middle!important}',
+      M + 'td._ars-notacell ._note,'+ A + 'td._ars-notacell ._note,',
+      M + 'td._ars-notacell input,'+ A + 'td._ars-notacell input',
+      '{width:100%!important;min-width:0!important;font-size:12px!important;height:22px!important;overflow:hidden!important;text-overflow:ellipsis!important;white-space:nowrap!important}',
 
       /* Header: same metal band, tighter type. */
       M + '.data-table thead th,' + A + '.data-table thead th',
@@ -76,38 +84,35 @@
       M + 'th[data-sort="name"] ._ars-mailsort,' + A + 'th[data-sort="name"] ._ars-mailsort',
       '{display:none!important}',
 
-      /* Rows */
+      /* Rows — v2: ~30% lægri (nótan er farin úr nafn-staflanum í eigin dálk),
+         texti ~10% stærri (ósk Agnars 2026-08-26). */
       M + '.data-table tbody td,' + A + '.data-table tbody td',
-      '{padding:6px 2px!important;height:auto!important;min-height:48px!important;font-size:13px!important;line-height:1.25!important;white-space:nowrap!important;vertical-align:middle!important}',
+      '{padding:3px 2px!important;height:auto!important;min-height:34px!important;font-size:14px!important;line-height:1.2!important;white-space:nowrap!important;vertical-align:middle!important}',
       M + '.data-table tbody td:first-child,' + A + '.data-table tbody td:first-child',
       '{white-space:normal!important;padding-left:8px!important}',
-      M + 'tr._ars-row,' + A + 'tr._ars-row{min-height:48px}',
+      M + 'tr._ars-row,' + A + 'tr._ars-row{min-height:34px}',
 
-      /* Name + kennitala — readable on white/steel. */
+      /* Name + kennitala — readable on white/steel, +10%. */
       M + '._co,' + A + '._co',
-      '{font-size:16px!important;font-weight:700!important;line-height:1.2!important;color:#11141c!important}',
+      '{font-size:17px!important;font-weight:700!important;line-height:1.15!important;color:#11141c!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;display:block!important}',
       M + '._kt,' + A + '._kt',
-      '{font-size:12px!important;color:#334155!important;margin-top:1px!important}',
+      '{font-size:12.5px!important;color:#334155!important;margin-top:0!important;line-height:1.1!important}',
 
-      /* Year pills: SCALE only — keep look-A gradients. */
+      /* Year pills: SCALE only — keep look-A gradients. +10%. */
       M + 'td[data-yrcell],' + A + 'td[data-yrcell]',
-      '{padding:4px 0!important;text-align:center!important}',
+      '{padding:2px 0!important;text-align:center!important}',
       M + 'a._yr,' + A + 'a._yr',
-      '{width:28px!important;height:20px!important;font-size:9px!important;gap:0!important;border-radius:5px!important}',
+      '{width:30px!important;height:22px!important;font-size:10px!important;gap:0!important;border-radius:5px!important}',
       M + 'a._yr::before,' + A + 'a._yr::before{width:4px!important;height:4px!important}',
       M + '._dd,' + A + '._dd{gap:1px!important}',
       M + '._yrs,' + A + '._yrs{gap:1px!important}',
 
-      /* Under-name ferðanóta on Sími (column stays hidden). Dotted, shrinks. */
+      /* Under-name ferðanótan VÍKUR — nótan býr nú í eigin dálki (col2). */
       M + 'input._ars-note-under,' + A + 'input._ars-note-under',
-      '{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;' +
-       'height:22px!important;min-height:22px!important;margin-top:3px!important;' +
-       'font-size:16px!important;padding:0 2px!important;border:0!important;' +
-       'border-bottom:1px dotted #c3c9d3!important;border-radius:0!important;' +
-       'background:transparent!important;box-sizing:border-box!important}',
+      '{display:none!important}',
 
-      /* Month / akstur / status */
-      M + '._mo,' + A + '._mo{font-size:12px!important}',
+      /* Month / akstur / status — +10%, þjappað til hægri */
+      M + '._mo,' + A + '._mo{font-size:13px!important}',
       M + '._arsak-chip,' + A + '._arsak-chip,',
       M + 'table button._arsak-chip,' + A + 'table button._arsak-chip,',
       'body.appmode #ars-main table ._arsak-chip',
