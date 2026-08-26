@@ -1,7 +1,8 @@
 /* Fjármál/Boss overview density — per-page polish on top of patch 314.
    Agnar 2026-08-26: "Fjármála app. Has everything way too big as an overview
-   app. Waste of space." Kröfur collapse lives in 166 (`.ky-mdetail` / `.is-open`).
-   This sheet: full-bleed lists, short Ársskoðun mrows, hide the stray copy-icon.
+   app. Waste of space." Kröfur collapse lives in 166 (`.ky-mdetail` / `.open`).
+   This sheet: full-bleed lists, short Ársskoðun mrows, hide the stray copy-icon,
+   and beat 261’s `[role=button]` 12px padding on `.ky-saletop`.
    Does not edit theme-scoped.css or restyle Ársskoðun `._yr` look-A. */
 (() => {
   if (window.__fjarmalAppCompactInstalled) return;
@@ -49,18 +50,28 @@
     KY + 'input._ky-search{font-size:16px!important;min-height:40px!important;padding:8px 10px!important}',
     KY + '.ky-saletop input[type=checkbox],' + KY + '.ky-copick input' +
       '{min-height:20px!important;width:20px!important;height:20px!important;padding:0!important}',
-    KY + '.ky-mrow{padding:8px 12px;min-height:44px}',
+    // 166 already zeros `.ky-mrow` padding. Do not add it back — 261 still
+    // hammers `.ky-saletop[role=button]` with padding-top/bottom 12px !important
+    // (and 17px type), which is why collapsed rows stayed huge.
+    KY + '.ky-mrow{padding:0!important;min-height:0}',
+    KY + '.ky-saletop,' + KY + '.ky-saletop[role="button"]' +
+      '{min-height:44px!important;height:auto!important;padding:6px 12px!important;' +
+       'font-size:14px!important;line-height:1.2!important}',
     KY + '.ky-mnum{font-size:14px!important}',
     KY + '.ky-mdate{font-size:12px!important}',
     KY + '.ky-mamt{font-size:15px!important}',
     KY + '.ky-mrow.open .ky-acts .ky-abtn,' + KY + '.ky-acts .ky-abtn' +
-      '{min-height:36px!important;height:36px!important;padding:2px 6px!important;font-size:11px!important}',
-    KY + '.ky-mexp,.ky-chev{min-height:36px!important;width:36px!important;height:36px!important;padding:0!important}',
-    KY + '.ky-mrow.open .ky-mnote{font-size:16px!important;min-height:40px!important}',
+      '{min-height:44px!important;height:44px!important;padding:2px 6px!important;font-size:11px!important}',
+    KY + '.ky-mexp,.ky-chev{min-height:44px!important;width:36px!important;height:36px!important;padding:0!important;font-size:16px!important}',
+    KY + '.ky-mrow.open .ky-mnote{font-size:16px!important;min-height:44px!important}',
 
     // ── Þjónusta / Ársskoðun mrows: full-bleed, short rows, ≥16px names ──
     // Do NOT restyle `._yr` (look-A lives on another ticket).
-    ARS + '#ars-main > div{padding-left:0!important;padding-right:0!important;max-width:none!important}',
+    // #ars-main IS `.main-panel` — 314 still leaves 10px sides; the inner wrap
+    // is inline `padding:10px 18px`. Zero both so the white list is full-bleed.
+    ARS + '#ars-main,' + ARS + '#ars-main.main-panel' +
+      '{padding-left:0!important;padding-right:0!important;max-width:none!important;margin:0!important}',
+    ARS + '#ars-main > div{padding-left:0!important;padding-right:0!important;max-width:none!important;margin:0!important}',
     ARS + '#ars-main > div > :not(._arsm-tbl){padding-left:10px;padding-right:10px;box-sizing:border-box}',
     ARS + '._arsm-tbl{border-radius:0;border-left:none;border-right:none;margin-top:0;box-shadow:none}',
     ARS + '._arsm-row{padding:6px 10px;gap:4px;grid-template-columns:minmax(0,1fr) 66px 34px 32px 26px}',
