@@ -322,10 +322,22 @@
           '<input id="f-birgdir" type="number" value="'+(p.birgdir||0)+'" '+(isSvc?'disabled':'')+' style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;box-sizing:border-box;'+(isSvc?'background:#f8fafc;color:#cbd5e1':'')+'">' +
         '</div>' +
       '</div>' +
-      '<label style="display:flex;align-items:center;gap:8px;margin-bottom:20px;cursor:pointer">' +
+      '<label style="display:flex;align-items:center;gap:8px;margin-bottom:10px;cursor:pointer">' +
         '<input id="f-virkt" type="checkbox" '+(p.virkt!==false?'checked':'')+' style="width:18px;height:18px">' +
         '<span style="font-size:14px;color:#334155">Virkt — sýna í Sala tab</span>' +
       '</label>' +
+      // Forsíðu-val + röðun (Agnar 26.08): sé EITTHVAÐ merkt á forsíðu sýna
+      // flísarnar á Sölusíðunni AÐEINS merktu vörurnar; röðunarnúmerið raðar
+      // (1 = fremst, tómt/hátt = aftast). Ekkert merkt = allt sýnist áfram.
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:20px;flex-wrap:wrap">' +
+        '<label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1;min-width:220px">' +
+          '<input id="f-forsida" type="checkbox" '+(p.forsida===true?'checked':'')+' style="width:18px;height:18px">' +
+          '<span style="font-size:14px;color:#334155">⭐ Sýna á forsíðu Söluborðs (flísunum)</span>' +
+        '</label>' +
+        '<label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#64748b">Röðun' +
+          '<input id="f-rodun" type="number" min="1" value="'+(p.rodun==null?'':p.rodun)+'" placeholder="t.d. 1" title="1 = fremst á Sölusíðunni; tómt eða há tala = aftast" style="width:90px;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:14px;box-sizing:border-box">' +
+        '</label>' +
+      '</div>' +
       '<div style="display:flex;gap:8px;justify-content:space-between;padding-top:16px;border-top:1px solid #e2e8f0">' +
         (isNew ? '<div></div>' : '<button id="vorur-del" style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;padding:10px 16px;border-radius:8px;font-weight:600;cursor:pointer;font-size:14px">Eyða</button>') +
         '<div style="display:flex;gap:8px">' +
@@ -402,7 +414,9 @@
         birgdir: parseInt(document.getElementById('f-birgdir').value,10) || 0,
         flokkur: flokkurVal,
         mynd: imgDataUrl || '',
-        virkt: document.getElementById('f-virkt').checked
+        virkt: document.getElementById('f-virkt').checked,
+        forsida: document.getElementById('f-forsida').checked,
+        rodun: (function(){ var v = parseInt(document.getElementById('f-rodun').value, 10); return isNaN(v) ? null : v; })()
       };
       if(!data.nafn){alert('Nafn er skilyrði');return;}
       var btn = document.getElementById('vorur-save');
