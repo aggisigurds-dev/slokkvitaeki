@@ -137,6 +137,74 @@
       defaults: ['br-fjarmalyfirlit', 'br-yfirferd', 'br-skyrslustod', 'br-eydublod', 'krofu-yfirlit', 'income', 'bokhalds-yfirlit', 'verkbord', 'rekstrarfelog'] },
   ];
   var APP_BY_KEY = {}; APPS.forEach(function (a) { APP_BY_KEY[a.key] = a; });
+  // ── NOTENDA-BÚIN ÖPP (2026-08-26, ósk Agnars: „save as app page named …") ──
+  // Vistast í custom_apps_json (localStorage STRAX + AppSettings í ský) og
+  // renna inn í APPS/APP_BY_KEY — fá launcher-kort MEÐ síðu-hökunum, ?app=
+  // boot og /app/<key>/ slóð eins og innbyggðu öppin. Ekkert manifest →
+  // „Setja upp" er falinn á þeim; Opna + Afrita hlekk virka.
+  var CUSTOM_KEY = 'custom_apps_json';
+  function loadCustoms() {
+    var raw = null;
+    try { if (window.AppSettings && AppSettings.get) raw = AppSettings.get(CUSTOM_KEY); } catch (_) {}
+    if (!raw) { try { raw = localStorage.getItem(CUSTOM_KEY); } catch (_) {} }
+    if (!raw) return [];
+    try { var a = JSON.parse(raw); return Array.isArray(a) ? a : []; } catch (_) { return []; }
+  }
+  function saveCustoms(list) {
+    var str = JSON.stringify(list || []);
+    try { localStorage.setItem(CUSTOM_KEY, str); } catch (_) {}
+    try { if (window.AppSettings && AppSettings.save) { var pl = {}; pl[CUSTOM_KEY] = str; AppSettings.save(pl); } } catch (_) {}
+  }
+  function mergeCustoms() {
+    var changed = false;
+    loadCustoms().forEach(function (c) {
+      if (!c || !c.key || APP_BY_KEY[c.key]) return;
+      var a = { key: c.key, emoji: c.emoji || '📱', name: c.name || c.key, color: c.color || '#334155',
+        dark: c.dark || '#0f172a', home: '', blurb: c.blurb || 'Notenda-búið app', custom: true,
+        defaults: Array.isArray(c.defaults) ? c.defaults : [] };
+      APPS.push(a); APP_BY_KEY[a.key] = a;
+      changed = true;
+    });
+    return changed;
+  }
+  mergeCustoms();   // localStorage-eintakið er til NÚNA → ?app=/slóð bootar strax
+  function customKeyFor(name) {
+    var base = 'x' + String(name || '').toLowerCase()
+      .replace(/[áà]/g, 'a').replace(/é/g, 'e').replace(/í/g, 'i').replace(/[óö]/g, 'o')
+      .replace(/ú/g, 'u').replace(/ý/g, 'y').replace(/þ/g, 'th').replace(/ð/g, 'd').replace(/æ/g, 'ae')
+      .replace(/[^a-z]/g, '').slice(0, 18) || 'xapp';
+    var k = base, i = 2;
+    while (APP_BY_KEY[k]) k = base + 'abcdefghij'.charAt(i++ % 10);
+    return k;
+  }
+  function createCustomApp() {
+    var name = prompt('Nafn á nýja appinu:', ''); if (!name || !String(name).trim()) return;
+    name = String(name).trim().slice(0, 30);
+    var emoji = prompt('Tákn (emoji) fyrir appið:', '📱') || '📱';
+    var list = loadCustoms();
+    var app = { key: customKeyFor(name), name: name, emoji: String(emoji).trim().slice(0, 4) || '📱',
+      color: '#334155', dark: '#0f172a', blurb: 'Notenda-búið app — hakaðu við síðurnar að neðan',
+      defaults: ['thjonustubord'] };
+    list.push(app); saveCustoms(list); mergeCustoms(); render();
+    try { if (window.Toast && Toast.show) Toast.show('📱 „' + name + '" búið til — hakaðu við „⚙ Síður í appinu"'); } catch (_) {}
+  }
+  function deleteCustomApp(key) {
+    var a = APP_BY_KEY[key]; if (!a || !a.custom) return;
+    if (!confirm('Eyða appinu „' + a.name + '"?')) return;
+    saveCustoms(loadCustoms().filter(function (c) { return c && c.key !== key; }));
+    var i = APPS.indexOf(a); if (i >= 0) APPS.splice(i, 1); delete APP_BY_KEY[key];
+    try { var c = loadCfg(); if (c && c[key]) { delete c[key]; var st = JSON.stringify(c); localStorage.setItem(CFG_KEY, st); if (window.AppSettings && AppSettings.save) AppSettings.save({ app_profiles_json: st }); } } catch (_) {}
+    render();
+  }
+  // Skýja-eintakið kemur seint — sama 12s-retry mynstur og cfg-migrationin.
+  (function () {
+    var n = 0;
+    function t() {
+      try { if (mergeCustoms()) { var v = document.getElementById(VIEW_ID); if (v && v.classList.contains('active')) render(); } } catch (_) {}
+      if (++n < 12) setTimeout(t, 1000);
+    }
+    setTimeout(t, 1000);
+  })();
   // Standalone apps (Bílstjóri) render their OWN full-screen locked view
   // (patch 219) — patch 261 must NOT build its bottom-nav shell or snap-back
   // for them, only surface the launcher card + install button.
@@ -603,9 +671,10 @@
           '<div><div class="op-nm">' + esc(a.name) + '</div><div class="op-bl">' + esc(a.blurb) + '</div></div></div>' +
         '<div class="op-acts">' +
           '<button class="op-btn prim _op-open" data-app="' + a.key + '" style="background:linear-gradient(180deg,' + esc(a.color) + ',' + esc(a.dark) + ')" type="button">▶ Opna</button>' +
-          '<button class="op-btn _app-install _op-install" data-app="' + a.key + '" data-always="1" type="button">⤓ Setja upp í síma</button>' +
+          (a.custom ? '' : '<button class="op-btn _app-install _op-install" data-app="' + a.key + '" data-always="1" type="button">⤓ Setja upp í síma</button>') +
           '<button class="op-btn _op-link" data-app="' + a.key + '" type="button">🔗 Afrita hlekk</button>' +
-          '<button class="op-btn _op-panel" data-app="' + a.key + '" type="button">⚙ Þjónustuborð</button>' +
+          (a.custom ? '' : '<button class="op-btn _op-panel" data-app="' + a.key + '" type="button">⚙ Þjónustuborð</button>') +
+          (a.custom ? '<button class="op-btn _op-delapp" data-app="' + a.key + '" type="button" style="color:#b91c1c;border-color:#fecaca">🗑 Eyða appi</button>' : '') +
         '</div>' +
         pagesSection +
       '</div>';
@@ -614,9 +683,16 @@
     v.innerHTML = '<div class="op-main"><h1 class="op-h1">📱 Öpp</h1>' +
       '<p class="op-sub">Léttar, símavænar útgáfur með völdum síðum — hver með eigin hlekk og hægt að setja upp í símann.</p>' +
       cards +
+      '<div class="op-card" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;min-height:170px;border:2px dashed #cbd5e1;background:rgba(255,255,255,.06)">' +
+        '<div style="font-size:34px;line-height:1">➕</div>' +
+        '<button class="op-btn prim" id="_op-newapp" type="button" style="background:linear-gradient(180deg,#334155,#0f172a)">Búa til app</button>' +
+        '<div style="font-size:11.5px;color:#94a3b8;text-align:center;max-width:220px">Nefndu appið og hakaðu svo við í „⚙ Síður í appinu" hvaða síður birtast í því</div>' +
+      '</div>' +
       (ver ? '<div style="text-align:center;font-size:11px;color:rgba(255,255,255,.4);margin-top:4px">Útgáfa ' + esc(ver) + '</div>' : '') +
       '</div>';
     v.querySelectorAll('._op-open').forEach(function (b) { b.addEventListener('click', function () { location.href = appLink(b.dataset.app); }); });
+    var nb = v.querySelector('#_op-newapp'); if (nb) nb.addEventListener('click', function (e) { e.preventDefault(); createCustomApp(); });
+    v.querySelectorAll('._op-delapp').forEach(function (b) { b.addEventListener('click', function (e) { e.preventDefault(); deleteCustomApp(b.dataset.app); }); });
     v.querySelectorAll('._op-install').forEach(function (b) { b.addEventListener('click', function () {
       // ALDREI nota deferredPrompt sem var fangaður HÉR á launcher-síðunni —
       // beforeinstallprompt er bundinn við manifestið sem gilti þegar hann
