@@ -607,8 +607,22 @@
       '<div class="pos-tile-exvat" style="font-size:10px;color:#94a3b8;font-weight:500;margin-top:1px">'+fmtKr(item.verd_an_vsk)+' án vsk</div>' +
     '</button>';
   }
-  function buildServicesHTML(){if(!state.services.length)return'<div style="color:#94a3b8;font-size:13px;text-align:center;padding:16px;grid-column:1/-1">Engin þjónusta skráð. Bættu við í Vörur og þjónusta tab.</div>';return state.services.map(function(s){return renderTile(s,true);}).join('');}
-  function buildProductsHTML(){if(!state.products.length)return'<div style="color:#94a3b8;font-size:13px;text-align:center;padding:16px;grid-column:1/-1">Engar vörur skráðar.</div>';return state.products.map(function(p){return renderTile(p,false);}).join('');}
+  // Forsíðu-sía + röðun (Agnar 26.08, stillt í Vörur og þjónusta modalnum):
+  // sé eitthvað merkt forsida=true sýna flísarnar AÐEINS það; rodun raðar
+  // (1 = fremst, null/hátt = aftast, svo stafrófsröð). Ekkert merkt = allt
+  // sýnist í rodun+stafrófsröð eins og áður. Snertir EKKERT í körfu/kt-flæði
+  // — state.services/products standa óbreytt fyrir Listann og leitina.
+  function tileList(arr){
+    var any = arr.some(function(p){return p.forsida === true;});
+    var rows = any ? arr.filter(function(p){return p.forsida === true;}) : arr.slice();
+    rows.sort(function(a,b){
+      var ra = (a.rodun == null ? 9999 : +a.rodun), rb = (b.rodun == null ? 9999 : +b.rodun);
+      return (ra - rb) || String(a.nafn||'').localeCompare(String(b.nafn||''), 'is');
+    });
+    return rows;
+  }
+  function buildServicesHTML(){if(!state.services.length)return'<div style="color:#94a3b8;font-size:13px;text-align:center;padding:16px;grid-column:1/-1">Engin þjónusta skráð. Bættu við í Vörur og þjónusta tab.</div>';return tileList(state.services).map(function(s){return renderTile(s,true);}).join('');}
+  function buildProductsHTML(){if(!state.products.length)return'<div style="color:#94a3b8;font-size:13px;text-align:center;padding:16px;grid-column:1/-1">Engar vörur skráðar.</div>';return tileList(state.products).map(function(p){return renderTile(p,false);}).join('');}
   function buildLinesHTML(){
     if(!state.lines.length)return'<div style="color:#94a3b8;text-align:center;padding:30px 16px;font-size:13px;border:2px dashed #e2e8f0;border-radius:12px">Karfan er tóm<br><span style="font-size:11px">Smelltu á flísar til að bæta við</span></div>';
     // 2026-06-22: KARFA endurhönnun — hver lína er „pill" með lit-rönd vinstra
