@@ -76,7 +76,7 @@ if (/reikMap\[kt\]/.test(SRC187)) {
 if (/k === 'brunakerfi'/.test(SRC187)) {
   fail('187 isReportKind still treats brunakerfi as úttektarskýrsla — slökkvitæki year pills would light from fire-system PDFs.');
 }
-if (!/hasReikYear/.test(SRC187) || !/reikMap = \{ byCo, byKtOrphan \}/.test(SRC187)) {
+if (!/hasReikYear/.test(SRC187) || !/reikMap = \{ byCo, byKtOrphan/.test(SRC187)) {
   fail('187 lost per-site invoice lookup (hasReikYear / reikMap.byCo + byKtOrphan).');
 }
 if (!/isUttektInvoiceTeg/.test(SRC187) || !/vidskiptategund/.test(SRC187)) {

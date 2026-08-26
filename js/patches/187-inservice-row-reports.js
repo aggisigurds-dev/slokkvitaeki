@@ -51,13 +51,27 @@
   // eigin reiknings og án skýrslu. Sama lekinn á Heimaleiga, Steypustöðinni,
   // Pizzunni, Vélrás. Nú: byCo[fyrirtaeki_id] = Set(ár); reikningar ÁN
   // fyrirtaeki_id (byKtOrphan) aðeins þegar kt-in á EINN stað — sama regla
-  // og uttekt_files hér að neðan. Búðarsala er áfram útilokuð.
+  // og uttekt_files hér að neðan. Búðarsala + brunakerfi eru útilokuð.
+  //
+  // 2026-08-26 (Plaza false flag): Drive-reikningur ÁN POS/v_uttekt_ar má
+  // ekki mála inv-only blátt. Plaza (193) á R-107802 (Stolpi 01.02.26,
+  // hleðsla/yfirferð, EKKI ársúttektin) í customer_documents.teg=uttekt —
+  // Rekstrarfélög/prófíls-pillur sýna ekkert blátt (engin skýrsla) en Ársskoðun
+  // kveikti LED af reikMap.byCo. hasReikYear = 🧾 við hlið skýrslu;
+  // hasConfirmedInvYear = inv-only blátt (v_uttekt_ar EÐA solur.customer_id).
   let reikMap = null, reikLoading = false;
   function hasReikYear(coId, kt, y, ktCount) {
-    if (invMap && invMap[coId] && invMap[coId][y]) return true;
     if (!reikMap) return false;
     if (reikMap.byCo && reikMap.byCo[coId] && reikMap.byCo[coId].has(y)) return true;
     if ((ktCount[kt] || 0) <= 1 && reikMap.byKtOrphan && reikMap.byKtOrphan[kt] && reikMap.byKtOrphan[kt].has(y)) return true;
+    // POS á þessum stað (Klöpp R-000668 o.fl.) — 🧾 við hlið skýrslu. Drive-einn
+    // (Plaza) kemst HINGAÐ líka um byCo, en inv-only notar hasConfirmedInvYear.
+    if (reikMap.bySolurCo && reikMap.bySolurCo[coId] && reikMap.bySolurCo[coId].has(y)) return true;
+    return false;
+  }
+  function hasConfirmedInvYear(coId, y) {
+    if (invMap && invMap[coId] && invMap[coId][y]) return true;
+    if (reikMap && reikMap.bySolurCo && reikMap.bySolurCo[coId] && reikMap.bySolurCo[coId].has(y)) return true;
     return false;
   }
   // 2026-08-19 (Agnar #11 — „fyrirtæki í þjónustu are not syncing to ársskoðun …
@@ -191,15 +205,26 @@
     if (reikLoading || reikMap) return; reikLoading = true;
     try {
       const sb = window.DB && DB.sb; if (!sb) { reikLoading = false; return; }
-      const reikRows = await fetchAll(() => sb.from('customer_documents').select('customer_base_id,fyrirtaeki_id,year,invoice_number,vidskiptategund')
+      const reikRows = await fetchAll(() => sb.from('customer_documents').select('id,customer_base_id,fyrirtaeki_id,year,invoice_number,vidskiptategund')
         .eq('doc_type','reikningur'));
-      // Pakki 7: búðarreikningar (solur.vidskiptategund='bud') kveikja EKKI
-      // 🧾-ársmerkið í ársskoðunarlistanum — það er skoðunar-samhengi og
-      // búðarsala segir ekkert um úttekt ársins. ovisst/óþekkt telja áfram.
-      const budNums = new Set();
+      // Pakki 7 + 2026-08-26: búð og brunakerfi kveikja EKKI úttektar-🧾.
+      // ovisst/óþekkt telja áfram (Hamraborg 7). solur.customer_id er staðrætti
+      // POS-staðfesting — Drive-einn (Plaza R-107802) fer EKKI í bySolurCo.
+      const skipNums = new Set();
+      const bySolurCo = {};
       try {
-        const bs = await fetchAll(() => sb.from('solur').select('num').eq('vidskiptategund', 'bud'));
-        bs.forEach(s => { const n = String(s.num || '').trim().toUpperCase(); if (n) budNums.add(n); });
+        const sales = await fetchAll(() => sb.from('solur').select('num,customer_id,created_at,vidskiptategund,status'));
+        sales.forEach(s => {
+          const teg = String(s.vidskiptategund || '').toLowerCase();
+          const n = String(s.num || '').trim().toUpperCase();
+          if (teg === 'bud' || teg === 'brunakerfi') { if (n) skipNums.add(n); return; }
+          const st = String(s.status || '').toLowerCase();
+          if (st === 'cancelled' || st === 'canceled' || st === 'credit' || st === 'void') return;
+          if (s.customer_id == null) return;
+          const y = String(s.created_at || '').slice(0, 4);
+          if (!/^20\d{2}$/.test(y)) return;
+          (bySolurCo[String(s.customer_id)] = bySolurCo[String(s.customer_id)] || new Set()).add(y);
+        });
       } catch (_) {}
       const byCo = {};
       const byBaseOrphan = {};
@@ -207,7 +232,7 @@
         if (!x.year) return;
         if (!isUttektInvoiceTeg(x.vidskiptategund)) return;
         const inv = String(x.invoice_number || '').trim().toUpperCase();
-        if (inv && budNums.has(inv)) return;
+        if (inv && skipNums.has(inv)) return;
         const y = String(x.year);
         if (x.fyrirtaeki_id != null) {
           (byCo[String(x.fyrirtaeki_id)] = byCo[String(x.fyrirtaeki_id)] || new Set()).add(y);
@@ -228,7 +253,7 @@
           years.forEach(y => set.add(y));
         });
       }
-      reikMap = { byCo, byKtOrphan };
+      reikMap = { byCo, byKtOrphan, bySolurCo };
       // rebuild the year cells so the new 🧾 markers appear
       document.querySelectorAll('th[data-yrcol], td[data-yrcell]').forEach(el => el.remove());
       document.querySelectorAll('tr._ars-row[data-yrcol]').forEach(tr => tr.removeAttribute('data-yrcol'));
@@ -390,15 +415,20 @@
         const isClaude  = fst === 'claude';
         const isGap     = fst === 'gap';
         const isNow = (y === String(new Date().getFullYear()));
+        const hasRepDoc = !!(u || f);
         const hasInvYear = hasReikYear(coId, kt, y, ktCount);
+        const hasInvOnly = hasConfirmedInvYear(coId, y);
         // Fullbúið úttektar-par (klarad) fyrir þennan stað+ár — trompar staðnað gap.
         const isKlarad = !!(pairMap && pairMap[coId] && pairMap[coId].has(y));
+        // 🧾 undir skýrslu = site-keyed úttektarreikningur. Án skýrslu = aðeins
+        // v_uttekt_ar eða POS á þessum stað — Plaza R-107802 (Drive-einn) slokknar.
+        const showInvLed = (hasRepDoc || isKlarad) ? hasInvYear : hasInvOnly;
         const td = document.createElement('td');
         td.setAttribute('data-yrcell','1');
         td.style.cssText = 'text-align:center;';
         const wrapBadge = (badgeHtml, hasRep) =>
           '<span class="_dd">' + badgeHtml +
-            '<u><i class="' + (hasRep ? 'rep' : '') + '"></i><i class="' + (hasInvYear ? 'inv' : '') + '"></i></u></span>';
+            '<u><i class="' + (hasRep ? 'rep' : '') + '"></i><i class="' + (showInvLed ? 'inv' : '') + '"></i></u></span>';
         // Ástands-klasar merkisins (effRep = skýrsla eða handstaðfest).
         // 2026-08-17 (Agnar): grænt = skoðað (skýrsla til), rautt = EKKI skoðað
         // („red when not inspected"), blátt = bara reikningur/yfirfarið — og
@@ -429,7 +459,7 @@
           if (isKlarad) return '_yr ' + (isNow ? 'now' : 'on') + ' both' + lit;
           if (isGap) return '_yr ' + (notDue ? 'penda' : 'now') + lit;
           if (effRep) return '_yr ' + (isNow ? 'now' : 'on') + ' both' + lit;
-          if (hasInvYear || isClaude || _visited) return '_yr ' + (isNow ? 'now' : 'on') + ' inv-only' + lit;
+          if (hasInvOnly || isClaude || _visited) return '_yr ' + (isNow ? 'now' : 'on') + ' inv-only' + lit;
           if (isNow) return '_yr ' + (notDue ? 'penda' : 'now') + lit;
           return '_yr' + lit;
         };
@@ -455,11 +485,12 @@
           // handvirkt reikning-eingöngu par, Hamraborg 7) en skýrslu-skjalið er
           // ekki tengt. Grænt = úttekt ársins lokið; smellur opnar skýrslu-tengingu.
           td.innerHTML = wrapBadge('<a href="#" class="' + yrCls(true) + ' _yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="✓ Fullbúið fyrir ' + y + ' — skýrsla↔reikningur paruð (klarad). Skýrsla ekki tengd; smelltu til að hengja hana við.">' + yy + '</a>', false);
-        } else if (invMap && invMap[coId] && invMap[coId][y]) {
-          // BLÁTT (inv-only): úttektin var GERÐ (reikningur til) en skýrslan vantar.
-          const iv = invMap[coId][y];
+        } else if (hasInvOnly) {
+          // BLÁTT (inv-only): úttektin var GERÐ (v_uttekt_ar eða POS á þessum
+          // stað) en skýrslan vantar. Drive-einn reikningur (Plaza R-107802) kemst ekki hingað.
+          const iv = (invMap && invMap[coId] && invMap[coId][y]) || {};
           td.innerHTML = wrapBadge('<a href="#" class="' + yrCls(false) + ' _yr-add" data-co-id="' + coId + '" data-year="' + y + '" ' +
-            'title="Úttekt staðfest með reikningi ' + String(iv.nr).replace(/"/g,'&quot;') + ' (' + String(iv.dags).replace(/"/g,'&quot;') + ') — skýrsla vantar. Smelltu til að hengja skýrsluna við.">' + yy + '</a>', false);
+            'title="Úttekt staðfest með reikningi' + (iv.nr ? (' ' + String(iv.nr).replace(/"/g,'&quot;')) : '') + (iv.dags ? (' (' + String(iv.dags).replace(/"/g,'&quot;') + ')') : '') + ' — skýrsla vantar. Smelltu til að hengja skýrsluna við.">' + yy + '</a>', false);
         } else if (confirmed) {
           td.innerHTML = wrapBadge('<a href="#" class="' + yrCls(true) + ' _yr-add" data-co-id="' + coId + '" data-year="' + y + '" title="Fact-checkað ' + y + ' (staðfest handvirkt)">' + yy + '</a>', true);
         } else if (isClaude) {
@@ -494,10 +525,13 @@
     YEARS.forEach(y => {
       const u = locRec[y] || ((ktCount[kt] || 0) <= 1 ? rec[y] : null);
       const f = findReportAtt(files, y);
-      // `inv` = úttekt staðfest með reikningi (v_uttekt_ar) en skýrsla vantar —
+      const hasRep = !!(u || f);
+      // `inv` = úttekt staðfest með reikningi (v_uttekt_ar / POS á stað) en skýrsla vantar —
       // `has` er ÁFRAM skýrslu-eingöngu svo „vantar skýrslu"-talningar standi.
-      out[y] = { has: !!(u || f), due: (y === '2026'), reik: hasReikYear(coId, kt, y, ktCount),
-        inv: !!(invMap && invMap[coId] && invMap[coId][y]),
+      // `reik` 🧾: við skýrslu = site-keyed úttektarreikningur; án skýrslu = confirmed only.
+      out[y] = { has: hasRep, due: (y === '2026'),
+        reik: hasRep ? hasReikYear(coId, kt, y, ktCount) : hasConfirmedInvYear(coId, y),
+        inv: hasConfirmedInvYear(coId, y),
         klarad: !!(pairMap && pairMap[coId] && pairMap[coId].has(y)) };
     });
     return out;
