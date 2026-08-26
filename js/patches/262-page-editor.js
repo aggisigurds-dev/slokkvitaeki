@@ -404,7 +404,7 @@
       '@media (min-width:900px){' +
         /* 2026-08-26 (Agnar): hliðarpanellinn VINSTRA megin, yfir app-sidebarnum
            — maður þarf ekki nav-ið á meðan verið er að stíla. */
-        '#' + PANEL_ID + '.pe-side{left:0;right:auto;top:0;bottom:0;width:410px;max-width:94vw;max-height:none;height:auto;border-top:0;border-left:0;border-right:1px solid #cbd5e1;box-shadow:16px 0 36px -18px rgba(15,23,42,.45);padding:14px 16px 26px;overflow-y:auto}' +
+        '#' + PANEL_ID + '.pe-side{left:0;right:auto;top:0;bottom:0;width:336px;max-width:94vw;max-height:none;height:auto;border-top:0;border-left:0;border-right:1px solid #cbd5e1;box-shadow:16px 0 36px -18px rgba(15,23,42,.45);padding:14px 16px 26px;overflow-y:auto}' +
         '#' + PANEL_ID + '.pe-side .pe-grid{grid-template-columns:1fr;gap:10px}' +
         '#' + PANEL_ID + '.pe-side .pe-target{max-width:100%}' +
       '}',
@@ -495,12 +495,15 @@
         '<button class="pe-btn" id="pe-reset">↺ Resetta ▾</button>' +
         '<button class="pe-btn" id="pe-bg">🖼 Bakgrunnsmynd</button>' +
       '</div>' +
-      (target ? '<div class="pe-targetrow"><span class="pe-target" title="' + esc(targetLbl) + '">' + esc(targetLbl) + '</span><button class="pe-btn" id="pe-unpick">hreinsa val</button></div>' : '') +
+      (target ? '<div class="pe-targetrow"><span class="pe-target" title="' + esc(targetLbl) + '"><b>' + esc(friendlyName(target)) + '</b> · ' + esc(targetLbl) + '</span>' +
+        '<button class="pe-btn" id="pe-parent" title="Velja hlutinn UTAN um þennan (stækka valið)">⬆ Foreldri</button>' +
+        (target.closest && target.closest('table') && target.tagName !== 'TABLE' ? '<button class="pe-btn" id="pe-pick-table" title="Velja töfluna í heild">📊 Taflan</button>' : '') +
+        '<button class="pe-btn" id="pe-unpick">hreinsa val</button></div>' : '') +
       '</div>';
 
     let body;
     if (!target) {
-      body = '<div class="pe-empty">Ýttu á <b>🎯 Velja hlut</b> og smelltu svo á texta, box eða glugga á síðunni til að byrja að breyta.<br>Eða settu <b>🖼 Bakgrunnsmynd</b> á síðuna.</div>' + presetsSection() + bgGallerySection() + versionsSection() + tableHelpSection() + linkasafnSection();
+      body = '<div class="pe-empty">Ýttu á <b>🎯 Velja hlut</b> og smelltu svo á texta, box eða glugga á síðunni til að byrja að breyta.<br>Eða settu <b>🖼 Bakgrunnsmynd</b> á síðuna.</div>' + zonesSection() + presetsSection() + bgGallerySection() + versionsSection() + tableHelpSection() + linkasafnSection();
     } else {
       body = '<div class="pe-grid">' +
         '<details class="pe-sec"><summary><h4>Stærð &amp; bil</h4></summary>' +
@@ -533,7 +536,7 @@
           '<div class="pe-row"><label>Font</label><select data-font>' + FONTS.map(f => '<option value="' + esc(f) + '"' + ((getDecl('font-family') || '') === f ? ' selected' : '') + '>' + esc(f) + '</option>').join('') + '</select></div>' +
           '<div class="pe-sub" style="margin-top:6px">Border sést aðeins þegar þykkt &gt; 0.</div>' +
         '</details>' +
-      '</div>' + presetsSection() + bgGallerySection() + versionsSection() + tableHelpSection() + linkasafnSection();
+      '</div>' + zonesSection() + presetsSection() + bgGallerySection() + versionsSection() + tableHelpSection() + linkasafnSection();
     }
     p.innerHTML = head + body;
     wirePanel();
@@ -722,6 +725,44 @@
       '</span>').join('');
     box.querySelectorAll('[data-pl-del]').forEach(b => b.onclick = e => { e.preventDefault(); removePageLink(+b.dataset.plDel); });
   }
+  // 🗺 Grunn-skipting síðunnar — smellu-val á stóru svæðin (header, valstika,
+  // tafla, main content …) án þess að þurfa að hitta þau með bendlinum
+  // (ósk Agnars 26.08: „sína svona grunn skiptingu síðunnar").
+  let _zones = [];
+  function zoneCandidates() {
+    const z = [];
+    const add = (el, label) => { if (el && z.every(x => x.el !== el)) z.push({ el, label }); };
+    const v = document.querySelector('.view.active');
+    add(document.querySelector('.topbar'), '☰ Hliðarstikan (valmynd)');
+    if (v) {
+      const h1 = v.querySelector('h1');
+      add(h1, '🏷 Fyrirsögnin (header)');
+      if (h1 && h1.parentElement && h1.parentElement !== v) add(h1.parentElement, '📰 Haus-svæðið (header-blokk)');
+      add(v.querySelector('._ars-statgrid, .statgrid, .kpi-grid, .stats'), '📈 Talnaspjöldin (KPI)');
+      add(v.querySelector('._ars-filterstrip, .filterstrip, .filters, .toolbar'), '🎚 Valstikan (síur)');
+      add(v.querySelector('.data-table-wrap, .thm, ._ars-tblscroll'), '🖼 Töflu-ramminn');
+      add(v.querySelector('table'), '📊 Taflan í heild');
+      const kids = Array.prototype.slice.call(v.children).filter(c => c.offsetHeight > 40);
+      if (kids.length > 1) add(kids[kids.length - 1], '⬇ Neðsta svæðið (footer area)');
+      add(v, '🗔 Síðan öll (main content)');
+    }
+    return z;
+  }
+  function zonesSection() {
+    _zones = zoneCandidates();
+    if (!_zones.length) return '';
+    return '<details class="pe-sec" style="margin-top:10px"' + (target ? '' : ' open') + '><summary><h4>🗺 Svæði síðunnar — smelltu til að velja</h4></summary>' +
+      '<div class="pe-presets">' + _zones.map((z, i) => '<button class="pe-chip" data-zone="' + i + '">' + esc(z.label) + '</button>').join('') + '</div>' +
+      '<div class="pe-sub" style="margin-top:5px">Velur allt svæðið í einu — svo má þrengja með 🎯 eða stækka með ⬆ Foreldri.</div>' +
+    '</details>';
+  }
+  function pickZone(i) {
+    const z = _zones[i]; if (!z || !document.body.contains(z.el)) { renderPanel(); return; }
+    target = z.el; extraTargets = [];
+    highlight(z.el); setTimeout(hideHighlight, 900);
+    try { z.el.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); } catch (_) {}
+    renderPanel();
+  }
   // Hjálp fyrir töflutólin (319) — „ég sé ekki alveg hvernig maður velur
   // coloms, eða þá raðirnar" (Agnar 26.08). Dálkar eru EKKI valdir með
   // 🎯 Velja hlut heldur beint á töflunni þegar ↔ Dálkar er kveikt.
@@ -799,6 +840,17 @@
     qa('[data-lk-place]').forEach(b => b.onclick = () => placeLink(+b.dataset.lkPlace));
     qa('[data-lk-delc]').forEach(b => b.onclick = () => deleteCustomLink(+b.dataset.lkDelc));
     const lkn = q('#pe-lk-new'); if (lkn) lkn.onclick = addCustomLink;
+    qa('[data-zone]').forEach(b => b.onclick = () => pickZone(+b.dataset.zone));
+    const pp = q('#pe-parent'); if (pp) pp.onclick = () => {
+      const par = target && target.parentElement;
+      if (par && par !== document.body && par !== document.documentElement) {
+        target = par; highlight(par); setTimeout(hideHighlight, 900); renderPanel();
+      }
+    };
+    const pt = q('#pe-pick-table'); if (pt) pt.onclick = () => {
+      const tb = target && target.closest && target.closest('table');
+      if (tb) { target = tb; extraTargets = []; highlight(tb); setTimeout(hideHighlight, 900); renderPanel(); }
+    };
     const pk = q('#pe-pick'); if (pk) pk.onclick = () => setPicking(!picking);
     const mu = q('#pe-multi'); if (mu) mu.onclick = () => {
       multiPick = !multiPick;
@@ -909,14 +961,49 @@
     if (!on) hideHighlight();
     renderPanel();
   }
-  function insideEditor(el) { return !!(el.closest && (el.closest('#' + PANEL_ID) || el.closest('#' + BTN_ID) || el.id === HL_ID)); }
+  function insideEditor(el) { return !!(el.closest && (el.closest('#' + PANEL_ID) || el.closest('#' + BTN_ID) || el.id === HL_ID || el.id === HL_ID + '-lbl')); }
+  // Mannamál um hlutinn — birt á merkimiða við bendilinn og í val-röndinni
+  // („gera betur augljóst hvað maður er að fara velja", Agnar 26.08).
+  function friendlyName(el) {
+    try {
+      const t = el.tagName;
+      if (t === 'TABLE') return '📊 Tafla í heild';
+      if (t === 'TR') return 'Röð í töflu';
+      if (t === 'TH') return 'Töfluhaus (dálkur)';
+      if (t === 'TD') return 'Reitur í töflu';
+      if (t === 'BUTTON') return 'Hnappur';
+      if (t === 'A') return 'Tengill / hnappur';
+      if (t === 'INPUT' || t === 'SELECT' || t === 'TEXTAREA') return 'Innsláttarreitur';
+      if (/^H[1-6]$/.test(t)) return 'Fyrirsögn';
+      if (t === 'IMG' || t === 'svg' || (el.closest && el.closest('svg'))) return 'Mynd / tákn';
+      if (el.classList.contains('topbar')) return '☰ Hliðarstikan (valmynd)';
+      if (el.classList.contains('view')) return '🗔 Síðan öll';
+      if (el.classList.contains('data-table-wrap') || el.classList.contains('thm')) return 'Töflu-ramminn';
+      const txt = (el.textContent || '').trim();
+      if (txt && txt.length < 30 && !el.children.length) return 'Texti: „' + txt.slice(0, 26) + '"';
+      return 'Box / svæði';
+    } catch (_) { return 'Hlutur'; }
+  }
   function highlight(el) {
     let h = document.getElementById(HL_ID);
     if (!h) { h = document.createElement('div'); h.id = HL_ID; document.body.appendChild(h); }
     const r = el.getBoundingClientRect();
     h.style.display = 'block'; h.style.left = r.left + 'px'; h.style.top = r.top + 'px'; h.style.width = r.width + 'px'; h.style.height = r.height + 'px';
+    let l = document.getElementById(HL_ID + '-lbl');
+    if (!l) {
+      l = document.createElement('div'); l.id = HL_ID + '-lbl';
+      l.style.cssText = 'position:fixed;z-index:99997;pointer-events:none;background:#0f172a;color:#fff;font:700 11.5px \'Space Grotesk\',sans-serif;padding:3px 9px;border-radius:7px;box-shadow:0 4px 12px rgba(0,0,0,.35);white-space:nowrap';
+      document.body.appendChild(l);
+    }
+    l.textContent = friendlyName(el);
+    l.style.display = 'block';
+    l.style.left = Math.max(4, r.left) + 'px';
+    l.style.top = (r.top > 26 ? r.top - 24 : r.top + 4) + 'px';
   }
-  function hideHighlight() { const h = document.getElementById(HL_ID); if (h) h.style.display = 'none'; }
+  function hideHighlight() {
+    const h = document.getElementById(HL_ID); if (h) h.style.display = 'none';
+    const l = document.getElementById(HL_ID + '-lbl'); if (l) l.style.display = 'none';
+  }
   function onMove(e) { if (!picking) return; const el = e.target; if (!el || insideEditor(el)) { hideHighlight(); return; } highlight(el); }
   function onPick(e) {
     if (!picking) return; const el = e.target; if (!el || insideEditor(el)) return;
