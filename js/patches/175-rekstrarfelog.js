@@ -39,7 +39,10 @@
       var q = SB.from(table).select(cols, { count: 'exact' });
       if (tweak) q = tweak(q);
       var first = await q.range(0, PAGE - 1);
-      if (first.error) return [];
+      if (first.error) {
+        console.warn('[rekstrarfelog] fetchAllRows', table, first.error);
+        return [];
+      }
       var rows = (first.data || []).slice();
       var total = (typeof first.count === 'number') ? first.count : rows.length;
       if (rows.length < PAGE || total <= PAGE) return rows;
@@ -54,6 +57,22 @@
       rest.forEach(function(a){ rows = rows.concat(a); });
       return rows;
     } catch (e) { console.warn('[rekstrarfelog] fetchAllRows', table, e); return []; }
+  }
+  // PostgREST `.in()` fer í query-strenginn — of langur listi → 414 / tóm
+  // niðurstaða og staðir detta út (Heimaleiga sást þá AÐEINS úr curated-blob).
+  // 80 id per kall er öruggt; síður sóttar með fetchAllRows.
+  async function fetchAllIn(SB, table, cols, column, ids, extraTweak){
+    var CHUNK = 80, out = [];
+    if (!ids || !ids.length) return out;
+    for (var i = 0; i < ids.length; i += CHUNK) {
+      var slice = ids.slice(i, i + CHUNK);
+      var rows = await fetchAllRows(SB, table, cols, function(q){
+        q = q.in(column, slice);
+        return extraTweak ? extraTweak(q) : q;
+      });
+      out = out.concat(rows);
+    }
+    return out;
   }
 
   // ---- inline SVG icons (Lucide-style) + scoped styles for the redesigned cards ----
@@ -76,16 +95,16 @@
   // (its .btn/.pill/.chip names collide with the app), so the needed
   // classes are inlined here with an rf-/rfa- prefix.
   function injectStyles(){
-    if(document.getElementById('_rf-styles-v4')) return;
-    ['_rf-styles','_rf-styles-v3'].forEach(function(id){ var o=document.getElementById(id); if(o) o.remove(); });
-    var s=document.createElement('style'); s.id='_rf-styles-v4';
+    if(document.getElementById('_rf-styles-v5')) return;
+    ['_rf-styles','_rf-styles-v3','_rf-styles-v4'].forEach(function(id){ var o=document.getElementById(id); if(o) o.remove(); });
+    var s=document.createElement('style'); s.id='_rf-styles-v5';
     var P='#view-rekstrarfelog ';
     var METB='linear-gradient(180deg,#2f333b,#1b1e24 60%,#111318)';
     var HERO='linear-gradient(110deg,#0c1018 0%,#13203f 45%,#274a9e 100%)';
     s.textContent=[
       "@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');",
       // page band: dark → grey gradient, the view itself
-      '#view-rekstrarfelog{padding:0!important;background:linear-gradient(180deg,#060607 0,#060607 95px,#aeb4be 360px,#9ba1ad 100%)!important}',
+      '#view-rekstrarfelog{padding:0!important;background:linear-gradient(180deg,#060607 0,#060607 95px,#aeb4be 360px,#9ba1ad 100%)!important;overflow-x:hidden;max-width:100%}',
       // 2026-08-06 (ósk Agnars: "adjust the width so everything is in the same
       // wide" — borðið/status-kassarnir litu mjórri út en restin af síðunni af
       // því 1560px hámarkið var mun þrengra en breidd skjásins leyfði). Ekkert
@@ -122,8 +141,11 @@
       P+'.rfa__pills{display:flex;align-items:center;gap:9px;flex:none}',
       P+'.rfa__chev{width:32px;height:32px;flex:none;border-radius:9px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px;transition:transform .28s ease}',
       P+'.rfa.is-open .rfa__chev{transform:rotate(180deg)}',
-      P+'.rfa__body{max-height:0;opacity:0;overflow:hidden;background:#fff;transition:max-height .32s ease,opacity .24s ease}',
-      P+'.rfa.is-open .rfa__body{max-height:6000px;opacity:1}',
+      P+'.rfa{max-width:100%}',
+      P+'.rfa__body{max-height:0;opacity:0;overflow:hidden;background:#fff;transition:opacity .24s ease}',
+      // 2026-08-26: 6000px klippti neðstu Heimaleiga-húsin (háar Sími-raðir).
+      // Ekkert þak — rfa overflow:hidden heldur töflunni innan síðunnar.
+      P+'.rfa.is-open .rfa__body{max-height:none;opacity:1}',
       P+'.rfa__pad{padding:16px 18px}',
       P+'.rf-chiprow{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}',
       // Gullkassi — áætlaðar árs-tekjur (yfirferð + hleðsla), stillanlegur.
@@ -136,8 +158,8 @@
       P+'.rf-gold__ed input{width:100%;box-sizing:border-box;margin-top:3px;padding:6px 8px;border:1px solid #3a4150;border-radius:7px;background:#0e1219;color:#fff;font:inherit;font-size:13px}',
       P+'.rf-gold__ed button{width:100%;margin-top:2px;padding:7px;border:0;border-radius:7px;background:linear-gradient(150deg,#c99a1e,#8a6410);color:#fff;font:inherit;font-weight:700;font-size:13px;cursor:pointer}',
       // buildings table (dark-metal head, zebra, rails)
-      P+'.rf-tblwrap{border-radius:13px;border:1px solid rgba(20,24,34,.1);overflow:hidden;background:#fff}',
-      P+'.rf-tblscroll{overflow-x:auto}',
+      P+'.rf-tblwrap{border-radius:13px;border:1px solid rgba(20,24,34,.1);overflow:hidden;background:#fff;max-width:100%}',
+      P+'.rf-tblscroll{overflow-x:auto;max-width:100%;-webkit-overflow-scrolling:touch}',
       // table-layout:fixed + <colgroup> (2026-08-20) — eins og listi Fyrirtækja í
       // þjónustu (153). Fastar súlubreiddir gera raðirnar jafnar og láta löng
       // byggingaheiti stytta sig með „…" í stað þess að vefjast í 2-3 línur (það
@@ -164,11 +186,11 @@
       P+'.rf-rail--done{background:#1f9d57}',
       P+'.rf-rail--overdue{background:#e23232}',
       P+'.rf-rail--none{background:#dbe0e9}',
-      P+'.rf-bname{display:block;font-size:13.5px;font-weight:600;color:#11141c;line-height:1.25;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}',
+      // Brunastál density (153 .data-table): one-line name + kt, ellipsis, title
+      // holds the full string. Wrapping (PR 701) made Heimaleiga rows ~3× too tall.
+      P+'.rf-bname{display:block;font-size:13px;font-weight:600;color:#11141c;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       P+'.rf-bname a{color:#11141c;text-decoration:none;font-weight:600}',
-      // eldri-ára hlekkir (📄2022↗) sitja UNDIR nafninu svo ellipsis á nafninu
-      // klippi þá aldrei af — þeir eru eina leiðin að gömlu skýrslunum.
-      P+'.rf-boldlinks{display:block;line-height:1.4;white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}',
+      P+'.rf-boldlinks{display:block;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       P+'.rf-bname a:hover{color:#2f5fe0}',
       // 2026-08-20 (ósk Agnars „more compact / decrease row height / not all over
       // the place"): kt undir nafni (eins og ._kt í 153), heimilisfang OG nóta
@@ -180,7 +202,7 @@
       P+'.rf-bnr{font-family:"Space Mono",monospace;font-size:10px;color:#5b6475;font-weight:700}',
       P+'.rf-bpd{font-family:"Space Mono",monospace;font-size:10px;color:#1d4ed8;font-weight:600;white-space:nowrap}',
       P+'.rf-bpd.is-paid{color:#15803d}',
-      P+'.rf-baddr{display:block;font-size:12px;color:#5b6472;line-height:1.25;white-space:normal;overflow:visible;overflow-wrap:anywhere}',
+      P+'.rf-baddr{display:block;font-size:12px;color:#5b6472;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}',
       P+'.rf-baddr--empty{color:#c3c9d3}',
       // Nóta-dálkur — ferðanótan (fyrirtaeki.plan_note), sami reitur og ._note í 153.
       P+'.rf-plannote{display:block;width:100%;min-width:120px;height:24px;border:1px solid transparent;border-radius:7px;background:transparent;color:#3a4250;font:inherit;font-size:11.5px;padding:0 8px;box-sizing:border-box;outline:none;transition:background .12s,border-color .12s}',
@@ -312,7 +334,25 @@
       P+'.rf-tblfoot b{color:#3a4250}',
       P+'.rf-nores{padding:16px;text-align:center;color:#9098a6;font-size:13px}',
       // mobile
-      '@media(max-width:640px){'+P+'.rf-search{width:100%;margin-left:0}'+P+'.rf-page{padding:16px 12px 50px}'+P+'.rf-bsearch{margin-left:0;width:100%}}',
+      '@media(max-width:640px){'+
+        P+'.rf-search{width:100%;margin-left:0}'+
+        P+'.rf-page{padding:16px 12px 50px}'+
+        P+'.rf-bsearch{margin-left:0;width:100%}'+
+        // 390px: sticky name so the site identity stays readable while the
+        // rest of the Brunastál table still scrolls horizontally — no new UI.
+        P+'.rf-tbl{min-width:760px;font-size:16px}'+
+        P+'.rf-tbl th:first-child,'+P+'.rf-tbl td.rf-cellname{position:sticky;left:0;z-index:1;background:#fff;box-shadow:4px 0 8px -6px rgba(10,20,50,.35)}'+
+        P+'.rf-tbl thead th:first-child{background:'+METB+'!important;z-index:2}'+
+        P+'.rf-tbl tbody tr:nth-child(even) td.rf-cellname{background:#fbfcfe}'+
+        P+'.rf-tbl tbody tr:hover td.rf-cellname{background:#f3f6fc}'+
+        P+'.rf-tbl tbody td{padding:4px 8px!important}'+
+        P+'.rf-bname{font-size:16px}'+
+        P+'.rf-baddr{font-size:14px}'+
+        P+'.rf-bldrow{min-height:44px}'+
+        P+'.rf-bldtoggle{width:44px;min-width:44px;min-height:44px}'+
+        P+'.rf-bname a{min-height:44px;display:inline-flex;align-items:center}'+
+        P+'.rfa__pad{padding:10px 10px}'+
+      '}',
       // Síma-úttekt 2026-07-30 (mælt): .rfa__pills var flex:none svo pillu-röðin
       // hélt fullri breidd og NAFNIÐ (flex:1 + ellipsis) fór í 0 px — félags-
       // nöfnin ólæsileg á síma. Pillurnar vefjast nú og víkja fyrir nafninu.
@@ -327,6 +367,8 @@
         // (sjá render í mode()) — inline vinnur nema með !important. Á síma fer
         // spanið í fulla breidd og vefur, svo #_rf_add endi ekki utan skjás.
         P+'.rf-phead>span{margin-left:0!important;display:flex!important;flex-wrap:wrap!important;flex:1 1 100%;gap:8px!important;min-width:0}'+
+        P+'.rf-btn{min-height:44px!important;height:44px!important;font-size:16px!important}'+
+        P+'.rfa__name{font-size:16px}'+
       '}',
       // --- vörn gegn patch 245 (Brunastál content-skin) sem málar .view
       //     input/thead/table með !important — okkar útlit VERÐUR að vinna ---
@@ -336,7 +378,11 @@
       // 2026-08-07 (Agnar: „reduce the height by 20% per line") — lóðrétta
       // paddingið var stærsti hæðargjafinn (11px × 2 = 22px af ~54px röð).
       // 6px × 2 + þéttara línubil á nafn/heimilisfang = ~20% lægri röð.
-      P+'.rf-tbl tbody td{border:0!important;padding:6px 12px!important;background:transparent!important}',
+      // 2026-08-26 (Heimaleiga): Brunastál 153 row = 7px/44px nowrap. Override
+      // the 6px padding with the same density so wrapping names don't inflate
+      // the accordion past the fold.
+      P+'.rf-tbl tbody td{border:0!important;padding:5px 10px!important;background:transparent!important;vertical-align:middle!important}',
+      P+'.rf-tbl tbody tr{height:44px}',
       P+'.rf-tbl tbody tr:nth-child(even){background:#fbfcfe!important}',
       P+'.rf-tbl tbody tr:hover{background:#f3f6fc!important}',
       P+'.rfa__head{background:'+HERO+'!important;border:0!important;box-shadow:none!important;text-shadow:none!important;border-radius:0!important;height:auto!important}',
@@ -348,7 +394,20 @@
       P+'.rf-bsearch input, '+P+'.rf-bsearch input[type="text"]{background:transparent!important;border:0!important;box-shadow:none!important;height:auto!important;padding:0!important;border-radius:0!important;color:#141822!important}',
       P+'.rf-tbl thead th.rf-yh{font-family:"Space Mono",monospace!important;font-size:12.5px!important;letter-spacing:0!important;text-transform:none!important;color:#fff!important;vertical-align:middle!important;padding:8px 6px!important}',
       P+'.rf-svcbtn{text-shadow:none!important;box-shadow:none!important;height:34px!important;border-radius:20px!important}',
-      P+'.rf-svcbtn.is-on{background:'+METB+'!important;color:#fff!important;border:1px solid #0a0b0d!important}'
+      P+'.rf-svcbtn.is-on{background:'+METB+'!important;color:#fff!important;border:1px solid #0a0b0d!important}',
+      // Sími/appmode (261): .view button{min-height:50px} + input{52px} blésu
+      // hverja byggingaröð. Sama undantekning og #ars-main í 261.
+      'body.appmode #view-rekstrarfelog .rf-tbl button,body.appmode #view-rekstrarfelog .rf-tbl .rf-bldtoggle,body.appmode #view-rekstrarfelog .rf-svcbtn{min-height:0!important;height:auto!important;padding-top:2px!important;padding-bottom:2px!important;font-size:13px!important;line-height:1.1!important}',
+      'body.appmode #view-rekstrarfelog .rf-tbl input.rf-plannote,body.appmode #view-rekstrarfelog .rf-tbl input._rf-plannote{min-height:24px!important;height:24px!important;font-size:13px!important;padding-top:0!important;padding-bottom:0!important}',
+      'body.appmode #view-rekstrarfelog .rf-tbl td{font-size:16px!important;padding:5px 8px!important}',
+      'body.appmode #view-rekstrarfelog .rf-bname{font-size:16px!important}',
+      'body.appmode #view-rekstrarfelog .rf-btn{min-height:44px!important;height:44px!important;font-size:16px!important;padding-top:0!important;padding-bottom:0!important}',
+      'body.appmode #view-rekstrarfelog .rf-bldtoggle{min-width:44px!important;min-height:44px!important}',
+      '@media(max-width:560px){'+
+        P+'.rf-btn{min-height:44px!important;height:44px!important;font-size:16px!important;padding-top:0!important;padding-bottom:0!important}'+
+        P+'.rf-bname{font-size:16px!important}'+
+        P+'.rfa__name{font-size:16px!important}'+
+      '}'
     ].join('\n');
     document.head.appendChild(s);
   }
@@ -388,7 +447,7 @@
         // base rows carrying a rekstrarfelag
         var bases = {}; // base_id -> rekstrarfelag
         // báðar töflur sóttar með samhliða blaðsíðum (var 2+2 raðbundnar sóknir)
-        var baseRows = await fetchAllRows(SB, 'customers_base', 'id,nafn,kennitala,rekstrarfelag',
+        var baseRows = await fetchAllRows(SB, 'customers_base', 'id,nafn,kennitala,heimilisfang,rekstrarfelag',
           function(q){ return q.not('rekstrarfelag','is',null); });
         baseRows.forEach(function(b){
           if(!b.rekstrarfelag) return;
@@ -398,14 +457,40 @@
         // fyrirtaeki locations that belong to those bases → the buildings/sites
         var baseIds = Object.keys(bases).map(function(x){return parseInt(x,10);});
         if (baseIds.length){
-          var siteRows = await fetchAllRows(SB, 'fyrirtaeki',
-            'id,nafn,kennitala,heimilisfang,netfang,simi,customer_base_id,bokunarnumer,stadur_nr',
-            function(q){ return q.in('customer_base_id', baseIds); });
+          var siteCols = 'id,nafn,kennitala,heimilisfang,netfang,simi,customer_base_id,bokunarnumer,stadur_nr,plan_note';
+          var alive = function(q){ return q.is('deleted_at', null); };
+          var siteRows = await fetchAllIn(SB, 'fyrirtaeki', siteCols, 'customer_base_id', baseIds, alive);
+          // Recover sites that share a tagged base's kennitala but are not
+          // linked (customer_base_id null). Never steal a site already pinned
+          // to another base. Never merge rows — kt+stadur_nr is the identity.
+          var ktToRek = {}, ktList = [];
+          baseRows.forEach(function(b){
+            var d = digits(b.kennitala);
+            if (d && d.length === 10 && b.rekstrarfelag) {
+              ktToRek[d] = b.rekstrarfelag;
+              var dash = d.slice(0,6)+'-'+d.slice(6);
+              if (ktList.indexOf(dash) < 0) ktList.push(dash);
+              if (ktList.indexOf(d) < 0) ktList.push(d);
+            }
+          });
+          if (ktList.length) {
+            var byKt = await fetchAllIn(SB, 'fyrirtaeki', siteCols, 'kennitala', ktList, alive);
+            var seen = {};
+            siteRows.forEach(function(f){ if (f && f.id != null) seen[f.id] = 1; });
+            byKt.forEach(function(f){
+              if (!f || f.id == null || seen[f.id]) return;
+              if (f.customer_base_id != null) return; // linked elsewhere — don't steal
+              seen[f.id] = 1;
+              siteRows.push(f);
+            });
+          }
+          var pushed = {};
           siteRows.forEach(function(f){
-            var rek = bases[f.customer_base_id]; if(!rek) return;
-            // co_id = fyrirtaeki.id — PINNINN. Ein kt á marga staði (Heimaleiga
-            // 10 hús, Center 11 hótel) og hver er sjálfstæð skoðunar-/Payday-eining.
-            // Án id mátaði síðan aftur á nafni/kt og hrúgaði systkinum saman.
+            if (!f || f.id == null || pushed[f.id]) return;
+            var rek = bases[f.customer_base_id];
+            if (!rek && (f.customer_base_id == null || f.customer_base_id === '')) rek = ktToRek[digits(f.kennitala)];
+            if (!rek) return;
+            pushed[f.id] = 1;
             (out[rek]||(out[rek]=[])).push({
               co_id: f.id,
               kt: f.kennitala||'',
@@ -415,7 +500,27 @@
               simi: f.simi||'',
               customer_base_id: f.customer_base_id,
               bokunarnumer: f.bokunarnumer||'',
-              stadur_nr: f.stadur_nr
+              stadur_nr: f.stadur_nr,
+              plan_note: f.plan_note||''
+            });
+          });
+          // Base tagged as rekstrarfélag but with no fyrirtaeki row yet (SAB ehf
+          // / Naustavör 18) — still list it so the Heimaleiga set is complete.
+          baseRows.forEach(function(b){
+            if (!b.rekstrarfelag) return;
+            var list = out[b.rekstrarfelag] || (out[b.rekstrarfelag]=[]);
+            var has = list.some(function(s){
+              return s.customer_base_id===b.id || (digits(s.kt) && digits(s.kt)===digits(b.kennitala));
+            });
+            if (has) return;
+            list.push({
+              co_id: null,
+              kt: b.kennitala||'',
+              nafn: b.nafn||'',
+              heimilisfang: b.heimilisfang||'',
+              customer_base_id: b.id,
+              stadur_nr: null,
+              _fromBase: true
             });
           });
         }
@@ -455,6 +560,15 @@
     // Fléttum lifandi rekstrarfélögum inn án þess að breyta upprunalega blobinu.
     var merged = {};
     Object.keys(data).forEach(function(k){ merged[k]=data[k]; });
+    // kt → which live rekstrarfélag already owns it. Seed leftovers (Aegina ehf,
+    // Húsfélagið Laugavegi 42) must not reappear under Heimaleiga when that kt
+    // already lives on this or another operator list.
+    var liveKtOwner = {};
+    Object.keys(_liveRF).forEach(function(nm){
+      (_liveRF[nm]||[]).forEach(function(s){
+        var d = digits(s.kt); if (d) liveKtOwner[d] = nm;
+      });
+    });
     Object.keys(_liveRF).forEach(function(name){
       var sites = _liveRF[name] || [];
       if (!merged[name]){
@@ -477,12 +591,13 @@
       // „Heimaleiga - Laugavegur 42" eru sitt hvor lögaðilinn á sama húsi).
       var info = merged[name];
       var curated = Array.isArray(info.buildings) ? info.buildings.slice() : [];
-      var liveNm = {}, liveAddr = {};
+      var liveNm = {}, liveAddr = {}, liveKtN = {};
       sites.forEach(function(s){
         var d = digits(s.kt);
         liveNm[d+'::'+foldNm(s.nafn)] = 1;
         var a = foldNm(s.heimilisfang);
         if (a) liveAddr[d+'::'+a] = 1;
+        if (d) liveKtN[d] = (liveKtN[d]||0)+1;
       });
       // Lifandi staðirnir fyrst, merktir svo þeir frjósi ekki inn í handskráða
       // blobið við næstu vistun (sjá saveData) — það var uppspretta afritanna.
@@ -495,6 +610,10 @@
         var kAddr = a ? (d+'::'+a) : null;
         if (liveNm[kNm]) return;                      // sami staður og lifandi röð
         if (kAddr && liveAddr[kAddr]) return;         // sama kt + sama heimilisfang
+        // Seed alias: Aegina ehf / EA Law / S&H — same unique kt, old legal name.
+        if (d && liveKtN[d] === 1 && !b.co_id) return;
+        // That kt already belongs to another live rekstrarfélag (Húsfélag 42 → Eignaumsjón).
+        if (d && liveKtOwner[d] && liveKtOwner[d] !== name) return;
         if (seen[kNm]) return;                        // tvítekning innan handskráða listans
         seen[kNm] = 1;
         blds.push(b);
@@ -1026,7 +1145,7 @@
     // Sækjum lifandi rekstrarfélög fyrir fyrstu málun; ef þau eru ekki komin
     // (fyrsta opnun) málum við samt strax með hráu gögnunum og endurmálum þegar
     // lifandi listinn er tilbúinn (getData fléttar hann þá inn).
-    if (!_liveRF) { ensureLiveRF().then(function(){ try{ var el=viewEl(); if(el && el.classList.contains('active')) renderView(); }catch(e){} }); }
+    if (!_liveRF) { ensureLiveRF().then(function(){ try{ var el=viewEl(); if(el && (el.classList.contains('active') || el.style.display!=='none')) renderView(); }catch(e){} }); }
     var data=getData();
     var nFirms=Object.keys(data).length;
     var html='';
@@ -1327,7 +1446,10 @@
   async function fillBody(body, name, info){
     body.innerHTML='<div style="color:var(--ink4);font-size:13px">Hleð…</div>';
     try {
-      await _fillBodyInner(body, name, info);
+      // Always re-read live merge so an accordion opened on the seed snapshot
+      // (4 Heimaleiga aliases) picks up all 15 sites once ensureLiveRF finishes.
+      var fresh = (getData()[name]) || info;
+      await _fillBodyInner(body, name, fresh);
     } catch (e) {
       console.warn('[rekstrarfelog] fillBody', e);
       body.innerHTML='<div style="color:#b91c1c;font-size:13px;padding:6px 0">⚠ Villa við að hlaða: '+esc((e&&e.message)||String(e))+
@@ -1574,8 +1696,8 @@
     // building table
     var rows=blds.map(function(b,_bi){
       var co=companyForBld(b);
-      var link= co ? '<a href="#" data-coid="'+co.id+'" class="_rf_open">'+esc(b.nafn)+'</a>'
-                   : esc(b.nafn)+' <span style="color:#9098a6;font-size:11px;font-weight:400">(ekki í skrá)</span>';
+      var link= co ? '<a href="#" data-coid="'+co.id+'" class="_rf_open" title="'+esc(b.nafn)+'">'+esc(b.nafn)+'</a>'
+                   : '<span title="'+esc(b.nafn)+'">'+esc(b.nafn)+'</span> <span style="color:#9098a6;font-size:11px;font-weight:400">(ekki í skrá)</span>';
       var doc = co ? '<a href="#" data-coid="'+co.id+'" class="_rf_docs" style="font-size:12px;color:#1d4ed8;text-decoration:underline">skjöl</a>' : '';
       // Per-byggingar talning (facts → worksite → nafn) — sjá bldEquipSt að ofan.
       // Áður equip.match(b.nafn) eitt og sér: sam-nefndar byggingar sömu kt

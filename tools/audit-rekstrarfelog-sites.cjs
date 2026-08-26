@@ -49,6 +49,21 @@ if (!/fyrirtaeki_id/.test(pairsChunk.slice(0, 400))) {
 if (!/pdByCo/.test(SRC) || !/solur/.test(SRC)) {
   fail('175 no longer loads Payday/R-númer per solur.customer_id.');
 }
+if (!/is\('deleted_at',\s*null\)/.test(SRC)) {
+  fail('175 live fyrirtaeki load no longer filters deleted_at — closed sites would crowd the list.');
+}
+if (!/ktToRek/.test(SRC)) {
+  fail('175 lost kennitala recovery — unlinked Heimaleiga sites would be dropped.');
+}
+if (!/liveKtN\[d\] === 1/.test(SRC)) {
+  fail('175 no longer drops seed aliases (Aegina/EA Law) on a unique live kt.');
+}
+if (!/white-space:nowrap;overflow:hidden;text-overflow:ellipsis/.test(SRC)) {
+  fail('175 building names wrap again — Heimaleiga rows would be too tall.');
+}
+if (!/max-height:200000px/.test(SRC)) {
+  fail('175 accordion max-height is back to a small cap — last Heimaleiga rows would clip.');
+}
 
 // ── (2) live data: do not merge ────────────────────────────────────────────
 async function pageAll(pathAndQuery) {
@@ -97,10 +112,37 @@ async function pageAll(pathAndQuery) {
     fail('S30 ehf / Ármúli 13A (711096-2059) missing — that property is its own kennitala, not Heimaleiga ehf.');
   }
 
+  const rfBases = await pageAll('customers_base?rekstrarfelag=eq.Heimaleiga&select=id,kennitala,nafn');
+  const rfIds = rfBases.map(x => x.id).join(',');
+  const group = rfIds
+    ? await pageAll('fyrirtaeki?customer_base_id=in.(' + rfIds + ')&deleted_at=is.null&select=id,nafn,kennitala,stadur_nr,heimilisfang')
+    : [];
+  const GROUP_MIN = 15; // 10 on 510117-0690 + S30, S&H, Mannheimar, EA Law, Aegina/Icelandic
+  if (group.length < GROUP_MIN) {
+    fail('Heimaleiga rekstrarfélag list has ' + group.length + ' sites — expected ≥' + GROUP_MIN + '. Query/join dropped properties.');
+  }
+  const gfold = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  const gneed = [
+    ['mani', 'Máni Apartments'],
+    ['midtown', 'Midtown Hotel'],
+    ['bilskur', 'Dalbrekka bílskúr'],
+    ['s30', 'S30 / Ármúli 13A'],
+    ['mannheimar', 'Mannheimar'],
+    ['icelandic', 'Icelandic Apartments (Aegina)'],
+    ['comfort', 'Iceland Comfort / Hamraborg 7'],
+    ['blue mountain', 'Blue Mountain / Urðarhvarf 2']
+  ];
+  gneed.forEach(function (pair) {
+    if (!group.some(x => gfold(x.nafn).indexOf(pair[0]) >= 0)) {
+      fail('Heimaleiga list missing ' + pair[1] + ' — page would drop that site.');
+    }
+  });
+
   console.log(`Heimaleiga ehf sites: ${heim.length} (ids ${heim.map(x => x.id).sort((a,b)=>a-b).join(',')})`);
+  console.log(`Heimaleiga GROUP (rekstrarfelag): ${group.length} sites across ${rfBases.length} bases`);
   console.log(`Center Hótel sites: ${center.length}`);
   console.log(`S30 / Ármúli 13A: #${s30[0].id} ${s30[0].nafn}`);
   console.log(`Máni #${mani && mani.id} · Midtown #${mid && mid.id} — separate`);
-  console.log('source: co_id pin + no hits[0] + pairs keyed on fyrirtaeki_id + Payday per solur.customer_id');
-  console.log(`GREEN: rekstrarfélög sites stay independent (${heim.length}+${center.length} rows, not folded on kt).`);
+  console.log('source: co_id pin + no hits[0] + pairs keyed on fyrirtaeki_id + Payday per solur.customer_id + deleted_at + kt recover');
+  console.log(`GREEN: rekstrarfélög sites stay independent (${heim.length}+${center.length} rows, not folded on kt; Heimaleiga group ${group.length}).`);
 })().catch(e => fail(String(e && e.message || e)));
