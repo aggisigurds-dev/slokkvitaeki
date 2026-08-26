@@ -136,7 +136,10 @@ function applyTopbarStyles(){
     v.style.setProperty('margin-left','0','important');
     v.style.setProperty('width','100%','important');
     v.style.setProperty('max-width','100%','important');
-    v.style.setProperty('padding-top','60px','important');
+    // 86px = slim Sími banner (66px at top:8 → bottom 74) + 12px air.
+    // 60px sat under the hamburger only and tucked content under the banner
+    // (Afgreiðsla overlap on 390px). Inline !important; 314 re-asserts it.
+    v.style.setProperty('padding-top','86px','important');
   });
   _topbarKey = wantKey;
 }

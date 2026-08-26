@@ -80,6 +80,20 @@
     g(' .page-title__tools') + '{justify-content:flex-start!important;flex-wrap:wrap!important;width:100%!important;gap:7px!important}',
     g(' .page-title h1') + '{font-size:20px!important;line-height:1.15!important}',
     g(' .frow2') + '{grid-template-columns:1fr!important}',
+    // Workshop .two-col and Þjónustutæki .field-body are 2/3-col flex/grid
+    // with !important in app.css. css/mobile.css only stacks them at
+    // max-width 480/900 — Sími-on-wide-window misses that, so pin here.
+    g(' .two-col') + '{display:flex!important;flex-direction:column!important;min-height:0!important}',
+    g(' .two-col .main-panel', ' .two-col .detail-panel', ' .two-col .sidebar') +
+      '{width:100%!important;max-width:100%!important;min-width:0!important;flex:none!important;box-sizing:border-box!important}',
+    g(' .two-col .detail-panel') + '{padding:12px 10px!important}',
+    M + '#view-workshop.active > .two-col,' + A + '#view-workshop.active > .two-col' +
+      '{display:flex!important;flex-direction:column!important;min-height:0!important}',
+    g(' .field-body') + '{display:block!important;grid-template-columns:1fr!important;overflow:visible!important;min-height:0!important}',
+    M + '#view-field.active .field-body,' + A + '#view-field.active .field-body' +
+      '{display:block!important;grid-template-columns:1fr!important;overflow:visible!important}',
+    g(' .field-col') + '{width:100%!important;max-width:100%!important;min-height:0!important}',
+    g(' .field-toolbar') + '{flex-wrap:wrap!important;gap:8px!important}',
     g(' .three-col') + '{display:block!important}',
     g(' .three-col>aside.sidebar', ' .three-col>main.main-panel', ' .three-col>aside.print-aside') +
       '{width:100%!important;max-width:100%!important;min-width:0!important;flex:none!important;box-sizing:border-box!important}',
@@ -224,7 +238,31 @@
     // ── Rekstrarfélög row density (Heimaleiga data is another ticket) ──────
     M + '#view-rekstrarfelog .rf-page,' + A + '#view-rekstrarfelog .rf-page{padding:8px 8px 40px!important}',
     M + '#view-rekstrarfelog .rf-tbl tbody td,' + A + '#view-rekstrarfelog .rf-tbl tbody td{padding:4px 8px!important}',
-    M + '#view-rekstrarfelog .rf-stat{flex:1 1 140px!important;min-width:0!important;padding:10px 12px!important}'
+    M + '#view-rekstrarfelog .rf-stat{flex:1 1 140px!important;min-width:0!important;padding:10px 12px!important}',
+
+    // ── Modals sit outside .view (Nýtt fyrirtæki / Vista fyrirtæki) ────────
+    // 263 explicitly skipped modals; .frow2 stayed 2-col on 360px and the
+    // 560px card + 20px overlay pad left grey gutters. Stack fields, fill
+    // the viewport, keep inputs ≥16px so iOS does not zoom.
+    M + '.modal .frow2,' + A + '.modal .frow2{grid-template-columns:1fr!important}',
+    M + '.modal.open,' + A + '.modal.open{padding:8px!important;align-items:stretch!important;justify-content:flex-start!important}',
+    M + '.modal.open > .modal-hd,' + M + '.modal.open > .modal-bd,' + M + '.modal.open > .modal-ft,' +
+    A + '.modal.open > .modal-hd,' + A + '.modal.open > .modal-bd,' + A + '.modal.open > .modal-ft' +
+      '{width:100%!important;max-width:100%!important;box-sizing:border-box!important}',
+    M + '.modal-bd,' + A + '.modal-bd{padding:12px 12px 16px!important}',
+    M + '.modal .fi,' + M + '.modal input,' + M + '.modal select,' + M + '.modal textarea,' +
+    A + '.modal .fi,' + A + '.modal input,' + A + '.modal select,' + A + '.modal textarea' +
+      '{min-height:48px!important;font-size:16px!important}',
+    M + '.modal input[type="checkbox"],' + M + '.modal input[type="radio"],' +
+    A + '.modal input[type="checkbox"],' + A + '.modal input[type="radio"]' +
+      '{min-height:20px!important;width:20px!important;height:20px!important;padding:0!important}',
+    M + '.modal-ft,' + A + '.modal-ft{flex-wrap:wrap!important;gap:8px!important}',
+    M + '.modal-ft button,' + A + '.modal-ft button{min-height:44px!important;font-size:16px!important}',
+
+    // Appmode list cells: 261 sets td{font-size:16.5px} which inflates every
+    // overview table. Names stay ≥16px on the row titles (315 / page CSS);
+    // table chrome goes compact. Forms keep 16px via the input rules above.
+    A + V + ' table td,' + A + V + ' table th{font-size:13px}'
   ].join('\n');
 
   const style = document.createElement('style');
@@ -232,5 +270,30 @@
   style.textContent = css;
   (document.head || document.documentElement).appendChild(style);
 
-  window.SimiCompactLayer = { installed: true, styleId: STYLE_ID };
+  // mobilenav.js stamps padding-top on every .view as inline !important
+  // (hamburger clearance). Stylesheets cannot beat that. Re-assert: 86px
+  // under the slim Sími banner, 48px under the Öpp header.
+  function pinPad() {
+    const app = !!(document.body && document.body.classList.contains('appmode'));
+    const mobile = document.documentElement.getAttribute('data-viewmode') === 'mobile';
+    if (!app && !mobile) return;
+    const pad = app ? '48px' : '86px';
+    document.querySelectorAll('.view').forEach(function (v) {
+      if (v.style.getPropertyValue('padding-top') !== pad) {
+        v.style.setProperty('padding-top', pad, 'important');
+      }
+    });
+  }
+  pinPad();
+  document.addEventListener('slokk-viewmode', pinPad);
+  document.addEventListener('DOMContentLoaded', pinPad);
+  [400, 1200, 3000].forEach(function (ms) { setTimeout(pinPad, ms); });
+  try {
+    new MutationObserver(pinPad).observe(document.documentElement, {
+      subtree: true, childList: true, attributes: true,
+      attributeFilter: ['class', 'data-viewmode']
+    });
+  } catch (_) {}
+
+  window.SimiCompactLayer = { installed: true, styleId: STYLE_ID, pinPad: pinPad };
 })();
