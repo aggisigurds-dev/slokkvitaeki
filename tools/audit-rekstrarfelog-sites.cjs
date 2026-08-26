@@ -61,8 +61,11 @@ if (!/liveKtN\[d\] === 1/.test(SRC)) {
 if (!/white-space:nowrap;overflow:hidden;text-overflow:ellipsis/.test(SRC)) {
   fail('175 building names wrap again — Heimaleiga rows would be too tall.');
 }
-if (!/max-height:200000px/.test(SRC)) {
+if (!/max-height:none/.test(SRC) && !/max-height:200000px/.test(SRC)) {
   fail('175 accordion max-height is back to a small cap — last Heimaleiga rows would clip.');
+}
+if (!/fetchAllIn/.test(SRC)) {
+  fail('175 live .in() is no longer chunked — a long base-id list would 414 and drop Heimaleiga sites.');
 }
 
 // ── (2) live data: do not merge ────────────────────────────────────────────

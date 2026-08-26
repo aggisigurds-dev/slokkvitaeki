@@ -1667,8 +1667,30 @@
         var baseIds = Object.keys(baseByKt).map(function(k){ return baseByKt[k]; }).filter(function(v,i,a){ return a.indexOf(v)===i; });
         if (baseIds.length) {
           var pr = await DB.sb.from('document_pairs').select('customer_base_id,fyrirtaeki_id,year,service_type,invoice_doc_id,solur_id').in('customer_base_id', baseIds);
+          var tegByInv = {};
+          var invIds = [];
+          (pr.data||[]).forEach(function(x){ if (x && x.invoice_doc_id) invIds.push(x.invoice_doc_id); });
+          try {
+            for (var ii = 0; ii < invIds.length; ii += 100) {
+              var chunk = invIds.slice(ii, ii + 100);
+              var tr = await DB.sb.from('customer_documents').select('id,vidskiptategund').in('id', chunk).limit(chunk.length);
+              (tr.data||[]).forEach(function(d){ tegByInv[d.id] = String(d.vidskiptategund||'').toLowerCase(); });
+            }
+          } catch (e) {
+            if (typeof window.logProblem === 'function') {
+              window.logProblem('rekstrarfelog', 'pair_invoice_tegund_failed');
+            }
+          }
           (pr.data||[]).forEach(function(x){
             if (!(x.invoice_doc_id || x.solur_id)) return;
+            // Cross-typed pair (úttekt-par á brunakerfis-reikningi) kveikir EKKI
+            // 🧾 á rangri strimlu. Óþekkt tegund = fail-open.
+            if (x.invoice_doc_id && tegByInv[x.invoice_doc_id]) {
+              var t = tegByInv[x.invoice_doc_id];
+              if (t === 'bud') return;
+              if (t === 'brunakerfi' && x.service_type !== 'brunakerfi') return;
+              if (t === 'uttekt' && x.service_type !== 'uttekt') return;
+            }
             var key = x.year+'|'+x.service_type;
             if (x.fyrirtaeki_id != null) {
               (pairByCo[String(x.fyrirtaeki_id)] = pairByCo[String(x.fyrirtaeki_id)] || {})[key] = true;
