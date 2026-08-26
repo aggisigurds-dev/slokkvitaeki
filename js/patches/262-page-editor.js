@@ -726,8 +726,28 @@
     state.customLinks.splice(ci, 1);
     persist(); renderPanel();
   }
-  // Chips-röndin: fastir link-takkar neðst til hægri á hverri síðu (per síða,
-  // vistast í AppSettings → fylgja milli tækja). ✕ er alltaf sýnilegt en smátt.
+  // Chips-röndin: link-takkar á hverri síðu (per síða, vistast í AppSettings →
+  // fylgja milli tækja).
+  //
+  // 26.08 v3 — ósk Agnars: „nýjir takka linkar fara bara niður í hægra hornið og
+  // ég get ekkert losnað við það … ég vill geta ráðið hvar þeir verða."
+  // Takkarnir voru harðkóðaðir í fastan stafla (right:12px;bottom:14px) svo ALLIR
+  // lentu í horninu og staðsetning varð ekki valin. Núna: DRAGA takkann hvert sem
+  // er — staðsetningin geymist sem hlutfall af glugganum (x/y í %) á hverjum takka
+  // fyrir sig, svo hún haldist á öllum skjástærðum. Takki án x/y hegðar sér eins og
+  // áður (staflast neðst til hægri) svo eldri vistaðir takkar færast ekki til.
+  // Tvísmellur setur takkann aftur í hornið; ✕ fjarlægir hann (stærra og sýnilegra
+  // en áður — það var of smátt til að hitta á síma).
+  let _plRz = null;
+  const PL_POS = l => (l && typeof l.x === 'number' && typeof l.y === 'number');
+  function plClamp(el, xPct, yPct) {
+    const w = el.offsetWidth || 120, h = el.offsetHeight || 32;
+    const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
+    let left = (xPct / 100) * vw, top = (yPct / 100) * vh;
+    left = Math.max(4, Math.min(left, vw - w - 4));
+    top = Math.max(4, Math.min(top, vh - h - 4));
+    el.style.left = left + 'px'; el.style.top = top + 'px';
+  }
   function renderPageLinks(force) {
     const k = curViewId();
     if (!force && k === _plKey && document.getElementById('pe-pagelinks')) return;
@@ -738,15 +758,93 @@
     if (!box) {
       box = document.createElement('div');
       box.id = 'pe-pagelinks';
-      box.style.cssText = 'position:fixed;right:12px;bottom:14px;z-index:99500;display:flex;flex-direction:column;gap:8px;align-items:flex-end';
       document.body.appendChild(box);
     }
-    box.innerHTML = arr.map((l, i) =>
-      '<span style="display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #cbd5e1;border-radius:99px;padding:7px 8px 7px 13px;box-shadow:0 6px 18px -8px rgba(15,23,42,.4)">' +
-        '<a href="' + esc(l.u) + '" target="_blank" rel="noopener" style="font:700 12.5px \'Space Grotesk\',sans-serif;color:#0f172a;text-decoration:none;white-space:nowrap;max-width:52vw;overflow:hidden;text-overflow:ellipsis">' + esc(l.n) + '</a>' +
-        '<button type="button" data-pl-del="' + i + '" title="Fjarlægja takkann af síðunni" style="all:unset;cursor:pointer;width:16px;height:16px;line-height:16px;text-align:center;border-radius:99px;background:#f1f5f9;color:#64748b;font-size:10px">✕</button>' +
-      '</span>').join('');
-    box.querySelectorAll('[data-pl-del]').forEach(b => b.onclick = e => { e.preventDefault(); removePageLink(+b.dataset.plDel); });
+    // Stíllinn er settur í HVERT sinn (ekki bara við stofnun): annars situr eldra
+    // eintak eftir með gamla stíl ef patchinn er endurhlaðinn í lifandi síðu.
+    // Gegnsætt yfirlag yfir allan gluggann svo takkarnir geti setið hvar sem er.
+    // pointer-events:none => yfirlagið sjálft stelur ENGUM smellum; aðeins
+    // takkarnir sjálfir taka við þeim.
+    box.style.cssText = 'position:fixed;inset:0;z-index:99500;pointer-events:none';
+    // Sjálfgefna hornið: staflast OFAN VIÐ „🤖 AI-flokka póst" (#pat-launch, 308)
+    // sem situr líka fast neðst til hægri — og með hærri z-index, svo hann lá ofan
+    // á link-tökkunum og faldi ✕-ið („ég get ekkert losnað við það", Agnar 26.08).
+    let bot = 14;
+    try {
+      const pat = document.getElementById('pat-launch');
+      if (pat && pat.offsetParent !== null) {
+        const pr = pat.getBoundingClientRect();
+        if (pr.height) bot = Math.round((window.innerHeight - pr.top) + 10);
+      }
+    } catch (_) {}
+    box.innerHTML = '<div id="pe-pl-stack" style="position:absolute;right:12px;bottom:' + bot + 'px;display:flex;flex-direction:column;gap:8px;align-items:flex-end"></div>';
+    const stack = box.querySelector('#pe-pl-stack');
+    arr.forEach((l, i) => {
+      const el = document.createElement('span');
+      el.setAttribute('data-pl-chip', String(i));
+      el.style.cssText = 'pointer-events:auto;display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #cbd5e1;border-radius:99px;padding:7px 8px 7px 13px;box-shadow:0 6px 18px -8px rgba(15,23,42,.4);cursor:grab;touch-action:none;user-select:none';
+      el.title = 'Dragðu takkann þangað sem þú vilt hafa hann · tvísmellur setur hann aftur í hornið';
+      el.innerHTML =
+        '<a href="' + esc(l.u) + '" target="_blank" rel="noopener" draggable="false" style="font:700 12.5px \'Space Grotesk\',sans-serif;color:#0f172a;text-decoration:none;white-space:nowrap;max-width:52vw;overflow:hidden;text-overflow:ellipsis">' + esc(l.n) + '</a>' +
+        '<button type="button" data-pl-del="' + i + '" title="Fjarlægja takkann af síðunni" style="all:unset;cursor:pointer;width:20px;height:20px;line-height:20px;text-align:center;border-radius:99px;background:#f1f5f9;color:#475569;font-size:12px;font-weight:700;flex:none">✕</button>';
+      if (PL_POS(l)) { el.style.position = 'absolute'; box.appendChild(el); plClamp(el, l.x, l.y); }
+      else stack.appendChild(el);
+    });
+    box.querySelectorAll('[data-pl-del]').forEach(b => b.onclick = e => {
+      e.preventDefault(); e.stopPropagation(); removePageLink(+b.dataset.plDel);
+    });
+    box.querySelectorAll('[data-pl-chip]').forEach(el => plDraggable(el, arr));
+  }
+  // Draga takka: pointer-events, virkar bæði með mús og á snertiskjá. Hreyfing
+  // undir 4px telst smellur (svo tengillinn opnist eðlilega), yfir 4px er dráttur.
+  function plDraggable(el, arr) {
+    el.addEventListener('dblclick', e => {
+      e.preventDefault();
+      const l = arr[+el.getAttribute('data-pl-chip')]; if (!l) return;
+      delete l.x; delete l.y;
+      persist(); renderPageLinks(true); toast('↩ Takkinn aftur í hornið');
+    });
+    el.addEventListener('pointerdown', e => {
+      if (e.button != null && e.button !== 0) return;
+      if (e.target && e.target.closest && e.target.closest('[data-pl-del]')) return;
+      const l = arr[+el.getAttribute('data-pl-chip')]; if (!l) return;
+      const r = el.getBoundingClientRect();
+      const offX = e.clientX - r.left, offY = e.clientY - r.top;
+      let moved = false;
+      const onMove = ev => {
+        if (!moved && Math.abs(ev.clientX - e.clientX) < 4 && Math.abs(ev.clientY - e.clientY) < 4) return;
+        if (!moved) {
+          moved = true;
+          el.style.cursor = 'grabbing';
+          el.style.opacity = '.92';
+          // Losa úr staflanum og festa á yfirlagið, á sama stað og hann var.
+          const box = document.getElementById('pe-pagelinks');
+          if (box && el.parentElement !== box) { el.style.position = 'absolute'; box.appendChild(el); }
+        }
+        ev.preventDefault();
+        const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
+        plClamp(el, ((ev.clientX - offX) / vw) * 100, ((ev.clientY - offY) / vh) * 100);
+      };
+      const onUp = ev => {
+        document.removeEventListener('pointermove', onMove, true);
+        document.removeEventListener('pointerup', onUp, true);
+        document.removeEventListener('pointercancel', onUp, true);
+        el.style.cursor = 'grab'; el.style.opacity = '';
+        if (!moved) return;                 // hreinn smellur → tengillinn sér um sig
+        ev.preventDefault();
+        const vw = window.innerWidth || 1024, vh = window.innerHeight || 768;
+        l.x = Math.max(0, Math.min(100, (parseFloat(el.style.left) / vw) * 100));
+        l.y = Math.max(0, Math.min(100, (parseFloat(el.style.top) / vh) * 100));
+        persist(); toast('📍 Staðsetning takkans vistuð');
+      };
+      // Hlustað á DOCUMENT, ekki á takkann sjálfan: við færum hann milli foreldra
+      // í miðjum drætti (úr staflanum yfir á yfirlagið) og það EYÐIR pointer-capture,
+      // svo frekari pointermove-atburðir rata ekki á hann. (Staðfest í vafra 26.08:
+      // takkinn losnaði en fylgdi svo ekki músinni og staðsetningin vistaðist aldrei.)
+      document.addEventListener('pointermove', onMove, true);
+      document.addEventListener('pointerup', onUp, true);
+      document.addEventListener('pointercancel', onUp, true);
+    });
   }
   // 🗺 Grunn-skipting síðunnar — smellu-val á stóru svæðin (header, valstika,
   // tafla, main content …) án þess að þurfa að hitta þau með bendlinum
@@ -815,7 +913,7 @@
           : '') +
         '</div>').join('') +
       '<button class="pe-btn pri" id="pe-lk-new" style="margin-top:6px">＋ Nýr link-takki…</button>' +
-      '<div class="pe-sub" style="margin-top:6px">Leit: sláðu inn og ýttu á Enter — niðurstaðan opnast í nýjum flipa. <b>➕ Á síðuna</b> setur takkann neðst til hægri á síðuna sem er opin (✕ á takkanum fjarlægir). Nýr link-takki = nafn + slóð.</div>' +
+      '<div class="pe-sub" style="margin-top:6px">Leit: sláðu inn og ýttu á Enter — niðurstaðan opnast í nýjum flipa. <b>➕ Á síðuna</b> setur takkann á síðuna sem er opin. <b>Dragðu takkann þangað sem þú vilt hafa hann</b> — staðsetningin vistast fyrir þá síðu og fylgir milli tækja; tvísmellur setur hann aftur í hornið og ✕ fjarlægir hann. Nýr link-takki = nafn + slóð.</div>' +
     '</details>';
   }
   function presetsSection() {
@@ -1111,6 +1209,9 @@
     // link-takkar á síðum: teikna við ræsingu og elta síðu-skipti
     renderPageLinks(true);
     window.addEventListener('hashchange', () => setTimeout(() => renderPageLinks(true), 120));
+    // Snúningur/stærðarbreyting: dregnir takkar eru geymdir sem hlutfall, svo
+    // teiknum upp á nýtt til að klemma þá aftur inn í gluggann.
+    window.addEventListener('resize', () => { clearTimeout(_plRz); _plRz = setTimeout(() => renderPageLinks(true), 180); });
     document.addEventListener('slokk-viewmode', () => renderPageLinks(true));
     setInterval(() => renderPageLinks(false), 2000);   // ódýrt: no-op nema view breytist
   }
