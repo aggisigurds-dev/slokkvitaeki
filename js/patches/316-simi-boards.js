@@ -82,13 +82,20 @@
     trio('#view-aksturslisti #_al-map') + '{height:220px!important}',
 
     // ── Verkdagbók (media-query stacks miss Sími-on-wide-window) ───────────
+    trio('#view-verkdagbok') + '{overflow-x:hidden!important}',
+    trio('#view-verkdagbok .vd-toolbar') + '{flex-wrap:wrap!important;max-width:100%}',
+    trio('#view-verkdagbok .vd-search') + '{min-width:0!important;flex:1 1 100%!important}',
+    trio('#view-verkdagbok .vd-stats') + '{flex-wrap:wrap;max-width:100%;flex-shrink:1}',
     trio('#view-verkdagbok .vd-meta-row') + '{grid-template-columns:1fr!important}',
-    trio('#view-verkdagbok .vd-card') + '{grid-template-columns:auto 1fr!important}',
+    trio('#view-verkdagbok .vd-card') + '{grid-template-columns:auto minmax(0,1fr)!important;max-width:100%;box-sizing:border-box}',
     trio('#view-verkdagbok .vd-actions') +
       '{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;gap:6px;padding-top:8px}',
     trio('#view-verkdagbok .vd-actions button') + '{flex:1 1 auto;min-height:40px}',
     trio('#view-verkdagbok .vd-eq-row') + ',' + trio('#view-verkdagbok .vd-eq-head') +
-      '{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) 40px 40px!important}',
+      '{grid-template-columns:minmax(0,1fr) minmax(0,1.4fr) 36px 36px!important}',
+    trio('#view-verkdagbok .vd-tbl-wrap') + '{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}',
+    trio('#view-verkdagbok .vd-tbl .ath-cell') + ',' + trio('#view-verkdagbok .vd-tbl .fyr-cell') +
+      '{min-width:0!important}',
 
     // ── Skipulagsborð — 4 desktop cells clip on 390px ──────────────────────
     trio('#vb-skipulag .sb-grid') + '{grid-template-columns:1fr 1fr!important;gap:6px}',
