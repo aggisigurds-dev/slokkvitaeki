@@ -473,7 +473,7 @@ Röð Center:   [26 both + i.rep + i.inv]     [Ágú]      [2 SLT]
 |---|---|---|
 | **Ágú 32** (rauð valin chip) | FILTER: `state.months ∋ 8`, talan = `monthCounts[8]` | Ekki `inspect_month` einstaks félags |
 | **Ágú** í SKOÐUN-dálki | SOURCE-pera: `c._ars.inspect_month === 8` | Ekki sían. Rauður texti = núverandi almanaksmánuður |
-| Grænt **26** + punktar | Árs-pera `187 yrCls` both + `._dd > u > i.rep/inv` | Ekki FULLBÚIÐ-textinn; sami *sannleikur* (skýrsla+reikningur) |
+| Grænt **26** + punktar | Árs-pera `187 yrCls` both + `._dd > u > i.rep/inv` | **Ekki** FULLBÚIÐ-textinn. `._yr.both` = skýrsla **eða** klarad-par; FULLBÚIÐ = n-of-2 á prófíl (kafli 13.2) |
 
 Vír SOURCE → SKOÐUN: kafli 1.3. Vír '26' prófíll → '26' tafla: sama fid+ár, 199 `pill` vs 187 `yrCls` (bæði lesa skjöl/pör, 187 bætir Look-A + mánuðar-penda).
 
@@ -619,4 +619,47 @@ Agnar merkti bæði **Ágú 32** og **Ágú** í SKOÐUN. Það eru **ekki** sam
 ```
 
 Smellur á FILTER felur raðir; hann **skrifar ekki** inspect_month. Smellur á SOURCE skrifar blob og **allir** perur sem lesa `_ars.inspect_month` uppfærast.
+
+---
+
+## 13. Known faults (as-built audit 2026-08-26)
+
+Úttekt gegn live `187`/`153`/`175`/`199`/`317` á `cursor/elon-musk-blueprint-226e` (+ master sem inniheldur Plaza-lagnirnar). **Engin kóða-lagfæring** — þetta er bilanalisti. Fid = `fyrirtaeki.id`.
+
+### 13.1 Already patched (not live)
+
+| Pera | Rangt áður | Vír nú | Staða |
+|---|---|---|---|
+| Plaza **193** `._yr` 2026 blátt | Drive `customer_documents` **9868** R-107802 (Stolpi) fór í `hasReikYear` → `inv-only` | `hasConfirmedInvYear` = `v_uttekt_ar` **eða** `solur.customer_id` (`187:72–75`). `yrCls` notar `hasInvOnly` (`187:462`). `showInvLed` án skýrslu = confirmed only (`187:425`) | **documented-and-patched.** Skjalið er **áfram í DB** |
+| Plaza Sími grænt 2026 frá Klöpp/Grandi | `_docYears` ORaði allar `customer_base` úttektarskýrslur á 11 Center-hótel | `byBase` = aðeins munaðir (engin fid) `153:268–271`; neytt aðeins ef base á ≤1 stað `153:358–361` | **documented-and-patched.** Hótel **ekki** sameinuð |
+| Brunakerfi-PDF málar slökkvitækja-`._yr` | `isReportKind` tók `kind==='brunakerfi'` (Arnarhvoll) | `187:34–37` — kind aðeins úttektarskýrsla; heiti með `brunakerfi` útilokað | **documented-and-patched** |
+| Rekstrarfélög 🧾 án skýrslu | par á base/kt | `yrMiniSl`: `bundled && state==='done'` `175:1607`; pör per fid `175:1668–1715` | **checks out** — 🧾 kviknar ekki á Plaza 2026 |
+
+### 13.2 Dual circuits that a staffer can read as one bulb
+
+Þetta er **ekki** Plaza-vír yfir stað. Þetta **er** rangmerking ef Agnar treystir þremur perum sem sömu perunni.
+
+| Pera | Rofi / vír | Getur **ósamst** við |
+|---|---|---|
+| Ársskoðun `._yr.both` | 187 `yrCls`: `isKlarad` **eða** `effRep` (locMap/viðhengi). Skýrsla **án** reiknings = grænt | 199 FULLBÚIÐ (`hasRep && hasInv` `199:1080`) sýnir þá **1 AF 2 VANTAR** |
+| STAÐA EFTIR ÁRI `.sk-pill` | `pill()` `199:443`: `hasReport && hasInv` úr `repByY`/`invByY` (Drive-reikningur **telur**). Aths. `199:445` segir ranglega „sama regla og `_yr both`" | `._yr.both` þarf ekki reikning; `._yr.inv-only` getur kviknað af `last_year_inspected` (`187:455–462`) án þess að pillan verði `claude`/`both` |
+| ✓ FULLBÚIÐ | n-of-2 á **þjónustukortinu** (úttekt vs brunakerfi sitt hvor) | `._yr.both` (listi) og `.sk-pill.both` (árshluti) |
+
+**Röðun þegar þau rekast:** listinn (`187 yrCls`) ræður „fórum við?"; FULLBÚIÐ ræður „er búntið tvískipt á prófíl?"; pillan er skjala-talning + fact-check, ekki Look-A.
+
+**📅 SOURCE vs SKOÐUN vs FILTER** — ekki bug, sjá kafla 1.2 og 12. 199 `loadInspectMonth` (`199:726–742`) les **ekki** `v_skodunar_manudur`. 153/187/síu-chips gera það. Prófíll getur sýnt `📅 mánuður?` á stað sem SKOÐUN sýnir Ágú (44 staðir, mánuður aðeins úr úttektarreikningi). **Rank:** manual > blob > facts > `v_skodunar_manudur` > `uttaeki.next_insp`. 175 næsta-dagur er **önnur** keðja (CanonStadur 312).
+
+### 13.3 Tracer leftover (317) — pera rétt, stimpill getur logið
+
+- `srcOfYr`: `inv-only` → alltaf `src=solur` (`317:102`) líka þegar rofinn var `last_year_inspected` eða `year_factcheck=claude`.
+- `._ars-mo` FILTER: `y=` mánaðarnúmer (`data-month`), ekki ár (`317:156–158`).
+- `.sk-doc.inv` → `src=solur` líka fyrir Drive-einn reikning.
+
+Hover `data-elon` er vísbending, ekki sönnun. Lesa `file:line` í köflum 1–3.
+
+### 13.4 Residual data (not a display wire)
+
+- Plaza **9868** / R-107802 situr áfram á fid **193**, `vidskiptategund=uttekt`. Kveikir **ekki** inv-only. Getur enn birtst sem reiknings-chip á prófíl og, **ef** 2026-skýrsla bætist við, auto-parast (`199:1004`) → FULLBÚIÐ á Stolpi-reikningi.
+- `filterDocsToLocation` (`199:272–281`): reikningur/samningur **án** fid → sýndur á **öllum** kt-stöðum. 9868 **hefur** fid=193 → Plaza only. Ómerkt Drive-reikningur = fail-open á Center-systkinum (prófíls-chip, ekki `._yr`).
+
 
