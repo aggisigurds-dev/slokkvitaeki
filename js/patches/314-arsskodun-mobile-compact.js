@@ -98,6 +98,14 @@
       M + '._dd,' + A + '._dd{gap:1px!important}',
       M + '._yrs,' + A + '._yrs{gap:1px!important}',
 
+      /* Under-name ferðanóta on Sími (column stays hidden). Dotted, shrinks. */
+      M + 'input._ars-note-under,' + A + 'input._ars-note-under',
+      '{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;' +
+       'height:22px!important;min-height:22px!important;margin-top:3px!important;' +
+       'font-size:16px!important;padding:0 2px!important;border:0!important;' +
+       'border-bottom:1px dotted #c3c9d3!important;border-radius:0!important;' +
+       'background:transparent!important;box-sizing:border-box!important}',
+
       /* Month / akstur / status */
       M + '._mo,' + A + '._mo{font-size:12px!important}',
       M + '._arsak-chip,' + A + '._arsak-chip,',

@@ -154,6 +154,14 @@
     A + V + ' .fi,' + A + V + ' .field-dark' +
       '{min-height:52px!important;font-size:16px!important}',
 
+    // Ferðanóta / Rekstrarfélög nóta: dotted one-liner, not 48px bricks.
+    M + V + ' input._ars-plannote,' + M + V + ' input._note,' +
+    M + V + ' input.rf-plannote,' + M + V + ' input._rf-plannote,' +
+    A + V + ' input._ars-plannote,' + A + V + ' input._note,' +
+    A + V + ' input.rf-plannote,' + A + V + ' input._rf-plannote' +
+      '{min-height:22px!important;height:22px!important;font-size:16px!important;' +
+       'padding-top:0!important;padding-bottom:0!important;border-radius:0!important}',
+
     // Checkboxes / radios must not inherit the 48–52px field hammer.
     g(' input[type="checkbox"]', ' input[type="radio"]') +
       '{min-height:20px!important;width:20px!important;height:20px!important;padding:0!important}',

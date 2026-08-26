@@ -1927,6 +1927,11 @@
           inp.dataset.saved = (val == null ? '' : val);
           const c1 = _cache.byId && _cache.byId[id]; if (c1) c1.plan_note = val;
           const c2 = _cache.list.find(x => x.id === id); if (c2) c2.plan_note = val;
+          main.querySelectorAll('._ars-plannote[data-co-id="' + id + '"]').forEach(other => {
+            if (other === inp || document.activeElement === other) return;
+            other.value = val || '';
+            other.dataset.saved = val == null ? '' : val;
+          });
         } catch (err) {
           console.warn('[arsskodun] plan_note', err);
           try { if (window.logProblem) window.logProblem('plan_note_save_failed', 'co ' + id); } catch (_) {}
@@ -2731,10 +2736,13 @@
       V+'._addr{white-space:normal;overflow:visible;overflow-wrap:anywhere;display:block}',
       V+'._post{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--muted);margin-right:8px}',
       V+'._mo{font-family:var(--mono);font-size:12px;color:var(--ink-2)}',
-      V+'._note{width:100%;height:24px;border:1px solid transparent;border-radius:7px;background:transparent;color:#3a4250;font-family:var(--ui);font-size:11.5px;padding:0 9px;box-sizing:border-box;transition:background .12s,border-color .12s}',
-      V+'._note::placeholder{color:#c7ccd6;letter-spacing:.16em}',
-      V+'._note:hover{border-color:#e6e9ef;background:#fbfcfd}',
-      V+'._note:focus{outline:none;border-color:#2f5fe0;background:#fff;color:#0f172a}',
+      // Ein-lína ferðanóta: dökkgrá punktalína sem skreppur (min-width:0).
+      V+'._note, '+V+'input._ars-plannote{display:block;width:100%;min-width:0;max-width:100%;height:22px!important;min-height:22px!important;max-height:22px!important;border:0!important;border-bottom:1px dotted #c3c9d3!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;color:#3a4250;font-family:var(--ui);font-size:12px!important;padding:0 2px!important;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
+      V+'._note::placeholder,'+V+'input._ars-plannote::placeholder{color:#c7ccd6;letter-spacing:.14em}',
+      V+'._note:hover,'+V+'input._ars-plannote:hover{border-bottom-color:#9aa3b2;background:transparent}',
+      V+'._note:focus,'+V+'input._ars-plannote:focus{outline:none;border-bottom-color:#2f5fe0;border-bottom-style:solid;background:#fff;color:#0f172a}',
+      V+'._ars-notacell{min-width:0;overflow:hidden;vertical-align:middle}',
+      V+'input._ars-note-under{display:none}',
       V+'._yrs{display:flex;gap:11px;justify-content:center}',
       V+'._dd{display:inline-flex;flex-direction:column;align-items:center;gap:3px}',
       V+'._dd > u{display:flex;gap:3px;text-decoration:none}',
@@ -2878,8 +2886,9 @@
                       ? `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Handvirkt virkjaður aftur — smelltu til að merkja aftur sem sleppt" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #86efac;background:#f0fdf4;color:#15803d;cursor:pointer;font-weight:700">✓ virkur · ↩ aftur í sleppt</button>`
                       : `<button class="_ars-unskip" data-co-id="${c.id}" type="button" title="Virkja aftur — telst þá ekki lengur sleppt og birtist í öllum sýnum og tölum" style="font-size:9.5px;padding:2px 8px;border-radius:99px;border:1px solid #fde68a;background:#fef3c7;color:#a16207;cursor:pointer;font-weight:700">↩ Virkja aftur</button>`) : ''}</span>` : ''}
                     ${aminning ? `<div style="font-size:10px;color:#b45309;margin-top:1px;line-height:1.3;white-space:normal"><span style="font-weight:700">📌</span> ${esc(aminning.slice(0, 90))}${aminning.length>90?'…':''} <button class="_ars-amin-x" data-co-id="${c.id}" type="button" title="Eyða áminningunni af þessu fyrirtæki" style="border:none;background:transparent;color:#b45309;cursor:pointer;font-size:10px;padding:0 3px;opacity:.7">✕</button></div>` : ''}
+                    <input class="_note _ars-plannote _ars-note-under" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="···" title="Ferðanóta — tímabundnar nótur við ferðaskipulag" maxlength="140">
                   </td>
-                  <td class="_ars-notacell"><input class="_note _ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="·····" title="Ferðanóta — tímabundnar nótur við ferðaskipulag" maxlength="140"></td>
+                  <td class="_ars-notacell"><input class="_note _ars-plannote" data-co-id="${c.id}" value="${esc(c.plan_note || '')}" placeholder="···" title="Ferðanóta — tímabundnar nótur við ferðaskipulag" maxlength="140"></td>
                   <td class="_ars-addrcell"><span class="_addr">${c.postnumer ? `<span class="_post">${esc(c.postnumer)}</span>` : ''}${esc(c.heimilisfang || '—')}</span></td>
                   <td class="center${ovr ? ' _ars-ovr-month' : ''}"${ovr ? ` data-co-id="${c.id}" title="⚡ Smelltu til að breyta skoðunarmánuði" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}><span class="_mo" style="${m===curMonth?'color:#c0241f;font-weight:700':''}">${manualMark(esc(MONTHS_IS_SHORT[m-1] || '—'), !!ars.inspect_month_manual)}</span></td>
                   <td ${ovr ? `class="_ars-ovr-eq" data-co-id="${c.id}" title="⚡ Smelltu til að breyta tækjatölum" style="cursor:pointer;background:rgba(245,158,11,.07)"` : ''}>
