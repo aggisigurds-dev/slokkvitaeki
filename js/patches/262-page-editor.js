@@ -997,6 +997,17 @@
       find: v => v && v.querySelector('._ars-filterstrip, .filterstrip, .filters, .toolbar') },
     { id: 'tafla', label: 'Taflan',
       find: v => v && v.querySelector('table') },
+    // ── Kanban-síður (Afgreiðsla / Verkstæði, patch 78) ────────────────────
+    // Sama umgjörð, önnur svæði: kanban-síða hefur enga töflu og engin
+    // talnaspjöld — hún hefur leitarrönd, dálka og kort. Svæðin sem finnast
+    // EKKI á síðunni falla sjálfkrafa út úr kortinu (sjá zoneMapSection), svo
+    // hver síðugerð sýnir bara sín eigin svæði án sérstakrar síðu-rökfræði.
+    { id: 'leit',   label: 'Leitarrönd',
+      find: v => v && v.querySelector('#counter-sidebar') },
+    { id: 'dalkar', label: 'Kanban-dálkar',
+      find: v => { const c = v && v.querySelector('.cw-col'); return c ? c.parentElement : null; } },
+    { id: 'kort',   label: 'Verk-kortin',
+      find: v => v && v.querySelector('.cw-rcard, .cw-col-scroll > [onclick^="Counter.select"]') },
   ];
   const NAVZONE = { id: 'valmynd', label: 'Valmynd', find: () => document.querySelector('.topbar') };
   const ALLZONES = ZONES.concat([NAVZONE]);
@@ -1037,9 +1048,17 @@
       }));
     } catch (_) {}
   }
+  // Kortið sýnir svæðin sem ERU á síðunni sem er opin — ársskoðun fær Haus /
+  // Talnaspjöld / Síur / Taflan, Afgreiðsla fær Haus / Leitarrönd /
+  // Kanban-dálkar / Verk-kortin. Áður voru öll svæði sýnd og þau sem vantaði
+  // sátu eftir sem óvirkir takkar; á kanban-síðu þýddi það þrjá dauða takka og
+  // ekkert nothæft. Finnist ekkert svæði (ókunn síða) sýnum við allt óvirkt
+  // eins og áður, svo kortið verði aldrei tómt.
   function zoneMapSection() {
-    const rows = ZONES.map(z => {
-      const has = !!zoneEl(z);
+    const found = ZONES.filter(z => !!zoneEl(z));
+    const list = found.length ? found : ZONES;
+    const rows = list.map(z => {
+      const has = found.length > 0;
       return '<button class="pe-map-z' + (activeZone === z.id ? ' on' : '') + (has ? '' : ' miss') +
         '" data-zone="' + z.id + '"' + (has ? '' : ' disabled title="Ekki á þessari síðu"') + '>' + esc(z.label) + '</button>';
     }).join('');
