@@ -2818,7 +2818,11 @@
     // Mockup-eftirmynd (2026-08-17): síðuskipting 50 í einu — „SÝNI 1–50 AF n"
     // + Fyrri/Næsta. state._page er setu-bundin (ekki vistuð) og klemmist við
     // hverja endurteiknun svo síu-/leitarbreytingar detta aldrei á tóma síðu.
-    const PER = 50;
+    // Raðir á síðu — stillanlegt úr Stílstjóranum („Stilla töflu → ítarlegt",
+    // patch 323). Sjálfgildið er óbreytt 50, svo ekkert færist til fyrr en
+    // notandinn velur annað.
+    const PER = (typeof window.__peTablePer === 'number' && window.__peTablePer > 0)
+      ? window.__peTablePer : 50;
     const totalRows = arr.length;
     const pages = Math.max(1, Math.ceil(totalRows / PER));
     if (!state._page || state._page > pages) state._page = 1;
