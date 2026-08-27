@@ -115,7 +115,7 @@
     { key: 'brunakerfi', emoji: '🚨', name: 'Brunakerfi', color: '#b91c1c', dark: '#7f1d1d',
       manifest: '/manifest-brunakerfi.json', home: 'brunayfirlit',
       blurb: 'Skoðunarmanna-app: fyrirtækin, skoðunarskýrslur og verð — skráð á staðnum',
-      defaults: ['brunayfirlit'] },
+      defaults: ['brunayfirlit', 'sala'] },
     // Bílstjóri er STANDALONE: engin botn-nav-skel (patch 219 á heilan
     // læstan fullskjá). Kortið gefur bara Opna / Setja upp / Afrita hlekk —
     // engin „Síður í appinu"-listi. ?app=bilstjori ræsir læsta Bílstjórann.
@@ -331,6 +331,7 @@
   //   __jv2   (2026-07-31): br-jarvis — á eftir rekstrarfelog (Fjármál) og
   //   __jv2b                 á eftir br-dagurinn (Brunahólf)
   //   __tvks1 (2026-08-01): thjonustu-verkstaedi — á eftir thjonustuverk (Fjármál)
+  //   __bksl1 (2026-08-27): sala — á eftir brunayfirlit í Brunakerfi-appinu
   // KAPPHLAUPS-GALLI SEM VAR LAGAÐUR 2026-07-31: migrationin keyrði EINU SINNI
   // við hleðslu skrárinnar — löngu áður en AppSettings hafði sótt vistuðu
   // stillinguna úr skýinu. Þá var `c[appKey]` ekki fylki, ekkert var sett inn,
@@ -368,6 +369,7 @@
         insertOnce('__jv2b',  'br-jarvis',     'br-dagurinn', 'brunaholf');
         insertOnce('__tvks1', 'thjonustu-verkstaedi', 'thjonustuverk');
         insertOnce('__yfd1',  'br-yfirferd', 'br-fjarmalyfirlit', 'boss');
+        insertOnce('__bksl1', 'sala', 'brunayfirlit', 'brunakerfi');
         if (changed) {
           var s = JSON.stringify(c);
           try { localStorage.setItem(CFG_KEY, s); } catch (_) {}
