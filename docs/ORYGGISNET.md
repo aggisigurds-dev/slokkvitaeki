@@ -47,6 +47,7 @@ automation health and pings Agnar *only* when something needs him.
 | Protected outcome | Guard (code) | Registry signal | Audit |
 |---|---|---|---|
 | **No blank / 0‑kr invoice can be emailed to a customer** | `233` `buildInvoiceBlob` throws on empty lines; `254` `compose` refuses to send a missing/empty attachment | `blank_invoice_source`, `blank_invoice_blocked`, `send_failed` | `audit-invoice-guard.cjs` |
+| **A Drive/URL-hosted invoice is sendable — and never sent empty** | `254` `_okAtts` telur `content`(>256) **/ `driveId` / `url`** gild; `gmail-send` neitar (422 `ATTACHMENTS_FAILED`) leysist umbeðið viðhengi ekki | `blank_invoice_blocked`, `send_failed` | `audit-attachment-forms.cjs` |
 | **An entered kennitala is never dropped to `999999‑9999`** | `121` saves `customer_kt` on both save paths; `js/pos.js` extracts a kt typed into the name field | *(kt signals to come)* | `audit-kt-trap.cjs` |
 | **POS fastur afsláttur skilar sér í körfuna** | `lookupKt` sækir kt **með og án** bandstriks (sama `.or` og checkout); 114 skrifar `discount_pct` strax; `pickBest` heldur pönnuðum `co_id` | — | `audit-pos-kt-discount.cjs` |
 | **POS search doesn't silently drop customers past 1000 rows** | `DB.fetchAll` pagination on the big tables | — | `audit-pagination.cjs` |

@@ -225,7 +225,17 @@
             // línur, jsPDF vantaði) used to be silently skipped and the póstur sendur
             // SAMT — kúnninn fékk reikningslausan/​tóman póst á meðan skrifstofan sá
             // „✅ Sent". Refuse: if any hökuð viðhengi vantar eða er tómt, EKKI senda.
-            const _okAtts = atts.filter(a => a && a.content && String(a.content).length > 256);
+            // 2026-08-27 (Menja ehf. R-000831 — „gat ekki sent, sagði innihaldið tómt"):
+            // gmail-send leysir ÞRJÚ viðhengja-form — base64 `content`, `driveId`
+            // (Drive-skrá sótt með OAuth þjónsmegin) og `url`. Vörðurinn hér taldi
+            // AÐEINS `content` gilt, svo hvert Drive-hýst skjal (reikningur/skýrsla
+            // úr document_pairs) féll sem „tómt" og EKKERT var hægt að senda.
+            // Teljum öll form sem þjónninn ræður við gild; tómt/vantandi base64 er
+            // áfram stöðvað hér, og þjónninn NEITAR að senda leysist viðhengi ekki
+            // (ATTACHMENTS_FAILED) — svo blank-invoice vörnin heldur báðum megin.
+            const _okAtts = atts.filter(a => a && (
+              (a.content && String(a.content).length > 256) || a.driveId || a.url
+            ));
             if (picked.length && _okAtts.length < picked.length) {
               try { if (window.logProblem) window.logProblem('blank_invoice_blocked', 'Sending stöðvuð: ' + _okAtts.length + '/' + picked.length + ' viðhengi tilbúin (tómur/vantandi reikningur)', { fingerprint: 'blank_send_block' }); } catch (_) {}
               fail('Reikningur/viðhengi teiknaðist ekki (' + _okAtts.length + ' af ' + picked.length + ' tilbúin). Sendi EKKI á kúnna — opnaðu reikninginn og athugaðu hvort hann sé tómur.');
