@@ -465,11 +465,34 @@
   // töfluna við hverja síun, svo applier-inn ber saman DOM-röðina við þá vistuðu
   // og færir aðeins ef þær stangast á — annars væri þetta 500 hnútafærslur á
   // 1,5 sekúndna fresti.
+  // ⚠️ HAUS-SÆTI ER EKKI DÁLK-SÆTI.
+  // Ársskoðunartaflan: 10 <th> en 13 dálkar — „Skoðanir · skjöl" spannar
+  // fjögur ár-spjöld (colspan=4). `th:nth-child(6)` er Skoðun en
+  // `td:nth-child(6)` er ár-reitur. Hver sá sem notar SÖMU töluna á hvort
+  // tveggja (eins og 319 gerir) felur rangan dálk um leið og einhver haus
+  // spannar fleiri en einn. Þess vegna vinnur þetta spjald með HÓPA: hver haus
+  // á sitt dálkabil [start, start+span), og bæði felun og röðun fara um það bil.
   function stampCols(t) {
     const ths = Array.prototype.slice.call(t.querySelectorAll('thead th'));
     ths.forEach((th, i) => { if (!th.hasAttribute('data-pe-col')) th.setAttribute('data-pe-col', String(i + 1)); });
     return ths;
   }
+  function groupsOf(t) {
+    if (!t) return [];
+    let start = 1;
+    return stampCols(t).map((th, i) => {
+      const span = th.colSpan || 1;
+      const g = {
+        n: +th.getAttribute('data-pe-col'),
+        idx: i + 1,                      // sæti hausins NÚNA (fyrir th:nth-child)
+        start: start, span: span,
+        label: (th.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 18) || ('Dálkur ' + (i + 1)),
+      };
+      start += span;
+      return g;
+    });
+  }
+  function colCount(t) { return groupsOf(t).reduce((a, g) => a + g.span, 0); }
   function curOrder(t) {
     return stampCols(t).map(th => +th.getAttribute('data-pe-col'));
   }
@@ -480,45 +503,57 @@
   // ✉-hausnum. Það er nákvæmlega bilunin sem `audit-ars-column-shift.cjs` er til
   // fyrir — röng gögn undir röngum haus er verra en engin röðun.
   // Þess vegna: annaðhvort færist ALLT saman, eða ekkert.
+  // Röðun er örugg svo lengi sem hver líkamsröð hefur nákvæmlega jafnmarga reiti
+  // og summa haus-spannanna. Þá vitum við hvaða reitir tilheyra hvaða haus og
+  // getum fært hópinn í heilu lagi — ár-spjöldin fjögur fylgja „Skoðanir · skjöl"
+  // og skiljast aldrei að. (Röð sem spannar allt, t.d. „engar niðurstöður",
+  // er sleppt.) rowSpan í haus myndi brjóta þetta; þá er ekki raðað.
   function canReorder(t) {
     if (!t) return false;
-    const ths = t.querySelectorAll('thead th');
-    if (!ths.length) return false;
-    for (const th of ths) if (th.colSpan > 1 || th.rowSpan > 1) return false;
-    const n = ths.length;
+    const gs = groupsOf(t); if (!gs.length) return false;
+    for (const th of t.querySelectorAll('thead th')) if (th.rowSpan > 1) return false;
+    const n = gs.reduce((a, g) => a + g.span, 0);
     const cg = t.querySelectorAll('colgroup col');
     if (cg.length && cg.length !== n) return false;
-    const rows = t.querySelectorAll('tbody tr');
-    for (const tr of rows) {
+    let sawRow = false;
+    for (const tr of t.querySelectorAll('tbody tr')) {
       const tds = tr.querySelectorAll(':scope>td');
-      if (!tds.length) continue;                    // spanna-röð (t.d. „engar niðurstöður")
-      if (tds.length !== n) return false;
-      for (const td of tds) if (td.colSpan > 1) return false;
+      if (!tds.length) continue;
+      let sum = 0; for (const td of tds) sum += (td.colSpan || 1);
+      if (tds.length === 1 && sum >= n) continue;          // „engar niðurstöður"-röð
+      if (sum !== n) return false;
+      sawRow = true;
     }
-    return true;
+    return sawRow;
   }
   function applyOrder(t, ord) {
     if (!t || !ord || !ord.length || !canReorder(t)) return;
-    const now = curOrder(t);
+    const gs = groupsOf(t);
+    const now = gs.map(g => g.n);
     if (now.length !== ord.length || now.every((v, i) => v === ord[i])) return;   // þegar rétt
-    const move = (row, sel) => {
+    const range = {};
+    gs.forEach(g => { range[g.n] = { start: g.start - 1, span: g.span }; });
+    // Hausinn: einn hnútur á hóp. Líkami/colgroup: heil SNEIÐ á hóp.
+    const head = t.querySelector('thead tr');
+    if (head) {
+      const ths = Array.prototype.slice.call(head.querySelectorAll(':scope>th'));
+      const byN = {}; now.forEach((n, i) => { byN[n] = ths[i]; });
+      ord.forEach(n => { const el = byN[n]; if (el) head.appendChild(el); });
+    }
+    const slice = (row, sel) => {
       const cells = Array.prototype.slice.call(row.querySelectorAll(sel));
-      if (cells.length !== now.length) return;
-      const byOrig = {};
-      now.forEach((orig, i) => { byOrig[orig] = cells[i]; });
-      ord.forEach(orig => { const c = byOrig[orig]; if (c) row.appendChild(c); });
+      if (cells.length !== gs.reduce((a, g) => a + g.span, 0)) return;
+      const out = [];
+      ord.forEach(n => { const r = range[n]; if (r) out.push.apply(out, cells.slice(r.start, r.start + r.span)); });
+      out.forEach(c => row.appendChild(c));
     };
-    const head = t.querySelector('thead tr'); if (head) move(head, ':scope>th');
-    const cg = t.querySelector('colgroup'); if (cg) move(cg, ':scope>col');
-    t.querySelectorAll('tbody tr').forEach(tr => move(tr, ':scope>td'));
+    const cg = t.querySelector('colgroup'); if (cg) slice(cg, ':scope>col');
+    t.querySelectorAll('tbody tr').forEach(tr => {
+      if (tr.querySelectorAll(':scope>td').length <= 1) return;
+      slice(tr, ':scope>td');
+    });
   }
-  function cols(t) {
-    if (!t) return [];
-    return stampCols(t).map(th => ({
-      n: +th.getAttribute('data-pe-col'),
-      label: (th.textContent || '').trim().slice(0, 18) || ('Dálkur ' + th.getAttribute('data-pe-col')),
-    }));
-  }
+  function cols(t) { return groupsOf(t); }
   const TAFLA = {
     render(cfg, api) {
       const v = tlVals();
@@ -542,19 +577,20 @@
           '<button type="button" class="pe-btn" data-t-adv style="margin-left:auto">ítarlegt ' + (advOpen ? '▴' : '▾') + '</button>' +
         '</div>';
       if (!advOpen) return head + basic;
-      const e = v.e, w = e.w || {}, hide = e.hide || {};
+      const e = v.e, w = e.w || {}, hideG = e.hideG || {};
       const canOrd = canReorder(v.table);
       const list = cols(v.table).map(c =>
         '<div class="pe-frow" style="margin:4px 0;gap:6px" data-t-col="' + c.n + '"' + (canOrd ? ' draggable="true"' : '') + '>' +
           (canOrd ? '<span style="cursor:grab;color:#94a3b8;font-weight:800">↕</span>' : '') +
           '<span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' +
-            (hide[c.n] ? ';opacity:.4' : '') + '">' + esc(c.label) + '</span>' +
-          '<button type="button" class="pe-btn" data-t-w="' + c.n + '|-1" style="padding:4px 8px">−</button>' +
+            (hideG[c.n] ? ';opacity:.4' : '') + '">' + esc(c.label) +
+            (c.span > 1 ? '<span style="color:#94a3b8;font-weight:600"> · ' + c.span + ' dálkar</span>' : '') + '</span>' +
+          '<button type="button" class="pe-btn" data-t-w="' + c.start + '|-1" style="padding:4px 8px">−</button>' +
           '<span style="font-size:11px;font-variant-numeric:tabular-nums;color:#64748b;min-width:34px;text-align:center">' +
-            (w[c.n] ? w[c.n] + 'px' : 'auto') + '</span>' +
-          '<button type="button" class="pe-btn" data-t-w="' + c.n + '|1" style="padding:4px 8px">+</button>' +
+            (w[c.start] ? w[c.start] + 'px' : 'auto') + '</span>' +
+          '<button type="button" class="pe-btn" data-t-w="' + c.start + '|1" style="padding:4px 8px">+</button>' +
           '<button type="button" class="pe-btn" data-t-hide="' + c.n + '" style="padding:4px 8px" title="' +
-            (hide[c.n] ? 'Sýna dálkinn' : 'Fela dálkinn') + '">' + (hide[c.n] ? '🚫' : '👁') + '</button>' +
+            (hideG[c.n] ? 'Sýna dálkinn' : 'Fela dálkinn') + '">' + (hideG[c.n] ? '🚫' : '👁') + '</button>' +
         '</div>').join('');
       const per = window.__peTablePer || 50;
       return head + basic +
@@ -597,10 +633,13 @@
         w[n] = Math.max(W_MIN, Math.min(W_MAX, cur + d * W_STEP));
         tlWrite({ w: w });
       });
+      // Felun er geymd á HAUS-númeri (hideG) og CSS-ið smíðað hér, því 319 notar
+      // sömu töluna á th og td og felur því rangan dálk í töflum með colspan.
+      // Gamla `hide` er hreinsuð í leiðinni svo ekki sitji tvær uppsprettur.
       root.querySelectorAll('[data-t-hide]').forEach(b => b.onclick = () => {
-        const n = b.dataset.tHide, e = tlVals().e, hide = Object.assign({}, e.hide || {});
-        if (hide[n]) delete hide[n]; else hide[n] = true;
-        tlWrite({ hide: hide });
+        const n = b.dataset.tHide, e = tlVals().e, hideG = Object.assign({}, e.hideG || {});
+        if (hideG[n]) delete hideG[n]; else hideG[n] = true;
+        tlWrite({ hideG: hideG, hide: null });
       });
       const aw = root.querySelector('[data-t-autow]');
       if (aw) aw.onclick = () => tlWrite({ autow: tlVals().e.autow ? null : 1 });
@@ -636,10 +675,23 @@
     if (en && en.table && en.e && en.e.ord) {
       try { applyOrder(en.table, en.e.ord); } catch (_) {}
     }
-    if (en && en.e && en.e.autow) {
-      return '#' + vid() + ' table{table-layout:auto!important}\n';
+    let css = '';
+    // Felun: haus falinn á HAUS-sæti, reitir/col á DÁLK-bili hópsins.
+    if (en && en.table && en.e && en.e.hideG && Object.keys(en.e.hideG).length) {
+      const t = en.table;
+      const cls = t.id ? ('#' + t.id) : (t.classList[0] ? ('.' + t.classList[0]) : '');
+      const base = 'html body #' + vid() + '#' + vid() + ' table' + cls;
+      groupsOf(t).forEach(g => {
+        if (!en.e.hideG[g.n]) return;
+        css += base + ' thead th:nth-child(' + g.idx + '){display:none!important}\n';
+        for (let c = g.start; c < g.start + g.span; c++) {
+          css += base + ' tbody td:nth-child(' + c + '){display:none!important}\n';
+          css += base + ' colgroup col:nth-child(' + c + '){display:none!important;width:0!important}\n';
+        }
+      });
     }
-    return '';
+    if (en && en.e && en.e.autow) css += '#' + vid() + ' table{table-layout:auto!important}\n';
+    return css;
   }
 
   /* ══ Sameiginlegt ══════════════════════════════════════════════════════════ */
