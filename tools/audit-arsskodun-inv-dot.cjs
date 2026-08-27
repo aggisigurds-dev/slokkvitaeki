@@ -141,22 +141,46 @@ async function pageAll(pathAndQuery) {
   if (!grandiInv.length) {
     fail('Grandi has no 2024–2026 site invoice — sibling leak would be untestable.');
   }
-  const plaza26 = docs.filter(d => +d.fyrirtaeki_id === 193 && String(d.year) === '2026');
-  const plazaDrive = plaza26.find(d => /107802/.test(String(d.invoice_number || '')));
-  if (!plazaDrive) {
-    fail('Plaza 2026 R-107802 missing — the Drive-only false-flag fixture is gone.');
+  // 2026-08-27 (Agnar: „ég var ekki búinn að klára Plaza"): fixturan var njörvuð
+  // við EINA vinnu-röð (Plaza 2026 R-107802). Um leið og sú röð fór úr umferð —
+  // eðlilegur hluti af óloknu verki — varð úttektin RAUÐ þótt tryggingin sjálf
+  // stæði óhögguð. Rautt net sem stafar af venjulegri vinnu kennir fólki að hunsa
+  // netið, sem er verra en engin úttekt. Prófum því trygginguna á ÖLLUM Drive-
+  // einum reikningum sem til eru hverju sinni í stað einnar fastrar raðar:
+  //   Drive-einn reikningur = skjal í customer_documents með reikningsnúmer EN
+  //   enga solur-röð. Slíkur reikningur má ALDREI birtast í v_uttekt_ar sem
+  //   heimild=reikningur — þá væri blái punkturinn kviknaður á óstaðfestum
+  //   Drive-skjölum aftur (veilan sem 187 hasConfirmedInvYear lokar).
+  const numbered = docs.filter(d => String(d.invoice_number || '').trim());
+  const nums = [...new Set(numbered.map(d => String(d.invoice_number).trim()))];
+  const sold = new Set();
+  for (let i = 0; i < nums.length; i += 50) {
+    const chunk = nums.slice(i, i + 50).map(n => '"' + n.replace(/"/g, '') + '"').join(',');
+    const rows = await pageAll('solur?num=in.(' + encodeURIComponent(chunk) + ')&select=num');
+    rows.forEach(r => sold.add(String(r.num)));
   }
-  const plazaSolur = await pageAll('solur?num=eq.R-107802&select=id,customer_id');
-  if (plazaSolur.length) {
-    fail('Plaza R-107802 unexpectedly has a solur row — confirmed-invoice gate would light Plaza again.');
+  const driveOnly = numbered.filter(d => !sold.has(String(d.invoice_number).trim()));
+  if (!driveOnly.length) {
+    console.log('  --  engin Drive-ein reikningsröð í gögnunum núna — sviðsmyndin ekki til að prófa (ekki villa)');
+  } else {
+    let leaked = 0;
+    for (const d of driveOnly) {
+      const inView = await pageAll('v_uttekt_ar?fyrirtaeki_id=eq.' + encodeURIComponent(d.fyrirtaeki_id)
+        + '&ar=eq.' + encodeURIComponent(d.year) + '&heimild=eq.reikningur&select=fyrirtaeki_id');
+      if (inView.length) {
+        leaked++;
+        fail('v_uttekt_ar telur Drive-eina reikninginn ' + d.invoice_number + ' (stad ' + d.fyrirtaeki_id
+          + ', ' + d.year + ') sem stadfestan — inv-only bla punkturinn er kviknadur aftur.');
+      }
+    }
+    if (!leaked) {
+      console.log('  OK  ' + driveOnly.length + ' Drive-einir reikningar — enginn telst stadfestur í v_uttekt_ar');
+    }
   }
-  const plazaView = await pageAll('v_uttekt_ar?fyrirtaeki_id=eq.193&ar=eq.2026&heimild=eq.reikningur&select=fyrirtaeki_id');
-  if (plazaView.length) {
-    fail('v_uttekt_ar now lists Plaza 2026 as reikningur — inv-only would return.');
-  }
+
   const grandiBru = docs.filter(d => +d.fyrirtaeki_id === 197 && String(d.year) === '2026' && String(d.vidskiptategund || '').toLowerCase() === 'brunakerfi');
   if (!grandiBru.length) {
     fail('Grandi 2026 brunakerfi invoice fixture missing (R-108001) — tegund filter untestable.');
   }
-  console.log('GREEN: Ársskoðun invoice-dot is per fyrirtaeki_id + confirmed inv-only (Plaza Drive R-107802 not in POS/v_uttekt_ar; Hlaðvarpinn 0 own 24–26, Grandi ' + grandiInv.length + ' sibling; Center sites ' + center.length + ').');
+  console.log('GREEN: Ársskoðun invoice-dot is per fyrirtaeki_id + confirmed inv-only (' + driveOnly.length + ' Drive-only invoices, none confirmed in v_uttekt_ar; Hlaðvarpinn 0 own 24–26, Grandi ' + grandiInv.length + ' sibling; Center sites ' + center.length + ').');
 })().catch(e => fail(e.message || String(e)));
