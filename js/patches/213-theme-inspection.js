@@ -24,7 +24,7 @@
     st.id = 'thm-style';
     st.textContent = [
       ":root{--thm-red:#DA2A1E;--thm-line:#E6E3DA;--thm-line2:#EFEDE6;}",
-      "body,.view,.main-panel,button,input,select,textarea,th,td{font-family:'Public Sans',Inter,system-ui,sans-serif !important;}",
+      "body,.view,.main-panel,button,input,select,textarea,th,td{font-family:'IBM Plex Sans',-apple-system,'Segoe UI',system-ui,sans-serif !important;}",
       "body.has-mobnav,.main-panel{background:#F5F4EF !important;}",
       "h1,h2,h3{font-family:'Playfair Display',Georgia,serif !important;letter-spacing:-.02em !important;}",
       ".topbar{background:#16181D !important;}",
