@@ -149,7 +149,9 @@ function applyTopbarStyles(){
     // 86px = slim Sími banner (66px at top:8 → bottom 74) + 12px air.
     // 60px sat under the hamburger only and tucked content under the banner
     // (Afgreiðsla overlap on 390px). Inline !important; 314 re-asserts it.
-    v.style.setProperty('padding-top','86px','important');
+    // __peBannerPad: Stílstjórinn (323) getur mjókkað/falið bannerinn — þá
+    // fylgir þessi tala með. Ósett = 86px eins og áður.
+    v.style.setProperty('padding-top', window.__peBannerPad || '86px','important');
   });
   _topbarKey = wantKey;
 }

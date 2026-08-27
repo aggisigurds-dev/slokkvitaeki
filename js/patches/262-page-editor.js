@@ -537,8 +537,11 @@
       '#' + PANEL_ID + ' .pe-pickrow{display:flex;gap:8px}',
       '#' + PANEL_ID + ' .pe-pickrow .pe-btn{flex:1;text-align:center}',
       '#' + PANEL_ID + ' .pe-btn.big{padding:11px 14px;font-size:13px}',
-      '#' + PANEL_ID + ' .pe-seg{width:100%;box-sizing:border-box}',
-      '#' + PANEL_ID + ' .pe-seg button{flex:1;text-align:center}',
+      // Aðeins gildissviðs-rofinn (beint barn hausins) fyllir breiddina — segin
+      // inni í verkfæraspjöldunum sitja við hliðina á merkimiða og mega ekki
+      // ryðja honum niður í næstu línu.
+      '#' + PANEL_ID + ' .pe-hd>.pe-seg{width:100%;box-sizing:border-box}',
+      '#' + PANEL_ID + ' .pe-hd>.pe-seg button{flex:1;text-align:center}',
       // Kortið: mjó „Valmynd"-rönd til vinstri, svæðin í stafla til hægri — sama
       // rúmfræði og síðan sjálf, svo augað þekki hana strax aftur.
       '#' + PANEL_ID + ' .pe-map{display:flex;gap:6px;border:1px solid #e2e8f0;border-radius:11px;padding:6px;background:#fff}',

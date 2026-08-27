@@ -79,7 +79,15 @@
       if (!wKeys.length && !aKeys.length && e.padY == null && !e.fs && !e.lh && !e.ff &&
           !Object.keys(e.hide || {}).length && !e.sticky) continue;
       const [vid, cls] = key.split('|');
-      const base = 'html #' + vid + ' ' + (cls === 'table' ? 'table' : (cls[0] === '#' ? 'table' + cls : 'table' + cls));
+      // SÉRTÆKNI, ekki bara !important (staðfest í vafra 27.08): `html #view-x
+      // table.data-table tbody td{font-size:15px!important}` TAPAÐI fyrir
+      // þéttleika-reglum símaham-laganna, svo letur/línuhæð/raðhæð úr
+      // töflu-ritlinum gerðu ekkert í þeim ham þótt gildin vistuðust rétt.
+      // Auðkennið er því TVÍTEKIÐ (#view-x#view-x = tvö auðkenni); sömu
+      // reglur, bara nógu sterkar til að vinna. `base.slice(5)` að neðan
+      // sleppir „html " og heldur áfram að virka óbreytt.
+      const base = 'html body #' + vid + '#' + vid + ' ' +
+        (cls === 'table' ? 'table' : (cls[0] === '#' ? 'table' + cls : 'table' + cls));
       if (wKeys.length) css += base + '{table-layout:fixed!important;width:100%!important}\n';
       wKeys.forEach(n => { css += base + ' col:nth-child(' + n + '){width:' + w[n] + 'px!important}\n'; });
       aKeys.forEach(n => { css += base + ' tbody td:nth-child(' + n + '),' + base + ' thead th:nth-child(' + n + '){text-align:' + al[n] + '!important}\n'; });

@@ -88,35 +88,72 @@
       if (h) h.onclick = () => api.set({ hnappar: !hausDefaults(cfg).hnappar });
     },
   };
+  // ⚠️ SÉRTÆKNI (specificity), ekki bara !important:
+  // Bannerinn er stilltur á fimm stöðum og sumar þeirra reglna eru sértækari en
+  // einfalt `#bstal-banner` — t.d. `html[data-viewmode="mobile"] #bstal-banner`
+  // í 314-simi-compact-layer (auðkenni + eigind). Staðfest í vafra 27.08: appið
+  // situr í data-viewmode="mobile" jafnvel á 1280px skjá, svo sú regla vann og
+  // „Mjór borði" gerði EKKERT. Báðar reglur eru !important — þá ræður sértækni.
+  // Þess vegna er auðkennið TVÍTEKIÐ (#x#x = tvö auðkenni) og `html body` sett
+  // framan við: það vinnur allar fimm reglurnar án þess að við þurfum að elta
+  // þær uppi eða breyta þeim.
+  // Sama gildir um padding-top á síðunni, sem verður að fylgja bannerhæðinni.
+  // `css/mobile.css:224` blæs upp sína sértækni VILJANDI með gervi-auðkennum
+  // (`:not(#_a):not(#_b):not(#_c):not(#_d)` = fjögur auðkenni) til að vinna
+  // þema-reglurnar. Við notum sama stílbragð einu þrepi ofar (sex auðkenni) —
+  // það er idíóm sem er þegar til í þessum kóðabasa, ekki nýtt trix.
+  const B = 'html body #bstal-banner#bstal-banner';
+  const PAD = ':not(#_p1):not(#_p2):not(#_p3)';
+  const VIEWS = 'html body .view.active:not(#view-field):not(#view-counter):not(#view-workshop)' + PAD;
+  const VIEWS3 = 'html body #view-field.active' + PAD + ',html body #view-counter.active' + PAD +
+                 ',html body #view-workshop.active' + PAD;
   function hausCss(cfg) {
     const c = hausDefaults(cfg);
     let css = '';
     if (c.h === 'falinn') {
       // Bannerinn hverfur — en efnið verður að renna upp í staðinn, annars situr
       // 148px af tómu plássi eftir efst á síðunni.
-      css += '#bstal-banner,#bstal-ember{display:none!important}\n';
-      css += '.view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:16px!important}\n';
+      css += B + ',html body #bstal-ember#bstal-ember{display:none!important}\n';
+      css += VIEWS + '{padding-top:16px!important}\n';
     } else if (c.h === 'mjor') {
       const H = HEIGHTS.mjor;
-      css += '#bstal-banner{height:' + H + 'px!important}\n';
-      css += '#bstal-banner .bb-flames{height:' + (H + 6) + 'px!important}\n';
-      css += '#bstal-banner .bb-logo img{height:26px!important}\n';
-      css += '#bstal-banner .bb-clock{font-size:18px!important}\n';
-      css += '#bstal-banner .bb-date,#bstal-banner .bb-eyebrow{font-size:8.5px!important}\n';
-      css += '#bstal-ember{display:none!important}\n';
-      css += '.view.active:not(#view-field):not(#view-counter):not(#view-workshop){padding-top:' + (H + 14) + 'px!important}\n';
-      css += '#view-field.active,#view-counter.active,#view-workshop.active{padding-top:' + (H + 18) + 'px!important}\n';
+      css += B + '{height:' + H + 'px!important}\n';
+      css += B + ' .bb-flames{height:' + (H + 6) + 'px!important}\n';
+      css += B + ' .bb-logo img{height:26px!important}\n';
+      css += B + ' .bb-clock{font-size:18px!important}\n';
+      css += B + ' .bb-date,' + B + ' .bb-eyebrow{font-size:8.5px!important}\n';
+      css += 'html body #bstal-ember#bstal-ember{display:none!important}\n';
+      css += VIEWS + '{padding-top:' + (H + 14) + 'px!important}\n';
+      css += VIEWS3 + '{padding-top:' + (H + 18) + 'px!important}\n';
     }
     const bg = HAUS_BG.filter(b => b[0] === c.bg)[0];
     if (bg && bg[2]) {
       // Logarnir eru mynd ofan á andlitinu — þeir verða að víkja svo nýi
       // bakgrunnurinn sjáist yfirhöfuð.
-      css += '#bstal-banner .bb-face{background:' + bg[2] + '!important}\n';
-      css += '#bstal-banner .bb-flames{opacity:0!important}\n';
+      css += B + ' .bb-face{background:' + bg[2] + '!important}\n';
+      css += B + ' .bb-flames{opacity:0!important}\n';
     }
-    if (!c.klukka) css += '#bstal-banner .bb-clockbox{display:none!important}\n';
-    if (!c.hnappar) css += '#bstal-banner .bb-rightwrap>*:not(.bb-clockbox){display:none!important}\n';
+    if (!c.klukka) css += B + ' .bb-clockbox{display:none!important}\n';
+    if (!c.hnappar) css += B + ' .bb-rightwrap>*:not(.bb-clockbox){display:none!important}\n';
+    hausPad(c);
     return css;
+  }
+  // Í síma-/appham stimpla 314 (`pinPad`) og mobilenav.js padding-top BEINT á
+  // hvert .view sem inline !important — og engin stílblaðsregla vinnur inline
+  // !important, sama hversu sértæk hún er (staðfest í vafra 27.08: bannerinn
+  // mjókkaði en 86px gatið sat eftir). Báðar skrár lesa nú `__peBannerPad`, svo
+  // hér er nóg að setja töluna og stimpla hana strax; næsta `pinPad`-keyrsla
+  // reiknar sama gildi og því verður ekkert flökt.
+  function hausPad(c) {
+    const mobile = document.documentElement.getAttribute('data-viewmode') === 'mobile';
+    const app = !!(document.body && document.body.classList.contains('appmode'));
+    if (app || !mobile) { window.__peBannerPad = null; return; }
+    const pad = c.h === 'falinn' ? '16px' : c.h === 'mjor' ? (HEIGHTS.mjor + 12) + 'px' : null;
+    window.__peBannerPad = pad;               // null ⇒ 314/mobilenav nota 86px
+    const want = pad || '86px';
+    document.querySelectorAll('.view').forEach(v => {
+      if (v.style.getPropertyValue('padding-top') !== want) v.style.setProperty('padding-top', want, 'important');
+    });
   }
 
   /* ══ 2 · TALNASPJÖLD (KPI) ═════════════════════════════════════════════════
@@ -176,18 +213,25 @@
     // Röð + felun með CSS `order`/`display` frekar en að hræra í DOM-inu: 153
     // teiknar þennan streng upp á nýtt við hverja síun og myndi henda hverri
     // DOM-færslu jafnóðum.
+    // Sami sértækni-slagur og með bannerinn: `315-fjarmal-app-compact` er með
+    // `body.appmode #view-arsskodun ._ars-statgrid > div{padding:8px 10px!important}`
+    // og `314-arsskodun-mobile-compact` sínar eigin. Staðfest í vafra 27.08:
+    // felun virkaði (engin samkeppni) en STÆRÐ gerði ekkert. Tvítekið auðkenni
+    // á sýninni (#view-x#view-x = tvö auðkenni) vinnur þær allar.
+    const V = vid();
+    const G = 'html body #' + V + '#' + V + ' ._ars-statgrid';
     const order = (cfg.order && cfg.order.length) ? cfg.order : [];
     cards.forEach(c => {
       const n = c.i + 1;
-      const base = '#' + vid() + ' ._ars-statgrid>*:nth-child(' + n + ')';
+      const base = G + '>*:nth-child(' + n + ')';
       if (hide[c.label]) css += base + '{display:none!important}\n';
       const oi = order.indexOf(c.label);
       if (oi >= 0) css += base + '{order:' + oi + '!important}\n';
     });
     const sz = KPI_SIZE[cfg.size || 'md'];
     if (sz) {
-      css += '#' + vid() + ' ._ars-statgrid>*{padding:' + sz.pad + 'px!important}\n';
-      css += '#' + vid() + ' ._ars-statgrid>* div:nth-child(2){font-size:' + sz.num + 'px!important;line-height:1.15!important}\n';
+      css += G + '>*{padding:' + sz.pad + 'px!important}\n';
+      css += G + '>* div:nth-child(2){font-size:' + sz.num + 'px!important;line-height:1.15!important}\n';
     }
     // „Upphæðir sýnilegar" er skjá-friðhelgi (Agnar sýnir skjáinn á fundum), ekki
     // útlit — talan er því MÖSKUÐ í DOM-inu. Upprunalega gildið geymist á
@@ -392,7 +436,6 @@
       if (v === null || v === '' || v === undefined) delete en.e[k]; else en.e[k] = v;
     });
     window.TableLook.set(en.store);
-    try { if (window.PageEditor && PageEditor.open && document.getElementById('_pe-panel')) PageEditor.open(); } catch (_) {}
     rerenderPanel();
   }
   function tlVals() {
@@ -550,12 +593,15 @@
       done(names);
     });
   }
+  // Panellinn endurteiknar sig sjálfur við setZoneCfg. Þetta er fyrir hina
+  // leiðina: þegar spjald skrifar BEINT í TableLook (319) og panellinn þarf svo
+  // að sýna nýju tölurnar.
   function rerenderPanel() {
-    try { if (window.PageEditor && PageEditor.applyZones) PageEditor.applyZones(); } catch (_) {}
-    // Panellinn endurteiknar sig sjálfur við setZoneCfg; hér er aðeins þörf á að
-    // ýta við honum þegar við skrifuðum beint í TableLook (framhjá zoneCfg).
-    const p = document.getElementById('_pe-panel');
-    if (p && window.PageEditor && PageEditor.toggle) { PageEditor.close(); PageEditor.open(); }
+    try {
+      if (!window.PageEditor) return;
+      if (PageEditor.applyZones) PageEditor.applyZones();
+      if (PageEditor.refresh) PageEditor.refresh();
+    } catch (_) {}
   }
   // Einn applier, eitt style-blað. Keyrður úr 262 (`pe-zones-apply`) við hverja
   // breytingu, síðuskipti og á reglulegu millibili — svo endurteiknun 153 éti
