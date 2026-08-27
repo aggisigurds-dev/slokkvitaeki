@@ -455,10 +455,69 @@
     }
     return { fs: fs || 13, lh: lh || 130, ff: e.ff || '', padY: e.padY, e: e, table: t, has: !!t };
   }
+  // ── Dálkaröð ──────────────────────────────────────────────────────────────
+  // ↕-handfangið var teiknað en aldrei tengt — dautt viðmót, nákvæmlega það sem
+  // pirraði mest annars staðar. Röðun á TÖFLU-dálkum er ekki hægt að gera með
+  // CSS (`order` virkar ekki á töflufrumur), svo hún er raunveruleg DOM-færsla.
+  //
+  // Hver dálkur er stimplaður með UPPRUNALEGU sæti sínu (`data-pe-col`) í fyrsta
+  // sinn sem hann sést; röðin er geymd sem listi þeirra númera. 153 endurteiknar
+  // töfluna við hverja síun, svo applier-inn ber saman DOM-röðina við þá vistuðu
+  // og færir aðeins ef þær stangast á — annars væri þetta 500 hnútafærslur á
+  // 1,5 sekúndna fresti.
+  function stampCols(t) {
+    const ths = Array.prototype.slice.call(t.querySelectorAll('thead th'));
+    ths.forEach((th, i) => { if (!th.hasAttribute('data-pe-col')) th.setAttribute('data-pe-col', String(i + 1)); });
+    return ths;
+  }
+  function curOrder(t) {
+    return stampCols(t).map(th => +th.getAttribute('data-pe-col'));
+  }
+  // ⚠️ RÖÐUN ER AÐEINS ÖRUGG Í 1:1-TÖFLUM.
+  // Ársskoðunartaflan hefur 10 <th> en 13 <td> í hverri röð — „Skoðanir · skjöl"
+  // spannar fleiri en einn dálk. Fyrsta útgáfan færði hausinn en SLEPPTI
+  // líkamanum (frumufjöldi stemmdi ekki) og þá sat nafn fyrirtækisins undir
+  // ✉-hausnum. Það er nákvæmlega bilunin sem `audit-ars-column-shift.cjs` er til
+  // fyrir — röng gögn undir röngum haus er verra en engin röðun.
+  // Þess vegna: annaðhvort færist ALLT saman, eða ekkert.
+  function canReorder(t) {
+    if (!t) return false;
+    const ths = t.querySelectorAll('thead th');
+    if (!ths.length) return false;
+    for (const th of ths) if (th.colSpan > 1 || th.rowSpan > 1) return false;
+    const n = ths.length;
+    const cg = t.querySelectorAll('colgroup col');
+    if (cg.length && cg.length !== n) return false;
+    const rows = t.querySelectorAll('tbody tr');
+    for (const tr of rows) {
+      const tds = tr.querySelectorAll(':scope>td');
+      if (!tds.length) continue;                    // spanna-röð (t.d. „engar niðurstöður")
+      if (tds.length !== n) return false;
+      for (const td of tds) if (td.colSpan > 1) return false;
+    }
+    return true;
+  }
+  function applyOrder(t, ord) {
+    if (!t || !ord || !ord.length || !canReorder(t)) return;
+    const now = curOrder(t);
+    if (now.length !== ord.length || now.every((v, i) => v === ord[i])) return;   // þegar rétt
+    const move = (row, sel) => {
+      const cells = Array.prototype.slice.call(row.querySelectorAll(sel));
+      if (cells.length !== now.length) return;
+      const byOrig = {};
+      now.forEach((orig, i) => { byOrig[orig] = cells[i]; });
+      ord.forEach(orig => { const c = byOrig[orig]; if (c) row.appendChild(c); });
+    };
+    const head = t.querySelector('thead tr'); if (head) move(head, ':scope>th');
+    const cg = t.querySelector('colgroup'); if (cg) move(cg, ':scope>col');
+    t.querySelectorAll('tbody tr').forEach(tr => move(tr, ':scope>td'));
+  }
   function cols(t) {
     if (!t) return [];
-    const ths = Array.prototype.slice.call(t.querySelectorAll('thead th'));
-    return ths.map((th, i) => ({ n: i + 1, label: (th.textContent || '').trim().slice(0, 18) || ('Dálkur ' + (i + 1)) }));
+    return stampCols(t).map(th => ({
+      n: +th.getAttribute('data-pe-col'),
+      label: (th.textContent || '').trim().slice(0, 18) || ('Dálkur ' + th.getAttribute('data-pe-col')),
+    }));
   }
   const TAFLA = {
     render(cfg, api) {
@@ -484,9 +543,10 @@
         '</div>';
       if (!advOpen) return head + basic;
       const e = v.e, w = e.w || {}, hide = e.hide || {};
+      const canOrd = canReorder(v.table);
       const list = cols(v.table).map(c =>
-        '<div class="pe-frow" style="margin:4px 0;gap:6px" data-t-col="' + c.n + '" draggable="true">' +
-          '<span style="cursor:grab;color:#94a3b8;font-weight:800">↕</span>' +
+        '<div class="pe-frow" style="margin:4px 0;gap:6px" data-t-col="' + c.n + '"' + (canOrd ? ' draggable="true"' : '') + '>' +
+          (canOrd ? '<span style="cursor:grab;color:#94a3b8;font-weight:800">↕</span>' : '') +
           '<span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' +
             (hide[c.n] ? ';opacity:.4' : '') + '">' + esc(c.label) + '</span>' +
           '<button type="button" class="pe-btn" data-t-w="' + c.n + '|-1" style="padding:4px 8px">−</button>' +
@@ -498,7 +558,10 @@
         '</div>').join('');
       const per = window.__peTablePer || 50;
       return head + basic +
-        '<div class="pe-glabel" style="margin-top:12px">Dálkar — ↕ raðar · 👁 felur</div>' + list +
+        '<div class="pe-glabel" style="margin-top:12px">Dálkar — ' + (canOrd ? '↕ raðar · ' : '') + '👁 felur</div>' +
+        '<div data-t-collist>' + list + '</div>' +
+        (canOrd ? '' : '<div class="pe-sub" style="margin-top:4px">Þessari töflu verður ekki raðað: hausar hennar spanna fleiri en einn dálk, ' +
+          'svo röðun myndi setja gögnin undir rangan haus. Breidd og 👁 virka eftir sem áður.</div>') +
         api.row('Jafna breidd sjálfkrafa', api.sw(!!e.autow, 'data-t-autow')) +
         api.row('Fastur dálkahaus við skrun', api.sw(!!e.sticky, 'data-t-sticky')) +
         api.row('Raðir á síðu', api.seg([[25, '25'], [50, '50'], [0, 'Allar']], per === 999999 ? 0 : per, 'data-t-per'));
@@ -547,6 +610,10 @@
         const n = +b.dataset.tPer;
         api.set({ per: n === 0 ? 999999 : n });
       });
+      // ↕ Dálkaröð — dragið í listanum skrifar nýja röð í TableLook og
+      // applier-inn færir dálkana strax.
+      const list = root.querySelector('[data-t-collist]');
+      if (list) dragSort(list, '[data-t-col]', 't-col', names => tlWrite({ ord: names.map(Number) }));
     },
   };
   function pageLabel() {
@@ -563,6 +630,12 @@
       try { if (window.Arsskodun && Arsskodun.render) Arsskodun.render(); } catch (_) {}
     }
     const en = tlEntry(false);
+    // Dálkaröðin er DOM-færsla, ekki CSS — endurtekin hér því 153 teiknar
+    // töfluna upp á nýtt við hverja síun. applyOrder hættir strax ef röðin er
+    // þegar rétt, svo þetta kostar ekkert í venjulegri keyrslu.
+    if (en && en.table && en.e && en.e.ord) {
+      try { applyOrder(en.table, en.e.ord); } catch (_) {}
+    }
     if (en && en.e && en.e.autow) {
       return '#' + vid() + ' table{table-layout:auto!important}\n';
     }

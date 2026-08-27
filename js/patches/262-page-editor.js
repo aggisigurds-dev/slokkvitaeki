@@ -628,14 +628,19 @@
       '<div class="pe-grp pe-toolbar">' +
         '<span class="pe-grplbl">Tafla &amp; skjár</span>' +
       '</div>' +
-      '<div class="pe-grp">' +
-        '<span class="pe-grplbl">Síðan</span>' +
-        '<button class="pe-btn pri" id="pe-savepage" title="Vista útlit þessarar síðu sem nefnda útgáfu — hægt að sækja aftur hvenær sem er">💾 Vista síðu</button>' +
-        '<button class="pe-btn" id="pe-undo"' + (undoStack.length ? '' : ' disabled') + ' title="Afturkalla síðustu breytingu">↩ Afturkalla</button>' +
-        '<button class="pe-btn" id="pe-reset">↺ Resetta ▾</button>' +
-        '<button class="pe-btn" id="pe-bg">🖼 Bakgrunnsmynd</button>' +
-      '</div>' +
       '</div>';
+
+    // „Síðan"-aðgerðirnar (vista/afturkalla/resetta/bakgrunnur) sitja NEÐST
+    // (Agnar 27.08: „færa Síðan vista síðu alveg niður"). Þær eru lokahnykkurinn
+    // — maður velur, breytir og vistar SVO — og þær ýttu verkfærunum niður fyrir
+    // brún á meðan þær sátu efst.
+    const sidanGrp = '<div class="pe-grp" style="margin-top:14px">' +
+      '<span class="pe-grplbl">Síðan</span>' +
+      '<button class="pe-btn pri" id="pe-savepage" title="Vista útlit þessarar síðu sem nefnda útgáfu — hægt að sækja aftur hvenær sem er">💾 Vista síðu</button>' +
+      '<button class="pe-btn" id="pe-undo"' + (undoStack.length ? '' : ' disabled') + ' title="Afturkalla síðustu breytingu">↩ Afturkalla</button>' +
+      '<button class="pe-btn" id="pe-reset">↺ Resetta ▾</button>' +
+      '<button class="pe-btn" id="pe-bg">🖼 Bakgrunnsmynd</button>' +
+    '</div>';
 
     const step2 = '<div class="pe-step">2 · Breyttu</div>';
     let body;
@@ -678,7 +683,7 @@
         '</details>' +
       '</div>' + presetsSection() + bgGallerySection() + versionsSection() + tableHelpSection() + linkasafnSection();
     }
-    p.innerHTML = head + body;
+    p.innerHTML = head + body + sidanGrp;
     wirePanel();
     wireCard();
   }
@@ -1499,6 +1504,8 @@
     },
     // Lesa/skrifa svæðis-stillingar utan frá (t.d. úr applier sem keyrir á
     // síðunni sjálfri, án þess að panellinn sé opinn).
+    // Valinn hlutur — svo spjöld geti boðið „bara þennan" gildissvið.
+    target: () => target,
     zoneCfg: (id, vid) => zoneCfg(id, vid),
     setZoneCfg: (id, patch) => setZoneCfg(id, patch),
     applyZones: applyZones,

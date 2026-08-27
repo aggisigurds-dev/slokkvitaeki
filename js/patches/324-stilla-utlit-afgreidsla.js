@@ -166,10 +166,32 @@
     midlungs: { pad: 7,  fs: 13,   gap: 5 },
     rumgott:  { pad: 12, fs: 14.5, gap: 9 },
   };
+  // Línurnar á kortinu — nákvæmlega þær sem 78 teiknar (sjá :337-343):
+  //   .cw-rcard-info > div:1  → R-númer + nafn viðskiptavinar
+  //   .cw-rcard-info > div:2  → fjöldi tækja · sími · dagsetning
+  //   select                  → hilla-fellilistinn
+  // Hver lína er sjálfstætt falin; ekkert þeirra er skylda á kortinu.
+  const KORT_LINUR = [
+    ['nafn',  'R-númer + nafn',              ' .cw-rcard-info>div:nth-child(1)'],
+    ['meta',  'Fjöldi tækja · sími · dags.', ' .cw-rcard-info>div:nth-child(2)'],
+    ['hilla', 'Hilla-dropdown',              ' select'],
+  ];
+  // Stöðuliturinn á kantinum: sjálfgefið heldur hvert kort SÍNUM tegundarlit
+  // (það er merkingin í honum). Hinir kostirnir mála öll kortin eins — gagnlegt
+  // þegar tegundin skiptir ekki máli og maður vill rólegra borð.
+  const KANT_LITIR = [
+    ['sjalf', 'Tegundarlitur (sjálfgefið)', null],
+    ['gull',  'Gull',                       'rgb(202, 138, 4)'],
+    ['graen', 'Grænn',                      'rgb(134, 239, 172)'],
+    ['hvitt', 'Enginn',                     null],
+  ];
   function kortDefaults(c) {
     return {
+      gildir: c.gildir || 'allir',
       dens: c.dens || 'midlungs',
       kantur: typeof c.kantur === 'number' ? c.kantur : 4,
+      kantlitur: c.kantlitur || 'sjalf',
+      linur: c.linur || {},
       fylling: c.fylling !== false,
       hnappar: c.hnappar || 'alltaf',
     };
@@ -177,27 +199,76 @@
   const KORT = {
     render(cfg, api) {
       const c = kortDefaults(cfg);
-      return api.head('Stilla verk-kort', kortCount() + ' kort á borðinu') +
-        '<div class="pe-sub" style="margin-bottom:9px">Gildir á <b>öll kort af sömu gerð</b> í öllum dálkum — kanban-síða er listi, ekki stakur hlutur.</div>' +
+      const n = kortCount(), nReady = kortCount('.cw-rcard');
+      const swatches = KANT_LITIR.map(k =>
+        '<button type="button" class="pe-chip" data-k-litur="' + k[0] + '" title="' + esc(k[1]) + '" style="' +
+          'min-width:0;width:40px;height:30px;padding:0;border-radius:7px;' +
+          (k[2] ? 'background:' + k[2] + ';'
+                : k[0] === 'sjalf' ? 'background:linear-gradient(90deg,rgb(37,99,235) 0 25%,rgb(56,189,248) 25% 50%,rgb(202,138,4) 50% 75%,rgb(134,239,172) 75%);'
+                : 'background:#fff;') +
+          (c.kantlitur === k[0] ? 'outline:3px solid #2563eb;outline-offset:1px;' : '') +
+        '"></button>').join('');
+      const linur = KORT_LINUR.map(L => {
+        const off = !!c.linur[L[0]];
+        return '<div class="pe-frow" style="margin:4px 0;gap:6px">' +
+          '<span style="flex:1;min-width:0;font-size:12.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap' +
+            (off ? ';opacity:.4' : '') + '">' + esc(L[1]) + '</span>' +
+          '<button type="button" class="pe-btn" data-k-lina="' + L[0] + '" style="padding:4px 9px" title="' +
+            (off ? 'Sýna línuna' : 'Fela línuna') + '">' + (off ? '🚫' : '👁') + '</button>' +
+        '</div>';
+      }).join('');
+      return api.head('Stilla verk-kort', nReady + ' kort í „Tilbúin"') +
+        // Þetta er EKKI skraut: á kanban-borði situr fjöldi korta í hverjum dálki
+        // og notandinn þarf að vita að hann er ekki að stilla stakt kort.
+        '<div class="pe-sub" style="margin-bottom:7px">Gildir á: <b style="color:#b58a2b">öll kort af sömu gerð</b> — ekki bara það sem þú ' +
+          'valdir. Kanban-síður eru listar; annars þyrftir þú að stilla ' + n + ' kort í röð.</div>' +
+        api.row(n + ' kort í röð', api.seg([['eitt', 'Bara þetta kort'], ['eins', 'Öll eins'], ['allir', 'Allir dálkar']], c.gildir, 'data-k-gildir')) +
         api.row('Þéttleiki', api.seg([['thett', 'Þétt'], ['midlungs', 'Miðlungs'], ['rumgott', 'Rúmgott']], c.dens, 'data-k-dens')) +
-        api.row('Tegundar-litakantur', api.stp(c.kantur, 'data-k-kantur', 'px')) +
-        api.row('Græn fylling á Tilbúin', api.sw(c.fylling, 'data-k-fylling')) +
-        api.row('Aðgerðahnappar', api.seg([['alltaf', 'Alltaf'], ['hover', 'Við yfirsvif']], c.hnappar, 'data-k-hnappar')) +
-        '<div class="pe-sub">„Við yfirsvif" hreinsar kortin — Sótt ✓ og ↩ Verkstæði birtast þegar bendillinn er á kortinu.</div>';
+        '<div class="pe-glabel" style="margin-top:11px">Línur á korti — 👁 felur</div>' + linur +
+        api.row('Stöðulitur á kanti', '<div class="pe-xwrap">' + swatches + '</div>' + api.stp(c.kantur, 'data-k-kantur', 'px')) +
+        api.row('Græn fylling', api.sw(c.fylling, 'data-k-fylling')) +
+        api.row('Aðgerðahnappar (Sótt / Verkstæði)', api.seg([['alltaf', 'Alltaf'], ['hover', 'Við yfirsvif']], c.hnappar, 'data-k-hnappar')) +
+        '<div class="pe-sub">„Við yfirsvif" hreinsar borðið — Sótt ✓ og ↩ Verkstæði birtast þegar bendillinn er á kortinu.</div>';
     },
     wire(root, cfg, api) {
       const c = kortDefaults(cfg);
+      root.querySelectorAll('[data-k-gildir]').forEach(b => b.onclick = () => api.set({ gildir: b.dataset.kGildir }));
       root.querySelectorAll('[data-k-dens]').forEach(b => b.onclick = () => api.set({ dens: b.dataset.kDens }));
       root.querySelectorAll('[data-k-kantur]').forEach(b => b.onclick = () =>
         api.set({ kantur: Math.max(0, Math.min(12, c.kantur + (+b.dataset.kKantur) * 2)) }));
+      root.querySelectorAll('[data-k-litur]').forEach(b => b.onclick = () => api.set({ kantlitur: b.dataset.kLitur }));
+      root.querySelectorAll('[data-k-lina]').forEach(b => b.onclick = () => {
+        const k = b.dataset.kLina, linur = Object.assign({}, c.linur);
+        if (linur[k]) delete linur[k]; else linur[k] = true;
+        api.set({ linur: linur });
+      });
       const f = root.querySelector('[data-k-fylling]');
       if (f) f.onclick = () => api.set({ fylling: !c.fylling });
       root.querySelectorAll('[data-k-hnappar]').forEach(b => b.onclick = () => api.set({ hnappar: b.dataset.kHnappar }));
     },
   };
-  function kortCount() {
+  function kortCount(sel) {
     const v = view(); if (!v) return 0;
-    return v.querySelectorAll(ALL_CARD).length;
+    return v.querySelectorAll(sel || ALL_CARD).length;
+  }
+  // „Bara þetta kort" þarf að vita HVAÐA kort er valið. 262 á valið (target),
+  // svo við sækjum það þangað frekar en að giska — og merkjum kortið sjálft, því
+  // 78 endurteiknar borðið og hvaða :nth-child-slóð sem er myndi renna til.
+  function markOne() {
+    const v = view(); if (!v) return false;
+    let el = null;
+    try { el = window.PageEditor && PageEditor.target && PageEditor.target(); } catch (_) {}
+    const card = el && el.closest ? el.closest('.cw-rcard,[onclick^="Counter.select"]') : null;
+    v.querySelectorAll('[data-pe-one]').forEach(x => { if (x !== card) x.removeAttribute('data-pe-one'); });
+    if (card) { card.setAttribute('data-pe-one', '1'); return true; }
+    return false;
+  }
+  // Gildissviðið ræður selectornum — og þar með hvort breytingin lendir á einu
+  // korti, öllum „Tilbúin"-kortum eða öllum kortum borðsins.
+  function kortSel(gildir) {
+    if (gildir === 'eitt' && markOne()) return V() + ' [data-pe-one]';
+    if (gildir === 'eins') return V() + ' .cw-rcard';
+    return V() + ' .cw-rcard,' + V() + ' .cw-col-scroll>[onclick^="Counter.select"]';
   }
   // ── Tegundar-litakanturinn ────────────────────────────────────────────────
   // 78 skrifar hann inline á hvert kort: `typeFrame()` skilar
@@ -224,8 +295,9 @@
     if (m) return 'inset ' + px + 'px 0 0 ' + m[2];              // eins og 78 ritar
     return null;                                                 // enginn tegundar-kantur
   }
-  function kanturApply(px) {
+  function kanturApply(px, litur, gildir) {
     const v = view(); if (!v) return;
+    const only = (gildir === 'eitt');
     v.querySelectorAll(ALL_CARD).forEach(el => {
       let orig = el.getAttribute('data-pe-shadow');
       if (orig == null) {
@@ -233,7 +305,17 @@
         if (!orig || rewriteShadow(orig, 4) === null) return;   // ekkert kant á þessu korti
         el.setAttribute('data-pe-shadow', orig);
       }
-      const want = (px === 4) ? orig : (px === 0) ? 'none' : (rewriteShadow(orig, px) || orig);
+      // Utan gildissviðs → skila kortinu í upprunalegt horf.
+      const inScope = !only || el.hasAttribute('data-pe-one');
+      let want;
+      if (!inScope) want = orig;
+      else if (px === 0) want = 'none';
+      else {
+        want = rewriteShadow(orig, px) || orig;
+        // Fastur litur valinn → skipta honum inn; annars heldur kortið sínum
+        // tegundarlit (það er sjálfgefið og merkingin í kantinum).
+        if (litur) want = want.replace(/^.+?(?=\s+[\d.]+px)/, litur).replace(/^inset\s+([\d.]+px\s+0\s+0)\s+.*$/i, 'inset $1 ' + litur);
+      }
       if (el.style.boxShadow !== want) el.style.boxShadow = want;
     });
   }
@@ -241,14 +323,17 @@
     const v = view(); if (!v || !v.querySelector('.cw-col')) return '';
     const c = kortDefaults(cfg);
     const d = KORT_DENS[c.dens] || KORT_DENS.midlungs;
-    const C = V() + ' .cw-rcard,' + V() + ' .cw-col-scroll>[onclick^="Counter.select"]';
+    const C = kortSel(c.gildir);
+    const each = suffix => C.split(',').map(s => s.trim() + suffix).join(',');
     let css = C + '{padding:' + d.pad + 'px ' + (d.pad + 3) + 'px!important;' +
       'margin-bottom:' + d.gap + 'px!important;font-size:' + d.fs + 'px!important}\n';
-    css += V() + ' .cw-rcard-name{font-size:' + d.fs + 'px!important}\n';
+    css += each(' .cw-rcard-name') + '{font-size:' + d.fs + 'px!important}\n';
+    KORT_LINUR.forEach(L => { if (c.linur[L[0]]) css += each(L[2]) + '{display:none!important}\n'; });
     // Litakanturinn er meðhöndlaður í JS (kanturApply) — EKKI hér. Sjá skýringu
     // þar: liturinn er bakaður inn í inline-skuggann og tapast ef við skrifum
     // yfir hann með stílblaði.
-    kanturApply(c.kantur);
+    const lit = KANT_LITIR.filter(k => k[0] === c.kantlitur)[0];
+    kanturApply(c.kantlitur === 'hvitt' ? 0 : c.kantur, (lit && lit[2]) || null, c.gildir);
     if (!c.fylling) {
       css += V() + ' .cw-rcard{background:#fff!important}\n';
     }
