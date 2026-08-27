@@ -40,7 +40,7 @@
     const css = `
       .sm-overlay { position:fixed; inset:0; background:rgba(8,10,14,.55); z-index:9000;
         display:flex; align-items:flex-start; justify-content:center; padding:16px; overflow-y:auto;
-        font-family:'Space Grotesk',system-ui,sans-serif; }
+        font-family:'IBM Plex Sans',-apple-system,'Segoe UI',sans-serif; }
       /* Modal — spec surface card with stronger shadow */
       .sm-modal { background:#fff; border-radius:16px; max-width:720px; width:100%;
         box-shadow:0 28px 80px -16px rgba(8,10,14,.55), 0 10px 28px -16px rgba(25,35,60,.3);
@@ -73,7 +73,7 @@
       .sm-result:hover, .sm-result.active { background:#f3f6fc; }
       .sm-result-main { flex:1; min-width:0; }
       .sm-result-name { font-weight:600; font-size:13.5px; color:#11141c; }
-      .sm-result-meta { font-family:'Space Mono',monospace; font-size:11px; color:#9098a6; margin-top:2px; }
+      .sm-result-meta { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:11px; color:#9098a6; margin-top:2px; }
       /* Status chips per spec §3 — filled colour on tinted bg with 1px border */
       .sm-badge { padding:3px 9px; border-radius:7px; font-size:11.5px; font-weight:600; white-space:nowrap; border:1px solid; }
       .sm-badge-cust  { background:#eef3ff; color:#2f5fe0; border-color:#c6d6ff; }
@@ -117,7 +117,7 @@
       .sm-success { background:linear-gradient(180deg,#eaf7ef,#fff); border:1px solid #a7f3d0; border-radius:12px;
         padding:20px; text-align:center; }
       .sm-success-title { font-size:18px; font-weight:700; color:#047857; margin-bottom:6px; }
-      .sm-success-num { font-family:'Space Mono',monospace; font-size:24px;
+      .sm-success-num { font-family:'JetBrains Mono',ui-monospace,monospace; font-size:24px;
         color:#1f9d57; font-weight:700; letter-spacing:.5px; }
       .sm-err { background:#fff1f2; border:1px solid #fecdd3; color:#be123c;
         padding:11px 13px; border-radius:10px; margin:8px 0; font-size:13px; font-weight:600; }

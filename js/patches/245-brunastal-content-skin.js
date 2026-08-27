@@ -39,7 +39,7 @@
 
   s.textContent = `
 /* ============================================================
-   §1 — fonts: Space Mono for numbers/kt/dates/amounts/IDs
+   §1 — fonts: JetBrains Mono for numbers/kt/dates/amounts/IDs
    ============================================================ */
 ${P}.kr,
 ${P}.price,
@@ -64,7 +64,7 @@ ${P}.sb-badge,
 ${P}.badge,
 ${P}.count,
 ${P}[class*="count"]:not(.fcol-count) {
-  font-family: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, monospace !important;
+  font-family: 'JetBrains Mono', ui-monospace, monospace !important;
   font-variant-numeric: tabular-nums !important;
 }
 
@@ -187,7 +187,7 @@ ${P}.view .btn:not(.btn-primary):not(.btn-success):not(.btn-danger):not(.btn-bra
   border: 1px solid #0a0b0d !important;
   background: linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%) !important;
   color: #fff !important;
-  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif !important;
   font-weight: 500 !important;
   text-shadow: 0 1px 1px rgba(0,0,0,.5) !important;
   box-shadow: inset 0 1px 0 rgba(255,255,255,.10) !important;
@@ -248,7 +248,7 @@ ${P}.view .status-pill{
   font-size: 11.5px !important;
   font-weight: 600 !important;
   line-height: 1.4 !important;
-  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif !important;
   background-image: none !important;
   text-shadow: none !important;
   box-shadow: none !important;
@@ -343,13 +343,13 @@ ${P}.view .kpi .label{
   letter-spacing: .14em !important;
   color: #8a93a5 !important;
   text-transform: uppercase !important;
-  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif !important;
 }
 ${P}.view .stat-value,
 ${P}.view .kpi-value,
 ${P}.view .stat .value,
 ${P}.view .kpi .value{
-  font-family: 'Space Mono', ui-monospace, monospace !important;
+  font-family: 'JetBrains Mono', ui-monospace, monospace !important;
   font-size: 30px !important;
   font-weight: 700 !important;
   color: #11141c !important;
@@ -402,7 +402,7 @@ ${P}.view .fi{
   border: 1px solid rgba(20,24,34,.12) !important;
   background: #fff !important;
   color: #141822 !important;
-  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif !important;
   font-size: 14px !important;
 }
 ${P}.view textarea,
@@ -464,7 +464,7 @@ ${P}.view > .main-panel > div > h1:first-child{
   font-weight: 700 !important;
   letter-spacing: -.01em !important;
   text-shadow: 0 2px 8px rgba(0,0,0,.55) !important;
-  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  font-family: 'Playfair Display', Georgia, serif !important;
 }
 
 /* ============================================================
@@ -488,7 +488,7 @@ ${P}.modal-hd{
 ${P}.modal .modal-hd h2,
 ${P}.modal-hd h2{
   color: #11141c !important;
-  font-family: 'Space Grotesk', system-ui, sans-serif !important;
+  font-family: 'Playfair Display', Georgia, serif !important;
   font-size: 17px !important;
   font-weight: 700 !important;
 }
@@ -517,7 +517,7 @@ ${P}.view .sec-label{
 ${P}.view-nav .vnav-btn .sb-badge,
 ${P}.view-nav .vnav-btn .badge,
 ${P}.view-nav .vnav-btn .count{
-  font-family: 'Space Mono', ui-monospace, monospace !important;
+  font-family: 'JetBrains Mono', ui-monospace, monospace !important;
 }
 
 /* ============================================================

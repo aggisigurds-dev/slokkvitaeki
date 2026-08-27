@@ -1030,7 +1030,7 @@
     s.id = 'verkbord-style';
     s.textContent = `
       /* ═══ Þjónustuverk v3 (dc.html referens) ═══ */
-      #view-verkbord { font-family: 'Space Grotesk', 'IBM Plex Sans', system-ui, sans-serif; color: #11141c;
+      #view-verkbord { font-family: 'IBM Plex Sans', -apple-system, 'Segoe UI', sans-serif; color: #11141c;
         padding: 0 !important;
         background: linear-gradient(180deg, #060607 0px, #060607 120px, #aeb4be 420px, #9ba1ad 100%) !important; }
       /* 2026-08-06 (ósk Agnars — „almost full size to the background, almost to
@@ -1155,7 +1155,7 @@
           '<div>' +
             '<div style="font-size:28px;font-weight:700;color:#fff;letter-spacing:-.01em">🔧 Þjónustuborð</div>' +
             '<div style="font-size:13px;color:rgba(255,255,255,.6);margin-top:4px">Tilboð, fyrirspurnir og póstar sem þarf að fylgja eftir</div>' +
-            '<div id="vb-morgun" style="font-size:12px;color:rgba(255,255,255,.55);margin-top:3px;font-family:\'Space Mono\',monospace"></div>' +
+            '<div id="vb-morgun" style="font-size:12px;color:rgba(255,255,255,.55);margin-top:3px;font-family:\'JetBrains Mono\',ui-monospace,monospace"></div>' +
           '</div>' +
           // Hnappahópur hægra megin: 🔑 Viðskiptavinavefir (opnar /gatt-admin/ í
           // nýjum flipa — sjálfstæð stjórnsíða aðgangs/lykilorða/fyrirspurna,
@@ -1360,7 +1360,7 @@
       else if (nums[nums.length - 1] !== '…') nums.push('…');
     }
     const btn = (label, pg, on, dis) =>
-      dis ? '' : '<button data-act="page" data-p="' + pg + '" style="height:32px;min-width:32px;padding:0 8px;border-radius:8px;font-family:\'Space Mono\',monospace;font-size:12.5px;cursor:pointer;' +
+      dis ? '' : '<button data-act="page" data-p="' + pg + '" style="height:32px;min-width:32px;padding:0 8px;border-radius:8px;font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:12.5px;cursor:pointer;' +
         (on ? 'border:1px solid #0a0b0d;background:linear-gradient(145deg,#08080a,#2a2a30 50%,#070709);color:#fff;font-weight:700'
             : 'border:1px solid rgba(20,24,34,.16);background:linear-gradient(180deg,#fff,#e3e7ee);color:#3a4250;font-weight:600;box-shadow:inset 0 1px 0 rgba(255,255,255,.9)') + '">' + label + '</button>';
     return '<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;background:linear-gradient(180deg,#f1f4f9,#e7ebf2);border-top:1px solid rgba(20,24,34,.09);flex-wrap:wrap">' +
@@ -1844,7 +1844,7 @@
         (function (d) { return d === 0 ? 'kom í dag' : d === 1 ? 'bíður 1 dag' : 'bíður ' + d + ' daga'; })(waitDays(r)) + '</span>' : '') +
       (isPost(r) && !isWaiting(r) && isOpen(r) && isReplied(r) ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#ecfdf5;color:#047857;border:1px solid #a7f3d0;white-space:nowrap">✓ svarað</span>' : '') +
       (isArchived(r) ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;background:#f1f5f9;color:#64748b;border:1px solid #e2e8f0;white-space:nowrap">📦 geymsla</span>' : '') +
-      (di ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;white-space:nowrap;font-family:\'Space Mono\',monospace;' +
+      (di ? '<span style="font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:7px;white-space:nowrap;font-family:\'JetBrains Mono\',ui-monospace,monospace;' +
         (od ? 'background:#fff1f2;color:#be123c;border:1px solid #fecdd3' : 'background:#fffbeb;color:#b45309;border:1px solid #fde68a') + '">📅 ' + esc(di.label) + '</span>' : '');
     const linkLine = r.customer_nafn
       ? '<span data-act="history" data-id="' + esc(r.id) + '" style="font-size:12.5px;font-weight:600;color:#2f5fe0;display:inline-flex;align-items:center;gap:5px;cursor:pointer">🏢 ' + esc(r.customer_nafn) + '</span>'
@@ -1855,7 +1855,7 @@
       '<div style="flex:1;min-width:0;display:flex;gap:16px;padding:' + (compact ? '9px 18px' : '14px 18px') + ';align-items:flex-start" class="vb-rowflex">' +
         // 2026-07-22 (ósk Agnars — „gerðu stjörnuna stærri"): 15px → 22px.
         '<span data-act="star" data-id="' + esc(r.id) + '" title="Áríðandi" style="flex:none;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer;margin-top:-2px;font-size:22px;line-height:1;color:' + (r.important ? '#e0a93e' : '#cbd2dc') + '">' + (r.important ? '★' : '☆') + '</span>' +
-        '<div class="vb-dags" style="width:74px;flex:none;font-family:\'Space Mono\',monospace;font-size:11.5px;color:#9098a6;padding-top:2px">' + fmtDots(r.created_at) + '</div>' +
+        '<div class="vb-dags" style="width:74px;flex:none;font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:11.5px;color:#9098a6;padding-top:2px">' + fmtDots(r.created_at) + '</div>' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-size:14px;font-weight:600;color:#11141c;' + (compact ? 'white-space:nowrap;overflow:hidden;text-overflow:ellipsis' : 'line-height:1.35') + '">' +
             (done ? '<s style="color:#9098a6">' + esc(r.title || '(án titils)') + '</s>' : esc(r.title || '(án titils)')) + '</div>' +

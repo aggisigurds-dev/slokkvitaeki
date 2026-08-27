@@ -103,6 +103,38 @@ Sérsvið: **(1) útlits-lagfæring** (layout fixing), **(2) farsíma-fínstilli
 
 ---
 
+## Húsritstíllinn — leturkerfi & ritstjórnar-mynstrið (Agnar 2026-08-27)
+
+**Ákvörðun Agnars:** ritstjórnar-leturkerfi Brunahólf-hubbsins er NÚNA húsritstíll
+Slökkvitæki-appsins líka — tekið upp á ÖLLU appinu í einu (leysti af Space Grotesk /
+Inter / Space Mono). Þrjú letur, hlaðin frá Google Fonts (`display=swap`):
+
+| Hlutverk | Letur | Token | Notkun |
+|---|---|---|---|
+| **Display** | **Playfair Display** (serif, 600/700) | `--font-display` | ALLAR stórar fyrirsagnir, page-title, h1–h3, section-titlar |
+| **UI / megintexti** | **IBM Plex Sans** (400/500/600) | `--font` / `--ui` | brauðtexti, labels, takkar, inntak |
+| **Mono** | **JetBrains Mono** (400/500) | `--mono` | tölur, kennitölur, símanúmer, upphæðir |
+
+**Ritstjórnar-mynstrið (the writing technique) — endurnýtanleg uppskrift, ekki bara letrið:**
+1. **Auga-lína (eyebrow):** pínulítil UPPHÁSTAFA, letter-spaced, í accent-lit („SLÖKKVITÆKI EHF · AKSTURSLISTI").
+2. **Display-fyrirsögn:** stór Playfair Display serif, þétt línubil, `letter-spacing:-.01em`.
+3. **Stuðningslína:** deyfður IBM Plex Sans texti, með **feitletri** á lykil-staðreyndum.
+4. **Tölur í mono:** raðnúmer, kennitölur, símar, upphæðir í JetBrains Mono.
+5. **Pillu-labels:** litlar rúnnaðar merkingar („ALDREI SKODAD", „SÍÐAST 2025").
+6. **Accent-tala efst-hægri**, rjóma-bakgrunnur, EINN accent-litur, ríflegt hvítt rými.
+
+**Hvar tókenarnir búa** (þrjú lög — haltu ÞEIM SAMSTILLTUM svo tvö kerfi slást ekki á):
+- `css/app.css` — `:root` (tvær blokkir), `body` + `h1,h2,h3` (eldri app-síður).
+- `css/theme-handoff/theme.css` → auto-generar `css/theme-scoped.css` (`.thm`-skópað).
+- `js/patches/245-*.js` — Brunastál-skinnið pinnnar letur með `!important`; það VERÐUR
+  að fylgja tókenunum.
+
+Sjálfar tóken-/letur-breytingar fara í gegnum **`thema`** — ekki hardkóða framhjá.
+**Undantekning:** prent/kvittanir/miðar (POS-kvittun `pos.js`, QR-miðar) halda einföldu
+letri (Arial/Helvetica) — Playfair fer ALDREI á prentflöt.
+
+---
+
 ## Þegar-til sjónræn eining — póst-stöðumerkið (ekki brjóta það)
 
 Á **Fyrirtæki í þjónustu**-listanum (Ársskoðun, patch 153) eru NÚNA **tvö**

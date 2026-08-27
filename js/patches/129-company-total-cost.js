@@ -1054,7 +1054,7 @@
         '</div>' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:9px 12px;border-top:2px solid var(--ink2)">' +
           '<span style="font-size:12px;color:#475569">Án vsk</span>' +
-          '<span id="_ctc-sum-subex" style="font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace">' + fmtKr(totalSubEx) + '</span>' +
+          '<span id="_ctc-sum-subex" style="font-weight:700;color:#0f172a;font-variant-numeric:tabular-nums;font-family:\'JetBrains Mono\',ui-monospace,monospace">' + fmtKr(totalSubEx) + '</span>' +
         '</div>' +
         // Afsláttur (%) — alltaf sýnilegt svo hægt sé að slá inn; upphæð birtist þegar > 0.
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 12px">' +
@@ -1062,15 +1062,15 @@
             '<input id="_ctc-discount" type="number" min="0" max="100" step="1" value="' + discountPct + '" ' +
             'style="width:48px;padding:3px 6px;border:1px solid #cbd5e1;border-radius:5px;font:inherit;font-size:12px;text-align:right;background:#fff;-moz-appearance:textfield"> %' +
             (discountPct > 0 && overrideSubEx > 0 ? ' <span style="font-size:10.5px;color:#854d0e">(nær ekki á 💰 sérverðslínur)</span>' : '') + '</span>' +
-          '<span style="font-weight:600;color:#b91c1c;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace">' + (discountEx > 0 ? '−' + fmtKr(discountEx) : '—') + '</span>' +
+          '<span style="font-weight:600;color:#b91c1c;font-variant-numeric:tabular-nums;font-family:\'JetBrains Mono\',ui-monospace,monospace">' + (discountEx > 0 ? '−' + fmtKr(discountEx) : '—') + '</span>' +
         '</div>' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:7px 12px">' +
           '<span style="font-size:12px;color:#475569">VSK</span>' +
-          '<span id="_ctc-sum-vsk" style="font-weight:600;color:#0f172a;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace">' + fmtKr(netVsk) + '</span>' +
+          '<span id="_ctc-sum-vsk" style="font-weight:600;color:#0f172a;font-variant-numeric:tabular-nums;font-family:\'JetBrains Mono\',ui-monospace,monospace">' + fmtKr(netVsk) + '</span>' +
         '</div>' +
         '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 14px;background:linear-gradient(110deg,#0c1018,#13203f 45%,#274a9e);color:#fff">' +
           '<span style="font-size:13px;font-weight:800;letter-spacing:.04em">SAMTALS M. VSK</span>' +
-          '<span id="_ctc-sum-total" style="font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;font-family:\'Space Mono\',monospace;white-space:nowrap">' + fmtKr(totalInc) + '</span>' +
+          '<span id="_ctc-sum-total" style="font-size:18px;font-weight:800;font-variant-numeric:tabular-nums;font-family:\'JetBrains Mono\',ui-monospace,monospace;white-space:nowrap">' + fmtKr(totalInc) + '</span>' +
         '</div>' +
       '</div>' +
       (unmatched.length ? '<div style="margin-top:8px;padding:8px 10px;background:#fef3c7;border:1px solid #fde68a;border-radius:6px;font-size:11px;color:#78350f">⚠ ' + unmatched.length + ' tegund(ir) fundu ekki matchandi þjónustu í verðlista. Bæta við í <b>Vörur og þjónusta</b>.</div>' : '');

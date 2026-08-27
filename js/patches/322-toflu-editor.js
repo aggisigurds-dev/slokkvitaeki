@@ -32,7 +32,7 @@
 
   const FONTS = [
     ['', '(sjálfgefið)'],
-    ['"Space Grotesk",system-ui,sans-serif', 'Space Grotesk'],
+    ['"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif', 'IBM Plex Sans'],
     ['"Public Sans",system-ui,sans-serif', 'Public Sans'],
     ['system-ui,-apple-system,sans-serif', 'Kerfisletur'],
     ['Verdana,Geneva,sans-serif', 'Verdana'],
@@ -113,7 +113,7 @@
     if (document.getElementById('_te-css')) return;
     const s = document.createElement('style'); s.id = '_te-css';
     s.textContent = [
-      '#' + BAR + '{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 12px;background:#171a21;color:#e8eaf0;border-radius:11px;font:13px "Space Grotesk",system-ui,sans-serif;margin:0 0 10px}',
+      '#' + BAR + '{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 12px;background:#171a21;color:#e8eaf0;border-radius:11px;font:13px "IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;margin:0 0 10px}',
       '#' + BAR + ' .te-brand{font-weight:800;font-size:12px;letter-spacing:.5px;color:#ff8a80}',
       '#' + BAR + ' .te-tgt{background:#262b36;border:1px solid #3a4150;border-radius:8px;padding:4px 9px;font-size:12px;font-weight:600;max-width:46vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}',
       '#' + BAR + ' .te-grp{display:flex;align-items:center;gap:5px;background:#262b36;border:1px solid #3a4150;border-radius:8px;padding:3px 7px}',

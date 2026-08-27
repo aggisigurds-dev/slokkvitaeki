@@ -458,7 +458,7 @@
     return s;
   }
 
-  const FONTS = ['(sjálfgefið)', 'Space Grotesk', 'Space Mono', 'Source Serif 4', 'Georgia, serif', 'system-ui, sans-serif', 'Arial, sans-serif', 'Courier New, monospace', 'Impact, sans-serif'];
+  const FONTS = ['(sjálfgefið)', 'IBM Plex Sans', 'JetBrains Mono', 'Source Serif 4', 'Georgia, serif', 'system-ui, sans-serif', 'Arial, sans-serif', 'Courier New, monospace', 'Impact, sans-serif'];
 
   function toast(m) { if (window.Toast && Toast.show) Toast.show(m); }
 
@@ -469,7 +469,7 @@
     s.textContent = [
       '#' + BTN_ID + '{all:unset;cursor:pointer;font-size:17px;line-height:1;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;margin-right:6px;transition:background .12s}',
       '#' + BTN_ID + ':hover{background:rgba(255,255,255,.14)}',
-      '#' + PANEL_ID + '{position:fixed;left:0;right:0;bottom:0;z-index:99990;max-height:56vh;overflow:auto;background:#f8fafc;border-top:1px solid #cbd5e1;box-shadow:0 -12px 34px -14px rgba(15,23,42,.35);font-family:"Space Grotesk",system-ui,sans-serif;color:#11141c;padding:14px 18px 22px}',
+      '#' + PANEL_ID + '{position:fixed;left:0;right:0;bottom:0;z-index:99990;max-height:56vh;overflow:auto;background:#f8fafc;border-top:1px solid #cbd5e1;box-shadow:0 -12px 34px -14px rgba(15,23,42,.35);font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;color:#11141c;padding:14px 18px 22px}',
       // Hliðar-dokkun: hægri panel í fullri hæð á breiðum skjá — stýringarnar
       // hlaðast lóðrétt og skyggja ekki á töfluna sem verið er að stilla.
       '@media (min-width:900px){' +
@@ -518,7 +518,7 @@
       '#' + PANEL_ID + ' .pe-row{display:flex;align-items:center;gap:10px;margin:7px 0}',
       '#' + PANEL_ID + ' .pe-row label{flex:0 0 118px;font-size:12.5px;font-weight:600;color:#334155}',
       '#' + PANEL_ID + ' .pe-row input[type=range]{flex:1;min-width:80px}',
-      '#' + PANEL_ID + ' .pe-val{flex:0 0 52px;width:52px;text-align:center;font-family:"Space Mono",monospace;font-weight:700;font-size:12.5px;background:#fff;border:1px solid #cbd5e1;border-radius:7px;padding:4px 2px;-moz-appearance:textfield}',
+      '#' + PANEL_ID + ' .pe-val{flex:0 0 52px;width:52px;text-align:center;font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:700;font-size:12.5px;background:#fff;border:1px solid #cbd5e1;border-radius:7px;padding:4px 2px;-moz-appearance:textfield}',
       '#' + PANEL_ID + ' .pe-val:focus{outline:none;border-color:#2563eb;box-shadow:0 0 0 2px rgba(37,99,235,.2)}',
       '#' + PANEL_ID + ' .pe-val::-webkit-outer-spin-button,#' + PANEL_ID + ' .pe-val::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}',
       '#' + PANEL_ID + ' .pe-row input[type=color]{width:40px;height:28px;border:1px solid #cbd5e1;border-radius:7px;background:#fff;padding:1px;cursor:pointer}',
@@ -530,7 +530,7 @@
       '#' + PANEL_ID + ' .pe-glabel{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#94a3b8;font-weight:700;margin:8px 0 6px}',
       '#' + PANEL_ID + ' .pe-favwrap{position:relative;display:inline-flex}',
       '#' + PANEL_ID + ' .pe-favdel{all:unset;position:absolute;top:-6px;right:-6px;width:17px;height:17px;border-radius:50%;background:#dc2626;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.35)}',
-      '#' + PANEL_ID + ' .pe-target{font-family:"Space Mono",monospace;font-size:11.5px;background:#111827;color:#e5e7eb;padding:4px 9px;border-radius:7px;white-space:nowrap;overflow:hidden;max-width:320px;text-overflow:ellipsis}',
+      '#' + PANEL_ID + ' .pe-target{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11.5px;background:#111827;color:#e5e7eb;padding:4px 9px;border-radius:7px;white-space:nowrap;overflow:hidden;max-width:320px;text-overflow:ellipsis}',
       '#' + PANEL_ID + ' .pe-empty{padding:22px;text-align:center;color:#64748b;font-size:13px;border:1px dashed #cbd5e1;border-radius:12px;background:#fff}',
       // ── v2: þrepa-merki, svæða-kort og verkfæraspjöld ───────────────────────
       '#' + PANEL_ID + ' .pe-step{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#94a3b8;margin:14px 0 2px}',
@@ -918,7 +918,7 @@
       el.style.cssText = 'pointer-events:auto;display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid #cbd5e1;border-radius:99px;padding:7px 8px 7px 13px;box-shadow:0 6px 18px -8px rgba(15,23,42,.4);cursor:grab;touch-action:none;user-select:none';
       el.title = 'Dragðu takkann þangað sem þú vilt hafa hann · tvísmellur setur hann aftur í hornið';
       el.innerHTML =
-        '<a href="' + esc(l.u) + '" target="_blank" rel="noopener" draggable="false" style="font:700 12.5px \'Space Grotesk\',sans-serif;color:#0f172a;text-decoration:none;white-space:nowrap;max-width:52vw;overflow:hidden;text-overflow:ellipsis">' + esc(l.n) + '</a>' +
+        '<a href="' + esc(l.u) + '" target="_blank" rel="noopener" draggable="false" style="font:700 12.5px \'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif;color:#0f172a;text-decoration:none;white-space:nowrap;max-width:52vw;overflow:hidden;text-overflow:ellipsis">' + esc(l.n) + '</a>' +
         '<button type="button" data-pl-del="' + i + '" title="Fjarlægja takkann af síðunni" style="all:unset;cursor:pointer;width:20px;height:20px;line-height:20px;text-align:center;border-radius:99px;background:#f1f5f9;color:#475569;font-size:12px;font-weight:700;flex:none">✕</button>';
       if (PL_POS(l)) { el.style.position = 'absolute'; box.appendChild(el); plClamp(el, l.x, l.y); }
       else stack.appendChild(el);
@@ -1407,7 +1407,7 @@
     let l = document.getElementById(HL_ID + '-lbl');
     if (!l) {
       l = document.createElement('div'); l.id = HL_ID + '-lbl';
-      l.style.cssText = 'position:fixed;z-index:99997;pointer-events:none;background:#0f172a;color:#fff;font:700 11.5px \'Space Grotesk\',sans-serif;padding:3px 9px;border-radius:7px;box-shadow:0 4px 12px rgba(0,0,0,.35);white-space:nowrap';
+      l.style.cssText = 'position:fixed;z-index:99997;pointer-events:none;background:#0f172a;color:#fff;font:700 11.5px \'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif;padding:3px 9px;border-radius:7px;box-shadow:0 4px 12px rgba(0,0,0,.35);white-space:nowrap';
       document.body.appendChild(l);
     }
     l.textContent = friendlyName(el);

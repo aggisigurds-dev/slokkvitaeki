@@ -280,24 +280,24 @@
       t.id = '_sv-theme';
       t.textContent = [
         // page heading on white-area (we render below the banner, not on the dark band)
-        '#' + VIEW_ID + ' h1{font-family:"Space Grotesk",system-ui,sans-serif;letter-spacing:-.01em;color:#11141c}',
+        '#' + VIEW_ID + ' h1{font-family:"Playfair Display",Georgia,serif;letter-spacing:-.01em;color:#11141c}',
         // Card surface (the wrapper card for each Í-vinnslu row)
         '#' + VIEW_ID + ' .sv-card{background:#fff!important;border:1px solid rgba(20,24,34,.08)!important;border-left:3px solid #2f5fe0!important;border-radius:16px!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)!important;padding:18px 20px!important}',
         '#' + VIEW_ID + ' .sv-card.haett{border-left-color:#c0241f!important}',
         // Segmented mode-switch (Listi / Breitt / Spjöld) — metallic black pill (filter-chip style)
         '#' + VIEW_ID + ' .sv-seg{background:#fff;border:1px solid rgba(20,24,34,.14);border-radius:11px;padding:3px;gap:3px;box-shadow:0 1px 2px rgba(0,0,0,.04)}',
-        '#' + VIEW_ID + ' .sv-seg button{font-family:"Space Grotesk",system-ui,sans-serif;font-size:13px;font-weight:600;color:#3a4250;padding:7px 14px;border-radius:9px;cursor:pointer;background:transparent;border:0}',
+        '#' + VIEW_ID + ' .sv-seg button{font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;font-size:13px;font-weight:600;color:#3a4250;padding:7px 14px;border-radius:9px;cursor:pointer;background:transparent;border:0}',
         '#' + VIEW_ID + ' .sv-seg button.on{background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%);color:#fff;box-shadow:0 1px 2px rgba(0,0,0,.18)}',
         // Tinted stat chips (Í vinnslu blue, Á dagskrá amber, Búið green) matching spec
-        '#' + VIEW_ID + ' .sv-chip{font-family:"Space Grotesk",system-ui,sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#3a4250;cursor:pointer;display:inline-flex;align-items:center;gap:8px}',
-        '#' + VIEW_ID + ' .sv-chip .n{font-family:"Space Mono",monospace;font-weight:700;color:inherit}',
+        '#' + VIEW_ID + ' .sv-chip{font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:11px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#3a4250;cursor:pointer;display:inline-flex;align-items:center;gap:8px}',
+        '#' + VIEW_ID + ' .sv-chip .n{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:700;color:inherit}',
       // Skref-sía (2026-07-30) — sömu rólegu litir og chip-röðin fyrir ofan;
       // virk sía fær dökka fyllingu (búið) eða gulbrúna (vantar) svo sjáist
       // í einu augnkasti að listinn sé síaður.
       '#' + VIEW_ID + ' .sv-stepf{display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin:0 2px 16px}',
       '#' + VIEW_ID + ' .sv-stepf-lbl{font-size:12px;color:#8a93a5;font-weight:600}',
       '#' + VIEW_ID + ' .sv-stepf-chip{font-family:inherit;font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:99px;border:1px solid rgba(20,24,34,.14);background:#fff;color:#3a4250;cursor:pointer;display:inline-flex;align-items:center;gap:6px}',
-      '#' + VIEW_ID + ' .sv-stepf-chip .n{font-family:"Space Mono",monospace;font-weight:700;opacity:.65}',
+      '#' + VIEW_ID + ' .sv-stepf-chip .n{font-family:"JetBrains Mono",ui-monospace,monospace;font-weight:700;opacity:.65}',
       '#' + VIEW_ID + ' .sv-stepf-chip:hover{border-color:#94a3b8}',
       '#' + VIEW_ID + ' .sv-stepf-chip.on{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);border-color:#0f6e3a;color:#fff}',
       '#' + VIEW_ID + ' .sv-stepf-chip.on .n{opacity:.85}',
@@ -309,7 +309,7 @@
         '#' + VIEW_ID + ' .sv-drawer{background:#fff!important;border:1px solid rgba(20,24,34,.08)!important;border-radius:14px!important;box-shadow:0 10px 28px -16px rgba(25,35,60,.16)!important}',
         '#' + VIEW_ID + ' .sv-drawer-row{border-bottom:1px solid rgba(20,24,34,.06)!important;font-size:13.5px;color:#3a4250}',
         '#' + VIEW_ID + ' .sv-drawer-row .nm{font-weight:600!important;color:#11141c!important}',
-        '#' + VIEW_ID + ' .sv-drawer-row .mn{font-family:"Space Mono",monospace!important;color:#9098a6!important}',
+        '#' + VIEW_ID + ' .sv-drawer-row .mn{font-family:"JetBrains Mono",ui-monospace,monospace!important;color:#9098a6!important}',
         // Stepper — green check filled when ON
         '#' + VIEW_ID + ' .sv-steps{background:#f8fafc;border:1px solid rgba(20,24,34,.06);border-radius:12px;padding:14px 16px}',
         '#' + VIEW_ID + ' .sv-step .nd{width:24px!important;height:24px!important;border:2px solid #cbd5e1!important;color:#64748b!important;font-size:11px!important}',
@@ -318,13 +318,13 @@
         '#' + VIEW_ID + ' .sv-step.on .lb{color:#0f6e3a!important}',
         '#' + VIEW_ID + ' .sv-step.on .ln{background:#2bbf6c!important}',
         // Marks (Hætt / Eftir að uppfæra / Reikningur áður)
-        '#' + VIEW_ID + ' .sv-mark{font-family:"Space Grotesk",system-ui,sans-serif;font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:8px;border:1px solid rgba(20,24,34,.14);background:#f6f8fb;color:#5b6472;cursor:pointer;white-space:nowrap}',
+        '#' + VIEW_ID + ' .sv-mark{font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:8px;border:1px solid rgba(20,24,34,.14);background:#f6f8fb;color:#5b6472;cursor:pointer;white-space:nowrap}',
         // Note textarea
-        '#' + VIEW_ID + ' .sv-note{background:#f6f8fb!important;border:1px solid rgba(20,24,34,.14)!important;border-radius:11px!important;padding:11px 13px!important;color:#141822!important;font-family:"Space Grotesk",system-ui,sans-serif!important;font-size:13px!important;line-height:1.45!important}',
+        '#' + VIEW_ID + ' .sv-note{background:#f6f8fb!important;border:1px solid rgba(20,24,34,.14)!important;border-radius:11px!important;padding:11px 13px!important;color:#141822!important;font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif!important;font-size:13px!important;line-height:1.45!important}',
         '#' + VIEW_ID + ' .sv-note:focus{outline:none!important;border-color:#2f5fe0!important;background:#fff!important;box-shadow:0 0 0 3px rgba(47,95,224,.12)!important}',
         // Action row
         '#' + VIEW_ID + ' .sv-acts{border-top:0!important;padding-top:0!important;gap:8px!important}',
-        '#' + VIEW_ID + ' .sv-acts ._sv-act{height:36px!important;padding:0 13px!important;border-radius:10px!important;border:1px solid rgba(20,24,34,.14)!important;background:#f1f5f9!important;color:#3a4250!important;font-family:"Space Grotesk",system-ui,sans-serif!important;font-size:12.5px!important;font-weight:600!important;cursor:pointer!important}',
+        '#' + VIEW_ID + ' .sv-acts ._sv-act{height:36px!important;padding:0 13px!important;border-radius:10px!important;border:1px solid rgba(20,24,34,.14)!important;background:#f1f5f9!important;color:#3a4250!important;font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif!important;font-size:12.5px!important;font-weight:600!important;cursor:pointer!important}',
         '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="buid"]{border:1px solid #156e3a!important;background:linear-gradient(150deg,#2bbf6c,#0f6e3a)!important;color:#fff!important;font-weight:700!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.25)!important}',
         '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="unstart"]{border:1px solid #f3c6c4!important;background:#fdecec!important;color:#c0241f!important}',
         '#' + VIEW_ID + ' .sv-acts ._sv-act[data-act="report"]{background:linear-gradient(145deg,#08080a 0%,#26262c 26%,#3a3a41 50%,#19191d 74%,#070709 100%)!important;border-color:#0a0b0d!important;color:#fff!important}',
@@ -339,7 +339,7 @@
         '#' + VIEW_ID + ' .sv-empbtn{height:30px;padding:0 12px;border-radius:99px;border:1px solid rgba(255,255,255,.28);background:rgba(255,255,255,.12);color:#fff;font:inherit;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap}',
         '#' + VIEW_ID + ' .sv-stepw .nd{width:26px;height:26px;border-radius:50%;border:2px solid #cbd5e1;background:#fff;color:#94a3b8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;box-sizing:border-box}',
         '#' + VIEW_ID + ' .sv-stepw.on .nd{background:linear-gradient(150deg,#2bbf6c,#0f6e3a);border-color:#0f6e3a;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.35)}',
-        '#' + VIEW_ID + ' .sv-stepw .lb{font-family:"Space Grotesk",system-ui,sans-serif;font-size:12.5px;font-weight:600;color:#5b6472;white-space:nowrap}',
+        '#' + VIEW_ID + ' .sv-stepw .lb{font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;font-size:12.5px;font-weight:600;color:#5b6472;white-space:nowrap}',
         '#' + VIEW_ID + ' .sv-stepw.on .lb{color:#0f6e3a;font-weight:700}',
         '#' + VIEW_ID + ' .sv-lnw{flex:1;min-width:12px;max-width:46px;height:3px;border-radius:2px;background:#dbe1ea}',
         '#' + VIEW_ID + ' .sv-lnw.on{background:#2bbf6c}',
@@ -349,9 +349,9 @@
         '#' + VIEW_ID + ' .sv-actsw{display:flex!important;gap:8px!important;flex-wrap:nowrap!important;border-top:0!important;padding-top:0!important}',
         '#' + VIEW_ID + ' .sv-actsw ._sv-act{flex:1;height:42px!important;white-space:nowrap}',
         '#' + VIEW_ID + ' .sv-actsw ._sv-act[data-act="report"]{background:#f1f5f9!important;border-color:rgba(20,24,34,.14)!important;color:#3a4250!important}',
-        '#' + VIEW_ID + ' .sv-unmarkw{width:100%;height:38px;border:1px solid #f3c6c4!important;background:#fdf1f1!important;color:#c0241f!important;border-radius:10px!important;font-family:"Space Grotesk",system-ui,sans-serif!important;font-size:12.5px!important;font-weight:700!important;cursor:pointer}',
+        '#' + VIEW_ID + ' .sv-unmarkw{width:100%;height:38px;border:1px solid #f3c6c4!important;background:#fdf1f1!important;color:#c0241f!important;border-radius:10px!important;font-family:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif!important;font-size:12.5px!important;font-weight:700!important;cursor:pointer}',
         // Numbers in mono
-        '#' + VIEW_ID + ' [data-mono],#' + VIEW_ID + ' .sv-kt{font-family:"Space Mono",monospace}'
+        '#' + VIEW_ID + ' [data-mono],#' + VIEW_ID + ' .sv-kt{font-family:"JetBrains Mono",ui-monospace,monospace}'
       ].join('');
       document.head.appendChild(t);
     }
@@ -418,7 +418,7 @@
       '#' + VIEW_ID + ' .sv-doclink.reik{color:#4f5d76}',
       '#' + VIEW_ID + ' .sv-doclink.send{background:#eef3ec;border-color:#cfe0cb;color:#3f6b3a}',
       '#' + VIEW_ID + ' .sv-docmuted{font-size:11px;color:var(--ink4);font-style:italic}',
-      '#' + VIEW_ID + ' .sv-pdpill{font-family:"Space Mono",monospace;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;border:1px solid #d9c7b0;background:#f5efe1;color:#7a5f2a}',
+      '#' + VIEW_ID + ' .sv-pdpill{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;border:1px solid #d9c7b0;background:#f5efe1;color:#7a5f2a}',
       '#' + VIEW_ID + ' .sv-pdpill.paid{border-color:#c3ddc7;background:#eef6ef;color:#3f6b3a}'
     ].join('');
     document.head.appendChild(s);
@@ -593,7 +593,7 @@
     return '<div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">' +
       draftChip +
       (r.units > 0 ? '<span style="font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;background:#eef1f6;color:#475569;border:1px solid #cbd5e1;white-space:nowrap">🧯 ' + r.units + ' einingar</span>' : '') +
-      (r.tekjur > 0 ? '<span style="font-family:\'Space Mono\',monospace;font-size:12px;font-weight:700;color:#11141c;align-self:center" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">áætl. ' + fmtKr(r.tekjur) + '</span>' : '') +
+      (r.tekjur > 0 ? '<span style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:12px;font-weight:700;color:#11141c;align-self:center" title="Áætlaðar tekjur: yfirferðir + skýrslugerð + akstur, m. vsk">áætl. ' + fmtKr(r.tekjur) + '</span>' : '') +
       '</div>';
   }
   // Skjala-lína ársins: 📄 Skýrsla-hlekkur + ✉️ Senda · 🧾 R-nr-hlekkur +
@@ -682,7 +682,7 @@
   }
   function nameBlock(r, big) {
     return '<div><div style="font-weight:700;font-size:' + (big ? '15.5px' : '13.5px') + ';color:#11141c;line-height:1.25;letter-spacing:-.005em">' + esc(r.nafn) + '</div>' +
-      (r.kennitala ? '<div style="font-family:\'Space Mono\',monospace;font-size:11px;color:#9098a6;margin-top:1px">kt. ' + esc(fmtKt(r.kennitala)) + '</div>' : '') + '</div>';
+      (r.kennitala ? '<div style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:11px;color:#9098a6;margin-top:1px">kt. ' + esc(fmtKt(r.kennitala)) + '</div>' : '') + '</div>';
   }
   // Sama hreinsun og Ársskoðun notar (153) — innflutningurinn tvítók sumar
   // áminningar með „---"-skiltingu og án þessa sæist afritið hér áfram.
@@ -809,7 +809,7 @@
       '<div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:5px 0">' +
         '<span style="font-size:10.5px;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.6);white-space:nowrap">' + esc(label) + '</span>' +
         '<span style="text-align:right;white-space:nowrap">' +
-          '<b style="font-family:\'Space Mono\',monospace;font-size:15px;font-weight:700;color:' + col + '">' + val + '</b>' +
+          '<b style="font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:15px;font-weight:700;color:' + col + '">' + val + '</b>' +
           (sub ? '<span style="font-size:10.5px;color:rgba(255,255,255,.45);margin-left:7px">' + esc(sub) + '</span>' : '') +
         '</span></div>';
     const moneyBox =
@@ -861,15 +861,15 @@
       opts = opts || {};
       const arrow = opts.toggle ? (' <span style="opacity:.55;font-size:11px">' + (opts.open ? '▾' : '▸') + '</span>') : '';
       return '<button ' + (opts.toggle ? 'data-toggle="' + opts.toggle + '" ' : '') +
-        'style="font-family:\'Space Grotesk\',system-ui,sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:11px;border:1px solid ' + c.bd + ';background:' + c.bg + ';color:' + c.fg + ';cursor:' + (opts.toggle ? 'pointer' : 'default') + ';display:inline-flex;align-items:center;gap:8px">' +
+        'style="font-family:\'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif;font-size:13px;font-weight:600;padding:8px 16px;border-radius:11px;border:1px solid ' + c.bd + ';background:' + c.bg + ';color:' + c.fg + ';cursor:' + (opts.toggle ? 'pointer' : 'default') + ';display:inline-flex;align-items:center;gap:8px">' +
         '<span style="width:9px;height:9px;border-radius:50%;background:' + c.dot + '"></span>' +
-        '<b style="font-family:\'Space Mono\',monospace">' + count + '</b> ' + esc(label) + arrow + '</button>';
+        '<b style="font-family:\'JetBrains Mono\',ui-monospace,monospace">' + count + '</b> ' + esc(label) + arrow + '</button>';
     };
-    v.innerHTML = '<div style="max-width:none;margin:0;width:100%;box-sizing:border-box;padding:6px 10px 34px;font-family:\'Space Grotesk\',system-ui,sans-serif">' +
+    v.innerHTML = '<div style="max-width:none;margin:0;width:100%;box-sizing:border-box;padding:6px 10px 34px;font-family:\'IBM Plex Sans\',-apple-system,\'Segoe UI\',sans-serif">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:14px;margin:2px 2px 14px">' +
         '<div style="min-width:0">' +
           '<div style="font-size:26px;font-weight:700;color:#ffffff;letter-spacing:-.01em;line-height:1.1;text-shadow:0 1px 3px rgba(0,0,0,.35)">🔧 ÞjónustuVerkstæði</div>' +
-          '<div style="font-size:13px;color:#c7cdd8;margin-top:4px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · áætl. <b style="font-family:\'Space Mono\',monospace;color:#ffffff">' + fmtSum(vinnslaSum) + '</b>' : '') + '</div>' +
+          '<div style="font-size:13px;color:#c7cdd8;margin-top:4px">Það sem er í vinnslu núna' + (vinnslaSum > 0 ? ' · áætl. <b style="font-family:\'JetBrains Mono\',ui-monospace,monospace;color:#ffffff">' + fmtSum(vinnslaSum) + '</b>' : '') + '</div>' +
         '</div>' +
         '<div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-end">' +
           '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:flex-end">' +

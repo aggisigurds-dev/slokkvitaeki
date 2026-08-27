@@ -111,7 +111,7 @@
       '<div style="display:flex;align-items:center;gap:8px;margin:0 2px 8px">' +
         '<span style="font-size:12px;font-weight:700;letter-spacing:.06em;color:#3a4250">🚚 KOMIÐ ÚR ÞJÓNUSTU</span>' +
         // teljarinn dempaður eins og .bw-shd-n/.bw-cnum (mono, grár) — ekki blár
-        (_shop.length ? '<span style="margin-left:auto;font-family:\'Space Mono\',monospace;font-size:12px;color:#9098a6">' + _shop.length + ' tæki</span>' : '') +
+        (_shop.length ? '<span style="margin-left:auto;font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:12px;color:#9098a6">' + _shop.length + ' tæki</span>' : '') +
       '</div>' + cards +
     '</div>';
   }
