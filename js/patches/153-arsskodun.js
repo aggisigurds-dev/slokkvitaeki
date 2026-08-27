@@ -98,14 +98,44 @@
   // "FALSE\n" prefix during the earlier Viðskiptavinir-sheet enrichment
   // (the parser read one column too early — c[38]=Falinn? instead of
   // c[39]=Áminning). Cheaper to strip at read time than to re-import.
+  // 2026-08-27 (Agnar: „can you get rid of this extra text, I cant delete it
+  // anywhere"): innflutningurinn skeytti sömu áminningunni AFTUR aftan við þá
+  // sem fyrir var, aðskilinni með „---". 19 af 35 áminningum voru þannig og 17
+  // þeirra bókstaflega sama setningin tvisvar („20% afsláttur af efni og vinnu
+  // --- 20% afsláttur af efni og vinnu"). ✕-takkinn á röðinni EYÐIR ALLRI
+  // áminningunni — líka afslættinum sem á að halda sér — svo það var engin leið
+  // að fjarlægja bara afritið. Þess vegna: klofið á „---", hlutar bornir saman
+  // eftir að bil/hástafir/FALSE-rusl er normaliserað, og afritum hent.
+  // Þetta er ÖRYGGISNET jafnt sem lagfæring: keyri innflutningurinn aftur og
+  // tvöfaldi textann á ný, sést það samt ekki.
+  const _aminJunk = /^(0\s*kr|false|true|—|-|0|null)$/i;
+  const _aminNorm = s => String(s).toLowerCase().replace(/\s+/g, ' ').replace(/[.,;:]/g, '').trim();
   function cleanAminning(s) {
-    let t = String(s == null ? '' : s).trim();
-    if (!t) return '';
-    // Strip junk prefix (single token + separator)
+    const raw = String(s == null ? '' : s).trim();
+    if (!raw) return '';
+    let parts = raw.split(/\n*-{3,}\n*/)
+      .map(p => p.replace(/^(false|true|null)\s*[\n,;.\s]*/i, '').trim())
+      .filter(Boolean);
+    if (parts.length > 1) parts = parts.filter(p => !_aminJunk.test(p));
+    const keep = [];
+    parts.forEach(p => {
+      const n = _aminNorm(p);
+      // Afrit = nákvæmlega eins EÐA annar hlutinn rúmast inni í hinum (t.d.
+      // „15% afsláttur\nTengiliður…" vs „Tengiliður…"). Þá er LENGRI útgáfan
+      // geymd, svo aukaupplýsingar tapist aldrei.
+      const i = keep.findIndex(k => { const kn = _aminNorm(k); return kn === n || kn.includes(n) || n.includes(kn); });
+      if (i < 0) keep.push(p);
+      else if (p.length > keep[i].length) keep[i] = p;
+    });
+    let t = keep.join(' · ');
+    // Gömlu heildar-síurnar óbreyttar (sjá skýringu að ofan um FALSE/TRUE-rusl).
     t = t.replace(/^(false|true|0\s*kr|null|—|-)\s*[\n,;.\s]*/i, '').trim();
     if (!t) return '';
-    if (/^(0\s*kr|false|true|—|-|0|null)$/i.test(t)) return '';
-    if (t.length < 4) return '';                 // single words / typos
+    if (_aminJunk.test(t)) return '';
+    // Stutt en tölulegt („10%") er RAUNVERULEG áminning — aðeins stuttir
+    // orðaslumpar án tölu eru rusl. Áður féll „10%" hér út um leið og
+    // „---0 kr"-halinn var hreinsaður af.
+    if (t.length < 4 && !/[0-9%]/.test(t)) return '';
     if (/^h(æ|a)\s*h(ó|o)w*\s*$/i.test(t)) return ''; // "hæ hó" test entry
     return t;
   }
@@ -3806,7 +3836,9 @@
   // Expose for debugging
   // loadAll exported 2026-06-12 so ÞjónustuVerkstæði (patch 190) can pull the
   // same live equipment counts + estimated yearly revenue per company.
-  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, version: 'v1' };
+  // cleanAminning er birt svo önnur borð (190 Verkstæði) noti SÖMU hreinsun —
+  // annars sæist tvítekni „---"-textinn þar áfram þótt hann sé horfinn hér.
+  window.Arsskodun = { show, openDetail, openOnMap, _cache, render, loadAll, cleanAminning, version: 'v1' };
 
   // Keep the cached priority in sync when the ❗ control is cycled (patch 175),
   // so sorting by ❗ stays correct. The ❗ button updates itself in place — no

@@ -684,7 +684,17 @@
     return '<div><div style="font-weight:700;font-size:' + (big ? '15.5px' : '13.5px') + ';color:#11141c;line-height:1.25;letter-spacing:-.005em">' + esc(r.nafn) + '</div>' +
       (r.kennitala ? '<div style="font-family:\'Space Mono\',monospace;font-size:11px;color:#9098a6;margin-top:1px">kt. ' + esc(fmtKt(r.kennitala)) + '</div>' : '') + '</div>';
   }
-  function aminningLine(r, n) { return r.aminning ? '<div style="font-size:10.5px;color:#b45309">📌 ' + esc(r.aminning.slice(0, n || 80)) + '</div>' : ''; }
+  // Sama hreinsun og Ársskoðun notar (153) — innflutningurinn tvítók sumar
+  // áminningar með „---"-skiltingu og án þessa sæist afritið hér áfram.
+  // Fallback: hrár texti ef 153 hefur ekki hlaðist (röðin tryggir að hann geri það).
+  function cleanAmin(s) {
+    try { if (window.Arsskodun && Arsskodun.cleanAminning) return Arsskodun.cleanAminning(s); } catch (_) {}
+    return String(s == null ? '' : s);
+  }
+  function aminningLine(r, n) {
+    const a = cleanAmin(r.aminning);
+    return a ? '<div style="font-size:10.5px;color:#b45309">📌 ' + esc(a.slice(0, n || 80)) + '</div>' : '';
+  }
   // Alert banner + "remove from board" button for cards that ALREADY have both an
   // úttektarskýrslu and a reikningur filed for the year (→ they're really done).
   function docAlert(r) {
