@@ -149,7 +149,22 @@
     return r && r.scope === 'all' && BARE_TAG.test(String(r.sel || '').trim());
   }
 
+  // Eigindin sem eiga að ná NIÐUR Í frumurnar þegar valin er heil tafla.
+  // Aðeins þau sem frumur eiga sjálfar — ekki t.d. border/breidd á töflunni.
+  const CELL_PROPS = ['font-size', 'line-height', 'font-weight', 'font-family',
+    'letter-spacing', 'color', 'padding-top', 'padding-bottom', 'padding-left', 'padding-right'];
+  // Á valinn velji við TÖFLU? Flett upp í DOM-inu og svarið geymt per applyCss-
+  // keyrslu (sami velji kemur oft fyrir og querySelector er ekki ókeypis).
+  let _tblCache = null;
+  function selHitsTable(sel) {
+    if (_tblCache && sel in _tblCache) return _tblCache[sel];
+    let hit = false;
+    try { const el = document.querySelector(sel); hit = !!el && el.tagName === 'TABLE'; } catch (_) {}
+    if (_tblCache) _tblCache[sel] = hit;
+    return hit;
+  }
   function applyCss() {
+    _tblCache = {};
     let st = document.getElementById(STYLE_ID);
     if (!st) { st = document.createElement('style'); st.id = STYLE_ID; document.head.appendChild(st); }
     let css = '';
@@ -162,12 +177,26 @@
         continue;
       }
       const body = keys.map(p => p + ':' + r.decls[p] + (/!important/.test(r.decls[p]) ? '' : ' !important')).join(';');
+      const cellProps = keys.filter(p => CELL_PROPS.indexOf(p) >= 0);
       // Tvöfalt id (#view-x#view-x) + html-forskeyti: Stílstjóra-reglan á að
       // VINNA á contrast-/þema-læsingum með !important id-pinnum (232/313
       // o.fl.) — notandinn valdi þetta sjálfur (Agnar 26.08: „næ ekki að
       // breyta litnum af neinum af fyrirsögnunum").
       const sel = r.scope === 'all' ? 'html ' + r.sel : '#' + r.scope + '#' + r.scope + ' ' + r.sel;
       css += sel + '{' + body + '}\n';
+      // TAFLA: frumurnar (th/td) hafa sínar EIGIN letur-, lita- og bil-reglur í
+      // stílblöðum appsins, svo regla sem sett er á <table> erfist aldrei niður
+      // í þær — taflan leit út fyrir að vera ósnert þótt sleðinn hreyfðist
+      // (Agnar 26.08: „Letur fór 14→9 í panelinum en taflan breyttist EKKERT").
+      // Speglum því frumu-eigindunum yfir á th/td. Röðin skiptir máli: þessi
+      // regla kemur Á EFTIR töflu-reglunni og er sértækari, svo hún vinnur.
+      // Bil-eigindin fara líka hingað — það er raunveruleg röð-hæð í töflu
+      // (padding á <table> gerir ekkert sýnilegt).
+      if (cellProps.length && selHitsTable(sel)) {
+        const cellBody = cellProps
+          .map(p => p + ':' + r.decls[p] + (/!important/.test(r.decls[p]) ? '' : ' !important')).join(';');
+        css += sel + ' th,' + sel + ' td{' + cellBody + '}\n';
+      }
       if (r.decls.color) colorSels.push(sel);
     }
     window.__peColorSels = colorSels;
@@ -242,9 +271,27 @@
   }
   // Read the element's live value (override → computed) for slider init.
   function liveNum(prop, fallback) {
+    // Línuhæðar-sleðinn er á PRÓSENTU-skala (90–240) en bæði reiknaða gildið
+    // („21px") og vistaða gildið (hlutfall, „1.4") eru á öðrum skala. Án
+    // umreiknings lenti 21 utan marka og sleðinn virtist FASTUR — Agnar 26.08:
+    // „Línuhæð-sleðinn hreyfist ekki einu sinni (fast í 21)".
+    if (prop === 'line-height') return liveLineHeightPct(fallback);
     const ov = getDecl(prop); if (ov != null) { const n = parseFloat(ov); if (isFinite(n)) return n; }
     if (!target) return fallback;
     const cs = getComputedStyle(target); const n = parseFloat(cs[prop] || cs.getPropertyValue(prop)); return isFinite(n) ? Math.round(n) : fallback;
+  }
+  function liveLineHeightPct(fallback) {
+    const ov = getDecl('line-height');
+    if (ov != null) {
+      const n = parseFloat(ov);
+      // Vistað sem einingalaust hlutfall (applySize skrifar val/100) → ×100.
+      if (isFinite(n)) return Math.round(n <= 5 ? n * 100 : n);
+    }
+    if (!target) return fallback;
+    const cs = getComputedStyle(target);
+    const lh = parseFloat(cs.lineHeight), fs = parseFloat(cs.fontSize);
+    if (isFinite(lh) && isFinite(fs) && fs > 0) return Math.round((lh / fs) * 100);
+    return fallback;
   }
   function liveColor(prop, fallback) {
     const ov = getDecl(prop); if (ov) return toHex(ov) || fallback;
@@ -438,6 +485,13 @@
       '#' + PANEL_ID + ' .pe-hd{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}',
       '#' + PANEL_ID + ' .pe-titlerow{display:flex;align-items:flex-start;gap:12px}',
       '#' + PANEL_ID + ' .pe-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}',
+      // Merktir takkahópar — hver hópur er ein rönd með lítilli yfirskrift til
+      // vinstri, svo augað sjái strax HVAÐ hver takki tilheyrir.
+      '#' + PANEL_ID + ' .pe-grp{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:7px 9px;border:1px solid #e2e8f0;border-radius:11px;background:#fff}',
+      '#' + PANEL_ID + ' .pe-grplbl{font-size:9.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:#94a3b8;flex:0 0 auto;min-width:58px}',
+      // Tómur hópur (t.d. „Tafla & skjár" áður en 319/320/321 hlaðast) á ekki
+      // að sitja eftir sem stök merkimiða-rönd.
+      '#' + PANEL_ID + ' .pe-grp:not(:has(button)){display:none}',
       '#' + PANEL_ID + ' .pe-targetrow{display:flex;align-items:center;gap:8px}',
       '#' + PANEL_ID + ' .pe-h{font-size:16px;font-weight:800;margin:0}',
       '#' + PANEL_ID + ' .pe-sub{font-size:12px;color:#64748b}',
@@ -509,11 +563,31 @@
         '<button class="pe-btn" id="pe-dock" title="Færa stjórnborðið milli hliðar og botns">' + (dock === 'side' ? '⇓ Botn' : '⇥ Hlið') + '</button>' +
         '<button class="pe-btn" id="pe-close">✕ Loka</button>' +
       '</div>' +
-      '<div class="pe-toolbar">' +
+      // Toolbarinn var ein flöt hrúga af 9+ eins útlítandi pillum þar sem val,
+      // gildissvið, tækjahamur, töfluverkfæri og aðgerðir blönduðust saman
+      // (Agnar 26.08: „hrikalega ruglingslega uppbyggt"). Núna: fjórir MERKTIR
+      // hópar í fastri röð — hvað velurðu → hvar gildir það → töflu/skjá-hamur
+      // → aðgerðir á síðuna.
+      // ⚠️ `.pe-toolbar` verður að lifa áfram sem klasi: patchar 319/320/321
+      // finna hann með querySelector('.pe-toolbar') og appenda sínum tökkum
+      // (Dálkar/Sími/Spjaldtölva/Töflunet). Hann er því hópurinn þar sem þeir
+      // eiga heima hvort eð er.
+      '<div class="pe-grp">' +
+        '<span class="pe-grplbl">Velja</span>' +
         '<button class="pe-btn ' + (picking ? 'on' : 'pri') + '" id="pe-pick">' + (picking ? '🎯 Hætta að velja' : '🎯 Velja hlut') + '</button>' +
         '<button class="pe-btn' + (multiPick ? ' on' : '') + '" id="pe-multi" title="Smelltu á nokkra hluti — sömu breytingar fara á þá alla">☑ Velja marga</button>' +
+      '</div>' +
+      '<div class="pe-grp">' +
+        '<span class="pe-grplbl">Gildir á</span>' +
         scopeSeg +
         (target ? matchSeg : '') +
+      '</div>' +
+      '<div class="pe-grp pe-toolbar">' +
+        '<span class="pe-grplbl">Tafla &amp; skjár</span>' +
+      '</div>' +
+      '<div class="pe-grp">' +
+        '<span class="pe-grplbl">Síðan</span>' +
+        '<button class="pe-btn pri" id="pe-savepage" title="Vista útlit þessarar síðu sem nefnda útgáfu — hægt að sækja aftur hvenær sem er">💾 Vista síðu</button>' +
         '<button class="pe-btn" id="pe-undo"' + (undoStack.length ? '' : ' disabled') + ' title="Afturkalla síðustu breytingu">↩ Afturkalla</button>' +
         '<button class="pe-btn" id="pe-reset">↺ Resetta ▾</button>' +
         '<button class="pe-btn" id="pe-bg">🖼 Bakgrunnsmynd</button>' +
@@ -983,6 +1057,10 @@
     qa('[data-bgg]').forEach(b => b.onclick = () => applyGalleryBg(+b.dataset.bgg));
     const bgc = q('#pe-bgg-clear'); if (bgc) bgc.onclick = clearGalleryBg;
     const vs = q('#pe-ver-save'); if (vs) vs.onclick = saveVersionAs;
+    // Sama aðgerð og „＋ Vista núverandi útlit sem…" neðst í Útgáfur-spjaldinu,
+    // en sýnileg í toolbarnum: aðgerðin VAR til, hún fannst bara aldrei ofan í
+    // samanbrotnu spjaldi (Agnar 26.08: „Engin skýr Vista síðu-aðgerð").
+    const sp = q('#pe-savepage'); if (sp) sp.onclick = saveVersionAs;
     qa('[data-ver-go]').forEach(b => b.onclick = () => activateVersion(+b.dataset.verGo));
     qa('[data-ver-del]').forEach(b => b.onclick = () => deleteVersion(+b.dataset.verDel));
     qa('[data-lk-open]').forEach(b => b.onclick = () => linkGo(+b.dataset.lkOpen, ''));

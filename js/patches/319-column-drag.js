@@ -71,7 +71,13 @@
       const e = store[key] || {};
       const w = e.w || {}, al = e.align || {};
       const wKeys = Object.keys(w), aKeys = Object.keys(al);
-      if (!wKeys.length && !aKeys.length && e.padY == null) continue;
+      // Sleppa TÓMUM færslum. Verður að telja ÖLL eigindin: áður sleppti þetta
+      // færslu sem hafði aðeins fs/lh/ff/hide/sticky (engar dálkabreiddir), svo
+      // leturstilling á töflu án dregins dálks datt þegjandi niður.
+      // ATH: '__grid'-lykill Töflunetsins (321) hefur ekkert af þessu og heldur
+      // því áfram að vera sleppt hér — eins og til er ætlast.
+      if (!wKeys.length && !aKeys.length && e.padY == null && !e.fs && !e.lh && !e.ff &&
+          !Object.keys(e.hide || {}).length && !e.sticky) continue;
       const [vid, cls] = key.split('|');
       const base = 'html #' + vid + ' ' + (cls === 'table' ? 'table' : (cls[0] === '#' ? 'table' + cls : 'table' + cls));
       if (wKeys.length) css += base + '{table-layout:fixed!important;width:100%!important}\n';
@@ -83,6 +89,11 @@
         css += base + ' col:nth-child(' + n + '){display:none!important;width:0!important}\n';
       });
       if (e.fs) css += base + ' tbody td{font-size:' + e.fs + 'px!important}\n';
+      // Töflu-editor (322): línuhæð og leturgerð. Sama geymsla og breiddirnar,
+      // svo hvort tveggja lifir reload og fylgir sjálfkrafa með í ÚTGÁFUR.
+      // lh er geymt sem PRÓSENTA (70–160) — CSS-hlutfallið er lh/100.
+      if (e.lh) css += base + ' tbody td,' + base + ' thead th{line-height:' + (e.lh / 100) + '!important}\n';
+      if (e.ff) css += base + ' tbody td,' + base + ' thead th{font-family:' + e.ff + '!important}\n';
       if (e.sticky) {
         css += base + ' thead th{position:sticky!important;top:0!important;z-index:25!important}\n';
         css += 'html.slokk-phone-nav ' + base.slice(5) + ' thead th{top:74px!important}\n';

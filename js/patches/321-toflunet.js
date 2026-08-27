@@ -211,10 +211,40 @@
     };
   }
 
-  function setOn(v) {
+  // Töflunet-hamurinn er VISTAÐUR per síðu í sömu geymslu og dálkabreiddirnar
+  // (window.TableLook), svo hann slokkni ekki við reload — Agnar 26.08:
+  // „Töflunet-hamurinn slokknar við reload (flaggið ekki vistað þó
+  // dálkabreiddir vistist)". Lykillinn er '__grid' svo hann rekist ekki á
+  // töflulyklana ('viewId|tafla').
+  const GRID_KEY = '__grid';
+  function gridSaved(vid) {
+    try {
+      const TL = window.TableLook; if (!TL || !vid) return false;
+      const g = TL.get()[GRID_KEY]; return !!(g && g[vid]);
+    } catch (_) { return false; }
+  }
+  function saveGrid(vid, val) {
+    try {
+      const TL = window.TableLook; if (!TL || !vid) return;
+      const s = TL.get(); const g = (s[GRID_KEY] = s[GRID_KEY] || {});
+      if (val) g[vid] = 1; else delete g[vid];
+      TL.set(s);
+    } catch (_) {}
+  }
+  function setOn(v, skipSave) {
     on = v;
     if (on) build(); else { destroyOverlay(); closeEditor(); }
     const b = document.querySelector('#pe-toflunet'); if (b) b.classList.toggle('on', on);
+    if (!skipSave) { const view = activeView(); saveGrid(view && view.id, on); }
+  }
+  // Kveikja aftur á netinu þegar síða opnast sem var með það á. Keyrt við
+  // ræsingu og við hverja síðuskiptingu; `skipSave` svo endurheimtin skrifi
+  // ekki yfir sína eigin stillingu.
+  function restoreGrid() {
+    const view = activeView(); const vid = view && view.id;
+    const want = gridSaved(vid);
+    if (want === on) { if (on) build(); return; }
+    setOn(want, true);
   }
 
   // Netið eltir scroll/resize (endurbyggt throttlað) á meðan það er á.
@@ -222,12 +252,19 @@
   const refresh = () => { if (!on) return; clearTimeout(rt); rt = setTimeout(() => { if (on) build(); }, 120); };
   window.addEventListener('scroll', refresh, true);
   window.addEventListener('resize', refresh);
-  window.addEventListener('hashchange', () => setOn(false));
+  // Síðuskipting: slökkva strax (netið tilheyrir gömlu síðunni) og kveikja svo
+  // aftur EF nýja síðan var vistuð með netið á. Áður var alltaf slökkt.
+  window.addEventListener('hashchange', () => {
+    setOn(false, true);
+    setTimeout(restoreGrid, 350);
+  });
 
   // Takkinn í Stílstjóra-toolbar (sama endursmíðunar-mynstur og 319/320).
   function ensureBtn() {
     const bar = document.querySelector('.pe-toolbar');
-    if (!bar) { if (on) setOn(false); return; }
+    // skipSave: að LOKA Stílstjóranum má ALDREI þurrka út vistuðu netstillinguna
+    // — takkinn hvarf bara, notandinn slökkti ekki á netinu.
+    if (!bar) { if (on) setOn(false, true); return; }
     if (!bar.querySelector('#pe-toflunet')) {
       const b = document.createElement('button');
       b.id = 'pe-toflunet'; b.type = 'button'; b.className = 'pe-btn' + (on ? ' on' : '');
@@ -245,6 +282,9 @@
     clearTimeout(t); t = setTimeout(ensureBtn, 250);
   }).observe(document.body, { childList: true, subtree: true });
   ensureBtn();
+  // Ræsing: kveikja á netinu ef þessi síða var vistuð með það á. Bíðum eftir að
+  // taflan sé komin í DOM (borðin hlaðast úr API) — þrjár atrennur duga.
+  [900, 2200, 4500].forEach(ms => setTimeout(() => { try { restoreGrid(); } catch (_) {} }, ms));
 
   console.log('[patch-321] töflunet ready');
 })();
